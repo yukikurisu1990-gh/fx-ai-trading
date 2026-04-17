@@ -2,6 +2,7 @@ __pycache__/
 *.pyc
 .env
 .env.*
+!.env.example
 venv/
 .venv/
 logs/
@@ -9,3 +10,6 @@ models/
 data/
 *.db
 .DS_Store
+.pytest_cache/
+.ruff_cache/
+*.egg-info/
