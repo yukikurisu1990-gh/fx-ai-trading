@@ -1,0 +1,55 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "fx-ai-trading"
+version = "0.0.1"
+description = "FX prediction and short-term trading system (MVP: paper mode only)"
+requires-python = ">=3.12,<3.13"
+readme = "README.md"
+authors = [{ name = "くりす" }]
+
+# Runtime dependencies intentionally empty for Cycle 1.
+# Added in later M1 cycles per docs/iteration1_implementation_plan.md 6.1.
+# Constraint: no DB / Alembic / Strategy / Interface implementation in Cycle 1.
+dependencies = []
+
+[project.optional-dependencies]
+dev = [
+    "ruff>=0.6,<1.0",
+    "pytest>=8.0,<9.0",
+]
+
+[tool.setuptools.packages.find]
+# src layout: auto-discover packages under src/ (e.g. fx_ai_trading and future subpackages).
+# setuptools >= 68 supports this natively; no package-dir needed.
+where = ["src"]
+
+# --- Ruff (lint + format integrated) ---
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+extend-exclude = [".venv", "build", "dist", "migrations"]
+
+[tool.ruff.lint]
+select = [
+    "E",    # pycodestyle errors
+    "F",    # pyflakes
+    "I",    # isort
+    "W",    # pycodestyle warnings
+    "B",    # flake8-bugbear
+    "UP",   # pyupgrade (Python 3.12 syntax suggestions)
+    "SIM",  # flake8-simplify
+    "N",    # pep8-naming (aligns with docs/development_rules.md 4.1)
+]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+
+# --- Pytest ---
+[tool.pytest.ini_options]
+minversion = "8.0"
+testpaths = ["tests"]
+addopts = "-ra --strict-markers"

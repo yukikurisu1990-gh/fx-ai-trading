@@ -1,0 +1,38 @@
+# Pre-commit hooks for fx-ai-trading.
+#
+# See docs/development_rules.md 2. for the test strategy this guards,
+# and docs/automation_harness.md 4.1 for the "Blocker" conditions that
+# the custom lint enforces.
+#
+# Setup (run once per clone, after the .venv is ready):
+#   pip install pre-commit
+#   pre-commit install
+#
+# Manual run on the entire repository:
+#   pre-commit run --all-files
+
+repos:
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.15.11
+    hooks:
+      - id: ruff
+        args: ["--fix"]
+      - id: ruff-format
+
+  - repo: local
+    hooks:
+      - id: pytest
+        name: pytest
+        entry: .venv/Scripts/pytest.exe
+        language: system
+        pass_filenames: false
+        always_run: true
+        stages: [pre-commit]
+
+      - id: custom-lint
+        name: custom lint (forbidden patterns)
+        entry: python tools/lint/run_custom_checks.py
+        language: system
+        pass_filenames: false
+        always_run: true
+        stages: [pre-commit]
