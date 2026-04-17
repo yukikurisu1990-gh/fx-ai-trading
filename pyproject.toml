@@ -13,7 +13,11 @@ authors = [{ name = "くりす" }]
 # Runtime dependencies intentionally empty for Cycle 1.
 # Added in later M1 cycles per docs/iteration1_implementation_plan.md 6.1.
 # Constraint: no DB / Alembic / Strategy / Interface implementation in Cycle 1.
-dependencies = []
+dependencies = [
+    "alembic>=1.13,<2.0",
+    "psycopg[binary]>=3.1,<4.0",
+    "sqlalchemy>=2.0,<3.0",
+]
 
 [project.optional-dependencies]
 dev = [
