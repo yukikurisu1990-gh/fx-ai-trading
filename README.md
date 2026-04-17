@@ -144,6 +144,69 @@ definition.
 
 ---
 
+## Dependency Lock
+
+The repository pins exact versions of every direct and transitive dependency
+through [`uv.lock`](uv.lock). This guarantees that every developer, CI run,
+and future deployment resolves to the same set of packages.
+
+### Installing uv (one-time, user-level)
+
+`uv` is a development tool, not a project dependency. Install it once on your
+machine (outside the project `.venv`):
+
+```powershell
+# PowerShell
+pip install --user uv
+# or: winget install astral-sh.uv
+```
+
+### Syncing a fresh environment from the lockfile (recommended)
+
+```powershell
+uv sync --all-extras --frozen
+```
+
+This creates / updates `.venv` with exactly the versions recorded in
+`uv.lock`. No resolution happens at sync time; mismatches cause an error.
+
+### Legacy path (pip-only, still supported)
+
+```powershell
+pip install -e ".[dev]"
+```
+
+This resolves against `pyproject.toml` version ranges (e.g. `ruff>=0.6,<1.0`)
+and may pick newer patch versions than `uv.lock`. Use this only when `uv` is
+unavailable; prefer `uv sync` for reproducibility.
+
+### When to update the lockfile
+
+Run `uv lock` **only when** `pyproject.toml` dependencies change:
+
+```powershell
+uv lock
+git add uv.lock pyproject.toml
+```
+
+Commit `uv.lock` together with the `pyproject.toml` change in the **same PR**.
+Never edit `uv.lock` by hand.
+
+### Adding a new dependency (M2 and later)
+
+Prefer:
+
+```powershell
+uv add sqlalchemy            # runtime dep
+uv add --dev some-linter     # dev dep
+```
+
+`uv add` edits `pyproject.toml` **and** updates `uv.lock` atomically.
+Manual `pyproject.toml` edits are allowed but must be followed by `uv lock`
+before commit.
+
+---
+
 ## Troubleshooting
 
 ### `.venv` was created with the wrong Python version
