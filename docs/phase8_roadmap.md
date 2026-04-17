@@ -213,3 +213,4 @@ Phase 8 の対象外だが、将来的に検討される領域として以下を
 
 <!-- Automation verification marker for Cycle 10. -->
 <!-- Automation verification marker for Cycle 11. -->
+<!-- Automation verification marker for Cycle 12. -->
