@@ -24,18 +24,19 @@ from logging.config import fileConfig
 from alembic import context
 from sqlalchemy import engine_from_config, pool
 
+from fx_ai_trading.db.base import Base
+
 config = context.config
 
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
-# When the first SQLAlchemy ``Base`` class is declared (Cycle 15+),
-# import it here and replace ``None`` with ``Base.metadata`` so that
-# autogenerate can diff the model against the live schema. Example:
-#
-#     from fx_ai_trading.repositories.base import Base
-#     target_metadata = Base.metadata
-target_metadata = None
+# Cycle 15+ target_metadata points at the single declarative ``Base`` in
+# ``src/fx_ai_trading/db/base.py``. ORM model modules register with this
+# metadata simply by being imported here; Cycle 15 itself declares no
+# model subclasses because the initial Group A revision uses direct
+# ``op.create_table``, so the metadata is empty at this stage.
+target_metadata = Base.metadata
 
 
 def _get_database_url() -> str:
