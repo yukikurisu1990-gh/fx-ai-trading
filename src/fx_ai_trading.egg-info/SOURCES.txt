@@ -1,0 +1,8 @@
+README.md
+pyproject.toml
+src/fx_ai_trading/__init__.py
+src/fx_ai_trading.egg-info/PKG-INFO
+src/fx_ai_trading.egg-info/SOURCES.txt
+src/fx_ai_trading.egg-info/dependency_links.txt
+src/fx_ai_trading.egg-info/requires.txt
+src/fx_ai_trading.egg-info/top_level.txt
