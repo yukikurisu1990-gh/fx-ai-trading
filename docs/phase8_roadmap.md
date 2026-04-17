@@ -212,3 +212,4 @@ Phase 8 の対象外だが、将来的に検討される領域として以下を
 - Phase 8 完了時点で Phase 9 以降のロードマップを同様のフォーマットで作成する
 
 <!-- Automation verification marker for Cycle 10. -->
+<!-- Automation verification marker for Cycle 11. -->
