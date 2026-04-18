@@ -30,6 +30,21 @@ _FORBIDDEN_ATTR_CALLS: set[tuple[str, str]] = {
 }
 
 
+_NOQA_CLOCK_MARKER = "# noqa: CLOCK"
+
+
+def _noqa_clock_lines(code: str) -> frozenset[int]:
+    """Return 1-based line numbers that carry ``# noqa: CLOCK``.
+
+    Lines marked this way are the *only* permitted location for
+    ``datetime.now()`` / ``time.time()`` — used exclusively by the Clock
+    interface implementation (``common/clock.py``).
+    """
+    return frozenset(
+        i for i, line in enumerate(code.splitlines(), start=1) if _NOQA_CLOCK_MARKER in line
+    )
+
+
 def find_forbidden_patterns(code: str) -> list[str]:
     """Parse ``code`` and return forbidden-pattern findings.
 
@@ -39,13 +54,16 @@ def find_forbidden_patterns(code: str) -> list[str]:
     returns a single-element list describing the parse failure so callers
     can distinguish "clean" from "unparseable".
 
-    The function is a pure function: no side effects, no I/O, deterministic.
+    Lines annotated with ``# noqa: CLOCK`` are exempt from the
+    ``datetime.now()`` / ``time.time()`` checks — this exemption is
+    reserved for the ``common/clock.py`` WallClock implementation only.
     """
     try:
         tree = ast.parse(code)
     except SyntaxError as exc:
         return [f"syntax error: {exc.msg} at line {exc.lineno}"]
 
+    noqa_lines = _noqa_clock_lines(code)
     findings: list[str] = []
     for node in ast.walk(tree):
         if not isinstance(node, ast.Call):
@@ -65,12 +83,14 @@ def find_forbidden_patterns(code: str) -> list[str]:
             value = func.value
             # 2a: ``outer.attr(...)`` with ``outer`` a plain name.
             if isinstance(value, ast.Name) and (value.id, attr) in _FORBIDDEN_ATTR_CALLS:
-                findings.append(f"{value.id}.{attr}() detected at line {line}")
+                if line not in noqa_lines:
+                    findings.append(f"{value.id}.{attr}() detected at line {line}")
             # 2b: ``X.outer.attr(...)`` such as ``datetime.datetime.now()``.
             elif (
                 isinstance(value, ast.Attribute)
                 and isinstance(value.value, ast.Name)
                 and (value.attr, attr) in _FORBIDDEN_ATTR_CALLS
+                and line not in noqa_lines
             ):
                 findings.append(f"{value.value.id}.{value.attr}.{attr}() detected at line {line}")
 
