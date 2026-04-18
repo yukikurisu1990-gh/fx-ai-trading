@@ -1,10 +1,13 @@
-"""AccountsRepository — read access to the accounts table.
+"""AccountsRepository — read/write access to the accounts table.
 
 Scope (M3 Cycle 7):
   - get_by_account_id(account_id) -> dict | None
   - list_accounts() -> list[dict]
 
-Write operations (create / update) are M3 Cycle 8 scope.
+Scope (M3 Cycle 8):
+  - create_account(account_id, broker_id, account_type, base_currency)
+  - update_account(account_id, **fields)
+
 Common Keys physical columns are M5 scope.
 """
 
@@ -18,7 +21,7 @@ _COLUMNS = ("account_id", "broker_id", "account_type", "base_currency", "created
 
 
 class AccountsRepository(RepositoryBase):
-    """Read interface for the accounts table."""
+    """Read/write interface for the accounts table."""
 
     def get_by_account_id(self, account_id: str) -> dict | None:
         """Return the account row for *account_id*, or None if not found."""
@@ -46,3 +49,45 @@ class AccountsRepository(RepositoryBase):
                 )
             )
             return [dict(zip(_COLUMNS, row, strict=True)) for row in result]
+
+    def create_account(
+        self,
+        account_id: str,
+        broker_id: str,
+        account_type: str,
+        base_currency: str,
+    ) -> None:
+        """Insert a new account row."""
+        with self._engine.begin() as conn:
+            conn.execute(
+                text(
+                    "INSERT INTO accounts (account_id, broker_id, account_type, base_currency)"
+                    " VALUES (:account_id, :broker_id, :account_type, :base_currency)"
+                ),
+                {
+                    "account_id": account_id,
+                    "broker_id": broker_id,
+                    "account_type": account_type,
+                    "base_currency": base_currency,
+                },
+            )
+
+    def update_account(self, account_id: str, **fields: str) -> None:
+        """Update mutable fields on an existing account row.
+
+        Only ``account_type`` and ``base_currency`` are accepted.
+        ``updated_at`` is refreshed via DB NOW() to avoid datetime.now().
+        """
+        allowed = {"account_type", "base_currency"}
+        updates = {k: v for k, v in fields.items() if k in allowed}
+        if not updates:
+            return
+        set_clause = ", ".join(f"{k} = :{k}" for k in sorted(updates))
+        with self._engine.begin() as conn:
+            conn.execute(
+                text(
+                    f"UPDATE accounts SET {set_clause}, updated_at = NOW()"
+                    " WHERE account_id = :account_id"
+                ),
+                {**updates, "account_id": account_id},
+            )
