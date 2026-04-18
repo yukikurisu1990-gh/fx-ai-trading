@@ -140,6 +140,20 @@ class TestAllFileChecks:
         code = "t = time.time()  # noqa: CLOCK\n"
         assert find_forbidden_patterns(code) == []
 
+    def test_noqa_clock_does_not_exempt_file_deletion(self) -> None:
+        """noqa: CLOCK must not silence os.remove — deletion has no CLOCK exemption."""
+        code = "os.remove('foo')  # noqa: CLOCK\n"
+        findings = find_forbidden_patterns(code)
+        assert len(findings) == 1
+        assert "os.remove" in findings[0]
+
+    def test_noqa_clock_does_not_exempt_shutil_rmtree(self) -> None:
+        """noqa: CLOCK must not silence shutil.rmtree."""
+        code = "shutil.rmtree('dir')  # noqa: CLOCK\n"
+        findings = find_forbidden_patterns(code)
+        assert len(findings) == 1
+        assert "shutil.rmtree" in findings[0]
+
     # --- multiple / syntax error ---------------------------------------------
 
     def test_detect_multiple_violations(self) -> None:

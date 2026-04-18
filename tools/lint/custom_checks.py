@@ -61,6 +61,18 @@ _FORBIDDEN_ATTR_CALLS: set[tuple[str, str]] = {
 _NOQA_CLOCK_MARKER = "# noqa: CLOCK"
 _NOQA_SQL_MARKER = "# noqa: SQL"
 
+# Clock-only subset of _FORBIDDEN_ATTR_CALLS — the ones exemptible via the CLOCK noqa marker.
+# File-deletion calls (os.remove/unlink, shutil.rmtree) are intentionally excluded:
+# there is no legitimate use-case for them in production code, so the CLOCK marker
+# must never silence them even if placed on the same line.
+_CLOCK_ATTR_CALLS: frozenset[tuple[str, str]] = frozenset(
+    {
+        ("datetime", "now"),
+        ("datetime", "utcnow"),
+        ("time", "time"),
+    }
+)
+
 # ---------------------------------------------------------------------------
 # Src-only forbidden patterns
 # ---------------------------------------------------------------------------
@@ -158,7 +170,8 @@ def find_forbidden_patterns(code: str) -> list[str]:
 
             # Simple: datetime.now() / time.time() / os.remove() etc.
             if isinstance(value, ast.Name) and (value.id, attr) in _FORBIDDEN_ATTR_CALLS:
-                if line not in noqa_clock:
+                is_clock = (value.id, attr) in _CLOCK_ATTR_CALLS
+                if not is_clock or line not in noqa_clock:
                     findings.append(f"{value.id}.{attr}() detected at line {line}")
 
             # Chained: datetime.datetime.now() etc.
@@ -166,9 +179,12 @@ def find_forbidden_patterns(code: str) -> list[str]:
                 isinstance(value, ast.Attribute)
                 and isinstance(value.value, ast.Name)
                 and (value.attr, attr) in _FORBIDDEN_ATTR_CALLS
-                and line not in noqa_clock
             ):
-                findings.append(f"{value.value.id}.{value.attr}.{attr}() detected at line {line}")
+                is_clock = (value.attr, attr) in _CLOCK_ATTR_CALLS
+                if not is_clock or line not in noqa_clock:
+                    findings.append(
+                        f"{value.value.id}.{value.attr}.{attr}() detected at line {line}"
+                    )
 
     return findings
 
