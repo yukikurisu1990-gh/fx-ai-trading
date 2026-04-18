@@ -4,8 +4,7 @@ ULID (Universally Unique Lexicographically Sortable Identifier):
   - 26 Crockford base32 characters
   - 10 chars = 48-bit timestamp (ms since Unix epoch)
   - 16 chars = 80-bit cryptographic random
-  - Lexicographically sortable within the same millisecond granularity
-  - Monotonically increasing within the same process when generated in sequence
+  - Lexicographically sortable by generation time (ms granularity)
 
 No external dependency — uses only Python stdlib (time, secrets).
 

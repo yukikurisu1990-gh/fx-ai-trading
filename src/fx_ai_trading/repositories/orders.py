@@ -110,6 +110,22 @@ class OrdersRepository(RepositoryBase):
                 },
             )
 
+    def list_open_orders(self) -> list[dict]:
+        """Return all orders with PENDING or SUBMITTED status, ordered by created_at.
+
+        Used by StartupReconciler to find orders that need reconciliation.
+        Returns dicts with keys: order_id, status.
+        """
+        with self._engine.connect() as conn:
+            rows = conn.execute(
+                text(
+                    "SELECT order_id, status FROM orders"
+                    " WHERE status IN ('PENDING', 'SUBMITTED')"
+                    " ORDER BY created_at ASC"
+                )
+            ).fetchall()
+        return [{"order_id": row[0], "status": row[1]} for row in rows]
+
     def update_status(
         self,
         order_id: str,
