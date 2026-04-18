@@ -92,8 +92,6 @@ def find_forbidden_patterns(code: str) -> list[str]:
                 and (value.attr, attr) in _FORBIDDEN_ATTR_CALLS
                 and line not in noqa_lines
             ):
-                findings.append(
-                    f"{value.value.id}.{value.attr}.{attr}() detected at line {line}"
-                )
+                findings.append(f"{value.value.id}.{value.attr}.{attr}() detected at line {line}")
 
     return findings

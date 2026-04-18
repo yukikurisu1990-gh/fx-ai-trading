@@ -210,18 +210,14 @@ class TestStep9AccountType:
     def test_matching_account_type_passes(self, journal, notifier) -> None:
         broker = MagicMock()
         broker.account_type = "demo"
-        ctx = _make_ctx(
-            journal, notifier, broker=broker, config_provider=self._mock_config("demo")
-        )
+        ctx = _make_ctx(journal, notifier, broker=broker, config_provider=self._mock_config("demo"))
         result = StartupRunner(ctx).run()
         assert result.outcome == "ready"
 
     def test_mismatched_account_type_raises_startup_error(self, journal, notifier) -> None:
         broker = MagicMock()
         broker.account_type = "live"
-        ctx = _make_ctx(
-            journal, notifier, broker=broker, config_provider=self._mock_config("demo")
-        )
+        ctx = _make_ctx(journal, notifier, broker=broker, config_provider=self._mock_config("demo"))
         with pytest.raises(StartupError) as exc_info:
             StartupRunner(ctx).run()
         assert exc_info.value.step == 9
@@ -287,9 +283,7 @@ class TestSupervisorSafeStop:
         sup.startup(ctx)
         assert sup.is_trading_allowed()
 
-        sup.trigger_safe_stop(
-            reason="test_stop", occurred_at=_FIXED_AT, payload={}, context=None
-        )
+        sup.trigger_safe_stop(reason="test_stop", occurred_at=_FIXED_AT, payload={}, context=None)
         assert not sup.is_trading_allowed()
 
     def test_safe_stop_is_idempotent(self, journal, notifier) -> None:

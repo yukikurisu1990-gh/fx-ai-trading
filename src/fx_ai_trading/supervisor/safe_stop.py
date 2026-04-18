@@ -103,9 +103,7 @@ class SafeStopHandler:
     # Individual step implementations
     # ------------------------------------------------------------------
 
-    def _fire_step1_journal(
-        self, reason: str, occurred_at: datetime, payload: dict
-    ) -> None:
+    def _fire_step1_journal(self, reason: str, occurred_at: datetime, payload: dict) -> None:
         if self._journal is None:
             _log.error("SafeStopHandler: journal not set — step 1 skipped!")
             return
@@ -138,9 +136,7 @@ class SafeStopHandler:
         self._notifier.dispatch_direct_sync(event, "critical", payload)
         _log.info("SafeStopHandler step 3: notifier dispatched")
 
-    def _fire_step4_db(
-        self, occurred_at: datetime, payload: dict, ctx: object | None
-    ) -> None:
+    def _fire_step4_db(self, occurred_at: datetime, payload: dict, ctx: object | None) -> None:
         repo = self._supervisor_events_repo
         if repo is None or ctx is None:
             _log.info("SafeStopHandler step 4: DB write skipped (repo or ctx not set)")

@@ -102,9 +102,7 @@ class Supervisor:
             context: Optional CommonKeysContext for DB write.
         """
         if self._is_stopped:
-            _log.warning(
-                "trigger_safe_stop called but already stopped (reason=%s) — no-op", reason
-            )
+            _log.warning("trigger_safe_stop called but already stopped (reason=%s) — no-op", reason)
             return
 
         from fx_ai_trading.supervisor.safe_stop import SafeStopHandler
