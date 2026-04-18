@@ -32,7 +32,7 @@ _log = logging.getLogger(__name__)
 _DEFAULT_TTL_SECONDS = 15
 _DEFAULT_DEFER_TIMEOUT_SECONDS = 5
 _DEFAULT_DEFER_EXHAUSTED_THRESHOLD = 3
-_DEFAULT_MAX_SPREAD_PIPS = 0.0005  # 5 pips in price units
+_DEFAULT_MAX_SPREAD = 0.0005  # 5 pips expressed in price units (EUR/USD: 1 pip = 0.0001)
 
 
 class ExecutionGateService:
@@ -44,7 +44,8 @@ class ExecutionGateService:
         signal_ttl_seconds: Max allowed signal age in seconds (6.15, default 15).
         defer_exhausted_threshold: Max defer attempts before DeferExhausted (default 3).
         defer_timeout_seconds: Seconds to wait per defer cycle (default 5).
-        max_spread_pips: Spread threshold above which a Defer is issued (default 0.0005).
+        max_spread_pips: Spread threshold in price units above which a Defer is issued
+            (default 0.0005 = 5 pips for major pairs; 1 pip = 0.0001).
         clock: Injectable clock (WallClock in production, FixedClock in tests).
     """
 
@@ -53,7 +54,7 @@ class ExecutionGateService:
         signal_ttl_seconds: int = _DEFAULT_TTL_SECONDS,
         defer_exhausted_threshold: int = _DEFAULT_DEFER_EXHAUSTED_THRESHOLD,
         defer_timeout_seconds: int = _DEFAULT_DEFER_TIMEOUT_SECONDS,
-        max_spread_pips: float = _DEFAULT_MAX_SPREAD_PIPS,
+        max_spread_pips: float = _DEFAULT_MAX_SPREAD,
         clock: Clock | None = None,
     ) -> None:
         self._ttl = signal_ttl_seconds

@@ -50,6 +50,20 @@ class TestPositionSizerInvalidInputs:
         with pytest.raises(ValueError):
             PositionSizerService(risk_pct=101.0)
 
+    def test_zero_risk_pct_in_size_returns_invalid(self) -> None:
+        """Passing risk_pct=0 to size() must return InvalidRiskPct (not silently use default)."""
+        sizer = _sizer(risk_pct=1.0)
+        result = sizer.size(100_000.0, 0.0, 0.001, _instrument())
+        assert result.size_units == 0
+        assert result.reason == "InvalidRiskPct"
+
+    def test_negative_risk_pct_in_size_returns_invalid(self) -> None:
+        """Passing negative risk_pct to size() must return InvalidRiskPct."""
+        sizer = _sizer(risk_pct=1.0)
+        result = sizer.size(100_000.0, -1.0, 0.001, _instrument())
+        assert result.size_units == 0
+        assert result.reason == "InvalidRiskPct"
+
 
 class TestPositionSizerMinLotBoundary:
     def test_size_under_min_returns_zero(self) -> None:
@@ -92,6 +106,7 @@ class TestPositionSizerMinLotBoundary:
         sizer = _sizer()
         result = sizer.size(1_000.0, 1.0, 0.001, _instrument(min_trade_units=1))
         assert result.size_units > 0
+        assert result.reason is None
 
     def test_large_balance_large_size(self) -> None:
         """Large balance → large size, still a multiple of min_lot."""

@@ -122,9 +122,11 @@ class RiskManagerService:
                 reject_reason="risk.total_risk",
             )
 
+        # Shallow-copy outer dicts so exposure_after is independent of the snapshot.
+        # Inner dicts of per_direction are not deep-copied (M10 paper-mode: no in-place mutation).
         exposure_after = Exposure(
-            per_currency=exposure.per_currency,
-            per_direction=exposure.per_direction,
+            per_currency=dict(exposure.per_currency),
+            per_direction={k: dict(v) for k, v in exposure.per_direction.items()},
             total_risk_correlation_adjusted=exposure.total_risk_correlation_adjusted,
             concurrent_positions=exposure.concurrent_positions + 1,
         )

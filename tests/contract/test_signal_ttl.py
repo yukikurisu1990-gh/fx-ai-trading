@@ -77,10 +77,14 @@ class TestSignalTTLContract:
         assert result.reason_code == "SignalExpired"
 
     def test_ttl_rejected_before_defer_exhausted_check(self) -> None:
-        """TTL check fires before DeferExhausted even with defer_count < threshold."""
+        """TTL fires before DeferExhausted even when BOTH conditions are satisfied.
+
+        Uses defer_count >= threshold so DeferExhausted *would* trigger if reached,
+        proving that TTL (Step 1) is evaluated before DeferExhausted (Step 2).
+        """
         gate = _gate()
-        # defer_count=0 < threshold=3, but signal is expired
-        result = gate.check(_make_intent(_SIGNAL_TTL + 5.0), _normal_context(), defer_count=0)
+        # defer_count=10 >= threshold=3 AND age > ttl — TTL must win
+        result = gate.check(_make_intent(_SIGNAL_TTL + 5.0), _normal_context(), defer_count=10)
         assert result.reason_code == "SignalExpired"
 
     def test_ttl_rejected_even_with_normal_spread(self) -> None:

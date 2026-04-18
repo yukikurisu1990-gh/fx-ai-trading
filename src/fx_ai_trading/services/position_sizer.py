@@ -66,8 +66,15 @@ class PositionSizerService:
             )
             return SizeResult(size_units=0, reason="InvalidSL")
 
-        effective_risk_pct = risk_pct if risk_pct > 0 else self._risk_pct
-        risk_amount = account_balance * effective_risk_pct / 100.0
+        if risk_pct <= 0:
+            _log.debug(
+                "PositionSizerService: risk_pct=%s <= 0 → InvalidRiskPct (%s)",
+                risk_pct,
+                instrument.instrument,
+            )
+            return SizeResult(size_units=0, reason="InvalidRiskPct")
+
+        risk_amount = account_balance * risk_pct / 100.0
         raw_units = risk_amount / sl_pips
 
         min_lot = instrument.min_trade_units
@@ -86,7 +93,7 @@ class PositionSizerService:
             "PositionSizerService: %s size=%d (risk_pct=%.2f, sl_pips=%.5f, balance=%.2f)",
             instrument.instrument,
             size_units,
-            effective_risk_pct,
+            risk_pct,
             sl_pips,
             account_balance,
         )
