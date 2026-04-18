@@ -18,10 +18,10 @@ from __future__ import annotations
 
 from datetime import UTC, datetime
 from pathlib import Path
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
 import pytest
-from sqlalchemy import create_engine, text
+from sqlalchemy import create_engine
 
 from fx_ai_trading.common.clock import FixedClock
 from fx_ai_trading.config.ntp import NtpChecker
