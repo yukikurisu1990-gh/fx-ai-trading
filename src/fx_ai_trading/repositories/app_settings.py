@@ -11,8 +11,6 @@ the corresponding migration are implemented together.
 
 from __future__ import annotations
 
-from datetime import UTC, datetime
-
 from sqlalchemy import Engine, text
 
 
@@ -32,12 +30,15 @@ class AppSettingsRepository:
         return row[0] if row else None
 
     def set(self, name: str, value: str) -> None:
-        """Upsert *value* for *name*, updating updated_at to now (UTC)."""
-        now = datetime.now(UTC)
+        """Upsert *value* for *name*, updating updated_at via DB NOW().
+
+        updated_at is set by the database (NOW()) to avoid datetime.now()
+        which is forbidden by custom lint — Clock interface is M3+ scope.
+        """
         with self._engine.begin() as conn:
             conn.execute(
                 text(
-                    "UPDATE app_settings SET value = :value, updated_at = :now WHERE name = :name"
+                    "UPDATE app_settings SET value = :value, updated_at = NOW() WHERE name = :name"
                 ),
-                {"name": name, "value": value, "now": now},
+                {"name": name, "value": value},
             )
