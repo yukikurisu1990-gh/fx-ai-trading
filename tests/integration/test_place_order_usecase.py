@@ -19,6 +19,15 @@ import pytest
 from dotenv import load_dotenv
 from sqlalchemy import create_engine, text
 
+from fx_ai_trading.config.common_keys_context import CommonKeysContext
+
+_CTX = CommonKeysContext(
+    run_id="integ-run-001",
+    environment="test",
+    code_version="0.0.0",
+    config_version="test-cfg",
+)
+
 load_dotenv(Path(__file__).resolve().parents[2] / ".env", override=False)
 
 _DATABASE_URL = os.environ.get("DATABASE_URL", "").strip()
@@ -106,6 +115,7 @@ def test_place_buy_order_creates_order_and_position(usecase, engine) -> None:
         order_type="market",
         direction="buy",
         units="1000",
+        context=_CTX,
         correlation_id="test-corr-001",
     )
 
@@ -144,6 +154,7 @@ def test_account_type_mismatch_raises_and_no_db_side_effects(usecase, engine) ->
             order_type="market",
             direction="buy",
             units="500",
+            context=_CTX,
         )
 
     with engine.connect() as conn:
@@ -165,4 +176,5 @@ def test_invalid_units_raises_before_db(usecase, engine) -> None:
             order_type="market",
             direction="buy",
             units="0",
+            context=_CTX,
         )

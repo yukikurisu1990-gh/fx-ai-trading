@@ -6,7 +6,15 @@ from unittest.mock import MagicMock
 
 import pytest
 
+from fx_ai_trading.config.common_keys_context import CommonKeysContext
 from fx_ai_trading.usecases.place_order_usecase import PlaceOrderUseCase
+
+_CTX = CommonKeysContext(
+    run_id="run-test",
+    environment="test",
+    code_version="0.0.0",
+    config_version="abc123",
+)
 
 _ACCOUNT = {
     "account_id": "acc-001",
@@ -26,6 +34,7 @@ _BASE_KWARGS = {
     "order_type": "market",
     "direction": "buy",
     "units": "1000",
+    "context": _CTX,
 }
 
 
@@ -105,6 +114,7 @@ class TestSuccessFlow:
             order_type="market",
             direction="buy",
             units="1000",
+            context=_CTX,
             correlation_id=None,
         )
 

@@ -1,18 +1,18 @@
-"""PositionsRepository — read access to the positions table.
+"""PositionsRepository — append-only read/write for the positions table (D3 §2.9.1).
 
-Scope (M3 Cycle 10):
-  - get_by_position_id(position_snapshot_id) -> dict | None
-  - get_open_positions(account_id) -> list[dict]
+positions is an append-only event timeline (one row per change event).
+No UPDATE/DELETE — only INSERT via insert_event().
 
-positions is an append-only timeline (one row per change event).
-get_open_positions returns snapshots with event_type in ('open','add','swap_applied').
-Common Keys physical columns are M5 scope.
+Common Keys: positions table has no run_id/environment/code_version/config_version
+columns in the current schema. Context is accepted on insert_event() for contract
+compliance; keys are not written to DB until the schema is extended.
 """
 
 from __future__ import annotations
 
 from sqlalchemy import text
 
+from fx_ai_trading.config.common_keys_context import CommonKeysContext
 from fx_ai_trading.repositories.base import RepositoryBase
 
 _COLUMNS = (
@@ -71,3 +71,50 @@ class PositionsRepository(RepositoryBase):
                 {"account_id": account_id},
             )
             return [dict(zip(_COLUMNS, row, strict=True)) for row in result]
+
+    def insert_event(
+        self,
+        position_snapshot_id: str,
+        account_id: str,
+        instrument: str,
+        event_type: str,
+        units: str,
+        context: CommonKeysContext,
+        *,
+        order_id: str | None = None,
+        avg_price: str | None = None,
+        unrealized_pl: str | None = None,
+        realized_pl: str | None = None,
+        correlation_id: str | None = None,
+    ) -> None:
+        """Append a position snapshot event row (append-only, no UPDATE/DELETE).
+
+        event_time_utc is set to DB NOW() to avoid datetime.now() in app code.
+        context: Common Keys for contract compliance (not yet written to DB).
+        """
+        self._with_common_keys({}, context)
+        with self._engine.begin() as conn:
+            conn.execute(
+                text(
+                    "INSERT INTO positions"
+                    " (position_snapshot_id, order_id, account_id, instrument,"
+                    "  event_type, units, avg_price, unrealized_pl, realized_pl,"
+                    "  event_time_utc, correlation_id)"
+                    " VALUES"
+                    " (:sid, :order_id, :account_id, :instrument,"
+                    "  :event_type, :units, :avg_price, :unrealized_pl, :realized_pl,"
+                    "  CURRENT_TIMESTAMP, :correlation_id)"
+                ),
+                {
+                    "sid": position_snapshot_id,
+                    "order_id": order_id,
+                    "account_id": account_id,
+                    "instrument": instrument,
+                    "event_type": event_type,
+                    "units": units,
+                    "avg_price": avg_price,
+                    "unrealized_pl": unrealized_pl,
+                    "realized_pl": realized_pl,
+                    "correlation_id": correlation_id,
+                },
+            )

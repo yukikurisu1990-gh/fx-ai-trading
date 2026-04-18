@@ -13,6 +13,15 @@ import pytest
 from dotenv import load_dotenv
 from sqlalchemy import create_engine, text
 
+from fx_ai_trading.config.common_keys_context import CommonKeysContext
+
+_CTX = CommonKeysContext(
+    run_id="integ-run-001",
+    environment="test",
+    code_version="0.0.0",
+    config_version="test-cfg",
+)
+
 load_dotenv(Path(__file__).resolve().parents[2] / ".env", override=False)
 
 _DATABASE_URL = os.environ.get("DATABASE_URL", "").strip()
@@ -81,6 +90,7 @@ def test_create_and_get_order(repo) -> None:
         order_type="market",
         direction="buy",
         units="1000",
+        context=_CTX,
     )
     result = repo.get_by_order_id(_ORDER_ID)
     assert result is not None
