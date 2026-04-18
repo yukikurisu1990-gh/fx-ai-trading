@@ -20,11 +20,16 @@ from __future__ import annotations
 
 import os
 from logging.config import fileConfig
+from pathlib import Path
 
 from alembic import context
+from dotenv import load_dotenv
 from sqlalchemy import engine_from_config, pool
 
 from fx_ai_trading.db.base import Base
+
+# Load .env from repository root before any URL resolution.
+load_dotenv(Path(__file__).resolve().parents[1] / ".env", override=False)
 
 config = context.config
 
