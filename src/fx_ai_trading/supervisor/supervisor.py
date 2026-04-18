@@ -49,6 +49,10 @@ class Supervisor:
         self._clock = clock
         self._trading_allowed = False
         self._is_stopped = False
+        self._journal: object = None
+        self._notifier: object = None
+        self._supervisor_events_repo: object = None
+        self._common_keys_ctx: object = None
 
     # ------------------------------------------------------------------
     # Startup
@@ -64,6 +68,10 @@ class Supervisor:
             StartupError: if a step fails with exit severity.
         """
         _log.info("Supervisor: beginning startup sequence")
+        self._journal = ctx.journal
+        self._notifier = ctx.notifier
+        self._supervisor_events_repo = ctx.supervisor_events_repo
+        self._common_keys_ctx = ctx.common_keys_ctx
         runner = StartupRunner(ctx)
         result = runner.run()
         self._trading_allowed = result.outcome in ("ready", "degraded")
@@ -108,7 +116,11 @@ class Supervisor:
         from fx_ai_trading.supervisor.safe_stop import SafeStopHandler
 
         handler = SafeStopHandler(
+            journal=self._journal,
+            notifier=self._notifier,
             stop_callback=self._on_loop_stop,
+            supervisor_events_repo=self._supervisor_events_repo,
+            common_keys_ctx=self._common_keys_ctx,
         )
         handler.fire(reason=reason, occurred_at=occurred_at, payload=payload, context=context)
 
