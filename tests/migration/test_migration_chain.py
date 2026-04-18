@@ -19,9 +19,7 @@ from pathlib import Path
 _VERSIONS_DIR = Path(__file__).resolve().parents[2] / "migrations" / "versions"
 
 # Collect all revision files (files matching 0NNN_*.py, excluding __init__).
-_REVISION_FILES = sorted(
-    p for p in _VERSIONS_DIR.glob("0*.py") if p.name != "__init__.py"
-)
+_REVISION_FILES = sorted(p for p in _VERSIONS_DIR.glob("0*.py") if p.name != "__init__.py")
 
 
 def _load_revision(path: Path):
@@ -57,8 +55,7 @@ def test_revision_chain_is_linear() -> None:
     # Find root (down_revision is None)
     roots = [m for m in mods if m.down_revision is None]
     assert len(roots) == 1, (
-        f"Expected exactly 1 root revision, got {len(roots)}: "
-        f"{[r.revision for r in roots]}"
+        f"Expected exactly 1 root revision, got {len(roots)}: {[r.revision for r in roots]}"
     )
 
     # Walk the chain from root and verify each link resolves
