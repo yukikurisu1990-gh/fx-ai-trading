@@ -103,7 +103,7 @@ class PositionsRepository(RepositoryBase):
                     " VALUES"
                     " (:sid, :order_id, :account_id, :instrument,"
                     "  :event_type, :units, :avg_price, :unrealized_pl, :realized_pl,"
-                    "  NOW(), :correlation_id)"
+                    "  CURRENT_TIMESTAMP, :correlation_id)"
                 ),
                 {
                     "sid": position_snapshot_id,

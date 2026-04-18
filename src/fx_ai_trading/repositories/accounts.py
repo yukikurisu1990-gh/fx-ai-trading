@@ -91,7 +91,7 @@ class AccountsRepository(RepositoryBase):
         with self._engine.begin() as conn:
             conn.execute(
                 text(
-                    f"UPDATE accounts SET {set_clause}, updated_at = NOW()"
+                    f"UPDATE accounts SET {set_clause}, updated_at = CURRENT_TIMESTAMP"
                     " WHERE account_id = :account_id"
                 ),
                 {**updates, "account_id": account_id},

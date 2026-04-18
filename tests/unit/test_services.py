@@ -42,12 +42,13 @@ class TestAccountService:
 
     def test_create_account_delegates(self) -> None:
         svc = self._make(create_account=None)
-        svc.create_account("acc-1", "broker-1", "demo", "USD")
+        svc.create_account("acc-1", "broker-1", "demo", "USD", _CTX)
         svc._repo.create_account.assert_called_once_with(
             account_id="acc-1",
             broker_id="broker-1",
             account_type="demo",
             base_currency="USD",
+            context=_CTX,
         )
 
 

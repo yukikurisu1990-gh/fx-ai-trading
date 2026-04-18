@@ -8,6 +8,7 @@ Scope (M3 Cycle 12):
 
 from __future__ import annotations
 
+from fx_ai_trading.config.common_keys_context import CommonKeysContext
 from fx_ai_trading.repositories.accounts import AccountsRepository
 
 
@@ -31,6 +32,7 @@ class AccountService:
         broker_id: str,
         account_type: str,
         base_currency: str,
+        context: CommonKeysContext,
     ) -> None:
         """Insert a new account row."""
         self._repo.create_account(
@@ -38,4 +40,5 @@ class AccountService:
             broker_id=broker_id,
             account_type=account_type,
             base_currency=base_currency,
+            context=context,
         )
