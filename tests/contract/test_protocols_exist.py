@@ -59,10 +59,10 @@ class TestBrokerDomain:
         from fx_ai_trading.domain.broker import (
             BrokerOrder,
             BrokerPosition,
+            BrokerTransactionEvent,
             CancelResult,
             OrderRequest,
             OrderResult,
-            TransactionEvent,
         )
 
         for cls in (
@@ -71,7 +71,7 @@ class TestBrokerDomain:
             CancelResult,
             BrokerPosition,
             BrokerOrder,
-            TransactionEvent,
+            BrokerTransactionEvent,
         ):
             assert _is_frozen_dataclass(cls), f"{cls.__name__} is not a frozen dataclass"
 
