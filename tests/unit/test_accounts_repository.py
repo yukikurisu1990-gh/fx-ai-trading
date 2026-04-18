@@ -28,6 +28,8 @@ def _make_repo(fetchone_return=None, fetchall_rows=None):
     conn.__enter__ = MagicMock(return_value=conn)
     conn.__exit__ = MagicMock(return_value=False)
     engine.connect.return_value = conn
+    # write methods use engine.begin()
+    engine.begin.return_value = conn
     return AccountsRepository(engine=engine)
 
 
@@ -66,3 +68,37 @@ class TestListAccounts:
         assert len(result) == 2
         assert result[0]["account_id"] == "acc-001"
         assert result[1]["account_id"] == "acc-002"
+
+
+class TestCreateAccount:
+    def test_calls_execute(self) -> None:
+        repo = _make_repo()
+        repo.create_account("acc-new", "broker-1", "demo", "USD")
+        repo._engine.begin().__enter__().execute.assert_called_once()
+
+    def test_passes_correct_params(self) -> None:
+        repo = _make_repo()
+        repo.create_account("acc-new", "broker-1", "demo", "USD")
+        call_args = repo._engine.begin().__enter__().execute.call_args
+        params = call_args[0][1]
+        assert params["account_id"] == "acc-new"
+        assert params["broker_id"] == "broker-1"
+        assert params["account_type"] == "demo"
+        assert params["base_currency"] == "USD"
+
+
+class TestUpdateAccount:
+    def test_calls_execute_with_allowed_field(self) -> None:
+        repo = _make_repo()
+        repo.update_account("acc-001", account_type="live")
+        repo._engine.begin().__enter__().execute.assert_called_once()
+
+    def test_ignores_disallowed_fields(self) -> None:
+        repo = _make_repo()
+        repo.update_account("acc-001", unknown_field="value")
+        repo._engine.begin().__enter__().execute.assert_not_called()
+
+    def test_no_op_when_no_fields(self) -> None:
+        repo = _make_repo()
+        repo.update_account("acc-001")
+        repo._engine.begin().__enter__().execute.assert_not_called()
