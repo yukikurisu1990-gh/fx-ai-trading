@@ -286,6 +286,25 @@ class TestSupervisorSafeStop:
         sup.trigger_safe_stop(reason="test_stop", occurred_at=_FIXED_AT, payload={}, context=None)
         assert not sup.is_trading_allowed()
 
+    def test_safe_stop_writes_journal(self, journal, notifier) -> None:
+        from fx_ai_trading.supervisor.supervisor import Supervisor
+
+        sup = Supervisor(clock=_CLOCK)
+        ctx = _make_ctx(journal, notifier)
+        sup.startup(ctx)
+        sup.trigger_safe_stop(reason="test_stop", occurred_at=_FIXED_AT)
+        entries = journal.read_all()
+        assert any(e.get("event_code") == "safe_stop.triggered" for e in entries)
+
+    def test_safe_stop_dispatches_notifier(self, journal, notifier) -> None:
+        from fx_ai_trading.supervisor.supervisor import Supervisor
+
+        sup = Supervisor(clock=_CLOCK)
+        ctx = _make_ctx(journal, notifier)
+        sup.startup(ctx)
+        sup.trigger_safe_stop(reason="test_stop", occurred_at=_FIXED_AT)
+        notifier.dispatch_direct_sync.assert_called_once()
+
     def test_safe_stop_is_idempotent(self, journal, notifier) -> None:
         from fx_ai_trading.supervisor.supervisor import Supervisor
 

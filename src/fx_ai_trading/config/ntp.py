@@ -57,6 +57,11 @@ class NtpChecker:
         self._reject_ms = reject_ms
         self._ntp_host = ntp_host
 
+    @property
+    def reject_ms(self) -> float:
+        """Rejection threshold in milliseconds (read-only)."""
+        return self._reject_ms
+
     def evaluate(self, skew_ms: float) -> NtpResult:
         """Classify *skew_ms* against configured thresholds — pure function.
 

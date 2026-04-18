@@ -159,7 +159,7 @@ class StartupRunner:
             raise StartupError(
                 2,
                 f"NTP skew {result.skew_ms:.0f}ms exceeds reject threshold"
-                f" {checker._reject_ms:.0f}ms",
+                f" {checker.reject_ms:.0f}ms",
             )
         if result.should_warn:
             _log.warning(
@@ -289,8 +289,7 @@ class StartupRunner:
     def _step9_account_type_check(self) -> None:
         """Assert broker.account_type matches app_settings.expected_account_type.
 
-        Failure → exit.  Mismatch is recorded as critical Notifier event
-        before the StartupError propagates.
+        Failure → exit (StartupError step=9).
         """
         _log.info("Step 9: account_type check")
         if self._ctx.broker is None:
