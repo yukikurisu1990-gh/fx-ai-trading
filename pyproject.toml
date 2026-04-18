@@ -15,9 +15,11 @@ authors = [{ name = "くりす" }]
 # Constraint: no DB / Alembic / Strategy / Interface implementation in Cycle 1.
 dependencies = [
     "alembic>=1.13,<2.0",
+    "click>=8.1,<9.0",
     "psycopg[binary]>=3.1,<4.0",
     "python-dotenv>=1.0,<2.0",
     "sqlalchemy>=2.0,<3.0",
+    "streamlit>=1.35,<2.0",
 ]
 
 [project.optional-dependencies]
