@@ -81,8 +81,13 @@ class BrokerOrder:
 
 
 @dataclass(frozen=True)
-class TransactionEvent:
-    """A broker transaction stream event."""
+class BrokerTransactionEvent:
+    """A broker transaction event from get_recent_transactions() (D3 §2.6.1).
+
+    Distinct from price_feed.TransactionEvent which carries streaming
+    Common Keys fields (event_time_utc, received_at_utc) for ingestion.
+    This DTO represents the broker's view of a completed transaction.
+    """
 
     transaction_id: str
     account_id: str
@@ -130,7 +135,7 @@ class Broker(ABC):
         """Return pending orders for the account."""
 
     @abstractmethod
-    def get_recent_transactions(self, since: str) -> list[TransactionEvent]:
+    def get_recent_transactions(self, since: str) -> list[BrokerTransactionEvent]:
         """Return transactions since the given bookmark."""
 
     # ------------------------------------------------------------------
