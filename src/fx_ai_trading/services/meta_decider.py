@@ -179,6 +179,10 @@ class MetaDeciderService:
         for sig in candidates:
             score = sig.ev_before_cost * sig.confidence
             scored.append((score, sig))
+
+        scored.sort(key=lambda x: x[0], reverse=True)
+
+        for score, sig in scored:
             contributions.append(
                 {
                     "strategy_id": sig.strategy_id,
@@ -187,8 +191,6 @@ class MetaDeciderService:
                     "confidence": sig.confidence,
                 }
             )
-
-        scored.sort(key=lambda x: x[0], reverse=True)
 
         return {
             "scored": scored,

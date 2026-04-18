@@ -125,7 +125,7 @@ def _atr(candles: list[dict], period: int) -> float:
     """Average True Range over the last *period* bars."""
     if len(candles) < 2:
         if candles:
-            return round(candles[0]["high"] - candles[0]["low"], 8)
+            return candles[0]["high"] - candles[0]["low"]
         return 0.0
 
     true_ranges: list[float] = []

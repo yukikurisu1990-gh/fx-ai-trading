@@ -53,7 +53,10 @@ class AIStrategyStub:
         context: StrategyContext,
     ) -> StrategySignal:
         """Return a fixed signal regardless of features."""
-        ev_before = self._confidence * self._tp - (1 - self._confidence) * self._sl
+        if self._fixed_signal == "no_trade":
+            ev_before = 0.0
+        else:
+            ev_before = self._confidence * self._tp - (1 - self._confidence) * self._sl
         return StrategySignal(
             strategy_id=self._strategy_id,
             strategy_type=_STRATEGY_TYPE,
