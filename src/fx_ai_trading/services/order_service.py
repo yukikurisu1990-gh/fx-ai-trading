@@ -1,12 +1,11 @@
-"""OrderService — thin wrapper around OrdersRepository.
+"""OrderService — thin wrapper around OrdersRepository (D3 §2.9.1).
 
-Scope (M3 Cycle 12):
-  - get_order(order_id) -> dict | None
-  - create_order(...)
+All write operations pass CommonKeysContext through to the repository.
 """
 
 from __future__ import annotations
 
+from fx_ai_trading.config.common_keys_context import CommonKeysContext
 from fx_ai_trading.repositories.orders import OrdersRepository
 
 
@@ -29,6 +28,7 @@ class OrderService:
         order_type: str,
         direction: str,
         units: str,
+        context: CommonKeysContext,
         *,
         client_order_id: str | None = None,
         trading_signal_id: str | None = None,
@@ -43,6 +43,7 @@ class OrderService:
             order_type=order_type,
             direction=direction,
             units=units,
+            context=context,
             client_order_id=client_order_id,
             trading_signal_id=trading_signal_id,
             correlation_id=correlation_id,

@@ -4,7 +4,15 @@ from __future__ import annotations
 
 from unittest.mock import MagicMock
 
+from fx_ai_trading.config.common_keys_context import CommonKeysContext
 from fx_ai_trading.repositories.orders import OrdersRepository
+
+_CTX = CommonKeysContext(
+    run_id="run-test",
+    environment="test",
+    code_version="0.0.0",
+    config_version="abc123",
+)
 
 _ROW = (
     "01ABCDEF",  # order_id
@@ -83,6 +91,7 @@ class TestCreateOrder:
             order_type="market",
             direction="buy",
             units="1000",
+            context=_CTX,
         )
         repo._engine.begin().__enter__().execute.assert_called_once()
 
@@ -96,6 +105,7 @@ class TestCreateOrder:
             order_type="market",
             direction="buy",
             units="1000",
+            context=_CTX,
         )
         call_args = repo._engine.begin().__enter__().execute.call_args
         params = call_args[0][1]
@@ -113,6 +123,7 @@ class TestCreateOrder:
             order_type="market",
             direction="buy",
             units="1000",
+            context=_CTX,
         )
         call_args = repo._engine.begin().__enter__().execute.call_args
         params = call_args[0][1]

@@ -1,20 +1,16 @@
-"""AccountsRepository — read/write access to the accounts table.
+"""AccountsRepository — read/write access to the accounts table (D3 §2.9.1).
 
-Scope (M3 Cycle 7):
-  - get_by_account_id(account_id) -> dict | None
-  - list_accounts() -> list[dict]
-
-Scope (M3 Cycle 8):
-  - create_account(account_id, broker_id, account_type, base_currency)
-  - update_account(account_id, **fields)
-
-Common Keys physical columns are M5 scope.
+Common Keys: accounts table has no run_id/environment/code_version/config_version
+columns in the current schema (M5 state). Context is accepted as a required
+argument on write methods for contract compliance; keys are not written to DB
+until the schema is extended in a future migration.
 """
 
 from __future__ import annotations
 
 from sqlalchemy import text
 
+from fx_ai_trading.config.common_keys_context import CommonKeysContext
 from fx_ai_trading.repositories.base import RepositoryBase
 
 _COLUMNS = ("account_id", "broker_id", "account_type", "base_currency", "created_at", "updated_at")
@@ -56,8 +52,15 @@ class AccountsRepository(RepositoryBase):
         broker_id: str,
         account_type: str,
         base_currency: str,
+        context: CommonKeysContext,
     ) -> None:
-        """Insert a new account row."""
+        """Insert a new account row.
+
+        context: Common Keys for contract compliance. Keys not written to DB
+        until accounts schema gains run_id/environment/code_version/config_version.
+        """
+        # _with_common_keys prepares enriched params; columns not in schema yet.
+        self._with_common_keys({}, context)
         with self._engine.begin() as conn:
             conn.execute(
                 text(
@@ -72,12 +75,14 @@ class AccountsRepository(RepositoryBase):
                 },
             )
 
-    def update_account(self, account_id: str, **fields: str) -> None:
+    def update_account(self, account_id: str, context: CommonKeysContext, **fields: str) -> None:
         """Update mutable fields on an existing account row.
 
-        Only ``account_type`` and ``base_currency`` are accepted.
-        ``updated_at`` is refreshed via DB NOW() to avoid datetime.now().
+        Only account_type and base_currency are accepted.
+        updated_at is refreshed via DB NOW() to avoid datetime.now().
+        context: Common Keys for contract compliance (not yet written to DB).
         """
+        self._with_common_keys({}, context)
         allowed = {"account_type", "base_currency"}
         updates = {k: v for k, v in fields.items() if k in allowed}
         if not updates:

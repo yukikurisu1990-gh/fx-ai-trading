@@ -4,9 +4,17 @@ from __future__ import annotations
 
 from unittest.mock import MagicMock
 
+from fx_ai_trading.config.common_keys_context import CommonKeysContext
 from fx_ai_trading.services.account_service import AccountService
 from fx_ai_trading.services.order_service import OrderService
 from fx_ai_trading.services.position_service import PositionService
+
+_CTX = CommonKeysContext(
+    run_id="run-test",
+    environment="test",
+    code_version="0.0.0",
+    config_version="abc123",
+)
 
 
 class TestAccountService:
@@ -69,6 +77,7 @@ class TestOrderService:
             order_type="market",
             direction="buy",
             units="1000",
+            context=_CTX,
         )
         svc._repo.create_order.assert_called_once()
 

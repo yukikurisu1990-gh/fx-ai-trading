@@ -1,15 +1,12 @@
-"""PositionService — thin wrapper around PositionsRepository.
+"""PositionService — thin wrapper around PositionsRepository (D3 §2.9.1).
 
-Scope (M3 Cycle 12):
-  - get_position(position_snapshot_id) -> dict | None
-  - get_open_positions(account_id) -> list[dict]
-  - record_position_event(...)
+All writes go through PositionsRepository.insert_event() — never directly
+to the engine. This ensures Common Keys context flows through the repo layer.
 """
 
 from __future__ import annotations
 
-from sqlalchemy import text
-
+from fx_ai_trading.config.common_keys_context import CommonKeysContext
 from fx_ai_trading.repositories.positions import PositionsRepository
 
 
@@ -34,6 +31,7 @@ class PositionService:
         instrument: str,
         event_type: str,
         units: str,
+        context: CommonKeysContext,
         *,
         order_id: str | None = None,
         avg_price: str | None = None,
@@ -41,29 +39,17 @@ class PositionService:
         realized_pl: str | None = None,
         correlation_id: str | None = None,
     ) -> None:
-        """Insert a position snapshot row via the repository engine."""
-        with self._repo._engine.begin() as conn:
-            conn.execute(
-                text(
-                    "INSERT INTO positions"
-                    " (position_snapshot_id, order_id, account_id, instrument,"
-                    "  event_type, units, avg_price, unrealized_pl, realized_pl,"
-                    "  event_time_utc, correlation_id)"
-                    " VALUES"
-                    " (:sid, :order_id, :account_id, :instrument,"
-                    "  :event_type, :units, :avg_price, :unrealized_pl, :realized_pl,"
-                    "  NOW(), :correlation_id)"
-                ),
-                {
-                    "sid": position_snapshot_id,
-                    "order_id": order_id,
-                    "account_id": account_id,
-                    "instrument": instrument,
-                    "event_type": event_type,
-                    "units": units,
-                    "avg_price": avg_price,
-                    "unrealized_pl": unrealized_pl,
-                    "realized_pl": realized_pl,
-                    "correlation_id": correlation_id,
-                },
-            )
+        """Append a position snapshot event via PositionsRepository.insert_event()."""
+        self._repo.insert_event(
+            position_snapshot_id=position_snapshot_id,
+            account_id=account_id,
+            instrument=instrument,
+            event_type=event_type,
+            units=units,
+            context=context,
+            order_id=order_id,
+            avg_price=avg_price,
+            unrealized_pl=unrealized_pl,
+            realized_pl=realized_pl,
+            correlation_id=correlation_id,
+        )

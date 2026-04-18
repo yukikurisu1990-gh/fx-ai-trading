@@ -13,6 +13,15 @@ import pytest
 from dotenv import load_dotenv
 from sqlalchemy import create_engine, text
 
+from fx_ai_trading.config.common_keys_context import CommonKeysContext
+
+_CTX = CommonKeysContext(
+    run_id="integ-run-001",
+    environment="test",
+    code_version="0.0.0",
+    config_version="test-cfg",
+)
+
 load_dotenv(Path(__file__).resolve().parents[2] / ".env", override=False)
 
 _DATABASE_URL = os.environ.get("DATABASE_URL", "").strip()
@@ -87,8 +96,8 @@ def test_list_accounts_includes_seeded(repo) -> None:
 
 
 def test_update_account_changes_field(repo) -> None:
-    repo.update_account(_ACCOUNT_ID, account_type="live")
+    repo.update_account(_ACCOUNT_ID, _CTX, account_type="live")
     result = repo.get_by_account_id(_ACCOUNT_ID)
     assert result is not None
     assert result["account_type"] == "live"
-    repo.update_account(_ACCOUNT_ID, account_type="demo")
+    repo.update_account(_ACCOUNT_ID, _CTX, account_type="demo")

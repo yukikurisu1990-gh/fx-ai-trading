@@ -4,7 +4,15 @@ from __future__ import annotations
 
 from unittest.mock import MagicMock
 
+from fx_ai_trading.config.common_keys_context import CommonKeysContext
 from fx_ai_trading.repositories.accounts import AccountsRepository
+
+_CTX = CommonKeysContext(
+    run_id="run-test",
+    environment="test",
+    code_version="0.0.0",
+    config_version="abc123",
+)
 
 _ROW = ("acc-001", "broker-1", "demo", "USD", "2026-01-01", "2026-01-01")
 _DICT = {
@@ -73,12 +81,12 @@ class TestListAccounts:
 class TestCreateAccount:
     def test_calls_execute(self) -> None:
         repo = _make_repo()
-        repo.create_account("acc-new", "broker-1", "demo", "USD")
+        repo.create_account("acc-new", "broker-1", "demo", "USD", _CTX)
         repo._engine.begin().__enter__().execute.assert_called_once()
 
     def test_passes_correct_params(self) -> None:
         repo = _make_repo()
-        repo.create_account("acc-new", "broker-1", "demo", "USD")
+        repo.create_account("acc-new", "broker-1", "demo", "USD", _CTX)
         call_args = repo._engine.begin().__enter__().execute.call_args
         params = call_args[0][1]
         assert params["account_id"] == "acc-new"
@@ -90,15 +98,15 @@ class TestCreateAccount:
 class TestUpdateAccount:
     def test_calls_execute_with_allowed_field(self) -> None:
         repo = _make_repo()
-        repo.update_account("acc-001", account_type="live")
+        repo.update_account("acc-001", _CTX, account_type="live")
         repo._engine.begin().__enter__().execute.assert_called_once()
 
     def test_ignores_disallowed_fields(self) -> None:
         repo = _make_repo()
-        repo.update_account("acc-001", unknown_field="value")
+        repo.update_account("acc-001", _CTX, unknown_field="value")
         repo._engine.begin().__enter__().execute.assert_not_called()
 
     def test_no_op_when_no_fields(self) -> None:
         repo = _make_repo()
-        repo.update_account("acc-001")
+        repo.update_account("acc-001", _CTX)
         repo._engine.begin().__enter__().execute.assert_not_called()
