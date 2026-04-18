@@ -23,13 +23,43 @@ from logging.config import fileConfig
 from pathlib import Path
 
 from alembic import context
+from alembic.ddl.impl import DefaultImpl
 from dotenv import load_dotenv
-from sqlalchemy import engine_from_config, pool
+from sqlalchemy import Column, MetaData, PrimaryKeyConstraint, Table, Text, engine_from_config, pool
 
 from fx_ai_trading.db.base import Base
 
 # Load .env from repository root before any URL resolution.
 load_dotenv(Path(__file__).resolve().parents[1] / ".env", override=False)
+
+
+# Alembic's default version_table_impl uses String(32) for version_num, which
+# is too short for this project's revision IDs (e.g. 34-char group names).
+# Patching at module load time ensures every new DB gets a TEXT column instead,
+# so manual pre-creation is never required.  Existing DBs are unaffected because
+# Alembic skips creation when alembic_version already exists.
+def _version_table_impl_text(
+    self,
+    *,
+    version_table: str,
+    version_table_schema,
+    version_table_pk: bool,
+    **kw,
+):
+    vt = Table(
+        version_table,
+        MetaData(),
+        Column("version_num", Text, nullable=False),
+        schema=version_table_schema,
+    )
+    if version_table_pk:
+        vt.append_constraint(
+            PrimaryKeyConstraint("version_num", name=f"{version_table}_pkc")
+        )
+    return vt
+
+
+DefaultImpl.version_table_impl = _version_table_impl_text
 
 config = context.config
 
