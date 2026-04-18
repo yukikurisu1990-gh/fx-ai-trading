@@ -30,49 +30,54 @@ _INSTRUMENT = "__FSM_INSTR__"
 def engine():
     e = create_engine("sqlite://")
     with e.begin() as conn:
-        conn.execute(text(
-            "CREATE TABLE brokers (broker_id TEXT PRIMARY KEY, name TEXT NOT NULL)"
-        ))
-        conn.execute(text(
-            "CREATE TABLE accounts ("
-            "  account_id TEXT PRIMARY KEY,"
-            "  broker_id TEXT NOT NULL REFERENCES brokers(broker_id),"
-            "  account_type TEXT NOT NULL,"
-            "  base_currency TEXT NOT NULL,"
-            "  created_at TEXT DEFAULT CURRENT_TIMESTAMP,"
-            "  updated_at TEXT DEFAULT CURRENT_TIMESTAMP"
-            ")"
-        ))
-        conn.execute(text(
-            "CREATE TABLE instruments ("
-            "  instrument TEXT PRIMARY KEY,"
-            "  base_currency TEXT NOT NULL,"
-            "  quote_currency TEXT NOT NULL,"
-            "  pip_location INTEGER NOT NULL"
-            ")"
-        ))
-        conn.execute(text(
-            "CREATE TABLE orders ("
-            "  order_id TEXT PRIMARY KEY,"
-            "  client_order_id TEXT,"
-            "  trading_signal_id TEXT,"
-            "  account_id TEXT NOT NULL REFERENCES accounts(account_id),"
-            "  instrument TEXT NOT NULL REFERENCES instruments(instrument),"
-            "  account_type TEXT NOT NULL,"
-            "  order_type TEXT NOT NULL,"
-            "  direction TEXT NOT NULL,"
-            "  units TEXT NOT NULL,"
-            "  status TEXT NOT NULL DEFAULT 'PENDING',"
-            "  submitted_at TEXT,"
-            "  filled_at TEXT,"
-            "  canceled_at TEXT,"
-            "  correlation_id TEXT,"
-            "  created_at TEXT DEFAULT CURRENT_TIMESTAMP"
-            ")"
-        ))
-        conn.execute(text(
-            "INSERT INTO brokers VALUES (:id, :name)"
-        ), {"id": _BROKER_ID, "name": "FSM Broker"})
+        conn.execute(text("CREATE TABLE brokers (broker_id TEXT PRIMARY KEY, name TEXT NOT NULL)"))
+        conn.execute(
+            text(
+                "CREATE TABLE accounts ("
+                "  account_id TEXT PRIMARY KEY,"
+                "  broker_id TEXT NOT NULL REFERENCES brokers(broker_id),"
+                "  account_type TEXT NOT NULL,"
+                "  base_currency TEXT NOT NULL,"
+                "  created_at TEXT DEFAULT CURRENT_TIMESTAMP,"
+                "  updated_at TEXT DEFAULT CURRENT_TIMESTAMP"
+                ")"
+            )
+        )
+        conn.execute(
+            text(
+                "CREATE TABLE instruments ("
+                "  instrument TEXT PRIMARY KEY,"
+                "  base_currency TEXT NOT NULL,"
+                "  quote_currency TEXT NOT NULL,"
+                "  pip_location INTEGER NOT NULL"
+                ")"
+            )
+        )
+        conn.execute(
+            text(
+                "CREATE TABLE orders ("
+                "  order_id TEXT PRIMARY KEY,"
+                "  client_order_id TEXT,"
+                "  trading_signal_id TEXT,"
+                "  account_id TEXT NOT NULL REFERENCES accounts(account_id),"
+                "  instrument TEXT NOT NULL REFERENCES instruments(instrument),"
+                "  account_type TEXT NOT NULL,"
+                "  order_type TEXT NOT NULL,"
+                "  direction TEXT NOT NULL,"
+                "  units TEXT NOT NULL,"
+                "  status TEXT NOT NULL DEFAULT 'PENDING',"
+                "  submitted_at TEXT,"
+                "  filled_at TEXT,"
+                "  canceled_at TEXT,"
+                "  correlation_id TEXT,"
+                "  created_at TEXT DEFAULT CURRENT_TIMESTAMP"
+                ")"
+            )
+        )
+        conn.execute(
+            text("INSERT INTO brokers VALUES (:id, :name)"),
+            {"id": _BROKER_ID, "name": "FSM Broker"},
+        )
         conn.execute(
             text(
                 "INSERT INTO accounts"
@@ -80,9 +85,9 @@ def engine():
             ),
             {"aid": _ACCOUNT_ID, "bid": _BROKER_ID},
         )
-        conn.execute(text(
-            "INSERT INTO instruments VALUES (:i, 'TST', 'USD', -4)"
-        ), {"i": _INSTRUMENT})
+        conn.execute(
+            text("INSERT INTO instruments VALUES (:i, 'TST', 'USD', -4)"), {"i": _INSTRUMENT}
+        )
     yield e
     e.dispose()
 

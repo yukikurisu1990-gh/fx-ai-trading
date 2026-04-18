@@ -49,38 +49,47 @@ class TestCommonKeysSignatures:
 
     def test_orders_create_order_has_context(self) -> None:
         from fx_ai_trading.repositories.orders import OrdersRepository
+
         self._assert_context_required(OrdersRepository, "create_order")
 
     def test_orders_update_status_has_context(self) -> None:
         from fx_ai_trading.repositories.orders import OrdersRepository
+
         self._assert_context_required(OrdersRepository, "update_status")
 
     def test_positions_insert_event_has_context(self) -> None:
         from fx_ai_trading.repositories.positions import PositionsRepository
+
         self._assert_context_required(PositionsRepository, "insert_event")
 
     def test_accounts_create_account_has_context(self) -> None:
         from fx_ai_trading.repositories.accounts import AccountsRepository
+
         self._assert_context_required(AccountsRepository, "create_account")
 
     def test_accounts_update_account_has_context(self) -> None:
         from fx_ai_trading.repositories.accounts import AccountsRepository
+
         self._assert_context_required(AccountsRepository, "update_account")
 
     def test_order_service_create_order_has_context(self) -> None:
         from fx_ai_trading.services.order_service import OrderService
+
         self._assert_context_required(OrderService, "create_order")
 
     def test_position_service_record_event_has_context(self) -> None:
         from fx_ai_trading.services.position_service import PositionService
+
         self._assert_context_required(PositionService, "record_position_event")
 
     def test_account_service_create_account_has_context(self) -> None:
         from fx_ai_trading.services.account_service import AccountService
+
         self._assert_context_required(AccountService, "create_account")
 
     def test_place_order_usecase_execute_has_context(self) -> None:
         from fx_ai_trading.usecases.place_order_usecase import PlaceOrderUseCase
+
         self._assert_context_required(PlaceOrderUseCase, "execute")
 
 
@@ -107,6 +116,7 @@ class TestCommonKeysContextValidation:
         from unittest.mock import MagicMock
 
         from fx_ai_trading.repositories.base import RepositoryBase
+
         repo = RepositoryBase(engine=MagicMock())
         result = repo._with_common_keys({"x": 1}, _CTX)
         assert result["run_id"] == _CTX.run_id
