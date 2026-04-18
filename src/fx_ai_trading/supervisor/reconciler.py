@@ -45,8 +45,6 @@ _BROKER_FILLED = "filled"
 _BROKER_CANCELED = "canceled"
 _BROKER_FAILED = "failed"
 
-# DB statuses considered "open" (not terminal)
-_OPEN_DB_STATUSES = frozenset({"PENDING", "SUBMITTED"})
 _TERMINAL_DB_STATUSES = frozenset({"FILLED", "CANCELED", "FAILED"})
 
 
@@ -205,17 +203,7 @@ class StartupReconciler:
 
     def _get_open_orders(self) -> list[dict]:
         """Return all orders with PENDING or SUBMITTED status."""
-        from sqlalchemy import text
-
-        with self._orders_repo._engine.connect() as conn:
-            rows = conn.execute(
-                text(
-                    "SELECT order_id, status FROM orders"
-                    " WHERE status IN ('PENDING', 'SUBMITTED')"
-                    " ORDER BY created_at ASC"
-                )
-            ).fetchall()
-        return [{"order_id": row[0], "status": row[1]} for row in rows]
+        return self._orders_repo.list_open_orders()
 
     def _get_broker_status(self, order_id: str) -> str | None:
         """Query broker for the status of *order_id*.

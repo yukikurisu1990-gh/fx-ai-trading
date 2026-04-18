@@ -17,7 +17,6 @@ OutboxEventsRepository methods are for the OutboxProcessor dispatch flow only
 
 from __future__ import annotations
 
-import json
 from datetime import datetime
 
 from sqlalchemy import text
@@ -162,10 +161,3 @@ class OutboxEventsRepository(RepositoryBase):
                 text("UPDATE outbox_events SET status = :status WHERE outbox_event_id = :id"),
                 {"status": new_status, "id": outbox_event_id},
             )
-
-    @staticmethod
-    def build_payload_json(payload: dict | None) -> str | None:
-        """Serialize *payload* dict to JSON text for storage."""
-        if payload is None:
-            return None
-        return json.dumps(payload, default=str)
