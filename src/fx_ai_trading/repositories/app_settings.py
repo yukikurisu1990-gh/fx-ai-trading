@@ -4,6 +4,9 @@ Scope (M3 Cycle 1):
   - get(name) -> str | None
   - set(name, value) -> None (upsert on updated_at only)
 
+Scope (M3 Cycle 6):
+  - Extends RepositoryBase (engine holder, Common Keys no-op hook)
+
 Common Keys (run_id / environment / code_version / config_version) are NOT
 attached as physical columns yet — deferred to M5 when Repository base and
 the corresponding migration are implemented together.
@@ -11,14 +14,13 @@ the corresponding migration are implemented together.
 
 from __future__ import annotations
 
-from sqlalchemy import Engine, text
+from sqlalchemy import text
+
+from fx_ai_trading.repositories.base import RepositoryBase
 
 
-class AppSettingsRepository:
+class AppSettingsRepository(RepositoryBase):
     """Read/write interface for the app_settings table."""
-
-    def __init__(self, engine: Engine) -> None:
-        self._engine = engine
 
     def get(self, name: str) -> str | None:
         """Return the value for *name*, or None if not found."""
