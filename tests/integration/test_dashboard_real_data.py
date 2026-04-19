@@ -217,10 +217,13 @@ class TestPanelRenderWithRealEngine:
     def test_market_state_render_does_not_raise(self, seeded_engine) -> None:
         from fx_ai_trading.dashboard.panels import market_state
 
-        with patch("fx_ai_trading.dashboard.panels.market_state.st"), patch.object(
-            market_state,
-            "_fetch",
-            return_value={"phase_mode": "phase6", "environment": "demo"},
+        with (
+            patch("fx_ai_trading.dashboard.panels.market_state.st"),
+            patch.object(
+                market_state,
+                "_fetch",
+                return_value={"phase_mode": "phase6", "environment": "demo"},
+            ),
         ):
             market_state.render(seeded_engine)
 
