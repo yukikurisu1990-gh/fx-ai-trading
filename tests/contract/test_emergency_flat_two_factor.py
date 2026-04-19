@@ -25,9 +25,9 @@ def notifier_log(tmp_path: Path):
 
 
 def _call_do_emergency_flat(two_factor, notifier_obj, log_file: Path) -> tuple[bool, list[dict]]:
-    from fx_ai_trading.common.clock import FixedClock
-    from datetime import datetime, UTC
+    from datetime import UTC, datetime
 
+    from fx_ai_trading.common.clock import FixedClock
     from scripts.ctl import _do_emergency_flat  # type: ignore[import]
 
     clock = FixedClock(datetime(2026, 1, 1, tzinfo=UTC))
@@ -77,8 +77,6 @@ class TestTwoFactorGateBlocking:
             pytest.fail(f"Rejection raised unexpectedly: {exc}")
 
     def test_fixed_two_factor_false_implements_protocol(self) -> None:
-        from fx_ai_trading.ops.two_factor import TwoFactorAuthenticator
-
         two_factor = FixedTwoFactor(False)
         assert callable(two_factor.run_challenge)
         assert two_factor.run_challenge() is False
