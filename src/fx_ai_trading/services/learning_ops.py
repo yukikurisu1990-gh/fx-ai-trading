@@ -14,9 +14,10 @@ from __future__ import annotations
 
 import logging
 import uuid
-from datetime import UTC, datetime
 
 from sqlalchemy import Engine, text
+
+from fx_ai_trading.common.clock import Clock, WallClock
 
 log = logging.getLogger(__name__)
 
@@ -26,6 +27,9 @@ _JOB_TYPE = "training"
 class LearningOps:
     """Manage training job lifecycle in system_jobs."""
 
+    def __init__(self, clock: Clock | None = None) -> None:
+        self._clock: Clock = clock or WallClock()
+
     def enqueue(
         self,
         engine: Engine,
@@ -33,7 +37,7 @@ class LearningOps:
     ) -> str:
         """INSERT a pending training job.  Returns the new system_job_id."""
         job_id = str(uuid.uuid4())
-        now = datetime.now(UTC).isoformat()
+        now = self._clock.now().isoformat()
         with engine.begin() as conn:
             conn.execute(
                 text(
@@ -56,7 +60,7 @@ class LearningOps:
 
         Phase 7 replaces this with a real LearningExecutor implementation.
         """
-        now = datetime.now(UTC).isoformat()
+        now = self._clock.now().isoformat()
         run_id = str(uuid.uuid4())
         experiment_id = f"stub_{job_id[:8]}"
         with engine.begin() as conn:
