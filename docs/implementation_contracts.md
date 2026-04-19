@@ -721,6 +721,30 @@ EventBus:
   - `LocalQueueEventBus` (multi_service_mode、Phase 7+)
   - `NetworkBusEventBus` (container_ready_mode、Phase 8+)
 
+#### 2.14.2 `ServiceMode` Interface
+
+```
+ServiceModeName: enum  # single_process_mode | multi_service_mode | container_ready_mode
+
+ServiceMode:
+  name: ServiceModeName
+  event_bus_implementation: str   # one of "InProcessEventBus" | "LocalQueueEventBus" | "NetworkBusEventBus"
+  supports_multi_process: bool
+  supports_container_orchestration: bool
+
+get_service_mode(name: ServiceModeName) -> ServiceMode
+```
+
+- **Purpose**: 3 実行モードの**接続点**を Interface 経由で固定し、コード非変更でモード切替できる構造を担保する (design.md §57 / §369、Phase 2 2.4)
+- **Invariants (Phase 2 / Iteration 2)**:
+  - 3 モードは **同一 Interface** を満たす (`InProcessEventBus` / `LocalQueueEventBus` / `NetworkBusEventBus` の選択は `event_bus_implementation` で決定)
+  - `ServiceModeName` の文字列値は `app_settings` / Dashboard / 設定ファイルに直接利用される **stable identifier**。リネーム不可。
+  - `get_service_mode()` は MVP では `SINGLE_PROCESS` のみ実体を返し、他 2 モードは `NotImplementedError` を即発出 (Phase 7/8 で実装)
+- **Implementations**:
+  - `SingleProcessMode` (single_process_mode、MVP 既定、唯一の実運用)
+  - `MultiServiceMode` (Phase 7+、未実装)
+  - `ContainerReadyMode` (Phase 8+、未実装)
+
 ---
 
 ## 3. Repository 契約の詳細

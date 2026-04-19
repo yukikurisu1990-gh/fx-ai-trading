@@ -706,3 +706,31 @@ cycle_id (分足単位)
 8. **バックアップは RPO 24h / RTO 2h** を MVP から保証
 9. **取引追跡は 10 テーブル JOIN** で完全再現可能 (Common Keys + cycle_id + correlation_id)
 10. **degraded / safe_stop / DB 破損**の復旧手順を MVP から文書化
+
+---
+
+## 14. Service Mode 運用ガイドライン (D3 §2.14.2 / Iteration 2 M24)
+
+### 14.1 3 モードの位置付け
+
+| モード | `ServiceModeName` 値 | EventBus 実装 | 運用状態 |
+|---|---|---|---|
+| Single Process | `single_process_mode` | `InProcessEventBus` | **MVP 既定 / 唯一の実運用** |
+| Multi Service | `multi_service_mode` | `LocalQueueEventBus` | Interface のみ (Phase 7+) |
+| Container Ready | `container_ready_mode` | `NetworkBusEventBus` | Interface のみ (Phase 8+) |
+
+### 14.2 運用ルール (MVP)
+
+1. **`ServiceMode` は起動時に 1 度だけ解決**: `get_service_mode(ServiceModeName.SINGLE_PROCESS)` を composition root で呼び、以降は同一インスタンスを使い回す
+2. **モード文字列の手動変更禁止**: `app_settings` / 設定ファイルで `service_mode = single_process_mode` 以外を MVP で指定すると `NotImplementedError` で起動失敗。これは安全装置であり迂回禁止
+3. **モード切替は OS 層で吸収**: プロセス再起動は OS の Supervisor (`systemd` / `nssm` / `launchd`) に委譲。アプリ側は `single_process_mode` 前提で動く (D3 §2.14.2 / design.md §324)
+4. **将来モードの先行設定は不可**: `multi_service_mode` を Phase 7、`container_ready_mode` を Phase 8 で本番化するまで、いずれの enum 値も実装が `NotImplementedError` を返す。設定ファイルや `app_settings` への先行投入は禁止
+
+### 14.3 Phase 7 / Phase 8 への引継
+
+- **Phase 7**: `MultiServiceMode` の concrete 実装 + `LocalQueueEventBus` の実装。本ガイドラインの §14.2 #2 制約を撤廃する
+- **Phase 8**: `ContainerReadyMode` の concrete 実装 + オーケストレータ (k8s / nomad / 等) 選定。`supports_container_orchestration = True` を返す実装を導入
+
+### 14.4 Cheat Sheet (§11) との関係
+
+- §11 の `ctl` コマンドは全て `single_process_mode` 前提。Phase 7+ で multi_service_mode 実運用化する際は `ctl` も再設計対象
