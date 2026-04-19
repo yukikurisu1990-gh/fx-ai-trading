@@ -3,7 +3,7 @@
 Requires a live PostgreSQL connection via DATABASE_URL (from .env or env var).
 Skipped automatically when DATABASE_URL is not set, so CI without a DB is safe.
 
-WARNING: downgrade base drops all 42 D1 tables. Any data in the DB is lost.
+WARNING: downgrade base drops all 43 D1 tables. Any data in the DB is lost.
 If the test fails mid-run, restore with: alembic upgrade head
 """
 
@@ -49,14 +49,14 @@ def _run_alembic(command: str) -> None:
 
 @pytest.mark.skipif(not _DATABASE_URL, reason="DATABASE_URL not set — skipping DB tests")
 def test_migration_roundtrip() -> None:
-    """upgrade head -> downgrade base -> upgrade head must succeed with 42 tables."""
+    """upgrade head -> downgrade base -> upgrade head must succeed with 43 tables."""
     engine = create_engine(_DATABASE_URL)
 
     # Step 1: ensure we start at head
     _run_alembic("upgrade_head")
     after_first_upgrade = _table_count(engine)
-    assert after_first_upgrade == 42, (
-        f"Expected 42 tables after initial upgrade, got {after_first_upgrade}"
+    assert after_first_upgrade == 43, (
+        f"Expected 43 tables after initial upgrade, got {after_first_upgrade}"
     )
 
     # Step 2: downgrade to base (drops all D1 tables)
@@ -64,11 +64,11 @@ def test_migration_roundtrip() -> None:
     after_downgrade = _table_count(engine)
     assert after_downgrade == 0, f"Expected 0 tables after downgrade base, got {after_downgrade}"
 
-    # Step 3: upgrade back to head — must restore all 42 tables
+    # Step 3: upgrade back to head — must restore all 43 tables
     _run_alembic("upgrade_head")
     after_second_upgrade = _table_count(engine)
-    assert after_second_upgrade == 42, (
-        f"Expected 42 tables after re-upgrade, got {after_second_upgrade}"
+    assert after_second_upgrade == 43, (
+        f"Expected 43 tables after re-upgrade, got {after_second_upgrade}"
     )
 
     engine.dispose()

@@ -60,10 +60,11 @@ EXPECTED_TABLES: frozenset[str] = frozenset(
         "reconciliation_events",
         "retry_events",
         "anomalies",
-        # Group H — Aggregates (3)
+        # Group H — Aggregates (4)
         "strategy_performance",
         "meta_strategy_evaluations",
         "daily_metrics",
+        "dashboard_top_candidates",
         # Group I — Operations (6)
         "system_jobs",
         "app_runtime_state",
@@ -85,10 +86,10 @@ def _collect_created_tables() -> set[str]:
 
 
 def test_total_table_count() -> None:
-    """Exactly 42 D1 tables must be created across all migrations."""
+    """Exactly 43 D1 tables must be created across all migrations."""
     created = _collect_created_tables()
-    assert len(created) == 42, (
-        f"Expected 42 tables, found {len(created)}. "
+    assert len(created) == 43, (
+        f"Expected 43 tables, found {len(created)}. "
         f"Extra: {created - EXPECTED_TABLES}, "
         f"Missing: {EXPECTED_TABLES - created}"
     )
