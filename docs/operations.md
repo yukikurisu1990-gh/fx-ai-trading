@@ -115,6 +115,32 @@ Step 9: Account Type 起動検査 (6.18)
   - 不一致: Notifier critical (account_type.mismatch) + exit
   - 一致: Broker._startup_verified_type にセット、supervisor_events に account_type_verified 記録
   - live 初回切替時は別途 --confirm-live-trading フラグ待ち (6.18 運用手順)
+
+  【demo↔live 切替 SQL runbook (M13b)】
+  demo → live 切替手順（必ず 4 重防御を順守すること）:
+    1. アプリ停止: `ctl stop` で safe_stop を完了させる
+    2. app_settings 更新 (手動 SQL):
+         UPDATE app_settings
+         SET value = 'live', introduced_in_version = (SELECT MAX(introduced_in_version) FROM app_settings)
+         WHERE name = 'expected_account_type';
+       確認: SELECT name, value FROM app_settings WHERE name = 'expected_account_type';
+    3. 環境変数設定: .env に OANDA_ACCOUNT_TYPE=live を追記（OANDA_ACCESS_TOKEN も live 用に差し替え）
+    4. アプリ再起動: `ctl start --confirm-live-trading`
+       ※ --confirm-live-trading フラグなしで起動した場合は LiveConfirmationGate Stage 2 でブロック
+
+  live → demo 切替手順:
+    1. アプリ停止: `ctl stop`
+    2. app_settings 更新:
+         UPDATE app_settings SET value = 'demo' WHERE name = 'expected_account_type';
+    3. .env を demo 用 OANDA_ACCESS_TOKEN に戻し、OANDA_ACCOUNT_TYPE=demo に変更
+    4. アプリ再起動: `ctl start` （--confirm-live-trading 不要）
+
+  注意事項:
+  - 上記 SQL は `app_settings_changes` への記録も推奨 (audit trail):
+      INSERT INTO app_settings_changes (name, old_value, new_value, changed_by, changed_at, reason)
+      VALUES ('expected_account_type', 'demo', 'live', 'operator', NOW(), '切替理由を記述');
+  - live 実発注は Iteration 3 以降で運用解禁 (IP2-Q0)。Iter2 は demo 接続のみ。
+  - expected_account_type の UI 経由変更は禁止 (operations.md §15.1 / M26)
   ↓
 Step 10: Reconciler 起動時実行 (6.12 Action Matrix)
   - Reconciler.reconcile_on_startup(context)

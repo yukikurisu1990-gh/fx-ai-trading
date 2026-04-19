@@ -120,3 +120,17 @@ class ArchiveVerifyError(RepositoryError):
 
 class ConfigError(BaseError):
     """Invalid or missing configuration value."""
+
+
+# ---------------------------------------------------------------------------
+# Live trading gate (6.18 / M13b)
+# ---------------------------------------------------------------------------
+
+
+class LiveConfirmationError(BaseError):
+    """Demo→Live gate verification failed (6.18).
+
+    Raised by LiveConfirmationGate.verify() when one of the three
+    confirmation stages fails.  The message names the failed stage so
+    the operator knows which check to satisfy.
+    """
