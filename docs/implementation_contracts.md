@@ -540,7 +540,7 @@ NotifierDispatcher:
 - **Implementations**:
   - `FileNotifier` (常時必須)
   - `SlackNotifier` (MVP 必須)
-  - `EmailNotifier` (Phase 7 任意)
+  - `EmailNotifier` (Iter2 M17 で実装済。SMTP_HOST / SMTP_PORT / SMTP_SENDER / SMTP_USERNAME / SMTP_PASSWORD / SMTP_RECIPIENTS の 6 変数全 set で auto-activate / 一部欠落で silently skip。phase6_hardening.md §6.13 参照)
 
 #### 2.10.2 `SafeStopJournal` Interface (6.1)
 
@@ -751,8 +751,10 @@ get_service_mode(name: ServiceModeName) -> ServiceMode
 
 - **Purpose**: ポジション毎の決済判断エンジン。1m/5m サイクル毎に各オープンポジションを評価し `ExitDecision` を返す。
 - **Protocol**: `domain/exit.py` の `ExitPolicy` Protocol を満足すること（`evaluate()` シグネチャ一致）。
-- **Rule Priority** (高い順): `emergency_stop > sl > tp > max_holding_time`
-  - Deferred: `reverse_signal` / `ev_decay` / `pre_event_halt` — Phase 7 へ送り（Protocol は `domain/exit.py` に準備済み）
+- **Rule Priority** (高い順、MVP + Deferred を一体で固定):
+  `emergency_stop > pre_event_halt > sl > tp > reverse_signal > ev_decay > max_holding_time`
+  - MVP 実装: `emergency_stop` / `sl` / `tp` / `max_holding_time` の 4 ルール
+  - Deferred (Phase 7): `pre_event_halt` / `reverse_signal` / `ev_decay` — 上記位置に挿入される前提で Protocol を `domain/exit.py` に準備済み。Phase 7 実装時もこの順序を変更しない。
 - **Invariants**:
   - `ExitDecision.reasons` は発火した全ルールを優先順で列挙する（primary_reason = reasons[0]）
   - `should_exit=False` の場合 `reasons=()`, `primary_reason=None`
