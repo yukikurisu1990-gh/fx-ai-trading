@@ -10,7 +10,6 @@ Responsibilities deferred to later milestones:
   - 1-minute trading cycle loop (M9/M12).
   - OutboxProcessor lifecycle (M8).
   - Reconciler / MidRunReconciler lifecycle (M8).
-  - Metrics recording 9 items per minute (M12).
   - Emergency Flat CLI integration (M12).
 """
 
@@ -53,6 +52,7 @@ class Supervisor:
         self._notifier: object = None
         self._supervisor_events_repo: object = None
         self._common_keys_ctx: object = None
+        self._metrics_loop: object = None
 
     # ------------------------------------------------------------------
     # Startup
@@ -129,6 +129,41 @@ class Supervisor:
         self._trading_allowed = False
         self._is_stopped = True
         _log.critical("Supervisor: trading loop STOPPED (safe_stop)")
+
+    # ------------------------------------------------------------------
+    # Metrics loop (M16)
+    # ------------------------------------------------------------------
+
+    def attach_metrics_loop(self, metrics_loop: object) -> None:
+        """Attach a MetricsLoop instance for caller-driven 60s recording.
+
+        Args:
+            metrics_loop: MetricsLoop from supervisor/metrics_loop.py.
+        """
+        self._metrics_loop = metrics_loop
+
+    def record_metrics(
+        self,
+        *,
+        cycle_duration_seconds: float | None = None,
+        stream_heartbeat_age_seconds: float | None = None,
+    ) -> bool:
+        """Record one metric_sample at clock.now().
+
+        No-op (returns False) if no MetricsLoop is attached or if
+        safe_stop has fired.  DB write failures are fail-open (MetricsLoop
+        logs a warning and returns False without raising).
+
+        Returns:
+            True if the metric_sample was written, False otherwise.
+        """
+        if self._metrics_loop is None or self._is_stopped:
+            return False
+        return self._metrics_loop.record(  # type: ignore[union-attr]
+            self._clock.now(),
+            cycle_duration_seconds=cycle_duration_seconds,
+            stream_heartbeat_age_seconds=stream_heartbeat_age_seconds,
+        )
 
     # ------------------------------------------------------------------
     # Health check
