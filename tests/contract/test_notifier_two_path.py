@@ -159,3 +159,83 @@ class TestTwoPathSeparation:
     def test_file_notifier_is_required(self) -> None:
         with pytest.raises(TypeError):
             NotifierDispatcherImpl()  # type: ignore[call-arg]
+
+
+# ---------------------------------------------------------------------------
+# Email — three-path fan-out (M17)
+# ---------------------------------------------------------------------------
+
+
+class TestEmailThreePath:
+    def test_email_notifier_called_on_critical_path(self, tmp_path) -> None:
+        file_notifier = _make_file_notifier(tmp_path)
+        email = MagicMock()
+        email.send.return_value = _make_ok_result("email")
+        dispatcher = NotifierDispatcherImpl(file_notifier=file_notifier, email_notifier=email)
+        dispatcher.dispatch_direct_sync(_CRITICAL_EVENT, "critical", {})
+        email.send.assert_called_once_with(_CRITICAL_EVENT, "critical", {})
+
+    def test_email_called_after_externals(self, tmp_path) -> None:
+        call_order: list[str] = []
+        file_notifier = _make_file_notifier(tmp_path)
+        external = MagicMock()
+
+        def ext_send(*a, **kw):
+            call_order.append("slack")
+            return _make_ok_result("slack")
+
+        external.send.side_effect = ext_send
+        email = MagicMock()
+
+        def email_send(*a, **kw):
+            call_order.append("email")
+            return _make_ok_result("email")
+
+        email.send.side_effect = email_send
+        dispatcher = NotifierDispatcherImpl(
+            file_notifier=file_notifier,
+            external_notifiers=[external],
+            email_notifier=email,
+        )
+        dispatcher.dispatch_direct_sync(_CRITICAL_EVENT, "critical", {})
+        assert call_order == ["slack", "email"]
+
+    def test_email_failure_does_not_raise(self, tmp_path) -> None:
+        file_notifier = _make_file_notifier(tmp_path)
+        email = MagicMock()
+        email.send.return_value = _make_fail_result("email")
+        dispatcher = NotifierDispatcherImpl(file_notifier=file_notifier, email_notifier=email)
+        dispatcher.dispatch_direct_sync(_CRITICAL_EVENT, "critical", {})
+
+    def test_email_failure_does_not_block_externals(self, tmp_path) -> None:
+        """Email is added last — externals must succeed even if email fails."""
+        call_order: list[str] = []
+        file_notifier = _make_file_notifier(tmp_path)
+        external = MagicMock()
+
+        def ext_send(*a, **kw):
+            call_order.append("slack")
+            return _make_ok_result("slack")
+
+        external.send.side_effect = ext_send
+        email = MagicMock()
+        email.send.return_value = _make_fail_result("email")
+        dispatcher = NotifierDispatcherImpl(
+            file_notifier=file_notifier,
+            external_notifiers=[external],
+            email_notifier=email,
+        )
+        dispatcher.dispatch_direct_sync(_CRITICAL_EVENT, "critical", {})
+        assert "slack" in call_order
+
+    def test_email_not_called_on_outbox_path(self, tmp_path) -> None:
+        file_notifier = _make_file_notifier(tmp_path)
+        email = MagicMock()
+        dispatcher = NotifierDispatcherImpl(file_notifier=file_notifier, email_notifier=email)
+        dispatcher.dispatch_via_outbox(_INFO_EVENT, "info", {})
+        email.send.assert_not_called()
+
+    def test_dispatcher_works_without_email_notifier(self, tmp_path) -> None:
+        file_notifier = _make_file_notifier(tmp_path)
+        dispatcher = NotifierDispatcherImpl(file_notifier=file_notifier)
+        dispatcher.dispatch_direct_sync(_CRITICAL_EVENT, "critical", {})

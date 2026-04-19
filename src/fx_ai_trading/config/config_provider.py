@@ -39,6 +39,24 @@ class ConfigProvider:
         """Return the value for *name* from app_settings, or None."""
         return self._repo.get(name)
 
+    def get_smtp_config(self) -> dict[str, str | int | None]:
+        """Return SMTP connection parameters from environment variables (M17).
+
+        Keys: host, port (int), sender, recipients (comma-separated → list),
+        username, password.  Password is never logged by this method.
+        Returns None for each key that is not set.
+        """
+        raw_port = os.environ.get("SMTP_PORT")
+        raw_recipients = os.environ.get("SMTP_RECIPIENTS", "")
+        return {
+            "host": os.environ.get("SMTP_HOST"),
+            "port": int(raw_port) if raw_port else None,
+            "sender": os.environ.get("SMTP_SENDER"),
+            "recipients": [r.strip() for r in raw_recipients.split(",") if r.strip()],
+            "username": os.environ.get("SMTP_USERNAME"),
+            "password": os.environ.get("SMTP_PASSWORD"),
+        }
+
     def get_env_secret(self, key: str) -> str | None:
         """Return os.environ.get(key) without logging the value (M13b).
 
