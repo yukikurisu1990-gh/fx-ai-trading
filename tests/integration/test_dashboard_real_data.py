@@ -97,7 +97,7 @@ _SEEDS = [
     "INSERT INTO orders VALUES ('o1','EUR_USD','buy',1000,'FILLED',datetime('now'))",
     f"INSERT INTO supervisor_events VALUES ('se1','system_start','run1','0.0.1',{_T},'{{}}')",
     "INSERT INTO app_settings VALUES ('phase_mode','phase6','string','0.0.1')",
-    "INSERT INTO app_settings VALUES ('environment','demo','string','0.0.1')",
+    "INSERT INTO app_settings VALUES ('runtime_environment','demo','string','0.0.1')",
     f"INSERT INTO execution_metrics VALUES ('em1','o1','EUR_USD',2.5,0.3,45.0,{_T})",
     f"INSERT INTO risk_events VALUES ('re1','c1','EUR_USD','accept',NULL,{_T})",
     f"INSERT INTO dashboard_top_candidates VALUES ('tc1','EUR_USD','AI',0.91,'buy',{_T},1)",
@@ -222,7 +222,7 @@ class TestPanelRenderWithRealEngine:
             patch.object(
                 market_state,
                 "_fetch",
-                return_value={"phase_mode": "phase6", "environment": "demo"},
+                return_value={"phase_mode": "phase6", "runtime_environment": "demo"},
             ),
         ):
             market_state.render(seeded_engine)
@@ -332,7 +332,7 @@ class TestPanelRenderWithRealEngine:
         fetch_returns = {
             "positions": svc.get_open_positions(seeded_engine),
             "daily_metrics": svc.get_daily_order_summary(seeded_engine),
-            "market_state": {"phase_mode": "phase6", "environment": "demo"},
+            "market_state": {"phase_mode": "phase6", "runtime_environment": "demo"},
             "recent_signals": svc.get_recent_orders(seeded_engine),
             "strategy_summary": svc.get_recent_orders(seeded_engine),
             "supervisor_status": svc.get_recent_supervisor_events(seeded_engine),
