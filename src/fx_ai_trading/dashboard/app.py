@@ -16,12 +16,15 @@ from sqlalchemy import create_engine
 
 from fx_ai_trading.dashboard.panels import (
     daily_metrics,
+    execution_quality,
     market_state,
     meta_decision,
     positions,
     recent_signals,
+    risk_state_detail,
     strategy_summary,
     supervisor_status,
+    top_candidates,
 )
 
 st.set_page_config(
@@ -42,7 +45,7 @@ def _get_engine():
 engine = _get_engine()
 
 st.title("FX-AI Trading Dashboard")
-st.caption("paper mode · Iteration 1 · M12")
+st.caption("paper mode · Iteration 2 · M19")
 
 if engine is None:
     st.warning("DATABASE_URL not set — panels show fallback data only.")
@@ -73,3 +76,14 @@ with col_f:
     supervisor_status.render(engine)
 with col_g:
     recent_signals.render(engine)
+
+st.divider()
+
+# --- Row 4: three columns (M19) ---
+col_h, col_i, col_j = st.columns(3)
+with col_h:
+    top_candidates.render(engine)
+with col_i:
+    execution_quality.render(engine)
+with col_j:
+    risk_state_detail.render(engine)
