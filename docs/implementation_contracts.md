@@ -780,6 +780,36 @@ get_service_mode(name: ServiceModeName) -> ServiceMode
 
 ---
 
+### 2.17 LearningExecutor Protocol (M21 / M-LRN-1)
+
+**目的**: Iteration 2 stub executor と Phase 7 本 executor の差し替えポイントを契約として固定する。
+
+```python
+class LearningExecutor(Protocol):
+    """Execute a training job registered in system_jobs."""
+
+    def execute(self, engine: Engine, job_id: str) -> None:
+        """Run the training job identified by *job_id*.
+
+        Implementations MUST:
+          - Transition system_jobs.status:  'pending' → 'running' → 'success' | 'failed'
+          - INSERT a row into training_runs with the outcome.
+          - On failure: set status='failed', populate error_detail.
+
+        Implementations MUST NOT:
+          - Raise exceptions (fail-open: log + set status=failed).
+          - Block the caller for more than 30 s without yielding.
+        """
+        ...
+```
+
+- **Iteration 2 実装**: `LearningOps.execute_stub()` — 即時 success + dummy training_run
+- **Phase 7 実装**: 実モデル学習を起動する `RealLearningExecutor`
+- **差し替え方法**: `LearningOps` のコンストラクタ引数 or DI でプロトコル実装を注入
+- **不変条件**: `execute()` は冪等でなくてよいが、同一 `job_id` の二重呼び出しは防護すること（呼び出し側責任）
+
+---
+
 ### 2.16 UI / Console 層 責務契約 (operations.md §15 と一対)
 
 > **位置付け**: 本節は新規 Protocol を**導入しない** (Iter2 仕様凍結のみ、実装は Iter3 以降の別 PR)。
