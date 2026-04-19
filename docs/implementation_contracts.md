@@ -841,6 +841,37 @@ class TwoFactorAuthenticator(Protocol):
 
 ---
 
+### 2.19 ProjectionTransport Protocol (M23 / D3 §2.19)
+
+**目的**: Supabase への定期 snapshot transport を Protocol として固定し、Phase 7 で本 Supabase クライアントに差し替え可能にする。
+
+```python
+class ProjectionTransport(Protocol):
+    """Secondary-DB snapshot transport (D3 §2.19 / M23)."""
+
+    def upsert(self, table: str, rows: list[dict]) -> int:
+        """Upsert *rows* into *table* on the secondary DB.
+
+        Returns the number of rows upserted.
+        Implementations MUST NOT:
+          - Raise exceptions (fail-open: log warn + return 0).
+          - Issue DELETE or TRUNCATE on the secondary DB.
+          - Modify the primary DB.
+        """
+        ...
+```
+
+- **Iteration 2 実装**: `SupabaseProjectionTransport` (接続は Mock のみ)
+- **Phase 7 実装**: 実 Supabase REST クライアント + retry / schema-alignment
+- **テスト用**: `MockSupabaseClient` — in-memory dict, primary-key 上書き対応
+- **配置**:
+  - Transport: `src/fx_ai_trading/adapters/projector/supabase.py`
+  - Service: `src/fx_ai_trading/services/projection_service.py`
+- **スコープ**: Iteration 2 は `supervisor_events` のみ。他 3 テーブルは Phase 7。
+- **不変条件**: upsert は read/write のみ、DELETE は一切発行しない（Primary DB の Append-only 制約と対称）
+
+---
+
 ### 2.16 UI / Console 層 責務契約 (operations.md §15 と一対)
 
 > **位置付け**: 本節は新規 Protocol を**導入しない** (Iter2 仕様凍結のみ、実装は Iter3 以降の別 PR)。
