@@ -10,7 +10,7 @@ All fired reasons are fully enumerated in ExitDecision and written to close_even
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Protocol
+from typing import Protocol, runtime_checkable
 
 # ---------------------------------------------------------------------------
 # DTOs
@@ -39,6 +39,7 @@ class ExitDecision:
 # ---------------------------------------------------------------------------
 
 
+@runtime_checkable
 class ExitPolicy(Protocol):
     """Per-position exit decision engine (D3 §2 / design §6.1).
 
