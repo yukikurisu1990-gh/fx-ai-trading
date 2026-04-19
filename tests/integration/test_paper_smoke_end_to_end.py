@@ -1,19 +1,27 @@
-"""Integration smoke test: paper mode 1-cycle end-to-end pipeline (M12).
+"""Integration smoke test: paper mode 1-cycle end-to-end pipeline (M12 / M25).
 
-Verifies the service chain completes without exception:
+Verifies the full 7-stage service chain:
 
-  FeatureService → MAStrategy → MetaDeciderService
-    → ExecutionGateService → PaperBroker.place_order → fill
+  Stage 1: FeatureService → features
+  Stage 2: MAStrategy → signal='long'
+  Stage 3: MetaDeciderService → decision (no_trade=False)
+  Stage 4: ExecutionGateService → approve
+  Stage 5: PaperBroker.place_order → filled
+  Stage 6: ExitPolicyService.evaluate → should_exit=True (SL breach)  [M25]
+  Stage 7: ExitExecutor.execute → close_event row recorded            [M25]
 
-No database required — PaperBroker is in-memory only.  This test confirms
-that the wiring between services is intact; it does not validate business
-correctness or profitability of the signal.
+Stage 6-7 use an in-memory SQLite database with the close_events schema
+so no external DB is required.  SQLite FK enforcement is off by default,
+allowing simplified fixture setup.
 
 Fixture design:
   50 candles at close=1.0, then 20 candles at close=2.0.
   sma_20 ≈ 2.0, sma_50 ≈ 1.40 → strong uptrend → MAStrategy signal='long'.
   MetaDeciderService(min_ev=-1.0) accepts even negative-EV signals so the
   smoke pipeline always reaches PaperBroker regardless of confidence.
+
+  SL breach in Stage 6: set sl=3.0 (above fill price=1.5 for a 'long')
+  so that current_price=1.0 < sl=3.0 triggers the SL rule.
 """
 
 from __future__ import annotations
@@ -21,13 +29,18 @@ from __future__ import annotations
 import uuid
 from datetime import UTC, datetime, timedelta
 
+from sqlalchemy import create_engine, text
+
 from fx_ai_trading.adapters.broker.paper import PaperBroker
 from fx_ai_trading.common.clock import FixedClock
 from fx_ai_trading.domain.broker import OrderRequest
 from fx_ai_trading.domain.execution import RealtimeContext, TradingIntent
 from fx_ai_trading.domain.meta import MetaContext
 from fx_ai_trading.domain.strategy import StrategyContext
+from fx_ai_trading.repositories.close_events import CloseEventsRepository
 from fx_ai_trading.services.execution_gate import ExecutionGateService
+from fx_ai_trading.services.exit_executor import ExitExecutor
+from fx_ai_trading.services.exit_policy import ExitPolicyService
 from fx_ai_trading.services.feature_service import FeatureService
 from fx_ai_trading.services.meta_decider import MetaDeciderService
 from fx_ai_trading.services.strategies.ma import MAStrategy
@@ -40,6 +53,20 @@ _INSTRUMENT = "EUR_USD"
 _ACCOUNT_ID = "smoke-account-001"
 _STRATEGY_ID = "smoke-ma-001"
 _NOW = datetime(2025, 1, 10, 12, 0, 0, tzinfo=UTC)
+
+# Minimal close_events DDL for Stage 7 in-memory DB (FK enforcement off in SQLite).
+_CLOSE_EVENTS_DDL = """
+CREATE TABLE IF NOT EXISTS close_events (
+    close_event_id       TEXT PRIMARY KEY,
+    order_id             TEXT,
+    position_snapshot_id TEXT,
+    reasons              TEXT,
+    primary_reason_code  TEXT,
+    closed_at            TEXT,
+    pnl_realized         REAL,
+    correlation_id       TEXT
+)
+"""
 
 
 # ---------------------------------------------------------------------------
@@ -183,3 +210,50 @@ def test_paper_smoke_one_cycle_end_to_end() -> None:
     assert any(p.instrument == _INSTRUMENT for p in positions_after), (
         f"PaperBroker has no position for {_INSTRUMENT} after fill"
     )
+
+    # --- Stage 6: ExitPolicy evaluation — SL breach ---
+    # SL = 3.0 (above fill price 1.5 for 'long'), current_price = 1.0 → breach.
+    exit_svc = ExitPolicyService()
+    exit_decision = exit_svc.evaluate(
+        position_id="smoke-pos-001",
+        instrument=_INSTRUMENT,
+        side="long",
+        current_price=1.0,
+        tp=5.0,
+        sl=3.0,
+        holding_seconds=60,
+        context={},
+    )
+
+    assert exit_decision.should_exit, (
+        f"ExitPolicyService did not trigger on SL breach: {exit_decision}"
+    )
+    assert exit_decision.primary_reason == "sl", (
+        f"Expected primary_reason='sl', got {exit_decision.primary_reason!r}"
+    )
+
+    # --- Stage 7: ExitExecutor — close_event recorded to in-memory DB ---
+    engine = create_engine("sqlite:///:memory:")
+    with engine.begin() as conn:
+        conn.execute(text(_CLOSE_EVENTS_DDL))
+
+    close_repo = CloseEventsRepository(engine=engine)
+    executor = ExitExecutor(broker=broker, close_events_repo=close_repo)
+    close_result = executor.execute(
+        decision=exit_decision,
+        account_id=_ACCOUNT_ID,
+        instrument=_INSTRUMENT,
+        side="long",
+        size_units=1000,
+        entry_order_id=intent.order_id,
+        occurred_at=_NOW,
+    )
+
+    assert close_result is not None, "ExitExecutor.execute returned None despite should_exit=True"
+    assert close_result.status == "filled", (
+        f"Close order not filled: status={close_result.status!r}"
+    )
+
+    with engine.connect() as conn:
+        row_count = conn.execute(text("SELECT COUNT(*) FROM close_events")).scalar()
+    assert row_count == 1, f"Expected 1 close_event row, found {row_count}"
