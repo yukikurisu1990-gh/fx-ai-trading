@@ -604,6 +604,8 @@ MA / ATR は lifecycle_state を持たないため、`strategy.MA.enabled` / `st
 3. 発注前 assertion (ランタイムレイヤの防御)
 4. Live 初回切替後の手動 confirmation 待ち (運用レイヤの防御)
 
+**UI 経由 demo ↔ live 切替も同じ 4 重防御を継続** (operations.md §15.1 / §3.1 / development_rules §10.3.1 と一対): Configuration Console (Iter3 以降) からの `expected_account_type` 変更は**閲覧のみ**を許可し、変更操作は CLI / 手動 SQL に委譲する (UI からの変更チャネルを開かない)。これにより上記 4 防御のうち #1 (`local` 固定) / #4 (`--confirm-live-trading` の手動 confirmation) が UI 都合で迂回されることを構造的に防ぐ。SecretProvider の書込 Interface (`rotate` / `set`) も同じ理由で Iter2 では追加せず、UI 経由 secret 入力 sink を `.env` (起動前モード) に限定する (implementation_contracts.md §2.15)。
+
 ### 6.19 `config_version` 導出契約 (C4 解消)
 
 `config_version` は全ログの Common Keys を構成し、**分析の再現性と回帰検出の中核**を担う。したがって「どの設定を入力とし、どうハッシュするか」を曖昧にできない。以下を仕様として固定する。

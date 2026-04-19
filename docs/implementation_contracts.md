@@ -745,6 +745,24 @@ get_service_mode(name: ServiceModeName) -> ServiceMode
   - `MultiServiceMode` (Phase 7+、未実装)
   - `ContainerReadyMode` (Phase 8+、未実装)
 
+### 2.15 UI / Console 層 責務契約 (operations.md §15 と一対)
+
+> **位置付け**: 本節は新規 Protocol を**導入しない** (Iter2 仕様凍結のみ、実装は Iter3 以降の別 PR)。
+> UI 層が既存の `ConfigProvider` / `SecretProvider` / `dashboard_query_service` / `scripts/ctl.py` 上に**薄いラッパとしてのみ存在する**ことを契約として固定する。
+
+- **Purpose**: Configuration Console / Operator Console を介した運用操作が、既存 Interface の境界を越えないことを契約レベルで保証する
+- **Invariants**:
+  - **新規 Protocol 不導入**: SecretProvider に書込 Interface (`rotate` / `set` 等) を Iter2 で追加しない (read-only `get` / `get_hash` / `list_keys` のまま、§2.13.2 維持)
+  - **新規 ctl usecase 不導入**: M22 で確定する 5 コマンド (`start` / `stop` / `resume-from-safe-stop` / `run-reconciler` / `emergency-flat-all`) が UI 経由実行可能集合の上限。UI 側で別 entry point を生やさない
+  - **`emergency-flat-all` の UI 経由実行は禁止** (CLI 専用、6.14 / 6.18 4 重防御の継続)
+  - **secret 書込 sink は `.env` のみ**: UI から DB / `app_settings` / 任意 KVS への secret 書込を契約として禁止
+  - **稼働中の即時反映禁止**: `app_settings` 系の変更は `app_settings_changes` キュー経由でのみ受け付け、適用は再起動 or hot-reload で別途トリガ
+  - **UI 操作の監査経路は既存 audit に集約**: Iter2/Iter3 では `app_settings_changes` + `safe_stop.jsonl` + `notifications.jsonl` で十分。`dashboard_operations_audit` テーブル (**仮称、Phase 8 で正式テーブル名確定**、UI 専用 audit) は Phase 8 (phase8_roadmap §5.3) で SSO/multi-user とセット導入。schema_catalog の現 43 表体系には未登録
+- **Boundary re-evaluation triggers** (本契約境界が再設計対象となる条件):
+  1. SSO / multi-user 化 (operator / viewer / admin の権限分離)
+  2. Streamlit 卒業条件超過 → Next.js + FastAPI 化
+  3. SecretProvider に書込 Interface (`rotate` / `set`) を D3 に追加
+
 ---
 
 ## 3. Repository 契約の詳細

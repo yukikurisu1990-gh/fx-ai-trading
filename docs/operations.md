@@ -275,16 +275,16 @@ events.type 別にディスパッチ:
 
 ### 3.1 許可される手動介入
 
-| 操作 | 許可条件 | 手順 |
-|---|---|---|
-| safe_stop 状態からの復帰 | 事故調査完了 | `ctl resume-from-safe-stop --reason="..."` + 監査ログ |
-| degraded モードからの復帰 | 整合性確認後 | Reconciler 再実行 or 手動 `supervisor_events` で status=ready |
-| `expected_account_type` を demo ↔ live 切替 | 運用者判断 | 手動 SQL で変更 → アプリ再起動 → 起動 assertion → --confirm-live-trading |
-| `app_settings` の設定値変更 | 運用者判断 | 手動 SQL + `app_settings_changes` 記録 + config_version bump |
-| 学習 job の enqueue | UI / CLI | ダッシュボードの学習 UI or `ctl enqueue-learning-job` |
-| Emergency Flat (全ポジションクローズ) | 緊急時 | `ctl emergency-flat-all` (UI 非依存、6.14) |
-| Reconciler 手動 kick | degraded 状態の調査後 | `ctl run-reconciler` |
-| Alembic migration 適用 | リリース時 | `alembic upgrade head` + 事前バックアップ |
+| 操作 | 許可条件 | 手順 | UI 経由可否 (Iter3+) |
+|---|---|---|---|
+| safe_stop 状態からの復帰 | 事故調査完了 | `ctl resume-from-safe-stop --reason="..."` + 監査ログ | ○ Operator Console (ctl ラッパ、reason 必須) |
+| degraded モードからの復帰 | 整合性確認後 | Reconciler 再実行 or 手動 `supervisor_events` で status=ready | △ Reconciler 再実行のみ (Operator Console)。`supervisor_events` 直書きは UI 経由禁止 |
+| `expected_account_type` を demo ↔ live 切替 | 運用者判断 | 手動 SQL で変更 → アプリ再起動 → 起動 assertion → --confirm-live-trading | △ 表示のみ。変更は Iter3 でも CLI/SQL 維持 (6.18 4 重防御維持、UI からは参照のみ) |
+| `app_settings` の設定値変更 | 運用者判断 | 手動 SQL + `app_settings_changes` 記録 + config_version bump | △ Configuration Console「稼働中モード」で変更キュー (即時反映なし、適用は再起動 or hot-reload 経由) |
+| 学習 job の enqueue | UI / CLI | ダッシュボードの学習 UI or `ctl enqueue-learning-job` | ○ Learning UI (Operator Console とは**別系統**、M21 で拡張、§15.1 / §15.3 参照) |
+| Emergency Flat (全ポジションクローズ) | 緊急時 | `ctl emergency-flat-all` (UI 非依存、6.14) | × UI 非依存維持 (CLI 専用、2-factor 必須、6.14) |
+| Reconciler 手動 kick | degraded 状態の調査後 | `ctl run-reconciler` | ○ Operator Console (ctl ラッパ) |
+| Alembic migration 適用 | リリース時 | `alembic upgrade head` + 事前バックアップ | × CLI 専用維持 (UI から実行禁止) |
 
 ### 3.2 禁止される手動介入
 
@@ -734,3 +734,62 @@ cycle_id (分足単位)
 ### 14.4 Cheat Sheet (§11) との関係
 
 - §11 の `ctl` コマンドは全て `single_process_mode` 前提。Phase 7+ で multi_service_mode 実運用化する際は `ctl` も再設計対象
+
+---
+
+## 15. UI 操作境界 (Configuration Console / Operator Console)
+
+> **位置付け**: Iteration 2 では仕様凍結のみ（実装は Iteration 3 以降の別 PR）。
+> 本章は UI 経由で「許可 / 禁止」「閲覧 / 操作」を**接合面レベルで固定**するための運用契約。
+> 実装の有無に関わらず本章の境界を破る変更は禁止 (development_rules §13.1 #16 と対応)。
+
+### 15.1 4 層責務マトリクス
+
+| 層 | 責務 | UI 経由可否 | 取得 / 適用パス |
+|---|---|---|---|
+| Secret 層 | 取引所 API key / SMTP 認証 / Supabase key 等 | 閲覧 = 不可 (hash 表示のみ) / 入力 = `.env` sink 限定 | 入力: Configuration Console「起動前モード」→ `.env` 書込 → アプリ再起動。読出: SecretProvider (`get` / `get_hash` / `list_keys`、D3 §2.13.2、read-only) |
+| Runtime 接続層 | OANDA endpoint / SMTP host / DB DSN | 閲覧 = 表示 (host のみ、credential 部分はマスク) / 変更 = `.env` 経由 | 同上 (Secret 層と同経路、`.env` 一本化) |
+| Runtime mode 層 | `expected_account_type` / `service_mode` / `runtime_environment` / 各種 feature flag | 閲覧 = ○ / 変更 = `app_settings_changes` キュー経由のみ (即時反映なし) | Configuration Console「稼働中モード」→ 変更キュー → 再起動 or hot-reload で適用、`app_settings_changes` に監査記録 |
+| Operational 層 (Operator Console) | start / stop / resume-from-safe-stop / run-reconciler (M22 確定 5 コマンド中、`emergency-flat-all` 除く 4 コマンド) | 閲覧 = ○ / 操作 = ctl ラッパ経由のみ | Operator Console → `scripts/ctl.py` の既存 usecase を呼ぶだけ。新規 usecase 不導入 |
+| Operational 層 (Learning UI、別系統) | enqueue-learning-job / 学習ステータス参照 / 履歴閲覧 | 閲覧 = ○ / 操作 = Learning UI 経由 | Iter1 既存の Streamlit Learning UI (M21 で enqueue / status / history 拡張、IP2 §6.9)。Operator Console とは**別系統**で、ctl 5 コマンド契約 (§15.3) の上限には含まれない |
+
+**Emergency Flat (`ctl emergency-flat-all`) は 4 層のいずれにも入らず UI 非依存維持** (6.14 / 6.18 4 重防御の継続)。
+
+### 15.2 Configuration Console の 2 モード
+
+- **起動前モード (Bootstrap)**: アプリ未起動時のみ操作可能。`.env` への書込が唯一の sink。Secret / 接続情報の初期投入はこのモードでしか行えない。書込時は `LogSanitizer` 経由で値そのものをログに出さず、key 名と書換え時刻のみ記録
+- **稼働中モード (Runtime)**: アプリ起動後は `app_settings` 系列の閲覧 + 変更キュー登録のみ可能。Secret / 接続情報は表示のみ (key 一覧 + hash)、変更操作は無効化。即時反映は不可で、適用は再起動 or hot-reload を別途トリガ
+
+### 15.3 Operator Console の責務境界
+
+- **既存 ctl のラッパに留める**: `ctl start` / `ctl stop` / `ctl resume-from-safe-stop` / `ctl run-reconciler` / `ctl emergency-flat-all` (M22 で確定する 5 コマンド) のうち、`emergency-flat-all` を**除く** 4 コマンドのみ Operator Console から実行可能
+- **新規 usecase の追加禁止**: Operator Console から新しい運用 action を生やさない。必要が出た場合は ctl 側に先に追加し、それを Operator Console が呼ぶ順序を守る
+- **2-factor が必要な ctl はそのまま 2-factor を要求**: Operator Console 側で 2-factor を「省略可」にする迂回禁止
+- **`reason` フィールドは Operator Console でも必須**: ctl が要求する `--reason="..."` は UI からも省略不可
+- **Learning UI は本節の対象外** (§15.1 「Operational 層 (Learning UI、別系統)」行参照): `enqueue-learning-job` 等の学習系操作は M21 拡張の Streamlit Learning UI で行う。Operator Console の M22 5 コマンド契約とは**別系統**で、本節の「新規 usecase の追加禁止」原則は Operator Console にのみ適用される (Learning UI 側は IP2 §6.9 の learning_jobs テーブル契約に従う)
+
+### 15.4 UI 経由 secret 入力カタログ (Iter3 以降の実装範囲)
+
+| Secret 名 | 入力契機 | sink | 監査記録 |
+|---|---|---|---|
+| OANDA API key | 起動前モードで初期投入 / rotate | `.env` のみ (DB 書込禁止) | `app_settings_changes` に key 名 + sha256 prefix + 操作者 + UTC time、値本体は記録せず |
+| SMTP password | 同上 | `.env` のみ | 同上 |
+| Supabase API key | 同上 | `.env` のみ | 同上 |
+| その他外部接続 credential | 同上 | `.env` のみ | 同上 |
+
+**禁止**: 上記 secret を `app_settings` テーブル本体や `app_settings_changes.old_value` / `app_settings_changes.new_value` に**平文で書込むこと** (development_rules §10.3.1 と対応、実列名は schema_catalog §2 #42)。SecretProvider 書込 Interface (`rotate` / `set` 等) は Iter2 では未導入のため、UI からは「`.env` 書換 + 再起動誘導」までが上限。
+
+### 15.5 監査ログとの関係
+
+- **Iter2 で必要な監査**: ctl 経由の操作は既存の `app_settings_changes` + `safe_stop.jsonl` + `notifications.jsonl` で十分。UI 専用の audit テーブルは Iter2 では新設しない
+- **Phase 8 で追加**: `dashboard_operations_audit` テーブル (**仮称、Phase 8 で正式テーブル名確定**、UI 操作の who / when / which action / which target) は SSO/multi-user とセットで Phase 8 (phase8_roadmap §5.3) で導入。schema_catalog の現 43 表体系には未登録。Iter3 で UI を実装する場合も、それまでは「単独運用者前提」「ctl の既存監査経路で代替」とする
+
+### 15.6 Phase 8 への送り (本章境界の再評価条件)
+
+以下が成立した時点で本章の境界は再評価対象になる:
+
+1. SSO / multi-user 化 (operator / viewer / admin の権限分離、phase8_roadmap §5.3)
+2. Streamlit 卒業条件超過 (phase8_roadmap §2.3) → Next.js + FastAPI への UI 刷新
+3. SecretProvider 書込 Interface (`rotate` / `set`) の D3 追加 (Iter2 では read-only `get` / `get_hash` / `list_keys` のまま)
+
+これらの 1 つでも成立するまで、UI は **「ctl の上に薄いラッパを被せたもの + `.env` の起動前 sink」** を超えて拡張しない。

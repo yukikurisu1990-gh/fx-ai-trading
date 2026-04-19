@@ -500,6 +500,21 @@ scripts/                    # ctl CLI 等
 - secret は SecretProvider Interface 経由でのみ取得
 - ログ出力時は `LogSanitizer` を通す (D3 2.10 / 6.13 継承)
 
+### 10.3.1 UI 経由 secret 入力ルール (Iter3 以降の Configuration Console)
+
+UI から secret を入力する場合の**唯一許可される sink は `.env`** (operations.md §15.4 と対応):
+
+**禁止**:
+- secret 値を `app_settings` / `app_settings_changes.old_value` / `app_settings_changes.new_value` / 他 DB テーブルに**平文書込** (実列名は schema_catalog §2 #42 の `(name, old_value, new_value, changed_by, changed_at, reason)`)
+- UI のセッション state / ブラウザ Cookie / Local Storage に secret 値を保持
+- UI ログ / ダッシュボードパネル / エラー表示に secret 値を露出 (key 名 + sha256 prefix までは許可)
+- SecretProvider に書込 Interface (`rotate` / `set` 等) を Iter2 で追加すること (Iter2 は read-only `get` / `get_hash` / `list_keys` のみ、D3 §2.13.2)
+
+**必須**:
+- 入力契機は Configuration Console「起動前モード」のみ (アプリ未起動時)。「稼働中モード」では表示 (key 一覧 + hash) のみで変更操作は無効化
+- `.env` 書込時は値そのものをログに出さず、`app_settings_changes` の `name` 列に key 名、`old_value` / `new_value` には sha256 prefix のみ、`changed_by` に操作者、`changed_at` に UTC time、`reason` に変更理由を記録 (`LogSanitizer` 経由、平文の secret は `old_value` / `new_value` に書込まない)
+- 適用は `.env` 書込 + アプリ再起動の 2 段階。即時反映は禁止 (6.18 4 重防御の継続)
+
 ### 10.4 環境別 config
 
 - `environment = local` / `vps` / `aws` / `backtest` で設定差分
@@ -605,6 +620,7 @@ class Clock(Protocol):
 | 13 | Observability tier 書込失敗で safe_stop | 6.13 |
 | 14 | Critical tier 書込を非同期キュー化 | 6.13 |
 | 15 | 契約 docs と矛盾する実装 | 3.1 |
+| 16 | UI 層が `ConfigProvider` / `SecretProvider` / `dashboard_query_service` を経由せず config / secret / DB を直接読み書き | operations.md §15.1 / 10.3.1。UI は ctl ラッパ + `.env` 起動前 sink + read-only query に閉じる |
 
 ### 13.2 Git
 
@@ -651,6 +667,6 @@ class Clock(Protocol):
 6. **Config / Secret**: 4 階層、secret は SecretProvider 経由、`.env` コミット禁止
 7. **Logging**: Criticality Tier 別書込経路、`print()` 禁止、構造化ログ必須
 8. **Live/Backtest**: Broker / PriceFeed / Clock の 3 点差し替えのみ、分岐禁止
-9. **禁止事項**: Code 15 項目 / Git 6 項目 / Docs 4 項目 を CI / review で機械検出
+9. **禁止事項**: Code 16 項目 / Git 6 項目 / Docs 4 項目 を CI / review で機械検出
 
 本書を破る変更は **契約違反**として扱う (contract-change process 経由のみ変更可)。
