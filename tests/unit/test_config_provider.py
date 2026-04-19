@@ -81,6 +81,24 @@ class TestCollectEnvVars:
         assert provider._collect_env_vars() == {}
 
 
+class TestGetEnvSecret:
+    def test_returns_value_when_key_exists(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        monkeypatch.setenv("OANDA_ACCOUNT_TYPE", "live")
+        provider = _make_provider()
+        assert provider.get_env_secret("OANDA_ACCOUNT_TYPE") == "live"
+
+    def test_returns_none_when_key_absent(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        monkeypatch.delenv("OANDA_ACCOUNT_TYPE", raising=False)
+        provider = _make_provider()
+        assert provider.get_env_secret("OANDA_ACCOUNT_TYPE") is None
+
+    def test_does_not_call_repo(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        monkeypatch.setenv("SOME_SECRET", "s3cr3t")
+        provider = _make_provider()
+        provider.get_env_secret("SOME_SECRET")
+        provider._repo.get.assert_not_called()
+
+
 class TestComputeVersion:
     def test_returns_16_hex_chars_with_mocked_engine(self) -> None:
         repo = MagicMock()
