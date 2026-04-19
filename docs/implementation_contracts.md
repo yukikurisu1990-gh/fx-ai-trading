@@ -810,6 +810,37 @@ class LearningExecutor(Protocol):
 
 ---
 
+### 2.18 TwoFactorAuthenticator Protocol (M22 / Mi-CTL-1)
+
+**目的**: emergency-flat-all の 2-factor confirmation gate を Protocol として固定し、Phase 8 の SSO 版実装に差し替え可能にする。
+
+```python
+class TwoFactorAuthenticator(Protocol):
+    """Interactive confirmation gate for high-risk ctl operations (D3 §2.18 / M22)."""
+
+    def run_challenge(self) -> bool:
+        """Run the interactive confirmation challenge.
+
+        Returns True if the operator confirmed successfully.
+        Returns False (never raises) if confirmation failed, was cancelled,
+        or timed out.
+
+        Implementations MUST NOT:
+          - Store a persistent "already confirmed" state.
+          - Bypass the challenge silently.
+          - Raise exceptions (return False on any error).
+        """
+        ...
+```
+
+- **Iteration 2 実装**: `ConsoleTwoFactor` — `secrets.token_hex(3)` トークン表示 → operator 入力照合
+- **Phase 8 実装**: SSO-backed `SSOTwoFactor`（TOTP / WebAuthn 統合）
+- **テスト用**: `FixedTwoFactor(result: bool)` — 常に固定値を返す stub
+- **配置**: `src/fx_ai_trading/ops/two_factor.py`
+- **不変条件**: `run_challenge()` は常に bool を返し、例外で脱出しない
+
+---
+
 ### 2.16 UI / Console 層 責務契約 (operations.md §15 と一対)
 
 > **位置付け**: 本節は新規 Protocol を**導入しない** (Iter2 仕様凍結のみ、実装は Iter3 以降の別 PR)。

@@ -699,7 +699,7 @@ cycle_id (分足単位)
 |---|---|---|
 | `ctl start` | アプリ起動 (起動シーケンス 2.1 を実行) | 運用者 |
 | `ctl stop --graceful` | 安全停止 (in-flight 完了後に停止) | 運用者 |
-| `ctl emergency-flat-all` | 全ポジション即クローズ + reject モード | 運用者 (緊急時のみ) |
+| `ctl emergency-flat-all` | 全ポジション即クローズ + reject モード (**2-factor 必須**、§2.18) | 運用者 (緊急時のみ) |
 | `ctl resume-from-safe-stop --reason=` | safe_stop 解除 | 運用者 |
 | `ctl run-reconciler` | Reconciler 手動 kick | 運用者 |
 | `ctl enqueue-learning-job --...` | 学習 job 追加 | 運用者 / UI |
