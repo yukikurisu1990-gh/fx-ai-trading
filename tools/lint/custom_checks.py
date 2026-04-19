@@ -6,7 +6,7 @@ find_forbidden_patterns(code)          — applied to ALL Python files (src/, te
 find_src_only_forbidden_patterns(code) — applied to src/ ONLY; patterns that are legitimate
                                          in test / tool code but forbidden in production logic.
 
-Machine-detectable items (10 total — M11 §6.11 requirement):
+Machine-detectable items (12 total — M25 §6.13 extension; was 10 in M11):
   All-file checks (5):
     1.  print()                          — must use structured logging (DR 11.2 / 13.1 #2)
     2.  datetime.now() / .datetime.now() — must use Clock interface (DR 13.1 #1 / 6.10)
@@ -14,18 +14,27 @@ Machine-detectable items (10 total — M11 §6.11 requirement):
     4.  time.time()                      — must use Clock interface (DR 13.1 #1)
     5.  os.remove / os.unlink / shutil.rmtree — must use Archiver (DR 13.1 #3 / D5 1.3)
 
-  Src-only checks (5):
+  Src-only checks (7 — checks 6–12):
     6.  SQL 'DELETE FROM' in string literal — D5 single-DELETE ban (Repository only)
     7.  SQL 'TRUNCATE' / 'DROP TABLE'       — D5 no-reset rule
     8.  `if backtest:` / variable 'backtest' in if-test — D2 §12 live/backtest parity
     9.  isinstance(x, PaperBroker/MockBroker) — D2 §12 no broker-type branching in logic
    10.  random.random/randint/choice/… without seed — D3 §6 determinism
+   11.  Live API key inlined in string literal — DR 13.1 #9 / M25 §6.13(a)
+        Detects `OANDA_ACCESS_TOKEN=<value>` or OANDA live-token patterns embedded
+        directly in source strings.  Applied to src/ only to minimise false positives.
+        Policy change from M11: previously "too many false positives → human-review";
+        now machine-detectable with a narrow regex targeting OANDA-specific key prefixes.
+   12.  FixedTwoFactor instantiation in production src/ — M25 §6.13(b) 2-factor bypass
+        FixedTwoFactor is a test-only stub that always returns a fixed bool.  Its
+        presence in src/ production code would silently bypass the 2-factor gate.
+        Legitimate use: tests/ and tools/ only.
 
 Human-review items (5 — not machine-detectable reliably):
     - _verify_account_type_or_raise not called in custom Broker implementation
     - Common Keys written outside Repository via SQLAlchemy
       (contract test: test_common_keys_contract.py)
-    - Secret / PII values in log messages (too many false positives)
+    - Secret / PII values in log messages other than OANDA token patterns
     - SQLite used in multi_service_mode / container_ready_mode (runtime context)
     - orders.status backward transition (covered by FSM contract test)
 
@@ -40,6 +49,7 @@ Exemption markers
 from __future__ import annotations
 
 import ast
+import re
 
 # ---------------------------------------------------------------------------
 # All-file forbidden patterns
@@ -110,6 +120,32 @@ _FORBIDDEN_SQL_KEYWORDS: list[tuple[str, str]] = [
     ("TRUNCATE TABLE", "SQL 'TRUNCATE TABLE' in string literal"),
     ("DROP TABLE", "SQL 'DROP TABLE' in string literal"),
 ]
+
+# ---------------------------------------------------------------------------
+# Check 11: Live API key inlined in string literal (M25 §6.13(a))
+#
+# Matches OANDA access-token patterns embedded directly in source strings.
+# Two complementary patterns:
+#   (a) Key-value assignment form: OANDA_ACCESS_TOKEN=<non-whitespace 20+ chars>
+#   (b) OANDA live-token format:   <prefix>-live-<32+ alphanumeric chars>
+#
+# Applied only to string literal AST nodes in src/ (via find_src_only_forbidden_patterns).
+# Narrow scope minimises false positives relative to the broader "no secrets in logs"
+# human-review rule that this replaces for OANDA-specific keys (M25 §6.13(a) policy change).
+# ---------------------------------------------------------------------------
+_LIVE_KEY_PATTERNS: list[re.Pattern[str]] = [
+    re.compile(r"OANDA_ACCESS_TOKEN\s*=\s*\S{20,}"),
+    re.compile(r"[A-Za-z0-9_]+-live-[A-Za-z0-9]{32,}"),
+]
+
+# ---------------------------------------------------------------------------
+# Check 12: FixedTwoFactor instantiation in src/ (M25 §6.13(b) 2-factor bypass)
+#
+# FixedTwoFactor is a test-only stub that skips the interactive challenge.
+# Instantiating it in production (src/) code silently bypasses the 2-factor gate.
+# Legitimate use is restricted to tests/ and tools/.
+# ---------------------------------------------------------------------------
+_FORBIDDEN_TEST_STUBS_IN_SRC: set[str] = {"FixedTwoFactor"}
 
 
 # ---------------------------------------------------------------------------
@@ -221,6 +257,13 @@ def find_src_only_forbidden_patterns(code: str) -> list[str]:
                 for keyword, msg in _FORBIDDEN_SQL_KEYWORDS:
                     if keyword in raw:
                         findings.append(f"{msg} at line {node.lineno}")
+                # Check 11: live API key patterns inlined in string literal
+                for pattern in _LIVE_KEY_PATTERNS:
+                    if pattern.search(raw):
+                        findings.append(
+                            f"live API key pattern '{pattern.pattern}' in string"
+                            f" literal at line {node.lineno}"
+                        )
             continue
 
         # ------------------------------------------------------------------
@@ -263,6 +306,18 @@ def find_src_only_forbidden_patterns(code: str) -> list[str]:
             and node.func.attr in _RANDOM_NON_DETERMINISTIC_METHODS
         ):
             findings.append(f"random.{node.func.attr}() seed-less random at line {node.lineno}")
+
+        # ------------------------------------------------------------------
+        # Check 12: FixedTwoFactor instantiation (2-factor bypass stub in src/)
+        # ------------------------------------------------------------------
+        if (
+            isinstance(node, ast.Call)
+            and isinstance(node.func, ast.Name)
+            and node.func.id in _FORBIDDEN_TEST_STUBS_IN_SRC
+        ):
+            findings.append(
+                f"{node.func.id}() test-stub instantiation in src/ at line {node.lineno}"
+            )
 
     return findings
 

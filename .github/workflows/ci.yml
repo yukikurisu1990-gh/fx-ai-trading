@@ -42,6 +42,10 @@ jobs:
         run: python tools/lint/run_custom_checks.py
 
   contract-tests:
+    # Covers Iteration 1 (15 tests) + Iteration 2 (7+ tests, M25 §6.13).
+    # Iteration 2 contracts: test_live_confirmation_gate, test_oanda_broker_account_type,
+    # test_exit_policy_rules, test_exit_event_fsm, test_email_notifier,
+    # test_emergency_flat_two_factor, test_projection_transport, test_iteration2_invariants.
     runs-on: ubuntu-latest
 
     steps:
@@ -59,3 +63,9 @@ jobs:
 
       - name: Contract tests
         run: pytest tests/contract/ -v --tb=short
+
+      - name: Verify minimum contract test count
+        run: |
+          count=$(pytest tests/contract/ --collect-only -q 2>&1 | grep "::test_" | wc -l)
+          echo "Contract test count: $count"
+          [ "$count" -ge 80 ] || { echo "ERROR: expected >= 80 contract tests, found $count"; exit 1; }

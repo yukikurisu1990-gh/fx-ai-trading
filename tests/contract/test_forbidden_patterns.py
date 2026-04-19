@@ -254,3 +254,57 @@ class TestSrcOnlyChecks:
         """random.seed() is the allowed call — must not be flagged."""
         code = "import random\nrandom.seed(42)\n"
         assert find_src_only_forbidden_patterns(code) == []
+
+
+# ===========================================================================
+# Check 11: Live API key in string literal (M25 §6.13(a))
+# ===========================================================================
+
+
+class TestLiveApiKeyDetection:
+    def test_detect_oanda_access_token_kv_form(self) -> None:
+        code = 'config = "OANDA_ACCESS_TOKEN=abc123def456ghi789jkl012"\n'
+        findings = find_src_only_forbidden_patterns(code)
+        assert any("live API key" in f for f in findings)
+
+    def test_detect_oanda_live_token_format(self) -> None:
+        code = 'token = "myapp-live-ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefgh"\n'
+        findings = find_src_only_forbidden_patterns(code)
+        assert any("live API key" in f for f in findings)
+
+    def test_short_token_not_flagged(self) -> None:
+        """Token shorter than 20/32 chars should not be flagged."""
+        code = 'x = "OANDA_ACCESS_TOKEN=short"\n'
+        findings = find_src_only_forbidden_patterns(code)
+        assert not any("live API key" in f for f in findings)
+
+    def test_plain_string_not_flagged(self) -> None:
+        code = 'msg = "this is a normal configuration string"\n'
+        assert find_src_only_forbidden_patterns(code) == []
+
+
+# ===========================================================================
+# Check 12: FixedTwoFactor bypass stub in src/ (M25 §6.13(b))
+# ===========================================================================
+
+
+class TestFixedTwoFactorBypassDetection:
+    def test_detect_fixed_two_factor_instantiation(self) -> None:
+        code = "auth = FixedTwoFactor(True)\n"
+        findings = find_src_only_forbidden_patterns(code)
+        assert any("FixedTwoFactor" in f for f in findings)
+
+    def test_detect_fixed_two_factor_false_variant(self) -> None:
+        code = "auth = FixedTwoFactor(False)\n"
+        findings = find_src_only_forbidden_patterns(code)
+        assert any("FixedTwoFactor" in f for f in findings)
+
+    def test_console_two_factor_not_flagged(self) -> None:
+        """ConsoleTwoFactor is the legitimate production implementation."""
+        code = "auth = ConsoleTwoFactor()\n"
+        assert find_src_only_forbidden_patterns(code) == []
+
+    def test_fixed_two_factor_name_in_string_not_flagged(self) -> None:
+        """A string containing 'FixedTwoFactor' (e.g. docstring) is not a call."""
+        code = 'doc = "Use FixedTwoFactor only in tests."\n'
+        assert find_src_only_forbidden_patterns(code) == []
