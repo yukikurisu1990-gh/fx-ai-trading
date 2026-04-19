@@ -745,7 +745,42 @@ get_service_mode(name: ServiceModeName) -> ServiceMode
   - `MultiServiceMode` (Phase 7+、未実装)
   - `ContainerReadyMode` (Phase 8+、未実装)
 
-### 2.15 UI / Console 層 責務契約 (operations.md §15 と一対)
+### 2.15 ExitPolicy / ExitExecutor 層 (M14 / M-EXIT-1)
+
+#### 2.15.1 `ExitPolicyService` (ExitPolicy Protocol 実装)
+
+- **Purpose**: ポジション毎の決済判断エンジン。1m/5m サイクル毎に各オープンポジションを評価し `ExitDecision` を返す。
+- **Protocol**: `domain/exit.py` の `ExitPolicy` Protocol を満足すること（`evaluate()` シグネチャ一致）。
+- **Rule Priority** (高い順): `emergency_stop > sl > tp > max_holding_time`
+  - Deferred: `reverse_signal` / `ev_decay` / `pre_event_halt` — Phase 7 へ送り（Protocol は `domain/exit.py` に準備済み）
+- **Invariants**:
+  - `ExitDecision.reasons` は発火した全ルールを優先順で列挙する（primary_reason = reasons[0]）
+  - `should_exit=False` の場合 `reasons=()`, `primary_reason=None`
+  - `ExitPolicyService` は DB / Broker を呼ばない（副作用なし、純粋評価）
+  - 複数ルール同時発火を許容する（全て `reasons` に列挙）
+- **MVP Scope**: `sl` / `tp` / `max_holding_time` / `emergency_stop` の 4 ルール。
+
+#### 2.15.2 `ExitExecutor` (クローズ発注 + close_events 記録)
+
+- **Purpose**: `ExitDecision.should_exit=True` のとき Broker 経由でクローズ発注し `close_events` に記録する。
+- **Invariants**:
+  - `execute()` は `should_exit=False` のとき `None` を返し Broker / Repository を**呼ばない**。
+  - クローズ側は元ポジションの逆サイド: long → short, short → long。
+  - close_events の `order_id` FK は**エントリー注文の order_id**（呼び出し側が渡す）。
+  - 1回の `execute()` で `close_events` への INSERT は**1行のみ**（部分決済不実装）。
+  - `emergency-flat-all` は M22 の ctl コマンド経由で `ExitExecutor.execute()` を呼ぶ（M14 はインターフェースのみ、ctl 統合は M22 スコープ）。
+- **Secret safety**: Broker credentials は `ExitExecutor` に持ち込まない（Broker 実装側の責任）。
+
+#### 2.15.3 `CloseEventsRepository` (Persistence)
+
+- **Retention**: `EXECUTION_PERMANENT`（retention_policy §3.1 #23）— 削除・UPDATE 禁止、税務 7 年保持。
+- **insert() のみ変更操作として許可**（UPDATE / DELETE 系メソッドは追加しない）。
+- `reasons` カラム: JSON 配列 `[{priority: int, reason_code: str, detail: str}]` — priority は 1-indexed。
+- **partial close 不実装の整合**: 1ポジション = 1 close_event。FK は entry order_id に紐付け。
+
+---
+
+### 2.16 UI / Console 層 責務契約 (operations.md §15 と一対)
 
 > **位置付け**: 本節は新規 Protocol を**導入しない** (Iter2 仕様凍結のみ、実装は Iter3 以降の別 PR)。
 > UI 層が既存の `ConfigProvider` / `SecretProvider` / `dashboard_query_service` / `scripts/ctl.py` 上に**薄いラッパとしてのみ存在する**ことを契約として固定する。
