@@ -39,6 +39,15 @@ class ConfigProvider:
         """Return the value for *name* from app_settings, or None."""
         return self._repo.get(name)
 
+    def get_env_secret(self, key: str) -> str | None:
+        """Return os.environ.get(key) without logging the value (M13b).
+
+        Use for secrets that live in environment variables rather than
+        app_settings — e.g. OANDA_ACCOUNT_TYPE for live gate verification.
+        The value is never logged or stored; callers must not log it either.
+        """
+        return os.environ.get(key)
+
     def compute_version(self) -> str:
         """Return SHA256[:16] of the effective configuration.
 
