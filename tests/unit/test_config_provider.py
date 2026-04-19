@@ -99,8 +99,14 @@ class TestGetSmtpConfig:
         assert cfg["password"] == "s3cr3t"
 
     def test_returns_none_for_missing_keys(self, monkeypatch: pytest.MonkeyPatch) -> None:
-        for key in ("SMTP_HOST", "SMTP_PORT", "SMTP_SENDER", "SMTP_RECIPIENTS",
-                    "SMTP_USERNAME", "SMTP_PASSWORD"):
+        for key in (
+            "SMTP_HOST",
+            "SMTP_PORT",
+            "SMTP_SENDER",
+            "SMTP_RECIPIENTS",
+            "SMTP_USERNAME",
+            "SMTP_PASSWORD",
+        ):
             monkeypatch.delenv(key, raising=False)
         provider = _make_provider()
         cfg = provider.get_smtp_config()

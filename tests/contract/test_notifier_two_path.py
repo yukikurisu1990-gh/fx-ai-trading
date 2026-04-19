@@ -171,9 +171,7 @@ class TestEmailThreePath:
         file_notifier = _make_file_notifier(tmp_path)
         email = MagicMock()
         email.send.return_value = _make_ok_result("email")
-        dispatcher = NotifierDispatcherImpl(
-            file_notifier=file_notifier, email_notifier=email
-        )
+        dispatcher = NotifierDispatcherImpl(file_notifier=file_notifier, email_notifier=email)
         dispatcher.dispatch_direct_sync(_CRITICAL_EVENT, "critical", {})
         email.send.assert_called_once_with(_CRITICAL_EVENT, "critical", {})
 
@@ -206,9 +204,7 @@ class TestEmailThreePath:
         file_notifier = _make_file_notifier(tmp_path)
         email = MagicMock()
         email.send.return_value = _make_fail_result("email")
-        dispatcher = NotifierDispatcherImpl(
-            file_notifier=file_notifier, email_notifier=email
-        )
+        dispatcher = NotifierDispatcherImpl(file_notifier=file_notifier, email_notifier=email)
         dispatcher.dispatch_direct_sync(_CRITICAL_EVENT, "critical", {})
 
     def test_email_failure_does_not_block_externals(self, tmp_path) -> None:
@@ -235,9 +231,7 @@ class TestEmailThreePath:
     def test_email_not_called_on_outbox_path(self, tmp_path) -> None:
         file_notifier = _make_file_notifier(tmp_path)
         email = MagicMock()
-        dispatcher = NotifierDispatcherImpl(
-            file_notifier=file_notifier, email_notifier=email
-        )
+        dispatcher = NotifierDispatcherImpl(file_notifier=file_notifier, email_notifier=email)
         dispatcher.dispatch_via_outbox(_INFO_EVENT, "info", {})
         email.send.assert_not_called()
 
