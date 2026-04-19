@@ -239,3 +239,34 @@ def get_close_events_recent(engine: Engine | None, limit: int = 20) -> list[dict
         return [dict(r) for r in rows]
     except Exception:
         return []
+
+
+# ---------------------------------------------------------------------------
+# M21 — Learning Jobs query (M-LRN-1)
+# ---------------------------------------------------------------------------
+
+
+def get_learning_jobs(engine: Engine | None, limit: int = 20) -> list[dict]:
+    """Return recent training jobs from system_jobs (job_type='training')."""
+    if engine is None:
+        return []
+    try:
+        with engine.connect() as conn:
+            rows = (
+                conn.execute(
+                    text(
+                        "SELECT system_job_id, job_type, status,"
+                        " created_at, started_at, ended_at"
+                        " FROM system_jobs"
+                        " WHERE job_type = 'training'"
+                        " ORDER BY created_at DESC"
+                        " LIMIT :limit"
+                    ),
+                    {"limit": limit},
+                )
+                .mappings()
+                .all()
+            )
+        return [dict(r) for r in rows]
+    except Exception:
+        return []
