@@ -16,6 +16,7 @@ from datetime import UTC, datetime
 from unittest.mock import MagicMock
 
 import pytest
+from oandapyV20.exceptions import V20Error
 
 from fx_ai_trading.adapters.broker.oanda import OandaBroker
 from fx_ai_trading.adapters.broker.oanda_api_client import OandaAPIClient
@@ -138,14 +139,36 @@ class TestCancelOrder:
         assert result.cancelled is True
         assert result.message == "CLIENT_REQUEST"
 
-    def test_cancel_api_failure_returns_cancelled_false(
+    def test_cancel_reject_returns_cancelled_false_with_reason(
         self, broker_and_api: tuple[OandaBroker, MagicMock]
     ) -> None:
         broker, fake_api = broker_and_api
-        fake_api.request.side_effect = RuntimeError("404 Not Found")
+        fake_api.request.return_value = {
+            "orderCancelRejectTransaction": {
+                "id": "301",
+                "rejectReason": "ORDER_DOESNT_EXIST",
+            }
+        }
         result = broker.cancel_order("missing-order")
         assert result.cancelled is False
-        assert "404" in (result.message or "")
+        assert result.message == "ORDER_DOESNT_EXIST"
+
+    def test_cancel_api_v20_error_returns_cancelled_false(
+        self, broker_and_api: tuple[OandaBroker, MagicMock]
+    ) -> None:
+        broker, fake_api = broker_and_api
+        fake_api.request.side_effect = V20Error(code=404, msg="Not Found")
+        result = broker.cancel_order("missing-order")
+        assert result.cancelled is False
+        assert "Not Found" in (result.message or "")
+
+    def test_cancel_non_v20_error_propagates(
+        self, broker_and_api: tuple[OandaBroker, MagicMock]
+    ) -> None:
+        broker, fake_api = broker_and_api
+        fake_api.request.side_effect = RuntimeError("auth misconfigured")
+        with pytest.raises(RuntimeError, match="auth misconfigured"):
+            broker.cancel_order("any-order")
 
 
 # ---------------------------------------------------------------------------
@@ -191,7 +214,9 @@ class TestGetPositions:
 
 
 class TestGetPendingOrders:
-    def test_pending_orders_parsed(self, broker_and_api: tuple[OandaBroker, MagicMock]) -> None:
+    def test_pending_orders_parsed_long(
+        self, broker_and_api: tuple[OandaBroker, MagicMock]
+    ) -> None:
         broker, fake_api = broker_and_api
         fake_api.request.return_value = {
             "orders": [
@@ -210,6 +235,26 @@ class TestGetPendingOrders:
         assert orders[0].client_order_id == "01CLIENT000000000000400"
         assert orders[0].side == "long"
         assert orders[0].size_units == 500
+
+    def test_pending_orders_parsed_short(
+        self, broker_and_api: tuple[OandaBroker, MagicMock]
+    ) -> None:
+        broker, fake_api = broker_and_api
+        fake_api.request.return_value = {
+            "orders": [
+                {
+                    "id": "402",
+                    "instrument": "USD_JPY",
+                    "units": "-750",
+                    "state": "PENDING",
+                    "clientExtensions": {"id": "01CLIENT000000000000401"},
+                }
+            ]
+        }
+        orders = broker.get_pending_orders("acc-demo")
+        assert len(orders) == 1
+        assert orders[0].side == "short"
+        assert orders[0].size_units == 750
 
 
 # ---------------------------------------------------------------------------

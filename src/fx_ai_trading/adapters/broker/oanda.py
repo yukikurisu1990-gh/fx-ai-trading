@@ -30,7 +30,10 @@ Usage:
 
 from __future__ import annotations
 
+from datetime import datetime
 from typing import Any
+
+from oandapyV20.exceptions import V20Error
 
 from fx_ai_trading.adapters.broker.base import BrokerBase
 from fx_ai_trading.adapters.broker.oanda_api_client import OandaAPIClient
@@ -95,15 +98,31 @@ class OandaBroker(BrokerBase):
         return self._parse_order_response(request.client_order_id, response)
 
     def cancel_order(self, order_id: str) -> CancelResult:
+        """Cancel an open order.
+
+        Returns ``CancelResult(cancelled=True)`` only when OANDA reports
+        ``orderCancelTransaction``. ``orderCancelRejectTransaction`` (e.g.
+        order already filled / unknown id) is surfaced as a non-cancelled
+        result with the broker-supplied ``rejectReason`` so the Reconciler
+        (M15) can distinguish a definitive reject from a transient API
+        failure. Non-API exceptions (auth/config) are *not* swallowed and
+        propagate to the caller.
+        """
         try:
             response = self._api_client.cancel_order(self._account_id, order_id)
-        except Exception as exc:  # noqa: BLE001 — surface any cancel failure to caller
+        except V20Error as exc:
             return CancelResult(order_id=order_id, cancelled=False, message=str(exc))
+        reject_tx = response.get("orderCancelRejectTransaction")
+        if reject_tx is not None:
+            return CancelResult(
+                order_id=order_id,
+                cancelled=False,
+                message=reject_tx.get("rejectReason"),
+            )
         cancel_tx = response.get("orderCancelTransaction") or {}
-        cancelled = bool(cancel_tx)
         return CancelResult(
             order_id=order_id,
-            cancelled=cancelled,
+            cancelled=bool(cancel_tx),
             message=cancel_tx.get("reason"),
         )
 
@@ -191,12 +210,13 @@ class OandaBroker(BrokerBase):
             )
 
         if fill_tx is not None:
+            price_raw = fill_tx.get("price")
             return OrderResult(
                 client_order_id=client_order_id,
                 broker_order_id=str(fill_tx.get("orderID") or create_tx.get("id", "")),
                 status="filled",
                 filled_units=abs(int(fill_tx.get("units", 0))),
-                fill_price=float(fill_tx.get("price", 0.0)) or None,
+                fill_price=float(price_raw) if price_raw is not None else None,
                 message=None,
             )
 
@@ -210,13 +230,8 @@ class OandaBroker(BrokerBase):
         )
 
     def _parse_transaction(self, entry: dict[str, Any]) -> BrokerTransactionEvent:
-        from datetime import UTC, datetime
-
         time_str = entry.get("time", "")
-        try:
-            occurred_at = datetime.fromisoformat(time_str.replace("Z", "+00:00"))
-        except ValueError:
-            occurred_at = datetime.now(UTC)
+        occurred_at = datetime.fromisoformat(time_str.replace("Z", "+00:00"))
 
         units_raw = entry.get("units")
         units = int(units_raw) if units_raw is not None else None
