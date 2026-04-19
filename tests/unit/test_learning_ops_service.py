@@ -50,17 +50,15 @@ def engine():
 
 def _jobs(eng) -> list[dict]:
     with eng.connect() as conn:
-        rows = conn.execute(
-            text("SELECT * FROM system_jobs ORDER BY created_at")
-        ).mappings().all()
+        rows = conn.execute(text("SELECT * FROM system_jobs ORDER BY created_at")).mappings().all()
     return [dict(r) for r in rows]
 
 
 def _runs(eng) -> list[dict]:
     with eng.connect() as conn:
-        rows = conn.execute(
-            text("SELECT * FROM training_runs ORDER BY created_at")
-        ).mappings().all()
+        rows = (
+            conn.execute(text("SELECT * FROM training_runs ORDER BY created_at")).mappings().all()
+        )
     return [dict(r) for r in rows]
 
 
