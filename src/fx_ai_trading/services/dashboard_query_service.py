@@ -130,3 +130,112 @@ def get_daily_order_summary(engine: Engine | None) -> dict:
         }
     except Exception:
         return {"total": 0, "filled": 0, "canceled": 0, "failed": 0}
+
+
+# ---------------------------------------------------------------------------
+# M18 — Extended queries (Ob-PANEL-FALLBACK-1)
+# ---------------------------------------------------------------------------
+
+
+def get_top_candidates(engine: Engine | None, limit: int = 20) -> list[dict]:
+    """Return top-ranked trade candidates from the dashboard_top_candidates mart.
+
+    Returns [] when the table does not yet exist (created in M20) or on any
+    DB error — callers display a graceful "data unavailable" state.
+    """
+    if engine is None:
+        return []
+    try:
+        with engine.connect() as conn:
+            rows = (
+                conn.execute(
+                    text(
+                        "SELECT instrument, strategy_id, tss_score, direction,"
+                        " generated_at, rank"
+                        " FROM dashboard_top_candidates"
+                        " ORDER BY rank ASC"
+                        " LIMIT :limit"
+                    ),
+                    {"limit": limit},
+                )
+                .mappings()
+                .all()
+            )
+        return [dict(r) for r in rows]
+    except Exception:
+        return []
+
+
+def get_execution_quality_summary(engine: Engine | None, limit: int = 20) -> list[dict]:
+    """Return recent execution quality metrics (fill latency, slippage, signal age)."""
+    if engine is None:
+        return []
+    try:
+        with engine.connect() as conn:
+            rows = (
+                conn.execute(
+                    text(
+                        "SELECT order_id, instrument, signal_age_seconds,"
+                        " slippage_pips, fill_latency_ms, created_at"
+                        " FROM execution_metrics"
+                        " ORDER BY created_at DESC"
+                        " LIMIT :limit"
+                    ),
+                    {"limit": limit},
+                )
+                .mappings()
+                .all()
+            )
+        return [dict(r) for r in rows]
+    except Exception:
+        return []
+
+
+def get_risk_state_detail(engine: Engine | None, limit: int = 20) -> list[dict]:
+    """Return recent risk manager accept/reject decisions."""
+    if engine is None:
+        return []
+    try:
+        with engine.connect() as conn:
+            rows = (
+                conn.execute(
+                    text(
+                        "SELECT risk_event_id, cycle_id, instrument, decision,"
+                        " reason_codes, event_time_utc"
+                        " FROM risk_events"
+                        " ORDER BY event_time_utc DESC"
+                        " LIMIT :limit"
+                    ),
+                    {"limit": limit},
+                )
+                .mappings()
+                .all()
+            )
+        return [dict(r) for r in rows]
+    except Exception:
+        return []
+
+
+def get_close_events_recent(engine: Engine | None, limit: int = 20) -> list[dict]:
+    """Return recent position close events with exit reasons."""
+    if engine is None:
+        return []
+    try:
+        with engine.connect() as conn:
+            rows = (
+                conn.execute(
+                    text(
+                        "SELECT close_event_id, order_id, primary_reason_code,"
+                        " reasons, closed_at, pnl_realized"
+                        " FROM close_events"
+                        " ORDER BY closed_at DESC"
+                        " LIMIT :limit"
+                    ),
+                    {"limit": limit},
+                )
+                .mappings()
+                .all()
+            )
+        return [dict(r) for r in rows]
+    except Exception:
+        return []
