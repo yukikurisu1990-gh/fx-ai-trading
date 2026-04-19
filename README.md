@@ -107,6 +107,90 @@ If any of the version outputs are outside the declared ranges, see
 
 ---
 
+## Running the System (Demo Mode)
+
+Iteration 2 runs demo-only against an OANDA practice account. Live trading is
+disabled by the 4-defense gate (see [`docs/phase6_hardening.md`](docs/phase6_hardening.md)
+§6.18) and is scheduled for Phase 7. The steps below take a fresh checkout to
+a running Supervisor on `demo`.
+
+### 1. Start PostgreSQL
+
+The application requires a reachable PostgreSQL instance for `DATABASE_URL`.
+Use any local install (Docker, native, etc.); SQLite is supported only for the
+Dashboard fallback path, not for `ctl start`.
+
+### 2. Configure `.env`
+
+```powershell
+Copy-Item .env.example .env
+```
+
+bash alternative:
+
+```bash
+cp .env.example .env
+```
+
+Edit `.env` and fill in at minimum:
+
+| Variable | Required | Notes |
+|---|---|---|
+| `DATABASE_URL` | yes | PostgreSQL DSN |
+| `OANDA_ACCESS_TOKEN` | yes | OANDA practice (demo) token |
+| `OANDA_ACCOUNT_TYPE` | yes | Set to `demo` for Iteration 2 |
+| `SLACK_WEBHOOK_URL` | no | Enables Slack notifier path |
+| `SMTP_*` | no | Enables Email notifier path (all six required together) |
+
+`.env` is gitignored — never commit secrets. See [`docs/development_rules.md`](docs/development_rules.md) §10.3 for the secret-handling rules.
+
+### 3. Apply database migrations
+
+```powershell
+alembic upgrade head
+```
+
+This creates / brings up to date the 43 physical tables and seeds
+`app_settings` with Phase 6.5 defaults (`expected_account_type=demo` and
+related runtime settings).
+
+### 4. Start the Supervisor
+
+```powershell
+python scripts/ctl.py start
+```
+
+Leave the `--confirm-live-trading` flag off for demo runs. The flag is
+required only when `OANDA_ACCOUNT_TYPE=live` and is one layer of the 4-defense.
+
+### 5. Confirm startup succeeded
+
+After `ctl start`, verify:
+
+- `logs/supervisor.pid` exists and contains the running PID.
+- `logs/notifications.jsonl` is being written (no `account_type.mismatch` line).
+- The 16-step boot sequence (see [`docs/operations.md`](docs/operations.md) §2.1)
+  reached "Step 16: Normal Operation"; check the `supervisor_events` table for
+  the latest `event_type` row.
+
+### 6. When you get stuck
+
+- Operator quickstart (navigation cheat sheet): [`docs/operator_quickstart.md`](docs/operator_quickstart.md)
+- Boot sequence and per-step failure handling: [`docs/operations.md`](docs/operations.md) §2.1
+- demo ↔ live switching runbook: [`docs/operations.md`](docs/operations.md) §2.1 Step 9
+- Failure recovery (F1–F15 runbooks): [`docs/operations.md`](docs/operations.md) §4
+- Account-type 4-defense: [`docs/phase6_hardening.md`](docs/phase6_hardening.md) §6.18
+
+### Stopping
+
+```powershell
+python scripts/ctl.py stop
+```
+
+`ctl stop` performs a graceful shutdown (SIGTERM, then SIGKILL on timeout).
+
+---
+
 ## Pre-commit Setup
 
 Pre-commit hooks run `ruff check --fix`, `ruff format`, `pytest`, and the
@@ -256,7 +340,11 @@ or install via your OS package manager (Linux / macOS). Then retry setup.
 
 ## Project Status
 
-This repository is in **Iteration 1** (MVP skeleton construction). Live OANDA
-trading is not enabled; all work proceeds under `paper` mode only. See
-[`docs/iteration1_implementation_plan.md`](docs/iteration1_implementation_plan.md)
-for current milestones and progress.
+**Iteration 2 is Full Complete** (see
+[`docs/iteration2_completion.md`](docs/iteration2_completion.md)). Live OANDA
+trading remains disabled in Iteration 2 — only `demo` mode is supported and
+the 4-defense gate (see [`docs/phase6_hardening.md`](docs/phase6_hardening.md)
+§6.18) blocks any unintended live activation. Live trading is scheduled for
+Phase 7. See [`docs/iteration2_implementation_plan.md`](docs/iteration2_implementation_plan.md)
+for milestone details (M13–M26) and [`docs/phase7_roadmap.md`](docs/phase7_roadmap.md)
+for the next phase.

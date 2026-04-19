@@ -39,8 +39,8 @@ MVP は single-user 前提で権限確認が緩い。Phase 7 で以下を追加:
 - 監査ログ (`emergency_actions` テーブル)
 - Slack 通知 (誰がいつ発動したか)
 
-### 2.6 EmailNotifier 実装
-Phase 6 では `FileNotifier` (必須) + `SlackNotifier` (MVP 必須) のみ。EmailNotifier は任意扱いだったが、Phase 7 で SMTP / SES 対応を追加し、Slack 障害時のフォールバックチャネルとして定着させる。
+### 2.6 EmailNotifier 拡張 (基本実装は Iter2 M17 で完了)
+Phase 6 では `FileNotifier` (必須) + `SlackNotifier` (MVP 必須) のみで、EmailNotifier は任意扱いだった。**Iter2 M17 で SMTP fan-out (3-path: File + Slack + Email) は実装済**で、SMTP_HOST / SMTP_PORT / SMTP_SENDER / SMTP_USERNAME / SMTP_PASSWORD / SMTP_RECIPIENTS の 6 環境変数全 set で auto-activate する (phase6 §6.13 / implementation_contracts §2.13)。Phase 7 では SES 対応 / OAuth 認証 / 配信ステータス追跡など**運用拡張**を追加する。
 
 ---
 
@@ -53,7 +53,7 @@ Phase 6 では `FileNotifier` (必須) + `SlackNotifier` (MVP 必須) のみ。E
 | CI/CD 自動化 | MVP 段階は migrations 数が少なく (初期 1 〜 数個)、手動確認で十分。migrations が累積した段階で自動化効果が現れる |
 | Chaos Engineering 体系化 | MVP 運用実績から**実際に起きた失敗モード**を抽出してシナリオ化する方が投資対効果が高い。先に体系化してもカバレッジが想像で決まり漏れる |
 | Emergency Flat 拡張 | MVP は single-user。複数人運用や権限分離が不要 |
-| EmailNotifier | Slack + File で MVP の通知要件は完全に満たせる。Slack Webhook 障害は稀で、file fallback で最低限保全される。Email 追加の優先度は低い |
+| EmailNotifier (運用拡張) | 基本 SMTP fan-out は **Iter2 M17 で実装済**。SES / OAuth / 配信ステータス追跡などは MVP 要件外、Phase 7 で運用熟成と合わせて追加 |
 
 ---
 
@@ -140,11 +140,10 @@ Phase 6.13 で `Notifier` Interface が抽象化済、実装追加のみで Emai
 - **Slack 通知**: 実行と同時に `SlackNotifier` で通知
 - **dry-run モード**: `--dry-run` で実際には実行せず対象ポジションを表示
 
-### 5.6 EmailNotifier
-- **実装**: SMTP (TLS / Gmail 等) or AWS SES (本番 VPS/AWS 想定)
+### 5.6 EmailNotifier (運用拡張、基本 SMTP は Iter2 M17 で実装済)
+- **基本 SMTP fan-out**: Iter2 M17 で実装済 (phase6 §6.13、SMTP_* 6 変数 auto-activate)
+- **拡張**: AWS SES / OAuth 2.0 認証 / 配信ステータス追跡 (bounce / delivery webhook)
 - **テンプレート**: プレーンテキスト + HTML、severity 別にフォーマット
-- **フォールバック**: 送信失敗時は FileNotifier に退避
-- **設定**: `app_settings.notification_channels.email = { enabled, smtp_host, ... }`
 - **送信抑制**: 同一イベント連発時の rate limiting (例: 同イベント 5 分以内に 2 通まで)
 
 ---
@@ -157,7 +156,7 @@ Phase 6.13 で `Notifier` Interface が抽象化済、実装追加のみで Emai
 - **CI/CD 不在**: migrations 数が 10 超えると手動確認ミスが顕在化
 - **Chaos 不在**: 既知の失敗モード以外に脆弱、未知のモードで MVP の価値が毀損
 - **Emergency Flat が single-user**: 運用引き継ぎ時に属人化、操作事故リスク
-- **EmailNotifier 不在**: Slack 障害時に file のみ → 気付かない
+- **EmailNotifier 運用拡張不在 (基本実装は Iter2 M17 で完了)**: SES / OAuth / 配信トラッキング不在のため、Gmail 等 SMTP 障害時に通知ロストを検知できない
 
 ### 6.2 Phase 7 実装中のリスク
 - **regime tightening を急に有効化**: 過去のデータで tightening 閾値が甘いと、有効化直後に全ペア no_trade → 機会損失。段階投入が必要
