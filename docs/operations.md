@@ -526,17 +526,21 @@ Supervisor が 1 分毎に以下を `supervisor_events(event_type=metric_sample)
 
 ### 6.3 アラート (6.13 Notifier 必須イベント)
 
+critical 経路の fan-out 順序（M17）: **File → Slack → Email**。
+各経路は独立 — Email 失敗は File/Slack を阻害しない。
+SMTP 設定: `SMTP_HOST` / `SMTP_PORT` / `SMTP_SENDER` / `SMTP_RECIPIENTS` / `SMTP_USERNAME` / `SMTP_PASSWORD` 環境変数（`.env` 経由）。
+
 | イベント | severity | channel | escalation |
 |---|---|---|---|
-| safe_stop.fired | critical | File + Slack (sync direct) | 即時 |
+| safe_stop.fired | critical | File + Slack + Email (sync direct) | 即時 |
 | safe_stop.cleared | info | outbox 経由 | なし |
-| db.critical_write_failed | critical | File + Slack (sync direct) | 即時 |
-| stream.gap_sustained | critical | File + Slack (sync direct) | 即時 |
-| reconciler.mismatch_manual_required | critical | File + Slack (sync direct) | 即時 |
+| db.critical_write_failed | critical | File + Slack + Email (sync direct) | 即時 |
+| stream.gap_sustained | critical | File + Slack + Email (sync direct) | 即時 |
+| reconciler.mismatch_manual_required | critical | File + Slack + Email (sync direct) | 即時 |
 | ntp.skew_reject | critical | File (DB 接続前、起動拒否時) | 手動調査 |
 | mode.degraded.entered | warning | outbox | 30 分以内 |
 | drawdown.warning | warning | outbox | 30 分以内 |
-| drawdown.stop_threshold | critical | File + Slack (sync direct) | 即時 |
+| drawdown.stop_threshold | critical | File + Slack + Email (sync direct) | 即時 |
 | oanda.api_persistent_error | warning | outbox | 1 時間以内 |
 | event_calendar.stale | warning | outbox | 運用者確認後解消 |
 | config.version_changed_production | info | outbox | 監査 |

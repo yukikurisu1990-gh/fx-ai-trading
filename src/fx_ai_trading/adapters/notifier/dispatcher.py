@@ -1,8 +1,9 @@
-"""NotifierDispatcherImpl — two-path dispatcher (D3 §2.10.1 / 6.13).
+"""NotifierDispatcherImpl — three-path dispatcher (D3 §2.10.1 / 6.13 / M17).
 
 Critical path (dispatch_direct_sync):
   - Sends to FileNotifier synchronously with fsync (always first).
   - Then sends to each external notifier (SlackNotifier etc.) in order.
+  - Then sends to EmailNotifier if configured (last in fan-out — M17).
   - Never uses the notification_outbox table.
   - Must be used for: safe_stop, db.critical_write_failed, stream.gap_sustained,
     reconciler.mismatch_manual_required, ntp.skew_reject.
@@ -11,6 +12,9 @@ Non-critical path (dispatch_via_outbox):
   - Writes to notification_outbox for async dispatch by OutboxProcessor (M8).
   - M6 implementation: logs to FileNotifier only (OutboxProcessor is M8 scope).
   - Must NOT be called for critical events.
+
+Fan-out order (critical path): File → externals (Slack …) → Email.
+Each leg is independent — failure of one never blocks the next.
 
 Design constraint: does NOT call datetime.now() / time.time() (§13.1).
 All timestamps come from NotifyEvent.occurred_at (injected by caller).
@@ -28,15 +32,17 @@ _log = logging.getLogger(__name__)
 
 
 class NotifierDispatcherImpl:
-    """Two-path Notifier dispatcher.
+    """Three-path Notifier dispatcher (File → externals → Email).
 
     Args:
         file_notifier: FileNotifier instance (required — last-resort path).
         external_notifiers: Additional notifiers (e.g. SlackNotifier) for
             the critical sync path. Optional.
+        email_notifier: EmailNotifier for the critical path (M17). Optional;
+            called last so SMTP failure never blocks File/Slack paths.
 
     Two-path contract (6.13):
-        dispatch_direct_sync  → FileNotifier + externals (never outbox)
+        dispatch_direct_sync  → FileNotifier + externals + email (never outbox)
         dispatch_via_outbox   → outbox write (M6: FileNotifier fallback only)
     """
 
@@ -44,9 +50,11 @@ class NotifierDispatcherImpl:
         self,
         file_notifier: FileNotifier,
         external_notifiers: list[NotifierBase] | None = None,
+        email_notifier: NotifierBase | None = None,
     ) -> None:
         self._file = file_notifier
         self._externals: list[NotifierBase] = external_notifiers or []
+        self._email: NotifierBase | None = email_notifier
 
     # ------------------------------------------------------------------
     # Critical path — never uses outbox
@@ -73,6 +81,15 @@ class NotifierDispatcherImpl:
                     result.notifier_name,
                     event.event_code,
                     result.error_message,
+                )
+        if self._email is not None:
+            email_result: NotifyResult = self._email.send(event, severity, payload)
+            if not email_result.success:
+                _log.warning(
+                    "notifier %s failed for event %s: %s",
+                    email_result.notifier_name,
+                    event.event_code,
+                    email_result.error_message,
                 )
 
     # ------------------------------------------------------------------

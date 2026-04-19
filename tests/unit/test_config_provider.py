@@ -81,6 +81,47 @@ class TestCollectEnvVars:
         assert provider._collect_env_vars() == {}
 
 
+class TestGetSmtpConfig:
+    def test_returns_all_keys_when_env_set(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        monkeypatch.setenv("SMTP_HOST", "smtp.example.com")
+        monkeypatch.setenv("SMTP_PORT", "587")
+        monkeypatch.setenv("SMTP_SENDER", "alert@example.com")
+        monkeypatch.setenv("SMTP_RECIPIENTS", "ops@example.com,oncall@example.com")
+        monkeypatch.setenv("SMTP_USERNAME", "user")
+        monkeypatch.setenv("SMTP_PASSWORD", "s3cr3t")
+        provider = _make_provider()
+        cfg = provider.get_smtp_config()
+        assert cfg["host"] == "smtp.example.com"
+        assert cfg["port"] == 587
+        assert cfg["sender"] == "alert@example.com"
+        assert cfg["recipients"] == ["ops@example.com", "oncall@example.com"]
+        assert cfg["username"] == "user"
+        assert cfg["password"] == "s3cr3t"
+
+    def test_returns_none_for_missing_keys(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        for key in ("SMTP_HOST", "SMTP_PORT", "SMTP_SENDER", "SMTP_RECIPIENTS",
+                    "SMTP_USERNAME", "SMTP_PASSWORD"):
+            monkeypatch.delenv(key, raising=False)
+        provider = _make_provider()
+        cfg = provider.get_smtp_config()
+        assert cfg["host"] is None
+        assert cfg["port"] is None
+        assert cfg["recipients"] == []
+
+    def test_port_converted_to_int(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        monkeypatch.setenv("SMTP_PORT", "465")
+        provider = _make_provider()
+        cfg = provider.get_smtp_config()
+        assert isinstance(cfg["port"], int)
+        assert cfg["port"] == 465
+
+    def test_does_not_call_repo(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        monkeypatch.setenv("SMTP_HOST", "smtp.example.com")
+        provider = _make_provider()
+        provider.get_smtp_config()
+        provider._repo.get.assert_not_called()
+
+
 class TestGetEnvSecret:
     def test_returns_value_when_key_exists(self, monkeypatch: pytest.MonkeyPatch) -> None:
         monkeypatch.setenv("OANDA_ACCOUNT_TYPE", "live")
