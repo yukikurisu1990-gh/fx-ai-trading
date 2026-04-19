@@ -11,12 +11,13 @@ Verifies:
 from __future__ import annotations
 
 from datetime import UTC, datetime
-from unittest.mock import PropertyMock, patch
+from unittest.mock import MagicMock, PropertyMock, patch
 
 import pytest
 
 from fx_ai_trading.adapters.broker.mock import MockBroker
 from fx_ai_trading.adapters.broker.oanda import OandaBroker
+from fx_ai_trading.adapters.broker.oanda_api_client import OandaAPIClient
 from fx_ai_trading.adapters.broker.paper import PaperBroker
 from fx_ai_trading.common.assertions import assert_account_type_matches
 from fx_ai_trading.common.exceptions import AccountTypeMismatch, AccountTypeMismatchRuntime
@@ -98,22 +99,43 @@ class TestPaperBrokerPlaceOrderCallsVerify:
             broker.place_order(_DEMO_REQUEST)
 
 
+def _make_oanda_broker_with_fake_client(account_type: str = "demo") -> OandaBroker:
+    fake_api = MagicMock()
+    fake_api.request.return_value = {
+        "orderCreateTransaction": {"id": "12345"},
+        "orderFillTransaction": {
+            "orderID": "12345",
+            "units": "1000",
+            "price": "1.10000",
+        },
+    }
+    api_client = OandaAPIClient(access_token="tok", environment="practice", api=fake_api)
+    return OandaBroker(
+        account_id="acc-1",
+        access_token="tok",
+        account_type=account_type,
+        environment="practice",
+        api_client=api_client,
+    )
+
+
 class TestOandaBrokerPlaceOrderCallsVerify:
-    def test_place_order_calls_verify_then_raises_not_implemented(self) -> None:
-        broker = OandaBroker(account_id="acc-1", access_token="tok", account_type="demo")
+    def test_place_order_calls_verify_before_http(self) -> None:
+        broker = _make_oanda_broker_with_fake_client(account_type="demo")
         _wrap = broker._verify_account_type_or_raise
         with patch.object(broker, "_verify_account_type_or_raise", wraps=_wrap) as spy:
-            with pytest.raises(NotImplementedError):
-                broker.place_order(_DEMO_REQUEST)
+            result = broker.place_order(_DEMO_REQUEST)
             spy.assert_called_once_with(broker.account_type)
+            assert result.status == "filled"
 
-    def test_place_order_mismatch_raises_before_not_implemented(self) -> None:
-        broker = OandaBroker(account_id="acc-1", access_token="tok", account_type="demo")
+    def test_place_order_mismatch_raises_before_http_call(self) -> None:
+        broker = _make_oanda_broker_with_fake_client(account_type="demo")
         _patch = patch.object(
             OandaBroker, "account_type", new_callable=PropertyMock, return_value="live"
         )
         with _patch, pytest.raises(AccountTypeMismatchRuntime):
             broker.place_order(_DEMO_REQUEST)
+        broker.api_client._api.request.assert_not_called()
 
 
 # ---------------------------------------------------------------------------
