@@ -962,6 +962,11 @@ def _insert_transaction(
 ) -> int:
     """Insert one order_transactions row and mirror it to the outbox.
 
+    Cycle 6.8 (I-05): the INSERT and the outbox enqueue share a single
+    transaction via the ``conn=`` kwarg added in Cycle 6.7d (I-03).  A
+    failure in either step rolls back the other, so order_transactions
+    and secondary_sync_outbox cannot diverge.
+
     Returns 1 for accounting in the caller.
     """
     broker_txn_id = generate_ulid()
@@ -976,6 +981,15 @@ def _insert_transaction(
         )
         """
     )
+    outbox_payload = {
+        "broker_txn_id": broker_txn_id,
+        "account_id": account_id,
+        "order_id": order_id,
+        "transaction_type": transaction_type,
+        "transaction_time_utc": transaction_time_utc.isoformat(),
+        "payload": payload,
+        "source_component": SOURCE_COMPONENT,
+    }
     with engine.begin() as conn:
         conn.execute(
             sql,
@@ -989,28 +1003,20 @@ def _insert_transaction(
                 "received_at_utc": transaction_time_utc,
             },
         )
-    outbox_payload = {
-        "broker_txn_id": broker_txn_id,
-        "account_id": account_id,
-        "order_id": order_id,
-        "transaction_type": transaction_type,
-        "transaction_time_utc": transaction_time_utc.isoformat(),
-        "payload": payload,
-        "source_component": SOURCE_COMPONENT,
-    }
-    enqueue_secondary_sync(
-        engine,
-        table_name="order_transactions",
-        primary_key=json.dumps([broker_txn_id, account_id]),
-        version_no=0,
-        payload=outbox_payload,
-        sanitizer=sanitizer,
-        clock=clock,
-        run_id=run_id,
-        environment=environment,
-        code_version=code_version,
-        config_version=config_version,
-    )
+        enqueue_secondary_sync(
+            engine,
+            conn=conn,
+            table_name="order_transactions",
+            primary_key=json.dumps([broker_txn_id, account_id]),
+            version_no=0,
+            payload=outbox_payload,
+            sanitizer=sanitizer,
+            clock=clock,
+            run_id=run_id,
+            environment=environment,
+            code_version=code_version,
+            config_version=config_version,
+        )
     return 1
 
 
