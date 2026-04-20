@@ -1,15 +1,12 @@
 """Contract tests: Configuration Console Runtime tab must not expose secrets
-or allow editing of read-only keys (M26 Phase 2).
+or allow editing of read-only keys (M26 Phase 2 + Phase 3 transition).
 
 Verifies the 3-layer defense for Runtime mode:
   1. Pure-helper level — `is_editable` rejects secret patterns and
      read-only keys (`expected_account_type`).
-  2. Source level — page file references the runtime view only;
-     Bootstrap tab is a placeholder.
-  3. Source level — runtime view file does not invoke `UPDATE app_settings`.
-
-These tests are static / source-level and do not require a Streamlit runtime
-or a database connection.
+  2. Source level — page file wires both Runtime and Bootstrap tabs (P3).
+  3. Source level — runtime view file does not invoke `UPDATE app_settings`
+     and does not contain any `.env` write path (those live in Bootstrap).
 """
 
 from __future__ import annotations
@@ -81,13 +78,11 @@ class TestPageFile:
         src = _PAGE_PATH.read_text(encoding="utf-8")
         assert 'st.tabs(["Runtime", "Bootstrap"])' in src
 
-    def test_bootstrap_tab_is_placeholder(self) -> None:
+    def test_page_calls_bootstrap_view(self) -> None:
+        """P3: Bootstrap tab is wired via bootstrap_view.render(engine)."""
         src = _PAGE_PATH.read_text(encoding="utf-8")
-        assert "Phase 3" in src, "Bootstrap tab must reference Phase 3 deferral"
-
-    def test_page_does_not_call_bootstrap_view(self) -> None:
-        src = _PAGE_PATH.read_text(encoding="utf-8")
-        assert "bootstrap_view" not in src
+        assert "bootstrap_view" in src
+        assert "bootstrap_view.render" in src
 
 
 class TestRuntimeViewSource:
