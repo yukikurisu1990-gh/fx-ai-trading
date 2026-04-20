@@ -57,6 +57,20 @@ class SizeResult:
 
 
 @dataclass(frozen=True)
+class AllowTradeResult:
+    """Result of RiskManagerService.allow_trade() — Cycle 6.6.
+
+    Represents the pre-execution 3-guard verdict (duplicate instrument /
+    max open positions / recent execution failure cooloff).  Separate
+    from ``RiskAcceptResult`` because the 4-constraint ``accept()`` path
+    is untouched in Cycle 6.6 and uses the ``exposure_after`` field.
+    """
+
+    allowed: bool
+    reject_reason: str | None = None
+
+
+@dataclass(frozen=True)
 class Instrument:
     """Reference data for a tradeable instrument (D3 §2.5.1 input)."""
 
