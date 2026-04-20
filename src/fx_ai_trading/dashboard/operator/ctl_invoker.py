@@ -60,9 +60,7 @@ def invoke(
     confirm_live_trading: bool = False,
     timeout: int = DEFAULT_TIMEOUT_SECONDS,
 ) -> CtlResult:
-    argv = build_argv(
-        command, reason=reason, confirm_live_trading=confirm_live_trading
-    )
+    argv = build_argv(command, reason=reason, confirm_live_trading=confirm_live_trading)
     try:
         proc = subprocess.run(
             argv,

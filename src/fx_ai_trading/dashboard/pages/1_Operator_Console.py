@@ -99,9 +99,7 @@ last = st.session_state.get("operator.last_result")
 if last is not None:
     st.subheader("Last invocation")
     if last["timed_out"]:
-        st.error(
-            f"`{last['label']}` timed out (default {ctl_invoker.DEFAULT_TIMEOUT_SECONDS}s)."
-        )
+        st.error(f"`{last['label']}` timed out (default {ctl_invoker.DEFAULT_TIMEOUT_SECONDS}s).")
     elif last["returncode"] == 0:
         st.success(f"`{last['label']}` exited 0.")
     else:
