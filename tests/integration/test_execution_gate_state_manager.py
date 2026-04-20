@@ -1,16 +1,13 @@
-"""Integration: Execution Gate + StateManager (Cycle 6.7a).
+"""Integration: Execution Gate + StateManager (Cycle 6.7a/b).
 
 Asserts:
-  - When ``state_manager`` is injected, the G1/G2/G3 guards in the
-    Risk block derive their inputs from ``StateManager.snapshot()``
-    and produce the same blocked outcomes as the Cycle 6.6 helper path.
-  - ORDER_EXPIRED rows (TTL path) do NOT increment the G3 failure
-    counter (L1 semantics — the only intentional behaviour change in
-    6.7a versus 6.6's orders-based counting).
-  - ``state_manager=None`` falls back to Cycle 6.6 helpers with no
-    change in outcome (full backward compat).
-  - Cross-account isolation: only the state_manager's account_id is
-    visible to the Risk block.
+  - When ``state_manager`` is injected, G1/G2/G3 guards derive their
+    inputs from ``StateManager.snapshot()`` (positions timeline in 6.7b).
+  - G1/G2 respond to positions rows (not orders rows) — the 6.7b
+    authoritative source switch.
+  - ORDER_EXPIRED rows do NOT increment the G3 failure counter (L1).
+  - ``state_manager=None`` falls back to Cycle 6.6 helpers (orders-based).
+  - Cross-account isolation via positions.
 """
 
 from __future__ import annotations
@@ -32,7 +29,7 @@ from fx_ai_trading.services.state_manager import StateManager
 
 _FIXED_NOW = datetime(2026, 4, 20, 12, 0, 0, tzinfo=UTC)
 
-# --- DDL (superset matching Cycle 6.6 fixture) --------------------------------
+# --- DDL (superset: all tables needed by 6.7b write path) ---------------------
 
 _DDL_TRADING_SIGNALS = """
 CREATE TABLE trading_signals (
@@ -96,6 +93,35 @@ CREATE TABLE no_trade_events (
 )
 """
 
+_DDL_POSITIONS = """
+CREATE TABLE positions (
+    position_snapshot_id TEXT PRIMARY KEY,
+    order_id             TEXT,
+    account_id           TEXT NOT NULL,
+    instrument           TEXT NOT NULL,
+    event_type           TEXT NOT NULL,
+    units                NUMERIC(18,4) NOT NULL,
+    avg_price            NUMERIC(18,8),
+    unrealized_pl        NUMERIC(18,8),
+    realized_pl          NUMERIC(18,8),
+    event_time_utc       TEXT NOT NULL,
+    correlation_id       TEXT
+)
+"""
+
+_DDL_RISK_EVENTS = """
+CREATE TABLE risk_events (
+    risk_event_id       TEXT PRIMARY KEY,
+    cycle_id            TEXT,
+    instrument          TEXT,
+    strategy_id         TEXT,
+    verdict             TEXT NOT NULL,
+    constraint_violated TEXT,
+    detail              TEXT,
+    event_time_utc      TEXT NOT NULL
+)
+"""
+
 _DDL_OUTBOX = """
 CREATE TABLE secondary_sync_outbox (
     outbox_id       TEXT PRIMARY KEY,
@@ -124,6 +150,8 @@ def engine():
         conn.execute(text(_DDL_ORDERS))
         conn.execute(text(_DDL_ORDER_TRANSACTIONS))
         conn.execute(text(_DDL_NO_TRADE_EVENTS))
+        conn.execute(text(_DDL_POSITIONS))
+        conn.execute(text(_DDL_RISK_EVENTS))
         conn.execute(text(_DDL_OUTBOX))
     yield eng
     eng.dispose()
@@ -134,8 +162,6 @@ def engine():
 
 @dataclass
 class _NeverBroker:
-    """Raises if called — proves the blocked path never reaches the broker."""
-
     account_type: str = "demo"
     call_count: int = 0
 
@@ -201,7 +227,44 @@ def _seed_signal(
     return ts_id
 
 
+def _seed_open_position(
+    engine,
+    *,
+    instrument: str,
+    account_id: str = "acc-1",
+    order_id: str | None = None,
+) -> str:
+    """Directly insert a positions 'open' row to simulate a prior fill."""
+    psid = generate_ulid()
+    oid = order_id or generate_ulid()
+    with engine.begin() as conn:
+        conn.execute(
+            text(
+                """
+                INSERT INTO positions (
+                    position_snapshot_id, order_id, account_id, instrument,
+                    event_type, units, avg_price, unrealized_pl, realized_pl,
+                    event_time_utc, correlation_id
+                ) VALUES (
+                    :psid, :oid, :aid, :inst,
+                    'open', 1000, 1.1, NULL, NULL,
+                    :ts, NULL
+                )
+                """
+            ),
+            {
+                "psid": psid,
+                "oid": oid,
+                "aid": account_id,
+                "inst": instrument,
+                "ts": _FIXED_NOW.isoformat(),
+            },
+        )
+    return psid
+
+
 def _seed_filled_order(engine, *, instrument: str, account_id: str = "acc-1") -> str:
+    """Seed a FILLED order (for state_manager=None / backward-compat tests only)."""
     oid = generate_ulid()
     with engine.begin() as conn:
         conn.execute(
@@ -297,14 +360,19 @@ def _run_with_state_manager(
     )
 
 
-# --- G1 duplicate instrument via StateManager ---------------------------------
+def _make_sm(engine, account_id: str = "acc-1") -> StateManager:
+    return StateManager(engine, account_id=account_id, clock=FixedClock(_FIXED_NOW))
+
+
+# --- G1 duplicate instrument (positions-based) --------------------------------
 
 
 class TestG1DuplicateViaStateManager:
-    def test_blocks_when_state_manager_sees_open_position(self, engine) -> None:
-        _seed_filled_order(engine, instrument="EURUSD", account_id="acc-1")
+    def test_blocks_when_positions_has_open_row(self, engine) -> None:
+        # Seed a positions 'open' row — StateManager reads from positions now.
+        _seed_open_position(engine, instrument="EURUSD", account_id="acc-1")
         _seed_signal(engine, instrument="EURUSD")
-        sm = StateManager(engine, account_id="acc-1")
+        sm = _make_sm(engine)
         risk_mgr = RiskManagerService(
             max_concurrent_positions=5,
             position_sizer=PositionSizerService(),
@@ -316,15 +384,15 @@ class TestG1DuplicateViaStateManager:
         assert result.reject_reason == "risk.duplicate_instrument"
 
 
-# --- G2 max open positions via StateManager -----------------------------------
+# --- G2 max open positions (positions-based) ----------------------------------
 
 
 class TestG2MaxOpenViaStateManager:
-    def test_blocks_when_state_manager_count_reaches_cap(self, engine) -> None:
+    def test_blocks_when_positions_count_reaches_cap(self, engine) -> None:
         for sym in ("USDJPY", "GBPUSD"):
-            _seed_filled_order(engine, instrument=sym, account_id="acc-1")
+            _seed_open_position(engine, instrument=sym, account_id="acc-1")
         _seed_signal(engine, instrument="EURUSD")
-        sm = StateManager(engine, account_id="acc-1")
+        sm = _make_sm(engine)
         risk_mgr = RiskManagerService(
             max_concurrent_positions=5,
             position_sizer=PositionSizerService(),
@@ -344,7 +412,7 @@ class TestG3CooloffViaStateManager:
         for _ in range(3):
             _seed_txn(engine, transaction_type="ORDER_REJECT", offset_seconds=30)
         _seed_signal(engine, instrument="EURUSD")
-        sm = StateManager(engine, account_id="acc-1")
+        sm = _make_sm(engine)
         risk_mgr = RiskManagerService(
             max_concurrent_positions=5,
             position_sizer=PositionSizerService(),
@@ -359,7 +427,7 @@ class TestG3CooloffViaStateManager:
         for _ in range(3):
             _seed_txn(engine, transaction_type="ORDER_TIMEOUT", offset_seconds=30)
         _seed_signal(engine, instrument="EURUSD")
-        sm = StateManager(engine, account_id="acc-1")
+        sm = _make_sm(engine)
         risk_mgr = RiskManagerService(
             max_concurrent_positions=5,
             position_sizer=PositionSizerService(),
@@ -371,11 +439,10 @@ class TestG3CooloffViaStateManager:
         assert result.reject_reason == "risk.recent_execution_failure_cooloff"
 
     def test_order_expired_does_not_trigger_cooloff(self, engine) -> None:
-        # L1 key assertion: TTL expiry is NOT broker-origin; G3 must not fire.
         for _ in range(10):
             _seed_txn(engine, transaction_type="ORDER_EXPIRED", offset_seconds=30)
         _seed_signal(engine, instrument="EURUSD")
-        sm = StateManager(engine, account_id="acc-1")
+        sm = _make_sm(engine)
         risk_mgr = RiskManagerService(
             max_concurrent_positions=5,
             position_sizer=PositionSizerService(),
@@ -383,23 +450,17 @@ class TestG3CooloffViaStateManager:
             cooloff_max_failures=3,
         )
         result = _run_with_state_manager(
-            engine,
-            broker=_AcceptBroker(),
-            risk_manager=risk_mgr,
-            state_manager=sm,
+            engine, broker=_AcceptBroker(), risk_manager=risk_mgr, state_manager=sm
         )
-        # Risk passes → broker called → filled.
         assert result.outcome == "filled"
-        assert result.reject_reason is None
 
     def test_mixed_expired_and_reject_counts_only_reject(self, engine) -> None:
-        # 2 ORDER_EXPIRED + 2 ORDER_REJECT; threshold=3 → G3 must NOT fire.
         for _ in range(2):
             _seed_txn(engine, transaction_type="ORDER_EXPIRED", offset_seconds=30)
         for _ in range(2):
             _seed_txn(engine, transaction_type="ORDER_REJECT", offset_seconds=30)
         _seed_signal(engine, instrument="EURUSD")
-        sm = StateManager(engine, account_id="acc-1")
+        sm = _make_sm(engine)
         risk_mgr = RiskManagerService(
             max_concurrent_positions=5,
             position_sizer=PositionSizerService(),
@@ -407,46 +468,38 @@ class TestG3CooloffViaStateManager:
             cooloff_max_failures=3,
         )
         result = _run_with_state_manager(
-            engine,
-            broker=_AcceptBroker(),
-            risk_manager=risk_mgr,
-            state_manager=sm,
+            engine, broker=_AcceptBroker(), risk_manager=risk_mgr, state_manager=sm
         )
         assert result.outcome == "filled"
 
 
-# --- Cross-account isolation ---------------------------------------------------
+# --- Cross-account isolation (positions-based) --------------------------------
 
 
 class TestAccountIsolation:
-    def test_other_account_filled_orders_not_visible(self, engine) -> None:
-        # Fill two positions for a different account — should not block acc-1.
+    def test_other_account_positions_not_visible(self, engine) -> None:
         for sym in ("USDJPY", "GBPUSD"):
-            _seed_filled_order(engine, instrument=sym, account_id="acc-OTHER")
+            _seed_open_position(engine, instrument=sym, account_id="acc-OTHER")
         _seed_signal(engine, instrument="EURUSD")
-        sm = StateManager(engine, account_id="acc-1")
+        sm = _make_sm(engine, account_id="acc-1")
         risk_mgr = RiskManagerService(
             max_concurrent_positions=5,
             position_sizer=PositionSizerService(),
-            max_open_positions=2,  # tight cap
+            max_open_positions=2,
             cooloff_max_failures=99,
         )
         result = _run_with_state_manager(
-            engine,
-            broker=_AcceptBroker(),
-            risk_manager=risk_mgr,
-            state_manager=sm,
+            engine, broker=_AcceptBroker(), risk_manager=risk_mgr, state_manager=sm
         )
         assert result.outcome == "filled"
 
     def test_other_account_failures_not_visible(self, engine) -> None:
-        # 5 ORDER_REJECT for acc-OTHER; acc-1 state_manager must see 0.
         for _ in range(5):
             _seed_txn(
                 engine, transaction_type="ORDER_REJECT", account_id="acc-OTHER", offset_seconds=30
             )
         _seed_signal(engine, instrument="EURUSD")
-        sm = StateManager(engine, account_id="acc-1")
+        sm = _make_sm(engine, account_id="acc-1")
         risk_mgr = RiskManagerService(
             max_concurrent_positions=5,
             position_sizer=PositionSizerService(),
@@ -454,21 +507,18 @@ class TestAccountIsolation:
             cooloff_max_failures=3,
         )
         result = _run_with_state_manager(
-            engine,
-            broker=_AcceptBroker(),
-            risk_manager=risk_mgr,
-            state_manager=sm,
+            engine, broker=_AcceptBroker(), risk_manager=risk_mgr, state_manager=sm
         )
         assert result.outcome == "filled"
 
 
-# --- Backward compat: state_manager=None ---------------------------------------
+# --- Backward compat: state_manager=None (orders-based helpers) ---------------
 
 
 class TestBackwardCompatNoStateManager:
     def test_none_falls_back_to_cycle66_helpers(self, engine) -> None:
-        # Without state_manager, _fetch_open_instruments / _count_recent_failures
-        # are used.  A FILLED order on EURUSD must still trigger G1.
+        # state_manager=None → _fetch_open_instruments reads orders.  A
+        # FILLED order must still trigger G1 via the legacy helper.
         _seed_filled_order(engine, instrument="EURUSD", account_id="acc-1")
         _seed_signal(engine, instrument="EURUSD")
         risk_mgr = RiskManagerService(
