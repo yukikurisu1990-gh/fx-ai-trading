@@ -202,7 +202,10 @@ def _run_full_chain(
     )
     meta = run_meta_cycle(engine, cycle_id=cycle_id, clock=clock)
     exec_result = run_execution_gate(
-        engine, broker=broker, account_id="acc-1", clock=clock,
+        engine,
+        broker=broker,
+        account_id="acc-1",
+        clock=clock,
     )
     return meta, exec_result
 
@@ -238,9 +241,7 @@ class TestCompletionCriterion:
 
         with engine.connect() as conn:
             orders_count = conn.execute(text("SELECT count(*) FROM orders")).scalar()
-            txn_count = conn.execute(
-                text("SELECT count(*) FROM order_transactions")
-            ).scalar()
+            txn_count = conn.execute(text("SELECT count(*) FROM order_transactions")).scalar()
         assert orders_count == 1
         assert txn_count >= 1
 
@@ -271,15 +272,16 @@ class TestCorrelationRoundTrip:
 
         run_meta_cycle(engine, cycle_id="cyc-corr", clock=clock)
         r = run_execution_gate(
-            engine, broker=broker, account_id="acc-1", clock=clock,
+            engine,
+            broker=broker,
+            account_id="acc-1",
+            clock=clock,
         )
 
         # orders.correlation_id matches.
         with engine.connect() as conn:
             order_corr = conn.execute(
-                text(
-                    "SELECT correlation_id FROM orders WHERE order_id=:oid"
-                ),
+                text("SELECT correlation_id FROM orders WHERE order_id=:oid"),
                 {"oid": r.order_id},
             ).scalar()
         assert order_corr == strategy_chain_id
@@ -289,9 +291,7 @@ class TestCorrelationRoundTrip:
             payloads = [
                 json.loads(str(row[0]))
                 for row in conn.execute(
-                    text(
-                        "SELECT payload FROM order_transactions WHERE order_id=:oid"
-                    ),
+                    text("SELECT payload FROM order_transactions WHERE order_id=:oid"),
                     {"oid": r.order_id},
                 ).fetchall()
             ]
@@ -316,10 +316,7 @@ class TestPaperModePreserved:
         )
         with engine.connect() as conn:
             account_types = [
-                row[0]
-                for row in conn.execute(
-                    text("SELECT account_type FROM orders")
-                ).fetchall()
+                row[0] for row in conn.execute(text("SELECT account_type FROM orders")).fetchall()
             ]
         assert account_types == ["demo"]
 
@@ -346,14 +343,9 @@ class TestAllNoTradeEndsAtExecution:
 
         with engine.connect() as conn:
             orders = conn.execute(text("SELECT count(*) FROM orders")).scalar()
-            txns = conn.execute(
-                text("SELECT count(*) FROM order_transactions")
-            ).scalar()
+            txns = conn.execute(text("SELECT count(*) FROM order_transactions")).scalar()
             nt = conn.execute(
-                text(
-                    "SELECT reason_code FROM no_trade_events"
-                    " WHERE cycle_id='cyc-allnt'"
-                )
+                text("SELECT reason_code FROM no_trade_events WHERE cycle_id='cyc-allnt'")
             ).fetchone()
         assert orders == 0
         assert txns == 0
@@ -384,15 +376,11 @@ class TestAppendOnlyAcrossTwoCycles:
             ).scalar()
             txn_create = conn.execute(
                 text(
-                    "SELECT count(*) FROM order_transactions"
-                    " WHERE transaction_type='ORDER_CREATE'"
+                    "SELECT count(*) FROM order_transactions WHERE transaction_type='ORDER_CREATE'"
                 )
             ).scalar()
             txn_fill = conn.execute(
-                text(
-                    "SELECT count(*) FROM order_transactions"
-                    " WHERE transaction_type='ORDER_FILL'"
-                )
+                text("SELECT count(*) FROM order_transactions WHERE transaction_type='ORDER_FILL'")
             ).scalar()
         assert orders == 2
         assert filled == 2
@@ -419,8 +407,7 @@ class TestOutboxFullChainMirror:
                 r[0]: r[1]
                 for r in conn.execute(
                     text(
-                        "SELECT table_name, count(*) FROM secondary_sync_outbox"
-                        " GROUP BY table_name"
+                        "SELECT table_name, count(*) FROM secondary_sync_outbox GROUP BY table_name"
                     )
                 ).fetchall()
             }

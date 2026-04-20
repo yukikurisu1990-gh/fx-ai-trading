@@ -323,9 +323,7 @@ class TestFilledPath:
         assert r.order_transactions_written == 2
 
         assert _count(engine, "orders", "trading_signal_id='ts-1'") == 1
-        assert (
-            _count(engine, "order_transactions", f"order_id='{r.order_id}'") == 2
-        )
+        assert _count(engine, "order_transactions", f"order_id='{r.order_id}'") == 2
 
         with engine.connect() as conn:
             types = [
@@ -343,7 +341,10 @@ class TestFilledPath:
         _seed_trading_signal(engine, trading_signal_id="ts-buy", direction="buy")
         b = _FakeBroker(mode="fill")
         run_execution_gate(
-            engine, broker=b, account_id="acc-1", clock=FixedClock(_FIXED_NOW),
+            engine,
+            broker=b,
+            account_id="acc-1",
+            clock=FixedClock(_FIXED_NOW),
         )
         assert b.received[0].side == "long"
 
@@ -351,7 +352,10 @@ class TestFilledPath:
         _seed_trading_signal(engine, trading_signal_id="ts-sell", direction="sell")
         b = _FakeBroker(mode="fill")
         run_execution_gate(
-            engine, broker=b, account_id="acc-1", clock=FixedClock(_FIXED_NOW),
+            engine,
+            broker=b,
+            account_id="acc-1",
+            clock=FixedClock(_FIXED_NOW),
         )
         assert b.received[0].side == "short"
 
@@ -364,7 +368,10 @@ class TestFilledPath:
         )
         b = _FakeBroker(mode="fill", account_type="demo")
         r = run_execution_gate(
-            engine, broker=b, account_id="acc-1", clock=FixedClock(_FIXED_NOW),
+            engine,
+            broker=b,
+            account_id="acc-1",
+            clock=FixedClock(_FIXED_NOW),
         )
         with engine.connect() as conn:
             row = conn.execute(
@@ -389,7 +396,10 @@ class TestRejectedPath:
         _seed_trading_signal(engine, trading_signal_id="ts-rej", direction="buy")
         b = _FakeBroker(mode="reject", reject_message="spread too wide")
         r = run_execution_gate(
-            engine, broker=b, account_id="acc-1", clock=FixedClock(_FIXED_NOW),
+            engine,
+            broker=b,
+            account_id="acc-1",
+            clock=FixedClock(_FIXED_NOW),
         )
         assert r.outcome == "rejected"
         assert r.order_status == "CANCELED"
@@ -399,8 +409,7 @@ class TestRejectedPath:
         with engine.connect() as conn:
             row = conn.execute(
                 text(
-                    "SELECT transaction_type FROM order_transactions"
-                    f" WHERE order_id='{r.order_id}'"
+                    f"SELECT transaction_type FROM order_transactions WHERE order_id='{r.order_id}'"
                 )
             ).fetchone()
         assert row.transaction_type == "ORDER_REJECT"
@@ -414,7 +423,10 @@ class TestTimeoutPath:
         _seed_trading_signal(engine, trading_signal_id="ts-timeout", direction="buy")
         b = _FakeBroker(mode="timeout")
         r = run_execution_gate(
-            engine, broker=b, account_id="acc-1", clock=FixedClock(_FIXED_NOW),
+            engine,
+            broker=b,
+            account_id="acc-1",
+            clock=FixedClock(_FIXED_NOW),
         )
         assert r.outcome == "timeout"
         assert r.order_status == "FAILED"
@@ -447,7 +459,10 @@ class TestExpiredPath:
         )
         b = _FakeBroker(mode="fill")
         r = run_execution_gate(
-            engine, broker=b, account_id="acc-1", clock=FixedClock(_FIXED_NOW),
+            engine,
+            broker=b,
+            account_id="acc-1",
+            clock=FixedClock(_FIXED_NOW),
         )
         assert r.outcome == "expired"
         assert r.order_status == "CANCELED"
@@ -458,8 +473,7 @@ class TestExpiredPath:
         with engine.connect() as conn:
             row = conn.execute(
                 text(
-                    "SELECT transaction_type FROM order_transactions"
-                    f" WHERE order_id='{r.order_id}'"
+                    f"SELECT transaction_type FROM order_transactions WHERE order_id='{r.order_id}'"
                 )
             ).fetchone()
         assert row.transaction_type == "ORDER_EXPIRED"
@@ -475,7 +489,10 @@ class TestExpiredPath:
         )
         b = _FakeBroker(mode="fill")
         r = run_execution_gate(
-            engine, broker=b, account_id="acc-1", clock=FixedClock(_FIXED_NOW),
+            engine,
+            broker=b,
+            account_id="acc-1",
+            clock=FixedClock(_FIXED_NOW),
         )
         assert r.outcome == "filled"
 
@@ -488,11 +505,17 @@ class TestUnprocessedSelector:
         _seed_trading_signal(engine, trading_signal_id="ts-a", direction="buy")
         b = _FakeBroker(mode="fill")
         first = run_execution_gate(
-            engine, broker=b, account_id="acc-1", clock=FixedClock(_FIXED_NOW),
+            engine,
+            broker=b,
+            account_id="acc-1",
+            clock=FixedClock(_FIXED_NOW),
         )
         assert first.outcome == "filled"
         second = run_execution_gate(
-            engine, broker=b, account_id="acc-1", clock=FixedClock(_FIXED_NOW),
+            engine,
+            broker=b,
+            account_id="acc-1",
+            clock=FixedClock(_FIXED_NOW),
         )
         assert second.outcome == "noop"
         # Still exactly one orders row for the signal.
@@ -514,12 +537,18 @@ class TestUnprocessedSelector:
         b = _FakeBroker(mode="fill")
         # First call picks the older signal (FIFO by signal_time_utc).
         r1 = run_execution_gate(
-            engine, broker=b, account_id="acc-1", clock=FixedClock(_FIXED_NOW),
+            engine,
+            broker=b,
+            account_id="acc-1",
+            clock=FixedClock(_FIXED_NOW),
         )
         assert r1.trading_signal_id == "ts-old"
         # Second call picks the remaining newer one.
         r2 = run_execution_gate(
-            engine, broker=b, account_id="acc-1", clock=FixedClock(_FIXED_NOW),
+            engine,
+            broker=b,
+            account_id="acc-1",
+            clock=FixedClock(_FIXED_NOW),
         )
         assert r2.trading_signal_id == "ts-new"
         assert _count(engine, "orders") == 2
@@ -533,7 +562,10 @@ class TestOutboxMirror:
         _seed_trading_signal(engine, trading_signal_id="ts-ob", direction="buy")
         b = _FakeBroker(mode="fill")
         run_execution_gate(
-            engine, broker=b, account_id="acc-1", clock=FixedClock(_FIXED_NOW),
+            engine,
+            broker=b,
+            account_id="acc-1",
+            clock=FixedClock(_FIXED_NOW),
         )
         with engine.connect() as conn:
             rows = conn.execute(
