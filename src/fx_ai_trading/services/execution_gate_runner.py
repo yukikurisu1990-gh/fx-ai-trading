@@ -1,9 +1,9 @@
-"""Execution gate runner — Phase 6 Cycle 6.5.
+"""Execution gate runner — Phase 6 Cycle 6.5 + Cycle 6.6 Risk integration.
 
 Closes the minimum viable path from ``trading_signals`` to a persisted
 broker round-trip.  One call, one trading_signal, one outcome.
 
-Pipeline:
+Pipeline (Cycle 6.6):
 
   1. SELECT one ``trading_signals`` row for which no ``orders`` row
      exists yet (the "unprocessed" queue, ordered by signal_time).
@@ -18,14 +18,23 @@ Pipeline:
      is expired; we NEVER call the broker in that case.  The orders
      row is written with status=CANCELED and one order_transactions
      row with type=ORDER_EXPIRED is appended.
-  4. Otherwise submit an ``OrderRequest`` to the injected ``Broker``.
+  4. **Cycle 6.6**: Risk gate (only when ``risk_manager`` is injected).
+     a. ``compute_size`` — delegated to PositionSizer.  ``size_units``
+        == 0 → blocked (reason_code derived from SizeResult.reason).
+     b. ``allow_trade`` — 3 guards (duplicate instrument /
+        max_open_positions / recent_execution_failure_cooloff).  First
+        failure → blocked (reason_code from AllowTradeResult).
+     On blocked we DO write orders (status=CANCELED) + no_trade_events,
+     but NEVER order_transactions, and NEVER call the broker.  Outcome
+     is ``blocked``.
+  5. Otherwise submit an ``OrderRequest`` to the injected ``Broker``.
      - ``OrderResult.status == 'filled'``  → orders status=FILLED,
        two order_transactions rows (ORDER_CREATE + ORDER_FILL).
      - Any other status                    → orders status=CANCELED,
        one order_transactions row (ORDER_REJECT).
      - Broker raises ``TimeoutError``      → orders status=FAILED,
        one order_transactions row (ORDER_TIMEOUT).
-  5. Every persisted row is mirrored into ``secondary_sync_outbox``
+  6. Every persisted row is mirrored into ``secondary_sync_outbox``
      via ``enqueue_secondary_sync`` under F-12.
 
 Design choices intentionally deferred to later cycles:
@@ -33,8 +42,9 @@ Design choices intentionally deferred to later cycles:
     orders row is inserted once with its *terminal* status for this
     cycle.  State Manager (later cycle) will own the async transition
     path when OANDA streaming enters the picture.
-  - No RiskManager sizing — ``size_units`` is a runner parameter,
-    constant per call.
+  - Risk inputs ``account_balance`` / ``risk_pct`` / ``sl_pips`` are
+    runner parameters (provisional); State Manager will take over
+    balance snapshot + per-strategy SL source in a later cycle.
   - No execution_metrics writes (M12).
   - No retry, no defer, no reconciliation.
 
@@ -48,7 +58,7 @@ import json
 from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import datetime, timedelta
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from sqlalchemy import text
 from sqlalchemy.engine import Engine
@@ -56,17 +66,33 @@ from sqlalchemy.engine import Engine
 from fx_ai_trading.common.clock import Clock
 from fx_ai_trading.common.ulid import generate_ulid
 from fx_ai_trading.domain.broker import Broker, OrderRequest, OrderResult
+from fx_ai_trading.domain.risk import Instrument
 from fx_ai_trading.sync.enqueue import enqueue_secondary_sync
+
+if TYPE_CHECKING:
+    from fx_ai_trading.services.risk_manager import RiskManagerService
 
 SOURCE_COMPONENT = "execution_gate_runner"
 
 # Paper-mode is the only account_type permitted in Iteration 1 (§10).
 PAPER_ACCOUNT_TYPE = "demo"
 
+# Default cool-off window for Cycle 6.6 recent-failure counting.
+_DEFAULT_COOLOFF_WINDOW_SECONDS = 900  # 15 minutes
+
 # --- Domain direction → broker side mapping ---------------------------------
 # The DB stores 'buy' / 'sell' on trading_signals.  Broker OrderRequest
 # uses the canonical 'long' / 'short' vocabulary (D3 §2.6.1).
 _DIRECTION_TO_BROKER_SIDE = {"buy": "long", "sell": "short"}
+
+# --- SizeResult.reason → no_trade reason_code mapping (dotted form) --------
+# Cycle 6.6: PositionSizer returns camelcase reasons; execution gate maps
+# them onto the risk.* taxonomy when writing no_trade_events.
+_SIZE_REASON_TO_CODE = {
+    "InvalidSL": "risk.invalid_sl",
+    "InvalidRiskPct": "risk.invalid_risk_pct",
+    "SizeUnderMin": "risk.size_under_min",
+}
 
 
 # --- F-12 sanitizer ---------------------------------------------------------
@@ -92,6 +118,7 @@ class ExecutionGateRunResult:
       'rejected'  : broker returned non-filled status.
       'expired'   : TTL elapsed before broker was called.
       'timeout'   : broker raised TimeoutError.
+      'blocked'   : Risk gate rejected (Cycle 6.6) — broker was NOT called.
     """
 
     processed: bool
@@ -101,6 +128,7 @@ class ExecutionGateRunResult:
     outcome: str
     reject_reason: str | None
     order_transactions_written: int
+    no_trade_events_written: int = 0
 
 
 # --- Internal pending-signal DTO -------------------------------------------
@@ -135,8 +163,23 @@ def run_execution_gate(
     environment: str | None = None,
     code_version: str | None = None,
     config_version: str | None = None,
+    # Cycle 6.6 — Risk integration.  All inputs are optional; when
+    # ``risk_manager`` is None the runner behaves exactly as Cycle 6.5.
+    risk_manager: RiskManagerService | None = None,
+    account_balance: float | None = None,
+    risk_pct: float | None = None,
+    sl_pips: float | None = None,
+    instruments: dict[str, Instrument] | None = None,
+    cooloff_window_seconds: int = _DEFAULT_COOLOFF_WINDOW_SECONDS,
 ) -> ExecutionGateRunResult:
     """Pick one unprocessed trading_signal and drive it through the gate.
+
+    When ``risk_manager`` is provided, the caller MUST also provide
+    ``account_balance``, ``risk_pct``, ``sl_pips`` and an ``instruments``
+    mapping containing the pending signal's instrument.  Those four
+    inputs feed ``compute_size``; ``open_instruments`` /
+    ``concurrent_positions`` / ``recent_failure_count`` for
+    ``allow_trade`` are derived from the orders table.
 
     Raises:
       ValueError: if ``expected_account_type`` is not 'demo' or the
@@ -144,8 +187,17 @@ def run_execution_gate(
                   These are the paper-fixed guards — they run BEFORE
                   any DB read so a misconfigured call cannot enqueue
                   work against a live broker.
+                  Also raised if ``risk_manager`` is provided without
+                  the matching sizing inputs.
     """
     _assert_paper_mode(broker=broker, expected=expected_account_type)
+    if risk_manager is not None:
+        _assert_risk_inputs_complete(
+            account_balance=account_balance,
+            risk_pct=risk_pct,
+            sl_pips=sl_pips,
+            instruments=instruments,
+        )
 
     san = sanitizer or _exec_sanitizer
     now = clock.now()
@@ -228,13 +280,87 @@ def run_execution_gate(
             order_transactions_written=txn_count,
         )
 
+    # --- Cycle 6.6 Risk gate ----------------------------------------------
+    # Order of evaluation is fixed: compute_size first, then the 3
+    # allow_trade guards (G1 duplicate, G2 max_open, G3 cooloff).  Any
+    # block short-circuits: broker is NOT called, no order_transactions
+    # are written, and one orders (CANCELED) + one no_trade_events row
+    # are persisted with matching ``correlation_id`` / ``cycle_id``.
+    effective_units = size_units
+    if risk_manager is not None:
+        assert instruments is not None  # guarded above
+        instrument_ref = instruments.get(pending.instrument)
+        if instrument_ref is None:
+            raise ValueError(
+                f"instruments mapping is missing a reference for "
+                f"{pending.instrument!r}; required when risk_manager is set."
+            )
+        size_result = risk_manager.compute_size(
+            account_balance=float(account_balance),  # type: ignore[arg-type]
+            risk_pct=float(risk_pct),  # type: ignore[arg-type]
+            sl_pips=float(sl_pips),  # type: ignore[arg-type]
+            instrument=instrument_ref,
+        )
+        if size_result.size_units == 0:
+            reject_reason = _SIZE_REASON_TO_CODE.get(
+                size_result.reason or "", "risk.size_under_min"
+            )
+            return _handle_risk_blocked(
+                engine,
+                order_id=order_id,
+                client_order_id=client_order_id,
+                pending=pending,
+                account_id=account_id,
+                account_type=broker.account_type,
+                units=0,
+                reject_reason=reject_reason,
+                now=now,
+                sanitizer=san,
+                clock=clock,
+                run_id=run_id,
+                environment=environment,
+                code_version=code_version,
+                config_version=config_version,
+            )
+        effective_units = size_result.size_units
+
+        open_instruments = _fetch_open_instruments(engine)
+        concurrent_positions = len(open_instruments)
+        recent_failure_count = _count_recent_failures(
+            engine, now=now, window_seconds=cooloff_window_seconds
+        )
+        allow_result = risk_manager.allow_trade(
+            instrument=pending.instrument,
+            open_instruments=open_instruments,
+            concurrent_positions=concurrent_positions,
+            recent_failure_count=recent_failure_count,
+        )
+        if not allow_result.allowed:
+            return _handle_risk_blocked(
+                engine,
+                order_id=order_id,
+                client_order_id=client_order_id,
+                pending=pending,
+                account_id=account_id,
+                account_type=broker.account_type,
+                units=effective_units,
+                reject_reason=allow_result.reject_reason or "risk.unknown",
+                now=now,
+                sanitizer=san,
+                clock=clock,
+                run_id=run_id,
+                environment=environment,
+                code_version=code_version,
+                config_version=config_version,
+            )
+
     # --- Broker call -------------------------------------------------------
     request = OrderRequest(
         client_order_id=client_order_id,
         account_id=account_id,
         instrument=pending.instrument,
         side=_DIRECTION_TO_BROKER_SIDE[pending.signal_direction],
-        size_units=size_units,
+        size_units=effective_units,
         tp=None,
         sl=None,
         expires_at=None,
@@ -250,7 +376,7 @@ def run_execution_gate(
             pending=pending,
             account_id=account_id,
             account_type=broker.account_type,
-            units=size_units,
+            units=effective_units,
             exc=exc,
             now=now,
             sanitizer=san,
@@ -269,7 +395,7 @@ def run_execution_gate(
             pending=pending,
             account_id=account_id,
             account_type=broker.account_type,
-            units=size_units,
+            units=effective_units,
             result=result,
             now=now,
             sanitizer=san,
@@ -287,7 +413,7 @@ def run_execution_gate(
         pending=pending,
         account_id=account_id,
         account_type=broker.account_type,
-        units=size_units,
+        units=effective_units,
         result=result,
         now=now,
         sanitizer=san,
@@ -806,6 +932,245 @@ def _insert_transaction(
         config_version=config_version,
     )
     return 1
+
+
+# --- Cycle 6.6 helpers -----------------------------------------------------
+
+
+def _assert_risk_inputs_complete(
+    *,
+    account_balance: float | None,
+    risk_pct: float | None,
+    sl_pips: float | None,
+    instruments: dict[str, Instrument] | None,
+) -> None:
+    """Fail fast when Risk is enabled but sizing inputs are missing."""
+    missing: list[str] = []
+    if account_balance is None:
+        missing.append("account_balance")
+    if risk_pct is None:
+        missing.append("risk_pct")
+    if sl_pips is None:
+        missing.append("sl_pips")
+    if instruments is None:
+        missing.append("instruments")
+    if missing:
+        raise ValueError(
+            "risk_manager was provided but the following sizing inputs are "
+            f"missing: {', '.join(missing)}.  All four are required "
+            "(Cycle 6.6 provisional runner params)."
+        )
+
+
+def _fetch_open_instruments(engine: Engine) -> frozenset[str]:
+    """Return the set of instruments currently held open.
+
+    M10 paper-mode shortcut: any ``orders`` row with status=FILLED is
+    considered open (there is no close mechanism yet).  State Manager
+    will refine this once position lifecycle lands.
+    """
+    sql = text("SELECT DISTINCT instrument FROM orders WHERE status = 'FILLED'")
+    with engine.connect() as conn:
+        rows = conn.execute(sql).fetchall()
+    return frozenset(r.instrument for r in rows)
+
+
+def _count_recent_failures(engine: Engine, *, now: datetime, window_seconds: int) -> int:
+    """Count recent execution failures for the Cycle 6.6 G3 guard.
+
+    A failure is any orders row in {FAILED, CANCELED} created within the
+    last ``window_seconds``.  SQLite stores ``created_at`` as text in
+    tests; we compare ISO strings where possible and fall back to a
+    Python-side filter for cross-dialect safety.
+    """
+    cutoff = now - timedelta(seconds=window_seconds)
+    sql = text(
+        """
+        SELECT created_at FROM orders
+        WHERE status IN ('FAILED', 'CANCELED')
+        """
+    )
+    with engine.connect() as conn:
+        rows = conn.execute(sql).fetchall()
+    count = 0
+    for r in rows:
+        ts = _coerce_datetime(r.created_at)
+        if ts >= cutoff:
+            count += 1
+    return count
+
+
+def _handle_risk_blocked(
+    engine: Engine,
+    *,
+    order_id: str,
+    client_order_id: str,
+    pending: _PendingSignal,
+    account_id: str,
+    account_type: str,
+    units: int,
+    reject_reason: str,
+    now: datetime,
+    sanitizer: Callable[[dict[str, Any]], dict[str, Any]],
+    clock: Clock,
+    run_id: str | None,
+    environment: str | None,
+    code_version: str | None,
+    config_version: str | None,
+) -> ExecutionGateRunResult:
+    """Persist a Cycle 6.6 Risk-blocked outcome.
+
+    Writes exactly one orders row (status=CANCELED) and exactly one
+    no_trade_events row.  Never writes order_transactions and never
+    calls the broker.  Both rows are enqueued to secondary_sync_outbox.
+    """
+    _insert_order(
+        engine,
+        order_id=order_id,
+        client_order_id=client_order_id,
+        pending=pending,
+        account_id=account_id,
+        account_type=account_type,
+        units=units,
+        status="CANCELED",
+        submitted_at=None,
+        filled_at=None,
+        canceled_at=now,
+        created_at=now,
+    )
+    _enqueue_order(
+        engine,
+        order_id=order_id,
+        client_order_id=client_order_id,
+        pending=pending,
+        account_id=account_id,
+        account_type=account_type,
+        units=units,
+        status="CANCELED",
+        sanitizer=sanitizer,
+        clock=clock,
+        run_id=run_id,
+        environment=environment,
+        code_version=code_version,
+        config_version=config_version,
+    )
+    # Split dotted "risk.<code>" back into category + bare code for
+    # no_trade_events storage (matches existing taxonomy layout).
+    if "." in reject_reason:
+        category, bare_code = reject_reason.split(".", 1)
+    else:
+        category, bare_code = "risk", reject_reason
+    _insert_and_enqueue_no_trade_event(
+        engine,
+        cycle_id=pending.cycle_id,
+        meta_decision_id=pending.meta_decision_id,
+        reason_category=category,
+        reason_code=bare_code,
+        reason_detail=json.dumps(
+            {
+                "order_id": order_id,
+                "trading_signal_id": pending.trading_signal_id,
+                "correlation_id": pending.correlation_id,
+                "units": units,
+            },
+            sort_keys=True,
+        ),
+        instrument=pending.instrument,
+        strategy_id=pending.strategy_id,
+        event_time_utc=now,
+        sanitizer=sanitizer,
+        clock=clock,
+        run_id=run_id,
+        environment=environment,
+        code_version=code_version,
+        config_version=config_version,
+    )
+    return ExecutionGateRunResult(
+        processed=True,
+        trading_signal_id=pending.trading_signal_id,
+        order_id=order_id,
+        order_status="CANCELED",
+        outcome="blocked",
+        reject_reason=reject_reason,
+        order_transactions_written=0,
+        no_trade_events_written=1,
+    )
+
+
+def _insert_and_enqueue_no_trade_event(
+    engine: Engine,
+    *,
+    cycle_id: str,
+    meta_decision_id: str,
+    reason_category: str,
+    reason_code: str,
+    reason_detail: str | None,
+    instrument: str | None,
+    strategy_id: str | None,
+    event_time_utc: datetime,
+    sanitizer: Callable[[dict[str, Any]], dict[str, Any]],
+    clock: Clock,
+    run_id: str | None,
+    environment: str | None,
+    code_version: str | None,
+    config_version: str | None,
+) -> str:
+    no_trade_event_id = generate_ulid()
+    sql = text(
+        """
+        INSERT INTO no_trade_events (
+            no_trade_event_id, cycle_id, meta_decision_id,
+            reason_category, reason_code, reason_detail,
+            source_component, instrument, strategy_id, event_time_utc
+        ) VALUES (
+            :no_trade_event_id, :cycle_id, :meta_decision_id,
+            :reason_category, :reason_code, :reason_detail,
+            :source_component, :instrument, :strategy_id, :event_time_utc
+        )
+        """
+    )
+    with engine.begin() as conn:
+        conn.execute(
+            sql,
+            {
+                "no_trade_event_id": no_trade_event_id,
+                "cycle_id": cycle_id,
+                "meta_decision_id": meta_decision_id,
+                "reason_category": reason_category,
+                "reason_code": reason_code,
+                "reason_detail": reason_detail,
+                "source_component": SOURCE_COMPONENT,
+                "instrument": instrument,
+                "strategy_id": strategy_id,
+                "event_time_utc": event_time_utc,
+            },
+        )
+    payload = {
+        "no_trade_event_id": no_trade_event_id,
+        "cycle_id": cycle_id,
+        "meta_decision_id": meta_decision_id,
+        "reason_category": reason_category,
+        "reason_code": reason_code,
+        "reason_detail": reason_detail,
+        "source_component": SOURCE_COMPONENT,
+        "instrument": instrument,
+        "strategy_id": strategy_id,
+        "event_time_utc": event_time_utc.isoformat(),
+    }
+    enqueue_secondary_sync(
+        engine,
+        table_name="no_trade_events",
+        primary_key=json.dumps([no_trade_event_id]),
+        version_no=0,
+        payload=payload,
+        sanitizer=sanitizer,
+        clock=clock,
+        run_id=run_id,
+        environment=environment,
+        code_version=code_version,
+        config_version=config_version,
+    )
+    return no_trade_event_id
 
 
 __all__ = [
