@@ -17,8 +17,6 @@ write path. It INSERTs into ``app_settings_changes`` and never UPDATEs
 
 from __future__ import annotations
 
-from datetime import UTC, datetime
-
 from sqlalchemy import Engine, text
 
 from fx_ai_trading.common.ulid import generate_ulid
@@ -302,7 +300,9 @@ def enqueue_app_settings_change(
     hot-reload (operations.md §15.2).
 
     The PK ``app_settings_change_id`` is generated as a ULID.
-    ``changed_at`` is set to ``datetime.now(timezone.utc)``.
+    ``changed_at`` is set by the database via ``CURRENT_TIMESTAMP`` to
+    avoid ``datetime.now()`` (development_rules.md §13.1; matches the
+    pattern used by ``AppSettingsRepository.set``).
 
     Returns the inserted row count (1 on success). Raises ``ValueError``
     when ``engine`` is None or ``name`` / ``new_value`` is empty.
@@ -315,7 +315,6 @@ def enqueue_app_settings_change(
         raise ValueError("new_value must be non-empty")
 
     change_id = generate_ulid()
-    changed_at = datetime.now(UTC)
 
     with engine.begin() as conn:
         result = conn.execute(
@@ -325,7 +324,7 @@ def enqueue_app_settings_change(
                 "  changed_by, changed_at, reason)"
                 " VALUES"
                 " (:change_id, :name, :old_value, :new_value,"
-                "  :changed_by, :changed_at, :reason)"
+                "  :changed_by, CURRENT_TIMESTAMP, :reason)"
             ),
             {
                 "change_id": change_id,
@@ -333,7 +332,6 @@ def enqueue_app_settings_change(
                 "old_value": old_value,
                 "new_value": new_value,
                 "changed_by": changed_by,
-                "changed_at": changed_at,
                 "reason": reason,
             },
         )

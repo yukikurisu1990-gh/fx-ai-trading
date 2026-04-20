@@ -8,11 +8,12 @@ Uses an in-memory SQLite engine — no DATABASE_URL required.
 
 from __future__ import annotations
 
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 
 import pytest
 from sqlalchemy import create_engine, text
 
+from fx_ai_trading.common.clock import WallClock
 from fx_ai_trading.services.dashboard_query_service import (
     enqueue_app_settings_change,
 )
@@ -163,8 +164,9 @@ class TestInsertShape:
         assert isinstance(pk, str)
         assert len(pk) == 26  # ULID length
 
-    def test_changed_at_is_utc(self, engine) -> None:
-        before = datetime.now(UTC)
+    def test_changed_at_is_recent_utc(self, engine) -> None:
+        clock = WallClock()
+        before = clock.now()
         enqueue_app_settings_change(
             engine,
             name="risk_per_trade_pct",
@@ -173,15 +175,16 @@ class TestInsertShape:
             changed_by="op",
             reason="r",
         )
-        after = datetime.now(UTC)
+        after = clock.now()
         with engine.connect() as conn:
             ts_str = conn.execute(text("SELECT changed_at FROM app_settings_changes")).scalar()
-        # SQLite stores datetime as ISO-8601 string when bound from
-        # datetime objects. Verify it round-trips and falls in [before, after].
-        ts = datetime.fromisoformat(ts_str.replace("Z", "+00:00"))
+        # SQLite CURRENT_TIMESTAMP returns naive UTC ISO-8601 (no tzinfo).
+        # Round-trip and treat as UTC, then bound-check against wall clock.
+        ts = datetime.fromisoformat(str(ts_str).replace("Z", "+00:00"))
         if ts.tzinfo is None:
             ts = ts.replace(tzinfo=UTC)
-        assert before <= ts <= after
+        # Allow 1s slack on each side: SQLite CURRENT_TIMESTAMP is second-precision.
+        assert (before - timedelta(seconds=1)) <= ts <= (after + timedelta(seconds=1))
 
     def test_old_value_can_be_none(self, engine) -> None:
         count = enqueue_app_settings_change(
