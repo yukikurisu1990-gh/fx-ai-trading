@@ -224,3 +224,65 @@ class TestRowShape:
         with engine.connect() as conn:
             ac = conn.execute(text("SELECT attempt_count FROM secondary_sync_outbox")).scalar()
         assert ac == 0
+
+
+class TestCallerProvidedConnection:
+    """Cycle 6.7d I-03: enqueue_secondary_sync(conn=...) joins caller tx."""
+
+    def test_conn_kwarg_inserts_row_when_caller_commits(self, engine) -> None:
+        with engine.begin() as conn:
+            enqueue_secondary_sync(
+                engine,
+                conn=conn,
+                table_name="positions",
+                primary_key="pk1",
+                version_no=1,
+                payload={"x": 1},
+                sanitizer=_identity,
+                clock=FixedClock(datetime(2026, 4, 20, tzinfo=UTC)),
+            )
+        with engine.connect() as conn:
+            n = conn.execute(text("SELECT COUNT(*) FROM secondary_sync_outbox")).scalar()
+        assert n == 1
+
+    def test_conn_kwarg_row_vanishes_when_caller_rolls_back(self, engine) -> None:
+        """If the caller's transaction is rolled back, the outbox row must
+        not persist — this is the F-12 atomicity invariant that the new
+        kwarg enables."""
+        conn = engine.connect()
+        try:
+            tx = conn.begin()
+            try:
+                enqueue_secondary_sync(
+                    engine,
+                    conn=conn,
+                    table_name="positions",
+                    primary_key="pk1",
+                    version_no=1,
+                    payload={"x": 1},
+                    sanitizer=_identity,
+                    clock=FixedClock(datetime(2026, 4, 20, tzinfo=UTC)),
+                )
+            finally:
+                tx.rollback()
+        finally:
+            conn.close()
+
+        with engine.connect() as conn2:
+            n = conn2.execute(text("SELECT COUNT(*) FROM secondary_sync_outbox")).scalar()
+        assert n == 0
+
+    def test_conn_none_preserves_legacy_behaviour(self, engine) -> None:
+        """Omitting conn keeps the helper opening its own transaction."""
+        enqueue_secondary_sync(
+            engine,
+            table_name="positions",
+            primary_key="pk1",
+            version_no=1,
+            payload={"x": 1},
+            sanitizer=_identity,
+            clock=FixedClock(datetime(2026, 4, 20, tzinfo=UTC)),
+        )
+        with engine.connect() as conn:
+            n = conn.execute(text("SELECT COUNT(*) FROM secondary_sync_outbox")).scalar()
+        assert n == 1
