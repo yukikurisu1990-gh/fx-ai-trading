@@ -212,12 +212,22 @@ class TestInputValidation:
 class TestF16SortOrder:
     def test_primary_sort_is_ev_after_cost_desc(self, engine) -> None:
         _seed_strategy_signal(
-            engine, cycle_id="cyc-sort1", instrument="EURUSD",
-            strategy_id="s-low", direction="buy", ev_after_cost=5.0, confidence=0.9,
+            engine,
+            cycle_id="cyc-sort1",
+            instrument="EURUSD",
+            strategy_id="s-low",
+            direction="buy",
+            ev_after_cost=5.0,
+            confidence=0.9,
         )
         _seed_strategy_signal(
-            engine, cycle_id="cyc-sort1", instrument="USDJPY",
-            strategy_id="s-high", direction="buy", ev_after_cost=20.0, confidence=0.6,
+            engine,
+            cycle_id="cyc-sort1",
+            instrument="USDJPY",
+            strategy_id="s-high",
+            direction="buy",
+            ev_after_cost=20.0,
+            confidence=0.6,
         )
         r = run_meta_cycle(engine, cycle_id="cyc-sort1", clock=FixedClock(_FIXED_NOW))
         assert r.adopted is True
@@ -225,26 +235,46 @@ class TestF16SortOrder:
 
     def test_secondary_sort_is_confidence_desc(self, engine) -> None:
         _seed_strategy_signal(
-            engine, cycle_id="cyc-sort2", instrument="EURUSD",
-            strategy_id="s-a", direction="buy", ev_after_cost=10.0, confidence=0.5,
+            engine,
+            cycle_id="cyc-sort2",
+            instrument="EURUSD",
+            strategy_id="s-a",
+            direction="buy",
+            ev_after_cost=10.0,
+            confidence=0.5,
         )
         _seed_strategy_signal(
-            engine, cycle_id="cyc-sort2", instrument="USDJPY",
-            strategy_id="s-b", direction="buy", ev_after_cost=10.0, confidence=0.9,
+            engine,
+            cycle_id="cyc-sort2",
+            instrument="USDJPY",
+            strategy_id="s-b",
+            direction="buy",
+            ev_after_cost=10.0,
+            confidence=0.9,
         )
         r = run_meta_cycle(engine, cycle_id="cyc-sort2", clock=FixedClock(_FIXED_NOW))
         assert r.adopted_strategy_id == "s-b"  # tie on EV, higher confidence wins
 
     def test_tertiary_sort_is_spread_asc(self, engine) -> None:
         _seed_strategy_signal(
-            engine, cycle_id="cyc-sort3", instrument="EURUSD",
-            strategy_id="s-wide", direction="buy", ev_after_cost=10.0,
-            confidence=0.7, spread=3.0,
+            engine,
+            cycle_id="cyc-sort3",
+            instrument="EURUSD",
+            strategy_id="s-wide",
+            direction="buy",
+            ev_after_cost=10.0,
+            confidence=0.7,
+            spread=3.0,
         )
         _seed_strategy_signal(
-            engine, cycle_id="cyc-sort3", instrument="USDJPY",
-            strategy_id="s-tight", direction="buy", ev_after_cost=10.0,
-            confidence=0.7, spread=0.5,
+            engine,
+            cycle_id="cyc-sort3",
+            instrument="USDJPY",
+            strategy_id="s-tight",
+            direction="buy",
+            ev_after_cost=10.0,
+            confidence=0.7,
+            spread=0.5,
         )
         r = run_meta_cycle(engine, cycle_id="cyc-sort3", clock=FixedClock(_FIXED_NOW))
         assert r.adopted_strategy_id == "s-tight"  # tighter spread wins
@@ -252,14 +282,24 @@ class TestF16SortOrder:
     def test_quaternary_sort_strategy_id_asc(self, engine) -> None:
         """All other keys tied — strategy_id alphabetical tiebreak."""
         _seed_strategy_signal(
-            engine, cycle_id="cyc-sort4", instrument="EURUSD",
-            strategy_id="s-zeta", direction="buy", ev_after_cost=10.0,
-            confidence=0.7, spread=1.0,
+            engine,
+            cycle_id="cyc-sort4",
+            instrument="EURUSD",
+            strategy_id="s-zeta",
+            direction="buy",
+            ev_after_cost=10.0,
+            confidence=0.7,
+            spread=1.0,
         )
         _seed_strategy_signal(
-            engine, cycle_id="cyc-sort4", instrument="USDJPY",
-            strategy_id="s-alpha", direction="buy", ev_after_cost=10.0,
-            confidence=0.7, spread=1.0,
+            engine,
+            cycle_id="cyc-sort4",
+            instrument="USDJPY",
+            strategy_id="s-alpha",
+            direction="buy",
+            ev_after_cost=10.0,
+            confidence=0.7,
+            spread=1.0,
         )
         r = run_meta_cycle(engine, cycle_id="cyc-sort4", clock=FixedClock(_FIXED_NOW))
         assert r.adopted_strategy_id == "s-alpha"
@@ -271,13 +311,21 @@ class TestF16SortOrder:
 class TestFilterThresholds:
     def test_ev_below_threshold_filters(self, engine) -> None:
         _seed_strategy_signal(
-            engine, cycle_id="cyc-evf", instrument="EURUSD",
-            strategy_id="s-low-ev", direction="buy", ev_after_cost=-2.0,
+            engine,
+            cycle_id="cyc-evf",
+            instrument="EURUSD",
+            strategy_id="s-low-ev",
+            direction="buy",
+            ev_after_cost=-2.0,
             confidence=0.8,
         )
         _seed_strategy_signal(
-            engine, cycle_id="cyc-evf", instrument="USDJPY",
-            strategy_id="s-ok-ev", direction="buy", ev_after_cost=5.0,
+            engine,
+            cycle_id="cyc-evf",
+            instrument="USDJPY",
+            strategy_id="s-ok-ev",
+            direction="buy",
+            ev_after_cost=5.0,
             confidence=0.8,
         )
         # min_ev_after_cost=0.0 → low_ev candidate rejected.
@@ -294,13 +342,21 @@ class TestFilterThresholds:
 
     def test_confidence_below_threshold_filters(self, engine) -> None:
         _seed_strategy_signal(
-            engine, cycle_id="cyc-cf", instrument="EURUSD",
-            strategy_id="s-low-conf", direction="buy", ev_after_cost=20.0,
+            engine,
+            cycle_id="cyc-cf",
+            instrument="EURUSD",
+            strategy_id="s-low-conf",
+            direction="buy",
+            ev_after_cost=20.0,
             confidence=0.3,
         )
         _seed_strategy_signal(
-            engine, cycle_id="cyc-cf", instrument="USDJPY",
-            strategy_id="s-ok-conf", direction="buy", ev_after_cost=5.0,
+            engine,
+            cycle_id="cyc-cf",
+            instrument="USDJPY",
+            strategy_id="s-ok-conf",
+            direction="buy",
+            ev_after_cost=5.0,
             confidence=0.6,
         )
         r = run_meta_cycle(
@@ -315,9 +371,13 @@ class TestFilterThresholds:
         """Cycle 6.4 guarantee: with stub numbers, default config must
         adopt.  Defaults are min_ev_after_cost=0.0, confidence_threshold=0.0."""
         _seed_strategy_signal(
-            engine, cycle_id="cyc-stub", instrument="EURUSD",
-            strategy_id="stub.deterministic_trend.v1", direction="buy",
-            ev_after_cost=12.0, confidence=0.70,
+            engine,
+            cycle_id="cyc-stub",
+            instrument="EURUSD",
+            strategy_id="stub.deterministic_trend.v1",
+            direction="buy",
+            ev_after_cost=12.0,
+            confidence=0.70,
         )
         r = run_meta_cycle(engine, cycle_id="cyc-stub", clock=FixedClock(_FIXED_NOW))
         assert r.adopted is True
@@ -330,13 +390,21 @@ class TestFilterThresholds:
 class TestForcedFallback:
     def test_fallback_adopts_when_all_filtered(self, engine) -> None:
         _seed_strategy_signal(
-            engine, cycle_id="cyc-fb", instrument="EURUSD",
-            strategy_id="s-1", direction="buy", ev_after_cost=-1.0,
+            engine,
+            cycle_id="cyc-fb",
+            instrument="EURUSD",
+            strategy_id="s-1",
+            direction="buy",
+            ev_after_cost=-1.0,
             confidence=0.6,
         )
         _seed_strategy_signal(
-            engine, cycle_id="cyc-fb", instrument="USDJPY",
-            strategy_id="s-2", direction="sell", ev_after_cost=-5.0,
+            engine,
+            cycle_id="cyc-fb",
+            instrument="USDJPY",
+            strategy_id="s-2",
+            direction="sell",
+            ev_after_cost=-5.0,
             confidence=0.9,
         )
         r = run_meta_cycle(
@@ -353,8 +421,12 @@ class TestForcedFallback:
 
     def test_fallback_disabled_emits_no_trade(self, engine) -> None:
         _seed_strategy_signal(
-            engine, cycle_id="cyc-nofb", instrument="EURUSD",
-            strategy_id="s-only", direction="buy", ev_after_cost=-1.0,
+            engine,
+            cycle_id="cyc-nofb",
+            instrument="EURUSD",
+            strategy_id="s-only",
+            direction="buy",
+            ev_after_cost=-1.0,
             confidence=0.6,
         )
         r = run_meta_cycle(
@@ -379,8 +451,12 @@ class TestForcedFallback:
 class TestGenuineNoTrade:
     def test_all_no_trade_input_produces_no_candidates_event(self, engine) -> None:
         _seed_strategy_signal(
-            engine, cycle_id="cyc-nt", instrument="EURUSD",
-            strategy_id="s-nt", direction="no_trade", ev_after_cost=0.0,
+            engine,
+            cycle_id="cyc-nt",
+            instrument="EURUSD",
+            strategy_id="s-nt",
+            direction="no_trade",
+            ev_after_cost=0.0,
             confidence=0.0,
         )
         r = run_meta_cycle(engine, cycle_id="cyc-nt", clock=FixedClock(_FIXED_NOW))
@@ -407,8 +483,11 @@ class TestGenuineNoTrade:
 class TestPersistenceShape:
     def test_meta_decisions_row_written_every_cycle(self, engine) -> None:
         _seed_strategy_signal(
-            engine, cycle_id="cyc-md", instrument="EURUSD",
-            strategy_id="s-a", direction="buy",
+            engine,
+            cycle_id="cyc-md",
+            instrument="EURUSD",
+            strategy_id="s-a",
+            direction="buy",
         )
         run_meta_cycle(engine, cycle_id="cyc-md", clock=FixedClock(_FIXED_NOW))
         assert _count(engine, "meta_decisions", "cycle_id='cyc-md'") == 1
@@ -418,24 +497,28 @@ class TestPersistenceShape:
         trading_signals.correlation_id — the stable identifier for the
         Strategy → Meta → Execution chain."""
         _seed_strategy_signal(
-            engine, cycle_id="cyc-corr", instrument="EURUSD",
-            strategy_id="s-a", direction="buy",
+            engine,
+            cycle_id="cyc-corr",
+            instrument="EURUSD",
+            strategy_id="s-a",
+            direction="buy",
             decision_chain_id="chain-XYZ-123",
         )
         r = run_meta_cycle(engine, cycle_id="cyc-corr", clock=FixedClock(_FIXED_NOW))
         assert r.adopted is True
         with engine.connect() as conn:
             corr = conn.execute(
-                text(
-                    "SELECT correlation_id FROM trading_signals WHERE cycle_id='cyc-corr'"
-                )
+                text("SELECT correlation_id FROM trading_signals WHERE cycle_id='cyc-corr'")
             ).scalar()
         assert corr == "chain-XYZ-123"
 
     def test_trading_signals_direction_is_buy_or_sell(self, engine) -> None:
         _seed_strategy_signal(
-            engine, cycle_id="cyc-dir", instrument="EURUSD",
-            strategy_id="s-a", direction="sell",
+            engine,
+            cycle_id="cyc-dir",
+            instrument="EURUSD",
+            strategy_id="s-a",
+            direction="sell",
         )
         run_meta_cycle(engine, cycle_id="cyc-dir", clock=FixedClock(_FIXED_NOW))
         with engine.connect() as conn:
@@ -446,12 +529,20 @@ class TestPersistenceShape:
 
     def test_outbox_rows_mirror_persisted_rows(self, engine) -> None:
         _seed_strategy_signal(
-            engine, cycle_id="cyc-ob", instrument="EURUSD",
-            strategy_id="s-a", direction="buy", ev_after_cost=-5.0,
+            engine,
+            cycle_id="cyc-ob",
+            instrument="EURUSD",
+            strategy_id="s-a",
+            direction="buy",
+            ev_after_cost=-5.0,
         )
         _seed_strategy_signal(
-            engine, cycle_id="cyc-ob", instrument="USDJPY",
-            strategy_id="s-b", direction="buy", ev_after_cost=10.0,
+            engine,
+            cycle_id="cyc-ob",
+            instrument="USDJPY",
+            strategy_id="s-b",
+            direction="buy",
+            ev_after_cost=10.0,
         )
         # With default config, s-a is filtered (ev < 0), s-b adopted.
         r = run_meta_cycle(engine, cycle_id="cyc-ob", clock=FixedClock(_FIXED_NOW))
@@ -479,20 +570,24 @@ class TestPersistenceShape:
 class TestAppendOnly:
     def test_running_a_second_cycle_does_not_overwrite_prior(self, engine) -> None:
         _seed_strategy_signal(
-            engine, cycle_id="cyc-A", instrument="EURUSD",
-            strategy_id="s-a", direction="buy",
+            engine,
+            cycle_id="cyc-A",
+            instrument="EURUSD",
+            strategy_id="s-a",
+            direction="buy",
         )
         _seed_strategy_signal(
-            engine, cycle_id="cyc-B", instrument="EURUSD",
-            strategy_id="s-a", direction="buy",
+            engine,
+            cycle_id="cyc-B",
+            instrument="EURUSD",
+            strategy_id="s-a",
+            direction="buy",
         )
         run_meta_cycle(engine, cycle_id="cyc-A", clock=FixedClock(_FIXED_NOW))
         run_meta_cycle(engine, cycle_id="cyc-B", clock=FixedClock(_FIXED_NOW))
         with engine.connect() as conn:
             cycles = conn.execute(
-                text(
-                    "SELECT DISTINCT cycle_id FROM meta_decisions ORDER BY cycle_id"
-                )
+                text("SELECT DISTINCT cycle_id FROM meta_decisions ORDER BY cycle_id")
             ).fetchall()
         assert [c[0] for c in cycles] == ["cyc-A", "cyc-B"]
 
@@ -503,8 +598,11 @@ class TestAppendOnly:
 class TestReturnShape:
     def test_result_is_meta_cycle_run_result(self, engine) -> None:
         _seed_strategy_signal(
-            engine, cycle_id="cyc-r", instrument="EURUSD",
-            strategy_id="s-a", direction="buy",
+            engine,
+            cycle_id="cyc-r",
+            instrument="EURUSD",
+            strategy_id="s-a",
+            direction="buy",
         )
         r = run_meta_cycle(engine, cycle_id="cyc-r", clock=FixedClock(_FIXED_NOW))
         assert isinstance(r, MetaCycleRunResult)

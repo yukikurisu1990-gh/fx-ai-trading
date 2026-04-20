@@ -227,9 +227,7 @@ def run_meta_cycle(
         adopted = sorted(trade_candidates, key=_f16_sort_key)[0]
         fallback_used = True
 
-    score_contributions = _build_score_contributions(
-        survivors if survivors else trade_candidates
-    )
+    score_contributions = _build_score_contributions(survivors if survivors else trade_candidates)
 
     filter_result = {
         "total_rows": len(candidates),
@@ -652,10 +650,7 @@ def _write_no_trade_events(
             meta_decision_id=meta_decision_id,
             reason_category="filter",
             reason_code=rej["reason_code"],
-            reason_detail=(
-                f"ev_after_cost={rej['ev_after_cost']}, "
-                f"confidence={rej['confidence']}"
-            ),
+            reason_detail=(f"ev_after_cost={rej['ev_after_cost']}, confidence={rej['confidence']}"),
             instrument=rej["instrument"],
             strategy_id=rej["strategy_id"],
             event_time_utc=event_time_utc,

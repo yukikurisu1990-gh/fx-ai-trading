@@ -158,9 +158,7 @@ class TestGoldenPath:
         )
         assert strat_result.trade_signals >= 1
 
-        meta_result = run_meta_cycle(
-            engine, cycle_id="cyc-gold", clock=FixedClock(_FIXED_NOW)
-        )
+        meta_result = run_meta_cycle(engine, cycle_id="cyc-gold", clock=FixedClock(_FIXED_NOW))
 
         # Cycle 6.4 guarantee — exactly one trading_signal row per cycle.
         assert meta_result.adopted is True
@@ -205,14 +203,10 @@ class TestGoldenPath:
         run_meta_cycle(engine, cycle_id="cyc-fk", clock=FixedClock(_FIXED_NOW))
         with engine.connect() as conn:
             ts_md_id = conn.execute(
-                text(
-                    "SELECT meta_decision_id FROM trading_signals WHERE cycle_id='cyc-fk'"
-                )
+                text("SELECT meta_decision_id FROM trading_signals WHERE cycle_id='cyc-fk'")
             ).scalar()
             md_id = conn.execute(
-                text(
-                    "SELECT meta_decision_id FROM meta_decisions WHERE cycle_id='cyc-fk'"
-                )
+                text("SELECT meta_decision_id FROM meta_decisions WHERE cycle_id='cyc-fk'")
             ).scalar()
         assert ts_md_id == md_id
 
@@ -239,17 +233,13 @@ class TestOnlyNoTradeStubs:
 
         with engine.connect() as conn:
             row = conn.execute(
-                text(
-                    "SELECT reason_code FROM no_trade_events WHERE cycle_id='cyc-all-nt'"
-                )
+                text("SELECT reason_code FROM no_trade_events WHERE cycle_id='cyc-all-nt'")
             ).fetchone()
         assert row is not None and row.reason_code == "NO_CANDIDATES"
 
         with engine.connect() as conn:
             ts = conn.execute(
-                text(
-                    "SELECT count(*) FROM trading_signals WHERE cycle_id='cyc-all-nt'"
-                )
+                text("SELECT count(*) FROM trading_signals WHERE cycle_id='cyc-all-nt'")
             ).scalar()
         assert ts == 0
 
@@ -277,9 +267,7 @@ class TestDecisionChainIdRoundTrip:
         run_meta_cycle(engine, cycle_id="cyc-chain", clock=FixedClock(_FIXED_NOW))
         with engine.connect() as conn:
             trading_corr = conn.execute(
-                text(
-                    "SELECT correlation_id FROM trading_signals WHERE cycle_id='cyc-chain'"
-                )
+                text("SELECT correlation_id FROM trading_signals WHERE cycle_id='cyc-chain'")
             ).scalar()
         assert trading_corr == strategy_chain_id
 
