@@ -230,6 +230,100 @@ class TestOpenInstruments:
         sm = StateManager(engine, account_id="acc-1")
         assert sm.open_instruments() == frozenset({"EURUSD"})
 
+    # --- 6.7c: re-open scenarios (fix for 6.7b NOT-IN bug) ---
+
+    def test_reopen_after_close_is_visible(self, engine) -> None:
+        """Instrument closed then re-opened must appear in open_instruments.
+
+        The 6.7b query (NOT IN close events) hid all previously-closed
+        instruments permanently.  The 6.7c fix (ROW_NUMBER on most recent
+        event) correctly reflects the current timeline state.
+        """
+        _insert_position(
+            engine, psid="p1", account_id="acc-1", instrument="EURUSD", event_type="open"
+        )
+        _insert_position(
+            engine,
+            psid="p2",
+            account_id="acc-1",
+            instrument="EURUSD",
+            event_type="close",
+            event_time_utc=_NOW + timedelta(seconds=1),
+        )
+        # Re-open after close
+        _insert_position(
+            engine,
+            psid="p3",
+            account_id="acc-1",
+            instrument="EURUSD",
+            event_type="open",
+            event_time_utc=_NOW + timedelta(seconds=2),
+        )
+        sm = StateManager(engine, account_id="acc-1")
+        assert sm.open_instruments() == frozenset({"EURUSD"})
+
+    def test_reopen_close_reopen_tracks_correctly(self, engine) -> None:
+        """Multiple open→close→open cycles all resolve to the correct state."""
+        t = _NOW
+        for cycle in range(3):
+            _insert_position(
+                engine,
+                psid=f"open-{cycle}",
+                account_id="acc-1",
+                instrument="EURUSD",
+                event_type="open",
+                event_time_utc=t + timedelta(seconds=cycle * 10),
+            )
+            _insert_position(
+                engine,
+                psid=f"close-{cycle}",
+                account_id="acc-1",
+                instrument="EURUSD",
+                event_type="close",
+                event_time_utc=t + timedelta(seconds=cycle * 10 + 5),
+            )
+        sm = StateManager(engine, account_id="acc-1")
+        # Most recent event is 'close' → not open
+        assert sm.open_instruments() == frozenset()
+
+        # One more open after the last close → open again
+        _insert_position(
+            engine,
+            psid="open-final",
+            account_id="acc-1",
+            instrument="EURUSD",
+            event_type="open",
+            event_time_utc=t + timedelta(seconds=100),
+        )
+        assert sm.open_instruments() == frozenset({"EURUSD"})
+
+    def test_reopen_does_not_leak_into_other_instruments(self, engine) -> None:
+        """Re-open logic is per-instrument; other instruments unaffected."""
+        _insert_position(
+            engine, psid="p1", account_id="acc-1", instrument="EURUSD", event_type="open"
+        )
+        _insert_position(
+            engine,
+            psid="p2",
+            account_id="acc-1",
+            instrument="EURUSD",
+            event_type="close",
+            event_time_utc=_NOW + timedelta(seconds=1),
+        )
+        _insert_position(
+            engine,
+            psid="p3",
+            account_id="acc-1",
+            instrument="EURUSD",
+            event_type="open",
+            event_time_utc=_NOW + timedelta(seconds=2),
+        )
+        _insert_position(
+            engine, psid="p4", account_id="acc-1", instrument="USDJPY", event_type="open"
+        )
+        sm = StateManager(engine, account_id="acc-1")
+        assert sm.open_instruments() == frozenset({"EURUSD", "USDJPY"})
+
 
 # --- recent_execution_failures_within (unchanged semantics) ------------------
 

@@ -1,4 +1,4 @@
-"""StateManager — Phase 6 Cycle 6.7a/b (snapshot source + write path).
+"""StateManager — Phase 6 Cycle 6.7a/b/c (snapshot source + write path).
 
 Cycle 6.7a added the read-only surface (snapshot / open_instruments /
 recent_execution_failures_within).  Cycle 6.7b adds the write path:
@@ -17,10 +17,16 @@ recent_execution_failures_within).  Cycle 6.7b adds the write path:
     Writes one ``risk_events`` row for every accept or reject decision.
     ``constraint_violated`` stores the dotted reason code per L6.
 
-6.7b also switches ``open_instruments()`` from the M10 paper-mode
-shortcut (``orders.status='FILLED'``) to the authoritative positions
-timeline projection.  An instrument is open if its most recent event_type
-in the positions timeline is 'open' or 'add' (not 'close').
+Cycle 6.7c adds:
+
+  open_position_details() -> list[OpenPositionInfo]
+    Returns per-position detail for each currently-open instrument.
+    Used by run_exit_gate() to evaluate ExitPolicy and call on_close.
+
+  open_instruments() fix (6.7c):
+    6.7b query used ``instrument NOT IN (close events)`` which
+    permanently hid re-opened instruments.  Fixed to: instrument whose
+    MOST RECENT positions event is 'open' or 'add' (window function).
 
 All writes are append-only and mirrored to ``secondary_sync_outbox``
 (F-12) in the same call.
@@ -53,7 +59,7 @@ from sqlalchemy.engine import Engine
 
 from fx_ai_trading.common.clock import Clock, WallClock
 from fx_ai_trading.common.ulid import generate_ulid
-from fx_ai_trading.domain.state import StateSnapshot
+from fx_ai_trading.domain.state import OpenPositionInfo, StateSnapshot
 from fx_ai_trading.sync.enqueue import enqueue_secondary_sync
 
 _log = logging.getLogger(__name__)
@@ -130,28 +136,79 @@ class StateManager:
     def open_instruments(self) -> frozenset[str]:
         """Instruments currently held open for this account.
 
-        6.7b: authoritative source is the positions timeline.  An
-        instrument is open when its most recent positions event is
-        'open' or 'add' and there is no subsequent 'close' event for
-        the same (account_id, instrument) pair.
+        6.7c fix: uses a window function to find each instrument's
+        MOST RECENT positions event.  The instrument is open only when
+        that latest event is 'open' or 'add'.
+
+        The 6.7b query (``NOT IN close events``) permanently hid any
+        instrument that had ever been closed, breaking re-open scenarios.
         """
         sql = text(
             """
-            SELECT DISTINCT instrument
-            FROM positions
-            WHERE account_id = :account_id
-              AND event_type IN ('open', 'add')
-              AND instrument NOT IN (
-                SELECT instrument
+            SELECT instrument
+            FROM (
+                SELECT instrument,
+                       event_type,
+                       ROW_NUMBER() OVER (
+                           PARTITION BY instrument
+                           ORDER BY event_time_utc DESC, position_snapshot_id DESC
+                       ) AS rn
                 FROM positions
                 WHERE account_id = :account_id
-                  AND event_type = 'close'
-              )
+            ) ranked
+            WHERE rn = 1
+              AND event_type IN ('open', 'add')
             """
         )
         with self._engine.connect() as conn:
             rows = conn.execute(sql, {"account_id": self._account_id}).fetchall()
         return frozenset(r.instrument for r in rows)
+
+    def open_position_details(self) -> list[OpenPositionInfo]:
+        """Details of all currently-open positions for this account.
+
+        Returns one ``OpenPositionInfo`` per open instrument, carrying the
+        data that ``run_exit_gate`` needs to evaluate ExitPolicy.
+
+        Cycle 6.7c constraint (L2): 1 order = 1 position.  The most recent
+        'open' or 'add' event row is used for units / avg_price / open_time.
+        For non-pyramiding positions (paper-mode) this is always the single
+        'open' row and open_time_utc equals the entry time.
+        """
+        sql = text(
+            """
+            SELECT instrument, order_id, units, avg_price, event_time_utc
+            FROM (
+                SELECT instrument,
+                       order_id,
+                       units,
+                       avg_price,
+                       event_time_utc,
+                       event_type,
+                       ROW_NUMBER() OVER (
+                           PARTITION BY instrument
+                           ORDER BY event_time_utc DESC, position_snapshot_id DESC
+                       ) AS rn
+                FROM positions
+                WHERE account_id = :account_id
+            ) ranked
+            WHERE rn = 1
+              AND event_type IN ('open', 'add')
+            ORDER BY event_time_utc ASC
+            """
+        )
+        with self._engine.connect() as conn:
+            rows = conn.execute(sql, {"account_id": self._account_id}).fetchall()
+        return [
+            OpenPositionInfo(
+                instrument=r.instrument,
+                order_id=r.order_id,
+                units=int(r.units),
+                avg_price=float(r.avg_price),
+                open_time_utc=_coerce_datetime(r.event_time_utc),
+            )
+            for r in rows
+        ]
 
     def recent_execution_failures_within(
         self,
@@ -238,7 +295,7 @@ class StateManager:
                     "event_type": event_type,
                     "units": units,
                     "avg_price": avg_price,
-                    "event_time_utc": now,
+                    "event_time_utc": now.isoformat(),
                     "correlation_id": correlation_id,
                 },
             )
@@ -324,7 +381,7 @@ class StateManager:
                     "account_id": self._account_id,
                     "instrument": instrument,
                     "realized_pl": pnl_realized,
-                    "event_time_utc": now,
+                    "event_time_utc": now.isoformat(),
                     "correlation_id": correlation_id,
                 },
             )
@@ -371,7 +428,7 @@ class StateManager:
                     "psid_link": last_psid,
                     "reasons": json.dumps(reasons, ensure_ascii=False, sort_keys=True),
                     "primary_reason_code": primary_reason_code,
-                    "closed_at": now,
+                    "closed_at": now.isoformat(),
                     "pnl_realized": pnl_realized,
                     "correlation_id": correlation_id,
                 },
@@ -447,7 +504,7 @@ class StateManager:
                     "detail": json.dumps(detail, ensure_ascii=False, sort_keys=True)
                     if detail
                     else None,
-                    "event_time_utc": now,
+                    "event_time_utc": now.isoformat(),
                 },
             )
         enqueue_secondary_sync(
@@ -513,4 +570,4 @@ def _coerce_datetime(value: object) -> datetime:
     return datetime.fromisoformat(str(value))
 
 
-__all__ = ["StateManager"]
+__all__ = ["StateManager", "OpenPositionInfo"]
