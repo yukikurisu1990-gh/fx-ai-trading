@@ -1,25 +1,17 @@
-"""State domain — Phase 6 Cycle 6.7a (read-only StateManager snapshot DTO).
+"""State domain — Phase 6 Cycle 6.7a/b/c (snapshot DTOs).
 
-The StateManager provides a single source of truth for the runtime
-state views that Risk and Execution already consume today via ad-hoc
-helpers on the Execution Gate.  Cycle 6.7a introduces the read-only
-view only; write paths (positions / close_events / risk_events) land
-in 6.7b.
+Cycle 6.7a: StateSnapshot read-only DTO.
+Cycle 6.7c: OpenPositionInfo DTO for exit gate.
 
-``StateSnapshot`` is an immutable value object.  Callers that need
-``open_instruments`` / ``concurrent_count`` / ``recent_failure_count``
-should read them from a single ``snapshot()`` call rather than issue
-separate queries — this guarantees the three numbers were derived from
-the same point-in-time read and cannot drift against each other.
+``StateSnapshot`` is an immutable value object consumed by Risk /
+Execution.  ``open_instruments`` / ``concurrent_count`` /
+``recent_failure_count`` should be read from a single ``snapshot()``
+call so the three numbers are derived from the same point-in-time read.
 
-Invariants (Cycle 6.7a):
-  - ``concurrent_count == len(open_instruments)`` (M10 paper-mode:
-    one instrument ⇔ one position).  6.7b will decouple these once
-    the positions timeline is authoritative.
-  - ``snapshot_time_utc`` is the ``now`` the caller supplied when
-    building the snapshot, not the DB read time.  Callers are
-    expected to pass the Clock's ``now()`` so every decision within
-    a single cycle shares a timestamp.
+``OpenPositionInfo`` carries per-position details for the exit runner.
+
+Cycle 6.7c constraint (L2): 1 order = 1 position in M10 paper-mode.
+Partial close, scale-in/out, and position_id are Phase 7 scope.
 """
 
 from __future__ import annotations
@@ -38,4 +30,24 @@ class StateSnapshot:
     snapshot_time_utc: datetime
 
 
-__all__ = ["StateSnapshot"]
+@dataclass(frozen=True)
+class OpenPositionInfo:
+    """Details of a single currently-open position (Cycle 6.7c).
+
+    Cycle 6.7c constraint (L2): order_id is the position identity.
+    One order = one position; pyramiding and partial close are not
+    modelled here.  Phase 7 will introduce a dedicated position_id.
+
+    open_time_utc is the event_time_utc of the most recent 'open' or
+    'add' event for this instrument, used to compute holding_seconds
+    for ExitPolicyService.evaluate().
+    """
+
+    instrument: str
+    order_id: str
+    units: int
+    avg_price: float
+    open_time_utc: datetime
+
+
+__all__ = ["OpenPositionInfo", "StateSnapshot"]
