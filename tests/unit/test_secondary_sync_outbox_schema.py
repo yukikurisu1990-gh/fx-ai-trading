@@ -88,18 +88,12 @@ class TestTableShape:
     def test_required_column_declared(self, migration_source: str, col: str) -> None:
         # Tolerant of multi-line sa.Column(...) formatting.
         pattern = re.compile(rf'sa\.Column\(\s*"{re.escape(col)}",')
-        assert pattern.search(migration_source), (
-            f"column '{col}' missing in migration declaration"
-        )
+        assert pattern.search(migration_source), f"column '{col}' missing in migration declaration"
 
     def test_outbox_id_is_pk(self, migration_source: str) -> None:
         # The outbox_id row carries primary_key=True; also assert no other
         # column does.
-        pk_lines = [
-            line
-            for line in migration_source.splitlines()
-            if "primary_key=True" in line
-        ]
+        pk_lines = [line for line in migration_source.splitlines() if "primary_key=True" in line]
         assert len(pk_lines) == 1, f"expected exactly one PK column, got {pk_lines}"
         assert "outbox_id" in pk_lines[0]
 
@@ -129,8 +123,7 @@ class TestTableShape:
 
     def test_acked_at_nullable(self, migration_source: str) -> None:
         assert (
-            'sa.Column("acked_at", sa.DateTime(timezone=True), nullable=True)'
-            in migration_source
+            'sa.Column("acked_at", sa.DateTime(timezone=True), nullable=True)' in migration_source
         )
 
     def test_no_foreign_keys(self, migration_source: str) -> None:
@@ -149,7 +142,7 @@ class TestIndexes:
         # Must support: WHERE acked_at IS NULL [AND next_attempt_at <= now()]
         #               ORDER BY enqueued_at LIMIT N
         block = re.search(
-            r'op\.create_index\(\s*'
+            r"op\.create_index\(\s*"
             r'"ix_secondary_sync_outbox_pending",\s*'
             r'"secondary_sync_outbox",\s*'
             r'\["acked_at",\s*"next_attempt_at",\s*"enqueued_at"\]',
@@ -160,7 +153,7 @@ class TestIndexes:
     def test_logical_key_index_present(self, migration_source: str) -> None:
         # Supports observability and de-dup queries.
         block = re.search(
-            r'op\.create_index\(\s*'
+            r"op\.create_index\(\s*"
             r'"ix_secondary_sync_outbox_logical_key",\s*'
             r'"secondary_sync_outbox",\s*'
             r'\["table_name",\s*"primary_key",\s*"version_no"\]',
