@@ -1,4 +1,4 @@
-"""Execution gate runner — Phase 6 Cycle 6.5 + Cycle 6.6 Risk integration.
+"""Execution gate runner — Phase 6 Cycle 6.5 + 6.6 Risk + 6.7a StateManager.
 
 Closes the minimum viable path from ``trading_signals`` to a persisted
 broker round-trip.  One call, one trading_signal, one outcome.
@@ -48,6 +48,14 @@ Design choices intentionally deferred to later cycles:
   - No execution_metrics writes (M12).
   - No retry, no defer, no reconciliation.
 
+Cycle 6.7a note:
+  When ``state_manager`` is injected, the Risk block derives
+  ``open_instruments`` / ``concurrent_positions`` / ``recent_failure_count``
+  from ``StateManager.snapshot()`` instead of the local helpers
+  ``_fetch_open_instruments`` / ``_count_recent_failures``.  The two
+  helpers remain for the backward-compat ``state_manager=None`` path.
+  6.7b will remove them once the positions-based read lands.
+
 Runner is a pure function: no loops, no polling, no sleeps.  Callers
 drive cadence.
 """
@@ -71,6 +79,7 @@ from fx_ai_trading.sync.enqueue import enqueue_secondary_sync
 
 if TYPE_CHECKING:
     from fx_ai_trading.services.risk_manager import RiskManagerService
+    from fx_ai_trading.services.state_manager import StateManager
 
 SOURCE_COMPONENT = "execution_gate_runner"
 
@@ -171,6 +180,11 @@ def run_execution_gate(
     sl_pips: float | None = None,
     instruments: dict[str, Instrument] | None = None,
     cooloff_window_seconds: int = _DEFAULT_COOLOFF_WINDOW_SECONDS,
+    # Cycle 6.7a — read-only StateManager.  When injected, Risk reads
+    # ``open_instruments`` / ``concurrent_count`` / ``recent_failures``
+    # through StateManager.snapshot() instead of the two local helpers.
+    # ``state_manager=None`` preserves Cycle 6.6 behaviour verbatim.
+    state_manager: StateManager | None = None,
 ) -> ExecutionGateRunResult:
     """Pick one unprocessed trading_signal and drive it through the gate.
 
@@ -324,11 +338,17 @@ def run_execution_gate(
             )
         effective_units = size_result.size_units
 
-        open_instruments = _fetch_open_instruments(engine)
-        concurrent_positions = len(open_instruments)
-        recent_failure_count = _count_recent_failures(
-            engine, now=now, window_seconds=cooloff_window_seconds
-        )
+        if state_manager is not None:
+            snap = state_manager.snapshot(now=now, cooloff_window_seconds=cooloff_window_seconds)
+            open_instruments = snap.open_instruments
+            concurrent_positions = snap.concurrent_count
+            recent_failure_count = snap.recent_failure_count
+        else:
+            open_instruments = _fetch_open_instruments(engine)
+            concurrent_positions = len(open_instruments)
+            recent_failure_count = _count_recent_failures(
+                engine, now=now, window_seconds=cooloff_window_seconds
+            )
         allow_result = risk_manager.allow_trade(
             instrument=pending.instrument,
             open_instruments=open_instruments,
