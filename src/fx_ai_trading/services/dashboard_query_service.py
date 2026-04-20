@@ -1,18 +1,27 @@
 """Dashboard Query Service — read-only DB queries for the Streamlit UI (M12).
 
-All public functions accept a SQLAlchemy Engine (or None), execute a single
-SQL read, and return plain Python data structures.  No streamlit imports.
+All public read functions accept a SQLAlchemy Engine (or None), execute a
+single SQL read, and return plain Python data structures.  No streamlit
+imports.
 
 Callers (dashboard panels) apply their own ``@st.cache_data(ttl=5)`` wrapper;
 this module stays framework-free so it is independently testable.
 
-On any DB error the function returns an empty result ([] or {}) rather than
-raising, so the dashboard panel can show a graceful fallback.
+On any DB error the read function returns an empty result ([] or {}) rather
+than raising, so the dashboard panel can show a graceful fallback.
+
+Write helpers (M26 Phase 2): ``enqueue_app_settings_change`` is the only
+write path. It INSERTs into ``app_settings_changes`` and never UPDATEs
+``app_settings`` (changes apply on next restart / hot-reload).
 """
 
 from __future__ import annotations
 
+from datetime import UTC, datetime
+
 from sqlalchemy import Engine, text
+
+from fx_ai_trading.common.ulid import generate_ulid
 
 
 def get_open_positions(engine: Engine | None) -> list[dict]:
@@ -270,3 +279,62 @@ def get_learning_jobs(engine: Engine | None, limit: int = 20) -> list[dict]:
         return [dict(r) for r in rows]
     except Exception:
         return []
+
+
+# ---------------------------------------------------------------------------
+# M26 Phase 2 — Configuration Console write path (queue only)
+# ---------------------------------------------------------------------------
+
+
+def enqueue_app_settings_change(
+    engine: Engine | None,
+    *,
+    name: str,
+    old_value: str | None,
+    new_value: str,
+    changed_by: str | None,
+    reason: str | None,
+) -> int:
+    """Enqueue an app_settings change for next-restart application.
+
+    INSERTs one row into ``app_settings_changes``. Does NOT touch
+    ``app_settings`` — the queue is consumed by Supervisor on restart /
+    hot-reload (operations.md §15.2).
+
+    The PK ``app_settings_change_id`` is generated as a ULID.
+    ``changed_at`` is set to ``datetime.now(timezone.utc)``.
+
+    Returns the inserted row count (1 on success). Raises ``ValueError``
+    when ``engine`` is None or ``name`` / ``new_value`` is empty.
+    """
+    if engine is None:
+        raise ValueError("engine is required for enqueue_app_settings_change")
+    if not name or not name.strip():
+        raise ValueError("name must be non-empty")
+    if not new_value or not new_value.strip():
+        raise ValueError("new_value must be non-empty")
+
+    change_id = generate_ulid()
+    changed_at = datetime.now(UTC)
+
+    with engine.begin() as conn:
+        result = conn.execute(
+            text(
+                "INSERT INTO app_settings_changes"
+                " (app_settings_change_id, name, old_value, new_value,"
+                "  changed_by, changed_at, reason)"
+                " VALUES"
+                " (:change_id, :name, :old_value, :new_value,"
+                "  :changed_by, :changed_at, :reason)"
+            ),
+            {
+                "change_id": change_id,
+                "name": name,
+                "old_value": old_value,
+                "new_value": new_value,
+                "changed_by": changed_by,
+                "changed_at": changed_at,
+                "reason": reason,
+            },
+        )
+    return result.rowcount
