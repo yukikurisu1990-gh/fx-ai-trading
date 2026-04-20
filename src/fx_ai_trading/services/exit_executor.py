@@ -1,5 +1,15 @@
 """ExitExecutor — closes positions and writes close_events (M14 / M-EXIT-1).
 
+.. deprecated:: Cycle 6.7d (I-09)
+    ``ExitExecutor`` is superseded by
+    :func:`fx_ai_trading.services.exit_gate_runner.run_exit_gate`, which
+    delegates the close writes to :meth:`StateManager.on_close` (one
+    atomic transaction covering positions, close_events, and the outbox).
+    Instantiating ``ExitExecutor`` writes ``close_events`` via the legacy
+    repository path and would duplicate those writes (see E1 in
+    ``exit_gate_runner``).  New code MUST use ``run_exit_gate``; existing
+    callers will be migrated before this class is removed.
+
 Orchestrates the close sequence:
   1. If decision.should_exit is False → no-op, return None.
   2. Place a closing order via Broker (opposite side).
@@ -16,6 +26,7 @@ Partial close is NOT supported in Iteration 2 (100% close only, per §6.2 risk).
 from __future__ import annotations
 
 import uuid
+import warnings
 from datetime import datetime
 
 from fx_ai_trading.config.common_keys_context import CommonKeysContext
@@ -25,9 +36,19 @@ from fx_ai_trading.repositories.close_events import CloseEventsRepository
 
 _CLOSE_SIDE = {"long": "short", "short": "long"}
 
+_DEPRECATION_MESSAGE = (
+    "ExitExecutor is deprecated since Cycle 6.7d (I-09). "
+    "Use fx_ai_trading.services.exit_gate_runner.run_exit_gate instead — "
+    "it delegates close writes to StateManager.on_close (single atomic "
+    "transaction covering positions, close_events, and the outbox)."
+)
+
 
 class ExitExecutor:
     """Executes the close sequence for a single position.
+
+    .. deprecated:: Cycle 6.7d (I-09)
+        Use :func:`fx_ai_trading.services.exit_gate_runner.run_exit_gate`.
 
     Args:
         broker: Any Broker implementation (MockBroker / OandaBroker etc.).
@@ -35,6 +56,7 @@ class ExitExecutor:
     """
 
     def __init__(self, broker, close_events_repo: CloseEventsRepository) -> None:
+        warnings.warn(_DEPRECATION_MESSAGE, DeprecationWarning, stacklevel=2)
         self._broker = broker
         self._repo = close_events_repo
 
