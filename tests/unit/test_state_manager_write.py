@@ -523,3 +523,98 @@ class TestOnCloseConsistency:
         assert pos_payload["order_id"] == "o1"
         assert ce_payload["order_id"] == "o1"
         assert ce_payload["primary_reason_code"] == "sl"
+
+
+# --- on_close atomicity (Cycle 6.7d I-03) ------------------------------------
+
+
+class TestOnCloseAtomicity:
+    """I-03: positions(close) + positions outbox + close_events + close_events
+    outbox must share one transaction.  Any mid-call failure must leave the DB
+    in the pre-call state (no partial writes, no outbox/domain divergence)."""
+
+    def _prior_state(self, engine) -> tuple[int, int, int]:
+        """(positions rows, close_events rows, outbox rows) — for comparison."""
+        return (
+            len(_positions_rows(engine)),
+            len(_close_events_rows(engine)),
+            len(_outbox_rows(engine)),
+        )
+
+    def test_rollback_when_second_outbox_enqueue_fails(self, engine, monkeypatch) -> None:
+        """If the close_events outbox enqueue raises, the positions(close) row,
+        its outbox mirror, and the close_events row must all be rolled back."""
+        sm = _make_sm(engine)
+        sm.on_fill(order_id="o1", instrument="EURUSD", units=1000, avg_price=1.10)
+        pre = self._prior_state(engine)  # 1 pos, 0 ce, 1 outbox
+
+        import fx_ai_trading.services.state_manager as sm_mod
+
+        real_enqueue = sm_mod.enqueue_secondary_sync
+        calls: list[str] = []
+
+        def flaky(*args, **kwargs):
+            calls.append(kwargs.get("table_name", ""))
+            if len(calls) == 2:  # on_close's second enqueue (close_events)
+                raise RuntimeError("simulated outbox failure")
+            return real_enqueue(*args, **kwargs)
+
+        monkeypatch.setattr(sm_mod, "enqueue_secondary_sync", flaky)
+
+        with pytest.raises(RuntimeError, match="simulated outbox failure"):
+            sm.on_close(
+                order_id="o1",
+                instrument="EURUSD",
+                reasons=[{"priority": 1, "reason_code": "sl", "detail": ""}],
+                primary_reason_code="sl",
+            )
+
+        post = self._prior_state(engine)
+        assert post == pre, f"expected rollback to {pre}, got {post}"
+        assert sm.open_instruments() == frozenset({"EURUSD"})
+
+    def test_rollback_when_close_events_insert_fails(self, engine, monkeypatch) -> None:
+        """If the close_events INSERT itself fails (e.g. DB constraint), the
+        positions close row and its outbox mirror must not persist."""
+        sm = _make_sm(engine)
+        sm.on_fill(order_id="o1", instrument="EURUSD", units=1000, avg_price=1.10)
+        pre = self._prior_state(engine)
+
+        from sqlalchemy import text as real_text
+
+        import fx_ai_trading.services.state_manager as sm_mod
+
+        def broken_text(sql: str):  # noqa: ANN001
+            if "INSERT INTO close_events" in sql:
+                raise RuntimeError("simulated close_events INSERT failure")
+            return real_text(sql)
+
+        monkeypatch.setattr(sm_mod, "text", broken_text)
+
+        with pytest.raises(RuntimeError, match="close_events INSERT failure"):
+            sm.on_close(
+                order_id="o1",
+                instrument="EURUSD",
+                reasons=[{"priority": 1, "reason_code": "tp", "detail": ""}],
+                primary_reason_code="tp",
+            )
+
+        post = self._prior_state(engine)
+        assert post == pre
+        assert sm.open_instruments() == frozenset({"EURUSD"})
+
+    def test_happy_path_still_commits_all_four_writes(self, engine) -> None:
+        """Regression guard: successful on_close persists all four rows,
+        confirming the single-transaction wrapping did not break the happy path."""
+        sm = _make_sm(engine)
+        sm.on_fill(order_id="o1", instrument="EURUSD", units=1000, avg_price=1.10)
+        sm.on_close(
+            order_id="o1",
+            instrument="EURUSD",
+            reasons=[{"priority": 1, "reason_code": "tp", "detail": ""}],
+            primary_reason_code="tp",
+        )
+        assert len(_positions_rows(engine)) == 2  # open + close
+        assert len(_close_events_rows(engine)) == 1
+        assert len(_outbox_rows(engine, table_name="positions")) == 2
+        assert len(_outbox_rows(engine, table_name="close_events")) == 1

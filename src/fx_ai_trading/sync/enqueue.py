@@ -17,6 +17,12 @@ Design:
   - Common Keys (run_id / environment / code_version / config_version)
     are threaded through as optional kwargs.  Nullable in the
     migration, so they may be omitted in simple contexts.
+  - Cycle 6.7d (I-03) adds optional ``conn`` kwarg.  When the caller is
+    already inside an active transaction, pass ``conn=`` so the outbox
+    INSERT joins that transaction; a rollback upstream then discards the
+    outbox row together with the domain row, preserving F-12 atomicity.
+    When ``conn`` is omitted the helper opens its own ``engine.begin()``
+    block — the legacy behaviour for callers that write a single row.
 """
 
 from __future__ import annotations
@@ -25,7 +31,7 @@ from collections.abc import Callable
 from typing import Any
 
 from sqlalchemy import text
-from sqlalchemy.engine import Engine
+from sqlalchemy.engine import Connection, Engine
 
 from fx_ai_trading.common.clock import Clock
 from fx_ai_trading.common.ulid import generate_ulid
@@ -36,6 +42,7 @@ Sanitizer = Callable[[dict[str, Any]], dict[str, Any]]
 def enqueue_secondary_sync(
     engine: Engine,
     *,
+    conn: Connection | None = None,
     table_name: str,
     primary_key: str,
     version_no: int,
@@ -52,6 +59,11 @@ def enqueue_secondary_sync(
     The ``sanitizer`` callable is invoked on ``payload`` and its return
     value is persisted — the original mapping is discarded.  This is
     the F-12 enforcement point.
+
+    When ``conn`` is provided the INSERT runs on that connection and the
+    caller owns commit/rollback (Cycle 6.7d I-03 atomicity).  When it is
+    omitted the helper opens ``engine.begin()`` and commits on exit, the
+    legacy behaviour for single-row callers.
 
     Returns the generated ULID ``outbox_id``.
 
@@ -97,22 +109,23 @@ def enqueue_secondary_sync(
         )
         """
     )
-    with engine.begin() as conn:
-        conn.execute(
-            sql,
-            {
-                "outbox_id": outbox_id,
-                "table_name": table_name,
-                "primary_key": primary_key,
-                "version_no": version_no,
-                "payload_json": payload_text,
-                "enqueued_at": enqueued_at,
-                "run_id": run_id,
-                "environment": environment,
-                "code_version": code_version,
-                "config_version": config_version,
-            },
-        )
+    params = {
+        "outbox_id": outbox_id,
+        "table_name": table_name,
+        "primary_key": primary_key,
+        "version_no": version_no,
+        "payload_json": payload_text,
+        "enqueued_at": enqueued_at,
+        "run_id": run_id,
+        "environment": environment,
+        "code_version": code_version,
+        "config_version": config_version,
+    }
+    if conn is not None:
+        conn.execute(sql, params)
+    else:
+        with engine.begin() as owned_conn:
+            owned_conn.execute(sql, params)
     return outbox_id
 
 

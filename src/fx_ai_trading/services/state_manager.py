@@ -12,6 +12,9 @@ recent_execution_failures_within).  Cycle 6.7b adds the write path:
   on_close(order_id, instrument, reasons, primary_reason_code, ...)
     Writes one ``positions`` row (event_type='close', units=0) and one
     ``close_events`` row.  Both are linked via position_snapshot_id.
+    Cycle 6.7d (I-03): all four writes (positions + close_events + both
+    outbox rows) share a single transaction so a partial failure cannot
+    leave domain and outbox state divergent.
 
   on_risk_verdict(verdict, cycle_id, instrument, ...)
     Writes one ``risk_events`` row for every accept or reject decision.
@@ -355,11 +358,18 @@ class StateManager:
         """
         now = self._clock.now()
 
-        # Link to the most recent open/add snapshot for this order.
+        # Link to the most recent open/add snapshot for this order.  Read
+        # before the write transaction — no atomicity requirement with the
+        # close row (L7: single StateManager instance, no concurrent closes).
         last_psid = self._last_open_snapshot_id(order_id=order_id, instrument=instrument)
 
-        # Append close event to positions timeline.
         psid = generate_ulid()
+        ceid = generate_ulid()
+
+        # I-03 (Cycle 6.7d): all four writes — positions close row,
+        # positions outbox row, close_events row, close_events outbox row —
+        # share one transaction.  A failure in any step rolls back the
+        # earlier ones, so domain and outbox state cannot diverge.
         with self._engine.begin() as conn:
             conn.execute(
                 text(
@@ -385,29 +395,26 @@ class StateManager:
                     "correlation_id": correlation_id,
                 },
             )
-        enqueue_secondary_sync(
-            self._engine,
-            table_name="positions",
-            primary_key=json.dumps([psid]),
-            version_no=0,
-            payload={
-                "position_snapshot_id": psid,
-                "order_id": order_id,
-                "account_id": self._account_id,
-                "instrument": instrument,
-                "event_type": "close",
-                "units": 0,
-                "realized_pl": pnl_realized,
-                "event_time_utc": now.isoformat(),
-                "correlation_id": correlation_id,
-            },
-            sanitizer=_state_sanitizer,
-            clock=self._clock,
-        )
-
-        # close_events row.
-        ceid = generate_ulid()
-        with self._engine.begin() as conn:
+            enqueue_secondary_sync(
+                self._engine,
+                conn=conn,
+                table_name="positions",
+                primary_key=json.dumps([psid]),
+                version_no=0,
+                payload={
+                    "position_snapshot_id": psid,
+                    "order_id": order_id,
+                    "account_id": self._account_id,
+                    "instrument": instrument,
+                    "event_type": "close",
+                    "units": 0,
+                    "realized_pl": pnl_realized,
+                    "event_time_utc": now.isoformat(),
+                    "correlation_id": correlation_id,
+                },
+                sanitizer=_state_sanitizer,
+                clock=self._clock,
+            )
             conn.execute(
                 text(
                     """
@@ -433,24 +440,25 @@ class StateManager:
                     "correlation_id": correlation_id,
                 },
             )
-        enqueue_secondary_sync(
-            self._engine,
-            table_name="close_events",
-            primary_key=json.dumps([ceid]),
-            version_no=0,
-            payload={
-                "close_event_id": ceid,
-                "order_id": order_id,
-                "position_snapshot_id": last_psid,
-                "reasons": reasons,
-                "primary_reason_code": primary_reason_code,
-                "closed_at": now.isoformat(),
-                "pnl_realized": pnl_realized,
-                "correlation_id": correlation_id,
-            },
-            sanitizer=_state_sanitizer,
-            clock=self._clock,
-        )
+            enqueue_secondary_sync(
+                self._engine,
+                conn=conn,
+                table_name="close_events",
+                primary_key=json.dumps([ceid]),
+                version_no=0,
+                payload={
+                    "close_event_id": ceid,
+                    "order_id": order_id,
+                    "position_snapshot_id": last_psid,
+                    "reasons": reasons,
+                    "primary_reason_code": primary_reason_code,
+                    "closed_at": now.isoformat(),
+                    "pnl_realized": pnl_realized,
+                    "correlation_id": correlation_id,
+                },
+                sanitizer=_state_sanitizer,
+                clock=self._clock,
+            )
         _log.debug(
             "StateManager.on_close: ceid=%s psid=%s order=%s instrument=%s reason=%s",
             ceid,
