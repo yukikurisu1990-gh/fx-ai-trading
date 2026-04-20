@@ -277,8 +277,9 @@ class TestRejectionAndRetry:
 class TestBatchBehavior:
     def test_max_items_caps_batch(self, engine) -> None:
         for i in range(5):
-            _enqueue(engine, pk=f"pk{i}", v=1, payload={"i": i},
-                     now=_FIXED_NOW + timedelta(seconds=i))
+            _enqueue(
+                engine, pk=f"pk{i}", v=1, payload={"i": i}, now=_FIXED_NOW + timedelta(seconds=i)
+            )
         sink = InMemorySink()
         svc = SyncService(
             engine=engine,
@@ -326,8 +327,7 @@ class TestF3DedupVisibility:
         Outbox preserves both rows (append-only), but the Sink enforces
         F-3 dedup so the final observable state reflects version 2."""
         _enqueue(engine, pk="pk1", v=1, payload={"x": "v1"}, now=_FIXED_NOW)
-        _enqueue(engine, pk="pk1", v=2, payload={"x": "v2"},
-                 now=_FIXED_NOW + timedelta(seconds=1))
+        _enqueue(engine, pk="pk1", v=2, payload={"x": "v2"}, now=_FIXED_NOW + timedelta(seconds=1))
 
         sink = InMemorySink()
         SyncService(

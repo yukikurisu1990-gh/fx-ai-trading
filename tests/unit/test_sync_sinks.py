@@ -148,9 +148,7 @@ class TestInMemorySinkPayloadIsolation:
     def test_get_returns_copy(self) -> None:
         """Mutating the return value must not mutate the sink store."""
         sink = InMemorySink()
-        sink.upsert(
-            SyncEnvelope(table_name="t", primary_key="pk", version_no=1, payload={"v": 1})
-        )
+        sink.upsert(SyncEnvelope(table_name="t", primary_key="pk", version_no=1, payload={"v": 1}))
         stored = sink.get("t", "pk")
         assert stored is not None
         stored[1]["v"] = 999
