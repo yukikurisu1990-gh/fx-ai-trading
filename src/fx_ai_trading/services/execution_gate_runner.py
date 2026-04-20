@@ -49,11 +49,10 @@ Design choices intentionally deferred to later cycles:
   - No retry, no defer, no reconciliation.
 
 Cycle 6.7a/b note:
-  When ``state_manager`` is injected, the Risk block derives
-  ``open_instruments`` / ``concurrent_positions`` / ``recent_failure_count``
-  from ``StateManager.snapshot()`` instead of the local helpers
-  ``_fetch_open_instruments`` / ``_count_recent_failures``.  The two
-  helpers remain for the backward-compat ``state_manager=None`` path.
+  The Risk block derives ``open_instruments`` / ``concurrent_positions`` /
+  ``recent_failure_count`` from ``StateManager.snapshot()``.  ``state_manager``
+  is a required dependency — the Cycle 6.6 backward-compat path that read
+  from the ``orders`` table directly was removed in Cycle 6.7d (I-02).
 
   Cycle 6.7b adds write-path calls:
     - After a broker fill: ``state_manager.on_fill()`` appends a
@@ -186,11 +185,10 @@ def run_execution_gate(
     sl_pips: float | None = None,
     instruments: dict[str, Instrument] | None = None,
     cooloff_window_seconds: int = _DEFAULT_COOLOFF_WINDOW_SECONDS,
-    # Cycle 6.7a — read-only StateManager.  When injected, Risk reads
-    # ``open_instruments`` / ``concurrent_count`` / ``recent_failures``
-    # through StateManager.snapshot() instead of the two local helpers.
-    # ``state_manager=None`` preserves Cycle 6.6 behaviour verbatim.
-    state_manager: StateManager | None = None,
+    # Cycle 6.7a — required StateManager.  Risk reads ``open_instruments`` /
+    # ``concurrent_count`` / ``recent_failures`` through
+    # ``StateManager.snapshot()``.  Required since Cycle 6.7d (I-02).
+    state_manager: StateManager,
 ) -> ExecutionGateRunResult:
     """Pick one unprocessed trading_signal and drive it through the gate.
 
@@ -290,6 +288,35 @@ def run_execution_gate(
             code_version=code_version,
             config_version=config_version,
         )
+        # Cycle 6.7d (I-01): TTL expiry is also a "did-not-trade" outcome.
+        # Record a no_trade_events row alongside the ORDER_EXPIRED txn so
+        # operators can query a single table for every non-entry reason.
+        _insert_and_enqueue_no_trade_event(
+            engine,
+            cycle_id=pending.cycle_id,
+            meta_decision_id=pending.meta_decision_id,
+            reason_category="timeout",
+            reason_code="ttl_expired",
+            reason_detail=json.dumps(
+                {
+                    "order_id": order_id,
+                    "trading_signal_id": pending.trading_signal_id,
+                    "correlation_id": pending.correlation_id,
+                    "signal_age_seconds": signal_age,
+                    "ttl_seconds": pending.ttl_seconds,
+                },
+                sort_keys=True,
+            ),
+            instrument=pending.instrument,
+            strategy_id=pending.strategy_id,
+            event_time_utc=now,
+            sanitizer=san,
+            clock=clock,
+            run_id=run_id,
+            environment=environment,
+            code_version=code_version,
+            config_version=config_version,
+        )
         return ExecutionGateRunResult(
             processed=True,
             trading_signal_id=pending.trading_signal_id,
@@ -298,6 +325,7 @@ def run_execution_gate(
             outcome="expired",
             reject_reason="SignalExpired",
             order_transactions_written=txn_count,
+            no_trade_events_written=1,
         )
 
     # --- Cycle 6.6 Risk gate ----------------------------------------------
@@ -325,15 +353,14 @@ def run_execution_gate(
             reject_reason = _SIZE_REASON_TO_CODE.get(
                 size_result.reason or "", "risk.size_under_min"
             )
-            if state_manager is not None:
-                state_manager.on_risk_verdict(
-                    verdict="reject",
-                    cycle_id=pending.cycle_id,
-                    instrument=pending.instrument,
-                    strategy_id=pending.strategy_id,
-                    constraint_violated=reject_reason,
-                    detail={"size_reason": size_result.reason},
-                )
+            state_manager.on_risk_verdict(
+                verdict="reject",
+                cycle_id=pending.cycle_id,
+                instrument=pending.instrument,
+                strategy_id=pending.strategy_id,
+                constraint_violated=reject_reason,
+                detail={"size_reason": size_result.reason},
+            )
             return _handle_risk_blocked(
                 engine,
                 order_id=order_id,
@@ -353,17 +380,10 @@ def run_execution_gate(
             )
         effective_units = size_result.size_units
 
-        if state_manager is not None:
-            snap = state_manager.snapshot(now=now, cooloff_window_seconds=cooloff_window_seconds)
-            open_instruments = snap.open_instruments
-            concurrent_positions = snap.concurrent_count
-            recent_failure_count = snap.recent_failure_count
-        else:
-            open_instruments = _fetch_open_instruments(engine)
-            concurrent_positions = len(open_instruments)
-            recent_failure_count = _count_recent_failures(
-                engine, now=now, window_seconds=cooloff_window_seconds
-            )
+        snap = state_manager.snapshot(now=now, cooloff_window_seconds=cooloff_window_seconds)
+        open_instruments = snap.open_instruments
+        concurrent_positions = snap.concurrent_count
+        recent_failure_count = snap.recent_failure_count
         allow_result = risk_manager.allow_trade(
             instrument=pending.instrument,
             open_instruments=open_instruments,
@@ -371,14 +391,13 @@ def run_execution_gate(
             recent_failure_count=recent_failure_count,
         )
         if not allow_result.allowed:
-            if state_manager is not None:
-                state_manager.on_risk_verdict(
-                    verdict="reject",
-                    cycle_id=pending.cycle_id,
-                    instrument=pending.instrument,
-                    strategy_id=pending.strategy_id,
-                    constraint_violated=allow_result.reject_reason,
-                )
+            state_manager.on_risk_verdict(
+                verdict="reject",
+                cycle_id=pending.cycle_id,
+                instrument=pending.instrument,
+                strategy_id=pending.strategy_id,
+                constraint_violated=allow_result.reject_reason,
+            )
             return _handle_risk_blocked(
                 engine,
                 order_id=order_id,
@@ -398,14 +417,13 @@ def run_execution_gate(
             )
 
         # Risk passed: log the accept verdict.
-        if state_manager is not None:
-            state_manager.on_risk_verdict(
-                verdict="accept",
-                cycle_id=pending.cycle_id,
-                instrument=pending.instrument,
-                strategy_id=pending.strategy_id,
-                constraint_violated=None,
-            )
+        state_manager.on_risk_verdict(
+            verdict="accept",
+            cycle_id=pending.cycle_id,
+            instrument=pending.instrument,
+            strategy_id=pending.strategy_id,
+            constraint_violated=None,
+        )
 
     # --- Broker call -------------------------------------------------------
     request = OrderRequest(
@@ -441,16 +459,15 @@ def run_execution_gate(
         )
 
     if result.status == "filled":
-        if state_manager is not None:
-            state_manager.on_fill(
-                order_id=order_id,
-                instrument=pending.instrument,
-                units=effective_units,
-                avg_price=float(result.fill_price or 0.0),
-                correlation_id=pending.correlation_id,
-                cycle_id=pending.cycle_id,
-                strategy_id=pending.strategy_id,
-            )
+        state_manager.on_fill(
+            order_id=order_id,
+            instrument=pending.instrument,
+            units=effective_units,
+            avg_price=float(result.fill_price or 0.0),
+            correlation_id=pending.correlation_id,
+            cycle_id=pending.cycle_id,
+            strategy_id=pending.strategy_id,
+        )
         return _handle_fill(
             engine,
             order_id=order_id,
@@ -1023,44 +1040,6 @@ def _assert_risk_inputs_complete(
             f"missing: {', '.join(missing)}.  All four are required "
             "(Cycle 6.6 provisional runner params)."
         )
-
-
-def _fetch_open_instruments(engine: Engine) -> frozenset[str]:
-    """Return the set of instruments currently held open.
-
-    M10 paper-mode shortcut: any ``orders`` row with status=FILLED is
-    considered open (there is no close mechanism yet).  State Manager
-    will refine this once position lifecycle lands.
-    """
-    sql = text("SELECT DISTINCT instrument FROM orders WHERE status = 'FILLED'")
-    with engine.connect() as conn:
-        rows = conn.execute(sql).fetchall()
-    return frozenset(r.instrument for r in rows)
-
-
-def _count_recent_failures(engine: Engine, *, now: datetime, window_seconds: int) -> int:
-    """Count recent execution failures for the Cycle 6.6 G3 guard.
-
-    A failure is any orders row in {FAILED, CANCELED} created within the
-    last ``window_seconds``.  SQLite stores ``created_at`` as text in
-    tests; we compare ISO strings where possible and fall back to a
-    Python-side filter for cross-dialect safety.
-    """
-    cutoff = now - timedelta(seconds=window_seconds)
-    sql = text(
-        """
-        SELECT created_at FROM orders
-        WHERE status IN ('FAILED', 'CANCELED')
-        """
-    )
-    with engine.connect() as conn:
-        rows = conn.execute(sql).fetchall()
-    count = 0
-    for r in rows:
-        ts = _coerce_datetime(r.created_at)
-        if ts >= cutoff:
-            count += 1
-    return count
 
 
 def _handle_risk_blocked(

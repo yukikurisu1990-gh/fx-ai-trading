@@ -21,7 +21,7 @@ integration.  Invariants asserted:
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 
 import pytest
 from sqlalchemy import create_engine, text
@@ -33,6 +33,7 @@ from fx_ai_trading.domain.risk import Instrument
 from fx_ai_trading.services.execution_gate_runner import run_execution_gate
 from fx_ai_trading.services.position_sizer import PositionSizerService
 from fx_ai_trading.services.risk_manager import RiskManagerService
+from fx_ai_trading.services.state_manager import StateManager
 
 _FIXED_NOW = datetime(2026, 4, 20, 12, 0, 0, tzinfo=UTC)
 
@@ -100,6 +101,35 @@ CREATE TABLE no_trade_events (
 )
 """
 
+_DDL_POSITIONS = """
+CREATE TABLE positions (
+    position_snapshot_id TEXT PRIMARY KEY,
+    order_id             TEXT,
+    account_id           TEXT NOT NULL,
+    instrument           TEXT NOT NULL,
+    event_type           TEXT NOT NULL,
+    units                NUMERIC(18,4) NOT NULL,
+    avg_price            NUMERIC(18,8),
+    unrealized_pl        NUMERIC(18,8),
+    realized_pl          NUMERIC(18,8),
+    event_time_utc       TEXT NOT NULL,
+    correlation_id       TEXT
+)
+"""
+
+_DDL_RISK_EVENTS = """
+CREATE TABLE risk_events (
+    risk_event_id       TEXT PRIMARY KEY,
+    cycle_id            TEXT,
+    instrument          TEXT,
+    strategy_id         TEXT,
+    verdict             TEXT NOT NULL,
+    constraint_violated TEXT,
+    detail              TEXT,
+    event_time_utc      TEXT NOT NULL
+)
+"""
+
 _DDL_OUTBOX = """
 CREATE TABLE secondary_sync_outbox (
     outbox_id       TEXT PRIMARY KEY,
@@ -128,6 +158,8 @@ def engine():
         conn.execute(text(_DDL_ORDERS))
         conn.execute(text(_DDL_ORDER_TRANSACTIONS))
         conn.execute(text(_DDL_NO_TRADE_EVENTS))
+        conn.execute(text(_DDL_POSITIONS))
+        conn.execute(text(_DDL_RISK_EVENTS))
         conn.execute(text(_DDL_OUTBOX))
     yield eng
     eng.dispose()
@@ -214,6 +246,75 @@ def _risk_manager_default() -> RiskManagerService:
     )
 
 
+def _sm(engine) -> StateManager:
+    return StateManager(engine, account_id="acc-1", clock=FixedClock(_FIXED_NOW))
+
+
+def _seed_open_position(
+    engine,
+    *,
+    instrument: str,
+    account_id: str = "acc-1",
+    order_id: str | None = None,
+) -> str:
+    """Insert a positions 'open' row.  Mirrors StateManager.on_fill semantics
+    for tests that need the instrument to appear in ``open_instruments()``."""
+    psid = generate_ulid()
+    oid = order_id or generate_ulid()
+    with engine.begin() as conn:
+        conn.execute(
+            text(
+                """
+                INSERT INTO positions (
+                    position_snapshot_id, order_id, account_id, instrument,
+                    event_type, units, avg_price, unrealized_pl, realized_pl,
+                    event_time_utc, correlation_id
+                ) VALUES (
+                    :psid, :oid, :aid, :inst,
+                    'open', 1000, 1.1, NULL, NULL,
+                    :ts, NULL
+                )
+                """
+            ),
+            {"psid": psid, "oid": oid, "aid": account_id, "inst": instrument,
+             "ts": _FIXED_NOW.isoformat()},
+        )
+    return psid
+
+
+def _seed_broker_failure_txn(
+    engine,
+    *,
+    transaction_type: str,
+    suffix: str,
+    account_id: str = "acc-1",
+    offset_seconds: int = 60,
+) -> None:
+    """Insert one order_transactions row of a broker-failure type.
+
+    ``transaction_type`` must be one of StateManager's failure set
+    (ORDER_REJECT / ORDER_TIMEOUT) to be counted by recent_execution_failures_within.
+    """
+    txn_id = f"txn-{suffix}"
+    event_time = _FIXED_NOW - timedelta(seconds=offset_seconds)
+    with engine.begin() as conn:
+        conn.execute(
+            text(
+                """
+                INSERT INTO order_transactions (
+                    broker_txn_id, account_id, order_id, transaction_type,
+                    transaction_time_utc, payload, received_at_utc
+                ) VALUES (
+                    :txn_id, :aid, NULL, :ttype,
+                    :ts, '{}', :ts
+                )
+                """
+            ),
+            {"txn_id": txn_id, "aid": account_id, "ttype": transaction_type,
+             "ts": event_time.isoformat()},
+        )
+
+
 # --- size==0 blocked path --------------------------------------------------
 
 
@@ -233,6 +334,7 @@ class TestSizeUnderMinBlocks:
             risk_pct=1.0,
             sl_pips=10.0,
             instruments={"EURUSD": _instrument(min_lot=1000)},
+            state_manager=_sm(engine),
         )
 
         assert result.outcome == "blocked"
@@ -275,6 +377,7 @@ class TestInvalidSLBlocks:
             risk_pct=1.0,
             sl_pips=0.0,  # invalid
             instruments={"EURUSD": _instrument()},
+            state_manager=_sm(engine),
         )
         assert result.outcome == "blocked"
         assert result.reject_reason == "risk.invalid_sl"
@@ -285,27 +388,11 @@ class TestInvalidSLBlocks:
 
 
 class TestDuplicateInstrumentBlocks:
-    def test_g1_fires_when_instrument_has_an_open_filled_order(self, engine) -> None:
-        # Seed a FILLED order for EURUSD so _fetch_open_instruments returns it.
-        with engine.begin() as conn:
-            conn.execute(
-                text(
-                    """
-                    INSERT INTO orders (
-                        order_id, client_order_id, trading_signal_id,
-                        account_id, instrument, account_type, order_type,
-                        direction, units, status, submitted_at, filled_at,
-                        canceled_at, correlation_id, created_at
-                    ) VALUES (
-                        'prev-order', 'prev-order:EURUSD:s1', 'prev-ts',
-                        'acc-1', 'EURUSD', 'demo', 'market',
-                        'buy', 1000, 'FILLED', :ts, :ts,
-                        NULL, 'prev-corr', :ts
-                    )
-                    """
-                ),
-                {"ts": _FIXED_NOW.isoformat()},
-            )
+    def test_g1_fires_when_instrument_has_an_open_position(self, engine) -> None:
+        # Seed an 'open' positions row for EURUSD so StateManager.snapshot()
+        # reports it as currently held.  (Cycle 6.7d: authoritative source
+        # is the positions table, not the orders table.)
+        _seed_open_position(engine, instrument="EURUSD")
         _seed_pending_signal(engine, instrument="EURUSD")
 
         broker = _RecordingBroker(account_type="demo")
@@ -319,6 +406,7 @@ class TestDuplicateInstrumentBlocks:
             risk_pct=1.0,
             sl_pips=10.0,  # computes size > 0
             instruments={"EURUSD": _instrument(min_lot=1)},
+            state_manager=_sm(engine),
         )
 
         assert result.outcome == "blocked"
@@ -335,34 +423,9 @@ class TestDuplicateInstrumentBlocks:
 
 class TestMaxOpenPositionsBlocks:
     def test_g2_fires_when_concurrent_cap_is_reached(self, engine) -> None:
-        # Seed 2 FILLED orders on different instruments; max_open_positions=2.
-        with engine.begin() as conn:
-            for i, sym in enumerate(("USDJPY", "GBPUSD")):
-                conn.execute(
-                    text(
-                        """
-                        INSERT INTO orders (
-                            order_id, client_order_id, trading_signal_id,
-                            account_id, instrument, account_type, order_type,
-                            direction, units, status, submitted_at, filled_at,
-                            canceled_at, correlation_id, created_at
-                        ) VALUES (
-                            :oid, :coid, :tsid,
-                            'acc-1', :sym, 'demo', 'market',
-                            'buy', 1000, 'FILLED', :ts, :ts,
-                            NULL, :corr, :ts
-                        )
-                        """
-                    ),
-                    {
-                        "oid": f"o-{i}",
-                        "coid": f"o-{i}:{sym}:s1",
-                        "tsid": f"ts-{i}",
-                        "sym": sym,
-                        "ts": _FIXED_NOW.isoformat(),
-                        "corr": f"c-{i}",
-                    },
-                )
+        # Seed 2 'open' positions rows on different instruments; max_open_positions=2.
+        for sym in ("USDJPY", "GBPUSD"):
+            _seed_open_position(engine, instrument=sym)
         _seed_pending_signal(engine, instrument="EURUSD")  # fresh instrument
 
         risk_mgr = RiskManagerService(
@@ -382,6 +445,7 @@ class TestMaxOpenPositionsBlocks:
             risk_pct=1.0,
             sl_pips=10.0,
             instruments={"EURUSD": _instrument(min_lot=1)},
+            state_manager=_sm(engine),
         )
 
         assert result.outcome == "blocked"
@@ -391,33 +455,11 @@ class TestMaxOpenPositionsBlocks:
 
 class TestCooloffBlocks:
     def test_g3_fires_when_recent_failures_reach_threshold(self, engine) -> None:
-        # Seed 3 CANCELED orders within the cool-off window.
-        with engine.begin() as conn:
-            for i in range(3):
-                conn.execute(
-                    text(
-                        """
-                        INSERT INTO orders (
-                            order_id, client_order_id, trading_signal_id,
-                            account_id, instrument, account_type, order_type,
-                            direction, units, status, submitted_at, filled_at,
-                            canceled_at, correlation_id, created_at
-                        ) VALUES (
-                            :oid, :coid, :tsid,
-                            'acc-1', 'EURUSD', 'demo', 'market',
-                            'buy', 1000, 'CANCELED', NULL, NULL,
-                            :ts, :corr, :ts
-                        )
-                        """
-                    ),
-                    {
-                        "oid": f"f-{i}",
-                        "coid": f"f-{i}:EURUSD:s1",
-                        "tsid": f"ts-f-{i}",
-                        "ts": _FIXED_NOW.isoformat(),
-                        "corr": f"c-f-{i}",
-                    },
-                )
+        # Seed 3 broker-failure order_transactions rows within the cool-off
+        # window.  (Cycle 6.7d: authoritative failure signal is
+        # order_transactions.ORDER_REJECT / ORDER_TIMEOUT, not orders.status.)
+        for i in range(3):
+            _seed_broker_failure_txn(engine, transaction_type="ORDER_REJECT", suffix=f"f-{i}")
         _seed_pending_signal(engine, instrument="EURUSD")
 
         risk_mgr = RiskManagerService(
@@ -437,6 +479,7 @@ class TestCooloffBlocks:
             risk_pct=1.0,
             sl_pips=10.0,
             instruments={"EURUSD": _instrument(min_lot=1)},
+            state_manager=_sm(engine),
         )
 
         assert result.outcome == "blocked"
@@ -461,6 +504,7 @@ class TestAppendOnlyAcrossTwoBlockedCycles:
             risk_pct=1.0,
             sl_pips=500.0,
             instruments={"EURUSD": _instrument(min_lot=1000)},
+            state_manager=_sm(engine),
         )
         assert result_a.outcome == "blocked"
 
@@ -487,6 +531,7 @@ class TestAppendOnlyAcrossTwoBlockedCycles:
             risk_pct=1.0,
             sl_pips=500.0,
             instruments={"EURUSD": _instrument(min_lot=1000)},
+            state_manager=_sm(engine),
         )
         assert result_b.outcome == "blocked"
 
@@ -522,6 +567,7 @@ class TestOutboxMirrorsBlockedRows:
             risk_pct=1.0,
             sl_pips=500.0,
             instruments={"EURUSD": _instrument(min_lot=1000)},
+            state_manager=_sm(engine),
         )
         with engine.connect() as conn:
             tables = sorted(
@@ -560,6 +606,7 @@ class TestCycle65PathStillWorksWhenRiskDisabled:
             account_id="acc-1",
             clock=FixedClock(_FIXED_NOW),
             size_units=1234,
+            state_manager=_sm(engine),
         )
         assert result.outcome == "filled"
         assert result.order_status == "FILLED"
@@ -576,4 +623,5 @@ class TestRiskInputsValidation:
                 clock=FixedClock(_FIXED_NOW),
                 risk_manager=_risk_manager_default(),
                 # missing: account_balance / risk_pct / sl_pips / instruments
+                state_manager=_sm(engine),
             )
