@@ -276,8 +276,13 @@ def _seed_open_position(
                 )
                 """
             ),
-            {"psid": psid, "oid": oid, "aid": account_id, "inst": instrument,
-             "ts": _FIXED_NOW.isoformat()},
+            {
+                "psid": psid,
+                "oid": oid,
+                "aid": account_id,
+                "inst": instrument,
+                "ts": _FIXED_NOW.isoformat(),
+            },
         )
     return psid
 
@@ -310,8 +315,12 @@ def _seed_broker_failure_txn(
                 )
                 """
             ),
-            {"txn_id": txn_id, "aid": account_id, "ttype": transaction_type,
-             "ts": event_time.isoformat()},
+            {
+                "txn_id": txn_id,
+                "aid": account_id,
+                "ttype": transaction_type,
+                "ts": event_time.isoformat(),
+            },
         )
 
 

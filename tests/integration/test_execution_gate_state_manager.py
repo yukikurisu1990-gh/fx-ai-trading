@@ -478,5 +478,3 @@ class TestAccountIsolation:
             engine, broker=_AcceptBroker(), risk_manager=risk_mgr, state_manager=sm
         )
         assert result.outcome == "filled"
-
-
