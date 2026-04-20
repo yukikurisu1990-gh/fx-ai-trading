@@ -729,3 +729,87 @@ class TestOutboxMirror:
                 )
             ).fetchone()
         assert row == ("run-99", "paper", "sha-1", "cv-1")
+
+
+# --- order_transactions atomicity (Cycle 6.8 I-05) ---------------------------
+
+
+class TestOrderTransactionAtomicity:
+    """I-05: order_transactions INSERT + outbox enqueue must share one
+    transaction.  A failure in either step must leave both tables in their
+    pre-call state (no domain/outbox divergence)."""
+
+    def test_rollback_when_outbox_enqueue_fails(self, engine, monkeypatch) -> None:
+        """If the outbox enqueue for an order_transactions row raises, the
+        matching INSERT into order_transactions must also roll back."""
+        _seed_trading_signal(engine, trading_signal_id="ts-atom-1", direction="buy")
+        b = _FakeBroker(mode="fill")
+
+        import fx_ai_trading.services.execution_gate_runner as egr
+
+        real_enqueue = egr.enqueue_secondary_sync
+
+        def flaky(*args, **kwargs):
+            if kwargs.get("table_name") == "order_transactions":
+                raise RuntimeError("simulated outbox failure")
+            return real_enqueue(*args, **kwargs)
+
+        monkeypatch.setattr(egr, "enqueue_secondary_sync", flaky)
+
+        with pytest.raises(RuntimeError, match="simulated outbox failure"):
+            run_execution_gate(
+                engine,
+                broker=b,
+                account_id="acc-1",
+                clock=FixedClock(_FIXED_NOW),
+                state_manager=_sm(engine),
+            )
+
+        assert _count(engine, "order_transactions") == 0
+        assert _count(engine, "secondary_sync_outbox", "table_name='order_transactions'") == 0
+
+    def test_rollback_when_insert_fails(self, engine, monkeypatch) -> None:
+        """If the order_transactions INSERT itself raises, the outbox row
+        must not be written — the enqueue runs inside the same transaction."""
+        _seed_trading_signal(engine, trading_signal_id="ts-atom-2", direction="buy")
+        b = _FakeBroker(mode="fill")
+
+        from sqlalchemy import text as real_text
+
+        import fx_ai_trading.services.execution_gate_runner as egr
+
+        def broken_text(sql: str):  # noqa: ANN001
+            if "INSERT INTO order_transactions" in sql:
+                raise RuntimeError("simulated order_transactions INSERT failure")
+            return real_text(sql)
+
+        monkeypatch.setattr(egr, "text", broken_text)
+
+        with pytest.raises(RuntimeError, match="order_transactions INSERT failure"):
+            run_execution_gate(
+                engine,
+                broker=b,
+                account_id="acc-1",
+                clock=FixedClock(_FIXED_NOW),
+                state_manager=_sm(engine),
+            )
+
+        assert _count(engine, "order_transactions") == 0
+        assert _count(engine, "secondary_sync_outbox", "table_name='order_transactions'") == 0
+
+    def test_happy_path_atomicity_preserved(self, engine) -> None:
+        """Regression guard: the single-tx rewrite must keep the filled
+        happy path producing 2 order_transactions rows and 2 matching
+        outbox rows (ORDER_CREATE + ORDER_FILL)."""
+        _seed_trading_signal(engine, trading_signal_id="ts-atom-3", direction="buy")
+        b = _FakeBroker(mode="fill")
+        r = run_execution_gate(
+            engine,
+            broker=b,
+            account_id="acc-1",
+            clock=FixedClock(_FIXED_NOW),
+            state_manager=_sm(engine),
+        )
+        assert r.outcome == "filled"
+        assert _count(engine, "order_transactions", f"order_id='{r.order_id}'") == 2
+        assert _count(engine, "secondary_sync_outbox", "table_name='order_transactions'") == 2
