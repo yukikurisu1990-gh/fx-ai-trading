@@ -399,3 +399,127 @@ class TestOnRiskVerdict:
         sm.on_risk_verdict(verdict="reject", constraint_violated="risk.max_open_positions")
         rows = _risk_events_rows(engine)
         assert len(rows) == 3
+
+
+# --- append-only invariant ---------------------------------------------------
+
+
+class TestAppendOnlyInvariant:
+    def test_positions_row_count_grows_monotonically(self, engine) -> None:
+        """Each write must only INSERT — row count must never decrease."""
+        sm = _make_sm(engine)
+
+        sm.on_fill(order_id="o1", instrument="EURUSD", units=1000, avg_price=1.10)
+        assert len(_positions_rows(engine)) == 1
+
+        sm.on_fill(order_id="o2", instrument="USDJPY", units=500, avg_price=150.0)
+        assert len(_positions_rows(engine)) == 2
+
+        sm.on_fill(order_id="o1", instrument="EURUSD", units=200, avg_price=1.11)
+        assert len(_positions_rows(engine)) == 3  # add event, not an update
+
+        sm.on_close(
+            order_id="o1",
+            instrument="EURUSD",
+            reasons=[{"priority": 1, "reason_code": "tp", "detail": ""}],
+            primary_reason_code="tp",
+        )
+        # close appends a new row; previous open/add rows remain
+        assert len(_positions_rows(engine)) == 4
+
+    def test_no_row_disappears_after_close(self, engine) -> None:
+        """All prior open/add rows persist after a close — immutable timeline."""
+        sm = _make_sm(engine)
+        sm.on_fill(order_id="o1", instrument="EURUSD", units=1000, avg_price=1.10)
+        sm.on_fill(order_id="o1", instrument="EURUSD", units=500, avg_price=1.11)
+        sm.on_close(
+            order_id="o1",
+            instrument="EURUSD",
+            reasons=[{"priority": 1, "reason_code": "sl", "detail": ""}],
+            primary_reason_code="sl",
+        )
+        rows = _positions_rows(engine)
+        event_types = [r.event_type for r in rows]
+        assert "open" in event_types
+        assert "add" in event_types
+        assert "close" in event_types
+        assert len(rows) == 3
+
+    def test_risk_events_row_count_grows_monotonically(self, engine) -> None:
+        sm = _make_sm(engine)
+        for i in range(5):
+            sm.on_risk_verdict(verdict="reject", constraint_violated="risk.cooloff")
+            assert len(_risk_events_rows(engine)) == i + 1
+
+
+# --- on_close consistency (both rows written together) -----------------------
+
+
+class TestOnCloseConsistency:
+    def test_both_positions_and_close_events_written_in_single_call(self, engine) -> None:
+        """A single on_close call must produce BOTH a positions(close) row
+        AND a close_events row — the caller must see a consistent state after
+        the call returns."""
+        sm = _make_sm(engine)
+        sm.on_fill(order_id="o1", instrument="EURUSD", units=1000, avg_price=1.10)
+
+        sm.on_close(
+            order_id="o1",
+            instrument="EURUSD",
+            reasons=[{"priority": 1, "reason_code": "tp", "detail": "target reached"}],
+            primary_reason_code="tp",
+            pnl_realized=200.0,
+            correlation_id="corr-close-1",
+        )
+
+        pos_rows = _positions_rows(engine)
+        ce_rows = _close_events_rows(engine)
+        outbox_pos = _outbox_rows(engine, table_name="positions")
+        outbox_ce = _outbox_rows(engine, table_name="close_events")
+
+        # positions: 1 open + 1 close
+        assert len(pos_rows) == 2
+        close_pos = next(r for r in pos_rows if r.event_type == "close")
+        assert close_pos.instrument == "EURUSD"
+        assert float(close_pos.units) == 0.0
+        assert float(close_pos.realized_pl) == 200.0
+
+        # close_events: 1 row with matching fields
+        assert len(ce_rows) == 1
+        assert ce_rows[0].primary_reason_code == "tp"
+        stored_reasons = json.loads(ce_rows[0].reasons)
+        assert stored_reasons[0]["detail"] == "target reached"
+
+        # outbox: 2 positions rows (open + close) + 1 close_events row
+        assert len(outbox_pos) == 2
+        assert len(outbox_ce) == 1
+
+    def test_on_close_outbox_payloads_are_consistent(self, engine) -> None:
+        """Outbox payloads for positions(close) and close_events must
+        reference the same instrument and order_id."""
+        sm = _make_sm(engine)
+        sm.on_fill(order_id="o1", instrument="GBPUSD", units=800, avg_price=1.25)
+        sm.on_close(
+            order_id="o1",
+            instrument="GBPUSD",
+            reasons=[{"priority": 1, "reason_code": "sl", "detail": ""}],
+            primary_reason_code="sl",
+        )
+
+        close_pos_outbox = [
+            r
+            for r in _outbox_rows(engine, table_name="positions")
+            if json.loads(r.payload_json).get("event_type") == "close"
+        ]
+        ce_outbox = _outbox_rows(engine, table_name="close_events")
+
+        assert len(close_pos_outbox) == 1
+        assert len(ce_outbox) == 1
+
+        pos_payload = json.loads(close_pos_outbox[0].payload_json)
+        ce_payload = json.loads(ce_outbox[0].payload_json)
+
+        assert pos_payload["instrument"] == "GBPUSD"
+        assert pos_payload["order_id"] == "o1"
+        assert ce_payload["order_id"] == "o1"
+        assert ce_payload["primary_reason_code"] == "sl"

@@ -454,3 +454,88 @@ class TestSecondSignalAfterFill:
         sm = _make_sm(engine)
         _run(engine, state_manager=sm)
         assert sm.open_instruments() == frozenset({"EURUSD"})
+
+
+# --- E2E: compute_size=0 → reject risk_event ----------------------------------
+
+
+class TestComputeSizeZeroPath:
+    def test_size_zero_writes_reject_risk_event(self, engine) -> None:
+        """When compute_size returns 0 (e.g. SizeUnderMin), on_risk_verdict
+        must be called with verdict='reject' and a dotted constraint code."""
+        _seed_signal(engine, instrument="EURUSD")
+        sm = _make_sm(engine)
+        # sl_pips=0 → PositionSizer returns size=0 (division by zero guard)
+        result = run_execution_gate(
+            engine,
+            broker=_NeverBroker(),
+            account_id="acc-1",
+            clock=FixedClock(_FIXED_NOW),
+            risk_manager=RiskManagerService(
+                max_concurrent_positions=5,
+                position_sizer=PositionSizerService(),
+                max_open_positions=5,
+                cooloff_max_failures=99,
+            ),
+            account_balance=10_000.0,
+            risk_pct=1.0,
+            sl_pips=0.0,  # triggers size=0
+            instruments={"EURUSD": _instrument()},
+            state_manager=sm,
+        )
+        assert result.outcome == "blocked"
+        events = _risk_events(engine)
+        assert len(events) == 1
+        assert events[0].verdict == "reject"
+        assert events[0].constraint_violated is not None
+        assert events[0].constraint_violated.startswith("risk.")
+
+    def test_size_zero_does_not_write_positions_row(self, engine) -> None:
+        """Blocked by compute_size=0 → broker not called → no positions row."""
+        _seed_signal(engine, instrument="EURUSD")
+        sm = _make_sm(engine)
+        run_execution_gate(
+            engine,
+            broker=_NeverBroker(),
+            account_id="acc-1",
+            clock=FixedClock(_FIXED_NOW),
+            risk_manager=RiskManagerService(
+                max_concurrent_positions=5,
+                position_sizer=PositionSizerService(),
+                max_open_positions=5,
+                cooloff_max_failures=99,
+            ),
+            account_balance=10_000.0,
+            risk_pct=1.0,
+            sl_pips=0.0,
+            instruments={"EURUSD": _instrument()},
+            state_manager=sm,
+        )
+        assert _positions(engine) == []
+
+    def test_size_zero_risk_event_in_outbox(self, engine) -> None:
+        _seed_signal(engine, instrument="EURUSD")
+        sm = _make_sm(engine)
+        run_execution_gate(
+            engine,
+            broker=_NeverBroker(),
+            account_id="acc-1",
+            clock=FixedClock(_FIXED_NOW),
+            risk_manager=RiskManagerService(
+                max_concurrent_positions=5,
+                position_sizer=PositionSizerService(),
+                max_open_positions=5,
+                cooloff_max_failures=99,
+            ),
+            account_balance=10_000.0,
+            risk_pct=1.0,
+            sl_pips=0.0,
+            instruments={"EURUSD": _instrument()},
+            state_manager=sm,
+        )
+        rows = _outbox(engine, table_name="risk_events")
+        assert len(rows) == 1
+        import json
+
+        payload = json.loads(rows[0].payload_json)
+        assert payload["verdict"] == "reject"
