@@ -1,9 +1,8 @@
-"""Configuration Console — Runtime + Bootstrap tabs (M26 Phase 2).
+"""Configuration Console — Runtime + Bootstrap tabs (M26 Phase 3).
 
-Phase 2 scope:
-  - Runtime tab: app_settings layer view + enqueue changes via
-    ``app_settings_changes`` queue. Applied on next restart / hot-reload.
-  - Bootstrap tab: PLACEHOLDER ONLY (enabled in M26 Phase 3 with .env sink).
+- Runtime tab: app_settings layer view + enqueue changes via
+  ``app_settings_changes`` queue. Applied on next restart / hot-reload.
+- Bootstrap tab: `.env` sink. PID-gated, atomic write, hash-only audit.
 """
 
 from __future__ import annotations
@@ -13,7 +12,7 @@ import os
 import streamlit as st
 from sqlalchemy import create_engine
 
-from fx_ai_trading.dashboard.config_console import runtime_view
+from fx_ai_trading.dashboard.config_console import bootstrap_view, runtime_view
 
 st.set_page_config(
     page_title="Configuration Console",
@@ -21,7 +20,7 @@ st.set_page_config(
     layout="wide",
 )
 st.title("Configuration Console")
-st.caption("app_settings & .env management · M26 Phase 2 · Demo Mode")
+st.caption("app_settings & .env management · M26 Phase 3 · Demo Mode")
 
 
 @st.cache_resource
@@ -45,12 +44,4 @@ with tab_runtime:
     runtime_view.render(engine)
 
 with tab_bootstrap:
-    st.info(
-        "Bootstrap mode (`.env` sink) is enabled in **M26 Phase 3**. "
-        "For now, edit `.env` from a terminal while the app is stopped."
-    )
-    st.caption(
-        "Per operations.md §15.2: secret / connection params are written "
-        "ONLY via `.env` (not via DB). UI write path is restricted to "
-        "PID-absent state (race-safe atomic rename)."
-    )
+    bootstrap_view.render(engine)
