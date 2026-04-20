@@ -211,9 +211,7 @@ class SyncService:
         last_error: str | None,
         now: datetime,
     ) -> None:
-        next_at = compute_next_attempt_at(
-            now=now, attempt_count=attempt_count, policy=self._policy
-        )
+        next_at = compute_next_attempt_at(now=now, attempt_count=attempt_count, policy=self._policy)
         sql = text(
             """
             UPDATE secondary_sync_outbox
