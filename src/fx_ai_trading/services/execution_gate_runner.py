@@ -79,6 +79,7 @@ from sqlalchemy.engine import Engine
 from fx_ai_trading.common.clock import Clock
 from fx_ai_trading.common.ulid import generate_ulid
 from fx_ai_trading.domain.broker import Broker, OrderRequest, OrderResult
+from fx_ai_trading.domain.reason_codes import RiskReason, TimeoutReason
 from fx_ai_trading.domain.risk import Instrument
 from fx_ai_trading.sync.enqueue import enqueue_secondary_sync
 
@@ -103,9 +104,9 @@ _DIRECTION_TO_BROKER_SIDE = {"buy": "long", "sell": "short"}
 # Cycle 6.6: PositionSizer returns camelcase reasons; execution gate maps
 # them onto the risk.* taxonomy when writing no_trade_events.
 _SIZE_REASON_TO_CODE = {
-    "InvalidSL": "risk.invalid_sl",
-    "InvalidRiskPct": "risk.invalid_risk_pct",
-    "SizeUnderMin": "risk.size_under_min",
+    "InvalidSL": RiskReason.INVALID_SL,
+    "InvalidRiskPct": RiskReason.INVALID_RISK_PCT,
+    "SizeUnderMin": RiskReason.SIZE_UNDER_MIN,
 }
 
 
@@ -275,7 +276,7 @@ def run_execution_gate(
             transaction_type="ORDER_EXPIRED",
             transaction_time_utc=now,
             payload={
-                "reason": "SignalExpired",
+                "reason": TimeoutReason.SIGNAL_EXPIRED,
                 "signal_age_seconds": signal_age,
                 "ttl_seconds": pending.ttl_seconds,
                 "correlation_id": pending.correlation_id,
@@ -296,7 +297,7 @@ def run_execution_gate(
             cycle_id=pending.cycle_id,
             meta_decision_id=pending.meta_decision_id,
             reason_category="timeout",
-            reason_code="ttl_expired",
+            reason_code=TimeoutReason.TTL_EXPIRED,
             reason_detail=json.dumps(
                 {
                     "order_id": order_id,
@@ -323,7 +324,7 @@ def run_execution_gate(
             order_id=order_id,
             order_status="CANCELED",
             outcome="expired",
-            reject_reason="SignalExpired",
+            reject_reason=TimeoutReason.SIGNAL_EXPIRED,
             order_transactions_written=txn_count,
             no_trade_events_written=1,
         )
@@ -351,7 +352,7 @@ def run_execution_gate(
         )
         if size_result.size_units == 0:
             reject_reason = _SIZE_REASON_TO_CODE.get(
-                size_result.reason or "", "risk.size_under_min"
+                size_result.reason or "", RiskReason.SIZE_UNDER_MIN
             )
             state_manager.on_risk_verdict(
                 verdict="reject",
@@ -406,7 +407,7 @@ def run_execution_gate(
                 account_id=account_id,
                 account_type=broker.account_type,
                 units=effective_units,
-                reject_reason=allow_result.reject_reason or "risk.unknown",
+                reject_reason=allow_result.reject_reason or RiskReason.UNKNOWN,
                 now=now,
                 sanitizer=san,
                 clock=clock,

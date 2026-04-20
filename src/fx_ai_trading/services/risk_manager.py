@@ -32,6 +32,7 @@ from __future__ import annotations
 
 import logging
 
+from fx_ai_trading.domain.reason_codes import RiskReason
 from fx_ai_trading.domain.risk import (
     AllowTradeResult,
     Exposure,
@@ -115,7 +116,7 @@ class RiskManagerService:
             )
             return RiskAcceptResult(
                 accepted=False,
-                reject_reason="risk.concurrent_limit",
+                reject_reason=RiskReason.CONCURRENT_LIMIT,
             )
 
         # C2: Single currency exposure cap
@@ -129,7 +130,7 @@ class RiskManagerService:
                 )
                 return RiskAcceptResult(
                     accepted=False,
-                    reject_reason="risk.single_currency_exposure",
+                    reject_reason=RiskReason.SINGLE_CURRENCY_EXPOSURE,
                 )
 
         # C3: Net directional exposure cap per currency
@@ -145,7 +146,7 @@ class RiskManagerService:
                     )
                     return RiskAcceptResult(
                         accepted=False,
-                        reject_reason="risk.net_directional_exposure",
+                        reject_reason=RiskReason.NET_DIRECTIONAL_EXPOSURE,
                     )
 
         # C4: Total correlation-adjusted risk cap
@@ -157,7 +158,7 @@ class RiskManagerService:
             )
             return RiskAcceptResult(
                 accepted=False,
-                reject_reason="risk.total_risk",
+                reject_reason=RiskReason.TOTAL_RISK,
             )
 
         # Shallow-copy outer dicts so exposure_after is independent of the snapshot.
@@ -240,7 +241,7 @@ class RiskManagerService:
                 "RiskManagerService.allow_trade G1 reject: %s already open",
                 instrument,
             )
-            return AllowTradeResult(allowed=False, reject_reason="risk.duplicate_instrument")
+            return AllowTradeResult(allowed=False, reject_reason=RiskReason.DUPLICATE_INSTRUMENT)
 
         # G2: max open positions (runtime cap)
         if concurrent_positions >= self._max_open_positions:
@@ -249,7 +250,7 @@ class RiskManagerService:
                 concurrent_positions,
                 self._max_open_positions,
             )
-            return AllowTradeResult(allowed=False, reject_reason="risk.max_open_positions")
+            return AllowTradeResult(allowed=False, reject_reason=RiskReason.MAX_OPEN_POSITIONS)
 
         # G3: recent execution failure cooloff
         if recent_failure_count >= self._cooloff_max_failures:
@@ -260,7 +261,7 @@ class RiskManagerService:
             )
             return AllowTradeResult(
                 allowed=False,
-                reject_reason="risk.recent_execution_failure_cooloff",
+                reject_reason=RiskReason.RECENT_EXECUTION_FAILURE_COOLOFF,
             )
 
         _log.debug(

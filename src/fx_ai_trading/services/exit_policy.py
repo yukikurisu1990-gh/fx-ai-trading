@@ -18,6 +18,7 @@ Deferred to Phase 7:
 from __future__ import annotations
 
 from fx_ai_trading.domain.exit import ExitDecision
+from fx_ai_trading.domain.reason_codes import CloseReason
 
 
 class ExitPolicyService:
@@ -71,7 +72,7 @@ class ExitPolicyService:
 
     def _check_emergency_stop(self, reasons: list[str], context: dict) -> None:
         if context.get("emergency_stop"):
-            reasons.append("emergency_stop")
+            reasons.append(CloseReason.EMERGENCY_STOP)
 
     def _check_sl(
         self, reasons: list[str], side: str, current_price: float, sl: float | None
@@ -79,7 +80,7 @@ class ExitPolicyService:
         if sl is None:
             return
         if (side == "long" and current_price <= sl) or (side == "short" and current_price >= sl):
-            reasons.append("sl")
+            reasons.append(CloseReason.SL)
 
     def _check_tp(
         self, reasons: list[str], side: str, current_price: float, tp: float | None
@@ -87,8 +88,8 @@ class ExitPolicyService:
         if tp is None:
             return
         if (side == "long" and current_price >= tp) or (side == "short" and current_price <= tp):
-            reasons.append("tp")
+            reasons.append(CloseReason.TP)
 
     def _check_max_holding_time(self, reasons: list[str], holding_seconds: int) -> None:
         if holding_seconds >= self._max_holding_seconds:
-            reasons.append("max_holding_time")
+            reasons.append(CloseReason.MAX_HOLDING_TIME)

@@ -33,7 +33,23 @@ from uuid import UUID
 from fx_ai_trading.domain.event_calendar import EventCalendar
 from fx_ai_trading.domain.meta import MetaContext, MetaDecision, NoTradeReason
 from fx_ai_trading.domain.price_anomaly import PriceAnomalyGuard
+from fx_ai_trading.domain.reason_codes import MetaReason
 from fx_ai_trading.domain.strategy import StrategySignal
+
+# Lowercase rule names used by the filter pipeline diagnostic snapshot.
+_RULE_SIGNAL_NO_TRADE = "signal_no_trade"
+_RULE_NEAR_EVENT = "near_event"
+_RULE_PRICE_ANOMALY = "price_anomaly"
+
+# Map filter-rule snapshot names to their canonical reason_code constants.
+# Keeps the registered (UPPERCASE) reason_code as the single source of
+# truth while preserving the lowercase rule labels used in
+# ``filter_log`` snapshots.
+_RULE_TO_REASON_CODE = {
+    _RULE_SIGNAL_NO_TRADE: MetaReason.SIGNAL_NO_TRADE,
+    _RULE_NEAR_EVENT: MetaReason.NEAR_EVENT,
+    _RULE_PRICE_ANOMALY: MetaReason.PRICE_ANOMALY,
+}
 
 _log = logging.getLogger(__name__)
 
@@ -123,7 +139,7 @@ class MetaDeciderService:
             detail = "EventCalendar exceeded max staleness"
             return {
                 "remaining": [],
-                "reasons": [NoTradeReason(reason_code="CALENDAR_STALE", detail=detail)],
+                "reasons": [NoTradeReason(reason_code=MetaReason.CALENDAR_STALE, detail=detail)],
                 "snapshot": {
                     "rule": "calendar_stale",
                     "candidates_in": len(candidates),
@@ -136,25 +152,30 @@ class MetaDeciderService:
 
             # Rule F2: explicit no_trade signal
             if sig.signal == "no_trade":
-                rejected_by.append("signal_no_trade")
+                rejected_by.append(_RULE_SIGNAL_NO_TRADE)
 
             # Rule F3: near high-impact economic event
             if not rejected_by and self._calendar is not None:
                 currency = _instrument_to_currency(sig.strategy_id)
                 upcoming = self._calendar.get_upcoming(currency, self._near_event_minutes)
                 if upcoming:
-                    rejected_by.append("near_event")
+                    rejected_by.append(_RULE_NEAR_EVENT)
 
             # Rule F4: price anomaly
             if not rejected_by and self._anomaly_guard is not None:
                 instrument = _strategy_id_to_instrument(sig.strategy_id)
                 if self._anomaly_guard.is_anomaly(instrument):
-                    rejected_by.append("price_anomaly")
+                    rejected_by.append(_RULE_PRICE_ANOMALY)
 
             if rejected_by:
                 filter_log[sig.strategy_id] = rejected_by
                 for rule in rejected_by:
-                    reasons.append(NoTradeReason(reason_code=rule.upper(), detail=sig.strategy_id))
+                    reasons.append(
+                        NoTradeReason(
+                            reason_code=_RULE_TO_REASON_CODE[rule],
+                            detail=sig.strategy_id,
+                        )
+                    )
             else:
                 remaining.append(sig)
 
@@ -218,7 +239,7 @@ class MetaDeciderService:
             return self._no_trade(
                 decision_id,
                 context,
-                reasons=(NoTradeReason(reason_code="NO_SCORED_CANDIDATES"),),
+                reasons=(NoTradeReason(reason_code=MetaReason.NO_SCORED_CANDIDATES),),
                 filter_snapshot=filter_snapshot,
             )
 
@@ -230,7 +251,9 @@ class MetaDeciderService:
             return self._no_trade(
                 decision_id,
                 context,
-                reasons=(NoTradeReason(reason_code="EV_BELOW_THRESHOLD", detail=ev_detail),),
+                reasons=(
+                    NoTradeReason(reason_code=MetaReason.EV_BELOW_THRESHOLD, detail=ev_detail),
+                ),
                 filter_snapshot=filter_snapshot,
                 score_snapshot=score_snapshot,
                 score_contributions=score_contributions,

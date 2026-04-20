@@ -25,6 +25,7 @@ from datetime import timedelta
 
 from fx_ai_trading.common.clock import Clock, WallClock
 from fx_ai_trading.domain.execution import GateResult, RealtimeContext, TradingIntent
+from fx_ai_trading.domain.reason_codes import GateReason
 
 _log = logging.getLogger(__name__)
 
@@ -94,7 +95,7 @@ class ExecutionGateService:
             return GateResult(
                 decision="reject",
                 signal_age_seconds=signal_age_seconds,
-                reason_code="SignalExpired",
+                reason_code=GateReason.SIGNAL_EXPIRED,
             )
 
         # Step 2 — DeferExhausted (TTL still valid but retried too many times)
@@ -108,7 +109,7 @@ class ExecutionGateService:
             return GateResult(
                 decision="reject",
                 signal_age_seconds=signal_age_seconds,
-                reason_code="DeferExhausted",
+                reason_code=GateReason.DEFER_EXHAUSTED,
             )
 
         # Step 3 — SpreadTooWide → Defer (with defer_until timestamp)
@@ -123,7 +124,7 @@ class ExecutionGateService:
             return GateResult(
                 decision="defer",
                 signal_age_seconds=signal_age_seconds,
-                reason_code="SpreadTooWide",
+                reason_code=GateReason.SPREAD_TOO_WIDE,
                 defer_until=defer_until,
             )
 
@@ -136,7 +137,7 @@ class ExecutionGateService:
             return GateResult(
                 decision="reject",
                 signal_age_seconds=signal_age_seconds,
-                reason_code="BrokerUnreachable",
+                reason_code=GateReason.BROKER_UNREACHABLE,
             )
 
         # Step 5 — All checks passed → Approve
