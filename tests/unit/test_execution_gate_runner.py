@@ -45,6 +45,7 @@ from fx_ai_trading.services.execution_gate_runner import (
     ExecutionGateRunResult,
     run_execution_gate,
 )
+from fx_ai_trading.services.state_manager import StateManager
 
 _FIXED_NOW = datetime(2026, 4, 20, 12, 0, 0, tzinfo=UTC)
 
@@ -98,6 +99,50 @@ CREATE TABLE order_transactions (
 )
 """
 
+_DDL_NO_TRADE_EVENTS = """
+CREATE TABLE no_trade_events (
+    no_trade_event_id TEXT PRIMARY KEY,
+    cycle_id          TEXT,
+    meta_decision_id  TEXT,
+    reason_category   TEXT NOT NULL,
+    reason_code       TEXT NOT NULL,
+    reason_detail     TEXT,
+    source_component  TEXT NOT NULL,
+    instrument        TEXT,
+    strategy_id       TEXT,
+    event_time_utc    TEXT NOT NULL
+)
+"""
+
+_DDL_POSITIONS = """
+CREATE TABLE positions (
+    position_snapshot_id TEXT PRIMARY KEY,
+    order_id             TEXT,
+    account_id           TEXT NOT NULL,
+    instrument           TEXT NOT NULL,
+    event_type           TEXT NOT NULL,
+    units                NUMERIC(18,4) NOT NULL,
+    avg_price            NUMERIC(18,8),
+    unrealized_pl        NUMERIC(18,8),
+    realized_pl          NUMERIC(18,8),
+    event_time_utc       TEXT NOT NULL,
+    correlation_id       TEXT
+)
+"""
+
+_DDL_RISK_EVENTS = """
+CREATE TABLE risk_events (
+    risk_event_id       TEXT PRIMARY KEY,
+    cycle_id            TEXT,
+    instrument          TEXT,
+    strategy_id         TEXT,
+    verdict             TEXT NOT NULL,
+    constraint_violated TEXT,
+    detail              TEXT,
+    event_time_utc      TEXT NOT NULL
+)
+"""
+
 _DDL_OUTBOX = """
 CREATE TABLE secondary_sync_outbox (
     outbox_id       TEXT PRIMARY KEY,
@@ -125,6 +170,9 @@ def engine():
         conn.execute(text(_DDL_TRADING_SIGNALS))
         conn.execute(text(_DDL_ORDERS))
         conn.execute(text(_DDL_ORDER_TRANSACTIONS))
+        conn.execute(text(_DDL_NO_TRADE_EVENTS))
+        conn.execute(text(_DDL_POSITIONS))
+        conn.execute(text(_DDL_RISK_EVENTS))
         conn.execute(text(_DDL_OUTBOX))
     yield eng
     eng.dispose()
@@ -242,6 +290,11 @@ def _count(engine, table: str, where: str = "1=1") -> int:
         return conn.execute(text(f"SELECT count(*) FROM {table} WHERE {where}")).scalar()
 
 
+def _sm(engine) -> StateManager:
+    """Build a StateManager bound to the unit-test fixture engine."""
+    return StateManager(engine, account_id="acc-1", clock=FixedClock(_FIXED_NOW))
+
+
 # --- Paper-fixed guard ----------------------------------------------------
 
 
@@ -255,6 +308,7 @@ class TestPaperFixedGuard:
                 account_id="acc-1",
                 clock=FixedClock(_FIXED_NOW),
                 expected_account_type="live",
+                state_manager=_sm(engine),
             )
 
     def test_broker_account_type_must_match_expected(self, engine) -> None:
@@ -265,6 +319,7 @@ class TestPaperFixedGuard:
                 broker=b,
                 account_id="acc-1",
                 clock=FixedClock(_FIXED_NOW),
+                state_manager=_sm(engine),
             )
 
     def test_guards_run_before_any_db_read(self, engine) -> None:
@@ -277,6 +332,7 @@ class TestPaperFixedGuard:
                 broker=b,
                 account_id="acc-1",
                 clock=FixedClock(_FIXED_NOW),
+                state_manager=_sm(engine),
             )
         # Nothing written.
         assert _count(engine, "orders") == 0
@@ -294,6 +350,7 @@ class TestNoop:
             broker=b,
             account_id="acc-1",
             clock=FixedClock(_FIXED_NOW),
+            state_manager=_sm(engine),
         )
         assert isinstance(r, ExecutionGateRunResult)
         assert r.processed is False
@@ -316,6 +373,7 @@ class TestFilledPath:
             broker=b,
             account_id="acc-1",
             clock=FixedClock(_FIXED_NOW),
+            state_manager=_sm(engine),
         )
         assert r.processed is True
         assert r.outcome == "filled"
@@ -345,6 +403,7 @@ class TestFilledPath:
             broker=b,
             account_id="acc-1",
             clock=FixedClock(_FIXED_NOW),
+            state_manager=_sm(engine),
         )
         assert b.received[0].side == "long"
 
@@ -356,6 +415,7 @@ class TestFilledPath:
             broker=b,
             account_id="acc-1",
             clock=FixedClock(_FIXED_NOW),
+            state_manager=_sm(engine),
         )
         assert b.received[0].side == "short"
 
@@ -372,6 +432,7 @@ class TestFilledPath:
             broker=b,
             account_id="acc-1",
             clock=FixedClock(_FIXED_NOW),
+            state_manager=_sm(engine),
         )
         with engine.connect() as conn:
             row = conn.execute(
@@ -400,6 +461,7 @@ class TestRejectedPath:
             broker=b,
             account_id="acc-1",
             clock=FixedClock(_FIXED_NOW),
+            state_manager=_sm(engine),
         )
         assert r.outcome == "rejected"
         assert r.order_status == "CANCELED"
@@ -427,6 +489,7 @@ class TestTimeoutPath:
             broker=b,
             account_id="acc-1",
             clock=FixedClock(_FIXED_NOW),
+            state_manager=_sm(engine),
         )
         assert r.outcome == "timeout"
         assert r.order_status == "FAILED"
@@ -463,6 +526,7 @@ class TestExpiredPath:
             broker=b,
             account_id="acc-1",
             clock=FixedClock(_FIXED_NOW),
+            state_manager=_sm(engine),
         )
         assert r.outcome == "expired"
         assert r.order_status == "CANCELED"
@@ -493,8 +557,67 @@ class TestExpiredPath:
             broker=b,
             account_id="acc-1",
             clock=FixedClock(_FIXED_NOW),
+            state_manager=_sm(engine),
         )
         assert r.outcome == "filled"
+
+    def test_ttl_expired_writes_no_trade_events(self, engine) -> None:
+        """Cycle 6.7d I-01: TTL expiry is recorded in no_trade_events."""
+        _seed_trading_signal(
+            engine,
+            trading_signal_id="ts-exp-ntr",
+            meta_decision_id="md-exp-ntr",
+            cycle_id="cy-exp-ntr",
+            instrument="EURUSD",
+            strategy_id="stratA",
+            direction="buy",
+            signal_time_utc=_FIXED_NOW - timedelta(seconds=120),
+            ttl_seconds=60,
+            correlation_id="corr-exp",
+        )
+        b = _FakeBroker(mode="fill")
+        r = run_execution_gate(
+            engine,
+            broker=b,
+            account_id="acc-1",
+            clock=FixedClock(_FIXED_NOW),
+            state_manager=_sm(engine),
+        )
+        assert r.outcome == "expired"
+        assert r.no_trade_events_written == 1
+
+        with engine.connect() as conn:
+            row = conn.execute(
+                text(
+                    "SELECT reason_category, reason_code, reason_detail, "
+                    "source_component, instrument, strategy_id, "
+                    "cycle_id, meta_decision_id "
+                    "FROM no_trade_events"
+                )
+            ).fetchone()
+        assert row is not None
+        assert row.reason_category == "timeout"
+        assert row.reason_code == "ttl_expired"
+        assert row.source_component == "execution_gate_runner"
+        assert row.instrument == "EURUSD"
+        assert row.strategy_id == "stratA"
+        assert row.cycle_id == "cy-exp-ntr"
+        assert row.meta_decision_id == "md-exp-ntr"
+        detail = json.loads(str(row.reason_detail))
+        assert detail["trading_signal_id"] == "ts-exp-ntr"
+        assert detail["correlation_id"] == "corr-exp"
+        assert detail["ttl_seconds"] == 60
+        assert detail["signal_age_seconds"] == 120
+
+        # F-12: row is mirrored to secondary_sync_outbox.
+        with engine.connect() as conn:
+            outbox_row = conn.execute(
+                text(
+                    "SELECT table_name FROM secondary_sync_outbox "
+                    "WHERE table_name = 'no_trade_events'"
+                )
+            ).fetchone()
+        assert outbox_row is not None
 
 
 # --- Unprocessed selector / append-only -----------------------------------
@@ -509,6 +632,7 @@ class TestUnprocessedSelector:
             broker=b,
             account_id="acc-1",
             clock=FixedClock(_FIXED_NOW),
+            state_manager=_sm(engine),
         )
         assert first.outcome == "filled"
         second = run_execution_gate(
@@ -516,6 +640,7 @@ class TestUnprocessedSelector:
             broker=b,
             account_id="acc-1",
             clock=FixedClock(_FIXED_NOW),
+            state_manager=_sm(engine),
         )
         assert second.outcome == "noop"
         # Still exactly one orders row for the signal.
@@ -541,6 +666,7 @@ class TestUnprocessedSelector:
             broker=b,
             account_id="acc-1",
             clock=FixedClock(_FIXED_NOW),
+            state_manager=_sm(engine),
         )
         assert r1.trading_signal_id == "ts-old"
         # Second call picks the remaining newer one.
@@ -549,6 +675,7 @@ class TestUnprocessedSelector:
             broker=b,
             account_id="acc-1",
             clock=FixedClock(_FIXED_NOW),
+            state_manager=_sm(engine),
         )
         assert r2.trading_signal_id == "ts-new"
         assert _count(engine, "orders") == 2
@@ -566,6 +693,7 @@ class TestOutboxMirror:
             broker=b,
             account_id="acc-1",
             clock=FixedClock(_FIXED_NOW),
+            state_manager=_sm(engine),
         )
         with engine.connect() as conn:
             rows = conn.execute(
@@ -591,6 +719,7 @@ class TestOutboxMirror:
             environment="paper",
             code_version="sha-1",
             config_version="cv-1",
+            state_manager=_sm(engine),
         )
         with engine.connect() as conn:
             row = conn.execute(

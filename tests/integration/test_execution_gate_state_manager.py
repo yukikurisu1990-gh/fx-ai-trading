@@ -6,7 +6,6 @@ Asserts:
   - G1/G2 respond to positions rows (not orders rows) — the 6.7b
     authoritative source switch.
   - ORDER_EXPIRED rows do NOT increment the G3 failure counter (L1).
-  - ``state_manager=None`` falls back to Cycle 6.6 helpers (orders-based).
   - Cross-account isolation via positions.
 """
 
@@ -263,37 +262,6 @@ def _seed_open_position(
     return psid
 
 
-def _seed_filled_order(engine, *, instrument: str, account_id: str = "acc-1") -> str:
-    """Seed a FILLED order (for state_manager=None / backward-compat tests only)."""
-    oid = generate_ulid()
-    with engine.begin() as conn:
-        conn.execute(
-            text(
-                """
-                INSERT INTO orders (
-                    order_id, client_order_id, trading_signal_id,
-                    account_id, instrument, account_type, order_type,
-                    direction, units, status, submitted_at, filled_at,
-                    canceled_at, correlation_id, created_at
-                ) VALUES (
-                    :oid, :coid, 'prev-ts',
-                    :aid, :inst, 'demo', 'market',
-                    'buy', 1000, 'FILLED', :ts, :ts,
-                    NULL, 'c-prev', :ts
-                )
-                """
-            ),
-            {
-                "oid": oid,
-                "coid": f"{oid}:{instrument}:s1",
-                "aid": account_id,
-                "inst": instrument,
-                "ts": _FIXED_NOW.isoformat(),
-            },
-        )
-    return oid
-
-
 def _seed_txn(
     engine,
     *,
@@ -340,7 +308,7 @@ def _run_with_state_manager(
     broker=None,
     account_id: str = "acc-1",
     risk_manager: RiskManagerService | None = None,
-    state_manager: StateManager | None = None,
+    state_manager: StateManager,
 ) -> object:
     return run_execution_gate(
         engine,
@@ -508,47 +476,5 @@ class TestAccountIsolation:
         )
         result = _run_with_state_manager(
             engine, broker=_AcceptBroker(), risk_manager=risk_mgr, state_manager=sm
-        )
-        assert result.outcome == "filled"
-
-
-# --- Backward compat: state_manager=None (orders-based helpers) ---------------
-
-
-class TestBackwardCompatNoStateManager:
-    def test_none_falls_back_to_cycle66_helpers(self, engine) -> None:
-        # state_manager=None → _fetch_open_instruments reads orders.  A
-        # FILLED order must still trigger G1 via the legacy helper.
-        _seed_filled_order(engine, instrument="EURUSD", account_id="acc-1")
-        _seed_signal(engine, instrument="EURUSD")
-        risk_mgr = RiskManagerService(
-            max_concurrent_positions=5,
-            position_sizer=PositionSizerService(),
-            max_open_positions=5,
-            cooloff_max_failures=99,
-        )
-        result = run_execution_gate(
-            engine,
-            broker=_NeverBroker(),
-            account_id="acc-1",
-            clock=FixedClock(_FIXED_NOW),
-            risk_manager=risk_mgr,
-            account_balance=10_000.0,
-            risk_pct=1.0,
-            sl_pips=10.0,
-            instruments={"EURUSD": _instrument()},
-            state_manager=None,
-        )
-        assert result.outcome == "blocked"
-        assert result.reject_reason == "risk.duplicate_instrument"
-
-    def test_no_risk_no_state_manager_still_works(self, engine) -> None:
-        _seed_signal(engine, instrument="EURUSD")
-        result = run_execution_gate(
-            engine,
-            broker=_AcceptBroker(),
-            account_id="acc-1",
-            clock=FixedClock(_FIXED_NOW),
-            size_units=500,
         )
         assert result.outcome == "filled"

@@ -288,7 +288,7 @@ def _run(
     broker=None,
     account_id: str = "acc-1",
     risk_manager: RiskManagerService | None = None,
-    state_manager: StateManager | None = None,
+    state_manager: StateManager,
     max_open: int = 5,
 ) -> object:
     rm = risk_manager or RiskManagerService(

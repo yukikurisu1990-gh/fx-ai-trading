@@ -31,6 +31,7 @@ from fx_ai_trading.domain.feature import FeatureSet
 from fx_ai_trading.domain.strategy import StrategyContext
 from fx_ai_trading.services.execution_gate_runner import run_execution_gate
 from fx_ai_trading.services.meta_cycle_runner import run_meta_cycle
+from fx_ai_trading.services.state_manager import StateManager
 from fx_ai_trading.services.strategy_runner import run_strategy_cycle
 from fx_ai_trading.strategies import (
     AlwaysNoTradeStrategy,
@@ -132,6 +133,35 @@ CREATE TABLE no_trade_events (
 )
 """
 
+_DDL_POSITIONS = """
+CREATE TABLE positions (
+    position_snapshot_id TEXT PRIMARY KEY,
+    order_id             TEXT,
+    account_id           TEXT NOT NULL,
+    instrument           TEXT NOT NULL,
+    event_type           TEXT NOT NULL,
+    units                NUMERIC(18,4) NOT NULL,
+    avg_price            NUMERIC(18,8),
+    unrealized_pl        NUMERIC(18,8),
+    realized_pl          NUMERIC(18,8),
+    event_time_utc       TEXT NOT NULL,
+    correlation_id       TEXT
+)
+"""
+
+_DDL_RISK_EVENTS = """
+CREATE TABLE risk_events (
+    risk_event_id       TEXT PRIMARY KEY,
+    cycle_id            TEXT,
+    instrument          TEXT,
+    strategy_id         TEXT,
+    verdict             TEXT NOT NULL,
+    constraint_violated TEXT,
+    detail              TEXT,
+    event_time_utc      TEXT NOT NULL
+)
+"""
+
 _DDL_OUTBOX = """
 CREATE TABLE secondary_sync_outbox (
     outbox_id       TEXT PRIMARY KEY,
@@ -162,6 +192,8 @@ def engine():
         conn.execute(text(_DDL_ORDERS))
         conn.execute(text(_DDL_ORDER_TRANSACTIONS))
         conn.execute(text(_DDL_NO_TRADE_EVENTS))
+        conn.execute(text(_DDL_POSITIONS))
+        conn.execute(text(_DDL_RISK_EVENTS))
         conn.execute(text(_DDL_OUTBOX))
     yield eng
     eng.dispose()
@@ -206,6 +238,7 @@ def _run_full_chain(
         broker=broker,
         account_id="acc-1",
         clock=clock,
+        state_manager=StateManager(engine, account_id="acc-1", clock=clock),
     )
     return meta, exec_result
 
@@ -276,6 +309,7 @@ class TestCorrelationRoundTrip:
             broker=broker,
             account_id="acc-1",
             clock=clock,
+            state_manager=StateManager(engine, account_id="acc-1", clock=clock),
         )
 
         # orders.correlation_id matches.
