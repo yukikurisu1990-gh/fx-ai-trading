@@ -1,13 +1,18 @@
-"""Schema coverage tests — verify all 42 D1 tables are declared in migrations.
+"""Schema coverage tests — verify all 44 D1 tables are declared in migrations.
 
 These tests are DB-free: they parse migration files statically, so they run
 in CI without a live PostgreSQL connection.
 
 What is checked:
   - Every op.create_table() call across all revision files is collected.
-  - The resulting set must exactly match the 42 D1 tables defined in
-    docs/schema_catalog.md (Groups A–I).
+  - The resulting set must exactly match the 44 D1 tables defined in
+    docs/schema_catalog.md (Groups A–I + Iter2 / Phase 6 additions).
   - alembic_version is NOT included (it is Alembic infrastructure, not D1).
+
+Table-count history:
+  - Phase 6 baseline:                42 tables (Groups A–I)
+  - Iter2 M20 (mig 0012):           +1 → 43 (dashboard_top_candidates)
+  - Phase 6 Cycle 6.1 (mig 0013):   +1 → 44 (secondary_sync_outbox)
 """
 
 from __future__ import annotations
@@ -65,13 +70,14 @@ EXPECTED_TABLES: frozenset[str] = frozenset(
         "meta_strategy_evaluations",
         "daily_metrics",
         "dashboard_top_candidates",
-        # Group I — Operations (6)
+        # Group I — Operations (7)
         "system_jobs",
         "app_runtime_state",
         "outbox_events",
         "notification_outbox",
         "supervisor_events",
         "app_settings_changes",
+        "secondary_sync_outbox",  # Phase 6 Cycle 6.1 — Primary→Secondary sync outbox
     ]
 )
 
@@ -86,10 +92,10 @@ def _collect_created_tables() -> set[str]:
 
 
 def test_total_table_count() -> None:
-    """Exactly 43 D1 tables must be created across all migrations."""
+    """Exactly 44 D1 tables must be created across all migrations."""
     created = _collect_created_tables()
-    assert len(created) == 43, (
-        f"Expected 43 tables, found {len(created)}. "
+    assert len(created) == 44, (
+        f"Expected 44 tables, found {len(created)}. "
         f"Extra: {created - EXPECTED_TABLES}, "
         f"Missing: {EXPECTED_TABLES - created}"
     )
