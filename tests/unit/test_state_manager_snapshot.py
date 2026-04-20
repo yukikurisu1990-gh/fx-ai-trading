@@ -1,16 +1,25 @@
-"""Unit tests: StateManager (Cycle 6.7a read-only snapshot source).
+"""Unit tests: StateManager read-only surface (Cycle 6.7a/b).
 
 Covers:
-  - snapshot() returns a StateSnapshot with consistent values.
-  - open_instruments() filters to status='FILLED' for the configured
-    account and ignores other accounts.
-  - recent_execution_failures_within() counts exactly the broker-
-    origin failure transaction_types (ORDER_REJECT, ORDER_TIMEOUT)
-    within the window.  ORDER_EXPIRED / ORDER_CREATE / ORDER_FILL are
-    NOT counted (L1 semantics).
-  - cooloff window boundary behaves correctly (inclusive of cutoff).
-  - Cross-account isolation.
-  - Empty DB yields zero values.
+  open_instruments():
+    - Reads from the positions timeline (6.7b source switch).
+    - 'open'/'add' events make an instrument visible; 'close' hides it.
+    - Filters by account_id; cross-account rows are invisible.
+    - An instrument with both an open and a later close event is not open.
+    - An instrument with only a close event is not open.
+    - Empty positions table → frozenset().
+
+  recent_execution_failures_within():
+    - ORDER_REJECT + ORDER_TIMEOUT counted (L1 broker-origin only).
+    - ORDER_EXPIRED / ORDER_CREATE / ORDER_FILL NOT counted.
+    - Window boundary inclusive.
+    - Cross-account isolation.
+    - window_seconds=0 → 0.
+
+  snapshot():
+    - Returns StateSnapshot with consistent values.
+    - concurrent_count == len(open_instruments) (M10 paper-mode invariant).
+    - Cross-account isolation end-to-end.
 """
 
 from __future__ import annotations
@@ -25,35 +34,31 @@ from fx_ai_trading.services.state_manager import StateManager
 
 _NOW = datetime(2026, 4, 20, 12, 0, 0, tzinfo=UTC)
 
-_DDL_ORDERS = """
-CREATE TABLE orders (
-    order_id          TEXT PRIMARY KEY,
-    client_order_id   TEXT,
-    trading_signal_id TEXT,
-    account_id        TEXT NOT NULL,
-    instrument        TEXT NOT NULL,
-    account_type      TEXT NOT NULL,
-    order_type        TEXT NOT NULL,
-    direction         TEXT NOT NULL,
-    units             NUMERIC(18,4) NOT NULL,
-    status            TEXT NOT NULL,
-    submitted_at      TEXT,
-    filled_at         TEXT,
-    canceled_at       TEXT,
-    correlation_id    TEXT,
-    created_at        TEXT NOT NULL
+_DDL_POSITIONS = """
+CREATE TABLE positions (
+    position_snapshot_id TEXT PRIMARY KEY,
+    order_id             TEXT,
+    account_id           TEXT NOT NULL,
+    instrument           TEXT NOT NULL,
+    event_type           TEXT NOT NULL,
+    units                NUMERIC(18,4) NOT NULL,
+    avg_price            NUMERIC(18,8),
+    unrealized_pl        NUMERIC(18,8),
+    realized_pl          NUMERIC(18,8),
+    event_time_utc       TEXT NOT NULL,
+    correlation_id       TEXT
 )
 """
 
 _DDL_ORDER_TRANSACTIONS = """
 CREATE TABLE order_transactions (
-    broker_txn_id       TEXT NOT NULL,
-    account_id          TEXT NOT NULL,
-    order_id            TEXT,
-    transaction_type    TEXT NOT NULL,
+    broker_txn_id        TEXT NOT NULL,
+    account_id           TEXT NOT NULL,
+    order_id             TEXT,
+    transaction_type     TEXT NOT NULL,
     transaction_time_utc TEXT NOT NULL,
-    payload             TEXT,
-    received_at_utc     TEXT NOT NULL,
+    payload              TEXT,
+    received_at_utc      TEXT NOT NULL,
     PRIMARY KEY (broker_txn_id, account_id)
 )
 """
@@ -63,47 +68,44 @@ CREATE TABLE order_transactions (
 def engine():
     eng = create_engine("sqlite:///:memory:")
     with eng.begin() as conn:
-        conn.execute(text(_DDL_ORDERS))
+        conn.execute(text(_DDL_POSITIONS))
         conn.execute(text(_DDL_ORDER_TRANSACTIONS))
     yield eng
     eng.dispose()
 
 
-def _insert_order(
+def _insert_position(
     engine,
     *,
-    order_id: str,
+    psid: str,
     account_id: str,
     instrument: str,
-    status: str,
-    created_at: datetime = _NOW,
+    event_type: str,
+    order_id: str = "prev-o",
+    event_time_utc: datetime = _NOW,
 ) -> None:
     with engine.begin() as conn:
         conn.execute(
             text(
                 """
-                INSERT INTO orders (
-                    order_id, client_order_id, trading_signal_id, account_id,
-                    instrument, account_type, order_type, direction, units,
-                    status, submitted_at, filled_at, canceled_at,
-                    correlation_id, created_at
+                INSERT INTO positions (
+                    position_snapshot_id, order_id, account_id, instrument,
+                    event_type, units, avg_price, unrealized_pl, realized_pl,
+                    event_time_utc, correlation_id
                 ) VALUES (
-                    :oid, :coid, :tsid, :aid,
-                    :inst, 'demo', 'market', 'buy', 1000,
-                    :status, :ts, :ts, NULL,
-                    :corr, :ts
+                    :psid, :oid, :aid, :inst,
+                    :etype, 1000, 1.1, NULL, NULL,
+                    :ts, NULL
                 )
                 """
             ),
             {
+                "psid": psid,
                 "oid": order_id,
-                "coid": f"{order_id}:{instrument}:s1",
-                "tsid": f"ts-{order_id}",
                 "aid": account_id,
                 "inst": instrument,
-                "status": status,
-                "ts": created_at.isoformat(),
-                "corr": f"corr-{order_id}",
+                "etype": event_type,
+                "ts": event_time_utc.isoformat(),
             },
         )
 
@@ -140,54 +142,96 @@ def _insert_txn(
         )
 
 
-# --- open_instruments ------------------------------------------------------
+# --- open_instruments (positions-based, 6.7b) ---------------------------------
 
 
 class TestOpenInstruments:
-    def test_returns_empty_set_when_no_orders(self, engine) -> None:
+    def test_returns_empty_when_positions_table_is_empty(self, engine) -> None:
         sm = StateManager(engine, account_id="acc-1")
         assert sm.open_instruments() == frozenset()
 
-    def test_returns_only_filled_status(self, engine) -> None:
-        _insert_order(
-            engine, order_id="o1", account_id="acc-1", instrument="EURUSD", status="FILLED"
-        )
-        _insert_order(
-            engine, order_id="o2", account_id="acc-1", instrument="USDJPY", status="CANCELED"
-        )
-        _insert_order(
-            engine, order_id="o3", account_id="acc-1", instrument="GBPUSD", status="FAILED"
-        )
-        _insert_order(
-            engine, order_id="o4", account_id="acc-1", instrument="AUDUSD", status="PENDING"
+    def test_open_event_makes_instrument_visible(self, engine) -> None:
+        _insert_position(
+            engine, psid="p1", account_id="acc-1", instrument="EURUSD", event_type="open"
         )
         sm = StateManager(engine, account_id="acc-1")
         assert sm.open_instruments() == frozenset({"EURUSD"})
+
+    def test_add_event_also_makes_instrument_visible(self, engine) -> None:
+        _insert_position(
+            engine, psid="p1", account_id="acc-1", instrument="EURUSD", event_type="open"
+        )
+        _insert_position(
+            engine,
+            psid="p2",
+            account_id="acc-1",
+            instrument="EURUSD",
+            event_type="add",
+            event_time_utc=_NOW + timedelta(seconds=1),
+        )
+        sm = StateManager(engine, account_id="acc-1")
+        assert sm.open_instruments() == frozenset({"EURUSD"})
+
+    def test_close_event_hides_instrument(self, engine) -> None:
+        _insert_position(
+            engine, psid="p1", account_id="acc-1", instrument="EURUSD", event_type="open"
+        )
+        _insert_position(
+            engine,
+            psid="p2",
+            account_id="acc-1",
+            instrument="EURUSD",
+            event_type="close",
+            event_time_utc=_NOW + timedelta(seconds=1),
+        )
+        sm = StateManager(engine, account_id="acc-1")
+        assert sm.open_instruments() == frozenset()
+
+    def test_close_only_hides_that_instrument_not_others(self, engine) -> None:
+        _insert_position(
+            engine, psid="p1", account_id="acc-1", instrument="EURUSD", event_type="open"
+        )
+        _insert_position(
+            engine,
+            psid="p2",
+            account_id="acc-1",
+            instrument="EURUSD",
+            event_type="close",
+            event_time_utc=_NOW + timedelta(seconds=1),
+        )
+        _insert_position(
+            engine, psid="p3", account_id="acc-1", instrument="USDJPY", event_type="open"
+        )
+        sm = StateManager(engine, account_id="acc-1")
+        assert sm.open_instruments() == frozenset({"USDJPY"})
 
     def test_filters_by_account_id(self, engine) -> None:
-        _insert_order(
-            engine, order_id="o1", account_id="acc-1", instrument="EURUSD", status="FILLED"
+        _insert_position(
+            engine, psid="p1", account_id="acc-1", instrument="EURUSD", event_type="open"
         )
-        _insert_order(
-            engine, order_id="o2", account_id="acc-2", instrument="USDJPY", status="FILLED"
+        _insert_position(
+            engine, psid="p2", account_id="acc-2", instrument="USDJPY", event_type="open"
         )
-        sm_a = StateManager(engine, account_id="acc-1")
-        sm_b = StateManager(engine, account_id="acc-2")
-        assert sm_a.open_instruments() == frozenset({"EURUSD"})
-        assert sm_b.open_instruments() == frozenset({"USDJPY"})
+        assert StateManager(engine, account_id="acc-1").open_instruments() == frozenset({"EURUSD"})
+        assert StateManager(engine, account_id="acc-2").open_instruments() == frozenset({"USDJPY"})
 
-    def test_dedupes_duplicate_instruments(self, engine) -> None:
-        _insert_order(
-            engine, order_id="o1", account_id="acc-1", instrument="EURUSD", status="FILLED"
+    def test_dedupes_multiple_open_rows_same_instrument(self, engine) -> None:
+        _insert_position(
+            engine, psid="p1", account_id="acc-1", instrument="EURUSD", event_type="open"
         )
-        _insert_order(
-            engine, order_id="o2", account_id="acc-1", instrument="EURUSD", status="FILLED"
+        _insert_position(
+            engine,
+            psid="p2",
+            account_id="acc-1",
+            instrument="EURUSD",
+            event_type="add",
+            event_time_utc=_NOW + timedelta(seconds=1),
         )
         sm = StateManager(engine, account_id="acc-1")
         assert sm.open_instruments() == frozenset({"EURUSD"})
 
 
-# --- recent_execution_failures_within --------------------------------------
+# --- recent_execution_failures_within (unchanged semantics) ------------------
 
 
 class TestRecentExecutionFailures:
@@ -216,7 +260,6 @@ class TestRecentExecutionFailures:
         assert sm.recent_execution_failures_within(now=_NOW, window_seconds=900) == 2
 
     def test_excludes_order_expired_ttl_path(self, engine) -> None:
-        # L1: ORDER_EXPIRED is NOT broker-origin; do not count it.
         _insert_txn(
             engine,
             broker_txn_id="t1",
@@ -249,7 +292,6 @@ class TestRecentExecutionFailures:
         assert sm.recent_execution_failures_within(now=_NOW, window_seconds=900) == 0
 
     def test_excludes_failures_outside_window(self, engine) -> None:
-        # Inside window: 1; outside window: 1.
         _insert_txn(
             engine,
             broker_txn_id="t1",
@@ -270,7 +312,6 @@ class TestRecentExecutionFailures:
         assert sm.recent_execution_failures_within(now=_NOW, window_seconds=900) == 1
 
     def test_cutoff_is_inclusive(self, engine) -> None:
-        # Exact boundary — ts == cutoff should count.
         _insert_txn(
             engine,
             broker_txn_id="t1",
@@ -325,7 +366,7 @@ class TestRecentExecutionFailures:
         assert sm.recent_execution_failures_within(now=_NOW, window_seconds=0) == 0
 
 
-# --- snapshot --------------------------------------------------------------
+# --- snapshot -----------------------------------------------------------------
 
 
 class TestSnapshot:
@@ -339,11 +380,11 @@ class TestSnapshot:
         assert snap.snapshot_time_utc == _NOW
 
     def test_groups_all_three_views(self, engine) -> None:
-        _insert_order(
-            engine, order_id="o1", account_id="acc-1", instrument="EURUSD", status="FILLED"
+        _insert_position(
+            engine, psid="p1", account_id="acc-1", instrument="EURUSD", event_type="open"
         )
-        _insert_order(
-            engine, order_id="o2", account_id="acc-1", instrument="USDJPY", status="FILLED"
+        _insert_position(
+            engine, psid="p2", account_id="acc-1", instrument="USDJPY", event_type="open"
         )
         _insert_txn(
             engine,
@@ -370,10 +411,9 @@ class TestSnapshot:
         assert snap.recent_failure_count == 2
 
     def test_concurrent_count_equals_len_open_instruments(self, engine) -> None:
-        # 6.7a invariant: paper-mode one-instrument ⇔ one-position.
         for i, sym in enumerate(("EURUSD", "USDJPY", "GBPUSD")):
-            _insert_order(
-                engine, order_id=f"o-{i}", account_id="acc-1", instrument=sym, status="FILLED"
+            _insert_position(
+                engine, psid=f"p-{i}", account_id="acc-1", instrument=sym, event_type="open"
             )
         snap = StateManager(engine, account_id="acc-1").snapshot(
             now=_NOW, cooloff_window_seconds=900
@@ -381,8 +421,8 @@ class TestSnapshot:
         assert snap.concurrent_count == len(snap.open_instruments) == 3
 
     def test_cross_account_isolation(self, engine) -> None:
-        _insert_order(
-            engine, order_id="o1", account_id="acc-1", instrument="EURUSD", status="FILLED"
+        _insert_position(
+            engine, psid="p1", account_id="acc-1", instrument="EURUSD", event_type="open"
         )
         _insert_txn(
             engine,

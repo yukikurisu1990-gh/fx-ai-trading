@@ -1,4 +1,4 @@
-"""Execution gate runner — Phase 6 Cycle 6.5 + 6.6 Risk + 6.7a StateManager.
+"""Execution gate runner — Phase 6 Cycle 6.5 + 6.6 Risk + 6.7a/b StateManager.
 
 Closes the minimum viable path from ``trading_signals`` to a persisted
 broker round-trip.  One call, one trading_signal, one outcome.
@@ -48,13 +48,19 @@ Design choices intentionally deferred to later cycles:
   - No execution_metrics writes (M12).
   - No retry, no defer, no reconciliation.
 
-Cycle 6.7a note:
+Cycle 6.7a/b note:
   When ``state_manager`` is injected, the Risk block derives
   ``open_instruments`` / ``concurrent_positions`` / ``recent_failure_count``
   from ``StateManager.snapshot()`` instead of the local helpers
   ``_fetch_open_instruments`` / ``_count_recent_failures``.  The two
   helpers remain for the backward-compat ``state_manager=None`` path.
-  6.7b will remove them once the positions-based read lands.
+
+  Cycle 6.7b adds write-path calls:
+    - After a broker fill: ``state_manager.on_fill()`` appends a
+      positions row before ``_handle_fill`` persists the orders row.
+    - After every Risk verdict (compute_size reject, allow_trade
+      reject/accept): ``state_manager.on_risk_verdict()`` appends a
+      risk_events row.
 
 Runner is a pure function: no loops, no polling, no sleeps.  Callers
 drive cadence.
@@ -319,6 +325,15 @@ def run_execution_gate(
             reject_reason = _SIZE_REASON_TO_CODE.get(
                 size_result.reason or "", "risk.size_under_min"
             )
+            if state_manager is not None:
+                state_manager.on_risk_verdict(
+                    verdict="reject",
+                    cycle_id=pending.cycle_id,
+                    instrument=pending.instrument,
+                    strategy_id=pending.strategy_id,
+                    constraint_violated=reject_reason,
+                    detail={"size_reason": size_result.reason},
+                )
             return _handle_risk_blocked(
                 engine,
                 order_id=order_id,
@@ -356,6 +371,14 @@ def run_execution_gate(
             recent_failure_count=recent_failure_count,
         )
         if not allow_result.allowed:
+            if state_manager is not None:
+                state_manager.on_risk_verdict(
+                    verdict="reject",
+                    cycle_id=pending.cycle_id,
+                    instrument=pending.instrument,
+                    strategy_id=pending.strategy_id,
+                    constraint_violated=allow_result.reject_reason,
+                )
             return _handle_risk_blocked(
                 engine,
                 order_id=order_id,
@@ -372,6 +395,16 @@ def run_execution_gate(
                 environment=environment,
                 code_version=code_version,
                 config_version=config_version,
+            )
+
+        # Risk passed: log the accept verdict.
+        if state_manager is not None:
+            state_manager.on_risk_verdict(
+                verdict="accept",
+                cycle_id=pending.cycle_id,
+                instrument=pending.instrument,
+                strategy_id=pending.strategy_id,
+                constraint_violated=None,
             )
 
     # --- Broker call -------------------------------------------------------
@@ -408,6 +441,16 @@ def run_execution_gate(
         )
 
     if result.status == "filled":
+        if state_manager is not None:
+            state_manager.on_fill(
+                order_id=order_id,
+                instrument=pending.instrument,
+                units=effective_units,
+                avg_price=float(result.fill_price or 0.0),
+                correlation_id=pending.correlation_id,
+                cycle_id=pending.cycle_id,
+                strategy_id=pending.strategy_id,
+            )
         return _handle_fill(
             engine,
             order_id=order_id,
