@@ -45,6 +45,7 @@ from sqlalchemy.engine import Engine
 
 from fx_ai_trading.common.clock import Clock
 from fx_ai_trading.common.ulid import generate_ulid
+from fx_ai_trading.domain.reason_codes import MetaReason
 from fx_ai_trading.sync.enqueue import enqueue_secondary_sync
 
 SOURCE_COMPONENT = "meta_cycle_runner"
@@ -396,9 +397,9 @@ def _parse_meta_json(raw: Any) -> dict[str, Any]:
 
 def _reject_reason(c: _Candidate, cfg: MetaCycleConfig) -> str | None:
     if c.ev_after_cost < cfg.min_ev_after_cost:
-        return "EV_BELOW_THRESHOLD"
+        return MetaReason.EV_BELOW_THRESHOLD
     if c.confidence < cfg.confidence_threshold:
-        return "CONFIDENCE_BELOW_THRESHOLD"
+        return MetaReason.CONFIDENCE_BELOW_THRESHOLD
     return None
 
 
@@ -428,11 +429,11 @@ def _derive_no_trade_reason(
     if adopted is not None:
         return None
     if not trade_candidates:
-        return "NO_CANDIDATES"
+        return MetaReason.NO_CANDIDATES
     # All filtered AND force_fallback=False.
     if rejections:
         return rejections[0]["reason_code"]
-    return "NO_CANDIDATES"
+    return MetaReason.NO_CANDIDATES
 
 
 # --- meta_decisions INSERT + outbox -----------------------------------------
@@ -669,7 +670,7 @@ def _write_no_trade_events(
             cycle_id=cycle_id,
             meta_decision_id=meta_decision_id,
             reason_category="meta",
-            reason_code="NO_CANDIDATES",
+            reason_code=MetaReason.NO_CANDIDATES,
             reason_detail="no trade candidates in cycle",
             instrument=None,
             strategy_id=None,
