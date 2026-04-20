@@ -135,8 +135,7 @@ class TestHappyPath:
             ).scalar()
             outbox_count = conn.execute(
                 text(
-                    "SELECT count(*) FROM secondary_sync_outbox"
-                    " WHERE table_name='strategy_signals'"
+                    "SELECT count(*) FROM secondary_sync_outbox WHERE table_name='strategy_signals'"
                 )
             ).scalar()
         assert db_count == 6
@@ -196,10 +195,7 @@ class TestStrategyOutputFullyPopulated:
         )
         with engine.connect() as conn:
             raw = conn.execute(
-                text(
-                    "SELECT meta FROM strategy_signals"
-                    " WHERE cycle_id='cyc-full'"
-                )
+                text("SELECT meta FROM strategy_signals WHERE cycle_id='cyc-full'")
             ).scalar()
         meta = json.loads(str(raw))
         expected_keys = {
@@ -256,16 +252,11 @@ class TestDecisionChainId:
             metas = [
                 json.loads(str(r[0]))
                 for r in conn.execute(
-                    text(
-                        "SELECT meta FROM strategy_signals"
-                        " WHERE cycle_id='cyc-chain'"
-                    )
+                    text("SELECT meta FROM strategy_signals WHERE cycle_id='cyc-chain'")
                 ).fetchall()
             ]
         chain_ids = {m["decision_chain_id"] for m in metas}
-        assert len(chain_ids) == 1, (
-            "all strategies for the same instrument must share one chain_id"
-        )
+        assert len(chain_ids) == 1, "all strategies for the same instrument must share one chain_id"
 
     def test_different_instruments_get_distinct_chain_ids(self, engine) -> None:
         result = run_strategy_cycle(

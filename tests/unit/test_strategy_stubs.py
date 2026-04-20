@@ -97,8 +97,7 @@ class TestDeterministicTrendStrategy:
         testability would suffer — this test ensures the stub varies."""
         s = DeterministicTrendStrategy()
         observed = {
-            s.evaluate("EURUSD", _dummy_features(), _ctx(f"cyc-{i}")).signal
-            for i in range(50)
+            s.evaluate("EURUSD", _dummy_features(), _ctx(f"cyc-{i}")).signal for i in range(50)
         }
         assert observed == {"long", "short"}
 

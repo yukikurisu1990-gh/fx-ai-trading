@@ -51,8 +51,7 @@ def _map_direction(domain_signal: str) -> str:
         return _DIRECTION_MAP[domain_signal]
     except KeyError as e:
         raise ValueError(
-            f"invalid StrategySignal.signal={domain_signal!r}; "
-            "expected 'long'|'short'|'no_trade'"
+            f"invalid StrategySignal.signal={domain_signal!r}; expected 'long'|'short'|'no_trade'"
         ) from e
 
 
