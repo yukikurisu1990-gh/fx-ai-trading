@@ -284,3 +284,277 @@ class TestStructural:
         assert callable(getattr(SafeStopHandler, "_fire_step2_loop_stop", None))
         assert callable(getattr(SafeStopHandler, "_fire_step3_notifier", None))
         assert callable(getattr(SafeStopHandler, "_fire_step4_db", None))
+
+
+# ---------------------------------------------------------------------------
+# Step exception isolation (G-2 / I-G2-06)
+#
+# Contract: a failure in any step must not prevent subsequent steps from
+# executing.  Each exception must be logged (no silent failures) so that
+# operators can correlate the partial completion with a root cause.
+# ---------------------------------------------------------------------------
+
+
+class TestStepExceptionIsolation:
+    def test_step1_failure_does_not_prevent_steps_2_3_4(self, journal) -> None:
+        """Journal failure must not prevent loop_stop / notifier / db."""
+        order: list[str] = []
+
+        # Make step 1 raise.
+        def boom(_entry: dict) -> None:
+            raise RuntimeError("disk full")
+
+        journal.append = boom  # type: ignore[method-assign]
+
+        def stop_cb():
+            order.append("loop_stop")
+
+        notifier = MagicMock()
+
+        def track_notify(*args, **kwargs):
+            order.append("notifier")
+
+        notifier.dispatch_direct_sync.side_effect = track_notify
+
+        db_repo = MagicMock()
+
+        def track_db(*args, **kwargs):
+            order.append("db")
+
+        db_repo.insert_event.side_effect = track_db
+        ctx = MagicMock()
+
+        handler = SafeStopHandler(
+            journal=journal,
+            notifier=notifier,
+            stop_callback=stop_cb,
+            supervisor_events_repo=db_repo,
+            common_keys_ctx=ctx,
+        )
+        # Must NOT raise.
+        handler.fire(reason=_REASON, occurred_at=_FIXED_AT)
+
+        assert order == ["loop_stop", "notifier", "db"]
+
+    def test_step2_failure_does_not_prevent_steps_3_4(self, journal) -> None:
+        """stop_callback failure must not prevent notifier / db."""
+        order: list[str] = []
+
+        original_append = journal.append
+
+        def tracking_append(entry: dict) -> None:
+            order.append("journal")
+            original_append(entry)
+
+        journal.append = tracking_append  # type: ignore[method-assign]
+
+        def stop_cb():
+            raise RuntimeError("loop already gone")
+
+        notifier = MagicMock()
+
+        def track_notify(*args, **kwargs):
+            order.append("notifier")
+
+        notifier.dispatch_direct_sync.side_effect = track_notify
+
+        db_repo = MagicMock()
+
+        def track_db(*args, **kwargs):
+            order.append("db")
+
+        db_repo.insert_event.side_effect = track_db
+        ctx = MagicMock()
+
+        handler = SafeStopHandler(
+            journal=journal,
+            notifier=notifier,
+            stop_callback=stop_cb,
+            supervisor_events_repo=db_repo,
+            common_keys_ctx=ctx,
+        )
+        handler.fire(reason=_REASON, occurred_at=_FIXED_AT)
+
+        assert order == ["journal", "notifier", "db"]
+
+    def test_step3_failure_does_not_prevent_step_4(self, journal) -> None:
+        """Notifier failure must not prevent supervisor_events INSERT."""
+        order: list[str] = []
+
+        original_append = journal.append
+
+        def tracking_append(entry: dict) -> None:
+            order.append("journal")
+            original_append(entry)
+
+        journal.append = tracking_append  # type: ignore[method-assign]
+
+        def stop_cb():
+            order.append("loop_stop")
+
+        notifier = MagicMock()
+        notifier.dispatch_direct_sync.side_effect = RuntimeError("slack 503")
+
+        db_repo = MagicMock()
+
+        def track_db(*args, **kwargs):
+            order.append("db")
+
+        db_repo.insert_event.side_effect = track_db
+        ctx = MagicMock()
+
+        handler = SafeStopHandler(
+            journal=journal,
+            notifier=notifier,
+            stop_callback=stop_cb,
+            supervisor_events_repo=db_repo,
+            common_keys_ctx=ctx,
+        )
+        handler.fire(reason=_REASON, occurred_at=_FIXED_AT)
+
+        assert order == ["journal", "loop_stop", "db"]
+
+    def test_all_steps_fail_does_not_raise(self, journal) -> None:
+        """Even if every step raises, fire() must return cleanly."""
+
+        def boom_journal(_entry: dict) -> None:
+            raise RuntimeError("disk full")
+
+        journal.append = boom_journal  # type: ignore[method-assign]
+
+        def stop_cb():
+            raise RuntimeError("loop gone")
+
+        notifier = MagicMock()
+        notifier.dispatch_direct_sync.side_effect = RuntimeError("slack down")
+
+        db_repo = MagicMock()
+        db_repo.insert_event.side_effect = RuntimeError("DB down")
+        ctx = MagicMock()
+
+        handler = SafeStopHandler(
+            journal=journal,
+            notifier=notifier,
+            stop_callback=stop_cb,
+            supervisor_events_repo=db_repo,
+            common_keys_ctx=ctx,
+        )
+        # Must NOT raise.
+        handler.fire(reason=_REASON, occurred_at=_FIXED_AT)
+
+    def test_step1_failure_is_logged(self, journal, caplog) -> None:
+        """Step 1 failure must emit an ERROR-level log (no silent failures)."""
+
+        def boom(_entry: dict) -> None:
+            raise RuntimeError("disk full")
+
+        journal.append = boom  # type: ignore[method-assign]
+
+        handler = SafeStopHandler(journal=journal)
+        with caplog.at_level("ERROR", logger="fx_ai_trading.supervisor.safe_stop"):
+            handler.fire(reason=_REASON, occurred_at=_FIXED_AT)
+
+        messages = [r.getMessage() for r in caplog.records if r.levelname == "ERROR"]
+        assert any("step 1" in m and "disk full" in m for m in messages), (
+            f"step 1 failure not logged at ERROR level; got: {messages}"
+        )
+
+    def test_step2_failure_is_logged(self, journal, caplog) -> None:
+        """Step 2 failure must emit an ERROR-level log (no silent failures)."""
+
+        def stop_cb():
+            raise RuntimeError("loop gone")
+
+        handler = SafeStopHandler(journal=journal, stop_callback=stop_cb)
+        with caplog.at_level("ERROR", logger="fx_ai_trading.supervisor.safe_stop"):
+            handler.fire(reason=_REASON, occurred_at=_FIXED_AT)
+
+        messages = [r.getMessage() for r in caplog.records if r.levelname == "ERROR"]
+        assert any("step 2" in m and "loop gone" in m for m in messages), (
+            f"step 2 failure not logged at ERROR level; got: {messages}"
+        )
+
+    def test_step3_failure_is_logged(self, journal, caplog) -> None:
+        """Step 3 failure must emit an ERROR-level log (no silent failures)."""
+        notifier = MagicMock()
+        notifier.dispatch_direct_sync.side_effect = RuntimeError("slack 503")
+
+        handler = SafeStopHandler(journal=journal, notifier=notifier)
+        with caplog.at_level("ERROR", logger="fx_ai_trading.supervisor.safe_stop"):
+            handler.fire(reason=_REASON, occurred_at=_FIXED_AT)
+
+        messages = [r.getMessage() for r in caplog.records if r.levelname == "ERROR"]
+        assert any("step 3" in m and "slack 503" in m for m in messages), (
+            f"step 3 failure not logged at ERROR level; got: {messages}"
+        )
+
+    def test_step1_returns_false_on_exception(self, journal) -> None:
+        """Step 1 must return False (not raise) on exception — PR-2 foundation."""
+
+        def boom(_entry: dict) -> None:
+            raise RuntimeError("disk full")
+
+        journal.append = boom  # type: ignore[method-assign]
+
+        handler = SafeStopHandler(journal=journal)
+        assert handler._fire_step1_journal(_REASON, _FIXED_AT, {"reason": _REASON}) is False
+
+    def test_step2_returns_false_on_exception(self, journal) -> None:
+        """Step 2 must return False on exception."""
+
+        def stop_cb():
+            raise RuntimeError("loop gone")
+
+        handler = SafeStopHandler(journal=journal, stop_callback=stop_cb)
+        assert handler._fire_step2_loop_stop() is False
+
+    def test_step3_returns_false_on_exception(self, journal) -> None:
+        """Step 3 must return False on exception."""
+        notifier = MagicMock()
+        notifier.dispatch_direct_sync.side_effect = RuntimeError("slack down")
+
+        handler = SafeStopHandler(journal=journal, notifier=notifier)
+        assert handler._fire_step3_notifier(_FIXED_AT, {"reason": _REASON}) is False
+
+    def test_step4_returns_false_on_exception(self, journal) -> None:
+        """Step 4 must return False on exception (already wrapped pre-PR-1)."""
+        db_repo = MagicMock()
+        db_repo.insert_event.side_effect = RuntimeError("DB down")
+        ctx = MagicMock()
+
+        handler = SafeStopHandler(
+            journal=journal,
+            supervisor_events_repo=db_repo,
+            common_keys_ctx=ctx,
+        )
+        assert handler._fire_step4_db(_FIXED_AT, {"reason": _REASON}, ctx) is False
+
+    def test_steps_return_true_on_success(self, journal) -> None:
+        """All steps must return True on the happy path."""
+        notifier = MagicMock()
+        db_repo = MagicMock()
+        ctx = MagicMock()
+
+        handler = SafeStopHandler(
+            journal=journal,
+            notifier=notifier,
+            stop_callback=lambda: None,
+            supervisor_events_repo=db_repo,
+            common_keys_ctx=ctx,
+        )
+        assert handler._fire_step1_journal(_REASON, _FIXED_AT, {"reason": _REASON}) is True
+        assert handler._fire_step2_loop_stop() is True
+        assert handler._fire_step3_notifier(_FIXED_AT, {"reason": _REASON}) is True
+        assert handler._fire_step4_db(_FIXED_AT, {"reason": _REASON}, ctx) is True
+
+    def test_skipped_steps_return_true(self, journal) -> None:
+        """Configured-skip path (dependency not set) must return True (no exception)."""
+        # journal=None → step 1 skipped
+        # stop_callback=None → step 2 skipped
+        # notifier=None → step 3 skipped
+        # repo/ctx=None → step 4 skipped
+        handler = SafeStopHandler()
+        assert handler._fire_step1_journal(_REASON, _FIXED_AT, {"reason": _REASON}) is True
+        assert handler._fire_step2_loop_stop() is True
+        assert handler._fire_step3_notifier(_FIXED_AT, {"reason": _REASON}) is True
+        assert handler._fire_step4_db(_FIXED_AT, {"reason": _REASON}, None) is True
