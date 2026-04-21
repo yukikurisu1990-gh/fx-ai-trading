@@ -67,6 +67,7 @@ drive cadence.
 
 from __future__ import annotations
 
+import contextlib
 import json
 from collections.abc import Callable
 from dataclasses import dataclass
@@ -77,6 +78,7 @@ from sqlalchemy import text
 from sqlalchemy.engine import Engine
 
 from fx_ai_trading.common.clock import Clock
+from fx_ai_trading.common.exceptions import AccountTypeMismatchRuntime
 from fx_ai_trading.common.ulid import generate_ulid
 from fx_ai_trading.domain.broker import Broker, OrderRequest, OrderResult
 from fx_ai_trading.domain.reason_codes import RiskReason, TimeoutReason
@@ -86,6 +88,7 @@ from fx_ai_trading.sync.enqueue import enqueue_secondary_sync
 if TYPE_CHECKING:
     from fx_ai_trading.services.risk_manager import RiskManagerService
     from fx_ai_trading.services.state_manager import StateManager
+    from fx_ai_trading.supervisor.supervisor import Supervisor
 
 SOURCE_COMPONENT = "execution_gate_runner"
 
@@ -190,6 +193,15 @@ def run_execution_gate(
     # ``concurrent_count`` / ``recent_failures`` through
     # ``StateManager.snapshot()``.  Required since Cycle 6.7d (I-02).
     state_manager: StateManager,
+    # PR-4 (U-1) — optional Supervisor wiring.  When provided, an
+    # AccountTypeMismatchRuntime raised inside ``broker.place_order``
+    # is caught, ``supervisor.trigger_safe_stop`` is fired with the
+    # canonical reason ``"account_type_mismatch_runtime"`` (per
+    # phase6_hardening §6.18 / operations F14), and the exception is
+    # re-raised so the cycle aborts without writing any orders row.
+    # When ``supervisor`` is None the runner preserves pre-PR-4
+    # behaviour: the exception propagates unchanged.
+    supervisor: Supervisor | None = None,
 ) -> ExecutionGateRunResult:
     """Pick one unprocessed trading_signal and drive it through the gate.
 
@@ -458,6 +470,32 @@ def run_execution_gate(
             code_version=code_version,
             config_version=config_version,
         )
+    except AccountTypeMismatchRuntime as exc:
+        # PR-4 (U-1): The broker's pre-place_order assertion detected a
+        # mid-flight account_type drift (Decision 2.6.1-1).  Per
+        # phase6_hardening §6.18, this MUST trigger
+        # safe_stop(reason=account_type_mismatch_runtime) and write NO
+        # orders row.  We fire the wired Supervisor (if any) and then
+        # re-raise so the caller sees the failure and aborts the cycle.
+        if supervisor is not None:
+            payload = {
+                "actual_account_type": broker.account_type,
+                "expected_account_type": expected_account_type,
+                "instrument": pending.instrument,
+                "client_order_id": client_order_id,
+                "detail": str(exc),
+            }
+            # Never let a downstream safe_stop bug swallow the original
+            # mismatch exception.  trigger_safe_stop has its own internal
+            # logging (PR-1 / PR-2); we just need to make sure the
+            # AccountTypeMismatchRuntime still propagates to the caller.
+            with contextlib.suppress(Exception):
+                supervisor.trigger_safe_stop(
+                    reason="account_type_mismatch_runtime",
+                    occurred_at=now,
+                    payload=payload,
+                )
+        raise
 
     if result.status == "filled":
         state_manager.on_fill(

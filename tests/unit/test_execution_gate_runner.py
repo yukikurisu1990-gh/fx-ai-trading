@@ -33,6 +33,7 @@ from sqlalchemy import create_engine, text
 
 from fx_ai_trading.adapters.broker.base import BrokerBase
 from fx_ai_trading.common.clock import FixedClock
+from fx_ai_trading.common.exceptions import AccountTypeMismatchRuntime
 from fx_ai_trading.domain.broker import (
     BrokerOrder,
     BrokerPosition,
@@ -813,3 +814,171 @@ class TestOrderTransactionAtomicity:
         assert r.outcome == "filled"
         assert _count(engine, "order_transactions", f"order_id='{r.order_id}'") == 2
         assert _count(engine, "secondary_sync_outbox", "table_name='order_transactions'") == 2
+
+
+# ---------------------------------------------------------------------------
+# PR-4 (U-1): Broker.place_order raising AccountTypeMismatchRuntime
+# must trigger Supervisor.trigger_safe_stop (canonical reason
+# "account_type_mismatch_runtime") and re-raise so the cycle aborts.
+#
+# Per phase6_hardening §6.18 / operations F14:
+#   - safe_stop fires with reason=account_type_mismatch_runtime
+#   - NO orders / order_transactions row is written for the failed signal
+# ---------------------------------------------------------------------------
+
+
+class _MismatchBroker(BrokerBase):
+    """Broker stub whose place_order raises AccountTypeMismatchRuntime.
+
+    account_type at construction time matches the expected paper guard so
+    _assert_paper_mode passes; the mismatch is simulated as if it were
+    detected mid-flight (e.g., the live broker drifted between startup
+    verification and the place_order call).
+    """
+
+    def __init__(
+        self,
+        *,
+        startup_account_type: str = "demo",
+        actual_account_type: str = "live",
+    ) -> None:
+        super().__init__(account_type=startup_account_type)
+        self._actual = actual_account_type
+        self.received: list[OrderRequest] = []
+
+    def place_order(self, request: OrderRequest) -> OrderResult:
+        self.received.append(request)
+        raise AccountTypeMismatchRuntime(
+            f"Broker account_type {self._actual!r} != expected {self.account_type!r}"
+        )
+
+    def cancel_order(self, order_id: str) -> CancelResult:
+        return CancelResult(order_id=order_id, cancelled=True)
+
+    def get_positions(self, account_id: str) -> list[BrokerPosition]:
+        return []
+
+    def get_pending_orders(self, account_id: str) -> list[BrokerOrder]:
+        return []
+
+    def get_recent_transactions(self, since: str) -> list[BrokerTransactionEvent]:
+        return []
+
+
+class TestAccountTypeMismatchRuntimeWiring:
+    def test_no_supervisor_propagates_exception_unchanged(self, engine) -> None:
+        """When supervisor is None, the exception propagates exactly as
+        pre-PR-4 — no swallowing, no orders row written."""
+        _seed_trading_signal(engine, trading_signal_id="ts-mismatch-1", direction="buy")
+        b = _MismatchBroker()
+
+        with pytest.raises(AccountTypeMismatchRuntime):
+            run_execution_gate(
+                engine,
+                broker=b,
+                account_id="acc-1",
+                clock=FixedClock(_FIXED_NOW),
+                state_manager=_sm(engine),
+                supervisor=None,
+            )
+
+        assert _count(engine, "orders") == 0
+        assert _count(engine, "order_transactions") == 0
+        assert _count(engine, "secondary_sync_outbox") == 0
+
+    def test_supervisor_triggers_safe_stop_with_canonical_reason(self, engine) -> None:
+        """When supervisor is wired, trigger_safe_stop must fire with
+        reason='account_type_mismatch_runtime' before the exception
+        propagates."""
+        _seed_trading_signal(engine, trading_signal_id="ts-mismatch-2", direction="buy")
+        b = _MismatchBroker(startup_account_type="demo", actual_account_type="live")
+
+        class _SupervisorSpy:
+            def __init__(self) -> None:
+                self.calls: list[dict] = []
+
+            def trigger_safe_stop(
+                self, reason: str, occurred_at, payload=None, context=None
+            ) -> None:
+                self.calls.append(
+                    {
+                        "reason": reason,
+                        "occurred_at": occurred_at,
+                        "payload": payload,
+                        "context": context,
+                    }
+                )
+
+        spy = _SupervisorSpy()
+
+        with pytest.raises(AccountTypeMismatchRuntime):
+            run_execution_gate(
+                engine,
+                broker=b,
+                account_id="acc-1",
+                clock=FixedClock(_FIXED_NOW),
+                state_manager=_sm(engine),
+                supervisor=spy,  # type: ignore[arg-type]
+            )
+
+        assert len(spy.calls) == 1
+        call = spy.calls[0]
+        assert call["reason"] == "account_type_mismatch_runtime"
+        assert call["occurred_at"] == _FIXED_NOW
+
+        payload = call["payload"]
+        assert payload is not None
+        assert payload["expected_account_type"] == "demo"
+        assert payload["actual_account_type"] == "demo"  # broker.account_type at the boundary
+        assert payload["instrument"] == "EURUSD"
+        assert "client_order_id" in payload
+        assert "detail" in payload
+
+    def test_supervisor_wired_does_not_write_orders_row(self, engine) -> None:
+        """Even with supervisor wired, no orders / order_transactions /
+        outbox row may be written when the mismatch fires."""
+        _seed_trading_signal(engine, trading_signal_id="ts-mismatch-3", direction="buy")
+        b = _MismatchBroker()
+
+        class _SupervisorNoop:
+            def trigger_safe_stop(
+                self, reason: str, occurred_at, payload=None, context=None
+            ) -> None:
+                pass
+
+        with pytest.raises(AccountTypeMismatchRuntime):
+            run_execution_gate(
+                engine,
+                broker=b,
+                account_id="acc-1",
+                clock=FixedClock(_FIXED_NOW),
+                state_manager=_sm(engine),
+                supervisor=_SupervisorNoop(),  # type: ignore[arg-type]
+            )
+
+        assert _count(engine, "orders") == 0
+        assert _count(engine, "order_transactions") == 0
+        assert _count(engine, "secondary_sync_outbox") == 0
+
+    def test_supervisor_trigger_safe_stop_failure_does_not_swallow_original(self, engine) -> None:
+        """If trigger_safe_stop itself raises, the original
+        AccountTypeMismatchRuntime must still propagate to the caller —
+        the safe_stop bug must never mask the live-broker risk."""
+        _seed_trading_signal(engine, trading_signal_id="ts-mismatch-4", direction="buy")
+        b = _MismatchBroker()
+
+        class _BrokenSupervisor:
+            def trigger_safe_stop(
+                self, reason: str, occurred_at, payload=None, context=None
+            ) -> None:
+                raise RuntimeError("supervisor blew up")
+
+        with pytest.raises(AccountTypeMismatchRuntime):
+            run_execution_gate(
+                engine,
+                broker=b,
+                account_id="acc-1",
+                clock=FixedClock(_FIXED_NOW),
+                state_manager=_sm(engine),
+                supervisor=_BrokenSupervisor(),  # type: ignore[arg-type]
+            )
