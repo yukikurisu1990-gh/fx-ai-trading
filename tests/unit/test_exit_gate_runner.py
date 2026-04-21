@@ -46,6 +46,7 @@ import pytest
 from sqlalchemy import create_engine, text
 
 from fx_ai_trading.common.clock import FixedClock
+from fx_ai_trading.common.exceptions import AccountTypeMismatchRuntime
 from fx_ai_trading.domain.broker import Broker, OrderRequest, OrderResult
 from fx_ai_trading.domain.exit import ExitDecision
 from fx_ai_trading.services.exit_gate_runner import ExitGateRunResult, run_exit_gate
@@ -650,3 +651,166 @@ class TestOpenPositionDetails:
         assert len(details) == 1
         assert details[0].order_id == "o2"
         assert details[0].units == 800
+
+
+# --- PR-5 (U-2): AccountTypeMismatchRuntime → safe_stop wiring ---------------
+
+
+@dataclass
+class _MismatchBroker:
+    """Broker stub: every place_order raises AccountTypeMismatchRuntime."""
+
+    account_type: str = "demo"
+    actual_account_type: str = "live"
+    received: list[OrderRequest] | None = None
+
+    def __post_init__(self) -> None:
+        if self.received is None:
+            self.received = []
+
+    def place_order(self, request: OrderRequest) -> OrderResult:
+        assert self.received is not None
+        self.received.append(request)
+        raise AccountTypeMismatchRuntime(
+            f"Broker account_type {self.actual_account_type!r} != expected {self.account_type!r}"
+        )
+
+
+class _SupervisorSpy:
+    """Captures (kwargs) of every trigger_safe_stop call."""
+
+    def __init__(self) -> None:
+        self.calls: list[dict] = []
+
+    def trigger_safe_stop(self, **kwargs) -> None:
+        self.calls.append(kwargs)
+
+
+class _SupervisorNoop:
+    """Accepts trigger_safe_stop and does nothing."""
+
+    def trigger_safe_stop(self, **_kwargs) -> None:
+        return None
+
+
+class _BrokenSupervisor:
+    """trigger_safe_stop itself raises — must NOT swallow original exception."""
+
+    def trigger_safe_stop(self, **_kwargs) -> None:
+        raise RuntimeError("supervisor blew up")
+
+
+class TestAccountTypeMismatchRuntimeWiring:
+    def test_no_supervisor_propagates_exception_unchanged(self, engine) -> None:
+        _seed_open_position(engine, psid="p1", order_id="o1", instrument="EURUSD")
+        sm = _make_sm(engine)
+        with pytest.raises(AccountTypeMismatchRuntime):
+            run_exit_gate(
+                broker=_MismatchBroker(),
+                account_id="acc-1",
+                clock=FixedClock(_NOW),
+                state_manager=sm,
+                exit_policy=_AlwaysExitPolicy(),
+                price_feed=_fixed_price(1.10),
+                # supervisor=None (default)
+            )
+        # No close_event, no positions(close) row, no outbox entry.
+        assert _close_events(engine) == []
+        assert all(r.event_type != "close" for r in _positions(engine))
+        assert _outbox(engine, table_name="close_events") == []
+
+    def test_supervisor_triggers_safe_stop_with_canonical_reason(self, engine) -> None:
+        _seed_open_position(engine, psid="p1", order_id="o1", instrument="EURUSD")
+        sm = _make_sm(engine)
+        spy = _SupervisorSpy()
+        broker = _MismatchBroker(account_type="demo", actual_account_type="live")
+        with pytest.raises(AccountTypeMismatchRuntime):
+            run_exit_gate(
+                broker=broker,
+                account_id="acc-1",
+                clock=FixedClock(_NOW),
+                state_manager=sm,
+                exit_policy=_AlwaysExitPolicy(),
+                price_feed=_fixed_price(1.10),
+                supervisor=spy,  # type: ignore[arg-type]
+            )
+        assert len(spy.calls) == 1
+        call = spy.calls[0]
+        assert call["reason"] == "account_type_mismatch_runtime"
+        assert call["occurred_at"] == _NOW
+        payload = call["payload"]
+        # payload key parity with PR-4 (execution_gate_runner).
+        assert set(payload.keys()) == {
+            "actual_account_type",
+            "expected_account_type",
+            "instrument",
+            "client_order_id",
+            "detail",
+        }
+        assert payload["actual_account_type"] == "demo"  # broker.account_type
+        assert payload["expected_account_type"] is None
+        assert payload["instrument"] == "EURUSD"
+        assert payload["client_order_id"]  # ulid populated
+        assert "live" in payload["detail"] and "demo" in payload["detail"]
+
+    def test_supervisor_wired_does_not_write_close_event_or_on_close(self, engine) -> None:
+        _seed_open_position(engine, psid="p1", order_id="o1", instrument="EURUSD")
+        sm = _make_sm(engine)
+        with pytest.raises(AccountTypeMismatchRuntime):
+            run_exit_gate(
+                broker=_MismatchBroker(),
+                account_id="acc-1",
+                clock=FixedClock(_NOW),
+                state_manager=sm,
+                exit_policy=_AlwaysExitPolicy(),
+                price_feed=_fixed_price(1.10),
+                supervisor=_SupervisorNoop(),  # type: ignore[arg-type]
+            )
+        # No close_event written.
+        assert _close_events(engine) == []
+        # No positions(close) row appended via on_close.
+        assert all(r.event_type != "close" for r in _positions(engine))
+        # No outbox entry for close_events or positions(close).
+        assert _outbox(engine, table_name="close_events") == []
+        positions_outbox_close = [
+            r
+            for r in _outbox(engine, table_name="positions")
+            if json.loads(r.payload_json).get("event_type") == "close"
+        ]
+        assert positions_outbox_close == []
+
+    def test_supervisor_trigger_safe_stop_failure_does_not_swallow_original(self, engine) -> None:
+        _seed_open_position(engine, psid="p1", order_id="o1", instrument="EURUSD")
+        sm = _make_sm(engine)
+        with pytest.raises(AccountTypeMismatchRuntime):
+            run_exit_gate(
+                broker=_MismatchBroker(),
+                account_id="acc-1",
+                clock=FixedClock(_NOW),
+                state_manager=sm,
+                exit_policy=_AlwaysExitPolicy(),
+                price_feed=_fixed_price(1.10),
+                supervisor=_BrokenSupervisor(),  # type: ignore[arg-type]
+            )
+        assert _close_events(engine) == []
+
+    def test_mismatch_on_first_position_aborts_remaining_positions(self, engine) -> None:
+        """Account-type drift → broker can't be trusted → loop must abort."""
+        _seed_open_position(engine, psid="p1", order_id="o1", instrument="EURUSD")
+        _seed_open_position(engine, psid="p2", order_id="o2", instrument="USDJPY")
+        sm = _make_sm(engine)
+        broker = _MismatchBroker()
+        with pytest.raises(AccountTypeMismatchRuntime):
+            run_exit_gate(
+                broker=broker,
+                account_id="acc-1",
+                clock=FixedClock(_NOW),
+                state_manager=sm,
+                exit_policy=_AlwaysExitPolicy(),
+                price_feed=_fixed_price(1.10),
+                supervisor=_SupervisorNoop(),  # type: ignore[arg-type]
+            )
+        # Only the first position was attempted; loop aborted before second.
+        assert broker.received is not None
+        assert len(broker.received) == 1
+        assert _close_events(engine) == []

@@ -25,14 +25,20 @@ Partial close is NOT supported in Iteration 2 (100% close only, per §6.2 risk).
 
 from __future__ import annotations
 
+import contextlib
 import uuid
 import warnings
 from datetime import datetime
+from typing import TYPE_CHECKING
 
+from fx_ai_trading.common.exceptions import AccountTypeMismatchRuntime
 from fx_ai_trading.config.common_keys_context import CommonKeysContext
 from fx_ai_trading.domain.broker import OrderRequest, OrderResult
 from fx_ai_trading.domain.exit import ExitDecision
 from fx_ai_trading.repositories.close_events import CloseEventsRepository
+
+if TYPE_CHECKING:
+    from fx_ai_trading.supervisor.supervisor import Supervisor
 
 _CLOSE_SIDE = {"long": "short", "short": "long"}
 
@@ -73,6 +79,7 @@ class ExitExecutor:
         pnl_realized: float | None = None,
         correlation_id: str | None = None,
         context: CommonKeysContext | None = None,
+        supervisor: Supervisor | None = None,
     ) -> OrderResult | None:
         """Execute close for *decision* if should_exit is True.
 
@@ -90,6 +97,14 @@ class ExitExecutor:
             pnl_realized: Realized P&L (optional, supplied by caller).
             correlation_id: Cross-table trace key (optional).
             context: CommonKeysContext for contract compliance.
+            supervisor: Optional Supervisor for safe_stop wiring (PR-5 / U-2).
+                When provided, an ``AccountTypeMismatchRuntime`` raised
+                inside ``broker.place_order`` triggers
+                ``supervisor.trigger_safe_stop`` with the canonical reason
+                ``"account_type_mismatch_runtime"`` (per phase6_hardening
+                §6.18 / operations F14) before the exception propagates.
+                The close_event is NOT written and the broker fill is NOT
+                returned.  When None, behaviour is unchanged from pre-PR-5.
         """
         if not decision.should_exit:
             return None
@@ -102,7 +117,36 @@ class ExitExecutor:
             side=close_side,
             size_units=size_units,
         )
-        result = self._broker.place_order(close_request)
+        try:
+            result = self._broker.place_order(close_request)
+        except AccountTypeMismatchRuntime as exc:
+            # PR-5 (U-2): Mid-flight account_type drift detected by the
+            # broker's pre-place_order assertion (Decision 2.6.1-1).  Per
+            # phase6_hardening §6.18 / operations F14, this MUST trigger
+            # safe_stop(reason=account_type_mismatch_runtime) and write
+            # NO close_events row.  We fire the wired Supervisor (if any)
+            # and then re-raise so the caller sees the failure.
+            #
+            # ``expected_account_type`` is None here because execute() has
+            # no per-call expected value (unlike run_execution_gate); the
+            # mismatch text is fully captured in ``detail`` (str(exc)).
+            if supervisor is not None:
+                payload = {
+                    "actual_account_type": self._broker.account_type,
+                    "expected_account_type": None,
+                    "instrument": instrument,
+                    "client_order_id": close_request.client_order_id,
+                    "detail": str(exc),
+                }
+                # Never let a downstream safe_stop bug swallow the
+                # original mismatch exception.
+                with contextlib.suppress(Exception):
+                    supervisor.trigger_safe_stop(
+                        reason="account_type_mismatch_runtime",
+                        occurred_at=occurred_at,
+                        payload=payload,
+                    )
+            raise
 
         reasons_json = [
             {"priority": i + 1, "reason_code": r, "detail": ""}
