@@ -18,6 +18,7 @@ Pattern:
 
 from __future__ import annotations
 
+from datetime import timedelta
 from unittest.mock import MagicMock
 
 from fx_ai_trading.services.dashboard_query_service import (
@@ -25,6 +26,10 @@ from fx_ai_trading.services.dashboard_query_service import (
     get_close_events_recent,
     get_daily_order_summary,
     get_execution_quality_summary,
+    get_exit_fire_count_by_reason,
+    get_exit_fire_pnl_summary_by_reason,
+    get_exit_fire_recent,
+    get_exit_fire_summary,
     get_open_positions,
     get_recent_orders,
     get_recent_supervisor_events,
@@ -254,3 +259,183 @@ class TestGetCloseEventsRecent:
         engine = _mock_engine(rows=[row])
         result = get_close_events_recent(engine)
         assert result[0]["pnl_realized"] is None
+
+
+# ---------------------------------------------------------------------------
+# Cycle 6.9d — ExitFireMetricsService UI-safe wrappers
+# ---------------------------------------------------------------------------
+#
+# The wrappers delegate to ExitFireMetricsService, which uses
+# ``conn.execute().fetchall()`` / ``.fetchone()`` (NOT ``.mappings().all()``
+# like the existing dashboard queries above). A dedicated mock helper
+# matches that interface so the wrapper + service path can be exercised
+# end-to-end without touching a real DB.
+
+
+def _mock_engine_for_service(
+    rows: list[tuple] | None = None,
+    *,
+    one: tuple | None = None,
+) -> MagicMock:
+    """Engine mock matching ExitFireMetricsService's fetchall / fetchone usage."""
+    engine = MagicMock()
+    conn = MagicMock()
+    cm = MagicMock()
+    cm.__enter__ = MagicMock(return_value=conn)
+    cm.__exit__ = MagicMock(return_value=False)
+    engine.connect.return_value = cm
+    result = MagicMock()
+    if rows is not None:
+        result.fetchall.return_value = rows
+        result.fetchone.return_value = rows[0] if rows else None
+    if one is not None:
+        result.fetchone.return_value = one
+    conn.execute.return_value = result
+    return engine
+
+
+def _error_engine_for_service() -> MagicMock:
+    """Engine mock that raises when the service issues conn.execute()."""
+    engine = MagicMock()
+    conn = MagicMock()
+    cm = MagicMock()
+    cm.__enter__ = MagicMock(return_value=conn)
+    cm.__exit__ = MagicMock(return_value=False)
+    engine.connect.return_value = cm
+    conn.execute.side_effect = RuntimeError("db error")
+    return engine
+
+
+_EMPTY_SUMMARY_FALLBACK = {
+    "total_fires": 0,
+    "distinct_reasons": 0,
+    "span_start_utc": None,
+    "span_end_utc": None,
+}
+
+
+class TestGetExitFireSummary:
+    def test_engine_none_returns_empty_summary(self) -> None:
+        assert get_exit_fire_summary(None) == _EMPTY_SUMMARY_FALLBACK
+
+    def test_db_error_returns_empty_summary(self) -> None:
+        assert get_exit_fire_summary(_error_engine_for_service()) == _EMPTY_SUMMARY_FALLBACK
+
+    def test_returns_service_result_on_success(self) -> None:
+        engine = _mock_engine_for_service(one=(7, 3, None, None))
+        result = get_exit_fire_summary(engine)
+        assert result == {
+            "total_fires": 7,
+            "distinct_reasons": 3,
+            "span_start_utc": None,
+            "span_end_utc": None,
+        }
+
+    def test_window_seconds_converted_to_timedelta(self) -> None:
+        engine = _mock_engine_for_service(one=(0, 0, None, None))
+        get_exit_fire_summary(engine, window_seconds=3600)
+        # The service appends WHERE closed_at >= :since when window is set,
+        # and the SQL fragment is observable on the captured execute call.
+        sql_arg, params = engine.connect.return_value.__enter__.return_value.execute.call_args[0]
+        assert "WHERE closed_at >= :since" in str(sql_arg)
+        assert "since" in params
+
+
+class TestGetExitFireCountByReason:
+    def test_engine_none_returns_empty_dict(self) -> None:
+        assert get_exit_fire_count_by_reason(None) == {}
+
+    def test_db_error_returns_empty_dict(self) -> None:
+        assert get_exit_fire_count_by_reason(_error_engine_for_service()) == {}
+
+    def test_returns_service_result_on_success(self) -> None:
+        engine = _mock_engine_for_service(rows=[("tp", 5), ("sl", 2)])
+        result = get_exit_fire_count_by_reason(engine)
+        assert result == {"tp": 5, "sl": 2}
+
+    def test_window_seconds_zero_treated_as_window(self) -> None:
+        # 0 seconds is still a window (since = now - 0s = now). Wrapper must
+        # NOT treat 0 as None (only None means "all time").
+        engine = _mock_engine_for_service(rows=[])
+        get_exit_fire_count_by_reason(engine, window_seconds=0)
+        sql_arg, _ = engine.connect.return_value.__enter__.return_value.execute.call_args[0]
+        assert "WHERE closed_at >= :since" in str(sql_arg)
+
+
+class TestGetExitFirePnlSummaryByReason:
+    def test_engine_none_returns_empty_dict(self) -> None:
+        assert get_exit_fire_pnl_summary_by_reason(None) == {}
+
+    def test_db_error_returns_empty_dict(self) -> None:
+        assert get_exit_fire_pnl_summary_by_reason(_error_engine_for_service()) == {}
+
+    def test_returns_service_result_with_null_pnl(self) -> None:
+        # Phase 6 paper: pnl_realized is always NULL → pnl_sum/avg surface as None.
+        engine = _mock_engine_for_service(rows=[("tp", 4, None, None)])
+        result = get_exit_fire_pnl_summary_by_reason(engine)
+        assert result == {"tp": {"count": 4, "pnl_sum": None, "pnl_avg": None}}
+
+
+class TestGetExitFireRecent:
+    def test_engine_none_returns_empty_list(self) -> None:
+        assert get_exit_fire_recent(None) == []
+
+    def test_db_error_returns_empty_list(self) -> None:
+        assert get_exit_fire_recent(_error_engine_for_service()) == []
+
+    def test_returns_service_result_on_success(self) -> None:
+        # Service.recent_fires returns an 8-tuple per row; reasons can be a
+        # JSON string (parsed) or already a list. Use list form here for clarity.
+        engine = _mock_engine_for_service(
+            rows=[
+                (
+                    "ce1",
+                    "o1",
+                    "ps1",
+                    [{"priority": 1, "reason_code": "tp", "detail": ""}],
+                    "tp",
+                    "2026-04-21T12:00:00+00:00",
+                    None,
+                    "corr-1",
+                )
+            ]
+        )
+        result = get_exit_fire_recent(engine, limit=10)
+        assert len(result) == 1
+        assert result[0]["close_event_id"] == "ce1"
+        assert result[0]["primary_reason_code"] == "tp"
+        assert result[0]["pnl_realized"] is None
+
+
+class TestExitFireWrapperHelpers:
+    def test_to_window_none_passes_none(self) -> None:
+        # If wrapper-side conversion regresses (e.g., None -> timedelta(0)),
+        # the unbounded path would be lost. Pin via service SQL: window=None
+        # must NOT add WHERE clause.
+        engine = _mock_engine_for_service(rows=[])
+        get_exit_fire_count_by_reason(engine, window_seconds=None)
+        sql_arg, _ = engine.connect.return_value.__enter__.return_value.execute.call_args[0]
+        assert "WHERE" not in str(sql_arg)
+
+    def test_window_seconds_int_converted_correctly(self) -> None:
+        engine = _mock_engine_for_service(rows=[])
+        get_exit_fire_count_by_reason(engine, window_seconds=120)
+        _, params = engine.connect.return_value.__enter__.return_value.execute.call_args[0]
+        # The service computes since = clock.now() - timedelta(seconds=120).
+        # We only assert the param key is present and is a timedelta-derived
+        # datetime; precise time comparison would require Clock injection
+        # which the wrapper deliberately leaves to the service default.
+        assert "since" in params
+        # The 'since' value must reflect a 120-second window, but since
+        # WallClock.now() is non-deterministic here, we instead verify the
+        # request shape via a second call with a different window and compare.
+        assert isinstance(params["since"], type(params["since"]))
+        # Sanity check: differing window_seconds produce differing :since.
+        first_since = params["since"]
+        get_exit_fire_count_by_reason(engine, window_seconds=1)
+        _, params2 = engine.connect.return_value.__enter__.return_value.execute.call_args[0]
+        # 120s window starts further in the past than 1s window → first_since < params2["since"]
+        assert first_since < params2["since"]
+        # (delta should be roughly 119s ± WallClock tick)
+        delta = params2["since"] - first_since
+        assert timedelta(seconds=110) < delta < timedelta(seconds=130)

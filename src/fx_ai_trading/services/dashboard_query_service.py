@@ -17,9 +17,12 @@ write path. It INSERTs into ``app_settings_changes`` and never UPDATEs
 
 from __future__ import annotations
 
+from datetime import timedelta
+
 from sqlalchemy import Engine, text
 
 from fx_ai_trading.common.ulid import generate_ulid
+from fx_ai_trading.services.exit_fire_metrics import ExitFireMetricsService
 
 
 def get_open_positions(engine: Engine | None) -> list[dict]:
@@ -275,6 +278,76 @@ def get_learning_jobs(engine: Engine | None, limit: int = 20) -> list[dict]:
                 .all()
             )
         return [dict(r) for r in rows]
+    except Exception:
+        return []
+
+
+# ---------------------------------------------------------------------------
+# Cycle 6.9d — ExitFireMetricsService UI-safe wrappers
+# ---------------------------------------------------------------------------
+#
+# Thin fail-open adapters around ExitFireMetricsService for dashboard /
+# query consumers. The underlying service raises on DB error; these
+# wrappers catch and return an empty fallback so UI panels stay graceful.
+#
+# ``window_seconds`` is the wire form (UI-friendly int) for the service's
+# ``window: timedelta`` parameter. None means "all time".
+
+
+_EMPTY_SUMMARY: dict = {
+    "total_fires": 0,
+    "distinct_reasons": 0,
+    "span_start_utc": None,
+    "span_end_utc": None,
+}
+
+
+def _to_window(window_seconds: int | None) -> timedelta | None:
+    return timedelta(seconds=window_seconds) if window_seconds is not None else None
+
+
+def get_exit_fire_summary(engine: Engine | None, window_seconds: int | None = None) -> dict:
+    """Top-line exit-fire aggregates with UI-safe fallback."""
+    if engine is None:
+        return dict(_EMPTY_SUMMARY)
+    try:
+        return ExitFireMetricsService(engine).summary(window=_to_window(window_seconds))
+    except Exception:
+        return dict(_EMPTY_SUMMARY)
+
+
+def get_exit_fire_count_by_reason(
+    engine: Engine | None, window_seconds: int | None = None
+) -> dict[str, int]:
+    """Count of close_events grouped by primary_reason_code, UI-safe."""
+    if engine is None:
+        return {}
+    try:
+        return ExitFireMetricsService(engine).count_by_reason(window=_to_window(window_seconds))
+    except Exception:
+        return {}
+
+
+def get_exit_fire_pnl_summary_by_reason(
+    engine: Engine | None, window_seconds: int | None = None
+) -> dict[str, dict]:
+    """count / pnl_sum / pnl_avg per primary_reason_code, UI-safe."""
+    if engine is None:
+        return {}
+    try:
+        return ExitFireMetricsService(engine).pnl_summary_by_reason(
+            window=_to_window(window_seconds)
+        )
+    except Exception:
+        return {}
+
+
+def get_exit_fire_recent(engine: Engine | None, limit: int = 50) -> list[dict]:
+    """Most-recent close_events (newest first), UI-safe."""
+    if engine is None:
+        return []
+    try:
+        return ExitFireMetricsService(engine).recent_fires(limit=limit)
     except Exception:
         return []
 
