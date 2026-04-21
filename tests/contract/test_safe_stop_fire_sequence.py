@@ -558,3 +558,125 @@ class TestStepExceptionIsolation:
         assert handler._fire_step2_loop_stop() is True
         assert handler._fire_step3_notifier(_FIXED_AT, {"reason": _REASON}) is True
         assert handler._fire_step4_db(_FIXED_AT, {"reason": _REASON}, None) is True
+
+
+# ---------------------------------------------------------------------------
+# fire() return value (G-2 / I-G2-02 — PR-2 idempotency foundation)
+#
+# Contract: fire() returns True iff every step finished without raising.
+# Callers (Supervisor.trigger_safe_stop) gate _safe_stop_completed on
+# this so a partial-failure run can be retried.
+# ---------------------------------------------------------------------------
+
+
+class TestFireReturnValue:
+    def test_fire_returns_true_when_all_steps_succeed(self, journal) -> None:
+        notifier = MagicMock()
+        db_repo = MagicMock()
+        ctx = MagicMock()
+
+        handler = SafeStopHandler(
+            journal=journal,
+            notifier=notifier,
+            stop_callback=lambda: None,
+            supervisor_events_repo=db_repo,
+            common_keys_ctx=ctx,
+        )
+        assert handler.fire(reason=_REASON, occurred_at=_FIXED_AT) is True
+
+    def test_fire_returns_true_when_dependencies_skipped(self, journal) -> None:
+        """A handler with only journal configured still returns True (no exception)."""
+        handler = SafeStopHandler(journal=journal)
+        assert handler.fire(reason=_REASON, occurred_at=_FIXED_AT) is True
+
+    def test_fire_returns_false_when_step1_raises(self, journal) -> None:
+        def boom(_entry: dict) -> None:
+            raise RuntimeError("disk full")
+
+        journal.append = boom  # type: ignore[method-assign]
+
+        notifier = MagicMock()
+        db_repo = MagicMock()
+        ctx = MagicMock()
+
+        handler = SafeStopHandler(
+            journal=journal,
+            notifier=notifier,
+            stop_callback=lambda: None,
+            supervisor_events_repo=db_repo,
+            common_keys_ctx=ctx,
+        )
+        assert handler.fire(reason=_REASON, occurred_at=_FIXED_AT) is False
+
+    def test_fire_returns_false_when_step2_raises(self, journal) -> None:
+        def stop_cb():
+            raise RuntimeError("loop gone")
+
+        notifier = MagicMock()
+        db_repo = MagicMock()
+        ctx = MagicMock()
+
+        handler = SafeStopHandler(
+            journal=journal,
+            notifier=notifier,
+            stop_callback=stop_cb,
+            supervisor_events_repo=db_repo,
+            common_keys_ctx=ctx,
+        )
+        assert handler.fire(reason=_REASON, occurred_at=_FIXED_AT) is False
+
+    def test_fire_returns_false_when_step3_raises(self, journal) -> None:
+        notifier = MagicMock()
+        notifier.dispatch_direct_sync.side_effect = RuntimeError("slack 503")
+
+        db_repo = MagicMock()
+        ctx = MagicMock()
+
+        handler = SafeStopHandler(
+            journal=journal,
+            notifier=notifier,
+            stop_callback=lambda: None,
+            supervisor_events_repo=db_repo,
+            common_keys_ctx=ctx,
+        )
+        assert handler.fire(reason=_REASON, occurred_at=_FIXED_AT) is False
+
+    def test_fire_returns_false_when_step4_raises(self, journal) -> None:
+        notifier = MagicMock()
+        db_repo = MagicMock()
+        db_repo.insert_event.side_effect = RuntimeError("DB down")
+        ctx = MagicMock()
+
+        handler = SafeStopHandler(
+            journal=journal,
+            notifier=notifier,
+            stop_callback=lambda: None,
+            supervisor_events_repo=db_repo,
+            common_keys_ctx=ctx,
+        )
+        assert handler.fire(reason=_REASON, occurred_at=_FIXED_AT) is False
+
+    def test_fire_returns_false_when_all_steps_raise(self, journal) -> None:
+        def boom(_entry: dict) -> None:
+            raise RuntimeError("disk full")
+
+        journal.append = boom  # type: ignore[method-assign]
+
+        def stop_cb():
+            raise RuntimeError("loop gone")
+
+        notifier = MagicMock()
+        notifier.dispatch_direct_sync.side_effect = RuntimeError("slack down")
+
+        db_repo = MagicMock()
+        db_repo.insert_event.side_effect = RuntimeError("DB down")
+        ctx = MagicMock()
+
+        handler = SafeStopHandler(
+            journal=journal,
+            notifier=notifier,
+            stop_callback=stop_cb,
+            supervisor_events_repo=db_repo,
+            common_keys_ctx=ctx,
+        )
+        assert handler.fire(reason=_REASON, occurred_at=_FIXED_AT) is False

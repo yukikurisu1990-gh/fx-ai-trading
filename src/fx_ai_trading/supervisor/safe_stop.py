@@ -72,7 +72,7 @@ class SafeStopHandler:
         occurred_at: datetime,
         payload: dict | None = None,
         context: object | None = None,
-    ) -> None:
+    ) -> bool:
         """Execute the safe_stop sequence in strict order.
 
         Args:
@@ -82,6 +82,13 @@ class SafeStopHandler:
                 Callers must provide this — no datetime.now() here.
             payload: Additional context merged into the Notifier payload.
             context: CommonKeysContext override (falls back to constructor arg).
+
+        Returns:
+            True iff every step (1–4) returned True (no exception, including
+            the configured-skip path).  False if any step caught an
+            exception.  Callers (e.g., Supervisor.trigger_safe_stop) use
+            this to decide whether the safe_stop sequence completed and
+            should not be retried, or whether a re-fire is warranted.
 
         Sequence (order is mandatory per 6.1):
             1. journal.append()
@@ -95,16 +102,18 @@ class SafeStopHandler:
         ctx = context or self._common_keys_ctx
 
         # ── Step 1: journal (file, fsync, DB-independent) ────────────────
-        self._fire_step1_journal(reason, occurred_at, effective_payload)
+        s1 = self._fire_step1_journal(reason, occurred_at, effective_payload)
 
         # ── Step 2: loop stop (in-memory flag) ───────────────────────────
-        self._fire_step2_loop_stop()
+        s2 = self._fire_step2_loop_stop()
 
         # ── Step 3: notifier (critical, direct sync) ─────────────────────
-        self._fire_step3_notifier(occurred_at, effective_payload)
+        s3 = self._fire_step3_notifier(occurred_at, effective_payload)
 
         # ── Step 4: DB record (supervisor_events) ────────────────────────
-        self._fire_step4_db(occurred_at, effective_payload, ctx)
+        s4 = self._fire_step4_db(occurred_at, effective_payload, ctx)
+
+        return s1 and s2 and s3 and s4
 
     # ------------------------------------------------------------------
     # Individual step implementations

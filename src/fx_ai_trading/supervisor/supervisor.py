@@ -48,6 +48,15 @@ class Supervisor:
         self._clock = clock
         self._trading_allowed = False
         self._is_stopped = False
+        # _safe_stop_completed is set to True only when every step of the
+        # SafeStopHandler 4-step sequence (journal → loop_stop → notifier →
+        # supervisor_events) finishes without raising.  It is the
+        # idempotency key for trigger_safe_stop: a partial completion
+        # (e.g., notifier failed) leaves it False so a follow-up
+        # trigger_safe_stop call can re-run the sequence.  This is
+        # orthogonal to _is_stopped, which records "the trading loop has
+        # been halted" and is set as soon as step 2 succeeds.
+        self._safe_stop_completed = False
         self._journal: object = None
         self._notifier: object = None
         self._supervisor_events_repo: object = None
@@ -100,8 +109,11 @@ class Supervisor:
         """Fire the safe_stop sequence: journal → loop_stop → notifier → DB.
 
         This method delegates to SafeStopHandler.  It is safe to call
-        multiple times — subsequent calls are logged but do not re-fire
-        the sequence (idempotent loop-stop flag).
+        multiple times.  The idempotency key is _safe_stop_completed,
+        which is set only when every step of the previous fire() call
+        succeeded.  If a previous call left the sequence partially
+        complete (e.g., notifier dispatch failed), a follow-up call
+        re-runs the sequence so the missing steps can be retried.
 
         Args:
             reason: Machine-readable stop reason (e.g. 'account_type_mismatch').
@@ -109,8 +121,11 @@ class Supervisor:
             payload: Optional additional context for the Notifier.
             context: Optional CommonKeysContext for DB write.
         """
-        if self._is_stopped:
-            _log.warning("trigger_safe_stop called but already stopped (reason=%s) — no-op", reason)
+        if self._safe_stop_completed:
+            _log.warning(
+                "trigger_safe_stop called but safe_stop already completed (reason=%s) — no-op",
+                reason,
+            )
             return
 
         from fx_ai_trading.supervisor.safe_stop import SafeStopHandler
@@ -122,7 +137,17 @@ class Supervisor:
             supervisor_events_repo=self._supervisor_events_repo,
             common_keys_ctx=self._common_keys_ctx,
         )
-        handler.fire(reason=reason, occurred_at=occurred_at, payload=payload, context=context)
+        all_steps_ok = handler.fire(
+            reason=reason, occurred_at=occurred_at, payload=payload, context=context
+        )
+        if all_steps_ok:
+            self._safe_stop_completed = True
+        else:
+            _log.warning(
+                "trigger_safe_stop: safe_stop sequence partially completed (reason=%s) — "
+                "_safe_stop_completed remains False so a follow-up trigger can retry",
+                reason,
+            )
 
     def _on_loop_stop(self) -> None:
         """Internal callback executed by SafeStopHandler as loop-stop step."""
