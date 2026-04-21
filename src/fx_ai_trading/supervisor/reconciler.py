@@ -30,9 +30,9 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass, field
-from datetime import UTC, datetime
 from enum import Enum
 
+from fx_ai_trading.common.clock import Clock, WallClock
 from fx_ai_trading.config.common_keys_context import CommonKeysContext
 from fx_ai_trading.repositories.orders import OrdersRepository
 from fx_ai_trading.repositories.reconciliation_events import (
@@ -99,6 +99,9 @@ class StartupReconciler:
             provided, every non-NO_OP action emits one audit row with
             trigger_reason='startup'.  When None (default), no audit rows
             are written — preserves the original M8 behaviour.
+        clock: Optional Clock for stamping event_time_utc on audit rows.
+            Defaults to WallClock().  Only consulted when
+            ``reconciliation_repo`` is provided.
     """
 
     def __init__(
@@ -107,11 +110,13 @@ class StartupReconciler:
         context: CommonKeysContext,
         broker: object | None = None,
         reconciliation_repo: ReconciliationEventsRepository | None = None,
+        clock: Clock | None = None,
     ) -> None:
         self._orders_repo = orders_repo
         self._context = context
         self._broker = broker
         self._reconciliation_repo = reconciliation_repo
+        self._clock = clock or WallClock()
 
     # ------------------------------------------------------------------
     # Pure classification function (testable)
@@ -288,7 +293,7 @@ class StartupReconciler:
             self._reconciliation_repo.insert(
                 trigger_reason=_STARTUP_TRIGGER_REASON,
                 action_taken=_ACTION_TAKEN_LABEL[action.value],
-                event_time_utc=datetime.now(UTC),
+                event_time_utc=self._clock.now(),
                 order_id=order_id,
                 detail={
                     "db_status": db_status,

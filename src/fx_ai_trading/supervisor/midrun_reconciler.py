@@ -18,10 +18,11 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass, field
-from datetime import UTC, datetime, timedelta
+from datetime import timedelta
 
 from sqlalchemy import Engine, text
 
+from fx_ai_trading.common.clock import Clock, WallClock
 from fx_ai_trading.common.rate_limiter import RateLimiter
 from fx_ai_trading.config.common_keys_context import CommonKeysContext
 from fx_ai_trading.repositories.orders import OrdersRepository
@@ -81,6 +82,9 @@ class MidRunReconciler:
         outbox_stale_seconds: Threshold for the secondary_sync_outbox
             staleness query at the end of ``check()``.  When None (default),
             the outbox_stale check is skipped entirely.
+        clock: Optional Clock for stamping event_time_utc on audit rows
+            and for computing the outbox_stale threshold.  Defaults to
+            WallClock().
     """
 
     def __init__(
@@ -93,6 +97,7 @@ class MidRunReconciler:
         trigger_reason: str = "midrun_heartbeat_gap",
         engine: Engine | None = None,
         outbox_stale_seconds: int | None = None,
+        clock: Clock | None = None,
     ) -> None:
         if trigger_reason not in _VALID_TRIGGER_REASONS:
             raise ValueError(
@@ -107,6 +112,7 @@ class MidRunReconciler:
         self._trigger_reason = trigger_reason
         self._engine = engine
         self._outbox_stale_seconds = outbox_stale_seconds
+        self._clock = clock or WallClock()
 
     def check(
         self,
@@ -215,7 +221,7 @@ class MidRunReconciler:
             self._reconciliation_repo.insert(
                 trigger_reason=self._trigger_reason,
                 action_taken=_ACTION_TAKEN_LABEL[action],
-                event_time_utc=datetime.now(UTC),
+                event_time_utc=self._clock.now(),
                 order_id=order_id,
                 detail={
                     "db_status": db_status,
@@ -258,7 +264,7 @@ class MidRunReconciler:
                         " AND enqueued_at < :threshold"
                     ),
                     {
-                        "threshold": datetime.now(UTC)
+                        "threshold": self._clock.now()
                         - timedelta(seconds=self._outbox_stale_seconds),
                     },
                 ).fetchall()
@@ -275,7 +281,7 @@ class MidRunReconciler:
             self._reconciliation_repo.insert(
                 trigger_reason=_OUTBOX_STALE_TRIGGER_REASON,
                 action_taken=_OUTBOX_STALE_ACTION,
-                event_time_utc=datetime.now(UTC),
+                event_time_utc=self._clock.now(),
                 detail={
                     "count": len(rows),
                     "oldest_enqueued_at": oldest.isoformat() if oldest else None,
