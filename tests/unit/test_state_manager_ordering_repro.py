@@ -1,35 +1,38 @@
-"""Deterministic reproduction of R-1 — StateManager ordering non-determinism.
+"""Order-independence invariants for StateManager — R-1 fix (Cycle 6.12).
 
-Hypothesis under test (R-1 from ``docs/design/flaky_state_manager_ordering_memo.md``):
+Background (R-1, see ``docs/design/flaky_state_manager_ordering_memo.md``):
 
-    ``StateManager.open_instruments()`` ranks rows per instrument with
-    ``ORDER BY event_time_utc DESC, position_snapshot_id DESC``.  When the
-    injected ``Clock`` returns the same ``event_time_utc`` for several
-    consecutive calls (as ``FixedClock`` does in tests, and as a single
-    wall-clock millisecond can in production), every row in the partition
-    ties on ``event_time_utc``.  The tie-break falls entirely on
-    ``position_snapshot_id DESC``.
+    The 6.7c versions of ``open_instruments()``,
+    ``open_position_details()`` and ``_last_open_snapshot_id()`` ranked
+    rows per (instrument | order_id) with
+    ``ORDER BY event_time_utc DESC, position_snapshot_id DESC``.  When
+    the injected ``Clock`` returned the same ``event_time_utc`` for
+    several consecutive calls (FixedClock in tests, a single wall-clock
+    millisecond in production), every row in the partition tied on
+    ``event_time_utc``.  The tie-break fell entirely on
+    ``position_snapshot_id DESC``, whose last 80 bits are
+    ``secrets.randbits`` — non-monotonic and effectively random.
 
-    ``position_snapshot_id`` is a ULID whose 16-char suffix is 80 bits of
-    uniform random (``secrets.randbits`` in ``common/ulid.py``).  So the
-    lexicographic order of two same-millisecond ULIDs is effectively random.
+    Adverse ULID orderings made the close row lose the tie-break, so
+    the queries returned closed positions as still open and the next
+    on_fill recorded ``event_type='add'`` instead of ``'open'``.
 
-    Consequence: after ``on_fill`` → ``on_close`` for the same instrument
-    with same ``event_time_utc``, whether ``open_instruments()`` returns
-    the close row or the open row as "latest" is ULID-suffix-dependent.
-    When the open row wins the tie-break, a subsequent ``on_fill`` wrongly
-    records ``event_type='add'`` — the reproduction target.
+Cycle 6.12 fix (方針 B): replace the order-dependent ranking with
+order-independent set/count/existence queries:
 
-These tests do NOT modify any src file.  They monkeypatch
-``generate_ulid`` inside the state_manager module to force chosen ULIDs
-and make the bug fire deterministically.
+  * ``open_instruments()``  — ``GROUP BY instrument HAVING SUM(open|add) > SUM(close)``
+  * ``open_position_details()`` — open rows whose order_id has no close row
+  * ``_last_open_snapshot_id()`` — the unique 'open' row for the order_id
 
-Scope contract (see Designer Freeze for F-2 step 1):
-  - read-only: no src change, no DDL change, no existing-test change
-  - additive only: new file
-  - ``test_fill_after_close_writes_open_not_add`` in
-    ``test_state_manager_write.py`` is left untouched (the flaky test
-    itself is the motivating symptom; this file explains *why*)
+This file was originally added in PR #109 to *reproduce* the bug.  Each
+test was authored with the bug-firing assertion (e.g.
+``event_type == 'add'``) so a failure proved the fix.  After PR #109
+merged and the fix landed, the assertions are flipped here so the same
+adversarial ULID sequences instead verify the invariant — the queries
+now ignore ULID ordering altogether.
+
+Scope: read-only fixtures over an in-memory SQLite engine, monkeypatch
+``generate_ulid`` inside the state_manager module to force chosen ULIDs.
 """
 
 from __future__ import annotations
@@ -145,19 +148,21 @@ def _positions_rows(engine, *, account_id: str = "acc-1") -> list:
 # ULID sequencing helper
 # ----------------------------------------------------------------------
 #
-# The bug surfaces only when two same-millisecond rows (open vs close)
-# end up on opposite sides of the ``position_snapshot_id DESC`` tie-break.
-# We monkeypatch ``generate_ulid`` inside the state_manager module so each
-# call returns a chosen ULID from a queue.  Both strings MUST be valid
-# ULIDs (26 uppercase Crockford base32 chars — alphabet excludes I, L, O, U).
+# The original bug surfaced only when two same-millisecond rows (open vs
+# close) ended up on opposite sides of the ``position_snapshot_id DESC``
+# tie-break.  We monkeypatch ``generate_ulid`` inside the state_manager
+# module so each call returns a chosen ULID from a queue.  Both strings
+# MUST be valid ULIDs (26 uppercase Crockford base32 chars — alphabet
+# excludes I, L, O, U).
 #
 # Suffixes use only ``A`` and ``Z``, both in the Crockford alphabet.
 # ``A`` is the smallest letter in that alphabet, ``Z`` the largest, so
 # comparing two ULIDs that differ only in the suffix reduces to comparing
 # ``A...A`` vs ``Z...Z``, where the Z variant is strictly greater.
 #
-# The timestamp prefix is deliberately identical across IDs in a given
-# test so the lexicographic comparison is decided entirely by the suffix.
+# Post-fix the queries are order-independent, so these adversarial
+# orderings now act as REGRESSION GUARDS: any future change that
+# reintroduces a ULID-dependent tie-break would re-break these tests.
 
 
 _ULID_PREFIX = "01HZ000000"  # 10 chars = timestamp portion (identical across IDs)
@@ -214,27 +219,32 @@ def _sequence_ulids(monkeypatch, sequence: list[str]) -> None:
 
 
 # ----------------------------------------------------------------------
-# R-1 reproduction tests
+# R-1 fix invariants
 # ----------------------------------------------------------------------
 
 
-class TestR1OpenInstrumentsTieBreak:
-    """Reproduce the open_instruments() tie-break non-determinism."""
+class TestR1FixOnFillEventType:
+    """``on_fill`` must record ``event_type='open'`` for a re-fill after
+    close, regardless of the relative ULID ordering of the open vs close
+    rows.  Pre-fix the answer depended on ``position_snapshot_id`` lex
+    order under same-millisecond ties; post-fix it depends only on the
+    structural open/close balance per instrument.
+    """
 
-    def test_fires_when_open_psid_greater_than_close_psid(self, engine, monkeypatch) -> None:
-        """R-1 canonical repro.
+    def test_re_open_after_close_writes_open_under_adverse_ulids(self, engine, monkeypatch) -> None:
+        """Adverse ordering: open psid > close psid (lex-greater).
 
         Sequence:
           1. on_fill  -> psid_open  = large (Z...)
           2. on_close -> psid_close = small (A...)  [ceid consumed but ignored]
           3. on_fill again -> queries open_instruments()
 
-        All three rows share ``event_time_utc`` via FixedClock, so the
-        ORDER BY falls entirely on ``position_snapshot_id DESC``.  Since
-        psid_open > psid_close lexicographically, the window function picks
-        the OPEN row as "latest" and reports EURUSD as still open.  The
-        third on_fill therefore writes ``event_type='add'`` — the exact
-        production bug masquerading as a flaky test.
+        All three rows share ``event_time_utc`` via FixedClock.  Under R-1
+        (window function + ULID DESC tie-break) the OPEN row would win
+        the rank-1 slot and EURUSD would appear "still held", forcing the
+        third on_fill to record ``event_type='add'``.  Post-fix the query
+        is count-based and order-independent, so the third on_fill
+        correctly records ``event_type='open'``.
         """
         _sequence_ulids(
             monkeypatch,
@@ -259,20 +269,19 @@ class TestR1OpenInstrumentsTieBreak:
         rows = _positions_rows(engine)
         last_fill_row = next(r for r in rows if r.order_id == "o2")
 
-        # This is the BUG assertion: the reproduction succeeds when the
-        # post-close re-fill is wrongly recorded as 'add'.
-        assert last_fill_row.event_type == "add", (
-            "R-1 NOT reproduced — re-open wrote 'open' despite adverse"
-            " ULID ordering.  Check that _sequence_ulids fed the state_manager"
-            " module binding, not the ulid module."
+        assert last_fill_row.event_type == "open", (
+            "R-1 regression: re-open after close recorded 'add' under adverse"
+            " ULID ordering.  open_instruments() / on_fill must not depend on"
+            " position_snapshot_id lex order."
         )
 
-    def test_does_not_fire_when_open_psid_less_than_close_psid(self, engine, monkeypatch) -> None:
-        """Control case — favorable ordering, bug silent.
-
-        Same three-call shape but with psid_open < psid_close.  Tie-break
-        picks the CLOSE row as latest, EURUSD drops out of
-        open_instruments, and the re-fill correctly records 'open'.
+    def test_re_open_after_close_writes_open_under_favorable_ulids(
+        self, engine, monkeypatch
+    ) -> None:
+        """Favorable ordering: open psid < close psid.  Pre-fix this case
+        also produced 'open' (the bug only manifested under adverse
+        orderings); the test stays here as a control proving determinism
+        across both sides of the original tie-break.
         """
         _sequence_ulids(
             monkeypatch,
@@ -298,20 +307,28 @@ class TestR1OpenInstrumentsTieBreak:
         last_fill_row = next(r for r in rows if r.order_id == "o2")
         assert last_fill_row.event_type == "open"
 
-    def test_open_instruments_directly_returns_closed_instrument_under_adverse_ulids(
+
+class TestR1FixOpenReadQueries:
+    """``open_instruments()`` and ``open_position_details()`` must report
+    "no open positions" once an instrument has been closed, regardless of
+    the relative ULID ordering of the open vs close rows.
+    """
+
+    def test_open_instruments_excludes_closed_instrument_under_adverse_ulids(
         self, engine, monkeypatch
     ) -> None:
-        """Narrow the observation to ``open_instruments()`` itself.
+        """Direct narrow-scope check on ``open_instruments()``.
 
-        After on_fill + on_close under adverse ULID ordering, the account
-        *should* hold no open instruments.  With R-1 unfixed, the query
-        returns {'EURUSD'} because the close row loses the tie-break.
+        After on_fill + on_close, the account holds no open instruments.
+        Under R-1 the close row could lose the tie-break and the query
+        wrongly returned ``{'EURUSD'}``.  Post-fix the count-based query
+        returns ``frozenset()`` regardless of ULID layout.
         """
         _sequence_ulids(
             monkeypatch,
             sequence=[
-                _ulid_large(0),  # on_fill  (open)   — wins tie-break
-                _ulid_small(0),  # on_close (pos)    — loses tie-break
+                _ulid_large(0),  # on_fill  (open)   — would have won pre-fix tie-break
+                _ulid_small(0),  # on_close (pos)    — would have lost pre-fix tie-break
                 _ulid_small(1),  # on_close (ce)
             ],
         )
@@ -325,31 +342,19 @@ class TestR1OpenInstrumentsTieBreak:
             primary_reason_code="tp",
         )
 
-        # Intended invariant (violated under R-1):
-        #   open_instruments() == frozenset() after close
-        # Observed under R-1:
-        assert sm.open_instruments() == frozenset({"EURUSD"}), (
-            "R-1 NOT reproduced at the open_instruments() layer — the query"
-            " returned the closed instrument as expected, meaning the ORDER BY"
-            " is resolving deterministically without relying on"
-            " position_snapshot_id.  Investigate alternate hypotheses R-2/R-3."
+        assert sm.open_instruments() == frozenset(), (
+            "R-1 regression: open_instruments() leaked a closed instrument"
+            " under adverse ULID ordering.  The query must use a count-based"
+            " (open|add vs close) comparison, not row ranking."
         )
 
-
-class TestR1SameFlawInOtherQueries:
-    """The same ``event_time_utc DESC, position_snapshot_id DESC`` ordering is
-    reused by ``open_position_details()`` and ``_last_open_snapshot_id()``.
-    Both share the bug surface, so a fix must address all three call sites,
-    not just ``open_instruments()``.
-    """
-
-    def test_open_position_details_returns_closed_instrument_under_adverse_ulids(
+    def test_open_position_details_excludes_closed_instrument_under_adverse_ulids(
         self, engine, monkeypatch
     ) -> None:
-        """``open_position_details`` uses the same ORDER BY — same bug.
-
-        If a fix only touches ``open_instruments``, this query continues
-        to leak closed positions to the exit gate.
+        """``open_position_details`` must drop the closed instrument under
+        the same adverse ULID layout that broke ``open_instruments``
+        pre-fix.  The two queries share the bug surface and so must share
+        the fix.
         """
         _sequence_ulids(
             monkeypatch,
@@ -370,43 +375,50 @@ class TestR1SameFlawInOtherQueries:
 
         details = sm.open_position_details()
         leaked = [d for d in details if d.instrument == "EURUSD"]
-        assert leaked, (
-            "R-1 NOT reproduced in open_position_details — the closed"
-            " position did not leak.  If open_instruments() reproduced but"
-            " this did not, the two ORDER BY sites have diverged; re-check"
-            " state_manager.py:155 and state_manager.py:191."
+        assert leaked == [], (
+            "R-1 regression: open_position_details() leaked a closed position"
+            " under adverse ULID ordering.  The query must filter via NOT EXISTS"
+            " on a matching close row, not row ranking."
         )
 
-    def test_last_open_snapshot_id_picks_wrong_row_under_adverse_ulids(
-        self, engine, monkeypatch
-    ) -> None:
-        """``_last_open_snapshot_id`` shares the ORDER BY and is called by
-        ``on_close`` to link the close_events.position_snapshot_id field.
 
-        Under R-1, the linkage is correct only because a second on_close
-        for the same order is not typical in paper mode.  Still, the same
-        tie-break flaw exists in the SQL and must be recorded.  We assert
-        that two open/add rows with divergent ULID ordering produce the
-        expected "larger ULID wins" behaviour under tie.
+class TestR1FixLastOpenSnapshotId:
+    """``_last_open_snapshot_id`` is called by ``on_close`` to populate
+    ``close_events.position_snapshot_id``.  Under L2 (1 order = 1 position)
+    each order_id has exactly one 'open' row, so the link target must be
+    that open row's psid regardless of any later fills.
+    """
+
+    def test_returns_open_row_psid_under_adverse_ulids(self, engine, monkeypatch) -> None:
+        """Two fills for the same order_id with adverse ULID ordering.
+
+        Sequence:
+          1. on_fill #1 -> writes 'open' with the SMALL ULID (smaller psid)
+          2. on_fill #2 -> instrument now held → writes 'add' with the
+             LARGE ULID (larger psid)
+
+        Pre-fix ``_last_open_snapshot_id`` ordered by
+        ``event_time_utc DESC, position_snapshot_id DESC LIMIT 1``,
+        picking the LARGER psid (the add row).  The "correct" answer
+        depended on which psid happened to be larger.
+
+        Post-fix the function returns the unique 'open' row for the
+        order, which is the position's identity event and the natural
+        audit anchor — independent of ULID ordering.
         """
         _sequence_ulids(
             monkeypatch,
             sequence=[
-                _ulid_small(0),  # on_fill #1 (open) — smaller
-                _ulid_large(0),  # on_fill #2 (add)  — larger
+                _ulid_small(0),  # on_fill #1 (open) — smaller psid
+                _ulid_large(0),  # on_fill #2 (add)  — larger psid
             ],
         )
         sm = _make_sm(engine)
         sm.on_fill(order_id="o1", instrument="EURUSD", units=1000, avg_price=1.10)
         sm.on_fill(order_id="o1", instrument="EURUSD", units=500, avg_price=1.11)
 
-        # With event_time_utc tied, the ORDER BY picks the larger ULID
-        # (_ulid_large(0)).  This is the "add" row, which happens to be
-        # correct here — but the determinism comes from ULID suffix, not
-        # insertion order.  The test documents the contract: if the ULID
-        # for the second fill were smaller, _last_open_snapshot_id would
-        # return the first fill's psid instead, which is the latent flaw.
         picked = sm._last_open_snapshot_id(order_id="o1", instrument="EURUSD")
-        assert picked == _ulid_large(0), (
-            f"expected larger-ULID row to win tie-break; got {picked!r}"
+        assert picked == _ulid_small(0), (
+            "R-1 regression: _last_open_snapshot_id returned a non-open row"
+            f" ({picked!r}) instead of the unique 'open' row for the order."
         )
