@@ -34,16 +34,21 @@ never issues UPDATE or DELETE.
 
 from __future__ import annotations
 
+import contextlib
 import logging
 from collections.abc import Callable
 from dataclasses import dataclass
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from fx_ai_trading.common.clock import Clock
+from fx_ai_trading.common.exceptions import AccountTypeMismatchRuntime
 from fx_ai_trading.common.ulid import generate_ulid
 from fx_ai_trading.domain.broker import Broker, OrderRequest
 from fx_ai_trading.services.exit_policy import ExitPolicyService
 from fx_ai_trading.services.state_manager import StateManager
+
+if TYPE_CHECKING:
+    from fx_ai_trading.supervisor.supervisor import Supervisor
 
 _log = logging.getLogger(__name__)
 
@@ -89,6 +94,7 @@ def run_exit_gate(
     tp: float | None = None,
     sl: float | None = None,
     context: dict[str, Any] | None = None,
+    supervisor: Supervisor | None = None,
 ) -> list[ExitGateRunResult]:
     """Evaluate all open positions and close those where ExitPolicy fires.
 
@@ -110,6 +116,16 @@ def run_exit_gate(
         sl: Stop-loss level; None disables SL rule (paper-mode).
         context: Passed to ExitPolicyService.evaluate() unchanged.
                  Pass ``{"emergency_stop": True}`` for M22 flat-all.
+        supervisor: Optional Supervisor for safe_stop wiring (PR-5 / U-2).
+                    When provided, an ``AccountTypeMismatchRuntime`` raised
+                    inside ``broker.place_order`` triggers
+                    ``supervisor.trigger_safe_stop`` with the canonical
+                    reason ``"account_type_mismatch_runtime"`` (per
+                    phase6_hardening §6.18 / operations F14) before the
+                    exception propagates.  The for-loop is then aborted
+                    without writing the close_event or invoking
+                    ``state_manager.on_close`` for that position.  When
+                    None, behaviour is unchanged from pre-PR-5.
 
     Returns:
         One ``ExitGateRunResult`` per open position evaluated.
@@ -169,7 +185,38 @@ def run_exit_gate(
             side=_CLOSE_SIDE[side],
             size_units=pos.units,
         )
-        result = broker.place_order(close_request)
+        try:
+            result = broker.place_order(close_request)
+        except AccountTypeMismatchRuntime as exc:
+            # PR-5 (U-2): Mid-flight account_type drift detected by the
+            # broker's pre-place_order assertion (Decision 2.6.1-1).  Per
+            # phase6_hardening §6.18 / operations F14, this MUST trigger
+            # safe_stop(reason=account_type_mismatch_runtime) and write
+            # NO close_event / NO state_manager.on_close row for this
+            # position.  We fire the wired Supervisor (if any) and then
+            # re-raise so the for-loop aborts and any remaining positions
+            # are NOT evaluated against the now-untrusted broker.
+            #
+            # ``expected_account_type`` is None here because run_exit_gate
+            # has no per-call expected value (unlike run_execution_gate);
+            # the mismatch text is fully captured in ``detail`` (str(exc)).
+            if supervisor is not None:
+                payload = {
+                    "actual_account_type": broker.account_type,
+                    "expected_account_type": None,
+                    "instrument": pos.instrument,
+                    "client_order_id": close_request.client_order_id,
+                    "detail": str(exc),
+                }
+                # Never let a downstream safe_stop bug swallow the
+                # original mismatch exception.
+                with contextlib.suppress(Exception):
+                    supervisor.trigger_safe_stop(
+                        reason="account_type_mismatch_runtime",
+                        occurred_at=now,
+                        payload=payload,
+                    )
+            raise
 
         if result.status != "filled":
             _log.warning(
