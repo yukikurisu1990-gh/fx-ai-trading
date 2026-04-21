@@ -13,6 +13,13 @@ This ordering guarantees that:
     for stopping).
   - DB write is last so that a DB failure cannot prevent steps 1-3.
 
+Exception isolation (G-2 / I-G2-06):
+  Every step is wrapped in try/except so that a failure in one step never
+  prevents subsequent steps from executing.  Each step returns a bool
+  (True = no exception raised, False = exception logged) so callers can
+  later observe partial completion.  The strict order from 6.1 is
+  preserved — wrapping is purely additive.
+
 Verified by: tests/contract/test_safe_stop_fire_sequence.py
 """
 
@@ -101,46 +108,68 @@ class SafeStopHandler:
 
     # ------------------------------------------------------------------
     # Individual step implementations
+    #
+    # Each step returns True when no exception was raised (including the
+    # configured-skip path), False when an exception was caught and
+    # logged.  The bool is intentionally never raised to fire(): the
+    # contract is that subsequent steps must always run.  Callers (e.g.,
+    # Supervisor.trigger_safe_stop) may inspect these returns in a future
+    # change to track partial completion.
     # ------------------------------------------------------------------
 
-    def _fire_step1_journal(self, reason: str, occurred_at: datetime, payload: dict) -> None:
+    def _fire_step1_journal(self, reason: str, occurred_at: datetime, payload: dict) -> bool:
         if self._journal is None:
             _log.error("SafeStopHandler: journal not set — step 1 skipped!")
-            return
-        entry = {
-            "event_code": self._EVENT_CODE,
-            "reason": reason,
-            "occurred_at": occurred_at.isoformat(),
-            **{k: v for k, v in payload.items() if k != "reason"},
-        }
-        self._journal.append(entry)
-        _log.info("SafeStopHandler step 1: journal written")
+            return True
+        try:
+            entry = {
+                "event_code": self._EVENT_CODE,
+                "reason": reason,
+                "occurred_at": occurred_at.isoformat(),
+                **{k: v for k, v in payload.items() if k != "reason"},
+            }
+            self._journal.append(entry)
+            _log.info("SafeStopHandler step 1: journal written")
+            return True
+        except Exception as exc:  # noqa: BLE001
+            _log.error("SafeStopHandler step 1: journal append failed: %s", exc)
+            return False
 
-    def _fire_step2_loop_stop(self) -> None:
+    def _fire_step2_loop_stop(self) -> bool:
         if self._stop_callback is None:
             _log.warning("SafeStopHandler: stop_callback not set — step 2 skipped")
-            return
-        self._stop_callback()
-        _log.info("SafeStopHandler step 2: loop stopped")
+            return True
+        try:
+            self._stop_callback()
+            _log.info("SafeStopHandler step 2: loop stopped")
+            return True
+        except Exception as exc:  # noqa: BLE001
+            _log.error("SafeStopHandler step 2: stop_callback failed: %s", exc)
+            return False
 
-    def _fire_step3_notifier(self, occurred_at: datetime, payload: dict) -> None:
+    def _fire_step3_notifier(self, occurred_at: datetime, payload: dict) -> bool:
         if self._notifier is None:
             _log.warning("SafeStopHandler: notifier not set — step 3 skipped")
-            return
-        event = NotifyEvent(
-            event_code=self._EVENT_CODE,
-            severity="critical",
-            payload=payload,
-            occurred_at=occurred_at,
-        )
-        self._notifier.dispatch_direct_sync(event, "critical", payload)
-        _log.info("SafeStopHandler step 3: notifier dispatched")
+            return True
+        try:
+            event = NotifyEvent(
+                event_code=self._EVENT_CODE,
+                severity="critical",
+                payload=payload,
+                occurred_at=occurred_at,
+            )
+            self._notifier.dispatch_direct_sync(event, "critical", payload)
+            _log.info("SafeStopHandler step 3: notifier dispatched")
+            return True
+        except Exception as exc:  # noqa: BLE001
+            _log.error("SafeStopHandler step 3: notifier dispatch failed: %s", exc)
+            return False
 
-    def _fire_step4_db(self, occurred_at: datetime, payload: dict, ctx: object | None) -> None:
+    def _fire_step4_db(self, occurred_at: datetime, payload: dict, ctx: object | None) -> bool:
         repo = self._supervisor_events_repo
         if repo is None or ctx is None:
             _log.info("SafeStopHandler step 4: DB write skipped (repo or ctx not set)")
-            return
+            return True
         try:
             repo.insert_event(
                 event_type=self._EVENT_CODE,
@@ -149,5 +178,7 @@ class SafeStopHandler:
                 detail=payload,
             )
             _log.info("SafeStopHandler step 4: supervisor_events written")
+            return True
         except Exception as exc:  # noqa: BLE001
             _log.error("SafeStopHandler step 4: supervisor_events insert failed: %s", exc)
+            return False
