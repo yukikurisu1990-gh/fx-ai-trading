@@ -139,28 +139,25 @@ class StateManager:
     def open_instruments(self) -> frozenset[str]:
         """Instruments currently held open for this account.
 
-        6.7c fix: uses a window function to find each instrument's
-        MOST RECENT positions event.  The instrument is open only when
-        that latest event is 'open' or 'add'.
+        Cycle 6.12 fix (R-1, 方針 B): order-independent.  The 6.7c version
+        ranked rows by ``event_time_utc DESC, position_snapshot_id DESC``
+        and treated the top row as "current state".  At same-millisecond
+        ties the ULID lex order decided the result, which non-deterministically
+        leaked closed instruments back into the open set.
 
-        The 6.7b query (``NOT IN close events``) permanently hid any
-        instrument that had ever been closed, breaking re-open scenarios.
+        The append-only timeline guarantees that an instrument is currently
+        held iff its open|add events outnumber its close events.  This count
+        comparison needs no row ordering and is therefore deterministic
+        regardless of timestamp granularity or ULID suffix entropy.
         """
         sql = text(
             """
             SELECT instrument
-            FROM (
-                SELECT instrument,
-                       event_type,
-                       ROW_NUMBER() OVER (
-                           PARTITION BY instrument
-                           ORDER BY event_time_utc DESC, position_snapshot_id DESC
-                       ) AS rn
-                FROM positions
-                WHERE account_id = :account_id
-            ) ranked
-            WHERE rn = 1
-              AND event_type IN ('open', 'add')
+            FROM positions
+            WHERE account_id = :account_id
+            GROUP BY instrument
+            HAVING SUM(CASE WHEN event_type IN ('open', 'add') THEN 1 ELSE 0 END) >
+                   SUM(CASE WHEN event_type = 'close' THEN 1 ELSE 0 END)
             """
         )
         with self._engine.connect() as conn:
@@ -173,31 +170,34 @@ class StateManager:
         Returns one ``OpenPositionInfo`` per open instrument, carrying the
         data that ``run_exit_gate`` needs to evaluate ExitPolicy.
 
-        Cycle 6.7c constraint (L2): 1 order = 1 position.  The most recent
-        'open' or 'add' event row is used for units / avg_price / open_time.
-        For non-pyramiding positions (paper-mode) this is always the single
-        'open' row and open_time_utc equals the entry time.
+        Cycle 6.7c constraint (L2): 1 order = 1 position.  Each active
+        position has exactly one ``event_type='open'`` row in the timeline
+        (paper-mode does not pyramid).  An open row is "still active" iff
+        no close row exists for the same order_id.
+
+        Cycle 6.12 fix (R-1, 方針 B): selects the open row directly via
+        ``NOT EXISTS (close for same order_id)``, which is order-independent.
+        The previous window-function ranking depended on
+        ``position_snapshot_id`` lex order at same-millisecond ties and
+        could leak closed positions into the exit gate.
+
+        Pyramiding (add rows) is paper-mode out of scope; if it lands later,
+        units/avg_price aggregation across (open, add*) per order_id will
+        require a separate change.
         """
         sql = text(
             """
-            SELECT instrument, order_id, units, avg_price, event_time_utc
-            FROM (
-                SELECT instrument,
-                       order_id,
-                       units,
-                       avg_price,
-                       event_time_utc,
-                       event_type,
-                       ROW_NUMBER() OVER (
-                           PARTITION BY instrument
-                           ORDER BY event_time_utc DESC, position_snapshot_id DESC
-                       ) AS rn
-                FROM positions
-                WHERE account_id = :account_id
-            ) ranked
-            WHERE rn = 1
-              AND event_type IN ('open', 'add')
-            ORDER BY event_time_utc ASC
+            SELECT p.instrument, p.order_id, p.units, p.avg_price, p.event_time_utc
+            FROM positions p
+            WHERE p.account_id = :account_id
+              AND p.event_type = 'open'
+              AND NOT EXISTS (
+                  SELECT 1 FROM positions c
+                  WHERE c.account_id = p.account_id
+                    AND c.order_id = p.order_id
+                    AND c.event_type = 'close'
+              )
+            ORDER BY p.event_time_utc ASC
             """
         )
         with self._engine.connect() as conn:
@@ -546,7 +546,23 @@ class StateManager:
     # ------------------------------------------------------------------
 
     def _last_open_snapshot_id(self, *, order_id: str, instrument: str) -> str | None:
-        """Return the most recent 'open' or 'add' position_snapshot_id for order."""
+        """Return the position_snapshot_id of the 'open' row for this order.
+
+        Cycle 6.12 fix (R-1, 方針 B): returns the unique 'open' row for
+        (account_id, order_id, instrument) — under L2 (1 order = 1 position)
+        each order_id has exactly one 'open' row, so no row ordering is
+        required.  Used by ``on_close`` to populate
+        ``close_events.position_snapshot_id`` as the audit link back to the
+        position's identity event.
+
+        The previous version ordered by ``event_time_utc DESC,
+        position_snapshot_id DESC`` to pick the latest 'open' or 'add' row,
+        which under same-millisecond ties depended on ULID lex order.
+        Because paper-mode does not pyramid, the new query is identity-
+        equivalent in practice; for hypothetical future pyramiding the
+        link target is the original open row, which remains the most
+        stable audit anchor.
+        """
         sql = text(
             """
             SELECT position_snapshot_id
@@ -554,8 +570,7 @@ class StateManager:
             WHERE account_id = :account_id
               AND order_id = :order_id
               AND instrument = :instrument
-              AND event_type IN ('open', 'add')
-            ORDER BY event_time_utc DESC, position_snapshot_id DESC
+              AND event_type = 'open'
             LIMIT 1
             """
         )
