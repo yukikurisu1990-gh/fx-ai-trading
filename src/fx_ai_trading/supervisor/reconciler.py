@@ -30,10 +30,26 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass, field
+from datetime import UTC, datetime
 from enum import Enum
 
 from fx_ai_trading.config.common_keys_context import CommonKeysContext
 from fx_ai_trading.repositories.orders import OrdersRepository
+from fx_ai_trading.repositories.reconciliation_events import (
+    ReconciliationEventsRepository,
+)
+
+# Trigger reason emitted by StartupReconciler when writing audit rows.
+_STARTUP_TRIGGER_REASON = "startup"
+
+# Map ReconcilerAction → action_taken string written to reconciliation_events.
+# Only non-NO_OP actions are recorded.
+_ACTION_TAKEN_LABEL = {
+    "mark_submitted": "MARK_SUBMITTED",
+    "mark_filled": "MARK_FILLED",
+    "mark_canceled": "MARK_CANCELED",
+    "mark_failed": "MARK_FAILED",
+}
 
 _log = logging.getLogger(__name__)
 
@@ -79,6 +95,10 @@ class StartupReconciler:
         context: CommonKeysContext for all repository write operations.
         broker: Optional broker adapter.  If None, all open orders are treated as
             NOT_FOUND at the broker and reconciled accordingly.
+        reconciliation_repo: Optional ReconciliationEventsRepository.  When
+            provided, every non-NO_OP action emits one audit row with
+            trigger_reason='startup'.  When None (default), no audit rows
+            are written — preserves the original M8 behaviour.
     """
 
     def __init__(
@@ -86,10 +106,12 @@ class StartupReconciler:
         orders_repo: OrdersRepository,
         context: CommonKeysContext,
         broker: object | None = None,
+        reconciliation_repo: ReconciliationEventsRepository | None = None,
     ) -> None:
         self._orders_repo = orders_repo
         self._context = context
         self._broker = broker
+        self._reconciliation_repo = reconciliation_repo
 
     # ------------------------------------------------------------------
     # Pure classification function (testable)
@@ -182,7 +204,7 @@ class StartupReconciler:
                 action.value,
             )
 
-            self._apply_action(order_id, action, outcome)
+            self._apply_action(order_id, action, outcome, db_status, broker_status)
 
         _log.info(
             "StartupReconciler.reconcile: done — examined=%d no_ops=%d submitted=%d"
@@ -222,12 +244,19 @@ class StartupReconciler:
         order_id: str,
         action: ReconcilerAction,
         outcome: ReconcileOutcome,
+        db_status: str,
+        broker_status: str | None,
     ) -> None:
-        """Apply *action* to *order_id* and update *outcome* counters."""
+        """Apply *action* to *order_id* and update *outcome* counters.
+
+        Also emits one reconciliation_events audit row per non-NO_OP action
+        when ``reconciliation_repo`` was injected.  NO_OP cases are silent.
+        """
         try:
             if action == ReconcilerAction.NO_OP:
                 outcome.no_ops += 1
-            elif action == ReconcilerAction.MARK_SUBMITTED:
+                return
+            if action == ReconcilerAction.MARK_SUBMITTED:
                 self._orders_repo.update_status(order_id, "SUBMITTED", self._context)
                 outcome.submitted += 1
             elif action == ReconcilerAction.MARK_FILLED:
@@ -239,7 +268,38 @@ class StartupReconciler:
             elif action == ReconcilerAction.MARK_FAILED:
                 self._orders_repo.update_status(order_id, "FAILED", self._context)
                 outcome.failed += 1
+            self._record_audit(order_id, action, db_status, broker_status)
         except Exception as exc:  # noqa: BLE001
             msg = f"order={order_id} action={action.value} error={exc}"
             _log.error("StartupReconciler._apply_action: %s", msg)
             outcome.errors.append(msg)
+
+    def _record_audit(
+        self,
+        order_id: str,
+        action: ReconcilerAction,
+        db_status: str,
+        broker_status: str | None,
+    ) -> None:
+        """Write one reconciliation_events row for a non-NO_OP action."""
+        if self._reconciliation_repo is None:
+            return
+        try:
+            self._reconciliation_repo.insert(
+                trigger_reason=_STARTUP_TRIGGER_REASON,
+                action_taken=_ACTION_TAKEN_LABEL[action.value],
+                event_time_utc=datetime.now(UTC),
+                order_id=order_id,
+                detail={
+                    "db_status": db_status,
+                    "broker_status": broker_status,
+                },
+            )
+        except Exception as exc:  # noqa: BLE001
+            # Audit failure must not break reconciliation flow.
+            _log.error(
+                "StartupReconciler._record_audit failed: order=%s action=%s error=%s",
+                order_id,
+                action.value,
+                exc,
+            )
