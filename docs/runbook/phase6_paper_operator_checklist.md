@@ -216,6 +216,69 @@ SafeStop の発火経路は本書 §6 と同一（このランナー側では Sa
 - SafeStop / schema / metrics / net pnl — 各専任 PR の責務
 - strategy / signal generation / execution gate — このランナーは exit cadence のみ
 
+### 10.7 paper-loop bootstrap（新規 open を 1 件作る）
+
+`scripts/run_paper_loop` は **exit cadence 専用**で、open position を作成する経路を持たない（strategy / signal generation は凍結スコープ、§10.6）。ランナーに対して exit path を確認したいとき、operator は `scripts/paper_open_position` で 1 件だけ open position を作成できる。
+
+本ブートストラップの責務は **1 PR / 1 責務**で「新規 open を最小構成で作る」ことに限定されている。既存 `OrdersRepository` / `PaperBroker` / `StateManager` の公開 API のみを使い、FSM (`PENDING → SUBMITTED → FILLED`) を忠実に踏む：
+
+1. `OrdersRepository.create_order`               → `status='PENDING'`
+2. `OrdersRepository.update_status('SUBMITTED')` → broker 送出を表明
+3. `PaperBroker.place_order`                     → 即時 fill
+4. `OrdersRepository.update_status('FILLED')`    → fill 確認後の終端遷移
+5. `StateManager.on_fill`                        → `positions(open)` + `secondary_sync_outbox`（単一 txn）
+
+起動コマンド（環境変数 `DATABASE_URL` が必要、読み方は §10.1 と同じ）：
+
+```bash
+python -m scripts.paper_open_position \
+    --account-id $OANDA_ACCOUNT_ID \
+    --instrument EUR_USD \
+    --direction buy \
+    --units 1000
+```
+
+| CLI flag | 必須 | 既定値 | 意味 |
+|---|---|---|---|
+| `--account-id` | ○ | — | `orders.account_id` / `positions.account_id`（本番 schema では `accounts` への FK）|
+| `--instrument` | ○ | — | OANDA instrument（例: `EUR_USD`）|
+| `--direction` | ○ | — | `buy` または `sell`。broker side へのマッピングは `buy → long` / `sell → short`（production と一致）|
+| `--units` | ○ | — | 約定数量（> 0）|
+| `--account-type` | × | `demo` | `PaperBroker` は `demo` のみ許可（6.18 不変条件）|
+| `--nominal-price` | × | `1.0` | `PaperBroker` の同期 fill 価格。以降の close で M-2 gross PnL を検証するとき `positions.avg_price` として残る |
+| `--log-dir` / `--log-filename` / `--log-level` | × | `logs/paper_open_position.jsonl` / `INFO` | 構造化 JSONL ログ（`apply_logging_config`、§10.3 と同じ形式）|
+
+**Exit code**:
+
+| rc | 意味 | 対応 |
+|---|---|---|
+| 0 | open 成功（`bootstrap.opened` ログを確認）| `run_paper_loop` を起動して exit cadence に乗せる |
+| 2 | `DATABASE_URL` が未設定 | `.env` を確認（§10.1 と同じチェック）|
+| 3 | 同じ `(account, instrument)` で既に open 行あり — pre-flight reject | `StateManager.open_instruments()` を確認。重複 open は意図的に禁止（pyramid `event_type='add'` 回避）|
+| 4 | `PaperBroker` が `status='filled'` を返さなかった（想定外）| broker 応答ログを確認。`orders` は `SUBMITTED` で止まる — `FILLED` に進まない |
+
+**イベント名（grep しやすい）**：
+
+```
+bootstrap.starting             起動直後（args + log_path）
+bootstrap.db_config_missing    rc=2
+bootstrap.duplicate_open       rc=3（pre-flight で既存 open を検出）
+bootstrap.broker_rejected      rc=4（broker 応答が非 filled）
+bootstrap.opened               成功（order_id / psid / fill_price / side）
+```
+
+**既知の制限（本 PR では意図的に未対応）**：
+
+- `orders.submitted_at` / `orders.filled_at` は **NULL のまま**。`OrdersRepository.update_status` は timestamp を受け取らない。observability 側で filled_at を必要とする場合は、Repository API の追加拡張（strictly additive、別 PR）で対応する。
+- `order_transactions` 行は書かれない — `PaperBroker.get_recent_transactions` は `[]` を返す。
+- tp / sl は設定しない — exit は `ExitPolicyService`（`run_paper_loop` 側の `max_holding_seconds` など）に完全に委ねる。
+
+**本ブートストラップの守備範囲外**（§10.6 と同様、別 PR 分割対象）：
+
+- 既存 position への pyramiding（`event_type='add'`）— 明示的に pre-flight で拒否
+- `run_exit_gate` / Supervisor / SafeStop — 不変
+- schema / metrics / net pnl — 不変
+
 ---
 
 ## 11. 関連資料一覧
