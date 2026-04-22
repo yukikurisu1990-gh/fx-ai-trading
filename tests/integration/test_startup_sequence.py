@@ -12,13 +12,18 @@ Test coverage:
   - Step 6 Alembic mismatch: wrong head → StartupError(step=6)
   - Step 9 account_type mismatch: → StartupError(step=9)
   - Stub steps 8/10-14: run silently, no error
+  - Step 15 notifier probes (G-3 PR-4 / memo §3.4):
+      Slack DNS/TCP failure → outcome='degraded' (no StartupError)
+      SMTP TCP failure → outcome='degraded' (no StartupError)
+      Probes OK → outcome='ready'
+      Probes unconfigured → outcome='ready' (existing baseline preserved)
 """
 
 from __future__ import annotations
 
 from datetime import UTC, datetime
 from pathlib import Path
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
 import pytest
 from sqlalchemy import create_engine
@@ -58,6 +63,9 @@ def _make_ctx(
     ntp_checker=None,
     config_provider=None,
     expected_alembic_head=None,
+    slack_webhook_url=None,
+    smtp_host=None,
+    smtp_port=None,
 ) -> StartupContext:
     return StartupContext(
         journal=journal,
@@ -68,6 +76,9 @@ def _make_ctx(
         ntp_checker=ntp_checker,
         config_provider=config_provider,
         expected_alembic_head=expected_alembic_head,
+        slack_webhook_url=slack_webhook_url,
+        smtp_host=smtp_host,
+        smtp_port=smtp_port,
     )
 
 
@@ -314,3 +325,149 @@ class TestSupervisorSafeStop:
         sup.trigger_safe_stop("reason_a", _FIXED_AT)
         sup.trigger_safe_stop("reason_b", _FIXED_AT)  # second call must not raise
         assert not sup.is_trading_allowed()
+
+
+# ---------------------------------------------------------------------------
+# Step 15 — external-notifier reachability probes (G-3 PR-4 / memo §3.4)
+# ---------------------------------------------------------------------------
+
+
+class TestStep15NotifierProbe:
+    """Pinned invariants for the PR-4 probe wiring.
+
+    These tests pin the four user-stated requirements:
+      1. Slack 設定不備でも起動継続 (degraded, not StartupError)
+      2. Email (SMTP) 接続失敗でも起動継続 (degraded, not StartupError)
+      3. degraded が記録される (15 in result.degraded_steps)
+      4. 正常時は既存起動を壊さない (probes off → outcome='ready', untouched
+         baseline already covered by TestHappyPath)
+
+    Network is fully mocked at the ``fx_ai_trading.supervisor.health``
+    module level so the suite remains hermetic; a real DNS / TCP attempt
+    would fail loudly instead of silently passing.
+    """
+
+    def test_no_probe_config_keeps_outcome_ready(self, journal, notifier) -> None:
+        # Baseline: no Slack / SMTP env config → probes skipped → ready.
+        # Pins requirement #4 ("正常時は既存起動を壊さない").
+        ctx = _make_ctx(journal, notifier)
+        result = StartupRunner(ctx).run()
+        assert result.outcome == "ready"
+        assert 15 not in result.degraded_steps
+
+    def test_slack_dns_failure_returns_degraded_not_startup_error(self, journal, notifier) -> None:
+        # Pins requirement #1 ("Slack 設定不備でも起動継続") + #3 ("degraded
+        # が記録される").  StartupError MUST NOT be raised.
+        with patch(
+            "fx_ai_trading.supervisor.health.socket.gethostbyname",
+            side_effect=OSError("name resolution failed"),
+        ):
+            ctx = _make_ctx(
+                journal,
+                notifier,
+                slack_webhook_url="https://hooks.slack.example/T/B/X",
+            )
+            result = StartupRunner(ctx).run()
+
+        assert result.outcome == "degraded"
+        assert 15 in result.degraded_steps
+
+    def test_slack_tcp_failure_returns_degraded(self, journal, notifier) -> None:
+        with (
+            patch(
+                "fx_ai_trading.supervisor.health.socket.gethostbyname",
+                return_value="1.2.3.4",
+            ),
+            patch(
+                "fx_ai_trading.supervisor.health.socket.create_connection",
+                side_effect=ConnectionRefusedError("port closed"),
+            ),
+        ):
+            ctx = _make_ctx(
+                journal,
+                notifier,
+                slack_webhook_url="https://hooks.slack.example/T/B/X",
+            )
+            result = StartupRunner(ctx).run()
+
+        assert result.outcome == "degraded"
+        assert 15 in result.degraded_steps
+
+    def test_smtp_tcp_failure_returns_degraded(self, journal, notifier) -> None:
+        # Pins requirement #2 ("Email 接続失敗でも起動継続").
+        with (
+            patch(
+                "fx_ai_trading.supervisor.health.socket.gethostbyname",
+                return_value="10.0.0.1",
+            ),
+            patch(
+                "fx_ai_trading.supervisor.health.socket.create_connection",
+                side_effect=ConnectionRefusedError("port closed"),
+            ),
+        ):
+            ctx = _make_ctx(
+                journal,
+                notifier,
+                smtp_host="smtp.example.com",
+                smtp_port=587,
+            )
+            result = StartupRunner(ctx).run()
+
+        assert result.outcome == "degraded"
+        assert 15 in result.degraded_steps
+
+    def test_both_probes_succeed_returns_ready(self, journal, notifier) -> None:
+        # Both Slack and SMTP probes succeed → outcome stays 'ready'.
+        # The conn cm must support context-manager protocol (probe uses
+        # ``with socket.create_connection(...)``).
+        with (
+            patch(
+                "fx_ai_trading.supervisor.health.socket.gethostbyname",
+                return_value="1.2.3.4",
+            ),
+            patch("fx_ai_trading.supervisor.health.socket.create_connection") as conn,
+        ):
+            conn.return_value.__enter__ = MagicMock(return_value=MagicMock())
+            conn.return_value.__exit__ = MagicMock(return_value=False)
+            ctx = _make_ctx(
+                journal,
+                notifier,
+                slack_webhook_url="https://hooks.slack.com/T/B/X",
+                smtp_host="smtp.example.com",
+                smtp_port=587,
+            )
+            result = StartupRunner(ctx).run()
+
+        assert result.outcome == "ready"
+        assert 15 not in result.degraded_steps
+
+    def test_probe_failure_does_not_raise_startup_error(self, journal, notifier) -> None:
+        # Explicit anti-regression: a probe failure must NEVER bubble up
+        # as ``StartupError`` (that would block the trading loop, which
+        # PR-4 rules forbid).
+        with patch(
+            "fx_ai_trading.supervisor.health.socket.gethostbyname",
+            side_effect=OSError("dns down"),
+        ):
+            ctx = _make_ctx(
+                journal,
+                notifier,
+                slack_webhook_url="https://hooks.slack.example/T/B/X",
+            )
+            # Must NOT raise.
+            result = StartupRunner(ctx).run()
+        assert result.outcome == "degraded"
+
+    def test_smtp_partial_config_skips_probe(self, journal, notifier) -> None:
+        # SMTP probe requires BOTH host and port — partial config must
+        # silently skip without marking degraded (operator misconfig is
+        # caught when both fields are present, not before).
+        ctx = _make_ctx(
+            journal,
+            notifier,
+            smtp_host="smtp.example.com",
+            smtp_port=None,
+        )
+        result = StartupRunner(ctx).run()
+        assert result.outcome == "ready"
+        assert 15 not in result.degraded_steps

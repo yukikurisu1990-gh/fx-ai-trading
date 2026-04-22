@@ -72,6 +72,15 @@ class StartupContext:
     common_keys_ctx: CommonKeysContext | None = None
     expected_alembic_head: str | None = None
 
+    # G-3 PR-4 (memo §3.4): external-notifier reachability probes.  All
+    # fields are optional — when unset the probe is silently skipped (no
+    # degraded mark).  Probes only DNS-resolve + TCP-connect; they do
+    # NOT activate Email or change DispatchResult semantics.
+    slack_webhook_url: str | None = None
+    smtp_host: str | None = None
+    smtp_port: int | None = None
+    notifier_probe_timeout_s: float = 2.0
+
 
 @dataclass
 class StartupResult:
@@ -346,7 +355,13 @@ class StartupRunner:
         """Confirm all mandatory components are healthy before allowing trading.
 
         In M7 this checks DB connectivity (if engine present).
-        Failure → exit.
+        DB failure → exit.
+
+        G-3 PR-4 (memo §3.4): also runs external-notifier reachability
+        probes (Slack DNS+TCP / SMTP TCP) when configured.  Probe
+        failures append step 15 to ``_degraded_steps`` and never raise
+        ``StartupError`` — the only mandatory gate at startup remains
+        the DB check, per D4 §2.1 Decision 2.1-1.
         """
         _log.info("Step 15: pre-trading health check")
         if self._ctx.engine is not None:
@@ -355,7 +370,64 @@ class StartupRunner:
                     conn.execute(text("SELECT 1"))
             except Exception as exc:  # noqa: BLE001
                 raise StartupError(15, f"Health check failed — DB unreachable: {exc}") from exc
+
+        # PR-4 notifier probes — degraded only, never raise.  Wrapped in
+        # an outer try/except so a probe-side bug (e.g., import error)
+        # cannot turn into a StartupError and block the trading loop.
+        try:
+            self._probe_external_notifiers()
+        except Exception as exc:  # noqa: BLE001
+            _log.warning("Step 15: notifier probe raised unexpectedly: %s — marking degraded", exc)
+            self._mark_step_degraded(15)
+
         _log.info("Step 15: health check passed — trading loop may begin")
+
+    def _probe_external_notifiers(self) -> None:
+        """Probe Slack/SMTP reachability without sending notifications.
+
+        - Slack: when ``slack_webhook_url`` is set, DNS-resolve + TCP-connect
+          to the webhook host.  No HTTP POST is issued.
+        - SMTP : when both ``smtp_host`` and ``smtp_port`` are set, TCP-connect
+          to ``(host, port)``.  No EHLO / AUTH / MAIL is issued — the
+          PR-1 Email-disabled hard guard is preserved.
+        - Channels with absent config are silently skipped (info log only).
+        - On any probe ``is_ok=False``, append step 15 to ``_degraded_steps``
+          (deduplicated) and emit a WARNING with the probe detail so the
+          operator can correlate the misconfigured channel.
+        """
+        from fx_ai_trading.supervisor.health import (
+            probe_slack_webhook,
+            probe_smtp_connection,
+        )
+
+        timeout_s = self._ctx.notifier_probe_timeout_s
+
+        if self._ctx.slack_webhook_url:
+            result = probe_slack_webhook(self._ctx.slack_webhook_url, timeout_s=timeout_s)
+            if not result.is_ok:
+                _log.warning("Step 15: Slack notifier probe degraded: %s", result.detail)
+                self._mark_step_degraded(15)
+            else:
+                _log.info("Step 15: Slack notifier probe OK (%s)", result.detail)
+        else:
+            _log.info("Step 15: Slack notifier probe skipped (no webhook configured)")
+
+        if self._ctx.smtp_host and self._ctx.smtp_port:
+            result = probe_smtp_connection(
+                self._ctx.smtp_host, self._ctx.smtp_port, timeout_s=timeout_s
+            )
+            if not result.is_ok:
+                _log.warning("Step 15: SMTP notifier probe degraded: %s", result.detail)
+                self._mark_step_degraded(15)
+            else:
+                _log.info("Step 15: SMTP notifier probe OK (%s)", result.detail)
+        else:
+            _log.info("Step 15: SMTP notifier probe skipped (host/port not configured)")
+
+    def _mark_step_degraded(self, step: int) -> None:
+        """Idempotently append ``step`` to ``_degraded_steps``."""
+        if step not in self._degraded_steps:
+            self._degraded_steps.append(step)
 
     # ------------------------------------------------------------------
     # Step 16 — allow trading
