@@ -29,11 +29,11 @@ Path (per tick)
        ``stale_quote``  — ``(clock.now() - quote.ts).total_seconds()``
                           exceeded the freshness threshold (M-3c default
                           60s).
-       ``no_signal``    — fresh quote acquired but ``MinimumEntrySignal``
-                          (3-point monotonic momentum) says no fireable
-                          direction (warmup of first 2 ticks, flat /
-                          mixed / non-monotonic 3-tick window, or
-                          signal direction != configured ``--direction``).
+       ``no_signal``    — fresh quote acquired but the configured
+                          ``EntrySignal`` says no fireable direction
+                          (warmup, flat / mixed / non-monotonic window,
+                          or signal direction != configured
+                          ``--direction``).
        ``ok``           — fire.
 
   2. If ``should_fire``: invoke ``_open_one_position`` which inlines the
@@ -109,6 +109,7 @@ from collections import deque
 from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Protocol
 
 from sqlalchemy import create_engine
 from sqlalchemy.engine import Engine
@@ -389,7 +390,7 @@ class EntryComponents:
     broker: PaperBroker
     quote_feed: QuoteFeed
     clock: Clock
-    signal: MinimumEntrySignal
+    signal: EntrySignal
 
 
 def build_components(
@@ -401,7 +402,7 @@ def build_components(
     nominal_price: float = _DEFAULT_NOMINAL_PRICE,
     clock: Clock | None = None,
     api_client: OandaAPIClient | None = None,
-    signal: MinimumEntrySignal | None = None,
+    signal: EntrySignal | None = None,
 ) -> EntryComponents:
     """Compose the production paper open-side stack.
 
@@ -418,7 +419,7 @@ def build_components(
     """
     effective_account_id = account_id or oanda.account_id
     effective_clock: Clock = clock if clock is not None else WallClock()
-    effective_signal: MinimumEntrySignal = signal if signal is not None else MinimumEntrySignal()
+    effective_signal: EntrySignal = signal if signal is not None else MinimumEntrySignal()
 
     if api_client is None:
         api_client = OandaAPIClient(
@@ -476,6 +477,19 @@ class EntryDecision:
     age_seconds: float | None = None  # populated when reason in {stale_quote, no_signal, ok}
 
 
+class EntrySignal(Protocol):
+    """Structural Protocol for entry-side signal classes.
+
+    Any class with ``evaluate(quote: Quote) -> str | None`` satisfies
+    this Protocol structurally — no explicit inheritance or registration
+    required.  ``MinimumEntrySignal`` and ``FivePointMomentumSignal``
+    both comply.  M10-3 multi-signal picker and future EV-weighted
+    selectors will consume this type.
+    """
+
+    def evaluate(self, quote: Quote) -> str | None: ...
+
+
 class MinimumEntrySignal:
     """3-point monotonic momentum signal from consecutive fresh quotes.
 
@@ -511,6 +525,36 @@ class MinimumEntrySignal:
         return None
 
 
+class FivePointMomentumSignal:
+    """5-point strict-monotonic momentum signal (M10-2 Protocol-validation concrete).
+
+    Identical structure to ``MinimumEntrySignal`` with a window of 5
+    consecutive fresh quotes instead of 3.  Added in M10-2 as the second
+    concrete implementation of ``EntrySignal``, validating that the Protocol
+    seam accepts any conforming class.  Not intended as a production-strategy
+    improvement over the 3-point variant.
+
+      * fewer than 5 quotes seen         → ``None`` (warmup; first 4 ticks)
+      * 5 prices strictly increasing     → ``'buy'``  (p1 < p2 < p3 < p4 < p5)
+      * 5 prices strictly decreasing     → ``'sell'`` (p1 > p2 > p3 > p4 > p5)
+      * otherwise (flat / mixed / non-monotonic) → ``None``
+    """
+
+    def __init__(self) -> None:
+        self._quotes: deque[Quote] = deque(maxlen=5)
+
+    def evaluate(self, quote: Quote) -> str | None:
+        self._quotes.append(quote)
+        if len(self._quotes) < 5:
+            return None
+        p1, p2, p3, p4, p5 = (q.price for q in self._quotes)
+        if p1 < p2 < p3 < p4 < p5:
+            return "buy"
+        if p1 > p2 > p3 > p4 > p5:
+            return "sell"
+        return None
+
+
 class MinimumEntryPolicy:
     """Deterministic open-side policy for the paper entry runner.
 
@@ -518,9 +562,9 @@ class MinimumEntryPolicy:
     open whenever:
       - the instrument is NOT already open for this account, AND
       - a fresh ``Quote`` is available for the instrument, AND
-      - ``MinimumEntrySignal`` returns the configured ``direction``
-        (i.e. the most recent 3 fresh quotes are strictly monotonic in
-        that direction — see ``MinimumEntrySignal``).
+      - the configured ``EntrySignal`` returns the configured
+        ``direction`` (e.g. ``MinimumEntrySignal``: most recent 3 fresh
+        quotes strictly monotonic; ``FivePointMomentumSignal``: 5).
 
     "Fresh" mirrors the M-3c definition used by ``run_exit_gate``:
     ``(clock.now() - quote.ts).total_seconds() > stale_after_seconds``
@@ -543,7 +587,7 @@ class MinimumEntryPolicy:
         state_manager: StateManager,
         quote_feed: QuoteFeed,
         clock: Clock,
-        signal: MinimumEntrySignal,
+        signal: EntrySignal,
         stale_after_seconds: float = _DEFAULT_STALE_AFTER_SECONDS,
     ) -> None:
         if direction not in _DIRECTION_TO_BROKER_SIDE:
