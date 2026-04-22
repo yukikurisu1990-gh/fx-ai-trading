@@ -1,21 +1,26 @@
-"""Unit tests: ``scripts/run_paper_loop`` (M9 paper-loop runner scaffold).
+"""Unit tests: ``scripts/run_paper_loop`` (M9 paper-stack bootstrap).
 
 Pins the contract that the runner:
-  - Resolves ``--interval`` / ``--instrument`` from CLI > env > defaults.
-  - Fails fast (RuntimeError) when required OANDA env vars are missing.
+  - Resolves CLI / env / defaults precedence (interval, instrument,
+    max_iterations, max_holding_seconds).
+  - Fails fast (rc=2) when required OANDA env vars are missing.
+  - Fails fast (rc=2) when ``DATABASE_URL`` is missing.
   - Builds an ``OandaQuoteFeed`` against the supplied
     ``OandaAPIClient`` and attaches it through
-    ``Supervisor.attach_exit_gate`` with the null-safe stubs so the
-    tick is a wiring verification (no positions → empty results).
+    ``Supervisor.attach_exit_gate`` with the production paper stack
+    (``PaperBroker`` + ``StateManager`` + ``ExitPolicyService``).  With
+    no positions seeded in the DB, ``run_exit_gate_tick`` returns ``[]``
+    and the OANDA client is never called.
   - The cadence loop respects ``max_iterations`` and ``should_stop``,
     sleeps between ticks via the injected ``sleep_fn``, and emits one
     ``tick.completed`` log line per tick (plus one ``tick.exit_result``
-    line per result, which in wiring-verification mode is zero).
+    line per result).
   - SIGINT does not crash the process — it sets the loop's stop flag.
 
-These tests do **not** touch real OANDA. The runner is driven through
-its public seam (``parse_args`` / ``read_oanda_config_from_env`` /
-``build_supervisor_with_oanda_feed`` / ``run_loop``) which accepts
+These tests do **not** touch real OANDA or a real Postgres.  The runner
+is driven through its public seams (``parse_args`` /
+``read_oanda_config_from_env`` / ``build_db_engine`` /
+``build_supervisor_with_paper_stack`` / ``run_loop``) which all accept
 test doubles.
 """
 
@@ -29,6 +34,8 @@ from pathlib import Path
 from unittest.mock import MagicMock
 
 import pytest
+from sqlalchemy import create_engine, text
+from sqlalchemy.engine import Engine
 
 from fx_ai_trading.adapters.broker.oanda_api_client import OandaAPIClient
 from fx_ai_trading.adapters.price_feed.oanda_quote_feed import OandaQuoteFeed
@@ -56,6 +63,65 @@ runner = _load_runner_module()
 
 
 # ---------------------------------------------------------------------------
+# Shared fixtures
+# ---------------------------------------------------------------------------
+
+
+# Minimal DDL for StateManager.open_position_details() to execute.  We
+# don't seed any rows here — these unit tests verify the wiring up to
+# the empty-positions branch; the integration test exercises the full
+# close path (see tests/integration/test_paper_loop_close_path.py).
+_DDL_POSITIONS = """
+CREATE TABLE positions (
+    position_snapshot_id TEXT PRIMARY KEY,
+    order_id             TEXT,
+    account_id           TEXT NOT NULL,
+    instrument           TEXT NOT NULL,
+    event_type           TEXT NOT NULL,
+    units                NUMERIC(18,4) NOT NULL,
+    avg_price            NUMERIC(18,8),
+    unrealized_pl        NUMERIC(18,8),
+    realized_pl          NUMERIC(18,8),
+    event_time_utc       TEXT NOT NULL,
+    correlation_id       TEXT
+)
+"""
+
+_DDL_ORDERS = """
+CREATE TABLE orders (
+    order_id          TEXT PRIMARY KEY,
+    client_order_id   TEXT,
+    trading_signal_id TEXT,
+    account_id        TEXT NOT NULL,
+    instrument        TEXT NOT NULL,
+    account_type      TEXT NOT NULL,
+    order_type        TEXT NOT NULL,
+    direction         TEXT NOT NULL,
+    units             NUMERIC(18,4) NOT NULL,
+    status            TEXT NOT NULL DEFAULT 'PENDING',
+    submitted_at      TEXT,
+    filled_at         TEXT,
+    canceled_at       TEXT,
+    correlation_id    TEXT,
+    created_at        TEXT NOT NULL
+)
+"""
+
+
+@pytest.fixture
+def empty_engine() -> Iterator[Engine]:
+    """In-memory SQLite engine with positions+orders schema, no rows."""
+    eng = create_engine("sqlite:///:memory:")
+    with eng.begin() as conn:
+        conn.execute(text(_DDL_ORDERS))
+        conn.execute(text(_DDL_POSITIONS))
+    try:
+        yield eng
+    finally:
+        eng.dispose()
+
+
+# ---------------------------------------------------------------------------
 # parse_args
 # ---------------------------------------------------------------------------
 
@@ -64,26 +130,41 @@ class TestParseArgs:
     def test_defaults_when_no_argv_no_env(self, monkeypatch: pytest.MonkeyPatch) -> None:
         monkeypatch.delenv("PAPER_LOOP_INTERVAL_SECONDS", raising=False)
         monkeypatch.delenv("PAPER_LOOP_INSTRUMENT", raising=False)
+        monkeypatch.delenv("PAPER_LOOP_MAX_HOLDING_SECONDS", raising=False)
         args = runner.parse_args([])
         assert args.interval_seconds == 5.0
         assert args.instrument == "EUR_USD"
         assert args.max_iterations == 0
+        assert args.max_holding_seconds == 86400
         assert args.log_level == "INFO"
         assert args.log_filename == "paper_loop.jsonl"
 
     def test_env_overrides_defaults(self, monkeypatch: pytest.MonkeyPatch) -> None:
         monkeypatch.setenv("PAPER_LOOP_INTERVAL_SECONDS", "2.5")
         monkeypatch.setenv("PAPER_LOOP_INSTRUMENT", "USD_JPY")
+        monkeypatch.setenv("PAPER_LOOP_MAX_HOLDING_SECONDS", "3600")
         args = runner.parse_args([])
         assert args.interval_seconds == 2.5
         assert args.instrument == "USD_JPY"
+        assert args.max_holding_seconds == 3600
 
     def test_cli_overrides_env(self, monkeypatch: pytest.MonkeyPatch) -> None:
         monkeypatch.setenv("PAPER_LOOP_INTERVAL_SECONDS", "2.5")
         monkeypatch.setenv("PAPER_LOOP_INSTRUMENT", "USD_JPY")
-        args = runner.parse_args(["--interval", "1", "--instrument", "GBP_USD"])
+        monkeypatch.setenv("PAPER_LOOP_MAX_HOLDING_SECONDS", "3600")
+        args = runner.parse_args(
+            [
+                "--interval",
+                "1",
+                "--instrument",
+                "GBP_USD",
+                "--max-holding-seconds",
+                "7200",
+            ]
+        )
         assert args.interval_seconds == 1.0
         assert args.instrument == "GBP_USD"
+        assert args.max_holding_seconds == 7200
 
     def test_max_iterations_threaded_through(self) -> None:
         args = runner.parse_args(["--max-iterations", "3"])
@@ -96,6 +177,10 @@ class TestParseArgs:
     def test_negative_max_iterations_errors(self) -> None:
         with pytest.raises(SystemExit):
             runner.parse_args(["--max-iterations", "-1"])
+
+    def test_non_positive_max_holding_seconds_errors(self) -> None:
+        with pytest.raises(SystemExit):
+            runner.parse_args(["--max-holding-seconds", "0"])
 
 
 # ---------------------------------------------------------------------------
@@ -138,28 +223,56 @@ class TestReadOandaConfigFromEnv:
 
 
 # ---------------------------------------------------------------------------
-# build_supervisor_with_oanda_feed
+# build_supervisor_with_paper_stack
 # ---------------------------------------------------------------------------
 
 
-class TestBuildSupervisorWithOandaFeed:
-    def test_returns_supervisor_and_oanda_feed_with_attach_wired(self) -> None:
+class TestBuildSupervisorWithPaperStack:
+    def test_returns_supervisor_and_oanda_feed(self, empty_engine: Engine) -> None:
+        from fx_ai_trading.adapters.broker.paper import PaperBroker
+        from fx_ai_trading.services.exit_policy import ExitPolicyService
+        from fx_ai_trading.services.state_manager import StateManager
+
         fake_api = MagicMock()
         api_client = OandaAPIClient(access_token="tok", environment="practice", api=fake_api)
         oanda = runner.OandaConfig(
             access_token="tok",
-            account_id="101-001-1234567-001",
+            account_id="acct-bootstrap-1",
             environment="practice",
         )
-        supervisor, feed = runner.build_supervisor_with_oanda_feed(
-            oanda=oanda, instrument="EUR_USD", api_client=api_client
+        supervisor, feed = runner.build_supervisor_with_paper_stack(
+            oanda=oanda,
+            instrument="EUR_USD",
+            engine=empty_engine,
+            api_client=api_client,
         )
         assert isinstance(feed, OandaQuoteFeed)
-        # Tick should be safe to call immediately and return [] because
-        # the null state manager reports no positions.
+
+        # Sanity-check the wired components match the production stack.
+        cfg = supervisor._exit_gate  # type: ignore[attr-defined]
+        assert isinstance(cfg.broker, PaperBroker)
+        assert isinstance(cfg.state_manager, StateManager)
+        assert isinstance(cfg.exit_policy, ExitPolicyService)
+        assert cfg.account_id == "acct-bootstrap-1"
+
+    def test_tick_returns_empty_when_no_positions(self, empty_engine: Engine) -> None:
+        fake_api = MagicMock()
+        api_client = OandaAPIClient(access_token="tok", environment="practice", api=fake_api)
+        oanda = runner.OandaConfig(
+            access_token="tok",
+            account_id="acct-bootstrap-2",
+            environment="practice",
+        )
+        supervisor, _feed = runner.build_supervisor_with_paper_stack(
+            oanda=oanda,
+            instrument="EUR_USD",
+            engine=empty_engine,
+            api_client=api_client,
+        )
+        # No positions seeded → state_manager.open_position_details()
+        # returns [] → quote_feed is never queried → fake_api is never
+        # touched.  This is the wiring smoke test for the bootstrap.
         assert supervisor.run_exit_gate_tick() == []
-        # The fake api must NOT have been touched — wiring verification
-        # mode never reaches get_quote.
         fake_api.request.assert_not_called()
 
 
@@ -251,11 +364,8 @@ class TestRunLoop:
             sleep_fn=sleep,
             monotonic_fn=_FakeMonotonic([0.0, 0.001, 0.0, 0.001]),
         )
-        # Two ticks ran; the post-tick should_stop() check breaks before sleep.
         assert iterations == 2
         assert supervisor.run_exit_gate_tick.call_count == 2
-        # sleep_fn was called once after the first tick, then the second
-        # tick's post-check triggered before the second sleep.
         assert sleep.calls == [1.0]
 
     def test_emits_tick_completed_with_iteration_and_results_count(
@@ -364,10 +474,34 @@ class TestMainSmoke:
         )
         assert rc == 2
 
+    def test_returns_2_when_database_url_missing(
+        self,
+        tmp_path: Path,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        # OANDA env present so we get past that check and hit the DB
+        # check.  build_db_engine raises RuntimeError because
+        # get_database_url() does, and main maps it to rc=2.
+        monkeypatch.setenv("OANDA_ACCESS_TOKEN", "tok")
+        monkeypatch.setenv("OANDA_ACCOUNT_ID", "101-001-1234567-001")
+        monkeypatch.delenv("DATABASE_URL", raising=False)
+        rc = runner.main(
+            [
+                "--max-iterations",
+                "1",
+                "--interval",
+                "0.01",
+                "--log-dir",
+                str(tmp_path),
+            ]
+        )
+        assert rc == 2
+
     def test_happy_path_with_env_runs_one_tick_and_returns_0(
         self,
         tmp_path: Path,
         monkeypatch: pytest.MonkeyPatch,
+        empty_engine: Engine,
     ) -> None:
         monkeypatch.setenv("OANDA_ACCESS_TOKEN", "tok")
         monkeypatch.setenv("OANDA_ACCOUNT_ID", "101-001-1234567-001")
@@ -379,6 +513,10 @@ class TestMainSmoke:
                 access_token="tok", environment="practice", api=MagicMock()
             ),
         )
+        # Substitute build_db_engine so we don't need a real DATABASE_URL
+        # or a real Postgres.  The fixture engine has the schema needed
+        # for StateManager.open_position_details() to execute.
+        monkeypatch.setattr(runner, "build_db_engine", lambda: empty_engine)
         rc = runner.main(
             [
                 "--max-iterations",
