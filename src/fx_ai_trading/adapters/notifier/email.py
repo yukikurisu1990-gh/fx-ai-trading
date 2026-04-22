@@ -6,6 +6,26 @@ must not treat email failure as a reason to abort critical paths.
 
 Secret safety: SMTP password is read from env at send-time only and is
 never stored as an instance attribute or included in log messages.
+
+SafeStop block budget (G-3 PR-2 / docs/design/g3_notifier_fix_plan.md §3.2)
+─────────────────────────────────────────────────────────────────────────
+The Email channel is the slowest leg of ``NotifierDispatcherImpl``'s
+``dispatch_direct_sync`` fan-out, so its worst-case wall-clock directly
+caps how long ``SafeStopHandler`` step 3 can block (P-1 SafeStop priority).
+
+  per-attempt timeout        = ``connect_timeout_s`` (default 10s)
+  max attempts (retry budget) = ``_MAX_RETRY``       (= 2)
+  worst-case wall-clock       = 10s × 2 = **≤ 20s**, well within the
+                                ``safe_stop_step3_wall_budget_s = 30``
+                                ceiling defined in memo §3.3.1.
+
+The ``timeout`` kwarg passed to ``smtplib.SMTP`` covers both the initial
+TCP connect and subsequent socket reads (per Python stdlib docs); it is
+the only mechanism that prevents an unresponsive SMTP host from hanging
+``safe_stop`` indefinitely (G-3 audit R-2).  Backoff between retries is
+intentionally absent — ``time.sleep`` would conflict with the §13.1
+clock constraint and the 30s budget already accounts for sequential
+re-attempts.
 """
 
 from __future__ import annotations
@@ -19,7 +39,15 @@ from fx_ai_trading.domain.notifier import NotifyEvent, NotifyResult
 
 _log = logging.getLogger(__name__)
 
-_MAX_RETRY = 3
+# Reduced from 3 → 2 in G-3 PR-2.  Combined with the new 10s per-attempt
+# ``connect_timeout_s``, this caps the Email leg at ≤ 20s and keeps
+# ``SafeStopHandler.fire`` step 3 inside the 30s budget (memo §3.2).
+_MAX_RETRY = 2
+
+# Default per-attempt SMTP timeout.  Picked at 10s in G-3 PR-2 so that
+# 2 sequential attempts fit under the 30s ``safe_stop_step3_wall_budget_s``
+# with headroom for File + Slack legs (memo §3.2 / §3.3.1).
+_DEFAULT_CONNECT_TIMEOUT_S = 10
 
 
 class EmailNotifier(NotifierBase):
@@ -33,6 +61,13 @@ class EmailNotifier(NotifierBase):
         username: SMTP auth username (optional).
         password: SMTP auth password (optional — never logged).
         use_starttls: Whether to issue STARTTLS after EHLO (default True).
+        connect_timeout_s: Per-attempt SMTP socket timeout in seconds
+            (default 10).  Forwarded as the ``timeout`` kwarg of
+            ``smtplib.SMTP`` so it bounds both the TCP connect and any
+            subsequent socket reads.  Combined with ``_MAX_RETRY = 2``
+            this caps the Email leg at ≤ 20s (G-3 PR-2 / memo §3.2).
+            Must be > 0; see module docstring for the SafeStop budget
+            rationale.
     """
 
     def __init__(
@@ -45,6 +80,7 @@ class EmailNotifier(NotifierBase):
         password: str | None = None,
         *,
         use_starttls: bool = True,
+        connect_timeout_s: int = _DEFAULT_CONNECT_TIMEOUT_S,
     ) -> None:
         self._host = host
         self._port = port
@@ -53,6 +89,7 @@ class EmailNotifier(NotifierBase):
         self._username = username
         self._password = password
         self._use_starttls = use_starttls
+        self._connect_timeout_s = connect_timeout_s
 
     # ------------------------------------------------------------------
     # NotifierBase implementation
@@ -104,7 +141,10 @@ class EmailNotifier(NotifierBase):
         msg["Subject"] = subject
         msg.set_content(body)
 
-        with smtplib.SMTP(self._host, self._port) as smtp:
+        # ``timeout`` (PR-2) bounds both the initial TCP connect and any
+        # subsequent socket reads — without this an unresponsive SMTP host
+        # would hang ``safe_stop`` step 3 indefinitely (memo §3.2 / R-2).
+        with smtplib.SMTP(self._host, self._port, timeout=self._connect_timeout_s) as smtp:
             if self._use_starttls:
                 smtp.starttls()
             if self._username is not None and self._password is not None:
