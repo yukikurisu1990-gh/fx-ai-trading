@@ -172,7 +172,10 @@ class TestEmailNotifierFailure:
         mock_smtp.__exit__ = MagicMock(return_value=False)
         call_count = 0
 
-        def smtp_factory(host, port):
+        def smtp_factory(host, port, *args, **kwargs):
+            # *args/**kwargs absorb the new ``timeout=`` kwarg added in
+            # G-3 PR-2 (smtplib.SMTP(host, port, timeout=...)) so this
+            # pre-PR-2 success-path test keeps passing unchanged in spirit.
             nonlocal call_count
             call_count += 1
             if call_count == 1:
