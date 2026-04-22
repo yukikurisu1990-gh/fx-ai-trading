@@ -6,12 +6,25 @@ PriceFeed abstracts market data access for live (OANDA) and backtest
 
 from __future__ import annotations
 
-from collections.abc import AsyncIterator
+from collections.abc import AsyncIterator, Callable
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Protocol
+from typing import Final, Protocol, runtime_checkable
 
+from fx_ai_trading.common.clock import Clock
 from fx_ai_trading.domain.risk import Instrument
+
+# ---------------------------------------------------------------------------
+# Source constants for Quote.source (M-3a)
+# ---------------------------------------------------------------------------
+# Minimal set — kept here to prevent typo drift across producers / tests.
+# Add new sources only when an actual producer lands; do not pre-declare.
+
+SOURCE_LEGACY_CALLABLE: Final[str] = "legacy_callable"
+SOURCE_OANDA_LIVE: Final[str] = "oanda_live"
+SOURCE_OANDA_REST_SNAPSHOT: Final[str] = "oanda_rest_snapshot"
+SOURCE_PAPER: Final[str] = "paper"
+SOURCE_TEST_FIXTURE: Final[str] = "test_fixture"
 
 # ---------------------------------------------------------------------------
 # DTOs
@@ -67,6 +80,27 @@ class TransactionEvent:
     payload: dict
 
 
+@dataclass(frozen=True)
+class Quote:
+    """Single mid-price snapshot for the exit / execution path (M-3a).
+
+    Distinct from ``PriceTick`` (bid/ask/spread oriented): consumers that
+    only need a single price (run_exit_gate, ExitPolicyService) stay
+    decoupled from the bid/ask split, and ``ts`` / ``source`` give the
+    staleness layer (M-3c) something authoritative to inspect.
+    """
+
+    price: float
+    ts: datetime
+    source: str
+
+    def __post_init__(self) -> None:
+        if self.ts.tzinfo is None:
+            raise ValueError(
+                f"Quote.ts must be timezone-aware (got naive datetime {self.ts!r}); use UTC."
+            )
+
+
 # ---------------------------------------------------------------------------
 # Interface (Protocol)
 # ---------------------------------------------------------------------------
@@ -111,3 +145,39 @@ class PriceFeed(Protocol):
     ) -> AsyncIterator[TransactionEvent]:
         """Return an async iterator of TransactionEvents for *account_id*."""
         ...
+
+
+@runtime_checkable
+class QuoteFeed(Protocol):
+    """Single-price feed for run_exit_gate / execution_gate (M-3a).
+
+    Migration target for the legacy ``Callable[[str], float]`` price_feed:
+    ``Quote`` carries ``ts`` and ``source`` so the gate can apply
+    staleness checks (M-3c) without a per-call wrapper.
+    """
+
+    def get_quote(self, instrument: str) -> Quote:
+        """Return the latest single-price ``Quote`` for *instrument*."""
+        ...
+
+
+def callable_to_quote_feed(
+    fn: Callable[[str], float],
+    *,
+    clock: Clock,
+    source: str = SOURCE_LEGACY_CALLABLE,
+) -> QuoteFeed:
+    """Wrap a legacy ``Callable[[str], float]`` price_feed as a ``QuoteFeed`` (M-3a).
+
+    ts is synthesized from ``clock.now()`` at call time, **not** the true
+    observation time of the underlying price — staleness checks against
+    this adapter therefore always pass.  This is intentional for the M-3
+    migration: existing callers keep their plain-callable contract while
+    the consumer side is rewritten against ``QuoteFeed``.
+    """
+
+    class _LegacyCallableAdapter:
+        def get_quote(self, instrument: str) -> Quote:
+            return Quote(price=fn(instrument), ts=clock.now(), source=source)
+
+    return _LegacyCallableAdapter()
