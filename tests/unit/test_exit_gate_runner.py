@@ -1117,3 +1117,158 @@ class TestQuoteFeedAcceptance:
             sl=sl_level,
         )
         assert [r.outcome for r in results] == ["closed"]
+
+
+# --- M-3c: stale quote gate --------------------------------------------------
+
+
+class _StaleStubFeed:
+    """QuoteFeed stub with configurable ts/source for staleness tests."""
+
+    def __init__(self, *, price: float, ts: datetime, source: str) -> None:
+        from fx_ai_trading.domain.price_feed import Quote
+
+        self._price = price
+        self._ts = ts
+        self._source = source
+        self._Quote = Quote
+        self.calls: list[str] = []
+
+    def get_quote(self, instrument: str):
+        self.calls.append(instrument)
+        return self._Quote(price=self._price, ts=self._ts, source=self._source)
+
+
+class TestStaleQuoteGate:
+    """M-3c: stale quote gate skips close evaluation when quote.ts is too old.
+
+    Threshold semantics: ``age_seconds > stale_max_age_seconds`` (strict >),
+    so age == max_age is NOT stale.  ``emergency_stop`` bypasses the gate
+    so an operator-triggered flat-all is never blocked by an upstream feed
+    outage.  The legacy ``Callable`` adapter synthesises ``ts == clock.now()``
+    so legacy callers always observe age=0 — verified by the last test below.
+    """
+
+    def test_stale_quote_returns_noop_stale_quote_outcome(self, engine, caplog) -> None:
+        _seed_open_position(engine, psid="p1", order_id="o1", instrument="EURUSD")
+        sm = _make_sm(engine)
+        # 120s old vs default 60s threshold → stale.
+        stale_ts = _NOW - timedelta(seconds=120)
+        feed = _StaleStubFeed(price=1.10, ts=stale_ts, source="oanda_live")
+        broker = _FillBroker()
+
+        with caplog.at_level("WARNING", logger="fx_ai_trading.services.exit_gate_runner"):
+            results = run_exit_gate(
+                broker=broker,
+                account_id="acc-1",
+                clock=FixedClock(_NOW),
+                state_manager=sm,
+                exit_policy=_AlwaysExitPolicy(),
+                quote_feed=feed,
+            )
+
+        assert [r.outcome for r in results] == ["noop_stale_quote"]
+        assert results[0].instrument == "EURUSD"
+        assert results[0].order_id == "o1"
+        # Broker MUST NOT be called on the stale path.
+        assert broker.last_request is None
+        # on_close MUST NOT have written a close event.
+        assert _close_events(engine) == []
+
+        # Warning log must mention instrument, age, source.
+        warning_msgs = [r.getMessage() for r in caplog.records if r.levelname == "WARNING"]
+        assert any("EURUSD" in m and "120.0" in m and "oanda_live" in m for m in warning_msgs), (
+            f"expected warning with instrument/age/source, got: {warning_msgs}"
+        )
+
+    def test_emergency_stop_bypasses_stale_gate(self, engine) -> None:
+        _seed_open_position(engine, psid="p1", order_id="o1", instrument="EURUSD")
+        sm = _make_sm(engine)
+        # 600s old quote — far past any reasonable threshold.
+        very_stale_ts = _NOW - timedelta(seconds=600)
+        feed = _StaleStubFeed(price=1.10, ts=very_stale_ts, source="oanda_live")
+        broker = _FillBroker()
+
+        results = run_exit_gate(
+            broker=broker,
+            account_id="acc-1",
+            clock=FixedClock(_NOW),
+            state_manager=sm,
+            exit_policy=_AlwaysExitPolicy(),
+            quote_feed=feed,
+            context={"emergency_stop": True},
+        )
+
+        # emergency_stop=True means the stale gate is bypassed and the
+        # close path runs to completion.
+        assert [r.outcome for r in results] == ["closed"]
+        assert broker.last_request is not None
+        assert len(_close_events(engine)) == 1
+
+    def test_fresh_quote_proceeds_to_existing_path(self, engine) -> None:
+        _seed_open_position(engine, psid="p1", order_id="o1", instrument="EURUSD")
+        sm = _make_sm(engine)
+        # ts == clock.now() → age=0 → not stale (under any positive threshold).
+        feed = _StaleStubFeed(price=1.10, ts=_NOW, source="oanda_live")
+        broker = _FillBroker()
+
+        results = run_exit_gate(
+            broker=broker,
+            account_id="acc-1",
+            clock=FixedClock(_NOW),
+            state_manager=sm,
+            exit_policy=_AlwaysExitPolicy(),
+            quote_feed=feed,
+        )
+
+        assert [r.outcome for r in results] == ["closed"]
+        assert broker.last_request is not None
+
+    def test_stale_max_age_seconds_override(self, engine) -> None:
+        _seed_open_position(engine, psid="p1", order_id="o1", instrument="EURUSD")
+        sm = _make_sm(engine)
+        # 30s old — well within default 60s — but threshold lowered to 10s.
+        feed = _StaleStubFeed(
+            price=1.10,
+            ts=_NOW - timedelta(seconds=30),
+            source="oanda_live",
+        )
+        broker = _FillBroker()
+
+        results = run_exit_gate(
+            broker=broker,
+            account_id="acc-1",
+            clock=FixedClock(_NOW),
+            state_manager=sm,
+            exit_policy=_AlwaysExitPolicy(),
+            quote_feed=feed,
+            stale_max_age_seconds=10.0,
+        )
+
+        # Per-call override flips the same fixture from fresh to stale.
+        assert [r.outcome for r in results] == ["noop_stale_quote"]
+        assert broker.last_request is None
+
+    def test_legacy_callable_never_triggers_stale_gate(self, engine) -> None:
+        """Legacy ``Callable[[str], float]`` is wrapped via
+        ``callable_to_quote_feed`` which sets ``ts = clock.now()``.  Even
+        with ``stale_max_age_seconds=0.0`` the gate cannot fire because
+        age == 0 and the comparison is strict ``>``.  This is the M-3c
+        guarantee of zero behavioural delta against legacy fixtures.
+        """
+        _seed_open_position(engine, psid="p1", order_id="o1", instrument="EURUSD")
+        sm = _make_sm(engine)
+        broker = _FillBroker()
+
+        results = run_exit_gate(
+            broker=broker,
+            account_id="acc-1",
+            clock=FixedClock(_NOW),
+            state_manager=sm,
+            exit_policy=_AlwaysExitPolicy(),
+            quote_feed=lambda _instrument: 1.10,
+            stale_max_age_seconds=0.0,
+        )
+
+        assert [r.outcome for r in results] == ["closed"]
+        assert broker.last_request is not None

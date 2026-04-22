@@ -37,9 +37,20 @@ Design decisions (Cycle 6.7c):
       For backward compatibility, ``quote_feed`` also accepts a legacy
       ``Callable[[str], float]``; in that case the runner internally
       wraps it via ``callable_to_quote_feed(fn, clock=clock)`` so the
-      consumer logic stays uniform.  Staleness enforcement is **NOT**
-      added in M-3b — that lands in M-3c.  No new outcome is introduced
-      by this milestone.
+      consumer logic stays uniform.
+
+      M-3c (post-M-3b): a stale-quote gate runs **before** policy
+      evaluation.  When ``(clock.now() - quote.ts).total_seconds() >
+      stale_max_age_seconds`` AND ``context.get("emergency_stop")`` is
+      falsy, the position is reported as
+      ``outcome="noop_stale_quote"`` and the close path is skipped
+      entirely (no broker call, no on_close).  Emergency stop bypasses
+      the gate so an operator-triggered flat-all is never blocked by
+      stale market data.  The legacy ``Callable[[str], float]`` adapter
+      synthesizes ``ts`` from ``clock.now()`` (M-3a), so callers on the
+      legacy path always observe ``age_seconds == 0`` and never trip
+      the gate — that is intentional and gives M-3c zero behavioural
+      delta against existing legacy fixtures.
 
   E5  Context dict is passed through to ExitPolicyService.evaluate()
       unchanged.  Callers may include ``{"emergency_stop": True}`` to
@@ -84,9 +95,14 @@ class ExitGateRunResult:
     """Outcome for one position evaluated by ``run_exit_gate``.
 
     outcome:
-      'noop'            — ExitPolicy did not fire; position held.
-      'closed'          — Broker accepted close; on_close written.
-      'broker_rejected' — Broker returned non-filled; no state change.
+      'noop'             — ExitPolicy did not fire; position held.
+      'noop_stale_quote' — M-3c: quote was older than
+                           ``stale_max_age_seconds``; close evaluation
+                           skipped (no broker call, no on_close).
+                           Bypassed when ``context['emergency_stop']``
+                           is truthy.
+      'closed'           — Broker accepted close; on_close written.
+      'broker_rejected'  — Broker returned non-filled; no state change.
     """
 
     instrument: str
@@ -110,6 +126,7 @@ def run_exit_gate(
     quote_feed: QuoteFeed | Callable[[str], float],
     tp: float | None = None,
     sl: float | None = None,
+    stale_max_age_seconds: float = 60.0,
     context: dict[str, Any] | None = None,
     supervisor: Supervisor | None = None,
 ) -> list[ExitGateRunResult]:
@@ -135,6 +152,14 @@ def run_exit_gate(
                     ``"legacy_callable"``.
         tp: Take-profit level; None disables TP rule (paper-mode).
         sl: Stop-loss level; None disables SL rule (paper-mode).
+        stale_max_age_seconds: M-3c freshness threshold.  When
+                 ``(clock.now() - quote.ts).total_seconds()`` exceeds
+                 this value AND ``context['emergency_stop']`` is falsy,
+                 the position skips close evaluation and reports
+                 ``outcome='noop_stale_quote'``.  Default 60s matches
+                 the M-3 design memo's conservative paper / live OANDA
+                 envelope and is intentionally a per-call argument
+                 rather than an ``app_settings`` key (deferred).
         context: Passed to ExitPolicyService.evaluate() unchanged.
                  Pass ``{"emergency_stop": True}`` for M22 flat-all.
         supervisor: Optional Supervisor for safe_stop wiring (PR-5 / U-2).
@@ -177,11 +202,43 @@ def run_exit_gate(
         else callable_to_quote_feed(quote_feed, clock=clock)
     )
 
+    # M-3c: emergency_stop bypasses the stale gate so an operator
+    # flat-all is never blocked by an upstream feed outage.  Read once
+    # outside the loop — every position in this tick shares the same
+    # operator intent.
+    emergency_stop = bool(ctx.get("emergency_stop"))
+
     results: list[ExitGateRunResult] = []
 
     for pos in positions:
         holding_seconds = max(0, int((now - pos.open_time_utc).total_seconds()))
-        current_price = qf.get_quote(pos.instrument).price
+        quote = qf.get_quote(pos.instrument)
+        age_seconds = (now - quote.ts).total_seconds()
+
+        # M-3c: stale-quote gate.  Skip close evaluation entirely when
+        # the quote is older than the freshness threshold AND we are
+        # not in an emergency_stop bypass.  No broker call, no
+        # on_close — the position is reported as noop_stale_quote and
+        # the next tick gets a fresh chance.
+        if age_seconds > stale_max_age_seconds and not emergency_stop:
+            _log.warning(
+                "run_exit_gate: stale quote — instrument=%s age=%.1fs "
+                "source=%s max_age=%.1fs; skipping close evaluation",
+                pos.instrument,
+                age_seconds,
+                quote.source,
+                stale_max_age_seconds,
+            )
+            results.append(
+                ExitGateRunResult(
+                    instrument=pos.instrument,
+                    order_id=pos.order_id,
+                    outcome="noop_stale_quote",
+                )
+            )
+            continue
+
+        current_price = quote.price
 
         decision = exit_policy.evaluate(
             position_id=pos.order_id,
