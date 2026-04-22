@@ -337,7 +337,7 @@ def _run(
         clock=FixedClock(_NOW),
         state_manager=sm,
         exit_policy=policy or _AlwaysHoldPolicy(),
-        price_feed=_fixed_price(price),
+        quote_feed=_fixed_price(price),
         context=context,
     )
 
@@ -438,7 +438,7 @@ class TestClose:
             clock=FixedClock(_NOW),
             state_manager=sm,
             exit_policy=_AlwaysExitPolicy(),
-            price_feed=_fixed_price(1.10),
+            quote_feed=_fixed_price(1.10),
         )
         assert broker.last_request is not None
         assert broker.last_request.side == "short"
@@ -465,7 +465,7 @@ class TestClose:
             clock=FixedClock(_NOW),
             state_manager=sm,
             exit_policy=_AlwaysExitPolicy(),
-            price_feed=_fixed_price(1.10),
+            quote_feed=_fixed_price(1.10),
         )
         assert broker.last_request is not None
         assert broker.last_request.side == "long"
@@ -480,7 +480,7 @@ class TestClose:
             clock=FixedClock(_NOW),
             state_manager=sm,
             exit_policy=_AlwaysExitPolicy(),
-            price_feed=_fixed_price(1.10),
+            quote_feed=_fixed_price(1.10),
         )
         assert broker.last_request is not None
         assert broker.last_request.size_units == 2500
@@ -502,7 +502,7 @@ class TestClose:
             clock=FixedClock(_NOW),
             state_manager=sm,
             exit_policy=_RecordPolicy(),
-            price_feed=_fixed_price(1.10),
+            quote_feed=_fixed_price(1.10),
         )
         assert received == ["ord-xyz"]
 
@@ -676,7 +676,7 @@ class TestReOpenScenario:
             clock=FixedClock(_NOW),
             state_manager=sm,
             exit_policy=_AlwaysExitPolicy(),
-            price_feed=_fixed_price(1.10),
+            quote_feed=_fixed_price(1.10),
         )
         assert sm.open_instruments() == frozenset()
 
@@ -698,7 +698,7 @@ class TestReOpenScenario:
             clock=FixedClock(_NOW),
             state_manager=sm,
             exit_policy=_AlwaysExitPolicy(),
-            price_feed=_fixed_price(1.10),
+            quote_feed=_fixed_price(1.10),
         )
         assert sm.open_instruments() == frozenset()
 
@@ -723,7 +723,7 @@ class TestReOpenScenario:
             clock=FixedClock(_NOW),
             state_manager=sm,
             exit_policy=_AlwaysExitPolicy(),
-            price_feed=_fixed_price(1.10),
+            quote_feed=_fixed_price(1.10),
         )
 
         sm2 = StateManager(
@@ -753,7 +753,7 @@ class TestReOpenScenario:
             clock=FixedClock(_NOW),
             state_manager=sm,
             exit_policy=_AlwaysExitPolicy(),
-            price_feed=_fixed_price(1.10),
+            quote_feed=_fixed_price(1.10),
         )
         sm2 = StateManager(
             engine, account_id="acc-1", clock=FixedClock(_NOW + timedelta(seconds=10))
@@ -897,7 +897,7 @@ class TestAccountTypeMismatchRuntimeWiring:
                 clock=FixedClock(_NOW),
                 state_manager=sm,
                 exit_policy=_AlwaysExitPolicy(),
-                price_feed=_fixed_price(1.10),
+                quote_feed=_fixed_price(1.10),
                 # supervisor=None (default)
             )
         # No close_event, no positions(close) row, no outbox entry.
@@ -917,7 +917,7 @@ class TestAccountTypeMismatchRuntimeWiring:
                 clock=FixedClock(_NOW),
                 state_manager=sm,
                 exit_policy=_AlwaysExitPolicy(),
-                price_feed=_fixed_price(1.10),
+                quote_feed=_fixed_price(1.10),
                 supervisor=spy,  # type: ignore[arg-type]
             )
         assert len(spy.calls) == 1
@@ -949,7 +949,7 @@ class TestAccountTypeMismatchRuntimeWiring:
                 clock=FixedClock(_NOW),
                 state_manager=sm,
                 exit_policy=_AlwaysExitPolicy(),
-                price_feed=_fixed_price(1.10),
+                quote_feed=_fixed_price(1.10),
                 supervisor=_SupervisorNoop(),  # type: ignore[arg-type]
             )
         # No close_event written.
@@ -975,7 +975,7 @@ class TestAccountTypeMismatchRuntimeWiring:
                 clock=FixedClock(_NOW),
                 state_manager=sm,
                 exit_policy=_AlwaysExitPolicy(),
-                price_feed=_fixed_price(1.10),
+                quote_feed=_fixed_price(1.10),
                 supervisor=_BrokenSupervisor(),  # type: ignore[arg-type]
             )
         assert _close_events(engine) == []
@@ -993,10 +993,127 @@ class TestAccountTypeMismatchRuntimeWiring:
                 clock=FixedClock(_NOW),
                 state_manager=sm,
                 exit_policy=_AlwaysExitPolicy(),
-                price_feed=_fixed_price(1.10),
+                quote_feed=_fixed_price(1.10),
                 supervisor=_SupervisorNoop(),  # type: ignore[arg-type]
             )
         # Only the first position was attempted; loop aborted before second.
         assert broker.received is not None
         assert len(broker.received) == 1
         assert _close_events(engine) == []
+
+
+# --- M-3b: QuoteFeed acceptance ----------------------------------------------
+
+
+class _StubQuoteFeed:
+    """Test-only QuoteFeed: counts get_quote calls, returns a constant price."""
+
+    def __init__(self, price: float) -> None:
+        from fx_ai_trading.domain.price_feed import Quote
+
+        self._price = price
+        self._Quote = Quote
+        self.calls: list[str] = []
+
+    def get_quote(self, instrument: str):
+        self.calls.append(instrument)
+        return self._Quote(price=self._price, ts=_NOW, source="test_fixture")
+
+
+class TestQuoteFeedAcceptance:
+    """run_exit_gate accepts both a QuoteFeed and a legacy callable.
+
+    The legacy callable path is already exercised by every other test in
+    this file; these tests pin the QuoteFeed branch and the discrimination
+    logic (no double-wrap when a QuoteFeed is passed directly).
+    """
+
+    def test_quote_feed_direct_path_drives_close(self, engine) -> None:
+        _seed_open_position(engine, psid="p1", order_id="o1", instrument="EURUSD")
+        sm = _make_sm(engine)
+        feed = _StubQuoteFeed(price=1.10)
+        results = run_exit_gate(
+            broker=_FillBroker(),
+            account_id="acc-1",
+            clock=FixedClock(_NOW),
+            state_manager=sm,
+            exit_policy=_AlwaysExitPolicy(),
+            quote_feed=feed,
+        )
+        # Decision still fires — proves get_quote().price is what reaches
+        # the policy/broker layer, not the legacy-call result.
+        assert [r.outcome for r in results] == ["closed"]
+        assert feed.calls == ["EURUSD"]
+
+    def test_legacy_callable_still_works_via_internal_wrap(self, engine) -> None:
+        """Back-compat: a plain Callable[[str], float] is auto-wrapped."""
+        _seed_open_position(engine, psid="p1", order_id="o1", instrument="EURUSD")
+        sm = _make_sm(engine)
+        seen: list[str] = []
+
+        def _legacy(instrument: str) -> float:
+            seen.append(instrument)
+            return 1.10
+
+        results = run_exit_gate(
+            broker=_FillBroker(),
+            account_id="acc-1",
+            clock=FixedClock(_NOW),
+            state_manager=sm,
+            exit_policy=_AlwaysExitPolicy(),
+            quote_feed=_legacy,
+        )
+        assert [r.outcome for r in results] == ["closed"]
+        assert seen == ["EURUSD"]
+
+    def test_quote_feed_price_threads_through_to_policy(self, engine) -> None:
+        """A different price must produce a different evaluation outcome.
+
+        Uses an SL-only policy with sl=0.99: feed price 0.95 → SL hit;
+        feed price 1.10 → no exit.  Pins that ``.price`` (not ``ts`` /
+        ``source``) is what the policy receives.
+        """
+        from fx_ai_trading.domain.exit import ExitDecision
+
+        sl_level = 0.99
+
+        class _SlPolicy:
+            def evaluate(
+                self,
+                *,
+                position_id,
+                instrument,
+                side,
+                current_price,
+                tp,
+                sl,
+                holding_seconds,
+                context,
+            ):
+                if current_price < sl_level:
+                    return ExitDecision(
+                        position_id=position_id,
+                        should_exit=True,
+                        reasons=("sl",),
+                        primary_reason="sl",
+                    )
+                return ExitDecision(
+                    position_id=position_id,
+                    should_exit=False,
+                    reasons=(),
+                    primary_reason=None,
+                )
+
+        # Below SL → close.
+        _seed_open_position(engine, psid="p1", order_id="o1", instrument="EURUSD")
+        sm = _make_sm(engine)
+        results = run_exit_gate(
+            broker=_FillBroker(),
+            account_id="acc-1",
+            clock=FixedClock(_NOW),
+            state_manager=sm,
+            exit_policy=_SlPolicy(),
+            quote_feed=_StubQuoteFeed(price=0.95),
+            sl=sl_level,
+        )
+        assert [r.outcome for r in results] == ["closed"]

@@ -154,7 +154,7 @@ class TestAccountTypeMismatchRuntimeWiring:
                 clock=FixedClock(_FIXED_AT),
                 state_manager=state_manager,
                 exit_policy=exit_policy,
-                price_feed=lambda _instrument: 1.20,
+                quote_feed=lambda _instrument: 1.20,
                 # supervisor=None (default)
             )
         # close-event write MUST NOT have happened.
@@ -172,7 +172,7 @@ class TestAccountTypeMismatchRuntimeWiring:
                 clock=FixedClock(_FIXED_AT),
                 state_manager=state_manager,
                 exit_policy=exit_policy,
-                price_feed=lambda _instrument: 1.20,
+                quote_feed=lambda _instrument: 1.20,
                 supervisor=spy,  # type: ignore[arg-type]
             )
         assert len(spy.calls) == 1
@@ -209,7 +209,7 @@ class TestAccountTypeMismatchRuntimeWiring:
                 clock=FixedClock(_FIXED_AT),
                 state_manager=state_manager,
                 exit_policy=exit_policy,
-                price_feed=lambda _instrument: 1.20,
+                quote_feed=lambda _instrument: 1.20,
                 supervisor=_SupervisorNoop(),  # type: ignore[arg-type]
             )
         state_manager.on_close.assert_not_called()
@@ -225,7 +225,7 @@ class TestAccountTypeMismatchRuntimeWiring:
                 clock=FixedClock(_FIXED_AT),
                 state_manager=state_manager,
                 exit_policy=exit_policy,
-                price_feed=lambda _instrument: 1.20,
+                quote_feed=lambda _instrument: 1.20,
                 supervisor=_BrokenSupervisor(),  # type: ignore[arg-type]
             )
         state_manager.on_close.assert_not_called()
@@ -246,7 +246,7 @@ class TestAccountTypeMismatchRuntimeWiring:
             clock=FixedClock(_FIXED_AT),
             state_manager=state_manager,
             exit_policy=_make_exit_policy(should_exit=False),
-            price_feed=lambda _instrument: 1.20,
+            quote_feed=lambda _instrument: 1.20,
             supervisor=spy,  # type: ignore[arg-type]
         )
         assert [r.outcome for r in results] == ["noop"]

@@ -209,7 +209,7 @@ class TestExitFlowEndToEnd:
             clock=clock,
             state_manager=state_manager,
             exit_policy=policy,
-            price_feed=lambda _instrument: 1.1100,
+            quote_feed=lambda _instrument: 1.1100,
             tp=1.1100,
             sl=1.0900,
         )
@@ -254,7 +254,7 @@ class TestExitFlowEndToEnd:
             state_manager=state_manager,
             exit_policy=policy,
             # Below TP, above SL → no exit rule fires.
-            price_feed=lambda _instrument: 1.1050,
+            quote_feed=lambda _instrument: 1.1050,
             tp=1.1100,
             sl=1.0900,
         )

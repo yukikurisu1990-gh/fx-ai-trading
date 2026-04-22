@@ -25,6 +25,7 @@ from datetime import datetime
 from typing import TYPE_CHECKING, Any
 
 from fx_ai_trading.common.clock import Clock
+from fx_ai_trading.domain.price_feed import QuoteFeed, callable_to_quote_feed
 from fx_ai_trading.supervisor.startup import (
     StartupContext,
     StartupResult,
@@ -54,7 +55,7 @@ class _ExitGateAttachment:
     account_id: str
     state_manager: StateManager
     exit_policy: ExitPolicyService
-    price_feed: Callable[[str], float]
+    quote_feed: QuoteFeed
     tp: float | None
     sl: float | None
     context: dict[str, Any] | None
@@ -236,7 +237,7 @@ class Supervisor:
         account_id: str,
         state_manager: StateManager,
         exit_policy: ExitPolicyService,
-        price_feed: Callable[[str], float],
+        quote_feed: QuoteFeed | Callable[[str], float],
         tp: float | None = None,
         sl: float | None = None,
         context: dict[str, Any] | None = None,
@@ -257,21 +258,34 @@ class Supervisor:
             turn comes from ``orders.direction`` via the M-1a JOIN).
             Callers no longer pass a process-wide side.
 
+        M-3b note:
+            ``price_feed`` was renamed to ``quote_feed`` and now accepts
+            either a ``QuoteFeed`` or a legacy ``Callable[[str], float]``.
+            A legacy callable is wrapped here once via
+            ``callable_to_quote_feed(fn, clock=self._clock)`` so the
+            stored attachment is always a ``QuoteFeed`` and
+            ``run_exit_gate`` does not have to re-wrap on every tick.
+
         Args:
             broker: Paper or live Broker.
             account_id: Must match ``state_manager.account_id``.
             state_manager: Authoritative open-positions source.
             exit_policy: Configured ExitPolicyService.
-            price_feed: ``instrument → current_price`` callable.
+            quote_feed: ``QuoteFeed`` or legacy ``Callable[[str], float]``.
             tp, sl, context: Forwarded to ``run_exit_gate`` unchanged
                 each tick.
         """
+        qf: QuoteFeed = (
+            quote_feed
+            if isinstance(quote_feed, QuoteFeed)
+            else callable_to_quote_feed(quote_feed, clock=self._clock)
+        )
         self._exit_gate = _ExitGateAttachment(
             broker=broker,
             account_id=account_id,
             state_manager=state_manager,
             exit_policy=exit_policy,
-            price_feed=price_feed,
+            quote_feed=qf,
             tp=tp,
             sl=sl,
             context=context,
@@ -307,7 +321,7 @@ class Supervisor:
             clock=self._clock,
             state_manager=cfg.state_manager,
             exit_policy=cfg.exit_policy,
-            price_feed=cfg.price_feed,
+            quote_feed=cfg.quote_feed,
             tp=cfg.tp,
             sl=cfg.sl,
             context=cfg.context,
