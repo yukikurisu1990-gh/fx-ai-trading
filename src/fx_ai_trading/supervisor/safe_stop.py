@@ -20,6 +20,15 @@ Exception isolation (G-2 / I-G2-06):
   later observe partial completion.  The strict order from 6.1 is
   preserved — wrapping is purely additive.
 
+Step-3 file binding (G-3 PR-3 / docs/design/g3_notifier_fix_plan.md §3.3.3):
+  ``_fire_step3_notifier`` now also returns False when the dispatcher
+  reports ``DispatchResult.file_success == False`` (no exception, but
+  FileNotifier swallowed an I/O error).  This closes audit finding R-4
+  and pins contract C-4 (``_safe_stop_completed`` ⇔ file delivery).
+  External / Email leg failures are intentionally NOT propagated into
+  the bool — C-5 mandates that file-OK keeps the stop "completed" so
+  Supervisor.trigger_safe_stop is not retried needlessly.
+
 Verified by: tests/contract/test_safe_stop_fire_sequence.py
 """
 
@@ -167,8 +176,25 @@ class SafeStopHandler:
                 payload=payload,
                 occurred_at=occurred_at,
             )
-            self._notifier.dispatch_direct_sync(event, "critical", payload)
-            _log.info("SafeStopHandler step 3: notifier dispatched")
+            result = self._notifier.dispatch_direct_sync(event, "critical", payload)
+            # PR-3 (memo §3.3.3 / C-4): step-3 truth is bound to file
+            # delivery, not to "no exception raised".  External / Email
+            # legs are deliberately ignored here so an unreachable Slack
+            # / SMTP host does NOT flip ``_safe_stop_completed`` to False
+            # (C-5: file durably written = stop is recoverable).
+            #
+            # ``getattr`` fallback keeps this back-compatible with mocks
+            # and any future caller that returns a plain truthy value:
+            # production ``NotifierDispatcherImpl`` always returns a
+            # ``DispatchResult`` so ``file_success`` is always present.
+            file_success = bool(getattr(result, "file_success", True))
+            if not file_success:
+                _log.error(
+                    "SafeStopHandler step 3: file delivery reported failure "
+                    "(NotifyResult.success=False) — _safe_stop_completed will remain False"
+                )
+                return False
+            _log.info("SafeStopHandler step 3: notifier dispatched (file delivery OK)")
             return True
         except Exception as exc:  # noqa: BLE001
             _log.error("SafeStopHandler step 3: notifier dispatch failed: %s", exc)
