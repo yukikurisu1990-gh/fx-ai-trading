@@ -41,6 +41,13 @@ class OpenPositionInfo:
     open_time_utc is the event_time_utc of the most recent 'open' or
     'add' event for this instrument, used to compute holding_seconds
     for ExitPolicyService.evaluate().
+
+    M-1a (Design A): ``side`` is derived per-position from
+    ``orders.direction`` via ``_DIRECTION_TO_SIDE`` at read time
+    (``StateManager.open_position_details``).  The runner consumer
+    (``run_exit_gate``) still accepts a call-arg ``side`` in M-1a;
+    M-1b will switch the runner to consume ``pos.side`` and remove
+    the call-arg.
     """
 
     instrument: str
@@ -48,6 +55,7 @@ class OpenPositionInfo:
     units: int
     avg_price: float
     open_time_utc: datetime
+    side: str
 
 
 __all__ = ["OpenPositionInfo", "StateSnapshot"]

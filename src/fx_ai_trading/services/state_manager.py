@@ -62,6 +62,7 @@ from sqlalchemy.engine import Engine
 
 from fx_ai_trading.common.clock import Clock, WallClock
 from fx_ai_trading.common.ulid import generate_ulid
+from fx_ai_trading.domain.order_side import _DIRECTION_TO_SIDE
 from fx_ai_trading.domain.state import OpenPositionInfo, StateSnapshot
 from fx_ai_trading.sync.enqueue import enqueue_secondary_sync
 
@@ -177,9 +178,20 @@ class StateManager:
 
         Cycle 6.12 fix (R-1, 方針 B): selects the open row directly via
         ``NOT EXISTS (close for same order_id)``, which is order-independent.
-        The previous window-function ranking depended on
-        ``position_snapshot_id`` lex order at same-millisecond ties and
-        could leak closed positions into the exit gate.
+
+        M-1a (Design A): each row is LEFT-JOINed against ``orders`` to
+        derive ``side`` from ``orders.direction`` via
+        ``_DIRECTION_TO_SIDE``.  Three defensive paths are pinned here:
+          * ``positions.order_id`` is nullable per the schema
+            (FK ``orders.order_id`` with ``nullable=True``); rows whose
+            ``order_id IS NULL`` are skipped with an error log.
+          * The orders FK guarantees a matching row in production, but
+            we still LEFT-JOIN and skip-with-log when no match exists,
+            so an orphan position cannot cause a KeyError on read.
+          * ``direction`` values outside the canonical
+            ``{'buy', 'sell'}`` set raise ``KeyError`` (fail-fast):
+            a corrupt direction is a contract violation that must
+            surface, not be silently coerced.
 
         Pyramiding (add rows) is paper-mode out of scope; if it lands later,
         units/avg_price aggregation across (open, add*) per order_id will
@@ -187,8 +199,10 @@ class StateManager:
         """
         sql = text(
             """
-            SELECT p.instrument, p.order_id, p.units, p.avg_price, p.event_time_utc
+            SELECT p.instrument, p.order_id, p.units, p.avg_price,
+                   p.event_time_utc, o.direction
             FROM positions p
+            LEFT JOIN orders o ON o.order_id = p.order_id
             WHERE p.account_id = :account_id
               AND p.event_type = 'open'
               AND NOT EXISTS (
@@ -202,16 +216,41 @@ class StateManager:
         )
         with self._engine.connect() as conn:
             rows = conn.execute(sql, {"account_id": self._account_id}).fetchall()
-        return [
-            OpenPositionInfo(
-                instrument=r.instrument,
-                order_id=r.order_id,
-                units=int(r.units),
-                avg_price=float(r.avg_price),
-                open_time_utc=_coerce_datetime(r.event_time_utc),
+
+        details: list[OpenPositionInfo] = []
+        for r in rows:
+            if r.order_id is None:
+                _log.error(
+                    "open_position_details: skipping position with NULL order_id"
+                    " (account=%s, instrument=%s)",
+                    self._account_id,
+                    r.instrument,
+                )
+                continue
+            if r.direction is None:
+                _log.error(
+                    "open_position_details: skipping orphan position — no orders row"
+                    " (account=%s, instrument=%s, order_id=%s)",
+                    self._account_id,
+                    r.instrument,
+                    r.order_id,
+                )
+                continue
+            # KeyError on unknown direction is intentional (M-1a fail-fast):
+            # a corrupt orders.direction is a contract violation, not a
+            # transient condition to swallow.
+            side = _DIRECTION_TO_SIDE[r.direction]
+            details.append(
+                OpenPositionInfo(
+                    instrument=r.instrument,
+                    order_id=r.order_id,
+                    units=int(r.units),
+                    avg_price=float(r.avg_price),
+                    open_time_utc=_coerce_datetime(r.event_time_utc),
+                    side=side,
+                )
             )
-            for r in rows
-        ]
+        return details
 
     def recent_execution_failures_within(
         self,

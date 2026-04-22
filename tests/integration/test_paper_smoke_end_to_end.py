@@ -248,6 +248,7 @@ def test_paper_smoke_one_cycle_end_to_end() -> None:
             units=1000,
             avg_price=1.5,  # PaperBroker fill price
             open_time_utc=_NOW - timedelta(seconds=60),  # holding_seconds=60
+            side="long",  # M-1a: derived from orders.direction='buy' in production
         )
     ]
     state_manager.on_close.return_value = ("smoke-snapshot-id", "smoke-close-event-id")

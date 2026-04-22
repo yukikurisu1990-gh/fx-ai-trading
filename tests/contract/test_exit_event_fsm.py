@@ -59,7 +59,11 @@ def _make_decision(*, should_exit: bool = True, reasons=("tp",), primary_reason=
 
 
 def _make_position(
-    *, instrument: str = "EUR_USD", order_id: str = "ord-1", units: int = 1000
+    *,
+    instrument: str = "EUR_USD",
+    order_id: str = "ord-1",
+    units: int = 1000,
+    side: str = "long",
 ) -> OpenPositionInfo:
     return OpenPositionInfo(
         instrument=instrument,
@@ -67,6 +71,7 @@ def _make_position(
         units=units,
         avg_price=1.10,
         open_time_utc=_OPEN_AT,
+        side=side,
     )
 
 

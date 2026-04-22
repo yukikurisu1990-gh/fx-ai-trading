@@ -91,7 +91,11 @@ class _BrokenSupervisor:
 
 
 def _make_position(
-    *, instrument: str = "EUR_USD", order_id: str = "ord-xyz", units: int = 1000
+    *,
+    instrument: str = "EUR_USD",
+    order_id: str = "ord-xyz",
+    units: int = 1000,
+    side: str = "long",
 ) -> OpenPositionInfo:
     return OpenPositionInfo(
         instrument=instrument,
@@ -99,6 +103,7 @@ def _make_position(
         units=units,
         avg_price=1.10,
         open_time_utc=_OPEN_AT,
+        side=side,
     )
 
 
