@@ -680,3 +680,128 @@ class TestFireReturnValue:
             common_keys_ctx=ctx,
         )
         assert handler.fire(reason=_REASON, occurred_at=_FIXED_AT) is False
+
+
+# ---------------------------------------------------------------------------
+# Step 3 file-bound semantics (G-3 PR-3 / docs/design/g3_notifier_fix_plan.md
+# §3.3.3 / contracts C-4 + C-5)
+#
+# Pre-PR-3 step 3 returned True iff ``dispatch_direct_sync`` did not raise.
+# A silent FileNotifier I/O failure (returned NotifyResult(success=False)
+# without raising) therefore left ``_safe_stop_completed=True`` even
+# though the safe_stop evidence had not been durably written.  PR-3 binds
+# step 3 to ``DispatchResult.file_success``:
+#
+#   C-4: file delivery failed                    → step 3 False, fire() False,
+#                                                  _safe_stop_completed False.
+#   C-5: file OK, external/email all-fail        → step 3 True,  fire() True,
+#                                                  _safe_stop_completed True
+#                                                  (file = last-resort durability).
+#
+# These tests construct a ``DispatchResult`` directly so they pin the new
+# semantic regardless of whether MagicMock auto-attribute access happens
+# to coincide with the right answer.
+# ---------------------------------------------------------------------------
+
+
+from fx_ai_trading.domain.notifier import DispatchResult, NotifyResult  # noqa: E402
+
+
+def _ok_notify_result(name: str = "file") -> NotifyResult:
+    return NotifyResult(success=True, notifier_name=name, sent_at=_FIXED_AT)
+
+
+def _fail_notify_result(name: str = "file", err: str = "boom") -> NotifyResult:
+    return NotifyResult(success=False, notifier_name=name, sent_at=_FIXED_AT, error_message=err)
+
+
+class TestStep3FileBoundSemantics:
+    def test_step3_true_when_file_ok_and_external_fail(self, journal) -> None:
+        """C-5: external failure with file OK keeps step 3 True."""
+        notifier = MagicMock()
+        notifier.dispatch_direct_sync.return_value = DispatchResult(
+            file=_ok_notify_result("file"),
+            externals=[_fail_notify_result("slack", err="503")],
+            email=None,
+        )
+        handler = SafeStopHandler(journal=journal, notifier=notifier)
+        assert handler._fire_step3_notifier(_FIXED_AT, {"reason": _REASON}) is True
+
+    def test_step3_false_when_file_failed_no_exception(self, journal) -> None:
+        """C-4: file delivery failure (no exception) flips step 3 to False."""
+        notifier = MagicMock()
+        notifier.dispatch_direct_sync.return_value = DispatchResult(
+            file=_fail_notify_result("file", err="disk full"),
+            externals=[_ok_notify_result("slack")],
+            email=None,
+        )
+        handler = SafeStopHandler(journal=journal, notifier=notifier)
+        assert handler._fire_step3_notifier(_FIXED_AT, {"reason": _REASON}) is False
+
+    def test_step3_true_when_email_fails_but_file_ok(self, journal) -> None:
+        """C-5 (email leg variant): email failure with file OK still True."""
+        notifier = MagicMock()
+        notifier.dispatch_direct_sync.return_value = DispatchResult(
+            file=_ok_notify_result("file"),
+            externals=[],
+            email=_fail_notify_result("email", err="smtp timeout"),
+        )
+        handler = SafeStopHandler(journal=journal, notifier=notifier)
+        assert handler._fire_step3_notifier(_FIXED_AT, {"reason": _REASON}) is True
+
+    def test_step3_true_when_all_external_and_email_fail_but_file_ok(self, journal) -> None:
+        """C-5 worst-case: every external + email leg fails, file OK → True."""
+        notifier = MagicMock()
+        notifier.dispatch_direct_sync.return_value = DispatchResult(
+            file=_ok_notify_result("file"),
+            externals=[_fail_notify_result("slack"), _fail_notify_result("pager")],
+            email=_fail_notify_result("email"),
+        )
+        handler = SafeStopHandler(journal=journal, notifier=notifier)
+        assert handler._fire_step3_notifier(_FIXED_AT, {"reason": _REASON}) is True
+
+    def test_fire_returns_true_when_only_externals_fail(self, journal) -> None:
+        """Full fire() with C-5 inputs → fire()=True so _safe_stop_completed=True."""
+        notifier = MagicMock()
+        notifier.dispatch_direct_sync.return_value = DispatchResult(
+            file=_ok_notify_result("file"),
+            externals=[_fail_notify_result("slack")],
+            email=None,
+        )
+        handler = SafeStopHandler(
+            journal=journal,
+            notifier=notifier,
+            stop_callback=lambda: None,
+        )
+        assert handler.fire(reason=_REASON, occurred_at=_FIXED_AT) is True
+
+    def test_fire_returns_false_when_file_fails(self, journal) -> None:
+        """Full fire() with C-4 inputs → fire()=False so _safe_stop_completed=False."""
+        notifier = MagicMock()
+        notifier.dispatch_direct_sync.return_value = DispatchResult(
+            file=_fail_notify_result("file", err="disk full"),
+            externals=[_ok_notify_result("slack")],
+            email=None,
+        )
+        handler = SafeStopHandler(
+            journal=journal,
+            notifier=notifier,
+            stop_callback=lambda: None,
+        )
+        assert handler.fire(reason=_REASON, occurred_at=_FIXED_AT) is False
+
+    def test_step3_file_failure_logs_error(self, journal, caplog) -> None:
+        """File-leg failure must emit an ERROR log (operator visibility)."""
+        notifier = MagicMock()
+        notifier.dispatch_direct_sync.return_value = DispatchResult(
+            file=_fail_notify_result("file", err="disk full"),
+            externals=[],
+            email=None,
+        )
+        handler = SafeStopHandler(journal=journal, notifier=notifier)
+        with caplog.at_level("ERROR", logger="fx_ai_trading.supervisor.safe_stop"):
+            handler._fire_step3_notifier(_FIXED_AT, {"reason": _REASON})
+        messages = [r.getMessage() for r in caplog.records if r.levelname == "ERROR"]
+        assert any("step 3" in m and "file delivery" in m for m in messages), (
+            f"file-leg failure not logged at ERROR level; got: {messages}"
+        )
