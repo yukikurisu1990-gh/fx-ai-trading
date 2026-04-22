@@ -22,8 +22,15 @@ Design decisions (Cycle 6.7c):
       long-only fixture from Cycle 6.7c) and ``ExitPolicyService.evaluate``
       receives the per-position side as well.
 
-  E3  pnl_realized is not computed (None).  Phase 7 will derive it from
-      fill_price vs avg_price once price data is authoritative.
+  E3  M-2 (post-M-1b): pnl_realized is computed at close time from
+      ``(result.fill_price - pos.avg_price) * pos.units`` with the sign
+      flipped for short positions, and forwarded to
+      ``StateManager.on_close``.  This is **gross PnL only — fees,
+      spread, swap and any quote-currency conversion are NOT included**;
+      net PnL is a separate milestone.  When the broker returns
+      ``fill_price=None`` (a known OANDA edge case), ``pnl_realized``
+      is left as ``None`` so the close still records but downstream
+      aggregates remain ANSI-NULL-aware.
 
   E4  Price feed is a plain ``Callable[[str], float]`` — no Protocol
       wrapper in 6.7c.  The caller (Supervisor / test) injects a lambda
@@ -244,13 +251,28 @@ def run_exit_gate(
             )
             continue
 
+        # M-2 (E3): compute gross realized PnL in quote currency.  Units
+        # are unsigned by repo convention (direction lives in pos.side),
+        # so we apply the long/short sign explicitly.  When the broker
+        # could not report a fill price, leave pnl_realized as None
+        # rather than fabricate a value — the close itself still records.
+        assert pos.units > 0, (
+            f"OpenPositionInfo.units must be positive (got {pos.units}); "
+            "M-2 PnL math relies on unsigned units."
+        )
+        if result.fill_price is None:
+            pnl_realized: float | None = None
+        else:
+            sign = 1 if pos.side == "long" else -1
+            pnl_realized = (result.fill_price - pos.avg_price) * pos.units * sign
+
         # Append-only state update (E1, E3).
         state_manager.on_close(
             order_id=pos.order_id,
             instrument=pos.instrument,
             reasons=reasons,
             primary_reason_code=decision.primary_reason or "",
-            pnl_realized=None,
+            pnl_realized=pnl_realized,
         )
         _log.info(
             "run_exit_gate: closed %s order=%s reason=%s holding=%ds",

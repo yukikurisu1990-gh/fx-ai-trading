@@ -276,6 +276,29 @@ class _FillBroker:
 
 
 @dataclass
+class _PriceFillBroker:
+    """Broker stub: returns filled with a configurable ``fill_price``.
+
+    Pass ``fill_price=None`` to simulate the OANDA edge case where the
+    broker accepts the close but cannot report a fill price (M-2 fall-back).
+    """
+
+    fill_price: float | None
+    account_type: str = "demo"
+    last_request: OrderRequest | None = None
+
+    def place_order(self, request: OrderRequest) -> OrderResult:
+        self.last_request = request
+        return OrderResult(
+            client_order_id=request.client_order_id,
+            broker_order_id="bk-close-priced",
+            status="filled",
+            filled_units=request.size_units,
+            fill_price=self.fill_price,
+        )
+
+
+@dataclass
 class _RejectBroker:
     """Broker stub: always returns rejected."""
 
@@ -482,6 +505,98 @@ class TestClose:
             price_feed=_fixed_price(1.10),
         )
         assert received == ["ord-xyz"]
+
+
+# --- M-2: pnl_realized computation -------------------------------------------
+
+
+class TestPnlRealized:
+    """M-2: ``run_exit_gate`` computes gross PnL at close time and forwards it
+    to ``StateManager.on_close`` (which writes it to ``close_events.pnl_realized``
+    and ``positions.realized_pl``).
+
+    Formula:  ``(fill_price - avg_price) * units * (+1 if long else -1)``
+    Units are unsigned by repo convention (direction lives in ``pos.side``).
+    Fees / spread / swap / quote-currency conversion are NOT included
+    (gross PnL only — net PnL is a separate milestone).
+    """
+
+    def test_long_profit_pnl_is_positive(self, engine) -> None:
+        broker = _PriceFillBroker(fill_price=1.12)
+        _seed_open_position(
+            engine,
+            psid="p1",
+            order_id="o1",
+            instrument="EURUSD",
+            avg_price=1.10,
+            units=1000,
+            direction="buy",
+        )
+        _run(engine, policy=_AlwaysExitPolicy(), broker=broker)
+        ces = _close_events(engine)
+        assert len(ces) == 1
+        # (1.12 - 1.10) * 1000 * (+1) = 20.0
+        assert float(ces[0].pnl_realized) == pytest.approx(20.0)
+
+    def test_short_profit_pnl_is_positive(self, engine) -> None:
+        broker = _PriceFillBroker(fill_price=1.10)
+        _seed_open_position(
+            engine,
+            psid="p1",
+            order_id="o1",
+            instrument="EURUSD",
+            avg_price=1.12,
+            units=1000,
+            direction="sell",
+        )
+        _run(engine, policy=_AlwaysExitPolicy(), broker=broker)
+        ces = _close_events(engine)
+        assert len(ces) == 1
+        # (1.10 - 1.12) * 1000 * (-1) = 20.0
+        assert float(ces[0].pnl_realized) == pytest.approx(20.0)
+
+    def test_long_loss_pnl_is_negative(self, engine) -> None:
+        broker = _PriceFillBroker(fill_price=1.08)
+        _seed_open_position(
+            engine,
+            psid="p1",
+            order_id="o1",
+            instrument="EURUSD",
+            avg_price=1.10,
+            units=1000,
+            direction="buy",
+        )
+        _run(engine, policy=_AlwaysExitPolicy(), broker=broker)
+        ces = _close_events(engine)
+        assert len(ces) == 1
+        # (1.08 - 1.10) * 1000 * (+1) = -20.0
+        assert float(ces[0].pnl_realized) == pytest.approx(-20.0)
+
+    def test_fill_price_none_records_pnl_realized_as_null(self, engine) -> None:
+        """OANDA edge case: broker returns filled but no fill_price.
+
+        The close MUST still record (so the position is marked closed),
+        but ``pnl_realized`` is left NULL — downstream aggregates remain
+        ANSI-NULL-aware, and a fabricated value would silently corrupt
+        metrics.
+        """
+        broker = _PriceFillBroker(fill_price=None)
+        _seed_open_position(
+            engine,
+            psid="p1",
+            order_id="o1",
+            instrument="EURUSD",
+            avg_price=1.10,
+            units=1000,
+            direction="buy",
+        )
+        results = _run(engine, policy=_AlwaysExitPolicy(), broker=broker)
+
+        assert len(results) == 1
+        assert results[0].outcome == "closed"
+        ces = _close_events(engine)
+        assert len(ces) == 1
+        assert ces[0].pnl_realized is None
 
 
 # --- broker_rejected path -----------------------------------------------------
