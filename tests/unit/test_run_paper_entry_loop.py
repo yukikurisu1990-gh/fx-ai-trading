@@ -379,3 +379,49 @@ class TestMinimumEntrySignal:
         # Covers the strict-monotonic contract; V-shape and equality
         # mixes are derivatives of (warmup pin + monotonic pin).
         assert self._feed(mod, [1.0, 1.1, 1.05]) is None
+
+
+class TestFivePointMomentumSignal:
+    """The signal classifies the last 5 fresh quotes into a direction.
+
+    Mirrors ``TestMinimumEntrySignal`` with a 5-point window.  Added in
+    M10-2 as the second concrete ``EntrySignal`` implementation; not a
+    production-strategy improvement.  Warmup spans the first 4 ticks
+    (until 5 quotes have been observed).
+    """
+
+    _NOW = datetime(2026, 4, 23, 12, 0, 0, tzinfo=UTC)
+
+    @staticmethod
+    def _quote(mod: Any, price: float) -> Any:
+        from fx_ai_trading.domain.price_feed import Quote
+
+        return Quote(price=price, ts=TestFivePointMomentumSignal._NOW, source="test")
+
+    def _feed(self, mod: Any, prices: list[float]) -> str | None:
+        signal = mod.FivePointMomentumSignal()
+        result: str | None = None
+        for p in prices:
+            result = signal.evaluate(self._quote(mod, p))
+        return result
+
+    def test_first_call_returns_none_warmup(self, mod: Any) -> None:
+        assert self._feed(mod, [1.0]) is None
+
+    def test_four_quotes_still_warmup(self, mod: Any) -> None:
+        # Boundary pin: 4 quotes is still < 5.
+        assert self._feed(mod, [1.0, 1.01, 1.02, 1.03]) is None
+
+    def test_five_strict_up_returns_buy(self, mod: Any) -> None:
+        assert self._feed(mod, [1.0, 1.01, 1.02, 1.03, 1.04]) == "buy"
+
+    def test_five_strict_down_returns_sell(self, mod: Any) -> None:
+        assert self._feed(mod, [1.0, 0.99, 0.98, 0.97, 0.96]) == "sell"
+
+    def test_equal_mix_returns_none(self, mod: Any) -> None:
+        # Flat start prevents strict monotonicity.
+        assert self._feed(mod, [1.0, 1.0, 1.01, 1.02, 1.03]) is None
+
+    def test_non_monotonic_returns_none(self, mod: Any) -> None:
+        # Peak shape: up then down — not strictly monotonic.
+        assert self._feed(mod, [1.0, 1.01, 1.02, 1.01, 1.03]) is None

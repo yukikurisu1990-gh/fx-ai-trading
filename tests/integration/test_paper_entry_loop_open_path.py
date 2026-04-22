@@ -180,13 +180,16 @@ class _SequentialQuoteFeed:
         return quote
 
 
-def _build_components_with_sequential_feed(mod: Any, engine: Any, prices: list[float]) -> Any:
+def _build_components_with_sequential_feed(
+    mod: Any, engine: Any, prices: list[float], signal: Any = None
+) -> Any:
     """Compose the real paper open-side stack with a ``_SequentialQuoteFeed``.
 
     Avoids ``build_components`` so we don't have to pass real OANDA
-    credentials.  Uses the **real** ``MinimumEntrySignal`` (the unit
-    test pins the price-comparison contract; here we want signal +
-    policy + 5-step body wired together against SQLite).
+    credentials.  The ``signal`` parameter accepts any ``EntrySignal``-
+    conforming instance; defaults to ``MinimumEntrySignal()`` to preserve
+    existing test behaviour.  M10-2 integration test passes
+    ``FivePointMomentumSignal()`` here to validate the Protocol seam.
     """
     from fx_ai_trading.adapters.broker.paper import PaperBroker
     from fx_ai_trading.common.clock import FixedClock
@@ -200,7 +203,7 @@ def _build_components_with_sequential_feed(mod: Any, engine: Any, prices: list[f
         broker=PaperBroker(account_type="demo", nominal_price=1.0),
         quote_feed=_SequentialQuoteFeed(prices),
         clock=clock,
-        signal=mod.MinimumEntrySignal(),
+        signal=signal if signal is not None else mod.MinimumEntrySignal(),
     )
 
 
@@ -297,3 +300,32 @@ class TestPaperEntryLoopSignalDriven:
         assert ord_count == 0
         assert pos_count == 0
         assert _INSTRUMENT not in components.state_manager.open_instruments()
+
+
+class TestPaperEntryLoopFivePointSignal:
+    """Protocol seam validation: FivePointMomentumSignal wires through correctly.
+
+    Verifies that the ``EntrySignal`` Protocol seam introduced in M10-2
+    accepts a second concrete implementation.  Not testing strategy quality
+    — testing that the injection path functions end-to-end with SQLite.
+    """
+
+    def test_five_point_signal_fires_on_tick_five(self, mod: Any, engine: Any) -> None:
+        # [1.0, 1.01, 1.02, 1.03, 1.04] + 'buy' → ticks 1-4 warmup
+        # (fewer than 5 quotes); tick 5 fires (5 strictly increasing prices).
+        components = _build_components_with_sequential_feed(
+            mod,
+            engine,
+            [1.0, 1.01, 1.02, 1.03, 1.04],
+            signal=mod.FivePointMomentumSignal(),
+        )
+        iterations = _run(mod, components, direction="buy", max_iterations=5)
+        assert iterations == 5
+
+        with engine.connect() as conn:
+            ord_rows = conn.execute(text("SELECT order_id, status FROM orders")).fetchall()
+            pos_rows = conn.execute(text("SELECT order_id, event_type FROM positions")).fetchall()
+        assert len(ord_rows) == 1, "warmup ticks must NOT write; 5th tick fires exactly once"
+        assert ord_rows[0][1] == "FILLED"
+        assert len(pos_rows) == 1
+        assert pos_rows[0][1] == "open"
