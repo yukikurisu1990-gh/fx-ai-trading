@@ -285,12 +285,15 @@ bootstrap.opened               成功（order_id / psid / fill_price / side）
 
 `scripts/paper_open_position`（§10.7）は **1 ショット**で open を 1 件作るが、close 後の自動再 open はできない。close path を継続的に検証したいとき（max_holding_seconds 経過 → close → 再 open → … のサイクル確認等）、operator は `scripts/run_paper_entry_loop` で **cadence 駆動の open 発火**を回せる。
 
-本ランナーの責務は **1 PR / 1 責務**で「最小 entry policy で paper の auto-open を可能にする」ことに限定されている。strategy / signal generation の凍結スコープ（§10.6, Cycle 6.9a）は侵食しない。固定された `(instrument, direction, units)` に対して、tick ごとに `MinimumEntryPolicy` が 4 分岐で発火可否のみを決める：
+本ランナーの責務は **1 PR / 1 責務**で「最小 entry policy で paper の auto-open を可能にする」ことに限定されている。strategy / signal generation の凍結スコープ（§10.6, Cycle 6.9a）は侵食しない。固定された `(instrument, direction, units)` に対して、tick ごとに `MinimumEntryPolicy` が 5 分岐で発火可否のみを決める：
 
 - `already_open` — 同 `(account, instrument)` で既に open がある（`StateManager.open_instruments()` 参照）
 - `no_quote`     — `QuoteFeed.get_quote` が例外（一時的な feed outage、次 tick で再試行）
 - `stale_quote`  — `(clock.now() - quote.ts).total_seconds() > stale_after_seconds`（M-3c と同じ厳密 `>`、既定 60s）
+- `no_signal`    — fresh quote は取れたが `MinimumEntrySignal` の判定が `--direction` と一致しない（warmup tick / 同値（flat） / 逆方向シグナル）
 - `ok`           — 発火 → §10.7 と完全に同じ FSM 5-step（`create_order` → `update_status('SUBMITTED')` → `PaperBroker.place_order` → `update_status('FILLED')` → `StateManager.on_fill`）
+
+`MinimumEntrySignal` は **fresh quote を 1 つ受け取り、直前の fresh quote との価格比較で `'buy'` / `'sell'` / `None` を返すだけ**の小クラス（`scripts/run_paper_entry_loop.MinimumEntrySignal`）。`QuoteFeed` も `Clock` も staleness 判定も持たず、そのレイヤは `MinimumEntryPolicy` 側で先に処理される。プロセス内のみで直前 quote を 1 件保持し、再起動で warmup へ戻る。
 
 #### CLI usage
 
@@ -342,7 +345,7 @@ entry_runner.env_missing       rc=2（OANDA env 欠落）
 entry_runner.db_config_missing rc=2（DATABASE_URL 欠落）
 entry_runner.shutdown          正常終了（iterations）
 shutdown.signal_received       SIGINT 受信
-tick.no_fire                   policy が発火を見送り（reason: already_open / no_quote / stale_quote）
+tick.no_fire                   policy が発火を見送り（reason: already_open / no_quote / stale_quote / no_signal）
 tick.opened                    open 成功（order_id / psid / fill_price / side）
 tick.skip_duplicate            policy.evaluate と _open_one_position の race（recoverable）
 tick.broker_rejected           broker が非 filled を返した（_open_one_position が abort）
@@ -355,6 +358,9 @@ tick.completed                 各 tick 末尾（iteration / tick_duration_ms）
 - `orders.submitted_at` / `orders.filled_at` は **NULL のまま**。§10.7 と同じ理由（`OrdersRepository.update_status` が timestamp を受け取らない）。
 - `order_transactions` 行は書かれない。§10.7 と同じ理由（`PaperBroker.get_recent_transactions` が `[]`）。
 - `tick.skip_duplicate` 経路は recoverable だが、duplicate 状態が続く限り毎 tick `tick.no_fire(reason=already_open)` がログに残り続ける（policy 自体が冪等のため副作用なし）。
+- **Signal warmup**: ランナー起動直後の最初の fresh quote 取得 tick は必ず `tick.no_fire(reason=no_signal)` になる（直前 quote が無く比較できないため）。プロセス再起動のたびに warmup が必要。
+- **Flat（同値）相場**: 連続する fresh quote が完全に同値だと signal は `None` を返し、`tick.no_fire(reason=no_signal)` が継続する。閾値ベースのブレイク判定は本ランナーの out of scope（戦略フレームワーク化を避けるため）。
+- **逆方向シグナル**: signal が `--direction` と逆向き（例: `--direction buy` で signal='sell'）の間は `tick.no_fire(reason=no_signal)` が継続し、永久に発火しないこともあり得る。これは仕様であり、新イベントは追加していない（reason 値で識別する）。
 - `tick.broker_rejected` 後、対象 `orders` 行は `status='SUBMITTED'` のまま **残留する**（FILLED へは進まない）。§10.7 の rc=4 と同じ性質。次 tick の `_open_one_position` は新しい `order_id` を作って独立に再試行するため、SUBMITTED 残留行は累積し得る — operator は `SELECT order_id FROM orders WHERE status='SUBMITTED'` で観測し、必要なら手動で reconcile する。
 - 1 ランナー = 1 instrument。複数 instrument を回す場合は instrument ごとに別プロセスで起動する。
 

@@ -6,17 +6,24 @@ Exercises the full open-side cadence path end-to-end:
     create_order → update_status(SUBMITTED) → PaperBroker.place_order →
     update_status(FILLED) → StateManager.on_fill
 
-with a stub QuoteFeed that always returns a fresh quote, and asserts
-the user's Loop 3 idempotency contract:
+with a deterministic ``_SequentialQuoteFeed`` stub that returns a
+pre-defined sequence of fresh quotes (one per tick), and asserts the
+user's Loop 3 contract under the **price-direction signal** layer:
 
-  - max_iterations=1 → exactly 1 open is written to DB.
-  - max_iterations=2 → the 2nd tick is a no-op (instrument already
-    open ⇒ policy returns 'already_open' ⇒ no second write).
+  - tick 1 is always a warmup no-op (signal has no prior quote to
+    compare → policy reason='no_signal').
+  - 2-tick / direction-matching sequence ([1.0, 1.1] + buy) → exactly
+    1 open is written on tick 2.
+  - 3-tick / direction-matching sequence ([1.0, 1.1, 1.2] + buy) →
+    tick 3 is blocked by 'already_open' (still 1 open / 1 position).
+  - direction-mismatch sequence ([1.0, 0.9] + buy) → 0 opens (signal
+    points 'sell', policy collapses to reason='no_signal').
 
 The paper components here are **production** code (``PaperBroker`` +
 real ``StateManager`` + real ``OrdersRepository`` +
-``MinimumEntryPolicy``).  Only the engine (in-memory SQLite) and the
-quote feed (a deterministic stub) are test-side substitutions.
+``MinimumEntryPolicy`` + real ``MinimumEntrySignal``).  Only the engine
+(in-memory SQLite) and the quote feed (a deterministic sequential
+stub) are test-side substitutions.
 
 In-memory SQLite + DDL is reused verbatim from
 ``tests/integration/test_paper_open_position_bootstrap.py`` so both
@@ -39,7 +46,6 @@ import sys
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
-from unittest.mock import MagicMock
 
 import pytest
 from sqlalchemy import create_engine, text
@@ -146,13 +152,39 @@ def mod() -> Any:
 _FIXED_NOW = datetime(2026, 4, 23, 12, 0, 0, tzinfo=UTC)
 
 
-def _build_components_with_fresh_quote_stub(mod: Any, engine: Any) -> Any:
-    """Compose the real paper open-side stack with a deterministic feed.
+class _SequentialQuoteFeed:
+    """Deterministic ``QuoteFeed`` returning a fixed price sequence.
+
+    One ``Quote`` per tick.  ``ts`` is pinned to ``_FIXED_NOW`` so the
+    policy's stale gate (M-3c) never trips against the same
+    ``FixedClock``: any no-op observed in these tests is therefore
+    attributable to the signal layer (warmup / flat / direction
+    mismatch) or to ``already_open``, NOT to staleness.
+
+    After the sequence is exhausted, the last quote is returned
+    indefinitely (sticky tail).  Tests that care about exhaustion
+    bound ``max_iterations`` to ``len(prices)``.
+    """
+
+    def __init__(self, prices: list[float]) -> None:
+        from fx_ai_trading.domain.price_feed import Quote
+
+        self._quotes = [Quote(price=p, ts=_FIXED_NOW, source="test-seq") for p in prices]
+        self._idx = 0
+
+    def get_quote(self, instrument: str) -> Any:  # noqa: ARG002 — single-instrument runner
+        quote = self._quotes[min(self._idx, len(self._quotes) - 1)]
+        self._idx += 1
+        return quote
+
+
+def _build_components_with_sequential_feed(mod: Any, engine: Any, prices: list[float]) -> Any:
+    """Compose the real paper open-side stack with a ``_SequentialQuoteFeed``.
 
     Avoids ``build_components`` so we don't have to pass real OANDA
-    credentials.  The feed returns a quote with ``ts == _FIXED_NOW``
-    and the clock returns ``_FIXED_NOW`` — age always 0s, so the
-    policy's stale gate never trips.
+    credentials.  Uses the **real** ``MinimumEntrySignal`` (the unit
+    test pins the price-comparison contract; here we want signal +
+    policy + 5-step body wired together against SQLite).
     """
     from fx_ai_trading.adapters.broker.paper import PaperBroker
     from fx_ai_trading.common.clock import FixedClock
@@ -160,104 +192,81 @@ def _build_components_with_fresh_quote_stub(mod: Any, engine: Any) -> Any:
     from fx_ai_trading.services.state_manager import StateManager
 
     clock = FixedClock(_FIXED_NOW)
-    feed = MagicMock()
-    feed.get_quote.return_value = MagicMock(
-        price=1.0,
-        ts=_FIXED_NOW,  # age = 0s against the same FixedClock
-        source="test-stub",
-    )
-
     return mod.EntryComponents(
         state_manager=StateManager(engine, account_id=_ACCOUNT_ID, clock=clock),
         orders=OrdersRepository(engine),
         broker=PaperBroker(account_type="demo", nominal_price=1.0),
-        quote_feed=feed,
+        quote_feed=_SequentialQuoteFeed(prices),
         clock=clock,
+        signal=mod.MinimumEntrySignal(),
+    )
+
+
+def _run(
+    mod: Any,
+    components: Any,
+    *,
+    direction: str,
+    max_iterations: int,
+) -> int:
+    policy = mod.MinimumEntryPolicy(
+        instrument=_INSTRUMENT,
+        direction=direction,
+        state_manager=components.state_manager,
+        quote_feed=components.quote_feed,
+        clock=components.clock,
+        signal=components.signal,
+        stale_after_seconds=60.0,
+    )
+    log = logging.getLogger("test_paper_entry_loop_open_path")
+    return mod.run_loop(
+        components=components,
+        policy=policy,
+        instrument=_INSTRUMENT,
+        direction=direction,
+        units=1000,
+        account_id=_ACCOUNT_ID,
+        account_type="demo",
+        interval_seconds=0.0,
+        max_iterations=max_iterations,
+        log=log,
+        should_stop=lambda: False,
+        sleep_fn=lambda _s: None,
+        monotonic_fn=lambda: 0.0,
     )
 
 
 # ---------------------------------------------------------------------------
-# Idempotency pin (Loop 3 contract #3)
+# Signal-driven open contract (replaces the v1 availability-only pins)
 # ---------------------------------------------------------------------------
 
 
-class TestPaperEntryLoopIdempotency:
-    """One open per cadence — the 2nd tick is a no-op for the same instrument."""
+class TestPaperEntryLoopSignalDriven:
+    """Signal layer gates open firing — warmup, fire, idempotency, mismatch."""
 
-    def test_max_iterations_1_writes_exactly_one_open(self, mod: Any, engine: Any) -> None:
-        components = _build_components_with_fresh_quote_stub(mod, engine)
-        policy = mod.MinimumEntryPolicy(
-            instrument=_INSTRUMENT,
-            state_manager=components.state_manager,
-            quote_feed=components.quote_feed,
-            clock=components.clock,
-            stale_after_seconds=60.0,
-        )
+    def test_warmup_first_tick_no_fire_then_second_tick_fires(self, mod: Any, engine: Any) -> None:
+        # [1.0, 1.1] + direction='buy' → tick1: warmup (no_signal),
+        # tick2: signal='buy' matches → 1 open.
+        components = _build_components_with_sequential_feed(mod, engine, [1.0, 1.1])
+        iterations = _run(mod, components, direction="buy", max_iterations=2)
+        assert iterations == 2
 
-        log = logging.getLogger("test_paper_entry_loop_open_path")
-        iterations = mod.run_loop(
-            components=components,
-            policy=policy,
-            instrument=_INSTRUMENT,
-            direction="buy",
-            units=1000,
-            account_id=_ACCOUNT_ID,
-            account_type="demo",
-            interval_seconds=0.0,
-            max_iterations=1,
-            log=log,
-            should_stop=lambda: False,
-            sleep_fn=lambda _s: None,
-            monotonic_fn=lambda: 0.0,
-        )
-
-        assert iterations == 1
-
-        # Exactly one orders row + one positions(open) row.
         with engine.connect() as conn:
             ord_rows = conn.execute(text("SELECT order_id, status FROM orders")).fetchall()
             pos_rows = conn.execute(text("SELECT order_id, event_type FROM positions")).fetchall()
-        assert len(ord_rows) == 1
+        assert len(ord_rows) == 1, "warmup tick must NOT write; 2nd tick fires exactly once"
         assert ord_rows[0][1] == "FILLED"
         assert len(pos_rows) == 1
         assert pos_rows[0][1] == "open"
 
-    def test_max_iterations_2_second_tick_is_noop(self, mod: Any, engine: Any) -> None:
-        components = _build_components_with_fresh_quote_stub(mod, engine)
-        policy = mod.MinimumEntryPolicy(
-            instrument=_INSTRUMENT,
-            state_manager=components.state_manager,
-            quote_feed=components.quote_feed,
-            clock=components.clock,
-            stale_after_seconds=60.0,
-        )
+    def test_third_tick_blocked_by_already_open(self, mod: Any, engine: Any) -> None:
+        # [1.0, 1.1, 1.2] + 'buy' → tick1 warmup, tick2 fires,
+        # tick3 already_open (signal direction would still be 'buy'
+        # but already_open returns earlier in evaluate()).
+        components = _build_components_with_sequential_feed(mod, engine, [1.0, 1.1, 1.2])
+        iterations = _run(mod, components, direction="buy", max_iterations=3)
+        assert iterations == 3
 
-        log = logging.getLogger("test_paper_entry_loop_open_path")
-
-        # FixedClock + fixed-ts stub keep the quote fresh forever, so
-        # the 2nd tick's no-op is driven ONLY by the 'already_open'
-        # branch (not by the quote going stale).  That isolation is
-        # what the idempotency pin requires.
-        iterations = mod.run_loop(
-            components=components,
-            policy=policy,
-            instrument=_INSTRUMENT,
-            direction="buy",
-            units=1000,
-            account_id=_ACCOUNT_ID,
-            account_type="demo",
-            interval_seconds=0.0,
-            max_iterations=2,
-            log=log,
-            should_stop=lambda: False,
-            sleep_fn=lambda _s: None,
-            monotonic_fn=lambda: 0.0,
-        )
-
-        assert iterations == 2
-
-        # Still exactly one orders row + one positions row — the 2nd
-        # tick must NOT have written anything.
         with engine.connect() as conn:
             ord_count = conn.execute(text("SELECT COUNT(*) FROM orders")).scalar()
             pos_count = conn.execute(
@@ -265,9 +274,20 @@ class TestPaperEntryLoopIdempotency:
             ).scalar()
         assert ord_count == 1
         assert pos_count == 1
-
-        # And the StateManager view confirms exactly one open instrument.
         assert _INSTRUMENT in components.state_manager.open_instruments()
-        details = components.state_manager.open_position_details()
-        assert len(details) == 1
-        assert details[0].instrument == _INSTRUMENT
+
+    def test_direction_mismatch_does_not_fire(self, mod: Any, engine: Any) -> None:
+        # [1.0, 0.9] + 'buy' → tick1 warmup, tick2 signal='sell' !=
+        # 'buy' → reason='no_signal', 0 opens.
+        components = _build_components_with_sequential_feed(mod, engine, [1.0, 0.9])
+        iterations = _run(mod, components, direction="buy", max_iterations=2)
+        assert iterations == 2
+
+        with engine.connect() as conn:
+            ord_count = conn.execute(text("SELECT COUNT(*) FROM orders")).scalar()
+            pos_count = conn.execute(
+                text("SELECT COUNT(*) FROM positions WHERE event_type='open'")
+            ).scalar()
+        assert ord_count == 0
+        assert pos_count == 0
+        assert _INSTRUMENT not in components.state_manager.open_instruments()

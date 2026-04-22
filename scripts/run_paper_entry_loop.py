@@ -29,6 +29,10 @@ Path (per tick)
        ``stale_quote``  — ``(clock.now() - quote.ts).total_seconds()``
                           exceeded the freshness threshold (M-3c default
                           60s).
+       ``no_signal``    — fresh quote acquired but ``MinimumEntrySignal``
+                          says no fireable direction (warmup tick, flat
+                          price, or signal direction != configured
+                          ``--direction``).
        ``ok``           — fire.
 
   2. If ``should_fire``: invoke ``_open_one_position`` which inlines the
@@ -114,7 +118,7 @@ from fx_ai_trading.common.clock import Clock, WallClock
 from fx_ai_trading.common.ulid import generate_ulid
 from fx_ai_trading.config.common_keys_context import CommonKeysContext
 from fx_ai_trading.domain.broker import OrderRequest
-from fx_ai_trading.domain.price_feed import QuoteFeed
+from fx_ai_trading.domain.price_feed import Quote, QuoteFeed
 from fx_ai_trading.ops.logging_config import apply_logging_config
 from fx_ai_trading.repositories.orders import OrdersRepository
 from fx_ai_trading.services.state_manager import StateManager
@@ -383,6 +387,7 @@ class EntryComponents:
     broker: PaperBroker
     quote_feed: QuoteFeed
     clock: Clock
+    signal: MinimumEntrySignal
 
 
 def build_components(
@@ -423,6 +428,7 @@ def build_components(
         broker=broker,
         quote_feed=feed,
         clock=effective_clock,
+        signal=MinimumEntrySignal(),
     )
 
 
@@ -450,14 +456,49 @@ def _make_context(*, account_type: str) -> CommonKeysContext:
 _REASON_ALREADY_OPEN = "already_open"
 _REASON_NO_QUOTE = "no_quote"
 _REASON_STALE_QUOTE = "stale_quote"
+_REASON_NO_SIGNAL = "no_signal"
 _REASON_OK = "ok"
 
 
 @dataclass(frozen=True)
 class EntryDecision:
     should_fire: bool
-    reason: str  # one of: already_open / no_quote / stale_quote / ok
-    age_seconds: float | None = None  # populated only when reason in {stale_quote, ok}
+    reason: str  # one of: already_open / no_quote / stale_quote / no_signal / ok
+    age_seconds: float | None = None  # populated when reason in {stale_quote, no_signal, ok}
+
+
+class MinimumEntrySignal:
+    """Minimum price-direction signal from consecutive fresh quotes.
+
+    Stateless w.r.t. time and feed: receives a *fresh* ``Quote``
+    (already filtered by the policy's no_quote / stale_quote gates) and
+    returns the direction implied by the move from the previously
+    observed quote:
+
+      * first call         → ``None`` (warmup; no prior quote to compare)
+      * ``price`` strictly increased  → ``'buy'``
+      * ``price`` strictly decreased  → ``'sell'``
+      * ``price`` unchanged (flat)    → ``None``
+
+    The signal does NOT call ``QuoteFeed.get_quote``, does NOT consult a
+    ``Clock``, and does NOT make staleness judgements — those remain in
+    ``MinimumEntryPolicy``.  Process state is one ``Quote`` (the previous
+    observation); on process restart the signal returns to warmup.
+    """
+
+    def __init__(self) -> None:
+        self._last_quote: Quote | None = None
+
+    def evaluate(self, quote: Quote) -> str | None:
+        prev = self._last_quote
+        self._last_quote = quote
+        if prev is None:
+            return None
+        if quote.price > prev.price:
+            return "buy"
+        if quote.price < prev.price:
+            return "sell"
+        return None
 
 
 class MinimumEntryPolicy:
@@ -466,7 +507,10 @@ class MinimumEntryPolicy:
     The policy fires the configured ``(instrument, direction, units)``
     open whenever:
       - the instrument is NOT already open for this account, AND
-      - a fresh ``Quote`` is available for the instrument.
+      - a fresh ``Quote`` is available for the instrument, AND
+      - ``MinimumEntrySignal`` returns the configured ``direction``
+        (i.e. the price moved in that direction since the last fresh
+        quote — see ``MinimumEntrySignal``).
 
     "Fresh" mirrors the M-3c definition used by ``run_exit_gate``:
     ``(clock.now() - quote.ts).total_seconds() > stale_after_seconds``
@@ -474,21 +518,32 @@ class MinimumEntryPolicy:
     tz-aware by Clock contract) and ``quote.ts`` (tz-aware enforced by
     ``Quote.__post_init__``) are tz-aware datetimes, so the subtraction
     is well-defined regardless of the quote's source timezone.
+
+    The signal is consulted only AFTER the no_quote / stale_quote gates
+    pass — so the signal sees a strictly ascending stream of fresh
+    quotes (warmup ticks aside) and never has to make staleness
+    decisions itself.
     """
 
     def __init__(
         self,
         *,
         instrument: str,
+        direction: str,
         state_manager: StateManager,
         quote_feed: QuoteFeed,
         clock: Clock,
+        signal: MinimumEntrySignal,
         stale_after_seconds: float = _DEFAULT_STALE_AFTER_SECONDS,
     ) -> None:
+        if direction not in _DIRECTION_TO_BROKER_SIDE:
+            raise ValueError(f"direction must be 'buy' or 'sell'; got {direction!r}")
         self._instrument = instrument
+        self._direction = direction
         self._sm = state_manager
         self._feed = quote_feed
         self._clock = clock
+        self._signal = signal
         self._stale_after_seconds = stale_after_seconds
 
     def evaluate(self) -> EntryDecision:
@@ -512,6 +567,14 @@ class MinimumEntryPolicy:
             return EntryDecision(
                 should_fire=False,
                 reason=_REASON_STALE_QUOTE,
+                age_seconds=age,
+            )
+
+        signal_direction = self._signal.evaluate(quote)
+        if signal_direction is None or signal_direction != self._direction:
+            return EntryDecision(
+                should_fire=False,
+                reason=_REASON_NO_SIGNAL,
                 age_seconds=age,
             )
 
@@ -843,9 +906,11 @@ def main(argv: list[str] | None = None) -> int:
         )
         policy = MinimumEntryPolicy(
             instrument=args.instrument,
+            direction=args.direction,
             state_manager=components.state_manager,
             quote_feed=components.quote_feed,
             clock=components.clock,
+            signal=components.signal,
             stale_after_seconds=args.stale_after_seconds,
         )
 
