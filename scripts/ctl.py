@@ -61,11 +61,24 @@ def _do_emergency_flat(
     two_factor: TwoFactorAuthenticator,
     notifier: FileNotifier | None = None,
     clock: Clock | None = None,
+    journal: SafeStopJournal | None = None,
+    process_manager: ProcessManager | None = None,
 ) -> bool:
     """Execute emergency flat with 2-factor confirmation.
 
     Returns True if the operation was authorised and executed.
     Returns False if the 2-factor challenge was rejected.
+
+    PR-α (U-9): once 2-factor is confirmed and the FileNotifier event has
+    been written, this function additionally
+      1. appends an ``emergency_flat_initiated`` entry to ``SafeStopJournal``
+         (durable, append-only — survives DB failure), and
+      2. requests Supervisor stop via ``ProcessManager.stop()`` so that the
+         existing in-Supervisor signal handler fires
+         ``trigger_safe_stop`` and produces the canonical
+         ``safe_stop.triggered`` journal entry.
+    Supervisor-未起動時 (PID file 不在 / 死プロセス) は journal append のみ
+    実行し stop は no-op (fail-safe; cross-process magic は導入しない).
     """
     click.echo("=" * 60)
     click.echo("EMERGENCY FLAT ALL — 2-factor confirmation required")
@@ -91,6 +104,34 @@ def _do_emergency_flat(
 
     _notifier = notifier or FileNotifier(log_path=_LOGS_DIR / "notifications.jsonl")
     _notifier.send(event, severity="critical", payload=event.payload)
+
+    # PR-α (U-9): wire emergency-flat-all to the SafeStop sequence.
+    # Step 1: durable journal append (independent of Supervisor liveness).
+    _journal = journal or SafeStopJournal(journal_path=_LOGS_DIR / "safe_stop.jsonl")
+    _journal.append(
+        {
+            "event_code": "emergency_flat_initiated",
+            "occurred_at": occurred_at.isoformat(),
+            "initiator": "ctl emergency-flat-all",
+            "pid": os.getpid(),
+        }
+    )
+
+    # Step 2: request Supervisor stop only when one is actually running.
+    # is_running() == False covers both "PID file missing" and "stale PID";
+    # in either case stop is a no-op (fail-safe).
+    _pm = process_manager or ProcessManager(pid_file=_PID_FILE)
+    if _pm.is_running():
+        stopped = _pm.stop()
+        if stopped:
+            click.echo(
+                "Supervisor stop requested. safe_stop sequence delegated to its signal handler."
+            )
+        else:
+            click.echo("Supervisor stop requested but process was not running.")
+    else:
+        _log.info("emergency-flat-all: Supervisor not running — journal recorded, stop is no-op")
+        click.echo("Supervisor not running — journal entry recorded; stop skipped (fail-safe).")
 
     click.echo("Emergency flat request recorded. Notifier critical event sent.")
     click.echo("Ensure the Supervisor or broker layer processes the flat order.")
