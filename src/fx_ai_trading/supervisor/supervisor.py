@@ -7,7 +7,10 @@ Responsibilities in M7:
   - Health check: delegates to HealthChecker.
 
 Responsibilities deferred to later milestones:
-  - 1-minute trading cycle loop (M9/M12).
+  - 1-minute trading cycle loop owner (M12).  Note: the per-tick
+    ``run_exit_gate_tick`` seam is wired here in M9/H-1 so the
+    forthcoming M12 loop can simply call it; the loop itself is still
+    out of scope.
   - OutboxProcessor lifecycle (M8).
   - Reconciler / MidRunReconciler lifecycle (M8).
   - Emergency Flat CLI integration (M12).
@@ -16,7 +19,10 @@ Responsibilities deferred to later milestones:
 from __future__ import annotations
 
 import logging
+from collections.abc import Callable
+from dataclasses import dataclass
 from datetime import datetime
+from typing import TYPE_CHECKING, Any
 
 from fx_ai_trading.common.clock import Clock
 from fx_ai_trading.supervisor.startup import (
@@ -25,7 +31,34 @@ from fx_ai_trading.supervisor.startup import (
     StartupRunner,
 )
 
+if TYPE_CHECKING:
+    from fx_ai_trading.domain.broker import Broker
+    from fx_ai_trading.services.exit_gate_runner import ExitGateRunResult
+    from fx_ai_trading.services.exit_policy import ExitPolicyService
+    from fx_ai_trading.services.state_manager import StateManager
+
 _log = logging.getLogger(__name__)
+
+
+@dataclass(frozen=True)
+class _ExitGateAttachment:
+    """Snapshot of the exit-gate dependencies bound to a Supervisor.
+
+    Created by ``Supervisor.attach_exit_gate`` and consumed by
+    ``Supervisor.run_exit_gate_tick`` so a single attach call freezes
+    the wiring for every subsequent cadence tick.  Held privately —
+    callers only see ``attach_exit_gate`` / ``run_exit_gate_tick``.
+    """
+
+    broker: Broker
+    account_id: str
+    state_manager: StateManager
+    exit_policy: ExitPolicyService
+    price_feed: Callable[[str], float]
+    side: str
+    tp: float | None
+    sl: float | None
+    context: dict[str, Any] | None
 
 
 class Supervisor:
@@ -62,6 +95,9 @@ class Supervisor:
         self._supervisor_events_repo: object = None
         self._common_keys_ctx: object = None
         self._metrics_loop: object = None
+        # M9 / H-1: exit-gate cadence wiring.  None until attach_exit_gate
+        # is called by the host (M12 main loop / paper smoke harness).
+        self._exit_gate: _ExitGateAttachment | None = None
 
     # ------------------------------------------------------------------
     # Startup
@@ -188,6 +224,93 @@ class Supervisor:
             self._clock.now(),
             cycle_duration_seconds=cycle_duration_seconds,
             stream_heartbeat_age_seconds=stream_heartbeat_age_seconds,
+        )
+
+    # ------------------------------------------------------------------
+    # Exit gate cadence (M9 / H-1)
+    # ------------------------------------------------------------------
+
+    def attach_exit_gate(
+        self,
+        *,
+        broker: Broker,
+        account_id: str,
+        state_manager: StateManager,
+        exit_policy: ExitPolicyService,
+        price_feed: Callable[[str], float],
+        side: str = "long",
+        tp: float | None = None,
+        sl: float | None = None,
+        context: dict[str, Any] | None = None,
+    ) -> None:
+        """Bind the dependencies needed by ``run_exit_gate_tick``.
+
+        Mirrors ``attach_metrics_loop``: caller-driven cadence.  The
+        Supervisor itself does NOT spin a loop (deferred to M9/M12 per
+        the class docstring); this attach freezes the wiring so a host
+        loop can fire ``run_exit_gate_tick`` per cadence.
+
+        Calling this twice replaces the previous attachment.
+
+        Args:
+            broker: Paper or live Broker.
+            account_id: Must match ``state_manager.account_id``.
+            state_manager: Authoritative open-positions source.
+            exit_policy: Configured ExitPolicyService.
+            price_feed: ``instrument → current_price`` callable.
+            side, tp, sl, context: Forwarded to ``run_exit_gate``
+                unchanged each tick.  ``side`` defaults to ``"long"``
+                per Cycle 6.7c E2 (paper-mode long-only); Phase 7 is
+                expected to derive side from the orders table instead.
+        """
+        self._exit_gate = _ExitGateAttachment(
+            broker=broker,
+            account_id=account_id,
+            state_manager=state_manager,
+            exit_policy=exit_policy,
+            price_feed=price_feed,
+            side=side,
+            tp=tp,
+            sl=sl,
+            context=context,
+        )
+
+    def run_exit_gate_tick(self) -> list[ExitGateRunResult]:
+        """Run one exit-gate evaluation pass and return its results.
+
+        No-op (returns ``[]``) when:
+          - ``attach_exit_gate`` has not been called, OR
+          - ``safe_stop`` has fired (``self._is_stopped is True``).
+
+        The post-stop guard mirrors ``record_metrics`` and keeps cadence
+        ticks safe to schedule unconditionally — once SafeStop owns the
+        process, no further close orders are placed by the cadence path.
+        SafeStop's own close-out flow is unchanged by this method.
+
+        Exceptions raised by ``run_exit_gate`` propagate to the caller,
+        matching that function's contract.  In particular,
+        ``AccountTypeMismatchRuntime`` first triggers
+        ``self.trigger_safe_stop`` (because we pass ``supervisor=self``
+        below — the existing PR-5 / U-2 wiring) and is then re-raised.
+        """
+        if self._exit_gate is None or self._is_stopped:
+            return []
+
+        from fx_ai_trading.services.exit_gate_runner import run_exit_gate
+
+        cfg = self._exit_gate
+        return run_exit_gate(
+            broker=cfg.broker,
+            account_id=cfg.account_id,
+            clock=self._clock,
+            state_manager=cfg.state_manager,
+            exit_policy=cfg.exit_policy,
+            price_feed=cfg.price_feed,
+            side=cfg.side,
+            tp=cfg.tp,
+            sl=cfg.sl,
+            context=cfg.context,
+            supervisor=self,
         )
 
     # ------------------------------------------------------------------
