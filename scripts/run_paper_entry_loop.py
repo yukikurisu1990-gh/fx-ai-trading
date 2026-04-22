@@ -401,6 +401,7 @@ def build_components(
     nominal_price: float = _DEFAULT_NOMINAL_PRICE,
     clock: Clock | None = None,
     api_client: OandaAPIClient | None = None,
+    signal: MinimumEntrySignal | None = None,
 ) -> EntryComponents:
     """Compose the production paper open-side stack.
 
@@ -409,9 +410,15 @@ def build_components(
     through Supervisor (Cycle 6.9a forbids a Supervisor-internal loop,
     and the entry side is a script-level concern that never registers a
     gate).
+
+    ``signal`` is optional; when omitted, defaults to a fresh
+    ``MinimumEntrySignal()`` (M9 behavior preserved).  Injection is the
+    M10-1 seam — it lets future signal classes be swapped in without
+    editing this factory.
     """
     effective_account_id = account_id or oanda.account_id
     effective_clock: Clock = clock if clock is not None else WallClock()
+    effective_signal: MinimumEntrySignal = signal if signal is not None else MinimumEntrySignal()
 
     if api_client is None:
         api_client = OandaAPIClient(
@@ -430,7 +437,7 @@ def build_components(
         broker=broker,
         quote_feed=feed,
         clock=effective_clock,
-        signal=MinimumEntrySignal(),
+        signal=effective_signal,
     )
 
 
