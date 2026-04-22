@@ -405,7 +405,7 @@ class TestClose:
         assert stored[0] == {"priority": 1, "reason_code": "emergency_stop", "detail": ""}
         assert stored[1] == {"priority": 2, "reason_code": "sl", "detail": ""}
 
-    def test_close_side_is_opposite_of_open_side(self, engine) -> None:
+    def test_close_side_is_opposite_of_open_side_for_long(self, engine) -> None:
         broker = _FillBroker()
         _seed_open_position(engine, psid="p1", order_id="o1", instrument="EURUSD")
         sm = _make_sm(engine)
@@ -416,10 +416,36 @@ class TestClose:
             state_manager=sm,
             exit_policy=_AlwaysExitPolicy(),
             price_feed=_fixed_price(1.10),
-            side="long",
         )
         assert broker.last_request is not None
         assert broker.last_request.side == "short"
+
+    def test_close_side_is_opposite_of_open_side_for_short(self, engine) -> None:
+        """M-1b: close side must derive per-position from pos.side.
+
+        Seeds an open position whose underlying order has
+        ``direction='sell'`` so the M-1a JOIN derives ``side='short'``;
+        the closing OrderRequest must then carry ``side='long'``.
+        """
+        broker = _FillBroker()
+        _seed_open_position(
+            engine,
+            psid="p1",
+            order_id="o1",
+            instrument="EURUSD",
+            direction="sell",
+        )
+        sm = _make_sm(engine)
+        run_exit_gate(
+            broker=broker,
+            account_id="acc-1",
+            clock=FixedClock(_NOW),
+            state_manager=sm,
+            exit_policy=_AlwaysExitPolicy(),
+            price_feed=_fixed_price(1.10),
+        )
+        assert broker.last_request is not None
+        assert broker.last_request.side == "long"
 
     def test_close_request_uses_position_units(self, engine) -> None:
         broker = _FillBroker()

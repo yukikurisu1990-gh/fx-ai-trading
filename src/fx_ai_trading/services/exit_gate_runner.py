@@ -15,8 +15,12 @@ Design decisions (Cycle 6.7c):
       doing so would duplicate the on_close write.
 
   E2  Broker close order uses the OPPOSITE side of the open position.
-      Paper-mode (6.7c): side is always 'long'; Phase 7 derives it from
-      the original OrderRequest stored in the orders table.
+      M-1b (post-M-1a): the open side is read from
+      ``OpenPositionInfo.side``, which ``StateManager.open_position_details``
+      derives from ``orders.direction`` per row.  The runner no longer
+      accepts a per-call ``side=`` argument (it was the paper-mode
+      long-only fixture from Cycle 6.7c) and ``ExitPolicyService.evaluate``
+      receives the per-position side as well.
 
   E3  pnl_realized is not computed (None).  Phase 7 will derive it from
       fill_price vs avg_price once price data is authoritative.
@@ -91,7 +95,6 @@ def run_exit_gate(
     state_manager: StateManager,
     exit_policy: ExitPolicyService,
     price_feed: Callable[[str], float],
-    side: str = "long",
     tp: float | None = None,
     sl: float | None = None,
     context: dict[str, Any] | None = None,
@@ -111,8 +114,6 @@ def run_exit_gate(
         state_manager: Authoritative positions source and write path.
         exit_policy: Configured ExitPolicyService instance.
         price_feed: ``instrument → current_price`` callable.
-        side: Open position side. Paper-mode long-only (E2).
-              Phase 7 will derive this from the orders table.
         tp: Take-profit level; None disables TP rule (paper-mode).
         sl: Stop-loss level; None disables SL rule (paper-mode).
         context: Passed to ExitPolicyService.evaluate() unchanged.
@@ -131,6 +132,13 @@ def run_exit_gate(
     Returns:
         One ``ExitGateRunResult`` per open position evaluated.
         Empty list when no positions are open.
+
+    M-1b note:
+        The open-side is now ``pos.side`` (per-position, derived from
+        ``orders.direction`` by ``StateManager.open_position_details``).
+        The pre-M-1b ``side=`` per-call argument has been removed; both
+        ``ExitPolicyService.evaluate`` and the closing ``OrderRequest``
+        consume ``pos.side`` directly.
     """
     ctx = context or {}
     now = clock.now()
@@ -149,7 +157,7 @@ def run_exit_gate(
         decision = exit_policy.evaluate(
             position_id=pos.order_id,
             instrument=pos.instrument,
-            side=side,
+            side=pos.side,
             current_price=current_price,
             tp=tp,
             sl=sl,
@@ -183,7 +191,7 @@ def run_exit_gate(
             client_order_id=generate_ulid(),
             account_id=account_id,
             instrument=pos.instrument,
-            side=_CLOSE_SIDE[side],
+            side=_CLOSE_SIDE[pos.side],
             size_units=pos.units,
         )
         try:
