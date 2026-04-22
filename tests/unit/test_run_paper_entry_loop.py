@@ -425,3 +425,72 @@ class TestFivePointMomentumSignal:
     def test_non_monotonic_returns_none(self, mod: Any) -> None:
         # Peak shape: up then down — not strictly monotonic.
         assert self._feed(mod, [1.0, 1.01, 1.02, 1.01, 1.03]) is None
+
+
+class TestMinimumEntryPickerLogic:
+    """Priority picker: first-non-None wins; direction mismatch → no_signal.
+
+    Uses MagicMock signals with fixed return values to isolate picker
+    behaviour from price-comparison logic.  Pins the M10-3 contract:
+      - ordered evaluation: first non-None is adopted, rest are skipped
+      - all-None → no_signal
+      - direction mismatch on adopted signal → no_signal (NOT ok)
+    """
+
+    _NOW = datetime(2026, 4, 23, 12, 0, 0, tzinfo=UTC)
+
+    @staticmethod
+    def _build_multi(
+        mod: Any,
+        *,
+        signals_returns: list[str | None],
+        direction: str = "buy",
+    ) -> Any:
+        sm = MagicMock()
+        sm.open_instruments.return_value = frozenset()
+        clock = MagicMock()
+        clock.now.return_value = TestMinimumEntryPickerLogic._NOW
+        feed = MagicMock()
+        feed.get_quote.return_value = MagicMock(
+            price=1.0,
+            ts=TestMinimumEntryPickerLogic._NOW,
+            source="x",
+        )
+        signals = [MagicMock(evaluate=MagicMock(return_value=r)) for r in signals_returns]
+        return mod.MinimumEntryPolicy(
+            instrument="EUR_USD",
+            direction=direction,
+            state_manager=sm,
+            quote_feed=feed,
+            clock=clock,
+            signals=signals,
+            stale_after_seconds=60.0,
+        )
+
+    def test_all_signals_none_returns_no_signal(self, mod: Any) -> None:
+        policy = self._build_multi(mod, signals_returns=[None, None])
+        decision = policy.evaluate()
+        assert decision.should_fire is False
+        assert decision.reason == "no_signal"
+
+    def test_first_none_second_buy_fires(self, mod: Any) -> None:
+        # Picker falls through first (None) and adopts second ('buy').
+        policy = self._build_multi(mod, signals_returns=[None, "buy"], direction="buy")
+        decision = policy.evaluate()
+        assert decision.should_fire is True
+        assert decision.reason == "ok"
+
+    def test_first_buy_wins_over_second_sell(self, mod: Any) -> None:
+        # 'buy' is non-None → adopted; 'sell' is never consulted.
+        policy = self._build_multi(mod, signals_returns=["buy", "sell"], direction="buy")
+        decision = policy.evaluate()
+        assert decision.should_fire is True
+        assert decision.reason == "ok"
+
+    def test_first_sell_direction_mismatch_returns_no_signal(self, mod: Any) -> None:
+        # first non-None = 'sell'; configured direction = 'buy' → mismatch → no_signal.
+        # Proves direction mismatch on the adopted signal does not fall through to next.
+        policy = self._build_multi(mod, signals_returns=["sell"], direction="buy")
+        decision = policy.evaluate()
+        assert decision.should_fire is False
+        assert decision.reason == "no_signal"
