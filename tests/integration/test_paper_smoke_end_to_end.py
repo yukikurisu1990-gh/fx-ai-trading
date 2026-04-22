@@ -8,11 +8,21 @@ Verifies the full 7-stage service chain:
   Stage 4: ExecutionGateService → approve
   Stage 5: PaperBroker.place_order → filled
   Stage 6: ExitPolicyService.evaluate → should_exit=True (SL breach)  [M25]
-  Stage 7: ExitExecutor.execute → close_event row recorded            [M25]
+  Stage 7: run_exit_gate → outcome='closed' + StateManager.on_close    [M25 / H-3c]
 
-Stage 6-7 use an in-memory SQLite database with the close_events schema
-so no external DB is required.  SQLite FK enforcement is off by default,
-allowing simplified fixture setup.
+Stage 7 was migrated from the deprecated ``ExitExecutor`` path to
+``run_exit_gate`` in M9/H-3c so the smoke pipeline exercises the
+post-Cycle-6.7d (I-09) write path that delegates DB writes to
+``StateManager.on_close``.  ``ExitExecutor`` itself is intentionally
+left in tree until the rest of H-3 finishes; this file no longer
+imports it.
+
+StateManager is mocked in Stage 7: the append-only write-path contract
+is covered separately by ``tests/integration/test_state_manager*``.
+What the smoke test pins here is that the 7-stage pipeline reaches the
+close path and invokes the on_close write exactly once with the SL
+primary_reason — the ``run_exit_gate`` analogue of the previous
+"close_events row recorded" check.
 
 Fixture design:
   50 candles at close=1.0, then 20 candles at close=2.0.
@@ -20,7 +30,7 @@ Fixture design:
   MetaDeciderService(min_ev=-1.0) accepts even negative-EV signals so the
   smoke pipeline always reaches PaperBroker regardless of confidence.
 
-  SL breach in Stage 6: set sl=3.0 (above fill price=1.5 for a 'long')
+  SL breach in Stage 6/7: set sl=3.0 (above fill price=1.5 for a 'long')
   so that current_price=1.0 < sl=3.0 triggers the SL rule.
 """
 
@@ -28,18 +38,17 @@ from __future__ import annotations
 
 import uuid
 from datetime import UTC, datetime, timedelta
-
-from sqlalchemy import create_engine, text
+from unittest.mock import MagicMock
 
 from fx_ai_trading.adapters.broker.paper import PaperBroker
 from fx_ai_trading.common.clock import FixedClock
 from fx_ai_trading.domain.broker import OrderRequest
 from fx_ai_trading.domain.execution import RealtimeContext, TradingIntent
 from fx_ai_trading.domain.meta import MetaContext
+from fx_ai_trading.domain.state import OpenPositionInfo
 from fx_ai_trading.domain.strategy import StrategyContext
-from fx_ai_trading.repositories.close_events import CloseEventsRepository
 from fx_ai_trading.services.execution_gate import ExecutionGateService
-from fx_ai_trading.services.exit_executor import ExitExecutor
+from fx_ai_trading.services.exit_gate_runner import run_exit_gate
 from fx_ai_trading.services.exit_policy import ExitPolicyService
 from fx_ai_trading.services.feature_service import FeatureService
 from fx_ai_trading.services.meta_decider import MetaDeciderService
@@ -53,20 +62,6 @@ _INSTRUMENT = "EUR_USD"
 _ACCOUNT_ID = "smoke-account-001"
 _STRATEGY_ID = "smoke-ma-001"
 _NOW = datetime(2025, 1, 10, 12, 0, 0, tzinfo=UTC)
-
-# Minimal close_events DDL for Stage 7 in-memory DB (FK enforcement off in SQLite).
-_CLOSE_EVENTS_DDL = """
-CREATE TABLE IF NOT EXISTS close_events (
-    close_event_id       TEXT PRIMARY KEY,
-    order_id             TEXT,
-    position_snapshot_id TEXT,
-    reasons              TEXT,
-    primary_reason_code  TEXT,
-    closed_at            TEXT,
-    pnl_realized         REAL,
-    correlation_id       TEXT
-)
-"""
 
 
 # ---------------------------------------------------------------------------
@@ -115,7 +110,8 @@ def _make_candles() -> list[dict]:
 
 
 def test_paper_smoke_one_cycle_end_to_end() -> None:
-    """Full 1-cycle pipeline reaches PaperBroker fill without exception.
+    """Full 1-cycle pipeline reaches PaperBroker fill and run_exit_gate close
+    without exception.
 
     Assertions:
       1. FeatureService produces a FeatureSet with sma_20 > sma_50.
@@ -123,6 +119,10 @@ def test_paper_smoke_one_cycle_end_to_end() -> None:
       3. MetaDeciderService selects the signal (no_trade=False).
       4. ExecutionGateService approves the TradingIntent.
       5. PaperBroker records a filled position for EUR_USD.
+      6. ExitPolicyService fires on SL breach (primary_reason='sl').
+      7. run_exit_gate returns one ExitGateRunResult(outcome='closed',
+         primary_reason='sl') and invokes StateManager.on_close exactly
+         once for the just-filled position.
     """
     clock = FixedClock(_NOW)
     cycle_id = uuid.uuid4()
@@ -213,6 +213,8 @@ def test_paper_smoke_one_cycle_end_to_end() -> None:
 
     # --- Stage 6: ExitPolicy evaluation — SL breach ---
     # SL = 3.0 (above fill price 1.5 for 'long'), current_price = 1.0 → breach.
+    # Kept as an explicit sanity check so a break in policy-rule logic is
+    # distinguishable from a break in the gate/state-manager wiring below.
     exit_svc = ExitPolicyService()
     exit_decision = exit_svc.evaluate(
         position_id="smoke-pos-001",
@@ -232,28 +234,50 @@ def test_paper_smoke_one_cycle_end_to_end() -> None:
         f"Expected primary_reason='sl', got {exit_decision.primary_reason!r}"
     )
 
-    # --- Stage 7: ExitExecutor — close_event recorded to in-memory DB ---
-    engine = create_engine("sqlite:///:memory:")
-    with engine.begin() as conn:
-        conn.execute(text(_CLOSE_EVENTS_DDL))
+    # --- Stage 7: run_exit_gate — close routed through StateManager.on_close ---
+    # ``run_exit_gate`` reads the position from StateManager.open_position_details
+    # (unlike the deprecated ExitExecutor which took position metadata as call
+    # arguments), so we seed a mock StateManager with the just-filled position.
+    # The append-only write-path contract itself lives in
+    # tests/integration/test_state_manager*; here we only pin the smoke
+    # property "the pipeline reaches the close write exactly once".
+    state_manager = MagicMock(name="state_manager")
+    state_manager.open_position_details.return_value = [
+        OpenPositionInfo(
+            instrument=_INSTRUMENT,
+            order_id=intent.order_id,
+            units=1000,
+            avg_price=1.5,  # PaperBroker fill price
+            open_time_utc=_NOW - timedelta(seconds=60),  # holding_seconds=60
+        )
+    ]
+    state_manager.on_close.return_value = ("smoke-snapshot-id", "smoke-close-event-id")
 
-    close_repo = CloseEventsRepository(engine=engine)
-    executor = ExitExecutor(broker=broker, close_events_repo=close_repo)
-    close_result = executor.execute(
-        decision=exit_decision,
+    results = run_exit_gate(
+        broker=broker,
         account_id=_ACCOUNT_ID,
-        instrument=_INSTRUMENT,
+        clock=clock,
+        state_manager=state_manager,
+        exit_policy=exit_svc,
+        price_feed=lambda _instrument: 1.0,  # SL breach: 1.0 < sl=3.0
         side="long",
-        size_units=1000,
-        entry_order_id=intent.order_id,
-        occurred_at=_NOW,
+        tp=5.0,
+        sl=3.0,
     )
 
-    assert close_result is not None, "ExitExecutor.execute returned None despite should_exit=True"
-    assert close_result.status == "filled", (
-        f"Close order not filled: status={close_result.status!r}"
+    assert len(results) == 1, f"run_exit_gate returned {len(results)} results, expected 1"
+    assert results[0].outcome == "closed", f"Expected outcome='closed', got {results[0].outcome!r}"
+    assert results[0].primary_reason == "sl", (
+        f"Expected primary_reason='sl', got {results[0].primary_reason!r}"
     )
 
-    with engine.connect() as conn:
-        row_count = conn.execute(text("SELECT COUNT(*) FROM close_events")).scalar()
-    assert row_count == 1, f"Expected 1 close_event row, found {row_count}"
+    # StateManager.on_close MUST have been invoked exactly once — the
+    # run_exit_gate analogue of the deprecated path's "close_events row
+    # recorded" assertion.
+    state_manager.on_close.assert_called_once()
+    on_close_kwargs = state_manager.on_close.call_args.kwargs
+    assert on_close_kwargs["order_id"] == intent.order_id
+    assert on_close_kwargs["instrument"] == _INSTRUMENT
+    assert on_close_kwargs["primary_reason_code"] == "sl"
+    reason_codes = {r["reason_code"] for r in on_close_kwargs["reasons"]}
+    assert "sl" in reason_codes
