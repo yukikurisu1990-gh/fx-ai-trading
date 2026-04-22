@@ -13,9 +13,8 @@ Verifies the full 7-stage service chain:
 Stage 7 was migrated from the deprecated ``ExitExecutor`` path to
 ``run_exit_gate`` in M9/H-3c so the smoke pipeline exercises the
 post-Cycle-6.7d (I-09) write path that delegates DB writes to
-``StateManager.on_close``.  ``ExitExecutor`` itself is intentionally
-left in tree until the rest of H-3 finishes; this file no longer
-imports it.
+``StateManager.on_close``.  ``ExitExecutor`` itself was subsequently
+removed in M9/H-3c (final PR); this file no longer imports it.
 
 StateManager is mocked in Stage 7: the append-only write-path contract
 is covered separately by ``tests/integration/test_state_manager*``.
