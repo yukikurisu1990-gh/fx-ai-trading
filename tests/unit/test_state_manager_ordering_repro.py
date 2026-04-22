@@ -116,6 +116,14 @@ CREATE TABLE secondary_sync_outbox (
 """
 
 
+_DDL_ORDERS = """
+CREATE TABLE orders (
+    order_id  TEXT PRIMARY KEY,
+    direction TEXT NOT NULL
+)
+"""
+
+
 @pytest.fixture
 def engine():
     eng = create_engine("sqlite:///:memory:")
@@ -124,6 +132,7 @@ def engine():
         conn.execute(text(_DDL_CLOSE_EVENTS))
         conn.execute(text(_DDL_ORDER_TRANSACTIONS))
         conn.execute(text(_DDL_OUTBOX))
+        conn.execute(text(_DDL_ORDERS))
     yield eng
     eng.dispose()
 

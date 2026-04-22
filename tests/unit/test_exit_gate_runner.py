@@ -118,6 +118,17 @@ CREATE TABLE secondary_sync_outbox (
 )
 """
 
+# Minimal orders DDL — only the columns ``open_position_details`` reads
+# via its M-1a LEFT JOIN.  The production schema has many more columns
+# (``client_order_id`` / ``trading_signal_id`` / ``account_type`` / ...);
+# tests do not exercise those here.
+_DDL_ORDERS = """
+CREATE TABLE orders (
+    order_id  TEXT PRIMARY KEY,
+    direction TEXT NOT NULL
+)
+"""
+
 
 @pytest.fixture
 def engine():
@@ -127,6 +138,7 @@ def engine():
         conn.execute(text(_DDL_CLOSE_EVENTS))
         conn.execute(text(_DDL_ORDER_TRANSACTIONS))
         conn.execute(text(_DDL_OUTBOX))
+        conn.execute(text(_DDL_ORDERS))
     yield eng
     eng.dispose()
 
@@ -136,6 +148,18 @@ def engine():
 
 def _make_sm(engine, account_id: str = "acc-1") -> StateManager:
     return StateManager(engine, account_id=account_id, clock=FixedClock(_NOW))
+
+
+def _seed_order(engine, *, order_id: str, direction: str = "buy") -> None:
+    """Seed the bare-minimum ``orders`` row that ``open_position_details``
+    needs for its M-1a LEFT JOIN.  Default ``direction='buy'`` keeps the
+    paper-mode long-only fixture posture intact.
+    """
+    with engine.begin() as conn:
+        conn.execute(
+            text("INSERT OR IGNORE INTO orders (order_id, direction) VALUES (:oid, :dir)"),
+            {"oid": order_id, "dir": direction},
+        )
 
 
 def _seed_open_position(
@@ -148,7 +172,9 @@ def _seed_open_position(
     avg_price: float = 1.10,
     account_id: str = "acc-1",
     open_time: datetime = _OPEN_TIME,
+    direction: str = "buy",
 ) -> None:
+    _seed_order(engine, order_id=order_id, direction=direction)
     with engine.begin() as conn:
         conn.execute(
             text(
@@ -496,6 +522,9 @@ class TestMultiPosition:
 class TestReOpenScenario:
     def test_position_invisible_after_exit_runner_close(self, engine) -> None:
         """After run_exit_gate closes a position, open_instruments must be empty."""
+        # M-1a: run_exit_gate calls open_position_details which LEFT-JOINs
+        # orders.  Seed the orders row so the JOIN finds 'buy' (→ side=long).
+        _seed_order(engine, order_id="o1")
         sm = _make_sm(engine)
         sm.on_fill(order_id="o1", instrument="EURUSD", units=1000, avg_price=1.10)
         assert sm.open_instruments() == frozenset({"EURUSD"})
@@ -516,6 +545,9 @@ class TestReOpenScenario:
         This is the core re-open bug that 6.7c fixes.  The 6.7b NOT-IN
         query would leave the instrument permanently hidden.
         """
+        # M-1a: orders rows for both order_ids the JOIN will touch.
+        _seed_order(engine, order_id="o1")
+        _seed_order(engine, order_id="o2")
         sm = _make_sm(engine)
         sm.on_fill(order_id="o1", instrument="EURUSD", units=1000, avg_price=1.10)
 
@@ -538,6 +570,9 @@ class TestReOpenScenario:
 
     def test_refill_event_type_is_open_not_add(self, engine) -> None:
         """After a full close, the next fill writes event_type='open' (not 'add')."""
+        # M-1a: orders rows for both order_ids the JOIN will touch.
+        _seed_order(engine, order_id="o1")
+        _seed_order(engine, order_id="o2")
         sm = _make_sm(engine)
         sm.on_fill(order_id="o1", instrument="EURUSD", units=1000, avg_price=1.10)
 
@@ -562,6 +597,12 @@ class TestReOpenScenario:
     def test_g1_blocks_second_signal_after_reopen(self, engine) -> None:
         """After re-fill, open_instruments reflects the new position,
         so a second duplicate signal would be blocked by G1."""
+        # M-1a: orders rows for every order_id the JOIN will touch.
+        # 'o3' is a same-instrument pyramid (event_type='add'), but
+        # open_position_details still observes it via the JOIN.
+        _seed_order(engine, order_id="o1")
+        _seed_order(engine, order_id="o2")
+        _seed_order(engine, order_id="o3")
         sm = _make_sm(engine)
         # Close existing and re-open
         sm.on_fill(order_id="o1", instrument="EURUSD", units=1000, avg_price=1.10)
@@ -635,6 +676,10 @@ class TestOpenPositionDetails:
         assert instruments == {"EURUSD", "USDJPY"}
 
     def test_reopen_after_close_returns_new_entry(self, engine) -> None:
+        # M-1a: open_position_details JOINs orders → seed an orders row
+        # for every order_id whose position will be observed via the JOIN.
+        _seed_order(engine, order_id="o1")
+        _seed_order(engine, order_id="o2")
         sm = _make_sm(engine)
         sm.on_fill(order_id="o1", instrument="EURUSD", units=1000, avg_price=1.10)
         sm.on_close(
