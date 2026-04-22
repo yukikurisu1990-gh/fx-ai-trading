@@ -213,15 +213,19 @@ def _run(
     *,
     direction: str,
     max_iterations: int,
+    signals: Any = None,
 ) -> int:
+    policy_signal_kwargs = (
+        {"signals": signals} if signals is not None else {"signal": components.signal}
+    )
     policy = mod.MinimumEntryPolicy(
         instrument=_INSTRUMENT,
         direction=direction,
         state_manager=components.state_manager,
         quote_feed=components.quote_feed,
         clock=components.clock,
-        signal=components.signal,
         stale_after_seconds=60.0,
+        **policy_signal_kwargs,
     )
     log = logging.getLogger("test_paper_entry_loop_open_path")
     return mod.run_loop(
@@ -329,3 +333,60 @@ class TestPaperEntryLoopFivePointSignal:
         assert ord_rows[0][1] == "FILLED"
         assert len(pos_rows) == 1
         assert pos_rows[0][1] == "open"
+
+
+class TestPaperEntryLoopMultiSignal:
+    """Priority picker seam: ordered signals, first-non-None wins, end-to-end.
+
+    Both tests use real signal instances (not mocks) wired through
+    SQLite, proving the picker seam at the integration boundary.
+    """
+
+    def test_second_signal_fires_when_first_is_in_warmup(self, mod: Any, engine: Any) -> None:
+        # signals = [FivePoint (needs 5), Minimum (needs 3)]
+        # prices  = [1.0, 1.05, 1.1] + 'buy', max=3
+        # Tick 3: FivePoint has only 3 quotes → warmup → None.
+        #         Picker falls through to MinimumEntrySignal → 'buy' → fire.
+        # Asserts: second signal is consulted when first returns None.
+        components = _build_components_with_sequential_feed(
+            mod, engine, [1.0, 1.05, 1.1], signal=mod.MinimumEntrySignal()
+        )
+        iterations = _run(
+            mod,
+            components,
+            direction="buy",
+            max_iterations=3,
+            signals=[mod.FivePointMomentumSignal(), mod.MinimumEntrySignal()],
+        )
+        assert iterations == 3
+        with engine.connect() as conn:
+            ord_count = conn.execute(text("SELECT COUNT(*) FROM orders")).scalar()
+            pos_count = conn.execute(
+                text("SELECT COUNT(*) FROM positions WHERE event_type='open'")
+            ).scalar()
+        assert ord_count == 1
+        assert pos_count == 1
+
+    def test_first_signal_mismatch_blocks_second(self, mod: Any, engine: Any) -> None:
+        # signals = [Minimum, FivePoint], prices = [1.0, 0.95, 0.9], direction='buy'
+        # Tick 3: MinimumEntrySignal → 'sell' (first non-None, direction mismatch).
+        #         Picker stops; FivePoint is NOT consulted → no_signal.
+        # Asserts: first-non-None is adopted even when it mismatches direction.
+        components = _build_components_with_sequential_feed(
+            mod, engine, [1.0, 0.95, 0.9], signal=mod.MinimumEntrySignal()
+        )
+        iterations = _run(
+            mod,
+            components,
+            direction="buy",
+            max_iterations=3,
+            signals=[mod.MinimumEntrySignal(), mod.FivePointMomentumSignal()],
+        )
+        assert iterations == 3
+        with engine.connect() as conn:
+            ord_count = conn.execute(text("SELECT COUNT(*) FROM orders")).scalar()
+            pos_count = conn.execute(
+                text("SELECT COUNT(*) FROM positions WHERE event_type='open'")
+            ).scalar()
+        assert ord_count == 0
+        assert pos_count == 0

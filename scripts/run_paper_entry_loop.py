@@ -106,7 +106,7 @@ import signal
 import sys
 import time
 from collections import deque
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Protocol
@@ -562,9 +562,9 @@ class MinimumEntryPolicy:
     open whenever:
       - the instrument is NOT already open for this account, AND
       - a fresh ``Quote`` is available for the instrument, AND
-      - the configured ``EntrySignal`` returns the configured
-        ``direction`` (e.g. ``MinimumEntrySignal``: most recent 3 fresh
-        quotes strictly monotonic; ``FivePointMomentumSignal``: 5).
+      - at least one signal in the ordered ``signals`` sequence returns
+        the configured ``direction`` before any other returns a different
+        direction (first-non-None priority picker; M10-3).
 
     "Fresh" mirrors the M-3c definition used by ``run_exit_gate``:
     ``(clock.now() - quote.ts).total_seconds() > stale_after_seconds``
@@ -587,17 +587,23 @@ class MinimumEntryPolicy:
         state_manager: StateManager,
         quote_feed: QuoteFeed,
         clock: Clock,
-        signal: EntrySignal,
+        signal: EntrySignal | None = None,
+        signals: Sequence[EntrySignal] | None = None,
         stale_after_seconds: float = _DEFAULT_STALE_AFTER_SECONDS,
     ) -> None:
         if direction not in _DIRECTION_TO_BROKER_SIDE:
             raise ValueError(f"direction must be 'buy' or 'sell'; got {direction!r}")
+        if signals is not None:
+            self._signals: tuple[EntrySignal, ...] = tuple(signals)
+        elif signal is not None:
+            self._signals = (signal,)
+        else:
+            raise ValueError("MinimumEntryPolicy requires signal= or signals=")
         self._instrument = instrument
         self._direction = direction
         self._sm = state_manager
         self._feed = quote_feed
         self._clock = clock
-        self._signal = signal
         self._stale_after_seconds = stale_after_seconds
 
     def evaluate(self) -> EntryDecision:
@@ -624,7 +630,14 @@ class MinimumEntryPolicy:
                 age_seconds=age,
             )
 
-        signal_direction = self._signal.evaluate(quote)
+        # Priority picker: iterate signals in order; adopt the first non-None
+        # direction.  All-None → no_signal.  Direction mismatch → no_signal.
+        signal_direction: str | None = None
+        for s in self._signals:
+            candidate = s.evaluate(quote)
+            if candidate is not None:
+                signal_direction = candidate
+                break
         if signal_direction is None or signal_direction != self._direction:
             return EntryDecision(
                 should_fire=False,

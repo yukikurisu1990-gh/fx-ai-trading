@@ -297,7 +297,7 @@ signal 層は M10-2 で `EntrySignal` Protocol（1 メソッド: `evaluate(quote
 
 - **`MinimumEntrySignal`** — 直近 3 quotes を `deque(maxlen=3)` で保持。3 点 strict 単調増 → `'buy'`、strict 単調減 → `'sell'`、それ以外 → `None`（warmup = 最初の 2 ticks）。
 - **`FivePointMomentumSignal`** — 直近 5 quotes を `deque(maxlen=5)` で保持。5 点 strict 単調増 → `'buy'`、strict 単調減 → `'sell'`、それ以外 → `None`（warmup = 最初の 4 ticks）。M10-2 で `EntrySignal` Protocol の実証用に追加。
-- **multi-signal picker は未対応**（M10-3 で実装予定）。現状は `build_components` に 1 signal のみ渡せる。
+- **multi-signal picker（M10-3）** — `MinimumEntryPolicy` は `signal=` に加えて `signals=` （順序付き `Sequence[EntrySignal]`）を受け付けるようになった。picker は **first-non-None**: signals を先頭から順番に `evaluate()` し、最初に非 None を返した direction を採用する。全 signal が None → `no_signal`。direction mismatch → `no_signal`（従来と同じ）。score / weighted pick / EV 比較は未実装。**default 構成は従来どおり single signal（`MinimumEntrySignal`）**。
 
 signal はいずれも `QuoteFeed` / `Clock` / staleness 判定を持たない。そのレイヤは `MinimumEntryPolicy` 側で先に処理される。reason / event / 5-step / `run_exit_gate` は不変。
 
