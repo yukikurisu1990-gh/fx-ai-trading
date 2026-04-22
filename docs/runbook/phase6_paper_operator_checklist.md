@@ -129,7 +129,90 @@
 
 ---
 
-## 10. 関連資料一覧
+## 10. paper-loop runner（M9 OandaQuoteFeed wiring verification）
+
+> **位置付け**: `scripts/ctl.py` 系（本書 §3 / §9）と**並行**に存在する別系統の起動口。M-3d で導入された `OandaQuoteFeed` の constructor / `Supervisor.attach_exit_gate` 経路が live OANDA 接続で通ることを確認するための、薄い outside-cadence runner。
+>
+> **wiring verification モード**: `broker` / `state_manager` / `exit_policy` は `fx_ai_trading.ops.null_safe_stubs` の null-safe stub。`open_position_details()` が常に `[]` を返すため `run_exit_gate` は即 `[]` を返し、close path は実行されない（=実際の発注・決済は起きない）。production paper stack の本物構築は次 PR の責務。
+
+### 10.1 環境変数
+
+| Env | 必須 | デフォルト | 用途 |
+|---|---|---|---|
+| `OANDA_ACCESS_TOKEN` | 必須 | — | OANDA REST トークン |
+| `OANDA_ACCOUNT_ID` | 必須 | — | OANDA account id |
+| `OANDA_ENVIRONMENT` | 任意 | `practice` | `practice` / `live`（本書スコープでは `practice` 固定） |
+| `PAPER_LOOP_INTERVAL_SECONDS` | 任意 | `5.0` | tick cadence |
+| `PAPER_LOOP_INSTRUMENT` | 任意 | `EUR_USD` | feed 構築対象 instrument |
+
+### 10.2 起動 / 停止
+
+```text
+# 起動（フォアグラウンド、Ctrl-C で graceful shutdown）
+python -m scripts.run_paper_loop --interval 5 --instrument EUR_USD
+
+# スモーク（N tick で自動終了）
+python -m scripts.run_paper_loop --max-iterations 3
+
+# CLI flags は env を上書きする
+python -m scripts.run_paper_loop --log-dir logs --log-level DEBUG
+```
+
+SIGINT（Ctrl-C）は in-flight tick 完了後に loop を抜ける。`scripts/ctl.py` 系の SafeStop / PID 管理とは無関係（このランナーは PID file を作らない）。
+
+### 10.3 ログの読み方（`logs/paper_loop.jsonl`）
+
+JSON Lines、rotating 10 MiB × 5。1 行 = 1 JSON object。共通 envelope: `ts` / `level` / `logger` / `message`。
+
+| event | いつ出る | 主なフィールド |
+|---|---|---|
+| `runner.starting` | 起動直後 | `interval_seconds`, `instrument`, `max_iterations`, `log_path` |
+| `runner.env_missing` | 必須 env 欠落で即 exit (rc=2) | `detail` |
+| `runner.attached` | `Supervisor.attach_exit_gate` 後 | `instrument`, `oanda_environment`, `account_id_suffix`, `wiring_mode="verification"` |
+| `tick.completed` | 各 tick の最後 | `iteration`, `results_count`, `tick_duration_ms` |
+| `tick.exit_result` | `ExitGateRunResult` 1 件ごと | `iteration`, `instrument`, `order_id`, `outcome`, `primary_reason` |
+| `tick.error` | tick 内例外（次 tick で再試行） | `iteration` + `exc_info` |
+| `shutdown.signal_received` | SIGINT 受信時 | `signum` |
+| `runner.shutdown` | loop 抜けた直後 | `iterations` |
+
+### 10.4 jq レシピ
+
+```bash
+# tick あたりの所要時間
+tail -f logs/paper_loop.jsonl | jq -c 'select(.event=="tick.completed") | {iteration, results_count, tick_duration_ms}'
+
+# wiring verification 中は results_count が常に 0 のはず
+jq -c 'select(.event=="tick.completed" and .results_count!=0)' logs/paper_loop.jsonl
+
+# 起動～接続の確認
+jq -c 'select(.event=="runner.starting" or .event=="runner.attached")' logs/paper_loop.jsonl
+
+# tick が落ちたケースだけ
+jq -c 'select(.event=="tick.error")' logs/paper_loop.jsonl
+```
+
+### 10.5 outcome 値の見方（次 PR で実データが流れ始めたとき用）
+
+本 PR の wiring verification モードでは `tick.exit_result` 行は出ない（`results_count=0`）。次 PR で production paper stack が attach された後は以下を判別軸にする:
+
+| `outcome` | 意味 | 初動 |
+|---|---|---|
+| `closed` | exit gate が正常 close 発火 | 通常運用、§4 / §5 と同じ |
+| `noop_stale_quote` | M-3c stale-quote ガード発火（quote 古い） | feed 健全性確認、`OANDA_ENVIRONMENT` 確認 |
+| `noop_*` その他 | exit policy が非発火判定 | `primary_reason` で切り分け |
+| `error_*` | 内部エラー | `tick.error` と相関、`exc_info` 確認 |
+
+SafeStop の発火経路は本書 §6 と同一（このランナー側では発火しない）。
+
+### 10.6 非対象（このランナーの守備範囲外）
+
+- production paper stack（real Broker / StateManager / ExitPolicy）の構築 — 次 PR
+- `run_exit_gate` 本体改変 / Supervisor-internal loop 化 — 凍結（`project_cycle_6_9a_blocked.md`）
+- SafeStop / schema / metrics / net pnl — 各専任 PR の責務
+
+---
+
+## 11. 関連資料一覧
 
 | カテゴリ | 参照先 |
 |---|---|
@@ -147,7 +230,7 @@
 
 ---
 
-## 11. 非対象（このチェックリストで決めないこと）
+## 12. 非対象（このチェックリストで決めないこと）
 
 - live mode の手順 — Phase 7 解禁時に別 PR
 - `ExitFireMetricsService` 内部仕様 — `docs/runbook/exit_fire_metrics.md` 参照
