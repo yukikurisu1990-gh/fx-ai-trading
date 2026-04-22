@@ -8,10 +8,11 @@ Design decisions (Cycle 6.7c):
   L2  order_id is the logical position identity (1 order = 1 position).
       Partial close, scale-in/out, and position_id are Phase 7 scope.
 
-  E1  ExitExecutor is NOT used.  That class writes close_events via
-      CloseEventsRepository, which would duplicate the write that
-      StateManager.on_close() already performs.  The exit runner calls
-      Broker directly and delegates all DB writes to StateManager.
+  E1  All close-event DB writes are delegated to ``StateManager.on_close``,
+      which performs a single atomic transaction covering positions,
+      close_events, and the secondary_sync_outbox.  The exit runner
+      calls Broker directly and never writes close_events itself —
+      doing so would duplicate the on_close write.
 
   E2  Broker close order uses the OPPOSITE side of the open position.
       Paper-mode (6.7c): side is always 'long'; Phase 7 derives it from

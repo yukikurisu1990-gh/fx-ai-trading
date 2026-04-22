@@ -2,8 +2,8 @@
 
 Migrated from the deprecated ``ExitExecutor`` path to ``run_exit_gate``
 in M9/H-2 so the FSM truth lives on the post-Cycle-6.7d (I-09) write
-path.  ``ExitExecutor`` itself is intentionally left in tree until H-3
-deletes it; this file no longer imports it.
+path.  ``ExitExecutor`` itself was subsequently removed in M9/H-3c;
+this file no longer imports it.
 
 The contract being pinned (semantics unchanged from the original suite,
 only the surface differs):
