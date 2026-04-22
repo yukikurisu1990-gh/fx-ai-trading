@@ -65,9 +65,7 @@ class TestRunExitGateTickGuards:
 
     def test_does_not_call_run_exit_gate_when_not_attached(self) -> None:
         supervisor = Supervisor(clock=FixedClock(datetime(2026, 1, 1, tzinfo=UTC)))
-        with patch(
-            "fx_ai_trading.services.exit_gate_runner.run_exit_gate"
-        ) as mock_run:
+        with patch("fx_ai_trading.services.exit_gate_runner.run_exit_gate") as mock_run:
             supervisor.run_exit_gate_tick()
         mock_run.assert_not_called()
 
@@ -77,9 +75,7 @@ class TestRunExitGateTickGuards:
         _attach_defaults(supervisor)
         supervisor._is_stopped = True  # what trigger_safe_stop sets via _on_loop_stop
 
-        with patch(
-            "fx_ai_trading.services.exit_gate_runner.run_exit_gate"
-        ) as mock_run:
+        with patch("fx_ai_trading.services.exit_gate_runner.run_exit_gate") as mock_run:
             result = supervisor.run_exit_gate_tick()
 
         assert result == []
@@ -253,8 +249,6 @@ class TestSafeStopUnaffectedByExitGateAttach:
         # full handler — the public seam we care about here is _is_stopped.
         supervisor._on_loop_stop()
 
-        with patch(
-            "fx_ai_trading.services.exit_gate_runner.run_exit_gate"
-        ) as mock_run:
+        with patch("fx_ai_trading.services.exit_gate_runner.run_exit_gate") as mock_run:
             assert supervisor.run_exit_gate_tick() == []
         mock_run.assert_not_called()
