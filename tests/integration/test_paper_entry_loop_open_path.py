@@ -8,16 +8,18 @@ Exercises the full open-side cadence path end-to-end:
 
 with a deterministic ``_SequentialQuoteFeed`` stub that returns a
 pre-defined sequence of fresh quotes (one per tick), and asserts the
-user's Loop 3 contract under the **price-direction signal** layer:
+user's Loop 3 contract under the **3-point monotonic momentum signal**
+layer:
 
-  - tick 1 is always a warmup no-op (signal has no prior quote to
-    compare → policy reason='no_signal').
-  - 2-tick / direction-matching sequence ([1.0, 1.1] + buy) → exactly
-    1 open is written on tick 2.
-  - 3-tick / direction-matching sequence ([1.0, 1.1, 1.2] + buy) →
-    tick 3 is blocked by 'already_open' (still 1 open / 1 position).
-  - direction-mismatch sequence ([1.0, 0.9] + buy) → 0 opens (signal
-    points 'sell', policy collapses to reason='no_signal').
+  - the first 2 ticks are always warmup no-ops (signal needs 3 quotes
+    to compare → policy reason='no_signal').
+  - 3-tick / direction-matching sequence ([1.0, 1.05, 1.1] + buy) →
+    exactly 1 open is written on tick 3.
+  - 4-tick / direction-matching sequence ([1.0, 1.05, 1.1, 1.15] +
+    buy) → tick 4 is blocked by 'already_open' (still 1 open / 1
+    position).
+  - 3-tick direction-mismatch sequence ([1.0, 0.95, 0.9] + buy) → 0
+    opens (signal points 'sell', policy collapses to reason='no_signal').
 
 The paper components here are **production** code (``PaperBroker`` +
 real ``StateManager`` + real ``OrdersRepository`` +
@@ -244,28 +246,31 @@ def _run(
 class TestPaperEntryLoopSignalDriven:
     """Signal layer gates open firing — warmup, fire, idempotency, mismatch."""
 
-    def test_warmup_first_tick_no_fire_then_second_tick_fires(self, mod: Any, engine: Any) -> None:
-        # [1.0, 1.1] + direction='buy' → tick1: warmup (no_signal),
-        # tick2: signal='buy' matches → 1 open.
-        components = _build_components_with_sequential_feed(mod, engine, [1.0, 1.1])
-        iterations = _run(mod, components, direction="buy", max_iterations=2)
-        assert iterations == 2
+    def test_warmup_first_two_ticks_no_fire_then_third_tick_fires(
+        self, mod: Any, engine: Any
+    ) -> None:
+        # [1.0, 1.05, 1.1] + direction='buy' → ticks 1-2 warmup
+        # (no_signal); tick 3 has 3 strictly increasing prices →
+        # signal='buy' matches → 1 open.
+        components = _build_components_with_sequential_feed(mod, engine, [1.0, 1.05, 1.1])
+        iterations = _run(mod, components, direction="buy", max_iterations=3)
+        assert iterations == 3
 
         with engine.connect() as conn:
             ord_rows = conn.execute(text("SELECT order_id, status FROM orders")).fetchall()
             pos_rows = conn.execute(text("SELECT order_id, event_type FROM positions")).fetchall()
-        assert len(ord_rows) == 1, "warmup tick must NOT write; 2nd tick fires exactly once"
+        assert len(ord_rows) == 1, "warmup ticks must NOT write; 3rd tick fires exactly once"
         assert ord_rows[0][1] == "FILLED"
         assert len(pos_rows) == 1
         assert pos_rows[0][1] == "open"
 
-    def test_third_tick_blocked_by_already_open(self, mod: Any, engine: Any) -> None:
-        # [1.0, 1.1, 1.2] + 'buy' → tick1 warmup, tick2 fires,
-        # tick3 already_open (signal direction would still be 'buy'
-        # but already_open returns earlier in evaluate()).
-        components = _build_components_with_sequential_feed(mod, engine, [1.0, 1.1, 1.2])
-        iterations = _run(mod, components, direction="buy", max_iterations=3)
-        assert iterations == 3
+    def test_fourth_tick_blocked_by_already_open(self, mod: Any, engine: Any) -> None:
+        # [1.0, 1.05, 1.1, 1.15] + 'buy' → ticks 1-2 warmup,
+        # tick 3 fires, tick 4 already_open (signal would still be
+        # 'buy' but already_open returns earlier in evaluate()).
+        components = _build_components_with_sequential_feed(mod, engine, [1.0, 1.05, 1.1, 1.15])
+        iterations = _run(mod, components, direction="buy", max_iterations=4)
+        assert iterations == 4
 
         with engine.connect() as conn:
             ord_count = conn.execute(text("SELECT COUNT(*) FROM orders")).scalar()
@@ -277,11 +282,12 @@ class TestPaperEntryLoopSignalDriven:
         assert _INSTRUMENT in components.state_manager.open_instruments()
 
     def test_direction_mismatch_does_not_fire(self, mod: Any, engine: Any) -> None:
-        # [1.0, 0.9] + 'buy' → tick1 warmup, tick2 signal='sell' !=
-        # 'buy' → reason='no_signal', 0 opens.
-        components = _build_components_with_sequential_feed(mod, engine, [1.0, 0.9])
-        iterations = _run(mod, components, direction="buy", max_iterations=2)
-        assert iterations == 2
+        # [1.0, 0.95, 0.9] + 'buy' → ticks 1-2 warmup; tick 3 has
+        # 3 strictly decreasing prices → signal='sell' != 'buy' →
+        # reason='no_signal', 0 opens.
+        components = _build_components_with_sequential_feed(mod, engine, [1.0, 0.95, 0.9])
+        iterations = _run(mod, components, direction="buy", max_iterations=3)
+        assert iterations == 3
 
         with engine.connect() as conn:
             ord_count = conn.execute(text("SELECT COUNT(*) FROM orders")).scalar()

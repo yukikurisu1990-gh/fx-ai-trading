@@ -30,9 +30,10 @@ Path (per tick)
                           exceeded the freshness threshold (M-3c default
                           60s).
        ``no_signal``    — fresh quote acquired but ``MinimumEntrySignal``
-                          says no fireable direction (warmup tick, flat
-                          price, or signal direction != configured
-                          ``--direction``).
+                          (3-point monotonic momentum) says no fireable
+                          direction (warmup of first 2 ticks, flat /
+                          mixed / non-monotonic 3-tick window, or
+                          signal direction != configured ``--direction``).
        ``ok``           — fire.
 
   2. If ``should_fire``: invoke ``_open_one_position`` which inlines the
@@ -104,6 +105,7 @@ import os
 import signal
 import sys
 import time
+from collections import deque
 from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
@@ -468,35 +470,36 @@ class EntryDecision:
 
 
 class MinimumEntrySignal:
-    """Minimum price-direction signal from consecutive fresh quotes.
+    """3-point monotonic momentum signal from consecutive fresh quotes.
 
-    Stateless w.r.t. time and feed: receives a *fresh* ``Quote``
-    (already filtered by the policy's no_quote / stale_quote gates) and
-    returns the direction implied by the move from the previously
-    observed quote:
+    Stateless w.r.t. time and feed: receives a *fresh* ``Quote`` (already
+    filtered by the policy's no_quote / stale_quote gates) and returns
+    the direction implied by the most recent three observed quotes:
 
-      * first call         → ``None`` (warmup; no prior quote to compare)
-      * ``price`` strictly increased  → ``'buy'``
-      * ``price`` strictly decreased  → ``'sell'``
-      * ``price`` unchanged (flat)    → ``None``
+      * fewer than 3 quotes seen      → ``None`` (warmup; first 2 ticks)
+      * 3 prices strictly increasing  → ``'buy'``  (p1 < p2 < p3)
+      * 3 prices strictly decreasing  → ``'sell'`` (p1 > p2 > p3)
+      * otherwise (flat / mixed equality / non-monotonic) → ``None``
 
     The signal does NOT call ``QuoteFeed.get_quote``, does NOT consult a
     ``Clock``, and does NOT make staleness judgements — those remain in
-    ``MinimumEntryPolicy``.  Process state is one ``Quote`` (the previous
-    observation); on process restart the signal returns to warmup.
+    ``MinimumEntryPolicy``.  Process state is the last three ``Quote``
+    observations (a ``deque`` with ``maxlen=3``); on process restart the
+    signal returns to warmup and 2 fresh ticks must elapse before it can
+    fire again.
     """
 
     def __init__(self) -> None:
-        self._last_quote: Quote | None = None
+        self._quotes: deque[Quote] = deque(maxlen=3)
 
     def evaluate(self, quote: Quote) -> str | None:
-        prev = self._last_quote
-        self._last_quote = quote
-        if prev is None:
+        self._quotes.append(quote)
+        if len(self._quotes) < 3:
             return None
-        if quote.price > prev.price:
+        p1, p2, p3 = (q.price for q in self._quotes)
+        if p1 < p2 < p3:
             return "buy"
-        if quote.price < prev.price:
+        if p1 > p2 > p3:
             return "sell"
         return None
 
@@ -509,8 +512,8 @@ class MinimumEntryPolicy:
       - the instrument is NOT already open for this account, AND
       - a fresh ``Quote`` is available for the instrument, AND
       - ``MinimumEntrySignal`` returns the configured ``direction``
-        (i.e. the price moved in that direction since the last fresh
-        quote — see ``MinimumEntrySignal``).
+        (i.e. the most recent 3 fresh quotes are strictly monotonic in
+        that direction — see ``MinimumEntrySignal``).
 
     "Fresh" mirrors the M-3c definition used by ``run_exit_gate``:
     ``(clock.now() - quote.ts).total_seconds() > stale_after_seconds``
