@@ -259,7 +259,7 @@ def test_paper_smoke_one_cycle_end_to_end() -> None:
         clock=clock,
         state_manager=state_manager,
         exit_policy=exit_svc,
-        price_feed=lambda _instrument: 1.0,  # SL breach: 1.0 < sl=3.0
+        quote_feed=lambda _instrument: 1.0,  # SL breach: 1.0 < sl=3.0
         tp=5.0,
         sl=3.0,
     )

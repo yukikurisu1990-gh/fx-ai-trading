@@ -111,7 +111,7 @@ def _run(
         clock=FixedClock(_FIXED_AT),
         state_manager=state_manager,
         exit_policy=exit_policy,
-        price_feed=lambda _instrument: 1.20,
+        quote_feed=lambda _instrument: 1.20,
     )
 
 

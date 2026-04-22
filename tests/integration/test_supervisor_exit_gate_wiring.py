@@ -19,6 +19,14 @@ Pinned invariants:
     SafeStop here; we only re-use it.
   - Attaching exit-gate has zero effect on SafeStop idempotency.
 
+M-3b additions:
+  - A ``QuoteFeed`` passed to ``attach_exit_gate`` is stored as-is and
+    forwarded by reference to ``run_exit_gate`` (no double-wrap).
+  - A legacy ``Callable[[str], float]`` is wrapped once at attach-time
+    via ``callable_to_quote_feed(fn, clock=self._clock)``; the stored
+    attachment is then a ``QuoteFeed`` whose ``get_quote`` returns the
+    callable's output.
+
 These tests use mocks for ``Broker`` / ``StateManager`` / ``ExitPolicyService``
 because the goal is to verify *the wiring*, not to re-test the gate
 itself (which has its own contract suite under ``tests/contract``).
@@ -30,29 +38,44 @@ from datetime import UTC, datetime
 from unittest.mock import MagicMock, patch
 
 from fx_ai_trading.common.clock import FixedClock
+from fx_ai_trading.domain.price_feed import Quote, QuoteFeed
 from fx_ai_trading.supervisor.supervisor import Supervisor
 
 
-def _attach_defaults(supervisor: Supervisor) -> dict[str, MagicMock]:
+class _StubQuoteFeed:
+    """Minimal QuoteFeed implementation for wiring tests."""
+
+    def __init__(self, price: float) -> None:
+        self._price = price
+
+    def get_quote(self, instrument: str) -> Quote:
+        return Quote(
+            price=self._price,
+            ts=datetime(2026, 1, 1, tzinfo=UTC),
+            source="test_fixture",
+        )
+
+
+def _attach_defaults(supervisor: Supervisor) -> dict[str, object]:
     """Attach a minimal mock exit-gate config and return the mocks."""
     broker = MagicMock(name="broker")
     state_manager = MagicMock(name="state_manager")
     state_manager.open_position_details.return_value = []
     exit_policy = MagicMock(name="exit_policy")
-    price_feed = MagicMock(name="price_feed", return_value=100.0)
+    quote_feed = _StubQuoteFeed(price=100.0)
 
     supervisor.attach_exit_gate(
         broker=broker,
         account_id="acct-1",
         state_manager=state_manager,
         exit_policy=exit_policy,
-        price_feed=price_feed,
+        quote_feed=quote_feed,
     )
     return {
         "broker": broker,
         "state_manager": state_manager,
         "exit_policy": exit_policy,
-        "price_feed": price_feed,
+        "quote_feed": quote_feed,
     }
 
 
@@ -109,7 +132,11 @@ class TestRunExitGateTickDispatch:
         assert kwargs["account_id"] == "acct-1"
         assert kwargs["state_manager"] is mocks["state_manager"]
         assert kwargs["exit_policy"] is mocks["exit_policy"]
-        assert kwargs["price_feed"] is mocks["price_feed"]
+        # M-3b: the QuoteFeed-typed input is stored & forwarded by reference
+        # (no wrapping when already a QuoteFeed).
+        assert kwargs["quote_feed"] is mocks["quote_feed"]
+        # M-3b: the kwarg name was renamed from price_feed to quote_feed.
+        assert "price_feed" not in kwargs
 
     def test_forwards_supervisor_self_for_safe_stop_wiring(self) -> None:
         """``supervisor=self`` keeps the PR-5/U-2 SafeStop callback live."""
@@ -168,7 +195,7 @@ class TestAttachExitGateOptionalArgs:
         state_manager = MagicMock()
         state_manager.open_position_details.return_value = []
         exit_policy = MagicMock()
-        price_feed = MagicMock(return_value=100.0)
+        quote_feed = _StubQuoteFeed(price=100.0)
         ctx = {"emergency_stop": False}
 
         supervisor.attach_exit_gate(
@@ -176,7 +203,7 @@ class TestAttachExitGateOptionalArgs:
             account_id="acct-7",
             state_manager=state_manager,
             exit_policy=exit_policy,
-            price_feed=price_feed,
+            quote_feed=quote_feed,
             tp=110.5,
             sl=95.25,
             context=ctx,
@@ -206,7 +233,7 @@ class TestAttachExitGateOptionalArgs:
             account_id="acct-2",
             state_manager=new_state,
             exit_policy=first["exit_policy"],
-            price_feed=first["price_feed"],
+            quote_feed=first["quote_feed"],
         )
 
         with patch(
@@ -218,6 +245,78 @@ class TestAttachExitGateOptionalArgs:
         kwargs = mock_run.call_args.kwargs
         assert kwargs["state_manager"] is new_state
         assert kwargs["account_id"] == "acct-2"
+
+
+class TestAttachExitGateLegacyCallable:
+    """M-3b: a legacy Callable[[str], float] is wrapped at attach-time
+    via ``callable_to_quote_feed(fn, clock=self._clock)`` so the stored
+    attachment is always a QuoteFeed.  This is the back-compat seam that
+    lets every existing caller keep its lambda contract while the
+    consumer side reads through ``.get_quote(...).price``.
+    """
+
+    def test_callable_is_wrapped_into_quote_feed(self) -> None:
+        clock = FixedClock(datetime(2026, 1, 1, tzinfo=UTC))
+        supervisor = Supervisor(clock=clock)
+        broker = MagicMock(name="broker")
+        state_manager = MagicMock(name="state_manager")
+        state_manager.open_position_details.return_value = []
+        exit_policy = MagicMock(name="exit_policy")
+
+        legacy: object = lambda _instrument: 100.0  # noqa: E731
+
+        supervisor.attach_exit_gate(
+            broker=broker,
+            account_id="acct-legacy",
+            state_manager=state_manager,
+            exit_policy=exit_policy,
+            quote_feed=legacy,
+        )
+
+        with patch(
+            "fx_ai_trading.services.exit_gate_runner.run_exit_gate",
+            return_value=[],
+        ) as mock_run:
+            supervisor.run_exit_gate_tick()
+
+        forwarded = mock_run.call_args.kwargs["quote_feed"]
+        # The forwarded object is NOT the original callable…
+        assert forwarded is not legacy
+        # …it satisfies the QuoteFeed runtime_checkable contract…
+        assert isinstance(forwarded, QuoteFeed)
+        # …and the wrapped get_quote returns the legacy callable's output.
+        q = forwarded.get_quote("EUR_USD")
+        assert q.price == 100.0
+        assert q.source == "legacy_callable"
+        # ts is synthesized from the supervisor's clock.
+        assert q.ts == clock.now()
+
+    def test_quote_feed_passthrough_is_not_rewrapped(self) -> None:
+        """Counterpart to the wrap test: a QuoteFeed input must be
+        stored and forwarded by reference (no double-wrap).
+        """
+        supervisor = Supervisor(clock=FixedClock(datetime(2026, 1, 1, tzinfo=UTC)))
+        broker = MagicMock(name="broker")
+        state_manager = MagicMock(name="state_manager")
+        state_manager.open_position_details.return_value = []
+        exit_policy = MagicMock(name="exit_policy")
+        quote_feed = _StubQuoteFeed(price=42.0)
+
+        supervisor.attach_exit_gate(
+            broker=broker,
+            account_id="acct-passthrough",
+            state_manager=state_manager,
+            exit_policy=exit_policy,
+            quote_feed=quote_feed,
+        )
+
+        with patch(
+            "fx_ai_trading.services.exit_gate_runner.run_exit_gate",
+            return_value=[],
+        ) as mock_run:
+            supervisor.run_exit_gate_tick()
+
+        assert mock_run.call_args.kwargs["quote_feed"] is quote_feed
 
 
 class TestSafeStopUnaffectedByExitGateAttach:

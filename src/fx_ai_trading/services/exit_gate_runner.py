@@ -32,9 +32,14 @@ Design decisions (Cycle 6.7c):
       is left as ``None`` so the close still records but downstream
       aggregates remain ANSI-NULL-aware.
 
-  E4  Price feed is a plain ``Callable[[str], float]`` — no Protocol
-      wrapper in 6.7c.  The caller (Supervisor / test) injects a lambda
-      or a named function.
+  E4  M-3b (post-M-3a): the price source is now a ``QuoteFeed`` — the
+      runner reads ``.price`` from ``quote_feed.get_quote(instrument)``.
+      For backward compatibility, ``quote_feed`` also accepts a legacy
+      ``Callable[[str], float]``; in that case the runner internally
+      wraps it via ``callable_to_quote_feed(fn, clock=clock)`` so the
+      consumer logic stays uniform.  Staleness enforcement is **NOT**
+      added in M-3b — that lands in M-3c.  No new outcome is introduced
+      by this milestone.
 
   E5  Context dict is passed through to ExitPolicyService.evaluate()
       unchanged.  Callers may include ``{"emergency_stop": True}`` to
@@ -56,6 +61,7 @@ from fx_ai_trading.common.clock import Clock
 from fx_ai_trading.common.exceptions import AccountTypeMismatchRuntime
 from fx_ai_trading.common.ulid import generate_ulid
 from fx_ai_trading.domain.broker import Broker, OrderRequest
+from fx_ai_trading.domain.price_feed import QuoteFeed, callable_to_quote_feed
 from fx_ai_trading.services.exit_policy import ExitPolicyService
 from fx_ai_trading.services.state_manager import StateManager
 
@@ -101,7 +107,7 @@ def run_exit_gate(
     clock: Clock,
     state_manager: StateManager,
     exit_policy: ExitPolicyService,
-    price_feed: Callable[[str], float],
+    quote_feed: QuoteFeed | Callable[[str], float],
     tp: float | None = None,
     sl: float | None = None,
     context: dict[str, Any] | None = None,
@@ -120,7 +126,13 @@ def run_exit_gate(
         clock: Injected time source.
         state_manager: Authoritative positions source and write path.
         exit_policy: Configured ExitPolicyService instance.
-        price_feed: ``instrument → current_price`` callable.
+        quote_feed: ``QuoteFeed`` providing ``get_quote(instrument) -> Quote``.
+                    For backward compatibility a legacy
+                    ``Callable[[str], float]`` is also accepted and
+                    wrapped internally via ``callable_to_quote_feed``;
+                    in that case ``Quote.ts`` is synthesized from
+                    ``clock.now()`` and ``Quote.source`` defaults to
+                    ``"legacy_callable"``.
         tp: Take-profit level; None disables TP rule (paper-mode).
         sl: Stop-loss level; None disables SL rule (paper-mode).
         context: Passed to ExitPolicyService.evaluate() unchanged.
@@ -155,11 +167,21 @@ def run_exit_gate(
         _log.debug("run_exit_gate(account=%s): no open positions", account_id)
         return []
 
+    # M-3b: normalize a legacy callable to QuoteFeed via the M-3a adapter
+    # so the per-position loop reads price uniformly through .get_quote().
+    # Discrimination uses the @runtime_checkable QuoteFeed Protocol — a
+    # bare lambda has no get_quote and falls into the wrap branch.
+    qf: QuoteFeed = (
+        quote_feed
+        if isinstance(quote_feed, QuoteFeed)
+        else callable_to_quote_feed(quote_feed, clock=clock)
+    )
+
     results: list[ExitGateRunResult] = []
 
     for pos in positions:
         holding_seconds = max(0, int((now - pos.open_time_utc).total_seconds()))
-        current_price = price_feed(pos.instrument)
+        current_price = qf.get_quote(pos.instrument).price
 
         decision = exit_policy.evaluate(
             position_id=pos.order_id,
