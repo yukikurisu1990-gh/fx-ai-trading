@@ -226,6 +226,11 @@ class TestExitFlowEndToEnd:
         assert row["primary_reason_code"] == "tp"
         reason_codes = {r["reason_code"] for r in row["reasons"]}
         assert "tp" in reason_codes
+        # M-2: gross PnL must be persisted on the close_events row.
+        # Seeded long position avg=1.10, units=1000; broker filled at 1.1100
+        # → (1.1100 - 1.10) * 1000 * (+1) = 10.0.
+        assert row["pnl_realized"] is not None
+        assert float(row["pnl_realized"]) == pytest.approx(10.0)
 
     def test_no_exit_writes_no_close_event(self, engine) -> None:
         from fx_ai_trading.adapters.broker.mock import MockBroker
