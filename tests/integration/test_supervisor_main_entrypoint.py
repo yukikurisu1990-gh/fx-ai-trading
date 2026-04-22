@@ -79,6 +79,79 @@ class TestBuildSupervisorContext:
         assert (tmp_path / "logs" / "safe_stop.jsonl").exists()
 
 
+class TestPr4ProbeEnvWiring:
+    """G-3 PR-4 (memo §3.4): SMTP_HOST / SMTP_PORT / SLACK_WEBHOOK_URL must
+    flow into ``StartupContext`` as probe-only fields.
+
+    Hard guards re-asserted here:
+      - Email is NEVER activated by the env-var path (``dispatcher._email``
+        stays ``None`` no matter what SMTP_HOST/PORT contain).
+      - A non-numeric ``SMTP_PORT`` is treated as "no SMTP probe" rather
+        than crashing startup.
+    """
+
+    def _clean_env(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        for name in ("SLACK_WEBHOOK_URL", "SMTP_HOST", "SMTP_PORT"):
+            monkeypatch.delenv(name, raising=False)
+
+    def test_probe_fields_default_to_none_when_no_env(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        self._clean_env(monkeypatch)
+        monkeypatch.chdir(tmp_path)
+
+        _, ctx = _build_supervisor_context()
+        assert ctx.slack_webhook_url is None
+        assert ctx.smtp_host is None
+        assert ctx.smtp_port is None
+
+    def test_smtp_env_vars_propagate_to_startup_context(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        self._clean_env(monkeypatch)
+        monkeypatch.setenv("SMTP_HOST", "smtp.example.com")
+        monkeypatch.setenv("SMTP_PORT", "587")
+        monkeypatch.chdir(tmp_path)
+
+        _, ctx = _build_supervisor_context()
+        assert ctx.smtp_host == "smtp.example.com"
+        assert ctx.smtp_port == 587
+        # Email channel must remain disabled — probes are connectivity only.
+        assert ctx.notifier._email is None
+
+    def test_slack_webhook_env_propagates_to_startup_context(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        self._clean_env(monkeypatch)
+        monkeypatch.setenv("SLACK_WEBHOOK_URL", "https://hooks.slack.example/T/B/X")
+        monkeypatch.chdir(tmp_path)
+
+        _, ctx = _build_supervisor_context()
+        assert ctx.slack_webhook_url == "https://hooks.slack.example/T/B/X"
+
+    def test_non_numeric_smtp_port_disables_probe_without_crashing(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        self._clean_env(monkeypatch)
+        monkeypatch.setenv("SMTP_HOST", "smtp.example.com")
+        monkeypatch.setenv("SMTP_PORT", "not-a-port")
+        monkeypatch.chdir(tmp_path)
+
+        # Must not raise; the bad port is normalised to None.
+        _, ctx = _build_supervisor_context()
+        assert ctx.smtp_port is None
+
+    def test_blank_smtp_host_normalised_to_none(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        self._clean_env(monkeypatch)
+        monkeypatch.setenv("SMTP_HOST", "   ")
+        monkeypatch.chdir(tmp_path)
+
+        _, ctx = _build_supervisor_context()
+        assert ctx.smtp_host is None
+
+
 class TestModuleSubprocessSmoke:
     """End-to-end: ``python -m fx_ai_trading.supervisor`` exits 0 file-only."""
 

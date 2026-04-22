@@ -34,6 +34,20 @@ Out of scope for PR-1 (deferred per docs/design/g3_notifier_fix_plan.md §4)
 
 The file-only fallback (P-2) is the intended steady state of this
 entry point until PR-2 ~ PR-4 land.
+
+PR-4 wiring (additive)
+──────────────────────
+The notifier health probes added to ``StartupRunner._step15_health_check``
+read three optional env vars here and pass them to ``StartupContext``:
+
+  ``SLACK_WEBHOOK_URL``  — Slack DNS+TCP probe (and the existing
+                            SlackNotifier wiring; unchanged).
+  ``SMTP_HOST``          — SMTP TCP probe host.
+  ``SMTP_PORT``          — SMTP TCP probe port (int; ignored if non-numeric).
+
+The probes are connectivity-only — they do NOT activate the Email
+channel or change ``notifier_factory`` behaviour.  Absent env vars
+silently skip the corresponding probe (no degraded mark).
 """
 
 from __future__ import annotations
@@ -55,6 +69,29 @@ _NOTIFICATIONS_PATH = _LOGS_DIR / "notifications.jsonl"
 _JOURNAL_PATH = _LOGS_DIR / "safe_stop.jsonl"
 
 _SLACK_ENV_VAR = "SLACK_WEBHOOK_URL"
+_SMTP_HOST_ENV_VAR = "SMTP_HOST"
+_SMTP_PORT_ENV_VAR = "SMTP_PORT"
+
+
+def _read_smtp_port_from_env() -> int | None:
+    """Parse ``SMTP_PORT`` env var into an int; return None on absence/garbage.
+
+    A non-numeric value silently disables the SMTP probe (logged at
+    WARNING) rather than crashing startup — the probe is best-effort
+    config validation, not a hard precondition.
+    """
+    raw = os.environ.get(_SMTP_PORT_ENV_VAR, "").strip()
+    if not raw:
+        return None
+    try:
+        return int(raw)
+    except ValueError:
+        logging.getLogger(__name__).warning(
+            "Supervisor entry point: %s=%r is not an integer — SMTP probe disabled",
+            _SMTP_PORT_ENV_VAR,
+            raw,
+        )
+        return None
 
 
 def _build_supervisor_context() -> tuple[Supervisor, StartupContext]:
@@ -76,8 +113,20 @@ def _build_supervisor_context() -> tuple[Supervisor, StartupContext]:
         slack_webhook_url=slack_url,
     )
 
+    smtp_host = os.environ.get(_SMTP_HOST_ENV_VAR, "").strip() or None
+    smtp_port = _read_smtp_port_from_env()
+
     supervisor = Supervisor(clock=clock)
-    ctx = StartupContext(journal=journal, notifier=dispatcher, clock=clock)
+    ctx = StartupContext(
+        journal=journal,
+        notifier=dispatcher,
+        clock=clock,
+        # PR-4: feed the probe-only fields.  Email is NOT activated
+        # — these only drive the connectivity probe in step 15.
+        slack_webhook_url=slack_url,
+        smtp_host=smtp_host,
+        smtp_port=smtp_port,
+    )
     return supervisor, ctx
 
 
