@@ -104,7 +104,6 @@ def _run(
     broker: MagicMock,
     state_manager: MagicMock,
     exit_policy: MagicMock,
-    side: str = "long",
 ):
     return run_exit_gate(
         broker=broker,
@@ -113,7 +112,6 @@ def _run(
         state_manager=state_manager,
         exit_policy=exit_policy,
         price_feed=lambda _instrument: 1.20,
-        side=side,
     )
 
 
@@ -172,30 +170,20 @@ class TestExitDecisionExecuted:
 
     def test_closing_side_is_opposite_for_long(self) -> None:
         broker = _make_broker()
-        state_manager = _make_state_manager([_make_position()])
+        state_manager = _make_state_manager([_make_position(side="long")])
         exit_policy = _make_exit_policy(_make_decision())
 
-        _run(
-            broker=broker,
-            state_manager=state_manager,
-            exit_policy=exit_policy,
-            side="long",
-        )
+        _run(broker=broker, state_manager=state_manager, exit_policy=exit_policy)
 
         request = broker.place_order.call_args[0][0]
         assert request.side == "short"
 
     def test_closing_side_is_opposite_for_short(self) -> None:
         broker = _make_broker()
-        state_manager = _make_state_manager([_make_position(units=500)])
+        state_manager = _make_state_manager([_make_position(units=500, side="short")])
         exit_policy = _make_exit_policy(_make_decision())
 
-        _run(
-            broker=broker,
-            state_manager=state_manager,
-            exit_policy=exit_policy,
-            side="short",
-        )
+        _run(broker=broker, state_manager=state_manager, exit_policy=exit_policy)
 
         request = broker.place_order.call_args[0][0]
         assert request.side == "long"

@@ -133,7 +133,7 @@ class TestRunExitGateTickDispatch:
             supervisor.run_exit_gate_tick()
         assert mock_run.call_args.kwargs["clock"] is clock
 
-    def test_forwards_default_long_side_and_none_tp_sl_context(self) -> None:
+    def test_forwards_default_none_tp_sl_context(self) -> None:
         supervisor = Supervisor(clock=FixedClock(datetime(2026, 1, 1, tzinfo=UTC)))
         _attach_defaults(supervisor)
         with patch(
@@ -142,7 +142,8 @@ class TestRunExitGateTickDispatch:
         ) as mock_run:
             supervisor.run_exit_gate_tick()
         kwargs = mock_run.call_args.kwargs
-        assert kwargs["side"] == "long"
+        # M-1b: side is no longer forwarded (derived per-position by run_exit_gate).
+        assert "side" not in kwargs
         assert kwargs["tp"] is None
         assert kwargs["sl"] is None
         assert kwargs["context"] is None
@@ -159,9 +160,9 @@ class TestRunExitGateTickDispatch:
 
 
 class TestAttachExitGateOptionalArgs:
-    """Optional tp / sl / context / side / non-default values flow through."""
+    """Optional tp / sl / context / non-default values flow through."""
 
-    def test_explicit_tp_sl_context_side_are_forwarded(self) -> None:
+    def test_explicit_tp_sl_context_are_forwarded(self) -> None:
         supervisor = Supervisor(clock=FixedClock(datetime(2026, 1, 1, tzinfo=UTC)))
         broker = MagicMock()
         state_manager = MagicMock()
@@ -176,7 +177,6 @@ class TestAttachExitGateOptionalArgs:
             state_manager=state_manager,
             exit_policy=exit_policy,
             price_feed=price_feed,
-            side="short",
             tp=110.5,
             sl=95.25,
             context=ctx,
@@ -189,7 +189,8 @@ class TestAttachExitGateOptionalArgs:
             supervisor.run_exit_gate_tick()
 
         kwargs = mock_run.call_args.kwargs
-        assert kwargs["side"] == "short"
+        # M-1b: side is no longer forwarded.
+        assert "side" not in kwargs
         assert kwargs["tp"] == 110.5
         assert kwargs["sl"] == 95.25
         assert kwargs["context"] is ctx

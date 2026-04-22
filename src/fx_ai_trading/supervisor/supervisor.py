@@ -55,7 +55,6 @@ class _ExitGateAttachment:
     state_manager: StateManager
     exit_policy: ExitPolicyService
     price_feed: Callable[[str], float]
-    side: str
     tp: float | None
     sl: float | None
     context: dict[str, Any] | None
@@ -238,7 +237,6 @@ class Supervisor:
         state_manager: StateManager,
         exit_policy: ExitPolicyService,
         price_feed: Callable[[str], float],
-        side: str = "long",
         tp: float | None = None,
         sl: float | None = None,
         context: dict[str, Any] | None = None,
@@ -252,16 +250,21 @@ class Supervisor:
 
         Calling this twice replaces the previous attachment.
 
+        M-1b note:
+            The pre-M-1b ``side=`` argument was removed.  The closing
+            side is now derived per-position from
+            ``OpenPositionInfo.side`` inside ``run_exit_gate`` (which in
+            turn comes from ``orders.direction`` via the M-1a JOIN).
+            Callers no longer pass a process-wide side.
+
         Args:
             broker: Paper or live Broker.
             account_id: Must match ``state_manager.account_id``.
             state_manager: Authoritative open-positions source.
             exit_policy: Configured ExitPolicyService.
             price_feed: ``instrument → current_price`` callable.
-            side, tp, sl, context: Forwarded to ``run_exit_gate``
-                unchanged each tick.  ``side`` defaults to ``"long"``
-                per Cycle 6.7c E2 (paper-mode long-only); Phase 7 is
-                expected to derive side from the orders table instead.
+            tp, sl, context: Forwarded to ``run_exit_gate`` unchanged
+                each tick.
         """
         self._exit_gate = _ExitGateAttachment(
             broker=broker,
@@ -269,7 +272,6 @@ class Supervisor:
             state_manager=state_manager,
             exit_policy=exit_policy,
             price_feed=price_feed,
-            side=side,
             tp=tp,
             sl=sl,
             context=context,
@@ -306,7 +308,6 @@ class Supervisor:
             state_manager=cfg.state_manager,
             exit_policy=cfg.exit_policy,
             price_feed=cfg.price_feed,
-            side=cfg.side,
             tp=cfg.tp,
             sl=cfg.sl,
             context=cfg.context,
