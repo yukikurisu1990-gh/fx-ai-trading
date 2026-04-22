@@ -322,16 +322,17 @@ class TestMinimumEntryPolicy:
 
 
 # ---------------------------------------------------------------------------
-# MinimumEntrySignal: warmup / up / down / flat
+# MinimumEntrySignal: 3-point monotonic momentum
 # ---------------------------------------------------------------------------
 
 
 class TestMinimumEntrySignal:
-    """The signal classifies consecutive fresh-quote moves into a direction.
+    """The signal classifies the last 3 fresh quotes into a direction.
 
     Pinned contract: signal touches NO clock, NO feed, NO staleness — it
     receives a fresh ``Quote`` and returns ``'buy'`` / ``'sell'`` /
-    ``None`` only.  ``ts`` value is irrelevant to the signal (only
+    ``None`` only.  Warmup spans the first 2 ticks (until 3 quotes have
+    been observed).  ``ts`` value is irrelevant to the signal (only
     ``price`` is consulted), but we still build tz-aware ``Quote``
     instances because ``Quote.__post_init__`` enforces it.
     """
@@ -345,21 +346,36 @@ class TestMinimumEntrySignal:
 
         return Quote(price=price, ts=TestMinimumEntrySignal._NOW, source="test")
 
-    def test_first_call_returns_none_warmup(self, mod: Any) -> None:
+    def _feed(self, mod: Any, prices: list[float]) -> str | None:
         signal = mod.MinimumEntrySignal()
-        assert signal.evaluate(self._quote(mod, 1.0)) is None
+        result: str | None = None
+        for p in prices:
+            result = signal.evaluate(self._quote(mod, p))
+        return result
+
+    def test_first_call_returns_none_warmup(self, mod: Any) -> None:
+        # 1 quote — strictly less than 3 → warmup.
+        assert self._feed(mod, [1.0]) is None
+
+    def test_two_quotes_still_warmup(self, mod: Any) -> None:
+        # Boundary pin: 2 quotes is still < 3, even if price moved.
+        # If this ever returns 'buy', the warmup boundary regressed.
+        assert self._feed(mod, [1.0, 1.1]) is None
 
     def test_price_up_returns_buy(self, mod: Any) -> None:
-        signal = mod.MinimumEntrySignal()
-        signal.evaluate(self._quote(mod, 1.0))  # warmup
-        assert signal.evaluate(self._quote(mod, 1.1)) == "buy"
+        # 3 strictly increasing prices → 'buy'.
+        assert self._feed(mod, [1.0, 1.05, 1.1]) == "buy"
 
     def test_price_down_returns_sell(self, mod: Any) -> None:
-        signal = mod.MinimumEntrySignal()
-        signal.evaluate(self._quote(mod, 1.1))  # warmup
-        assert signal.evaluate(self._quote(mod, 1.0)) == "sell"
+        # 3 strictly decreasing prices → 'sell'.
+        assert self._feed(mod, [1.0, 0.95, 0.9]) == "sell"
 
     def test_price_equal_returns_none_flat(self, mod: Any) -> None:
-        signal = mod.MinimumEntrySignal()
-        signal.evaluate(self._quote(mod, 1.0))  # warmup
-        assert signal.evaluate(self._quote(mod, 1.0)) is None
+        # 3 equal prices → no monotonic move → None.
+        assert self._feed(mod, [1.0, 1.0, 1.0]) is None
+
+    def test_non_monotonic_returns_none(self, mod: Any) -> None:
+        # Boundary pin: peak shape (up then down) is NOT monotonic.
+        # Covers the strict-monotonic contract; V-shape and equality
+        # mixes are derivatives of (warmup pin + monotonic pin).
+        assert self._feed(mod, [1.0, 1.1, 1.05]) is None
