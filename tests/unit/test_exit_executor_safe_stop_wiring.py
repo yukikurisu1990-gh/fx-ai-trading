@@ -1,39 +1,61 @@
-"""Unit tests: ExitExecutor.execute() AccountTypeMismatchRuntime → safe_stop wiring (PR-5 / U-2).
+"""Unit tests: ``run_exit_gate`` AccountTypeMismatchRuntime → safe_stop wiring (PR-5 / U-2).
 
-ExitExecutor is deprecated since Cycle 6.7d (I-09); this PR does NOT
-revive or restructure it.  These tests cover ONLY the safe_stop wiring
-added in PR-5 so that the deprecated path observes the same canonical
-behaviour as ``run_exit_gate`` and ``run_execution_gate``:
+Migrated from the deprecated ``ExitExecutor`` path to ``run_exit_gate``
+in M9/H-3b so the safe_stop wiring contract lives on the post-Cycle
+6.7d (I-09) write path.  ``ExitExecutor`` itself is intentionally left
+in tree until H-3c deletes it; this file no longer imports it.
+
+The wiring being pinned (semantics unchanged from the original suite,
+only the surface differs):
 
   - When ``broker.place_order`` raises ``AccountTypeMismatchRuntime``,
     ``supervisor.trigger_safe_stop(reason='account_type_mismatch_runtime')``
-    is fired (when a supervisor is wired) and the exception then
+    fires (when a supervisor is wired) and the exception then
     propagates so the caller aborts.
-  - The close_events repository INSERT MUST NOT run on this path.
-  - Payload key set MUST exactly match PR-4 / PR-5 run_exit_gate.
-  - A broken supervisor must NOT swallow the original exception.
+  - ``StateManager.on_close`` MUST NOT run on this path.
+  - Payload key set MUST exactly match PR-4 (run_execution_gate) /
+    PR-5 (run_exit_gate).
+  - A broken supervisor must NOT swallow the original mismatch
+    exception.
+  - When ExitPolicy returns ``should_exit=False``, the gate short-
+    circuits before ``broker.place_order`` — broker is untouched, no
+    safe_stop fires, no close-event is written.
+
+Surface mapping vs the deprecated ``ExitExecutor`` test
+───────────────────────────────────────────────────────
+  ExitExecutor.execute(...)              → run_exit_gate(...)
+  CloseEventsRepository.insert(...)      → StateManager.on_close(...)
+  result is None  (should_exit=False)    → outcome == 'noop'
 """
 
 from __future__ import annotations
 
-import warnings
 from datetime import UTC, datetime
 from unittest.mock import MagicMock
 
 import pytest
 
+from fx_ai_trading.common.clock import FixedClock
 from fx_ai_trading.common.exceptions import AccountTypeMismatchRuntime
 from fx_ai_trading.domain.broker import OrderRequest, OrderResult
 from fx_ai_trading.domain.exit import ExitDecision
-from fx_ai_trading.services.exit_executor import ExitExecutor
+from fx_ai_trading.domain.state import OpenPositionInfo
+from fx_ai_trading.services.exit_gate_runner import run_exit_gate
 
 _FIXED_AT = datetime(2026, 4, 22, 12, 0, 0, tzinfo=UTC)
+_OPEN_AT = datetime(2026, 4, 22, 11, 0, 0, tzinfo=UTC)
 
 
 # --- doubles -----------------------------------------------------------------
 
 
 class _MismatchBroker:
+    """Broker whose ``place_order`` always raises AccountTypeMismatchRuntime.
+
+    Mirrors the deprecated suite's double exactly so the wiring contract
+    being verified is unchanged on this side of the migration.
+    """
+
     account_type: str = "demo"
 
     def __init__(self, *, actual_account_type: str = "live") -> None:
@@ -65,30 +87,51 @@ class _BrokenSupervisor:
         raise RuntimeError("supervisor blew up")
 
 
+# --- helpers -----------------------------------------------------------------
+
+
+def _make_position(
+    *, instrument: str = "EUR_USD", order_id: str = "ord-xyz", units: int = 1000
+) -> OpenPositionInfo:
+    return OpenPositionInfo(
+        instrument=instrument,
+        order_id=order_id,
+        units=units,
+        avg_price=1.10,
+        open_time_utc=_OPEN_AT,
+    )
+
+
+def _make_state_manager(positions: list[OpenPositionInfo]) -> MagicMock:
+    """StateManager double — ``on_close`` MUST NOT be called on the
+    AccountTypeMismatchRuntime path; per-test asserts pin that."""
+    sm = MagicMock(name="state_manager")
+    sm.open_position_details.return_value = positions
+    return sm
+
+
+def _make_exit_policy(*, should_exit: bool = True) -> MagicMock:
+    policy = MagicMock(name="exit_policy")
+    policy.evaluate.return_value = ExitDecision(
+        position_id="ord-xyz",
+        should_exit=should_exit,
+        reasons=("max_holding_time",) if should_exit else (),
+        primary_reason="max_holding_time" if should_exit else None,
+    )
+    return policy
+
+
 # --- fixtures ----------------------------------------------------------------
 
 
 @pytest.fixture()
-def repo() -> MagicMock:
-    """CloseEventsRepository mock — its insert MUST NOT be called on this path."""
-    return MagicMock()
+def state_manager() -> MagicMock:
+    return _make_state_manager([_make_position()])
 
 
 @pytest.fixture()
-def decision() -> ExitDecision:
-    return ExitDecision(
-        position_id="ord-xyz",
-        should_exit=True,
-        reasons=("max_holding_time",),
-        primary_reason="max_holding_time",
-    )
-
-
-def _make_executor(broker, repo) -> ExitExecutor:
-    # ExitExecutor.__init__ emits a DeprecationWarning; suppress it for tests.
-    with warnings.catch_warnings():
-        warnings.simplefilter("ignore", DeprecationWarning)
-        return ExitExecutor(broker=broker, close_events_repo=repo)
+def exit_policy() -> MagicMock:
+    return _make_exit_policy(should_exit=True)
 
 
 # --- tests -------------------------------------------------------------------
@@ -96,39 +139,37 @@ def _make_executor(broker, repo) -> ExitExecutor:
 
 class TestAccountTypeMismatchRuntimeWiring:
     def test_no_supervisor_propagates_exception_unchanged(
-        self, repo: MagicMock, decision: ExitDecision
+        self, state_manager: MagicMock, exit_policy: MagicMock
     ) -> None:
         broker = _MismatchBroker()
-        executor = _make_executor(broker, repo)
         with pytest.raises(AccountTypeMismatchRuntime):
-            executor.execute(
-                decision=decision,
+            run_exit_gate(
+                broker=broker,
                 account_id="acc-1",
-                instrument="EUR_USD",
+                clock=FixedClock(_FIXED_AT),
+                state_manager=state_manager,
+                exit_policy=exit_policy,
+                price_feed=lambda _instrument: 1.20,
                 side="long",
-                size_units=1000,
-                entry_order_id="ord-xyz",
-                occurred_at=_FIXED_AT,
                 # supervisor=None (default)
             )
-        # close_events INSERT must NOT have been called.
-        repo.insert.assert_not_called()
+        # close-event write MUST NOT have happened.
+        state_manager.on_close.assert_not_called()
 
     def test_supervisor_triggers_safe_stop_with_canonical_reason(
-        self, repo: MagicMock, decision: ExitDecision
+        self, state_manager: MagicMock, exit_policy: MagicMock
     ) -> None:
         broker = _MismatchBroker()
-        executor = _make_executor(broker, repo)
         spy = _SupervisorSpy()
         with pytest.raises(AccountTypeMismatchRuntime):
-            executor.execute(
-                decision=decision,
+            run_exit_gate(
+                broker=broker,
                 account_id="acc-1",
-                instrument="EUR_USD",
+                clock=FixedClock(_FIXED_AT),
+                state_manager=state_manager,
+                exit_policy=exit_policy,
+                price_feed=lambda _instrument: 1.20,
                 side="long",
-                size_units=1000,
-                entry_order_id="ord-xyz",
-                occurred_at=_FIXED_AT,
                 supervisor=spy,  # type: ignore[arg-type]
             )
         assert len(spy.calls) == 1
@@ -136,7 +177,7 @@ class TestAccountTypeMismatchRuntimeWiring:
         assert call["reason"] == "account_type_mismatch_runtime"
         assert call["occurred_at"] == _FIXED_AT
         payload = call["payload"]
-        # Payload key parity with PR-4 (run_execution_gate) and
+        # Payload key parity with PR-4 (run_execution_gate) /
         # PR-5 (run_exit_gate).
         assert set(payload.keys()) == {
             "actual_account_type",
@@ -146,64 +187,69 @@ class TestAccountTypeMismatchRuntimeWiring:
             "detail",
         }
         assert payload["actual_account_type"] == "demo"
+        # run_exit_gate has no per-call expected value (unlike
+        # run_execution_gate); the mismatch text is fully captured in
+        # ``detail`` (str(exc)).
         assert payload["expected_account_type"] is None
         assert payload["instrument"] == "EUR_USD"
         assert payload["client_order_id"]
         assert "demo" in payload["detail"] and "live" in payload["detail"]
 
     def test_supervisor_wired_does_not_write_close_event(
-        self, repo: MagicMock, decision: ExitDecision
+        self, state_manager: MagicMock, exit_policy: MagicMock
     ) -> None:
         broker = _MismatchBroker()
-        executor = _make_executor(broker, repo)
         with pytest.raises(AccountTypeMismatchRuntime):
-            executor.execute(
-                decision=decision,
+            run_exit_gate(
+                broker=broker,
                 account_id="acc-1",
-                instrument="EUR_USD",
+                clock=FixedClock(_FIXED_AT),
+                state_manager=state_manager,
+                exit_policy=exit_policy,
+                price_feed=lambda _instrument: 1.20,
                 side="long",
-                size_units=1000,
-                entry_order_id="ord-xyz",
-                occurred_at=_FIXED_AT,
                 supervisor=_SupervisorNoop(),  # type: ignore[arg-type]
             )
-        repo.insert.assert_not_called()
+        state_manager.on_close.assert_not_called()
 
     def test_supervisor_trigger_safe_stop_failure_does_not_swallow_original(
-        self, repo: MagicMock, decision: ExitDecision
+        self, state_manager: MagicMock, exit_policy: MagicMock
     ) -> None:
         broker = _MismatchBroker()
-        executor = _make_executor(broker, repo)
         with pytest.raises(AccountTypeMismatchRuntime):
-            executor.execute(
-                decision=decision,
+            run_exit_gate(
+                broker=broker,
                 account_id="acc-1",
-                instrument="EUR_USD",
+                clock=FixedClock(_FIXED_AT),
+                state_manager=state_manager,
+                exit_policy=exit_policy,
+                price_feed=lambda _instrument: 1.20,
                 side="long",
-                size_units=1000,
-                entry_order_id="ord-xyz",
-                occurred_at=_FIXED_AT,
                 supervisor=_BrokenSupervisor(),  # type: ignore[arg-type]
             )
-        repo.insert.assert_not_called()
+        state_manager.on_close.assert_not_called()
 
-    def test_should_exit_false_short_circuits_before_broker(self, repo: MagicMock) -> None:
+    def test_should_exit_false_short_circuits_before_broker(self, state_manager: MagicMock) -> None:
         """should_exit=False keeps existing behaviour: no broker call,
-        no safe_stop firing, even when a supervisor is wired."""
+        no safe_stop firing, even when a supervisor is wired.
+
+        ``run_exit_gate`` returns
+        ``[ExitGateRunResult(outcome='noop')]`` here in place of the
+        deprecated ``execute() → None`` signal.
+        """
         broker = _MismatchBroker()
-        executor = _make_executor(broker, repo)
         spy = _SupervisorSpy()
-        result = executor.execute(
-            decision=ExitDecision(position_id="ord-xyz", should_exit=False, reasons=()),
+        results = run_exit_gate(
+            broker=broker,
             account_id="acc-1",
-            instrument="EUR_USD",
+            clock=FixedClock(_FIXED_AT),
+            state_manager=state_manager,
+            exit_policy=_make_exit_policy(should_exit=False),
+            price_feed=lambda _instrument: 1.20,
             side="long",
-            size_units=1000,
-            entry_order_id="ord-xyz",
-            occurred_at=_FIXED_AT,
             supervisor=spy,  # type: ignore[arg-type]
         )
-        assert result is None
+        assert [r.outcome for r in results] == ["noop"]
         assert broker.received == []
         assert spy.calls == []
-        repo.insert.assert_not_called()
+        state_manager.on_close.assert_not_called()
