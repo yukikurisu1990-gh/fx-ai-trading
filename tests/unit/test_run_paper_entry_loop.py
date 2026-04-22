@@ -103,6 +103,7 @@ def _make_components(mod: Any, calls: list[str], *, broker_status: str = "filled
 
     feed = MagicMock()
     clock = MagicMock()
+    signal = MagicMock()
 
     return mod.EntryComponents(
         state_manager=sm,
@@ -110,6 +111,7 @@ def _make_components(mod: Any, calls: list[str], *, broker_status: str = "filled
         broker=broker,
         quote_feed=feed,
         clock=clock,
+        signal=signal,
     )
 
 
@@ -210,12 +212,18 @@ class TestOpenOnePositionDuplicateGuard:
 
 
 # ---------------------------------------------------------------------------
-# MinimumEntryPolicy: 4-branch decision
+# MinimumEntryPolicy: 5-branch decision (already_open / no_quote /
+# stale_quote / no_signal / ok)
 # ---------------------------------------------------------------------------
 
 
 class TestMinimumEntryPolicy:
-    """Each of the 4 reason branches is reachable and labelled correctly."""
+    """Each of the 5 reason branches is reachable and labelled correctly.
+
+    The signal layer is injected as a MagicMock so we can pin each
+    branch without exercising the price-comparison logic (that lives in
+    ``TestMinimumEntrySignal`` below).
+    """
 
     @staticmethod
     def _build(
@@ -225,6 +233,8 @@ class TestMinimumEntryPolicy:
         quote_age_seconds: float | None,
         feed_raises: bool = False,
         stale_after_seconds: float = 60.0,
+        direction: str = "buy",
+        signal_returns: str | None = "buy",
     ) -> Any:
         sm = MagicMock()
         sm.open_instruments.return_value = open_set
@@ -241,11 +251,16 @@ class TestMinimumEntryPolicy:
             quote_ts = now - timedelta(seconds=quote_age_seconds)
             feed.get_quote.return_value = MagicMock(price=1.0, ts=quote_ts, source="x")
 
+        signal = MagicMock()
+        signal.evaluate.return_value = signal_returns
+
         return mod.MinimumEntryPolicy(
             instrument="EUR_USD",
+            direction=direction,
             state_manager=sm,
             quote_feed=feed,
             clock=clock,
+            signal=signal,
             stale_after_seconds=stale_after_seconds,
         )
 
@@ -269,9 +284,82 @@ class TestMinimumEntryPolicy:
         assert decision.reason == "stale_quote"
         assert decision.age_seconds == pytest.approx(120.0)
 
+    def test_no_signal_when_signal_returns_none(self, mod: Any) -> None:
+        # Fresh quote, but signal returned None (warmup or flat).
+        policy = self._build(mod, open_set=frozenset(), quote_age_seconds=10.0, signal_returns=None)
+        decision = policy.evaluate()
+        assert decision.should_fire is False
+        assert decision.reason == "no_signal"
+        assert decision.age_seconds == pytest.approx(10.0)
+
+    def test_no_signal_when_direction_mismatch(self, mod: Any) -> None:
+        # Signal says 'sell' but runner is configured for 'buy' →
+        # collapses into the same no_signal reason (no new event).
+        policy = self._build(
+            mod,
+            open_set=frozenset(),
+            quote_age_seconds=10.0,
+            direction="buy",
+            signal_returns="sell",
+        )
+        decision = policy.evaluate()
+        assert decision.should_fire is False
+        assert decision.reason == "no_signal"
+        assert decision.age_seconds == pytest.approx(10.0)
+
     def test_ok(self, mod: Any) -> None:
-        policy = self._build(mod, open_set=frozenset(), quote_age_seconds=10.0)
+        policy = self._build(
+            mod,
+            open_set=frozenset(),
+            quote_age_seconds=10.0,
+            direction="buy",
+            signal_returns="buy",
+        )
         decision = policy.evaluate()
         assert decision.should_fire is True
         assert decision.reason == "ok"
         assert decision.age_seconds == pytest.approx(10.0)
+
+
+# ---------------------------------------------------------------------------
+# MinimumEntrySignal: warmup / up / down / flat
+# ---------------------------------------------------------------------------
+
+
+class TestMinimumEntrySignal:
+    """The signal classifies consecutive fresh-quote moves into a direction.
+
+    Pinned contract: signal touches NO clock, NO feed, NO staleness — it
+    receives a fresh ``Quote`` and returns ``'buy'`` / ``'sell'`` /
+    ``None`` only.  ``ts`` value is irrelevant to the signal (only
+    ``price`` is consulted), but we still build tz-aware ``Quote``
+    instances because ``Quote.__post_init__`` enforces it.
+    """
+
+    _NOW = datetime(2026, 4, 23, 12, 0, 0, tzinfo=UTC)
+
+    @staticmethod
+    def _quote(mod: Any, price: float) -> Any:
+        # Use the real Quote DTO so __post_init__ runs (tz-aware check).
+        from fx_ai_trading.domain.price_feed import Quote
+
+        return Quote(price=price, ts=TestMinimumEntrySignal._NOW, source="test")
+
+    def test_first_call_returns_none_warmup(self, mod: Any) -> None:
+        signal = mod.MinimumEntrySignal()
+        assert signal.evaluate(self._quote(mod, 1.0)) is None
+
+    def test_price_up_returns_buy(self, mod: Any) -> None:
+        signal = mod.MinimumEntrySignal()
+        signal.evaluate(self._quote(mod, 1.0))  # warmup
+        assert signal.evaluate(self._quote(mod, 1.1)) == "buy"
+
+    def test_price_down_returns_sell(self, mod: Any) -> None:
+        signal = mod.MinimumEntrySignal()
+        signal.evaluate(self._quote(mod, 1.1))  # warmup
+        assert signal.evaluate(self._quote(mod, 1.0)) == "sell"
+
+    def test_price_equal_returns_none_flat(self, mod: Any) -> None:
+        signal = mod.MinimumEntrySignal()
+        signal.evaluate(self._quote(mod, 1.0))  # warmup
+        assert signal.evaluate(self._quote(mod, 1.0)) is None
