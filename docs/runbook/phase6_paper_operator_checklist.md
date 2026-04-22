@@ -281,6 +281,94 @@ bootstrap.opened               成功（order_id / psid / fill_price / side）
 
 ---
 
+### 10.8 paper-entry runner（cadence で open を発火する）
+
+`scripts/paper_open_position`（§10.7）は **1 ショット**で open を 1 件作るが、close 後の自動再 open はできない。close path を継続的に検証したいとき（max_holding_seconds 経過 → close → 再 open → … のサイクル確認等）、operator は `scripts/run_paper_entry_loop` で **cadence 駆動の open 発火**を回せる。
+
+本ランナーの責務は **1 PR / 1 責務**で「最小 entry policy で paper の auto-open を可能にする」ことに限定されている。strategy / signal generation の凍結スコープ（§10.6, Cycle 6.9a）は侵食しない。固定された `(instrument, direction, units)` に対して、tick ごとに `MinimumEntryPolicy` が 4 分岐で発火可否のみを決める：
+
+- `already_open` — 同 `(account, instrument)` で既に open がある（`StateManager.open_instruments()` 参照）
+- `no_quote`     — `QuoteFeed.get_quote` が例外（一時的な feed outage、次 tick で再試行）
+- `stale_quote`  — `(clock.now() - quote.ts).total_seconds() > stale_after_seconds`（M-3c と同じ厳密 `>`、既定 60s）
+- `ok`           — 発火 → §10.7 と完全に同じ FSM 5-step（`create_order` → `update_status('SUBMITTED')` → `PaperBroker.place_order` → `update_status('FILLED')` → `StateManager.on_fill`）
+
+#### CLI usage
+
+```bash
+python -m scripts.run_paper_entry_loop \
+    --account-id $OANDA_ACCOUNT_ID \
+    --instrument EUR_USD \
+    --direction buy \
+    --units 1000
+```
+
+| CLI flag | 必須 | 既定値 | 意味 |
+|---|---|---|---|
+| `--account-id` | ○ | — | `orders.account_id` / `positions.account_id`（§10.7 と同義）|
+| `--instrument` | ○ | — | OANDA instrument（例: `EUR_USD`）。policy はこの 1 件のみを監視 |
+| `--direction` | ○ | — | `buy` または `sell`。broker side マッピングは §10.7 と同じ |
+| `--units` | ○ | — | 約定数量（> 0）|
+| `--account-type` | × | `demo` | §10.7 と同義 |
+| `--nominal-price` | × | `1.0` | §10.7 と同義 |
+| `--interval` | × | `5.0` | tick 間 sleep 秒。`PAPER_ENTRY_INTERVAL_SECONDS` で上書き可 |
+| `--stale-after-seconds` | × | `60.0` | M-3c 既定。`PAPER_ENTRY_STALE_AFTER_SECONDS` で上書き可 |
+| `--max-iterations` | × | `0` | `0` = SIGINT まで継続。smoke test では `1` / `2` などを指定 |
+| `--log-dir` / `--log-filename` / `--log-level` | × | `logs/paper_entry_loop.jsonl` / `INFO` | 構造化 JSONL ログ（`apply_logging_config`、§10.3 と同じ形式）|
+
+#### 必須 / optional env
+
+| 変数 | 必須 | 既定値 | 出典 |
+|---|---|---|---|
+| `DATABASE_URL` | ○ | — | §10.1 と同じ（StateManager / OrdersRepository が利用）|
+| `OANDA_ACCESS_TOKEN` | ○ | — | §10.1 と同じ（OandaQuoteFeed が利用）|
+| `OANDA_ACCOUNT_ID` | ○ | — | §10.1 と同じ |
+| `OANDA_ENVIRONMENT` | × | `practice` | §10.1 と同じ |
+| `PAPER_ENTRY_INTERVAL_SECONDS` | × | `5.0` | `--interval` 未指定時の fallback |
+| `PAPER_ENTRY_STALE_AFTER_SECONDS` | × | `60.0` | `--stale-after-seconds` 未指定時の fallback |
+
+#### Exit code
+
+| rc | 意味 | 対応 |
+|---|---|---|
+| 0 | 正常終了（SIGINT または `--max-iterations` 到達）| `entry_runner.shutdown` ログで `iterations` を確認 |
+| 2 | 必須 env または `DATABASE_URL` 欠落 | `entry_runner.env_missing` / `entry_runner.db_config_missing` ログを確認、`.env` を修正 |
+
+#### イベントログ一覧（grep しやすい）
+
+```
+entry_runner.starting          起動直後（args + log_path）
+entry_runner.attached          components 構築完了（instrument / interval / stale_after_seconds）
+entry_runner.env_missing       rc=2（OANDA env 欠落）
+entry_runner.db_config_missing rc=2（DATABASE_URL 欠落）
+entry_runner.shutdown          正常終了（iterations）
+shutdown.signal_received       SIGINT 受信
+tick.no_fire                   policy が発火を見送り（reason: already_open / no_quote / stale_quote）
+tick.opened                    open 成功（order_id / psid / fill_price / side）
+tick.skip_duplicate            policy.evaluate と _open_one_position の race（recoverable）
+tick.broker_rejected           broker が非 filled を返した（_open_one_position が abort）
+tick.error                     tick 内で予期せぬ例外（次 tick で再試行）
+tick.completed                 各 tick 末尾（iteration / tick_duration_ms）
+```
+
+#### 既知の制限（本 PR では意図的に未対応）
+
+- `orders.submitted_at` / `orders.filled_at` は **NULL のまま**。§10.7 と同じ理由（`OrdersRepository.update_status` が timestamp を受け取らない）。
+- `order_transactions` 行は書かれない。§10.7 と同じ理由（`PaperBroker.get_recent_transactions` が `[]`）。
+- `tick.skip_duplicate` 経路は recoverable だが、duplicate 状態が続く限り毎 tick `tick.no_fire(reason=already_open)` がログに残り続ける（policy 自体が冪等のため副作用なし）。
+- `tick.broker_rejected` 後、対象 `orders` 行は `status='SUBMITTED'` のまま **残留する**（FILLED へは進まない）。§10.7 の rc=4 と同じ性質。次 tick の `_open_one_position` は新しい `order_id` を作って独立に再試行するため、SUBMITTED 残留行は累積し得る — operator は `SELECT order_id FROM orders WHERE status='SUBMITTED'` で観測し、必要なら手動で reconcile する。
+- 1 ランナー = 1 instrument。複数 instrument を回す場合は instrument ごとに別プロセスで起動する。
+
+#### out of scope（本ランナーの守備範囲外、別 PR 分割対象）
+
+- 実 strategy / signal generation surfaces（Cycle 6.9a 凍結、§10.6）— `MinimumEntryPolicy` は deliberately fixed predicate であり、戦略フレームワークではない
+- `OrdersRepository.update_status` の timestamp 拡張（strictly additive、別 PR）
+- pyramiding（`event_type='add'`）— `_open_one_position` の pre-flight で `DuplicateOpenInstrumentError` を raise
+- `run_exit_gate` / Supervisor / SafeStop — 不変
+- schema / metrics / net pnl — 不変
+- 複数 instrument を 1 プロセスで多重化する scheduler — 別 PR
+
+---
+
 ## 11. 関連資料一覧
 
 | カテゴリ | 参照先 |
