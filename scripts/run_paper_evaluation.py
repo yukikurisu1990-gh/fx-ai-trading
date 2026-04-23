@@ -168,6 +168,7 @@ class EvaluationArgs:
     log_dir: Path
     log_filename: str
     log_level: str
+    fast: bool
 
 
 def parse_args(argv: list[str] | None = None) -> EvaluationArgs:
@@ -254,6 +255,15 @@ def parse_args(argv: list[str] | None = None) -> EvaluationArgs:
         "--log-filename", dest="log_filename", type=str, default=_DEFAULT_LOG_FILENAME
     )
     parser.add_argument("--log-level", dest="log_level", type=str, default="INFO")
+    parser.add_argument(
+        "--fast",
+        dest="fast",
+        action="store_true",
+        help=(
+            "Skip the inter-tick sleep. Quote fetch, signal, policy, open/close "
+            "and PnL paths are unchanged — only the wall-clock pacing is removed."
+        ),
+    )
 
     parsed = parser.parse_args(argv)
     if parsed.max_iterations <= 0:
@@ -282,6 +292,7 @@ def parse_args(argv: list[str] | None = None) -> EvaluationArgs:
         log_dir=parsed.log_dir,
         log_filename=parsed.log_filename,
         log_level=parsed.log_level,
+        fast=parsed.fast,
     )
 
 
@@ -326,6 +337,7 @@ def run_eval_ticks(
     stale_after_seconds: float,
     signals: list[Any],
     log: logging.Logger,
+    fast: bool = False,
     sleep_fn: Callable[[float], None] = time.sleep,
     should_stop: Callable[[], bool] = lambda: False,
 ) -> tuple[datetime, datetime, int, int]:
@@ -385,7 +397,7 @@ def run_eval_ticks(
                 "eval.tick_error",
                 extra={"event": "eval.tick_error", "iteration": iteration},
             )
-        if interval_seconds > 0 and iteration < max_iterations and not should_stop():
+        if not fast and interval_seconds > 0 and iteration < max_iterations and not should_stop():
             sleep_fn(interval_seconds)
     end_time = components.clock.now()
     return start_time, end_time, iteration, no_signal_count
@@ -565,6 +577,7 @@ def main(argv: list[str] | None = None) -> int:
             "units": args.units,
             "max_iterations": args.max_iterations,
             "interval_seconds": args.interval_seconds,
+            "fast": args.fast,
             "max_holding_seconds": args.max_holding_seconds,
             "log_path": str(log_path),
         },
@@ -619,6 +632,7 @@ def main(argv: list[str] | None = None) -> int:
         stale_after_seconds=args.stale_after_seconds,
         signals=signals,
         log=log,
+        fast=args.fast,
     )
 
     metrics = aggregate_metrics(
