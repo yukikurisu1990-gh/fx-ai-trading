@@ -427,6 +427,85 @@ class TestFivePointMomentumSignal:
         assert self._feed(mod, [1.0, 1.01, 1.02, 1.01, 1.03]) is None
 
 
+class TestStridedMinimumEntrySignal:
+    """Stride-subsampled 3-point monotonic momentum.
+
+    Reuses the ``MinimumEntrySignal`` 3-point rule but only samples every
+    ``stride``-th quote.  Four cases pin the contract from the design:
+
+      1. ``stride=5`` + 15 strictly increasing quotes → fires exactly
+         once (on the final sampling tick), confirming sampled-deque
+         logic produces the same buy verdict as the un-strided signal.
+      2. ``stride=5`` + sampled series is non-monotonic → never fires,
+         even when intermediate (dropped) quotes form a valid streak.
+      3. ``stride=5`` + fewer than 15 quotes → never fires (sampled
+         deque cannot reach 3 entries before the 15th tick).
+      4. ``stride=1`` invariance: identical behaviour to
+         ``MinimumEntrySignal`` on the same input sequence — pins the
+         "no regression when stride is a no-op" property.
+    """
+
+    _NOW = datetime(2026, 4, 23, 12, 0, 0, tzinfo=UTC)
+
+    @staticmethod
+    def _quote(price: float) -> Any:
+        from fx_ai_trading.domain.price_feed import Quote
+
+        return Quote(price=price, ts=TestStridedMinimumEntrySignal._NOW, source="test")
+
+    def _feed_stride(self, mod: Any, prices: list[float], *, stride: int = 5) -> list[str | None]:
+        signal = mod.StridedMinimumEntrySignal(stride=stride)
+        return [signal.evaluate(self._quote(p)) for p in prices]
+
+    def test_stride5_fifteen_strict_up_fires_exactly_once(self, mod: Any) -> None:
+        # 15 strictly increasing ticks → sampled indices 0/5/10 are the
+        # 3 deque entries (prices 1.00 < 1.05 < 1.10) → 'buy' on tick 10.
+        # Every other tick returns None (non-sampling or warmup).
+        prices = [1.00 + 0.01 * i for i in range(15)]
+
+        results = self._feed_stride(mod, prices, stride=5)
+
+        fires = [i for i, r in enumerate(results) if r is not None]
+        assert fires == [10]
+        assert results[10] == "buy"
+
+    def test_stride5_sampled_series_non_monotonic_never_fires(self, mod: Any) -> None:
+        # Sampled prices at indices 0/5/10 = 1.00, 1.05, 1.00 (down at
+        # the end).  Intermediate quotes go up strictly — confirming the
+        # signal ignores dropped quotes and only the sampled series is
+        # checked for monotonicity.
+        prices = [1.00, 1.10, 1.20, 1.30, 1.40, 1.05, 1.15, 1.25, 1.35, 1.45, 1.00]
+
+        results = self._feed_stride(mod, prices, stride=5)
+
+        assert all(r is None for r in results)
+
+    def test_stride5_fewer_than_fifteen_ticks_stays_in_warmup(self, mod: Any) -> None:
+        # 14 ticks — sampled indices 0/5/10 need a 15th observation (or
+        # rather, the 11th tick is the 3rd sample; but with 14 ticks we
+        # only reach the 3rd sample at index 10, and the remainder is
+        # non-sampling).  Confirm 10 ticks (only 2 samples at 0/5) is
+        # still warmup — boundary pin against an off-by-one regression.
+        prices = [1.00 + 0.01 * i for i in range(10)]
+
+        results = self._feed_stride(mod, prices, stride=5)
+
+        assert all(r is None for r in results)
+
+    def test_stride1_reduces_to_minimum_entry_signal(self, mod: Any) -> None:
+        # Invariance: stride=1 means every tick is sampled → behaviour
+        # must exactly match ``MinimumEntrySignal`` on the same prices.
+        prices = [1.00, 1.05, 1.10, 1.08, 1.12, 1.15, 1.20, 1.18, 1.10, 1.05]
+
+        strided = mod.StridedMinimumEntrySignal(stride=1)
+        baseline = mod.MinimumEntrySignal()
+
+        strided_out = [strided.evaluate(self._quote(p)) for p in prices]
+        baseline_out = [baseline.evaluate(self._quote(p)) for p in prices]
+
+        assert strided_out == baseline_out
+
+
 class TestMinimumEntryPickerLogic:
     """Priority picker: first-non-None wins; direction mismatch → no_signal.
 

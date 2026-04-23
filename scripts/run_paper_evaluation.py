@@ -111,7 +111,15 @@ _DEFAULT_UNITS = 1000
 _STRATEGY_MINIMUM = "minimum"
 _STRATEGY_FIVEPOINT = "fivepoint"
 _STRATEGY_MULTI = "multi"
-_VALID_STRATEGIES = (_STRATEGY_MINIMUM, _STRATEGY_FIVEPOINT, _STRATEGY_MULTI)
+_STRATEGY_STRIDE5 = "stride5"
+_VALID_STRATEGIES = (
+    _STRATEGY_MINIMUM,
+    _STRATEGY_FIVEPOINT,
+    _STRATEGY_MULTI,
+    _STRATEGY_STRIDE5,
+)
+
+_STRIDE5_STEP = 5
 
 _REASON_NO_SIGNAL = "no_signal"
 
@@ -315,6 +323,8 @@ def build_signal_set(strategy: str) -> list[Any]:
         return [entry.FivePointMomentumSignal()]
     if strategy == _STRATEGY_MULTI:
         return [entry.MinimumEntrySignal(), entry.FivePointMomentumSignal()]
+    if strategy == _STRATEGY_STRIDE5:
+        return [entry.StridedMinimumEntrySignal(stride=_STRIDE5_STEP)]
     raise ValueError(f"unknown strategy: {strategy!r}")
 
 

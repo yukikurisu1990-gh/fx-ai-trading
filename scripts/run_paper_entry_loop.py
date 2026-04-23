@@ -573,6 +573,51 @@ class FivePointMomentumSignal:
         return None
 
 
+class StridedMinimumEntrySignal:
+    """Stride-subsampled 3-point monotonic momentum signal.
+
+    Identical decision logic to ``MinimumEntrySignal`` but only *samples*
+    every ``stride``-th quote into the 3-point deque; intermediate
+    observations are dropped.  Lets the 1-second eval cadence probe
+    longer-horizon monotonic moves without changing the tick interval
+    (``stride=5`` ≈ 5-second momentum at a 1 Hz feed).
+
+      * non-sampling ticks                                   → ``None``
+      * sampled < 3 quotes                                   → ``None`` (warmup)
+      * 3 sampled prices strictly increasing                 → ``'buy'``
+      * 3 sampled prices strictly decreasing                 → ``'sell'``
+      * otherwise (flat / mixed / non-monotonic)             → ``None``
+
+    ``stride=1`` reduces exactly to ``MinimumEntrySignal`` (every tick
+    is sampled; same 2-tick warmup, same 3-point rule), which is pinned
+    in the unit tests as an invariance check.  Counter starts at 0 so
+    the *first* call is a sampling call (same warmup shape as the
+    un-strided signal).
+    """
+
+    def __init__(self, stride: int = 5) -> None:
+        if stride < 1:
+            raise ValueError(f"stride must be >= 1; got {stride!r}")
+        self._stride = stride
+        self._counter = 0
+        self._quotes: deque[Quote] = deque(maxlen=3)
+
+    def evaluate(self, quote: Quote) -> str | None:
+        sample = self._counter % self._stride == 0
+        self._counter += 1
+        if not sample:
+            return None
+        self._quotes.append(quote)
+        if len(self._quotes) < 3:
+            return None
+        p1, p2, p3 = (q.price for q in self._quotes)
+        if p1 < p2 < p3:
+            return "buy"
+        if p1 > p2 > p3:
+            return "sell"
+        return None
+
+
 class MinimumEntryPolicy:
     """Deterministic open-side policy for the paper entry runner.
 
