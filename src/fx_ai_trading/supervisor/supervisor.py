@@ -59,6 +59,7 @@ class _ExitGateAttachment:
     tp: float | None
     sl: float | None
     context: dict[str, Any] | None
+    stale_max_age_seconds: float = 60.0
 
 
 class Supervisor:
@@ -241,6 +242,7 @@ class Supervisor:
         tp: float | None = None,
         sl: float | None = None,
         context: dict[str, Any] | None = None,
+        stale_max_age_seconds: float = 60.0,
     ) -> None:
         """Bind the dependencies needed by ``run_exit_gate_tick``.
 
@@ -289,6 +291,7 @@ class Supervisor:
             tp=tp,
             sl=sl,
             context=context,
+            stale_max_age_seconds=stale_max_age_seconds,
         )
 
     def run_exit_gate_tick(self) -> list[ExitGateRunResult]:
@@ -326,6 +329,7 @@ class Supervisor:
             sl=cfg.sl,
             context=cfg.context,
             supervisor=self,
+            stale_max_age_seconds=cfg.stale_max_age_seconds,
         )
 
     # ------------------------------------------------------------------

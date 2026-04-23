@@ -679,6 +679,7 @@ def main(argv: list[str] | None = None) -> int:
         account_id=args.account_id,
         max_holding_seconds=args.max_holding_seconds,
         quote_feed=components.quote_feed,
+        stale_max_age_seconds=args.stale_after_seconds,
     )
 
     start_time, end_time, ticks_executed, no_signal_count = run_eval_ticks(
