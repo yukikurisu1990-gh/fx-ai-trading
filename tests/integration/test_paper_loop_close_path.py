@@ -333,12 +333,12 @@ class TestPaperLoopClosePath:
         ce = ce_rows[0]
         assert ce["primary_reason_code"] == "max_holding_time"
         # M-2 contract: gross PnL = (fill - avg) * units * sign(side).
-        # Long position seeded at avg=0.99, units=1000; PaperBroker fills
-        # closes at its own ``nominal_price=1.0`` default (the QuoteFeed
-        # only feeds the policy / staleness gate, not the broker fill).
-        # → (1.00 - 0.99) * 1000 * (+1) = +10.0
+        # Long position seeded at avg=0.99, units=1000; PaperBroker now
+        # reads the close fill from the same QuoteFeed the policy uses,
+        # so the close leg fills at the stubbed mid price 1.11.
+        # → (1.11 - 0.99) * 1000 * (+1) = +120.0
         assert ce["pnl_realized"] is not None
-        assert float(ce["pnl_realized"]) == pytest.approx(10.0)
+        assert float(ce["pnl_realized"]) == pytest.approx(120.0)
 
         # --- positions(close) row appended (append-only) ---------------
         with engine.connect() as conn:
@@ -375,9 +375,12 @@ class TestPaperLoopClosePath:
         assert "close_events" in mirrored_tables
         assert "positions" in mirrored_tables
 
-        # --- The OandaQuoteFeed was actually called (one tick = one poll) -
-        assert len(api_client.calls) == 1
+        # --- The OandaQuoteFeed was called twice on this tick: once by
+        # the exit-policy / staleness gate and once by PaperBroker for
+        # the close-leg fill price. Both go through the same api_client.
+        assert len(api_client.calls) == 2
         assert api_client.calls[0] == ("dummy-account", [_INSTRUMENT])
+        assert api_client.calls[1] == ("dummy-account", [_INSTRUMENT])
 
         # psid is recorded on the close_events row when StateManager
         # successfully derived it from the open row — soft check, only

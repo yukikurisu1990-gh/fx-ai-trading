@@ -331,7 +331,7 @@ def build_supervisor_with_paper_stack(
         )
     feed = OandaQuoteFeed(api_client=api_client, account_id=oanda.account_id)
 
-    broker = PaperBroker(account_type="demo")
+    broker = PaperBroker(account_type="demo", quote_feed=feed)
     state_manager = StateManager(engine, account_id=effective_account_id, clock=effective_clock)
     exit_policy = ExitPolicyService(max_holding_seconds=max_holding_seconds)
 
