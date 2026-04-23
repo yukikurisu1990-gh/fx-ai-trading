@@ -134,6 +134,8 @@
 > **位置付け**: `scripts/ctl.py` 系（本書 §3 / §9）と**並行**に存在する別系統の起動口。M9 exit pipeline（`run_exit_gate` + M-1a/b 側面 + M-2 PnL + M-3a/b/c/d QuoteFeed）を outside-cadence で駆動する、薄い host loop。
 >
 > **本 PR から: production paper stack で稼働**: `broker` は `PaperBroker(account_type="demo")`、`state_manager` は `StateManager(engine, ...)`（DB engine は `DATABASE_URL` から構築）、`exit_policy` は `ExitPolicyService(max_holding_seconds=...)`、`quote_feed` は `OandaQuoteFeed`。`StateManager.open_position_details()` に open 行が見えていれば close path（broker.place_order → on_close → close_events / positions(close) / outbox）まで到達する。前 PR (#141) の null-safe stub による wiring verification モードは廃止された。
+>
+> **fill price (本 PR から)**: production wiring の `PaperBroker` には同じ `OandaQuoteFeed` が注入される。open / close いずれの `place_order` 呼び出しも、その時点の `Quote.price` を fill price として読む。これにより close-leg の `fill_price` が open-leg の `avg_price` と異なる時点を反映するようになり、M-2 PnL 式 `(fill - avg) × units × sign(side)` が **0 以外** を返せるようになる（`run_paper_evaluation.py` の `total_pnl` / `win_rate` / `avg_pnl` が評価可能になる）。`quote_feed` を渡さずに `PaperBroker` を直接構築するテスト類は従来通り `nominal_price` で fill するため、既存の固定価格テストは壊れない。production paper stack では close tick 1 回あたり OANDA REST 呼び出しは 2 回（policy / staleness gate と broker fill）に増える。
 
 ### 10.1 環境変数
 

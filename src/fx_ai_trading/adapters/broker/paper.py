@@ -7,6 +7,12 @@ Invariant (6.18): place_order calls _verify_account_type_or_raise first.
 Invariant (10-1): account_type is always 'demo' in Iteration 1.
 
 SlippageModel: injected at init; defaults to ZeroSlippageModel (no slippage).
+
+Fill price source: when ``quote_feed`` is supplied, ``place_order`` reads
+the current ``Quote.price`` from the feed for each fill so that open and
+close legs reflect different observation times (enabling non-zero
+``pnl_realized`` evaluation). When omitted, the legacy ``nominal_price``
+is used (preserved for tests that pin a fixed fill price).
 """
 
 from __future__ import annotations
@@ -22,6 +28,7 @@ from fx_ai_trading.domain.broker import (
     OrderRequest,
     OrderResult,
 )
+from fx_ai_trading.domain.price_feed import QuoteFeed
 
 
 class SlippageModel(Protocol):
@@ -47,9 +54,12 @@ class PaperBroker(BrokerBase):
 
     Args:
         account_type: Must be 'demo' (Iteration 1 constraint §10).
-        nominal_price: Fixed price used for all fills (placeholder until
-            real price feed integration in M8+).
+        nominal_price: Fallback fill price when ``quote_feed`` is None.
         slippage_model: Optional SlippageModel; defaults to ZeroSlippageModel.
+        quote_feed: Optional QuoteFeed; when provided, ``place_order``
+            reads the current quote price for each fill instead of
+            ``nominal_price``. Open and close legs then reflect distinct
+            observation times so ``pnl_realized`` can be non-zero.
     """
 
     def __init__(
@@ -58,10 +68,12 @@ class PaperBroker(BrokerBase):
         *,
         nominal_price: float = 1.0,
         slippage_model: SlippageModel | None = None,
+        quote_feed: QuoteFeed | None = None,
     ) -> None:
         super().__init__(account_type=account_type)
         self._nominal_price = nominal_price
         self._slippage: SlippageModel = slippage_model or ZeroSlippageModel()
+        self._quote_feed = quote_feed
         self._positions: dict[str, BrokerPosition] = {}
         self._pending: dict[str, BrokerOrder] = {}
         self._order_counter = 0
@@ -77,7 +89,12 @@ class PaperBroker(BrokerBase):
         Updates the in-memory position register.
         """
         self._verify_account_type_or_raise(self._account_type)
-        fill_price = self._slippage.apply(self._nominal_price, request.side)
+        base_price = (
+            self._quote_feed.get_quote(request.instrument).price
+            if self._quote_feed is not None
+            else self._nominal_price
+        )
+        fill_price = self._slippage.apply(base_price, request.side)
         broker_order_id = f"paper-{request.client_order_id}"
         self._update_position(request, fill_price)
         return OrderResult(
