@@ -296,6 +296,7 @@ def build_supervisor_with_paper_stack(
     max_holding_seconds: int = _DEFAULT_MAX_HOLDING_SECONDS,
     api_client: OandaAPIClient | None = None,
     quote_feed: QuoteFeed | None = None,
+    stale_max_age_seconds: float = 60.0,
 ) -> tuple[Supervisor, QuoteFeed]:
     """Construct a Supervisor wired to the production paper stack.
 
@@ -347,6 +348,7 @@ def build_supervisor_with_paper_stack(
         state_manager=state_manager,
         exit_policy=exit_policy,
         quote_feed=feed,
+        stale_max_age_seconds=stale_max_age_seconds,
     )
     # Stashed for log clarity — get_quote(instrument) call sites are
     # the only ones that read it; not part of the Supervisor contract.
