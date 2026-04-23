@@ -618,6 +618,40 @@ class StridedMinimumEntrySignal:
         return None
 
 
+class MeanReversionEntrySignal:
+    """3-point mean-reversion (counter-trend) signal from consecutive fresh quotes.
+
+    Mirror of ``MinimumEntrySignal`` with the verdict inverted: a strict
+    monotonic *up* sequence is interpreted as overbought and fires
+    ``'sell'`` (short-the-rally); a strict monotonic *down* sequence is
+    interpreted as oversold and fires ``'buy'`` (long-the-dip).
+
+      * fewer than 3 quotes seen      → ``None`` (warmup; first 2 ticks)
+      * 3 prices strictly increasing  → ``'sell'`` (p1 < p2 < p3 → fade rally)
+      * 3 prices strictly decreasing  → ``'buy'``  (p1 > p2 > p3 → fade dip)
+      * otherwise (flat / mixed equality / non-monotonic) → ``None``
+
+    Same statelessness contract as the momentum signals: receives a fresh
+    ``Quote`` (already past the policy's no_quote / stale_quote gates),
+    keeps a 3-element deque, and does not consult ``Clock`` or
+    ``QuoteFeed``.  On process restart the signal returns to warmup.
+    """
+
+    def __init__(self) -> None:
+        self._quotes: deque[Quote] = deque(maxlen=3)
+
+    def evaluate(self, quote: Quote) -> str | None:
+        self._quotes.append(quote)
+        if len(self._quotes) < 3:
+            return None
+        p1, p2, p3 = (q.price for q in self._quotes)
+        if p1 < p2 < p3:
+            return "sell"
+        if p1 > p2 > p3:
+            return "buy"
+        return None
+
+
 class MinimumEntryPolicy:
     """Deterministic open-side policy for the paper entry runner.
 
