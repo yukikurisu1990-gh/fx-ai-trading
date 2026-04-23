@@ -652,6 +652,41 @@ class MeanReversionEntrySignal:
         return None
 
 
+class DownMomentumSignal:
+    """One-sided 3-point momentum signal: fires only on strict-down.
+
+    Asymmetric variant of ``MinimumEntrySignal`` that ignores up-trends
+    entirely and emits ``'sell'`` only when the most recent three quotes
+    are strictly decreasing.  Motivated by a 2000-tick × 3-run A/B in
+    which ``MeanReversionEntrySignal`` posted mean PnL = −2.19 with
+    stdev/|mean| = 0.93 — i.e. fading down-streaks lost money
+    consistently, suggesting down-streaks tend to *continue* on the
+    EUR/USD windows tested.
+
+      * fewer than 3 quotes seen      → ``None`` (warmup; first 2 ticks)
+      * 3 prices strictly decreasing  → ``'sell'`` (p1 > p2 > p3)
+      * 3 prices strictly increasing  → ``None`` (no symmetric buy)
+      * otherwise (flat / mixed / non-monotonic) → ``None``
+
+    Same statelessness contract as the other entry signals: receives a
+    fresh ``Quote`` past the policy's no_quote / stale_quote gates,
+    keeps a 3-element deque, and does not consult ``Clock`` or
+    ``QuoteFeed``.  On process restart the signal returns to warmup.
+    """
+
+    def __init__(self) -> None:
+        self._quotes: deque[Quote] = deque(maxlen=3)
+
+    def evaluate(self, quote: Quote) -> str | None:
+        self._quotes.append(quote)
+        if len(self._quotes) < 3:
+            return None
+        p1, p2, p3 = (q.price for q in self._quotes)
+        if p1 > p2 > p3:
+            return "sell"
+        return None
+
+
 class MinimumEntryPolicy:
     """Deterministic open-side policy for the paper entry runner.
 

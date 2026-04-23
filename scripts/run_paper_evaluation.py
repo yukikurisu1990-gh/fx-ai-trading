@@ -113,12 +113,14 @@ _STRATEGY_FIVEPOINT = "fivepoint"
 _STRATEGY_MULTI = "multi"
 _STRATEGY_STRIDE5 = "stride5"
 _STRATEGY_REVERSION = "reversion"
+_STRATEGY_DOWN_MOMENTUM = "down_momentum"
 _VALID_STRATEGIES = (
     _STRATEGY_MINIMUM,
     _STRATEGY_FIVEPOINT,
     _STRATEGY_MULTI,
     _STRATEGY_STRIDE5,
     _STRATEGY_REVERSION,
+    _STRATEGY_DOWN_MOMENTUM,
 )
 
 _STRIDE5_STEP = 5
@@ -329,6 +331,8 @@ def build_signal_set(strategy: str) -> list[Any]:
         return [entry.StridedMinimumEntrySignal(stride=_STRIDE5_STEP)]
     if strategy == _STRATEGY_REVERSION:
         return [entry.MeanReversionEntrySignal()]
+    if strategy == _STRATEGY_DOWN_MOMENTUM:
+        return [entry.DownMomentumSignal()]
     raise ValueError(f"unknown strategy: {strategy!r}")
 
 
