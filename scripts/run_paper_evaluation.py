@@ -180,9 +180,7 @@ def parse_args(argv: list[str] | None = None) -> EvaluationArgs:
         ),
     )
     parser.add_argument("--account-id", dest="account_id", type=str, required=True)
-    parser.add_argument(
-        "--instrument", dest="instrument", type=str, default=_DEFAULT_INSTRUMENT
-    )
+    parser.add_argument("--instrument", dest="instrument", type=str, default=_DEFAULT_INSTRUMENT)
     parser.add_argument(
         "--direction",
         dest="direction",
@@ -219,7 +217,10 @@ def parse_args(argv: list[str] | None = None) -> EvaluationArgs:
         default=_DEFAULT_INTERVAL_SECONDS,
     )
     parser.add_argument(
-        "--max-iterations", dest="max_iterations", type=int, required=True,
+        "--max-iterations",
+        dest="max_iterations",
+        type=int,
+        required=True,
         help="Total combined entry+exit ticks to run (must be > 0).",
     )
     parser.add_argument(
@@ -235,11 +236,17 @@ def parse_args(argv: list[str] | None = None) -> EvaluationArgs:
         default=_DEFAULT_STALE_AFTER_SECONDS,
     )
     parser.add_argument(
-        "--output", dest="output_format", type=str, default="stdout",
+        "--output",
+        dest="output_format",
+        type=str,
+        default="stdout",
         choices=("json", "stdout"),
     )
     parser.add_argument(
-        "--output-path", dest="output_path", type=Path, default=None,
+        "--output-path",
+        dest="output_path",
+        type=Path,
+        default=None,
         help="When --output=json and --output-path is set, write the JSON dict there.",
     )
     parser.add_argument("--log-dir", dest="log_dir", type=Path, default=_DEFAULT_LOG_DIR)
@@ -256,9 +263,7 @@ def parse_args(argv: list[str] | None = None) -> EvaluationArgs:
     if parsed.interval_seconds < 0:
         parser.error(f"--interval-seconds must be >= 0; got {parsed.interval_seconds!r}")
     if parsed.max_holding_seconds <= 0:
-        parser.error(
-            f"--max-holding-seconds must be > 0; got {parsed.max_holding_seconds!r}"
-        )
+        parser.error(f"--max-holding-seconds must be > 0; got {parsed.max_holding_seconds!r}")
 
     return EvaluationArgs(
         strategy=parsed.strategy,
@@ -455,9 +460,7 @@ def aggregate_metrics(
             {"account_id": account_id, "instrument": instrument},
         ).fetchall()
 
-    open_time_by_order: dict[str, datetime] = {
-        str(r[0]): _parse_timestamp(r[1]) for r in open_rows
-    }
+    open_time_by_order: dict[str, datetime] = {str(r[0]): _parse_timestamp(r[1]) for r in open_rows}
 
     trades_count = len(close_rows)
     pnl_values: list[float] = []
@@ -471,9 +474,7 @@ def aggregate_metrics(
             wins += 1
         open_time = open_time_by_order.get(oid)
         if open_time is not None:
-            holding_secs.append(
-                (_parse_timestamp(closed_at) - open_time).total_seconds()
-            )
+            holding_secs.append((_parse_timestamp(closed_at) - open_time).total_seconds())
 
     total_pnl = sum(pnl_values)
     win_rate = (wins / trades_count) if trades_count > 0 else None

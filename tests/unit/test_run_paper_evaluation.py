@@ -151,9 +151,7 @@ def _seed_open(conn, *, order_id: str, opened_at: datetime) -> None:
     )
 
 
-def _seed_close(
-    conn, *, order_id: str, closed_at: datetime, pnl_realized: float
-) -> None:
+def _seed_close(conn, *, order_id: str, closed_at: datetime, pnl_realized: float) -> None:
     conn.execute(
         text(
             """
@@ -218,9 +216,7 @@ class TestAggregateMetrics:
         mod = _load_module()
 
         with engine.begin() as conn:
-            for i, (pnl, hold_sec) in enumerate(
-                [(1.0, 60), (2.0, 120), (-1.0, 180)], start=1
-            ):
+            for i, (pnl, hold_sec) in enumerate([(1.0, 60), (2.0, 120), (-1.0, 180)], start=1):
                 oid = f"ord-{i}"
                 opened_at = _START + timedelta(minutes=i)
                 closed_at = opened_at + timedelta(seconds=hold_sec)
