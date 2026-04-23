@@ -506,6 +506,80 @@ class TestStridedMinimumEntrySignal:
         assert strided_out == baseline_out
 
 
+class TestMeanReversionEntrySignal:
+    """3-point mean-reversion (counter-trend) signal.
+
+    Mirrors the ``MinimumEntrySignal`` 3-point window but inverts the
+    verdict: strict-up sequences produce ``'sell'`` (fade the rally),
+    strict-down sequences produce ``'buy'`` (fade the dip).  Four cases
+    pin the contract:
+
+      1. 3 strictly increasing prices → ``'sell'`` (verdict inverted vs
+         ``MinimumEntrySignal`` which would emit ``'buy'``).
+      2. 3 strictly decreasing prices → ``'buy'`` (inverted from
+         ``'sell'``).
+      3. Warmup: fewer than 3 quotes → ``None`` for every prefix tick.
+      4. Inversion-vs-momentum invariance: on a sequence of arbitrary
+         prices, ``MeanReversionEntrySignal`` output is the
+         direction-swapped image of ``MinimumEntrySignal`` output
+         (``'buy'``↔``'sell'``, ``None``→``None``).  Pins both the
+         "verdict inversion" rule and the "same warmup / same
+         non-monotonic gating" properties in one assertion.
+    """
+
+    _NOW = datetime(2026, 4, 23, 12, 0, 0, tzinfo=UTC)
+
+    @staticmethod
+    def _quote(price: float) -> Any:
+        from fx_ai_trading.domain.price_feed import Quote
+
+        return Quote(price=price, ts=TestMeanReversionEntrySignal._NOW, source="test")
+
+    def _feed(self, mod: Any, prices: list[float]) -> list[str | None]:
+        signal = mod.MeanReversionEntrySignal()
+        return [signal.evaluate(self._quote(p)) for p in prices]
+
+    def test_strict_up_sequence_fires_sell(self, mod: Any) -> None:
+        prices = [1.00, 1.05, 1.10]
+
+        results = self._feed(mod, prices)
+
+        assert results == [None, None, "sell"]
+
+    def test_strict_down_sequence_fires_buy(self, mod: Any) -> None:
+        prices = [1.10, 1.05, 1.00]
+
+        results = self._feed(mod, prices)
+
+        assert results == [None, None, "buy"]
+
+    def test_warmup_fewer_than_three_quotes_returns_none(self, mod: Any) -> None:
+        # First two ticks must always be None regardless of monotonicity
+        # — the deque cannot have 3 entries yet.
+        prices = [1.00, 1.05]
+
+        results = self._feed(mod, prices)
+
+        assert results == [None, None]
+
+    def test_inversion_invariance_vs_minimum_entry_signal(self, mod: Any) -> None:
+        # On the same input, MeanReversionEntrySignal must emit the
+        # buy/sell-swapped image of MinimumEntrySignal.  None positions
+        # (warmup, flat, non-monotonic) must coincide exactly — pinning
+        # that both signals share the same gating and only the verdict
+        # axis is inverted.
+        prices = [1.00, 1.05, 1.10, 1.08, 1.12, 1.15, 1.20, 1.18, 1.10, 1.05]
+
+        reversion = mod.MeanReversionEntrySignal()
+        momentum = mod.MinimumEntrySignal()
+
+        rev_out = [reversion.evaluate(self._quote(p)) for p in prices]
+        mom_out = [momentum.evaluate(self._quote(p)) for p in prices]
+
+        swap = {"buy": "sell", "sell": "buy", None: None}
+        assert rev_out == [swap[v] for v in mom_out]
+
+
 class TestMinimumEntryPickerLogic:
     """Priority picker: first-non-None wins; direction mismatch → no_signal.
 
