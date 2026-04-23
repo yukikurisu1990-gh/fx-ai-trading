@@ -580,6 +580,75 @@ class TestMeanReversionEntrySignal:
         assert rev_out == [swap[v] for v in mom_out]
 
 
+class TestDownMomentumSignal:
+    """One-sided 3-point momentum: fires only on strict-down (sell).
+
+    Asymmetric variant of ``MinimumEntrySignal`` that drops the buy
+    side entirely.  Four cases pin the contract:
+
+      1. 3 strictly decreasing prices → ``'sell'``.
+      2. 3 strictly increasing prices → ``None`` (asymmetry — does NOT
+         fire on up-trends; this is the load-bearing difference vs
+         ``MinimumEntrySignal``).
+      3. Warmup: fewer than 3 quotes → ``None`` for every prefix tick.
+      4. Asymmetry-vs-momentum invariance: on a shared price series,
+         output equals ``MinimumEntrySignal`` output **only when** that
+         output is ``'sell'``; otherwise ``None``.  Pins both the
+         "down rule matches MinimumEntrySignal" and "up rule is
+         dropped" properties in one assertion.
+    """
+
+    _NOW = datetime(2026, 4, 23, 12, 0, 0, tzinfo=UTC)
+
+    @staticmethod
+    def _quote(price: float) -> Any:
+        from fx_ai_trading.domain.price_feed import Quote
+
+        return Quote(price=price, ts=TestDownMomentumSignal._NOW, source="test")
+
+    def _feed(self, mod: Any, prices: list[float]) -> list[str | None]:
+        signal = mod.DownMomentumSignal()
+        return [signal.evaluate(self._quote(p)) for p in prices]
+
+    def test_strict_down_sequence_fires_sell(self, mod: Any) -> None:
+        prices = [1.10, 1.05, 1.00]
+
+        results = self._feed(mod, prices)
+
+        assert results == [None, None, "sell"]
+
+    def test_strict_up_sequence_returns_none(self, mod: Any) -> None:
+        # Critical asymmetry: an up-streak that would fire 'buy' under
+        # MinimumEntrySignal must produce None here.
+        prices = [1.00, 1.05, 1.10]
+
+        results = self._feed(mod, prices)
+
+        assert results == [None, None, None]
+
+    def test_warmup_fewer_than_three_quotes_returns_none(self, mod: Any) -> None:
+        prices = [1.10, 1.05]
+
+        results = self._feed(mod, prices)
+
+        assert results == [None, None]
+
+    def test_asymmetry_vs_minimum_entry_signal(self, mod: Any) -> None:
+        # On the same input, DownMomentumSignal must equal
+        # MinimumEntrySignal where the latter said 'sell', and None
+        # everywhere else (including positions where MinimumEntrySignal
+        # said 'buy').  Pins the one-sided contract.
+        prices = [1.00, 1.05, 1.10, 1.08, 1.12, 1.15, 1.20, 1.18, 1.10, 1.05]
+
+        down = mod.DownMomentumSignal()
+        momentum = mod.MinimumEntrySignal()
+
+        down_out = [down.evaluate(self._quote(p)) for p in prices]
+        mom_out = [momentum.evaluate(self._quote(p)) for p in prices]
+
+        assert down_out == [v if v == "sell" else None for v in mom_out]
+
+
 class TestMinimumEntryPickerLogic:
     """Priority picker: first-non-None wins; direction mismatch → no_signal.
 
