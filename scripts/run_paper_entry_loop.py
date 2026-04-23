@@ -403,6 +403,7 @@ def build_components(
     clock: Clock | None = None,
     api_client: OandaAPIClient | None = None,
     signal: EntrySignal | None = None,
+    quote_feed: QuoteFeed | None = None,
 ) -> EntryComponents:
     """Compose the production paper open-side stack.
 
@@ -416,27 +417,44 @@ def build_components(
     ``MinimumEntrySignal()`` (M9 behavior preserved).  Injection is the
     M10-1 seam — it lets future signal classes be swapped in without
     editing this factory.
+
+    ``quote_feed`` is optional; when omitted, an ``OandaQuoteFeed`` is
+    built internally (legacy behavior).  When provided, the same feed
+    is used both for the policy / staleness gate (via
+    ``EntryComponents.quote_feed``) and for ``PaperBroker.place_order``
+    fill prices — matching the exit-side wiring in
+    ``build_supervisor_with_paper_stack`` so open and close legs reflect
+    real quote drift instead of a fixed nominal price.
     """
     effective_account_id = account_id or oanda.account_id
     effective_clock: Clock = clock if clock is not None else WallClock()
     effective_signal: EntrySignal = signal if signal is not None else MinimumEntrySignal()
 
-    if api_client is None:
-        api_client = OandaAPIClient(
-            access_token=oanda.access_token,
-            environment=oanda.environment,
+    if quote_feed is None:
+        if api_client is None:
+            api_client = OandaAPIClient(
+                access_token=oanda.access_token,
+                environment=oanda.environment,
+            )
+        effective_feed: QuoteFeed = OandaQuoteFeed(
+            api_client=api_client, account_id=oanda.account_id
         )
-    feed = OandaQuoteFeed(api_client=api_client, account_id=oanda.account_id)
+    else:
+        effective_feed = quote_feed
 
     state_manager = StateManager(engine, account_id=effective_account_id, clock=effective_clock)
     orders = OrdersRepository(engine)
-    broker = PaperBroker(account_type=account_type, nominal_price=nominal_price)
+    broker = PaperBroker(
+        account_type=account_type,
+        nominal_price=nominal_price,
+        quote_feed=effective_feed,
+    )
 
     return EntryComponents(
         state_manager=state_manager,
         orders=orders,
         broker=broker,
-        quote_feed=feed,
+        quote_feed=effective_feed,
         clock=effective_clock,
         signal=effective_signal,
     )

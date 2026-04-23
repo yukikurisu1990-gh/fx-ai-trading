@@ -82,6 +82,7 @@ from fx_ai_trading.adapters.broker.oanda_api_client import OandaAPIClient
 from fx_ai_trading.adapters.broker.paper import PaperBroker
 from fx_ai_trading.adapters.price_feed.oanda_quote_feed import OandaQuoteFeed
 from fx_ai_trading.common.clock import Clock, WallClock
+from fx_ai_trading.domain.price_feed import QuoteFeed
 from fx_ai_trading.ops.logging_config import apply_logging_config
 from fx_ai_trading.services.exit_policy import ExitPolicyService
 from fx_ai_trading.services.state_manager import StateManager
@@ -294,7 +295,8 @@ def build_supervisor_with_paper_stack(
     clock: Clock | None = None,
     max_holding_seconds: int = _DEFAULT_MAX_HOLDING_SECONDS,
     api_client: OandaAPIClient | None = None,
-) -> tuple[Supervisor, OandaQuoteFeed]:
+    quote_feed: QuoteFeed | None = None,
+) -> tuple[Supervisor, QuoteFeed]:
     """Construct a Supervisor wired to the production paper stack.
 
     Replaces the null-safe stubs from PR #141 with the real
@@ -324,12 +326,15 @@ def build_supervisor_with_paper_stack(
     effective_account_id = account_id or oanda.account_id
     effective_clock: Clock = clock if clock is not None else WallClock()
 
-    if api_client is None:
-        api_client = OandaAPIClient(
-            access_token=oanda.access_token,
-            environment=oanda.environment,
-        )
-    feed = OandaQuoteFeed(api_client=api_client, account_id=oanda.account_id)
+    if quote_feed is None:
+        if api_client is None:
+            api_client = OandaAPIClient(
+                access_token=oanda.access_token,
+                environment=oanda.environment,
+            )
+        feed: QuoteFeed = OandaQuoteFeed(api_client=api_client, account_id=oanda.account_id)
+    else:
+        feed = quote_feed
 
     broker = PaperBroker(account_type="demo", quote_feed=feed)
     state_manager = StateManager(engine, account_id=effective_account_id, clock=effective_clock)

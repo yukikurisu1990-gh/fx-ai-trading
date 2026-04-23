@@ -593,12 +593,17 @@ def main(argv: list[str] | None = None) -> int:
         nominal_price=args.nominal_price,
         signal=signals[0],  # EntryComponents.signal slot (unused by our policy)
     )
+    # Share the entry-side QuoteFeed with the exit-side Supervisor so
+    # open-leg avg_price and close-leg fill_price are read from the
+    # same source — without this, the entry broker would fall back to
+    # nominal_price and pnl_realized would carry an artefact bias.
     supervisor, _feed = exit_lib.build_supervisor_with_paper_stack(
         oanda=oanda,
         instrument=args.instrument,
         engine=engine,
         account_id=args.account_id,
         max_holding_seconds=args.max_holding_seconds,
+        quote_feed=components.quote_feed,
     )
 
     start_time, end_time, ticks_executed, no_signal_count = run_eval_ticks(
