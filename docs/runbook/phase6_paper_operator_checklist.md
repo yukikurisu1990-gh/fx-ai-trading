@@ -381,6 +381,117 @@ tick.completed                 各 tick 末尾（iteration / tick_duration_ms）
 
 ---
 
+### 10.9 paper-evaluation runner（既存 signal の N-tick 計測）
+
+`scripts/run_paper_evaluation` は §10.8 の `run_paper_entry_loop` と同じ生産 paper stack を再利用して、**既存 signal の挙動**を `N` tick 計測するためのホストである。**新しい signal を作る場ではない / strategy framework ではない / EV / Sharpe / drawdown を出す場でもない**。観測したいのは「いま在る signal が、固定 cadence でどう振る舞うか」だけ。
+
+責務:
+
+1. `--strategy` で signal セットを 1 つ選ぶ（`minimum` / `fivepoint` / `multi`）
+2. `MinimumEntryPolicy(signals=[…])` を直接構築し、`signals=` 経路（M10-3 picker）を **strategy 種別に依らず一様に**通す
+3. `N` 回のループで「`policy.evaluate()` → 発火なら `_open_one_position` → `Supervisor.run_exit_gate_tick()`」を 1 セットとして回す
+4. ループ終了後、`positions` / `close_events` を JOIN で集計し、固定 6 メトリクスを 1 つの JSON dict として吐く
+
+集計クエリは read-only / 既存テーブルのみ。集計は Python 側で行うため schema / migration は触らない。
+
+#### CLI usage
+
+```bash
+# minimum (3点モメンタム)
+python -m scripts.run_paper_evaluation \
+    --account-id $OANDA_ACCOUNT_ID \
+    --instrument EUR_USD \
+    --direction buy \
+    --units 1000 \
+    --strategy minimum \
+    --max-iterations 100 \
+    --interval-seconds 1.0 \
+    --max-holding-seconds 30 \
+    --output stdout
+
+# fivepoint (5点モメンタム)
+python -m scripts.run_paper_evaluation … --strategy fivepoint …
+
+# multi (両方を first-non-None で picker; M10-3)
+python -m scripts.run_paper_evaluation … --strategy multi --output json
+```
+
+| CLI flag | 必須 | 既定値 | 意味 |
+|---|---|---|---|
+| `--account-id` | ○ | — | §10.8 と同義 |
+| `--instrument` | × | `EUR_USD` | §10.8 と同義 |
+| `--direction` | ○ | — | `buy` / `sell`。M10-3 master では Policy が direction filter を要求（M10-4 マージ後は optional 化される — §10.10 Minor-3 参照）|
+| `--units` | × | `1000` | §10.8 と同義 |
+| `--strategy` | ○ | — | `minimum` / `fivepoint` / `multi` のいずれか |
+| `--account-type` | × | `demo` | §10.8 と同義 |
+| `--nominal-price` | × | `1.0` | §10.8 と同義 |
+| `--interval-seconds` | × | `1.0` | tick 間 sleep。`0` 指定で sleep をスキップ（テスト用）|
+| `--max-iterations` | ○ | — | 総 tick 数（> 0）。`run_paper_entry_loop` と違い `0` = 永遠は許可しない（評価は時限）|
+| `--max-holding-seconds` | × | `30` | `ExitPolicyService` に渡る close 条件 |
+| `--stale-after-seconds` | × | `60.0` | §10.8 と同義 |
+| `--output` | × | `stdout` | `stdout` = 人間可読 / `json` = 1 行の JSON dict |
+| `--output-path` | × | `None` | `--output json` と併用すると指定パスへ書き出し（不在ディレクトリは作成）|
+| `--log-dir` / `--log-filename` / `--log-level` | × | `logs/paper_evaluation.jsonl` / `INFO` | §10.8 と同じ JSONL ログ |
+
+#### 出力（frozen 6 メトリクス）
+
+```json
+{
+  "strategy": "minimum",
+  "ticks_executed": 100,
+  "trades_count": 4,
+  "win_rate": 0.5,
+  "avg_pnl": 0.25,
+  "total_pnl": 1.0,
+  "no_signal_rate": 0.62,
+  "avg_holding_sec": 27.5
+}
+```
+
+| key | 型 | 計算 |
+|---|---|---|
+| `strategy` | str | `--strategy` の echo |
+| `ticks_executed` | int | 実際に回した tick 数（早期停止時は `< --max-iterations`）|
+| `trades_count` | int | run window 内に `closed_at` が入る `close_events` 行数 |
+| `win_rate` | float \| None | `pnl_realized > 0` の比率。`trades_count == 0` は `None` |
+| `avg_pnl` | float \| None | `total_pnl / trades_count`。0 件は `None` |
+| `total_pnl` | float | `sum(close_events.pnl_realized)` |
+| `no_signal_rate` | float | `decisions(reason='no_signal') / ticks_executed`。0 ticks は `0.0` |
+| `avg_holding_sec` | float \| None | `mean(close_events.closed_at - positions.event_time_utc)`（同 `order_id` を join、`event_type='open'`）。マッチなしは `None` |
+
+#### Exit code
+
+| rc | 意味 |
+|---|---|
+| 0 | 評価完了（メトリクス出力済み）|
+| 2 | `OANDA_*` env または `DATABASE_URL` 欠落（§10.8 と同義）|
+
+---
+
+### 10.10 Technical Debt (M10 Carryover)
+
+M10-1〜M10-4 の signal 抽象化シリーズで、**意図的に**この PR では**解消しなかった**項目。各項目は「次の signal 拡張 PR」での解消を予定する。本評価ランナーはこれらの存在を踏まえて使用する。
+
+#### Minor-1: multi-signal を production CLI から指定できない
+
+- **現状**: `MinimumEntryPolicy` は M10-3 で `signals=` （順序付き `Sequence[EntrySignal]`）を受け付けるようになったが、`scripts/run_paper_entry_loop` の CLI と `EntryComponents.signal` slot は依然として **single signal** のみ。`build_components(signal=…)` も `signal` 単数。production cadence ランナーから `--strategy multi` 相当の構成を直接組めない。
+- **影響**: `run_paper_entry_loop` を直接使った paper 運用では `multi` 相当の picker は試せず、`scripts/run_paper_evaluation`（本書 §10.9、Policy を直接構築して回避）でのみ M10-3 picker を end-to-end で評価できる。production 経路と評価経路で signal injection の幅が乖離している。
+- **解消タイミング**: M11（仮）で `EntryComponents.signals: tuple[EntrySignal, …]` の追加 + `run_paper_entry_loop` 側に `--signals` 系 CLI を生やす予定。本 PR では `EntryComponents` を不変に保つため対応しない。
+
+#### Minor-2: tick.opened.direction が signal-driven mode で null になる（M10-4 マージ後に顕在化）
+
+- **現状**: master tip（d05d6fd, M10-3）では `--direction` が必須なため未顕在。M10-4（PR #151, open）がマージされ `--direction` が optional になると、signal-driven mode で `EntryDecision.adopted_direction` に direction が乗る一方、`tick.opened` イベントの `direction` フィールド（runner の引数経由）は `None` のまま流れる経路が残る。
+- **影響**: 観測ログで「実際にどちらに撃ったか」が `tick.opened.direction` 単体では分からなくなる（`adopted_direction` を別フィールドで追わないと不明）。本評価ランナーは `--direction` 必須運用なので影響を受けないが、M10-4 マージ後に entry runner / 評価ランナー双方で `tick.opened` の `direction` を `decision.adopted_direction` から派生させる修正が必要。
+- **解消タイミング**: M10-4 マージ直後の追従 PR（scripts/ 限定、src/ 不変）で `tick.opened.direction = decision.adopted_direction` 補正。
+
+#### Minor-3: `parse_args` docstring が direction を「required」と説明し続けている（M10-4 マージ後に陳腐化）
+
+- **現状**: `scripts/run_paper_entry_loop.parse_args` 周辺の docstring / コメントは "required `--direction`" 前提で書かれている。本評価ランナーの §10.9 ドキュメントも、M10-3 master に合わせて「`--direction` 必須」と書いている。
+- **影響**: M10-4 マージ後はこの記述が誤りになり、reader が `--direction` を渡し忘れると `signal-driven mode` に落ちる挙動を「バグ」と誤認しうる。
+- **解消タイミング**: Minor-2 と同じ追従 PR（M10-4 マージ後）で docstring と本書 §10.9 / §10.8 の direction 表記を一括修正。
+
+---
+
 ## 11. 関連資料一覧
 
 | カテゴリ | 参照先 |
