@@ -97,6 +97,9 @@ from typing import Any
 from sqlalchemy import text
 from sqlalchemy.engine import Engine
 
+from fx_ai_trading.adapters.price_feed.replay_quote_feed import ReplayQuoteFeed
+from fx_ai_trading.domain.price_feed import QuoteFeed
+
 _SCRIPTS_DIR = Path(__file__).resolve().parent
 _DEFAULT_LOG_DIR = Path("logs")
 _DEFAULT_LOG_FILENAME = "paper_evaluation.jsonl"
@@ -181,6 +184,7 @@ class EvaluationArgs:
     log_filename: str
     log_level: str
     fast: bool
+    replay_path: Path | None
 
 
 def parse_args(argv: list[str] | None = None) -> EvaluationArgs:
@@ -276,6 +280,19 @@ def parse_args(argv: list[str] | None = None) -> EvaluationArgs:
             "and PnL paths are unchanged — only the wall-clock pacing is removed."
         ),
     )
+    parser.add_argument(
+        "--replay",
+        dest="replay_path",
+        type=Path,
+        default=None,
+        help=(
+            "Path to a JSONL produced by scripts/record_quotes.  When set, "
+            "ReplayQuoteFeed substitutes the live OANDA feed and the OANDA "
+            "env vars (OANDA_ACCESS_TOKEN / OANDA_ACCOUNT_ID / "
+            "OANDA_ENVIRONMENT) are NOT required.  Combine with --fast to "
+            "replay as quickly as the dataset allows."
+        ),
+    )
 
     parsed = parser.parse_args(argv)
     if parsed.max_iterations <= 0:
@@ -286,6 +303,8 @@ def parse_args(argv: list[str] | None = None) -> EvaluationArgs:
         parser.error(f"--interval-seconds must be >= 0; got {parsed.interval_seconds!r}")
     if parsed.max_holding_seconds <= 0:
         parser.error(f"--max-holding-seconds must be > 0; got {parsed.max_holding_seconds!r}")
+    if parsed.replay_path is not None and not parsed.replay_path.is_file():
+        parser.error(f"--replay file not found: {parsed.replay_path}")
 
     return EvaluationArgs(
         strategy=parsed.strategy,
@@ -305,6 +324,7 @@ def parse_args(argv: list[str] | None = None) -> EvaluationArgs:
         log_filename=parsed.log_filename,
         log_level=parsed.log_level,
         fast=parsed.fast,
+        replay_path=parsed.replay_path,
     )
 
 
@@ -597,15 +617,38 @@ def main(argv: list[str] | None = None) -> int:
             "interval_seconds": args.interval_seconds,
             "fast": args.fast,
             "max_holding_seconds": args.max_holding_seconds,
+            "replay_path": str(args.replay_path) if args.replay_path is not None else None,
             "log_path": str(log_path),
         },
     )
 
-    try:
-        oanda = exit_lib.read_oanda_config_from_env()
-    except RuntimeError as exc:
-        log.error("eval.env_missing", extra={"event": "eval.env_missing", "detail": str(exc)})
-        return 2
+    if args.replay_path is not None:
+        # Replay mode: substitute the live OANDA feed with a file-backed
+        # ReplayQuoteFeed (PR #159).  The OANDA env vars are *not* read.
+        # build_components / build_supervisor_with_paper_stack still take
+        # an OandaConfig — we hand them a placeholder whose credentials
+        # are never consumed (both factories only touch oanda.* when
+        # quote_feed is None, and we always inject the replay feed).
+        log.info(
+            "eval.replay_mode",
+            extra={"event": "eval.replay_mode", "path": str(args.replay_path)},
+        )
+        oanda = exit_lib.OandaConfig(
+            access_token="",
+            account_id=args.account_id,
+            environment="practice",
+        )
+        replay_feed: QuoteFeed | None = ReplayQuoteFeed(
+            args.replay_path, instrument=args.instrument
+        )
+    else:
+        try:
+            oanda = exit_lib.read_oanda_config_from_env()
+        except RuntimeError as exc:
+            log.error("eval.env_missing", extra={"event": "eval.env_missing", "detail": str(exc)})
+            return 2
+        replay_feed = None
+
     try:
         engine = exit_lib.build_db_engine()
     except RuntimeError as exc:
@@ -623,6 +666,7 @@ def main(argv: list[str] | None = None) -> int:
         account_type=args.account_type,
         nominal_price=args.nominal_price,
         signal=signals[0],  # EntryComponents.signal slot (unused by our policy)
+        quote_feed=replay_feed,  # None → factory builds OandaQuoteFeed (legacy)
     )
     # Share the entry-side QuoteFeed with the exit-side Supervisor so
     # open-leg avg_price and close-leg fill_price are read from the
