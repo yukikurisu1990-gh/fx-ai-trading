@@ -157,7 +157,7 @@ _DIRECTION_TO_BROKER_SIDE: dict[str, str] = {"buy": "long", "sell": "short"}
 @dataclass(frozen=True)
 class EntryRunnerArgs:
     instrument: str
-    direction: str  # 'buy' | 'sell'
+    direction: str | None  # 'buy' | 'sell' | None (signal-driven)
     units: int
     account_id: str
     account_type: str
@@ -206,9 +206,14 @@ def parse_args(argv: list[str] | None = None) -> EntryRunnerArgs:
         "--direction",
         dest="direction",
         type=str,
-        required=True,
+        required=False,
+        default=None,
         choices=("buy", "sell"),
-        help="Order direction. Mapped to broker side: buy→long, sell→short.",
+        help=(
+            "Order direction. Mapped to broker side: buy→long, sell→short. "
+            "When omitted, the signal's returned direction is adopted directly "
+            "(signal-driven mode)."
+        ),
     )
     parser.add_argument(
         "--units",
@@ -493,6 +498,7 @@ class EntryDecision:
     should_fire: bool
     reason: str  # one of: already_open / no_quote / stale_quote / no_signal / ok
     age_seconds: float | None = None  # populated when reason in {stale_quote, no_signal, ok}
+    adopted_direction: str | None = None  # 'buy'|'sell' when should_fire=True; None otherwise
 
 
 class EntrySignal(Protocol):
@@ -715,7 +721,7 @@ class MinimumEntryPolicy:
         self,
         *,
         instrument: str,
-        direction: str,
+        direction: str | None,
         state_manager: StateManager,
         quote_feed: QuoteFeed,
         clock: Clock,
@@ -723,8 +729,8 @@ class MinimumEntryPolicy:
         signals: Sequence[EntrySignal] | None = None,
         stale_after_seconds: float = _DEFAULT_STALE_AFTER_SECONDS,
     ) -> None:
-        if direction not in _DIRECTION_TO_BROKER_SIDE:
-            raise ValueError(f"direction must be 'buy' or 'sell'; got {direction!r}")
+        if direction is not None and direction not in _DIRECTION_TO_BROKER_SIDE:
+            raise ValueError(f"direction must be 'buy', 'sell', or None; got {direction!r}")
         if signals is not None:
             self._signals: tuple[EntrySignal, ...] = tuple(signals)
         elif signal is not None:
@@ -770,14 +776,13 @@ class MinimumEntryPolicy:
             if candidate is not None:
                 signal_direction = candidate
                 break
-        if signal_direction is None or signal_direction != self._direction:
-            return EntryDecision(
-                should_fire=False,
-                reason=_REASON_NO_SIGNAL,
-                age_seconds=age,
-            )
-
-        return EntryDecision(should_fire=True, reason=_REASON_OK, age_seconds=age)
+        if signal_direction is None:
+            return EntryDecision(should_fire=False, reason=_REASON_NO_SIGNAL, age_seconds=age)
+        if self._direction is not None and signal_direction != self._direction:
+            return EntryDecision(should_fire=False, reason=_REASON_NO_SIGNAL, age_seconds=age)
+        return EntryDecision(
+            should_fire=True, reason=_REASON_OK, age_seconds=age, adopted_direction=signal_direction
+        )
 
 
 # ---------------------------------------------------------------------------
@@ -921,7 +926,7 @@ def run_loop(
     components: EntryComponents,
     policy: MinimumEntryPolicy,
     instrument: str,
-    direction: str,
+    direction: str | None,
     units: int,
     account_id: str,
     account_type: str,
@@ -957,10 +962,11 @@ def run_loop(
                     },
                 )
             else:
+                assert decision.adopted_direction is not None
                 try:
                     opened = _open_one_position(
                         instrument=instrument,
-                        direction=direction,
+                        direction=decision.adopted_direction,
                         units=units,
                         account_id=account_id,
                         account_type=account_type,

@@ -287,25 +287,33 @@ bootstrap.opened               成功（order_id / psid / fill_price / side）
 
 `scripts/paper_open_position`（§10.7）は **1 ショット**で open を 1 件作るが、close 後の自動再 open はできない。close path を継続的に検証したいとき（max_holding_seconds 経過 → close → 再 open → … のサイクル確認等）、operator は `scripts/run_paper_entry_loop` で **cadence 駆動の open 発火**を回せる。
 
-本ランナーの責務は **1 PR / 1 責務**で「最小 entry policy で paper の auto-open を可能にする」ことに限定されている。strategy / signal generation の凍結スコープ（§10.6, Cycle 6.9a）は侵食しない。固定された `(instrument, direction, units)` に対して、tick ごとに `MinimumEntryPolicy` が 5 分岐で発火可否のみを決める：
+本ランナーの責務は **1 PR / 1 責務**で「最小 entry policy で paper の auto-open を可能にする」ことに限定されている。strategy / signal generation の凍結スコープ（§10.6, Cycle 6.9a）は侵食しない。固定された `(instrument, units)` に対して、tick ごとに `MinimumEntryPolicy` が 5 分岐で発火可否のみを決める：
 
 - `already_open` — 同 `(account, instrument)` で既に open がある（`StateManager.open_instruments()` 参照）
 - `no_quote`     — `QuoteFeed.get_quote` が例外（一時的な feed outage、次 tick で再試行）
 - `stale_quote`  — `(clock.now() - quote.ts).total_seconds() > stale_after_seconds`（M-3c と同じ厳密 `>`、既定 60s）
-- `no_signal`    — fresh quote は取れたが設定済み `EntrySignal` の判定が `--direction` と一致しない（warmup / 非単調 / 逆方向シグナル。window 長は signal 実装に依存）
+- `no_signal`    — fresh quote は取れたが signal が None（warmup / 非単調）、または `--direction` 指定時に signal 方向が不一致
 - `ok`           — 発火 → §10.7 と完全に同じ FSM 5-step（`create_order` → `update_status('SUBMITTED')` → `PaperBroker.place_order` → `update_status('FILLED')` → `StateManager.on_fill`）
 
 signal 層は M10-2 で `EntrySignal` Protocol（1 メソッド: `evaluate(quote: Quote) -> str | None`）として最小抽象化された。`build_components(signal=...)` に任意の conforming インスタンスを差し込める。**default は `MinimumEntrySignal`（3 点モメンタム）のまま**。
 
 - **`MinimumEntrySignal`** — 直近 3 quotes を `deque(maxlen=3)` で保持。3 点 strict 単調増 → `'buy'`、strict 単調減 → `'sell'`、それ以外 → `None`（warmup = 最初の 2 ticks）。
 - **`FivePointMomentumSignal`** — 直近 5 quotes を `deque(maxlen=5)` で保持。5 点 strict 単調増 → `'buy'`、strict 単調減 → `'sell'`、それ以外 → `None`（warmup = 最初の 4 ticks）。M10-2 で `EntrySignal` Protocol の実証用に追加。
-- **multi-signal picker（M10-3）** — `MinimumEntryPolicy` は `signal=` に加えて `signals=` （順序付き `Sequence[EntrySignal]`）を受け付けるようになった。picker は **first-non-None**: signals を先頭から順番に `evaluate()` し、最初に非 None を返した direction を採用する。全 signal が None → `no_signal`。direction mismatch → `no_signal`（従来と同じ）。score / weighted pick / EV 比較は未実装。**default 構成は従来どおり single signal（`MinimumEntrySignal`）**。
+- **multi-signal picker（M10-3）** — `MinimumEntryPolicy` は `signal=` に加えて `signals=` （順序付き `Sequence[EntrySignal]`）を受け付けるようになった。picker は **first-non-None**: signals を先頭から順番に `evaluate()` し、最初に非 None を返した direction を採用する。全 signal が None → `no_signal`。score / weighted pick / EV 比較は未実装。**default 構成は従来どおり single signal（`MinimumEntrySignal`）**。
+- **direction optional（M10-4）** — `--direction` は **省略可能**になった（`required=False`）。省略時は signal が返した direction をそのまま採用（signal-driven mode）。指定時は signal direction がフィルタとして機能し、一致しない場合 `no_signal`（filter mode、従来と同じ動作）。`EntryDecision.adopted_direction` フィールドが追加され、`run_loop` が open 時の direction を参照する。
 
 signal はいずれも `QuoteFeed` / `Clock` / staleness 判定を持たない。そのレイヤは `MinimumEntryPolicy` 側で先に処理される。reason / event / 5-step / `run_exit_gate` は不変。
 
 #### CLI usage
 
 ```bash
+# signal-driven mode（--direction 省略 → signal が方向を決定）
+python -m scripts.run_paper_entry_loop \
+    --account-id $OANDA_ACCOUNT_ID \
+    --instrument EUR_USD \
+    --units 1000
+
+# filter mode（--direction 指定 → signal 方向が一致した tick のみ発火）
 python -m scripts.run_paper_entry_loop \
     --account-id $OANDA_ACCOUNT_ID \
     --instrument EUR_USD \
@@ -317,7 +325,7 @@ python -m scripts.run_paper_entry_loop \
 |---|---|---|---|
 | `--account-id` | ○ | — | `orders.account_id` / `positions.account_id`（§10.7 と同義）|
 | `--instrument` | ○ | — | OANDA instrument（例: `EUR_USD`）。policy はこの 1 件のみを監視 |
-| `--direction` | ○ | — | `buy` または `sell`。broker side マッピングは §10.7 と同じ |
+| `--direction` | × | `None` | `buy` または `sell`。省略時は signal-driven（signal が方向を決定）。指定時は filter（一致 tick のみ発火）。broker side マッピングは §10.7 と同じ |
 | `--units` | ○ | — | 約定数量（> 0）|
 | `--account-type` | × | `demo` | §10.7 と同義 |
 | `--nominal-price` | × | `1.0` | §10.7 と同義 |
@@ -368,7 +376,7 @@ tick.completed                 各 tick 末尾（iteration / tick_duration_ms）
 - `tick.skip_duplicate` 経路は recoverable だが、duplicate 状態が続く限り毎 tick `tick.no_fire(reason=already_open)` がログに残り続ける（policy 自体が冪等のため副作用なし）。
 - **Signal warmup**: ランナー起動直後は signal の window が埋まるまで必ず `tick.no_fire(reason=no_signal)` になる（`MinimumEntrySignal`: 最初の **2 ticks** / `FivePointMomentumSignal`: 最初の **4 ticks**）。プロセス再起動・cold start のたびに warmup が再発生する。
 - **Flat / 非単調 相場**: signal の window が strict 単調でない（同値を含む / 山型 / V 字 / 一部だけ等値）場合 signal は `None` を返し、`tick.no_fire(reason=no_signal)` が継続する。閾値ベースのブレイク判定は本ランナーの out of scope（戦略フレームワーク化を避けるため）。
-- **逆方向シグナル**: signal が `--direction` と逆向き（例: `--direction buy` で signal='sell'）の間は `tick.no_fire(reason=no_signal)` が継続し、永久に発火しないこともあり得る。これは仕様であり、新イベントは追加していない（reason 値で識別する）。
+- **逆方向シグナル（filter mode）**: `--direction` を指定した場合、signal が逆向き（例: `--direction buy` で signal='sell'）の間は `tick.no_fire(reason=no_signal)` が継続し、永久に発火しないこともあり得る。これは仕様であり、新イベントは追加していない（reason 値で識別する）。signal-driven mode（`--direction` 省略）ではこの問題は発生しない。
 - `tick.broker_rejected` 後、対象 `orders` 行は `status='SUBMITTED'` のまま **残留する**（FILLED へは進まない）。§10.7 の rc=4 と同じ性質。次 tick の `_open_one_position` は新しい `order_id` を作って独立に再試行するため、SUBMITTED 残留行は累積し得る — operator は `SELECT order_id FROM orders WHERE status='SUBMITTED'` で観測し、必要なら手動で reconcile する。
 - 1 ランナー = 1 instrument。複数 instrument を回す場合は instrument ごとに別プロセスで起動する。
 
