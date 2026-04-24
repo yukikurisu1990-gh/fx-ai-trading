@@ -154,12 +154,14 @@ def _install_signal_driven_safe_stop(
         stop_event.set()
 
     # SIGTERM is the ProcessManager.stop() target on Unix.  SIGINT covers
-    # interactive Ctrl+C.  Both are catchable on Unix and on Windows
-    # signal.signal(SIGINT) is honored by the C runtime; SIGTERM on
-    # Windows is not delivered by TerminateProcess (handled separately
-    # in PR-B via CTRL_BREAK_EVENT + CREATE_NEW_PROCESS_GROUP).
+    # interactive Ctrl+C on both platforms.  On Windows the catchable
+    # ProcessManager.stop() signal is CTRL_BREAK_EVENT, which Python
+    # delivers as SIGBREAK — register that too so the same wiring works
+    # cross-platform (PR-B).
     signal.signal(signal.SIGTERM, _handler)
     signal.signal(signal.SIGINT, _handler)
+    if sys.platform == "win32":
+        signal.signal(signal.SIGBREAK, _handler)  # type: ignore[attr-defined]
     return stop_event, received
 
 
