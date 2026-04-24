@@ -8,6 +8,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from fx_ai_trading.adapters.price_feed.oanda_bar_feed import OandaBarFeed, _parse_oanda_time
+from fx_ai_trading.common.clock import FixedClock
 from fx_ai_trading.domain.price_feed import Candle
 
 
@@ -29,9 +30,13 @@ def _at_boundary_feed(
     granularity: str = "M5",
     max_bars: int = 0,
 ) -> OandaBarFeed:
-    """Return a feed whose datetime.now mock always lands at a bar boundary."""
+    """Return a feed whose clock always lands at a bar boundary.
+
+    timestamp=2 → int(2) % 300 = 2 < poll_interval(5) → always at boundary.
+    """
     client = MagicMock()
-    return OandaBarFeed(client, instrument, granularity, max_bars=max_bars)
+    clock = FixedClock(datetime.fromtimestamp(2.0, tz=UTC))
+    return OandaBarFeed(client, instrument, granularity, max_bars=max_bars, clock=clock)
 
 
 class TestParseOandaTime:
@@ -58,13 +63,7 @@ class TestOandaBarFeedMaxBars:
         """Run the feed with _fetch_latest_completed returning the given sequence."""
         feed = _at_boundary_feed(max_bars=max_bars)
         feed._fetch_latest_completed = MagicMock(side_effect=candles)  # type: ignore[method-assign]
-
-        # secs_into_bar = int(ts) % bar_seconds; need < poll_interval (5) → use ts=2
-        with (
-            patch("fx_ai_trading.adapters.price_feed.oanda_bar_feed.datetime") as mock_dt,
-            patch("fx_ai_trading.adapters.price_feed.oanda_bar_feed.time"),
-        ):
-            mock_dt.now.return_value.timestamp.return_value = 2.0
+        with patch("fx_ai_trading.adapters.price_feed.oanda_bar_feed.time"):
             return list(feed)
 
     def test_max_bars_limits_output(self) -> None:
@@ -103,11 +102,7 @@ class TestOandaBarFeedDedup:
             side_effect=[candle1, candle1, candle2]
         )
 
-        with (
-            patch("fx_ai_trading.adapters.price_feed.oanda_bar_feed.datetime") as mock_dt,
-            patch("fx_ai_trading.adapters.price_feed.oanda_bar_feed.time"),
-        ):
-            mock_dt.now.return_value.timestamp.return_value = 2.0
+        with patch("fx_ai_trading.adapters.price_feed.oanda_bar_feed.time"):
             bars = list(feed)
 
         assert len(bars) == 2
@@ -123,11 +118,7 @@ class TestOandaBarFeedStop:
         feed._fetch_latest_completed = MagicMock(return_value=candle)  # type: ignore[method-assign]
 
         collected: list[Candle] = []
-        with (
-            patch("fx_ai_trading.adapters.price_feed.oanda_bar_feed.datetime") as mock_dt,
-            patch("fx_ai_trading.adapters.price_feed.oanda_bar_feed.time"),
-        ):
-            mock_dt.now.return_value.timestamp.return_value = 2.0
+        with patch("fx_ai_trading.adapters.price_feed.oanda_bar_feed.time"):
             for bar in feed:
                 collected.append(bar)
                 feed.stop()
