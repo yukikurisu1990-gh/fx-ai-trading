@@ -26,6 +26,7 @@ class MetaContext:
     config_version: str
     correlation_threshold: float = 0.7
     currency_strength: dict[str, float] | None = None
+    regime: str | None = None
 
 
 @dataclass(frozen=True)
