@@ -3,18 +3,37 @@
 Starts the Supervisor as a detached subprocess, records its PID in
 logs/supervisor.pid, and provides stop / status operations.
 
-SIGTERM → graceful wait → SIGKILL ladder is implemented via psutil so that
+graceful-stop → wait → SIGKILL ladder is implemented via psutil so that
 it works on both Unix and Windows.
+
+Catchable-stop on Windows (G-0/G-1 PR-B):
+    Windows ``proc.terminate()`` is ``TerminateProcess`` — uncatchable,
+    so the supervisor's SafeStopHandler 4-step contract never fires.
+    Instead, ``start()`` spawns with ``CREATE_NEW_PROCESS_GROUP`` so
+    ``stop()`` can deliver ``CTRL_BREAK_EVENT`` to that group only —
+    Python receives this as ``SIGBREAK`` in the supervisor's signal
+    handler.  This pair is the Windows analog of Unix SIGTERM and is
+    what makes the safe-stop sequence reachable from outside.
 """
 
 from __future__ import annotations
 
 import logging
+import os
+import signal
 import subprocess
 import sys
 from pathlib import Path
 
 import psutil
+
+_IS_WINDOWS = sys.platform == "win32"
+
+# subprocess.CREATE_NEW_PROCESS_GROUP is Windows-only.  Resolve via
+# getattr so this module imports cleanly on Linux CI runners; the
+# value (0x00000200) is the documented CreateProcess flag and is only
+# ever passed when ``_IS_WINDOWS`` is True.
+_CREATE_NEW_PROCESS_GROUP = getattr(subprocess, "CREATE_NEW_PROCESS_GROUP", 0x00000200)
 
 _log = logging.getLogger(__name__)
 
@@ -55,20 +74,33 @@ class ProcessManager:
             raise RuntimeError(f"Supervisor is already running (PID {pid})")
 
         cmd = args or [sys.executable, "-m", "fx_ai_trading.supervisor"]
-        proc = subprocess.Popen(  # noqa: S603
-            cmd,
-            start_new_session=True,
-        )
+        popen_kwargs: dict = {"start_new_session": True}
+        if _IS_WINDOWS:
+            # Required so stop() can deliver CTRL_BREAK_EVENT to the
+            # supervisor *only* (without it the event would propagate
+            # to this process too).  Python translates the event into
+            # SIGBREAK in the supervisor's signal handler.
+            popen_kwargs["creationflags"] = _CREATE_NEW_PROCESS_GROUP
+        proc = subprocess.Popen(cmd, **popen_kwargs)  # noqa: S603
         self._pid_file.parent.mkdir(parents=True, exist_ok=True)
         self._pid_file.write_text(str(proc.pid), encoding="utf-8")
         _log.info("ProcessManager.start: pid=%d cmd=%s", proc.pid, cmd)
         return proc.pid
 
     def stop(self, *, timeout_graceful: int = 10, timeout_kill: int = 5) -> bool:
-        """Stop the Supervisor using SIGTERM → wait → SIGKILL.
+        """Stop the Supervisor using a catchable signal → wait → SIGKILL.
+
+        On Unix the catchable signal is SIGTERM (via ``proc.terminate()``).
+        On Windows it is CTRL_BREAK_EVENT delivered to the new process
+        group created by ``start()``; the supervisor receives it as
+        SIGBREAK and runs the SafeStopHandler 4-step sequence before
+        exit.  ``proc.terminate()`` on Windows is intentionally NOT used
+        — it maps to TerminateProcess which is uncatchable and would
+        skip safe_stop.
 
         Args:
-            timeout_graceful: Seconds to wait after SIGTERM before escalating.
+            timeout_graceful: Seconds to wait after the catchable signal
+                              before escalating.
             timeout_kill: Seconds to wait after SIGKILL before giving up.
 
         Returns:
@@ -86,8 +118,12 @@ class ProcessManager:
             self._remove_pid_file()
             return False
 
-        _log.info("ProcessManager.stop: sending SIGTERM to PID %d", pid)
-        proc.terminate()
+        if _IS_WINDOWS:
+            _log.info("ProcessManager.stop: sending CTRL_BREAK_EVENT to PID %d", pid)
+            os.kill(pid, signal.CTRL_BREAK_EVENT)
+        else:
+            _log.info("ProcessManager.stop: sending SIGTERM to PID %d", pid)
+            proc.terminate()
         try:
             proc.wait(timeout=timeout_graceful)
         except psutil.TimeoutExpired:

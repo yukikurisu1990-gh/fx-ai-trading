@@ -163,13 +163,22 @@ class TestPr4ProbeEnvWiring:
 class TestModuleSubprocessSmoke:
     """End-to-end: ``python -m fx_ai_trading.supervisor`` blocks on signal then exits 0.
 
-    Skipped on Windows because ``signal.SIGTERM`` is not catchable when
-    delivered via ``subprocess.Popen.terminate`` (Win32 ``TerminateProcess``
-    is uncatchable).  The Windows-compatible path uses
-    ``CREATE_NEW_PROCESS_GROUP`` + ``CTRL_BREAK_EVENT`` and lands in PR-B.
+    Skipped on Windows because ``CTRL_BREAK_EVENT`` delivery requires the
+    target subprocess to share a console with the sender; pytest under
+    common Windows runners (git-bash, MSYS, headless CI shells) often has
+    no console attached and the event is silently dropped.  That delivery
+    contract is an OS guarantee, not something this codebase implements.
+    Windows coverage of the catchable-stop wiring lives in:
+      - ``TestSignalDrivenSafeStop.test_install_registers_sigbreak_on_windows``
+        (handler is wired to SIGBREAK on Windows), and
+      - ``test_ctl_start_stop.TestProcessManagerCrossPlatformBranching``
+        (start uses CREATE_NEW_PROCESS_GROUP, stop sends CTRL_BREAK_EVENT).
     """
 
-    @pytest.mark.skipif(sys.platform == "win32", reason="catchable-signal compat is PR-B")
+    @pytest.mark.skipif(
+        sys.platform == "win32",
+        reason="CTRL_BREAK_EVENT needs a shared console; covered by mock+in-process tests",
+    )
     def test_module_blocks_then_exits_clean_on_sigterm(self, tmp_path: Path) -> None:
         env = dict(os.environ)
         env.pop("SLACK_WEBHOOK_URL", None)
@@ -237,6 +246,42 @@ class TestSignalDrivenSafeStop:
         finally:
             signal.signal(signal.SIGTERM, prior_term)
             signal.signal(signal.SIGINT, prior_int)
+
+    def test_install_registers_sigbreak_on_windows(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """PR-B: on Windows the same handler must also be wired to SIGBREAK.
+
+        ``ProcessManager.stop()`` delivers ``CTRL_BREAK_EVENT`` on Windows,
+        which Python translates to ``SIGBREAK`` in the child.  Without this
+        registration the catchable-stop path lands on the default handler
+        and the supervisor exits without firing safe_stop.
+        """
+        if sys.platform != "win32":
+            pytest.skip("SIGBREAK is Windows-only")
+
+        monkeypatch.delenv("SLACK_WEBHOOK_URL", raising=False)
+        monkeypatch.chdir(tmp_path)
+        supervisor, ctx = _build_supervisor_context()
+        log = __import__("logging").getLogger("test")
+
+        sigbreak = signal.SIGBREAK  # type: ignore[attr-defined]
+        prior_term = signal.getsignal(signal.SIGTERM)
+        prior_int = signal.getsignal(signal.SIGINT)
+        prior_break = signal.getsignal(sigbreak)
+        try:
+            stop_event, received = _install_signal_driven_safe_stop(supervisor, ctx, log)
+            handler = signal.getsignal(sigbreak)
+            # Default handlers are SIG_DFL/SIG_IGN sentinels — our handler
+            # is a callable installed by _install_signal_driven_safe_stop.
+            assert callable(handler)
+            handler(sigbreak, None)
+            assert stop_event.is_set()
+            assert received == [sigbreak]
+        finally:
+            signal.signal(signal.SIGTERM, prior_term)
+            signal.signal(signal.SIGINT, prior_int)
+            signal.signal(sigbreak, prior_break)
 
     def test_handler_sets_event_and_records_signum(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
