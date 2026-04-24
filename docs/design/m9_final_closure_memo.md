@@ -6,6 +6,33 @@
 
 ---
 
+## 0a. Post-publication amendment (2026-04-24)
+
+> **趣旨**: 本メモ初出 (PR #140, master `056d272`) 直後に、§5.2 / §7 / §9 で "意図的に未実施" と記述していた **`OandaQuoteFeed` の Supervisor 接続** が **PR #142 (`a66c714`, `bootstrap production paper stack`) の `scripts/run_paper_loop.py:build_supervisor_with_paper_stack` 配線で完了** していたことが事後に判明した。本メモ §5.2 / §7 / §9 / §0 の「未接続 (意図的; deferral)」「(将来 attach 時)」「意図的に未実施」「Supervisor 接続が残作業」の記述は **その時点では正しかったが、現在の master では事実と異なる**。
+>
+> 本セクションを以て差分を明示し、本文 §1〜§10 は当初の snapshot として保持する。
+>
+> | 旧記述箇所 | 旧記述 | post-#142 / #162 の事実 |
+> |---|---|---|
+> | §0 表「Supervisor への live producer 接続」 | 未接続 (意図的; §5.2 deferral) | ✅ paper stack 経由で接続済 (`scripts/run_paper_loop.py`) |
+> | §0 表「残 deferral 件数」 | 6 | 5 (Supervisor 接続が解消側へ移動) |
+> | §2.2 表 M-3d 行 | "Supervisor wiring は意図的に未実施" | producer landing は #139、wiring は #142 (paper stack) / #162 (`stale_max_age_seconds` 配線) で完了 |
+> | §4.1 ASCII diagram | "※ Supervisor 接続は別 PR (deferral)" / "(将来 attach 時)" | paper stack の `build_supervisor_with_paper_stack` で `attach_exit_gate(quote_feed=OandaQuoteFeed(...))` を直接呼出 |
+> | §5.1 解消済リスト | (Supervisor 接続は欠落) | **+ `OandaQuoteFeed` の Supervisor 接続 (`run_paper_loop.build_supervisor_with_paper_stack` 経由 / PR #142, #162)** |
+> | §5.2 deferral 表先頭行 | "**`OandaQuoteFeed` の Supervisor 接続** ... `attach_exit_gate(quote_feed=...)` には未接続" | この行は **解消済み**。§5.1 へ移動 |
+> | §5.2 prose ("差引 6 項目 ...") | 6 項目 + paper QuoteFeed 直接接続 + `pnl_summary_by_reason` の合計 8 候補 | Supervisor 接続も解消側に移動。実質残り 5 項目 + `pnl_summary_by_reason` の 6 候補 (paper QuoteFeed 直接接続も #142 で接続経路上は完了) |
+> | §7 末文 | "現状: ... `attach_exit_gate(quote_feed=OandaQuoteFeed(...))` を呼ぶだけで実 runtime 接続が完了する状態" / "接続が **意図的に未実施** な理由は §5.2 冒頭参照" | paper-mode runner では接続済。**live-mode 単独 runner はまだ存在しない** (M9/M16 trading-loop bootstrap scope) ため "live 単体 runner への接続" は未着手のまま |
+> | §9 候補表 "Supervisor 接続" 行 | 緊急性 = 最優先 | 接続済 (本表からは削除相当)。残る関連候補は **live-mode 単独 trading-loop runner** (M9/M16) と、その上での streaming producer 切替 |
+> | §9 判断軸 ("Supervisor 接続 > net pnl > その他") | Supervisor 接続が最優先 | paper-mode 接続済を踏まえ、優先度は net pnl / metrics / runbook の順に再考要 |
+>
+> **新規残候補 (post-#142 / #162 の整理)**:
+> - **live-mode trading-loop runner の bootstrap** — paper-loop runner と対称な `scripts/run_live_loop.py` に相当する未実装作業。M9/M16 scope。本メモ §5.2 deferral には載っていない (旧 §5.2 の "Supervisor 接続" は paper の文脈)。
+> - その他の旧 §5.2 deferral (net pnl / streaming producer / stale gate metrics / runbook / `app_settings` 化) は **未消化のまま** で本 amendment の対象外。
+>
+> **影響範囲**: 本 amendment は docs-only。コード実態の変更ゼロ。closure memo の "snapshot at landing" 性質を保つため §1〜§10 本文は触らず、本セクションのみで差分を表明する。
+
+---
+
 ## 0. 旧 closure memo (#138) との差分
 
 | 観点 | 旧 closure memo (#138, `3122cee`) | 本メモ (post-#139, `0a9e071`) |
