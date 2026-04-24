@@ -64,7 +64,10 @@ from fx_ai_trading.ops.logging_config import apply_logging_config
 from fx_ai_trading.services.feature_service import FeatureService
 from fx_ai_trading.services.meta_cycle_runner import run_meta_cycle
 from fx_ai_trading.services.strategies.atr import ATRStrategy
+from fx_ai_trading.services.strategies.bollinger import BollingerStrategy
 from fx_ai_trading.services.strategies.ma import MAStrategy
+from fx_ai_trading.services.strategies.macd import MACDStrategy
+from fx_ai_trading.services.strategies.rsi import RSIStrategy
 from fx_ai_trading.services.strategy_runner import run_strategy_cycle
 
 if TYPE_CHECKING:
@@ -322,8 +325,13 @@ def run(args: argparse.Namespace, *, env: dict[str, str] | None = None) -> int:
 
     _insert_system_job(engine, run_id=run_id, instrument=reference_instrument, dry_run=args.dry_run)
 
-    strategies = [MAStrategy(), ATRStrategy()]
-    # Phase 9.4: replace with strategy registry lookup.
+    strategies = [
+        MAStrategy(strategy_id="ma"),
+        ATRStrategy(strategy_id="atr"),
+        RSIStrategy(strategy_id="rsi"),
+        MACDStrategy(strategy_id="macd"),
+        BollingerStrategy(strategy_id="bollinger"),
+    ]
 
     # Rolling per-instrument candle history (fed before FeatureService.build).
     history: dict[str, deque] = {inst: deque(maxlen=_HISTORY_DEPTH) for inst in active_instruments}
