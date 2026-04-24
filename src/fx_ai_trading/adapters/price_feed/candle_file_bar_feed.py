@@ -14,6 +14,11 @@ Same dataset format as ``CandleReplayQuoteFeed``:
 
 Required fields per line: ``time``, ``o``, ``h``, ``l``, ``c``, ``volume``.
 
+Phase 9.10: if optional ``bid_c`` and ``ask_c`` fields are present on the
+JSONL line (produced by ``fetch_oanda_candles --price BA`` or ``MBA``),
+they are carried onto ``Candle.bid_close`` / ``Candle.ask_close``. Lines
+without bid/ask still produce valid mid-only Candles.
+
 Yields completed ``Candle`` objects in file order (ascending time assumed).
 StopIteration when the file is exhausted.  Raises ``ReplayDataError`` on
 malformed lines — never silently skips.
@@ -80,6 +85,18 @@ class CandleFileBarFeed:
                     raise ReplayDataError(
                         f"CandleFileBarFeed: missing fields {sorted(missing)} on line {lineno}"
                     )
+                # Phase 9.10: optional bid_c / ask_c carried through as
+                # Candle.bid_close / ask_close when both are present. If
+                # only one of the pair is present, propagate neither and
+                # let the downstream Quote fall back to mid.
+                bid_c = obj.get("bid_c")
+                ask_c = obj.get("ask_c")
+                if bid_c is not None and ask_c is not None:
+                    bid_close: float | None = float(bid_c)
+                    ask_close: float | None = float(ask_c)
+                else:
+                    bid_close = None
+                    ask_close = None
                 yield Candle(
                     instrument=self._instrument,
                     tier=self._granularity,
@@ -89,6 +106,8 @@ class CandleFileBarFeed:
                     low=float(obj["l"]),
                     close=float(obj["c"]),
                     volume=int(obj["volume"]),
+                    bid_close=bid_close,
+                    ask_close=ask_close,
                 )
 
 

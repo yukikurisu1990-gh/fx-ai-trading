@@ -33,6 +33,12 @@ that need OHLCV will read the same JSONL via a separate
 ``CandleReplaySignalFeed`` (not built here) so this projection layer
 stays minimal.
 
+Phase 9.10: when the source JSONL carries optional ``bid_c`` / ``ask_c``
+(produced by ``fetch_oanda_candles --price BA`` or ``MBA``), the emitted
+``Quote`` populates ``bid`` / ``ask`` so downstream ``PaperBroker`` fills
+at side-specific prices (long at ask, short at bid). With mid-only input
+the bid/ask remain ``None`` and fills stay at mid (legacy behaviour).
+
 Single-instrument-per-file convention: instrument lives in the filename,
 not in each candle line (matching ``ReplayQuoteFeed`` semantics).
 ``get_quote(instrument)`` compares against the instrument passed at
@@ -157,8 +163,28 @@ def _iter_candles_as_quotes(path: Path) -> Iterator[Quote]:
                     f"CandleReplayQuoteFeed: unparseable 'time' on line {line_no} "
                     f"of {path!s}: {exc}"
                 ) from exc
+            # Phase 9.10: propagate optional bid_c / ask_c as Quote.bid/ask.
+            # When either is absent, both stay None so Quote.__post_init__
+            # accepts it (and PaperBroker falls back to mid-price fills).
+            bid_raw = data.get("bid_c")
+            ask_raw = data.get("ask_c")
+            if bid_raw is not None and ask_raw is not None:
+                bid: float | None = float(bid_raw)
+                ask: float | None = float(ask_raw)
+                # With explicit bid/ask the Quote mid must equal (bid+ask)/2
+                # for the invariant to hold.  Synthesize that mid here — the
+                # candle's mid close may diverge from the BA mid when the
+                # producer pulled separate M and BA passes; we trust BA for
+                # cost-aware backtests.
+                projected_price = (bid + ask) / 2.0
+            else:
+                bid = None
+                ask = None
+                projected_price = float(data["c"])
             yield Quote(
-                price=float(data["c"]),
+                price=projected_price,
                 ts=ts,
                 source=SOURCE_OANDA_CANDLE_REPLAY,
+                bid=bid,
+                ask=ask,
             )
