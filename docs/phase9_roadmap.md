@@ -50,9 +50,21 @@ Phase 8 までで運用が「壊れない / 育つ / チームで運用できる
 - マルチブローカー対応 (OANDA 以外) — 別ロードマップ
 - 強化学習 (RL) — Phase 10+
 - 深層学習 (LSTM / Transformer) は Phase 9.9 で**任意**として扱う (gradient boosting が rule を上回ったときのみ)
-- 約定品質 (slippage モデル / TWAP-VWAP 比較) — Phase 11
+- ~~約定品質 (slippage モデル / TWAP-VWAP 比較) — Phase 11~~ → **Phase 9.10 に前倒し** (spread/slippage を含む cost-aware backtest が経済的実現性判定の前提)
 - Tick データへの拡張 (現状 candle ベース) — Phase 11
 - 社外データ (経済指標 / news / sentiment) — Phase 12
+
+### 2.3 追補: Phase 9.10 以降の必要性 (2026-04-25 追加)
+
+Phase 9.1-9.8 完了後の multi-pair ML 選択 backtest (scripts/compare_multipair_v2.py) で判明した事実:
+
+- ML 選択 (SELECTOR) は Sharpe 0.351 / PnL 230k pip / 10 ペア で baseline を上回る
+- しかし backtest はスプレッド / スリッページを**モデル化していない**
+- TP=3pip / SL=2pip は EUR/USD の典型スプレッド (~1pip/round-trip) でエッジがほぼ消える
+- シグナル率 91% は「毎分トレード」状態で実運用非現実的
+- 検証期間 1 年 = 単一レジーム
+
+これを受けて **Phase 9.10-9.14** を新設。Phase 9.8 (promotion gate) の基準を cost-aware 化し、実運用ゲートを追加する。
 
 ---
 
@@ -84,10 +96,18 @@ Phase 8 までで運用が「壊れない / 育つ / チームで運用できる
 
 ### 4.1 定量ゴール (Phase 9 全体完了時点)
 
+**Tier 1 (9.1-9.8 — 達成済)**:
 - 同一 eval pipeline 上で **3 種類以上の戦略系統**が独立に走る
-- 直近 6 ヶ月分の OHLCV (M5 想定) を replay した backtest で、ML 戦略の **out-of-sample Sharpe ≥ rule baseline + 0.3**
+- 直近 6 ヶ月分の OHLCV (M5 想定) を replay した backtest で、ML 戦略の **out-of-sample Sharpe ≥ rule baseline + 0.3** (**ゼロコスト前提**)
 - champion-challenger の自動 promotion が **月次で 1 回以上**実行される
 - 主要通貨 8 ペア (EUR/USD, USD/JPY, GBP/USD, USD/CHF, AUD/USD, USD/CAD, NZD/USD, EUR/JPY) で CSI が**毎時更新**される
+
+**Tier 2 (9.10-9.14 — 実運用化ゲート, 2026-04-25 追加)**:
+- bid/ask spread を組み込んだ backtest で、ML 戦略の **spread-adjusted OoS Sharpe ≥ 0.20** かつ PnL > 0
+- **シグナル率 ≤ 30%** (過剰トレード抑制)
+- **3 年以上の multi-regime データ**で OoS 検証され、全レジームで PnL > 0
+- **ペーパートレード実測**と backtest 予測の Sharpe 乖離が 30% 以内
+- **最大ドローダウン** が想定値 (backtest の 1.5 倍) 以内
 
 ### 4.2 定性ゴール
 
@@ -114,6 +134,11 @@ Phase 8 までで運用が「壊れない / 育つ / チームで運用できる
 | 9.7 | Meta-strategy 拡張 | EV-weighted picker / 相場状態ゲートを `MetaDeciderService` の Score 段に組込 (新規 Policy class は作らない) | 中 (PR 3-4) | 9.3 / 9.4 / 9.6 |
 | 9.8 | 昇格ゲート / Online A/B | backtest → paper → live promotion 定式化; `model_metadata.yaml` lifecycle 自動化 | 中 (PR 3-4) | 9.7 |
 | 9.9 | (任意) Sequence model | LSTM / Transformer を `StrategyEvaluator` Protocol 越しに | 大 (PR 5-7) | 9.6 が rule baseline 超過 |
+| **9.10** | **Cost-aware backtest (Phase A)** | bid/ask spread + slippage を `Quote`/`PaperBroker` に組込; TP/SL/confidence 再調整; spread 後 Sharpe ≥ 0.20 のサバイバル判定 | 大 (PR 6-8) | 9.6 / 9.7 (既達) |
+| **9.11** | **Robustness validation (Phase B)** | データを 3+ 年に拡大, OoS ホールドアウト, レジーム層別分析, マルチシード安定性検証 | 中 (PR 4-6) | 9.10 合格 |
+| **9.12** | **Model quality (Phase C)** | Meta-labeling (2 層 ML), ATR-based dynamic TP/SL, session/news フィルタ, ensemble (LightGBM + XGBoost + CatBoost) | 大 (PR 5-8) | 9.11 |
+| **9.13** | **Risk management (Phase D)** | Kelly/Fractional Kelly position sizing, portfolio 相関制限, daily loss limit, consecutive loss kill-switch | 中 (PR 4-5) | 9.12 |
+| **9.14** | **Paper trading validation (Phase E)** | OANDA demo での 1-3 ヶ月実走; 実測 vs 予測 Sharpe 乖離 ≤ 30% を昇格条件に追加 | 中 (PR 3-4) + 運用期間 1-3 ヶ月 | 9.13 |
 
 ---
 
@@ -408,6 +433,141 @@ Phase 8 までで運用が「壊れない / 育つ / チームで運用できる
 
 ---
 
+### 6.12 Phase 9.10 — Cost-aware backtest (Phase A, 新設 2026-04-25)
+
+**目的**: backtest にスプレッド / bid-ask / スリッページを組み込み、「ML の edge が取引コストを超えるか」のサバイバル判定を行う。ここで不合格なら Phase 9.11 以降の投資は意味がないため、**9.10 はこれ以降の全ての前提**となる Go/No-Go gate。
+
+**背景 (2026-04-25)**:
+現行 `compare_multipair_v2.py` の結果:
+- EUR/USD のヒット率 58% × TP=3pip / SL=2pip = gross 期待値 +0.90 pip/trade
+- ただし EUR/USD の実スプレッド 1 pip/round-trip を引くと **-0.10 pip/trade** でエッジ消滅
+- backtest 上の 91% シグナル率は現実のスプレッドコストを加味すると大損ラインに乗る
+
+**変更対象**:
+
+1. **`Quote` DTO 拡張** — `bid`, `ask` を optional field として追加 (default None; 既存呼び出し側の `.price` は動作維持)
+2. **`OandaQuoteFeed`** — `Quote.bid`, `Quote.ask` を populate (従来どおり `.price` も維持)
+3. **`fetch_oanda_candles`** — `--price BA` モード追加; output JSONL に `bid_o/h/l/c` + `ask_o/h/l/c` を書く
+4. **`CandleFileBarFeed` / `CandleReplayQuoteFeed`** — JSONL に bid/ask があれば propagate; なければ従来どおり mid
+5. **`PaperBroker`** — `Quote.bid/ask` が populate されていれば: buy 側は ask で約定 / sell 側は bid で約定 / exit 逆サイド; 不在時は mid fallback
+6. **新規 `BidAskSpreadModel`** — `SlippageModel` とは別軸; bid/ask が無い feed で spread を合成するためのモデル (固定 spread pip or ATR 倍率)
+7. **新規 `scripts/compare_multipair_v3_costs.py`** — v2 の派生; bid/ask candle で TP/SL 判定 (long entry at ask_open, TP/SL check against bid_high/bid_low); spread-adjusted Sharpe / PnL を出力
+8. **新規 `scripts/grid_search_tp_sl_conf.py`** — TP ∈ {5,8,10,15,20} × SL ∈ {3,5,8,10} × conf ∈ {0.45,0.50,0.55,0.60,0.65} の網羅探索
+
+**完了条件 (Go/No-Go gate)**:
+- [GO] spread 後 Sharpe ≥ 0.20 かつ PnL > 0 で `compare_multipair_v3_costs.py` が回る → **Phase 9.11 進行**
+- [GO] signal rate ≤ 30% の条件下でも Sharpe ≥ 0.20 維持される設定点が grid search で 1 つ以上存在
+- [NO-GO] どの TP/SL/conf 組合せでも spread 後 Sharpe < 0.20 → 戦略設計を根本見直し (Phase 9.12 から再出発、または scope 見直し)
+
+**PR 分割 (想定)**:
+- PR #A-1: `Quote` bid/ask 拡張 + `OandaQuoteFeed` 対応 (≤200 行)
+- PR #A-2: `PaperBroker` bid/ask fill + `BidAskSpreadModel` (≤250 行)
+- PR #A-3: `fetch_oanda_candles` `--price BA` (≤150 行)
+- PR #A-4: `Candle`/`CandleFileBarFeed`/`CandleReplayQuoteFeed` bid/ask 伝搬 (≤300 行)
+- PR #A-5: `compare_multipair_v3_costs.py` (≤500 行)
+- PR #A-6: `grid_search_tp_sl_conf.py` + 実行結果レポート (≤400 行)
+- PR #A-7: `docs/design/phase9_10_closure_memo.md` (Go/No-Go 判定)
+
+**リスク**:
+- bid/ask データ取得が OANDA 2 倍の API コール → fetch 時間 2 倍だが、一度取れば parquet 化で回避
+- No-Go 判定が出た場合の戦略再設計は scope 膨張 → 本 phase 内では **判定のみ**、再設計は別 phase
+
+---
+
+### 6.13 Phase 9.11 — Robustness validation (Phase B, 新設 2026-04-25)
+
+**目的**: 1 年データ・単一レジームでの過剰適合を排除。3+ 年・複数レジーム・ホールドアウト検証・マルチシード安定性を担保。
+
+**変更対象**:
+- `scripts/fetch_oanda_candles_multi_year.py` — 3-5 年分を fan-out で fetch (OANDA 無料口座の max 5000 bar/req 制約下)
+- `scripts/backtest_with_holdout.py` — データの直近 30% を hold-out; 開発中は触らず、全調整完了後に 1 回だけ検証
+- `scripts/regime_stratified_analysis.py` — ATRRegimeClassifier (Phase 9.7 実装) を活用し、レジーム別 Sharpe / PnL を分解
+- `scripts/multi_seed_stability.py` — seed ∈ {42, 123, 456, 789, 999} で 5 回訓練 → Sharpe の std / mean ≤ 0.2 を確認
+- `docs/design/phase9_11_validation_protocol.md` — ホールドアウト運用規約 (開発者が誤って触らないためのチェックリスト)
+
+**完了条件**:
+- 3+ 年データで walk-forward backtest が完走
+- ホールドアウト OoS Sharpe ≥ 内部検証 Sharpe × 0.7
+- 全レジーム (trend/range/high_vol) で PnL > 0
+- マルチシード std/mean ≤ 0.2
+
+**リスク**:
+- 3+ 年データの OANDA fetch コスト (per-request 制約) → 分割 fetch + resume 機能
+- 2020 COVID 等極端レジームでの過去データ整合性 → 一部 instrument で欠損可能性あり; その場合は期間調整
+
+---
+
+### 6.14 Phase 9.12 — Model quality improvements (Phase C, 新設 2026-04-25)
+
+**目的**: baseline LightGBM の予測精度を底上げする。シグナル品質向上で信号率を絞り込みつつ Sharpe を維持する。
+
+**変更対象**:
+- `src/fx_ai_trading/services/ml/meta_labeling.py` — Lopez de Prado Meta-labeling (2 層 ML: primary model の signal を filter する secondary model)
+- `src/fx_ai_trading/services/labeling/atr_triple_barrier.py` — 固定 pip TP/SL ではなく、ATR 倍率で動的 TP/SL
+- `src/fx_ai_trading/services/filters/session_filter.py` — Asia/London/NY セッション別勝率分析 + 低流動時間帯除外
+- `src/fx_ai_trading/services/filters/news_filter.py` — 経済指標カレンダー連携 (重要指標前後 30 分取引停止)
+- `src/fx_ai_trading/services/ml/ensemble.py` — LightGBM + XGBoost + CatBoost の単純平均ensemble
+- `scripts/evaluate_model_quality_upgrades.py` — 各改善項目の貢献度を ablation study で計測
+
+**完了条件**:
+- Meta-labeling ありで Sharpe が baseline より +0.05 以上改善
+- ATR-based dynamic TP/SL で signal rate が 30% → 20% 以下に改善、Sharpe 維持
+- Session filter で低流動時間帯除外後 PnL 維持
+- Ensemble で単一モデルより Sharpe std が 20% 以上削減
+
+**リスク**:
+- Meta-labeling の overfitting (2 層 ML は 1 層より過学習しやすい) → 厳格な OoS 検証
+- 経済指標カレンダーの外部データ依存 → Phase 9 scope 外にも影響; MVP は OANDA の `/v3/labs/calendar` エンドポイント (OANDA 提供の簡易版) のみ
+
+---
+
+### 6.15 Phase 9.13 — Risk management (Phase D, 新設 2026-04-25)
+
+**目的**: 致命的な損失を防ぎ、実運用時の存続確率を上げる。既存の `risk_manager.py` / `position_sizer.py` / `EmergencyStopWatchdog` を実質稼働させる。
+
+**変更対象**:
+- `src/fx_ai_trading/services/position_sizer.py` — Fractional Kelly (f*/2〜f*/4) ベースのロットサイズ計算追加
+- `src/fx_ai_trading/services/risk_manager.py` — portfolio 相関制限 (同時保有ペア相関 > 0.7 を禁止)
+- `src/fx_ai_trading/services/risk_limits/daily_loss_limit.py` — 日次 -3% で自動停止
+- `src/fx_ai_trading/services/risk_limits/consecutive_loss_kill.py` — 5 連敗でクールダウン (N bar 発注停止)
+- `src/fx_ai_trading/services/risk_limits/drawdown_kill.py` — -10% で完全停止 (EmergencyStopWatchdog と連動)
+- `tests/integration/test_risk_kill_switches.py` — 各 kill switch の e2e テスト
+
+**完了条件**:
+- Kelly 基準で計算した lot が `orders.size_units` に反映される
+- 同時保有ポジション数 / 相関上限が `meta_decider` filter で強制される
+- 3 つの kill switch (daily / consecutive / DD) が backtest / paper で動作確認
+- 既存 SafeStop (G-0/G-1) との連動確認
+
+**リスク**:
+- Kelly の過大評価 (勝率誤推定で過大ロット) → Fractional Kelly で保守化必須
+- 相関計算の rolling window 選択 (20 bar? 100 bar?) → Phase 9.13 着手時に ablation
+
+---
+
+### 6.16 Phase 9.14 — Paper trading validation (Phase E, 新設 2026-04-25)
+
+**目的**: backtest と実市場の乖離を定量し、本番投入可否を判定する最終 gate。OANDA demo 口座での 1-3 ヶ月実走を必須化。
+
+**変更対象**:
+- `scripts/run_paper_production_loop.py` — 既存 `run_paper_decision_loop.py` の production 版 (Phase 9.10-9.13 の全改善を統合)
+- `src/fx_ai_trading/services/monitoring/backtest_vs_live_drift.py` — 日次で backtest 予測 vs 実 paper 成績の乖離を計測
+- `docs/runbook/phase9_14_paper_runbook.md` — 1-3 ヶ月の paper 運用手順 / 異常時対応
+- `scripts/promotion_decision.py` — paper 結果をもとに「本番昇格」の可否を判定 (Phase 9.8 promotion gate を拡張)
+
+**完了条件**:
+- OANDA demo で 1 ヶ月以上連続稼働 (中断 ≤ 1 回)
+- 実測 Sharpe が backtest 予測の 70% 以上
+- 実測ヒット率が予測の ±5pp 以内
+- 実測スリッページが想定値 +0.3pip 以内
+- 全 kill switch が誤発動せず、正当な発動のみ記録
+
+**リスク**:
+- OANDA demo の約定ロジックが本番と異なる可能性 → 本番投入前に live 少額 (0.01 lot) で短期検証を追加 gate として挟む可能性
+- 1-3 ヶ月の運用期間中に市場レジームが偏る → 期間延長判断を phase 内で許容
+
+---
+
 ### 6.11 Phase 9.X-B — I-4 lint + outbox writer 結線 (新設, scope 縮小版)
 
 **目的**: Phase 1 invariant I-4 (売買経路は一次 DB のみ) と I-11 (二次 DB 障害が売買を停止させない) を CI + 実装の両側で担保。M23 (Iteration 2 Supabase projector) 着手前に gate を入れる。
@@ -434,32 +594,54 @@ Phase 8 までで運用が「壊れない / 育つ / チームで運用できる
 ## 7. Recommended Order
 
 ```
-9.0 ─> 9.1 ─┬─> 9.2 ─┬─> 9.3 ──────────────────────┐
-            │        └─> 9.5 ─> 9.6 ─────────────> 9.7 ─> 9.8 ─> [9.9 任意]
-            └─> 9.4 ──────────────┘
+Tier 1 (scaffolding, 完了済):
+  9.0 ─> 9.1 ─┬─> 9.2 ─┬─> 9.3 ──────────────────────┐
+              │        └─> 9.5 ─> 9.6 ─────────────> 9.7 ─> 9.8 ─> [9.9 任意]
+              └─> 9.4 ──────────────┘
+
+Tier 2 (real-world gate, 2026-04-25 追加):
+  9.8 完了 ─> 9.10 ─[Go]─> 9.11 ─> 9.12 ─> 9.13 ─> 9.14 ─> [本番投入判定]
+                │
+                [No-Go] ─> 戦略設計見直し (roadmap 再策定)
 
 並行実施可 (依存少):
   9.X-A (close reason 拡張)   ← 9.0 完了後いつでも
   9.X-B (I-4 lint)            ← M23 着手前であればいつでも
 ```
 
-- **直列で必須**: 9.0 → 9.1 → 9.2 → 9.5 → 9.6 → 9.7 → 9.8
+- **直列で必須**: 9.0 → 9.1 → 9.2 → 9.5 → 9.6 → 9.7 → 9.8 → **9.10 → 9.11 → 9.12 → 9.13 → 9.14**
 - **並列可**: 9.3 (CSI) と 9.4 (TA) は 9.1/9.2 の後にどちらから着手してもよい
 - **並行可**: 9.X-A / 9.X-B は本流とは独立に着手 (規模も小)
 - **任意**: 9.9 は 9.8 完了 + 9.6 baseline が rule 超過の条件付き
+- **Go/No-Go gate**: 9.10 で spread 後 edge が確認できなかった場合、9.11 以降には進まない
 
 ---
 
 ## 8. 完了判定 (Phase 9 全体)
 
-Phase 9 完了の認定条件:
+### 8.1 Tier 1 完了条件 (scaffolding; 9.1-9.8 = 達成済)
 
 1. ✅ rule (3pt momentum / mean-reversion / down-only) / TA (4 種以上) / ML (LightGBM baseline) の **3 系統が同一 eval pipeline で走る**
 2. ✅ G8 8 ペアの **CSI が backtest 中に毎 bar 更新**される
 3. ✅ champion-challenger フレーム上で **月次の自動昇格判定**が 1 サイクル以上完了
-4. ✅ 6 ヶ月 OHLCV replay で **ML 戦略 OoS Sharpe ≥ rule baseline + 0.3**
+4. ✅ 6 ヶ月 OHLCV replay で **ML 戦略 OoS Sharpe ≥ rule baseline + 0.3** (**ゼロコスト前提**)
 5. ✅ 全 signal の **inference / backtest が deterministic** (同入力 → 同出力)
 6. ✅ Phase 9.1-9.8 各々で **closure memo を docs/design/** に残す (M9 / M26 と同じ pattern)
+
+### 8.2 Tier 2 完了条件 (real-world gate; 9.10-9.14 = 新設 2026-04-25)
+
+7. ✅ bid/ask spread を組み込んだ backtest で **ML 戦略 spread-adjusted OoS Sharpe ≥ 0.20** かつ PnL > 0 (9.10)
+8. ✅ **シグナル率 ≤ 30%** の設定点で上記条件を満たす (9.10)
+9. ✅ **3+ 年 multi-regime データ** で OoS 検証、全レジームで PnL > 0 (9.11)
+10. ✅ **マルチシード Sharpe std/mean ≤ 0.2** (9.11)
+11. ✅ Meta-labeling / ATR-based TP/SL / session filter / ensemble の **各改善で +Sharpe 定量化** (9.12)
+12. ✅ Kelly position sizing / portfolio 相関制限 / 3 種 kill switch の **実動作確認** (9.13)
+13. ✅ OANDA demo **1-3 ヶ月 paper 実走**で backtest 予測との乖離 ≤ 30% (9.14)
+14. ✅ Phase 9.10-9.14 各々で **closure memo を docs/design/** に残す
+
+### 8.3 本番昇格判定
+
+Tier 1 + Tier 2 全項目 pass で **本番投入可否判定 gate** に到達。判定権限はユーザー (自動昇格はしない)。
 
 ---
 
@@ -491,6 +673,11 @@ Phase 9 完了の認定条件:
 | 9.7 | 9.6 + 複数 signal が同時稼働できる状況 |
 | 9.8 | 9.7 完了 + 14 日連続 paper 運用が回っている状況 |
 | 9.9 | 9.6 baseline が rule を明確に上回った場合のみ |
+| **9.10** | 9.8 完了 — Tier 1 scaffolding が揃ってから cost 検証に入る (2026-04-25 着手) |
+| **9.11** | 9.10 Go 判定後 — No-Go なら戦略再設計 |
+| **9.12** | 9.11 完了 — ロバスト性が確認された baseline の品質向上 |
+| **9.13** | 9.12 完了 — 改善モデルにリスク管理を被せる |
+| **9.14** | 9.13 完了 — 全改善を統合した paper 実走 |
 
 ---
 
