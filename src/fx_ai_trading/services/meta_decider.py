@@ -62,6 +62,17 @@ _DEFAULT_NEAR_EVENT_MINUTES = 60
 # Minimum CSI base/quote strength divergence (z-score units) to pass Rule F5.
 _DEFAULT_MIN_CSI_DIFF = 0.5
 
+# Regime-aware EV multipliers applied to the Score stage.
+# 'trend'    → amplify (momentum strategies rewarded)
+# 'range'    → neutral
+# 'high_vol' → dampen (risk reduction during volatile conditions)
+_REGIME_EV_WEIGHTS: dict[str | None, float] = {
+    "trend": 1.2,
+    "range": 1.0,
+    "high_vol": 0.5,
+    None: 1.0,
+}
+
 
 class MetaDeciderService:
     """Filter → Score → Select MetaDecider for M9/Phase 9.3.
@@ -114,7 +125,7 @@ class MetaDeciderService:
                 filter_snapshot=filter_snapshot,
             )
 
-        score_result = self._score(filtered)
+        score_result = self._score(filtered, context)
         scored = score_result["scored"]
         score_contributions: tuple[dict, ...] = score_result["contributions"]
         score_snapshot: dict = score_result["snapshot"]
@@ -207,12 +218,15 @@ class MetaDeciderService:
     # Stage 2 — Score
     # ------------------------------------------------------------------
 
-    def _score(self, candidates: list[StrategySignal]) -> dict:
+    def _score(self, candidates: list[StrategySignal], context: MetaContext) -> dict:
+        regime = context.regime
+        regime_weight = _REGIME_EV_WEIGHTS.get(regime, 1.0)
+
         scored: list[tuple[float, StrategySignal]] = []
         contributions: list[dict] = []
 
         for sig in candidates:
-            score = sig.ev_after_cost * sig.confidence
+            score = sig.ev_after_cost * sig.confidence * regime_weight
             scored.append((score, sig))
 
         scored.sort(key=lambda x: x[0], reverse=True)
@@ -225,6 +239,7 @@ class MetaDeciderService:
                     "ev_after_cost": sig.ev_after_cost,
                     "ev_before_cost": sig.ev_before_cost,
                     "confidence": sig.confidence,
+                    "regime_weight": regime_weight,
                 }
             )
 
@@ -234,6 +249,8 @@ class MetaDeciderService:
             "snapshot": {
                 "candidates_scored": len(scored),
                 "top_score": round(scored[0][0], 8) if scored else None,
+                "regime": regime,
+                "regime_weight": regime_weight,
             },
         }
 
@@ -282,7 +299,7 @@ class MetaDeciderService:
             cycle_id=context.cycle_id,
             no_trade=False,
             active_strategies=active,
-            regime_detected=False,
+            regime_detected=context.regime is not None,
             filter_snapshot=filter_snapshot,
             score_snapshot=score_snapshot,
             select_snapshot={
