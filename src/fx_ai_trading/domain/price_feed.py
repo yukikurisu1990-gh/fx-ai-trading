@@ -2,11 +2,15 @@
 
 PriceFeed abstracts market data access for live (OANDA) and backtest
 (HistoricalPriceFeed) implementations. Pure read — no side effects.
+
+BarFeed (Phase 9.1) abstracts the bar-cadence data source used by the D3
+decision loop (run_paper_decision_loop). Yields completed Candle objects at
+1m/5m granularity — one Candle per tick of the decision loop.
 """
 
 from __future__ import annotations
 
-from collections.abc import AsyncIterator, Callable
+from collections.abc import AsyncIterator, Callable, Iterator
 from dataclasses import dataclass
 from datetime import datetime
 from typing import Final, Protocol, runtime_checkable
@@ -182,3 +186,27 @@ def callable_to_quote_feed(
             return Quote(price=fn(instrument), ts=clock.now(), source=source)
 
     return _LegacyCallableAdapter()
+
+
+# ---------------------------------------------------------------------------
+# BarFeed — decision-loop bar-cadence abstraction (Phase 9.1)
+# ---------------------------------------------------------------------------
+
+
+class BarFeed(Protocol):
+    """Yields completed OHLCV bars at 1m/5m cadence for the D3 decision loop.
+
+    Phase 1 I-1: sell/buy decisions are made at bar granularity, not tick.
+    Concrete implementations:
+      - OandaBarFeed: live polling via PriceFeed.get_candles()
+      - CandleFileBarFeed: replay from fetch_oanda_candles JSONL
+
+    Contract:
+      - Each Candle yielded is *complete* (bar has closed).
+      - Candles are yielded in ascending time order.
+      - StopIteration when the source is exhausted (replay) or on shutdown.
+    """
+
+    def __iter__(self) -> Iterator[Candle]:
+        """Yield completed Candles one at a time."""
+        ...

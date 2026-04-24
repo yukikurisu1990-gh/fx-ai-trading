@@ -11,7 +11,7 @@ Implements the MetaDecider Protocol.
     4. Remove candidates flagged by PriceAnomalyGuard.
 
   Score:
-    score = ev_before_cost * confidence  (simple multiplicative score)
+    score = ev_after_cost * confidence  (Phase 1 I-5: EV_after_cost is the sole decision center)
 
   Select:
     Highest-scoring remaining candidate wins.
@@ -68,8 +68,8 @@ class MetaDeciderService:
             stale failsafe. If None, stale and near-event checks are skipped.
         price_anomaly_guard: Optional PriceAnomalyGuard for flash-halt detection.
             If None, anomaly check is skipped.
-        min_ev: Minimum ev_before_cost required to pass the Score stage.
-            Candidates with ev_before_cost <= min_ev are filtered out.
+        min_ev: Minimum ev_after_cost required to pass the Score stage.
+            Candidates with ev_after_cost <= min_ev are filtered out.
         near_event_minutes: High-impact events within this window filter a candidate.
     """
 
@@ -198,7 +198,7 @@ class MetaDeciderService:
         contributions: list[dict] = []
 
         for sig in candidates:
-            score = sig.ev_before_cost * sig.confidence
+            score = sig.ev_after_cost * sig.confidence
             scored.append((score, sig))
 
         scored.sort(key=lambda x: x[0], reverse=True)
@@ -208,6 +208,7 @@ class MetaDeciderService:
                 {
                     "strategy_id": sig.strategy_id,
                     "score": round(score, 8),
+                    "ev_after_cost": sig.ev_after_cost,
                     "ev_before_cost": sig.ev_before_cost,
                     "confidence": sig.confidence,
                 }
@@ -245,9 +246,9 @@ class MetaDeciderService:
 
         best_score, best_sig = scored[0]
 
-        # Min-EV gate
-        if best_sig.ev_before_cost <= self._min_ev:
-            ev_detail = str(best_sig.ev_before_cost)
+        # Min-EV gate (Phase 1 I-5: gate on ev_after_cost, not ev_before_cost)
+        if best_sig.ev_after_cost <= self._min_ev:
+            ev_detail = str(best_sig.ev_after_cost)
             return self._no_trade(
                 decision_id,
                 context,
