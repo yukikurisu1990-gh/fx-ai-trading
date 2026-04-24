@@ -51,6 +51,66 @@ def _candle(time_str: str, *, complete: bool = True, price: float = 1.1) -> dict
     }
 
 
+def _ba_candle(
+    time_str: str,
+    *,
+    complete: bool = True,
+    bid_base: float = 1.10,
+    ask_base: float = 1.1002,
+) -> dict[str, Any]:
+    """Shape mirrors OANDA's ``price=BA`` response."""
+    return {
+        "time": time_str,
+        "complete": complete,
+        "bid": {
+            "o": f"{bid_base:.5f}",
+            "h": f"{bid_base + 0.0001:.5f}",
+            "l": f"{bid_base - 0.0001:.5f}",
+            "c": f"{bid_base + 0.00005:.5f}",
+        },
+        "ask": {
+            "o": f"{ask_base:.5f}",
+            "h": f"{ask_base + 0.0001:.5f}",
+            "l": f"{ask_base - 0.0001:.5f}",
+            "c": f"{ask_base + 0.00005:.5f}",
+        },
+        "volume": 17,
+    }
+
+
+def _mba_candle(
+    time_str: str,
+    *,
+    complete: bool = True,
+    mid_base: float = 1.1001,
+    bid_base: float = 1.10,
+    ask_base: float = 1.1002,
+) -> dict[str, Any]:
+    return {
+        "time": time_str,
+        "complete": complete,
+        "mid": {
+            "o": f"{mid_base:.5f}",
+            "h": f"{mid_base + 0.0001:.5f}",
+            "l": f"{mid_base - 0.0001:.5f}",
+            "c": f"{mid_base + 0.00005:.5f}",
+        },
+        "bid": {
+            "o": f"{bid_base:.5f}",
+            "h": f"{bid_base + 0.0001:.5f}",
+            "l": f"{bid_base - 0.0001:.5f}",
+            "c": f"{bid_base + 0.00005:.5f}",
+        },
+        "ask": {
+            "o": f"{ask_base:.5f}",
+            "h": f"{ask_base + 0.0001:.5f}",
+            "l": f"{ask_base - 0.0001:.5f}",
+            "c": f"{ask_base + 0.00005:.5f}",
+        },
+        "volume": 17,
+    }
+
+
 class _FakeAPIClient:
     """Returns canned ``{"candles": [...]}`` pages in order; raises if asked
     for more pages than were queued."""
@@ -302,3 +362,113 @@ def test_format_then_parse_drops_microsecond_only_precision() -> None:
     dt = datetime(2026, 4, 23, 20, 0, 0, tzinfo=UTC) + timedelta(seconds=5)
     formatted = _format_oanda_time(dt)
     assert ".000000000Z" in formatted
+
+
+# ---------------------------------------------------------------------------
+# Phase 9.10: bid/ask (BA) + MBA price modes
+# ---------------------------------------------------------------------------
+
+
+def test_ba_mode_writes_bid_and_ask_ohlc(tmp_path: Path) -> None:
+    """--price BA must emit bid_o/h/l/c + ask_o/h/l/c and NO mid o/h/l/c."""
+    output = tmp_path / "candles_ba.jsonl"
+    page = [_ba_candle("2026-04-23T20:00:00.000000000Z", bid_base=1.10, ask_base=1.1002)]
+    api = _FakeAPIClient(pages=[page])
+
+    fetch_candles(
+        instrument="EUR_USD",
+        granularity="S5",
+        days=1,
+        output_path=output,
+        price="BA",
+        api_client=api,
+    )
+
+    rows = _read_jsonl(output)
+    assert len(rows) == 1
+    r = rows[0]
+    # bid/ask present, mid o/h/l/c absent.
+    assert set(r.keys()) == {
+        "time",
+        "volume",
+        "bid_o",
+        "bid_h",
+        "bid_l",
+        "bid_c",
+        "ask_o",
+        "ask_h",
+        "ask_l",
+        "ask_c",
+    }
+    assert r["bid_o"] == pytest.approx(1.10)
+    assert r["ask_o"] == pytest.approx(1.1002)
+    assert r["ask_o"] > r["bid_o"]
+
+
+def test_ba_mode_forwards_price_param_to_oanda(tmp_path: Path) -> None:
+    output = tmp_path / "candles_ba.jsonl"
+    api = _FakeAPIClient(pages=[[]])
+
+    fetch_candles(
+        instrument="USD_JPY",
+        granularity="M1",
+        days=1,
+        output_path=output,
+        price="BA",
+        api_client=api,
+    )
+
+    assert api.calls[0]["params"]["price"] == "BA"
+
+
+def test_mba_mode_writes_all_three_price_components(tmp_path: Path) -> None:
+    output = tmp_path / "candles_mba.jsonl"
+    page = [_mba_candle("2026-04-23T20:00:00.000000000Z")]
+    api = _FakeAPIClient(pages=[page])
+
+    fetch_candles(
+        instrument="EUR_USD",
+        granularity="S5",
+        days=1,
+        output_path=output,
+        price="MBA",
+        api_client=api,
+    )
+
+    rows = _read_jsonl(output)
+    assert len(rows) == 1
+    r = rows[0]
+    assert {"o", "h", "l", "c"}.issubset(r.keys())  # mid
+    assert {"bid_o", "bid_h", "bid_l", "bid_c"}.issubset(r.keys())
+    assert {"ask_o", "ask_h", "ask_l", "ask_c"}.issubset(r.keys())
+
+
+def test_m_mode_shape_is_unchanged_by_phase_9_10(tmp_path: Path) -> None:
+    """Back-compat: default --price M must keep the pre-9.10 shape exactly."""
+    output = tmp_path / "candles_m.jsonl"
+    page = [_candle("2026-04-23T20:00:00.000000000Z")]
+    api = _FakeAPIClient(pages=[page])
+
+    fetch_candles(
+        instrument="EUR_USD",
+        granularity="S5",
+        days=1,
+        output_path=output,
+        price="M",
+        api_client=api,
+    )
+
+    rows = _read_jsonl(output)
+    assert set(rows[0].keys()) == {"time", "o", "h", "l", "c", "volume"}
+
+
+def test_rejects_unknown_price_mode(tmp_path: Path) -> None:
+    with pytest.raises(ValueError, match="--price must be one of"):
+        fetch_candles(
+            instrument="EUR_USD",
+            granularity="S5",
+            days=1,
+            output_path=tmp_path / "x.jsonl",
+            price="XYZ",
+            api_client=_FakeAPIClient(pages=[]),
+        )

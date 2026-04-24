@@ -90,7 +90,15 @@ class OandaQuoteFeed:
         bid = self._first_price(entry.get("bids"), side="bid", instrument=instrument)
         ask = self._first_price(entry.get("asks"), side="ask", instrument=instrument)
         ts = self._parse_time(entry.get("time"), instrument=instrument)
-        return Quote(price=(bid + ask) / 2.0, ts=ts, source=self._source)
+        # Phase 9.10: populate bid/ask so cost-aware consumers (PaperBroker)
+        # can use side-specific prices. price stays as mid for backward compat.
+        return Quote(
+            price=(bid + ask) / 2.0,
+            ts=ts,
+            source=self._source,
+            bid=bid,
+            ask=ask,
+        )
 
     @staticmethod
     def _first_price(

@@ -93,17 +93,43 @@ class Quote:
     only need a single price (run_exit_gate, ExitPolicyService) stay
     decoupled from the bid/ask split, and ``ts`` / ``source`` give the
     staleness layer (M-3c) something authoritative to inspect.
+
+    Phase 9.10: optional ``bid`` / ``ask`` fields let cost-aware consumers
+    (PaperBroker buy/sell fills, spread-adjusted backtests) use true
+    side-specific prices. When both are supplied, ``price`` must equal
+    ``(bid + ask) / 2`` within a small tolerance. When either is None,
+    consumers should fall back to ``price`` (mid). Existing callers that
+    only pass ``price`` continue to work unchanged.
     """
 
     price: float
     ts: datetime
     source: str
+    bid: float | None = None
+    ask: float | None = None
 
     def __post_init__(self) -> None:
         if self.ts.tzinfo is None:
             raise ValueError(
                 f"Quote.ts must be timezone-aware (got naive datetime {self.ts!r}); use UTC."
             )
+        # Mixed-populated state is disallowed — both or neither.
+        if (self.bid is None) != (self.ask is None):
+            raise ValueError(
+                f"Quote.bid and Quote.ask must both be set or both be None "
+                f"(got bid={self.bid!r}, ask={self.ask!r})."
+            )
+        # When both populated, price must equal mid within float tolerance.
+        # Tolerance 1e-9 covers pip-level rounding (FX pips are 1e-4 or 1e-2).
+        if self.bid is not None and self.ask is not None:
+            expected_mid = (self.bid + self.ask) / 2.0
+            if abs(expected_mid - self.price) > 1e-9:
+                raise ValueError(
+                    f"Quote.price ({self.price!r}) must equal (bid+ask)/2 "
+                    f"({expected_mid!r}); bid={self.bid!r}, ask={self.ask!r}."
+                )
+            if self.ask < self.bid:
+                raise ValueError(f"Quote.ask ({self.ask!r}) must be >= bid ({self.bid!r}).")
 
 
 # ---------------------------------------------------------------------------
