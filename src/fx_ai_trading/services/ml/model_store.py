@@ -13,7 +13,7 @@ from __future__ import annotations
 
 import pickle
 from dataclasses import asdict, dataclass
-from datetime import UTC, datetime
+from datetime import datetime
 from pathlib import Path
 from typing import Any
 
@@ -63,10 +63,9 @@ def load_model(model_dir: Path) -> tuple[Any, ModelMetadata]:
     return model, metadata
 
 
-def model_dir_name() -> str:
+def model_dir_name(now: datetime) -> str:
     """Return a timestamped directory name for a new model."""
-    ts = datetime.now(UTC).strftime("%Y%m%dT%H%M%S")
-    return f"ml_baseline_{ts}"
+    return f"ml_baseline_{now.strftime('%Y%m%dT%H%M%S')}"
 
 
 __all__ = ["ModelMetadata", "load_model", "model_dir_name", "save_model"]

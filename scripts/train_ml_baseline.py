@@ -18,13 +18,13 @@ Usage:
 from __future__ import annotations
 
 import sys
-from datetime import UTC, datetime
 from pathlib import Path
 
 import click
 
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
+from fx_ai_trading.common.clock import WallClock
 from fx_ai_trading.services.ml.model_store import (
     ModelMetadata,
     model_dir_name,
@@ -61,11 +61,11 @@ def main(parquet: str, output_dir: str, train_months: int, val_months: int) -> N
 
     # Save the last fold's model (trained on the most data).
     best = folds[-1]
-    out_dir = Path(output_dir) / model_dir_name()
+    out_dir = Path(output_dir) / model_dir_name(WallClock().now())
 
     metadata = ModelMetadata(
         model_id=out_dir.name,
-        created_at=datetime.now(UTC).isoformat(),
+        created_at=WallClock().now().isoformat(),
         feature_version="v2",
         feature_columns=FEATURE_COLUMNS,
         label_column=LABEL_COLUMN,
