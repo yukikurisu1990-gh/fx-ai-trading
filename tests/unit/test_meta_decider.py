@@ -152,8 +152,8 @@ class TestMetaDeciderFilter:
 
 class TestMetaDeciderScore:
     def test_highest_score_selected(self, decider: MetaDeciderService) -> None:
-        """Multiple candidates: highest ev_before_cost * confidence wins."""
-        # strat_b has score = 0.003 * 0.9 = 0.0027 > strat_a score = 0.002 * 0.6 = 0.0012
+        """Multiple candidates: highest ev_after_cost * confidence wins (Phase 1 I-5)."""
+        # strat_b: score = 0.003 * 0.9 = 0.0027 > strat_a: score = 0.002 * 0.6 = 0.0012
         candidates = [
             _make_signal("strat_a", confidence=0.6, ev_before_cost=0.002),
             _make_signal("strat_b", confidence=0.9, ev_before_cost=0.003),
@@ -206,9 +206,9 @@ class TestMetaDeciderSelect:
         assert decision.regime_detected is False
 
     def test_no_trade_when_min_ev_not_met(self) -> None:
-        """Candidate with ev_before_cost <= min_ev → no_trade (EV_BELOW_THRESHOLD)."""
+        """Candidate with ev_after_cost <= min_ev → no_trade (EV_BELOW_THRESHOLD)."""
         decider = MetaDeciderService(min_ev=0.01)
-        # ev_before_cost=0.002 < min_ev=0.01
+        # ev_after_cost=0.002 (== ev_before_cost in fixture) < min_ev=0.01
         decision = decider.decide([_make_signal(ev_before_cost=0.002)], _CTX)
         assert decision.no_trade is True
         reason_codes = {r.reason_code for r in decision.no_trade_reasons}
