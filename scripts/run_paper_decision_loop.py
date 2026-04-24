@@ -1,4 +1,4 @@
-"""``run_paper_decision_loop`` — D3 bar-cadence decision runner (Phase 9.1).
+"""``run_paper_decision_loop`` — D3 bar-cadence decision runner (Phase 9.1/9.2).
 
 Wires the full D3 pipeline for paper trading:
 
@@ -11,25 +11,32 @@ Wires the full D3 pipeline for paper trading:
 
 Phase 1 invariants enforced:
   I-1  : decisions at bar cadence (1m/5m Candle), not tick cadence.
-  I-5  : MetaDeciderService scores by ev_after_cost (Phase 9.1 fix).
+  I-5  : MetaDeciderService scores by ev_after_cost.
   I-6  : run_strategy_cycle writes ALL candidate signals (enabled/disabled).
   I-7  : FeatureService is deterministic (same bars → same FeatureSet).
+  I-8  : Instrument list fetched dynamically from OANDA (live mode).
 
-Current limitations (resolved in later phases):
-  - Single --instrument (Phase 9.2 adds dynamic all-pair via OandaInstrumentRegistry).
-  - Live bar feed not implemented (Phase 9.2); use --replay-candles for now.
-  - Strategies hardcoded to [MAStrategy, ATRStrategy] (Phase 9.4 adds registry).
-  - system_jobs run_id linkage is tracked but full column set added in Phase 9.1 alembic.
+Modes:
+  replay  --replay-candles <path> --instrument <sym>
+            Reads a fetch_oanda_candles JSONL. Single instrument. No OANDA creds needed.
+  live    (no --replay-candles)
+            Polls OANDA for bar closes. Instruments from OandaInstrumentRegistry
+            unless --instrument overrides to a single pair.
 
-Usage (replay mode):
+Usage:
+  # Replay
   python -m scripts.run_paper_decision_loop \\
     --account-id <id> --instrument EUR_USD \\
-    --replay-candles data/eurusd_m5.jsonl \\
-    [--granularity M5] [--dry-run]
+    --replay-candles data/eurusd_m5.jsonl [--dry-run]
+
+  # Live (dynamic all-pair)
+  python -m scripts.run_paper_decision_loop \\
+    --account-id <id> [--dry-run]
 
 Environment variables:
-  DATABASE_URL     — required (PostgreSQL connection string).
-  OANDA_ACCOUNT_ID — used if --account-id is omitted.
+  DATABASE_URL        — required.
+  OANDA_ACCOUNT_ID    — used if --account-id omitted.
+  OANDA_ACCESS_TOKEN  — required in live mode.
 """
 
 from __future__ import annotations
@@ -41,14 +48,18 @@ import platform
 import sys
 from collections import deque
 from datetime import UTC, datetime
+from typing import TYPE_CHECKING
 from uuid import UUID
 
 from sqlalchemy import create_engine, text
 from sqlalchemy.engine import Engine
 
+from fx_ai_trading.adapters.instrument_registry import OandaInstrumentRegistry
 from fx_ai_trading.adapters.price_feed.candle_file_bar_feed import CandleFileBarFeed
+from fx_ai_trading.adapters.price_feed.oanda_bar_feed import OandaBarFeed
 from fx_ai_trading.common.clock import WallClock
 from fx_ai_trading.common.ulid import generate_ulid
+from fx_ai_trading.domain.price_feed import Candle
 from fx_ai_trading.ops.logging_config import apply_logging_config
 from fx_ai_trading.services.feature_service import FeatureService
 from fx_ai_trading.services.meta_cycle_runner import run_meta_cycle
@@ -56,10 +67,14 @@ from fx_ai_trading.services.strategies.atr import ATRStrategy
 from fx_ai_trading.services.strategies.ma import MAStrategy
 from fx_ai_trading.services.strategy_runner import run_strategy_cycle
 
+if TYPE_CHECKING:
+    from fx_ai_trading.adapters.broker.oanda_api_client import OandaAPIClient
+
 _log = logging.getLogger(__name__)
 
 _ENV_DATABASE_URL = "DATABASE_URL"
 _ENV_OANDA_ACCOUNT_ID = "OANDA_ACCOUNT_ID"
+_ENV_OANDA_ACCESS_TOKEN = "OANDA_ACCESS_TOKEN"
 
 # Rolling bar history depth for FeatureService (SMA_50 needs ≥50 bars).
 _HISTORY_DEPTH = 100
@@ -72,19 +87,23 @@ _HISTORY_DEPTH = 100
 
 def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     p = argparse.ArgumentParser(
-        description="D3 bar-cadence paper decision loop (Phase 9.1)",
+        description="D3 bar-cadence paper decision loop (Phase 9.1/9.2)",
     )
     p.add_argument("--account-id", default=os.environ.get(_ENV_OANDA_ACCOUNT_ID, ""))
     p.add_argument(
         "--instrument",
-        required=True,
-        help="Instrument to trade (e.g. EUR_USD). Phase 9.2 will make this dynamic.",
+        default=None,
+        help=(
+            "Single instrument override (e.g. EUR_USD). "
+            "In live mode, omit to use all active instruments from OandaInstrumentRegistry (I-8). "
+            "Required in replay mode."
+        ),
     )
     p.add_argument(
         "--replay-candles",
-        required=True,
+        default=None,
         metavar="PATH",
-        help="Path to fetch_oanda_candles JSONL. Live bar feed added in Phase 9.2.",
+        help="Path to fetch_oanda_candles JSONL (replay mode). Omit for live OANDA polling.",
     )
     p.add_argument("--granularity", default="M5", help="Candle granularity (default: M5).")
     p.add_argument(
@@ -109,6 +128,55 @@ def _build_engine(src: dict[str, str]) -> Engine:
             "Set it to a PostgreSQL connection string and retry."
         )
     return create_engine(url)
+
+
+def _build_oanda_client(src: dict[str, str]) -> OandaAPIClient:
+    from fx_ai_trading.adapters.broker.oanda_api_client import OandaAPIClient
+
+    token = (src.get(_ENV_OANDA_ACCESS_TOKEN) or "").strip()
+    if not token:
+        raise SystemExit(
+            f"run_paper_decision_loop: {_ENV_OANDA_ACCESS_TOKEN} is not set"
+            " (required for live mode)."
+        )
+    return OandaAPIClient(access_token=token, environment="practice")
+
+
+def _warmup_history(
+    client: OandaAPIClient,
+    instruments: list[str],
+    granularity: str,
+    history: dict[str, deque],
+    depth: int,
+) -> None:
+    """Pre-fill rolling candle history from OANDA (live mode warmup)."""
+    from fx_ai_trading.adapters.price_feed.oanda_bar_feed import _parse_oanda_time
+
+    for inst in instruments:
+        try:
+            response = client.get_candles(
+                inst,
+                params={"granularity": granularity, "count": depth, "price": "M"},
+            )
+            for raw in response.get("candles", []):
+                if not raw.get("complete", True):
+                    continue
+                mid = raw["mid"]
+                history[inst].append(
+                    Candle(
+                        instrument=inst,
+                        tier=granularity,
+                        time_utc=_parse_oanda_time(raw["time"]),
+                        open=float(mid["o"]),
+                        high=float(mid["h"]),
+                        low=float(mid["l"]),
+                        close=float(mid["c"]),
+                        volume=int(raw.get("volume", 0)),
+                    )
+                )
+            _log.info("warmup: %s — %d bars loaded", inst, len(history[inst]))
+        except Exception:
+            _log.warning("warmup failed for %s — starting with empty history", inst, exc_info=True)
 
 
 def _insert_system_job(engine: Engine, *, run_id: str, instrument: str, dry_run: bool) -> None:
@@ -210,6 +278,33 @@ def run(args: argparse.Namespace, *, env: dict[str, str] | None = None) -> int:
             f"run_paper_decision_loop: --account-id is required (or set {_ENV_OANDA_ACCOUNT_ID})."
         )
 
+    is_live = args.replay_candles is None
+
+    if is_live and args.instrument is None:
+        # Live + dynamic all-pair mode (I-8).
+        oanda_client = _build_oanda_client(src)
+        registry = OandaInstrumentRegistry(oanda_client, account_id)
+        active_instruments = registry.list_active()
+        if not active_instruments:
+            raise SystemExit(
+                "run_paper_decision_loop: OandaInstrumentRegistry returned no instruments."
+            )
+        reference_instrument = active_instruments[0]
+        _log.info("live mode: %d instruments from registry", len(active_instruments))
+    elif is_live:
+        oanda_client = _build_oanda_client(src)
+        registry = None
+        active_instruments = [args.instrument]
+        reference_instrument = args.instrument
+    else:
+        # Replay mode — single instrument, no OANDA creds needed.
+        if args.instrument is None:
+            raise SystemExit("run_paper_decision_loop: --instrument is required in replay mode.")
+        oanda_client = None
+        registry = None
+        active_instruments = [args.instrument]
+        reference_instrument = args.instrument
+
     engine = _build_engine(src)
     clock = WallClock()
     run_id = generate_ulid()
@@ -218,38 +313,58 @@ def run(args: argparse.Namespace, *, env: dict[str, str] | None = None) -> int:
         "run_paper_decision_loop starting",
         extra={
             "run_id": run_id,
-            "instrument": args.instrument,
+            "mode": "live" if is_live else "replay",
+            "instruments": active_instruments,
             "granularity": args.granularity,
             "dry_run": args.dry_run,
-            "replay_candles": args.replay_candles,
         },
     )
 
-    _insert_system_job(engine, run_id=run_id, instrument=args.instrument, dry_run=args.dry_run)
+    _insert_system_job(engine, run_id=run_id, instrument=reference_instrument, dry_run=args.dry_run)
 
     strategies = [MAStrategy(), ATRStrategy()]
     # Phase 9.4: replace with strategy registry lookup.
 
     # Rolling per-instrument candle history (fed before FeatureService.build).
-    history: dict[str, deque] = {args.instrument: deque(maxlen=_HISTORY_DEPTH)}
+    history: dict[str, deque] = {inst: deque(maxlen=_HISTORY_DEPTH) for inst in active_instruments}
     feature_service = _make_feature_service(history)
 
-    bar_feed = CandleFileBarFeed(
-        path=args.replay_candles,
-        instrument=args.instrument,
-        granularity=args.granularity,
-    )
+    # Live mode: warmup history for all instruments before starting loop.
+    if is_live and oanda_client is not None:
+        _warmup_history(oanda_client, active_instruments, args.granularity, history, _HISTORY_DEPTH)
+
+    # Build BarFeed.
+    if is_live:
+        assert oanda_client is not None
+        bar_feed: object = OandaBarFeed(
+            oanda_client,
+            instrument=reference_instrument,
+            granularity=args.granularity,
+        )
+    else:
+        bar_feed = CandleFileBarFeed(
+            path=args.replay_candles,
+            instrument=reference_instrument,
+            granularity=args.granularity,
+        )
 
     cycles_completed = 0
 
     try:
-        for bar in bar_feed:
-            # Accumulate bar into history BEFORE building features (no look-ahead).
-            history[args.instrument].append(bar)
+        for bar in bar_feed:  # type: ignore[union-attr]
+            # Accumulate reference bar into history (no look-ahead).
+            history[reference_instrument].append(bar)
+
+            # In live multi-instrument mode, refresh instrument list each cycle (I-8).
+            if is_live and registry is not None:
+                current_instruments = registry.list_active()
+                for inst in current_instruments:
+                    if inst not in history:
+                        history[inst] = deque(maxlen=_HISTORY_DEPTH)
+            else:
+                current_instruments = active_instruments
 
             cycle_id = generate_ulid()
-            instruments = [args.instrument]
-            # Phase 9.2: replace with OandaInstrumentRegistry.list_active().
 
             from fx_ai_trading.domain.strategy import StrategyContext
 
@@ -262,7 +377,7 @@ def run(args: argparse.Namespace, *, env: dict[str, str] | None = None) -> int:
 
             # Build FeatureSet for each instrument.
             features = {}
-            for inst in instruments:
+            for inst in current_instruments:
                 try:
                     features[inst] = feature_service.build(
                         instrument=inst,
