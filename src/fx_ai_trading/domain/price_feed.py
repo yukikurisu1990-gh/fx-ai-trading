@@ -38,7 +38,15 @@ SOURCE_TEST_FIXTURE: Final[str] = "test_fixture"
 
 @dataclass(frozen=True)
 class Candle:
-    """A single OHLCV candle."""
+    """A single OHLCV candle.
+
+    ``open``/``high``/``low``/``close`` are mid-price OHLC (the legacy
+    shape). Phase 9.10 adds optional ``bid_close`` / ``ask_close`` so
+    cost-aware replay feeds can project side-specific prices into the
+    downstream ``Quote`` without bloating Candle with full bid/ask OHLC
+    — consumers that need bid/ask high/low (e.g. a grid-search backtest
+    doing TP/SL barrier checks) should read the source JSONL directly.
+    """
 
     instrument: str
     tier: str
@@ -48,6 +56,24 @@ class Candle:
     low: float
     close: float
     volume: int
+    bid_close: float | None = None
+    ask_close: float | None = None
+
+    def __post_init__(self) -> None:
+        # Mirror Quote: both-or-neither, and ask >= bid when populated.
+        if (self.bid_close is None) != (self.ask_close is None):
+            raise ValueError(
+                "Candle.bid_close and Candle.ask_close must both be set or both be None "
+                f"(got bid_close={self.bid_close!r}, ask_close={self.ask_close!r})."
+            )
+        if (
+            self.bid_close is not None
+            and self.ask_close is not None
+            and self.ask_close < self.bid_close
+        ):
+            raise ValueError(
+                f"Candle.ask_close ({self.ask_close!r}) must be >= bid_close ({self.bid_close!r})."
+            )
 
 
 @dataclass(frozen=True)

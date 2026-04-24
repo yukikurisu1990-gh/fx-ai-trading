@@ -351,3 +351,98 @@ class TestQuoteDtoInvariants:
         assert isinstance(q, Quote)
         assert q.ts.tzinfo is not None
         assert q.ts.utcoffset().total_seconds() == 0  # type: ignore[union-attr]
+
+
+# ---------------------------------------------------------------------------
+# Phase 9.10: bid/ask propagation into Quote
+# ---------------------------------------------------------------------------
+
+
+def _ba_candle(
+    time_str: str,
+    *,
+    bid_c: float,
+    ask_c: float,
+    volume: int = 17,
+) -> dict:
+    """JSONL line shape produced by ``fetch_oanda_candles --price BA``.
+
+    Carries bid_c / ask_c alongside the mid o/h/l/c so the feed exercises
+    both the legacy validation path (required mid fields) and the new
+    optional bid/ask projection.
+    """
+    mid = (bid_c + ask_c) / 2.0
+    return {
+        "time": time_str,
+        "o": mid,
+        "h": mid + 0.0001,
+        "l": mid - 0.0001,
+        "c": mid,
+        "volume": volume,
+        "bid_c": bid_c,
+        "ask_c": ask_c,
+    }
+
+
+class TestBidAskProjection:
+    def test_quote_carries_bid_and_ask_when_jsonl_has_both(self, tmp_path: Path) -> None:
+        path = tmp_path / "candles_ba.jsonl"
+        _write_jsonl(
+            path,
+            [_ba_candle("2026-04-23T20:00:00.000000000Z", bid_c=1.09990, ask_c=1.10010)],
+        )
+        feed = CandleReplayQuoteFeed(path, instrument="EUR_USD")
+        q = feed.get_quote("EUR_USD")
+        assert q.bid == pytest.approx(1.09990)
+        assert q.ask == pytest.approx(1.10010)
+        # Quote.__post_init__ enforces price == (bid+ask)/2 exactly.
+        assert q.price == pytest.approx(1.10000)
+
+    def test_quote_bid_ask_none_on_mid_only_jsonl(self, tmp_path: Path) -> None:
+        """Back-compat: mid-only JSONL still produces valid Quotes with
+        bid/ask = None and price = c."""
+        path = tmp_path / "candles_m.jsonl"
+        _write_jsonl(path, [_candle("2026-04-23T20:00:00.000000000Z", c=1.10005)])
+        feed = CandleReplayQuoteFeed(path, instrument="EUR_USD")
+        q = feed.get_quote("EUR_USD")
+        assert q.bid is None
+        assert q.ask is None
+        assert q.price == pytest.approx(1.10005)
+
+    def test_half_populated_bid_or_ask_treated_as_absent(self, tmp_path: Path) -> None:
+        """Pairs are all-or-nothing: if only one of bid_c/ask_c is present,
+        both propagate as None (and price falls back to the mid close)."""
+        path = tmp_path / "candles_partial.jsonl"
+        partial = {
+            "time": "2026-04-23T20:00:00.000000000Z",
+            "o": 1.10000,
+            "h": 1.10005,
+            "l": 1.09995,
+            "c": 1.10002,
+            "volume": 17,
+            "bid_c": 1.09995,  # ask_c omitted
+        }
+        _write_jsonl(path, [partial])
+        feed = CandleReplayQuoteFeed(path, instrument="EUR_USD")
+        q = feed.get_quote("EUR_USD")
+        assert q.bid is None
+        assert q.ask is None
+        assert q.price == pytest.approx(1.10002)  # falls back to c
+
+    def test_ba_and_mid_mixed_in_same_file(self, tmp_path: Path) -> None:
+        """A file that alternates BA and mid-only lines must yield a mix
+        of populated and None-bid/ask Quotes in file order."""
+        path = tmp_path / "candles_mixed.jsonl"
+        _write_jsonl(
+            path,
+            [
+                _ba_candle("2026-04-23T20:00:00.000000000Z", bid_c=1.10, ask_c=1.1001),
+                _candle("2026-04-23T20:00:05.000000000Z", c=1.10005),
+                _ba_candle("2026-04-23T20:00:10.000000000Z", bid_c=1.1001, ask_c=1.1002),
+            ],
+        )
+        feed = CandleReplayQuoteFeed(path, instrument="EUR_USD")
+        quotes = [feed.get_quote("EUR_USD") for _ in range(3)]
+        assert quotes[0].bid == pytest.approx(1.10) and quotes[0].ask == pytest.approx(1.1001)
+        assert quotes[1].bid is None and quotes[1].ask is None
+        assert quotes[2].bid == pytest.approx(1.1001) and quotes[2].ask == pytest.approx(1.1002)

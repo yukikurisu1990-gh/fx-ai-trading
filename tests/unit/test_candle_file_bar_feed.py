@@ -120,7 +120,37 @@ class TestCandleFileBarFeedContract:
     def test_extra_fields_tolerated(self, tmp_path: Path) -> None:
         """Forward-compat: extra JSONL fields must not raise."""
         f = tmp_path / "bars.jsonl"
-        candle_with_extra = {**_CANDLE_A, "complete": True, "bid_close": 1.168}
+        candle_with_extra = {**_CANDLE_A, "complete": True, "note": "x"}
         _write_jsonl(f, [candle_with_extra])
         bars = list(CandleFileBarFeed(f, instrument="EUR_USD"))
         assert len(bars) == 1
+
+
+class TestBidAskPropagation:
+    """Phase 9.10: bid_c / ask_c in JSONL → Candle.bid_close / ask_close."""
+
+    def test_bid_close_and_ask_close_populated_when_both_present(self, tmp_path: Path) -> None:
+        f = tmp_path / "bars_ba.jsonl"
+        candle_ba = {**_CANDLE_A, "bid_c": 1.16798, "ask_c": 1.16806}
+        _write_jsonl(f, [candle_ba])
+        bar = next(iter(CandleFileBarFeed(f, instrument="EUR_USD")))
+        assert bar.bid_close == pytest.approx(1.16798)
+        assert bar.ask_close == pytest.approx(1.16806)
+
+    def test_bid_close_and_ask_close_none_when_absent(self, tmp_path: Path) -> None:
+        """Back-compat: legacy mid-only JSONL must keep bid/ask = None."""
+        f = tmp_path / "bars_m.jsonl"
+        _write_jsonl(f, [_CANDLE_A])
+        bar = next(iter(CandleFileBarFeed(f, instrument="EUR_USD")))
+        assert bar.bid_close is None
+        assert bar.ask_close is None
+
+    def test_half_populated_bid_or_ask_treated_as_absent(self, tmp_path: Path) -> None:
+        """If only one of bid_c/ask_c is present, both propagate as None —
+        avoiding a mid-plus-one-side half-populated Candle."""
+        f = tmp_path / "bars_partial.jsonl"
+        partial = {**_CANDLE_A, "bid_c": 1.16798}  # ask_c missing
+        _write_jsonl(f, [partial])
+        bar = next(iter(CandleFileBarFeed(f, instrument="EUR_USD")))
+        assert bar.bid_close is None
+        assert bar.ask_close is None
