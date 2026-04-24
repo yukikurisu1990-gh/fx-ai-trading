@@ -55,7 +55,7 @@ class TestForwardReturn:
         result = forward_return(closes, horizon=12)
         assert len(result) == len(closes)
         assert result[-13] is not None  # index 7: 7+12=19 < 20
-        assert result[-12] is None      # index 8: 8+12=20 == n
+        assert result[-12] is None  # index 8: 8+12=20 == n
         assert result[-1] is None
 
 
