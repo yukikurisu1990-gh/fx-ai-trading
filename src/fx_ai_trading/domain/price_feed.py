@@ -21,6 +21,7 @@ from fx_ai_trading.domain.risk import Instrument
 # Add new sources only when an actual producer lands; do not pre-declare.
 
 SOURCE_LEGACY_CALLABLE: Final[str] = "legacy_callable"
+SOURCE_OANDA_CANDLE_REPLAY: Final[str] = "oanda_candle_replay"
 SOURCE_OANDA_LIVE: Final[str] = "oanda_live"
 SOURCE_OANDA_REST_SNAPSHOT: Final[str] = "oanda_rest_snapshot"
 SOURCE_PAPER: Final[str] = "paper"

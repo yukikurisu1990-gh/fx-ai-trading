@@ -97,6 +97,9 @@ from typing import Any
 from sqlalchemy import text
 from sqlalchemy.engine import Engine
 
+from fx_ai_trading.adapters.price_feed.candle_replay_quote_feed import (
+    CandleReplayQuoteFeed,
+)
 from fx_ai_trading.adapters.price_feed.replay_quote_feed import ReplayQuoteFeed
 from fx_ai_trading.domain.price_feed import QuoteFeed
 
@@ -185,6 +188,7 @@ class EvaluationArgs:
     log_level: str
     fast: bool
     replay_path: Path | None
+    replay_candles_path: Path | None
 
 
 def parse_args(argv: list[str] | None = None) -> EvaluationArgs:
@@ -293,6 +297,18 @@ def parse_args(argv: list[str] | None = None) -> EvaluationArgs:
             "replay as quickly as the dataset allows."
         ),
     )
+    parser.add_argument(
+        "--replay-candles",
+        dest="replay_candles_path",
+        type=Path,
+        default=None,
+        help=(
+            "Path to an OHLCV JSONL produced by scripts/fetch_oanda_candles. "
+            "When set, CandleReplayQuoteFeed substitutes the live OANDA feed "
+            "(emits one Quote per candle at price=close).  Mutually exclusive "
+            "with --replay.  OANDA env vars are NOT required."
+        ),
+    )
 
     parsed = parser.parse_args(argv)
     if parsed.max_iterations <= 0:
@@ -303,8 +319,12 @@ def parse_args(argv: list[str] | None = None) -> EvaluationArgs:
         parser.error(f"--interval-seconds must be >= 0; got {parsed.interval_seconds!r}")
     if parsed.max_holding_seconds <= 0:
         parser.error(f"--max-holding-seconds must be > 0; got {parsed.max_holding_seconds!r}")
+    if parsed.replay_path is not None and parsed.replay_candles_path is not None:
+        parser.error("--replay and --replay-candles are mutually exclusive")
     if parsed.replay_path is not None and not parsed.replay_path.is_file():
         parser.error(f"--replay file not found: {parsed.replay_path}")
+    if parsed.replay_candles_path is not None and not parsed.replay_candles_path.is_file():
+        parser.error(f"--replay-candles file not found: {parsed.replay_candles_path}")
 
     return EvaluationArgs(
         strategy=parsed.strategy,
@@ -325,6 +345,7 @@ def parse_args(argv: list[str] | None = None) -> EvaluationArgs:
         log_level=parsed.log_level,
         fast=parsed.fast,
         replay_path=parsed.replay_path,
+        replay_candles_path=parsed.replay_candles_path,
     )
 
 
@@ -618,28 +639,48 @@ def main(argv: list[str] | None = None) -> int:
             "fast": args.fast,
             "max_holding_seconds": args.max_holding_seconds,
             "replay_path": str(args.replay_path) if args.replay_path is not None else None,
+            "replay_candles_path": (
+                str(args.replay_candles_path) if args.replay_candles_path is not None else None
+            ),
             "log_path": str(log_path),
         },
     )
 
-    if args.replay_path is not None:
+    if args.replay_path is not None or args.replay_candles_path is not None:
         # Replay mode: substitute the live OANDA feed with a file-backed
-        # ReplayQuoteFeed (PR #159).  The OANDA env vars are *not* read.
-        # build_components / build_supervisor_with_paper_stack still take
-        # an OandaConfig — we hand them a placeholder whose credentials
-        # are never consumed (both factories only touch oanda.* when
-        # quote_feed is None, and we always inject the replay feed).
-        log.info(
-            "eval.replay_mode",
-            extra={"event": "eval.replay_mode", "path": str(args.replay_path)},
-        )
+        # feed.  The OANDA env vars are *not* read.  build_components /
+        # build_supervisor_with_paper_stack still take an OandaConfig —
+        # we hand them a placeholder whose credentials are never consumed
+        # (both factories only touch oanda.* when quote_feed is None, and
+        # we always inject the replay feed).
+        replay_feed: QuoteFeed | None
+        if args.replay_candles_path is not None:
+            log.info(
+                "eval.replay_mode",
+                extra={
+                    "event": "eval.replay_mode",
+                    "path": str(args.replay_candles_path),
+                    "feed": "candle",
+                },
+            )
+            replay_feed = CandleReplayQuoteFeed(
+                args.replay_candles_path, instrument=args.instrument
+            )
+        else:
+            assert args.replay_path is not None
+            log.info(
+                "eval.replay_mode",
+                extra={
+                    "event": "eval.replay_mode",
+                    "path": str(args.replay_path),
+                    "feed": "quote",
+                },
+            )
+            replay_feed = ReplayQuoteFeed(args.replay_path, instrument=args.instrument)
         oanda = exit_lib.OandaConfig(
             access_token="",
             account_id=args.account_id,
             environment="practice",
-        )
-        replay_feed: QuoteFeed | None = ReplayQuoteFeed(
-            args.replay_path, instrument=args.instrument
         )
     else:
         try:
