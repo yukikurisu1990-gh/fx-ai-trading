@@ -15,16 +15,24 @@ This test verifies the file-only safe path:
 from __future__ import annotations
 
 import os
+import signal
 import subprocess
 import sys
+import threading
+import time
 from pathlib import Path
+from unittest.mock import patch
 
 import pytest
 
 from fx_ai_trading.adapters.notifier.dispatcher import NotifierDispatcherImpl
 from fx_ai_trading.adapters.notifier.file import FileNotifier
 from fx_ai_trading.adapters.notifier.slack import SlackNotifier
-from fx_ai_trading.supervisor.__main__ import _build_supervisor_context
+from fx_ai_trading.supervisor.__main__ import (
+    _build_supervisor_context,
+    _install_signal_driven_safe_stop,
+    main,
+)
 
 _REPO_ROOT = Path(__file__).resolve().parents[2]
 
@@ -153,29 +161,160 @@ class TestPr4ProbeEnvWiring:
 
 
 class TestModuleSubprocessSmoke:
-    """End-to-end: ``python -m fx_ai_trading.supervisor`` exits 0 file-only."""
+    """End-to-end: ``python -m fx_ai_trading.supervisor`` blocks on signal then exits 0.
 
-    def test_module_runs_to_completion(self, tmp_path: Path) -> None:
+    Skipped on Windows because ``signal.SIGTERM`` is not catchable when
+    delivered via ``subprocess.Popen.terminate`` (Win32 ``TerminateProcess``
+    is uncatchable).  The Windows-compatible path uses
+    ``CREATE_NEW_PROCESS_GROUP`` + ``CTRL_BREAK_EVENT`` and lands in PR-B.
+    """
+
+    @pytest.mark.skipif(sys.platform == "win32", reason="catchable-signal compat is PR-B")
+    def test_module_blocks_then_exits_clean_on_sigterm(self, tmp_path: Path) -> None:
         env = dict(os.environ)
         env.pop("SLACK_WEBHOOK_URL", None)
-        # Steer the subprocess into a clean tmp_path so its log files
-        # land outside the repo working tree.
         env["PYTHONPATH"] = str(_REPO_ROOT / "src") + os.pathsep + env.get("PYTHONPATH", "")
 
-        result = subprocess.run(  # noqa: S603
+        proc = subprocess.Popen(  # noqa: S603
             [sys.executable, "-m", "fx_ai_trading.supervisor"],
             cwd=tmp_path,
             env=env,
-            capture_output=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
             text=True,
-            timeout=30,
         )
+        # Wait for startup + signal-handler install to land before signaling.
+        # 5s is generous: file-only startup is sub-second on the CI runners.
+        time.sleep(5)
+        proc.send_signal(signal.SIGTERM)
+        try:
+            stdout, stderr = proc.communicate(timeout=15)
+        except subprocess.TimeoutExpired:
+            proc.kill()
+            stdout, stderr = proc.communicate()
+            pytest.fail(
+                f"supervisor did not exit within 15s after SIGTERM\n"
+                f"--- stdout ---\n{stdout}\n--- stderr ---\n{stderr}"
+            )
 
-        assert result.returncode == 0, (
-            f"supervisor entry point exited {result.returncode}\n"
-            f"--- stdout ---\n{result.stdout}\n--- stderr ---\n{result.stderr}"
+        assert proc.returncode == 0, (
+            f"supervisor entry point exited {proc.returncode}\n"
+            f"--- stdout ---\n{stdout}\n--- stderr ---\n{stderr}"
         )
-        # Confirm the file-only fallback notice landed in stderr (logging default).
-        combined = result.stdout + result.stderr
+        combined = stdout + stderr
         assert "Supervisor entry point" in combined
         assert "startup complete" in combined.lower()
+        assert "awaiting stop signal" in combined.lower()
+        assert "signal received" in combined.lower()
+        assert "safe_stop complete" in combined.lower()
+
+
+class TestSignalDrivenSafeStop:
+    """In-process tests for the signal → safe_stop wiring added in PR-A.
+
+    These run without spawning a subprocess so the same coverage applies
+    on Windows (where SIGTERM-via-TerminateProcess is uncatchable).  The
+    handler is invoked directly to avoid relying on signal delivery.
+    """
+
+    def test_install_returns_event_and_received_list(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        monkeypatch.delenv("SLACK_WEBHOOK_URL", raising=False)
+        monkeypatch.chdir(tmp_path)
+        supervisor, ctx = _build_supervisor_context()
+        log = __import__("logging").getLogger("test")
+
+        # signal.signal can only run on the main thread.  Save and
+        # restore prior handlers so sibling tests are unaffected.
+        prior_term = signal.getsignal(signal.SIGTERM)
+        prior_int = signal.getsignal(signal.SIGINT)
+        try:
+            stop_event, received = _install_signal_driven_safe_stop(supervisor, ctx, log)
+            assert isinstance(stop_event, threading.Event)
+            assert received == []
+            assert not stop_event.is_set()
+        finally:
+            signal.signal(signal.SIGTERM, prior_term)
+            signal.signal(signal.SIGINT, prior_int)
+
+    def test_handler_sets_event_and_records_signum(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """Invoke the registered SIGTERM handler directly to verify wiring.
+
+        Skips signal delivery (which is fiddly cross-platform) and just
+        confirms the handler installed by ``_install_signal_driven_safe_stop``
+        sets the event and appends the signum.
+        """
+        monkeypatch.delenv("SLACK_WEBHOOK_URL", raising=False)
+        monkeypatch.chdir(tmp_path)
+        supervisor, ctx = _build_supervisor_context()
+        log = __import__("logging").getLogger("test")
+
+        prior_term = signal.getsignal(signal.SIGTERM)
+        prior_int = signal.getsignal(signal.SIGINT)
+        try:
+            stop_event, received = _install_signal_driven_safe_stop(supervisor, ctx, log)
+            handler = signal.getsignal(signal.SIGTERM)
+            # Invoke the handler as the runtime would (signum, frame).
+            handler(signal.SIGTERM, None)
+            assert stop_event.is_set()
+            assert received == [signal.SIGTERM]
+        finally:
+            signal.signal(signal.SIGTERM, prior_term)
+            signal.signal(signal.SIGINT, prior_int)
+
+    def test_main_blocks_then_fires_safe_stop_on_signal(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """Run main() in a worker thread, set the stop event from outside, assert exit 0.
+
+        We patch ``_install_signal_driven_safe_stop`` so the test can
+        flip the stop event without actually delivering a signal —
+        signals can only be raised on the main thread, but pytest IS
+        the main thread.
+        """
+        monkeypatch.delenv("SLACK_WEBHOOK_URL", raising=False)
+        monkeypatch.chdir(tmp_path)
+
+        externally_visible_event = threading.Event()
+        spy_received: list[int] = []
+
+        def _fake_install(supervisor, ctx, log):  # type: ignore[no-untyped-def]
+            return externally_visible_event, spy_received
+
+        trigger_calls: list[dict] = []
+
+        # Capture the real Supervisor.trigger_safe_stop so we can verify
+        # main() invoked it with the right reason without firing the
+        # full SafeStopHandler 4-step sequence (which would write real
+        # files / require a journal etc.).
+        from fx_ai_trading.supervisor.supervisor import Supervisor
+
+        def _spy_trigger(self, reason, occurred_at, payload=None, context=None):  # type: ignore[no-untyped-def]
+            trigger_calls.append({"reason": reason, "occurred_at": occurred_at})
+
+        with (
+            patch(
+                "fx_ai_trading.supervisor.__main__._install_signal_driven_safe_stop",
+                _fake_install,
+            ),
+            patch.object(Supervisor, "trigger_safe_stop", _spy_trigger),
+        ):
+            rc_holder: list[int] = []
+
+            def _run():
+                rc_holder.append(main())
+
+            t = threading.Thread(target=_run, daemon=True)
+            t.start()
+            # Wait briefly for startup to land and main() to enter wait().
+            time.sleep(2)
+            externally_visible_event.set()
+            t.join(timeout=10)
+            assert not t.is_alive(), "main() did not return after stop_event was set"
+
+        assert rc_holder == [0]
+        assert len(trigger_calls) == 1
+        assert trigger_calls[0]["reason"] == "signal_received"

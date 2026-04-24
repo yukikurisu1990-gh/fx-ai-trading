@@ -54,7 +54,9 @@ from __future__ import annotations
 
 import logging
 import os
+import signal
 import sys
+import threading
 from pathlib import Path
 
 from fx_ai_trading.adapters.notifier.file import FileNotifier
@@ -130,6 +132,37 @@ def _build_supervisor_context() -> tuple[Supervisor, StartupContext]:
     return supervisor, ctx
 
 
+def _install_signal_driven_safe_stop(
+    supervisor: Supervisor,
+    ctx: StartupContext,
+    log: logging.Logger,
+) -> tuple[threading.Event, list[int]]:
+    """Install SIGTERM/SIGINT handlers that signal the main thread to fire safe_stop.
+
+    Returns the stop ``Event`` (set by handlers) and the list of signal
+    numbers received (mutated by handlers).  The handler intentionally
+    does only flag-setting work — ``trigger_safe_stop`` is invoked from
+    the main thread after ``Event.wait()`` returns so the I/O-heavy
+    SafeStopHandler 4-step sequence does not run inside a signal frame.
+    """
+    stop_event = threading.Event()
+    received: list[int] = []
+
+    def _handler(signum: int, _frame: object) -> None:
+        received.append(signum)
+        log.info("Supervisor: received signal %d — initiating safe_stop", signum)
+        stop_event.set()
+
+    # SIGTERM is the ProcessManager.stop() target on Unix.  SIGINT covers
+    # interactive Ctrl+C.  Both are catchable on Unix and on Windows
+    # signal.signal(SIGINT) is honored by the C runtime; SIGTERM on
+    # Windows is not delivered by TerminateProcess (handled separately
+    # in PR-B via CTRL_BREAK_EVENT + CREATE_NEW_PROCESS_GROUP).
+    signal.signal(signal.SIGTERM, _handler)
+    signal.signal(signal.SIGINT, _handler)
+    return stop_event, received
+
+
 def main() -> int:
     """Run the Supervisor startup sequence and return the process exit code."""
     logging.basicConfig(
@@ -152,6 +185,22 @@ def main() -> int:
         result.outcome,
         result.degraded_steps,
     )
+
+    stop_event, _received = _install_signal_driven_safe_stop(supervisor, ctx, log)
+    log.info("Supervisor: awaiting stop signal (SIGTERM/SIGINT)")
+    stop_event.wait()
+
+    log.info("Supervisor: signal received — firing SafeStopHandler 4-step sequence")
+    try:
+        supervisor.trigger_safe_stop(
+            reason="signal_received",
+            occurred_at=ctx.clock.now(),
+        )
+    except Exception:
+        log.exception("Supervisor: trigger_safe_stop raised — exiting non-zero")
+        return 2
+
+    log.info("Supervisor: safe_stop complete — exiting 0")
     return 0
 
 
