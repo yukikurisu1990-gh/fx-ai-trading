@@ -233,7 +233,7 @@ class TestMinimumEntryPolicy:
         quote_age_seconds: float | None,
         feed_raises: bool = False,
         stale_after_seconds: float = 60.0,
-        direction: str = "buy",
+        direction: str | None = "buy",
         signal_returns: str | None = "buy",
     ) -> Any:
         sm = MagicMock()
@@ -319,6 +319,63 @@ class TestMinimumEntryPolicy:
         assert decision.should_fire is True
         assert decision.reason == "ok"
         assert decision.age_seconds == pytest.approx(10.0)
+        assert decision.adopted_direction == "buy"
+
+    def test_direction_none_signal_buy_fires_and_adopts(self, mod: Any) -> None:
+        # direction=None + signal='buy' → ok, adopted_direction='buy'.
+        policy = self._build(
+            mod,
+            open_set=frozenset(),
+            quote_age_seconds=10.0,
+            direction=None,
+            signal_returns="buy",
+        )
+        decision = policy.evaluate()
+        assert decision.should_fire is True
+        assert decision.reason == "ok"
+        assert decision.adopted_direction == "buy"
+
+    def test_direction_none_signal_sell_fires_and_adopts(self, mod: Any) -> None:
+        # direction=None + signal='sell' → ok, adopted_direction='sell'.
+        policy = self._build(
+            mod,
+            open_set=frozenset(),
+            quote_age_seconds=10.0,
+            direction=None,
+            signal_returns="sell",
+        )
+        decision = policy.evaluate()
+        assert decision.should_fire is True
+        assert decision.reason == "ok"
+        assert decision.adopted_direction == "sell"
+
+    def test_direction_none_signal_none_no_signal(self, mod: Any) -> None:
+        # direction=None + signal=None (warmup) → no_signal.
+        policy = self._build(
+            mod,
+            open_set=frozenset(),
+            quote_age_seconds=10.0,
+            direction=None,
+            signal_returns=None,
+        )
+        decision = policy.evaluate()
+        assert decision.should_fire is False
+        assert decision.reason == "no_signal"
+        assert decision.adopted_direction is None
+
+    def test_direction_buy_signal_sell_still_no_signal(self, mod: Any) -> None:
+        # direction='buy' + signal='sell' → no_signal (filter blocks it).
+        policy = self._build(
+            mod,
+            open_set=frozenset(),
+            quote_age_seconds=10.0,
+            direction="buy",
+            signal_returns="sell",
+        )
+        decision = policy.evaluate()
+        assert decision.should_fire is False
+        assert decision.reason == "no_signal"
+        assert decision.adopted_direction is None
 
 
 # ---------------------------------------------------------------------------

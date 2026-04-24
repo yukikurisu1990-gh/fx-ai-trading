@@ -211,7 +211,7 @@ def _run(
     mod: Any,
     components: Any,
     *,
-    direction: str,
+    direction: str | None,
     max_iterations: int,
     signals: Any = None,
 ) -> int:
@@ -383,6 +383,44 @@ class TestPaperEntryLoopMultiSignal:
             signals=[mod.MinimumEntrySignal(), mod.FivePointMomentumSignal()],
         )
         assert iterations == 3
+        with engine.connect() as conn:
+            ord_count = conn.execute(text("SELECT COUNT(*) FROM orders")).scalar()
+            pos_count = conn.execute(
+                text("SELECT COUNT(*) FROM positions WHERE event_type='open'")
+            ).scalar()
+        assert ord_count == 0
+        assert pos_count == 0
+
+
+class TestPaperEntryLoopDirectionOptional:
+    """direction=None: signal-driven direction adopted end-to-end.
+
+    Verifies that omitting --direction causes the signal's returned
+    direction to be used directly for the open call (M10-4 contract).
+    """
+
+    def test_direction_none_signal_drives_open(self, mod: Any, engine: Any) -> None:
+        # direction=None + [1.0, 1.05, 1.1] → tick 3 MinimumEntrySignal='buy'
+        # → adopted_direction='buy' → 1 open.
+        components = _build_components_with_sequential_feed(mod, engine, [1.0, 1.05, 1.1])
+        iterations = _run(mod, components, direction=None, max_iterations=3)
+        assert iterations == 3
+
+        with engine.connect() as conn:
+            ord_rows = conn.execute(text("SELECT order_id, status FROM orders")).fetchall()
+            pos_rows = conn.execute(text("SELECT order_id, event_type FROM positions")).fetchall()
+        assert len(ord_rows) == 1
+        assert ord_rows[0][1] == "FILLED"
+        assert len(pos_rows) == 1
+        assert pos_rows[0][1] == "open"
+
+    def test_direction_filter_blocks_signal_mismatch(self, mod: Any, engine: Any) -> None:
+        # direction='buy' + [1.0, 0.95, 0.9] → signal='sell' mismatch → 0 opens.
+        # Pins the filter-mode contract alongside direction=None.
+        components = _build_components_with_sequential_feed(mod, engine, [1.0, 0.95, 0.9])
+        iterations = _run(mod, components, direction="buy", max_iterations=3)
+        assert iterations == 3
+
         with engine.connect() as conn:
             ord_count = conn.execute(text("SELECT COUNT(*) FROM orders")).scalar()
             pos_count = conn.execute(
