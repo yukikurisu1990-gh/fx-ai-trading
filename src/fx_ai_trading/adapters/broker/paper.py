@@ -13,6 +13,13 @@ the current ``Quote.price`` from the feed for each fill so that open and
 close legs reflect different observation times (enabling non-zero
 ``pnl_realized`` evaluation). When omitted, the legacy ``nominal_price``
 is used (preserved for tests that pin a fixed fill price).
+
+Phase 9.10: when the ``Quote`` carries populated ``bid``/``ask`` fields,
+fills use the side-specific price (long → ask, short → bid) so the
+backtest PnL reflects real spread cost. When bid/ask are unavailable but
+a ``BidAskSpreadModel`` is injected, a synthetic half-spread is added to
+the mid. With neither, the legacy mid-fill behavior stands — preserving
+existing tests that only assert a single price per observation.
 """
 
 from __future__ import annotations
@@ -46,6 +53,44 @@ class ZeroSlippageModel:
         return nominal_price
 
 
+class BidAskSpreadModel(Protocol):
+    """Synthesizes a half-spread for a Quote that only carries mid (Phase 9.10).
+
+    When a QuoteFeed supplies only ``Quote.price`` (no bid/ask), the broker
+    calls ``half_spread(instrument)`` to approximate the cost of crossing
+    the book. Long fills pay ``mid + half_spread``; short fills receive
+    ``mid - half_spread``.
+    """
+
+    def half_spread(self, instrument: str) -> float:
+        """Return half the synthetic bid-ask spread in price units."""
+        ...
+
+
+def _default_pip_size(instrument: str) -> float:
+    """Return the pip size in price units for *instrument*.
+
+    JPY-quoted pairs price at 0.01 per pip; most other FX pairs at 0.0001.
+    """
+    return 0.01 if instrument.endswith("_JPY") else 0.0001
+
+
+class FixedPipSpreadModel:
+    """``BidAskSpreadModel`` that yields a fixed spread in pips across all pairs.
+
+    The spread is specified in pip units so the same constant covers both
+    JPY-quoted pairs (pip = 0.01) and the rest (pip = 0.0001).
+    """
+
+    def __init__(self, spread_pip: float) -> None:
+        if spread_pip < 0:
+            raise ValueError(f"spread_pip must be >= 0 (got {spread_pip!r}).")
+        self._spread_pip = spread_pip
+
+    def half_spread(self, instrument: str) -> float:
+        return _default_pip_size(instrument) * self._spread_pip / 2.0
+
+
 class PaperBroker(BrokerBase):
     """In-memory paper trading broker.
 
@@ -60,6 +105,10 @@ class PaperBroker(BrokerBase):
             reads the current quote price for each fill instead of
             ``nominal_price``. Open and close legs then reflect distinct
             observation times so ``pnl_realized`` can be non-zero.
+        spread_model: Optional ``BidAskSpreadModel``; consulted only when
+            the Quote lacks bid/ask (Phase 9.10). Adds a synthetic
+            half-spread to the mid so side-aware fills are still possible
+            from mid-only producers.
     """
 
     def __init__(
@@ -69,11 +118,13 @@ class PaperBroker(BrokerBase):
         nominal_price: float = 1.0,
         slippage_model: SlippageModel | None = None,
         quote_feed: QuoteFeed | None = None,
+        spread_model: BidAskSpreadModel | None = None,
     ) -> None:
         super().__init__(account_type=account_type)
         self._nominal_price = nominal_price
         self._slippage: SlippageModel = slippage_model or ZeroSlippageModel()
         self._quote_feed = quote_feed
+        self._spread_model = spread_model
         self._positions: dict[str, BrokerPosition] = {}
         self._pending: dict[str, BrokerOrder] = {}
         self._order_counter = 0
@@ -89,11 +140,7 @@ class PaperBroker(BrokerBase):
         Updates the in-memory position register.
         """
         self._verify_account_type_or_raise(self._account_type)
-        base_price = (
-            self._quote_feed.get_quote(request.instrument).price
-            if self._quote_feed is not None
-            else self._nominal_price
-        )
+        base_price = self._base_fill_price(request)
         fill_price = self._slippage.apply(base_price, request.side)
         broker_order_id = f"paper-{request.client_order_id}"
         self._update_position(request, fill_price)
@@ -104,6 +151,27 @@ class PaperBroker(BrokerBase):
             filled_units=request.size_units,
             fill_price=fill_price,
         )
+
+    def _base_fill_price(self, request: OrderRequest) -> float:
+        """Pre-slippage fill price, side-aware when bid/ask is available.
+
+        Resolution order (Phase 9.10):
+          1. No quote_feed → legacy ``nominal_price`` (tests that pin a fixed price).
+          2. Quote has both bid and ask → long pays ask, short receives bid.
+          3. Quote has only mid + a spread_model is injected → mid ± half_spread.
+          4. Otherwise → mid (legacy behavior, no side awareness).
+        """
+        if self._quote_feed is None:
+            return self._nominal_price
+        quote = self._quote_feed.get_quote(request.instrument)
+        if quote.bid is not None and quote.ask is not None:
+            return quote.ask if request.side == "long" else quote.bid
+        if self._spread_model is not None:
+            half_spread = self._spread_model.half_spread(request.instrument)
+            return (
+                quote.price + half_spread if request.side == "long" else quote.price - half_spread
+            )
+        return quote.price
 
     def cancel_order(self, order_id: str) -> CancelResult:
         """Remove the order from pending register if present."""

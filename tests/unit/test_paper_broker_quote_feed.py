@@ -78,3 +78,119 @@ def test_round_trip_yields_non_zero_pnl_via_m2_formula() -> None:
 
     assert pnl != 0.0
     assert pnl == 1000 * (1.12 - 1.10)
+
+
+# ----------------------------------------------------------------------------
+# Phase 9.10: bid/ask-aware fills + synthetic spread model
+# ----------------------------------------------------------------------------
+
+
+class _BidAskQuoteFeed:
+    """Test double that returns Quotes with populated bid/ask."""
+
+    def __init__(self, quotes: list[Quote]) -> None:
+        self._quotes = list(quotes)
+        self.calls: list[str] = []
+
+    def get_quote(self, instrument: str) -> Quote:
+        self.calls.append(instrument)
+        return self._quotes.pop(0)
+
+
+def _bid_ask_quote(*, bid: float, ask: float) -> Quote:
+    return Quote(
+        price=(bid + ask) / 2.0,
+        ts=_FIXED_TS,
+        source="test",
+        bid=bid,
+        ask=ask,
+    )
+
+
+def test_long_fill_uses_ask_when_bid_ask_populated() -> None:
+    feed = _BidAskQuoteFeed(quotes=[_bid_ask_quote(bid=1.0998, ask=1.1002)])
+    broker = PaperBroker(account_type="demo", quote_feed=feed)
+    result = broker.place_order(_request(side="long", client_order_id="o-1"))
+    assert result.fill_price == 1.1002
+
+
+def test_short_fill_uses_bid_when_bid_ask_populated() -> None:
+    feed = _BidAskQuoteFeed(quotes=[_bid_ask_quote(bid=1.0998, ask=1.1002)])
+    broker = PaperBroker(account_type="demo", quote_feed=feed)
+    result = broker.place_order(_request(side="short", client_order_id="o-1"))
+    assert result.fill_price == 1.0998
+
+
+def test_round_trip_with_spread_cost_reduces_pnl() -> None:
+    """Spread must bleed into PnL: a long opened at ask and closed at bid
+    loses the full spread even when the mid did not move."""
+    feed = _BidAskQuoteFeed(
+        quotes=[
+            _bid_ask_quote(bid=1.0998, ask=1.1002),  # open long → ask 1.1002
+            _bid_ask_quote(bid=1.0998, ask=1.1002),  # close → short at bid 1.0998
+        ]
+    )
+    broker = PaperBroker(account_type="demo", quote_feed=feed)
+
+    open_result = broker.place_order(_request(side="long", client_order_id="o-1"))
+    close_result = broker.place_order(_request(side="short", client_order_id="o-2"))
+
+    import pytest as _pytest
+
+    units = 1000
+    pnl = (close_result.fill_price - open_result.fill_price) * units
+    # Spread = 0.0004, loss = 0.0004 * 1000 = 0.4
+    assert pnl == _pytest.approx(-0.4)
+
+
+def test_synthetic_spread_model_applied_when_bid_ask_missing() -> None:
+    """When the Quote only carries mid, a BidAskSpreadModel can still make
+    fills side-aware so backtests from mid-only sources stay cost-aware."""
+    from fx_ai_trading.adapters.broker.paper import FixedPipSpreadModel
+
+    feed = _ScriptedQuoteFeed(prices=[1.1000, 1.1000])  # mid only
+    broker = PaperBroker(
+        account_type="demo",
+        quote_feed=feed,
+        spread_model=FixedPipSpreadModel(spread_pip=1.0),  # 1 pip round-trip
+    )
+
+    long_result = broker.place_order(_request(side="long", client_order_id="o-1"))
+    short_result = broker.place_order(_request(side="short", client_order_id="o-2"))
+
+    import pytest as _pytest
+
+    # 1 pip = 0.0001 on EUR_USD, half-spread = 0.00005.
+    assert long_result.fill_price == _pytest.approx(1.1000 + 0.00005)
+    assert short_result.fill_price == _pytest.approx(1.1000 - 0.00005)
+
+
+def test_mid_quote_without_spread_model_falls_back_to_legacy_mid_fill() -> None:
+    """Existing tests that only care about mid-driven PnL must keep working:
+    a mid-only Quote + no spread_model reproduces the pre-9.10 behavior."""
+    feed = _ScriptedQuoteFeed(prices=[1.10, 1.12])
+    broker = PaperBroker(account_type="demo", quote_feed=feed)  # no spread_model
+    long_result = broker.place_order(_request(side="long", client_order_id="o-1"))
+    short_result = broker.place_order(_request(side="short", client_order_id="o-2"))
+    # Mid-only fills — same as the legacy round-trip test above.
+    assert long_result.fill_price == 1.10
+    assert short_result.fill_price == 1.12
+
+
+def test_jpy_pip_size_applied_in_spread_model() -> None:
+    from fx_ai_trading.adapters.broker.paper import FixedPipSpreadModel
+
+    model = FixedPipSpreadModel(spread_pip=1.0)
+    # JPY pairs: pip = 0.01, half-spread = 0.005.
+    assert model.half_spread("USD_JPY") == 0.005
+    # Non-JPY pairs: pip = 0.0001, half-spread = 0.00005.
+    assert model.half_spread("EUR_USD") == 0.00005
+
+
+def test_spread_model_rejects_negative_pip() -> None:
+    import pytest as _pytest
+
+    from fx_ai_trading.adapters.broker.paper import FixedPipSpreadModel
+
+    with _pytest.raises(ValueError, match="spread_pip must be >= 0"):
+        FixedPipSpreadModel(spread_pip=-0.5)

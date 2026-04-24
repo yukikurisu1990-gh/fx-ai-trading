@@ -333,12 +333,15 @@ class TestPaperLoopClosePath:
         ce = ce_rows[0]
         assert ce["primary_reason_code"] == "max_holding_time"
         # M-2 contract: gross PnL = (fill - avg) * units * sign(side).
-        # Long position seeded at avg=0.99, units=1000; PaperBroker now
-        # reads the close fill from the same QuoteFeed the policy uses,
-        # so the close leg fills at the stubbed mid price 1.11.
-        # → (1.11 - 0.99) * 1000 * (+1) = +120.0
+        # Long position seeded at avg=0.99, units=1000; PaperBroker reads
+        # the close fill from the same QuoteFeed the policy uses.
+        #
+        # Phase 9.10: OandaQuoteFeed now populates Quote.bid/ask, and
+        # PaperBroker fills the close (short) leg at the bid side. With
+        # mid=1.11 and half_spread=0.0001, bid=1.1099 so the spread-aware
+        # close PnL is (1.1099 - 0.99) * 1000 = +119.9.
         assert ce["pnl_realized"] is not None
-        assert float(ce["pnl_realized"]) == pytest.approx(120.0)
+        assert float(ce["pnl_realized"]) == pytest.approx(119.9)
 
         # --- positions(close) row appended (append-only) ---------------
         with engine.connect() as conn:
