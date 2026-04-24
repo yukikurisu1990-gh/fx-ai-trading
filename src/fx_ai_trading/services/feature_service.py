@@ -95,7 +95,7 @@ _ZERO_FEATURES: dict[str, float] = {
     "atr_14": 0.0,
     "bb_lower": 0.0,
     "bb_middle": 0.0,
-    "bb_pct_b": 0.5,
+    "bb_pct_b": 0.0,
     "bb_upper": 0.0,
     "bb_width": 0.0,
     "ema_12": 0.0,
@@ -104,7 +104,7 @@ _ZERO_FEATURES: dict[str, float] = {
     "macd_histogram": 0.0,
     "macd_line": 0.0,
     "macd_signal": 0.0,
-    "rsi_14": 50.0,
+    "rsi_14": 0.0,
     "sma_20": 0.0,
     "sma_50": 0.0,
 }

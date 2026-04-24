@@ -167,11 +167,11 @@ class TestComputeFeaturesTAFields:
         ):
             assert key in result, f"Missing key: {key}"
 
-    def test_rsi_defaults_50_on_empty(self) -> None:
-        assert _compute_features([])["rsi_14"] == pytest.approx(50.0)
+    def test_rsi_defaults_0_on_empty(self) -> None:
+        assert _compute_features([])["rsi_14"] == pytest.approx(0.0)
 
-    def test_bb_pct_b_defaults_0_5_on_empty(self) -> None:
-        assert _compute_features([])["bb_pct_b"] == pytest.approx(0.5)
+    def test_bb_pct_b_defaults_0_on_empty(self) -> None:
+        assert _compute_features([])["bb_pct_b"] == pytest.approx(0.0)
 
     def test_rsi_populated_on_sufficient_data(self) -> None:
         candles = _candles([float(i) for i in range(1, 40)])
