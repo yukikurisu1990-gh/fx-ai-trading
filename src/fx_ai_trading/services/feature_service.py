@@ -156,6 +156,23 @@ def _compute_features(candles: list[dict]) -> dict:
     }
 
 
+def compute_features_from_candles(candles: list[dict]) -> dict[str, float]:
+    """Public entry point for batch feature computation (Phase 9.5 feature store).
+
+    Computes features from *all* candles in the list with no time filtering.
+    Callers are responsible for passing only candles up to (and including)
+    the bar of interest to preserve the no-lookahead invariant.
+
+    Args:
+        candles: List of candle dicts with keys: timestamp, open, high, low,
+            close (float), volume (float).
+
+    Returns:
+        Dict with all feature keys (float values rounded to 8 dp).
+    """
+    return _compute_features(candles)
+
+
 def _sma(values: list[float], period: int) -> float:
     """Simple moving average of the last *period* values."""
     if not values:
