@@ -86,7 +86,7 @@ class OandaBarFeed:
         *,
         poll_interval_seconds: int = 5,
         max_bars: int = 0,
-        clock: Clock = WallClock(),
+        clock: Clock | None = None,
     ) -> None:
         self._client = client
         self._instrument = instrument
@@ -95,7 +95,7 @@ class OandaBarFeed:
         self._max_bars = max_bars
         self._stop_flag = False
         self._bar_seconds = _GRANULARITY_SECONDS.get(granularity, 300)
-        self._clock = clock
+        self._clock: Clock = clock if clock is not None else WallClock()
 
     def stop(self) -> None:
         """Signal the feed to stop after the current bar."""

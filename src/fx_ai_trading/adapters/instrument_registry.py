@@ -18,7 +18,7 @@ Design:
 from __future__ import annotations
 
 import logging
-from datetime import UTC, datetime
+from datetime import datetime
 from typing import TYPE_CHECKING
 
 from fx_ai_trading.common.clock import Clock, WallClock
@@ -50,13 +50,13 @@ class OandaInstrumentRegistry:
         *,
         ttl_seconds: int = _DEFAULT_TTL_SECONDS,
         instrument_types: frozenset[str] = frozenset({_TRADEABLE_TYPE}),
-        clock: Clock = WallClock(),
+        clock: Clock | None = None,
     ) -> None:
         self._client = client
         self._account_id = account_id
         self._ttl_seconds = ttl_seconds
         self._instrument_types = instrument_types
-        self._clock = clock
+        self._clock: Clock = clock if clock is not None else WallClock()
         self._cached: list[str] = []
         self._cached_at: datetime | None = None
 
