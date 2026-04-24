@@ -6,7 +6,6 @@ start → is_running → stop lifecycle without spawning the real Supervisor.
 
 from __future__ import annotations
 
-import subprocess
 import sys
 import time
 from pathlib import Path
@@ -123,6 +122,11 @@ class TestProcessManagerCrossPlatformBranching:
     def test_start_on_windows_sets_create_new_process_group(self, tmp_path: Path) -> None:
         pm = ProcessManager(pid_file=tmp_path / "supervisor.pid")
         fake_proc = self._fake_popen_returning()
+        # subprocess.CREATE_NEW_PROCESS_GROUP is Windows-only; ProcessManager
+        # resolves it via getattr fallback so the test asserts against the
+        # same module-level constant (importable on Linux CI).
+        from fx_ai_trading.ops.process_manager import _CREATE_NEW_PROCESS_GROUP
+
         with (
             patch("fx_ai_trading.ops.process_manager._IS_WINDOWS", True),
             patch(
@@ -132,7 +136,7 @@ class TestProcessManagerCrossPlatformBranching:
         ):
             pm.start(args=["python", "-c", "pass"])
         kwargs = mock_popen.call_args.kwargs
-        assert kwargs.get("creationflags") == subprocess.CREATE_NEW_PROCESS_GROUP
+        assert kwargs.get("creationflags") == _CREATE_NEW_PROCESS_GROUP
 
     def test_stop_on_unix_calls_terminate(self, tmp_path: Path) -> None:
         pid_file = tmp_path / "supervisor.pid"

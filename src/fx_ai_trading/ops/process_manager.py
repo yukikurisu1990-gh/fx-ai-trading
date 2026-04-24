@@ -29,6 +29,12 @@ import psutil
 
 _IS_WINDOWS = sys.platform == "win32"
 
+# subprocess.CREATE_NEW_PROCESS_GROUP is Windows-only.  Resolve via
+# getattr so this module imports cleanly on Linux CI runners; the
+# value (0x00000200) is the documented CreateProcess flag and is only
+# ever passed when ``_IS_WINDOWS`` is True.
+_CREATE_NEW_PROCESS_GROUP = getattr(subprocess, "CREATE_NEW_PROCESS_GROUP", 0x00000200)
+
 _log = logging.getLogger(__name__)
 
 _DEFAULT_PID_FILE = Path("logs") / "supervisor.pid"
@@ -74,7 +80,7 @@ class ProcessManager:
             # supervisor *only* (without it the event would propagate
             # to this process too).  Python translates the event into
             # SIGBREAK in the supervisor's signal handler.
-            popen_kwargs["creationflags"] = subprocess.CREATE_NEW_PROCESS_GROUP
+            popen_kwargs["creationflags"] = _CREATE_NEW_PROCESS_GROUP
         proc = subprocess.Popen(cmd, **popen_kwargs)  # noqa: S603
         self._pid_file.parent.mkdir(parents=True, exist_ok=True)
         self._pid_file.write_text(str(proc.pid), encoding="utf-8")
