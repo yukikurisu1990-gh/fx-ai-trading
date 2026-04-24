@@ -213,3 +213,62 @@ class TestMetaDeciderSelect:
         assert decision.no_trade is True
         reason_codes = {r.reason_code for r in decision.no_trade_reasons}
         assert "EV_BELOW_THRESHOLD" in reason_codes
+
+
+class TestMetaDeciderRuleF5CSI:
+    """Phase 9.3: Rule F5 — CSI strength filter."""
+
+    def _ctx_with_strength(self, strength: dict[str, float]) -> MetaContext:
+        return MetaContext(
+            cycle_id=_CTX.cycle_id,
+            account_id=_CTX.account_id,
+            config_version=_CTX.config_version,
+            currency_strength=strength,
+        )
+
+    def test_no_currency_strength_skips_rule(self) -> None:
+        """currency_strength=None in context → Rule F5 is not applied."""
+        decider = MetaDeciderService(min_csi_diff=9999.0)
+        # min_csi_diff is extremely large, but strength is None → rule skipped → trade.
+        decision = decider.decide([_make_signal("EUR_USD")], _CTX)
+        assert decision.no_trade is False
+
+    def test_sufficient_strength_diff_passes(self) -> None:
+        """|EUR - USD| = 1.5 >= min_csi_diff=0.5 → candidate passes."""
+        ctx = self._ctx_with_strength({"EUR": 1.2, "USD": -0.3})
+        decider = MetaDeciderService(min_csi_diff=0.5)
+        decision = decider.decide([_make_signal("EUR_USD")], ctx)
+        assert decision.no_trade is False
+
+    def test_insufficient_strength_diff_filters_candidate(self) -> None:
+        """|EUR - USD| = 0.1 < min_csi_diff=0.5 → no_trade with CSI_STRENGTH_WEAK."""
+        ctx = self._ctx_with_strength({"EUR": 0.05, "USD": -0.05})
+        decider = MetaDeciderService(min_csi_diff=0.5)
+        decision = decider.decide([_make_signal("EUR_USD")], ctx)
+        assert decision.no_trade is True
+        reason_codes = {r.reason_code for r in decision.no_trade_reasons}
+        assert "meta.csi_strength_weak" in reason_codes
+
+    def test_missing_currency_in_strength_passes(self) -> None:
+        """Currency absent from strength dict → Rule F5 passes (no data = no block)."""
+        ctx = self._ctx_with_strength({"EUR": 1.2})  # USD missing
+        decider = MetaDeciderService(min_csi_diff=0.5)
+        decision = decider.decide([_make_signal("EUR_USD")], ctx)
+        assert decision.no_trade is False
+
+    def test_non_pair_instrument_passes(self) -> None:
+        """Non-``A_B`` strategy_id → Rule F5 passes silently."""
+        ctx = self._ctx_with_strength({"EUR": 1.2, "USD": -0.3})
+        decider = MetaDeciderService(min_csi_diff=0.5)
+        decision = decider.decide([_make_signal("strat_a")], ctx)
+        # "strat" and "a" not in strength → passes
+        assert decision.no_trade is False
+
+    def test_multiple_candidates_partial_filter(self) -> None:
+        """Strong EUR_USD passes; weak GBP_JPY is filtered by CSI."""
+        ctx = self._ctx_with_strength({"EUR": 1.5, "USD": -0.5, "GBP": 0.1, "JPY": 0.05})
+        decider = MetaDeciderService(min_csi_diff=0.5)
+        candidates = [_make_signal("EUR_USD"), _make_signal("GBP_JPY")]
+        decision = decider.decide(candidates, ctx)
+        assert decision.no_trade is False
+        assert decision.selected_instrument == "EUR_USD"

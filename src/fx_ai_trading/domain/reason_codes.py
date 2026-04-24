@@ -100,6 +100,17 @@ class MetaReason:
     PRICE_ANOMALY = "PRICE_ANOMALY"
 
 
+class MetaFilterReason:
+    """Dotted reason codes for Phase 9.3+ MetaDecider filter rules.
+
+    Unlike ``MetaReason`` (UPPERCASE, LEGACY_BARE), these are dotted and
+    registered in ``DOTTED``.
+    """
+
+    CSI_STRENGTH_WEAK = "meta.csi_strength_weak"
+    SESSION_CLOSED = "meta.session_closed"
+
+
 class TimeoutReason:
     """Reason markers for the TTL-expiry path in ``run_execution_gate``.
 
@@ -175,6 +186,9 @@ DOTTED: frozenset[str] = frozenset(
         RiskReason.INVALID_RISK_PCT,
         RiskReason.SIZE_UNDER_MIN,
         RiskReason.UNKNOWN,
+        # Phase 9.3 MetaDecider filter rules
+        MetaFilterReason.CSI_STRENGTH_WEAK,
+        MetaFilterReason.SESSION_CLOSED,
     }
 )
 """Dotted reason codes.  New entries MUST be added here, not LEGACY_BARE."""
@@ -189,6 +203,7 @@ __all__ = [
     "LEGACY_BARE",
     "CloseReason",
     "GateReason",
+    "MetaFilterReason",
     "MetaReason",
     "RiskReason",
     "TimeoutReason",
