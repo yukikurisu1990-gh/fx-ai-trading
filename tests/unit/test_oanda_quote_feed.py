@@ -133,6 +133,17 @@ class TestGetQuoteHappyPath:
         with pytest.raises(FrozenInstanceError):
             q.price = 9.99  # type: ignore[misc]
 
+    def test_populates_bid_and_ask_from_response(self) -> None:
+        """Phase 9.10: cost-aware consumers (PaperBroker buy/sell) need
+        side-specific prices. The producer preserves bid/ask alongside
+        the mid so the Quote DTO carries all three."""
+        feed, _ = _make_feed(response=_pricing_response(bid="1.10000", ask="1.10010"))
+        q = feed.get_quote("EUR_USD")
+        assert q.bid == pytest.approx(1.10000)
+        assert q.ask == pytest.approx(1.10010)
+        # price is the mid and consistent with bid/ask (Quote.__post_init__ enforces this).
+        assert q.price == pytest.approx((1.10000 + 1.10010) / 2.0)
+
 
 # --- request shape -----------------------------------------------------------
 

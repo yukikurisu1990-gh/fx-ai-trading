@@ -71,6 +71,78 @@ class TestQuote:
             assert s  # non-empty
 
 
+class TestQuoteBidAsk:
+    """Phase 9.10: optional bid/ask fields for cost-aware consumers."""
+
+    def test_bid_ask_default_none(self) -> None:
+        # Backward compat: existing callers pass only price, bid/ask default None.
+        q = Quote(price=1.2345, ts=_FIXED_AT, source=SOURCE_TEST_FIXTURE)
+        assert q.bid is None
+        assert q.ask is None
+
+    def test_accepts_consistent_bid_ask(self) -> None:
+        q = Quote(
+            price=1.2345,
+            ts=_FIXED_AT,
+            source=SOURCE_TEST_FIXTURE,
+            bid=1.2340,
+            ask=1.2350,
+        )
+        assert q.bid == 1.2340
+        assert q.ask == 1.2350
+
+    def test_rejects_mismatched_mid(self) -> None:
+        # price must equal (bid+ask)/2 within 1e-9.
+        with pytest.raises(ValueError, match="must equal"):
+            Quote(
+                price=1.2345,
+                ts=_FIXED_AT,
+                source=SOURCE_TEST_FIXTURE,
+                bid=1.2340,
+                ask=1.2360,  # mid would be 1.2350, not 1.2345
+            )
+
+    def test_rejects_only_bid_set(self) -> None:
+        with pytest.raises(ValueError, match="both be set or both be None"):
+            Quote(
+                price=1.0,
+                ts=_FIXED_AT,
+                source=SOURCE_TEST_FIXTURE,
+                bid=1.0,
+            )
+
+    def test_rejects_only_ask_set(self) -> None:
+        with pytest.raises(ValueError, match="both be set or both be None"):
+            Quote(
+                price=1.0,
+                ts=_FIXED_AT,
+                source=SOURCE_TEST_FIXTURE,
+                ask=1.0,
+            )
+
+    def test_rejects_ask_less_than_bid(self) -> None:
+        # Inverted spread is always a data quality bug.
+        with pytest.raises(ValueError, match="must be >= bid"):
+            Quote(
+                price=1.2345,
+                ts=_FIXED_AT,
+                source=SOURCE_TEST_FIXTURE,
+                bid=1.2350,
+                ask=1.2340,
+            )
+
+    def test_zero_spread_is_allowed(self) -> None:
+        # Degenerate but valid: bid == ask (e.g., replay synthesis from mid only).
+        q = Quote(
+            price=1.2345,
+            ts=_FIXED_AT,
+            source=SOURCE_TEST_FIXTURE,
+            bid=1.2345,
+            ask=1.2345,
+        )
+        assert q.bid == q.ask == q.price
+
+
 class TestCallableToQuoteFeed:
     def test_returns_quote_with_callable_price(self) -> None:
         clock = FixedClock(_FIXED_AT)
