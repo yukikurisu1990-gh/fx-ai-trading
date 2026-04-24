@@ -35,6 +35,7 @@ from collections.abc import Iterator
 from datetime import UTC, datetime
 from typing import TYPE_CHECKING
 
+from fx_ai_trading.common.clock import Clock, WallClock
 from fx_ai_trading.domain.price_feed import Candle
 
 if TYPE_CHECKING:
@@ -85,6 +86,7 @@ class OandaBarFeed:
         *,
         poll_interval_seconds: int = 5,
         max_bars: int = 0,
+        clock: Clock = WallClock(),
     ) -> None:
         self._client = client
         self._instrument = instrument
@@ -93,6 +95,7 @@ class OandaBarFeed:
         self._max_bars = max_bars
         self._stop_flag = False
         self._bar_seconds = _GRANULARITY_SECONDS.get(granularity, 300)
+        self._clock = clock
 
     def stop(self) -> None:
         """Signal the feed to stop after the current bar."""
@@ -107,7 +110,7 @@ class OandaBarFeed:
                 break
 
             # Wait until we are past a bar boundary.
-            now = datetime.now(tz=UTC)
+            now = self._clock.now()
             secs_into_bar = int(now.timestamp()) % self._bar_seconds
             if secs_into_bar < self._poll_interval:
                 # Near the boundary — poll OANDA now.
