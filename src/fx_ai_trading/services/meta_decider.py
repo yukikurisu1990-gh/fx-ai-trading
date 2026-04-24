@@ -33,22 +33,21 @@ from uuid import UUID
 from fx_ai_trading.domain.event_calendar import EventCalendar
 from fx_ai_trading.domain.meta import MetaContext, MetaDecision, NoTradeReason
 from fx_ai_trading.domain.price_anomaly import PriceAnomalyGuard
-from fx_ai_trading.domain.reason_codes import MetaReason
+from fx_ai_trading.domain.reason_codes import MetaFilterReason, MetaReason
 from fx_ai_trading.domain.strategy import StrategySignal
 
 # Lowercase rule names used by the filter pipeline diagnostic snapshot.
 _RULE_SIGNAL_NO_TRADE = "signal_no_trade"
 _RULE_NEAR_EVENT = "near_event"
 _RULE_PRICE_ANOMALY = "price_anomaly"
+_RULE_CSI_STRENGTH_WEAK = "csi_strength_weak"
 
 # Map filter-rule snapshot names to their canonical reason_code constants.
-# Keeps the registered (UPPERCASE) reason_code as the single source of
-# truth while preserving the lowercase rule labels used in
-# ``filter_log`` snapshots.
 _RULE_TO_REASON_CODE = {
     _RULE_SIGNAL_NO_TRADE: MetaReason.SIGNAL_NO_TRADE,
     _RULE_NEAR_EVENT: MetaReason.NEAR_EVENT,
     _RULE_PRICE_ANOMALY: MetaReason.PRICE_ANOMALY,
+    _RULE_CSI_STRENGTH_WEAK: MetaFilterReason.CSI_STRENGTH_WEAK,
 }
 
 _log = logging.getLogger(__name__)
@@ -60,8 +59,12 @@ _DEFAULT_MIN_EV = 0.0
 _DEFAULT_NEAR_EVENT_MINUTES = 60
 
 
+# Minimum CSI base/quote strength divergence (z-score units) to pass Rule F5.
+_DEFAULT_MIN_CSI_DIFF = 0.5
+
+
 class MetaDeciderService:
-    """Filter → Score → Select MetaDecider for M9.
+    """Filter → Score → Select MetaDecider for M9/Phase 9.3.
 
     Args:
         event_calendar: Optional EventCalendar for near-event filtering and
@@ -71,6 +74,9 @@ class MetaDeciderService:
         min_ev: Minimum ev_after_cost required to pass the Score stage.
             Candidates with ev_after_cost <= min_ev are filtered out.
         near_event_minutes: High-impact events within this window filter a candidate.
+        min_csi_diff: Minimum |base_strength - quote_strength| (z-score units)
+            required for a candidate to pass Rule F5. If context.currency_strength
+            is None, this check is skipped.
     """
 
     def __init__(
@@ -79,11 +85,13 @@ class MetaDeciderService:
         price_anomaly_guard: PriceAnomalyGuard | None = None,
         min_ev: float = _DEFAULT_MIN_EV,
         near_event_minutes: int = _DEFAULT_NEAR_EVENT_MINUTES,
+        min_csi_diff: float = _DEFAULT_MIN_CSI_DIFF,
     ) -> None:
         self._calendar = event_calendar
         self._anomaly_guard = price_anomaly_guard
         self._min_ev = min_ev
         self._near_event_minutes = near_event_minutes
+        self._min_csi_diff = min_csi_diff
 
     def decide(
         self,
@@ -166,6 +174,12 @@ class MetaDeciderService:
                 instrument = _strategy_id_to_instrument(sig.strategy_id)
                 if self._anomaly_guard.is_anomaly(instrument):
                     rejected_by.append(_RULE_PRICE_ANOMALY)
+
+            # Rule F5: CSI strength — require sufficient base/quote divergence
+            if not rejected_by and context.currency_strength is not None:
+                instrument = _strategy_id_to_instrument(sig.strategy_id)
+                if not _csi_passes(instrument, context.currency_strength, self._min_csi_diff):
+                    rejected_by.append(_RULE_CSI_STRENGTH_WEAK)
 
             if rejected_by:
                 filter_log[sig.strategy_id] = rejected_by
@@ -335,3 +349,20 @@ def _strategy_id_to_instrument(strategy_id: str) -> str:
     Real instrument resolution is part of the evaluation framework (M10).
     """
     return strategy_id
+
+
+def _csi_passes(instrument: str, currency_strength: dict[str, float], min_diff: float) -> bool:
+    """Return True if the instrument's base/quote strength gap exceeds min_diff.
+
+    Silently passes (returns True) if the instrument is not in ``BASE_QUOTE``
+    format or if either currency is absent from the strength dict — avoids
+    blocking on incomplete CSI data.
+    """
+    parts = instrument.split("_")
+    if len(parts) != 2:
+        return True
+    base, quote = parts
+    if base not in currency_strength or quote not in currency_strength:
+        return True
+    diff = abs(currency_strength[base] - currency_strength[quote])
+    return diff >= min_diff
