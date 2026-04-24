@@ -18,8 +18,10 @@ Design:
 from __future__ import annotations
 
 import logging
-from datetime import UTC, datetime
+from datetime import datetime
 from typing import TYPE_CHECKING
+
+from fx_ai_trading.common.clock import Clock, WallClock
 
 if TYPE_CHECKING:
     from fx_ai_trading.adapters.broker.oanda_api_client import OandaAPIClient
@@ -48,11 +50,13 @@ class OandaInstrumentRegistry:
         *,
         ttl_seconds: int = _DEFAULT_TTL_SECONDS,
         instrument_types: frozenset[str] = frozenset({_TRADEABLE_TYPE}),
+        clock: Clock | None = None,
     ) -> None:
         self._client = client
         self._account_id = account_id
         self._ttl_seconds = ttl_seconds
         self._instrument_types = instrument_types
+        self._clock: Clock = clock if clock is not None else WallClock()
         self._cached: list[str] = []
         self._cached_at: datetime | None = None
 
@@ -63,7 +67,7 @@ class OandaInstrumentRegistry:
         Returns instrument names (e.g. ``["EUR_USD", "GBP_USD", ...]``).
         Never returns a hardcoded list (I-8).
         """
-        now = datetime.now(tz=UTC)
+        now = self._clock.now()
         if self._cached_at is None or (now - self._cached_at).total_seconds() > self._ttl_seconds:
             self._refresh(now)
         return list(self._cached)

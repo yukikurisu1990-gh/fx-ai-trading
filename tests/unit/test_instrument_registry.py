@@ -6,6 +6,7 @@ from datetime import UTC, datetime, timedelta
 from unittest.mock import MagicMock
 
 from fx_ai_trading.adapters.instrument_registry import OandaInstrumentRegistry
+from fx_ai_trading.common.clock import FixedClock
 
 
 def _make_entry(name: str, type_: str = "CURRENCY", tradeable: bool = True) -> dict:
@@ -80,10 +81,11 @@ class TestOandaInstrumentRegistryTTL:
 
     def test_expired_cache_triggers_refresh(self) -> None:
         client = _make_client([_make_entry("EUR_USD")])
-        reg = OandaInstrumentRegistry(client, "acct-1", ttl_seconds=1)
+        t0 = datetime(2024, 1, 1, 12, 0, 0, tzinfo=UTC)
+        reg = OandaInstrumentRegistry(client, "acct-1", ttl_seconds=1, clock=FixedClock(t0))
         reg.list_active()
-        # Manually expire cache by back-dating _cached_at.
-        reg._cached_at = datetime.now(tz=UTC) - timedelta(seconds=10)
+        # Advance clock past TTL by back-dating _cached_at.
+        reg._cached_at = t0 - timedelta(seconds=10)
         reg.list_active()
         assert client.list_account_instruments.call_count == 2
 
