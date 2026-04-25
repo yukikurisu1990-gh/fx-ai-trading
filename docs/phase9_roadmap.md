@@ -102,12 +102,13 @@ Phase 9.1-9.8 完了後の multi-pair ML 選択 backtest (scripts/compare_multip
 - champion-challenger の自動 promotion が **月次で 1 回以上**実行される
 - 主要通貨 8 ペア (EUR/USD, USD/JPY, GBP/USD, USD/CHF, AUD/USD, USD/CAD, NZD/USD, EUR/JPY) で CSI が**毎時更新**される
 
-**Tier 2 (9.10-9.14 — 実運用化ゲート, 2026-04-25 追加)**:
+**Tier 2 (9.10-9.14 + 9.15-9.18 — 実運用化ゲート, 2026-04-25 追加)**:
 - bid/ask spread を組み込んだ backtest で、ML 戦略の **spread-adjusted OoS Sharpe ≥ 0.20** かつ PnL > 0
 - **シグナル率 ≤ 30%** (過剰トレード抑制)
 - **3 年以上の multi-regime データ**で OoS 検証され、全レジームで PnL > 0
 - **ペーパートレード実測**と backtest 予測の Sharpe 乖離が 30% 以内
 - **最大ドローダウン** が想定値 (backtest の 1.5 倍) 以内
+- **月利目標 +10–20% (at $10k account)** — Phase 9.15-9.18 完了で到達想定 (現状 v5+C-3 で +2.4%/月 @ slippage 0.5pip)
 
 ### 4.2 定性ゴール
 
@@ -138,7 +139,11 @@ Phase 9.1-9.8 完了後の multi-pair ML 選択 backtest (scripts/compare_multip
 | **9.11** | **Robustness validation (Phase B)** | データを 3+ 年に拡大, OoS ホールドアウト, レジーム層別分析, マルチシード安定性検証 | 中 (PR 4-6) | 9.10 合格 |
 | **9.12** | **Model quality (Phase C)** | Meta-labeling (2 層 ML), ATR-based dynamic TP/SL, session/news フィルタ, ensemble (LightGBM + XGBoost + CatBoost) | 大 (PR 5-8) | 9.11 |
 | **9.13** | **Risk management (Phase D)** | Kelly/Fractional Kelly position sizing, portfolio 相関制限, daily loss limit, consecutive loss kill-switch | 中 (PR 4-5) | 9.12 |
-| **9.14** | **Paper trading validation (Phase E)** | OANDA demo での 1-3 ヶ月実走; 実測 vs 予測 Sharpe 乖離 ≤ 30% を昇格条件に追加 | 中 (PR 3-4) + 運用期間 1-3 ヶ月 | 9.13 |
+| **9.15** | **Orthogonal features (Phase F)** | bid/ask spread・時間帯・volume・直近 hit rate 等の **Layer 1 が見ていない情報** を特徴量化 (2026-04-25 追加) | 中 (PR 4-5) | 9.13 |
+| **9.16** | **Pair universe expansion (Phase G)** | 通貨ペアを 10 → 25-30 に拡大 (BA データ追加) + conf 閾値再 sweep (2026-04-25 追加) | 中 (PR 3-4) | 9.13 (並行可) |
+| **9.17** | **Multi-strategy ensemble (Phase H)** | mean reversion / breakout / news-fade / carry の独立戦略を `StrategyEvaluator` として並列実行; SELECTOR が pair × strategy で picker (2026-04-25 追加) | 大 (PR 6-10) | 9.15 / 9.16 |
+| **9.18** | **Asymmetric TP/SL + partial exits (Phase I)** | 信頼度別の TP/SL 比率, 1×ATR で 1/2 利確 + 残りトレーリング (2026-04-25 追加) | 中 (PR 3-4) | 9.15 |
+| **9.14** | **Paper trading validation (Phase E)** | OANDA demo での 1-3 ヶ月実走; 実測 vs 予測 Sharpe 乖離 ≤ 30% を昇格条件に追加 | 中 (PR 3-4) + 運用期間 1-3 ヶ月 | 9.15-9.18 のいずれかで full GO 達成 |
 
 ---
 
@@ -545,6 +550,136 @@ Phase 9.1-9.8 完了後の multi-pair ML 選択 backtest (scripts/compare_multip
 
 ---
 
+### 6.17 Phase 9.15 — Orthogonal features (Phase F, 新設 2026-04-25)
+
+**目的**: Phase 9.13 closure で判明した制約 — **Layer 1 が見ていない情報**を特徴量化しない限り、Sharpe も hit rate も上がらない — を解消。Phase 9.10 で取得した bid/ask candle データには既存特徴量で使われていない情報が大量に残っている。
+
+**動機**: Phase 9.12/B-3 (meta-labeling) と Phase 9.13/C-1 (Kelly) はどちらも "no Sharpe lift" で終わった。共通失敗要因は `predict_proba` を再射影しているだけで新情報を加えていないこと。Phase 9.15 はその根本原因を解消する。
+
+**追加特徴量パッケージ**:
+
+| 特徴量 | 計算 | 期待寄与 |
+|--------|------|---------|
+| `spread_now` | `ask_o - bid_o` (現値) | スプレッド広 → 流動性低 → hit rate 低 |
+| `spread_pct_ma_20` | spread / spread.rolling(20).mean() | 平常からの乖離 |
+| `spread_zscore_50` | spread の 50-bar z-score | regime 判定 |
+| `hour_sin` / `hour_cos` | UTC hour の cyclic encoding | session 統計の自動学習 |
+| `is_asian` / `is_london` / `is_overlap` | session one-hot | より明示的な session 効果 |
+| `day_of_week` | one-hot | 月曜・金曜の特殊性 |
+| `volume_pct_100` | volume の 100-bar percentile | 低 volume 時の偽 breakout 検出 |
+| `volume_zscore_50` | volume の 50-bar z-score | 異常出来高検出 |
+| `recent_hit_rate_50` | 直近 50 trade のヒット率 (pair 別) | 自己フィードバック (Layer 1 の自己認識) |
+| `regime_class` | ATRRegimeClassifier 出力 (one-hot) | regime 直接 feature 化 |
+
+合計 **約 13 feature 追加** → 32 → 45 features
+
+**変更対象**:
+- 新規: `scripts/compare_multipair_v9_orthogonal.py` (v5 + 新特徴量)
+- 期待: 勝率 +5〜8pp → trade あたり EV +50〜100% → 月利 +50〜100%
+- 期待 Sharpe: 0.16 → **0.22-0.28** (full GO 達成濃厚)
+
+**完了条件**:
+- v5 vs v9 ablation で各特徴量の寄与を分解
+- SELECTOR Sharpe ≥ 0.20 で full GO → Phase 9.11 (3年データ) を unblock
+
+**リスク**:
+- 特徴量が増えると過学習リスク。walk-forward + 十分な訓練データ (90日) で抑制
+- bid/ask spread の practice/live 差 → Phase 9.14 (paper) で実測検証
+
+---
+
+### 6.18 Phase 9.16 — Pair universe expansion (Phase G, 新設 2026-04-25)
+
+**目的**: 現在 10 ペアの SELECTOR 選択肢を 25-30 ペアに拡大。機会数を機械的に +50〜80% 増やす。Phase 9.15 と並行可。
+
+**追加候補ペア (流動性順)**:
+- USD/HKD, USD/SGD, USD/MXN (USD 系)
+- AUD/JPY, NZD/JPY, CHF/JPY (JPY 系)
+- AUD/NZD, AUD/CAD, NZD/CAD (Commodity クロス)
+- EUR/CHF, EUR/AUD, GBP/AUD, GBP/CHF (EUR/GBP クロス)
+- USD/SEK, USD/NOK (北欧)
+
+**変更対象**:
+- `scripts/fetch_oanda_candles.py` — 新ペアの BA データ取得 (既存 script で対応可、設定追加のみ)
+- `scripts/compare_multipair_v9.py` (or v10) — DEFAULT_PAIRS 拡張
+- 期待 trades +50〜80% / EV/trade 不変 → 月利 +50〜80%
+
+**完了条件**:
+- 25 ペア × 365 日 BA データの取得完了
+- backtest で SELECTOR 選択頻度の分散確認 (どこかのペアに偏りすぎていないか)
+
+**リスク**:
+- 流動性の低いペアが大規模 slippage を持ち込む → 各ペアの実 spread を観測して universe 採否決定
+- 計算量 +150% (10 → 25 ペア)。最適化された v8 の eval 設計でも fold あたり 10 秒 → 25 秒程度に増。許容範囲
+
+---
+
+### 6.19 Phase 9.17 — Multi-strategy ensemble (Phase H, 新設 2026-04-25)
+
+**目的**: 現状 1 戦略 (ML signal → triple barrier) しか走っていない。orthogonal なアルファ源を追加して機会数 +100〜200%、低相関なら Sharpe も上昇。
+
+**追加戦略 (各々が独立した `StrategyEvaluator`)**:
+
+| 戦略 | アルファ源 | 補完性 |
+|------|----------|-------|
+| **Mean reversion** | RSI/Bollinger 端での逆張り | trend 戦略と直交 |
+| **Breakout** | レンジ抜け確認後の follow | range regime で休む trend を補完 |
+| **News spike fade** | 経済指標発表直後の overshoot 戻し | event-driven、他戦略と独立 |
+| **Carry overlay** | 金利差 (overnight rate) の蓄積 | 長期 hold、短期と直交 |
+| **Session opener momentum** | London open の 7-9 UTC 急変ポジ | 時間帯限定、他戦略は控えめ |
+
+各戦略は別モデル + 別ラベル + 別特徴量を持ち、`SELECTOR` が **「どのペア × どの戦略」** を選ぶ。
+
+**変更対象**:
+- 新規: `services/strategies/mean_reversion.py` (Phase 9.4 の TA 戦略を拡張)
+- 新規: `services/strategies/breakout.py`
+- 新規: `services/strategies/news_fade.py` (経済指標カレンダー API 統合要)
+- 新規: `services/strategies/carry_overlay.py` (overnight rate データソース要)
+- 修正: SELECTOR ロジックを「pair」次元から「(pair, strategy)」に拡張
+
+**完了条件**:
+- 5 戦略が同時稼働、SELECTOR がペア × 戦略を選択
+- 戦略間の相関 < 0.5 (独立性確認)
+- 月利 +100〜150%、Sharpe +0.05〜0.10
+
+**リスク**:
+- 過剰な戦略追加で運用複雑化 → 戦略数を 5 以内に制限
+- 経済指標データソースの保守コスト → OANDA labs API 利用で簡略化
+
+---
+
+### 6.20 Phase 9.18 — Asymmetric TP/SL + partial exits (Phase I, 新設 2026-04-25)
+
+**目的**: 全 trade 一律の TP/SL ではなく、信頼度別に payoff 比を変える。さらに 1×ATR で部分利確することでトレンド延長益も拾う。
+
+**変更内容**:
+
+```
+信頼度別 TP/SL:
+  conf >= 0.65: TP = 2.0×ATR, SL = 0.8×ATR  (損切り早く、利益伸ばす)
+  0.55 <= conf < 0.65: TP = 1.5, SL = 1.0 (現状)
+  conf < 0.55: 取引せず
+
+Partial exit (新):
+  1×ATR で 1/2 利確
+  残り 1/2 は 2×ATR まで保有 (トレーリング SL = entry)
+```
+
+**変更対象**:
+- 新規: `services/labeling/asymmetric_triple_barrier.py` (信頼度依存ラベル)
+- 新規: `services/strategies/multi_target_executor.py` (partial exit ロジック)
+- 修正: `compare_multipair_v*.py` (新ラベリング使用)
+
+**完了条件**:
+- per-trade EV +20〜30% / Sharpe +0.02〜0.04
+- backtest 結果が Phase 9.15 と複合した場合の総効果が closure memo に記載される
+
+**リスク**:
+- partial exit の execution complexity → backtest では理論計算で簡略化、live では Phase 9.14 で実測検証
+- 信頼度区切り 3 段階の境界が ad-hoc → walk-forward CV で過学習 check
+
+---
+
 ### 6.16 Phase 9.14 — Paper trading validation (Phase E, 新設 2026-04-25)
 
 **目的**: backtest と実市場の乖離を定量し、本番投入可否を判定する最終 gate。OANDA demo 口座での 1-3 ヶ月実走を必須化。
@@ -609,11 +744,16 @@ Tier 2 (real-world gate, 2026-04-25 追加):
   9.X-B (I-4 lint)            ← M23 着手前であればいつでも
 ```
 
-- **直列で必須**: 9.0 → 9.1 → 9.2 → 9.5 → 9.6 → 9.7 → 9.8 → **9.10 → 9.11 → 9.12 → 9.13 → 9.14**
+- **直列で必須 (Tier 1+2)**: 9.0 → 9.1 → 9.2 → 9.5 → 9.6 → 9.7 → 9.8 → **9.10 → 9.12 → 9.13 → (9.15 / 9.16 並行) → 9.17 → 9.18 → 9.11 → 9.14**
 - **並列可**: 9.3 (CSI) と 9.4 (TA) は 9.1/9.2 の後にどちらから着手してもよい
 - **並行可**: 9.X-A / 9.X-B は本流とは独立に着手 (規模も小)
 - **任意**: 9.9 は 9.8 完了 + 9.6 baseline が rule 超過の条件付き
 - **Go/No-Go gate**: 9.10 で spread 後 edge が確認できなかった場合、9.11 以降には進まない
+- **Phase 9.15-9.18 順序 (2026-04-25 追加)**:
+  - 9.15 (orthogonal features) と 9.16 (pair expansion) は並行可。コスト低・効果高で先行
+  - 9.17 (multi-strategy ensemble) は 9.15+9.16 完了後の大プロジェクト
+  - 9.18 (asymmetric TP/SL) は 9.15 と並行可
+  - 9.11 (3 年データ) は 9.15-9.18 のいずれかで full GO (≥0.20 Sharpe) 達成後
 
 ---
 
@@ -628,16 +768,18 @@ Tier 2 (real-world gate, 2026-04-25 追加):
 5. ✅ 全 signal の **inference / backtest が deterministic** (同入力 → 同出力)
 6. ✅ Phase 9.1-9.8 各々で **closure memo を docs/design/** に残す (M9 / M26 と同じ pattern)
 
-### 8.2 Tier 2 完了条件 (real-world gate; 9.10-9.14 = 新設 2026-04-25)
+### 8.2 Tier 2 完了条件 (real-world gate; 9.10-9.18 = 新設 2026-04-25)
 
-7. ✅ bid/ask spread を組み込んだ backtest で **ML 戦略 spread-adjusted OoS Sharpe ≥ 0.20** かつ PnL > 0 (9.10)
-8. ✅ **シグナル率 ≤ 30%** の設定点で上記条件を満たす (9.10)
+7. ✅ bid/ask spread を組み込んだ backtest で **ML 戦略 spread-adjusted OoS Sharpe ≥ 0.20** かつ PnL > 0 (9.10 / 9.15-9.18 のいずれか)
+8. ✅ **シグナル率 ≤ 30%** の設定点で上記条件を満たす (9.10 / 9.15-9.18)
 9. ✅ **3+ 年 multi-regime データ** で OoS 検証、全レジームで PnL > 0 (9.11)
 10. ✅ **マルチシード Sharpe std/mean ≤ 0.2** (9.11)
 11. ✅ Meta-labeling / ATR-based TP/SL / session filter / ensemble の **各改善で +Sharpe 定量化** (9.12)
 12. ✅ Kelly position sizing / portfolio 相関制限 / 3 種 kill switch の **実動作確認** (9.13)
-13. ✅ OANDA demo **1-3 ヶ月 paper 実走**で backtest 予測との乖離 ≤ 30% (9.14)
-14. ✅ Phase 9.10-9.14 各々で **closure memo を docs/design/** に残す
+13. ✅ Orthogonal features / pair expansion / multi-strategy / asymmetric TP/SL の **各改善で +Sharpe 定量化** (9.15-9.18)
+14. ✅ OANDA demo **1-3 ヶ月 paper 実走**で backtest 予測との乖離 ≤ 30% (9.14)
+15. ✅ Phase 9.10-9.18 各々で **closure memo を docs/design/** に残す
+16. ✅ **月利目標 +10–20% (at $10k account, slippage 0.5pip)** — 9.15-9.18 で 1,500-3,500 pip/月 達成
 
 ### 8.3 本番昇格判定
 
