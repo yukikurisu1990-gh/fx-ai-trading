@@ -62,7 +62,7 @@ from fx_ai_trading.common.ulid import generate_ulid
 from fx_ai_trading.domain.price_feed import Candle
 from fx_ai_trading.ops.logging_config import apply_logging_config
 from fx_ai_trading.services.feature_service import FeatureService
-from fx_ai_trading.services.meta_cycle_runner import run_meta_cycle
+from fx_ai_trading.services.meta_cycle_runner import MetaCycleConfig, run_meta_cycle
 from fx_ai_trading.services.strategies.atr import ATRStrategy
 from fx_ai_trading.services.strategies.bollinger import BollingerStrategy
 from fx_ai_trading.services.strategies.ma import MAStrategy
@@ -115,7 +115,25 @@ def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         help="Run full D3 pipeline but skip position opening.",
     )
     p.add_argument("--log-level", default="INFO")
-    return p.parse_args(argv)
+    p.add_argument(
+        "--top-k",
+        type=int,
+        default=1,
+        help=(
+            "Phase 9.19/J-3 config plumbing only. "
+            "Intended SELECTOR rule: adopt the K highest-EV candidates "
+            "per cycle (backtest verified K=2 naive lifts PnL +25%%; "
+            "see docs/design/phase9_19_closure_memo.md). "
+            "Currently honours top_k in the F-16 sort but ADOPTS ONLY "
+            "rank-1 (multi-trade adoption deferred — requires changes "
+            "to MetaCycleRunResult, execution gateway, position-mgmt). "
+            "Default 1 reproduces Phase 9.16 production behaviour."
+        ),
+    )
+    args = p.parse_args(argv)
+    if args.top_k < 1:
+        p.error(f"--top-k must be >= 1 (got {args.top_k})")
+    return args
 
 
 # ---------------------------------------------------------------------------
@@ -425,6 +443,7 @@ def run(args: argparse.Namespace, *, env: dict[str, str] | None = None) -> int:
                     clock=clock,
                     run_id=run_id,
                     environment="paper",
+                    config=MetaCycleConfig(top_k=args.top_k),
                 )
             except Exception:
                 _log.exception("run_meta_cycle failed for cycle %s", cycle_id)
