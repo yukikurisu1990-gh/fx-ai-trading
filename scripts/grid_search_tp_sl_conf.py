@@ -328,19 +328,19 @@ def main(argv: list[str] | None = None) -> int:
         sharpe_eu[(sp, cf)] = _sharpe(strats["EURUSD_ML"])
 
     _print_heatmap(
-        "SELECTOR net Sharpe — spread × conf",
+        "SELECTOR net Sharpe -- spread x conf",
         "sharpe",
         sharpe_sel,
         highlight="go",
     )
     _print_heatmap(
-        "SELECTOR net PnL (pip) — spread × conf",
+        "SELECTOR net PnL (pip) -- spread x conf",
         "pnl",
         pnl_sel,
         highlight=None,
     )
     _print_heatmap(
-        "EURUSD_ML net Sharpe — spread × conf",
+        "EURUSD_ML net Sharpe -- spread x conf",
         "sharpe",
         sharpe_eu,
         highlight="go",
@@ -354,22 +354,30 @@ def main(argv: list[str] | None = None) -> int:
         f"netSharpe={sharpe_sel[best_cell]:.3f}  netPnL={pnl_sel[best_cell]:.0f} pip"
     )
 
-    # Go/No-Go summary
-    go_cells = [k for k, v in sharpe_sel.items() if v >= 0.20 and pnl_sel[k] > 0]
-    soft_cells = [k for k, v in sharpe_sel.items() if 0.15 <= v < 0.20 and pnl_sel[k] > 0]
-    print("\n  Go/No-Go (SELECTOR):")
+    # Go/No-Go summary — restrict to *realistic* spread cells (spread >= 0.5pip).
+    # Spread=0 cells are reproducer/sanity checks (they should match v2's gross Sharpe)
+    # and must NOT count toward the gate verdict.
+    realistic = [k for k in sharpe_sel if k[0] >= 0.5]
+    go_cells = [k for k in realistic if sharpe_sel[k] >= 0.20 and pnl_sel[k] > 0]
+    soft_cells = [k for k in realistic if 0.15 <= sharpe_sel[k] < 0.20 and pnl_sel[k] > 0]
+    zero_cost_go = [k for k in sharpe_sel if k[0] == 0.0 and sharpe_sel[k] >= 0.20]
+    print("\n  Go/No-Go (SELECTOR, realistic spread >= 0.5pip):")
     print(f"    GO      cells (Sh>=0.20 & PnL>0): {len(go_cells):>3}")
     print(f"    SOFT GO cells (0.15<=Sh<0.20):    {len(soft_cells):>3}")
     print(
-        f"    NO-GO   cells (else):             "
-        f"{len(sharpe_sel) - len(go_cells) - len(soft_cells):>3}"
+        "    NO-GO   cells (else):             "
+        f"{len(realistic) - len(go_cells) - len(soft_cells):>3}"
+    )
+    print(
+        f"    (info) zero-cost GO cells:        {len(zero_cost_go):>3}  "
+        "(sanity check, not counted toward verdict)"
     )
     if go_cells:
-        print("    → Phase 9.10 GO (≥1 realistic spread regime has edge)")
+        print("    -> Phase 9.10 GO (>=1 realistic spread regime has edge)")
     elif soft_cells:
-        print("    → Phase 9.10 SOFT GO (Phase 9.12 quality lift recommended)")
+        print("    -> Phase 9.10 SOFT GO (Phase 9.12 quality lift recommended)")
     else:
-        print("    → Phase 9.10 NO-GO (strategy redesign required)")
+        print("    -> Phase 9.10 NO-GO (strategy redesign required)")
     return 0
 
 
