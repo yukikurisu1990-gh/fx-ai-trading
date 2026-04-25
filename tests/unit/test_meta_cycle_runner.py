@@ -611,3 +611,61 @@ class TestReturnShape:
         assert r.adopted is True
         assert r.trading_signal_id is not None
         assert r.adopted_direction in {"buy", "sell"}
+
+
+# --- Phase 9.19/J-3 top_k config plumbing ----------------------------------
+
+
+class TestTopKConfig:
+    def test_default_top_k_is_one(self) -> None:
+        cfg = MetaCycleConfig()
+        assert cfg.top_k == 1
+
+    def test_top_k_zero_raises(self) -> None:
+        import pytest
+
+        with pytest.raises(ValueError, match=r"top_k must be >= 1"):
+            MetaCycleConfig(top_k=0)
+
+    def test_top_k_negative_raises(self) -> None:
+        import pytest
+
+        with pytest.raises(ValueError, match=r"top_k must be >= 1"):
+            MetaCycleConfig(top_k=-3)
+
+    def test_top_k_two_is_accepted(self) -> None:
+        cfg = MetaCycleConfig(top_k=2)
+        assert cfg.top_k == 2
+
+    def test_top_k_does_not_break_existing_adoption(self, engine) -> None:
+        # Phase 9.19/J-3: top_k=2 is config-plumbing only; current
+        # run_meta_cycle still adopts only the rank-1 candidate.
+        # This test pins the contract so a future PR knows where to
+        # extend behaviour.
+        _seed_strategy_signal(
+            engine,
+            cycle_id="cyc-tk2",
+            instrument="EURUSD",
+            strategy_id="s-tk-a",
+            direction="buy",
+            ev_after_cost=2.0,
+        )
+        _seed_strategy_signal(
+            engine,
+            cycle_id="cyc-tk2",
+            instrument="GBPUSD",
+            strategy_id="s-tk-b",
+            direction="buy",
+            ev_after_cost=1.5,
+        )
+        r = run_meta_cycle(
+            engine,
+            cycle_id="cyc-tk2",
+            clock=FixedClock(_FIXED_NOW),
+            config=MetaCycleConfig(top_k=2),
+        )
+        # Current contract: single adopt.
+        assert r.adopted is True
+        assert r.adopted_strategy_id == "s-tk-a"  # higher EV wins rank-1
+        # Multi-trade adoption deferred — only one trading_signal row.
+        assert r.trading_signal_id is not None

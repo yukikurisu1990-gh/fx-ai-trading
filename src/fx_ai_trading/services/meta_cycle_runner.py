@@ -69,11 +69,33 @@ class MetaCycleConfig:
                              the top-EV candidate anyway.  True by
                              default; this is the mechanism that
                              fulfils the Cycle 6.4 ≥1-trade guarantee.
+      top_k                : Phase 9.19/J-3 config plumbing only. The
+                             intended SELECTOR rule is "adopt the K
+                             highest-EV candidates per cycle"
+                             (backtest validated K=2 naive lift +25%
+                             PnL — see docs/design/phase9_19_closure_memo.md).
+                             At present, ``run_meta_cycle`` honours
+                             ``top_k`` in the F-16 sort but ADOPTS ONLY
+                             the rank-1 candidate (single-adopt
+                             contract preserved). Must be >= 1; default
+                             1 reproduces Phase 9.16 production
+                             behaviour exactly. Multi-trade adoption
+                             (K > 1 actually opening K positions per
+                             cycle) is deferred to a follow-up phase
+                             that requires changes to
+                             MetaCycleRunResult, the execution
+                             gateway, and position-management
+                             invariants.
     """
 
     min_ev_after_cost: float = 0.0
     confidence_threshold: float = 0.0
     force_fallback: bool = True
+    top_k: int = 1
+
+    def __post_init__(self) -> None:
+        if self.top_k < 1:
+            raise ValueError(f"MetaCycleConfig.top_k must be >= 1 (got {self.top_k})")
 
 
 @dataclass(frozen=True)
