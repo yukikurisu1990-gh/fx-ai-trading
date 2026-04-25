@@ -218,3 +218,227 @@ class TestBucketLookupArrays:
 
     def test_bucket_names_match_constants(self) -> None:
         assert v12._BUCKET_NAMES == ("low", "mid", "high")
+
+
+class TestPartialHighOutcomeLong:
+    """Phase 9.18/H-2: scenario tests for the High-bucket partial-exit helper.
+
+    A long trade is opened at entry with two legs (50% size each):
+      partial: TP=+1xATR, SL=-0.8xATR
+      runner:  TP=+2xATR, SL=-0.8xATR initially -> trails to entry once
+               partial fires.
+
+    With ATR=10pip and pip=0.0001, the half-leg pip values are:
+      partial TP   ->  0.5 x 1.0 x 10 =  5pip
+      runner TP    ->  0.5 x 2.0 x 10 = 10pip
+      SL (any leg) -> -0.5 x 0.8 x 10 = -4pip
+    """
+
+    ENTRY = 1.10000
+    ATR = 0.001
+    PIP = 0.0001
+
+    def test_partial_then_full_tp_in_same_bar(self) -> None:
+        bid_h = np.array([1.10120, 1.10220], dtype=np.float64)
+        bid_l = np.array([1.09980, 1.10180], dtype=np.float64)
+        p, f, oc = v12._partial_high_outcome_long(bid_h, bid_l, self.ENTRY, self.ATR, self.PIP)
+        # Bar 0 crosses both partial (1.10100) and full TP (1.10200).
+        assert p == 5.0
+        assert f == 10.0
+        assert int(oc) == int(v12._OUTCOME_PARTIAL_THEN_TP)
+
+    def test_partial_fires_then_trail_to_entry(self) -> None:
+        bid_h = np.array([1.10120, 1.10120, 1.10120], dtype=np.float64)
+        bid_l = np.array([1.10100, 1.10050, 1.09990], dtype=np.float64)
+        p, f, oc = v12._partial_high_outcome_long(bid_h, bid_l, self.ENTRY, self.ATR, self.PIP)
+        assert p == 5.0
+        assert f == 0.0
+        assert int(oc) == int(v12._OUTCOME_PARTIAL_THEN_TRAIL)
+
+    def test_sl_fires_before_partial(self) -> None:
+        bid_h = np.array([1.10050, 1.10050, 1.10050], dtype=np.float64)
+        bid_l = np.array([1.09910, 1.09900, 1.09880], dtype=np.float64)
+        p, f, oc = v12._partial_high_outcome_long(bid_h, bid_l, self.ENTRY, self.ATR, self.PIP)
+        # Both legs SL: total = -8pip = -0.8xATR
+        assert p == -4.0
+        assert f == -4.0
+        assert int(oc) == int(v12._OUTCOME_SL_BEFORE_PARTIAL)
+
+    def test_no_movement_times_out(self) -> None:
+        bid_h = np.array([1.10050, 1.10050, 1.10050], dtype=np.float64)
+        bid_l = np.array([1.09980, 1.09980, 1.09980], dtype=np.float64)
+        p, f, oc = v12._partial_high_outcome_long(bid_h, bid_l, self.ENTRY, self.ATR, self.PIP)
+        assert p == 0.0
+        assert f == 0.0
+        assert int(oc) == int(v12._OUTCOME_TIMEOUT_NO_PARTIAL)
+
+    def test_partial_then_timeout_runner_flat(self) -> None:
+        bid_h = np.array([1.10120, 1.10050, 1.10050], dtype=np.float64)
+        bid_l = np.array([1.10100, 1.10020, 1.10010], dtype=np.float64)
+        p, f, oc = v12._partial_high_outcome_long(bid_h, bid_l, self.ENTRY, self.ATR, self.PIP)
+        assert p == 5.0
+        assert f == 0.0
+        assert int(oc) == int(v12._OUTCOME_PARTIAL_THEN_TIMEOUT)
+
+    def test_conservation_partial_plus_final_equals_total(self) -> None:
+        """Property test: total_pnl == partial + final on every scenario."""
+        scenarios = [
+            (np.array([1.10120, 1.10220]), np.array([1.09980, 1.10180])),
+            (np.array([1.10120, 1.10120, 1.10120]), np.array([1.10100, 1.10050, 1.09990])),
+            (np.array([1.10050, 1.10050]), np.array([1.09910, 1.09900])),
+            (np.array([1.10050, 1.10050]), np.array([1.09980, 1.09980])),
+            (np.array([1.10120, 1.10050]), np.array([1.10100, 1.10010])),
+        ]
+        for bid_h, bid_l in scenarios:
+            p, f, oc = v12._partial_high_outcome_long(
+                bid_h.astype(np.float64),
+                bid_l.astype(np.float64),
+                self.ENTRY,
+                self.ATR,
+                self.PIP,
+            )
+            total = p + f
+            # Cross-check against expected pnl by outcome.
+            expected_total_by_outcome = {
+                int(v12._OUTCOME_SL_BEFORE_PARTIAL): -8.0,
+                int(v12._OUTCOME_PARTIAL_THEN_TRAIL): 5.0,
+                int(v12._OUTCOME_PARTIAL_THEN_TP): 15.0,
+                int(v12._OUTCOME_PARTIAL_THEN_TIMEOUT): 5.0,
+                int(v12._OUTCOME_TIMEOUT_NO_PARTIAL): 0.0,
+            }
+            assert total == expected_total_by_outcome[int(oc)], (
+                f"outcome {int(oc)}: got total {total}, expected "
+                f"{expected_total_by_outcome[int(oc)]}"
+            )
+
+
+class TestPartialHighOutcomeShort:
+    """Mirror of TestPartialHighOutcomeLong for short trades.
+
+    A short profits when ask price falls. With entry=1.10000, ATR=10pip:
+      partial TP threshold:  ask_l <= 1.10000 - 0.001 = 1.09900
+      runner TP threshold:   ask_l <= 1.10000 - 0.002 = 1.09800
+      SL threshold:          ask_h >= 1.10000 + 0.0008 = 1.10080
+      trail post-partial:    ask_h >= 1.10000
+    """
+
+    ENTRY = 1.10000
+    ATR = 0.001
+    PIP = 0.0001
+
+    def test_partial_then_full_tp_short(self) -> None:
+        # Bar 0 crosses both partial (1.09900) and full TP (1.09800).
+        ask_h = np.array([1.10010, 1.10010], dtype=np.float64)
+        ask_l = np.array([1.09790, 1.09780], dtype=np.float64)
+        p, f, oc = v12._partial_high_outcome_short(ask_h, ask_l, self.ENTRY, self.ATR, self.PIP)
+        assert p == 5.0
+        assert f == 10.0
+        assert int(oc) == int(v12._OUTCOME_PARTIAL_THEN_TP)
+
+    def test_sl_fires_before_partial_short(self) -> None:
+        ask_h = np.array([1.10090, 1.10100, 1.10110], dtype=np.float64)
+        ask_l = np.array([1.10050, 1.10050, 1.10050], dtype=np.float64)
+        p, f, oc = v12._partial_high_outcome_short(ask_h, ask_l, self.ENTRY, self.ATR, self.PIP)
+        assert p == -4.0
+        assert f == -4.0
+        assert int(oc) == int(v12._OUTCOME_SL_BEFORE_PARTIAL)
+
+    def test_partial_then_trail_short(self) -> None:
+        # Bar 0: ask_l hits partial threshold (1.09900). Bar 2: ask_h reaches
+        # entry (1.10000) -> trail-stop fires.
+        ask_h = np.array([1.09950, 1.09950, 1.10010], dtype=np.float64)
+        ask_l = np.array([1.09890, 1.09870, 1.09950], dtype=np.float64)
+        p, f, oc = v12._partial_high_outcome_short(ask_h, ask_l, self.ENTRY, self.ATR, self.PIP)
+        assert p == 5.0
+        assert f == 0.0
+        assert int(oc) == int(v12._OUTCOME_PARTIAL_THEN_TRAIL)
+
+
+class TestAddPartialOutcomesHigh:
+    def test_produces_six_columns(self) -> None:
+        df = _make_synthetic_ba_df(60)
+        out = v12._add_partial_outcomes_high(df, horizon=15, instrument="EUR_USD")
+        for col in (
+            "partial_pnl_high_long",
+            "final_pnl_high_long",
+            "outcome_high_long",
+            "partial_pnl_high_short",
+            "final_pnl_high_short",
+            "outcome_high_short",
+        ):
+            assert col in out.columns, f"{col} missing"
+
+    def test_late_bars_are_unlabelable(self) -> None:
+        df = _make_synthetic_ba_df(20)
+        out = v12._add_partial_outcomes_high(df, horizon=15, instrument="EUR_USD")
+        # Bars at index >= n - horizon - 1 = 4 should not be labelable
+        late = out.iloc[5:]
+        assert late["partial_pnl_high_long"].isna().all()
+        assert (late["outcome_high_long"] == int(v12._OUTCOME_NOT_LABELABLE)).all()
+
+    def test_missing_bid_ask_columns_raises(self) -> None:
+        df = pd.DataFrame(
+            {
+                "open": [1.1] * 10,
+                "high": [1.1] * 10,
+                "low": [1.1] * 10,
+                "close": [1.1] * 10,
+                "atr_14": [0.001] * 10,
+                "volume": [100] * 10,
+            },
+            index=pd.date_range("2025-01-01", periods=10, freq="min", tz="UTC"),
+        )
+        with pytest.raises(ValueError, match="BA mode candles"):
+            v12._add_partial_outcomes_high(df, horizon=5, instrument="EUR_USD")
+
+    def test_pip_size_jpy_pair_uses_2dp(self) -> None:
+        """JPY pairs use pip=0.01, non-JPY use pip=0.0001 - verify the helper
+        picks up the right one through the instrument argument."""
+        df = _make_synthetic_ba_df(60)
+        # Synthetic data has price ~1.10000 and ATR=0.001 -- the integer pip
+        # values will differ depending on which pip_size the helper uses.
+        out_eur = v12._add_partial_outcomes_high(df, horizon=15, instrument="EUR_USD")
+        out_jpy = v12._add_partial_outcomes_high(df, horizon=15, instrument="USD_JPY")
+        # First labelable bar should produce a 100x larger pip value when
+        # interpreted as JPY (pip 0.01) vs non-JPY (pip 0.0001).
+        non_nan_eur = out_eur["partial_pnl_high_long"].dropna().abs()
+        non_nan_jpy = out_jpy["partial_pnl_high_long"].dropna().abs()
+        # At least one labelable row should exist.
+        assert len(non_nan_eur) > 0
+        # Same outcome codes, but pip values differ by 100x.
+        first_eur = non_nan_eur.iloc[0] if (non_nan_eur > 0).any() else 0.0
+        first_jpy = non_nan_jpy.iloc[0] if (non_nan_jpy > 0).any() else 0.0
+        if first_eur > 0 and first_jpy > 0:
+            assert first_eur == pytest.approx(first_jpy * 100, rel=1e-6)
+
+
+class TestOutcomeConstants:
+    def test_outcome_codes_are_distinct(self) -> None:
+        codes = {
+            int(v12._OUTCOME_NOT_LABELABLE),
+            int(v12._OUTCOME_SL_BEFORE_PARTIAL),
+            int(v12._OUTCOME_PARTIAL_THEN_TRAIL),
+            int(v12._OUTCOME_PARTIAL_THEN_TP),
+            int(v12._OUTCOME_PARTIAL_THEN_TIMEOUT),
+            int(v12._OUTCOME_TIMEOUT_NO_PARTIAL),
+        }
+        assert len(codes) == 6  # all distinct
+
+    def test_outcome_names_cover_all_codes(self) -> None:
+        for code in (
+            v12._OUTCOME_NOT_LABELABLE,
+            v12._OUTCOME_SL_BEFORE_PARTIAL,
+            v12._OUTCOME_PARTIAL_THEN_TRAIL,
+            v12._OUTCOME_PARTIAL_THEN_TP,
+            v12._OUTCOME_PARTIAL_THEN_TIMEOUT,
+            v12._OUTCOME_TIMEOUT_NO_PARTIAL,
+        ):
+            assert code in v12._OUTCOME_NAMES, f"{code} missing label"
+
+
+class TestValidPolicies:
+    def test_includes_h2_partial(self) -> None:
+        assert "bucketed+partial" in v12._VALID_POLICIES
+
+    def test_canonical_order(self) -> None:
+        assert v12._VALID_POLICIES == ("symmetric", "bucketed", "bucketed+partial")

@@ -1,40 +1,47 @@
-"""compare_multipair_v12_asymmetric.py - Phase 9.18/H-1 confidence-bucketed TP/SL.
+"""compare_multipair_v12_asymmetric.py - Phase 9.18 asymmetric TP/SL + partial exit.
 
 Successor to v9 (`compare_multipair_v9_orthogonal.py`). Identical
-load + features + cross-pair + train pipeline; the only change is
-**eval-time relabeling** of each trade's TP/SL multipliers based on
-the model's confidence at that bar:
+load + features + cross-pair + train pipeline; the differences are
+in the **eval-time exit policy**.
 
+H-1 (confidence-bucketed TP/SL) - eval-time relabeling per trade:
   conf in [0.50, 0.55):  TP=1.2 x ATR, SL=1.2 x ATR  ("low"  bucket)
   conf in [0.55, 0.65):  TP=1.5 x ATR, SL=1.0 x ATR  ("mid"  bucket; current default)
   conf >= 0.65:          TP=2.0 x ATR, SL=0.8 x ATR  ("high" bucket)
 
-The model is trained ONCE per fold on the GLOBAL "mid" label
-(TP=1.5 / SL=1.0). Bucketing is a pure post-prediction transform on
-the eval loop. There is no path from bucket back to feature, so no
-in-sample leakage.
+H-2 (partial exit on High bucket only) - 50% size split:
+  partial leg: TP=1.0 x ATR, SL=0.8 x ATR
+  runner leg:  TP=2.0 x ATR, SL=0.8 x ATR initially, trail to entry
+               once partial fires.
 
-Pre-computed labels per row:
+The model is trained ONCE per fold on the GLOBAL "mid" label
+(TP=1.5 / SL=1.0). Bucketing and partial exits are pure
+post-prediction transforms on the eval loop. There is no path from
+bucket / partial to feature, so no in-sample leakage.
+
+Pre-computed columns per row:
   label_tb_low   - barrier outcome at (1.2, 1.2)
   label_tb_mid   - barrier outcome at (1.5, 1.0); used as `label_tb`
                    for training and as the symmetric-baseline cell
   label_tb_high  - barrier outcome at (2.0, 0.8)
+  partial_pnl_high_long, final_pnl_high_long, outcome_high_long
+                 - H-2 partial-exit outcome for a long High-bucket trade
+  partial_pnl_high_short, final_pnl_high_short, outcome_high_short
+                 - mirror for short
 
 CLI
 ---
-    --exit-policy POLICY    # one of: symmetric, bucketed
+    --exit-policy POLICY    # one of: symmetric, bucketed, bucketed+partial
                             # (default: bucketed)
 
     --exit-policies LIST    # comma-separated cells for internal sweep
-                            # e.g. 'symmetric,bucketed'
+                            # e.g. 'symmetric,bucketed,bucketed+partial'
                             # When provided, overrides --exit-policy.
 
 Phase 9.18 verdict gates (PnL-priority frame):
   GO          - PnL >= 1.10 x baseline AND DD%PnL <= 5% AND Sharpe >= baseline
   STRETCH GO  - any cell reaches Sharpe >= 0.18
   NO ADOPT    - PnL < baseline OR DD%PnL > 5%
-
-H-1 only: H-2 (partial exit on High bucket) is a separate PR.
 
 Requires data/candles_<pair>_M1_365d_BA.jsonl (same as v9).
 """
@@ -133,6 +140,135 @@ def _bucket_indices(conf: np.ndarray) -> np.ndarray:
     out[conf < _BUCKET_BOUNDARY_LOW] = 0
     out[conf >= _BUCKET_BOUNDARY_HIGH] = 2
     return out
+
+
+# Phase 9.18/H-2: partial-exit outcome codes (High bucket only).
+#
+# A High-bucket trade is split into two equal legs (50% size each):
+#   partial leg: TP=1.0xATR, SL=0.8xATR
+#   runner leg:  TP=2.0xATR, SL=0.8xATR initially, trail to entry once
+#                the partial leg has realised.
+#
+# Possible outcomes within the lookahead horizon:
+#   1 SL_BEFORE_PARTIAL    SL fires before partial TP  -> total = -0.8xATR (full size)
+#   2 PARTIAL_THEN_TRAIL   partial fires, then runner trail (entry) hits  -> +0.5xATR
+#   3 PARTIAL_THEN_TP      partial fires, then runner full TP fires       -> +1.5xATR
+#   4 PARTIAL_THEN_TIMEOUT partial fires, runner times out flat at entry  -> +0.5xATR
+#   5 TIMEOUT_NO_PARTIAL   neither partial nor SL fired in the window     -> 0
+#
+# `0` is reserved for "not labelable" (invalid ATR / entry / window).
+_OUTCOME_NOT_LABELABLE = np.int8(0)
+_OUTCOME_SL_BEFORE_PARTIAL = np.int8(1)
+_OUTCOME_PARTIAL_THEN_TRAIL = np.int8(2)
+_OUTCOME_PARTIAL_THEN_TP = np.int8(3)
+_OUTCOME_PARTIAL_THEN_TIMEOUT = np.int8(4)
+_OUTCOME_TIMEOUT_NO_PARTIAL = np.int8(5)
+_OUTCOME_NAMES = {
+    _OUTCOME_NOT_LABELABLE: "not_labelable",
+    _OUTCOME_SL_BEFORE_PARTIAL: "sl_before_partial",
+    _OUTCOME_PARTIAL_THEN_TRAIL: "partial_then_trail",
+    _OUTCOME_PARTIAL_THEN_TP: "partial_then_tp",
+    _OUTCOME_PARTIAL_THEN_TIMEOUT: "partial_then_timeout",
+    _OUTCOME_TIMEOUT_NO_PARTIAL: "timeout_no_partial",
+}
+
+
+def _partial_high_outcome_long(
+    bid_h_window: np.ndarray,
+    bid_l_window: np.ndarray,
+    entry_long: float,
+    atr: float,
+    pip: float,
+) -> tuple[float, float, np.int8]:
+    """Compute partial-exit outcome for a single long High-bucket trade.
+
+    Walks the lookahead window in bar order with two legs alive
+    initially. The partial leg's TP at +1xATR may fire, after which
+    the runner leg's SL is trailed to entry.
+
+    Returns ``(partial_pnl_pip, final_pnl_pip, outcome_code)``. The
+    pip values are signed and already weighted by the 0.5 leg size,
+    so ``partial_pnl_pip + final_pnl_pip`` is the full per-trade PnL
+    in pips on a 1.0-unit notional.
+
+    A bar that contains both the partial-TP cross AND the full-TP
+    cross is treated as a sequential `partial -> TP` (the partial
+    fires first, the runner then hits TP within the same bar). This
+    is the most favourable interpretation for the bucketed-partial
+    cell and matches the design memo's bar-granularity simplification.
+    """
+    half_size = 0.5
+    partial_tp_dist = 1.0 * atr
+    runner_tp_dist = 2.0 * atr
+    sl_dist = 0.8 * atr
+    partial_tp_pip = (partial_tp_dist / pip) * half_size
+    runner_tp_pip = (runner_tp_dist / pip) * half_size
+    sl_pip = (sl_dist / pip) * half_size  # half size on each leg
+
+    sl_threshold = entry_long - sl_dist
+    partial_threshold = entry_long + partial_tp_dist
+    runner_tp_threshold = entry_long + runner_tp_dist
+
+    horizon = bid_h_window.shape[0]
+    for j in range(horizon):
+        if bid_l_window[j] <= sl_threshold:
+            # Both legs SL: total = -0.8xATR; split half-and-half on legs.
+            return (-sl_pip, -sl_pip, _OUTCOME_SL_BEFORE_PARTIAL)
+        if bid_h_window[j] >= partial_threshold:
+            # Partial fires. Did the same bar also reach the runner TP?
+            if bid_h_window[j] >= runner_tp_threshold:
+                return (partial_tp_pip, runner_tp_pip, _OUTCOME_PARTIAL_THEN_TP)
+            # Runner alive with SL trailed to entry.
+            for k in range(j + 1, horizon):
+                if bid_l_window[k] <= entry_long:
+                    return (partial_tp_pip, 0.0, _OUTCOME_PARTIAL_THEN_TRAIL)
+                if bid_h_window[k] >= runner_tp_threshold:
+                    return (partial_tp_pip, runner_tp_pip, _OUTCOME_PARTIAL_THEN_TP)
+            return (partial_tp_pip, 0.0, _OUTCOME_PARTIAL_THEN_TIMEOUT)
+    return (0.0, 0.0, _OUTCOME_TIMEOUT_NO_PARTIAL)
+
+
+def _partial_high_outcome_short(
+    ask_h_window: np.ndarray,
+    ask_l_window: np.ndarray,
+    entry_short: float,
+    atr: float,
+    pip: float,
+) -> tuple[float, float, np.int8]:
+    """Mirror of `_partial_high_outcome_long` for short trades.
+
+    Short legs profit when ask price falls, so:
+      partial TP: ask_l <= entry - 1xATR
+      runner TP:  ask_l <= entry - 2xATR
+      SL:         ask_h >= entry + 0.8xATR
+      trail:      ask_h >= entry (post-partial)
+    """
+    half_size = 0.5
+    partial_tp_dist = 1.0 * atr
+    runner_tp_dist = 2.0 * atr
+    sl_dist = 0.8 * atr
+    partial_tp_pip = (partial_tp_dist / pip) * half_size
+    runner_tp_pip = (runner_tp_dist / pip) * half_size
+    sl_pip = (sl_dist / pip) * half_size
+
+    sl_threshold = entry_short + sl_dist
+    partial_threshold = entry_short - partial_tp_dist
+    runner_tp_threshold = entry_short - runner_tp_dist
+
+    horizon = ask_l_window.shape[0]
+    for j in range(horizon):
+        if ask_h_window[j] >= sl_threshold:
+            return (-sl_pip, -sl_pip, _OUTCOME_SL_BEFORE_PARTIAL)
+        if ask_l_window[j] <= partial_threshold:
+            if ask_l_window[j] <= runner_tp_threshold:
+                return (partial_tp_pip, runner_tp_pip, _OUTCOME_PARTIAL_THEN_TP)
+            for k in range(j + 1, horizon):
+                if ask_h_window[k] >= entry_short:
+                    return (partial_tp_pip, 0.0, _OUTCOME_PARTIAL_THEN_TRAIL)
+                if ask_l_window[k] <= runner_tp_threshold:
+                    return (partial_tp_pip, runner_tp_pip, _OUTCOME_PARTIAL_THEN_TP)
+            return (partial_tp_pip, 0.0, _OUTCOME_PARTIAL_THEN_TIMEOUT)
+    return (0.0, 0.0, _OUTCOME_TIMEOUT_NO_PARTIAL)
 
 
 def _pip_size(instrument: str) -> float:
@@ -502,6 +638,83 @@ def _add_labels_bidask_multi(
     return df
 
 
+def _add_partial_outcomes_high(df: pd.DataFrame, horizon: int, instrument: str) -> pd.DataFrame:
+    """Phase 9.18/H-2: per-bar partial-exit outcomes for the High bucket.
+
+    For each bar i where labelling is feasible, walks the lookahead
+    window once for each direction (long, short) using
+    ``_partial_high_outcome_long`` / ``_partial_high_outcome_short``.
+
+    Adds six columns:
+      partial_pnl_high_long   - pip pnl of the partial leg (signed)
+      final_pnl_high_long     - pip pnl of the runner leg (signed)
+      outcome_high_long       - int8 outcome code (see _OUTCOME_*)
+      partial_pnl_high_short  - mirror for short
+      final_pnl_high_short    - mirror for short
+      outcome_high_short      - mirror for short
+
+    Bars without ATR(14), without ask_o/bid_o at i+1, or with i+horizon
+    out of range get NaN pnl and outcome_code=_OUTCOME_NOT_LABELABLE.
+    """
+    if "bid_o" not in df.columns or "ask_o" not in df.columns:
+        raise ValueError(
+            "Phase 9.18/H-2 partial outcomes require BA mode candles "
+            "(bid_o/h/l/c and ask_o/h/l/c columns)."
+        )
+    pip = _pip_size(instrument)
+    n = len(df)
+    bid_h = df["bid_h"].to_numpy(dtype=np.float64)
+    bid_l = df["bid_l"].to_numpy(dtype=np.float64)
+    ask_h = df["ask_h"].to_numpy(dtype=np.float64)
+    ask_l = df["ask_l"].to_numpy(dtype=np.float64)
+    ask_o = df["ask_o"].to_numpy(dtype=np.float64)
+    bid_o = df["bid_o"].to_numpy(dtype=np.float64)
+    atrs = df["atr_14"].to_numpy(dtype=np.float64)
+
+    pnl_partial_long = np.full(n, np.nan, dtype=np.float64)
+    pnl_final_long = np.full(n, np.nan, dtype=np.float64)
+    pnl_partial_short = np.full(n, np.nan, dtype=np.float64)
+    pnl_final_short = np.full(n, np.nan, dtype=np.float64)
+    outcome_long = np.full(n, _OUTCOME_NOT_LABELABLE, dtype=np.int8)
+    outcome_short = np.full(n, _OUTCOME_NOT_LABELABLE, dtype=np.int8)
+
+    for i in range(n - horizon - 1):
+        atr_i = atrs[i]
+        if not np.isfinite(atr_i) or atr_i <= 0:
+            continue
+        entry_long = ask_o[i + 1]
+        entry_short = bid_o[i + 1]
+        if not (np.isfinite(entry_long) and np.isfinite(entry_short)):
+            continue
+
+        long_bh = bid_h[i + 1 : i + 1 + horizon]
+        long_bl = bid_l[i + 1 : i + 1 + horizon]
+        short_ah = ask_h[i + 1 : i + 1 + horizon]
+        short_al = ask_l[i + 1 : i + 1 + horizon]
+
+        p_long, f_long, oc_long = _partial_high_outcome_long(
+            long_bh, long_bl, entry_long, atr_i, pip
+        )
+        p_short, f_short, oc_short = _partial_high_outcome_short(
+            short_ah, short_al, entry_short, atr_i, pip
+        )
+        pnl_partial_long[i] = p_long
+        pnl_final_long[i] = f_long
+        outcome_long[i] = oc_long
+        pnl_partial_short[i] = p_short
+        pnl_final_short[i] = f_short
+        outcome_short[i] = oc_short
+
+    df = df.copy()
+    df["partial_pnl_high_long"] = pnl_partial_long
+    df["final_pnl_high_long"] = pnl_final_long
+    df["outcome_high_long"] = outcome_long
+    df["partial_pnl_high_short"] = pnl_partial_short
+    df["final_pnl_high_short"] = pnl_final_short
+    df["outcome_high_short"] = outcome_short
+    return df
+
+
 def _add_labels_atr(df: pd.DataFrame, horizon: int, tp_mult: float, sl_mult: float) -> pd.DataFrame:
     """Triple-barrier labels with TP/SL scaled by ATR(14) at entry bar.
 
@@ -645,6 +858,10 @@ def _build_pair_features(
         ),
         out_columns=_LABEL_COLS_BY_BUCKET,
     )
+    # Phase 9.18/H-2: partial-exit outcomes on the High bucket only.
+    # Adds six columns; the eval loop reads them only when the
+    # exit policy is "bucketed+partial".
+    df = _add_partial_outcomes_high(df, horizon, instrument=instrument)
     # The training label is always the mid bucket (1.5 / 1.0). The
     # explicit (tp_mult, sl_mult) CLI arguments are advisory only at
     # this stage; we honour them by aliasing label_tb to the column
@@ -863,6 +1080,20 @@ def _eval_fold(
     bucket_breakdown: dict[str, dict] = {
         name: {"trades": 0, "wins": 0, "losses": 0, "gross_pnl": 0.0} for name in _BUCKET_NAMES
     }
+    use_partial = exit_policy == "bucketed+partial"
+    if use_partial:
+        # H-2: per-outcome breakdown of SELECTOR's High-bucket trades.
+        bucket_breakdown["high"]["partial_outcomes"] = {
+            int(oc): 0
+            for oc in (
+                _OUTCOME_SL_BEFORE_PARTIAL,
+                _OUTCOME_PARTIAL_THEN_TRAIL,
+                _OUTCOME_PARTIAL_THEN_TP,
+                _OUTCOME_PARTIAL_THEN_TIMEOUT,
+                _OUTCOME_TIMEOUT_NO_PARTIAL,
+            )
+        }
+        bucket_breakdown["high"]["partial_fired"] = 0
 
     if base_df.empty:
         empty = {
@@ -904,6 +1135,17 @@ def _eval_fold(
                 "atr": zeros.copy(),
                 "present": empty_bool,
             }
+            if use_partial:
+                pair_arrays[pair].update(
+                    {
+                        "partial_long": zeros.copy(),
+                        "final_long": zeros.copy(),
+                        "outcome_long": ints.copy(),
+                        "partial_short": zeros.copy(),
+                        "final_short": zeros.copy(),
+                        "outcome_short": ints.copy(),
+                    }
+                )
             continue
 
         # Index the pair test frame by timestamp; align to base_ts via reindex.
@@ -937,6 +1179,25 @@ def _eval_fold(
             "atr": atr_arr,
             "present": present,
         }
+        if use_partial:
+            pair_arrays[pair]["partial_long"] = (
+                aligned["partial_pnl_high_long"].fillna(0.0).to_numpy(dtype=np.float64)
+            )
+            pair_arrays[pair]["final_long"] = (
+                aligned["final_pnl_high_long"].fillna(0.0).to_numpy(dtype=np.float64)
+            )
+            pair_arrays[pair]["outcome_long"] = (
+                aligned["outcome_high_long"].fillna(0).to_numpy(dtype=np.int8)
+            )
+            pair_arrays[pair]["partial_short"] = (
+                aligned["partial_pnl_high_short"].fillna(0.0).to_numpy(dtype=np.float64)
+            )
+            pair_arrays[pair]["final_short"] = (
+                aligned["final_pnl_high_short"].fillna(0.0).to_numpy(dtype=np.float64)
+            )
+            pair_arrays[pair]["outcome_short"] = (
+                aligned["outcome_high_short"].fillna(0).to_numpy(dtype=np.int8)
+            )
 
     # Per-pair signal arrays (vectorised once).
     pair_signal: dict[str, np.ndarray] = {}  # int8: +1 long, -1 short, 0 no-trade
@@ -951,7 +1212,7 @@ def _eval_fold(
         pair_signal[pair] = sig
         conf = np.maximum(pa["p_tp"], pa["p_sl"])
         pair_conf[pair] = conf
-        if exit_policy == "bucketed":
+        if exit_policy in ("bucketed", "bucketed+partial"):
             pair_bucket[pair] = _bucket_indices(conf)
         else:
             # Symmetric: every bar uses the mid bucket (1.5 / 1.0).
@@ -991,6 +1252,23 @@ def _eval_fold(
         pnl = np.where(long_mask & (label == -1), -sl_pip, pnl)
         pnl = np.where(short_mask & (label == -1), tp_pip, pnl)
         pnl = np.where(short_mask & (label == 1), -sl_pip, pnl)
+
+        # H-2: override per-bar pnl for High-bucket trades when policy is
+        # 'bucketed+partial'. Partial leg + runner leg pnls were
+        # pre-computed at label time per direction; we look them up
+        # directly here. Conservation guarantees
+        # ``partial + final == total`` for each trade.
+        if use_partial:
+            high_mask = bidx == 2
+            high_long_mask = high_mask & long_mask
+            high_short_mask = high_mask & short_mask
+            partial_long = pa["partial_long"]
+            final_long = pa["final_long"]
+            partial_short = pa["partial_short"]
+            final_short = pa["final_short"]
+            pnl = np.where(high_long_mask, partial_long + final_long, pnl)
+            pnl = np.where(high_short_mask, partial_short + final_short, pnl)
+
         pair_gross[pair] = pnl
         pair_traded[pair] = traded
 
@@ -1036,6 +1314,35 @@ def _eval_fold(
         bucket_breakdown[name]["wins"] += int((bucket_gross > 0).sum())
         bucket_breakdown[name]["losses"] += int((bucket_gross < 0).sum())
         bucket_breakdown[name]["gross_pnl"] += float(bucket_gross.sum())
+
+    # H-2: partial-exit outcome breakdown for SELECTOR's High-bucket
+    # trades. We need to look up, per active bar where the picked pair
+    # is in the High bucket, which direction the trade went and the
+    # outcome code from the pre-computed columns.
+    if use_partial:
+        sig_mat = np.stack([pair_signal[p] for p in pair_idx], axis=0)
+        outcome_long_mat = np.stack([pair_arrays[p]["outcome_long"] for p in pair_idx], axis=0)
+        outcome_short_mat = np.stack([pair_arrays[p]["outcome_short"] for p in pair_idx], axis=0)
+        sel_sig = sig_mat[sel_pair_idx, np.arange(n_lab)][active_any]
+        sel_outcome_long = outcome_long_mat[sel_pair_idx, np.arange(n_lab)][active_any]
+        sel_outcome_short = outcome_short_mat[sel_pair_idx, np.arange(n_lab)][active_any]
+        high_active = sel_bucket == 2
+        for i in np.flatnonzero(high_active):
+            if sel_sig[i] == 1:
+                oc = int(sel_outcome_long[i])
+            elif sel_sig[i] == -1:
+                oc = int(sel_outcome_short[i])
+            else:
+                continue
+            outcomes_dict = bucket_breakdown["high"]["partial_outcomes"]
+            if oc in outcomes_dict:
+                outcomes_dict[oc] += 1
+            if oc in (
+                int(_OUTCOME_PARTIAL_THEN_TRAIL),
+                int(_OUTCOME_PARTIAL_THEN_TP),
+                int(_OUTCOME_PARTIAL_THEN_TIMEOUT),
+            ):
+                bucket_breakdown["high"]["partial_fired"] += 1
 
     # EQUAL_AVG: mean of per-pair gross over pairs that traded this bar.
     # Mask non-traded pairs out, then take mean over the bars where >=1 traded.
@@ -1183,7 +1490,11 @@ def _print_comparison(agg: dict[str, dict], spread_pip: float, exit_policy: str)
 
 
 def _print_bucket_breakdown(bucket_totals: dict[str, dict]) -> None:
-    """Phase 9.18/H-1: per-bucket trade count / hit rate / EV breakdown."""
+    """Phase 9.18: per-bucket trade count / hit rate / EV breakdown.
+
+    When the H-2 'bucketed+partial' policy ran, also print the
+    per-outcome partial-exit distribution for the High bucket.
+    """
     _hdr("PER-BUCKET DISTRIBUTION (SELECTOR)")
     print(
         f"  {'Bucket':<8} {'TP/SL':>8} {'Trades':>10} {'Wins':>8} "
@@ -1211,6 +1522,24 @@ def _print_bucket_breakdown(bucket_totals: dict[str, dict]) -> None:
             f"{wins:>8,} {losses:>8,} {hit * 100:>8.1f}% "
             f"{v['gross_pnl']:>11.1f} {ev_per_trade:>10.3f}"
         )
+
+    high = bucket_totals.get("high", {})
+    if "partial_outcomes" in high:
+        _hdr("HIGH-BUCKET PARTIAL-EXIT OUTCOMES (SELECTOR)")
+        outcomes = high["partial_outcomes"]
+        high_trades = high.get("trades", 0)
+        partial_fired = high.get("partial_fired", 0)
+        partial_fire_rate = partial_fired / high_trades * 100 if high_trades > 0 else 0.0
+        print(
+            f"  Partial fired: {partial_fired:,} / {high_trades:,} High-bucket "
+            f"trades  ({partial_fire_rate:.1f}%)"
+        )
+        print(f"  {'Outcome':<24} {'Count':>10} {'Share':>8}")
+        print("  " + "-" * 50)
+        for oc_code, count in outcomes.items():
+            share = count / high_trades * 100 if high_trades > 0 else 0.0
+            label = _OUTCOME_NAMES.get(np.int8(oc_code), f"oc_{oc_code}")
+            print(f"  {label:<24} {count:>10,} {share:>7.1f}%")
 
 
 def _print_verdict(agg: dict[str, dict], spread_pip: float, exit_policy: str) -> None:
@@ -1248,7 +1577,7 @@ def _print_verdict(agg: dict[str, dict], spread_pip: float, exit_policy: str) ->
 # ---------------------------------------------------------------------------
 
 
-_VALID_POLICIES = ("symmetric", "bucketed")
+_VALID_POLICIES = ("symmetric", "bucketed", "bucketed+partial")
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -1278,21 +1607,23 @@ def main(argv: list[str] | None = None) -> int:
         choices=_VALID_POLICIES,
         default="bucketed",
         help=(
-            "Phase 9.18/H-1 exit policy. 'symmetric' reproduces v9 baseline "
-            "(every trade uses TP=1.5, SL=1.0). 'bucketed' relabels per trade "
+            "Phase 9.18 exit policy. 'symmetric' reproduces v9 baseline (every "
+            "trade uses TP=1.5, SL=1.0). 'bucketed' (H-1) relabels per trade "
             "based on model confidence bucket: low (1.2/1.2), mid (1.5/1.0), "
-            "high (2.0/0.8)."
+            "high (2.0/0.8). 'bucketed+partial' (H-2) additionally splits the "
+            "High bucket into 0.5+0.5 legs with partial TP at 1xATR and runner "
+            "trail-to-entry."
         ),
     )
     parser.add_argument(
         "--exit-policies",
         default=None,
         help=(
-            "Phase 9.18/H-1 internal sweep. Comma-separated list of policies "
-            "(e.g. 'symmetric,bucketed'). When provided, overrides --exit-policy "
-            "and produces a multi-cell summary. Loads + features + train run "
-            "ONCE per fold and are SHARED across cells; only the eval loop "
-            "runs per cell."
+            "Phase 9.18 internal sweep. Comma-separated list of policies (e.g. "
+            "'symmetric,bucketed,bucketed+partial'). When provided, overrides "
+            "--exit-policy and produces a multi-cell summary. Loads + features + "
+            "train run ONCE per fold and are SHARED across cells; only the eval "
+            "loop runs per cell."
         ),
     )
     parser.add_argument("--retrain-interval-days", type=int, default=90)
@@ -1372,6 +1703,14 @@ def main(argv: list[str] | None = None) -> int:
         _LABEL_COL_LOW,
         _LABEL_COL_MID,
         _LABEL_COL_HIGH,
+        # H-2: partial-exit outcome columns are derived from FUTURE OHLC
+        # and must never enter the model as features.
+        "partial_pnl_high_long",
+        "final_pnl_high_long",
+        "outcome_high_long",
+        "partial_pnl_high_short",
+        "final_pnl_high_short",
+        "outcome_high_short",
     }
     ortho_drop = set(_ORTHO_COLS_TIME) | set(_ORTHO_COLS_VOLUME) | set(_ORTHO_COLS_REGIME)
     full_exclude = raw_exclude | ortho_drop
@@ -1389,9 +1728,27 @@ def main(argv: list[str] | None = None) -> int:
     select_totals_by_cell: dict[str, dict[str, int]] = {
         p: {pair: 0 for pair in pairs} for p in policy_specs
     }
+
+    def _empty_bucket_totals(policy: str) -> dict[str, dict]:
+        out = {
+            name: {"trades": 0, "wins": 0, "losses": 0, "gross_pnl": 0.0} for name in _BUCKET_NAMES
+        }
+        if policy == "bucketed+partial":
+            out["high"]["partial_outcomes"] = {
+                int(oc): 0
+                for oc in (
+                    _OUTCOME_SL_BEFORE_PARTIAL,
+                    _OUTCOME_PARTIAL_THEN_TRAIL,
+                    _OUTCOME_PARTIAL_THEN_TP,
+                    _OUTCOME_PARTIAL_THEN_TIMEOUT,
+                    _OUTCOME_TIMEOUT_NO_PARTIAL,
+                )
+            }
+            out["high"]["partial_fired"] = 0
+        return out
+
     bucket_totals_by_cell: dict[str, dict[str, dict]] = {
-        p: {name: {"trades": 0, "wins": 0, "losses": 0, "gross_pnl": 0.0} for name in _BUCKET_NAMES}
-        for p in policy_specs
+        p: _empty_bucket_totals(p) for p in policy_specs
     }
 
     print("Running folds (train once -> eval per policy cell) ...")
@@ -1427,8 +1784,15 @@ def main(argv: list[str] | None = None) -> int:
             for pair, cnt in sel_counts.items():
                 select_totals_by_cell[cell_policy][pair] += cnt
             for name in _BUCKET_NAMES:
-                for k, v in bucket_brk[name].items():
-                    bucket_totals_by_cell[cell_policy][name][k] += v
+                src = bucket_brk[name]
+                dst = bucket_totals_by_cell[cell_policy][name]
+                for k, v in src.items():
+                    if k == "partial_outcomes":
+                        # Merge per-outcome counters; same key set on both sides.
+                        for oc, cnt in v.items():
+                            dst["partial_outcomes"][oc] += cnt
+                    else:
+                        dst[k] += v
             sharpe_strs.append(f"{cell_policy[:3]}={results['SELECTOR']['net_sharpe']:>5.2f}")
         print(f"  Fold{fid:>3}{retrain_marker} SEL Sharpe: " + "  ".join(sharpe_strs))
 
