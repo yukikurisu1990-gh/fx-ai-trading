@@ -169,5 +169,5 @@ H-4 (production runtime toggle for exit_policy) is **not triggered**.
 019f79f  PR #202  Phase 9.18 kickoff design memo
 b391c8d  PR #203  H-1 confidence-bucketed TP/SL eval
 af6bb86  PR #204  H-2 partial exit on High bucket
-<TBD>    PR #???  H-3 + this closure memo
+97adb2c  PR #205  H-3 + this closure memo
 ```
