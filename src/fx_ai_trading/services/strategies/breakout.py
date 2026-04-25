@@ -47,12 +47,17 @@ _STRATEGY_VERSION = "v1"
 
 
 class BreakoutStrategy:
-    """Bollinger range-exit + EMA trend-confirmed breakout strategy (Phase 9.17 G-2).
+    """Bollinger range-exit + EMA trend-confirmed breakout strategy.
+
+    Phase 9.17 G-2; confidence_threshold added in 9.17b/I-1.
 
     Args:
         strategy_id: Unique ID for this strategy instance.
         breakout_strength_full_atr: ATR multiples beyond the band that
             saturate confidence to 1.0 (default 0.5).
+        confidence_threshold: Minimum confidence required to emit a
+            signal. Trades below this are suppressed to 'no_trade'.
+            Default 0.0 preserves Phase 9.17 G-2 behavior.
         tp_atr_multiplier: TP = atr_14 * multiplier (default 1.5).
         sl_atr_multiplier: SL = atr_14 * multiplier (default 1.0).
         holding_time_seconds: Expected holding duration.
@@ -62,12 +67,14 @@ class BreakoutStrategy:
         self,
         strategy_id: str,
         breakout_strength_full_atr: float = 0.5,
+        confidence_threshold: float = 0.0,
         tp_atr_multiplier: float = 1.5,
         sl_atr_multiplier: float = 1.0,
         holding_time_seconds: int = 3600,
     ) -> None:
         self._strategy_id = strategy_id
         self._strength_full = breakout_strength_full_atr
+        self._conf_threshold = confidence_threshold
         self._tp_mult = tp_atr_multiplier
         self._sl_mult = sl_atr_multiplier
         self._holding_time_seconds = holding_time_seconds
@@ -105,6 +112,10 @@ class BreakoutStrategy:
                 min(strength / self._strength_full, 1.0) if self._strength_full > 0 else 1.0
             )
         else:
+            signal = "no_trade"
+            confidence = 0.0
+
+        if signal != "no_trade" and confidence < self._conf_threshold:
             signal = "no_trade"
             confidence = 0.0
 

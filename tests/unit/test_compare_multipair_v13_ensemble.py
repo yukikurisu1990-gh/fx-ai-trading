@@ -185,6 +185,46 @@ class TestMrSignalVec:
         assert conf[3] == 0.0  # bb mismatched
 
 
+class TestMrSignalVecThreshold:
+    """Phase 9.17b/I-1: confidence_threshold post-filter parity vs class."""
+
+    def test_threshold_zero_is_default_behavior(self) -> None:
+        rsi = np.array([28.0, 20.0, 50.0])
+        bb_pct_b = np.array([0.08, 0.05, 0.5])
+        sig_d, conf_d = v13._mr_signal_vec(rsi, bb_pct_b)
+        sig_z, conf_z = v13._mr_signal_vec(rsi, bb_pct_b, conf_threshold=0.0)
+        assert (sig_d == sig_z).all()
+        assert (conf_d == conf_z).all()
+
+    def test_threshold_suppresses_low_conf(self) -> None:
+        # rsi=28, bb_pct_b=0.08 → conf ≈ 0.133 < threshold 0.5
+        rsi = np.array([28.0])
+        bb_pct_b = np.array([0.08])
+        sig, conf = v13._mr_signal_vec(rsi, bb_pct_b, conf_threshold=0.5)
+        assert sig[0] == 0
+        assert conf[0] == 0.0
+
+    def test_threshold_admits_high_conf(self) -> None:
+        # rsi=10, bb_pct_b=0.02 → conf ≈ 0.733 > threshold 0.5
+        rsi = np.array([10.0])
+        bb_pct_b = np.array([0.02])
+        sig, conf = v13._mr_signal_vec(rsi, bb_pct_b, conf_threshold=0.5)
+        assert sig[0] == 1
+        assert conf[0] > 0.5
+
+    def test_threshold_parity_with_class(self) -> None:
+        # Match confidence_threshold=0.4 between vec and class on a batch
+        rsi = np.array([10.0, 20.0, 28.0])
+        bb_pct_b = np.array([0.02, 0.05, 0.08])
+        sig_v, conf_v = v13._mr_signal_vec(rsi, bb_pct_b, conf_threshold=0.4)
+        mr = MeanReversionStrategy("ref", confidence_threshold=0.4)
+        for i in range(len(rsi)):
+            ref = mr.evaluate("EUR_USD", _make_features(rsi_14=rsi[i], bb_pct_b=bb_pct_b[i]), _CTX)
+            expected_sig = {"long": 1, "short": -1, "no_trade": 0}[ref.signal]
+            assert sig_v[i] == expected_sig, f"row {i}: vec={sig_v[i]} class={ref.signal}"
+            assert conf_v[i] == pytest.approx(ref.confidence, abs=1e-4)
+
+
 # ---------------------------------------------------------------------------
 # _bo_signal_vec — cross-checked against BreakoutStrategy
 # ---------------------------------------------------------------------------
@@ -273,6 +313,81 @@ class TestBoSignalVec:
         atr = np.array([0.012, 0.012, 0.012])
         sig, _ = v13._bo_signal_vec(last_close, bb_upper, bb_lower, ema_12, ema_26, atr)
         assert sig.tolist() == [1, 0, -1]
+
+
+class TestBoSignalVecThreshold:
+    """Phase 9.17b/I-1: confidence_threshold post-filter parity vs class."""
+
+    def test_threshold_zero_is_default_behavior(self) -> None:
+        last_close = np.array([1.115, 1.111, 1.085])
+        bb_upper = np.array([1.110, 1.110, 1.110])
+        bb_lower = np.array([1.090, 1.090, 1.090])
+        ema_12 = np.array([1.105, 1.105, 1.095])
+        ema_26 = np.array([1.100, 1.100, 1.100])
+        atr = np.array([0.020, 0.020, 0.020])
+        sig_d, conf_d = v13._bo_signal_vec(last_close, bb_upper, bb_lower, ema_12, ema_26, atr)
+        sig_z, conf_z = v13._bo_signal_vec(
+            last_close, bb_upper, bb_lower, ema_12, ema_26, atr, conf_threshold=0.0
+        )
+        assert (sig_d == sig_z).all()
+        assert (conf_d == conf_z).all()
+
+    def test_threshold_suppresses_weak_breakout(self) -> None:
+        # close=1.111, upper=1.110 → break=0.001; atr=0.020 → strength=0.05 ATR
+        # full_atr=0.5 → conf = 0.10 < threshold 0.5
+        last_close = np.array([1.111])
+        bb_upper = np.array([1.110])
+        bb_lower = np.array([1.090])
+        ema_12 = np.array([1.105])
+        ema_26 = np.array([1.100])
+        atr = np.array([0.020])
+        sig, conf = v13._bo_signal_vec(
+            last_close, bb_upper, bb_lower, ema_12, ema_26, atr, conf_threshold=0.5
+        )
+        assert sig[0] == 0
+        assert conf[0] == 0.0
+
+    def test_threshold_admits_strong_breakout(self) -> None:
+        # close=1.116, upper=1.110, atr=0.012 → strength=0.5 ATR → conf=1.0
+        last_close = np.array([1.116])
+        bb_upper = np.array([1.110])
+        bb_lower = np.array([1.090])
+        ema_12 = np.array([1.105])
+        ema_26 = np.array([1.100])
+        atr = np.array([0.012])
+        sig, conf = v13._bo_signal_vec(
+            last_close, bb_upper, bb_lower, ema_12, ema_26, atr, conf_threshold=0.5
+        )
+        assert sig[0] == 1
+        assert conf[0] == pytest.approx(1.0, abs=1e-4)
+
+    def test_threshold_parity_with_class(self) -> None:
+        last_close = np.array([1.116, 1.111, 1.084])
+        bb_upper = np.array([1.110, 1.110, 1.110])
+        bb_lower = np.array([1.090, 1.090, 1.090])
+        ema_12 = np.array([1.105, 1.105, 1.095])
+        ema_26 = np.array([1.100, 1.100, 1.100])
+        atr = np.array([0.012, 0.020, 0.012])
+        sig_v, conf_v = v13._bo_signal_vec(
+            last_close, bb_upper, bb_lower, ema_12, ema_26, atr, conf_threshold=0.4
+        )
+        bo = BreakoutStrategy("ref", confidence_threshold=0.4)
+        for i in range(len(last_close)):
+            ref = bo.evaluate(
+                "EUR_USD",
+                _make_features(
+                    last_close=last_close[i],
+                    bb_upper=bb_upper[i],
+                    bb_lower=bb_lower[i],
+                    ema_12=ema_12[i],
+                    ema_26=ema_26[i],
+                    atr_14=atr[i],
+                ),
+                _CTX,
+            )
+            expected_sig = {"long": 1, "short": -1, "no_trade": 0}[ref.signal]
+            assert sig_v[i] == expected_sig, f"row {i}: vec={sig_v[i]} class={ref.signal}"
+            assert conf_v[i] == pytest.approx(ref.confidence, abs=1e-4)
 
 
 # ---------------------------------------------------------------------------

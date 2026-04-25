@@ -21,6 +21,13 @@ Confidence:
   - short: mean of (rsi_short_conf, bb_short_conf)
   - 'no_trade' → 0.0
 
+Phase 9.17b: confidence_threshold post-filter.
+  - When confidence < threshold AFTER it would otherwise be a signal,
+    the trade is suppressed (signal becomes 'no_trade', confidence 0.0).
+  - Default 0.0 preserves Phase 9.17 behavior. Closure memo §5
+    identified MR's lack of LGBM-style threshold as the cause of trade-
+    rate explosion (15× higher than LGBM).
+
 TP/SL: 1.5 / 1.0 × ATR by default — matches LightGBM triple-barrier
 baseline so PnL is directly comparable in the v13 ensemble eval.
 
@@ -41,7 +48,9 @@ _STRATEGY_VERSION = "v1"
 
 
 class MeanReversionStrategy:
-    """Combined RSI/Bollinger mean-reversion strategy (Phase 9.17 G-1).
+    """Combined RSI/Bollinger mean-reversion strategy.
+
+    Phase 9.17 G-1; confidence_threshold added in 9.17b/I-1.
 
     Args:
         strategy_id: Unique ID for this strategy instance.
@@ -49,6 +58,9 @@ class MeanReversionStrategy:
         rsi_overbought: RSI level above which overbought (default 70.0).
         bb_lower: %B level below which lower-band touch (default 0.10).
         bb_upper: %B level above which upper-band touch (default 0.90).
+        confidence_threshold: Minimum mean(rsi_conf, bb_conf) required to
+            emit a signal. Trades below this are suppressed to 'no_trade'.
+            Default 0.0 preserves Phase 9.17 G-1 behavior.
         tp_atr_multiplier: TP = atr_14 * multiplier (default 1.5).
         sl_atr_multiplier: SL = atr_14 * multiplier (default 1.0).
         holding_time_seconds: Expected holding duration.
@@ -61,6 +73,7 @@ class MeanReversionStrategy:
         rsi_overbought: float = 70.0,
         bb_lower: float = 0.10,
         bb_upper: float = 0.90,
+        confidence_threshold: float = 0.0,
         tp_atr_multiplier: float = 1.5,
         sl_atr_multiplier: float = 1.0,
         holding_time_seconds: int = 3600,
@@ -70,6 +83,7 @@ class MeanReversionStrategy:
         self._rsi_overbought = rsi_overbought
         self._bb_lower = bb_lower
         self._bb_upper = bb_upper
+        self._conf_threshold = confidence_threshold
         self._tp_mult = tp_atr_multiplier
         self._sl_mult = sl_atr_multiplier
         self._holding_time_seconds = holding_time_seconds
@@ -108,6 +122,10 @@ class MeanReversionStrategy:
             bb_conf = min((pct_b - self._bb_upper) / bb_denom, 1.0) if bb_denom > 0 else 1.0
             confidence = (rsi_conf + bb_conf) / 2.0
         else:
+            signal = "no_trade"
+            confidence = 0.0
+
+        if signal != "no_trade" and confidence < self._conf_threshold:
             signal = "no_trade"
             confidence = 0.0
 
