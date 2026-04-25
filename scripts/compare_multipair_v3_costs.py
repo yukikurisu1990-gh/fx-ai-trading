@@ -626,16 +626,16 @@ def _print_verdict(agg: dict[str, dict], spread_pip: float) -> None:
 
     # Go/No-Go gate
     print("")
-    print("  [Go/No-Go gate — per docs/design/phase9_10_design_memo.md §6]")
+    print("  [Go/No-Go gate -- per docs/design/phase9_10_design_memo.md sec.6]")
     if selector["overall_sharpe_net"] >= 0.20 and selector["net_pnl"] > 0:
         print(f"  [GO]      SELECTOR net Sharpe>=0.20 AND net PnL>0 at spread={spread_pip:.2f}")
     elif selector["overall_sharpe_net"] >= 0.15:
         print(
-            "  [SOFT GO] SELECTOR net Sharpe>=0.15 but <0.20 — Phase 9.12 quality"
+            "  [SOFT GO] SELECTOR net Sharpe>=0.15 but <0.20 - Phase 9.12 quality"
             " lift recommended before Phase 9.11"
         )
     else:
-        print("  [NO-GO]   SELECTOR net Sharpe<0.15 — strategy redesign required")
+        print("  [NO-GO]   SELECTOR net Sharpe<0.15 - strategy redesign required")
 
 
 # ---------------------------------------------------------------------------
