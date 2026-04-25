@@ -359,3 +359,94 @@ class TestBreakoutCustomThresholds:
         sig_loose = loose.evaluate("EUR_USD", features, _CTX)
         sig_tight = tight.evaluate("EUR_USD", features, _CTX)
         assert sig_tight.confidence > sig_loose.confidence
+
+
+# ---------------------------------------------------------------------------
+# Phase 9.17b/I-1 confidence_threshold post-filter
+# ---------------------------------------------------------------------------
+
+
+class TestBreakoutConfidenceThreshold:
+    def test_default_threshold_preserves_phase9_17_behavior(self) -> None:
+        # Default 0.0 → all rule-met breakouts fire (Phase 9.17 G-2 contract)
+        bo_default = BreakoutStrategy("bo_default")
+        bo_explicit = BreakoutStrategy("bo_explicit", confidence_threshold=0.0)
+        features = _make_features(
+            last_close=1.111,
+            bb_upper=1.110,
+            ema_12=1.105,
+            ema_26=1.100,
+            atr_14=0.020,
+        )
+        sig_d = bo_default.evaluate("EUR_USD", features, _CTX)
+        sig_e = bo_explicit.evaluate("EUR_USD", features, _CTX)
+        assert sig_d.signal == "long"
+        assert sig_e.signal == "long"
+        assert sig_d.confidence == sig_e.confidence
+
+    def test_threshold_suppresses_weak_breakout(self) -> None:
+        # Tiny break: close=1.111, upper=1.110 → break = 0.001
+        # atr=0.020 → strength = 0.001/0.020 = 0.05 ATR
+        # full_atr=0.5 default → confidence = 0.05/0.5 = 0.10 → below 0.5
+        bo = BreakoutStrategy("bo_high", confidence_threshold=0.5)
+        sig = bo.evaluate(
+            "EUR_USD",
+            _make_features(
+                last_close=1.111,
+                bb_upper=1.110,
+                ema_12=1.105,
+                ema_26=1.100,
+                atr_14=0.020,
+            ),
+            _CTX,
+        )
+        assert sig.signal == "no_trade"
+        assert sig.confidence == 0.0
+        assert sig.ev_before_cost == 0.0
+
+    def test_threshold_admits_strong_breakout(self) -> None:
+        # Strong break: close=1.116, upper=1.110 → break=0.006
+        # atr=0.012 → strength=0.5 ATR → confidence=1.0 (saturated)
+        bo = BreakoutStrategy("bo_high", confidence_threshold=0.5)
+        sig = bo.evaluate(
+            "EUR_USD",
+            _make_features(
+                last_close=1.116,
+                bb_upper=1.110,
+                ema_12=1.105,
+                ema_26=1.100,
+                atr_14=0.012,
+            ),
+            _CTX,
+        )
+        assert sig.signal == "long"
+        assert sig.confidence == pytest.approx(1.0, abs=1e-4)
+
+    def test_threshold_at_exact_boundary_admits(self) -> None:
+        # confidence == threshold → admitted (uses `<` filter)
+        # close=1.114, upper=1.110 → break=0.004; atr=0.020 → 0.20 ATR
+        # full_atr=0.4 → confidence = 0.20/0.4 = 0.5
+        bo = BreakoutStrategy(
+            "bo_boundary",
+            breakout_strength_full_atr=0.4,
+            confidence_threshold=0.5,
+        )
+        sig = bo.evaluate(
+            "EUR_USD",
+            _make_features(
+                last_close=1.114,
+                bb_upper=1.110,
+                ema_12=1.105,
+                ema_26=1.100,
+                atr_14=0.020,
+            ),
+            _CTX,
+        )
+        assert sig.signal == "long"
+        assert sig.confidence == pytest.approx(0.5, abs=1e-4)
+
+    def test_threshold_does_not_affect_no_trade_state(self) -> None:
+        bo = BreakoutStrategy("bo_high", confidence_threshold=0.9)
+        sig = bo.evaluate("EUR_USD", _make_features(), _CTX)  # neutral state
+        assert sig.signal == "no_trade"
+        assert sig.confidence == 0.0

@@ -262,3 +262,61 @@ class TestMeanReversionCustomThresholds:
         # bb_pct_b=0.04 < custom 0.05 → long
         sig = mr.evaluate("EUR_USD", _make_features(rsi_14=20.0, bb_pct_b=0.04), _CTX)
         assert sig.signal == "long"
+
+
+# ---------------------------------------------------------------------------
+# Phase 9.17b/I-1 confidence_threshold post-filter
+# ---------------------------------------------------------------------------
+
+
+class TestMeanReversionConfidenceThreshold:
+    def test_default_threshold_preserves_phase9_17_behavior(self) -> None:
+        # Default 0.0 → all rule-met signals fire (Phase 9.17 G-1 contract)
+        mr_default = MeanReversionStrategy("mr_default")
+        mr_explicit = MeanReversionStrategy("mr_explicit", confidence_threshold=0.0)
+        sig_d = mr_default.evaluate("EUR_USD", _make_features(rsi_14=28.0, bb_pct_b=0.08), _CTX)
+        sig_e = mr_explicit.evaluate("EUR_USD", _make_features(rsi_14=28.0, bb_pct_b=0.08), _CTX)
+        assert sig_d.signal == "long"
+        assert sig_e.signal == "long"
+        assert sig_d.confidence == sig_e.confidence
+
+    def test_threshold_suppresses_low_confidence_long(self) -> None:
+        # rsi=28 → rsi_conf = (30-28)/30 ≈ 0.067
+        # bb_pct_b=0.08 → bb_conf = (0.10-0.08)/0.10 = 0.2
+        # avg = ~0.133  → below threshold 0.5
+        mr = MeanReversionStrategy("mr_high", confidence_threshold=0.5)
+        sig = mr.evaluate("EUR_USD", _make_features(rsi_14=28.0, bb_pct_b=0.08), _CTX)
+        assert sig.signal == "no_trade"
+        assert sig.confidence == 0.0
+        assert sig.ev_before_cost == 0.0
+
+    def test_threshold_admits_high_confidence_long(self) -> None:
+        # rsi=10 → rsi_conf = (30-10)/30 ≈ 0.667
+        # bb_pct_b=0.02 → bb_conf = (0.10-0.02)/0.10 = 0.8
+        # avg ≈ 0.733 → above threshold 0.5
+        mr = MeanReversionStrategy("mr_high", confidence_threshold=0.5)
+        sig = mr.evaluate("EUR_USD", _make_features(rsi_14=10.0, bb_pct_b=0.02), _CTX)
+        assert sig.signal == "long"
+        assert sig.confidence > 0.5
+
+    def test_threshold_suppresses_low_confidence_short(self) -> None:
+        # rsi=72 → rsi_conf = (72-70)/30 ≈ 0.067
+        # bb_pct_b=0.92 → bb_conf = (0.92-0.90)/0.10 = 0.2
+        # avg ≈ 0.133 → below 0.5
+        mr = MeanReversionStrategy("mr_high", confidence_threshold=0.5)
+        sig = mr.evaluate("EUR_USD", _make_features(rsi_14=72.0, bb_pct_b=0.92), _CTX)
+        assert sig.signal == "no_trade"
+
+    def test_threshold_at_exact_boundary_admits(self) -> None:
+        # confidence == threshold → not suppressed (`<` filter, not `<=`)
+        # rsi=15 → rsi_conf = 0.5; bb_pct_b=0.05 → bb_conf = 0.5; avg = 0.5
+        mr = MeanReversionStrategy("mr_boundary", confidence_threshold=0.5)
+        sig = mr.evaluate("EUR_USD", _make_features(rsi_14=15.0, bb_pct_b=0.05), _CTX)
+        assert sig.signal == "long"
+        assert sig.confidence == pytest.approx(0.5, abs=1e-4)
+
+    def test_threshold_does_not_affect_no_trade_state(self) -> None:
+        mr = MeanReversionStrategy("mr_high", confidence_threshold=0.9)
+        sig = mr.evaluate("EUR_USD", _make_features(rsi_14=50.0, bb_pct_b=0.5), _CTX)
+        assert sig.signal == "no_trade"
+        assert sig.confidence == 0.0

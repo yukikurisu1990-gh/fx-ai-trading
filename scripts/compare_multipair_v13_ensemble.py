@@ -741,7 +741,9 @@ def _compute_pnl_vec(
     return pnl
 
 
-def _mr_signal_vec(rsi: np.ndarray, bb_pct_b: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+def _mr_signal_vec(
+    rsi: np.ndarray, bb_pct_b: np.ndarray, conf_threshold: float = 0.0
+) -> tuple[np.ndarray, np.ndarray]:
     """Phase 9.17 G-1 MeanReversionStrategy — vectorised.
 
     Combined-AND logic:
@@ -751,17 +753,17 @@ def _mr_signal_vec(rsi: np.ndarray, bb_pct_b: np.ndarray) -> tuple[np.ndarray, n
     Confidence = mean of normalised RSI- and BB-distances from threshold.
     Mirrors `MeanReversionStrategy.evaluate` in
     src/fx_ai_trading/services/strategies/mean_reversion.py.
+
+    Phase 9.17b/I-1: ``conf_threshold`` post-filter — bars where rule-met
+    confidence < threshold are suppressed to no-trade. Default 0.0
+    preserves Phase 9.17 G-1 behavior.
     """
     long_mask = (rsi <= _MR_RSI_OVERSOLD) & (bb_pct_b <= _MR_BB_LOWER)
     short_mask = (rsi >= _MR_RSI_OVERBOUGHT) & (bb_pct_b >= _MR_BB_UPPER)
 
-    sig = np.zeros(rsi.shape, dtype=np.int8)
-    sig[long_mask] = 1
-    sig[short_mask] = -1
-
     rsi_long_conf = np.clip((_MR_RSI_OVERSOLD - rsi) / _MR_RSI_OVERSOLD, 0.0, 1.0)
     bb_long_conf = np.clip((_MR_BB_LOWER - bb_pct_b) / _MR_BB_LOWER, 0.0, 1.0)
-    long_conf = (rsi_long_conf + bb_long_conf) / 2.0
+    long_conf_raw = (rsi_long_conf + bb_long_conf) / 2.0
 
     rsi_short_denom = 100.0 - _MR_RSI_OVERBOUGHT
     bb_short_denom = 1.0 - _MR_BB_UPPER
@@ -775,11 +777,19 @@ def _mr_signal_vec(rsi: np.ndarray, bb_pct_b: np.ndarray) -> tuple[np.ndarray, n
         0.0,
         1.0,
     )
-    short_conf = (rsi_short_conf + bb_short_conf) / 2.0
+    short_conf_raw = (rsi_short_conf + bb_short_conf) / 2.0
+
+    if conf_threshold > 0.0:
+        long_mask = long_mask & (long_conf_raw >= conf_threshold)
+        short_mask = short_mask & (short_conf_raw >= conf_threshold)
+
+    sig = np.zeros(rsi.shape, dtype=np.int8)
+    sig[long_mask] = 1
+    sig[short_mask] = -1
 
     conf = np.zeros(rsi.shape, dtype=np.float64)
-    conf = np.where(long_mask, long_conf, conf)
-    conf = np.where(short_mask, short_conf, conf)
+    conf = np.where(long_mask, long_conf_raw, conf)
+    conf = np.where(short_mask, short_conf_raw, conf)
     return sig, conf
 
 
@@ -790,6 +800,7 @@ def _bo_signal_vec(
     ema_12: np.ndarray,
     ema_26: np.ndarray,
     atr: np.ndarray,
+    conf_threshold: float = 0.0,
 ) -> tuple[np.ndarray, np.ndarray]:
     """Phase 9.17 G-2 BreakoutStrategy — vectorised.
 
@@ -800,6 +811,10 @@ def _bo_signal_vec(
     Confidence = ATR-normalised distance from broken band, capped at
     1.0 at `_BO_STRENGTH_FULL_ATR`. Mirrors `BreakoutStrategy.evaluate`
     in src/fx_ai_trading/services/strategies/breakout.py.
+
+    Phase 9.17b/I-1: ``conf_threshold`` post-filter — bars where rule-met
+    confidence < threshold are suppressed to no-trade. Default 0.0
+    preserves Phase 9.17 G-2 behavior.
     """
     valid_atr = np.isfinite(atr) & (atr > 0)
     long_break = last_close > bb_upper
@@ -809,23 +824,27 @@ def _bo_signal_vec(
     long_mask = long_break & trend_up & valid_atr
     short_mask = short_break & trend_down & valid_atr
 
-    sig = np.zeros(last_close.shape, dtype=np.int8)
-    sig[long_mask] = 1
-    sig[short_mask] = -1
-
     safe_atr = np.where(valid_atr, atr, 1.0)
     long_strength = np.where(long_mask, (last_close - bb_upper) / safe_atr, 0.0)
     short_strength = np.where(short_mask, (bb_lower - last_close) / safe_atr, 0.0)
     if _BO_STRENGTH_FULL_ATR > 0:
-        long_conf = np.clip(long_strength / _BO_STRENGTH_FULL_ATR, 0.0, 1.0)
-        short_conf = np.clip(short_strength / _BO_STRENGTH_FULL_ATR, 0.0, 1.0)
+        long_conf_raw = np.clip(long_strength / _BO_STRENGTH_FULL_ATR, 0.0, 1.0)
+        short_conf_raw = np.clip(short_strength / _BO_STRENGTH_FULL_ATR, 0.0, 1.0)
     else:
-        long_conf = np.where(long_mask, 1.0, 0.0)
-        short_conf = np.where(short_mask, 1.0, 0.0)
+        long_conf_raw = np.where(long_mask, 1.0, 0.0)
+        short_conf_raw = np.where(short_mask, 1.0, 0.0)
+
+    if conf_threshold > 0.0:
+        long_mask = long_mask & (long_conf_raw >= conf_threshold)
+        short_mask = short_mask & (short_conf_raw >= conf_threshold)
+
+    sig = np.zeros(last_close.shape, dtype=np.int8)
+    sig[long_mask] = 1
+    sig[short_mask] = -1
 
     conf = np.zeros(last_close.shape, dtype=np.float64)
-    conf = np.where(long_mask, long_conf, conf)
-    conf = np.where(short_mask, short_conf, conf)
+    conf = np.where(long_mask, long_conf_raw, conf)
+    conf = np.where(short_mask, short_conf_raw, conf)
     return sig, conf
 
 
@@ -840,6 +859,7 @@ def _eval_fold(
     sl_mult: float,
     rng: random.Random,
     cell_strategies: frozenset[str] = frozenset({_STRATEGY_LGBM}),
+    strategy_conf_threshold: float = 0.0,
 ) -> tuple[dict, dict[str, int], dict[str, int], dict[str, list[float]]]:
     """Phase 9.17 multi-strategy ensemble per-fold evaluation.
 
@@ -990,7 +1010,9 @@ def _eval_fold(
             pair_strat_traded[(pair, _STRATEGY_LGBM)] = traded_l
 
         if _STRATEGY_MR in cell_strategies:
-            sig_m, conf_m = _mr_signal_vec(pa["rsi"], pa["bb_pct_b"])
+            sig_m, conf_m = _mr_signal_vec(
+                pa["rsi"], pa["bb_pct_b"], conf_threshold=strategy_conf_threshold
+            )
             sig_m = np.where(present, sig_m, 0).astype(np.int8)
             conf_m = np.where(present, conf_m, 0.0)
             traded_m = (sig_m != 0) & valid_atr
@@ -1008,6 +1030,7 @@ def _eval_fold(
                 pa["ema_12"],
                 pa["ema_26"],
                 atr,
+                conf_threshold=strategy_conf_threshold,
             )
             sig_b = np.where(present, sig_b, 0).astype(np.int8)
             conf_b = np.where(present, conf_b, 0.0)
@@ -1380,6 +1403,18 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--retrain-interval-days", type=int, default=90)
     parser.add_argument("--n-estimators", type=int, default=200)
     parser.add_argument("--seed", type=int, default=42)
+    parser.add_argument(
+        "--strategy-conf-threshold",
+        type=float,
+        default=0.0,
+        help=(
+            "Phase 9.17b/I-1 confidence floor applied to MR and BO strategies "
+            "(LGBM is unaffected; it has its own --conf-threshold). At 0.0 "
+            "(default) preserves Phase 9.17 G-3 behavior. Closure memo §5 "
+            "identified the lack of this filter as the cause of the 15x "
+            "trade-rate explosion. Try {0.2, 0.3, 0.5} to bound trade rate."
+        ),
+    )
     args = parser.parse_args(argv)
 
     pairs = [p.strip() for p in args.pairs.split(",") if p.strip()]
@@ -1404,7 +1439,10 @@ def main(argv: list[str] | None = None) -> int:
         f"slippage={args.spread_pip}pip | "
         f"retrain every {args.retrain_interval_days}d"
     )
-    print(f"Ensemble cells ({len(cell_specs)}): {', '.join(cell_specs)}\n")
+    print(
+        f"Ensemble cells ({len(cell_specs)}): {', '.join(cell_specs)} | "
+        f"strategy_conf_threshold={args.strategy_conf_threshold}\n"
+    )
 
     print("Loading candles ...")
     mid_dfs: dict[str, pd.DataFrame] = {}
@@ -1503,6 +1541,7 @@ def main(argv: list[str] | None = None) -> int:
                 args.sl_mult,
                 rng,
                 cell_strategies=cell_strategies,
+                strategy_conf_threshold=args.strategy_conf_threshold,
             )
             fold_results_by_cell[cell_name].append(results)
             for pair, cnt in pair_counts.items():
