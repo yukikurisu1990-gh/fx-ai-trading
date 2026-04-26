@@ -41,14 +41,17 @@ from fx_ai_trading.domain.feature import FeatureSet
 
 # Bump this constant when feature computation logic changes.
 # v3 (2026-04-26) — Phase 9.X-B/J-5: opt-in mtf feature group.
-# When enable_groups is empty, behaviour identical to v2; the version is
-# bumped because the schema is extensible and callers may opt in via
-# FeatureService(enable_groups=frozenset({"mtf"})).
+#                    Phase 9.X-B amendment: opt-in vol feature group also added.
+# When enable_groups is empty, behaviour identical to v2; the version stays
+# v3 because adding a new opt-in group does not change the default schema.
+# FeatureService(enable_groups=frozenset({"mtf"})) or frozenset({"vol"}).
 FEATURE_VERSION = "v3"
 
 # Phase 9.X-B/J-5: opt-in feature groups.
+# - "mtf"  — multi-timeframe extension (4h / daily / weekly stats)
+# - "vol"  — volatility-clustering features (GARCH-like dynamics)
 ENABLE_GROUPS_DEFAULT: frozenset[str] = frozenset()
-_VALID_GROUPS: frozenset[str] = frozenset({"mtf"})
+_VALID_GROUPS: frozenset[str] = frozenset({"mtf", "vol"})
 
 
 class FeatureService:
@@ -105,6 +108,8 @@ class FeatureService:
         feature_stats = _compute_features(candles)
         if "mtf" in self._enable_groups:
             feature_stats.update(_compute_mtf_features(candles))
+        if "vol" in self._enable_groups:
+            feature_stats.update(_compute_vol_features(candles))
         feature_hash = _hash_features(feature_stats)
 
         return FeatureSet(
@@ -455,6 +460,99 @@ def _range_pct_last(bars: list[dict]) -> float:
     if last["close"] == 0.0:
         return 0.0
     return (last["high"] - last["low"]) / last["close"]
+
+
+# ---------------------------------------------------------------------------
+# Phase 9.X-B amendment — vol-clustering feature group (opt-in).
+# ---------------------------------------------------------------------------
+
+_VOL_ZERO_FEATURES: dict[str, float] = {
+    "real_var_5": 0.0,
+    "real_var_20": 0.0,
+    "vol_of_vol_20": 0.0,
+    "var_ratio_5_20": 0.0,
+    "ewma_var_30": 0.0,
+    "ewma_var_60": 0.0,
+}
+
+
+def _compute_vol_features(candles: list[dict]) -> dict[str, float]:
+    """Phase 9.X-B amendment — volatility-clustering features.
+
+    Captures GARCH-like dynamics that the static rolling ATR_14 does not
+    encode. All from close-to-close log-returns; OHLC-only.
+
+    - real_var_5 / real_var_20 — sum of squared log-returns.
+    - vol_of_vol_20 — rolling std of real_var_5.
+    - var_ratio_5_20 — Lo-MacKinlay short/long variance ratio.
+    - ewma_var_30 / ewma_var_60 — EWMA of squared log-returns.
+
+    Pure function. No-lookahead preserved (candles already filtered by
+    build() to timestamp < as_of_time before this is called).
+
+    All-zero output if insufficient history.
+    """
+    if not candles or len(candles) < 2:
+        return dict(_VOL_ZERO_FEATURES)
+
+    closes = [c["close"] for c in candles]
+    log_returns: list[float] = [0.0]  # placeholder for index 0
+    for i in range(1, len(closes)):
+        prev = closes[i - 1]
+        cur = closes[i]
+        if prev <= 0.0 or cur <= 0.0:
+            log_returns.append(0.0)
+        else:
+            log_returns.append(math.log(cur / prev))
+
+    # log_return^2 series, skipping the placeholder at index 0.
+    sq = [r * r for r in log_returns[1:]]
+    if not sq:
+        return dict(_VOL_ZERO_FEATURES)
+
+    # Rolling sums of sq over the last N values (N <= len(sq)).
+    real_var_5 = sum(sq[-5:]) if len(sq) >= 2 else 0.0
+    real_var_20 = sum(sq[-20:]) if len(sq) >= 5 else 0.0
+
+    # vol_of_vol_20: rolling std of the trailing real_var_5 window over
+    # the last 20 bars. Compute the rolling rv5 series first.
+    rv5_series: list[float] = []
+    for end in range(2, len(sq) + 1):  # need at least 2 points for rv5
+        start = max(0, end - 5)
+        rv5_series.append(sum(sq[start:end]))
+    if len(rv5_series) >= 5:
+        window = rv5_series[-20:]
+        mean = sum(window) / len(window)
+        variance = sum((x - mean) ** 2 for x in window) / len(window)
+        vol_of_vol_20 = math.sqrt(variance)
+    else:
+        vol_of_vol_20 = 0.0
+
+    # var_ratio_5_20 = (rv5 / 5) / (rv20 / 20). Requires rv20 > 0.
+    var_ratio_5_20 = (real_var_5 / 5.0) / (real_var_20 / 20.0) if real_var_20 > 0.0 else 0.0
+
+    # EWMA of sq with given half-life. min_periods is a soft floor —
+    # computed when there's enough series to be statistically meaningful.
+    def _ewma(series: list[float], halflife: int, min_periods: int) -> float:
+        if len(series) < min_periods:
+            return 0.0
+        alpha = 1.0 - 0.5 ** (1.0 / halflife)
+        ewm = series[0]
+        for v in series[1:]:
+            ewm = alpha * v + (1.0 - alpha) * ewm
+        return ewm
+
+    ewma_var_30 = _ewma(sq, halflife=30, min_periods=10)
+    ewma_var_60 = _ewma(sq, halflife=60, min_periods=20)
+
+    return {
+        "real_var_5": round(real_var_5, 8),
+        "real_var_20": round(real_var_20, 8),
+        "vol_of_vol_20": round(vol_of_vol_20, 8),
+        "var_ratio_5_20": round(var_ratio_5_20, 8),
+        "ewma_var_30": round(ewma_var_30, 8),
+        "ewma_var_60": round(ewma_var_60, 8),
+    }
 
 
 def _hash_features(feature_stats: dict) -> str:

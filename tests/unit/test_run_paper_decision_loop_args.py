@@ -84,8 +84,10 @@ class TestFeatureGroupsFlag:
         assert args.feature_groups_set == frozenset({"mtf"})
 
     def test_feature_groups_combination_accepted(self) -> None:
-        args = runner._parse_args(["--feature-groups", "vol,moments,mtf"])
-        assert args.feature_groups_set == frozenset({"vol", "moments", "mtf"})
+        # Phase 9.X-B amendment: "moments" was scoped during J-4 plumbing
+        # but never wired into FeatureService — only "vol" and "mtf" remain.
+        args = runner._parse_args(["--feature-groups", "vol,mtf"])
+        assert args.feature_groups_set == frozenset({"vol", "mtf"})
 
     def test_feature_groups_whitespace_stripped(self) -> None:
         args = runner._parse_args(["--feature-groups", " mtf , vol "])
