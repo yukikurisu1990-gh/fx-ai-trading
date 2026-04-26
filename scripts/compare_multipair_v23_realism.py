@@ -201,6 +201,32 @@ _PIP_VALUE_JPY_PER_UNIT: dict[str, float] = {
     "AUD_NZD": 0.009,
 }
 
+# Phase 9.X-N: per-pair notional value in JPY per 1 unit. Used for
+# margin-aware sizing. For pair X_Y, 1 unit = 1 X with notional in JPY
+# = 1 X × (X/JPY rate). Approx fixed cross-rates.
+_NOTIONAL_JPY_PER_UNIT: dict[str, float] = {
+    "EUR_USD": 165.0,
+    "EUR_JPY": 165.0,
+    "EUR_GBP": 165.0,
+    "EUR_CHF": 165.0,
+    "EUR_AUD": 165.0,
+    "EUR_CAD": 165.0,
+    "GBP_USD": 195.0,
+    "GBP_JPY": 195.0,
+    "GBP_AUD": 195.0,
+    "GBP_CHF": 195.0,
+    "AUD_USD": 100.0,
+    "AUD_JPY": 100.0,
+    "AUD_NZD": 100.0,
+    "AUD_CAD": 100.0,
+    "NZD_USD": 90.0,
+    "NZD_JPY": 90.0,
+    "USD_JPY": 150.0,
+    "USD_CHF": 150.0,
+    "USD_CAD": 150.0,
+    "CHF_JPY": 165.0,
+}
+
 
 def _compute_size_units(
     balance_jpy: float,
@@ -209,21 +235,22 @@ def _compute_size_units(
     pip_value_jpy_per_unit: float,
     min_lot: int,
     max_size_units: int = 0,
+    instrument: str = "USD_JPY",
+    max_utilization_pct: float = 30.0,
+    broker_margin_pct: float = 4.0,
 ) -> int:
     """Phase 9.X-I/I-1 risk-based sizing (pip-value-aware variant).
 
-    Worst-case loss if SL hits = N_units × pip_value × sl_pip ≤ risk_amount.
-    → N_units = floor(balance × risk_pct / 100 / pip_value / sl_pip / min_lot) × min_lot
+    Phase 9.X-N margin-aware cap (2026-04-27): in addition to risk_pct
+    sizing, cap by available margin. notional = size × notional_per_unit.
+    margin_required = notional × broker_margin_pct / 100. Constraint:
+    margin_required ≤ balance × max_utilization_pct / 100.
 
-    Phase 9.X-J/J-1 fix (2026-04-27): added optional max_size_units cap.
-    Without this cap, compounding (--enable-compounding) produces
-    physically-impossible sizes when balance grows large (e.g. ¥118B
-    final balance × 1% risk on USD/JPY = millions of units = absurd).
-    Real broker / liquidity / margin limits cap the practical size; this
-    parameter mirrors that constraint. Default 0 disables the cap
-    (reproduces v22 behaviour pre-fix). For realistic compounding
-    simulation pass max_size_units = 100,000 (= 100 mini lots, a
-    reasonable retail FX cap).
+    Defaults: 30% balance utilization, 4% broker margin (OANDA Japan
+    25:1 leverage). For a ¥300k account: max notional per trade =
+    ¥300k × 0.30 / 0.04 = ¥2.25M → USD/JPY 15 mini lots @ ¥150.
+
+    Phase 9.X-J/J-1 fix: max_size_units absolute cap (broker hard limit).
     """
     if (
         sl_pip <= 0
@@ -233,11 +260,21 @@ def _compute_size_units(
         or pip_value_jpy_per_unit <= 0
     ):
         return 0
+    # 1. Risk-based raw size.
     risk_amount = balance_jpy * risk_pct / 100.0
     raw_units = risk_amount / (pip_value_jpy_per_unit * sl_pip)
-    size = int(raw_units // min_lot) * min_lot
+    # 2. Margin-aware cap (Phase 9.X-N).
+    notional_per_unit = _NOTIONAL_JPY_PER_UNIT.get(instrument, 150.0)
+    if notional_per_unit > 0 and broker_margin_pct > 0 and max_utilization_pct > 0:
+        max_notional = balance_jpy * max_utilization_pct / 100.0 / (broker_margin_pct / 100.0)
+        max_units_by_margin = max_notional / notional_per_unit
+        size_raw = min(raw_units, max_units_by_margin)
+    else:
+        size_raw = raw_units
+    # 3. Absolute cap.
     if max_size_units > 0:
-        size = min(size, (max_size_units // min_lot) * min_lot)
+        size_raw = min(size_raw, max_size_units)
+    size = int(size_raw // min_lot) * min_lot
     return size if size >= min_lot else 0
 
 
@@ -1255,6 +1292,8 @@ def _eval_fold(
     initial_balance_jpy: float = 300_000.0,
     min_lot: int = 1000,
     max_size_units: int = 0,
+    max_utilization_pct: float = 30.0,
+    broker_margin_pct: float = 4.0,
     enable_risk_manager: bool = False,
     max_per_instrument_pct: float = 50.0,
     max_same_direction_pct: float = 70.0,
@@ -1686,6 +1725,9 @@ def _eval_fold(
                     pip_value,
                     min_lot,
                     max_size_units,
+                    instrument=pair,
+                    max_utilization_pct=max_utilization_pct,
+                    broker_margin_pct=broker_margin_pct,
                 )
                 if size_b == 0:
                     continue
@@ -2249,6 +2291,25 @@ def main(argv: list[str] | None = None) -> int:
         ),
     )
     parser.add_argument(
+        "--max-utilization-pct",
+        type=float,
+        default=30.0,
+        help=(
+            "Phase 9.X-N margin-aware sizing: max %% of balance to use "
+            "as margin per trade. Default 30. Lower = more conservative. "
+            "0 disables margin cap (legacy behaviour)."
+        ),
+    )
+    parser.add_argument(
+        "--broker-margin-pct",
+        type=float,
+        default=4.0,
+        help=(
+            "Phase 9.X-N margin-aware sizing: broker required margin %%. "
+            "Default 4 (OANDA Japan 25:1 leverage)."
+        ),
+    )
+    parser.add_argument(
         "--enable-compounding",
         action="store_true",
         default=False,
@@ -2492,6 +2553,8 @@ def main(argv: list[str] | None = None) -> int:
                 initial_balance_jpy=balance_for_fold,
                 min_lot=args.min_lot,
                 max_size_units=args.max_size_units,
+                max_utilization_pct=args.max_utilization_pct,
+                broker_margin_pct=args.broker_margin_pct,
                 enable_risk_manager=args.enable_risk_manager,
                 max_per_instrument_pct=args.max_per_instrument_pct,
                 max_same_direction_pct=args.max_same_direction_pct,
