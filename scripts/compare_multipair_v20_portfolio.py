@@ -1395,20 +1395,56 @@ def _eval_fold(
                 ret_mat[1:, i_p] = np.log(cur / prev)
         ret_mat = np.nan_to_num(ret_mat, nan=0.0, posinf=0.0, neginf=0.0)
 
-        # Causal rolling pairwise correlation. Vectorised via pandas.
+        # Causal rolling pairwise correlation tensor — fully vectorised.
+        # Use rolling means / sum-of-squares / sum-of-products to derive
+        # cov and stddev in one pass per pair-pair, avoiding 190 separate
+        # rolling.corr() calls (which were O(hours) on a 9-month walk-fwd).
+        # Memory: (n_lab × n_pairs × n_pairs) × 8 bytes ≈ 16 MB at 5000×20×20.
         ret_df = pd.DataFrame(ret_mat, columns=all_pairs)
-        corr_tensor = np.full((n_lab, n_pairs, n_pairs), np.nan, dtype=np.float64)
-        for i_p in range(n_pairs):
-            for j_p in range(i_p, n_pairs):
-                c = (
-                    ret_df.iloc[:, i_p]
-                    .rolling(corr_window, min_periods=20)
-                    .corr(ret_df.iloc[:, j_p])
-                )
-                ca = c.to_numpy()
-                corr_tensor[:, i_p, j_p] = ca
-                if i_p != j_p:
-                    corr_tensor[:, j_p, i_p] = ca
+        # rolling().sum() and rolling().mean() are O(n) total per column.
+        win = corr_window
+        min_p = min(20, win)
+        # For each pair, rolling mean and rolling sum-of-squares.
+        roll_mean = ret_df.rolling(win, min_periods=min_p).mean().to_numpy()
+        roll_sumsq = (ret_df * ret_df).rolling(win, min_periods=min_p).sum().to_numpy()
+        # Effective window count (smaller at the start where min_periods kicks in).
+        roll_count = (
+            ret_df.notna().astype(float).rolling(win, min_periods=min_p).sum().to_numpy()
+        )
+        # Per-bar variance per pair: E[X²] - (E[X])²; clipped to ≥0.
+        roll_var = roll_sumsq / np.maximum(roll_count, 1.0) - roll_mean**2
+        roll_var = np.clip(roll_var, 0.0, None)
+        roll_std = np.sqrt(roll_var)  # (n_lab, n_pairs)
+
+        # Sum of cross-products X_i · X_j needed for covariance.
+        # Compute via einsum on the windowed tensor — but sliding-window
+        # einsum is memory-heavy. Instead, accumulate cumulative sum and
+        # difference (cumulative-sum trick) for each pair-pair sum-of-products.
+        # ret_mat[:, i] * ret_mat[:, j] cumulative sum, then differenced
+        # over window length gives the rolling sum.
+        cumprod = np.zeros((n_lab + 1, n_pairs, n_pairs), dtype=np.float64)
+        # ret_mat[:, :, None] * ret_mat[:, None, :] is (n_lab, n_pairs, n_pairs).
+        # Avoid materialising the full tensor; loop over time accumulating.
+        for t in range(n_lab):
+            outer = np.outer(ret_mat[t], ret_mat[t])
+            cumprod[t + 1] = cumprod[t] + outer
+        # Rolling sum of products at end-bar t = cumprod[t+1] - cumprod[t+1-win].
+        roll_sumprod = np.full((n_lab, n_pairs, n_pairs), np.nan, dtype=np.float64)
+        for t in range(n_lab):
+            start = max(0, t + 1 - win)
+            roll_sumprod[t] = cumprod[t + 1] - cumprod[start]
+        # Mask out positions where the window has fewer than min_periods samples.
+        eff_count_mat = np.minimum(np.arange(1, n_lab + 1), win).astype(float)
+        # E[X·Y] - E[X]·E[Y] gives cov.
+        # (n_lab, n_pairs, n_pairs)
+        mean_outer = roll_mean[:, :, None] * roll_mean[:, None, :]
+        roll_cov = roll_sumprod / eff_count_mat[:, None, None] - mean_outer
+        std_outer = roll_std[:, :, None] * roll_std[:, None, :]
+        with np.errstate(divide="ignore", invalid="ignore"):
+            corr_tensor = np.where(std_outer > 1e-12, roll_cov / std_outer, np.nan)
+        # Mask early bars (insufficient history).
+        insufficient = eff_count_mat < min_p
+        corr_tensor[insufficient, :, :] = np.nan
 
     # Per-bar SELECTOR pick: array of selected candidate indices per rank.
     sel_cand_idx_per_rank = np.full((k_use, n_lab), -1, dtype=np.int64)
