@@ -208,18 +208,22 @@ def _compute_size_units(
     sl_pip: float,
     pip_value_jpy_per_unit: float,
     min_lot: int,
+    max_size_units: int = 0,
 ) -> int:
     """Phase 9.X-I/I-1 risk-based sizing (pip-value-aware variant).
 
     Worst-case loss if SL hits = N_units × pip_value × sl_pip ≤ risk_amount.
     → N_units = floor(balance × risk_pct / 100 / pip_value / sl_pip / min_lot) × min_lot
 
-    Note: PositionSizerService (src/) has the M10 placeholder formula
-    that assumes 1 pip = 1 unit-currency, which is only correct for a
-    JPY-quoted pair if the account is in JPY. For backtest accuracy
-    across the 20-pair universe we use the correct pip-value-aware
-    formula here, and Phase 7 wiring will replace the production
-    PositionSizer with the same formula.
+    Phase 9.X-J/J-1 fix (2026-04-27): added optional max_size_units cap.
+    Without this cap, compounding (--enable-compounding) produces
+    physically-impossible sizes when balance grows large (e.g. ¥118B
+    final balance × 1% risk on USD/JPY = millions of units = absurd).
+    Real broker / liquidity / margin limits cap the practical size; this
+    parameter mirrors that constraint. Default 0 disables the cap
+    (reproduces v22 behaviour pre-fix). For realistic compounding
+    simulation pass max_size_units = 100,000 (= 100 mini lots, a
+    reasonable retail FX cap).
     """
     if (
         sl_pip <= 0
@@ -232,6 +236,8 @@ def _compute_size_units(
     risk_amount = balance_jpy * risk_pct / 100.0
     raw_units = risk_amount / (pip_value_jpy_per_unit * sl_pip)
     size = int(raw_units // min_lot) * min_lot
+    if max_size_units > 0:
+        size = min(size, (max_size_units // min_lot) * min_lot)
     return size if size >= min_lot else 0
 
 
@@ -1248,6 +1254,7 @@ def _eval_fold(
     risk_pct: float = 1.0,
     initial_balance_jpy: float = 300_000.0,
     min_lot: int = 1000,
+    max_size_units: int = 0,
     enable_risk_manager: bool = False,
     max_per_instrument_pct: float = 50.0,
     max_same_direction_pct: float = 70.0,
@@ -1673,7 +1680,12 @@ def _eval_fold(
                 sl_b = float(pair_sl_pip[pair][b])
                 pip_value = _PIP_VALUE_JPY_PER_UNIT.get(pair, 0.015)  # fallback
                 size_b = _compute_size_units(
-                    initial_balance_jpy, risk_pct, sl_b, pip_value, min_lot
+                    initial_balance_jpy,
+                    risk_pct,
+                    sl_b,
+                    pip_value,
+                    min_lot,
+                    max_size_units,
                 )
                 if size_b == 0:
                     continue
@@ -2228,6 +2240,15 @@ def main(argv: list[str] | None = None) -> int:
         help="Phase 9.X-I/I-1: minimum trade units (1 mini lot). Default 1000.",
     )
     parser.add_argument(
+        "--max-size-units",
+        type=int,
+        default=0,
+        help=(
+            "Phase 9.X-J/J-1 fix: per-trade size cap. 0=no cap. "
+            "Recommended 100000 with --enable-compounding."
+        ),
+    )
+    parser.add_argument(
         "--enable-compounding",
         action="store_true",
         default=False,
@@ -2470,6 +2491,7 @@ def main(argv: list[str] | None = None) -> int:
                 risk_pct=args.risk_pct,
                 initial_balance_jpy=balance_for_fold,
                 min_lot=args.min_lot,
+                max_size_units=args.max_size_units,
                 enable_risk_manager=args.enable_risk_manager,
                 max_per_instrument_pct=args.max_per_instrument_pct,
                 max_same_direction_pct=args.max_same_direction_pct,

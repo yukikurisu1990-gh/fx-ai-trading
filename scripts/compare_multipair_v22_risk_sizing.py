@@ -187,18 +187,11 @@ def _compute_size_units(
     sl_pip: float,
     pip_value_jpy_per_unit: float,
     min_lot: int,
+    max_size_units: int = 0,
 ) -> int:
     """Phase 9.X-I/I-1 risk-based sizing (pip-value-aware variant).
 
-    Worst-case loss if SL hits = N_units × pip_value × sl_pip ≤ risk_amount.
-    → N_units = floor(balance × risk_pct / 100 / pip_value / sl_pip / min_lot) × min_lot
-
-    Note: PositionSizerService (src/) has the M10 placeholder formula
-    that assumes 1 pip = 1 unit-currency, which is only correct for a
-    JPY-quoted pair if the account is in JPY. For backtest accuracy
-    across the 20-pair universe we use the correct pip-value-aware
-    formula here, and Phase 7 wiring will replace the production
-    PositionSizer with the same formula.
+    Phase 9.X-J/J-1 fix (2026-04-27): max_size_units cap. See v23.
     """
     if (
         sl_pip <= 0
@@ -211,6 +204,8 @@ def _compute_size_units(
     risk_amount = balance_jpy * risk_pct / 100.0
     raw_units = risk_amount / (pip_value_jpy_per_unit * sl_pip)
     size = int(raw_units // min_lot) * min_lot
+    if max_size_units > 0:
+        size = min(size, (max_size_units // min_lot) * min_lot)
     return size if size >= min_lot else 0
 
 
@@ -1227,6 +1222,7 @@ def _eval_fold(
     risk_pct: float = 1.0,
     initial_balance_jpy: float = 300_000.0,
     min_lot: int = 1000,
+    max_size_units: int = 0,
 ) -> tuple[dict, dict[str, int], dict[str, int], dict[str, list[float]], list[float]]:
     """Phase 9.19 SELECTOR multi-pick (Top-K) per-fold evaluation.
 
@@ -1533,7 +1529,12 @@ def _eval_fold(
                 sl_b = float(pair_sl_pip[pair][b])
                 pip_value = _PIP_VALUE_JPY_PER_UNIT.get(pair, 0.015)  # fallback
                 size_b = _compute_size_units(
-                    initial_balance_jpy, risk_pct, sl_b, pip_value, min_lot
+                    initial_balance_jpy,
+                    risk_pct,
+                    sl_b,
+                    pip_value,
+                    min_lot,
+                    max_size_units,
                 )
                 if size_b == 0:
                     continue
@@ -1872,20 +1873,26 @@ def _compute_correlation_matrix(
 def _print_per_rank_sharpe(
     per_fold_per_pick_sharpe: list[list[float]], k: int, cell_label: str
 ) -> None:
-    """Phase 9.19: print mean per-rank Sharpe across folds for diagnostics.
+    """DEPRECATED Phase 9.19 fold-mean per-rank Sharpe — kept for back-compat.
 
-    A K-th pick with mean Sharpe << rank-1 indicates dilution; if mean
-    Sharpe < 0, the K-th pick is reducing the portfolio Sharpe.
+    Phase 9.X-I rank-3 audit (2026-04-27) showed this fold-mean estimator
+    is SMALL-SAMPLE BIASED: when per-fold N is small (e.g. rank-3 had
+    ~19 trades/fold), the mean of per-fold Sharpe estimates inflates
+    relative to the pooled (across-folds) Sharpe by a factor that scales
+    inversely with N.
+
+    Specific evidence: rank-3 fold-mean Sharpe was 0.561 while pooled was
+    0.192 — a 2.92x inflation purely from sample-size aggregation, NOT
+    from a real edge. See docs/design/phase9_x_i_rank3_audit_partial.md
+    and the in-line PER-RANK AUDIT block (computed by the pooled
+    function) for the correct numbers.
+
+    This function is now a no-op to prevent further citation of the
+    misleading number. Use ``_print_per_rank_pooled_audit`` instead.
     """
-    _hdr(f"PER-RANK SHARPE (cell={cell_label}, K={k}) - fold-mean")
-    print(f"  {'Rank':<8} {'Mean Sharpe':>14} {'Folds with rank':>18}")
-    print("  " + "-" * 42)
-    for rank in range(k):
-        rank_values = [sharpes[rank] for sharpes in per_fold_per_pick_sharpe if rank < len(sharpes)]
-        if not rank_values:
-            continue
-        mean_sharpe = sum(rank_values) / len(rank_values)
-        print(f"  Rank {rank + 1:<3} {mean_sharpe:>14.3f} {len(rank_values):>18}")
+    # Intentionally suppressed. The pooled audit replaces this output.
+    _ = (per_fold_per_pick_sharpe, k, cell_label)
+    return
 
 
 def _print_per_rank_pooled_audit(
@@ -2138,6 +2145,18 @@ def main(argv: list[str] | None = None) -> int:
         default=1000,
         help="Phase 9.X-I/I-1: minimum trade units (1 mini lot). Default 1000.",
     )
+    parser.add_argument(
+        "--max-size-units",
+        type=int,
+        default=0,
+        help=(
+            "Phase 9.X-J/J-1 fix: per-trade size cap in units. 0 (default) = "
+            "no cap (reproduces pre-fix behaviour). Set to e.g. 100000 (= "
+            "100 mini lots) to model realistic broker / margin / liquidity "
+            "constraints. Strongly recommended when --enable-compounding is "
+            "on; otherwise compounding produces physically impossible sizes."
+        ),
+    )
     args = parser.parse_args(argv)
 
     try:
@@ -2308,6 +2327,7 @@ def main(argv: list[str] | None = None) -> int:
                 risk_pct=args.risk_pct,
                 initial_balance_jpy=args.initial_balance_jpy,
                 min_lot=args.min_lot,
+                max_size_units=args.max_size_units,
             )
             key = (cell_name, k)
             fold_results_by_key[key].append(results)
