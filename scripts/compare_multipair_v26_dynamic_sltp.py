@@ -2354,8 +2354,11 @@ def main(argv: list[str] | None = None) -> int:
             f"(grid={tp_grid}, objective={args.sltp_objective}) ..."
         )
         # First 90 days only — out-of-sample for the walk-forward test set.
+        # Stage-1 needs atr_14 which is computed by _add_m1_features.
         for pair in pairs:
             train_df = mid_dfs[pair].iloc[: 90 * 24 * 60]  # 90 days of m1
+            # Inject ATR-14 minimal feature (without full m1 pipeline overhead).
+            train_df = _add_m1_features(train_df.copy()).iloc[50:]
             best_tp, best_sl, best_score, _all = _optimize_per_pair_sltp(
                 train_df,
                 args.horizon,
