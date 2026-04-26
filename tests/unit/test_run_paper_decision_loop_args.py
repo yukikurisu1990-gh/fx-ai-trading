@@ -66,3 +66,40 @@ class TestTopKFlag:
     def test_top_k_three_accepted(self) -> None:
         args = runner._parse_args(["--top-k", "3"])
         assert args.top_k == 3
+
+
+# ---------------------------------------------------------------------------
+# Phase 9.X-B/J-4 --feature-groups flag (plumbing only)
+# ---------------------------------------------------------------------------
+
+
+class TestFeatureGroupsFlag:
+    def test_feature_groups_default_empty(self) -> None:
+        args = runner._parse_args([])
+        assert args.feature_groups == ""
+        assert args.feature_groups_set == frozenset()
+
+    def test_feature_groups_mtf_accepted(self) -> None:
+        args = runner._parse_args(["--feature-groups", "mtf"])
+        assert args.feature_groups_set == frozenset({"mtf"})
+
+    def test_feature_groups_combination_accepted(self) -> None:
+        args = runner._parse_args(["--feature-groups", "vol,moments,mtf"])
+        assert args.feature_groups_set == frozenset({"vol", "moments", "mtf"})
+
+    def test_feature_groups_whitespace_stripped(self) -> None:
+        args = runner._parse_args(["--feature-groups", " mtf , vol "])
+        assert args.feature_groups_set == frozenset({"mtf", "vol"})
+
+    def test_feature_groups_invalid_rejected(self) -> None:
+        with pytest.raises(SystemExit):
+            runner._parse_args(["--feature-groups", "garbage"])
+
+    def test_feature_groups_partial_invalid_rejected(self) -> None:
+        with pytest.raises(SystemExit):
+            runner._parse_args(["--feature-groups", "mtf,xyz"])
+
+    def test_feature_groups_empty_string_in_list(self) -> None:
+        # Trailing comma is tolerated
+        args = runner._parse_args(["--feature-groups", "mtf,"])
+        assert args.feature_groups_set == frozenset({"mtf"})
