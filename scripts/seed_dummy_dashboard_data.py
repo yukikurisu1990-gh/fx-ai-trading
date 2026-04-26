@@ -77,6 +77,8 @@ def _seed_reference(conn) -> tuple[str, str]:
     for instr, base, quote, pip_loc in (
         ("USD_JPY", "USD", "JPY", -2),
         ("EUR_USD", "EUR", "USD", -4),
+        ("GBP_USD", "GBP", "USD", -4),
+        ("AUD_USD", "AUD", "USD", -4),
     ):
         conn.execute(
             text(
@@ -90,17 +92,46 @@ def _seed_reference(conn) -> tuple[str, str]:
     return demo_id, live_id
 
 
-def _seed_orders_positions(conn, account_id: str, n_filled: int = 5) -> list[str]:
-    """Insert n_filled FILLED orders + matching position rows. Returns order_ids."""
-    order_ids: list[str] = []
-    instruments = ["USD_JPY", "EUR_USD"]
+_INSTRUMENTS = ["USD_JPY", "EUR_USD", "GBP_USD", "AUD_USD"]
+_STRATEGIES = ["LGBM_v1", "MR_BO", "MOMENTUM"]
+_AVG_PRICE = {"USD_JPY": 159.500, "EUR_USD": 1.07500, "GBP_USD": 1.27500, "AUD_USD": 0.66500}
+_REASON_CODES = [
+    ("TP_HIT", 0.45),
+    ("SL_HIT", 0.30),
+    ("TIME_STOP", 0.15),
+    ("TRAIL_STOP", 0.07),
+    ("MANUAL_CLOSE", 0.03),
+]
+
+
+def _weighted_choice(pairs: list[tuple]) -> object:
+    """Choose from [(value, weight), ...]."""
+    r = random.random() * sum(w for _, w in pairs)
+    cum = 0.0
+    for v, w in pairs:
+        cum += w
+        if r <= cum:
+            return v
+    return pairs[-1][0]
+
+
+def _seed_orders_positions(
+    conn, account_id: str, n_filled: int = 60, span_days: int = 30
+) -> list[tuple[str, datetime]]:
+    """Insert n_filled FILLED orders distributed over span_days.
+
+    Returns list of (order_id, filled_at) tuples for use by _seed_close_events.
+    """
+    order_ids: list[tuple[str, datetime]] = []
+    base_t = _now() - timedelta(days=span_days)
     for _ in range(n_filled):
         oid = generate_ulid()
-        instr = random.choice(instruments)
+        instr = random.choice(_INSTRUMENTS)
+        strat = random.choice(_STRATEGIES)
         direction = random.choice(["buy", "sell"])
-        units = random.choice([1000, 5000, 10000])
-        ago_min = random.randint(5, 240)
-        created = _now() - timedelta(minutes=ago_min)
+        units = random.choice([1000, 5000, 10000, 25000])
+        offset_min = random.randint(0, span_days * 24 * 60)
+        created = base_t + timedelta(minutes=offset_min)
         filled = created + timedelta(seconds=random.randint(1, 5))
         conn.execute(
             text(
@@ -110,7 +141,7 @@ def _seed_orders_positions(conn, account_id: str, n_filled: int = 5) -> list[str
             ),
             {
                 "oid": oid,
-                "cid": f"{oid}:{instr}:DUMMY_STRAT",
+                "cid": f"{oid}:{instr}:{strat}",
                 "aid": account_id,
                 "i": instr,
                 "at": "demo" if "demo" in account_id else "live",
@@ -120,8 +151,7 @@ def _seed_orders_positions(conn, account_id: str, n_filled: int = 5) -> list[str
                 "c": created,
             },
         )
-        # position open snapshot
-        avg_price = 159.500 if instr == "USD_JPY" else 1.07500
+        avg_price = _AVG_PRICE[instr]
         conn.execute(
             text(
                 "INSERT INTO positions (position_snapshot_id, order_id, account_id,"
@@ -139,14 +169,29 @@ def _seed_orders_positions(conn, account_id: str, n_filled: int = 5) -> list[str
                 "t": filled,
             },
         )
-        order_ids.append(oid)
+        order_ids.append((oid, filled))
     return order_ids
 
 
-def _seed_close_events(conn, order_ids: list[str]) -> None:
-    reason_codes = ["TP_HIT", "SL_HIT", "TIME_STOP", "MANUAL_CLOSE"]
-    for oid in order_ids[:3]:
-        rc = random.choice(reason_codes)
+def _seed_close_events(conn, order_ids: list[tuple[str, datetime]]) -> None:
+    """Close most orders with realistic reason / PnL distribution."""
+    for oid, filled in order_ids:
+        if random.random() < 0.15:
+            continue  # ~15% remain open
+        rc = _weighted_choice(_REASON_CODES)
+        # Realistic PnL: TP positive, SL negative, others mixed.
+        if rc == "TP_HIT":
+            pnl = round(random.uniform(400, 3500), 2)
+        elif rc == "SL_HIT":
+            pnl = round(random.uniform(-3000, -400), 2)
+        elif rc == "TIME_STOP":
+            pnl = round(random.gauss(-100, 500), 2)
+        elif rc == "TRAIL_STOP":
+            pnl = round(random.uniform(100, 1800), 2)
+        else:  # MANUAL_CLOSE
+            pnl = round(random.gauss(0, 800), 2)
+        hold_min = random.randint(5, 480)
+        closed_at = filled + timedelta(minutes=hold_min)
         conn.execute(
             text(
                 "INSERT INTO close_events (close_event_id, order_id, reasons,"
@@ -156,16 +201,16 @@ def _seed_close_events(conn, order_ids: list[str]) -> None:
             {
                 "ceid": generate_ulid(),
                 "oid": oid,
-                "rs": json.dumps([{"priority": 1, "reason_code": rc, "detail": "dummy"}]),
+                "rs": json.dumps([{"priority": 1, "reason_code": str(rc), "detail": "dummy"}]),
                 "pr": rc,
-                "t": _now() - timedelta(minutes=random.randint(1, 60)),
-                "pnl": round(random.uniform(-1500, 2500), 2),
+                "t": closed_at,
+                "pnl": pnl,
             },
         )
 
 
-def _seed_execution_metrics(conn, order_ids: list[str]) -> None:
-    for oid in order_ids:
+def _seed_execution_metrics(conn, order_ids: list[tuple[str, datetime]]) -> None:
+    for oid, _ in order_ids:
         conn.execute(
             text(
                 "INSERT INTO execution_metrics (execution_metric_id, order_id,"
@@ -301,11 +346,11 @@ def main() -> int:
         print("Seeding reference (broker + accounts) ...")
         demo_id, live_id = _seed_reference(conn)
 
-        print(f"Seeding orders + positions for {demo_id} ...")
-        demo_orders = _seed_orders_positions(conn, demo_id, n_filled=6)
+        print(f"Seeding orders + positions for {demo_id} (60 trades over 30d) ...")
+        demo_orders = _seed_orders_positions(conn, demo_id, n_filled=60, span_days=30)
 
-        print(f"Seeding orders + positions for {live_id} ...")
-        live_orders = _seed_orders_positions(conn, live_id, n_filled=4)
+        print(f"Seeding orders + positions for {live_id} (40 trades over 30d) ...")
+        live_orders = _seed_orders_positions(conn, live_id, n_filled=40, span_days=30)
 
         print("Seeding close_events ...")
         _seed_close_events(conn, demo_orders + live_orders)
