@@ -83,7 +83,10 @@ _ENV_OANDA_ACCESS_TOKEN = "OANDA_ACCESS_TOKEN"
 # Default 100 bars covers Phase 9.16 baseline (SMA_50 needs ≥50 bars).
 # When --feature-groups mtf is active, weekly stats need ≥7 days of m5
 # bars (~2,016) — depth is auto-expanded in run() based on enabled groups.
+# When --feature-groups vol is active, ewma_var_60 needs ~7 half-lives
+# (~420 bars) for the EWMA to converge cleanly.
 _HISTORY_DEPTH_BASELINE = 100
+_HISTORY_DEPTH_VOL = 500  # halflife=60 EWMA × ~7 half-lives + safety margin
 _HISTORY_DEPTH_MTF = 2100  # 7d × 24h × 12 bars/h + safety margin
 _HISTORY_DEPTH = _HISTORY_DEPTH_BASELINE  # back-compat module-level alias
 
@@ -156,7 +159,10 @@ def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     args = p.parse_args(argv)
     if args.top_k < 1:
         p.error(f"--top-k must be >= 1 (got {args.top_k})")
-    valid_groups = {"vol", "moments", "mtf"}
+    # Must mirror feature_service._VALID_GROUPS. "moments" was scoped during
+    # J-4 plumbing but never wired into FeatureService — leave it out so a
+    # typo doesn't reach runtime.
+    valid_groups = {"vol", "mtf"}
     feature_groups = {g.strip() for g in args.feature_groups.split(",") if g.strip()}
     invalid_groups = feature_groups - valid_groups
     if invalid_groups:
@@ -391,10 +397,16 @@ def run(args: argparse.Namespace, *, env: dict[str, str] | None = None) -> int:
     ]
 
     # Rolling per-instrument candle history (fed before FeatureService.build).
-    # Phase 9.X-B/J-5: depth auto-expanded when --feature-groups mtf is set
-    # because weekly stats need ≥7 days of m5 bars (~2,016).
+    # Phase 9.X-B/J-5: depth auto-expanded when --feature-groups mtf or vol
+    # is set; mtf needs ≥7 days of m5 bars (~2,016) and vol needs ~7
+    # half-lives of EWMA convergence (~420 bars). max() picks the larger
+    # when both are enabled.
     enable_groups: frozenset[str] = args.feature_groups_set
-    history_depth = _HISTORY_DEPTH_MTF if "mtf" in enable_groups else _HISTORY_DEPTH_BASELINE
+    history_depth = _HISTORY_DEPTH_BASELINE
+    if "mtf" in enable_groups:
+        history_depth = max(history_depth, _HISTORY_DEPTH_MTF)
+    if "vol" in enable_groups:
+        history_depth = max(history_depth, _HISTORY_DEPTH_VOL)
     history: dict[str, deque] = {inst: deque(maxlen=history_depth) for inst in active_instruments}
     feature_service = _make_feature_service(history, enable_groups=enable_groups)
 
