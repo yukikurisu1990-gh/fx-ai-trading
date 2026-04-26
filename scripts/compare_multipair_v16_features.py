@@ -580,13 +580,11 @@ def _add_higher_moment_features(df: pd.DataFrame) -> pd.DataFrame:
     logret = np.log(close / close.shift(1))
     df["skew_20"] = logret.rolling(20, min_periods=10).skew()
     df["kurt_20"] = logret.rolling(20, min_periods=10).kurt()
-    # Rolling Pearson autocorrelation lag-k.
-    df["autocorr_lag1"] = logret.rolling(20, min_periods=10).apply(
-        lambda x: pd.Series(x).autocorr(lag=1), raw=False
-    )
-    df["autocorr_lag5"] = logret.rolling(20, min_periods=10).apply(
-        lambda x: pd.Series(x).autocorr(lag=5), raw=False
-    )
+    # Rolling Pearson autocorrelation lag-k — vectorised via rolling.corr
+    # of (logret, logret.shift(k)). The .apply(lambda) pure-Python form
+    # was prohibitively slow at 20-pair × 500k-bar scale.
+    df["autocorr_lag1"] = logret.rolling(20, min_periods=10).corr(logret.shift(1))
+    df["autocorr_lag5"] = logret.rolling(20, min_periods=10).corr(logret.shift(5))
     return df
 
 
