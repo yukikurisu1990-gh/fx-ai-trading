@@ -1,0 +1,1679 @@
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+Pairs (20): EUR_USD, GBP_USD, AUD_USD, NZD_USD, USD_CHF, USD_CAD, EUR_GBP, USD_JPY, EUR_JPY, GBP_JPY, AUD_JPY, NZD_JPY, CHF_JPY, EUR_CHF, EUR_AUD, EUR_CAD, AUD_NZD, AUD_CAD, GBP_AUD, GBP_CHF
+Base: EUR_USD | training_label TP/SL = 1.5/1.0 xATR | horizon=20 | conf>=0.5 | slippage=0.0pip | retrain every 90d
+Ensemble cells (2): lgbm_only, lgbm+mr+bo | strategy_conf_threshold=0.0
+Top-K sweep: K in [1, 2, 3, 5] | diversify_by_currency=no
+
+Loading candles ...
+  EUR_USD: 370,638 bars  (BA mode)  2025-04-24 -> 2026-04-24
+  GBP_USD: 370,667 bars  (BA mode)  2025-04-24 -> 2026-04-24
+  AUD_USD: 369,531 bars  (BA mode)  2025-04-24 -> 2026-04-24
+  NZD_USD: 368,738 bars  (BA mode)  2025-04-24 -> 2026-04-24
+  USD_CHF: 369,053 bars  (BA mode)  2025-04-24 -> 2026-04-24
+  USD_CAD: 370,120 bars  (BA mode)  2025-04-24 -> 2026-04-24
+  EUR_GBP: 369,715 bars  (BA mode)  2025-04-24 -> 2026-04-24
+  USD_JPY: 370,544 bars  (BA mode)  2025-04-24 -> 2026-04-24
+  EUR_JPY: 370,567 bars  (BA mode)  2025-04-24 -> 2026-04-24
+  GBP_JPY: 371,479 bars  (BA mode)  2025-04-24 -> 2026-04-24
+  AUD_JPY: 369,975 bars  (BA mode)  2025-04-25 -> 2026-04-24
+  NZD_JPY: 366,855 bars  (BA mode)  2025-04-25 -> 2026-04-24
+  CHF_JPY: 367,402 bars  (BA mode)  2025-04-25 -> 2026-04-24
+  EUR_CHF: 367,889 bars  (BA mode)  2025-04-25 -> 2026-04-24
+  EUR_AUD: 369,942 bars  (BA mode)  2025-04-25 -> 2026-04-24
+  EUR_CAD: 369,151 bars  (BA mode)  2025-04-25 -> 2026-04-24
+  AUD_NZD: 368,611 bars  (BA mode)  2025-04-25 -> 2026-04-24
+  AUD_CAD: 363,371 bars  (BA mode)  2025-04-25 -> 2026-04-24
+  GBP_AUD: 369,018 bars  (BA mode)  2025-04-25 -> 2026-04-24
+  GBP_CHF: 367,191 bars  (BA mode)  2025-04-25 -> 2026-04-24
+
+Building features (per pair, baseline + Phase 9.X-B groups: ['mtf']) ...
+  EUR_USD: 370,588 rows  370,567 labeled
+  GBP_USD: 370,617 rows  370,596 labeled
+  AUD_USD: 369,481 rows  369,460 labeled
+  NZD_USD: 368,688 rows  368,667 labeled
+  USD_CHF: 369,003 rows  368,982 labeled
+  USD_CAD: 370,070 rows  370,049 labeled
+  EUR_GBP: 369,665 rows  369,644 labeled
+  USD_JPY: 370,494 rows  370,473 labeled
+  EUR_JPY: 370,517 rows  370,496 labeled
+  GBP_JPY: 371,429 rows  371,408 labeled
+  AUD_JPY: 369,925 rows  369,904 labeled
+  NZD_JPY: 366,805 rows  366,784 labeled
+  CHF_JPY: 367,352 rows  367,331 labeled
+  EUR_CHF: 367,839 rows  367,818 labeled
+  EUR_AUD: 369,892 rows  369,871 labeled
+  EUR_CAD: 369,101 rows  369,080 labeled
+  AUD_NZD: 368,561 rows  368,540 labeled
+  AUD_CAD: 363,321 rows  363,300 labeled
+  GBP_AUD: 368,968 rows  368,947 labeled
+  GBP_CHF: 367,141 rows  367,120 labeled
+
+Folds: 39  retrains at: [0, 13, 26]
+Feature columns (51): spread bundle (Phase 9.15/F-1 winner)
+
+Phase 9.X-C/M-1 LSTM Mode A enabled: device=cuda, sequence=100, hidden=64, epochs=10, batch=256, lr=0.001
+Running folds (train once -> eval per (cell, K) sweep cell) ...
+  Fold  0* SEL Sharpe: lgbm_oK1= 0.06  lgbm_oK2= 0.07  lgbm_oK3= 0.06  lgbm_oK5= 0.07  lgbm+mK1= 0.04  lgbm+mK2= 0.05  lgbm+mK3= 0.05  lgbm+mK5= 0.08
+  Fold  1  SEL Sharpe: lgbm_oK1=-0.04  lgbm_oK2=-0.01  lgbm_oK3= 0.01  lgbm_oK5= 0.01  lgbm+mK1= 0.01  lgbm+mK2= 0.03  lgbm+mK3= 0.05  lgbm+mK5= 0.07
+  Fold  2  SEL Sharpe: lgbm_oK1= 0.09  lgbm_oK2= 0.10  lgbm_oK3= 0.10  lgbm_oK5= 0.10  lgbm+mK1= 0.05  lgbm+mK2= 0.05  lgbm+mK3= 0.05  lgbm+mK5= 0.06
+  Fold  3  SEL Sharpe: lgbm_oK1= 0.10  lgbm_oK2= 0.13  lgbm_oK3= 0.13  lgbm_oK5= 0.13  lgbm+mK1= 0.05  lgbm+mK2= 0.07  lgbm+mK3= 0.07  lgbm+mK5= 0.08
+  Fold  4  SEL Sharpe: lgbm_oK1= 0.01  lgbm_oK2= 0.01  lgbm_oK3= 0.03  lgbm_oK5= 0.05  lgbm+mK1= 0.01  lgbm+mK2= 0.02  lgbm+mK3= 0.04  lgbm+mK5= 0.04
+  Fold  5  SEL Sharpe: lgbm_oK1= 0.04  lgbm_oK2= 0.06  lgbm_oK3= 0.06  lgbm_oK5= 0.06  lgbm+mK1= 0.08  lgbm+mK2= 0.07  lgbm+mK3= 0.07  lgbm+mK5= 0.07
+  Fold  6  SEL Sharpe: lgbm_oK1= 0.06  lgbm_oK2= 0.08  lgbm_oK3= 0.07  lgbm_oK5= 0.05  lgbm+mK1= 0.03  lgbm+mK2= 0.03  lgbm+mK3= 0.03  lgbm+mK5= 0.03
+  Fold  7  SEL Sharpe: lgbm_oK1= 0.08  lgbm_oK2= 0.11  lgbm_oK3= 0.11  lgbm_oK5= 0.09  lgbm+mK1= 0.04  lgbm+mK2= 0.05  lgbm+mK3= 0.06  lgbm+mK5= 0.06
+  Fold  8  SEL Sharpe: lgbm_oK1= 0.08  lgbm_oK2= 0.09  lgbm_oK3= 0.08  lgbm_oK5= 0.07  lgbm+mK1= 0.03  lgbm+mK2= 0.04  lgbm+mK3= 0.04  lgbm+mK5= 0.05
+  Fold  9  SEL Sharpe: lgbm_oK1= 0.03  lgbm_oK2= 0.01  lgbm_oK3= 0.01  lgbm_oK5= 0.01  lgbm+mK1= 0.02  lgbm+mK2= 0.04  lgbm+mK3= 0.04  lgbm+mK5= 0.07
+  Fold 10  SEL Sharpe: lgbm_oK1= 0.02  lgbm_oK2= 0.07  lgbm_oK3= 0.07  lgbm_oK5= 0.08  lgbm+mK1= 0.01  lgbm+mK2= 0.02  lgbm+mK3= 0.03  lgbm+mK5= 0.05
+  Fold 11  SEL Sharpe: lgbm_oK1= 0.04  lgbm_oK2= 0.07  lgbm_oK3= 0.08  lgbm_oK5= 0.08  lgbm+mK1= 0.02  lgbm+mK2= 0.03  lgbm+mK3= 0.05  lgbm+mK5= 0.06
+  Fold 12  SEL Sharpe: lgbm_oK1= 0.01  lgbm_oK2= 0.01  lgbm_oK3= 0.01  lgbm_oK5= 0.02  lgbm+mK1= 0.02  lgbm+mK2= 0.04  lgbm+mK3= 0.06  lgbm+mK5= 0.07
+  Fold 13* SEL Sharpe: lgbm_oK1= 0.08  lgbm_oK2= 0.07  lgbm_oK3= 0.08  lgbm_oK5= 0.08  lgbm+mK1= 0.03  lgbm+mK2= 0.04  lgbm+mK3= 0.05  lgbm+mK5= 0.06
+  Fold 14  SEL Sharpe: lgbm_oK1= 0.09  lgbm_oK2= 0.08  lgbm_oK3= 0.09  lgbm_oK5= 0.10  lgbm+mK1= 0.04  lgbm+mK2= 0.05  lgbm+mK3= 0.05  lgbm+mK5= 0.07
+  Fold 15  SEL Sharpe: lgbm_oK1= 0.08  lgbm_oK2= 0.09  lgbm_oK3= 0.08  lgbm_oK5= 0.08  lgbm+mK1= 0.04  lgbm+mK2= 0.05  lgbm+mK3= 0.05  lgbm+mK5= 0.05
+  Fold 16  SEL Sharpe: lgbm_oK1= 0.08  lgbm_oK2= 0.06  lgbm_oK3= 0.07  lgbm_oK5= 0.07  lgbm+mK1= 0.06  lgbm+mK2= 0.06  lgbm+mK3= 0.07  lgbm+mK5= 0.08
+  Fold 17  SEL Sharpe: lgbm_oK1= 0.04  lgbm_oK2= 0.06  lgbm_oK3= 0.05  lgbm_oK5= 0.05  lgbm+mK1= 0.01  lgbm+mK2= 0.04  lgbm+mK3= 0.05  lgbm+mK5= 0.06
+  Fold 18  SEL Sharpe: lgbm_oK1= 0.06  lgbm_oK2= 0.05  lgbm_oK3= 0.05  lgbm_oK5= 0.05  lgbm+mK1= 0.01  lgbm+mK2= 0.03  lgbm+mK3= 0.04  lgbm+mK5= 0.04
+  Fold 19  SEL Sharpe: lgbm_oK1= 0.03  lgbm_oK2= 0.06  lgbm_oK3= 0.09  lgbm_oK5= 0.09  lgbm+mK1= 0.03  lgbm+mK2= 0.04  lgbm+mK3= 0.06  lgbm+mK5= 0.05
+  Fold 20  SEL Sharpe: lgbm_oK1= 0.04  lgbm_oK2= 0.07  lgbm_oK3= 0.07  lgbm_oK5= 0.07  lgbm+mK1= 0.04  lgbm+mK2= 0.07  lgbm+mK3= 0.07  lgbm+mK5= 0.08
+  Fold 21  SEL Sharpe: lgbm_oK1= 0.00  lgbm_oK2= 0.01  lgbm_oK3= 0.01  lgbm_oK5= 0.01  lgbm+mK1= 0.01  lgbm+mK2= 0.03  lgbm+mK3= 0.03  lgbm+mK5= 0.03
+  Fold 22  SEL Sharpe: lgbm_oK1=-0.06  lgbm_oK2=-0.05  lgbm_oK3=-0.06  lgbm_oK5=-0.06  lgbm+mK1= 0.02  lgbm+mK2= 0.04  lgbm+mK3= 0.05  lgbm+mK5= 0.05
+  Fold 23  SEL Sharpe: lgbm_oK1= 0.04  lgbm_oK2= 0.03  lgbm_oK3= 0.03  lgbm_oK5= 0.03  lgbm+mK1= 0.02  lgbm+mK2= 0.03  lgbm+mK3= 0.04  lgbm+mK5= 0.04
+  Fold 24  SEL Sharpe: lgbm_oK1= 0.03  lgbm_oK2= 0.10  lgbm_oK3= 0.10  lgbm_oK5= 0.10  lgbm+mK1= 0.02  lgbm+mK2= 0.03  lgbm+mK3= 0.04  lgbm+mK5= 0.04
+  Fold 25  SEL Sharpe: lgbm_oK1= 0.03  lgbm_oK2= 0.04  lgbm_oK3= 0.06  lgbm_oK5= 0.07  lgbm+mK1= 0.03  lgbm+mK2= 0.04  lgbm+mK3= 0.07  lgbm+mK5= 0.09
+  Fold 26* SEL Sharpe: lgbm_oK1= 0.08  lgbm_oK2= 0.09  lgbm_oK3= 0.11  lgbm_oK5= 0.11  lgbm+mK1= 0.03  lgbm+mK2= 0.04  lgbm+mK3= 0.07  lgbm+mK5= 0.07
+  Fold 27  SEL Sharpe: lgbm_oK1= 0.07  lgbm_oK2= 0.05  lgbm_oK3= 0.06  lgbm_oK5= 0.07  lgbm+mK1= 0.06  lgbm+mK2= 0.08  lgbm+mK3= 0.08  lgbm+mK5= 0.10
+  Fold 28  SEL Sharpe: lgbm_oK1= 0.03  lgbm_oK2= 0.05  lgbm_oK3= 0.06  lgbm_oK5= 0.06  lgbm+mK1= 0.02  lgbm+mK2= 0.04  lgbm+mK3= 0.05  lgbm+mK5= 0.07
+  Fold 29  SEL Sharpe: lgbm_oK1= 0.06  lgbm_oK2= 0.07  lgbm_oK3= 0.08  lgbm_oK5= 0.09  lgbm+mK1= 0.04  lgbm+mK2= 0.05  lgbm+mK3= 0.06  lgbm+mK5= 0.08
+  Fold 30  SEL Sharpe: lgbm_oK1= 0.02  lgbm_oK2= 0.02  lgbm_oK3= 0.02  lgbm_oK5= 0.02  lgbm+mK1= 0.03  lgbm+mK2= 0.04  lgbm+mK3= 0.04  lgbm+mK5= 0.05
+  Fold 31  SEL Sharpe: lgbm_oK1= 0.06  lgbm_oK2= 0.08  lgbm_oK3= 0.07  lgbm_oK5= 0.06  lgbm+mK1= 0.06  lgbm+mK2= 0.06  lgbm+mK3= 0.07  lgbm+mK5= 0.09
+  Fold 32  SEL Sharpe: lgbm_oK1= 0.07  lgbm_oK2= 0.05  lgbm_oK3= 0.05  lgbm_oK5= 0.05  lgbm+mK1= 0.04  lgbm+mK2= 0.06  lgbm+mK3= 0.07  lgbm+mK5= 0.09
+  Fold 33  SEL Sharpe: lgbm_oK1= 0.06  lgbm_oK2= 0.09  lgbm_oK3= 0.10  lgbm_oK5= 0.10  lgbm+mK1= 0.01  lgbm+mK2= 0.04  lgbm+mK3= 0.05  lgbm+mK5= 0.06
+  Fold 34  SEL Sharpe: lgbm_oK1= 0.09  lgbm_oK2= 0.09  lgbm_oK3= 0.09  lgbm_oK5= 0.09  lgbm+mK1= 0.06  lgbm+mK2= 0.07  lgbm+mK3= 0.08  lgbm+mK5= 0.09
+  Fold 35  SEL Sharpe: lgbm_oK1= 0.04  lgbm_oK2= 0.03  lgbm_oK3= 0.02  lgbm_oK5= 0.02  lgbm+mK1= 0.03  lgbm+mK2= 0.03  lgbm+mK3= 0.05  lgbm+mK5= 0.06C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1517: RuntimeWarning: Mean of empty slice
+  mean_per_bar = np.nanmean(masked, axis=0)  # NaN where nothing traded
+C:\Users\yukik\fx-ai-trading\scripts\compare_multipair_v17_lstm.py:1545: RuntimeWarning: Mean of empty slice
+  mean_strat = np.nanmean(masked_strat, axis=0)
+
+  Fold 36  SEL Sharpe: lgbm_oK1= 0.04  lgbm_oK2= 0.03  lgbm_oK3= 0.04  lgbm_oK5= 0.04  lgbm+mK1= 0.03  lgbm+mK2= 0.04  lgbm+mK3= 0.05  lgbm+mK5= 0.05
+  Fold 37  SEL Sharpe: lgbm_oK1= 0.01  lgbm_oK2= 0.03  lgbm_oK3= 0.03  lgbm_oK5= 0.03  lgbm+mK1= 0.00  lgbm+mK2= 0.00  lgbm+mK3= 0.00  lgbm+mK5=-0.00
+  Fold 38  SEL Sharpe: lgbm_oK1= 0.00  lgbm_oK2= 0.01  lgbm_oK3= 0.02  lgbm_oK5= 0.04  lgbm+mK1= 0.01  lgbm+mK2= 0.02  lgbm+mK3= 0.04  lgbm+mK5= 0.06
+
+====================================================================================================
+  COMPARISON SUMMARY (cell='lgbm_only (K=1)'  slippage=0.00pip; bid/ask spread already in labels)
+====================================================================================================
+  Strategy      NetSharpe   NetPnL(pip)  MaxDD(pip)   DD%PnL  WinFold%   SigRate     Trades
+  ----------------------------------------------------------------------------------------------------
+  EURUSD_ML         0.050        1051.1       183.9    17.5%       64%      4.1%     11,411
+  SELECTOR          0.050        6125.7       189.0     3.1%       95%     34.7%     95,945
+  EQUAL_AVG         0.056        5828.4       146.9     2.5%       95%     34.7%     95,945
+  RANDOM            0.037         368.6        66.8    18.1%       77%      2.4%      6,753
+
+====================================================================================================
+  STRATEGY SHARE IN SELECTOR (cell='lgbm_only (K=1)')
+====================================================================================================
+  Strategy        Picks    Share
+  --------------------------------
+  lgbm           95,945   100.0%
+
+====================================================================================================
+  PHASE 9.17 VERDICT (cell='lgbm_only (K=1)'; slippage=0.00pip)
+====================================================================================================
+  EURUSD_ML  Sharpe=0.050  PnL=1051 pip  DD=184 pip (17% of PnL)
+  SELECTOR   Sharpe=0.050  PnL=6126 pip  DD=189 pip (3% of PnL)  (vs EU: Sh -0.000, PnL +5075)
+  vs Phase 9.16 baseline (lgbm_only PnL=6126): ratio=1.00x
+  Max inter-strategy rho (this cell): 0.000
+
+  [PnL-priority + correlation gate -- per docs/design/phase9_17_design_memo.md sec.5]
+  [NO ADOPT] PnL<baseline OR DD%PnL>5% OR rho>0.6 (rho=0.000, ratio=1.00x, DD%PnL=3.1%)
+
+====================================================================================================
+  COMPARISON SUMMARY (cell='lgbm_only (K=2)'  slippage=0.00pip; bid/ask spread already in labels)
+====================================================================================================
+  Strategy      NetSharpe   NetPnL(pip)  MaxDD(pip)   DD%PnL  WinFold%   SigRate     Trades
+  ----------------------------------------------------------------------------------------------------
+  EURUSD_ML         0.050        1051.1       183.9    17.5%       64%      4.1%     11,411
+  SELECTOR          0.057        8752.7       166.8     1.9%       95%     34.7%     95,945
+  EQUAL_AVG         0.056        5828.4       146.9     2.5%       95%     34.7%     95,945
+  RANDOM            0.049         558.8        38.2     6.8%       67%      2.5%      6,948
+
+====================================================================================================
+  STRATEGY SHARE IN SELECTOR (cell='lgbm_only (K=2)')
+====================================================================================================
+  Strategy        Picks    Share
+  --------------------------------
+  lgbm          124,750   100.0%
+
+====================================================================================================
+  PER-RANK SHARPE (cell=lgbm_only (K=2), K=2) - fold-mean
+====================================================================================================
+  Rank        Mean Sharpe    Folds with rank
+  ------------------------------------------
+  Rank 1            0.045                 39
+  Rank 2            0.054                 39
+
+====================================================================================================
+  PHASE 9.17 VERDICT (cell='lgbm_only (K=2)'; slippage=0.00pip)
+====================================================================================================
+  EURUSD_ML  Sharpe=0.050  PnL=1051 pip  DD=184 pip (17% of PnL)
+  SELECTOR   Sharpe=0.057  PnL=8753 pip  DD=167 pip (2% of PnL)  (vs EU: Sh +0.007, PnL +7702)
+  vs Phase 9.16 baseline (lgbm_only PnL=6126): ratio=1.43x
+  Max inter-strategy rho (this cell): 0.000
+
+  [PnL-priority + correlation gate -- per docs/design/phase9_17_design_memo.md sec.5]
+  [GO] PnL>=1.10x baseline AND rho<=0.4 AND Sharpe>=baseline AND DD%PnL<=5% (rho=0.000)
+
+====================================================================================================
+  COMPARISON SUMMARY (cell='lgbm_only (K=3)'  slippage=0.00pip; bid/ask spread already in labels)
+====================================================================================================
+  Strategy      NetSharpe   NetPnL(pip)  MaxDD(pip)   DD%PnL  WinFold%   SigRate     Trades
+  ----------------------------------------------------------------------------------------------------
+  EURUSD_ML         0.050        1051.1       183.9    17.5%       64%      4.1%     11,411
+  SELECTOR          0.060       10115.9       187.1     1.8%       97%     34.7%     95,945
+  EQUAL_AVG         0.056        5828.4       146.9     2.5%       95%     34.7%     95,945
+  RANDOM            0.046         451.6        51.8    11.5%       82%      2.5%      6,805
+
+====================================================================================================
+  STRATEGY SHARE IN SELECTOR (cell='lgbm_only (K=3)')
+====================================================================================================
+  Strategy        Picks    Share
+  --------------------------------
+  lgbm          133,148   100.0%
+
+====================================================================================================
+  PER-RANK SHARPE (cell=lgbm_only (K=3), K=3) - fold-mean
+====================================================================================================
+  Rank        Mean Sharpe    Folds with rank
+  ------------------------------------------
+  Rank 1            0.045                 39
+  Rank 2            0.054                 39
+  Rank 3            0.060                 39
+
+====================================================================================================
+  PHASE 9.17 VERDICT (cell='lgbm_only (K=3)'; slippage=0.00pip)
+====================================================================================================
+  EURUSD_ML  Sharpe=0.050  PnL=1051 pip  DD=184 pip (17% of PnL)
+  SELECTOR   Sharpe=0.060  PnL=10116 pip  DD=187 pip (2% of PnL)  (vs EU: Sh +0.010, PnL +9065)
+  vs Phase 9.16 baseline (lgbm_only PnL=6126): ratio=1.65x
+  Max inter-strategy rho (this cell): 0.000
+
+  [PnL-priority + correlation gate -- per docs/design/phase9_17_design_memo.md sec.5]
+  [GO] PnL>=1.10x baseline AND rho<=0.4 AND Sharpe>=baseline AND DD%PnL<=5% (rho=0.000)
+
+====================================================================================================
+  COMPARISON SUMMARY (cell='lgbm_only (K=5)'  slippage=0.00pip; bid/ask spread already in labels)
+====================================================================================================
+  Strategy      NetSharpe   NetPnL(pip)  MaxDD(pip)   DD%PnL  WinFold%   SigRate     Trades
+  ----------------------------------------------------------------------------------------------------
+  EURUSD_ML         0.050        1051.1       183.9    17.5%       64%      4.1%     11,411
+  SELECTOR          0.061       10538.4       217.3     2.1%       97%     34.7%     95,945
+  EQUAL_AVG         0.056        5828.4       146.9     2.5%       95%     34.7%     95,945
+  RANDOM            0.050         523.1        47.9     9.2%       74%      2.5%      6,892
+
+====================================================================================================
+  STRATEGY SHARE IN SELECTOR (cell='lgbm_only (K=5)')
+====================================================================================================
+  Strategy        Picks    Share
+  --------------------------------
+  lgbm          136,265   100.0%
+
+====================================================================================================
+  PER-RANK SHARPE (cell=lgbm_only (K=5), K=5) - fold-mean
+====================================================================================================
+  Rank        Mean Sharpe    Folds with rank
+  ------------------------------------------
+  Rank 1            0.045                 39
+  Rank 2            0.054                 39
+  Rank 3            0.060                 39
+  Rank 4            0.061                 39
+  Rank 5            0.043                 39
+
+====================================================================================================
+  PHASE 9.17 VERDICT (cell='lgbm_only (K=5)'; slippage=0.00pip)
+====================================================================================================
+  EURUSD_ML  Sharpe=0.050  PnL=1051 pip  DD=184 pip (17% of PnL)
+  SELECTOR   Sharpe=0.061  PnL=10538 pip  DD=217 pip (2% of PnL)  (vs EU: Sh +0.011, PnL +9487)
+  vs Phase 9.16 baseline (lgbm_only PnL=6126): ratio=1.72x
+  Max inter-strategy rho (this cell): 0.000
+
+  [PnL-priority + correlation gate -- per docs/design/phase9_17_design_memo.md sec.5]
+  [GO] PnL>=1.10x baseline AND rho<=0.4 AND Sharpe>=baseline AND DD%PnL<=5% (rho=0.000)
+
+====================================================================================================
+  COMPARISON SUMMARY (cell='lgbm+mr+bo (K=1)'  slippage=0.00pip; bid/ask spread already in labels)
+====================================================================================================
+  Strategy      NetSharpe   NetPnL(pip)  MaxDD(pip)   DD%PnL  WinFold%   SigRate     Trades
+  ----------------------------------------------------------------------------------------------------
+  EURUSD_ML         0.050        1051.1       183.9    17.5%       64%      4.1%     11,411
+  SELECTOR          0.031        7513.4       168.9     2.2%      100%     86.1%    237,913
+  EQUAL_AVG         0.066        9080.4        69.8     0.8%      100%     86.1%    237,913
+  RANDOM            0.049         460.1        49.7    10.8%       72%      2.4%      6,586
+
+====================================================================================================
+  STRATEGY SHARE IN SELECTOR (cell='lgbm+mr+bo (K=1)')
+====================================================================================================
+  Strategy        Picks    Share
+  --------------------------------
+  bo            123,624    52.0%
+  mr             67,242    28.3%
+  lgbm           47,047    19.8%
+
+====================================================================================================
+  INTER-STRATEGY CORRELATION (Pearson on per-bar mean gross PnL)
+====================================================================================================
+              bo      lgbm        mr
+  ----------------------------------
+  bo        +1.000    -0.041    -0.582
+  lgbm      -0.041    +1.000    +0.088
+  mr        -0.582    +0.088    +1.000
+
+====================================================================================================
+  PHASE 9.17 VERDICT (cell='lgbm+mr+bo (K=1)'; slippage=0.00pip)
+====================================================================================================
+  EURUSD_ML  Sharpe=0.050  PnL=1051 pip  DD=184 pip (17% of PnL)
+  SELECTOR   Sharpe=0.031  PnL=7513 pip  DD=169 pip (2% of PnL)  (vs EU: Sh -0.019, PnL +6462)
+  vs Phase 9.16 baseline (lgbm_only PnL=6126): ratio=1.23x
+  Max inter-strategy rho (this cell): 0.582
+
+  [PnL-priority + correlation gate -- per docs/design/phase9_17_design_memo.md sec.5]
+  [NO ADOPT] PnL<baseline OR DD%PnL>5% OR rho>0.6 (rho=0.582, ratio=1.23x, DD%PnL=2.2%)
+
+====================================================================================================
+  COMPARISON SUMMARY (cell='lgbm+mr+bo (K=2)'  slippage=0.00pip; bid/ask spread already in labels)
+====================================================================================================
+  Strategy      NetSharpe   NetPnL(pip)  MaxDD(pip)   DD%PnL  WinFold%   SigRate     Trades
+  ----------------------------------------------------------------------------------------------------
+  EURUSD_ML         0.050        1051.1       183.9    17.5%       64%      4.1%     11,411
+  SELECTOR          0.043       14932.6       179.1     1.2%      100%     86.1%    237,913
+  EQUAL_AVG         0.066        9080.4        69.8     0.8%      100%     86.1%    237,913
+  RANDOM            0.059         597.5        43.4     7.3%       69%      2.5%      6,815
+
+====================================================================================================
+  STRATEGY SHARE IN SELECTOR (cell='lgbm+mr+bo (K=2)')
+====================================================================================================
+  Strategy        Picks    Share
+  --------------------------------
+  bo            211,016    48.4%
+  mr            149,730    34.3%
+  lgbm           75,564    17.3%
+
+====================================================================================================
+  INTER-STRATEGY CORRELATION (Pearson on per-bar mean gross PnL)
+====================================================================================================
+              bo      lgbm        mr
+  ----------------------------------
+  bo        +1.000    -0.041    -0.582
+  lgbm      -0.041    +1.000    +0.088
+  mr        -0.582    +0.088    +1.000
+
+====================================================================================================
+  PER-RANK SHARPE (cell=lgbm+mr+bo (K=2), K=2) - fold-mean
+====================================================================================================
+  Rank        Mean Sharpe    Folds with rank
+  ------------------------------------------
+  Rank 1            0.030                 39
+  Rank 2            0.036                 39
+
+====================================================================================================
+  PHASE 9.17 VERDICT (cell='lgbm+mr+bo (K=2)'; slippage=0.00pip)
+====================================================================================================
+  EURUSD_ML  Sharpe=0.050  PnL=1051 pip  DD=184 pip (17% of PnL)
+  SELECTOR   Sharpe=0.043  PnL=14933 pip  DD=179 pip (1% of PnL)  (vs EU: Sh -0.007, PnL +13881)
+  vs Phase 9.16 baseline (lgbm_only PnL=6126): ratio=2.44x
+  Max inter-strategy rho (this cell): 0.582
+
+  [PnL-priority + correlation gate -- per docs/design/phase9_17_design_memo.md sec.5]
+  [NO ADOPT] PnL<baseline OR DD%PnL>5% OR rho>0.6 (rho=0.582, ratio=2.44x, DD%PnL=1.2%)
+
+====================================================================================================
+  COMPARISON SUMMARY (cell='lgbm+mr+bo (K=3)'  slippage=0.00pip; bid/ask spread already in labels)
+====================================================================================================
+  Strategy      NetSharpe   NetPnL(pip)  MaxDD(pip)   DD%PnL  WinFold%   SigRate     Trades
+  ----------------------------------------------------------------------------------------------------
+  EURUSD_ML         0.050        1051.1       183.9    17.5%       64%      4.1%     11,411
+  SELECTOR          0.051       22256.5       216.6     1.0%      100%     86.1%    237,913
+  EQUAL_AVG         0.066        9080.4        69.8     0.8%      100%     86.1%    237,913
+  RANDOM            0.056         753.8        58.2     7.7%       77%      2.5%      6,906
+
+====================================================================================================
+  STRATEGY SHARE IN SELECTOR (cell='lgbm+mr+bo (K=3)')
+====================================================================================================
+  Strategy        Picks    Share
+  --------------------------------
+  bo            277,840    46.3%
+  mr            229,284    38.2%
+  lgbm           93,322    15.5%
+
+====================================================================================================
+  INTER-STRATEGY CORRELATION (Pearson on per-bar mean gross PnL)
+====================================================================================================
+              bo      lgbm        mr
+  ----------------------------------
+  bo        +1.000    -0.041    -0.582
+  lgbm      -0.041    +1.000    +0.088
+  mr        -0.582    +0.088    +1.000
+
+====================================================================================================
+  PER-RANK SHARPE (cell=lgbm+mr+bo (K=3), K=3) - fold-mean
+====================================================================================================
+  Rank        Mean Sharpe    Folds with rank
+  ------------------------------------------
+  Rank 1            0.030                 39
+  Rank 2            0.036                 39
+  Rank 3            0.040                 39
+
+====================================================================================================
+  PHASE 9.17 VERDICT (cell='lgbm+mr+bo (K=3)'; slippage=0.00pip)
+====================================================================================================
+  EURUSD_ML  Sharpe=0.050  PnL=1051 pip  DD=184 pip (17% of PnL)
+  SELECTOR   Sharpe=0.051  PnL=22256 pip  DD=217 pip (1% of PnL)  (vs EU: Sh +0.001, PnL +21205)
+  vs Phase 9.16 baseline (lgbm_only PnL=6126): ratio=3.63x
+  Max inter-strategy rho (this cell): 0.582
+
+  [PnL-priority + correlation gate -- per docs/design/phase9_17_design_memo.md sec.5]
+  [PARTIAL GO] PnL>=1.05x baseline AND Sharpe>=baseline; rho=0.582 drags expected lift
+
+====================================================================================================
+  COMPARISON SUMMARY (cell='lgbm+mr+bo (K=5)'  slippage=0.00pip; bid/ask spread already in labels)
+====================================================================================================
+  Strategy      NetSharpe   NetPnL(pip)  MaxDD(pip)   DD%PnL  WinFold%   SigRate     Trades
+  ----------------------------------------------------------------------------------------------------
+  EURUSD_ML         0.050        1051.1       183.9    17.5%       64%      4.1%     11,411
+  SELECTOR          0.062       34241.7       201.5     0.6%       97%     86.1%    237,913
+  EQUAL_AVG         0.066        9080.4        69.8     0.8%      100%     86.1%    237,913
+  RANDOM            0.063         653.3        35.4     5.4%       82%      2.5%      6,873
+
+====================================================================================================
+  STRATEGY SHARE IN SELECTOR (cell='lgbm+mr+bo (K=5)')
+====================================================================================================
+  Strategy        Picks    Share
+  --------------------------------
+  bo            372,728    44.0%
+  mr            361,600    42.7%
+  lgbm          112,587    13.3%
+
+====================================================================================================
+  INTER-STRATEGY CORRELATION (Pearson on per-bar mean gross PnL)
+====================================================================================================
+              bo      lgbm        mr
+  ----------------------------------
+  bo        +1.000    -0.041    -0.582
+  lgbm      -0.041    +1.000    +0.088
+  mr        -0.582    +0.088    +1.000
+
+====================================================================================================
+  PER-RANK SHARPE (cell=lgbm+mr+bo (K=5), K=5) - fold-mean
+====================================================================================================
+  Rank        Mean Sharpe    Folds with rank
+  ------------------------------------------
+  Rank 1            0.030                 39
+  Rank 2            0.036                 39
+  Rank 3            0.040                 39
+  Rank 4            0.038                 39
+  Rank 5            0.043                 39
+
+====================================================================================================
+  PHASE 9.17 VERDICT (cell='lgbm+mr+bo (K=5)'; slippage=0.00pip)
+====================================================================================================
+  EURUSD_ML  Sharpe=0.050  PnL=1051 pip  DD=184 pip (17% of PnL)
+  SELECTOR   Sharpe=0.062  PnL=34242 pip  DD=202 pip (1% of PnL)  (vs EU: Sh +0.012, PnL +33191)
+  vs Phase 9.16 baseline (lgbm_only PnL=6126): ratio=5.59x
+  Max inter-strategy rho (this cell): 0.582
+
+  [PnL-priority + correlation gate -- per docs/design/phase9_17_design_memo.md sec.5]
+  [PARTIAL GO] PnL>=1.05x baseline AND Sharpe>=baseline; rho=0.582 drags expected lift
+
+====================================================================================================
+  MULTI-CELL TOP-K SWEEP SUMMARY (SELECTOR)
+====================================================================================================
+  Cell              K  NetSharpe   NetPnL(pip)  MaxDD(pip)   DD%PnL   MaxRho     Trades
+  ----------------------------------------------------------------------------------------------------
+  lgbm_only         1      0.050        6125.7       189.0     3.1%    0.000     95,945
+  lgbm_only         2      0.057        8752.7       166.8     1.9%    0.000     95,945  (1.43x)
+  lgbm_only         3      0.060       10115.9       187.1     1.8%    0.000     95,945  (1.65x)
+  lgbm_only         5      0.061       10538.4       217.3     2.1%    0.000     95,945  (1.72x)
+  lgbm+mr+bo        1      0.031        7513.4       168.9     2.2%    0.582    237,913  (1.23x)
+  lgbm+mr+bo        2      0.043       14932.6       179.1     1.2%    0.582    237,913  (2.44x)
+  lgbm+mr+bo        3      0.051       22256.5       216.6     1.0%    0.582    237,913  (3.63x)
+  lgbm+mr+bo        5      0.062       34241.7       201.5     0.6%    0.582    237,913  (5.59x)
