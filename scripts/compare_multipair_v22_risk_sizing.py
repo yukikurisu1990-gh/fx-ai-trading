@@ -1546,12 +1546,16 @@ def _eval_fold(
     # Per-pick (per-rank) Sharpe diagnostic: across folds, what is the
     # standalone Sharpe of just the rank-r pick? Useful to detect dilution.
     per_pick_sharpe: list[float] = []
+    # Phase 9.X-I rank-3 audit: also keep per-rank net pnl LIST so the
+    # caller can pool across folds and verify fold-mean vs pooled Sharpe.
+    per_rank_pnls_pip: list[list[float]] = []
     for r in range(k_use):
         cidx_r = sel_cand_idx_per_rank[r]
         valid = cidx_r >= 0
         rank_gross = per_rank_gross[r][valid]
         rank_net = rank_gross - spread_pip
         per_pick_sharpe.append(_sharpe(rank_net.tolist()) if rank_net.size > 1 else 0.0)
+        per_rank_pnls_pip.append(rank_net.tolist())
 
     # ----- EQUAL_AVG: mean of all (pair, strategy) gross PnLs per bar -----
     masked = np.where(traded_mat, gross_mat, np.nan)
@@ -1626,6 +1630,9 @@ def _eval_fold(
         results["SELECTOR"]["net_pnls_jpy"] = []
         results["SELECTOR"]["bar_pnls_jpy"] = []
         results["SELECTOR"]["bar_timestamps_ns"] = []
+
+    # Phase 9.X-I rank-3 audit: per-rank pnl list for cross-fold pooling.
+    results["SELECTOR"]["per_rank_pnls_pip"] = per_rank_pnls_pip
 
     return (
         results,
@@ -1879,6 +1886,52 @@ def _print_per_rank_sharpe(
             continue
         mean_sharpe = sum(rank_values) / len(rank_values)
         print(f"  Rank {rank + 1:<3} {mean_sharpe:>14.3f} {len(rank_values):>18}")
+
+
+def _print_per_rank_pooled_audit(
+    per_fold_per_rank_pnls: list[list[list[float]]], k: int, cell_label: str
+) -> None:
+    """Phase 9.X-I rank-3 audit: pooled-Sharpe + outcome distribution.
+
+    Concatenates per-rank pnl across all folds and computes a single
+    Sharpe (item 8 of the audit). Also reports trade-count distribution
+    (item 4) and outcome breakdown (item 5/6/7).
+    """
+    _hdr(f"PER-RANK AUDIT (cell={cell_label}, K={k}) - pooled across folds")
+    print(
+        f"  {'Rank':<8} {'NTrades':>9} {'Pooled Sh':>11} {'Win%':>8} "
+        f"{'Loss%':>8} {'TO%':>7} {'MeanPip':>9} {'StdPip':>9} "
+        f"{'FoldNMin':>10} {'FoldNMax':>10}"
+    )
+    print("  " + "-" * 95)
+    for rank in range(k):
+        all_pnls: list[float] = []
+        per_fold_n: list[int] = []
+        for fold_pnls in per_fold_per_rank_pnls:
+            if rank < len(fold_pnls):
+                all_pnls.extend(fold_pnls[rank])
+                per_fold_n.append(len(fold_pnls[rank]))
+            else:
+                per_fold_n.append(0)
+        n = len(all_pnls)
+        if n == 0:
+            print(f"  Rank {rank + 1}    0  (no trades)")
+            continue
+        wins = sum(1 for v in all_pnls if v > 0)
+        losses = sum(1 for v in all_pnls if v < 0)
+        zeros = n - wins - losses
+        mean_pip = sum(all_pnls) / n
+        var_pip = sum((v - mean_pip) ** 2 for v in all_pnls) / n
+        std_pip = var_pip**0.5
+        pooled_sh = (mean_pip / std_pip) if std_pip > 0 else 0.0
+        fold_n_min = min(per_fold_n) if per_fold_n else 0
+        fold_n_max = max(per_fold_n) if per_fold_n else 0
+        print(
+            f"  Rank {rank + 1:<3} {n:>9,} {pooled_sh:>11.4f} "
+            f"{100 * wins / n:>7.1f}% {100 * losses / n:>7.1f}% "
+            f"{100 * zeros / n:>6.1f}% {mean_pip:>9.3f} {std_pip:>9.3f} "
+            f"{fold_n_min:>10} {fold_n_max:>10}"
+        )
 
 
 def _print_correlation_matrix(rho_pairs: dict[tuple[str, str], float]) -> None:
@@ -2215,6 +2268,10 @@ def main(argv: list[str] | None = None) -> int:
     per_pick_sharpes_by_key: dict[tuple[str, int], list[list[float]]] = {
         key: [] for key in sweep_keys
     }
+    # Phase 9.X-I rank-3 audit: per-fold per-rank pnl lists for pooled stats.
+    per_rank_pnls_by_key: dict[tuple[str, int], list[list[list[float]]]] = {
+        key: [] for key in sweep_keys
+    }
 
     print("Running folds (train once -> eval per (cell, K) sweep cell) ...")
     for fid, fold in enumerate(folds):
@@ -2261,6 +2318,8 @@ def main(argv: list[str] | None = None) -> int:
             for strat, series in pnl_series.items():
                 pnl_series_by_key[key][strat].extend(series)
             per_pick_sharpes_by_key[key].append(per_pick)
+            # Phase 9.X-I rank-3 audit: collect per-rank pnl per fold for pooling.
+            per_rank_pnls_by_key[key].append(results["SELECTOR"].get("per_rank_pnls_pip", []) or [])
             short_label = f"{cell_name[:6]}K{k}"
             sharpe_strs.append(f"{short_label}={results['SELECTOR']['net_sharpe']:>5.2f}")
         print(f"  Fold{fid:>3}{retrain_marker} SEL Sharpe: " + "  ".join(sharpe_strs))
@@ -2285,6 +2344,8 @@ def main(argv: list[str] | None = None) -> int:
         # Per-rank Sharpe across folds (mean over folds).
         if k > 1 and per_pick_sharpes_by_key[key]:
             _print_per_rank_sharpe(per_pick_sharpes_by_key[key], k, cell_label)
+            # Phase 9.X-I rank-3 audit: pooled-Sharpe + outcome distribution.
+            _print_per_rank_pooled_audit(per_rank_pnls_by_key[key], k, cell_label)
         _print_verdict(agg, args.spread_pip, cell_label, rho_pairs, baseline_cell_pnl)
         cell_summaries.append((cell_name, k, agg, rho_pairs))
 
