@@ -2241,15 +2241,15 @@ def main(argv: list[str] | None = None) -> int:
                 f"{sel['total_trades']:>10,}{ratio}"
             )
 
-        # Phase 9.X-I/I-1: ¥-based summary block (only when risk-sizing on).
+        # Phase 9.X-I/I-1: JPY-based summary block (only when risk-sizing on).
         if args.enable_risk_sizing:
             _hdr(
-                f"PHASE 9.X-I/I-1 — RISK-BASED ¥ SUMMARY "
-                f"(balance=¥{args.initial_balance_jpy:,.0f}, risk={args.risk_pct}%)"
+                f"PHASE 9.X-I/I-1 - RISK-BASED JPY SUMMARY "
+                f"(balance=JPY{args.initial_balance_jpy:,.0f}, risk={args.risk_pct}%)"
             )
             print(
                 f"  {'Cell':<14} {'K':>4} {'Sharpe(JPY)':>12} {'NetPnL(JPY)':>14} "
-                f"{'MaxDD(JPY)':>12} {'DD%PnL':>8} {'Sharpe Δ':>10}"
+                f"{'MaxDD(JPY)':>12} {'DD%PnL':>8} {'Sharpe d':>10}"
             )
             print("  " + "-" * 100)
             for cell_name, k, agg, _rho in cell_summaries:
@@ -2265,7 +2265,7 @@ def main(argv: list[str] | None = None) -> int:
                     f"{dd_jpy:>12,.0f} {dd_pct_jpy:>7.1f}% {delta:>+10.3f}"
                 )
             print()
-            print("  Sharpe Δ > 0 → variance equalisation working (¥-Sharpe lifted vs pip-Sharpe)")
+            print("  Sharpe d > 0 -> variance equalisation working (JPY-Sharpe vs pip-Sharpe)")
 
     return 0
 

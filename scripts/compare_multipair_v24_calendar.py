@@ -2620,14 +2620,14 @@ def main(argv: list[str] | None = None) -> int:
         # Phase 9.X-J/J-1: compounding summary (final balance per cell).
         if args.enable_compounding:
             _hdr(
-                f"PHASE 9.X-J/J-1 — COMPOUNDING SUMMARY (initial=¥{args.initial_balance_jpy:,.0f})"
+                f"PHASE 9.X-J/J-1 - COMPOUNDING SUMMARY (initial=JPY{args.initial_balance_jpy:,.0f})"
             )
             print(
                 f"  {'Cell':<14} {'K':>4} {'FinalBalance':>14} {'Return':>10} {'AnnualReturn':>14}"
             )
             print("  " + "-" * 80)
             n_folds = len(folds)
-            # 39 folds × 7 days ≈ 273 days ≈ 9 months.
+            # 39 folds x 7 days ~ 273 days ~ 9 months.
             years = n_folds * 7.0 / 365.0 if n_folds else 1.0
             for cell_name, k, _agg, _rho in cell_summaries:
                 key = (cell_name, k)
@@ -2638,20 +2638,20 @@ def main(argv: list[str] | None = None) -> int:
                 else:
                     annualized = 0.0
                 print(
-                    f"  {cell_name:<14} {k:>4} ¥{final_balance:>12,.0f} "
+                    f"  {cell_name:<14} {k:>4} JPY{final_balance:>11,.0f} "
                     f"{ret * 100:>9.1f}% {annualized * 100:>13.1f}%"
                 )
             print()
 
-        # Phase 9.X-I/I-1: ¥-based summary block (only when risk-sizing on).
+        # Phase 9.X-I/I-1: JPY-based summary block (only when risk-sizing on).
         if args.enable_risk_sizing:
             _hdr(
-                f"PHASE 9.X-I/I-1 — RISK-BASED ¥ SUMMARY "
-                f"(balance=¥{args.initial_balance_jpy:,.0f}, risk={args.risk_pct}%)"
+                f"PHASE 9.X-I/I-1 - RISK-BASED JPY SUMMARY "
+                f"(balance=JPY{args.initial_balance_jpy:,.0f}, risk={args.risk_pct}%)"
             )
             print(
                 f"  {'Cell':<14} {'K':>4} {'Sharpe(JPY)':>12} {'NetPnL(JPY)':>14} "
-                f"{'MaxDD(JPY)':>12} {'DD%PnL':>8} {'Sharpe Δ':>10}"
+                f"{'MaxDD(JPY)':>12} {'DD%PnL':>8} {'Sharpe d':>10}"
             )
             print("  " + "-" * 100)
             for cell_name, k, agg, _rho in cell_summaries:
@@ -2667,7 +2667,7 @@ def main(argv: list[str] | None = None) -> int:
                     f"{dd_jpy:>12,.0f} {dd_pct_jpy:>7.1f}% {delta:>+10.3f}"
                 )
             print()
-            print("  Sharpe Δ > 0 → variance equalisation working (¥-Sharpe lifted vs pip-Sharpe)")
+            print("  Sharpe d > 0 -> variance equalisation working (JPY-Sharpe vs pip-Sharpe)")
 
     return 0
 
