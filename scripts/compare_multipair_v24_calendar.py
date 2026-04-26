@@ -1882,10 +1882,18 @@ def _eval_fold(
         results["SELECTOR"]["net_sharpe_jpy"] = _sharpe(sel_net_jpy.tolist())
         results["SELECTOR"]["net_pnl_jpy"] = float(sel_net_jpy.sum())
         results["SELECTOR"]["net_pnls_jpy"] = sel_net_jpy.tolist()
+        # Phase 9.X-K: per-bar JPY series (full n_lab including zero bars)
+        # plus aligned timestamps in ns for daily-Sharpe aggregation.
+        # All trades resolve within their bar (TB labelling), so per-bar
+        # JPY is realized PnL = MTM closure for that bar's positions.
+        results["SELECTOR"]["bar_pnls_jpy"] = sel_jpy_all.tolist()
+        results["SELECTOR"]["bar_timestamps_ns"] = [int(pd.Timestamp(t).value) for t in base_ts]
     else:
         results["SELECTOR"]["net_sharpe_jpy"] = 0.0
         results["SELECTOR"]["net_pnl_jpy"] = 0.0
         results["SELECTOR"]["net_pnls_jpy"] = []
+        results["SELECTOR"]["bar_pnls_jpy"] = []
+        results["SELECTOR"]["bar_timestamps_ns"] = []
 
     return (
         results,
@@ -1924,7 +1932,7 @@ def _max_drawdown(pnl_series: list[float]) -> float:
 # ---------------------------------------------------------------------------
 
 
-def _aggregate(fold_results: list[dict]) -> dict:
+def _aggregate(fold_results: list[dict], initial_balance_jpy: float = 300_000.0) -> dict:
     agg: dict[str, dict] = {}
     strats = ["EURUSD_ML", "SELECTOR", "EQUAL_AVG", "RANDOM"]
     for s in strats:
@@ -1957,6 +1965,9 @@ def _aggregate(fold_results: list[dict]) -> dict:
         )
         sharpe_jpy = _sharpe(all_net_jpy) if len(all_net_jpy) >= 2 else 0.0
 
+        # Phase 9.X-K: daily-bar JPY aggregation → daily Sharpe (annualized) + DD on equity.
+        daily_metrics = _compute_daily_metrics(fold_results, s, initial_balance_jpy)
+
         agg[s] = {
             "overall_sharpe_net": _sharpe(all_net),
             "mean_fold_net_sharpe": mean_sh,
@@ -1975,8 +1986,104 @@ def _aggregate(fold_results: list[dict]) -> dict:
             "net_pnl_jpy": net_pnl_jpy,
             "max_drawdown_jpy": max_dd_jpy,
             "max_dd_pct_of_pnl_jpy": dd_pct_of_pnl_jpy,
+            # Phase 9.X-K daily metrics
+            **daily_metrics,
         }
     return agg
+
+
+def _compute_daily_metrics(
+    fold_results: list[dict],
+    strategy: str,
+    initial_balance_jpy: float,
+) -> dict:
+    """Phase 9.X-K: daily-bar aggregation -> annualized Sharpe + equity max DD.
+
+    Concatenate per-bar JPY PnL across folds, group by calendar day (UTC),
+    fill missing days with 0 (no-trade days), then build equity curve from
+    initial_balance and compute annualized Sharpe and max drawdown on that
+    equity series.
+
+    Empty inputs return zero metrics. Daily Sharpe annualised by sqrt(252).
+    """
+    bar_pnls: list[float] = []
+    bar_ts_ns: list[int] = []
+    for fr in fold_results:
+        bp = fr.get(strategy, {}).get("bar_pnls_jpy", []) or []
+        bt = fr.get(strategy, {}).get("bar_timestamps_ns", []) or []
+        bar_pnls.extend(bp)
+        bar_ts_ns.extend(bt)
+
+    if not bar_pnls or not bar_ts_ns or len(bar_pnls) != len(bar_ts_ns):
+        return {
+            "daily_sharpe_annualized": 0.0,
+            "daily_max_drawdown_jpy": 0.0,
+            "daily_max_drawdown_pct": 0.0,
+            "daily_n_days": 0,
+            "daily_mean_return_pct": 0.0,
+            "daily_std_return_pct": 0.0,
+        }
+
+    ts_index = pd.to_datetime(np.asarray(bar_ts_ns, dtype="int64"))
+    series = pd.Series(bar_pnls, index=ts_index, dtype=np.float64)
+    # Group by UTC calendar day. normalize() drops time component.
+    daily_pnl = series.groupby(series.index.normalize()).sum().sort_index()
+    if daily_pnl.empty:
+        return {
+            "daily_sharpe_annualized": 0.0,
+            "daily_max_drawdown_jpy": 0.0,
+            "daily_max_drawdown_pct": 0.0,
+            "daily_n_days": 0,
+            "daily_mean_return_pct": 0.0,
+            "daily_std_return_pct": 0.0,
+        }
+    # Reindex to full date range so no-trade days are 0 returns.
+    full_range = pd.date_range(
+        daily_pnl.index.min(), daily_pnl.index.max(), freq="D", tz=daily_pnl.index.tz
+    )
+    daily_pnl = daily_pnl.reindex(full_range, fill_value=0.0)
+
+    # Build equity curve. Start from initial_balance the day BEFORE the first
+    # series day so that the first daily return is well defined.
+    initial_eq = float(initial_balance_jpy)
+    equity_after = initial_eq + daily_pnl.cumsum()
+    equity = pd.concat(
+        [
+            pd.Series([initial_eq], index=[daily_pnl.index[0] - pd.Timedelta(days=1)]),
+            equity_after,
+        ]
+    )
+    daily_returns = equity.pct_change().dropna()
+
+    if len(daily_returns) < 2:
+        return {
+            "daily_sharpe_annualized": 0.0,
+            "daily_max_drawdown_jpy": 0.0,
+            "daily_max_drawdown_pct": 0.0,
+            "daily_n_days": int(len(daily_pnl)),
+            "daily_mean_return_pct": (
+                float(daily_returns.mean() * 100.0) if len(daily_returns) else 0.0
+            ),
+            "daily_std_return_pct": 0.0,
+        }
+    mean_r = float(daily_returns.mean())
+    std_r = float(daily_returns.std(ddof=1))
+    annualized_sharpe = (mean_r / std_r) * math.sqrt(252.0) if std_r > 0 else 0.0
+    # Max DD on equity curve (post-initial point onwards): worst peak-to-trough.
+    eq_post = equity.iloc[1:]
+    peak = eq_post.cummax()
+    drawdown_jpy = peak - eq_post
+    max_dd_jpy = float(drawdown_jpy.max())
+    max_dd_pct = float((drawdown_jpy / peak).max() * 100.0) if peak.gt(0).all() else 0.0
+
+    return {
+        "daily_sharpe_annualized": annualized_sharpe,
+        "daily_max_drawdown_jpy": max_dd_jpy,
+        "daily_max_drawdown_pct": max_dd_pct,
+        "daily_n_days": int(len(daily_pnl)),
+        "daily_mean_return_pct": float(mean_r * 100.0),
+        "daily_std_return_pct": float(std_r * 100.0),
+    }
 
 
 def _hdr(title: str) -> None:
@@ -2570,13 +2677,13 @@ def main(argv: list[str] | None = None) -> int:
     cell_summaries: list[tuple[str, int, dict, dict[tuple[str, str], float]]] = []
     baseline_cell_pnl: float | None = None
     for key in sweep_keys:
-        agg = _aggregate(fold_results_by_key[key])
+        agg = _aggregate(fold_results_by_key[key], args.initial_balance_jpy)
         if key == (_CELL_LGBM_ONLY, 1):
             baseline_cell_pnl = agg["SELECTOR"]["net_pnl"]
 
     for key in sweep_keys:
         cell_name, k = key
-        agg = _aggregate(fold_results_by_key[key])
+        agg = _aggregate(fold_results_by_key[key], args.initial_balance_jpy)
         rho_pairs = _compute_correlation_matrix(pnl_series_by_key[key])
         cell_label = f"{cell_name} (K={k})"
         _print_comparison(agg, args.spread_pip, cell_label)
@@ -2620,7 +2727,8 @@ def main(argv: list[str] | None = None) -> int:
         # Phase 9.X-J/J-1: compounding summary (final balance per cell).
         if args.enable_compounding:
             _hdr(
-                f"PHASE 9.X-J/J-1 - COMPOUNDING SUMMARY (initial=JPY{args.initial_balance_jpy:,.0f})"
+                "PHASE 9.X-J/J-1 - COMPOUNDING SUMMARY "
+                f"(initial=JPY{args.initial_balance_jpy:,.0f})"
             )
             print(
                 f"  {'Cell':<14} {'K':>4} {'FinalBalance':>14} {'Return':>10} {'AnnualReturn':>14}"
@@ -2668,6 +2776,35 @@ def main(argv: list[str] | None = None) -> int:
                 )
             print()
             print("  Sharpe d > 0 -> variance equalisation working (JPY-Sharpe vs pip-Sharpe)")
+
+        # Phase 9.X-K: daily annualized Sharpe + max DD on equity curve.
+        if args.enable_risk_sizing:
+            _hdr(
+                f"PHASE 9.X-K - DAILY ANNUALIZED SHARPE + MAX DD "
+                f"(initial=JPY{args.initial_balance_jpy:,.0f}, sqrt(252) annualization)"
+            )
+            print(
+                f"  {'Cell':<14} {'K':>4} {'DailySharpe':>12} {'MeanRet%':>10} "
+                f"{'StdRet%':>10} {'MaxDD(JPY)':>13} {'MaxDD%':>9} {'NDays':>7}"
+            )
+            print("  " + "-" * 100)
+            for cell_name, k, agg, _rho in cell_summaries:
+                sel = agg["SELECTOR"]
+                ds = sel.get("daily_sharpe_annualized", 0.0)
+                mr = sel.get("daily_mean_return_pct", 0.0)
+                sr = sel.get("daily_std_return_pct", 0.0)
+                dd = sel.get("daily_max_drawdown_jpy", 0.0)
+                ddp = sel.get("daily_max_drawdown_pct", 0.0)
+                nd = sel.get("daily_n_days", 0)
+                print(
+                    f"  {cell_name:<14} {k:>4} {ds:>12.3f} {mr:>9.4f}% "
+                    f"{sr:>9.4f}% {dd:>13,.0f} {ddp:>8.2f}% {nd:>7}"
+                )
+            print()
+            print(
+                "  daily_return = equity_t / equity_{t-1} - 1; zero-return days included; "
+                "annualized = mean/std * sqrt(252)"
+            )
 
     return 0
 
