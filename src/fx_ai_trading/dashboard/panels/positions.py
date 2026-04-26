@@ -9,13 +9,13 @@ from fx_ai_trading.services import dashboard_query_service
 
 
 @st.cache_data(ttl=5)
-def _fetch(_engine: object) -> list[dict]:
-    return dashboard_query_service.get_open_positions(_engine)  # type: ignore[arg-type]
+def _fetch(_engine: object, account_id: str | None) -> list[dict]:
+    return dashboard_query_service.get_open_positions(_engine, account_id=account_id)  # type: ignore[arg-type]
 
 
-def render(engine: Engine | None) -> None:
+def render(engine: Engine | None, account_id: str | None = None) -> None:
     st.subheader("Open Positions")
-    rows = _fetch(engine)
+    rows = _fetch(engine, account_id)
     if not rows:
         st.info("No open positions.")
         return

@@ -1,4 +1,4 @@
-"""FX-AI Trading Dashboard — Streamlit entry point (M12).
+"""FX-AI Trading Dashboard — Streamlit entry point.
 
 Launch:
     streamlit run src/fx_ai_trading/dashboard/app.py
@@ -26,6 +26,7 @@ from fx_ai_trading.dashboard.panels import (
     supervisor_status,
     top_candidates,
 )
+from fx_ai_trading.services import dashboard_query_service
 
 st.set_page_config(
     page_title="FX-AI Trading Dashboard",
@@ -42,13 +43,45 @@ def _get_engine():
     return create_engine(db_url)
 
 
+@st.cache_data(ttl=30)
+def _list_accounts(_engine: object) -> list[dict]:
+    return dashboard_query_service.list_accounts(_engine)  # type: ignore[arg-type]
+
+
+def _format_account(acct: dict) -> str:
+    aid = acct.get("account_id", "?")
+    atype = acct.get("account_type", "?")
+    cur = acct.get("base_currency", "?")
+    broker = acct.get("broker_name") or acct.get("broker_id") or "?"
+    return f"[{atype}] {aid} ({broker}, {cur})"
+
+
 engine = _get_engine()
 
 st.title("FX-AI Trading Dashboard")
-st.caption("paper mode · Iteration 2 · M19")
+st.caption("Phase 9.X · demo-ready · multi-account")
 
 if engine is None:
     st.warning("DATABASE_URL not set — panels show fallback data only.")
+
+# --- Account switcher ---
+accounts = _list_accounts(engine) if engine is not None else []
+account_options: list[tuple[str | None, str]] = [(None, "All accounts")]
+account_options.extend((a["account_id"], _format_account(a)) for a in accounts)
+labels = [label for _, label in account_options]
+default_index = 0
+selected_label = st.sidebar.selectbox(
+    "Account",
+    labels,
+    index=default_index,
+    help="Scope panels to a single OANDA account, or show all.",
+)
+selected_account_id: str | None = next(
+    (aid for aid, label in account_options if label == selected_label), None
+)
+st.sidebar.caption(
+    f"{len(accounts)} account(s) registered" if accounts else "No accounts registered yet."
+)
 
 # --- Row 1: three columns ---
 col_a, col_b, col_c = st.columns(3)
@@ -64,9 +97,9 @@ st.divider()
 # --- Row 2: two columns ---
 col_d, col_e = st.columns(2)
 with col_d:
-    positions.render(engine)
+    positions.render(engine, account_id=selected_account_id)
 with col_e:
-    daily_metrics.render(engine)
+    daily_metrics.render(engine, account_id=selected_account_id)
 
 st.divider()
 
@@ -75,15 +108,15 @@ col_f, col_g = st.columns(2)
 with col_f:
     supervisor_status.render(engine)
 with col_g:
-    recent_signals.render(engine)
+    recent_signals.render(engine, account_id=selected_account_id)
 
 st.divider()
 
-# --- Row 4: three columns (M19) ---
+# --- Row 4: three columns ---
 col_h, col_i, col_j = st.columns(3)
 with col_h:
     top_candidates.render(engine)
 with col_i:
-    execution_quality.render(engine)
+    execution_quality.render(engine, account_id=selected_account_id)
 with col_j:
     risk_state_detail.render(engine)

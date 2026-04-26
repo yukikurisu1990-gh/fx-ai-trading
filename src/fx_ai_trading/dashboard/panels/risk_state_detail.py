@@ -22,15 +22,15 @@ def render(engine: Engine | None) -> None:
     display = [
         {
             "Instrument": r.get("instrument", ""),
-            "Decision": r.get("decision", ""),
-            "Reason Codes": str(r.get("reason_codes", "") or ""),
+            "Verdict": r.get("verdict", ""),
+            "Constraint": str(r.get("constraint_violated", "") or ""),
             "Cycle ID": r.get("cycle_id", ""),
-            "Time (UTC)": str(r.get("event_time_utc", "")),
+            "Time (UTC)": str(r.get("event_time_utc", ""))[:19],
         }
         for r in rows
     ]
     # Highlight rejects
-    has_rejects = any(r.get("decision") == "reject" for r in rows)
+    has_rejects = any(r.get("verdict") == "reject" for r in rows)
     if has_rejects:
         st.warning("Recent risk rejections detected.")
     st.dataframe(display, use_container_width=True)

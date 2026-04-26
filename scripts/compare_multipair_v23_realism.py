@@ -2284,10 +2284,12 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument(
         "--max-size-units",
         type=int,
-        default=0,
+        default=1_000_000,
         help=(
-            "Phase 9.X-J/J-1 fix: per-trade size cap. 0=no cap. "
-            "Recommended 100000 with --enable-compounding."
+            "Per-trade clip cap. Default 1,000,000 = 100 mini lot, "
+            "OANDA Japan retail v20 single-order maximum. Pass 0 to disable. "
+            "Without this cap, compounding can produce simulation balances "
+            "that exceed any realistic OANDA position-size limit."
         ),
     )
     parser.add_argument(
@@ -2514,13 +2516,20 @@ def main(argv: list[str] | None = None) -> int:
         key: [args.initial_balance_jpy] for key in sweep_keys
     }
 
+    # Phase 9.X-O purging: drop the last `horizon` rows of training data
+    # because their triple-barrier labels look forward into the test period
+    # (de Prado, Advances in Financial ML §7.1). Row-count purge is robust
+    # to weekend gaps; a timedelta-based purge can under-cut at Friday close.
     print("Running folds (train once -> eval per (cell, K) sweep cell) ...")
     for fid, fold in enumerate(folds):
         if fid in retrain_schedule:
             for pair in pairs:
                 ts = feat_dfs[pair]["timestamp"]
                 tr_mask = (ts >= fold["train_start"]) & (ts < fold["train_end"])
-                pair_models[pair] = _train(feat_dfs[pair][tr_mask], feature_cols, args.n_estimators)
+                tr_df = feat_dfs[pair][tr_mask]
+                if len(tr_df) > args.horizon:
+                    tr_df = tr_df.iloc[: -args.horizon]
+                pair_models[pair] = _train(tr_df, feature_cols, args.n_estimators)
         pair_test_dfs: dict[str, pd.DataFrame] = {}
         for pair in pairs:
             ts = feat_dfs[pair]["timestamp"]
