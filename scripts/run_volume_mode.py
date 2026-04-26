@@ -409,10 +409,15 @@ class VolumeRunner:
         if self._stopping:
             stop_reason = "signal"
 
-        # CLOSE
+        # CLOSE — uses PositionClose endpoint so it works on both netting
+        # (OANDA Japan retail) and hedging (demo/practice) accounts. A plain
+        # opposite-direction market order would open a new short leg in
+        # hedging mode instead of flattening the long.
         opp = "short" if side == "long" else "long"
         try:
-            exit_price, close_cid = _place_market(self.broker, cfg, opp)
+            exit_price, realized_pl_jpy, close_cid = self.broker.close_position(
+                cfg.instrument, side
+            )
         except Exception as exc:
             self.log.emit(
                 "cycle.error",
@@ -424,11 +429,15 @@ class VolumeRunner:
             self.state.halt_reason = "close_failed"
             return
 
-        # P&L
+        # P&L: prefer broker-reported realized PnL (OANDA computes net of
+        # half-spread cost on both legs). Fall back to mid-price arithmetic
+        # only if the broker returned 0.0 (e.g. a stub response).
         pnl_pip = ((exit_price - entry_price) / cfg.pip_size) * sign
-        # USD/JPY: ¥(pip × units / 1_pip_unit_count). For pip=0.01 and units=5000:
-        # 1 pip move = 5000 × 0.01 = ¥50/pip per 5,000 units.
-        pnl_jpy = pnl_pip * cfg.units_per_trade * cfg.pip_size
+        pnl_jpy = (
+            realized_pl_jpy
+            if realized_pl_jpy != 0.0
+            else pnl_pip * cfg.units_per_trade * cfg.pip_size
+        )
 
         leg_volume = _quote_volume_usd(cfg.instrument, cfg.units_per_trade, last_mid)
         round_trip_volume = 2 * leg_volume

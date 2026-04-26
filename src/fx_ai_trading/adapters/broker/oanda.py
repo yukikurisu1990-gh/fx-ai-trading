@@ -126,6 +126,35 @@ class OandaBroker(BrokerBase):
             message=cancel_tx.get("reason"),
         )
 
+    def close_position(self, instrument: str, side: str) -> tuple[float, float, str]:
+        """Close all units on the given side via OANDA PositionClose.
+
+        Mode-agnostic: works on both netting (OANDA Japan retail) and hedging
+        (most demo/practice) accounts. Returns ``(close_price, realized_pl_jpy,
+        transaction_id)`` extracted from the side-specific orderFillTransaction.
+        """
+        self._verify_account_type_or_raise(self._account_type)
+        if side == "long":
+            response = self._api_client.close_position(
+                self._account_id, instrument, long_units="ALL"
+            )
+            fill = response.get("longOrderFillTransaction") or {}
+        elif side == "short":
+            response = self._api_client.close_position(
+                self._account_id, instrument, short_units="ALL"
+            )
+            fill = response.get("shortOrderFillTransaction") or {}
+        else:
+            raise ValueError(f"side must be 'long' or 'short', got {side!r}")
+        if not fill:
+            raise RuntimeError(
+                f"OANDA close_position returned no fill transaction for {instrument} side={side}"
+            )
+        price = float(fill.get("price", 0.0))
+        pl = float(fill.get("pl", 0.0))
+        tx_id = str(fill.get("id", ""))
+        return price, pl, tx_id
+
     def get_positions(self, account_id: str) -> list[BrokerPosition]:
         raw = self._api_client.list_open_positions(account_id)
         result: list[BrokerPosition] = []

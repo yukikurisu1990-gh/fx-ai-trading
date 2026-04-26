@@ -127,3 +127,66 @@ class TestNoLiveCallsInCI:
             api_client=api_client,
         )
         fake_api.request.assert_not_called()
+
+
+# ---------------------------------------------------------------------------
+# close_position — PositionClose primitive (hedging-mode safe)
+# ---------------------------------------------------------------------------
+
+
+_FAKE_LONG_CLOSE_RESPONSE: dict = {
+    "longOrderFillTransaction": {
+        "id": "200",
+        "price": "159.500",
+        "pl": "-355.0000",
+    },
+}
+
+_FAKE_SHORT_CLOSE_RESPONSE: dict = {
+    "shortOrderFillTransaction": {
+        "id": "201",
+        "price": "159.480",
+        "pl": "12.0000",
+    },
+}
+
+
+class TestClosePosition:
+    def test_close_long_returns_price_pl_tx_id(self) -> None:
+        broker, fake_api = _make_broker(account_type="demo")
+        fake_api.request.return_value = _FAKE_LONG_CLOSE_RESPONSE
+        price, pl, tx_id = broker.close_position("USD_JPY", "long")
+        assert price == 159.500
+        assert pl == -355.0
+        assert tx_id == "200"
+        fake_api.request.assert_called_once()
+
+    def test_close_short_returns_price_pl_tx_id(self) -> None:
+        broker, fake_api = _make_broker(account_type="demo")
+        fake_api.request.return_value = _FAKE_SHORT_CLOSE_RESPONSE
+        price, pl, tx_id = broker.close_position("USD_JPY", "short")
+        assert price == 159.480
+        assert pl == 12.0
+        assert tx_id == "201"
+        fake_api.request.assert_called_once()
+
+    def test_close_invalid_side_raises(self) -> None:
+        broker, fake_api = _make_broker(account_type="demo")
+        with pytest.raises(ValueError, match="side must be 'long' or 'short'"):
+            broker.close_position("USD_JPY", "flat")
+        fake_api.request.assert_not_called()
+
+    def test_close_missing_fill_raises(self) -> None:
+        broker, fake_api = _make_broker(account_type="demo")
+        fake_api.request.return_value = {}  # No longOrderFillTransaction
+        with pytest.raises(RuntimeError, match="no fill transaction"):
+            broker.close_position("USD_JPY", "long")
+
+    def test_close_runtime_mismatch_blocks_http(self) -> None:
+        broker, fake_api = _make_broker(account_type="demo")
+        _patch = patch.object(
+            OandaBroker, "account_type", new_callable=PropertyMock, return_value="live"
+        )
+        with _patch, pytest.raises(AccountTypeMismatchRuntime):
+            broker.close_position("USD_JPY", "long")
+        fake_api.request.assert_not_called()

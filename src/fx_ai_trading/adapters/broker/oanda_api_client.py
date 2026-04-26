@@ -87,6 +87,29 @@ class OandaAPIClient:
         response = self._api.request(request)
         return list(response.get("positions", []))
 
+    def close_position(
+        self,
+        account_id: str,
+        instrument: str,
+        *,
+        long_units: str | None = None,
+        short_units: str | None = None,
+    ) -> dict[str, Any]:
+        # Hedging-mode safe close primitive: long_units / short_units may each
+        # be "ALL" or a digit string. Netting accounts only ever hold one leg
+        # so passing both with "ALL" is harmless (the absent leg is ignored).
+        from oandapyV20.endpoints import positions
+
+        if long_units is None and short_units is None:
+            raise ValueError("close_position requires long_units or short_units")
+        data: dict[str, Any] = {}
+        if long_units is not None:
+            data["longUnits"] = long_units
+        if short_units is not None:
+            data["shortUnits"] = short_units
+        request = positions.PositionClose(accountID=account_id, instrument=instrument, data=data)
+        return self._api.request(request)
+
     # ------------------------------------------------------------------
     # Transaction endpoints
     # ------------------------------------------------------------------
