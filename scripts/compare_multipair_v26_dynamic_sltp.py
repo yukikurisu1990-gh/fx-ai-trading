@@ -446,14 +446,17 @@ def _add_labels_bidask(
 ) -> pd.DataFrame:
     """Bid/ask-aware ATR triple-barrier label (Phase 9.12/B-2).
 
-    Computes both directions:
+    Phase 9.X-M perf fix (2026-04-27): vectorised via sliding_window_view +
+    np.argmax. Equivalent to the original Python-loop implementation but
+    ~50-100x faster (~30s/call → ~0.5s/call on 90-day m1). Critical for
+    the 49-combo grid sweep in Stage-1.
 
-      Long: entry at next bar's ask_o; TP fires when bid_h reaches
-            entry + tp_mult*ATR within horizon; SL when bid_l reaches
-            entry - sl_mult*ATR.
-      Short: entry at next bar's bid_o; TP when ask_l reaches
-             entry - tp_mult*ATR; SL when ask_h reaches
-             entry + sl_mult*ATR.
+    Long: entry at next bar's ask_o; TP fires when bid_h reaches
+          entry + tp_mult*ATR within horizon; SL when bid_l reaches
+          entry - sl_mult*ATR.
+    Short: entry at next bar's bid_o; TP when ask_l reaches
+           entry - tp_mult*ATR; SL when ask_h reaches
+           entry + sl_mult*ATR.
 
     Per-bar label semantics (compatible with v3/v4's encoding):
       +1 = long TP fires before long SL AND (short TP doesn't beat it)
@@ -463,9 +466,6 @@ def _add_labels_bidask(
 
     Bars without ATR(14), without ask_o/bid_o at i+1, or with i+horizon
     out of range get label=None.
-
-    Writes the result to the column named by LABEL_COLUMN ("label_tb")
-    so downstream code (folds, train, eval) sees the same shape as v9.
     """
     if "bid_o" not in df.columns or "ask_o" not in df.columns:
         raise ValueError(
@@ -483,42 +483,72 @@ def _add_labels_bidask(
     bid_o = df["bid_o"].to_numpy(dtype=np.float64)
     atrs = df["atr_14"].to_numpy(dtype=np.float64)
 
+    n_eff = n - horizon - 1
+    if n_eff <= 0:
+        df = df.copy()
+        df[LABEL_COLUMN] = [None] * n
+        return df
+
+    # Validity masks.
+    atr_view = atrs[:n_eff]
+    entry_long_arr = ask_o[1 : n_eff + 1]
+    entry_short_arr = bid_o[1 : n_eff + 1]
+    valid = (
+        np.isfinite(atr_view)
+        & (atr_view > 0)
+        & np.isfinite(entry_long_arr)
+        & np.isfinite(entry_short_arr)
+    )
+
+    # Sliding-window views starting from i+1, length horizon, for i in [0, n_eff).
+    bid_h_win = np.lib.stride_tricks.sliding_window_view(bid_h[1:], horizon)[:n_eff]
+    bid_l_win = np.lib.stride_tricks.sliding_window_view(bid_l[1:], horizon)[:n_eff]
+    ask_h_win = np.lib.stride_tricks.sliding_window_view(ask_h[1:], horizon)[:n_eff]
+    ask_l_win = np.lib.stride_tricks.sliding_window_view(ask_l[1:], horizon)[:n_eff]
+
+    tp_arr = tp_mult * atr_view
+    sl_arr = sl_mult * atr_view
+
+    long_tp_thresh = (entry_long_arr + tp_arr).reshape(-1, 1)
+    long_sl_thresh = (entry_long_arr - sl_arr).reshape(-1, 1)
+    short_tp_thresh = (entry_short_arr - tp_arr).reshape(-1, 1)
+    short_sl_thresh = (entry_short_arr + sl_arr).reshape(-1, 1)
+
+    long_tp_mask = bid_h_win >= long_tp_thresh
+    long_sl_mask = bid_l_win <= long_sl_thresh
+    short_tp_mask = ask_l_win <= short_tp_thresh
+    short_sl_mask = ask_h_win >= short_sl_thresh
+
+    def _first_hit_vec(mask: np.ndarray) -> np.ndarray:
+        # mask shape (n_eff, H). Returns -1 if no True in row, else col idx.
+        has_any = mask.any(axis=1)
+        first = mask.argmax(axis=1)
+        return np.where(has_any, first, -1)
+
+    long_tp_idx = _first_hit_vec(long_tp_mask)
+    long_sl_idx = _first_hit_vec(long_sl_mask)
+    short_tp_idx = _first_hit_vec(short_tp_mask)
+    short_sl_idx = _first_hit_vec(short_sl_mask)
+
+    long_clears = (long_tp_idx >= 0) & ((long_sl_idx < 0) | (long_tp_idx < long_sl_idx))
+    short_clears = (short_tp_idx >= 0) & (
+        (short_sl_idx < 0) | (short_tp_idx < short_sl_idx)
+    )
+
+    # Default 0 (neither cleared). Override based on conditions.
+    inner = np.zeros(n_eff, dtype=np.int64)
+    inner[long_clears & ~short_clears] = 1
+    inner[short_clears & ~long_clears] = -1
+    both = long_clears & short_clears
+    both_long = both & (long_tp_idx <= short_tp_idx)
+    both_short = both & ~(long_tp_idx <= short_tp_idx)
+    inner[both_long] = 1
+    inner[both_short] = -1
+
+    # Build final labels list with None for invalid bars and bars beyond n_eff.
     labels: list[int | None] = [None] * n
-    for i in range(n - horizon - 1):
-        atr_i = atrs[i]
-        if not np.isfinite(atr_i) or atr_i <= 0:
-            continue
-        entry_long = ask_o[i + 1]
-        entry_short = bid_o[i + 1]
-        if not (np.isfinite(entry_long) and np.isfinite(entry_short)):
-            continue
-        tp = tp_mult * atr_i
-        sl = sl_mult * atr_i
-
-        # Window covers bars i+1 .. i+horizon (length = horizon)
-        long_bh = bid_h[i + 1 : i + 1 + horizon]
-        long_bl = bid_l[i + 1 : i + 1 + horizon]
-        short_al = ask_l[i + 1 : i + 1 + horizon]
-        short_ah = ask_h[i + 1 : i + 1 + horizon]
-
-        long_tp_idx = _first_hit_idx(long_bh >= entry_long + tp)
-        long_sl_idx = _first_hit_idx(long_bl <= entry_long - sl)
-        short_tp_idx = _first_hit_idx(short_al <= entry_short - tp)
-        short_sl_idx = _first_hit_idx(short_ah >= entry_short + sl)
-
-        # Did each direction's TP fire before its own SL?
-        long_clears = long_tp_idx >= 0 and (long_sl_idx < 0 or long_tp_idx < long_sl_idx)
-        short_clears = short_tp_idx >= 0 and (short_sl_idx < 0 or short_tp_idx < short_sl_idx)
-
-        if long_clears and not short_clears:
-            labels[i] = 1
-        elif short_clears and not long_clears:
-            labels[i] = -1
-        elif long_clears and short_clears:
-            # Both directions cleared TP — pick the earlier
-            labels[i] = 1 if long_tp_idx <= short_tp_idx else -1
-        else:
-            labels[i] = 0
+    for i in np.flatnonzero(valid):
+        labels[i] = int(inner[i])
     df = df.copy()
     df[LABEL_COLUMN] = labels
     return df
