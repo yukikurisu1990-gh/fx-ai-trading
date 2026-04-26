@@ -1757,14 +1757,16 @@ def _eval_fold(
                 if cumulative_risk + risk_pct > max_total_risk_pct + 1e-9:
                     sel_cand_idx_per_rank[r, b] = -1
                     continue
-                # C3 per-direction (after this acceptance)
-                hypo_long = picks_long + (1 if sig > 0 else 0)
-                hypo_short = picks_short + (1 if sig < 0 else 0)
-                hypo_total = picks_total + 1
-                same_dir_pct = 100.0 * max(hypo_long, hypo_short) / hypo_total
-                if same_dir_pct > max_same_direction_pct + 1e-9:
-                    sel_cand_idx_per_rank[r, b] = -1
-                    continue
+                # C3 per-direction — only after >=1 pick already accepted
+                # (otherwise first pick is always 100% one-direction → bug).
+                if picks_total >= 1:
+                    hypo_long = picks_long + (1 if sig > 0 else 0)
+                    hypo_short = picks_short + (1 if sig < 0 else 0)
+                    hypo_total = picks_total + 1
+                    same_dir_pct = 100.0 * max(hypo_long, hypo_short) / hypo_total
+                    if same_dir_pct > max_same_direction_pct + 1e-9:
+                        sel_cand_idx_per_rank[r, b] = -1
+                        continue
                 # Accept
                 used_pairs.add(pair)
                 cumulative_risk += risk_pct

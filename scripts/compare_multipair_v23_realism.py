@@ -1609,14 +1609,19 @@ def _eval_fold(
                 if cumulative_risk + risk_pct > max_total_risk_pct + 1e-9:
                     sel_cand_idx_per_rank[r, b] = -1
                     continue
-                # C3 per-direction (after this acceptance)
-                hypo_long = picks_long + (1 if sig > 0 else 0)
-                hypo_short = picks_short + (1 if sig < 0 else 0)
-                hypo_total = picks_total + 1
-                same_dir_pct = 100.0 * max(hypo_long, hypo_short) / hypo_total
-                if same_dir_pct > max_same_direction_pct + 1e-9:
-                    sel_cand_idx_per_rank[r, b] = -1
-                    continue
+                # C3 per-direction (after this acceptance).
+                # Skip the check at the FIRST pick — a single pick is always
+                # 100% one-direction, so a max_same_direction_pct < 100 would
+                # reject EVERY first pick (the original bug). Apply the
+                # constraint only when at least one pick is already accepted.
+                if picks_total >= 1:
+                    hypo_long = picks_long + (1 if sig > 0 else 0)
+                    hypo_short = picks_short + (1 if sig < 0 else 0)
+                    hypo_total = picks_total + 1
+                    same_dir_pct = 100.0 * max(hypo_long, hypo_short) / hypo_total
+                    if same_dir_pct > max_same_direction_pct + 1e-9:
+                        sel_cand_idx_per_rank[r, b] = -1
+                        continue
                 # Accept
                 used_pairs.add(pair)
                 cumulative_risk += risk_pct
