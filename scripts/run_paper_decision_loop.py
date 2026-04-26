@@ -130,9 +130,36 @@ def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
             "Default 1 reproduces Phase 9.16 production behaviour."
         ),
     )
+    p.add_argument(
+        "--feature-groups",
+        default="",
+        help=(
+            "Phase 9.X-B/J-4 config plumbing only. "
+            "Comma-separated feature groups to enable on top of the "
+            "Phase 9.16 baseline. Valid: vol, moments, mtf. "
+            "Recommended (per docs/design/phase9_x_b_closure_memo.md) "
+            "is 'mtf' alone — 4h/daily/weekly stats lift Sharpe 0.160 "
+            "→ 0.174 / PnL 1.85x at K=3. Empty (default) preserves "
+            "Phase 9.16 production behaviour. "
+            "ACTIVATION DEFERRED: actual feature computation in "
+            "FeatureService requires _HISTORY_DEPTH expansion (100 → "
+            "~2000 bars) and FEATURE_VERSION bump (v2 → v3). This PR "
+            "ships only the flag plumbing; flag value validated and "
+            "stored but not yet wired into FeatureService."
+        ),
+    )
     args = p.parse_args(argv)
     if args.top_k < 1:
         p.error(f"--top-k must be >= 1 (got {args.top_k})")
+    valid_groups = {"vol", "moments", "mtf"}
+    feature_groups = {g.strip() for g in args.feature_groups.split(",") if g.strip()}
+    invalid_groups = feature_groups - valid_groups
+    if invalid_groups:
+        p.error(
+            f"--feature-groups: invalid value(s) {sorted(invalid_groups)} "
+            f"(valid: {sorted(valid_groups)})"
+        )
+    args.feature_groups_set = frozenset(feature_groups)
     return args
 
 
