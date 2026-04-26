@@ -18,6 +18,14 @@ Phase 9.4 additions:
   - macd_line, macd_signal, macd_histogram: MACD(12, 26, 9).
   - rsi_14: RSI over 14 bars.
   - bb_upper, bb_middle, bb_lower, bb_pct_b, bb_width: Bollinger Bands(20, 2σ).
+
+Phase 9.X-B/J-5 additions (opt-in via enable_groups):
+  - Group "mtf" (multi-timeframe extension): h4_atr_14, d1_return_3,
+    d1_range_pct, d1_atr_14, w1_return_1, w1_range_pct. Backtest-validated
+    Sharpe 0.174 / PnL 1.85x baseline at K=3 (Phase 9.X-B closure memo).
+  - Activating mtf bumps FEATURE_VERSION v2 → v3 (schema change).
+  - mtf requires ≥ 7 days of history (~2,016 m5 bars for weekly stats);
+    callers must size the rolling buffer accordingly.
 """
 
 from __future__ import annotations
@@ -32,7 +40,15 @@ from uuid import UUID
 from fx_ai_trading.domain.feature import FeatureSet
 
 # Bump this constant when feature computation logic changes.
-FEATURE_VERSION = "v2"
+# v3 (2026-04-26) — Phase 9.X-B/J-5: opt-in mtf feature group.
+# When enable_groups is empty, behaviour identical to v2; the version is
+# bumped because the schema is extensible and callers may opt in via
+# FeatureService(enable_groups=frozenset({"mtf"})).
+FEATURE_VERSION = "v3"
+
+# Phase 9.X-B/J-5: opt-in feature groups.
+ENABLE_GROUPS_DEFAULT: frozenset[str] = frozenset()
+_VALID_GROUPS: frozenset[str] = frozenset({"mtf"})
 
 
 class FeatureService:
@@ -43,13 +59,24 @@ class FeatureService:
             Each candle must have keys: timestamp (datetime), open, high, low,
             close (float), volume (float).
             May include data up to or past as_of_time; build() will filter.
+        enable_groups: Phase 9.X-B/J-5 opt-in feature groups. Currently
+            supports "mtf" (multi-timeframe extension: 4h/daily/weekly stats).
+            Default empty preserves Phase 9.16 baseline behaviour.
     """
 
     def __init__(
         self,
         get_candles: Callable[[str, datetime], list[dict]],
+        enable_groups: frozenset[str] = ENABLE_GROUPS_DEFAULT,
     ) -> None:
         self._get_candles = get_candles
+        invalid = enable_groups - _VALID_GROUPS
+        if invalid:
+            raise ValueError(
+                f"FeatureService: invalid feature group(s) {sorted(invalid)} "
+                f"(valid: {sorted(_VALID_GROUPS)})"
+            )
+        self._enable_groups = enable_groups
 
     def get_feature_version(self) -> str:
         """Return the deterministic feature version string (6.10)."""
@@ -76,6 +103,8 @@ class FeatureService:
         candles = [c for c in raw_candles if c["timestamp"] < as_of_time]
 
         feature_stats = _compute_features(candles)
+        if "mtf" in self._enable_groups:
+            feature_stats.update(_compute_mtf_features(candles))
         feature_hash = _hash_features(feature_stats)
 
         return FeatureSet(
@@ -291,6 +320,141 @@ def _atr(candles: list[dict], period: int) -> float:
 
     window = true_ranges[-period:] if len(true_ranges) >= period else true_ranges
     return sum(window) / len(window)
+
+
+# ---------------------------------------------------------------------------
+# Phase 9.X-B/J-5 mtf feature group (opt-in).
+# ---------------------------------------------------------------------------
+
+_MTF_ZERO_FEATURES: dict[str, float] = {
+    "h4_atr_14": 0.0,
+    "d1_return_3": 0.0,
+    "d1_range_pct": 0.0,
+    "d1_atr_14": 0.0,
+    "w1_return_1": 0.0,
+    "w1_range_pct": 0.0,
+}
+
+
+def _compute_mtf_features(candles: list[dict]) -> dict[str, float]:
+    """Phase 9.X-B/J-5 — multi-timeframe extension (4h / daily / weekly).
+
+    Resamples the m5 input candles to 4h, daily, and weekly bars, then
+    computes ATR(14) on 4h, return-3 / range-pct / ATR(14) on daily,
+    return-1 / range-pct on weekly.
+
+    Pure function. No-lookahead preserved (candles already filtered by
+    build() to timestamp < as_of_time before this is called).
+
+    All-zero output if insufficient history (e.g., fewer than 14 daily
+    bars to compute ATR).
+    """
+    if not candles:
+        return dict(_MTF_ZERO_FEATURES)
+
+    # Resampling buckets keyed by (year, month, day, hour-bucket).
+    h4_bars = _resample_ohlc(candles, _h4_bucket)
+    d1_bars = _resample_ohlc(candles, _d1_bucket)
+    w1_bars = _resample_ohlc(candles, _w1_bucket)
+
+    h4_atr_14 = _atr_from_bars(h4_bars, 14)
+    d1_atr_14 = _atr_from_bars(d1_bars, 14)
+    d1_return_3 = _return_at_lag(d1_bars, 3)
+    d1_range_pct = _range_pct_last(d1_bars)
+    w1_return_1 = _return_at_lag(w1_bars, 1)
+    w1_range_pct = _range_pct_last(w1_bars)
+
+    return {
+        "h4_atr_14": round(h4_atr_14, 8),
+        "d1_return_3": round(d1_return_3, 8),
+        "d1_range_pct": round(d1_range_pct, 8),
+        "d1_atr_14": round(d1_atr_14, 8),
+        "w1_return_1": round(w1_return_1, 8),
+        "w1_range_pct": round(w1_range_pct, 8),
+    }
+
+
+def _h4_bucket(ts: datetime) -> tuple[int, int, int, int]:
+    """4-hour bucket key — UTC-aligned at 0/4/8/12/16/20."""
+    return (ts.year, ts.month, ts.day, (ts.hour // 4) * 4)
+
+
+def _d1_bucket(ts: datetime) -> tuple[int, int, int]:
+    """Daily bucket key — UTC midnight aligned."""
+    return (ts.year, ts.month, ts.day)
+
+
+def _w1_bucket(ts: datetime) -> tuple[int, int]:
+    """ISO-calendar week bucket — (iso_year, iso_week)."""
+    iso_year, iso_week, _iso_weekday = ts.isocalendar()
+    return (iso_year, iso_week)
+
+
+def _resample_ohlc(candles: list[dict], bucket_fn: Callable[[datetime], tuple]) -> list[dict]:
+    """Resample m5 OHLC to a coarser cadence using `bucket_fn(timestamp)`.
+
+    Each output bar takes:
+      open  — first candle's open in the bucket
+      high  — max of all highs
+      low   — min of all lows
+      close — last candle's close in the bucket
+    Bars are returned in chronological order.
+    """
+    buckets: dict[tuple, dict] = {}
+    bucket_order: list[tuple] = []
+    for c in candles:
+        key = bucket_fn(c["timestamp"])
+        if key not in buckets:
+            buckets[key] = {
+                "open": c["open"],
+                "high": c["high"],
+                "low": c["low"],
+                "close": c["close"],
+            }
+            bucket_order.append(key)
+        else:
+            b = buckets[key]
+            b["high"] = max(b["high"], c["high"])
+            b["low"] = min(b["low"], c["low"])
+            b["close"] = c["close"]  # candles arrive in time order; last wins
+    return [buckets[k] for k in bucket_order]
+
+
+def _atr_from_bars(bars: list[dict], period: int) -> float:
+    """ATR over the last *period* bars."""
+    if len(bars) < 2:
+        if bars:
+            return bars[0]["high"] - bars[0]["low"]
+        return 0.0
+    true_ranges: list[float] = []
+    for i in range(1, len(bars)):
+        h = bars[i]["high"]
+        lo = bars[i]["low"]
+        prev_c = bars[i - 1]["close"]
+        true_ranges.append(max(h - lo, abs(h - prev_c), abs(lo - prev_c)))
+    window = true_ranges[-period:] if len(true_ranges) >= period else true_ranges
+    return sum(window) / len(window)
+
+
+def _return_at_lag(bars: list[dict], lag: int) -> float:
+    """Close-to-close pct change at lag bars. 0.0 if insufficient history."""
+    if len(bars) < lag + 1:
+        return 0.0
+    last = bars[-1]["close"]
+    prior = bars[-1 - lag]["close"]
+    if prior == 0.0:
+        return 0.0
+    return (last - prior) / prior
+
+
+def _range_pct_last(bars: list[dict]) -> float:
+    """High-Low range / close for the most recent bar. 0.0 if no data."""
+    if not bars:
+        return 0.0
+    last = bars[-1]
+    if last["close"] == 0.0:
+        return 0.0
+    return (last["high"] - last["low"]) / last["close"]
 
 
 def _hash_features(feature_stats: dict) -> str:

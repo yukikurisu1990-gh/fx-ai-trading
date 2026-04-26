@@ -79,8 +79,13 @@ _ENV_DATABASE_URL = "DATABASE_URL"
 _ENV_OANDA_ACCOUNT_ID = "OANDA_ACCOUNT_ID"
 _ENV_OANDA_ACCESS_TOKEN = "OANDA_ACCESS_TOKEN"
 
-# Rolling bar history depth for FeatureService (SMA_50 needs ≥50 bars).
-_HISTORY_DEPTH = 100
+# Rolling bar history depth for FeatureService.
+# Default 100 bars covers Phase 9.16 baseline (SMA_50 needs ≥50 bars).
+# When --feature-groups mtf is active, weekly stats need ≥7 days of m5
+# bars (~2,016) — depth is auto-expanded in run() based on enabled groups.
+_HISTORY_DEPTH_BASELINE = 100
+_HISTORY_DEPTH_MTF = 2100  # 7d × 24h × 12 bars/h + safety margin
+_HISTORY_DEPTH = _HISTORY_DEPTH_BASELINE  # back-compat module-level alias
 
 
 # ---------------------------------------------------------------------------
@@ -286,11 +291,18 @@ def _finish_system_job(engine: Engine, *, run_id: str, cycles: int) -> None:
 # ---------------------------------------------------------------------------
 
 
-def _make_feature_service(history: dict[str, deque]) -> FeatureService:
+def _make_feature_service(
+    history: dict[str, deque],
+    enable_groups: frozenset[str] = frozenset(),
+) -> FeatureService:
     """Build FeatureService backed by the rolling bar-history deque.
 
     The lambda bridges ``Candle`` objects (stored in history) to the
     ``list[dict]`` format expected by FeatureService._compute_features().
+
+    Phase 9.X-B/J-5: ``enable_groups`` activates opt-in feature groups
+    (currently only "mtf"). When mtf is enabled, the rolling buffer
+    depth at the call site MUST be expanded to >= 2,016 m5 bars.
     """
 
     def _get_candles(instrument: str, as_of_time: datetime) -> list[dict]:
@@ -308,7 +320,7 @@ def _make_feature_service(history: dict[str, deque]) -> FeatureService:
             if c.time_utc < as_of_time
         ]
 
-    return FeatureService(get_candles=_get_candles)
+    return FeatureService(get_candles=_get_candles, enable_groups=enable_groups)
 
 
 # ---------------------------------------------------------------------------
@@ -379,12 +391,16 @@ def run(args: argparse.Namespace, *, env: dict[str, str] | None = None) -> int:
     ]
 
     # Rolling per-instrument candle history (fed before FeatureService.build).
-    history: dict[str, deque] = {inst: deque(maxlen=_HISTORY_DEPTH) for inst in active_instruments}
-    feature_service = _make_feature_service(history)
+    # Phase 9.X-B/J-5: depth auto-expanded when --feature-groups mtf is set
+    # because weekly stats need ≥7 days of m5 bars (~2,016).
+    enable_groups: frozenset[str] = args.feature_groups_set
+    history_depth = _HISTORY_DEPTH_MTF if "mtf" in enable_groups else _HISTORY_DEPTH_BASELINE
+    history: dict[str, deque] = {inst: deque(maxlen=history_depth) for inst in active_instruments}
+    feature_service = _make_feature_service(history, enable_groups=enable_groups)
 
     # Live mode: warmup history for all instruments before starting loop.
     if is_live and oanda_client is not None:
-        _warmup_history(oanda_client, active_instruments, args.granularity, history, _HISTORY_DEPTH)
+        _warmup_history(oanda_client, active_instruments, args.granularity, history, history_depth)
 
     # Build BarFeed.
     if is_live:
