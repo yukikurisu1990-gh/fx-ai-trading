@@ -782,9 +782,7 @@ def _build_cross_pair_features(
     for pair, df in feat_dfs.items():
         aligned = df.set_index("timestamp").reindex(ref_ts_series.index, method="ffill")
         ret_map[pair] = aligned["last_close"].pct_change(1)
-        log_ret_map[pair] = np.log(
-            aligned["last_close"] / aligned["last_close"].shift(1)
-        )
+        log_ret_map[pair] = np.log(aligned["last_close"] / aligned["last_close"].shift(1))
         rsi_map[pair] = aligned["rsi_14"]
     ret_df = pd.DataFrame(ret_map)
     rsi_df = pd.DataFrame(rsi_map)
@@ -843,9 +841,7 @@ def _build_cross_pair_features(
         # Phase 9.X-D dxy: per-pair correlation + alignment features.
         if "dxy" in enable_groups and dxy_log_ret is not None:
             pair_log_ret = log_ret_map[pair]
-            dxy_corr_pair = pair_log_ret.rolling(corr_window, min_periods=5).corr(
-                dxy_log_ret
-            )
+            dxy_corr_pair = pair_log_ret.rolling(corr_window, min_periods=5).corr(dxy_log_ret)
             # Alignment: for USD-quote pairs (EUR/USD, GBP/USD, AUD/USD, etc.),
             # rising DXY ⇒ pair falling. For USD-base pairs (USD/JPY, USD/CHF,
             # USD/CAD, etc.) rising DXY ⇒ pair rising. Compute as:
@@ -1916,9 +1912,7 @@ def main(argv: list[str] | None = None) -> int:
         )
         feat_dfs[pair] = feat
         print(f"  {pair}: {len(feat):>7,} rows  {feat[LABEL_COLUMN].notna().sum():>7,} labeled")
-    feat_dfs = _build_cross_pair_features(
-        feat_dfs, ref_pair=base_pair, enable_groups=enable_groups
-    )
+    feat_dfs = _build_cross_pair_features(feat_dfs, ref_pair=base_pair, enable_groups=enable_groups)
 
     sample = feat_dfs[base_pair]
     folds = _generate_folds(feat_dfs[base_pair]["timestamp"])
