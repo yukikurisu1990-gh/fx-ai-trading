@@ -531,9 +531,7 @@ def _add_labels_bidask(
     short_sl_idx = _first_hit_vec(short_sl_mask)
 
     long_clears = (long_tp_idx >= 0) & ((long_sl_idx < 0) | (long_tp_idx < long_sl_idx))
-    short_clears = (short_tp_idx >= 0) & (
-        (short_sl_idx < 0) | (short_tp_idx < short_sl_idx)
-    )
+    short_clears = (short_tp_idx >= 0) & ((short_sl_idx < 0) | (short_tp_idx < short_sl_idx))
 
     # Default 0 (neither cleared). Override based on conditions.
     inner = np.zeros(n_eff, dtype=np.int64)
@@ -559,20 +557,36 @@ def _optimize_per_pair_sltp(
     horizon: int,
     tp_grid: list[float],
     sl_grid: list[float],
-    objective: str = "edge",
+    objective: str = "expected-sharpe",
+    model_accuracy: float = 0.52,
 ) -> tuple[float, float, float, dict]:
     """Phase 9.X-M Stage-1: pick best (tp_mult, sl_mult) for one pair.
 
     Sweeps the (tp_mult x sl_mult) grid, computes bid/ask-aware TB
     labels under each combination, and scores by:
-      - "edge": |p_tp - p_sl| (raw directional bias)
-      - "info-ratio": |p_tp - p_sl| / sqrt(p_tp(1-p_tp) + p_sl(1-p_sl))
+
+      - "expected-sharpe" (DEFAULT, post-2026-04-27 fix):
+            exp_pip = A * tp - (1 - A) * sl  (in ATR units)
+            var = A * tp**2 + (1 - A) * sl**2 - exp_pip**2
+            sharpe_per_fire = exp_pip / sqrt(var)
+            score = sharpe_per_fire * sqrt(p_tp + p_sl)
+        Penalises asymmetric tp<sl (negative EV for trader). The
+        original "edge" objective ran 2026-04-27 picked tp=2.0/sl=3-5
+        for most pairs, producing Sharpe=-0.158/PnL=-202k pip. The
+        "expected-sharpe" objective is grounded in trader EV under a
+        modest model-accuracy assumption (default A=0.52).
+
+      - "edge" (deprecated): |p_tp - p_sl|. Picks asymmetric configs
+        without regard to PnL implications. KEPT FOR REPRODUCIBILITY.
+
+      - "info-ratio" (deprecated): |p_tp - p_sl| / sqrt(p_tp(1-p_tp)+p_sl(1-p_sl)).
+        Same problem as "edge".
 
     Returns (best_tp, best_sl, best_score, all_scores_dict).
 
     Constraint: this function operates on training data only (caller's
     responsibility to slice the first training window). No model
-    training is performed — purely label-distribution analysis.
+    training is performed — purely label-distribution + EV analysis.
     """
     best_tp = tp_grid[0]
     best_sl = sl_grid[0]
@@ -593,6 +607,12 @@ def _optimize_per_pair_sltp(
             if objective == "info-ratio":
                 denom = math.sqrt(p_tp * (1 - p_tp) + p_sl * (1 - p_sl))
                 score = abs(p_tp - p_sl) / denom if denom > 0 else 0.0
+            elif objective == "expected-sharpe":
+                exp_pip = model_accuracy * tp - (1.0 - model_accuracy) * sl
+                var = model_accuracy * tp**2 + (1.0 - model_accuracy) * sl**2 - exp_pip**2
+                per_trade_sharpe = exp_pip / math.sqrt(var) if var > 0 else -float("inf")
+                trade_rate = p_tp + p_sl
+                score = per_trade_sharpe * math.sqrt(max(trade_rate, 0.0))
             else:  # edge
                 score = abs(p_tp - p_sl)
             all_scores[(tp, sl)] = {
@@ -2295,11 +2315,25 @@ def main(argv: list[str] | None = None) -> int:
     )
     parser.add_argument(
         "--sltp-objective",
-        choices=("edge", "info-ratio"),
-        default="edge",
+        choices=("expected-sharpe", "edge", "info-ratio"),
+        default="expected-sharpe",
         help=(
-            "Phase 9.X-M: Stage-1 scoring metric. 'edge' = |p_tp - p_sl|; "
-            "'info-ratio' = |p_tp - p_sl| / sqrt(p_tp(1-p_tp)+p_sl(1-p_sl))."
+            "Phase 9.X-M: Stage-1 scoring metric. Default 'expected-sharpe' "
+            "= per-trade Sharpe under fixed model accuracy * sqrt(trade_rate). "
+            "'edge'/'info-ratio' are the deprecated label-distribution-only "
+            "objectives that ran 2026-04-27 with disastrous results "
+            "(Sharpe -0.158, PnL -202k pip). Kept for reproducibility."
+        ),
+    )
+    parser.add_argument(
+        "--sltp-model-accuracy",
+        type=float,
+        default=0.52,
+        help=(
+            "Phase 9.X-M: assumed model directional accuracy for "
+            "'expected-sharpe' objective. Default 0.52 (slightly above "
+            "chance, conservative). Higher values favour asymmetric (tp>sl) "
+            "configs more aggressively."
         ),
     )
     args = parser.parse_args(argv)
@@ -2395,6 +2429,7 @@ def main(argv: list[str] | None = None) -> int:
                 tp_grid,
                 sl_grid,
                 objective=args.sltp_objective,
+                model_accuracy=args.sltp_model_accuracy,
             )
             per_pair_sltp[pair] = (best_tp, best_sl)
             print(f"  {pair}: tp={best_tp}, sl={best_sl}, score={best_score:.4f}")
