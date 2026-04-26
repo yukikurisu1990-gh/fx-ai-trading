@@ -907,7 +907,12 @@ def _add_calendar_features(
         return df
     base, quote = parts
 
-    bar_ts = pd.to_datetime(df["timestamp"]).astype("int64").to_numpy()  # ns
+    # timestamp can be either a column (post reset_index) or the index
+    # (pre reset_index, which is the case in _build_pair_features). Handle both.
+    if "timestamp" in df.columns:
+        bar_ts = pd.to_datetime(df["timestamp"]).astype("int64").to_numpy()
+    else:
+        bar_ts = pd.to_datetime(df.index).astype("int64").to_numpy()
     n = len(bar_ts)
 
     def _next_and_last(currency: str) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
