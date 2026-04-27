@@ -185,24 +185,43 @@ def _add_labels_bidask(
         tp = tp_mult * atr_i
         sl = sl_mult * atr_i
 
-        long_tp_idx = short_tp_idx = None
+        # Find first occurrence of each barrier within the horizon window.
+        # Tracking all four in one pass avoids a second full-range scan for SL.
+        long_tp_idx = long_sl_idx = short_tp_idx = short_sl_idx = None
         for j in range(i + 1, i + 1 + horizon):
             if long_tp_idx is None and bid_h[j] >= entry_ask + tp:
                 long_tp_idx = j
+            if long_sl_idx is None and bid_l[j] <= entry_ask - sl:
+                long_sl_idx = j
             if short_tp_idx is None and ask_l[j] <= entry_bid - tp:
                 short_tp_idx = j
+            if short_sl_idx is None and ask_h[j] >= entry_bid + sl:
+                short_sl_idx = j
+            if (
+                long_tp_idx is not None
+                and long_sl_idx is not None
+                and short_tp_idx is not None
+                and short_sl_idx is not None
+            ):
+                break  # all barriers found; no need to scan further
 
-        long_sl_hit = any(bid_l[j] <= entry_ask - sl for j in range(i + 1, i + 1 + horizon))
-        short_sl_hit = any(ask_h[j] >= entry_bid + sl for j in range(i + 1, i + 1 + horizon))
+        # Direction is profitable when TP hit arrives before SL (or SL never fires).
+        long_profit = long_tp_idx is not None and (
+            long_sl_idx is None or long_tp_idx <= long_sl_idx
+        )
+        short_profit = short_tp_idx is not None and (
+            short_sl_idx is None or short_tp_idx <= short_sl_idx
+        )
 
-        if long_tp_idx is None and short_tp_idx is None:
-            labels[i] = 0
-        elif long_tp_idx is not None and short_tp_idx is None:
-            labels[i] = 0 if long_sl_hit and bid_l[long_tp_idx - 1] <= entry_ask - sl else 1
-        elif short_tp_idx is not None and long_tp_idx is None:
-            labels[i] = 0 if short_sl_hit and ask_h[short_tp_idx - 1] >= entry_bid + sl else -1
+        if long_profit and not short_profit:
+            labels[i] = 1
+        elif short_profit and not long_profit:
+            labels[i] = -1
+        elif long_profit and short_profit:
+            # Both directions profitable — take whichever TP landed first.
+            labels[i] = 1 if long_tp_idx <= short_tp_idx else -1  # type: ignore[operator]
         else:
-            labels[i] = 1 if long_tp_idx <= short_tp_idx else -1
+            labels[i] = 0
 
     df[_LABEL_COLUMN] = labels
     return df
