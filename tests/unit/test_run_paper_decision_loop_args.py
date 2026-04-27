@@ -517,7 +517,8 @@ class TestOpenPaperPosition:
             orders_repo=orders_repo,
             orders_context=ctx,
         )
-        assert result is True
+        assert result is not None
+        assert isinstance(result, str)
         assert "EUR_USD" in state_manager.open_instruments()
 
     def test_successful_open_sell(self) -> None:
@@ -535,7 +536,8 @@ class TestOpenPaperPosition:
             orders_repo=orders_repo,
             orders_context=ctx,
         )
-        assert result is True
+        assert result is not None
+        assert isinstance(result, str)
         assert "USD_JPY" in state_manager.open_instruments()
 
     def test_duplicate_instrument_skipped(self) -> None:
@@ -567,9 +569,9 @@ class TestOpenPaperPosition:
             orders_repo=orders_repo,
             orders_context=ctx,
         )
-        assert result is False
+        assert result is None
 
-    def test_unknown_direction_returns_false(self) -> None:
+    def test_unknown_direction_returns_none(self) -> None:
         engine = self._build_engine()
         state_manager, orders_repo, ctx, clock = self._make_collaborators(engine)
         result = runner._open_paper_position(
@@ -584,7 +586,7 @@ class TestOpenPaperPosition:
             orders_repo=orders_repo,
             orders_context=ctx,
         )
-        assert result is False
+        assert result is None
         assert "EUR_USD" not in state_manager.open_instruments()
 
     def test_order_fsm_transitions_to_filled(self) -> None:
@@ -610,3 +612,55 @@ class TestOpenPaperPosition:
             ).fetchone()
         assert row is not None
         assert row[0] == "FILLED"
+
+    def test_returns_order_id_string(self) -> None:
+        engine = self._build_engine()
+        state_manager, orders_repo, ctx, clock = self._make_collaborators(engine)
+        result = runner._open_paper_position(
+            engine=engine,
+            account_id="acct1",
+            instrument="AUD_USD",
+            direction="buy",
+            size_units=1000,
+            fill_price=0.6550,
+            clock=clock,
+            state_manager=state_manager,
+            orders_repo=orders_repo,
+            orders_context=ctx,
+        )
+        # Returned order_id can be used as key in _tpsl_map.
+        assert isinstance(result, str)
+        assert len(result) > 0
+
+
+# ---------------------------------------------------------------------------
+# Phase 9.X-K+1: TP/SL constants and per-position map wiring
+# ---------------------------------------------------------------------------
+
+
+class TestTPSLConstants:
+    def test_tp_mult_matches_b2_label(self) -> None:
+        assert pytest.approx(1.5) == runner._TP_MULT
+
+    def test_sl_mult_matches_b2_label(self) -> None:
+        assert pytest.approx(1.0) == runner._SL_MULT
+
+    def test_buy_tp_above_entry(self) -> None:
+        entry = 1.1000
+        atr = 0.0020
+        tp = entry + runner._TP_MULT * atr
+        sl = entry - runner._SL_MULT * atr
+        assert tp > entry
+        assert sl < entry
+        assert tp == pytest.approx(1.1030)
+        assert sl == pytest.approx(1.0980)
+
+    def test_sell_tp_below_entry(self) -> None:
+        entry = 1.1000
+        atr = 0.0020
+        tp = entry - runner._TP_MULT * atr
+        sl = entry + runner._SL_MULT * atr
+        assert tp < entry
+        assert sl > entry
+        assert tp == pytest.approx(1.0970)
+        assert sl == pytest.approx(1.1020)

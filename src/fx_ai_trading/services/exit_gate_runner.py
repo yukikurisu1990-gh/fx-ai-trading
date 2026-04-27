@@ -126,6 +126,7 @@ def run_exit_gate(
     quote_feed: QuoteFeed | Callable[[str], float],
     tp: float | None = None,
     sl: float | None = None,
+    per_position_tpsl: dict[str, tuple[float | None, float | None]] | None = None,
     stale_max_age_seconds: float = 60.0,
     context: dict[str, Any] | None = None,
     supervisor: Supervisor | None = None,
@@ -150,8 +151,13 @@ def run_exit_gate(
                     in that case ``Quote.ts`` is synthesized from
                     ``clock.now()`` and ``Quote.source`` defaults to
                     ``"legacy_callable"``.
-        tp: Take-profit level; None disables TP rule (paper-mode).
-        sl: Stop-loss level; None disables SL rule (paper-mode).
+        tp: Take-profit level (global fallback); None disables TP rule.
+        sl: Stop-loss level (global fallback); None disables SL rule.
+        per_position_tpsl: Optional mapping of order_id → (tp_price, sl_price).
+                When provided, each position uses its stored entry-computed
+                TP/SL price levels instead of the global ``tp``/``sl``.
+                Positions absent from the mapping fall back to global values.
+                Phase 9.X-K+1 production lever for B-2 price-based exits.
         stale_max_age_seconds: M-3c freshness threshold.  When
                  ``(clock.now() - quote.ts).total_seconds()`` exceeds
                  this value AND ``context['emergency_stop']`` is falsy,
@@ -240,13 +246,21 @@ def run_exit_gate(
 
         current_price = quote.price
 
+        # Use per-position TP/SL levels when available (Phase 9.X-K+1),
+        # falling back to the global tp/sl for positions that pre-date
+        # the map or were opened without ATR data.
+        if per_position_tpsl and pos.order_id in per_position_tpsl:
+            pos_tp, pos_sl = per_position_tpsl[pos.order_id]
+        else:
+            pos_tp, pos_sl = tp, sl
+
         decision = exit_policy.evaluate(
             position_id=pos.order_id,
             instrument=pos.instrument,
             side=pos.side,
             current_price=current_price,
-            tp=tp,
-            sl=sl,
+            tp=pos_tp,
+            sl=pos_sl,
             holding_seconds=holding_seconds,
             context=ctx,
         )

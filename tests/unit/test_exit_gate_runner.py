@@ -1272,3 +1272,102 @@ class TestStaleQuoteGate:
 
         assert [r.outcome for r in results] == ["closed"]
         assert broker.last_request is not None
+
+
+# --- per_position_tpsl (Phase 9.X-K+1) ---------------------------------------
+
+
+class TestPerPositionTpsl:
+    """per_position_tpsl passes per-position TP/SL price levels to the
+    exit policy evaluate() call instead of the global tp/sl fallback.
+    """
+
+    def _run_with_tpsl(
+        self,
+        engine,
+        *,
+        current_price: float,
+        per_position_tpsl: dict | None = None,
+        global_tp: float | None = None,
+        global_sl: float | None = None,
+    ):
+        from fx_ai_trading.services.exit_policy import ExitPolicyService
+
+        sm = _make_sm(engine)
+        broker = _FillBroker()
+        policy = ExitPolicyService(max_holding_seconds=999_999)  # time-based won't fire
+        return run_exit_gate(
+            broker=broker,
+            account_id="acc-1",
+            clock=FixedClock(_NOW),
+            state_manager=sm,
+            exit_policy=policy,
+            quote_feed=lambda _: current_price,
+            tp=global_tp,
+            sl=global_sl,
+            per_position_tpsl=per_position_tpsl,
+        )
+
+    def test_none_map_uses_global_tp_sl(self, engine) -> None:
+        """per_position_tpsl=None falls back to global tp/sl (backward compat)."""
+        _seed_open_position(engine, psid="p1", order_id="o1", instrument="EURUSD", avg_price=1.10)
+        results = self._run_with_tpsl(
+            engine,
+            current_price=1.13,  # above global tp 1.12 → TP fires
+            per_position_tpsl=None,
+            global_tp=1.12,
+            global_sl=1.08,
+        )
+        assert results[0].outcome == "closed"
+        assert results[0].primary_reason == "tp"
+
+    def test_per_position_tp_fires_when_price_above(self, engine) -> None:
+        """Per-position tp_price in the map → TP fires for that order."""
+        _seed_open_position(engine, psid="p1", order_id="o1", instrument="EURUSD", avg_price=1.10)
+        results = self._run_with_tpsl(
+            engine,
+            current_price=1.13,
+            per_position_tpsl={"o1": (1.12, 1.08)},  # tp=1.12, sl=1.08
+            global_tp=None,
+            global_sl=None,
+        )
+        assert results[0].outcome == "closed"
+        assert results[0].primary_reason == "tp"
+
+    def test_per_position_sl_fires_when_price_below(self, engine) -> None:
+        """Per-position sl_price in the map → SL fires for that order."""
+        _seed_open_position(engine, psid="p1", order_id="o1", instrument="EURUSD", avg_price=1.10)
+        results = self._run_with_tpsl(
+            engine,
+            current_price=1.07,  # below sl 1.08 → SL fires
+            per_position_tpsl={"o1": (1.12, 1.08)},
+            global_tp=None,
+            global_sl=None,
+        )
+        assert results[0].outcome == "closed"
+        assert results[0].primary_reason == "sl"
+
+    def test_position_not_in_map_falls_back_to_global(self, engine) -> None:
+        """Positions absent from the map use global tp/sl."""
+        _seed_open_position(engine, psid="p1", order_id="o1", instrument="EURUSD", avg_price=1.10)
+        results = self._run_with_tpsl(
+            engine,
+            current_price=1.13,
+            per_position_tpsl={"other-order": (1.12, 1.08)},  # o1 NOT in map
+            global_tp=1.12,
+            global_sl=None,
+        )
+        assert results[0].outcome == "closed"
+        assert results[0].primary_reason == "tp"
+
+    def test_price_between_tp_and_sl_is_noop(self, engine) -> None:
+        """Price within the TP/SL band → no exit fires."""
+        _seed_open_position(engine, psid="p1", order_id="o1", instrument="EURUSD", avg_price=1.10)
+        results = self._run_with_tpsl(
+            engine,
+            current_price=1.105,  # inside [1.08, 1.12]
+            per_position_tpsl={"o1": (1.12, 1.08)},
+            global_tp=None,
+            global_sl=None,
+        )
+        assert results[0].outcome == "noop"
