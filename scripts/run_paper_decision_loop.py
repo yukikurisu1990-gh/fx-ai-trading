@@ -58,17 +58,22 @@ from uuid import UUID
 from sqlalchemy import create_engine, text
 from sqlalchemy.engine import Engine
 
+from fx_ai_trading.adapters.broker.paper import PaperBroker
 from fx_ai_trading.adapters.instrument_registry import OandaInstrumentRegistry
 from fx_ai_trading.adapters.price_feed.candle_file_bar_feed import CandleFileBarFeed
 from fx_ai_trading.adapters.price_feed.oanda_bar_feed import OandaBarFeed
-from fx_ai_trading.common.clock import WallClock
+from fx_ai_trading.common.clock import Clock, WallClock
 from fx_ai_trading.common.ulid import generate_ulid
+from fx_ai_trading.config.common_keys_context import CommonKeysContext
+from fx_ai_trading.domain.broker import OrderRequest
 from fx_ai_trading.domain.price_feed import Candle
 from fx_ai_trading.domain.risk import Instrument
 from fx_ai_trading.ops.logging_config import apply_logging_config
+from fx_ai_trading.repositories.orders import OrdersRepository
 from fx_ai_trading.services.feature_service import FeatureService
 from fx_ai_trading.services.meta_cycle_runner import MetaCycleConfig, run_meta_cycle
 from fx_ai_trading.services.position_sizer import PositionSizerService
+from fx_ai_trading.services.state_manager import StateManager
 from fx_ai_trading.services.strategies.atr import ATRStrategy
 from fx_ai_trading.services.strategies.bollinger import BollingerStrategy
 from fx_ai_trading.services.strategies.lgbm_strategy import LGBMStrategy
@@ -110,6 +115,113 @@ _DEFAULT_DAILY_DD_PCT = 3.0
 # Phase 9.X-O recommended initial balance (¥300k) and risk per trade (1%).
 _DEFAULT_INITIAL_BALANCE = 300_000.0
 _DEFAULT_RISK_PCT = 1.0
+
+# MetaDecision adopted_direction → PaperBroker side mapping.
+_DIRECTION_TO_BROKER_SIDE: dict[str, str] = {"buy": "long", "sell": "short"}
+
+
+# ---------------------------------------------------------------------------
+# Paper open helper (5-step FSM sequence)
+# ---------------------------------------------------------------------------
+
+
+def _open_paper_position(
+    *,
+    engine: Engine,
+    account_id: str,
+    instrument: str,
+    direction: str,
+    size_units: int,
+    fill_price: float,
+    clock: Clock,
+    state_manager: StateManager,
+    orders_repo: OrdersRepository,
+    orders_context: CommonKeysContext,
+    trading_signal_id: str | None = None,
+) -> bool:
+    """Execute the 5-step paper open sequence (D1 §6.6 FSM).
+
+    Steps:
+      1. OrdersRepository.create_order    → status=PENDING
+      2. OrdersRepository.update_status   → SUBMITTED
+      3. PaperBroker.place_order          → fills synchronously at fill_price
+      4. OrdersRepository.update_status   → FILLED
+      5. StateManager.on_fill             → positions(open) + secondary_sync_outbox
+
+    Returns True on success. Returns False (without raising) when:
+      - direction is unknown (neither 'buy' nor 'sell')
+      - instrument is already open for this account (no pyramiding in paper mode)
+      - PaperBroker unexpectedly does not fill (should not happen in paper mode)
+    """
+    side = _DIRECTION_TO_BROKER_SIDE.get(direction)
+    if side is None:
+        _log.error("paper_open: unknown direction %r — skipped (%s)", direction, instrument)
+        return False
+
+    if instrument in state_manager.open_instruments():
+        _log.info("paper_open: %s already open for %s — skipped", instrument, account_id)
+        return False
+
+    order_id = generate_ulid()
+    client_order_id = f"dl:{order_id}:{instrument}"
+
+    # Step 1: PENDING
+    orders_repo.create_order(
+        order_id=order_id,
+        account_id=account_id,
+        instrument=instrument,
+        account_type="demo",
+        order_type="market",
+        direction=direction,
+        units=str(size_units),
+        context=orders_context,
+        client_order_id=client_order_id,
+        trading_signal_id=trading_signal_id,
+    )
+
+    # Step 2: SUBMITTED
+    orders_repo.update_status(order_id, "SUBMITTED", orders_context)
+
+    # Step 3: PaperBroker fill (synchronous; nominal_price = current bar close)
+    broker = PaperBroker(account_type="demo", nominal_price=fill_price)
+    request = OrderRequest(
+        client_order_id=client_order_id,
+        account_id=account_id,
+        instrument=instrument,
+        side=side,
+        size_units=size_units,
+    )
+    result = broker.place_order(request)
+    if result.status != "filled" or result.fill_price is None:
+        _log.error(
+            "paper_open: broker did not fill — order_id=%s status=%r",
+            order_id,
+            result.status,
+        )
+        return False
+
+    # Step 4: FILLED
+    orders_repo.update_status(order_id, "FILLED", orders_context)
+
+    # Step 5: positions(open) + secondary_sync_outbox
+    state_manager.on_fill(
+        order_id=order_id,
+        instrument=instrument,
+        units=size_units,
+        avg_price=float(result.fill_price),
+    )
+
+    _log.info(
+        "paper_open: position opened",
+        extra={
+            "instrument": instrument,
+            "direction": direction,
+            "size_units": size_units,
+            "fill_price": result.fill_price,
+            "order_id": order_id,
+        },
+    )
+    return True
 
 
 # ---------------------------------------------------------------------------
@@ -723,6 +835,16 @@ def run(args: argparse.Namespace, *, env: dict[str, str] | None = None) -> int:
         dd_pct=args.daily_dd_pct,
     )
 
+    # Paper trading collaborators (shared across the full loop lifecycle).
+    state_manager = StateManager(engine, account_id=account_id, clock=clock)
+    orders_repo = OrdersRepository(engine)
+    orders_context = CommonKeysContext(
+        run_id=run_id,
+        environment="demo",
+        code_version="decision-loop",
+        config_version="v1",
+    )
+
     cycles_completed = 0
 
     try:
@@ -868,16 +990,18 @@ def run(args: argparse.Namespace, *, env: dict[str, str] | None = None) -> int:
                     },
                 )
 
-                # Phase 9.1 / 9.X-K follow-up: wire PaperBroker.place_order()
-                # using the computed size_units above. Deferred until exit-gate
-                # integration is confirmed and the PaperBroker + StateManager
-                # bootstrap is wired into this runner.
-                _log.info(
-                    "trade intent logged (broker call deferred to Phase 9.X-K follow-up)",
-                    extra={
-                        "adopted_direction": meta_result.adopted_direction,
-                        "size_units": size_units,
-                    },
+                _open_paper_position(
+                    engine=engine,
+                    account_id=account_id,
+                    instrument=inst or "",
+                    direction=meta_result.adopted_direction or "",
+                    size_units=size_units,
+                    fill_price=bar.close,
+                    clock=clock,
+                    state_manager=state_manager,
+                    orders_repo=orders_repo,
+                    orders_context=orders_context,
+                    trading_signal_id=meta_result.trading_signal_id,
                 )
 
     except KeyboardInterrupt:

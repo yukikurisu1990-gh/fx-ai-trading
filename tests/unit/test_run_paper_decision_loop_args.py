@@ -1,4 +1,4 @@
-"""Unit tests: scripts/run_paper_decision_loop.py argparse seam (Phase 9.19/J-3 + 9.X-K)."""
+"""Unit tests: run_paper_decision_loop.py argparse + broker helpers (Phase 9.19/J-3 + 9.X-K)."""
 
 from __future__ import annotations
 
@@ -360,3 +360,211 @@ class TestComputePositionSize:
         # margin_limit = 1000 × 0.5 = 500; max_units_by_margin = 500×2/155 ≈ 6
         # Result is either 0 (InsufficientMargin) or a small positive number.
         assert reason in (None, "InsufficientMargin", "SizeUnderMin") or size >= 0
+
+
+# ---------------------------------------------------------------------------
+# Phase 9.X-K broker wiring: _open_paper_position unit tests
+# ---------------------------------------------------------------------------
+
+
+class TestOpenPaperPosition:
+    """Unit tests for _open_paper_position using SQLite in-memory DB."""
+
+    def _build_engine(self):
+        import sqlalchemy as sa
+
+        engine = sa.create_engine("sqlite:///:memory:")
+        with engine.begin() as conn:
+            conn.execute(
+                sa.text(
+                    """
+                    CREATE TABLE orders (
+                        order_id TEXT PRIMARY KEY,
+                        client_order_id TEXT,
+                        trading_signal_id TEXT,
+                        account_id TEXT,
+                        instrument TEXT,
+                        account_type TEXT,
+                        order_type TEXT,
+                        direction TEXT,
+                        units TEXT,
+                        status TEXT DEFAULT 'PENDING',
+                        submitted_at TEXT,
+                        filled_at TEXT,
+                        canceled_at TEXT,
+                        correlation_id TEXT,
+                        created_at TEXT DEFAULT (datetime('now'))
+                    )
+                    """
+                )
+            )
+            conn.execute(
+                sa.text(
+                    """
+                    CREATE TABLE positions (
+                        position_snapshot_id TEXT PRIMARY KEY,
+                        order_id TEXT,
+                        account_id TEXT,
+                        instrument TEXT,
+                        event_type TEXT,
+                        units INTEGER,
+                        avg_price REAL,
+                        unrealized_pl REAL,
+                        realized_pl REAL,
+                        event_time_utc TEXT,
+                        correlation_id TEXT
+                    )
+                    """
+                )
+            )
+            conn.execute(
+                sa.text(
+                    """
+                    CREATE TABLE secondary_sync_outbox (
+                        outbox_id TEXT PRIMARY KEY,
+                        table_name TEXT,
+                        primary_key TEXT,
+                        version_no INTEGER,
+                        payload_json TEXT,
+                        enqueued_at TEXT,
+                        attempt_count INTEGER DEFAULT 0,
+                        run_id TEXT,
+                        environment TEXT,
+                        code_version TEXT,
+                        config_version TEXT
+                    )
+                    """
+                )
+            )
+        return engine
+
+    def _make_collaborators(self, engine):
+        from unittest.mock import MagicMock
+
+        from fx_ai_trading.common.clock import WallClock
+        from fx_ai_trading.config.common_keys_context import CommonKeysContext
+        from fx_ai_trading.repositories.orders import OrdersRepository
+        from fx_ai_trading.services.state_manager import StateManager
+
+        clock = MagicMock(spec=WallClock)
+        clock.now.return_value = __import__("datetime").datetime(
+            2026, 4, 28, 12, 0, 0, tzinfo=__import__("datetime").timezone.utc
+        )
+        state_manager = StateManager(engine, account_id="acct1", clock=clock)
+        orders_repo = OrdersRepository(engine)
+        orders_context = CommonKeysContext(
+            run_id="test-run",
+            environment="demo",
+            code_version="test",
+            config_version="v1",
+        )
+        return state_manager, orders_repo, orders_context, clock
+
+    def test_successful_open_buy(self) -> None:
+        engine = self._build_engine()
+        state_manager, orders_repo, ctx, clock = self._make_collaborators(engine)
+        result = runner._open_paper_position(
+            engine=engine,
+            account_id="acct1",
+            instrument="EUR_USD",
+            direction="buy",
+            size_units=1000,
+            fill_price=1.1050,
+            clock=clock,
+            state_manager=state_manager,
+            orders_repo=orders_repo,
+            orders_context=ctx,
+        )
+        assert result is True
+        assert "EUR_USD" in state_manager.open_instruments()
+
+    def test_successful_open_sell(self) -> None:
+        engine = self._build_engine()
+        state_manager, orders_repo, ctx, clock = self._make_collaborators(engine)
+        result = runner._open_paper_position(
+            engine=engine,
+            account_id="acct1",
+            instrument="USD_JPY",
+            direction="sell",
+            size_units=500,
+            fill_price=155.0,
+            clock=clock,
+            state_manager=state_manager,
+            orders_repo=orders_repo,
+            orders_context=ctx,
+        )
+        assert result is True
+        assert "USD_JPY" in state_manager.open_instruments()
+
+    def test_duplicate_instrument_skipped(self) -> None:
+        engine = self._build_engine()
+        state_manager, orders_repo, ctx, clock = self._make_collaborators(engine)
+        # First open succeeds.
+        runner._open_paper_position(
+            engine=engine,
+            account_id="acct1",
+            instrument="EUR_USD",
+            direction="buy",
+            size_units=1000,
+            fill_price=1.1050,
+            clock=clock,
+            state_manager=state_manager,
+            orders_repo=orders_repo,
+            orders_context=ctx,
+        )
+        # Second open on same instrument → skipped.
+        result = runner._open_paper_position(
+            engine=engine,
+            account_id="acct1",
+            instrument="EUR_USD",
+            direction="buy",
+            size_units=500,
+            fill_price=1.1060,
+            clock=clock,
+            state_manager=state_manager,
+            orders_repo=orders_repo,
+            orders_context=ctx,
+        )
+        assert result is False
+
+    def test_unknown_direction_returns_false(self) -> None:
+        engine = self._build_engine()
+        state_manager, orders_repo, ctx, clock = self._make_collaborators(engine)
+        result = runner._open_paper_position(
+            engine=engine,
+            account_id="acct1",
+            instrument="EUR_USD",
+            direction="hold",  # invalid
+            size_units=1000,
+            fill_price=1.1050,
+            clock=clock,
+            state_manager=state_manager,
+            orders_repo=orders_repo,
+            orders_context=ctx,
+        )
+        assert result is False
+        assert "EUR_USD" not in state_manager.open_instruments()
+
+    def test_order_fsm_transitions_to_filled(self) -> None:
+        import sqlalchemy as sa
+
+        engine = self._build_engine()
+        state_manager, orders_repo, ctx, clock = self._make_collaborators(engine)
+        runner._open_paper_position(
+            engine=engine,
+            account_id="acct1",
+            instrument="GBP_USD",
+            direction="sell",
+            size_units=200,
+            fill_price=1.2700,
+            clock=clock,
+            state_manager=state_manager,
+            orders_repo=orders_repo,
+            orders_context=ctx,
+        )
+        with engine.connect() as conn:
+            row = conn.execute(
+                sa.text("SELECT status FROM orders WHERE instrument = 'GBP_USD'")
+            ).fetchone()
+        assert row is not None
+        assert row[0] == "FILLED"
