@@ -132,7 +132,16 @@ class TestMainSkipFetch:
             import sys
 
             old_argv = sys.argv
-            sys.argv = ["retrain", "--skip-fetch", "--pairs", "EUR_USD", "--data-dir", str(tmp_path), "--model-dir", str(tmp_path / "models")]  # noqa: E501
+            sys.argv = [
+                "retrain",
+                "--skip-fetch",
+                "--pairs",
+                "EUR_USD",
+                "--data-dir",
+                str(tmp_path),
+                "--model-dir",
+                str(tmp_path / "models"),
+            ]  # noqa: E501
             try:
                 exit_code = retrain.main()
             finally:
@@ -147,7 +156,15 @@ class TestMainSkipFetch:
         import sys
 
         old_argv = sys.argv
-        sys.argv = ["retrain", "--pairs", "EUR_USD", "--data-dir", str(tmp_path), "--model-dir", str(tmp_path / "models")]  # noqa: E501
+        sys.argv = [
+            "retrain",
+            "--pairs",
+            "EUR_USD",
+            "--data-dir",
+            str(tmp_path),
+            "--model-dir",
+            str(tmp_path / "models"),
+        ]  # noqa: E501
         try:
             exit_code = retrain.main()
         finally:
@@ -164,7 +181,15 @@ class TestMainSkipFetch:
             import sys
 
             old_argv = sys.argv
-            sys.argv = ["retrain", "--pairs", "EUR_USD", "--data-dir", str(tmp_path), "--model-dir", str(tmp_path / "models")]  # noqa: E501
+            sys.argv = [
+                "retrain",
+                "--pairs",
+                "EUR_USD",
+                "--data-dir",
+                str(tmp_path),
+                "--model-dir",
+                str(tmp_path / "models"),
+            ]  # noqa: E501
             try:
                 exit_code = retrain.main()
             finally:
