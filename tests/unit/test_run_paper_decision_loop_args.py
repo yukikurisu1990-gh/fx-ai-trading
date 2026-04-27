@@ -821,3 +821,69 @@ class TestQueryRealizedPnl:
         engine = MagicMock()
         engine.connect.side_effect = RuntimeError("DB down")
         assert runner._query_realized_pnl(engine, "acc-1") == pytest.approx(0.0)
+
+
+# ---------------------------------------------------------------------------
+# RiskManagerService gate wiring (--max-open-positions + allow_trade)
+# ---------------------------------------------------------------------------
+
+
+class TestMaxOpenPositionsFlag:
+    def test_default_is_five(self) -> None:
+        args = runner._parse_args([])
+        assert args.max_open_positions == 5
+
+    def test_custom_value_parsed(self) -> None:
+        args = runner._parse_args(["--max-open-positions", "3"])
+        assert args.max_open_positions == 3
+
+    def test_zero_is_rejected(self) -> None:
+        with pytest.raises(SystemExit):
+            runner._parse_args(["--max-open-positions", "0"])
+
+
+class TestRiskManagerServiceInstantiation:
+    def test_risk_manager_imported(self) -> None:
+        from fx_ai_trading.services.risk_manager import RiskManagerService
+
+        assert hasattr(runner, "RiskManagerService")
+        assert runner.RiskManagerService is RiskManagerService
+
+    def test_allow_trade_g1_duplicate_instrument(self) -> None:
+        from fx_ai_trading.services.risk_manager import RiskManagerService
+
+        rm = RiskManagerService(max_open_positions=5)
+        result = rm.allow_trade(
+            instrument="EUR_USD",
+            open_instruments={"EUR_USD"},
+            concurrent_positions=1,
+            recent_failure_count=0,
+        )
+        assert result.allowed is False
+        assert result.reject_reason == "risk.duplicate_instrument"
+
+    def test_allow_trade_g2_max_positions(self) -> None:
+        from fx_ai_trading.services.risk_manager import RiskManagerService
+
+        rm = RiskManagerService(max_open_positions=2)
+        result = rm.allow_trade(
+            instrument="GBP_USD",
+            open_instruments={"EUR_USD", "USD_JPY"},
+            concurrent_positions=2,
+            recent_failure_count=0,
+        )
+        assert result.allowed is False
+        assert result.reject_reason == "risk.max_open_positions"
+
+    def test_allow_trade_passes_when_clear(self) -> None:
+        from fx_ai_trading.services.risk_manager import RiskManagerService
+
+        rm = RiskManagerService(max_open_positions=5)
+        result = rm.allow_trade(
+            instrument="EUR_USD",
+            open_instruments=set(),
+            concurrent_positions=0,
+            recent_failure_count=0,
+        )
+        assert result.allowed is True
+        assert result.reject_reason is None
