@@ -887,3 +887,30 @@ class TestRiskManagerServiceInstantiation:
         )
         assert result.allowed is True
         assert result.reject_reason is None
+
+
+class TestLiveExecutionFlag:
+    def test_default_is_false(self) -> None:
+        args = runner._parse_args([])
+        assert args.live_execution is False
+
+    def test_flag_sets_true(self) -> None:
+        args = runner._parse_args(["--live-execution"])
+        assert args.live_execution is True
+
+    def test_live_execution_with_replay_candles_rejected(self) -> None:
+        with pytest.raises(SystemExit):
+            runner._parse_args(
+                [
+                    "--live-execution",
+                    "--replay-candles",
+                    "data/test.jsonl",
+                    "--instrument",
+                    "EUR_USD",
+                ]
+            )
+
+    def test_live_execution_without_replay_accepted(self) -> None:
+        args = runner._parse_args(["--live-execution"])
+        assert args.live_execution is True
+        assert args.replay_candles is None
