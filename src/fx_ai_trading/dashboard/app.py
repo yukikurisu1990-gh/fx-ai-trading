@@ -16,6 +16,7 @@ from sqlalchemy import create_engine
 
 from fx_ai_trading.dashboard.panels import (
     account_summary,
+    chart_candlestick,
     daily_metrics,
     daily_pnl,
     drawdown,
@@ -151,3 +152,7 @@ with col_eq2:
     execution_quality.render(engine, account_id=selected_account_id)
 with col_risk:
     risk_state_detail.render(engine)
+st.divider()
+
+# --- Section 7: Candlestick chart ---
+chart_candlestick.render(engine, account_id=selected_account_id)
