@@ -65,6 +65,7 @@ from fx_ai_trading.services.feature_service import FeatureService
 from fx_ai_trading.services.meta_cycle_runner import MetaCycleConfig, run_meta_cycle
 from fx_ai_trading.services.strategies.atr import ATRStrategy
 from fx_ai_trading.services.strategies.bollinger import BollingerStrategy
+from fx_ai_trading.services.strategies.lgbm_strategy import LGBMStrategy
 from fx_ai_trading.services.strategies.ma import MAStrategy
 from fx_ai_trading.services.strategies.macd import MACDStrategy
 from fx_ai_trading.services.strategies.rsi import RSIStrategy
@@ -136,6 +137,15 @@ def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
             "rank-1 (multi-trade adoption deferred — requires changes "
             "to MetaCycleRunResult, execution gateway, position-mgmt). "
             "Default 1 reproduces Phase 9.16 production behaviour."
+        ),
+    )
+    p.add_argument(
+        "--use-ta-strategies",
+        action="store_true",
+        default=False,
+        help=(
+            "Use unvalidated TA strategies (MA/ATR/RSI/MACD/Bollinger) instead "
+            "of the default LGBM classifier. Intended for A/B testing only."
         ),
     )
     p.add_argument(
@@ -388,13 +398,20 @@ def run(args: argparse.Namespace, *, env: dict[str, str] | None = None) -> int:
 
     _insert_system_job(engine, run_id=run_id, instrument=reference_instrument, dry_run=args.dry_run)
 
-    strategies = [
-        MAStrategy(strategy_id="ma"),
-        ATRStrategy(strategy_id="atr"),
-        RSIStrategy(strategy_id="rsi"),
-        MACDStrategy(strategy_id="macd"),
-        BollingerStrategy(strategy_id="bollinger"),
-    ]
+    # Phase 9.5-A: LGBM classifier is the primary strategy.
+    # TA strategies (MA/ATR/RSI/MACD/Bollinger) are retained in the codebase
+    # for future A/B testing but excluded from the default loop because they
+    # are not backtest-validated and use arbitrary EV formulas.
+    if args.use_ta_strategies:
+        strategies: list = [
+            MAStrategy(strategy_id="ma"),
+            ATRStrategy(strategy_id="atr"),
+            RSIStrategy(strategy_id="rsi"),
+            MACDStrategy(strategy_id="macd"),
+            BollingerStrategy(strategy_id="bollinger"),
+        ]
+    else:
+        strategies = [LGBMStrategy(strategy_id="lgbm")]
 
     # Rolling per-instrument candle history (fed before FeatureService.build).
     # Phase 9.X-B/J-5: depth auto-expanded when --feature-groups mtf or vol
