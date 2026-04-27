@@ -16,10 +16,10 @@ def _fetch(_engine: object, account_id: str | None) -> list[dict]:
 
 
 def render(engine: Engine | None, account_id: str | None = None) -> None:
-    st.subheader("Daily PnL (last 30d)")
+    st.subheader("日次損益（過去30日）")
     rows = _fetch(engine, account_id)
     if not rows:
-        st.info("No daily activity in the last 30 days.")
+        st.info("過去30日間の取引データなし。")
         return
     df = pd.DataFrame(rows)
     df["day"] = pd.to_datetime(df["day"])
@@ -29,8 +29,8 @@ def render(engine: Engine | None, account_id: str | None = None) -> None:
         alt.Chart(df)
         .mark_bar()
         .encode(
-            x=alt.X("day:T", title="Date"),
-            y=alt.Y("total_pnl:Q", title="PnL (JPY)"),
+            x=alt.X("day:T", title="日付"),
+            y=alt.Y("total_pnl:Q", title="損益（JPY）"),
             color=alt.Color(
                 "sign:N",
                 scale=alt.Scale(domain=["win", "loss"], range=["#4e79a7", "#e15759"]),

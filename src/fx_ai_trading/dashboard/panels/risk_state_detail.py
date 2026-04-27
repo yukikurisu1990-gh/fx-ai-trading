@@ -14,23 +14,22 @@ def _fetch(_engine: object) -> list[dict]:
 
 
 def render(engine: Engine | None) -> None:
-    st.subheader("Risk State Detail")
+    st.subheader("リスク状態詳細")
     rows = _fetch(engine)
     if not rows:
-        st.info("No risk events recorded yet.")
+        st.info("リスクイベントなし。")
         return
     display = [
         {
-            "Instrument": r.get("instrument", ""),
-            "Verdict": r.get("verdict", ""),
-            "Constraint": str(r.get("constraint_violated", "") or ""),
-            "Cycle ID": r.get("cycle_id", ""),
-            "Time (UTC)": str(r.get("event_time_utc", ""))[:19],
+            "通貨ペア": r.get("instrument", ""),
+            "判定": r.get("verdict", ""),
+            "制約": str(r.get("constraint_violated", "") or ""),
+            "サイクルID": r.get("cycle_id", ""),
+            "時刻（UTC）": str(r.get("event_time_utc", ""))[:19],
         }
         for r in rows
     ]
-    # Highlight rejects
     has_rejects = any(r.get("verdict") == "reject" for r in rows)
     if has_rejects:
-        st.warning("Recent risk rejections detected.")
+        st.warning("直近リスク拒否あり。")
     st.dataframe(display, use_container_width=True)

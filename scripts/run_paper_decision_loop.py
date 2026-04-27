@@ -845,6 +845,31 @@ def _build_oanda_client(src: dict[str, str]) -> OandaAPIClient:
     return OandaAPIClient(access_token=token, environment="practice")
 
 
+def _persist_candle(engine: Engine, bar: Candle) -> None:
+    try:
+        with engine.begin() as conn:
+            conn.execute(
+                text(
+                    "INSERT INTO market_candles"
+                    " (instrument, tier, event_time_utc, open, high, low, close, volume)"
+                    " VALUES (:instrument, :tier, :ts, :open, :high, :low, :close, :volume)"
+                    " ON CONFLICT (instrument, tier, event_time_utc) DO NOTHING"
+                ),
+                {
+                    "instrument": bar.instrument,
+                    "tier": bar.tier,
+                    "ts": bar.time_utc,
+                    "open": bar.open,
+                    "high": bar.high,
+                    "low": bar.low,
+                    "close": bar.close,
+                    "volume": bar.volume,
+                },
+            )
+    except Exception:
+        _log.warning("_persist_candle: failed for %s %s", bar.instrument, bar.time_utc)
+
+
 def _warmup_history(
     client: OandaAPIClient,
     instruments: list[str],
@@ -1151,6 +1176,7 @@ def run(args: argparse.Namespace, *, env: dict[str, str] | None = None) -> int:
         for bar in bar_feed:  # type: ignore[union-attr]
             # Accumulate reference bar into history (no look-ahead).
             history[reference_instrument].append(bar)
+            _persist_candle(engine, bar)
 
             # In live multi-instrument mode, refresh instrument list each cycle (I-8).
             if is_live and registry is not None:

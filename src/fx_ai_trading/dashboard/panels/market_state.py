@@ -19,11 +19,11 @@ def _fetch(_engine: object) -> dict:
 
 
 def render(engine: Engine | None) -> None:
-    st.subheader("Market State")
+    st.subheader("マーケット状態")
     data = _fetch(engine)
     phase = data["phase_mode"] or "—"
     env = data["runtime_environment"] or "—"
-    st.metric("Phase Mode", phase)
-    st.metric("Environment", env)
+    st.metric("フェーズモード", phase)
+    st.metric("実行環境", env)
     if engine is None:
-        st.caption("No DATABASE_URL — showing defaults")
+        st.caption("DATABASE_URL 未設定 — デフォルト値を表示")

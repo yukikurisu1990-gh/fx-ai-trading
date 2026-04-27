@@ -16,18 +16,18 @@ def _fetch(_engine: object, account_id: str | None) -> list[dict]:
 
 
 def render(engine: Engine | None, account_id: str | None = None) -> None:
-    st.subheader("Execution Quality")
+    st.subheader("執行品質")
     rows = _fetch(engine, account_id)
     if not rows:
-        st.info("No execution metrics recorded yet.")
+        st.info("執行メトリクスなし。")
         return
     display = [
         {
-            "Order ID": str(r.get("order_id", ""))[:12],
-            "Signal Age (s)": r.get("signal_age_seconds", ""),
-            "Slippage (pips)": r.get("slippage_pips", ""),
-            "Latency (ms)": r.get("latency_ms", ""),
-            "Recorded (UTC)": str(r.get("recorded_at", ""))[:19],
+            "注文ID": str(r.get("order_id", ""))[:12],
+            "シグナル経過（秒）": r.get("signal_age_seconds", ""),
+            "スリッページ（pips）": r.get("slippage_pips", ""),
+            "レイテンシ（ms）": r.get("latency_ms", ""),
+            "記録時刻（UTC）": str(r.get("recorded_at", ""))[:19],
         }
         for r in rows
     ]

@@ -16,19 +16,19 @@ def _fetch(_engine: object, account_id: str | None) -> list[dict]:
 
 
 def render(engine: Engine | None, account_id: str | None = None) -> None:
-    st.subheader("Recent Signals")
+    st.subheader("直近シグナル")
     orders = _fetch(engine, account_id)
     if not orders:
-        st.info("No signals recorded yet.")
+        st.info("シグナルなし。")
         return
     display = [
         {
-            "Order ID": str(o.get("order_id", ""))[:12],
-            "Instrument": o.get("instrument", ""),
-            "Direction": o.get("direction", ""),
-            "Units": o.get("units", ""),
-            "Status": o.get("status", ""),
-            "Created (UTC)": str(o.get("created_at", ""))[:19],
+            "注文ID": str(o.get("order_id", ""))[:12],
+            "通貨ペア": o.get("instrument", ""),
+            "方向": o.get("direction", ""),
+            "数量": o.get("units", ""),
+            "ステータス": o.get("status", ""),
+            "作成時刻（UTC）": str(o.get("created_at", ""))[:19],
         }
         for o in orders
     ]

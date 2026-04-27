@@ -15,10 +15,10 @@ def _fetch(_engine: object, account_id: str | None) -> list[dict]:
 
 
 def render(engine: Engine | None, account_id: str | None = None) -> None:
-    st.subheader("Drawdown (JPY)")
+    st.subheader("ドローダウン（JPY）")
     rows = _fetch(engine, account_id)
     if not rows:
-        st.info("No closed trades yet.")
+        st.info("決済済み取引なし。")
         return
     df = pd.DataFrame(rows)
     df["closed_at"] = pd.to_datetime(df["closed_at"])
@@ -26,5 +26,5 @@ def render(engine: Engine | None, account_id: str | None = None) -> None:
     df["drawdown"] = df["cumulative_pnl"] - df["running_peak"]
     df = df.set_index("closed_at")
     max_dd = df["drawdown"].min()
-    st.metric("Max Drawdown (JPY)", f"{max_dd:,.0f}")
+    st.metric("最大ドローダウン（JPY）", f"{max_dd:,.0f}")
     st.area_chart(df[["drawdown"]], height=220, color="#e15759")

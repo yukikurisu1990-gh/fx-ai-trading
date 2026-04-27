@@ -12,10 +12,9 @@ from sqlalchemy import Engine
 
 
 def render(engine: Engine | None) -> None:  # noqa: ARG001
-    st.subheader("Meta Decision")
+    st.subheader("メタ判定")
     st.info(
-        "Meta-decision data is populated during live operation.\n\n"
-        "Iteration 2 will persist MetaDecision rows to the meta_decisions table "
-        "and display them here."
+        "ライブ運用中にメタ判定データが蓄積されます。\n\n"
+        "meta_decisions テーブルへの永続化後、ここに表示されます。"
     )
-    st.caption("M12: static placeholder — no persistent MetaDecision table yet")
+    st.caption("M12: 静的プレースホルダー")

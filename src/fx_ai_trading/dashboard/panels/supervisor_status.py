@@ -14,10 +14,10 @@ def _fetch(_engine: object) -> list[dict]:
 
 
 def render(engine: Engine | None) -> None:
-    st.subheader("Supervisor Status")
+    st.subheader("スーパーバイザー状態")
     events = _fetch(engine)
     if not events:
-        st.info("No supervisor events recorded.")
+        st.info("スーパーバイザーイベントなし。")
         return
     for ev in events:
         event_type = ev.get("event_type", "?")
