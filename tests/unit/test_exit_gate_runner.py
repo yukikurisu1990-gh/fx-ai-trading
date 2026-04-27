@@ -1310,8 +1310,7 @@ class TestPerPositionTpsl:
 
     def test_none_map_uses_global_tp_sl(self, engine) -> None:
         """per_position_tpsl=None falls back to global tp/sl (backward compat)."""
-        _seed_open_position(engine, psid="p1", order_id="o1", instrument="EURUSD",
-                            avg_price=1.10)
+        _seed_open_position(engine, psid="p1", order_id="o1", instrument="EURUSD", avg_price=1.10)
         results = self._run_with_tpsl(
             engine,
             current_price=1.13,  # above global tp 1.12 → TP fires
@@ -1324,8 +1323,7 @@ class TestPerPositionTpsl:
 
     def test_per_position_tp_fires_when_price_above(self, engine) -> None:
         """Per-position tp_price in the map → TP fires for that order."""
-        _seed_open_position(engine, psid="p1", order_id="o1", instrument="EURUSD",
-                            avg_price=1.10)
+        _seed_open_position(engine, psid="p1", order_id="o1", instrument="EURUSD", avg_price=1.10)
         results = self._run_with_tpsl(
             engine,
             current_price=1.13,
@@ -1338,8 +1336,7 @@ class TestPerPositionTpsl:
 
     def test_per_position_sl_fires_when_price_below(self, engine) -> None:
         """Per-position sl_price in the map → SL fires for that order."""
-        _seed_open_position(engine, psid="p1", order_id="o1", instrument="EURUSD",
-                            avg_price=1.10)
+        _seed_open_position(engine, psid="p1", order_id="o1", instrument="EURUSD", avg_price=1.10)
         results = self._run_with_tpsl(
             engine,
             current_price=1.07,  # below sl 1.08 → SL fires
@@ -1352,8 +1349,7 @@ class TestPerPositionTpsl:
 
     def test_position_not_in_map_falls_back_to_global(self, engine) -> None:
         """Positions absent from the map use global tp/sl."""
-        _seed_open_position(engine, psid="p1", order_id="o1", instrument="EURUSD",
-                            avg_price=1.10)
+        _seed_open_position(engine, psid="p1", order_id="o1", instrument="EURUSD", avg_price=1.10)
         results = self._run_with_tpsl(
             engine,
             current_price=1.13,
@@ -1366,8 +1362,7 @@ class TestPerPositionTpsl:
 
     def test_price_between_tp_and_sl_is_noop(self, engine) -> None:
         """Price within the TP/SL band → no exit fires."""
-        _seed_open_position(engine, psid="p1", order_id="o1", instrument="EURUSD",
-                            avg_price=1.10)
+        _seed_open_position(engine, psid="p1", order_id="o1", instrument="EURUSD", avg_price=1.10)
         results = self._run_with_tpsl(
             engine,
             current_price=1.105,  # inside [1.08, 1.12]
