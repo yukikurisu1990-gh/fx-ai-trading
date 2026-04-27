@@ -63,7 +63,7 @@ def _make_features(atr_14: float = 0.5, rsi_14: float = 50.0) -> FeatureSet:
         feature_hash="test",
         feature_stats=stats,
         sampled_features=stats,
-        computed_at=datetime.now(UTC),
+        computed_at=datetime.now(UTC),  # noqa: CLOCK
     )
 
 

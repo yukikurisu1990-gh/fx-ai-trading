@@ -19,7 +19,6 @@ from __future__ import annotations
 
 import argparse
 import json
-import os
 from pathlib import Path
 
 import joblib
@@ -44,27 +43,56 @@ _LGBM_PARAMS = {
 }
 
 _ALL_PAIRS = [
-    "AUD_CAD", "AUD_JPY", "AUD_NZD", "AUD_USD",
-    "CHF_JPY", "EUR_AUD", "EUR_CAD", "EUR_CHF",
-    "EUR_GBP", "EUR_JPY", "EUR_USD",
-    "GBP_AUD", "GBP_CHF", "GBP_JPY", "GBP_USD",
-    "NZD_JPY", "NZD_USD",
-    "USD_CAD", "USD_CHF", "USD_JPY",
+    "AUD_CAD",
+    "AUD_JPY",
+    "AUD_NZD",
+    "AUD_USD",
+    "CHF_JPY",
+    "EUR_AUD",
+    "EUR_CAD",
+    "EUR_CHF",
+    "EUR_GBP",
+    "EUR_JPY",
+    "EUR_USD",
+    "GBP_AUD",
+    "GBP_CHF",
+    "GBP_JPY",
+    "GBP_USD",
+    "NZD_JPY",
+    "NZD_USD",
+    "USD_CAD",
+    "USD_CHF",
+    "USD_JPY",
 ]
 
 _PIP_SIZE: dict[str, float] = {
-    "AUD_CAD": 0.0001, "AUD_JPY": 0.01, "AUD_NZD": 0.0001, "AUD_USD": 0.0001,
-    "CHF_JPY": 0.01, "EUR_AUD": 0.0001, "EUR_CAD": 0.0001, "EUR_CHF": 0.0001,
-    "EUR_GBP": 0.0001, "EUR_JPY": 0.01, "EUR_USD": 0.0001,
-    "GBP_AUD": 0.0001, "GBP_CHF": 0.0001, "GBP_JPY": 0.01, "GBP_USD": 0.0001,
-    "NZD_JPY": 0.01, "NZD_USD": 0.0001,
-    "USD_CAD": 0.0001, "USD_CHF": 0.0001, "USD_JPY": 0.01,
+    "AUD_CAD": 0.0001,
+    "AUD_JPY": 0.01,
+    "AUD_NZD": 0.0001,
+    "AUD_USD": 0.0001,
+    "CHF_JPY": 0.01,
+    "EUR_AUD": 0.0001,
+    "EUR_CAD": 0.0001,
+    "EUR_CHF": 0.0001,
+    "EUR_GBP": 0.0001,
+    "EUR_JPY": 0.01,
+    "EUR_USD": 0.0001,
+    "GBP_AUD": 0.0001,
+    "GBP_CHF": 0.0001,
+    "GBP_JPY": 0.01,
+    "GBP_USD": 0.0001,
+    "NZD_JPY": 0.01,
+    "NZD_USD": 0.0001,
+    "USD_CAD": 0.0001,
+    "USD_CHF": 0.0001,
+    "USD_JPY": 0.01,
 }
 
 
 # ---------------------------------------------------------------------------
 # Feature computation (vectorised pandas, matching FeatureService)
 # ---------------------------------------------------------------------------
+
 
 def _add_features(df: pd.DataFrame) -> pd.DataFrame:
     """Add all FeatureService base features to the DataFrame (vectorised)."""
@@ -110,9 +138,9 @@ def _add_features(df: pd.DataFrame) -> pd.DataFrame:
     high = df["high"]
     low = df["low"]
     prev_close = c.shift(1).fillna(c)
-    tr = pd.concat(
-        [high - low, (high - prev_close).abs(), (low - prev_close).abs()], axis=1
-    ).max(axis=1)
+    tr = pd.concat([high - low, (high - prev_close).abs(), (low - prev_close).abs()], axis=1).max(
+        axis=1
+    )
     df["atr_14"] = tr.rolling(14, min_periods=1).mean()
 
     # last_close
@@ -185,10 +213,21 @@ def _add_labels_bidask(
 # ---------------------------------------------------------------------------
 
 _FEATURE_COLS = [
-    "atr_14", "bb_lower", "bb_middle", "bb_pct_b", "bb_upper", "bb_width",
-    "ema_12", "ema_26", "last_close",
-    "macd_histogram", "macd_line", "macd_signal",
-    "rsi_14", "sma_20", "sma_50",
+    "atr_14",
+    "bb_lower",
+    "bb_middle",
+    "bb_pct_b",
+    "bb_upper",
+    "bb_width",
+    "ema_12",
+    "ema_26",
+    "last_close",
+    "macd_histogram",
+    "macd_line",
+    "macd_signal",
+    "rsi_14",
+    "sma_20",
+    "sma_50",
 ]
 
 
@@ -225,30 +264,42 @@ def _load_ba_candles(path: Path) -> pd.DataFrame:
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
-        "--pairs", nargs="*", default=None,
+        "--pairs",
+        nargs="*",
+        default=None,
         help="Instruments to train (default: all available)",
     )
     parser.add_argument(
-        "--data-dir", default="data",
+        "--data-dir",
+        default="data",
         help="Directory containing candle JSONL files",
     )
     parser.add_argument(
-        "--model-dir", default="models/lgbm",
+        "--model-dir",
+        default="models/lgbm",
         help="Output directory for saved models",
     )
     parser.add_argument(
-        "--train-frac", type=float, default=0.80,
+        "--train-frac",
+        type=float,
+        default=0.80,
         help="Fraction of data to use for training (default 0.80)",
     )
     parser.add_argument(
-        "--horizon", type=int, default=_HORIZON,
+        "--horizon",
+        type=int,
+        default=_HORIZON,
         help="Triple-barrier horizon in bars (default 20)",
     )
     parser.add_argument(
-        "--tp-mult", type=float, default=_TP_MULT,
+        "--tp-mult",
+        type=float,
+        default=_TP_MULT,
     )
     parser.add_argument(
-        "--sl-mult", type=float, default=_SL_MULT,
+        "--sl-mult",
+        type=float,
+        default=_SL_MULT,
     )
     args = parser.parse_args()
 

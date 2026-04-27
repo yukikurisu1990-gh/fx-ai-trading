@@ -31,12 +31,26 @@ _DEFAULT_MODEL_DIR = Path(__file__).resolve().parents[4] / "models" / "lgbm"
 _DEFAULT_THRESHOLD = 0.40
 
 _PIP_SIZE: dict[str, float] = {
-    "AUD_CAD": 0.0001, "AUD_JPY": 0.01, "AUD_NZD": 0.0001, "AUD_USD": 0.0001,
-    "CHF_JPY": 0.01, "EUR_AUD": 0.0001, "EUR_CAD": 0.0001, "EUR_CHF": 0.0001,
-    "EUR_GBP": 0.0001, "EUR_JPY": 0.01, "EUR_USD": 0.0001,
-    "GBP_AUD": 0.0001, "GBP_CHF": 0.0001, "GBP_JPY": 0.01, "GBP_USD": 0.0001,
-    "NZD_JPY": 0.01, "NZD_USD": 0.0001,
-    "USD_CAD": 0.0001, "USD_CHF": 0.0001, "USD_JPY": 0.01,
+    "AUD_CAD": 0.0001,
+    "AUD_JPY": 0.01,
+    "AUD_NZD": 0.0001,
+    "AUD_USD": 0.0001,
+    "CHF_JPY": 0.01,
+    "EUR_AUD": 0.0001,
+    "EUR_CAD": 0.0001,
+    "EUR_CHF": 0.0001,
+    "EUR_GBP": 0.0001,
+    "EUR_JPY": 0.01,
+    "EUR_USD": 0.0001,
+    "GBP_AUD": 0.0001,
+    "GBP_CHF": 0.0001,
+    "GBP_JPY": 0.01,
+    "GBP_USD": 0.0001,
+    "NZD_JPY": 0.01,
+    "NZD_USD": 0.0001,
+    "USD_CAD": 0.0001,
+    "USD_CHF": 0.0001,
+    "USD_JPY": 0.01,
 }
 
 
@@ -82,7 +96,9 @@ class LGBMStrategy:
 
         _log.info(
             "LGBMStrategy loaded: %d instruments, threshold=%.2f, features=%d",
-            len(self._models), threshold, len(self._feature_cols),
+            len(self._models),
+            threshold,
+            len(self._feature_cols),
         )
 
     def evaluate(
@@ -99,7 +115,7 @@ class LGBMStrategy:
         x = np.array([[float(stats.get(col) or 0.0) for col in self._feature_cols]])
 
         proba = model.predict_proba(x)[0]
-        p_long = float(proba[2])   # class 2 = label +1 (long TP)
+        p_long = float(proba[2])  # class 2 = label +1 (long TP)
         p_short = float(proba[0])  # class 0 = label -1 (short TP)
 
         atr = stats.get("atr_14", 0.0) or 0.0
