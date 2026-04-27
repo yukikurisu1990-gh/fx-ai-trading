@@ -324,6 +324,29 @@ def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         ),
     )
     p.add_argument(
+        "--max-slippage-pip",
+        type=float,
+        default=2.0,
+        metavar="PIPS",
+        help=(
+            "Pre-trade sudden-move (急変) gate: skip trade if the live mid-price "
+            "deviates from the latest bar close by more than this many pips. "
+            "Applied in live mode only via the same get_pricing call as the "
+            "spread gate (single round-trip). Default 2.0 pips."
+        ),
+    )
+    p.add_argument(
+        "--no-compound",
+        dest="compound",
+        action="store_false",
+        help=(
+            "Disable J-1 compounding: always size positions from --initial-balance "
+            "regardless of accumulated realized PnL. Default is compounding=True "
+            "(current_balance = initial_balance + SUM(pnl_realized))."
+        ),
+    )
+    p.set_defaults(compound=True)
+    p.add_argument(
         "--feature-groups",
         default="",
         help=(
@@ -468,28 +491,46 @@ _PIP_SIZE: dict[str, float] = {
 }
 
 
+def _fetch_live_quote(
+    client: OandaAPIClient,
+    account_id: str,
+    instrument: str,
+) -> tuple[float | None, float | None]:
+    """Return (spread_pips, mid_price) from a live OANDA pricing tick.
+
+    Both values are None when the pricing endpoint is unavailable or returns
+    an unexpected shape.  Callers should treat None as "gate skipped" (fail-open).
+    A single get_pricing call covers both the spread gate and the sudden-move
+    (急変) check, avoiding a redundant round-trip.
+    """
+    try:
+        prices = client.get_pricing(account_id, [instrument])
+        if not prices:
+            return None, None
+        entry = prices[0]
+        bids = entry.get("bids", [])
+        asks = entry.get("asks", [])
+        if not bids or not asks:
+            return None, None
+        bid = float(bids[0]["price"])
+        ask = float(asks[0]["price"])
+        pip = _PIP_SIZE.get(instrument, 0.0001)
+        spread_pips = (ask - bid) / pip
+        mid_price = (bid + ask) / 2.0
+        return spread_pips, mid_price
+    except Exception:
+        _log.warning("live quote fetch failed for %s — gates skipped", instrument, exc_info=True)
+        return None, None
+
+
 def _fetch_spread_pips(
     client: OandaAPIClient,
     account_id: str,
     instrument: str,
 ) -> float | None:
     """Return current bid/ask spread in pips, or None if unavailable."""
-    try:
-        prices = client.get_pricing(account_id, [instrument])
-        if not prices:
-            return None
-        entry = prices[0]
-        bids = entry.get("bids", [])
-        asks = entry.get("asks", [])
-        if not bids or not asks:
-            return None
-        bid = float(bids[0]["price"])
-        ask = float(asks[0]["price"])
-        pip = _PIP_SIZE.get(instrument, 0.0001)
-        return (ask - bid) / pip
-    except Exception:
-        _log.warning("spread fetch failed for %s — gate skipped", instrument, exc_info=True)
-        return None
+    spread, _ = _fetch_live_quote(client, account_id, instrument)
+    return spread
 
 
 # ---------------------------------------------------------------------------
@@ -617,6 +658,30 @@ def _compute_position_size(
 # ---------------------------------------------------------------------------
 # DB helpers
 # ---------------------------------------------------------------------------
+
+
+def _query_realized_pnl(engine: Engine, account_id: str) -> float:
+    """Return the sum of all realized PnL for the given account.
+
+    Used by J-1 compounding to adjust position sizing as profits accumulate.
+    Returns 0.0 on DB error (fail-safe — sizing falls back to initial_balance).
+    """
+    try:
+        with engine.connect() as conn:
+            row = conn.execute(
+                text(
+                    "SELECT COALESCE(SUM(ce.pnl_realized), 0.0) "
+                    "FROM close_events ce "
+                    "INNER JOIN orders o ON ce.order_id = o.order_id "
+                    "WHERE o.account_id = :account_id "
+                    "  AND ce.pnl_realized IS NOT NULL"
+                ),
+                {"account_id": account_id},
+            ).one()
+        return float(row[0])
+    except Exception:
+        _log.debug("_query_realized_pnl: DB query failed — returning 0.0")
+        return 0.0
 
 
 def _build_engine(src: dict[str, str]) -> Engine:
@@ -1025,9 +1090,11 @@ def run(args: argparse.Namespace, *, env: dict[str, str] | None = None) -> int:
 
             if meta_result.adopted and not args.dry_run:
                 inst = meta_result.adopted_instrument
-                # Spread gate (live mode only — replay has no real-time quotes).
+                # Live-quote gate (live mode only — replay has no real-time quotes).
+                # A single get_pricing call populates both the spread gate and the
+                # sudden-move (急変) guard; skipping if either threshold is breached.
                 if is_live and oanda_client is not None and inst is not None:
-                    spread_pip = _fetch_spread_pips(oanda_client, account_id, inst)
+                    spread_pip, live_mid = _fetch_live_quote(oanda_client, account_id, inst)
                     if spread_pip is not None and spread_pip > args.max_spread_pip:
                         _log.info(
                             "spread_too_wide: trade skipped",
@@ -1038,6 +1105,21 @@ def run(args: argparse.Namespace, *, env: dict[str, str] | None = None) -> int:
                             },
                         )
                         continue
+                    if live_mid is not None:
+                        _pip_sz = _PIP_SIZE.get(inst, 0.0001)
+                        dev_pips = abs(live_mid - bar.close) / _pip_sz
+                        if dev_pips > args.max_slippage_pip:
+                            _log.info(
+                                "sudden_move: trade skipped",
+                                extra={
+                                    "instrument": inst,
+                                    "dev_pips": round(dev_pips, 3),
+                                    "max_slippage_pip": args.max_slippage_pip,
+                                    "live_mid": live_mid,
+                                    "bar_close": bar.close,
+                                },
+                            )
+                            continue
 
                 # Phase 9.X-J: daily DD brake — halt entries when today's
                 # realized loss exceeds dd_pct% of opening balance.
@@ -1049,12 +1131,26 @@ def run(args: argparse.Namespace, *, env: dict[str, str] | None = None) -> int:
                     )
                     continue
 
+                # J-1 compounding: balance grows with realized PnL.
+                # current_balance = initial_balance + SUM(pnl_realized) for this
+                # account, so position sizing naturally compounds profits.
+                # Clamped to 1.0 so sizing never divides by near-zero.
+                # --no-compound bypasses the DB query and uses initial_balance.
+                current_balance = (
+                    max(
+                        args.initial_balance + _query_realized_pnl(engine, account_id),
+                        1.0,
+                    )
+                    if args.compound
+                    else args.initial_balance
+                )
+
                 # Phase 9.X-K: compute risk-sized position (clip cap + margin check).
                 # Sizing is logged regardless of whether the broker call is live.
                 size_units, skip_reason = _compute_position_size(
                     inst=inst or "",
                     features=features,
-                    initial_balance=args.initial_balance,
+                    initial_balance=current_balance,
                     risk_pct=args.risk_pct,
                     max_units=args.max_units,
                     max_leverage=args.max_leverage,
@@ -1073,6 +1169,7 @@ def run(args: argparse.Namespace, *, env: dict[str, str] | None = None) -> int:
                         "instrument": inst,
                         "direction": meta_result.adopted_direction,
                         "size_units": size_units,
+                        "current_balance": current_balance,
                         "initial_balance": args.initial_balance,
                         "risk_pct": args.risk_pct,
                         "max_units": args.max_units,
