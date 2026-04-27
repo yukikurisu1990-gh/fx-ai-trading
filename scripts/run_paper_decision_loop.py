@@ -121,6 +121,11 @@ _DEFAULT_RISK_PCT = 1.0
 # MetaDecision adopted_direction → PaperBroker side mapping.
 _DIRECTION_TO_BROKER_SIDE: dict[str, str] = {"buy": "long", "sell": "short"}
 
+# B-2 triple-barrier TP/SL ATR multipliers (matching train_lgbm_models.py).
+# Used to compute absolute price TP/SL levels stored in _tpsl_map at open time.
+_TP_MULT = 1.5
+_SL_MULT = 1.0
+
 
 # ---------------------------------------------------------------------------
 # Granularity helper
@@ -165,7 +170,7 @@ def _open_paper_position(
     orders_repo: OrdersRepository,
     orders_context: CommonKeysContext,
     trading_signal_id: str | None = None,
-) -> bool:
+) -> str | None:
     """Execute the 5-step paper open sequence (D1 §6.6 FSM).
 
     Steps:
@@ -175,7 +180,7 @@ def _open_paper_position(
       4. OrdersRepository.update_status   → FILLED
       5. StateManager.on_fill             → positions(open) + secondary_sync_outbox
 
-    Returns True on success. Returns False (without raising) when:
+    Returns the order_id (str) on success. Returns None (without raising) when:
       - direction is unknown (neither 'buy' nor 'sell')
       - instrument is already open for this account (no pyramiding in paper mode)
       - PaperBroker unexpectedly does not fill (should not happen in paper mode)
@@ -183,11 +188,11 @@ def _open_paper_position(
     side = _DIRECTION_TO_BROKER_SIDE.get(direction)
     if side is None:
         _log.error("paper_open: unknown direction %r — skipped (%s)", direction, instrument)
-        return False
+        return None
 
     if instrument in state_manager.open_instruments():
         _log.info("paper_open: %s already open for %s — skipped", instrument, account_id)
-        return False
+        return None
 
     order_id = generate_ulid()
     client_order_id = f"dl:{order_id}:{instrument}"
@@ -225,7 +230,7 @@ def _open_paper_position(
             order_id,
             result.status,
         )
-        return False
+        return None
 
     # Step 4: FILLED
     orders_repo.update_status(order_id, "FILLED", orders_context)
@@ -248,7 +253,7 @@ def _open_paper_position(
             "order_id": order_id,
         },
     )
-    return True
+    return order_id
 
 
 # ---------------------------------------------------------------------------
@@ -902,6 +907,10 @@ def run(args: argparse.Namespace, *, env: dict[str, str] | None = None) -> int:
 
     cycles_completed = 0
 
+    # Per-position TP/SL price map keyed by order_id.
+    # Populated at open time from B-2 ATR multipliers; consumed by run_exit_gate.
+    _tpsl_map: dict[str, tuple[float | None, float | None]] = {}
+
     try:
         for bar in bar_feed:  # type: ignore[union-attr]
             # Accumulate reference bar into history (no look-ahead).
@@ -936,6 +945,7 @@ def run(args: argparse.Namespace, *, env: dict[str, str] | None = None) -> int:
                     quote_feed=_bar_price,
                     tp=None,
                     sl=None,
+                    per_position_tpsl=_tpsl_map,
                 )
             except Exception:
                 _log.exception("run_exit_gate failed — open positions not evaluated this bar")
@@ -1069,11 +1079,27 @@ def run(args: argparse.Namespace, *, env: dict[str, str] | None = None) -> int:
                     },
                 )
 
-                _open_paper_position(
+                # Compute absolute TP/SL price levels from B-2 ATR multipliers.
+                # Stored in _tpsl_map and passed to run_exit_gate each bar.
+                _direction = meta_result.adopted_direction or ""
+                _feat = features.get(inst or "")
+                _atr = _feat.sampled_features.get("atr_14", 0.0) if _feat else 0.0
+                if _atr and _atr > 0:
+                    if _direction == "buy":
+                        _tp_price: float | None = bar.close + _TP_MULT * _atr
+                        _sl_price: float | None = bar.close - _SL_MULT * _atr
+                    else:  # sell
+                        _tp_price = bar.close - _TP_MULT * _atr
+                        _sl_price = bar.close + _SL_MULT * _atr
+                else:
+                    _tp_price = None
+                    _sl_price = None
+
+                opened_order_id = _open_paper_position(
                     engine=engine,
                     account_id=account_id,
                     instrument=inst or "",
-                    direction=meta_result.adopted_direction or "",
+                    direction=_direction,
                     size_units=size_units,
                     fill_price=bar.close,
                     clock=clock,
@@ -1082,6 +1108,16 @@ def run(args: argparse.Namespace, *, env: dict[str, str] | None = None) -> int:
                     orders_context=orders_context,
                     trading_signal_id=meta_result.trading_signal_id,
                 )
+                if opened_order_id:
+                    _tpsl_map[opened_order_id] = (_tp_price, _sl_price)
+                    _log.debug(
+                        "tpsl_map: stored tp=%.5f sl=%.5f for order=%s (%s %s)",
+                        _tp_price or 0.0,
+                        _sl_price or 0.0,
+                        opened_order_id,
+                        inst,
+                        _direction,
+                    )
 
     except KeyboardInterrupt:
         _log.info("run_paper_decision_loop interrupted by user")
