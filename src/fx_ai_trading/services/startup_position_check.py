@@ -123,8 +123,7 @@ def check_position_integrity(
 
     if halt_on_mismatch:
         raise PositionMismatchError(
-            f"Position drift detected: db_only={sorted(db_only)},"
-            f" broker_only={sorted(broker_only)}"
+            f"Position drift detected: db_only={sorted(db_only)}, broker_only={sorted(broker_only)}"
         )
 
     return result
