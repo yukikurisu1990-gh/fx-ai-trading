@@ -72,10 +72,7 @@ def scenario_a_uniform_edge(rng: np.random.Generator) -> None:
 
 
 def scenario_b_real_selection_edge(rng: np.random.Generator) -> None:
-    print(
-        "\n=== Scenario B: rank-3 has TRULY higher edge "
-        "(genuine selection effect) ==="
-    )
+    print("\n=== Scenario B: rank-3 has TRULY higher edge (genuine selection effect) ===")
     n_folds = 39
     rank1_per_fold: list[list[float]] = []
     rank2_per_fold: list[list[float]] = []
@@ -108,9 +105,7 @@ def scenario_d_observed_pattern(rng: np.random.Generator) -> None:
 
     What input distributions make fold-mean Sharpe approach 0.561?
     """
-    print(
-        "\n=== Scenario D: hunting for the configuration that produces 0.561 ==="
-    )
+    print("\n=== Scenario D: hunting for the configuration that produces 0.561 ===")
     # If we have moderate edge and small N, the mean of fold Sharpes can drift
     # high because individual folds with luck-of-the-draw 0-variance hit the
     # population-variance Sharpe ceiling.

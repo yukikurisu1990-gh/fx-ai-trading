@@ -20,10 +20,21 @@ from fx_ai_trading.services.strategies.lgbm_strategy import LGBMStrategy
 # ---------------------------------------------------------------------------
 
 _FEATURE_COLS = [
-    "atr_14", "bb_lower", "bb_middle", "bb_pct_b", "bb_upper", "bb_width",
-    "ema_12", "ema_26", "last_close",
-    "macd_histogram", "macd_line", "macd_signal",
-    "rsi_14", "sma_20", "sma_50",
+    "atr_14",
+    "bb_lower",
+    "bb_middle",
+    "bb_pct_b",
+    "bb_upper",
+    "bb_width",
+    "ema_12",
+    "ema_26",
+    "last_close",
+    "macd_histogram",
+    "macd_line",
+    "macd_signal",
+    "rsi_14",
+    "sma_20",
+    "sma_50",
 ]
 
 
@@ -51,11 +62,21 @@ def _make_tiny_lgbm(p_long: float = 0.5, p_neutral: float = 0.3) -> lgb.LGBMClas
 
 def _make_features(atr_14: float = 0.5, rsi_14: float = 50.0) -> FeatureSet:
     stats = {
-        "atr_14": atr_14, "bb_lower": 159.0, "bb_middle": 160.0,
-        "bb_pct_b": 0.5, "bb_upper": 161.0, "bb_width": 0.0125,
-        "ema_12": 160.0, "ema_26": 160.0, "last_close": 160.0,
-        "macd_histogram": 0.0, "macd_line": 0.0, "macd_signal": 0.0,
-        "rsi_14": rsi_14, "sma_20": 160.0, "sma_50": 159.5,
+        "atr_14": atr_14,
+        "bb_lower": 159.0,
+        "bb_middle": 160.0,
+        "bb_pct_b": 0.5,
+        "bb_upper": 161.0,
+        "bb_width": 0.0125,
+        "ema_12": 160.0,
+        "ema_26": 160.0,
+        "last_close": 160.0,
+        "macd_histogram": 0.0,
+        "macd_line": 0.0,
+        "macd_signal": 0.0,
+        "rsi_14": rsi_14,
+        "sma_20": 160.0,
+        "sma_50": 159.5,
     }
     return FeatureSet(
         feature_version="v3",
@@ -96,6 +117,7 @@ def _make_strategy(tmp_path: Path, threshold: float = 0.40) -> LGBMStrategy:
 # Tests
 # ---------------------------------------------------------------------------
 
+
 class TestLGBMStrategyInit:
     def test_raises_if_manifest_missing(self, tmp_path):
         with pytest.raises(FileNotFoundError, match="manifest not found"):
@@ -103,6 +125,7 @@ class TestLGBMStrategyInit:
 
     def test_loads_manifest_feature_cols(self, tmp_path):
         import joblib
+
         _make_manifest(tmp_path)
         model = _make_tiny_lgbm()
         joblib.dump(model, tmp_path / "USD_JPY.joblib")

@@ -52,9 +52,7 @@ def _add_labels_bidask_loop(
         short_tp_idx = _first_hit_idx(short_al <= entry_short - tp)
         short_sl_idx = _first_hit_idx(short_ah >= entry_short + sl)
         long_clears = long_tp_idx >= 0 and (long_sl_idx < 0 or long_tp_idx < long_sl_idx)
-        short_clears = short_tp_idx >= 0 and (
-            short_sl_idx < 0 or short_tp_idx < short_sl_idx
-        )
+        short_clears = short_tp_idx >= 0 and (short_sl_idx < 0 or short_tp_idx < short_sl_idx)
         if long_clears and not short_clears:
             labels[i] = 1
         elif short_clears and not long_clears:
@@ -115,9 +113,7 @@ def _add_labels_bidask_vec(
     short_tp_idx = _first_hit_vec(short_tp_mask)
     short_sl_idx = _first_hit_vec(short_sl_mask)
     long_clears = (long_tp_idx >= 0) & ((long_sl_idx < 0) | (long_tp_idx < long_sl_idx))
-    short_clears = (short_tp_idx >= 0) & (
-        (short_sl_idx < 0) | (short_tp_idx < short_sl_idx)
-    )
+    short_clears = (short_tp_idx >= 0) & ((short_sl_idx < 0) | (short_tp_idx < short_sl_idx))
     inner = np.zeros(n_eff, dtype=np.int64)
     inner[long_clears & ~short_clears] = 1
     inner[short_clears & ~long_clears] = -1
@@ -183,8 +179,10 @@ def main() -> None:
             f"diffs={n_diff}/{len(loop_labels)}"
         )
         if n_diff > 0:
-            print(f"    First diff at index {first_diff_idx}: "
-                  f"loop={loop_labels[first_diff_idx]} vec={vec_labels[first_diff_idx]}")
+            print(
+                f"    First diff at index {first_diff_idx}: "
+                f"loop={loop_labels[first_diff_idx]} vec={vec_labels[first_diff_idx]}"
+            )
 
 
 if __name__ == "__main__":

@@ -99,7 +99,6 @@ _SEEDS = [
     "INSERT INTO app_settings VALUES ('runtime_environment','demo','string','0.0.1')",
     f"INSERT INTO execution_metrics VALUES ('em1','o1',2.5,0.3,45.0,{_T})",
     f"INSERT INTO risk_events VALUES ('re1','c1','EUR_USD','accept',NULL,{_T})",
-
     f"INSERT INTO dashboard_top_candidates VALUES ('tc1','EUR_USD','AI',0.91,'buy',{_T},1)",
 ]
 
