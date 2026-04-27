@@ -220,3 +220,236 @@ class TestExistingNotifierBehaviourPreserved:
         entry = json.loads(log_path.read_text(encoding="utf-8"))
         assert entry["event_code"] == "EMERGENCY_FLAT_ALL"
         assert entry["severity"] == "critical"
+
+
+# --- G-2 fix: _do_emergency_flat_positions closes open paper positions --------
+
+_DDL_POSITIONS = """
+CREATE TABLE positions (
+    position_snapshot_id TEXT PRIMARY KEY,
+    order_id             TEXT,
+    account_id           TEXT NOT NULL,
+    instrument           TEXT NOT NULL,
+    event_type           TEXT NOT NULL,
+    units                NUMERIC(18,4) NOT NULL,
+    avg_price            NUMERIC(18,8),
+    unrealized_pl        NUMERIC(18,8),
+    realized_pl          NUMERIC(18,8),
+    event_time_utc       TEXT NOT NULL,
+    correlation_id       TEXT
+)
+"""
+_DDL_CLOSE_EVENTS = """
+CREATE TABLE close_events (
+    close_event_id       TEXT PRIMARY KEY,
+    order_id             TEXT NOT NULL,
+    position_snapshot_id TEXT,
+    reasons              TEXT NOT NULL,
+    primary_reason_code  TEXT NOT NULL,
+    closed_at            TEXT NOT NULL,
+    pnl_realized         NUMERIC(18,8),
+    correlation_id       TEXT
+)
+"""
+_DDL_OUTBOX = """
+CREATE TABLE secondary_sync_outbox (
+    outbox_id      TEXT PRIMARY KEY,
+    table_name     TEXT NOT NULL,
+    primary_key    TEXT NOT NULL,
+    version_no     BIGINT NOT NULL DEFAULT 0,
+    payload_json   TEXT NOT NULL,
+    enqueued_at    TEXT NOT NULL,
+    acked_at       TEXT,
+    last_error     TEXT,
+    attempt_count  INTEGER NOT NULL DEFAULT 0,
+    next_attempt_at TEXT,
+    run_id         TEXT,
+    environment    TEXT,
+    code_version   TEXT,
+    config_version TEXT
+)
+"""
+_DDL_ORDERS = """
+CREATE TABLE orders (order_id TEXT PRIMARY KEY, direction TEXT NOT NULL)
+"""
+
+
+def _make_db_engine():
+    from sqlalchemy import create_engine, text
+
+    eng = create_engine("sqlite:///:memory:")
+    with eng.begin() as conn:
+        conn.execute(text(_DDL_POSITIONS))
+        conn.execute(text(_DDL_CLOSE_EVENTS))
+        conn.execute(text(_DDL_OUTBOX))
+        conn.execute(text(_DDL_ORDERS))
+    return eng
+
+
+def _seed_open_position(engine, *, order_id: str, instrument: str, account_id: str = "acc-1"):
+    from sqlalchemy import text
+
+    with engine.begin() as conn:
+        conn.execute(
+            text(
+                "INSERT INTO orders (order_id, direction) VALUES (:oid, 'buy') "
+                "ON CONFLICT DO NOTHING"
+            ),
+            {"oid": order_id},
+        )
+        conn.execute(
+            text(
+                "INSERT INTO positions "
+                "(position_snapshot_id, order_id, account_id, instrument, "
+                " event_type, units, avg_price, unrealized_pl, realized_pl, "
+                " event_time_utc) "
+                "VALUES (:psid, :oid, :aid, :inst, 'open', 1000, 1.10, NULL, NULL, "
+                "        '2026-04-28T10:00:00+00:00')"
+            ),
+            {"psid": f"ps-{order_id}", "oid": order_id, "aid": account_id, "inst": instrument},
+        )
+
+
+class TestEmergencyFlatPositions:
+    """G-2 fix: _do_emergency_flat_positions closes open paper positions."""
+
+    def _close_events(self, engine):
+        from sqlalchemy import text
+
+        with engine.connect() as conn:
+            return conn.execute(text("SELECT * FROM close_events")).fetchall()
+
+    def test_closes_single_open_position(self) -> None:
+        from scripts.ctl import _do_emergency_flat_positions  # type: ignore[import]
+
+        engine = _make_db_engine()
+        _seed_open_position(engine, order_id="o1", instrument="EUR_USD")
+
+        count = _do_emergency_flat_positions(
+            account_id="acc-1",
+            engine=engine,
+            clock=FixedClock(_FIXED_AT),
+        )
+
+        assert count == 1
+        assert len(self._close_events(engine)) == 1
+        ce = self._close_events(engine)[0]
+        assert ce.primary_reason_code == "emergency_stop"
+
+    def test_closes_multiple_open_positions(self) -> None:
+        from scripts.ctl import _do_emergency_flat_positions  # type: ignore[import]
+
+        engine = _make_db_engine()
+        _seed_open_position(engine, order_id="o1", instrument="EUR_USD")
+        _seed_open_position(engine, order_id="o2", instrument="USD_JPY")
+
+        count = _do_emergency_flat_positions(
+            account_id="acc-1",
+            engine=engine,
+            clock=FixedClock(_FIXED_AT),
+        )
+
+        assert count == 2
+        assert len(self._close_events(engine)) == 2
+
+    def test_no_positions_returns_zero(self) -> None:
+        from scripts.ctl import _do_emergency_flat_positions  # type: ignore[import]
+
+        engine = _make_db_engine()
+        count = _do_emergency_flat_positions(
+            account_id="acc-1",
+            engine=engine,
+            clock=FixedClock(_FIXED_AT),
+        )
+        assert count == 0
+
+
+class TestEmergencyFlatCallsPositionClose:
+    """G-2 fix: _do_emergency_flat() calls position close when env has DB URL."""
+
+    def test_env_with_db_url_closes_open_positions(self, journal, notifier, tmp_path) -> None:
+        from scripts.ctl import _do_emergency_flat  # type: ignore[import]
+
+        engine = _make_db_engine()
+        _seed_open_position(engine, order_id="o1", instrument="EUR_USD")
+
+        # Patch create_engine via env injection + monkeypatching is complex;
+        # instead verify via a spy on _do_emergency_flat_positions.
+        from unittest.mock import patch
+
+        j, _ = journal
+        notifier_obj, _ = notifier
+        pm = _FakeProcessManager(running=False)
+
+        closed_counts = []
+
+        def _spy_positions(**kwargs):
+            closed_counts.append(kwargs.get("account_id"))
+            return 1
+
+        with patch("scripts.ctl._do_emergency_flat_positions", side_effect=_spy_positions):
+            result = _do_emergency_flat(
+                FixedTwoFactor(True),
+                notifier=notifier_obj,
+                clock=FixedClock(_FIXED_AT),
+                journal=j,
+                process_manager=pm,
+                env={"DATABASE_URL": "sqlite:///:memory:", "OANDA_ACCOUNT_ID": "acc-1"},
+            )
+
+        assert result is True
+        assert closed_counts == ["acc-1"]
+
+    def test_missing_database_url_skips_position_close(self, journal, notifier) -> None:
+        from unittest.mock import patch
+
+        from scripts.ctl import _do_emergency_flat  # type: ignore[import]
+
+        j, _ = journal
+        notifier_obj, _ = notifier
+        pm = _FakeProcessManager(running=False)
+        calls = []
+
+        def _spy(**kwargs):
+            calls.append(1)
+            return 0
+
+        with patch("scripts.ctl._do_emergency_flat_positions", side_effect=_spy):
+            result = _do_emergency_flat(
+                FixedTwoFactor(True),
+                notifier=notifier_obj,
+                clock=FixedClock(_FIXED_AT),
+                journal=j,
+                process_manager=pm,
+                env={"OANDA_ACCOUNT_ID": "acc-1"},  # DATABASE_URL missing
+            )
+
+        assert result is True
+        assert calls == []  # position close NOT called
+
+    def test_rejected_2fa_skips_position_close(self, journal, notifier) -> None:
+        from unittest.mock import patch
+
+        from scripts.ctl import _do_emergency_flat  # type: ignore[import]
+
+        j, _ = journal
+        notifier_obj, _ = notifier
+        pm = _FakeProcessManager(running=False)
+        calls = []
+
+        def _noop_flat(**_kw):
+            calls.append(1)
+            return 0
+
+        with patch("scripts.ctl._do_emergency_flat_positions", side_effect=_noop_flat):
+            result = _do_emergency_flat(
+                FixedTwoFactor(False),
+                notifier=notifier_obj,
+                clock=FixedClock(_FIXED_AT),
+                journal=j,
+                process_manager=pm,
+                env={"DATABASE_URL": "sqlite:///:memory:", "OANDA_ACCOUNT_ID": "acc-1"},
+            )
+
+        assert result is False
+        assert calls == []  # 2FA rejected → position close never reached
