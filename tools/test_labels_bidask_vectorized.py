@@ -153,13 +153,13 @@ def main() -> None:
 
     horizon = 12
 
-    print("Running both implementations on 10,000-row slice...")
+    print("Running both implementations on 10,000-row slice...")  # noqa: PRINT
     for tp_mult, sl_mult in [(2.0, 2.0), (3.0, 3.0), (4.0, 4.0), (5.0, 3.0), (3.0, 5.0)]:
-        t0 = time.time()
+        t0 = time.time()  # noqa: CLOCK
         loop_labels = _add_labels_bidask_loop(df, horizon, tp_mult, sl_mult)
-        t1 = time.time()
+        t1 = time.time()  # noqa: CLOCK
         vec_labels = _add_labels_bidask_vec(df, horizon, tp_mult, sl_mult)
-        t2 = time.time()
+        t2 = time.time()  # noqa: CLOCK
 
         # Compare element-by-element.
         n_diff = 0
@@ -173,13 +173,13 @@ def main() -> None:
         loop_ms = (t1 - t0) * 1000
         vec_ms = (t2 - t1) * 1000
         speedup = loop_ms / vec_ms if vec_ms > 0 else float("inf")
-        print(
+        print(  # noqa: PRINT
             f"  tp={tp_mult}, sl={sl_mult}: "
             f"loop={loop_ms:.1f}ms vec={vec_ms:.1f}ms speedup={speedup:.1f}x "
             f"diffs={n_diff}/{len(loop_labels)}"
         )
         if n_diff > 0:
-            print(
+            print(  # noqa: PRINT
                 f"    First diff at index {first_diff_idx}: "
                 f"loop={loop_labels[first_diff_idx]} vec={vec_labels[first_diff_idx]}"
             )

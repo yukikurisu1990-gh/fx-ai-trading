@@ -246,7 +246,7 @@ def main() -> None:
             # Quote event name if it contains commas.
             name_safe = f'"{name}"' if "," in name else name
             fh.write(f"{ts_str},{cur},{name_safe},{imp}\n")
-    print(f"Wrote {len(rows)} events to {OUT_PATH}")
+    print(f"Wrote {len(rows)} events to {OUT_PATH}")  # noqa: PRINT
 
 
 if __name__ == "__main__":

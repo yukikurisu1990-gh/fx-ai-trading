@@ -43,7 +43,7 @@ def fold_mean_vs_pooled(
     all_pnls = [v for f in per_fold_pnls for v in f]
     pooled = _sharpe(all_pnls)
     n_total = len(all_pnls)
-    print(
+    print(  # noqa: PRINT
         f"  {label:<32}  fold-mean Sharpe={fold_mean:>+.4f}  "
         f"pooled Sharpe={pooled:>+.4f}  "
         f"n_total={n_total}  "
@@ -53,7 +53,7 @@ def fold_mean_vs_pooled(
 
 
 def scenario_a_uniform_edge(rng: np.random.Generator) -> None:
-    print("\n=== Scenario A: uniform edge across ranks, rank-3 fires sparsely ===")
+    print("\n=== Scenario A: uniform edge across ranks, rank-3 fires sparsely ===")  # noqa: PRINT
     n_folds = 39
     # All ranks: per-trade pip PnL ~ N(mu=0.5, sigma=15).
     rank1_per_fold: list[list[float]] = []
@@ -72,7 +72,7 @@ def scenario_a_uniform_edge(rng: np.random.Generator) -> None:
 
 
 def scenario_b_real_selection_edge(rng: np.random.Generator) -> None:
-    print("\n=== Scenario B: rank-3 has TRULY higher edge (genuine selection effect) ===")
+    print("\n=== Scenario B: rank-3 has TRULY higher edge (genuine selection effect) ===")  # noqa: PRINT
     n_folds = 39
     rank1_per_fold: list[list[float]] = []
     rank2_per_fold: list[list[float]] = []
@@ -88,7 +88,7 @@ def scenario_b_real_selection_edge(rng: np.random.Generator) -> None:
 
 
 def scenario_c_n_lt_2_fallback(rng: np.random.Generator) -> None:
-    print("\n=== Scenario C: rank-3 with very small n; n<2 fallback to 0 ===")
+    print("\n=== Scenario C: rank-3 with very small n; n<2 fallback to 0 ===")  # noqa: PRINT
     n_folds = 39
     rank3_per_fold: list[list[float]] = []
     for _ in range(n_folds):
@@ -96,7 +96,7 @@ def scenario_c_n_lt_2_fallback(rng: np.random.Generator) -> None:
         n3 = max(0, int(rng.poisson(2)))
         rank3_per_fold.append(rng.normal(0.5, 15, n3).tolist())
     n_zero = sum(1 for f in rank3_per_fold if len(f) < 2)
-    print(f"  Folds with n<2 (returns 0.0): {n_zero}/{n_folds}")
+    print(f"  Folds with n<2 (returns 0.0): {n_zero}/{n_folds}")  # noqa: PRINT
     fold_mean_vs_pooled(rank3_per_fold, "Rank 3 (poisson(2))")
 
 
@@ -105,7 +105,7 @@ def scenario_d_observed_pattern(rng: np.random.Generator) -> None:
 
     What input distributions make fold-mean Sharpe approach 0.561?
     """
-    print("\n=== Scenario D: hunting for the configuration that produces 0.561 ===")
+    print("\n=== Scenario D: hunting for the configuration that produces 0.561 ===")  # noqa: PRINT
     # If we have moderate edge and small N, the mean of fold Sharpes can drift
     # high because individual folds with luck-of-the-draw 0-variance hit the
     # population-variance Sharpe ceiling.
@@ -142,22 +142,22 @@ def scenario_d_observed_pattern(rng: np.random.Generator) -> None:
 
 def main() -> None:
     rng = np.random.default_rng(42)
-    print("=" * 70)
-    print("Synthetic test: fold-mean vs pooled Sharpe (item 10)")
-    print("=" * 70)
+    print("=" * 70)  # noqa: PRINT
+    print("Synthetic test: fold-mean vs pooled Sharpe (item 10)")  # noqa: PRINT
+    print("=" * 70)  # noqa: PRINT
 
     scenario_a_uniform_edge(rng)
     scenario_b_real_selection_edge(rng)
     scenario_c_n_lt_2_fallback(rng)
     scenario_d_observed_pattern(rng)
 
-    print("\n" + "=" * 70)
-    print("Interpretation:")
-    print("  - If A shows fold-mean ~ pooled across all ranks: aggregation is fair")
-    print("  - If C shows fold-mean << pooled: n<2 fallback artificially deflates")
-    print("  - If D shows fold-mean ~ 0.5+ for rank3 with truly biased outcomes:")
-    print("    real selection edge can produce the observed 0.561")
-    print("=" * 70)
+    print("\n" + "=" * 70)  # noqa: PRINT
+    print("Interpretation:")  # noqa: PRINT
+    print("  - If A shows fold-mean ~ pooled across all ranks: aggregation is fair")  # noqa: PRINT
+    print("  - If C shows fold-mean << pooled: n<2 fallback artificially deflates")  # noqa: PRINT
+    print("  - If D shows fold-mean ~ 0.5+ for rank3 with truly biased outcomes:")  # noqa: PRINT
+    print("    real selection edge can produce the observed 0.561")  # noqa: PRINT
+    print("=" * 70)  # noqa: PRINT
 
 
 if __name__ == "__main__":
