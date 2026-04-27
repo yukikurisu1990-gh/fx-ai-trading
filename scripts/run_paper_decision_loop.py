@@ -70,6 +70,8 @@ from fx_ai_trading.domain.price_feed import Candle
 from fx_ai_trading.domain.risk import Instrument
 from fx_ai_trading.ops.logging_config import apply_logging_config
 from fx_ai_trading.repositories.orders import OrdersRepository
+from fx_ai_trading.services.exit_gate_runner import run_exit_gate
+from fx_ai_trading.services.exit_policy import ExitPolicyService
 from fx_ai_trading.services.feature_service import FeatureService
 from fx_ai_trading.services.meta_cycle_runner import MetaCycleConfig, run_meta_cycle
 from fx_ai_trading.services.position_sizer import PositionSizerService
@@ -118,6 +120,31 @@ _DEFAULT_RISK_PCT = 1.0
 
 # MetaDecision adopted_direction → PaperBroker side mapping.
 _DIRECTION_TO_BROKER_SIDE: dict[str, str] = {"buy": "long", "sell": "short"}
+
+
+# ---------------------------------------------------------------------------
+# Granularity helper
+# ---------------------------------------------------------------------------
+
+
+def _granularity_minutes(granularity: str) -> int:
+    """Return the number of minutes per bar for an OANDA granularity string.
+
+    Examples: "M1" → 1, "M5" → 5, "H1" → 60, "H4" → 240.
+    Falls back to 5 (M5) for unrecognised strings.
+    """
+    gran = granularity.upper()
+    if gran.startswith("M"):
+        try:
+            return int(gran[1:])
+        except ValueError:
+            pass
+    if gran.startswith("H"):
+        try:
+            return int(gran[1:]) * 60
+        except ValueError:
+            pass
+    return 5
 
 
 # ---------------------------------------------------------------------------
@@ -367,6 +394,19 @@ def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
             "daily_dd_pct%% of initial_balance. Default 3.0%%."
         ),
     )
+    p.add_argument(
+        "--max-holding-bars",
+        type=int,
+        default=20,
+        metavar="BARS",
+        help=(
+            "Exit gate: maximum bars a position may be held before "
+            "max_holding_time exit fires. Converted to seconds as "
+            "bars × granularity_minutes × 60. "
+            "Default 20 matches the B-2 triple-barrier horizon "
+            "(TP=1.5×ATR, SL=1.0×ATR, horizon=20 M5 bars)."
+        ),
+    )
     args = p.parse_args(argv)
     if args.top_k < 1:
         p.error(f"--top-k must be >= 1 (got {args.top_k})")
@@ -378,6 +418,8 @@ def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         p.error(f"--max-leverage must be > 0, got {args.max_leverage}")
     if args.daily_dd_pct <= 0 or args.daily_dd_pct > 100:
         p.error(f"--daily-dd-pct must be in (0, 100], got {args.daily_dd_pct}")
+    if args.max_holding_bars < 1:
+        p.error(f"--max-holding-bars must be >= 1, got {args.max_holding_bars}")
     # Must mirror feature_service._VALID_GROUPS. "moments" was scoped during
     # J-4 plumbing but never wired into FeatureService — leave it out so a
     # typo doesn't reach runtime.
@@ -845,6 +887,19 @@ def run(args: argparse.Namespace, *, env: dict[str, str] | None = None) -> int:
         config_version="v1",
     )
 
+    # Exit gate: time-based policy (B-2 horizon = 20 bars × granularity).
+    # TP/SL price-based exit is deferred — current_price awareness requires
+    # storing entry-price TP/SL levels in the orders table (Phase 9.X-K+1).
+    _gran_min = _granularity_minutes(args.granularity)
+    max_holding_secs = args.max_holding_bars * _gran_min * 60
+    exit_policy = ExitPolicyService(max_holding_seconds=max_holding_secs)
+    _log.info(
+        "exit_policy: max_holding=%ds (%d bars × %dmin)",
+        max_holding_secs,
+        args.max_holding_bars,
+        _gran_min,
+    )
+
     cycles_completed = 0
 
     try:
@@ -860,6 +915,30 @@ def run(args: argparse.Namespace, *, env: dict[str, str] | None = None) -> int:
                         history[inst] = deque(maxlen=_HISTORY_DEPTH)
             else:
                 current_instruments = active_instruments
+
+            # --- Exit gate (runs before open decision — exit-before-entry) ---
+            # Evaluates all open positions against ExitPolicyService and closes
+            # those where max_holding_time fires.  TP/SL price levels are
+            # deferred (requires per-position storage of entry TP/SL).
+            # Uses per-instrument latest bar close as the current price.
+            def _bar_price(inst: str, _hist: dict = history, _bar=bar) -> float:
+                buf = _hist.get(inst)
+                return buf[-1].close if buf else _bar.close
+
+            try:
+                close_broker = PaperBroker(account_type="demo", nominal_price=bar.close)
+                run_exit_gate(
+                    broker=close_broker,
+                    account_id=account_id,
+                    clock=clock,
+                    state_manager=state_manager,
+                    exit_policy=exit_policy,
+                    quote_feed=_bar_price,
+                    tp=None,
+                    sl=None,
+                )
+            except Exception:
+                _log.exception("run_exit_gate failed — open positions not evaluated this bar")
 
             cycle_id = generate_ulid()
 
