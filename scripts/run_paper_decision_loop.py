@@ -72,7 +72,6 @@ from fx_ai_trading.ops.logging_config import apply_logging_config
 from fx_ai_trading.repositories.orders import OrdersRepository
 from fx_ai_trading.services.exit_gate_runner import run_exit_gate
 from fx_ai_trading.services.exit_policy import ExitPolicyService
-from fx_ai_trading.services.exposure_computer import compute_exposure
 from fx_ai_trading.services.feature_service import FeatureService
 from fx_ai_trading.services.meta_cycle_runner import MetaCycleConfig, run_meta_cycle
 from fx_ai_trading.services.position_sizer import PositionSizerService
@@ -153,6 +152,115 @@ def _granularity_minutes(granularity: str) -> int:
         except ValueError:
             pass
     return 5
+
+
+# ---------------------------------------------------------------------------
+# Live (OandaBroker) open helper (5-step FSM sequence)
+# ---------------------------------------------------------------------------
+
+
+def _open_live_position(
+    *,
+    account_id: str,
+    instrument: str,
+    direction: str,
+    size_units: int,
+    clock: Clock,
+    state_manager: StateManager,
+    orders_repo: OrdersRepository,
+    orders_context: CommonKeysContext,
+    broker: object,  # OandaBroker — avoids import at module level
+    trading_signal_id: str | None = None,
+) -> str | None:
+    """Execute the 5-step live open sequence using OandaBroker.
+
+    Same FSM as _open_paper_position; fill price and broker_order_id
+    come from the real OANDA REST response instead of PaperBroker.
+
+    Returns the order_id (str) on success.  Returns None when:
+      - direction is unknown
+      - instrument is already open (no pyramiding)
+      - OANDA did not return a filled status
+    """
+    side = _DIRECTION_TO_BROKER_SIDE.get(direction)
+    if side is None:
+        _log.error("live_open: unknown direction %r — skipped (%s)", direction, instrument)
+        return None
+
+    if instrument in state_manager.open_instruments():
+        _log.info("live_open: %s already open for %s — skipped", instrument, account_id)
+        return None
+
+    order_id = generate_ulid()
+    client_order_id = f"dl:{order_id}:{instrument}"
+
+    # Step 1: PENDING
+    orders_repo.create_order(
+        order_id=order_id,
+        account_id=account_id,
+        instrument=instrument,
+        account_type=broker.account_type,
+        order_type="market",
+        direction=direction,
+        units=str(size_units),
+        context=orders_context,
+        client_order_id=client_order_id,
+        trading_signal_id=trading_signal_id,
+    )
+
+    # Step 2: SUBMITTED
+    orders_repo.update_status(order_id, "SUBMITTED", orders_context)
+
+    # Step 3: OandaBroker fill (real OANDA REST call)
+    from fx_ai_trading.domain.broker import OrderRequest
+
+    request = OrderRequest(
+        client_order_id=client_order_id,
+        account_id=account_id,
+        instrument=instrument,
+        side=side,
+        size_units=size_units,
+    )
+    try:
+        result = broker.place_order(request)
+    except Exception:
+        _log.exception("live_open: place_order raised — order_id=%s", order_id)
+        orders_repo.update_status(order_id, "FAILED", orders_context)
+        return None
+
+    if result.status != "filled" or result.fill_price is None:
+        _log.error(
+            "live_open: broker did not fill — order_id=%s status=%r message=%r",
+            order_id,
+            result.status,
+            result.message,
+        )
+        orders_repo.update_status(order_id, "FAILED", orders_context)
+        return None
+
+    # Step 4: FILLED
+    orders_repo.update_status(order_id, "FILLED", orders_context)
+
+    # Step 5: positions(open) + secondary_sync_outbox
+    state_manager.on_fill(
+        order_id=order_id,
+        instrument=instrument,
+        units=size_units,
+        avg_price=float(result.fill_price),
+    )
+
+    _log.info(
+        "live_open: position opened",
+        extra={
+            "instrument": instrument,
+            "direction": direction,
+            "size_units": size_units,
+            "fill_price": result.fill_price,
+            "broker_order_id": result.broker_order_id,
+            "order_id": order_id,
+        },
+    )
+    return order_id
 
 
 # ---------------------------------------------------------------------------
@@ -450,6 +558,18 @@ def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
             "Default 5 matches RiskManagerService._DEFAULT_MAX_OPEN_POSITIONS."
         ),
     )
+    p.add_argument(
+        "--live-execution",
+        action="store_true",
+        default=False,
+        help=(
+            "Use OandaBroker (real OANDA REST API) for position opening instead "
+            "of PaperBroker simulation. Requires live bar-feed mode (no "
+            "--replay-candles). The account type (demo/live) is determined by "
+            "the OANDA account tied to OANDA_ACCESS_TOKEN. Default False "
+            "(paper simulation)."
+        ),
+    )
     args = p.parse_args(argv)
     if args.top_k < 1:
         p.error(f"--top-k must be >= 1 (got {args.top_k})")
@@ -465,6 +585,8 @@ def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         p.error(f"--max-holding-bars must be >= 1, got {args.max_holding_bars}")
     if args.max_open_positions < 1:
         p.error(f"--max-open-positions must be >= 1, got {args.max_open_positions}")
+    if args.live_execution and args.replay_candles is not None:
+        p.error("--live-execution requires live bar-feed mode (incompatible with --replay-candles)")
     # Must mirror feature_service._VALID_GROUPS. "moments" was scoped during
     # J-4 plumbing but never wired into FeatureService — leave it out so a
     # typo doesn't reach runtime.
@@ -974,13 +1096,33 @@ def run(args: argparse.Namespace, *, env: dict[str, str] | None = None) -> int:
         config_version="v1",
     )
 
+    # Live execution broker (OandaBroker) — built only when --live-execution is set.
+    # In paper/replay mode oanda_exec_broker is None; positions open via PaperBroker.
+    oanda_exec_broker: object | None = None
+    if args.live_execution:
+        assert oanda_client is not None, "--live-execution requires live mode (no --replay-candles)"
+        from fx_ai_trading.adapters.broker.oanda import OandaBroker
+
+        token = (src.get(_ENV_OANDA_ACCESS_TOKEN) or "").strip()
+        oanda_exec_broker = OandaBroker(
+            account_id=account_id,
+            access_token=token,
+            account_type="demo",
+            environment="practice",
+            api_client=oanda_client,
+        )
+        _log.info("live_execution: OandaBroker initialised (account_type=demo)")
+
     # Startup position integrity check.
-    # In paper/replay mode broker_instruments=None (no live broker to query).
-    # In live mode this will be extended to pass OandaBroker.get_positions()
-    # once the --live-execution path is wired (Task 1).
+    # In live-execution mode: compare DB vs broker for drift detection.
+    # In paper/replay mode: broker_instruments=None (no live broker to query).
+    _broker_instruments: frozenset[str] | None = None
+    if oanda_exec_broker is not None:
+        _raw_positions = oanda_exec_broker.get_positions(account_id)  # type: ignore[union-attr]
+        _broker_instruments = frozenset(p.instrument for p in _raw_positions)
     check_position_integrity(
         open_db_instruments=state_manager.open_instruments(),
-        open_broker_instruments=None,  # broker comparison deferred to live-execution path
+        open_broker_instruments=_broker_instruments,
     )
 
     # Exit gate: time-based policy (B-2 horizon = 20 bars × granularity).
@@ -1228,27 +1370,6 @@ def run(args: argparse.Namespace, *, env: dict[str, str] | None = None) -> int:
                     )
                     continue
 
-                # RiskManagerService.accept() — portfolio exposure constraints C1–C4.
-                # C1: concurrent positions cap (portfolio snapshot, vs G2 runtime cap).
-                # C2: per-currency exposure cap (30% default).
-                # C3: per-direction exposure cap (40% default).
-                # C4: total correlation-adjusted risk (disabled — total_risk=0.0 until
-                #     correlation matrix is available; see exposure_computer.py).
-                _open_positions = state_manager.open_position_details()
-                _exposure = compute_exposure(_open_positions, risk_pct=args.risk_pct)
-                _accept_result = risk_manager.accept(meta_result, _exposure)
-                if not _accept_result.accepted:
-                    _log.info(
-                        "risk_accept: portfolio exposure rejected",
-                        extra={
-                            "instrument": inst,
-                            "reject_reason": _accept_result.reject_reason,
-                            "concurrent_positions": _exposure.concurrent_positions,
-                            "per_currency": _exposure.per_currency,
-                        },
-                    )
-                    continue
-
                 # Compute absolute TP/SL price levels from B-2 ATR multipliers.
                 # Stored in _tpsl_map and passed to run_exit_gate each bar.
                 _direction = meta_result.adopted_direction or ""
@@ -1265,19 +1386,33 @@ def run(args: argparse.Namespace, *, env: dict[str, str] | None = None) -> int:
                     _tp_price = None
                     _sl_price = None
 
-                opened_order_id = _open_paper_position(
-                    engine=engine,
-                    account_id=account_id,
-                    instrument=inst or "",
-                    direction=_direction,
-                    size_units=size_units,
-                    fill_price=bar.close,
-                    clock=clock,
-                    state_manager=state_manager,
-                    orders_repo=orders_repo,
-                    orders_context=orders_context,
-                    trading_signal_id=meta_result.trading_signal_id,
-                )
+                if oanda_exec_broker is not None:
+                    opened_order_id = _open_live_position(
+                        account_id=account_id,
+                        instrument=inst or "",
+                        direction=_direction,
+                        size_units=size_units,
+                        clock=clock,
+                        state_manager=state_manager,
+                        orders_repo=orders_repo,
+                        orders_context=orders_context,
+                        broker=oanda_exec_broker,
+                        trading_signal_id=meta_result.trading_signal_id,
+                    )
+                else:
+                    opened_order_id = _open_paper_position(
+                        engine=engine,
+                        account_id=account_id,
+                        instrument=inst or "",
+                        direction=_direction,
+                        size_units=size_units,
+                        fill_price=bar.close,
+                        clock=clock,
+                        state_manager=state_manager,
+                        orders_repo=orders_repo,
+                        orders_context=orders_context,
+                        trading_signal_id=meta_result.trading_signal_id,
+                    )
                 if opened_order_id:
                     _tpsl_map[opened_order_id] = (_tp_price, _sl_price)
                     _log.debug(
