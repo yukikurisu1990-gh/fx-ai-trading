@@ -75,6 +75,7 @@ from fx_ai_trading.services.exit_policy import ExitPolicyService
 from fx_ai_trading.services.feature_service import FeatureService
 from fx_ai_trading.services.meta_cycle_runner import MetaCycleConfig, run_meta_cycle
 from fx_ai_trading.services.position_sizer import PositionSizerService
+from fx_ai_trading.services.risk_manager import RiskManagerService
 from fx_ai_trading.services.state_manager import StateManager
 from fx_ai_trading.services.strategies.atr import ATRStrategy
 from fx_ai_trading.services.strategies.bollinger import BollingerStrategy
@@ -435,6 +436,18 @@ def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
             "(TP=1.5×ATR, SL=1.0×ATR, horizon=20 M5 bars)."
         ),
     )
+    p.add_argument(
+        "--max-open-positions",
+        type=int,
+        default=5,
+        metavar="N",
+        help=(
+            "RiskManagerService G2 guard: skip new entry if the number of "
+            "concurrent open positions reaches this limit. Also covers G1 "
+            "(no duplicate instrument) and G3 (execution failure cooloff). "
+            "Default 5 matches RiskManagerService._DEFAULT_MAX_OPEN_POSITIONS."
+        ),
+    )
     args = p.parse_args(argv)
     if args.top_k < 1:
         p.error(f"--top-k must be >= 1 (got {args.top_k})")
@@ -448,6 +461,8 @@ def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         p.error(f"--daily-dd-pct must be in (0, 100], got {args.daily_dd_pct}")
     if args.max_holding_bars < 1:
         p.error(f"--max-holding-bars must be >= 1, got {args.max_holding_bars}")
+    if args.max_open_positions < 1:
+        p.error(f"--max-open-positions must be >= 1, got {args.max_open_positions}")
     # Must mirror feature_service._VALID_GROUPS. "moments" was scoped during
     # J-4 plumbing but never wired into FeatureService — leave it out so a
     # typo doesn't reach runtime.
@@ -970,6 +985,9 @@ def run(args: argparse.Namespace, *, env: dict[str, str] | None = None) -> int:
         _gran_min,
     )
 
+    risk_manager = RiskManagerService(max_open_positions=args.max_open_positions)
+    _log.info("risk_manager: max_open_positions=%d", args.max_open_positions)
+
     cycles_completed = 0
 
     # Per-position TP/SL price map keyed by order_id.
@@ -1175,6 +1193,29 @@ def run(args: argparse.Namespace, *, env: dict[str, str] | None = None) -> int:
                         "max_units": args.max_units,
                     },
                 )
+
+                # RiskManagerService pre-execution gate (G1/G2/G3).
+                # G1: no duplicate instrument (defense-in-depth over _open_paper_position check).
+                # G2: concurrent open positions cap (not checked elsewhere).
+                # G3: recent execution failure cooloff (failure_count=0 until tracked).
+                _open_instr = state_manager.open_instruments()
+                _risk_result = risk_manager.allow_trade(
+                    instrument=inst or "",
+                    open_instruments=_open_instr,
+                    concurrent_positions=len(_open_instr),
+                    recent_failure_count=0,
+                )
+                if not _risk_result.allowed:
+                    _log.info(
+                        "risk_gate: trade rejected",
+                        extra={
+                            "instrument": inst,
+                            "reject_reason": _risk_result.reject_reason,
+                            "concurrent_positions": len(_open_instr),
+                            "max_open_positions": args.max_open_positions,
+                        },
+                    )
+                    continue
 
                 # Compute absolute TP/SL price levels from B-2 ATR multipliers.
                 # Stored in _tpsl_map and passed to run_exit_gate each bar.
