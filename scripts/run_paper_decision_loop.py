@@ -72,6 +72,7 @@ from fx_ai_trading.ops.logging_config import apply_logging_config
 from fx_ai_trading.repositories.orders import OrdersRepository
 from fx_ai_trading.services.exit_gate_runner import run_exit_gate
 from fx_ai_trading.services.exit_policy import ExitPolicyService
+from fx_ai_trading.services.exposure_computer import compute_exposure
 from fx_ai_trading.services.feature_service import FeatureService
 from fx_ai_trading.services.meta_cycle_runner import MetaCycleConfig, run_meta_cycle
 from fx_ai_trading.services.position_sizer import PositionSizerService
@@ -1213,6 +1214,27 @@ def run(args: argparse.Namespace, *, env: dict[str, str] | None = None) -> int:
                             "reject_reason": _risk_result.reject_reason,
                             "concurrent_positions": len(_open_instr),
                             "max_open_positions": args.max_open_positions,
+                        },
+                    )
+                    continue
+
+                # RiskManagerService.accept() — portfolio exposure constraints C1–C4.
+                # C1: concurrent positions cap (portfolio snapshot, vs G2 runtime cap).
+                # C2: per-currency exposure cap (30% default).
+                # C3: per-direction exposure cap (40% default).
+                # C4: total correlation-adjusted risk (disabled — total_risk=0.0 until
+                #     correlation matrix is available; see exposure_computer.py).
+                _open_positions = state_manager.open_position_details()
+                _exposure = compute_exposure(_open_positions, risk_pct=args.risk_pct)
+                _accept_result = risk_manager.accept(meta_result, _exposure)
+                if not _accept_result.accepted:
+                    _log.info(
+                        "risk_accept: portfolio exposure rejected",
+                        extra={
+                            "instrument": inst,
+                            "reject_reason": _accept_result.reject_reason,
+                            "concurrent_positions": _exposure.concurrent_positions,
+                            "per_currency": _exposure.per_currency,
                         },
                     )
                     continue
