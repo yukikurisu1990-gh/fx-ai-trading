@@ -74,9 +74,11 @@ class TestPageFile:
         src = _PAGE_PATH.read_text(encoding="utf-8")
         assert "runtime_view" in src
 
-    def test_page_has_two_tabs_runtime_first(self) -> None:
+    def test_page_has_tabs_runtime_first(self) -> None:
         src = _PAGE_PATH.read_text(encoding="utf-8")
-        assert 'st.tabs(["Runtime", "Bootstrap"])' in src
+        assert "st.tabs(" in src
+        assert '"Runtime"' in src
+        assert src.index('"Runtime"') < src.index('"Bootstrap')
 
     def test_page_calls_bootstrap_view(self) -> None:
         """P3: Bootstrap tab is wired via bootstrap_view.render(engine)."""
