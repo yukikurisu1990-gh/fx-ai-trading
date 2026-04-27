@@ -77,6 +77,7 @@ from fx_ai_trading.services.feature_service import FeatureService
 from fx_ai_trading.services.meta_cycle_runner import MetaCycleConfig, run_meta_cycle
 from fx_ai_trading.services.position_sizer import PositionSizerService
 from fx_ai_trading.services.risk_manager import RiskManagerService
+from fx_ai_trading.services.startup_position_check import check_position_integrity
 from fx_ai_trading.services.state_manager import StateManager
 from fx_ai_trading.services.strategies.atr import ATRStrategy
 from fx_ai_trading.services.strategies.bollinger import BollingerStrategy
@@ -971,6 +972,15 @@ def run(args: argparse.Namespace, *, env: dict[str, str] | None = None) -> int:
         environment="demo",
         code_version="decision-loop",
         config_version="v1",
+    )
+
+    # Startup position integrity check.
+    # In paper/replay mode broker_instruments=None (no live broker to query).
+    # In live mode this will be extended to pass OandaBroker.get_positions()
+    # once the --live-execution path is wired (Task 1).
+    check_position_integrity(
+        open_db_instruments=state_manager.open_instruments(),
+        open_broker_instruments=None,  # broker comparison deferred to live-execution path
     )
 
     # Exit gate: time-based policy (B-2 horizon = 20 bars × granularity).
