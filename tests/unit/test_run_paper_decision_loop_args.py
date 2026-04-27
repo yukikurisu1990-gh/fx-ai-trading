@@ -167,6 +167,48 @@ class TestFetchSpreadPips:
 
 
 # ---------------------------------------------------------------------------
+# Exit gate wiring: _granularity_minutes helper
+# ---------------------------------------------------------------------------
+
+
+class TestGranularityMinutes:
+    def test_m1(self) -> None:
+        assert runner._granularity_minutes("M1") == 1
+
+    def test_m5(self) -> None:
+        assert runner._granularity_minutes("M5") == 5
+
+    def test_m15(self) -> None:
+        assert runner._granularity_minutes("M15") == 15
+
+    def test_h1(self) -> None:
+        assert runner._granularity_minutes("H1") == 60
+
+    def test_h4(self) -> None:
+        assert runner._granularity_minutes("H4") == 240
+
+    def test_unknown_falls_back_to_5(self) -> None:
+        assert runner._granularity_minutes("D1") == 5
+
+    def test_lowercase_accepted(self) -> None:
+        assert runner._granularity_minutes("m5") == 5
+
+
+class TestMaxHoldingBarsFlag:
+    def test_default_is_20(self) -> None:
+        args = runner._parse_args([])
+        assert args.max_holding_bars == 20
+
+    def test_custom_value(self) -> None:
+        args = runner._parse_args(["--max-holding-bars", "50"])
+        assert args.max_holding_bars == 50
+
+    def test_zero_rejected(self) -> None:
+        with pytest.raises(SystemExit):
+            runner._parse_args(["--max-holding-bars", "0"])
+
+
+# ---------------------------------------------------------------------------
 # Phase 9.X-K: production levers — argparse flags
 # ---------------------------------------------------------------------------
 
