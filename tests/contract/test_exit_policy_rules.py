@@ -2,11 +2,13 @@
 
 Verifies the public ExitPolicy contract:
   1. ExitPolicyService implements the ExitPolicy Protocol (structural).
-  2. All 4 rules return ExitDecision with correct fields.
-  3. Priority ordering: emergency_stop > sl > tp > max_holding_time.
+  2. Core rules (emergency_stop / sl / tp / max_holding_time) return correct decisions.
+  3. Priority ordering: emergency_stop > sl > tp > max_holding_time (core subset).
   4. Multiple rules can fire simultaneously; all enumerated in reasons.
   5. ExitDecision is frozen / immutable.
   6. should_exit=False when no rule fires.
+  Phase 9.X: extended priority emergency_stop > manual > session_close > sl > tp
+             > news_pause > max_holding_time > reverse_signal > ev_decay.
 """
 
 from __future__ import annotations

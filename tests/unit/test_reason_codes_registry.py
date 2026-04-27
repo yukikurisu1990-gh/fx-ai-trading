@@ -181,3 +181,16 @@ def test_known_dotted_codes_present():
     }
     missing = expected - DOTTED
     assert missing == set(), f"DOTTED is missing registered risk codes: {missing}"
+
+
+def test_known_exit_close_codes_present():
+    """Sanity: every Phase 9.X close.* code (§4.9.2) is registered in DOTTED."""
+    expected = {
+        "close.manual",
+        "close.session_close",
+        "close.news_pause",
+        "close.reverse_signal",
+        "close.ev_decay",
+    }
+    missing = expected - DOTTED
+    assert missing == set(), f"DOTTED is missing exit close reason codes: {missing}"

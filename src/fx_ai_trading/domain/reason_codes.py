@@ -111,6 +111,29 @@ class MetaFilterReason:
     SESSION_CLOSED = "meta.session_closed"
 
 
+class ExitCloseReason:
+    """Dotted close reason codes for Phase 9.X expanded exit rules (§4.9.2).
+
+    Extends the frozen ``CloseReason`` (LEGACY_BARE) with dotted
+    ``close.<name>`` values per I-04 policy.  All rules are context-dict
+    driven: set the corresponding key to ``True`` in the ``context`` arg
+    of ``ExitPolicyService.evaluate()`` to fire the rule.
+
+    Context key mapping:
+        manual_close   → MANUAL
+        session_close  → SESSION_CLOSE
+        near_event     → NEWS_PAUSE
+        reverse_signal → REVERSE_SIGNAL
+        ev_decay       → EV_DECAY
+    """
+
+    MANUAL = "close.manual"
+    SESSION_CLOSE = "close.session_close"
+    NEWS_PAUSE = "close.news_pause"
+    REVERSE_SIGNAL = "close.reverse_signal"
+    EV_DECAY = "close.ev_decay"
+
+
 class TimeoutReason:
     """Reason markers for the TTL-expiry path in ``run_execution_gate``.
 
@@ -189,6 +212,12 @@ DOTTED: frozenset[str] = frozenset(
         # Phase 9.3 MetaDecider filter rules
         MetaFilterReason.CSI_STRENGTH_WEAK,
         MetaFilterReason.SESSION_CLOSED,
+        # Phase 9.X extended close reasons (§4.9.2)
+        ExitCloseReason.MANUAL,
+        ExitCloseReason.SESSION_CLOSE,
+        ExitCloseReason.NEWS_PAUSE,
+        ExitCloseReason.REVERSE_SIGNAL,
+        ExitCloseReason.EV_DECAY,
     }
 )
 """Dotted reason codes.  New entries MUST be added here, not LEGACY_BARE."""
@@ -202,6 +231,7 @@ __all__ = [
     "DOTTED",
     "LEGACY_BARE",
     "CloseReason",
+    "ExitCloseReason",
     "GateReason",
     "MetaFilterReason",
     "MetaReason",

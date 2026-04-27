@@ -194,3 +194,144 @@ class TestDecisionFields:
         svc = _make_service()
         d = _evaluate(svc, sl=1.0800)
         assert d.sl_price == 1.0800
+
+
+# ---------------------------------------------------------------------------
+# Phase 9.X: extended close reasons (§4.9.2)
+# ---------------------------------------------------------------------------
+
+
+class TestExtendedCloseReasons:
+    """Context-dict driven close reasons added in Phase 9.X (§4.9.2)."""
+
+    # ------------------------------------------------------------------
+    # Each rule fires when its context key is True
+    # ------------------------------------------------------------------
+
+    def test_manual_close_triggers_exit(self) -> None:
+        svc = _make_service()
+        d = _evaluate(svc, context={"manual_close": True})
+        assert d.should_exit is True
+        assert d.primary_reason == "close.manual"
+
+    def test_session_close_triggers_exit(self) -> None:
+        svc = _make_service()
+        d = _evaluate(svc, context={"session_close": True})
+        assert d.should_exit is True
+        assert d.primary_reason == "close.session_close"
+
+    def test_news_pause_triggers_exit(self) -> None:
+        svc = _make_service()
+        d = _evaluate(svc, context={"near_event": True})
+        assert d.should_exit is True
+        assert d.primary_reason == "close.news_pause"
+
+    def test_reverse_signal_triggers_exit(self) -> None:
+        svc = _make_service()
+        d = _evaluate(svc, context={"reverse_signal": True})
+        assert d.should_exit is True
+        assert d.primary_reason == "close.reverse_signal"
+
+    def test_ev_decay_triggers_exit(self) -> None:
+        svc = _make_service()
+        d = _evaluate(svc, context={"ev_decay": True})
+        assert d.should_exit is True
+        assert d.primary_reason == "close.ev_decay"
+
+    def test_absent_context_keys_do_not_fire(self) -> None:
+        svc = _make_service()
+        d = _evaluate(svc, context={})
+        assert d.should_exit is False
+
+    def test_false_context_keys_do_not_fire(self) -> None:
+        svc = _make_service()
+        d = _evaluate(
+            svc,
+            context={
+                "manual_close": False,
+                "session_close": False,
+                "near_event": False,
+                "reverse_signal": False,
+                "ev_decay": False,
+            },
+        )
+        assert d.should_exit is False
+
+    # ------------------------------------------------------------------
+    # Priority ordering among the new rules (§4.9.3)
+    # ------------------------------------------------------------------
+
+    def test_manual_beats_session_close(self) -> None:
+        svc = _make_service()
+        d = _evaluate(svc, context={"manual_close": True, "session_close": True})
+        assert d.primary_reason == "close.manual"
+        assert "close.session_close" in d.reasons
+
+    def test_session_close_beats_sl(self) -> None:
+        svc = _make_service()
+        d = _evaluate(
+            svc, side=_LONG, current_price=1.0900, sl=1.0900, context={"session_close": True}
+        )
+        assert d.primary_reason == "close.session_close"
+        assert "sl" in d.reasons
+
+    def test_sl_beats_news_pause(self) -> None:
+        svc = _make_service()
+        d = _evaluate(
+            svc, side=_LONG, current_price=1.0900, sl=1.0900, context={"near_event": True}
+        )
+        assert d.primary_reason == "sl"
+        assert "close.news_pause" in d.reasons
+
+    def test_news_pause_beats_max_holding_time(self) -> None:
+        svc = _make_service(max_holding_seconds=0)
+        d = _evaluate(svc, holding_seconds=1, context={"near_event": True})
+        assert d.primary_reason == "close.news_pause"
+        assert "max_holding_time" in d.reasons
+
+    def test_max_holding_time_beats_reverse_signal(self) -> None:
+        svc = _make_service(max_holding_seconds=0)
+        d = _evaluate(svc, holding_seconds=1, context={"reverse_signal": True})
+        assert d.primary_reason == "max_holding_time"
+        assert "close.reverse_signal" in d.reasons
+
+    def test_reverse_signal_beats_ev_decay(self) -> None:
+        svc = _make_service()
+        d = _evaluate(svc, context={"reverse_signal": True, "ev_decay": True})
+        assert d.primary_reason == "close.reverse_signal"
+        assert "close.ev_decay" in d.reasons
+
+    def test_all_nine_rules_fire_simultaneously(self) -> None:
+        svc = _make_service(max_holding_seconds=0)
+        d = _evaluate(
+            svc,
+            side=_LONG,
+            current_price=1.0900,
+            tp=1.0900,
+            sl=1.0900,
+            holding_seconds=1,
+            context={
+                "emergency_stop": True,
+                "manual_close": True,
+                "session_close": True,
+                "near_event": True,
+                "reverse_signal": True,
+                "ev_decay": True,
+            },
+        )
+        assert d.should_exit is True
+        assert d.primary_reason == "emergency_stop"
+        assert len(d.reasons) == 9
+        # Full priority order check
+        order = list(d.reasons)
+        assert order == [
+            "emergency_stop",
+            "close.manual",
+            "close.session_close",
+            "sl",
+            "tp",
+            "close.news_pause",
+            "max_holding_time",
+            "close.reverse_signal",
+            "close.ev_decay",
+        ]
