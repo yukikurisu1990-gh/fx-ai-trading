@@ -57,12 +57,68 @@ def _ensure_logs_dir() -> None:
     _LOGS_DIR.mkdir(parents=True, exist_ok=True)
 
 
+def _do_emergency_flat_positions(
+    *,
+    account_id: str,
+    engine: object,
+    clock: Clock,
+    broker: object | None = None,
+    quote_feed: object | None = None,
+) -> int:
+    """Issue emergency flat close for all open paper positions.
+
+    Connects to StateManager (DB-backed) and calls run_exit_gate with
+    ``context={"emergency_stop": True}``, which bypasses the stale-quote
+    gate and fires the emergency_stop rule for every open position.
+
+    Args:
+        account_id:  Account scope (must match StateManager's account).
+        engine:      SQLAlchemy Engine (already connected to DATABASE_URL).
+        clock:       Injected time source.
+        broker:      Optional Broker override (default: PaperBroker demo at
+                     nominal_price=0.0).  Inject a real broker in tests.
+        quote_feed:  Optional callable(instrument) → float (default: 0.0 for
+                     all instruments).  Used only for PnL computation inside
+                     run_exit_gate; the emergency_stop rule fires regardless.
+
+    Returns:
+        Number of positions successfully closed (outcome='closed').
+    """
+    from fx_ai_trading.adapters.broker.paper import PaperBroker
+    from fx_ai_trading.services.exit_gate_runner import run_exit_gate
+    from fx_ai_trading.services.exit_policy import ExitPolicyService
+    from fx_ai_trading.services.state_manager import StateManager
+
+    state_manager = StateManager(engine, account_id=account_id, clock=clock)
+    exit_policy = ExitPolicyService()
+    _broker = broker or PaperBroker(account_type="demo", nominal_price=0.0)
+    _qf = quote_feed if quote_feed is not None else (lambda _: 0.0)
+
+    results = run_exit_gate(
+        broker=_broker,
+        account_id=account_id,
+        clock=clock,
+        state_manager=state_manager,
+        exit_policy=exit_policy,
+        quote_feed=_qf,
+        context={"emergency_stop": True},
+    )
+    closed = sum(1 for r in results if r.outcome == "closed")
+    _log.info(
+        "emergency-flat: %d/%d positions closed",
+        closed,
+        len(results),
+    )
+    return closed
+
+
 def _do_emergency_flat(
     two_factor: TwoFactorAuthenticator,
     notifier: FileNotifier | None = None,
     clock: Clock | None = None,
     journal: SafeStopJournal | None = None,
     process_manager: ProcessManager | None = None,
+    env: dict[str, str] | None = None,
 ) -> bool:
     """Execute emergency flat with 2-factor confirmation.
 
@@ -72,13 +128,16 @@ def _do_emergency_flat(
     PR-α (U-9): once 2-factor is confirmed and the FileNotifier event has
     been written, this function additionally
       1. appends an ``emergency_flat_initiated`` entry to ``SafeStopJournal``
-         (durable, append-only — survives DB failure), and
+         (durable, append-only — survives DB failure),
       2. requests Supervisor stop via ``ProcessManager.stop()`` so that the
          existing in-Supervisor signal handler fires
          ``trigger_safe_stop`` and produces the canonical
-         ``safe_stop.triggered`` journal entry.
+         ``safe_stop.triggered`` journal entry, and
+      3. calls ``_do_emergency_flat_positions()`` to close all open paper
+         positions via run_exit_gate(emergency_stop=True) (G-2 fix).
     Supervisor-未起動時 (PID file 不在 / 死プロセス) は journal append のみ
     実行し stop は no-op (fail-safe; cross-process magic は導入しない).
+    DB 接続失敗時はエラーログを出力し操作は True を返す (journal 書込み済み).
     """
     click.echo("=" * 60)
     click.echo("EMERGENCY FLAT ALL — 2-factor confirmation required")
@@ -134,7 +193,38 @@ def _do_emergency_flat(
         click.echo("Supervisor not running — journal entry recorded; stop skipped (fail-safe).")
 
     click.echo("Emergency flat request recorded. Notifier critical event sent.")
-    click.echo("Ensure the Supervisor or broker layer processes the flat order.")
+
+    # Step 3 (G-2 fix): close all open paper positions in the DB.
+    # Reads DATABASE_URL + OANDA_ACCOUNT_ID from env; skips gracefully if absent.
+    _env = env if env is not None else dict(os.environ)
+    _account_id = _env.get("OANDA_ACCOUNT_ID", "").strip()
+    _db_url = _env.get("DATABASE_URL", "").strip()
+    if _account_id and _db_url:
+        try:
+            from sqlalchemy import create_engine as _create_engine
+
+            _engine = _create_engine(_db_url)
+            closed_count = _do_emergency_flat_positions(
+                account_id=_account_id,
+                engine=_engine,
+                clock=_clock,
+            )
+            click.echo(f"Emergency flat: {closed_count} position(s) closed in DB.")
+        except Exception:
+            _log.exception(
+                "emergency-flat: position close via DB failed — manual close may be required"
+            )
+            click.echo(
+                "WARNING: DB position close failed. Manual intervention may be required.",
+                err=True,
+            )
+    else:
+        missing = ", ".join(
+            k for k in ("DATABASE_URL", "OANDA_ACCOUNT_ID") if not _env.get(k, "").strip()
+        )
+        _log.warning("emergency-flat: position close skipped — %s not set", missing)
+        click.echo(f"Position close skipped ({missing} not configured).")
+
     return True
 
 
