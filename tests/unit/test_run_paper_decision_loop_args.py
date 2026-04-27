@@ -664,3 +664,160 @@ class TestTPSLConstants:
         assert sl > entry
         assert tp == pytest.approx(1.0970)
         assert sl == pytest.approx(1.1020)
+
+
+# ---------------------------------------------------------------------------
+# J-1 compounding: _fetch_live_quote helper
+# ---------------------------------------------------------------------------
+
+
+class TestFetchLiveQuote:
+    def _mock_client(self, bid: float, ask: float):
+        from unittest.mock import MagicMock
+
+        client = MagicMock()
+        client.get_pricing.return_value = [
+            {"bids": [{"price": str(bid)}], "asks": [{"price": str(ask)}]}
+        ]
+        return client
+
+    def test_returns_spread_and_mid_price_usd_jpy(self) -> None:
+        client = self._mock_client(159.000, 159.010)
+        spread, mid = runner._fetch_live_quote(client, "acct1", "USD_JPY")
+        assert spread == pytest.approx(1.0, abs=0.01)
+        assert mid == pytest.approx(159.005, abs=0.001)
+
+    def test_returns_spread_and_mid_price_eur_usd(self) -> None:
+        client = self._mock_client(1.10000, 1.10020)
+        spread, mid = runner._fetch_live_quote(client, "acct1", "EUR_USD")
+        assert spread == pytest.approx(2.0, abs=0.01)
+        assert mid == pytest.approx(1.10010, abs=0.00001)
+
+    def test_empty_prices_returns_none_none(self) -> None:
+        from unittest.mock import MagicMock
+
+        client = MagicMock()
+        client.get_pricing.return_value = []
+        spread, mid = runner._fetch_live_quote(client, "acct1", "EUR_USD")
+        assert spread is None
+        assert mid is None
+
+    def test_api_error_returns_none_none(self) -> None:
+        from unittest.mock import MagicMock
+
+        client = MagicMock()
+        client.get_pricing.side_effect = RuntimeError("network error")
+        spread, mid = runner._fetch_live_quote(client, "acct1", "EUR_USD")
+        assert spread is None
+        assert mid is None
+
+    def test_fetch_spread_pips_backward_compat(self) -> None:
+        """_fetch_spread_pips still works as a thin wrapper."""
+        client = self._mock_client(1.10000, 1.10020)
+        pip = runner._fetch_spread_pips(client, "acct1", "EUR_USD")
+        assert pip == pytest.approx(2.0, abs=0.01)
+
+
+# ---------------------------------------------------------------------------
+# J-1 compounding: --max-slippage-pip and --no-compound flags
+# ---------------------------------------------------------------------------
+
+
+class TestMaxSlippagePipFlag:
+    def test_default_is_2_0(self) -> None:
+        args = runner._parse_args([])
+        assert args.max_slippage_pip == pytest.approx(2.0)
+
+    def test_custom_value_accepted(self) -> None:
+        args = runner._parse_args(["--max-slippage-pip", "3.0"])
+        assert args.max_slippage_pip == pytest.approx(3.0)
+
+    def test_zero_accepted(self) -> None:
+        args = runner._parse_args(["--max-slippage-pip", "0.0"])
+        assert args.max_slippage_pip == pytest.approx(0.0)
+
+
+class TestNoCompoundFlag:
+    def test_compound_default_true(self) -> None:
+        args = runner._parse_args([])
+        assert args.compound is True
+
+    def test_no_compound_flag_sets_false(self) -> None:
+        args = runner._parse_args(["--no-compound"])
+        assert args.compound is False
+
+
+# ---------------------------------------------------------------------------
+# J-1 compounding: _query_realized_pnl helper
+# ---------------------------------------------------------------------------
+
+
+class TestQueryRealizedPnl:
+    def _make_engine(self):
+        import sqlalchemy as sa
+
+        engine = sa.create_engine("sqlite:///:memory:")
+        with engine.begin() as conn:
+            conn.execute(
+                sa.text("CREATE TABLE orders (order_id TEXT PRIMARY KEY, account_id TEXT)")
+            )
+            conn.execute(
+                sa.text(
+                    "CREATE TABLE close_events ("
+                    "  close_event_id TEXT PRIMARY KEY,"
+                    "  order_id TEXT,"
+                    "  pnl_realized REAL,"
+                    "  closed_at TEXT"
+                    ")"
+                )
+            )
+        return engine
+
+    def _seed(self, engine, rows: list):
+        import sqlalchemy as sa
+
+        with engine.begin() as conn:
+            for oid, aid, pnl in rows:
+                conn.execute(
+                    sa.text("INSERT INTO orders (order_id, account_id) VALUES (:oid, :aid)"),
+                    {"oid": oid, "aid": aid},
+                )
+                conn.execute(
+                    sa.text(
+                        "INSERT INTO close_events "
+                        "(close_event_id, order_id, pnl_realized, closed_at) "
+                        "VALUES (:ceid, :oid, :pnl, '2026-04-28T10:00:00+00:00')"
+                    ),
+                    {"ceid": f"ce-{oid}", "oid": oid, "pnl": pnl},
+                )
+
+    def test_empty_table_returns_zero(self) -> None:
+        engine = self._make_engine()
+        assert runner._query_realized_pnl(engine, "acc-1") == pytest.approx(0.0)
+
+    def test_single_profit_close(self) -> None:
+        engine = self._make_engine()
+        self._seed(engine, [("o1", "acc-1", 500.0)])
+        assert runner._query_realized_pnl(engine, "acc-1") == pytest.approx(500.0)
+
+    def test_multiple_closes_summed(self) -> None:
+        engine = self._make_engine()
+        self._seed(engine, [("o1", "acc-1", 1000.0), ("o2", "acc-1", -300.0)])
+        assert runner._query_realized_pnl(engine, "acc-1") == pytest.approx(700.0)
+
+    def test_null_pnl_excluded(self) -> None:
+        engine = self._make_engine()
+        self._seed(engine, [("o1", "acc-1", None), ("o2", "acc-1", 200.0)])
+        assert runner._query_realized_pnl(engine, "acc-1") == pytest.approx(200.0)
+
+    def test_different_account_excluded(self) -> None:
+        engine = self._make_engine()
+        self._seed(engine, [("o1", "acc-2", 1000.0), ("o2", "acc-1", 100.0)])
+        assert runner._query_realized_pnl(engine, "acc-1") == pytest.approx(100.0)
+
+    def test_db_error_returns_zero(self) -> None:
+        from unittest.mock import MagicMock
+
+        engine = MagicMock()
+        engine.connect.side_effect = RuntimeError("DB down")
+        assert runner._query_realized_pnl(engine, "acc-1") == pytest.approx(0.0)
