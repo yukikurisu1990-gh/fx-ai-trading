@@ -25,8 +25,8 @@ from fx_ai_trading.common.ulid import generate_ulid
 from fx_ai_trading.services.exit_fire_metrics import ExitFireMetricsService
 
 
-def get_open_positions(engine: Engine | None) -> list[dict]:
-    """Return open position snapshots (event_type 'open' or 'add')."""
+def list_accounts(engine: Engine | None) -> list[dict]:
+    """Return all accounts joined with broker name (for the dashboard switcher)."""
     if engine is None:
         return []
     try:
@@ -34,12 +34,11 @@ def get_open_positions(engine: Engine | None) -> list[dict]:
             rows = (
                 conn.execute(
                     text(
-                        "SELECT position_snapshot_id, account_id, instrument,"
-                        " event_type, units, avg_price, unrealized_pl, event_time_utc"
-                        " FROM position_snapshots"
-                        " WHERE event_type IN ('open', 'add')"
-                        " ORDER BY event_time_utc DESC"
-                        " LIMIT 50"
+                        "SELECT a.account_id, a.account_type, a.base_currency,"
+                        " a.broker_id, b.name AS broker_name"
+                        " FROM accounts a"
+                        " LEFT JOIN brokers b ON b.broker_id = a.broker_id"
+                        " ORDER BY a.account_type, a.account_id"
                     )
                 )
                 .mappings()
@@ -50,25 +49,50 @@ def get_open_positions(engine: Engine | None) -> list[dict]:
         return []
 
 
-def get_recent_orders(engine: Engine | None, limit: int = 20) -> list[dict]:
-    """Return the most recent *limit* orders ordered by created_at desc."""
+def get_open_positions(engine: Engine | None, account_id: str | None = None) -> list[dict]:
+    """Return open position snapshots (event_type 'open' or 'add').
+
+    If ``account_id`` is provided, results are scoped to that account.
+    """
     if engine is None:
         return []
     try:
         with engine.connect() as conn:
-            rows = (
-                conn.execute(
-                    text(
-                        "SELECT order_id, instrument, direction, units, status, created_at"
-                        " FROM orders"
-                        " ORDER BY created_at DESC"
-                        " LIMIT :limit"
-                    ),
-                    {"limit": limit},
-                )
-                .mappings()
-                .all()
+            sql = (
+                "SELECT position_snapshot_id, account_id, instrument,"
+                " event_type, units, avg_price, unrealized_pl, event_time_utc"
+                " FROM positions"
+                " WHERE event_type IN ('open', 'add')"
             )
+            params: dict = {}
+            if account_id:
+                sql += " AND account_id = :aid"
+                params["aid"] = account_id
+            sql += " ORDER BY event_time_utc DESC LIMIT 50"
+            rows = conn.execute(text(sql), params).mappings().all()
+        return [dict(r) for r in rows]
+    except Exception:
+        return []
+
+
+def get_recent_orders(
+    engine: Engine | None, limit: int = 20, account_id: str | None = None
+) -> list[dict]:
+    """Return the most recent *limit* orders ordered by created_at desc.
+
+    If ``account_id`` is provided, results are scoped to that account.
+    """
+    if engine is None:
+        return []
+    try:
+        with engine.connect() as conn:
+            sql = "SELECT order_id, instrument, direction, units, status, created_at FROM orders"
+            params: dict = {"limit": limit}
+            if account_id:
+                sql += " WHERE account_id = :aid"
+                params["aid"] = account_id
+            sql += " ORDER BY created_at DESC LIMIT :limit"
+            rows = conn.execute(text(sql), params).mappings().all()
         return [dict(r) for r in rows]
     except Exception:
         return []
@@ -113,23 +137,29 @@ def get_app_setting(engine: Engine | None, name: str) -> str | None:
         return None
 
 
-def get_daily_order_summary(engine: Engine | None) -> dict:
-    """Aggregate today's order counts by status."""
+def get_daily_order_summary(engine: Engine | None, account_id: str | None = None) -> dict:
+    """Aggregate today's order counts by status.
+
+    If ``account_id`` is provided, results are scoped to that account.
+    """
     if engine is None:
         return {"total": 0, "filled": 0, "canceled": 0, "failed": 0}
     try:
         with engine.connect() as conn:
-            row = conn.execute(
-                text(
-                    "SELECT"
-                    "  COUNT(*) AS total,"
-                    "  SUM(CASE WHEN status = 'FILLED'   THEN 1 ELSE 0 END) AS filled,"
-                    "  SUM(CASE WHEN status = 'CANCELED' THEN 1 ELSE 0 END) AS canceled,"
-                    "  SUM(CASE WHEN status = 'FAILED'   THEN 1 ELSE 0 END) AS failed"
-                    " FROM orders"
-                    " WHERE DATE(created_at) = CURRENT_DATE"
-                )
-            ).fetchone()
+            sql = (
+                "SELECT"
+                "  COUNT(*) AS total,"
+                "  SUM(CASE WHEN status = 'FILLED'   THEN 1 ELSE 0 END) AS filled,"
+                "  SUM(CASE WHEN status = 'CANCELED' THEN 1 ELSE 0 END) AS canceled,"
+                "  SUM(CASE WHEN status = 'FAILED'   THEN 1 ELSE 0 END) AS failed"
+                " FROM orders"
+                " WHERE DATE(created_at) = CURRENT_DATE"
+            )
+            params: dict = {}
+            if account_id:
+                sql += " AND account_id = :aid"
+                params["aid"] = account_id
+            row = conn.execute(text(sql), params).fetchone()
         if row is None:
             return {"total": 0, "filled": 0, "canceled": 0, "failed": 0}
         return {
@@ -176,26 +206,28 @@ def get_top_candidates(engine: Engine | None, limit: int = 20) -> list[dict]:
         return []
 
 
-def get_execution_quality_summary(engine: Engine | None, limit: int = 20) -> list[dict]:
-    """Return recent execution quality metrics (fill latency, slippage, signal age)."""
+def get_execution_quality_summary(
+    engine: Engine | None, limit: int = 20, account_id: str | None = None
+) -> list[dict]:
+    """Return recent execution quality metrics (fill latency, slippage, signal age).
+
+    Joins ``orders`` to scope by ``account_id`` when provided.
+    """
     if engine is None:
         return []
     try:
         with engine.connect() as conn:
-            rows = (
-                conn.execute(
-                    text(
-                        "SELECT order_id, instrument, signal_age_seconds,"
-                        " slippage_pips, fill_latency_ms, created_at"
-                        " FROM execution_metrics"
-                        " ORDER BY created_at DESC"
-                        " LIMIT :limit"
-                    ),
-                    {"limit": limit},
-                )
-                .mappings()
-                .all()
+            sql = (
+                "SELECT em.order_id, em.signal_age_seconds,"
+                " em.slippage_pips, em.latency_ms, em.recorded_at"
+                " FROM execution_metrics em"
             )
+            params: dict = {"limit": limit}
+            if account_id:
+                sql += " JOIN orders o ON o.order_id = em.order_id WHERE o.account_id = :aid"
+                params["aid"] = account_id
+            sql += " ORDER BY em.recorded_at DESC LIMIT :limit"
+            rows = conn.execute(text(sql), params).mappings().all()
         return [dict(r) for r in rows]
     except Exception:
         return []
@@ -210,8 +242,8 @@ def get_risk_state_detail(engine: Engine | None, limit: int = 20) -> list[dict]:
             rows = (
                 conn.execute(
                     text(
-                        "SELECT risk_event_id, cycle_id, instrument, decision,"
-                        " reason_codes, event_time_utc"
+                        "SELECT risk_event_id, cycle_id, instrument, verdict,"
+                        " constraint_violated, event_time_utc"
                         " FROM risk_events"
                         " ORDER BY event_time_utc DESC"
                         " LIMIT :limit"
@@ -226,29 +258,287 @@ def get_risk_state_detail(engine: Engine | None, limit: int = 20) -> list[dict]:
         return []
 
 
-def get_close_events_recent(engine: Engine | None, limit: int = 20) -> list[dict]:
-    """Return recent position close events with exit reasons."""
+def get_close_events_recent(
+    engine: Engine | None, limit: int = 20, account_id: str | None = None
+) -> list[dict]:
+    """Return recent position close events with exit reasons.
+
+    Joins ``orders`` to scope by ``account_id`` when provided.
+    """
     if engine is None:
         return []
     try:
         with engine.connect() as conn:
-            rows = (
-                conn.execute(
-                    text(
-                        "SELECT close_event_id, order_id, primary_reason_code,"
-                        " reasons, closed_at, pnl_realized"
-                        " FROM close_events"
-                        " ORDER BY closed_at DESC"
-                        " LIMIT :limit"
-                    ),
-                    {"limit": limit},
-                )
-                .mappings()
-                .all()
+            sql = (
+                "SELECT ce.close_event_id, ce.order_id, ce.primary_reason_code,"
+                " ce.reasons, ce.closed_at, ce.pnl_realized"
+                " FROM close_events ce"
             )
+            params: dict = {"limit": limit}
+            if account_id:
+                sql += " JOIN orders o ON o.order_id = ce.order_id WHERE o.account_id = :aid"
+                params["aid"] = account_id
+            sql += " ORDER BY ce.closed_at DESC LIMIT :limit"
+            rows = conn.execute(text(sql), params).mappings().all()
         return [dict(r) for r in rows]
     except Exception:
         return []
+
+
+# ---------------------------------------------------------------------------
+# Analytics queries — equity / per-pair / outcomes / hour / strategy
+# ---------------------------------------------------------------------------
+
+
+def _account_join_clause(account_id: str | None) -> tuple[str, dict]:
+    """Return (' JOIN orders... WHERE ... ', params) for account scoping."""
+    if not account_id:
+        return "", {}
+    return " JOIN orders o ON o.order_id = ce.order_id WHERE o.account_id = :aid", {
+        "aid": account_id
+    }
+
+
+def get_equity_curve(
+    engine: Engine | None, account_id: str | None = None, limit: int = 1000
+) -> list[dict]:
+    """Return per-trade close events with cumulative PnL.
+
+    Each row: {closed_at, pnl_realized, cumulative_pnl}. Caller scopes to the
+    selected account. Cumulative is computed in Python.
+    """
+    if engine is None:
+        return []
+    try:
+        with engine.connect() as conn:
+            join, params = _account_join_clause(account_id)
+            params = {**params, "limit": limit}
+            sql = (
+                "SELECT ce.closed_at, ce.pnl_realized FROM close_events ce"
+                + join
+                + " ORDER BY ce.closed_at ASC LIMIT :limit"
+            )
+            rows = conn.execute(text(sql), params).mappings().all()
+        cumulative = 0.0
+        out: list[dict] = []
+        for r in rows:
+            pnl = float(r["pnl_realized"] or 0.0)
+            cumulative += pnl
+            out.append(
+                {
+                    "closed_at": r["closed_at"],
+                    "pnl_realized": pnl,
+                    "cumulative_pnl": cumulative,
+                }
+            )
+        return out
+    except Exception:
+        return []
+
+
+def get_daily_pnl(
+    engine: Engine | None, account_id: str | None = None, days: int = 30
+) -> list[dict]:
+    """Return per-day aggregated PnL: {day, total_pnl, n_trades, n_wins, n_losses}."""
+    if engine is None:
+        return []
+    try:
+        with engine.connect() as conn:
+            join, params = _account_join_clause(account_id)
+            params = {**params, "days": days}
+            sql = (
+                "SELECT DATE(ce.closed_at) AS day,"
+                " SUM(ce.pnl_realized) AS total_pnl,"
+                " COUNT(*) AS n_trades,"
+                " SUM(CASE WHEN ce.pnl_realized > 0 THEN 1 ELSE 0 END) AS n_wins,"
+                " SUM(CASE WHEN ce.pnl_realized < 0 THEN 1 ELSE 0 END) AS n_losses"
+                " FROM close_events ce"
+                + join
+                + (" AND " if join else " WHERE ")
+                + "ce.closed_at >= NOW() - (:days || ' days')::interval"
+                " GROUP BY DATE(ce.closed_at)"
+                " ORDER BY day ASC"
+            )
+            rows = conn.execute(text(sql), params).mappings().all()
+        return [dict(r) for r in rows]
+    except Exception:
+        return []
+
+
+def get_per_pair_performance(engine: Engine | None, account_id: str | None = None) -> list[dict]:
+    """Return per-instrument trade stats: {instrument, n_trades, total_pnl, win_rate, avg_pnl}."""
+    if engine is None:
+        return []
+    try:
+        with engine.connect() as conn:
+            sql = (
+                "SELECT o.instrument,"
+                " COUNT(*) AS n_trades,"
+                " SUM(ce.pnl_realized) AS total_pnl,"
+                " AVG(ce.pnl_realized) AS avg_pnl,"
+                " SUM(CASE WHEN ce.pnl_realized > 0 THEN 1 ELSE 0 END) AS n_wins,"
+                " SUM(CASE WHEN ce.pnl_realized < 0 THEN 1 ELSE 0 END) AS n_losses"
+                " FROM close_events ce"
+                " JOIN orders o ON o.order_id = ce.order_id"
+            )
+            params: dict = {}
+            if account_id:
+                sql += " WHERE o.account_id = :aid"
+                params["aid"] = account_id
+            sql += " GROUP BY o.instrument ORDER BY total_pnl DESC"
+            rows = conn.execute(text(sql), params).mappings().all()
+        out: list[dict] = []
+        for r in rows:
+            n = int(r["n_trades"]) if r["n_trades"] else 0
+            wins = int(r["n_wins"] or 0)
+            out.append(
+                {
+                    "instrument": r["instrument"],
+                    "n_trades": n,
+                    "total_pnl": float(r["total_pnl"] or 0.0),
+                    "avg_pnl": float(r["avg_pnl"] or 0.0),
+                    "n_wins": wins,
+                    "n_losses": int(r["n_losses"] or 0),
+                    "win_rate": (wins / n) if n > 0 else 0.0,
+                }
+            )
+        return out
+    except Exception:
+        return []
+
+
+def get_trade_outcome_breakdown(engine: Engine | None, account_id: str | None = None) -> list[dict]:
+    """Return count + total PnL per primary_reason_code (TP/SL/TIME/etc)."""
+    if engine is None:
+        return []
+    try:
+        with engine.connect() as conn:
+            join, params = _account_join_clause(account_id)
+            sql = (
+                "SELECT ce.primary_reason_code,"
+                " COUNT(*) AS n,"
+                " SUM(ce.pnl_realized) AS total_pnl"
+                " FROM close_events ce" + join + " GROUP BY ce.primary_reason_code ORDER BY n DESC"
+            )
+            rows = conn.execute(text(sql), params).mappings().all()
+        return [
+            {
+                "reason": r["primary_reason_code"],
+                "n_trades": int(r["n"] or 0),
+                "total_pnl": float(r["total_pnl"] or 0.0),
+            }
+            for r in rows
+        ]
+    except Exception:
+        return []
+
+
+def get_hourly_distribution(engine: Engine | None, account_id: str | None = None) -> list[dict]:
+    """Return trade frequency + avg PnL per hour-of-day (UTC)."""
+    if engine is None:
+        return []
+    try:
+        with engine.connect() as conn:
+            join, params = _account_join_clause(account_id)
+            sql = (
+                "SELECT EXTRACT(hour FROM ce.closed_at) AS hour,"
+                " COUNT(*) AS n_trades,"
+                " AVG(ce.pnl_realized) AS avg_pnl,"
+                " SUM(ce.pnl_realized) AS total_pnl"
+                " FROM close_events ce" + join + " GROUP BY EXTRACT(hour FROM ce.closed_at)"
+                " ORDER BY hour ASC"
+            )
+            rows = conn.execute(text(sql), params).mappings().all()
+        return [
+            {
+                "hour": int(r["hour"] or 0),
+                "n_trades": int(r["n_trades"] or 0),
+                "avg_pnl": float(r["avg_pnl"] or 0.0),
+                "total_pnl": float(r["total_pnl"] or 0.0),
+            }
+            for r in rows
+        ]
+    except Exception:
+        return []
+
+
+def get_strategy_breakdown(engine: Engine | None, account_id: str | None = None) -> list[dict]:
+    """Return per-strategy stats. Strategy id parsed from orders.client_order_id
+    convention "{ulid}:{instrument}:{strategy_id}"."""
+    if engine is None:
+        return []
+    try:
+        with engine.connect() as conn:
+            sql = (
+                "SELECT split_part(o.client_order_id, ':', 3) AS strategy_id,"
+                " COUNT(*) AS n_trades,"
+                " SUM(ce.pnl_realized) AS total_pnl,"
+                " AVG(ce.pnl_realized) AS avg_pnl,"
+                " SUM(CASE WHEN ce.pnl_realized > 0 THEN 1 ELSE 0 END) AS n_wins"
+                " FROM close_events ce"
+                " JOIN orders o ON o.order_id = ce.order_id"
+            )
+            params: dict = {}
+            if account_id:
+                sql += " WHERE o.account_id = :aid"
+                params["aid"] = account_id
+            sql += " GROUP BY split_part(o.client_order_id, ':', 3) ORDER BY total_pnl DESC"
+            rows = conn.execute(text(sql), params).mappings().all()
+        out: list[dict] = []
+        for r in rows:
+            n = int(r["n_trades"] or 0)
+            wins = int(r["n_wins"] or 0)
+            out.append(
+                {
+                    "strategy_id": r["strategy_id"] or "(none)",
+                    "n_trades": n,
+                    "total_pnl": float(r["total_pnl"] or 0.0),
+                    "avg_pnl": float(r["avg_pnl"] or 0.0),
+                    "win_rate": (wins / n) if n > 0 else 0.0,
+                }
+            )
+        return out
+    except Exception:
+        return []
+
+
+def get_account_summary(engine: Engine | None, account_id: str) -> dict:
+    """Return high-level account stats: total trades, total PnL, win rate, max DD."""
+    empty = {
+        "n_trades": 0,
+        "total_pnl": 0.0,
+        "win_rate": 0.0,
+        "best_trade": 0.0,
+        "worst_trade": 0.0,
+        "max_drawdown": 0.0,
+    }
+    if engine is None or not account_id:
+        return empty
+    try:
+        equity = get_equity_curve(engine, account_id=account_id, limit=10000)
+        if not equity:
+            return empty
+        pnls = [r["pnl_realized"] for r in equity]
+        cum = [r["cumulative_pnl"] for r in equity]
+        n = len(pnls)
+        wins = sum(1 for p in pnls if p > 0)
+        peak = 0.0
+        max_dd = 0.0
+        for c in cum:
+            peak = max(peak, c)
+            dd = peak - c
+            if dd > max_dd:
+                max_dd = dd
+        return {
+            "n_trades": n,
+            "total_pnl": cum[-1] if cum else 0.0,
+            "win_rate": (wins / n) if n > 0 else 0.0,
+            "best_trade": max(pnls) if pnls else 0.0,
+            "worst_trade": min(pnls) if pnls else 0.0,
+            "max_drawdown": max_dd,
+        }
+    except Exception:
+        return empty
 
 
 # ---------------------------------------------------------------------------

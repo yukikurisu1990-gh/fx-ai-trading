@@ -65,6 +65,7 @@ from fx_ai_trading.services.feature_service import FeatureService
 from fx_ai_trading.services.meta_cycle_runner import MetaCycleConfig, run_meta_cycle
 from fx_ai_trading.services.strategies.atr import ATRStrategy
 from fx_ai_trading.services.strategies.bollinger import BollingerStrategy
+from fx_ai_trading.services.strategies.lgbm_strategy import LGBMStrategy
 from fx_ai_trading.services.strategies.ma import MAStrategy
 from fx_ai_trading.services.strategies.macd import MACDStrategy
 from fx_ai_trading.services.strategies.rsi import RSIStrategy
@@ -139,6 +140,26 @@ def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         ),
     )
     p.add_argument(
+        "--use-ta-strategies",
+        action="store_true",
+        default=False,
+        help=(
+            "Use unvalidated TA strategies (MA/ATR/RSI/MACD/Bollinger) instead "
+            "of the default LGBM classifier. Intended for A/B testing only."
+        ),
+    )
+    p.add_argument(
+        "--max-spread-pip",
+        type=float,
+        default=2.0,
+        metavar="PIPS",
+        help=(
+            "Pre-trade spread gate: skip trade if live bid/ask spread exceeds "
+            "this threshold (in pips). Applied in live mode only; ignored in "
+            "replay mode where real-time quotes are unavailable. Default 2.0 pips."
+        ),
+    )
+    p.add_argument(
         "--feature-groups",
         default="",
         help=(
@@ -172,6 +193,58 @@ def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         )
     args.feature_groups_set = frozenset(feature_groups)
     return args
+
+
+# ---------------------------------------------------------------------------
+# Spread gate helper
+# ---------------------------------------------------------------------------
+
+_PIP_SIZE: dict[str, float] = {
+    "AUD_CAD": 0.0001,
+    "AUD_JPY": 0.01,
+    "AUD_NZD": 0.0001,
+    "AUD_USD": 0.0001,
+    "CHF_JPY": 0.01,
+    "EUR_AUD": 0.0001,
+    "EUR_CAD": 0.0001,
+    "EUR_CHF": 0.0001,
+    "EUR_GBP": 0.0001,
+    "EUR_JPY": 0.01,
+    "EUR_USD": 0.0001,
+    "GBP_AUD": 0.0001,
+    "GBP_CHF": 0.0001,
+    "GBP_JPY": 0.01,
+    "GBP_USD": 0.0001,
+    "NZD_JPY": 0.01,
+    "NZD_USD": 0.0001,
+    "USD_CAD": 0.0001,
+    "USD_CHF": 0.0001,
+    "USD_JPY": 0.01,
+}
+
+
+def _fetch_spread_pips(
+    client: OandaAPIClient,
+    account_id: str,
+    instrument: str,
+) -> float | None:
+    """Return current bid/ask spread in pips, or None if unavailable."""
+    try:
+        prices = client.get_pricing(account_id, [instrument])
+        if not prices:
+            return None
+        entry = prices[0]
+        bids = entry.get("bids", [])
+        asks = entry.get("asks", [])
+        if not bids or not asks:
+            return None
+        bid = float(bids[0]["price"])
+        ask = float(asks[0]["price"])
+        pip = _PIP_SIZE.get(instrument, 0.0001)
+        return (ask - bid) / pip
+    except Exception:
+        _log.warning("spread fetch failed for %s — gate skipped", instrument, exc_info=True)
+        return None
 
 
 # ---------------------------------------------------------------------------
@@ -388,13 +461,20 @@ def run(args: argparse.Namespace, *, env: dict[str, str] | None = None) -> int:
 
     _insert_system_job(engine, run_id=run_id, instrument=reference_instrument, dry_run=args.dry_run)
 
-    strategies = [
-        MAStrategy(strategy_id="ma"),
-        ATRStrategy(strategy_id="atr"),
-        RSIStrategy(strategy_id="rsi"),
-        MACDStrategy(strategy_id="macd"),
-        BollingerStrategy(strategy_id="bollinger"),
-    ]
+    # Phase 9.5-A: LGBM classifier is the primary strategy.
+    # TA strategies (MA/ATR/RSI/MACD/Bollinger) are retained in the codebase
+    # for future A/B testing but excluded from the default loop because they
+    # are not backtest-validated and use arbitrary EV formulas.
+    if args.use_ta_strategies:
+        strategies: list = [
+            MAStrategy(strategy_id="ma"),
+            ATRStrategy(strategy_id="atr"),
+            RSIStrategy(strategy_id="rsi"),
+            MACDStrategy(strategy_id="macd"),
+            BollingerStrategy(strategy_id="bollinger"),
+        ]
+    else:
+        strategies = [LGBMStrategy(strategy_id="lgbm")]
 
     # Rolling per-instrument candle history (fed before FeatureService.build).
     # Phase 9.X-B/J-5: depth auto-expanded when --feature-groups mtf or vol
@@ -519,6 +599,21 @@ def run(args: argparse.Namespace, *, env: dict[str, str] | None = None) -> int:
             cycles_completed += 1
 
             if not meta_result.no_trade and not args.dry_run:
+                inst = meta_result.selected_instrument
+                # Spread gate (live mode only — replay has no real-time quotes).
+                if is_live and oanda_client is not None and inst is not None:
+                    spread_pip = _fetch_spread_pips(oanda_client, account_id, inst)
+                    if spread_pip is not None and spread_pip > args.max_spread_pip:
+                        _log.info(
+                            "spread_too_wide: trade skipped",
+                            extra={
+                                "instrument": inst,
+                                "spread_pip": round(spread_pip, 3),
+                                "max_spread_pip": args.max_spread_pip,
+                            },
+                        )
+                        continue
+
                 # Phase 9.1: position opening via PaperBroker is deferred —
                 # the MetaDecision is logged to DB; trade intent is captured in
                 # trading_signals by run_meta_cycle. Actual broker call wired in

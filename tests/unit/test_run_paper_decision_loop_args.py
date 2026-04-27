@@ -105,3 +105,62 @@ class TestFeatureGroupsFlag:
         # Trailing comma is tolerated
         args = runner._parse_args(["--feature-groups", "mtf,"])
         assert args.feature_groups_set == frozenset({"mtf"})
+
+
+# ---------------------------------------------------------------------------
+# Phase 9.5-A --max-spread-pip flag + _fetch_spread_pips helper
+# ---------------------------------------------------------------------------
+
+
+class TestMaxSpreadPipFlag:
+    def test_default_is_2_0(self) -> None:
+        args = runner._parse_args([])
+        assert args.max_spread_pip == 2.0
+
+    def test_custom_value_accepted(self) -> None:
+        args = runner._parse_args(["--max-spread-pip", "1.5"])
+        assert args.max_spread_pip == 1.5
+
+    def test_zero_accepted(self) -> None:
+        args = runner._parse_args(["--max-spread-pip", "0.0"])
+        assert args.max_spread_pip == 0.0
+
+
+class TestFetchSpreadPips:
+    def _mock_client(self, bid: float, ask: float):
+        from unittest.mock import MagicMock
+
+        client = MagicMock()
+        client.get_pricing.return_value = [
+            {"bids": [{"price": str(bid)}], "asks": [{"price": str(ask)}]}
+        ]
+        return client
+
+    def test_normal_spread(self) -> None:
+        client = self._mock_client(159.000, 159.010)
+        pip = runner._fetch_spread_pips(client, "acct1", "USD_JPY")
+        assert pip == pytest.approx(1.0, abs=0.01)
+
+    def test_eur_usd_spread(self) -> None:
+        client = self._mock_client(1.10000, 1.10020)
+        pip = runner._fetch_spread_pips(client, "acct1", "EUR_USD")
+        assert pip == pytest.approx(2.0, abs=0.01)
+
+    def test_empty_prices_returns_none(self) -> None:
+        from unittest.mock import MagicMock
+
+        client = MagicMock()
+        client.get_pricing.return_value = []
+        assert runner._fetch_spread_pips(client, "acct1", "EUR_USD") is None
+
+    def test_api_error_returns_none(self) -> None:
+        from unittest.mock import MagicMock
+
+        client = MagicMock()
+        client.get_pricing.side_effect = RuntimeError("network error")
+        assert runner._fetch_spread_pips(client, "acct1", "EUR_USD") is None
+
+    def test_unknown_instrument_uses_default_pip(self) -> None:
+        client = self._mock_client(1.00000, 1.00010)
+        pip = runner._fetch_spread_pips(client, "acct1", "XYZ_ABC")
+        assert pip == pytest.approx(1.0, abs=0.01)

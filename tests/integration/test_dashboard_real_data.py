@@ -30,7 +30,7 @@ from fx_ai_trading.services import dashboard_query_service
 # ---------------------------------------------------------------------------
 
 _DDL = [
-    """CREATE TABLE position_snapshots (
+    """CREATE TABLE positions (
         position_snapshot_id TEXT PRIMARY KEY,
         account_id           TEXT,
         instrument           TEXT,
@@ -65,19 +65,18 @@ _DDL = [
     """CREATE TABLE execution_metrics (
         execution_metric_id TEXT PRIMARY KEY,
         order_id            TEXT,
-        instrument          TEXT,
         signal_age_seconds  REAL,
         slippage_pips       REAL,
-        fill_latency_ms     REAL,
-        created_at          TEXT
+        latency_ms          REAL,
+        recorded_at         TEXT
     )""",
     """CREATE TABLE risk_events (
-        risk_event_id   TEXT PRIMARY KEY,
-        cycle_id        TEXT,
-        instrument      TEXT,
-        decision        TEXT,
-        reason_codes    TEXT,
-        event_time_utc  TEXT
+        risk_event_id       TEXT PRIMARY KEY,
+        cycle_id            TEXT,
+        instrument          TEXT,
+        verdict             TEXT,
+        constraint_violated TEXT,
+        event_time_utc      TEXT
     )""",
     """CREATE TABLE dashboard_top_candidates (
         candidate_id TEXT PRIMARY KEY,
@@ -93,12 +92,12 @@ _DDL = [
 _T = "'2026-01-01T00:00:00'"
 
 _SEEDS = [
-    f"INSERT INTO position_snapshots VALUES ('ps1','acct1','EUR_USD','open',10000,1.105,-5.0,{_T})",
+    f"INSERT INTO positions VALUES ('ps1','acct1','EUR_USD','open',10000,1.105,-5.0,{_T})",
     "INSERT INTO orders VALUES ('o1','EUR_USD','buy',1000,'FILLED',datetime('now'))",
     f"INSERT INTO supervisor_events VALUES ('se1','system_start','run1','0.0.1',{_T},'{{}}')",
     "INSERT INTO app_settings VALUES ('phase_mode','phase6','string','0.0.1')",
     "INSERT INTO app_settings VALUES ('runtime_environment','demo','string','0.0.1')",
-    f"INSERT INTO execution_metrics VALUES ('em1','o1','EUR_USD',2.5,0.3,45.0,{_T})",
+    f"INSERT INTO execution_metrics VALUES ('em1','o1',2.5,0.3,45.0,{_T})",
     f"INSERT INTO risk_events VALUES ('re1','c1','EUR_USD','accept',NULL,{_T})",
     f"INSERT INTO dashboard_top_candidates VALUES ('tc1','EUR_USD','AI',0.91,'buy',{_T},1)",
 ]
@@ -155,7 +154,7 @@ class TestQueryLayerRealSQLite:
     def test_get_risk_state_detail_returns_data(self, seeded_engine) -> None:
         rows = dashboard_query_service.get_risk_state_detail(seeded_engine)
         assert len(rows) == 1
-        assert rows[0]["decision"] == "accept"
+        assert rows[0]["verdict"] == "accept"
 
     def test_get_top_candidates_returns_data(self, seeded_engine) -> None:
         rows = dashboard_query_service.get_top_candidates(seeded_engine)

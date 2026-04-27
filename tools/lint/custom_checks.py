@@ -70,6 +70,7 @@ _FORBIDDEN_ATTR_CALLS: set[tuple[str, str]] = {
 
 _NOQA_CLOCK_MARKER = "# noqa: CLOCK"
 _NOQA_SQL_MARKER = "# noqa: SQL"
+_NOQA_PRINT_MARKER = "# noqa: PRINT"
 
 # Clock-only subset of _FORBIDDEN_ATTR_CALLS — the ones exemptible via the CLOCK noqa marker.
 # File-deletion calls (os.remove/unlink, shutil.rmtree) are intentionally excluded:
@@ -185,6 +186,7 @@ def find_forbidden_patterns(code: str) -> list[str]:
         return [f"syntax error: {exc.msg} at line {exc.lineno}"]
 
     noqa_clock = _noqa_lines(code, _NOQA_CLOCK_MARKER)
+    noqa_print = _noqa_lines(code, _NOQA_PRINT_MARKER)
     findings: list[str] = []
 
     for node in ast.walk(tree):
@@ -195,7 +197,7 @@ def find_forbidden_patterns(code: str) -> list[str]:
 
         # Bare name call: print(...)
         if isinstance(func, ast.Name):
-            if func.id in _FORBIDDEN_BUILTINS:
+            if func.id in _FORBIDDEN_BUILTINS and line not in noqa_print:
                 findings.append(f"{func.id}() detected at line {line}")
             continue
 

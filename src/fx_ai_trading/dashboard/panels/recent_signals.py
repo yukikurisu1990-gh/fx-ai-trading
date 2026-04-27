@@ -9,13 +9,15 @@ from fx_ai_trading.services import dashboard_query_service
 
 
 @st.cache_data(ttl=5)
-def _fetch(_engine: object) -> list[dict]:
-    return dashboard_query_service.get_recent_orders(_engine, limit=20)  # type: ignore[arg-type]
+def _fetch(_engine: object, account_id: str | None) -> list[dict]:
+    return dashboard_query_service.get_recent_orders(  # type: ignore[arg-type]
+        _engine, limit=20, account_id=account_id
+    )
 
 
-def render(engine: Engine | None) -> None:
+def render(engine: Engine | None, account_id: str | None = None) -> None:
     st.subheader("Recent Signals")
-    orders = _fetch(engine)
+    orders = _fetch(engine, account_id)
     if not orders:
         st.info("No signals recorded yet.")
         return
