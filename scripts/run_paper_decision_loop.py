@@ -196,6 +196,58 @@ def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
 
 
 # ---------------------------------------------------------------------------
+# Spread gate helper
+# ---------------------------------------------------------------------------
+
+_PIP_SIZE: dict[str, float] = {
+    "AUD_CAD": 0.0001,
+    "AUD_JPY": 0.01,
+    "AUD_NZD": 0.0001,
+    "AUD_USD": 0.0001,
+    "CHF_JPY": 0.01,
+    "EUR_AUD": 0.0001,
+    "EUR_CAD": 0.0001,
+    "EUR_CHF": 0.0001,
+    "EUR_GBP": 0.0001,
+    "EUR_JPY": 0.01,
+    "EUR_USD": 0.0001,
+    "GBP_AUD": 0.0001,
+    "GBP_CHF": 0.0001,
+    "GBP_JPY": 0.01,
+    "GBP_USD": 0.0001,
+    "NZD_JPY": 0.01,
+    "NZD_USD": 0.0001,
+    "USD_CAD": 0.0001,
+    "USD_CHF": 0.0001,
+    "USD_JPY": 0.01,
+}
+
+
+def _fetch_spread_pips(
+    client: OandaAPIClient,
+    account_id: str,
+    instrument: str,
+) -> float | None:
+    """Return current bid/ask spread in pips, or None if unavailable."""
+    try:
+        prices = client.get_pricing(account_id, [instrument])
+        if not prices:
+            return None
+        entry = prices[0]
+        bids = entry.get("bids", [])
+        asks = entry.get("asks", [])
+        if not bids or not asks:
+            return None
+        bid = float(bids[0]["price"])
+        ask = float(asks[0]["price"])
+        pip = _PIP_SIZE.get(instrument, 0.0001)
+        return (ask - bid) / pip
+    except Exception:
+        _log.warning("spread fetch failed for %s — gate skipped", instrument, exc_info=True)
+        return None
+
+
+# ---------------------------------------------------------------------------
 # DB helpers
 # ---------------------------------------------------------------------------
 
@@ -547,6 +599,21 @@ def run(args: argparse.Namespace, *, env: dict[str, str] | None = None) -> int:
             cycles_completed += 1
 
             if not meta_result.no_trade and not args.dry_run:
+                inst = meta_result.selected_instrument
+                # Spread gate (live mode only — replay has no real-time quotes).
+                if is_live and oanda_client is not None and inst is not None:
+                    spread_pip = _fetch_spread_pips(oanda_client, account_id, inst)
+                    if spread_pip is not None and spread_pip > args.max_spread_pip:
+                        _log.info(
+                            "spread_too_wide: trade skipped",
+                            extra={
+                                "instrument": inst,
+                                "spread_pip": round(spread_pip, 3),
+                                "max_spread_pip": args.max_spread_pip,
+                            },
+                        )
+                        continue
+
                 # Phase 9.1: position opening via PaperBroker is deferred —
                 # the MetaDecision is logged to DB; trade intent is captured in
                 # trading_signals by run_meta_cycle. Actual broker call wired in
