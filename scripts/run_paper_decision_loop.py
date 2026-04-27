@@ -149,6 +149,17 @@ def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         ),
     )
     p.add_argument(
+        "--max-spread-pip",
+        type=float,
+        default=2.0,
+        metavar="PIPS",
+        help=(
+            "Pre-trade spread gate: skip trade if live bid/ask spread exceeds "
+            "this threshold (in pips). Applied in live mode only; ignored in "
+            "replay mode where real-time quotes are unavailable. Default 2.0 pips."
+        ),
+    )
+    p.add_argument(
         "--feature-groups",
         default="",
         help=(

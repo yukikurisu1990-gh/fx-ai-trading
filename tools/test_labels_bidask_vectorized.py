@@ -168,7 +168,7 @@ def main() -> None:
         # Compare element-by-element.
         n_diff = 0
         first_diff_idx = -1
-        for i, (a, b) in enumerate(zip(loop_labels, vec_labels)):
+        for i, (a, b) in enumerate(zip(loop_labels, vec_labels, strict=False)):
             if a != b:
                 if first_diff_idx == -1:
                     first_diff_idx = i

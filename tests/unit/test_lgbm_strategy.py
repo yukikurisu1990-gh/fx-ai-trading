@@ -3,18 +3,17 @@
 from __future__ import annotations
 
 import json
-from datetime import datetime, UTC
+from datetime import UTC, datetime
 from pathlib import Path
 from uuid import uuid4
 
+import lightgbm as lgb
 import numpy as np
 import pytest
-import lightgbm as lgb
 
 from fx_ai_trading.domain.feature import FeatureSet
 from fx_ai_trading.domain.strategy import StrategyContext
 from fx_ai_trading.services.strategies.lgbm_strategy import LGBMStrategy
-
 
 # ---------------------------------------------------------------------------
 # Helpers
