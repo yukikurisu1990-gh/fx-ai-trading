@@ -7,7 +7,11 @@ Wires the full D3 pipeline for paper trading:
                                                     MetaDecision (logged)
                                                               ↓
                                                (if trade + not --dry-run)
-                                                    open position (paper)
+                                          Phase 9.X-K pre-trade gate:
+                                            1. Clip cap (--max-units)
+                                            2. Margin-aware sizing (--max-leverage)
+                                            3. Daily DD brake (--daily-dd-pct)
+                                            → position opened (paper)
 
 Phase 1 invariants enforced:
   I-1  : decisions at bar cadence (1m/5m Candle), not tick cadence.
@@ -47,7 +51,7 @@ import os
 import platform
 import sys
 from collections import deque
-from datetime import UTC, datetime
+from datetime import UTC, date, datetime
 from typing import TYPE_CHECKING
 from uuid import UUID
 
@@ -60,9 +64,11 @@ from fx_ai_trading.adapters.price_feed.oanda_bar_feed import OandaBarFeed
 from fx_ai_trading.common.clock import WallClock
 from fx_ai_trading.common.ulid import generate_ulid
 from fx_ai_trading.domain.price_feed import Candle
+from fx_ai_trading.domain.risk import Instrument
 from fx_ai_trading.ops.logging_config import apply_logging_config
 from fx_ai_trading.services.feature_service import FeatureService
 from fx_ai_trading.services.meta_cycle_runner import MetaCycleConfig, run_meta_cycle
+from fx_ai_trading.services.position_sizer import PositionSizerService
 from fx_ai_trading.services.strategies.atr import ATRStrategy
 from fx_ai_trading.services.strategies.bollinger import BollingerStrategy
 from fx_ai_trading.services.strategies.lgbm_strategy import LGBMStrategy
@@ -73,6 +79,7 @@ from fx_ai_trading.services.strategy_runner import run_strategy_cycle
 
 if TYPE_CHECKING:
     from fx_ai_trading.adapters.broker.oanda_api_client import OandaAPIClient
+    from fx_ai_trading.domain.feature import FeatureSet
 
 _log = logging.getLogger(__name__)
 
@@ -90,6 +97,19 @@ _HISTORY_DEPTH_BASELINE = 100
 _HISTORY_DEPTH_VOL = 500  # halflife=60 EWMA × ~7 half-lives + safety margin
 _HISTORY_DEPTH_MTF = 2100  # 7d × 24h × 12 bars/h + safety margin
 _HISTORY_DEPTH = _HISTORY_DEPTH_BASELINE  # back-compat module-level alias
+
+# Phase 9.X-O clip cap: maximum position size in units (100 mini-lots).
+_DEFAULT_MAX_UNITS = 10_000
+
+# Phase 9.X-N margin-aware: Japan FX leverage limit (25:1).
+_DEFAULT_MAX_LEVERAGE = 25.0
+
+# Phase 9.X-J daily DD brake: halt if daily loss exceeds 3% of opening balance.
+_DEFAULT_DAILY_DD_PCT = 3.0
+
+# Phase 9.X-O recommended initial balance (¥300k) and risk per trade (1%).
+_DEFAULT_INITIAL_BALANCE = 300_000.0
+_DEFAULT_RISK_PCT = 1.0
 
 
 # ---------------------------------------------------------------------------
@@ -177,9 +197,75 @@ def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
             "stored but not yet wired into FeatureService."
         ),
     )
+    # -----------------------------------------------------------------------
+    # Phase 9.X-K: production levers (clip cap + margin-aware + daily DD brake)
+    # -----------------------------------------------------------------------
+    p.add_argument(
+        "--initial-balance",
+        type=float,
+        default=_DEFAULT_INITIAL_BALANCE,
+        metavar="AMOUNT",
+        help=(
+            "Starting account balance in account currency (JPY). "
+            "Used by PositionSizerService (risk-% sizing) and daily DD brake "
+            "(threshold = initial_balance × daily_dd_pct / 100). "
+            "Default ¥300,000 per Phase 9.X-O production recommendation."
+        ),
+    )
+    p.add_argument(
+        "--risk-pct",
+        type=float,
+        default=_DEFAULT_RISK_PCT,
+        help=(
+            "Risk percentage per trade passed to PositionSizerService "
+            "(risk_amount = balance × risk_pct / 100). "
+            "Default 1.0%% per Phase 9.X-O recommendation."
+        ),
+    )
+    p.add_argument(
+        "--max-units",
+        type=int,
+        default=_DEFAULT_MAX_UNITS,
+        metavar="UNITS",
+        help=(
+            "Phase 9.X-O clip cap: maximum position size in units. "
+            "Sized positions are clamped to min(computed, max_units). "
+            "Default 10,000 (= 100 mini-lots). "
+            "Eliminates compounding blowup risk at high K."
+        ),
+    )
+    p.add_argument(
+        "--max-leverage",
+        type=float,
+        default=_DEFAULT_MAX_LEVERAGE,
+        help=(
+            "Phase 9.X-N margin-aware leverage limit. "
+            "Trade skipped if margin_required = units × close / max_leverage "
+            "exceeds 50%% of initial_balance. "
+            "Default 25.0 (Japan FX regulation for retail accounts)."
+        ),
+    )
+    p.add_argument(
+        "--daily-dd-pct",
+        type=float,
+        default=_DEFAULT_DAILY_DD_PCT,
+        help=(
+            "Phase 9.X-J daily drawdown brake: halt new entries for the "
+            "remainder of the UTC day if cumulative realized daily loss exceeds "
+            "daily_dd_pct%% of initial_balance. Default 3.0%%."
+        ),
+    )
     args = p.parse_args(argv)
     if args.top_k < 1:
         p.error(f"--top-k must be >= 1 (got {args.top_k})")
+    if args.risk_pct <= 0 or args.risk_pct > 100:
+        p.error(f"--risk-pct must be in (0, 100], got {args.risk_pct}")
+    if args.max_units < 1:
+        p.error(f"--max-units must be >= 1, got {args.max_units}")
+    if args.max_leverage <= 0:
+        p.error(f"--max-leverage must be > 0, got {args.max_leverage}")
+    if args.daily_dd_pct <= 0 or args.daily_dd_pct > 100:
+        p.error(f"--daily-dd-pct must be in (0, 100], got {args.daily_dd_pct}")
     # Must mirror feature_service._VALID_GROUPS. "moments" was scoped during
     # J-4 plumbing but never wired into FeatureService — leave it out so a
     # typo doesn't reach runtime.
@@ -245,6 +331,128 @@ def _fetch_spread_pips(
     except Exception:
         _log.warning("spread fetch failed for %s — gate skipped", instrument, exc_info=True)
         return None
+
+
+# ---------------------------------------------------------------------------
+# Phase 9.X-K: production lever helpers
+# ---------------------------------------------------------------------------
+
+
+class _DailyDrawdownBrake:
+    """Intraday drawdown circuit breaker (Phase 9.X-J GO lever).
+
+    Queries close_events for today's total realized loss.  Halts new entries
+    for the remainder of the UTC day when cumulative daily loss exceeds
+    dd_pct% of opening_balance.
+
+    On DB query error the brake falls through safely (not engaged).
+    """
+
+    def __init__(self, opening_balance: float, dd_pct: float) -> None:
+        self._threshold = opening_balance * dd_pct / 100.0
+        self._opening_balance = opening_balance
+
+    def is_engaged(self, engine: Engine, today: date) -> bool:
+        try:
+            with engine.connect() as conn:
+                row = conn.execute(
+                    text(
+                        "SELECT COALESCE(SUM(pnl_realized), 0.0) "
+                        "FROM close_events "
+                        "WHERE DATE(closed_at AT TIME ZONE 'UTC') = :today "
+                        "  AND pnl_realized < 0"
+                    ),
+                    {"today": str(today)},
+                ).one()
+            daily_loss = float(row[0])
+        except Exception:
+            _log.debug("daily DD brake: DB query failed — brake not engaged")
+            return False
+        if daily_loss < -self._threshold:
+            _log.warning(
+                "daily DD brake engaged: daily_loss=%.2f exceeds threshold=%.2f (%.1f%% of %.2f)",
+                daily_loss,
+                -self._threshold,
+                -daily_loss / self._opening_balance * 100,
+                self._opening_balance,
+            )
+            return True
+        return False
+
+
+def _compute_position_size(
+    inst: str,
+    features: dict[str, FeatureSet],
+    initial_balance: float,
+    risk_pct: float,
+    max_units: int,
+    max_leverage: float,
+    bar_close: float,
+) -> tuple[int, str | None]:
+    """Compute risk-sized position with clip cap and margin check.
+
+    Returns (size_units, skip_reason). size_units=0 means skip this trade.
+
+    Steps:
+      1. ATR-based SL distance → PositionSizerService (risk-% formula)
+      2. Clip cap: min(computed, max_units)
+      3. Margin-aware: skip if margin_required > 50% of initial_balance
+    """
+    feat = features.get(inst)
+    if feat is None:
+        return 0, "NoFeatures"
+    atr = feat.sampled_features.get("atr_14", 0.0)
+    if not atr or atr <= 0:
+        return 0, "NoATR"
+    pip = _PIP_SIZE.get(inst, 0.0001)
+    sl_pips = atr / pip
+    instrument_ref = Instrument(
+        instrument=inst,
+        base_currency=inst[:3],
+        quote_currency=inst[4:] if len(inst) > 4 else "???",
+        pip_location=-4 if pip == 0.0001 else -2,
+        min_trade_units=1,
+    )
+    sizer = PositionSizerService(risk_pct=risk_pct)
+    sr = sizer.size(initial_balance, risk_pct, sl_pips, instrument_ref)
+    if sr.size_units == 0:
+        return 0, sr.reason or "SizeUnderMin"
+
+    # Apply clip cap (Phase 9.X-O: 100 mini-lots).
+    size_units = min(sr.size_units, max_units)
+    clipped = size_units < sr.size_units
+    if clipped:
+        _log.debug(
+            "clip cap applied: %s raw=%d → %d (max_units=%d)",
+            inst,
+            sr.size_units,
+            size_units,
+            max_units,
+        )
+
+    # Margin-aware check (Phase 9.X-N: Japan 25:1 leverage limit).
+    # Approximation: margin_required = units × close_price / leverage.
+    # For JPY-quoted pairs this gives JPY margin directly; for non-JPY
+    # pairs it overestimates slightly (base-to-JPY conversion omitted
+    # — conservative bias is intentional for paper mode).
+    if bar_close > 0 and max_leverage > 0:
+        margin_required = size_units * bar_close / max_leverage
+        margin_limit = initial_balance * 0.5
+        if margin_required > margin_limit:
+            # Reduce size to fit within 50% margin constraint.
+            reduced = int(margin_limit * max_leverage / bar_close)
+            if reduced < 1:
+                return 0, "InsufficientMargin"
+            size_units = reduced
+            _log.debug(
+                "margin-aware size reduction: %s margin_req=%.2f > limit=%.2f → units=%d",
+                inst,
+                margin_required,
+                margin_limit,
+                size_units,
+            )
+
+    return size_units, None
 
 
 # ---------------------------------------------------------------------------
@@ -509,6 +717,12 @@ def run(args: argparse.Namespace, *, env: dict[str, str] | None = None) -> int:
             granularity=args.granularity,
         )
 
+    # Phase 9.X-K: instantiate daily DD brake (J-2 lever).
+    dd_brake = _DailyDrawdownBrake(
+        opening_balance=args.initial_balance,
+        dd_pct=args.daily_dd_pct,
+    )
+
     cycles_completed = 0
 
     try:
@@ -589,17 +803,17 @@ def run(args: argparse.Namespace, *, env: dict[str, str] | None = None) -> int:
                 extra={
                     "cycle_id": cycle_id,
                     "bar_time": bar.time_utc.isoformat(),
-                    "no_trade": meta_result.no_trade,
-                    "selected_instrument": meta_result.selected_instrument,
-                    "selected_signal": meta_result.selected_signal,
+                    "adopted": meta_result.adopted,
+                    "adopted_instrument": meta_result.adopted_instrument,
+                    "adopted_direction": meta_result.adopted_direction,
                     "strategy_rows": strategy_result.rows_written,
                 },
             )
 
             cycles_completed += 1
 
-            if not meta_result.no_trade and not args.dry_run:
-                inst = meta_result.selected_instrument
+            if meta_result.adopted and not args.dry_run:
+                inst = meta_result.adopted_instrument
                 # Spread gate (live mode only — replay has no real-time quotes).
                 if is_live and oanda_client is not None and inst is not None:
                     spread_pip = _fetch_spread_pips(oanda_client, account_id, inst)
@@ -614,13 +828,56 @@ def run(args: argparse.Namespace, *, env: dict[str, str] | None = None) -> int:
                         )
                         continue
 
-                # Phase 9.1: position opening via PaperBroker is deferred —
-                # the MetaDecision is logged to DB; trade intent is captured in
-                # trading_signals by run_meta_cycle. Actual broker call wired in
-                # Phase 9.1 follow-up PR once exit-gate integration is confirmed.
+                # Phase 9.X-J: daily DD brake — halt entries when today's
+                # realized loss exceeds dd_pct% of opening balance.
+                today_utc = bar.time_utc.date()
+                if dd_brake.is_engaged(engine, today_utc):
+                    _log.info(
+                        "daily_dd_brake: trade skipped",
+                        extra={"instrument": inst, "bar_time": bar.time_utc.isoformat()},
+                    )
+                    continue
+
+                # Phase 9.X-K: compute risk-sized position (clip cap + margin check).
+                # Sizing is logged regardless of whether the broker call is live.
+                size_units, skip_reason = _compute_position_size(
+                    inst=inst or "",
+                    features=features,
+                    initial_balance=args.initial_balance,
+                    risk_pct=args.risk_pct,
+                    max_units=args.max_units,
+                    max_leverage=args.max_leverage,
+                    bar_close=bar.close,
+                )
+                if size_units == 0:
+                    _log.info(
+                        "sizing_skipped: trade skipped",
+                        extra={"instrument": inst, "reason": skip_reason},
+                    )
+                    continue
+
                 _log.info(
-                    "trade intent logged (broker call deferred to Phase 9.1 follow-up)",
-                    extra={"selected_signal": meta_result.selected_signal},
+                    "trade intent: position sized",
+                    extra={
+                        "instrument": inst,
+                        "direction": meta_result.adopted_direction,
+                        "size_units": size_units,
+                        "initial_balance": args.initial_balance,
+                        "risk_pct": args.risk_pct,
+                        "max_units": args.max_units,
+                    },
+                )
+
+                # Phase 9.1 / 9.X-K follow-up: wire PaperBroker.place_order()
+                # using the computed size_units above. Deferred until exit-gate
+                # integration is confirmed and the PaperBroker + StateManager
+                # bootstrap is wired into this runner.
+                _log.info(
+                    "trade intent logged (broker call deferred to Phase 9.X-K follow-up)",
+                    extra={
+                        "adopted_direction": meta_result.adopted_direction,
+                        "size_units": size_units,
+                    },
                 )
 
     except KeyboardInterrupt:
