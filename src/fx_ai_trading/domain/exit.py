@@ -1,8 +1,9 @@
 """ExitPolicy domain interface and DTOs (D3 §2 / design §6.1).
 
 ExitPolicy evaluates open positions each cycle and decides whether to close them.
-Priority (high to low): emergency_stop > pre_event_halt > sl > tp > reverse_signal
-  > ev_decay > max_holding_time.
+Priority (high to low) per Phase 1 §4.9.3:
+  emergency_stop > manual > session_close > sl > tp > news_pause
+  > max_holding_time > reverse_signal > ev_decay.
 
 All fired reasons are fully enumerated in ExitDecision and written to close_events.
 """
@@ -44,15 +45,16 @@ class ExitPolicy(Protocol):
     """Per-position exit decision engine (D3 §2 / design §6.1).
 
     Evaluates each open position every 1m/5m cycle.
-    Priority: emergency_stop > pre_event_halt > sl > tp > reverse_signal
-              > ev_decay > max_holding_time.
+    Priority per Phase 1 §4.9.3:
+      emergency_stop > manual > session_close > sl > tp > news_pause
+      > max_holding_time > reverse_signal > ev_decay.
 
     Invariant: all triggered reasons are fully enumerated in ExitDecision.reasons;
     the highest-priority reason is primary_reason.
     Side effect: caller writes ExitDecision to close_events (not ExitPolicy itself).
 
-    MVP scope: sl / tp / max_holding_time / emergency_stop.
-    Deferred: reverse_signal / ev_decay / pre_event_halt Interface prepared.
+    Rules 2-3, 6, 8-9 (manual/session_close/news_pause/reverse_signal/ev_decay) are
+    context-dict driven: set the corresponding key to True in context to activate.
     """
 
     def evaluate(
