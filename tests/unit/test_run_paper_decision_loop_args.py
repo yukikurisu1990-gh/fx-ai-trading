@@ -900,11 +900,15 @@ class TestLiveExecutionFlag:
 
     def test_live_execution_with_replay_candles_rejected(self) -> None:
         with pytest.raises(SystemExit):
-            runner._parse_args([
-                "--live-execution",
-                "--replay-candles", "data/test.jsonl",
-                "--instrument", "EUR_USD",
-            ])
+            runner._parse_args(
+                [
+                    "--live-execution",
+                    "--replay-candles",
+                    "data/test.jsonl",
+                    "--instrument",
+                    "EUR_USD",
+                ]
+            )
 
     def test_live_execution_without_replay_accepted(self) -> None:
         args = runner._parse_args(["--live-execution"])
