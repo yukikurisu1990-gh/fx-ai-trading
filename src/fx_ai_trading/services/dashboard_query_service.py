@@ -647,6 +647,127 @@ def get_exit_fire_recent(engine: Engine | None, limit: int = 50) -> list[dict]:
 # ---------------------------------------------------------------------------
 
 
+# ---------------------------------------------------------------------------
+# Candlestick chart queries
+# ---------------------------------------------------------------------------
+
+
+def get_market_candles(
+    engine: Engine | None,
+    instrument: str,
+    tier: str = "M1",
+    limit: int = 500,
+) -> list[dict]:
+    """Return OHLCV candles for a given instrument and tier, newest-last."""
+    if engine is None:
+        return []
+    try:
+        with engine.connect() as conn:
+            rows = (
+                conn.execute(
+                    text(
+                        "SELECT event_time_utc, open, high, low, close, volume"
+                        " FROM market_candles"
+                        " WHERE instrument = :inst AND tier = :tier"
+                        " ORDER BY event_time_utc DESC LIMIT :limit"
+                    ),
+                    {"inst": instrument, "tier": tier, "limit": limit},
+                )
+                .mappings()
+                .all()
+            )
+        return [dict(r) for r in reversed(rows)]
+    except Exception:
+        return []
+
+
+def get_trade_markers(
+    engine: Engine | None,
+    instrument: str,
+    account_id: str | None = None,
+    limit: int = 200,
+) -> list[dict]:
+    """Return entry/exit price markers for closed trades on a given instrument.
+
+    Each row: {entry_time, exit_time, entry_price, exit_price, direction, pnl_realized}.
+    """
+    if engine is None:
+        return []
+    try:
+        with engine.connect() as conn:
+            sql = (
+                "SELECT"
+                "  o.direction,"
+                "  o.filled_at AS entry_time,"
+                "  ce.closed_at AS exit_time,"
+                "  p_open.avg_price AS entry_price,"
+                "  p_close.avg_price AS exit_price,"
+                "  ce.pnl_realized,"
+                "  ce.primary_reason_code"
+                " FROM orders o"
+                " JOIN close_events ce ON ce.order_id = o.order_id"
+                " JOIN positions p_open ON p_open.order_id = o.order_id"
+                "   AND p_open.event_type = 'open'"
+                " JOIN positions p_close ON p_close.order_id = o.order_id"
+                "   AND p_close.event_type = 'close'"
+                " WHERE o.instrument = :inst AND o.status = 'FILLED'"
+            )
+            params: dict = {"inst": instrument, "limit": limit}
+            if account_id:
+                sql += " AND o.account_id = :aid"
+                params["aid"] = account_id
+            sql += " ORDER BY o.filled_at DESC LIMIT :limit"
+            rows = conn.execute(text(sql), params).mappings().all()
+        return [dict(r) for r in rows]
+    except Exception:
+        return []
+
+
+def get_decision_markers(
+    engine: Engine | None,
+    instrument: str,
+    limit: int = 200,
+) -> list[dict]:
+    """Return MetaDecider decision markers for a given instrument.
+
+    Each row: {signal_time_utc, signal_direction, confidence, strategy_id}.
+    """
+    if engine is None:
+        return []
+    try:
+        with engine.connect() as conn:
+            rows = (
+                conn.execute(
+                    text(
+                        "SELECT signal_time_utc, signal_direction, confidence, strategy_id"
+                        " FROM strategy_signals"
+                        " WHERE instrument = :inst"
+                        " ORDER BY signal_time_utc DESC LIMIT :limit"
+                    ),
+                    {"inst": instrument, "limit": limit},
+                )
+                .mappings()
+                .all()
+            )
+        return [dict(r) for r in rows]
+    except Exception:
+        return []
+
+
+def list_candle_instruments(engine: Engine | None) -> list[str]:
+    """Return distinct instruments that have candle data."""
+    if engine is None:
+        return []
+    try:
+        with engine.connect() as conn:
+            rows = conn.execute(
+                text("SELECT DISTINCT instrument FROM market_candles ORDER BY instrument")
+            ).fetchall()
+        return [r[0] for r in rows]
+    except Exception:
+        return []
+
+
 def enqueue_app_settings_change(
     engine: Engine | None,
     *,
