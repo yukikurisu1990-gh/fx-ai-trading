@@ -1781,13 +1781,15 @@ def run(args: argparse.Namespace, *, env: dict[str, str] | None = None) -> int:
                 _direction = meta_result.adopted_direction or ""
                 _feat = features.get(inst or "")
                 _atr = _feat.sampled_features.get("atr_14", 0.0) if _feat else 0.0
+                # OANDA price precision: JPY pairs = 3 dp, others = 5 dp.
+                _price_dp = 3 if (inst or "").endswith("_JPY") else 5
                 if _atr and _atr > 0:
                     if _direction == "buy":
-                        _tp_price: float | None = inst_close + _TP_MULT * _atr
-                        _sl_price: float | None = inst_close - _SL_MULT * _atr
+                        _tp_price: float | None = round(inst_close + _TP_MULT * _atr, _price_dp)
+                        _sl_price: float | None = round(inst_close - _SL_MULT * _atr, _price_dp)
                     else:  # sell
-                        _tp_price = inst_close - _TP_MULT * _atr
-                        _sl_price = inst_close + _SL_MULT * _atr
+                        _tp_price = round(inst_close - _TP_MULT * _atr, _price_dp)
+                        _sl_price = round(inst_close + _SL_MULT * _atr, _price_dp)
                 else:
                     _tp_price = None
                     _sl_price = None
