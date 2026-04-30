@@ -261,7 +261,12 @@ def run_meta_cycle(
         "rejections": rejections,
     }
 
-    active_strategies = [c.strategy_id for c in (survivors or trade_candidates)]
+    if survivors:
+        active_strategies = [c.strategy_id for c in survivors]
+    elif adopted is not None:
+        active_strategies = [adopted.strategy_id]
+    else:
+        active_strategies = []
 
     meta_decision_id = generate_ulid()
     no_trade_reason = _derive_no_trade_reason(

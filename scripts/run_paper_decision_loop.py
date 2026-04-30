@@ -1491,7 +1491,7 @@ def run(args: argparse.Namespace, *, env: dict[str, str] | None = None) -> int:
                 current_instruments = [i for i in registry.list_active() if i in active_instruments]
                 for inst in current_instruments:
                     if inst not in history:
-                        history[inst] = deque(maxlen=_HISTORY_DEPTH)
+                        history[inst] = deque(maxlen=history_depth)
             else:
                 current_instruments = active_instruments
 

@@ -124,6 +124,7 @@ def _rows_to_table(rows: list[dict]) -> pa.Table:
             ("low", pa.float64()),
             ("close", pa.float64()),
             ("volume", pa.int64()),
+            # M1 base features (15)
             ("atr_14", pa.float64()),
             ("bb_lower", pa.float64()),
             ("bb_middle", pa.float64()),
@@ -139,6 +140,34 @@ def _rows_to_table(rows: list[dict]) -> pa.Table:
             ("rsi_14", pa.float64()),
             ("sma_20", pa.float64()),
             ("sma_50", pa.float64()),
+            # v4 upper-TF features — M5 (8)
+            ("m5_return_1", pa.float64()),
+            ("m5_return_3", pa.float64()),
+            ("m5_volatility", pa.float64()),
+            ("m5_rsi_14", pa.float64()),
+            ("m5_ma_slope", pa.float64()),
+            ("m5_bb_pct_b", pa.float64()),
+            ("m5_trend_slope", pa.float64()),
+            ("m5_trend_dir", pa.float64()),
+            # v4 upper-TF features — M15 (8)
+            ("m15_return_1", pa.float64()),
+            ("m15_return_3", pa.float64()),
+            ("m15_volatility", pa.float64()),
+            ("m15_rsi_14", pa.float64()),
+            ("m15_ma_slope", pa.float64()),
+            ("m15_bb_pct_b", pa.float64()),
+            ("m15_trend_slope", pa.float64()),
+            ("m15_trend_dir", pa.float64()),
+            # v4 upper-TF features — H1 (8)
+            ("h1_return_1", pa.float64()),
+            ("h1_return_3", pa.float64()),
+            ("h1_volatility", pa.float64()),
+            ("h1_rsi_14", pa.float64()),
+            ("h1_ma_slope", pa.float64()),
+            ("h1_bb_pct_b", pa.float64()),
+            ("h1_trend_slope", pa.float64()),
+            ("h1_trend_dir", pa.float64()),
+            # Labels
             ("label_fwd_return", pa.float64()),
             ("label_triple_barrier", pa.int8()),
         ]
