@@ -764,7 +764,8 @@ def get_decision_markers(
                 rows = (
                     conn.execute(
                         text(
-                            "SELECT signal_time_utc, signal_direction, confidence, strategy_id, meta"
+                            "SELECT signal_time_utc, signal_direction,"
+                            " confidence, strategy_id, meta"
                             " FROM strategy_signals"
                             " WHERE instrument = :inst AND signal_time_utc >= :since"
                             " ORDER BY signal_time_utc ASC LIMIT 20000"
@@ -778,7 +779,8 @@ def get_decision_markers(
                 rows = (
                     conn.execute(
                         text(
-                            "SELECT signal_time_utc, signal_direction, confidence, strategy_id, meta"
+                            "SELECT signal_time_utc, signal_direction,"
+                            " confidence, strategy_id, meta"
                             " FROM strategy_signals"
                             " WHERE instrument = :inst"
                             " ORDER BY signal_time_utc DESC LIMIT :limit"
@@ -795,6 +797,7 @@ def get_decision_markers(
             if isinstance(meta, str):
                 try:
                     import json as _json
+
                     meta = _json.loads(meta)
                 except Exception:
                     meta = {}
