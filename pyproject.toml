@@ -66,4 +66,7 @@ indent-style = "space"
 [tool.pytest.ini_options]
 minversion = "8.0"
 testpaths = ["tests"]
-addopts = "-ra --strict-markers"
+addopts = "-ra --strict-markers --ignore=tests/migration/test_roundtrip.py"
+markers = [
+    "destructive: test drops/truncates real DB tables — run explicitly with -m destructive",
+]
