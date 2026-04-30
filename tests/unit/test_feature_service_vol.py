@@ -193,10 +193,8 @@ class TestFeatureServiceVol:
                 enable_groups=frozenset({"garbage"}),
             )
 
-    def test_feature_version_unchanged(self) -> None:
-        # Adding a new opt-in group does NOT change FEATURE_VERSION.
-        # Default behaviour (enable_groups=frozenset()) stays v3.
-        assert FEATURE_VERSION == "v3"
+    def test_feature_version_v4(self) -> None:
+        assert FEATURE_VERSION == "v4"
 
     def test_feature_hash_changes_with_vol(self) -> None:
         candles = _make_candles(500)

@@ -232,6 +232,7 @@ def _add_labels_bidask(
 # ---------------------------------------------------------------------------
 
 _FEATURE_COLS = [
+    # M1 base (15)
     "atr_14",
     "bb_lower",
     "bb_middle",
@@ -247,7 +248,162 @@ _FEATURE_COLS = [
     "rsi_14",
     "sma_20",
     "sma_50",
+    # M5 upper-TF (8)
+    "m5_return_1",
+    "m5_return_3",
+    "m5_volatility",
+    "m5_rsi_14",
+    "m5_ma_slope",
+    "m5_bb_pct_b",
+    "m5_trend_slope",
+    "m5_trend_dir",
+    # M15 upper-TF (8)
+    "m15_return_1",
+    "m15_return_3",
+    "m15_volatility",
+    "m15_rsi_14",
+    "m15_ma_slope",
+    "m15_bb_pct_b",
+    "m15_trend_slope",
+    "m15_trend_dir",
+    # H1 upper-TF (8)
+    "h1_return_1",
+    "h1_return_3",
+    "h1_volatility",
+    "h1_rsi_14",
+    "h1_ma_slope",
+    "h1_bb_pct_b",
+    "h1_trend_slope",
+    "h1_trend_dir",
+    # MTF H4/D1/W1 (6)
+    "h4_atr_14",
+    "d1_return_3",
+    "d1_range_pct",
+    "d1_atr_14",
+    "w1_return_1",
+    "w1_range_pct",
 ]
+
+
+def _rsi_series(c: pd.Series, period: int = 14) -> pd.Series:
+    """Wilder RSI on a pandas Series."""
+    delta = c.diff()
+    gain = delta.clip(lower=0.0).ewm(alpha=1.0 / period, adjust=False, min_periods=1).mean()
+    loss = (-delta).clip(lower=0.0).ewm(alpha=1.0 / period, adjust=False, min_periods=1).mean()
+    rs = gain / loss.replace(0.0, np.nan)
+    return (100.0 - 100.0 / (1.0 + rs)).fillna(50.0)
+
+
+def _add_upper_tf_features(df: pd.DataFrame) -> pd.DataFrame:
+    """Add M5/M15/H1 upper-timeframe features (vectorised, shift(1) no-lookahead)."""
+    df = df.copy()
+    idx = pd.DatetimeIndex(df["timestamp"])
+
+    for rule, prefix in [("5min", "m5"), ("15min", "m15"), ("1h", "h1")]:
+        ohlc = (
+            df.set_index(idx)[["open", "high", "low", "close"]]
+            .resample(rule)
+            .agg({"open": "first", "high": "max", "low": "min", "close": "last"})
+            .dropna(how="all")
+        )
+        c = ohlc["close"]
+        ret1 = c.pct_change(1)
+        ret3 = c.pct_change(3)
+        vol = ret1.rolling(5, min_periods=2).std(ddof=0)
+        rsi14 = _rsi_series(c, 14)
+        sma5 = c.rolling(5, min_periods=1).mean()
+        ma_slope = sma5.diff(1) / sma5.shift(1)
+        bb_std = c.rolling(20, min_periods=1).std(ddof=0).fillna(0.0)
+        bb_mid = c.rolling(20, min_periods=1).mean()
+        bb_lo = bb_mid - 2 * bb_std
+        bb_wi = (4 * bb_std).replace(0.0, float("nan"))
+        bb_pct = (c - bb_lo) / bb_wi
+        trend_slope = c.pct_change(5)
+        trend_dir = np.sign(c.diff(3))
+        raw = pd.DataFrame(
+            {
+                f"{prefix}_return_1": ret1,
+                f"{prefix}_return_3": ret3,
+                f"{prefix}_volatility": vol,
+                f"{prefix}_rsi_14": rsi14,
+                f"{prefix}_ma_slope": ma_slope,
+                f"{prefix}_bb_pct_b": bb_pct,
+                f"{prefix}_trend_slope": trend_slope,
+                f"{prefix}_trend_dir": trend_dir,
+            },
+            index=ohlc.index,
+        )
+        aligned = raw.shift(1).reindex(idx, method="ffill")
+        for col in aligned.columns:
+            df[col] = aligned[col].fillna(0.0).values
+
+    return df
+
+
+def _add_mtf_features(df: pd.DataFrame) -> pd.DataFrame:
+    """Add H4/D1/W1 MTF features (shift(1) no-lookahead, matches FeatureService)."""
+    df = df.copy()
+    idx = pd.DatetimeIndex(df["timestamp"])
+    df_ts = df.set_index(idx)
+
+    def _tr_series(ohlc: pd.DataFrame) -> pd.Series:
+        h, lo, pc = ohlc["high"], ohlc["low"], ohlc["close"].shift(1)
+        return pd.concat([h - lo, (h - pc).abs(), (lo - pc).abs()], axis=1).max(axis=1)
+
+    # H4: h4_atr_14
+    h4 = (
+        df_ts[["open", "high", "low", "close"]]
+        .resample("4h")
+        .agg({"open": "first", "high": "max", "low": "min", "close": "last"})
+        .dropna(how="all")
+    )
+    h4_raw = pd.DataFrame(
+        {"h4_atr_14": _tr_series(h4).rolling(14, min_periods=1).mean()},
+        index=h4.index,
+    )
+    h4_aligned = h4_raw.shift(1).reindex(idx, method="ffill")
+    df["h4_atr_14"] = h4_aligned["h4_atr_14"].fillna(0.0).values
+
+    # D1: d1_return_3, d1_range_pct, d1_atr_14
+    d1 = (
+        df_ts[["open", "high", "low", "close"]]
+        .resample("1D")
+        .agg({"open": "first", "high": "max", "low": "min", "close": "last"})
+        .dropna(how="all")
+    )
+    d1_c = d1["close"]
+    d1_raw = pd.DataFrame(
+        {
+            "d1_return_3": d1_c.pct_change(3),
+            "d1_range_pct": (d1["high"] - d1["low"]) / d1_c.replace(0.0, float("nan")),
+            "d1_atr_14": _tr_series(d1).rolling(14, min_periods=1).mean(),
+        },
+        index=d1.index,
+    )
+    d1_aligned = d1_raw.shift(1).reindex(idx, method="ffill")
+    for col in d1_raw.columns:
+        df[col] = d1_aligned[col].fillna(0.0).values
+
+    # W1: w1_return_1, w1_range_pct
+    w1 = (
+        df_ts[["open", "high", "low", "close"]]
+        .resample("1W")
+        .agg({"open": "first", "high": "max", "low": "min", "close": "last"})
+        .dropna(how="all")
+    )
+    w1_c = w1["close"]
+    w1_raw = pd.DataFrame(
+        {
+            "w1_return_1": w1_c.pct_change(1),
+            "w1_range_pct": (w1["high"] - w1["low"]) / w1_c.replace(0.0, float("nan")),
+        },
+        index=w1.index,
+    )
+    w1_aligned = w1_raw.shift(1).reindex(idx, method="ffill")
+    for col in w1_raw.columns:
+        df[col] = w1_aligned[col].fillna(0.0).values
+
+    return df
 
 
 def _train(df: pd.DataFrame) -> lgb.LGBMClassifier:
@@ -343,6 +499,8 @@ def main() -> int:
         print(f"  {pair}: loading {path.name} ...", end=" ", flush=True)
         df = _load_ba_candles(path)
         df = _add_features(df)
+        df = _add_upper_tf_features(df)
+        df = _add_mtf_features(df)
 
         if "ask_o" in df.columns:
             df = _add_labels_bidask(df, pair, args.horizon, args.tp_mult, args.sl_mult)
@@ -376,6 +534,7 @@ def main() -> int:
 
     # Save manifest
     manifest = {
+        "feature_version": "v4",
         "feature_cols": _FEATURE_COLS,
         "tp_mult": args.tp_mult,
         "sl_mult": args.sl_mult,

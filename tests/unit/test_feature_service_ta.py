@@ -183,9 +183,7 @@ class TestComputeFeaturesTAFields:
         result = _compute_features(candles)
         assert result["macd_line"] != 0.0 or result["macd_histogram"] == 0.0
 
-    def test_feature_version_v3(self) -> None:
-        # v2 → v3 bump: Phase 9.X-B/J-5 added opt-in mtf feature group.
-        # When enable_groups is empty, behaviour is identical to v2.
+    def test_feature_version_v4(self) -> None:
         from fx_ai_trading.services.feature_service import FEATURE_VERSION
 
-        assert FEATURE_VERSION == "v3"
+        assert FEATURE_VERSION == "v4"
