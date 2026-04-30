@@ -1389,14 +1389,14 @@ def run(args: argparse.Namespace, *, env: dict[str, str] | None = None) -> int:
         if _fetched_balance:
             startup_balance = _fetched_balance
             _log.info(
-                "startup: live balance ¥%,.0f fetched from OANDA (DD brake threshold ¥%,.0f/day)",
-                startup_balance,
-                startup_balance * args.daily_dd_pct / 100,
+                "startup: live balance ¥%s fetched from OANDA (DD brake threshold ¥%s/day)",
+                f"{startup_balance:,.0f}",
+                f"{startup_balance * args.daily_dd_pct / 100:,.0f}",
             )
         else:
             _log.warning(
-                "startup: could not fetch live balance; DD brake using --initial-balance ¥%,.0f",
-                startup_balance,
+                "startup: could not fetch live balance; DD brake using --initial-balance ¥%s",
+                f"{startup_balance:,.0f}",
             )
     dd_brake = _DailyDrawdownBrake(
         opening_balance=startup_balance,
