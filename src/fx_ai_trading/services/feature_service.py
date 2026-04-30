@@ -80,6 +80,21 @@ class FeatureService:
                 f"(valid: {sorted(_VALID_GROUPS)})"
             )
         self._enable_groups = enable_groups
+        self._ext_mtf: dict[str, tuple[list, list, list]] = {}
+
+    def set_ext_mtf_bars(
+        self,
+        instrument: str,
+        h4: list[dict],
+        d1: list[dict],
+        w1: list[dict],
+    ) -> None:
+        """Store externally-fetched H4/D1/W1 bars for use in build().
+
+        When set, build() uses these bars instead of resampling M1 history
+        for MTF features — providing more history depth for live trading.
+        """
+        self._ext_mtf[instrument] = (h4, d1, w1)
 
     def get_feature_version(self) -> str:
         """Return the deterministic feature version string (6.10)."""
@@ -107,7 +122,12 @@ class FeatureService:
 
         feature_stats = _compute_features(candles)
         if "mtf" in self._enable_groups:
-            feature_stats.update(_compute_mtf_features(candles))
+            ext = self._ext_mtf.get(instrument)
+            if ext:
+                h4, d1, w1 = ext
+                feature_stats.update(_compute_ext_mtf_features(h4, d1, w1))
+            else:
+                feature_stats.update(_compute_mtf_features(candles))
         if "vol" in self._enable_groups:
             feature_stats.update(_compute_vol_features(candles))
         feature_hash = _hash_features(feature_stats)
@@ -369,6 +389,32 @@ def _compute_mtf_features(candles: list[dict]) -> dict[str, float]:
     w1_return_1 = _return_at_lag(w1_bars, 1)
     w1_range_pct = _range_pct_last(w1_bars)
 
+    return {
+        "h4_atr_14": round(h4_atr_14, 8),
+        "d1_return_3": round(d1_return_3, 8),
+        "d1_range_pct": round(d1_range_pct, 8),
+        "d1_atr_14": round(d1_atr_14, 8),
+        "w1_return_1": round(w1_return_1, 8),
+        "w1_range_pct": round(w1_range_pct, 8),
+    }
+
+
+def _compute_ext_mtf_features(
+    h4: list[dict],
+    d1: list[dict],
+    w1: list[dict],
+) -> dict[str, float]:
+    """Compute MTF features from pre-fetched H4/D1/W1 bars (live mode).
+
+    Same feature set as _compute_mtf_features but operates on externally
+    sourced bars rather than resampled M1 history — provides more depth.
+    """
+    h4_atr_14 = _atr_from_bars(h4, 14)
+    d1_atr_14 = _atr_from_bars(d1, 14)
+    d1_return_3 = _return_at_lag(d1, 3)
+    d1_range_pct = _range_pct_last(d1)
+    w1_return_1 = _return_at_lag(w1, 1)
+    w1_range_pct = _range_pct_last(w1)
     return {
         "h4_atr_14": round(h4_atr_14, 8),
         "d1_return_3": round(d1_return_3, 8),
