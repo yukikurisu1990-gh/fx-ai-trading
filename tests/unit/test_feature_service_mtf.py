@@ -9,9 +9,11 @@ import pytest
 
 from fx_ai_trading.services.feature_service import (
     _MTF_ZERO_FEATURES,
+    _UPPER_TF_ZERO_FEATURES,
     FEATURE_VERSION,
     FeatureService,
     _compute_mtf_features,
+    _compute_upper_tf_all,
 )
 
 
@@ -126,8 +128,9 @@ class TestComputeMtfFeatures:
 
 
 class TestFeatureServiceMtf:
-    def test_default_no_mtf_features(self) -> None:
-        # Without enable_groups, mtf keys should NOT appear.
+    def test_default_no_mtf_features_but_upper_tf_present(self) -> None:
+        # Without enable_groups, H4/D1/W1 MTF keys should NOT appear,
+        # but M5/M15/H1 upper-TF keys ARE always present (v4).
         candles = _make_candles(2200)
         service = FeatureService(get_candles=lambda inst, t: candles)
         result = service.build(
@@ -139,6 +142,10 @@ class TestFeatureServiceMtf:
         assert "h4_atr_14" not in result.feature_stats
         assert "d1_return_3" not in result.feature_stats
         assert "atr_14" in result.feature_stats  # baseline still present
+        # v4: M5/M15/H1 upper-TF features always present.
+        assert "m5_return_1" in result.feature_stats
+        assert "m15_rsi_14" in result.feature_stats
+        assert "h1_bb_pct_b" in result.feature_stats
 
     def test_mtf_enabled_adds_six_features(self) -> None:
         candles = _make_candles(2200)
@@ -171,8 +178,8 @@ class TestFeatureServiceMtf:
                 enable_groups=frozenset({"garbage"}),
             )
 
-    def test_feature_version_v3(self) -> None:
-        assert FEATURE_VERSION == "v3"
+    def test_feature_version_v4(self) -> None:
+        assert FEATURE_VERSION == "v4"
 
     def test_feature_hash_changes_with_mtf(self) -> None:
         # Same candles, different enable_groups → different feature_hash
@@ -222,3 +229,71 @@ class TestFeatureServiceMtf:
         h1 = service.build("EUR_USD", "m5", uuid4(), as_of).feature_hash
         h2 = service.build("EUR_USD", "m5", uuid4(), as_of).feature_hash
         assert h1 == h2
+
+
+# ---------------------------------------------------------------------------
+# _compute_upper_tf_all (v4 always-on M5/M15/H1 features)
+# ---------------------------------------------------------------------------
+
+
+class TestComputeUpperTfAll:
+    def test_empty_candles_returns_zero_dict(self) -> None:
+        result = _compute_upper_tf_all([])
+        assert result == _UPPER_TF_ZERO_FEATURES
+
+    def test_returns_all_24_keys(self) -> None:
+        candles = _make_candles(2200)
+        result = _compute_upper_tf_all(candles)
+        assert set(result.keys()) == set(_UPPER_TF_ZERO_FEATURES.keys())
+
+    def test_values_finite(self) -> None:
+        import math
+
+        candles = _make_candles(2200)
+        result = _compute_upper_tf_all(candles)
+        for k, v in result.items():
+            assert math.isfinite(v), f"{k} is not finite: {v}"
+
+    def test_values_rounded_to_8dp(self) -> None:
+        candles = _make_candles(2200)
+        result = _compute_upper_tf_all(candles)
+        for k, v in result.items():
+            assert v == round(v, 8), f"{k} not 8-dp rounded: {v}"
+
+    def test_rsi_bounded_0_to_100(self) -> None:
+        candles = _make_candles(2200, drift=0.0001)
+        result = _compute_upper_tf_all(candles)
+        for prefix in ("m5", "m15", "h1"):
+            rsi = result[f"{prefix}_rsi_14"]
+            assert 0.0 <= rsi <= 100.0, f"{prefix}_rsi_14={rsi} out of range"
+
+    def test_uptrend_return1_positive(self) -> None:
+        candles = _make_candles(2200, drift=0.001)
+        result = _compute_upper_tf_all(candles)
+        for prefix in ("m5", "m15", "h1"):
+            assert result[f"{prefix}_return_1"] > 0, f"{prefix}_return_1 not positive"
+
+    def test_downtrend_return1_negative(self) -> None:
+        # drift=-0.0001 keeps prices positive over 2200 bars (floor ~0.88)
+        candles = _make_candles(2200, drift=-0.0001)
+        result = _compute_upper_tf_all(candles)
+        for prefix in ("m5", "m15", "h1"):
+            assert result[f"{prefix}_return_1"] < 0, f"{prefix}_return_1 not negative"
+
+    def test_insufficient_history_returns_zeros(self) -> None:
+        # Only 2 M1 candles — not enough to form 2 completed bars at any TF.
+        candles = _make_candles(2)
+        result = _compute_upper_tf_all(candles)
+        assert result == _UPPER_TF_ZERO_FEATURES
+
+    def test_determinism(self) -> None:
+        candles = _make_candles(2200)
+        assert _compute_upper_tf_all(candles) == _compute_upper_tf_all(candles)
+
+    def test_feature_service_build_includes_upper_tf(self) -> None:
+        candles = _make_candles(2200)
+        as_of = datetime(2026, 1, 8, 0, 0, tzinfo=UTC)
+        service = FeatureService(get_candles=lambda inst, t: candles)
+        result = service.build("EUR_USD", "m5", uuid4(), as_of)
+        for key in _UPPER_TF_ZERO_FEATURES:
+            assert key in result.feature_stats, f"upper-TF key missing: {key}"

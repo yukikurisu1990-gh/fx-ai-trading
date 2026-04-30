@@ -26,6 +26,13 @@ Phase 9.X-B/J-5 additions (opt-in via enable_groups):
   - Activating mtf bumps FEATURE_VERSION v2 → v3 (schema change).
   - mtf requires ≥ 7 days of history (~2,016 m5 bars for weekly stats);
     callers must size the rolling buffer accordingly.
+
+v4 additions (always-on, 2026-04-30):
+  - M5/M15/H1 upper-timeframe features (24 features, 8 per timeframe):
+    {prefix}_return_1/3, volatility, rsi_14, ma_slope, bb_pct_b,
+    trend_slope, trend_dir. Resampled from M1 candles; last (partial) bar
+    dropped per timeframe to mirror training-time shift(1) no-lookahead.
+  - Requires 2100-bar history depth for H1 BB(20) coverage.
 """
 
 from __future__ import annotations
@@ -42,10 +49,9 @@ from fx_ai_trading.domain.feature import FeatureSet
 # Bump this constant when feature computation logic changes.
 # v3 (2026-04-26) — Phase 9.X-B/J-5: opt-in mtf feature group.
 #                    Phase 9.X-B amendment: opt-in vol feature group also added.
-# When enable_groups is empty, behaviour identical to v2; the version stays
-# v3 because adding a new opt-in group does not change the default schema.
-# FeatureService(enable_groups=frozenset({"mtf"})) or frozenset({"vol"}).
-FEATURE_VERSION = "v3"
+# v4 (2026-04-30) — M5/M15/H1 upper-TF features always computed (24 features).
+#                    Total feature set: 15 M1 + 24 upper-TF + 6 MTF = 45.
+FEATURE_VERSION = "v4"
 
 # Phase 9.X-B/J-5: opt-in feature groups.
 # - "mtf"  — multi-timeframe extension (4h / daily / weekly stats)
@@ -121,6 +127,7 @@ class FeatureService:
         candles = [c for c in raw_candles if c["timestamp"] < as_of_time]
 
         feature_stats = _compute_features(candles)
+        feature_stats.update(_compute_upper_tf_all(candles))
         if "mtf" in self._enable_groups:
             ext = self._ext_mtf.get(instrument)
             if ext:
@@ -348,6 +355,131 @@ def _atr(candles: list[dict], period: int) -> float:
 
 
 # ---------------------------------------------------------------------------
+# v4: M5/M15/H1 upper-timeframe features (always computed).
+# ---------------------------------------------------------------------------
+
+_UPPER_TF_ZERO_FEATURES: dict[str, float] = {
+    "m5_return_1": 0.0,
+    "m5_return_3": 0.0,
+    "m5_volatility": 0.0,
+    "m5_rsi_14": 0.0,
+    "m5_ma_slope": 0.0,
+    "m5_bb_pct_b": 0.0,
+    "m5_trend_slope": 0.0,
+    "m5_trend_dir": 0.0,
+    "m15_return_1": 0.0,
+    "m15_return_3": 0.0,
+    "m15_volatility": 0.0,
+    "m15_rsi_14": 0.0,
+    "m15_ma_slope": 0.0,
+    "m15_bb_pct_b": 0.0,
+    "m15_trend_slope": 0.0,
+    "m15_trend_dir": 0.0,
+    "h1_return_1": 0.0,
+    "h1_return_3": 0.0,
+    "h1_volatility": 0.0,
+    "h1_rsi_14": 0.0,
+    "h1_ma_slope": 0.0,
+    "h1_bb_pct_b": 0.0,
+    "h1_trend_slope": 0.0,
+    "h1_trend_dir": 0.0,
+}
+
+
+def _upper_tf_features(bars: list[dict], prefix: str) -> dict[str, float]:
+    """Compute 8 upper-TF features for *prefix* from resampled bars.
+
+    Drops the last bar (potentially in-progress in live mode) to mirror
+    the training-time shift(1) no-lookahead convention. Returns zero/
+    neutral defaults when fewer than 2 completed bars are available.
+    """
+    zero = {
+        f"{prefix}_return_1": 0.0,
+        f"{prefix}_return_3": 0.0,
+        f"{prefix}_volatility": 0.0,
+        f"{prefix}_rsi_14": 0.0,
+        f"{prefix}_ma_slope": 0.0,
+        f"{prefix}_bb_pct_b": 0.0,
+        f"{prefix}_trend_slope": 0.0,
+        f"{prefix}_trend_dir": 0.0,
+    }
+    completed = bars[:-1] if len(bars) > 1 else []
+    if len(completed) < 2:
+        return zero
+
+    closes = [b["close"] for b in completed]
+
+    ret1 = (closes[-1] - closes[-2]) / closes[-2] if closes[-2] != 0.0 else 0.0
+    ret3 = (closes[-1] - closes[-4]) / closes[-4] if len(closes) >= 4 and closes[-4] != 0.0 else 0.0
+
+    rets = [
+        (closes[i] - closes[i - 1]) / closes[i - 1] if closes[i - 1] != 0.0 else 0.0
+        for i in range(1, len(closes))
+    ]
+    vol_win = rets[-5:] if len(rets) >= 2 else rets
+    volatility = 0.0
+    if len(vol_win) >= 2:
+        m = sum(vol_win) / len(vol_win)
+        volatility = math.sqrt(sum((r - m) ** 2 for r in vol_win) / len(vol_win))
+
+    rsi14 = _rsi(closes, 14)
+
+    sma5_curr = _sma(closes, 5)
+    sma5_prev = _sma(closes[:-1], 5)
+    ma_slope = (sma5_curr - sma5_prev) / sma5_prev if sma5_prev != 0.0 else 0.0
+
+    bb_upper, bb_mid, bb_lower = _bollinger(closes, 20, 2.0)
+    bb_range = bb_upper - bb_lower
+    bb_pct_b = (closes[-1] - bb_lower) / bb_range if bb_range != 0.0 else 0.5
+
+    trend_slope = (
+        (closes[-1] - closes[-6]) / closes[-6] if len(closes) >= 6 and closes[-6] != 0.0 else 0.0
+    )
+
+    trend_dir = 0.0
+    if len(closes) >= 4:
+        d = closes[-1] - closes[-4]
+        trend_dir = 1.0 if d > 0.0 else (-1.0 if d < 0.0 else 0.0)
+
+    return {
+        f"{prefix}_return_1": round(ret1, 8),
+        f"{prefix}_return_3": round(ret3, 8),
+        f"{prefix}_volatility": round(volatility, 8),
+        f"{prefix}_rsi_14": round(rsi14, 8),
+        f"{prefix}_ma_slope": round(ma_slope, 8),
+        f"{prefix}_bb_pct_b": round(bb_pct_b, 8),
+        f"{prefix}_trend_slope": round(trend_slope, 8),
+        f"{prefix}_trend_dir": round(trend_dir, 8),
+    }
+
+
+def _compute_upper_tf_all(candles: list[dict]) -> dict[str, float]:
+    """v4: M5/M15/H1 upper-timeframe features (always on, 24 features total).
+
+    Resamples M1 candles to 5-min, 15-min, and 1-hour bars, then computes
+    8 features per timeframe. The last resampled bar per timeframe is dropped
+    to mirror the training-time shift(1) no-lookahead convention: at each M1
+    bar, only features from completed upper-TF periods are used.
+
+    Requires 2100-bar M1 history for H1 BB(20) and RSI(14) coverage.
+    Pure function; no-lookahead preserved (candles already filtered by
+    build() before this is called).
+    """
+    if not candles:
+        return dict(_UPPER_TF_ZERO_FEATURES)
+
+    m5_bars = _resample_ohlc(candles, _m5_bucket)
+    m15_bars = _resample_ohlc(candles, _m15_bucket)
+    h1_bars = _resample_ohlc(candles, _h1_bucket)
+
+    result: dict[str, float] = {}
+    result.update(_upper_tf_features(m5_bars, "m5"))
+    result.update(_upper_tf_features(m15_bars, "m15"))
+    result.update(_upper_tf_features(h1_bars, "h1"))
+    return result
+
+
+# ---------------------------------------------------------------------------
 # Phase 9.X-B/J-5 mtf feature group (opt-in).
 # ---------------------------------------------------------------------------
 
@@ -423,6 +555,21 @@ def _compute_ext_mtf_features(
         "w1_return_1": round(w1_return_1, 8),
         "w1_range_pct": round(w1_range_pct, 8),
     }
+
+
+def _m5_bucket(ts: datetime) -> tuple[int, int, int, int, int]:
+    """5-minute bucket key — UTC-aligned."""
+    return (ts.year, ts.month, ts.day, ts.hour, (ts.minute // 5) * 5)
+
+
+def _m15_bucket(ts: datetime) -> tuple[int, int, int, int, int]:
+    """15-minute bucket key — UTC-aligned."""
+    return (ts.year, ts.month, ts.day, ts.hour, (ts.minute // 15) * 15)
+
+
+def _h1_bucket(ts: datetime) -> tuple[int, int, int, int]:
+    """1-hour bucket key — UTC-aligned."""
+    return (ts.year, ts.month, ts.day, ts.hour)
 
 
 def _h4_bucket(ts: datetime) -> tuple[int, int, int, int]:
