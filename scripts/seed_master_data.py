@@ -31,16 +31,35 @@ _BROKERS = [
 ]
 
 _INSTRUMENTS = [
-    "AUD_CAD", "AUD_JPY", "AUD_NZD", "AUD_USD",
+    "AUD_CAD",
+    "AUD_JPY",
+    "AUD_NZD",
+    "AUD_USD",
     "CHF_JPY",
-    "EUR_AUD", "EUR_CAD", "EUR_CHF", "EUR_GBP", "EUR_JPY", "EUR_USD",
-    "GBP_AUD", "GBP_CHF", "GBP_JPY", "GBP_USD",
-    "NZD_JPY", "NZD_USD",
-    "USD_CAD", "USD_CHF", "USD_JPY",
+    "EUR_AUD",
+    "EUR_CAD",
+    "EUR_CHF",
+    "EUR_GBP",
+    "EUR_JPY",
+    "EUR_USD",
+    "GBP_AUD",
+    "GBP_CHF",
+    "GBP_JPY",
+    "GBP_USD",
+    "NZD_JPY",
+    "NZD_USD",
+    "USD_CAD",
+    "USD_CHF",
+    "USD_JPY",
 ]
 
 _JPY_PAIRS = {
-    "AUD_JPY", "CHF_JPY", "EUR_JPY", "GBP_JPY", "NZD_JPY", "USD_JPY",
+    "AUD_JPY",
+    "CHF_JPY",
+    "EUR_JPY",
+    "GBP_JPY",
+    "NZD_JPY",
+    "USD_JPY",
 }
 
 
