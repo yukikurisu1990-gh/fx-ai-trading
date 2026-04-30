@@ -19,8 +19,12 @@ _THRESHOLD = 0.40
 _JST = pd.Timedelta(hours=9)
 
 _PIP_SIZE: dict[str, float] = {
-    "AUD_JPY": 0.01, "CHF_JPY": 0.01, "EUR_JPY": 0.01,
-    "GBP_JPY": 0.01, "NZD_JPY": 0.01, "USD_JPY": 0.01,
+    "AUD_JPY": 0.01,
+    "CHF_JPY": 0.01,
+    "EUR_JPY": 0.01,
+    "GBP_JPY": 0.01,
+    "NZD_JPY": 0.01,
+    "USD_JPY": 0.01,
 }
 
 # Default number of bars visible in the initial chart view (before scrolling)
@@ -40,13 +44,17 @@ def _fetch_candles(_engine: object, instrument: str, limit: int) -> list[dict]:
 def _resample(df: pd.DataFrame, rule: str) -> pd.DataFrame:
     """Aggregate M1 OHLCV bars into a higher timeframe."""
     df = df.set_index("event_time_utc").sort_index()
-    resampled = df.resample(rule, label="left", closed="left").agg(
-        open=("open", "first"),
-        high=("high", "max"),
-        low=("low", "min"),
-        close=("close", "last"),
-        volume=("volume", "sum"),
-    ).dropna(subset=["open"])
+    resampled = (
+        df.resample(rule, label="left", closed="left")
+        .agg(
+            open=("open", "first"),
+            high=("high", "max"),
+            low=("low", "min"),
+            close=("close", "last"),
+            volume=("volume", "sum"),
+        )
+        .dropna(subset=["open"])
+    )
     resampled = resampled.reset_index()
     return resampled
 
@@ -88,8 +96,8 @@ def _utc_to_jst(col: pd.Series) -> pd.Series:
 
 def render(engine: Engine | None, account_id: str | None = None) -> None:
     try:
-        from plotly.subplots import make_subplots
         import plotly.graph_objects as go
+        from plotly.subplots import make_subplots
     except ImportError:
         st.warning("plotly not installed — candlestick chart unavailable.")
         return
@@ -193,7 +201,10 @@ def render(engine: Engine | None, account_id: str | None = None) -> None:
     df["event_time_utc"] += _JST
 
     if df.empty:
-        st.info(f"{instrument} ({granularity}): データが足りません。M1バーが蓄積されるまでお待ちください。")
+        st.info(
+            f"{instrument} ({granularity}): "
+            "データが足りません。M1バーが蓄積されるまでお待ちください。"
+        )
         return
 
     t_min = df["event_time_utc"].min()
@@ -213,7 +224,8 @@ def render(engine: Engine | None, account_id: str | None = None) -> None:
     # --- Build figure (1 or 2 rows) ---
     if show_proba and not sig_df.empty and "p_long" in sig_df.columns:
         fig = make_subplots(
-            rows=2, cols=1,
+            rows=2,
+            cols=1,
             shared_xaxes=True,
             row_heights=[0.65, 0.28],
             vertical_spacing=0.03,
@@ -237,7 +249,8 @@ def render(engine: Engine | None, account_id: str | None = None) -> None:
             increasing_line_color="#26a69a",
             decreasing_line_color="#ef5350",
         ),
-        row=candle_row, col=1,
+        row=candle_row,
+        col=1,
     )
 
     # --- Signal markers ---
@@ -251,9 +264,7 @@ def render(engine: Engine | None, account_id: str | None = None) -> None:
         ]:
             sub = sig_df[sig_df["signal_direction"] == direction]
             if not sub.empty:
-                price_col = indexed[price_band].reindex(
-                    sub["signal_time_utc"], method="nearest"
-                )
+                price_col = indexed[price_band].reindex(sub["signal_time_utc"], method="nearest")
                 fig.add_trace(
                     go.Scatter(
                         x=sub["signal_time_utc"].values,
@@ -263,7 +274,8 @@ def render(engine: Engine | None, account_id: str | None = None) -> None:
                         name=label,
                         hovertemplate=f"Signal: {direction}<br>Time: %{{x}}<br><extra></extra>",
                     ),
-                    row=candle_row, col=1,
+                    row=candle_row,
+                    col=1,
                 )
 
     # --- TP/SL lines ---
@@ -311,7 +323,8 @@ def render(engine: Engine | None, account_id: str | None = None) -> None:
                             name="TP",
                             hovertemplate="TP: %{y:.5f}<extra></extra>",
                         ),
-                        row=candle_row, col=1,
+                        row=candle_row,
+                        col=1,
                     )
                     fig.add_trace(
                         go.Scatter(
@@ -322,7 +335,8 @@ def render(engine: Engine | None, account_id: str | None = None) -> None:
                             name="SL",
                             hovertemplate="SL: %{y:.5f}<extra></extra>",
                         ),
-                        row=candle_row, col=1,
+                        row=candle_row,
+                        col=1,
                     )
 
     # --- Trade markers ---
@@ -352,7 +366,8 @@ def render(engine: Engine | None, account_id: str | None = None) -> None:
                         name="エントリー",
                         hovertemplate="エントリー: %{x} JST<br>価格: %{y:.5f}<extra></extra>",
                     ),
-                    row=candle_row, col=1,
+                    row=candle_row,
+                    col=1,
                 )
                 fig.add_trace(
                     go.Scatter(
@@ -361,10 +376,13 @@ def render(engine: Engine | None, account_id: str | None = None) -> None:
                         mode="markers",
                         marker={"symbol": "x", "size": 9, "color": "#4caf50"},
                         name="決済（利益）",
-                        hovertemplate="決済 利益: %{x} JST<br>損益: %{customdata:.0f}<extra></extra>",
+                        hovertemplate=(
+                            "決済 利益: %{x} JST<br>損益: %{customdata:.0f}<extra></extra>"
+                        ),
                         customdata=tr_df.loc[win, "pnl_realized"].values,
                     ),
-                    row=candle_row, col=1,
+                    row=candle_row,
+                    col=1,
                 )
                 fig.add_trace(
                     go.Scatter(
@@ -373,10 +391,13 @@ def render(engine: Engine | None, account_id: str | None = None) -> None:
                         mode="markers",
                         marker={"symbol": "x", "size": 9, "color": "#f44336"},
                         name="決済（損失）",
-                        hovertemplate="決済 損失: %{x} JST<br>損益: %{customdata:.0f}<extra></extra>",
+                        hovertemplate=(
+                            "決済 損失: %{x} JST<br>損益: %{customdata:.0f}<extra></extra>"
+                        ),
                         customdata=tr_df.loc[~win, "pnl_realized"].values,
                     ),
-                    row=candle_row, col=1,
+                    row=candle_row,
+                    col=1,
                 )
 
     # --- Probability sub-panel ---
@@ -392,7 +413,8 @@ def render(engine: Engine | None, account_id: str | None = None) -> None:
                     name="p_long",
                     hovertemplate="p_long: %{y:.3f}<br>%{x} JST<extra></extra>",
                 ),
-                row=proba_row, col=1,
+                row=proba_row,
+                col=1,
             )
             fig.add_trace(
                 go.Scatter(
@@ -403,7 +425,8 @@ def render(engine: Engine | None, account_id: str | None = None) -> None:
                     name="p_short",
                     hovertemplate="p_short: %{y:.3f}<br>%{x} JST<extra></extra>",
                 ),
-                row=proba_row, col=1,
+                row=proba_row,
+                col=1,
             )
             fig.add_hline(
                 y=_THRESHOLD,
@@ -413,7 +436,8 @@ def render(engine: Engine | None, account_id: str | None = None) -> None:
                 annotation_text=f"閾値 {_THRESHOLD}",
                 annotation_font_color="#ffd54f",
                 annotation_font_size=10,
-                row=proba_row, col=1,
+                row=proba_row,
+                col=1,
             )
 
     # --- Initial visible range: latest N bars, rest scrollable ---
@@ -443,7 +467,8 @@ def render(engine: Engine | None, account_id: str | None = None) -> None:
     fig.update_xaxes(
         rangeslider=dict(visible=True, thickness=0.06, bgcolor="#2a2a2a"),
         range=[x_start, x_end],
-        row=bottom_row, col=1,
+        row=bottom_row,
+        col=1,
     )
 
     # Grid styling
@@ -454,7 +479,8 @@ def render(engine: Engine | None, account_id: str | None = None) -> None:
         p_max = sig_df[["p_long", "p_short"]].max().max() if not sig_df.empty else 0.5
         fig.update_yaxes(
             title_text="確信度",
-            row=proba_row, col=1,
+            row=proba_row,
+            col=1,
             range=[0, max(0.5, p_max * 1.1)],
         )
 

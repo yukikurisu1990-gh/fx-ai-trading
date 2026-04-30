@@ -807,9 +807,7 @@ def _reconcile_broker_closes(
         _log.warning("reconcile: get_positions failed — skipping this bar")
         return
 
-    broker_open: set[tuple[str, str]] = {
-        (p.instrument, p.side) for p in broker_positions
-    }
+    broker_open: set[tuple[str, str]] = {(p.instrument, p.side) for p in broker_positions}
 
     for pos in sm_positions:
         if (pos.instrument, pos.side) in broker_open:
@@ -844,7 +842,12 @@ def _reconcile_broker_closes(
 
         _log.info(
             "reconcile: OANDA closed %s %s order=%s reason=%s fill=%.5f pnl=%.2f",
-            pos.instrument, pos.side, pos.order_id, reason, fill_price, pnl,
+            pos.instrument,
+            pos.side,
+            pos.order_id,
+            reason,
+            fill_price,
+            pnl,
         )
         state_manager.on_close(
             order_id=pos.order_id,
@@ -898,9 +901,7 @@ def _compute_position_size(
         # ATR is in the quote currency (e.g., USD for EUR/USD).
         # Multiply by USDJPY close to get JPY equivalent.
         usdjpy_feat = features.get("USD_JPY")
-        usdjpy_close = (
-            usdjpy_feat.sampled_features.get("last_close") if usdjpy_feat else None
-        )
+        usdjpy_close = usdjpy_feat.sampled_features.get("last_close") if usdjpy_feat else None
         if usdjpy_close and usdjpy_close > 0:
             sl_value_jpy = atr * usdjpy_close
         else:
@@ -933,7 +934,10 @@ def _compute_position_size(
     if max_units > 0 and size_units > max_units:
         _log.debug(
             "clip cap: %s raw=%d → %d (max_units=%d)",
-            inst, size_units, max_units, max_units,
+            inst,
+            size_units,
+            max_units,
+            max_units,
         )
         size_units = max_units
 
@@ -946,8 +950,12 @@ def _compute_position_size(
         if size_units > max_units_leverage:
             _log.debug(
                 "leverage cap: %s %d → %d (balance=%.0f, leverage=%.0f, price=%.5f)",
-                inst, size_units, max_units_leverage,
-                initial_balance, max_leverage, bar_close,
+                inst,
+                size_units,
+                max_units_leverage,
+                initial_balance,
+                max_leverage,
+                bar_close,
             )
             size_units = max_units_leverage
 
@@ -1149,12 +1157,16 @@ def _fetch_granularity_bars(
     H4/D/W は UTC midnight アラインメントを指定して pandas resample と一致させる。
     """
     params: dict[str, object] = {"granularity": granularity, "count": count, "price": "M"}
-    if granularity == "H4":
-        params.update({"dailyAlignment": 0, "alignmentTimezone": "UTC"})
-    elif granularity == "D":
+    if granularity in ("H4", "D"):
         params.update({"dailyAlignment": 0, "alignmentTimezone": "UTC"})
     elif granularity == "W":
-        params.update({"weeklyAlignment": "Sunday", "dailyAlignment": 0, "alignmentTimezone": "UTC"})
+        params.update(
+            {
+                "weeklyAlignment": "Sunday",
+                "dailyAlignment": 0,
+                "alignmentTimezone": "UTC",
+            }
+        )
     try:
         resp = oanda_client.get_candles(  # type: ignore[union-attr]
             instrument,
@@ -1165,12 +1177,14 @@ def _fetch_granularity_bars(
             if not r.get("complete", True):
                 continue
             mid = r["mid"]
-            bars.append({
-                "open": float(mid["o"]),
-                "high": float(mid["h"]),
-                "low": float(mid["l"]),
-                "close": float(mid["c"]),
-            })
+            bars.append(
+                {
+                    "open": float(mid["o"]),
+                    "high": float(mid["h"]),
+                    "low": float(mid["l"]),
+                    "close": float(mid["c"]),
+                }
+            )
         return bars
     except Exception:
         return []
@@ -1179,13 +1193,13 @@ def _fetch_granularity_bars(
 def _load_ext_mtf(
     oanda_client: object,
     instruments: list[str],
-    feature_service: "FeatureService",
+    feature_service: FeatureService,
 ) -> None:
     """全ペアの H4(60本)/D1(30本)/W1(15本) を取得して feature_service に設定する。"""
     for inst in instruments:
         h4 = _fetch_granularity_bars(oanda_client, inst, "H4", 60)
-        d1 = _fetch_granularity_bars(oanda_client, inst, "D",  30)
-        w1 = _fetch_granularity_bars(oanda_client, inst, "W",  15)
+        d1 = _fetch_granularity_bars(oanda_client, inst, "D", 30)
+        w1 = _fetch_granularity_bars(oanda_client, inst, "W", 15)
         feature_service.set_ext_mtf_bars(inst, h4, d1, w1)
     _log.info("ext MTF bars loaded: %d instruments", len(instruments))
 
@@ -1317,7 +1331,9 @@ def run(args: argparse.Namespace, *, env: dict[str, str] | None = None) -> int:
         try:
             lgbm.register_models(engine)
         except Exception:
-            _log.warning("LGBMStrategy.register_models failed — predictions table may be incomplete")
+            _log.warning(
+                "LGBMStrategy.register_models failed — predictions table may be incomplete"
+            )
         strategies = [lgbm]
 
     # Rolling per-instrument candle history (fed before FeatureService.build).
@@ -1373,15 +1389,13 @@ def run(args: argparse.Namespace, *, env: dict[str, str] | None = None) -> int:
         if _fetched_balance:
             startup_balance = _fetched_balance
             _log.info(
-                "startup: live balance ¥%,.0f fetched from OANDA "
-                "(DD brake threshold ¥%,.0f/day)",
+                "startup: live balance ¥%,.0f fetched from OANDA (DD brake threshold ¥%,.0f/day)",
                 startup_balance,
                 startup_balance * args.daily_dd_pct / 100,
             )
         else:
             _log.warning(
-                "startup: could not fetch live balance; "
-                "DD brake using --initial-balance ¥%,.0f",
+                "startup: could not fetch live balance; DD brake using --initial-balance ¥%,.0f",
                 startup_balance,
             )
     dd_brake = _DailyDrawdownBrake(
@@ -1484,6 +1498,7 @@ def run(args: argparse.Namespace, *, env: dict[str, str] | None = None) -> int:
             # Hourly refresh of external H4/D1/W1 bars for accurate MTF features.
             if is_live and oanda_client is not None and "mtf" in enable_groups:
                 import time as _time_mod
+
                 _now_epoch = _time_mod.time()
                 if _now_epoch - _last_ext_mtf_refresh >= _MTF_EXT_REFRESH_SECS:
                     _load_ext_mtf(oanda_client, list(current_instruments), feature_service)
