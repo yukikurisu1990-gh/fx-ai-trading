@@ -14,11 +14,11 @@ def _fetch(_engine: object, account_id: str | None) -> dict:
 
 
 def render(engine: Engine | None, account_id: str | None = None) -> None:
-    st.subheader("Daily Metrics")
+    st.subheader("本日のメトリクス")
     summary = _fetch(engine, account_id)
     col1, col2, col3 = st.columns(3)
-    col1.metric("Orders today", summary["total"])
-    col2.metric("Filled", summary["filled"])
-    col3.metric("Canceled", summary["canceled"])
+    col1.metric("本日の注文数", summary["total"])
+    col2.metric("約定", summary["filled"])
+    col3.metric("キャンセル", summary["canceled"])
     if summary.get("failed", 0):
-        st.warning(f"Failed orders today: {summary['failed']}")
+        st.warning(f"本日の失敗注文数: {summary['failed']}")

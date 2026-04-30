@@ -16,18 +16,18 @@ def _fetch(_engine: object, account_id: str | None) -> list[dict]:
 
 
 def render(engine: Engine | None, account_id: str | None = None) -> None:
-    st.subheader("Strategy Breakdown")
+    st.subheader("戦略別内訳")
     rows = _fetch(engine, account_id)
     if not rows:
-        st.info("No closed trades yet.")
+        st.info("決済済み取引なし。")
         return
     df = pd.DataFrame(rows)
     chart = (
         alt.Chart(df)
         .mark_bar()
         .encode(
-            x=alt.X("strategy_id:N", title="Strategy", sort="-y"),
-            y=alt.Y("total_pnl:Q", title="Total PnL (JPY)"),
+            x=alt.X("strategy_id:N", title="戦略", sort="-y"),
+            y=alt.Y("total_pnl:Q", title="累計損益（JPY）"),
             color=alt.condition(
                 alt.datum.total_pnl >= 0,
                 alt.value("#4e79a7"),

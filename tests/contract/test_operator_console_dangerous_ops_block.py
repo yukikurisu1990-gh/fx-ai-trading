@@ -67,7 +67,7 @@ def test_page_buttons_do_not_mention_emergency_or_flat() -> None:
 
 def test_page_includes_cli_only_notice() -> None:
     src = _PAGE_PATH.read_text(encoding="utf-8")
-    assert "CLI-only" in src, "Page must include the CLI-only notice"
+    assert "CLI専用" in src or "CLI-only" in src, "Page must include the CLI-only notice"
     assert "emergency-flat-all" in src, (
         "Page must explicitly mention emergency-flat-all in the CLI-only notice"
     )

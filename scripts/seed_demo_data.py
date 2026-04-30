@@ -39,7 +39,7 @@ _RNG = random.Random(42)
 
 _BROKER_ID = "OANDA"
 _ACCOUNT_ID = "demo-001-seed"
-_ACCOUNT_TYPE = "demo"
+_ACCOUNT_TYPE = "dummy"
 _BASE_CURRENCY = "JPY"
 
 _ALL_PAIRS: list[tuple[str, str, str, int]] = [
@@ -186,7 +186,7 @@ def _insert_account(conn) -> None:
         text(
             "INSERT INTO accounts (account_id, broker_id, account_type, base_currency)"
             " VALUES (:id, :broker, :type, :cur)"
-            " ON CONFLICT (account_id) DO NOTHING"
+            " ON CONFLICT (account_id) DO UPDATE SET account_type = EXCLUDED.account_type"
         ),
         {"id": _ACCOUNT_ID, "broker": _BROKER_ID, "type": _ACCOUNT_TYPE, "cur": _BASE_CURRENCY},
     )
@@ -422,6 +422,240 @@ def _generate_trades(
     _log.info("inserted %d trades", inserted_trades)
 
 
+def _generate_candle_window_trades(
+    conn,
+    instruments: list[str],
+    start: datetime,
+    end: datetime,
+    trades_per_instrument: int = 6,
+) -> None:
+    """Generate guaranteed closed trades inside the candle window for chart visibility."""
+    span = (end - start).total_seconds()
+    step = span / (trades_per_instrument + 1)
+    count = 0
+    for instrument in instruments:
+        base_price = _BASE_PRICES.get(instrument, 1.0)
+        is_jpy = instrument.endswith("_JPY")
+        pip_value = 0.01 if is_jpy else 0.0001
+        for i in range(trades_per_instrument):
+            entry_time = start + timedelta(seconds=step * (i + 1))
+            hold_minutes = _RNG.randint(30, 240)
+            raw_exit = entry_time + timedelta(minutes=hold_minutes)
+            exit_time = min(raw_exit, end - timedelta(minutes=1))
+
+            direction = _RNG.choice(["buy", "sell"])
+            strategy = _RNG.choice(_STRATEGIES)
+            exit_reason = _RNG.choice(_EXIT_REASONS)
+            drift_pips = _RNG.gauss(1.0, 6.0)
+            entry_price = base_price + _RNG.gauss(0, base_price * 0.001)
+            exit_price = entry_price + (drift_pips * pip_value * (1 if direction == "buy" else -1))
+            units = _RNG.choice([2000, 5000, 10000])
+            pnl_raw = (exit_price - entry_price) * units * (1 if direction == "buy" else -1)
+            pnl_jpy = round(pnl_raw if is_jpy else pnl_raw * 151.5, 2)
+
+            cycle_id = _ulid_like()
+            meta_decision_id = _ulid_like()
+            trading_signal_id = _ulid_like()
+            order_id = _ulid_like()
+            pos_open_id = _ulid_like()
+            pos_close_id = _ulid_like()
+            close_event_id = _ulid_like()
+
+            conn.execute(
+                text(
+                    "INSERT INTO meta_decisions"
+                    " (meta_decision_id, cycle_id, filter_result, active_strategies,"
+                    "  regime_detected, decision_time_utc, no_trade_reason)"
+                    " VALUES (:mid, :cid, :fr, :as_, :regime, :dt, NULL)"
+                    " ON CONFLICT (meta_decision_id) DO NOTHING"
+                ),
+                {
+                    "mid": meta_decision_id,
+                    "cid": cycle_id,
+                    "fr": json.dumps({"passed": [instrument], "filtered": []}),
+                    "as_": json.dumps([strategy]),
+                    "regime": _RNG.choice(["trend", "range", "high_vol"]),
+                    "dt": entry_time,
+                },
+            )
+            conn.execute(
+                text(
+                    "INSERT INTO strategy_signals"
+                    " (cycle_id, instrument, strategy_id, strategy_type,"
+                    "  signal_direction, confidence, signal_time_utc)"
+                    " VALUES (:cid, :inst, :sid, :stype, :dir, :conf, :st)"
+                    " ON CONFLICT (cycle_id, instrument, strategy_id) DO NOTHING"
+                ),
+                {
+                    "cid": cycle_id,
+                    "inst": instrument,
+                    "sid": strategy,
+                    "stype": strategy.split("_")[0],
+                    "dir": direction,
+                    "conf": round(_RNG.uniform(0.52, 0.88), 4),
+                    "st": entry_time,
+                },
+            )
+            conn.execute(
+                text(
+                    "INSERT INTO trading_signals"
+                    " (trading_signal_id, meta_decision_id, cycle_id, instrument,"
+                    "  strategy_id, signal_direction, signal_time_utc)"
+                    " VALUES (:tsid, :mid, :cid, :inst, :sid, :dir, :st)"
+                    " ON CONFLICT (trading_signal_id) DO NOTHING"
+                ),
+                {
+                    "tsid": trading_signal_id,
+                    "mid": meta_decision_id,
+                    "cid": cycle_id,
+                    "inst": instrument,
+                    "sid": strategy,
+                    "dir": direction,
+                    "st": entry_time,
+                },
+            )
+            conn.execute(
+                text(
+                    "INSERT INTO orders"
+                    " (order_id, client_order_id, trading_signal_id, account_id, instrument,"
+                    "  account_type, order_type, direction, units, status, submitted_at, filled_at)"
+                    " VALUES (:oid, :coid, :tsid, :aid, :inst,"
+                    "         :atype, 'market', :dir, :units, 'FILLED', :sub_at, :fill_at)"
+                    " ON CONFLICT (order_id) DO NOTHING"
+                ),
+                {
+                    "oid": order_id,
+                    "coid": f"cw-{order_id}",
+                    "tsid": trading_signal_id,
+                    "aid": _ACCOUNT_ID,
+                    "inst": instrument,
+                    "atype": _ACCOUNT_TYPE,
+                    "dir": direction,
+                    "units": units,
+                    "sub_at": entry_time,
+                    "fill_at": entry_time + timedelta(milliseconds=_RNG.randint(50, 300)),
+                },
+            )
+            conn.execute(
+                text(
+                    "INSERT INTO positions"
+                    " (position_snapshot_id, order_id, account_id, instrument,"
+                    "  event_type, units, avg_price, unrealized_pl, realized_pl, event_time_utc)"
+                    " VALUES (:psid, :oid, :aid, :inst, 'open', :units, :avg_price, 0, NULL, :et)"
+                    " ON CONFLICT (position_snapshot_id) DO NOTHING"
+                ),
+                {
+                    "psid": pos_open_id,
+                    "oid": order_id,
+                    "aid": _ACCOUNT_ID,
+                    "inst": instrument,
+                    "units": units,
+                    "avg_price": round(entry_price, 8),
+                    "et": entry_time,
+                },
+            )
+            conn.execute(
+                text(
+                    "INSERT INTO positions"
+                    " (position_snapshot_id, order_id, account_id, instrument,"
+                    "  event_type, units, avg_price, unrealized_pl, realized_pl, event_time_utc)"
+                    " VALUES (:psid, :oid, :aid, :inst, 'close', 0, :avg_price, 0, :pnl, :et)"
+                    " ON CONFLICT (position_snapshot_id) DO NOTHING"
+                ),
+                {
+                    "psid": pos_close_id,
+                    "oid": order_id,
+                    "aid": _ACCOUNT_ID,
+                    "inst": instrument,
+                    "avg_price": round(exit_price, 8),
+                    "pnl": pnl_jpy,
+                    "et": exit_time,
+                },
+            )
+            conn.execute(
+                text(
+                    "INSERT INTO close_events"
+                    " (close_event_id, order_id, position_snapshot_id,"
+                    "  reasons, primary_reason_code, closed_at, pnl_realized)"
+                    " VALUES (:ceid, :oid, :psid, :reasons, :reason, :closed_at, :pnl)"
+                    " ON CONFLICT (close_event_id) DO NOTHING"
+                ),
+                {
+                    "ceid": close_event_id,
+                    "oid": order_id,
+                    "psid": pos_close_id,
+                    "reasons": json.dumps(
+                        [{"priority": 1, "reason_code": exit_reason, "detail": ""}]
+                    ),
+                    "reason": exit_reason,
+                    "closed_at": exit_time,
+                    "pnl": pnl_jpy,
+                },
+            )
+            count += 1
+    _log.info("inserted %d candle-window trades (%d per instrument)", count, trades_per_instrument)
+
+
+def _generate_chart_signals(
+    conn,
+    instruments: list[str],
+    start: datetime,
+    end: datetime,
+    interval_minutes: int = 30,
+) -> None:
+    """Generate strategy_signals at regular intervals inside the candle window.
+
+    These standalone signals (no orders/positions) exist solely to populate
+    the chart overlays for dashboard review.
+    """
+    t = start
+    count = 0
+    while t <= end:
+        for instrument in instruments:
+            cycle_id = _ulid_like()
+            meta_decision_id = _ulid_like()
+            direction = _RNG.choice(["buy", "sell"])
+            strategy = _RNG.choice(_STRATEGIES)
+            conn.execute(
+                text(
+                    "INSERT INTO meta_decisions"
+                    " (meta_decision_id, cycle_id, filter_result,"
+                    "  active_strategies, regime_detected, decision_time_utc)"
+                    " VALUES (:mid, :cid, :fr, :as_, :regime, :dt)"
+                    " ON CONFLICT (meta_decision_id) DO NOTHING"
+                ),
+                {
+                    "mid": meta_decision_id,
+                    "cid": cycle_id,
+                    "fr": json.dumps({"passed": [instrument], "filtered": []}),
+                    "as_": json.dumps([strategy]),
+                    "regime": _RNG.choice(["trend", "range", "high_vol"]),
+                    "dt": t,
+                },
+            )
+            conn.execute(
+                text(
+                    "INSERT INTO strategy_signals"
+                    " (cycle_id, instrument, strategy_id, strategy_type,"
+                    "  signal_direction, confidence, signal_time_utc)"
+                    " VALUES (:cid, :inst, :sid, :stype, :dir, :conf, :st)"
+                    " ON CONFLICT (cycle_id, instrument, strategy_id) DO NOTHING"
+                ),
+                {
+                    "cid": cycle_id,
+                    "inst": instrument,
+                    "sid": strategy,
+                    "stype": strategy.split("_")[0],
+                    "dir": direction,
+                    "conf": round(_RNG.uniform(0.52, 0.88), 4),
+                    "st": t,
+                },
+            )
+            count += 1
+        t += timedelta(minutes=interval_minutes)
+    _log.info("inserted %d chart signals (%d-min interval)", count, interval_minutes)
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--database-url", default=os.environ.get("DATABASE_URL", ""))
@@ -469,8 +703,26 @@ def main() -> int:
             )
             conn.execute(text("DELETE FROM orders WHERE account_id = :aid"), {"aid": _ACCOUNT_ID})
             conn.execute(
-                text("DELETE FROM market_candles WHERE instrument IN :insts"),
-                {"insts": tuple(args.candle_instruments)},
+                text("DELETE FROM market_candles WHERE instrument = ANY(:insts)"),
+                {"insts": list(args.candle_instruments)},
+            )
+            conn.execute(
+                text("DELETE FROM strategy_signals WHERE instrument = ANY(:insts)"),
+                {"insts": list(args.candle_instruments)},
+            )
+            # trading_signals FK -> meta_decisions: delete child before parent
+            conn.execute(
+                text(
+                    "DELETE FROM trading_signals WHERE meta_decision_id IN ("
+                    "  SELECT meta_decision_id FROM meta_decisions"
+                    "  WHERE decision_time_utc >= :start"
+                    ")"
+                ),
+                {"start": now - timedelta(days=args.days + 1)},
+            )
+            conn.execute(
+                text("DELETE FROM meta_decisions WHERE decision_time_utc >= :start"),
+                {"start": now - timedelta(days=args.days + 1)},
             )
 
         _log.info("inserting broker/account/instruments...")
@@ -481,14 +733,20 @@ def main() -> int:
         _log.info("generating %d trades (%d days)...", args.trades, args.days)
         _generate_trades(conn, args.trades, start, now)
 
+        candle_start = now - timedelta(days=args.candle_days)
         for instrument in args.candle_instruments:
             base_price = _BASE_PRICES.get(instrument, 1.0)
             pip_size = 0.01 if instrument.endswith("_JPY") else 0.0001
             n_candles = args.candle_days * 1440
-            candle_start = now - timedelta(days=args.candle_days)
             _log.info("generating %d M1 candles for %s...", n_candles, instrument)
             rows = _make_candles(instrument, candle_start, n_candles, base_price, pip_size)
             _insert_candles_batch(conn, rows)
+
+        _log.info("generating candle-window trades...")
+        _generate_candle_window_trades(conn, args.candle_instruments, candle_start, now)
+
+        _log.info("generating chart signals for candle window...")
+        _generate_chart_signals(conn, args.candle_instruments, candle_start, now)
 
     _log.info(
         "done — account=%s broker=%s trades=%d candle_days=%d",

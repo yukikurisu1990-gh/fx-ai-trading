@@ -52,6 +52,7 @@ import platform
 import sys
 from collections import deque
 from datetime import UTC, date, datetime
+from pathlib import Path
 from typing import TYPE_CHECKING
 from uuid import UUID
 
@@ -66,7 +67,7 @@ from fx_ai_trading.common.clock import Clock, WallClock
 from fx_ai_trading.common.ulid import generate_ulid
 from fx_ai_trading.config.common_keys_context import CommonKeysContext
 from fx_ai_trading.domain.broker import OrderRequest
-from fx_ai_trading.domain.price_feed import Candle
+from fx_ai_trading.domain.price_feed import Candle, callable_to_quote_feed
 from fx_ai_trading.domain.risk import Instrument
 from fx_ai_trading.ops.logging_config import apply_logging_config
 from fx_ai_trading.repositories.orders import OrdersRepository
@@ -107,8 +108,8 @@ _HISTORY_DEPTH_VOL = 500  # halflife=60 EWMA × ~7 half-lives + safety margin
 _HISTORY_DEPTH_MTF = 2100  # 7d × 24h × 12 bars/h + safety margin
 _HISTORY_DEPTH = _HISTORY_DEPTH_BASELINE  # back-compat module-level alias
 
-# Phase 9.X-O clip cap: maximum position size in units (100 mini-lots).
-_DEFAULT_MAX_UNITS = 10_000
+# Phase 9.X-O clip cap: 0 = no cap (rely on leverage cap only).
+_DEFAULT_MAX_UNITS = 0
 
 # Phase 9.X-N margin-aware: Japan FX leverage limit (25:1).
 _DEFAULT_MAX_LEVERAGE = 25.0
@@ -127,6 +128,61 @@ _DIRECTION_TO_BROKER_SIDE: dict[str, str] = {"buy": "long", "sell": "short"}
 # Used to compute absolute price TP/SL levels stored in _tpsl_map at open time.
 _TP_MULT = 1.5
 _SL_MULT = 1.0
+
+# Reference data required before any FK-dependent table can be written.
+_BROKER_SEED = ("OANDA", "OANDA", "https://api-fxpractice.oanda.com")
+_INSTRUMENT_SEED: list[tuple[str, str, str, int]] = [
+    ("AUD_CAD", "AUD", "CAD", -4),
+    ("AUD_JPY", "AUD", "JPY", -2),
+    ("AUD_NZD", "AUD", "NZD", -4),
+    ("AUD_USD", "AUD", "USD", -4),
+    ("CHF_JPY", "CHF", "JPY", -2),
+    ("EUR_AUD", "EUR", "AUD", -4),
+    ("EUR_CAD", "EUR", "CAD", -4),
+    ("EUR_CHF", "EUR", "CHF", -4),
+    ("EUR_GBP", "EUR", "GBP", -4),
+    ("EUR_JPY", "EUR", "JPY", -2),
+    ("EUR_USD", "EUR", "USD", -4),
+    ("GBP_AUD", "GBP", "AUD", -4),
+    ("GBP_CHF", "GBP", "CHF", -4),
+    ("GBP_JPY", "GBP", "JPY", -2),
+    ("GBP_USD", "GBP", "USD", -4),
+    ("NZD_JPY", "NZD", "JPY", -2),
+    ("NZD_USD", "NZD", "USD", -4),
+    ("USD_CAD", "USD", "CAD", -4),
+    ("USD_CHF", "USD", "CHF", -4),
+    ("USD_JPY", "USD", "JPY", -2),
+]
+
+
+def _ensure_reference_data(engine) -> None:
+    """Seed brokers + instruments on every startup (idempotent, ON CONFLICT DO NOTHING).
+
+    Prevents FK cascading failures when these reference tables are accidentally
+    wiped (migration re-run, restore from backup, etc.).
+    """
+    from sqlalchemy import text as _text
+
+    broker_id, broker_name, broker_url = _BROKER_SEED
+    with engine.begin() as conn:
+        conn.execute(
+            _text(
+                "INSERT INTO brokers (broker_id, name, api_base_url)"
+                " VALUES (:id, :name, :url) ON CONFLICT (broker_id) DO NOTHING"
+            ),
+            {"id": broker_id, "name": broker_name, "url": broker_url},
+        )
+        for inst, base, quote, pip_loc in _INSTRUMENT_SEED:
+            conn.execute(
+                _text(
+                    "INSERT INTO instruments"
+                    " (instrument, base_currency, quote_currency, pip_location, min_trade_units)"
+                    " VALUES (:inst, :base, :quote, :pip, :min_units)"
+                    " ON CONFLICT (instrument) DO NOTHING"
+                ),
+                {"inst": inst, "base": base, "quote": quote, "pip": pip_loc, "min_units": 1000},
+            )
+    _log.info("reference data: brokers + %d instruments ensured", len(_INSTRUMENT_SEED))
 
 
 # ---------------------------------------------------------------------------
@@ -171,6 +227,8 @@ def _open_live_position(
     orders_context: CommonKeysContext,
     broker: object,  # OandaBroker — avoids import at module level
     trading_signal_id: str | None = None,
+    tp: float | None = None,
+    sl: float | None = None,
 ) -> str | None:
     """Execute the 5-step live open sequence using OandaBroker.
 
@@ -220,6 +278,8 @@ def _open_live_position(
         instrument=instrument,
         side=side,
         size_units=size_units,
+        tp=tp,
+        sl=sl,
     )
     try:
         result = broker.place_order(request)
@@ -392,13 +452,32 @@ def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         metavar="PATH",
         help="Path to fetch_oanda_candles JSONL (replay mode). Omit for live OANDA polling.",
     )
-    p.add_argument("--granularity", default="M5", help="Candle granularity (default: M5).")
+    p.add_argument(
+        "--granularity",
+        default="M1",
+        choices=["M1"],
+        help="Candle granularity. Only M1 is supported (must match LGBM training granularity).",
+    )
     p.add_argument(
         "--dry-run",
         action="store_true",
         help="Run full D3 pipeline but skip position opening.",
     )
     p.add_argument("--log-level", default="INFO")
+    p.add_argument(
+        "--log-dir",
+        dest="log_dir",
+        type=Path,
+        default=Path("logs"),
+        help="Directory for the JSONL log file (default: logs/).",
+    )
+    p.add_argument(
+        "--log-filename",
+        dest="log_filename",
+        type=str,
+        default="paper_decision_loop.jsonl",
+        help="JSONL filename inside --log-dir (default: paper_decision_loop.jsonl).",
+    )
     p.add_argument(
         "--top-k",
         type=int,
@@ -421,17 +500,6 @@ def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         help=(
             "Use unvalidated TA strategies (MA/ATR/RSI/MACD/Bollinger) instead "
             "of the default LGBM classifier. Intended for A/B testing only."
-        ),
-    )
-    p.add_argument(
-        "--max-spread-pip",
-        type=float,
-        default=2.0,
-        metavar="PIPS",
-        help=(
-            "Pre-trade spread gate: skip trade if live bid/ask spread exceeds "
-            "this threshold (in pips). Applied in live mode only; ignored in "
-            "replay mode where real-time quotes are unavailable. Default 2.0 pips."
         ),
     )
     p.add_argument(
@@ -459,20 +527,15 @@ def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     p.set_defaults(compound=True)
     p.add_argument(
         "--feature-groups",
-        default="",
+        default="mtf",
         help=(
-            "Phase 9.X-B/J-4 config plumbing only. "
-            "Comma-separated feature groups to enable on top of the "
-            "Phase 9.16 baseline. Valid: vol, moments, mtf. "
-            "Recommended (per docs/design/phase9_x_b_closure_memo.md) "
-            "is 'mtf' alone — 4h/daily/weekly stats lift Sharpe 0.160 "
-            "→ 0.174 / PnL 1.85x at K=3. Empty (default) preserves "
-            "Phase 9.16 production behaviour. "
-            "ACTIVATION DEFERRED: actual feature computation in "
-            "FeatureService requires _HISTORY_DEPTH expansion (100 → "
-            "~2000 bars) and FEATURE_VERSION bump (v2 → v3). This PR "
-            "ships only the flag plumbing; flag value validated and "
-            "stored but not yet wired into FeatureService."
+            "Comma-separated feature groups to activate. Valid: vol, mtf. "
+            "Default 'mtf' enables the H4/D1/W1 multi-timeframe features "
+            "(6 features) that are part of the v4 45-feature production set. "
+            "M5/M15/H1 upper-TF features (24 features) are always computed "
+            "regardless of this flag. Passing 'mtf' also auto-expands the "
+            "rolling bar history to 2100 bars for weekly stats. "
+            "Pass '' to disable the MTF group (reverts to 39 features)."
         ),
     )
     # -----------------------------------------------------------------------
@@ -506,10 +569,9 @@ def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         default=_DEFAULT_MAX_UNITS,
         metavar="UNITS",
         help=(
-            "Phase 9.X-O clip cap: maximum position size in units. "
-            "Sized positions are clamped to min(computed, max_units). "
-            "Default 10,000 (= 100 mini-lots). "
-            "Eliminates compounding blowup risk at high K."
+            "Hard cap on position size in units. 0 = no cap (default); "
+            "relies solely on leverage cap (50%% margin rule). "
+            "Set > 0 to impose an additional upper bound."
         ),
     )
     p.add_argument(
@@ -575,8 +637,8 @@ def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         p.error(f"--top-k must be >= 1 (got {args.top_k})")
     if args.risk_pct <= 0 or args.risk_pct > 100:
         p.error(f"--risk-pct must be in (0, 100], got {args.risk_pct}")
-    if args.max_units < 1:
-        p.error(f"--max-units must be >= 1, got {args.max_units}")
+    if args.max_units < 0:
+        p.error(f"--max-units must be >= 0 (0 = no cap), got {args.max_units}")
     if args.max_leverage <= 0:
         p.error(f"--max-leverage must be > 0, got {args.max_leverage}")
     if args.daily_dd_pct <= 0 or args.daily_dd_pct > 100:
@@ -719,6 +781,84 @@ class _DailyDrawdownBrake:
         return False
 
 
+def _reconcile_broker_closes(
+    *,
+    broker: object,
+    account_id: str,
+    state_manager: StateManager,
+    price_fn: object,
+    tpsl_map: dict[str, tuple[float | None, float | None]],
+) -> None:
+    """Sync StateManager with OANDA for positions already auto-closed by TP/SL.
+
+    When OANDA executes a takeProfitOnFill or stopLossOnFill order, the
+    position disappears from OANDA's open-positions list but StateManager
+    still holds it as open.  This function detects that discrepancy and
+    calls on_close() so DB state stays consistent.
+
+    Called in live mode only, before run_exit_gate each bar.
+    """
+    sm_positions = state_manager.open_position_details()
+    if not sm_positions:
+        return
+    try:
+        broker_positions = broker.get_positions(account_id)  # type: ignore[attr-defined]
+    except Exception:
+        _log.warning("reconcile: get_positions failed — skipping this bar")
+        return
+
+    broker_open: set[tuple[str, str]] = {(p.instrument, p.side) for p in broker_positions}
+
+    for pos in sm_positions:
+        if (pos.instrument, pos.side) in broker_open:
+            continue  # still open at OANDA
+
+        # Position gone from OANDA — auto-executed TP/SL or manual close.
+        sign = 1 if pos.side == "long" else -1
+        pos_tp, pos_sl = tpsl_map.get(pos.order_id, (None, None))
+
+        try:
+            current_price = price_fn(pos.instrument)  # type: ignore[operator]
+        except Exception:
+            current_price = pos.avg_price
+
+        # Determine reason first, then assign fill_price.
+        # When OANDA executes a takeProfitOnFill / stopLossOnFill order it
+        # fills at exactly the attached limit price (no partial fill, no
+        # slippage in the conventional sense for limit-type attached orders).
+        # Using those levels as fill_price is therefore more accurate than
+        # the current bar close.
+        if pos_tp is not None and sign * (current_price - pos_tp) >= -1e-8:
+            reason = "tp_hit_broker"
+            fill_price = pos_tp
+        elif pos_sl is not None and sign * (pos_sl - current_price) >= -1e-8:
+            reason = "sl_hit_broker"
+            fill_price = pos_sl
+        else:
+            reason = "closed_by_broker"
+            fill_price = current_price  # best estimate; unknown external close
+
+        pnl = (fill_price - pos.avg_price) * pos.units * sign
+
+        _log.info(
+            "reconcile: OANDA closed %s %s order=%s reason=%s fill=%.5f pnl=%.2f",
+            pos.instrument,
+            pos.side,
+            pos.order_id,
+            reason,
+            fill_price,
+            pnl,
+        )
+        state_manager.on_close(
+            order_id=pos.order_id,
+            instrument=pos.instrument,
+            reasons=[{"priority": 1, "reason_code": reason, "detail": "oanda_auto_close"}],
+            primary_reason_code=reason,
+            pnl_realized=pnl,
+        )
+        tpsl_map.pop(pos.order_id, None)
+
+
 def _compute_position_size(
     inst: str,
     features: dict[str, FeatureSet],
@@ -728,14 +868,21 @@ def _compute_position_size(
     max_leverage: float,
     bar_close: float,
 ) -> tuple[int, str | None]:
-    """Compute risk-sized position with clip cap and margin check.
+    """Compute risk-sized position with clip cap and leverage-aware margin check.
 
     Returns (size_units, skip_reason). size_units=0 means skip this trade.
 
     Steps:
-      1. ATR-based SL distance → PositionSizerService (risk-% formula)
+      1. ATR-based SL in JPY/unit → risk-% formula (pip-value-corrected)
       2. Clip cap: min(computed, max_units)
-      3. Margin-aware: skip if margin_required > 50% of initial_balance
+      3. Leverage cap: max units such that margin ≤ 50 % of balance
+
+    Pip-value correction:
+      For JPY-quoted pairs (e.g. USD_JPY): ATR is already in JPY, so
+        sl_value_jpy_per_unit = ATR.
+      For non-JPY pairs (e.g. EUR_USD): ATR is in USD; we multiply by the
+        current USD/JPY close fetched from the features dict.
+      Fallback (no USD_JPY data): old simplified formula (ATR / pip_size).
     """
     feat = features.get(inst)
     if feat is None:
@@ -744,52 +891,73 @@ def _compute_position_size(
     if not atr or atr <= 0:
         return 0, "NoATR"
     pip = _PIP_SIZE.get(inst, 0.0001)
-    sl_pips = atr / pip
+
+    # --- pip-value-corrected SL distance in JPY per unit ---
+    quote_ccy = inst.split("_")[1] if "_" in inst else ""
+    if quote_ccy == "JPY":
+        # ATR is quoted in JPY; each unit moves ATR JPY at SL.
+        sl_value_jpy = atr
+    else:
+        # ATR is in the quote currency (e.g., USD for EUR/USD).
+        # Multiply by USDJPY close to get JPY equivalent.
+        usdjpy_feat = features.get("USD_JPY")
+        usdjpy_close = usdjpy_feat.sampled_features.get("last_close") if usdjpy_feat else None
+        if usdjpy_close and usdjpy_close > 0:
+            sl_value_jpy = atr * usdjpy_close
+        else:
+            # USD_JPY feature unavailable.  Using atr / pip (= pip count)
+            # would implicitly assume USDJPY=1.0 and oversize by ~150×.
+            # Use a conservative approximate rate instead.
+            _log.warning(
+                "_compute_position_size: USD_JPY feature missing for %s "
+                "— falling back to USDJPY≈150 approximation",
+                inst,
+            )
+            sl_value_jpy = atr * 150.0
+
     instrument_ref = Instrument(
         instrument=inst,
         base_currency=inst[:3],
-        quote_currency=inst[4:] if len(inst) > 4 else "???",
+        quote_currency=quote_ccy or "???",
         pip_location=-4 if pip == 0.0001 else -2,
         min_trade_units=1,
     )
     sizer = PositionSizerService(risk_pct=risk_pct)
-    sr = sizer.size(initial_balance, risk_pct, sl_pips, instrument_ref)
+    # Pass sl_value_jpy as sl_pips: sizer formula is risk_amount / sl_pips,
+    # which is now dimensionally correct (JPY / JPY·unit⁻¹ = units).
+    sr = sizer.size(initial_balance, risk_pct, sl_value_jpy, instrument_ref)
     if sr.size_units == 0:
         return 0, sr.reason or "SizeUnderMin"
 
-    # Apply clip cap (Phase 9.X-O: 100 mini-lots).
-    size_units = min(sr.size_units, max_units)
-    clipped = size_units < sr.size_units
-    if clipped:
+    # Apply optional clip cap (max_units=0 means no cap).
+    size_units = sr.size_units
+    if max_units > 0 and size_units > max_units:
         _log.debug(
-            "clip cap applied: %s raw=%d → %d (max_units=%d)",
+            "clip cap: %s raw=%d → %d (max_units=%d)",
             inst,
-            sr.size_units,
             size_units,
             max_units,
+            max_units,
         )
+        size_units = max_units
 
-    # Margin-aware check (Phase 9.X-N: Japan 25:1 leverage limit).
-    # Approximation: margin_required = units × close_price / leverage.
-    # For JPY-quoted pairs this gives JPY margin directly; for non-JPY
-    # pairs it overestimates slightly (base-to-JPY conversion omitted
-    # — conservative bias is intentional for paper mode).
+    # Leverage cap (Phase 9.X-N): margin ≤ 50 % of balance.
+    # max_units_leverage = balance × 0.5 × leverage / price
     if bar_close > 0 and max_leverage > 0:
-        margin_required = size_units * bar_close / max_leverage
-        margin_limit = initial_balance * 0.5
-        if margin_required > margin_limit:
-            # Reduce size to fit within 50% margin constraint.
-            reduced = int(margin_limit * max_leverage / bar_close)
-            if reduced < 1:
-                return 0, "InsufficientMargin"
-            size_units = reduced
+        max_units_leverage = int(initial_balance * 0.5 * max_leverage / bar_close)
+        if max_units_leverage < 1:
+            return 0, "InsufficientMargin"
+        if size_units > max_units_leverage:
             _log.debug(
-                "margin-aware size reduction: %s margin_req=%.2f > limit=%.2f → units=%d",
+                "leverage cap: %s %d → %d (balance=%.0f, leverage=%.0f, price=%.5f)",
                 inst,
-                margin_required,
-                margin_limit,
                 size_units,
+                max_units_leverage,
+                initial_balance,
+                max_leverage,
+                bar_close,
             )
+            size_units = max_units_leverage
 
     return size_units, None
 
@@ -823,6 +991,17 @@ def _query_realized_pnl(engine: Engine, account_id: str) -> float:
         return 0.0
 
 
+def _query_live_balance(client: OandaAPIClient, account_id: str) -> float | None:
+    """Fetch the current account balance from OANDA. Returns None on failure."""
+    try:
+        summary = client.get_account_summary(account_id)
+        val = float(summary.get("balance", 0.0))
+        return val if val > 0 else None
+    except Exception:
+        _log.warning("_query_live_balance: API call failed — falling back to initial_balance")
+        return None
+
+
 def _build_engine(src: dict[str, str]) -> Engine:
     url = (src.get(_ENV_DATABASE_URL) or "").strip()
     if not url:
@@ -843,6 +1022,31 @@ def _build_oanda_client(src: dict[str, str]) -> OandaAPIClient:
             " (required for live mode)."
         )
     return OandaAPIClient(access_token=token, environment="practice")
+
+
+def _persist_candle(engine: Engine, bar: Candle) -> None:
+    try:
+        with engine.begin() as conn:
+            conn.execute(
+                text(
+                    "INSERT INTO market_candles"
+                    " (instrument, tier, event_time_utc, open, high, low, close, volume)"
+                    " VALUES (:instrument, :tier, :ts, :open, :high, :low, :close, :volume)"
+                    " ON CONFLICT (instrument, tier, event_time_utc) DO NOTHING"
+                ),
+                {
+                    "instrument": bar.instrument,
+                    "tier": bar.tier,
+                    "ts": bar.time_utc,
+                    "open": bar.open,
+                    "high": bar.high,
+                    "low": bar.low,
+                    "close": bar.close,
+                    "volume": bar.volume,
+                },
+            )
+    except Exception:
+        _log.warning("_persist_candle: failed for %s %s", bar.instrument, bar.time_utc)
 
 
 def _warmup_history(
@@ -937,6 +1141,70 @@ def _finish_system_job(engine: Engine, *, run_id: str, cycles: int) -> None:
 
 
 # ---------------------------------------------------------------------------
+# External MTF bar fetcher (H4/D1/W1 direct from OANDA)
+# ---------------------------------------------------------------------------
+
+_MTF_EXT_REFRESH_SECS = 3600  # 1 時間ごとに D1/W1/H4 を再フェッチ
+
+
+def _fetch_granularity_bars(
+    oanda_client: object,
+    instrument: str,
+    granularity: str,
+    count: int,
+) -> list[dict]:
+    """指定 granularity の完了済みバーを list[dict(open,high,low,close)] で返す。
+    H4/D/W は UTC midnight アラインメントを指定して pandas resample と一致させる。
+    """
+    params: dict[str, object] = {"granularity": granularity, "count": count, "price": "M"}
+    if granularity in ("H4", "D"):
+        params.update({"dailyAlignment": 0, "alignmentTimezone": "UTC"})
+    elif granularity == "W":
+        params.update(
+            {
+                "weeklyAlignment": "Sunday",
+                "dailyAlignment": 0,
+                "alignmentTimezone": "UTC",
+            }
+        )
+    try:
+        resp = oanda_client.get_candles(  # type: ignore[union-attr]
+            instrument,
+            params=params,
+        )
+        bars = []
+        for r in resp.get("candles", []):
+            if not r.get("complete", True):
+                continue
+            mid = r["mid"]
+            bars.append(
+                {
+                    "open": float(mid["o"]),
+                    "high": float(mid["h"]),
+                    "low": float(mid["l"]),
+                    "close": float(mid["c"]),
+                }
+            )
+        return bars
+    except Exception:
+        return []
+
+
+def _load_ext_mtf(
+    oanda_client: object,
+    instruments: list[str],
+    feature_service: FeatureService,
+) -> None:
+    """全ペアの H4(60本)/D1(30本)/W1(15本) を取得して feature_service に設定する。"""
+    for inst in instruments:
+        h4 = _fetch_granularity_bars(oanda_client, inst, "H4", 60)
+        d1 = _fetch_granularity_bars(oanda_client, inst, "D", 30)
+        w1 = _fetch_granularity_bars(oanda_client, inst, "W", 15)
+        feature_service.set_ext_mtf_bars(inst, h4, d1, w1)
+    _log.info("ext MTF bars loaded: %d instruments", len(instruments))
+
+
+# ---------------------------------------------------------------------------
 # FeatureService factory
 # ---------------------------------------------------------------------------
 
@@ -999,6 +1267,19 @@ def run(args: argparse.Namespace, *, env: dict[str, str] | None = None) -> int:
             raise SystemExit(
                 "run_paper_decision_loop: OandaInstrumentRegistry returned no instruments."
             )
+        # Restrict to LGBM-trained pairs so strategy_signals FK (→instruments) is satisfied.
+        _manifest_path = Path(__file__).resolve().parents[1] / "models" / "lgbm" / "manifest.json"
+        if _manifest_path.exists():
+            import json as _json
+
+            _trained = set(_json.loads(_manifest_path.read_text()).get("trained_pairs", []))
+            _before = len(active_instruments)
+            active_instruments = [i for i in active_instruments if i in _trained]
+            _log.info(
+                "live mode: filtered %d → %d instruments (manifest trained_pairs)",
+                _before,
+                len(active_instruments),
+            )
         reference_instrument = active_instruments[0]
         _log.info("live mode: %d instruments from registry", len(active_instruments))
     elif is_live:
@@ -1016,6 +1297,7 @@ def run(args: argparse.Namespace, *, env: dict[str, str] | None = None) -> int:
         reference_instrument = args.instrument
 
     engine = _build_engine(src)
+    _ensure_reference_data(engine)
     clock = WallClock()
     run_id = generate_ulid()
 
@@ -1045,7 +1327,14 @@ def run(args: argparse.Namespace, *, env: dict[str, str] | None = None) -> int:
             BollingerStrategy(strategy_id="bollinger"),
         ]
     else:
-        strategies = [LGBMStrategy(strategy_id="lgbm")]
+        lgbm = LGBMStrategy(strategy_id="lgbm")
+        try:
+            lgbm.register_models(engine)
+        except Exception:
+            _log.warning(
+                "LGBMStrategy.register_models failed — predictions table may be incomplete"
+            )
+        strategies = [lgbm]
 
     # Rolling per-instrument candle history (fed before FeatureService.build).
     # Phase 9.X-B/J-5: depth auto-expanded when --feature-groups mtf or vol
@@ -1064,6 +1353,17 @@ def run(args: argparse.Namespace, *, env: dict[str, str] | None = None) -> int:
     # Live mode: warmup history for all instruments before starting loop.
     if is_live and oanda_client is not None:
         _warmup_history(oanda_client, active_instruments, args.granularity, history, history_depth)
+        # Persist warmup bars to market_candles so the dashboard chart is
+        # populated immediately for all 20 pairs (not just the reference instrument).
+        _log.info("persisting warmup history to market_candles (%d instruments)…", len(history))
+        for _inst, _buf in history.items():
+            for _bar in _buf:
+                _persist_candle(engine, _bar)
+        _log.info("warmup candles persisted")
+        # D1/W1 warmup fix: fetch proper-depth H4/D1/W1 bars directly from OANDA.
+        # M1 warmup (2100 bars = 35h) is insufficient for D1-ATR14 (needs 14+ D1 bars).
+        if "mtf" in enable_groups:
+            _load_ext_mtf(oanda_client, active_instruments, feature_service)
 
     # Build BarFeed.
     if is_live:
@@ -1081,8 +1381,25 @@ def run(args: argparse.Namespace, *, env: dict[str, str] | None = None) -> int:
         )
 
     # Phase 9.X-K: instantiate daily DD brake (J-2 lever).
+    # In live mode, calibrate to the actual OANDA balance fetched at startup.
+    # In paper/replay mode, fall back to --initial-balance.
+    startup_balance: float = args.initial_balance
+    if is_live and oanda_client is not None:
+        _fetched_balance = _query_live_balance(oanda_client, account_id)
+        if _fetched_balance:
+            startup_balance = _fetched_balance
+            _log.info(
+                "startup: live balance ¥%,.0f fetched from OANDA (DD brake threshold ¥%,.0f/day)",
+                startup_balance,
+                startup_balance * args.daily_dd_pct / 100,
+            )
+        else:
+            _log.warning(
+                "startup: could not fetch live balance; DD brake using --initial-balance ¥%,.0f",
+                startup_balance,
+            )
     dd_brake = _DailyDrawdownBrake(
-        opening_balance=args.initial_balance,
+        opening_balance=startup_balance,
         dd_pct=args.daily_dd_pct,
     )
 
@@ -1125,6 +1442,19 @@ def run(args: argparse.Namespace, *, env: dict[str, str] | None = None) -> int:
         open_broker_instruments=_broker_instruments,
     )
 
+    # Ensure the account row exists in the accounts table so the dashboard
+    # sidebar can list it.  Safe to call on every startup (ON CONFLICT DO UPDATE).
+    with engine.begin() as _conn:
+        _conn.execute(
+            text(
+                "INSERT INTO accounts (account_id, broker_id, account_type, base_currency)"
+                " VALUES (:aid, 'OANDA', :atype, 'JPY')"
+                " ON CONFLICT (account_id) DO UPDATE SET account_type = EXCLUDED.account_type"
+            ),
+            {"aid": account_id, "atype": "demo" if is_live else "dummy"},
+        )
+    _log.info("accounts: upserted %s", account_id)
+
     # Exit gate: time-based policy (B-2 horizon = 20 bars × granularity).
     # TP/SL price-based exit is deferred — current_price awareness requires
     # storing entry-price TP/SL levels in the orders table (Phase 9.X-K+1).
@@ -1142,24 +1472,70 @@ def run(args: argparse.Namespace, *, env: dict[str, str] | None = None) -> int:
     _log.info("risk_manager: max_open_positions=%d", args.max_open_positions)
 
     cycles_completed = 0
+    _last_ext_mtf_refresh: float = 0.0  # epoch seconds; triggers first-bar refresh
 
     # Per-position TP/SL price map keyed by order_id.
     # Populated at open time from B-2 ATR multipliers; consumed by run_exit_gate.
     _tpsl_map: dict[str, tuple[float | None, float | None]] = {}
 
     try:
+        from fx_ai_trading.adapters.price_feed.oanda_bar_feed import _parse_oanda_time
+
         for bar in bar_feed:  # type: ignore[union-attr]
             # Accumulate reference bar into history (no look-ahead).
             history[reference_instrument].append(bar)
+            _persist_candle(engine, bar)
 
             # In live multi-instrument mode, refresh instrument list each cycle (I-8).
             if is_live and registry is not None:
-                current_instruments = registry.list_active()
+                current_instruments = [i for i in registry.list_active() if i in active_instruments]
                 for inst in current_instruments:
                     if inst not in history:
                         history[inst] = deque(maxlen=_HISTORY_DEPTH)
             else:
                 current_instruments = active_instruments
+
+            # Hourly refresh of external H4/D1/W1 bars for accurate MTF features.
+            if is_live and oanda_client is not None and "mtf" in enable_groups:
+                import time as _time_mod
+
+                _now_epoch = _time_mod.time()
+                if _now_epoch - _last_ext_mtf_refresh >= _MTF_EXT_REFRESH_SECS:
+                    _load_ext_mtf(oanda_client, list(current_instruments), feature_service)
+                    _last_ext_mtf_refresh = _now_epoch
+
+            # Refresh bar history for all non-reference instruments in live mode.
+            # Without this, features for the other 19 pairs would be computed from
+            # warmup-only data and grow increasingly stale over the session.
+            if is_live and oanda_client is not None:
+                for inst in current_instruments:
+                    if inst == reference_instrument:
+                        continue
+                    try:
+                        resp = oanda_client.get_candles(
+                            inst,
+                            params={"granularity": args.granularity, "count": 2, "price": "M"},
+                        )
+                        for raw in resp.get("candles", []):
+                            if not raw.get("complete", True):
+                                continue
+                            mid = raw["mid"]
+                            c = Candle(
+                                instrument=inst,
+                                tier=args.granularity,
+                                time_utc=_parse_oanda_time(raw["time"]),
+                                open=float(mid["o"]),
+                                high=float(mid["h"]),
+                                low=float(mid["l"]),
+                                close=float(mid["c"]),
+                                volume=int(raw.get("volume", 0)),
+                            )
+                            buf = history[inst]
+                            if not buf or c.time_utc > buf[-1].time_utc:
+                                buf.append(c)
+                                _persist_candle(engine, c)
+                    except Exception:
+                        _log.debug("bar refresh failed for %s — using cached history", inst)
 
             # --- Exit gate (runs before open decision — exit-before-entry) ---
             # Evaluates all open positions against ExitPolicyService and closes
@@ -1171,7 +1547,27 @@ def run(args: argparse.Namespace, *, env: dict[str, str] | None = None) -> int:
                 return buf[-1].close if buf else _bar.close
 
             try:
-                close_broker = PaperBroker(account_type="demo", nominal_price=bar.close)
+                # Live mode: use OandaBroker to actually send the close order
+                # to OANDA and get the real fill price for PnL.
+                # Paper mode: give PaperBroker a per-instrument quote_feed so
+                # the fill price is instrument-specific (not the reference bar.close).
+                if oanda_exec_broker is not None:
+                    close_broker: object = oanda_exec_broker
+                    # Reconcile: mark positions OANDA has already auto-closed
+                    # via takeProfitOnFill / stopLossOnFill before running the
+                    # exit gate so we don't try to close them a second time.
+                    _reconcile_broker_closes(
+                        broker=oanda_exec_broker,
+                        account_id=account_id,
+                        state_manager=state_manager,
+                        price_fn=_bar_price,
+                        tpsl_map=_tpsl_map,
+                    )
+                else:
+                    close_broker = PaperBroker(
+                        account_type="demo",
+                        quote_feed=callable_to_quote_feed(_bar_price, clock=clock),
+                    )
                 run_exit_gate(
                     broker=close_broker,
                     account_id=account_id,
@@ -1261,24 +1657,30 @@ def run(args: argparse.Namespace, *, env: dict[str, str] | None = None) -> int:
 
             if meta_result.adopted and not args.dry_run:
                 inst = meta_result.adopted_instrument
+                # Use the adopted instrument's latest bar close, not the reference bar.
+                inst_close = _bar_price(inst or "")
                 # Live-quote gate (live mode only — replay has no real-time quotes).
                 # A single get_pricing call populates both the spread gate and the
                 # sudden-move (急変) guard; skipping if either threshold is breached.
                 if is_live and oanda_client is not None and inst is not None:
                     spread_pip, live_mid = _fetch_live_quote(oanda_client, account_id, inst)
-                    if spread_pip is not None and spread_pip > args.max_spread_pip:
-                        _log.info(
-                            "spread_too_wide: trade skipped",
-                            extra={
-                                "instrument": inst,
-                                "spread_pip": round(spread_pip, 3),
-                                "max_spread_pip": args.max_spread_pip,
-                            },
-                        )
-                        continue
+                    if spread_pip is not None:
+                        ev = meta_result.adopted_ev_after_cost or 0.0
+                        # EV gate: skip if spread exceeds model's expected value.
+                        if ev - spread_pip <= 0:
+                            _log.info(
+                                "spread_eats_ev: trade skipped",
+                                extra={
+                                    "instrument": inst,
+                                    "spread_pip": round(spread_pip, 3),
+                                    "ev_after_cost": round(ev, 4),
+                                    "net_ev": round(ev - spread_pip, 4),
+                                },
+                            )
+                            continue
                     if live_mid is not None:
                         _pip_sz = _PIP_SIZE.get(inst, 0.0001)
-                        dev_pips = abs(live_mid - bar.close) / _pip_sz
+                        dev_pips = abs(live_mid - inst_close) / _pip_sz
                         if dev_pips > args.max_slippage_pip:
                             _log.info(
                                 "sudden_move: trade skipped",
@@ -1287,7 +1689,7 @@ def run(args: argparse.Namespace, *, env: dict[str, str] | None = None) -> int:
                                     "dev_pips": round(dev_pips, 3),
                                     "max_slippage_pip": args.max_slippage_pip,
                                     "live_mid": live_mid,
-                                    "bar_close": bar.close,
+                                    "bar_close": inst_close,
                                 },
                             )
                             continue
@@ -1302,19 +1704,23 @@ def run(args: argparse.Namespace, *, env: dict[str, str] | None = None) -> int:
                     )
                     continue
 
-                # J-1 compounding: balance grows with realized PnL.
-                # current_balance = initial_balance + SUM(pnl_realized) for this
-                # account, so position sizing naturally compounds profits.
-                # Clamped to 1.0 so sizing never divides by near-zero.
-                # --no-compound bypasses the DB query and uses initial_balance.
-                current_balance = (
-                    max(
-                        args.initial_balance + _query_realized_pnl(engine, account_id),
+                # Live mode: use actual OANDA account balance as sizing base.
+                # Paper/replay mode: fall back to initial_balance + realized PnL
+                # (J-1 compounding) or initial_balance (--no-compound).
+                if is_live and oanda_client is not None:
+                    current_balance = max(
+                        _query_live_balance(oanda_client, account_id) or args.initial_balance,
                         1.0,
                     )
-                    if args.compound
-                    else args.initial_balance
-                )
+                else:
+                    current_balance = (
+                        max(
+                            args.initial_balance + _query_realized_pnl(engine, account_id),
+                            1.0,
+                        )
+                        if args.compound
+                        else args.initial_balance
+                    )
 
                 # Phase 9.X-K: compute risk-sized position (clip cap + margin check).
                 # Sizing is logged regardless of whether the broker call is live.
@@ -1325,7 +1731,7 @@ def run(args: argparse.Namespace, *, env: dict[str, str] | None = None) -> int:
                     risk_pct=args.risk_pct,
                     max_units=args.max_units,
                     max_leverage=args.max_leverage,
-                    bar_close=bar.close,
+                    bar_close=inst_close,
                 )
                 if size_units == 0:
                     _log.info(
@@ -1377,11 +1783,11 @@ def run(args: argparse.Namespace, *, env: dict[str, str] | None = None) -> int:
                 _atr = _feat.sampled_features.get("atr_14", 0.0) if _feat else 0.0
                 if _atr and _atr > 0:
                     if _direction == "buy":
-                        _tp_price: float | None = bar.close + _TP_MULT * _atr
-                        _sl_price: float | None = bar.close - _SL_MULT * _atr
+                        _tp_price: float | None = inst_close + _TP_MULT * _atr
+                        _sl_price: float | None = inst_close - _SL_MULT * _atr
                     else:  # sell
-                        _tp_price = bar.close - _TP_MULT * _atr
-                        _sl_price = bar.close + _SL_MULT * _atr
+                        _tp_price = inst_close - _TP_MULT * _atr
+                        _sl_price = inst_close + _SL_MULT * _atr
                 else:
                     _tp_price = None
                     _sl_price = None
@@ -1398,6 +1804,8 @@ def run(args: argparse.Namespace, *, env: dict[str, str] | None = None) -> int:
                         orders_context=orders_context,
                         broker=oanda_exec_broker,
                         trading_signal_id=meta_result.trading_signal_id,
+                        tp=_tp_price,
+                        sl=_sl_price,
                     )
                 else:
                     opened_order_id = _open_paper_position(
@@ -1406,7 +1814,7 @@ def run(args: argparse.Namespace, *, env: dict[str, str] | None = None) -> int:
                         instrument=inst or "",
                         direction=_direction,
                         size_units=size_units,
-                        fill_price=bar.close,
+                        fill_price=inst_close,
                         clock=clock,
                         state_manager=state_manager,
                         orders_repo=orders_repo,
@@ -1435,7 +1843,12 @@ def run(args: argparse.Namespace, *, env: dict[str, str] | None = None) -> int:
 
 def main(argv: list[str] | None = None) -> None:
     args = _parse_args(argv)
-    apply_logging_config(level=args.log_level)
+    log_path = apply_logging_config(
+        log_dir=args.log_dir,
+        filename=args.log_filename,
+        level=args.log_level,
+    )
+    print(f"Logging to: {log_path}  (tail -f {log_path})")
     sys.exit(run(args))
 
 

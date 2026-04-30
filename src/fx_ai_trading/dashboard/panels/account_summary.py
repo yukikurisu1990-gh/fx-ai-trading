@@ -14,19 +14,19 @@ def _fetch(_engine: object, account_id: str) -> dict:
 
 
 def render(engine: Engine | None, account_id: str | None = None) -> None:
-    st.subheader("Account Summary")
+    st.subheader("口座サマリー")
     if not account_id:
-        st.caption("Select a single account in the sidebar to see its KPI tiles.")
+        st.caption("サイドバーで口座を選択するとKPIを表示します。")
         return
     s = _fetch(engine, account_id)
     if s["n_trades"] == 0:
-        st.info("No trades for this account yet.")
+        st.info("この口座の取引はまだありません。")
         return
     c1, c2, c3 = st.columns(3)
-    c1.metric("Closed trades", s["n_trades"])
-    c2.metric("Total PnL (JPY)", f"{s['total_pnl']:,.0f}")
-    c3.metric("Win rate", f"{s['win_rate'] * 100:.1f}%")
+    c1.metric("決済済み取引数", s["n_trades"])
+    c2.metric("累計損益（JPY）", f"{s['total_pnl']:,.0f}")
+    c3.metric("勝率", f"{s['win_rate'] * 100:.1f}%")
     c4, c5, c6 = st.columns(3)
-    c4.metric("Best trade", f"{s['best_trade']:,.0f}")
-    c5.metric("Worst trade", f"{s['worst_trade']:,.0f}")
-    c6.metric("Max drawdown", f"{s['max_drawdown']:,.0f}")
+    c4.metric("最良トレード（JPY）", f"{s['best_trade']:,.0f}")
+    c5.metric("最悪トレード（JPY）", f"{s['worst_trade']:,.0f}")
+    c6.metric("最大ドローダウン（JPY）", f"{s['max_drawdown']:,.0f}")

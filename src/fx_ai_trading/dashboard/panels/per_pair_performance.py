@@ -16,10 +16,10 @@ def _fetch(_engine: object, account_id: str | None) -> list[dict]:
 
 
 def render(engine: Engine | None, account_id: str | None = None) -> None:
-    st.subheader("Per-Pair Performance")
+    st.subheader("通貨ペア別パフォーマンス")
     rows = _fetch(engine, account_id)
     if not rows:
-        st.info("No closed trades yet.")
+        st.info("決済済み取引なし。")
         return
     df = pd.DataFrame(rows)
     df_disp = df.copy()
@@ -37,8 +37,8 @@ def render(engine: Engine | None, account_id: str | None = None) -> None:
         alt.Chart(df)
         .mark_bar()
         .encode(
-            x=alt.X("instrument:N", title="Instrument", sort="-y"),
-            y=alt.Y("total_pnl:Q", title="Total PnL (JPY)"),
+            x=alt.X("instrument:N", title="通貨ペア", sort="-y"),
+            y=alt.Y("total_pnl:Q", title="累計損益（JPY）"),
             color=alt.condition(
                 alt.datum.total_pnl >= 0,
                 alt.value("#4e79a7"),

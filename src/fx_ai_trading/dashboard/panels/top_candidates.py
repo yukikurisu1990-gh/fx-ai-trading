@@ -18,19 +18,19 @@ def _fetch(_engine: object) -> list[dict]:
 
 
 def render(engine: Engine | None) -> None:
-    st.subheader("Top Candidates")
+    st.subheader("上位候補")
     rows = _fetch(engine)
     if not rows:
-        st.info("No candidates available. (TSS mart populated after M20.)")
+        st.info("候補なし（M20以降にTSSマートが生成されます）。")
         return
     display = [
         {
-            "Instrument": r.get("instrument", ""),
-            "Strategy": r.get("strategy_id", ""),
-            "TSS Score": r.get("tss_score", ""),
-            "Direction": r.get("direction", ""),
-            "Rank": r.get("rank", ""),
-            "Generated (UTC)": str(r.get("generated_at", "")),
+            "通貨ペア": r.get("instrument", ""),
+            "戦略": r.get("strategy_id", ""),
+            "TSSスコア": r.get("tss_score", ""),
+            "方向": r.get("direction", ""),
+            "ランク": r.get("rank", ""),
+            "生成時刻（UTC）": str(r.get("generated_at", "")),
         }
         for r in rows
     ]

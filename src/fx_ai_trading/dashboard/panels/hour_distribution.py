@@ -16,10 +16,10 @@ def _fetch(_engine: object, account_id: str | None) -> list[dict]:
 
 
 def render(engine: Engine | None, account_id: str | None = None) -> None:
-    st.subheader("Hour-of-Day (UTC)")
+    st.subheader("時間帯別分布（UTC）")
     rows = _fetch(engine, account_id)
     if not rows:
-        st.info("No closed trades yet.")
+        st.info("決済済み取引なし。")
         return
     df = pd.DataFrame(rows)
     df = df.set_index("hour").reindex(range(24), fill_value=0).reset_index()
@@ -27,11 +27,11 @@ def render(engine: Engine | None, account_id: str | None = None) -> None:
         alt.Chart(df)
         .mark_bar()
         .encode(
-            x=alt.X("hour:O", title="Hour (UTC)"),
-            y=alt.Y("n_trades:Q", title="Trades"),
+            x=alt.X("hour:O", title="時（UTC）"),
+            y=alt.Y("n_trades:Q", title="取引数"),
             color=alt.Color(
                 "avg_pnl:Q",
-                title="Avg PnL",
+                title="平均損益",
                 scale=alt.Scale(scheme="redblue", domainMid=0),
             ),
             tooltip=["hour:O", "n_trades:Q", "avg_pnl:Q", "total_pnl:Q"],

@@ -57,102 +57,98 @@ def _list_accounts(_engine: object) -> list[dict]:
     return dashboard_query_service.list_accounts(_engine)  # type: ignore[arg-type]
 
 
+_ACCOUNT_TYPE_LABEL = {"live": "本番", "demo": "デモ", "dummy": "ダミー"}
+
+
 def _format_account(acct: dict) -> str:
     aid = acct.get("account_id", "?")
     atype = acct.get("account_type", "?")
+    label = _ACCOUNT_TYPE_LABEL.get(atype, atype)
     cur = acct.get("base_currency", "?")
     broker = acct.get("broker_name") or acct.get("broker_id") or "?"
-    return f"[{atype}] {aid} ({broker}, {cur})"
+    return f"[{label}] {aid} ({broker}, {cur})"
 
 
 engine = _get_engine()
 
-st.title("FX-AI Trading Dashboard")
-st.caption("Phase 9.X · demo-ready · multi-account")
+st.title("FX-AI 取引ダッシュボード")
+st.caption("Phase 9.X · マルチ口座対応")
 
 if engine is None:
-    st.warning("DATABASE_URL not set — panels show fallback data only.")
+    st.warning("DATABASE_URL 未設定 — パネルはフォールバックデータを表示します。")
 
 # --- Sidebar: account switcher ---
 accounts = _list_accounts(engine) if engine is not None else []
-account_options: list[tuple[str | None, str]] = [(None, "All accounts")]
+account_options: list[tuple[str | None, str]] = [(None, "全口座")]
 account_options.extend((a["account_id"], _format_account(a)) for a in accounts)
 labels = [label for _, label in account_options]
 selected_label = st.sidebar.selectbox(
-    "Account",
+    "口座",
     labels,
     index=0,
-    help="Scope panels to a single OANDA account, or show all.",
+    help="口座を絞り込むか「全口座」で集計表示。",
 )
 selected_account_id: str | None = next(
     (aid for aid, label in account_options if label == selected_label), None
 )
-st.sidebar.caption(
-    f"{len(accounts)} account(s) registered" if accounts else "No accounts registered yet."
+st.sidebar.caption(f"{len(accounts)} 口座登録済み" if accounts else "口座未登録")
+
+tab_overview, tab_perf, tab_chart, tab_system = st.tabs(
+    ["概要", "パフォーマンス", "チャート", "システム"]
 )
 
-# --- Section 1: KPI tiles ---
-account_summary.render(engine, account_id=selected_account_id)
-st.divider()
+with tab_overview:
+    account_summary.render(engine, account_id=selected_account_id)
+    st.divider()
+    col_eq, col_dd = st.columns([3, 2])
+    with col_eq:
+        equity_curve.render(engine, account_id=selected_account_id)
+    with col_dd:
+        drawdown.render(engine, account_id=selected_account_id)
 
-# --- Section 2: Equity + Drawdown ---
-col_eq, col_dd = st.columns([3, 2])
-with col_eq:
-    equity_curve.render(engine, account_id=selected_account_id)
-with col_dd:
-    drawdown.render(engine, account_id=selected_account_id)
-st.divider()
+with tab_perf:
+    col_d, col_h = st.columns(2)
+    with col_d:
+        daily_pnl.render(engine, account_id=selected_account_id)
+    with col_h:
+        hour_distribution.render(engine, account_id=selected_account_id)
+    st.divider()
+    col_pair, col_strat, col_out = st.columns([2, 2, 1])
+    with col_pair:
+        per_pair_performance.render(engine, account_id=selected_account_id)
+    with col_strat:
+        strategy_breakdown.render(engine, account_id=selected_account_id)
+    with col_out:
+        trade_outcomes.render(engine, account_id=selected_account_id)
+    st.divider()
+    col_ex, col_dm = st.columns(2)
+    with col_ex:
+        execution_quality.render(engine, account_id=selected_account_id)
+    with col_dm:
+        daily_metrics.render(engine, account_id=selected_account_id)
 
-# --- Section 3: Daily + Hour distribution ---
-col_d, col_h = st.columns(2)
-with col_d:
-    daily_pnl.render(engine, account_id=selected_account_id)
-with col_h:
-    hour_distribution.render(engine, account_id=selected_account_id)
-st.divider()
+with tab_chart:
+    chart_candlestick.render(engine, account_id=selected_account_id)
 
-# --- Section 4: Per-pair + Strategy + Outcomes ---
-col_pair, col_strat, col_out = st.columns([2, 2, 1])
-with col_pair:
-    per_pair_performance.render(engine, account_id=selected_account_id)
-with col_strat:
-    strategy_breakdown.render(engine, account_id=selected_account_id)
-with col_out:
-    trade_outcomes.render(engine, account_id=selected_account_id)
-st.divider()
-
-# --- Section 5: Operational state (system-wide) ---
-col_a, col_b, col_c = st.columns(3)
-with col_a:
-    market_state.render(engine)
-with col_b:
-    strategy_summary.render(engine)
-with col_c:
-    meta_decision.render(engine)
-st.divider()
-
-col_pos, col_dm = st.columns(2)
-with col_pos:
-    positions.render(engine, account_id=selected_account_id)
-with col_dm:
-    daily_metrics.render(engine, account_id=selected_account_id)
-st.divider()
-
-col_sup, col_sig = st.columns(2)
-with col_sup:
-    supervisor_status.render(engine)
-with col_sig:
-    recent_signals.render(engine, account_id=selected_account_id)
-st.divider()
-
-col_top, col_eq2, col_risk = st.columns(3)
-with col_top:
-    top_candidates.render(engine)
-with col_eq2:
-    execution_quality.render(engine, account_id=selected_account_id)
-with col_risk:
-    risk_state_detail.render(engine)
-st.divider()
-
-# --- Section 7: Candlestick chart ---
-chart_candlestick.render(engine, account_id=selected_account_id)
+with tab_system:
+    col_a, col_b, col_c = st.columns(3)
+    with col_a:
+        market_state.render(engine)
+    with col_b:
+        strategy_summary.render(engine)
+    with col_c:
+        meta_decision.render(engine)
+    st.divider()
+    col_pos, col_sig = st.columns(2)
+    with col_pos:
+        positions.render(engine, account_id=selected_account_id)
+    with col_sig:
+        recent_signals.render(engine, account_id=selected_account_id)
+    st.divider()
+    col_sup, col_top, col_risk = st.columns(3)
+    with col_sup:
+        supervisor_status.render(engine)
+    with col_top:
+        top_candidates.render(engine)
+    with col_risk:
+        risk_state_detail.render(engine)

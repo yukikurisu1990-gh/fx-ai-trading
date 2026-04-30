@@ -15,15 +15,15 @@ def _fetch(_engine: object, account_id: str | None) -> list[dict]:
 
 
 def render(engine: Engine | None, account_id: str | None = None) -> None:
-    st.subheader("Equity Curve")
+    st.subheader("資産推移")
     rows = _fetch(engine, account_id)
     if not rows:
-        st.info("No closed trades yet.")
+        st.info("決済済み取引なし。")
         return
     df = pd.DataFrame(rows)
     df["closed_at"] = pd.to_datetime(df["closed_at"])
     df = df.set_index("closed_at")
     final_pnl = df["cumulative_pnl"].iloc[-1]
     delta_color = "normal" if final_pnl >= 0 else "inverse"
-    st.metric("Cumulative PnL (JPY)", f"{final_pnl:,.0f}", delta_color=delta_color)
+    st.metric("累積損益（JPY）", f"{final_pnl:,.0f}", delta_color=delta_color)
     st.line_chart(df[["cumulative_pnl"]], height=260)

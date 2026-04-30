@@ -655,27 +655,46 @@ def get_exit_fire_recent(engine: Engine | None, limit: int = 50) -> list[dict]:
 def get_market_candles(
     engine: Engine | None,
     instrument: str,
-    tier: str = "M1",
+    tier: str | None = None,
     limit: int = 500,
 ) -> list[dict]:
-    """Return OHLCV candles for a given instrument and tier, newest-last."""
+    """Return OHLCV candles for a given instrument, newest-last.
+
+    When ``tier`` is None (default), returns candles regardless of tier
+    (useful when the stored tier is unknown, e.g. M5 vs M1).
+    """
     if engine is None:
         return []
     try:
         with engine.connect() as conn:
-            rows = (
-                conn.execute(
-                    text(
-                        "SELECT event_time_utc, open, high, low, close, volume"
-                        " FROM market_candles"
-                        " WHERE instrument = :inst AND tier = :tier"
-                        " ORDER BY event_time_utc DESC LIMIT :limit"
-                    ),
-                    {"inst": instrument, "tier": tier, "limit": limit},
+            if tier is None:
+                rows = (
+                    conn.execute(
+                        text(
+                            "SELECT event_time_utc, open, high, low, close, volume"
+                            " FROM market_candles"
+                            " WHERE instrument = :inst"
+                            " ORDER BY event_time_utc DESC LIMIT :limit"
+                        ),
+                        {"inst": instrument, "limit": limit},
+                    )
+                    .mappings()
+                    .all()
                 )
-                .mappings()
-                .all()
-            )
+            else:
+                rows = (
+                    conn.execute(
+                        text(
+                            "SELECT event_time_utc, open, high, low, close, volume"
+                            " FROM market_candles"
+                            " WHERE instrument = :inst AND tier = :tier"
+                            " ORDER BY event_time_utc DESC LIMIT :limit"
+                        ),
+                        {"inst": instrument, "tier": tier, "limit": limit},
+                    )
+                    .mappings()
+                    .all()
+                )
         return [dict(r) for r in reversed(rows)]
     except Exception:
         return []
@@ -727,29 +746,75 @@ def get_decision_markers(
     engine: Engine | None,
     instrument: str,
     limit: int = 200,
+    since: object | None = None,
 ) -> list[dict]:
     """Return MetaDecider decision markers for a given instrument.
 
-    Each row: {signal_time_utc, signal_direction, confidence, strategy_id}.
+    Each row: {signal_time_utc, signal_direction, confidence, strategy_id, p_long, p_short}.
+    p_long/p_short are extracted from the meta JSON column when available.
+
+    If *since* is provided (a UTC-aware or UTC-naive datetime), only rows at or after
+    that timestamp are returned and *limit* is raised to 20 000 to cover multi-day views.
     """
     if engine is None:
         return []
     try:
         with engine.connect() as conn:
-            rows = (
-                conn.execute(
-                    text(
-                        "SELECT signal_time_utc, signal_direction, confidence, strategy_id"
-                        " FROM strategy_signals"
-                        " WHERE instrument = :inst"
-                        " ORDER BY signal_time_utc DESC LIMIT :limit"
-                    ),
-                    {"inst": instrument, "limit": limit},
+            if since is not None:
+                rows = (
+                    conn.execute(
+                        text(
+                            "SELECT signal_time_utc, signal_direction,"
+                            " confidence, strategy_id, meta"
+                            " FROM strategy_signals"
+                            " WHERE instrument = :inst AND signal_time_utc >= :since"
+                            " ORDER BY signal_time_utc ASC LIMIT 20000"
+                        ),
+                        {"inst": instrument, "since": since},
+                    )
+                    .mappings()
+                    .all()
                 )
-                .mappings()
-                .all()
-            )
-        return [dict(r) for r in rows]
+            else:
+                rows = (
+                    conn.execute(
+                        text(
+                            "SELECT signal_time_utc, signal_direction,"
+                            " confidence, strategy_id, meta"
+                            " FROM strategy_signals"
+                            " WHERE instrument = :inst"
+                            " ORDER BY signal_time_utc DESC LIMIT :limit"
+                        ),
+                        {"inst": instrument, "limit": limit},
+                    )
+                    .mappings()
+                    .all()
+                )
+        result = []
+        for r in rows:
+            d = dict(r)
+            meta = d.pop("meta", None)
+            if isinstance(meta, str):
+                try:
+                    import json as _json
+
+                    meta = _json.loads(meta)
+                except Exception:
+                    meta = {}
+            if isinstance(meta, dict):
+                d["p_long"] = meta.get("p_long")
+                d["p_short"] = meta.get("p_short")
+                d["tp_pips"] = meta.get("tp")
+                d["sl_pips"] = meta.get("sl")
+                d["holding_time_seconds"] = meta.get("holding_time_seconds")
+            else:
+                d["p_long"] = None
+                d["p_short"] = None
+                d["tp_pips"] = None
+                d["sl_pips"] = None
+                d["holding_time_seconds"] = None
+            result.append(d)
+        return result
     except Exception:
         return []
 
@@ -762,6 +827,20 @@ def list_candle_instruments(engine: Engine | None) -> list[str]:
         with engine.connect() as conn:
             rows = conn.execute(
                 text("SELECT DISTINCT instrument FROM market_candles ORDER BY instrument")
+            ).fetchall()
+        return [r[0] for r in rows]
+    except Exception:
+        return []
+
+
+def list_instruments(engine: Engine | None) -> list[str]:
+    """Return all registered instruments from the instruments table."""
+    if engine is None:
+        return []
+    try:
+        with engine.connect() as conn:
+            rows = conn.execute(
+                text("SELECT instrument FROM instruments ORDER BY instrument")
             ).fetchall()
         return [r[0] for r in rows]
     except Exception:

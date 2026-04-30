@@ -16,18 +16,18 @@ def _fetch(_engine: object, account_id: str | None) -> list[dict]:
 
 
 def render(engine: Engine | None, account_id: str | None = None) -> None:
-    st.subheader("Trade Outcomes")
+    st.subheader("取引結果")
     rows = _fetch(engine, account_id)
     if not rows:
-        st.info("No closed trades yet.")
+        st.info("決済済み取引なし。")
         return
     df = pd.DataFrame(rows)
     chart = (
         alt.Chart(df)
         .mark_arc(innerRadius=50)
         .encode(
-            theta=alt.Theta("n_trades:Q", title="Trades"),
-            color=alt.Color("reason:N", title="Reason"),
+            theta=alt.Theta("n_trades:Q", title="取引数"),
+            color=alt.Color("reason:N", title="決済理由"),
             tooltip=["reason:N", "n_trades:Q", "total_pnl:Q"],
         )
         .properties(height=220)

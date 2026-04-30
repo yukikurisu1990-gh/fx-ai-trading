@@ -14,19 +14,19 @@ def _fetch(_engine: object, account_id: str | None) -> list[dict]:
 
 
 def render(engine: Engine | None, account_id: str | None = None) -> None:
-    st.subheader("Open Positions")
+    st.subheader("オープンポジション")
     rows = _fetch(engine, account_id)
     if not rows:
-        st.info("No open positions.")
+        st.info("オープンポジションなし。")
         return
     display = [
         {
-            "Instrument": r.get("instrument", ""),
-            "Type": r.get("event_type", ""),
-            "Units": r.get("units", ""),
-            "Avg Price": r.get("avg_price", ""),
-            "Unrealized PL": r.get("unrealized_pl", ""),
-            "Time (UTC)": str(r.get("event_time_utc", "")),
+            "通貨ペア": r.get("instrument", ""),
+            "種別": r.get("event_type", ""),
+            "数量": r.get("units", ""),
+            "平均価格": r.get("avg_price", ""),
+            "含み損益": r.get("unrealized_pl", ""),
+            "時刻（UTC）": str(r.get("event_time_utc", "")),
         }
         for r in rows
     ]

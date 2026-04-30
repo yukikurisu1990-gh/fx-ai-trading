@@ -47,6 +47,7 @@ def _run_alembic(command: str) -> None:
         alembic_cmd.downgrade(cfg, "base")
 
 
+@pytest.mark.destructive
 @pytest.mark.skipif(not _DATABASE_URL, reason="DATABASE_URL not set — skipping DB tests")
 def test_migration_roundtrip() -> None:
     """upgrade head -> downgrade base -> upgrade head must succeed with 44 tables."""

@@ -14,13 +14,13 @@ def _fetch(_engine: object) -> list[dict]:
 
 
 def render(engine: Engine | None) -> None:
-    st.subheader("Strategy Summary")
+    st.subheader("戦略サマリー")
     orders = _fetch(engine)
     if not orders:
-        st.info("No orders recorded yet.")
+        st.info("注文なし。")
         return
     buy_count = sum(1 for o in orders if o.get("direction") in ("buy", "long"))
     sell_count = sum(1 for o in orders if o.get("direction") in ("sell", "short"))
     col1, col2 = st.columns(2)
-    col1.metric("BUY signals", buy_count)
-    col2.metric("SELL signals", sell_count)
+    col1.metric("買いシグナル", buy_count)
+    col2.metric("売りシグナル", sell_count)

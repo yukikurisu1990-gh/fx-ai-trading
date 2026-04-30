@@ -27,7 +27,7 @@ class TestExistingFlags:
         # Phase 9.19/J-3 default — no behaviour change.
         assert args.top_k == 1
         assert args.dry_run is False
-        assert args.granularity == "M5"
+        assert args.granularity == "M1"
 
     def test_dry_run_flag(self) -> None:
         args = runner._parse_args(["--dry-run"])
@@ -76,8 +76,8 @@ class TestTopKFlag:
 class TestFeatureGroupsFlag:
     def test_feature_groups_default_empty(self) -> None:
         args = runner._parse_args([])
-        assert args.feature_groups == ""
-        assert args.feature_groups_set == frozenset()
+        assert args.feature_groups == "mtf"
+        assert args.feature_groups_set == frozenset({"mtf"})
 
     def test_feature_groups_mtf_accepted(self) -> None:
         args = runner._parse_args(["--feature-groups", "mtf"])
@@ -115,15 +115,15 @@ class TestFeatureGroupsFlag:
 class TestMaxSpreadPipFlag:
     def test_default_is_2_0(self) -> None:
         args = runner._parse_args([])
-        assert args.max_spread_pip == 2.0
+        assert args.max_slippage_pip == 2.0
 
     def test_custom_value_accepted(self) -> None:
-        args = runner._parse_args(["--max-spread-pip", "1.5"])
-        assert args.max_spread_pip == 1.5
+        args = runner._parse_args(["--max-slippage-pip", "1.5"])
+        assert args.max_slippage_pip == 1.5
 
     def test_zero_accepted(self) -> None:
-        args = runner._parse_args(["--max-spread-pip", "0.0"])
-        assert args.max_spread_pip == 0.0
+        args = runner._parse_args(["--max-slippage-pip", "0.0"])
+        assert args.max_slippage_pip == 0.0
 
 
 class TestFetchSpreadPips:
@@ -218,7 +218,7 @@ class TestPhase9XKFlags:
         args = runner._parse_args([])
         assert args.initial_balance == pytest.approx(300_000.0)
         assert args.risk_pct == pytest.approx(1.0)
-        assert args.max_units == 10_000
+        assert args.max_units == 0  # 0 = no cap
         assert args.max_leverage == pytest.approx(25.0)
         assert args.daily_dd_pct == pytest.approx(3.0)
 
@@ -242,9 +242,9 @@ class TestPhase9XKFlags:
         args = runner._parse_args(["--max-units", "5000"])
         assert args.max_units == 5000
 
-    def test_max_units_zero_rejected(self) -> None:
-        with pytest.raises(SystemExit):
-            runner._parse_args(["--max-units", "0"])
+    def test_max_units_zero_means_no_cap(self) -> None:
+        args = runner._parse_args(["--max-units", "0"])
+        assert args.max_units == 0
 
     def test_max_leverage_custom(self) -> None:
         args = runner._parse_args(["--max-leverage", "10.0"])
