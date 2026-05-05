@@ -1,0 +1,43 @@
+=== Stage 23.0b M5 Donchian eval (20 pairs) ===
+  signals+labels EUR_USD: long+short trigger counts (N=10/20/50) = 26235 / 18178 / 11033 (  7.0s)
+  signals+labels GBP_USD: long+short trigger counts (N=10/20/50) = 25697 / 17886 / 10914 (  7.1s)
+  signals+labels AUD_USD: long+short trigger counts (N=10/20/50) = 26289 / 18213 / 10996 (  7.2s)
+  signals+labels NZD_USD: long+short trigger counts (N=10/20/50) = 26913 / 18651 / 11373 (  7.8s)
+  signals+labels USD_CHF: long+short trigger counts (N=10/20/50) = 25914 / 17960 / 10918 (  7.0s)
+  signals+labels USD_CAD: long+short trigger counts (N=10/20/50) = 26353 / 18497 / 11341 (  6.5s)
+  signals+labels EUR_GBP: long+short trigger counts (N=10/20/50) = 23293 / 16093 / 9543 (  7.1s)
+  signals+labels USD_JPY: long+short trigger counts (N=10/20/50) = 26327 / 18267 / 11234 (  6.8s)
+  signals+labels EUR_JPY: long+short trigger counts (N=10/20/50) = 24805 / 17314 / 10510 (  6.8s)
+  signals+labels GBP_JPY: long+short trigger counts (N=10/20/50) = 24898 / 17334 / 10656 (  7.1s)
+  signals+labels AUD_JPY: long+short trigger counts (N=10/20/50) = 25362 / 17740 / 10893 (  7.0s)
+  signals+labels NZD_JPY: long+short trigger counts (N=10/20/50) = 25632 / 17931 / 10977 (  6.7s)
+  signals+labels CHF_JPY: long+short trigger counts (N=10/20/50) = 24824 / 17346 / 10561 (  6.9s)
+  signals+labels EUR_CHF: long+short trigger counts (N=10/20/50) = 24131 / 16576 / 9985 (  6.9s)
+  signals+labels EUR_AUD: long+short trigger counts (N=10/20/50) = 25009 / 17267 / 10390 (  7.1s)
+  signals+labels EUR_CAD: long+short trigger counts (N=10/20/50) = 24216 / 16793 / 10154 (  6.9s)
+  signals+labels AUD_NZD: long+short trigger counts (N=10/20/50) = 23443 / 16258 / 9764 (  6.9s)
+  signals+labels AUD_CAD: long+short trigger counts (N=10/20/50) = 25254 / 17331 / 10219 (  7.0s)
+  signals+labels GBP_AUD: long+short trigger counts (N=10/20/50) = 24013 / 16647 / 10215 (  7.1s)
+  signals+labels GBP_CHF: long+short trigger counts (N=10/20/50) = 23939 / 16401 / 9922 (  7.0s)
+  cell N=10 h=1 exit=tb   n=498673 ann_tr=249507.3 sharpe=-0.6210 ann_pnl=-576437.8 dd=1152084.5 A4=0/4 gates=100000
+  cell N=10 h=1 exit=time n=498673 ann_tr=249507.3 sharpe=-0.5183 ann_pnl=-670417.9 dd=1339916.1 A4=0/4 gates=100000
+  cell N=10 h=2 exit=tb   n=498666 ann_tr=249503.8 sharpe=-0.5120 ann_pnl=-581984.5 dd=1163171.7 A4=0/4 gates=100000
+  cell N=10 h=2 exit=time n=498666 ann_tr=249503.8 sharpe=-0.4096 ann_pnl=-685193.2 dd=1369449.5 A4=0/4 gates=100000
+  cell N=10 h=3 exit=tb   n=498663 ann_tr=249502.3 sharpe=-0.4649 ann_pnl=-584913.1 dd=1169017.3 A4=0/4 gates=100000
+  cell N=10 h=3 exit=time n=498663 ann_tr=249502.3 sharpe=-0.3495 ann_pnl=-692651.6 dd=1384350.6 A4=0/4 gates=100000
+  cell N=20 h=1 exit=tb   n=346187 ann_tr=173212.1 sharpe=-0.5953 ann_pnl=-399890.5 dd=799237.3 A4=0/4 gates=100000
+  cell N=20 h=1 exit=time n=346187 ann_tr=173212.1 sharpe=-0.5002 ann_pnl=-465284.3 dd=929935.3 A4=0/4 gates=100000
+  cell N=20 h=2 exit=tb   n=346181 ann_tr=173209.1 sharpe=-0.4945 ann_pnl=-404129.0 dd=807712.2 A4=0/4 gates=100000
+  cell N=20 h=2 exit=time n=346181 ann_tr=173209.1 sharpe=-0.3962 ann_pnl=-477414.2 dd=954182.4 A4=0/4 gates=100000
+  cell N=20 h=3 exit=tb   n=346179 ann_tr=173208.1 sharpe=-0.4521 ann_pnl=-407018.7 dd=813478.6 A4=0/4 gates=100000
+  cell N=20 h=3 exit=time n=346179 ann_tr=173208.1 sharpe=-0.3387 ann_pnl=-485262.4 dd=969859.9 A4=0/4 gates=100000
+  cell N=50 h=1 exit=tb   n=210410 ann_tr=105277.1 sharpe=-0.5529 ann_pnl=-244641.9 dd=488954.6 A4=0/4 gates=100000
+  cell N=50 h=1 exit=time n=210410 ann_tr=105277.1 sharpe=-0.4668 ann_pnl=-279300.5 dd=558224.4 A4=0/4 gates=100000
+  cell N=50 h=2 exit=tb   n=210407 ann_tr=105275.6 sharpe=-0.4624 ann_pnl=-247540.2 dd=494749.7 A4=0/4 gates=100000
+  cell N=50 h=2 exit=time n=210407 ann_tr=105275.6 sharpe=-0.3709 ann_pnl=-286954.2 dd=573570.2 A4=0/4 gates=100000
+  cell N=50 h=3 exit=tb   n=210406 ann_tr=105275.1 sharpe=-0.4246 ann_pnl=-249600.4 dd=498856.5 A4=0/4 gates=100000
+  cell N=50 h=3 exit=time n=210406 ann_tr=105275.1 sharpe=-0.3182 ann_pnl=-291015.2 dd=581661.9 A4=0/4 gates=100000
+
+Report: C:\Users\yukik\fx-ai-trading\artifacts\stage23_0b\eval_report.md
+Verdict: REJECT
+Best cell: N=50 h=3 exit=time Sharpe=-0.3182 annual_pnl=-291015.2

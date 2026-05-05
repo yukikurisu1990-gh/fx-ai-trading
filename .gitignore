@@ -15,3 +15,7 @@ data/
 artifacts/stage23_0a/labels_M5/
 artifacts/stage23_0a/labels_M15/
 artifacts/stage23_0a/build_summary.json
+
+# Phase 23.0b sweep raw results (summary embedded in eval_report.md)
+artifacts/stage23_0b/sweep_results.parquet
+artifacts/stage23_0b/sweep_results.json
