@@ -16,7 +16,9 @@ from __future__ import annotations
 
 import json
 import logging
+from datetime import UTC, datetime
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 import joblib
 import lightgbm as lgb
@@ -24,6 +26,9 @@ import numpy as np
 
 from fx_ai_trading.domain.feature import FeatureSet
 from fx_ai_trading.domain.strategy import StrategyContext, StrategySignal
+
+if TYPE_CHECKING:
+    from sqlalchemy import Engine
 
 _log = logging.getLogger(__name__)
 
@@ -77,6 +82,7 @@ class LGBMStrategy:
     ) -> None:
         self._threshold = threshold
         self._strategy_id = strategy_id
+        self._model_dir = model_dir
 
         manifest_path = model_dir / "manifest.json"
         if not manifest_path.exists():
@@ -148,7 +154,83 @@ class LGBMStrategy:
             sl=round(sl_pips, 4),
             holding_time_seconds=1800,
             enabled=True,
+            p_long=round(p_long, 8),
+            p_short=round(p_short, 8),
         )
+
+    def register_models(self, engine: Engine) -> None:
+        """Upsert each loaded model into model_registry and cache model_ids."""
+        from sqlalchemy import text
+
+        now = datetime.now(UTC)
+        with engine.begin() as conn:
+            for instrument in self._models:
+                model_id = f"{self._strategy_id}_{instrument}"
+                artifact = str(self._model_dir / f"{instrument}.joblib")
+                conn.execute(
+                    text(
+                        """
+                        INSERT INTO model_registry
+                            (model_id, model_type, model_version, status, artifact_path, created_at, updated_at)
+                        VALUES
+                            (:mid, :mtype, :mver, 'active', :artifact, :now, :now)
+                        ON CONFLICT (model_id) DO UPDATE
+                            SET updated_at = EXCLUDED.updated_at,
+                                status = 'active'
+                        """
+                    ),
+                    {
+                        "mid": model_id,
+                        "mtype": self._STRATEGY_TYPE,
+                        "mver": self._STRATEGY_VERSION,
+                        "artifact": artifact,
+                        "now": now,
+                    },
+                )
+        _log.info(
+            "register_models: upserted %d models into model_registry",
+            len(self._models),
+        )
+
+    def write_predictions(
+        self,
+        engine: Engine,
+        cycle_id: str,
+        predictions: list[dict],
+        feature_version: str = "v4",
+    ) -> None:
+        """Bulk-insert per-instrument predictions for one cycle."""
+        if not predictions:
+            return
+        from sqlalchemy import text
+
+        now = datetime.now(UTC)
+        with engine.begin() as conn:
+            for row in predictions:
+                instrument = row["instrument"]
+                model_id = f"{self._strategy_id}_{instrument}"
+                conn.execute(
+                    text(
+                        """
+                        INSERT INTO predictions
+                            (model_id, cycle_id, instrument, strategy_id,
+                             predicted_at, prediction, confidence, feature_version)
+                        VALUES
+                            (:mid, :cid, :inst, :sid, :ts, :pred, :conf, :fver)
+                        ON CONFLICT DO NOTHING
+                        """
+                    ),
+                    {
+                        "mid": model_id,
+                        "cid": cycle_id,
+                        "inst": instrument,
+                        "sid": self._strategy_id,
+                        "ts": now,
+                        "pred": row.get("prediction", 1),
+                        "conf": row.get("confidence", 0.0),
+                        "fver": feature_version,
+                    },
+                )
 
     def _no_trade(self, instrument: str, features: FeatureSet) -> StrategySignal:
         atr = features.feature_stats.get("atr_14", 0.0) or 0.0

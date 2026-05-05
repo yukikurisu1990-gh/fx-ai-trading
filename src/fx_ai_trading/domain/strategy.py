@@ -32,6 +32,7 @@ class StrategySignal:
     signal: 'long' | 'short' | 'no_trade'
     enabled: False means the strategy is disabled (6.17); should not appear
              in MetaDecider candidates.
+    p_long/p_short: raw classifier probabilities (0.0 for non-LGBM strategies).
     """
 
     strategy_id: str
@@ -45,6 +46,8 @@ class StrategySignal:
     sl: float
     holding_time_seconds: int
     enabled: bool
+    p_long: float = 0.0
+    p_short: float = 0.0
 
 
 # ---------------------------------------------------------------------------

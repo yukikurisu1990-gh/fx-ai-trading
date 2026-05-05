@@ -1318,6 +1318,7 @@ def run(args: argparse.Namespace, *, env: dict[str, str] | None = None) -> int:
     # TA strategies (MA/ATR/RSI/MACD/Bollinger) are retained in the codebase
     # for future A/B testing but excluded from the default loop because they
     # are not backtest-validated and use arbitrary EV formulas.
+    lgbm: LGBMStrategy | None = None
     if args.use_ta_strategies:
         strategies: list = [
             MAStrategy(strategy_id="ma"),
@@ -1491,7 +1492,7 @@ def run(args: argparse.Namespace, *, env: dict[str, str] | None = None) -> int:
                 current_instruments = [i for i in registry.list_active() if i in active_instruments]
                 for inst in current_instruments:
                     if inst not in history:
-                        history[inst] = deque(maxlen=_HISTORY_DEPTH)
+                        history[inst] = deque(maxlen=history_depth)
             else:
                 current_instruments = active_instruments
 
@@ -1626,6 +1627,26 @@ def run(args: argparse.Namespace, *, env: dict[str, str] | None = None) -> int:
             except Exception:
                 _log.exception("run_strategy_cycle failed for cycle %s", cycle_id)
                 continue
+
+            # Write per-instrument predictions for LGBM strategy.
+            if lgbm is not None:
+                try:
+                    pred_rows = [
+                        {
+                            "instrument": inst,
+                            "prediction": (
+                                2 if sigs[0].signal == "long"
+                                else 0 if sigs[0].signal == "short"
+                                else 1
+                            ),
+                            "confidence": sigs[0].confidence,
+                        }
+                        for inst, sigs in strategy_result.signals.items()
+                        if sigs
+                    ]
+                    lgbm.write_predictions(engine, cycle_id, pred_rows)
+                except Exception:
+                    _log.warning("write_predictions failed for cycle %s", cycle_id)
 
             # --- Stage 2: run_meta_cycle (Cycle 6.4) ---
             try:

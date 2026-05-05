@@ -78,12 +78,14 @@ class StrategyRunResult:
                            when DeterministicTrendStrategy is in the mix).
       no_trade_signals   : count of no_trade rows.
       decision_chain_ids : mapping instrument -> chain_id used this cycle.
+      signals            : per-instrument signals (instrument -> StrategySignal list).
     """
 
     rows_written: int
     trade_signals: int
     no_trade_signals: int
     decision_chain_ids: dict[str, str]
+    signals: dict[str, list[StrategySignal]]
 
 
 def run_strategy_cycle(
@@ -133,12 +135,14 @@ def run_strategy_cycle(
     rows_written = 0
     trade_signals = 0
     no_trade_signals = 0
+    collected_signals: dict[str, list[StrategySignal]] = {inst: [] for inst in instruments}
 
     for instrument in instruments:
         feat = features[instrument]
         chain_id = chain_ids[instrument]
         for strategy in strategies:
             signal = strategy.evaluate(instrument, feat, context)
+            collected_signals[instrument].append(signal)
             persisted_direction = _map_direction(signal.signal)
 
             meta_payload = _build_meta_payload(
@@ -183,6 +187,7 @@ def run_strategy_cycle(
         trade_signals=trade_signals,
         no_trade_signals=no_trade_signals,
         decision_chain_ids=chain_ids,
+        signals=collected_signals,
     )
 
 
@@ -206,6 +211,8 @@ def _build_meta_payload(*, signal: StrategySignal, decision_chain_id: str) -> di
         "sl": signal.sl,
         "holding_time_seconds": signal.holding_time_seconds,
         "enabled": signal.enabled,
+        "p_long": signal.p_long,
+        "p_short": signal.p_short,
     }
 
 

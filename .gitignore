@@ -8,5 +8,9 @@ venv/
 logs/
 models/
 data/
+artifacts/*.log
+artifacts/*.jsonl
 *.db
 .DS_Store
+.claude/
+src/fx_ai_trading.egg-info/
