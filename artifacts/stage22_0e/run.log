@@ -1,0 +1,54 @@
+=== Stage 22.0e Meta-Labeling (20 pairs) ===
+[ 1/20] EUR_USD N=20:   54379 signals ( 18.1s)
+[ 1/20] EUR_USD N=50:   33033 signals ( 16.5s)
+[ 2/20] GBP_USD N=20:   53577 signals ( 18.0s)
+[ 2/20] GBP_USD N=50:   32729 signals ( 17.4s)
+[ 3/20] AUD_USD N=20:   54444 signals ( 17.6s)
+[ 3/20] AUD_USD N=50:   32983 signals ( 17.0s)
+[ 4/20] NZD_USD N=20:   55800 signals ( 18.1s)
+[ 4/20] NZD_USD N=50:   34088 signals ( 17.3s)
+[ 5/20] USD_CHF N=20:   53725 signals ( 17.3s)
+[ 5/20] USD_CHF N=50:   32749 signals ( 18.2s)
+[ 6/20] USD_CAD N=20:   55420 signals ( 17.6s)
+[ 6/20] USD_CAD N=50:   34006 signals ( 17.4s)
+[ 7/20] EUR_GBP N=20:   48341 signals ( 18.9s)
+[ 7/20] EUR_GBP N=50:   28689 signals ( 18.0s)
+[ 8/20] USD_JPY N=20:   54596 signals ( 20.1s)
+[ 8/20] USD_JPY N=50:   33614 signals ( 18.6s)
+[ 9/20] EUR_JPY N=20:   51776 signals ( 19.2s)
+[ 9/20] EUR_JPY N=50:   31480 signals ( 19.7s)
+[10/20] GBP_JPY N=20:   51890 signals ( 19.6s)
+[10/20] GBP_JPY N=50:   31942 signals ( 18.9s)
+[11/20] AUD_JPY N=20:   53195 signals ( 19.3s)
+[11/20] AUD_JPY N=50:   32684 signals ( 18.6s)
+[12/20] NZD_JPY N=20:   53593 signals ( 19.3s)
+[12/20] NZD_JPY N=50:   32853 signals ( 18.7s)
+[13/20] CHF_JPY N=20:   51610 signals ( 20.5s)
+[13/20] CHF_JPY N=50:   31485 signals ( 18.5s)
+[14/20] EUR_CHF N=20:   49623 signals ( 19.2s)
+[14/20] EUR_CHF N=50:   29969 signals ( 18.6s)
+[15/20] EUR_AUD N=20:   51921 signals ( 19.9s)
+[15/20] EUR_AUD N=50:   31265 signals ( 18.7s)
+[16/20] EUR_CAD N=20:   50532 signals ( 19.4s)
+[16/20] EUR_CAD N=50:   30563 signals ( 18.6s)
+[17/20] AUD_NZD N=20:   48792 signals ( 19.0s)
+[17/20] AUD_NZD N=50:   29391 signals ( 19.7s)
+[18/20] AUD_CAD N=20:   51784 signals ( 19.2s)
+[18/20] AUD_CAD N=50:   30666 signals ( 18.0s)
+[19/20] GBP_AUD N=20:   49935 signals ( 19.2s)
+[19/20] GBP_AUD N=50:   30742 signals ( 18.4s)
+[20/20] GBP_CHF N=20:   49071 signals ( 20.8s)
+[20/20] GBP_CHF N=50:   29788 signals ( 18.0s)
+Total signals: 1,678,723
+
+[main] running 48-cell sweep + shuffled-target sanity ...
+     done (453.8s)
+
+[ablation A] main + hour_utc ...
+     done (397.8s)
+
+[ablation B] triggered (Ablation-A lift +0.0911); main + hour_utc + dow ...
+     done (428.2s)
+
+Sweep results: C:\Users\yukik\fx-ai-trading\artifacts\stage22_0e\sweep_results.parquet
+Report: C:\Users\yukik\fx-ai-trading\artifacts\stage22_0e\eval_report.md
