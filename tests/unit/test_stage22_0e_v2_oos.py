@@ -277,7 +277,7 @@ def test_verdict_failed_oos_when_s1_fails() -> None:
     assert "S1" in failed
 
 
-def test_verdict_a3_alone_does_NOT_force_failed_oos() -> None:
+def test_verdict_a3_alone_does_not_force_failed_oos() -> None:
     """Per user-revised boundary: A3 alone fail → PROMISING_CONFIRMED, not FAILED_OOS."""
     r = _make_oos_result(oos_max_dd=400.0)
     verdict, _, _ = mod.classify_verdict(r, shuffled_sharpe=0.02)
