@@ -1,6 +1,6 @@
 # Stage 23.0b — M5 Donchian Breakout + M1 Execution Eval
 
-Generated: 2026-05-05T20:18:49.996606+00:00
+Generated: 2026-05-05T20:34:09.429494+00:00
 
 Design contract: `docs/design/phase23_0b_m5_donchian_baseline.md`
 
@@ -11,7 +11,27 @@ Sweep: N (10, 20, 50) × horizon (1, 2, 3) × exit ('tb', 'time') = 18 cells
 
 **REJECT**
 
+**Per-cell verdict counts: 18 REJECT / 0 PROMISING_BUT_NEEDS_OOS / 0 ADOPT_CANDIDATE — out of 18 cells.**
+
 Best cell: `N=50, horizon=3, exit=time` (Sharpe -0.3182, annual_pnl -291015.2 pip, n_trades 210406)
+
+## Failure mode (where the REJECT comes from)
+
+**This REJECT is a finding about the *continuous-trigger Donchian* design, not about the M5 timeframe.** The 23.0a outcome dataset confirmed that M5's cost regime (cross-pair median `cost_ratio` = 0.573) is *structurally lighter* than M1's (1.28), so the cost regime alone does not preclude positive-EV signals on M5. The failure here arises from how the signal fires:
+
+1. **Continuous trigger**: with `long_break = mid_c > upper_N`, every M5 bar that remains above the band keeps firing the long signal — not only the first cross. A single sustained breakout produces dozens of overlapping trades. Of 18 cells, **18 trigger the overtrading warning** (`annual_trades > 1000`).
+
+2. **Trade-count explosion**: pooled across 20 pairs, this generates 100,000–500,000 annual trades depending on N. A0 (`>= 70 annual_trades`) passes trivially — but is uninformative.
+
+3. **Spread-cost domination**: per-trade EV ≈ `mean(directional_move) - spread_cost_per_round_trip`. With continuous re-entry the directional move is small (~0.1–1 pip/M5 bar) while the spread cost is roughly fixed (~0.3–1 pip/round-trip). The ratio is unfavorable on every cell — Sharpe ≈ −0.3 to −0.6 across the entire 18-cell sweep.
+
+**The substantive Phase 23 question — *is M5 a useful judgment timeframe for breakout signals?* — is NOT answered by this REJECT.** A follow-up cell design that addresses the continuous-trigger pathology is needed before any M5-Donchian conclusion can be drawn:
+
+- **First-touch only**: trigger only when `mid_c > upper_N AND mid_c.shift(1) <= upper_N.shift(1)` (rising-edge filter).
+- **Held-position semantics**: enter on first cross, hold for `horizon`, no overlap; or enforce a minimum re-entry gap (e.g., ATR-distance from prior entry).
+- **Conditional re-entry**: pair Donchian breakout with a meta-labeling layer (23.0e scope) that filters out the bulk of overlapping continuations.
+
+These designs are **out of scope for 23.0b** (specified as the naive baseline) but are natural candidates for 23.0e meta-labeling triggers or a follow-up `23.0b-rev1` stage. Phase 23.0c (M5 z-score MR) and 23.0d (M15 cells) remain mandatory per kickoff §5 regardless of this REJECT.
 
 ## Production-readiness
 

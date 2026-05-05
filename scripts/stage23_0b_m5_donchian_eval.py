@@ -555,6 +555,16 @@ def write_report(
     )
     verdict = assign_verdict(best_gates, s1) if best is not None else "REJECT"
 
+    # Per-cell verdicts (assigned without S1 since S1 is best-cell-only)
+    per_cell_verdicts: list[str] = []
+    for c in cell_results:
+        gates_only = {k.replace("gate_", ""): v for k, v in c.items() if k.startswith("gate_")}
+        per_cell_verdicts.append(assign_verdict(gates_only, None))
+    n_reject = sum(1 for v in per_cell_verdicts if v == "REJECT")
+    n_promising = sum(1 for v in per_cell_verdicts if v == "PROMISING_BUT_NEEDS_OOS")
+    n_adopt_candidate = sum(1 for v in per_cell_verdicts if v == "ADOPT_CANDIDATE")
+    n_overtrading = sum(1 for c in cell_results if c["overtrading_warning"])
+
     lines: list[str] = []
     lines.append("# Stage 23.0b — M5 Donchian Breakout + M1 Execution Eval")
     lines.append("")
@@ -573,6 +583,12 @@ def write_report(
     lines.append("")
     lines.append(f"**{verdict}**")
     lines.append("")
+    lines.append(
+        f"**Per-cell verdict counts: {n_reject} REJECT / "
+        f"{n_promising} PROMISING_BUT_NEEDS_OOS / "
+        f"{n_adopt_candidate} ADOPT_CANDIDATE — out of {len(cell_results)} cells.**"
+    )
+    lines.append("")
     if best is not None:
         lines.append(
             f"Best cell: `N={best['N']}, horizon={best['horizon_bars']}, "
@@ -582,6 +598,65 @@ def write_report(
         )
     else:
         lines.append("No cell passed A0 (annual_trades >= 70).")
+    lines.append("")
+    lines.append("## Failure mode (where the REJECT comes from)")
+    lines.append("")
+    lines.append(
+        "**This REJECT is a finding about the *continuous-trigger Donchian* design, "
+        "not about the M5 timeframe.** The 23.0a outcome dataset confirmed that M5's "
+        "cost regime (cross-pair median `cost_ratio` = 0.573) is *structurally lighter* "
+        "than M1's (1.28), so the cost regime alone does not preclude positive-EV "
+        "signals on M5. The failure here arises from how the signal fires:"
+    )
+    lines.append("")
+    lines.append(
+        f"1. **Continuous trigger**: with `long_break = mid_c > upper_N`, every M5 bar "
+        f"that remains above the band keeps firing the long signal — not only the "
+        f"first cross. A single sustained breakout produces dozens of overlapping "
+        f"trades. Of {len(cell_results)} cells, **{n_overtrading} trigger the "
+        f"overtrading warning** (`annual_trades > {int(A0_OVERTRADING_WARN)}`)."
+    )
+    lines.append("")
+    lines.append(
+        "2. **Trade-count explosion**: pooled across 20 pairs, this generates "
+        "100,000–500,000 annual trades depending on N. A0 (`>= 70 annual_trades`) "
+        "passes trivially — but is uninformative."
+    )
+    lines.append("")
+    lines.append(
+        "3. **Spread-cost domination**: per-trade EV ≈ "
+        "`mean(directional_move) - spread_cost_per_round_trip`. With continuous "
+        "re-entry the directional move is small (~0.1–1 pip/M5 bar) while the spread "
+        "cost is roughly fixed (~0.3–1 pip/round-trip). The ratio is unfavorable on "
+        "every cell — Sharpe ≈ −0.3 to −0.6 across the entire 18-cell sweep."
+    )
+    lines.append("")
+    lines.append(
+        "**The substantive Phase 23 question — *is M5 a useful judgment timeframe "
+        "for breakout signals?* — is NOT answered by this REJECT.** A follow-up cell "
+        "design that addresses the continuous-trigger pathology is needed before any "
+        "M5-Donchian conclusion can be drawn:"
+    )
+    lines.append("")
+    lines.append(
+        "- **First-touch only**: trigger only when "
+        "`mid_c > upper_N AND mid_c.shift(1) <= upper_N.shift(1)` (rising-edge filter)."
+    )
+    lines.append(
+        "- **Held-position semantics**: enter on first cross, hold for `horizon`, "
+        "no overlap; or enforce a minimum re-entry gap (e.g., ATR-distance from prior entry)."
+    )
+    lines.append(
+        "- **Conditional re-entry**: pair Donchian breakout with a meta-labeling layer "
+        "(23.0e scope) that filters out the bulk of overlapping continuations."
+    )
+    lines.append("")
+    lines.append(
+        "These designs are **out of scope for 23.0b** (specified as the naive "
+        "baseline) but are natural candidates for 23.0e meta-labeling triggers or "
+        "a follow-up `23.0b-rev1` stage. Phase 23.0c (M5 z-score MR) and 23.0d "
+        "(M15 cells) remain mandatory per kickoff §5 regardless of this REJECT."
+    )
     lines.append("")
     lines.append("## Production-readiness")
     lines.append("")
