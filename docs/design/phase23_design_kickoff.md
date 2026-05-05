@@ -134,9 +134,13 @@ Row key:
 
 `horizon_bars` units depend on the timeframe:
 - M5 parquet: `horizon_bars ∈ {1, 2, 3}` = forward 5 / 10 / 15 minutes
-- M15 parquet: `horizon_bars ∈ {1, 2}` = forward 15 / 30 minutes
+- M15 parquet: `horizon_bars ∈ {1, 2, 4}` = forward 15 / 30 / 60 minutes
 
-Note: M15 horizon=3 (45 min) is **deferred to a future PR**. Initial 23.0a/d focuses on the 2-horizon set to keep the search space tight (per user feedback).
+The M15 set is intentionally chosen as `{1, 2, 4}` (clean H1 sub-multiples: 1/4 H1, 1/2 H1, 1 H1), NOT a contiguous `{1, 2, 3}`. The 60-min horizon is essential for the Phase 23 timeframe-pivot study because the H1-equivalent horizon is the longest holding period at which an M15 signal can plausibly capture EV after M1 execution-side cost; dropping it would reduce the M15 surface to short-horizon-only and undermine the pivot hypothesis.
+
+Deferred (NOT in initial 23.0a/d, may be added in a follow-up PR if the M15 surface motivates it):
+- M15 horizon=3 (45 min) — skipped to keep H1-aligned discretisation
+- M15 horizon ≥ 8 (≥ 2 H1) — out of Phase 23 scope; if needed, becomes a Phase 24 sub-stage
 
 ### 6.3 Entry / exit convention (consistency with 22.0a)
 
