@@ -1,0 +1,106 @@
+{
+  "version": "23.0a-1",
+  "generated_at": "2026-05-05T19:51:28.833823+00:00",
+  "row_key": [
+    "entry_ts",
+    "pair",
+    "signal_timeframe",
+    "horizon_bars",
+    "direction"
+  ],
+  "signal_timeframes": [
+    "M5",
+    "M15"
+  ],
+  "horizons_by_tf": {
+    "M5": [
+      1,
+      2,
+      3
+    ],
+    "M15": [
+      1,
+      2,
+      4
+    ]
+  },
+  "tf_minutes": {
+    "M5": 5,
+    "M15": 15
+  },
+  "directions": [
+    "long",
+    "short"
+  ],
+  "barrier_profile": "standard",
+  "tp_atr_mult": 1.5,
+  "sl_atr_mult": 1.0,
+  "atr_period": 14,
+  "gap_threshold_seconds": 300.0,
+  "ambiguity_resolution": "conservative_sl",
+  "columns": [
+    "entry_ts",
+    "pair",
+    "signal_timeframe",
+    "horizon_bars",
+    "horizon_minutes",
+    "direction",
+    "entry_ask",
+    "entry_bid",
+    "exit_bid_close",
+    "exit_ask_close",
+    "tb_pnl",
+    "time_exit_pnl",
+    "best_possible_pnl",
+    "worst_possible_pnl",
+    "mfe_after_cost",
+    "mae_after_cost",
+    "tb_outcome",
+    "time_to_tp",
+    "time_to_sl",
+    "hit_tp",
+    "hit_sl",
+    "same_bar_tp_sl_ambiguous",
+    "valid_label",
+    "gap_affected_forward_window",
+    "atr_at_entry_signal_tf",
+    "spread_entry",
+    "cost_ratio",
+    "barrier_profile",
+    "tp_atr_mult",
+    "sl_atr_mult",
+    "tp_dist_pip",
+    "sl_dist_pip",
+    "exit_reason"
+  ],
+  "design_doc": "docs/design/phase23_0a_outcome_dataset.md",
+  "carried_over_from_22_0a": [
+    "entry_ts",
+    "pair",
+    "horizon_bars",
+    "direction",
+    "tb_pnl",
+    "time_exit_pnl",
+    "tb_outcome",
+    "time_to_tp",
+    "time_to_sl",
+    "same_bar_tp_sl_ambiguous",
+    "entry_ask",
+    "entry_bid",
+    "exit_bid_close",
+    "exit_ask_close",
+    "gap_affected_forward_window",
+    "valid_label",
+    "mfe_after_cost",
+    "mae_after_cost",
+    "spread_entry",
+    "cost_ratio"
+  ],
+  "removed_from_22_0a": [
+    "path_shape_class",
+    "is_week_open_window",
+    "hour_utc",
+    "dow",
+    "atr_at_entry"
+  ]
+}
