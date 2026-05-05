@@ -10,3 +10,8 @@ models/
 data/
 *.db
 .DS_Store
+
+# Phase 23.0a outcome-dataset parquets (regenerable from script + data)
+artifacts/stage23_0a/labels_M5/
+artifacts/stage23_0a/labels_M15/
+artifacts/stage23_0a/build_summary.json
