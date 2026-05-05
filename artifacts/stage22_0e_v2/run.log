@@ -1,0 +1,39 @@
+=== Stage 22.0e-v2 Independent OOS Validation ===
+Frozen cell: N=50, conf=0.55, h=40, exit=time_exit_pnl
+Pairs: 20
+
+[1/3] Building signal dataset (Donchian-immediate, N=50) ...
+[ 1/20] EUR_USD:   33033 signals ( 17.4s)
+[ 2/20] GBP_USD:   32729 signals ( 17.5s)
+[ 3/20] AUD_USD:   32983 signals ( 17.2s)
+[ 4/20] NZD_USD:   34088 signals ( 17.0s)
+[ 5/20] USD_CHF:   32749 signals ( 18.4s)
+[ 6/20] USD_CAD:   34006 signals ( 17.6s)
+[ 7/20] EUR_GBP:   28689 signals ( 17.1s)
+[ 8/20] USD_JPY:   33614 signals ( 17.4s)
+[ 9/20] EUR_JPY:   31480 signals ( 17.2s)
+[10/20] GBP_JPY:   31942 signals ( 17.5s)
+[11/20] AUD_JPY:   32684 signals ( 17.0s)
+[12/20] NZD_JPY:   32853 signals ( 17.1s)
+[13/20] CHF_JPY:   31485 signals ( 18.4s)
+[14/20] EUR_CHF:   29969 signals ( 17.5s)
+[15/20] EUR_AUD:   31265 signals ( 17.5s)
+[16/20] EUR_CAD:   30563 signals ( 17.0s)
+[17/20] AUD_NZD:   29391 signals ( 17.5s)
+[18/20] AUD_CAD:   30666 signals ( 16.9s)
+[19/20] GBP_AUD:   30742 signals ( 17.6s)
+[20/20] GBP_CHF:   29788 signals ( 17.0s)
+     total signals: 634,719 (347.8s)
+
+[2/3] Training single LightGBM model (first 80%) and predicting OOS (last 20%) ...
+     n_oos_filtered=20, OOS Sharpe=-0.0191, OOS annual_pnl=-58.5, MaxDD=312.1 (  1.0s)
+
+[3/3] Shuffled-target sanity (S0) ...
+     shuffled_sharpe=0.0000 (  0.5s)
+
+=== Verdict: FAILED_OOS ===
+Gates failed: ['A1', 'A2', 'A3', 'A4', 'A5', 'S1']
+Drawdown attribution: SINGLE_PAIR_CONCENTRATION (worst pair MaxDD share = 46.1%); SINGLE_PERIOD_CONCENTRATION (worst sub-fold = 76.3%)
+
+OOS trades: C:\Users\yukik\fx-ai-trading\artifacts\stage22_0e_v2\oos_trades.parquet
+Report: C:\Users\yukik\fx-ai-trading\artifacts\stage22_0e_v2\eval_report.md
