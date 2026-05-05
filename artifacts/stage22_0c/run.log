@@ -1,0 +1,24 @@
+=== Stage 22.0c M5 Donchian Breakout + M1 Entry (20 pairs) ===
+[ 1/20] EUR_USD: valid_label_rows=  5896336 ( 17.0s)
+[ 2/20] GBP_USD: valid_label_rows=  5901714 ( 16.6s)
+[ 3/20] AUD_USD: valid_label_rows=  5858642 ( 16.8s)
+[ 4/20] NZD_USD: valid_label_rows=  5840588 ( 17.0s)
+[ 5/20] USD_CHF: valid_label_rows=  5862920 ( 16.9s)
+[ 6/20] USD_CAD: valid_label_rows=  5887974 ( 18.2s)
+[ 7/20] EUR_GBP: valid_label_rows=  5847330 ( 16.2s)
+[ 8/20] USD_JPY: valid_label_rows=  5897112 ( 17.6s)
+[ 9/20] EUR_JPY: valid_label_rows=  5899758 ( 21.7s)
+[10/20] GBP_JPY: valid_label_rows=  5920300 ( 18.8s)
+[11/20] AUD_JPY: valid_label_rows=  5912718 ( 18.7s)
+[12/20] NZD_JPY: valid_label_rows=  5853656 ( 17.6s)
+[13/20] CHF_JPY: valid_label_rows=  5838960 ( 18.3s)
+[14/20] EUR_CHF: valid_label_rows=  5861882 ( 18.3s)
+[15/20] EUR_AUD: valid_label_rows=  5916176 ( 17.9s)
+[16/20] EUR_CAD: valid_label_rows=  5902224 ( 17.3s)
+[17/20] AUD_NZD: valid_label_rows=  5873148 ( 17.3s)
+[18/20] AUD_CAD: valid_label_rows=  5814120 ( 18.5s)
+[19/20] GBP_AUD: valid_label_rows=  5892630 ( 18.6s)
+[20/20] GBP_CHF: valid_label_rows=  5855398 ( 18.4s)
+Materializing cells and computing metrics ...
+Sweep results: C:\Users\yukik\fx-ai-trading\artifacts\stage22_0c\sweep_results.parquet
+Report: C:\Users\yukik\fx-ai-trading\artifacts\stage22_0c\eval_report.md
