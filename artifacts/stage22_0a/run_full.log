@@ -1,0 +1,24 @@
+=== Stage 22.0a Scalp Label Design (20 pairs) ===
+[ 1/20] EUR_USD: bars= 740264 rows= 5922112 valid= 5921850 cost_ratio_p50=1.206 ( 15.9s)
+[ 2/20] GBP_USD: bars= 740908 rows= 5927264 valid= 5927002 cost_ratio_p50=1.125 ( 16.3s)
+[ 3/20] AUD_USD: bars= 737087 rows= 5896696 valid= 5896434 cost_ratio_p50=1.199 ( 15.6s)
+[ 4/20] NZD_USD: bars= 735593 rows= 5884744 valid= 5884482 cost_ratio_p50=1.483 ( 15.6s)
+[ 5/20] USD_CHF: bars= 737060 rows= 5896480 valid= 5896218 cost_ratio_p50=1.412 ( 16.6s)
+[ 6/20] USD_CAD: bars= 739566 rows= 5916528 valid= 5916266 cost_ratio_p50=1.516 ( 15.9s)
+[ 7/20] EUR_GBP: bars= 734979 rows= 5879832 valid= 5879570 cost_ratio_p50=1.867 ( 15.6s)
+[ 8/20] USD_JPY: bars= 740393 rows= 5923144 valid= 5922882 cost_ratio_p50=0.673 ( 15.8s)
+[ 9/20] EUR_JPY: bars= 740735 rows= 5925880 valid= 5925618 cost_ratio_p50=0.905 ( 16.3s)
+[10/20] GBP_JPY: bars= 742493 rows= 5939944 valid= 5939682 cost_ratio_p50=0.969 ( 16.3s)
+[11/20] AUD_JPY: bars= 741663 rows= 5933304 valid= 5933042 cost_ratio_p50=1.035 ( 18.7s)
+[12/20] NZD_JPY: bars= 736025 rows= 5888200 valid= 5887938 cost_ratio_p50=1.591 ( 15.7s)
+[13/20] CHF_JPY: bars= 735552 rows= 5884416 valid= 5884154 cost_ratio_p50=1.345 ( 17.5s)
+[14/20] EUR_CHF: bars= 737398 rows= 5899184 valid= 5898922 cost_ratio_p50=1.806 ( 15.8s)
+[15/20] EUR_AUD: bars= 741957 rows= 5935656 valid= 5935394 cost_ratio_p50=1.270 ( 15.9s)
+[16/20] EUR_CAD: bars= 740629 rows= 5925032 valid= 5924770 cost_ratio_p50=1.455 ( 15.8s)
+[17/20] AUD_NZD: bars= 738189 rows= 5905512 valid= 5905250 cost_ratio_p50=2.375 ( 16.2s)
+[18/20] AUD_CAD: bars= 732062 rows= 5856496 valid= 5856234 cost_ratio_p50=1.854 ( 15.5s)
+[19/20] GBP_AUD: bars= 740045 rows= 5920360 valid= 5920098 cost_ratio_p50=1.359 ( 16.1s)
+[20/20] GBP_CHF: bars= 736762 rows= 5894096 valid= 5893834 cost_ratio_p50=1.717 ( 16.0s)
+
+Schema: C:\Users\yukik\fx-ai-trading\artifacts\stage22_0a\labels\label_schema.json
+Report: C:\Users\yukik\fx-ai-trading\artifacts\stage22_0a\labels\label_validation_report.md

@@ -1,0 +1,62 @@
+{
+  "version": "22.0a-1",
+  "generated_at": "2026-05-05T06:15:06.217612+00:00",
+  "row_key": [
+    "entry_ts",
+    "pair",
+    "horizon_bars",
+    "direction"
+  ],
+  "horizons_M1_bars": [
+    5,
+    10,
+    20,
+    40
+  ],
+  "directions": [
+    "long",
+    "short"
+  ],
+  "tp_mult": 1.5,
+  "sl_mult": 1.0,
+  "atr_period": 14,
+  "gap_threshold_seconds": 300.0,
+  "columns": [
+    "entry_ts",
+    "pair",
+    "horizon_bars",
+    "direction",
+    "mfe_after_cost",
+    "mae_after_cost",
+    "best_possible_pnl",
+    "time_exit_pnl",
+    "tb_outcome",
+    "tb_pnl",
+    "time_to_tp",
+    "time_to_sl",
+    "same_bar_tp_sl_ambiguous",
+    "entry_ask",
+    "entry_bid",
+    "exit_bid_close",
+    "exit_ask_close",
+    "gap_affected_forward_window",
+    "valid_label",
+    "path_shape_class",
+    "cost_ratio",
+    "is_week_open_window",
+    "hour_utc",
+    "dow",
+    "atr_at_entry",
+    "spread_entry"
+  ],
+  "deferred_to_subsequent_pr": {
+    "M5_horizons_bars": [
+      1,
+      2,
+      3
+    ],
+    "rationale": "M5 candle load + path computation is a separate pass; schema is timeframe-agnostic and reusable. See design \u00a73.2/3.3."
+  },
+  "ambiguity_resolution_default": "conservative_sl",
+  "design_doc": "docs/design/phase22_0a_scalp_label_design.md"
+}
