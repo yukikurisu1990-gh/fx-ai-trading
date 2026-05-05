@@ -1,0 +1,1222 @@
+{
+  "generated": "2026-05-05T16:47:04.702115+00:00",
+  "eval_span_years": 1.998631074606434,
+  "pairs_used": [
+    "EUR_USD",
+    "GBP_USD",
+    "AUD_USD",
+    "NZD_USD",
+    "USD_CHF",
+    "USD_CAD",
+    "EUR_GBP",
+    "USD_JPY",
+    "EUR_JPY",
+    "GBP_JPY",
+    "AUD_JPY",
+    "NZD_JPY",
+    "CHF_JPY",
+    "EUR_CHF",
+    "EUR_AUD",
+    "EUR_CAD",
+    "AUD_NZD",
+    "AUD_CAD",
+    "GBP_AUD",
+    "GBP_CHF"
+  ],
+  "audit_22_0a_long_convention": {
+    "pair": "USD_JPY",
+    "n_samples_checked": 10,
+    "all_match": true,
+    "findings": [
+      {
+        "entry_ts": "2025-04-30 21:47:00+00:00",
+        "entry_ask_match": true,
+        "entry_bid_match": true,
+        "exit_bid_close_match": true,
+        "exit_ask_close_match": true,
+        "time_exit_pnl_match": "True",
+        "mfe_after_cost_match": "True",
+        "mae_after_cost_match": "True",
+        "best_possible_eq_mfe": true,
+        "reported_time_exit_pnl": -1.7999999523162842,
+        "recomputed_time_exit_pnl": -1.8000000000000682
+      },
+      {
+        "entry_ts": "2025-04-30 21:48:00+00:00",
+        "entry_ask_match": true,
+        "entry_bid_match": true,
+        "exit_bid_close_match": true,
+        "exit_ask_close_match": true,
+        "time_exit_pnl_match": "True",
+        "mfe_after_cost_match": "True",
+        "mae_after_cost_match": "True",
+        "best_possible_eq_mfe": true,
+        "reported_time_exit_pnl": -1.0,
+        "recomputed_time_exit_pnl": -0.9999999999990905
+      },
+      {
+        "entry_ts": "2025-04-30 21:49:00+00:00",
+        "entry_ask_match": true,
+        "entry_bid_match": true,
+        "exit_bid_close_match": true,
+        "exit_ask_close_match": true,
+        "time_exit_pnl_match": "True",
+        "mfe_after_cost_match": "True",
+        "mae_after_cost_match": "True",
+        "best_possible_eq_mfe": true,
+        "reported_time_exit_pnl": -4.400000095367432,
+        "recomputed_time_exit_pnl": -4.400000000001114
+      },
+      {
+        "entry_ts": "2025-04-30 21:50:00+00:00",
+        "entry_ask_match": true,
+        "entry_bid_match": true,
+        "exit_bid_close_match": true,
+        "exit_ask_close_match": true,
+        "time_exit_pnl_match": "True",
+        "mfe_after_cost_match": "True",
+        "mae_after_cost_match": "True",
+        "best_possible_eq_mfe": true,
+        "reported_time_exit_pnl": -0.8999999761581421,
+        "recomputed_time_exit_pnl": -0.899999999998613
+      },
+      {
+        "entry_ts": "2025-04-30 21:51:00+00:00",
+        "entry_ask_match": true,
+        "entry_bid_match": true,
+        "exit_bid_close_match": true,
+        "exit_ask_close_match": true,
+        "time_exit_pnl_match": "True",
+        "mfe_after_cost_match": "True",
+        "mae_after_cost_match": "True",
+        "best_possible_eq_mfe": true,
+        "reported_time_exit_pnl": -1.7000000476837158,
+        "recomputed_time_exit_pnl": -1.6999999999995907
+      },
+      {
+        "entry_ts": "2025-04-30 21:52:00+00:00",
+        "entry_ask_match": true,
+        "entry_bid_match": true,
+        "exit_bid_close_match": true,
+        "exit_ask_close_match": true,
+        "time_exit_pnl_match": "True",
+        "mfe_after_cost_match": "True",
+        "mae_after_cost_match": "True",
+        "best_possible_eq_mfe": true,
+        "reported_time_exit_pnl": -0.4000000059604645,
+        "recomputed_time_exit_pnl": -0.39999999999906777
+      },
+      {
+        "entry_ts": "2025-04-30 21:53:00+00:00",
+        "entry_ask_match": true,
+        "entry_bid_match": true,
+        "exit_bid_close_match": true,
+        "exit_ask_close_match": true,
+        "time_exit_pnl_match": "True",
+        "mfe_after_cost_match": "True",
+        "mae_after_cost_match": "True",
+        "best_possible_eq_mfe": true,
+        "reported_time_exit_pnl": 0.5,
+        "recomputed_time_exit_pnl": 0.49999999999954525
+      },
+      {
+        "entry_ts": "2025-04-30 21:54:00+00:00",
+        "entry_ask_match": true,
+        "entry_bid_match": true,
+        "exit_bid_close_match": true,
+        "exit_ask_close_match": true,
+        "time_exit_pnl_match": "True",
+        "mfe_after_cost_match": "True",
+        "mae_after_cost_match": "True",
+        "best_possible_eq_mfe": true,
+        "reported_time_exit_pnl": -1.0,
+        "recomputed_time_exit_pnl": -1.0000000000019327
+      },
+      {
+        "entry_ts": "2025-04-30 21:55:00+00:00",
+        "entry_ask_match": true,
+        "entry_bid_match": true,
+        "exit_bid_close_match": true,
+        "exit_ask_close_match": true,
+        "time_exit_pnl_match": "True",
+        "mfe_after_cost_match": "True",
+        "mae_after_cost_match": "True",
+        "best_possible_eq_mfe": true,
+        "reported_time_exit_pnl": 3.9000000953674316,
+        "recomputed_time_exit_pnl": 3.900000000001569
+      },
+      {
+        "entry_ts": "2025-04-30 21:56:00+00:00",
+        "entry_ask_match": true,
+        "entry_bid_match": true,
+        "exit_bid_close_match": true,
+        "exit_ask_close_match": true,
+        "time_exit_pnl_match": "True",
+        "mfe_after_cost_match": "True",
+        "mae_after_cost_match": "True",
+        "best_possible_eq_mfe": true,
+        "reported_time_exit_pnl": 2.299999952316284,
+        "recomputed_time_exit_pnl": 2.2999999999996135
+      }
+    ]
+  },
+  "audit_22_0a_short_convention": {
+    "pair": "USD_JPY",
+    "n_samples_checked": 10,
+    "all_match": true,
+    "findings": [
+      {
+        "entry_ts": "2025-04-30 21:47:00+00:00",
+        "entry_ask_match": "True",
+        "entry_bid_match": "True",
+        "exit_ask_close_match": "True",
+        "time_exit_pnl_match": "True",
+        "mfe_after_cost_match": "True",
+        "mae_after_cost_match": "True",
+        "reported_time_exit_pnl": -6.199999809265137,
+        "recomputed_time_exit_pnl": -6.19999999999834
+      },
+      {
+        "entry_ts": "2025-04-30 21:48:00+00:00",
+        "entry_ask_match": "True",
+        "entry_bid_match": "True",
+        "exit_ask_close_match": "True",
+        "time_exit_pnl_match": "True",
+        "mfe_after_cost_match": "True",
+        "mae_after_cost_match": "True",
+        "reported_time_exit_pnl": -5.099999904632568,
+        "recomputed_time_exit_pnl": -5.099999999998772
+      },
+      {
+        "entry_ts": "2025-04-30 21:49:00+00:00",
+        "entry_ask_match": "True",
+        "entry_bid_match": "True",
+        "exit_ask_close_match": "True",
+        "time_exit_pnl_match": "True",
+        "mfe_after_cost_match": "True",
+        "mae_after_cost_match": "True",
+        "reported_time_exit_pnl": -2.200000047683716,
+        "recomputed_time_exit_pnl": -2.199999999999136
+      },
+      {
+        "entry_ts": "2025-04-30 21:50:00+00:00",
+        "entry_ask_match": "True",
+        "entry_bid_match": "True",
+        "exit_ask_close_match": "True",
+        "time_exit_pnl_match": "True",
+        "mfe_after_cost_match": "True",
+        "mae_after_cost_match": "True",
+        "reported_time_exit_pnl": -5.199999809265137,
+        "recomputed_time_exit_pnl": -5.19999999999925
+      },
+      {
+        "entry_ts": "2025-04-30 21:51:00+00:00",
+        "entry_ask_match": "True",
+        "entry_bid_match": "True",
+        "exit_ask_close_match": "True",
+        "time_exit_pnl_match": "True",
+        "mfe_after_cost_match": "True",
+        "mae_after_cost_match": "True",
+        "reported_time_exit_pnl": -4.0,
+        "recomputed_time_exit_pnl": -3.999999999999204
+      },
+      {
+        "entry_ts": "2025-04-30 21:52:00+00:00",
+        "entry_ask_match": "True",
+        "entry_bid_match": "True",
+        "exit_ask_close_match": "True",
+        "time_exit_pnl_match": "True",
+        "mfe_after_cost_match": "True",
+        "mae_after_cost_match": "True",
+        "reported_time_exit_pnl": -5.300000190734863,
+        "recomputed_time_exit_pnl": -5.299999999999727
+      },
+      {
+        "entry_ts": "2025-04-30 21:53:00+00:00",
+        "entry_ask_match": "True",
+        "entry_bid_match": "True",
+        "exit_ask_close_match": "True",
+        "time_exit_pnl_match": "True",
+        "mfe_after_cost_match": "True",
+        "mae_after_cost_match": "True",
+        "reported_time_exit_pnl": -6.5,
+        "recomputed_time_exit_pnl": -6.499999999999773
+      },
+      {
+        "entry_ts": "2025-04-30 21:54:00+00:00",
+        "entry_ask_match": "True",
+        "entry_bid_match": "True",
+        "exit_ask_close_match": "True",
+        "time_exit_pnl_match": "True",
+        "mfe_after_cost_match": "True",
+        "mae_after_cost_match": "True",
+        "reported_time_exit_pnl": -10.899999618530273,
+        "recomputed_time_exit_pnl": -10.900000000000887
+      },
+      {
+        "entry_ts": "2025-04-30 21:55:00+00:00",
+        "entry_ask_match": "True",
+        "entry_bid_match": "True",
+        "exit_ask_close_match": "True",
+        "time_exit_pnl_match": "True",
+        "mfe_after_cost_match": "True",
+        "mae_after_cost_match": "True",
+        "reported_time_exit_pnl": -14.300000190734863,
+        "recomputed_time_exit_pnl": -14.300000000000068
+      },
+      {
+        "entry_ts": "2025-04-30 21:56:00+00:00",
+        "entry_ask_match": "True",
+        "entry_bid_match": "True",
+        "exit_ask_close_match": "True",
+        "time_exit_pnl_match": "True",
+        "mfe_after_cost_match": "True",
+        "mae_after_cost_match": "True",
+        "reported_time_exit_pnl": -14.199999809265137,
+        "recomputed_time_exit_pnl": -14.19999999999959
+      }
+    ]
+  },
+  "audit_valid_label_exclusion": {
+    "per_pair": {
+      "EUR_USD": {
+        "n_rows": 5922112,
+        "n_valid": 5921850,
+        "n_non_gap": 5896598,
+        "n_valid_non_gap": 5896336,
+        "valid_pct": 0.9999557590265095,
+        "horizon_breakdown": {
+          "5": {
+            "long_n_rows": 740264,
+            "long_valid_count": 740245,
+            "long_invalid_count": 19,
+            "short_n_rows": 740264,
+            "short_valid_count": 740245,
+            "short_invalid_count": 19
+          },
+          "10": {
+            "long_n_rows": 740264,
+            "long_valid_count": 740240,
+            "long_invalid_count": 24,
+            "short_n_rows": 740264,
+            "short_valid_count": 740240,
+            "short_invalid_count": 24
+          },
+          "20": {
+            "long_n_rows": 740264,
+            "long_valid_count": 740230,
+            "long_invalid_count": 34,
+            "short_n_rows": 740264,
+            "short_valid_count": 740230,
+            "short_invalid_count": 34
+          },
+          "40": {
+            "long_n_rows": 740264,
+            "long_valid_count": 740210,
+            "long_invalid_count": 54,
+            "short_n_rows": 740264,
+            "short_valid_count": 740210,
+            "short_invalid_count": 54
+          }
+        }
+      },
+      "GBP_USD": {
+        "n_rows": 5927264,
+        "n_valid": 5927002,
+        "n_non_gap": 5901976,
+        "n_valid_non_gap": 5901714,
+        "valid_pct": 0.9999557974809288,
+        "horizon_breakdown": {
+          "5": {
+            "long_n_rows": 740908,
+            "long_valid_count": 740889,
+            "long_invalid_count": 19,
+            "short_n_rows": 740908,
+            "short_valid_count": 740889,
+            "short_invalid_count": 19
+          },
+          "10": {
+            "long_n_rows": 740908,
+            "long_valid_count": 740884,
+            "long_invalid_count": 24,
+            "short_n_rows": 740908,
+            "short_valid_count": 740884,
+            "short_invalid_count": 24
+          },
+          "20": {
+            "long_n_rows": 740908,
+            "long_valid_count": 740874,
+            "long_invalid_count": 34,
+            "short_n_rows": 740908,
+            "short_valid_count": 740874,
+            "short_invalid_count": 34
+          },
+          "40": {
+            "long_n_rows": 740908,
+            "long_valid_count": 740854,
+            "long_invalid_count": 54,
+            "short_n_rows": 740908,
+            "short_valid_count": 740854,
+            "short_invalid_count": 54
+          }
+        }
+      },
+      "AUD_USD": {
+        "n_rows": 5896696,
+        "n_valid": 5896434,
+        "n_non_gap": 5858904,
+        "n_valid_non_gap": 5858642,
+        "valid_pct": 0.9999555683386087,
+        "horizon_breakdown": {
+          "5": {
+            "long_n_rows": 737087,
+            "long_valid_count": 737068,
+            "long_invalid_count": 19,
+            "short_n_rows": 737087,
+            "short_valid_count": 737068,
+            "short_invalid_count": 19
+          },
+          "10": {
+            "long_n_rows": 737087,
+            "long_valid_count": 737063,
+            "long_invalid_count": 24,
+            "short_n_rows": 737087,
+            "short_valid_count": 737063,
+            "short_invalid_count": 24
+          },
+          "20": {
+            "long_n_rows": 737087,
+            "long_valid_count": 737053,
+            "long_invalid_count": 34,
+            "short_n_rows": 737087,
+            "short_valid_count": 737053,
+            "short_invalid_count": 34
+          },
+          "40": {
+            "long_n_rows": 737087,
+            "long_valid_count": 737033,
+            "long_invalid_count": 54,
+            "short_n_rows": 737087,
+            "short_valid_count": 737033,
+            "short_invalid_count": 54
+          }
+        }
+      },
+      "NZD_USD": {
+        "n_rows": 5884744,
+        "n_valid": 5884482,
+        "n_non_gap": 5840850,
+        "n_valid_non_gap": 5840588,
+        "valid_pct": 0.999955478097263,
+        "horizon_breakdown": {
+          "5": {
+            "long_n_rows": 735593,
+            "long_valid_count": 735574,
+            "long_invalid_count": 19,
+            "short_n_rows": 735593,
+            "short_valid_count": 735574,
+            "short_invalid_count": 19
+          },
+          "10": {
+            "long_n_rows": 735593,
+            "long_valid_count": 735569,
+            "long_invalid_count": 24,
+            "short_n_rows": 735593,
+            "short_valid_count": 735569,
+            "short_invalid_count": 24
+          },
+          "20": {
+            "long_n_rows": 735593,
+            "long_valid_count": 735559,
+            "long_invalid_count": 34,
+            "short_n_rows": 735593,
+            "short_valid_count": 735559,
+            "short_invalid_count": 34
+          },
+          "40": {
+            "long_n_rows": 735593,
+            "long_valid_count": 735539,
+            "long_invalid_count": 54,
+            "short_n_rows": 735593,
+            "short_valid_count": 735539,
+            "short_invalid_count": 54
+          }
+        }
+      },
+      "USD_CHF": {
+        "n_rows": 5896480,
+        "n_valid": 5896218,
+        "n_non_gap": 5863182,
+        "n_valid_non_gap": 5862920,
+        "valid_pct": 0.9999555667109868,
+        "horizon_breakdown": {
+          "5": {
+            "long_n_rows": 737060,
+            "long_valid_count": 737041,
+            "long_invalid_count": 19,
+            "short_n_rows": 737060,
+            "short_valid_count": 737041,
+            "short_invalid_count": 19
+          },
+          "10": {
+            "long_n_rows": 737060,
+            "long_valid_count": 737036,
+            "long_invalid_count": 24,
+            "short_n_rows": 737060,
+            "short_valid_count": 737036,
+            "short_invalid_count": 24
+          },
+          "20": {
+            "long_n_rows": 737060,
+            "long_valid_count": 737026,
+            "long_invalid_count": 34,
+            "short_n_rows": 737060,
+            "short_valid_count": 737026,
+            "short_invalid_count": 34
+          },
+          "40": {
+            "long_n_rows": 737060,
+            "long_valid_count": 737006,
+            "long_invalid_count": 54,
+            "short_n_rows": 737060,
+            "short_valid_count": 737006,
+            "short_invalid_count": 54
+          }
+        }
+      },
+      "USD_CAD": {
+        "n_rows": 5916528,
+        "n_valid": 5916266,
+        "n_non_gap": 5888236,
+        "n_valid_non_gap": 5887974,
+        "valid_pct": 0.9999557172720217,
+        "horizon_breakdown": {
+          "5": {
+            "long_n_rows": 739566,
+            "long_valid_count": 739547,
+            "long_invalid_count": 19,
+            "short_n_rows": 739566,
+            "short_valid_count": 739547,
+            "short_invalid_count": 19
+          },
+          "10": {
+            "long_n_rows": 739566,
+            "long_valid_count": 739542,
+            "long_invalid_count": 24,
+            "short_n_rows": 739566,
+            "short_valid_count": 739542,
+            "short_invalid_count": 24
+          },
+          "20": {
+            "long_n_rows": 739566,
+            "long_valid_count": 739532,
+            "long_invalid_count": 34,
+            "short_n_rows": 739566,
+            "short_valid_count": 739532,
+            "short_invalid_count": 34
+          },
+          "40": {
+            "long_n_rows": 739566,
+            "long_valid_count": 739512,
+            "long_invalid_count": 54,
+            "short_n_rows": 739566,
+            "short_valid_count": 739512,
+            "short_invalid_count": 54
+          }
+        }
+      },
+      "EUR_GBP": {
+        "n_rows": 5879832,
+        "n_valid": 5879570,
+        "n_non_gap": 5847592,
+        "n_valid_non_gap": 5847330,
+        "valid_pct": 0.9999554409037538,
+        "horizon_breakdown": {
+          "5": {
+            "long_n_rows": 734979,
+            "long_valid_count": 734960,
+            "long_invalid_count": 19,
+            "short_n_rows": 734979,
+            "short_valid_count": 734960,
+            "short_invalid_count": 19
+          },
+          "10": {
+            "long_n_rows": 734979,
+            "long_valid_count": 734955,
+            "long_invalid_count": 24,
+            "short_n_rows": 734979,
+            "short_valid_count": 734955,
+            "short_invalid_count": 24
+          },
+          "20": {
+            "long_n_rows": 734979,
+            "long_valid_count": 734945,
+            "long_invalid_count": 34,
+            "short_n_rows": 734979,
+            "short_valid_count": 734945,
+            "short_invalid_count": 34
+          },
+          "40": {
+            "long_n_rows": 734979,
+            "long_valid_count": 734925,
+            "long_invalid_count": 54,
+            "short_n_rows": 734979,
+            "short_valid_count": 734925,
+            "short_invalid_count": 54
+          }
+        }
+      },
+      "USD_JPY": {
+        "n_rows": 5923144,
+        "n_valid": 5922882,
+        "n_non_gap": 5897374,
+        "n_valid_non_gap": 5897112,
+        "valid_pct": 0.9999557667346936,
+        "horizon_breakdown": {
+          "5": {
+            "long_n_rows": 740393,
+            "long_valid_count": 740374,
+            "long_invalid_count": 19,
+            "short_n_rows": 740393,
+            "short_valid_count": 740374,
+            "short_invalid_count": 19
+          },
+          "10": {
+            "long_n_rows": 740393,
+            "long_valid_count": 740369,
+            "long_invalid_count": 24,
+            "short_n_rows": 740393,
+            "short_valid_count": 740369,
+            "short_invalid_count": 24
+          },
+          "20": {
+            "long_n_rows": 740393,
+            "long_valid_count": 740359,
+            "long_invalid_count": 34,
+            "short_n_rows": 740393,
+            "short_valid_count": 740359,
+            "short_invalid_count": 34
+          },
+          "40": {
+            "long_n_rows": 740393,
+            "long_valid_count": 740339,
+            "long_invalid_count": 54,
+            "short_n_rows": 740393,
+            "short_valid_count": 740339,
+            "short_invalid_count": 54
+          }
+        }
+      },
+      "EUR_JPY": {
+        "n_rows": 5925880,
+        "n_valid": 5925618,
+        "n_non_gap": 5900020,
+        "n_valid_non_gap": 5899758,
+        "valid_pct": 0.9999557871573505,
+        "horizon_breakdown": {
+          "5": {
+            "long_n_rows": 740735,
+            "long_valid_count": 740716,
+            "long_invalid_count": 19,
+            "short_n_rows": 740735,
+            "short_valid_count": 740716,
+            "short_invalid_count": 19
+          },
+          "10": {
+            "long_n_rows": 740735,
+            "long_valid_count": 740711,
+            "long_invalid_count": 24,
+            "short_n_rows": 740735,
+            "short_valid_count": 740711,
+            "short_invalid_count": 24
+          },
+          "20": {
+            "long_n_rows": 740735,
+            "long_valid_count": 740701,
+            "long_invalid_count": 34,
+            "short_n_rows": 740735,
+            "short_valid_count": 740701,
+            "short_invalid_count": 34
+          },
+          "40": {
+            "long_n_rows": 740735,
+            "long_valid_count": 740681,
+            "long_invalid_count": 54,
+            "short_n_rows": 740735,
+            "short_valid_count": 740681,
+            "short_invalid_count": 54
+          }
+        }
+      },
+      "GBP_JPY": {
+        "n_rows": 5939944,
+        "n_valid": 5939682,
+        "n_non_gap": 5920562,
+        "n_valid_non_gap": 5920300,
+        "valid_pct": 0.9999558918400577,
+        "horizon_breakdown": {
+          "5": {
+            "long_n_rows": 742493,
+            "long_valid_count": 742474,
+            "long_invalid_count": 19,
+            "short_n_rows": 742493,
+            "short_valid_count": 742474,
+            "short_invalid_count": 19
+          },
+          "10": {
+            "long_n_rows": 742493,
+            "long_valid_count": 742469,
+            "long_invalid_count": 24,
+            "short_n_rows": 742493,
+            "short_valid_count": 742469,
+            "short_invalid_count": 24
+          },
+          "20": {
+            "long_n_rows": 742493,
+            "long_valid_count": 742459,
+            "long_invalid_count": 34,
+            "short_n_rows": 742493,
+            "short_valid_count": 742459,
+            "short_invalid_count": 34
+          },
+          "40": {
+            "long_n_rows": 742493,
+            "long_valid_count": 742439,
+            "long_invalid_count": 54,
+            "short_n_rows": 742493,
+            "short_valid_count": 742439,
+            "short_invalid_count": 54
+          }
+        }
+      },
+      "AUD_JPY": {
+        "n_rows": 5933304,
+        "n_valid": 5933042,
+        "n_non_gap": 5912980,
+        "n_valid_non_gap": 5912718,
+        "valid_pct": 0.9999558424783224,
+        "horizon_breakdown": {
+          "5": {
+            "long_n_rows": 741663,
+            "long_valid_count": 741644,
+            "long_invalid_count": 19,
+            "short_n_rows": 741663,
+            "short_valid_count": 741644,
+            "short_invalid_count": 19
+          },
+          "10": {
+            "long_n_rows": 741663,
+            "long_valid_count": 741639,
+            "long_invalid_count": 24,
+            "short_n_rows": 741663,
+            "short_valid_count": 741639,
+            "short_invalid_count": 24
+          },
+          "20": {
+            "long_n_rows": 741663,
+            "long_valid_count": 741629,
+            "long_invalid_count": 34,
+            "short_n_rows": 741663,
+            "short_valid_count": 741629,
+            "short_invalid_count": 34
+          },
+          "40": {
+            "long_n_rows": 741663,
+            "long_valid_count": 741609,
+            "long_invalid_count": 54,
+            "short_n_rows": 741663,
+            "short_valid_count": 741609,
+            "short_invalid_count": 54
+          }
+        }
+      },
+      "NZD_JPY": {
+        "n_rows": 5888200,
+        "n_valid": 5887938,
+        "n_non_gap": 5853918,
+        "n_valid_non_gap": 5853656,
+        "valid_pct": 0.9999555042287965,
+        "horizon_breakdown": {
+          "5": {
+            "long_n_rows": 736025,
+            "long_valid_count": 736006,
+            "long_invalid_count": 19,
+            "short_n_rows": 736025,
+            "short_valid_count": 736006,
+            "short_invalid_count": 19
+          },
+          "10": {
+            "long_n_rows": 736025,
+            "long_valid_count": 736001,
+            "long_invalid_count": 24,
+            "short_n_rows": 736025,
+            "short_valid_count": 736001,
+            "short_invalid_count": 24
+          },
+          "20": {
+            "long_n_rows": 736025,
+            "long_valid_count": 735991,
+            "long_invalid_count": 34,
+            "short_n_rows": 736025,
+            "short_valid_count": 735991,
+            "short_invalid_count": 34
+          },
+          "40": {
+            "long_n_rows": 736025,
+            "long_valid_count": 735971,
+            "long_invalid_count": 54,
+            "short_n_rows": 736025,
+            "short_valid_count": 735971,
+            "short_invalid_count": 54
+          }
+        }
+      },
+      "CHF_JPY": {
+        "n_rows": 5884416,
+        "n_valid": 5884154,
+        "n_non_gap": 5839222,
+        "n_valid_non_gap": 5838960,
+        "valid_pct": 0.9999554756155921,
+        "horizon_breakdown": {
+          "5": {
+            "long_n_rows": 735552,
+            "long_valid_count": 735533,
+            "long_invalid_count": 19,
+            "short_n_rows": 735552,
+            "short_valid_count": 735533,
+            "short_invalid_count": 19
+          },
+          "10": {
+            "long_n_rows": 735552,
+            "long_valid_count": 735528,
+            "long_invalid_count": 24,
+            "short_n_rows": 735552,
+            "short_valid_count": 735528,
+            "short_invalid_count": 24
+          },
+          "20": {
+            "long_n_rows": 735552,
+            "long_valid_count": 735518,
+            "long_invalid_count": 34,
+            "short_n_rows": 735552,
+            "short_valid_count": 735518,
+            "short_invalid_count": 34
+          },
+          "40": {
+            "long_n_rows": 735552,
+            "long_valid_count": 735498,
+            "long_invalid_count": 54,
+            "short_n_rows": 735552,
+            "short_valid_count": 735498,
+            "short_invalid_count": 54
+          }
+        }
+      },
+      "EUR_CHF": {
+        "n_rows": 5899184,
+        "n_valid": 5898922,
+        "n_non_gap": 5862144,
+        "n_valid_non_gap": 5861882,
+        "valid_pct": 0.999955587077806,
+        "horizon_breakdown": {
+          "5": {
+            "long_n_rows": 737398,
+            "long_valid_count": 737379,
+            "long_invalid_count": 19,
+            "short_n_rows": 737398,
+            "short_valid_count": 737379,
+            "short_invalid_count": 19
+          },
+          "10": {
+            "long_n_rows": 737398,
+            "long_valid_count": 737374,
+            "long_invalid_count": 24,
+            "short_n_rows": 737398,
+            "short_valid_count": 737374,
+            "short_invalid_count": 24
+          },
+          "20": {
+            "long_n_rows": 737398,
+            "long_valid_count": 737364,
+            "long_invalid_count": 34,
+            "short_n_rows": 737398,
+            "short_valid_count": 737364,
+            "short_invalid_count": 34
+          },
+          "40": {
+            "long_n_rows": 737398,
+            "long_valid_count": 737344,
+            "long_invalid_count": 54,
+            "short_n_rows": 737398,
+            "short_valid_count": 737344,
+            "short_invalid_count": 54
+          }
+        }
+      },
+      "EUR_AUD": {
+        "n_rows": 5935656,
+        "n_valid": 5935394,
+        "n_non_gap": 5916438,
+        "n_valid_non_gap": 5916176,
+        "valid_pct": 0.9999558599757129,
+        "horizon_breakdown": {
+          "5": {
+            "long_n_rows": 741957,
+            "long_valid_count": 741938,
+            "long_invalid_count": 19,
+            "short_n_rows": 741957,
+            "short_valid_count": 741938,
+            "short_invalid_count": 19
+          },
+          "10": {
+            "long_n_rows": 741957,
+            "long_valid_count": 741933,
+            "long_invalid_count": 24,
+            "short_n_rows": 741957,
+            "short_valid_count": 741933,
+            "short_invalid_count": 24
+          },
+          "20": {
+            "long_n_rows": 741957,
+            "long_valid_count": 741923,
+            "long_invalid_count": 34,
+            "short_n_rows": 741957,
+            "short_valid_count": 741923,
+            "short_invalid_count": 34
+          },
+          "40": {
+            "long_n_rows": 741957,
+            "long_valid_count": 741903,
+            "long_invalid_count": 54,
+            "short_n_rows": 741957,
+            "short_valid_count": 741903,
+            "short_invalid_count": 54
+          }
+        }
+      },
+      "EUR_CAD": {
+        "n_rows": 5925032,
+        "n_valid": 5924770,
+        "n_non_gap": 5902486,
+        "n_valid_non_gap": 5902224,
+        "valid_pct": 0.9999557808295382,
+        "horizon_breakdown": {
+          "5": {
+            "long_n_rows": 740629,
+            "long_valid_count": 740610,
+            "long_invalid_count": 19,
+            "short_n_rows": 740629,
+            "short_valid_count": 740610,
+            "short_invalid_count": 19
+          },
+          "10": {
+            "long_n_rows": 740629,
+            "long_valid_count": 740605,
+            "long_invalid_count": 24,
+            "short_n_rows": 740629,
+            "short_valid_count": 740605,
+            "short_invalid_count": 24
+          },
+          "20": {
+            "long_n_rows": 740629,
+            "long_valid_count": 740595,
+            "long_invalid_count": 34,
+            "short_n_rows": 740629,
+            "short_valid_count": 740595,
+            "short_invalid_count": 34
+          },
+          "40": {
+            "long_n_rows": 740629,
+            "long_valid_count": 740575,
+            "long_invalid_count": 54,
+            "short_n_rows": 740629,
+            "short_valid_count": 740575,
+            "short_invalid_count": 54
+          }
+        }
+      },
+      "AUD_NZD": {
+        "n_rows": 5905512,
+        "n_valid": 5905250,
+        "n_non_gap": 5873410,
+        "n_valid_non_gap": 5873148,
+        "valid_pct": 0.9999556346680863,
+        "horizon_breakdown": {
+          "5": {
+            "long_n_rows": 738189,
+            "long_valid_count": 738170,
+            "long_invalid_count": 19,
+            "short_n_rows": 738189,
+            "short_valid_count": 738170,
+            "short_invalid_count": 19
+          },
+          "10": {
+            "long_n_rows": 738189,
+            "long_valid_count": 738165,
+            "long_invalid_count": 24,
+            "short_n_rows": 738189,
+            "short_valid_count": 738165,
+            "short_invalid_count": 24
+          },
+          "20": {
+            "long_n_rows": 738189,
+            "long_valid_count": 738155,
+            "long_invalid_count": 34,
+            "short_n_rows": 738189,
+            "short_valid_count": 738155,
+            "short_invalid_count": 34
+          },
+          "40": {
+            "long_n_rows": 738189,
+            "long_valid_count": 738135,
+            "long_invalid_count": 54,
+            "short_n_rows": 738189,
+            "short_valid_count": 738135,
+            "short_invalid_count": 54
+          }
+        }
+      },
+      "AUD_CAD": {
+        "n_rows": 5856496,
+        "n_valid": 5856234,
+        "n_non_gap": 5814382,
+        "n_valid_non_gap": 5814120,
+        "valid_pct": 0.9999552633520111,
+        "horizon_breakdown": {
+          "5": {
+            "long_n_rows": 732062,
+            "long_valid_count": 732043,
+            "long_invalid_count": 19,
+            "short_n_rows": 732062,
+            "short_valid_count": 732043,
+            "short_invalid_count": 19
+          },
+          "10": {
+            "long_n_rows": 732062,
+            "long_valid_count": 732038,
+            "long_invalid_count": 24,
+            "short_n_rows": 732062,
+            "short_valid_count": 732038,
+            "short_invalid_count": 24
+          },
+          "20": {
+            "long_n_rows": 732062,
+            "long_valid_count": 732028,
+            "long_invalid_count": 34,
+            "short_n_rows": 732062,
+            "short_valid_count": 732028,
+            "short_invalid_count": 34
+          },
+          "40": {
+            "long_n_rows": 732062,
+            "long_valid_count": 732008,
+            "long_invalid_count": 54,
+            "short_n_rows": 732062,
+            "short_valid_count": 732008,
+            "short_invalid_count": 54
+          }
+        }
+      },
+      "GBP_AUD": {
+        "n_rows": 5920360,
+        "n_valid": 5920098,
+        "n_non_gap": 5892892,
+        "n_valid_non_gap": 5892630,
+        "valid_pct": 0.9999557459343689,
+        "horizon_breakdown": {
+          "5": {
+            "long_n_rows": 740045,
+            "long_valid_count": 740026,
+            "long_invalid_count": 19,
+            "short_n_rows": 740045,
+            "short_valid_count": 740026,
+            "short_invalid_count": 19
+          },
+          "10": {
+            "long_n_rows": 740045,
+            "long_valid_count": 740021,
+            "long_invalid_count": 24,
+            "short_n_rows": 740045,
+            "short_valid_count": 740021,
+            "short_invalid_count": 24
+          },
+          "20": {
+            "long_n_rows": 740045,
+            "long_valid_count": 740011,
+            "long_invalid_count": 34,
+            "short_n_rows": 740045,
+            "short_valid_count": 740011,
+            "short_invalid_count": 34
+          },
+          "40": {
+            "long_n_rows": 740045,
+            "long_valid_count": 739991,
+            "long_invalid_count": 54,
+            "short_n_rows": 740045,
+            "short_valid_count": 739991,
+            "short_invalid_count": 54
+          }
+        }
+      },
+      "GBP_CHF": {
+        "n_rows": 5894096,
+        "n_valid": 5893834,
+        "n_non_gap": 5855660,
+        "n_valid_non_gap": 5855398,
+        "valid_pct": 0.9999555487389414,
+        "horizon_breakdown": {
+          "5": {
+            "long_n_rows": 736762,
+            "long_valid_count": 736743,
+            "long_invalid_count": 19,
+            "short_n_rows": 736762,
+            "short_valid_count": 736743,
+            "short_invalid_count": 19
+          },
+          "10": {
+            "long_n_rows": 736762,
+            "long_valid_count": 736738,
+            "long_invalid_count": 24,
+            "short_n_rows": 736762,
+            "short_valid_count": 736738,
+            "short_invalid_count": 24
+          },
+          "20": {
+            "long_n_rows": 736762,
+            "long_valid_count": 736728,
+            "long_invalid_count": 34,
+            "short_n_rows": 736762,
+            "short_valid_count": 736728,
+            "short_invalid_count": 34
+          },
+          "40": {
+            "long_n_rows": 736762,
+            "long_valid_count": 736708,
+            "long_invalid_count": 54,
+            "short_n_rows": 736762,
+            "short_valid_count": 736708,
+            "short_invalid_count": 54
+          }
+        }
+      }
+    },
+    "summary": {
+      "total_rows": 118154880,
+      "total_valid": 118149640,
+      "total_non_gap": 117538826,
+      "total_valid_non_gap": 117533586,
+      "pct_excluded": 0.00525830164611063
+    }
+  },
+  "reproduce_22_0b_top_cell": {
+    "cell": {
+      "N": 100,
+      "threshold": 3.0,
+      "horizon_bars": 40,
+      "exit_rule": "time_exit_pnl",
+      "reported_n_trades_annual": 132771,
+      "reported_annual_pnl": -366617.5,
+      "reported_sharpe": -0.1828
+    },
+    "recomputed_n_trades": 265361,
+    "recomputed_annual_trades": 132771.37705479452,
+    "recomputed_total_pnl": -732733.125,
+    "recomputed_annual_pnl": -366617.49850171234,
+    "recomputed_mean_pnl": -2.7612690925598145,
+    "recomputed_std_pnl": 15.101822853088379,
+    "recomputed_sharpe": -0.1828434301886361,
+    "recomputed_annual_pnl_stress_+0.5": "-433003.16",
+    "long_n": 138310,
+    "long_pnl_sum": -386063.8125,
+    "long_mean_pnl": -2.791293561564601,
+    "short_n": 127051,
+    "short_pnl_sum": -346669.3125,
+    "short_mean_pnl": -2.728583895443562,
+    "annual_trades_match": true,
+    "annual_pnl_match": true,
+    "sharpe_match": true
+  },
+  "reproduce_22_0c_top_cell": {
+    "cell": {
+      "N": 100,
+      "entry_timing": "retest",
+      "horizon_bars": 40,
+      "exit_rule": "time_exit_pnl",
+      "reported_n_trades_annual": 26211,
+      "reported_annual_pnl": -62719.9,
+      "reported_sharpe": -0.1751
+    },
+    "recomputed_n_trades": 52372,
+    "recomputed_annual_trades": 26203.935616438357,
+    "recomputed_total_pnl": -125253.296875,
+    "recomputed_annual_pnl": -62669.54340218322,
+    "recomputed_sharpe": -0.1749733714624129,
+    "n_signals_total_pooled": 146771,
+    "n_fired_total_pooled": 52597,
+    "skipped_rate_pooled": 0.6416390158818841,
+    "long_n": 27303,
+    "long_pnl_sum": -65226.09765625,
+    "short_n": 25069,
+    "short_pnl_sum": -60027.19921875,
+    "annual_trades_match": true,
+    "annual_pnl_match": true,
+    "annual_pnl_relative_diff_pct": 0.08028807095799355,
+    "sharpe_match": true
+  },
+  "audit_best_possible_gap": {
+    "pair": "USD_JPY",
+    "long_n": 2948556,
+    "long_gap_min": 0.0,
+    "long_gap_p50": 3.9000000953674316,
+    "long_gap_p90": 14.800000190734863,
+    "long_gap_p99": 38.0,
+    "long_gap_negative_count": 0,
+    "short_n": 2948556,
+    "short_gap_min": 0.0,
+    "short_gap_p50": 4.199999809265137,
+    "short_gap_p90": 15.0,
+    "short_gap_p99": 37.20000076293945,
+    "short_gap_negative_count": 0,
+    "best_possible_pnl_eq_mfe_after_cost": true
+  },
+  "audit_22_0e_plan_features": {
+    "forbidden_in_main_features": [
+      "best_possible_pnl",
+      "exit_ask_close",
+      "exit_bid_close",
+      "gap_affected_forward_window",
+      "is_week_open_window",
+      "mae_after_cost",
+      "mfe_after_cost",
+      "path_shape_class",
+      "same_bar_tp_sl_ambiguous",
+      "tb_outcome",
+      "tb_pnl",
+      "time_exit_pnl",
+      "time_to_sl",
+      "time_to_tp",
+      "valid_label"
+    ],
+    "ablation_only_features": [
+      "dow",
+      "hour_utc"
+    ],
+    "allowlist_main_features": [
+      "atr_at_entry",
+      "breakout_age_M5_bars",
+      "cost_ratio",
+      "direction",
+      "donchian_position",
+      "pair",
+      "spread_entry",
+      "z_score_10",
+      "z_score_100",
+      "z_score_20",
+      "z_score_50"
+    ],
+    "overlap_violations": [],
+    "is_week_open_window_excluded_from_main": true,
+    "hour_utc_excluded_from_main": true,
+    "dow_excluded_from_main": true
+  }
+}
