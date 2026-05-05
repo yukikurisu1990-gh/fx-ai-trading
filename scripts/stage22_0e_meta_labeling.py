@@ -811,16 +811,14 @@ def write_report(
             f"**{'PASS' if a0_pass else 'FAIL'}**"
         )
         lines.append(
-            f"- A1 sharpe={v.sharpe:.4f} >= {ADOPT_MIN_SHARPE}: "
-            f"**{'PASS' if a1_pass else 'FAIL'}**"
+            f"- A1 sharpe={v.sharpe:.4f} >= {ADOPT_MIN_SHARPE}: **{'PASS' if a1_pass else 'FAIL'}**"
         )
         lines.append(
             f"- A2 annual_pnl={v.annual_pnl:.1f} >= {ADOPT_MIN_PNL}: "
             f"**{'PASS' if a2_pass else 'FAIL'}**"
         )
         lines.append(
-            f"- A3 MaxDD={v.max_dd:.1f} <= {ADOPT_MAX_DD}: "
-            f"**{'PASS' if a3_pass else 'FAIL'}**"
+            f"- A3 MaxDD={v.max_dd:.1f} <= {ADOPT_MAX_DD}: **{'PASS' if a3_pass else 'FAIL'}**"
         )
         lines.append(
             f"- A4 OOS fold pos/neg={v.fold_pos}/{v.fold_neg} >= "
@@ -971,9 +969,7 @@ def write_report(
     lines.append("")
     lines.append(f"- MAIN_FEATURE_COLS = {list(MAIN_FEATURE_COLS)}")
     iwow_in = "is_week_open_window" in MAIN_FEATURE_COLS
-    lines.append(
-        f"- is_week_open_window in MAIN: {iwow_in}  (must be False)"
-    )
+    lines.append(f"- is_week_open_window in MAIN: {iwow_in}  (must be False)")
     lines.append(f"- hour_utc in MAIN: {('hour_utc' in MAIN_FEATURE_COLS)}  (must be False)")
     lines.append(f"- dow in MAIN: {('dow' in MAIN_FEATURE_COLS)}  (must be False)")
     forbidden_in_main = set(MAIN_FEATURE_COLS) & FORBIDDEN_FEATURES
