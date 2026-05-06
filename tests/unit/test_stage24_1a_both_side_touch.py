@@ -13,6 +13,7 @@ import sys
 from pathlib import Path
 
 import numpy as np
+import pytest
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 SCRIPTS_DIR = REPO_ROOT / "scripts"
@@ -25,6 +26,16 @@ stage24_1a = importlib.import_module("stage24_1a_both_side_touch_eval")
 
 
 PIP = 0.0001
+DATA_DIR = REPO_ROOT / "data"
+_REPO_HAS_M1_DATA = (DATA_DIR / "candles_USD_JPY_M1_730d_BA.jsonl").exists()
+_REPO_HAS_FROZEN = (REPO_ROOT / "artifacts" / "stage24_0a" / "frozen_entry_streams.json").exists()
+_skip_no_data = pytest.mark.skipif(
+    not _REPO_HAS_M1_DATA, reason="M1 BA data not present (CI env without data/ files)"
+)
+_skip_no_data_or_frozen = pytest.mark.skipif(
+    not (_REPO_HAS_M1_DATA and _REPO_HAS_FROZEN),
+    reason="M1 BA data or 24.0a frozen JSON not present (CI env without data/ files)",
+)
 
 
 def _arr(*v: float) -> np.ndarray:
@@ -338,6 +349,7 @@ def test_no_lookahead_t_plus_1_unused():
 # ---------------------------------------------------------------------------
 
 
+@_skip_no_data
 def test_load_m1_ba_returns_full_ohlc():
     """load_m1_ba already returns the 8 OHLC columns; no API change needed."""
     df = stage23_0a.load_m1_ba("USD_JPY", days=730)
@@ -377,6 +389,7 @@ def _smoke_invoke(script_name: str) -> int:
     return rc.returncode
 
 
+@_skip_no_data_or_frozen
 def test_24_0b_close_only_smoke_regression():
     """Smoke regression: 24.0b still executes successfully under unchanged
     code path. Full byte-identical reproduction is checked locally if
@@ -385,11 +398,13 @@ def test_24_0b_close_only_smoke_regression():
     assert rc == 0
 
 
+@_skip_no_data_or_frozen
 def test_24_0c_close_only_smoke_regression():
     rc = _smoke_invoke("stage24_0c_partial_exit_eval.py")
     assert rc == 0
 
 
+@_skip_no_data_or_frozen
 def test_24_0d_close_only_smoke_regression():
     rc = _smoke_invoke("stage24_0d_regime_conditional_eval.py")
     assert rc == 0
