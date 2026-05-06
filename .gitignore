@@ -19,3 +19,7 @@ artifacts/stage23_0a/build_summary.json
 # Phase 23.0b sweep raw results (summary embedded in eval_report.md)
 artifacts/stage23_0b/sweep_results.parquet
 artifacts/stage23_0b/sweep_results.json
+
+# Phase 23.0c sweep raw results (summary embedded in eval_report.md)
+artifacts/stage23_0c/sweep_results.parquet
+artifacts/stage23_0c/sweep_results.json
