@@ -31,3 +31,6 @@ artifacts/stage23_0d/sweep_results.json
 # Phase 23.0c-rev1 sweep raw results (summary embedded in eval_report.md)
 artifacts/stage23_0c_rev1/sweep_results.parquet
 artifacts/stage23_0c_rev1/sweep_results.json
+
+# Phase 24.0a per-cell raw distribution (regenerable; summary in eval_report.md)
+artifacts/stage24_0a/path_ev_distribution.parquet
