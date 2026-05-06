@@ -1,0 +1,178 @@
+=== Stage 23.0c-rev1 signal-quality control (20 pairs) ===
+Filters: ['F1_neutral_reset', 'F2_cooldown', 'F3_reversal_confirmation', 'F4_cost_gate']
+Filter constants: NEUTRAL_BAND=0.5, COOLDOWN_BARS=3, COST_GATE_THRESHOLD=0.6
+--- loading m5 + labels for 20 pairs ---
+  EUR_USD: m5=149134 rows (  7.2s)
+  GBP_USD: m5=149099 rows (  6.8s)
+  AUD_USD: m5=149108 rows (  6.5s)
+  NZD_USD: m5=149098 rows (  7.0s)
+  USD_CHF: m5=149058 rows (  6.9s)
+  USD_CAD: m5=149114 rows (  6.8s)
+  EUR_GBP: m5=149114 rows (  6.8s)
+  USD_JPY: m5=149103 rows (  7.1s)
+  EUR_JPY: m5=149089 rows (  6.9s)
+  GBP_JPY: m5=149104 rows (  6.9s)
+  AUD_JPY: m5=149100 rows (  6.9s)
+  NZD_JPY: m5=148954 rows (  6.8s)
+  CHF_JPY: m5=148422 rows (  7.0s)
+  EUR_CHF: m5=149038 rows (  6.8s)
+  EUR_AUD: m5=149119 rows (  7.7s)
+  EUR_CAD: m5=149131 rows (  7.2s)
+  AUD_NZD: m5=149052 rows (  7.1s)
+  AUD_CAD: m5=149013 rows (  6.8s)
+  GBP_AUD: m5=149045 rows (  7.0s)
+  GBP_CHF: m5=148804 rows (  6.8s)
+--- generating per-pair signals (4 filters Å~ 3 N Å~ 2 threshold) ---
+--- evaluating 144 cells ---
+  F1_neutral_reset           N=12 thr=2.0 h=1 exit=tb   n=214583 ann_tr=107365.0 sharpe=-0.6312 ann_pnl=-236194.9 gates=100000 reason=still_overtrading
+  F1_neutral_reset           N=12 thr=2.0 h=1 exit=time n=214583 ann_tr=107365.0 sharpe=-0.4994 ann_pnl=-277152.6 gates=100000 reason=still_overtrading
+  F1_neutral_reset           N=12 thr=2.0 h=2 exit=tb   n=214581 ann_tr=107364.0 sharpe=-0.5196 ann_pnl=-236177.6 gates=100000 reason=still_overtrading
+  F1_neutral_reset           N=12 thr=2.0 h=2 exit=time n=214581 ann_tr=107364.0 sharpe=-0.3906 ann_pnl=-271929.3 gates=100000 reason=still_overtrading
+  F1_neutral_reset           N=12 thr=2.0 h=3 exit=tb   n=214579 ann_tr=107363.0 sharpe=-0.4703 ann_pnl=-237406.4 gates=100000 reason=still_overtrading
+  F1_neutral_reset           N=12 thr=2.0 h=3 exit=time n=214579 ann_tr=107363.0 sharpe=-0.3313 ann_pnl=-270070.5 gates=100000 reason=still_overtrading
+  F1_neutral_reset           N=12 thr=2.5 h=1 exit=tb   n=157929 ann_tr= 79018.6 sharpe=-0.6139 ann_pnl=-174091.5 gates=100000 reason=still_overtrading
+  F1_neutral_reset           N=12 thr=2.5 h=1 exit=time n=157929 ann_tr= 79018.6 sharpe=-0.4822 ann_pnl=-206667.0 gates=100000 reason=still_overtrading
+  F1_neutral_reset           N=12 thr=2.5 h=2 exit=tb   n=157927 ann_tr= 79017.6 sharpe=-0.5109 ann_pnl=-173972.1 gates=100000 reason=still_overtrading
+  F1_neutral_reset           N=12 thr=2.5 h=2 exit=time n=157927 ann_tr= 79017.6 sharpe=-0.3786 ann_pnl=-201253.7 gates=100000 reason=still_overtrading
+  F1_neutral_reset           N=12 thr=2.5 h=3 exit=tb   n=157926 ann_tr= 79017.1 sharpe=-0.4690 ann_pnl=-175741.7 gates=100000 reason=still_overtrading
+  F1_neutral_reset           N=12 thr=2.5 h=3 exit=time n=157926 ann_tr= 79017.1 sharpe=-0.3209 ann_pnl=-200650.3 gates=100000 reason=still_overtrading
+  F1_neutral_reset           N=24 thr=2.0 h=1 exit=tb   n=124177 ann_tr= 62131.0 sharpe=-0.6120 ann_pnl=-137632.0 gates=100000 reason=still_overtrading
+  F1_neutral_reset           N=24 thr=2.0 h=1 exit=time n=124177 ann_tr= 62131.0 sharpe=-0.4938 ann_pnl=-164502.4 gates=100000 reason=still_overtrading
+  F1_neutral_reset           N=24 thr=2.0 h=2 exit=tb   n=124176 ann_tr= 62130.5 sharpe=-0.5135 ann_pnl=-138146.9 gates=100000 reason=still_overtrading
+  F1_neutral_reset           N=24 thr=2.0 h=2 exit=time n=124176 ann_tr= 62130.5 sharpe=-0.3846 ann_pnl=-160785.9 gates=100000 reason=still_overtrading
+  F1_neutral_reset           N=24 thr=2.0 h=3 exit=tb   n=124175 ann_tr= 62130.0 sharpe=-0.4682 ann_pnl=-138769.1 gates=100000 reason=still_overtrading
+  F1_neutral_reset           N=24 thr=2.0 h=3 exit=time n=124175 ann_tr= 62130.0 sharpe=-0.3169 ann_pnl=-158210.8 gates=100000 reason=still_overtrading
+  F1_neutral_reset           N=24 thr=2.5 h=1 exit=tb   n=87625 ann_tr= 43842.5 sharpe=-0.5779 ann_pnl=-96650.3 gates=100000 reason=still_overtrading
+  F1_neutral_reset           N=24 thr=2.5 h=1 exit=time n=87625 ann_tr= 43842.5 sharpe=-0.4665 ann_pnl=-117424.6 gates=100000 reason=still_overtrading
+  F1_neutral_reset           N=24 thr=2.5 h=2 exit=tb   n=87624 ann_tr= 43842.0 sharpe=-0.4877 ann_pnl=-96768.2 gates=100000 reason=still_overtrading
+  F1_neutral_reset           N=24 thr=2.5 h=2 exit=time n=87624 ann_tr= 43842.0 sharpe=-0.3669 ann_pnl=-114288.1 gates=100000 reason=still_overtrading
+  F1_neutral_reset           N=24 thr=2.5 h=3 exit=tb   n=87624 ann_tr= 43842.0 sharpe=-0.4449 ann_pnl=-96679.6 gates=100000 reason=still_overtrading
+  F1_neutral_reset           N=24 thr=2.5 h=3 exit=time n=87624 ann_tr= 43842.0 sharpe=-0.2996 ann_pnl=-111104.4 gates=100000 reason=still_overtrading
+  F1_neutral_reset           N=48 thr=2.0 h=1 exit=tb   n=70741 ann_tr= 35394.7 sharpe=-0.5725 ann_pnl=-79687.6 gates=100000 reason=still_overtrading
+  F1_neutral_reset           N=48 thr=2.0 h=1 exit=time n=70741 ann_tr= 35394.7 sharpe=-0.4551 ann_pnl=-95530.4 gates=100000 reason=still_overtrading
+  F1_neutral_reset           N=48 thr=2.0 h=2 exit=tb   n=70741 ann_tr= 35394.7 sharpe=-0.4838 ann_pnl=-79809.2 gates=100000 reason=still_overtrading
+  F1_neutral_reset           N=48 thr=2.0 h=2 exit=time n=70741 ann_tr= 35394.7 sharpe=-0.3593 ann_pnl=-92821.6 gates=100000 reason=still_overtrading
+  F1_neutral_reset           N=48 thr=2.0 h=3 exit=tb   n=70741 ann_tr= 35394.7 sharpe=-0.4439 ann_pnl=-80146.5 gates=100000 reason=still_overtrading
+  F1_neutral_reset           N=48 thr=2.0 h=3 exit=time n=70741 ann_tr= 35394.7 sharpe=-0.2990 ann_pnl=-91831.0 gates=100000 reason=still_overtrading
+  F1_neutral_reset           N=48 thr=2.5 h=1 exit=tb   n=49778 ann_tr= 24906.0 sharpe=-0.5456 ann_pnl=-57195.9 gates=100000 reason=still_overtrading
+  F1_neutral_reset           N=48 thr=2.5 h=1 exit=time n=49778 ann_tr= 24906.0 sharpe=-0.4306 ann_pnl=-68777.9 gates=100000 reason=still_overtrading
+  F1_neutral_reset           N=48 thr=2.5 h=2 exit=tb   n=49778 ann_tr= 24906.0 sharpe=-0.4692 ann_pnl=-57318.1 gates=100000 reason=still_overtrading
+  F1_neutral_reset           N=48 thr=2.5 h=2 exit=time n=49778 ann_tr= 24906.0 sharpe=-0.3454 ann_pnl=-66236.9 gates=100000 reason=still_overtrading
+  F1_neutral_reset           N=48 thr=2.5 h=3 exit=tb   n=49778 ann_tr= 24906.0 sharpe=-0.4293 ann_pnl=-57365.7 gates=100000 reason=still_overtrading
+  F1_neutral_reset           N=48 thr=2.5 h=3 exit=time n=49778 ann_tr= 24906.0 sharpe=-0.2879 ann_pnl=-66058.6 gates=100000 reason=still_overtrading
+  F2_cooldown                N=12 thr=2.0 h=1 exit=tb   n=289176 ann_tr=144687.0 sharpe=-0.6147 ann_pnl=-315632.2 gates=100000 reason=still_overtrading
+  F2_cooldown                N=12 thr=2.0 h=1 exit=time n=289176 ann_tr=144687.0 sharpe=-0.4931 ann_pnl=-366501.3 gates=100000 reason=still_overtrading
+  F2_cooldown                N=12 thr=2.0 h=2 exit=tb   n=289171 ann_tr=144684.5 sharpe=-0.5038 ann_pnl=-315240.1 gates=100000 reason=still_overtrading
+  F2_cooldown                N=12 thr=2.0 h=2 exit=time n=289171 ann_tr=144684.5 sharpe=-0.3816 ann_pnl=-358849.6 gates=100000 reason=still_overtrading
+  F2_cooldown                N=12 thr=2.0 h=3 exit=tb   n=289169 ann_tr=144683.5 sharpe=-0.4547 ann_pnl=-316462.7 gates=100000 reason=still_overtrading
+  F2_cooldown                N=12 thr=2.0 h=3 exit=time n=289169 ann_tr=144683.5 sharpe=-0.3212 ann_pnl=-356395.7 gates=100000 reason=still_overtrading
+  F2_cooldown                N=12 thr=2.5 h=1 exit=tb   n=191360 ann_tr= 95745.5 sharpe=-0.5960 ann_pnl=-209777.1 gates=100000 reason=still_overtrading
+  F2_cooldown                N=12 thr=2.5 h=1 exit=time n=191360 ann_tr= 95745.5 sharpe=-0.4710 ann_pnl=-247471.2 gates=100000 reason=still_overtrading
+  F2_cooldown                N=12 thr=2.5 h=2 exit=tb   n=191356 ann_tr= 95743.5 sharpe=-0.4951 ann_pnl=-209572.9 gates=100000 reason=still_overtrading
+  F2_cooldown                N=12 thr=2.5 h=2 exit=time n=191356 ann_tr= 95743.5 sharpe=-0.3697 ann_pnl=-240832.1 gates=100000 reason=still_overtrading
+  F2_cooldown                N=12 thr=2.5 h=3 exit=tb   n=191355 ann_tr= 95743.0 sharpe=-0.4535 ann_pnl=-211449.5 gates=100000 reason=still_overtrading
+  F2_cooldown                N=12 thr=2.5 h=3 exit=time n=191355 ann_tr= 95743.0 sharpe=-0.3113 ann_pnl=-239310.2 gates=100000 reason=still_overtrading
+  F2_cooldown                N=24 thr=2.0 h=1 exit=tb   n=194185 ann_tr= 97159.0 sharpe=-0.6015 ann_pnl=-215032.5 gates=100000 reason=still_overtrading
+  F2_cooldown                N=24 thr=2.0 h=1 exit=time n=194185 ann_tr= 97159.0 sharpe=-0.4922 ann_pnl=-251446.8 gates=100000 reason=still_overtrading
+  F2_cooldown                N=24 thr=2.0 h=2 exit=tb   n=194182 ann_tr= 97157.5 sharpe=-0.4978 ann_pnl=-215429.8 gates=100000 reason=still_overtrading
+  F2_cooldown                N=24 thr=2.0 h=2 exit=time n=194182 ann_tr= 97157.5 sharpe=-0.3785 ann_pnl=-245280.4 gates=100000 reason=still_overtrading
+  F2_cooldown                N=24 thr=2.0 h=3 exit=tb   n=194181 ann_tr= 97157.0 sharpe=-0.4513 ann_pnl=-216139.0 gates=100000 reason=still_overtrading
+  F2_cooldown                N=24 thr=2.0 h=3 exit=time n=194181 ann_tr= 97157.0 sharpe=-0.3133 ann_pnl=-241934.7 gates=100000 reason=still_overtrading
+  F2_cooldown                N=24 thr=2.5 h=1 exit=tb   n=117888 ann_tr= 58984.4 sharpe=-0.5632 ann_pnl=-129942.5 gates=100000 reason=still_overtrading
+  F2_cooldown                N=24 thr=2.5 h=1 exit=time n=117888 ann_tr= 58984.4 sharpe=-0.4570 ann_pnl=-154744.4 gates=100000 reason=still_overtrading
+  F2_cooldown                N=24 thr=2.5 h=2 exit=tb   n=117886 ann_tr= 58983.4 sharpe=-0.4705 ann_pnl=-129687.1 gates=100000 reason=still_overtrading
+  F2_cooldown                N=24 thr=2.5 h=2 exit=time n=117886 ann_tr= 58983.4 sharpe=-0.3550 ann_pnl=-149842.1 gates=100000 reason=still_overtrading
+  F2_cooldown                N=24 thr=2.5 h=3 exit=tb   n=117886 ann_tr= 58983.4 sharpe=-0.4285 ann_pnl=-129783.2 gates=100000 reason=still_overtrading
+  F2_cooldown                N=24 thr=2.5 h=3 exit=time n=117886 ann_tr= 58983.4 sharpe=-0.2904 ann_pnl=-146207.6 gates=100000 reason=still_overtrading
+  F2_cooldown                N=48 thr=2.0 h=1 exit=tb   n=133066 ann_tr= 66578.6 sharpe=-0.5704 ann_pnl=-149254.4 gates=100000 reason=still_overtrading
+  F2_cooldown                N=48 thr=2.0 h=1 exit=time n=133066 ann_tr= 66578.6 sharpe=-0.4647 ann_pnl=-172066.6 gates=100000 reason=still_overtrading
+  F2_cooldown                N=48 thr=2.0 h=2 exit=tb   n=133064 ann_tr= 66577.6 sharpe=-0.4720 ann_pnl=-149285.3 gates=100000 reason=still_overtrading
+  F2_cooldown                N=48 thr=2.0 h=2 exit=time n=133064 ann_tr= 66577.6 sharpe=-0.3599 ann_pnl=-168176.0 gates=100000 reason=still_overtrading
+  F2_cooldown                N=48 thr=2.0 h=3 exit=tb   n=133064 ann_tr= 66577.6 sharpe=-0.4306 ann_pnl=-150305.0 gates=100000 reason=still_overtrading
+  F2_cooldown                N=48 thr=2.0 h=3 exit=time n=133064 ann_tr= 66577.6 sharpe=-0.3024 ann_pnl=-166776.5 gates=100000 reason=still_overtrading
+  F2_cooldown                N=48 thr=2.5 h=1 exit=tb   n=80569 ann_tr= 40312.1 sharpe=-0.5354 ann_pnl=-92278.2 gates=100000 reason=still_overtrading
+  F2_cooldown                N=48 thr=2.5 h=1 exit=time n=80569 ann_tr= 40312.1 sharpe=-0.4355 ann_pnl=-106932.9 gates=100000 reason=still_overtrading
+  F2_cooldown                N=48 thr=2.5 h=2 exit=tb   n=80568 ann_tr= 40311.6 sharpe=-0.4467 ann_pnl=-92196.0 gates=100000 reason=still_overtrading
+  F2_cooldown                N=48 thr=2.5 h=2 exit=time n=80568 ann_tr= 40311.6 sharpe=-0.3391 ann_pnl=-103388.8 gates=100000 reason=still_overtrading
+  F2_cooldown                N=48 thr=2.5 h=3 exit=tb   n=80568 ann_tr= 40311.6 sharpe=-0.4052 ann_pnl=-92288.7 gates=100000 reason=still_overtrading
+  F2_cooldown                N=48 thr=2.5 h=3 exit=time n=80568 ann_tr= 40311.6 sharpe=-0.2821 ann_pnl=-102383.9 gates=100000 reason=still_overtrading
+  F3_reversal_confirmation   N=12 thr=2.0 h=1 exit=tb   n=32940 ann_tr= 16481.3 sharpe=-0.5944 ann_pnl=-37362.2 gates=100000 reason=still_overtrading
+  F3_reversal_confirmation   N=12 thr=2.0 h=1 exit=time n=32940 ann_tr= 16481.3 sharpe=-0.4855 ann_pnl=-45127.9 gates=100000 reason=still_overtrading
+  F3_reversal_confirmation   N=12 thr=2.0 h=2 exit=tb   n=32940 ann_tr= 16481.3 sharpe=-0.4990 ann_pnl=-37974.6 gates=100000 reason=still_overtrading
+  F3_reversal_confirmation   N=12 thr=2.0 h=2 exit=time n=32940 ann_tr= 16481.3 sharpe=-0.3718 ann_pnl=-44257.3 gates=100000 reason=still_overtrading
+  F3_reversal_confirmation   N=12 thr=2.0 h=3 exit=tb   n=32940 ann_tr= 16481.3 sharpe=-0.4575 ann_pnl=-38263.5 gates=100000 reason=still_overtrading
+  F3_reversal_confirmation   N=12 thr=2.0 h=3 exit=time n=32940 ann_tr= 16481.3 sharpe=-0.3229 ann_pnl=-45068.7 gates=100000 reason=still_overtrading
+  F3_reversal_confirmation   N=12 thr=2.5 h=1 exit=tb   n= 4298 ann_tr=  2150.5 sharpe=-0.5171 ann_pnl= -5307.6 gates=100000 reason=still_overtrading
+  F3_reversal_confirmation   N=12 thr=2.5 h=1 exit=time n= 4298 ann_tr=  2150.5 sharpe=-0.4588 ann_pnl= -7193.6 gates=100000 reason=still_overtrading
+  F3_reversal_confirmation   N=12 thr=2.5 h=2 exit=tb   n= 4298 ann_tr=  2150.5 sharpe=-0.4639 ann_pnl= -5435.1 gates=100000 reason=still_overtrading
+  F3_reversal_confirmation   N=12 thr=2.5 h=2 exit=time n= 4298 ann_tr=  2150.5 sharpe=-0.3717 ann_pnl= -6957.4 gates=100000 reason=still_overtrading
+  F3_reversal_confirmation   N=12 thr=2.5 h=3 exit=tb   n= 4298 ann_tr=  2150.5 sharpe=-0.4393 ann_pnl= -5473.1 gates=100000 reason=still_overtrading
+  F3_reversal_confirmation   N=12 thr=2.5 h=3 exit=time n= 4298 ann_tr=  2150.5 sharpe=-0.3205 ann_pnl= -7430.6 gates=100000 reason=still_overtrading
+  F3_reversal_confirmation   N=24 thr=2.0 h=1 exit=tb   n=52381 ann_tr= 26208.4 sharpe=-0.6117 ann_pnl=-60663.0 gates=100000 reason=still_overtrading
+  F3_reversal_confirmation   N=24 thr=2.0 h=1 exit=time n=52381 ann_tr= 26208.4 sharpe=-0.5019 ann_pnl=-71051.5 gates=100000 reason=still_overtrading
+  F3_reversal_confirmation   N=24 thr=2.0 h=2 exit=tb   n=52381 ann_tr= 26208.4 sharpe=-0.5005 ann_pnl=-61010.4 gates=100000 reason=still_overtrading
+  F3_reversal_confirmation   N=24 thr=2.0 h=2 exit=time n=52381 ann_tr= 26208.4 sharpe=-0.3807 ann_pnl=-69940.2 gates=100000 reason=still_overtrading
+  F3_reversal_confirmation   N=24 thr=2.0 h=3 exit=tb   n=52381 ann_tr= 26208.4 sharpe=-0.4579 ann_pnl=-61702.1 gates=100000 reason=still_overtrading
+  F3_reversal_confirmation   N=24 thr=2.0 h=3 exit=time n=52381 ann_tr= 26208.4 sharpe=-0.3254 ann_pnl=-70702.6 gates=100000 reason=still_overtrading
+  F3_reversal_confirmation   N=24 thr=2.5 h=1 exit=tb   n=16902 ann_tr=  8456.8 sharpe=-0.5415 ann_pnl=-20273.1 gates=100000 reason=still_overtrading
+  F3_reversal_confirmation   N=24 thr=2.5 h=1 exit=time n=16902 ann_tr=  8456.8 sharpe=-0.4294 ann_pnl=-24613.8 gates=100000 reason=still_overtrading
+  F3_reversal_confirmation   N=24 thr=2.5 h=2 exit=tb   n=16902 ann_tr=  8456.8 sharpe=-0.4574 ann_pnl=-20344.3 gates=100000 reason=still_overtrading
+  F3_reversal_confirmation   N=24 thr=2.5 h=2 exit=time n=16902 ann_tr=  8456.8 sharpe=-0.3376 ann_pnl=-23730.1 gates=100000 reason=still_overtrading
+  F3_reversal_confirmation   N=24 thr=2.5 h=3 exit=tb   n=16902 ann_tr=  8456.8 sharpe=-0.4215 ann_pnl=-20553.1 gates=100000 reason=still_overtrading
+  F3_reversal_confirmation   N=24 thr=2.5 h=3 exit=time n=16902 ann_tr=  8456.8 sharpe=-0.2899 ann_pnl=-24284.5 gates=100000 reason=still_overtrading
+  F3_reversal_confirmation   N=48 thr=2.0 h=1 exit=tb   n=44107 ann_tr= 22068.6 sharpe=-0.5972 ann_pnl=-52410.8 gates=100000 reason=still_overtrading
+  F3_reversal_confirmation   N=48 thr=2.0 h=1 exit=time n=44107 ann_tr= 22068.6 sharpe=-0.4914 ann_pnl=-60179.0 gates=100000 reason=still_overtrading
+  F3_reversal_confirmation   N=48 thr=2.0 h=2 exit=tb   n=44107 ann_tr= 22068.6 sharpe=-0.4867 ann_pnl=-52642.1 gates=100000 reason=still_overtrading
+  F3_reversal_confirmation   N=48 thr=2.0 h=2 exit=time n=44107 ann_tr= 22068.6 sharpe=-0.3844 ann_pnl=-59356.8 gates=100000 reason=still_overtrading
+  F3_reversal_confirmation   N=48 thr=2.0 h=3 exit=tb   n=44107 ann_tr= 22068.6 sharpe=-0.4421 ann_pnl=-53074.0 gates=100000 reason=still_overtrading
+  F3_reversal_confirmation   N=48 thr=2.0 h=3 exit=time n=44107 ann_tr= 22068.6 sharpe=-0.3261 ann_pnl=-59995.7 gates=100000 reason=still_overtrading
+  F3_reversal_confirmation   N=48 thr=2.5 h=1 exit=tb   n=23048 ann_tr= 11531.9 sharpe=-0.5589 ann_pnl=-28605.1 gates=100000 reason=still_overtrading
+  F3_reversal_confirmation   N=48 thr=2.5 h=1 exit=time n=23048 ann_tr= 11531.9 sharpe=-0.4537 ann_pnl=-32838.1 gates=100000 reason=still_overtrading
+  F3_reversal_confirmation   N=48 thr=2.5 h=2 exit=tb   n=23048 ann_tr= 11531.9 sharpe=-0.4721 ann_pnl=-29122.9 gates=100000 reason=still_overtrading
+  F3_reversal_confirmation   N=48 thr=2.5 h=2 exit=time n=23048 ann_tr= 11531.9 sharpe=-0.3631 ann_pnl=-32749.5 gates=100000 reason=still_overtrading
+  F3_reversal_confirmation   N=48 thr=2.5 h=3 exit=tb   n=23048 ann_tr= 11531.9 sharpe=-0.4251 ann_pnl=-28927.7 gates=100000 reason=still_overtrading
+  F3_reversal_confirmation   N=48 thr=2.5 h=3 exit=time n=23048 ann_tr= 11531.9 sharpe=-0.2982 ann_pnl=-32477.5 gates=100000 reason=still_overtrading
+  F4_cost_gate               N=12 thr=2.0 h=1 exit=tb   n=163792 ann_tr= 81952.1 sharpe=-0.4488 ann_pnl=-167949.1 gates=100000 reason=still_overtrading
+  F4_cost_gate               N=12 thr=2.0 h=1 exit=time n=163792 ann_tr= 81952.1 sharpe=-0.3631 ann_pnl=-168081.9 gates=100000 reason=still_overtrading
+  F4_cost_gate               N=12 thr=2.0 h=2 exit=tb   n=163788 ann_tr= 81950.1 sharpe=-0.3626 ann_pnl=-167781.4 gates=100000 reason=still_overtrading
+  F4_cost_gate               N=12 thr=2.0 h=2 exit=time n=163788 ann_tr= 81950.1 sharpe=-0.2680 ann_pnl=-166484.7 gates=100000 reason=still_overtrading
+  F4_cost_gate               N=12 thr=2.0 h=3 exit=tb   n=163786 ann_tr= 81949.1 sharpe=-0.3260 ann_pnl=-168841.5 gates=100000 reason=still_overtrading
+  F4_cost_gate               N=12 thr=2.0 h=3 exit=time n=163786 ann_tr= 81949.1 sharpe=-0.2211 ann_pnl=-165836.3 gates=100000 reason=still_overtrading
+  F4_cost_gate               N=12 thr=2.5 h=1 exit=tb   n=105274 ann_tr= 52673.1 sharpe=-0.4329 ann_pnl=-108870.2 gates=100000 reason=still_overtrading
+  F4_cost_gate               N=12 thr=2.5 h=1 exit=time n=105274 ann_tr= 52673.1 sharpe=-0.3413 ann_pnl=-108866.5 gates=100000 reason=still_overtrading
+  F4_cost_gate               N=12 thr=2.5 h=2 exit=tb   n=105270 ann_tr= 52671.1 sharpe=-0.3562 ann_pnl=-109039.8 gates=100000 reason=still_overtrading
+  F4_cost_gate               N=12 thr=2.5 h=2 exit=time n=105270 ann_tr= 52671.1 sharpe=-0.2558 ann_pnl=-107342.7 gates=100000 reason=still_overtrading
+  F4_cost_gate               N=12 thr=2.5 h=3 exit=tb   n=105269 ann_tr= 52670.6 sharpe=-0.3264 ann_pnl=-110672.7 gates=100000 reason=still_overtrading
+  F4_cost_gate               N=12 thr=2.5 h=3 exit=time n=105269 ann_tr= 52670.6 sharpe=-0.2117 ann_pnl=-107862.2 gates=100000 reason=still_overtrading
+  F4_cost_gate               N=24 thr=2.0 h=1 exit=tb   n=111351 ann_tr= 55713.6 sharpe=-0.4442 ann_pnl=-115883.8 gates=100000 reason=still_overtrading
+  F4_cost_gate               N=24 thr=2.0 h=1 exit=time n=111351 ann_tr= 55713.6 sharpe=-0.3666 ann_pnl=-115655.6 gates=100000 reason=still_overtrading
+  F4_cost_gate               N=24 thr=2.0 h=2 exit=tb   n=111349 ann_tr= 55712.6 sharpe=-0.3622 ann_pnl=-116299.1 gates=100000 reason=still_overtrading
+  F4_cost_gate               N=24 thr=2.0 h=2 exit=time n=111349 ann_tr= 55712.6 sharpe=-0.2663 ann_pnl=-114074.3 gates=100000 reason=still_overtrading
+  F4_cost_gate               N=24 thr=2.0 h=3 exit=tb   n=111348 ann_tr= 55712.1 sharpe=-0.3267 ann_pnl=-116899.5 gates=100000 reason=still_overtrading
+  F4_cost_gate               N=24 thr=2.0 h=3 exit=time n=111348 ann_tr= 55712.1 sharpe=-0.2166 ann_pnl=-113364.7 gates=100000 reason=still_overtrading
+  F4_cost_gate               N=24 thr=2.5 h=1 exit=tb   n=67348 ann_tr= 33697.1 sharpe=-0.4112 ann_pnl=-69111.0 gates=100000 reason=still_overtrading
+  F4_cost_gate               N=24 thr=2.5 h=1 exit=time n=67348 ann_tr= 33697.1 sharpe=-0.3316 ann_pnl=-68920.9 gates=100000 reason=still_overtrading
+  F4_cost_gate               N=24 thr=2.5 h=2 exit=tb   n=67346 ann_tr= 33696.1 sharpe=-0.3393 ann_pnl=-68997.8 gates=100000 reason=still_overtrading
+  F4_cost_gate               N=24 thr=2.5 h=2 exit=time n=67346 ann_tr= 33696.1 sharpe=-0.2435 ann_pnl=-67266.6 gates=100000 reason=still_overtrading
+  F4_cost_gate               N=24 thr=2.5 h=3 exit=tb   n=67346 ann_tr= 33696.1 sharpe=-0.3083 ann_pnl=-69234.0 gates=100000 reason=still_overtrading
+  F4_cost_gate               N=24 thr=2.5 h=3 exit=time n=67346 ann_tr= 33696.1 sharpe=-0.1948 ann_pnl=-66181.4 gates=100000 reason=still_overtrading
+  F4_cost_gate               N=48 thr=2.0 h=1 exit=tb   n=82325 ann_tr= 41190.7 sharpe=-0.4302 ann_pnl=-85970.6 gates=100000 reason=still_overtrading
+  F4_cost_gate               N=48 thr=2.0 h=1 exit=time n=82325 ann_tr= 41190.7 sharpe=-0.3531 ann_pnl=-85675.5 gates=100000 reason=still_overtrading
+  F4_cost_gate               N=48 thr=2.0 h=2 exit=tb   n=82324 ann_tr= 41190.2 sharpe=-0.3515 ann_pnl=-86155.3 gates=100000 reason=still_overtrading
+  F4_cost_gate               N=48 thr=2.0 h=2 exit=time n=82324 ann_tr= 41190.2 sharpe=-0.2606 ann_pnl=-84671.4 gates=100000 reason=still_overtrading
+  F4_cost_gate               N=48 thr=2.0 h=3 exit=tb   n=82324 ann_tr= 41190.2 sharpe=-0.3186 ann_pnl=-86802.6 gates=100000 reason=still_overtrading
+  F4_cost_gate               N=48 thr=2.0 h=3 exit=time n=82324 ann_tr= 41190.2 sharpe=-0.2148 ann_pnl=-85019.7 gates=100000 reason=still_overtrading
+  F4_cost_gate               N=48 thr=2.5 h=1 exit=tb   n=51939 ann_tr= 25987.3 sharpe=-0.4112 ann_pnl=-55292.6 gates=100000 reason=still_overtrading
+  F4_cost_gate               N=48 thr=2.5 h=1 exit=time n=51939 ann_tr= 25987.3 sharpe=-0.3362 ann_pnl=-54824.0 gates=100000 reason=still_overtrading
+  F4_cost_gate               N=48 thr=2.5 h=2 exit=tb   n=51939 ann_tr= 25987.3 sharpe=-0.3392 ann_pnl=-55453.4 gates=100000 reason=still_overtrading
+  F4_cost_gate               N=48 thr=2.5 h=2 exit=time n=51939 ann_tr= 25987.3 sharpe=-0.2510 ann_pnl=-54421.5 gates=100000 reason=still_overtrading
+  F4_cost_gate               N=48 thr=2.5 h=3 exit=tb   n=51939 ann_tr= 25987.3 sharpe=-0.3045 ann_pnl=-55348.4 gates=100000 reason=still_overtrading
+  F4_cost_gate               N=48 thr=2.5 h=3 exit=time n=51939 ann_tr= 25987.3 sharpe=-0.2045 ann_pnl=-54563.7 gates=100000 reason=still_overtrading
+
+Report: C:\Users\yukik\fx-ai-trading\artifacts\stage23_0c_rev1\eval_report.md
+Overall verdict: REJECT
+Per-filter verdicts:
+  F1_neutral_reset: REJECT
+  F2_cooldown: REJECT
+  F3_reversal_confirmation: REJECT
+  F4_cost_gate: REJECT
