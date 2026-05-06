@@ -1,0 +1,57 @@
+=== Stage 24.0c partial-exit eval (20 pairs) ===
+Frozen cells: 3; Variants: 9; Total: 27
+PARTIAL_FRACTIONS=(0.25, 0.5, 0.75), K_MFE=(1.0, 1.5, 2.0), P3_FRACTION=0.5, MIDPOINT_IDX=30
+--- preloading per-pair M1 / M15 / labels for 20 pairs ---
+  EUR_USD: m1=740264 m15=49718 (  6.7s)
+  GBP_USD: m1=740908 m15=49716 (  6.3s)
+  AUD_USD: m1=737087 m15=49718 (  6.4s)
+  NZD_USD: m1=735593 m15=49718 (  6.3s)
+  USD_CHF: m1=737060 m15=49716 (  6.2s)
+  USD_CAD: m1=739566 m15=49718 (  6.5s)
+  EUR_GBP: m1=734979 m15=49716 (  6.1s)
+  USD_JPY: m1=740393 m15=49717 (  6.4s)
+  EUR_JPY: m1=740735 m15=49715 (  6.2s)
+  GBP_JPY: m1=742493 m15=49714 (  6.6s)
+  AUD_JPY: m1=741663 m15=49714 (  6.5s)
+  NZD_JPY: m1=736025 m15=49698 (  6.3s)
+  CHF_JPY: m1=735552 m15=49619 (  6.5s)
+  EUR_CHF: m1=737398 m15=49715 (  6.5s)
+  EUR_AUD: m1=741957 m15=49714 (  6.2s)
+  EUR_CAD: m1=740629 m15=49717 (  6.7s)
+  AUD_NZD: m1=738189 m15=49709 (  7.8s)
+  AUD_CAD: m1=732062 m15=49717 (  6.4s)
+  GBP_AUD: m1=740045 m15=49712 (  6.1s)
+  GBP_CHF: m1=736762 m15=49680 (  6.7s)
+--- joining signals to 23.0a labels (per pair x N) ---
+--- evaluating 3 cells x 9 variants ---
+  cell 1/3 (rank1, N=50, h=4, exit=tb) variant 1/9 P1_tp_half_frac=0.25             n= 45229 ann_tr= 22630.0 sharpe=-0.2412 ann_pnl=-59802.2 capture=-0.333 phr=0.300 gates=100000 reason=still_overtrading
+  cell 1/3 (rank1, N=50, h=4, exit=tb) variant 2/9 P1_tp_half_frac=0.5              n= 45229 ann_tr= 22630.0 sharpe=-0.2507 ann_pnl=-59352.8 capture=-0.330 phr=0.300 gates=100000 reason=still_overtrading
+  cell 1/3 (rank1, N=50, h=4, exit=tb) variant 3/9 P1_tp_half_frac=0.75             n= 45229 ann_tr= 22630.0 sharpe=-0.2558 ann_pnl=-58903.4 capture=-0.328 phr=0.300 gates=100000 reason=still_overtrading
+  cell 1/3 (rank1, N=50, h=4, exit=tb) variant 4/9 P2_midpoint_frac=0.25            n= 45229 ann_tr= 22630.0 sharpe=-0.2422 ann_pnl=-60014.0 capture=-0.334 phr=0.474 gates=100000 reason=still_overtrading
+  cell 1/3 (rank1, N=50, h=4, exit=tb) variant 5/9 P2_midpoint_frac=0.5             n= 45229 ann_tr= 22630.0 sharpe=-0.2529 ann_pnl=-59776.4 capture=-0.333 phr=0.474 gates=100000 reason=still_overtrading
+  cell 1/3 (rank1, N=50, h=4, exit=tb) variant 6/9 P2_midpoint_frac=0.75            n= 45229 ann_tr= 22630.0 sharpe=-0.2597 ann_pnl=-59538.9 capture=-0.331 phr=0.474 gates=100000 reason=still_overtrading
+  cell 1/3 (rank1, N=50, h=4, exit=tb) variant 7/9 P3_mfe_K=1.0_frac=0.5            n= 45229 ann_tr= 22630.0 sharpe=-0.2410 ann_pnl=-59791.9 capture=-0.333 phr=0.226 gates=100000 reason=still_overtrading
+  cell 1/3 (rank1, N=50, h=4, exit=tb) variant 8/9 P3_mfe_K=1.5_frac=0.5            n= 45229 ann_tr= 22630.0 sharpe=-0.2290 ann_pnl=-60251.5 capture=-0.335 phr=0.000 gates=100000 reason=still_overtrading
+  cell 1/3 (rank1, N=50, h=4, exit=tb) variant 9/9 P3_mfe_K=2.0_frac=0.5            n= 45229 ann_tr= 22630.0 sharpe=-0.2290 ann_pnl=-60251.5 capture=-0.335 phr=0.000 gates=100000 reason=still_overtrading
+  cell 2/3 (rank2, N=50, h=4, exit=time) variant 1/9 P1_tp_half_frac=0.25             n= 45229 ann_tr= 22630.0 sharpe=-0.2412 ann_pnl=-59802.2 capture=-0.333 phr=0.300 gates=100000 reason=still_overtrading
+  cell 2/3 (rank2, N=50, h=4, exit=time) variant 2/9 P1_tp_half_frac=0.5              n= 45229 ann_tr= 22630.0 sharpe=-0.2507 ann_pnl=-59352.8 capture=-0.330 phr=0.300 gates=100000 reason=still_overtrading
+  cell 2/3 (rank2, N=50, h=4, exit=time) variant 3/9 P1_tp_half_frac=0.75             n= 45229 ann_tr= 22630.0 sharpe=-0.2558 ann_pnl=-58903.4 capture=-0.328 phr=0.300 gates=100000 reason=still_overtrading
+  cell 2/3 (rank2, N=50, h=4, exit=time) variant 4/9 P2_midpoint_frac=0.25            n= 45229 ann_tr= 22630.0 sharpe=-0.2422 ann_pnl=-60014.0 capture=-0.334 phr=0.474 gates=100000 reason=still_overtrading
+  cell 2/3 (rank2, N=50, h=4, exit=time) variant 5/9 P2_midpoint_frac=0.5             n= 45229 ann_tr= 22630.0 sharpe=-0.2529 ann_pnl=-59776.4 capture=-0.333 phr=0.474 gates=100000 reason=still_overtrading
+  cell 2/3 (rank2, N=50, h=4, exit=time) variant 6/9 P2_midpoint_frac=0.75            n= 45229 ann_tr= 22630.0 sharpe=-0.2597 ann_pnl=-59538.9 capture=-0.331 phr=0.474 gates=100000 reason=still_overtrading
+  cell 2/3 (rank2, N=50, h=4, exit=time) variant 7/9 P3_mfe_K=1.0_frac=0.5            n= 45229 ann_tr= 22630.0 sharpe=-0.2410 ann_pnl=-59791.9 capture=-0.333 phr=0.226 gates=100000 reason=still_overtrading
+  cell 2/3 (rank2, N=50, h=4, exit=time) variant 8/9 P3_mfe_K=1.5_frac=0.5            n= 45229 ann_tr= 22630.0 sharpe=-0.2290 ann_pnl=-60251.5 capture=-0.335 phr=0.000 gates=100000 reason=still_overtrading
+  cell 2/3 (rank2, N=50, h=4, exit=time) variant 9/9 P3_mfe_K=2.0_frac=0.5            n= 45229 ann_tr= 22630.0 sharpe=-0.2290 ann_pnl=-60251.5 capture=-0.335 phr=0.000 gates=100000 reason=still_overtrading
+  cell 3/3 (rank3, N=20, h=4, exit=tb) variant 1/9 P1_tp_half_frac=0.25             n= 73510 ann_tr= 36780.2 sharpe=-0.2658 ann_pnl=-103051.4 capture=-0.383 phr=0.289 gates=100000 reason=still_overtrading
+  cell 3/3 (rank3, N=20, h=4, exit=tb) variant 2/9 P1_tp_half_frac=0.5              n= 73510 ann_tr= 36780.2 sharpe=-0.2752 ann_pnl=-102158.3 capture=-0.380 phr=0.289 gates=100000 reason=still_overtrading
+  cell 3/3 (rank3, N=20, h=4, exit=tb) variant 3/9 P1_tp_half_frac=0.75             n= 73510 ann_tr= 36780.2 sharpe=-0.2799 ann_pnl=-101265.2 capture=-0.377 phr=0.289 gates=100000 reason=still_overtrading
+  cell 3/3 (rank3, N=20, h=4, exit=tb) variant 4/9 P2_midpoint_frac=0.25            n= 73510 ann_tr= 36780.2 sharpe=-0.2689 ann_pnl=-103648.6 capture=-0.386 phr=0.460 gates=100000 reason=still_overtrading
+  cell 3/3 (rank3, N=20, h=4, exit=tb) variant 5/9 P2_midpoint_frac=0.5             n= 73510 ann_tr= 36780.2 sharpe=-0.2818 ann_pnl=-103352.7 capture=-0.384 phr=0.460 gates=100000 reason=still_overtrading
+  cell 3/3 (rank3, N=20, h=4, exit=tb) variant 6/9 P2_midpoint_frac=0.75            n= 73510 ann_tr= 36780.2 sharpe=-0.2900 ann_pnl=-103056.8 capture=-0.383 phr=0.460 gates=100000 reason=still_overtrading
+  cell 3/3 (rank3, N=20, h=4, exit=tb) variant 7/9 P3_mfe_K=1.0_frac=0.5            n= 73510 ann_tr= 36780.2 sharpe=-0.2650 ann_pnl=-102841.2 capture=-0.383 phr=0.218 gates=100000 reason=still_overtrading
+  cell 3/3 (rank3, N=20, h=4, exit=tb) variant 8/9 P3_mfe_K=1.5_frac=0.5            n= 73510 ann_tr= 36780.2 sharpe=-0.2533 ann_pnl=-103944.5 capture=-0.387 phr=0.000 gates=100000 reason=still_overtrading
+  cell 3/3 (rank3, N=20, h=4, exit=tb) variant 9/9 P3_mfe_K=2.0_frac=0.5            n= 73510 ann_tr= 36780.2 sharpe=-0.2533 ann_pnl=-103944.5 capture=-0.387 phr=0.000 gates=100000 reason=still_overtrading
+
+Report: C:\Users\yukik\fx-ai-trading\artifacts\stage24_0c\eval_report.md
+Verdict: REJECT
+Best cell: rank1 P3_mfe_K=1.5_frac=0.5 Sharpe=-0.2290 ann_pnl=-60251.5 capture=-0.335 phr=0.000
