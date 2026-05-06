@@ -47,3 +47,8 @@ artifacts/stage24_0c/sweep_results.json
 artifacts/stage24_0d/sweep_results.parquet
 artifacts/stage24_0d/sweep_results.json
 artifacts/stage24_0d/run.log
+
+# Phase 24.1a sweep raw results (summary embedded in eval_report.md)
+artifacts/stage24_1a/sweep_results.parquet
+artifacts/stage24_1a/sweep_results.json
+artifacts/stage24_1a/run.log
