@@ -1,0 +1,119 @@
+{
+  "version": "24.0a-1",
+  "generated_at": "2026-05-06T14:37:34.037750+00:00",
+  "halt_triggered": false,
+  "halt_criteria": {
+    "annual_trades_min": 70.0,
+    "mean_best_pnl_min": 0.0,
+    "p75_best_pnl_min": 0.0,
+    "positive_rate_min": 0.55
+  },
+  "eligibility_criteria": {
+    "annual_trades_min": 70.0,
+    "max_pair_share_max": 0.5,
+    "min_fold_share_min": 0.1,
+    "mean_best_possible_pnl_min": 0.0,
+    "p75_best_possible_pnl_min": 0.0,
+    "positive_rate_best_pnl_min": 0.55
+  },
+  "score_formula": {
+    "axis_1_weight_mean_best_possible_pnl": 1.0,
+    "axis_2_weight_realised_gap": 0.3,
+    "axis_3_weight_mean_abs_mae_after_cost": -0.5,
+    "tiebreaker": "lower mean |mae_after_cost|",
+    "p75_in_score": false,
+    "p75_in_diagnostic_only": true
+  },
+  "K": 3,
+  "n_eligible_cells": 116,
+  "n_total_cells": 216,
+  "frozen_cells": [
+    {
+      "rank": 1,
+      "source_stage": "23.0d",
+      "source_pr": 266,
+      "source_merge_commit": "d929867",
+      "source_verdict": "REJECT",
+      "reject_reason": "still_overtrading",
+      "signal_timeframe": "M15",
+      "filter": null,
+      "cell_params": {
+        "N": 50,
+        "horizon_bars": 4,
+        "exit_rule": "tb"
+      },
+      "score": 3.6991905975741,
+      "metrics": {
+        "n_trades": 45229,
+        "annual_trades": 22629.989383561642,
+        "mean_best_possible_pnl": 7.943624973297119,
+        "median_best_possible_pnl": 4.099999904632568,
+        "p75_best_possible_pnl": 10.699999809265137,
+        "positive_rate_best_pnl": 0.7876141413694754,
+        "realised_gap": 7.270776367320569,
+        "mean_abs_mae_after_cost": 12.851334571838379,
+        "worst_possible_pnl_p10": -26.100000381469727,
+        "max_pair_share": 0.05419089522209202,
+        "min_fold_share": 0.24997927203382805
+      }
+    },
+    {
+      "rank": 2,
+      "source_stage": "23.0d",
+      "source_pr": 266,
+      "source_merge_commit": "d929867",
+      "source_verdict": "REJECT",
+      "reject_reason": "still_overtrading",
+      "signal_timeframe": "M15",
+      "filter": null,
+      "cell_params": {
+        "N": 50,
+        "horizon_bars": 4,
+        "exit_rule": "time"
+      },
+      "score": 3.6991905975741,
+      "metrics": {
+        "n_trades": 45229,
+        "annual_trades": 22629.989383561642,
+        "mean_best_possible_pnl": 7.943624973297119,
+        "median_best_possible_pnl": 4.099999904632568,
+        "p75_best_possible_pnl": 10.699999809265137,
+        "positive_rate_best_pnl": 0.7876141413694754,
+        "realised_gap": 7.270776367320569,
+        "mean_abs_mae_after_cost": 12.851334571838379,
+        "worst_possible_pnl_p10": -26.100000381469727,
+        "max_pair_share": 0.05419089522209202,
+        "min_fold_share": 0.24997927203382805
+      }
+    },
+    {
+      "rank": 3,
+      "source_stage": "23.0d",
+      "source_pr": 266,
+      "source_merge_commit": "d929867",
+      "source_verdict": "REJECT",
+      "reject_reason": "still_overtrading",
+      "signal_timeframe": "M15",
+      "filter": null,
+      "cell_params": {
+        "N": 20,
+        "horizon_bars": 4,
+        "exit_rule": "tb"
+      },
+      "score": 3.068392234293661,
+      "metrics": {
+        "n_trades": 73510,
+        "annual_trades": 36780.17465753425,
+        "mean_best_possible_pnl": 7.310057163238525,
+        "median_best_possible_pnl": 3.700000047683716,
+        "p75_best_possible_pnl": 10.0,
+        "positive_rate_best_pnl": 0.7723575023806285,
+        "realised_gap": 6.812805987888049,
+        "mean_abs_mae_after_cost": 12.571013450622559,
+        "worst_possible_pnl_p10": -25.700000762939453,
+        "max_pair_share": 0.053829410964494624,
+        "min_fold_share": 0.25
+      }
+    }
+  ]
+}

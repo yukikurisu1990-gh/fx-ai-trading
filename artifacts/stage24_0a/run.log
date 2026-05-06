@@ -1,0 +1,44 @@
+=== Stage 24.0a path-EV characterisation (20 pairs) ===
+Score: AXIS_1=1.0, AXIS_2=0.3, AXIS_3=-0.5, K=3
+Eligibility: ann_tr>=70.0, max_pair<=0.5, min_fold>=0.1, mean_best>0.0, p75>0.0, positive_rate>=0.55
+--- preloading per-pair data for 20 pairs ---
+  EUR_USD: m5=149134 m15=49718 (  7.4s)
+  GBP_USD: m5=149099 m15=49716 (  6.7s)
+  AUD_USD: m5=149108 m15=49718 (  6.7s)
+  NZD_USD: m5=149098 m15=49718 (  6.7s)
+  USD_CHF: m5=149058 m15=49716 (  6.8s)
+  USD_CAD: m5=149114 m15=49718 (  6.8s)
+  EUR_GBP: m5=149114 m15=49716 (  6.6s)
+  USD_JPY: m5=149103 m15=49717 (  7.2s)
+  EUR_JPY: m5=149089 m15=49715 (  7.0s)
+  GBP_JPY: m5=149104 m15=49714 (  6.9s)
+  AUD_JPY: m5=149100 m15=49714 (  7.1s)
+  NZD_JPY: m5=148954 m15=49698 (  6.7s)
+  CHF_JPY: m5=148422 m15=49619 (  6.9s)
+  EUR_CHF: m5=149038 m15=49715 (  6.9s)
+  EUR_AUD: m5=149119 m15=49714 (  7.0s)
+  EUR_CAD: m5=149131 m15=49717 (  6.9s)
+  AUD_NZD: m5=149052 m15=49709 (  7.2s)
+  AUD_CAD: m5=149013 m15=49717 (  6.7s)
+  GBP_AUD: m5=149045 m15=49712 (  6.9s)
+  GBP_CHF: m5=148804 m15=49680 (  8.2s)
+--- evaluating 216 cells ---
+  [ 25/216] 23.0c       f=-                         N=12, threshold=2.5, horizon_bars=1, exit_rule=tb -- n=204118, mean_best=+0.035, eligible=False, score=-inf
+  [ 50/216] 23.0c       f=-                         N=48, threshold=2.5, horizon_bars=1, exit_rule=time -- n= 86698, mean_best=+0.385, eligible=False, score=-inf
+  [ 75/216] 23.0c-rev1  f=F1_neutral_reset          N=12, threshold=2.0, horizon_bars=2, exit_rule=tb -- n=214581, mean_best=+0.971, eligible=False, score=-inf
+  [100/216] 23.0c-rev1  f=F1_neutral_reset          N=48, threshold=2.0, horizon_bars=2, exit_rule=time -- n= 70741, mean_best=+1.306, eligible=False, score=-inf
+  [125/216] 23.0c-rev1  f=F2_cooldown               N=24, threshold=2.0, horizon_bars=3, exit_rule=tb -- n=194181, mean_best=+2.004, eligible=True, score=-0.850
+  [150/216] 23.0c-rev1  f=F3_reversal_confirmation  N=12, threshold=2.0, horizon_bars=3, exit_rule=time -- n= 32940, mean_best=+1.926, eligible=True, score=-1.023
+  [175/216] 23.0c-rev1  f=F3_reversal_confirmation  N=48, threshold=2.5, horizon_bars=1, exit_rule=tb -- n= 23048, mean_best=+0.298, eligible=False, score=-inf
+  [200/216] 23.0c-rev1  f=F4_cost_gate              N=24, threshold=2.5, horizon_bars=1, exit_rule=time -- n= 67348, mean_best=+1.591, eligible=True, score=-0.521
+  [216/216] 23.0c-rev1  f=F4_cost_gate              N=48, threshold=2.5, horizon_bars=3, exit_rule=time -- n= 51939, mean_best=+4.271, eligible=True, score=+1.206
+
+Frozen JSON: C:\Users\yukik\fx-ai-trading\artifacts\stage24_0a\frozen_entry_streams.json
+Halt triggered: False
+Eligible cells: 116 / 216
+Top-3 frozen cells:
+  [1] 23.0d f=- N=50, horizon_bars=4, exit_rule=tb -> score +3.6992 (mean_best +7.944)
+  [2] 23.0d f=- N=50, horizon_bars=4, exit_rule=time -> score +3.6992 (mean_best +7.944)
+  [3] 23.0d f=- N=20, horizon_bars=4, exit_rule=tb -> score +3.0684 (mean_best +7.310)
+Report: C:\Users\yukik\fx-ai-trading\artifacts\stage24_0a\path_ev_characterisation_report.md
+Sidecar: C:\Users\yukik\fx-ai-trading\artifacts\stage24_0a\path_ev_distribution.parquet
