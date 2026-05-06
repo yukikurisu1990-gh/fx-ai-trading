@@ -1,0 +1,63 @@
+=== Stage 24.0b trailing-stop eval (20 pairs) ===
+Frozen cells: 3; Variants: 11; Total: 33
+K_ATR=(1.0, 1.5, 2.0, 2.5), fixed_pip=(5.0, 10.0, 20.0, 30.0), BE=(1.0, 1.5, 2.0)
+--- preloading per-pair M1 / M15 / labels for 20 pairs ---
+  EUR_USD: m1=740264 m15=49718 (  6.4s)
+  GBP_USD: m1=740908 m15=49716 (  6.8s)
+  AUD_USD: m1=737087 m15=49718 (  6.3s)
+  NZD_USD: m1=735593 m15=49718 (  6.0s)
+  USD_CHF: m1=737060 m15=49716 (  6.3s)
+  USD_CAD: m1=739566 m15=49718 (  6.4s)
+  EUR_GBP: m1=734979 m15=49716 (  6.6s)
+  USD_JPY: m1=740393 m15=49717 (  6.3s)
+  EUR_JPY: m1=740735 m15=49715 (  6.4s)
+  GBP_JPY: m1=742493 m15=49714 (  6.3s)
+  AUD_JPY: m1=741663 m15=49714 (  6.5s)
+  NZD_JPY: m1=736025 m15=49698 (  6.4s)
+  CHF_JPY: m1=735552 m15=49619 (  6.3s)
+  EUR_CHF: m1=737398 m15=49715 (  6.1s)
+  EUR_AUD: m1=741957 m15=49714 (  6.3s)
+  EUR_CAD: m1=740629 m15=49717 (  6.7s)
+  AUD_NZD: m1=738189 m15=49709 (  7.6s)
+  AUD_CAD: m1=732062 m15=49717 (  6.5s)
+  GBP_AUD: m1=740045 m15=49712 (  6.3s)
+  GBP_CHF: m1=736762 m15=49680 (  6.4s)
+--- joining signals to 23.0a labels (per pair Å~ N) ---
+--- evaluating 3 cells Å~ 11 variants ---
+  cell 1/3 (rank1, N=50, h=4, exit=tb) variant 1/11 T1_ATR_K=1.0              n= 45229 ann_tr= 22630.0 sharpe=-0.2488 ann_pnl=-65833.4 capture=-0.366 gates=100000 reason=still_overtrading
+  cell 1/3 (rank1, N=50, h=4, exit=tb) variant 2/11 T1_ATR_K=1.5              n= 45229 ann_tr= 22630.0 sharpe=-0.2071 ann_pnl=-64412.8 capture=-0.358 gates=100000 reason=still_overtrading
+  cell 1/3 (rank1, N=50, h=4, exit=tb) variant 3/11 T1_ATR_K=2.0              n= 45229 ann_tr= 22630.0 sharpe=-0.1881 ann_pnl=-64027.8 capture=-0.356 gates=100000 reason=still_overtrading
+  cell 1/3 (rank1, N=50, h=4, exit=tb) variant 4/11 T1_ATR_K=2.5              n= 45229 ann_tr= 22630.0 sharpe=-0.1773 ann_pnl=-62937.0 capture=-0.350 gates=100000 reason=still_overtrading
+  cell 1/3 (rank1, N=50, h=4, exit=tb) variant 5/11 T2_fixed_pip_5            n= 45229 ann_tr= 22630.0 sharpe=-0.3551 ann_pnl=-62839.4 capture=-0.350 gates=100000 reason=still_overtrading
+  cell 1/3 (rank1, N=50, h=4, exit=tb) variant 6/11 T2_fixed_pip_10           n= 45229 ann_tr= 22630.0 sharpe=-0.2684 ann_pnl=-64897.9 capture=-0.361 gates=100000 reason=still_overtrading
+  cell 1/3 (rank1, N=50, h=4, exit=tb) variant 7/11 T2_fixed_pip_20           n= 45229 ann_tr= 22630.0 sharpe=-0.2085 ann_pnl=-63432.7 capture=-0.353 gates=100000 reason=still_overtrading
+  cell 1/3 (rank1, N=50, h=4, exit=tb) variant 8/11 T2_fixed_pip_30           n= 45229 ann_tr= 22630.0 sharpe=-0.1882 ann_pnl=-62205.9 capture=-0.346 gates=100000 reason=still_overtrading
+  cell 1/3 (rank1, N=50, h=4, exit=tb) variant 9/11 T3_breakeven_BE=1.0       n= 45229 ann_tr= 22630.0 sharpe=-0.2350 ann_pnl=-60464.6 capture=-0.336 gates=100000 reason=still_overtrading
+  cell 1/3 (rank1, N=50, h=4, exit=tb) variant 10/11 T3_breakeven_BE=1.5       n= 45229 ann_tr= 22630.0 sharpe=-0.2290 ann_pnl=-60251.5 capture=-0.335 gates=100000 reason=still_overtrading
+  cell 1/3 (rank1, N=50, h=4, exit=tb) variant 11/11 T3_breakeven_BE=2.0       n= 45229 ann_tr= 22630.0 sharpe=-0.2290 ann_pnl=-60251.5 capture=-0.335 gates=100000 reason=still_overtrading
+  cell 2/3 (rank2, N=50, h=4, exit=time) variant 1/11 T1_ATR_K=1.0              n= 45229 ann_tr= 22630.0 sharpe=-0.2488 ann_pnl=-65833.4 capture=-0.366 gates=100000 reason=still_overtrading
+  cell 2/3 (rank2, N=50, h=4, exit=time) variant 2/11 T1_ATR_K=1.5              n= 45229 ann_tr= 22630.0 sharpe=-0.2071 ann_pnl=-64412.8 capture=-0.358 gates=100000 reason=still_overtrading
+  cell 2/3 (rank2, N=50, h=4, exit=time) variant 3/11 T1_ATR_K=2.0              n= 45229 ann_tr= 22630.0 sharpe=-0.1881 ann_pnl=-64027.8 capture=-0.356 gates=100000 reason=still_overtrading
+  cell 2/3 (rank2, N=50, h=4, exit=time) variant 4/11 T1_ATR_K=2.5              n= 45229 ann_tr= 22630.0 sharpe=-0.1773 ann_pnl=-62937.0 capture=-0.350 gates=100000 reason=still_overtrading
+  cell 2/3 (rank2, N=50, h=4, exit=time) variant 5/11 T2_fixed_pip_5            n= 45229 ann_tr= 22630.0 sharpe=-0.3551 ann_pnl=-62839.4 capture=-0.350 gates=100000 reason=still_overtrading
+  cell 2/3 (rank2, N=50, h=4, exit=time) variant 6/11 T2_fixed_pip_10           n= 45229 ann_tr= 22630.0 sharpe=-0.2684 ann_pnl=-64897.9 capture=-0.361 gates=100000 reason=still_overtrading
+  cell 2/3 (rank2, N=50, h=4, exit=time) variant 7/11 T2_fixed_pip_20           n= 45229 ann_tr= 22630.0 sharpe=-0.2085 ann_pnl=-63432.7 capture=-0.353 gates=100000 reason=still_overtrading
+  cell 2/3 (rank2, N=50, h=4, exit=time) variant 8/11 T2_fixed_pip_30           n= 45229 ann_tr= 22630.0 sharpe=-0.1882 ann_pnl=-62205.9 capture=-0.346 gates=100000 reason=still_overtrading
+  cell 2/3 (rank2, N=50, h=4, exit=time) variant 9/11 T3_breakeven_BE=1.0       n= 45229 ann_tr= 22630.0 sharpe=-0.2350 ann_pnl=-60464.6 capture=-0.336 gates=100000 reason=still_overtrading
+  cell 2/3 (rank2, N=50, h=4, exit=time) variant 10/11 T3_breakeven_BE=1.5       n= 45229 ann_tr= 22630.0 sharpe=-0.2290 ann_pnl=-60251.5 capture=-0.335 gates=100000 reason=still_overtrading
+  cell 2/3 (rank2, N=50, h=4, exit=time) variant 11/11 T3_breakeven_BE=2.0       n= 45229 ann_tr= 22630.0 sharpe=-0.2290 ann_pnl=-60251.5 capture=-0.335 gates=100000 reason=still_overtrading
+  cell 3/3 (rank3, N=20, h=4, exit=tb) variant 1/11 T1_ATR_K=1.0              n= 73510 ann_tr= 36780.2 sharpe=-0.2692 ann_pnl=-112225.2 capture=-0.417 gates=100000 reason=still_overtrading
+  cell 3/3 (rank3, N=20, h=4, exit=tb) variant 2/11 T1_ATR_K=1.5              n= 73510 ann_tr= 36780.2 sharpe=-0.2275 ann_pnl=-110713.4 capture=-0.412 gates=100000 reason=still_overtrading
+  cell 3/3 (rank3, N=20, h=4, exit=tb) variant 3/11 T1_ATR_K=2.0              n= 73510 ann_tr= 36780.2 sharpe=-0.2082 ann_pnl=-110225.6 capture=-0.410 gates=100000 reason=still_overtrading
+  cell 3/3 (rank3, N=20, h=4, exit=tb) variant 4/11 T1_ATR_K=2.5              n= 73510 ann_tr= 36780.2 sharpe=-0.1970 ann_pnl=-108438.8 capture=-0.403 gates=100000 reason=still_overtrading
+  cell 3/3 (rank3, N=20, h=4, exit=tb) variant 5/11 T2_fixed_pip_5            n= 73510 ann_tr= 36780.2 sharpe=-0.3810 ann_pnl=-108477.0 capture=-0.403 gates=100000 reason=still_overtrading
+  cell 3/3 (rank3, N=20, h=4, exit=tb) variant 6/11 T2_fixed_pip_10           n= 73510 ann_tr= 36780.2 sharpe=-0.2894 ann_pnl=-111815.0 capture=-0.416 gates=100000 reason=still_overtrading
+  cell 3/3 (rank3, N=20, h=4, exit=tb) variant 7/11 T2_fixed_pip_20           n= 73510 ann_tr= 36780.2 sharpe=-0.2231 ann_pnl=-107395.4 capture=-0.399 gates=100000 reason=still_overtrading
+  cell 3/3 (rank3, N=20, h=4, exit=tb) variant 8/11 T2_fixed_pip_30           n= 73510 ann_tr= 36780.2 sharpe=-0.2015 ann_pnl=-105000.5 capture=-0.391 gates=100000 reason=still_overtrading
+  cell 3/3 (rank3, N=20, h=4, exit=tb) variant 9/11 T3_breakeven_BE=1.0       n= 73510 ann_tr= 36780.2 sharpe=-0.2589 ann_pnl=-104109.7 capture=-0.387 gates=100000 reason=still_overtrading
+  cell 3/3 (rank3, N=20, h=4, exit=tb) variant 10/11 T3_breakeven_BE=1.5       n= 73510 ann_tr= 36780.2 sharpe=-0.2533 ann_pnl=-103944.5 capture=-0.387 gates=100000 reason=still_overtrading
+  cell 3/3 (rank3, N=20, h=4, exit=tb) variant 11/11 T3_breakeven_BE=2.0       n= 73510 ann_tr= 36780.2 sharpe=-0.2533 ann_pnl=-103944.5 capture=-0.387 gates=100000 reason=still_overtrading
+
+Report: C:\Users\yukik\fx-ai-trading\artifacts\stage24_0b\eval_report.md
+Verdict: REJECT
+Best cell: rank1 T1_ATR_K=2.5 Sharpe=-0.1773 ann_pnl=-62937.0 capture=-0.350
