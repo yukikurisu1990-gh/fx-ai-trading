@@ -1,0 +1,62 @@
+=== Stage 23.0c M5 z-score MR eval (20 pairs) ===
+Trigger mode: first_touch
+  signals+labels EUR_USD: N=12,t=2.0:15721 / N=48,t=2.5:4380  (  6.6s)
+  signals+labels GBP_USD: N=12,t=2.0:15798 / N=48,t=2.5:4401  (  6.9s)
+  signals+labels AUD_USD: N=12,t=2.0:15829 / N=48,t=2.5:4352  (  6.9s)
+  signals+labels NZD_USD: N=12,t=2.0:15709 / N=48,t=2.5:4315  (  6.6s)
+  signals+labels USD_CHF: N=12,t=2.0:15840 / N=48,t=2.5:4417  (  6.5s)
+  signals+labels USD_CAD: N=12,t=2.0:15873 / N=48,t=2.5:4354  (  6.8s)
+  signals+labels EUR_GBP: N=12,t=2.0:15856 / N=48,t=2.5:4342  (  6.7s)
+  signals+labels USD_JPY: N=12,t=2.0:15790 / N=48,t=2.5:4310  (  6.7s)
+  signals+labels EUR_JPY: N=12,t=2.0:15755 / N=48,t=2.5:4384  (  6.6s)
+  signals+labels GBP_JPY: N=12,t=2.0:15866 / N=48,t=2.5:4400  (  6.7s)
+  signals+labels AUD_JPY: N=12,t=2.0:15781 / N=48,t=2.5:4304  (  6.7s)
+  signals+labels NZD_JPY: N=12,t=2.0:15827 / N=48,t=2.5:4366  (  6.5s)
+  signals+labels CHF_JPY: N=12,t=2.0:15890 / N=48,t=2.5:4345  (  6.8s)
+  signals+labels EUR_CHF: N=12,t=2.0:15835 / N=48,t=2.5:4385  (  6.7s)
+  signals+labels EUR_AUD: N=12,t=2.0:15887 / N=48,t=2.5:4451  (  6.9s)
+  signals+labels EUR_CAD: N=12,t=2.0:15934 / N=48,t=2.5:4403  (  7.1s)
+  signals+labels AUD_NZD: N=12,t=2.0:15763 / N=48,t=2.5:4261  (  7.1s)
+  signals+labels AUD_CAD: N=12,t=2.0:15864 / N=48,t=2.5:4353  (  6.8s)
+  signals+labels GBP_AUD: N=12,t=2.0:15868 / N=48,t=2.5:4425  (  6.6s)
+  signals+labels GBP_CHF: N=12,t=2.0:16016 / N=48,t=2.5:4413  (  6.7s)
+  cell N=12 thr=2.0 h=1 exit=tb   n=313901 ann_tr=157058.0 sharpe=-0.6157 ann_pnl=-342654.9 dd=684838.7 A4=0/4 gates=100000 reason=still_overtrading
+  cell N=12 thr=2.0 h=1 exit=time n=313901 ann_tr=157058.0 sharpe=-0.4957 ann_pnl=-398105.5 dd=795664.0 A4=0/4 gates=100000 reason=still_overtrading
+  cell N=12 thr=2.0 h=2 exit=tb   n=313896 ann_tr=157055.5 sharpe=-0.5041 ann_pnl=-342370.3 dd=684264.8 A4=0/4 gates=100000 reason=still_overtrading
+  cell N=12 thr=2.0 h=2 exit=time n=313896 ann_tr=157055.5 sharpe=-0.3837 ann_pnl=-389956.7 dd=779371.8 A4=0/4 gates=100000 reason=still_overtrading
+  cell N=12 thr=2.0 h=3 exit=tb   n=313894 ann_tr=157054.5 sharpe=-0.4545 ann_pnl=-343527.1 dd=686576.8 A4=0/4 gates=100000 reason=still_overtrading
+  cell N=12 thr=2.0 h=3 exit=time n=313894 ann_tr=157054.5 sharpe=-0.3222 ann_pnl=-386772.3 dd=772998.6 A4=0/4 gates=100000 reason=still_overtrading
+  cell N=12 thr=2.5 h=1 exit=tb   n=204118 ann_tr=102128.9 sharpe=-0.5956 ann_pnl=-223760.5 dd=447207.0 A4=0/4 gates=100000 reason=still_overtrading
+  cell N=12 thr=2.5 h=1 exit=time n=204118 ann_tr=102128.9 sharpe=-0.4720 ann_pnl=-263752.0 dd=527132.5 A4=0/4 gates=100000 reason=still_overtrading
+  cell N=12 thr=2.5 h=2 exit=tb   n=204113 ann_tr=102126.4 sharpe=-0.4952 ann_pnl=-223821.9 dd=447330.8 A4=0/4 gates=100000 reason=still_overtrading
+  cell N=12 thr=2.5 h=2 exit=time n=204113 ann_tr=102126.4 sharpe=-0.3699 ann_pnl=-257118.5 dd=513888.7 A4=0/4 gates=100000 reason=still_overtrading
+  cell N=12 thr=2.5 h=3 exit=tb   n=204112 ann_tr=102125.9 sharpe=-0.4529 ann_pnl=-225596.0 dd=450876.3 A4=0/4 gates=100000 reason=still_overtrading
+  cell N=12 thr=2.5 h=3 exit=time n=204112 ann_tr=102125.9 sharpe=-0.3107 ann_pnl=-255364.9 dd=510386.2 A4=0/4 gates=100000 reason=still_overtrading
+  cell N=24 thr=2.0 h=1 exit=tb   n=210478 ann_tr=105311.1 sharpe=-0.6048 ann_pnl=-233185.0 dd=466043.3 A4=0/4 gates=100000 reason=still_overtrading
+  cell N=24 thr=2.0 h=1 exit=time n=210478 ann_tr=105311.1 sharpe=-0.4942 ann_pnl=-272731.1 dd=545078.4 A4=0/4 gates=100000 reason=still_overtrading
+  cell N=24 thr=2.0 h=2 exit=tb   n=210475 ann_tr=105309.6 sharpe=-0.4987 ann_pnl=-233575.1 dd=466823.0 A4=0/4 gates=100000 reason=still_overtrading
+  cell N=24 thr=2.0 h=2 exit=time n=210475 ann_tr=105309.6 sharpe=-0.3803 ann_pnl=-266253.0 dd=532137.9 A4=0/4 gates=100000 reason=still_overtrading
+  cell N=24 thr=2.0 h=3 exit=tb   n=210474 ann_tr=105309.1 sharpe=-0.4515 ann_pnl=-234282.4 dd=468236.4 A4=0/4 gates=100000 reason=still_overtrading
+  cell N=24 thr=2.0 h=3 exit=time n=210474 ann_tr=105309.1 sharpe=-0.3139 ann_pnl=-262183.9 dd=524006.9 A4=0/4 gates=100000 reason=still_overtrading
+  cell N=24 thr=2.5 h=1 exit=tb   n=126528 ann_tr=63307.3 sharpe=-0.5660 ann_pnl=-139724.2 dd=279262.5 A4=0/4 gates=100000 reason=still_overtrading
+  cell N=24 thr=2.5 h=1 exit=time n=126528 ann_tr=63307.3 sharpe=-0.4594 ann_pnl=-166219.4 dd=332216.6 A4=0/4 gates=100000 reason=still_overtrading
+  cell N=24 thr=2.5 h=2 exit=tb   n=126526 ann_tr=63306.3 sharpe=-0.4724 ann_pnl=-139493.2 dd=278803.3 A4=0/4 gates=100000 reason=still_overtrading
+  cell N=24 thr=2.5 h=2 exit=time n=126526 ann_tr=63306.3 sharpe=-0.3567 ann_pnl=-161054.9 dd=321897.3 A4=0/4 gates=100000 reason=still_overtrading
+  cell N=24 thr=2.5 h=3 exit=tb   n=126526 ann_tr=63306.3 sharpe=-0.4306 ann_pnl=-139732.4 dd=279280.1 A4=0/4 gates=100000 reason=still_overtrading
+  cell N=24 thr=2.5 h=3 exit=time n=126526 ann_tr=63306.3 sharpe=-0.2923 ann_pnl=-157546.2 dd=314883.7 A4=0/4 gates=100000 reason=still_overtrading
+  cell N=48 thr=2.0 h=1 exit=tb   n=144066 ann_tr=72082.3 sharpe=-0.5723 ann_pnl=-161547.3 dd=322873.0 A4=0/4 gates=100000 reason=still_overtrading
+  cell N=48 thr=2.0 h=1 exit=time n=144066 ann_tr=72082.3 sharpe=-0.4667 ann_pnl=-186200.2 dd=372145.2 A4=0/4 gates=100000 reason=still_overtrading
+  cell N=48 thr=2.0 h=2 exit=tb   n=144064 ann_tr=72081.3 sharpe=-0.4719 ann_pnl=-161470.7 dd=322719.2 A4=0/4 gates=100000 reason=still_overtrading
+  cell N=48 thr=2.0 h=2 exit=time n=144064 ann_tr=72081.3 sharpe=-0.3606 ann_pnl=-181600.5 dd=362951.3 A4=0/4 gates=100000 reason=still_overtrading
+  cell N=48 thr=2.0 h=3 exit=tb   n=144064 ann_tr=72081.3 sharpe=-0.4289 ann_pnl=-162233.1 dd=324242.7 A4=0/4 gates=100000 reason=still_overtrading
+  cell N=48 thr=2.0 h=3 exit=time n=144064 ann_tr=72081.3 sharpe=-0.3021 ann_pnl=-179676.7 dd=359106.1 A4=0/4 gates=100000 reason=still_overtrading
+  cell N=48 thr=2.5 h=1 exit=tb   n=86698 ann_tr=43378.7 sharpe=-0.5372 ann_pnl=-99167.3 dd=198198.4 A4=0/4 gates=100000 reason=still_overtrading
+  cell N=48 thr=2.5 h=1 exit=time n=86698 ann_tr=43378.7 sharpe=-0.4383 ann_pnl=-114626.0 dd=229094.7 A4=0/4 gates=100000 reason=still_overtrading
+  cell N=48 thr=2.5 h=2 exit=tb   n=86697 ann_tr=43378.2 sharpe=-0.4462 ann_pnl=-99097.4 dd=198057.9 A4=0/4 gates=100000 reason=still_overtrading
+  cell N=48 thr=2.5 h=2 exit=time n=86697 ann_tr=43378.2 sharpe=-0.3409 ann_pnl=-111278.4 dd=222406.6 A4=0/4 gates=100000 reason=still_overtrading
+  cell N=48 thr=2.5 h=3 exit=tb   n=86697 ann_tr=43378.2 sharpe=-0.4037 ann_pnl=-99160.9 dd=198184.8 A4=0/4 gates=100000 reason=still_overtrading
+  cell N=48 thr=2.5 h=3 exit=time n=86697 ann_tr=43378.2 sharpe=-0.2830 ann_pnl=-109888.1 dd=219628.6 A4=0/4 gates=100000 reason=still_overtrading
+
+Report: C:\Users\yukik\fx-ai-trading\artifacts\stage23_0c\eval_report.md
+Verdict: REJECT
+Best cell: N=48 thr=2.5 h=3 exit=time Sharpe=-0.2830 ann_pnl=-109888.1
