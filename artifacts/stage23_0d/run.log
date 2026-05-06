@@ -1,0 +1,44 @@
+=== Stage 23.0d M15 Donchian first-touch eval (20 pairs) ===
+Trigger mode: first_touch
+  signals+labels EUR_USD: N=10:5684 / N=20:3918 / N=50:2359  (  7.2s)
+  signals+labels GBP_USD: N=10:5569 / N=20:3921 / N=50:2461  (  7.1s)
+  signals+labels AUD_USD: N=10:5528 / N=20:3791 / N=50:2257  (  7.5s)
+  signals+labels NZD_USD: N=10:5636 / N=20:3928 / N=50:2418  (  7.4s)
+  signals+labels USD_CHF: N=10:5500 / N=20:3828 / N=50:2350  (  7.0s)
+  signals+labels USD_CAD: N=10:5622 / N=20:3859 / N=50:2414  (  6.7s)
+  signals+labels EUR_GBP: N=10:5104 / N=20:3439 / N=50:2113  (  6.9s)
+  signals+labels USD_JPY: N=10:5751 / N=20:3980 / N=50:2431  (  6.8s)
+  signals+labels EUR_JPY: N=10:5359 / N=20:3706 / N=50:2228  (  7.0s)
+  signals+labels GBP_JPY: N=10:5417 / N=20:3750 / N=50:2310  (  6.8s)
+  signals+labels AUD_JPY: N=10:5438 / N=20:3767 / N=50:2262  (  6.8s)
+  signals+labels NZD_JPY: N=10:5425 / N=20:3756 / N=50:2307  (  7.0s)
+  signals+labels CHF_JPY: N=10:5339 / N=20:3689 / N=50:2330  (  6.9s)
+  signals+labels EUR_CHF: N=10:5151 / N=20:3542 / N=50:2155  (  6.8s)
+  signals+labels EUR_AUD: N=10:5301 / N=20:3630 / N=50:2154  (  7.0s)
+  signals+labels EUR_CAD: N=10:5203 / N=20:3579 / N=50:2293  (  6.8s)
+  signals+labels AUD_NZD: N=10:5251 / N=20:3622 / N=50:2198  (  6.8s)
+  signals+labels AUD_CAD: N=10:5326 / N=20:3614 / N=50:2184  (  6.8s)
+  signals+labels GBP_AUD: N=10:5199 / N=20:3562 / N=50:2167  (  6.9s)
+  signals+labels GBP_CHF: N=10:5146 / N=20:3518 / N=50:2218  (  6.9s)
+  cell N=10 h=1 exit=tb   n=106330 ann_tr=53201.4 sharpe=-0.3843 ann_pnl=-134909.2 dd=269639.7 A4=0/4 gates=100000 reason=still_overtrading
+  cell N=10 h=1 exit=time n=106330 ann_tr=53201.4 sharpe=-0.3319 ann_pnl=-147031.4 dd=293873.1 A4=0/4 gates=100000 reason=still_overtrading
+  cell N=10 h=2 exit=tb   n=106328 ann_tr=53200.4 sharpe=-0.3245 ann_pnl=-138703.5 dd=277217.9 A4=0/4 gates=100000 reason=still_overtrading
+  cell N=10 h=2 exit=time n=106328 ann_tr=53200.4 sharpe=-0.2540 ann_pnl=-150090.7 dd=299981.6 A4=0/4 gates=100000 reason=still_overtrading
+  cell N=10 h=4 exit=tb   n=106324 ann_tr=53198.4 sharpe=-0.2794 ann_pnl=-140594.6 dd=281012.2 A4=0/4 gates=100000 reason=still_overtrading
+  cell N=10 h=4 exit=time n=106324 ann_tr=53198.4 sharpe=-0.1894 ann_pnl=-152429.1 dd=304727.5 A4=0/4 gates=100000 reason=still_overtrading
+  cell N=20 h=1 exit=tb   n=73516 ann_tr=36783.2 sharpe=-0.3628 ann_pnl=-92370.5 dd=184625.7 A4=0/4 gates=100000 reason=still_overtrading
+  cell N=20 h=1 exit=time n=73516 ann_tr=36783.2 sharpe=-0.3141 ann_pnl=-99419.7 dd=198719.4 A4=0/4 gates=100000 reason=still_overtrading
+  cell N=20 h=2 exit=tb   n=73514 ann_tr=36782.2 sharpe=-0.3064 ann_pnl=-94532.8 dd=188939.7 A4=0/4 gates=100000 reason=still_overtrading
+  cell N=20 h=2 exit=time n=73514 ann_tr=36782.2 sharpe=-0.2380 ann_pnl=-100954.2 dd=201776.0 A4=0/4 gates=100000 reason=still_overtrading
+  cell N=20 h=4 exit=tb   n=73510 ann_tr=36780.2 sharpe=-0.2657 ann_pnl=-95402.5 dd=190692.4 A4=0/4 gates=100000 reason=still_overtrading
+  cell N=20 h=4 exit=time n=73510 ann_tr=36780.2 sharpe=-0.1767 ann_pnl=-102264.3 dd=204436.2 A4=0/4 gates=100000 reason=still_overtrading
+  cell N=50 h=1 exit=tb   n=45236 ann_tr=22633.5 sharpe=-0.3377 ann_pnl=-55954.8 dd=111844.0 A4=0/4 gates=100000 reason=still_overtrading
+  cell N=50 h=1 exit=time n=45236 ann_tr=22633.5 sharpe=-0.2861 ann_pnl=-58569.5 dd=117074.8 A4=0/4 gates=100000 reason=still_overtrading
+  cell N=50 h=2 exit=tb   n=45234 ann_tr=22632.5 sharpe=-0.2802 ann_pnl=-56361.8 dd=112642.8 A4=0/4 gates=100000 reason=still_overtrading
+  cell N=50 h=2 exit=time n=45234 ann_tr=22632.5 sharpe=-0.2098 ann_pnl=-58174.0 dd=116270.6 A4=0/4 gates=100000 reason=still_overtrading
+  cell N=50 h=4 exit=tb   n=45229 ann_tr=22630.0 sharpe=-0.2459 ann_pnl=-57227.4 dd=114386.4 A4=0/4 gates=100000 reason=still_overtrading
+  cell N=50 h=4 exit=time n=45229 ann_tr=22630.0 sharpe=-0.1616 ann_pnl=-60361.3 dd=120681.8 A4=0/4 gates=100000 reason=still_overtrading
+
+Report: C:\Users\yukik\fx-ai-trading\artifacts\stage23_0d\eval_report.md
+Verdict: REJECT
+Best cell: N=50 h=4 exit=time Sharpe=-0.1616 ann_pnl=-60361.3
