@@ -56,3 +56,6 @@ artifacts/stage24_1a/run.log
 # Phase 25.0a-β path-quality dataset (summary embedded in dataset_summary.md)
 artifacts/stage25_0a/path_quality_dataset.parquet
 artifacts/stage25_0a/run.log
+
+# Phase 25.0b-β F1 eval intermediates
+artifacts/stage25_0b/run.log
