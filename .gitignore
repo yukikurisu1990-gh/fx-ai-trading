@@ -52,3 +52,7 @@ artifacts/stage24_0d/run.log
 artifacts/stage24_1a/sweep_results.parquet
 artifacts/stage24_1a/sweep_results.json
 artifacts/stage24_1a/run.log
+
+# Phase 25.0a-β path-quality dataset (summary embedded in dataset_summary.md)
+artifacts/stage25_0a/path_quality_dataset.parquet
+artifacts/stage25_0a/run.log
