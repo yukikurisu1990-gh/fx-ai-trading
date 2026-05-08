@@ -59,3 +59,6 @@ artifacts/stage25_0a/run.log
 
 # Phase 25.0b-β F1 eval intermediates
 artifacts/stage25_0b/run.log
+
+# Phase 25.0c-β F2 eval intermediates
+artifacts/stage25_0c/run.log
