@@ -66,6 +66,12 @@ artifacts/stage25_0c/run.log
 # Phase 25.0d-β deployment audit intermediates
 artifacts/stage25_0d/run.log
 
+# Phase 25.0f-β F5 eval intermediates
+artifacts/stage25_0f/run.log
+artifacts/stage25_0f/sweep_results.parquet
+artifacts/stage25_0f/sweep_results.json
+artifacts/stage25_0f/aggregate_summary.json
+
 # Phase 25.0e-β F3 eval intermediates
 artifacts/stage25_0e/run.log
 artifacts/stage25_0e/sweep_results.parquet
