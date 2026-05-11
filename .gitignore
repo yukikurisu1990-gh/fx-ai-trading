@@ -84,3 +84,10 @@ artifacts/stage26_0a/sweep_results.parquet
 artifacts/stage26_0a/sweep_results.json
 artifacts/stage26_0a/aggregate_summary.json
 artifacts/stage26_0a/val_selected_cell.json
+
+# Phase 26.0b-β L-2 generic path-quality regression eval intermediates
+artifacts/stage26_0b/run.log
+artifacts/stage26_0b/sweep_results.parquet
+artifacts/stage26_0b/sweep_results.json
+artifacts/stage26_0b/aggregate_summary.json
+artifacts/stage26_0b/val_selected_cell.json
