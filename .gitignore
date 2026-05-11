@@ -77,3 +77,10 @@ artifacts/stage25_0e/run.log
 artifacts/stage25_0e/sweep_results.parquet
 artifacts/stage25_0e/sweep_results.json
 artifacts/stage25_0e/aggregate_summary.json
+
+# Phase 26.0a-β L-3 EV regression eval intermediates
+artifacts/stage26_0a/run.log
+artifacts/stage26_0a/sweep_results.parquet
+artifacts/stage26_0a/sweep_results.json
+artifacts/stage26_0a/aggregate_summary.json
+artifacts/stage26_0a/val_selected_cell.json
