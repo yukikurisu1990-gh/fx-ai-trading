@@ -91,3 +91,11 @@ artifacts/stage26_0b/sweep_results.parquet
 artifacts/stage26_0b/sweep_results.json
 artifacts/stage26_0b/aggregate_summary.json
 artifacts/stage26_0b/val_selected_cell.json
+
+# Phase 26.0c-β L-1 ternary classification eval intermediates
+artifacts/stage26_0c/run.log
+artifacts/stage26_0c/sweep_results.parquet
+artifacts/stage26_0c/sweep_results.json
+artifacts/stage26_0c/aggregate_summary.json
+artifacts/stage26_0c/val_selected_cell.json
+artifacts/stage26_0c/sanity_probe.json
