@@ -99,3 +99,12 @@ artifacts/stage26_0c/sweep_results.json
 artifacts/stage26_0c/aggregate_summary.json
 artifacts/stage26_0c/val_selected_cell.json
 artifacts/stage26_0c/sanity_probe.json
+
+# Phase 26.0d-β R6-new-A feature-widening audit intermediates
+artifacts/stage26_0d/run.log
+artifacts/stage26_0d/sanity_probe_run.log
+artifacts/stage26_0d/sweep_results.parquet
+artifacts/stage26_0d/sweep_results.json
+artifacts/stage26_0d/aggregate_summary.json
+artifacts/stage26_0d/val_selected_cell.json
+artifacts/stage26_0d/sanity_probe.json
