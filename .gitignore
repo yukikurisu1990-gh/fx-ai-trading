@@ -108,3 +108,12 @@ artifacts/stage26_0d/sweep_results.json
 artifacts/stage26_0d/aggregate_summary.json
 artifacts/stage26_0d/val_selected_cell.json
 artifacts/stage26_0d/sanity_probe.json
+
+# Phase 27.0b-β S-C TIME penalty eval intermediates
+artifacts/stage27_0b/run.log
+artifacts/stage27_0b/sanity_probe_run.log
+artifacts/stage27_0b/sweep_results.parquet
+artifacts/stage27_0b/sweep_results.json
+artifacts/stage27_0b/aggregate_summary.json
+artifacts/stage27_0b/val_selected_cell.json
+artifacts/stage27_0b/sanity_probe.json
