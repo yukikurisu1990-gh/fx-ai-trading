@@ -126,3 +126,12 @@ artifacts/stage27_0c/sweep_results.json
 artifacts/stage27_0c/aggregate_summary.json
 artifacts/stage27_0c/val_selected_cell.json
 artifacts/stage27_0c/sanity_probe.json
+
+# Phase 27.0d-β S-E regression-on-realised-PnL eval intermediates
+artifacts/stage27_0d/run.log
+artifacts/stage27_0d/sanity_probe_run.log
+artifacts/stage27_0d/sweep_results.parquet
+artifacts/stage27_0d/sweep_results.json
+artifacts/stage27_0d/aggregate_summary.json
+artifacts/stage27_0d/val_selected_cell.json
+artifacts/stage27_0d/sanity_probe.json
