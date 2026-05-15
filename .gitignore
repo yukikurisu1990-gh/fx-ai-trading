@@ -153,3 +153,12 @@ artifacts/stage27_0f/sweep_results.json
 artifacts/stage27_0f/aggregate_summary.json
 artifacts/stage27_0f/val_selected_cell.json
 artifacts/stage27_0f/sanity_probe.json
+
+# Phase 28.0a-β A1 objective redesign eval intermediates
+artifacts/stage28_0a/run.log
+artifacts/stage28_0a/sanity_probe_run.log
+artifacts/stage28_0a/sweep_results.parquet
+artifacts/stage28_0a/sweep_results.json
+artifacts/stage28_0a/aggregate_summary.json
+artifacts/stage28_0a/val_selected_cell.json
+artifacts/stage28_0a/sanity_probe.json
