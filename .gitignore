@@ -144,3 +144,12 @@ artifacts/stage27_0e/sweep_results.json
 artifacts/stage27_0e/aggregate_summary.json
 artifacts/stage27_0e/val_selected_cell.json
 artifacts/stage27_0e/sanity_probe.json
+
+# Phase 27.0f-β S-E + R7-C regime/context feature eval intermediates
+artifacts/stage27_0f/run.log
+artifacts/stage27_0f/sanity_probe_run.log
+artifacts/stage27_0f/sweep_results.parquet
+artifacts/stage27_0f/sweep_results.json
+artifacts/stage27_0f/aggregate_summary.json
+artifacts/stage27_0f/val_selected_cell.json
+artifacts/stage27_0f/sanity_probe.json
