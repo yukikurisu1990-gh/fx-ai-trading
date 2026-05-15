@@ -117,3 +117,12 @@ artifacts/stage27_0b/sweep_results.json
 artifacts/stage27_0b/aggregate_summary.json
 artifacts/stage27_0b/val_selected_cell.json
 artifacts/stage27_0b/sanity_probe.json
+
+# Phase 27.0c-β S-D calibrated EV eval intermediates
+artifacts/stage27_0c/run.log
+artifacts/stage27_0c/sanity_probe_run.log
+artifacts/stage27_0c/sweep_results.parquet
+artifacts/stage27_0c/sweep_results.json
+artifacts/stage27_0c/aggregate_summary.json
+artifacts/stage27_0c/val_selected_cell.json
+artifacts/stage27_0c/sanity_probe.json
