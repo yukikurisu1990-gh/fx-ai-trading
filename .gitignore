@@ -162,3 +162,12 @@ artifacts/stage28_0a/sweep_results.json
 artifacts/stage28_0a/aggregate_summary.json
 artifacts/stage28_0a/val_selected_cell.json
 artifacts/stage28_0a/sanity_probe.json
+
+# Phase 28.0b-β A4 monetisation-aware selection eval intermediates
+artifacts/stage28_0b/run.log
+artifacts/stage28_0b/sanity_probe_run.log
+artifacts/stage28_0b/sweep_results.parquet
+artifacts/stage28_0b/sweep_results.json
+artifacts/stage28_0b/aggregate_summary.json
+artifacts/stage28_0b/val_selected_cell.json
+artifacts/stage28_0b/sanity_probe.json
