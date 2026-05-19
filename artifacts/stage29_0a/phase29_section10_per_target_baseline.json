@@ -1,0 +1,141 @@
+{
+  "phase29_section10_per_target_baseline": {
+    "T1": {
+      "val_sharpe": -0.10442475995311165,
+      "test_n_trades": 34626,
+      "test_sharpe": -0.09510388500057003,
+      "test_ann_pnl": -218684.3479452043
+    },
+    "T2": {
+      "val_sharpe": -0.3067198737178101,
+      "test_n_trades": 34626,
+      "test_sharpe": -0.2868824937320032,
+      "test_ann_pnl": -228452.80920248106
+    },
+    "T3": {
+      "val_sharpe": -0.19438797031570915,
+      "test_n_trades": 34585,
+      "test_sharpe": -0.17886547653281534,
+      "test_ann_pnl": -601200.6994221202
+    },
+    "T4": {
+      "val_sharpe": -0.2522054566735431,
+      "test_n_trades": 34626,
+      "test_sharpe": -0.22841409191413956,
+      "test_ann_pnl": -195512.84617820245
+    }
+  },
+  "archived_phase28_section10": {
+    "test_n_trades": 34626,
+    "test_sharpe": -0.1732,
+    "test_ann_pnl": -204664.4,
+    "val_sharpe": -0.1863
+  },
+  "fail_fast_consistency_report": {
+    "per_target": {
+      "T1": {
+        "n_trades_first": 34626,
+        "n_trades_second": 34626,
+        "n_trades_match": true,
+        "sharpe_first": -0.09510388500057003,
+        "sharpe_second": -0.09510388500057003,
+        "sharpe_delta": 0.0,
+        "sharpe_match": true,
+        "ann_pnl_first": -218684.3479452043,
+        "ann_pnl_second": -218684.3479452043,
+        "ann_pnl_delta": 0.0,
+        "ann_pnl_match": true,
+        "all_match": true
+      },
+      "T2": {
+        "n_trades_first": 34626,
+        "n_trades_second": 34626,
+        "n_trades_match": true,
+        "sharpe_first": -0.2868824937320032,
+        "sharpe_second": -0.2868824937320032,
+        "sharpe_delta": 0.0,
+        "sharpe_match": true,
+        "ann_pnl_first": -228452.80920248106,
+        "ann_pnl_second": -228452.80920248106,
+        "ann_pnl_delta": 0.0,
+        "ann_pnl_match": true,
+        "all_match": true
+      },
+      "T3": {
+        "n_trades_first": 34585,
+        "n_trades_second": 34585,
+        "n_trades_match": true,
+        "sharpe_first": -0.17886547653281534,
+        "sharpe_second": -0.17886547653281534,
+        "sharpe_delta": 0.0,
+        "sharpe_match": true,
+        "ann_pnl_first": -601200.6994221202,
+        "ann_pnl_second": -601200.6994221202,
+        "ann_pnl_delta": 0.0,
+        "ann_pnl_match": true,
+        "all_match": true
+      },
+      "T4": {
+        "n_trades_first": 34626,
+        "n_trades_second": 34626,
+        "n_trades_match": true,
+        "sharpe_first": -0.22841409191413956,
+        "sharpe_second": -0.22841409191413956,
+        "sharpe_delta": 0.0,
+        "sharpe_match": true,
+        "ann_pnl_first": -195512.84617820245,
+        "ann_pnl_second": -195512.84617820245,
+        "ann_pnl_delta": 0.0,
+        "ann_pnl_match": true,
+        "all_match": true
+      }
+    },
+    "all_consistent": true
+  },
+  "archived_phase28_drift_diagnostic": {
+    "T1": {
+      "test_n_trades_per_target": 34626,
+      "test_n_trades_archived_phase28": 34626,
+      "test_n_trades_delta": 0,
+      "test_sharpe_per_target": -0.09510388500057003,
+      "test_sharpe_archived_phase28": -0.1732,
+      "test_sharpe_delta": 0.07809611499942996,
+      "test_ann_pnl_per_target": -218684.3479452043,
+      "test_ann_pnl_archived_phase28": -204664.4,
+      "test_ann_pnl_delta": -14019.947945204302
+    },
+    "T2": {
+      "test_n_trades_per_target": 34626,
+      "test_n_trades_archived_phase28": 34626,
+      "test_n_trades_delta": 0,
+      "test_sharpe_per_target": -0.2868824937320032,
+      "test_sharpe_archived_phase28": -0.1732,
+      "test_sharpe_delta": -0.1136824937320032,
+      "test_ann_pnl_per_target": -228452.80920248106,
+      "test_ann_pnl_archived_phase28": -204664.4,
+      "test_ann_pnl_delta": -23788.409202481067
+    },
+    "T3": {
+      "test_n_trades_per_target": 34585,
+      "test_n_trades_archived_phase28": 34626,
+      "test_n_trades_delta": -41,
+      "test_sharpe_per_target": -0.17886547653281534,
+      "test_sharpe_archived_phase28": -0.1732,
+      "test_sharpe_delta": -0.00566547653281535,
+      "test_ann_pnl_per_target": -601200.6994221202,
+      "test_ann_pnl_archived_phase28": -204664.4,
+      "test_ann_pnl_delta": -396536.2994221202
+    },
+    "T4": {
+      "test_n_trades_per_target": 34626,
+      "test_n_trades_archived_phase28": 34626,
+      "test_n_trades_delta": 0,
+      "test_sharpe_per_target": -0.22841409191413956,
+      "test_sharpe_archived_phase28": -0.1732,
+      "test_sharpe_delta": -0.05521409191413956,
+      "test_ann_pnl_per_target": -195512.84617820245,
+      "test_ann_pnl_archived_phase28": -204664.4,
+      "test_ann_pnl_delta": 9151.55382179754
+    }
+  }
+}
