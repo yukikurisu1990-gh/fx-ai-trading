@@ -189,3 +189,15 @@ artifacts/stage29_0a/sweep_results.json
 artifacts/stage29_0a/aggregate_summary.json
 artifacts/stage29_0a/val_selected_cell.json
 artifacts/stage29_0a/sanity_probe.json
+
+# Phase 29.0b-β A0-broad sequence/NN eval intermediates
+artifacts/stage29_0b/run.log
+artifacts/stage29_0b/sanity_probe_run.log
+artifacts/stage29_0b/sweep_results.parquet
+artifacts/stage29_0b/sweep_results.json
+artifacts/stage29_0b/aggregate_summary.json
+artifacts/stage29_0b/val_selected_cell.json
+artifacts/stage29_0b/sanity_probe.json
+artifacts/stage29_0b/windowed_dataset/
+artifacts/stage29_0b/checkpoints/
+artifacts/stage29_0b/training_logs/
