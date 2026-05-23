@@ -1,9 +1,9 @@
-# Tabular Targeted Verification V2-expanded — Design Memo (V1 Shared Foundation + 6 Major-Axis Sentinels at #325 / #332 / #338 / #342 / #345 / #351; #318 / #321 / #328 Deferred; Allowed Success Label `SENTINEL_VERIFICATION_PARTIAL_RECOVERY_MAJOR_AXES`)
+# Tabular Targeted Verification V2-expanded — Design Memo (V1 Shared Foundation + 6 Major-Axis Sentinels at #325 / #332 / #338 / #342 / #345 / #351; #318 / #321 / #328 Deferred; Allowed Success Label `SENTINEL_VERIFICATION_PARTIAL_RECOVERY_MAJOR_AXES`) [AMENDED 2026-05-24 — see §0.A]
 
 **Type**: doc-only design memo. **No verification code. No rerun. No A0-broad β resumption.**
-**Branch**: `research/tabular-targeted-verification-v2-expanded-design`
-**Base**: master @ `9c36adf` (post-PR #356 Phase 27–29 Tabular Evaluation Validity Audit merged)
-**Date**: 2026-05-24
+**Branch**: `research/tabular-targeted-verification-v2-expanded-design` (original); `research/tabular-targeted-verification-v2-expanded-amendment` (this amendment)
+**Base**: master @ `9c36adf` (original) / master @ `608e21d` (this amendment; post-PR #357 merge)
+**Date**: 2026-05-24 (original) / **2026-05-24 (amendment)**
 
 ---
 
@@ -27,6 +27,190 @@
 > - *issue any auto-route from any verification outcome.*
 
 The verification implementation is a **separate later PR** explicitly authorised by the user against the contract this memo pre-states; no implementation begins until that authorisation is given.
+
+---
+
+## 0.A Amendment 2026-05-24 — F-1 / F-3 tolerance correction + historic data identity wording + §3.7 file topology Option B + revised artifact policy + historic compatibility review result (binding; supersedes selected parts of §3, §4 (F-1 / F-3), §7, §7.2, §8)
+
+This amendment was authorised after the V2-expanded **implementation plan** review surfaced three implementation blockers and one file-topology consistency item. The amendment is doc-only. No verification code lands in this PR. Implementation begins only after a revised implementation plan referencing this amendment is presented and explicitly approved.
+
+The amendment is a **single one-shot fix** for the four items below. Subsequent amendments are not anticipated.
+
+### A.0 Companion historic compatibility review
+
+A new read-only review doc accompanies this amendment at `docs/design/tabular_targeted_verification_v2_expanded_historic_compatibility_review.md`. The review records, at each sentinel's squash-merge SHA:
+
+- **Historic test-touched-once compatibility** per S-1..S-6
+- **Historic data identity availability** per S-1..S-6
+
+Aggregate review verdicts (recorded for binding):
+
+| Sentinel | Test-touched-once | Data identity |
+|---|---|---|
+| S-1 #325 | HISTORIC_TEST_TOUCHED_ONCE_COMPATIBLE | NOT_PROVABLE → Case B |
+| S-2 #332 | HISTORIC_TEST_TOUCHED_ONCE_COMPATIBLE | NOT_PROVABLE → Case B |
+| S-3 #338 | HISTORIC_TEST_TOUCHED_ONCE_COMPATIBLE | NOT_PROVABLE → Case B |
+| S-4 #342 | HISTORIC_TEST_TOUCHED_ONCE_COMPATIBLE | NOT_PROVABLE → Case B |
+| S-5 #345 | HISTORIC_TEST_TOUCHED_ONCE_COMPATIBLE | NOT_PROVABLE → Case B |
+| S-6 #351 | HISTORIC_TEST_TOUCHED_ONCE_COMPATIBLE | NOT_PROVABLE → Case B |
+
+All six sentinels pass the test-touched-once gate (every `_q_sort_key` at the merge SHA reads only `val` fields). All six fall under Case B for data identity (no merge-SHA eval script records a content-SHA of `data/m1_ba/` or `data/signals/`). Implementation is not blocked by the test-touched-once gate; reporting wording is bound by §A.3 of this amendment.
+
+### A.1 F-1 Phase 28 §10 C-sb-baseline FAIL-FAST tolerance correction (binding; supersedes §4 row F-1 tolerance + §7.2 F-1 entries)
+
+The original §4 row F-1 incorrectly applied control-drift tolerance (`n_trades ±100 / Sharpe ±5e-3 / ann_pnl ±0.5%`) to the Phase 28 §10 immutable baseline FAIL-FAST. **Corrected F-1 contract** (binding; supersedes):
+
+| F-1 binding | Value |
+|---|---|
+| Scorer | inherited S-B raw P(TP)−P(SL) multiclass head |
+| Row-set | full historic R7-A-clean row-set |
+| Quantile | q = 5 fixed |
+| **test n_trades** | **34,626 exact** (no tolerance; `±0`) |
+| **test Sharpe** | **−0.1732 within ±1e-4** (NOT ±5e-3) |
+| **test ann_pnl** | **−204,664.4 within ±0.5 pip** (NOT ±0.5%) |
+| **val Sharpe = −0.1863** | DIAGNOSTIC-ONLY unless the merge-SHA contract explicitly bound it as a HALT condition at PR #335 / Phase 28 §10 introduction; the amendment defaults to DIAGNOSTIC-ONLY (does NOT participate in F-1 PASS/HALT) absent that explicit historic binding |
+| Mismatch | **`BaselineMismatchError` / HALT** |
+
+The control-chain drift tolerance (`n_trades ±100 / Sharpe ±5e-3 / ann_pnl ±0.5%`) is reserved for **historic control drift diagnostic only** and MUST NOT be reused for the Phase 28 §10 baseline FAIL-FAST. The original §7.2 F-1 rows referring to ±100 / ±5e-3 / ±0.5% are superseded by this amendment row.
+
+### A.2 F-3 aligned C-d2-arch-control semantics correction (binding; supersedes §4 row F-3 + §7.2 F-3 entries)
+
+The original §4 row F-3 incorrectly required F-3 (the aligned C-d2-arch-control) to reproduce drift "within tolerance" against S-1 (the historic full-row C-se anchor) and made that drift a HALT condition. This is contradictory because F-3 and S-1 operate on different row-sets (windowed-valid aligned vs full Phase 27-era) and different purposes (A0-broad H-D2 PARTIAL_DRIFT comparator foundation vs historic 1st-anchor reproduction). **Corrected F-3 contract** (binding; supersedes):
+
+| F-3 binding | Value |
+|---|---|
+| Scorer | S-E LightGBM regressor |
+| Loss | symmetric Huber α=0.9 |
+| Sample weight | 1 |
+| Fit row-set | aligned_train |
+| Eval row-set | aligned_val (for quantile selection) then aligned_test (evaluated once after selection freezes) |
+| Quantile family | {5, 10, 20, 30, 40} |
+| Purpose | **future A0-broad PARTIAL_DRIFT comparator foundation** (per PR #355 §A.4) |
+| **PASS condition** (all required) | scorer identity correct (S-E LightGBM regressor; not S-B multiclass); row-set manifest exact; metrics finite; test-isolation protocol PASS; provenance artifacts complete |
+| **HALT condition** | scorer identity conflation; row-set manifest mismatch; non-finite metrics; test-isolation violation; provenance artifact missing |
+| **NOT a HALT condition** | drift vs S-1 metric — F-3 and S-1 differ in row-set / era / purpose, so F-3 reproducing S-1's numerics is NOT a verification predicate |
+
+Historic C-se reproduction remains the responsibility of S-1 (sentinel) and is governed by S-1's tolerance row in §5.1 (drift vs the historic eval_report.md numerics at PR #325 within `n_trades ±100 / Sharpe ±5e-3 / ann_pnl ±0.5%`).
+
+The original §7.2 F-3 rows referring to "drift vs C-se anchor" are superseded by this amendment row.
+
+### A.3 Historic data identity wording gate (binding; new §; supersedes §1, §2.3, §7.1, §8 wording where it conflicts)
+
+Per §A.0 the companion review establishes all six sentinels as **Case B (HISTORIC_DATA_IDENTITY_NOT_PROVABLE)**. The implementation report and any narrative referring to V2-expanded outcomes MUST bind to the following wording rules.
+
+**Per-sentinel labelling (binding; required in the verification report under PASS)**:
+
+- All six sentinels MUST display per-sentinel: **`CURRENT_MANIFEST_CLEAN_REEXECUTION_ONLY`** (clean re-execution under current provenance-bound dataset).
+- No sentinel may display **`HISTORIC_DATA_IDENTITY_PROVEN`** under the current evidence state. (The Case A label exists in the contract for forward extensibility but is not emittable for any of S-1..S-6 under V2-expanded.)
+
+**Aggregate narrative wording (binding)**:
+
+- The PASS label `SENTINEL_VERIFICATION_PARTIAL_RECOVERY_MAJOR_AXES` remains admissible per §7 and §A.4.
+- Since all six sentinels are Case B, the verification report MUST NOT use any of the following wordings in the aggregate or per-sentinel narrative:
+  - "historical execution verified"
+  - "historic verdict reproduced"
+  - "prior verdict revalidated"
+  - "historical negative verdict reproduction"
+  - any equivalent claim of historical execution identity
+- The verification report MUST express the aggregate as: "clean re-execution of the V2-expanded contract under the current provenance-bound dataset". This wording is the only admissible aggregate phrasing under the current Case-B-uniform state.
+- The verification report MUST reference §A.3 of this amendment and the companion historic compatibility review doc for the Case B rationale.
+
+### A.4 Source-file topology — Option B (binding; supersedes original §3.7 file list)
+
+Per user instruction, **Option B is adopted**. The original §3.7 file list (5 files) is superseded by the following **20-file topology** for the `code_hash` SHA-256 input (sorted concatenation):
+
+- `scripts/tabular_targeted_verification_v2_expanded.py`
+- `scripts/_verification_harness/__init__.py`
+- `scripts/_verification_harness/manifests.py`
+- `scripts/_verification_harness/event_log.py`
+- `scripts/_verification_harness/pnl_identity.py`
+- `scripts/_verification_harness/row_set.py`
+- `scripts/_verification_harness/sentinel_runner.py`
+- `scripts/_verification_harness/reporting.py`
+- `scripts/_verification_harness/contract_snapshots.py`
+- `scripts/_verification_harness/forbidden_inputs.py`
+- `scripts/_verification_harness/tolerances.py`
+- `scripts/_verification_harness/sentinel_adapters/__init__.py`
+- `scripts/_verification_harness/sentinel_adapters/_pinned_s_b_factory.py`
+- `scripts/_verification_harness/sentinel_adapters/_pinned_s_e_factory.py`
+- `scripts/_verification_harness/sentinel_adapters/s1_pr325.py`
+- `scripts/_verification_harness/sentinel_adapters/s2_pr332.py`
+- `scripts/_verification_harness/sentinel_adapters/s3_pr338.py`
+- `scripts/_verification_harness/sentinel_adapters/s4_pr342.py`
+- `scripts/_verification_harness/sentinel_adapters/s5_pr345.py`
+- `scripts/_verification_harness/sentinel_adapters/s6_pr351.py`
+
+The implementation PR MAY NOT add or remove formal harness source files beyond this amended list without a separate amendment PR.
+
+### A.5 Artifact policy (binding; establishes the policy; supersedes any informal "commit everything" reading of §3.1)
+
+The original memo did not pre-state a dedicated artifact-policy section; §3.1 mentioned "persists machine-readable result summaries (parquet + JSON) sufficient for later static audit" without further binding. This amendment establishes the **binding artifact policy** that the eventual implementation PR must obey. Any earlier informal "commit everything; no cryptographic substitute needed" reading is superseded.
+
+**Mandatory committed artifacts** (required for any independent later recomputation of each reported formal metric and verdict):
+
+- `verification_report.md`
+- `verification_log.jsonl`
+- `pnl_harness_identity.json`
+- `manifests/*` (contract_hash / code_hash / data_manifest_hash / environment_manifest / contract_snapshot_hashes / git_state_at_run_start / forbidden_inputs)
+- `historic_compatibility_classification.json` (records per-sentinel Case A/B classification and test-touched-once compatibility result; new artifact per §A.3)
+- Row-set manifests or sufficient row-index artifacts (`row_sets/*.parquet`)
+- Per-cell result JSON for every foundation cell + every sentinel cell
+- **Selected-trade / selected-row parquet** sufficient to independently recompute n_trades / Sharpe / ann_pnl and the reported comparator drift values
+
+**Permissible omissions** (only if all conditions are met):
+
+- Redundant model-internal predictions or duplicate intermediates MAY be omitted if:
+  - omission does not prevent independent metric / verdict recomputation, AND
+  - a committed `artifact_hashes.json` records the SHA-256 of each omitted artifact (if it was generated during the run)
+- **Hash-only substitution is NOT permitted** for any data necessary to independently recompute the reported verdict.
+
+**Size guard** (binding):
+
+- If any single artifact file is expected to exceed **95 MB** at PR-creation time, the harness MUST HALT before PR creation and emit a `size_mitigation_required.json` report listing the file size + path + recommended mitigation options (e.g., per-pair parquet sharding). The implementation PR is then paused until the user resolves the mitigation in a separate decision.
+
+### A.6 O-4 (sentinel separability) confirmation (re-affirmation)
+
+User-approved: `--sentinel S-n` flag allowed for development/debug only. Standalone output MUST state "STANDALONE SENTINEL RUN; NOT FORMAL V2-EXPANDED". Formal PASS requires foundation + all six sentinels executed under the **same** provenance-bound formal run (single `contract_hash` / `code_hash` / `data_manifest_hash` / `environment_manifest`). Standalone artifacts cannot be concatenated into formal PASS evidence.
+
+### A.7 O-5 (environment mismatch) confirmation (re-affirmation)
+
+User-approved: environment mismatch → HALT. No WARN relaxation without a separate explicit amendment. Original §3.1 default preserved.
+
+### A.8 Implementation gate (binding)
+
+Implementation MUST NOT begin until:
+
+1. This amendment PR merges, AND
+2. A revised implementation plan referencing this amendment is presented to the user, AND
+3. The user explicitly approves the revised implementation plan.
+
+No code, no branch, no rerun, no A0-broad β resumption may begin until all three conditions are met.
+
+### A.9 Amendment PR scope (this PR)
+
+- Doc-only.
+- One amendment PR; no additional amendments anticipated.
+- Files modified: `docs/design/tabular_targeted_verification_v2_expanded_design_memo.md` (this file).
+- Files added: `docs/design/tabular_targeted_verification_v2_expanded_historic_compatibility_review.md` (companion review per §A.0).
+- No source / tests / production / β code / MEMORY.md touched.
+- No prior verdict modification.
+- No auto-route.
+
+### A.10 Section-by-section supersession map
+
+| Section in original memo | Amendment subsection that binds | Nature of change |
+|---|---|---|
+| §3.7 source-file topology (5 files) | §A.4 | superseded by 20-file Option B list |
+| §4 row F-1 (tolerance) | §A.1 | superseded; correct Phase 28 §10 FAIL-FAST tolerance |
+| §4 row F-3 (HALT condition) | §A.2 | superseded; drift vs S-1 NOT a HALT condition |
+| §7.2 F-1 rows | §A.1 | superseded |
+| §7.2 F-3 rows | §A.2 | superseded |
+| (no dedicated §8 artifact policy in original memo; §3.1 only mentioned "persists machine-readable result summaries" generally) | §A.5 | establishes binding artifact policy + size guard |
+| §1 / §2.3 / §7.1 wording where Case B applies | §A.3 | binding wording rules; `CURRENT_MANIFEST_CLEAN_REEXECUTION_ONLY` per sentinel; forbidden aggregate wording listed |
+| §3.1 environment mismatch policy | §A.7 | re-affirmed HALT |
+| §10 sentinel separability | §A.6 | re-affirmed dev/debug only |
+
+Sections §0, §1 (mission), §2 (scope), §3 (verification contract clauses not listed above), §4 rows F-2 / F-4 / F-5 / F-6 / F-7, §5 (sentinels S-1..S-6), §6 (deferred PRs), §7 (outcome ladder excluding §7.2 F-1 / F-3 rows), §8.1 (committed artifact tree top-level structure), §9 (sequencing), §10 (negative-list of what this PR is NOT), §11 (preserved), §12 (references) are **unchanged** by this amendment.
 
 ---
 
@@ -177,6 +361,8 @@ The `code_hash` SHA-256 input is the sorted concatenation of file content for ex
 ---
 
 ## 4. V1 shared foundation (verification predicates)
+
+> **AMENDED 2026-05-24**: §A.1 supersedes the F-1 tolerance row below (Phase 28 §10 FAIL-FAST uses inherited baseline-reproduction contract: n_trades ±0 / Sharpe ±1e-4 / ann_pnl ±0.5 pip; val Sharpe DIAGNOSTIC-ONLY by default). §A.2 supersedes the F-3 HALT row below (drift vs S-1 is NOT a F-3 HALT condition; F-3 PASS = scorer + row-set + finite + isolation + provenance).
 
 Each predicate emits its own per-cell artifact bundle (parquet + JSON + manifests).
 
@@ -340,16 +526,21 @@ The verification report under `SENTINEL_VERIFICATION_PARTIAL_RECOVERY_MAJOR_AXES
 
 ### 7.2 Per-cell pre-stated tolerance summary (binding)
 
-| Tolerance | Default value | Where applied |
+> **AMENDED 2026-05-24**: §A.1 supersedes the F-1 tolerance entries below. Phase 28 §10 immutable baseline FAIL-FAST does NOT use control-drift tolerance; it uses the inherited baseline-reproduction contract: **n_trades = 34,626 exact (±0)** / **Sharpe = −0.1732 within ±1e-4** / **ann_pnl = −204,664.4 within ±0.5 pip** / val Sharpe DIAGNOSTIC-ONLY by default per §A.1. The drift tolerance (±100 / ±5e-3 / ±0.5%) below applies only to control-chain drift diagnostics at S-1..S-6, NOT to F-1.
+
+| Tolerance | Default value | Where applied (post-amendment) |
 |---|---|---|
-| n_trades_tol | **±100** | drift comparisons; baseline reproduction; per-cell row count cross-checks |
-| sharpe_tol | **±5e-3** | drift; baseline; per-target / per-rule / per-AR / per-L cells |
-| ann_pnl_tol_pct | **±0.5%** of magnitude | drift; baseline; per-target / per-rule / per-AR / per-L cells |
+| n_trades_tol_drift | **±100** | control drift comparisons; sentinel-vs-control drift (NOT F-1) |
+| sharpe_tol_drift | **±5e-3** | control drift; per-target / per-rule / per-AR / per-L cells (NOT F-1) |
+| ann_pnl_tol_pct_drift | **±0.5%** of magnitude | control drift; per-cell ann_pnl (NOT F-1) |
 | spearman_tol | **±5e-3** | S-1 Spearman +0.4381 reproduction |
 | row_count_tol | **±10 rows** | S-2 Fix A per-cell row counts vs eval_report.md §3 |
-| val_sharpe_tol | **±5e-3** | F-1 Phase 28 §10 val Sharpe reproduction; sentinel val Sharpe reproductions |
+| val_sharpe_tol_sentinel | **±5e-3** | sentinel val Sharpe reproductions (NOT F-1; F-1 val Sharpe is DIAGNOSTIC-ONLY per §A.1) |
+| **f1_n_trades_tol** | **±0 (exact 34,626)** | F-1 Phase 28 §10 baseline (per §A.1; supersedes original entry) |
+| **f1_sharpe_tol** | **±1e-4 (target −0.1732)** | F-1 Phase 28 §10 baseline (per §A.1) |
+| **f1_ann_pnl_tol_pip** | **±0.5 pip (target −204,664.4)** | F-1 Phase 28 §10 baseline (per §A.1) |
 
-Tolerances are α-fixed by the design memo; the implementation PR may not relax them.
+Tolerances are α-fixed by the design memo (as amended by §A.1); the implementation PR may not relax them.
 
 ---
 
