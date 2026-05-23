@@ -1,10 +1,10 @@
-# Phase 29.0b-α A0-broad Design Memo — Closed 3-Architecture Sequence-NN Allowlist (S1 LSTM / S2 Temporal CNN / S3 Transformer); Windowed (N=32×8) Input on R7-A; C-d2-arch-control 7th Anchor; Early Stopping on Val Huber Loss (Train-time vs Verdict-time Objective Wall); H-D2 4-Outcome Ladder; FALSIFIED_A0_BROAD_NARROW Distinction
+# Phase 29.0b-α A0-broad Design Memo — Closed 3-Architecture Sequence-NN Allowlist (S1 LSTM / S2 Temporal CNN / S3 Transformer); Windowed (N=32×8) Input on R7-A; C-d2-arch-control 7th Anchor; Early Stopping on Val Huber Loss (Train-time vs Verdict-time Objective Wall); H-D2 4-Outcome Ladder; FALSIFIED_A0_BROAD_NARROW Distinction [AMENDED 2026-05-23 — see §0.A]
 
 **Type**: Phase 29 second sub-phase α design memo. **Doc-only**.
-**Branch**: `research/phase29-0b-alpha-a0-broad-design`
-**Base**: master @ `1985e92` (post-PR #353 A0-broad preflight audit)
+**Branch**: `research/phase29-0b-alpha-a0-broad-design` (original); `research/phase29-0b-alpha-amendment` (this amendment)
+**Base**: master @ `1985e92` (original); master @ `a47d961` (post-PR #354 merge; this amendment)
 **Pattern**: analogous to PR #344 (28.0c-α A0-narrow design memo; closed-architecture-allowlist) + PR #350 (29.0a-α A2; per-target baseline + FALSIFIED_*_NARROW distinction) + PR #353 (A0-broad preflight audit; 7th anchor framing source)
-**Date**: 2026-05-22
+**Date**: 2026-05-22 (original); **2026-05-23 (amendment)**
 
 ---
 
@@ -33,7 +33,280 @@ Same approval-then-defer pattern as PR #344 / PR #350 / PR #353.
 
 ---
 
+## 0.A Amendment 2026-05-23 — row-set alignment / R7-A static context / two-stage sanity (binding; supersedes selected parts of §3, §4, §6, §7, §9, §10, §11, §13, §14, §16)
+
+This amendment was authorised after a post-implementation halt-and-audit of in-progress 29.0b-β surfaced four design issues that would invalidate the formal interpretation of any H-D2 verdict produced under the original memo:
+
+- **Row-set mixing** — sequence-valid C-d2-Sx cells were compared against the historic full-row Phase 28 §10 baseline (-0.1863).
+- **Feature-surface impurity** — sequence models received only the `(32, 8)` temporal tensor; the inherited R7-A static context (pair, direction, atr_at_signal_pip, spread_at_signal_pip) was not preserved as model input.
+- **Causality contract implicit** — the existing `CausalityGuardError` HALT was correctly wired but not numbered as a binding design contract in the memo.
+- **No two-stage sanity sequencing** — the original §16 used a single sanity probe; there was no Stage A → Stage B → Full gate.
+
+The amendment is **doc-only**. No β code lands in this PR. β implementation is paused until (a) this amendment PR merges and (b) a revised β implementation PR against the amended spec is explicitly authorised.
+
+### A.0 β WIP retention
+
+The β branch `research/phase29-0b-beta-a0-broad-sequence-eval` (tip `9ac8fda` "WIP — INVALID_FOR_FORMAL_VERDICT") is retained as historical WIP. It MUST NOT be used as formal Phase 29.0b-β evidence. Any formal Phase 29.0b-β evaluation must be performed in a separate β PR against the amended spec below.
+
+### A.1 Scorer corrections (supersedes §9 row 4 / row 5)
+
+The following four cells take exactly the following scorers (the original §9 row 4 / row 5 wording is split into full + aligned variants; the underlying scorer assignment is preserved correctly):
+
+| Cell ID | Scorer | Row-set | Role |
+|---|---|---|---|
+| **C-sb-baseline-full** | inherited **S-B raw P(TP)−P(SL) multiclass head** | original full R7-A-clean train / val / test | Phase 28 §10 historic FAIL-FAST only; q=5 fixed |
+| **C-sb-baseline-aligned** | inherited **S-B raw P(TP)−P(SL) multiclass head** | windowed-valid aligned train / val / test | **formal H-D2 H2 comparator**; q=5 fixed |
+| **C-d2-arch-control-full** | inherited **S-E tabular LightGBM regressor** | original full R7-A-clean train / val / test | mandatory 7th-anchor diagnostic-chain control |
+| **C-d2-arch-control-aligned** | inherited **S-E tabular LightGBM regressor** | windowed-valid aligned train / val / test | **formal PARTIAL_DRIFT_TABULAR_REPLICA comparator** |
+
+### A.2 7-cell mandatory structure (supersedes §9 cell count + §10 NG#A0B-3 referent)
+
+The cell list is now exactly **7 mandatory cells** (no optional cells):
+
+1. C-d2-S1
+2. C-d2-S2
+3. C-d2-S3
+4. C-d2-arch-control-aligned
+5. C-sb-baseline-aligned
+6. C-d2-arch-control-full
+7. C-sb-baseline-full
+
+**C-d2-arch-control-full is mandatory**, not optional, because:
+
+- The 7th-anchor bit-tight reproduction chain (27.0d → 27.0f → 28.0a → 28.0b → 28.0c → 29.0a → 29.0b) is defined against the historic full row-set; only C-d2-arch-control-full lets the 7th-anchor reproduction be verified end-to-end against the historic chain.
+- The aligned control alone cannot satisfy the 7th-anchor chain because row-drop from `windowed_input_valid` filtering changes the population vs the 6th anchor (29.0a C-d1-target-control), which was defined on the full row-set.
+
+Per-(cell, q) record count under the amendment:
+
+- 3 sequence cells × 5 quantiles = 15 records
+- 2 LightGBM arch-control cells × 5 quantiles = 10 records
+- 2 S-B baseline cells × 1 quantile (q=5 fixed) = 2 records
+- **Total: 27 (cell, q) records** (was 21 under the original memo)
+
+### A.3 Formal aligned row-set policy (supersedes §3 / §7 / §11.1)
+
+**Aligned split definition** (binding):
+
+```
+aligned_train = R7-A-clean train ∩ windowed_input_valid
+aligned_val   = R7-A-clean val   ∩ windowed_input_valid
+aligned_test  = R7-A-clean test  ∩ windowed_input_valid
+```
+
+The five **formal** cells —
+
+- C-d2-S1
+- C-d2-S2
+- C-d2-S3
+- C-d2-arch-control-aligned
+- C-sb-baseline-aligned
+
+— must **all** use exactly the same aligned split. Requirements:
+
+- Sequence architectures S1 / S2 / S3 are **trained on aligned_train** (not the original full train).
+- C-sb-baseline-aligned (S-B multiclass head) is **fitted on aligned_train and evaluated on aligned_val / aligned_test**.
+- C-d2-arch-control-aligned (S-E tabular LightGBM) is **fitted on aligned_train and evaluated on aligned_val / aligned_test**.
+- **No formal H-D2 comparison may mix full-row and aligned-row metrics.** Any number that feeds the H-D2 ladder rows must come from the aligned row-set.
+
+**Full-row cells** —
+
+- C-sb-baseline-full
+- C-d2-arch-control-full
+
+— are **quarantined to historic FAIL-FAST and diagnostic-chain reporting only**. Their numbers appear in eval_report §10 (FAIL-FAST against Phase 28 §10 immutable baseline) and §11b (7th-anchor drift against 29.0a C-d1-target-control) but NEVER appear as comparators in the H-D2 ladder rows.
+
+### A.4 H-D2 ladder rewrite — aligned comparators (supersedes §3 numeric reference / §14)
+
+Formal comparators (binding):
+
+- **H2 Sharpe lift comparator** = C-sb-baseline-**aligned** val Sharpe (NOT the historic full-row -0.1863).
+- **PARTIAL_DRIFT comparator** = C-d2-arch-control-**aligned** (NOT C-d2-arch-control-full).
+
+Per-architecture 4-outcome ladder (precedence row 4 > 1 > 2 > 3; PARTIAL_DRIFT checked first per NG#A0B-3):
+
+**Row 4 — PARTIAL_DRIFT_TABULAR_REPLICA** (checked first per NG#A0B-3):
+- C-d2-Sx ≈ C-d2-arch-control-**aligned** within unchanged tolerance (n_trades ±100 / Sharpe ±5e-3 / ann_pnl ±0.5%) at val-selected q\*
+- AND C-d2-Sx does not produce qualifying lift vs C-sb-baseline-**aligned**
+
+**Row 1 — PASS**:
+- val Sharpe lift vs C-sb-baseline-**aligned** ≥ **+0.05** absolute
+- AND H1m ≥ **+0.30**
+- AND val trade count ≥ **20,000**
+- AND **C-sb-baseline-full historic FAIL-FAST PASS** (Phase 28 §10 immutable: n=34,626 / Sharpe -0.1732 / ann_pnl -204,664.4 with §11.1 tolerances)
+- AND aligned baseline successfully generated (C-sb-baseline-aligned val Sharpe is finite)
+
+**Row 2 — PARTIAL_SUPPORT**:
+- val Sharpe lift vs C-sb-baseline-**aligned** ∈ [**+0.02**, **+0.05**)
+- AND H1m ≥ **+0.30**
+- AND val trade count ≥ **20,000**
+- AND C-sb-baseline-**full** historic FAIL-FAST PASS
+
+**Row 3 — FALSIFIED_ARCH_INSUFFICIENT** (default otherwise).
+
+All-fail label remains **`FALSIFIED_A0_BROAD_NARROW`** (NEVER `FALSIFIED_ALL_A0_BROAD`); §3.1 / §15 distinction preserved verbatim.
+
+### A.5 Feature-surface wording correction (supersedes §1 / §5 / §6 / §13.1)
+
+Sequence cells must consume **both** inputs per row:
+
+**Temporal input**:
+- 32 M5 bars × 8 bid/ask OHLC channels (bid_O / bid_H / bid_L / bid_C / ask_O / ask_H / ask_L / ask_C)
+- per-pair pip normalisation
+- entry-price centering (see §A.6 for the corrected directional rule)
+- NO mid-price; NO volume; NO derived/computed channels
+
+**Static context** (inherited R7-A; required model input on every row):
+- `pair_id` — embedding (dim 8; learnable embedding table)
+- `direction` — signed scalar (+1 long, −1 short)
+- `atr_at_signal_pip` — float scalar
+- `spread_at_signal_pip` — float scalar
+
+The memo must **NOT** claim "only model class changes" without qualification. The corrected wording (binding):
+
+- R-B engineered feature redesign remains **excluded** from A0-broad.
+- A0-broad admits the architecture-required **raw temporal bid/ask window representation** as a representational requirement of the sequence model class.
+- Inherited **R7-A static context remains present** and is fed into every sequence-cell forward pass alongside the temporal tensor.
+- The formal test is the **A0-broad package effect**: sequence model class plus its required temporal representation, under fixed target / selection / loss and no R-B.
+
+Static feature normalisation:
+- `atr_at_signal_pip` and `spread_at_signal_pip` are z-scored using **train-split-only statistics** (mean / std fitted on aligned_train only).
+- **No leakage** from val/test into normalisation statistics.
+- α-fixed. **No β-time normalisation-scheme grid** (NG#A0B-1 reinforced).
+
+Per-architecture fusion (α-fixed; binding numerics; β implements):
+- **S1 LSTM** — final-step hidden ⊕ static R7-A vector → MLP head → scalar
+- **S2 Temporal CNN** — GAP output ⊕ static R7-A vector → MLP head → scalar
+- **S3 Transformer** — first-position output ⊕ static R7-A vector → MLP head → scalar
+
+### A.6 Directional centering and causality contract (supersedes §6.2 / §7)
+
+**Directional centering** (binding):
+
+- Temporal input is centered on the **executable entry price** (M1 at `signal_ts + 1 minute`):
+  - **long**: entry reference = entry **ask_o**
+  - **short**: entry reference = entry **bid_o**
+- Per-pair pip normalisation preserved.
+- **No mid-price** input; **no volume**; **direction** included in static R7-A context per §A.5.
+
+**Causality contract** (binding; HALT):
+
+- Entry timestamp = `signal_ts + 1 minute`
+- Every temporal input timestamp must satisfy `input_timestamp < entry_timestamp`
+- Any violation → **HALT** (`CausalityGuardError`)
+- **Stage A sanity must explicitly check this** (see §A.7)
+
+### A.7 Two-stage sanity sequencing (supersedes §16)
+
+Replace the single sanity probe with a two-stage gate. β runner must refuse out-of-order full execution using config-hash / stage-artifact checks.
+
+**Stage A — pre-training gate** (all items HALT-gated unless inherited as WARN per §16.3):
+
+- CUDA availability (HALT)
+- causality guard (HALT; per §A.6)
+- window coverage per pair ≥ 95% (HALT; inherited from original §16.2 item 7)
+- M1/M5 alignment (HALT)
+- **full** row-set construction (HALT; for FAIL-FAST and 7th-anchor diagnostic)
+- **aligned** row-set construction (HALT; for the 5 formal cells)
+- C-sb-baseline-full FAIL-FAST feasibility — the historic full-row baseline can actually be reproduced before any sequence training (HALT)
+- full and aligned arch-control harness construction (HALT)
+
+**Stage B — bounded training gate** (runs only after Stage A PASS; all items HALT-gated):
+
+- Run **S1, S2, AND S3** (all 3 architectures; not S1 only)
+- Bounded subset of aligned_train
+- `max_epochs = 1`
+- Same seed (42) used consistently
+- Finite validation Huber loss per architecture
+- No OOM
+- Peak VRAM within threshold (per §16.2 item 10: < 90% available)
+- Metric-level determinism over 2 consecutive runs:
+  - selected q **identical**
+  - n_trades **exact**
+  - val Sharpe within **±1e-4**
+
+**Full sweep** may run only after **Stage A AND Stage B both PASS** (WARN acceptable for items inherited as WARN-only per original §16.3). Runner must refuse out-of-order full execution via config-hash / stage-artifact checks.
+
+### A.8 Loss and training wall preserved (no change)
+
+Preserved from §12 verbatim:
+
+- PyTorch
+- AdamW (weight_decay = 1e-4)
+- symmetric Huber loss α=0.9 as explicitly defined in §12.1
+- early stopping on **validation Huber loss** (NOT validation Sharpe)
+- max_epochs = 5
+- patience = 2
+- best checkpoint = lowest val Huber loss
+- (cell, q) selection by validation Sharpe **only after** training (§12.4)
+- formal verdict only by the H-D2 ladder (now per §A.4)
+
+### A.9 Amendment PR scope
+
+This amendment PR is **doc-only**.
+
+- No β code modification in this PR.
+- No formal β execution may resume until both: (a) this amendment PR merges and (b) a revised β implementation PR against the amended spec is explicitly authorised.
+
+**Branch**: `research/phase29-0b-alpha-amendment`
+**File modified**: `docs/design/phase29_0b_alpha_a0_broad_design_memo.md` (this file only)
+
+**Expected effect** after the amendment merges and a β re-implementation lands:
+
+- formal H-D2 comparison row-set-aligned
+- mandatory full historic controls preserved (FAIL-FAST + 7th anchor)
+- dual-input sequence contract (temporal + R7-A static)
+- explicit causality HALT
+- two-stage sanity gating (S1 + S2 + S3 in Stage B)
+
+**Preserved** (verbatim from §19.1; not relaxed by this amendment):
+
+- Scope III
+- Policy C
+- Option 9c
+- D-1 bid/ask executable harness
+- validation-only selection
+- test touched once
+- ADOPT_CANDIDATE wall
+- H2 PASS = PROMISING_BUT_NEEDS_OOS only
+- NG#10 / NG#11 not relaxed
+- γ closure PR #279
+- X-v2 OOS gating
+- Phase 22 frozen-OOS
+- production v9 untouched (Phase 9.12 tip `79ed1e8`)
+- Phase 28 §10 baseline immutable (n=34,626 / Sharpe -0.1732 / ann_pnl -204,664.4 / val Sharpe -0.1863)
+- Phase 29 29.0a per-target baselines frozen (PR #351; DIAGNOSTIC-ONLY 2nd reference; NOT used for A0-broad H-D2)
+- no prior verdict modification (Phase 27 / Phase 28 / Phase 29.0a verdicts preserved verbatim)
+- MEMORY.md unchanged inside PR
+- no production change
+- no auto-route after merge
+
+### A.10 Section-by-section supersession map
+
+For reviewers reading the body sections (§1–§19) below — when there is a conflict, the §0.A amendment text is binding.
+
+| Section in original memo | Amendment subsection that binds | Nature of change |
+|---|---|---|
+| §1 mission statement | §A.5 | "only model class changes" wording is qualified; static R7-A context preserved alongside temporal repr |
+| §3 H-D2 hypothesis statement | §A.3, §A.4 | aligned comparator referent; thresholds restated explicitly |
+| §3.1 falsification distinction | preserved verbatim | — |
+| §4 closed 3-arch allowlist | §A.5 | input is dual (temporal + R7-A static); per-arch fusion stated |
+| §5 fixed non-architecture axes | §A.5 | R7-A surface still present as static context to the sequence model |
+| §6.2 normalisation policy | §A.6 | directional centering: long=ask_o, short=bid_o |
+| §7 M1/M5 alignment policy | §A.6 | causality contract restated as numbered binding |
+| §9 cell structure (5 cells / 21 records) | §A.1, §A.2 | 7 mandatory cells; 27 records; full + aligned splits per scorer |
+| §10 C-d2-arch-control 7th anchor | §A.1, §A.2 | split into -aligned (formal) + -full (mandatory diagnostic) |
+| §11.1 C-sb-baseline FAIL-FAST | §A.1, §A.3 | -full is FAIL-FAST only; -aligned is formal H2 comparator |
+| §13.1 NG#A0B-1 | §A.5 | reinforced: no β-time static-feature-normalisation grid |
+| §14 H-D2 4-outcome ladder | §A.4 | aligned comparators; explicit thresholds (+0.05 PASS, +0.02 PARTIAL) |
+| §16 sanity probe items | §A.7 | two-stage Stage A / Stage B gate; Stage B runs all 3 archs |
+
+Sections §12 (training schedule), §15 (aggregate verdict mapping), §17 (eval_report sections), §18 (selection-overfit guard), §19 (binding constraints), §20 (references) are **unchanged** by this amendment except that eval_report §10 / §11b under §17 now reference C-sb-baseline-full / C-d2-arch-control-full respectively, and the H-D2 row binding in §17 §13 now references the amended A.4 ladder.
+
+---
+
 ## 1. A0-broad mission statement
+
+> **AMENDED 2026-05-23**: §A.5 qualifies "Only the model class and the input shape change". Per the amendment, A0-broad admits the architecture-required raw temporal bid/ask window representation alongside the inherited R7-A static context (which remains present as model input). R-B engineered feature redesign remains excluded. The formal test is the **A0-broad package effect**: sequence model class plus its required temporal representation, under fixed target / selection / loss and no R-B.
 
 **Phase 29.0b tests A0-broad (sequence / NN model class beyond tabular LightGBM) as the Phase 29 second sub-phase per PR #352 primary recommendation, gated by PR #353 preflight clearance.** The hypothesis is that the **tabular LightGBM model class** is the binding constraint on Sharpe lift across the 9-eval picture (PR #352 §1). Phase 29.0b replaces the model class with a **closed allowlist of 3 sequence-NN architectures** (S1 Bidirectional LSTM / S2 Temporal CNN / S3 Transformer encoder), keeping the R7-A feature surface, triple-barrier realised-PnL target, top-q selection rule, and symmetric Huber α=0.9 regression loss **all fixed**. Only the **model class** and the **input shape** (tabular → windowed M5 bars) change.
 
@@ -95,6 +368,8 @@ A0-broad is structurally distinct from every Phase 27 / Phase 28 / Phase 29 sub-
 
 ## 3. Formal H-D2 hypothesis statement
 
+> **AMENDED 2026-05-23**: The aligned-row-set comparator and explicit ladder thresholds in §A.3 / §A.4 bind. The numeric reference "-0.1363" below is the historic full-row threshold and is preserved here for traceability; under the amendment the formal H2 comparator is C-sb-baseline-**aligned** val Sharpe, computed at β time.
+
 > **H-D2 (A0-broad scope)**: At least one of the closed 3 sequence-NN architecture variants {S1, S2, S3} will produce a val-selected configuration on the C-d2-Sx cell satisfying **all** of:
 >
 > 1. **H2 PASS**: val Sharpe ≥ Phase 28 §10 baseline + **+0.05 absolute** (val Sharpe ≥ -0.1363)
@@ -117,6 +392,8 @@ Load-bearing distinction analogous to:
 ---
 
 ## 4. Closed 3-architecture sequence-NN allowlist (formal pre-statement)
+
+> **AMENDED 2026-05-23**: Per §A.5, the input is dual: temporal `(32, 8)` AND R7-A static context (pair embedding + direction + atr_at_signal_pip + spread_at_signal_pip). The §4.1 / §4.2 / §4.3 "Input shape" lines below describe the temporal tensor only; the static context is concatenated post-pooling per §A.5 fusion rule. Architecture hyperparameters (layers / dims / kernels / heads) are unchanged.
 
 NG#A0B-1 enforces. Each variant has α-fixed numerics; no β-time grid sweep.
 
@@ -219,6 +496,8 @@ A0-broad commits to 5 invariants across all 3 sequence variants. NG#A0B-1 enforc
 
 ## 6. Windowed dataset shape (final lock)
 
+> **AMENDED 2026-05-23**: §6.2 entry-price centering uses **long → entry ask_o, short → entry bid_o** (corrected from the original "subtract `signal_ts ask_o`" wording — the original applied a long-only reference). Per-pair pip normalisation preserved. The causality contract in §A.6 binds. See §A.6.
+
 ### 6.1 Shape
 
 - **N = 32 M5 bars** (last 160 minutes pre-signal)
@@ -310,7 +589,7 @@ Within PR #353 §6.2 estimate. Gitignored under `artifacts/stage29_0b/windowed_d
 
 ---
 
-## 9. Cell structure (5 cells; 21 records)
+## 9. Cell structure (5 cells; 21 records) [AMENDED: see §A.1 / §A.2 — 7 mandatory cells / 27 records]
 
 | # | Cell ID | Score | Target | Selection | Purpose |
 |---|---|---|---|---|---|
@@ -339,6 +618,8 @@ Within PR #353 §6.2 estimate. Gitignored under `artifacts/stage29_0b/windowed_d
 ---
 
 ## 10. C-d2-arch-control 7th anchor — load-bearing distinction
+
+> **AMENDED 2026-05-23**: Per §A.1 / §A.2, the 7th-anchor role is split into **C-d2-arch-control-full** (mandatory diagnostic against the historic full row-set 6th-anchor chain) and **C-d2-arch-control-aligned** (formal PARTIAL_DRIFT_TABULAR_REPLICA comparator on the aligned row-set). The "C-d2-arch-control" single cell described below now refers to whichever variant the eval_report section is reporting (§10/§11b → full; §11 PARTIAL_DRIFT → aligned).
 
 **Critical**: C-d2-arch-control is a **tabular LightGBM model evaluated inside the sequence-cell evaluation harness**. It is **NOT a sequence model**.
 
@@ -372,6 +653,8 @@ Inherited from PR #344 §11 / PR #350 §10.3 / PR #353 §10.3:
 ---
 
 ## 11. Baseline / control reproduction policy
+
+> **AMENDED 2026-05-23**: Per §A.1 / §A.3, the C-sb-baseline cell described below is now **C-sb-baseline-full** for FAIL-FAST purposes (immutable Phase 28 §10 numerics; full row-set). The **C-sb-baseline-aligned** cell (S-B multiclass head fitted on aligned_train) is the formal H-D2 H2 comparator. No formal comparison mixes full + aligned metrics.
 
 ### 11.1 C-sb-baseline FAIL-FAST (Phase 28 §10 inherited directly)
 
@@ -451,6 +734,8 @@ The H-D2 verdict ladder retains its falsifiability discipline because val Sharpe
 
 ## 13. NG#A0B-* anti-collapse guards
 
+> **AMENDED 2026-05-23**: Per §A.5, NG#A0B-1 is reinforced to forbid β-time grid sweep of the static-feature normalisation scheme. Per §A.2 / §A.7, NG#A0B-3 binds C-d2-arch-control-**aligned** as the formal PARTIAL_DRIFT comparator; C-d2-arch-control-**full** is the mandatory 7th-anchor diagnostic control (WARN-only).
+
 ### 13.1 NG#A0B-1 — closed 3-architecture allowlist + fixed non-architecture axes + no joint admission
 
 - Architectures MUST be {S1 LSTM, S2 Temporal CNN, S3 Transformer} with α-fixed numerics (§4)
@@ -476,6 +761,8 @@ The H-D2 verdict ladder retains its falsifiability discipline because val Sharpe
 
 ## 14. H-D2 4-outcome ladder per architecture (precedence row 4 > 1 > 2 > 3)
 
+> **AMENDED 2026-05-23**: §A.4 binds. The ladder below uses the historic full-row "Phase 28 §10 baseline" referent and is retained for traceability; under the amendment the formal comparator is C-sb-baseline-**aligned** (H2 lift) and C-d2-arch-control-**aligned** (PARTIAL_DRIFT). Thresholds (+0.05 PASS, +0.02 PARTIAL_SUPPORT, H1m ≥ +0.30, trade count ≥ 20,000) are preserved.
+
 Inherited from PR #344 §12.3 / PR #350 §10 pattern.
 
 | Row | Outcome | Per-architecture condition |
@@ -499,6 +786,8 @@ Inherited from PR #344 §12.3 / PR #350 §10 pattern.
 ---
 
 ## 16. Sanity probe items (12 total: 6 inherited + 6 NEW sequence-cell-specific)
+
+> **AMENDED 2026-05-23**: §A.7 binds. The 12-item list below is the **Stage A** scope (extended to include full + aligned row-set construction and C-sb-baseline-full FAIL-FAST feasibility). **Stage B** is a NEW bounded-training gate that runs S1 + S2 + S3 at max_epochs=1 with metric-level determinism check (see §A.7). Full sweep requires both stages to PASS; runner refuses out-of-order full execution via config-hash / stage-artifact checks.
 
 ### 16.1 Inherited items 1-6 (from PR #344 §15 / PR #350 §13)
 
@@ -703,7 +992,8 @@ A0-broad-specific selection-overfit guard reinforcement (PR #344 / PR #350 did n
 - PR #351 — Phase 29.0a-β A2 target redesign eval (FALSIFIED_A2_NARROW; R-T3 = FALSIFIED_under_T3)
 - PR #352 — Phase 29 post-29.0a routing review (Path 1 PRIMARY preflight-gated)
 - PR #353 — A0-broad preflight audit (PASS gate; 7th anchor framing source)
-- **This PR** — Phase 29.0b-α A0-broad design memo
+- PR #354 — Phase 29.0b-α A0-broad design memo (original)
+- **This PR — Phase 29.0b-α A0-broad design memo AMENDMENT** (2026-05-23; row-set alignment / R7-A static context / two-stage sanity; §0.A binding)
 
 ### Phase 28 templates
 
