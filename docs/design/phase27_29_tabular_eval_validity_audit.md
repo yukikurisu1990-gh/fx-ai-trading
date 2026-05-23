@@ -475,35 +475,42 @@ Sub-phase: A2 target redesign. Closed allowlist T1 (fixed-horizon close) / T2 (t
 
 ## 16. Supporting-dependency contamination graph
 
+> **Wording binding for §16 (all subsections)**: every "contamination status" line below describes the result of **static contract inspection** at each merge-time snapshot — i.e., "no visible contract violation found in the inspected committed code / memo". The static-clean finding **does NOT remove the structural Class U on run-provenance** established in §4.1 (U-1) and §4.2 (U-2). Actual historical execution of these dependencies remains **unverified** where committed machine-readable artifacts / sanity-probe outputs are absent. The aggregate audit outcome therefore remains `TARGETED_VERIFICATION_REQUIRED` (see §17). Wording such as "empirically clean across all 9 PRs" / "historical execution verified" / "tabular evidence reconfirmed" / "prior verdicts formally revalidated" is **NOT** used and **NOT** implied anywhere in this section.
+
 ### 16.1 D-1 bid/ask executable harness
 
 - **Origin**: `_compute_realised_barrier_pnl` + `precompute_realised_pnl_per_row` in `scripts/_data_helpers/...` (introduced pre-Phase 27).
-- **Identity check across 9 merge SHAs**: every β-eval's sanity probe item 3 explicitly verifies (a) `_compute_realised_barrier_pnl` source contains `bid_h / ask_l / ask_h / bid_l`, and (b) `precompute_realised_pnl_per_row` signature does NOT expose `spread_factor` or `mid_to_mid`. HALT on violation.
-- **Contamination status**: clean across all 9 PRs. No mid-price leakage into formal PnL path. Class NONE for Dimension 4 (D-1 integrity) on every PR.
+- **Static identity check across 9 merge SHAs**: every β-eval's sanity probe item 3 explicitly verifies (a) `_compute_realised_barrier_pnl` source contains `bid_h / ask_l / ask_h / bid_l`, and (b) `precompute_realised_pnl_per_row` signature does NOT expose `spread_factor` or `mid_to_mid`. HALT on violation.
+- **Static-code contamination status**: **no visible contract violation found in D-1 harness lineage** across all 9 PRs in static inspection. No mid-price leakage into the formal PnL code path. Class NONE for Dimension 4 (D-1 integrity) on every PR at the static-code column.
+- **Run-provenance status**: actual historical execution of the D-1 sanity-probe HALT gate remains **unverified** where the committed `sanity_probe.json` is absent (U-2). The static-clean code path does not by itself prove the run actually executed the inspected sanity-probe item 3. **This finding does NOT remove the structural Class U** on Dimension 6 (baseline reproduction — run-provenance) or Dimension 8 (artifact / code reproducibility — run-provenance).
 
 ### 16.2 S-B raw P(TP)−P(SL) multiclass head + Phase 28 §10 baseline numeric
 
 - **Origin**: S-B multiclass head pre-dates Phase 27. The immutable baseline numeric `(n=34,626 / Sharpe -0.1732 / ann_pnl -204,664.4 / val Sharpe -0.1863)` is introduced contemporaneously at PR #335 (Phase 28 kickoff).
-- **Modification check across 9 merge SHAs**: no spine PR retroactively modifies the immutable numeric. Phase 27 PRs (predating PR #335) reference contemporaneous baselines (Phase 26 R6-new-A C02). Phase 28 + Phase 29 PRs all reference Phase 28 §10 verbatim.
-- **Contamination status**: clean. Class NONE for retroactive-modification check (Tier-1 Universal blocker §2.5 not triggered).
+- **Static modification check across 9 merge SHAs**: no spine PR's committed memo / code / artifact contains a retroactive modification of the immutable numeric. Phase 27 PRs (predating PR #335) reference contemporaneous baselines (Phase 26 R6-new-A C02). Phase 28 + Phase 29 PRs all reference Phase 28 §10 verbatim.
+- **Static-code contamination status**: **no visible contract violation found in Phase 28 §10 immutable baseline lineage** in static inspection. Class NONE for the Tier-1 retroactive-modification check (§2.5 universal blocker not triggered).
+- **Run-provenance status**: each PR's claim of "C-sb-baseline reproduction PASS" against Phase 28 §10 is asserted in `eval_report.md §10` but the underlying baseline-cell `sweep_results.parquet` entry is gitignored (U-1). The static-clean lineage does not by itself prove the run actually reproduced the numeric. **This finding does NOT remove the structural Class U** on Dimension 6 (baseline reproduction — run-provenance) for PRs #338 / #342 / #345 / #351.
 
 ### 16.3 Fix A row-set isolation
 
 - **Origin**: Introduced at PR #332 (27.0f-β); R7-C-feature drop applied to C-se-rcw cell only; C-sb-baseline + r7a-replica retain full R7-A-clean row-set.
-- **Propagation check**: Fix A is inherited by all subsequent spine PRs (#338 / #342 / #345 / #351). Per each PR's eval_report.md §3, the row-set construction documents inherit the 27.0f Fix A pattern.
-- **Contamination status**: clean inheritance. Class NONE for Dimension 1 (split integrity) and Dimension 3 (row-set comparability) at the static-code level; Class **U** for run-provenance (per-cell row counts not independently checkable from committed parquet).
+- **Static propagation check**: Fix A is referenced by all subsequent spine PRs (#338 / #342 / #345 / #351). Per each PR's `eval_report.md §3`, the row-set construction documents inherit the 27.0f Fix A pattern.
+- **Static-code contamination status**: **no visible contract violation found in Fix A inheritance** across #338 / #342 / #345 / #351 in static inspection. Class NONE for Dimension 1 (split integrity) and Dimension 3 (row-set comparability) at the static-code column.
+- **Run-provenance status**: per-cell row counts demonstrating that the Fix A row-set isolation was actually applied at run time are asserted in `eval_report.md §3` but the underlying per-cell row-count artifacts (parquet) are gitignored. The static-clean inheritance does not by itself prove the run actually applied the isolation. **This finding does NOT remove the structural Class U** on Dimension 3 (row-set comparability — run-provenance) at the four propagating PRs.
 
 ### 16.4 Option 9c framing (Phase 29.0a)
 
 - **Origin**: PR #348 (Phase 29 kickoff) introduces Option 9c (simple-case: target unchanged → direct inheritance of Phase 28 §10; redesign-case: per-target baseline reference required).
-- **Application at #351**: A2 redesigns target → per-target baselines (T1/T2/T3/T4) frozen at `artifacts/stage29_0a/phase29_section10_per_target_baseline.json`. Phase 28 §10 retained as DIAGNOSTIC-ONLY 2nd reference (not the formal H-D1 comparator for redesigned targets).
-- **Contamination status**: clean application. Per-target baseline JSON is one of the few committed JSON artifacts in the entire 9-eval spine.
+- **Static application check at #351**: A2 redesigns target → per-target baselines (T1/T2/T3/T4) frozen at `artifacts/stage29_0a/phase29_section10_per_target_baseline.json`. Phase 28 §10 retained as DIAGNOSTIC-ONLY 2nd reference (not the formal H-D1 comparator for redesigned targets).
+- **Static-code contamination status**: **no visible contract violation found in Option 9c application** at #351 in static inspection. Per-target baseline JSON is one of the few machine-readable artifacts committed in the entire 9-eval spine.
+- **Run-provenance status**: the per-target baseline JSON is REPRODUCIBLE_VIA_COMMITTED_ARTIFACT (committed; 141 lines). The C-sb-baseline (Phase 28 §10 reproduction) at #351 remains run-provenance Class U because the C-sb-baseline cell's `sweep_results.parquet` entry is gitignored (U-1). The partial improvement at #351 (committed per-target baseline JSON) does **NOT remove** the structural Class U on the C-sb-baseline reproduction component.
 
 ### 16.5 Phase 28.0b A4 scope amendment (PR #340)
 
 - **Origin**: PR #340 amended Clause 2 to admit non-quantile cell shapes R1 (absolute threshold) + R4 (top-K per bar) alongside quantile R2/R3.
-- **Application at #342**: 28.0b-β eval uses R1 / R2 / R3 / R4 closed allowlist per PR #341 / NG#A4-1. Scope amendment applied at merge time of #342.
-- **Contamination status**: clean. Scope amendment matches PR #341 design memo.
+- **Static application check at #342**: 28.0b-β eval uses R1 / R2 / R3 / R4 closed allowlist per PR #341 / NG#A4-1. Scope amendment applied at merge time of #342.
+- **Static-code contamination status**: **no visible contract violation found in PR #340 amendment application at #342** in static inspection. Code-level cell allowlist matches PR #341 design memo's pre-stated allowlist.
+- **Run-provenance status**: actual per-cell execution of the R1 / R4 non-quantile cells (e.g., whether each cell's row-set was constructed as documented) remains **unverified** where `sweep_results.parquet` is gitignored. **This finding does NOT remove the structural Class U** at #342.
 
 ### 16.6 Citation drift (Phase 28 closure + Phase 29 post-29.0a routing memos)
 
@@ -537,6 +544,8 @@ The 6-anchor cross-PR control chain (C-se → C-se-r7a-replica → C-a1-se-r7a-r
 One supporting-dependency Class B finding is recorded (§16.6): citation drift in Phase 28 closure + Phase 29 post-29.0a routing memos mis-attributes 27.0b/c/e-β to incorrect PR numbers; the underlying β-evals are unaffected.
 
 **This outcome does not invalidate any historical verdict.** No prior verdict is modified by this audit. Whether the tabular ceiling is trustworthy enough to anchor A0-broad H-D2 comparison is a routing decision deferred to the user.
+
+**Wording binding (re-affirmed)**: the "static-code clean at each PR's own merge-time snapshot" finding above and the "no visible contract violation found in ..." findings in §16 are **static contract inspection** results. They are **NOT** empirical reconfirmation of historical execution, NOT tabular evidence reconfirmation, NOT prior verdict formal revalidation, NOT a claim that the actual historical runs followed the inspected code paths. The structural Class U on artifact run-provenance (U-1) and sanity-probe run-provenance (U-2) is preserved across all 9 PRs; the aggregate outcome `TARGETED_VERIFICATION_REQUIRED` reflects exactly this remaining unverified-run-provenance state.
 
 ---
 
