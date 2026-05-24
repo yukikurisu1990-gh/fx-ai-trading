@@ -13,6 +13,32 @@ emit the Gate P1 report.
 - file added: `docs/design/gate_p1_feasibility_inspection_protocol.md`
   (this file only)
 
+**Amendment history:**
+
+- **Amendment 1 (this revision):** corrects the protocol description to
+  pin (a) the authoritative M1 BA raw schema to the existing
+  `scripts/stage23_0a_build_outcome_dataset.py::load_m1_ba` reader
+  contract (§3.1, no `volume` required), (b) the canonical PAIRS_20
+  authority to `scripts/stage23_0a_build_outcome_dataset.py::PAIRS_20`
+  with cross-confirmation against `scripts/stage22_0a_scalp_label_design.py::PAIRS_20`
+  (new §3.2), (c) the default inspection mechanism as AST/source-text
+  only with explicit prohibition of production-module imports
+  (`importlib` / `__import__` / `exec` / `eval` / `compile` / `runpy`)
+  in §4 and §7, (d) the development-slice parquet classification as
+  the new `EXCLUDED_NONAUTHORITY_DEVELOPMENT_SLICE` class (separate
+  from the four candidate-dependency classes; §4), (e) the in-repo
+  retention size guard citation to
+  `scripts/_verification_harness/tolerances.py::ARTIFACT_SIZE_GUARD_BYTES`
+  (95 MB per-file ceiling only; no total in-repo budget exists; §6.1)
+  and the first-PR-B-run restriction that `IN_REPO_*` and
+  `EXISTING_LOCAL_*` retention statuses are not admissible (§6.2),
+  (f) comprehensive primitive-coverage list for the no-side-effect
+  guard plus the outer-launcher / inner-guard boundary (§8.1 / §8.2)
+  and `.gitignore` non-modification (§8.3), (g) per-candidate
+  evaluation and top-level aggregation precedence (§9.1 / §9.2). All
+  prior section numbers are preserved; amendments are inlined under
+  the relevant sections.
+
 ---
 
 ## §1 — Carry-forward status
@@ -121,20 +147,91 @@ into the Gate P1 report directory (path constrained per §8).
 - SHA-256 hashing is permitted **only** in PR-B (which is read-only
   execution); this PR-A authors no hash
 
-### §3.1 — Declared bid/ask OHLC schema
+### §3.1 — Declared bid/ask OHLC schema (Amendment 1)
 
-PR-B will declare and version the expected schema in code; PR-A
-captures the conceptual contract:
+This section is amended to bind to the **actual authoritative reader
+contract** already merged at master, not to an aspirational schema.
 
-- required field set per record: timestamp (UTC), bid_open, bid_high,
-  bid_low, bid_close, ask_open, ask_high, ask_low, ask_close, volume
-- exact field names, dtypes, and ordering are fixed by the PR-B
-  implementation and recorded in the `schema_fingerprint` field of
-  the per-pair inventory entry
-- any deviation from the declared schema → per-pair field
-  `schema_valid = false` and the candidate cannot reach
-  `LOCAL_DATA_CANDIDATE_FEASIBLE_FOR_CONSTRUCTION_REVIEW` for any
-  pair that fails the schema check
+**Authoritative reader (cited):**
+`scripts/stage23_0a_build_outcome_dataset.py::load_m1_ba` (already merged).
+
+**Required M1 BA input fields per JSONL record (binding):**
+
+| Field | Type / format |
+|---|---|
+| `time` | timestamp string; must parse as the authoritative OANDA/UTC timestamp representation accepted by the cited loader contract |
+| `bid_o` | numeric, finite |
+| `bid_h` | numeric, finite |
+| `bid_l` | numeric, finite |
+| `bid_c` | numeric, finite |
+| `ask_o` | numeric, finite |
+| `ask_h` | numeric, finite |
+| `ask_l` | numeric, finite |
+| `ask_c` | numeric, finite |
+
+**Volume handling (binding):**
+
+- `volume` is **not** a required authoritative field for Gate P1 M1 BA validity
+- presence of additional non-required fields (e.g. `volume`) **may** be
+  recorded as an informational `schema_extension_finding`
+- presence of additional non-required fields **must not** by itself make
+  an otherwise valid BA file invalid
+
+**PR-B obligations under this amended schema:**
+
+- PR-B must AST-extract the actual field set from the cited authority
+  function source (no import of the production module)
+- PR-B must compute and record the SHA-256 of the cited authority
+  source file (the file containing `load_m1_ba`)
+- PR-B HALTs if the implementation's `REQUIRED_FIELDS` disagrees with
+  the amended protocol's field list above
+- any deviation from the required field list in a JSONL record →
+  per-pair field `schema_valid = false` and that pair cannot
+  contribute to a `LOCAL_DATA_CANDIDATE_FEASIBLE_FOR_CONSTRUCTION_REVIEW`
+  outcome
+
+**Scope of this amendment:**
+
+- this amendment **corrects the protocol description** to match the
+  already-existing authoritative reader
+- it does **not** inspect any local raw data
+- it does **not** select any candidate span
+- the prior wording ("`bid_open, bid_high, … volume`") is superseded
+  in full by the field list above
+
+---
+
+### §3.2 — PAIRS_20 authority resolution (Amendment 1)
+
+This section is added to pin the previously under-specified pair-universe
+authority.
+
+**Canonical candidate pair-universe authority (binding):**
+
+- `scripts/stage23_0a_build_outcome_dataset.py::PAIRS_20`
+
+**Secondary cross-confirmation source (binding):**
+
+- `scripts/stage22_0a_scalp_label_design.py::PAIRS_20`
+
+**PR-B resolution rule (binding):**
+
+- PR-B must inspect **both** sources by **AST/source-text only** (no
+  import of either module)
+- if the two literal pair lists are **identical** (element-by-element
+  string equality), emit `pair_universe_hash` over the canonical sorted
+  list and record both source SHAs in the Gate P1 report
+- if the two literal pair lists **differ**:
+  - PR-B must **not** silently select one
+  - the candidate outcome is `LOCAL_DATA_CANDIDATE_PARTIAL_FEASIBILITY`
+  - the reason is `PAIR_UNIVERSE_AUTHORITY_AMBIGUOUS`
+- if the canonical authority source cannot be read or AST-parsed:
+  - this is an **inspection-integrity HALT**
+  - no Gate P1 report PASS / PARTIAL / INSUFFICIENT outcome is emitted
+  - no PR-B evidence result is produced
+
+**This amendment does not claim any source SHA.** PR-B will compute and
+report source hashes after implementation authorisation.
 
 ---
 
@@ -161,26 +258,49 @@ into `dependency_inventory_<candidate_id>.json`.
 | Class | Meaning |
 |---|---|
 | `AVAILABLE_AS_RETAINED_RAW_LOCAL_INPUT` | the dependency is satisfied by an already-present, read-only-inspectable local raw input within the candidate span |
-| `DETERMINISTICALLY_DERIVABLE_FROM_ACCEPTED_RAW` | the dependency is reconstructable from accepted raw input via a committed, code-hashed derivation function (exact function path + source SHA-256 recorded) |
+| `DETERMINISTICALLY_DERIVABLE_FROM_ACCEPTED_RAW` | the dependency is reconstructable from accepted raw input via a committed, source-hashed derivation function (exact function path + source SHA-256 recorded; AST/source-only evidence per Amendment 1) |
 | `MISSING` | no satisfactory raw input or derivation function is present |
 | `UNCERTAIN_REQUIRES_GATE_P2_EXECUTION_VALIDATION` | code path exists but its applicability or output-emptiness cannot be assessed without running it |
 
-**Bindings:**
+**Separate classification (Amendment 1) — not one of the four
+candidate-dependency classes:**
 
-- PR-B may inspect / import / hash code paths only; **no execution**
+| Class | Meaning |
+|---|---|
+| `EXCLUDED_NONAUTHORITY_DEVELOPMENT_SLICE` | applied **only** to the existing development-slice labels parquet (`artifacts/stage25_0a/path_quality_dataset.parquet`). Recorded for documentation; not a candidate epoch input; **does not count as `MISSING`** for E2 feasibility |
+
+**Bindings (Amendment 1 strengthens correction 3):**
+
+- PR-B may inspect code paths by **AST / source-text reads + source-text
+  SHA-256 only**; **no execution**; **no import of production pipeline
+  modules**
+- PR-B must not use `importlib.import_module`, `__import__`, `exec`,
+  `eval`, `compile`, or `runpy` against production modules
 - PR-B may not run signal generation or label generation
 - PR-B may not claim that non-empty labels will be produced (that
   claim is Gate P2's alone, per PR #361 §4)
 - PR-B may not silently infer that M5 / H1 / D1 are derivable from
-  M1 BA without locating and code-hashing the exact derivation
-  function and inspecting its required semantics; absent that
-  evidence, the dependency is `UNCERTAIN_REQUIRES_GATE_P2_EXECUTION_VALIDATION`
-  at best
+  M1 BA without locating and source-hashing the exact derivation
+  function and inspecting its required semantics through AST evidence;
+  absent that evidence, the dependency is
+  `UNCERTAIN_REQUIRES_GATE_P2_EXECUTION_VALIDATION` at best
+- code-path existence claims and `DETERMINISTICALLY_DERIVABLE_FROM_ACCEPTED_RAW`
+  classifications are admissible only when supported by **bounded
+  AST/source evidence and recorded source hashes**; any dependency
+  whose applicability cannot be established without executing code
+  remains `UNCERTAIN_REQUIRES_GATE_P2_EXECUTION_VALIDATION`
 - the existing development-slice labels parquet
   (`artifacts/stage25_0a/path_quality_dataset.parquet`, currently a
-  3-pair / 1-day / 1,306-row stub) **may not be reused** as the
-  labels source; the inventory must require labels regeneration under
-  the new epoch namespace (deferred to Gate P2)
+  3-pair / 1-day / 1,306-row stub) **is not a candidate epoch input**
+  and is classified as `EXCLUDED_NONAUTHORITY_DEVELOPMENT_SLICE`
+  (separate from the four candidate-dependency classes above); Gate P1
+  may inspect only already-established exclusion metadata or later
+  permitted metadata-only filesystem facts (`os.stat()` only)
+- new labels generation remains
+  `UNCERTAIN_REQUIRES_GATE_P2_EXECUTION_VALIDATION` because Gate P1
+  cannot execute or validate labels generation
+- the dev-slice exclusion **does not** count as a `MISSING` dependency
+  for E2 feasibility
 - silent substitution of derived candles for independently-sourced
   higher-TF candles is prohibited (cross-reference to PR #361 §6)
 
@@ -241,16 +361,28 @@ PR-B will report into `retention_feasibility_<candidate_id>.json`:
 | `candidate_retention_options_requiring_later_authorisation` | enumerated, descriptive only; no probe attempted |
 | `retention_classification` | one of the four values defined in §6.2 |
 
-### §6.1 — In-repo retention size guard
+### §6.1 — In-repo retention size guard (Amendment 1)
 
-A pre-stated, documented byte budget that the new epoch's combined
-raw + labels + split + manifest footprint must not exceed if the
-intended retention path is in-repo bytes. PR-B will declare the exact
-constant in its source; PR-A's binding is that the constant is
-**explicit**, **documented**, and **referenced by hash** in the
-retention-feasibility report. The exact byte value is a PR-B
-implementation decision (it must be conservative enough not to bloat
-the repository while admitting a realistic dataset epoch).
+This section is amended to cite the existing repository policy rather
+than leaving the constant to PR-B implementation discretion.
+
+**Cited per-file ceiling (binding):**
+
+- `scripts/_verification_harness/tolerances.py::ARTIFACT_SIZE_GUARD_BYTES`
+  = `95 * 1024 * 1024` bytes (95 MB)
+- this constant is the authoritative per-file artifact-size ceiling for
+  any artifact ever committed under the project's V2-expanded harness
+  policy (merged in PR #359)
+- PR-B may cite this constant **only as a per-file artifact-size
+  ceiling**; it is not an aggregate retention budget
+
+**Total in-repo retention budget (binding):**
+
+- **no binding repository policy currently exists** at master `d718c6f`
+  declaring a total in-repo aggregate retention budget for a future
+  epoch's raw + labels + split + manifests
+- consequently, PR-B may **not** declare in-repo total retention
+  feasible in the first run; see §6.2 first-run restrictions
 
 ### §6.2 — Retention classification (binding)
 
@@ -265,7 +397,7 @@ candidate:
 | `RETENTION_DESTINATION_UNRESOLVED` | no currently admissible retention path can be justified |
 
 **Eligibility to emit `LOCAL_DATA_CANDIDATE_FEASIBLE_FOR_CONSTRUCTION_REVIEW`
-(binding):**
+(general protocol; first-run restriction below):**
 
 - raw inventory, dependency inventory, common coverage, and pipeline
   feasibility checks all pass for the candidate, **AND**
@@ -282,6 +414,30 @@ Otherwise:
 - if classification is `RETENTION_DESTINATION_UNRESOLVED` and no
   in-repo or visible-immutable-archive option exists, Gate P1 emits
   the corresponding outcome (see §9)
+
+**First-PR-B-run restrictions (Amendment 1, binding for the first
+PR-B execution):**
+
+- per §6.1, no binding total in-repo retention budget exists at master
+  `d718c6f`, **and** no local immutable archive path has been approved
+  or identified
+- therefore, in the first PR-B execution:
+  - `IN_REPO_RETENTION_SIZE_FEASIBLE_PENDING_GATE_P2` is **not
+    admissible** as an emitted retention result
+  - `EXISTING_LOCAL_IMMUTABLE_ARCHIVE_VISIBLE_READ_ONLY` is **not
+    admissible** as an emitted retention result
+- the first-PR-B-run resolver is therefore restricted to emitting
+  retention as one of:
+  - `RETENTION_CAPABILITY_REQUIRES_SEPARATE_AUTHORISED_PROBE`
+  - `RETENTION_DESTINATION_UNRESOLVED`
+- PR-B may **calculate and report**:
+  - raw candidate byte totals
+  - estimated labels / split / manifest byte requirements
+  - per-file 95 MB ceiling references (citing
+    `tolerances.py::ARTIFACT_SIZE_GUARD_BYTES`)
+- this is **not** a failure of Gate P1; it means a later separately
+  authorised retention decision is needed before any subsequent
+  PR-B-style execution could pass
 
 **If a write / read / delete capability probe is later needed:**
 
@@ -311,7 +467,8 @@ Otherwise:
 
 ## §7 — Pipeline feasibility inspection contract (PR-B scope)
 
-PR-B may inspect **code paths and imports only**. It will write
+PR-B may inspect **source text and AST only** (Amendment 1
+strengthens the prior "imports only" wording). It will write
 `pipeline_feasibility.json` recording:
 
 - which scripts / functions would generate signals
@@ -320,17 +477,22 @@ PR-B may inspect **code paths and imports only**. It will write
 - which scripts / functions construct splits
 - whether each path can be parameterised to write into a **new epoch
   namespace** (e.g. `artifacts/epoch-<manifest_id_preview>/…`)
-  without overwriting historic / current local artifacts
+  without overwriting historic / current local artifacts (detected by
+  AST inspection only)
 - the SHA-256 of the source text of each identified function
 - the enumerated work list of code changes required for Gate P2
   (design-level, not execution)
 
-**Inspection mode (binding):**
+**Inspection mode (binding; Amendment 1):**
 
-- imports only; **no** `__main__` execution of any pipeline module
-- function-signature + docstring + dependency-graph inspection
-- code-hashing of identified functions (read-only; SHA-256 over
-  source text only)
+- **AST + source-text reads + source-text SHA-256 only**
+- no `import` of production pipeline modules
+- no `importlib.import_module`, `__import__`, `exec`, `eval`,
+  `compile`, or `runpy` against production code
+- no `__main__` execution of any pipeline module
+- no invocation of any pipeline function
+- function-signature + docstring inspection is performed by AST
+  traversal, not by importing the function
 - **no labels parquet write**
 - **no signal artifact write**
 - **no baseline / control execution**
@@ -352,46 +514,173 @@ and prevent any PASS outcome from being written).
 
 **Write-path allow-list (binding):**
 
-- only Gate P1 report artifacts may be written, and only under:
+- only Gate P1 report artifacts may be written, and only under
   `artifacts/gate_p1_report/<report_id>/`
 - any attempt to write outside that prefix HALTs
 
-**Explicit write prohibitions:**
+**Categories of prohibition (overview; see §8.1 for comprehensive
+primitive coverage, §8.2 for the outer-launcher / inner-guard
+boundary, §8.3 for `.gitignore` non-modification):**
 
-- no writes under `data/`
-- no writes under existing `artifacts/stage25_0a/` or any historical
-  artifact directory
-- no labels or signals writes
-- no temporary mutation of existing datasets (no rename, no
-  tmp-and-rename pattern over `data/` or `artifacts/`)
-
-**Network prohibitions:**
-
-- no network calls of any kind (URL fetch, socket, HTTP client,
-  WebSocket, DNS-lookup-as-side-effect, etc.)
-- no API or token handling
-
-**Credentials prohibitions:**
-
-- **no credentials reads, including no environment-variable
-  presence-check**, unless a separately-authorised later step
-  explicitly enables it
-- no read of `OANDA_*`, `*_TOKEN`, `*_SECRET`, `*_API_KEY`, or any
-  similar variable — neither for value nor for presence
-- no output of any credential value to the report under any condition
-
-**Stage 2 branch prohibitions:**
-
+- file-write, network, subprocess, credentials, and bytecode-writing
+  primitives are blocked per §8.1
+- the inner guarded process must not invoke `git` or any other
+  subprocess (§8.1); code-commit provenance is captured by the
+  narrow outer launcher per §8.2
+- no credential value ever appears in any Gate P1 report artifact
+  (per §12 artifact-schema binding; consistent with §8.1 credential-
+  read block)
 - no access to, push of, fetch of, checkout of, or modification of
   the Stage 2 implementation branch
   (`research/tabular-targeted-verification-v2-expanded-stage2-preflight`
   @ local `0234ed3`)
+- retention-probe prohibitions (no test-object write / read / delete
+  against any destination; no external storage access; no
+  credential-based destination verification) — see §6 for the
+  authoritative retention-feasibility contract
 
-**Retention-probe prohibitions** (cross-reference §6):
+### §8.1 — Comprehensive primitive coverage (Amendment 1)
 
-- no test-object write / read / delete against any destination
-- no external storage access
-- no credential-based destination verification
+The earlier `open`-and-`socket`-only patch list is insufficient. The
+write-allow-list guard, network guard, credentials guard, subprocess
+guard, and bytecode guard together must, at minimum, cover the
+following primitives. Violation outside the report-namespace
+allow-list (`artifacts/gate_p1_report/<report_id>/`, `.json` / `.md`
+only) is an **inspection-integrity HALT** and prevents PR-B from being
+opened.
+
+**Bytecode (Amendment 1, binding):**
+
+- the inner guarded inspection process runs with **bytecode writing
+  disabled** (`python -B`; guard asserts `sys.dont_write_bytecode is
+  True`)
+- no `__pycache__` is written anywhere during the inspection run
+
+**File-write primitives blocked outside the report-namespace
+allow-list:**
+
+- `builtins.open` (write modes)
+- `io.open` (write modes)
+- `os.open` (with any write/create/truncate flag combination)
+- `pathlib.Path.write_text`
+- `pathlib.Path.write_bytes`
+- `pathlib.Path.touch`
+- `pathlib.Path.mkdir` (only the report directory itself may be
+  created by the outer launcher; no other mkdir from the inner
+  process)
+- `os.rename`
+- `os.replace`
+- `os.remove` / `os.unlink` (denied entirely — no deletion is required
+  or permitted during Gate P1)
+- `os.rmdir` (denied entirely)
+- `shutil.copy` / `copy2` / `copyfile` / `copytree`
+- `shutil.move`
+- `shutil.rmtree`
+- `tempfile.NamedTemporaryFile` / `TemporaryFile` / `SpooledTemporaryFile`
+- `tempfile.mkstemp` / `mkdtemp`
+
+**Extension allow-list** (additional to path allow-list):
+
+- only `.json` and `.md` writes succeed even inside the
+  report-namespace directory
+- attempts to write `.parquet` / `.csv` / `.pkl` / arbitrary binary
+  blobs HALT
+
+**Network primitives blocked (no allow-list — all banned):**
+
+- `socket.socket` (constructor)
+- `socket.create_connection`
+- `urllib.request.urlopen`
+- `http.client.HTTPConnection`
+- `http.client.HTTPSConnection`
+- `ssl.wrap_socket` / `ssl.SSLContext.wrap_socket`
+- any `requests.*` invocation (sentinel raises on attribute access)
+
+**Subprocess primitives blocked (no allow-list — all banned inside
+the guarded inner process):**
+
+- `subprocess.run` / `Popen` / `call` / `check_output` / `check_call`
+- `os.system`
+- `os.popen`
+- `os.spawn*` family
+- `multiprocessing.Process` start
+
+**Credential reads blocked (no opt-out in the first PR-B run):**
+
+- `os.environ.get/__getitem__/__contains__` for any key matching
+  `r"(?i)(OANDA|TOKEN|SECRET|KEY|PASSWORD|CREDENTIAL|AWS|GCP|AZURE).*"`
+  — read of value **and** presence-check (`in`) both HALT
+
+**Stage 2 branch prohibitions:**
+
+- the inner guarded process must not invoke `git`, `subprocess`, or
+  any tool that could shell out; this also covers any indirect
+  access to the Stage 2 implementation branch (cross-reference §8
+  overview)
+
+### §8.2 — Outer launcher vs guarded inner process boundary (Amendment 1)
+
+Because the inner guarded process cannot invoke `git`, code-commit
+provenance is captured by a **narrow outer launcher**. The boundary
+is binding.
+
+**Outer launcher (binding):**
+
+- implemented as a **single auditable Python launcher module** (not
+  separate shell and PowerShell scripts; cross-platform Python only)
+- runs **before** any inner-process guard is installed (separate
+  process)
+- may perform **only** the following operations:
+  - obtain the clean code commit SHA (`git rev-parse HEAD`)
+  - verify clean tracked worktree (`git status --porcelain` empty)
+  - create the **one** Gate P1 report directory
+    (`artifacts/gate_p1_report/<report_id>/`)
+  - write `execution_envelope.json` inside that report directory
+  - start the guarded inner process with `python -B`
+  - after inner completion, verify code SHA unchanged and no
+    unexpected tracked / untracked changes outside the report
+    directory
+- must contain its own **path restriction** allowing writes only to:
+  - `artifacts/gate_p1_report/<report_id>/execution_envelope.json`
+  - and creation of its containing report directory
+- must **not** read local candidate raw files
+- must **not** compute raw-data hashes
+- must **not** use network
+- must **not** access credentials
+- must **not** modify any existing file
+- must **not** delete anything
+
+**Inner guarded inspection process (binding):**
+
+- must install all runtime guards (§8 + §8.1) **before** importing
+  any inspector submodule
+- must run with bytecode writing disabled (`python -B`)
+- must prohibit all subprocess / git / network / credential access
+- must restrict all writes to `.json` and `.md` files inside the
+  pre-created report-namespace directory
+
+**Required PR-B tests** (to be implemented in PR-B; recorded here
+under Amendment 1 so the implementation is constrained):
+
+- outer launcher cannot write outside its envelope / report-directory
+  allowance
+- outer launcher cannot read candidate raw input or
+  network / credential sources
+- inner process imports only minimal bootstrap / guards before guard
+  installation
+- post-run audit accepts only new files beneath the one report
+  directory
+
+### §8.3 — `.gitignore` non-modification (Amendment 1)
+
+PR-B **must not modify `.gitignore`**. If Gate P1 report artifacts
+cannot be committed under existing repository policy, PR-B must
+**stop and request approval** rather than changing ignore rules.
+
+At master `d718c6f`, the `.gitignore` file uses per-stage entries
+under `artifacts/`; there is no blanket `artifacts/` ignore. The
+Gate P1 report namespace `artifacts/gate_p1_report/` is therefore
+trackable by default and no `.gitignore` change is anticipated.
 
 ---
 
@@ -419,6 +708,50 @@ where applicable):
 - any A0-broad eligibility status
 - any historic verdict modification (Phase 27 / 28 / 29.0a / PR #356
   / PR #360 / PR #361 unchanged)
+
+### §9.1 — Per-candidate evaluation (Amendment 1)
+
+Per candidate, the outcome is assigned as follows:
+
+- **all sufficient + retention `RETENTION_CAPABILITY_REQUIRES_SEPARATE_AUTHORISED_PROBE`:**
+  - candidate status = `LOCAL_DATA_CANDIDATE_PARTIAL_FEASIBILITY`
+  - substatus = `RETENTION_CAPABILITY_REQUIRES_SEPARATE_AUTHORISED_PROBE`
+  - "all sufficient" = raw inventory + pair/schema authority +
+    dependency inventory + pipeline feasibility all pass
+- **all sufficient + retention `RETENTION_DESTINATION_UNRESOLVED`:**
+  - candidate status = `RETENTION_DESTINATION_UNRESOLVED`
+- **pair-universe or schema authority is ambiguous:**
+  - candidate status = `LOCAL_DATA_CANDIDATE_PARTIAL_FEASIBILITY`
+  - reason recorded explicitly as one of:
+    - `PAIR_UNIVERSE_AUTHORITY_AMBIGUOUS`
+    - `SCHEMA_AUTHORITY_AMBIGUOUS`
+- **raw or required dependency / pipeline feasibility is insufficient:**
+  - candidate status = `LOCAL_DATA_INSUFFICIENT_FOR_NEW_EPOCH`
+
+### §9.2 — Top-level aggregation across candidate spans (Amendment 1)
+
+Top-level outcome is selected by the following precedence:
+
+1. **if any candidate would be
+   `LOCAL_DATA_CANDIDATE_FEASIBLE_FOR_CONSTRUCTION_REVIEW`**, emit that
+   outcome
+   - this outcome remains part of the general protocol but, per
+     §6.2 first-PR-B-run restrictions, is **unreachable** in the
+     first PR-B execution because the retention-ready statuses
+     (`IN_REPO_*` / `EXISTING_LOCAL_*`) are not admissible there
+2. **else if any candidate is
+   `LOCAL_DATA_CANDIDATE_PARTIAL_FEASIBILITY`**, emit
+   `LOCAL_DATA_CANDIDATE_PARTIAL_FEASIBILITY` and list **all**
+   contributing candidates and their per-candidate reasons (substatus
+   or ambiguity reason) in the Gate P1 report
+3. **else if one or more candidates satisfy raw / dependency /
+   pipeline sufficiency but all are blocked solely by unresolved
+   retention**, emit `RETENTION_DESTINATION_UNRESOLVED`
+4. **else** emit `LOCAL_DATA_INSUFFICIENT_FOR_NEW_EPOCH`
+
+PR-B must not implement unreachable or contradictory branches of the
+resolver. The resolver source must be statically verifiable against
+this precedence.
 
 ---
 
