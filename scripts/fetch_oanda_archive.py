@@ -145,7 +145,13 @@ def main() -> int:
 
     for i, (pair, gran) in enumerate(jobs, 1):
         out = _output_path(pair, gran)
-        rec = {"job": i, "n_total": n_total, "pair": pair, "granularity": gran, "output": str(out.relative_to(REPO_ROOT))}
+        rec = {
+            "job": i,
+            "n_total": n_total,
+            "pair": pair,
+            "granularity": gran,
+            "output": str(out.relative_to(REPO_ROOT)),
+        }
 
         if out.exists() and out.stat().st_size > 0:
             _log({**rec, "event": "skip_existing", "size_bytes": out.stat().st_size})
@@ -165,14 +171,30 @@ def main() -> int:
                 api_client=api,
             )
             elapsed = time.time() - t_job
-            _log({**rec, "event": "fetch_done", "written": written, "elapsed_sec": round(elapsed, 1)})
+            _log(
+                {**rec, "event": "fetch_done", "written": written, "elapsed_sec": round(elapsed, 1)}
+            )
             completed.append({**rec, "written": written, "elapsed_sec": round(elapsed, 1)})
         except Exception as exc:
             elapsed = time.time() - t_job
-            _log({**rec, "event": "fetch_failed", "error": str(exc), "elapsed_sec": round(elapsed, 1)})
+            _log(
+                {
+                    **rec,
+                    "event": "fetch_failed",
+                    "error": str(exc),
+                    "elapsed_sec": round(elapsed, 1),
+                }
+            )
             failed.append({**rec, "error": str(exc), "elapsed_sec": round(elapsed, 1)})
 
-    _log({"event": "fetch_phase_done", "skipped": len(skipped), "completed": len(completed), "failed": len(failed)})
+    _log(
+        {
+            "event": "fetch_phase_done",
+            "skipped": len(skipped),
+            "completed": len(completed),
+            "failed": len(failed),
+        }
+    )
 
     print("\n=== Building manifest ===", flush=True)
     manifest_files: list[dict] = []
@@ -184,7 +206,10 @@ def main() -> int:
             summary = _file_summary(out)
             summary.update({"pair": pair, "granularity": gran, "days": DAYS, "price": PRICE})
             manifest_files.append(summary)
-            print(f"  {pair} {gran}: rows={summary['row_count']} sha={summary['sha256'][:12]}", flush=True)
+            print(
+                f"  {pair} {gran}: rows={summary['row_count']} sha={summary['sha256'][:12]}",
+                flush=True,
+            )
         except Exception as exc:
             print(f"  {pair} {gran}: MANIFEST FAILED: {exc}", flush=True)
 
@@ -211,7 +236,7 @@ def main() -> int:
     }
     MANIFEST_PATH.write_text(json.dumps(manifest, indent=2), encoding="utf-8")
     print(f"\nManifest written: {MANIFEST_PATH}", flush=True)
-    print(f"Total elapsed: {total_elapsed/60:.1f} min", flush=True)
+    print(f"Total elapsed: {total_elapsed / 60:.1f} min", flush=True)
     return 0 if not failed else 2
 
 
