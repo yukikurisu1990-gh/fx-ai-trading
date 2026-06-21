@@ -16,6 +16,40 @@ contract of `docs/design/phase27_29_tabular_eval_validity_audit.md`
 
 **Amendment history:**
 
+- Amendment 6 (this PR): new section §11A "Profit Growth
+  Hypothesis Matrix" added before §11 Open questions. The
+  Foundation / Research / Production track sections (§5 / §6 /
+  §7) define the **methodological** layer (how to verify; how to
+  expand the research surface); §11A defines the
+  **profit-mechanism** layer mapped explicitly to those tracks so
+  the two layers cannot drift. §11A.1 matrix covers 8 profit
+  levers (L1 cost reduction / spread realism; L2 execution /
+  sizing efficiency; L3 new retained-data / new-epoch
+  verification; L4 cheap signal-family ambiguity resolution; L5
+  data-side expansion; L6 architecture / representation
+  expansion; L7 target redesign; L8 ensemble / selection
+  redesign) plus L-LEGACY for Phase 20-26 / M1-M5-M15 routes with
+  controlled-vocabulary status `REQUIRES_SEPARATE_EVIDENCE_
+  RECONCILIATION` (explicit binding; silent ignoring forbidden).
+  Each lever row carries: candidate track(s), profit mechanism,
+  why-admissible-after-evidence-reconciliation, required
+  evaluation metrics, Foundation dependency, production risk,
+  recommended priority, first authorisable PR / design memo.
+  §11A.2 recommended profit-first sequencing (near-term
+  pre-Foundation: P2 → P1 → PR-B.0/T1 → T2; post-Foundation T4:
+  A.1 → D.1 → C.1 → A.2 → D.2/D.4/D.5 → B/E/F/G). §11A.3 explicit
+  non-goals (do not optimise for gross Sharpe alone; do not use
+  old numeric claims as thresholds; do not treat any track as
+  production-ready without migration design; do not add external
+  data without retention/provenance; do not run architecture work
+  without marginal-information hypothesis; do not over-generalise
+  Phase 28 negative research baseline; do not interpret absence of
+  +mtf direct negative final Sharpe as positive evidence). §11A.4
+  Phase 20-26 / M1-M5-M15 legacy route explicit handling
+  (`REQUIRES_SEPARATE_EVIDENCE_RECONCILIATION`; not silently
+  ignored; requires separately authorised legacy-route
+  reconciliation memo before legacy phases can be promoted into
+  §6 / §7). All Amendment 1-5 bindings preserved.
 - Amendment 5 (this PR): cleanup of Amendment 4 residuals. (a) §3
   status table: stale duplicate `9.X-J / 9.X-L / 9.X-M / 9.X-N /
   9.X-O "(per log)"` rows (which preceded the detailed Amendment-4
@@ -1628,6 +1662,161 @@ that track's outcome ladder.
 
 ---
 
+## §11A Profit Growth Hypothesis Matrix (Amendment 6)
+
+This section answers a different question from the rest of the
+roadmap: "given everything we have tried so far, what should we
+test next to actually improve profit?" The Foundation Track
+(§5), Research Tracks (§6), and Production-Improvement Tracks
+(§7) above are the **methodological** layer (how to verify
+claims; how to expand the research surface). §11A is the
+**profit-mechanism** layer (which lever, in which sequence,
+under which gates, against which metrics) — mapped explicitly
+to the tracks above so the two layers cannot drift.
+
+### §11A.1 — Profit lever matrix
+
+| Profit lever | Candidate track(s) | Profit mechanism | Why still admissible after evidence reconciliation | Required evaluation metrics | Foundation dependency | Production risk | Recommended priority | First authorisable PR / design memo |
+|---|---|---|---|---|---|---|---|---|
+| **L1 — Cost reduction / spread realism** | §7.P2 (live spread snapshotting; observational) → §7.P1 (cost-model refinement) | Replace fixed-pip spread assumptions with empirical per-pair / per-time-of-day spread; reduce false-positive trades that only pass under unrealistic cost models | The Phase 9.10 cost-aware backtest is `ARCHIVED_UNTRUSTED` as a Sharpe ceiling claim, but the *direction* (lower cost → better net P&L) is independent of the suspended numerics; admissibility comes from real-world spread/slippage measurements, not from old Sharpe numbers | net Sharpe (per-trade, post-cost), ann_pnl, spread sensitivity (Δ Sharpe / Δ pip), per-time-of-day PnL distribution, blocked-trade per-trade EV (i.e., would-have-been P&L of trades the new cost model blocks), DD%PnL | Independent of Foundation T1-T4 (P2 / P1 can proceed while Foundation work parallels) | Low for P2 (observational); medium for P1 (paper A/B before any production switch); high for P3 sizing changes (rollback plan + risk limits required) | **Highest near-term** — P2 first because observational and safest | P2 snapshotting design memo (small; ~200-400 lines; under §7.P1 / §7.P2 framing) |
+| **L2 — Execution / sizing efficiency** | §7.P3 (cost-aware sizing engineering); 9.X-N margin-aware-sizing **mechanism re-evaluation from scratch under new epoch** (NOT 9.X-N's old numeric); 9.X-O purge+clip **mechanism re-evaluation from scratch** | Reduce drawdown and avoid oversized / bad-liquidity execution while preserving net PnL; partial fills, margin accounting, per-pair max-position scaling | The Phase 9.13 C-1 Kelly / C-2 cap NO ADOPT was for **Layer-1 lever** Sharpe lift, which is a distinct question from production-layer engineering; the 9.X-N / 9.X-O mechanisms are `ARCHIVED_UNTRUSTED` as Sharpe claims but their mechanism-level rationale (sizing realism, clip cap discipline) is independent of those numerics; production-engineering admissibility comes from rollback + risk-limit discipline, not from old Sharpe numbers | ann_pnl, max DD, DD%PnL, margin usage histogram, rejected-order count, per-pair lot exposure, turnover, live/paper safety gate triggers, max-consecutive-losses count | Foundation-independent for the engineering portion; the mechanism-level re-evaluation of 9.X-N / 9.X-O Sharpe is Foundation-dependent (requires T4 + new-epoch S-B / S-E) | High (production order flow) — requires explicit rollback plan + pre-stated risk limits + safety gates per §7.P3 | High, but production-risk controlled | §7.P3 cost-aware sizing engineering design memo (mechanism-only; **no** Sharpe-lift claim) |
+| **L3 — New retained-data / new-epoch verification** | §5 T1 (Gate P1 PR-B) → T2 (Gate P2 retention) → T3 (new epoch baseline + control) → T4 (V2-expanded sentinel) | **Not a direct profit lever.** Enables trustworthy profit tests for all subsequent levers; prevents Class-U recurrence; establishes the new S-B / S-E comparator baseline against which Research Tracks A-G evaluate | The PR #356 audit verdict `TARGETED_VERIFICATION_REQUIRED` and the V2-expanded Stage 2 `HALTED_INPUT_UNAVAILABLE` make this the only path under which new "verified" claims become admissible; this is the structural admissibility precondition for every other lever above L1 / L2 | manifest completeness, retention round-trip 100% per-file SHA-256 match (§5.3 T2 stage gate), committed run-provenance artifacts (sweep_results / aggregate / val_selected / sanity_probe), full V2-expanded sentinel verification verdict (F-1..F-7 + S-1..S-6 under same contract / provenance boundary; per §5.5 T4 stage gate) | self-defining (T1 → T2 → T3 → T4 sequence) | None (Foundation work itself does not change production) | **Mandatory before any new "verified" research claim**; L4..L8 below all depend on at least T4 completion | T1 PR-B.0 infrastructure (per PR #365 §11 3-PR split default) — requires explicit user authorisation |
+| **L4 — Cheap signal-family ambiguity resolution** | §6.A A.1 (MTF from-scratch under new epoch); A.2 (Top-K from-scratch); A.3 (C-3 mechanism from-scratch) | Test whether historically important but untrusted feature families / mechanisms have any value under the new-epoch S-B / S-E comparators; not a reproduction or rescue of prior claims | The +mtf v18 0.174 (`INVALID_LOOKAHEAD_NUMERIC`) / v19 0.158 (`ARCHIVED_UNTRUSTED`) / Top-K 0.165 / C-3 0.177 numerics are non-routing per Amendment 1-5, but the underlying feature families / mechanisms are eligible for from-scratch re-evaluation under T4 (per §6.A from-scratch framing; Amendment 4 Track A.1 sequencing binding); A.1's value is **ambiguity resolution** (does the family produce admissible new-epoch evidence at all?), not historical promise | net Sharpe (post-cost) on new-epoch test split, ann_pnl, per-trade EV stability, rank monotonicity (no inversion à la Phase 9.19 rank-3 -0.054), per-pair contribution, regime contribution, cost sensitivity (Δ Sharpe / Δ spread bps) | Foundation T4 complete | None directly (research-layer; production reflection requires separate migration design memo per §6.A) | **Medium**; A.1 may be **early** post-T4 because it is cheap and resolves a major historical ambiguity, **not** because old MTF evidence is favourable | A.1 design memo (per-track design memo authored after T3 / T4 completion; thresholds defined against new-epoch S-B / S-E, not against any archived old-epoch numeric) |
+| **L5 — Data-side expansion (information enlargement)** | §6.D D.1 (time-axis) → D.2 (economic calendar) → D.4 (interest rate spreads) / D.5 (orderbook microstructure) / D.6 (pair universe 20→30) | Add **genuinely new information** rather than more extraction from the same R7-A surface (the data-side leg of the §4.2 extraction-vs-expansion working hypothesis) | The historical +mtf evidence supporting "expansion ≥ extraction" is now degraded by Amendment 4's realism harvest (J/L/M -1.9% / -8.9% / -15.8% under realism mechanisms); however, the hypothesis is preserved as a heuristic, not a verdictable claim; D.1 is cheap (timestamp-derived from existing OANDA bytes), D.2 / D.4 / D.5 are subject to the §6.D external-data mini provenance / retention gate | incremental value vs new-epoch S-B (Δ Sharpe, Δ ann_pnl), leakage checks (causality test; split-leakage check per §6.D D.1 requirements), regime robustness (per-quarter / per-vol-regime breakdown), per-pair contribution, cost-adjusted net PnL | Foundation T4 complete; external-data sub-tracks (D.2 / D.4 / D.5) additionally require the mini retention / provenance gate per §6.D Amendment 1 binding | None directly; production reflection requires separate migration design memo | **D.1 high after Foundation** (cheap timestamp-derived); D.2 / D.4 / D.5 conditional on external-data mini gate completion | D.1 time-axis design memo (post-T4) |
+| **L6 — Architecture / representation expansion** | §6.C C.1 (A0-broad S1 LSTM) → C.2 (S2 TCN) → C.3 (S3 Transformer); §6.B B-1 / B-3 / B-4 (Phase 9.X-C residual LSTM modes); §6.F A3 learned MoE | Test whether the current tabular-LightGBM + R7-A architecture stack is seam-saturated (H-B9 hypothesis falsification path); enable a fundamentally different representation if any single architecture beats the new-epoch baseline | The H-B9 hypothesis is conjectural (§4.4 working hypothesis); Phase 27-29 9/9 baseline-pick pattern is consistent with H-B9 but does not confirm it; A0-broad sequence-NN allowlist (PR #354) is the explicit falsification path; B and F tracks are not foreclosed | net Sharpe (post-cost) on new-epoch test split under the same accepted contract / provenance boundary, tabular arch-control (C-d2-arch-control 7th anchor per PR #354 §H-D2), train/val objective wall (val Huber loss training-time; val Sharpe verdict-time per PR #354), full run-provenance committed (sweep_results / sanity_probe / aggregate_summary; explicit U-1 prevention), H-D2 4-outcome ladder verdict | Foundation T4 complete + A0-broad preflight audit pass (per PR #353 / #355 amendment §0.A) | None directly (research-layer); GPU compute cost (2-4 weeks per architecture per §8.3 §6.C sequencing) | **C.1 important** for H-B9 ambiguity resolution; B / F **conditional on A / C / D outcomes** and lower-priority by themselves; the §6.B decision table over A.1 outcome binds B-track eligibility | C.1 (S1 LSTM under A0-broad) design memo (post-T4 + post-preflight); reuses Phase 9.X-C/M-1 PyTorch + CUDA infrastructure |
+| **L7 — Target redesign** | §6.E A2-broad target redesign (e.g., E.1 multi-horizon weighted target; E.2 meta-labelling 2-stage; E.3 return-magnitude regression with per-pair quantile normalisation; E.4 risk-adjusted Sharpe-of-trade target) | Improve label / target alignment with monetisable trades; address the class-imbalance / label-noise sources that have repeatedly shown up (84% TB timeout per Phase 9.X-C closure; Phase 27.0d Spearman PASS but Sharpe -0.483 conversion failure) | A2-narrow is FALSIFIED at narrow scope (T1..T4); A2-broad is `DEFERRED_NOT_FORECLOSED` (§3 Tier 5; §6.E scope); not falsified by the narrow result | D-1 PnL identity, net Sharpe (post-cost), ann_pnl, per-trade EV, calibration (rank monotonicity; PIT histogram), class balance, regime robustness | Foundation T4 complete + Track A.1 outcome known (so the candidate targets can be evaluated against a baseline-defined reference) | None directly | **Conditional after Foundation and A.1 / C.1 outcomes**; lower-priority than L4 / L5 / L6 until L4-L6 results clarify which target structure is sensible | A2-broad target redesign design memo (post-T4 + post-A.1) |
+| **L8 — Ensemble / selection redesign** | §6.G G.1 (calibrated confidence ranking ensemble) / G.2 (regime-conditional ensemble) / G.3 (sequence-NN + LightGBM ensemble) | Avoid trade-rate explosion and rank inversion through calibrated selection (the Phase 9.17 / 9.17b / 9.X-A / 9.X-C/M-1 5-phase pattern of "trade-rate explosion + per-trade EV collapse") | Phase 9.17 ensemble (MR+BO without threshold) is FALSIFIED at narrow scope; G.1 / G.2 / G.3 are scope-distinct (calibrated selection; regime-conditional; sequence-NN cooperation); not falsified by the narrow Phase 9.17 verdict | rank monotonicity, selected-trade EV (per rank), trade count, turnover, net Sharpe (post-cost), per-pair overlap (the correlated-pair concern from Phase 9.19 rank inversion), cost sensitivity | Foundation T4 complete + Track A.1 + at least one Track C architecture result | None directly | **Lower priority** unless A / C / D produce complementary signals that benefit from ensemble combination | G.1 / G.2 / G.3 design memo (post-T4 + post-A.1 + post-C-some-architecture) |
+| **L-LEGACY — Pre-Phase-9 / Phase 20-26 / M1-M5-M15 routes** | (none currently in §6 Research Tracks; pending) | Scalp label design (Phase 22), outcome dataset (Phase 23), mean-reversion / breakout / Donchian / z-score / hybrid baselines, path-EV / trailing-stop / partial-exit (Phase 24), alpha L1-L3 layers and feature widening (Phase 25-26), M1 / M5 / M15 timeframe variants, exit study, fresh-fetch alt-signal work | **Status: `REQUIRES_SEPARATE_EVIDENCE_RECONCILIATION`** — the docs/design/ directory contains substantial committed memos (phase22_*, phase23_*, phase24_*, phase25_*, phase26_* series) that the current roadmap (Foundation T1-T4 + Research A-G + Production P1-P3) does not cover. These remain candidates for profit improvement but were not subjected to the Amendments 1-5 evidence reconciliation. Until a separately authorised legacy-route reconciliation memo establishes their controlled-vocabulary labels and admissibility, they cannot be promoted into §6 Research Tracks or §7 Production Tracks. | (to be defined in a separate legacy-route reconciliation memo) | None until reconciliation completes (Foundation T1-T4 status independent of legacy reconciliation) | Unknown until reconciliation completes | **Deferred until separate evidence-reconciliation memo authorised**; not silently ignored | A "Phase 20-26 / M1-M5-M15 legacy route evidence reconciliation memo" (separate from this roadmap; analogous in structure to Amendments 2 / 4 but scoped to the legacy phases) |
+
+### §11A.2 — Recommended profit-first sequencing
+
+**Near-term, before Foundation completes** (parallel to T1 / T2
+planning):
+
+1. **P2 live spread snapshotting design** — observational and
+   safest; collects empirical spread data per pair per time-of-day;
+   no production decision logic touched.
+2. **P1 spread / slippage model design** — authored **after P2 has
+   collected ≥ 4 weeks of empirical spread data** (per §11.Q8
+   recommendation); paper A/B before any production switch.
+3. **PR-B.0 / T1 infrastructure** — if user authorises the
+   Foundation path; per PR #365 §11 3-PR split default.
+4. **T2 retention destination discussion in parallel** with T1, but
+   per §8.2 Amendment 1 binding, **T2 deposit ≠ epoch adoption**;
+   no epoch span is bound until T1 / T2 evidence is reviewed at T3.
+
+**After Foundation T4 completes:**
+
+1. **A.1 only as cheap ambiguity resolution** — MTF feature-family
+   from-scratch re-evaluation under new-epoch S-B / S-E (per
+   Amendment 4 Track A.1 sequencing binding; **not** a reproduction
+   of 0.158, **not** a continuation of prior PARTIAL GO+).
+2. **D.1 time-axis features** — cheap and timestamp-derived from
+   existing OANDA bytes; subject to causality + split-leakage
+   checks per §6.D Amendment 1 binding.
+3. **C.1 A0-broad S1 LSTM** — H-B9 falsification path; sequencing
+   priority justified independently of L4 outcome.
+4. **A.2 Top-K** only if the Top-K execution gateway (per PR #216
+   follow-up requirement) is ready; otherwise deferred.
+5. **D.2 / D.4 / D.5 external data** only after the §6.D mini
+   data-source feasibility + retention/provenance gate completes
+   for that specific external source.
+6. **B / E / F / G** conditional on A / C / D results per the
+   per-track decision logic (§6.B decision table; §6.E / F / G
+   prerequisites).
+
+### §11A.3 — Non-goals (explicit)
+
+The following are **forbidden** as profit-improvement strategies
+under this roadmap (Amendment 6 binding):
+
+- **Do not optimise for gross Sharpe alone.** Net-of-cost Sharpe
+  is the binding metric (per §11A.1 L1 / L4 / L5 metric columns);
+  gross Sharpe is informational only.
+- **Do not use old numeric claims as pass / fail thresholds.**
+  v18 0.174 is `INVALID_LOOKAHEAD_NUMERIC`; v19 0.158 / Top-K 0.165
+  / C-3 0.177 are `ARCHIVED_UNTRUSTED_NUMERIC_DO_NOT_USE_FOR_
+  ROUTING`; LSTM Mode A 0.061 is `FALSIFIED_AT_SCOPE`. None may
+  serve as a threshold (Amendment 1-5 bindings preserved).
+- **Do not treat any track as production-ready without a
+  production-migration design memo.** §6.A explicit binding: A.1
+  Tier-1 verdict does NOT auto-authorise production reflection;
+  migration requires separate design memo + live / paper safety
+  gates + explicit user authorisation.
+- **Do not add external data without the mini retention /
+  provenance gate** (per §6.D Amendment 1 binding): raw-byte
+  retention satisfying PR #361 §7; schema manifest; dependency
+  manifest; documented restoration procedure. Unretained external
+  data may NOT enter a verified evaluation.
+- **Do not run architecture work just because prior signal work
+  failed.** Track B (residual LSTM modes), Track C (A0-broad), and
+  Track F (A3 MoE) each require a **stated marginal-information
+  hypothesis** in their design memo explaining why the
+  architecture might add value over the new-epoch baseline; the
+  decision is not "extraction failed, so try architecture."
+- **Do not over-generalise Phase 28 §10 research baseline
+  negative Sharpe to the production baseline.** The Phase 28
+  research baseline `NEGATIVE_FINAL_EVIDENCE_AT_SCOPE` is
+  research-scope only; Phase 9.16 v9 20p production baseline
+  remains `VALID_OPERATIONAL_BASELINE` (Amendment 4 / 5 scoping
+  binding preserved).
+- **Do not interpret the absence of a direct +mtf negative
+  final Sharpe as positive evidence for +mtf.** Per Amendment 5
+  Appendix A.11 binding: direct +mtf negative final Sharpe =
+  `SOURCE_NOT_FOUND_IN_REPO`; absence is not positive evidence;
+  four independent non-routing reasons bind regardless.
+
+### §11A.4 — Phase 20-26 / M1-M5-M15 legacy route — explicit handling
+
+The current roadmap (Foundation T1-T4 + Research A-G + Production
+P1-P3) does **not** cover the substantial pre-Phase-9 / Phase 20-26
+research line. The `docs/design/` directory contains committed
+memos for:
+
+- Phase 22 — scalp label design, mean-reversion baseline,
+  M5-breakout-M1-entry hybrid, meta-labelling, alternatives
+  postmortem, final synthesis, research integrity audit
+- Phase 23 — outcome dataset, m5 Donchian baseline, m5 z-score
+  MR baseline, signal quality rev1, m15 Donchian baseline, design
+  kickoff, final synthesis
+- Phase 24 — path-EV characterisation, trailing stop, partial
+  exit, regime-conditional, design kickoff, NG10 envelope
+  confirmation, NG10 relaxation review, final synthesis,
+  gamma hard close
+- Phase 25 — label design, F1 / F2 / F3 / F5 alpha designs,
+  scope reviews post-F1 / F2 / F3 / F5, deployment audit design,
+  routing reviews, closure memo
+- Phase 26 — kickoff, first scope review, alpha L1 / L2 / L3
+  designs, alpha rev1, routing reviews post-26.0a / 26.0b / 26.0c,
+  scope amendment for feature widening, R6 new-A design memo
+- Various M1 / M5 / M15 timeframe variants and exit-study /
+  fresh-fetch / alt-signal work
+
+**These are NOT intentionally out of scope.** They remain
+potentially relevant to profit growth but were **not** subjected
+to the Amendments 1-5 evidence reconciliation (which focused on
+Phase 9.x / Phase 27-29 lineage).
+
+**Amendment 6 binding for Phase 20-26 / M1-M5-M15 legacy:**
+
+- **Status:** `REQUIRES_SEPARATE_EVIDENCE_RECONCILIATION`
+- **Roadmap effect:** the L-LEGACY row in §11A.1 records this
+  status; the legacy phases cannot be promoted into §6 Research
+  Tracks or §7 Production Tracks under this roadmap.
+- **Required next step (when user authorises):** a separately
+  authorised "Phase 20-26 / M1-M5-M15 legacy route evidence
+  reconciliation memo" analogous in structure to Amendments 2 / 4
+  (controlled vocabulary labels per claim; SOURCE citations;
+  per-numeric admissibility; per-mechanism eligibility). This
+  memo is **not** part of the current roadmap PR sequence.
+- **Until that memo lands:** the legacy phases are recorded as
+  pending; **silent ignoring is forbidden** (Amendment 6 binding);
+  future profit-growth decisions must either (a) explicitly
+  defer to the pending reconciliation, or (b) trigger the
+  reconciliation memo's authoring.
+
+---
+
 ## §11 Open questions
 
 These items require user judgment before the corresponding track /
@@ -2128,7 +2317,8 @@ above independently.
 
 | Roadmap section | Update applied |
 |---|---|
-| §0 Amendment history | Amendment 1 + 2 + 3 + 4 + 5 history entries added |
+| §0 Amendment history | Amendment 1 + 2 + 3 + 4 + 5 + 6 history entries added |
+| §11A Profit Growth Hypothesis Matrix (new) | 8 profit-lever matrix + L-LEGACY row for Phase 20-26 / M1-M5-M15; recommended profit-first sequencing (near-term + post-T4); explicit non-goals; legacy-route handling as `REQUIRES_SEPARATE_EVIDENCE_RECONCILIATION` (Amendment 6) |
 | §3 status table (Amendment 5 cleanup) | stale duplicate "(per log)" rows for 9.X-J / 9.X-L / 9.X-M / 9.X-N / 9.X-O removed; the detailed Amendment-4 rows are now the sole authoritative entries; conflict with old interpretation (TBD / blanket NO ADOPT) resolved |
 | §3 status table `+all (vol+moments+mtf)` row | active comparator phrasing "< +mtf alone" replaced with archival closure-context note + active reason "multicollinearity / combined feature group did not produce an adoptable phase verdict" (Amendment 5) |
 | Appendix A.11 aggregate finding | extended with audit-proof binding `Direct +mtf final negative Sharpe = SOURCE_NOT_FOUND_IN_REPO`; absence may not be interpreted as positive evidence (Amendment 5) |
