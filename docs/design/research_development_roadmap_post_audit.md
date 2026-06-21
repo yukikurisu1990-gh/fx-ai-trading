@@ -14,7 +14,40 @@ contract of `docs/design/phase27_29_tabular_eval_validity_audit.md`
 **Branch:** `docs/research-development-roadmap-post-audit`
 **File added:** `docs/design/research_development_roadmap_post_audit.md`
 
-**Amendment history:** (none — initial draft.)
+**Amendment history:**
+
+- Amendment 1 + 2 (this PR): combined application of (a) the 11
+  structural fixes earlier requested by user review (T3/T4
+  separation, retraction of unapproved `SENTINEL_VERIFICATION_COMPLETE`
+  label, Tier 1 language tightening, Track A outcome ladders
+  reframed as illustrative-only, T4 staged-verification binding,
+  H-B9 wording softening, Track D external-data provenance gate,
+  Production P1/P2/P3 risk wording, Track B decision table,
+  T1/T2 parallelism clarification with T2 deposit ≠ epoch adoption,
+  §12 carry-forward precision), and (b) the evidence reconciliation
+  appendix and corresponding numeric-claim demotion: +mtf v18 Sharpe
+  0.174 reclassified as `INVALID_LOOKAHEAD_NUMERIC` per
+  `sharpe_improvement_brief.md` lookahead bug citation; +mtf v19
+  Sharpe 0.158 reclassified as `ARCHIVED_UNTRUSTED_NUMERIC_DO_NOT_
+  USE_FOR_ROUTING` (class U + numeric reduced from a now-invalid v18
+  anchor); Top-K K=2 Sharpe 0.165 reclassified as
+  `ARCHIVED_UNTRUSTED_NUMERIC_DO_NOT_USE_FOR_ROUTING`; C-3 Sharpe
+  0.177 reclassified as `ARCHIVED_UNTRUSTED_NUMERIC_DO_NOT_USE_FOR_
+  ROUTING`; LSTM Mode A Sharpe 0.061 remains `FALSIFIED_AT_SCOPE`
+  but explicitly does not falsify B-1..B-4 nor the A0-broad
+  sequence-NN allowlist; Phase 9.16 v9 20p Sharpe 0.160 remains
+  `VALID_OPERATIONAL_BASELINE`. Track A.1 / A.2 / A.3 reframed as
+  **from-scratch feature-family re-evaluations under new epoch**
+  (old numerics archived context only; no production reflection
+  auto-authorised). §4.2 extraction-vs-expansion principle demoted
+  from "verified success" wording to "working hypothesis with
+  empirical falsification surface support; not a binding verdictable
+  claim". §12 explicitly states that old +mtf / Top-K / C-3 numerics
+  are not admissible routing evidence and that no prior Phase
+  9.X-B PARTIAL GO / PARTIAL GO+ survives as verified or production-
+  relevant evidence unless re-executed under the new foundation
+  contract. Appendix A added (evidence-status table with controlled
+  vocabulary + per-numeric source citations).
 
 This document is a **doc-only research and development roadmap**. It
 does not authorise the execution of any track listed within it. Per
@@ -103,8 +136,13 @@ The memo explicitly **does not**:
   closure memos remain in their then-recorded class.
 - claim any new "verified" status for any Phase 9.x result. The
   +mtf v19 causal Sharpe 0.158, Top-K K=2 Sharpe 0.165, and any
-  pre-Phase-9.16 baselines (incl. C-3 0.177) remain at
-  TARGETED_VERIFICATION_REQUIRED or worse.
+  pre-Phase-9.16 baselines (incl. C-3 0.177) are at
+  TARGETED_VERIFICATION_REQUIRED at minimum; per the Appendix A
+  evidence reconciliation, they are demoted to
+  `ARCHIVED_UNTRUSTED_NUMERIC_DO_NOT_USE_FOR_ROUTING` for the
+  specific purpose of admissibility as production-routing /
+  pass-fail-threshold evidence. The +mtf v18 Sharpe 0.174 is
+  reclassified as `INVALID_LOOKAHEAD_NUMERIC`.
 - select a Gate P2 retention destination. PR #366 evaluation memo's
   default recommendation (D3 R2 + D7 backup + D6 manifest-CID) is
   not pre-approved here.
@@ -137,10 +175,15 @@ verification passed under the V2-expanded contract or its successor.
 
 - "formally verified at PR #<n>"
 - "carries V2-expanded sentinel evidence"
-- "cleared the F-1 / F-2 / F-3 foundation checks under run-provenance"
+- "cleared the full applicable foundation + sentinel verification
+  contract, with committed run-provenance artifacts"
 
-**Forbidden:** none specific (it is admissible to attribute new
-results to this tier once any reach it).
+**Forbidden:**
+
+- "cleared the F-1 / F-2 / F-3 foundation checks" alone (partial-
+  stage clearance is not Tier 1; see §11.Q3 binding)
+- attributing Tier 1 to a result that passed only a staged subset
+  of the verification contract
 
 ### Tier 2 — CONTEMPORANEOUS_CONTRACT_PASS
 
@@ -175,19 +218,52 @@ any "verified" claim is admissible.
 
 **Currently in this tier:**
 
-- +mtf K=3 (Phase 9.X-B v19 causal fix, nominal Sharpe 0.158) +
-  +mtf K=2 (nominal Sharpe 0.157)
-- Top-K K=2 (Phase 9.19, nominal Sharpe 0.165) and the entire
-  Phase 9.19 J-series
-- C-3 kill switches (Phase 9.13, nominal Sharpe 0.177) — pre-Phase-27
-  predecessor of the spine but, by inheritance, subject to the same
-  unverifiable run-provenance
-- Phase 9.X-C M-1 LSTM Mode A (nominal Sharpe 0.061) — out of audit
-  scope but same artifact-commitment pattern; presumed class-U risk
-  until verified otherwise
 - All 9 Phase 27-29 β-evals (#318, #321, #325, #328, #332, #338,
   #342, #345, #351) — explicit aggregate
-  `TARGETED_VERIFICATION_REQUIRED` per PR #356 §4
+  `TARGETED_VERIFICATION_REQUIRED` per PR #356 §4 (citation:
+  `phase27_29_tabular_eval_validity_audit.md:525-534`)
+
+**Demoted out of this tier into `ARCHIVED_UNTRUSTED_NUMERIC_DO_
+NOT_USE_FOR_ROUTING` per Appendix A (Amendment 2)** — these
+remain `TARGETED_VERIFICATION_REQUIRED` for the narrow purpose of
+"the underlying feature family or mechanism may be revisited
+under a from-scratch new-epoch evaluation", but the **numeric
+claims themselves** are not admissible as routing evidence,
+pass/fail thresholds, or production-migration anchors:
+
+- +mtf K=3 (Phase 9.X-B v19 causal, archived nominal Sharpe
+  0.158): the numeric is downstream of the now-invalidated v18
+  0.174 and carries class U on run-provenance; admissible only
+  as historical context (citation:
+  `sharpe_improvement_brief.md:2,36-37`, `phase9_x_jlmno_series_
+  closure_memo.md:5`)
+- +mtf K=2 (Phase 9.X-B v19 causal, archived nominal Sharpe
+  ≈ 0.157): same status as K=3
+- Top-K K=2 (Phase 9.19, archived nominal Sharpe 0.165) and the
+  entire Phase 9.19 J-series: phase-closure PARTIAL GO under
+  class U on run-provenance (citation:
+  `phase9_19_closure_memo.md:3,40,89,100`)
+- C-3 kill switches (Phase 9.13, archived nominal Sharpe 0.177):
+  predecessor of Phase 27 spine; class U by inheritance
+  (citation: `phase9_13_closure_memo.md:3,40,48`)
+- Phase 9.X-C M-1 LSTM Mode A (nominal Sharpe 0.061): out of
+  PR #356 audit scope but same artifact-commitment pattern;
+  presumed class-U risk on run-provenance. Note: Mode A is
+  `FALSIFIED_AT_SCOPE` (Tier 4) for the Full-Replacement
+  formulation; the 0.061 numeric is archived; modes B-1..B-4 and
+  A0-broad sequence-NN remain Tier 5 (citation:
+  `sharpe_improvement_brief.md:89,154-161`)
+
+**Demoted out of this tier into `INVALID_LOOKAHEAD_NUMERIC` per
+Appendix A (Amendment 2)** — formally invalid; not admissible
+for any purpose other than archive context on how the bug was
+detected:
+
+- +mtf v18 K=3 Sharpe 0.174 (Phase 9.X-B initial claim): inflated
+  by `_add_multi_tf_extended_features` `shift(1)` missing (~14h
+  lookahead); v19 causal fix reduced to 0.158 (citation:
+  `sharpe_improvement_brief.md:37,182-183`,
+  `phase9_x_e_live_deploy_plan.md:30-31,37`)
 
 **Admissible language:**
 
@@ -300,7 +376,7 @@ this table. Entries marked TIER are in the corresponding §2 tier.
 | 9.12 | B-2 bid/ask labels | SELECTOR Sharpe 0.160 | Tier 2 (baseline) | Foundation of current production Phase 9.16 v9 20p |
 | 9.13 | C-1 Kelly sizing | NO ADOPT | Tier 4 | Layer-1-only lever; rejected |
 | 9.13 | C-2 cap sizing | NO ADOPT | Tier 4 | Layer-1-only lever; rejected |
-| 9.13 | C-3 kill switches | Sharpe 0.177 | Tier 3 | Predecessor of Phase 27 spine; Class-U risk by inheritance |
+| 9.13 | C-3 kill switches | archived nominal Sharpe 0.177 | Tier 3 + `ARCHIVED_UNTRUSTED_NUMERIC_DO_NOT_USE_FOR_ROUTING` (Appendix A) | Predecessor of Phase 27 spine; Class-U risk by inheritance; numeric not admissible as routing evidence |
 | 9.15 | spread bundle | PnL +13%, DD -17% | Tier 2 | Adopted into Phase 9.16 production default |
 | 9.15 | spread+RH bundle | PnL +15.5%, train 2x | Tier 4 (in-sample leak) | Found to have in-sample leakage; partial-pair only |
 | 9.16 | v9 20-pair universe expansion | PnL +20.1% vs v5, DD%PnL 2.5% | **Tier 2 (production default)** | Pair universe 10→20; current production baseline |
@@ -309,16 +385,16 @@ this table. Entries marked TIER are in the corresponding §2 tier.
 | 9.17b | confidence threshold post-filter | NO ADOPT | Tier 4 | +0.005 Sharpe; per-trade EV constraint binding |
 | 9.18 | bucketed TP/SL (H-1) | NO ADOPT | Tier 4 | Low-bucket -19% EV drag |
 | 9.18 | partial exit (H-2) | NO ADOPT | Tier 4 | 80% SL-before-partial rate |
-| 9.19 | Top-K Naive K=2 | Sharpe 0.165 / PnL +25% | Tier 3 | PARTIAL GO at phase closure; Class U on run-provenance |
-| 9.19 | Top-K Diversified K=2 | similar | Tier 3 | Same Class-U inheritance |
+| 9.19 | Top-K Naive K=2 | archived nominal Sharpe 0.165 / PnL +25% | Tier 3 + `ARCHIVED_UNTRUSTED_NUMERIC_DO_NOT_USE_FOR_ROUTING` (Appendix A) | PARTIAL GO at phase closure; Class U on run-provenance; numeric not admissible as routing evidence |
+| 9.19 | Top-K Diversified K=2 | similar | Tier 3 + `ARCHIVED_UNTRUSTED_NUMERIC_DO_NOT_USE_FOR_ROUTING` | Same Class-U inheritance; numeric not admissible as routing evidence |
 | 9.X-A | LGBMRegressor on label_return | NO ADOPT | Tier 4 | Best Sharpe 0.092; per-trade EV collapse |
 | **9.X-B** | **+vol feature group** | worse than mtf alone | Tier 4 | Redundant with ATR / BB_width / multi-TF h1_volatility |
 | **9.X-B** | **+moments feature group** | K=1 Sharpe 0.145 (< baseline) | Tier 4 | Noisy; skewness/kurtosis/autocorr |
-| **9.X-B** | **+mtf K=3 (v18 reported)** | Sharpe 0.174 — **lookahead bug** | Tier 4 (the v18 number) | `shift(1)` missing in `_add_multi_tf_extended_features` |
-| **9.X-B** | **+mtf K=3 (v19 causal fix)** | Sharpe 0.158 (-9.2% vs v18) | Tier 3 | Class U on run-provenance; PARTIAL GO+ rescinded under v19 |
-| **9.X-B** | **+mtf K=2 (v19 causal fix)** | Sharpe ≈ 0.157 (estimate) | Tier 3 | Same status as K=3 |
+| **9.X-B** | **+mtf K=3 (v18 reported)** | Sharpe 0.174 — **lookahead bug** | Tier 4 + `INVALID_LOOKAHEAD_NUMERIC` (Appendix A) | `shift(1)` missing in `_add_multi_tf_extended_features` (`sharpe_improvement_brief.md:182-183`); not admissible for any routing purpose |
+| **9.X-B** | **+mtf K=3 (v19 causal fix)** | archived nominal Sharpe 0.158 (-9.2% vs v18) | Tier 3 + `ARCHIVED_UNTRUSTED_NUMERIC_DO_NOT_USE_FOR_ROUTING` (Appendix A) | Class U on run-provenance; PARTIAL GO+ rescinded under v19; numeric is a reduction of a now-invalid v18 anchor and not admissible as routing evidence or pass/fail threshold |
+| **9.X-B** | **+mtf K=2 (v19 causal fix)** | archived nominal Sharpe ≈ 0.157 (estimate) | Tier 3 + `ARCHIVED_UNTRUSTED_NUMERIC_DO_NOT_USE_FOR_ROUTING` | Same status as K=3 |
 | **9.X-B** | **+all (vol+moments+mtf)** | < +mtf alone | Tier 4 | Multicollinearity |
-| **9.X-C** | **M-1 Mode A (Full LSTM replacement)** | Sharpe 0.061; 7.7× trade rate; 0.13× per-trade EV | Tier 4 (with Tier-3 Class-U risk caveat) | Class imbalance + no discrimination + information saturation |
+| **9.X-C** | **M-1 Mode A (Full LSTM replacement)** | archived nominal Sharpe 0.061; 7.7× trade rate; 0.13× per-trade EV | Tier 4 `FALSIFIED_AT_SCOPE` (Mode A only; B-1..B-4 untouched; A0-broad sequence-NN untouched) + Tier-3 Class-U risk on the numeric | Class imbalance + no discrimination + information saturation; falsification is **narrow** to Mode A full-replacement formulation |
 | **9.X-C** | **Mode B-1 (Feature stacking, LSTM hidden → LGBM)** | **untried** | **Tier 5** | Tier-2 deprioritised at M-1 closure; not foreclosed |
 | **9.X-C** | **Mode B-2 (Output averaging)** | **untried** | **Tier 5** | Tier-2 deprioritised; early-fail logic at M-1 closure (0.061 avg ≈ 0.118 < mtf 0.174); not foreclosed |
 | **9.X-C** | **Mode B-3 (Regime gating)** | **untried** | **Tier 5** | Tier-2 deprioritised at M-1 closure; not foreclosed |
@@ -394,27 +470,64 @@ This means **two things every research-track decision must respect**:
    the verdict surface; they live in an exploratory log and require
    re-execution under V2-expanded before becoming verdict material.
 
-### §4.2 Extraction vs Expansion principle
+### §4.2 Extraction vs Expansion — working hypothesis (Amendment 2)
 
-Phase 9.x arc evidence (mtf was the single PARTIAL GO+; all other
-extraction-tricks NO ADOPT): clever extraction from the same data
-fails; expanding the data succeeds. Concretely:
+**Status: working hypothesis, not a verified finding.** This
+section was originally framed in the initial draft as "mtf was
+the single PARTIAL GO+ (extraction vs expansion principle)";
+Appendix A's evidence reconciliation demotes the +mtf v18 0.174
+to `INVALID_LOOKAHEAD_NUMERIC` and +mtf v19 0.158 to
+`ARCHIVED_UNTRUSTED_NUMERIC_DO_NOT_USE_FOR_ROUTING`. The original
+formulation "mtf was the single verified PARTIAL GO+ success"
+**is not admissible**.
 
-- 5 NO ADOPT phases on extraction-tricks (Phase 9.17 ensemble,
-  9.17b confidence threshold, 9.19 multi-pick SELECTOR Top-K, 9.X-A
-  regression labels, 9.X-C M-1 LSTM model class)
-- 1 PARTIAL GO+ on horizon expansion (9.X-B mtf at 4h / daily;
-  v19 causal fix Sharpe 0.158)
-- 1 NO ADOPT on cross-asset expansion (9.X-D DXY)
+The empirical falsification surface (committed source citations
+in Appendix A) does still show this pattern:
 
-The 5/6 majority is "more clever extraction fails"; the 1/6 minority
-(mtf) is "expanding the data succeeds". This biases future research:
-**data-side expansion is preferred over architecture / extraction
-expansion** at equal cost. Architecture-side expansion (LSTM Mode A,
-A0-broad sequence-NN) is admissible only when (a) the data side is
-also expanded, or (b) a structural reason makes the architecture
-not subject to the extraction-trick pattern (e.g., calibrated
-confidence ranking with explicit per-trade EV stability).
+- 5 NO ADOPT verdicts on extraction-tricks at phase closure
+  (Phase 9.17 ensemble, 9.17b confidence threshold, 9.19 multi-
+  pick SELECTOR Top-K, 9.X-A regression labels, 9.X-C M-1 LSTM
+  Mode A) — citations in Appendix A
+- 1 PARTIAL GO+ verdict on horizon expansion at phase closure
+  (Phase 9.X-B +mtf), but the numerics under that PARTIAL GO+
+  are now demoted per Appendix A (v18 INVALID; v19 ARCHIVED
+  UNTRUSTED). The verdict label "PARTIAL GO+" survives as a
+  phase-closure record; the **numbers do not survive as routing
+  evidence**.
+- 1 NO ADOPT verdict on cross-asset expansion at phase closure
+  (Phase 9.X-D DXY)
+
+**Admissible hypothesis (not a finding):** the falsification
+surface above is **consistent with** a working hypothesis that
+"clever extraction from the same data tends to NO ADOPT at the
+existing tabular-LightGBM-on-R7-A architecture; data-side
+expansion has a phase-closure record that is no worse than
+extraction-tricks". This is a **research-prioritisation heuristic**
+for sequencing Foundation-completion Research Tracks, **not a
+verified principle** and **not a binding constraint** on
+production decisions or pass/fail thresholds.
+
+**What this hypothesis does NOT support:**
+
+- it does NOT say "+mtf was verified"
+- it does NOT say "data-side expansion is verified to succeed"
+- it does NOT say "extraction approaches are verified to fail"
+- it does NOT supply a pass/fail Sharpe threshold for new-epoch
+  evaluations
+
+**What this hypothesis does support (heuristically only):**
+
+- Track D (data-side expansion) may be sequenced earlier than
+  later Tracks at equal cost, on the basis of the pattern shape
+  above
+- Track C (A0-broad sequence-NN) remains the explicit
+  falsification path for the H-B9 seam-exhaustion hypothesis
+  (§4.4) and is **independent** of the extraction-vs-expansion
+  heuristic — sequence-NN under A0-broad is admissible
+  regardless of whether the heuristic favours data-side
+- Track B (Phase 9.X-C residual LSTM modes B-1..B-4) is **not
+  foreclosed** by this heuristic; the heuristic does not
+  override per-track design memos
 
 ### §4.3 Class-U recurrence prevention
 
@@ -598,18 +711,39 @@ inventory, scientific adequacy review); construction not begun.
 
 **Exit criteria (T3):**
 
-- baseline + control + D-1 + split + aligned-row-set all committed
-  under V2-expanded sentinel registry (run-provenance artifacts
-  committed, **not** gitignored — explicit U-1 prevention)
-- scientific adequacy review document present
-- sentinel verification per V2-expanded contract F-1..F-7 + S-1..S-6
-  passes at the new-epoch run
+- new epoch dataset (raw / labels / split / row-set / provenance
+  manifests) constructed and committed
+- new S-B economic baseline computed and committed
+- new S-E tabular control computed and committed
+- D-1 PnL identity validation executed and committed
+- scientific adequacy review document committed
+- run-provenance artifacts committed (sweep_results / aggregate /
+  val_selected / sanity_probe equivalents required by the
+  construction harness — **not** gitignored; explicit U-1 prevention)
 
-**Stage gate:** the new-epoch baseline is now Tier 2 (eventually
-Tier 1 after sentinel verification). Production baseline can be
-considered for migration; default policy is **continue Phase 9.16
-v9 20p in production** until at least one Research-Track-A
-re-evaluation completes (§6.A).
+**Exit label proposed for T3 (Amendment 1):**
+
+- `NEW_EPOCH_BASELINE_CONTROL_BUILT` /
+  `NOT_FORMALLY_VERIFIED_YET`
+
+These labels are **proposed-only** at this roadmap level; if a
+later T3-specific design memo adopts a different label, that memo
+binds. T3 explicitly **does not** require:
+
+- F-1..F-7 + S-1..S-6 sentinel verification PASS
+- a Tier 1 (FORMALLY_VERIFIED) claim
+- a V2-expanded aggregate verification verdict
+
+All sentinel verification responsibilities are exclusive to T4.
+
+**Stage gate:** the new-epoch baseline reaches `NEW_EPOCH_BASELINE_
+CONTROL_BUILT` / `NOT_FORMALLY_VERIFIED_YET` (proposed label;
+subject to T3-specific design memo). It is **not** Tier 1; future
+elevation to Tier 1 depends on T4 sentinel verification under the
+applicable contract. Production baseline can be considered for
+migration **only after** T4 completes for the relevant comparison
+contract; default policy is **continue Phase 9.16 v9 20p in
+production** through T3 and T4.
 
 ### §5.5 T4 — V2-expanded sentinel verification implementation
 
@@ -634,15 +768,24 @@ locked at PR #357 + Amendment 2026-05-24 (PR #358).
 
 **Exit criteria (T4):**
 
-- F-1..F-7 + S-1..S-6 all executed with run-provenance committed
+- F-1..F-7 + S-1..S-6 all executed under the same accepted
+  contract / provenance boundary, with run-provenance committed
 - verification report under
   `artifacts/v2_expanded_verification/<verification_id>/`
-- aggregate verdict at success label
+- aggregate verdict at a **previously authorised** success label
+  (e.g., `SENTINEL_VERIFICATION_PARTIAL_RECOVERY_MAJOR_AXES` per
+  PR #357)
 
-**Stage gate:** Foundation complete. Tier 1 (FORMALLY_VERIFIED)
-claims become admissible for results that pass the V2-expanded
-contract. Research Tracks A..G become eligible (each requiring
-separate authorisation).
+**No new success label is minted by this roadmap.** Specifically,
+`SENTINEL_VERIFICATION_COMPLETE` is **not** introduced here; any
+stricter label requires a separate design memo and explicit user
+approval before being added to the V2-expanded contract.
+
+**Stage gate:** Foundation complete for the applicable contract.
+Tier 1 (FORMALLY_VERIFIED) claims become admissible for results
+that pass the **full** V2-expanded contract under T4 (not a partial
+staged subset). Research Tracks A..G become eligible (each
+requiring separate authorisation).
 
 ---
 
@@ -658,51 +801,93 @@ authorises nothing.
 
 **Prerequisite:** Foundation T4 complete.
 
-**Scope:** the Tier-3 entries from §3 receive a clean re-execution
-under the V2-expanded contract on the new epoch. The purpose is to
-discover whether their nominal Sharpe survives the elimination of
-Class U on run-provenance and the new epoch's possibly-different
-market regime.
+**Scope (Amendment 1 + 2):** the **feature families** and
+**mechanisms** behind the Tier-3 entries from §3 receive
+**from-scratch re-evaluation** under the V2-expanded contract on
+the new epoch. The purpose is to determine whether each feature
+family / mechanism is structurally informative under the new
+foundation, **not** to reproduce or confirm any old-epoch nominal
+Sharpe. Old-epoch numerics are archived context only (per
+Appendix A `ARCHIVED_UNTRUSTED_NUMERIC_DO_NOT_USE_FOR_ROUTING`).
 
-- **A.1 — +mtf K=2 / K=3 v19 causal fix.** Re-execute on new epoch
-  under V2-expanded contract. Hypothesis: nominal Sharpe 0.158
-  (K=3) survives. Outcome ladder:
-  - if new-epoch Sharpe ≥ 0.158 - 0.01 → Tier 1
-    (FORMALLY_VERIFIED); production reflection authorised at
-    follow-on PR
-  - if new-epoch Sharpe ∈ [0.10, 0.158) → Tier 3 (still
-    TARGETED_VERIFICATION_REQUIRED; ambiguous)
-  - if new-epoch Sharpe < 0.10 → Tier 4 (FALSIFIED at scope)
-- **A.2 — Top-K K=2 (Phase 9.19).** Re-execute on new epoch with
-  Top-K execution gateway (per PR #216 follow-up requirement).
-  Same outcome ladder.
-- **A.3 — C-3 kill switches (Phase 9.13).** Re-execute on new
-  epoch. Caveat: C-3 was a predecessor of Phase 27 spine; it is
-  inheritable rather than directly re-implementable. The actual
-  re-execution may need to map C-3 mechanism onto the new
-  epoch's signal / state schema.
+**Critical bindings (Amendment 2):**
+
+- old-epoch nominal Sharpe values (0.158, 0.165, 0.177, etc.) are
+  **NOT** executable pass/fail gates for new-epoch evaluation
+- the authoritative comparators are the new-epoch S-B baseline
+  and S-E control (built at T3)
+- exact thresholds and outcome ladders are defined in each
+  track-specific design memo authored after T3 / T4 completion,
+  not in this roadmap
+- A Tier 1 research result does **not** automatically authorise
+  production reflection. Any production migration requires
+  (a) a separate migration design memo, (b) live / paper safety
+  gates (per §7 P1..P3 and `phase9_x_e_live_deploy_plan.md`
+  G1 / G2 / G3 lineage), and (c) explicit user authorisation.
+
+**Sub-tracks:**
+
+- **A.1 — `MTF feature-family re-evaluation from scratch under
+  new epoch`.** The mtf feature class (multi-timeframe context
+  features at 4h / daily) is re-implemented and re-evaluated
+  from scratch on the new epoch under the V2-expanded contract,
+  using whatever causality-correct implementation the new
+  contract requires. This sub-track:
+  - **does NOT** attempt to reproduce the archived nominal
+    Sharpe 0.158
+  - **does NOT** treat the +mtf v19 PARTIAL GO+ phase verdict
+    as evidence that this feature family will succeed at new
+    epoch
+  - **does NOT** use 0.158 as a pass/fail threshold
+  - **does NOT** use 0.174 (now `INVALID_LOOKAHEAD_NUMERIC`)
+    in any capacity
+  - **compares** the resulting numbers against the new-epoch
+    S-B baseline and S-E control, with thresholds defined in
+    the A.1 design memo authored after T3 / T4 completion
+- **A.2 — `Top-K K=2 mechanism re-evaluation from scratch under
+  new epoch`.** Re-implemented under V2-expanded contract. The
+  archived 0.165 is not a threshold; comparators are the new-
+  epoch S-B and S-E. A.2 requires the Top-K execution gateway
+  (per PR #216 follow-up requirement) to be implemented before
+  the sub-track can begin.
+- **A.3 — `C-3 kill switches mechanism re-evaluation from
+  scratch under new epoch`.** C-3 was a predecessor of the
+  Phase 27 spine; it is mapped onto the new epoch's signal /
+  state schema. The archived 0.177 is not a threshold;
+  comparators are the new-epoch S-B and S-E.
 
 **Authoring shape:** one design memo + one implementing PR per
-candidate (A.1, A.2, A.3 each); sentinel verification re-run.
+sub-track (A.1, A.2, A.3 each), authored after T3 / T4 completion;
+sentinel verification re-run under T4 contract.
 
 ### §6.B Track B — Phase 9.X-C residual LSTM modes (B-1, B-2, B-3, B-4)
 
-**Prerequisite:** Foundation T4 complete **and** Track A.1 (+mtf)
-outcome known.
+**Prerequisite:** Foundation T4 complete **and** Track A.1 (+mtf
+feature-family re-evaluation) outcome known.
 
-**Conditional logic:**
+**Amendment 2 binding:** old-epoch arithmetic ("B-2 = 0.061
+averaged with 0.174 ≈ 0.118 < 0.174" from Phase 9.X-C/M-1 closure)
+is **NOT** used as a B-track priority justification under this
+roadmap. The 0.174 is `INVALID_LOOKAHEAD_NUMERIC`; the 0.061 is an
+old-epoch archived numeric from a Mode-A-only falsification. New
+B-track priority logic is defined by **future new-epoch A.1 /
+C.1 outcomes** plus **explicit marginal-information hypotheses**
+in per-mode design memos.
 
-- If A.1 outcome is Tier 4 (mtf NO ADOPT on new epoch): consider
-  Track B fully **deferred again** — the early-fail logic in
-  Phase 9.X-C/M-1 closure (B-2 = 0.061 averaged with 0.174 ≈
-  0.118 < 0.174) used mtf 0.174 as the reference; if mtf is
-  rejected, the early-fail logic loses its baseline and B-2 may
-  be re-considerable. But A.1 Tier-4 also suggests the underlying
-  arc is data-bound, biasing toward Track D (data expansion).
-- If A.1 outcome is Tier 1 (mtf verified at new epoch): the early-
-  fail logic re-applies; B-2 (output averaging) remains low-prior
-  but B-1 / B-3 / B-4 are eligible under their original cost
-  estimates.
+**Decision table (Amendment 1):**
+
+| Track A.1 outcome on new epoch | B-1 / B-3 / B-4 eligibility | B-2 eligibility |
+|---|---|---|
+| **A.1 succeeds (Tier 1 under T4)** | **eligible** for design-memo authoring; each mode requires its own marginal-information hypothesis explaining why hidden-state stacking / regime gating / specialisation might add to a working mtf | **low priority**: output-averaging on top of a working mtf has limited upside; admissible only via separate design memo with marginal-information argument |
+| **A.1 fails (Tier 4 at scope)** | **lower priority** than Track D / data-side expansion (extraction-vs-expansion heuristic §4.2). Each mode admissible only by separate design memo that justifies its marginal-information hypothesis against the new baseline; not automatically revived | same as left: only by separate design memo |
+| **A.1 ambiguous (Tier 3 or inconclusive ladder result)** | **defer** B-tracks until Track C.1 (A0-broad S1 LSTM) or Track D.1 (time-axis) outcome clarifies the architecture-vs-data binding | **defer** under same condition |
+
+In all three rows, Track D (data-side expansion) retains higher
+priority than Track B (architecture / extraction tricks) per the
+§4.2 working hypothesis. Track B candidates require **explicit
+user authorisation + marginal-information hypothesis per design
+memo**; the decision table above is a recommendation, not an
+auto-route.
 
 **Scope:**
 
@@ -758,9 +943,21 @@ V2-expanded contract.
   falsified at narrow scope (single-architecture exception); a
   successful architecture warrants integration design memo
 - if all three → FALSIFIED_A0_BROAD_NARROW: this is **strong
-  evidence** for H-B9 (multi-architecture saturation); production
-  ceiling at Tier-2 Phase 9.16 v9 20p is the structural limit
-  under current data; pivot priority shifts decisively to Track D
+  evidence for the current-data / current-contract seam-
+  exhaustion hypothesis**. **Strategic review is required before
+  declaring a production ceiling**; production-ceiling language
+  is not authorised by an all-architecture
+  FALSIFIED_A0_BROAD_NARROW result alone. Pivot priority shifts
+  toward Track D (data expansion) and toward broader scope
+  re-evaluation, but only through a separately authorised
+  strategic-review memo.
+
+**Scope discipline (Amendment 1):** `FALSIFIED_A0_BROAD_NARROW`
+remains **narrow** even when emitted across all of S1 / S2 / S3.
+The label `FALSIFIED_ALL_A0_BROAD` is **never** to be written
+under this roadmap; it would require a separately authorised
+broader saturation contract that defines what "all A0-broad"
+means beyond the current 3-architecture allowlist.
 
 **Authoring shape:** per architecture, one design memo + one
 implementing PR (training script + eval + report). All commit
@@ -772,29 +969,81 @@ prevention).
 **Prerequisite:** Foundation T4 complete. Each sub-track requires
 its own data source plan.
 
-**Scope (in extraction-vs-expansion priority order per §4.2):**
+**External-data provenance/retention gate (Amendment 1):**
+
+For any sub-track that introduces data from outside the OANDA
+2026-05-31 archive (D.2, D.4, D.5 below, and any other external
+or non-OANDA source), a **mini data-source feasibility +
+retention/provenance gate** must complete **before** any model
+evaluation begins. The mini-gate requires:
+
+- raw-byte retention of the external source under a destination
+  satisfying PR #361 §7 admissibility criteria (round-trip
+  restorable / immutability or content-addressed / auditor-
+  runnable restoration), independently of the primary epoch's
+  retention destination
+- schema manifest of the external source (per-field types, units,
+  timestamp semantics, sampling cadence)
+- dependency manifest declaring which consumer functions depend
+  on the external source and how
+- documented restoration procedure committed under
+  `docs/runbook/`
+
+No external calendar / interest-rate / orderbook / other side
+input may enter a verified evaluation as an **unretained side
+input**. If the external data source changes the epoch's
+information content materially, the track must explicitly
+define whether it is being added as:
+
+- **additive epoch extension** (same `manifest_id`, extended
+  inputs declared in a new manifest section), or
+- **a new epoch** (new `manifest_id`, full T3 / T4 cycle re-run)
+
+The choice is recorded in the sub-track's design memo and binds
+how the sub-track's results integrate with prior baseline /
+control.
+
+**Scope (in extraction-vs-expansion-heuristic priority order per §4.2;
+heuristic only, not binding):**
 
 - **D.1 — Time-axis features.** Session (Asia / Europe / NY),
   day-of-week, month, holiday distance, fed-meeting distance.
-  Cheap (~3 days). Untried at depth.
+  Cheaper because timestamp-derived from existing OANDA bytes
+  — no external source needed. Still requires (a) causality
+  check (no future-bar timestamp leakage; e.g., distance-to-
+  event must use only events whose timestamp is strictly past)
+  and (b) split-leakage check (per-split distribution of
+  session / month / holiday categories must not differ in a
+  way that conflates structural label imbalance with predictor
+  signal). ~3 days. Untried at depth.
 - **D.2 — Economic calendar / event-distance.** Originally a
   Phase 9.X-D candidate; not yet tried. ~2-3 days using OANDA
-  Labs API or self-built calendar. Mid-cost.
+  Labs API or self-built calendar. **Subject to the external-
+  data provenance/retention gate above.** Mid-cost.
 - **D.3 — Cross-asset re-evaluation.** Phase 9.X-D DXY synthetic
   NO ADOPT — re-evaluate at A0-broad sequence-NN architecture
   (Track C) if available, since DXY as orthogonal feature may
   behave differently under sequence-NN than under tabular
-  LightGBM.
+  LightGBM. DXY synthetic uses existing OANDA bytes (derived
+  from PAIRS_20), so it does not require the external-data
+  gate; however, additional cross-asset sources (e.g., true DXY
+  futures, gold, VIX, indices not in OANDA Japan practice
+  account) would.
 - **D.4 — Interest rate spreads.** US 2y/10y, JP, EU, AU rate
-  differentials. Requires non-OANDA data source (FRED / Bloomberg
-  / other). ~3-5 days.
+  differentials. Requires non-OANDA data source (FRED /
+  Bloomberg / other). **Subject to the external-data provenance/
+  retention gate above.** ~3-5 days.
 - **D.5 — Orderbook microstructure.** Most expensive (~5+ days,
-  non-OANDA data). Most informative if successful. Conditional on
-  Track C result and Track D.1-D.4 outcomes.
-- **D.6 — Pair universe expansion (20 → 30).** Cheap if pair data
-  available; new epoch construction (T3) may include a wider pair
-  set as a parameter. Authorisation deferred to T3 construction
-  decision.
+  non-OANDA data). Most informative if successful. Conditional
+  on Track C result and Track D.1-D.4 outcomes. **Subject to
+  the external-data provenance/retention gate above.**
+- **D.6 — Pair universe expansion (20 → 30).** Cheap if pair
+  data available; new epoch construction (T3) may include a
+  wider pair set as a parameter. Authorisation deferred to T3
+  construction decision. If additional pairs require an
+  external data source (e.g., a pair not retained under the
+  OANDA 2026-05-31 archive), the **external-data provenance/
+  retention gate above applies**.
 
 **Authoring shape:** per sub-track, one design memo + one
 implementing PR. Each runs under V2-expanded contract; each
@@ -941,13 +1190,38 @@ Engineering-flavour; explicitly **not** a Sharpe-lift attempt.
 
 ### Production-layer keep-alive
 
-P1, P2, P3 are progress-without-risk to production baseline. They
-improve effective net P&L without claiming a "new verified
-signal". They are eligible to be authorised **at any time**,
-independent of Foundation status. Recommended priority within
-production-side: P2 (data) → P1 (model) → P3 (engineering),
-because P2 provides the empirical evidence for P1, and P1 provides
-the cost-model for P3.
+P1, P2, P3 are **independent of research-signal verification
+contamination, but still subject to production engineering risk
+controls**. They improve effective net P&L without claiming a
+"new verified signal", but each carries its own production-side
+risk that must be managed explicitly:
+
+- **P2 snapshotting is observational and safest first.** It only
+  records live spread data; it does not change any production
+  decision logic. Recommended as the entry sub-track.
+- **P1 cost-model changes must be evaluated in backtest / paper
+  before production use.** Replacing the fixed-pip spread with
+  an empirical profile alters per-trade economics and re-routes
+  marginal trade-pass / trade-block decisions; A / B
+  paper-comparison required before any production switch.
+- **P3 execution / sizing changes require production safety
+  gates, rollback plan, and risk limits.** Margin accounting,
+  per-pair max position, drawdown-aware sizing, and
+  order-execution checks each affect live order flow; each
+  requires an explicit rollback plan and a pre-stated risk
+  limit (max position / max daily loss / max consecutive losses)
+  that triggers automatic pause.
+
+Each of P1 / P2 / P3 still requires **explicit user
+authorisation plus a design memo before any production code
+changes**. Tracks are eligible to be authorised **at any time**
+(independent of Foundation status), but no track auto-routes
+to production.
+
+Recommended priority within production-side: **P2 (data) → P1
+(model, paper A/B first) → P3 (engineering, safety gates)**,
+because P2 provides the empirical evidence for P1, and P1
+provides the cost-model for P3.
 
 ---
 
@@ -969,7 +1243,7 @@ the cost-model for P3.
 ### §8.2 Foundation-track parallelism
 
 Foundation T1 (PR-B implementation) and T2 (retention deposit)
-can proceed in **parallel** because:
+**planning** can proceed in **parallel** because:
 
 - T1 produces a software artifact (the inspector); T2 produces a
   storage artifact (the deposit)
@@ -980,10 +1254,36 @@ can proceed in **parallel** because:
   the input to the T2 destination selection — but this can be
   reflected after both complete
 
-T3 (new epoch construction) depends on T1 (the inspection report's
-dependency / pipeline feasibility classifications inform whether
-the epoch's required-input dependency inventory is satisfied) and
-T2 (durable byte retention is binding under PR #361 §7).
+**Critical binding (Amendment 1): T2 deposit is NOT epoch
+adoption.** If T2 deposits a broad archive (e.g., the entire
+OANDA 2026-05-31 10y archive), the deposit only establishes
+**retained input availability**; it does **not** automatically
+adopt that archive as the new epoch's data envelope. The choice
+of which span / pair universe / granularity set defines the new
+epoch is **made at T3** after the user reviews the combined
+evidence from the T1 Gate P1 inspection report and the T2
+retention deposit verification.
+
+Concretely:
+
+- T2 may proceed with depositing the 3650d_BA bytes irrespective
+  of which epoch span will eventually be selected
+- T3 may still construct the epoch at 730d_BA / 365d_BA /
+  3650d_BA (or any other admissible span discovered at T1)
+  regardless of what T2 deposited
+- T2 deposit / adoption **must not bind a final epoch span
+  unless the chosen span is consistent with Gate P1 PR-B
+  findings** from T1 — i.e., T1 evidence is the gate for which
+  spans are candidate, T2 deposit covers the retained input,
+  and T3 makes the final epoch-span decision under combined
+  evidence
+
+T3 (new epoch construction) depends on T1 (the inspection
+report's dependency / pipeline feasibility classifications
+inform whether the epoch's required-input dependency inventory
+is satisfied) and T2 (durable byte retention is binding under
+PR #361 §7) **both being reviewed by the user before T3 epoch
+selection**.
 
 T4 (V2-expanded sentinel implementation) depends on T3 (the new
 epoch's baseline + control are the input the sentinel checks
@@ -1086,8 +1386,8 @@ completion.
 | T0 | continuous; no closure | event-log (operational) |
 | T1 | first inspection report emitted; per-candidate dependency inventory + pipeline feasibility classifications recorded | `artifacts/gate_p1_report/<report_id>/gate_p1_report.json` |
 | T2 | round-trip report 100% per-file SHA-256 match against `candles_manifest.json` | `artifacts/gate_p2_verification/<verification_id>/gate_p2_retention_verification_report.json` |
-| T3 | new epoch baseline + control + D-1 + split + aligned-row-set committed under V2-expanded sentinel registry (NOT gitignored); scientific adequacy review present | `artifacts/v2_expanded_baselines/<manifest_id>/` (new epoch's baseline + control); `docs/design/<manifest_id>_scientific_adequacy_review.md` |
-| T4 | F-1..F-7 + S-1..S-6 executed; aggregate verification verdict at allowed success label or stricter | `artifacts/v2_expanded_verification/<verification_id>/v2_expanded_verification_report.json` |
+| T3 | new epoch dataset (raw / labels / split / row-set / provenance manifests) + new S-B baseline + new S-E control + D-1 PnL validation + scientific adequacy review committed (run-provenance NOT gitignored); exit label `NEW_EPOCH_BASELINE_CONTROL_BUILT` / `NOT_FORMALLY_VERIFIED_YET` (proposed; T3-specific design memo may bind a different label) | `artifacts/v2_expanded_baselines/<manifest_id>/` (new epoch's baseline + control); `docs/design/<manifest_id>_scientific_adequacy_review.md` |
+| T4 | F-1..F-7 + S-1..S-6 all executed under the **same accepted contract / provenance boundary**, with run-provenance committed; aggregate verification verdict at a **previously authorised** success label (e.g., `SENTINEL_VERIFICATION_PARTIAL_RECOVERY_MAJOR_AXES` per PR #357); **no new success label minted by this roadmap** | `artifacts/v2_expanded_verification/<verification_id>/v2_expanded_verification_report.json` |
 
 For each Research Track A..G, the per-track design memo (authored
 at track-authorisation time) re-states the track's stage gates per
@@ -1113,8 +1413,23 @@ stage is authorised.
   least-information-loss epoch construction.
 - **Q3 — T4 sentinel verification scope.** Run all F-1..F-7 +
   S-1..S-6 (full), or staged (F-1..F-3 first, then S-1..S-6
-  separately)? Recommendation: staged for review tractability;
-  F-1..F-3 in one PR, S-1..S-6 in a second.
+  separately)? **Amendment 1 binding (precedence over the prior
+  recommendation):** if T4 is staged for review tractability:
+  - the F-1..F-3-only stage is **preflight / partial verification
+    only**
+  - it **cannot emit Tier 1 (FORMALLY_VERIFIED)**
+  - it **cannot be combined with later S-1..S-6 artifacts**
+    unless a separately designed and approved **staged-
+    composition rule** explicitly defines how partial-stage
+    artifacts compose into a full-contract verdict
+  - the final formal claim requires **all required checks under
+    the same accepted contract / provenance boundary** — i.e., a
+    single accepted verification run, not a stitched composition
+    of partial runs across PRs
+  Recommendation: a single full-contract run is the cleanest path.
+  If staging is preferred for review tractability, the staged-
+  composition rule must be designed before the partial stage
+  runs.
 - **Q4 — Research Track A.1 (+mtf) authorisation timing.**
   Authorise immediately after T4, or wait for explicit user
   consideration of bear-case scenario (mtf Sharpe drops below
@@ -1168,12 +1483,22 @@ stage is authorised.
 Unchanged by this PR:
 
 - V2-expanded Stage 2 = `HALTED_INPUT_UNAVAILABLE` (PR #360);
-  expected to lift when T3 (new epoch baseline + control)
-  completes
-- F-1 = `UNEXECUTABLE_INPUT_UNAVAILABLE` (PR #360); expected to
-  lift at T4
-- PR #356 audit = `TARGETED_VERIFICATION_REQUIRED`; expected to
-  lift per-PR as Research Track A re-evaluations complete
+  **may be superseded by new-epoch foundation / verification
+  results after T3 / T4**, but the old historic-anchor Stage 2
+  route itself is not lifted by new-epoch work
+- F-1 = `UNEXECUTABLE_INPUT_UNAVAILABLE` (PR #360); the **old
+  F-1 historic-anchor route remains
+  `UNEXECUTABLE_INPUT_UNAVAILABLE` unless original historic
+  inputs are restored** (Option 1 per PR #360); **new-epoch
+  verification under T4 does not repair or reproduce the old
+  F-1 historic-anchor route** — it establishes a new F-1
+  against the new-epoch baseline, which is a distinct reference
+  under a distinct `manifest_id`
+- PR #356 audit = `TARGETED_VERIFICATION_REQUIRED`; **may be
+  superseded per-PR by future targeted-verification work**, but
+  the old eval evidence at #318 / #321 / #325 / #328 / #332 /
+  #338 / #342 / #345 / #351 remains at its currently-recorded
+  class regardless of new-epoch work
 - Phase 27 / 28 / 29.0a verdicts preserved verbatim
 - A0-broad β remains halted; eligible to resume under Track C
   upon Foundation T4 completion + A0-broad preflight audit pass
@@ -1186,6 +1511,39 @@ Unchanged by this PR:
 - no P1..P3 authorisation issued
 - `.gitignore` unmodified; no source code change; no executable
   artifact deposited
+
+**Explicit bindings from Amendment 2 (evidence reconciliation):**
+
+- **Old +mtf numeric claims (v18 Sharpe 0.174; v19 Sharpe
+  0.158) are NOT admissible routing evidence** under this
+  roadmap. v18 is `INVALID_LOOKAHEAD_NUMERIC`; v19 is
+  `ARCHIVED_UNTRUSTED_NUMERIC_DO_NOT_USE_FOR_ROUTING`. See
+  Appendix A for citations.
+- **Top-K K=2 Sharpe 0.165 (Phase 9.19) and C-3 Sharpe 0.177
+  (Phase 9.13) are NOT admissible routing evidence** under
+  this roadmap; both are `ARCHIVED_UNTRUSTED_NUMERIC_DO_NOT_
+  USE_FOR_ROUTING`.
+- **LSTM Mode A Sharpe 0.061 (Phase 9.X-C/M-1) is
+  `FALSIFIED_AT_SCOPE` for Mode A only**; modes B-1 / B-2 /
+  B-3 / B-4 and the A0-broad sequence-NN allowlist (S1 LSTM /
+  S2 TCN / S3 Transformer per PR #354) remain Tier 5
+  (DEFERRED_NOT_FORECLOSED) and are not falsified by the
+  Mode A result.
+- **New-epoch Track A.1 (+mtf feature-family re-evaluation) is
+  a from-scratch evaluation**; it does **not** attempt to
+  reproduce 0.158 / 0.174 / 0.165 / 0.177, does **not** use
+  any old-epoch numeric as a pass/fail threshold, and does
+  **not** auto-authorise production reflection on success.
+- **No prior Phase 9.X-B PARTIAL GO / PARTIAL GO+ verdict
+  survives as verified or production-relevant evidence unless
+  it is re-executed under the new foundation contract**
+  (T3 + T4) and the new-epoch evaluation produces an
+  independent Tier-1 result under that contract.
+- Phase 9.16 v9 20p baseline (Sharpe 0.160) retains
+  `VALID_OPERATIONAL_BASELINE` status (Tier 2
+  CONTEMPORANEOUS_CONTRACT_PASS) for production-default use
+  only; it is **not** admissible as Tier-1 evidence for new
+  routing claims.
 
 ---
 
@@ -1206,3 +1564,162 @@ Next step (post-merge): user decides which of the open questions
 (typically T1 PR-B.0). Subsequent stages and Research Tracks each
 require their own explicit authorisation per the no-auto-route
 binding.
+
+---
+
+## Appendix A — Evidence reconciliation (Amendment 2)
+
+This appendix is the source-of-truth-based reconciliation of past
+Phase 9.x / Phase 27-29 numeric claims and verdicts against the
+controlled vocabulary defined below. Every entry cites a committed
+source document (path + line range) or marks `SOURCE_NOT_FOUND_IN_
+REPO`. The roadmap body (§2 / §3 / §4 / §6.A / §6.B / §12) is
+updated to reference this appendix.
+
+### Controlled vocabulary
+
+| Label | Meaning | Admissibility for routing / pass-fail / production migration |
+|---|---|---|
+| `VALID_OPERATIONAL_BASELINE` | static-inspection clean, used as production default under contemporaneous contract; run-provenance may be partial or absent | admissible as production-default baseline only; **not** Tier 1 evidence |
+| `FALSIFIED_AT_SCOPE` | NO ADOPT verdict at phase closure for the **specific tested formulation**; narrow scope explicitly recorded | not admissible for the falsified formulation; does not falsify related but distinct formulations |
+| `INVALID_LOOKAHEAD_NUMERIC` | numeric was produced under a documented look-ahead / causality bug; numeric is formally invalid | not admissible for any purpose other than archive context on the bug detection itself |
+| `ARCHIVED_UNTRUSTED_NUMERIC_DO_NOT_USE_FOR_ROUTING` | numeric exists in a committed source but carries class U on run-provenance or is downstream of an invalidated anchor; phase-closure context only | **not** admissible as routing evidence, pass/fail threshold, or production-migration anchor; may be referenced as historical phase-closure context only |
+| `TARGETED_REEVALUATION_REQUIRED_FROM_SCRATCH` | feature family / mechanism is potentially re-evaluable but must be re-implemented and re-evaluated from scratch under the new foundation contract; old numerics are not admissible as anchors | admissible only as a research-track candidate; the re-evaluation is independent of any old-epoch number |
+| `DEFERRED_NOT_FORECLOSED` | explicitly preserved for future Phase routing; neither falsified nor tested; design memo binds admissibility conditions where present | admissible as research-track candidate under stated prerequisites |
+| `SOURCE_NOT_FOUND_IN_REPO` | citation could not be located in committed sources | informational only; not admissible until citation is established |
+
+### Per-numeric harvest (with committed-source citations)
+
+#### A.1 — +mtf v18 K=3 Sharpe 0.174 (Phase 9.X-B initial claim)
+
+- **Original claim citation:** `docs/design/phase9_x_b_closure_memo.md:3,52` — "PARTIAL GO+ for +mtf alone (Sharpe 0.173 K=2, 0.174 K=3)"
+- **Lookahead bug citation:** `docs/design/sharpe_improvement_brief.md:37` — "v19 backtest (`compare_multipair_v19_causal.py`) fixed a `_add_multi_tf_extended_features` lookahead bug that had inflated Phase 9.X-B's claimed +mtf Sharpe from a true 0.158 to 0.174 (~9% inflation)."
+- **Specific bug location citation:** `docs/design/sharpe_improvement_brief.md:182-183` — "`_add_multi_tf_extended_features` (v18) used `df.resample(...).reindex(idx, method='ffill')` without a `shift(1)`. Daily bar labelled 2026-01-15 contains the 23:55 close; ffill at m5 10:00 leaked the future close (~14h lookahead). Fixed in v19 (`raw.shift(1).reindex(...)`, matching the same-script `_add_upper_tf` pattern)"
+- **Final label:** `INVALID_LOOKAHEAD_NUMERIC`
+- **May be used for routing?** No
+- **May be used for pass/fail threshold?** No
+- **May be used for production migration?** No
+- **May be used as historical context?** Yes (archive note on how lookahead was detected)
+
+#### A.2 — +mtf v19 K=3 Sharpe 0.158 / K=2 ≈ 0.157 (Phase 9.X-B causal fix)
+
+- **Citation:** `docs/design/sharpe_improvement_brief.md:2` — "What is the most likely path to push the backtest's per-trade SELECTOR Sharpe from 0.158 to ≥ 0.20"
+- **Anchor citation:** `docs/design/phase9_x_jlmno_series_closure_memo.md:5` — "Anchor: Phase 9.X-E v19 causal +mtf K=1 — pip Sharpe 0.158"
+- **Causal-fix module citation:** `docs/design/phase9_x_e_live_deploy_plan.md:30-31` — "Production `_compute_mtf_features` is causal by construction (operates on candles already filtered to `timestamp < as_of_time` by `FeatureService.build`)"
+- **Class U on run-provenance:** Phase 9.X-B is out of PR #356 audit scope but the same gitignore pattern applies (sweep_results not committed). The numeric is downstream of v18 (`INVALID_LOOKAHEAD_NUMERIC`) and is thus a reduction of a now-invalid anchor.
+- **Final label:** `ARCHIVED_UNTRUSTED_NUMERIC_DO_NOT_USE_FOR_ROUTING`
+- **May be used for routing?** No
+- **May be used for pass/fail threshold?** No
+- **May be used for production migration?** No
+- **May be used for research prioritisation?** Yes, but only as part of the §4.2 working-hypothesis pattern (not as evidence that the +mtf feature family will succeed)
+- **May be used as historical context?** Yes (anchor for understanding Phase 9.X-B closure intent)
+
+#### A.3 — Top-K K=2 Sharpe 0.165 (Phase 9.19)
+
+- **Phase-closure citation:** `docs/design/phase9_19_closure_memo.md:3` — "Closed — PARTIAL GO at K=2 lgbm_only (modest +25% PnL, +0.005 Sharpe over baseline)"
+- **Per-cell number citation:** `docs/design/phase9_19_closure_memo.md:40` — "lgbm_only | 2 | 0.165 | 10,219.8 | 2.6% | 1.25x"
+- **Verdict qualification citation:** `docs/design/phase9_19_closure_memo.md:89,100` — "Verdict: PARTIAL GO — Naive K=2 lgbm_only achieves PnL +25% with Sharpe +0.005 over baseline, DD%PnL within bounds. However: the lift is modest, not the breakthrough we hoped for."
+- **Class U citation:** `docs/design/phase27_29_tabular_eval_validity_audit.md:309` — "Per-PR outcome: PR_TARGETED_VERIFICATION_REQUIRED (no Class A; static-code clean throughout; structural Class U on run-provenance)" — Phase 27.0d S-E anchor PR #325 is in audit scope.
+- **Final label:** `ARCHIVED_UNTRUSTED_NUMERIC_DO_NOT_USE_FOR_ROUTING`
+- **May be used for routing?** No
+- **May be used for pass/fail threshold?** No
+- **May be used for production migration?** No
+- **May be used for research prioritisation?** Yes (Top-K mechanism remains a research-track candidate)
+- **May be used as historical context?** Yes (phase closure verdict)
+
+#### A.4 — C-3 kill switches Sharpe 0.177 (Phase 9.13)
+
+- **Phase-closure citation:** `docs/design/phase9_13_closure_memo.md:3` — "Closed — SOFT GO+ at SELECTOR net Sharpe 0.177 (C-3 only)"
+- **Number citation:** `docs/design/phase9_13_closure_memo.md:40` — "C-3 only (kill switches) | 0.177 | 6,275 | −7%"
+- **Closure rationale citation:** `docs/design/phase9_13_closure_memo.md:48` — "Phase 9.13 closes at SOFT GO+ via C-3 only. SELECTOR net Sharpe 0.177 is up from v5's 0.160 (+0.017) at the cost of just 7% of total profit."
+- **Class U inheritance:** C-3 is a predecessor of Phase 27 spine; the same sweep_results gitignore pattern applies; the per-PR audit anchors that inherit C-3 are class U on run-provenance per `docs/design/phase27_29_tabular_eval_validity_audit.md:214-235` (U-1 finding).
+- **Final label:** `ARCHIVED_UNTRUSTED_NUMERIC_DO_NOT_USE_FOR_ROUTING`
+- **May be used for routing?** No (not as a verified ceiling)
+- **May be used for pass/fail threshold?** No
+- **May be used for production migration?** Production-operational (kill-switches mechanism already shipped as a risk control); however, the 0.177 numeric is not an admissible "verified ceiling" for future routing
+- **May be used as historical context?** Yes (SOFT GO+ phase closure; risk-control evidence)
+
+#### A.5 — LSTM Mode A Sharpe 0.061 (Phase 9.X-C/M-1)
+
+- **Number citation:** `docs/design/sharpe_improvement_brief.md:89` — "| 9.X-C | LSTM Mode A | LSTM replaces LGBM | 7.7× | 0.13× | 0.061 |"
+- **NO ADOPT rationale citation:** `docs/design/sharpe_improvement_brief.md:154-161` — "Result: per-trade Sharpe 0.061 vs LGBM baseline 0.149. Why it failed: Class weights overshot: LSTM produced 7.7× too many trades, per-trade EV collapsed. Per-rank Sharpe inversion: rank-1 worse than rank-3 → confidence ranking is poorly calibrated. LSTM has no prior advantage on m5 FX bars; not enough sequence signal beyond what LGBM already extracts."
+- **Scope binding (Mode A only):** Phase 9.X-C/M-1 closure memo confirms B-1..B-4 deprioritised but not foreclosed; A0-broad sequence-NN allowlist (PR #354 S1 LSTM / S2 TCN / S3 Transformer) is an entirely separate formal framework. The Mode A falsification does not falsify B-1..B-4 or A0-broad.
+- **Class U on run-provenance:** Phase 9.X-C is out of PR #356 audit scope but the same artifact-commitment pattern likely applies (presumed Class U risk on the 0.061 numeric).
+- **Final label:** `FALSIFIED_AT_SCOPE` (Mode A full-replacement formulation only; numeric carries Tier-3 Class-U risk)
+- **May be used for routing?** No (Mode A falsification does not authorise Mode A production reflection; the 0.061 numeric is not admissible as a ceiling)
+- **May be used for pass/fail threshold?** No
+- **May be used for production migration?** No
+- **May be used as historical context?** Yes (Mode A falsification for exclusion logic; B-1..B-4 and A0-broad untouched)
+- **Does this falsify B-1 / B-2 / B-3 / B-4?** No — they remain `DEFERRED_NOT_FORECLOSED` (Tier 5)
+- **Does this falsify A0-broad sequence-NN allowlist (S1 / S2 / S3)?** No — A0-broad remains `DEFERRED_NOT_FORECLOSED` (Tier 5)
+
+#### A.6 — Phase 9.16 v9 20p baseline Sharpe 0.160 (production default)
+
+- **Citation:** `docs/design/phase9_16_closure_memo.md:38` — "10-pair v9 spread (base) | 0.152 ... 20-pair v9 spread | 0.160"
+- **Production default citation:** `docs/design/phase9_16_closure_memo.md:102` — "Production default: 20-pair v9 spread bundle, no CSI features."
+- **Tier 2 basis:** static inspection clean at PR #338 / #342 / #345 / #351; sweep_results artifact absent at all four merge SHAs (Class U on run-provenance, but not contested for production-operational use under the contemporaneous contract).
+- **Final label:** `VALID_OPERATIONAL_BASELINE`
+- **May be used for routing?** Yes, as the production-default baseline reference (Tier 2 / CONTEMPORANEOUS_CONTRACT_PASS); **not** as Tier-1 evidence for new claims
+- **May be used for pass/fail threshold?** Yes, as the **comparator baseline** for backtest / paper / live comparisons under the contemporaneous contract; **not** as a Tier-1 ceiling
+- **May be used for production migration?** Already in production; admissible as the migration reference until a Tier-1 alternative is established under the new foundation contract
+- **May be used as historical context?** Yes
+
+#### A.7 — Phase 27-29 tabular spine (9 β-evals: #318 / #321 / #325 / #328 / #332 / #338 / #342 / #345 / #351)
+
+- **Aggregate verdict citation:** `docs/design/phase27_29_tabular_eval_validity_audit.md:525-534` — "Aggregate outcome: `TARGETED_VERIFICATION_REQUIRED`. The Phase 27-29 tabular β-eval spine ... is static-code clean at each PR's own merge-time snapshot, under each PR's own merged design memo. No formal validity blocker (Class A) was identified..."
+- **U-1 finding citation:** `docs/design/phase27_29_tabular_eval_validity_audit.md:214-235` — "U-1 — Machine-readable artifact run-provenance is gitignored across all 9 PRs ... artifacts/stageXX_Xy/sweep_results.parquet / sweep_results.json / aggregate_summary.json / val_selected_cell.json / sanity_probe.json [all] gitignored ... Consequence: the eval_report.md numerics cannot be independently cross-checked"
+- **U-2 finding citation:** `docs/design/phase27_29_tabular_eval_validity_audit.md:237-243` — "U-2 — Sanity-probe HALT outcome cannot be independently verified"
+- **Final label (aggregate):** `TARGETED_VERIFICATION_REQUIRED` (Tier 3); the sub-phase narrow verdicts (FALSIFIED_A0_NARROW etc.) preserve their stated narrow scope; the spine as a whole is **not** formally verified.
+
+#### A.8 — A0-narrow (Phase 28.0c AR1..AR4)
+
+- **Verdict citation:** `docs/design/phase27_29_tabular_eval_validity_audit.md:395,408` — "Verdict: all 4 FALSIFIED_ARCH_INSUFFICIENT; aggregate FALSIFIED_A0_NARROW (NEVER FALSIFIED_ALL_A0). NARROW vs ALL distinction explicit in PR #344 design memo §12.2."
+- **Scope binding:** A0-narrow tabular topology axis is falsified; A0-broad sequence/NN remains deferred-not-foreclosed.
+- **Final label:** `FALSIFIED_AT_SCOPE` (narrow tabular only)
+- **Does this falsify A0-broad?** No — A0-broad remains `DEFERRED_NOT_FORECLOSED`.
+
+#### A.9 — A2-narrow (Phase 29.0a T1..T4)
+
+- **Verdict citation:** `docs/design/phase27_29_tabular_eval_validity_audit.md:415,427` — "Verdict: all 4 FALSIFIED_TARGET_INSUFFICIENT; aggregate FALSIFIED_A2_NARROW (NEVER FALSIFIED_ALL_A2); R-T3 = FALSIFIED_under_T3"
+- **Final label:** `FALSIFIED_AT_SCOPE` (narrow targets only)
+- **Does this falsify A2-broad?** No — A2-broad remains `DEFERRED_NOT_FORECLOSED`.
+
+#### A.10 — A0-broad WIP (Phase 29.0b-α)
+
+- **Halted-state citation:** `docs/design/phase27_29_tabular_eval_validity_audit.md:586` — "A0-broad formal β remains halted. Existing WIP branch `research/phase29-0b-beta-a0-broad-sequence-eval` (tip `9ac8fda`) remains INVALID_FOR_FORMAL_VERDICT on the remote."
+- **Final label:** `DEFERRED_NOT_FORECLOSED`
+
+### Roadmap section update summary (cross-reference)
+
+| Roadmap section | Update applied |
+|---|---|
+| §0 Amendment history | Amendment 1 + 2 history entry added |
+| §1 Non-scope | +mtf / Top-K / C-3 numerics demoted to `ARCHIVED_UNTRUSTED_NUMERIC_DO_NOT_USE_FOR_ROUTING`; v18 reclassified as `INVALID_LOOKAHEAD_NUMERIC` |
+| §2 Tier 1 admissible language | "cleared F-1 / F-2 / F-3 alone" forbidden; full applicable contract required |
+| §2 Tier 3 currently-in-tier | numerics demoted with citation pointers to Appendix A |
+| §3 status table | per-row controlled-vocabulary labels applied to v18 / v19 / Top-K / C-3 / Mode A |
+| §4.2 extraction-vs-expansion | reframed as working hypothesis (not verified principle); does not supply pass/fail thresholds |
+| §5.4 T3 | exit criteria restricted to dataset / baseline / control / D-1 / scientific adequacy / run-provenance committed; sentinel verification moved entirely to T4; exit label proposed `NEW_EPOCH_BASELINE_CONTROL_BUILT` / `NOT_FORMALLY_VERIFIED_YET` |
+| §5.5 T4 | `SENTINEL_VERIFICATION_COMPLETE` retracted; no new success label minted by this roadmap |
+| §6.A | A.1 / A.2 / A.3 reframed as from-scratch feature-family / mechanism re-evaluations; old numerics archived context only; no production reflection auto-authorised |
+| §6.B | decision table over A.1 outcome; old 0.174 / 0.158 / 0.061 arithmetic removed |
+| §6.C | H-B9 all-architecture failure wording softened; strategic review required before declaring a production ceiling |
+| §6.D | external-data provenance / retention gate added |
+| §7 | P1 / P2 / P3 risk wording corrected; production safety gates explicit |
+| §8.2 | T1 / T2 parallelism clarified; T2 deposit ≠ epoch adoption |
+| §10 | stage gate table T3 / T4 rows updated |
+| §11.Q3 | T4 staged-verification binding (preflight only) |
+| §12 | carry-forward precision (old historic-anchor F-1 not repaired by new-epoch work); explicit bindings from Amendment 2 |
+| Appendix A (this) | controlled vocabulary + per-numeric harvest |
+
+### Confirmations
+
+This appendix and the roadmap body updates are doc-only. **No
+experiment was re-run.** **No raw data was read.** **No model
+was executed.** **No SHA was computed.** **No production code
+or configuration was changed.** **No prior verdict file was
+modified.** **No auto-route was created.** No source code, test,
+artifact, hash, fetch, credential, label, or model execution
+occurred. Source-of-truth citations come from committed
+documents under `docs/design/` listed above; no out-of-repo
+data was consulted.
