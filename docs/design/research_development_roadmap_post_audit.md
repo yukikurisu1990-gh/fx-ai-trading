@@ -16,6 +16,42 @@ contract of `docs/design/phase27_29_tabular_eval_validity_audit.md`
 
 **Amendment history:**
 
+- Amendment 5 (this PR): cleanup of Amendment 4 residuals. (a) §3
+  status table: stale duplicate `9.X-J / 9.X-L / 9.X-M / 9.X-N /
+  9.X-O "(per log)"` rows (which preceded the detailed Amendment-4
+  rows) **removed**; the new Amendment-4 rows above (citing
+  `phase9_x_jlmno_series_closure_memo.md`) are now the sole
+  authoritative entries for J / L / M / N / O. The stale rows
+  conflicted with the new interpretation (9.X-J = PARTIAL GO not
+  "TBD"; 9.X-N = PARTIAL GO not "NO ADOPT"; 9.X-O = GO at series
+  closure proposed-only candidate, not blanket "NO ADOPT"). (b) §3
+  `+all (vol+moments+mtf)` row's active comparator phrasing
+  "< +mtf alone" rewritten as `NO ADOPT at phase scope` + archival
+  closure-context note (the historical reference compared against
+  the now-invalid / archived +mtf anchor; that comparison is no
+  longer active); active reason recorded as multicollinearity /
+  combined feature group did not produce an adoptable phase
+  verdict. (c) Appendix A.11 aggregate finding extended with
+  audit-proof binding: `Direct +mtf final negative Sharpe =
+  SOURCE_NOT_FOUND_IN_REPO` explicitly recorded; absence of
+  direct negative final Sharpe for +mtf may **not** be
+  interpreted as positive evidence for +mtf; the four
+  independent non-routing reasons (v18 invalidation; v19 class
+  U; J/L/M realism degradation; N/O recovery being
+  engineering-layer rather than signal-strength) bind. (d)
+  Scoping re-confirmed: Phase 28 §10 immutable research baseline
+  = `NEGATIVE_FINAL_EVIDENCE_AT_SCOPE` is research-baseline scope
+  only; Phase 9.16 v9 20p production baseline remains
+  `VALID_OPERATIONAL_BASELINE`; the Phase 28 negative-baseline
+  finding does **not** invalidate the production baseline
+  directly; over-generalisation forbidden. (e) All no-routing
+  bindings from Amendments 1-4 preserved: 0.174 =
+  `INVALID_LOOKAHEAD_NUMERIC`; 0.158 / 0.165 / 0.177 =
+  `ARCHIVED_UNTRUSTED_NUMERIC_DO_NOT_USE_FOR_ROUTING`; 0.061 =
+  `FALSIFIED_AT_SCOPE` (LSTM Mode A only); no old numeric may be
+  used as routing evidence / pass-fail threshold / production
+  migration trigger / H-B9 proof; Track A.1 remains from-scratch
+  new-epoch re-evaluation only.
 - Amendment 4 (this PR): realism / cost-adjusted / net-Sharpe
   final-status harvest from committed sources. New controlled
   vocabulary label `NEGATIVE_FINAL_EVIDENCE_AT_SCOPE` added for
@@ -499,7 +535,7 @@ this table. Entries marked TIER are in the corresponding §2 tier.
 | **9.X-B** | **+mtf K=3 (v18 reported)** | Sharpe 0.174 — **lookahead bug** | Tier 4 + `INVALID_LOOKAHEAD_NUMERIC` (Appendix A) | `shift(1)` missing in `_add_multi_tf_extended_features` (`sharpe_improvement_brief.md:182-183`); not admissible for any routing purpose |
 | **9.X-B** | **+mtf K=3 (v19 causal fix)** | archived nominal Sharpe 0.158 (-9.2% vs v18) | Tier 3 + `ARCHIVED_UNTRUSTED_NUMERIC_DO_NOT_USE_FOR_ROUTING` (Appendix A) | Class U on run-provenance; PARTIAL GO+ rescinded under v19; numeric is a reduction of a now-invalid v18 anchor and not admissible as routing evidence or pass/fail threshold |
 | **9.X-B** | **+mtf K=2 (v19 causal fix)** | archived nominal Sharpe ≈ 0.157 (estimate) | Tier 3 + `ARCHIVED_UNTRUSTED_NUMERIC_DO_NOT_USE_FOR_ROUTING` | Same status as K=3 |
-| **9.X-B** | **+all (vol+moments+mtf)** | < +mtf alone | Tier 4 | Multicollinearity |
+| **9.X-B** | **+all (vol+moments+mtf)** | NO ADOPT at phase scope | Tier 4 | Amendment 5 binding: historic closure comparison referenced the now-invalid / archived +mtf anchor; archival closure context only — not an active comparator. Active reason recorded: multicollinearity / combined feature group did not produce an adoptable phase verdict |
 | **9.X-C** | **M-1 Mode A (Full LSTM replacement)** | archived nominal Sharpe 0.061; 7.7× trade rate; 0.13× per-trade EV | Tier 4 `FALSIFIED_AT_SCOPE` (Mode A only; B-1..B-4 untouched; A0-broad sequence-NN untouched) + Tier-3 Class-U risk on the numeric | Class imbalance + no discrimination + information saturation; falsification is **narrow** to Mode A full-replacement formulation |
 | **9.X-C** | **Mode B-1 (Feature stacking, LSTM hidden → LGBM)** | **untried** | **Tier 5** | Tier-2 deprioritised at M-1 closure; not foreclosed |
 | **9.X-C** | **Mode B-2 (Output averaging)** | **untried** | **Tier 5** | Tier-2 deprioritised at M-1 closure (historic comparison used the now-invalid mtf v18 0.174 anchor; retained only as archival closure context — not a current active comparator). Eligibility under new-epoch contract per §6.B decision table; not foreclosed |
@@ -518,11 +554,8 @@ this table. Entries marked TIER are in the corresponding §2 tier.
 | **9.X-O** | **purge + 100 mini-lot clip cap** | archived K=3 0.158 / K=1 0.157 (matches +mtf v19 anchor; DD%PnL 2.8% vs anchor ~5%; trade count 13.8k vs 22k) | Tier 3 + `ARCHIVED_UNTRUSTED_NUMERIC_DO_NOT_USE_FOR_ROUTING` (Appendix A.11) | **GO** at series closure (`phase9_x_jlmno_series_closure_memo.md:140-170`); best result in JLMNO series; proposed-only as a successor candidate to Phase 9.16 v9 20p **subject to from-scratch new-epoch re-evaluation under Foundation T4** — not admissible as routing evidence or as a production-migration anchor without that re-evaluation; mechanism eligibility per §6.A from-scratch framing |
 | 9.X-H | calendar full | NO ADOPT (per log) | Tier 4 | Memo not in main project memory; verify at PR-time |
 | 9.X-I | rank audit / risk sizing | NO ADOPT (per log) | Tier 4 | Same caveat |
-| 9.X-J | realism (all combined) | (log present) | TBD | Verify at PR-time |
-| 9.X-L | filter | NO ADOPT (per log) | Tier 4 | Same caveat |
-| 9.X-M | dynamic SL/TP | NO ADOPT (per log) | Tier 4 | Same caveat |
-| 9.X-N | margin-aware | NO ADOPT (per log) | Tier 4 | Same caveat |
-| 9.X-O | purge / clip | NO ADOPT (per log) | Tier 4 | Same caveat |
+<!-- Amendment 5: stale duplicate 9.X-J / 9.X-L / 9.X-M / 9.X-N / 9.X-O "(per log)" rows removed; the detailed Amendment-4 rows above (citing `phase9_x_jlmno_series_closure_memo.md`) are authoritative. The old rows conflicted with the new interpretation: 9.X-J = PARTIAL GO not "TBD"; 9.X-N = PARTIAL GO not "NO ADOPT"; 9.X-O = GO at series closure (proposed-only candidate, not "NO ADOPT"). -->
+
 
 **Reading guide:**
 
@@ -2062,11 +2095,44 @@ is **degraded** (in addition to being class U on run-provenance
 and downstream of an invalidated v18 anchor). This further
 weakens §4.2's extraction-vs-expansion hypothesis support.
 
+**Amendment 5 audit-proof binding (direct +mtf negative final
+Sharpe):**
+
+- **Direct +mtf final negative Sharpe:**
+  `SOURCE_NOT_FOUND_IN_REPO`
+- **Committed sources instead show:**
+  - J / L / M realism degradation (-1.9% / -8.9% / -15.8% vs
+    anchor) at phase scope
+  - N / O anchor-parity recovery achieved via sizing /
+    clip-cap engineering, **not** via underlying +mtf signal
+    strengthening
+- **Therefore no direct negative final Sharpe is asserted for
+  +mtf itself** under this roadmap.
+- **Nevertheless, +mtf numerics remain non-routing** because of:
+  - v18 lookahead invalidation (Appendix A.1 →
+    `INVALID_LOOKAHEAD_NUMERIC`)
+  - v19 class-U on run-provenance + downstream of invalidated
+    v18 anchor (Appendix A.2 →
+    `ARCHIVED_UNTRUSTED_NUMERIC_DO_NOT_USE_FOR_ROUTING`)
+  - J / L / M realism degradation
+  - N / O recovery being engineering-layer (sizing /
+    clip-cap), **not** signal-strength evidence
+
+This binding ensures that future readers cannot interpret the
+absence of a direct +mtf negative final Sharpe as positive
+evidence for +mtf; the absence is `SOURCE_NOT_FOUND_IN_REPO`,
+and the +mtf non-routing status stands on the four reasons
+above independently.
+
 ### Roadmap section update summary (cross-reference)
 
 | Roadmap section | Update applied |
 |---|---|
-| §0 Amendment history | Amendment 1 + 2 + 3 + 4 history entries added |
+| §0 Amendment history | Amendment 1 + 2 + 3 + 4 + 5 history entries added |
+| §3 status table (Amendment 5 cleanup) | stale duplicate "(per log)" rows for 9.X-J / 9.X-L / 9.X-M / 9.X-N / 9.X-O removed; the detailed Amendment-4 rows are now the sole authoritative entries; conflict with old interpretation (TBD / blanket NO ADOPT) resolved |
+| §3 status table `+all (vol+moments+mtf)` row | active comparator phrasing "< +mtf alone" replaced with archival closure-context note + active reason "multicollinearity / combined feature group did not produce an adoptable phase verdict" (Amendment 5) |
+| Appendix A.11 aggregate finding | extended with audit-proof binding `Direct +mtf final negative Sharpe = SOURCE_NOT_FOUND_IN_REPO`; absence may not be interpreted as positive evidence (Amendment 5) |
+| Scoping re-confirmation | Phase 28 §10 research baseline `NEGATIVE_FINAL_EVIDENCE_AT_SCOPE` is research-baseline scope only and does NOT invalidate Phase 9.16 v9 20p production baseline `VALID_OPERATIONAL_BASELINE` (Amendment 5) |
 | Appendix A controlled vocabulary | new label `NEGATIVE_FINAL_EVIDENCE_AT_SCOPE` added (Amendment 4) |
 | Appendix A.7 extension | Phase 28 §10 immutable research baseline negative-Sharpe citations (test -0.1732 / val -0.1863 / ann_pnl -204,664.4); Phase 27.0d C-se cell Sharpe -0.483; Phase 9.19 Top-K rank-3 -0.054; composite labels (TARGETED_VERIFICATION_REQUIRED + NEGATIVE_FINAL_EVIDENCE_AT_SCOPE) (Amendment 4) |
 | Appendix A.11 (new) | Phase 9.X-J / 9.X-L / 9.X-M / 9.X-N / 9.X-O per-series numerics + verdicts + citations (Amendment 4) |
