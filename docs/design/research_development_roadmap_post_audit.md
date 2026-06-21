@@ -16,6 +16,57 @@ contract of `docs/design/phase27_29_tabular_eval_validity_audit.md`
 
 **Amendment history:**
 
+- Amendment 7 (this PR): new section §11B "Root Logic
+  Reassessment / Profit Logic Audit" added between §11A and
+  §11. **§11B is not a Research Track**; it is a diagnostic
+  layer to be authored / reviewed **before** running the next
+  research track, to address why historical research-frame
+  Sharpe / Spearman / phase-closure verdicts did not convert
+  reliably to monetisable profit (Phase 28 §10 research
+  baseline NEGATIVE; Phase 27.0d C-se Spearman PASS + Sharpe
+  -0.483; Phase 9.19 Top-K rank-3 -0.054; Phase 9.X-C/M-1
+  trade-rate explosion + per-trade EV collapse; Phase 9.X-J/L/M
+  realism degradation; 9/9 val-selector C-sb-baseline pick).
+  Subsections: §11B.1 Objective mismatch audit (train objective
+  vs val selector vs rank metrics vs gross/net Sharpe vs
+  per-trade EV vs production-realistic PnL); §11B.2 Label /
+  target logic audit (direction vs trade/no-trade vs return
+  magnitude vs exit-aware vs risk-adjusted; cost-hurdle inside
+  label; entry/exit-mechanics coherence; class imbalance;
+  selected-trade EV priority); §11B.3 Selection / ranking
+  logic audit (rank monotonicity by decile; selected-trade EV
+  by score bucket; per-pair overlap; calibration; score
+  distribution stability; cost-adjusted selected-trade PnL by
+  rank); §11B.4 Cost hurdle / execution realism audit (cost
+  inside training target vs selector vs post-filter; edges
+  smaller than spread; gross-vs-net mismatch; dynamic cost
+  hurdle; spread/time-of-day/liquidity inside the selector);
+  §11B.5 Trade unit / horizon audit (horizon too short for
+  alpha after costs; feature-horizon alignment; TP/SL
+  destroying signal; partial-exit / dynamic-SL/TP mismatch;
+  direction vs path-aware outcome); §11B.6 Baseline and
+  comparator audit (new-epoch S-B + S-E + cash/no-trade +
+  production Phase 9.16 v9 20p + cost-adjusted hurdle baseline
+  required; beating a negative research baseline insufficient;
+  forbidden language list); §11B.7 Alpha upper-bound / oracle
+  diagnostics (cost-free vs cost-adjusted oracle; per-pair /
+  per-regime / perfect-rank oracle; label separability;
+  IC/MI; score-to-PnL monotonicity; contribution
+  decomposition); §11B.8 13-item root-cause taxonomy
+  (NO_SIGNAL / SIGNAL_NON_MONETISABLE / COST_ERASED_EDGE /
+  RANKING_INVERSION / TRADE_RATE_EXPLOSION /
+  PER_TRADE_EV_COLLAPSE / REGIME_INSTABILITY /
+  PAIR_CONCENTRATION / LEAKAGE_OR_CAUSALITY_FAILURE /
+  CLASS_U_RUN_PROVENANCE / BASELINE_NEGATIVE_OR_WEAK /
+  OVERFITTED_SELECTOR / EXECUTION_CONSTRAINT_FAILURE);
+  §11B.9 Pre-registered kill criteria + escalation criteria
+  (mandatory in every Research Track design memo); §11B.10
+  Relationship to existing tracks (diagnostic layer; does not
+  replace Foundation; sequenced between T0 and T1; may
+  co-author with §7.P2 design). New Open Question Q12 added
+  (Root Logic Reassessment authorisation timing recommendation
+  yes / between T0 and T1 / co-author with §7.P2). All
+  Amendment 1-6 bindings preserved.
 - Amendment 6 (this PR): new section §11A "Profit Growth
   Hypothesis Matrix" added before §11 Open questions. The
   Foundation / Research / Production track sections (§5 / §6 /
@@ -1817,6 +1868,400 @@ Phase 9.x / Phase 27-29 lineage).
 
 ---
 
+## §11B Root Logic Reassessment / Profit Logic Audit (Amendment 7)
+
+**Status:** This section is **not a Research Track**. It does
+**not** execute new models, features, or experiments. It is a
+**diagnostic layer** to be authored / reviewed **before** running
+the next research track, so that we do not repeat the historical
+failure modes uncovered in Amendments 1-6:
+
+- Phase 28 §10 research baseline = `NEGATIVE_FINAL_EVIDENCE_AT_SCOPE`
+  (test Sharpe -0.1732 / val -0.1863 / ann_pnl -204,664.4)
+- Phase 27.0d C-se cell = Spearman H1m PASS (+0.438) but Sharpe
+  **-0.483** (ranking signal does not monetise)
+- Phase 9.19 Top-K rank-3 = per-trade Sharpe **-0.054** (rank
+  inversion)
+- Phase 9.X-C/M-1 LSTM Mode A = 7.7× trade-rate explosion +
+  per-trade EV collapse to 0.13×
+- Phase 9.X-J/L/M +mtf realism degradation (Sharpe -1.9% / -8.9%
+  / -15.8% under cost / SL-TP / time-of-day mechanisms)
+- 9 / 9 Phase 27-29 sub-phases picked C-sb-baseline at
+  val-selector
+
+The pattern across these results: research-frame Sharpe / Spearman
+/ phase-closure verdicts did **not** convert reliably to
+monetisable, cost-adjusted, regime-stable, rank-monotonic
+profit. §11B asks **why**, **before** spending more compute on
+the next architecture / feature / target try.
+
+### §11B.1 — Objective mismatch audit
+
+Historical failures suggest possible mismatch between:
+
+- **train objective** (e.g., log-loss, MSE, Huber on a label that
+  may not be the monetisable quantity)
+- **validation selector** (e.g., val log-loss, val Sharpe at a
+  selection rule that may pick val-superior cells that do not
+  test-superior on net PnL)
+- **rank / Spearman metrics** (PASS at H1m yet -0.483 at C-se)
+- **gross Sharpe** (pre-cost; may be optimistic relative to
+  net-PnL realism)
+- **net Sharpe** (post-cost per-trade; the binding metric for
+  §11A profit levers)
+- **ann_pnl** (the production-relevant scale)
+- **per-trade EV** (the collapse pattern in 9.17 / 9.17b / 9.19 /
+  9.X-A / 9.X-C/M-1)
+- **production-realistic PnL** (live execution incl. slippage,
+  partial fills, rejected orders)
+
+**Required diagnostic questions** (must be answered in any future
+Track design memo before implementation):
+
+- Did the selected train / val objective optimise **monetisable**
+  trades, or only a proxy (rank order, classification accuracy,
+  regression error) that may not monetise?
+- Did the validation score (whatever it was) correlate with **net
+  PnL** on the held-out test set across multiple folds?
+- Did Spearman / ranking signal survive the addition of cost +
+  selection rule + position sizing? Phase 27.0d C-se shows
+  Spearman can PASS while Sharpe is -0.483; this is the
+  reference negative case.
+- Did better model score lead to better **selected-trade EV**,
+  or did rank inversion creep in (Phase 9.19 rank-3 -0.054)?
+
+**Binding (Amendment 7):** every future Research Track design
+memo (A / B / C / D / E / F / G under §6) must include an
+**objective-coherence statement** answering the four questions
+above. Tracks that pass classification accuracy or rank
+correlation as their headline metric but cannot answer (b) and
+(d) affirmatively are **not eligible for promotion** to
+production.
+
+### §11B.2 — Label / target logic audit
+
+The historical labels (TB 3-class with 84% timeout per Phase
+9.X-C closure; the various A2-narrow T1..T4 targets per Phase
+29.0a closure FALSIFIED_A2_NARROW) may not encode profitable
+trading decisions structurally.
+
+**Diagnostic questions** (must be answered before any future
+Track E design memo or before reusing the current TB label for a
+new Track A.1 / D / C re-evaluation):
+
+- Is the label predicting **direction**, **trade / no-trade**,
+  **return magnitude**, **exit-aware profit** (path-aware
+  realised P&L net of TP / SL), or **risk-adjusted profit**?
+- Does the label include **spread / slippage / cost hurdle** as
+  part of its definition (so a "profitable" label requires
+  return > round-trip-cost), or only gross return?
+- Does the label reflect **entry / exit mechanics actually used
+  by the strategy** (TP / SL distances, time-stop horizon,
+  partial exit rules), or an idealised geometric move that the
+  strategy cannot capture?
+- Does the label produce **class imbalance** (TB 84% timeout
+  per Phase 9.X-C) or excessive false positives?
+- Should future target redesign **prioritise selected-trade EV
+  and net PnL** rather than raw return or direction?
+
+**Binding (Amendment 7):** Track E A2-broad design memo must
+answer all five questions above as a structural prerequisite;
+this expansion of §6.E is broader than "try more targets" — it
+includes a **label-definition review** of what counts as
+"profitable" in the label generator before listing candidate
+targets.
+
+### §11B.3 — Selection / ranking logic audit
+
+Top-K rank inversion (Phase 9.19) and C-se Spearman-but-negative-
+Sharpe (Phase 27.0d) are evidence that ranking can pass at the
+distribution level while failing to monetise at the
+top-of-distribution level (where selection actually operates).
+
+**Required diagnostics** (must be reported in any future Track A.2
+/ Track G selection-rule design memo):
+
+- **rank monotonicity by decile** of model score on the val set
+  and the test set (per-pair decomposition + global)
+- **selected-trade EV by score bucket** (top decile, top quintile,
+  top half, bottom half, bottom decile)
+- **per-pair selected-trade overlap** (Phase 9.19 closure
+  identified that simultaneous picks across USD-base pairs are
+  not independent; same pattern may bite Track A.2 again unless
+  explicitly diagnosed)
+- **confidence calibration** (reliability diagram of predicted
+  probability vs realised hit rate)
+- **score distribution stability across train / val / test**
+  (KS / Wasserstein distance per split; covariate-shift detection)
+- **cost-adjusted selected-trade PnL by rank** (the binding
+  metric — what would a rank-k strategy have earned after spread
+  / slippage / sizing, by k?)
+
+**Binding (Amendment 7):** no future selection / ranking
+mechanism may be promoted to a new-epoch Research Track
+production-migration design memo unless **rank monotonicity AND
+cost-adjusted selected-trade EV survive** validation on the new
+epoch's test split. Spearman PASS alone is **insufficient** (per
+the C-se reference case).
+
+### §11B.4 — Cost hurdle / execution realism audit
+
+A diagnostic layer asking **where** cost should enter — training
+target, selector, post-filter, or all three.
+
+**Questions** (must be addressed in any future Track A / D / G /
+P1 / P3 design memo where cost is a binding variable):
+
+- Is the strategy trying to trade **edges smaller than
+  spread / slippage**? If so, even a perfect rank order yields
+  negative net P&L (the C-se reference case).
+- Does the model score predict **gross return but not net
+  return**? Train / val a parallel scorer on gross-return target
+  vs net-return target and compare; if they pick different cells
+  at val-selector, the gross / net mismatch is binding.
+- Should the trade gate require **expected edge > dynamic cost
+  hurdle** (per-pair, per-time-of-day, per-volatility-regime),
+  rather than a fixed-pip / fixed-percentage threshold?
+- Should **spread / time-of-day / liquidity enter the selector**
+  rather than only the backtest cost model? If the selector
+  cannot see cost, it cannot avoid picking cost-erased
+  candidates.
+
+**Binding (Amendment 7):** this is **root logic**, not just
+production engineering. §7.P1 / §7.P2 / §7.P3 still hold for the
+production-side improvements; §11B.4 asks the cost question
+**inside the model training and selection logic** as well. A
+future Track A.1 / D.1 / C.1 design memo must state how cost
+enters its training / selection / post-filter / backtest chain,
+or explain why cost is admissibly absent from each stage.
+
+### §11B.5 — Trade unit / horizon audit
+
+Review whether current entry / exit / horizon assumptions are
+correct given the alpha-after-cost picture.
+
+**Questions** (must be addressed before reusing the current TB
+20-bar M5 horizon for any new Research Track A / D / C):
+
+- Is the **current horizon too short** for the available alpha
+  after costs (so 84% TB timeout per Phase 9.X-C is partly a
+  horizon-mismatch finding, not just a class-imbalance finding)?
+- Are M1 / M5 / M15 / H1 / D1 features **aligned with the trade
+  holding period** the strategy actually executes, or is there a
+  feature / horizon mismatch?
+- Does **TP / SL logic destroy** otherwise predictive signal
+  (e.g., does forcing TP=1.5 / SL=1.0 truncate profitable runners
+  while letting losers run to SL)? Phase 9.X-M tested per-pair
+  tuning and reverted to global; is this a horizon-coupling
+  finding rather than a tuning finding?
+- Are **partial exits / dynamic SL/TP failures** telling us that
+  the **exit policy is mismatched** with the entry policy (Phase
+  9.18 H-1 bucketed TP/SL + H-2 partial exit both FALSIFIED;
+  80% SL-before-partial rate)?
+- Should evaluation compare **direction prediction vs path-aware
+  trade outcome** (Phase 24 path-EV characterisation) rather
+  than only direction accuracy?
+
+**Binding (Amendment 7):** any future Track A.1 / D / C design
+memo must include a **horizon-coherence statement** answering at
+least (a), (c), and (e); horizon-mismatch failure modes must be
+explicitly checked before committing GPU / CPU time.
+
+### §11B.6 — Baseline and comparator audit
+
+Because the Phase 28 §10 research baseline is
+`NEGATIVE_FINAL_EVIDENCE_AT_SCOPE` (-0.1732 test Sharpe),
+**beating a negative research baseline is not evidence of
+profitability**. Future research must define its comparators
+carefully.
+
+**Required language (Amendment 7 binding):** future candidates
+must be compared against **all** of the following, with explicit
+results reported for each:
+
+- **new-epoch S-B baseline** (the from-scratch new-epoch
+  economic baseline built at T3 per §5.4)
+- **new-epoch S-E control** (the from-scratch tabular control
+  built at T3)
+- **no-trade / cash baseline** (Sharpe 0; ann_pnl 0;
+  trade-count 0; the structural floor)
+- **production Phase 9.16 v9 20p operational baseline** where
+  applicable (Tier 2 `VALID_OPERATIONAL_BASELINE` at Sharpe
+  0.160; the production-decision floor)
+- **cost-adjusted hurdle baseline** (a per-pair / per-time-of-day
+  cost-only model that buys when expected edge > realistic cost,
+  no signal added; the cost-floor)
+
+**Comparator-choice binding:** the **set of comparators** for a
+given Track must be defined **before** running that Track (in
+its design memo). Post-hoc comparator selection (cherry-picking
+the comparator that makes the candidate look best) is
+**forbidden**.
+
+**Forbidden language (Amendment 7):**
+
+- "beat the baseline" (without specifying which baseline)
+- "improvement over Phase 28 §10" alone (because Phase 28 §10
+  is `NEGATIVE_FINAL_EVIDENCE_AT_SCOPE`; beating it is
+  insufficient)
+- "Sharpe > 0" alone (because cash is also Sharpe 0; production
+  baseline is Sharpe 0.160; a candidate at Sharpe 0.05 is worse
+  than cash for a leveraged strategy after risk + tax)
+
+### §11B.7 — Alpha upper-bound / oracle diagnostics
+
+Before expensive architecture work (Track C A0-broad
+sequence-NN; Track F A3 MoE), require **cheap diagnostic
+upper-bound checks** to determine whether enough monetisable
+signal exists to justify model complexity.
+
+**Required diagnostics** (must be reported before any Track C /
+F / B-3 / B-4 design memo authorises GPU compute):
+
+- **cost-free oracle vs cost-adjusted oracle** — what Sharpe /
+  ann_pnl would a perfect-foresight strategy earn (a) ignoring
+  cost, and (b) after realistic per-pair / per-time-of-day cost?
+  The gap is the cost-erasure ceiling; if (b) ≤ baseline, no
+  signal can win.
+- **per-pair oracle** — same as above per pair; identifies
+  which pairs structurally have / lack alpha
+- **regime oracle** — same as above per market-regime bucket
+  (vol-regime / trend-regime / session-regime); identifies
+  which regimes have / lack alpha
+- **perfect-rank oracle** — what does a perfect rank order
+  earn under realistic selection rules + cost? Phase 27.0d
+  C-se PASS Spearman + Sharpe -0.483 is the reference case for
+  why this is a binding diagnostic.
+- **label separability check** — KL / Wasserstein distance
+  between the feature distributions of TP / SL / timeout
+  outcomes; if not separable, no model class can do better
+  than random by this label.
+- **feature information coefficient (IC) / mutual information**
+  per-pair per-feature on the new-epoch data
+- **score-to-PnL monotonicity check** — for whichever simple
+  baseline model we have, does higher score → higher P&L
+  monotonically? If not, the score is non-monetisable at the
+  current selection rule.
+- **per-pair and per-regime contribution decomposition** of any
+  baseline candidate (to detect single-pair / single-regime
+  reliance per Phase 9.19 USD-cluster finding)
+
+**Binding (Amendment 7):** Track C (A0-broad) / Track F (A3
+MoE) / Track B-3 / Track B-4 design memos must **first** present
+the §11B.7 diagnostics on the new-epoch data; only if the
+diagnostics show monetisable upper-bound headroom may the
+architecture work be authorised. This is **prerequisite to GPU
+compute**, not parallel to it.
+
+### §11B.8 — Root-cause taxonomy for failed experiments
+
+Future Research Track closure memos **must classify failures**
+using the controlled taxonomy below, **instead of** just writing
+"NO ADOPT" or "PARTIAL GO with caveats." Multiple labels per
+closure are admissible.
+
+| Label | Definition |
+|---|---|
+| `NO_SIGNAL` | The feature / target / mechanism does not predict the outcome at any rank; IC / MI ≈ 0; oracle diagnostics show no alpha headroom |
+| `SIGNAL_NON_MONETISABLE` | The feature predicts the outcome with statistically significant rank correlation, but the rank does not survive cost + selection + sizing to net P&L (reference case: Phase 27.0d C-se Spearman PASS + Sharpe -0.483) |
+| `COST_ERASED_EDGE` | The signal produces positive gross P&L but negative net P&L under realistic cost; cost-free oracle would adopt, cost-adjusted oracle would not |
+| `RANKING_INVERSION` | Top-of-distribution ranks underperform middle / bottom ranks at net P&L (reference: Phase 9.19 rank-3 -0.054; LSTM Mode A rank-1 < rank-3) |
+| `TRADE_RATE_EXPLOSION` | Trade rate increases materially without proportional EV scaling; reference Phase 9.17 (15× trade rate, Sharpe collapsed); Phase 9.X-C/M-1 (7.7× trade rate); Phase 9.X-A (4.5× trade rate) |
+| `PER_TRADE_EV_COLLAPSE` | Per-trade EV drops below operational threshold even if total PnL increases; the binding metric for the 5-phase NO ADOPT pattern in §4.2 |
+| `REGIME_INSTABILITY` | Signal works in some market regimes (trend / vol bucket / session) but reverses or vanishes in others; not robust to regime shift |
+| `PAIR_CONCENTRATION` | PnL comes from a single pair or a single correlated-pair cluster (reference: Phase 9.19 USD cluster overlap); not robust to pair-universe expansion or contraction |
+| `LEAKAGE_OR_CAUSALITY_FAILURE` | Future / same-bar information enters features or labels (reference: Phase 9.X-B v18 lookahead bug; v19 causal fix reduced 0.174 → 0.158); falsifies the prior numeric and requires re-evaluation |
+| `CLASS_U_RUN_PROVENANCE` | sweep_results / sanity_probe / aggregate_summary / val_selected gitignored at merge SHA; numeric cannot be independently verified (reference: PR #356 audit U-1 finding across 9 β-evals) |
+| `BASELINE_NEGATIVE_OR_WEAK` | The candidate beat the local research baseline but the local baseline itself was negative or weak (reference: Phase 28 §10 immutable research baseline -0.1732); the candidate's apparent improvement does not survive comparison against cash or production baseline |
+| `OVERFITTED_SELECTOR` | The val-selector pick-pattern saturates on a single cell (reference: Phase 27-29 9 / 9 val-selector C-sb-baseline pick); the selector cannot distinguish new candidates from the local baseline; H-B9 hypothesis ground |
+| `EXECUTION_CONSTRAINT_FAILURE` | The strategy assumes execution behaviour that does not match production (partial fills not modelled; SL-before-partial 80% per Phase 9.18 H-2; rejected orders not modelled); reference for §7.P3 production-safety-gate failures |
+
+**Binding (Amendment 7):** every Research Track closure memo
+(A / B / C / D / E / F / G under §6) must classify outcomes
+using this taxonomy. Tracks that NO ADOPT without a taxonomy
+label are **not closure-eligible**; the closure memo must be
+revised to include the label(s) before merge. This is a
+**process binding** on Research Track closure, not a
+specification of which labels are correct for any given track.
+
+### §11B.9 — Kill criteria / escalation criteria
+
+Pre-registered stop conditions for future Tracks, to prevent
+sunk-cost continuation of unprofitable explorations.
+
+**Pre-registered kill criteria** (must appear in every Research
+Track design memo before running):
+
+- if **cost-adjusted selected-trade EV is negative** at any
+  K (Top-K) or rank decile under realistic cost, **stop**
+- if **rank monotonicity fails** (per §11B.3 diagnostic) on the
+  new-epoch val set or test set, **do not promote** any
+  selection-track candidate
+- if **per-trade EV collapses while trade count rises**,
+  **stop** the Track (per the 5-phase NO ADOPT pattern; this
+  is the structural failure mode)
+- if the candidate **only beats a negative research baseline**
+  (e.g., Phase 28 §10) but **not** cash / no-trade or
+  production Phase 9.16 v9 20p baseline, **do not promote**
+- if a **feature family shows no incremental value over S-B /
+  S-E** in §11B.7 oracle diagnostics, **do not proceed** to
+  expensive model architecture work
+- if a **neural model does not beat the tabular arch-control**
+  (C-d2-arch-control 7th anchor per PR #354 §H-D2), **stop**
+  architecture escalation (Track C → Track F gating)
+- if source / run-provenance is `CLASS_U_RUN_PROVENANCE`, the
+  result **does not enter routing evidence** regardless of
+  numeric magnitude
+
+**Escalation criteria** (must also appear in the design memo):
+
+- if the candidate **passes all kill criteria above** + reaches
+  a `STRONG_GO_UNDER_<contract>` outcome → escalate to
+  production-migration design memo per §6.A binding (not
+  auto-route to production)
+- if the candidate **passes some kill criteria but is
+  inconclusive on others** → escalate to a strategic-review
+  memo (not auto-route to next-architecture work)
+- if the candidate produces a `NEGATIVE_FINAL_EVIDENCE_AT_SCOPE`
+  outcome at the same scope as a prior negative result →
+  escalate to user with the taxonomy label(s) explaining
+  **why** the negative finding recurred
+
+**Binding (Amendment 7):** Track design memos that omit
+pre-registered kill criteria are **not authorisable**. This
+removes the discretion to continue a Track past its kill
+threshold based on post-hoc rationalisation.
+
+### §11B.10 — Relationship to existing tracks
+
+§11B is a **diagnostic layer**, not a Track:
+
+- It does **not** replace Foundation T1-T4 (those remain the
+  data / verification path)
+- It **should** be done **before or alongside** the early
+  Track A.1 / D.1 / C.1 design memos (per §11A.2 sequencing)
+- It **informs** Track E (target redesign per §11B.2), Track
+  G (selection redesign per §11B.3), Track C (architecture
+  escalation per §11B.7 / §11B.9), and §7.P1 / §7.P3 (cost
+  / execution per §11B.4)
+- It can be **authored as a doc-only design memo after this
+  roadmap merge**, before any expensive Research Track
+  execution. The audit memo itself does not run experiments;
+  it answers the §11B.1-§11B.7 diagnostic questions on the
+  current state and pre-registers the §11B.8 taxonomy + §11B.9
+  kill / escalation criteria for adoption by subsequent
+  Research Track design memos.
+
+**Sequencing recommendation:** the Root Logic Reassessment
+memo (doc-only) is authored **between** Foundation Track T0
+(continuous production keep-alive) and Foundation Track T1
+(Gate P1 PR-B). It does not require T1-T4 completion. It
+may also be co-authored in parallel with §7.P2 spread
+snapshotting design (which is observational and therefore
+non-conflicting).
+
+---
+
 ## §11 Open questions
 
 These items require user judgment before the corresponding track /
@@ -1909,6 +2354,25 @@ stage is authorised.
   surface), (b) when any Track outcome is Tier 1 (production
   migration design), (c) when H-B9 is confirmed or falsified
   (strategic direction), (d) at user request.
+- **Q12 — Root Logic Reassessment authorisation timing
+  (Amendment 7).** Should the §11B Root Logic Reassessment
+  diagnostic memo be authorised **before** Track A.1 / D.1 /
+  C.1 design memos? **Recommendation: yes**, at least as a
+  doc-only diagnostic design memo, because it may prevent
+  repeating the historical failure modes documented in
+  Amendments 1-6 (objective mismatch; label-cost coupling
+  absent; ranking-vs-monetisation gap; horizon mismatch;
+  baseline-comparator confusion; missing oracle-upper-bound
+  diagnostics; taxonomy-less closure memos). The §11B memo
+  itself runs no experiments; it answers the §11B.1-§11B.7
+  diagnostic questions on the current state and pre-registers
+  the §11B.8 taxonomy + §11B.9 kill / escalation criteria for
+  adoption by subsequent Research Track design memos.
+  Sequencing per §11B.10: the Root Logic Reassessment memo is
+  authored **between** Foundation T0 (production keep-alive)
+  and Foundation T1 (Gate P1 PR-B); may be co-authored in
+  parallel with §7.P2 spread snapshotting design (both
+  observational / non-conflicting).
 
 ---
 
@@ -2317,7 +2781,8 @@ above independently.
 
 | Roadmap section | Update applied |
 |---|---|
-| §0 Amendment history | Amendment 1 + 2 + 3 + 4 + 5 + 6 history entries added |
+| §0 Amendment history | Amendment 1 + 2 + 3 + 4 + 5 + 6 + 7 history entries added |
+| §11B Root Logic Reassessment / Profit Logic Audit (new) | 10-subsection diagnostic layer (objective mismatch / label / selection / cost-realism / horizon / baseline-comparator / oracle / 13-item failure taxonomy / kill+escalation criteria / relationship to tracks); new Open Question Q12 (Root Logic Reassessment authorisation timing) (Amendment 7) |
 | §11A Profit Growth Hypothesis Matrix (new) | 8 profit-lever matrix + L-LEGACY row for Phase 20-26 / M1-M5-M15; recommended profit-first sequencing (near-term + post-T4); explicit non-goals; legacy-route handling as `REQUIRES_SEPARATE_EVIDENCE_RECONCILIATION` (Amendment 6) |
 | §3 status table (Amendment 5 cleanup) | stale duplicate "(per log)" rows for 9.X-J / 9.X-L / 9.X-M / 9.X-N / 9.X-O removed; the detailed Amendment-4 rows are now the sole authoritative entries; conflict with old interpretation (TBD / blanket NO ADOPT) resolved |
 | §3 status table `+all (vol+moments+mtf)` row | active comparator phrasing "< +mtf alone" replaced with archival closure-context note + active reason "multicollinearity / combined feature group did not produce an adoptable phase verdict" (Amendment 5) |
