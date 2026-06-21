@@ -16,6 +16,36 @@ contract of `docs/design/phase27_29_tabular_eval_validity_audit.md`
 
 **Amendment history:**
 
+- Amendment 3 (this PR): residual-contradiction cleanup of
+  Amendments 1 + 2. (a) §5.5 T4 Scope had retained "or stricter
+  `SENTINEL_VERIFICATION_COMPLETE` if all sentinels pass" which
+  contradicted the Exit-criteria binding immediately below; the
+  Scope wording is now aligned with the Exit-criteria binding.
+  (b) §11.Q9 retained "e.g., A.1 Sharpe ≥ 0.158 on new epoch" as
+  a Tier-1 success example; the numeric example is removed and
+  replaced with "produces a Tier-1 verdict against the new-epoch
+  S-B baseline and S-E control". (c) §3 status-table entries
+  Phase 9.X-C Mode B-2, Phase 9.X-D +dxy alone, Phase 9.X-D
+  +dxy+mtf had retained archival comparisons against the
+  now-INVALID v18 mtf anchor (0.174); these are restated as
+  archival phase-closure context only, with no active-comparator
+  role. (d) §4.4 H-B9 Track-C outcome wording softened: success
+  "would materially weaken H-B9 under the tested scope"; failure
+  "would strongly support H-B9 under the current-data /
+  current-contract scope"; neither outcome alone declares an
+  absolute production ceiling; production-ceiling or
+  structural-ceiling conclusions require separate strategic
+  review. (e) §7 P1 Phase 9.10 cost-sensitivity wording revised:
+  Phase 9.10 evidence is historical / operational
+  cost-sensitivity context (Tier 3); it is not Tier-1 verified
+  research evidence; P1/P2/P3 remain production-engineering
+  priorities subject to design memo, backtest/paper, and safety
+  gates. (f) Full numeric-reference audit completed (0.174 /
+  0.158 / 0.165 / 0.177 / 0.061 / 0.154 / 0.168 / PARTIAL GO+ /
+  verified / production ceiling / SENTINEL_VERIFICATION_COMPLETE);
+  each remaining occurrence is either removed, demoted to
+  archival / invalid / untrusted / non-routing context, or
+  authorised under controlled vocabulary.
 - Amendment 1 + 2 (this PR): combined application of (a) the 11
   structural fixes earlier requested by user review (T3/T4
   separation, retraction of unapproved `SENTINEL_VERIFICATION_COMPLETE`
@@ -301,10 +331,15 @@ absent scope amendment. The verdict label binds.
   80% SL-before-partial rate)
 - Phase 9.X-A regression LGBMRegressor (NO ADOPT — Sharpe 0.092
   vs baseline 0.160)
-- Phase 9.X-C M-1 LSTM Mode A (NO ADOPT — Sharpe 0.061 << mtf
-  0.174 / baseline 0.160; note Tier-3 caveat on Class-U risk above)
-- Phase 9.X-D DXY synthetic (NO ADOPT — both +dxy alone and +dxy+mtf
-  worse than mtf alone)
+- Phase 9.X-C M-1 LSTM Mode A (NO ADOPT — archived closure
+  comparison referenced the now-invalid mtf v18 0.174 anchor as
+  a secondary reference; retained here as archival closure
+  context only. The active falsification is at Mode A
+  full-replacement scope; the 0.061 numeric carries Tier-3
+  Class-U risk per Appendix A)
+- Phase 9.X-D DXY synthetic (NO ADOPT — archived closure
+  comparison referenced the now-invalid mtf v18 0.174 anchor;
+  retained as archival closure context only)
 - Phase 9.X-G greedy decorrelation top-K (NO ADOPT — PnL -18-20%)
 
 **Admissible language:**
@@ -388,7 +423,7 @@ this table. Entries marked TIER are in the corresponding §2 tier.
 | 9.19 | Top-K Naive K=2 | archived nominal Sharpe 0.165 / PnL +25% | Tier 3 + `ARCHIVED_UNTRUSTED_NUMERIC_DO_NOT_USE_FOR_ROUTING` (Appendix A) | PARTIAL GO at phase closure; Class U on run-provenance; numeric not admissible as routing evidence |
 | 9.19 | Top-K Diversified K=2 | similar | Tier 3 + `ARCHIVED_UNTRUSTED_NUMERIC_DO_NOT_USE_FOR_ROUTING` | Same Class-U inheritance; numeric not admissible as routing evidence |
 | 9.X-A | LGBMRegressor on label_return | NO ADOPT | Tier 4 | Best Sharpe 0.092; per-trade EV collapse |
-| **9.X-B** | **+vol feature group** | worse than mtf alone | Tier 4 | Redundant with ATR / BB_width / multi-TF h1_volatility |
+| **9.X-B** | **+vol feature group** | Tier 4 NO ADOPT at phase scope | Tier 4 | Archived closure comparison referenced the now-invalid mtf v18 anchor; archival closure context only. Active reason recorded: redundant with ATR / BB_width / multi-TF h1_volatility |
 | **9.X-B** | **+moments feature group** | K=1 Sharpe 0.145 (< baseline) | Tier 4 | Noisy; skewness/kurtosis/autocorr |
 | **9.X-B** | **+mtf K=3 (v18 reported)** | Sharpe 0.174 — **lookahead bug** | Tier 4 + `INVALID_LOOKAHEAD_NUMERIC` (Appendix A) | `shift(1)` missing in `_add_multi_tf_extended_features` (`sharpe_improvement_brief.md:182-183`); not admissible for any routing purpose |
 | **9.X-B** | **+mtf K=3 (v19 causal fix)** | archived nominal Sharpe 0.158 (-9.2% vs v18) | Tier 3 + `ARCHIVED_UNTRUSTED_NUMERIC_DO_NOT_USE_FOR_ROUTING` (Appendix A) | Class U on run-provenance; PARTIAL GO+ rescinded under v19; numeric is a reduction of a now-invalid v18 anchor and not admissible as routing evidence or pass/fail threshold |
@@ -396,11 +431,11 @@ this table. Entries marked TIER are in the corresponding §2 tier.
 | **9.X-B** | **+all (vol+moments+mtf)** | < +mtf alone | Tier 4 | Multicollinearity |
 | **9.X-C** | **M-1 Mode A (Full LSTM replacement)** | archived nominal Sharpe 0.061; 7.7× trade rate; 0.13× per-trade EV | Tier 4 `FALSIFIED_AT_SCOPE` (Mode A only; B-1..B-4 untouched; A0-broad sequence-NN untouched) + Tier-3 Class-U risk on the numeric | Class imbalance + no discrimination + information saturation; falsification is **narrow** to Mode A full-replacement formulation |
 | **9.X-C** | **Mode B-1 (Feature stacking, LSTM hidden → LGBM)** | **untried** | **Tier 5** | Tier-2 deprioritised at M-1 closure; not foreclosed |
-| **9.X-C** | **Mode B-2 (Output averaging)** | **untried** | **Tier 5** | Tier-2 deprioritised; early-fail logic at M-1 closure (0.061 avg ≈ 0.118 < mtf 0.174); not foreclosed |
+| **9.X-C** | **Mode B-2 (Output averaging)** | **untried** | **Tier 5** | Tier-2 deprioritised at M-1 closure (historic comparison used the now-invalid mtf v18 0.174 anchor; retained only as archival closure context — not a current active comparator). Eligibility under new-epoch contract per §6.B decision table; not foreclosed |
 | **9.X-C** | **Mode B-3 (Regime gating)** | **untried** | **Tier 5** | Tier-2 deprioritised at M-1 closure; not foreclosed |
 | **9.X-C** | **Mode B-4 (Specialisation)** | **untried** | **Tier 5** | Tier-2 deprioritised at M-1 closure; not foreclosed |
-| 9.X-D | +dxy alone | NO ADOPT | Tier 4 | K=3 Sharpe 0.154 < mtf 0.174 |
-| 9.X-D | +dxy+mtf | NO ADOPT | Tier 4 | K=3 Sharpe 0.168 < mtf 0.174 |
+| 9.X-D | +dxy alone | NO ADOPT | Tier 4 | Historic phase-closure comparison used the now-invalid mtf v18 0.174 anchor (archived closure context only — not an active comparator). NO ADOPT verdict at phase scope; any future re-evaluation under the new-epoch contract compares against S-B baseline / S-E control, not against the old anchor. |
+| 9.X-D | +dxy+mtf | NO ADOPT | Tier 4 | Same as +dxy alone: historic comparison used the now-invalid mtf v18 anchor; archived closure context only. |
 | 9.X-D | Economic calendar / event-distance | **untried** | **Tier 5** | Originally listed as Phase 9.X-D candidate |
 | 9.X-D | Orderbook microstructure | **untried** | **Tier 5** | Requires non-OANDA data source |
 | 9.X-E | mtf v19 causal live deploy plan | doc-only memo | (planning) | G1/G2/G3 gates defined but not yet executed |
@@ -553,9 +588,26 @@ remains conjectural.
 
 This roadmap accordingly treats A0-broad as the highest-priority
 Research Track (Track C below) **conditional on Foundation
-completion**, because a successful A0-broad rejects H-B9 (and lifts
-the production ceiling); a failed A0-broad confirms H-B9 (and
-narrows the candidate set further). Either outcome is informative.
+completion** (Amendment 3 binding, scoped language):
+
+- a successful A0-broad result (any of S1 / S2 / S3 producing
+  `STRONG_GO_UNDER_A0_BROAD`) **would materially weaken H-B9
+  under the tested scope** (single-architecture exception)
+- all S1 / S2 / S3 failure (FALSIFIED_A0_BROAD_NARROW across the
+  allowlist) **would strongly support H-B9 under the
+  current-data / current-contract scope**
+- **neither outcome alone declares an absolute production
+  ceiling**
+- **production-ceiling or structural-ceiling conclusions
+  require separate strategic review** (memo authored separately
+  from Track C closure)
+
+H-B9 remains a hypothesis, not a finding. FALSIFIED_A0_BROAD_NARROW
+remains narrow even when emitted across all of S1 / S2 / S3; the
+label `FALSIFIED_ALL_A0_BROAD` is **never** to be written under
+this roadmap. Either Track-C outcome is informative for
+research-track sequencing; neither is sufficient to declare a
+strategic ceiling without separate review.
 
 ### §4.5 Production keep-alive discipline
 
@@ -761,10 +813,12 @@ locked at PR #357 + Amendment 2026-05-24 (PR #358).
   epoch (note: prior PRs are historic anchors and not re-executed;
   the "equivalent anchors" are computed once on the new epoch and
   serve as the V2-expanded sentinel reference)
-- emit verification report with allowed success label
-  `SENTINEL_VERIFICATION_PARTIAL_RECOVERY_MAJOR_AXES` (per PR #357)
-  or stricter `SENTINEL_VERIFICATION_COMPLETE` if all sentinels
-  pass
+- emit verification report only at a **previously authorised**
+  success label (e.g., `SENTINEL_VERIFICATION_PARTIAL_RECOVERY_MAJOR_AXES`
+  if applicable under PR #357). Any stricter label requires a
+  separate design memo and explicit user approval before being
+  added to the V2-expanded contract (Amendment 1 binding,
+  re-stated; aligns with the Exit-criteria binding below).
 
 **Exit criteria (T4):**
 
@@ -1138,8 +1192,15 @@ production baseline.
 
 **Status:** broker-time-aware spread snapshotting not implemented
 at the modelled depth required. Phase 9.10 cost-aware backtest
-established 1pip → 0.5pip Sharpe sensitivity (Sharpe more than
-doubles), so spread cost reduction is a verified P&L lever.
+recorded a 1pip → 0.5pip Sharpe-sensitivity pattern (Sharpe more
+than doubled in the closure-memo summary). **Amendment 3
+binding:** this Phase 9.10 evidence is **historical / operational
+cost-sensitivity context** at Tier 3 (per §3 status table); it
+is **not Tier-1 verified research evidence** for a current
+routing decision. P1 / P2 / P3 remain production-engineering
+priorities; each requires a design memo, backtest / paper
+evaluation, and the production safety gates specified below
+before any production-code change.
 
 **Scope:**
 
@@ -1457,18 +1518,30 @@ stage is authorised.
   (engineering) anytime.
 - **Q9 — Production migration policy after a Tier-1 verdict.**
   When a Research Track produces a Tier-1 verdict (e.g., A.1
-  Sharpe ≥ 0.158 on new epoch), what is the production migration
-  cadence? Recommendation: a per-Track post-Tier-1 design memo
-  authoring the migration plan (analogous to PR #365 for PR-B);
-  the migration PR is independently authorised.
+  produces a Tier-1 verdict against the new-epoch S-B baseline
+  and S-E control), what is the production migration cadence?
+  Recommendation: a per-Track post-Tier-1 design memo authoring
+  the migration plan (analogous to PR #365 for PR-B); the
+  migration PR is independently authorised. **Amendment 3
+  binding:** old-epoch numerics (e.g., 0.158) are **not**
+  admissible as Tier-1 success examples; the Tier-1 criterion
+  for any Research Track is defined per-track against the
+  new-epoch comparators (S-B baseline and S-E control), not
+  against any archived old-epoch Sharpe.
 - **Q10 — H-B9 confirmation handling.** If Track C (A0-broad)
   produces FALSIFIED_A0_BROAD_NARROW across S1 / S2 / S3, H-B9
-  is strongly supported. Strategic options: (a) accept Phase 9.16
-  v9 20p as production ceiling and shift focus to P1..P3 cost
-  reduction + market-regime / asset-class change discussion; (b)
-  continue with Track F (A3 learned MoE) at higher complexity;
-  (c) escalate to user as `STRUCTURAL_CEILING_HYPOTHESIS_CONFIRMED`
-  for strategy-level decision. Recommendation: (c).
+  is strongly supported **under the current-data /
+  current-contract scope only**. This does **not** declare an
+  absolute production ceiling. Strategic options for the
+  separate strategic-review memo: (a) continue running Phase
+  9.16 v9 20p as the current operational baseline while
+  shifting research focus to P1..P3 cost reduction +
+  market-regime / asset-class change discussion; (b) continue
+  with Track F (A3 learned MoE) at higher complexity; (c)
+  escalate to user for strategy-level decision; the label
+  `STRUCTURAL_CEILING_HYPOTHESIS_CONFIRMED` is proposed-only at
+  this roadmap level and requires a separate strategic-review
+  memo to authorise. Recommendation: (c).
 - **Q11 — Memo re-authoring trigger.** When does this roadmap
   itself need re-evaluation? Recommendation: (a) when Foundation
   T4 completes (re-state per-track conditions under verified
@@ -1693,7 +1766,14 @@ updated to reference this appendix.
 
 | Roadmap section | Update applied |
 |---|---|
-| §0 Amendment history | Amendment 1 + 2 history entry added |
+| §0 Amendment history | Amendment 1 + 2 + 3 history entries added |
+| §2 Tier 3 demoted bullets | Mode A bullet updated (0.061 << mtf 0.174 archival-only); §3 Phase 9.X-D DXY synthetic NO ADOPT description updated (archived comparison) — Amendment 3 |
+| §3 status table | Mode B-2 / +dxy alone / +dxy+mtf rows updated: historic comparisons against now-invalid mtf v18 0.174 anchor restated as archival closure context only (Amendment 3) |
+| §4.4 H-B9 / Track C outcome wording | softened to "would materially weaken H-B9 under the tested scope" / "would strongly support H-B9 under the current-data / current-contract scope"; neither outcome alone declares an absolute production ceiling; strategic review required (Amendment 3) |
+| §5.5 T4 Scope | "or stricter `SENTINEL_VERIFICATION_COMPLETE` if all sentinels pass" removed; Scope wording aligned with Exit-criteria binding (Amendment 3) |
+| §7.P1 | "verified P&L lever" wording removed; Phase 9.10 cost-sensitivity classified as historical / operational context (Tier 3), not Tier-1 verified research evidence (Amendment 3) |
+| §11.Q9 | "e.g., A.1 Sharpe ≥ 0.158 on new epoch" example removed; replaced with "Tier-1 verdict against the new-epoch S-B baseline and S-E control" (Amendment 3) |
+| §11.Q10 | "accept Phase 9.16 v9 20p as production ceiling" reframed to "continue running Phase 9.16 v9 20p as the current operational baseline" plus separate strategic-review memo binding; `STRUCTURAL_CEILING_HYPOTHESIS_CONFIRMED` label proposed-only at roadmap level (Amendment 3) |
 | §1 Non-scope | +mtf / Top-K / C-3 numerics demoted to `ARCHIVED_UNTRUSTED_NUMERIC_DO_NOT_USE_FOR_ROUTING`; v18 reclassified as `INVALID_LOOKAHEAD_NUMERIC` |
 | §2 Tier 1 admissible language | "cleared F-1 / F-2 / F-3 alone" forbidden; full applicable contract required |
 | §2 Tier 3 currently-in-tier | numerics demoted with citation pointers to Appendix A |
