@@ -14,7 +14,27 @@ contract of `docs/design/phase27_29_tabular_eval_validity_audit.md`
 **Branch:** `docs/research-development-roadmap-post-audit`
 **File added:** `docs/design/research_development_roadmap_post_audit.md`
 
-**Amendment history:** (none — initial draft.)
+**Amendment history:**
+
+- Amendment 1 (this PR): T3/T4 responsibility separation (sentinel
+  verification moved entirely to T4); retracts the unapproved
+  `SENTINEL_VERIFICATION_COMPLETE` label; tightens Tier 1 language to
+  require the full applicable verification contract; reframes Track A
+  outcome ladders to drop fixed numeric thresholds (illustrative only);
+  T4 staged-verification wording: F-1..F-3-only stage is preflight /
+  partial verification only and cannot emit Tier 1; H-B9 / Track C
+  all-architecture-failure wording softened (strong evidence for
+  current-data / current-contract seam-exhaustion hypothesis; strategic
+  review required before declaring a production ceiling); Track D
+  external-data sources gated by mini data-source feasibility +
+  retention/provenance gate; Production P1/P2/P3 "progress-without-
+  risk" wording replaced with "independent of research-signal
+  verification contamination, but still subject to production
+  engineering risk controls"; Track B conditional logic rewritten as a
+  decision table; T1/T2 parallelism clarified to bind that T2 deposit
+  ≠ epoch adoption; §12 carry-forward wording made precise (old F-1
+  historic-anchor route remains UNEXECUTABLE_INPUT_UNAVAILABLE; new-
+  epoch verification does not repair or reproduce it).
 
 This document is a **doc-only research and development roadmap**. It
 does not authorise the execution of any track listed within it. Per
@@ -137,10 +157,15 @@ verification passed under the V2-expanded contract or its successor.
 
 - "formally verified at PR #<n>"
 - "carries V2-expanded sentinel evidence"
-- "cleared the F-1 / F-2 / F-3 foundation checks under run-provenance"
+- "cleared the full applicable foundation + sentinel verification
+  contract, with committed run-provenance artifacts"
 
-**Forbidden:** none specific (it is admissible to attribute new
-results to this tier once any reach it).
+**Forbidden:**
+
+- "cleared the F-1 / F-2 / F-3 foundation checks" (partial-stage
+  verification alone is not Tier 1; see §11.Q3 wording binding)
+- attributing Tier 1 to a result that passed only a staged subset of
+  the verification contract
 
 ### Tier 2 — CONTEMPORANEOUS_CONTRACT_PASS
 
@@ -598,18 +623,39 @@ inventory, scientific adequacy review); construction not begun.
 
 **Exit criteria (T3):**
 
-- baseline + control + D-1 + split + aligned-row-set all committed
-  under V2-expanded sentinel registry (run-provenance artifacts
-  committed, **not** gitignored — explicit U-1 prevention)
-- scientific adequacy review document present
-- sentinel verification per V2-expanded contract F-1..F-7 + S-1..S-6
-  passes at the new-epoch run
+- new epoch dataset (raw / labels / split / row-set / provenance
+  manifests) constructed and committed
+- new S-B economic baseline computed and committed
+- new S-E tabular control computed and committed
+- D-1 PnL identity validation executed and committed
+- scientific adequacy review document committed
+- run-provenance artifacts committed (sweep_results / aggregate /
+  val_selected / sanity_probe equivalents required by the
+  construction harness — **not** gitignored; explicit U-1 prevention)
 
-**Stage gate:** the new-epoch baseline is now Tier 2 (eventually
-Tier 1 after sentinel verification). Production baseline can be
-considered for migration; default policy is **continue Phase 9.16
-v9 20p in production** until at least one Research-Track-A
-re-evaluation completes (§6.A).
+**Exit label proposed for T3 (Amendment 1):**
+
+- `NEW_EPOCH_BASELINE_CONTROL_BUILT` /
+  `NOT_FORMALLY_VERIFIED_YET`
+
+These labels are **proposed-only** at this roadmap level; if a
+later T3-specific design memo adopts a different label, that memo
+binds. T3 explicitly **does not** require:
+
+- F-1..F-7 + S-1..S-6 sentinel verification PASS
+- a Tier 1 (FORMALLY_VERIFIED) claim
+- a V2-expanded aggregate verification verdict
+
+All sentinel verification responsibilities are exclusive to T4.
+
+**Stage gate:** the new-epoch baseline reaches `NEW_EPOCH_BASELINE_
+CONTROL_BUILT` / `NOT_FORMALLY_VERIFIED_YET` (proposed label;
+subject to T3-specific design memo). It is **not** Tier 1; future
+elevation to Tier 1 depends on T4 sentinel verification under the
+applicable contract. Production baseline can be considered for
+migration **only after** T4 completes for the relevant comparison
+contract; default policy is **continue Phase 9.16 v9 20p in
+production** through T3 and T4.
 
 ### §5.5 T4 — V2-expanded sentinel verification implementation
 
@@ -634,15 +680,24 @@ locked at PR #357 + Amendment 2026-05-24 (PR #358).
 
 **Exit criteria (T4):**
 
-- F-1..F-7 + S-1..S-6 all executed with run-provenance committed
+- F-1..F-7 + S-1..S-6 all executed under the same accepted
+  contract / provenance boundary, with run-provenance committed
 - verification report under
   `artifacts/v2_expanded_verification/<verification_id>/`
-- aggregate verdict at success label
+- aggregate verdict at a **previously authorised** success label
+  (e.g., `SENTINEL_VERIFICATION_PARTIAL_RECOVERY_MAJOR_AXES` per
+  PR #357)
 
-**Stage gate:** Foundation complete. Tier 1 (FORMALLY_VERIFIED)
-claims become admissible for results that pass the V2-expanded
-contract. Research Tracks A..G become eligible (each requiring
-separate authorisation).
+**No new success label is minted by this roadmap.** Specifically,
+`SENTINEL_VERIFICATION_COMPLETE` is **not** introduced here; any
+stricter label requires a separate design memo and explicit user
+approval before being added to the V2-expanded contract.
+
+**Stage gate:** Foundation complete for the applicable contract.
+Tier 1 (FORMALLY_VERIFIED) claims become admissible for results
+that pass the **full** V2-expanded contract under T4 (not a partial
+staged subset). Research Tracks A..G become eligible (each
+requiring separate authorisation).
 
 ---
 
@@ -660,49 +715,64 @@ authorises nothing.
 
 **Scope:** the Tier-3 entries from §3 receive a clean re-execution
 under the V2-expanded contract on the new epoch. The purpose is to
-discover whether their nominal Sharpe survives the elimination of
-Class U on run-provenance and the new epoch's possibly-different
-market regime.
+discover whether they survive the elimination of Class U on
+run-provenance and the new epoch's possibly-different market
+regime.
+
+**Old-epoch nominal Sharpe values are archived context only.** They
+are not executable pass/fail gates for new-epoch evaluation. The
+authoritative comparators are the new-epoch S-B baseline and S-E
+control (built at T3). Exact thresholds and outcome ladders are
+defined in each track-specific design memo authored after T3 / T4
+completion, not in this roadmap.
 
 - **A.1 — +mtf K=2 / K=3 v19 causal fix.** Re-execute on new epoch
-  under V2-expanded contract. Hypothesis: nominal Sharpe 0.158
-  (K=3) survives. Outcome ladder:
-  - if new-epoch Sharpe ≥ 0.158 - 0.01 → Tier 1
-    (FORMALLY_VERIFIED); production reflection authorised at
-    follow-on PR
-  - if new-epoch Sharpe ∈ [0.10, 0.158) → Tier 3 (still
-    TARGETED_VERIFICATION_REQUIRED; ambiguous)
-  - if new-epoch Sharpe < 0.10 → Tier 4 (FALSIFIED at scope)
+  under V2-expanded contract. Old context: Phase 9.X-B v19 nominal
+  Sharpe ≈ 0.158 (K=3) — archived only. New-epoch evaluation
+  compares against new S-B baseline and S-E control; outcome
+  ladder defined in the per-track design memo. **Illustrative only
+  (not binding):** large positive delta vs S-B → candidate Tier 1
+  on T4 completion; near-zero or negative delta → candidate Tier 3
+  or Tier 4 depending on the track-specific ladder. No numeric
+  thresholds are binding here.
 - **A.2 — Top-K K=2 (Phase 9.19).** Re-execute on new epoch with
   Top-K execution gateway (per PR #216 follow-up requirement).
-  Same outcome ladder.
+  Same evaluation framing as A.1 (S-B / S-E comparators; track-
+  specific ladder).
 - **A.3 — C-3 kill switches (Phase 9.13).** Re-execute on new
   epoch. Caveat: C-3 was a predecessor of Phase 27 spine; it is
   inheritable rather than directly re-implementable. The actual
-  re-execution may need to map C-3 mechanism onto the new
-  epoch's signal / state schema.
+  re-execution may need to map C-3 mechanism onto the new epoch's
+  signal / state schema. Same evaluation framing as A.1.
+
+**Production reflection.** A Tier 1 research result does **not**
+automatically authorise production reflection. Any production
+migration requires (a) a separate migration design memo, (b) live /
+paper safety gates (per §7 P1..P3 and `phase9_x_e_live_deploy_plan
+.md` G1 / G2 / G3 lineage), and (c) explicit user authorisation.
 
 **Authoring shape:** one design memo + one implementing PR per
-candidate (A.1, A.2, A.3 each); sentinel verification re-run.
+candidate (A.1, A.2, A.3 each); sentinel verification re-run under
+T4 contract.
 
 ### §6.B Track B — Phase 9.X-C residual LSTM modes (B-1, B-2, B-3, B-4)
 
 **Prerequisite:** Foundation T4 complete **and** Track A.1 (+mtf)
 outcome known.
 
-**Conditional logic:**
+**Decision table (Amendment 1):**
 
-- If A.1 outcome is Tier 4 (mtf NO ADOPT on new epoch): consider
-  Track B fully **deferred again** — the early-fail logic in
-  Phase 9.X-C/M-1 closure (B-2 = 0.061 averaged with 0.174 ≈
-  0.118 < 0.174) used mtf 0.174 as the reference; if mtf is
-  rejected, the early-fail logic loses its baseline and B-2 may
-  be re-considerable. But A.1 Tier-4 also suggests the underlying
-  arc is data-bound, biasing toward Track D (data expansion).
-- If A.1 outcome is Tier 1 (mtf verified at new epoch): the early-
-  fail logic re-applies; B-2 (output averaging) remains low-prior
-  but B-1 / B-3 / B-4 are eligible under their original cost
-  estimates.
+| Track A.1 outcome on new epoch | B-1 / B-3 / B-4 eligibility | B-2 eligibility |
+|---|---|---|
+| **A.1 succeeds (Tier 1 under T4)** | **eligible** under original cost estimates (B-1 ≈ 2 days; B-3 ≈ 6 days; B-4 similar) | **low priority** (output-averaging with a verified mtf signal has limited upside) |
+| **A.1 fails (Tier 4 at scope)** | **lower priority** than Track D / data-side expansion (extraction-vs-expansion bias §4.2) | **may be considered only by separate design memo** that re-justifies the formulation against the new baseline; not automatically revived |
+| **A.1 ambiguous (Tier 3 or inconclusive ladder result)** | **defer** B-tracks until Track C.1 (A0-broad S1) or Track D.1 (time-axis) result clarifies the architecture-vs-data binding | **defer** under same condition |
+
+In all three rows, Track D (data-side expansion) retains higher
+priority than Track B (architecture / extraction tricks) per the
+§4.2 extraction-vs-expansion principle. Track B candidates require
+explicit user authorisation; the decision table above is a
+recommendation, not an auto-route.
 
 **Scope:**
 
@@ -758,9 +828,20 @@ V2-expanded contract.
   falsified at narrow scope (single-architecture exception); a
   successful architecture warrants integration design memo
 - if all three → FALSIFIED_A0_BROAD_NARROW: this is **strong
-  evidence** for H-B9 (multi-architecture saturation); production
-  ceiling at Tier-2 Phase 9.16 v9 20p is the structural limit
-  under current data; pivot priority shifts decisively to Track D
+  evidence for the current-data / current-contract seam-
+  exhaustion hypothesis**. **Strategic review is required before
+  declaring a production ceiling**; production-ceiling language
+  is not authorised by an all-architecture FALSIFIED_A0_BROAD_NARROW
+  result alone. Pivot priority shifts toward Track D (data
+  expansion) and toward broader scope re-evaluation, but only
+  through a separately authorised strategic-review memo.
+
+**Scope discipline:** `FALSIFIED_A0_BROAD_NARROW` is **narrow**
+even when emitted across all of S1 / S2 / S3. The label
+`FALSIFIED_ALL_A0_BROAD` is **never** to be written under this
+roadmap; it would require a separately authorised broader
+saturation contract that defines what "all A0-broad" means
+beyond the current 3-architecture allowlist.
 
 **Authoring shape:** per architecture, one design memo + one
 implementing PR (training script + eval + report). All commit
@@ -772,33 +853,85 @@ prevention).
 **Prerequisite:** Foundation T4 complete. Each sub-track requires
 its own data source plan.
 
+**External-data provenance/retention gate (Amendment 1):**
+
+For any sub-track that introduces data from outside the OANDA
+2026-05-31 archive (D.2, D.4, D.5 below, and any other external
+or non-OANDA source), a **mini data-source feasibility +
+retention/provenance gate** must complete **before** any model
+evaluation begins. The mini-gate requires:
+
+- raw-byte retention of the external source under a destination
+  satisfying PR #361 §7 admissibility criteria (round-trip
+  restorable / immutability or content-addressed / auditor-
+  runnable restoration), independently of the primary epoch's
+  retention destination
+- schema manifest of the external source (per-field types, units,
+  timestamp semantics, sampling cadence)
+- dependency manifest declaring which consumer functions depend
+  on the external source and how
+- documented restoration procedure committed under
+  `docs/runbook/`
+
+No external calendar / interest-rate / orderbook / other side
+input may enter a verified evaluation as an **unretained side
+input**. If the external data source changes the epoch's
+information content materially, the track must explicitly define
+whether it is being added as:
+
+- **additive epoch extension** (same `manifest_id`, extended
+  inputs declared in a new manifest section), or
+- **a new epoch** (new `manifest_id`, full T3 / T4 cycle re-run)
+
+The choice is recorded in the sub-track's design memo and binds
+how the sub-track's results integrate with prior baseline /
+control.
+
 **Scope (in extraction-vs-expansion priority order per §4.2):**
 
 - **D.1 — Time-axis features.** Session (Asia / Europe / NY),
   day-of-week, month, holiday distance, fed-meeting distance.
-  Cheap (~3 days). Untried at depth.
+  Cheaper because timestamp-derived from existing OANDA bytes —
+  no external source needed. Still requires (a) causality check
+  (no future-bar timestamp leakage; e.g., distance-to-event
+  must use only events whose timestamp is strictly past) and
+  (b) split-leakage check (per-split distribution of
+  session / month / holiday categories must not differ in a way
+  that conflates structural label imbalance with predictor
+  signal). ~3 days. Untried at depth.
 - **D.2 — Economic calendar / event-distance.** Originally a
   Phase 9.X-D candidate; not yet tried. ~2-3 days using OANDA
-  Labs API or self-built calendar. Mid-cost.
+  Labs API or self-built calendar. **Subject to the external-data
+  provenance/retention gate above.** Mid-cost.
 - **D.3 — Cross-asset re-evaluation.** Phase 9.X-D DXY synthetic
   NO ADOPT — re-evaluate at A0-broad sequence-NN architecture
   (Track C) if available, since DXY as orthogonal feature may
   behave differently under sequence-NN than under tabular
-  LightGBM.
+  LightGBM. DXY synthetic uses existing OANDA bytes (derived
+  from PAIRS_20), so it does not require the external-data gate;
+  however, additional cross-asset sources (e.g., true DXY
+  futures, gold, VIX, indices not in OANDA Japan practice
+  account) would.
 - **D.4 — Interest rate spreads.** US 2y/10y, JP, EU, AU rate
   differentials. Requires non-OANDA data source (FRED / Bloomberg
-  / other). ~3-5 days.
+  / other). **Subject to the external-data provenance/retention
+  gate above.** ~3-5 days.
 - **D.5 — Orderbook microstructure.** Most expensive (~5+ days,
   non-OANDA data). Most informative if successful. Conditional on
-  Track C result and Track D.1-D.4 outcomes.
+  Track C result and Track D.1-D.4 outcomes. **Subject to the
+  external-data provenance/retention gate above.**
 - **D.6 — Pair universe expansion (20 → 30).** Cheap if pair data
   available; new epoch construction (T3) may include a wider pair
   set as a parameter. Authorisation deferred to T3 construction
-  decision.
+  decision. If additional pairs require an external data source
+  (e.g., a pair not retained under the OANDA 2026-05-31 archive),
+  the **external-data provenance/retention gate above applies**.
 
 **Authoring shape:** per sub-track, one design memo + one
 implementing PR. Each runs under V2-expanded contract; each
-respects the extraction-vs-expansion principle (data-side first).
+respects the extraction-vs-expansion principle (data-side first);
+each external-data sub-track satisfies the mini data-source
+feasibility + retention/provenance gate before model evaluation.
 
 ### §6.E Track E — A2-broad target redesign
 
@@ -941,13 +1074,37 @@ Engineering-flavour; explicitly **not** a Sharpe-lift attempt.
 
 ### Production-layer keep-alive
 
-P1, P2, P3 are progress-without-risk to production baseline. They
-improve effective net P&L without claiming a "new verified
-signal". They are eligible to be authorised **at any time**,
-independent of Foundation status. Recommended priority within
-production-side: P2 (data) → P1 (model) → P3 (engineering),
-because P2 provides the empirical evidence for P1, and P1 provides
-the cost-model for P3.
+P1, P2, P3 are **independent of research-signal verification
+contamination, but still subject to production engineering risk
+controls**. They improve effective net P&L without claiming a
+"new verified signal", but each carries its own production-side
+risk that must be managed explicitly:
+
+- **P2 snapshotting is observational and safest first.** It only
+  records live spread data; it does not change any production
+  decision logic. Recommended as the entry sub-track.
+- **P1 cost-model changes must be evaluated in backtest / paper
+  before production use.** Replacing the fixed-pip spread with an
+  empirical profile alters per-trade economics and re-routes
+  marginal trade-pass / trade-block decisions; A / B
+  paper-comparison required before any production switch.
+- **P3 execution / sizing changes require production safety gates,
+  rollback plan, and risk limits.** Margin accounting, per-pair
+  max position, drawdown-aware sizing, and order-execution checks
+  each affect live order flow; each requires an explicit
+  rollback plan and a pre-stated risk limit (max position / max
+  daily loss / max consecutive losses) that triggers automatic
+  pause.
+
+Each of P1 / P2 / P3 still requires **explicit user authorisation
+plus a design memo before any production code changes**. Tracks
+are eligible to be authorised **at any time** (independent of
+Foundation status), but no track auto-routes to production.
+
+Recommended priority within production-side: **P2 (data) → P1
+(model, paper A/B first) → P3 (engineering, safety gates)**,
+because P2 provides the empirical evidence for P1, and P1
+provides the cost-model for P3.
 
 ---
 
@@ -969,7 +1126,7 @@ the cost-model for P3.
 ### §8.2 Foundation-track parallelism
 
 Foundation T1 (PR-B implementation) and T2 (retention deposit)
-can proceed in **parallel** because:
+**planning** can proceed in **parallel** because:
 
 - T1 produces a software artifact (the inspector); T2 produces a
   storage artifact (the deposit)
@@ -980,10 +1137,35 @@ can proceed in **parallel** because:
   the input to the T2 destination selection — but this can be
   reflected after both complete
 
-T3 (new epoch construction) depends on T1 (the inspection report's
-dependency / pipeline feasibility classifications inform whether
-the epoch's required-input dependency inventory is satisfied) and
-T2 (durable byte retention is binding under PR #361 §7).
+**Critical binding (Amendment 1): T2 deposit is NOT epoch
+adoption.** If T2 deposits a broad archive (e.g., the entire
+OANDA 2026-05-31 10y archive), the deposit only establishes
+**retained input availability**; it does **not** automatically
+adopt that archive as the new epoch's data envelope. The choice
+of which span / pair universe / granularity set defines the new
+epoch is **made at T3** after the user reviews the combined
+evidence from the T1 Gate P1 inspection report and the T2
+retention deposit verification.
+
+Concretely:
+
+- T2 may proceed with depositing the 3650d_BA bytes
+  irrespective of which epoch span will eventually be selected
+- T3 may still construct the epoch at 730d_BA / 365d_BA / 3650d_BA
+  (or any other admissible span discovered at T1) regardless of
+  what T2 deposited
+- T2 deposit / adoption **must not bind a final epoch span unless
+  the chosen span is consistent with Gate P1 PR-B findings** from
+  T1 — i.e., T1 evidence is the gate for which spans are
+  candidate, T2 deposit covers the retained input, and T3 makes
+  the final epoch-span decision under combined evidence
+
+T3 (new epoch construction) depends on T1 (the inspection
+report's dependency / pipeline feasibility classifications inform
+whether the epoch's required-input dependency inventory is
+satisfied) and T2 (durable byte retention is binding under
+PR #361 §7) **both being reviewed by the user before T3 epoch
+selection**.
 
 T4 (V2-expanded sentinel implementation) depends on T3 (the new
 epoch's baseline + control are the input the sentinel checks
@@ -1086,8 +1268,8 @@ completion.
 | T0 | continuous; no closure | event-log (operational) |
 | T1 | first inspection report emitted; per-candidate dependency inventory + pipeline feasibility classifications recorded | `artifacts/gate_p1_report/<report_id>/gate_p1_report.json` |
 | T2 | round-trip report 100% per-file SHA-256 match against `candles_manifest.json` | `artifacts/gate_p2_verification/<verification_id>/gate_p2_retention_verification_report.json` |
-| T3 | new epoch baseline + control + D-1 + split + aligned-row-set committed under V2-expanded sentinel registry (NOT gitignored); scientific adequacy review present | `artifacts/v2_expanded_baselines/<manifest_id>/` (new epoch's baseline + control); `docs/design/<manifest_id>_scientific_adequacy_review.md` |
-| T4 | F-1..F-7 + S-1..S-6 executed; aggregate verification verdict at allowed success label or stricter | `artifacts/v2_expanded_verification/<verification_id>/v2_expanded_verification_report.json` |
+| T3 | new epoch dataset (raw / labels / split / row-set / provenance manifests) + new S-B baseline + new S-E control + D-1 PnL validation + scientific adequacy review committed (run-provenance NOT gitignored); exit label `NEW_EPOCH_BASELINE_CONTROL_BUILT` / `NOT_FORMALLY_VERIFIED_YET` (proposed; T3-specific design memo may bind a different label) | `artifacts/v2_expanded_baselines/<manifest_id>/` (new epoch's baseline + control); `docs/design/<manifest_id>_scientific_adequacy_review.md` |
+| T4 | F-1..F-7 + S-1..S-6 all executed under the **same accepted contract / provenance boundary**, with run-provenance committed; aggregate verification verdict at a **previously authorised** success label (e.g., `SENTINEL_VERIFICATION_PARTIAL_RECOVERY_MAJOR_AXES` per PR #357); **no new success label minted by this roadmap** | `artifacts/v2_expanded_verification/<verification_id>/v2_expanded_verification_report.json` |
 
 For each Research Track A..G, the per-track design memo (authored
 at track-authorisation time) re-states the track's stage gates per
@@ -1113,8 +1295,22 @@ stage is authorised.
   least-information-loss epoch construction.
 - **Q3 — T4 sentinel verification scope.** Run all F-1..F-7 +
   S-1..S-6 (full), or staged (F-1..F-3 first, then S-1..S-6
-  separately)? Recommendation: staged for review tractability;
-  F-1..F-3 in one PR, S-1..S-6 in a second.
+  separately)? **Amendment 1 binding (precedence over the prior
+  recommendation):** if T4 is staged for review tractability:
+  - the F-1..F-3-only stage is **preflight / partial verification
+    only**
+  - it **cannot emit Tier 1 (FORMALLY_VERIFIED)**
+  - it **cannot be combined with later S-1..S-6 artifacts** unless
+    a separately designed and approved **staged-composition rule**
+    explicitly defines how partial-stage artifacts compose into a
+    full-contract verdict
+  - the final formal claim requires **all required checks under
+    the same accepted contract / provenance boundary** — i.e., a
+    single accepted verification run, not a stitched composition
+    of partial runs across PRs
+  Recommendation: a single full-contract run is the cleanest path.
+  If staging is preferred for review tractability, the staged-
+  composition rule must be designed before the partial stage runs.
 - **Q4 — Research Track A.1 (+mtf) authorisation timing.**
   Authorise immediately after T4, or wait for explicit user
   consideration of bear-case scenario (mtf Sharpe drops below
@@ -1167,13 +1363,22 @@ stage is authorised.
 
 Unchanged by this PR:
 
-- V2-expanded Stage 2 = `HALTED_INPUT_UNAVAILABLE` (PR #360);
-  expected to lift when T3 (new epoch baseline + control)
-  completes
-- F-1 = `UNEXECUTABLE_INPUT_UNAVAILABLE` (PR #360); expected to
-  lift at T4
-- PR #356 audit = `TARGETED_VERIFICATION_REQUIRED`; expected to
-  lift per-PR as Research Track A re-evaluations complete
+- V2-expanded Stage 2 = `HALTED_INPUT_UNAVAILABLE` (PR #360); **may
+  be superseded by new-epoch foundation / verification results
+  after T3 / T4**, but the old historic-anchor Stage 2 route
+  itself is not lifted by new-epoch work
+- F-1 = `UNEXECUTABLE_INPUT_UNAVAILABLE` (PR #360); the **old F-1
+  historic-anchor route remains `UNEXECUTABLE_INPUT_UNAVAILABLE`
+  unless original historic inputs are restored** (Option 1 per
+  PR #360); **new-epoch verification under T4 does not repair or
+  reproduce the old F-1 historic-anchor route** — it establishes a
+  new F-1 against the new-epoch baseline, which is a distinct
+  reference under a distinct `manifest_id`
+- PR #356 audit = `TARGETED_VERIFICATION_REQUIRED`; **may be
+  superseded per-PR by future targeted-verification work**, but
+  the old eval evidence at #318 / #321 / #325 / #328 / #332 /
+  #338 / #342 / #345 / #351 remains at its currently-recorded
+  class regardless of new-epoch work
 - Phase 27 / 28 / 29.0a verdicts preserved verbatim
 - A0-broad β remains halted; eligible to resume under Track C
   upon Foundation T4 completion + A0-broad preflight audit pass
