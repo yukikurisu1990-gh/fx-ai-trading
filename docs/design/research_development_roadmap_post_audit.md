@@ -16,6 +16,51 @@ contract of `docs/design/phase27_29_tabular_eval_validity_audit.md`
 
 **Amendment history:**
 
+- Amendment 4 (this PR): realism / cost-adjusted / net-Sharpe
+  final-status harvest from committed sources. New controlled
+  vocabulary label `NEGATIVE_FINAL_EVIDENCE_AT_SCOPE` added for
+  results whose committed final / net / realism / cost-adjusted
+  numeric is negative or materially worse than baseline. Major
+  findings (per Appendix A.4-extension citations):
+  (i) **Phase 28 §10 immutable baseline carries NEGATIVE Sharpe**
+  (test -0.1732 / val -0.1863, ann_pnl -204,664.4 pip per
+  `phase27_closure_memo.md:34`); all 9 Phase 27-29 β-evals
+  searched over this negative-PnL contract; none produced a
+  val-selector-preferred positive-Sharpe candidate cell;
+  classified `NEGATIVE_FINAL_EVIDENCE_AT_SCOPE` (research-baseline
+  scope only — distinct from production baseline Phase 9.16 v9
+  20p which remains `VALID_OPERATIONAL_BASELINE` at Sharpe
+  0.160). (ii) **Phase 9.19 Top-K Rank-3 produced negative
+  per-rank Sharpe** (rank-3 ≈ -0.054 per `phase9_19_closure_memo
+  .md:102-127`); rank-1 / rank-2 also showed inversion patterns
+  inconsistent with calibrated confidence. (iii) **Phase 27.0d
+  C-se cell produced Sharpe -0.483** while H1m Spearman PASS
+  (+0.438) — ranking signal does not monetise (per
+  `phase27_closure_memo.md:34-35`). (iv) **+mtf v19 realism /
+  cost-adjusted re-checks: NO negative final Sharpe was found**;
+  however phases 9.X-J / 9.X-L / 9.X-M show material Sharpe
+  degradation under realism mechanisms (K=3 0.155 → 0.144 →
+  0.133; per `phase9_x_jlmno_series_closure_memo.md:30,58,84`);
+  phases 9.X-N / 9.X-O recover to anchor-parity (K=3 0.158 with
+  DD halved at 9.X-O; GO verdict at series closure per same memo
+  line 158-170). (v) Phase 9.X-O `purge + clip` recorded as a
+  proposed-only successor candidate to Phase 9.16 v9 20p, subject
+  to from-scratch new-epoch re-evaluation (Track A.1 framing
+  preserved). §3 status table extended with Phase 9.X-J / 9.X-L
+  / 9.X-M / 9.X-N / 9.X-O rows. §4.2 extraction-vs-expansion
+  hypothesis further weakened: the +mtf-based empirical-support
+  argument is degraded by 9.X-J/L/M realism degradation in
+  addition to the v18 invalidation + v19 class-U status; the
+  hypothesis remains a research-track design lens, **not** a
+  verdictable claim. §6.A Track A.1 sequencing rationale revised:
+  A.1 may remain early **only** because it is cheap and resolves
+  a major historical ambiguity, **not** because the prior +mtf
+  evidence is favourable or promising. Appendix A.7 (Phase 27-29
+  spine harvest) extended with negative-Sharpe baseline citation.
+  Appendix A.11 (new) added for Phase 9.X-J / 9.X-L / 9.X-M /
+  9.X-N / 9.X-O harvest with `NEGATIVE_FINAL_EVIDENCE_AT_SCOPE`
+  labels where applicable (none for +mtf series itself; applied
+  to Phase 28 §10 baseline and Phase 27.0d C-se cell).
 - Amendment 3 (this PR): residual-contradiction cleanup of
   Amendments 1 + 2. (a) §5.5 T4 Scope had retained "or stricter
   `SENTINEL_VERIFICATION_COMPLETE` if all sentinels pass" which
@@ -251,7 +296,33 @@ any "verified" claim is admissible.
 - All 9 Phase 27-29 β-evals (#318, #321, #325, #328, #332, #338,
   #342, #345, #351) — explicit aggregate
   `TARGETED_VERIFICATION_REQUIRED` per PR #356 §4 (citation:
-  `phase27_29_tabular_eval_validity_audit.md:525-534`)
+  `phase27_29_tabular_eval_validity_audit.md:525-534`). **Amendment
+  4 additional binding (with `NEGATIVE_FINAL_EVIDENCE_AT_SCOPE`
+  composite label):** the Phase 28 §10 **immutable research
+  baseline** used as the comparison anchor across all 9 β-evals
+  carries committed-source-stated **NEGATIVE Sharpe** (test
+  -0.1732 / val -0.1863) and **NEGATIVE ann_pnl** (-204,664.4
+  pip over 9 months, n=34,626) per
+  `phase27_closure_memo.md:34`. The val-selector picked
+  C-sb-baseline (the negative-Sharpe cell) in 5/5 Phase 27
+  sub-phases; none of the new candidate cells were val-superior.
+  Phase 27.0d S-E (#325) cell C-se produced Sharpe **-0.483**
+  while H1m Spearman PASS at +0.438 (ranking signal does not
+  monetise; `phase27_closure_memo.md:34-35`). These negative
+  numerics are **research-baseline scope only**, distinct from
+  the production baseline Phase 9.16 v9 20p (Tier 2;
+  `VALID_OPERATIONAL_BASELINE` at 0.160) which is **not affected**
+  by the Phase 27-29 research-baseline status.
+
+- **Phase 9.19 Top-K per-rank inversion harvest (Amendment 4):**
+  Rank-3 per-trade Sharpe **≈ -0.054 (negative)** per
+  `phase9_19_closure_memo.md:102-127`; rank-1 / rank-2 also show
+  inversion patterns inconsistent with calibrated confidence
+  (per-rank ordering not monotonic in trade quality). The
+  composite Top-K K=2 Sharpe 0.165 number is the aggregate of
+  ranks 1 + 2; the per-rank negative tail at rank-3 is a
+  `NEGATIVE_FINAL_EVIDENCE_AT_SCOPE` finding for the
+  multi-pick-from-correlated-pairs scope.
 
 **Demoted out of this tier into `ARCHIVED_UNTRUSTED_NUMERIC_DO_
 NOT_USE_FOR_ROUTING` per Appendix A (Amendment 2)** — these
@@ -439,7 +510,12 @@ this table. Entries marked TIER are in the corresponding §2 tier.
 | 9.X-D | Economic calendar / event-distance | **untried** | **Tier 5** | Originally listed as Phase 9.X-D candidate |
 | 9.X-D | Orderbook microstructure | **untried** | **Tier 5** | Requires non-OANDA data source |
 | 9.X-E | mtf v19 causal live deploy plan | doc-only memo | (planning) | G1/G2/G3 gates defined but not yet executed |
-| 9.X-G | greedy decorrelation top-K | NO ADOPT | Tier 4 | ρ ∈ {0.4, 0.5}; PnL -18~-20% |
+| 9.X-G | greedy decorrelation top-K | NO ADOPT | Tier 4 | ρ ∈ {0.4, 0.5}; PnL -18~-20%; closure comparison used the now-invalid mtf v18 anchor; archived closure context only |
+| **9.X-J** | **realism pack (cost-aware + RiskManager)** | archived K=3 0.155 (-1.9% vs anchor) / K=1 0.146 (-7.6%) — net of realism mechanisms | Tier 3 + `ARCHIVED_UNTRUSTED_NUMERIC_DO_NOT_USE_FOR_ROUTING` (Appendix A.11) | PARTIAL GO at series closure (`phase9_x_jlmno_series_closure_memo.md:28-42`); realism cost acceptable given DD improvement; numeric not admissible as routing evidence; built on the now-archived +mtf v19 anchor |
+| **9.X-L** | **time-of-day filter** | archived K=3 0.144 (-8.9% vs anchor) | Tier 4 + `ARCHIVED_UNTRUSTED_NUMERIC_DO_NOT_USE_FOR_ROUTING` (Appendix A.11) | NO ADOPT at series closure (`phase9_x_jlmno_series_closure_memo.md:54-69`); 73% trade-rate reduction with Sharpe gain ~0.001 only; not admissible as routing evidence |
+| **9.X-M** | **dynamic SL/TP per-pair tuning** | archived K=3 0.133 (-15.8% vs anchor) | Tier 4 + `ARCHIVED_UNTRUSTED_NUMERIC_DO_NOT_USE_FOR_ROUTING` (Appendix A.11) | NO ADOPT at series closure (`phase9_x_jlmno_series_closure_memo.md:82-95`); in-sample overfit; per-pair tuning reverts to global TP/SL for most pairs; not admissible as routing evidence |
+| **9.X-N** | **margin-aware balance-proportional sizing** | archived K=3 0.158 (matches +mtf v19 anchor; DD%PnL 2.1% vs anchor ~5%) | Tier 3 + `ARCHIVED_UNTRUSTED_NUMERIC_DO_NOT_USE_FOR_ROUTING` (Appendix A.11) | PARTIAL GO at series closure (`phase9_x_jlmno_series_closure_memo.md:107-130`); matches anchor Sharpe with about half DD; numeric still class-U on run-provenance and downstream of archived v19 anchor — not admissible as routing evidence; mechanism may be re-evaluated as a from-scratch sizing-engineering candidate under new epoch |
+| **9.X-O** | **purge + 100 mini-lot clip cap** | archived K=3 0.158 / K=1 0.157 (matches +mtf v19 anchor; DD%PnL 2.8% vs anchor ~5%; trade count 13.8k vs 22k) | Tier 3 + `ARCHIVED_UNTRUSTED_NUMERIC_DO_NOT_USE_FOR_ROUTING` (Appendix A.11) | **GO** at series closure (`phase9_x_jlmno_series_closure_memo.md:140-170`); best result in JLMNO series; proposed-only as a successor candidate to Phase 9.16 v9 20p **subject to from-scratch new-epoch re-evaluation under Foundation T4** — not admissible as routing evidence or as a production-migration anchor without that re-evaluation; mechanism eligibility per §6.A from-scratch framing |
 | 9.X-H | calendar full | NO ADOPT (per log) | Tier 4 | Memo not in main project memory; verify at PR-time |
 | 9.X-I | rank audit / risk sizing | NO ADOPT (per log) | Tier 4 | Same caveat |
 | 9.X-J | realism (all combined) | (log present) | TBD | Verify at PR-time |
@@ -532,15 +608,50 @@ in Appendix A) does still show this pattern:
 - 1 NO ADOPT verdict on cross-asset expansion at phase closure
   (Phase 9.X-D DXY)
 
-**Admissible hypothesis (not a finding):** the falsification
-surface above is **consistent with** a working hypothesis that
-"clever extraction from the same data tends to NO ADOPT at the
-existing tabular-LightGBM-on-R7-A architecture; data-side
+**Amendment 4 — further degradation of the historical evidence
+basis:** Beyond the v18 invalidation and v19 class-U status, the
++mtf realism / cost-adjusted re-verification series (Phases
+9.X-J / 9.X-L / 9.X-M / 9.X-N / 9.X-O per `phase9_x_jlmno_series_
+closure_memo.md`) revealed material Sharpe degradation when
+real-world cost and risk mechanisms were layered onto the +mtf
+v19 baseline:
+
+- 9.X-J realism pack: K=3 0.155 (-1.9% vs anchor) / K=1 0.146
+  (-7.6%) — PARTIAL GO
+- 9.X-L time-of-day filter: K=3 0.144 (-8.9%) — NO ADOPT
+- 9.X-M dynamic SL/TP: K=3 0.133 (-15.8%) — NO ADOPT (in-sample
+  overfit)
+- 9.X-N margin-aware sizing: K=3 0.158 (anchor parity, DD ~halved)
+  — PARTIAL GO
+- 9.X-O purge + clip cap: K=3 0.158 (anchor parity, DD halved) —
+  GO at series closure
+
+(All five numerics are themselves `ARCHIVED_UNTRUSTED_NUMERIC_DO_
+NOT_USE_FOR_ROUTING` — they are downstream of the now-archived
++mtf v19 anchor; class U on run-provenance applies; per §3 status
+table extension.)
+
+**Implication for the principle:** the pattern "data-side
 expansion has a phase-closure record that is no worse than
-extraction-tricks". This is a **research-prioritisation heuristic**
-for sequencing Foundation-completion Research Tracks, **not a
-verified principle** and **not a binding constraint** on
-production decisions or pass/fail thresholds.
+extraction-tricks" is no longer well-supported by the historical
+evidence on its own terms. When realism mechanisms (cost-aware
+spread, time-of-day filtering, dynamic SL/TP) were stacked,
+Sharpe degraded by up to 15.8% (9.X-M); the recovery in 9.X-N /
+9.X-O came from sizing / clip-cap engineering rather than from
+the underlying +mtf signal strengthening. The historical
+horizon-expansion evidence is **degraded** in addition to being
+class U.
+
+**Admissible hypothesis (not a finding):** the falsification
+surface, weakened by Amendment 4's realism harvest, is **still
+consistent with** a working hypothesis that "clever extraction
+from the same data tends to NO ADOPT at the existing
+tabular-LightGBM-on-R7-A architecture"; the second clause about
+data-side expansion is now **less supported** and should be
+treated as **even more provisional**. This is a **research-
+prioritisation heuristic** for sequencing Foundation-completion
+Research Tracks, **not a verified principle** and **not a binding
+constraint** on production decisions or pass/fail thresholds.
 
 **What this hypothesis does NOT support:**
 
@@ -549,12 +660,17 @@ production decisions or pass/fail thresholds.
 - it does NOT say "extraction approaches are verified to fail"
 - it does NOT supply a pass/fail Sharpe threshold for new-epoch
   evaluations
+- (Amendment 4) it does NOT say the historical horizon-expansion
+  evidence survived realism / cost-adjusted re-verification —
+  the 9.X-J/L/M sequence shows otherwise; the 9.X-N/O recovery
+  came from engineering layers, not from the underlying signal
 
 **What this hypothesis does support (heuristically only):**
 
 - Track D (data-side expansion) may be sequenced earlier than
   later Tracks at equal cost, on the basis of the pattern shape
-  above
+  above — but **only as a hypothesis-driven priority**, not
+  because historical +mtf was successful (Amendment 4 binding)
 - Track C (A0-broad sequence-NN) remains the explicit
   falsification path for the H-B9 seam-exhaustion hypothesis
   (§4.4) and is **independent** of the extraction-vs-expansion
@@ -563,6 +679,16 @@ production decisions or pass/fail thresholds.
 - Track B (Phase 9.X-C residual LSTM modes B-1..B-4) is **not
   foreclosed** by this heuristic; the heuristic does not
   override per-track design memos
+
+**Bottom-line position after Amendment 4:** the current strategy
+is **not** "data expansion succeeded historically and should be
+prioritised on that basis." The current strategy is: **all
+historical positive numerics (across both extraction and
+expansion arms) are non-admissible as routing evidence; future
+research must be from-scratch under the new-epoch contract;
+data-side expansion may still be prioritised in research-track
+sequencing, but only as a hypothesis-driven heuristic, not
+because the historical +mtf evidence was successful.**
 
 ### §4.3 Class-U recurrence prevention
 
@@ -1166,12 +1292,25 @@ alternatives:
 Given Foundation T4 completion is gating, the **recommended
 research-side sequencing under Foundation T4 completion** is:
 
-1. Track A.1 (+mtf) first — cheapest re-evaluation; sets context
-   for B / D
+1. Track A.1 (+mtf feature-family re-evaluation **from scratch
+   under new epoch**) — **Amendment 4 binding:** A.1 retains an
+   early position **only** because it is cheap **and** because
+   it resolves a major historical ambiguity (does the +mtf
+   feature family produce admissible new-epoch evidence at all,
+   or did the underlying signal not survive the lookahead-bug
+   removal + realism / cost stack?). A.1 is **explicitly NOT** a
+   reproduction, rescue, or continuation of the prior +mtf
+   PARTIAL GO+ claim. The archived +mtf v19 0.158 is class U on
+   run-provenance and the 9.X-J/L/M sequence showed material
+   Sharpe degradation under realism mechanisms (Appendix A.11);
+   A.1's early position is justified by ambiguity-resolution
+   value, not by historical promise.
 2. Track C.1 (S1 LSTM under A0-broad) — falsifies or partially
    confirms H-B9
 3. Track D.1, D.2 (time-axis, economic calendar) in parallel with
-   C.1 — data-side expansion under extraction-vs-expansion bias
+   C.1 — data-side expansion under the (Amendment 4-weakened)
+   extraction-vs-expansion hypothesis (heuristic only; not
+   verified)
 4. Track A.2 (Top-K) after T4
 5. Track C.2, C.3 (S2, S3) after C.1
 6. Tracks B, E, F, G conditional on (1)-(5) outcomes
@@ -1655,6 +1794,7 @@ updated to reference this appendix.
 |---|---|---|
 | `VALID_OPERATIONAL_BASELINE` | static-inspection clean, used as production default under contemporaneous contract; run-provenance may be partial or absent | admissible as production-default baseline only; **not** Tier 1 evidence |
 | `FALSIFIED_AT_SCOPE` | NO ADOPT verdict at phase closure for the **specific tested formulation**; narrow scope explicitly recorded | not admissible for the falsified formulation; does not falsify related but distinct formulations |
+| `NEGATIVE_FINAL_EVIDENCE_AT_SCOPE` (Amendment 4) | a committed source records that a later final / net / realism / cost-adjusted / per-rank result is **negative** or **materially worse than baseline** at the specific scope cited | not admissible for routing / threshold / migration; per-scope only (does not generalise outside the cited scope); the negative evidence binds future re-evaluations to use new-epoch S-B / S-E comparators, not the negative anchor |
 | `INVALID_LOOKAHEAD_NUMERIC` | numeric was produced under a documented look-ahead / causality bug; numeric is formally invalid | not admissible for any purpose other than archive context on the bug detection itself |
 | `ARCHIVED_UNTRUSTED_NUMERIC_DO_NOT_USE_FOR_ROUTING` | numeric exists in a committed source but carries class U on run-provenance or is downstream of an invalidated anchor; phase-closure context only | **not** admissible as routing evidence, pass/fail threshold, or production-migration anchor; may be referenced as historical phase-closure context only |
 | `TARGETED_REEVALUATION_REQUIRED_FROM_SCRATCH` | feature family / mechanism is potentially re-evaluable but must be re-implemented and re-evaluated from scratch under the new foundation contract; old numerics are not admissible as anchors | admissible only as a research-track candidate; the re-evaluation is independent of any old-epoch number |
@@ -1762,11 +1902,178 @@ updated to reference this appendix.
 - **Halted-state citation:** `docs/design/phase27_29_tabular_eval_validity_audit.md:586` — "A0-broad formal β remains halted. Existing WIP branch `research/phase29-0b-beta-a0-broad-sequence-eval` (tip `9ac8fda`) remains INVALID_FOR_FORMAL_VERDICT on the remote."
 - **Final label:** `DEFERRED_NOT_FORECLOSED`
 
+#### A.7-extension — Phase 27-29 baseline negative-Sharpe harvest (Amendment 4)
+
+This extension to A.7 records the negative-baseline finding from
+the Phase 27 closure memo. It applies the new `NEGATIVE_FINAL_
+EVIDENCE_AT_SCOPE` label to the Phase 28 §10 immutable
+**research baseline**.
+
+- **Immutable research-baseline citation (test):**
+  `docs/design/phase27_closure_memo.md:34` — "test Sharpe **-0.1732**;
+  test ann_pnl **-204,664.4**" over n=34,626 trades / ~9-month
+  test window
+- **Immutable research-baseline citation (val):** same memo —
+  "val Sharpe **-0.1863**"
+- **Val-selector behaviour citation:** `docs/design/phase27_closure_memo.md:34`
+  — "The val-selected (cell*, q*) record is bit-identical across
+  all five [Phase 27] sub-phases (q*=5; val Sharpe -0.1863; test
+  Sharpe -0.1732..."; **all 5/5 sub-phases picked C-sb-baseline**
+  (the negative-Sharpe cell) at val-selector; none of the new
+  candidate cells were val-superior.
+- **S-E cell (Phase 27.0d) citation:** `docs/design/phase27_closure_memo.md:34-35`
+  — "S-E (27.0d) unlocked ranking signal but failed monetisation
+  conversion: Spearman +0.438 (PASS at H1m level) but Sharpe
+  **-0.483** at the C-se cell."
+- **Composite labels:** `TARGETED_VERIFICATION_REQUIRED` (Tier 3,
+  aggregate from PR #356) **+** `NEGATIVE_FINAL_EVIDENCE_AT_SCOPE`
+  (this extension): the Phase 27-29 spine searched **over a
+  negative-Sharpe research-baseline contract**. This is the
+  intended scope (architectural exploration under a fixed
+  research baseline), not a regression from a positive baseline.
+- **Critical scope binding (Amendment 4):** the Phase 28 §10
+  negative research-baseline status is **separate from and does
+  not affect** the production baseline Phase 9.16 v9 20p (Tier 2,
+  `VALID_OPERATIONAL_BASELINE` at Sharpe 0.160). The production
+  baseline is positive-Sharpe under contemporaneous contract;
+  the Phase 27-29 research baseline is a distinct research-frame
+  object. Mixing the two is **forbidden** under this Amendment.
+- **Per-rank inversion harvest (Phase 9.19 Top-K):**
+  `docs/design/phase9_19_closure_memo.md:102-127` — "When LGBM
+  picks EUR/USD long with high confidence, it often picks
+  GBP/USD long, AUD/USD long etc. simultaneously — all
+  reflecting USD weakness... Per-rank Sharpe inversion: Rank-3
+  (third family, low-conf trades) produces **-0.054** (negative)."
+  Composite label: `ARCHIVED_UNTRUSTED_NUMERIC_DO_NOT_USE_FOR_
+  ROUTING` (aggregate Top-K 0.165 per Appendix A.3) **+**
+  `NEGATIVE_FINAL_EVIDENCE_AT_SCOPE` (per-rank tail at rank-3
+  scope).
+- **Admissibility of the negative numerics:**
+  - May be used for routing? **No.**
+  - May be used for pass/fail threshold? **No** (a future
+    new-epoch evaluation may not adopt -0.1732 as a comparator
+    threshold; new-epoch S-B / S-E comparators bind).
+  - May be used for research prioritisation? Yes, as
+    **architectural / scope-design context** (e.g., "the Phase
+    27-29 spine searched over a negative-baseline research
+    contract; any new evaluation under T4 must define its own
+    positive baseline").
+  - May be used as historical context? Yes.
+
+#### A.11 — Phase 9.X-J / 9.X-L / 9.X-M / 9.X-N / 9.X-O harvest (Amendment 4)
+
+The +mtf v19 realism / cost-adjusted / engineering-stack
+re-verification series. None of these numerics are negative; all
+sit at the same Tier-3 archived-untrusted level as the +mtf v19
+0.158 anchor (downstream of class U on run-provenance and
+downstream of the archived v19 anchor itself).
+
+**A.11.J — Phase 9.X-J realism pack:**
+
+- **Number citation:** `docs/design/phase9_x_jlmno_series_closure_memo.md:28-30`
+  — "K=3 pip Sharpe **0.155** (-1.9% vs 0.158 anchor); K=1
+  Sharpe 0.146 (-7.6%)"
+- **Phase-closure verdict citation:** same memo line 35 —
+  PARTIAL GO; realism cost acceptable given DD improvement
+- **Final label:** `ARCHIVED_UNTRUSTED_NUMERIC_DO_NOT_USE_FOR_
+  ROUTING` (Tier 3; downstream of archived +mtf v19 anchor)
+- **Routing-evidence admissibility:** No
+
+**A.11.L — Phase 9.X-L time-of-day filter:**
+
+- **Number citation:** `docs/design/phase9_x_jlmno_series_closure_memo.md:54-58`
+  — "K=3 pip Sharpe **0.144** (-8.9% vs anchor); 73% of trades
+  removed; Sharpe gain ~0.001 only"
+- **Phase-closure verdict citation:** same memo line 60-69 —
+  NO ADOPT
+- **Final label:** `ARCHIVED_UNTRUSTED_NUMERIC_DO_NOT_USE_FOR_
+  ROUTING` (Tier 4 NO ADOPT)
+- **Routing-evidence admissibility:** No
+
+**A.11.M — Phase 9.X-M dynamic SL/TP per-pair tuning:**
+
+- **Number citation:** `docs/design/phase9_x_jlmno_series_closure_memo.md:82-84`
+  — "K=3 pip Sharpe **0.133** (-15.8% vs anchor); K=1 0.138
+  (-12.7%); per-pair tuning reverts to global TP=1.5 / SL=1.0
+  for most pairs (already optimal); in-sample overfit"
+- **Phase-closure verdict citation:** same memo line 86-95 —
+  NO ADOPT
+- **Final label:** `ARCHIVED_UNTRUSTED_NUMERIC_DO_NOT_USE_FOR_
+  ROUTING` (Tier 4 NO ADOPT)
+- **Routing-evidence admissibility:** No
+
+**A.11.N — Phase 9.X-N margin-aware balance-proportional sizing:**
+
+- **Number citation:** `docs/design/phase9_x_jlmno_series_closure_memo.md:107-110`
+  — "K=3 pip Sharpe **0.158** (matches anchor exactly); DD%PnL
+  2.1% (vs anchor ~5%); JPY risk-based Sharpe 0.141 (variance
+  imbalance across JPY / non-JPY)"
+- **Phase-closure verdict citation:** same memo line 113-130 —
+  PARTIAL GO; matches anchor Sharpe with about half DD
+- **Final label:** `ARCHIVED_UNTRUSTED_NUMERIC_DO_NOT_USE_FOR_
+  ROUTING` (Tier 3; the 0.158 here is anchor-parity but the
+  anchor itself is class-U archived)
+- **Routing-evidence admissibility:** No; the mechanism
+  (margin-aware sizing) may be re-evaluated as a from-scratch
+  P3-engineering candidate under §7.P3 production-side track
+  (not a research signal)
+
+**A.11.O — Phase 9.X-O purge + 100 mini-lot clip cap:**
+
+- **Number citation:** `docs/design/phase9_x_jlmno_series_closure_memo.md:140-158`
+  — "K=3 pip Sharpe **0.158** (matches anchor); K=1 0.157
+  (-0.6%); DD%PnL 2.8% (vs ~5% anchor); trade count 13.8k
+  (vs 22k anchor); compounding ¥300k → ¥61.2M (+20,315%);
+  daily annualized Sharpe (√252): K=1 = 7.16, K=3 = 6.90"
+- **Phase-closure verdict citation:** same memo line 158-170 —
+  **GO** at series closure; recommended production
+  configuration listed
+- **Series summary citation:** same memo line 184-188 — "the
+  production-optimal stack is v26 with purge+clip (Phase 9.X-O)
+  at K=3, which matches the anchor pip Sharpe while halving
+  DD%PnL... Recommended production configuration: v26
+  purge+clip, lgbm_only K=3, margin-aware sizing (Phase
+  9.X-N), initial balance ¥300k, risk 1% per trade."
+- **Final label (Amendment 4 binding):** `ARCHIVED_UNTRUSTED_
+  NUMERIC_DO_NOT_USE_FOR_ROUTING` (Tier 3). Despite the
+  series-closure "GO" verdict, the 9.X-O numerics are
+  downstream of the archived +mtf v19 0.158 anchor and carry
+  class U on run-provenance; therefore they cannot serve as
+  routing evidence under the controlled vocabulary. The
+  **mechanism** (purge + clip cap + margin-aware sizing) is
+  recorded as a proposed-only successor candidate to the
+  Phase 9.16 v9 20p production baseline, subject to
+  **from-scratch new-epoch re-evaluation under Foundation T4**
+  before any production-migration decision.
+- **Routing-evidence admissibility:** No (numeric); the
+  **mechanism** is eligible for a future migration design
+  memo per §7.P3 / §6.A from-scratch framing; that memo
+  requires Foundation completion + explicit user
+  authorisation.
+
+**Aggregate finding (Amendment 4):** the +mtf v19 series did
+**not** produce a negative final Sharpe at any of J / L / M / N /
+O; the historical signal survived in 9.X-N / 9.X-O at anchor
+parity. **However**, J / L / M show material Sharpe degradation
+under realism mechanisms; the 9.X-N / 9.X-O recovery comes from
+sizing / clip-cap engineering rather than from the +mtf signal
+itself strengthening. The historical horizon-expansion evidence
+is **degraded** (in addition to being class U on run-provenance
+and downstream of an invalidated v18 anchor). This further
+weakens §4.2's extraction-vs-expansion hypothesis support.
+
 ### Roadmap section update summary (cross-reference)
 
 | Roadmap section | Update applied |
 |---|---|
-| §0 Amendment history | Amendment 1 + 2 + 3 history entries added |
+| §0 Amendment history | Amendment 1 + 2 + 3 + 4 history entries added |
+| Appendix A controlled vocabulary | new label `NEGATIVE_FINAL_EVIDENCE_AT_SCOPE` added (Amendment 4) |
+| Appendix A.7 extension | Phase 28 §10 immutable research baseline negative-Sharpe citations (test -0.1732 / val -0.1863 / ann_pnl -204,664.4); Phase 27.0d C-se cell Sharpe -0.483; Phase 9.19 Top-K rank-3 -0.054; composite labels (TARGETED_VERIFICATION_REQUIRED + NEGATIVE_FINAL_EVIDENCE_AT_SCOPE) (Amendment 4) |
+| Appendix A.11 (new) | Phase 9.X-J / 9.X-L / 9.X-M / 9.X-N / 9.X-O per-series numerics + verdicts + citations (Amendment 4) |
+| §2 Tier 3 currently-in-tier bullets | Phase 27-29 baseline negative-Sharpe binding + Phase 9.19 Top-K rank-3 negative per-rank binding added (Amendment 4) |
+| §3 status table | Phase 9.X-J / 9.X-L / 9.X-M / 9.X-N / 9.X-O rows added (Amendment 4) |
+| §4.2 extraction-vs-expansion | Amendment 4 binding: realism-degradation (9.X-J/L/M) weakens the historical horizon-expansion evidence further; the "data expansion ≥ extraction" pattern claim is no longer well-supported by the historical evidence on its own terms; bottom-line: all historical positive numerics are non-admissible as routing evidence; data-side expansion may still be prioritised, but only as a hypothesis-driven heuristic |
+| §6.A cross-track sequencing | Amendment 4 binding: A.1's early position is justified by ambiguity-resolution value (does the +mtf family produce admissible new-epoch evidence?), NOT by historical promise; A.1 is explicitly NOT a reproduction / rescue / continuation of prior +mtf claims |
 | §2 Tier 3 demoted bullets | Mode A bullet updated (0.061 << mtf 0.174 archival-only); §3 Phase 9.X-D DXY synthetic NO ADOPT description updated (archived comparison) — Amendment 3 |
 | §3 status table | Mode B-2 / +dxy alone / +dxy+mtf rows updated: historic comparisons against now-invalid mtf v18 0.174 anchor restated as archival closure context only (Amendment 3) |
 | §4.4 H-B9 / Track C outcome wording | softened to "would materially weaken H-B9 under the tested scope" / "would strongly support H-B9 under the current-data / current-contract scope"; neither outcome alone declares an absolute production ceiling; strategic review required (Amendment 3) |
