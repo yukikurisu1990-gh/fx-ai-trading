@@ -16,6 +16,22 @@ contract of `docs/design/phase27_29_tabular_eval_validity_audit.md`
 
 **Amendment history:**
 
+- Amendment 8 (this PR): final consistency cleanup before merge.
+  §11A.2 near-term sequencing extended from 4 steps to 5 steps
+  by inserting §11B Root Logic Reassessment / Profit Logic Audit
+  design as the **second** step (after P2 live spread
+  snapshotting, before P1 spread/slippage model). §11B may be
+  **co-authored in parallel with P2** (both observational /
+  non-conflicting); P1 design memo now explicitly **informed by
+  §11B findings** on cost-hurdle / selector / post-filter
+  placement. Added one-sentence sequencing binding (§11A.2 tail):
+  Root Logic Reassessment is not required to complete all future
+  diagnostics before P2 observational snapshotting, but it should
+  be authored / reviewed before any non-observational research
+  execution, P1 selector / cost-model change, Track A / D / C
+  execution, or production-impacting change. Effect: §11B cannot
+  be skipped between P2 and any subsequent non-observational
+  step. All Amendment 1-7 bindings preserved verbatim.
 - Amendment 7 (this PR): new section §11B "Root Logic
   Reassessment / Profit Logic Audit" added between §11A and
   §11. **§11B is not a Research Track**; it is a diagnostic
@@ -1747,14 +1763,35 @@ planning):
 1. **P2 live spread snapshotting design** — observational and
    safest; collects empirical spread data per pair per time-of-day;
    no production decision logic touched.
-2. **P1 spread / slippage model design** — authored **after P2 has
+2. **§11B Root Logic Reassessment / Profit Logic Audit design**
+   (Amendment 8 binding) — doc-only diagnostic memo per §11B.10;
+   may be **co-authored in parallel with P2** (both observational
+   / non-conflicting); answers §11B.1-§11B.7 diagnostic questions
+   on the current state and pre-registers the §11B.8 taxonomy +
+   §11B.9 kill / escalation criteria for adoption by subsequent
+   Research Track design memos.
+3. **P1 spread / slippage model design** — authored **after P2 has
    collected ≥ 4 weeks of empirical spread data** (per §11.Q8
-   recommendation); paper A/B before any production switch.
-3. **PR-B.0 / T1 infrastructure** — if user authorises the
+   recommendation) **and informed by §11B Root Logic Reassessment
+   findings** on cost-hurdle / selector / post-filter placement
+   (Amendment 8 binding); paper A/B before any production switch.
+4. **PR-B.0 / T1 infrastructure** — if user authorises the
    Foundation path; per PR #365 §11 3-PR split default.
-4. **T2 retention destination discussion in parallel** with T1, but
+5. **T2 retention destination discussion in parallel** with T1, but
    per §8.2 Amendment 1 binding, **T2 deposit ≠ epoch adoption**;
    no epoch span is bound until T1 / T2 evidence is reviewed at T3.
+
+**§11B sequencing binding (Amendment 8):** Root Logic Reassessment
+is **not** required to complete all future diagnostics before P2
+observational snapshotting; however, it **should be authored /
+reviewed before any non-observational research execution, P1
+selector / cost-model change, Track A / D / C execution, or
+production-impacting change**. P2 (observational) and §11B
+(diagnostic memo) may proceed concurrently; everything downstream
+of P2 — P1 model authoring, PR-B.0 / T1 infrastructure
+authorisation, T2 destination selection that locks an epoch
+candidate, post-T4 Track A / D / C execution — requires §11B to
+have at minimum reached a reviewable draft state.
 
 **After Foundation T4 completes:**
 
@@ -2781,7 +2818,8 @@ above independently.
 
 | Roadmap section | Update applied |
 |---|---|
-| §0 Amendment history | Amendment 1 + 2 + 3 + 4 + 5 + 6 + 7 history entries added |
+| §0 Amendment history | Amendment 1 + 2 + 3 + 4 + 5 + 6 + 7 + 8 history entries added |
+| §11A.2 near-term sequencing | §11B Root Logic Reassessment design inserted as step 2 (after P2 snapshotting; may co-author in parallel; P1 design informed by §11B findings); one-sentence binding added at §11A.2 tail that §11B must precede any non-observational research execution / P1 selector or cost-model change / Track A / D / C execution / production-impacting change (Amendment 8) |
 | §11B Root Logic Reassessment / Profit Logic Audit (new) | 10-subsection diagnostic layer (objective mismatch / label / selection / cost-realism / horizon / baseline-comparator / oracle / 13-item failure taxonomy / kill+escalation criteria / relationship to tracks); new Open Question Q12 (Root Logic Reassessment authorisation timing) (Amendment 7) |
 | §11A Profit Growth Hypothesis Matrix (new) | 8 profit-lever matrix + L-LEGACY row for Phase 20-26 / M1-M5-M15; recommended profit-first sequencing (near-term + post-T4); explicit non-goals; legacy-route handling as `REQUIRES_SEPARATE_EVIDENCE_RECONCILIATION` (Amendment 6) |
 | §3 status table (Amendment 5 cleanup) | stale duplicate "(per log)" rows for 9.X-J / 9.X-L / 9.X-M / 9.X-N / 9.X-O removed; the detailed Amendment-4 rows are now the sole authoritative entries; conflict with old interpretation (TBD / blanket NO ADOPT) resolved |
