@@ -655,8 +655,6 @@ this table. Entries marked TIER are in the corresponding §2 tier.
 | **9.X-O** | **purge + 100 mini-lot clip cap** | archived K=3 0.158 / K=1 0.157 (matches +mtf v19 anchor; DD%PnL 2.8% vs anchor ~5%; trade count 13.8k vs 22k) | Tier 3 + `ARCHIVED_UNTRUSTED_NUMERIC_DO_NOT_USE_FOR_ROUTING` (Appendix A.11) | **GO** at series closure (`phase9_x_jlmno_series_closure_memo.md:140-170`); best result in JLMNO series; proposed-only as a successor candidate to Phase 9.16 v9 20p **subject to from-scratch new-epoch re-evaluation under Foundation T4** — not admissible as routing evidence or as a production-migration anchor without that re-evaluation; mechanism eligibility per §6.A from-scratch framing |
 | 9.X-H | calendar full | NO ADOPT (per log) | Tier 4 | Memo not in main project memory; verify at PR-time |
 | 9.X-I | rank audit / risk sizing | NO ADOPT (per log) | Tier 4 | Same caveat |
-<!-- Amendment 5: stale duplicate 9.X-J / 9.X-L / 9.X-M / 9.X-N / 9.X-O "(per log)" rows removed; the detailed Amendment-4 rows above (citing `phase9_x_jlmno_series_closure_memo.md`) are authoritative. The old rows conflicted with the new interpretation: 9.X-J = PARTIAL GO not "TBD"; 9.X-N = PARTIAL GO not "NO ADOPT"; 9.X-O = GO at series closure (proposed-only candidate, not "NO ADOPT"). -->
-
 
 **Reading guide:**
 
