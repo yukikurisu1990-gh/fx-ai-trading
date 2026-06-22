@@ -1,0 +1,87 @@
+# Gate P1 PR-B.0 — usage and non-scope
+
+**Stage:** Foundation **T1** / Gate P1 PR-B.0 (infrastructure only).
+**Status:** infrastructure scaffold merged; performs **no** Gate P1 inspection.
+**Plan:** `docs/design/gate_p1_pr_b_implementation_plan.md` (PR #365) §3-§5, §11.
+
+---
+
+## What PR-B.0 is
+
+PR-B.0 is the **infrastructure / launcher skeleton** for the Gate P1 PR-B
+read-only inspection. It provides:
+
+- an outer launcher (`scripts/gate_p1_pr_b_launcher.py`) that builds an
+  audited, side-effect-free execution envelope and spawns the inner guarded
+  inspector;
+- an inner bootstrap (`scripts/_gate_p1_inspector/bootstrap.py`) that installs
+  five guard families in a fixed order before running anything;
+- guard modules (`scripts/_gate_p1_inspector/guards/`) for bytecode, production
+  imports, credentials / env-vars, network, subprocess, and a filesystem
+  write-allowlist;
+- a **stub inspector** that performs no inspection and emits a clearly-marked
+  stub report.
+
+PR-B.0 proves the inspector can be invoked **safely** in stub mode without
+reading real data, credentials, broker state, quote feeds, or production
+runtime state.
+
+## What PR-B.0 is NOT
+
+PR-B.0 performs **no** Gate P1 inspection. It does **not**:
+
+- read any byte under `data/`, `artifacts/`, or any candle / JSONL / parquet /
+  CSV file;
+- open or hash the OANDA 2026-05-31 archive;
+- run raw inventory, coverage, retention feasibility, dependency inventory, or
+  pipeline feasibility;
+- access credentials, environment variables, networks, brokers, quote feeds,
+  or subprocesses from the inner inspector;
+- decide any feasibility, retention, or byte-admissibility outcome;
+- grant any T2 / T3 / T4 / epoch-adoption authorisation.
+
+**PR-B.1** (authority + raw inventory + coverage + retention + resolver) and
+**PR-B.2** (dependency + pipeline feasibility) are **not implemented** here and
+each require independent explicit authorisation (plan §11).
+
+## Usage (stub mode only)
+
+```bash
+# Default report root (artifacts/gate_p1_report/<id>/):
+python scripts/gate_p1_pr_b_launcher.py --report-id my-stub-run-001 --first-run
+
+# Test-controlled report root (recommended for any ad-hoc invocation):
+python scripts/gate_p1_pr_b_launcher.py --report-id t --report-root /tmp/out
+```
+
+The launcher **fails closed** on: an unknown flag, `--mode` other than `stub`,
+a report root inside a data / archive location, a dirty tracked worktree, or a
+report-id collision.
+
+### Outputs (all under `<report-root>/<report-id>/`)
+
+- `execution_envelope.json` — outer envelope + post-run audit.
+- `gate_p1_report.json` — the stub report (`top_level_outcome =
+  STUB_NO_INSPECTION_PERFORMED`, `stub_marker = PR_B0_STUB_ONLY`).
+- `report.md` — human-readable stub summary.
+
+### Exit codes
+
+| Code | Meaning |
+| --- | --- |
+| 0 | inner emitted the stub report and the post-run audit passed |
+| 1 | outer pre-flight failed (bad args / unsafe path / dirty worktree / collision) |
+| 2 | inner crashed or a guard tripped (no stub report emitted) |
+| 3 | post-run audit failed (HEAD changed, or a diff escaped the report dir) |
+
+## Status bindings preserved
+
+- T1 = Gate P1 PR-B implementation / review; **PR-B.0 = infrastructure only**.
+- PR-B.1 / PR-B.2 not authorised here.
+- T2 = Gate P2 retention destination selection / deposit + round-trip; not
+  authorised here. `T2_PROPOSED_DESTINATION_PLAN` (PR #378) remains
+  planning-layer only, pending T1 Gate P1 PR-B review + explicit T2 execution
+  authorisation.
+- T3 / T4 / new-epoch adoption / P1 / P2 / P3 / Track A-G / production change:
+  not authorised here.
+- Phase 9.16 v9 20p remains Tier 2 `VALID_OPERATIONAL_BASELINE`.
