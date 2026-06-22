@@ -47,16 +47,29 @@ each require independent explicit authorisation (plan §11).
 ## Usage (stub mode only)
 
 ```bash
-# Default report root (artifacts/gate_p1_report/<id>/):
+# Default: a system-temp stub-only dir (<tmp>/gate_p1_pr_b0_stub/<id>/):
 python scripts/gate_p1_pr_b_launcher.py --report-id my-stub-run-001 --first-run
 
-# Test-controlled report root (recommended for any ad-hoc invocation):
+# Explicit test-controlled report root (must be outside data/ and artifacts/):
 python scripts/gate_p1_pr_b_launcher.py --report-id t --report-root /tmp/out
 ```
 
-The launcher **fails closed** on: an unknown flag, `--mode` other than `stub`,
-a report root inside a data / archive location, a dirty tracked worktree, or a
-report-id collision.
+### Stub-output boundary (where PR-B.0 may write)
+
+PR-B.0 stub output is **never** written to real-evidence or repo-tracked
+locations. The launcher **fails closed** (exit 1) if `--report-root`:
+
+- contains a reserved path component: `data`, `artifacts`, `oanda_archive`,
+  `gate_p1_report`, or `gate_p2_verification`; **or**
+- resolves anywhere inside the repository working tree (so stub output can
+  never be accidentally committed or confused with real Gate P1 evidence).
+
+The default root is a **system-temp** `gate_p1_pr_b0_stub` directory — outside
+the repo, never committed. The REAL inspection (PR-B.1, separately authorised)
+is what writes to `artifacts/gate_p1_report/`; the PR-B.0 stub does not.
+
+The launcher also **fails closed** on: an unknown flag, `--mode` other than
+`stub`, a dirty tracked worktree, or a report-id collision.
 
 ### Outputs (all under `<report-root>/<report-id>/`)
 

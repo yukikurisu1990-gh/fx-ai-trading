@@ -27,19 +27,34 @@ import platform
 import re
 import subprocess
 import sys
+import tempfile
 from datetime import UTC, datetime
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
-DEFAULT_REPORT_ROOT = REPO_ROOT / "artifacts" / "gate_p1_report"
+
+# PR-B.0 stub output defaults OUTSIDE the repository, in a clearly stub-only
+# system-temp location. A PR-B.0 stub report must never be written under
+# data/ or artifacts/ (where it could be confused with real Gate P1 / Gate P2
+# evidence) or anywhere repo-tracked (where it could be accidentally
+# committed). The REAL inspection (PR-B.1, separately authorised) is what
+# writes to artifacts/gate_p1_report/.
+DEFAULT_REPORT_ROOT = Path(tempfile.gettempdir()) / "gate_p1_pr_b0_stub"
 
 _REPORT_ID_RE = re.compile(r"^[A-Za-z0-9_-]{1,64}$")
 _CREDENTIAL_PATTERN = re.compile(r"(?i)(OANDA|TOKEN|SECRET|KEY|PASSWORD|CREDENTIAL|AWS|GCP|AZURE)")
 _PR_A_SPEC_RELPATH = "docs/design/gate_p1_feasibility_inspection_protocol.md"
 
-# Unsafe report-root prefixes (a stub report must never land in real data /
-# archive locations).
-_UNSAFE_ROOT_PARTS = ("data", "oanda_archive")
+# Reserved path components a stub report root must never contain: real raw
+# data, any artifact tree, OANDA archive paths, and prior/real verification
+# artifact paths.
+_UNSAFE_ROOT_PARTS = (
+    "data",
+    "artifacts",
+    "oanda_archive",
+    "gate_p1_report",
+    "gate_p2_verification",
+)
 
 EXIT_OK = 0
 EXIT_PREFLIGHT_FAILED = 1
@@ -113,7 +128,11 @@ def _parse_args(argv: list[str] | None) -> argparse.Namespace:
     parser.add_argument(
         "--report-root",
         default=str(DEFAULT_REPORT_ROOT),
-        help="Parent dir for the report (default: artifacts/gate_p1_report).",
+        help=(
+            "Parent dir for the stub report (default: a system-temp "
+            "gate_p1_pr_b0_stub dir). Must be outside data/, artifacts/, and "
+            "the repository working tree."
+        ),
     )
     parser.add_argument("--first-run", action="store_true")
     parser.add_argument(
@@ -127,6 +146,27 @@ def _parse_args(argv: list[str] | None) -> argparse.Namespace:
 def _fail(message: str) -> int:
     sys.stderr.write(f"[PR-B.0 preflight HALT] {message}\n")
     return EXIT_PREFLIGHT_FAILED
+
+
+def _unsafe_report_root_reason(report_root: Path) -> str | None:
+    """Return a reason string if ``report_root`` is an unsafe stub location.
+
+    A PR-B.0 stub report must never be written:
+      * under a reserved path component (data / artifacts / OANDA archive /
+        prior verification artifact paths), nor
+      * anywhere inside the repository working tree (src / docs / tests /
+        scripts / tools / config / repo root), where it could be accidentally
+        committed or confused with real Gate P1 evidence.
+    """
+    parts_lower = {part.lower() for part in report_root.parts}
+    reserved = parts_lower.intersection(_UNSAFE_ROOT_PARTS)
+    if reserved:
+        return f"contains reserved path component(s) {sorted(reserved)}"
+    try:
+        report_root.relative_to(REPO_ROOT)
+    except ValueError:
+        return None  # outside the repository working tree => safe
+    return "is inside the repository working tree (stub output must be external)"
 
 
 def run(argv: list[str] | None = None) -> int:
@@ -147,9 +187,11 @@ def run(argv: list[str] | None = None) -> int:
         return _fail(f"invalid --report-id '{report_id}' (must match {_REPORT_ID_RE.pattern}).")
 
     report_root = Path(args.report_root).resolve()
-    if any(part in _UNSAFE_ROOT_PARTS for part in report_root.parts):
+    unsafe_reason = _unsafe_report_root_reason(report_root)
+    if unsafe_reason is not None:
         return _fail(
-            f"unsafe --report-root '{report_root}': must not be within a data / archive location."
+            f"unsafe --report-root '{report_root}': {unsafe_reason}. PR-B.0 stub "
+            "output must be temp/test-controlled and outside data/ and artifacts/."
         )
 
     report_dir = report_root / report_id

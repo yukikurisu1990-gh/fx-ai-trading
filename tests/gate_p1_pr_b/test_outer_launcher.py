@@ -27,10 +27,40 @@ def test_non_stub_mode_fails_closed(capsys):
     assert "PR-B.1" in err and "PR-B.2" in err
 
 
-def test_unsafe_report_root_rejected(tmp_path):
-    unsafe = tmp_path / "data" / "candles"
-    rc = launcher.run(["--report-id", "abc", "--report-root", str(unsafe)])
+@pytest.mark.parametrize(
+    "report_root",
+    [
+        "artifacts/gate_p1_pr_b0_stub",
+        "data/gate_p1_pr_b0_stub",
+        "data/oanda_archive/gate_p1_pr_b0_stub",
+        "artifacts/gate_p1_report/x",
+        "artifacts/gate_p2_verification/x",
+    ],
+)
+def test_reserved_report_root_rejected(report_root):
+    rc = launcher.run(["--report-id", "abc", "--report-root", report_root])
     assert rc == launcher.EXIT_PREFLIGHT_FAILED
+
+
+def test_in_repo_report_root_rejected():
+    # A path inside the repo working tree (even with no reserved component) is
+    # rejected so stub output can never be accidentally committed.
+    in_repo = str(launcher.REPO_ROOT / "src" / "gate_p1_pr_b0_stub")
+    rc = launcher.run(["--report-id", "abc", "--report-root", in_repo])
+    assert rc == launcher.EXIT_PREFLIGHT_FAILED
+
+
+def test_default_report_root_is_safe():
+    # The default stub root must be outside the repo and free of reserved parts.
+    default_root = launcher.DEFAULT_REPORT_ROOT
+    assert launcher._unsafe_report_root_reason(default_root) is None
+    parts = {p.lower() for p in default_root.parts}
+    assert parts.isdisjoint({"data", "artifacts"})
+
+
+def test_tmp_path_report_root_is_accepted(tmp_path):
+    # A clean system-temp path (pytest tmp_path) is a safe stub location.
+    assert launcher._unsafe_report_root_reason(tmp_path.resolve()) is None
 
 
 def test_unknown_flag_rejected():
@@ -39,7 +69,7 @@ def test_unknown_flag_rejected():
 
 
 def test_end_to_end_stub_run(tmp_path):
-    report_root = tmp_path / "gate_p1_report_out"
+    report_root = tmp_path / "stub_out"
     rc = launcher.run(
         ["--report-id", "e2e-stub-001", "--report-root", str(report_root), "--first-run"]
     )
