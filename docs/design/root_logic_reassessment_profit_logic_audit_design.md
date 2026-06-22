@@ -430,11 +430,14 @@ baseline construction. §11B pins **profit logic admissibility**.
 ### 11.2 §11B must be reviewed before:
 
 - any P1 selector / cost-model change is authorised,
-- any Track A re-evaluation execution (PR #354 allowlist S1+S2+S3) is
+- any Track A from-scratch re-evaluation execution (A.1 +mtf / A.2 Top-K /
+  A.3 C-3 under the new-epoch contract) is authorised,
+- any Track B Phase 9.X-C residual LSTM execution (B-1 / B-2 / B-3 / B-4) is
   authorised,
+- any Track C A0-broad sequence-NN formal verification (PR #354 allowlist
+  S1 LSTM / S2 Temporal CNN / S3 Transformer) is authorised,
 - any Track D data-side expansion that affects the cost / horizon surface is
   authorised,
-- any Track C residual LSTM execution (B-1 / B-2 / B-3 / B-4) is authorised,
 - any production-impacting change is authorised.
 
 Review means: the track's design memo must explicitly map onto §11B audit
@@ -482,7 +485,7 @@ gate-opener.
 - **§11B framework status after this PR merges:** `DESIGNED_NOT_OPERATIONALISED_ON_CANDIDATES`.
 - **P1 status after this PR merges:** unchanged, gated on P2 observation **and**
   §11B review.
-- **Track A / C / D status after this PR merges:** unchanged, gated on §11B
+- **Track A / B / C / D status after this PR merges:** unchanged, gated on §11B
   review at design memo time.
 - **Foundation T1 / T2 / T3 / T4 status after this PR merges:** unchanged.
 - **Phase 9.16 v9 20p production baseline status:** unchanged, Tier 2
