@@ -157,7 +157,7 @@ memos cited above.
 | --- | --- | --- |
 | D1–D10 admissibility scoring | scored against C1/C2/C3 + OF1–OF7 | unchanged; cited |
 | Recommended tier ordering | §7 Tier 1 = {D3, D5, D1, D4}; recommended combination D3 + D7 + D6 manifest-CID | adopted as the routing-decision-of-record proposal (§6) |
-| Destination selection | **explicitly none** ("not pre-approved") | a **planning-layer proposed selection**, still subordinate to Gate P1 verification + explicit T2-execution authorisation |
+| Destination selection | **explicitly none** ("not pre-approved") | a **planning-layer proposed selection**, still subordinate to the **T1 Gate P1 PR-B review** (the read-only feasibility-inspection prerequisite, *not* Gate P2 retention) + explicit T2-execution authorisation |
 | Round-trip protocol | §8 design | restated as a T2-execution **plan** (§7), not executed |
 | Open questions | §11 Q1–Q11 | mapped to pre-execution user decisions (§8) |
 
@@ -188,9 +188,15 @@ it operates at a different layer:
   with explicit user authorisation. **This memo performs neither.**
 
 Therefore the routing decision in §6 is labelled
-`T2_PROPOSED_DESTINATION_PLAN_PENDING_GATE_P1_VERIFICATION_AND_EXECUTION_AUTH`.
-It is the decision-of-record for *planning*; it does **not** pre-approve the
-destination at the §7 level, and it does **not** make the epoch binding.
+`PENDING_T1_GATE_P1_PR_B_REVIEW_AND_EXPLICIT_T2_EXECUTION_AUTHORISATION`.
+Here **"T1 Gate P1 PR-B review"** means the Foundation **T1** read-only
+feasibility-inspection prerequisite (Gate P1 PR-B, plan locked at PR #365) — it
+is **not** Gate P2 retention, which **is** T2 itself. The label encodes the two
+gating conditions: (a) the upstream T1 Gate P1 PR-B inspection records the
+candidate's retention feasibility, and (b) explicit user authorisation of T2
+execution. It is the decision-of-record for *planning*; it does **not**
+pre-approve the destination at the §7 level, and it does **not** make the epoch
+binding.
 
 ---
 
@@ -240,7 +246,13 @@ against a documented option set.
 
 `T2_PROPOSED_DESTINATION_PLAN = {primary: D3, backup: D7, manifest_sidecar: D6}`
 with status
-`PENDING_GATE_P1_VERIFICATION_AND_EXPLICIT_T2_EXECUTION_AUTHORISATION`.
+`PENDING_T1_GATE_P1_PR_B_REVIEW_AND_EXPLICIT_T2_EXECUTION_AUTHORISATION`.
+
+The `T1_GATE_P1_PR_B_REVIEW` term in this status refers to the Foundation **T1**
+Gate P1 PR-B read-only feasibility inspection (PR #365 plan); it does **not**
+refer to Gate P2 retention (which is T2). The status does **not** mix Gate P1
+and Gate P2: T1 Gate P1 PR-B is the upstream inspection prerequisite, and T2
+(this stage) is the Gate P2 retention deposit + round-trip.
 
 No byte is deposited. No account is created. No §7 approval is granted.
 
@@ -344,8 +356,8 @@ This memo authorises **nothing executable**. Specifically:
 - **Foundation T2:** evaluation framework locked at PR #366; **destination
   plan now proposed at the planning layer by this memo**
   (`T2_PROPOSED_DESTINATION_PLAN = {D3, D7, D6}`,
-  `PENDING_GATE_P1_VERIFICATION_AND_EXECUTION_AUTH`); **deposit not begun;
-  round-trip not performed; §7 not pre-approved.**
+  `PENDING_T1_GATE_P1_PR_B_REVIEW_AND_EXPLICIT_T2_EXECUTION_AUTHORISATION`);
+  **deposit not begun; round-trip not performed; §7 not pre-approved.**
 - **Foundation T3 / T4:** designed (PR #361) / specified (roadmap §5.4/§5.5);
   construction not begun; unchanged.
 - **§11B framework status:** `DESIGNED_NOT_OPERATIONALISED_ON_CANDIDATES`
