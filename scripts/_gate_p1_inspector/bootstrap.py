@@ -89,6 +89,7 @@ def run_b1_under_guards(
     repo_root: str | Path,
     candidate_spans: tuple[str, ...] = CANDIDATE_SPANS,
     first_run_mode: bool = True,
+    clean_code_sha: str | None = None,
     enforce_bytecode: bool = True,
 ) -> Path:
     """Install guards, run the PR-B.1 read-only inspection, return report path.
@@ -105,6 +106,7 @@ def run_b1_under_guards(
             repo_root=repo_root,
             candidate_spans=candidate_spans,
             first_run_mode=first_run_mode,
+            clean_code_sha=clean_code_sha,
         )
     finally:
         uninstall_guards()
@@ -148,10 +150,12 @@ def main(argv: list[str] | None = None) -> int:
 
     report_id = args.report_id
     expected_code_hash: str | None = None
+    clean_code_sha: str | None = None
     if args.envelope is not None:
         envelope = json.loads(Path(args.envelope).read_text(encoding="utf-8"))
         report_id = report_id or envelope.get("report_id")
         expected_code_hash = envelope.get("pr_b_code_hash")
+        clean_code_sha = envelope.get("clean_code_sha")
     report_id = report_id or report_dir.name
 
     if not report_dir.is_dir():
@@ -177,6 +181,7 @@ def main(argv: list[str] | None = None) -> int:
                 repo_root=args.repo_root,
                 candidate_spans=spans,
                 first_run_mode=args.first_run,
+                clean_code_sha=clean_code_sha,
             )
         else:
             run_inner(report_dir, report_id, first_run_mode=args.first_run)

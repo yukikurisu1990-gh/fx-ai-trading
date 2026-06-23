@@ -42,7 +42,7 @@ def _parse_oanda_ts(s: str) -> datetime:
 @dataclass
 class FileInventory:
     pair: str
-    path: str
+    filename: str
     present: bool
     size_bytes: int | None = None
     file_sha256: str | None = None
@@ -164,7 +164,7 @@ class _RowAccumulator:
 def inspect_file(pair: str, path: Path) -> FileInventory:
     """Inspect a single candidate file read-only (streaming, bounded memory)."""
     if not path.exists():
-        return FileInventory(pair=pair, path=str(path), present=False)
+        return FileInventory(pair=pair, filename=path.name, present=False)
 
     digest = hashlib.sha256()
     acc = _RowAccumulator()
@@ -188,7 +188,7 @@ def inspect_file(pair: str, path: Path) -> FileInventory:
     schema_valid = acc.missing_fields_count == 0 and acc.non_finite_fields_count == 0
     return FileInventory(
         pair=pair,
-        path=str(path),
+        filename=path.name,
         present=True,
         size_bytes=size_bytes,
         file_sha256=digest.hexdigest(),

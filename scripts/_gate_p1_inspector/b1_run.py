@@ -30,7 +30,12 @@ def _candidate_id(span_label: str) -> str:
     return f"{span_label}_BA"
 
 
-def _render_markdown(report_id: str, top_level: str, per_candidate: list[dict[str, Any]]) -> str:
+def _render_markdown(
+    report_id: str,
+    top_level: str,
+    per_candidate: list[dict[str, Any]],
+    span_scope: dict[str, str],
+) -> str:
     lines = [
         "# Gate P1 PR-B.1 first-run inspection report",
         "",
@@ -44,6 +49,16 @@ def _render_markdown(report_id: str, top_level: str, per_candidate: list[dict[st
         "A feasible-for-construction outcome is structurally unreachable on the "
         "first run. This report makes no byte-admissibility claim and grants no "
         "T2 authorisation.",
+        "",
+        "## Candidate-span scope",
+        "",
+        "The top_level_outcome above is scoped to the INSPECTED span(s) only; "
+        "spans marked NOT_INSPECTED_IN_THIS_PR are neither feasible, infeasible, "
+        "complete, nor verified.",
+        "",
+        "| span | scope |",
+        "| --- | --- |",
+        *[f"| {span} | {scope} |" for span, scope in sorted(span_scope.items())],
         "",
         "## Per-candidate summary",
         "",
@@ -69,6 +84,20 @@ def _render_markdown(report_id: str, top_level: str, per_candidate: list[dict[st
     return "\n".join(lines)
 
 
+def _span_scope(inspected: tuple[str, ...]) -> dict[str, str]:
+    """Map every designed Gate P1 span to INSPECTED / NOT_INSPECTED in this PR."""
+    inspected_set = set(inspected)
+    scope: dict[str, str] = {}
+    for span in CANDIDATE_SPANS:
+        scope[span] = (
+            "INSPECTED_IN_THIS_PR" if span in inspected_set else "NOT_INSPECTED_IN_THIS_PR"
+        )
+    # Include any inspected span outside the canonical designed set.
+    for span in inspected:
+        scope.setdefault(span, "INSPECTED_IN_THIS_PR")
+    return scope
+
+
 def run_b1_inspection(
     report_dir: str | Path,
     report_id: str,
@@ -77,6 +106,7 @@ def run_b1_inspection(
     repo_root: str | Path,
     candidate_spans: tuple[str, ...] = CANDIDATE_SPANS,
     first_run_mode: bool = True,
+    clean_code_sha: str | None = None,
 ) -> Path:
     """Run the PR-B.1 inspection and emit artifacts; return the report path."""
     report_dir = Path(report_dir)
@@ -149,13 +179,23 @@ def run_b1_inspection(
     top_level = resolver_mod.resolve_top_level(candidate_outcomes, first_run_mode=first_run_mode)
     b1_writers.validate_top_level_outcome(top_level)
 
-    markdown = _render_markdown(report_id, top_level, per_candidate)
+    span_scope = _span_scope(candidate_spans)
+    markdown = _render_markdown(report_id, top_level, per_candidate, span_scope)
     b1_writers.write_b1_markdown(report_dir, _MARKDOWN_FILENAME, markdown)
 
     report_payload = {
         "report_id": report_id,
         "first_run_mode": first_run_mode,
         "top_level_outcome": top_level,
+        "git_commit_sha": clean_code_sha,
+        "candidate_spans_inspected": list(candidate_spans),
+        "candidate_spans_designed": list(CANDIDATE_SPANS),
+        "candidate_span_scope": span_scope,
+        "outcome_scope_note": (
+            "top_level_outcome is scoped to the inspected candidate span(s) only. "
+            "Spans marked NOT_INSPECTED_IN_THIS_PR are neither feasible, "
+            "infeasible, complete, nor verified by this report."
+        ),
         "pair_universe_outcome": pair_result.outcome,
         "schema_authority_outcome": schema_result.outcome,
         "per_candidate_summary": per_candidate,
