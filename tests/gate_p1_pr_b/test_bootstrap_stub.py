@@ -14,16 +14,12 @@ import sys
 from scripts._gate_p1_inspector import bootstrap
 from scripts._gate_p1_inspector.report.schema import FORBIDDEN_STUB_KEYS
 
-# Real inspection submodules that belong to PR-B.1 / PR-B.2 and must be ABSENT.
-_PR_B1_B2_MODULES = (
-    "scripts._gate_p1_inspector.inspector.raw_inventory",
-    "scripts._gate_p1_inspector.inspector.coverage",
+# PR-B.2 inspection submodules that must remain ABSENT (PR-B.1 implements
+# authority / raw_inventory / coverage / retention / resolver, so those now
+# exist; dependency inventory + pipeline feasibility are PR-B.2 and must not).
+_PR_B2_MODULES = (
     "scripts._gate_p1_inspector.inspector.dependency_inventory",
     "scripts._gate_p1_inspector.inspector.pipeline_feasibility",
-    "scripts._gate_p1_inspector.inspector.retention",
-    "scripts._gate_p1_inspector.inspector.resolver",
-    "scripts._gate_p1_inspector.authority.pair_universe",
-    "scripts._gate_p1_inspector.authority.schema",
 )
 
 
@@ -70,13 +66,13 @@ def test_stub_run_does_not_import_production_modules(tmp_path):
     assert after - before == set()
 
 
-def test_pr_b1_b2_submodules_absent():
-    for name in _PR_B1_B2_MODULES:
+def test_pr_b2_submodules_absent():
+    for name in _PR_B2_MODULES:
         try:
             spec = importlib.util.find_spec(name)
         except ModuleNotFoundError:
             spec = None  # parent package absent => submodule absent
-        assert spec is None, f"{name} must not exist in PR-B.0"
+        assert spec is None, f"{name} (PR-B.2) must not exist yet"
 
 
 def test_guards_uninstalled_after_run(tmp_path):

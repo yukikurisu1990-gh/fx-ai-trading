@@ -87,6 +87,45 @@ The launcher also **fails closed** on: an unknown flag, `--mode` other than
 | 2 | inner crashed or a guard tripped (no stub report emitted) |
 | 3 | post-run audit failed (HEAD changed, or a diff escaped the report dir) |
 
+## PR-B.1 (read-only first-run inspection)
+
+PR-B.1 layers the first **real** read-only inspection on top of the PR-B.0
+guarded envelope. It is invoked through the same launcher with `--mode b1`:
+
+```bash
+# Default b1 report root is the controlled artifacts/gate_p1_pr_b/<id>/:
+python scripts/gate_p1_pr_b_launcher.py --mode b1 --report-id run-001 --first-run
+
+# Explicit external (test-controlled) root + a single candidate span:
+python scripts/gate_p1_pr_b_launcher.py --mode b1 --report-id t \
+  --report-root /tmp/out --data-dir ./data --candidate-spans 365d --first-run
+```
+
+PR-B.1 scope: authority resolution (PAIRS_20 + M1 BA schema, AST/source-only),
+raw inventory (existence / size / streaming SHA-256 / row count / timestamp
+boundary / schema-key presence — bounded-memory streaming, read-only), coverage
+derivation, retention feasibility (size metadata only), and resolver / first-run
+report composition.
+
+PR-B.1 emits derived-metadata artifacts under `<report-root>/<id>/`:
+`gate_p1_report.json`, `raw_inventory_<candidate>.json`,
+`coverage_<candidate>.json`, `retention_feasibility_<candidate>.json`,
+`report.md`. No raw rows, credentials, or model outputs are written.
+
+`top_level_outcome` is one of (first-run; PASS structurally unreachable):
+`LOCAL_DATA_CANDIDATE_PARTIAL_FEASIBILITY`,
+`LOCAL_DATA_INSUFFICIENT_FOR_NEW_EPOCH`, `RETENTION_DESTINATION_UNRESOLVED`.
+
+### PR-B.1 non-scope
+
+- Dependency inventory and pipeline feasibility (PR-B.2): NOT performed.
+- No T2 execution, retention deposit, cloud configuration, upload / download /
+  deposit / round-trip, or byte-admissibility approval.
+- No new-epoch adoption; no T3/T4 formal verification.
+- The b1 report root is rejected if it is under `data/`, an OANDA archive path,
+  `gate_p1_report`, or `gate_p2_verification`, or anywhere in-repo other than
+  the controlled `artifacts/gate_p1_pr_b` subtree.
+
 ## Status bindings preserved
 
 - T1 = Gate P1 PR-B implementation / review; **PR-B.0 = infrastructure only**.

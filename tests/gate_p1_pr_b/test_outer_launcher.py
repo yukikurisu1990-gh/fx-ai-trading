@@ -9,6 +9,7 @@ suite stays green regardless of local state while running fully in CI.
 from __future__ import annotations
 
 import json
+from pathlib import Path
 
 import pytest
 
@@ -50,17 +51,57 @@ def test_in_repo_report_root_rejected():
     assert rc == launcher.EXIT_PREFLIGHT_FAILED
 
 
-def test_default_report_root_is_safe():
+def test_default_stub_report_root_is_safe():
     # The default stub root must be outside the repo and free of reserved parts.
-    default_root = launcher.DEFAULT_REPORT_ROOT
-    assert launcher._unsafe_report_root_reason(default_root) is None
+    default_root = launcher.DEFAULT_STUB_REPORT_ROOT.resolve()
+    assert launcher._unsafe_report_root_reason(default_root, "stub") is None
     parts = {p.lower() for p in default_root.parts}
     assert parts.isdisjoint({"data", "artifacts"})
 
 
 def test_tmp_path_report_root_is_accepted(tmp_path):
-    # A clean system-temp path (pytest tmp_path) is a safe stub location.
-    assert launcher._unsafe_report_root_reason(tmp_path.resolve()) is None
+    # A clean system-temp path (pytest tmp_path) is safe for both modes.
+    assert launcher._unsafe_report_root_reason(tmp_path.resolve(), "stub") is None
+    assert launcher._unsafe_report_root_reason(tmp_path.resolve(), "b1") is None
+
+
+def test_default_b1_report_root_is_controlled_inrepo():
+    # b1 default lives under the controlled artifacts/gate_p1_pr_b subtree and
+    # is accepted for b1 but rejected for stub (stub must be external).
+    b1_root = launcher.DEFAULT_B1_REPORT_ROOT.resolve()
+    assert launcher._unsafe_report_root_reason(b1_root, "b1") is None
+    assert launcher._unsafe_report_root_reason(b1_root, "stub") is not None
+
+
+def test_b1_rejects_reserved_and_wrong_inrepo_roots():
+    # b1 still rejects data/, gate_p2_verification, and in-repo paths outside
+    # the controlled artifacts/gate_p1_pr_b subtree.
+    assert launcher._unsafe_report_root_reason(Path("data/x").resolve(), "b1") is not None
+    assert (
+        launcher._unsafe_report_root_reason(
+            (launcher.REPO_ROOT / "artifacts" / "gate_p2_verification" / "x").resolve(), "b1"
+        )
+        is not None
+    )
+    assert (
+        launcher._unsafe_report_root_reason((launcher.REPO_ROOT / "src" / "x").resolve(), "b1")
+        is not None
+    )
+
+
+def test_b2_mode_still_rejected(capsys):
+    rc = launcher.run(["--report-id", "abc", "--mode", "b2"])
+    assert rc == launcher.EXIT_PREFLIGHT_FAILED
+    assert "PR-B.2" in capsys.readouterr().err
+
+
+def test_dependency_pipeline_modes_rejected():
+    assert launcher.run(["--report-id", "abc", "--mode", "dependency"]) == (
+        launcher.EXIT_PREFLIGHT_FAILED
+    )
+    assert launcher.run(["--report-id", "abc", "--mode", "pipeline"]) == (
+        launcher.EXIT_PREFLIGHT_FAILED
+    )
 
 
 def test_unknown_flag_rejected():

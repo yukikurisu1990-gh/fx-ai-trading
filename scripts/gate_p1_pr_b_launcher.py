@@ -33,28 +33,41 @@ from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 
+SUPPORTED_MODES = ("stub", "b1")
+
 # PR-B.0 stub output defaults OUTSIDE the repository, in a clearly stub-only
 # system-temp location. A PR-B.0 stub report must never be written under
-# data/ or artifacts/ (where it could be confused with real Gate P1 / Gate P2
-# evidence) or anywhere repo-tracked (where it could be accidentally
-# committed). The REAL inspection (PR-B.1, separately authorised) is what
-# writes to artifacts/gate_p1_report/.
-DEFAULT_REPORT_ROOT = Path(tempfile.gettempdir()) / "gate_p1_pr_b0_stub"
+# data/ or artifacts/ (where it could be confused with real evidence) or
+# anywhere repo-tracked (where it could be accidentally committed).
+DEFAULT_STUB_REPORT_ROOT = Path(tempfile.gettempdir()) / "gate_p1_pr_b0_stub"
+
+# PR-B.1 real inspection writes derived-metadata reports under a controlled,
+# clearly-namespaced Gate P1 PR-B path (the real evidence location). This is
+# distinct from the Gate P2 verification path and from the original plan's
+# gate_p1_report path.
+DEFAULT_B1_REPORT_ROOT = Path(__file__).resolve().parent.parent / "artifacts" / "gate_p1_pr_b"
+
+# Backwards-compatible alias (PR-B.0 default).
+DEFAULT_REPORT_ROOT = DEFAULT_STUB_REPORT_ROOT
 
 _REPORT_ID_RE = re.compile(r"^[A-Za-z0-9_-]{1,64}$")
 _CREDENTIAL_PATTERN = re.compile(r"(?i)(OANDA|TOKEN|SECRET|KEY|PASSWORD|CREDENTIAL|AWS|GCP|AZURE)")
 _PR_A_SPEC_RELPATH = "docs/design/gate_p1_feasibility_inspection_protocol.md"
 
-# Reserved path components a stub report root must never contain: real raw
-# data, any artifact tree, OANDA archive paths, and prior/real verification
-# artifact paths.
-_UNSAFE_ROOT_PARTS = (
+# Reserved path components NO report root may contain (either mode): real raw
+# data, OANDA archive paths, the original plan gate_p1_report path, and Gate P2
+# verification paths.
+_RESERVED_ROOT_PARTS_ALWAYS = (
     "data",
-    "artifacts",
     "oanda_archive",
     "gate_p1_report",
     "gate_p2_verification",
 )
+# Additionally forbidden for the STUB mode only (stub must never land under any
+# artifact tree or anywhere in the repo).
+_RESERVED_ROOT_PARTS_STUB = ("artifacts",)
+# The single in-repo subtree PR-B.1 may write its controlled real report into.
+_B1_ALLOWED_INREPO_RELPATH = "artifacts/gate_p1_pr_b"
 
 EXIT_OK = 0
 EXIT_PREFLIGHT_FAILED = 1
@@ -127,58 +140,92 @@ def _parse_args(argv: list[str] | None) -> argparse.Namespace:
     parser.add_argument("--report-id", default=None, help="ASCII [A-Za-z0-9_-], 1-64 chars.")
     parser.add_argument(
         "--report-root",
-        default=str(DEFAULT_REPORT_ROOT),
+        default=None,
         help=(
-            "Parent dir for the stub report (default: a system-temp "
-            "gate_p1_pr_b0_stub dir). Must be outside data/, artifacts/, and "
-            "the repository working tree."
+            "Parent dir for the report. Default depends on --mode: stub -> a "
+            "system-temp gate_p1_pr_b0_stub dir; b1 -> artifacts/gate_p1_pr_b. "
+            "Never data/, OANDA archive, gate_p1_report, or gate_p2_verification."
         ),
     )
     parser.add_argument("--first-run", action="store_true")
     parser.add_argument(
         "--mode",
         default="stub",
-        help="Only 'stub' is implemented in PR-B.0. Any other value fails closed.",
+        help=(
+            "'stub' (PR-B.0 inert) or 'b1' (PR-B.1 read-only inspection). Any "
+            "other value (e.g. 'b2', dependency/pipeline) fails closed."
+        ),
+    )
+    parser.add_argument(
+        "--data-dir",
+        default=str(REPO_ROOT / "data"),
+        help="Candidate raw data dir (b1 mode, read-only).",
+    )
+    parser.add_argument(
+        "--candidate-spans",
+        default=None,
+        help="Comma-separated candidate spans for b1 (default: 365d,730d,3650d).",
     )
     return parser.parse_args(argv)
 
 
 def _fail(message: str) -> int:
-    sys.stderr.write(f"[PR-B.0 preflight HALT] {message}\n")
+    sys.stderr.write(f"[PR-B preflight HALT] {message}\n")
     return EXIT_PREFLIGHT_FAILED
 
 
-def _unsafe_report_root_reason(report_root: Path) -> str | None:
-    """Return a reason string if ``report_root`` is an unsafe stub location.
+def _unsafe_report_root_reason(report_root: Path, mode: str) -> str | None:
+    """Return a reason string if ``report_root`` is unsafe for the given mode.
 
-    A PR-B.0 stub report must never be written:
-      * under a reserved path component (data / artifacts / OANDA archive /
-        prior verification artifact paths), nor
-      * anywhere inside the repository working tree (src / docs / tests /
-        scripts / tools / config / repo root), where it could be accidentally
-        committed or confused with real Gate P1 evidence.
+    Always reject reserved components (data / OANDA archive / gate_p1_report /
+    gate_p2_verification).
+
+    * ``stub`` mode additionally rejects any ``artifacts`` component and any
+      path inside the repository working tree — a stub must never land where it
+      could be committed or confused with real evidence.
+    * ``b1`` mode permits the single controlled in-repo subtree
+      ``artifacts/gate_p1_pr_b`` (the real-evidence destination) and any
+      external (temp/test) path; everything else in-repo is rejected.
     """
     parts_lower = {part.lower() for part in report_root.parts}
-    reserved = parts_lower.intersection(_UNSAFE_ROOT_PARTS)
+    reserved = parts_lower.intersection(_RESERVED_ROOT_PARTS_ALWAYS)
     if reserved:
         return f"contains reserved path component(s) {sorted(reserved)}"
+
+    if mode == "stub":
+        stub_reserved = parts_lower.intersection(_RESERVED_ROOT_PARTS_STUB)
+        if stub_reserved:
+            return f"stub output must not be under {sorted(stub_reserved)}"
+        try:
+            report_root.relative_to(REPO_ROOT)
+        except ValueError:
+            return None
+        return "is inside the repository working tree (stub output must be external)"
+
+    # b1 mode.
     try:
-        report_root.relative_to(REPO_ROOT)
+        rel = report_root.relative_to(REPO_ROOT)
     except ValueError:
-        return None  # outside the repository working tree => safe
-    return "is inside the repository working tree (stub output must be external)"
+        return None  # external (temp/test) path is fine for b1
+    allowed = Path(_B1_ALLOWED_INREPO_RELPATH)
+    if rel == allowed or allowed in rel.parents:
+        return None
+    return (
+        "in-repo PR-B.1 report root must be under "
+        f"'{_B1_ALLOWED_INREPO_RELPATH}' (got '{rel.as_posix()}')"
+    )
 
 
 def run(argv: list[str] | None = None) -> int:
-    """Execute the PR-B.0 outer launcher. Returns the process exit code."""
+    """Execute the Gate P1 PR-B outer launcher. Returns the process exit code."""
     args = _parse_args(argv)
 
     # --- step 1: arg validation (fail closed) ---
-    if args.mode != "stub":
+    if args.mode not in SUPPORTED_MODES:
         return _fail(
-            f"mode '{args.mode}' is not implemented. PR-B.0 supports only "
-            "'stub'. PR-B.1 (authority/raw/coverage/retention) and PR-B.2 "
-            "(dependency/pipeline) are NOT implemented and require separate "
+            f"mode '{args.mode}' is not implemented. Supported: 'stub' (PR-B.0 "
+            "inert) and 'b1' (PR-B.1 read-only inspection). PR-B.2 "
+            "(dependency/pipeline) is NOT implemented and requires separate "
             "authorisation."
         )
 
@@ -186,12 +233,17 @@ def run(argv: list[str] | None = None) -> int:
     if not _REPORT_ID_RE.match(report_id):
         return _fail(f"invalid --report-id '{report_id}' (must match {_REPORT_ID_RE.pattern}).")
 
-    report_root = Path(args.report_root).resolve()
-    unsafe_reason = _unsafe_report_root_reason(report_root)
+    if args.report_root is not None:
+        report_root = Path(args.report_root).resolve()
+    elif args.mode == "b1":
+        report_root = DEFAULT_B1_REPORT_ROOT.resolve()
+    else:
+        report_root = DEFAULT_STUB_REPORT_ROOT.resolve()
+
+    unsafe_reason = _unsafe_report_root_reason(report_root, args.mode)
     if unsafe_reason is not None:
         return _fail(
-            f"unsafe --report-root '{report_root}': {unsafe_reason}. PR-B.0 stub "
-            "output must be temp/test-controlled and outside data/ and artifacts/."
+            f"unsafe --report-root '{report_root}' for mode '{args.mode}': {unsafe_reason}."
         )
 
     report_dir = report_root / report_id
@@ -226,8 +278,8 @@ def run(argv: list[str] | None = None) -> int:
         "pr_a_spec_version": _pr_a_spec_version(),
         "pr_b_code_hash": pr_b_code_hash,
         "first_run_mode": args.first_run,
-        "mode": "stub",
-        "pr_b_stage": "PR-B.0",
+        "mode": args.mode,
+        "pr_b_stage": "PR-B.1" if args.mode == "b1" else "PR-B.0",
     }
     envelope_path = report_dir / "execution_envelope.json"
     if envelope_path.resolve().parent != report_dir.resolve():
@@ -244,9 +296,16 @@ def run(argv: list[str] | None = None) -> int:
         str(report_dir),
         "--envelope",
         str(envelope_path),
+        "--mode",
+        args.mode,
     ]
     if args.first_run:
         inner_argv.append("--first-run")
+    if args.mode == "b1":
+        inner_argv += ["--data-dir", str(Path(args.data_dir).resolve())]
+        inner_argv += ["--repo-root", str(REPO_ROOT)]
+        if args.candidate_spans:
+            inner_argv += ["--candidate-spans", args.candidate_spans]
     inner = subprocess.run(
         inner_argv,
         cwd=str(REPO_ROOT),
