@@ -1,0 +1,43 @@
+{
+  "candidate_span_scope": {
+    "3650d": "NOT_INSPECTED_IN_THIS_PR",
+    "365d": "NOT_INSPECTED_IN_THIS_PR",
+    "730d": "INSPECTED_IN_THIS_PR"
+  },
+  "candidate_spans_designed": [
+    "365d",
+    "730d",
+    "3650d"
+  ],
+  "candidate_spans_inspected": [
+    "730d"
+  ],
+  "dependency_inventory_performed": false,
+  "first_run_mode": true,
+  "git_commit_sha": "0f1e273de5e6213bb0e072376eed6d197aa5aa7f",
+  "notice": "PR-B.1 first-run read-only inspection. Derived metadata only; no raw rows, credentials, or model outputs. No byte-admissibility approval, no new-epoch adoption, no T3/T4 formal verification. PR-B.2 (dependency + pipeline) NOT implemented; T2 execution NOT authorised.",
+  "outcome_scope_note": "top_level_outcome is scoped to the inspected candidate span(s) only. Spans marked NOT_INSPECTED_IN_THIS_PR are neither feasible, infeasible, complete, nor verified by this report.",
+  "pair_universe_outcome": "OK",
+  "per_candidate_summary": [
+    {
+      "candidate_id": "730d_BA",
+      "candidate_status": "LOCAL_DATA_CANDIDATE_PARTIAL_FEASIBILITY",
+      "nominal_span_label": "730d",
+      "reason_codes": [
+        "ALL_CHECKED_SUFFICIENT_RETENTION_PROBE_REQUIRED"
+      ],
+      "retention_classification": "RETENTION_CAPABILITY_REQUIRES_SEPARATE_AUTHORISED_PROBE",
+      "retention_substatus": "RETENTION_CAPABILITY_REQUIRES_SEPARATE_AUTHORISED_PROBE"
+    }
+  ],
+  "pipeline_feasibility_performed": false,
+  "pr_b1_inspection": true,
+  "pr_b2_implemented": false,
+  "pr_b_code_hash": "509b90ef3a337101b8247eb33ccb72d4178a2791f4a1f49ec788336bb5d1f6e5",
+  "pr_b_stage": "PR-B.1",
+  "report_id": "firstrun_730d_ba",
+  "schema_authority_outcome": "OK",
+  "schema_version": "gate-p1-pr-b-1.0",
+  "t2_execution_authorised": false,
+  "top_level_outcome": "LOCAL_DATA_CANDIDATE_PARTIAL_FEASIBILITY"
+}
