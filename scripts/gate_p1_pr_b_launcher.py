@@ -360,10 +360,14 @@ def run(argv: list[str] | None = None) -> int:
 
 
 def _diff_confined_to_report(new_entries: set[str], report_dir: Path) -> bool:
-    """True if every new porcelain entry's path is within the report dir.
+    """True if every new porcelain entry stays within the report-dir subtree.
 
     When the report root is outside the repo working tree, new_entries is
-    empty and the diff is trivially confined.
+    empty and the diff is trivially confined. Git collapses a newly-created
+    untracked tree to its top-most new directory, so a new entry that is an
+    ANCESTOR directory of the report dir (e.g. ``artifacts/gate_p1_pr_b/`` when
+    the report dir is ``artifacts/gate_p1_pr_b/<id>/``) is accepted: it exists
+    only to contain the report dir, since the guarded inner writes nowhere else.
     """
     if not new_entries:
         return True
@@ -375,7 +379,10 @@ def _diff_confined_to_report(new_entries: set[str], report_dir: Path) -> bool:
     for entry in new_entries:
         path_part = entry[3:] if len(entry) > 3 else ""
         path_part = path_part.strip().strip('"')
-        if not path_part.startswith(report_rel):
+        normalised = path_part.rstrip("/")
+        under_report = path_part.startswith(report_rel)
+        ancestor_of_report = bool(normalised) and report_rel.startswith(normalised + "/")
+        if not (under_report or ancestor_of_report):
             return False
     return True
 
