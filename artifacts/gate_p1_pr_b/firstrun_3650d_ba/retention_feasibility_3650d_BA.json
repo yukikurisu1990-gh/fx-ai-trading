@@ -1,0 +1,29 @@
+{
+  "candidate_retention_options_requiring_later_authorisation": [
+    {
+      "description": "10y OANDA practice archive captured 2026-05-31, retained locally only",
+      "manifest_path": "artifacts/oanda_archive_2026-05-31/candles_manifest.json",
+      "note": "Recorded as candidate input only. NOT a retention destination.",
+      "option_id": "oanda_archive_2026_05_31"
+    }
+  ],
+  "dependency_inventory_performed": false,
+  "existing_local_immutable_archive_visible_read_only": false,
+  "expected_labels_storage_estimate_bytes": 4636790848,
+  "expected_split_manifest_storage_estimate_bytes": 289799428,
+  "expected_total_raw_bytes": 14519140663,
+  "expected_total_retention_bytes": 19445730939,
+  "in_repo_retention_size_guard_bytes": 99614720,
+  "in_repo_retention_size_guard_semantics": "per-file ceiling, NOT aggregate budget",
+  "in_repo_retention_within_guard": false,
+  "pipeline_feasibility_performed": false,
+  "pr_b1_inspection": true,
+  "pr_b2_implemented": false,
+  "pr_b_code_hash": "509b90ef3a337101b8247eb33ccb72d4178a2791f4a1f49ec788336bb5d1f6e5",
+  "pr_b_stage": "PR-B.1",
+  "restoration_procedure_documented": false,
+  "retention_classification": "RETENTION_CAPABILITY_REQUIRES_SEPARATE_AUTHORISED_PROBE",
+  "schema_version": "gate-p1-pr-b-1.0",
+  "span_label": "3650d",
+  "t2_execution_authorised": false
+}

@@ -1,0 +1,15 @@
+{
+  "common_coverage_findings": [],
+  "dependency_inventory_performed": false,
+  "observation_end_timestamp_utc": "2026-05-29T20:58:00Z",
+  "observation_start_timestamp_utc": "2016-06-02T15:32:00Z",
+  "pipeline_feasibility_performed": false,
+  "pr_b1_inspection": true,
+  "pr_b2_implemented": false,
+  "pr_b_code_hash": "509b90ef3a337101b8247eb33ccb72d4178a2791f4a1f49ec788336bb5d1f6e5",
+  "pr_b_stage": "PR-B.1",
+  "schema_version": "gate-p1-pr-b-1.0",
+  "span_days_effective": 3648.2264,
+  "span_label": "3650d",
+  "t2_execution_authorised": false
+}
