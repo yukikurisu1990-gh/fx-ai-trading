@@ -33,6 +33,12 @@ from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 
+# Allow running as `python scripts/gate_p1_pr_b_launcher.py` (which puts the
+# scripts/ dir on sys.path, not the repo root) by ensuring the repo root is
+# importable so `import scripts._gate_p1_inspector...` resolves.
+if str(REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT))
+
 SUPPORTED_MODES = ("stub", "b1")
 
 # PR-B.0 stub output defaults OUTSIDE the repository, in a clearly stub-only
