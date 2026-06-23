@@ -21,6 +21,8 @@ import json
 import sys
 from pathlib import Path
 
+from .b1_constants import CANDIDATE_SPANS
+from .b1_run import run_b1_inspection
 from .guards import GUARD_VIOLATION_ARTIFACT, GuardViolationError
 from .guards import bytecode as bytecode_guard
 from .guards import credentials as credentials_guard
@@ -34,6 +36,8 @@ from .report.common_metadata import compute_pr_b_code_hash
 EXIT_OK = 0
 EXIT_GUARD_VIOLATION = 2
 EXIT_INTEGRITY_HALT = 3
+
+_REPO_ROOT = Path(__file__).resolve().parent.parent.parent
 
 
 def install_guards(report_dir: str | Path, *, enforce_bytecode: bool = True) -> None:
@@ -77,6 +81,37 @@ def run_inner(
         uninstall_guards()
 
 
+def run_b1_under_guards(
+    report_dir: str | Path,
+    report_id: str,
+    *,
+    data_dir: str | Path,
+    repo_root: str | Path,
+    candidate_spans: tuple[str, ...] = CANDIDATE_SPANS,
+    first_run_mode: bool = True,
+    clean_code_sha: str | None = None,
+    enforce_bytecode: bool = True,
+) -> Path:
+    """Install guards, run the PR-B.1 read-only inspection, return report path.
+
+    Guards confine WRITES to the report dir (reads of candidate raw files and
+    AST/source reads remain allowed); they are uninstalled on the way out.
+    """
+    install_guards(report_dir, enforce_bytecode=enforce_bytecode)
+    try:
+        return run_b1_inspection(
+            report_dir,
+            report_id,
+            data_dir=data_dir,
+            repo_root=repo_root,
+            candidate_spans=candidate_spans,
+            first_run_mode=first_run_mode,
+            clean_code_sha=clean_code_sha,
+        )
+    finally:
+        uninstall_guards()
+
+
 def _write_guard_violation(report_dir: Path, message: str) -> None:
     payload = {
         "guard_violation": True,
@@ -95,12 +130,16 @@ def _write_guard_violation(report_dir: Path, message: str) -> None:
 def _parse_args(argv: list[str] | None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         prog="gate_p1_pr_b_bootstrap",
-        description="Gate P1 PR-B.0 inner inspector (stub only).",
+        description="Gate P1 PR-B inner inspector (stub or PR-B.1 read-only).",
     )
     parser.add_argument("--report-dir", required=True)
     parser.add_argument("--envelope", default=None)
     parser.add_argument("--report-id", default=None)
     parser.add_argument("--first-run", action="store_true")
+    parser.add_argument("--mode", default="stub", choices=("stub", "b1"))
+    parser.add_argument("--data-dir", default=str(_REPO_ROOT / "data"))
+    parser.add_argument("--repo-root", default=str(_REPO_ROOT))
+    parser.add_argument("--candidate-spans", default=",".join(CANDIDATE_SPANS))
     return parser.parse_args(argv)
 
 
@@ -111,10 +150,12 @@ def main(argv: list[str] | None = None) -> int:
 
     report_id = args.report_id
     expected_code_hash: str | None = None
+    clean_code_sha: str | None = None
     if args.envelope is not None:
         envelope = json.loads(Path(args.envelope).read_text(encoding="utf-8"))
         report_id = report_id or envelope.get("report_id")
         expected_code_hash = envelope.get("pr_b_code_hash")
+        clean_code_sha = envelope.get("clean_code_sha")
     report_id = report_id or report_dir.name
 
     if not report_dir.is_dir():
@@ -130,8 +171,20 @@ def main(argv: list[str] | None = None) -> int:
         )
         return EXIT_INTEGRITY_HALT
 
+    spans = tuple(s for s in args.candidate_spans.split(",") if s)
     try:
-        run_inner(report_dir, report_id, first_run_mode=args.first_run)
+        if args.mode == "b1":
+            run_b1_under_guards(
+                report_dir,
+                report_id,
+                data_dir=args.data_dir,
+                repo_root=args.repo_root,
+                candidate_spans=spans,
+                first_run_mode=args.first_run,
+                clean_code_sha=clean_code_sha,
+            )
+        else:
+            run_inner(report_dir, report_id, first_run_mode=args.first_run)
     except GuardViolationError as exc:
         _write_guard_violation(report_dir, str(exc))
         return EXIT_GUARD_VIOLATION

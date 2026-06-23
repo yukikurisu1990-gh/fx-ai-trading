@@ -1,0 +1,1324 @@
+{
+  "candidate_id": "365d_BA",
+  "dependency_inventory_performed": false,
+  "files": [
+    {
+      "duplicate_timestamps": 0,
+      "file_sha256": "6e71f8e90075e83a5047469384a4e24b112ac6bab75df32bbe2ffcafd5dc3df4",
+      "filename": "candles_EUR_USD_M1_365d_BA.jsonl",
+      "gap_profile": {
+        "histogram": [
+          {
+            "bucket": "<= 60s",
+            "count": 369485
+          },
+          {
+            "bucket": "<= 120s",
+            "count": 690
+          },
+          {
+            "bucket": "<= 300s",
+            "count": 390
+          },
+          {
+            "bucket": "<= 600s",
+            "count": 17
+          },
+          {
+            "bucket": "<= 3600s",
+            "count": 1
+          },
+          {
+            "bucket": "<= 21600s",
+            "count": 0
+          },
+          {
+            "bucket": "<= 86400s",
+            "count": 0
+          },
+          {
+            "bucket": "<= 604800s",
+            "count": 54
+          },
+          {
+            "bucket": "> 604800s",
+            "count": 0
+          }
+        ],
+        "max_gap_seconds": 176700
+      },
+      "malformed_rows": 0,
+      "missing_fields_count": 0,
+      "monotonicity_violations": 0,
+      "non_finite_fields_count": 0,
+      "pair": "EUR_USD",
+      "present": true,
+      "row_count": 370638,
+      "schema_extension_findings": [
+        {
+          "field_name": "volume",
+          "occurrence_count": 370638
+        }
+      ],
+      "schema_valid": true,
+      "size_bytes": 74680793,
+      "ts_max_utc": "2026-04-24T20:59:00.000000000Z",
+      "ts_min_utc": "2025-04-24T22:03:00.000000000Z"
+    },
+    {
+      "duplicate_timestamps": 0,
+      "file_sha256": "c9071eabf212daea45e8ac50e38c7c823e45c4635cb67f82931e2aa7c4ee2a2c",
+      "filename": "candles_GBP_USD_M1_365d_BA.jsonl",
+      "gap_profile": {
+        "histogram": [
+          {
+            "bucket": "<= 60s",
+            "count": 369752
+          },
+          {
+            "bucket": "<= 120s",
+            "count": 458
+          },
+          {
+            "bucket": "<= 300s",
+            "count": 361
+          },
+          {
+            "bucket": "<= 600s",
+            "count": 35
+          },
+          {
+            "bucket": "<= 3600s",
+            "count": 6
+          },
+          {
+            "bucket": "<= 21600s",
+            "count": 0
+          },
+          {
+            "bucket": "<= 86400s",
+            "count": 0
+          },
+          {
+            "bucket": "<= 604800s",
+            "count": 54
+          },
+          {
+            "bucket": "> 604800s",
+            "count": 0
+          }
+        ],
+        "max_gap_seconds": 176700
+      },
+      "malformed_rows": 0,
+      "missing_fields_count": 0,
+      "monotonicity_violations": 0,
+      "non_finite_fields_count": 0,
+      "pair": "GBP_USD",
+      "present": true,
+      "row_count": 370667,
+      "schema_extension_findings": [
+        {
+          "field_name": "volume",
+          "occurrence_count": 370667
+        }
+      ],
+      "schema_valid": true,
+      "size_bytes": 74762346,
+      "ts_max_utc": "2026-04-24T20:59:00.000000000Z",
+      "ts_min_utc": "2025-04-24T22:04:00.000000000Z"
+    },
+    {
+      "duplicate_timestamps": 0,
+      "file_sha256": "a322c203cb829e0b4a63b1c2d23baf793329596a80b68247a6b4a2edaeace1ce",
+      "filename": "candles_AUD_USD_M1_365d_BA.jsonl",
+      "gap_profile": {
+        "histogram": [
+          {
+            "bucket": "<= 60s",
+            "count": 367513
+          },
+          {
+            "bucket": "<= 120s",
+            "count": 1412
+          },
+          {
+            "bucket": "<= 300s",
+            "count": 507
+          },
+          {
+            "bucket": "<= 600s",
+            "count": 42
+          },
+          {
+            "bucket": "<= 3600s",
+            "count": 2
+          },
+          {
+            "bucket": "<= 21600s",
+            "count": 0
+          },
+          {
+            "bucket": "<= 86400s",
+            "count": 0
+          },
+          {
+            "bucket": "<= 604800s",
+            "count": 54
+          },
+          {
+            "bucket": "> 604800s",
+            "count": 0
+          }
+        ],
+        "max_gap_seconds": 176700
+      },
+      "malformed_rows": 0,
+      "missing_fields_count": 0,
+      "monotonicity_violations": 0,
+      "non_finite_fields_count": 0,
+      "pair": "AUD_USD",
+      "present": true,
+      "row_count": 369531,
+      "schema_extension_findings": [
+        {
+          "field_name": "volume",
+          "occurrence_count": 369531
+        }
+      ],
+      "schema_valid": true,
+      "size_bytes": 74344893,
+      "ts_max_utc": "2026-04-24T20:59:00.000000000Z",
+      "ts_min_utc": "2025-04-24T22:04:00.000000000Z"
+    },
+    {
+      "duplicate_timestamps": 0,
+      "file_sha256": "5a99d9d6c88abb354d6c37186fc9ef5653b1a177d812b4c36c790ed47bb72634",
+      "filename": "candles_NZD_USD_M1_365d_BA.jsonl",
+      "gap_profile": {
+        "histogram": [
+          {
+            "bucket": "<= 60s",
+            "count": 366554
+          },
+          {
+            "bucket": "<= 120s",
+            "count": 1425
+          },
+          {
+            "bucket": "<= 300s",
+            "count": 623
+          },
+          {
+            "bucket": "<= 600s",
+            "count": 78
+          },
+          {
+            "bucket": "<= 3600s",
+            "count": 3
+          },
+          {
+            "bucket": "<= 21600s",
+            "count": 0
+          },
+          {
+            "bucket": "<= 86400s",
+            "count": 0
+          },
+          {
+            "bucket": "<= 604800s",
+            "count": 54
+          },
+          {
+            "bucket": "> 604800s",
+            "count": 0
+          }
+        ],
+        "max_gap_seconds": 176700
+      },
+      "malformed_rows": 0,
+      "missing_fields_count": 0,
+      "monotonicity_violations": 0,
+      "non_finite_fields_count": 0,
+      "pair": "NZD_USD",
+      "present": true,
+      "row_count": 368738,
+      "schema_extension_findings": [
+        {
+          "field_name": "volume",
+          "occurrence_count": 368738
+        }
+      ],
+      "schema_valid": true,
+      "size_bytes": 74181332,
+      "ts_max_utc": "2026-04-24T20:58:00.000000000Z",
+      "ts_min_utc": "2025-04-24T22:04:00.000000000Z"
+    },
+    {
+      "duplicate_timestamps": 0,
+      "file_sha256": "83e5dec7a02192b9778ce7a7e5d63c40bff10c2e5d87a98591c9fcec8e71809a",
+      "filename": "candles_USD_CHF_M1_365d_BA.jsonl",
+      "gap_profile": {
+        "histogram": [
+          {
+            "bucket": "<= 60s",
+            "count": 366923
+          },
+          {
+            "bucket": "<= 120s",
+            "count": 1441
+          },
+          {
+            "bucket": "<= 300s",
+            "count": 557
+          },
+          {
+            "bucket": "<= 600s",
+            "count": 72
+          },
+          {
+            "bucket": "<= 3600s",
+            "count": 5
+          },
+          {
+            "bucket": "<= 21600s",
+            "count": 0
+          },
+          {
+            "bucket": "<= 86400s",
+            "count": 0
+          },
+          {
+            "bucket": "<= 604800s",
+            "count": 54
+          },
+          {
+            "bucket": "> 604800s",
+            "count": 0
+          }
+        ],
+        "max_gap_seconds": 176700
+      },
+      "malformed_rows": 0,
+      "missing_fields_count": 0,
+      "monotonicity_violations": 0,
+      "non_finite_fields_count": 0,
+      "pair": "USD_CHF",
+      "present": true,
+      "row_count": 369053,
+      "schema_extension_findings": [
+        {
+          "field_name": "volume",
+          "occurrence_count": 369053
+        }
+      ],
+      "schema_valid": true,
+      "size_bytes": 74236316,
+      "ts_max_utc": "2026-04-24T20:59:00.000000000Z",
+      "ts_min_utc": "2025-04-24T22:04:00.000000000Z"
+    },
+    {
+      "duplicate_timestamps": 0,
+      "file_sha256": "067c412bdd82b2ffb0edb681785ded9392e56b6e0ebaff77284ca86d7c89ada6",
+      "filename": "candles_USD_CAD_M1_365d_BA.jsonl",
+      "gap_profile": {
+        "histogram": [
+          {
+            "bucket": "<= 60s",
+            "count": 368696
+          },
+          {
+            "bucket": "<= 120s",
+            "count": 857
+          },
+          {
+            "bucket": "<= 300s",
+            "count": 473
+          },
+          {
+            "bucket": "<= 600s",
+            "count": 37
+          },
+          {
+            "bucket": "<= 3600s",
+            "count": 2
+          },
+          {
+            "bucket": "<= 21600s",
+            "count": 0
+          },
+          {
+            "bucket": "<= 86400s",
+            "count": 0
+          },
+          {
+            "bucket": "<= 604800s",
+            "count": 54
+          },
+          {
+            "bucket": "> 604800s",
+            "count": 0
+          }
+        ],
+        "max_gap_seconds": 176700
+      },
+      "malformed_rows": 0,
+      "missing_fields_count": 0,
+      "monotonicity_violations": 0,
+      "non_finite_fields_count": 0,
+      "pair": "USD_CAD",
+      "present": true,
+      "row_count": 370120,
+      "schema_extension_findings": [
+        {
+          "field_name": "volume",
+          "occurrence_count": 370120
+        }
+      ],
+      "schema_valid": true,
+      "size_bytes": 74524981,
+      "ts_max_utc": "2026-04-24T20:59:00.000000000Z",
+      "ts_min_utc": "2025-04-24T22:04:00.000000000Z"
+    },
+    {
+      "duplicate_timestamps": 0,
+      "file_sha256": "bbd20c47a0f015e44b6ab60af58933597f7777e267679821b40165796b683daa",
+      "filename": "candles_EUR_GBP_M1_365d_BA.jsonl",
+      "gap_profile": {
+        "histogram": [
+          {
+            "bucket": "<= 60s",
+            "count": 367694
+          },
+          {
+            "bucket": "<= 120s",
+            "count": 1501
+          },
+          {
+            "bucket": "<= 300s",
+            "count": 449
+          },
+          {
+            "bucket": "<= 600s",
+            "count": 16
+          },
+          {
+            "bucket": "<= 3600s",
+            "count": 0
+          },
+          {
+            "bucket": "<= 21600s",
+            "count": 0
+          },
+          {
+            "bucket": "<= 86400s",
+            "count": 0
+          },
+          {
+            "bucket": "<= 604800s",
+            "count": 54
+          },
+          {
+            "bucket": "> 604800s",
+            "count": 0
+          }
+        ],
+        "max_gap_seconds": 176700
+      },
+      "malformed_rows": 0,
+      "missing_fields_count": 0,
+      "monotonicity_violations": 0,
+      "non_finite_fields_count": 0,
+      "pair": "EUR_GBP",
+      "present": true,
+      "row_count": 369715,
+      "schema_extension_findings": [
+        {
+          "field_name": "volume",
+          "occurrence_count": 369715
+        }
+      ],
+      "schema_valid": true,
+      "size_bytes": 74329749,
+      "ts_max_utc": "2026-04-24T20:59:00.000000000Z",
+      "ts_min_utc": "2025-04-24T22:04:00.000000000Z"
+    },
+    {
+      "duplicate_timestamps": 0,
+      "file_sha256": "9b1165731d1b0b306a73a38a642880b0f08538f9614be506eb657aaeab5a355c",
+      "filename": "candles_USD_JPY_M1_365d_BA.jsonl",
+      "gap_profile": {
+        "histogram": [
+          {
+            "bucket": "<= 60s",
+            "count": 369531
+          },
+          {
+            "bucket": "<= 120s",
+            "count": 486
+          },
+          {
+            "bucket": "<= 300s",
+            "count": 429
+          },
+          {
+            "bucket": "<= 600s",
+            "count": 40
+          },
+          {
+            "bucket": "<= 3600s",
+            "count": 3
+          },
+          {
+            "bucket": "<= 21600s",
+            "count": 0
+          },
+          {
+            "bucket": "<= 86400s",
+            "count": 0
+          },
+          {
+            "bucket": "<= 604800s",
+            "count": 54
+          },
+          {
+            "bucket": "> 604800s",
+            "count": 0
+          }
+        ],
+        "max_gap_seconds": 176700
+      },
+      "malformed_rows": 0,
+      "missing_fields_count": 0,
+      "monotonicity_violations": 0,
+      "non_finite_fields_count": 0,
+      "pair": "USD_JPY",
+      "present": true,
+      "row_count": 370544,
+      "schema_extension_findings": [
+        {
+          "field_name": "volume",
+          "occurrence_count": 370544
+        }
+      ],
+      "schema_valid": true,
+      "size_bytes": 74782873,
+      "ts_max_utc": "2026-04-24T20:59:00.000000000Z",
+      "ts_min_utc": "2025-04-24T22:04:00.000000000Z"
+    },
+    {
+      "duplicate_timestamps": 0,
+      "file_sha256": "2430c7d6e3b9a8f3200cd4f2f6ee090898cb96e73e41ea342fc8ac0131e71ae8",
+      "filename": "candles_EUR_JPY_M1_365d_BA.jsonl",
+      "gap_profile": {
+        "histogram": [
+          {
+            "bucket": "<= 60s",
+            "count": 369601
+          },
+          {
+            "bucket": "<= 120s",
+            "count": 446
+          },
+          {
+            "bucket": "<= 300s",
+            "count": 427
+          },
+          {
+            "bucket": "<= 600s",
+            "count": 32
+          },
+          {
+            "bucket": "<= 3600s",
+            "count": 6
+          },
+          {
+            "bucket": "<= 21600s",
+            "count": 0
+          },
+          {
+            "bucket": "<= 86400s",
+            "count": 0
+          },
+          {
+            "bucket": "<= 604800s",
+            "count": 54
+          },
+          {
+            "bucket": "> 604800s",
+            "count": 0
+          }
+        ],
+        "max_gap_seconds": 176700
+      },
+      "malformed_rows": 0,
+      "missing_fields_count": 0,
+      "monotonicity_violations": 0,
+      "non_finite_fields_count": 0,
+      "pair": "EUR_JPY",
+      "present": true,
+      "row_count": 370567,
+      "schema_extension_findings": [
+        {
+          "field_name": "volume",
+          "occurrence_count": 370567
+        }
+      ],
+      "schema_valid": true,
+      "size_bytes": 74763700,
+      "ts_max_utc": "2026-04-24T20:59:00.000000000Z",
+      "ts_min_utc": "2025-04-24T22:04:00.000000000Z"
+    },
+    {
+      "duplicate_timestamps": 0,
+      "file_sha256": "c1380b584e0efbccae887f2c91c646370d97b2cca54812d7893829d8aac2d34a",
+      "filename": "candles_GBP_JPY_M1_365d_BA.jsonl",
+      "gap_profile": {
+        "histogram": [
+          {
+            "bucket": "<= 60s",
+            "count": 370997
+          },
+          {
+            "bucket": "<= 120s",
+            "count": 156
+          },
+          {
+            "bucket": "<= 300s",
+            "count": 261
+          },
+          {
+            "bucket": "<= 600s",
+            "count": 7
+          },
+          {
+            "bucket": "<= 3600s",
+            "count": 3
+          },
+          {
+            "bucket": "<= 21600s",
+            "count": 0
+          },
+          {
+            "bucket": "<= 86400s",
+            "count": 0
+          },
+          {
+            "bucket": "<= 604800s",
+            "count": 54
+          },
+          {
+            "bucket": "> 604800s",
+            "count": 0
+          }
+        ],
+        "max_gap_seconds": 176700
+      },
+      "malformed_rows": 0,
+      "missing_fields_count": 0,
+      "monotonicity_violations": 0,
+      "non_finite_fields_count": 0,
+      "pair": "GBP_JPY",
+      "present": true,
+      "row_count": 371479,
+      "schema_extension_findings": [
+        {
+          "field_name": "volume",
+          "occurrence_count": 371479
+        }
+      ],
+      "schema_valid": true,
+      "size_bytes": 74967818,
+      "ts_max_utc": "2026-04-24T20:59:00.000000000Z",
+      "ts_min_utc": "2025-04-24T22:04:00.000000000Z"
+    },
+    {
+      "duplicate_timestamps": 0,
+      "file_sha256": "0eef67f025c79a3f0fffa8649a7571ba18965b1f481ebdbe4f86fd8b1320bab7",
+      "filename": "candles_AUD_JPY_M1_365d_BA.jsonl",
+      "gap_profile": {
+        "histogram": [
+          {
+            "bucket": "<= 60s",
+            "count": 369204
+          },
+          {
+            "bucket": "<= 120s",
+            "count": 403
+          },
+          {
+            "bucket": "<= 300s",
+            "count": 297
+          },
+          {
+            "bucket": "<= 600s",
+            "count": 13
+          },
+          {
+            "bucket": "<= 3600s",
+            "count": 3
+          },
+          {
+            "bucket": "<= 21600s",
+            "count": 0
+          },
+          {
+            "bucket": "<= 86400s",
+            "count": 0
+          },
+          {
+            "bucket": "<= 604800s",
+            "count": 54
+          },
+          {
+            "bucket": "> 604800s",
+            "count": 0
+          }
+        ],
+        "max_gap_seconds": 176700
+      },
+      "malformed_rows": 0,
+      "missing_fields_count": 0,
+      "monotonicity_violations": 0,
+      "non_finite_fields_count": 0,
+      "pair": "AUD_JPY",
+      "present": true,
+      "row_count": 369975,
+      "schema_extension_findings": [
+        {
+          "field_name": "volume",
+          "occurrence_count": 369975
+        }
+      ],
+      "schema_valid": true,
+      "size_bytes": 73040066,
+      "ts_max_utc": "2026-04-24T20:59:00.000000000Z",
+      "ts_min_utc": "2025-04-25T17:09:00.000000000Z"
+    },
+    {
+      "duplicate_timestamps": 0,
+      "file_sha256": "9302599854de355e5ccb0aa46d3191b8dd598c4d47623760b322730ac10e0213",
+      "filename": "candles_NZD_JPY_M1_365d_BA.jsonl",
+      "gap_profile": {
+        "histogram": [
+          {
+            "bucket": "<= 60s",
+            "count": 364665
+          },
+          {
+            "bucket": "<= 120s",
+            "count": 1258
+          },
+          {
+            "bucket": "<= 300s",
+            "count": 774
+          },
+          {
+            "bucket": "<= 600s",
+            "count": 86
+          },
+          {
+            "bucket": "<= 3600s",
+            "count": 17
+          },
+          {
+            "bucket": "<= 21600s",
+            "count": 0
+          },
+          {
+            "bucket": "<= 86400s",
+            "count": 0
+          },
+          {
+            "bucket": "<= 604800s",
+            "count": 54
+          },
+          {
+            "bucket": "> 604800s",
+            "count": 0
+          }
+        ],
+        "max_gap_seconds": 176700
+      },
+      "malformed_rows": 0,
+      "missing_fields_count": 0,
+      "monotonicity_violations": 0,
+      "non_finite_fields_count": 0,
+      "pair": "NZD_JPY",
+      "present": true,
+      "row_count": 366855,
+      "schema_extension_findings": [
+        {
+          "field_name": "volume",
+          "occurrence_count": 366855
+        }
+      ],
+      "schema_valid": true,
+      "size_bytes": 70838359,
+      "ts_max_utc": "2026-04-24T20:59:00.000000000Z",
+      "ts_min_utc": "2025-04-25T17:09:00.000000000Z"
+    },
+    {
+      "duplicate_timestamps": 0,
+      "file_sha256": "560b1ed062e77f1a041ce97c9a23f7a32021e6c75cfd0a15a74fa581351c16eb",
+      "filename": "candles_CHF_JPY_M1_365d_BA.jsonl",
+      "gap_profile": {
+        "histogram": [
+          {
+            "bucket": "<= 60s",
+            "count": 365779
+          },
+          {
+            "bucket": "<= 120s",
+            "count": 908
+          },
+          {
+            "bucket": "<= 300s",
+            "count": 518
+          },
+          {
+            "bucket": "<= 600s",
+            "count": 93
+          },
+          {
+            "bucket": "<= 3600s",
+            "count": 49
+          },
+          {
+            "bucket": "<= 21600s",
+            "count": 0
+          },
+          {
+            "bucket": "<= 86400s",
+            "count": 0
+          },
+          {
+            "bucket": "<= 604800s",
+            "count": 54
+          },
+          {
+            "bucket": "> 604800s",
+            "count": 0
+          }
+        ],
+        "max_gap_seconds": 176700
+      },
+      "malformed_rows": 0,
+      "missing_fields_count": 0,
+      "monotonicity_violations": 0,
+      "non_finite_fields_count": 0,
+      "pair": "CHF_JPY",
+      "present": true,
+      "row_count": 367402,
+      "schema_extension_findings": [
+        {
+          "field_name": "volume",
+          "occurrence_count": 367402
+        }
+      ],
+      "schema_valid": true,
+      "size_bytes": 73922851,
+      "ts_max_utc": "2026-04-24T20:59:00.000000000Z",
+      "ts_min_utc": "2025-04-25T17:09:00.000000000Z"
+    },
+    {
+      "duplicate_timestamps": 0,
+      "file_sha256": "b59cf028e3e5807afbecc73d1301ecf470c3cea421715b8ef169f5eb971292b2",
+      "filename": "candles_EUR_CHF_M1_365d_BA.jsonl",
+      "gap_profile": {
+        "histogram": [
+          {
+            "bucket": "<= 60s",
+            "count": 366004
+          },
+          {
+            "bucket": "<= 120s",
+            "count": 1144
+          },
+          {
+            "bucket": "<= 300s",
+            "count": 597
+          },
+          {
+            "bucket": "<= 600s",
+            "count": 74
+          },
+          {
+            "bucket": "<= 3600s",
+            "count": 15
+          },
+          {
+            "bucket": "<= 21600s",
+            "count": 0
+          },
+          {
+            "bucket": "<= 86400s",
+            "count": 0
+          },
+          {
+            "bucket": "<= 604800s",
+            "count": 54
+          },
+          {
+            "bucket": "> 604800s",
+            "count": 0
+          }
+        ],
+        "max_gap_seconds": 176700
+      },
+      "malformed_rows": 0,
+      "missing_fields_count": 0,
+      "monotonicity_violations": 0,
+      "non_finite_fields_count": 0,
+      "pair": "EUR_CHF",
+      "present": true,
+      "row_count": 367889,
+      "schema_extension_findings": [
+        {
+          "field_name": "volume",
+          "occurrence_count": 367889
+        }
+      ],
+      "schema_valid": true,
+      "size_bytes": 73984686,
+      "ts_max_utc": "2026-04-24T20:59:00.000000000Z",
+      "ts_min_utc": "2025-04-25T17:09:00.000000000Z"
+    },
+    {
+      "duplicate_timestamps": 0,
+      "file_sha256": "d32109ac1916c810cfaa843d0e963e960d824a7f0fe258020a42ca5ad090e8d2",
+      "filename": "candles_EUR_AUD_M1_365d_BA.jsonl",
+      "gap_profile": {
+        "histogram": [
+          {
+            "bucket": "<= 60s",
+            "count": 369173
+          },
+          {
+            "bucket": "<= 120s",
+            "count": 361
+          },
+          {
+            "bucket": "<= 300s",
+            "count": 343
+          },
+          {
+            "bucket": "<= 600s",
+            "count": 9
+          },
+          {
+            "bucket": "<= 3600s",
+            "count": 1
+          },
+          {
+            "bucket": "<= 21600s",
+            "count": 0
+          },
+          {
+            "bucket": "<= 86400s",
+            "count": 0
+          },
+          {
+            "bucket": "<= 604800s",
+            "count": 54
+          },
+          {
+            "bucket": "> 604800s",
+            "count": 0
+          }
+        ],
+        "max_gap_seconds": 176700
+      },
+      "malformed_rows": 0,
+      "missing_fields_count": 0,
+      "monotonicity_violations": 0,
+      "non_finite_fields_count": 0,
+      "pair": "EUR_AUD",
+      "present": true,
+      "row_count": 369942,
+      "schema_extension_findings": [
+        {
+          "field_name": "volume",
+          "occurrence_count": 369942
+        }
+      ],
+      "schema_valid": true,
+      "size_bytes": 74592135,
+      "ts_max_utc": "2026-04-24T20:59:00.000000000Z",
+      "ts_min_utc": "2025-04-25T17:09:00.000000000Z"
+    },
+    {
+      "duplicate_timestamps": 0,
+      "file_sha256": "1e43d15270d2deb298d5f6d8052977162c0be86d806d768dbed54a7796b33a29",
+      "filename": "candles_EUR_CAD_M1_365d_BA.jsonl",
+      "gap_profile": {
+        "histogram": [
+          {
+            "bucket": "<= 60s",
+            "count": 367885
+          },
+          {
+            "bucket": "<= 120s",
+            "count": 692
+          },
+          {
+            "bucket": "<= 300s",
+            "count": 492
+          },
+          {
+            "bucket": "<= 600s",
+            "count": 25
+          },
+          {
+            "bucket": "<= 3600s",
+            "count": 2
+          },
+          {
+            "bucket": "<= 21600s",
+            "count": 0
+          },
+          {
+            "bucket": "<= 86400s",
+            "count": 0
+          },
+          {
+            "bucket": "<= 604800s",
+            "count": 54
+          },
+          {
+            "bucket": "> 604800s",
+            "count": 0
+          }
+        ],
+        "max_gap_seconds": 176700
+      },
+      "malformed_rows": 0,
+      "missing_fields_count": 0,
+      "monotonicity_violations": 0,
+      "non_finite_fields_count": 0,
+      "pair": "EUR_CAD",
+      "present": true,
+      "row_count": 369151,
+      "schema_extension_findings": [
+        {
+          "field_name": "volume",
+          "occurrence_count": 369151
+        }
+      ],
+      "schema_valid": true,
+      "size_bytes": 74325614,
+      "ts_max_utc": "2026-04-24T20:59:00.000000000Z",
+      "ts_min_utc": "2025-04-25T17:09:00.000000000Z"
+    },
+    {
+      "duplicate_timestamps": 0,
+      "file_sha256": "ef61b5cfb3be9f14554ac870a85559f1c62fcdc23a54cffcc08d546da2556add",
+      "filename": "candles_AUD_NZD_M1_365d_BA.jsonl",
+      "gap_profile": {
+        "histogram": [
+          {
+            "bucket": "<= 60s",
+            "count": 367387
+          },
+          {
+            "bucket": "<= 120s",
+            "count": 566
+          },
+          {
+            "bucket": "<= 300s",
+            "count": 547
+          },
+          {
+            "bucket": "<= 600s",
+            "count": 50
+          },
+          {
+            "bucket": "<= 3600s",
+            "count": 6
+          },
+          {
+            "bucket": "<= 21600s",
+            "count": 0
+          },
+          {
+            "bucket": "<= 86400s",
+            "count": 0
+          },
+          {
+            "bucket": "<= 604800s",
+            "count": 54
+          },
+          {
+            "bucket": "> 604800s",
+            "count": 0
+          }
+        ],
+        "max_gap_seconds": 176700
+      },
+      "malformed_rows": 0,
+      "missing_fields_count": 0,
+      "monotonicity_violations": 0,
+      "non_finite_fields_count": 0,
+      "pair": "AUD_NZD",
+      "present": true,
+      "row_count": 368611,
+      "schema_extension_findings": [
+        {
+          "field_name": "volume",
+          "occurrence_count": 368611
+        }
+      ],
+      "schema_valid": true,
+      "size_bytes": 74212052,
+      "ts_max_utc": "2026-04-24T20:59:00.000000000Z",
+      "ts_min_utc": "2025-04-25T17:09:00.000000000Z"
+    },
+    {
+      "duplicate_timestamps": 0,
+      "file_sha256": "60207196518b7e6550ff3169be1bb7d1d9c811e2cb3a84882f29ee24af5a037a",
+      "filename": "candles_AUD_CAD_M1_365d_BA.jsonl",
+      "gap_profile": {
+        "histogram": [
+          {
+            "bucket": "<= 60s",
+            "count": 357844
+          },
+          {
+            "bucket": "<= 120s",
+            "count": 4175
+          },
+          {
+            "bucket": "<= 300s",
+            "count": 1153
+          },
+          {
+            "bucket": "<= 600s",
+            "count": 127
+          },
+          {
+            "bucket": "<= 3600s",
+            "count": 17
+          },
+          {
+            "bucket": "<= 21600s",
+            "count": 0
+          },
+          {
+            "bucket": "<= 86400s",
+            "count": 0
+          },
+          {
+            "bucket": "<= 604800s",
+            "count": 54
+          },
+          {
+            "bucket": "> 604800s",
+            "count": 0
+          }
+        ],
+        "max_gap_seconds": 176700
+      },
+      "malformed_rows": 0,
+      "missing_fields_count": 0,
+      "monotonicity_violations": 0,
+      "non_finite_fields_count": 0,
+      "pair": "AUD_CAD",
+      "present": true,
+      "row_count": 363371,
+      "schema_extension_findings": [
+        {
+          "field_name": "volume",
+          "occurrence_count": 363371
+        }
+      ],
+      "schema_valid": true,
+      "size_bytes": 72972935,
+      "ts_max_utc": "2026-04-24T20:59:00.000000000Z",
+      "ts_min_utc": "2025-04-25T17:09:00.000000000Z"
+    },
+    {
+      "duplicate_timestamps": 0,
+      "file_sha256": "601a5cdb84c77a41bec3c1d61e53ebb494a6d9a300a3ad3f64d7f03ac1dbdfa4",
+      "filename": "candles_GBP_AUD_M1_365d_BA.jsonl",
+      "gap_profile": {
+        "histogram": [
+          {
+            "bucket": "<= 60s",
+            "count": 367815
+          },
+          {
+            "bucket": "<= 120s",
+            "count": 621
+          },
+          {
+            "bucket": "<= 300s",
+            "count": 469
+          },
+          {
+            "bucket": "<= 600s",
+            "count": 49
+          },
+          {
+            "bucket": "<= 3600s",
+            "count": 9
+          },
+          {
+            "bucket": "<= 21600s",
+            "count": 0
+          },
+          {
+            "bucket": "<= 86400s",
+            "count": 0
+          },
+          {
+            "bucket": "<= 604800s",
+            "count": 54
+          },
+          {
+            "bucket": "> 604800s",
+            "count": 0
+          }
+        ],
+        "max_gap_seconds": 176700
+      },
+      "malformed_rows": 0,
+      "missing_fields_count": 0,
+      "monotonicity_violations": 0,
+      "non_finite_fields_count": 0,
+      "pair": "GBP_AUD",
+      "present": true,
+      "row_count": 369018,
+      "schema_extension_findings": [
+        {
+          "field_name": "volume",
+          "occurrence_count": 369018
+        }
+      ],
+      "schema_valid": true,
+      "size_bytes": 74374786,
+      "ts_max_utc": "2026-04-24T20:59:00.000000000Z",
+      "ts_min_utc": "2025-04-25T17:09:00.000000000Z"
+    },
+    {
+      "duplicate_timestamps": 0,
+      "file_sha256": "4582768adf01d19a4e316ebfd7c3de0b8b963ec01ff2e4dad14fa042fcc9cacd",
+      "filename": "candles_GBP_CHF_M1_365d_BA.jsonl",
+      "gap_profile": {
+        "histogram": [
+          {
+            "bucket": "<= 60s",
+            "count": 364962
+          },
+          {
+            "bucket": "<= 120s",
+            "count": 1423
+          },
+          {
+            "bucket": "<= 300s",
+            "count": 625
+          },
+          {
+            "bucket": "<= 600s",
+            "count": 100
+          },
+          {
+            "bucket": "<= 3600s",
+            "count": 26
+          },
+          {
+            "bucket": "<= 21600s",
+            "count": 0
+          },
+          {
+            "bucket": "<= 86400s",
+            "count": 0
+          },
+          {
+            "bucket": "<= 604800s",
+            "count": 54
+          },
+          {
+            "bucket": "> 604800s",
+            "count": 0
+          }
+        ],
+        "max_gap_seconds": 176700
+      },
+      "malformed_rows": 0,
+      "missing_fields_count": 0,
+      "monotonicity_violations": 0,
+      "non_finite_fields_count": 0,
+      "pair": "GBP_CHF",
+      "present": true,
+      "row_count": 367191,
+      "schema_extension_findings": [
+        {
+          "field_name": "volume",
+          "occurrence_count": 367191
+        }
+      ],
+      "schema_valid": true,
+      "size_bytes": 73877232,
+      "ts_max_utc": "2026-04-24T20:59:00.000000000Z",
+      "ts_min_utc": "2025-04-25T17:09:00.000000000Z"
+    }
+  ],
+  "nominal_span_label": "365d",
+  "pair_universe": [
+    "EUR_USD",
+    "GBP_USD",
+    "AUD_USD",
+    "NZD_USD",
+    "USD_CHF",
+    "USD_CAD",
+    "EUR_GBP",
+    "USD_JPY",
+    "EUR_JPY",
+    "GBP_JPY",
+    "AUD_JPY",
+    "NZD_JPY",
+    "CHF_JPY",
+    "EUR_CHF",
+    "EUR_AUD",
+    "EUR_CAD",
+    "AUD_NZD",
+    "AUD_CAD",
+    "GBP_AUD",
+    "GBP_CHF"
+  ],
+  "pair_universe_hash": "7e9a56ba9388f17b3b4ad75c3bad95c3cd479d709218b329a107d90750577b0d",
+  "pair_universe_source_a": {
+    "path": "scripts/stage23_0a_build_outcome_dataset.py",
+    "sha256": "104d550d29922d4b17abc92626a3568ae0b71e862af835ba25644cd75b49c25b"
+  },
+  "pair_universe_source_b": {
+    "path": "scripts/stage22_0a_scalp_label_design.py",
+    "sha256": "b3bae4d3f09b27151a5cdbbdb72dc3111033b0a03e80fb470047641dd15ee2c5"
+  },
+  "pipeline_feasibility_performed": false,
+  "pr_b1_inspection": true,
+  "pr_b2_implemented": false,
+  "pr_b_code_hash": "6d606ac52af75233c7df0e803b0b814ba7d791e66455eb5587107c316df80e62",
+  "pr_b_stage": "PR-B.1",
+  "schema_authority": {
+    "informational_extensions": [],
+    "outcome": "OK",
+    "required_fields": [
+      "ask_c",
+      "ask_h",
+      "ask_l",
+      "ask_o",
+      "bid_c",
+      "bid_h",
+      "bid_l",
+      "bid_o",
+      "time"
+    ],
+    "source": {
+      "path": "scripts/stage23_0a_build_outcome_dataset.py",
+      "sha256": "104d550d29922d4b17abc92626a3568ae0b71e862af835ba25644cd75b49c25b"
+    }
+  },
+  "schema_version": "gate-p1-pr-b-1.0",
+  "t2_execution_authorised": false
+}
