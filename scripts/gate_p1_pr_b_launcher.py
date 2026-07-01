@@ -336,7 +336,9 @@ def run(argv: list[str] | None = None) -> int:
     )
 
     # --- step 8: inner result capture ---
-    report_json = report_dir / "gate_p1_report.json"
+    # The canonical completion-signal report filename is mode-dependent.
+    report_name = "gate_p1_pr_b2_report.json" if args.mode == "b2" else "gate_p1_report.json"
+    report_json = report_dir / report_name
     inner_ok = inner.returncode == 0 and report_json.exists()
 
     # --- step 9: post-run audit ---
