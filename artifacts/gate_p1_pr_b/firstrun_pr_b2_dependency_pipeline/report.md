@@ -8,6 +8,13 @@
 
 Static, AST/source-only + committed PR-B.1 metadata only. No pipeline execution, no raw data read, no model / backtest / sweep / replay, no labels / features / trades / trading metrics. No byte-admissibility approval, no T2 retention execution, no new-epoch construction, no production routing decision.
 
+## Scope disclaimers
+
+- REPRESENTATIVE_STATIC_DEPENDENCY_INVENTORY_ONLY (NOT_FULL_REPOSITORY_DEPENDENCY_CERTIFICATION).
+- STATIC_PIPELINE_PATH_OBSERVED_NOT_EXECUTED.
+- NOT_ML_HARNESS_READY.
+- RETENTION_PROBE_REQUIRED_BEFORE_BYTE_ADMISSIBILITY (binding blocker).
+
 ## Dependency inventory (summary)
 
 - consumers inspected: 2

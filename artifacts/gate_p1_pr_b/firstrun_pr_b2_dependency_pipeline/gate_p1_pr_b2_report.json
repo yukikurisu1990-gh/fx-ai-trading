@@ -8,16 +8,18 @@
     "distinct_labels": [
       "STATIC_DEPENDENCY_OBSERVED"
     ],
-    "forbidden_to_execute_count": 0
+    "forbidden_to_execute_count": 0,
+    "not_full_repository_certification": true,
+    "scope": "REPRESENTATIVE_STATIC_DEPENDENCY_INVENTORY_ONLY"
   },
   "feature_generation_performed": false,
   "first_run_pass_structurally_unreachable": true,
-  "generated_at": "2026-07-01T13:32:41Z",
-  "git_commit_sha": "adc0761c83380d2312a9b06f6ce1e2ce78a40231",
+  "generated_at": "2026-07-01T13:50:47Z",
+  "git_commit_sha": "ad7826979c307dde1756e362e9350a7e67c8ec9e",
   "label_generation_performed": false,
   "model_executed": false,
   "new_epoch_adoption_authorised": false,
-  "notice": "PR-B.2 static dependency inventory + pipeline feasibility. AST/source and committed PR-B.1 metadata only. No pipeline / model / backtest execution, no raw data, no trading metrics. No byte-admissibility approval, no T2 authorisation, no new-epoch adoption, no production claim. PR-B.1 span outcomes are unchanged.",
+  "notice": "PR-B.2 static dependency inventory + pipeline feasibility. Dependency inventory is a REPRESENTATIVE static AST/source-only inventory of Gate P1 consumer sources, NOT a full-repository dependency certification. Pipeline path is statically observed, NOT executed. AST/source and committed PR-B.1 metadata only: no pipeline / model / backtest execution, no raw data, no features / labels / model inputs / inference, no trading metrics. NOT ML-harness-ready. Retention probe remains the binding blocker (RETENTION_PROBE_REQUIRED_BEFORE_BYTE_ADMISSIBILITY). No byte-admissibility approval, no T2 authorisation, no new-epoch construction or adoption, no production routing or change. PR-B.1 span outcomes are unchanged.",
   "pipeline_executed": false,
   "pipeline_feasibility_performed": true,
   "pipeline_feasibility_summary": {
@@ -48,12 +50,19 @@
     }
   },
   "pr_b2_implemented": true,
-  "pr_b_code_hash": "56c11ef5401aeac7eb7715bcd096483e5dc865e33ba6dec963386e87d5d0f2f9",
+  "pr_b_code_hash": "4631f66d00d270bbb0eec4555845eee9183e649b53b4a58222c64dc8f535b549",
   "pr_b_stage": "PR-B.2",
   "production_change_authorised": false,
   "raw_data_read": false,
   "report_id": "firstrun_pr_b2_dependency_pipeline",
   "schema_version": "gate-p1-pr-b-2.0",
+  "scope_disclaimers": [
+    "REPRESENTATIVE_STATIC_DEPENDENCY_INVENTORY_ONLY",
+    "NOT_FULL_REPOSITORY_DEPENDENCY_CERTIFICATION",
+    "STATIC_PIPELINE_PATH_OBSERVED_NOT_EXECUTED",
+    "NOT_ML_HARNESS_READY",
+    "RETENTION_PROBE_REQUIRED_BEFORE_BYTE_ADMISSIBILITY"
+  ],
   "t2_execution_authorised": false,
   "top_level_outcome": "GATE_P1_READONLY_SURFACE_STATICALLY_OBSERVED_RETENTION_PROBE_REQUIRED",
   "trading_metrics_computed": false
