@@ -1,7 +1,7 @@
 {
   "artifact_manifest": {
-    "artifact_root": "C:\\Users\\yukik\\AppData\\Local\\Temp\\tmp10f5z8yn",
-    "experiment_dir": "C:\\Users\\yukik\\AppData\\Local\\Temp\\tmp10f5z8yn\\synthetic-dry-run-step3",
+    "artifact_root_basename": "ml_uplift_step3_synthetic_out",
+    "experiment_dir_reference": "ml_uplift_step3_synthetic_out/synthetic-dry-run-step3",
     "planned_report_files": [
       "report.md",
       "synthetic_report.json"

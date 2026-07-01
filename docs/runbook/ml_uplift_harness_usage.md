@@ -30,10 +30,9 @@ specified and validated **before** any real run:
 
 It reads **no** real market data, trains/runs **no** model, runs **no**
 backtest / sweep / replay, generates **no** real features/labels, and computes
-**no** trading metric (PnL / Sharpe / IC / MI / oracle / calibration / expected
-value). It performs no network / broker / quote-feed / OANDA / credential
-access and spawns no subprocess. It authorises no T2 / byte-admissibility /
-new-epoch / production / LLM integration.
+**no** trading-performance metrics. It performs no network / broker /
+quote-feed / OANDA / credential access and spawns no subprocess. It authorises
+no T2 / byte-admissibility / new-epoch / production / LLM integration.
 
 ## Usage (synthetic smoke only)
 
@@ -79,7 +78,7 @@ not-authorised statuses (`REAL_EXPERIMENT_NOT_AUTHORISED`, `T2_NOT_AUTHORISED`,
 
 - No real experiment artifacts are committed under `artifacts/`; tests write to
   `tmp_path` only.
-- No PASS / Tier-1 / FORMALLY_VERIFIED / byte-admissibility / promotion labels.
+- No success / verification / promotion labels of any kind.
 - PR-B.1 / PR-B.2 Gate P1 outcomes unchanged; Phase 9.16 v9 20p remains Tier 2
   `VALID_OPERATIONAL_BASELINE`; archived/untrusted numerics remain prohibited
   from routing evidence; LLM integration remains deferred and unauthorised.

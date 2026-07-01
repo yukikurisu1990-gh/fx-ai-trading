@@ -17,7 +17,16 @@ def test_temp_root_accepted_and_manifest_deterministic(tmp_path):
     m2 = plan_artifact_manifest(tmp_path, "exp-1", ["report.md", "synthetic_report.json"])
     assert m1["planned_report_files"] == m2["planned_report_files"]  # sorted, deterministic
     assert m1["write_performed"] is False
-    assert m1["experiment_dir"].endswith("exp-1")
+    assert m1["experiment_dir_reference"].endswith("exp-1")
+
+
+def test_manifest_has_no_absolute_or_personal_path(tmp_path):
+    m = plan_artifact_manifest(tmp_path, "exp-1", ["synthetic_report.json"])
+    text = str(m)
+    # No absolute-path markers / personal-machine prefixes in the manifest.
+    assert ":\\" not in text and ":/" not in text
+    assert "/Users/" not in text and "/home/" not in text
+    assert "AppData" not in text
 
 
 def test_real_artifacts_root_rejected():
