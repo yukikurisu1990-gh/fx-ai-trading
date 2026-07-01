@@ -19,6 +19,8 @@ from ..b2_constants import (
     DEP_OBSERVED,
     DEP_UNRESOLVED,
     FORBIDDEN_EXECUTION_SURFACES,
+    SCOPE_NOT_FULL_REPO_CERT,
+    SCOPE_REPRESENTATIVE_DEP_ONLY,
     is_internal_module,
 )
 
@@ -131,6 +133,10 @@ def build_dependency_inventory(repo_root: str | Path) -> dict[str, Any]:
     )
     return {
         "method": "ast_source_text_only",
+        "scope": SCOPE_REPRESENTATIVE_DEP_ONLY,
+        "scope_note": SCOPE_NOT_FULL_REPO_CERT,
+        "inspected_consumer_registry_only": True,
+        "inspected_consumer_sources": list(CONSUMER_REGISTRY),
         "import_execution_performed": False,
         "package_manager_invoked": False,
         "consumers": consumers,
@@ -139,5 +145,7 @@ def build_dependency_inventory(repo_root: str | Path) -> dict[str, Any]:
             "consumer_count": len(consumers),
             "distinct_labels": sorted(all_labels),
             "forbidden_to_execute_count": forbidden_execution_count,
+            "scope": SCOPE_REPRESENTATIVE_DEP_ONLY,
+            "not_full_repository_certification": True,
         },
     }

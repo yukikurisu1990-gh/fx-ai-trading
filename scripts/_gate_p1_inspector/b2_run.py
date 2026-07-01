@@ -13,6 +13,7 @@ from pathlib import Path
 from typing import Any
 
 from .b2_constants import (
+    B2_SCOPE_DISCLAIMERS,
     OUTCOME_INSUFFICIENT_STATIC_EVIDENCE,
     OUTCOME_OBSERVED_RETENTION_PROBE_REQUIRED,
     OUTCOME_PARTIAL_STATIC_FEASIBILITY,
@@ -62,6 +63,14 @@ def _render_markdown(report_id: str, outcome: str, dependency: dict, pipeline: d
         "labels / features / trades / trading metrics. No byte-admissibility "
         "approval, no T2 retention execution, no new-epoch construction, no "
         "production routing decision.",
+        "",
+        "## Scope disclaimers",
+        "",
+        "- REPRESENTATIVE_STATIC_DEPENDENCY_INVENTORY_ONLY "
+        "(NOT_FULL_REPOSITORY_DEPENDENCY_CERTIFICATION).",
+        "- STATIC_PIPELINE_PATH_OBSERVED_NOT_EXECUTED.",
+        "- NOT_ML_HARNESS_READY.",
+        "- RETENTION_PROBE_REQUIRED_BEFORE_BYTE_ADMISSIBILITY (binding blocker).",
         "",
         "## Dependency inventory (summary)",
         "",
@@ -140,12 +149,20 @@ def run_b2_inspection(
         "pipeline_feasibility_summary": pipeline["summary"],
         "pr_b1_span_status_unchanged": pr_b1_span_status,
         "first_run_pass_structurally_unreachable": True,
+        "scope_disclaimers": list(B2_SCOPE_DISCLAIMERS),
         "notice": (
-            "PR-B.2 static dependency inventory + pipeline feasibility. AST/source "
-            "and committed PR-B.1 metadata only. No pipeline / model / backtest "
-            "execution, no raw data, no trading metrics. No byte-admissibility "
-            "approval, no T2 authorisation, no new-epoch adoption, no production "
-            "claim. PR-B.1 span outcomes are unchanged."
+            "PR-B.2 static dependency inventory + pipeline feasibility. "
+            "Dependency inventory is a REPRESENTATIVE static AST/source-only "
+            "inventory of Gate P1 consumer sources, NOT a full-repository "
+            "dependency certification. Pipeline path is statically observed, NOT "
+            "executed. AST/source and committed PR-B.1 metadata only: no pipeline "
+            "/ model / backtest execution, no raw data, no features / labels / "
+            "model inputs / inference, no trading metrics. NOT ML-harness-ready. "
+            "Retention probe remains the binding blocker "
+            "(RETENTION_PROBE_REQUIRED_BEFORE_BYTE_ADMISSIBILITY). No "
+            "byte-admissibility approval, no T2 authorisation, no new-epoch "
+            "construction or adoption, no production routing or change. PR-B.1 "
+            "span outcomes are unchanged."
         ),
         **b2_writers.b2_metadata_block(),
     }

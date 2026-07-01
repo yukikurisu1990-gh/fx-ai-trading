@@ -157,10 +157,16 @@ Allowed top-level PR-B.2 outcomes (PASS structurally unreachable):
 
 ### PR-B.2 non-scope
 
+- Dependency inventory is `REPRESENTATIVE_STATIC_DEPENDENCY_INVENTORY_ONLY`
+  (`NOT_FULL_REPOSITORY_DEPENDENCY_CERTIFICATION`) — only the Gate P1 consumer
+  registry sources are AST-inspected.
+- Pipeline path is `STATIC_PIPELINE_PATH_OBSERVED_NOT_EXECUTED`.
+- `NOT_ML_HARNESS_READY` — no ML experiment-harness readiness is approved.
 - No pipeline / model / backtest / sweep / replay execution.
 - No raw data / archive read; no labels / features / trades / metrics.
 - No T2 execution, cloud config, upload / deposit / round-trip, object-lock, or
-  byte-admissibility approval.
+  byte-admissibility approval; `RETENTION_PROBE_REQUIRED_BEFORE_BYTE_ADMISSIBILITY`
+  remains the binding blocker.
 - No new-epoch construction; no production routing; no PR-B.1 outcome change.
 
 ## Status bindings preserved

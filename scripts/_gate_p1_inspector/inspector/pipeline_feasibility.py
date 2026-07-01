@@ -25,6 +25,8 @@ from ..b2_constants import (
     PR_B1_EVIDENCE_DIRS,
     PR_B1_EXPECTED_OUTCOME,
     PR_B1_EXPECTED_RETENTION,
+    SCOPE_NOT_ML_HARNESS_READY,
+    SCOPE_PIPELINE_OBSERVED_NOT_EXECUTED,
 )
 
 
@@ -106,11 +108,16 @@ def build_pipeline_feasibility(repo_root: str | Path) -> dict[str, Any]:
 
     return {
         "method": "ast_source_and_committed_pr_b1_metadata_only",
+        "scope": SCOPE_PIPELINE_OBSERVED_NOT_EXECUTED,
+        "ml_harness_readiness": SCOPE_NOT_ML_HARNESS_READY,
         "pipeline_executed": False,
         "raw_data_read": False,
         "features_generated": False,
         "labels_generated": False,
         "model_inputs_constructed": False,
+        "model_trained": False,
+        "inference_performed": False,
+        "backtest_executed": False,
         "trading_metrics_computed": False,
         "static_reference_scan": references,
         "pr_b1_evidence_check": evidence,
@@ -120,10 +127,13 @@ def build_pipeline_feasibility(repo_root: str | Path) -> dict[str, Any]:
             PIPE_NEW_EPOCH_NOT_AUTHORISED,
         ],
         "statements": [
-            "feasibility is static / source-only",
+            "feasibility is static / source-only; path observed, NOT executed",
             "no pipeline execution occurred",
+            "no raw data was read",
+            "no features, labels, model inputs, training, or inference occurred",
             "no new epoch dataset was constructed",
             "no model-ready dataset was constructed",
+            "NOT ML-harness-ready (no harness readiness is approved)",
             "no byte-admissibility approval was granted",
             "no T2 retention execution occurred",
             "no production routing decision was made",

@@ -63,6 +63,27 @@ def test_b2_preserves_pr_b1_span_status(tmp_path):
     assert report["first_run_pass_structurally_unreachable"] is True
 
 
+def test_b2_report_states_scope_disclaimers(tmp_path):
+    report_dir = tmp_path / "out_scope"
+    report = _run_b2(report_dir)
+    disclaimers = set(report["scope_disclaimers"])
+    assert {
+        "REPRESENTATIVE_STATIC_DEPENDENCY_INVENTORY_ONLY",
+        "NOT_FULL_REPOSITORY_DEPENDENCY_CERTIFICATION",
+        "STATIC_PIPELINE_PATH_OBSERVED_NOT_EXECUTED",
+        "NOT_ML_HARNESS_READY",
+        "RETENTION_PROBE_REQUIRED_BEFORE_BYTE_ADMISSIBILITY",
+    } <= disclaimers
+    dep = json.loads((report_dir / "dependency_inventory.json").read_text(encoding="utf-8"))
+    assert dep["scope"] == "REPRESENTATIVE_STATIC_DEPENDENCY_INVENTORY_ONLY"
+    assert dep["inspected_consumer_registry_only"] is True
+    pipe = json.loads((report_dir / "pipeline_feasibility.json").read_text(encoding="utf-8"))
+    assert pipe["ml_harness_readiness"] == "NOT_ML_HARNESS_READY"
+    md = (report_dir / "report.md").read_text(encoding="utf-8")
+    assert "NOT_ML_HARNESS_READY" in md
+    assert "NOT_FULL_REPOSITORY_DEPENDENCY_CERTIFICATION" in md
+
+
 def test_b2_report_has_no_forbidden_content(tmp_path):
     report_dir = tmp_path / "out3"
     _run_b2(report_dir)
