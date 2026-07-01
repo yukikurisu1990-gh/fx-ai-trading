@@ -89,8 +89,14 @@ def test_b1_rejects_reserved_and_wrong_inrepo_roots():
     )
 
 
-def test_b2_mode_still_rejected(capsys):
-    rc = launcher.run(["--report-id", "abc", "--mode", "b2"])
+def test_b2_mode_is_supported():
+    # b2 (PR-B.2) is now an accepted mode; it passes mode validation (a full
+    # run is exercised in test_b2_report_and_run, skipping on a dirty worktree).
+    assert "b2" in launcher.SUPPORTED_MODES
+
+
+def test_unsupported_mode_rejected(capsys):
+    rc = launcher.run(["--report-id", "abc", "--mode", "b3"])
     assert rc == launcher.EXIT_PREFLIGHT_FAILED
     assert "PR-B.2" in capsys.readouterr().err
 

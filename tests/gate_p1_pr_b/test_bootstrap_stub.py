@@ -7,20 +7,11 @@ report can never be read as a real Gate P1 inspection result.
 
 from __future__ import annotations
 
-import importlib.util
 import json
 import sys
 
 from scripts._gate_p1_inspector import bootstrap
 from scripts._gate_p1_inspector.report.schema import FORBIDDEN_STUB_KEYS
-
-# PR-B.2 inspection submodules that must remain ABSENT (PR-B.1 implements
-# authority / raw_inventory / coverage / retention / resolver, so those now
-# exist; dependency inventory + pipeline feasibility are PR-B.2 and must not).
-_PR_B2_MODULES = (
-    "scripts._gate_p1_inspector.inspector.dependency_inventory",
-    "scripts._gate_p1_inspector.inspector.pipeline_feasibility",
-)
 
 
 def test_stub_run_emits_marked_stub_report(tmp_path):
@@ -64,15 +55,6 @@ def test_stub_run_does_not_import_production_modules(tmp_path):
     # The stub run itself must import no production module (other tests in the
     # session may already have imported some; only the delta is attributable).
     assert after - before == set()
-
-
-def test_pr_b2_submodules_absent():
-    for name in _PR_B2_MODULES:
-        try:
-            spec = importlib.util.find_spec(name)
-        except ModuleNotFoundError:
-            spec = None  # parent package absent => submodule absent
-        assert spec is None, f"{name} (PR-B.2) must not exist yet"
 
 
 def test_guards_uninstalled_after_run(tmp_path):

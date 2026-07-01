@@ -23,6 +23,7 @@ from pathlib import Path
 
 from .b1_constants import CANDIDATE_SPANS
 from .b1_run import run_b1_inspection
+from .b2_run import run_b2_inspection
 from .guards import GUARD_VIOLATION_ARTIFACT, GuardViolationError
 from .guards import bytecode as bytecode_guard
 from .guards import credentials as credentials_guard
@@ -112,6 +113,35 @@ def run_b1_under_guards(
         uninstall_guards()
 
 
+def run_b2_under_guards(
+    report_dir: str | Path,
+    report_id: str,
+    *,
+    repo_root: str | Path,
+    clean_code_sha: str | None = None,
+    base_master_sha: str | None = None,
+    generated_at: str | None = None,
+    enforce_bytecode: bool = True,
+) -> Path:
+    """Install guards, run the PR-B.2 static inspections, return report path.
+
+    Guards confine WRITES to the report dir (AST/source reads and committed
+    PR-B.1 metadata reads remain allowed); they are uninstalled on the way out.
+    """
+    install_guards(report_dir, enforce_bytecode=enforce_bytecode)
+    try:
+        return run_b2_inspection(
+            report_dir,
+            report_id,
+            repo_root=repo_root,
+            clean_code_sha=clean_code_sha,
+            base_master_sha=base_master_sha,
+            generated_at=generated_at,
+        )
+    finally:
+        uninstall_guards()
+
+
 def _write_guard_violation(report_dir: Path, message: str) -> None:
     payload = {
         "guard_violation": True,
@@ -136,7 +166,7 @@ def _parse_args(argv: list[str] | None) -> argparse.Namespace:
     parser.add_argument("--envelope", default=None)
     parser.add_argument("--report-id", default=None)
     parser.add_argument("--first-run", action="store_true")
-    parser.add_argument("--mode", default="stub", choices=("stub", "b1"))
+    parser.add_argument("--mode", default="stub", choices=("stub", "b1", "b2"))
     parser.add_argument("--data-dir", default=str(_REPO_ROOT / "data"))
     parser.add_argument("--repo-root", default=str(_REPO_ROOT))
     parser.add_argument("--candidate-spans", default=",".join(CANDIDATE_SPANS))
@@ -151,11 +181,15 @@ def main(argv: list[str] | None = None) -> int:
     report_id = args.report_id
     expected_code_hash: str | None = None
     clean_code_sha: str | None = None
+    base_master_sha: str | None = None
+    generated_at: str | None = None
     if args.envelope is not None:
         envelope = json.loads(Path(args.envelope).read_text(encoding="utf-8"))
         report_id = report_id or envelope.get("report_id")
         expected_code_hash = envelope.get("pr_b_code_hash")
         clean_code_sha = envelope.get("clean_code_sha")
+        base_master_sha = envelope.get("base_master_sha")
+        generated_at = envelope.get("outer_launch_ts_utc")
     report_id = report_id or report_dir.name
 
     if not report_dir.is_dir():
@@ -182,6 +216,15 @@ def main(argv: list[str] | None = None) -> int:
                 candidate_spans=spans,
                 first_run_mode=args.first_run,
                 clean_code_sha=clean_code_sha,
+            )
+        elif args.mode == "b2":
+            run_b2_under_guards(
+                report_dir,
+                report_id,
+                repo_root=args.repo_root,
+                clean_code_sha=clean_code_sha,
+                base_master_sha=base_master_sha,
+                generated_at=generated_at,
             )
         else:
             run_inner(report_dir, report_id, first_run_mode=args.first_run)

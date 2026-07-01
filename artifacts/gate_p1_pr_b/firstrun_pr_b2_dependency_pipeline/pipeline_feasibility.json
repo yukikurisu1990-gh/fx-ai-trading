@@ -1,0 +1,100 @@
+{
+  "backtest_executed": false,
+  "blocking_labels": [
+    "RETENTION_PROBE_REQUIRED_BEFORE_BYTE_ADMISSIBILITY",
+    "NEW_EPOCH_CONSTRUCTION_NOT_AUTHORISED"
+  ],
+  "byte_admissibility_approved": false,
+  "dependency_inventory_performed": true,
+  "feature_generation_performed": false,
+  "features_generated": false,
+  "inference_performed": false,
+  "label_generation_performed": false,
+  "labels_generated": false,
+  "method": "ast_source_and_committed_pr_b1_metadata_only",
+  "ml_harness_readiness": "NOT_ML_HARNESS_READY",
+  "model_executed": false,
+  "model_inputs_constructed": false,
+  "model_trained": false,
+  "new_epoch_adoption_authorised": false,
+  "pipeline_executed": false,
+  "pipeline_feasibility_performed": true,
+  "pr_b1_evidence_check": [
+    {
+      "evidence_path": "artifacts/gate_p1_pr_b/firstrun_365d_ba/gate_p1_report.json",
+      "outcome_matches_expected": true,
+      "present": true,
+      "retention_classification": "RETENTION_CAPABILITY_REQUIRES_SEPARATE_AUTHORISED_PROBE",
+      "span": "365d_BA",
+      "top_level_outcome": "LOCAL_DATA_CANDIDATE_PARTIAL_FEASIBILITY"
+    },
+    {
+      "evidence_path": "artifacts/gate_p1_pr_b/firstrun_730d_ba/gate_p1_report.json",
+      "outcome_matches_expected": true,
+      "present": true,
+      "retention_classification": "RETENTION_CAPABILITY_REQUIRES_SEPARATE_AUTHORISED_PROBE",
+      "span": "730d_BA",
+      "top_level_outcome": "LOCAL_DATA_CANDIDATE_PARTIAL_FEASIBILITY"
+    },
+    {
+      "evidence_path": "artifacts/gate_p1_pr_b/firstrun_3650d_ba/gate_p1_report.json",
+      "outcome_matches_expected": true,
+      "present": true,
+      "retention_classification": "RETENTION_CAPABILITY_REQUIRES_SEPARATE_AUTHORISED_PROBE",
+      "span": "3650d_BA",
+      "top_level_outcome": "LOCAL_DATA_CANDIDATE_PARTIAL_FEASIBILITY"
+    }
+  ],
+  "pr_b2_implemented": true,
+  "pr_b_code_hash": "4631f66d00d270bbb0eec4555845eee9183e649b53b4a58222c64dc8f535b549",
+  "pr_b_stage": "PR-B.2",
+  "production_change_authorised": false,
+  "raw_data_read": false,
+  "schema_version": "gate-p1-pr-b-2.0",
+  "scope": "STATIC_PIPELINE_PATH_OBSERVED_NOT_EXECUTED",
+  "statements": [
+    "feasibility is static / source-only; path observed, NOT executed",
+    "no pipeline execution occurred",
+    "no raw data was read",
+    "no features, labels, model inputs, training, or inference occurred",
+    "no new epoch dataset was constructed",
+    "no model-ready dataset was constructed",
+    "NOT ML-harness-ready (no harness readiness is approved)",
+    "no byte-admissibility approval was granted",
+    "no T2 retention execution occurred",
+    "no production routing decision was made"
+  ],
+  "static_path_label": "STATIC_PIPELINE_PATH_OBSERVED",
+  "static_reference_scan": [
+    {
+      "found": true,
+      "source_path": "scripts/stage23_0a_build_outcome_dataset.py",
+      "target": "load_m1_ba"
+    },
+    {
+      "found": true,
+      "source_path": "scripts/stage23_0a_build_outcome_dataset.py",
+      "target": "aggregate_m1_to_tf"
+    },
+    {
+      "found": true,
+      "source_path": "scripts/stage23_0a_build_outcome_dataset.py",
+      "target": "PAIRS_20"
+    },
+    {
+      "found": true,
+      "source_path": "scripts/stage22_0a_scalp_label_design.py",
+      "target": "PAIRS_20"
+    }
+  ],
+  "summary": {
+    "pr_b1_evidence_all_expected_outcome": true,
+    "pr_b1_evidence_all_present": true,
+    "pr_b1_expected_outcome": "LOCAL_DATA_CANDIDATE_PARTIAL_FEASIBILITY",
+    "pr_b1_expected_retention": "RETENTION_CAPABILITY_REQUIRES_SEPARATE_AUTHORISED_PROBE",
+    "references_found": 4,
+    "references_total": 4
+  },
+  "t2_execution_authorised": false,
+  "trading_metrics_computed": false
+}
