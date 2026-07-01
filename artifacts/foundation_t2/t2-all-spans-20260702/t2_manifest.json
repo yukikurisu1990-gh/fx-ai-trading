@@ -1,0 +1,390 @@
+{
+  "checksum_algorithm": "sha256",
+  "checksum_source": "pr_b1_committed_metadata (no raw data re-read)",
+  "contract_version": "foundation-t2.v1",
+  "manifest_id": "t2-all-spans-20260702",
+  "spans": [
+    {
+      "file_count": 20,
+      "files": [
+        {
+          "checksum_source": "pr_b1_committed_metadata",
+          "logical_file_id": "candles_EUR_USD_M1_365d_BA.jsonl",
+          "sha256": "6e71f8e90075e83a5047469384a4e24b112ac6bab75df32bbe2ffcafd5dc3df4",
+          "size_bytes": 74680793
+        },
+        {
+          "checksum_source": "pr_b1_committed_metadata",
+          "logical_file_id": "candles_GBP_USD_M1_365d_BA.jsonl",
+          "sha256": "c9071eabf212daea45e8ac50e38c7c823e45c4635cb67f82931e2aa7c4ee2a2c",
+          "size_bytes": 74762346
+        },
+        {
+          "checksum_source": "pr_b1_committed_metadata",
+          "logical_file_id": "candles_AUD_USD_M1_365d_BA.jsonl",
+          "sha256": "a322c203cb829e0b4a63b1c2d23baf793329596a80b68247a6b4a2edaeace1ce",
+          "size_bytes": 74344893
+        },
+        {
+          "checksum_source": "pr_b1_committed_metadata",
+          "logical_file_id": "candles_NZD_USD_M1_365d_BA.jsonl",
+          "sha256": "5a99d9d6c88abb354d6c37186fc9ef5653b1a177d812b4c36c790ed47bb72634",
+          "size_bytes": 74181332
+        },
+        {
+          "checksum_source": "pr_b1_committed_metadata",
+          "logical_file_id": "candles_USD_CHF_M1_365d_BA.jsonl",
+          "sha256": "83e5dec7a02192b9778ce7a7e5d63c40bff10c2e5d87a98591c9fcec8e71809a",
+          "size_bytes": 74236316
+        },
+        {
+          "checksum_source": "pr_b1_committed_metadata",
+          "logical_file_id": "candles_USD_CAD_M1_365d_BA.jsonl",
+          "sha256": "067c412bdd82b2ffb0edb681785ded9392e56b6e0ebaff77284ca86d7c89ada6",
+          "size_bytes": 74524981
+        },
+        {
+          "checksum_source": "pr_b1_committed_metadata",
+          "logical_file_id": "candles_EUR_GBP_M1_365d_BA.jsonl",
+          "sha256": "bbd20c47a0f015e44b6ab60af58933597f7777e267679821b40165796b683daa",
+          "size_bytes": 74329749
+        },
+        {
+          "checksum_source": "pr_b1_committed_metadata",
+          "logical_file_id": "candles_USD_JPY_M1_365d_BA.jsonl",
+          "sha256": "9b1165731d1b0b306a73a38a642880b0f08538f9614be506eb657aaeab5a355c",
+          "size_bytes": 74782873
+        },
+        {
+          "checksum_source": "pr_b1_committed_metadata",
+          "logical_file_id": "candles_EUR_JPY_M1_365d_BA.jsonl",
+          "sha256": "2430c7d6e3b9a8f3200cd4f2f6ee090898cb96e73e41ea342fc8ac0131e71ae8",
+          "size_bytes": 74763700
+        },
+        {
+          "checksum_source": "pr_b1_committed_metadata",
+          "logical_file_id": "candles_GBP_JPY_M1_365d_BA.jsonl",
+          "sha256": "c1380b584e0efbccae887f2c91c646370d97b2cca54812d7893829d8aac2d34a",
+          "size_bytes": 74967818
+        },
+        {
+          "checksum_source": "pr_b1_committed_metadata",
+          "logical_file_id": "candles_AUD_JPY_M1_365d_BA.jsonl",
+          "sha256": "0eef67f025c79a3f0fffa8649a7571ba18965b1f481ebdbe4f86fd8b1320bab7",
+          "size_bytes": 73040066
+        },
+        {
+          "checksum_source": "pr_b1_committed_metadata",
+          "logical_file_id": "candles_NZD_JPY_M1_365d_BA.jsonl",
+          "sha256": "9302599854de355e5ccb0aa46d3191b8dd598c4d47623760b322730ac10e0213",
+          "size_bytes": 70838359
+        },
+        {
+          "checksum_source": "pr_b1_committed_metadata",
+          "logical_file_id": "candles_CHF_JPY_M1_365d_BA.jsonl",
+          "sha256": "560b1ed062e77f1a041ce97c9a23f7a32021e6c75cfd0a15a74fa581351c16eb",
+          "size_bytes": 73922851
+        },
+        {
+          "checksum_source": "pr_b1_committed_metadata",
+          "logical_file_id": "candles_EUR_CHF_M1_365d_BA.jsonl",
+          "sha256": "b59cf028e3e5807afbecc73d1301ecf470c3cea421715b8ef169f5eb971292b2",
+          "size_bytes": 73984686
+        },
+        {
+          "checksum_source": "pr_b1_committed_metadata",
+          "logical_file_id": "candles_EUR_AUD_M1_365d_BA.jsonl",
+          "sha256": "d32109ac1916c810cfaa843d0e963e960d824a7f0fe258020a42ca5ad090e8d2",
+          "size_bytes": 74592135
+        },
+        {
+          "checksum_source": "pr_b1_committed_metadata",
+          "logical_file_id": "candles_EUR_CAD_M1_365d_BA.jsonl",
+          "sha256": "1e43d15270d2deb298d5f6d8052977162c0be86d806d768dbed54a7796b33a29",
+          "size_bytes": 74325614
+        },
+        {
+          "checksum_source": "pr_b1_committed_metadata",
+          "logical_file_id": "candles_AUD_NZD_M1_365d_BA.jsonl",
+          "sha256": "ef61b5cfb3be9f14554ac870a85559f1c62fcdc23a54cffcc08d546da2556add",
+          "size_bytes": 74212052
+        },
+        {
+          "checksum_source": "pr_b1_committed_metadata",
+          "logical_file_id": "candles_AUD_CAD_M1_365d_BA.jsonl",
+          "sha256": "60207196518b7e6550ff3169be1bb7d1d9c811e2cb3a84882f29ee24af5a037a",
+          "size_bytes": 72972935
+        },
+        {
+          "checksum_source": "pr_b1_committed_metadata",
+          "logical_file_id": "candles_GBP_AUD_M1_365d_BA.jsonl",
+          "sha256": "601a5cdb84c77a41bec3c1d61e53ebb494a6d9a300a3ad3f64d7f03ac1dbdfa4",
+          "size_bytes": 74374786
+        },
+        {
+          "checksum_source": "pr_b1_committed_metadata",
+          "logical_file_id": "candles_GBP_CHF_M1_365d_BA.jsonl",
+          "sha256": "4582768adf01d19a4e316ebfd7c3de0b8b963ec01ff2e4dad14fa042fcc9cacd",
+          "size_bytes": 73877232
+        }
+      ],
+      "pr_b1_evidence_reference": "artifacts/gate_p1_pr_b/firstrun_365d_ba/raw_inventory_365d_BA.json",
+      "span_id": "365d_BA"
+    },
+    {
+      "file_count": 20,
+      "files": [
+        {
+          "checksum_source": "pr_b1_committed_metadata",
+          "logical_file_id": "candles_EUR_USD_M1_730d_BA.jsonl",
+          "sha256": "1205c03a68ae45e216bdf01c7084faaaec780c1f3085b12afc16fac620400977",
+          "size_bytes": 149110099
+        },
+        {
+          "checksum_source": "pr_b1_committed_metadata",
+          "logical_file_id": "candles_GBP_USD_M1_730d_BA.jsonl",
+          "sha256": "04296540bbd3d0a8c43b3c05bb74b0a7928ceffb8aa31fc9edb3b1ed51f5987d",
+          "size_bytes": 149412575
+        },
+        {
+          "checksum_source": "pr_b1_committed_metadata",
+          "logical_file_id": "candles_AUD_USD_M1_730d_BA.jsonl",
+          "sha256": "d5966560511f84f40759aa7f092c99c8e735101750ff8c7a6557f7f7ba2e39d9",
+          "size_bytes": 148283411
+        },
+        {
+          "checksum_source": "pr_b1_committed_metadata",
+          "logical_file_id": "candles_NZD_USD_M1_730d_BA.jsonl",
+          "sha256": "a5d41b8b537f86e21971e3f8ce139b93f65f0abb58959d485c29a67ebab311ae",
+          "size_bytes": 147977830
+        },
+        {
+          "checksum_source": "pr_b1_committed_metadata",
+          "logical_file_id": "candles_USD_CHF_M1_730d_BA.jsonl",
+          "sha256": "e66f52db1ab9ac168eb361496cd1e67140d5ccdbd6475baa89f51eda70ee7052",
+          "size_bytes": 148264406
+        },
+        {
+          "checksum_source": "pr_b1_committed_metadata",
+          "logical_file_id": "candles_USD_CAD_M1_730d_BA.jsonl",
+          "sha256": "aa2e2146951e3f75bf3dc734fecf261f27a955c9c376c34b2a5a9c71c5bb03fc",
+          "size_bytes": 148942479
+        },
+        {
+          "checksum_source": "pr_b1_committed_metadata",
+          "logical_file_id": "candles_EUR_GBP_M1_730d_BA.jsonl",
+          "sha256": "a5b4dbb140eef81034ce8428f39789fcb145f4d315126636274601921dd894f4",
+          "size_bytes": 147761967
+        },
+        {
+          "checksum_source": "pr_b1_committed_metadata",
+          "logical_file_id": "candles_USD_JPY_M1_730d_BA.jsonl",
+          "sha256": "1b96d2bb64da28b006993e4c1469e5b63e7e09fcba96fc5b75a2515f0e6b9c89",
+          "size_bytes": 149425927
+        },
+        {
+          "checksum_source": "pr_b1_committed_metadata",
+          "logical_file_id": "candles_EUR_JPY_M1_730d_BA.jsonl",
+          "sha256": "acdf3206824a35097f56681087fe122b49872759213a0460f16916da890a8478",
+          "size_bytes": 149485725
+        },
+        {
+          "checksum_source": "pr_b1_committed_metadata",
+          "logical_file_id": "candles_GBP_JPY_M1_730d_BA.jsonl",
+          "sha256": "2e6479c8fa51990da29afa46fed8f4a463f2e53812be1acb239c1f00e4cf438c",
+          "size_bytes": 149860332
+        },
+        {
+          "checksum_source": "pr_b1_committed_metadata",
+          "logical_file_id": "candles_AUD_JPY_M1_730d_BA.jsonl",
+          "sha256": "c94d743bd27403bf032a8a55c2bf2bcade5b93dcd8d12143ed17dd1de612bace",
+          "size_bytes": 146209286
+        },
+        {
+          "checksum_source": "pr_b1_committed_metadata",
+          "logical_file_id": "candles_NZD_JPY_M1_730d_BA.jsonl",
+          "sha256": "c7b004f788446276fd9e386b84f5ff817811d0c9262569eb478041a49ebbcf02",
+          "size_bytes": 142198336
+        },
+        {
+          "checksum_source": "pr_b1_committed_metadata",
+          "logical_file_id": "candles_CHF_JPY_M1_730d_BA.jsonl",
+          "sha256": "0dba2604820322e1a8392ff22ce18dadd0ed5797350844d44bff54510459688b",
+          "size_bytes": 148092111
+        },
+        {
+          "checksum_source": "pr_b1_committed_metadata",
+          "logical_file_id": "candles_EUR_CHF_M1_730d_BA.jsonl",
+          "sha256": "7337bf2c0d261c9b9d19b70c656f86c04a72def5324269991c8007c2b48679c3",
+          "size_bytes": 148305132
+        },
+        {
+          "checksum_source": "pr_b1_committed_metadata",
+          "logical_file_id": "candles_EUR_AUD_M1_730d_BA.jsonl",
+          "sha256": "1f39814030b3a74f4995b77a1a099dfccd4d42c192faa8fa92741a34047b3570",
+          "size_bytes": 149614043
+        },
+        {
+          "checksum_source": "pr_b1_committed_metadata",
+          "logical_file_id": "candles_EUR_CAD_M1_730d_BA.jsonl",
+          "sha256": "192d3908e103697455da667a3bf9190bfcee7791f5fa955366f348f4be2ebb58",
+          "size_bytes": 149171534
+        },
+        {
+          "checksum_source": "pr_b1_committed_metadata",
+          "logical_file_id": "candles_AUD_NZD_M1_730d_BA.jsonl",
+          "sha256": "0dad455929e6c2023ce073a7a52e0fda847a24016964370f37eb27287c22fc54",
+          "size_bytes": 148581922
+        },
+        {
+          "checksum_source": "pr_b1_committed_metadata",
+          "logical_file_id": "candles_AUD_CAD_M1_730d_BA.jsonl",
+          "sha256": "cf8790f3658c9b97255c093091eb9c2a2d58c98891639bc983e1ca3d8c097238",
+          "size_bytes": 147096576
+        },
+        {
+          "checksum_source": "pr_b1_committed_metadata",
+          "logical_file_id": "candles_GBP_AUD_M1_730d_BA.jsonl",
+          "sha256": "bc6f825de722f8639b0f89c412e7f0abc372cae71afbbcdee7e515f25eb602c4",
+          "size_bytes": 149203979
+        },
+        {
+          "checksum_source": "pr_b1_committed_metadata",
+          "logical_file_id": "candles_GBP_CHF_M1_730d_BA.jsonl",
+          "sha256": "228464c0b593682a98723577d004b401bcad00b8ae0c54003110564caa39f008",
+          "size_bytes": 148292506
+        }
+      ],
+      "pr_b1_evidence_reference": "artifacts/gate_p1_pr_b/firstrun_730d_ba/raw_inventory_730d_BA.json",
+      "span_id": "730d_BA"
+    },
+    {
+      "file_count": 20,
+      "files": [
+        {
+          "checksum_source": "pr_b1_committed_metadata",
+          "logical_file_id": "candles_EUR_USD_M1_3650d_BA.jsonl",
+          "sha256": "8671a11fbd550626f0e28e67b67f92a419b7f9bac3d0e980877e58460cbecbf4",
+          "size_bytes": 725547762
+        },
+        {
+          "checksum_source": "pr_b1_committed_metadata",
+          "logical_file_id": "candles_GBP_USD_M1_3650d_BA.jsonl",
+          "sha256": "bb0f5c17c59508a4e906f712db752674e316ef6ee08aee8c667b21629042fcb3",
+          "size_bytes": 721645265
+        },
+        {
+          "checksum_source": "pr_b1_committed_metadata",
+          "logical_file_id": "candles_AUD_USD_M1_3650d_BA.jsonl",
+          "sha256": "3aeccb79b8d5d4891516897f43af1cbd59269f557c5504acbf6a17e6ecc5ee2c",
+          "size_bytes": 694017979
+        },
+        {
+          "checksum_source": "pr_b1_committed_metadata",
+          "logical_file_id": "candles_NZD_USD_M1_3650d_BA.jsonl",
+          "sha256": "077a1623342fd8dffe53c6513b27b108ac0e5e6e4c05eec61dcf8d2a43664df9",
+          "size_bytes": 716771510
+        },
+        {
+          "checksum_source": "pr_b1_committed_metadata",
+          "logical_file_id": "candles_USD_CHF_M1_3650d_BA.jsonl",
+          "sha256": "d09baf0cf181fe169687ead45baedc4628ede312473adc4f96d7bb2747e3e0ac",
+          "size_bytes": 677737394
+        },
+        {
+          "checksum_source": "pr_b1_committed_metadata",
+          "logical_file_id": "candles_USD_CAD_M1_3650d_BA.jsonl",
+          "sha256": "738fc2c1be746029d2a1a071a1c185c5792bde1f5040cfd5ee860274fb6b131d",
+          "size_bytes": 726806499
+        },
+        {
+          "checksum_source": "pr_b1_committed_metadata",
+          "logical_file_id": "candles_EUR_GBP_M1_3650d_BA.jsonl",
+          "sha256": "3eb9b3714a9c9cb718426f2cd6c4a7a013469f05b91fe92ebfc9cab0155b91ed",
+          "size_bytes": 718588116
+        },
+        {
+          "checksum_source": "pr_b1_committed_metadata",
+          "logical_file_id": "candles_USD_JPY_M1_3650d_BA.jsonl",
+          "sha256": "3797e6fa4843f1af941937a6565d8ae1474b31525267c4b980f1584ba8a7c6d1",
+          "size_bytes": 731882373
+        },
+        {
+          "checksum_source": "pr_b1_committed_metadata",
+          "logical_file_id": "candles_EUR_JPY_M1_3650d_BA.jsonl",
+          "sha256": "2cdcc22dbf88e5aba0f1a87983ee49f5fefa9aab025f2419efc6713f6a4ce0af",
+          "size_bytes": 731859635
+        },
+        {
+          "checksum_source": "pr_b1_committed_metadata",
+          "logical_file_id": "candles_GBP_JPY_M1_3650d_BA.jsonl",
+          "sha256": "13fe46a7dded68392181acae13a5a4204873853bf34205c779e0525ab69e6a5f",
+          "size_bytes": 743905861
+        },
+        {
+          "checksum_source": "pr_b1_committed_metadata",
+          "logical_file_id": "candles_AUD_JPY_M1_3650d_BA.jsonl",
+          "sha256": "7fe8f18ed116fe1aae5c0e632576f561ead759423694573880c0b5786a23e2d5",
+          "size_bytes": 715403385
+        },
+        {
+          "checksum_source": "pr_b1_committed_metadata",
+          "logical_file_id": "candles_NZD_JPY_M1_3650d_BA.jsonl",
+          "sha256": "fcaebfef6287698154774f32029ba73c5a5a5994f9261d7d5506c6d6e0badff9",
+          "size_bytes": 715196259
+        },
+        {
+          "checksum_source": "pr_b1_committed_metadata",
+          "logical_file_id": "candles_CHF_JPY_M1_3650d_BA.jsonl",
+          "sha256": "1084aaac4b3dbd89893c5e7755a9308618afce53a4bae1c2cb42bc5649e88ed0",
+          "size_bytes": 743592032
+        },
+        {
+          "checksum_source": "pr_b1_committed_metadata",
+          "logical_file_id": "candles_EUR_CHF_M1_3650d_BA.jsonl",
+          "sha256": "d19c810e3a92c590262b6b0b16a6a041f811484945d1de07d834f3522d6477f1",
+          "size_bytes": 706001661
+        },
+        {
+          "checksum_source": "pr_b1_committed_metadata",
+          "logical_file_id": "candles_EUR_AUD_M1_3650d_BA.jsonl",
+          "sha256": "fcd0b7261a46a08ce4cd7e0b961a00002a6c662a005b9071844cc7ccfe3c20e6",
+          "size_bytes": 731513897
+        },
+        {
+          "checksum_source": "pr_b1_committed_metadata",
+          "logical_file_id": "candles_EUR_CAD_M1_3650d_BA.jsonl",
+          "sha256": "1e93c87715c062b11641a73a529fcc123e5db81fe77b52dad6eb2b38db7c2c07",
+          "size_bytes": 746361863
+        },
+        {
+          "checksum_source": "pr_b1_committed_metadata",
+          "logical_file_id": "candles_AUD_NZD_M1_3650d_BA.jsonl",
+          "sha256": "d27cb15b3d35a03fc5ba8bd58b54e4d3c0e6b3ed1e00709f9ad2da92497867c3",
+          "size_bytes": 741648107
+        },
+        {
+          "checksum_source": "pr_b1_committed_metadata",
+          "logical_file_id": "candles_AUD_CAD_M1_3650d_BA.jsonl",
+          "sha256": "c28557ee675864cf61c09e60517141908a4ad650d44c1001754a886c4daabada",
+          "size_bytes": 742543882
+        },
+        {
+          "checksum_source": "pr_b1_committed_metadata",
+          "logical_file_id": "candles_GBP_AUD_M1_3650d_BA.jsonl",
+          "sha256": "010acb5f278fecc8f6fd87d1b0121a0cb667f5d18f06a2860e86f181e754168e",
+          "size_bytes": 746031139
+        },
+        {
+          "checksum_source": "pr_b1_committed_metadata",
+          "logical_file_id": "candles_GBP_CHF_M1_3650d_BA.jsonl",
+          "sha256": "323abedf0f623d45d884279b5778473487c62285e91ddc33f367aa6058dbdf23",
+          "size_bytes": 742086044
+        }
+      ],
+      "pr_b1_evidence_reference": "artifacts/gate_p1_pr_b/firstrun_3650d_ba/raw_inventory_3650d_BA.json",
+      "span_id": "3650d_BA"
+    }
+  ],
+  "total_file_count": 60
+}

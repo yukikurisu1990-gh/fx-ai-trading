@@ -1,0 +1,60 @@
+{
+  "backup_hdd": "NOT_EXECUTED_DEFERRED",
+  "base_master_sha": "2f61a733303f60ef3fa3eb693a0545d32fbcb928",
+  "contract_version": "foundation-t2.v1",
+  "destination_logical_alias": "T2_PRIMARY_R2",
+  "generated_at": "2026-07-02T00:00:00Z",
+  "git_sha": "2f61a733303f60ef3fa3eb693a0545d32fbcb928",
+  "ipfs_sidecar": "NOT_EXECUTED_DEFERRED",
+  "manifest_id": "t2-all-spans-20260702",
+  "notice": "Foundation T2 harness run. Metadata-only evidence; no raw rows, credentials, env values, signed URLs, tokens, or local absolute paths. Deposit/restore checksums are referenced from committed PR-B.1 metadata; no raw data was re-read. No byte-admissibility approval, no new-epoch adoption, no ML Step 4, no production change, no model / backtest / trading metric.",
+  "operator_authorisation_reference": "NOT_APPLICABLE_NO_REAL_DEPOSIT_ATTEMPTED",
+  "per_span_status": [
+    {
+      "deposit_status": "NOT_PERFORMED",
+      "file_count": 20,
+      "reason": "T2_CREDENTIALS_UNAVAILABLE",
+      "restore_status": "NOT_PERFORMED",
+      "roundtrip_status": "NOT_PERFORMED",
+      "span_id": "365d_BA"
+    },
+    {
+      "deposit_status": "NOT_PERFORMED",
+      "file_count": 20,
+      "reason": "T2_CREDENTIALS_UNAVAILABLE",
+      "restore_status": "NOT_PERFORMED",
+      "roundtrip_status": "NOT_PERFORMED",
+      "span_id": "730d_BA"
+    },
+    {
+      "deposit_status": "NOT_PERFORMED",
+      "file_count": 20,
+      "reason": "T2_CREDENTIALS_UNAVAILABLE",
+      "restore_status": "NOT_PERFORMED",
+      "roundtrip_status": "NOT_PERFORMED",
+      "span_id": "3650d_BA"
+    }
+  ],
+  "real_cloud_deposit_status": "T2_EXECUTION_STOPPED_BEFORE_DEPOSIT",
+  "run_id": "t2-all-spans-20260702",
+  "statuses": [
+    "T2_MULTI_SPAN_MANIFEST_PREPARED",
+    "T2_EVIDENCE_METADATA_ONLY",
+    "T2_EVIDENCE_SCRUBBED",
+    "T2_CREDENTIALS_UNAVAILABLE",
+    "BYTE_ADMISSIBILITY_NOT_APPROVED",
+    "NEW_EPOCH_NOT_AUTHORISED",
+    "ML_STEP4_NOT_AUTHORISED",
+    "PRODUCTION_CHANGE_NOT_AUTHORISED",
+    "MODEL_TRAINING_NOT_AUTHORISED",
+    "BACKTEST_NOT_AUTHORISED",
+    "TRADING_METRICS_NOT_COMPUTED",
+    "LLM_INTEGRATION_NOT_AUTHORISED"
+  ],
+  "target_spans": [
+    "365d_BA",
+    "730d_BA",
+    "3650d_BA"
+  ],
+  "top_level_status": "T2_EXECUTION_STOPPED_BEFORE_DEPOSIT"
+}
