@@ -27,11 +27,12 @@ def _render_markdown(report: dict[str, Any]) -> str:
         f"- experiment_id: `{report['experiment_id']}`\n"
         f"- markers: {', '.join(report['markers'])}\n\n"
         "## Non-scope\n\n"
-        "SYNTHETIC_ONLY / NOT_REAL_EXPERIMENT_EVIDENCE. NO_MODEL_RUN, NO_BACKTEST,"
-        " NO_TRADING_METRICS. No real data read; no features / labels / model /"
-        " inference / sweep / replay; no PnL / Sharpe / IC / MI / oracle /"
-        " calibration / expected value. No T2 execution, byte-admissibility,"
-        " new-epoch adoption, production routing, or LLM integration authorised.\n"
+        "SYNTHETIC_ONLY / NOT_REAL_EXPERIMENT_EVIDENCE. NO_REAL_DATA,"
+        " NO_MODEL_RUN, NO_BACKTEST, NO_TRADING_METRICS. No real data read; no"
+        " features / labels / model / inference / sweep / replay; no"
+        " trading-performance metrics computed. No T2 execution,"
+        " byte-admissibility, new-epoch adoption, production routing, or LLM"
+        " integration authorised.\n"
     )
 
 

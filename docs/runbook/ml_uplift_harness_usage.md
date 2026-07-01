@@ -51,6 +51,30 @@ real-run / downstream authorisation. It writes only `synthetic_report.json` +
 `HARNESS_CONTRACT_VALIDATED_SYNTHETIC_ONLY`, `REAL_EXPERIMENT_NOT_AUTHORISED`,
 `MODEL_TRAINING_NOT_AUTHORISED`, `T2_NOT_AUTHORISED`, ...).
 
+## Step 3 — synthetic dry-run
+
+A committed synthetic dry-run config + example report demonstrate the harness
+running end-to-end in synthetic-only mode:
+
+```bash
+python scripts/run_ml_uplift_harness.py \
+  --config tests/fixtures/ml_uplift_harness/synthetic_dry_run_config.json \
+  --output-root /tmp/ml_uplift_step3
+```
+
+Committed synthetic example (clearly marked, `tests/fixtures/` only — never
+under `artifacts/` or `data/`):
+
+- `tests/fixtures/ml_uplift_harness/synthetic_dry_run_config.json`
+- `tests/fixtures/ml_uplift_harness/synthetic_reports/synthetic_dry_run_report.json`
+- `tests/fixtures/ml_uplift_harness/synthetic_reports/synthetic_dry_run_report.md`
+
+The example carries all markers (`SYNTHETIC_ONLY`, `NOT_REAL_EXPERIMENT_EVIDENCE`,
+`NO_REAL_DATA`, `NO_MODEL_RUN`, `NO_BACKTEST`, `NO_TRADING_METRICS`) and
+not-authorised statuses (`REAL_EXPERIMENT_NOT_AUTHORISED`, `T2_NOT_AUTHORISED`,
+`BYTE_ADMISSIBILITY_NOT_APPROVED`, `NEW_EPOCH_NOT_AUTHORISED`,
+`PRODUCTION_CHANGE_NOT_AUTHORISED`), and contains no performance metrics.
+
 ## Non-scope / bindings
 
 - No real experiment artifacts are committed under `artifacts/`; tests write to

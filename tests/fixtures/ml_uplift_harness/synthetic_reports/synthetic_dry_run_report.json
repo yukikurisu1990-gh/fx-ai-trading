@@ -1,0 +1,138 @@
+{
+  "artifact_manifest": {
+    "artifact_root": "C:\\Users\\yukik\\AppData\\Local\\Temp\\tmp10f5z8yn",
+    "experiment_dir": "C:\\Users\\yukik\\AppData\\Local\\Temp\\tmp10f5z8yn\\synthetic-dry-run-step3",
+    "planned_report_files": [
+      "report.md",
+      "synthetic_report.json"
+    ],
+    "write_performed": false
+  },
+  "contract_echo": {
+    "code_sha": "SYNTHETIC_DRY_RUN_FIXED_SHA",
+    "contract_version": "ml-uplift-harness.v1",
+    "cost_contract": {
+      "commission_hurdle": 0.0,
+      "slippage_stress": "synthetic_placeholder",
+      "spread_assumption": 0.0
+    },
+    "data_span": {
+      "candidate_span_id": "synthetic-dry-run-span",
+      "real_data_authorised": false,
+      "synthetic_fixture": true
+    },
+    "experiment_id": "synthetic-dry-run-step3",
+    "feature_set": {
+      "feature_family": [
+        "placeholder_family_a",
+        "placeholder_family_b"
+      ],
+      "feature_set_id": "synthetic-fs-placeholder"
+    },
+    "generated_at": "2026-07-01T00:00:00Z",
+    "label_contract": {
+      "barrier_type": "synthetic_barrier_placeholder",
+      "cost_inclusion": true,
+      "horizon": 30,
+      "label_contract_id": "synthetic-lc-placeholder"
+    },
+    "model_config": {
+      "hyperparameters": {
+        "placeholder": true
+      },
+      "model_family": "synthetic_placeholder",
+      "random_seed": 42
+    },
+    "non_authorisation": {
+      "backtest_performed": false,
+      "byte_admissibility_approved": false,
+      "feature_generation_performed": false,
+      "label_generation_performed": false,
+      "llm_integration_authorised": false,
+      "model_inference_performed": false,
+      "model_training_performed": false,
+      "new_epoch_adoption_authorised": false,
+      "production_change_authorised": false,
+      "real_data_read": false,
+      "replay_performed": false,
+      "sweep_performed": false,
+      "t2_execution_authorised": false,
+      "trading_metrics_computed": false
+    },
+    "output_report": {
+      "artifact_root": "SET_BY_RUNNER_TO_SAFE_OUTPUT_ROOT",
+      "metrics_schema": [
+        "outcome_metric_name_placeholder",
+        "trade_quality_metric_name_placeholder"
+      ],
+      "report_files": [
+        "synthetic_report.json",
+        "report.md"
+      ]
+    },
+    "purpose": "Step 3 harness end-to-end synthetic dry run (SYNTHETIC_ONLY; no real experiment)",
+    "validation_split": {
+      "embargo_bars": 5,
+      "purged": true,
+      "split_type": "synthetic_walk_forward_placeholder",
+      "walk_forward_folds": 3
+    }
+  },
+  "experiment_id": "synthetic-dry-run-step3",
+  "markers": [
+    "SYNTHETIC_ONLY",
+    "NOT_REAL_EXPERIMENT_EVIDENCE",
+    "NO_REAL_DATA",
+    "NO_MODEL_RUN",
+    "NO_BACKTEST",
+    "NO_TRADING_METRICS"
+  ],
+  "metrics_schema_names_only": [
+    "outcome_metric_name_placeholder",
+    "trade_quality_metric_name_placeholder"
+  ],
+  "non_authorisation_flags": {
+    "backtest_performed": false,
+    "byte_admissibility_approved": false,
+    "feature_generation_performed": false,
+    "label_generation_performed": false,
+    "llm_integration_authorised": false,
+    "model_inference_performed": false,
+    "model_training_performed": false,
+    "new_epoch_adoption_authorised": false,
+    "production_change_authorised": false,
+    "real_data_read": false,
+    "replay_performed": false,
+    "sweep_performed": false,
+    "t2_execution_authorised": false,
+    "trading_metrics_computed": false
+  },
+  "notice": "SYNTHETIC_ONLY harness report; NOT_REAL_EXPERIMENT_EVIDENCE. NO_REAL_DATA, NO_MODEL_RUN, NO_BACKTEST, NO_TRADING_METRICS. No real data was read; no features / labels / model / inference / sweep / replay occurred; no trading-performance metrics were computed. No T2 execution, byte-admissibility, new-epoch adoption, production routing, or LLM integration was authorised. This is harness scaffolding validation only.",
+  "provenance": {
+    "code_sha": "SYNTHETIC_DRY_RUN_FIXED_SHA",
+    "contract_version": "ml-uplift-harness.v1",
+    "generated_at": "2026-07-01T00:00:00Z",
+    "hashes": {
+      "cost_contract_hash": "3c0308b2886a3e9cb19814d7c371136cd889ac37470c16ad562795389886996f",
+      "experiment_contract_hash": "e3689c6f55e0bba363729fd746ae512a5e484fbcca53e926bb65b9c748a4553f",
+      "feature_contract_hash": "9f3741471a00fe16eee88606694b07e1f7918ce5b3a0914c0b89f03c59bf923a",
+      "label_contract_hash": "6d08efc0edbd0376206b1ec079f1a73b8921bcf1018863c5d75e4102322034f5",
+      "model_config_hash": "ad0cfb41cc1cec53a0ada85e2fde709a648a10f0c3f04b4c4fc5bad74fa718c2",
+      "validation_contract_hash": "4c61c82de83c775736df76f96dfcc10b18342da77335b00d08eaa919822b41ca"
+    }
+  },
+  "purpose": "Step 3 harness end-to-end synthetic dry run (SYNTHETIC_ONLY; no real experiment)",
+  "statuses": [
+    "HARNESS_CONTRACT_VALIDATED_SYNTHETIC_ONLY",
+    "HARNESS_REPORT_SHAPE_VALIDATED_SYNTHETIC_ONLY",
+    "REAL_EXPERIMENT_NOT_AUTHORISED",
+    "REAL_DATA_READ_NOT_AUTHORISED",
+    "MODEL_TRAINING_NOT_AUTHORISED",
+    "BACKTEST_NOT_AUTHORISED",
+    "TRADING_METRICS_NOT_COMPUTED",
+    "T2_NOT_AUTHORISED",
+    "BYTE_ADMISSIBILITY_NOT_APPROVED",
+    "NEW_EPOCH_NOT_AUTHORISED",
+    "PRODUCTION_CHANGE_NOT_AUTHORISED"
+  ]
+}
