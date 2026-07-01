@@ -39,7 +39,7 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
-SUPPORTED_MODES = ("stub", "b1")
+SUPPORTED_MODES = ("stub", "b1", "b2")
 
 # PR-B.0 stub output defaults OUTSIDE the repository, in a clearly stub-only
 # system-temp location. A PR-B.0 stub report must never be written under
@@ -80,6 +80,8 @@ EXIT_PREFLIGHT_FAILED = 1
 EXIT_INNER_CRASHED = 2
 EXIT_AUDIT_FAILED = 3
 
+_PR_B_STAGE_BY_MODE = {"stub": "PR-B.0", "b1": "PR-B.1", "b2": "PR-B.2"}
+
 # Minimal env keys forwarded to the inner process (plan §13.Q8). Credential-
 # pattern keys are excluded by construction.
 _ENV_ALLOWLIST = (
@@ -119,6 +121,14 @@ def _git(*args: str) -> subprocess.CompletedProcess[str]:
 def _tracked_dirty(porcelain: str) -> list[str]:
     """Return tracked (non-``??``) porcelain lines."""
     return [ln for ln in porcelain.splitlines() if ln and not ln.startswith("??")]
+
+
+def _base_master_sha() -> str | None:
+    """Best-effort merge-base of HEAD with origin/master (provenance only)."""
+    try:
+        return _git("merge-base", "HEAD", "origin/master").stdout.strip() or None
+    except (subprocess.CalledProcessError, FileNotFoundError):
+        return None
 
 
 def _scrubbed_env() -> dict[str, str]:
@@ -230,9 +240,9 @@ def run(argv: list[str] | None = None) -> int:
     if args.mode not in SUPPORTED_MODES:
         return _fail(
             f"mode '{args.mode}' is not implemented. Supported: 'stub' (PR-B.0 "
-            "inert) and 'b1' (PR-B.1 read-only inspection). PR-B.2 "
-            "(dependency/pipeline) is NOT implemented and requires separate "
-            "authorisation."
+            "inert), 'b1' (PR-B.1 read-only inspection), 'b2' (PR-B.2 static "
+            "dependency inventory + pipeline feasibility). Any other mode "
+            "requires separate authorisation."
         )
 
     report_id = args.report_id or _utc_now_iso().replace(":", "").replace("-", "")
@@ -241,7 +251,7 @@ def run(argv: list[str] | None = None) -> int:
 
     if args.report_root is not None:
         report_root = Path(args.report_root).resolve()
-    elif args.mode == "b1":
+    elif args.mode in ("b1", "b2"):
         report_root = DEFAULT_B1_REPORT_ROOT.resolve()
     else:
         report_root = DEFAULT_STUB_REPORT_ROOT.resolve()
@@ -258,6 +268,7 @@ def run(argv: list[str] | None = None) -> int:
     try:
         clean_code_sha = _git("rev-parse", "HEAD").stdout.strip()
         porcelain_before = _git("status", "--porcelain").stdout
+        base_master_sha = _base_master_sha()
     except (subprocess.CalledProcessError, FileNotFoundError) as exc:
         return _fail(f"git unavailable or not a repo: {exc}")
 
@@ -285,7 +296,8 @@ def run(argv: list[str] | None = None) -> int:
         "pr_b_code_hash": pr_b_code_hash,
         "first_run_mode": args.first_run,
         "mode": args.mode,
-        "pr_b_stage": "PR-B.1" if args.mode == "b1" else "PR-B.0",
+        "base_master_sha": base_master_sha,
+        "pr_b_stage": _PR_B_STAGE_BY_MODE.get(args.mode, "PR-B.0"),
     }
     envelope_path = report_dir / "execution_envelope.json"
     if envelope_path.resolve().parent != report_dir.resolve():
@@ -312,6 +324,8 @@ def run(argv: list[str] | None = None) -> int:
         inner_argv += ["--repo-root", str(REPO_ROOT)]
         if args.candidate_spans:
             inner_argv += ["--candidate-spans", args.candidate_spans]
+    elif args.mode == "b2":
+        inner_argv += ["--repo-root", str(REPO_ROOT)]
     inner = subprocess.run(
         inner_argv,
         cwd=str(REPO_ROOT),

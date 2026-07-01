@@ -126,6 +126,43 @@ PR-B.1 emits derived-metadata artifacts under `<report-root>/<id>/`:
   `gate_p1_report`, or `gate_p2_verification`, or anywhere in-repo other than
   the controlled `artifacts/gate_p1_pr_b` subtree.
 
+## PR-B.2 (static dependency inventory + pipeline feasibility)
+
+PR-B.2 completes the read-only Gate P1 surface with two **static** inspections,
+invoked through the same guarded launcher with `--mode b2`:
+
+```bash
+# Default b2 report root is the controlled artifacts/gate_p1_pr_b/<id>/:
+python scripts/gate_p1_pr_b_launcher.py --mode b2 --report-id run-b2-001
+
+# Explicit external (test-controlled) root:
+python scripts/gate_p1_pr_b_launcher.py --mode b2 --report-id t --report-root /tmp/out
+```
+
+PR-B.2 scope: **static dependency inventory** (AST-derived import graph of
+representative consumer sources + inspector self-check that no production
+trading module is imported) and **static pipeline feasibility** (AST reference
+scan + read-only check that committed PR-B.1 metadata exists for 365d_BA /
+730d_BA / 3650d_BA). It imports no production module, executes nothing, reads no
+raw data, and computes no trading metric.
+
+PR-B.2 emits derived-metadata artifacts under `<report-root>/<id>/`:
+`gate_p1_pr_b2_report.json`, `dependency_inventory.json`,
+`pipeline_feasibility.json`, `report.md`.
+
+Allowed top-level PR-B.2 outcomes (PASS structurally unreachable):
+`GATE_P1_READONLY_SURFACE_STATICALLY_OBSERVED_RETENTION_PROBE_REQUIRED`,
+`..._PARTIAL_STATIC_FEASIBILITY`, `..._INSUFFICIENT_STATIC_EVIDENCE`,
+`..._HALTED`.
+
+### PR-B.2 non-scope
+
+- No pipeline / model / backtest / sweep / replay execution.
+- No raw data / archive read; no labels / features / trades / metrics.
+- No T2 execution, cloud config, upload / deposit / round-trip, object-lock, or
+  byte-admissibility approval.
+- No new-epoch construction; no production routing; no PR-B.1 outcome change.
+
 ## Status bindings preserved
 
 - T1 = Gate P1 PR-B implementation / review; **PR-B.0 = infrastructure only**.
