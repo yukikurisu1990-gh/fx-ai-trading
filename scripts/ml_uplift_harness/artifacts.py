@@ -71,26 +71,43 @@ def validate_artifact_root(artifact_root: str | os.PathLike[str]) -> Path:
     )
 
 
+def resolve_experiment_dir(artifact_root: str | os.PathLike[str], experiment_id: str) -> Path:
+    """Return the absolute experiment output dir for writing (validated root)."""
+    return validate_artifact_root(artifact_root) / experiment_id
+
+
+def _machine_independent_dir(experiment_dir: Path) -> str:
+    """Return a report-safe (no absolute / personal-machine) dir reference."""
+    try:
+        return experiment_dir.relative_to(_REPO_ROOT).as_posix()
+    except ValueError:
+        # External (temp/test) root: keep only the root basename + experiment id
+        # so no personal-machine path prefix is recorded.
+        return f"{experiment_dir.parent.name}/{experiment_dir.name}"
+
+
 def plan_artifact_manifest(
     artifact_root: str | os.PathLike[str],
     experiment_id: str,
     report_files: list[str],
 ) -> dict[str, Any]:
-    """Deterministic report manifest under a validated root (no files written)."""
-    root = validate_artifact_root(artifact_root)
-    experiment_dir = root / experiment_id
+    """Deterministic, machine-independent report manifest (no files written).
+
+    The manifest records NO absolute / personal-machine path — only a repo-
+    relative or basename-scoped reference — so it is safe to commit.
+    """
+    experiment_dir = resolve_experiment_dir(artifact_root, experiment_id)
     planned = []
     for name in sorted(report_files):
         target = (experiment_dir / name).resolve()
-        # Reject traversal outside the experiment dir.
         if experiment_dir.resolve() not in target.parents and target != experiment_dir.resolve():
             raise HarnessContractError(f"planned report file '{name}' escapes the experiment dir")
         if target.suffix not in (".json", ".md"):
             raise HarnessContractError(f"planned report file '{name}' must be .json or .md")
         planned.append(target.name)
     return {
-        "artifact_root": str(root),
-        "experiment_dir": str(experiment_dir),
+        "artifact_root_basename": experiment_dir.parent.name,
+        "experiment_dir_reference": _machine_independent_dir(experiment_dir),
         "planned_report_files": planned,
         "write_performed": False,
     }

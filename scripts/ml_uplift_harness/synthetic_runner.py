@@ -11,7 +11,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any
 
-from .artifacts import plan_artifact_manifest
+from .artifacts import plan_artifact_manifest, resolve_experiment_dir
 from .contracts import HarnessContractError, contract_from_dict
 from .provenance import capture_provenance
 from .reporting import build_synthetic_report, write_markdown, write_report
@@ -27,11 +27,12 @@ def _render_markdown(report: dict[str, Any]) -> str:
         f"- experiment_id: `{report['experiment_id']}`\n"
         f"- markers: {', '.join(report['markers'])}\n\n"
         "## Non-scope\n\n"
-        "SYNTHETIC_ONLY / NOT_REAL_EXPERIMENT_EVIDENCE. NO_MODEL_RUN, NO_BACKTEST,"
-        " NO_TRADING_METRICS. No real data read; no features / labels / model /"
-        " inference / sweep / replay; no PnL / Sharpe / IC / MI / oracle /"
-        " calibration / expected value. No T2 execution, byte-admissibility,"
-        " new-epoch adoption, production routing, or LLM integration authorised.\n"
+        "SYNTHETIC_ONLY / NOT_REAL_EXPERIMENT_EVIDENCE. NO_REAL_DATA,"
+        " NO_MODEL_RUN, NO_BACKTEST, NO_TRADING_METRICS. No real data read; no"
+        " features / labels / model / inference / sweep / replay; no"
+        " trading-performance metrics computed. No T2 execution,"
+        " byte-admissibility, new-epoch adoption, production routing, or LLM"
+        " integration authorised.\n"
     )
 
 
@@ -52,11 +53,12 @@ def run_synthetic_smoke(
 
     contract = contract_from_dict(payload)
     provenance = capture_provenance(contract, code_sha=code_sha)
-    manifest = plan_artifact_manifest(
-        output_root, contract.experiment_id, contract.output_report.report_files or [_REPORT_JSON]
-    )
+    report_files = contract.output_report.report_files or [_REPORT_JSON]
+    manifest = plan_artifact_manifest(output_root, contract.experiment_id, report_files)
 
-    output_dir = Path(manifest["experiment_dir"])
+    # The manifest is machine-independent; the actual write dir is resolved
+    # separately and never embedded in the committed report.
+    output_dir = resolve_experiment_dir(output_root, contract.experiment_id)
     output_dir.mkdir(parents=True, exist_ok=True)
 
     report = build_synthetic_report(contract, provenance, manifest, result.status)

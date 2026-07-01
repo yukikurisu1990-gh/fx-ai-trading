@@ -65,12 +65,12 @@ def build_synthetic_report(
         "metrics_schema_names_only": contract.output_report.metrics_schema,
         "notice": (
             "SYNTHETIC_ONLY harness report; NOT_REAL_EXPERIMENT_EVIDENCE. "
-            "NO_MODEL_RUN, NO_BACKTEST, NO_TRADING_METRICS. No real data was "
-            "read; no features / labels / model / inference / sweep / replay "
-            "occurred; no PnL / Sharpe / IC / MI / oracle / calibration / "
-            "expected-value computed. No T2 execution, byte-admissibility, "
-            "new-epoch adoption, production routing, or LLM integration was "
-            "authorised. This is harness scaffolding validation only."
+            "NO_REAL_DATA, NO_MODEL_RUN, NO_BACKTEST, NO_TRADING_METRICS. No real "
+            "data was read; no features / labels / model / inference / sweep / "
+            "replay occurred; no trading-performance metrics were computed. No "
+            "T2 execution, byte-admissibility, new-epoch adoption, production "
+            "routing, or LLM integration was authorised. This is harness "
+            "scaffolding validation only."
         ),
     }
 

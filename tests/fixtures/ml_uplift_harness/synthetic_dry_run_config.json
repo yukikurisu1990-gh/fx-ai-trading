@@ -1,0 +1,44 @@
+{
+  "experiment_id": "synthetic-dry-run-step3",
+  "purpose": "Step 3 harness end-to-end synthetic dry run (SYNTHETIC_ONLY; no real experiment)",
+  "generated_at": "2026-07-01T00:00:00Z",
+  "code_sha": "SYNTHETIC_DRY_RUN_FIXED_SHA",
+  "contract_version": "ml-uplift-harness.v1",
+  "data_span": {
+    "candidate_span_id": "synthetic-dry-run-span",
+    "synthetic_fixture": true,
+    "real_data_authorised": false
+  },
+  "feature_set": {
+    "feature_set_id": "synthetic-fs-placeholder",
+    "feature_family": ["placeholder_family_a", "placeholder_family_b"]
+  },
+  "label_contract": {
+    "label_contract_id": "synthetic-lc-placeholder",
+    "horizon": 30,
+    "barrier_type": "synthetic_barrier_placeholder",
+    "cost_inclusion": true
+  },
+  "cost_contract": {
+    "spread_assumption": 0.0,
+    "slippage_stress": "synthetic_placeholder",
+    "commission_hurdle": 0.0
+  },
+  "validation_split": {
+    "split_type": "synthetic_walk_forward_placeholder",
+    "walk_forward_folds": 3,
+    "purged": true,
+    "embargo_bars": 5
+  },
+  "model_config": {
+    "model_family": "synthetic_placeholder",
+    "hyperparameters": {"placeholder": true},
+    "random_seed": 42
+  },
+  "output_report": {
+    "artifact_root": "SET_BY_RUNNER_TO_SAFE_OUTPUT_ROOT",
+    "report_files": ["synthetic_report.json", "report.md"],
+    "metrics_schema": ["outcome_metric_name_placeholder", "trade_quality_metric_name_placeholder"]
+  },
+  "non_authorisation": {}
+}
