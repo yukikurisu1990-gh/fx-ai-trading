@@ -1,0 +1,60 @@
+{
+  "backtest_executed": false,
+  "base_master_sha": "74922cc1449254fb57873e57bfce9aa9345aef21",
+  "byte_admissibility_approved": false,
+  "dependency_inventory_performed": true,
+  "dependency_inventory_summary": {
+    "consumer_count": 2,
+    "distinct_labels": [
+      "STATIC_DEPENDENCY_OBSERVED"
+    ],
+    "forbidden_to_execute_count": 0
+  },
+  "feature_generation_performed": false,
+  "first_run_pass_structurally_unreachable": true,
+  "generated_at": "2026-07-01T13:32:41Z",
+  "git_commit_sha": "adc0761c83380d2312a9b06f6ce1e2ce78a40231",
+  "label_generation_performed": false,
+  "model_executed": false,
+  "new_epoch_adoption_authorised": false,
+  "notice": "PR-B.2 static dependency inventory + pipeline feasibility. AST/source and committed PR-B.1 metadata only. No pipeline / model / backtest execution, no raw data, no trading metrics. No byte-admissibility approval, no T2 authorisation, no new-epoch adoption, no production claim. PR-B.1 span outcomes are unchanged.",
+  "pipeline_executed": false,
+  "pipeline_feasibility_performed": true,
+  "pipeline_feasibility_summary": {
+    "pr_b1_evidence_all_expected_outcome": true,
+    "pr_b1_evidence_all_present": true,
+    "pr_b1_expected_outcome": "LOCAL_DATA_CANDIDATE_PARTIAL_FEASIBILITY",
+    "pr_b1_expected_retention": "RETENTION_CAPABILITY_REQUIRES_SEPARATE_AUTHORISED_PROBE",
+    "references_found": 4,
+    "references_total": 4
+  },
+  "pr_b1_evidence_paths_consumed": [
+    "artifacts/gate_p1_pr_b/firstrun_365d_ba/gate_p1_report.json",
+    "artifacts/gate_p1_pr_b/firstrun_730d_ba/gate_p1_report.json",
+    "artifacts/gate_p1_pr_b/firstrun_3650d_ba/gate_p1_report.json"
+  ],
+  "pr_b1_span_status_unchanged": {
+    "3650d_BA": {
+      "retention_classification": "RETENTION_CAPABILITY_REQUIRES_SEPARATE_AUTHORISED_PROBE",
+      "top_level_outcome": "LOCAL_DATA_CANDIDATE_PARTIAL_FEASIBILITY"
+    },
+    "365d_BA": {
+      "retention_classification": "RETENTION_CAPABILITY_REQUIRES_SEPARATE_AUTHORISED_PROBE",
+      "top_level_outcome": "LOCAL_DATA_CANDIDATE_PARTIAL_FEASIBILITY"
+    },
+    "730d_BA": {
+      "retention_classification": "RETENTION_CAPABILITY_REQUIRES_SEPARATE_AUTHORISED_PROBE",
+      "top_level_outcome": "LOCAL_DATA_CANDIDATE_PARTIAL_FEASIBILITY"
+    }
+  },
+  "pr_b2_implemented": true,
+  "pr_b_code_hash": "56c11ef5401aeac7eb7715bcd096483e5dc865e33ba6dec963386e87d5d0f2f9",
+  "pr_b_stage": "PR-B.2",
+  "production_change_authorised": false,
+  "raw_data_read": false,
+  "report_id": "firstrun_pr_b2_dependency_pipeline",
+  "schema_version": "gate-p1-pr-b-2.0",
+  "t2_execution_authorised": false,
+  "top_level_outcome": "GATE_P1_READONLY_SURFACE_STATICALLY_OBSERVED_RETENTION_PROBE_REQUIRED",
+  "trading_metrics_computed": false
+}

@@ -1,0 +1,179 @@
+{
+  "backtest_executed": false,
+  "byte_admissibility_approved": false,
+  "consumers": [
+    {
+      "dependencies": [
+        {
+          "kind": "stdlib",
+          "label": "STATIC_DEPENDENCY_OBSERVED",
+          "module": "__future__",
+          "top_level": "__future__"
+        },
+        {
+          "kind": "stdlib",
+          "label": "STATIC_DEPENDENCY_OBSERVED",
+          "module": "argparse",
+          "top_level": "argparse"
+        },
+        {
+          "kind": "stdlib",
+          "label": "STATIC_DEPENDENCY_OBSERVED",
+          "module": "datetime",
+          "top_level": "datetime"
+        },
+        {
+          "kind": "stdlib",
+          "label": "STATIC_DEPENDENCY_OBSERVED",
+          "module": "json",
+          "top_level": "json"
+        },
+        {
+          "kind": "third_party",
+          "label": "STATIC_DEPENDENCY_OBSERVED",
+          "module": "numpy",
+          "top_level": "numpy"
+        },
+        {
+          "kind": "third_party",
+          "label": "STATIC_DEPENDENCY_OBSERVED",
+          "module": "pandas",
+          "top_level": "pandas"
+        },
+        {
+          "kind": "stdlib",
+          "label": "STATIC_DEPENDENCY_OBSERVED",
+          "module": "pathlib",
+          "top_level": "pathlib"
+        },
+        {
+          "kind": "third_party",
+          "label": "STATIC_DEPENDENCY_OBSERVED",
+          "module": "pyarrow",
+          "top_level": "pyarrow"
+        },
+        {
+          "kind": "third_party",
+          "label": "STATIC_DEPENDENCY_OBSERVED",
+          "module": "pyarrow.parquet",
+          "top_level": "pyarrow"
+        },
+        {
+          "kind": "stdlib",
+          "label": "STATIC_DEPENDENCY_OBSERVED",
+          "module": "sys",
+          "top_level": "sys"
+        },
+        {
+          "kind": "stdlib",
+          "label": "STATIC_DEPENDENCY_OBSERVED",
+          "module": "time",
+          "top_level": "time"
+        }
+      ],
+      "present": true,
+      "source_path": "scripts/stage23_0a_build_outcome_dataset.py"
+    },
+    {
+      "dependencies": [
+        {
+          "kind": "stdlib",
+          "label": "STATIC_DEPENDENCY_OBSERVED",
+          "module": "__future__",
+          "top_level": "__future__"
+        },
+        {
+          "kind": "stdlib",
+          "label": "STATIC_DEPENDENCY_OBSERVED",
+          "module": "argparse",
+          "top_level": "argparse"
+        },
+        {
+          "kind": "stdlib",
+          "label": "STATIC_DEPENDENCY_OBSERVED",
+          "module": "datetime",
+          "top_level": "datetime"
+        },
+        {
+          "kind": "stdlib",
+          "label": "STATIC_DEPENDENCY_OBSERVED",
+          "module": "json",
+          "top_level": "json"
+        },
+        {
+          "kind": "third_party",
+          "label": "STATIC_DEPENDENCY_OBSERVED",
+          "module": "numpy",
+          "top_level": "numpy"
+        },
+        {
+          "kind": "third_party",
+          "label": "STATIC_DEPENDENCY_OBSERVED",
+          "module": "pandas",
+          "top_level": "pandas"
+        },
+        {
+          "kind": "stdlib",
+          "label": "STATIC_DEPENDENCY_OBSERVED",
+          "module": "pathlib",
+          "top_level": "pathlib"
+        },
+        {
+          "kind": "third_party",
+          "label": "STATIC_DEPENDENCY_OBSERVED",
+          "module": "pyarrow",
+          "top_level": "pyarrow"
+        },
+        {
+          "kind": "third_party",
+          "label": "STATIC_DEPENDENCY_OBSERVED",
+          "module": "pyarrow.parquet",
+          "top_level": "pyarrow"
+        },
+        {
+          "kind": "stdlib",
+          "label": "STATIC_DEPENDENCY_OBSERVED",
+          "module": "sys",
+          "top_level": "sys"
+        },
+        {
+          "kind": "stdlib",
+          "label": "STATIC_DEPENDENCY_OBSERVED",
+          "module": "time",
+          "top_level": "time"
+        }
+      ],
+      "present": true,
+      "source_path": "scripts/stage22_0a_scalp_label_design.py"
+    }
+  ],
+  "dependency_inventory_performed": true,
+  "feature_generation_performed": false,
+  "import_execution_performed": false,
+  "inspector_self_check": {
+    "inspector_free_of_production_imports": true,
+    "offending_imports": []
+  },
+  "label_generation_performed": false,
+  "method": "ast_source_text_only",
+  "model_executed": false,
+  "new_epoch_adoption_authorised": false,
+  "package_manager_invoked": false,
+  "pipeline_executed": false,
+  "pipeline_feasibility_performed": true,
+  "pr_b2_implemented": true,
+  "pr_b_code_hash": "56c11ef5401aeac7eb7715bcd096483e5dc865e33ba6dec963386e87d5d0f2f9",
+  "pr_b_stage": "PR-B.2",
+  "production_change_authorised": false,
+  "raw_data_read": false,
+  "schema_version": "gate-p1-pr-b-2.0",
+  "summary": {
+    "consumer_count": 2,
+    "distinct_labels": [
+      "STATIC_DEPENDENCY_OBSERVED"
+    ],
+    "forbidden_to_execute_count": 0
+  },
+  "t2_execution_authorised": false,
+  "trading_metrics_computed": false
+}
