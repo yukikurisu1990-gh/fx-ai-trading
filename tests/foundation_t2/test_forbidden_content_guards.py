@@ -67,8 +67,33 @@ def test_cli_run_produces_clean_metadata_only_evidence(tmp_path):
     report = json.loads((out / "guard-run" / "t2_roundtrip_report.json").read_text())
     # Real deposit not performed; no round-trip claimed.
     assert report["real_cloud_deposit_status"] == "T2_EXECUTION_STOPPED_BEFORE_DEPOSIT"
+    assert report["retention_probe_status"] == "RETENTION_PROBE_REMAINS_UNRESOLVED"
     for s in report["per_span_status"]:
         assert s["deposit_status"] == "NOT_PERFORMED"
+    # Required explicit did-not-happen statuses are present.
+    statuses = set(report["statuses"])
+    for required in (
+        "T2_EXECUTION_STOPPED_BEFORE_DEPOSIT",
+        "T2_CREDENTIALS_UNAVAILABLE",
+        "T2_DEPOSIT_NOT_PERFORMED",
+        "T2_RESTORE_NOT_PERFORMED",
+        "T2_ROUNDTRIP_NOT_PERFORMED",
+        "RETENTION_PROBE_REMAINS_UNRESOLVED",
+        "BYTE_ADMISSIBILITY_NOT_APPROVED",
+        "NEW_EPOCH_NOT_AUTHORISED",
+        "ML_STEP4_NOT_AUTHORISED",
+    ):
+        assert required in statuses, f"missing required status {required}"
+    # Forbidden success tokens must NOT appear anywhere (no real round-trip).
+    blob = json.dumps(report)
+    for forbidden in (
+        "T2_ROUNDTRIP_MATCH_OBSERVED",
+        "T2_SPAN_365D_BA_ROUNDTRIP_OBSERVED",
+        "T2_SPAN_730D_BA_ROUNDTRIP_OBSERVED",
+        "T2_SPAN_3650D_BA_ROUNDTRIP_OBSERVED",
+        "T2_EXECUTION_ATTEMPTED_WITH_AUTHORISATION",
+    ):
+        assert forbidden not in blob, f"forbidden success token leaked: {forbidden}"
     # Evidence is clean (scrubber ran at write time; re-scan here).
     assert scrub.scan_payload(report) == []
     clean = json.loads((out / "guard-run" / "evidence_cleanliness_report.json").read_text())

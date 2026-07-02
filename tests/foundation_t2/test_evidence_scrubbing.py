@@ -68,6 +68,7 @@ def test_write_evidence_writes_four_scrubbed_files(tmp_path):
         authorisation_reference="unit-test-authorisation",
         real_deposit_status="T2_EXECUTION_STOPPED_BEFORE_DEPOSIT",
         top_level_status="T2_EXECUTION_STOPPED_BEFORE_DEPOSIT",
+        retention_probe_status="RETENTION_PROBE_REMAINS_UNRESOLVED",
         per_span=[
             {
                 "span_id": b["span_id"],
@@ -97,6 +98,7 @@ def test_write_evidence_rejects_local_path_in_markdown(tmp_path):
         authorisation_reference="x",
         real_deposit_status="T2_EXECUTION_STOPPED_BEFORE_DEPOSIT",
         top_level_status="T2_EXECUTION_STOPPED_BEFORE_DEPOSIT",
+        retention_probe_status="RETENTION_PROBE_REMAINS_UNRESOLVED",
         per_span=[],
         extra_statuses=[],
     )

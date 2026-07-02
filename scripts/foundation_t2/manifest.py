@@ -41,7 +41,9 @@ def _span_files_from_pr_b1(repo_root: Path, span: str) -> list[dict[str, Any]]:
                 "logical_file_id": filename,  # basename only, machine-independent
                 "size_bytes": int(size),
                 "sha256": checksum,
-                "checksum_source": "pr_b1_committed_metadata",
+                # Copied verbatim from committed PR-B.1 metadata; NOT recomputed
+                # in this PR; no raw candidate bytes were read here.
+                "checksum_source": "copied_from_committed_pr_b1_metadata_not_recomputed",
             }
         )
     if not files:
@@ -74,7 +76,10 @@ def build_deposit_manifest(
         "manifest_id": manifest_id,
         "contract_version": T2_CONTRACT_VERSION,
         "checksum_algorithm": "sha256",
-        "checksum_source": "pr_b1_committed_metadata (no raw data re-read)",
+        "checksum_source": (
+            "copied from committed PR-B.1 metadata; not recomputed in this PR; "
+            "no raw candidate bytes read"
+        ),
         "spans": span_blocks,
         "total_file_count": total_files,
     }

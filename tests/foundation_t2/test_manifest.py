@@ -28,7 +28,10 @@ def test_manifest_from_synthetic_repo(tmp_path, synthetic_pr_b1_repo):
     synthetic_pr_b1_repo(tmp_path, pairs=2)
     m = build_deposit_manifest(tmp_path, "syn-manifest")
     assert m["total_file_count"] == 6  # 3 spans x 2 pairs
-    assert m["spans"][0]["files"][0]["checksum_source"] == "pr_b1_committed_metadata"
+    assert (
+        m["spans"][0]["files"][0]["checksum_source"]
+        == "copied_from_committed_pr_b1_metadata_not_recomputed"
+    )
 
 
 def test_manifest_missing_evidence_stops(tmp_path):

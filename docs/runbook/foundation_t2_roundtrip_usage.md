@@ -1,10 +1,13 @@
-# Foundation T2 — retention deposit + round-trip harness usage
+# Foundation T2 — round-trip harness + pre-deposit stop evidence usage
 
 **Stage:** Foundation **T2** (Gate P2 retention deposit + round-trip), governed
 by `docs/design/foundation_t2_execution_readiness_contract.md`.
-**Status in this repo:** harness implemented + validated synthetically; **real
-cloud deposit NOT performed** (no configured destination / credentials in this
-environment; the harness stops before deposit and never fakes success).
+**Status in this repo:** harness implemented + validated synthetically;
+**execution stopped before deposit** — **no deposit, no restore/download, and
+no round-trip verification were performed**, so the **retention probe remains
+unresolved**. (No configured destination / credentials in this environment; the
+harness stops before deposit and never fakes success.) Byte-admissibility
+remains not approved; new epoch not authorised; ML Step 4 not authorised.
 
 ---
 
@@ -37,10 +40,18 @@ python scripts/run_foundation_t2_roundtrip.py --run-id t2-all-spans-001 \
 ```
 
 In this environment the primary destination is unavailable, so the run reports
-`T2_EXECUTION_STOPPED_BEFORE_DEPOSIT` / `T2_CREDENTIALS_UNAVAILABLE` and writes
+`T2_EXECUTION_STOPPED_BEFORE_DEPOSIT` / `T2_CREDENTIALS_UNAVAILABLE` /
+`T2_DEPOSIT_NOT_PERFORMED` / `T2_RESTORE_NOT_PERFORMED` /
+`T2_ROUNDTRIP_NOT_PERFORMED` / `RETENTION_PROBE_REMAINS_UNRESOLVED` and writes
 metadata-only evidence under `artifacts/foundation_t2/<run_id>/`
 (`t2_manifest.json`, `t2_roundtrip_report.json`, `t2_roundtrip_report.md`,
-`evidence_cleanliness_report.json`).
+`evidence_cleanliness_report.json`). The `T2_*_ROUNDTRIP_OBSERVED` /
+`T2_ROUNDTRIP_MATCH_OBSERVED` tokens are emitted **only** after a real deposit +
+restore + checksum match — never on this stopped path.
+
+**SHA-256 provenance:** manifest checksums are copied verbatim from committed
+PR-B.1 metadata; they are not recomputed here and no raw candidate bytes are
+read.
 
 ## Real cloud round-trip (operator only, future)
 

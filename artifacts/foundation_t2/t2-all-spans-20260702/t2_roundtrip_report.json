@@ -1,13 +1,13 @@
 {
   "backup_hdd": "NOT_EXECUTED_DEFERRED",
-  "base_master_sha": "2f61a733303f60ef3fa3eb693a0545d32fbcb928",
+  "base_master_sha": "f588accdc08db21b7d015805f9869f3226998aed",
   "contract_version": "foundation-t2.v1",
   "destination_logical_alias": "T2_PRIMARY_R2",
   "generated_at": "2026-07-02T00:00:00Z",
-  "git_sha": "2f61a733303f60ef3fa3eb693a0545d32fbcb928",
+  "git_sha": "f588accdc08db21b7d015805f9869f3226998aed",
   "ipfs_sidecar": "NOT_EXECUTED_DEFERRED",
   "manifest_id": "t2-all-spans-20260702",
-  "notice": "Foundation T2 harness run. Metadata-only evidence; no raw rows, credentials, env values, signed URLs, tokens, or local absolute paths. Deposit/restore checksums are referenced from committed PR-B.1 metadata; no raw data was re-read. No byte-admissibility approval, no new-epoch adoption, no ML Step 4, no production change, no model / backtest / trading metric.",
+  "notice": "Foundation T2 round-trip harness + pre-deposit stop evidence. Execution stopped before deposit: NO deposit, NO restore/download, and NO round-trip verification were performed, so the retention probe remains UNRESOLVED. Metadata-only evidence; no raw rows, credentials, env values, signed URLs, tokens, or local absolute paths. SHA-256 values are copied from committed PR-B.1 metadata; they were not recomputed and no raw candidate bytes were read. No byte-admissibility approval, no new-epoch adoption, no ML Step 4, no production change, no model / backtest / trading metric.",
   "operator_authorisation_reference": "NOT_APPLICABLE_NO_REAL_DEPOSIT_ATTEMPTED",
   "per_span_status": [
     {
@@ -36,12 +36,18 @@
     }
   ],
   "real_cloud_deposit_status": "T2_EXECUTION_STOPPED_BEFORE_DEPOSIT",
+  "retention_probe_status": "RETENTION_PROBE_REMAINS_UNRESOLVED",
   "run_id": "t2-all-spans-20260702",
   "statuses": [
     "T2_MULTI_SPAN_MANIFEST_PREPARED",
     "T2_EVIDENCE_METADATA_ONLY",
     "T2_EVIDENCE_SCRUBBED",
+    "T2_EXECUTION_STOPPED_BEFORE_DEPOSIT",
     "T2_CREDENTIALS_UNAVAILABLE",
+    "T2_DEPOSIT_NOT_PERFORMED",
+    "T2_RESTORE_NOT_PERFORMED",
+    "T2_ROUNDTRIP_NOT_PERFORMED",
+    "RETENTION_PROBE_REMAINS_UNRESOLVED",
     "BYTE_ADMISSIBILITY_NOT_APPROVED",
     "NEW_EPOCH_NOT_AUTHORISED",
     "ML_STEP4_NOT_AUTHORISED",

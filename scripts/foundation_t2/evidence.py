@@ -37,6 +37,7 @@ def build_roundtrip_report(
     authorisation_reference: str,
     real_deposit_status: str,
     top_level_status: str,
+    retention_probe_status: str,
     per_span: list[dict[str, Any]],
     extra_statuses: list[str],
 ) -> dict[str, Any]:
@@ -53,6 +54,7 @@ def build_roundtrip_report(
         "target_spans": [b["span_id"] for b in manifest["spans"]],
         "top_level_status": top_level_status,
         "real_cloud_deposit_status": real_deposit_status,
+        "retention_probe_status": retention_probe_status,
         "per_span_status": per_span,
         "backup_hdd": "NOT_EXECUTED_DEFERRED",
         "ipfs_sidecar": "NOT_EXECUTED_DEFERRED",
@@ -64,12 +66,15 @@ def build_roundtrip_report(
             *NON_AUTHORISATION_STATUSES,
         ],
         "notice": (
-            "Foundation T2 harness run. Metadata-only evidence; no raw rows, "
+            "Foundation T2 round-trip harness + pre-deposit stop evidence. "
+            "Execution stopped before deposit: NO deposit, NO restore/download, "
+            "and NO round-trip verification were performed, so the retention "
+            "probe remains UNRESOLVED. Metadata-only evidence; no raw rows, "
             "credentials, env values, signed URLs, tokens, or local absolute "
-            "paths. Deposit/restore checksums are referenced from committed "
-            "PR-B.1 metadata; no raw data was re-read. No byte-admissibility "
-            "approval, no new-epoch adoption, no ML Step 4, no production "
-            "change, no model / backtest / trading metric."
+            "paths. SHA-256 values are copied from committed PR-B.1 metadata; "
+            "they were not recomputed and no raw candidate bytes were read. No "
+            "byte-admissibility approval, no new-epoch adoption, no ML Step 4, "
+            "no production change, no model / backtest / trading metric."
         ),
     }
 

@@ -42,7 +42,7 @@ NON_AUTHORISATION_STATUSES: Final[tuple[str, ...]] = (
     "LLM_INTEGRATION_NOT_AUTHORISED",
 )
 
-# --- Allowed failure / partial statuses ---
+# --- Allowed failure / partial / not-performed statuses ---
 T2_EXECUTION_STOPPED_BEFORE_DEPOSIT: Final[str] = "T2_EXECUTION_STOPPED_BEFORE_DEPOSIT"
 T2_DESTINATION_AMBIGUOUS: Final[str] = "T2_DESTINATION_AMBIGUOUS"
 T2_CREDENTIALS_UNAVAILABLE: Final[str] = "T2_CREDENTIALS_UNAVAILABLE"
@@ -52,6 +52,11 @@ T2_RESTORE_PARTIAL: Final[str] = "T2_RESTORE_PARTIAL"
 T2_ROUNDTRIP_MISMATCH: Final[str] = "T2_ROUNDTRIP_MISMATCH"
 T2_EVIDENCE_SCRUB_FAILED: Final[str] = "T2_EVIDENCE_SCRUB_FAILED"
 T2_REMOTE_STATE_UNCERTAIN: Final[str] = "T2_REMOTE_STATE_UNCERTAIN"
+# Explicit "did-not-happen" statuses for the pre-deposit-stop path.
+T2_DEPOSIT_NOT_PERFORMED: Final[str] = "T2_DEPOSIT_NOT_PERFORMED"
+T2_RESTORE_NOT_PERFORMED: Final[str] = "T2_RESTORE_NOT_PERFORMED"
+T2_ROUNDTRIP_NOT_PERFORMED: Final[str] = "T2_ROUNDTRIP_NOT_PERFORMED"
+RETENTION_PROBE_REMAINS_UNRESOLVED: Final[str] = "RETENTION_PROBE_REMAINS_UNRESOLVED"
 
 # Per-span real-round-trip-observed statuses (emitted ONLY on a real, verified
 # cloud round-trip — never for a synthetic/local-mock harness run).
