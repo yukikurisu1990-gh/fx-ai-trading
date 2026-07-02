@@ -1,0 +1,22 @@
+{
+  "checks": [
+    "no_local_absolute_paths",
+    "no_windows_user_paths",
+    "no_users_home_drive_paths",
+    "no_credentials",
+    "no_env_var_values",
+    "no_signed_urls",
+    "no_access_tokens",
+    "no_raw_market_rows",
+    "no_candle_quote_row_previews",
+    "no_forbidden_success_labels",
+    "no_trading_metric_keys",
+    "no_byte_admissibility_claim",
+    "no_new_epoch_claim",
+    "no_production_claim",
+    "no_ml_step4_claim"
+  ],
+  "clean": true,
+  "findings": [],
+  "scrubber_version": "foundation-t2-scrubber.v1"
+}
