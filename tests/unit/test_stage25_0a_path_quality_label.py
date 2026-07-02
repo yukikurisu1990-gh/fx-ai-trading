@@ -390,14 +390,29 @@ def test_pathological_balance_halts_on_synthetic_extreme_data():
 
 
 @_skip_no_data
-def test_smoke_run_completes_with_data():
-    """End-to-end smoke run: 3 pairs × 1 day from real data."""
+def test_smoke_run_completes_with_data(tmp_path):
+    """End-to-end smoke run: 3 pairs × 1 day from real data.
+
+    P1-A: --out-dir points at tmp_path so the smoke run never rewrites
+    the tracked artifacts/stage25_0a/ evidence (dataset_summary.md,
+    causality_audit.md) nor the canonical path_quality_dataset.parquet
+    consumed by the stage25_0b/0c/0d smoke runs."""
+    protected = REPO_ROOT / "artifacts" / "stage25_0a" / "dataset_summary.md"
+    before = protected.read_bytes()
     rc = subprocess.run(
-        [sys.executable, str(SCRIPTS_DIR / "stage25_0a_build_path_quality_dataset.py"), "--smoke"],
+        [
+            sys.executable,
+            str(SCRIPTS_DIR / "stage25_0a_build_path_quality_dataset.py"),
+            "--smoke",
+            "--out-dir",
+            str(tmp_path),
+        ],
         capture_output=True,
         timeout=180,
     )
     assert rc.returncode == 0
+    assert (tmp_path / "dataset_summary.md").exists()
+    assert protected.read_bytes() == before
 
 
 # ---------------------------------------------------------------------------

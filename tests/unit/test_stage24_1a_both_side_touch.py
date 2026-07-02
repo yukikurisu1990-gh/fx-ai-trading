@@ -378,36 +378,59 @@ def test_load_m1_ba_default_signature_unchanged():
 # ---------------------------------------------------------------------------
 
 
-def _smoke_invoke(script_name: str) -> int:
+def _smoke_invoke(script_name: str, out_dir: Path) -> int:
     """Invoke a stage script in --smoke mode and return rc. Used for
-    regression check that 24.0b/0c/0d still execute under the new code."""
+    regression check that 24.0b/0c/0d still execute under the new code.
+
+    P1-A test-output isolation: --out-dir must always point at an
+    ephemeral path so the smoke run never rewrites the tracked
+    evidence under artifacts/stage24_* (audit memo F-9 / P1-A)."""
     rc = subprocess.run(
-        [sys.executable, str(SCRIPTS_DIR / script_name), "--smoke"],
+        [
+            sys.executable,
+            str(SCRIPTS_DIR / script_name),
+            "--smoke",
+            "--out-dir",
+            str(out_dir),
+        ],
         capture_output=True,
         timeout=180,
     )
     return rc.returncode
 
 
+def _tracked_artifact_bytes(rel: str) -> bytes:
+    return (REPO_ROOT / rel).read_bytes()
+
+
 @_skip_no_data_or_frozen
-def test_24_0b_close_only_smoke_regression():
+def test_24_0b_close_only_smoke_regression(tmp_path):
     """Smoke regression: 24.0b still executes successfully under unchanged
     code path. Full byte-identical reproduction is checked locally if
     feasible (see eval_report.md reproducibility note)."""
-    rc = _smoke_invoke("stage24_0b_trailing_stop_eval.py")
+    before = _tracked_artifact_bytes("artifacts/stage24_0b/eval_report.md")
+    rc = _smoke_invoke("stage24_0b_trailing_stop_eval.py", tmp_path)
     assert rc == 0
+    assert (tmp_path / "eval_report.md").exists()
+    assert _tracked_artifact_bytes("artifacts/stage24_0b/eval_report.md") == before
 
 
 @_skip_no_data_or_frozen
-def test_24_0c_close_only_smoke_regression():
-    rc = _smoke_invoke("stage24_0c_partial_exit_eval.py")
+def test_24_0c_close_only_smoke_regression(tmp_path):
+    before = _tracked_artifact_bytes("artifacts/stage24_0c/eval_report.md")
+    rc = _smoke_invoke("stage24_0c_partial_exit_eval.py", tmp_path)
     assert rc == 0
+    assert (tmp_path / "eval_report.md").exists()
+    assert _tracked_artifact_bytes("artifacts/stage24_0c/eval_report.md") == before
 
 
 @_skip_no_data_or_frozen
-def test_24_0d_close_only_smoke_regression():
-    rc = _smoke_invoke("stage24_0d_regime_conditional_eval.py")
+def test_24_0d_close_only_smoke_regression(tmp_path):
+    before = _tracked_artifact_bytes("artifacts/stage24_0d/eval_report.md")
+    rc = _smoke_invoke("stage24_0d_regime_conditional_eval.py", tmp_path)
     assert rc == 0
+    assert (tmp_path / "eval_report.md").exists()
+    assert _tracked_artifact_bytes("artifacts/stage24_0d/eval_report.md") == before
 
 
 # ---------------------------------------------------------------------------
