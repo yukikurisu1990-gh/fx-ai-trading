@@ -669,3 +669,64 @@ class TestTopKConfig:
         assert r.adopted_strategy_id == "s-tk-a"  # higher EV wins rank-1
         # Multi-trade adoption deferred — only one trading_signal row.
         assert r.trading_signal_id is not None
+
+
+# --- F-1 regression: adopted_ev_after_cost --------------------------------
+# See docs/design/project_wide_logic_audit_fable5_findings.md §3 F-1.
+
+
+class TestAdoptedEvAfterCost:
+    def test_adopted_result_carries_adopted_candidates_ev(self, engine) -> None:
+        _seed_strategy_signal(
+            engine,
+            cycle_id="cyc-ev1",
+            instrument="EURUSD",
+            strategy_id="s-hi",
+            direction="buy",
+            ev_after_cost=7.25,
+        )
+        _seed_strategy_signal(
+            engine,
+            cycle_id="cyc-ev1",
+            instrument="USDJPY",
+            strategy_id="s-lo",
+            direction="buy",
+            ev_after_cost=3.5,
+        )
+        r = run_meta_cycle(engine, cycle_id="cyc-ev1", clock=FixedClock(_FIXED_NOW))
+        assert r.adopted is True
+        assert r.adopted_strategy_id == "s-hi"
+        assert r.adopted_ev_after_cost == 7.25
+
+    def test_fallback_adoption_also_carries_ev(self, engine) -> None:
+        _seed_strategy_signal(
+            engine,
+            cycle_id="cyc-ev2",
+            instrument="EURUSD",
+            strategy_id="s-fb",
+            direction="buy",
+            ev_after_cost=1.5,
+        )
+        r = run_meta_cycle(
+            engine,
+            cycle_id="cyc-ev2",
+            clock=FixedClock(_FIXED_NOW),
+            config=MetaCycleConfig(min_ev_after_cost=10.0, force_fallback=True),
+        )
+        assert r.adopted is True
+        assert r.fallback_used is True
+        assert r.adopted_ev_after_cost == 1.5
+
+    def test_no_adoption_yields_none_ev_and_no_trading_signal(self, engine) -> None:
+        _seed_strategy_signal(
+            engine,
+            cycle_id="cyc-ev3",
+            instrument="EURUSD",
+            strategy_id="s-nt",
+            direction="no_trade",
+        )
+        r = run_meta_cycle(engine, cycle_id="cyc-ev3", clock=FixedClock(_FIXED_NOW))
+        assert r.adopted is False
+        assert r.adopted_ev_after_cost is None
+        assert r.trading_signal_id is None
+        assert _count(engine, "trading_signals") == 0

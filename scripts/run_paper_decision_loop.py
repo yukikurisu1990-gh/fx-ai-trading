@@ -47,6 +47,7 @@ from __future__ import annotations
 
 import argparse
 import logging
+import math
 import os
 import platform
 import sys
@@ -722,6 +723,30 @@ def _fetch_live_quote(
     except Exception:
         _log.warning("live quote fetch failed for %s — gates skipped", instrument, exc_info=True)
         return None, None
+
+
+def _evaluate_live_ev_gate(
+    ev_after_cost: float | None,
+    spread_pip: float | None,
+) -> tuple[bool, str]:
+    """Live spread/EV entry gate decision (F-1 crash fix).
+
+    See docs/design/project_wide_logic_audit_fable5_findings.md §3 F-1.
+    Returns ``(allow, reason)``.  Fail-closed on missing EV: an adopted
+    candidate whose post-cost EV is None or non-finite is blocked
+    (``ev_missing_fail_closed``) rather than silently defaulted to 0.0
+    or allowed to crash the loop.  When *spread_pip* is None the pricing
+    endpoint returned no usable quote and this gate cannot evaluate; the
+    pre-existing fail-open behaviour for that case is preserved
+    unchanged (``no_spread_quote``).
+    """
+    if spread_pip is None:
+        return True, "no_spread_quote"
+    if ev_after_cost is None or not math.isfinite(ev_after_cost):
+        return False, "ev_missing_fail_closed"
+    if ev_after_cost - spread_pip <= 0:
+        return False, "spread_eats_ev"
+    return True, "ev_clears_spread"
 
 
 def _fetch_spread_pips(
@@ -1664,10 +1689,21 @@ def run(args: argparse.Namespace, *, env: dict[str, str] | None = None) -> int:
                 # sudden-move (急変) guard; skipping if either threshold is breached.
                 if is_live and oanda_client is not None and inst is not None:
                     spread_pip, live_mid = _fetch_live_quote(oanda_client, account_id, inst)
-                    if spread_pip is not None:
-                        ev = meta_result.adopted_ev_after_cost or 0.0
-                        # EV gate: skip if spread exceeds model's expected value.
-                        if ev - spread_pip <= 0:
+                    ev = meta_result.adopted_ev_after_cost
+                    allow, gate_reason = _evaluate_live_ev_gate(ev, spread_pip)
+                    if not allow:
+                        if gate_reason == "ev_missing_fail_closed":
+                            # F-1 fail-closed: EV unknown — never default to 0.0.
+                            _log.warning(
+                                "ev_after_cost_missing: trade skipped (fail-closed live EV gate)",
+                                extra={
+                                    "instrument": inst,
+                                    "spread_pip": round(spread_pip, 3)
+                                    if spread_pip is not None
+                                    else None,
+                                },
+                            )
+                        else:
                             _log.info(
                                 "spread_eats_ev: trade skipped",
                                 extra={
@@ -1677,7 +1713,7 @@ def run(args: argparse.Namespace, *, env: dict[str, str] | None = None) -> int:
                                     "net_ev": round(ev - spread_pip, 4),
                                 },
                             )
-                            continue
+                        continue
                     if live_mid is not None:
                         _pip_sz = _PIP_SIZE.get(inst, 0.0001)
                         dev_pips = abs(live_mid - inst_close) / _pip_sz

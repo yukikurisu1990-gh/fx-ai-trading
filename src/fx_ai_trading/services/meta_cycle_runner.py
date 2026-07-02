@@ -106,6 +106,12 @@ class MetaCycleRunResult:
     and one trading_signals row was written.  adopted=False implies the
     cycle ended in no_trade (no trade candidates existed and fallback
     was not invoked).
+
+    ``adopted_ev_after_cost`` carries the adopted candidate's post-cost
+    EV (F-1 fix — see docs/design/project_wide_logic_audit_fable5_findings.md);
+    it is None when no candidate was adopted.  Consumers of the live
+    entry gate must treat None as "EV unknown" and fail closed, never
+    default it to 0.0.
     """
 
     cycle_id: str
@@ -120,6 +126,7 @@ class MetaCycleRunResult:
     filtered_count: int
     fallback_used: bool
     no_trade_event_count: int
+    adopted_ev_after_cost: float | None = None
 
 
 # --- Internal candidate representation --------------------------------------
@@ -360,6 +367,7 @@ def run_meta_cycle(
         filtered_count=len(rejections),
         fallback_used=fallback_used,
         no_trade_event_count=no_trade_event_count,
+        adopted_ev_after_cost=adopted.ev_after_cost if adopted else None,
     )
 
 
