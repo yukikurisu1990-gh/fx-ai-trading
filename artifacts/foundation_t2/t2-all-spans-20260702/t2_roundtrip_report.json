@@ -1,10 +1,10 @@
 {
   "backup_hdd": "NOT_EXECUTED_DEFERRED",
-  "base_master_sha": "f588accdc08db21b7d015805f9869f3226998aed",
+  "base_master_sha": "2f61a733303f60ef3fa3eb693a0545d32fbcb928",
   "contract_version": "foundation-t2.v1",
   "destination_logical_alias": "T2_PRIMARY_R2",
   "generated_at": "2026-07-02T00:00:00Z",
-  "git_sha": "f588accdc08db21b7d015805f9869f3226998aed",
+  "git_sha": "33685ac55c4c58d26d72bf04e2bf125535bc3b02",
   "ipfs_sidecar": "NOT_EXECUTED_DEFERRED",
   "manifest_id": "t2-all-spans-20260702",
   "notice": "Foundation T2 round-trip harness + pre-deposit stop evidence. Execution stopped before deposit: NO deposit, NO restore/download, and NO round-trip verification were performed, so the retention probe remains UNRESOLVED. Metadata-only evidence; no raw rows, credentials, env values, signed URLs, tokens, or local absolute paths. SHA-256 values are copied from committed PR-B.1 metadata; they were not recomputed and no raw candidate bytes were read. No byte-admissibility approval, no new-epoch adoption, no ML Step 4, no production change, no model / backtest / trading metric.",
