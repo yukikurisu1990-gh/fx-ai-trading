@@ -63,8 +63,18 @@ import lightgbm as lgb
 import numpy as np
 import pandas as pd
 
+_SCRIPTS_DIR = str(Path(__file__).resolve().parent)
+if _SCRIPTS_DIR not in sys.path:
+    sys.path.insert(0, _SCRIPTS_DIR)
+from traded_direction_pnl import traded_direction_pnl_price  # noqa: E402
+
 DATA_DIR = Path(__file__).resolve().parent.parent / "data"
 LABEL_COLUMN = "label_tb"
+# F-2 correction: per-direction traded-outcome PnL (price units), computed
+# alongside the label from the SAME barrier indices. Eval-only columns —
+# always kept out of model features via raw_exclude.
+PNL_LONG_COLUMN = "tb_pnl_long_price"
+PNL_SHORT_COLUMN = "tb_pnl_short_price"
 _LABEL_ENCODE = {-1: 0, 0: 1, 1: 2}
 
 DEFAULT_PAIRS = [
@@ -324,9 +334,13 @@ def _add_labels_bidask(
     ask_l = df["ask_l"].to_numpy(dtype=np.float64)
     ask_o = df["ask_o"].to_numpy(dtype=np.float64)
     bid_o = df["bid_o"].to_numpy(dtype=np.float64)
+    bid_c = df["bid_c"].to_numpy(dtype=np.float64)
+    ask_c = df["ask_c"].to_numpy(dtype=np.float64)
     atrs = df["atr_14"].to_numpy(dtype=np.float64)
 
     labels: list[int | None] = [None] * n
+    pnl_long = np.full(n, np.nan, dtype=np.float64)
+    pnl_short = np.full(n, np.nan, dtype=np.float64)
     for i in range(n - horizon - 1):
         atr_i = atrs[i]
         if not np.isfinite(atr_i) or atr_i <= 0:
@@ -349,6 +363,25 @@ def _add_labels_bidask(
         short_tp_idx = _first_hit_idx(short_al <= entry_short - tp)
         short_sl_idx = _first_hit_idx(short_ah >= entry_short + sl)
 
+        # F-2 correction: score each direction's OWN barrier path (label
+        # below is unchanged). Timeout → horizon-end mark-to-market at the
+        # exit side's close (window covers i+1 .. i+horizon); same-bar
+        # TP+SL tie → SL-first (conservative).
+        pnl_long[i] = traded_direction_pnl_price(
+            tp_idx=long_tp_idx,
+            sl_idx=long_sl_idx,
+            tp_dist=tp,
+            sl_dist=sl,
+            mtm_exit_pnl=bid_c[i + horizon] - entry_long,
+        )
+        pnl_short[i] = traded_direction_pnl_price(
+            tp_idx=short_tp_idx,
+            sl_idx=short_sl_idx,
+            tp_dist=tp,
+            sl_dist=sl,
+            mtm_exit_pnl=entry_short - ask_c[i + horizon],
+        )
+
         # Did each direction's TP fire before its own SL?
         long_clears = long_tp_idx >= 0 and (long_sl_idx < 0 or long_tp_idx < long_sl_idx)
         short_clears = short_tp_idx >= 0 and (short_sl_idx < 0 or short_tp_idx < short_sl_idx)
@@ -364,6 +397,8 @@ def _add_labels_bidask(
             labels[i] = 0
     df = df.copy()
     df[LABEL_COLUMN] = labels
+    df[PNL_LONG_COLUMN] = pnl_long
+    df[PNL_SHORT_COLUMN] = pnl_short
     return df
 
 
@@ -736,6 +771,8 @@ def _eval_fold(
                 "label": ints,
                 "atr": zeros.copy(),
                 "present": empty_bool,
+                "pnl_long": np.full(n_lab, np.nan, dtype=np.float64),
+                "pnl_short": np.full(n_lab, np.nan, dtype=np.float64),
             }
             continue
 
@@ -764,6 +801,8 @@ def _eval_fold(
             "label": label_arr,
             "atr": atr_arr,
             "present": present,
+            "pnl_long": aligned[PNL_LONG_COLUMN].to_numpy(dtype=np.float64),
+            "pnl_short": aligned[PNL_SHORT_COLUMN].to_numpy(dtype=np.float64),
         }
 
     # Per-pair signal arrays (vectorised once).
@@ -788,19 +827,18 @@ def _eval_fold(
         sig = pair_signal[pair]
         traded = (sig != 0) & valid_atr
         pip = pair_pip[pair]
-        tp_pip = (tp_mult * atr) / pip
-        sl_pip = (sl_mult * atr) / pip
 
-        # PnL for long when traded:  label==+1 -> +tp_pip; -1 -> -sl_pip; 0 -> 0
-        # PnL for short:             label==-1 -> +tp_pip; +1 -> -sl_pip; 0 -> 0
-        label = pa["label"].astype(np.int64)
+        # F-2 correction (audit memo §3 F-2): score the traded direction's
+        # OWN barrier/horizon outcome. The old mapping scored the label
+        # identity (label==0 -> 0.0), which booked masked traded-direction
+        # SL hits and timeout exits as 0.0 pips.
+        pnl_long_pip = pa["pnl_long"] / pip
+        pnl_short_pip = pa["pnl_short"] / pip
         pnl = np.zeros(n_lab, dtype=np.float64)
-        long_mask = traded & (sig == 1)
-        short_mask = traded & (sig == -1)
-        pnl = np.where(long_mask & (label == 1), tp_pip, pnl)
-        pnl = np.where(long_mask & (label == -1), -sl_pip, pnl)
-        pnl = np.where(short_mask & (label == -1), tp_pip, pnl)
-        pnl = np.where(short_mask & (label == 1), -sl_pip, pnl)
+        long_mask = traded & (sig == 1) & np.isfinite(pnl_long_pip)
+        short_mask = traded & (sig == -1) & np.isfinite(pnl_short_pip)
+        pnl = np.where(long_mask, pnl_long_pip, pnl)
+        pnl = np.where(short_mask, pnl_short_pip, pnl)
         pair_gross[pair] = pnl
         pair_traded[pair] = traded
 
@@ -1133,6 +1171,9 @@ def main(argv: list[str] | None = None) -> int:
         "ask_l",
         "ask_c",
         LABEL_COLUMN,
+        # F-2 eval-only outcome columns — must never enter model features.
+        PNL_LONG_COLUMN,
+        PNL_SHORT_COLUMN,
     }
 
     group_to_cols = {

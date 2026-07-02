@@ -116,6 +116,11 @@ import pandas as pd
 
 DATA_DIR = Path(__file__).resolve().parent.parent / "data"
 LABEL_COLUMN = "label_tb"
+# F-2 correction: per-direction traded-outcome PnL (price units), computed
+# alongside the label from the SAME barrier indices. Eval-only columns —
+# always kept out of model features via raw_exclude.
+PNL_LONG_COLUMN = "tb_pnl_long_price"
+PNL_SHORT_COLUMN = "tb_pnl_short_price"
 _LABEL_ENCODE = {-1: 0, 0: 1, 1: 2}
 
 # Phase 9.16 production default: 20-pair universe.
@@ -481,12 +486,16 @@ def _add_labels_bidask(
     ask_l = df["ask_l"].to_numpy(dtype=np.float64)
     ask_o = df["ask_o"].to_numpy(dtype=np.float64)
     bid_o = df["bid_o"].to_numpy(dtype=np.float64)
+    bid_c = df["bid_c"].to_numpy(dtype=np.float64)
+    ask_c = df["ask_c"].to_numpy(dtype=np.float64)
     atrs = df["atr_14"].to_numpy(dtype=np.float64)
 
     n_eff = n - horizon - 1
     if n_eff <= 0:
         df = df.copy()
         df[LABEL_COLUMN] = [None] * n
+        df[PNL_LONG_COLUMN] = np.full(n, np.nan, dtype=np.float64)
+        df[PNL_SHORT_COLUMN] = np.full(n, np.nan, dtype=np.float64)
         return df
 
     # Validity masks.
@@ -530,6 +539,26 @@ def _add_labels_bidask(
     short_tp_idx = _first_hit_vec(short_tp_mask)
     short_sl_idx = _first_hit_vec(short_sl_mask)
 
+    # F-2 correction: score each direction's OWN barrier path (label
+    # below is unchanged). Vectorised equivalent of the shared
+    # traded_direction_pnl.traded_direction_pnl_price helper — identical
+    # semantics: SL hit first -> -sl (same-bar TP+SL tie -> SL-first,
+    # conservative); else TP hit -> +tp; else horizon-end mark-to-market
+    # at the exit side's close (window covers i+1 .. i+horizon). Uses the
+    # SAME per-row tp_arr/sl_arr distances the label uses.
+    mtm_long = bid_c[horizon : horizon + n_eff] - entry_long_arr
+    mtm_short = entry_short_arr - ask_c[horizon : horizon + n_eff]
+    long_sl_first = (long_sl_idx >= 0) & ((long_tp_idx < 0) | (long_sl_idx <= long_tp_idx))
+    short_sl_first = (short_sl_idx >= 0) & ((short_tp_idx < 0) | (short_sl_idx <= short_tp_idx))
+    pnl_long_inner = np.where(long_sl_first, -sl_arr, np.where(long_tp_idx >= 0, tp_arr, mtm_long))
+    pnl_short_inner = np.where(
+        short_sl_first, -sl_arr, np.where(short_tp_idx >= 0, tp_arr, mtm_short)
+    )
+    pnl_long = np.full(n, np.nan, dtype=np.float64)
+    pnl_short = np.full(n, np.nan, dtype=np.float64)
+    pnl_long[:n_eff] = np.where(valid, pnl_long_inner, np.nan)
+    pnl_short[:n_eff] = np.where(valid, pnl_short_inner, np.nan)
+
     long_clears = (long_tp_idx >= 0) & ((long_sl_idx < 0) | (long_tp_idx < long_sl_idx))
     short_clears = (short_tp_idx >= 0) & ((short_sl_idx < 0) | (short_tp_idx < short_sl_idx))
 
@@ -549,6 +578,8 @@ def _add_labels_bidask(
         labels[i] = int(inner[i])
     df = df.copy()
     df[LABEL_COLUMN] = labels
+    df[PNL_LONG_COLUMN] = pnl_long
+    df[PNL_SHORT_COLUMN] = pnl_short
     return df
 
 
@@ -1203,26 +1234,26 @@ def _classify_vec(p_tp: np.ndarray, p_sl: np.ndarray, threshold: float) -> np.nd
 
 def _compute_pnl_vec(
     sig: np.ndarray,
-    label: np.ndarray,
-    tp_pip: np.ndarray,
-    sl_pip: np.ndarray,
+    pnl_long_pip: np.ndarray,
+    pnl_short_pip: np.ndarray,
     traded: np.ndarray,
 ) -> np.ndarray:
-    """Per-bar gross PnL given signal, label, and TP/SL pip arrays.
+    """Per-bar gross PnL from the traded direction's OWN outcome columns.
 
-    long  + label==+1 -> +tp_pip
-    long  + label==-1 -> -sl_pip
-    short + label==-1 -> +tp_pip
-    short + label==+1 -> -sl_pip
-    timeout / no_trade -> 0
+    F-2 correction (audit memo §3 F-2): score the traded direction's
+    OWN barrier/horizon outcome. The old mapping scored the label
+    identity (label==0 -> 0.0), which booked masked traded-direction
+    SL hits and timeout exits as 0.0 pips.
+
+    long  -> pnl_long_pip
+    short -> pnl_short_pip
+    no_trade / no finite outcome -> 0
     """
-    pnl = np.zeros_like(tp_pip)
-    long_mask = traded & (sig == 1)
-    short_mask = traded & (sig == -1)
-    pnl = np.where(long_mask & (label == 1), tp_pip, pnl)
-    pnl = np.where(long_mask & (label == -1), -sl_pip, pnl)
-    pnl = np.where(short_mask & (label == -1), tp_pip, pnl)
-    pnl = np.where(short_mask & (label == 1), -sl_pip, pnl)
+    pnl = np.zeros(sig.shape, dtype=np.float64)
+    long_mask = traded & (sig == 1) & np.isfinite(pnl_long_pip)
+    short_mask = traded & (sig == -1) & np.isfinite(pnl_short_pip)
+    pnl = np.where(long_mask, pnl_long_pip, pnl)
+    pnl = np.where(short_mask, pnl_short_pip, pnl)
     return pnl
 
 
@@ -1441,6 +1472,8 @@ def _eval_fold(
                 "ema_12": zeros.copy(),
                 "ema_26": zeros.copy(),
                 "present": empty_bool,
+                "pnl_long": np.full(n_lab, np.nan, dtype=np.float64),
+                "pnl_short": np.full(n_lab, np.nan, dtype=np.float64),
             }
             continue
 
@@ -1487,6 +1520,8 @@ def _eval_fold(
             "ema_12": ema_12_arr,
             "ema_26": ema_26_arr,
             "present": present,
+            "pnl_long": aligned[PNL_LONG_COLUMN].to_numpy(dtype=np.float64),
+            "pnl_short": aligned[PNL_SHORT_COLUMN].to_numpy(dtype=np.float64),
         }
 
     # Per (pair, strategy): signals, confidence, gross PnL, traded mask.
@@ -1503,24 +1538,32 @@ def _eval_fold(
         valid_atr = np.isfinite(atr) & (atr > 0)
         present = pa["present"]
         pip = pair_pip[pair]
-        label = pa["label"].astype(np.int64)
         # Phase 9.X-M: per-pair (tp_mult, sl_mult) lookup. Falls back to
         # global tp_mult/sl_mult when per_pair_sltp is None or missing.
-        tp_m, sl_m = (
+        # sl_pip is still needed downstream for ¥-based position sizing.
+        _tp_m, sl_m = (
             per_pair_sltp.get(pair, (tp_mult, sl_mult))
             if per_pair_sltp is not None
             else (tp_mult, sl_mult)
         )
-        tp_pip = (tp_m * atr) / pip
         sl_pip = (sl_m * atr) / pip
         pair_sl_pip[pair] = sl_pip
+
+        # F-2 correction (audit memo §3 F-2): score the traded direction's
+        # OWN barrier/horizon outcome. The old mapping scored the label
+        # identity (label==0 -> 0.0), which booked masked traded-direction
+        # SL hits and timeout exits as 0.0 pips. The pnl columns were
+        # computed at label time with the SAME per-pair, per-row TP/SL
+        # distances the labels used.
+        pnl_long_pip = pa["pnl_long"] / pip
+        pnl_short_pip = pa["pnl_short"] / pip
 
         if _STRATEGY_LGBM in cell_strategies:
             sig_l = _classify_vec(pa["p_tp"], pa["p_sl"], ml_threshold)
             sig_l = np.where(present, sig_l, 0).astype(np.int8)
             conf_l = np.maximum(pa["p_tp"], pa["p_sl"])
             traded_l = (sig_l != 0) & valid_atr
-            gross_l = _compute_pnl_vec(sig_l, label, tp_pip, sl_pip, traded_l)
+            gross_l = _compute_pnl_vec(sig_l, pnl_long_pip, pnl_short_pip, traded_l)
             pair_strat_sig[(pair, _STRATEGY_LGBM)] = sig_l
             pair_strat_conf[(pair, _STRATEGY_LGBM)] = conf_l
             pair_strat_gross[(pair, _STRATEGY_LGBM)] = gross_l
@@ -1533,7 +1576,7 @@ def _eval_fold(
             sig_m = np.where(present, sig_m, 0).astype(np.int8)
             conf_m = np.where(present, conf_m, 0.0)
             traded_m = (sig_m != 0) & valid_atr
-            gross_m = _compute_pnl_vec(sig_m, label, tp_pip, sl_pip, traded_m)
+            gross_m = _compute_pnl_vec(sig_m, pnl_long_pip, pnl_short_pip, traded_m)
             pair_strat_sig[(pair, _STRATEGY_MR)] = sig_m
             pair_strat_conf[(pair, _STRATEGY_MR)] = conf_m
             pair_strat_gross[(pair, _STRATEGY_MR)] = gross_m
@@ -1552,7 +1595,7 @@ def _eval_fold(
             sig_b = np.where(present, sig_b, 0).astype(np.int8)
             conf_b = np.where(present, conf_b, 0.0)
             traded_b = (sig_b != 0) & valid_atr
-            gross_b = _compute_pnl_vec(sig_b, label, tp_pip, sl_pip, traded_b)
+            gross_b = _compute_pnl_vec(sig_b, pnl_long_pip, pnl_short_pip, traded_b)
             pair_strat_sig[(pair, _STRATEGY_BO)] = sig_b
             pair_strat_conf[(pair, _STRATEGY_BO)] = conf_b
             pair_strat_gross[(pair, _STRATEGY_BO)] = gross_b
@@ -2477,6 +2520,9 @@ def main(argv: list[str] | None = None) -> int:
         "ask_l",
         "ask_c",
         LABEL_COLUMN,
+        # F-2 eval-only outcome columns — must never enter model features.
+        PNL_LONG_COLUMN,
+        PNL_SHORT_COLUMN,
     }
     ortho_drop = set(_ORTHO_COLS_TIME) | set(_ORTHO_COLS_VOLUME) | set(_ORTHO_COLS_REGIME)
     full_exclude = raw_exclude | ortho_drop

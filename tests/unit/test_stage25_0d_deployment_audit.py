@@ -313,10 +313,21 @@ def test_directional_comparison_marked_diagnostic_only():
 
 
 @_skip_no_data
-def test_smoke_run_completes_with_data():
+def test_smoke_run_completes_with_data(tmp_path):
+    # P1-A: --out-dir points at tmp_path so the smoke run never rewrites
+    # the tracked artifacts/stage25_0d/eval_report.md evidence.
+    protected = REPO_ROOT / "artifacts" / "stage25_0d" / "eval_report.md"
+    before = protected.read_bytes()
     rc = subprocess.run(
-        [sys.executable, str(SCRIPTS_DIR / "stage25_0d_deployment_audit_eval.py"), "--smoke"],
+        [
+            sys.executable,
+            str(SCRIPTS_DIR / "stage25_0d_deployment_audit_eval.py"),
+            "--smoke",
+            "--out-dir",
+            str(tmp_path),
+        ],
         capture_output=True,
         timeout=600,
     )
     assert rc.returncode == 0
+    assert protected.read_bytes() == before
