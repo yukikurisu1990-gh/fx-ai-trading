@@ -142,6 +142,10 @@ granting the next.
 > `T2_LOCAL_OFFLINE_PRIMARY` for the immediate `365d_BA` pilot; procedure in
 > `docs/design/phase_c1_365d_ba_local_offline_execution_plan.md`. Gate structure
 > below is unchanged; only the destination changes.
+>
+> Status pointer: `365d_BA` local/offline pilot evidence merged (PR #401,
+> `T2_C1_365D_BA_LOCAL_OFFLINE_ROUND_TRIP_EVIDENCE_CREATED`); acceptance audit in
+> `docs/design/phase_c1_365d_ba_local_offline_acceptance_audit_fable5.md`.
 
 - **Purpose:** deposit bytes, restore bytes, verify checksum/identity,
   produce metadata-only evidence (per span: deposit status, restore status,
