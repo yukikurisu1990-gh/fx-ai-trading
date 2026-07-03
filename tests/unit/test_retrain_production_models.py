@@ -174,7 +174,13 @@ class TestMainSkipFetch:
 
     def test_fetch_failure_excludes_pair_from_training(self, tmp_path, monkeypatch) -> None:
         monkeypatch.setenv("OANDA_ACCESS_TOKEN", "test-token")
+        # F5-C: candles_EUR_USD_M1_365d_BA.jsonl is referenced by committed
+        # inventory metadata, so the provenance guard would fail closed before
+        # reaching the fetch step; neutralize it here — this test pins the
+        # fetch-failure exclusion path, not the guard (guard behavior is
+        # covered by tests/unit/test_f5_ingestion_provenance.py).
         with (
+            patch.object(retrain, "assert_not_inventoried_span", return_value=[]),
             patch.object(retrain, "_fetch_pair", return_value=False),
             patch.object(retrain, "_train_all") as mock_train,
         ):

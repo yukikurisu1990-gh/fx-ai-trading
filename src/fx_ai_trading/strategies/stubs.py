@@ -27,6 +27,7 @@ from __future__ import annotations
 
 import hashlib
 
+from fx_ai_trading.domain.ev_contract import EV_UNIT_PIPS_POST_COST
 from fx_ai_trading.domain.feature import FeatureSet
 from fx_ai_trading.domain.strategy import StrategyContext, StrategySignal
 
@@ -52,6 +53,9 @@ class AlwaysNoTradeStrategy:
             confidence=0.0,
             ev_before_cost=0.0,
             ev_after_cost=0.0,
+            # F8-F: trivially satisfied (EV is 0 pips, never a trade
+            # candidate); declared so the pipeline carries the unit key.
+            ev_unit=EV_UNIT_PIPS_POST_COST,
             tp=0.0,
             sl=0.0,
             holding_time_seconds=0,
@@ -103,6 +107,10 @@ class DeterministicTrendStrategy:
             confidence=self.CONFIDENCE,
             ev_before_cost=self.EV_BEFORE_COST,
             ev_after_cost=self.EV_AFTER_COST,
+            # F8-F: the stub's constants are documented in pips with the
+            # ~3 pip cost already subtracted (15.0 → 12.0), so this is
+            # pips_post_cost by construction and stays Meta-rankable.
+            ev_unit=EV_UNIT_PIPS_POST_COST,
             tp=self.TP,
             sl=self.SL,
             holding_time_seconds=self.HOLDING_TIME_SECONDS,

@@ -202,6 +202,7 @@ def _build_meta_payload(*, signal: StrategySignal, decision_chain_id: str) -> di
         "decision_chain_id": decision_chain_id,
         "ev_before_cost": signal.ev_before_cost,
         "ev_after_cost": signal.ev_after_cost,
+        "ev_unit": signal.ev_unit,
         "tp": signal.tp,
         "sl": signal.sl,
         "holding_time_seconds": signal.holding_time_seconds,

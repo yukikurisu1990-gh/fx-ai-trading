@@ -9,6 +9,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Protocol
 
+from fx_ai_trading.domain.ev_contract import EV_UNIT_UNKNOWN
 from fx_ai_trading.domain.feature import FeatureSet
 
 # ---------------------------------------------------------------------------
@@ -32,6 +33,13 @@ class StrategySignal:
     signal: 'long' | 'short' | 'no_trade'
     enabled: False means the strategy is disabled (6.17); should not appear
              in MetaDecider candidates.
+    ev_unit: unit/cost declaration for ev_before_cost / ev_after_cost
+             (F8-F contract — see domain/ev_contract.py).  Only
+             ``EV_UNIT_PIPS_POST_COST`` candidates are rankable by the
+             Meta selector; anything else is rejected fail-closed.
+             Defaults to ``EV_UNIT_UNKNOWN`` (non-comparable) so an
+             emitter that forgets to declare its unit can never be
+             ranked by accident.
     """
 
     strategy_id: str
@@ -45,6 +53,7 @@ class StrategySignal:
     sl: float
     holding_time_seconds: int
     enabled: bool
+    ev_unit: str = EV_UNIT_UNKNOWN
 
 
 # ---------------------------------------------------------------------------

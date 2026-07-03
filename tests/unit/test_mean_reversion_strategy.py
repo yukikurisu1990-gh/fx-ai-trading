@@ -7,6 +7,7 @@ from uuid import uuid4
 
 import pytest
 
+from fx_ai_trading.domain.ev_contract import EV_UNIT_PIPS_POST_COST
 from fx_ai_trading.domain.feature import FeatureSet
 from fx_ai_trading.domain.strategy import StrategyContext
 from fx_ai_trading.services.strategies.mean_reversion import MeanReversionStrategy
@@ -201,6 +202,19 @@ class TestMeanReversionTpSl:
         sig = mr.evaluate("EUR_USD", _make_features(rsi_14=50.0, bb_pct_b=0.5), _CTX)
         assert sig.ev_before_cost == 0.0
         assert sig.ev_after_cost == 0.0
+
+    def test_ev_is_pips_post_cost_with_sl_term(self) -> None:
+        # F8-F contract: EV in pips with SL term (see test_f8_ev_contract.py
+        # for the full matrix).  confidence 0.5, tp 15 pips, sl 10 pips.
+        mr = MeanReversionStrategy("mr_1")
+        sig = mr.evaluate(
+            "EUR_USD",
+            _make_features(rsi_14=15.0, bb_pct_b=0.05, atr_14=0.001),
+            _CTX,
+        )
+        assert sig.ev_unit == EV_UNIT_PIPS_POST_COST
+        assert sig.ev_before_cost == pytest.approx(0.5 * 15.0 - 0.5 * 10.0, abs=1e-3)
+        assert sig.ev_after_cost == pytest.approx(sig.ev_before_cost)  # cost_pips=0.0
 
 
 # ---------------------------------------------------------------------------

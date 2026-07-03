@@ -167,8 +167,10 @@ class TestSLBeforeTP:
         )
         assert _label0(df, horizon=4) == 0
 
-    def test_long_tp_same_bar_as_sl_long_wins(self) -> None:
-        # Same bar triggers both TP and SL: long_tp_idx == long_sl_idx → profitable.
+    def test_long_tp_same_bar_as_sl_sl_wins(self) -> None:
+        # F8_LABEL_TIE_BREAK_CONTRACT_ALIGNED: same bar triggers both TP and
+        # SL (long_tp_idx == long_sl_idx) → SL-first (strict <) → NOT
+        # profitable → label 0. (Old TP-first `<=` behaviour returned 1.)
         df = _make_df(
             {},
             {},
@@ -176,7 +178,7 @@ class TestSLBeforeTP:
             {},
             {},
         )
-        assert _label0(df) == 1
+        assert _label0(df) == 0
 
 
 # ---------------------------------------------------------------------------

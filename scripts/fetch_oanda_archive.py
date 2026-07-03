@@ -2,8 +2,25 @@
 
 Triggered by impending OANDA tier downgrade. One-shot bulk fetcher driven
 by `fetch_candles()` from `fetch_oanda_candles.py`. Each (pair × granularity)
-job is resume-safe: existing `data/candles_<PAIR>_<GRAN>_3650d_BA.jsonl`
-files are skipped (treated as already-done).
+job is resume-safe via a sidecar completion marker
+`<output>.complete.json` written after a fully-successful fetch.
+
+Fail-closed resume semantics (F5-D; status
+F5_INGESTION_PROVENANCE_HARDENED_BY_TESTS /
+F5_INVENTORIED_SPAN_OVERWRITE_GUARDED):
+
+- A job is skipped ONLY if its marker exists, parses, has
+  ``completed == true`` and ``size_bytes`` matching the file's current
+  size.  A non-empty file WITHOUT a valid marker is treated as incomplete
+  (the pre-hardening rule skipped any non-empty file, so truncations were
+  never repaired on resume).
+- Before re-fetching over existing-but-unmarked bytes whose basename is
+  referenced by committed inventory metadata (Gate P1 PR-B / Foundation
+  T2), the job FAILS CLOSED instead of silently re-pointing span identity
+  at new bytes.
+- `fetch_candles()` itself writes to ``<output>.incomplete`` and promotes
+  atomically only on success, so a failed re-fetch never destroys the
+  existing final file.
 
 Naming: matches existing local convention `candles_<PAIR>_<GRAN>_<days>d_BA.jsonl`.
 Price mode: BA (bid + ask OHLC), matching all existing `_BA.jsonl` files
@@ -32,6 +49,7 @@ load_dotenv(REPO_ROOT / ".env")
 sys.path.insert(0, str(REPO_ROOT / "scripts"))
 
 from fetch_oanda_candles import fetch_candles  # noqa: E402
+from provenance_guard import find_inventory_references  # noqa: E402
 
 from fx_ai_trading.adapters.broker.oanda_api_client import OandaAPIClient  # noqa: E402
 
@@ -71,6 +89,64 @@ MANIFEST_PATH = ARCHIVE_DIR / "candles_manifest.json"
 
 def _output_path(pair: str, granularity: str) -> Path:
     return DATA_DIR / f"candles_{pair}_{granularity}_3650d_BA.jsonl"
+
+
+def _completion_marker_path(out: Path) -> Path:
+    return out.with_name(out.name + ".complete.json")
+
+
+def _write_completion_marker(out: Path, rows_written: int) -> Path:
+    """Record a fully-successful fetch (F5-D resume evidence)."""
+    marker = _completion_marker_path(out)
+    marker.write_text(
+        json.dumps(
+            {
+                "rows_written": rows_written,
+                "size_bytes": out.stat().st_size,
+                "completed": True,
+            }
+        ),
+        encoding="utf-8",
+    )
+    return marker
+
+
+def _is_marked_complete(out: Path) -> bool:
+    """True only if the sidecar marker exists, parses, has completed==true,
+    and its recorded size_bytes matches the file's current size."""
+    marker = _completion_marker_path(out)
+    if not out.exists() or not marker.exists():
+        return False
+    try:
+        meta = json.loads(marker.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return False
+    if not isinstance(meta, dict):
+        return False
+    return meta.get("completed") is True and meta.get("size_bytes") == out.stat().st_size
+
+
+def _resume_decision(out: Path, *, inventory_roots: list[Path] | None = None) -> tuple[str, dict]:
+    """F5-D resume policy for one output file.
+
+    Returns ``(action, info)`` where action is one of:
+
+    - ``"skip"``    — valid completion marker matches the file's size.
+    - ``"blocked"`` — the basename is referenced by committed inventory
+      metadata and no valid marker exists: fail closed rather than re-point
+      span identity at new bytes.  This applies even when the local file is
+      missing — recreating an inventoried span with post-downgrade bytes is
+      the same identity re-point.  There is deliberately no override flag
+      here: the archived pre-downgrade bytes are unreproducible, so any
+      legitimate re-fetch belongs to a new epoch/output path.
+    - ``"fetch"``   — (re-)fetch via the atomic ``.incomplete`` path.
+    """
+    if _is_marked_complete(out):
+        return "skip", {"size_bytes": out.stat().st_size}
+    refs = find_inventory_references(out.name, inventory_roots=inventory_roots)
+    if refs:
+        return "blocked", {"inventory_references": refs}
+    return "fetch", {}
 
 
 def _log(event: dict) -> None:
@@ -153,9 +229,25 @@ def main() -> int:
             "output": str(out.relative_to(REPO_ROOT)),
         }
 
-        if out.exists() and out.stat().st_size > 0:
-            _log({**rec, "event": "skip_existing", "size_bytes": out.stat().st_size})
+        action, info = _resume_decision(out)
+        if action == "skip":
+            _log({**rec, "event": "skip_complete_marker", **info})
             skipped.append(rec)
+            continue
+        if action == "blocked":
+            _log(
+                {
+                    **rec,
+                    "event": "resume_blocked_inventoried",
+                    "error": (
+                        "existing bytes lack a valid completion marker and the "
+                        "basename is referenced by committed inventory metadata; "
+                        "failing closed (use a new output path / dataset epoch)"
+                    ),
+                    **info,
+                }
+            )
+            failed.append({**rec, "error": "resume_blocked_inventoried", **info})
             continue
 
         _log({**rec, "event": "fetch_begin"})
@@ -170,6 +262,7 @@ def main() -> int:
                 page_size=PAGE_SIZE,
                 api_client=api,
             )
+            _write_completion_marker(out, written)
             elapsed = time.time() - t_job
             _log(
                 {**rec, "event": "fetch_done", "written": written, "elapsed_sec": round(elapsed, 1)}

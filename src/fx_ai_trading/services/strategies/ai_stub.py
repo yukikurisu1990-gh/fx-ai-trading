@@ -11,6 +11,7 @@ Phase 7: Replace body with real model inference via ModelRegistry / Predictor.
 
 from __future__ import annotations
 
+from fx_ai_trading.domain.ev_contract import EV_UNIT_PRICE_RAW
 from fx_ai_trading.domain.feature import FeatureSet
 from fx_ai_trading.domain.strategy import StrategyContext, StrategySignal
 
@@ -65,6 +66,10 @@ class AIStrategyStub:
             confidence=self._confidence,
             ev_before_cost=round(ev_before, 8),
             ev_after_cost=round(ev_before, 8),
+            # F8-F: tp/sl (and hence EV) are fixed price-unit distances
+            # with no cost model — declared non-comparable, so Meta
+            # rejects it fail-closed rather than ranking mixed units.
+            ev_unit=EV_UNIT_PRICE_RAW,
             tp=self._tp,
             sl=self._sl,
             holding_time_seconds=self._holding_time_seconds,

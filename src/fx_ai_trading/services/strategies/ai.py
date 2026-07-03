@@ -15,6 +15,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from fx_ai_trading.domain.ev_contract import EV_UNIT_PRICE_RAW
 from fx_ai_trading.domain.feature import FeatureSet
 from fx_ai_trading.domain.strategy import StrategyContext, StrategySignal
 from fx_ai_trading.services.ml.inference import MLInferenceService
@@ -79,6 +80,10 @@ class MLDirectionStrategy:
             confidence=confidence,
             ev_before_cost=ev,
             ev_after_cost=ev,
+            # F8-F: tp/sl (and hence EV) are fixed price-unit distances
+            # with no cost model — declared non-comparable, so Meta
+            # rejects it fail-closed rather than ranking mixed units.
+            ev_unit=EV_UNIT_PRICE_RAW,
             tp=self._tp,
             sl=self._sl,
             holding_time_seconds=self._holding_time_seconds,

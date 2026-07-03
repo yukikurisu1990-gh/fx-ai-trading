@@ -6,6 +6,23 @@ bid_h (long) / ask_l (short), SL from bid_l (long) / ask_h (short).
 Features match FeatureService base feature set so training and inference
 use identical feature vectors (no train/serve skew).
 
+F8_LABEL_TIE_BREAK_CONTRACT_ALIGNED: same-bar TP+SL both-touch resolves
+SL-first via the strict ``tp_idx < sl_idx`` "clears" test, matching the
+active backtest contract (compare_multipair v5/v9/v19/v23/v26
+``_add_labels_bidask``) and the F-2 ``traded_direction_pnl`` SL-first tie
+convention. Models previously trained under the old TP-first tie-break
+remain in models/lgbm until a separately-authorised retrain.
+
+F8_ATR_WARMUP_GUARDED: ATR(14) uses ``min_periods=14`` and no
+prev-close fillna, so the first bars carry NaN ATR instead of degenerate
+near-zero widths; rows without a finite positive ATR get label None and
+are excluded from training.
+
+F5-E: manifest.json carries data provenance (logical file id, streaming
+sha256, UTC time bounds, row count, price mode) per trained pair plus
+label/cost contracts, code_sha and config_hash. Only file basenames are
+written — never absolute paths.
+
 Usage:
     .venv/Scripts/python.exe scripts/train_lgbm_models.py
     .venv/Scripts/python.exe scripts/train_lgbm_models.py --pairs USD_JPY EUR_USD
@@ -18,7 +35,9 @@ Output:
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
+import subprocess
 from pathlib import Path
 
 import joblib
@@ -135,13 +154,17 @@ def _add_features(df: pd.DataFrame) -> pd.DataFrame:
     df["sma_50"] = c.rolling(50, min_periods=1).mean()
 
     # ATR-14 (standard true range)
+    # F8_ATR_WARMUP_GUARDED: min_periods=14 (was min_periods=1) and no
+    # prev_close fillna. Early rows get NaN atr_14 instead of degenerate
+    # near-zero widths; the label loop skips non-finite ATR so those rows
+    # never produce a label.
     high = df["high"]
     low = df["low"]
-    prev_close = c.shift(1).fillna(c)
+    prev_close = c.shift(1)
     tr = pd.concat([high - low, (high - prev_close).abs(), (low - prev_close).abs()], axis=1).max(
         axis=1
     )
-    df["atr_14"] = tr.rolling(14, min_periods=1).mean()
+    df["atr_14"] = tr.rolling(14, min_periods=14).mean()
 
     # last_close
     df["last_close"] = c
@@ -161,6 +184,17 @@ def _add_labels_bidask(
     +1 = long TP hit first (bid_h reaches entry_ask + tp_mult*ATR within horizon)
     -1 = short TP hit first (ask_l reaches entry_bid - tp_mult*ATR within horizon)
      0 = neither TP hit before SL or timeout
+
+    F8_LABEL_TIE_BREAK_CONTRACT_ALIGNED: a same-bar TP+SL both-touch
+    resolves SL-first (conservative) via the strict ``tp_idx < sl_idx``
+    "clears" test — identical to the active backtest contract
+    (compare_multipair v5/v9/v19/v23/v26 ``_add_labels_bidask``). Models
+    previously trained under the old TP-first tie-break (``<=``) remain
+    in models/lgbm until a separately-authorised retrain.
+
+    F8_ATR_WARMUP_GUARDED: bars whose ATR(14) is non-finite or <= 0
+    (including the min_periods=14 warmup rows) and bars whose next-bar
+    entry prices are non-finite get label None and are excluded.
     """
     df = df.copy()
     if "ask_o" not in df.columns or "bid_o" not in df.columns:
@@ -178,10 +212,12 @@ def _add_labels_bidask(
     labels: list[int | None] = [None] * n
     for i in range(n - horizon - 1):
         atr_i = atrs[i]
-        if np.isnan(atr_i) or atr_i <= 0.0:
+        if not np.isfinite(atr_i) or atr_i <= 0.0:
             continue
         entry_ask = ask_o[i + 1]
         entry_bid = bid_o[i + 1]
+        if not (np.isfinite(entry_ask) and np.isfinite(entry_bid)):
+            continue
         tp = tp_mult * atr_i
         sl = sl_mult * atr_i
 
@@ -205,12 +241,12 @@ def _add_labels_bidask(
             ):
                 break  # all barriers found; no need to scan further
 
-        # Direction is profitable when TP hit arrives before SL (or SL never fires).
-        long_profit = long_tp_idx is not None and (
-            long_sl_idx is None or long_tp_idx <= long_sl_idx
-        )
+        # Direction is profitable when TP hit arrives strictly before SL
+        # (or SL never fires). Strict < = SL-first on a same-bar tie
+        # (F8_LABEL_TIE_BREAK_CONTRACT_ALIGNED — matches backtest contract).
+        long_profit = long_tp_idx is not None and (long_sl_idx is None or long_tp_idx < long_sl_idx)
         short_profit = short_tp_idx is not None and (
-            short_sl_idx is None or short_tp_idx <= short_sl_idx
+            short_sl_idx is None or short_tp_idx < short_sl_idx
         )
 
         if long_profit and not short_profit:
@@ -416,6 +452,50 @@ def _train(df: pd.DataFrame) -> lgb.LGBMClassifier:
     return model
 
 
+# ---------------------------------------------------------------------------
+# F5-E provenance helpers
+# ---------------------------------------------------------------------------
+
+
+def _sha256_file(path: Path) -> str:
+    """Streaming SHA-256 of a file (constant memory)."""
+    h = hashlib.sha256()
+    with open(path, "rb") as f:
+        for chunk in iter(lambda: f.read(1 << 20), b""):
+            h.update(chunk)
+    return h.hexdigest()
+
+
+def _git_code_sha() -> str:
+    """Best-effort ``git rev-parse HEAD``; returns "unknown" instead of raising."""
+    try:
+        proc = subprocess.run(
+            ["git", "rev-parse", "HEAD"],
+            capture_output=True,
+            text=True,
+            timeout=10,
+            cwd=Path(__file__).resolve().parent,
+            check=False,
+        )
+        sha = proc.stdout.strip()
+        if proc.returncode == 0 and sha:
+            return sha
+    except Exception:
+        pass
+    return "unknown"
+
+
+def _config_hash(lgbm_params: dict, label_contract: dict) -> str:
+    """SHA-256 of a canonical JSON of LGBM params + label contract."""
+    canonical = json.dumps(
+        {"label_contract": label_contract, "lgbm_params": lgbm_params},
+        sort_keys=True,
+        separators=(",", ":"),
+        default=str,
+    )
+    return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
+
+
 def _load_ba_candles(path: Path) -> pd.DataFrame:
     rows = []
     with open(path) as f:
@@ -436,7 +516,7 @@ def _load_ba_candles(path: Path) -> pd.DataFrame:
     return df
 
 
-def main() -> int:
+def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
         "--pairs",
@@ -476,7 +556,7 @@ def main() -> int:
         type=float,
         default=_SL_MULT,
     )
-    args = parser.parse_args()
+    args = parser.parse_args(argv)
 
     data_dir = Path(args.data_dir)
     model_dir = Path(args.model_dir)
@@ -485,12 +565,16 @@ def main() -> int:
     pairs = args.pairs or _ALL_PAIRS
     trained: list[str] = []
     skipped: list[str] = []
+    # F5-E: per-pair data provenance. Only file basenames are stored —
+    # NEVER absolute paths (personal directory layout must not leak).
+    pair_provenance: dict[str, dict] = {}
 
     for pair in pairs:
         # Prefer BA candle file; fall back to mid-only
         ba_path = data_dir / f"candles_{pair}_M1_365d_BA.jsonl"
         mid_path = data_dir / f"candles_{pair}_M1_365d.jsonl"
         path = ba_path if ba_path.exists() else (mid_path if mid_path.exists() else None)
+        price_mode = "BA" if path == ba_path else "M"
         if path is None:
             print(f"  SKIP {pair}: no candle file found")
             skipped.append(pair)
@@ -530,9 +614,29 @@ def main() -> int:
         out_path = model_dir / f"{pair}.joblib"
         joblib.dump(model, out_path)
         trained.append(pair)
+        ts_idx = pd.DatetimeIndex(df["timestamp"])
+        pair_provenance[pair] = {
+            "logical_file_id": path.name,  # basename only — never absolute
+            "data_sha256": _sha256_file(path),
+            "data_ts_min_utc": ts_idx.min().isoformat(),
+            "data_ts_max_utc": ts_idx.max().isoformat(),
+            "row_count": int(len(df)),
+            "price_mode": price_mode,
+        }
         print(f"saved → {out_path.name}")
 
-    # Save manifest
+    # Save manifest (F5-E provenance schema)
+    label_contract = {
+        "type": "b2_bidask_triple_barrier",
+        "tie_break": "sl_first_strict_lt",  # F8_LABEL_TIE_BREAK_CONTRACT_ALIGNED
+        "horizon": args.horizon,
+        "tp_mult": args.tp_mult,
+        "sl_mult": args.sl_mult,
+        "atr": "atr14_min_periods_14",  # F8_ATR_WARMUP_GUARDED
+    }
+    lgbm_params = {**_LGBM_PARAMS, "n_estimators": _N_ESTIMATORS}
+    prov_values = list(pair_provenance.values())
+    price_modes = sorted({p["price_mode"] for p in prov_values})
     manifest = {
         "feature_version": "v4",
         "feature_cols": _FEATURE_COLS,
@@ -541,6 +645,21 @@ def main() -> int:
         "horizon": args.horizon,
         "n_estimators": _N_ESTIMATORS,
         "trained_pairs": trained,
+        # ---- F5-E global provenance ----
+        "label_contract": label_contract,
+        "cost_contract": "spread_embedded_in_bidask_labels",
+        "code_sha": _git_code_sha(),
+        "config_hash": _config_hash(lgbm_params, label_contract),
+        "lgbm_params": lgbm_params,
+        "price_mode": (price_modes[0] if len(price_modes) == 1 else "MIXED")
+        if price_modes
+        else None,
+        "data_files": [p["logical_file_id"] for p in prov_values],
+        "data_ts_min_utc": min((p["data_ts_min_utc"] for p in prov_values), default=None),
+        "data_ts_max_utc": max((p["data_ts_max_utc"] for p in prov_values), default=None),
+        "total_row_count": int(sum(p["row_count"] for p in prov_values)),
+        # ---- F5-E per-pair provenance ----
+        "pairs": pair_provenance,
     }
     manifest_path = model_dir / "manifest.json"
     manifest_path.write_text(json.dumps(manifest, indent=2))

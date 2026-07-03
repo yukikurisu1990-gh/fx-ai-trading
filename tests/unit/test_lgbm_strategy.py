@@ -169,9 +169,21 @@ class TestLGBMStrategyEvaluate:
         assert sig.sl == 0.0
 
     def test_ev_before_equals_ev_after_cost(self, tmp_path):
+        # F8-F: B-2 labels embed the spread in barrier geometry, so the
+        # contract helper is applied with cost_pips=0.0 (no double count).
         strategy = _make_strategy(tmp_path)
         sig = strategy.evaluate("USD_JPY", _make_features(), _make_context())
         assert sig.ev_before_cost == sig.ev_after_cost
+
+    def test_ev_unit_is_pips_post_cost(self, tmp_path):
+        from fx_ai_trading.domain.ev_contract import EV_UNIT_PIPS_POST_COST
+
+        strategy = _make_strategy(tmp_path)
+        sig = strategy.evaluate("USD_JPY", _make_features(), _make_context())
+        assert sig.ev_unit == EV_UNIT_PIPS_POST_COST
+        # no-model path declares the unit too
+        sig_nm = strategy.evaluate("AUD_JPY", _make_features(), _make_context())
+        assert sig_nm.ev_unit == EV_UNIT_PIPS_POST_COST
 
     def test_signal_changes_with_different_proba(self, tmp_path):
         _make_manifest(tmp_path)

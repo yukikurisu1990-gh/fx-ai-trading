@@ -10,6 +10,12 @@ B-2 label convention (matching train_lgbm_models.py):
 
 ev_after_cost = P(win) * tp_pips - P(lose) * sl_pips.
 B-2 labels already embed the bid/ask spread, so this EV is post-spread.
+
+F8-F EV contract (domain/ev_contract.py): EV is emitted in PIPS with
+ev_unit = EV_UNIT_PIPS_POST_COST.  The post-cost derivation routes
+through ``ev_after_cost_pips`` with ``cost_pips=0.0`` because the B-2
+label geometry already embeds the spread — subtracting it again here
+would double-count.  Live spread gating happens at entry (F-1 gate).
 """
 
 from __future__ import annotations
@@ -22,6 +28,7 @@ import joblib
 import lightgbm as lgb
 import numpy as np
 
+from fx_ai_trading.domain.ev_contract import EV_UNIT_PIPS_POST_COST, ev_after_cost_pips
 from fx_ai_trading.domain.feature import FeatureSet
 from fx_ai_trading.domain.strategy import StrategyContext, StrategySignal
 
@@ -136,6 +143,12 @@ class LGBMStrategy:
             confidence = max(p_long, p_short)
             ev = 0.0
 
+        # F8-F: cost_pips=0.0 — the B-2 training labels embed the bid/ask
+        # spread in the barrier geometry, so `ev` is post-embedded-cost by
+        # construction; subtracting a spread here would double-count it.
+        # Live spread is applied at the entry gate (F-1), not in the EV.
+        ev_after = ev_after_cost_pips(ev, cost_pips=0.0)
+
         return StrategySignal(
             strategy_id=self._strategy_id,
             strategy_type=self._STRATEGY_TYPE,
@@ -143,7 +156,8 @@ class LGBMStrategy:
             signal=signal,
             confidence=round(confidence, 8),
             ev_before_cost=round(ev, 8),
-            ev_after_cost=round(ev, 8),
+            ev_after_cost=round(ev_after, 8),
+            ev_unit=EV_UNIT_PIPS_POST_COST,
             tp=round(tp_pips, 4),
             sl=round(sl_pips, 4),
             holding_time_seconds=1800,
@@ -163,6 +177,7 @@ class LGBMStrategy:
             confidence=0.0,
             ev_before_cost=0.0,
             ev_after_cost=0.0,
+            ev_unit=EV_UNIT_PIPS_POST_COST,
             tp=round(tp_pips, 4),
             sl=round(sl_pips, 4),
             holding_time_seconds=1800,

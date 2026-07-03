@@ -202,6 +202,7 @@ class TestStrategyOutputFullyPopulated:
             "decision_chain_id",
             "ev_before_cost",
             "ev_after_cost",
+            "ev_unit",  # F8-F unit declaration (domain/ev_contract.py)
             "tp",
             "sl",
             "holding_time_seconds",

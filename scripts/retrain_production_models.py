@@ -25,6 +25,18 @@ Flags:
   --model-dir      Output directory for models (default: models/lgbm/).
   --train-frac     Fraction of data for training, rest discarded after purge
                    (default: 0.80, passed to train_lgbm_models.py).
+  --allow-overwrite-inventoried
+                   Explicitly allow fetching over candle filenames referenced
+                   by committed inventory metadata (Gate P1 PR-B /
+                   Foundation T2). Default: fail closed.
+
+F5-C provenance hardening (status
+F5_INVENTORIED_SPAN_OVERWRITE_GUARDED): before the fetch step, every
+target `candles_{PAIR}_M1_{days}d_BA.jsonl` basename is checked against
+committed inventory metadata; if referenced, the run fails closed unless
+--allow-overwrite-inventoried is passed (re-fetching in place would
+re-point span identity at different bytes while committed SHA evidence
+refers to the old bytes).
 """
 
 from __future__ import annotations
@@ -35,6 +47,14 @@ import os
 import subprocess
 import sys
 from pathlib import Path
+
+try:  # imported as part of the ``scripts`` package (tests, repo-root callers)
+    from scripts.provenance_guard import ProvenanceGuardError, assert_not_inventoried_span
+except ImportError:  # standalone execution: scripts/ itself is on sys.path
+    from provenance_guard import (  # type: ignore[no-redef]
+        ProvenanceGuardError,
+        assert_not_inventoried_span,
+    )
 
 _log = logging.getLogger(__name__)
 
@@ -75,26 +95,27 @@ def _run(cmd: list[str], *, step: str) -> bool:
     return True
 
 
-def _fetch_pair(pair: str, data_dir: Path, days: int) -> bool:
+def _fetch_pair(pair: str, data_dir: Path, days: int, *, allow_overwrite: bool = False) -> bool:
     """Fetch BA candles for one pair via fetch_oanda_candles.py."""
     output = data_dir / f"candles_{pair}_M1_{days}d_BA.jsonl"
-    return _run(
-        [
-            _PYTHON,
-            str(_SCRIPTS_DIR / "fetch_oanda_candles.py"),
-            "--instrument",
-            pair,
-            "--granularity",
-            "M1",
-            "--days",
-            str(days),
-            "--price",
-            "BA",
-            "--output",
-            str(output),
-        ],
-        step=f"fetch {pair}",
-    )
+    cmd = [
+        _PYTHON,
+        str(_SCRIPTS_DIR / "fetch_oanda_candles.py"),
+        "--instrument",
+        pair,
+        "--granularity",
+        "M1",
+        "--days",
+        str(days),
+        "--price",
+        "BA",
+        "--output",
+        str(output),
+    ]
+    if allow_overwrite:
+        # Forward the explicit F5-C override to the fetcher's own guard.
+        cmd.append("--allow-overwrite-inventoried")
+    return _run(cmd, step=f"fetch {pair}")
 
 
 def _train_all(pairs: list[str], data_dir: Path, model_dir: Path, train_frac: float) -> bool:
@@ -143,6 +164,16 @@ def main() -> int:
         default=0.80,
         help="Training fraction passed to train_lgbm_models.py (default 0.80).",
     )
+    p.add_argument(
+        "--allow-overwrite-inventoried",
+        action="store_true",
+        default=False,
+        help=(
+            "Explicitly allow fetching over candle filenames referenced by "
+            "committed inventory metadata (Gate P1 PR-B / Foundation T2). "
+            "Default: fail closed."
+        ),
+    )
     args = p.parse_args()
 
     pairs = args.pairs or _ALL_PAIRS
@@ -162,9 +193,22 @@ def main() -> int:
     fetch_failed: list[str] = []
 
     if not args.skip_fetch:
+        # F5-C: fail closed BEFORE fetching over any inventoried span filename.
+        for pair in pairs:
+            output = data_dir / f"candles_{pair}_M1_{args.days}d_BA.jsonl"
+            try:
+                assert_not_inventoried_span(
+                    output, allow_overwrite=args.allow_overwrite_inventoried
+                )
+            except ProvenanceGuardError as exc:
+                _log.error("%s", exc)
+                return 1
+
         _log.info("=== Step 1: fetching BA candles for %d pairs ===", len(pairs))
         for pair in pairs:
-            if not _fetch_pair(pair, data_dir, args.days):
+            if not _fetch_pair(
+                pair, data_dir, args.days, allow_overwrite=args.allow_overwrite_inventoried
+            ):
                 fetch_failed.append(pair)
         if fetch_failed:
             _log.warning("Fetch failed for: %s — skipping those pairs in training", fetch_failed)
