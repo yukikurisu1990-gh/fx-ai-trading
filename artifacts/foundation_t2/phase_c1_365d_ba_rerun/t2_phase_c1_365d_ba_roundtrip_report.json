@@ -1,0 +1,67 @@
+{
+  "phase": "C1_rerun",
+  "run_id": "phase-c1-365d-ba-rerun",
+  "generated_at": "2026-07-03T17:31:23Z",
+  "code_sha": "6ae9655fb36811307a28d9d5b81a202b3da34b2a",
+  "plan_document": "docs/design/t2_execution_plan.md",
+  "span_id": "365d_BA",
+  "destination_logical_alias": "T2_PRIMARY_R2",
+  "expected_file_count": 20,
+  "top_level_status": "T2_C1_RERUN_STOPPED_BEFORE_DEPOSIT_CREDENTIALS_NOT_PRESENT",
+  "preflight": {
+    "master_sha": "6ae9655fb36811307a28d9d5b81a202b3da34b2a",
+    "pr_397_merged": true,
+    "working_tree_clean_before_start": true,
+    "protected_artifacts_clean_before_start": true,
+    "inventory_reference_present": "artifacts/gate_p1_pr_b/firstrun_365d_ba/raw_inventory_365d_BA.json",
+    "local_candidate_byte_count_365d_BA": 20,
+    "inventory_expected_file_count": 20,
+    "boto3_available": false
+  },
+  "dry_run": {
+    "command": "python scripts/t2_r2_runtime.py --dry-run",
+    "status": "T2_PRIMARY_R2_CREDENTIALS_NOT_PRESENT",
+    "objects_touched": false,
+    "deposit_performed": false,
+    "restore_performed": false,
+    "checksum_round_trip_performed": false,
+    "env_var_presence": {
+      "access_key_id": false,
+      "secret_access_key": false,
+      "endpoint": false,
+      "bucket": false,
+      "region": false,
+      "object_prefix": false,
+      "retention_expectation": false
+    }
+  },
+  "deposit_status": "NOT_PERFORMED",
+  "restore_status": "NOT_PERFORMED",
+  "roundtrip_status": "NOT_PERFORMED",
+  "object_lock_status": "NOT_OBSERVED",
+  "checksum_comparison_result": "NOT_PERFORMED",
+  "reason": "T2_PRIMARY_R2_CREDENTIALS_NOT_PRESENT",
+  "per_span_status": [
+    {
+      "span_id": "365d_BA",
+      "file_count": 20,
+      "deposit_status": "NOT_PERFORMED",
+      "restore_status": "NOT_PERFORMED",
+      "roundtrip_status": "NOT_PERFORMED",
+      "object_lock_status": "NOT_OBSERVED",
+      "reason": "T2_PRIMARY_R2_CREDENTIALS_NOT_PRESENT"
+    }
+  ],
+  "statuses": [
+    "T2_C1_RERUN_STOPPED_BEFORE_DEPOSIT_CREDENTIALS_NOT_PRESENT",
+    "T2_DEPOSIT_NOT_PERFORMED",
+    "T2_RESTORE_NOT_PERFORMED",
+    "T2_ROUNDTRIP_NOT_PERFORMED",
+    "T2_OBJECT_LOCK_NOT_VERIFIED",
+    "RETENTION_PROBE_REMAINS_UNRESOLVED",
+    "BYTE_ADMISSIBILITY_NOT_APPROVED",
+    "NEW_EPOCH_NOT_AUTHORISED",
+    "ML_STEP4_NOT_AUTHORISED",
+    "PRODUCTION_READINESS_NOT_CLAIMED"
+  ]
+}
