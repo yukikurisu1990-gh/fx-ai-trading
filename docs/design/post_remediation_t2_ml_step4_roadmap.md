@@ -157,6 +157,12 @@ granting the next.
 
 ### Phase D — Byte-admissibility review
 
+> Status pointer: `365d_BA` byte-admissibility review authored
+> (`docs/design/phase_d_365d_ba_byte_admissibility_review_fable5.md`,
+> `PHASE_D_365D_BA_BYTE_ADMISSIBILITY_RECOMMENDED_FOR_HUMAN_ACCEPTANCE`,
+> `365d_BA`-only; awaits human + ChatGPT acceptance). `730d_BA`/`3650d_BA` out
+> of scope.
+
 - **Purpose:** review T2 evidence and decide whether specific deposited /
   restored bytes are admissible inputs for future experiments.
 - **Definition (precise):** byte-admissibility approves **specific bytes /
