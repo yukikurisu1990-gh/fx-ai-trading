@@ -70,6 +70,44 @@ SPAN_ROUNDTRIP_OBSERVED: Final[dict[str, str]] = {
 BACKUP_HDD_STATUS: Final[str] = "BACKUP_HDD_DEPOSIT_NOT_EXECUTED_DEFERRED"
 IPFS_SIDECAR_STATUS: Final[str] = "IPFS_SIDECAR_PUBLICATION_NOT_EXECUTED_DEFERRED"
 
+# --- T2_PRIMARY_R2 adapter readiness statuses (support for a FUTURE, separately
+# authorised Phase C1 re-run). None of these is a round-trip success status;
+# a real round-trip is emitted only by an authorised real run, never here. ---
+T2_PRIMARY_R2_ADAPTER_WIRED_FOR_FUTURE_USE: Final[str] = (
+    "T2_PRIMARY_R2_ADAPTER_WIRED_FOR_FUTURE_USE"
+)
+T2_PRIMARY_R2_ADAPTER_READY_WITH_MOCKS: Final[str] = "T2_PRIMARY_R2_ADAPTER_READY_WITH_MOCKS"
+T2_PRIMARY_R2_MOCK_ROUNDTRIP_TESTED: Final[str] = "T2_PRIMARY_R2_MOCK_ROUNDTRIP_TESTED"
+T2_PRIMARY_R2_CREDENTIALS_NOT_PRESENT: Final[str] = "T2_PRIMARY_R2_CREDENTIALS_NOT_PRESENT"
+T2_PRIMARY_R2_CONFIG_INCOMPLETE: Final[str] = "T2_PRIMARY_R2_CONFIG_INCOMPLETE"
+T2_PRIMARY_R2_OBJECT_LOCK_NOT_OBSERVED: Final[str] = "T2_PRIMARY_R2_OBJECT_LOCK_NOT_OBSERVED"
+T2_PRIMARY_R2_OBJECT_LOCK_OBSERVED: Final[str] = "T2_PRIMARY_R2_OBJECT_LOCK_OBSERVED"
+REAL_T2_EXECUTION_NOT_PERFORMED: Final[str] = "REAL_T2_EXECUTION_NOT_PERFORMED"
+PHASE_C1_RERUN_NOT_AUTHORISED: Final[str] = "PHASE_C1_RERUN_NOT_AUTHORISED"
+
+# Required credential env-var NAMES for the real R2 destination. The adapter
+# checks NAME PRESENCE ONLY — it never reads, prints, logs, or serialises the
+# VALUES. Values, if present, are handed straight to a runtime client and never
+# touched by this module.
+R2_CREDENTIAL_ENV_VARS: Final[tuple[str, ...]] = (
+    "T2_PRIMARY_R2_ACCESS_KEY_ID",
+    "T2_PRIMARY_R2_SECRET_ACCESS_KEY",
+)
+# Required non-secret destination config env-var NAMES (bucket / endpoint may be
+# provided via env at execution time; still checked by presence only here).
+R2_CONFIG_ENV_VARS: Final[tuple[str, ...]] = (
+    "T2_PRIMARY_R2_BUCKET",
+    "T2_PRIMARY_R2_ENDPOINT",
+)
+
+# Phase C1 pilot is 365d_BA ONLY. Object-key construction for phase_c1 refuses
+# the expansion spans unless a later command explicitly overrides.
+PHASE_C1_ALLOWED_SPANS: Final[tuple[str, ...]] = ("365d_BA",)
+
+# Object-key namespace root. Non-secret, deterministic; contains no bucket or
+# account identifier.
+T2_OBJECT_KEY_NAMESPACE: Final[str] = "t2"
+
 # --- Forbidden success/promotion labels (must never appear in evidence) ---
 FORBIDDEN_LABELS: Final[tuple[str, ...]] = (
     "PASS",
