@@ -1,0 +1,44 @@
+{
+  "phase": "C1_local_offline_hardening",
+  "run_id": "phase-c1-365d-ba-local-offline-hardening",
+  "generated_at": "2026-07-03T19:09:07Z",
+  "code_sha": "f401398e09b837a8190202a9a4a98b3a482b47fd",
+  "span_id": "365d_BA",
+  "restore_root_alias": "T2_LOCAL_OFFLINE_RESTORE_ROOT",
+  "restore_root_available": true,
+  "selection_method": "deterministic sorted-index pick [0, 10, 19] of the 20-file inventory",
+  "selected_file_count": 3,
+  "selected_logical_file_ids": [
+    "candles_AUD_CAD_M1_365d_BA.jsonl",
+    "candles_EUR_USD_M1_365d_BA.jsonl",
+    "candles_USD_JPY_M1_365d_BA.jsonl"
+  ],
+  "spot_rehash_comparison_result": "MATCH_ALL_SELECTED_VS_INVENTORY_AND_PR401",
+  "files": [
+    {
+      "logical_file_id": "candles_AUD_CAD_M1_365d_BA.jsonl",
+      "restored_size_bytes": 72972935,
+      "restored_sha256": "60207196518b7e6550ff3169be1bb7d1d9c811e2cb3a84882f29ee24af5a037a",
+      "matches_inventory": true,
+      "matches_pr401_evidence": true,
+      "checksum_match": true
+    },
+    {
+      "logical_file_id": "candles_EUR_USD_M1_365d_BA.jsonl",
+      "restored_size_bytes": 74680793,
+      "restored_sha256": "6e71f8e90075e83a5047469384a4e24b112ac6bab75df32bbe2ffcafd5dc3df4",
+      "matches_inventory": true,
+      "matches_pr401_evidence": true,
+      "checksum_match": true
+    },
+    {
+      "logical_file_id": "candles_USD_JPY_M1_365d_BA.jsonl",
+      "restored_size_bytes": 74782873,
+      "restored_sha256": "9b1165731d1b0b306a73a38a642880b0f08538f9614be506eb657aaeab5a355c",
+      "matches_inventory": true,
+      "matches_pr401_evidence": true,
+      "checksum_match": true
+    }
+  ],
+  "top_level_status": "T2_C1_365D_BA_LOCAL_OFFLINE_HARDENING_EVIDENCE_CREATED"
+}
