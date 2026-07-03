@@ -21,8 +21,9 @@ Phase 9.4 additions:
 
 Phase 9.X-B/J-5 additions (opt-in via enable_groups):
   - Group "mtf" (multi-timeframe extension): h4_atr_14, d1_return_3,
-    d1_range_pct, d1_atr_14, w1_return_1, w1_range_pct. Backtest-validated
-    Sharpe 0.174 / PnL 1.85x baseline at K=3 (Phase 9.X-B closure memo).
+    d1_range_pct, d1_atr_14, w1_return_1, w1_range_pct. Historical backtest
+    figures previously cited here are invalid due to a lookahead defect; see
+    docs/design/project_wide_logic_audit_fable5_findings.md (F-10).
   - Activating mtf bumps FEATURE_VERSION v2 → v3 (schema change).
   - mtf requires ≥ 7 days of history (~2,016 m5 bars for weekly stats);
     callers must size the rolling buffer accordingly.
@@ -500,6 +501,14 @@ def _compute_mtf_features(candles: list[dict]) -> dict[str, float]:
     computes ATR(14) on 4h, return-3 / range-pct / ATR(14) on daily,
     return-1 / range-pct on weekly.
 
+    F8_MTF_COMPLETED_BUCKET_CONTRACT_ALIGNED: the last (potentially
+    in-progress) resampled bucket per timeframe is dropped before feature
+    computation, mirroring `_upper_tf_features`'s bars[:-1] convention so
+    this fallback matches the training-time shift(1) completed-bucket
+    definition (scripts/train_lgbm_models.py `_add_mtf_features`). If no
+    completed buckets remain after the drop, the affected features fall
+    back to the same zero/neutral values as insufficient history.
+
     Pure function. No-lookahead preserved (candles already filtered by
     build() to timestamp < as_of_time before this is called).
 
@@ -510,9 +519,13 @@ def _compute_mtf_features(candles: list[dict]) -> dict[str, float]:
         return dict(_MTF_ZERO_FEATURES)
 
     # Resampling buckets keyed by (year, month, day, hour-bucket).
-    h4_bars = _resample_ohlc(candles, _h4_bucket)
-    d1_bars = _resample_ohlc(candles, _d1_bucket)
-    w1_bars = _resample_ohlc(candles, _w1_bucket)
+    # [:-1] drops the last (potentially in-progress) bucket per timeframe
+    # (F-8): only COMPLETED buckets feed the features, matching training's
+    # shift(1) convention. Empty lists degrade to the zero/neutral values
+    # via the helpers below, identical to insufficient-history handling.
+    h4_bars = _resample_ohlc(candles, _h4_bucket)[:-1]
+    d1_bars = _resample_ohlc(candles, _d1_bucket)[:-1]
+    w1_bars = _resample_ohlc(candles, _w1_bucket)[:-1]
 
     h4_atr_14 = _atr_from_bars(h4_bars, 14)
     d1_atr_14 = _atr_from_bars(d1_bars, 14)

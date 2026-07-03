@@ -34,11 +34,24 @@ Invariants:
   - feature_stats keys 'last_close', 'bb_upper', 'bb_lower',
     'ema_12', 'ema_26', 'atr_14' must be present; defaults give
     'no_trade'.
-  - ev_after_cost = ev_before_cost (placeholder; EVEstimator corrects later).
+  - F8-F EV contract (domain/ev_contract.py): EV is emitted in PIPS
+    with an SL term —
+        ev_before_cost_pips = confidence * tp_pips - (1 - confidence) * sl_pips
+    where tp_pips/sl_pips are the ATR-based tp/sl converted at the
+    instrument pip size.  This strategy has no spread feed (pure
+    FeatureSet input), so cost_pips=0.0 is passed to the contract
+    helper and cost gating is delegated to the entry gate (F-1).
+    ev_unit = EV_UNIT_PIPS_POST_COST.  The tp/sl DTO fields stay in
+    price units (unchanged consumer contract).
 """
 
 from __future__ import annotations
 
+from fx_ai_trading.domain.ev_contract import (
+    EV_UNIT_PIPS_POST_COST,
+    ev_after_cost_pips,
+    pip_size,
+)
 from fx_ai_trading.domain.feature import FeatureSet
 from fx_ai_trading.domain.strategy import StrategyContext, StrategySignal
 
@@ -121,7 +134,18 @@ class BreakoutStrategy:
 
         tp = atr * self._tp_mult
         sl = atr * self._sl_mult
-        ev = tp * confidence * 0.5 if signal != "no_trade" else 0.0
+
+        # F8-F: EV in pips with an SL term.  tp/sl are price distances,
+        # converted at the instrument pip size (0.01 JPY-quoted, else 0.0001).
+        pip = pip_size(instrument)
+        tp_pips = tp / pip
+        sl_pips = sl / pip
+        ev_pips = (
+            confidence * tp_pips - (1.0 - confidence) * sl_pips if signal != "no_trade" else 0.0
+        )
+        # cost_pips=0.0 — no spread feed reaches this pure-functional
+        # strategy; live spread gating happens at the entry gate (F-1).
+        ev_after_pips = ev_after_cost_pips(ev_pips, cost_pips=0.0)
 
         return StrategySignal(
             strategy_id=self._strategy_id,
@@ -129,8 +153,9 @@ class BreakoutStrategy:
             strategy_version=_STRATEGY_VERSION,
             signal=signal,
             confidence=round(confidence, 6),
-            ev_before_cost=round(ev, 8),
-            ev_after_cost=round(ev, 8),
+            ev_before_cost=round(ev_pips, 8),
+            ev_after_cost=round(ev_after_pips, 8),
+            ev_unit=EV_UNIT_PIPS_POST_COST,
             tp=round(tp, 8),
             sl=round(sl, 8),
             holding_time_seconds=self._holding_time_seconds,

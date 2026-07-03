@@ -7,6 +7,7 @@ from uuid import uuid4
 
 import pytest
 
+from fx_ai_trading.domain.ev_contract import EV_UNIT_PIPS_POST_COST
 from fx_ai_trading.domain.feature import FeatureSet
 from fx_ai_trading.domain.strategy import StrategyContext
 from fx_ai_trading.services.strategies.breakout import BreakoutStrategy
@@ -285,6 +286,27 @@ class TestBreakoutTpSl:
         sig = bo.evaluate("EUR_USD", _make_features(), _CTX)
         assert sig.ev_before_cost == 0.0
         assert sig.ev_after_cost == 0.0
+
+    def test_ev_is_pips_post_cost_with_sl_term(self) -> None:
+        # F8-F contract: EV in pips with SL term (see test_f8_ev_contract.py
+        # for the full matrix).  Saturated confidence 1.0: break=0.006 at
+        # atr=0.012 → 0.5 ATR → full strength; tp 180 pips, sl 120 pips.
+        bo = BreakoutStrategy("bo_1")
+        sig = bo.evaluate(
+            "EUR_USD",
+            _make_features(
+                last_close=1.116,
+                bb_upper=1.110,
+                ema_12=1.11,
+                ema_26=1.10,
+                atr_14=0.012,
+            ),
+            _CTX,
+        )
+        assert sig.signal == "long"
+        assert sig.ev_unit == EV_UNIT_PIPS_POST_COST
+        assert sig.ev_before_cost == pytest.approx(1.0 * 180.0 - 0.0 * 120.0, abs=1e-3)
+        assert sig.ev_after_cost == pytest.approx(sig.ev_before_cost)  # cost_pips=0.0
 
 
 # ---------------------------------------------------------------------------

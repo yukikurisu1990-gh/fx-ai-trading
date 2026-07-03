@@ -14,6 +14,7 @@ from fx_ai_trading.services.feature_service import (
     FeatureService,
     _compute_mtf_features,
     _compute_upper_tf_all,
+    _h4_bucket,
 )
 
 
@@ -92,7 +93,11 @@ class TestComputeMtfFeatures:
         assert result["d1_return_3"] < 0
 
     def test_w1_return_1_consistent_with_drift(self) -> None:
-        candles = _make_candles(2200, drift=0.0005)
+        # F-8: the last (in-progress) weekly bucket is dropped, so we need
+        # >= 3 ISO-week buckets for 2 COMPLETED weekly bars (2026-01-01 is a
+        # Thursday: week 1 = Jan 1-4, week 2 = Jan 5-11, week 3 = Jan 12+).
+        # 3600 m5 bars = 12.5 days -> reaches into week 3.
+        candles = _make_candles(3600, drift=0.0005)
         result = _compute_mtf_features(candles)
         assert result["w1_return_1"] > 0
 
@@ -111,8 +116,11 @@ class TestComputeMtfFeatures:
         result = _compute_mtf_features(candles)
         # Should not raise; returns 0 or partial-window value
         assert "d1_atr_14" in result
-        # Just one daily bucket; ATR fallback returns high - low
-        assert result["d1_atr_14"] >= 0
+        # F-8: the single daily bucket is in-progress and is dropped, so the
+        # daily ATR falls back to the zero/insufficient-history value.
+        assert result["d1_atr_14"] == 0.0
+        # 100 m5 bars span three h4 buckets (00/04/08) -> 2 completed ones.
+        assert result["h4_atr_14"] >= 0
 
     def test_no_lookahead_determinism(self) -> None:
         # Same input → same output
@@ -120,6 +128,93 @@ class TestComputeMtfFeatures:
         result_a = _compute_mtf_features(candles)
         result_b = _compute_mtf_features(candles)
         assert result_a == result_b
+
+
+# ---------------------------------------------------------------------------
+# F-8: completed-bucket consistency (in-progress bucket must be excluded)
+# ---------------------------------------------------------------------------
+
+
+def _perturb(candle: dict, delta: float = 0.05) -> dict:
+    """Return a copy of *candle* with all prices shifted / range widened."""
+    out = dict(candle)
+    out["open"] = candle["open"] + delta
+    out["high"] = candle["high"] + 2 * delta
+    out["low"] = candle["low"] - 2 * delta
+    out["close"] = candle["close"] + delta
+    return out
+
+
+class TestF8CompletedBucketConsistency:
+    """MTF fallback must use only COMPLETED H4/D1/W1 buckets (audit F-8).
+
+    Timeline: 3600 m5 candles from 2026-01-01 00:00 UTC (a Thursday) span
+    ~12.5 days -> ISO weeks 1 (Jan 1-4), 2 (Jan 5-11), 3 (Jan 12+, partial);
+    13 daily buckets (Jan 13 partial); 75 h4 buckets (last partial).
+    Candles in the LAST h4 bucket are, by chronology, also inside the last
+    d1 and last w1 buckets — perturbing only them touches exclusively the
+    in-progress bucket of every timeframe.
+    """
+
+    N = 3600
+
+    def test_in_progress_bucket_perturbation_does_not_change_features(self) -> None:
+        candles = _make_candles(self.N)
+        base = _compute_mtf_features(candles)
+
+        last_h4_key = _h4_bucket(candles[-1]["timestamp"])
+        perturbed = [
+            _perturb(c) if _h4_bucket(c["timestamp"]) == last_h4_key else c for c in candles
+        ]
+        n_perturbed = sum(1 for a, b in zip(candles, perturbed, strict=True) if a is not b)
+        assert n_perturbed > 0, "test setup: must perturb at least one candle"
+
+        assert _compute_mtf_features(perturbed) == base
+
+    def test_completed_bucket_perturbation_changes_features(self) -> None:
+        candles = _make_candles(self.N)
+        base = _compute_mtf_features(candles)
+
+        # Perturb one candle on Jan 6 — a COMPLETED d1 bucket, inside the
+        # COMPLETED ISO week 2, and a completed h4 bucket.
+        target = datetime(2026, 1, 6, 10, 0, tzinfo=UTC)
+        idx = next(i for i, c in enumerate(candles) if c["timestamp"] == target)
+        perturbed = list(candles)
+        perturbed[idx] = _perturb(candles[idx])
+
+        assert _compute_mtf_features(perturbed) != base
+
+    def test_all_history_in_single_bucket_returns_zeros(self) -> None:
+        # 10 candles inside one hour: every timeframe has exactly one
+        # (in-progress) bucket -> dropped -> insufficient-history zeros.
+        candles = _make_candles(10)
+        assert _compute_mtf_features(candles) == _MTF_ZERO_FEATURES
+
+    def test_agreement_with_pandas_shift1_reference(self) -> None:
+        # Training-side reference (scripts/train_lgbm_models.py
+        # _add_mtf_features): resample -> feature -> shift(1) -> reindex.
+        # The fallback value at the newest candle must equal the shift(1)
+        # value the training pipeline would assign to that row.
+        pd = pytest.importorskip("pandas")
+
+        candles = _make_candles(self.N)
+        result = _compute_mtf_features(candles)
+
+        df = pd.DataFrame(candles).set_index("timestamp")
+
+        # d1_return_3 — calendar-day resample, shift(1), reindex (ffill).
+        d1_close = df["close"].resample("1D").last()
+        d1_return_3 = d1_close.pct_change(3).shift(1)
+        ref_d1 = d1_return_3.reindex(df.index, method="ffill").iloc[-1]
+        assert result["d1_return_3"] == pytest.approx(ref_d1, abs=1e-8)
+
+        # w1_return_1 — ISO-week grouping (matches _w1_bucket), shift(1):
+        # the newest row sits in the last (in-progress) week, so its
+        # shift(1) value is pct_change at the second-to-last week bucket.
+        iso = df.index.isocalendar()
+        w1_close = df["close"].groupby([iso["year"], iso["week"]]).last()
+        ref_w1 = w1_close.pct_change(1).iloc[-2]
+        assert result["w1_return_1"] == pytest.approx(ref_w1, abs=1e-8)
 
 
 # ---------------------------------------------------------------------------
@@ -218,6 +313,10 @@ class TestFeatureServiceMtf:
         )
         result2 = service2.build("EUR_USD", "m5", uuid4(), as_of)
         assert result.feature_hash == result2.feature_hash
+        # F-8: also assert the six MTF values themselves match, not only the
+        # aggregate hash — future candles must not leak into the MTF group.
+        for key in _MTF_ZERO_FEATURES:
+            assert result.feature_stats[key] == result2.feature_stats[key]
 
     def test_determinism_same_candles_same_hash(self) -> None:
         candles = _make_candles(2200)

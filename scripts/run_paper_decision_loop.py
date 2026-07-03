@@ -52,7 +52,7 @@ import os
 import platform
 import sys
 from collections import deque
-from datetime import UTC, date, datetime
+from datetime import UTC, date, datetime, timedelta
 from pathlib import Path
 from typing import TYPE_CHECKING
 from uuid import UUID
@@ -209,6 +209,95 @@ def _granularity_minutes(granularity: str) -> int:
         except ValueError:
             pass
     return 5
+
+
+def _feature_as_of_time(bar_open_utc: datetime, granularity: str) -> datetime:
+    """Feature as-of = decision-bar CLOSE time (F8_FEATURE_ASOF_CONTRACT_ALIGNED).
+
+    BarFeed emits *completed* bars stamped with their OPEN timestamp
+    (OandaBarFeed polls completed candles only; CandleFileBarFeed replays
+    completed candles).  FeatureService.build() filters candle history
+    strictly ``timestamp < as_of_time`` (feature_service.py), so passing the
+    bar OPEN time excluded the just-completed decision bar and made serve-time
+    features one full bar staler than training/backtest, which include the
+    completed decision bar's close (audit F-8, F8-D).
+
+    Passing open + bar duration (derived from the runner granularity via
+    ``_granularity_minutes``) includes the completed decision bar, while
+    in-progress/future bars remain excluded by the feed layer — only completed
+    bars ever enter the history buffer, so the strict ``<`` filter at bar
+    close time cannot admit an unfinished bar.
+
+    This intentionally shifts paper/replay and live equally: the equal shift
+    IS the train/serve contract alignment, not a live-only patch.
+    """
+    return bar_open_utc + timedelta(minutes=_granularity_minutes(granularity))
+
+
+# ---------------------------------------------------------------------------
+# F8-C barrier anchor helpers
+# ---------------------------------------------------------------------------
+
+
+def _barrier_prices(
+    fill_price: float | None,
+    atr: float | None,
+    price_dp: int,
+    direction: str,
+    tp_mult: float = _TP_MULT,
+    sl_mult: float = _SL_MULT,
+) -> tuple[float, float] | None:
+    """TP/SL price barriers anchored at the ACTUAL entry fill price.
+
+    F8_LIVE_BARRIER_ANCHOR_ALIGNED: the training/backtest label contract
+    anchors triple-barrier levels at the trade's entry fill price, not at the
+    decision-bar mid close (audit F-8, F8-C).  Callers must pass the fill
+    price that ``StateManager.on_fill`` recorded for the just-opened position
+    (PaperBroker nominal fill in paper mode; real OANDA fill in live mode).
+
+    Fail-closed: returns None — meaning NO price barriers; the exit gate's
+    time stop then governs the position — when fill_price or atr is missing,
+    non-finite, or non-positive, or when direction is not 'buy'/'sell'.
+    Callers must NOT substitute the decision-bar mid close on None.
+    """
+    if fill_price is None or atr is None:
+        return None
+    try:
+        fill = float(fill_price)
+        atr_f = float(atr)
+    except (TypeError, ValueError):
+        return None
+    if not math.isfinite(fill) or not math.isfinite(atr_f) or fill <= 0.0 or atr_f <= 0.0:
+        return None
+    if direction == "buy":
+        return (
+            round(fill + tp_mult * atr_f, price_dp),
+            round(fill - sl_mult * atr_f, price_dp),
+        )
+    if direction == "sell":
+        return (
+            round(fill - tp_mult * atr_f, price_dp),
+            round(fill + sl_mult * atr_f, price_dp),
+        )
+    return None
+
+
+def _recorded_fill_price(state_manager: StateManager, order_id: str) -> float | None:
+    """Fill price (positions.avg_price) recorded by on_fill for *order_id*.
+
+    Reads back exactly what ``StateManager.on_fill`` persisted for the
+    just-opened position: the PaperBroker nominal fill in paper mode, the
+    real OANDA fill in live mode.  Returns None when the position row cannot
+    be found or the read fails; callers fail closed (no price barriers set —
+    F8_LIVE_BARRIER_ANCHOR_ALIGNED).
+    """
+    try:
+        for pos in state_manager.open_position_details():
+            if pos.order_id == order_id:
+                return float(pos.avg_price)
+    except Exception:
+        _log.exception("fill-price lookup failed for order=%s", order_id)
+    return None
 
 
 # ---------------------------------------------------------------------------
@@ -1626,7 +1715,10 @@ def run(args: argparse.Namespace, *, env: dict[str, str] | None = None) -> int:
                         instrument=inst,
                         tier=args.granularity,
                         cycle_id=UUID(cycle_id) if len(cycle_id) == 32 else UUID(int=0),
-                        as_of_time=bar.time_utc,
+                        # F8-D: as-of = decision-bar CLOSE (open + granularity)
+                        # so the just-completed decision bar passes the strict
+                        # `<` filter, matching training/backtest feature lag.
+                        as_of_time=_feature_as_of_time(bar.time_utc, args.granularity),
                     )
                 except Exception:
                     _log.warning("FeatureService.build failed for %s — skipping cycle", inst)
@@ -1812,25 +1904,37 @@ def run(args: argparse.Namespace, *, env: dict[str, str] | None = None) -> int:
                     )
                     continue
 
-                # Compute absolute TP/SL price levels from B-2 ATR multipliers.
-                # Stored in _tpsl_map and passed to run_exit_gate each bar.
+                # F8-C (F8_LIVE_BARRIER_ANCHOR_ALIGNED): the contract TP/SL
+                # barriers stored in _tpsl_map (consumed by run_exit_gate and
+                # _reconcile_broker_closes each bar) are anchored at the
+                # ACTUAL fill price recorded by on_fill — computed AFTER the
+                # open below via _barrier_prices().  The training/backtest
+                # label contract anchors barriers at the entry fill, not the
+                # decision-bar mid close.
                 _direction = meta_result.adopted_direction or ""
                 _feat = features.get(inst or "")
                 _atr = _feat.sampled_features.get("atr_14", 0.0) if _feat else 0.0
                 # OANDA price precision: JPY pairs = 3 dp, others = 5 dp.
                 _price_dp = 3 if (inst or "").endswith("_JPY") else 5
-                if _atr and _atr > 0:
-                    if _direction == "buy":
-                        _tp_price: float | None = round(inst_close + _TP_MULT * _atr, _price_dp)
-                        _sl_price: float | None = round(inst_close - _SL_MULT * _atr, _price_dp)
-                    else:  # sell
-                        _tp_price = round(inst_close - _TP_MULT * _atr, _price_dp)
-                        _sl_price = round(inst_close + _SL_MULT * _atr, _price_dp)
-                else:
-                    _tp_price = None
-                    _sl_price = None
 
                 if oanda_exec_broker is not None:
+                    # Pre-fill PROTECTIVE tp/sl for OANDA takeProfitOnFill /
+                    # stopLossOnFill (server-side crash protection if this
+                    # loop dies).  The real fill price is unknowable before a
+                    # market order fills, so these use the decision-bar close
+                    # as the best available pre-fill proxy.  They are NOT the
+                    # contract barriers: _tpsl_map below is anchored at the
+                    # actual fill once recorded.  Re-anchoring the attached
+                    # broker orders post-fill would need a trade-amend API on
+                    # OandaBroker (src/ change) — out of scope here; residual
+                    # divergence is bounded by |fill - decision close|.
+                    _protective = _barrier_prices(
+                        fill_price=inst_close,
+                        atr=_atr,
+                        price_dp=_price_dp,
+                        direction=_direction,
+                    )
+                    _prot_tp, _prot_sl = _protective if _protective is not None else (None, None)
                     opened_order_id = _open_live_position(
                         account_id=account_id,
                         instrument=inst or "",
@@ -1842,8 +1946,8 @@ def run(args: argparse.Namespace, *, env: dict[str, str] | None = None) -> int:
                         orders_context=orders_context,
                         broker=oanda_exec_broker,
                         trading_signal_id=meta_result.trading_signal_id,
-                        tp=_tp_price,
-                        sl=_sl_price,
+                        tp=_prot_tp,
+                        sl=_prot_sl,
                     )
                 else:
                     opened_order_id = _open_paper_position(
@@ -1860,6 +1964,35 @@ def run(args: argparse.Namespace, *, env: dict[str, str] | None = None) -> int:
                         trading_signal_id=meta_result.trading_signal_id,
                     )
                 if opened_order_id:
+                    # F8-C fail-closed anchor: read back the fill price that
+                    # on_fill persisted; if unavailable, set NO price barriers
+                    # (never silently re-anchor at the decision-bar mid) —
+                    # the position is then governed by the exit gate's time
+                    # stop (max_holding_time).  In paper mode the recorded
+                    # fill equals the decision-bar close (PaperBroker nominal
+                    # fill), so paper/replay barrier levels are unchanged.
+                    _fill_price = _recorded_fill_price(state_manager, opened_order_id)
+                    _barriers = _barrier_prices(
+                        fill_price=_fill_price,
+                        atr=_atr,
+                        price_dp=_price_dp,
+                        direction=_direction,
+                    )
+                    if _barriers is None:
+                        _tp_price: float | None = None
+                        _sl_price: float | None = None
+                        _log.warning(
+                            "barrier_anchor_unavailable: no price barriers set"
+                            " — time stop governs (F8-C fail-closed)",
+                            extra={
+                                "order_id": opened_order_id,
+                                "instrument": inst,
+                                "fill_price": _fill_price,
+                                "atr_14": _atr,
+                            },
+                        )
+                    else:
+                        _tp_price, _sl_price = _barriers
                     _tpsl_map[opened_order_id] = (_tp_price, _sl_price)
                     _log.debug(
                         "tpsl_map: stored tp=%.5f sl=%.5f for order=%s (%s %s)",

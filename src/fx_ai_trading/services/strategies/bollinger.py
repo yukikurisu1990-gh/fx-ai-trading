@@ -20,6 +20,7 @@ Invariants:
 
 from __future__ import annotations
 
+from fx_ai_trading.domain.ev_contract import EV_UNIT_PRICE_RAW
 from fx_ai_trading.domain.feature import FeatureSet
 from fx_ai_trading.domain.strategy import StrategyContext, StrategySignal
 
@@ -89,6 +90,10 @@ class BollingerStrategy:
             confidence=round(confidence, 6),
             ev_before_cost=round(ev, 8),
             ev_after_cost=round(ev, 8),
+            # F8-F: EV here is raw price units without an SL/cost term —
+            # declared non-comparable, so Meta rejects it fail-closed
+            # instead of ranking it against pips_post_cost candidates.
+            ev_unit=EV_UNIT_PRICE_RAW,
             tp=round(tp, 8),
             sl=round(sl, 8),
             holding_time_seconds=self._holding_time_seconds,

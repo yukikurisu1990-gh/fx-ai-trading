@@ -44,6 +44,22 @@ Forex weekends are closed: a 7-calendar-day pull on a weekday will
 return roughly 5 trading days of candles.  Empty pages are interpreted
 as "no data in this window" and we advance the cursor by ``page-size *
 granularity_sec`` to skip past the closed period.
+
+Fail-closed provenance hardening (F5-A/F5-B/F5-C)
+-------------------------------------------------
+Status: F5_INGESTION_PROVENANCE_HARDENED_BY_TESTS /
+F5_INVENTORIED_SPAN_OVERWRITE_GUARDED
+
+- F5-A: a mid-stream request failure no longer exits 0 with a truncated,
+  shape-identical file.  The failure is tracked; ``fetch_candles`` raises
+  ``FetchIncompleteError`` and ``main()`` returns non-zero.
+- F5-B: candles are written to ``<output>.incomplete`` and atomically
+  promoted to the final path only on fully-successful completion.  On
+  failure only the ``.incomplete`` file remains; any pre-existing final
+  file is left untouched.
+- F5-C: ``main()`` refuses (by default) to write over a basename that is
+  referenced by committed inventory metadata (Gate P1 PR-B / Foundation
+  T2).  Pass ``--allow-overwrite-inventoried`` to override explicitly.
 """
 
 from __future__ import annotations
@@ -56,6 +72,23 @@ from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 from fx_ai_trading.adapters.broker.oanda_api_client import OandaAPIClient
+
+try:  # imported as part of the ``scripts`` package (tests, repo-root callers)
+    from scripts.provenance_guard import ProvenanceGuardError, assert_not_inventoried_span
+except ImportError:  # standalone execution: scripts/ itself is on sys.path
+    from provenance_guard import (  # type: ignore[no-redef]
+        ProvenanceGuardError,
+        assert_not_inventoried_span,
+    )
+
+
+class FetchIncompleteError(RuntimeError):
+    """A mid-stream request failure truncated the pull (F5-A fail-closed).
+
+    The partial output is retained at ``<output>.incomplete`` and the final
+    output path is NOT promoted.
+    """
+
 
 _GRANULARITY_SECONDS: dict[str, int] = {
     "S5": 5,
@@ -176,18 +209,22 @@ def fetch_candles(
     granularity_sec = _GRANULARITY_SECONDS[granularity]
 
     output_path.parent.mkdir(parents=True, exist_ok=True)
+    # F5-B atomic write: stream into <output>.incomplete and promote to the
+    # final path only when the pull finished without a request failure.
+    incomplete_path = output_path.with_name(output_path.name + ".incomplete")
 
     cursor = start_time
     seen: set[str] = set()
     written = 0
     requests = 0
+    failure: str | None = None
 
     print(
         f"fetch start: instrument={instrument} granularity={granularity} "
         f"days={days} ({start_time.isoformat()} -> {end_time.isoformat()})"
     )
 
-    with output_path.open("w", encoding="utf-8") as out_f:
+    with incomplete_path.open("w", encoding="utf-8") as out_f:
         while cursor < end_time:
             params = {
                 "granularity": granularity,
@@ -198,6 +235,9 @@ def fetch_candles(
             try:
                 resp = api_client.get_candles(instrument, params=params)
             except Exception as exc:
+                # F5-A fail-closed: record the failure and stop; do NOT
+                # promote the truncated output as complete.
+                failure = f"request failed at cursor={cursor.isoformat()}: {exc}"
                 print(f"REQUEST FAILED at cursor={cursor.isoformat()}: {exc}", file=sys.stderr)
                 break
             requests += 1
@@ -234,6 +274,15 @@ def fetch_candles(
             last_dt = _parse_oanda_time(last_time_str)
             cursor = last_dt + timedelta(seconds=granularity_sec)
 
+    if failure is not None:
+        print(
+            f"FETCH INCOMPLETE: {failure}; partial output retained at "
+            f"{incomplete_path} (final output NOT promoted)",
+            file=sys.stderr,
+        )
+        raise FetchIncompleteError(failure)
+
+    os.replace(incomplete_path, output_path)
     print(f"DONE: requests={requests} candles_written={written} -> {output_path}")
     return written
 
@@ -251,6 +300,15 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         default=None,
         help="Output JSONL path. Default: data/candles_<inst>_<gran>_<days>d.jsonl",
     )
+    parser.add_argument(
+        "--allow-overwrite-inventoried",
+        action="store_true",
+        default=False,
+        help=(
+            "Explicitly allow writing over a filename referenced by committed "
+            "inventory metadata (Gate P1 PR-B / Foundation T2). Default: fail closed."
+        ),
+    )
     return parser.parse_args(argv)
 
 
@@ -259,14 +317,25 @@ def main(argv: list[str] | None = None) -> int:
     output_path = args.output
     if output_path is None:
         output_path = Path(f"data/candles_{args.instrument}_{args.granularity}_{args.days}d.jsonl")
-    fetch_candles(
-        instrument=args.instrument,
-        granularity=args.granularity,
-        days=args.days,
-        output_path=output_path,
-        price=args.price,
-        page_size=args.page_size,
-    )
+    # F5-C: refuse to re-point an inventoried span basename at new bytes
+    # unless the operator passed an explicit override.
+    try:
+        assert_not_inventoried_span(output_path, allow_overwrite=args.allow_overwrite_inventoried)
+    except ProvenanceGuardError as exc:
+        print(f"PROVENANCE GUARD: {exc}", file=sys.stderr)
+        return 2
+    try:
+        fetch_candles(
+            instrument=args.instrument,
+            granularity=args.granularity,
+            days=args.days,
+            output_path=output_path,
+            price=args.price,
+            page_size=args.page_size,
+        )
+    except FetchIncompleteError as exc:
+        print(f"FETCH FAILED (incomplete, exit non-zero): {exc}", file=sys.stderr)
+        return 1
     return 0
 
 

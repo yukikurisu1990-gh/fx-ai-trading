@@ -109,6 +109,10 @@ class MetaFilterReason:
 
     CSI_STRENGTH_WEAK = "meta.csi_strength_weak"
     SESSION_CLOSED = "meta.session_closed"
+    # F8-F post-cost EV contract: candidate's ev_unit is not the canonical
+    # comparable unit (pips_post_cost) — rejected fail-closed by
+    # run_meta_cycle before the F-16 sort (see domain/ev_contract.py).
+    EV_UNIT_INCOMPARABLE = "meta.ev_unit_incomparable"
 
 
 class ExitCloseReason:
@@ -212,6 +216,8 @@ DOTTED: frozenset[str] = frozenset(
         # Phase 9.3 MetaDecider filter rules
         MetaFilterReason.CSI_STRENGTH_WEAK,
         MetaFilterReason.SESSION_CLOSED,
+        # F8-F EV unit/cost contract
+        MetaFilterReason.EV_UNIT_INCOMPARABLE,
         # Phase 9.X extended close reasons (§4.9.2)
         ExitCloseReason.MANUAL,
         ExitCloseReason.SESSION_CLOSE,

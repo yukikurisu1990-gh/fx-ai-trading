@@ -4,14 +4,24 @@ Reads every strategy_signals row emitted for a given cycle by
 Cycle 6.3's run_strategy_cycle and produces one MetaDecision plus,
 when possible, one trading_signals row (the Execution-ready intent).
 
-Design constraints (Cycle 6.4 brief):
+Design constraints (Cycle 6.4 brief, amended by F8-G):
 
-  1. Meta MUST guarantee ≥1 trading_signal per cycle whenever at least
-     one non-``no_trade`` candidate exists.  If the normal Filter →
-     Sort pipeline rejects every candidate, Meta falls back to the
-     top-EV candidate and adopts it anyway (``force_fallback``).
-     Genuine no_trade — writing only meta_decisions + no_trade_events —
-     is reserved for cycles where zero trade candidates exist at all.
+  1. F8-G: the Cycle 6.4 "≥1 trading_signal per cycle" guarantee is now
+     OPT-IN (``force_fallback=True``, for smoke/tests only).  The
+     production-like default is fail-closed: if the normal Filter →
+     Sort pipeline rejects every candidate, Meta adopts NOTHING and
+     records the rejections as no_trade_events.  Only when
+     ``force_fallback`` is explicitly enabled does Meta fall back to
+     the top-EV candidate and adopt it despite the filters.
+     (F8_FORCE_FALLBACK_PRODUCTION_GUARDED — see
+     docs/design/project_wide_logic_audit_fable5_findings.md §4 F-4.)
+
+  1b. F8-F: candidates are only rankable when their ``ev_unit`` (from
+     strategy_signals.meta) equals the canonical unit
+     ``pips_post_cost`` (domain/ev_contract.py).  Any other unit —
+     including legacy rows without the key — is rejected fail-closed
+     with ``meta.ev_unit_incomparable`` so the F-16 sort never
+     compares pips against raw price units.
 
   2. Sort order is F-16:
        primary   : ev_after_cost   DESC
@@ -45,7 +55,8 @@ from sqlalchemy.engine import Engine
 
 from fx_ai_trading.common.clock import Clock
 from fx_ai_trading.common.ulid import generate_ulid
-from fx_ai_trading.domain.reason_codes import MetaReason
+from fx_ai_trading.domain.ev_contract import EV_UNIT_UNKNOWN, is_comparable
+from fx_ai_trading.domain.reason_codes import MetaFilterReason, MetaReason
 from fx_ai_trading.sync.enqueue import enqueue_secondary_sync
 
 SOURCE_COMPONENT = "meta_cycle_runner"
@@ -66,9 +77,15 @@ class MetaCycleConfig:
                              than this value are filtered out.  Default
                              0.0 — no filter.
       force_fallback       : if every trade candidate is filtered, adopt
-                             the top-EV candidate anyway.  True by
-                             default; this is the mechanism that
-                             fulfils the Cycle 6.4 ≥1-trade guarantee.
+                             the top-EV candidate anyway.  **False by
+                             default** (F8-G fail-closed: all-filtered
+                             cycles end in no adoption + no_trade_events,
+                             the production-like behaviour).  Set True
+                             explicitly ONLY for smoke/tests that need
+                             the legacy Cycle 6.4 ≥1-trade guarantee —
+                             it adopts a candidate that failed the EV /
+                             confidence filters, which is never
+                             acceptable in a production-like run.
       top_k                : Phase 9.19/J-3 config plumbing only. The
                              intended SELECTOR rule is "adopt the K
                              highest-EV candidates per cycle"
@@ -90,7 +107,7 @@ class MetaCycleConfig:
 
     min_ev_after_cost: float = 0.0
     confidence_threshold: float = 0.0
-    force_fallback: bool = True
+    force_fallback: bool = False
     top_k: int = 1
 
     def __post_init__(self) -> None:
@@ -142,6 +159,7 @@ class _Candidate:
     confidence: float
     ev_after_cost: float
     ev_before_cost: float
+    ev_unit: str  # F8-F unit declaration; missing/legacy meta → "unknown"
     spread: float
     decision_chain_id: str | None
     signal_time_utc: Any  # datetime from strategy_signals.signal_time_utc
@@ -192,15 +210,20 @@ def run_meta_cycle(
          no-trade rows.  no-trade rows are not adopt-eligible but do
          not generate no_trade_events by themselves — they are
          strategy-originated, not meta-originated.
-      3. Apply min_ev_after_cost / confidence_threshold filters to
-         trade candidates.
+      3. Apply the F8-F ev_unit comparability gate (only
+         ``pips_post_cost`` candidates are rankable; others rejected
+         with ``meta.ev_unit_incomparable``) and the
+         min_ev_after_cost / confidence_threshold filters to trade
+         candidates.
       4. Sort survivors by F-16.  Adopt top-1 if any survive.
-      5. Else, if ``force_fallback`` and trade candidates exist, sort
-         ALL trade candidates by F-16 and adopt top-1.  Mark
+      5. Else, if ``force_fallback`` (opt-in for smoke/tests; default
+         False per F8-G) and trade candidates exist, sort ALL trade
+         candidates by F-16 and adopt top-1.  Mark
          ``fallback_used=True`` in the meta_decisions.filter_result
          JSON.
-      6. Else (no trade candidates existed at all): emit a single
-         no_trade_events row with reason_code=NO_CANDIDATES.
+      6. Else (fail-closed default, or no trade candidates at all):
+         adopt nothing; a cycle with zero trade candidates emits a
+         single no_trade_events row with reason_code=NO_CANDIDATES.
       7. For every filtered-out trade candidate, write one
          no_trade_events row with the concrete reason.
       8. Enqueue every persisted row into secondary_sync_outbox.
@@ -239,6 +262,7 @@ def run_meta_cycle(
                     "instrument": c.instrument,
                     "reason_code": reason_code,
                     "ev_after_cost": c.ev_after_cost,
+                    "ev_unit": c.ev_unit,
                     "confidence": c.confidence,
                 }
             )
@@ -252,8 +276,10 @@ def run_meta_cycle(
         adopted = survivors[0]
     elif cfg.force_fallback and trade_candidates:
         # Forced fallback — adopt the highest-EV trade candidate even
-        # though it failed the normal filter.  This is the Cycle 6.4
-        # ≥1-trade guarantee.
+        # though it failed the normal filter.  This is the legacy Cycle
+        # 6.4 ≥1-trade guarantee, now opt-in for smoke/tests only
+        # (F8-G): the production-like default (force_fallback=False)
+        # falls through and adopts nothing.
         adopted = sorted(trade_candidates, key=_f16_sort_key)[0]
         fallback_used = True
 
@@ -400,6 +426,9 @@ def _load_candidates(engine: Engine, *, cycle_id: str) -> list[_Candidate]:
                 confidence=float(r.confidence) if r.confidence is not None else 0.0,
                 ev_after_cost=float(meta.get("ev_after_cost", 0.0)),
                 ev_before_cost=float(meta.get("ev_before_cost", 0.0)),
+                # F8-F: legacy rows without an ev_unit key load as
+                # "unknown" and are rejected fail-closed by _reject_reason.
+                ev_unit=str(meta.get("ev_unit", EV_UNIT_UNKNOWN)),
                 spread=float(meta.get("spread", 0.0)),
                 decision_chain_id=meta.get("decision_chain_id"),
                 signal_time_utc=r.signal_time_utc,
@@ -426,6 +455,11 @@ def _parse_meta_json(raw: Any) -> dict[str, Any]:
 
 
 def _reject_reason(c: _Candidate, cfg: MetaCycleConfig) -> str | None:
+    # F8-F fail-closed unit gate: EV thresholds and the F-16 sort are only
+    # meaningful in the canonical unit (pips, post-cost).  Candidates
+    # declaring any other unit — or none at all — must never be ranked.
+    if not is_comparable(c.ev_unit):
+        return MetaFilterReason.EV_UNIT_INCOMPARABLE
     if c.ev_after_cost < cfg.min_ev_after_cost:
         return MetaReason.EV_BELOW_THRESHOLD
     if c.confidence < cfg.confidence_threshold:

@@ -5,8 +5,10 @@ Covers in isolation:
   - F-16 sort order (ev_after_cost DESC, confidence DESC, spread ASC,
     strategy_id ASC).
   - Filter rejects (EV below threshold, confidence below threshold).
-  - Forced fallback: every candidate filtered but one trade candidate
-    exists → adopt top-EV, mark fallback.
+  - Forced fallback (opt-in via force_fallback=True since F8-G): every
+    candidate filtered but one trade candidate exists → adopt top-EV,
+    mark fallback.  The default is fail-closed (no adoption); see
+    tests/unit/test_f8_ev_contract.py for the default-config coverage.
   - Genuine no_trade: no trade candidates at all → NO_CANDIDATES row.
   - no_trade_events taxonomy: filter rejections carry source_component
     and meta_decision_id; whole-cycle NO_CANDIDATES has instrument/
@@ -27,6 +29,7 @@ import pytest
 from sqlalchemy import create_engine, text
 
 from fx_ai_trading.common.clock import FixedClock
+from fx_ai_trading.domain.ev_contract import EV_UNIT_PIPS_POST_COST
 from fx_ai_trading.services.meta_cycle_runner import (
     MetaCycleConfig,
     MetaCycleRunResult,
@@ -144,7 +147,11 @@ def _seed_strategy_signal(
     decision_chain_id: str | None = "chain-test",
     strategy_type: str = "stub",
     strategy_version: str = "1.0.0",
+    ev_unit: str | None = EV_UNIT_PIPS_POST_COST,
 ) -> None:
+    # F8-F: seeded candidates declare the canonical comparable unit by
+    # default so the pre-existing filter/sort assertions stay valid.
+    # Pass ev_unit=None to seed a legacy row without the key.
     meta = {
         "decision_chain_id": decision_chain_id,
         "ev_before_cost": ev_before_cost,
@@ -155,6 +162,8 @@ def _seed_strategy_signal(
         "holding_time_seconds": 3600,
         "enabled": True,
     }
+    if ev_unit is not None:
+        meta["ev_unit"] = ev_unit
     with engine.begin() as conn:
         conn.execute(
             text(
