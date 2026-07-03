@@ -22,6 +22,7 @@ under ``artifacts/``.
 
 from __future__ import annotations
 
+import sys
 from pathlib import Path
 
 _REPO_ROOT = Path(__file__).resolve().parent.parent
@@ -84,8 +85,24 @@ def assert_not_inventoried_span(
     write is permitted.  Raises :class:`ProvenanceGuardError` when the
     basename is referenced by committed inventory metadata and
     ``allow_overwrite`` is False.
+
+    When the override IS used against a referenced basename, an explicit
+    ``PROVENANCE_OVERRIDE`` warning is emitted to stderr — an overridden
+    overwrite must never look like a normal provenance-clean run.  The
+    override grants nothing beyond the write itself: no byte-admissibility,
+    no new-epoch adoption, no ML Step 4 authorisation.
     """
     references = find_inventory_references(output_path, inventory_roots=inventory_roots)
+    if references and allow_overwrite:
+        print(
+            f"PROVENANCE_OVERRIDE: overwriting inventoried span "
+            f"{Path(output_path).name!r} referenced by {len(references)} "
+            "committed metadata file(s); committed SHA-256 evidence still "
+            "refers to the OLD bytes. This override does NOT confer "
+            "byte-admissibility, new-epoch adoption, or ML Step 4 "
+            "authorisation.",
+            file=sys.stderr,
+        )
     if references and not allow_overwrite:
         shown = "\n  ".join(references[:5])
         more = f"\n  ... and {len(references) - 5} more" if len(references) > 5 else ""

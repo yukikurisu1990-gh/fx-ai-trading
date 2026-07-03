@@ -66,10 +66,21 @@
 - **ATR warmup (F8-B, `F8_ATR_WARMUP_GUARDED`):** label/trainer ATR uses an
   explicit `min_periods = ATR period` warmup; rows without sufficient history
   produce no label instead of degenerate near-zero barrier widths.
-- **Live barrier anchor (F8-C, `F8_LIVE_BARRIER_ANCHOR_ALIGNED`):** live/paper
-  TP/SL anchors derive from the **actual fill price** (the label contract's
-  entry convention), never silently from the decision-bar mid close; a
-  missing fill price fails closed.
+- **Live barrier anchor (F8-C, `F8_LIVE_BARRIER_ANCHOR_ALIGNED`):** the
+  contract TP/SL barriers consumed by the software exit path
+  (`run_exit_gate` via the runner's barrier map) derive from the **actual
+  recorded fill price** (the label contract's entry convention), never
+  silently from the decision-bar mid close; a missing fill price fails
+  closed — no price barriers are set, an explicit
+  `barrier_anchor_unavailable` warning is logged, and the position is
+  governed by the time stop. **Documented residual (deferred, not
+  production-ready):** OANDA pre-fill protective orders
+  (`takeProfitOnFill`/`stopLossOnFill`) are inherently constructed before
+  the fill and therefore still use the decision-bar close as an
+  explicitly-labeled PROTECTIVE proxy (server-side crash protection only,
+  not the contract barriers); re-anchoring them post-fill requires a
+  broker trade-amend API and remains a follow-up. Divergence is bounded by
+  |fill − decision close|.
 - **Feature as-of time (F8-D, `F8_FEATURE_ASOF_CONTRACT_ALIGNED`):** the live
   loop's feature as-of time is the decision bar's **close** time, so the
   just-completed decision bar is included — the same completed-bar snapshot

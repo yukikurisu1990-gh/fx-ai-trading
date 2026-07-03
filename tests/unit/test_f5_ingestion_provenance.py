@@ -384,6 +384,37 @@ def test_guard_allows_inventoried_span_with_explicit_override(
     assert len(refs) == 2
 
 
+def test_guard_override_is_never_silent(
+    synthetic_inventory_root: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """Using the override against a referenced basename MUST emit an
+    explicit PROVENANCE_OVERRIDE warning — an overridden overwrite may
+    never look like a normal provenance-clean run, and it confers no
+    byte-admissibility / new-epoch / ML Step 4 authorisation."""
+    assert_not_inventoried_span(
+        Path("data/candles_EUR_USD_M1_9d_BA.jsonl"),
+        allow_overwrite=True,
+        inventory_roots=[synthetic_inventory_root],
+    )
+
+    err = capsys.readouterr().err
+    assert "PROVENANCE_OVERRIDE" in err
+    assert "byte-admissibility" in err
+
+
+def test_guard_override_silent_for_non_inventoried(
+    synthetic_inventory_root: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """No spurious override warning when nothing is referenced."""
+    assert_not_inventoried_span(
+        Path("data/candles_ZZZ_TEST_M1_9d_BA.jsonl"),
+        allow_overwrite=True,
+        inventory_roots=[synthetic_inventory_root],
+    )
+
+    assert "PROVENANCE_OVERRIDE" not in capsys.readouterr().err
+
+
 def test_guard_passes_non_inventoried_filename(synthetic_inventory_root: Path) -> None:
     refs = assert_not_inventoried_span(
         Path("data/candles_ZZZ_TEST_M1_9d_BA.jsonl"),
