@@ -1,0 +1,196 @@
+{
+  "phase": "C1_local_offline_hardening",
+  "run_id": "phase-c1-365d-ba-local-offline-hardening",
+  "generated_at": "2026-07-03T19:09:07Z",
+  "code_sha": "f401398e09b837a8190202a9a4a98b3a482b47fd",
+  "span_id": "365d_BA",
+  "backup_destination_alias": "T2_LOCAL_OFFLINE_BACKUP",
+  "destination_mode": "local_offline_file_preserving",
+  "backup_file_count": 20,
+  "expected_total_bytes": 1481715517,
+  "backup_total_bytes": 1481715517,
+  "backup_checksum_comparison_result": "MATCH_ALL_20_FILES",
+  "files": [
+    {
+      "logical_file_id": "candles_AUD_CAD_M1_365d_BA.jsonl",
+      "backup_status": "COPIED",
+      "expected_size_bytes": 72972935,
+      "backup_size_bytes": 72972935,
+      "expected_sha256": "60207196518b7e6550ff3169be1bb7d1d9c811e2cb3a84882f29ee24af5a037a",
+      "backup_sha256": "60207196518b7e6550ff3169be1bb7d1d9c811e2cb3a84882f29ee24af5a037a",
+      "checksum_match": true
+    },
+    {
+      "logical_file_id": "candles_AUD_JPY_M1_365d_BA.jsonl",
+      "backup_status": "COPIED",
+      "expected_size_bytes": 73040066,
+      "backup_size_bytes": 73040066,
+      "expected_sha256": "0eef67f025c79a3f0fffa8649a7571ba18965b1f481ebdbe4f86fd8b1320bab7",
+      "backup_sha256": "0eef67f025c79a3f0fffa8649a7571ba18965b1f481ebdbe4f86fd8b1320bab7",
+      "checksum_match": true
+    },
+    {
+      "logical_file_id": "candles_AUD_NZD_M1_365d_BA.jsonl",
+      "backup_status": "COPIED",
+      "expected_size_bytes": 74212052,
+      "backup_size_bytes": 74212052,
+      "expected_sha256": "ef61b5cfb3be9f14554ac870a85559f1c62fcdc23a54cffcc08d546da2556add",
+      "backup_sha256": "ef61b5cfb3be9f14554ac870a85559f1c62fcdc23a54cffcc08d546da2556add",
+      "checksum_match": true
+    },
+    {
+      "logical_file_id": "candles_AUD_USD_M1_365d_BA.jsonl",
+      "backup_status": "COPIED",
+      "expected_size_bytes": 74344893,
+      "backup_size_bytes": 74344893,
+      "expected_sha256": "a322c203cb829e0b4a63b1c2d23baf793329596a80b68247a6b4a2edaeace1ce",
+      "backup_sha256": "a322c203cb829e0b4a63b1c2d23baf793329596a80b68247a6b4a2edaeace1ce",
+      "checksum_match": true
+    },
+    {
+      "logical_file_id": "candles_CHF_JPY_M1_365d_BA.jsonl",
+      "backup_status": "COPIED",
+      "expected_size_bytes": 73922851,
+      "backup_size_bytes": 73922851,
+      "expected_sha256": "560b1ed062e77f1a041ce97c9a23f7a32021e6c75cfd0a15a74fa581351c16eb",
+      "backup_sha256": "560b1ed062e77f1a041ce97c9a23f7a32021e6c75cfd0a15a74fa581351c16eb",
+      "checksum_match": true
+    },
+    {
+      "logical_file_id": "candles_EUR_AUD_M1_365d_BA.jsonl",
+      "backup_status": "COPIED",
+      "expected_size_bytes": 74592135,
+      "backup_size_bytes": 74592135,
+      "expected_sha256": "d32109ac1916c810cfaa843d0e963e960d824a7f0fe258020a42ca5ad090e8d2",
+      "backup_sha256": "d32109ac1916c810cfaa843d0e963e960d824a7f0fe258020a42ca5ad090e8d2",
+      "checksum_match": true
+    },
+    {
+      "logical_file_id": "candles_EUR_CAD_M1_365d_BA.jsonl",
+      "backup_status": "COPIED",
+      "expected_size_bytes": 74325614,
+      "backup_size_bytes": 74325614,
+      "expected_sha256": "1e43d15270d2deb298d5f6d8052977162c0be86d806d768dbed54a7796b33a29",
+      "backup_sha256": "1e43d15270d2deb298d5f6d8052977162c0be86d806d768dbed54a7796b33a29",
+      "checksum_match": true
+    },
+    {
+      "logical_file_id": "candles_EUR_CHF_M1_365d_BA.jsonl",
+      "backup_status": "COPIED",
+      "expected_size_bytes": 73984686,
+      "backup_size_bytes": 73984686,
+      "expected_sha256": "b59cf028e3e5807afbecc73d1301ecf470c3cea421715b8ef169f5eb971292b2",
+      "backup_sha256": "b59cf028e3e5807afbecc73d1301ecf470c3cea421715b8ef169f5eb971292b2",
+      "checksum_match": true
+    },
+    {
+      "logical_file_id": "candles_EUR_GBP_M1_365d_BA.jsonl",
+      "backup_status": "COPIED",
+      "expected_size_bytes": 74329749,
+      "backup_size_bytes": 74329749,
+      "expected_sha256": "bbd20c47a0f015e44b6ab60af58933597f7777e267679821b40165796b683daa",
+      "backup_sha256": "bbd20c47a0f015e44b6ab60af58933597f7777e267679821b40165796b683daa",
+      "checksum_match": true
+    },
+    {
+      "logical_file_id": "candles_EUR_JPY_M1_365d_BA.jsonl",
+      "backup_status": "COPIED",
+      "expected_size_bytes": 74763700,
+      "backup_size_bytes": 74763700,
+      "expected_sha256": "2430c7d6e3b9a8f3200cd4f2f6ee090898cb96e73e41ea342fc8ac0131e71ae8",
+      "backup_sha256": "2430c7d6e3b9a8f3200cd4f2f6ee090898cb96e73e41ea342fc8ac0131e71ae8",
+      "checksum_match": true
+    },
+    {
+      "logical_file_id": "candles_EUR_USD_M1_365d_BA.jsonl",
+      "backup_status": "COPIED",
+      "expected_size_bytes": 74680793,
+      "backup_size_bytes": 74680793,
+      "expected_sha256": "6e71f8e90075e83a5047469384a4e24b112ac6bab75df32bbe2ffcafd5dc3df4",
+      "backup_sha256": "6e71f8e90075e83a5047469384a4e24b112ac6bab75df32bbe2ffcafd5dc3df4",
+      "checksum_match": true
+    },
+    {
+      "logical_file_id": "candles_GBP_AUD_M1_365d_BA.jsonl",
+      "backup_status": "COPIED",
+      "expected_size_bytes": 74374786,
+      "backup_size_bytes": 74374786,
+      "expected_sha256": "601a5cdb84c77a41bec3c1d61e53ebb494a6d9a300a3ad3f64d7f03ac1dbdfa4",
+      "backup_sha256": "601a5cdb84c77a41bec3c1d61e53ebb494a6d9a300a3ad3f64d7f03ac1dbdfa4",
+      "checksum_match": true
+    },
+    {
+      "logical_file_id": "candles_GBP_CHF_M1_365d_BA.jsonl",
+      "backup_status": "COPIED",
+      "expected_size_bytes": 73877232,
+      "backup_size_bytes": 73877232,
+      "expected_sha256": "4582768adf01d19a4e316ebfd7c3de0b8b963ec01ff2e4dad14fa042fcc9cacd",
+      "backup_sha256": "4582768adf01d19a4e316ebfd7c3de0b8b963ec01ff2e4dad14fa042fcc9cacd",
+      "checksum_match": true
+    },
+    {
+      "logical_file_id": "candles_GBP_JPY_M1_365d_BA.jsonl",
+      "backup_status": "COPIED",
+      "expected_size_bytes": 74967818,
+      "backup_size_bytes": 74967818,
+      "expected_sha256": "c1380b584e0efbccae887f2c91c646370d97b2cca54812d7893829d8aac2d34a",
+      "backup_sha256": "c1380b584e0efbccae887f2c91c646370d97b2cca54812d7893829d8aac2d34a",
+      "checksum_match": true
+    },
+    {
+      "logical_file_id": "candles_GBP_USD_M1_365d_BA.jsonl",
+      "backup_status": "COPIED",
+      "expected_size_bytes": 74762346,
+      "backup_size_bytes": 74762346,
+      "expected_sha256": "c9071eabf212daea45e8ac50e38c7c823e45c4635cb67f82931e2aa7c4ee2a2c",
+      "backup_sha256": "c9071eabf212daea45e8ac50e38c7c823e45c4635cb67f82931e2aa7c4ee2a2c",
+      "checksum_match": true
+    },
+    {
+      "logical_file_id": "candles_NZD_JPY_M1_365d_BA.jsonl",
+      "backup_status": "COPIED",
+      "expected_size_bytes": 70838359,
+      "backup_size_bytes": 70838359,
+      "expected_sha256": "9302599854de355e5ccb0aa46d3191b8dd598c4d47623760b322730ac10e0213",
+      "backup_sha256": "9302599854de355e5ccb0aa46d3191b8dd598c4d47623760b322730ac10e0213",
+      "checksum_match": true
+    },
+    {
+      "logical_file_id": "candles_NZD_USD_M1_365d_BA.jsonl",
+      "backup_status": "COPIED",
+      "expected_size_bytes": 74181332,
+      "backup_size_bytes": 74181332,
+      "expected_sha256": "5a99d9d6c88abb354d6c37186fc9ef5653b1a177d812b4c36c790ed47bb72634",
+      "backup_sha256": "5a99d9d6c88abb354d6c37186fc9ef5653b1a177d812b4c36c790ed47bb72634",
+      "checksum_match": true
+    },
+    {
+      "logical_file_id": "candles_USD_CAD_M1_365d_BA.jsonl",
+      "backup_status": "COPIED",
+      "expected_size_bytes": 74524981,
+      "backup_size_bytes": 74524981,
+      "expected_sha256": "067c412bdd82b2ffb0edb681785ded9392e56b6e0ebaff77284ca86d7c89ada6",
+      "backup_sha256": "067c412bdd82b2ffb0edb681785ded9392e56b6e0ebaff77284ca86d7c89ada6",
+      "checksum_match": true
+    },
+    {
+      "logical_file_id": "candles_USD_CHF_M1_365d_BA.jsonl",
+      "backup_status": "COPIED",
+      "expected_size_bytes": 74236316,
+      "backup_size_bytes": 74236316,
+      "expected_sha256": "83e5dec7a02192b9778ce7a7e5d63c40bff10c2e5d87a98591c9fcec8e71809a",
+      "backup_sha256": "83e5dec7a02192b9778ce7a7e5d63c40bff10c2e5d87a98591c9fcec8e71809a",
+      "checksum_match": true
+    },
+    {
+      "logical_file_id": "candles_USD_JPY_M1_365d_BA.jsonl",
+      "backup_status": "COPIED",
+      "expected_size_bytes": 74782873,
+      "backup_size_bytes": 74782873,
+      "expected_sha256": "9b1165731d1b0b306a73a38a642880b0f08538f9614be506eb657aaeab5a355c",
+      "backup_sha256": "9b1165731d1b0b306a73a38a642880b0f08538f9614be506eb657aaeab5a355c",
+      "checksum_match": true
+    }
+  ],
+  "top_level_status": "T2_C1_365D_BA_LOCAL_OFFLINE_HARDENING_EVIDENCE_CREATED"
+}
