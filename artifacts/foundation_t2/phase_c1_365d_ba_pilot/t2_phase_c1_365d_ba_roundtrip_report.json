@@ -1,0 +1,57 @@
+{
+  "phase": "C1",
+  "run_id": "phase-c1-365d-ba-pilot",
+  "generated_at": "2026-07-03T16:37:26Z",
+  "code_sha": "24b08b3bfda36f3e3f08321f6f7cf3cfd8ea41d3",
+  "plan_document": "docs/design/t2_execution_plan.md",
+  "span_id": "365d_BA",
+  "destination_logical_alias": "T2_PRIMARY_R2",
+  "expected_file_count": 20,
+  "top_level_status": "T2_C1_STOPPED_BEFORE_DEPOSIT_CREDENTIALS_UNAVAILABLE_OR_UNSAFE",
+  "preflight": {
+    "master_sha": "24b08b3bfda36f3e3f08321f6f7cf3cfd8ea41d3",
+    "pr_394_merged": true,
+    "plan_doc_present": true,
+    "t2_execution_plan_approved_token_present": true,
+    "working_tree_clean_before_start": true,
+    "protected_artifacts_clean_before_start": true,
+    "inventory_reference_present": "artifacts/gate_p1_pr_b/firstrun_365d_ba/raw_inventory_365d_BA.json",
+    "local_candidate_byte_count_365d_BA": 20,
+    "inventory_expected_file_count": 20,
+    "inventory_t2_execution_authorised_field": false,
+    "credentials_present": false,
+    "credential_check_method": "env-var NAME presence only; no values read or printed",
+    "harness_primary_destination": "UnavailableR2Destination (resolve_primary_destination fails closed with T2_CREDENTIALS_UNAVAILABLE)",
+    "destination_resolved": false,
+    "object_lock_observable": false
+  },
+  "deposit_status": "NOT_PERFORMED",
+  "restore_status": "NOT_PERFORMED",
+  "roundtrip_status": "NOT_PERFORMED",
+  "object_lock_status": "NOT_OBSERVED",
+  "checksum_comparison_result": "NOT_PERFORMED",
+  "reason": "T2_CREDENTIALS_UNAVAILABLE",
+  "per_span_status": [
+    {
+      "span_id": "365d_BA",
+      "file_count": 20,
+      "deposit_status": "NOT_PERFORMED",
+      "restore_status": "NOT_PERFORMED",
+      "roundtrip_status": "NOT_PERFORMED",
+      "object_lock_status": "NOT_OBSERVED",
+      "reason": "T2_CREDENTIALS_UNAVAILABLE"
+    }
+  ],
+  "statuses": [
+    "T2_C1_STOPPED_BEFORE_DEPOSIT_CREDENTIALS_UNAVAILABLE_OR_UNSAFE",
+    "T2_DEPOSIT_NOT_PERFORMED",
+    "T2_RESTORE_NOT_PERFORMED",
+    "T2_ROUNDTRIP_NOT_PERFORMED",
+    "T2_OBJECT_LOCK_NOT_VERIFIED",
+    "RETENTION_PROBE_REMAINS_UNRESOLVED",
+    "BYTE_ADMISSIBILITY_NOT_APPROVED",
+    "NEW_EPOCH_NOT_AUTHORISED",
+    "ML_STEP4_NOT_AUTHORISED",
+    "PRODUCTION_READINESS_NOT_CLAIMED"
+  ]
+}

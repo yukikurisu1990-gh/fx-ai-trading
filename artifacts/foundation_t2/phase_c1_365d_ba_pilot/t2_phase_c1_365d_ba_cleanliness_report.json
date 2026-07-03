@@ -1,0 +1,28 @@
+{
+  "scrubber_version": "phase-c1-manual-review.v1",
+  "run_id": "phase-c1-365d-ba-pilot",
+  "generated_at": "2026-07-03T16:37:26Z",
+  "checks": [
+    "no_credentials",
+    "no_secret_values",
+    "no_env_var_values",
+    "no_environment_dumps",
+    "no_signed_urls",
+    "no_access_tokens",
+    "no_raw_market_rows",
+    "no_candle_quote_row_previews",
+    "no_raw_archive_files",
+    "no_local_absolute_paths",
+    "no_windows_user_paths",
+    "no_users_home_drive_paths",
+    "no_forbidden_success_labels",
+    "no_trading_metric_keys",
+    "no_byte_admissibility_claim",
+    "no_new_epoch_claim",
+    "no_ml_step4_claim",
+    "no_production_claim"
+  ],
+  "clean": true,
+  "findings": [],
+  "notes": "Metadata-only stop evidence for a pre-deposit fail-closed stop. Credential availability was determined by env-var NAME presence only; no values were read, printed, or written. No raw data, no cloud output, no logs captured."
+}
