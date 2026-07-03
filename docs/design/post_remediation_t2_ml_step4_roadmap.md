@@ -135,6 +135,12 @@ granting the next.
 
 ### Phase C — T2 actual retention round-trip
 
+> Destination-strategy note: the immediate destination is no longer
+> `T2_PRIMARY_R2` (deferred, billing/operational risk). Google Drive /
+> local-offline is the next destination plan — see
+> `docs/design/t2_drive_local_destination_strategy.md`. Gate structure below is
+> unchanged; only the destination changes.
+
 - **Purpose:** deposit bytes, restore bytes, verify checksum/identity,
   produce metadata-only evidence (per span: deposit status, restore status,
   recomputed SHA-256 vs PR-B.1 inventory, sizes, timestamps, scrubbed
