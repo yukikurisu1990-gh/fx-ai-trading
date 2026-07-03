@@ -50,6 +50,12 @@ or `FORMALLY_VERIFIED`; where those tokens appear they are prohibited outputs.
 
 ## 3. Recommended immediate strategy
 
+> **Operator selection (update):** the operator selected
+> `T2_LOCAL_OFFLINE_PRIMARY` (± `T2_LOCAL_OFFLINE_BACKUP`) as the immediate
+> Phase C1 destination; Google Drive is optional future off-site backup only;
+> R2 stays deferred. The concrete `365d_BA` pilot procedure is defined in
+> `docs/design/phase_c1_365d_ba_local_offline_execution_plan.md`.
+
 The recommendation is **operator-selectable**, in this order of preference given
 the stated billing/operational-risk concern:
 
