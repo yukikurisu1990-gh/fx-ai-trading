@@ -1,5 +1,14 @@
 # Phase B — T2 execution plan
 
+> **Amendment (destination strategy changed):** the immediate T2 destination is
+> no longer `T2_PRIMARY_R2`. R2 is **deferred** for billing/operational-risk
+> reasons (`T2_PRIMARY_R2_DEFERRED_BILLING_AND_OPERATIONAL_RISK`); the immediate
+> strategy moves to Google Drive / local-offline — see
+> `docs/design/t2_drive_local_destination_strategy.md`. This plan's procedure,
+> evidence schema, and stop conditions remain valid; only the destination
+> changes. The R2 stop evidence (PR #395, PR #398) and R2 infrastructure
+> (PR #396, PR #397) remain valid.
+
 - **Document class:** doc-only planning memo (Phase B of the post-remediation gate
   roadmap; executes nothing)
 - **Roadmap source-of-truth:** `docs/design/post_remediation_t2_ml_step4_roadmap.md`
