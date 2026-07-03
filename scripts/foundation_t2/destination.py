@@ -37,6 +37,18 @@ class Destination(ABC):
     def restore(self, remote_ref: str, dest_path: Path) -> None:
         """Restore bytes from the remote reference to ``dest_path``."""
 
+    def observe_object_lock(self, remote_ref: str) -> dict[str, Any]:
+        """Return a non-secret object-lock / retention observation.
+
+        Default: object-lock is NOT observed (fail-closed for admissibility
+        purposes). Real adapters override this. Never returns secrets.
+        """
+        return {
+            "remote_logical_reference": remote_ref,
+            "object_lock_observed": False,
+            "status": "T2_PRIMARY_R2_OBJECT_LOCK_NOT_OBSERVED",
+        }
+
 
 class LocalMockDestination(Destination):
     """Filesystem-backed mock 'remote' store for CI / harness validation only."""
@@ -87,12 +99,30 @@ class UnavailableR2Destination(Destination):
         raise DestinationUnavailableError(T2_CREDENTIALS_UNAVAILABLE)
 
 
-def resolve_primary_destination() -> Destination:
-    """Resolve the real primary destination for this environment.
+def resolve_primary_destination(
+    *,
+    config: Any = None,
+    client: Any = None,
+) -> Destination:
+    """Resolve the primary destination.
 
-    This PR never has real R2 credentials/config available and never accesses
-    env-vars or the network, so the primary destination is always the
-    unavailable stub. A future operator run wires a real adapter here under
-    explicit authorisation.
+    Fail-closed by default: with no explicitly-injected ``config`` AND
+    ``client``, this returns :class:`UnavailableR2Destination` — it never reads
+    env-var values, never constructs a real cloud client, and never accesses the
+    network. This is the state in the current environment (no operator
+    credentials, no real adapter wired), so the no-argument call still returns
+    the unavailable stub.
+
+    A future, separately-authorised Phase C1 re-run supplies BOTH a validated
+    :class:`~scripts.foundation_t2.r2_adapter.R2DestinationConfig` and a runtime
+    R2 client (built from operator credentials outside this module) — only then
+    is a real :class:`~scripts.foundation_t2.r2_adapter.R2Destination` returned.
+    This module does not build that client.
     """
+    if config is not None and client is not None:
+        # Local import to avoid a hard dependency cycle; the adapter imports
+        # nothing from the network / no cloud SDK.
+        from .r2_adapter import R2Destination
+
+        return R2Destination(config=config, client=client)
     return UnavailableR2Destination()
