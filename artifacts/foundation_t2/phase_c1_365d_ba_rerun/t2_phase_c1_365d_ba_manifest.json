@@ -1,0 +1,50 @@
+{
+  "phase": "C1_rerun",
+  "contract_version": "foundation-t2.v1",
+  "plan_document": "docs/design/t2_execution_plan.md",
+  "runtime_readiness_doc": "docs/runbook/t2_r2_runtime_client_readiness.md",
+  "run_id": "phase-c1-365d-ba-rerun",
+  "generated_at": "2026-07-03T17:31:23Z",
+  "code_sha": "6ae9655fb36811307a28d9d5b81a202b3da34b2a",
+  "span_id": "365d_BA",
+  "strategy": "one-span pilot re-run",
+  "destination_logical_alias": "T2_PRIMARY_R2",
+  "expected_destination_type": "cloudflare_r2",
+  "expected_file_count": 20,
+  "expected_size_source": "referenced from committed PR-B.1 inventory artifacts/gate_p1_pr_b/firstrun_365d_ba/raw_inventory_365d_BA.json (files[].size_bytes); not recomputed here",
+  "expected_sha256_source": "referenced from committed PR-B.1 inventory artifacts/gate_p1_pr_b/firstrun_365d_ba/raw_inventory_365d_BA.json (files[].file_sha256); not recomputed here",
+  "object_key_prefix_convention": "t2/phase_c1/365d_BA/<logical_file_id> (proposed; NOT created — no deposit performed)",
+  "checksum_algorithm": "sha256",
+  "required_credential_env_var_names": [
+    "T2_PRIMARY_R2_ACCESS_KEY_ID",
+    "T2_PRIMARY_R2_SECRET_ACCESS_KEY"
+  ],
+  "required_config_env_var_names": [
+    "T2_PRIMARY_R2_ENDPOINT",
+    "T2_PRIMARY_R2_BUCKET"
+  ],
+  "optional_env_var_names": [
+    "T2_PRIMARY_R2_REGION",
+    "T2_PRIMARY_R2_OBJECT_PREFIX",
+    "T2_PRIMARY_R2_RETENTION_EXPECTATION"
+  ],
+  "credential_env_var_names_present": false,
+  "boto3_available": false,
+  "top_level_status": "T2_C1_RERUN_STOPPED_BEFORE_DEPOSIT_CREDENTIALS_NOT_PRESENT",
+  "notice": "Phase C1 re-run for span 365d_BA. Read-only preflight + runtime dry-run ran and STOPPED BEFORE DEPOSIT: the dry-run readiness command (python scripts/t2_r2_runtime.py --dry-run) reported status T2_PRIMARY_R2_CREDENTIALS_NOT_PRESENT (every required T2_PRIMARY_R2_* env-var NAME absent; presence-only check, no values read/exposed). boto3 is also absent in this environment (secondary blocker; credentials are checked first). NO deposit, NO restore/download, NO checksum round-trip, and NO object-lock observation were performed. No cloud/network access occurred; no credential value was read, logged, or serialised. This is honest fail-closed stop evidence, not success evidence. PR #395 stop evidence under artifacts/foundation_t2/phase_c1_365d_ba_pilot/ is unmodified.",
+  "non_authorisation": [
+    "T2_C1_RERUN_STOPPED_BEFORE_DEPOSIT_CREDENTIALS_NOT_PRESENT",
+    "T2_DEPOSIT_NOT_PERFORMED",
+    "T2_RESTORE_NOT_PERFORMED",
+    "T2_ROUNDTRIP_NOT_PERFORMED",
+    "T2_OBJECT_LOCK_NOT_VERIFIED",
+    "RETENTION_PROBE_REMAINS_UNRESOLVED",
+    "BYTE_ADMISSIBILITY_NOT_APPROVED",
+    "NEW_EPOCH_NOT_AUTHORISED",
+    "ML_STEP4_NOT_AUTHORISED",
+    "PRODUCTION_READINESS_NOT_CLAIMED",
+    "PHASE_C2_NOT_STARTED",
+    "SPAN_730D_BA_NOT_EXECUTED",
+    "SPAN_3650D_BA_NOT_EXECUTED"
+  ]
+}
