@@ -16,6 +16,16 @@ contract of `docs/design/phase27_29_tabular_eval_validity_audit.md`
 
 **Amendment history:**
 
+- Amendment 9 (PR `docs/post-remediation-t2-ml-roadmap`): pointer only —
+  the detailed post-remediation gate roadmap covering readiness audit →
+  T2 execution → byte-admissibility review → new-epoch adoption →
+  ML Step 4 pre-registration → first real run → post-run audit is now
+  documented in `docs/design/post_remediation_t2_ml_step4_roadmap.md`
+  (authored after the F-1/P1-A/F-2/F-5/F-8 remediation wave, PRs
+  #388–#391). That document refines the sequencing only; every binding
+  classification in THIS document (tiers, archived/invalid numerics,
+  §7 destination non-approval, §11B) remains in force verbatim. No
+  historical section below is modified.
 - Amendment 8 (this PR): final consistency cleanup before merge.
   §11A.2 near-term sequencing extended from 4 steps to 5 steps
   by inserting §11B Root Logic Reassessment / Profit Logic Audit
