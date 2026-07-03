@@ -138,8 +138,10 @@ granting the next.
 > Destination-strategy note: the immediate destination is no longer
 > `T2_PRIMARY_R2` (deferred, billing/operational risk). Google Drive /
 > local-offline is the next destination plan — see
-> `docs/design/t2_drive_local_destination_strategy.md`. Gate structure below is
-> unchanged; only the destination changes.
+> `docs/design/t2_drive_local_destination_strategy.md`. Operator selected
+> `T2_LOCAL_OFFLINE_PRIMARY` for the immediate `365d_BA` pilot; procedure in
+> `docs/design/phase_c1_365d_ba_local_offline_execution_plan.md`. Gate structure
+> below is unchanged; only the destination changes.
 
 - **Purpose:** deposit bytes, restore bytes, verify checksum/identity,
   produce metadata-only evidence (per span: deposit status, restore status,
