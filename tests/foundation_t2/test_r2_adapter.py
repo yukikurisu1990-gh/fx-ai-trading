@@ -183,7 +183,7 @@ def test_object_key_rejects_personal_path_component():
             config=_COMPLETE_CONFIG,
             phase="phase_c1",
             span_id="365d_BA",
-            logical_file_id="C:\\Users\\yukik\\secret.jsonl",
+            logical_file_id="C:\\Users\\testuser\\secret.jsonl",
         )
 
 
@@ -318,7 +318,7 @@ def test_object_lock_observed_status(tmp_path):
 
 
 def test_scrub_error_text_redacts_paths_and_urls():
-    dirty = "failed at C:\\Users\\yukik\\k and https://b.example/o?X-Amz-Signature=abc"
+    dirty = "failed at C:\\Users\\testuser\\k and https://b.example/o?X-Amz-Signature=abc"
     clean = scrub_error_text(dirty)
     assert "C:\\Users" not in clean
     assert "X-Amz-Signature=abc" not in clean
