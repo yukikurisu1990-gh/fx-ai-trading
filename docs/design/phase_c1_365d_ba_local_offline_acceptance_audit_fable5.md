@@ -63,10 +63,11 @@ appear only as prohibitions.
    none; only hashes/sizes/basenames appear.
 6. **No personal paths / drive letters / home paths / env dumps / credentials /
    Drive links / R2 keys?** Confirmed by two independent scans: this audit's
-   regex scan (drive-letter, `/Users/`, `/home/`, `AppData`, username, `AKIA`,
-   `Bearer`, `X-Amz-`, `drive.google`) found nothing, and the committed
-   cleanliness report (Foundation T2 scrubber v1) records `clean: true`,
-   `findings: []`.
+   regex scan (covering local/personal-path indicators, drive-letter paths, the
+   OS username, access-key and bearer-token value forms, signed-URL query
+   parameters, and cloud-storage share-link hosts) found nothing, and the
+   committed cleanliness report (Foundation T2 scrubber v1) records
+   `clean: true`, `findings: []`.
 7. **Alias, not runtime path?** Confirmed. `T2_LOCAL_OFFLINE_PRIMARY` appears 6
    times across the evidence; no runtime path appears anywhere.
 8. **Restore-root isolation supported?** Supported as a recorded field
