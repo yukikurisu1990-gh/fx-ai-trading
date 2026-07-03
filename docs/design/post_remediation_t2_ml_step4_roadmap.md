@@ -103,6 +103,8 @@ granting the next.
 
 ### Phase A — Post-remediation readiness audit
 
+> Status pointer: executed in `docs/design/post_remediation_readiness_audit.md`.
+
 - **Purpose:** confirm F-1/F-2/P1-A/F-5/F-8 are closed enough to proceed
   toward T2, and that no remaining blocker should be fixed first.
 - **Evidence:** merged PR references (#388–#391 with merge SHAs), current test
