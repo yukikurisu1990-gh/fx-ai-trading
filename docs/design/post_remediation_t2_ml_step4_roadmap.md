@@ -119,6 +119,8 @@ granting the next.
 
 ### Phase B — T2 execution plan
 
+> Status pointer: executed in `docs/design/t2_execution_plan.md`.
+
 - **Purpose:** decide the execution shape — one-span pilot, all-span, or
   pilot-then-expand (§5 compares; recommendation: **pilot-then-expand**).
 - **Documents:** credential handling (operator-provisioned, never in repo/env
