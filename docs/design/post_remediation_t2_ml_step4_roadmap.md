@@ -201,6 +201,13 @@ granting the next.
 
 ### Phase F — ML Step 4 pre-registration contract
 
+> Status pointer: pre-registration authored for
+> `RESEARCH_FROZEN_HOLDOUT_EPOCH_365D_BA_V1`
+> (`docs/design/phase_f_ml_step4_pre_registration.md`,
+> `PHASE_F_ML_STEP4_PRE_REGISTRATION_CREATED`). §10 acceptance thresholds are
+> placeholders requiring human + ChatGPT review; ML Step 4 execution remains
+> separately gated (`ML_STEP4_EXECUTION_NOT_AUTHORISED`).
+
 - **Purpose:** define the first real ML experiment completely before running
   anything. **Design only — no training, no real-data run in this phase.**
 - **Contract must include:** one span (or explicitly minimal span set); one
