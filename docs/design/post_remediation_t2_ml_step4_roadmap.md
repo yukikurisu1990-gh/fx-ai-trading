@@ -325,6 +325,18 @@ granting the next.
 > integer-arithmetic split boundaries). Remaining for the execution PR: real
 > checksum-verified data provider + production v4 bulk feature wiring + real
 > mode enablement. Next: Fable 5 body source audit.
+>
+> Body source-audit pointer: the Fable 5 audit of the PR #417 run body
+> (`docs/design/ml_step4_real_run_body_source_audit_fable5.md`,
+> `ML_STEP4_REAL_RUN_BODY_BLOCKED_FOR_FIRST_RUN_EXECUTION_REVIEW`) found the
+> body fail-closed for real data/execution but PROVED two blockers: B-1 the
+> cost cell is applied twice in the holdout metrics path (0.5-cell metrics are
+> actually 1.0-cell; sensitivity cells shifted +0.5; validation/holdout
+> charging inconsistent); B-2 bulk_labels labels one extra trailing decision
+> bar vs the committed trainer/v9 range(n−horizon−1) convention. ATR flavor
+> CLEARED (matches trainer exactly). Required: small code-only fix PR (single
+> cost application + range alignment + value/range-pinned tests) → re-check →
+> only then the separately-authorised first-run execution PR.
 
 - **Purpose:** execute the smallest safe real run under the pre-registered
   contract, exactly as registered.
