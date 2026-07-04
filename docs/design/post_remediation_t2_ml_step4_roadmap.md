@@ -180,6 +180,14 @@ granting the next.
 
 ### Phase E — New epoch adoption
 
+> Status pointer: `365d_BA` adopted as research-only frozen-holdout epoch
+> `RESEARCH_FROZEN_HOLDOUT_EPOCH_365D_BA_V1`
+> (`docs/design/phase_e_365d_ba_new_epoch_adoption_decision.md`,
+> `PHASE_E_365D_BA_RESEARCH_FROZEN_HOLDOUT_EPOCH_ADOPTION_RECORDED`,
+> `365d_BA`-only). Carries F-2/F-5/F-8 contracts + local/offline limitation.
+> Next gate = Phase F (ML Step 4 pre-registration), separately authorised;
+> `730d_BA`/`3650d_BA` out of scope.
+
 - **Purpose:** convert byte-admissible spans into a named research epoch.
 - **Epoch record must include:** epoch ID; span IDs; data SHA-256/checksums;
   time bounds; price mode; candle type; feature contract version; label
