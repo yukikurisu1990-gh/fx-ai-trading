@@ -1,0 +1,23 @@
+{
+  "record_class": "leakage_provenance_report",
+  "executed": false,
+  "epoch_id": "RESEARCH_FROZEN_HOLDOUT_EPOCH_365D_BA_V1",
+  "code_sha": "e0abde1a188f1668ae59382d37205310ed07b675",
+  "leakage_checks_performed": false,
+  "leakage_checks_note": "No lookahead/leakage checks were run because no features were computed and no model was trained. There is nothing to check for leakage; the stop occurred before any data consumption.",
+  "provenance_status": "INCOMPLETE_NO_REVIEWED_PIPELINE",
+  "provenance_gap": {
+    "missing_config_hash": true,
+    "missing_feature_config_hash": true,
+    "missing_model_config_hash": true,
+    "missing_deterministic_reproducible_pipeline": true,
+    "root_cause": "No committed, reviewed ML Step 4 execution harness on master implements the exact PR #407 contract. Without it, the F-5 provenance chain (PR #407 section 7) cannot be satisfied: the config/feature/model hashes and the deterministic reproducibility guarantee must originate from reviewed code, which does not exist. Authoring a novel unreviewed pipeline and self-certifying its provenance in a single autonomous run would not satisfy the 'complete provenance per PR #407 section 7' requirement, nor the PR #408 'run exactly the contract or stop' mandate."
+  },
+  "f2_label_pnl_contract_enforceable": "NOT_CONFIRMED",
+  "f5_provenance_contract_satisfiable": "NOT_SATISFIED",
+  "f8_train_serve_contract_satisfiable": "NOT_CONFIRMED",
+  "holdout_evaluated_exactly_once": false,
+  "holdout_evaluated_count": 0,
+  "hard_invalidation_trigger": "PROVENANCE_MISSING (pre-execution: no reviewed provenance-complete executor)",
+  "note": "Checksum re-verification (separate report) PASSED for all 20 files; data integrity is not the issue. The issue is the absence of a reviewed, provenance-complete execution pipeline required to run and attest the contract."
+}

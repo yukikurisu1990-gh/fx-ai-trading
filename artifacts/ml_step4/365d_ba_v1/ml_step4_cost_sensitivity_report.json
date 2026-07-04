@@ -1,0 +1,12 @@
+{
+  "record_class": "cost_sensitivity_report",
+  "executed": false,
+  "reason_not_executed": "Stopped before training at enforceability gates 11-13.",
+  "epoch_id": "RESEARCH_FROZEN_HOLDOUT_EPOCH_365D_BA_V1",
+  "intended_cells_pips": [0.0, 0.5, 1.0],
+  "primary_cell_pips": 0.5,
+  "diagnostic_cells_pips": [0.0, 1.0],
+  "cost_sensitivity_guard": "post-cost expectancy must remain >= 0 at the 1.0 pip cell",
+  "results_by_cell": null,
+  "note": "No backtest was run; no cost-sensitivity curve was computed. Cells listed are the pre-registered diagnostic cells only."
+}

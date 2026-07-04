@@ -1,0 +1,29 @@
+{
+  "record_class": "model_config_report",
+  "executed": false,
+  "reason_not_executed": "Stopped before training at enforceability gates 11-13; no reviewed executor.",
+  "epoch_id": "RESEARCH_FROZEN_HOLDOUT_EPOCH_365D_BA_V1",
+  "contract_reference": "PR #407 pre-registration",
+  "intended_model_family": "LightGBM 3-class classifier (single family)",
+  "intended_config_documented_only": {
+    "label_scheme": "B-2 bid/ask triple-barrier",
+    "tp_mult_atr14": 1.5,
+    "sl_mult_atr14": 1.0,
+    "atr_min_periods": 14,
+    "sl_first_tie_rule": "strict <",
+    "horizon_m1_bars": 20,
+    "feature_version": "v4 base only (opt-in groups excluded)",
+    "training_mode": "retrain from scratch",
+    "deployed_model_reuse": "forbidden (no models/lgbm/ reuse)",
+    "hyperparameter_search": "none (frozen _LGBM_PARAMS / _N_ESTIMATORS per committed conventions)",
+    "threshold_candidates": [0.35, 0.40, 0.45],
+    "threshold_selection": "validation only"
+  },
+  "config_hash": null,
+  "feature_config_hash": null,
+  "model_config_hash": null,
+  "random_seeds": null,
+  "config_hash_note": "config_hash / feature_config_hash / model_config_hash are NULL because there is no committed, reviewed execution pipeline from which to derive them deterministically. This absence is the direct cause of the F-5 provenance gate (12) failure and the ML_STEP4_RUN_INVALID_PROVENANCE_MISSING status: a provenance-complete run requires these hashes to be emitted by reviewed code, which does not exist on master.",
+  "selected_threshold": null,
+  "note": "This is a documented restatement of the intended (pre-registered) model configuration, not a trained-model record. No model was trained."
+}

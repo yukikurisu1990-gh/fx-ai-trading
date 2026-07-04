@@ -1,0 +1,24 @@
+{
+  "record_class": "metrics_report",
+  "executed": false,
+  "reason_not_executed": "Stopped before training at enforceability gates 11-13; no model trained, no holdout evaluated.",
+  "epoch_id": "RESEARCH_FROZEN_HOLDOUT_EPOCH_365D_BA_V1",
+  "primary_metric_definition": "daily portfolio Sharpe (annualised) on frozen holdout at the 0.5 pip cell",
+  "holdout_evaluated_count": 0,
+  "metrics_computed": false,
+  "binding_acceptance_criteria_evaluation": {
+    "note": "No run occurred; none of the criteria could be measured. Values are UNMEASURED, not zero and not below-threshold. This is a pre-execution stop, NOT an honest below-threshold result.",
+    "min_holdout_trades_ge_300": "UNMEASURED",
+    "min_daily_coverage_ge_60pct": "UNMEASURED",
+    "post_cost_expectancy_gt_0_pips": "UNMEASURED",
+    "daily_portfolio_sharpe_annualised_ge_0_8": "UNMEASURED",
+    "max_equity_drawdown_le_15pct": "UNMEASURED",
+    "turnover_le_40_trades_per_day": "UNMEASURED",
+    "pair_concentration_within_guard": "UNMEASURED",
+    "session_concentration_diagnostic_only": "UNMEASURED",
+    "cost_sensitivity_expectancy_ge_0_at_1_0_pip": "UNMEASURED",
+    "provenance_reproducibility_complete": "NOT_SATISFIED (no reviewed provenance-complete pipeline)"
+  },
+  "acceptance_outcome": "NOT_APPLICABLE_STOP_BEFORE_EXECUTION",
+  "note": "Acceptance criteria must not be loosened. This stop does not evaluate them; it halts before any measurement so that no unreviewed metric is produced or reported as a first real ML result."
+}
