@@ -31,7 +31,7 @@ from .executor import (
     label_diagnostics,
     reproducibility_policy,
 )
-from .labels import apply_cost_cell, bulk_labels, label_contract_identity
+from .labels import bulk_labels, label_contract_identity
 from .metrics import MetricTrade, trading_day_utc
 from .simulator import TradeSignal, simulate
 from .split import bar_index_split
@@ -75,13 +75,15 @@ def _predictions_to_signals(
     *,
     threshold: float,
     horizon: int,
-    cell_pips: float,
 ) -> list[TradeSignal]:
     """Turn per-bar class probabilities into trade signals.
 
-    ALL PnL and ALL exit timing come from the ``labels.py`` bulk records
-    (single-source trade scoring, R-4). Occupancy interval = entry bar index →
-    resolved exit bar index (barrier or timeout per ``exit_window_offset``).
+    PR #418 B-1 fix: signal PnL is the RAW traded-direction PnL from the
+    ``labels.py`` bulk records (spread already embedded exactly once by the B-2
+    ask-entry/bid-exit geometry). The flat evaluation cost cell is NOT applied
+    here — the metrics layer is the single responsible layer for it, applied
+    exactly once. ALL PnL and ALL exit timing still come from ``labels.py``
+    (single-source trade scoring, R-4).
     """
     signals: list[TradeSignal] = []
     for i in indices:
@@ -97,9 +99,10 @@ def _predictions_to_signals(
         if conf < threshold:
             continue
         exit_bar = i + 1 + rec[f"exit_{direction}_offset"]
-        pnl = apply_cost_cell(rec[pnl_key], cell_pips)
         signals.append(
-            TradeSignal(pair=pair, entry=i, exit_=exit_bar, direction=direction, pnl_pips=pnl)
+            TradeSignal(
+                pair=pair, entry=i, exit_=exit_bar, direction=direction, pnl_pips=rec[pnl_key]
+            )
         )
     return signals
 
@@ -107,6 +110,8 @@ def _predictions_to_signals(
 def _trades_from_accepted(
     accepted: list[dict], bars_by_pair: dict[str, list[dict]]
 ) -> list[MetricTrade]:
+    # ``pnl_pips`` here is RAW (gross of the flat cost cell); the metrics layer
+    # subtracts the cell exactly once. MetricTrade.gross_pnl_pips is genuinely gross.
     return [
         MetricTrade(
             pair=t["pair"],
@@ -212,12 +217,13 @@ def guarded_run_body(
                     val_idx,
                     threshold=thr,
                     horizon=horizon,
-                    cell_pips=cell_pips,
                 )
             )
         sim = simulate(val_signals)
         trades = _trades_from_accepted(sim["accepted_trades"], bars_by_pair)
-        series = [v for _, v in metrics.daily_portfolio_pnl(trades, 0.0)]
+        # B-1 fix: validation charges the SAME primary cost cell as the holdout
+        # (applied once by the metrics layer) — consistent charging.
+        series = [v for _, v in metrics.daily_portfolio_pnl(trades, cell_pips)]
         val_metrics_by_threshold[thr] = {
             "daily_portfolio_sharpe": metrics.annualised_daily_sharpe(series),
             "n_trades": len(trades),
@@ -237,7 +243,6 @@ def guarded_run_body(
                 hold_idx,
                 threshold=selection.selected_threshold,
                 horizon=horizon,
-                cell_pips=cell_pips,
             )
         )
     hold_sim = simulate(hold_signals)
@@ -269,6 +274,15 @@ def guarded_run_body(
         "real_run": False,
         "non_decision": True,
     }
+    # PR #418 B-1: make the cost convention explicit in evidence.
+    cost_convention = {
+        "spread": "embedded_once_by_b2_ask_entry_bid_exit_geometry",
+        "flat_cost_cell": "applied_exactly_once_by_metrics_layer",
+        "signal_pnl": "raw_gross_of_flat_cell",
+        "primary_cell_pips": cell_pips,
+        "validation_and_holdout_charge_identically": True,
+        "double_charge": False,
+    }
     payloads: dict[str, Any] = {
         "ml_step4_run_manifest.json": {
             **fixture_banner,
@@ -291,10 +305,12 @@ def guarded_run_body(
             **fixture_banner,
             "metrics": bundle,
             "diagnostics": diagnostics,
+            "cost_convention": cost_convention,
         },
         "ml_step4_cost_sensitivity_report.json": {
             **fixture_banner,
             "cost_sensitivity": bundle["cost_sensitivity"],
+            "cost_convention": cost_convention,
         },
         "ml_step4_leakage_provenance_report.json": {
             **fixture_banner,

@@ -13,6 +13,7 @@ result. Provenance incompleteness is ``..._PROVENANCE_MISSING``.
 
 from __future__ import annotations
 
+import math
 from typing import Any
 
 from . import contract
@@ -84,6 +85,20 @@ def missing_required_metrics(metrics: dict[str, Any]) -> list[str]:
     return [p for p in REQUIRED_METRIC_PATHS if _lookup(metrics, p) is None]
 
 
+def non_finite_required_metrics(metrics: dict[str, Any]) -> list[str]:
+    """Return required metric paths whose value is NaN or +/-infinity.
+
+    PR #418: a NaN/inf decision metric must NEVER become a meets-criteria
+    status. It is treated as a provenance gap (fail-closed), not a soft miss.
+    """
+    bad: list[str] = []
+    for p in REQUIRED_METRIC_PATHS:
+        v = _lookup(metrics, p)
+        if isinstance(v, (int, float)) and not math.isfinite(v):
+            bad.append(p)
+    return bad
+
+
 class AcceptanceEvaluator:
     """Evaluate holdout metrics against the frozen §10 acceptance criteria."""
 
@@ -105,8 +120,8 @@ class AcceptanceEvaluator:
 
         # PR #411 B-3 fix: fail closed on missing/None required metric inputs
         # BEFORE any criterion is evaluated. Missing metrics are a provenance
-        # gap, never passing defaults.
-        missing = missing_required_metrics(metrics)
+        # gap, never passing defaults. PR #418: NaN/inf is likewise fail-closed.
+        missing = missing_required_metrics(metrics) + non_finite_required_metrics(metrics)
         if missing:
             triggers.add("PROVENANCE_MISSING")
 

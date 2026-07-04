@@ -206,9 +206,12 @@ def bulk_labels(
     out: list[dict] = []
     for i in range(n):
         atr_i = atrs[i]
-        # Window covers bars i+1 .. i+horizon, so the last labelable decision
-        # bar is n-1-horizon (matching the committed labeller's range).
-        if atr_i is None or atr_i <= 0 or i + horizon >= n:
+        # PR #418 B-2 fix: label eligibility aligned to the committed convention
+        # ``range(n - horizon - 1)`` (trainer / compare_multipair_v9), whose last
+        # eligible decision bar is ``n - horizon - 2``. Skip when
+        # ``i + horizon + 1 >= n`` (i.e. i >= n - horizon - 1). This keeps future
+        # training labels and future holdout scoring on identical eligible bars.
+        if atr_i is None or atr_i <= 0 or i + horizon + 1 >= n:
             out.append(
                 {
                     "label": None,
