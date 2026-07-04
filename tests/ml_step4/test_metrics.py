@@ -84,9 +84,10 @@ def test_compute_all_bundle() -> None:
     bundle = compute_all(
         trades,
         cell_pips=0.5,
-        notional_equity_pips=1000.0,
         holdout_trading_days=5,
     )
+    # PR #416 item 1: the maxDD denominator is the frozen contract constant.
+    assert bundle["max_equity_drawdown"]["notional_equity_pips"] == 10_000.0
     assert bundle["trade_count"] == 20
     assert bundle["primary_metric"] == "daily_portfolio_sharpe_annualised"
     assert "1.0pip" in bundle["cost_sensitivity"]

@@ -207,11 +207,21 @@ def compute_all(
     trades: Sequence[MetricTrade],
     *,
     cell_pips: float = contract.PRIMARY_COST_CELL_PIPS,
-    notional_equity_pips: float,
+    notional_equity_pips: float = contract.FIXED_NOTIONAL_EQUITY_PIPS,
     holdout_trading_days: int,
     trading_days_per_year: int = contract.TRADING_DAYS_PER_YEAR,
 ) -> dict[str, Any]:
-    """Full metrics bundle at the given primary cost cell + cost sensitivity."""
+    """Full metrics bundle at the given primary cost cell + cost sensitivity.
+
+    PR #416 item 1: the maxDD denominator defaults to the frozen contract
+    constant ``FIXED_NOTIONAL_EQUITY_PIPS``. A caller supplying a DIFFERENT
+    notional fails closed — the recorded constant must be the one actually used.
+    """
+    if notional_equity_pips != contract.FIXED_NOTIONAL_EQUITY_PIPS:
+        raise ValueError(
+            f"notional_equity_pips={notional_equity_pips} conflicts with the frozen "
+            f"contract constant {contract.FIXED_NOTIONAL_EQUITY_PIPS}"
+        )
     trades = list(trades)
     series = [v for _, v in daily_portfolio_pnl(trades, cell_pips)]
     n_days = len({t.day for t in trades})

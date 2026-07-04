@@ -29,11 +29,28 @@ def main(argv: list[str] | None = None) -> int:
         help="Run wiring preflight + execution plan (no run).",
     )
     group.add_argument(
+        "--fixture-e2e",
+        action="store_true",
+        help="Synthetic end-to-end rehearsal of the run body (no real data).",
+    )
+    group.add_argument(
         "--execute",
         action="store_true",
         help="Request real execution (refused in this build).",
     )
     args = parser.parse_args(argv)
+
+    if args.fixture_e2e:
+        import tempfile
+
+        from .body import guarded_run_body
+
+        with tempfile.TemporaryDirectory() as td:
+            summary = guarded_run_body(mode="fixture", out_dir=td)
+        # Summary carries file NAMES only — never the temporary path.
+        evidence.assert_clean(summary)
+        print(evidence.serialise(summary))
+        return 0
 
     if not args.preflight:
         # Default and --execute both refuse: real execution is unavailable here.

@@ -312,6 +312,19 @@ granting the next.
 > gate: ONE code-only/no-run real-run-body implementation PR (synthetic-fixture
 > end-to-end rehearsal), then a Fable 5 body audit, then the separately
 > authorised first-run execution.
+>
+> Run-body status pointer: the guarded run body was implemented fixture-only
+> (`scripts/ml_step4/body.py` + data_adapter/features/trainer/manifest,
+> `docs/design/ml_step4_real_run_body_implementation_note.md`,
+> `ML_STEP4_REAL_RUN_BODY_IMPLEMENTED_NO_RUN`). Real mode refuses; the
+> synthetic rehearsal runs the full sequence end-to-end (deterministic, 8
+> scrubbed evidence payloads to non-protected paths; PR #409 evidence
+> untouched). All six PR #416 required-in-body items bound (notional wiring,
+> single-source labels/scoring incl. exit timing, UTC coverage denominator,
+> real code-SHA/seeds/versions manifest, diagnostics labeler in pipeline,
+> integer-arithmetic split boundaries). Remaining for the execution PR: real
+> checksum-verified data provider + production v4 bulk feature wiring + real
+> mode enablement. Next: Fable 5 body source audit.
 
 - **Purpose:** execute the smallest safe real run under the pre-registered
   contract, exactly as registered.

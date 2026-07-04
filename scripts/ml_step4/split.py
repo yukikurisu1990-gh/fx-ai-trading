@@ -14,6 +14,7 @@ from __future__ import annotations
 from collections.abc import Iterable
 from dataclasses import dataclass
 from datetime import UTC, datetime
+from fractions import Fraction
 from typing import Any
 
 from . import contract
@@ -186,8 +187,16 @@ def bar_index_split(
     if n_bars < 2 * purge_bars + 3:
         raise SplitError(f"n_bars={n_bars} too small for purge_bars={purge_bars}")
 
-    train_end = int(fractions[0] * n_bars)
-    val_end = int((fractions[0] + fractions[1]) * n_bars)
+    # PR #416 item 6 hardening: EXACT integer arithmetic (no float truncation).
+    # Fractions convert via their decimal string (Fraction("0.7") is exactly
+    # 7/10), so boundaries equal the exact-rational floor for every n — e.g.
+    # train_end == (70 * n) // 100 for the contract 0.70. The emitted indices
+    # are the AUTHORITATIVE record; the run body must consume them, never
+    # recompute boundaries with floats.
+    frac0 = Fraction(str(fractions[0]))
+    frac01 = frac0 + Fraction(str(fractions[1]))
+    train_end = int(frac0 * n_bars)  # Fraction * int is exact; int() floors
+    val_end = int(frac01 * n_bars)
     holdout_end = n_bars
     train_label_end = train_end - purge_bars
     val_label_end = val_end - purge_bars
