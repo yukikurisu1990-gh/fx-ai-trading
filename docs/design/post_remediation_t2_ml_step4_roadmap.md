@@ -301,6 +301,17 @@ granting the next.
 > notional 10,000 pips; NON_DECISION_EXPLORATORY labeling). config/model/
 > threshold hashes recomputed (safe: never consumed by any run). Next: the
 > separately-authorised first-run execution PR implementing the guarded body.
+>
+> Wiring source-audit pointer: a Fable 5 adversarial source audit of the
+> PR #415 wiring (`docs/design/ml_step4_guarded_wiring_source_audit_fable5.md`,
+> `ML_STEP4_GUARDED_WIRING_ACCEPTABLE_FOR_REAL_RUN_BODY_IMPLEMENTATION_REVIEW`)
+> found ZERO blockers: all refusal combinations verified; no hidden
+> execution/data/env routes; residuals bound (4 substantive, 3 provenance-level
+> with an explicit 6-item required-in-body checklist, incl. wiring compute_all
+> to the notional constant and integer-arithmetic boundary hardening). Next
+> gate: ONE code-only/no-run real-run-body implementation PR (synthetic-fixture
+> end-to-end rehearsal), then a Fable 5 body audit, then the separately
+> authorised first-run execution.
 
 - **Purpose:** execute the smallest safe real run under the pre-registered
   contract, exactly as registered.
