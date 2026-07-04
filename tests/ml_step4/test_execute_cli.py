@@ -56,3 +56,30 @@ def test_cli_flags_no_execution() -> None:
     assert plan["raw_data_read"] is False
     assert plan["model_trained"] is False
     assert Path(EXECUTION_EVIDENCE_DIR).name == "365d_ba_v1"
+
+
+# --- PR #416 body: CLI fixture-e2e rehearsal ---------------------------------
+
+
+def test_cli_fixture_e2e_returns_zero(capsys) -> None:
+    rc = main(["--fixture-e2e"])
+    assert rc == 0
+    out = capsys.readouterr().out
+    assert "ML_STEP4_REAL_RUN_BODY_IMPLEMENTED_NO_RUN" in out
+    assert '"fixture_rehearsal_performed": true' in out
+    assert '"execution_performed": false' in out
+    assert '"raw_data_read": false' in out
+    assert '"real_evidence_written": false' in out
+
+
+def test_cli_fixture_e2e_output_has_no_paths(capsys) -> None:
+    main(["--fixture-e2e"])
+    out = capsys.readouterr().out
+    assert "Users" not in out and ":\\" not in out  # no tmp/personal paths leak
+
+
+def test_cli_fixture_e2e_does_not_touch_protected_evidence(capsys) -> None:
+    exec_dir = evidence.repo_root() / EXECUTION_EVIDENCE_DIR
+    before = sorted(p.name for p in exec_dir.glob("*"))
+    main(["--fixture-e2e"])
+    assert sorted(p.name for p in exec_dir.glob("*")) == before
