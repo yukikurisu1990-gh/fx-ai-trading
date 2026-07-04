@@ -76,6 +76,11 @@ PURGE_EMBARGO_BARS: Final[int] = HORIZON_M1_BARS + 1  # 21
 THRESHOLD_CANDIDATES: Final[tuple[float, float, float]] = (0.35, 0.40, 0.45)
 PRODUCTION_DEFAULT_THRESHOLD: Final[float] = 0.40
 MAX_CONFIGURATIONS: Final[int] = 3  # 3 validation threshold variants; 1 on holdout
+# Deterministic tie rule (PR #411 R-6 provenance binding): among the best-scoring
+# validation thresholds, prefer the production default 0.40; otherwise the
+# smallest threshold value. Recorded in the frozen contract so config_hash and
+# threshold_config_hash both cover it.
+THRESHOLD_TIE_RULE: Final[str] = "prefer_production_default_0.40_else_smallest"
 
 # --- Cost cells -------------------------------------------------------------
 PRIMARY_COST_CELL_PIPS: Final[float] = 0.5
@@ -88,6 +93,16 @@ NON_COMPOUNDING: Final[bool] = True
 MAX_OPEN_POSITIONS_PER_PAIR: Final[int] = 1
 PNL_UNIT: Final[str] = "pips_post_cost"
 TRADING_DAYS_PER_YEAR: Final[int] = 252
+
+# --- Evaluation bindings (PR #411/#413 wiring residuals R-5 / maxDD) ---------
+# R-5: one auditable holdout trading-day definition — a UTC calendar date; the
+# daily-coverage denominator is the count of distinct UTC calendar dates in the
+# evaluated holdout window (no local/broker timezone).
+TRADING_DAY_DEFINITION: Final[str] = "utc_calendar_date"
+DAILY_COVERAGE_DENOMINATOR: Final[str] = "distinct_utc_calendar_dates_in_holdout"
+# maxDD fixed-notional constant: peak-to-trough drawdown in pips divided by this
+# fixed notional equity (in pips); % = drawdown_pips / notional * 100.
+FIXED_NOTIONAL_EQUITY_PIPS: Final[float] = 10_000.0
 
 # --- Frozen LightGBM params (PR #411 B-1 fix) --------------------------------
 # PR #407 §4 binds hyperparameters to the TRAINER's committed defaults
@@ -204,7 +219,7 @@ def contract_dict() -> dict[str, Any]:
             "fractions": list(SPLIT_FRACTIONS),
             "purge_embargo_bars": PURGE_EMBARGO_BARS,
         },
-        "threshold_candidates": list(THRESHOLD_CANDIDATES),
+        "threshold_config": threshold_config(),
         "cost_cells_pips": {
             "primary": PRIMARY_COST_CELL_PIPS,
             "diagnostics": list(DIAGNOSTIC_COST_CELLS_PIPS),
@@ -215,10 +230,33 @@ def contract_dict() -> dict[str, Any]:
             "max_open_positions_per_pair": MAX_OPEN_POSITIONS_PER_PAIR,
             "pnl_unit": PNL_UNIT,
         },
+        "evaluation": {
+            "trading_day_definition": TRADING_DAY_DEFINITION,
+            "daily_coverage_denominator": DAILY_COVERAGE_DENOMINATOR,
+            "fixed_notional_equity_pips": FIXED_NOTIONAL_EQUITY_PIPS,
+            "max_drawdown_formula": "peak_to_trough_pips / fixed_notional_equity_pips",
+            "trading_days_per_year": TRADING_DAYS_PER_YEAR,
+        },
         "acceptance_criteria": ACCEPTANCE_CRITERIA,
         "forbidden_scope": list(FORBIDDEN_SCOPE),
         "max_configurations": MAX_CONFIGURATIONS,
     }
+
+
+def threshold_config() -> dict[str, Any]:
+    """Deterministic threshold descriptor incl. the R-6 tie rule."""
+    return {
+        "candidates": list(THRESHOLD_CANDIDATES),
+        "production_default": PRODUCTION_DEFAULT_THRESHOLD,
+        "selection_partition": "validation_only",
+        "tie_rule": THRESHOLD_TIE_RULE,
+        "max_configurations": MAX_CONFIGURATIONS,
+    }
+
+
+def threshold_config_hash() -> str:
+    """Deterministic SHA-256 of the threshold descriptor (tie rule included)."""
+    return _sha256_hex(threshold_config())
 
 
 def config_hash() -> str:

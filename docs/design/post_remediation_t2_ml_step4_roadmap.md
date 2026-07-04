@@ -289,6 +289,18 @@ granting the next.
 > probes refused; PR #409 evidence untouched). Zero blockers remain. Next gate:
 > the code-only guarded `execute()` wiring PR, binding R-1/R-4/R-5/R-6 + seed
 > decision + maxDD notional + NON_DECISION_EXPLORATORY labeling.
+>
+> Guarded wiring status pointer: the code-only guarded `execute()` orchestration
+> was implemented (`scripts/ml_step4/executor.py` + `execute_365d_ba.py` CLI,
+> `docs/design/ml_step4_guarded_execute_wiring_note.md`,
+> `ML_STEP4_GUARDED_EXECUTE_WIRING_IMPLEMENTED_NO_RUN`). Real execution is
+> refused (no run body); preflight verifies 16 hard gates on inventory metadata
+> only. All seven residuals are bound (R-1 bar-index boundaries; R-4 single-
+> source label routing; R-5 UTC trading-day; R-6 tie-rule in config/threshold
+> hashes; reproducibility policy separate from the model contract; maxDD
+> notional 10,000 pips; NON_DECISION_EXPLORATORY labeling). config/model/
+> threshold hashes recomputed (safe: never consumed by any run). Next: the
+> separately-authorised first-run execution PR implementing the guarded body.
 
 - **Purpose:** execute the smallest safe real run under the pre-registered
   contract, exactly as registered.

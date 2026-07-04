@@ -21,6 +21,7 @@ import math
 import statistics
 from collections.abc import Iterable, Sequence
 from dataclasses import dataclass
+from datetime import UTC, datetime
 from typing import Any
 
 from . import contract
@@ -228,3 +229,22 @@ def compute_all(
         "cost_sensitivity": cost_sensitivity(trades, trading_days_per_year=trading_days_per_year),
         "primary_metric": "daily_portfolio_sharpe_annualised",
     }
+
+
+# ---------------------------------------------------------------------------
+# PR #411 R-5 — auditable UTC trading-day definition
+# ---------------------------------------------------------------------------
+
+
+def trading_day_utc(dt: datetime) -> str:
+    """Canonical trading day = the UTC calendar date 'YYYY-MM-DD' (R-5).
+
+    No local/broker timezone: the input is converted to UTC and truncated to the
+    calendar date. This is the single sanctioned key for daily aggregation and
+    the daily-coverage denominator.
+    """
+    if not isinstance(dt, datetime):
+        raise ValueError("trading_day_utc requires a datetime")
+    if dt.tzinfo is None:
+        raise ValueError("trading_day_utc requires a timezone-aware datetime (UTC)")
+    return dt.astimezone(UTC).strftime("%Y-%m-%d")

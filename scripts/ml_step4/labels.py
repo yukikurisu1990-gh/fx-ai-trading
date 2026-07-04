@@ -114,3 +114,26 @@ def apply_cost_cell(pnl_pips: float, slippage_pips: float) -> float:
     if slippage_pips < 0:
         raise LabelContractError("slippage_pips must be >= 0")
     return pnl_pips - slippage_pips
+
+
+# ---------------------------------------------------------------------------
+# PR #411 R-4 — single-source label routing identity
+# ---------------------------------------------------------------------------
+
+# Fully-qualified identity of the ONLY sanctioned label/PnL primitives. The
+# wiring layer records this in preflight metadata and routes all label
+# generation AND all trade scoring exclusively through this module; any
+# alternative/fallback label path is a contract violation.
+LABEL_CONTRACT_ID: Final[str] = "scripts.ml_step4.labels.v1"
+
+
+def label_contract_identity() -> dict[str, str]:
+    """Identity of the sanctioned single-source label/PnL adapter (R-4)."""
+    return {
+        "label_contract_id": LABEL_CONTRACT_ID,
+        "pnl_scorer": "scripts.ml_step4.labels.traded_direction_pnl_pips",
+        "delegates_to": "scripts.traded_direction_pnl.traded_direction_pnl_price",
+        "label_rule": "scripts.ml_step4.labels.barrier_label",
+        "tie_handling": "sl_first_strict",
+        "spread_convention": "b2_ask_entry_bid_exit_spread_once",
+    }
