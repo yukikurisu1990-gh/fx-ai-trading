@@ -280,6 +280,15 @@ granting the next.
 > flagship (likely DOES_NOT_MEET on honest priors); binding pivot afterwards
 > to M15/H1 cost-hurdle-aware experiments + empirical spread work (P2);
 > program-level kill criteria pre-registered (§17 of the audit).
+>
+> Re-check pointer: a narrow Fable 5 re-check verified the PR #412 fixes by
+> execution (`docs/design/ml_step4_executor_recheck_fable5.md`,
+> `ML_STEP4_EXECUTOR_PRIMITIVES_ACCEPTABLE_FOR_GUARDED_WIRING_REVIEW_AFTER_RECHECK`):
+> B-1/B-2/B-3 fixed (exact PR #411 reproductions now fail closed; 0/9
+> missing-metric probes fail open), R-2 hardened (cwd/traversal/nested/case
+> probes refused; PR #409 evidence untouched). Zero blockers remain. Next gate:
+> the code-only guarded `execute()` wiring PR, binding R-1/R-4/R-5/R-6 + seed
+> decision + maxDD notional + NON_DECISION_EXPLORATORY labeling.
 
 - **Purpose:** execute the smallest safe real run under the pre-registered
   contract, exactly as registered.
