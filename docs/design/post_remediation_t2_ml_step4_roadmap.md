@@ -234,6 +234,14 @@ granting the next.
 > `ML_STEP4_365D_BA_EXECUTION_AUTHORISATION_PLAN_CREATED`; §10 thresholds
 > confirmed as binding lower bounds). Execution remains a separate gate
 > (`ML_STEP4_EXECUTION_NOT_PERFORMED`).
+>
+> First-run attempt status pointer: execution go-ahead granted; pre-execution
+> hard gates 1–10 + all-20-file checksum re-verification PASSED, but the run
+> **stopped before training** at the F-5 provenance gate because no committed,
+> reviewed execution harness implements the exact PR #407 contract
+> (`ML_STEP4_RUN_INVALID_PROVENANCE_MISSING`; metadata-only stop evidence at
+> `artifacts/ml_step4/365d_ba_v1/`). No model trained; no holdout evaluated.
+> Next: author + review a contract-faithful executor before the first real run.
 
 - **Purpose:** execute the smallest safe real run under the pre-registered
   contract, exactly as registered.

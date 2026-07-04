@@ -1,0 +1,21 @@
+{
+  "record_class": "pre_consumption_checksum_reverification",
+  "performed": true,
+  "performed_at_utc": "2026-07-04T06:26:38Z",
+  "epoch_id": "RESEARCH_FROZEN_HOLDOUT_EPOCH_365D_BA_V1",
+  "span": "365d_BA",
+  "reference_inventory": "artifacts/gate_p1_pr_b/firstrun_365d_ba/raw_inventory_365d_BA.json",
+  "reference_inventory_field": "files[].file_sha256 + files[].size_bytes",
+  "algorithm": "SHA-256",
+  "files_expected": 20,
+  "files_checked": 20,
+  "files_missing": 0,
+  "sha256_mismatches": 0,
+  "size_mismatches": 0,
+  "total_bytes_observed": 1481715517,
+  "total_bytes_expected": 1481715517,
+  "total_bytes_match": true,
+  "result": "ALL_20_FILES_MATCH_PRB1_INVENTORY",
+  "note": "Per-file SHA-256 and sizes were recomputed from the local candle files immediately before any execution decision and compared against the committed PR-B.1 inventory. All 20 matched. Per-file hashes are NOT re-listed here; they are the committed reference in the PR-B.1 inventory (referenced above) to avoid redundant hash duplication. This report records only the aggregate re-verification outcome. Local file paths are intentionally omitted; files are identified by the epoch inventory (logical filename + hash), not by any runtime path.",
+  "consumed_into_training_or_features": false
+}

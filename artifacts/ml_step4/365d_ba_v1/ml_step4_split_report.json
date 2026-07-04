@@ -1,0 +1,21 @@
+{
+  "record_class": "split_report",
+  "executed": false,
+  "reason_not_executed": "Stopped before training at enforceability gates 11-13; no reviewed executor to reproduce the split.",
+  "epoch_id": "RESEARCH_FROZEN_HOLDOUT_EPOCH_365D_BA_V1",
+  "contract_reference": "PR #407 pre-registration (docs/design/phase_f_ml_step4_pre_registration.md)",
+  "intended_split_parameters_documented_only": {
+    "common_cross_pair_window_utc": {
+      "start": "2025-04-25T17:09Z",
+      "end": "2026-04-24T20:58Z",
+      "note": "Contract-stated common cross-pair window. NOT recomputed from data in this stop; would require the reviewed executor to derive and verify."
+    },
+    "split_scheme": "chronological 70/15/15 (train/validation/frozen-holdout)",
+    "purge_embargo_bars": 21,
+    "purge_embargo_definition": "horizon(20) + 1 M1 bars at split boundaries",
+    "threshold_selection_partition": "validation only",
+    "holdout_evaluation_count_permitted": 1
+  },
+  "split_boundaries_computed": null,
+  "note": "This is a documented restatement of the contract split parameters, not an executed split. No boundaries were computed from raw data. The stop occurred before any data was partitioned."
+}
