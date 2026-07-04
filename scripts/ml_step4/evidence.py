@@ -113,8 +113,20 @@ def serialise(report: Any) -> str:
     return json.dumps(report, sort_keys=True, indent=2, ensure_ascii=False) + "\n"
 
 
+# PR #411 R-2 fix: the guard is anchored to the REPO ROOT derived from this
+# module's own location (scripts/ml_step4/evidence.py -> parents[2]), NOT the
+# process working directory — changing cwd cannot bypass it, and `..`
+# traversal is neutralised by resolve() before comparison.
+_REPO_ROOT: Final[Path] = Path(__file__).resolve().parents[2]
+
+
+def repo_root() -> Path:
+    """Deterministic repository root (module-anchored, cwd-independent)."""
+    return _REPO_ROOT
+
+
 def _is_under_execution_dir(target: Path) -> bool:
-    exec_dir = (Path.cwd() / EXECUTION_EVIDENCE_DIR).resolve()
+    exec_dir = (_REPO_ROOT / EXECUTION_EVIDENCE_DIR).resolve()
     try:
         resolved = target.resolve()
     except OSError:  # pragma: no cover - defensive

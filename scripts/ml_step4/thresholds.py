@@ -50,18 +50,39 @@ def select_threshold(
     candidates: tuple[float, ...] = contract.THRESHOLD_CANDIDATES,
     production_default: float = contract.PRODUCTION_DEFAULT_THRESHOLD,
 ) -> ThresholdSelection:
-    """Return exactly one threshold selected on validation metrics only."""
+    """Return exactly one threshold selected on validation metrics only.
+
+    PR #411 B-2 fix: the input MUST cover **exactly** the full registered
+    candidate set (every candidate present, no extras, no duplicates after
+    float normalisation). An incomplete sweep is a §11 multiplicity-control
+    violation and fails closed — a wiring bug can no longer evaluate a subset
+    and still look contract-compliant.
+    """
     if not validation_metrics_by_threshold:
         raise ThresholdSelectionError("no validation metrics provided")
 
-    allowed = set(candidates)
+    allowed = {float(c) for c in candidates}
+    provided: set[float] = set()
+    for key in validation_metrics_by_threshold:
+        try:
+            thr_f = float(key)
+        except (TypeError, ValueError) as exc:
+            raise ThresholdSelectionError(f"non-numeric threshold key {key!r}") from exc
+        if thr_f in provided:
+            raise ThresholdSelectionError(f"duplicate threshold after normalisation: {thr_f}")
+        provided.add(thr_f)
+    missing = sorted(allowed - provided)
+    extra = sorted(provided - allowed)
+    if missing or extra:
+        raise ThresholdSelectionError(
+            "threshold sweep must cover exactly the registered candidate set "
+            f"{sorted(allowed)}: missing={missing} extra={extra} "
+            "(incomplete sweep is a multiplicity-control violation)"
+        )
+
     scored: list[tuple[float, float, dict[str, Any]]] = []
     for thr, metrics in validation_metrics_by_threshold.items():
         thr_f = float(thr)
-        if thr_f not in allowed:
-            raise ThresholdSelectionError(
-                f"threshold {thr_f} is not a registered candidate {sorted(allowed)}"
-            )
         if not isinstance(metrics, dict) or selection_metric not in metrics:
             raise ThresholdSelectionError(
                 f"threshold {thr_f} missing selection metric {selection_metric!r}"

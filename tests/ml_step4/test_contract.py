@@ -2,9 +2,25 @@
 
 from __future__ import annotations
 
+import ast
+from pathlib import Path
+
 import pytest
 
 from scripts.ml_step4 import contract
+
+_TRAINER_PATH = Path(__file__).resolve().parents[2] / "scripts" / "train_lgbm_models.py"
+
+
+def _trainer_literal(name: str):
+    """AST-extract a module-level literal from the committed trainer (no import)."""
+    tree = ast.parse(_TRAINER_PATH.read_text(encoding="utf-8"))
+    for node in tree.body:
+        if isinstance(node, ast.Assign):
+            for tgt in node.targets:
+                if isinstance(tgt, ast.Name) and tgt.id == name:
+                    return ast.literal_eval(node.value)
+    raise AssertionError(f"{name} not found in {_TRAINER_PATH}")
 
 
 def test_hashes_are_stable_across_calls() -> None:
@@ -79,3 +95,33 @@ def test_assert_feature_groups_base_only() -> None:
 def test_forbidden_scope_lists_expansion_spans() -> None:
     for token in ("730d_BA", "3650d_BA", "phase_c2", "broad_hyperparameter_search"):
         assert token in contract.FORBIDDEN_SCOPE
+
+
+# --- PR #411 B-1 fix: hyperparameters pinned to the trainer's committed literals
+
+
+def test_b1_lgbm_params_equal_trainer_literals() -> None:
+    """Frozen params MUST equal scripts/train_lgbm_models.py _LGBM_PARAMS (AST-pinned)."""
+    assert _trainer_literal("_LGBM_PARAMS") == contract.LGBM_PARAMS
+    assert contract.LGBM_PARAMS == {"learning_rate": 0.05, "num_leaves": 31, "verbose": -1}
+
+
+def test_b1_n_estimators_equals_trainer_literal() -> None:
+    assert _trainer_literal("_N_ESTIMATORS") == contract.LGBM_N_ESTIMATORS
+    assert contract.LGBM_N_ESTIMATORS == 200
+
+
+def test_b1_no_research_hyperparameters() -> None:
+    """The v14 research extras from the PR #411 B-1 drift must be absent."""
+    for extra in ("min_child_samples", "reg_alpha", "reg_lambda", "random_state", "n_jobs"):
+        assert extra not in contract.LGBM_PARAMS
+    mc = contract.model_config()
+    assert "random_seed" not in mc  # trainer defines no seed; wiring PR decides
+    assert mc["seed_policy"] == "wiring_pr_responsibility_trainer_defines_none"
+
+
+def test_b1_extra_hyperparameter_changes_model_hash() -> None:
+    base = contract.model_config_hash()
+    mutated = dict(contract.model_config())
+    mutated["params"] = {**mutated["params"], "reg_alpha": 0.1}
+    assert contract._sha256_hex(mutated) != base

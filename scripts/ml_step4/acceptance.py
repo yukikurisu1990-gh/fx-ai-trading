@@ -42,6 +42,48 @@ def invalid_status(reason: str) -> str:
     return f"ML_STEP4_RUN_INVALID_{reason}"
 
 
+# PR #411 B-3 fix: required metric inputs. "a.b" means metrics["a"]["b"].
+# A missing or None value for ANY of these makes the metrics record
+# provenance-incomplete → ML_STEP4_RUN_INVALID_PROVENANCE_MISSING. Missing
+# metrics must NEVER become passing defaults.
+REQUIRED_METRIC_PATHS: tuple[str, ...] = (
+    "trade_count",
+    "daily_coverage_frac",
+    "expectancy_pips",
+    "daily_portfolio_sharpe_annualised",
+    "max_equity_drawdown.max_drawdown_frac",
+    "turnover_trades_per_day",
+    "pair_concentration.max_trade_share",
+    "pair_concentration.max_positive_pnl_share",
+    "cost_sensitivity.1.0pip.expectancy_pips",
+)
+
+
+def _lookup(metrics: dict[str, Any], path: str) -> Any:
+    """Resolve a dotted path; the '1.0pip' cost-cell key is one segment."""
+    if path.startswith("cost_sensitivity."):
+        rest = path[len("cost_sensitivity.") :]
+        cell, _, leaf = rest.rpartition(".")
+        node = metrics.get("cost_sensitivity")
+        if not isinstance(node, dict):
+            return None
+        cell_node = node.get(cell)
+        if not isinstance(cell_node, dict):
+            return None
+        return cell_node.get(leaf)
+    node: Any = metrics
+    for part in path.split("."):
+        if not isinstance(node, dict):
+            return None
+        node = node.get(part)
+    return node
+
+
+def missing_required_metrics(metrics: dict[str, Any]) -> list[str]:
+    """Return the required metric paths that are absent or None."""
+    return [p for p in REQUIRED_METRIC_PATHS if _lookup(metrics, p) is None]
+
+
 class AcceptanceEvaluator:
     """Evaluate holdout metrics against the frozen §10 acceptance criteria."""
 
@@ -55,20 +97,28 @@ class AcceptanceEvaluator:
         provenance_complete: bool,
         hard_triggers: set[str] | None = None,
     ) -> dict[str, Any]:
-        """Return {status, criteria table, hard_triggers, meets}."""
+        """Return {status, criteria table, hard_triggers, meets, missing_metrics}."""
         triggers: set[str] = set(hard_triggers or set())
         for t in triggers:
             if t not in INVALID_REASONS:
                 raise ValueError(f"unknown hard trigger {t!r}")
 
-        trade_count = int(metrics.get("trade_count", 0))
-        coverage = float(metrics.get("daily_coverage_frac", 0.0))
-        # Sample sufficiency is a HARD trigger, not a soft miss.
-        if (
-            trade_count < self.criteria["min_holdout_trades"]
-            or coverage < self.criteria["min_daily_coverage_frac"]
-        ):
-            triggers.add("INSUFFICIENT_OOS_SAMPLE")
+        # PR #411 B-3 fix: fail closed on missing/None required metric inputs
+        # BEFORE any criterion is evaluated. Missing metrics are a provenance
+        # gap, never passing defaults.
+        missing = missing_required_metrics(metrics)
+        if missing:
+            triggers.add("PROVENANCE_MISSING")
+
+        if not missing:
+            trade_count = int(metrics["trade_count"])
+            coverage = float(metrics["daily_coverage_frac"])
+            # Sample sufficiency is a HARD trigger, not a soft miss.
+            if (
+                trade_count < self.criteria["min_holdout_trades"]
+                or coverage < self.criteria["min_daily_coverage_frac"]
+            ):
+                triggers.add("INSUFFICIENT_OOS_SAMPLE")
         if not provenance_complete:
             triggers.add("PROVENANCE_MISSING")
 
@@ -79,6 +129,7 @@ class AcceptanceEvaluator:
                 "hard_triggers": sorted(triggers),
                 "meets": False,
                 "criteria": {},
+                "missing_metrics": missing,
             }
 
         table = self._quality_criteria(metrics)
@@ -88,24 +139,27 @@ class AcceptanceEvaluator:
             "hard_triggers": [],
             "meets": meets,
             "criteria": table,
+            "missing_metrics": [],
         }
 
     def _quality_criteria(self, m: dict[str, Any]) -> dict[str, dict[str, Any]]:
+        # PR #411 B-3 fix: direct indexing, no fallback defaults — presence of
+        # every required key is guaranteed by missing_required_metrics() before
+        # this method is reached; an unexpected gap raises rather than passes.
         c = self.criteria
-        dd = m.get("max_equity_drawdown", {})
-        conc = m.get("pair_concentration", {})
-        cost = m.get("cost_sensitivity", {})
-        exp_1pip = cost.get("1.0pip", {}).get("expectancy_pips", float("-inf"))
+        dd = m["max_equity_drawdown"]
+        conc = m["pair_concentration"]
+        exp_1pip = float(m["cost_sensitivity"]["1.0pip"]["expectancy_pips"])
 
         def crit(name: str, value: float, threshold: float, passed: bool) -> dict[str, Any]:
             return {"value": value, "threshold": threshold, "passed": bool(passed)}
 
-        exp = float(m.get("expectancy_pips", 0.0))
-        sharpe = float(m.get("daily_portfolio_sharpe_annualised", 0.0))
-        dd_frac = float(dd.get("max_drawdown_frac", 1.0))
-        turnover = float(m.get("turnover_trades_per_day", 0.0))
-        max_trade_share = float(conc.get("max_trade_share", 1.0))
-        max_pos_share = float(conc.get("max_positive_pnl_share", 1.0))
+        exp = float(m["expectancy_pips"])
+        sharpe = float(m["daily_portfolio_sharpe_annualised"])
+        dd_frac = float(dd["max_drawdown_frac"])
+        turnover = float(m["turnover_trades_per_day"])
+        max_trade_share = float(conc["max_trade_share"])
+        max_pos_share = float(conc["max_positive_pnl_share"])
 
         return {
             "post_cost_expectancy": crit(
