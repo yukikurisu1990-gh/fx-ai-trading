@@ -325,6 +325,31 @@ granting the next.
 > integer-arithmetic split boundaries). Remaining for the execution PR: real
 > checksum-verified data provider + production v4 bulk feature wiring + real
 > mode enablement. Next: Fable 5 body source audit.
+>
+> Body source-audit pointer: the Fable 5 audit of the PR #417 run body
+> (`docs/design/ml_step4_real_run_body_source_audit_fable5.md`,
+> `ML_STEP4_REAL_RUN_BODY_BLOCKED_FOR_FIRST_RUN_EXECUTION_REVIEW`) found the
+> body fail-closed for real data/execution but PROVED two blockers: B-1 the
+> cost cell is applied twice in the holdout metrics path (0.5-cell metrics are
+> actually 1.0-cell; sensitivity cells shifted +0.5; validation/holdout
+> charging inconsistent); B-2 bulk_labels labels one extra trailing decision
+> bar vs the committed trainer/v9 range(n−horizon−1) convention. ATR flavor
+> CLEARED (matches trainer exactly). Required: small code-only fix PR (single
+> cost application + range alignment + value/range-pinned tests) → re-check →
+> only then the separately-authorised first-run execution PR.
+>
+> Full-source audit pointer: the audit was broadened repo-wide
+> (`docs/design/ml_step4_first_run_full_source_audit_fable5.md`,
+> `ML_STEP4_FULL_SOURCE_AUDIT_BLOCKED_FOR_FIRST_RUN_EXECUTION_REVIEW`): the
+> first-run path is structurally isolated (ml_step4 imports only the audited
+> F-2 helper + scrub constants; nothing external imports it or writes
+> artifacts/ml_step4); the production feature seam target
+> (trainer _add_features/_add_upper_tf_features) was inspected and CLEARED for
+> lookahead (shift(1) completed buckets); all legacy routes (optimistic-PnL
+> v-scripts, F-10 MTF code, deployed-model machinery, stage22-29) are
+> classified unreachable/forbidden; the only physical vector (candle-byte
+> mutation) is F-5-guarded and hard-stopped by the pre-consumption checksum
+> gate. No new blockers; B-1/B-2 carry over as the sole blockers.
 
 - **Purpose:** execute the smallest safe real run under the pre-registered
   contract, exactly as registered.
