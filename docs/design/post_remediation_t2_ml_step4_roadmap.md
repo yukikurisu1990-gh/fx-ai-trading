@@ -242,6 +242,13 @@ granting the next.
 > (`ML_STEP4_RUN_INVALID_PROVENANCE_MISSING`; metadata-only stop evidence at
 > `artifacts/ml_step4/365d_ba_v1/`). No model trained; no holdout evaluated.
 > Next: author + review a contract-faithful executor before the first real run.
+>
+> Executor status pointer: the reviewed, code-only, no-run contract executor
+> was implemented under `scripts/ml_step4/` (+ `tests/ml_step4/`,
+> `docs/design/ml_step4_executor_implementation_note.md`,
+> `ML_STEP4_CONTRACT_EXECUTOR_IMPLEMENTED_NO_RUN`). It trains nothing and reads
+> no real raw data; a separate explicitly-authorised execution PR wires it into
+> a guarded real run.
 
 - **Purpose:** execute the smallest safe real run under the pre-registered
   contract, exactly as registered.
