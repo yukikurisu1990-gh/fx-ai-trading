@@ -259,6 +259,16 @@ granting the next.
 > silently; B-3 acceptance evaluator fail-open on missing metric keys — require
 > a small code-only fix PR (+ tests) before any guarded `execute()` wiring PR.
 > No execution occurred; no hashes were consumed by any run.
+>
+> Blocker-fix status pointer: B-1/B-2/B-3 + R-2 were fixed code-only
+> (`ML_STEP4_EXECUTOR_BLOCKERS_B1_B3_FIXED_NO_RUN`): hyperparameters re-pinned
+> to the trainer literals (lr 0.05 / num_leaves 31 / verbose −1,
+> n_estimators 200; no invented seed — determinism deferred to the wiring PR);
+> threshold selector requires the exact full {0.35, 0.40, 0.45} sweep;
+> acceptance evaluator fails closed on missing/None required metrics
+> (→ `ML_STEP4_RUN_INVALID_PROVENANCE_MISSING`); evidence guard repo-root
+> anchored. config/model hashes changed (safe: never consumed by any run).
+> Still no execution; guarded `execute()` wiring remains a separate gate.
 
 - **Purpose:** execute the smallest safe real run under the pre-registered
   contract, exactly as registered.

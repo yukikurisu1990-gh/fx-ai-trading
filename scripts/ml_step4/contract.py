@@ -89,21 +89,25 @@ MAX_OPEN_POSITIONS_PER_PAIR: Final[int] = 1
 PNL_UNIT: Final[str] = "pips_post_cost"
 TRADING_DAYS_PER_YEAR: Final[int] = 252
 
-# --- Frozen LightGBM params (from scripts/compare_multipair_v14_topk.py) -----
+# --- Frozen LightGBM params (PR #411 B-1 fix) --------------------------------
+# PR #407 §4 binds hyperparameters to the TRAINER's committed defaults
+# (scripts/train_lgbm_models.py: _LGBM_PARAMS + _N_ESTIMATORS), frozen — no
+# invented parameters. These literals MUST equal the trainer's; a test pins
+# them against the trainer source (AST-parsed, no import).
 LGBM_PARAMS: Final[dict[str, Any]] = {
     "learning_rate": 0.05,
     "num_leaves": 31,
-    "min_child_samples": 50,
-    "reg_alpha": 0.1,
-    "reg_lambda": 0.1,
-    "random_state": 42,
-    "n_jobs": 1,
+    "verbose": -1,
 }
-LGBM_N_ESTIMATORS: Final[int] = 300
+LGBM_N_ESTIMATORS: Final[int] = 200
 LGBM_OBJECTIVE: Final[str] = "multiclass"
 LGBM_NUM_CLASS: Final[int] = 3
 CALIBRATION: Final[str] = "none_raw_predict_proba"
-RANDOM_SEED: Final[int] = 42
+# Seed / determinism decision (PR #411 B-1): the bound trainer convention has
+# NO random_state, so this frozen contract does not invent one. Determinism
+# handling (seed capture / thread settings) is an explicit responsibility of
+# the future guarded execute() wiring PR, where it must be declared and
+# recorded in the run provenance — never silently added here.
 
 # --- Acceptance criteria (PR #407 §10 / PR #408 §5, binding lower bounds) -----
 ACCEPTANCE_CRITERIA: Final[dict[str, Any]] = {
@@ -169,7 +173,9 @@ def model_config() -> dict[str, Any]:
         "retrain_from_scratch": True,
         "deployed_model_reuse": False,
         "hyperparameter_search": "none",
-        "random_seed": RANDOM_SEED,
+        # No random_seed here: the bound trainer convention defines none
+        # (PR #411 B-1). Determinism is declared at the wiring PR / runtime.
+        "seed_policy": "wiring_pr_responsibility_trainer_defines_none",
     }
 
 

@@ -89,11 +89,50 @@ def test_write_report_scrubs_before_write(tmp_path: Path) -> None:
 def test_write_report_refuses_real_execution_dir() -> None:
     # The real execution-evidence dir may already exist on this branch (it holds
     # PR #409 stop evidence). The guard must refuse to write there regardless.
-    probe = Path.cwd() / EXECUTION_EVIDENCE_DIR / "guard_probe_should_not_exist.json"
+    probe = evidence.repo_root() / EXECUTION_EVIDENCE_DIR / "guard_probe_should_not_exist.json"
     with pytest.raises(EvidenceScrubError):
         write_report(EXECUTION_EVIDENCE_DIR, "guard_probe_should_not_exist.json", {"ok": True})
     # Guard fires before any write: our probe file was never created.
     assert not probe.exists()
+
+
+# --- PR #411 R-2 fix: repo-root-anchored guard (cwd-independent)
+
+
+def test_r2_repo_root_is_module_anchored() -> None:
+    root = evidence.repo_root()
+    assert (root / "scripts" / "ml_step4" / "evidence.py").is_file()
+
+
+def test_r2_cwd_manipulation_does_not_bypass_guard(tmp_path: Path, monkeypatch) -> None:
+    real_dir = evidence.repo_root() / EXECUTION_EVIDENCE_DIR
+    probe = real_dir / "guard_probe_cwd.json"
+    monkeypatch.chdir(tmp_path)  # cwd far away from the repo
+    with pytest.raises(EvidenceScrubError):
+        write_report(real_dir, "guard_probe_cwd.json", {"ok": True})
+    assert not probe.exists()
+
+
+def test_r2_path_traversal_rejected() -> None:
+    # ..-traversal that resolves back into the real execution dir is refused.
+    sneaky = evidence.repo_root() / "artifacts" / "ml_step4" / "other" / ".." / "365d_ba_v1"
+    probe = evidence.repo_root() / EXECUTION_EVIDENCE_DIR / "guard_probe_traversal.json"
+    with pytest.raises(EvidenceScrubError):
+        write_report(sneaky, "guard_probe_traversal.json", {"ok": True})
+    assert not probe.exists()
+
+
+def test_r2_subdir_of_execution_dir_rejected() -> None:
+    nested = evidence.repo_root() / EXECUTION_EVIDENCE_DIR / "nested"
+    with pytest.raises(EvidenceScrubError):
+        write_report(nested, "guard_probe_nested.json", {"ok": True})
+    assert not nested.exists()
+
+
+def test_r2_safe_tmp_dir_still_accepted(tmp_path: Path, monkeypatch) -> None:
+    monkeypatch.chdir(tmp_path)
+    out = write_report(tmp_path / "reports", "ok.json", {"a": 1})
+    assert out.is_file()
 
 
 def test_write_markdown_report(tmp_path: Path) -> None:
