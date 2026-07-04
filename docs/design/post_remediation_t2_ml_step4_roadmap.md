@@ -228,6 +228,13 @@ granting the next.
 
 ### Phase G — First real ML run
 
+> Status pointer: execution-authorisation / execution plan authored for the
+> PR #407 contract
+> (`docs/design/ml_step4_365d_ba_execution_authorisation_plan.md`,
+> `ML_STEP4_365D_BA_EXECUTION_AUTHORISATION_PLAN_CREATED`; §10 thresholds
+> confirmed as binding lower bounds). Execution remains a separate gate
+> (`ML_STEP4_EXECUTION_NOT_PERFORMED`).
+
 - **Purpose:** execute the smallest safe real run under the pre-registered
   contract, exactly as registered.
 - **Constraints:** minimal span; minimal config set; **no sweep explosion**;
