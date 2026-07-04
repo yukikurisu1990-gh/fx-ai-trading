@@ -337,6 +337,19 @@ granting the next.
 > CLEARED (matches trainer exactly). Required: small code-only fix PR (single
 > cost application + range alignment + value/range-pinned tests) → re-check →
 > only then the separately-authorised first-run execution PR.
+>
+> Full-source audit pointer: the audit was broadened repo-wide
+> (`docs/design/ml_step4_first_run_full_source_audit_fable5.md`,
+> `ML_STEP4_FULL_SOURCE_AUDIT_BLOCKED_FOR_FIRST_RUN_EXECUTION_REVIEW`): the
+> first-run path is structurally isolated (ml_step4 imports only the audited
+> F-2 helper + scrub constants; nothing external imports it or writes
+> artifacts/ml_step4); the production feature seam target
+> (trainer _add_features/_add_upper_tf_features) was inspected and CLEARED for
+> lookahead (shift(1) completed buckets); all legacy routes (optimistic-PnL
+> v-scripts, F-10 MTF code, deployed-model machinery, stage22-29) are
+> classified unreachable/forbidden; the only physical vector (candle-byte
+> mutation) is F-5-guarded and hard-stopped by the pre-consumption checksum
+> gate. No new blockers; B-1/B-2 carry over as the sole blockers.
 
 - **Purpose:** execute the smallest safe real run under the pre-registered
   contract, exactly as registered.
