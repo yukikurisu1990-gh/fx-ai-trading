@@ -95,3 +95,42 @@ def test_compute_all_bundle() -> None:
 
 def test_trading_days_per_year_constant() -> None:
     assert metrics.contract.TRADING_DAYS_PER_YEAR == 252
+
+
+# --- PR #411 R-5: auditable UTC trading-day definition ----------------------
+
+
+def test_r5_trading_day_utc_grouping() -> None:
+    from datetime import UTC, datetime
+
+    from scripts.ml_step4.metrics import trading_day_utc
+
+    assert trading_day_utc(datetime(2025, 4, 25, 0, 0, tzinfo=UTC)) == "2025-04-25"
+    assert trading_day_utc(datetime(2025, 4, 25, 23, 59, tzinfo=UTC)) == "2025-04-25"
+
+
+def test_r5_converts_other_tz_to_utc() -> None:
+    from datetime import datetime, timedelta, timezone
+
+    from scripts.ml_step4.metrics import trading_day_utc
+
+    # 2025-04-26 00:30 at UTC+2 is 2025-04-25 22:30 UTC -> UTC day 25.
+    tz = timezone(timedelta(hours=2))
+    assert trading_day_utc(datetime(2025, 4, 26, 0, 30, tzinfo=tz)) == "2025-04-25"
+
+
+def test_r5_naive_datetime_fails_closed() -> None:
+    from datetime import datetime
+
+    from scripts.ml_step4.metrics import trading_day_utc
+
+    with pytest.raises(ValueError):
+        trading_day_utc(datetime(2025, 4, 25, 0, 0))  # no tzinfo
+
+
+def test_r5_definition_recorded_in_contract() -> None:
+    from scripts.ml_step4 import contract
+
+    assert contract.TRADING_DAY_DEFINITION == "utc_calendar_date"
+    ev = contract.contract_dict()["evaluation"]
+    assert ev["daily_coverage_denominator"] == "distinct_utc_calendar_dates_in_holdout"

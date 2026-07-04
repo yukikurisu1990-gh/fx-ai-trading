@@ -86,3 +86,58 @@ def test_fail_closed_on_window_too_short_for_purge() -> None:
 
 def test_module_exposes_bar_seconds() -> None:
     assert split._BAR_SECONDS == 60
+
+
+# --- PR #411 R-1: bar-granularity boundary rule -----------------------------
+
+
+def test_r1_bar_index_split_boundaries() -> None:
+    from scripts.ml_step4.split import bar_index_split
+
+    out = bar_index_split(1000)
+    seg = out["segments"]
+    assert out["granularity"] == "m1_bar_index"
+    assert out["purge_embargo_bars"] == 21
+    assert seg["train"]["start_index"] == 0
+    assert seg["train"]["end_index_exclusive"] == 700
+    assert seg["train"]["label_eligible_end_index_exclusive"] == 679  # 700 - 21
+    assert seg["validation"]["start_index"] == 700
+    assert seg["validation"]["end_index_exclusive"] == 850
+    assert seg["validation"]["label_eligible_end_index_exclusive"] == 829
+    assert seg["holdout"]["start_index"] == 850
+    assert seg["holdout"]["end_index_exclusive"] == 1000
+    assert seg["holdout"]["evaluated_once"] is True
+
+
+def test_r1_end_exclusive_no_overlap() -> None:
+    from scripts.ml_step4.split import bar_index_split
+
+    seg = bar_index_split(1000)["segments"]
+    # end-exclusive: validation starts exactly where train ends (no shared bar).
+    assert seg["train"]["end_index_exclusive"] == seg["validation"]["start_index"]
+    assert seg["validation"]["end_index_exclusive"] == seg["holdout"]["start_index"]
+
+
+def test_r1_off_by_one_small_n() -> None:
+    from scripts.ml_step4.split import SplitError, bar_index_split
+
+    with pytest.raises(SplitError):
+        bar_index_split(10)  # too small for purge=21
+
+
+def test_r1_m1_alignment_rejects_non_aligned() -> None:
+    from scripts.ml_step4.split import SplitError, assert_m1_aligned
+
+    assert_m1_aligned("2025-04-25T17:09:00Z")  # aligned, no raise
+    with pytest.raises(SplitError):
+        assert_m1_aligned("2025-04-25T17:09:30Z")  # :30 seconds -> not M1-aligned
+
+
+def test_r1_purge_is_horizon_plus_one() -> None:
+    from scripts.ml_step4 import contract
+    from scripts.ml_step4.split import bar_index_split
+
+    out = bar_index_split(5000, purge_bars=contract.PURGE_EMBARGO_BARS)
+    seg = out["segments"]
+    gap = seg["train"]["end_index_exclusive"] - seg["train"]["label_eligible_end_index_exclusive"]
+    assert gap == 21 == contract.HORIZON_M1_BARS + 1
