@@ -249,6 +249,16 @@ granting the next.
 > `ML_STEP4_CONTRACT_EXECUTOR_IMPLEMENTED_NO_RUN`). It trains nothing and reads
 > no real raw data; a separate explicitly-authorised execution PR wires it into
 > a guarded real run.
+>
+> Fable 5 adversarial harness review pointer: the PR #410 primitives were
+> audited against PR #407/#408
+> (`docs/design/ml_step4_executor_harness_review_fable5.md`,
+> `ML_STEP4_EXECUTOR_PRIMITIVES_BLOCKED_FOR_GUARDED_WIRING_REVIEW`). Three
+> proven blockers — B-1 hyperparameter drift vs the trainer's committed
+> `_LGBM_PARAMS`/`_N_ESTIMATORS`; B-2 incomplete threshold sweep accepted
+> silently; B-3 acceptance evaluator fail-open on missing metric keys — require
+> a small code-only fix PR (+ tests) before any guarded `execute()` wiring PR.
+> No execution occurred; no hashes were consumed by any run.
 
 - **Purpose:** execute the smallest safe real run under the pre-registered
   contract, exactly as registered.
