@@ -269,6 +269,17 @@ granting the next.
 > (→ `ML_STEP4_RUN_INVALID_PROVENANCE_MISSING`); evidence guard repo-root
 > anchored. config/model hashes changed (safe: never consumed by any run).
 > Still no execution; guarded `execute()` wiring remains a separate gate.
+>
+> Root-level trading-logic audit pointer: a Fable 5 project-wide trading-logic
+> & profitability research audit
+> (`docs/design/trading_logic_profitability_research_audit_fable5.md`,
+> `TRADING_LOGIC_PROFITABILITY_RESEARCH_AUDIT_ACCEPTABLE_FOR_GUARDED_WIRING_WITH_REQUIRED_RESEARCH_DISCIPLINE`)
+> substantially discharges the roadmap §11B Root Logic Reassessment for the
+> ML Step 4 path. Verdict: proceed to guarded wiring under the PR #407/#408
+> contract, reframed as a falsification/baseline measurement of the M1
+> flagship (likely DOES_NOT_MEET on honest priors); binding pivot afterwards
+> to M15/H1 cost-hurdle-aware experiments + empirical spread work (P2);
+> program-level kill criteria pre-registered (§17 of the audit).
 
 - **Purpose:** execute the smallest safe real run under the pre-registered
   contract, exactly as registered.
