@@ -350,6 +350,18 @@ granting the next.
 > classified unreachable/forbidden; the only physical vector (candle-byte
 > mutation) is F-5-guarded and hard-stopped by the pre-consumption checksum
 > gate. No new blockers; B-1/B-2 carry over as the sole blockers.
+>
+> B-1/B-2 fix status pointer: both blockers fixed code-only
+> (`docs/design/ml_step4_b1_b2_fix_note.md`,
+> `ML_STEP4_FULL_SOURCE_BLOCKERS_B1_B2_FIXED_NO_RUN`). B-1: the flat cost cell
+> is applied exactly once by the metrics layer (signal PnL raw gross;
+> validation and holdout charge identically; sensitivity cells 0.0/0.5/1.0
+> unshifted; explicit cost_convention in evidence). B-2: bulk_labels
+> eligibility aligned to the committed range(n−horizon−1) (last eligible
+> n−horizon−2). Added the PR #418 mandatory tests (value-pinned cost,
+> label-range pinning, ATR numeric cross-check, import-graph legacy-non-use,
+> NaN/inf fail-closed, deployed-reuse-impossible). Next: short Fable 5 re-check
+> → separately-authorised first-run execution PR.
 
 - **Purpose:** execute the smallest safe real run under the pre-registered
   contract, exactly as registered.
