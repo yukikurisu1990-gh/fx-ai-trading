@@ -374,6 +374,18 @@ granting the next.
 > provider + production v4 wiring + minimal real-mode enablement; no contract
 > changes; execute exactly once; mandatory post-run review) under the PR #413
 > falsification/baseline frame.
+>
+> FIRST-RUN RESULT pointer: the single authorised ML Step 4 first run executed
+> once (code SHA 181dc52f3a08; ML_STEP4_365D_BA_FIRST_RUN_COMPLETED;
+> docs/design/ml_step4_365d_ba_first_run_execution_report.md; evidence at
+> artifacts/ml_step4/365d_ba_v1/first_run_181dc52f3a08/). All 12 hard gates
+> passed (20 files / 1,481,715,517 bytes verified); 20 per-pair LightGBM from
+> scratch on v4-BASE 39 features (MTF excluded); labels via labels.py; holdout
+> evaluated exactly once. Result: DOES_NOT_MEET_PREREGISTERED_CRITERIA (6/7
+> criteria fail; daily Sharpe -13.7, expectancy -127.8 pips, win-rate 7.8%).
+> Expected valid falsification outcome; no rerun/tuning; production readiness
+> NOT claimed. Next: mandated human + ChatGPT post-run review + recommended
+> Fable 5 adversarial post-run audit, then the PR #413 pivot (M15/H1/H4).
 
 - **Purpose:** execute the smallest safe real run under the pre-registered
   contract, exactly as registered.

@@ -31,7 +31,7 @@ from .executor import (
     label_diagnostics,
     reproducibility_policy,
 )
-from .labels import bulk_labels, label_contract_identity
+from .labels import bars_from_frame, bulk_labels, label_contract_identity
 from .metrics import MetricTrade, trading_day_utc
 from .simulator import TradeSignal, simulate
 from .split import bar_index_split
@@ -347,4 +347,285 @@ def guarded_run_body(
         "n_holdout_trades_fixture": bundle["trade_count"],
         "holdout_days_fixture": len(holdout_days),
         "acceptance_dry_output": acceptance["status"],
+    }
+
+
+# ---------------------------------------------------------------------------
+# Real 365d_BA first-run execution body (per-pair; memory-safe; shared helpers)
+# ---------------------------------------------------------------------------
+
+FIRST_RUN_COMPLETED = "ML_STEP4_365D_BA_FIRST_RUN_COMPLETED"
+FIRST_RUN_STOPPED = "ML_STEP4_365D_BA_FIRST_RUN_STOPPED_BEFORE_TRAINING"
+
+
+def _prob_short_long(model, x_rows):
+    """(p_short, p_long) per row, robust to LightGBM class ordering."""
+    classes = list(model.classes_)
+    i_short = classes.index(_CLASS_INDEX[-1]) if _CLASS_INDEX[-1] in classes else None
+    i_long = classes.index(_CLASS_INDEX[1]) if _CLASS_INDEX[1] in classes else None
+    out = []
+    for p in model.predict_proba(x_rows):
+        out.append(
+            (p[i_short] if i_short is not None else 0.0, p[i_long] if i_long is not None else 0.0)
+        )
+    return out
+
+
+def _real_signals(pair, probs_sl, recs, indices, *, threshold):
+    """Build raw-PnL trade signals for a pair over given indices (B-1 single-charge).
+
+    ``probs_sl[i]`` = (p_short, p_long); PnL/exit come solely from ``recs`` (R-4).
+    Signal PnL is RAW (gross of the flat cost cell — the metrics layer applies it).
+    """
+    sigs = []
+    for i in indices:
+        rec = recs[i]
+        if rec["label"] is None:
+            continue
+        p_short, p_long = probs_sl[i]
+        if p_long >= p_short:
+            direction, conf, pnl_key = "long", p_long, "pnl_long_pips"
+        else:
+            direction, conf, pnl_key = "short", p_short, "pnl_short_pips"
+        if conf < threshold:
+            continue
+        exit_bar = i + 1 + rec[f"exit_{direction}_offset"]
+        sigs.append(
+            TradeSignal(
+                pair=pair, entry=i, exit_=exit_bar, direction=direction, pnl_pips=rec[pnl_key]
+            )
+        )
+    return sigs
+
+
+def _trades_with_days(accepted, day_by_index):
+    return [
+        MetricTrade(
+            pair=t["pair"], day=day_by_index[t["pair"]][t["entry"]], gross_pnl_pips=t["pnl_pips"]
+        )
+        for t in accepted
+    ]
+
+
+def run_first_run_365d_ba(
+    *,
+    provider,
+    out_dir: str,
+    code_sha: str,
+    cell_pips: float = contract.PRIMARY_COST_CELL_PIPS,
+    real: bool = True,
+):
+    """Execute the PR #407 contract EXACTLY ONCE (real or a real-shaped fixture).
+
+    Per pair: production v4-base features -> B-2 labels via labels.py -> common
+    cross-pair window trim -> chronological 70/15/15 with 21-bar purge (from
+    inventory metadata) -> from-scratch LightGBM -> validation-only threshold ->
+    single frozen-holdout evaluation. Reuses the shared single-charge /
+    B-2-fixed helpers. Writes eight metadata-only evidence payloads (raw PnL
+    kept gross; cost cell applied once by the metrics layer).
+    """
+    from datetime import UTC, datetime
+
+    from . import features as feat_mod
+    from . import manifest as manifest_mod
+    from .data_adapter import PIP_SIZE
+    from .split import PairWindow, build_split
+    from .trainer import train_lgbm, training_config
+
+    horizon = contract.HORIZON_M1_BARS
+    pair_windows = [PairWindow(r.filename, r.ts_min_utc, r.ts_max_utc) for r in provider._records]
+    split_meta = build_split(pair_windows)
+    seg = split_meta["segments"]
+
+    def _parse(ts):
+        return datetime.fromisoformat(ts.replace("Z", "+00:00")).astimezone(UTC)
+
+    common_start = _parse(split_meta["common_window"]["start_utc"])
+    common_end = _parse(split_meta["common_window"]["end_utc"])
+    tr_end = _parse(seg["train"]["end_utc"])
+    tr_lab_end = _parse(seg["train"]["label_eligible_end_utc"])
+    val_lab_end = _parse(seg["validation"]["label_eligible_end_utc"])
+    hold_start = _parse(seg["holdout"]["start_utc"])
+
+    val_signals_by_thr = {t: [] for t in contract.THRESHOLD_CANDIDATES}
+    hold_signals_by_thr = {t: [] for t in contract.THRESHOLD_CANDIDATES}
+    day_by_index = {}
+    holdout_days = set()
+    per_pair_meta = []
+    # The frozen trainer convention defines NO random_state (PR #412 B-1); record
+    # that honestly. Determinism is bounded (data ordering fixed; LightGBM may
+    # retain thread/platform nondeterminism) — declared in the manifest.
+    seeds = {
+        "lightgbm_random_state": "not_set__trainer_convention_defines_none",
+        "data_ordering": "deterministic__inventory_pair_order_then_timestamp",
+    }
+
+    for pair in provider.pairs:
+        df = provider.pair_frame(pair)
+        df = df[(df["timestamp"] >= common_start) & (df["timestamp"] <= common_end)]
+        df = df.reset_index(drop=True)
+        df, cols = feat_mod.compute_production_v4_base(df)
+        ts_list = list(df["timestamp"])
+        bars = bars_from_frame(df)
+        recs = bulk_labels(
+            bars,
+            horizon=horizon,
+            tp_mult=contract.TP_MULT_ATR14,
+            sl_mult=contract.SL_MULT_ATR14,
+            pip_size=PIP_SIZE,
+        )
+        feat_rows = df[cols].fillna(0.0).values.tolist()
+        n = len(ts_list)
+        day_by_index[pair] = {}
+        train_idx, val_idx, hold_idx = [], [], []
+        for i in range(n):
+            if recs[i]["label"] is None:
+                continue
+            t = ts_list[i]
+            d = t.astimezone(UTC).strftime("%Y-%m-%d")
+            if t < tr_lab_end:
+                train_idx.append(i)
+            elif tr_end <= t < val_lab_end:
+                val_idx.append(i)
+                day_by_index[pair][i] = d  # needed for validation daily aggregation
+            elif t >= hold_start:
+                hold_idx.append(i)
+                day_by_index[pair][i] = d
+                holdout_days.add(d)
+        x_train = [feat_rows[i] for i in train_idx]
+        y_train = [_CLASS_INDEX[recs[i]["label"]] for i in train_idx]
+        model = train_lgbm(x_train, y_train)
+        needed = sorted(set(val_idx) | set(hold_idx))
+        prob_map = dict(
+            zip(needed, _prob_short_long(model, [feat_rows[i] for i in needed]), strict=True)
+        )
+        probs_sl = [prob_map.get(i, (0.0, 0.0)) for i in range(n)]
+        for thr in contract.THRESHOLD_CANDIDATES:
+            val_signals_by_thr[thr].extend(
+                _real_signals(pair, probs_sl, recs, val_idx, threshold=thr)
+            )
+            hold_signals_by_thr[thr].extend(
+                _real_signals(pair, probs_sl, recs, hold_idx, threshold=thr)
+            )
+        per_pair_meta.append(
+            {
+                "pair": pair,
+                "n_common_window_bars": n,
+                "n_train_labeled": len(train_idx),
+                "n_val_labeled": len(val_idx),
+                "n_holdout_labeled": len(hold_idx),
+                "model_classes": [int(c) for c in model.classes_],
+            }
+        )
+        del df, bars, recs, feat_rows, model
+
+    val_metrics_by_threshold = {}
+    for thr in contract.THRESHOLD_CANDIDATES:
+        sim = simulate(val_signals_by_thr[thr])
+        trades = _trades_with_days(sim["accepted_trades"], day_by_index)
+        series = [v for _, v in metrics.daily_portfolio_pnl(trades, cell_pips)]
+        val_metrics_by_threshold[thr] = {
+            "daily_portfolio_sharpe": metrics.annualised_daily_sharpe(series),
+            "n_trades": len(trades),
+        }
+    selection = select_threshold(val_metrics_by_threshold)
+
+    hold_sim = simulate(hold_signals_by_thr[selection.selected_threshold])
+    hold_trades = _trades_with_days(hold_sim["accepted_trades"], day_by_index)
+    bundle = evaluate_portfolio(hold_trades, holdout_trading_days=len(holdout_days))
+    acceptance = AcceptanceEvaluator().evaluate(bundle, provenance_complete=True)
+    assert_diagnostics_excluded_from_decision(acceptance)
+
+    run_manifest = manifest_mod.build_run_manifest(mode="real_first_run", seeds=seeds)
+    cost_convention = {
+        "spread": "embedded_once_by_b2_ask_entry_bid_exit_geometry",
+        "flat_cost_cell": "applied_exactly_once_by_metrics_layer",
+        "signal_pnl": "raw_gross_of_flat_cell",
+        "primary_cell_pips": cell_pips,
+        "double_charge": False,
+    }
+    diagnostics = label_diagnostics(
+        {
+            "per_threshold_validation_curves": selection.as_dict(),
+            "session_contribution": {"note": "diagnostic only; session not evaluated"},
+            "pair_contribution": metrics.pair_contribution(hold_trades, cell_pips),
+            "win_rate": metrics.win_rate(hold_trades, cell_pips),
+            "per_pair_data_summary": per_pair_meta,
+        }
+    )
+    assert_diagnostics_labeled(diagnostics)
+
+    banner = {"real_run": real, "run_class": "ml_step4_365d_ba_first_run"}
+    non_auth = {
+        "production_readiness_claimed": False,
+        "paper_or_live_trading": False,
+        "rerun_performed": False,
+        "holdout_evaluated_count": 1,
+    }
+    vrep = provider.verification_report()
+    payloads = {
+        "ml_step4_run_manifest.json": {
+            **banner,
+            **run_manifest,
+            "feature_binding": feat_mod.production_feature_binding(),
+            "label_contract": label_contract_identity(),
+            "non_authorisation": non_auth,
+        },
+        "ml_step4_pre_consumption_checksum_report.json": {**banner, **vrep},
+        "ml_step4_split_report.json": {**banner, **split_meta},
+        "ml_step4_model_config_report.json": {**banner, **training_config()},
+        "ml_step4_metrics_report.json": {
+            **banner,
+            "metrics": bundle,
+            "diagnostics": diagnostics,
+            "cost_convention": cost_convention,
+        },
+        "ml_step4_cost_sensitivity_report.json": {
+            **banner,
+            "cost_sensitivity": bundle["cost_sensitivity"],
+            "cost_convention": cost_convention,
+        },
+        "ml_step4_leakage_provenance_report.json": {
+            **banner,
+            "label_contract": label_contract_identity(),
+            "feature_binding": feat_mod.production_feature_binding(),
+            "provider_id": provider.provider_id,
+            "checksum_all_match": vrep["all_match"],
+            "holdout_evaluated_count": 1,
+            "threshold_selected_on": "validation_only",
+            "selected_threshold": selection.selected_threshold,
+            "rejected_threshold_variants": selection.as_dict()["rejected_variants"],
+        },
+        "ml_step4_acceptance_failure_decision_report.md": (
+            "# ML Step 4 365d_BA first-run acceptance\n\n"
+            f"- acceptance_status: {acceptance['status']}\n"
+            f"- selected_threshold: {selection.selected_threshold}\n"
+            f"- holdout_trades: {bundle['trade_count']}\n"
+            "- holdout_evaluated_count: 1 (exactly once)\n"
+            "- production_readiness: NOT CLAIMED\n"
+            "- interpretation: falsification/baseline measurement per PR #413; an\n"
+            "  honest below-threshold result is valid; no rerun; no tuning.\n"
+        ),
+    }
+    written = []
+    for name, payload in payloads.items():
+        evidence.write_report(out_dir, name, payload, allow_execution_evidence=True)
+        written.append(name)
+
+    return {
+        "run_status": FIRST_RUN_COMPLETED,
+        "acceptance_status": acceptance["status"],
+        "production_status": contract.PRODUCTION_NOT_CLAIMED,
+        "selected_threshold": selection.selected_threshold,
+        "rejected_threshold_variants": selection.as_dict()["rejected_variants"],
+        "holdout_trade_count": bundle["trade_count"],
+        "holdout_days": len(holdout_days),
+        "holdout_evaluated_count": 1,
+        "metrics": bundle,
+        "evidence_files": written,
+        "code_sha": code_sha,
+        "provider_id": provider.provider_id,
+        "checksum_all_match": vrep["all_match"],
+        "feature_cols_n": len(feat_mod.V4_BASE_FEATURE_COLS),
+        "rerun_performed": False,
     }

@@ -122,3 +122,108 @@ class RealDataProviderRefused:
             "authorised first-run execution PR must implement the real provider "
             "with pre-consumption checksum re-verification"
         )
+
+
+# ---------------------------------------------------------------------------
+# Real 365d_BA provider (checksum-verified) — first-run execution only
+# ---------------------------------------------------------------------------
+
+
+class Real365dBaProvider:
+    """Reads ONLY the pre-registered 365d_BA epoch, checksum-verified first.
+
+    ``verify()`` re-hashes all 20 committed files against the PR-B.1 inventory
+    (SHA-256 + size) BEFORE any consumption; any missing / extra / duplicate /
+    size- or checksum-mismatch / unreadable file raises, so no partial training
+    can occur. ``pair_frame`` then loads one pair to a mid+bid/ask DataFrame via
+    the committed trainer loader (lazy import). Provider/checksum metadata is
+    recorded WITHOUT personal paths or raw rows.
+    """
+
+    mode = "real"
+    synthetic_only = False
+    provider_id = "scripts.ml_step4.data_adapter.Real365dBaProvider.v1"
+
+    def __init__(self, inventory_records, data_root: str = "data") -> None:
+        self._records = list(inventory_records)
+        self._data_root = data_root  # relative repo path; never absolute/personal
+        self._verified = False
+        self._report: dict | None = None
+
+    @property
+    def pairs(self) -> tuple[str, ...]:
+        return tuple(self._pair_name(r.filename) for r in self._records)
+
+    @staticmethod
+    def _pair_name(filename: str) -> str:
+        # candles_<PAIR>_M1_365d_BA.jsonl -> <PAIR>
+        base = filename.split("candles_", 1)[-1]
+        return base.split("_M1_", 1)[0]
+
+    def _path(self, filename: str):
+        from pathlib import Path
+
+        return Path(self._data_root) / filename
+
+    def verify(self) -> dict:
+        """Re-verify all files vs inventory; fail closed; return metadata report."""
+        from .inventory import file_sha256_and_size
+
+        per_file = []
+        observed_total = 0
+        mismatches = 0
+        for rec in self._records:
+            p = self._path(rec.filename)
+            if not p.is_file():
+                raise RealDataRefusedError(f"missing real file for {rec.filename}")
+            sha, size = file_sha256_and_size(p)
+            observed_total += size
+            sha_ok = sha.lower() == rec.sha256.lower()
+            size_ok = size == rec.size_bytes
+            if not (sha_ok and size_ok):
+                mismatches += 1
+            per_file.append(
+                {
+                    "filename": rec.filename,
+                    "pair": self._pair_name(rec.filename),
+                    "sha256_match": sha_ok,
+                    "size_match": size_ok,
+                }
+            )
+        expected_total = sum(r.size_bytes for r in self._records)
+        report = {
+            "provider_id": self.provider_id,
+            "inventory_source": (
+                "artifacts/gate_p1_pr_b/firstrun_365d_ba/raw_inventory_365d_BA.json"
+            ),
+            "expected_file_count": len(self._records),
+            "observed_file_count": len(per_file),
+            "expected_total_bytes": expected_total,
+            "observed_total_bytes": observed_total,
+            "sha256_mismatches": mismatches,
+            "all_match": mismatches == 0 and observed_total == expected_total,
+            "per_file": per_file,
+        }
+        if not report["all_match"]:
+            self._report = report
+            raise RealDataRefusedError(
+                f"365d_BA checksum verification FAILED: mismatches={mismatches} "
+                f"observed_bytes={observed_total} expected={expected_total}"
+            )
+        self._verified = True
+        self._report = report
+        return report
+
+    def verification_report(self) -> dict | None:
+        return self._report
+
+    def pair_frame(self, pair: str):
+        """Load one pair to a DataFrame (mid + bid/ask); requires prior verify()."""
+        if not self._verified:
+            raise RealDataRefusedError("verify() must pass before reading any pair data")
+        from scripts import train_lgbm_models as trainer  # lazy: builders/loader only
+
+        rec = next((r for r in self._records if self._pair_name(r.filename) == pair), None)
+        if rec is None:
+            raise RealDataRefusedError(f"unknown pair {pair!r}")
+        return trainer._load_ba_candles(self._path(rec.filename))
