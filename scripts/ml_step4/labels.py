@@ -284,3 +284,25 @@ def exit_window_offset(tp_idx: int, sl_idx: int, horizon: int) -> int:
     if tp_idx >= 0:
         return tp_idx
     return horizon - 1
+
+
+def bars_from_frame(df) -> list[dict]:
+    """Marshal a BA candle DataFrame into the bar-dict list ``bulk_labels`` needs.
+
+    Kept here (label-adjacent) so the run body never handles raw OHLC directly —
+    all barrier/label/PnL geometry stays single-sourced in this module (R-4).
+    Requires bid_o/h/l/c and ask_o/h/l/c columns.
+    """
+    return [
+        {
+            "bid_o": r.bid_o,
+            "bid_h": r.bid_h,
+            "bid_l": r.bid_l,
+            "bid_c": r.bid_c,
+            "ask_o": r.ask_o,
+            "ask_h": r.ask_h,
+            "ask_l": r.ask_l,
+            "ask_c": r.ask_c,
+        }
+        for r in df.itertuples()
+    ]

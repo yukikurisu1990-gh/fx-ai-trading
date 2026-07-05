@@ -90,3 +90,107 @@ def compute_fixture_features(bars: list[dict]) -> tuple[list[list[float]], list[
         )
         rows.append([ret_1, ret_5, mids[i] - mean10, var10**0.5, hl])
     return rows, list(FIXTURE_FEATURE_NAMES)
+
+
+# ---------------------------------------------------------------------------
+# Production v4-BASE feature computation (first-run execution only)
+# ---------------------------------------------------------------------------
+#
+# CONTRACT NOTE: PR #407 §4 requires "FEATURE_VERSION v4 BASE only — opt-in
+# groups (mtf, vol, moments) EXCLUDED". The committed trainer's _FEATURE_COLS
+# is 45 columns and INCLUDES the 6-feature MTF group (h4/d1/w1) because the
+# DEPLOYED models enable mtf. The first-run therefore uses ONLY the 39 base
+# columns (15 M1 + 24 M5/M15/H1 upper-TF) and NEVER calls _add_mtf_features.
+
+V4_BASE_M1_COLS: Final[tuple[str, ...]] = (
+    "atr_14",
+    "bb_lower",
+    "bb_middle",
+    "bb_pct_b",
+    "bb_upper",
+    "bb_width",
+    "ema_12",
+    "ema_26",
+    "last_close",
+    "macd_histogram",
+    "macd_line",
+    "macd_signal",
+    "rsi_14",
+    "sma_20",
+    "sma_50",
+)
+V4_BASE_UPPER_TF_COLS: Final[tuple[str, ...]] = (
+    "m5_return_1",
+    "m5_return_3",
+    "m5_volatility",
+    "m5_rsi_14",
+    "m5_ma_slope",
+    "m5_bb_pct_b",
+    "m5_trend_slope",
+    "m5_trend_dir",
+    "m15_return_1",
+    "m15_return_3",
+    "m15_volatility",
+    "m15_rsi_14",
+    "m15_ma_slope",
+    "m15_bb_pct_b",
+    "m15_trend_slope",
+    "m15_trend_dir",
+    "h1_return_1",
+    "h1_return_3",
+    "h1_volatility",
+    "h1_rsi_14",
+    "h1_ma_slope",
+    "h1_bb_pct_b",
+    "h1_trend_slope",
+    "h1_trend_dir",
+)
+V4_BASE_FEATURE_COLS: Final[tuple[str, ...]] = V4_BASE_M1_COLS + V4_BASE_UPPER_TF_COLS  # 39
+# The 6 opt-in MTF columns that MUST NOT appear in the first-run feature set.
+_EXCLUDED_MTF_COLS: Final[tuple[str, ...]] = (
+    "h4_atr_14",
+    "d1_return_3",
+    "d1_range_pct",
+    "d1_atr_14",
+    "w1_return_1",
+    "w1_range_pct",
+)
+
+
+def production_feature_binding() -> dict[str, Any]:
+    """Provenance for the production v4-base feature wiring (identity + hash)."""
+    fc = contract.feature_config()
+    if fc["feature_version"] != "v4" or not fc["base_only"] or fc["enabled_groups"]:
+        raise FeatureContractError(f"feature contract drifted: {fc}")
+    return {
+        "feature_version": "v4_base_only",
+        "feature_config_hash": contract.feature_config_hash(),
+        "builders": "scripts.train_lgbm_models._add_features + _add_upper_tf_features",
+        "mtf_excluded": True,
+        "excluded_groups": ["mtf", "vol", "moments"],
+        "feature_cols": list(V4_BASE_FEATURE_COLS),
+        "n_features": len(V4_BASE_FEATURE_COLS),
+        "deployed_FEATURE_COLS_note": "trainer _FEATURE_COLS (45) adds the opt-in "
+        "mtf group; excluded here per PR #407 §4",
+    }
+
+
+def compute_production_v4_base(df):
+    """Add v4-BASE features to a pair DataFrame; return (df, cols). Fail-closed.
+
+    Calls ONLY the two committed base builders (never `_add_mtf_features`),
+    then asserts exactly the 39 base columns are present and no excluded MTF
+    column leaked. NaN filling is left to the caller (train/predict fillna 0.0)
+    to mirror the trainer.
+    """
+    from scripts import train_lgbm_models as trainer  # lazy: builders only
+
+    df = trainer._add_features(df)
+    df = trainer._add_upper_tf_features(df)
+    missing = [c for c in V4_BASE_FEATURE_COLS if c not in df.columns]
+    if missing:
+        raise FeatureContractError(f"v4-base features missing: {missing}")
+    leaked = [c for c in _EXCLUDED_MTF_COLS if c in df.columns]
+    if leaked:
+        raise FeatureContractError(f"excluded MTF features present (contract violation): {leaked}")
+    return df, list(V4_BASE_FEATURE_COLS)

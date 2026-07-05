@@ -35,6 +35,11 @@ class InventoryRecord:
     filename: str
     sha256: str
     size_bytes: int
+    # Per-file UTC timestamp bounds (from the committed inventory) — used by the
+    # real provider to derive the common cross-pair window. Default "" keeps
+    # older call sites that build records without them backward-compatible.
+    ts_min_utc: str = ""
+    ts_max_utc: str = ""
 
 
 def load_inventory(inventory_path: str | Path) -> dict[str, Any]:
@@ -89,7 +94,15 @@ def resolve_inventory(
         if size_int <= 0:
             raise InventoryError(f"inventory entry {name} has non-positive size")
         seen.add(name)
-        records.append(InventoryRecord(filename=name, sha256=sha.lower(), size_bytes=size_int))
+        records.append(
+            InventoryRecord(
+                filename=name,
+                sha256=sha.lower(),
+                size_bytes=size_int,
+                ts_min_utc=str(entry.get("ts_min_utc", "")),
+                ts_max_utc=str(entry.get("ts_max_utc", "")),
+            )
+        )
 
     if len(records) != expected_count:
         raise InventoryError(f"inventory has {len(records)} files, expected {expected_count}")
