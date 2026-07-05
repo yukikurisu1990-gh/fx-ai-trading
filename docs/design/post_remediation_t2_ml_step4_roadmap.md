@@ -414,6 +414,23 @@ granting the next.
 > corrected second first-run attempt remains **unauthorised**; it stays
 > admissible only after a Fable 5 re-check of this fix AND a separate human +
 > ChatGPT decision explicitly authorising it.
+>
+> PIP-SIZE FIX RE-CHECK pointer (Fable 5, doc-only): the adversarial re-check
+> (docs/design/ml_step4_pip_size_fix_recheck_fable5.md) verified the PR #423
+> fix — single per-pair authority (grep-confirmed sole price->pips division in
+> the package), both bulk_labels call sites routed, map resolved fail-closed
+> before training, evidence/manifest mapping recorded, 26 value-pinned tests
+> that would have caught the PR #421 bug three independent ways, B-1/B-2/cost/
+> threshold/refusal machinery byte-untouched, and a static metadata check that
+> all 20 committed inventory filenames parse to well-formed pairs with exactly
+> 6 _JPY crosses. Verdict:
+> ML_STEP4_PIP_SIZE_FIX_ACCEPTABLE_FOR_CORRECTED_FIRST_RUN_DECISION /
+> PRODUCTION_READINESS_NOT_CLAIMED. Zero blockers; 3 non-blocking residuals
+> (manifest-field optionality hardening; unknown-pair fallback scope pinned to
+> this epoch; flat cost cell = frozen contract design, out of scope). The
+> re-check authorises NOTHING: a corrected second first-run attempt still
+> requires the separate explicit human + ChatGPT decision (including the
+> same-holdout re-measurement ruling).
 
 - **Purpose:** execute the smallest safe real run under the pre-registered
   contract, exactly as registered.
