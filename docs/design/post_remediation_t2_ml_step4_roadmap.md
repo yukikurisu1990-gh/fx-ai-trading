@@ -362,6 +362,18 @@ granting the next.
 > label-range pinning, ATR numeric cross-check, import-graph legacy-non-use,
 > NaN/inf fail-closed, deployed-reuse-impossible). Next: short Fable 5 re-check
 > → separately-authorised first-run execution PR.
+>
+> B-1/B-2 re-check pointer: the Fable 5 re-check verified both fixes by
+> execution (`docs/design/ml_step4_b1_b2_fix_recheck_fable5.md`,
+> `ML_STEP4_B1_B2_FIXES_ACCEPTABLE_FOR_FIRST_RUN_EXECUTION_REVIEW`): three-value
+> cost probes single-charged with unshifted cells; range aligned to
+> n−horizon−2 across five sizes; six NaN/±inf combinations never MEET; zero
+> regressions (determinism, refusals, guards, notional all intact); legacy
+> imports still limited to the two sanctioned externals. ZERO blockers remain.
+> Next gate: the separately-authorised first-run execution PR (checksum-verified
+> provider + production v4 wiring + minimal real-mode enablement; no contract
+> changes; execute exactly once; mandatory post-run review) under the PR #413
+> falsification/baseline frame.
 
 - **Purpose:** execute the smallest safe real run under the pre-registered
   contract, exactly as registered.
