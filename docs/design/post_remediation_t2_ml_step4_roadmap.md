@@ -400,6 +400,20 @@ granting the next.
 > human + ChatGPT decide whether the invalidation permits a corrected second
 > first-run attempt (per-pair pip fix + mixed-scale tests + re-check) or M1
 > closes on archived honest evidence. No rerun/tuning performed.
+>
+> INV-1 PIP-SIZE FIX pointer (code-only, NO RUN): the invalidator was fixed
+> code-only in `docs/design/ml_step4_pip_size_fix_note.md` — a single per-pair
+> pip-size authority `data_adapter.pip_size_for` (`0.01` if `*_JPY` else
+> `0.0001`, matching `compare_multipair_v9_orthogonal._pip_size`) routed into
+> every `bulk_labels` caller, with a per-pair pip-size map recorded in the
+> manifest + leakage/provenance evidence, plus mixed-scale value-pinned tests
+> proving the bug cannot recur. Status:
+> `ML_STEP4_PIP_SIZE_INVALIDATOR_FIXED_NO_RUN` /
+> `PRODUCTION_READINESS_NOT_CLAIMED`. This fix does NOT rerun ML Step 4, train,
+> evaluate holdout, read real data, or generate corrected metrics/evidence. A
+> corrected second first-run attempt remains **unauthorised**; it stays
+> admissible only after a Fable 5 re-check of this fix AND a separate human +
+> ChatGPT decision explicitly authorising it.
 
 - **Purpose:** execute the smallest safe real run under the pre-registered
   contract, exactly as registered.

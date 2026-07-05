@@ -74,8 +74,19 @@ def package_versions() -> dict[str, str]:
     return versions
 
 
-def build_run_manifest(*, mode: str, seeds: dict[str, int]) -> dict[str, Any]:
-    """Assemble the runtime manifest; fail closed on any missing field."""
+def build_run_manifest(
+    *,
+    mode: str,
+    seeds: dict[str, int],
+    pip_size_by_pair: dict[str, float] | None = None,
+) -> dict[str, Any]:
+    """Assemble the runtime manifest; fail closed on any missing field.
+
+    ``pip_size_by_pair`` (optional) records the INV-1 per-pair pip-size mapping
+    used by the run. When supplied it must be a non-empty mapping of positive
+    pip sizes; it is recorded alongside an explicit flag that no single global
+    pip size is authoritative for all pairs. The fixture rehearsal may omit it.
+    """
     if not isinstance(seeds, dict) or not seeds:
         raise ManifestError("runtime seeds missing (record every seed actually used)")
     from .labels import label_contract_identity  # local import avoids cycles
@@ -98,6 +109,12 @@ def build_run_manifest(*, mode: str, seeds: dict[str, int]) -> dict[str, Any]:
         "daily_coverage_denominator": contract.DAILY_COVERAGE_DENOMINATOR,
         "fixed_notional_equity_pips": contract.FIXED_NOTIONAL_EQUITY_PIPS,
     }
+    if pip_size_by_pair is not None:
+        if not pip_size_by_pair or any(not (v > 0) for v in pip_size_by_pair.values()):
+            raise ManifestError("pip_size_by_pair must be a non-empty map of positive pip sizes")
+        manifest["pip_size_by_pair"] = dict(pip_size_by_pair)
+        manifest["global_pip_size_authoritative_for_all_pairs"] = False
+        manifest["pip_size_convention"] = "0.01 if pair endswith _JPY else 0.0001"
     assert_manifest_complete(manifest)
     return manifest
 
