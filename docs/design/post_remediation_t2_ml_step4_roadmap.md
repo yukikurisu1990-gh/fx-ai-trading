@@ -386,6 +386,20 @@ granting the next.
 > Expected valid falsification outcome; no rerun/tuning; production readiness
 > NOT claimed. Next: mandated human + ChatGPT post-run review + recommended
 > Fable 5 adversarial post-run audit, then the PR #413 pivot (M15/H1/H4).
+>
+> POST-RUN AUDIT pointer: the Fable 5 post-run audit
+> (docs/design/ml_step4_365d_ba_first_run_post_audit_fable5.md) found the run
+> procedurally clean (one-shot, provenance complete, holdout once) but its
+> decision metrics INVALID: ML_STEP4_365D_BA_FIRST_RUN_EVIDENCE_INVALID.
+> Proven from committed evidence: fixed PIP_SIZE=0.0001 applied to all pairs
+> misconverts the 6 JPY crosses (pip=0.01) by 100x — JPY per-trade mean
+> -358.78 vs non-JPY -3.18 (ratio 112.8); JPY = 98.4% of total loss (CHF_JPY
+> 91.5%). The DOES_NOT_MEET result must NOT be cited; the M1 first-run
+> question is NOT closed. Non-decisional: the correctly-scaled non-JPY
+> portion (~-3.5 net pips/trade) matches the archived honest M1 band. Next:
+> human + ChatGPT decide whether the invalidation permits a corrected second
+> first-run attempt (per-pair pip fix + mixed-scale tests + re-check) or M1
+> closes on archived honest evidence. No rerun/tuning performed.
 
 - **Purpose:** execute the smallest safe real run under the pre-registered
   contract, exactly as registered.
