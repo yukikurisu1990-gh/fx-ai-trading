@@ -13,14 +13,67 @@ Bar schema (one dict per completed M1 bar, chronological):
 from __future__ import annotations
 
 import hashlib
+from collections.abc import Iterable
 from datetime import UTC, datetime, timedelta
 from typing import Final
 
+# NOTE: ``PIP_SIZE`` is the synthetic-price *generation* scale for the fixture
+# random walk below (spread / candle amplitude). It is NOT a pip-conversion
+# authority and MUST NOT be used to convert PnL to pips for any pair — real or
+# fixture. The sole pip-conversion authority is :func:`pip_size_for` (per pair).
+# INV-1 (PR #421) was caused by using a fixed 0.0001 for pip conversion on all
+# 20 pairs, mis-scaling the six JPY crosses by ~100x.
 PIP_SIZE: Final[float] = 0.0001
+
+# Non-JPY branch of the per-pair pip size (kept named so the source guard can
+# allow ``0.0001`` only inside :func:`pip_size_for`).
+_PIP_NON_JPY: Final[float] = 0.0001
+_PIP_JPY: Final[float] = 0.01
 
 
 class RealDataRefusedError(RuntimeError):
     """Raised when real 365d_BA data access is requested (unavailable here)."""
+
+
+class PipSizeError(RuntimeError):
+    """Raised when a pair has no known pip size (fail closed before any run)."""
+
+
+def pip_size_for(pair: str) -> float:
+    """Per-pair pip size — the sole pip-conversion authority (fail closed).
+
+    Matches the committed research convention
+    ``scripts.compare_multipair_v9_orthogonal._pip_size``:
+    ``0.01`` for JPY-quote crosses (instruments ending ``_JPY``), ``0.0001``
+    otherwise. A missing / empty / non-string pair fails closed with
+    :class:`PipSizeError`, so no run can silently fall back to a wrong global
+    scale. Non-JPY pairs are handled conservatively at ``0.0001`` (the
+    convention's ``else`` branch).
+    """
+    if not isinstance(pair, str) or not pair.strip():
+        raise PipSizeError("pip_size_for requires a non-empty pair name")
+    return _PIP_JPY if pair.endswith("_JPY") else _PIP_NON_JPY
+
+
+def pip_size_map(pairs: Iterable[str]) -> dict[str, float]:
+    """Build ``{pair: pip_size_for(pair)}``; fail closed on empty / duplicate.
+
+    Used once per real run so every downstream consumer (labels, trade scoring,
+    timeout MTM, metrics, evidence) reads the SAME per-pair value from one
+    source — structurally preventing the cross-layer inconsistency the fix must
+    forbid. Every resolved pip size is re-checked positive (defence in depth).
+    """
+    mapping: dict[str, float] = {}
+    for pair in pairs:
+        if pair in mapping:
+            raise PipSizeError(f"duplicate pair in pip-size map: {pair!r}")
+        size = pip_size_for(pair)
+        if not (size > 0):
+            raise PipSizeError(f"non-positive pip size for {pair!r}")
+        mapping[pair] = size
+    if not mapping:
+        raise PipSizeError("pip-size map is empty (no pairs)")
+    return mapping
 
 
 class FixtureDataProvider:

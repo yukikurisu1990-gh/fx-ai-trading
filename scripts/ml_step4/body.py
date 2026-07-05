@@ -23,7 +23,7 @@ from typing import Any, Final
 
 from . import contract, evidence, features, manifest, metrics, trainer
 from .acceptance import AcceptanceEvaluator
-from .data_adapter import PIP_SIZE, FixtureDataProvider
+from .data_adapter import FixtureDataProvider, pip_size_for, pip_size_map
 from .executor import (
     ExecutionRefusedError,
     assert_diagnostics_excluded_from_decision,
@@ -173,12 +173,14 @@ def guarded_run_body(
             raise BodyError("fixture pairs must share a common bar count")
         rows, feat_names = features.compute_fixture_features(bars)
         # Single-source labels AND exit timing: everything from labels.py (R-4).
+        # Pip conversion via the per-pair authority (INV-1 fix) — even in the
+        # fixture path there is no fixed-global pip constant on the scoring path.
         recs = bulk_labels(
             bars,
             horizon=horizon,
             tp_mult=contract.TP_MULT_ATR14,
             sl_mult=contract.SL_MULT_ATR14,
-            pip_size=PIP_SIZE,
+            pip_size=pip_size_for(pair),
         )
         bars_by_pair[pair] = bars
         feats_by_pair[pair] = rows
@@ -428,11 +430,15 @@ def run_first_run_365d_ba(
 
     from . import features as feat_mod
     from . import manifest as manifest_mod
-    from .data_adapter import PIP_SIZE
     from .split import PairWindow, build_split
     from .trainer import train_lgbm, training_config
 
     horizon = contract.HORIZON_M1_BARS
+    # INV-1 fix: resolve the per-pair pip size ONCE from the single authority so
+    # labels, trade scoring, timeout MTM, metrics and evidence all read the same
+    # value per pair. Fails closed here (before any training) if a pair lacks a
+    # known pip size or the map is empty.
+    pip_size_by_pair = pip_size_map(provider.pairs)
     pair_windows = [PairWindow(r.filename, r.ts_min_utc, r.ts_max_utc) for r in provider._records]
     split_meta = build_split(pair_windows)
     seg = split_meta["segments"]
@@ -467,12 +473,13 @@ def run_first_run_365d_ba(
         df, cols = feat_mod.compute_production_v4_base(df)
         ts_list = list(df["timestamp"])
         bars = bars_from_frame(df)
+        pip = pip_size_by_pair[pair]  # per-pair authority (INV-1 fix)
         recs = bulk_labels(
             bars,
             horizon=horizon,
             tp_mult=contract.TP_MULT_ATR14,
             sl_mult=contract.SL_MULT_ATR14,
-            pip_size=PIP_SIZE,
+            pip_size=pip,
         )
         feat_rows = df[cols].fillna(0.0).values.tolist()
         n = len(ts_list)
@@ -515,6 +522,8 @@ def run_first_run_365d_ba(
                 "n_val_labeled": len(val_idx),
                 "n_holdout_labeled": len(hold_idx),
                 "model_classes": [int(c) for c in model.classes_],
+                "pip_size": pip,
+                "pip_size_kind": "jpy_cross" if pair.endswith("_JPY") else "non_jpy",
             }
         )
         del df, bars, recs, feat_rows, model
@@ -536,7 +545,9 @@ def run_first_run_365d_ba(
     acceptance = AcceptanceEvaluator().evaluate(bundle, provenance_complete=True)
     assert_diagnostics_excluded_from_decision(acceptance)
 
-    run_manifest = manifest_mod.build_run_manifest(mode="real_first_run", seeds=seeds)
+    run_manifest = manifest_mod.build_run_manifest(
+        mode="real_first_run", seeds=seeds, pip_size_by_pair=pip_size_by_pair
+    )
     cost_convention = {
         "spread": "embedded_once_by_b2_ask_entry_bid_exit_geometry",
         "flat_cost_cell": "applied_exactly_once_by_metrics_layer",
@@ -595,6 +606,11 @@ def run_first_run_365d_ba(
             "threshold_selected_on": "validation_only",
             "selected_threshold": selection.selected_threshold,
             "rejected_threshold_variants": selection.as_dict()["rejected_variants"],
+            # INV-1 fix provenance: per-pair pip-size mapping is authoritative;
+            # NO single global pip size governs all pairs.
+            "pip_size_by_pair": dict(pip_size_by_pair),
+            "pip_size_convention": "0.01 if pair endswith _JPY else 0.0001",
+            "global_pip_size_authoritative_for_all_pairs": False,
         },
         "ml_step4_acceptance_failure_decision_report.md": (
             "# ML Step 4 365d_BA first-run acceptance\n\n"
