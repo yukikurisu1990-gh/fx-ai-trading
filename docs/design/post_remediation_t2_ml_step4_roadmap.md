@@ -431,6 +431,28 @@ granting the next.
 > re-check authorises NOTHING: a corrected second first-run attempt still
 > requires the separate explicit human + ChatGPT decision (including the
 > same-holdout re-measurement ruling).
+>
+> CORRECTED SECOND FIRST-RUN pointer: the human + ChatGPT decision explicitly
+> approved exactly one corrected second first-run on the same frozen 365d_BA
+> holdout (re-measurement, not re-optimisation). Executed once at code SHA
+> 6fbb178280b4 (== master post-#424); all 12 gates PASS; 20/20 files &
+> 1,481,715,517 bytes checksum-verified; per-pair pip map resolved before
+> training (6 _JPY->0.01, 14 non-JPY->0.0001,
+> global_pip_size_authoritative_for_all_pairs=false); v4-base 39 features;
+> holdout evaluated once. VALID corrected result =
+> ML_STEP4_365D_BA_CORRECTED_SECOND_RUN_COMPLETED /
+> ML_STEP4_FIRST_RUN_EVIDENCE_CREATED_DOES_NOT_MEET_PREREGISTERED_CRITERIA:
+> expectancy -3.49 pips/trade (was invalid -127.75), maxDD 2.82x notional (was
+> 103.25x), Sharpe -18.91; JPY per-trade -4.45 vs non-JPY -3.04 (100x inflation
+> gone); trade count/holdout/threshold identical to #421 (labels pip-agnostic).
+> Evidence (metadata-only, scrub-clean) at
+> artifacts/ml_step4/365d_ba_v1/corrected_second_run_6fbb178280b4/; #421 invalid
+> evidence and #409 stop evidence untouched. Report:
+> docs/design/ml_step4_365d_ba_corrected_second_run_execution_report.md.
+> PRODUCTION_READINESS_NOT_CLAIMED. Next: human + ChatGPT post-run review +
+> Fable 5 post-run audit; if it validates provenance, the M1 flagship first-run
+> question can be closed on honest evidence. No rerun; no tuning; no pivot
+> started.
 
 - **Purpose:** execute the smallest safe real run under the pre-registered
   contract, exactly as registered.

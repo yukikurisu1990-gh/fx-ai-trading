@@ -1,0 +1,134 @@
+{
+  "all_match": true,
+  "expected_file_count": 20,
+  "expected_total_bytes": 1481715517,
+  "inventory_source": "artifacts/gate_p1_pr_b/firstrun_365d_ba/raw_inventory_365d_BA.json",
+  "observed_file_count": 20,
+  "observed_total_bytes": 1481715517,
+  "per_file": [
+    {
+      "filename": "candles_AUD_CAD_M1_365d_BA.jsonl",
+      "pair": "AUD_CAD",
+      "sha256_match": true,
+      "size_match": true
+    },
+    {
+      "filename": "candles_AUD_JPY_M1_365d_BA.jsonl",
+      "pair": "AUD_JPY",
+      "sha256_match": true,
+      "size_match": true
+    },
+    {
+      "filename": "candles_AUD_NZD_M1_365d_BA.jsonl",
+      "pair": "AUD_NZD",
+      "sha256_match": true,
+      "size_match": true
+    },
+    {
+      "filename": "candles_AUD_USD_M1_365d_BA.jsonl",
+      "pair": "AUD_USD",
+      "sha256_match": true,
+      "size_match": true
+    },
+    {
+      "filename": "candles_CHF_JPY_M1_365d_BA.jsonl",
+      "pair": "CHF_JPY",
+      "sha256_match": true,
+      "size_match": true
+    },
+    {
+      "filename": "candles_EUR_AUD_M1_365d_BA.jsonl",
+      "pair": "EUR_AUD",
+      "sha256_match": true,
+      "size_match": true
+    },
+    {
+      "filename": "candles_EUR_CAD_M1_365d_BA.jsonl",
+      "pair": "EUR_CAD",
+      "sha256_match": true,
+      "size_match": true
+    },
+    {
+      "filename": "candles_EUR_CHF_M1_365d_BA.jsonl",
+      "pair": "EUR_CHF",
+      "sha256_match": true,
+      "size_match": true
+    },
+    {
+      "filename": "candles_EUR_GBP_M1_365d_BA.jsonl",
+      "pair": "EUR_GBP",
+      "sha256_match": true,
+      "size_match": true
+    },
+    {
+      "filename": "candles_EUR_JPY_M1_365d_BA.jsonl",
+      "pair": "EUR_JPY",
+      "sha256_match": true,
+      "size_match": true
+    },
+    {
+      "filename": "candles_EUR_USD_M1_365d_BA.jsonl",
+      "pair": "EUR_USD",
+      "sha256_match": true,
+      "size_match": true
+    },
+    {
+      "filename": "candles_GBP_AUD_M1_365d_BA.jsonl",
+      "pair": "GBP_AUD",
+      "sha256_match": true,
+      "size_match": true
+    },
+    {
+      "filename": "candles_GBP_CHF_M1_365d_BA.jsonl",
+      "pair": "GBP_CHF",
+      "sha256_match": true,
+      "size_match": true
+    },
+    {
+      "filename": "candles_GBP_JPY_M1_365d_BA.jsonl",
+      "pair": "GBP_JPY",
+      "sha256_match": true,
+      "size_match": true
+    },
+    {
+      "filename": "candles_GBP_USD_M1_365d_BA.jsonl",
+      "pair": "GBP_USD",
+      "sha256_match": true,
+      "size_match": true
+    },
+    {
+      "filename": "candles_NZD_JPY_M1_365d_BA.jsonl",
+      "pair": "NZD_JPY",
+      "sha256_match": true,
+      "size_match": true
+    },
+    {
+      "filename": "candles_NZD_USD_M1_365d_BA.jsonl",
+      "pair": "NZD_USD",
+      "sha256_match": true,
+      "size_match": true
+    },
+    {
+      "filename": "candles_USD_CAD_M1_365d_BA.jsonl",
+      "pair": "USD_CAD",
+      "sha256_match": true,
+      "size_match": true
+    },
+    {
+      "filename": "candles_USD_CHF_M1_365d_BA.jsonl",
+      "pair": "USD_CHF",
+      "sha256_match": true,
+      "size_match": true
+    },
+    {
+      "filename": "candles_USD_JPY_M1_365d_BA.jsonl",
+      "pair": "USD_JPY",
+      "sha256_match": true,
+      "size_match": true
+    }
+  ],
+  "provider_id": "scripts.ml_step4.data_adapter.Real365dBaProvider.v1",
+  "real_run": true,
+  "run_class": "ml_step4_365d_ba_first_run",
+  "sha256_mismatches": 0
+}

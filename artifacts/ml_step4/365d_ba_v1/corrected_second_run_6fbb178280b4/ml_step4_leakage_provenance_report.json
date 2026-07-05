@@ -1,0 +1,113 @@
+{
+  "checksum_all_match": true,
+  "feature_binding": {
+    "builders": "scripts.train_lgbm_models._add_features + _add_upper_tf_features",
+    "deployed_FEATURE_COLS_note": "trainer _FEATURE_COLS (45) adds the opt-in mtf group; excluded here per PR #407 §4",
+    "excluded_groups": [
+      "mtf",
+      "vol",
+      "moments"
+    ],
+    "feature_cols": [
+      "atr_14",
+      "bb_lower",
+      "bb_middle",
+      "bb_pct_b",
+      "bb_upper",
+      "bb_width",
+      "ema_12",
+      "ema_26",
+      "last_close",
+      "macd_histogram",
+      "macd_line",
+      "macd_signal",
+      "rsi_14",
+      "sma_20",
+      "sma_50",
+      "m5_return_1",
+      "m5_return_3",
+      "m5_volatility",
+      "m5_rsi_14",
+      "m5_ma_slope",
+      "m5_bb_pct_b",
+      "m5_trend_slope",
+      "m5_trend_dir",
+      "m15_return_1",
+      "m15_return_3",
+      "m15_volatility",
+      "m15_rsi_14",
+      "m15_ma_slope",
+      "m15_bb_pct_b",
+      "m15_trend_slope",
+      "m15_trend_dir",
+      "h1_return_1",
+      "h1_return_3",
+      "h1_volatility",
+      "h1_rsi_14",
+      "h1_ma_slope",
+      "h1_bb_pct_b",
+      "h1_trend_slope",
+      "h1_trend_dir"
+    ],
+    "feature_config_hash": "bff146e4ba54d8b468812a8c92d0c70c1dfde1ce15e3f03abb860c16596794bd",
+    "feature_version": "v4_base_only",
+    "mtf_excluded": true,
+    "n_features": 39
+  },
+  "global_pip_size_authoritative_for_all_pairs": false,
+  "holdout_evaluated_count": 1,
+  "label_contract": {
+    "delegates_to": "scripts.traded_direction_pnl.traded_direction_pnl_price",
+    "label_contract_id": "scripts.ml_step4.labels.v1",
+    "label_rule": "scripts.ml_step4.labels.barrier_label",
+    "pnl_scorer": "scripts.ml_step4.labels.traded_direction_pnl_pips",
+    "spread_convention": "b2_ask_entry_bid_exit_spread_once",
+    "tie_handling": "sl_first_strict"
+  },
+  "pip_size_by_pair": {
+    "AUD_CAD": 0.0001,
+    "AUD_JPY": 0.01,
+    "AUD_NZD": 0.0001,
+    "AUD_USD": 0.0001,
+    "CHF_JPY": 0.01,
+    "EUR_AUD": 0.0001,
+    "EUR_CAD": 0.0001,
+    "EUR_CHF": 0.0001,
+    "EUR_GBP": 0.0001,
+    "EUR_JPY": 0.01,
+    "EUR_USD": 0.0001,
+    "GBP_AUD": 0.0001,
+    "GBP_CHF": 0.0001,
+    "GBP_JPY": 0.01,
+    "GBP_USD": 0.0001,
+    "NZD_JPY": 0.01,
+    "NZD_USD": 0.0001,
+    "USD_CAD": 0.0001,
+    "USD_CHF": 0.0001,
+    "USD_JPY": 0.01
+  },
+  "pip_size_convention": "0.01 if pair endswith _JPY else 0.0001",
+  "provider_id": "scripts.ml_step4.data_adapter.Real365dBaProvider.v1",
+  "real_run": true,
+  "rejected_threshold_variants": [
+    {
+      "selected": false,
+      "threshold": 0.35,
+      "validation_metrics": {
+        "daily_portfolio_sharpe": -16.21382512202224,
+        "n_trades": 9475
+      }
+    },
+    {
+      "selected": false,
+      "threshold": 0.4,
+      "validation_metrics": {
+        "daily_portfolio_sharpe": -16.206426953610197,
+        "n_trades": 7209
+      }
+    }
+  ],
+  "run_class": "ml_step4_365d_ba_first_run",
+  "selected_threshold": 0.45,
+  "threshold_selected_on": "validation_only"
+}

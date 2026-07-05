@@ -1,0 +1,28 @@
+{
+  "class_order": [
+    -1,
+    0,
+    1
+  ],
+  "deployed_model_reuse": false,
+  "model_binary_persisted": false,
+  "model_config": {
+    "calibration": "none_raw_predict_proba",
+    "deployed_model_reuse": false,
+    "family": "lightgbm_multiclass_3class",
+    "hyperparameter_search": "none",
+    "n_estimators": 200,
+    "num_class": 3,
+    "objective": "multiclass",
+    "params": {
+      "learning_rate": 0.05,
+      "num_leaves": 31,
+      "verbose": -1
+    },
+    "retrain_from_scratch": true,
+    "seed_policy": "wiring_pr_responsibility_trainer_defines_none"
+  },
+  "model_config_hash": "bc27cfa39ea34e09f6b358859720682942a81863b736e52fa98e00b73997dd6c",
+  "real_run": true,
+  "run_class": "ml_step4_365d_ba_first_run"
+}
