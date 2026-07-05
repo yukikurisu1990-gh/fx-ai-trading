@@ -1,0 +1,28 @@
+{
+  "cost_convention": {
+    "double_charge": false,
+    "flat_cost_cell": "applied_exactly_once_by_metrics_layer",
+    "primary_cell_pips": 0.5,
+    "signal_pnl": "raw_gross_of_flat_cell",
+    "spread": "embedded_once_by_b2_ask_entry_bid_exit_geometry"
+  },
+  "cost_sensitivity": {
+    "0.0pip": {
+      "cell_pips": 0.0,
+      "daily_portfolio_sharpe": -13.67048110045631,
+      "expectancy_pips": -127.25295807261466
+    },
+    "0.5pip": {
+      "cell_pips": 0.5,
+      "daily_portfolio_sharpe": -13.693560746612173,
+      "expectancy_pips": -127.75295807261466
+    },
+    "1.0pip": {
+      "cell_pips": 1.0,
+      "daily_portfolio_sharpe": -13.716496030277296,
+      "expectancy_pips": -128.25295807261466
+    }
+  },
+  "real_run": true,
+  "run_class": "ml_step4_365d_ba_first_run"
+}

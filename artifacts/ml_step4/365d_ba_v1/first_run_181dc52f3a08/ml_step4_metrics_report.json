@@ -1,0 +1,486 @@
+{
+  "cost_convention": {
+    "double_charge": false,
+    "flat_cost_cell": "applied_exactly_once_by_metrics_layer",
+    "primary_cell_pips": 0.5,
+    "signal_pnl": "raw_gross_of_flat_cell",
+    "spread": "embedded_once_by_b2_ask_entry_bid_exit_geometry"
+  },
+  "diagnostics": {
+    "pair_contribution": {
+      "classification": "NON_DECISION_EXPLORATORY",
+      "value": {
+        "AUD_CAD": {
+          "n_trades": 1501.0,
+          "pnl_pips": -4511.492857142875,
+          "positive_pnl_pips": 928.5571428571499,
+          "positive_pnl_share": 0.013321748699072536,
+          "trade_share": 0.18572135609997525
+        },
+        "AUD_JPY": {
+          "n_trades": 19.0,
+          "pnl_pips": -5527.535714285548,
+          "positive_pnl_pips": 1978.4642857142667,
+          "positive_pnl_share": 0.028384471787354752,
+          "trade_share": 0.0023509032417718388
+        },
+        "AUD_NZD": {
+          "n_trades": 1944.0,
+          "pnl_pips": -5721.173214285477,
+          "positive_pnl_pips": 97.28035714284856,
+          "positive_pnl_share": 0.0013956539790598798,
+          "trade_share": 0.24053452115812918
+        },
+        "AUD_USD": {
+          "n_trades": 531.0,
+          "pnl_pips": -952.1785714285958,
+          "positive_pnl_pips": 675.0964285714515,
+          "positive_pnl_share": 0.009685418973136704,
+          "trade_share": 0.06570155902004454
+        },
+        "CHF_JPY": {
+          "n_trades": 2332.0,
+          "pnl_pips": -944696.178571442,
+          "positive_pnl_pips": 38348.96428571545,
+          "positive_pnl_share": 0.5501818267339552,
+          "trade_share": 0.2885424399901015
+        },
+        "EUR_AUD": {
+          "n_trades": 381.0,
+          "pnl_pips": -1850.0000000000275,
+          "positive_pnl_pips": 518.3000000000106,
+          "positive_pnl_share": 0.007435904622395067,
+          "trade_share": 0.04714179658500371
+        },
+        "EUR_CAD": {
+          "n_trades": 37.0,
+          "pnl_pips": -197.35714285713718,
+          "positive_pnl_pips": 44.0214285714293,
+          "positive_pnl_share": 0.0006315630796811087,
+          "trade_share": 0.0045780747339767384
+        },
+        "EUR_CHF": {
+          "n_trades": 182.0,
+          "pnl_pips": -395.1375000000132,
+          "positive_pnl_pips": 82.7482142857184,
+          "positive_pnl_share": 0.0011871654044030453,
+          "trade_share": 0.022519178421182874
+        },
+        "EUR_GBP": {
+          "n_trades": 40.0,
+          "pnl_pips": -69.35535714285876,
+          "positive_pnl_pips": 27.308928571430165,
+          "positive_pnl_share": 0.0003917935330830602,
+          "trade_share": 0.004949269982677555
+        },
+        "EUR_JPY": {
+          "n_trades": 20.0,
+          "pnl_pips": -11547.678571428709,
+          "positive_pnl_pips": 969.6785714285904,
+          "positive_pnl_share": 0.013911706292732303,
+          "trade_share": 0.0024746349913387774
+        },
+        "EUR_USD": {
+          "n_trades": 66.0,
+          "pnl_pips": -174.2482142857159,
+          "positive_pnl_pips": 132.83392857143684,
+          "positive_pnl_share": 0.0019057310890897609,
+          "trade_share": 0.008166295471417966
+        },
+        "GBP_AUD": {
+          "n_trades": 150.0,
+          "pnl_pips": -1221.6053571428536,
+          "positive_pnl_pips": 187.2732142857161,
+          "positive_pnl_share": 0.0026867562410918576,
+          "trade_share": 0.01855976243504083
+        },
+        "GBP_CHF": {
+          "n_trades": 173.0,
+          "pnl_pips": -625.9517857142773,
+          "positive_pnl_pips": 100.60535714285396,
+          "positive_pnl_share": 0.0014433568207915088,
+          "trade_share": 0.021405592675080427
+        },
+        "GBP_JPY": {
+          "n_trades": 14.0,
+          "pnl_pips": -6090.928571428518,
+          "positive_pnl_pips": 903.7857142858297,
+          "positive_pnl_share": 0.01296635996625987,
+          "trade_share": 0.0017322444939371442
+        },
+        "GBP_USD": {
+          "n_trades": 38.0,
+          "pnl_pips": -104.86071428571944,
+          "positive_pnl_pips": 96.82500000000336,
+          "positive_pnl_share": 0.0013891210979421426,
+          "trade_share": 0.0047018064835436775
+        },
+        "NZD_JPY": {
+          "n_trades": 159.0,
+          "pnl_pips": -44031.64285714356,
+          "positive_pnl_pips": 19930.571428571806,
+          "positive_pnl_share": 0.285938314128283,
+          "trade_share": 0.01967334818114328
+        },
+        "NZD_USD": {
+          "n_trades": 95.0,
+          "pnl_pips": -225.9500000000096,
+          "positive_pnl_pips": 69.45357142857452,
+          "positive_pnl_share": 0.0009964308949017414,
+          "trade_share": 0.011754516208859193
+        },
+        "USD_CAD": {
+          "n_trades": 80.0,
+          "pnl_pips": -85.49285714285367,
+          "positive_pnl_pips": 172.76785714286282,
+          "positive_pnl_share": 0.002478651953559479,
+          "trade_share": 0.00989853996535511
+        },
+        "USD_CHF": {
+          "n_trades": 297.0,
+          "pnl_pips": -623.4250000000195,
+          "positive_pnl_pips": 281.02500000000464,
+          "positive_pnl_share": 0.00403178679627352,
+          "trade_share": 0.036748329621380846
+        },
+        "USD_JPY": {
+          "n_trades": 23.0,
+          "pnl_pips": -3847.214285714238,
+          "positive_pnl_pips": 4156.785714285872,
+          "positive_pnl_share": 0.05963623790693317,
+          "trade_share": 0.0028458302400395943
+        }
+      }
+    },
+    "per_pair_data_summary": {
+      "classification": "NON_DECISION_EXPLORATORY",
+      "value": [
+        {
+          "model_classes": [
+            0,
+            1,
+            2
+          ],
+          "n_common_window_bars": 363370,
+          "n_holdout_labeled": 56668,
+          "n_train_labeled": 250875,
+          "n_val_labeled": 55772,
+          "pair": "AUD_CAD"
+        },
+        {
+          "model_classes": [
+            0,
+            1,
+            2
+          ],
+          "n_common_window_bars": 369974,
+          "n_holdout_labeled": 57351,
+          "n_train_labeled": 256204,
+          "n_val_labeled": 56364,
+          "pair": "AUD_JPY"
+        },
+        {
+          "model_classes": [
+            0,
+            1,
+            2
+          ],
+          "n_common_window_bars": 368610,
+          "n_holdout_labeled": 57179,
+          "n_train_labeled": 255171,
+          "n_val_labeled": 56205,
+          "pair": "AUD_NZD"
+        },
+        {
+          "model_classes": [
+            0,
+            1,
+            2
+          ],
+          "n_common_window_bars": 368387,
+          "n_holdout_labeled": 57216,
+          "n_train_labeled": 254956,
+          "n_val_labeled": 56160,
+          "pair": "AUD_USD"
+        },
+        {
+          "model_classes": [
+            0,
+            1,
+            2
+          ],
+          "n_common_window_bars": 367401,
+          "n_holdout_labeled": 57161,
+          "n_train_labeled": 253956,
+          "n_val_labeled": 56229,
+          "pair": "CHF_JPY"
+        },
+        {
+          "model_classes": [
+            0,
+            1,
+            2
+          ],
+          "n_common_window_bars": 369941,
+          "n_holdout_labeled": 57363,
+          "n_train_labeled": 256149,
+          "n_val_labeled": 56374,
+          "pair": "EUR_AUD"
+        },
+        {
+          "model_classes": [
+            0,
+            1,
+            2
+          ],
+          "n_common_window_bars": 369150,
+          "n_holdout_labeled": 57250,
+          "n_train_labeled": 255610,
+          "n_val_labeled": 56235,
+          "pair": "EUR_CAD"
+        },
+        {
+          "model_classes": [
+            0,
+            1,
+            2
+          ],
+          "n_common_window_bars": 367888,
+          "n_holdout_labeled": 56850,
+          "n_train_labeled": 255004,
+          "n_val_labeled": 55979,
+          "pair": "EUR_CHF"
+        },
+        {
+          "model_classes": [
+            0,
+            1,
+            2
+          ],
+          "n_common_window_bars": 368569,
+          "n_holdout_labeled": 57132,
+          "n_train_labeled": 255221,
+          "n_val_labeled": 56161,
+          "pair": "EUR_GBP"
+        },
+        {
+          "model_classes": [
+            0,
+            1,
+            2
+          ],
+          "n_common_window_bars": 369421,
+          "n_holdout_labeled": 57281,
+          "n_train_labeled": 255771,
+          "n_val_labeled": 56314,
+          "pair": "EUR_JPY"
+        },
+        {
+          "model_classes": [
+            0,
+            1,
+            2
+          ],
+          "n_common_window_bars": 369493,
+          "n_holdout_labeled": 57278,
+          "n_train_labeled": 255936,
+          "n_val_labeled": 56224,
+          "pair": "EUR_USD"
+        },
+        {
+          "model_classes": [
+            0,
+            1,
+            2
+          ],
+          "n_common_window_bars": 369017,
+          "n_holdout_labeled": 57338,
+          "n_train_labeled": 255391,
+          "n_val_labeled": 56233,
+          "pair": "GBP_AUD"
+        },
+        {
+          "model_classes": [
+            0,
+            1,
+            2
+          ],
+          "n_common_window_bars": 367190,
+          "n_holdout_labeled": 57277,
+          "n_train_labeled": 253809,
+          "n_val_labeled": 56049,
+          "pair": "GBP_CHF"
+        },
+        {
+          "model_classes": [
+            0,
+            1,
+            2
+          ],
+          "n_common_window_bars": 370333,
+          "n_holdout_labeled": 57387,
+          "n_train_labeled": 256474,
+          "n_val_labeled": 56417,
+          "pair": "GBP_JPY"
+        },
+        {
+          "model_classes": [
+            0,
+            1,
+            2
+          ],
+          "n_common_window_bars": 369521,
+          "n_holdout_labeled": 57302,
+          "n_train_labeled": 255828,
+          "n_val_labeled": 56336,
+          "pair": "GBP_USD"
+        },
+        {
+          "model_classes": [
+            0,
+            1,
+            2
+          ],
+          "n_common_window_bars": 366854,
+          "n_holdout_labeled": 56956,
+          "n_train_labeled": 253764,
+          "n_val_labeled": 56079,
+          "pair": "NZD_JPY"
+        },
+        {
+          "model_classes": [
+            0,
+            1,
+            2
+          ],
+          "n_common_window_bars": 367593,
+          "n_holdout_labeled": 57056,
+          "n_train_labeled": 254478,
+          "n_val_labeled": 56004,
+          "pair": "NZD_USD"
+        },
+        {
+          "model_classes": [
+            0,
+            1,
+            2
+          ],
+          "n_common_window_bars": 368974,
+          "n_holdout_labeled": 57257,
+          "n_train_labeled": 255397,
+          "n_val_labeled": 56265,
+          "pair": "USD_CAD"
+        },
+        {
+          "model_classes": [
+            0,
+            1,
+            2
+          ],
+          "n_common_window_bars": 367907,
+          "n_holdout_labeled": 57003,
+          "n_train_labeled": 254833,
+          "n_val_labeled": 56016,
+          "pair": "USD_CHF"
+        },
+        {
+          "model_classes": [
+            0,
+            1,
+            2
+          ],
+          "n_common_window_bars": 369398,
+          "n_holdout_labeled": 57246,
+          "n_train_labeled": 255830,
+          "n_val_labeled": 56267,
+          "pair": "USD_JPY"
+        }
+      ]
+    },
+    "per_threshold_validation_curves": {
+      "classification": "NON_DECISION_EXPLORATORY",
+      "value": {
+        "candidates": [
+          0.35,
+          0.4,
+          0.45
+        ],
+        "holdout_inspected": false,
+        "rejected_variants": [
+          {
+            "selected": false,
+            "threshold": 0.35,
+            "validation_metrics": {
+              "daily_portfolio_sharpe": -14.261634231908966,
+              "n_trades": 9475
+            }
+          },
+          {
+            "selected": false,
+            "threshold": 0.4,
+            "validation_metrics": {
+              "daily_portfolio_sharpe": -13.408321260994914,
+              "n_trades": 7209
+            }
+          }
+        ],
+        "selected_threshold": 0.45,
+        "selected_validation_metrics": {
+          "daily_portfolio_sharpe": -12.570251168224644,
+          "n_trades": 5705
+        },
+        "selection_metric": "daily_portfolio_sharpe"
+      }
+    },
+    "session_contribution": {
+      "classification": "NON_DECISION_EXPLORATORY",
+      "value": {
+        "note": "diagnostic only; session not evaluated"
+      }
+    },
+    "win_rate": {
+      "classification": "NON_DECISION_EXPLORATORY",
+      "value": 0.07844592922543925
+    }
+  },
+  "metrics": {
+    "avg_loss_pips": -147.98627196179442,
+    "avg_win_pips": 109.94060950879073,
+    "cost_cell_pips": 0.5,
+    "cost_sensitivity": {
+      "0.0pip": {
+        "cell_pips": 0.0,
+        "daily_portfolio_sharpe": -13.67048110045631,
+        "expectancy_pips": -127.25295807261466
+      },
+      "0.5pip": {
+        "cell_pips": 0.5,
+        "daily_portfolio_sharpe": -13.693560746612173,
+        "expectancy_pips": -127.75295807261466
+      },
+      "1.0pip": {
+        "cell_pips": 1.0,
+        "daily_portfolio_sharpe": -13.716496030277296,
+        "expectancy_pips": -128.25295807261466
+      }
+    },
+    "daily_coverage_frac": 1.0,
+    "daily_portfolio_sharpe_annualised": -13.693560746612173,
+    "expectancy_pips": -127.75295807261466,
+    "max_equity_drawdown": {
+      "max_drawdown_frac": 103.24994071428713,
+      "max_drawdown_pips": 1032499.4071428714,
+      "notional_equity_pips": 10000.0
+    },
+    "pair_concentration": {
+      "max_positive_pnl_share": 0.5501818267339552,
+      "max_trade_share": 0.2885424399901015
+    },
+    "primary_metric": "daily_portfolio_sharpe_annualised",
+    "trade_count": 8082,
+    "turnover_trades_per_day": 168.375,
+    "win_rate": 0.07844592922543925
+  },
+  "real_run": true,
+  "run_class": "ml_step4_365d_ba_first_run"
+}
