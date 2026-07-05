@@ -1,0 +1,33 @@
+{
+  "bar_seconds": 60,
+  "common_window": {
+    "end_utc": "2026-04-24T20:58:00Z",
+    "start_utc": "2025-04-25T17:09:00Z"
+  },
+  "deterministic": true,
+  "fractions": {
+    "holdout": 0.15,
+    "train": 0.7,
+    "validation": 0.15
+  },
+  "purge_embargo_bars": 21,
+  "real_run": true,
+  "run_class": "ml_step4_365d_ba_first_run",
+  "segments": {
+    "holdout": {
+      "end_utc": "2026-04-24T20:58:00Z",
+      "evaluated_once": true,
+      "start_utc": "2026-03-01T05:59:39Z"
+    },
+    "train": {
+      "end_utc": "2026-01-05T15:01:18Z",
+      "label_eligible_end_utc": "2026-01-05T14:40:18Z",
+      "start_utc": "2025-04-25T17:09:00Z"
+    },
+    "validation": {
+      "end_utc": "2026-03-01T05:59:39Z",
+      "label_eligible_end_utc": "2026-03-01T05:38:39Z",
+      "start_utc": "2026-01-05T15:01:18Z"
+    }
+  }
+}
