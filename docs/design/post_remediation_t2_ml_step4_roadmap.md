@@ -510,6 +510,35 @@ granting the next.
 > (M15-first) pre-registration incorporating R-2a/R-2b + C-1..C-8. Nothing
 > implemented/executed/authorised; NO_EXECUTION_PERFORMED /
 > PRODUCTION_READINESS_NOT_CLAIMED.
+>
+> FAMILY-A PRE-REGISTRATION pointer (gate 3, doc-only): the M15-first
+> cost-hurdle-aware pre-registration design
+> (docs/design/m15_first_cost_hurdle_aware_preregistration_design.md) was
+> proposed — M15_FIRST_COST_HURDLE_AWARE_PREREGISTRATION_PROPOSED. Incorporates
+> R-2a (design = 365d_BA pre-holdout span M15 aggregate, fixed PAIRS_20,
+> never-evidence) + R-2b (dead window 2026-03-01..2026-04-24 excluded from
+> every role) + C-1..C-8. Dataset plan: design 2025-04-25..2026-02-28;
+> validation+frozen holdout from a NEW forward epoch starting 2026-04-25
+> (gate 3a adoption required; spans [FIXED-AT gate 3a]). Label: spread-floored
+> bid/ask triple-barrier + cost-hurdle eligibility (h_min x cost), horizon
+> candidate {16,24,32} M15 bars, ONE frozen at merge. Decision: calibrated
+> EV gate (raw probability threshold explicitly not permitted), ev_min from
+> {0.0,0.25,0.5} pips on validation only. Acceptance: cost-relative floors
+> (net>0 AND gross>=1.5x cost), dual stressed-cost (2x + p90), turnover<=40/d,
+> effective-N gate + INSUFFICIENT_SAMPLE, validation-first kill gate (family
+> closes without holdout touch on validation failure). AMENDED: human +
+> ChatGPT rulings 1-13 applied in-document (new section 16) — all contract
+> values FROZEN (horizon 24 M15 bars; TP/SL 1.5/1.0 x ATR14 with 3.0/2.0 x
+> cost floors; hurdle 1.5xATR >= 2.0xcost; sessions frozen; rollover
+> 21:55-22:15 minimum widen-only; padding 0.3 + cell 0.5 pip; LightGBM params
+> frozen; no class weighting; isotonic calibration; ev_min {0.0,0.25,0.5};
+> acceptance table frozen, design audit may only tighten). C-1 resolved by
+> deferral: gate 3a = separate PR docs/m15-gate3a-dataset-epoch-adoption,
+> required before any implementation data read. Remaining deferred items carry
+> explicit [FIXED-AT gate 3a / design audit / implementation audit] markers.
+> Merge of PR #429 accepts the frozen contract; nothing implemented/trained/
+> executed/adopted; NO_EXECUTION_PERFORMED / PRODUCTION_READINESS_NOT_CLAIMED.
+> Next gate: Fable 5 design audit.
 
 - **Purpose:** execute the smallest safe real run under the pre-registered
   contract, exactly as registered.
