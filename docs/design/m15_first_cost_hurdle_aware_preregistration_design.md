@@ -23,11 +23,14 @@ Forbidden-label note: this document does not assert `PASS`, `Tier 1`,
 `H2_STARTED`, `PHASE_C2_STARTED`, `NEW_EPOCH_ADOPTED`, `BYTE_ADMISSIBLE`, or
 `MEETS`; those tokens appear only in this prohibition list.
 
-Numeric-value convention: every number marked **[CANDIDATE]** is a
-pre-registration candidate requiring explicit human + ChatGPT approval before
-this PR merges; numbers marked **[FIXED-AT]** name the later gate where they
-are frozen. Nothing in this document is a final threshold unless the merge
-approval explicitly freezes it.
+Numeric-value convention (amended): the human + ChatGPT pre-merge rulings
+(§16) have been applied. Every previously-generic `[CANDIDATE]` value required
+for this contract is now **frozen** as a pre-registration value; the only
+remaining deferred items carry an explicit **[FIXED-AT gate 3a]**,
+**[FIXED-AT design audit]**, or **[FIXED-AT implementation audit]** marker.
+**Merging this PR accepts the frozen values below as the family-A
+pre-registration contract** — while still authorising **no** implementation,
+data adoption/derivation, training, or execution.
 
 ---
 
@@ -77,9 +80,9 @@ The `365d_BA` M1 frozen holdout is **consumed**; the calendar window
 same-data M1 flagship retry is **forbidden**; general M1 is admissible only
 under a materially new microstructure-grade hypothesis and separate protocol.
 
-## 3. Dataset and epoch plan (C-1 — merge-blocking until approved)
+## 3. Dataset and epoch plan (C-1 — resolved by Rulings 1–2, §16)
 
-### 3.1 Roles and spans (proposal — gate 3a subject matter)
+### 3.1 Roles and spans (approved as design-POLICY; data adoption deferred to gate 3a)
 
 | Role | Span (UTC) | Source | Status |
 | --- | --- | --- | --- |
@@ -90,18 +93,19 @@ under a materially new microstructure-grade hypothesis and separate protocol.
 | **Disjoint replication** | a further, later or separately adopted span | future decision | required before any production-grade claim |
 
 T_v / T_h (the validation/holdout boundary and end) are **[FIXED-AT gate 3a]**
-when the forward epoch is adopted, with minimum spans: validation ≥ 3 months
-and holdout ≥ 2 months **[CANDIDATE]**; if insufficient forward data has
-accrued at adoption time, adoption waits — the verdict `INSUFFICIENT_SAMPLE`
-exists precisely so that impatience cannot shrink the holdout.
+when the forward epoch is adopted, with **frozen minimum spans (Ruling 2):
+validation ≥ 3 months and holdout ≥ 2 months**; the forward epoch starts **no
+earlier than 2026-04-25**; if insufficient forward data has accrued at
+adoption time, **adoption waits** — the verdict `INSUFFICIENT_SAMPLE` exists
+precisely so that impatience cannot shrink the holdout.
 
 ### 3.2 Rules
 
 - **Chronological ordering:** design < (dead window) < validation < holdout <
   replication. The dead window sits between design and validation, providing a
   natural ≥ 1-month buffer in addition to formal purge.
-- **Purge/embargo:** ≥ horizon + 1 M15 bars at every role boundary
-  **[FIXED-AT gate 3 merge, with the horizon]**.
+- **Purge/embargo:** ≥ horizon + 1 = **25 M15 bars** at every role boundary
+  (horizon frozen at 24 by Ruling 6).
 - **Holdout consumption:** the frozen holdout is consumed at its single
   authorised evaluation, or upon any decision-bearing observation of it
   (including via an invalid run).
@@ -115,13 +119,16 @@ exists precisely so that impatience cannot shrink the holdout.
   and disjoint from the design span. **R-2b compliance:** the dead window
   appears in no role above and is banned from design/validation/holdout/
   replication/pair/session/threshold/feature/acceptance use.
-- **Gate 3a placement:** this section **is the severable gate-3a proposal**.
-  Two artifacts are distinguished: (i) the **design-data derivation artifact**
-  (M15 aggregate of the already-adopted pre-holdout span — §4) and (ii) the
-  **forward-epoch adoption artifact** (new raw data; full Gate-P2-style
-  adoption). **This PR must remain unmerged until the human + ChatGPT
-  decision either approves this §3 plan (with §3.1 spans resolved or
-  explicitly deferred to a named separate gate-3a PR) or supersedes it.**
+- **Gate 3a placement (Ruling 1 — RESOLVED):** gate 3a is **deferred to a
+  named separate PR** (proposed branch:
+  `docs/m15-gate3a-dataset-epoch-adoption`). **PR #429 merges only as the
+  family-A contract design** — it adopts no epoch and approves no real read.
+  Gate 3a must complete **before any implementation PR reads or derives
+  data**, and must provide: the design-data M15 derivation artifact; the
+  forward-epoch adoption artifact; inventory; checksums; timestamp bounds;
+  derivation identity; the M1→M15 aggregation identity; and the retention
+  binding. Exact forward validation/holdout calendar boundaries and the
+  derived-dataset inventory/checksums are **[FIXED-AT gate 3a]**.
 - **Explicit non-authorisations:** no `730d_BA`; no `3650d_BA`; no epoch
   adopted by this document; no raw data read in this PR.
 
@@ -141,10 +148,11 @@ Gate-P2-style adoption artifact **before any real read**. Required contract
 - **Bid/ask OHLC aggregation:** per side (bid, ask): open = first M1 open in
   bucket; close = last M1 close; high = max of M1 highs; low = min of M1 lows.
   No mid-price construction at aggregation time.
-- **Partial-bar policy:** buckets containing fewer than 15 M1 bars are kept
-  with a recorded `n_source_bars` field; buckets with `n_source_bars <` a
-  floor **[CANDIDATE: 5]** are marked incomplete and excluded from event
-  eligibility (not from context/features' history).
+- **Partial-bar policy (Ruling 3 — FROZEN):** every bucket records
+  `n_source_bars`; **event/label eligibility requires a complete bucket
+  (`n_source_bars == 15`)**. Incomplete buckets are recorded for gap
+  diagnostics only — they must not create labels or trade events. No
+  imputation.
 - **Missing-minute policy:** absent M1 minutes are simply absent (no
   imputation); a per-file gap report (count + max gap) is part of the
   artifact.
@@ -168,26 +176,29 @@ Gate-P2-style adoption artifact **before any real read**. Required contract
 
 ## 5. Cost model and spread policy (C-4 prerequisite)
 
-- **Per-pair, session-aware empirical spread model:** from design-span M15
-  quoted spreads, per pair × session (3 sessions **[CANDIDATE]**: Asia
-  00:00–07:59, Europe 08:00–15:59, US 16:00–23:59 UTC), estimate the median
-  and p90 quoted spread. These estimates are **frozen from design data** and
-  recorded (values + method) in the contract at implementation time
-  **[FIXED-AT design audit]**.
-- **All-in modelled cost per trade:** `cost(pair, session) =
-  median_spread(pair, session) + pad_exec + cell_slippage`, where `pad_exec`
-  is a quote-vs-fill execution padding **[CANDIDATE: 0.3 pip]** and
-  `cell_slippage` the flat slippage cell **[CANDIDATE: 0.5 pip primary]**.
-  Claims are explicitly **quote-cost-validity** claims; the padding
-  acknowledges (not eliminates) the executable-fill gap.
+- **Per-pair, session-aware empirical spread model (Ruling 4 — session
+  partition FROZEN):** from design-span M15 quoted spreads, per pair ×
+  session — **Asia 00:00–07:59, Europe 08:00–15:59, US 16:00–23:59 UTC** —
+  estimate the median and p90 quoted spread. The numeric spread tables are
+  frozen from design data **[FIXED-AT gate 3a or design audit]**.
+- **All-in modelled cost per trade (Ruling 5 — FROZEN):** `cost(pair, session)
+  = median_spread(pair, session) + pad_exec + cell_slippage`, with
+  **`pad_exec = 0.3 pip`** (quote-vs-fill execution padding) and
+  **`cell_slippage = 0.5 pip` (primary)**. This is explicitly a
+  **quote-cost-validity research claim, not a live-fill claim** —
+  production/paper fill validity requires the separate gate-10 track; the
+  padding acknowledges (not eliminates) the executable-fill gap.
 - **Stress tests (both mandatory):** (i) **2× stress** — all metrics
   recomputed at `2 × cost(pair, session)`; (ii) **p90 stress** — recomputed
   with p90 session spread substituted for the median. Acceptance requires
   survival per §9.
-- **Weekend/rollover/holiday:** rollover windows (21:55–22:15 UTC
-  **[CANDIDATE]**) and low-liquidity holiday sessions are event-ineligible
-  (cost there is unmodelled, so no trade may be scored there); the exclusion
-  windows are frozen at design audit from design data.
+- **Weekend/rollover/holiday (Ruling 4 — FROZEN as minimum):** the rollover
+  exclusion window is **21:55–22:15 UTC minimum** — gate 3a / the design audit
+  may **widen it only for conservatism; it must not be narrowed** without a
+  new human + ChatGPT ruling. Rollover windows and low-liquidity holiday
+  sessions are event-ineligible (cost there is unmodelled, so no trade may be
+  scored there); the holiday / abnormal-thin-liquidity exclusion calendar is
+  **[FIXED-AT design audit]**, before implementation.
 - **Admissibility requirements:** the cost model is admissible only if the
   spread estimates derive from the checksummed derived dataset (§4), the
   estimation script identity is recorded, and per-pair/session tables are
@@ -203,24 +214,20 @@ Gate-P2-style adoption artifact **before any real read**. Required contract
   on bid; short mirrored; SL-first same-bar tie; timeout scored at
   horizon-end mark-to-market on the exit side. (These conventions survived
   three audits; they are carried, not re-derived.)
-- **Spread-floored barriers:** `TP_dist = max(tp_mult × ATR14_M15,
-  f_tp × cost(pair, session))`, `SL_dist = max(sl_mult × ATR14_M15,
-  f_sl × cost(pair, session))`, with `tp_mult = 1.5`, `sl_mult = 1.0`
-  **[CANDIDATE — carried from the audited convention]** and floors
-  `f_tp = 3.0`, `f_sl = 2.0` **[CANDIDATE]**.
-- **Cost-hurdle eligibility:** a bar is an eligible event only if
-  `tp_mult × ATR14_M15 ≥ h_min × cost(pair, session)` with `h_min = 2.0`
-  **[CANDIDATE]** — bars whose attainable move cannot plausibly clear cost
-  are never labeled, trained on, or traded. This is the family's defining
-  condition.
-- **Barrier/spread ratio requirement (C-3):** before implementation, the
-  actual distribution of `barrier_distance / cost` on design data must be
-  derived and recorded; if the median eligible ratio is < 3 **[CANDIDATE]**,
-  the parameters (or the family) must be reconsidered at the design audit —
-  M15 must demonstrably escape the M1 cost regime, not just claim to.
-- **Horizon candidates:** {16, 24, 32} M15 bars (4–8 hours) **[CANDIDATE
-  set]**; exactly ONE value is frozen at gate-3-merge approval — horizon is
-  **not** a searchable parameter.
+- **Spread-floored barriers (Ruling 6 — FROZEN):** `TP_dist =
+  max(1.5 × ATR14_M15, 3.0 × cost(pair, session))`, `SL_dist =
+  max(1.0 × ATR14_M15, 2.0 × cost(pair, session))`.
+- **Cost-hurdle eligibility (Ruling 6 — FROZEN):** a bar is an eligible event
+  only if `1.5 × ATR14_M15 ≥ 2.0 × cost(pair, session)` — bars whose
+  attainable move cannot plausibly clear cost are never labeled, trained on,
+  or traded. This is the family's defining condition.
+- **Barrier/spread ratio requirement (C-3, Ruling 6 — FROZEN):** before
+  implementation, the actual distribution of `barrier_distance / cost` on
+  design data must be derived and recorded; a **median eligible ratio < 3.0
+  triggers design-audit reconsideration before implementation** — M15 must
+  demonstrably escape the M1 cost regime, not just claim to.
+- **Horizon (Ruling 6 — FROZEN):** **24 M15 bars (6 hours)**. No horizon
+  search; no label-parameter search; no post-validation label change.
 - **Class vocabulary:** {−1, 0, +1} (short/timeout/long), unchanged.
 - **No drift:** identical label code path for training, validation, and
   holdout; no label parameter may change after validation is first computed;
@@ -245,26 +252,30 @@ Gate-P2-style adoption artifact **before any real read**. Required contract
 | Microstructure/tick features | **deferred** (family F prerequisite) |
 | M1-derived features (any) | **forbidden** — no M1 microstructure proxying from OHLC M1; M1 exists in this family only as aggregation input |
 
-Cross-cutting prohibitions: no consumed-window-derived features (R-2b); no
-feature selection on any holdout; no legacy-route feature evidence (C-8); the
-final feature list is frozen at the design audit and hashed into the contract.
+Cross-cutting prohibitions (Ruling 7): **M1 data may be used only as
+aggregation input** — no M1-derived feature, no M1 microstructure proxy (from
+OHLC M1 or otherwise), and no consumed-window-derived feature is allowed
+(R-2b); no feature selection on any holdout; no legacy-route feature evidence
+(C-8); the final feature list is frozen at the design audit and hashed into
+the contract.
 
 ## 8. Model and decision policy
 
-- **Baseline model family:** LightGBM 3-class classifier — retained
-  deliberately: the model family was not the proven M1 failure mode, and
-  changing it would confound the timeframe/cost-economics test. Params carry
-  the audited convention (`learning_rate 0.05, num_leaves 31, verbose −1,
-  n_estimators 200`) **[CANDIDATE — re-frozen at gate-3 merge]**; from-scratch
-  training; no deployed-model reuse; no model-family search; no post-result
-  model changes.
-- **Class imbalance:** class frequencies are a mandatory evidence item (§9);
-  handling (none vs class-weight) is fixed at the design audit **[FIXED-AT
-  design audit]** — not searched.
-- **Probability calibration (C-4):** probabilities are calibrated before EV
-  computation, using a calibration split **carved from the training span
-  only** (never validation/holdout). Method candidate: isotonic regression
-  **[CANDIDATE; FIXED-AT gate-3 merge]**.
+- **Baseline model family (Ruling 8 — FROZEN):** LightGBM 3-class classifier —
+  retained deliberately: the model family was not the proven M1 failure mode,
+  and changing it would confound the timeframe/cost-economics test. Params
+  **frozen**: `learning_rate = 0.05`, `num_leaves = 31`, `n_estimators = 200`,
+  `verbose = −1`; from-scratch training only; no deployed-model reuse; no
+  model-family search; no post-result model changes.
+- **Class imbalance (Ruling 8 — FROZEN):** **default = no class weighting**
+  for this first M15 contract. Class frequencies are a mandatory evidence
+  item (§9). If the class distribution makes the sample invalid, the run
+  takes `INSUFFICIENT_SAMPLE` or invalid-status handling — **weights are
+  never changed post hoc**; any future class-weighting change requires a
+  separate design amendment before execution.
+- **Probability calibration (C-4, Ruling 8 — FROZEN):** **isotonic
+  regression**, fit on a split **carved from the training span only** — never
+  validation, never holdout; **no calibration-method search**.
 - **EV-gate mechanism (C-4 — the decision rule):** for each eligible bar and
   direction d ∈ {long, short}:
   `EV_d = p̂_d × W̄(pair, session) − (1 − p̂_d) × L̄(pair, session) −
@@ -274,40 +285,44 @@ final feature list is frozen at the design audit and hashed into the contract.
   holdout). Trade direction d iff `EV_d ≥ ev_min` and `EV_d > EV_{−d}`.
   **A raw probability threshold alone is explicitly not a permitted decision
   rule.**
-- **Operating-point selection:** `ev_min` is chosen on **validation only**
-  from a pre-registered candidate set {0.0, 0.25, 0.5} pips **[CANDIDATE
-  set]**, tie rule: smallest passing candidate; selection metric: validation
-  net expectancy subject to the turnover budget. Holdout is evaluated once,
-  after selection, at the selected operating point only.
+- **Operating-point selection (Ruling 9 — FROZEN):** `ev_min ∈ {0.0, 0.25,
+  0.5}` pips; chosen on **validation only**; tie rule: **smallest passing
+  `ev_min`**; selection metric: validation net expectancy subject to the
+  turnover budget. The selected operating point is evaluated on the holdout
+  **exactly once**. A raw probability threshold alone remains forbidden.
 - **Seed policy:** any RNG actually used is recorded in the manifest; if the
   trainer convention defines none, that is recorded honestly (M1 precedent);
   reproducibility level declared (`bounded_not_bitwise_guaranteed`).
 - **Not done in this PR:** no training.
 
-## 9. Metrics and acceptance criteria (all thresholds [CANDIDATE] pending merge approval)
+## 9. Metrics and acceptance criteria (Ruling 10 — FROZEN; design audit may only tighten)
 
-**V. Validation kill gate (evaluated before any holdout touch):** validation
-net expectancy under the empirical cost model > 0 **AND** validation gross
-expectancy ≥ k × modelled all-in cost with **k = 1.5 [CANDIDATE]**, at at
-least one registered `ev_min` operating point, within the turnover budget.
-Fail at all points → **family closed, no holdout consumed**.
+**V. Validation kill gate (evaluated before any holdout touch) — FROZEN:**
+validation net expectancy under the empirical cost model > 0 **AND**
+validation gross expectancy ≥ **1.5 ×** modelled all-in cost, at at least one
+registered `ev_min` operating point, within the turnover budget. Fail at all
+points → **family A closed, no holdout consumed**.
 
-**H. Holdout acceptance (single evaluation, selected operating point):**
+**H. Holdout acceptance (single evaluation, selected operating point) — FROZEN:**
 
-| Criterion | Candidate threshold |
+| Criterion | Frozen threshold |
 | --- | --- |
 | net expectancy (empirical cost) | > 0 |
 | gross expectancy vs cost | ≥ 1.5 × all-in cost |
-| stressed-cost survival | net expectancy ≥ 0 at 2× cost AND at p90 session spread |
-| daily portfolio Sharpe (ann., UTC-day) | ≥ 0.8 (metric definition frozen; number [CANDIDATE]) |
+| stressed-cost survival | net expectancy ≥ 0 at 2× cost AND ≥ 0 at p90 session spread |
+| daily portfolio Sharpe (ann., UTC-day) | ≥ 0.8 |
 | max equity drawdown (vs fixed notional) | ≤ 0.15 |
-| trade count lower bound | ≥ 1,000 holdout trades AND effective-N ≥ 400 (§ below), else `INSUFFICIENT_SAMPLE` |
+| trade count lower bound | ≥ 1,000 holdout trades AND effective-N ≥ 400, else `INSUFFICIENT_SAMPLE` |
 | daily coverage | ≥ 0.60 |
 | turnover upper bound | ≤ 40 trades/day portfolio-wide |
 | pair trade concentration | ≤ 0.40 |
 | pair positive-PnL concentration | ≤ 0.50 |
-| class-frequency sanity | recorded; no gate, defect trigger only |
-| concurrency/exposure | max concurrent positions and per-currency net exposure recorded; caps [FIXED-AT design audit] |
+| class-frequency sanity | recorded; defect trigger only, not a standalone pass/fail gate |
+| concurrency/exposure | recorded; caps **[FIXED-AT design audit]**, before implementation |
+
+**Loosening prohibition (Ruling 10):** the design audit may only **tighten**
+these thresholds or refer them back for a new human + ChatGPT ruling — it may
+not loosen them.
 
 **Mandatory evidence schema (C-5):** exit-type counts (TP/SL/timeout),
 timeout share, gross/net layer decomposition, class frequencies, concurrency
@@ -316,29 +331,34 @@ metrics, per-currency exposure, full cost-model metadata, EV-gate metadata
 (method + fit-span), effective-N estimate, per-pair pip map + convention +
 `global…= false`.
 
-**Effective-N (C-6):** raw event counts overstate independence under
-overlapping horizons and cross-pair dependence. Draft estimator: block-adjust
-by horizon (events per pair thinned by mean overlap factor ≈ horizon/mean
-inter-event gap) and discount cross-pair by an average-correlation factor
-estimated on design data; method **[FIXED-AT design audit]**; the estimate
-appears in evidence and gates the trade-count criterion. Daily-aggregation
+**Effective-N (C-6, Ruling 11 — mandatory):** raw event counts overstate
+independence under overlapping horizons and cross-pair dependence. The method
+is **[FIXED-AT design audit or gate 3a]**, with frozen minimum requirements:
+it must adjust for overlapping labels; it must adjust or discount for
+cross-pair dependence; evidence must report BOTH the raw event count and the
+effective-N; `INSUFFICIENT_SAMPLE` is available at validation and at holdout;
+and an effective-N failure prevents holdout acceptance. Draft estimator (for
+the design audit to fix): block-adjust by horizon (events per pair thinned by
+mean overlap factor ≈ horizon/mean inter-event gap) and discount cross-pair by
+an average-correlation factor estimated on design data. Daily-aggregation
 dependence: Sharpe is computed on UTC-day portfolio sums (as in M1),
 acknowledged as correlated across pairs — the per-currency exposure metric is
-the monitoring instrument. `INSUFFICIENT_SAMPLE` triggers whenever the
-effective-N or trade-count floor fails at any stage — validation or holdout,
-M15 included.
+the monitoring instrument.
 
 **Disjoint replication:** required before any production-grade claim; not
 part of this family's acceptance.
 
 ## 10. Execution protocol (gates for this family — none skippable)
 
-1. **This pre-registration design PR** (gate 3) — merge blocked until §3
-   (C-1) is approved and all [CANDIDATE] values are approved or amended.
-2. **Fable 5 design audit PR** (gate 4).
-3. **Gate 3a dataset/epoch artifacts** — design-data derivation artifact (§4)
-   and forward-epoch adoption artifact (§3.1), if not already approved as the
-   severable §3 of this PR; each requires human + ChatGPT approval.
+1. **This pre-registration design PR** (gate 3) — contract values frozen by
+   the §16 rulings; merging this PR accepts them as the family-A contract.
+2. **Fable 5 design audit PR** (gate 4) — may only tighten or refer back
+   (Ruling 10).
+3. **Gate 3a dataset/epoch PR** (Ruling 1: separate PR, proposed branch
+   `docs/m15-gate3a-dataset-epoch-adoption`) — design-data derivation artifact
+   (§4) + forward-epoch adoption artifact (§3.1); requires human + ChatGPT
+   approval; **must complete before any implementation PR reads or derives
+   data**.
 4. **Code-only implementation PR(s)** (gate 5) — fixture-tested; value-pinned
    JPY/non-JPY tests on every conversion/aggregation path; no real run.
 5. **Source-contamination audit PR** (gate 6).
@@ -384,7 +404,7 @@ background only and decides nothing.
 | 3 | Non-stationarity | claim scoped to the evaluated spans; disjoint replication required for stronger claims |
 | 4 | Quote-vs-fill gap | execution padding in the cost model; dual stress tests; quote-cost-validity claim scope |
 | 5 | Weekend/rollover/holiday | event-ineligibility windows frozen at design audit; aggregation policy §4 |
-| 6 | Class imbalance | mandatory class-frequency evidence; handling fixed at design audit, not searched |
+| 6 | Class imbalance | mandatory class-frequency evidence; frozen default = no weighting (Ruling 8); INSUFFICIENT_SAMPLE/invalid handling instead of post-hoc weight changes |
 | 7 | Probability calibration | training-span-only calibration split; method frozen pre-run |
 | 8 | Concurrency/exposure aggregation | simulator must define overlapping-position accounting; concurrency metrics mandatory |
 | 9 | M1→M15 aggregation alignment (INV-1-class) | checksummed derivation artifact; value-pinned JPY/non-JPY tests; gate-6 audit |
@@ -394,22 +414,23 @@ background only and decides nothing.
 
 ## 13. Blockers and open questions
 
-**Must resolve before this PR merges (C-1):**
-- The §3 dataset/epoch plan (spans, minimums, forward-epoch commitment) —
-  approve, amend, or defer to a named separate gate-3a PR.
-- Every **[CANDIDATE]** value (horizon; tp/sl mults; floors f_tp/f_sl; hurdle
-  h_min; k; ev_min set; session partition; padding; minimum spans; acceptance
-  numbers) — approve or amend as the frozen contract, or explicitly mark
-  which remain [FIXED-AT design audit].
+**Merge blockers — RESOLVED by the §16 rulings:** the §3/C-1 dataset question
+is resolved by deferral to the named separate gate-3a PR (Ruling 1), with the
+span policy approved as design-policy (Ruling 2); every previously-generic
+[CANDIDATE] contract value is frozen (Rulings 3–10). The remaining deferred
+items below carry explicit [FIXED-AT …] markers and do not block this merge.
 
-**Must resolve before implementation (gates 4–5):**
-- Forward-epoch adoption artifact (gate 3a) and design-data derivation
-  artifact (§4) produced and approved.
+**Must resolve before implementation (gates 4–5 / gate 3a):**
+- Forward-epoch adoption artifact + design-data derivation artifact (gate 3a
+  PR `docs/m15-gate3a-dataset-epoch-adoption`): exact validation/holdout
+  calendar boundaries **[FIXED-AT gate 3a]**; derived-dataset inventory and
+  checksums **[FIXED-AT gate 3a]**; cost tables **[FIXED-AT gate 3a or design
+  audit]**.
 - Barrier/spread ratio derivation from design data (§6, C-3).
-- Empirical spread tables + padding validation (§5).
-- Native-M15 feature-builder review (§7).
-- Effective-N estimator method; class-imbalance handling; concurrency caps;
-  rollover/holiday exclusion windows.
+- Native-M15 feature-builder review (§7) **[FIXED-AT implementation audit]**.
+- Effective-N formula details **[FIXED-AT design audit]**; concurrency/
+  exposure caps **[FIXED-AT design audit]**; holiday exclusion calendar
+  **[FIXED-AT design audit]**.
 
 **Must resolve before execution (gates 6–7):**
 - Source-contamination audit; evidence-schema implementation (C-5); scrubber
@@ -422,21 +443,45 @@ paper/live gates (gate 10).
 
 This document authorises **nothing**: no implementation; no training; no
 execution; no holdout evaluation; no raw data access; no metric computation;
-no epoch adoption (the §3 plan is a proposal pending C-1 approval; the
-forward epoch is not adopted by this text); no `730d_BA`; no `3650d_BA`; no
-Phase C2; no H2/H3; no paper/live trading; no production readiness; no
-selected-family run. The consumed `365d_BA` holdout and the dead window
-2026-03-01 → 2026-04-24 remain quarantined. Statuses:
+no epoch adoption (the §3 span policy is approved as design-policy only —
+data adoption happens exclusively in the separate gate-3a PR; the forward
+epoch is not adopted by this text); no `730d_BA`; no `3650d_BA`; no Phase C2;
+no H2/H3; no paper/live trading; no production readiness; no selected-family
+run. The consumed `365d_BA` holdout and the dead window 2026-03-01 →
+2026-04-24 remain quarantined. Statuses:
 `M15_FIRST_COST_HURDLE_AWARE_PREREGISTRATION_PROPOSED`,
 `NO_EXECUTION_PERFORMED`, `PRODUCTION_READINESS_NOT_CLAIMED`.
 
 ## 15. Recommendation for next gate
 
-1. Human + ChatGPT review this pre-registration: rule on §3 (C-1) and on every
-   [CANDIDATE]; merge only with those rulings recorded (in the approval
-   message or an amended revision).
-2. Then the **Fable 5 design audit PR** (gate 4) attacks the frozen contract.
-3. Then gate 3a artifacts (if deferred), implementation (gate 5), source audit
-   (gate 6) — in order, each separately approved.
+1. Merge this amended pre-registration — merging accepts the §16-frozen values
+   as the family-A contract (authorising no implementation or execution).
+2. Then the **Fable 5 design audit PR** (gate 4) attacks the frozen contract
+   (tighten-or-refer-back only, per Ruling 10).
+3. Then the **gate-3a dataset/epoch PR**
+   (`docs/m15-gate3a-dataset-epoch-adoption`), implementation (gate 5), and
+   source audit (gate 6) — in order, each separately approved.
 4. Nothing runs until gate 7 is separately authorised with its own one-shot
    discipline.
+
+## 16. Human + ChatGPT pre-merge rulings (applied by amendment)
+
+Merging PR #429 accepts these rulings and the values they freeze as the
+family-A pre-registration contract. They authorise **no** implementation, data
+adoption/derivation, training, or execution.
+
+| # | Ruling | Frozen outcome |
+| --- | --- | --- |
+| 1 | Gate 3a placement | **Separate PR** (`docs/m15-gate3a-dataset-epoch-adoption`); PR #429 merges as contract design only; gate 3a must complete before any implementation PR reads/derives data; must provide derivation artifact, forward-epoch adoption artifact, inventory, checksums, ts-bounds, derivation + M1→M15 aggregation identity, retention binding |
+| 2 | Dataset spans (design-policy, not adoption) | design 2025-04-25→2026-02-28 (exploratory only, never evidence, fixed PAIRS_20); dead window 2026-03-01→2026-04-24 dead for all roles at all timeframes; validation/holdout from a new forward epoch starting **no earlier than 2026-04-25**; boundaries [FIXED-AT gate 3a]; minimums validation ≥ 3 mo, holdout ≥ 2 mo; adoption waits if data insufficient; no `730d_BA`/`3650d_BA` |
+| 3 | M15 aggregation | event/label eligibility requires `n_source_bars == 15`; incomplete buckets diagnostics-only; no imputation; UTC bucket-start, per-side bid/ask OHLC, no synthetic weekend bars, value-pinned JPY/non-JPY tests, pip authority — all retained |
+| 4 | Sessions & rollover | Asia 00:00–07:59 / Europe 08:00–15:59 / US 16:00–23:59 UTC frozen; rollover exclusion **21:55–22:15 UTC minimum** — widen-only-for-conservatism, never narrowed without a new human + ChatGPT ruling; holiday/thin-liquidity exclusion policy [FIXED-AT design audit], before implementation |
+| 5 | Cost model | all-in cost = median quoted spread + **0.3 pip** execution padding + **0.5 pip** flat cell (primary); mandatory 2× and p90 stress; **quote-cost-validity research claim, not a live-fill claim** — production/paper fill validity requires separate gates |
+| 6 | Label contract | TP = 1.5 × ATR14_M15, SL = 1.0 × ATR14_M15; floors TP ≥ 3.0 × cost, SL ≥ 2.0 × cost; eligibility 1.5 × ATR14_M15 ≥ 2.0 × cost; median eligible barrier/cost ratio < 3.0 → design-audit reconsideration before implementation; **horizon = 24 M15 bars (6 h)**; classes {−1, 0, +1}; SL-first tie; timeout MTM at horizon end on exit side; no horizon/label search; no post-validation label change |
+| 7 | Feature policy | native-M15 base + H1/H4 context + realised-vol = after-audit; session/time = allowed; spread/cost-regime = supporting-only; calendar + carry + microstructure = deferred; **M1-derived features forbidden — M1 is aggregation input only**; no consumed-window features |
+| 8 | Model & calibration | LightGBM 3-class, `learning_rate 0.05 / num_leaves 31 / n_estimators 200 / verbose −1`; from-scratch only; no reuse; no model-family search; **no class weighting** (frequencies reported; INSUFFICIENT_SAMPLE/invalid handling, never post-hoc weight changes; future weighting = separate design amendment before execution); **isotonic calibration**, training-span-only fit split, no method search |
+| 9 | EV gate | `ev_min ∈ {0.0, 0.25, 0.5}` pips; validation-only selection; tie = smallest passing; selected point evaluated on holdout exactly once; raw probability threshold alone forbidden |
+| 10 | Acceptance thresholds | validation kill gate (net > 0 AND gross ≥ 1.5 × cost, ≥ 1 registered point, within budget; all-fail → family closed pre-holdout) and holdout table (§9) **frozen as printed**; design audit may only tighten or refer back — never loosen |
+| 11 | Effective-N | mandatory; method [FIXED-AT design audit or gate 3a]; must adjust for overlap + cross-pair dependence; raw count AND effective-N reported; `INSUFFICIENT_SAMPLE` at validation and holdout; effective-N failure prevents holdout acceptance |
+| 12 | Program budget (C-7) | family A = M15-first; family B = H1/H4 as separate contracts if reached; A fails validation → B under its own pre-registration; B fails → mandatory program-level review; no third family without a new roadmap arc + audit |
+| 13 | No-legacy-evidence (C-8) | no number from fenced legacy routes in design justification, priors, thresholds, acceptance criteria, pair/session/feature selection, or evidence claims; archived records citable only as clearly-marked non-evidence background |
