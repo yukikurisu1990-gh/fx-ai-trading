@@ -579,6 +579,24 @@ granting the next.
 > Forward epoch NOT adopted; NO_EXECUTION_PERFORMED /
 > PRODUCTION_READINESS_NOT_CLAIMED. Next gate: code-only implementation
 > (design-data aggregation machinery) while forward adoption waits for accrual.
+>
+> GATE 5 CODE-ONLY MACHINERY pointer (synthetic-only, no run): the M15
+> aggregation/dataset machinery
+> (docs/design/m15_aggregation_dataset_machinery_implementation_note.md; new
+> package scripts/m15_gate3a/ + tests/m15_gate3a/) is implemented FIXTURE-ONLY —
+> M15_AGGREGATION_DATASET_MACHINERY_IMPLEMENTED_SYNTHETIC_ONLY_NO_RUN. Pure
+> M1->M15 aggregation (UTC buckets, per-side OHLC, no mid, n_source_bars==15
+> eligibility, no imputation, no synthetic weekend bars, gap report, pip
+> authority); no-overlap utilities vs the dead window (T-7); T-1 warm-up
+> burn-in policy (fail-closed on pre-forward loads); effective-N helper (T-6,
+> INSUFFICIENT_SAMPLE); cost-table schema validation (p95 diagnostic, no real
+> spreads); gate-3a-strict scrubber + refusal guards (real-data / train /
+> evaluate / execute / forward-adopt / model-binary / forbidden-status all fail
+> closed). 52 fixture tests. Reads NO real data, derives NO real M15 bytes,
+> computes NO metrics, trains NOTHING, adopts NO epoch; NO_EXECUTION_PERFORMED /
+> PRODUCTION_READINESS_NOT_CLAIMED. Next: separately-authorised gate-3a
+> continuation (design-data derivation only) + gate-6 source audit; forward
+> adoption still waits for accrual (~2026-10).
 
 - **Purpose:** execute the smallest safe real run under the pre-registered
   contract, exactly as registered.
