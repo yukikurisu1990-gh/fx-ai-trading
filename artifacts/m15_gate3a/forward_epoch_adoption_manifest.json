@@ -1,0 +1,34 @@
+{
+  "artifact": "forward_epoch_adoption_manifest",
+  "gate": "3a",
+  "status": "ADOPTION_BLOCKED__FORWARD_DATA_NOT_YET_ACCRUED",
+  "verdict": "INSUFFICIENT_SAMPLE__ADOPTION_WAITS",
+  "as_of_utc": "2026-07-07",
+  "frozen_requirement": {
+    "forward_epoch_start_floor_utc": "2026-04-25T00:00:00Z",
+    "validation_min_span_months": 3,
+    "holdout_min_span_months": 2,
+    "purge_embargo_m15_bars": 25,
+    "total_min_forward_span_months_approx": 5
+  },
+  "feasibility_finding": {
+    "committed_source_epoch_ts_max_utc": "2026-04-24T20:59:00Z",
+    "committed_forward_epoch_bars_in_repo": 0,
+    "note_committed_epoch": "The committed 365d_BA epoch ENDS 2026-04-24T20:59Z, i.e. exactly at the dead-window end; it contains ZERO bars at or after the forward-epoch floor 2026-04-25. There is no forward-epoch source in the repository.",
+    "elapsed_since_forward_floor_as_of_2026_07_07_days_approx": 73,
+    "elapsed_months_approx": 2.4,
+    "earliest_data_complete_estimate_utc": "2026-09-25 (validation ~2026-04-25..2026-07-25 + purge + holdout ~2026-07-25..2026-09-25)",
+    "earliest_feasible_adoption_estimate_utc": "2026-10 (after >= 5 months accrue; plus ingestion + a Gate-P2-style adoption + no-overlap proof)"
+  },
+  "to_be_fixed_when_adopted_at_a_future_gate_3a_continuation": {
+    "forward_epoch_source": "PENDING (new forward data; must be acquired and admitted under Gate-P2-style adoption; NOT 730d_BA, NOT 3650d_BA)",
+    "validation_span_utc": "PENDING (exact boundaries [FIXED-AT gate 3a continuation])",
+    "holdout_span_utc": "PENDING",
+    "forward_inventory_sha256": "PENDING",
+    "retention_binding": "PENDING",
+    "no_overlap_proof": "the source-level proof in no_overlap_proof.json holds now; a byte-level forward proof is produced when the forward artifacts exist"
+  },
+  "adoption_for_research_only": true,
+  "production_ready": false,
+  "scrub": {"raw_rows_committed": false, "metadata_only": true, "secrets": false, "personal_paths": false}
+}
