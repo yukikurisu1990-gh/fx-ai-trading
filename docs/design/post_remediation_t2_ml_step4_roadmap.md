@@ -539,6 +539,29 @@ granting the next.
 > Merge of PR #429 accepts the frozen contract; nothing implemented/trained/
 > executed/adopted; NO_EXECUTION_PERFORMED / PRODUCTION_READINESS_NOT_CLAIMED.
 > Next gate: Fable 5 design audit.
+>
+> DESIGN AUDIT pointer (gate 4, Fable 5, doc-only): the adversarial design
+> audit (docs/design/m15_first_cost_hurdle_aware_design_audit_fable5.md) found
+> the frozen contract ACCEPTABLE —
+> M15_FIRST_COST_HURDLE_AWARE_PREREGISTRATION_ACCEPTABLE_FOR_GATE3A_DATASET_EPOCH_ADOPTION
+> — with 7 binding tightenings T-1..T-7 (tighten-only per Ruling 10; zero
+> loosenings; zero blockers before gate 3a). Key findings: T-1 closes the ONE
+> genuine leakage loophole found (dead-window feature warm-up at the forward-
+> epoch start: dead window never loaded; burn-in W bars event-ineligible);
+> T-2 pins EV payoff semantics (W-bar/L-bar incl. timeout MTM in the
+> complement); T-3 hardens the barrier/cost ratio rule (<3.0 median on design
+> data BLOCKS gate-7 authorisation pending new ruling); T-4 timeout share >60%
+> = mandatory post-run-audit trigger; T-5 maxDD notional pinned to the M1
+> 10,000-pip convention; T-6 re-points data-dependent deferrals (effective-N
+> estimator -> gate 3a; cost tables -> gate 3a/implementation; caps + holiday
+> calendar -> implementation, human-approved before gate 7); T-7 gate 3a must
+> include a machine-checkable no-overlap proof vs the dead window + p95 spread
+> diagnostic. Rulings 1-13 verified incorporated; R-2a/R-2b airtight with T-1;
+> risk 13 added (W/L payoff staleness across the design->forward gap).
+> Allowed next PR: doc-only gate-3a dataset/epoch adoption
+> (docs/m15-gate3a-dataset-epoch-adoption) incorporating T-1/T-6/T-7. Nothing
+> implemented/trained/executed/adopted; NO_EXECUTION_PERFORMED /
+> PRODUCTION_READINESS_NOT_CLAIMED.
 
 - **Purpose:** execute the smallest safe real run under the pre-registered
   contract, exactly as registered.
