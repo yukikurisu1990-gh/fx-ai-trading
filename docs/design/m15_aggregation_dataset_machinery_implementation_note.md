@@ -107,13 +107,30 @@ execution evidence; no model binaries; no forward-epoch adoption; no epoch
 adoption; no byte-admissibility claim; no `730d_BA`/`3650d_BA`; no Phase C2; no
 H2/H3; no production-readiness claim.
 
-## Recommendation for next gate
+## Recommendation for next gate (corrected — audit BEFORE any real derivation)
 
-With the machinery synthetic-tested, the next step is a **separately-authorised
-gate-3a continuation** that runs this aggregation over the **design-span** M1
-data (design-data derivation only — still no forward run) to populate the
-design-M15 inventory/checksums and derive the cost tables, under these
-value-pinned tests and a source-contamination audit (gate 6). The
-**forward-epoch adoption remains a documented WAIT** until ≥ 5 months of forward
-data accrue (earliest ≈ 2026-10). Nothing runs, trains, or is adopted without
-its own explicit authorisation.
+Real design-span M15 derivation is a **real-data read/derivation** step, so this
+new machinery must be **source-audited before it ever touches real data.** The
+required order is:
+
+1. **Merge PR #432** as code-only, synthetic/fixture-only machinery (this PR).
+2. **Then run a source-contamination / implementation source audit of PR #432**
+   — **before any real data read.** The audit must verify: the T-1
+   dead-window warm-up policy; T-7 no-overlap handling; the refusal guards; that
+   **no real-data read path is accidentally enabled**; that **no**
+   validation/holdout/training/execution path exists; **no consumed-window
+   access**; **no** byte-admissibility or epoch-adoption claim; and **no**
+   production-readiness claim.
+3. **Only after that audit is accepted**, a **separately-authorised gate-3a
+   continuation** may run this aggregation over the **design-span** M1 data
+   (design-data derivation only — still no forward run) to populate the
+   design-M15 inventory/checksums and derive the cost tables, *if still
+   appropriate*.
+4. **Forward-epoch adoption remains BLOCKED/WAIT** until ≥ 5 months of forward
+   data accrue (earliest ≈ 2026-10).
+
+**The next gate after PR #432 merge is the source-contamination audit of this
+M15 machinery.** A gate-3a continuation that reads or derives real design-span
+data is **not authorised yet** and must not begin until the audit is accepted.
+Nothing runs, trains, derives real data, or is adopted without its own explicit
+authorisation.

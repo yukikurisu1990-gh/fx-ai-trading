@@ -594,9 +594,15 @@ granting the next.
 > evaluate / execute / forward-adopt / model-binary / forbidden-status all fail
 > closed). 52 fixture tests. Reads NO real data, derives NO real M15 bytes,
 > computes NO metrics, trains NOTHING, adopts NO epoch; NO_EXECUTION_PERFORMED /
-> PRODUCTION_READINESS_NOT_CLAIMED. Next: separately-authorised gate-3a
-> continuation (design-data derivation only) + gate-6 source audit; forward
-> adoption still waits for accrual (~2026-10).
+> PRODUCTION_READINESS_NOT_CLAIMED. NEXT GATE (corrected order): a
+> source-contamination / implementation source audit of the PR #432 machinery
+> BEFORE any real data read (verifies T-1 warm-up, T-7 no-overlap, refusal
+> guards, no real-data path, no validate/holdout/train/execute path, no
+> consumed-window access, no byte-admissibility/epoch/production claim). ONLY
+> after that audit is accepted may a separately-authorised gate-3a continuation
+> derive design-span M15 metadata (design-data only, still no forward run).
+> Gate-3a continuation that reads/derives real data is NOT authorised yet.
+> Forward-epoch adoption stays BLOCKED/WAIT until accrual (~2026-10).
 
 - **Purpose:** execute the smallest safe real run under the pre-registered
   contract, exactly as registered.
