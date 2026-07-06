@@ -1,0 +1,24 @@
+{
+  "artifact": "cost_table_plan",
+  "gate": "3a",
+  "option_selected": "B__DEFER_COST_TABLE_PRODUCTION_TO_IMPLEMENTATION",
+  "rationale": "Producing the cost tables requires reading design-span raw candles and computing per-pair x session spread statistics via the M15 aggregation code, which does not exist yet (gate-5 code-only implementation deliverable). This gate is metadata-only and does not read raw data or run derivations, so Option A (produce tables now) is not admissible here. No ambiguity: the tables are produced by the implementation PR from DESIGN-span data only, human-approved before any gate-7 execution authorisation.",
+  "must_produce_before_gate7_authorisation": {
+    "granularity": "per pair x session",
+    "sessions_utc": {"asia": "00:00-07:59", "europe": "08:00-15:59", "us": "16:00-23:59"},
+    "statistics": {
+      "median_quoted_spread": "primary (frozen from design data)",
+      "p90_session_spread": "mandatory stress",
+      "p95_session_spread": "mandatory diagnostic (PR #430 T-7); reported, not a gate"
+    },
+    "execution_padding_pip": 0.3,
+    "flat_slippage_cell_pip": 0.5,
+    "all_in_cost_formula": "cost(pair, session) = median_spread(pair, session) + 0.3 + 0.5 (primary)",
+    "stress_forms": ["2x modelled cost", "p90 session spread substituted for median"],
+    "pip_conversion_policy": "spreads measured in price units; converted via pip_size_for (0.01 iff *_JPY else 0.0001); value-pinned JPY/non-JPY tests apply to the spread path",
+    "data_source_restriction": "DESIGN span only (2025-04-25..2026-02-28); never validation/holdout; frozen and committed as metadata",
+    "claim_scope": "quote-cost-validity research claim; NOT a live-fill claim"
+  },
+  "no_raw_data_read_at_gate3a": true,
+  "scrub": {"raw_rows_committed": false, "metadata_only": true}
+}

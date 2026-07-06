@@ -1,0 +1,28 @@
+{
+  "artifact": "effective_n_estimator_spec",
+  "gate": "3a",
+  "status": "APPROVED_SPEC (T-6 requires the effective-N estimator to be fixed at gate 3a)",
+  "purpose": "Deterministic estimator of independent-evidence count for the M15 family. Specification only; no data is read and no count is computed here.",
+  "definitions": {
+    "raw_event_count": "N_raw = number of eligible traded events (n_source_bars==15 buckets that pass the cost-hurdle and fire an EV-gated trade), reported per role.",
+    "horizon_overlap_factor": "rho_h = 1 + (H - 1) * mean_overlap_fraction, where H = 24 M15 bars is the label horizon and mean_overlap_fraction in [0,1] = mean fraction of a trade's horizon that overlaps the next same-pair trade's horizon, estimated per pair from the realised inter-event gaps. Non-overlapping events => rho_h -> 1.",
+    "per_pair_effective": "N_eff_pair = N_raw_pair / rho_h_pair",
+    "cross_pair_discount": "rho_x = 1 + (P - 1) * mean_abs_pairwise_corr, where P = number of pairs contributing and mean_abs_pairwise_corr = mean absolute pairwise correlation of per-pair daily PnL series, estimated on DESIGN data only and frozen. Independent pairs => rho_x -> 1.",
+    "portfolio_effective": "N_eff = (sum over pairs of N_eff_pair) / rho_x"
+  },
+  "reporting": {
+    "must_report_raw_and_effective": true,
+    "per_role": ["validation", "holdout"],
+    "granularity": ["portfolio", "per_pair"]
+  },
+  "daily_aggregation_dependence_note": "Daily portfolio Sharpe is computed on UTC-day portfolio sums; days are treated as the Sharpe sampling unit but are correlated across pairs. rho_x captures the cross-pair term; per-currency exposure is the monitoring instrument (recorded as evidence).",
+  "failure_handling": {
+    "holdout": "if N_eff < 400 at holdout -> verdict INSUFFICIENT_SAMPLE (holdout acceptance cannot be granted).",
+    "validation": "if the validation sample is insufficient (raw or effective below the family's minimum) -> family A closes or adoption waits per the frozen contract; no holdout is touched.",
+    "trade_count_floor": ">= 1000 raw holdout trades AND N_eff >= 400 both required."
+  },
+  "frozen_parameters": {"H_m15_bars": 24, "N_eff_holdout_floor": 400, "raw_holdout_trade_floor": 1000},
+  "correlation_estimation_data": "DESIGN span only (2025-04-25..2026-02-28); never validation/holdout; frozen once and recorded.",
+  "no_strategy_metrics_computed_at_gate3a": true,
+  "scrub": {"raw_rows_committed": false, "metadata_only": true}
+}

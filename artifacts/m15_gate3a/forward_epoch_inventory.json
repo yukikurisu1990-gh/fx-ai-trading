@@ -1,0 +1,17 @@
+{
+  "artifact": "forward_epoch_inventory",
+  "gate": "3a",
+  "status": "EMPTY__NO_FORWARD_DATA_EXISTS",
+  "reason": "The forward epoch (>= 2026-04-25) has no committed source and, as of 2026-07-07, insufficient calendar time has elapsed to satisfy validation >= 3 months + holdout >= 2 months. No inventory can be produced. Adoption waits (see forward_epoch_adoption_manifest.json).",
+  "file_count": 0,
+  "files": [],
+  "required_schema_when_populated": {
+    "filename": "candles_<PAIR>_M15_FORWARD_<epoch_id>.jsonl",
+    "sha256": "64-hex",
+    "size_bytes": "positive int",
+    "ts_min_utc": ">= 2026-04-25T00:00:00Z",
+    "ts_max_utc": "PENDING",
+    "role": "validation | holdout (disjoint, chronological, purge 25 M15 bars between)"
+  },
+  "scrub": {"raw_rows_committed": false, "metadata_only": true}
+}

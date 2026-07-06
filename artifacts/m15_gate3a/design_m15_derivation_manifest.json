@@ -1,0 +1,52 @@
+{
+  "artifact": "design_m15_derivation_manifest",
+  "gate": "3a",
+  "status": "DERIVATION_CONTRACT_FIXED__BYTE_PRODUCTION_DEFERRED_TO_IMPLEMENTATION",
+  "purpose": "Fixes the M1->M15 derivation contract for the design-data span. The byte-level derived M15 files, their SHA-256 checksums, and the value-pinned JPY/non-JPY aggregation tests are produced by the code-only implementation PR (gate 5), because the aggregation code does not exist yet and must be created and audited before any real derivation.",
+  "input_identity": {
+    "source_epoch_id": "RESEARCH_FROZEN_HOLDOUT_EPOCH_365D_BA_V1",
+    "source_timeframe": "M1",
+    "source_inventory_path": "artifacts/gate_p1_pr_b/firstrun_365d_ba/raw_inventory_365d_BA.json",
+    "source_file_count": 20,
+    "source_pairs": "PAIRS_20 (fixed; no inclusion/exclusion)",
+    "source_checksum_authority": "committed PR-B.1 per-file SHA-256 + size + ts bounds"
+  },
+  "design_span_cut": {
+    "design_start_utc": "2025-04-25T00:00:00Z",
+    "design_end_utc": "2026-02-28T23:59:59Z",
+    "role": "exploratory_design_only__never_evidence",
+    "excludes_dead_window": true
+  },
+  "aggregation_contract": {
+    "bucket_convention": "floor(source_minute / 15) on the UTC clock; bar timestamp = bucket start",
+    "timezone": "UTC only (no DST logic)",
+    "ohlc_rule": "per side (bid, ask): open=first M1 open in bucket, close=last M1 close, high=max M1 highs, low=min M1 lows",
+    "mid_price_construction_at_aggregation": false,
+    "event_label_eligibility": "n_source_bars == 15 (complete bucket only)",
+    "incomplete_buckets": "recorded for gap diagnostics only; never create labels or events; retained for indicator history subject to T-1 warm-up policy",
+    "imputation": false,
+    "synthetic_weekend_bars": false,
+    "missing_minute_policy": "absent minutes remain absent; per-file gap report (count + max gap) in the derived inventory",
+    "spread_field": "per-bar quoted spread = ask_close - bid_close (open-side variant also recorded)",
+    "pip_size_authority": "scripts.ml_step4.data_adapter.pip_size_for (0.01 iff *_JPY else 0.0001); carried forward verbatim"
+  },
+  "derivation_identity_required_at_implementation": {
+    "aggregation_script_path": "TO_BE_CREATED_AT_GATE5",
+    "aggregation_script_git_sha": "PENDING_IMPLEMENTATION",
+    "aggregation_config_hash": "PENDING_IMPLEMENTATION",
+    "byte_reproducible_from_source": "REQUIRED",
+    "value_pinned_tests_required_before_any_real_read": [
+      "JPY-scale synthetic bucket -> exact expected OHLC/spread/pip outputs",
+      "non-JPY-scale synthetic bucket -> exact expected outputs",
+      "bucket-edge / weekend-boundary / gap boundary tests",
+      "checksum round-trip test"
+    ]
+  },
+  "scrub": {
+    "raw_rows_committed": false,
+    "raw_candles_committed": false,
+    "personal_paths": false,
+    "secrets": false,
+    "metadata_only": true
+  }
+}

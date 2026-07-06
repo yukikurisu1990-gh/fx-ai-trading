@@ -1,0 +1,25 @@
+{
+  "artifact": "design_m15_inventory",
+  "gate": "3a",
+  "status": "SCHEMA_FIXED__POPULATED_AT_IMPLEMENTATION",
+  "reason_not_populated_now": "Populating this inventory requires running the M1->M15 aggregation over the committed design-span M1 data to produce derived M15 files and their SHA-256 checksums. That aggregation code does not yet exist (it is a gate-5 code-only implementation deliverable) and must be created under the value-pinned tests in design_m15_derivation_manifest.json before any real derivation. Fabricating checksums here is forbidden.",
+  "required_schema_per_file": {
+    "filename": "candles_<PAIR>_M15_365d_BA_DESIGN.jsonl (name convention fixed at implementation)",
+    "pair": "one of PAIRS_20",
+    "sha256": "64-hex of the derived M15 file bytes",
+    "size_bytes": "positive int",
+    "row_count": "positive int (complete + incomplete buckets)",
+    "eligible_event_count": "count of n_source_bars==15 buckets",
+    "ts_min_utc": ">= 2025-04-25T00:00:00Z",
+    "ts_max_utc": "<= 2026-02-28T23:59:59Z",
+    "gap_report": {"missing_minute_count": "int", "max_gap_minutes": "int"},
+    "pip_size": "0.01 iff *_JPY else 0.0001"
+  },
+  "required_aggregate_assertions": {
+    "file_count": 20,
+    "all_ts_max_within_design_end": "<= 2026-02-28T23:59:59Z",
+    "all_ts_min_within_design_start": ">= 2025-04-25T00:00:00Z",
+    "dead_window_bars_present": 0
+  },
+  "scrub": {"raw_rows_committed": false, "metadata_only": true}
+}

@@ -1,0 +1,31 @@
+{
+  "artifact": "no_overlap_proof",
+  "gate": "3a",
+  "requirement": "PR #430 T-7 + R-2b: design, dead-window, and forward roles must be timestamp-disjoint; the dead window must be absent from every role and every derived artifact.",
+  "boundary_constants_utc": {
+    "design_start": "2025-04-25T00:00:00Z",
+    "design_end": "2026-02-28T23:59:59Z",
+    "dead_window_start": "2026-03-01T00:00:00Z",
+    "dead_window_end": "2026-04-24T23:59:59Z",
+    "forward_epoch_floor": "2026-04-25T00:00:00Z"
+  },
+  "source_metadata_evidence": {
+    "committed_365d_ba_epoch_ts_min_utc": "2025-04-24T22:03:00.000000000Z",
+    "committed_365d_ba_epoch_ts_max_utc": "2026-04-24T20:59:00.000000000Z",
+    "source": "artifacts/gate_p1_pr_b/firstrun_365d_ba/raw_inventory_365d_BA.json (committed per-file ts bounds; metadata only)"
+  },
+  "machine_checkable_assertions": [
+    {"id": "A1", "assert": "design_end < dead_window_start", "lhs": "2026-02-28T23:59:59Z", "rhs": "2026-03-01T00:00:00Z", "result": "PROVEN_TRUE"},
+    {"id": "A2", "assert": "dead_window_end < forward_epoch_floor", "lhs": "2026-04-24T23:59:59Z", "rhs": "2026-04-25T00:00:00Z", "result": "PROVEN_TRUE"},
+    {"id": "A3", "assert": "committed_epoch_ts_max < forward_epoch_floor (=> committed epoch contains ZERO forward-epoch bars => forward data must come from a NEW not-yet-accrued source)", "lhs": "2026-04-24T20:59:00Z", "rhs": "2026-04-25T00:00:00Z", "result": "PROVEN_TRUE"},
+    {"id": "A4", "assert": "dead window equals the consumed M1 holdout window (2026-03-01..2026-04-24) and lies strictly between design and forward, so R-2b exclusion is structural", "result": "PROVEN_TRUE"},
+    {"id": "A5", "assert": "design-M15 derived artifacts must satisfy per-file ts_max <= design_end (2026-02-28T23:59:59Z)", "result": "PENDING_AT_IMPLEMENTATION (enforced by design_m15_inventory.json required_aggregate_assertions)"},
+    {"id": "A6", "assert": "forward-epoch artifacts must satisfy per-file ts_min >= forward_epoch_floor (2026-04-25T00:00:00Z)", "result": "PENDING_UNTIL_FORWARD_DATA_EXISTS"}
+  ],
+  "t1_feature_warmup_leakage_addressed": {
+    "policy": "Dead-window data is NEVER loaded for any purpose. All indicators/context features (incl. H1/H4) initialise ONLY from forward-epoch bars; the first W forward-epoch bars are an event-ineligible warm-up burn-in, W >= the longest feature lookback across all groups including H1/H4 context. Exact W frozen at implementation; verified at the gate-6 source-contamination audit.",
+    "consequence": "No validation/holdout feature can read a dead-window price via warm-up, aggregation context, or spread tables."
+  },
+  "overall": "SOURCE_LEVEL_PROOF_PROVEN (A1-A4); BYTE_LEVEL_PROOF PENDING (A5 at implementation; A6 when forward data accrues)",
+  "scrub": {"raw_rows_committed": false, "metadata_only": true}
+}

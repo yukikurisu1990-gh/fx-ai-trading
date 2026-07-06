@@ -562,6 +562,23 @@ granting the next.
 > (docs/m15-gate3a-dataset-epoch-adoption) incorporating T-1/T-6/T-7. Nothing
 > implemented/trained/executed/adopted; NO_EXECUTION_PERFORMED /
 > PRODUCTION_READINESS_NOT_CLAIMED.
+>
+> GATE 3A DATASET/EPOCH ADOPTION pointer (doc + metadata, no run): the adoption
+> record (docs/design/m15_gate3a_dataset_epoch_adoption.md + artifacts/
+> m15_gate3a/*.json) is proposed — M15_GATE3A_DATASET_EPOCH_ADOPTION_PROPOSED.
+> Fixed now: design-data M1->M15 derivation contract; effective-N estimator
+> (T-6); source-level no-overlap proof vs the dead window (T-7, A1-A4 PROVEN
+> from committed inventory ts-bounds); cost-table plan (Option B, deferred to
+> implementation, p90+p95); retention binding. KEY FINDING — forward-epoch
+> adoption is BLOCKED: FORWARD_EPOCH_ADOPTION_BLOCKED_INSUFFICIENT_SAMPLE.
+> Committed 365d_BA ends 2026-04-24T20:59Z (zero forward bars); as of
+> 2026-07-07 only ~2.4 of the required ~5 months (validation >=3mo + holdout
+> >=2mo) have elapsed since the 2026-04-25 floor -> adoption WAITS per the
+> frozen rule (earliest ~2026-10). Byte-level design-M15 derivation + checksums
+> + value-pinned tests deferred to the gate-5 code-only implementation.
+> Forward epoch NOT adopted; NO_EXECUTION_PERFORMED /
+> PRODUCTION_READINESS_NOT_CLAIMED. Next gate: code-only implementation
+> (design-data aggregation machinery) while forward adoption waits for accrual.
 
 - **Purpose:** execute the smallest safe real run under the pre-registered
   contract, exactly as registered.

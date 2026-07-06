@@ -1,0 +1,30 @@
+{
+  "artifact": "scrub_report",
+  "gate": "3a",
+  "checked_artifacts": [
+    "design_m15_derivation_manifest.json",
+    "design_m15_inventory.json",
+    "forward_epoch_adoption_manifest.json",
+    "forward_epoch_inventory.json",
+    "no_overlap_proof.json",
+    "effective_n_estimator_spec.json",
+    "cost_table_plan_or_metadata.json"
+  ],
+  "assertions": {
+    "raw_price_rows_committed": false,
+    "raw_candles_committed": false,
+    "model_outputs_committed": false,
+    "predictions_committed": false,
+    "validation_metrics_committed": false,
+    "holdout_metrics_committed": false,
+    "trade_level_outputs_committed": false,
+    "strategy_performance_metrics_committed": false,
+    "model_binaries_committed": false,
+    "personal_or_local_paths": false,
+    "credentials_or_secrets": false,
+    "google_drive_or_r2_secrets": false,
+    "metadata_only": true
+  },
+  "content_kind": "specifications, plans, boundary constants, committed-metadata-derived assertions, and scrub-clean adoption records only",
+  "result": "ALL_SCRUB_CLEAN"
+}
