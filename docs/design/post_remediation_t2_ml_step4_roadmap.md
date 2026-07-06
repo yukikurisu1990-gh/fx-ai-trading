@@ -475,6 +475,21 @@ granting the next.
 > gate before any new frozen holdout; the PR #425 holdout is consumed and is
 > never a design set. PRODUCTION_READINESS_NOT_CLAIMED. Awaits human + ChatGPT
 > post-run review countersignature.
+>
+> POST-M1 RESEARCH PROGRAM ROADMAP pointer (doc-only): with the M1 flagship
+> closed, a program-level roadmap
+> (docs/design/post_m1_research_program_roadmap_fable5.md) proposes the next
+> research sequence — POST_M1_RESEARCH_PROGRAM_ROADMAP_PROPOSED /
+> NO_EXECUTION_PERFORMED. Ranking: A M15-first cost-hurdle-aware family FIRST,
+> B H1/H4 swing SECOND; session/vol + calendar as supporting layers only;
+> carry + microstructure-M1 deferred (data); portfolio layer gated on a
+> positive-edge family; risk-overlay-only forbidden as standalone. Ten-gate
+> pipeline (thesis -> roadmap audit -> pre-registration -> design audit ->
+> implementation -> source audit -> single run -> post-audit -> disjoint
+> replication -> separate paper/live gates). Dataset strategy: consumed
+> 365d_BA holdout permanently quarantined; new epochs need Gate-P2-style
+> adoption; 730d/3650d unauthorised. Next gate: Fable 5 adversarial roadmap
+> audit; nothing implemented/executed/authorised.
 
 - **Purpose:** execute the smallest safe real run under the pre-registered
   contract, exactly as registered.
