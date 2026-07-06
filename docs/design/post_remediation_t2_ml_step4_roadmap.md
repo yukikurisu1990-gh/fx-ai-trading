@@ -490,6 +490,26 @@ granting the next.
 > 365d_BA holdout permanently quarantined; new epochs need Gate-P2-style
 > adoption; 730d/3650d unauthorised. Next gate: Fable 5 adversarial roadmap
 > audit; nothing implemented/executed/authorised.
+>
+> ROADMAP AUDIT pointer (Fable 5, doc-only): the adversarial audit
+> (docs/design/post_m1_research_program_roadmap_audit_fable5.md) found the
+> PR #427 roadmap ACCEPTABLE —
+> POST_M1_RESEARCH_PROGRAM_ROADMAP_ACCEPTABLE_FOR_SELECTED_FAMILY_PREREGISTRATION
+> — with 8 binding conditions (C-1..C-8) on the gate-3 pre-registration and
+> 3 rulings: R-2a pre-holdout span = exploratory design only with FIXED
+> PAIRS_20 + disjoint later validation/holdout; R-2b the consumed calendar
+> window 2026-03-01..2026-04-24 is dead for ALL roles at ALL timeframes;
+> ranking KEEP A-FIRST (M15; H1-first rejected on sample-size/epoch-friction;
+> H1/H4 split if reached). Added gate 3a (Gate-P2-style epoch/dataset adoption
+> artifact before gate-3 merge); acceptance floors made cost-relative +
+> dual stressed-cost; evidence schema must add exit-type/timeout/concurrency;
+> program budget = families A then B only, both failing => mandatory program
+> review (stopping rule); 12 missing risks recorded (effective-N overlap,
+> cross-pair dependence, quote-vs-fill gap, M1->M15 aggregation bugs, etc.).
+> Zero blockers requiring roadmap rewrite. Allowed next PR: doc-only family-A
+> (M15-first) pre-registration incorporating R-2a/R-2b + C-1..C-8. Nothing
+> implemented/executed/authorised; NO_EXECUTION_PERFORMED /
+> PRODUCTION_READINESS_NOT_CLAIMED.
 
 - **Purpose:** execute the smallest safe real run under the pre-registered
   contract, exactly as registered.
