@@ -453,6 +453,28 @@ granting the next.
 > Fable 5 post-run audit; if it validates provenance, the M1 flagship first-run
 > question can be closed on honest evidence. No rerun; no tuning; no pivot
 > started.
+>
+> CORRECTED-RUN POST-AUDIT + DIAGNOSIS pointer (Fable 5, doc-only): the
+> adversarial audit
+> (docs/design/ml_step4_365d_ba_corrected_second_run_post_audit_and_diagnosis_fable5.md)
+> found the PR #425 evidence VALID —
+> ML_STEP4_365D_BA_CORRECTED_SECOND_RUN_EVIDENCE_VALID_DOES_NOT_MEET: one-shot
+> clean, provenance complete, arithmetic identities airtight (cells exact 0.5
+> steps; sum(pair net@0.5) = 8,082 x -3.4875 = maxDD pips exactly; win/loss
+> identity exact), pip fix verified in-run (JPY/non-JPY per-trade ratio 1.47x
+> vs 112.8x invalid; 20/20 pairs negative -> broad-based). Research diagnosis:
+> M1_FLAGSHIP_FIRST_RUN_QUESTION_CLOSED_FAILED_PREREGISTERED_CRITERIA —
+> negative GROSS edge (-2.99 pre-cell; not cost-killed), no validation edge at
+> any threshold (-16.2 all), turnover 4.2x over gate, win rate 7.83% vs ~40%
+> breakeven; M1 lineage closed
+> (M1_FLAGSHIP_CLOSED_THIS_LINEAGE_FAILED; general M1 requires a new
+> microstructure-grade hypothesis). Recommended next (NOT started, NOT
+> authorised): pre-registration design PR for an M15-first (H1 secondary)
+> cost-hurdle-aware family — spread-floored barrier labels, empirical per-pair/
+> session cost model, turnover budget, EV-based gate, validation-first evidence
+> gate before any new frozen holdout; the PR #425 holdout is consumed and is
+> never a design set. PRODUCTION_READINESS_NOT_CLAIMED. Awaits human + ChatGPT
+> post-run review countersignature.
 
 - **Purpose:** execute the smallest safe real run under the pre-registered
   contract, exactly as registered.
