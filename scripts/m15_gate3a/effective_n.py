@@ -15,6 +15,8 @@ N_EFF_HOLDOUT_FLOOR: Final[int] = 400
 RAW_HOLDOUT_TRADE_FLOOR: Final[int] = 1000
 INSUFFICIENT_SAMPLE: Final[str] = "INSUFFICIENT_SAMPLE"
 SUFFICIENT: Final[str] = "SAMPLE_SUFFICIENT"
+NOT_EVALUATED: Final[str] = "NOT_EVALUATED_AT_THIS_ROLE"
+_KNOWN_ROLES: Final[frozenset[str]] = frozenset({"holdout", "validation"})
 
 
 class EffectiveNError(ValueError):
@@ -29,6 +31,8 @@ def effective_n(
     n_pairs: int,
     horizon_bars: int = HORIZON_M15_BARS,
     role: str = "holdout",
+    validation_raw_floor: int | None = None,
+    validation_neff_floor: float | None = None,
 ) -> dict:
     """Return raw + effective counts and the sufficiency verdict (fail-closed).
 
@@ -36,7 +40,16 @@ def effective_n(
     ``rho_x = 1 + (n_pairs-1) * cross_pair_corr`` discounts cross-pair
     dependence; ``N_eff = raw / rho_h / rho_x``. Non-overlapping, independent
     inputs recover ``N_eff -> raw``.
+
+    F-3 fix — role handling is fail-closed: an unknown ``role`` raises;
+    ``role="holdout"`` applies the frozen floors (raw >= 1000 AND
+    N_eff >= 400, else ``INSUFFICIENT_SAMPLE``); ``role="validation"`` NEVER
+    returns ``SAMPLE_SUFFICIENT`` by default — without explicit validation
+    floors it returns ``NOT_EVALUATED_AT_THIS_ROLE``; with explicit floors it
+    applies them.
     """
+    if role not in _KNOWN_ROLES:
+        raise EffectiveNError(f"unknown role {role!r} (fail closed)")
     if not isinstance(raw_event_count, int) or raw_event_count < 0:
         raise EffectiveNError("raw_event_count must be a non-negative integer")
     if not (0.0 <= overlap_fraction <= 1.0):
@@ -52,11 +65,21 @@ def effective_n(
     rho_x = 1.0 + (n_pairs - 1) * cross_pair_corr
     n_eff = raw_event_count / (rho_h * rho_x)
 
-    verdict = SUFFICIENT
-    if role == "holdout" and (
-        raw_event_count < RAW_HOLDOUT_TRADE_FLOOR or n_eff < N_EFF_HOLDOUT_FLOOR
-    ):
-        verdict = INSUFFICIENT_SAMPLE
+    if role == "holdout":
+        if raw_event_count < RAW_HOLDOUT_TRADE_FLOOR or n_eff < N_EFF_HOLDOUT_FLOOR:
+            verdict = INSUFFICIENT_SAMPLE
+        else:
+            verdict = SUFFICIENT
+    else:  # validation — never default-sufficient (F-3)
+        if validation_raw_floor is None and validation_neff_floor is None:
+            verdict = NOT_EVALUATED
+        else:
+            raw_floor = validation_raw_floor if validation_raw_floor is not None else 0
+            neff_floor = validation_neff_floor if validation_neff_floor is not None else 0.0
+            if raw_event_count < raw_floor or n_eff < neff_floor:
+                verdict = INSUFFICIENT_SAMPLE
+            else:
+                verdict = SUFFICIENT
 
     return {
         "role": role,

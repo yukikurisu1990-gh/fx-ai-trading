@@ -88,7 +88,14 @@ def assert_no_forbidden_operation(**flags: bool) -> None:
             raise RealDataRefusedError(f"unknown operation flag {op!r} refused (fail closed)")
 
 
+# O-1 hardening: forbidden-status matching is normalised (strip + upper), so
+# casing / whitespace variants cannot slip past the exact-match set.
+_FORBIDDEN_STATUSES_NORMALISED: Final[frozenset[str]] = frozenset(
+    s.strip().upper() for s in FORBIDDEN_STATUSES
+)
+
+
 def assert_status_allowed(status: Any) -> None:
-    """Refuse to assert a forbidden status label."""
-    if isinstance(status, str) and status in FORBIDDEN_STATUSES:
+    """Refuse to assert a forbidden status label (case/whitespace-insensitive)."""
+    if isinstance(status, str) and status.strip().upper() in _FORBIDDEN_STATUSES_NORMALISED:
         raise RealDataRefusedError(f"forbidden status {status!r} may not be asserted here")
