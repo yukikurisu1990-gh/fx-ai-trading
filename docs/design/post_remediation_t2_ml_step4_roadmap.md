@@ -603,6 +603,26 @@ granting the next.
 > derive design-span M15 metadata (design-data only, still no forward run).
 > Gate-3a continuation that reads/derives real data is NOT authorised yet.
 > Forward-epoch adoption stays BLOCKED/WAIT until accrual (~2026-10).
+>
+> MACHINERY SOURCE AUDIT pointer (Fable 5, doc-only): the source-contamination
+> audit (docs/design/m15_aggregation_dataset_machinery_source_audit_fable5.md)
+> is BLOCKED-PENDING-TARGETED-FIXES —
+> M15_AGGREGATION_DATASET_MACHINERY_SOURCE_AUDIT_BLOCKED_PENDING_TARGETED_FIXES.
+> Containment layer CLEAN (import graph minimal, no real-data/train/execute
+> route, guards + scrubber + protected paths + traversal all fail closed,
+> non-authorisation clean). But 5 probe-CONFIRMED value-layer defects: F-1
+> duplicate/sub-minute rows inflate n_source_bars -> FALSE eligibility (14
+> distinct minutes + 1 dup = eligible); F-2 NaN/inf prices accepted and NaN
+> silently swallowed by max() -> plausible wrong OHLC; F-3 effective_n returns
+> SAMPLE_SUFFICIENT for validation and UNKNOWN roles; F-4 cost schema accepts
+> NaN spreads (NaN<0 is False); F-5 naive datetimes silently assumed UTC.
+> F-1/F-2 are INV-1-class value bugs in the exact function that would produce
+> real bytes — exactly what this pre-read audit exists to catch. Required:
+> ONE code-only fix PR (F-1..F-5 + 5 tests; optional O-1 status normalisation,
+> O-2 scrub heuristic, O-3 half-open bounds) -> short Fable 5 re-check -> only
+> then the gate-3a continuation (design-span derivation only, no forward
+> adoption). Nothing read/derived/trained/executed in this audit;
+> NO_EXECUTION_PERFORMED / PRODUCTION_READINESS_NOT_CLAIMED.
 
 - **Purpose:** execute the smallest safe real run under the pre-registered
   contract, exactly as registered.
