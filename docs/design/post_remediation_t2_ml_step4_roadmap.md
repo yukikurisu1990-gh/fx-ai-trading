@@ -623,6 +623,20 @@ granting the next.
 > then the gate-3a continuation (design-span derivation only, no forward
 > adoption). Nothing read/derived/trained/executed in this audit;
 > NO_EXECUTION_PERFORMED / PRODUCTION_READINESS_NOT_CLAIMED.
+>
+> GOVERNANCE PLAYBOOK pointer (doc-only): durable audit templates + Claude
+> operating rules for the remaining M15 gates are recorded —
+> M15_AUDIT_PLAYBOOK_AND_CLAUDE_RULES_RECORDED. Files:
+> docs/governance/m15_audit_playbook.md (gate state, immutable stop rules,
+> remaining gate order, source-audit / gate-3a-continuation / pre-run /
+> single-run / post-run / merge-approval templates, forbidden labels);
+> docs/prompts/m15_future_audit_templates.md (8 copy-paste prompt templates);
+> docs/prompts/m15_claude_operating_prefix.md (mandatory session prefix);
+> root CLAUDE.md (mandatory pointer, created). Binding rules: never advance
+> more than one gate per task; head-SHA-change = stop; real data only after
+> the relevant source audit + gate approval; forward epoch stays BLOCKED/WAIT;
+> even a future MEETS status is not production readiness. Authorises nothing;
+> NO_EXECUTION_PERFORMED / PRODUCTION_READINESS_NOT_CLAIMED.
 
 - **Purpose:** execute the smallest safe real run under the pre-registered
   contract, exactly as registered.
