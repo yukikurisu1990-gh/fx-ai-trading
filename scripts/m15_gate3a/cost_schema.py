@@ -8,6 +8,7 @@ reads data and never computes spreads.
 
 from __future__ import annotations
 
+import math
 from typing import Any, Final
 
 from scripts.ml_step4.data_adapter import pip_size_for
@@ -79,8 +80,14 @@ def validate_cost_table(table: Any) -> dict:
             )
         for stat in ("median_spread", "p90_spread", "p95_spread"):
             v = e[stat]
-            if not isinstance(v, (int, float)) or v < 0:
-                raise CostSchemaError(f"{stat} for {pair}/{session} must be a non-negative number")
+            # F-4 fix: NaN/inf must fail closed (``NaN < 0`` is False, so the
+            # old check silently accepted non-finite spreads).
+            if isinstance(v, bool) or not isinstance(v, (int, float)):
+                raise CostSchemaError(f"{stat} for {pair}/{session} must be a number")
+            if not math.isfinite(v) or v < 0:
+                raise CostSchemaError(
+                    f"{stat} for {pair}/{session} must be a finite non-negative number"
+                )
         key = (pair, session)
         if key in seen:
             raise CostSchemaError(f"duplicate (pair, session): {key}")

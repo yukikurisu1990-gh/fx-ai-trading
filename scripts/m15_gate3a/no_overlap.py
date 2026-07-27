@@ -23,10 +23,21 @@ class NoOverlapError(RuntimeError):
 
 
 def _parse(ts: Any) -> datetime:
+    """Parse a timestamp; F-5 fix: naive inputs FAIL CLOSED (never assumed UTC).
+
+    Accepts tz-aware ``datetime`` objects and ISO strings with an explicit
+    ``Z`` / ``+00:00`` / other offset (converted to UTC deterministically).
+    Timezone-naive datetimes and offset-less ISO strings are rejected.
+    """
     if isinstance(ts, datetime):
-        return ts if ts.tzinfo else ts.replace(tzinfo=UTC)
+        if ts.tzinfo is None:
+            raise NoOverlapError(f"naive datetime rejected (no tzinfo): {ts.isoformat()}")
+        return ts.astimezone(UTC)
     if isinstance(ts, str) and ts.strip():
-        return datetime.fromisoformat(ts.replace("Z", "+00:00")).astimezone(UTC)
+        parsed = datetime.fromisoformat(ts.replace("Z", "+00:00"))
+        if parsed.tzinfo is None:
+            raise NoOverlapError(f"ISO string without explicit offset rejected: {ts!r}")
+        return parsed.astimezone(UTC)
     raise NoOverlapError(f"unparseable timestamp: {ts!r}")
 
 

@@ -11,6 +11,7 @@ one source minute exists); per-pair pip-size authority via
 
 from __future__ import annotations
 
+import math
 from datetime import UTC, datetime, timedelta
 from typing import Any, Final
 
@@ -50,16 +51,32 @@ def _bucket_start(ts: datetime) -> datetime:
     )
 
 
-def _validate_row(row: dict[str, Any]) -> datetime:
+def _validate_row(row: dict[str, Any]) -> tuple[datetime, datetime]:
+    """Validate one synthetic M1 row; return (bucket_start, minute_ts).
+
+    F-1 fix: rows must be minute-aligned (seconds == microseconds == 0) —
+    sub-minute timestamps fail closed. F-2 fix: every side value must be a
+    finite number (``math.isfinite``) — NaN / +inf / -inf fail closed before
+    any aggregation output exists (a NaN would otherwise be silently swallowed
+    by ``max()``/``min()`` and produce a plausible wrong bar).
+    """
     ts = row.get("ts")
     if not isinstance(ts, datetime):
         raise AggregationError("M1 row missing tz-aware 'ts' datetime")
+    if ts.tzinfo is None:
+        raise AggregationError("M1 row timestamp must be tz-aware UTC")
+    ts = ts.astimezone(UTC)
+    if ts.second != 0 or ts.microsecond != 0:
+        raise AggregationError(f"M1 row timestamp {ts.isoformat()} is not minute-aligned")
     for k in _SIDE_KEYS:
         if k not in row:
             raise AggregationError(f"M1 row missing side key {k!r}")
-        if not isinstance(row[k], (int, float)):
+        v = row[k]
+        if isinstance(v, bool) or not isinstance(v, (int, float)):
             raise AggregationError(f"M1 row key {k!r} must be numeric")
-    return _bucket_start(ts)
+        if not math.isfinite(v):
+            raise AggregationError(f"M1 row key {k!r} is non-finite ({v!r})")
+    return _bucket_start(ts), ts
 
 
 def aggregate_m15(m1_rows: list[dict[str, Any]], *, pair: str) -> tuple[list[dict], dict]:
@@ -75,12 +92,22 @@ def aggregate_m15(m1_rows: list[dict[str, Any]], *, pair: str) -> tuple[list[dic
         raise AggregationError("m1_rows must be a list of synthetic M1 dicts")
 
     buckets: dict[datetime, list[dict[str, Any]]] = {}
+    seen_minutes: dict[datetime, set[datetime]] = {}
     order: list[datetime] = []
     for row in m1_rows:
-        b = _validate_row(row)
+        b, minute_ts = _validate_row(row)
         if b not in buckets:
             buckets[b] = []
+            seen_minutes[b] = set()
             order.append(b)
+        # F-1 fix: completeness means 15 DISTINCT source minutes. A duplicate
+        # source minute inside a bucket fails closed — it must never inflate
+        # ``n_source_bars`` into false eligibility.
+        if minute_ts in seen_minutes[b]:
+            raise AggregationError(
+                f"duplicate source minute {minute_ts.isoformat()} in bucket {b.isoformat()}"
+            )
+        seen_minutes[b].add(minute_ts)
         buckets[b].append(row)
 
     order.sort()
@@ -88,11 +115,12 @@ def aggregate_m15(m1_rows: list[dict[str, Any]], *, pair: str) -> tuple[list[dic
     total_missing = 0
     for b in order:
         rows = sorted(buckets[b], key=lambda r: r["ts"])
+        # Duplicates raise above, so len(rows) == distinct source minutes and
+        # can never exceed 15 (a 16th row would collide with a seen minute or
+        # belong to another bucket); assert defensively anyway.
         n = len(rows)
-        if n > FULL_BUCKET_SOURCE_BARS:
-            raise AggregationError(
-                f"bucket {b.isoformat()} has {n} > 15 source bars (duplicate minutes?)"
-            )
+        if n > FULL_BUCKET_SOURCE_BARS:  # pragma: no cover - unreachable after F-1
+            raise AggregationError(f"bucket {b.isoformat()} has {n} > 15 source bars")
         total_missing += FULL_BUCKET_SOURCE_BARS - n
         bid_c = rows[-1]["bid_c"]
         ask_c = rows[-1]["ask_c"]

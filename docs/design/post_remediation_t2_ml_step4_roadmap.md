@@ -637,6 +637,25 @@ granting the next.
 > the relevant source audit + gate approval; forward epoch stays BLOCKED/WAIT;
 > even a future MEETS status is not production readiness. Authorises nothing;
 > NO_EXECUTION_PERFORMED / PRODUCTION_READINESS_NOT_CLAIMED.
+>
+> TARGETED FIXES pointer (code-only, no run): the source-audit blockers F-1..F-5
+> (PR #433 audit: duplicate/sub-minute false eligibility; non-finite prices
+> silently swallowed; effective-N role handling not fail-closed; non-finite
+> spreads accepted; naive datetimes assumed UTC) are fixed code-only in
+> scripts/m15_gate3a/ + tests —
+> M15_AGGREGATION_DATASET_MACHINERY_TARGETED_FIXES_PROPOSED. F-1 eligibility now
+> requires 15 DISTINCT minute-aligned source minutes (duplicates + sub-minute
+> timestamps fail closed); F-2/F-4 math.isfinite on all prices/spreads; F-3
+> unknown roles raise + validation returns NOT_EVALUATED_AT_THIS_ROLE unless
+> explicit floors supplied; F-5 naive datetimes/offset-less ISO strings
+> rejected in no_overlap + warmup. Optional hardenings applied: O-1 status
+> normalisation (casing/whitespace variants refused); O-2 conservative
+> row-like numeric-record scrub heuristic. O-3 intentionally NOT applied
+> (current second-granularity bounds already fail closed conservatively;
+> half-open change would loosen or conflict with the committed proof artifact).
+> +39 regression tests (91 total in tests/m15_gate3a). No guard loosened; no
+> real data read; no derivation/training/validation/holdout/execution. Next:
+> short Fable 5 re-check of F-1..F-5 BEFORE any gate-3a continuation.
 
 - **Purpose:** execute the smallest safe real run under the pre-registered
   contract, exactly as registered.

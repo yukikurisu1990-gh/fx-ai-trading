@@ -41,12 +41,20 @@ class WarmupPolicy:
             )
 
     def assert_load_allowed(self, ts: Any) -> None:
-        """Fail closed if any load timestamp precedes the forward floor (dead-window guard)."""
+        """Fail closed if any load timestamp precedes the forward floor.
+
+        F-5 fix: naive datetimes and offset-less ISO strings FAIL CLOSED —
+        never silently assumed UTC.
+        """
         if isinstance(ts, datetime):
-            t = ts if ts.tzinfo else ts.replace(tzinfo=UTC)
-            t = t.astimezone(UTC)
+            if ts.tzinfo is None:
+                raise WarmupPolicyError(f"naive load timestamp rejected: {ts.isoformat()}")
+            t = ts.astimezone(UTC)
         elif isinstance(ts, str) and ts.strip():
-            t = datetime.fromisoformat(ts.replace("Z", "+00:00")).astimezone(UTC)
+            parsed = datetime.fromisoformat(ts.replace("Z", "+00:00"))
+            if parsed.tzinfo is None:
+                raise WarmupPolicyError(f"ISO load timestamp without offset rejected: {ts!r}")
+            t = parsed.astimezone(UTC)
         else:
             raise WarmupPolicyError(f"unparseable load timestamp: {ts!r}")
         if t < FORWARD_FLOOR:

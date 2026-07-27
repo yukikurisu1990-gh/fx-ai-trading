@@ -60,6 +60,19 @@ class ArtifactScrubError(RuntimeError):
     """Raised when a gate-3a metadata artifact would leak forbidden content."""
 
 
+# O-2 hardening: conservative row-like heuristic. A list of >= 2 dicts, each
+# carrying >= 6 numeric (non-bool) immediate values, looks like smuggled
+# candle/quote rows (a full BA row has 8 numeric sides) — reject. Thresholds
+# chosen so legitimate metadata survives: cost-table entries have 4 numeric
+# fields, inventory records <= 4; neither trips the heuristic.
+_ROW_LIKE_MIN_RECORDS: Final[int] = 2
+_ROW_LIKE_MIN_NUMERIC_FIELDS: Final[int] = 6
+
+
+def _numeric_field_count(d: dict) -> int:
+    return sum(1 for v in d.values() if isinstance(v, (int, float)) and not isinstance(v, bool))
+
+
 def _scan_gate3a_keys(obj: Any, findings: list[str]) -> None:
     if isinstance(obj, dict):
         for key, value in obj.items():
@@ -67,6 +80,11 @@ def _scan_gate3a_keys(obj: Any, findings: list[str]) -> None:
                 findings.append(f"gate3a_forbidden_key:{key}")
             _scan_gate3a_keys(value, findings)
     elif isinstance(obj, (list, tuple)):
+        dict_items = [x for x in obj if isinstance(x, dict)]
+        if len(dict_items) >= _ROW_LIKE_MIN_RECORDS and all(
+            _numeric_field_count(d) >= _ROW_LIKE_MIN_NUMERIC_FIELDS for d in dict_items
+        ):
+            findings.append("gate3a_row_like_numeric_records")
         for item in obj:
             _scan_gate3a_keys(item, findings)
 
