@@ -28,6 +28,9 @@ CLAIM_SCOPE: Final[str] = "quote_cost_validity"
 # (a 10,000x difference the schema could not see), and the formula string could
 # document away the pinned 0.3 / 0.5.
 SPREAD_UNIT: Final[str] = "price"
+# A quoted spread wider than 100 pips is not a real quote for PAIRS_20; anything
+# above it is far more likely a unit error than a market condition.
+MAX_PLAUSIBLE_SPREAD_PIPS: Final[float] = 100.0
 ALL_IN_COST_FORMULA: Final[str] = (
     "cost(pair, session) = median_spread(pair, session) + 0.3 + 0.5 (primary)"
 )
@@ -110,6 +113,17 @@ def validate_cost_table(table: Any) -> dict:
                     f"{stat} for {pair}/{session} must be a finite non-negative number"
                 )
             stats[stat] = float(v)
+        # R-8 residual (a): declaring the unit does not catch a mis-declared
+        # MAGNITUDE. A pip-scale number under spread_unit="price" is a 10,000x
+        # error that every other check would accept, so bound each statistic to
+        # a generous plausibility ceiling expressed in the pair's own pips.
+        for stat, value in stats.items():
+            if value > MAX_PLAUSIBLE_SPREAD_PIPS * expected_pip:
+                raise CostSchemaError(
+                    f"{stat} for {pair}/{session} is {value} price units = "
+                    f"{value / expected_pip:.1f} pips, above the plausibility ceiling of "
+                    f"{MAX_PLAUSIBLE_SPREAD_PIPS} pips (wrong unit?)"
+                )
         # R-8: without monotonicity the mandatory p90 stress could be milder
         # than the base case.
         if not stats["median_spread"] <= stats["p90_spread"] <= stats["p95_spread"]:

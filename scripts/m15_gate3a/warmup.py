@@ -27,10 +27,11 @@ class WarmupPolicy:
     longest_feature_lookback_bars: int
 
     def validate(self) -> None:
-        if not isinstance(self.w_bars, int) or self.w_bars <= 0:
+        if isinstance(self.w_bars, bool) or not isinstance(self.w_bars, int) or self.w_bars <= 0:
             raise WarmupPolicyError("w_bars must be a positive integer")
         if (
-            not isinstance(self.longest_feature_lookback_bars, int)
+            isinstance(self.longest_feature_lookback_bars, bool)
+            or not isinstance(self.longest_feature_lookback_bars, int)
             or self.longest_feature_lookback_bars <= 0
         ):
             raise WarmupPolicyError("longest_feature_lookback_bars must be a positive integer")

@@ -32,7 +32,7 @@ import math
 from datetime import UTC, datetime, timedelta
 from typing import Any, Final
 
-from .pair_authority import pip_size_for_pair
+from .pair_authority import canonical_pair, pip_size_for_pair
 
 BUCKET_MINUTES: Final[int] = 15
 FULL_BUCKET_SOURCE_BARS: Final[int] = 15
@@ -149,7 +149,12 @@ def aggregate_m15(m1_rows: list[dict[str, Any]], *, pair: str) -> tuple[list[dic
     is constructed. The pair is normalised and universe-checked before any
     aggregation, so an unknown or non-canonical pair fails closed.
     """
-    pip = pip_size_for_pair(pair)  # fail-closed FIRST (unknown/off-universe pair raises)
+    # fail-closed FIRST (unknown/off-universe pair raises), and D5: the emitted
+    # artifact must carry the CANONICAL label, not the caller's spelling — the
+    # committed design inventory requires "one of PAIRS_20" and cost_schema
+    # already rejects non-canonical spellings.
+    pair = canonical_pair(pair)
+    pip = pip_size_for_pair(pair)
     if not isinstance(m1_rows, list):
         raise AggregationError("m1_rows must be a list of synthetic M1 dicts")
 

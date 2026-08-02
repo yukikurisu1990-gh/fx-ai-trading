@@ -8,6 +8,7 @@ every role. Fail-closed; fixture-tested; reads no data.
 
 from __future__ import annotations
 
+from collections.abc import Mapping, Sequence
 from datetime import UTC, datetime, timedelta
 from typing import Any, Final
 
@@ -26,8 +27,11 @@ FORWARD_FLOOR: Final[datetime] = datetime(2026, 4, 25, 0, 0, 0, tzinfo=UTC)
 _DEAD_END_EXCLUSIVE: Final[datetime] = DEAD_END + timedelta(seconds=1)
 
 # Ordering invariants of the frozen spans (defence against a constant edit).
-assert DESIGN_START < DESIGN_END < DEAD_START <= DEAD_END < FORWARD_FLOOR
-assert _DEAD_END_EXCLUSIVE == FORWARD_FLOOR
+# Explicit raises, not `assert`: bare asserts are stripped under `python -O`.
+if not (DESIGN_START < DESIGN_END < DEAD_START <= DEAD_END < FORWARD_FLOOR):
+    raise RuntimeError("frozen span constants are out of order")
+if _DEAD_END_EXCLUSIVE != FORWARD_FLOOR:
+    raise RuntimeError("dead-window end and the forward floor must be contiguous")
 
 
 class NoOverlapError(RuntimeError):
@@ -109,14 +113,33 @@ def assert_no_dead_window(ts_min: Any, ts_max: Any, *, role: str) -> None:
         )
 
 
-def assert_per_file_bounds(files: list[dict[str, Any]], *, role: str) -> dict:
-    """Per-file ts-bound assertions for a role's inventory (design|forward)."""
+def assert_per_file_bounds(
+    files: Sequence[Any], *, role: str, expected_count: int | None = None
+) -> dict:
+    """Per-file ts-bound assertions for a role's inventory (design|forward).
+
+    D2 (found by the internal adversarial audit of this fix): ``if not files``
+    is truthiness on the container, so a generator or any other lazy iterable
+    slipped past the emptiness guard and the loop then ran zero times — the
+    machine-checkable T-7 proof token was returned on **zero evidence**. The
+    argument must now be a concrete sequence, every entry must be a mapping,
+    and a caller that knows how many files the inventory should hold can pin it
+    with ``expected_count`` (the committed design inventory declares 20).
+    """
     if role not in ("design", "forward"):
         raise NoOverlapError(f"unknown role {role!r}")
+    if isinstance(files, (str, bytes)) or not isinstance(files, Sequence):
+        raise NoOverlapError(
+            f"{role}: files must be a concrete sequence of file records, got {type(files).__name__}"
+        )
     if not files:
         raise NoOverlapError(f"{role}: empty file list")
+    if expected_count is not None and len(files) != expected_count:
+        raise NoOverlapError(f"{role}: expected {expected_count} files, got {len(files)}")
     checked = 0
     for f in files:
+        if not isinstance(f, Mapping):
+            raise NoOverlapError(f"{role}: file record must be a mapping, got {type(f).__name__}")
         tmin = f.get("ts_min_utc")
         tmax = f.get("ts_max_utc")
         if not tmin or not tmax:

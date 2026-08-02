@@ -9,6 +9,7 @@ under any protected real path.
 
 from __future__ import annotations
 
+import math
 from pathlib import Path
 from typing import Any, Final
 
@@ -87,16 +88,33 @@ def _is_numeric_series(value: Any) -> bool:
     )
 
 
+def _non_finite_finding(key: Any, value: Any, findings: list[str]) -> None:
+    """D6: NaN / Infinity must never reach a written artifact.
+
+    ``json.dumps`` emits the non-standard ``NaN`` / ``Infinity`` constants, so a
+    committed artifact would not re-parse under a strict JSON reader.
+    """
+    if isinstance(value, float) and not math.isfinite(value):
+        findings.append(f"gate3a_non_finite_value:{key}")
+
+
 def _scan_gate3a_keys(obj: Any, findings: list[str]) -> None:
     if isinstance(obj, dict):
-        series_lengths = [len(v) for v in obj.values() if _is_numeric_series(v)]
-        if len(series_lengths) >= _COLUMNAR_MIN_SERIES and len(set(series_lengths)) == 1:
+        series_count = sum(1 for v in obj.values() if _is_numeric_series(v))
+        if series_count >= _COLUMNAR_MIN_SERIES:
             findings.append("gate3a_columnar_numeric_series")
         for key, value in obj.items():
             if isinstance(key, str) and key.strip().lower() in _GATE3A_FORBIDDEN_KEYS:
                 findings.append(f"gate3a_forbidden_key:{key}")
+            # D3: a forbidden status used as a KEY was previously unscanned.
+            # Only a TRUTHY value asserts it — `"production_ready": false` is a
+            # legitimate negative declaration and the committed gate-3a
+            # manifests rely on it.
+            if is_forbidden_status(key) and value:
+                findings.append(f"gate3a_forbidden_status_key:{key}")
             if is_forbidden_status(value):
                 findings.append(f"gate3a_forbidden_status_value:{value}")
+            _non_finite_finding(key, value, findings)
             _scan_gate3a_keys(value, findings)
     elif isinstance(obj, (list, tuple)):
         row_like = sum(
@@ -112,6 +130,7 @@ def _scan_gate3a_keys(obj: Any, findings: list[str]) -> None:
         for item in obj:
             if is_forbidden_status(item):
                 findings.append(f"gate3a_forbidden_status_value:{item}")
+            _non_finite_finding("item", item, findings)
             _scan_gate3a_keys(item, findings)
 
 
@@ -148,9 +167,11 @@ def write_metadata_artifact(out_dir: str | Path, name: str, payload: Any) -> Pat
     if (
         name != Path(name).name
         or Path(name).is_absolute()
-        or any(sep in name for sep in ("/", "\\"))
+        or any(sep in name for sep in ("/", "\\", ":"))
     ):
         raise ArtifactScrubError(f"artifact name must be a bare filename, got {name!r}")
+    if not name[: -len(".json")].strip().strip("."):
+        raise ArtifactScrubError(f"artifact name needs a non-empty stem, got {name!r}")
     out = Path(out_dir)
     refuse_real_path(out)
     target = out / name

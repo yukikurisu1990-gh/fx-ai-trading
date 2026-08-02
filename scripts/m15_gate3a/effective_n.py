@@ -36,6 +36,8 @@ import math
 from collections.abc import Sequence
 from typing import Any, Final
 
+from .pair_authority import PAIRS_20, PairAuthorityError, canonical_pair
+
 HORIZON_M15_BARS: Final[int] = 24
 N_EFF_HOLDOUT_FLOOR: Final[int] = 400
 RAW_HOLDOUT_TRADE_FLOOR: Final[int] = 1000
@@ -93,9 +95,14 @@ def _normalise_pairs(per_pair: Sequence[Any]) -> list[dict[str, Any]]:
         for key in ("pair", "raw_event_count", "overlap_fraction"):
             if key not in entry:
                 raise EffectiveNError(f"per-pair record missing key {key!r}")
-        pair = entry["pair"]
-        if not isinstance(pair, str) or not pair.strip():
-            raise EffectiveNError("per-pair 'pair' must be a non-empty string")
+        # D4: identity is bound to the canonical PAIRS_20 universe. Without it
+        # "usd_jpy" and "USD_JPY" counted as two pairs, defeating the duplicate
+        # guard and inflating P in the cross-pair haircut, and an off-universe
+        # label was accepted outright.
+        try:
+            pair = canonical_pair(entry["pair"])
+        except PairAuthorityError as exc:
+            raise EffectiveNError(f"per-pair 'pair' invalid: {exc}") from exc
         if pair in seen:
             raise EffectiveNError(f"duplicate pair in per_pair: {pair!r}")
         seen.add(pair)
@@ -143,14 +150,17 @@ def effective_n(
 
     if isinstance(horizon_bars, bool) or not isinstance(horizon_bars, int) or horizon_bars < 1:
         raise EffectiveNError("horizon_bars must be a positive integer")
-    if role == "holdout" and horizon_bars != HORIZON_M15_BARS:
-        # R-1: the horizon is frozen by Ruling 6; an override must not be able to
-        # change a holdout verdict.
+    if horizon_bars != HORIZON_M15_BARS:
+        # R-1: the horizon is frozen at 24 by Ruling 6. Pinning it only for the
+        # holdout role still let a validation verdict be flipped by an override,
+        # so it is now frozen for every role.
         raise EffectiveNError(
-            f"horizon_bars is frozen at {HORIZON_M15_BARS} for role='holdout' (got {horizon_bars})"
+            f"horizon_bars is frozen at {HORIZON_M15_BARS} by the contract (got {horizon_bars})"
         )
 
     n_pairs = len(records)
+    if n_pairs > len(PAIRS_20):  # pragma: no cover - canonical identity already bounds this
+        raise EffectiveNError(f"n_pairs {n_pairs} exceeds the frozen universe {len(PAIRS_20)}")
     rho_x = 1.0 + (n_pairs - 1) * corr
     raw_total = 0
     n_eff_sum = 0.0
@@ -196,6 +206,15 @@ def effective_n(
         )
         verdict = INSUFFICIENT_SAMPLE if raw_total < raw_floor or n_eff < neff_floor else SUFFICIENT
         floors_applied = {"raw_floor": raw_floor, "neff_floor": neff_floor}
+
+    # D6: NaN / Infinity must never reach a written artifact (json.dumps would
+    # emit the non-standard constants and the file would not re-parse strictly).
+    for label, value in (("effective_n", n_eff), ("rho_x", rho_x)):
+        if not math.isfinite(value):
+            raise EffectiveNError(f"derived {label} is non-finite ({value!r})")
+    for rec in per_pair_out:
+        if not math.isfinite(rec["effective_n"]) or not math.isfinite(rec["rho_h"]):
+            raise EffectiveNError(f"derived per-pair value for {rec['pair']!r} is non-finite")
 
     return {
         "role": role,

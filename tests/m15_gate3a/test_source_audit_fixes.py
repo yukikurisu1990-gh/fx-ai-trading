@@ -23,6 +23,7 @@ from scripts.m15_gate3a.effective_n import (
 )
 from scripts.m15_gate3a.guards import RealDataRefusedError, assert_status_allowed
 from scripts.m15_gate3a.no_overlap import NoOverlapError, assert_design_bounds
+from scripts.m15_gate3a.pair_authority import PAIRS_20
 from scripts.m15_gate3a.warmup import WarmupPolicy, WarmupPolicyError
 
 
@@ -119,18 +120,18 @@ def _pp(pair: str, raw: int, overlap: float) -> dict:
 
 def test_f3_unknown_role_raises() -> None:
     with pytest.raises(EffectiveNError, match="unknown role"):
-        effective_n([_pp("A", 1000, 0.0)], cross_pair_corr=0.0, role="bogus")
+        effective_n([_pp("EUR_USD", 1000, 0.0)], cross_pair_corr=0.0, role="bogus")
 
 
 def test_f3_validation_not_default_sufficient() -> None:
-    r = effective_n([_pp("A", 5, 0.0)], cross_pair_corr=0.0, role="validation")
+    r = effective_n([_pp("EUR_USD", 5, 0.0)], cross_pair_corr=0.0, role="validation")
     assert r["verdict"] == NOT_EVALUATED
     assert r["verdict"] != SUFFICIENT
 
 
 def test_f3_validation_with_explicit_floors_applies_them() -> None:
     low = effective_n(
-        [_pp("A", 5, 0.0)],
+        [_pp("EUR_USD", 5, 0.0)],
         cross_pair_corr=0.0,
         role="validation",
         validation_raw_floor=100,
@@ -139,7 +140,7 @@ def test_f3_validation_with_explicit_floors_applies_them() -> None:
     assert low["verdict"] == INSUFFICIENT_SAMPLE
     assert low["floors_applied"] == {"raw_floor": 100.0, "neff_floor": 100.0}
     ok = effective_n(
-        [_pp("A", 500, 0.0)],
+        [_pp("EUR_USD", 500, 0.0)],
         cross_pair_corr=0.0,
         role="validation",
         validation_raw_floor=100,
@@ -149,11 +150,14 @@ def test_f3_validation_with_explicit_floors_applies_them() -> None:
 
 
 def test_f3_holdout_floors_unchanged() -> None:
-    assert effective_n([_pp("A", 900, 0.0)], cross_pair_corr=0.0)["verdict"] == INSUFFICIENT_SAMPLE
-    low_eff = effective_n([_pp(f"P{i}", 60, 0.9) for i in range(20)], cross_pair_corr=0.5)
+    assert (
+        effective_n([_pp("EUR_USD", 900, 0.0)], cross_pair_corr=0.0)["verdict"]
+        == INSUFFICIENT_SAMPLE
+    )
+    low_eff = effective_n([_pp(PAIRS_20[i], 60, 0.9) for i in range(20)], cross_pair_corr=0.5)
     assert low_eff["effective_n"] < 400 and low_eff["verdict"] == INSUFFICIENT_SAMPLE
     assert (
-        effective_n([_pp(f"P{i}", 250, 0.0) for i in range(20)], cross_pair_corr=0.0)["verdict"]
+        effective_n([_pp(PAIRS_20[i], 250, 0.0) for i in range(20)], cross_pair_corr=0.0)["verdict"]
         == SUFFICIENT
     )
 
