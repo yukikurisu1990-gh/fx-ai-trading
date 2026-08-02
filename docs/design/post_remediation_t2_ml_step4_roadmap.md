@@ -700,6 +700,29 @@ granting the next.
 > any real read. Forward epoch stays BLOCKED/WAIT; nothing read, derived,
 > validated, evaluated, trained or executed; NO_EXECUTION_PERFORMED /
 > PRODUCTION_READINESS_NOT_CLAIMED.
+>
+> INDEPENDENT SOURCE-AUDIT RE-CHECK pointer (doc-only, 2026-08-02): the F-1..F-5
+> re-check ran against master 697a1cf and BLOCKED again —
+> M15_AGGREGATION_DATASET_MACHINERY_SOURCE_AUDIT_BLOCKED_PENDING_TARGETED_FIXES
+> (docs/design/m15_aggregation_dataset_machinery_source_audit_recheck.md).
+> Containment re-derived CLEAN (no real-data/derivation/validation/holdout/
+> training/inference/execution/broker/storage/model-binary/CLI route) and no
+> guard was loosened by PR #434. F-2/F-3/F-4/F-5 correctly fixed. F-1 is NOT
+> fixed for the input type the real loader produces: pandas.Timestamp is a
+> datetime subclass whose nanoseconds are invisible to the .second/.microsecond
+> alignment check and survive replace(), yielding eligible bars at non-aligned
+> bucket starts and two eligible bars for one 15-minute window. Five blockers:
+> B-1 ns/pandas F-1 defeat; B-2 assert_per_file_bounds certifies reversed ts
+> bounds as PROVEN_NO_DEAD_WINDOW_OVERLAP; B-3 effective_n diverges fail-open
+> from the committed APPROVED per-pair spec across the frozen 400 floor; B-4 pip
+> authority case-sensitive + universe-unbound with false fail-closed docstrings
+> (100x JPY mis-scale, INV-1 class); B-5 validation floors unvalidated
+> (SAMPLE_SUFFICIENT on zero events via NaN/non-positive floor). Plus R-1..R-10
+> including an unreachable forbidden-status control and an unpinned aggregation
+> value path. Next: ONE targeted-fix Work PR, then another independent re-check;
+> gate-3a continuation stays unauthorised. Forward epoch BLOCKED/WAIT; nothing
+> read, derived, validated, evaluated, trained or executed;
+> NO_EXECUTION_PERFORMED / PRODUCTION_READINESS_NOT_CLAIMED.
 
 - **Purpose:** execute the smallest safe real run under the pre-registered
   contract, exactly as registered.
