@@ -22,6 +22,14 @@ may perform it. The auditing AI may not give final approval for an Amber or
 Red gate (policy §12). Historical audit documents keep their original names and
 attributions; do not rewrite them.
 
+**PR shape.** Templates 1, 3, 4 and 6 produce **Gate-decision PRs** (they
+judge or change the research state); template 2 is a **Work PR**; template 5
+is an **Execution-evidence PR**. A template's several bullet points are stages
+of one PR, not separate PRs: per policy §14, the code, tests, docs, internal
+audit findings and CI repair belonging to one objective stay in one PR, and no
+new PR is opened for a subagent's required fix, a CI failure, a rebase or a
+pointer update.
+
 **Role separation.** Any of these audits may be split across specialised
 subagent roles per policy §13 — each reading the source and diff itself, at
 least one arguing the change is wrong and at least one hunting boundary
