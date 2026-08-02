@@ -49,16 +49,18 @@ Last reconciled against master at `0e19135` (2026-08-02); master CI green.
 | Source-contamination audit of the PR #432 machinery | **executed and merged (PR #433)** with verdict `M15_AGGREGATION_DATASET_MACHINERY_SOURCE_AUDIT_BLOCKED_PENDING_TARGETED_FIXES` — five probe-confirmed blockers **F-1…F-5** (F-1/F-2 INV-1-class) |
 | Targeted fix PR for F-1…F-5 (+O-1/O-2) (PR #434) | ✅ **merged** as `5701ce8` (2026-07-27), on a recorded human + ChatGPT approval of the rebased head `2afa01f`. Status `M15_AGGREGATION_DATASET_MACHINERY_TARGETED_FIXES_PROPOSED`. The merge recorded the fixes; it did **not** grant audit acceptance |
 | CI reproducibility repair (PR #436) | ✅ **merged** as `0e19135` (2026-08-02) — infra-only Ruff pin `0.15.11`; master CI green. Status `RUFF_VERSION_PINNED_FOR_REPRODUCIBLE_CI_NO_RUN` |
-| **Independent source-audit re-check of the F-1…F-5 fixes** | **NOT started — this is the next gate.** Required before any real read |
-| Gate-3a continuation (real design-span derivation) | **NOT authorised** until the re-check accepts the fixes |
+| **Independent source-audit re-check of the F-1…F-5 fixes** | **executed — verdict `M15_AGGREGATION_DATASET_MACHINERY_SOURCE_AUDIT_BLOCKED_PENDING_TARGETED_FIXES`** (`docs/design/m15_aggregation_dataset_machinery_source_audit_recheck.md`). F-2…F-5 fixed; **F-1 defeated by `pandas.Timestamp` nanoseconds**; five blockers B-1…B-5 + ten required fixes. Containment re-derived CLEAN |
+| Second targeted-fix Work PR (B-1…B-5, R-1…R-10) | **NOT started** — one PR carrying code + tests + docs + internal audit |
+| Second independent re-check | **NOT started** — required after that fix PR merges |
+| Gate-3a continuation (real design-span derivation) | **NOT authorised** until a re-check accepts the fixes |
 
-**Next required step before any real data read:** an **independent
-source-audit re-check of F-1…F-5** (§4 checklist), performed by a session
-independent of the one that wrote the fixes. Only after that re-check is
-accepted may a separately-authorised gate-3a continuation read/derive
-design-span data. (This supersedes-by-progress the earlier phrasing "the
-source audit is next": the *first* audit ran and BLOCKED; the fixes are now
-merged; the re-check is the gatekeeper.)
+**Next required step before any real data read:** the re-check ran and
+**BLOCKED again**. One targeted-fix Work PR must close B-1…B-5 and R-1…R-10
+with failing-before / passing-after tests, then a further independent re-check
+must accept it. Only then may a separately-authorised gate-3a continuation
+read/derive design-span data. (This supersedes-by-progress the earlier phrasing
+"the source audit is next": the *first* audit BLOCKED, the F-1…F-5 fixes
+merged, and the re-check BLOCKED again on defects those fixes did not cover.)
 
 ## 2. Research stop rules (mandatory for every session)
 
