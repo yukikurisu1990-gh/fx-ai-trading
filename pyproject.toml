@@ -31,7 +31,12 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = [
-    "ruff>=0.6,<1.0",
+    # Ruff is pinned exactly, not ranged: CI installs via `pip install -e ".[dev]"`,
+    # so a floating spec resolved to a newer Ruff on every run. Ruff 0.16.0 began
+    # formatting Python code blocks inside Markdown, which failed `ruff format
+    # --check .` on 17 pre-existing docs. 0.15.11 is the version already recorded
+    # in uv.lock and .pre-commit-config.yaml, so all install paths now agree.
+    "ruff==0.15.11",
     "pytest>=8.0,<9.0",
 ]
 
