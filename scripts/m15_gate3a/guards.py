@@ -8,6 +8,9 @@ guards.
 
 from __future__ import annotations
 
+import os
+import re
+import unicodedata
 from pathlib import Path
 from typing import Any, Final
 
@@ -20,12 +23,15 @@ _PROTECTED_PREFIXES: Final[tuple[str, ...]] = (
 )
 
 # Statuses this gate is forbidden to assert (may appear only in prohibition lists).
+# R-4: kept in step with the playbook §10 list, which additionally names
+# READY_FOR_LIVE, ROBUST and DEPLOYABLE.
 FORBIDDEN_STATUSES: Final[frozenset[str]] = frozenset(
     {
         "PASS",
         "Tier 1",
         "FORMALLY_VERIFIED",
         "PRODUCTION_READY",
+        "READY_FOR_LIVE",
         "M15_AUTHORISED",
         "H1_AUTHORISED",
         "H2_STARTED",
@@ -33,6 +39,8 @@ FORBIDDEN_STATUSES: Final[frozenset[str]] = frozenset(
         "NEW_EPOCH_ADOPTED",
         "BYTE_ADMISSIBLE",
         "MEETS",
+        "ROBUST",
+        "DEPLOYABLE",
     }
 )
 
@@ -66,16 +74,59 @@ def assert_synthetic_only(mode: str) -> None:
         )
 
 
+def _strip_extended_prefix(path: str | Path) -> str:
+    r"""R-3: drop a Windows extended-length prefix before comparison.
+
+    ``Path.resolve()`` *keeps* ``\\?\``, so ``\\?\C:\...`` compared unequal to
+    ``C:\...`` while naming the same directory.
+    """
+    text = str(path)
+    for prefix in ("\\\\?\\UNC\\", "\\\\?\\"):
+        if text.startswith(prefix):
+            rest = text[len(prefix) :]
+            return f"\\\\{rest}" if prefix.endswith("UNC\\") else rest
+    return text
+
+
+_MAX_ANCESTOR_WALK: Final[int] = 64
+
+
+def _names_protected(resolved: Path, protected: Path) -> bool:
+    """True iff *resolved* is, or sits under, *protected* — by name **or identity**.
+
+    String comparison alone is not enough: UNC aliases (``\\localhost\\C$\\...``),
+    NTFS junctions and 8.3 short names all resolve to a different string while
+    naming the same directory. Filesystem identity closes those; the name test
+    still covers targets that do not exist yet (the usual case for a write).
+    Any OS error while probing fails closed.
+    """
+    if resolved == protected or protected in resolved.parents:
+        return True
+    try:
+        if not protected.exists():  # pragma: no cover - protected tree is committed
+            return False
+        probe = resolved
+        for _ in range(_MAX_ANCESTOR_WALK):
+            if probe.exists() and os.path.samefile(probe, protected):
+                return True
+            if probe.parent == probe:
+                return False
+            probe = probe.parent
+    except OSError:
+        return True  # unresolvable / inaccessible -> fail closed
+    return False  # pragma: no cover - walk exhausted
+
+
 def refuse_real_path(path: str | Path) -> None:
     """Fail closed if a path points at protected real archive / evidence trees."""
     try:
-        resolved = Path(path).resolve()
+        resolved = Path(_strip_extended_prefix(path)).resolve()
     except OSError as exc:  # pragma: no cover - defensive
         raise RealDataRefusedError(f"unresolvable path: {exc}") from exc
     root = repo_root()
     for prefix in _PROTECTED_PREFIXES:
         protected = (root / prefix).resolve()
-        if resolved == protected or protected in resolved.parents:
+        if _names_protected(resolved, protected):
             raise RealDataRefusedError(f"refused real/protected path: {prefix}")
 
 
@@ -88,14 +139,30 @@ def assert_no_forbidden_operation(**flags: bool) -> None:
             raise RealDataRefusedError(f"unknown operation flag {op!r} refused (fail closed)")
 
 
-# O-1 hardening: forbidden-status matching is normalised (strip + upper), so
-# casing / whitespace variants cannot slip past the exact-match set.
+def normalise_status(status: str) -> str:
+    """Fold a status label to its comparison key.
+
+    O-1 normalised case and surrounding whitespace. R-4 additionally folds the
+    separator variants that slipped past it — ``"production ready"``,
+    ``"PRODUCTION-READY"`` and ``"Tier  1"`` all reduce to the same key as the
+    canonical spelling.
+    """
+    key = unicodedata.normalize("NFKC", status).strip().upper()
+    key = re.sub(r"[\s\-./]+", "_", key)
+    return re.sub(r"_+", "_", key).strip("_")
+
+
 _FORBIDDEN_STATUSES_NORMALISED: Final[frozenset[str]] = frozenset(
-    s.strip().upper() for s in FORBIDDEN_STATUSES
+    normalise_status(s) for s in FORBIDDEN_STATUSES
 )
 
 
+def is_forbidden_status(value: Any) -> bool:
+    """True iff *value* is a string naming a forbidden status (any spelling)."""
+    return isinstance(value, str) and normalise_status(value) in _FORBIDDEN_STATUSES_NORMALISED
+
+
 def assert_status_allowed(status: Any) -> None:
-    """Refuse to assert a forbidden status label (case/whitespace-insensitive)."""
-    if isinstance(status, str) and status.strip().upper() in _FORBIDDEN_STATUSES_NORMALISED:
+    """Refuse to assert a forbidden status label (case/separator-insensitive)."""
+    if is_forbidden_status(status):
         raise RealDataRefusedError(f"forbidden status {status!r} may not be asserted here")

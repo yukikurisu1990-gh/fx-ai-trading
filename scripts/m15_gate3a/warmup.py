@@ -27,10 +27,11 @@ class WarmupPolicy:
     longest_feature_lookback_bars: int
 
     def validate(self) -> None:
-        if not isinstance(self.w_bars, int) or self.w_bars <= 0:
+        if isinstance(self.w_bars, bool) or not isinstance(self.w_bars, int) or self.w_bars <= 0:
             raise WarmupPolicyError("w_bars must be a positive integer")
         if (
-            not isinstance(self.longest_feature_lookback_bars, int)
+            isinstance(self.longest_feature_lookback_bars, bool)
+            or not isinstance(self.longest_feature_lookback_bars, int)
             or self.longest_feature_lookback_bars <= 0
         ):
             raise WarmupPolicyError("longest_feature_lookback_bars must be a positive integer")
@@ -44,8 +45,10 @@ class WarmupPolicy:
         """Fail closed if any load timestamp precedes the forward floor.
 
         F-5 fix: naive datetimes and offset-less ISO strings FAIL CLOSED —
-        never silently assumed UTC.
+        never silently assumed UTC. N-3: the policy validates itself first, so
+        an under-sized or malformed warm-up can no longer authorise a load.
         """
+        self.validate()
         if isinstance(ts, datetime):
             if ts.tzinfo is None:
                 raise WarmupPolicyError(f"naive load timestamp rejected: {ts.isoformat()}")

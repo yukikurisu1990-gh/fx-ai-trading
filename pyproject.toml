@@ -38,6 +38,10 @@ dev = [
     # in uv.lock and .pre-commit-config.yaml, so all install paths now agree.
     "ruff==0.15.11",
     "pytest>=8.0,<9.0",
+    # The B-1 regression proof (pandas.Timestamp nanoseconds defeating the
+    # minute-alignment guard) needs pandas. It previously arrived only
+    # transitively, so the whole blocker-regression module could skip silently.
+    "pandas>=2.0,<4.0",
 ]
 
 [tool.setuptools.packages.find]

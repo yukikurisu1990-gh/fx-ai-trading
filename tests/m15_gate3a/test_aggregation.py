@@ -11,7 +11,7 @@ from scripts.m15_gate3a.aggregation import (
     aggregate_m15,
     to_pips,
 )
-from scripts.ml_step4.data_adapter import PipSizeError
+from scripts.m15_gate3a.pair_authority import PairAuthorityError
 
 
 def _m1(ts: datetime, base: float = 1.10, half: float = 0.00005) -> dict:
@@ -104,8 +104,10 @@ def test_non_jpy_pip_conversion_value_pinned() -> None:
 
 
 def test_unknown_pair_fails_closed() -> None:
-    with pytest.raises(PipSizeError):
-        aggregate_m15(_bucket(datetime(2025, 6, 2, tzinfo=UTC), 15), pair="")
+    rows = _bucket(datetime(2025, 6, 2, tzinfo=UTC), 15)
+    for bad in ("", "   ", "XXX_YYY", "NOT_A_PAIR"):
+        with pytest.raises(PairAuthorityError):
+            aggregate_m15(rows, pair=bad)
 
 
 def test_naive_timestamp_fails_closed() -> None:

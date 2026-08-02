@@ -50,8 +50,8 @@ Last reconciled against master at `0e19135` (2026-08-02); master CI green.
 | Targeted fix PR for F-1…F-5 (+O-1/O-2) (PR #434) | ✅ **merged** as `5701ce8` (2026-07-27), on a recorded human + ChatGPT approval of the rebased head `2afa01f`. Status `M15_AGGREGATION_DATASET_MACHINERY_TARGETED_FIXES_PROPOSED`. The merge recorded the fixes; it did **not** grant audit acceptance |
 | CI reproducibility repair (PR #436) | ✅ **merged** as `0e19135` (2026-08-02) — infra-only Ruff pin `0.15.11`; master CI green. Status `RUFF_VERSION_PINNED_FOR_REPRODUCIBLE_CI_NO_RUN` |
 | **Independent source-audit re-check of the F-1…F-5 fixes** | **executed — verdict `M15_AGGREGATION_DATASET_MACHINERY_SOURCE_AUDIT_BLOCKED_PENDING_TARGETED_FIXES`** (`docs/design/m15_aggregation_dataset_machinery_source_audit_recheck.md`). F-2…F-5 fixed; **F-1 defeated by `pandas.Timestamp` nanoseconds**; five blockers B-1…B-5 + ten required fixes. Containment re-derived CLEAN |
-| Second targeted-fix Work PR (B-1…B-5, R-1…R-10) | **NOT started** — one PR carrying code + tests + docs + internal audit |
-| Second independent re-check | **NOT started** — required after that fix PR merges |
+| Second targeted-fix Work PR (B-1…B-5, R-1…R-10) | **OPEN, not merged** — one Work PR carrying code + tests + docs + internal audit (`docs/design/m15_recheck_targeted_fixes_note.md`, status `M15_AGGREGATION_DATASET_MACHINERY_RECHECK_FIXES_PROPOSED`) |
+| Second independent re-check | **NOT started** — required after that fix PR merges, in a session separate from the fix author |
 | Gate-3a continuation (real design-span derivation) | **NOT authorised** until a re-check accepts the fixes |
 
 **Next required step before any real data read:** the re-check ran and

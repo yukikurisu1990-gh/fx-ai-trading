@@ -8,7 +8,8 @@ every role. Fail-closed; fixture-tested; reads no data.
 
 from __future__ import annotations
 
-from datetime import UTC, datetime
+from collections.abc import Mapping, Sequence
+from datetime import UTC, datetime, timedelta
 from typing import Any, Final
 
 DESIGN_START: Final[datetime] = datetime(2025, 4, 25, 0, 0, 0, tzinfo=UTC)
@@ -16,6 +17,21 @@ DESIGN_END: Final[datetime] = datetime(2026, 2, 28, 23, 59, 59, tzinfo=UTC)
 DEAD_START: Final[datetime] = datetime(2026, 3, 1, 0, 0, 0, tzinfo=UTC)
 DEAD_END: Final[datetime] = datetime(2026, 4, 24, 23, 59, 59, tzinfo=UTC)
 FORWARD_FLOOR: Final[datetime] = datetime(2026, 4, 25, 0, 0, 0, tzinfo=UTC)
+
+# B-2 / O-3: the constants stay at second granularity (moving them would
+# conflict with the committed no_overlap_proof.json, which is why O-3's
+# half-open rewrite was declined). The dead window is nonetheless treated as
+# covering the whole of its final second, so a sub-second timestamp inside
+# 2026-04-24T23:59:59.x is dead — strictly more conservative, and it changes no
+# published boundary constant.
+_DEAD_END_EXCLUSIVE: Final[datetime] = DEAD_END + timedelta(seconds=1)
+
+# Ordering invariants of the frozen spans (defence against a constant edit).
+# Explicit raises, not `assert`: bare asserts are stripped under `python -O`.
+if not (DESIGN_START < DESIGN_END < DEAD_START <= DEAD_END < FORWARD_FLOOR):
+    raise RuntimeError("frozen span constants are out of order")
+if _DEAD_END_EXCLUSIVE != FORWARD_FLOOR:
+    raise RuntimeError("dead-window end and the forward floor must be contiguous")
 
 
 class NoOverlapError(RuntimeError):
@@ -42,12 +58,27 @@ def _parse(ts: Any) -> datetime:
 
 
 def _intersects_dead_window(ts_min: datetime, ts_max: datetime) -> bool:
-    return not (ts_max < DEAD_START or ts_min > DEAD_END)
+    """True iff [ts_min, ts_max] touches the dead window, final second included."""
+    return not (ts_max < DEAD_START or ts_min >= _DEAD_END_EXCLUSIVE)
+
+
+def _assert_ordered(lo: datetime, hi: datetime, *, what: str) -> None:
+    """B-2: a reversed span must never reach the dead-window predicate.
+
+    ``_intersects_dead_window`` short-circuits on ``ts_min > DEAD_END``, so an
+    inverted pair could be certified clean while its real span sat inside the
+    dead window. Every bound-checker now rejects the inversion first.
+    """
+    if hi < lo:
+        raise NoOverlapError(
+            f"{what}: ts_max {hi.isoformat()} < ts_min {lo.isoformat()} (reversed span)"
+        )
 
 
 def assert_design_bounds(ts_min: Any, ts_max: Any) -> None:
     """Design artifact must sit within [DESIGN_START, DESIGN_END] and miss dead window."""
     lo, hi = _parse(ts_min), _parse(ts_max)
+    _assert_ordered(lo, hi, what="design")
     if hi > DESIGN_END:
         raise NoOverlapError(
             f"design ts_max {hi.isoformat()} > DESIGN_END {DESIGN_END.isoformat()}"
@@ -63,6 +94,7 @@ def assert_design_bounds(ts_min: Any, ts_max: Any) -> None:
 def assert_forward_bounds(ts_min: Any, ts_max: Any) -> None:
     """Forward artifact must begin >= FORWARD_FLOOR and miss the dead window."""
     lo, hi = _parse(ts_min), _parse(ts_max)
+    _assert_ordered(lo, hi, what="forward")
     if lo < FORWARD_FLOOR:
         raise NoOverlapError(
             f"forward ts_min {lo.isoformat()} < FORWARD_FLOOR {FORWARD_FLOOR.isoformat()}"
@@ -74,22 +106,40 @@ def assert_forward_bounds(ts_min: Any, ts_max: Any) -> None:
 def assert_no_dead_window(ts_min: Any, ts_max: Any, *, role: str) -> None:
     """Any role's span must not intersect the dead window (fail-closed)."""
     lo, hi = _parse(ts_min), _parse(ts_max)
-    if hi < lo:
-        raise NoOverlapError(f"{role}: ts_max < ts_min")
+    _assert_ordered(lo, hi, what=role)
     if _intersects_dead_window(lo, hi):
         raise NoOverlapError(
             f"{role}: span intersects dead window {DEAD_START.date()}..{DEAD_END.date()}"
         )
 
 
-def assert_per_file_bounds(files: list[dict[str, Any]], *, role: str) -> dict:
-    """Per-file ts-bound assertions for a role's inventory (design|forward)."""
+def assert_per_file_bounds(
+    files: Sequence[Any], *, role: str, expected_count: int | None = None
+) -> dict:
+    """Per-file ts-bound assertions for a role's inventory (design|forward).
+
+    D2 (found by the internal adversarial audit of this fix): ``if not files``
+    is truthiness on the container, so a generator or any other lazy iterable
+    slipped past the emptiness guard and the loop then ran zero times — the
+    machine-checkable T-7 proof token was returned on **zero evidence**. The
+    argument must now be a concrete sequence, every entry must be a mapping,
+    and a caller that knows how many files the inventory should hold can pin it
+    with ``expected_count`` (the committed design inventory declares 20).
+    """
     if role not in ("design", "forward"):
         raise NoOverlapError(f"unknown role {role!r}")
+    if isinstance(files, (str, bytes)) or not isinstance(files, Sequence):
+        raise NoOverlapError(
+            f"{role}: files must be a concrete sequence of file records, got {type(files).__name__}"
+        )
     if not files:
         raise NoOverlapError(f"{role}: empty file list")
+    if expected_count is not None and len(files) != expected_count:
+        raise NoOverlapError(f"{role}: expected {expected_count} files, got {len(files)}")
     checked = 0
     for f in files:
+        if not isinstance(f, Mapping):
+            raise NoOverlapError(f"{role}: file record must be a mapping, got {type(f).__name__}")
         tmin = f.get("ts_min_utc")
         tmax = f.get("ts_max_utc")
         if not tmin or not tmax:

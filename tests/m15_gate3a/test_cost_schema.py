@@ -20,7 +20,10 @@ def _table(**overrides):
     t = {
         "execution_padding_pip": 0.3,
         "flat_slippage_cell_pip": 0.5,
-        "all_in_cost_formula": "median + 0.3 + 0.5",
+        "all_in_cost_formula": (
+            "cost(pair, session) = median_spread(pair, session) + 0.3 + 0.5 (primary)"
+        ),
+        "spread_unit": "price",
         "claim_scope": "quote_cost_validity",
         "entries": [entry],
     }
