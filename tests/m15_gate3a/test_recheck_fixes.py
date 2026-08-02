@@ -14,6 +14,7 @@ from __future__ import annotations
 import importlib.util
 import json
 import math
+import sys
 from datetime import UTC, datetime, timedelta, timezone
 
 import pytest
@@ -770,6 +771,20 @@ def test_nb1_refused_write_leaves_no_directory_behind(tmp_path) -> None:
 # ==========================================================================
 
 
+def test_d1_plain_protected_path_refused() -> None:
+    """Platform-independent baseline for the protected-path guard."""
+    from scripts.ml_step4.evidence import repo_root
+
+    protected = (repo_root() / "artifacts" / "ml_step4" / "365d_ba_v1").resolve()
+    with pytest.raises(RealDataRefusedError):
+        refuse_real_path(str(protected))
+    with pytest.raises(RealDataRefusedError):
+        refuse_real_path(protected / "sub" / "x.json")
+
+
+@pytest.mark.skipif(
+    sys.platform != "win32", reason=r"UNC and \?\ aliases are Windows-only spellings"
+)
 def test_d1_unc_and_extended_aliases_of_a_protected_path_refused() -> None:
     """String comparison alone let UNC aliases name the protected tree."""
     from scripts.ml_step4.evidence import repo_root
