@@ -656,6 +656,50 @@ granting the next.
 > +39 regression tests (91 total in tests/m15_gate3a). No guard loosened; no
 > real data read; no derivation/training/validation/holdout/execution. Next:
 > short Fable 5 re-check of F-1..F-5 BEFORE any gate-3a continuation.
+>
+> STATE + GOVERNANCE AMENDMENT pointer (doc-only, 2026-08-02): the two blocks
+> above are historical records of what was proposed at the time; current state
+> is recorded here. PR #434 (F-1..F-5 + O-1/O-2 targeted fixes) MERGED as
+> 5701ce8 on a recorded human + ChatGPT approval of head 2afa01f — the merge
+> records the fixes, it does NOT grant audit acceptance. PR #436 (infra-only
+> Ruff pin 0.15.11, after an unpinned Ruff floated to 0.16.0 and broke
+> ruff format --check on 17 pre-existing docs) MERGED as 0e19135 —
+> RUFF_VERSION_PINNED_FOR_REPRODUCIBLE_CI_NO_RUN; master CI green. Governance
+> amended to autonomy-first: docs/governance/autonomous_development_policy.md
+> (new) defines Green/Amber/Red risk tiers, autonomous work inside a tier, one
+> irreversible gate per task, head-SHA freedom before merge approval, a limited
+> stop list, and the five-field task contract; CLAUDE.md, the playbook, the
+> operating prefix and the templates are aligned to it. Classification cannot
+> be self-lowered: protected paths (M15 machinery, features/labels/cost model,
+> effective-N, no-overlap/warm-up/epoch/split, kill gate, training/inference/
+> execution, strategy/broker, evidence+artifact schema/scrubber/guards, frozen
+> contracts, scripts/m15_gate3a/**, research-bearing src/scripts, artifacts/**,
+> governance, AI authority, .github/workflows/**, branch protection/required
+> checks, security/credentials/external storage, dependencies + pyproject.toml
+> + uv.lock + .pre-commit-config.yaml) are Amber at minimum; the highest
+> applicable tier governs; ambiguity resolves to Amber; a requester's "Green"
+> label does not bind. Green is an ALLOWLIST of small reversible edits with
+> nine self-merge conditions. Dependency/lockfile/workflow changes are Amber
+> (credentialed workflows Red); "synthetic-only" never makes a machinery bugfix
+> Green. A multi-agent internal audit loop is standard: the lead splits work
+> across specialised roles (implementation, contract, tests/boundaries,
+> security/forbidden routes, contamination, CI/dependencies, adversarial
+> refutation, integration), gives each audit role the source and diff rather
+> than the other roles' conclusions, requires at least one refutation role and
+> one bypass-route role, fixes blockers in scope, re-audits in a fresh context
+> and iterates to CI green — reporting only the final head. Amber needs >= 3
+> separated roles; Green self-merge needs the allowlist checked outside the
+> lead's context; sequential passes are the fallback with no subagents. The
+> loop is NOT a substitute for human + ChatGPT approval and agent count is
+> never a safety argument. Audits are now
+> model-independent — "independent adversarial review / source-audit re-check /
+> post-run audit"; the Fable 5 requirement is removed from FUTURE rules while
+> every historical Fable 5 audit record, document name, PR number and status is
+> preserved unchanged. An auditing AI may not give final approval for an Amber
+> or Red gate. NEXT GATE: independent source-audit re-check of F-1..F-5, before
+> any real read. Forward epoch stays BLOCKED/WAIT; nothing read, derived,
+> validated, evaluated, trained or executed; NO_EXECUTION_PERFORMED /
+> PRODUCTION_READINESS_NOT_CLAIMED.
 
 - **Purpose:** execute the smallest safe real run under the pre-registered
   contract, exactly as registered.

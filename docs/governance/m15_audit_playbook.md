@@ -1,7 +1,7 @@
 # M15 audit playbook — durable governance record and gate discipline
 
 - **Document class:** doc-only governance playbook. Binding operating
-  instructions for every future Claude / Opus / Fable session that proposes,
+  instructions for every future AI session — of any model — that proposes,
   implements, audits, or merges any M15 / post-M1 research work. Executes
   nothing; authorises nothing.
 - **Status:** `M15_AUDIT_PLAYBOOK_AND_CLAUDE_RULES_RECORDED`
@@ -10,9 +10,20 @@
   · `FORWARD_EPOCH_ADOPTION_BLOCKED_INSUFFICIENT_SAMPLE_ADOPTION_WAITS`
   · `M15_FIRST_COST_HURDLE_AWARE_PREREGISTRATION_ACCEPTABLE_FOR_GATE3A_DATASET_EPOCH_ADOPTION`
 - Always binding: **`PRODUCTION_READINESS_NOT_CLAIMED`** · **`NO_EXECUTION_PERFORMED`**
-- Companion files: `docs/prompts/m15_future_audit_templates.md` (copy-paste
-  prompts), `docs/prompts/m15_claude_operating_prefix.md` (session prefix),
+- Companion files: `docs/governance/autonomous_development_policy.md`
+  (**process authority**: risk tiers, autonomy, stop rules, head-SHA rule),
+  `docs/prompts/m15_future_audit_templates.md` (optional prompt templates),
+  `docs/prompts/m15_claude_operating_prefix.md` (five-field task contract),
   root `CLAUDE.md` (mandatory pointer).
+
+**Division of authority.** This playbook governs research *substance* — what
+may be read, derived, trained, evaluated and claimed at each gate. The
+autonomous development policy governs *process* — how much a session decides
+alone, when it stops, and how head changes are handled. Where they overlap,
+the research restrictions here win. Every gate below is **Amber or Red** in
+the policy's tiers: the AI may investigate, implement, test and prepare a PR
+autonomously, but merging a gate PR and advancing to the next gate require a
+human + ChatGPT decision, and Red operations require approval before they run.
 
 Forbidden-label note: this document does not assert `PASS`, `Tier 1`,
 `FORMALLY_VERIFIED`, `PRODUCTION_READY`, `READY_FOR_LIVE`, `M15_AUTHORISED`,
@@ -22,7 +33,9 @@ in prohibition lists (§10) and in template status vocabularies.
 
 ---
 
-## 1. Current gate state (as recorded at authorship)
+## 1. Current gate state
+
+Last reconciled against master at `0e19135` (2026-08-02); master CI green.
 
 | Gate | State |
 | --- | --- |
@@ -34,30 +47,37 @@ in prohibition lists (§10) and in template status vocabularies.
 | Forward epoch (validation + holdout) | **`FORWARD_EPOCH_ADOPTION_BLOCKED_INSUFFICIENT_SAMPLE_ADOPTION_WAITS`** — needs ≥ 3 mo validation + ≥ 2 mo holdout of data at/after 2026-04-25; earliest feasible adoption ≈ **2026-10** per the PR #431 record |
 | Gate 5 — synthetic-only M15 machinery (PR #432) | ✅ merged (`M15_AGGREGATION_DATASET_MACHINERY_IMPLEMENTED_SYNTHETIC_ONLY_NO_RUN`) |
 | Source-contamination audit of the PR #432 machinery | **executed and merged (PR #433)** with verdict `M15_AGGREGATION_DATASET_MACHINERY_SOURCE_AUDIT_BLOCKED_PENDING_TARGETED_FIXES` — five probe-confirmed blockers **F-1…F-5** (F-1/F-2 INV-1-class) |
-| Targeted fix PR for F-1…F-5 (PR #434) | **OPEN, not merged** — must be rebased onto post-#433 master, reviewed at its new head, and merged only with explicit approval |
-| Source-audit **re-check** of the F-1…F-5 fixes | **NOT started** — required after the fix PR merges, before any real read |
+| Targeted fix PR for F-1…F-5 (+O-1/O-2) (PR #434) | ✅ **merged** as `5701ce8` (2026-07-27), on a recorded human + ChatGPT approval of the rebased head `2afa01f`. Status `M15_AGGREGATION_DATASET_MACHINERY_TARGETED_FIXES_PROPOSED`. The merge recorded the fixes; it did **not** grant audit acceptance |
+| CI reproducibility repair (PR #436) | ✅ **merged** as `0e19135` (2026-08-02) — infra-only Ruff pin `0.15.11`; master CI green. Status `RUFF_VERSION_PINNED_FOR_REPRODUCIBLE_CI_NO_RUN` |
+| **Independent source-audit re-check of the F-1…F-5 fixes** | **NOT started — this is the next gate.** Required before any real read |
 | Gate-3a continuation (real design-span derivation) | **NOT authorised** until the re-check accepts the fixes |
 
-**Next required step before any real data read:** merge the targeted fixes
-(after review), then a **short Fable 5 source-audit re-check of F-1…F-5**.
-Only after that re-check is accepted may a separately-authorised gate-3a
-continuation read/derive design-span data. (This supersedes-by-progress the
-earlier phrasing "the source audit is next": the *first* audit ran and
-BLOCKED; the re-check is now the gatekeeper.)
+**Next required step before any real data read:** an **independent
+source-audit re-check of F-1…F-5** (§4 checklist), performed by a session
+independent of the one that wrote the fixes. Only after that re-check is
+accepted may a separately-authorised gate-3a continuation read/derive
+design-span data. (This supersedes-by-progress the earlier phrasing "the
+source audit is next": the *first* audit ran and BLOCKED; the fixes are now
+merged; the re-check is the gatekeeper.)
 
-## 2. Immutable stop rules (mandatory for every session)
+## 2. Research stop rules (mandatory for every session)
 
-1. **Head-change stop:** if a PR head SHA changes after review/reporting —
-   even doc-only or hygiene-only — STOP, do not merge or proceed, and report
-   the new SHA for human + ChatGPT review.
-2. **No real read before audit acceptance:** if a task asks for a real data
+These are substantive research boundaries. Procedural stop rules — and the
+list of things that are explicitly **not** reasons to stop — live in
+`docs/governance/autonomous_development_policy.md` §11. Risk classification
+rules — protected paths, upward escalation, the Green allowlist — are policy
+§2–§8 and are not overridable by a task prompt.
+
+1. **No real read before audit acceptance:** if a task asks for a real data
    read before the machinery source audit (currently: the F-1…F-5 re-check)
    is accepted, REFUSE and redirect to the audit gate.
-3. **No real M15 derivation before audit acceptance:** same refusal + redirect.
-4. **No forward-epoch adoption** before sufficient forward data accrues AND an
+2. **No real M15 derivation before audit acceptance:** same refusal + redirect.
+3. **No forward-epoch adoption** before sufficient forward data accrues AND an
    explicitly authorised gate-3a continuation PR exists — refuse and redirect.
-5. **No validation, holdout, training, execution, or strategy metrics**
+4. **No validation, holdout, training, execution, or strategy metrics**
    without an explicit approved gate — refuse and redirect.
+5. **No automatic chaining of irreversible stages:** real-data read → training,
+   and validation → holdout, are separate gates with separate approvals.
 6. **Forbidden-label block:** any task or diff introducing
    `NEW_EPOCH_ADOPTED`, `BYTE_ADMISSIBLE`, `PRODUCTION_READY`, `MEETS`, or an
    equivalent final-success label outside a prohibition list → block or
@@ -65,15 +85,22 @@ BLOCKED; the re-check is now the gatekeeper.)
 7. **Doc-only purity:** if evidence, data, model binaries, raw rows, candles,
    predictions, trade logs, local paths, secrets, Drive/R2 credentials, or
    environment dumps appear in a doc-only PR → block.
-8. **Ambiguity rule:** if the current step is ambiguous, choose the NARROWER
-   (no-run, no-read) interpretation and require human + ChatGPT review.
+8. **Ambiguity rule:** if what a gate permits is ambiguous, choose the NARROWER
+   (no-run, no-read) interpretation and require human + ChatGPT review. This
+   applies to research scope, not to ordinary implementation choices — those
+   the session decides on its own (policy §1). Classification itself is not a
+   free choice: it escalates upward per policy §2–§3.
+9. **Approval scope is exact:** an approval covers the operation and head it
+   names. After merge approval, a changed head or an out-of-scope addition
+   voids it (policy §10).
 
 ## 3. Remaining gate order
 
 1. **Source-contamination / implementation source audit of the PR #432
    machinery** — *executed (PR #433): BLOCKED pending targeted fixes.*
-   Sub-steps now pending: (1a) merge the reviewed targeted-fix PR;
-   (1b) **short Fable 5 re-check of F-1…F-5** (accept / block again).
+   (1a) merge the reviewed targeted-fix PR — ✅ done (PR #434 → `5701ce8`);
+   (1b) **independent source-audit re-check of F-1…F-5** (accept / block
+   again) — **pending; this is the next gate.**
 2. If accepted → **separately-authorised gate-3a continuation**: design-span
    M15 derivation metadata/checksums; optionally design-span cost tables if
    explicitly authorised. (Template §5.)
@@ -97,7 +124,19 @@ and Gate-P2-style adoption artifacts.
 
 ## 4. Source-contamination audit template (reusable checklist)
 
-Use for the F-1…F-5 re-check and for any future machinery audit. Verify each:
+Use for the F-1…F-5 re-check and for any future machinery audit. The audit
+must be **independent**: performed by a session separate from the one that
+wrote the code, reading the source itself rather than trusting the fix report.
+Any sufficiently capable model may perform it; the auditing AI may not give
+final approval for the gate (policy §12).
+
+The checklist may be **split across specialised audit roles** (policy §13) —
+for example containment and forbidden routes, aggregation and boundary
+correctness, artifact/scrubber probing, and a refutation role arguing the
+machinery is still unsafe. Each role reads the source and diff itself and is
+not given the other roles' conclusions; the lead reconciles conflicting
+findings on the evidence rather than by majority, and reports any material
+disagreement it cannot resolve as a blocker. Verify each:
 
 - [ ] **Import graph** — outbound imports enumerated; only audited internal
       modules + stdlib; zero unexpected reverse callers.
@@ -241,10 +280,15 @@ production readiness, not paper/live authorisation, and not replication — it
 requires a separate human + ChatGPT ruling (disjoint replication before any
 stronger claim; the M1 precedent applies).
 
-## 9. Merge approval checklist (standard, every M15 PR)
+## 9. Merge approval checklist (standard, every Amber/Red PR)
+
+Run these read-only checks immediately before merging an approved PR. (Green
+PRs meeting every policy §4 self-merge condition do not need this ceremony;
+anything touching a protected path (policy §3) does.)
 
 - [ ] PR open · [ ] PR mergeable
-- [ ] reviewed head SHA unchanged (else STOP per §2.1)
+- [ ] head SHA still the approved one (else the approval is void — do not
+      merge, report the new SHA and request re-review; policy §10)
 - [ ] base = expected master tip
 - [ ] CI green on the reviewed head
 - [ ] touched files exactly match the approved scope
