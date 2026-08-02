@@ -224,6 +224,14 @@ battery.
 
 **Unresolved disagreement:** none.
 
+**CI repair in the same PR** (policy §14 — a CI failure never becomes its own
+PR): the first pushed head failed on Linux because the D1 regression asserted
+that UNC and extended-length aliases are refused. Those are Windows-only
+spellings; on Linux the same strings are ordinary relative paths that correctly
+resolve outside the protected tree, so the guard rightly allowed them. The
+alias attack now sits behind a `win32` skipif and a platform-independent
+`test_d1_plain_protected_path_refused` always runs.
+
 ## 5. Non-authorisation
 
 This note authorises nothing. It does not accept the source audit, does not
