@@ -64,7 +64,9 @@ merged; the re-check is the gatekeeper.)
 
 These are substantive research boundaries. Procedural stop rules — and the
 list of things that are explicitly **not** reasons to stop — live in
-`docs/governance/autonomous_development_policy.md` §5.
+`docs/governance/autonomous_development_policy.md` §11. Risk classification
+rules — protected paths, upward escalation, the Green allowlist — are policy
+§2–§8 and are not overridable by a task prompt.
 
 1. **No real read before audit acceptance:** if a task asks for a real data
    read before the machinery source audit (currently: the F-1…F-5 re-check)
@@ -86,10 +88,11 @@ list of things that are explicitly **not** reasons to stop — live in
 8. **Ambiguity rule:** if what a gate permits is ambiguous, choose the NARROWER
    (no-run, no-read) interpretation and require human + ChatGPT review. This
    applies to research scope, not to ordinary implementation choices — those
-   the session decides on its own (policy §1).
+   the session decides on its own (policy §1). Classification itself is not a
+   free choice: it escalates upward per policy §2–§3.
 9. **Approval scope is exact:** an approval covers the operation and head it
    names. After merge approval, a changed head or an out-of-scope addition
-   voids it (policy §4).
+   voids it (policy §10).
 
 ## 3. Remaining gate order
 
@@ -125,7 +128,7 @@ Use for the F-1…F-5 re-check and for any future machinery audit. The audit
 must be **independent**: performed by a session separate from the one that
 wrote the code, reading the source itself rather than trusting the fix report.
 Any sufficiently capable model may perform it; the auditing AI may not give
-final approval for the gate (policy §6). Verify each:
+final approval for the gate (policy §12). Verify each:
 
 - [ ] **Import graph** — outbound imports enumerated; only audited internal
       modules + stdlib; zero unexpected reverse callers.
@@ -272,11 +275,12 @@ stronger claim; the M1 precedent applies).
 ## 9. Merge approval checklist (standard, every Amber/Red PR)
 
 Run these read-only checks immediately before merging an approved PR. (Green
-PRs outside the review-required list in policy §2 do not need this ceremony.)
+PRs meeting every policy §4 self-merge condition do not need this ceremony;
+anything touching a protected path (policy §3) does.)
 
 - [ ] PR open · [ ] PR mergeable
 - [ ] head SHA still the approved one (else the approval is void — do not
-      merge, report the new SHA and request re-review; policy §4)
+      merge, report the new SHA and request re-review; policy §10)
 - [ ] base = expected master tip
 - [ ] CI green on the reviewed head
 - [ ] touched files exactly match the approved scope

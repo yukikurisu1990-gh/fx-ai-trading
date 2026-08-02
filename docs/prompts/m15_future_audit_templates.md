@@ -19,7 +19,7 @@ never treat a template's omissions as permission.
 requirement is an *independent* audit — a session separate from the one that
 produced the work, reading the source itself. Any sufficiently capable model
 may perform it. The auditing AI may not give final approval for an Amber or
-Red gate (policy §6). Historical audit documents keep their original names and
+Red gate (policy §12). Historical audit documents keep their original names and
 attributions; do not rewrite them.
 
 Forbidden-label note: `PASS`, `Tier 1`, `FORMALLY_VERIFIED`,
@@ -79,7 +79,7 @@ pytest tests/m15_gate3a
 - confirmation no next experiment started
 - the final green head SHA (this is the review target)
 Do not merge. Stop after opening the PR and reporting.
-Head-SHA rule (policy §4): before merge approval you may amend the PR and
+Head-SHA rule (policy §10): before merge approval you may amend the PR and
 push new heads until CI is green without stopping — report the final green
 head. After merge approval, a changed head or an out-of-scope addition voids
 the approval: do not merge, report the new SHA and request re-review.
@@ -275,7 +275,7 @@ gate. Stop after the merge report.
 ## Template 8 — Reviewer-requested amendment to an open PR
 
 *(Only needed when a reviewer asks for specific changes. Amending your own PR
-to get CI green needs no template and no template-driven stop — policy §4.)*
+to get CI green needs no template and no template-driven stop — policy §10.)*
 
 ```
 [STATE HEADER]

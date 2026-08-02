@@ -669,7 +669,19 @@ granting the next.
 > (new) defines Green/Amber/Red risk tiers, autonomous work inside a tier, one
 > irreversible gate per task, head-SHA freedom before merge approval, a limited
 > stop list, and the five-field task contract; CLAUDE.md, the playbook, the
-> operating prefix and the templates are aligned to it. Audits are now
+> operating prefix and the templates are aligned to it. Classification cannot
+> be self-lowered: protected paths (M15 machinery, features/labels/cost model,
+> effective-N, no-overlap/warm-up/epoch/split, kill gate, training/inference/
+> execution, strategy/broker, evidence+artifact schema/scrubber/guards, frozen
+> contracts, scripts/m15_gate3a/**, research-bearing src/scripts, artifacts/**,
+> governance, AI authority, .github/workflows/**, branch protection/required
+> checks, security/credentials/external storage, dependencies + pyproject.toml
+> + uv.lock + .pre-commit-config.yaml) are Amber at minimum; the highest
+> applicable tier governs; ambiguity resolves to Amber; a requester's "Green"
+> label does not bind. Green is an ALLOWLIST of small reversible edits with
+> nine self-merge conditions. Dependency/lockfile/workflow changes are Amber
+> (credentialed workflows Red); "synthetic-only" never makes a machinery bugfix
+> Green. Audits are now
 > model-independent — "independent adversarial review / source-audit re-check /
 > post-run audit"; the Fable 5 requirement is removed from FUTURE rules while
 > every historical Fable 5 audit record, document name, PR number and status is

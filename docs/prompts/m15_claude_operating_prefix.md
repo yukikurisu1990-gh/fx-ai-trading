@@ -19,7 +19,8 @@ TASK CONTRACT
 
 1. CURRENT POSITION — master SHA; what just landed; anything in flight.
 2. OBJECTIVE — what this task should achieve.
-3. RISK TIER — Green / Amber / Red (autonomous_development_policy.md §2).
+3. RISK TIER — the requester's expectation; the session re-derives it from
+   autonomous_development_policy.md §2-§8 and applies the higher of the two.
 4. HARD BOUNDARIES — what must not be crossed in this task.
 5. COMPLETION CRITERIA — what "done" means, and whether to merge or stop.
 ```
@@ -33,7 +34,7 @@ What the session does with it:
 3. Work autonomously inside that tier: investigate, implement, test, fix lint
    and CI, open and amend the PR until CI is green. Pick the most conservative
    reasonable option where several exist and record why.
-4. Stop only for a policy §5 trigger or a playbook §2 research boundary — not
+4. Stop only for a policy §11 trigger or a playbook §2 research boundary — not
    for a design choice, a CI failure, or a pre-approval head change.
 5. Report the final green head SHA, what was decided and why, and the residual
    risk. Merge only if the tier and the completion criteria allow it.
