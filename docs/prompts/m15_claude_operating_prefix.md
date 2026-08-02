@@ -41,9 +41,15 @@ What the session does with it:
    required fixes in scope, re-verify in a fresh audit context, and iterate to
    CI green. Sequential separated passes are the fallback when subagents are
    unavailable; say so in the report.
-5. Stop only for a policy §11 trigger or a playbook §2 research boundary — not
+5. Keep it to **one PR** while the work shares one objective, one risk tier
+   and one revert unit (policy §14) — implementation, tests, docs, stale-state
+   refreshes, CI repair and the internal audit's required fixes all belong in
+   the same PR, amended to the final green head. Open a Gate-decision PR only
+   when a contract or the research state is formally changed or judged, and an
+   Execution-evidence PR only for a post-approval irreversible run.
+6. Stop only for a policy §11 trigger or a playbook §2 research boundary — not
    for a design choice, a CI failure, or a pre-approval head change.
-6. Report the final green head SHA, the roles used and their main findings,
+7. Report the final green head SHA, the roles used and their main findings,
    what was decided and why, and the residual risk. Merge only if the tier and
    the completion criteria allow it.
 

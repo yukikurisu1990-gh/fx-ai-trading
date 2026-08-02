@@ -96,11 +96,22 @@ rules — protected paths, upward escalation, the Green allowlist — are policy
 
 ## 3. Remaining gate order
 
+**PR shape for this order (policy §14).** Each audit or adoption step below is
+a **Gate-decision PR** — it judges or changes the research state. The work it
+judges is a single **Work PR** that carries its code, tests, docs, internal
+audit and CI repair together; do not fragment a step into code / tests / docs
+/ audit-preparation PRs. A post-approval irreversible run and its evidence go
+in an **Execution-evidence PR**.
+
 1. **Source-contamination / implementation source audit of the PR #432
    machinery** — *executed (PR #433): BLOCKED pending targeted fixes.*
    (1a) merge the reviewed targeted-fix PR — ✅ done (PR #434 → `5701ce8`);
    (1b) **independent source-audit re-check of F-1…F-5** (accept / block
-   again) — **pending; this is the next gate.**
+   again) — **pending; this is the next gate.** If it accepts: one
+   Gate-decision PR, then a separate approval for the continuation. If it
+   blocks: one Gate-decision PR carrying the verdict → **one** targeted-fix
+   Work PR (code + tests + docs + internal audit + CI fixes) → one independent
+   re-check Gate-decision PR.
 2. If accepted → **separately-authorised gate-3a continuation**: design-span
    M15 derivation metadata/checksums; optionally design-span cost tables if
    explicitly authorised. (Template §5.)

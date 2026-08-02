@@ -102,6 +102,25 @@ autonomous development policy alone is enough.
   of agents used is never an argument that a change is safe.** If subagents
   are unavailable, run the perspectives sequentially, keep implementation /
   contract / adversarial review separate, and say so in the report.
+- **One objective, one PR** (policy §14). A PR is a meaningful unit of change,
+  not a work stage. While the work shares one objective, one risk tier and one
+  revert unit, keep investigation, implementation, tests, docs, stale-state
+  refreshes, lint/format, CI repair, rebases, the internal audit and its
+  required fixes in the **same** PR, and keep amending that PR to the final
+  green head. Never open a new PR because a subagent raised a fix, because CI
+  failed, because docs or tests are "separate", because of a rebase, or
+  because the head changed. PR count is not evidence of safety, and splitting
+  must never be used to manufacture extra approval points. Split only when the
+  risk tier changes, an irreversible operation sits between the parts, an
+  independent audit needs the separation, a frozen contract or research state
+  is being changed, the changes are unrelated, one part genuinely needs its
+  own revert, or one PR would seriously damage reviewability (judged by
+  cohesion, not line count). Three kinds: **Work PR** (ordinary change),
+  **Gate-decision PR** (formally changes or judges a contract or research
+  state — audits, adoptions, pre-registration, verdicts), **Execution-evidence
+  PR** (post-approval irreversible run and its evidence only). The latter two
+  are never Green. Do not open pointer-only or status-only PRs — fold them
+  into the related PR.
 - **The lead owns the outcome.** It is not a vote counter: it decomposes the
   task, picks the roles, checks the evidence behind each finding, merges
   duplicates, resolves contradictions, prevents scope creep, reviews the final

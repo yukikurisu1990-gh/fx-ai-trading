@@ -435,7 +435,153 @@ State briefly, in the PR body or the final report:
 Do not archive long internal transcripts or chains of reasoning — keep the
 conclusions, the evidence for them, and what was changed.
 
-## 14. Task prompt contract
+## 14. PR scope and splitting
+
+Autonomy applies to how the work is packaged, not only to how it is done. A
+PR is a **meaningful unit of change**, not a stage in a workflow. Splitting by
+work stage — code here, tests there, docs in a third PR — fragments a single change
+across several reviews without making any of them better, and quietly
+multiplies the number of human approvals a piece of work needs.
+
+### 14.1 Principle
+
+- Divide PRs by **meaningful change unit**, never by work stage.
+- As long as the work shares **one objective, one risk tier and one revert
+  unit**, keep investigation, implementation, tests, docs, internal audit and
+  CI repair in **one PR**.
+- After opening the PR, the AI keeps amending it autonomously — same
+  objective, same tier, same scope — until the final green head.
+- Never open a **new** PR to address subagent findings or to fix CI.
+- The number of PRs is never evidence of safety or audit quality.
+- Do not use fine-grained splitting as a way to manufacture more human
+  approval points.
+
+### 14.2 Standard PR kinds
+
+**1. Work PR** — ordinary implementation or repair. Within one objective and
+one risk tier, the following belong together and are **not** separated:
+
+investigation · design detailing · implementation · regression tests ·
+synthetic probes · the docs the change requires · refreshing stale state
+descriptions · lint and format · CI failure repair · rebase and conflict
+resolution · the internal subagent audit (§13) · required fixes that audit
+produced · the final self-review.
+
+**2. Gate-decision PR** — used only when the research state or a contract is
+formally changed or judged: freezing or changing a research contract ·
+dataset / epoch adoption · pre-registration · an independent source-audit
+verdict · a post-run audit · accepting or rejecting validation / holdout ·
+continuing or stopping a research family · a production or paper/live
+decision. A Gate-decision PR evaluates the **final state** of the Work PR it
+judges, independently of it.
+
+**3. Execution-evidence PR** — used when an irreversible or once-only
+operation produces evidence: the first real-data processing · a validation
+run · a holdout evaluation · a training run · external storage operations ·
+anything using credentials · paper/live execution. The implementation and
+preparation finish in a Work PR; only the post-approval execution and its
+evidence go in the Execution-evidence PR.
+
+### 14.3 When to split
+
+Split into separate PRs only when at least one of these holds:
+
+- the risk tier changes
+- the split is across an irreversible operation (before / after)
+- the independence of an independent audit requires it
+- a frozen contract or the research state is being changed
+- the changes are genuinely unrelated to each other
+- there is a real need to revert one part independently
+- a single PR would seriously damage reviewability
+
+Judge the last one by **cohesion of purpose, meaning and dependency**, not by
+line count alone.
+
+### 14.4 Reasons that are never sufficient to split
+
+- code and tests are different things
+- code and docs are different things
+- lint or format work is needed
+- CI failed
+- a rebase or conflict resolution is needed
+- a subagent produced a required fix
+- a stale document needs updating
+- a pointer or status line needs updating
+- the head SHA changed
+- the work had several stages
+
+### 14.5 Relationship to the internal audit
+
+- The subagent audit inside a Work PR is **internal quality control for
+  completing that PR** — it never becomes its own PR.
+- The independent gate audit that Amber and Red require runs in a session
+  separate from the implementer (§12), and is separated into a Gate-decision
+  PR **only when the gate calls for it**.
+- Do not confuse the internal audit with a formal independent gate audit.
+- Having run an internal audit never excuses skipping a required
+  gate-decision.
+- Conversely, do not impose a ceremonial separate audit PR on every Green or
+  Amber Work PR.
+
+### 14.6 Pointer and state updates
+
+- Do not open PRs that only update a roadmap pointer or a status line.
+- Fold them into the related Work PR or Gate-decision PR.
+- When the update merely records an already-merged state and changes no
+  research state or contract, it may wait for the next related PR.
+- Only a genuinely urgent stale-information correction is handled as its own
+  small Green docs PR.
+
+### 14.7 Relationship to the tiers
+
+- A **Green Work PR** may be self-merged when it satisfies the Green allowlist
+  and every §4 self-merge condition.
+- An **Amber Work PR** is prepared autonomously through the internal audit
+  loop to a final green head, but merging requires human + ChatGPT approval.
+- **Gate-decision PRs and Execution-evidence PRs are never treated as Green.**
+- A Red operation requires explicit approval before it runs, whatever the PR
+  structure around it looks like.
+
+### 14.8 Worked examples — the current M15 flow
+
+*Independent source-audit re-check of F-1…F-5 finds no blocker:*
+
+```text
+independent source-audit Gate-decision PR
+→ human + ChatGPT approval
+→ merge
+→ separate approval for the gate-3a continuation
+```
+
+*The re-check finds blockers:*
+
+```text
+independent audit Gate-decision PR
+→ blocker verdict
+→ ONE targeted-fix Work PR
+   - code
+   - tests
+   - docs
+   - internal subagent audit
+   - CI fixes
+→ human + ChatGPT approval, merge
+→ ONE independent re-check Gate-decision PR
+```
+
+Do **not** fragment that targeted fix into a code PR, a tests PR, a docs PR
+and an audit-preparation PR.
+
+*A future single run:*
+
+```text
+implementation + preparation Work PR
+→ pre-run Gate-decision
+→ human + ChatGPT Red execution approval
+→ Execution-evidence PR
+→ independent post-run Gate-decision PR
+```
+
+## 15. Task prompt contract
 
 A task prompt needs only these five fields:
 
@@ -451,7 +597,7 @@ vocabularies or file inventories. The AI reads `CLAUDE.md`, this policy and
 the playbook, and selects the checks the task actually warrants. When a prompt
 omits something these documents specify, the documents apply anyway.
 
-## 15. Recording an autonomous Green merge
+## 16. Recording an autonomous Green merge
 
 When the AI merges a Green PR on its own authority, it records — after the
 fact, with no prior approval needed:
@@ -465,7 +611,7 @@ fact, with no prior approval needed:
 - confirmation that no protected path was touched
 - confirmation that no next gate was started
 
-## 16. Always-binding statuses
+## 17. Always-binding statuses
 
 `PRODUCTION_READINESS_NOT_CLAIMED` and `NO_EXECUTION_PERFORMED` hold in every
 task and every report. The forward epoch remains
