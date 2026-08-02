@@ -177,6 +177,53 @@ Single-guard mutations of these are therefore *equivalent mutants*, not test
 gaps. Removing **both** members of a pair is caught by the suite in every case,
 which is the property that matters — verified by probe, not by argument.
 
+## 4b. Internal multi-agent audit of this fix
+
+Three independent audit roles ran as subagents (policy §13), each given the
+source, diff and contract and **none of the others' conclusions**: contract /
+specification, adversarial / bypass, and test adequacy / mutation. The lead
+re-derived every finding with its own probes before acting on it.
+
+**Six defects were found in the first cut of this fix and closed in this same
+PR** (policy §14 — a subagent finding never becomes its own PR):
+
+| # | Defect the audit found in the fix | Closed by |
+| --- | --- | --- |
+| **D1** | `refuse_real_path` was still bypassable by UNC aliases — and the new extended-prefix stripping *converted* an extended UNC path into exactly the plain-UNC form that bypassed the string comparison | `_names_protected` now also compares by filesystem identity (`os.path.samefile`) walking up the ancestors, and fails closed on any `OSError` |
+| **D2** | `if not files` is truthiness on the container, so a generator returned `PROVEN_NO_DEAD_WINDOW_OVERLAP` with `files_checked=0` — the T-7 proof on **zero evidence** | a concrete `Sequence` is required, every entry must be a `Mapping`, and an optional `expected_count` pins the inventory size |
+| **D3** | a forbidden status used as a dict **key** was unscanned (`{"PASS": 1}` passed clean) | keys are scanned too — but only a **truthy** value asserts the status, so the committed manifests' `"production_ready": false` disclaimers still pass |
+| **D4** | `effective_n` never consulted the pair authority: `usd_jpy` and `USD_JPY` counted as two pairs, defeating the duplicate guard, and off-universe labels were accepted | pair identity is bound to `canonical_pair`; the universe size is also bounded |
+| **D5** | the gap report emitted the caller's raw spelling, so one real pair produced five artifact identities — violating the committed inventory's `pair: "one of PAIRS_20"` | `aggregate_m15` canonicalises `pair` before use |
+| **D6** | `NaN` / `Infinity` reached the effective-N record and were serialised as non-standard JSON constants, scrub-clean | the record is checked finite, and the scrubber now reports `gate3a_non_finite_value` |
+
+Further required fixes raised by the test/mutation and contract roles and
+closed here: the OHLC value pin could not distinguish aggregation from
+positional selection (a non-monotone bucket now pins it); the per-key
+`isfinite` check was only nominally covered because a single-row bucket let the
+derived guard raise instead (the bad value now sits in a middle row of a full
+bucket, with the per-key message pinned); `PAIRS_20` membership is now asserted
+against the two committed canonical lists by AST, which is what the module
+docstring claimed; a mis-declared spread **magnitude** is now caught by a
+100-pip plausibility ceiling; the span ordering invariants became explicit
+`raise`s because bare `assert`s vanish under `python -O`; artifact names need a
+non-empty stem; and `pandas` is declared in the dev extra so the B-1 regression
+module cannot skip silently.
+
+**One finding was overridden by the lead.** Both the contract and test roles
+raised the branch head moving mid-audit as a blocker, citing the rule that any
+head change stops the work. That rule was superseded on master by
+`docs/governance/autonomous_development_policy.md` §10: before merge approval
+the head may move freely and only the final green head is reported; the
+head-change stop applies *after* approval. Recorded rather than acted on.
+
+**Mutation battery:** 44 mutations, **38 caught**. The six survivors are all
+members of the deliberately redundant pairs in §4; removing both members of
+each pair is caught — verified by probe: B-1 pair → 2 failures, B-1 triple → 2,
+R-3 pair → 2, R-9 whole guard → 3. No genuine test gap remains from the
+battery.
+
+**Unresolved disagreement:** none.
+
 ## 5. Non-authorisation
 
 This note authorises nothing. It does not accept the source audit, does not
