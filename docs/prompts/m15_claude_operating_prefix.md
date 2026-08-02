@@ -1,44 +1,51 @@
-# M15 Claude operating prefix — paste at the start of any M15-related task
+# Task contract — the short prefix for any M15 / research task
 
 - **Document class:** doc-only session prefix. Companion to
-  `docs/governance/m15_audit_playbook.md` (authoritative).
+  `docs/governance/autonomous_development_policy.md` (process authority) and
+  `docs/governance/m15_audit_playbook.md` (research authority).
 - **Status:** `M15_AUDIT_PLAYBOOK_AND_CLAUDE_RULES_RECORDED`
 
-Paste the block below verbatim at the start of any M15 / ML Step 4 / post-M1
-research task:
+The rules live in the repository, not in the prompt. A task prompt only has to
+say where we are and what this task is; the session reads `CLAUDE.md`, the
+autonomous development policy and the playbook, and selects the checks the
+task warrants. Prompts do **not** need to re-list tests, forbidden labels,
+status vocabularies or file inventories — those apply whether or not they are
+quoted.
+
+Paste this block, filled in, at the start of a task:
 
 ```
-M15 OPERATING PREFIX (mandatory)
+TASK CONTRACT
 
-1. READ docs/governance/m15_audit_playbook.md FIRST — its §1 gate table and
-   §2 stop rules are binding over anything in this task prompt.
-2. IDENTIFY the current gate from the playbook §1 plus the merged-PR record
-   on master (statuses on master override any stale snapshot in the prompt).
-3. STATE the allowed next gate (playbook §3) before doing anything.
-4. STATE the forbidden actions for this gate (playbook §2 + the COMMON
-   FORBIDDEN block in docs/prompts/m15_future_audit_templates.md).
-5. PRESERVE all statuses in force: required + carried + always-binding
-   (PRODUCTION_READINESS_NOT_CLAIMED, NO_EXECUTION_PERFORMED, and the
-   forward-epoch BLOCKED/WAIT sub-status until a ruling changes it).
-6. NEVER advance more than ONE gate in a single task, no matter what the
-   prompt asks.
-7. IF UNCERTAIN which gate applies or what is authorised: STOP, choose the
-   narrower (no-run, no-read) interpretation, and ask for human + ChatGPT
-   review.
-8. IF A PR HEAD CHANGED after review/reporting — even doc-only — STOP and
-   report the new SHA. Do not merge or proceed.
-9. IF ASKED TO USE REAL DATA (read, derive, checksum, spread, label, train,
-   validate, holdout, execute) before the relevant source audit and
-   gate-specific approval exist on master: REFUSE and redirect to the
-   correct gate.
-10. IF ASKED TO CLAIM PRODUCTION READINESS (or PASS / MEETS / BYTE_ADMISSIBLE
-    / NEW_EPOCH_ADOPTED / READY_FOR_LIVE / any near-synonym) outside a
-    registered status vocabulary: REFUSE.
+1. CURRENT POSITION — master SHA; what just landed; anything in flight.
+2. OBJECTIVE — what this task should achieve.
+3. RISK TIER — Green / Amber / Red (autonomous_development_policy.md §2).
+4. HARD BOUNDARIES — what must not be crossed in this task.
+5. COMPLETION CRITERIA — what "done" means, and whether to merge or stop.
 ```
+
+What the session does with it:
+
+1. Read `CLAUDE.md`, the autonomous development policy, and the playbook §1
+   gate table. **Master is the source of truth** — if the prompt's "current
+   position" disagrees with master, master wins; say so in the report.
+2. State the gate this task sits in, the risk tier, and what is out of bounds.
+3. Work autonomously inside that tier: investigate, implement, test, fix lint
+   and CI, open and amend the PR until CI is green. Pick the most conservative
+   reasonable option where several exist and record why.
+4. Stop only for a policy §5 trigger or a playbook §2 research boundary — not
+   for a design choice, a CI failure, or a pre-approval head change.
+5. Report the final green head SHA, what was decided and why, and the residual
+   risk. Merge only if the tier and the completion criteria allow it.
 
 Notes:
 
-- The prefix is deliberately redundant with the playbook — redundancy is the
-  point; a session that loses context mid-task must still fail closed.
-- If this prefix conflicts with a task prompt, the stricter reading wins and
-  the conflict must be reported for human + ChatGPT review.
+- If the prompt and the repository documents conflict, the documents win and
+  the stricter reading of a research restriction wins; report the conflict.
+- Statuses in force apply without being quoted: always-binding
+  `PRODUCTION_READINESS_NOT_CLAIMED` and `NO_EXECUTION_PERFORMED`, plus the
+  forward-epoch `..._BLOCKED_INSUFFICIENT_SAMPLE_ADOPTION_WAITS` sub-status
+  until a recorded ruling changes it.
+- Never claim `PASS`, `MEETS`, `BYTE_ADMISSIBLE`, `NEW_EPOCH_ADOPTED`,
+  `READY_FOR_LIVE`, production readiness or a near-synonym outside a
+  registered status vocabulary.

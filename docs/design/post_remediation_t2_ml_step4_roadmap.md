@@ -656,6 +656,28 @@ granting the next.
 > +39 regression tests (91 total in tests/m15_gate3a). No guard loosened; no
 > real data read; no derivation/training/validation/holdout/execution. Next:
 > short Fable 5 re-check of F-1..F-5 BEFORE any gate-3a continuation.
+>
+> STATE + GOVERNANCE AMENDMENT pointer (doc-only, 2026-08-02): the two blocks
+> above are historical records of what was proposed at the time; current state
+> is recorded here. PR #434 (F-1..F-5 + O-1/O-2 targeted fixes) MERGED as
+> 5701ce8 on a recorded human + ChatGPT approval of head 2afa01f — the merge
+> records the fixes, it does NOT grant audit acceptance. PR #436 (infra-only
+> Ruff pin 0.15.11, after an unpinned Ruff floated to 0.16.0 and broke
+> ruff format --check on 17 pre-existing docs) MERGED as 0e19135 —
+> RUFF_VERSION_PINNED_FOR_REPRODUCIBLE_CI_NO_RUN; master CI green. Governance
+> amended to autonomy-first: docs/governance/autonomous_development_policy.md
+> (new) defines Green/Amber/Red risk tiers, autonomous work inside a tier, one
+> irreversible gate per task, head-SHA freedom before merge approval, a limited
+> stop list, and the five-field task contract; CLAUDE.md, the playbook, the
+> operating prefix and the templates are aligned to it. Audits are now
+> model-independent — "independent adversarial review / source-audit re-check /
+> post-run audit"; the Fable 5 requirement is removed from FUTURE rules while
+> every historical Fable 5 audit record, document name, PR number and status is
+> preserved unchanged. An auditing AI may not give final approval for an Amber
+> or Red gate. NEXT GATE: independent source-audit re-check of F-1..F-5, before
+> any real read. Forward epoch stays BLOCKED/WAIT; nothing read, derived,
+> validated, evaluated, trained or executed; NO_EXECUTION_PERFORMED /
+> PRODUCTION_READINESS_NOT_CLAIMED.
 
 - **Purpose:** execute the smallest safe real run under the pre-registered
   contract, exactly as registered.

@@ -1,12 +1,26 @@
-# M15 future prompt templates — copy-paste library for Claude/Opus/Fable sessions
+# M15 prompt templates — optional detail library
 
 - **Document class:** doc-only prompt library. Companion to
   `docs/governance/m15_audit_playbook.md` (the playbook is authoritative; if a
-  template and the playbook disagree, the playbook + the stricter reading win).
+  template and the playbook disagree, the playbook + the stricter reading win)
+  and `docs/governance/autonomous_development_policy.md` (process authority).
 - **Status:** `M15_AUDIT_PLAYBOOK_AND_CLAUDE_RULES_RECORDED`
 - No template below authorises real data, validation, holdout, training, or
   execution. Templates 4–6 are usable ONLY after their gate-specific human +
   ChatGPT approval exists; pasting a template is never itself an approval.
+
+**These templates are optional.** The normal prompt is the five-field task
+contract in `docs/prompts/m15_claude_operating_prefix.md`; the session reads
+the repository documents and selects its own checks. Use a template when you
+want to pin an unusually exact scope for a gate, not as routine ceremony — and
+never treat a template's omissions as permission.
+
+**Model-independent by design.** Where these templates call for an audit, the
+requirement is an *independent* audit — a session separate from the one that
+produced the work, reading the source itself. Any sufficiently capable model
+may perform it. The auditing AI may not give final approval for an Amber or
+Red gate (policy §6). Historical audit documents keep their original names and
+attributions; do not rewrite them.
 
 Forbidden-label note: `PASS`, `Tier 1`, `FORMALLY_VERIFIED`,
 `PRODUCTION_READY`, `READY_FOR_LIVE`, `M15_AUTHORISED`, `H1_AUTHORISED`,
@@ -63,23 +77,27 @@ pytest tests/m15_gate3a
 - confirmation prior evidence dirs + artifacts/m15_gate3a untouched
 - confirmation stage24/stage25 clean
 - confirmation no next experiment started
+- the final green head SHA (this is the review target)
 Do not merge. Stop after opening the PR and reporting.
-Important process rule: if the PR head changes after reporting — even
-doc-only or hygiene-only — do not merge or proceed. Stop and report the
-changed head SHA for human + ChatGPT review.
+Head-SHA rule (policy §4): before merge approval you may amend the PR and
+push new heads until CI is green without stopping — report the final green
+head. After merge approval, a changed head or an out-of-scope addition voids
+the approval: do not merge, report the new SHA and request re-review.
 ```
 
 ---
 
-## Template 1 — Source-contamination audit (incl. the F-1…F-5 re-check)
+## Template 1 — Independent source-contamination audit (incl. the F-1…F-5 re-check)
 
 ```
 [STATE HEADER]
 Create a doc-only source-contamination / implementation source audit PR for
 <TARGET: e.g. the merged targeted-fix PR #<N> M15 machinery>.
-Branch: docs/fable5-m15-<target>-source-audit(-recheck)
+This is an INDEPENDENT audit: read the source yourself; do not rely on the
+fix PR's own report. Any sufficiently capable model may perform it.
+Branch: docs/m15-<target>-source-audit(-recheck)
 Base: latest master (<BASE_SHA>)
-Primary document: docs/design/m15_<target>_source_audit_fable5.md
+Primary document: docs/design/m15_<target>_source_audit.md
 Allowed files: the primary document + a short pointer in
 docs/design/post_remediation_t2_ml_step4_roadmap.md only.
 [COMMON FORBIDDEN]
@@ -133,8 +151,9 @@ no-overlap proof result / cost-table status / [COMMON REPORT TAIL]
 
 ```
 [STATE HEADER]
-Create a doc-only audit PR of the gate-3a continuation outputs (PR #<N>).
-Branch: docs/fable5-m15-gate3a-continuation-audit
+Create a doc-only independent audit PR of the gate-3a continuation outputs
+(PR #<N>).
+Branch: docs/m15-gate3a-continuation-audit
 Base: latest master (<BASE_SHA>)
 Allowed files: the audit doc + roadmap pointer.
 [COMMON FORBIDDEN] (reading the COMMITTED metadata artifacts is allowed; raw
@@ -209,8 +228,9 @@ vocabulary; always PRODUCTION_READINESS_NOT_CLAIMED. [COMMON CHECKS]
 
 ```
 [STATE HEADER]
-Create a doc-only Fable 5 post-run audit of the single-run evidence (PR #<N>).
-Branch: docs/fable5-m15-single-run-post-audit
+Create a doc-only independent post-run audit of the single-run evidence
+(PR #<N>), by a session separate from the one that executed the run.
+Branch: docs/m15-single-run-post-audit
 Base: latest master (<BASE_SHA>)
 Allowed files: audit doc + roadmap pointer. Read ONLY committed evidence
 metadata + committed source; arithmetic consistency checks on committed values
@@ -232,16 +252,17 @@ separate human + ChatGPT ruling (disjoint replication before stronger claims).
 [COMMON CHECKS] Final report: per-section findings + [COMMON REPORT TAIL]
 ```
 
-## Template 7 — Merge approval (for the human to issue; Claude executes read-only checks then merges)
+## Template 7 — Merge approval (for the human to issue; the session runs read-only checks then merges)
 
 ```
 Human approval granted: merge PR #<N>.
-Reviewed head SHA: <HEAD_SHA> ; Base: <BASE_SHA>.
+Approved head SHA: <HEAD_SHA> ; Base: <BASE_SHA>.
 This merge accepts: <the PR's registered status + key conclusions, itemised>.
 This merge does not approve: <the standard non-approval list for the gate>.
 Before merging, perform final read-only pre-merge checks per playbook §9
-(open, mergeable, head unchanged — else STOP and report the new SHA, do not
-merge —, base expected, CI green, touched files exactly <LIST>, no unexpected
+(open, mergeable, head still the approved one — else the approval is void:
+do not merge, report the new SHA and request re-review —, base expected, CI
+green, touched files exactly <LIST>, no unexpected
 code/test/config, no raw data/secrets/evidence/binaries, prior evidence +
 artifacts/m15_gate3a untouched, stage24/25 clean, working tree clean,
 statuses correct, non-authorisation present).
@@ -251,7 +272,10 @@ touched files / status confirmations / the gate's confirmation list / next
 gate. Stop after the merge report.
 ```
 
-## Template 8 — Amendment for a changed head SHA
+## Template 8 — Reviewer-requested amendment to an open PR
+
+*(Only needed when a reviewer asks for specific changes. Amending your own PR
+to get CI green needs no template and no template-driven stop — policy §4.)*
 
 ```
 [STATE HEADER]
