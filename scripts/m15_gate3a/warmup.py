@@ -44,8 +44,10 @@ class WarmupPolicy:
         """Fail closed if any load timestamp precedes the forward floor.
 
         F-5 fix: naive datetimes and offset-less ISO strings FAIL CLOSED —
-        never silently assumed UTC.
+        never silently assumed UTC. N-3: the policy validates itself first, so
+        an under-sized or malformed warm-up can no longer authorise a load.
         """
+        self.validate()
         if isinstance(ts, datetime):
             if ts.tzinfo is None:
                 raise WarmupPolicyError(f"naive load timestamp rejected: {ts.isoformat()}")

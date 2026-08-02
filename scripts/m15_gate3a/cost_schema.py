@@ -11,7 +11,7 @@ from __future__ import annotations
 import math
 from typing import Any, Final
 
-from scripts.ml_step4.data_adapter import pip_size_for
+from .pair_authority import PAIRS_20, canonical_pair, pip_size_for_pair
 
 SESSIONS_UTC: Final[dict[str, str]] = {
     "asia": "00:00-07:59",
@@ -21,6 +21,16 @@ SESSIONS_UTC: Final[dict[str, str]] = {
 EXECUTION_PADDING_PIP: Final[float] = 0.3
 FLAT_SLIPPAGE_CELL_PIP: Final[float] = 0.5
 CLAIM_SCOPE: Final[str] = "quote_cost_validity"
+
+# R-8: the committed cost_table_plan_or_metadata.json fixes the convention —
+# "spreads measured in price units; converted via pip_size_for". Without a
+# declared unit a price-unit table and a pip-unit table were indistinguishable
+# (a 10,000x difference the schema could not see), and the formula string could
+# document away the pinned 0.3 / 0.5.
+SPREAD_UNIT: Final[str] = "price"
+ALL_IN_COST_FORMULA: Final[str] = (
+    "cost(pair, session) = median_spread(pair, session) + 0.3 + 0.5 (primary)"
+)
 
 _REQUIRED_ENTRY_KEYS: Final[tuple[str, ...]] = (
     "pair",
@@ -34,6 +44,7 @@ _REQUIRED_GLOBAL_KEYS: Final[tuple[str, ...]] = (
     "execution_padding_pip",
     "flat_slippage_cell_pip",
     "all_in_cost_formula",
+    "spread_unit",
     "claim_scope",
     "entries",
 )
@@ -56,6 +67,10 @@ def validate_cost_table(table: Any) -> dict:
         raise CostSchemaError("flat_slippage_cell_pip must be 0.5")
     if table["claim_scope"] != CLAIM_SCOPE:
         raise CostSchemaError("claim_scope must be 'quote_cost_validity'")
+    if table["spread_unit"] != SPREAD_UNIT:
+        raise CostSchemaError(f"spread_unit must be {SPREAD_UNIT!r} (price units, per the plan)")
+    if table["all_in_cost_formula"] != ALL_IN_COST_FORMULA:
+        raise CostSchemaError("all_in_cost_formula must match the frozen plan string verbatim")
 
     entries = table["entries"]
     if not isinstance(entries, list) or not entries:
@@ -71,13 +86,19 @@ def validate_cost_table(table: Any) -> dict:
         session = e["session"]
         if session not in SESSIONS_UTC:
             raise CostSchemaError(f"unsupported session {session!r}")
-        pair = e["pair"]
-        # Fail-closed pip check against the single authority (unknown pair raises).
-        expected_pip = pip_size_for(pair)
+        # B-4: normalise + universe-check before the pip comparison, so a
+        # non-canonical spelling cannot agree with a wrongly scaled pip_size.
+        pair = canonical_pair(e["pair"])
+        if e["pair"] != pair:
+            raise CostSchemaError(
+                f"pair must be the canonical spelling {pair!r}, got {e['pair']!r}"
+            )
+        expected_pip = pip_size_for_pair(pair)
         if e["pip_size"] != expected_pip:
             raise CostSchemaError(
                 f"pip_size {e['pip_size']} for {pair} != authority {expected_pip}"
             )
+        stats: dict[str, float] = {}
         for stat in ("median_spread", "p90_spread", "p95_spread"):
             v = e[stat]
             # F-4 fix: NaN/inf must fail closed (``NaN < 0`` is False, so the
@@ -88,6 +109,15 @@ def validate_cost_table(table: Any) -> dict:
                 raise CostSchemaError(
                     f"{stat} for {pair}/{session} must be a finite non-negative number"
                 )
+            stats[stat] = float(v)
+        # R-8: without monotonicity the mandatory p90 stress could be milder
+        # than the base case.
+        if not stats["median_spread"] <= stats["p90_spread"] <= stats["p95_spread"]:
+            raise CostSchemaError(
+                f"spread quantiles for {pair}/{session} must satisfy "
+                f"median <= p90 <= p95 (got {stats['median_spread']}, "
+                f"{stats['p90_spread']}, {stats['p95_spread']})"
+            )
         key = (pair, session)
         if key in seen:
             raise CostSchemaError(f"duplicate (pair, session): {key}")
@@ -96,6 +126,9 @@ def validate_cost_table(table: Any) -> dict:
     return {
         "entries_validated": len(entries),
         "sessions": sorted(SESSIONS_UTC),
+        "spread_unit": SPREAD_UNIT,
+        "pairs_covered": sorted({p for p, _ in seen}),
+        "full_20x3_coverage": len(seen) == len(PAIRS_20) * len(SESSIONS_UTC),
         "p95_diagnostic_present": True,
         "real_spreads_computed": False,
         "result": "COST_TABLE_SCHEMA_VALID",
