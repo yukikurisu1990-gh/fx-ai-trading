@@ -82,6 +82,35 @@ autonomous development policy alone is enough.
   session's conclusions; the same model product is fine; the implementer's own
   self-review never counts. An AI that performed an audit may not give final
   approval for an Amber or Red gate. Do not rewrite historical audit records.
+- **Split the work and have it attacked** (policy §13). Where subagents are
+  available, the lead agent assigns specialised roles sized to the change —
+  implementation, contract/specification, tests and boundary conditions,
+  security and forbidden routes, contamination and leakage, CI and
+  dependencies, adversarial refutation, final integration. Give each audit
+  role the source, diff and contract, **never the other roles' conclusions**;
+  at least one role argues the change is wrong, and at least one hunts
+  boundary conditions and bypass routes the tests miss. Then loop: implement →
+  independent audit classifying findings as blocker / required fix /
+  non-blocking observation / accepted → fix in scope → re-verify in a fresh
+  audit context → run CI → repeat until every required fix is resolved and CI
+  is green. Report only that final head. Amber needs at least three separated
+  roles (author, contract/data-boundary audit, adversarial/bypass audit); a
+  Green self-merge needs the §4 conditions confirmed in a review context other
+  than the lead's. Disagreements are resolved on the evidence, never by
+  majority vote; an unresolvable material disagreement is a blocker. **Running
+  this loop is never a substitute for human + ChatGPT approval, and the number
+  of agents used is never an argument that a change is safe.** If subagents
+  are unavailable, run the perspectives sequentially, keep implementation /
+  contract / adversarial review separate, and say so in the report.
+- **The lead owns the outcome.** It is not a vote counter: it decomposes the
+  task, picks the roles, checks the evidence behind each finding, merges
+  duplicates, resolves contradictions, prevents scope creep, reviews the final
+  diff and confirms the final classification. Do not adopt a subagent's error,
+  omission or over-correction unexamined.
+- **Record briefly** (PR body or final report): roles used, each role's main
+  findings, blockers and required fixes, the post-fix re-audit result, any
+  unresolved disagreement, and the substitute procedure if subagents were
+  unavailable. Keep conclusions and evidence, not transcripts.
 - **After an autonomous Green merge**, record PR URL, merge commit, risk
   classification, touched files, CI result, which §4 allowlist entry applied,
   that no protected path was touched, and that no next gate was started. No

@@ -128,7 +128,15 @@ Use for the F-1…F-5 re-check and for any future machinery audit. The audit
 must be **independent**: performed by a session separate from the one that
 wrote the code, reading the source itself rather than trusting the fix report.
 Any sufficiently capable model may perform it; the auditing AI may not give
-final approval for the gate (policy §12). Verify each:
+final approval for the gate (policy §12).
+
+The checklist may be **split across specialised audit roles** (policy §13) —
+for example containment and forbidden routes, aggregation and boundary
+correctness, artifact/scrubber probing, and a refutation role arguing the
+machinery is still unsafe. Each role reads the source and diff itself and is
+not given the other roles' conclusions; the lead reconciles conflicting
+findings on the evidence rather than by majority, and reports any material
+disagreement it cannot resolve as a blocker. Verify each:
 
 - [ ] **Import graph** — outbound imports enumerated; only audited internal
       modules + stdlib; zero unexpected reverse callers.

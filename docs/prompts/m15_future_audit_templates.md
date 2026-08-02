@@ -22,6 +22,15 @@ may perform it. The auditing AI may not give final approval for an Amber or
 Red gate (policy §12). Historical audit documents keep their original names and
 attributions; do not rewrite them.
 
+**Role separation.** Any of these audits may be split across specialised
+subagent roles per policy §13 — each reading the source and diff itself, at
+least one arguing the change is wrong and at least one hunting boundary
+conditions and bypass routes. The lead reconciles findings on the evidence,
+not by majority, and reports unresolved material disagreement as a blocker.
+Where subagents are unavailable, run the perspectives sequentially and say so.
+Running the loop is never a substitute for the gate's human + ChatGPT
+approval.
+
 Forbidden-label note: `PASS`, `Tier 1`, `FORMALLY_VERIFIED`,
 `PRODUCTION_READY`, `READY_FOR_LIVE`, `M15_AUTHORISED`, `H1_AUTHORISED`,
 `H2_STARTED`, `PHASE_C2_STARTED`, `NEW_EPOCH_ADOPTED`, `BYTE_ADMISSIBLE`,

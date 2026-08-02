@@ -681,7 +681,17 @@ granting the next.
 > label does not bind. Green is an ALLOWLIST of small reversible edits with
 > nine self-merge conditions. Dependency/lockfile/workflow changes are Amber
 > (credentialed workflows Red); "synthetic-only" never makes a machinery bugfix
-> Green. Audits are now
+> Green. A multi-agent internal audit loop is standard: the lead splits work
+> across specialised roles (implementation, contract, tests/boundaries,
+> security/forbidden routes, contamination, CI/dependencies, adversarial
+> refutation, integration), gives each audit role the source and diff rather
+> than the other roles' conclusions, requires at least one refutation role and
+> one bypass-route role, fixes blockers in scope, re-audits in a fresh context
+> and iterates to CI green — reporting only the final head. Amber needs >= 3
+> separated roles; Green self-merge needs the allowlist checked outside the
+> lead's context; sequential passes are the fallback with no subagents. The
+> loop is NOT a substitute for human + ChatGPT approval and agent count is
+> never a safety argument. Audits are now
 > model-independent — "independent adversarial review / source-audit re-check /
 > post-run audit"; the Fable 5 requirement is removed from FUTURE rules while
 > every historical Fable 5 audit record, document name, PR number and status is

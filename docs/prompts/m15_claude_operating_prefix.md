@@ -34,10 +34,18 @@ What the session does with it:
 3. Work autonomously inside that tier: investigate, implement, test, fix lint
    and CI, open and amend the PR until CI is green. Pick the most conservative
    reasonable option where several exist and record why.
-4. Stop only for a policy §11 trigger or a playbook §2 research boundary — not
+4. Run the internal audit loop (policy §13): split the work across specialised
+   roles where subagents exist — Amber needs at least author, contract/
+   data-boundary audit and adversarial/bypass audit — give each audit role the
+   source and diff rather than the other roles' conclusions, fix blockers and
+   required fixes in scope, re-verify in a fresh audit context, and iterate to
+   CI green. Sequential separated passes are the fallback when subagents are
+   unavailable; say so in the report.
+5. Stop only for a policy §11 trigger or a playbook §2 research boundary — not
    for a design choice, a CI failure, or a pre-approval head change.
-5. Report the final green head SHA, what was decided and why, and the residual
-   risk. Merge only if the tier and the completion criteria allow it.
+6. Report the final green head SHA, the roles used and their main findings,
+   what was decided and why, and the residual risk. Merge only if the tier and
+   the completion criteria allow it.
 
 Notes:
 

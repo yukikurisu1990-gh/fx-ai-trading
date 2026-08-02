@@ -289,7 +289,153 @@ Amber or Red gate.** Final approval is a human + ChatGPT decision.
 Historical audit records — their document names, PR numbers, statuses, and the
 model that actually performed them — are facts and must not be rewritten.
 
-## 13. Task prompt contract
+## 13. Multi-agent internal audit loop
+
+A session that implements a change and then reviews its own work checks it
+with the same assumptions that produced it. Where the environment offers
+subagents, the lead agent therefore splits the work across specialised roles
+and has the result attacked before reporting it.
+
+**This does not replace human + ChatGPT approval for Amber or Red.** Running
+an internal audit loop is evidence that the work was scrutinised; it is not an
+authorisation, and the number of agents used is never an argument that a
+change is safe or that a gate may advance.
+
+### 13.1 Roles
+
+The lead agent may create specialised subagents sized to the work and its
+risk. Typical roles:
+
+- implementation / change author
+- specification and contract consistency
+- tests and boundary conditions
+- security and forbidden routes
+- data contamination and leakage
+- CI and dependencies
+- adversarial review / refutation
+- final integration
+
+Not every task needs every role. The lead selects the roles the change
+actually warrants.
+
+### 13.2 Independence of audit subagents
+
+- Give each audit subagent the target source, diff and contract — **not** the
+  other subagents' conclusions.
+- Never adopt the implementer's own explanation or self-assessment as fact.
+- At least one subagent must work **from the position that the change is
+  wrong**, hunting for blockers.
+- At least one subagent must hunt for **boundary conditions and bypass routes
+  the tests do not cover**.
+- When subagents disagree, the lead does **not** take a majority vote: it
+  compares the reasoning and resolves the disagreement on the evidence.
+- A material disagreement that cannot be resolved is reported as a blocker.
+
+### 13.3 The loop
+
+1. The lead confirms the current position, objective, risk tier and hard
+   boundaries.
+2. The lead splits the work across the appropriate specialised roles.
+3. The implementation role produces the change.
+4. Independent audit roles re-read the source, diff, tests and contract.
+5. Audit roles classify each finding as **blocker**, **required fix**,
+   **non-blocking observation**, or **accepted**.
+6. Blockers and required fixes are fixed by the implementation role, within
+   the same scope.
+7. After the fix, re-verify with a **different** audit subagent, or in a fresh
+   audit context that does not inherit the first conclusions.
+8. Run CI and the tests the change warrants.
+9. While CI failures or unresolved audit findings remain, iterate — fix and
+   re-audit — inside the authorised gate.
+10. Report only the final head, once every required fix is resolved and CI is
+    green.
+
+Head changes during this loop are **not** a reason to stop, as long as merge
+approval has not yet been given (§10).
+
+### 13.4 Loop exit conditions
+
+The lead may not call a task complete until all of these hold:
+
+- [ ] the implementation or document change matches the objective
+- [ ] the change stays inside its risk tier
+- [ ] protected path / protected action classification is settled (§2–§3)
+- [ ] the tests the change warrants pass
+- [ ] CI is green
+- [ ] an independent adversarial review has been completed
+- [ ] no blocker remains — or the remaining blockers are stated explicitly and
+      the task stops
+- [ ] disagreements between implementation and audit roles are resolved
+- [ ] the final diff contains nothing unrelated to the objective
+- [ ] no automatic advance to the next irreversible gate
+
+### 13.5 Per-tier application
+
+**Green.** Subagents are not mandatory for a small change. Use at least one
+independent review role when the change: touches several files; fixed a CI
+failure; might indirectly affect dependencies or tooling; involved a rebase or
+conflict resolution; will be self-merged; or grew beyond the diff originally
+expected. **Before any Green self-merge, confirm the §4 allowlist conditions
+and protected-path non-contact in a review context separate from the lead.**
+
+**Amber.** Where subagents are available, separate at least three roles:
+implementation / authoring; contract, specification and data-boundary audit;
+adversarial test and bypass-route audit. For a source audit or a post-run
+audit, the auditing session or subagent must be different from the one that
+implemented the target (§12). An Amber PR is **never** self-merged, however
+complete the internal loop was — submit the final green head for human +
+ChatGPT approval.
+
+**Red.** Explicit approval before execution remains mandatory. After approval,
+separate where possible: execution; evidence verification; contract-deviation
+monitoring. Never treat the existence of multiple agents as a substitute for
+the execution approval or as validation of the result. No automatic advance to
+the next Red gate.
+
+### 13.6 When subagents are unavailable
+
+Do not stop. Instead:
+
+- run the independent review perspectives **sequentially**;
+- in each pass, re-read the source and diff, staying off the previous pass's
+  conclusions as far as possible;
+- keep implementation review, contract review and adversarial review clearly
+  separate;
+- state in the final report that subagents were unavailable and describe the
+  substitute procedure.
+
+The two mandatory perspectives of §13.2 do **not** become optional here: one
+pass must still argue the change is wrong, and one must still hunt boundary
+conditions and bypass routes the tests do not cover. Unavailable subagents
+change how the perspectives are run, never whether they are run.
+
+### 13.7 The lead agent's responsibility
+
+The lead is not a vote counter for its subagents. It is responsible for: task
+decomposition; choosing the roles; checking the evidence behind each finding;
+merging duplicate findings; resolving contradictory ones; prioritising fixes;
+preventing scope creep; reviewing the final diff; confirming the final risk
+classification; and the final report.
+
+The lead must not adopt a subagent's error, omission or over-correction
+unexamined. A finding is acted on because its reasoning holds, not because a
+subagent raised it.
+
+### 13.8 What to record
+
+State briefly, in the PR body or the final report:
+
+- the roles used
+- each role's main findings
+- blockers and required fixes
+- the result of re-auditing after the fixes
+- any unresolved disagreement
+- the substitute review procedure, if subagents were unavailable
+
+Do not archive long internal transcripts or chains of reasoning — keep the
+conclusions, the evidence for them, and what was changed.
+
+## 14. Task prompt contract
 
 A task prompt needs only these five fields:
 
@@ -305,7 +451,7 @@ vocabularies or file inventories. The AI reads `CLAUDE.md`, this policy and
 the playbook, and selects the checks the task actually warrants. When a prompt
 omits something these documents specify, the documents apply anyway.
 
-## 14. Recording an autonomous Green merge
+## 15. Recording an autonomous Green merge
 
 When the AI merges a Green PR on its own authority, it records — after the
 fact, with no prior approval needed:
@@ -319,7 +465,7 @@ fact, with no prior approval needed:
 - confirmation that no protected path was touched
 - confirmation that no next gate was started
 
-## 15. Always-binding statuses
+## 16. Always-binding statuses
 
 `PRODUCTION_READINESS_NOT_CLAIMED` and `NO_EXECUTION_PERFORMED` hold in every
 task and every report. The forward epoch remains
