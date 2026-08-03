@@ -723,6 +723,36 @@ granting the next.
 > gate-3a continuation stays unauthorised. Forward epoch BLOCKED/WAIT; nothing
 > read, derived, validated, evaluated, trained or executed;
 > NO_EXECUTION_PERFORMED / PRODUCTION_READINESS_NOT_CLAIMED.
+>
+> SECOND INDEPENDENT RE-CHECK pointer (doc-only, 2026-08-03): the B-1..B-5 fix
+> PR #440 merged as 9c36cb0; the second re-check ran against it and BLOCKED
+> again — M15_AGGREGATION_DATASET_MACHINERY_SOURCE_AUDIT_BLOCKED_PENDING_TARGETED_FIXES
+> (docs/design/m15_second_independent_source_audit_recheck.md). B-1..B-5 and
+> D1/D3..D6 are CONFIRMED CLOSED, containment re-derives CLEAN (stdlib-only
+> eager closure, no forbidden route reachable, all 8 committed artifacts
+> scrub-clean), and no guard was loosened. Five new blockers, four of them
+> inside code PR #440 itself added: BL-1 assert_per_file_bounds still returns
+> PROVEN with files_checked=0 (a Sequence whose __len__ and iteration disagree)
+> and accepts 20 identical records for expected_count=20; BL-2 `tzinfo is None`
+> is not Python's awareness test at 5 sites, so a utcoffset()->None tzinfo is
+> reinterpreted in HOST LOCAL TIME (bucket emitted 9h wrong; the dead-window
+> verdict becomes host-dependent) — the F-5 class reopened; BL-3 the
+> protected-path guard is defeated by extended-UNC prefix casing and by
+> ancestor-walk exhaustion failing OPEN at depth >= 64; BL-4 crossed-quote rows
+> ABORT the whole pair while this repo's committed stage25_0a treats negative
+> spread as an expected data anomaly and DROPS-and-COUNTS it, so the
+> continuation would halt on first contact with the archive; BL-5 the cost
+> magnitude ceiling is blind for JPY pairs (a 100x pip-unit error validates)
+> and has no lower bound (0.0 and 1e-9 validate). Plus RF-1..RF-7. Two claims
+> in the merged fix note are refuted (mutation-survivor redundancy; horizon
+> frozen only at holdout). The record's section 0 discloses an INDEPENDENCE
+> LIMITATION: the lead session was the fix author, compensated by
+> fresh-subagent roles and lead re-derivation of every blocker, but a genuinely
+> separate session should re-check it. NEXT: one targeted-fix Work PR for
+> BL-1..BL-5 + RF-1..RF-7, then a separate-session re-check. Gate-3a
+> continuation stays unauthorised; forward epoch BLOCKED/WAIT; nothing read,
+> derived, validated, evaluated, trained or executed; NO_EXECUTION_PERFORMED /
+> PRODUCTION_READINESS_NOT_CLAIMED.
 
 - **Purpose:** execute the smallest safe real run under the pre-registered
   contract, exactly as registered.

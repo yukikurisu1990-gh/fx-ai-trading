@@ -50,14 +50,16 @@ Last reconciled against master at `0e19135` (2026-08-02); master CI green.
 | Targeted fix PR for F-1…F-5 (+O-1/O-2) (PR #434) | ✅ **merged** as `5701ce8` (2026-07-27), on a recorded human + ChatGPT approval of the rebased head `2afa01f`. Status `M15_AGGREGATION_DATASET_MACHINERY_TARGETED_FIXES_PROPOSED`. The merge recorded the fixes; it did **not** grant audit acceptance |
 | CI reproducibility repair (PR #436) | ✅ **merged** as `0e19135` (2026-08-02) — infra-only Ruff pin `0.15.11`; master CI green. Status `RUFF_VERSION_PINNED_FOR_REPRODUCIBLE_CI_NO_RUN` |
 | **Independent source-audit re-check of the F-1…F-5 fixes** | **executed — verdict `M15_AGGREGATION_DATASET_MACHINERY_SOURCE_AUDIT_BLOCKED_PENDING_TARGETED_FIXES`** (`docs/design/m15_aggregation_dataset_machinery_source_audit_recheck.md`). F-2…F-5 fixed; **F-1 defeated by `pandas.Timestamp` nanoseconds**; five blockers B-1…B-5 + ten required fixes. Containment re-derived CLEAN |
-| Second targeted-fix Work PR (B-1…B-5, R-1…R-10) | **OPEN, not merged** — one Work PR carrying code + tests + docs + internal audit (`docs/design/m15_recheck_targeted_fixes_note.md`, status `M15_AGGREGATION_DATASET_MACHINERY_RECHECK_FIXES_PROPOSED`) |
-| Second independent re-check | **NOT started** — required after that fix PR merges, in a session separate from the fix author |
+| Second targeted-fix Work PR (B-1…B-5, R-1…R-10, D1…D6) | ✅ **merged** as `9c36cb0` (2026-08-02) — code + tests + docs + internal audit (`docs/design/m15_recheck_targeted_fixes_note.md`, status `M15_AGGREGATION_DATASET_MACHINERY_RECHECK_FIXES_PROPOSED`). The merge recorded the fixes; it did **not** grant audit acceptance |
+| **Second independent source-audit re-check** | **executed — verdict `M15_AGGREGATION_DATASET_MACHINERY_SOURCE_AUDIT_BLOCKED_PENDING_TARGETED_FIXES`** (`docs/design/m15_second_independent_source_audit_recheck.md`). B-1…B-5 and D1/D3…D6 confirmed CLOSED and containment re-derived CLEAN, but five new blockers BL-1…BL-5 + RF-1…RF-7. ⚠ Its §0 records an **independence limitation**: the lead session was the fix author, compensated by fresh-subagent roles and lead re-derivation of every blocker |
+| Third targeted-fix Work PR (BL-1…BL-5, RF-1…RF-7) | **NOT started** |
+| Third independent re-check | **NOT started** — must run in a genuinely separate session |
 | Gate-3a continuation (real design-span derivation) | **NOT authorised** until a re-check accepts the fixes |
 
-**Next required step before any real data read:** the re-check ran and
-**BLOCKED again**. One targeted-fix Work PR must close B-1…B-5 and R-1…R-10
-with failing-before / passing-after tests, then a further independent re-check
-must accept it. Only then may a separately-authorised gate-3a continuation
+**Next required step before any real data read:** the second re-check ran and
+**BLOCKED again**. One targeted-fix Work PR must close BL-1…BL-5 and RF-1…RF-7
+with failing-before / passing-after tests, then a further independent re-check —
+in a genuinely separate session — must accept it. Only then may a separately-authorised gate-3a continuation
 read/derive design-span data. (This supersedes-by-progress the earlier phrasing
 "the source audit is next": the *first* audit BLOCKED, the F-1…F-5 fixes
 merged, and the re-check BLOCKED again on defects those fixes did not cover.)
