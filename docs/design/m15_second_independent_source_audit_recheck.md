@@ -78,6 +78,11 @@ all five biting the gate-3a continuation that acceptance would unlock:
 | **BL-4** | Crossed-quote rows abort the whole pair, contradicting this repo's own committed drop-and-count treatment of that documented real-data anomaly | The continuation would halt on first contact with the archive |
 | **BL-5** | The cost-table magnitude ceiling is blind for JPY pairs (a 100× pip-unit error validates) and has no lower bound (`0.0` and `1e-9` validate) | The continuation produces the cost tables; this is B-4's 100× class re-entering through the cost path |
 
+Alongside these, **RF-8…RF-11 record four test-coverage gaps where the shipped
+source is correct but a regression would go unnoticed** — most importantly, the
+entire B-1 regression proof skips in a pandas-free interpreter, where every B-1
+mutation survives.
+
 No rewrite is warranted. The architecture is sound, the previously-blocked
 defects are genuinely fixed, and every finding below is a small, precisely
 scoped change.
@@ -109,8 +114,8 @@ scoped change.
 ### B-1 — pandas / datetime-subclass nanoseconds · **CLOSED**
 
 `_plain_utc_minute` (`aggregation.py:62-92`) rebuilds a plain UTC `datetime`
-from components and **returns that**, so bucket keys and the duplicate set are
-structurally immune to subclass behaviour. Lead probes, all rejected: a single
+from components and **returns that**, so bucket keys and the duplicate set
+cannot carry subclass resolution into the pipeline. Lead probes, all rejected: a single
 `pd.Timestamp` at `ns=500`; fifteen ns-bearing rows; the same fifteen minutes at
 `ns=0` and `ns=500`; a subclass with an always-true `__eq__` and `second=30`; a
 subclass exposing `nanosecond=500`; `pd.NaT`. An aligned pandas bucket is
@@ -119,6 +124,27 @@ accepted and its `ts` is a **plain** `datetime` on a 15-minute boundary; a
 attacks (`as_unit` variants, `numpy.datetime64`, `astimezone`-liars, zoneinfo
 DST folds, `+00:00:30`) — all held. **No probe produced a non-aligned bucket
 start or two eligible bars for one window.**
+
+**One qualification, lead-verified.** The two guards are *not* universal over
+subclasses. A stdlib subclass that stores extra resolution **outside** the
+fields `datetime` comparison inspects and does **not** expose `.nanosecond` is
+blind to both limbs and is accepted:
+
+```
+class PicoDatetime(datetime):  # holds `pico` in a private attribute
+    ...
+PicoDatetime(2025, 6, 2, tzinfo=UTC, pico=500) == datetime(2025, 6, 2, tzinfo=UTC)  -> True
+aggregate_m15([row(that)], pair="EUR_USD")  -> ACCEPTED
+```
+
+Consequence is bounded and **not** the F-1 pathology: the emitted bucket key is
+still a **plain `datetime`** at exactly `2025-06-02T00:00:00+00:00`, so the
+extra resolution is discarded rather than propagated — no wrong bucket, no
+duplicate eligible bar. The defect is that such a row is accepted where the
+guard's stated contract says it should fail closed. `pandas.Timestamp` — the
+only realistic carrier — is correctly handled by both limbs. This makes the
+fix note's claim that the equality check "generalises … any subclass, known or
+not" **false** (§7), and is recorded as RF-8.
 
 ### B-2 — reversed / insufficient spans · **CLOSED for reversal; see BL-1**
 
@@ -193,25 +219,56 @@ floors are echoed in `floors_applied`. Zero events cannot reach
 environment; the eleven `@requires_pandas` B-1 proofs execute. The divergent
 formula pin is gone and `N_EFF_HOLDOUT_FLOOR` is now verdict-driving.
 
-An independent 84-mutation battery (run by the contract role on a scratch copy)
-killed **76**. Everything the previous audit listed as MISSED is now caught:
+Two independent batteries were run on scratch copies: **84 mutations / 76
+killed** (contract role) and **138 mutations / 120 killed** (test role), each
+self-designed. Everything the previous audit listed as MISSED is now caught:
 the microsecond+equality combination, `isfinite` on all **eight** side keys
-individually, `max`↔`min`, the `spread_close` sign, `sorted()` removal,
+individually, `max`↔`min` on all four extrema, positional-vs-aggregation on all
+eight OHLC fields, the `spread_close` sign, within-bucket `sorted()` removal,
 `DEAD_START → 2026-03-15`, the `DESIGN_START`/`DESIGN_END` shifts,
-`_assert_ordered` removal, `N_EFF_HOLDOUT_FLOOR 400→100`, `v < 0` removal, and
-the warm-up `astimezone`→`replace` mutation.
+`_assert_ordered` removal at each call site, `N_EFF_HOLDOUT_FLOOR 400→100`,
+`v < 0` removal, the warm-up `astimezone`→`replace` mutation, and **PAIRS_20
+member substitution with the length preserved**.
 
-Of the eight survivors, five are genuinely redundant pairs — removing **both**
-members of each is caught, verified by probe, not argued. **Three are real
-gaps** and contradict the fix note's claim that all survivors are redundant
-(§7): the `SESSIONS_UTC` ranges (RF-1), the `except OSError: return True`
-fail-closed direction (RF-5), and `_ROW_LIKE_MIN_NUMERIC_FIELDS 6→8`.
+Every survivor was resolved by **differential probe**, not by argument. The
+deliberately redundant guard pairs are real — removing **both** members of each
+is caught in every case. But the fix note's claim that "no genuine test gap
+remains from the battery" is **falsified**: six survivors are genuine coverage
+gaps, and the lead reproduced each to establish whether the *source* is also
+wrong. **In every case the shipped source is correct** — these are test gaps,
+not defects:
 
-## 7. Two claims in the merged fix note are refuted
+| Survivor | Source behaviour, lead-verified | Gap |
+| --- | --- | --- |
+| bucket-**order** sort removed | correct: out-of-order buckets still emit `00:00, 00:30, 00:45` chronologically with `missing_whole_buckets = 1` | no test feeds buckets out of order (RF-9) |
+| `h ≥ max(o,c)` / `l ≤ min(o,c)` limb removed | correct: a row with `bid_c=1.50` above `bid_h=1.1002` raises "OHLC incoherent" | the existing `bid_h=0/bid_l=9` test reaches only the `h < l` limb (RF-10) |
+| NFKC folding removed | correct: `ＰＡＳＳ` and `ＰＲＯＤＵＣＴＩＯＮ_ＲＥＡＤＹ` normalise to `PASS` / `PRODUCTION_READY` and are refused | no test supplies a fullwidth form (RF-11) |
+| `SESSIONS_UTC` retargeted | correct: matches the committed plan | unpinned (RF-1) |
+| `except OSError: return True` → `False` | correct as written | direction unpinned (RF-5) |
+| `_ROW_LIKE_MIN_NUMERIC_FIELDS 6→8` | correct as written | threshold unpinned |
+
+**A coverage hole that matters more than any of those:** in a pandas-free
+interpreter the suite runs `247 passed, 6 skipped`, and **all five B-1
+mutations survive — including "every guard removed"**. The headline blocker's
+entire regression proof sits behind an optional import. A pure-stdlib
+`datetime` subclass exposing `.nanosecond` reproduces the same input class and
+kills those mutants, so the pandas gate is not necessary for the proof. → RF-8.
+
+Clean-install check: a fresh venv with `pip install -e ".[dev]"` runs
+`253 passed`, **0 skipped**, with pandas 3.0.5 — so the declared dev dependency
+does achieve its stated purpose in CI and in a clean developer install.
+
+## 7. Three claims in the merged fix note are refuted
 
 - `docs/design/m15_recheck_targeted_fixes_note.md` §4 states the mutation
-  survivors "are all members of the deliberately redundant pairs". A wider
-  independent battery finds three survivors outside that set.
+  survivors "are all members of the deliberately redundant pairs" and that "no
+  genuine test gap remains from the battery". Two wider independent batteries
+  (84 and 138 mutations) find six survivors outside that set.
+- The same note (§4) claims the plain-datetime equality check "generalises …
+  Any subclass with resolution finer than a microsecond — known or not — fails
+  the comparison." **False**, lead-verified: `datetime.__eq__` inspects only
+  (y, m, d, h, min, s, µs, offset), so a subclass holding extra resolution
+  elsewhere and lacking `.nanosecond` compares equal and is accepted (§3).
 - The same note (§2, R-1 row) describes the horizon as frozen "for
   `role='holdout'`". The merged code freezes it for **every** role — the code
   is stricter than its own record.
@@ -392,8 +449,29 @@ normalise it away.
   `refuse_real_path` as a bare `ValueError` rather than `RealDataRefusedError`
   (lead-reproduced); `a\x00b.json` behaves likewise in the writer. Fail-closed
   in effect, wrong type for a caller that catches the documented exception.
-- **RF-7 — correct the two refuted claims in the merged fix note** (§7) and the
-  stale playbook row recording PR #440 as open.
+- **RF-7 — correct the three refuted claims in the merged fix note** (§7) and
+  the stale playbook row recording PR #440 as open.
+- **RF-8 — B-1's regression proof vanishes without pandas, and the guard is not
+  universal over subclasses.** In a pandas-free interpreter the six B-1 tests
+  skip and **all five B-1 mutations survive, including "every guard removed"**.
+  Separately, a stdlib subclass holding resolution outside the compared fields
+  and lacking `.nanosecond` is accepted (§3). Both are closed by the same
+  change: add a **pure-stdlib** `datetime` subclass exposing `.nanosecond` as an
+  ungated regression test, and either widen the guard (e.g. reject `datetime`
+  subclasses outright, or compare `timestamp()` against the rebuilt minute) or
+  narrow the docstring's claim to what it actually guarantees.
+- **RF-9 — bucket-level ordering is unpinned.** The source sorts correctly
+  (verified: out-of-order buckets emit `00:00, 00:30, 00:45` with
+  `missing_whole_buckets = 1`), but removing `order = sorted(buckets)` survives
+  the suite. Add a test feeding buckets out of order and asserting both the bar
+  sequence and the gap count.
+- **RF-10 — half of R-2 is unpinned.** The source correctly rejects a row whose
+  close sits above its high (verified: "OHLC incoherent"), but the existing
+  `bid_h=0.0 / bid_l=9.0` case reaches only the `h < l` limb, so removing the
+  `h ≥ max(o,c)` / `l ≤ min(o,c)` limb survives. Add a close-above-high case.
+- **RF-11 — the NFKC limb of `normalise_status` is unpinned.** The source
+  correctly folds `ＰＡＳＳ` and `ＰＲＯＤＵＣＴＩＯＮ_ＲＥＡＤＹ` (verified
+  refused), but removing NFKC survives the suite. Add a fullwidth variant.
 
 ### NON-BLOCKING OBSERVATIONS
 
@@ -503,7 +581,10 @@ limitation that qualifies this record.
    `tzinfo` whose `utcoffset()` returns `None` at all five sites; `\\?\unc\`
    casing; an ancestor depth beyond the walk limit; the crossed-quote policy
    whichever way it is decided; a JPY pip-unit cost table and a zero-spread
-   table; the `SESSIONS_UTC` value pin.
+   table; the `SESSIONS_UTC` value pin; an **ungated stdlib** `datetime`
+   subclass carrying `.nanosecond`, so B-1 keeps its proof without pandas;
+   buckets fed out of order; a close-above-high row; and a fullwidth status
+   form.
 2. **One independent re-check** of that fix, performed in a **genuinely
    separate session** — and, given §0, ideally also a fresh-session re-check of
    *this* record.
