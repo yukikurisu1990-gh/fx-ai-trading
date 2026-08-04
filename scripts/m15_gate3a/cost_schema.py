@@ -22,18 +22,51 @@ EXECUTION_PADDING_PIP: Final[float] = 0.3
 FLAT_SLIPPAGE_CELL_PIP: Final[float] = 0.5
 CLAIM_SCOPE: Final[str] = "quote_cost_validity"
 
+
+# RF-1: the session partition is part of the frozen contract, so pin its
+# structure at import time — three windows, minute-granular, tiling 00:00..23:59
+# exactly once. An edit that overlapped or left a hole would otherwise change
+# which bars land in which session with nothing to notice it. Explicit raise,
+# not `assert`: bare asserts are stripped under `python -O`.
+def _check_session_partition() -> None:
+    covered: set[int] = set()
+    for name, window in SESSIONS_UTC.items():
+        start_text, _, end_text = window.partition("-")
+        start_h, _, start_m = start_text.partition(":")
+        end_h, _, end_m = end_text.partition(":")
+        lo = int(start_h) * 60 + int(start_m)
+        hi = int(end_h) * 60 + int(end_m)
+        if not 0 <= lo <= hi <= 24 * 60 - 1:
+            raise RuntimeError(f"session {name!r} window {window!r} is out of range")
+        minutes = set(range(lo, hi + 1))
+        if covered & minutes:
+            raise RuntimeError(f"session {name!r} overlaps another session")
+        covered |= minutes
+    if covered != set(range(24 * 60)):
+        raise RuntimeError("SESSIONS_UTC does not tile the UTC day exactly once")
+
+
+_check_session_partition()
+
 # R-8: the committed cost_table_plan_or_metadata.json fixes the convention —
 # "spreads measured in price units; converted via pip_size_for". Without a
 # declared unit a price-unit table and a pip-unit table were indistinguishable
 # (a 10,000x difference the schema could not see), and the formula string could
 # document away the pinned 0.3 / 0.5.
 SPREAD_UNIT: Final[str] = "price"
-# A quoted spread wider than 100 pips is not a real quote for PAIRS_20; anything
-# above it is far more likely a unit error than a market condition.
-MAX_PLAUSIBLE_SPREAD_PIPS: Final[float] = 100.0
 ALL_IN_COST_FORMULA: Final[str] = (
     "cost(pair, session) = median_spread(pair, session) + 0.3 + 0.5 (primary)"
 )
+
+# BL-5: there is NO absolute spread-magnitude bound in any committed authority.
+# PR #440 invented ``MAX_PLAUSIBLE_SPREAD_PIPS = 100.0`` and applied it as
+# ``100 * pip_size``; for a JPY pair that ceiling is 1.0 *price units* = 100
+# pips, so ``USD_JPY median=0.9`` under ``spread_unit="price"`` — a 100x unit
+# error — validated. The invented number is removed rather than re-tuned: this
+# module may not mint a contract constant. Callers that hold a pinned bound pass
+# it in explicitly; until one is recorded, the summary reports the magnitude in
+# pips and states that it is UNVALIDATED. See the fix note for the referral.
+MAGNITUDE_AUTHORITY_STATUS: Final[str] = "REQUIRES_SEPARATE_CONTRACT_GATE_DECISION"
 
 _REQUIRED_ENTRY_KEYS: Final[tuple[str, ...]] = (
     "pair",
@@ -57,8 +90,28 @@ class CostSchemaError(ValueError):
     """Raised when cost-table metadata violates the frozen schema."""
 
 
-def validate_cost_table(table: Any) -> dict:
-    """Validate cost-table metadata shape (fail-closed). Returns a summary."""
+def _check_magnitude_bound(bound: Any) -> float | None:
+    """Validate a caller-supplied pip-unit magnitude bound, or accept 'none declared'."""
+    if bound is None:
+        return None
+    if isinstance(bound, bool) or not isinstance(bound, (int, float)):
+        raise CostSchemaError("max_spread_pips must be a number or None")
+    if not math.isfinite(bound) or bound <= 0:
+        raise CostSchemaError("max_spread_pips must be a finite positive number of pips")
+    return float(bound)
+
+
+def validate_cost_table(table: Any, *, max_spread_pips: float | None = None) -> dict:
+    """Validate cost-table metadata shape (fail-closed). Returns a summary.
+
+    ``max_spread_pips`` is the pip-unit magnitude ceiling. It is deliberately
+    **not** defaulted to a number: no committed authority pins one (BL-5), and
+    inventing one here is what let a 100x JPY unit error validate. When it is
+    ``None`` the summary reports every statistic converted to the pair's own
+    pips and marks the magnitude UNVALIDATED, so a reader cannot mistake schema
+    validity for magnitude validity.
+    """
+    ceiling_pips = _check_magnitude_bound(max_spread_pips)
     if not isinstance(table, dict):
         raise CostSchemaError("cost table must be a dict")
     for k in _REQUIRED_GLOBAL_KEYS:
@@ -80,6 +133,7 @@ def validate_cost_table(table: Any) -> dict:
         raise CostSchemaError("cost table 'entries' must be a non-empty list")
 
     seen: set[tuple[str, str]] = set()
+    pips_observed: dict[str, float] = {}
     for e in entries:
         if not isinstance(e, dict):
             raise CostSchemaError("cost entry must be a dict")
@@ -113,16 +167,20 @@ def validate_cost_table(table: Any) -> dict:
                     f"{stat} for {pair}/{session} must be a finite non-negative number"
                 )
             stats[stat] = float(v)
-        # R-8 residual (a): declaring the unit does not catch a mis-declared
-        # MAGNITUDE. A pip-scale number under spread_unit="price" is a 10,000x
-        # error that every other check would accept, so bound each statistic to
-        # a generous plausibility ceiling expressed in the pair's own pips.
+        # BL-5: convert to the pair's own pips — pair-aware, and the only
+        # magnitude statement this module can make from committed authority.
+        # No floor is imposed: a zero quoted spread is accepted here because the
+        # in-repo precedent (stage25_0a, which drops only `spread_pip < 0`, and
+        # `aggregation._assert_bar_finite`, which rejects only a negative
+        # spread_close) treats zero as observable rather than impossible.
         for stat, value in stats.items():
-            if value > MAX_PLAUSIBLE_SPREAD_PIPS * expected_pip:
+            in_pips = value / expected_pip
+            pips_observed[f"{pair}/{session}/{stat}"] = in_pips
+            if ceiling_pips is not None and in_pips > ceiling_pips:
                 raise CostSchemaError(
-                    f"{stat} for {pair}/{session} is {value} price units = "
-                    f"{value / expected_pip:.1f} pips, above the plausibility ceiling of "
-                    f"{MAX_PLAUSIBLE_SPREAD_PIPS} pips (wrong unit?)"
+                    f"{stat} for {pair}/{session} is {value} {SPREAD_UNIT} units = "
+                    f"{in_pips:.4f} pips, above the caller-declared ceiling of "
+                    f"{ceiling_pips} pips (wrong unit?)"
                 )
         # R-8: without monotonicity the mandatory p90 stress could be milder
         # than the base case.
@@ -145,5 +203,13 @@ def validate_cost_table(table: Any) -> dict:
         "full_20x3_coverage": len(seen) == len(PAIRS_20) * len(SESSIONS_UTC),
         "p95_diagnostic_present": True,
         "real_spreads_computed": False,
+        # BL-5: magnitude is reported, never asserted, unless a caller pins it.
+        "max_spread_pips_declared": ceiling_pips,
+        "spread_magnitude_validated": ceiling_pips is not None,
+        "max_observed_spread_pips": (max(pips_observed.values()) if pips_observed else None),
+        "min_observed_spread_pips": (min(pips_observed.values()) if pips_observed else None),
+        "magnitude_authority": (
+            "CALLER_DECLARED" if ceiling_pips is not None else MAGNITUDE_AUTHORITY_STATUS
+        ),
         "result": "COST_TABLE_SCHEMA_VALID",
     }

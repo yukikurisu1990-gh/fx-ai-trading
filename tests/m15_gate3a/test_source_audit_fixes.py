@@ -244,7 +244,7 @@ def test_f5_naive_rejected_in_warmup() -> None:
     p = WarmupPolicy(w_bars=50, longest_feature_lookback_bars=50)
     with pytest.raises(WarmupPolicyError, match="naive"):
         p.assert_load_allowed(datetime(2026, 5, 1))
-    with pytest.raises(WarmupPolicyError, match="without offset"):
+    with pytest.raises(WarmupPolicyError, match="without explicit offset"):
         p.assert_load_allowed("2026-05-01T00:00:00")
     p.assert_load_allowed("2026-05-01T00:00:00Z")  # explicit UTC still allowed
 

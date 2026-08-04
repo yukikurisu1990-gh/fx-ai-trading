@@ -12,6 +12,9 @@ from collections.abc import Mapping, Sequence
 from datetime import UTC, datetime, timedelta
 from typing import Any, Final
 
+from scripts.m15_gate3a.pair_authority import PAIRS_20, PairAuthorityError, canonical_pair
+from scripts.m15_gate3a.timeutil import TimestampError, to_utc
+
 DESIGN_START: Final[datetime] = datetime(2025, 4, 25, 0, 0, 0, tzinfo=UTC)
 DESIGN_END: Final[datetime] = datetime(2026, 2, 28, 23, 59, 59, tzinfo=UTC)
 DEAD_START: Final[datetime] = datetime(2026, 3, 1, 0, 0, 0, tzinfo=UTC)
@@ -39,22 +42,18 @@ class NoOverlapError(RuntimeError):
 
 
 def _parse(ts: Any) -> datetime:
-    """Parse a timestamp; F-5 fix: naive inputs FAIL CLOSED (never assumed UTC).
+    """Parse a timestamp; naive inputs FAIL CLOSED (never assumed UTC).
 
-    Accepts tz-aware ``datetime`` objects and ISO strings with an explicit
-    ``Z`` / ``+00:00`` / other offset (converted to UTC deterministically).
-    Timezone-naive datetimes and offset-less ISO strings are rejected.
+    BL-2: awareness is decided by :mod:`scripts.m15_gate3a.timeutil`, not by
+    ``tzinfo is None``. A ``tzinfo`` whose ``utcoffset()`` returns ``None``
+    leaves the value naive while ``tzinfo is None`` is ``False``, and the old
+    ``astimezone(UTC)`` then reinterpreted it in the **host's** zone — which
+    made this dead-window verdict depend on where it was run.
     """
-    if isinstance(ts, datetime):
-        if ts.tzinfo is None:
-            raise NoOverlapError(f"naive datetime rejected (no tzinfo): {ts.isoformat()}")
-        return ts.astimezone(UTC)
-    if isinstance(ts, str) and ts.strip():
-        parsed = datetime.fromisoformat(ts.replace("Z", "+00:00"))
-        if parsed.tzinfo is None:
-            raise NoOverlapError(f"ISO string without explicit offset rejected: {ts!r}")
-        return parsed.astimezone(UTC)
-    raise NoOverlapError(f"unparseable timestamp: {ts!r}")
+    try:
+        return to_utc(ts)
+    except TimestampError as exc:
+        raise NoOverlapError(str(exc)) from exc
 
 
 def _intersects_dead_window(ts_min: datetime, ts_max: datetime) -> bool:
@@ -113,35 +112,147 @@ def assert_no_dead_window(ts_min: Any, ts_max: Any, *, role: str) -> None:
         )
 
 
+_SHA256_HEX_LENGTH: Final[int] = 64
+
+
+def _materialise(files: Any, *, role: str) -> tuple[Any, ...]:
+    """Return the evidence as a tuple, or refuse if it is not re-scannable.
+
+    BL-1: ``Sequence`` is an ABC — nothing forces ``__len__`` to agree with
+    iteration. The previous guard trusted ``len(files)`` for ``expected_count``
+    and then counted the loop separately, so a container reporting ``20`` while
+    yielding nothing produced ``files_checked=0`` **and** the T-7 proof token.
+    Both passes and indexed access must now agree before anything is checked.
+    """
+    if isinstance(files, (str, bytes, bytearray)) or not isinstance(files, Sequence):
+        raise NoOverlapError(
+            f"{role}: files must be a concrete sequence of file records, got {type(files).__name__}"
+        )
+    try:
+        declared = len(files)
+        first = tuple(files)
+        second = tuple(files)
+    except (TypeError, ValueError) as exc:
+        raise NoOverlapError(f"{role}: evidence could not be re-scanned: {exc}") from exc
+    if len(first) != declared or len(second) != declared:
+        raise NoOverlapError(
+            f"{role}: __len__ reports {declared} but iteration yields "
+            f"{len(first)}/{len(second)} records (evidence is not self-consistent)"
+        )
+    for index, (a, b) in enumerate(zip(first, second, strict=True)):
+        if a is not b and a != b:
+            raise NoOverlapError(f"{role}: iteration is not stable at index {index}")
+        try:
+            indexed = files[index]
+        except (IndexError, KeyError, TypeError) as exc:
+            raise NoOverlapError(f"{role}: indexed access failed at {index}: {exc}") from exc
+        if indexed is not a and indexed != a:
+            raise NoOverlapError(f"{role}: indexed access disagrees with iteration at {index}")
+    return first
+
+
+def _roster_report(records: tuple[Any, ...], *, role: str) -> dict:
+    """Bind the evidence to the canonical PAIRS_20 roster; refuse anything short of it.
+
+    BL-1: the proof used to say nothing about *which* files it saw, so twenty
+    copies of one record satisfied a twenty-file inventory. Every record must
+    name a pair in the frozen universe, alias spellings collapse to the same
+    canonical name (so ``eur/usd`` duplicates ``EUR_USD``), and the canonical
+    roster must equal PAIRS_20 exactly — no missing, duplicate or unknown pair.
+    """
+    seen: dict[str, int] = {}
+    duplicate: list[str] = []
+    unknown: list[Any] = []
+    filenames: dict[str, int] = {}
+    digests: dict[str, int] = {}
+
+    for index, record in enumerate(records):
+        if not isinstance(record, Mapping):
+            raise NoOverlapError(
+                f"{role}: file record must be a mapping, got {type(record).__name__}"
+            )
+        try:
+            pair = canonical_pair(record.get("pair"))
+        except PairAuthorityError:
+            unknown.append(record.get("pair"))
+            continue
+        if pair in seen:
+            duplicate.append(pair)
+        else:
+            seen[pair] = index
+
+        filename = record.get("filename")
+        if filename is not None:
+            if not isinstance(filename, str) or not filename.strip():
+                raise NoOverlapError(f"{role}: file record {index} has a non-string filename")
+            if filename in filenames:
+                raise NoOverlapError(
+                    f"{role}: filename {filename!r} appears at records "
+                    f"{filenames[filename]} and {index} (duplicate evidence)"
+                )
+            filenames[filename] = index
+
+        digest = record.get("sha256")
+        if digest is not None:
+            if (
+                not isinstance(digest, str)
+                or len(digest) != _SHA256_HEX_LENGTH
+                or any(c not in "0123456789abcdefABCDEF" for c in digest)
+            ):
+                raise NoOverlapError(f"{role}: file record {index} has a malformed sha256")
+            key = digest.lower()
+            if key in digests:
+                raise NoOverlapError(
+                    f"{role}: sha256 {key} appears at records {digests[key]} and "
+                    f"{index} (duplicate evidence)"
+                )
+            digests[key] = index
+
+    missing = [p for p in PAIRS_20 if p not in seen]
+    report = {
+        "expected_pairs": list(PAIRS_20),
+        "expected_pair_count": len(PAIRS_20),
+        "actual_pairs": [p for p in PAIRS_20 if p in seen],
+        "actual_record_count": len(records),
+        "missing_pairs": missing,
+        "duplicate_pairs": sorted(set(duplicate)),
+        "unknown_pairs": [repr(u) for u in unknown],
+    }
+    if missing or duplicate or unknown:
+        raise NoOverlapError(
+            f"{role}: roster does not match PAIRS_20 — "
+            f"expected {len(PAIRS_20)}, got {len(records)} records; "
+            f"missing={report['missing_pairs']}, "
+            f"duplicate={report['duplicate_pairs']}, "
+            f"unknown={report['unknown_pairs']}"
+        )
+    return report
+
+
 def assert_per_file_bounds(
     files: Sequence[Any], *, role: str, expected_count: int | None = None
 ) -> dict:
     """Per-file ts-bound assertions for a role's inventory (design|forward).
 
-    D2 (found by the internal adversarial audit of this fix): ``if not files``
-    is truthiness on the container, so a generator or any other lazy iterable
-    slipped past the emptiness guard and the loop then ran zero times — the
-    machine-checkable T-7 proof token was returned on **zero evidence**. The
-    argument must now be a concrete sequence, every entry must be a mapping,
-    and a caller that knows how many files the inventory should hold can pin it
-    with ``expected_count`` (the committed design inventory declares 20).
+    The returned ``PROVEN_NO_DEAD_WINDOW_OVERLAP`` token is a claim about the
+    whole 20-pair inventory, so it is only ever produced when the evidence is
+    re-scannable, bound to the canonical roster, and every record's span clears
+    the dead window. ``expected_count`` remains a caller-supplied cross-check —
+    on its own it can no longer produce the token.
     """
     if role not in ("design", "forward"):
         raise NoOverlapError(f"unknown role {role!r}")
-    if isinstance(files, (str, bytes)) or not isinstance(files, Sequence):
-        raise NoOverlapError(
-            f"{role}: files must be a concrete sequence of file records, got {type(files).__name__}"
-        )
-    if not files:
+    records = _materialise(files, role=role)
+    if not records:
         raise NoOverlapError(f"{role}: empty file list")
-    if expected_count is not None and len(files) != expected_count:
-        raise NoOverlapError(f"{role}: expected {expected_count} files, got {len(files)}")
+    if expected_count is not None and len(records) != expected_count:
+        raise NoOverlapError(f"{role}: expected {expected_count} files, got {len(records)}")
+    report = _roster_report(records, role=role)
+
     checked = 0
-    for f in files:
-        if not isinstance(f, Mapping):
-            raise NoOverlapError(f"{role}: file record must be a mapping, got {type(f).__name__}")
-        tmin = f.get("ts_min_utc")
-        tmax = f.get("ts_max_utc")
+    for record in records:
+        tmin = record.get("ts_min_utc")
+        tmax = record.get("ts_max_utc")
         if not tmin or not tmax:
             raise NoOverlapError(f"{role}: file missing ts bounds")
         if role == "design":
@@ -149,4 +260,11 @@ def assert_per_file_bounds(
         else:
             assert_forward_bounds(tmin, tmax)
         checked += 1
-    return {"role": role, "files_checked": checked, "result": "PROVEN_NO_DEAD_WINDOW_OVERLAP"}
+    if checked != len(records):  # pragma: no cover - defensive
+        raise NoOverlapError(f"{role}: checked {checked} of {len(records)} records")
+    return {
+        "role": role,
+        "files_checked": checked,
+        **report,
+        "result": "PROVEN_NO_DEAD_WINDOW_OVERLAP",
+    }

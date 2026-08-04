@@ -50,17 +50,33 @@ Last reconciled against master at `0e19135` (2026-08-02); master CI green.
 | Targeted fix PR for F-1…F-5 (+O-1/O-2) (PR #434) | ✅ **merged** as `5701ce8` (2026-07-27), on a recorded human + ChatGPT approval of the rebased head `2afa01f`. Status `M15_AGGREGATION_DATASET_MACHINERY_TARGETED_FIXES_PROPOSED`. The merge recorded the fixes; it did **not** grant audit acceptance |
 | CI reproducibility repair (PR #436) | ✅ **merged** as `0e19135` (2026-08-02) — infra-only Ruff pin `0.15.11`; master CI green. Status `RUFF_VERSION_PINNED_FOR_REPRODUCIBLE_CI_NO_RUN` |
 | **Independent source-audit re-check of the F-1…F-5 fixes** | **executed — verdict `M15_AGGREGATION_DATASET_MACHINERY_SOURCE_AUDIT_BLOCKED_PENDING_TARGETED_FIXES`** (`docs/design/m15_aggregation_dataset_machinery_source_audit_recheck.md`). F-2…F-5 fixed; **F-1 defeated by `pandas.Timestamp` nanoseconds**; five blockers B-1…B-5 + ten required fixes. Containment re-derived CLEAN |
-| Second targeted-fix Work PR (B-1…B-5, R-1…R-10) | **OPEN, not merged** — one Work PR carrying code + tests + docs + internal audit (`docs/design/m15_recheck_targeted_fixes_note.md`, status `M15_AGGREGATION_DATASET_MACHINERY_RECHECK_FIXES_PROPOSED`) |
-| Second independent re-check | **NOT started** — required after that fix PR merges, in a session separate from the fix author |
-| Gate-3a continuation (real design-span derivation) | **NOT authorised** until a re-check accepts the fixes |
+| Second targeted-fix Work PR (B-1…B-5, R-1…R-10) (PR #440) | ✅ **merged** as `9c36cb0` (2026-08-03) — code + tests + docs + internal audit (`docs/design/m15_recheck_targeted_fixes_note.md`, status `M15_AGGREGATION_DATASET_MACHINERY_RECHECK_FIXES_PROPOSED`). Merged with the `uv.lock` inconsistency formally unresolved: **`uv sync --frozen` reproducibility is NOT claimed**, and no Red operation that presumes a frozen uv environment is approved until it is |
+| Second re-check attempt (PR #441) | **CLOSED unmerged — non-independent diagnostic review, no gate authority.** Authored in the same session as PR #440, so it does not satisfy policy §12. Its BL-1…BL-5 / RF-1…RF-11 findings are retained as **non-authoritative diagnostic input** only |
+| Third targeted-fix Work PR (BL-1…BL-5, RF-1…RF-11) | **OPEN, not merged** — `docs/design/m15_second_recheck_targeted_fixes_note.md` |
+| Second **independent** re-check | **NOT started** — must run in a session separate from every fix author, after the BL fix PR merges |
+| Gate-3a continuation (real design-span derivation) | **NOT authorised** until an independent re-check accepts the fixes |
 
-**Next required step before any real data read:** the re-check ran and
-**BLOCKED again**. One targeted-fix Work PR must close B-1…B-5 and R-1…R-10
-with failing-before / passing-after tests, then a further independent re-check
-must accept it. Only then may a separately-authorised gate-3a continuation
+**Official gate status:** `M15_AGGREGATION_DATASET_MACHINERY_SOURCE_AUDIT_BLOCKED_PENDING_TARGETED_FIXES`
+— the verdict of the merged PR #439 record. Nothing since has changed it: PR
+#440 recorded fixes without granting acceptance, and PR #441 was closed as a
+non-independent diagnostic review.
+
+**Next required step before any real data read:** the BL-1…BL-5 / RF-1…RF-11
+targeted-fix Work PR must be reviewed and merged, then a **genuinely
+independent** re-check (separate session, no implementation context) must
+accept it. Only then may a separately-authorised gate-3a continuation
 read/derive design-span data. (This supersedes-by-progress the earlier phrasing
 "the source audit is next": the *first* audit BLOCKED, the F-1…F-5 fixes
 merged, and the re-check BLOCKED again on defects those fixes did not cover.)
+
+**Open contract referrals** — decisions this machinery may not make for itself,
+each blocking nothing today but required before the corresponding artifact is
+written for real:
+
+| Referral | Question | Raised by |
+| --- | --- | --- |
+| Spread magnitude bound | No committed authority pins an absolute upper (or lower) bound on a quoted spread. PR #440 invented `MAX_PLAUSIBLE_SPREAD_PIPS = 100.0`; it has been removed rather than re-tuned | BL-5 |
+| `missing_minute_count` semantics | Does the committed inventory's field count **all** absent minutes (closure included) or only in-session ones? Leading/trailing partial buckets also differ between the two emitted figures | RF-2 |
 
 ## 2. Research stop rules (mandatory for every session)
 

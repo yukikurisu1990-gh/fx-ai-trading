@@ -65,14 +65,24 @@ def test_trade_level_payload_fails() -> None:
         assert_gate3a_clean({"trades": [{"pnl": 1.0}]})
 
 
-def test_writer_writes_clean_and_refuses_real_paths(tmp_path: Path) -> None:
+def test_writer_writes_clean_and_refuses_real_paths(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     out = tmp_path / "m15_gate3a"
     p = write_metadata_artifact(out, "no_overlap_proof.json", {"result": "PROVEN_TRUE"})
     assert p.exists()
     assert p.read_text(encoding="utf-8").strip().startswith("{")
-    # refuse writing under the protected real evidence tree
+    # refuse writing under a protected evidence tree. RF-4: the prefix is
+    # synthetic — a test must never address the real tree, because the moment
+    # the guard regresses the suite itself becomes the thing that litters it.
+    import scripts.m15_gate3a.guards as guards_mod
+
+    synthetic_root = tmp_path / "fake_repo"
+    (synthetic_root / "protected_stub").mkdir(parents=True)
+    monkeypatch.setattr(guards_mod, "repo_root", lambda: synthetic_root)
+    monkeypatch.setattr(guards_mod, "_PROTECTED_PREFIXES", ("protected_stub",))
     with pytest.raises(RealDataRefusedError):
-        write_metadata_artifact("artifacts/ml_step4/365d_ba_v1/x", "y.json", {"ok": True})
+        write_metadata_artifact(synthetic_root / "protected_stub" / "x", "y.json", {"ok": True})
 
 
 def test_writer_rejects_dirty_payload(tmp_path: Path) -> None:

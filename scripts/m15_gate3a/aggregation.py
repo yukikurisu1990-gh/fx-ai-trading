@@ -24,15 +24,28 @@ Re-check fixes (PR #439):
 * **R-7** — the gap report counts missing source minutes and reports a
   minute-granular maximum gap under the schema key the committed inventory
   declares.
+
+Second re-check fixes:
+
+* **BL-2** — awareness and minute alignment are decided by
+  :mod:`scripts.m15_gate3a.timeutil`, the single timestamp authority. The old
+  ``tzinfo is None`` test is not Python's awareness test and let a
+  ``utcoffset()``-``None`` zone through ``astimezone(UTC)``, which then read the
+  value in the *host's* zone and accepted a bucket hours wrong.
+* **BL-4** — a crossed quote (``ask < bid``) is a data anomaly, not a contract
+  violation: the row is dropped and counted per pair, exactly as this repo's
+  committed ``scripts/stage25_0a_build_path_quality_dataset.py`` already treats
+  negative spread. Aborting the whole pair was this package's own invention.
 """
 
 from __future__ import annotations
 
 import math
-from datetime import UTC, datetime, timedelta
+from datetime import datetime, timedelta
 from typing import Any, Final
 
 from .pair_authority import canonical_pair, pip_size_for_pair
+from .timeutil import TimestampError, to_utc_minute
 
 BUCKET_MINUTES: Final[int] = 15
 FULL_BUCKET_SOURCE_BARS: Final[int] = 15
@@ -59,37 +72,22 @@ def to_pips(price_delta: float, pair: str) -> float:
     return price_delta / pip_size_for_pair(pair)
 
 
-def _plain_utc_minute(ts: datetime) -> datetime:
+def _plain_utc_minute(ts: Any) -> datetime:
     """Return a plain minute-aligned UTC ``datetime``; fail closed on any remainder.
 
-    B-1: ``datetime`` subclasses may carry resolution finer than
-    ``.microsecond`` — ``pandas.Timestamp`` stores nanoseconds, and
-    ``.replace(second=0, microsecond=0)`` returns a subclass instance that
-    *keeps* them. Rebuilding a plain ``datetime`` from the components and
-    requiring it to equal the original instant rejects every such remainder,
-    including from subclasses this module has never heard of.
+    BL-2: delegated to the single timestamp authority, which decides awareness
+    by ``utcoffset()`` (not ``tzinfo is None``) and converts from the offset
+    itself rather than via ``astimezone``, so the host's zone can never take
+    part. Sub-minute remainder carried outside ``.second``/``.microsecond`` —
+    ``pandas.Timestamp`` nanoseconds, or a subclass hiding it elsewhere — is
+    still rejected there.
     """
-    if not isinstance(ts, datetime):
+    if not isinstance(ts, (datetime, str)):
         raise AggregationError("M1 row missing tz-aware 'ts' datetime")
-    if ts.tzinfo is None:
-        raise AggregationError("M1 row timestamp must be tz-aware UTC")
-    utc = ts.astimezone(UTC)
-    minute = datetime(utc.year, utc.month, utc.day, utc.hour, utc.minute, tzinfo=UTC)
-    if utc.second != 0 or utc.microsecond != 0:
-        raise AggregationError(f"M1 row timestamp {utc.isoformat()} is not minute-aligned")
-    # Sub-microsecond remainder carried by a datetime subclass (e.g. pandas
-    # nanoseconds), invisible to .second/.microsecond.
-    if getattr(utc, "nanosecond", 0):
-        raise AggregationError(
-            f"M1 row timestamp {utc!s} carries sub-microsecond resolution "
-            f"(nanosecond={utc.nanosecond}); not minute-aligned"
-        )
-    if utc != minute:
-        raise AggregationError(
-            f"M1 row timestamp {utc!s} is not exactly minute-aligned "
-            "(sub-minute remainder in a datetime subclass)"
-        )
-    return minute
+    try:
+        return to_utc_minute(ts)
+    except TimestampError as exc:
+        raise AggregationError(f"M1 row timestamp rejected: {exc}") from exc
 
 
 def _bucket_start(minute: datetime) -> datetime:
@@ -108,6 +106,9 @@ def _validate_row(row: dict[str, Any]) -> tuple[datetime, datetime]:
     (``math.isfinite``) — NaN / +inf / -inf fail closed before any aggregation
     output exists. R-2: the row's own OHLC must be internally coherent, so a
     finite-but-impossible row cannot be absorbed silently.
+
+    A crossed quote is *not* checked here: BL-4 makes it a counted drop, which
+    is a decision for the caller loop, not a validation error.
     """
     minute = _plain_utc_minute(row.get("ts"))
     for k in _SIDE_KEYS:
@@ -123,7 +124,13 @@ def _validate_row(row: dict[str, Any]) -> tuple[datetime, datetime]:
 
 
 def _assert_row_coherent(row: dict[str, Any], minute: datetime) -> None:
-    """R-2: reject rows whose OHLC cannot describe a real quote."""
+    """R-2: reject rows whose per-side OHLC cannot describe any quote at all.
+
+    Only *intra-side* impossibilities are contract violations: a high below its
+    own low, or a high/low that fails to bracket the open and close. Those
+    cannot be produced by a market, only by a broken writer. The bid/ask
+    relation is handled separately — see :func:`_is_crossed_quote`.
+    """
     for side in ("bid", "ask"):
         o, h, low, c = (row[f"{side}_{k}"] for k in ("o", "h", "l", "c"))
         if h < low:
@@ -132,12 +139,20 @@ def _assert_row_coherent(row: dict[str, Any], minute: datetime) -> None:
             raise AggregationError(
                 f"M1 row {minute.isoformat()} {side} OHLC incoherent (o={o}, h={h}, l={low}, c={c})"
             )
-    for k in ("o", "h", "l", "c"):
-        if row[f"ask_{k}"] < row[f"bid_{k}"]:
-            raise AggregationError(
-                f"M1 row {minute.isoformat()} crossed quote: "
-                f"ask_{k} {row[f'ask_{k}']} < bid_{k} {row[f'bid_{k}']}"
-            )
+
+
+def _is_crossed_quote(row: dict[str, Any]) -> bool:
+    """True iff any of the row's four ask values sits below its bid counterpart.
+
+    BL-4: a crossed quote is an *observed data anomaly*, and this repository has
+    already ruled on how to handle one. ``scripts/stage25_0a_build_path_quality_dataset.py``
+    documents "rows with negative spread (data anomaly)" and drops the row while
+    incrementing ``dropped_invalid_spread`` (``:191``, ``:242-245``, reported at
+    ``:417``/``:424``). Gate-3a raising and abandoning the whole pair was this
+    package's own stricter invention, incompatible with that precedent; the
+    counted drop is adopted instead so one anomalous minute costs one minute.
+    """
+    return any(row[f"ask_{k}"] < row[f"bid_{k}"] for k in ("o", "h", "l", "c"))
 
 
 def aggregate_m15(m1_rows: list[dict[str, Any]], *, pair: str) -> tuple[list[dict], dict]:
@@ -160,20 +175,26 @@ def aggregate_m15(m1_rows: list[dict[str, Any]], *, pair: str) -> tuple[list[dic
 
     buckets: dict[datetime, list[tuple[datetime, dict[str, Any]]]] = {}
     seen_minutes: dict[datetime, set[datetime]] = {}
+    dropped_crossed = 0
     for row in m1_rows:
         b, minute_ts = _validate_row(row)
-        if b not in buckets:
-            buckets[b] = []
-            seen_minutes[b] = set()
         # F-1/B-1: completeness means 15 DISTINCT source minutes, compared on the
         # plain UTC minute — a duplicate differing only in a sub-minute remainder
-        # is rejected here rather than silently opening a second bucket.
-        if minute_ts in seen_minutes[b]:
+        # is rejected here rather than silently opening a second bucket. The
+        # minute is claimed BEFORE the crossed-quote drop, so a dropped anomaly
+        # cannot be quietly substituted by a second record for the same minute.
+        if minute_ts in seen_minutes.setdefault(b, set()):
             raise AggregationError(
                 f"duplicate source minute {minute_ts.isoformat()} in bucket {b.isoformat()}"
             )
         seen_minutes[b].add(minute_ts)
-        buckets[b].append((minute_ts, row))
+        # BL-4: drop-and-count, per the stage25_0a precedent. The row leaves no
+        # bar behind, so the bucket becomes incomplete and loses eligibility —
+        # a dropped minute is never replaced, imputed or back-filled.
+        if _is_crossed_quote(row):
+            dropped_crossed += 1
+            continue
+        buckets.setdefault(b, []).append((minute_ts, row))
 
     order = sorted(buckets)
     bars: list[dict] = []
@@ -208,7 +229,9 @@ def aggregate_m15(m1_rows: list[dict[str, Any]], *, pair: str) -> tuple[list[dic
         _assert_bar_finite(bar)
         bars.append(bar)
 
-    gap_report = _build_gap_report(order, all_minutes, bars, total_missing, pair, pip)
+    gap_report = _build_gap_report(
+        order, all_minutes, bars, total_missing, pair, pip, dropped_crossed, len(m1_rows)
+    )
     return bars, gap_report
 
 
@@ -229,6 +252,8 @@ def _build_gap_report(
     total_missing: int,
     pair: str,
     pip: float,
+    dropped_crossed_quote_rows: int,
+    rows_ingested: int,
 ) -> dict:
     """Gap report with the schema keys the committed design inventory declares (R-7).
 
@@ -236,6 +261,27 @@ def _build_gap_report(
     between the first and last observed minute — minute-granular, so a 28-minute
     hole inside two adjacent buckets is no longer reported as ``0``. Whole
     missing buckets are still counted separately. No bars are synthesised.
+
+    BL-4: ``dropped_crossed_quote_rows`` is the second half of drop-and-count —
+    the drop is never silent. ``rows_ingested`` / ``rows_retained`` make the
+    loss ratio explicit, so a pair whose rows were mostly or entirely dropped is
+    visible in the report rather than presenting as a merely sparse pair.
+
+    RF-2 — ``missing_minute_count`` semantics, stated exactly so a reader cannot
+    infer the wrong one. It counts absent minutes strictly BETWEEN the first and
+    last observed minute of the whole input. It therefore:
+
+    * counts market-closure minutes (weekends, holidays) like any other hole —
+      on a real design-span file closure will dominate the figure;
+    * counts nothing before the first or after the last observed minute, so a
+      partial LEADING or TRAILING bucket contributes ``0`` here while
+      ``total_missing_source_minutes_within_emitted_buckets`` counts it.
+
+    Which of those the committed inventory's ``gap_report.missing_minute_count``
+    is meant to record — all absent minutes, or only in-session ones — is a
+    contract question this module may not settle on its own. It is referred as
+    ``Requires separate contract Gate-decision``; both figures are emitted
+    meanwhile so neither reading is silently assumed.
     """
     missing_whole_buckets = 0
     if order:
@@ -263,6 +309,9 @@ def _build_gap_report(
         "max_gap_minutes": max_gap_minutes,
         "total_missing_source_minutes_within_emitted_buckets": total_missing,
         "missing_whole_buckets": missing_whole_buckets,
+        "rows_ingested": rows_ingested,
+        "rows_retained": len(all_minutes),
+        "dropped_crossed_quote_rows": dropped_crossed_quote_rows,
         "imputation": False,
         "synthetic_weekend_bars": False,
         "mid_price_constructed": False,

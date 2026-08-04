@@ -29,9 +29,21 @@ within-bucket sort all use that plain minute, never the caller's object, so a
 `datetime` subclass can no longer smuggle sub-microsecond resolution into the
 bucket key.
 
-Why the equality check and not just a nanosecond test: it generalises. Any
-subclass with resolution finer than a microsecond — known or not — fails the
-comparison. The two guards are deliberately redundant (§4).
+Why the equality check and not just a nanosecond test: it catches
+`pandas.Timestamp`, whose nanoseconds survive `.replace()`.
+
+> **CORRECTION (RF-7, second re-check).** This paragraph originally claimed the
+> equality check "generalises … any subclass with resolution finer than a
+> microsecond — known or not — fails the comparison." **That is false.**
+> `datetime.__eq__` inspects only (y, m, d, h, min, s, µs, offset), so a
+> subclass holding its extra resolution anywhere else and not exposing
+> `.nanosecond` compares equal and is accepted. The effect was bounded — the
+> emitted bucket key is still a plain `datetime` at the correct minute — but
+> the claim overstated the guarantee. Closed in the second-recheck fix PR by
+> `scripts/m15_gate3a/timeutil.py`, which additionally compares `timestamp()`
+> against the rebuilt minute and so rejects a subclass whose true instant
+> differs, and by pure-stdlib regression tests that no longer need pandas
+> (RF-8).
 
 Also: `_bucket_start` asserts its own result is 15-minute aligned, and
 `aggregate_m15` sorts on the normalised minute rather than on `row["ts"]`.
@@ -94,7 +106,7 @@ raises instead of silently deciding. Zero events can no longer produce
 
 | # | Disposition | What was done |
 | --- | --- | --- |
-| **R-1** `horizon_bars` override unauditable | **Fixed** | The horizon is rejected if overridden for `role="holdout"` (frozen at 24 by Ruling 6) and is echoed in the record for every role. |
+| **R-1** `horizon_bars` override unauditable | **Fixed** | The horizon is rejected if overridden for **every** role (frozen at 24 by Ruling 6) and is echoed in the record for every role. *(RF-7 correction: this row originally said "for `role='holdout'`". The code is stricter than that — it freezes the horizon regardless of role — so the record understated it.)* |
 | **R-2** finite-but-impossible rows absorbed | **Fixed** | `_assert_row_coherent` requires `h ≥ max(o,c)`, `l ≤ min(o,c)`, `h ≥ l` per side and `ask_* ≥ bid_*` per row. |
 | **R-3** `\\?\` alias defeats `refuse_real_path` | **Fixed** | `_strip_extended_prefix` removes `\\?\` and `\\?\UNC\` before resolution and comparison. |
 | **R-4** forbidden-status control unreachable | **Fixed** | `FORBIDDEN_STATUSES` widened to the playbook §10 list (adds `READY_FOR_LIVE`, `ROBUST`, `DEPLOYABLE`); `normalise_status` folds case, NFKC and separator variants; and the scrubber now inspects status **values**, so a forbidden label cannot be written into an artifact. |
@@ -216,11 +228,16 @@ head change stops the work. That rule was superseded on master by
 the head may move freely and only the final green head is reported; the
 head-change stop applies *after* approval. Recorded rather than acted on.
 
-**Mutation battery:** 44 mutations, **38 caught**. The six survivors are all
-members of the deliberately redundant pairs in §4; removing both members of
-each pair is caught — verified by probe: B-1 pair → 2 failures, B-1 triple → 2,
-R-3 pair → 2, R-9 whole guard → 3. No genuine test gap remains from the
-battery.
+**Mutation battery:** 44 mutations, **38 caught**.
+
+> **CORRECTION (RF-7, second re-check).** This originally read "the six
+> survivors are all members of the deliberately redundant pairs in §4 … no
+> genuine test gap remains from the battery." **Three of the six were not
+> redundant pairs but real coverage gaps**, later recorded as RF-9 (bucket
+> ordering), RF-10 (the `h ≥ max(o,c)` / `l ≤ min(o,c)` coherence limb) and
+> RF-11 (the NFKC limb of `normalise_status`) — in each case the source was
+> correct but nothing pinned it. All three are closed by tests in the
+> second-recheck fix PR.
 
 **Unresolved disagreement:** none.
 
