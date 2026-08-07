@@ -191,25 +191,27 @@ def _table(entry_overrides: dict) -> dict:
 
 def test_f4_nan_median_fails() -> None:
     with pytest.raises(CostSchemaError, match="finite"):
-        validate_cost_table(_table({"median_spread": float("nan")}))
+        validate_cost_table(_table({"median_spread": float("nan")}), max_spread_pips=None)
 
 
 def test_f4_inf_p90_fails() -> None:
     with pytest.raises(CostSchemaError, match="finite"):
-        validate_cost_table(_table({"p90_spread": float("inf")}))
+        validate_cost_table(_table({"p90_spread": float("inf")}), max_spread_pips=None)
 
 
 def test_f4_neg_inf_p95_fails() -> None:
     with pytest.raises(CostSchemaError, match="finite"):
-        validate_cost_table(_table({"p95_spread": float("-inf")}))
+        validate_cost_table(_table({"p95_spread": float("-inf")}), max_spread_pips=None)
 
 
 def test_f4_finite_non_negative_pass_and_missing_p95_still_fails() -> None:
-    assert validate_cost_table(_table({}))["result"] == "COST_TABLE_SCHEMA_VALID"
+    assert (
+        validate_cost_table(_table({}), max_spread_pips=None)["result"] == "COST_TABLE_SCHEMA_VALID"
+    )
     t = _table({})
     del t["entries"][0]["p95_spread"]
     with pytest.raises(CostSchemaError):
-        validate_cost_table(t)
+        validate_cost_table(t, max_spread_pips=None)
 
 
 # --------------------------------------------------------------------------
@@ -244,7 +246,7 @@ def test_f5_naive_rejected_in_warmup() -> None:
     p = WarmupPolicy(w_bars=50, longest_feature_lookback_bars=50)
     with pytest.raises(WarmupPolicyError, match="naive"):
         p.assert_load_allowed(datetime(2026, 5, 1))
-    with pytest.raises(WarmupPolicyError, match="without offset"):
+    with pytest.raises(WarmupPolicyError, match="without explicit offset"):
         p.assert_load_allowed("2026-05-01T00:00:00")
     p.assert_load_allowed("2026-05-01T00:00:00Z")  # explicit UTC still allowed
 

@@ -9,10 +9,10 @@ timestamp before the forward floor fails closed.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import UTC, datetime
 from typing import Any
 
 from .no_overlap import FORWARD_FLOOR
+from .timeutil import TimestampError, to_utc
 
 
 class WarmupPolicyError(RuntimeError):
@@ -47,19 +47,15 @@ class WarmupPolicy:
         F-5 fix: naive datetimes and offset-less ISO strings FAIL CLOSED —
         never silently assumed UTC. N-3: the policy validates itself first, so
         an under-sized or malformed warm-up can no longer authorise a load.
+        BL-2: awareness is decided by ``utcoffset()`` in the single timestamp
+        authority, so a ``utcoffset()``-``None`` zone can no longer be read in
+        the host's local time and slip under the forward floor.
         """
         self.validate()
-        if isinstance(ts, datetime):
-            if ts.tzinfo is None:
-                raise WarmupPolicyError(f"naive load timestamp rejected: {ts.isoformat()}")
-            t = ts.astimezone(UTC)
-        elif isinstance(ts, str) and ts.strip():
-            parsed = datetime.fromisoformat(ts.replace("Z", "+00:00"))
-            if parsed.tzinfo is None:
-                raise WarmupPolicyError(f"ISO load timestamp without offset rejected: {ts!r}")
-            t = parsed.astimezone(UTC)
-        else:
-            raise WarmupPolicyError(f"unparseable load timestamp: {ts!r}")
+        try:
+            t = to_utc(ts)
+        except TimestampError as exc:
+            raise WarmupPolicyError(f"load timestamp rejected: {exc}") from exc
         if t < FORWARD_FLOOR:
             raise WarmupPolicyError(
                 f"warm-up would load pre-forward data at {t.isoformat()} "

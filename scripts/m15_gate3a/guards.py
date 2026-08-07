@@ -8,12 +8,11 @@ guards.
 
 from __future__ import annotations
 
-import os
 import re
 import unicodedata
-from pathlib import Path
 from typing import Any, Final
 
+from scripts.m15_gate3a.path_authority import PathAuthorityError, assert_outside
 from scripts.ml_step4.evidence import repo_root
 
 # Real ML Step 4 archive / evidence root — off-limits for computation here.
@@ -74,60 +73,20 @@ def assert_synthetic_only(mode: str) -> None:
         )
 
 
-def _strip_extended_prefix(path: str | Path) -> str:
-    r"""R-3: drop a Windows extended-length prefix before comparison.
+def refuse_real_path(path: Any) -> None:
+    """Fail closed if a path points at protected real archive / evidence trees.
 
-    ``Path.resolve()`` *keeps* ``\\?\``, so ``\\?\C:\...`` compared unequal to
-    ``C:\...`` while naming the same directory.
+    BL-3: containment is decided by :mod:`scripts.m15_gate3a.path_authority`,
+    the single authority for Windows path aliasing. The previous inline check
+    matched the extended-UNC prefix case-sensitively and gave up (allowing)
+    after a fixed 64-level ancestor walk; both routes are closed there.
     """
-    text = str(path)
-    for prefix in ("\\\\?\\UNC\\", "\\\\?\\"):
-        if text.startswith(prefix):
-            rest = text[len(prefix) :]
-            return f"\\\\{rest}" if prefix.endswith("UNC\\") else rest
-    return text
-
-
-_MAX_ANCESTOR_WALK: Final[int] = 64
-
-
-def _names_protected(resolved: Path, protected: Path) -> bool:
-    """True iff *resolved* is, or sits under, *protected* — by name **or identity**.
-
-    String comparison alone is not enough: UNC aliases (``\\localhost\\C$\\...``),
-    NTFS junctions and 8.3 short names all resolve to a different string while
-    naming the same directory. Filesystem identity closes those; the name test
-    still covers targets that do not exist yet (the usual case for a write).
-    Any OS error while probing fails closed.
-    """
-    if resolved == protected or protected in resolved.parents:
-        return True
-    try:
-        if not protected.exists():  # pragma: no cover - protected tree is committed
-            return False
-        probe = resolved
-        for _ in range(_MAX_ANCESTOR_WALK):
-            if probe.exists() and os.path.samefile(probe, protected):
-                return True
-            if probe.parent == probe:
-                return False
-            probe = probe.parent
-    except OSError:
-        return True  # unresolvable / inaccessible -> fail closed
-    return False  # pragma: no cover - walk exhausted
-
-
-def refuse_real_path(path: str | Path) -> None:
-    """Fail closed if a path points at protected real archive / evidence trees."""
-    try:
-        resolved = Path(_strip_extended_prefix(path)).resolve()
-    except OSError as exc:  # pragma: no cover - defensive
-        raise RealDataRefusedError(f"unresolvable path: {exc}") from exc
     root = repo_root()
-    for prefix in _PROTECTED_PREFIXES:
-        protected = (root / prefix).resolve()
-        if _names_protected(resolved, protected):
-            raise RealDataRefusedError(f"refused real/protected path: {prefix}")
+    roots = tuple((root / prefix) for prefix in _PROTECTED_PREFIXES)
+    try:
+        assert_outside(path, roots, _PROTECTED_PREFIXES)
+    except PathAuthorityError as exc:
+        raise RealDataRefusedError(str(exc)) from exc
 
 
 def assert_no_forbidden_operation(**flags: bool) -> None:

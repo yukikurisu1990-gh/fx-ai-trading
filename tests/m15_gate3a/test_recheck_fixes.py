@@ -16,6 +16,7 @@ import json
 import math
 import sys
 from datetime import UTC, datetime, timedelta, timezone
+from pathlib import Path
 
 import pytest
 
@@ -52,6 +53,7 @@ from scripts.m15_gate3a.no_overlap import (
 )
 from scripts.m15_gate3a.pair_authority import PAIRS_20, PairAuthorityError, canonical_pair
 from scripts.m15_gate3a.warmup import WarmupPolicy, WarmupPolicyError
+from tests.m15_gate3a.roster_fixtures import design_roster
 
 requires_pandas = pytest.mark.skipif(
     importlib.util.find_spec("pandas") is None,
@@ -204,15 +206,71 @@ def test_r2_high_below_low_row_rejected() -> None:
         aggregate_m15(rows, pair="EUR_USD")
 
 
-def test_r2_crossed_quote_rejected_no_negative_spread() -> None:
-    """Each side is internally coherent, but ask sits below bid -> crossed."""
+def test_r2_crossed_quote_dropped_and_counted_not_fatal() -> None:
+    """BL-4: a crossed quote is a counted drop, matching the stage25_0a precedent.
+
+    R-2's original intent — a crossed row must never reach a bar — still holds:
+    the row leaves no trace in the OHLC, the bucket loses eligibility, and the
+    drop is reported. What changed is that one anomalous minute no longer
+    destroys the whole pair.
+    """
     rows = _bucket(15)
     crossed = _row(START + timedelta(minutes=14))
     for k in ("o", "h", "l", "c"):
         crossed[f"ask_{k}"] = crossed[f"bid_{k}"] - 0.0001
     rows[14] = crossed
-    with pytest.raises(AggregationError, match="crossed quote"):
-        aggregate_m15(rows, pair="EUR_USD")
+
+    bars, gap = aggregate_m15(rows, pair="EUR_USD")
+    assert gap["dropped_crossed_quote_rows"] == 1
+    assert gap["rows_ingested"] == 15
+    assert gap["rows_retained"] == 14
+    assert len(bars) == 1
+    assert bars[0]["n_source_bars"] == 14
+    assert bars[0]["eligible"] is False  # 15 distinct minutes are no longer present
+    assert bars[0]["spread_close"] >= 0
+    # the dropped row's values never reach the emitted bar
+    assert bars[0]["ask_l"] >= bars[0]["bid_l"]
+
+
+def test_bl4_all_rows_crossed_yields_no_bars_and_a_full_drop_count() -> None:
+    """The loss is explicit: an entirely-dropped pair cannot look merely sparse."""
+    rows = []
+    for i in range(15):
+        r = _row(START + timedelta(minutes=i))
+        for k in ("o", "h", "l", "c"):
+            r[f"ask_{k}"] = r[f"bid_{k}"] - 0.0001
+        rows.append(r)
+    bars, gap = aggregate_m15(rows, pair="EUR_USD")
+    assert bars == []
+    assert gap["rows_ingested"] == 15
+    assert gap["rows_retained"] == 0
+    assert gap["dropped_crossed_quote_rows"] == 15
+    assert gap["n_eligible"] == 0
+
+
+def test_bl4_a_dropped_minute_cannot_be_substituted_by_a_second_record() -> None:
+    """The minute is claimed before the drop, so a replacement row is a duplicate."""
+    crossed = _row(START)
+    for k in ("o", "h", "l", "c"):
+        crossed[f"ask_{k}"] = crossed[f"bid_{k}"] - 0.0001
+    with pytest.raises(AggregationError, match="duplicate source minute"):
+        aggregate_m15([crossed, _row(START)], pair="EUR_USD")
+
+
+def test_bl4_matches_the_stage25_0a_precedent_on_zero_spread() -> None:
+    """stage25_0a drops only `spread_pip < 0`; an exactly-zero spread is retained."""
+    row = _row(START)
+    for k in ("o", "h", "l", "c"):
+        row[f"ask_{k}"] = row[f"bid_{k}"]
+    bars, gap = aggregate_m15([row], pair="EUR_USD")
+    assert gap["dropped_crossed_quote_rows"] == 0
+    assert bars[0]["spread_close"] == 0.0
+
+
+def test_bl4_intra_side_incoherence_is_still_fatal() -> None:
+    """Only the bid/ask relation became a drop; a broken side is still a hard error."""
+    with pytest.raises(AggregationError, match="high .* < low|OHLC incoherent"):
+        aggregate_m15([_row(START, bid_h=1.0, bid_l=2.0)], pair="EUR_USD")
 
 
 def test_r6_finite_inputs_producing_infinite_spread_rejected() -> None:
@@ -335,9 +393,9 @@ def test_r7_whole_bucket_gap_still_counted() -> None:
 
 
 def test_b2_reversed_span_rejected_by_per_file_bounds() -> None:
-    files = [{"ts_min_utc": "2026-05-01T00:00:00Z", "ts_max_utc": "2026-03-15T00:00:00Z"}]
+    files = design_roster(ts_min="2025-12-01T00:00:00Z", ts_max="2025-06-01T00:00:00Z")
     with pytest.raises(NoOverlapError, match="reversed span"):
-        assert_per_file_bounds(files, role="forward")
+        assert_per_file_bounds(files, role="design")
 
 
 def test_b2_reversed_span_rejected_by_each_bound_checker() -> None:
@@ -350,9 +408,9 @@ def test_b2_reversed_span_rejected_by_each_bound_checker() -> None:
 
 
 def test_b2_span_containing_dead_window_never_proven() -> None:
-    files = [{"ts_min_utc": "2026-01-01T00:00:00Z", "ts_max_utc": "2026-05-01T00:00:00Z"}]
-    with pytest.raises(NoOverlapError):
-        assert_per_file_bounds(files, role="forward")
+    files = design_roster(ts_min="2026-01-01T00:00:00Z", ts_max="2026-05-01T00:00:00Z")
+    with pytest.raises(NoOverlapError, match="dead window|DESIGN_END"):
+        assert_per_file_bounds(files, role="design")
 
 
 def test_b2_boundary_constants_pinned_independently() -> None:
@@ -381,7 +439,7 @@ def test_b2_sub_second_tail_of_dead_window_is_dead() -> None:
 
 
 def test_b2_valid_design_file_still_proven() -> None:
-    files = [{"ts_min_utc": "2025-05-01T00:00:00Z", "ts_max_utc": "2025-06-01T00:00:00Z"}]
+    files = design_roster(ts_min="2025-05-01T00:00:00Z", ts_max="2025-06-01T00:00:00Z")
     assert assert_per_file_bounds(files, role="design")["result"] == (
         "PROVEN_NO_DEAD_WINDOW_OVERLAP"
     )
@@ -529,7 +587,9 @@ def test_b4_cost_schema_rejects_non_canonical_pair_spelling() -> None:
     from tests.m15_gate3a.test_cost_schema import _table  # reuse the fixture shape
 
     with pytest.raises(CostSchemaError, match="canonical"):
-        validate_cost_table(_table(entry={"pair": "usd_jpy", "pip_size": 0.01}))
+        validate_cost_table(
+            _table(entry={"pair": "usd_jpy", "pip_size": 0.01}), max_spread_pips=None
+        )
 
 
 # ==========================================================================
@@ -547,42 +607,48 @@ def test_r8_spread_unit_is_mandatory_and_pinned() -> None:
     t = _cost_table()
     del t["spread_unit"]
     with pytest.raises(CostSchemaError, match="spread_unit"):
-        validate_cost_table(t)
+        validate_cost_table(t, max_spread_pips=None)
     with pytest.raises(CostSchemaError, match="spread_unit"):
-        validate_cost_table(_cost_table(spread_unit="pip"))
-    assert validate_cost_table(_cost_table())["spread_unit"] == "price"
+        validate_cost_table(_cost_table(spread_unit="pip"), max_spread_pips=None)
+    assert validate_cost_table(_cost_table(), max_spread_pips=None)["spread_unit"] == "price"
 
 
 def test_r8_formula_string_must_match_the_frozen_plan() -> None:
     with pytest.raises(CostSchemaError, match="all_in_cost_formula"):
-        validate_cost_table(_cost_table(all_in_cost_formula="median + 0.0 + 0.0"))
+        validate_cost_table(
+            _cost_table(all_in_cost_formula="median + 0.0 + 0.0"), max_spread_pips=None
+        )
 
 
 def test_r8_quantiles_must_be_monotone() -> None:
     with pytest.raises(CostSchemaError, match="median <= p90 <= p95"):
         validate_cost_table(
-            _cost_table(entry={"median_spread": 0.0009, "p90_spread": 0.0002, "p95_spread": 0.0001})
+            _cost_table(
+                entry={"median_spread": 0.0009, "p90_spread": 0.0002, "p95_spread": 0.0001}
+            ),
+            max_spread_pips=None,
         )
     with pytest.raises(CostSchemaError, match="median <= p90 <= p95"):
         validate_cost_table(
             _cost_table(
                 entry={"median_spread": 0.00008, "p90_spread": 0.0003, "p95_spread": 0.0002}
-            )
+            ),
+            max_spread_pips=None,
         )
 
 
 def test_r8_padding_and_cell_remain_unloosenable() -> None:
     with pytest.raises(CostSchemaError):
-        validate_cost_table(_cost_table(execution_padding_pip=0.31))
+        validate_cost_table(_cost_table(execution_padding_pip=0.31), max_spread_pips=None)
     with pytest.raises(CostSchemaError):
-        validate_cost_table(_cost_table(flat_slippage_cell_pip=0.51))
+        validate_cost_table(_cost_table(flat_slippage_cell_pip=0.51), max_spread_pips=None)
 
 
 @pytest.mark.parametrize("bad", [float("nan"), float("inf"), float("-inf"), -1.0, True])
 @pytest.mark.parametrize("stat", ["median_spread", "p90_spread", "p95_spread"])
 def test_r8_non_finite_negative_and_bool_spreads_rejected(stat: str, bad) -> None:
     with pytest.raises(CostSchemaError):
-        validate_cost_table(_cost_table(entry={stat: bad}))
+        validate_cost_table(_cost_table(entry={stat: bad}), max_spread_pips=None)
 
 
 # ==========================================================================
@@ -727,7 +793,7 @@ def test_rf6_coverage_flag_is_reported_and_pinned() -> None:
     """20x3 coverage is deliberately REPORTED, not enforced (see the fix note)."""
     from tests.m15_gate3a.test_cost_schema import _table
 
-    partial = validate_cost_table(_table())
+    partial = validate_cost_table(_table(), max_spread_pips=None)
     assert partial["result"] == "COST_TABLE_SCHEMA_VALID"
     assert partial["full_20x3_coverage"] is False
     assert partial["pairs_covered"] == ["EUR_USD"]
@@ -745,25 +811,80 @@ def test_rf6_coverage_flag_is_reported_and_pinned() -> None:
         for pair in _EXPECTED_PAIRS_20
         for session in ("asia", "europe", "us")
     ]
-    complete = validate_cost_table(full)
+    complete = validate_cost_table(full, max_spread_pips=None)
     assert complete["entries_validated"] == 60
     assert complete["full_20x3_coverage"] is True
     assert complete["pairs_covered"] == sorted(_EXPECTED_PAIRS_20)
 
 
-def test_nb1_refused_write_leaves_no_directory_behind(tmp_path) -> None:
-    """The refusals must run BEFORE mkdir, or a refused write litters the tree."""
-    from scripts.ml_step4.evidence import repo_root
+def test_nb1_refused_write_leaves_no_directory_behind(tmp_path, monkeypatch) -> None:
+    """The refusals must run BEFORE mkdir, or a refused write litters the tree.
 
-    protected = repo_root() / "artifacts" / "ml_step4" / "365d_ba_v1" / "nb1_probe"
+    RF-4: this used to aim the write at the REAL protected evidence tree on
+    every run — correct only for as long as the guard held, and the suite's own
+    litter if it ever regressed. The protected prefix is now synthetic, so the
+    test proves the ordering without ever addressing real evidence.
+    """
+    import scripts.m15_gate3a.guards as guards_mod
+
+    synthetic_root = tmp_path / "fake_repo"
+    (synthetic_root / "protected_stub").mkdir(parents=True)
+    monkeypatch.setattr(guards_mod, "repo_root", lambda: synthetic_root)
+    monkeypatch.setattr(guards_mod, "_PROTECTED_PREFIXES", ("protected_stub",))
+
+    target = synthetic_root / "protected_stub" / "nb1_probe"
     with pytest.raises(RealDataRefusedError):
-        write_metadata_artifact(protected, "x.json", {"ok": 1})
-    assert not protected.exists()
+        write_metadata_artifact(target, "x.json", {"ok": 1})
+    assert not target.exists()
 
     fresh = tmp_path / "never_created"
     with pytest.raises(ArtifactScrubError):
         write_metadata_artifact(fresh, "bad.txt", {"ok": 1})
     assert not fresh.exists()
+
+
+def test_rf4_the_suite_never_addresses_the_real_protected_tree() -> None:
+    """No test may name a real protected prefix as a write target.
+
+    Anchored to ``__file__``, not the working directory: an earlier version used
+    a cwd-relative glob, so running pytest from anywhere else made the glob
+    empty and the guard pass vacuously. It now asserts it actually saw files,
+    scans every ``.py`` in the package, and matches a write anywhere in the
+    call rather than only on the same source line.
+    """
+    import ast
+
+    from scripts.m15_gate3a.guards import _PROTECTED_PREFIXES
+
+    here = Path(__file__).resolve().parent
+    files = sorted(here.glob("*.py"))
+    assert len(files) >= 8, f"protected-tree scan found only {len(files)} files under {here}"
+
+    leaves = {p.rsplit("/", 1)[-1] for p in _PROTECTED_PREFIXES} | set(_PROTECTED_PREFIXES)
+    for path in files:
+        source = path.read_text(encoding="utf-8")
+        tree = ast.parse(source)
+        for node in ast.walk(tree):
+            if not isinstance(node, ast.Call):
+                continue
+            name = getattr(node.func, "id", None) or getattr(node.func, "attr", None)
+            if name not in ("write_metadata_artifact", "write_text", "write_bytes", "mkdir"):
+                continue
+            segment = ast.get_source_segment(source, node) or ""
+            for leaf in leaves:
+                assert leaf not in segment, (
+                    f"{path.name}: {name}(...) aimed at a protected tree ({leaf}): {segment[:120]}"
+                )
+
+
+def test_rf6_a_nul_byte_raises_the_documented_exception(tmp_path) -> None:
+    """RF-6: a NUL escaped as a bare ValueError, not RealDataRefusedError."""
+    with pytest.raises(RealDataRefusedError):
+        refuse_real_path("a\x00b")
+    with pytest.raises((RealDataRefusedError, ArtifactScrubError)):
+        write_metadata_artifact(tmp_path, "a\x00b.json", {"ok": 1})
+    with pytest.raises((RealDataRefusedError, ArtifactScrubError)):
+        write_metadata_artifact(str(tmp_path) + "\x00x", "ok.json", {"ok": 1})
 
 
 # ==========================================================================
@@ -813,18 +934,18 @@ def test_d2_lazy_iterables_cannot_produce_a_proof_on_zero_evidence() -> None:
     """`if not files` is truthiness on the container: a generator slipped past it."""
     for lazy in ((f for f in []), iter([]), (f for f in [{"a": 1}])):
         with pytest.raises(NoOverlapError, match="concrete sequence"):
-            assert_per_file_bounds(lazy, role="forward")
+            assert_per_file_bounds(lazy, role="design")
     with pytest.raises(NoOverlapError, match="empty file list"):
-        assert_per_file_bounds([], role="forward")
+        assert_per_file_bounds([], role="design")
 
 
 def test_d2_non_mapping_entries_and_expected_count() -> None:
-    ok = [{"ts_min_utc": "2025-05-01T00:00:00Z", "ts_max_utc": "2025-06-01T00:00:00Z"}]
     with pytest.raises(NoOverlapError, match="must be a mapping"):
-        assert_per_file_bounds(["not-a-record"], role="design")
-    assert assert_per_file_bounds(ok, role="design")["files_checked"] == 1
-    with pytest.raises(NoOverlapError, match="expected 20 files"):
-        assert_per_file_bounds(ok, role="design", expected_count=20)
+        assert_per_file_bounds(["not-a-record"] * 20, role="design")
+    ok = design_roster()
+    assert assert_per_file_bounds(ok, role="design")["files_checked"] == 20
+    with pytest.raises(NoOverlapError, match="expected 19 files"):
+        assert_per_file_bounds(ok, role="design", expected_count=19)
 
 
 def test_d3_forbidden_status_as_a_dict_key_is_scrubbed() -> None:
@@ -925,31 +1046,89 @@ def test_rf2_pairs_20_matches_the_committed_canonical_lists() -> None:
         assert tuple(PAIRS_20) == _canonical_pairs_from(path), path
 
 
-def test_rf3_pip_magnitude_spreads_are_rejected_under_a_price_unit_declaration() -> None:
-    """A pip-scale number declared as price units is a 10,000x error."""
+def test_rf3_magnitude_is_reported_in_pips_and_marked_unvalidated_by_default() -> None:
+    """BL-5: no committed authority pins a ceiling, so none is invented here."""
     from tests.m15_gate3a.test_cost_schema import _table
 
-    with pytest.raises(CostSchemaError, match="plausibility ceiling"):
-        validate_cost_table(
-            _table(entry={"median_spread": 0.8, "p90_spread": 1.5, "p95_spread": 2.0})
-        )
-    # A genuinely wide but plausible price-unit spread still validates.
-    validate_cost_table(
-        _table(entry={"median_spread": 0.0009, "p90_spread": 0.0015, "p95_spread": 0.0020})
+    summary = validate_cost_table(
+        _table(entry={"median_spread": 0.0009, "p90_spread": 0.0015, "p95_spread": 0.0020}),
+        max_spread_pips=None,
     )
+    assert summary["magnitude_checked_against_declared_bound"] is False
+    assert summary["max_spread_pips_declared"] is None
+    assert summary["magnitude_authority"] == "REQUIRES_SEPARATE_CONTRACT_GATE_DECISION"
+    # The magnitude is nonetheless made visible, in the pair's own pips.
+    assert summary["max_observed_spread_pips"] == pytest.approx(20.0)
+    assert summary["min_observed_spread_pips"] == pytest.approx(9.0)
 
 
-def test_rf3_jpy_ceiling_scales_with_the_pair_pip_size() -> None:
+def test_bl5_pip_conversion_is_pair_aware_so_a_100x_jpy_error_is_visible() -> None:
+    """The invented ceiling was `100 * pip_size`, which for JPY was 100 pips.
+
+    ``USD_JPY median=0.9`` price units is 90 pips — a 100x unit error — and it
+    passed the old ceiling. Under a caller-declared bound it is caught, and the
+    same number for a non-JPY pair converts to 9000 pips, not 90.
+    """
     from tests.m15_gate3a.test_cost_schema import _table
 
     jpy = {"pair": "USD_JPY", "pip_size": PIP_JPY}
-    validate_cost_table(
-        _table(entry={**jpy, "median_spread": 0.02, "p90_spread": 0.05, "p95_spread": 0.08})
+    jpy_table = _table(entry={**jpy, "median_spread": 0.9, "p90_spread": 1.0, "p95_spread": 1.1})
+    assert validate_cost_table(jpy_table, max_spread_pips=None)[
+        "max_observed_spread_pips"
+    ] == pytest.approx(110.0)
+    with pytest.raises(CostSchemaError, match="caller-declared ceiling"):
+        validate_cost_table(jpy_table, max_spread_pips=10.0)
+
+    non_jpy = _table(entry={"median_spread": 0.9, "p90_spread": 1.0, "p95_spread": 1.1})
+    assert validate_cost_table(non_jpy, max_spread_pips=None)[
+        "max_observed_spread_pips"
+    ] == pytest.approx(11000.0)
+
+
+def test_bl5_no_invented_threshold_constant_remains_in_the_module() -> None:
+    """A module-level magnitude constant would be this gate minting a contract."""
+    import scripts.m15_gate3a.cost_schema as cs
+
+    assert not hasattr(cs, "MAX_PLAUSIBLE_SPREAD_PIPS")
+    numeric_constants = {
+        name: getattr(cs, name)
+        for name in dir(cs)
+        if name.isupper() and isinstance(getattr(cs, name), (int, float))
+    }
+    assert set(numeric_constants) == {"EXECUTION_PADDING_PIP", "FLAT_SLIPPAGE_CELL_PIP"}
+
+
+def test_bl5_a_declared_bound_must_itself_be_sane() -> None:
+    from tests.m15_gate3a.test_cost_schema import _table
+
+    for bad in (0, -1.0, float("nan"), float("inf"), True, "5"):
+        with pytest.raises(CostSchemaError, match="max_spread_pips"):
+            validate_cost_table(_table(), max_spread_pips=bad)
+
+
+def test_bl5_zero_spread_is_accepted_per_the_in_repo_precedent() -> None:
+    """stage25_0a drops only negative spread; a floor here would contradict it."""
+    from tests.m15_gate3a.test_cost_schema import _table
+
+    summary = validate_cost_table(
+        _table(entry={"median_spread": 0.0, "p90_spread": 0.0, "p95_spread": 0.0}),
+        max_spread_pips=None,
     )
-    with pytest.raises(CostSchemaError, match="plausibility ceiling"):
-        validate_cost_table(
-            _table(entry={**jpy, "median_spread": 2.0, "p90_spread": 3.0, "p95_spread": 4.0})
-        )
+    assert summary["min_observed_spread_pips"] == 0.0
+    assert summary["result"] == "COST_TABLE_SCHEMA_VALID"
+
+
+def test_rf1_sessions_utc_tiles_the_day_exactly_once() -> None:
+    from scripts.m15_gate3a.cost_schema import SESSIONS_UTC
+
+    covered: list[int] = []
+    for window in SESSIONS_UTC.values():
+        lo_text, _, hi_text = window.partition("-")
+        lo_h, _, lo_m = lo_text.partition(":")
+        hi_h, _, hi_m = hi_text.partition(":")
+        covered.extend(range(int(lo_h) * 60 + int(lo_m), int(hi_h) * 60 + int(hi_m) + 1))
+    assert sorted(covered) == list(range(24 * 60))
+    assert len(covered) == len(set(covered))
 
 
 def test_span_ordering_invariants_survive_optimised_mode() -> None:

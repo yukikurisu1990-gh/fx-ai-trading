@@ -12,6 +12,7 @@ from scripts.m15_gate3a.no_overlap import (
     assert_per_file_bounds,
 )
 from scripts.m15_gate3a.warmup import WarmupPolicy, WarmupPolicyError
+from tests.m15_gate3a.roster_fixtures import design_roster
 
 
 def test_design_ending_before_dead_window_passes() -> None:
@@ -38,21 +39,18 @@ def test_any_role_intersecting_dead_window_fails() -> None:
 
 
 def test_per_file_bounds_design_pass_and_fail() -> None:
-    ok = assert_per_file_bounds(
-        [{"ts_min_utc": "2025-05-01T00:00:00Z", "ts_max_utc": "2025-12-31T23:59:59Z"}],
-        role="design",
-    )
+    ok = assert_per_file_bounds(design_roster(), role="design", expected_count=20)
     assert ok["result"] == "PROVEN_NO_DEAD_WINDOW_OVERLAP"
+    assert ok["files_checked"] == 20
     with pytest.raises(NoOverlapError):
-        assert_per_file_bounds(
-            [{"ts_min_utc": "2025-05-01T00:00:00Z", "ts_max_utc": "2026-04-10T00:00:00Z"}],
-            role="design",
-        )
+        assert_per_file_bounds(design_roster(ts_max="2026-04-10T00:00:00Z"), role="design")
 
 
 def test_per_file_missing_bounds_fails_closed() -> None:
+    roster = design_roster()
+    del roster[7]["ts_max_utc"]
     with pytest.raises(NoOverlapError):
-        assert_per_file_bounds([{"ts_min_utc": "2025-05-01T00:00:00Z"}], role="design")
+        assert_per_file_bounds(roster, role="design")
 
 
 def test_feature_warmup_pre_forward_load_fails() -> None:

@@ -32,7 +32,7 @@ def _table(**overrides):
 
 
 def test_valid_cost_table_passes() -> None:
-    r = validate_cost_table(_table())
+    r = validate_cost_table(_table(), max_spread_pips=None)
     assert r["result"] == "COST_TABLE_SCHEMA_VALID"
     assert r["p95_diagnostic_present"] is True
     assert r["real_spreads_computed"] is False
@@ -47,12 +47,14 @@ def test_missing_p95_fails() -> None:
         "pip_size": 0.0001,
     }
     with pytest.raises(CostSchemaError):
-        validate_cost_table(_table(entries=[e]))
+        validate_cost_table(_table(entries=[e]), max_spread_pips=None)
 
 
 def test_wrong_jpy_pip_fails() -> None:
     with pytest.raises(CostSchemaError):
-        validate_cost_table(_table(entry={"pair": "USD_JPY", "pip_size": 0.0001}))  # should be 0.01
+        validate_cost_table(
+            _table(entry={"pair": "USD_JPY", "pip_size": 0.0001}), max_spread_pips=None
+        )  # should be 0.01
 
 
 def test_correct_jpy_pip_passes() -> None:
@@ -65,7 +67,8 @@ def test_correct_jpy_pip_passes() -> None:
                 "p90_spread": 0.015,
                 "p95_spread": 0.02,
             }
-        )
+        ),
+        max_spread_pips=None,
     )
     assert r["result"] == "COST_TABLE_SCHEMA_VALID"
 
@@ -74,21 +77,21 @@ def test_missing_claim_scope_fails() -> None:
     t = _table()
     del t["claim_scope"]
     with pytest.raises(CostSchemaError):
-        validate_cost_table(t)
+        validate_cost_table(t, max_spread_pips=None)
 
 
 def test_wrong_claim_scope_fails() -> None:
     with pytest.raises(CostSchemaError):
-        validate_cost_table(_table(claim_scope="live_fill_validity"))
+        validate_cost_table(_table(claim_scope="live_fill_validity"), max_spread_pips=None)
 
 
 def test_unsupported_session_fails() -> None:
     with pytest.raises(CostSchemaError):
-        validate_cost_table(_table(entry={"session": "sydney"}))
+        validate_cost_table(_table(entry={"session": "sydney"}), max_spread_pips=None)
 
 
 def test_wrong_padding_or_cell_fails() -> None:
     with pytest.raises(CostSchemaError):
-        validate_cost_table(_table(execution_padding_pip=0.1))
+        validate_cost_table(_table(execution_padding_pip=0.1), max_spread_pips=None)
     with pytest.raises(CostSchemaError):
-        validate_cost_table(_table(flat_slippage_cell_pip=1.0))
+        validate_cost_table(_table(flat_slippage_cell_pip=1.0), max_spread_pips=None)
