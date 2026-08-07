@@ -59,9 +59,15 @@ def normalise_spelling(path: str | Path) -> str:
         return "\\\\" + text[len(_EXTENDED_UNC) :]
     if upper.startswith(_EXTENDED):
         rest = text[len(_EXTENDED) :]
-        # Only a `<letter>:` device is a drive whose extended spelling is a
-        # pure alias of an ordinary path. Anything else keeps its prefix.
-        if len(rest) >= 2 and rest[0].isascii() and rest[0].isalpha() and rest[1] == ":":
+        # Fold only when what follows is ITSELF a rooted path — a `<letter>:`
+        # drive, or anything the platform already calls absolute. That is what
+        # makes the extended spelling a pure alias of an ordinary path.
+        # `Volume{GUID}\...` and `GLOBALROOT\Device\...` are neither, so they
+        # keep their prefix and reach `resolve()` intact; stripping them left a
+        # relative path that resolved against the working directory and walked
+        # straight out of the protected tree.
+        is_drive = len(rest) >= 2 and rest[0].isascii() and rest[0].isalpha() and rest[1] == ":"
+        if is_drive or Path(rest).is_absolute():
             return rest
     return text
 

@@ -17,6 +17,7 @@ checksum or spread, trains, validates, evaluates or executes anything.
 from __future__ import annotations
 
 import importlib.util
+import sys
 from collections.abc import Mapping, Sequence
 from datetime import UTC, datetime, timedelta, timezone, tzinfo
 from pathlib import Path
@@ -810,16 +811,25 @@ def test_bl3_extended_prefix_fold_only_applies_to_a_drive_or_unc(tmp_path: Path)
     are absolute Win32 spellings. Stripping ``\\?\`` leaves them **relative**,
     so they resolve against the working directory and containment fails open.
     """
-    for spelling in (
+    volume_spellings = (
         r"\\?\Volume{9e556d10-77de-4b32-95e7-d94a2a2868ce}\Users\x\prot\s.json",
         r"\\?\GLOBALROOT\Device\HarddiskVolume4\Users\x\prot\s.json",
         r"\\?\globalroot\Device\HarddiskVolume4\Users\x\prot\s.json",
-    ):
+    )
+    for spelling in volume_spellings:
+        # The prefix is kept, so `resolve()` sees the real spelling.
         assert normalise_spelling(spelling) == spelling, spelling
-        assert Path(normalise_spelling(spelling)).is_absolute() is True, spelling
-    # the two spellings that ARE pure aliases of an ordinary path still fold
-    assert Path(normalise_spelling(r"\\?\C:\x")).is_absolute()
+    if sys.platform == "win32":
+        # Only on Windows is the un-folded spelling still absolute; that is the
+        # whole point — folding it there is what produced a relative path.
+        for spelling in volume_spellings:
+            assert Path(spelling).is_absolute() is True, spelling
+
+    # A drive letter or UNC share IS a pure alias, and still folds.
+    assert normalise_spelling(r"\\?\C:\x") == r"C:\x"
     assert normalise_spelling(r"\\?\UNC\host\share\x") == r"\\host\share\x"
+    # ...as is anything the platform already calls absolute (the POSIX case).
+    assert normalise_spelling("\\\\?\\" + str(Path.cwd())) == str(Path.cwd())
 
 
 def test_bl3_an_uninterrogable_candidate_ancestor_fails_closed(
