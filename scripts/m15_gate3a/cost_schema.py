@@ -59,13 +59,14 @@ ALL_IN_COST_FORMULA: Final[str] = (
 )
 
 # BL-5: there is NO absolute spread-magnitude bound in any committed authority.
-# PR #440 invented ``MAX_PLAUSIBLE_SPREAD_PIPS = 100.0`` and applied it as
-# ``100 * pip_size``; for a JPY pair that ceiling is 1.0 *price units* = 100
-# pips, so ``USD_JPY median=0.9`` under ``spread_unit="price"`` — a 100x unit
-# error — validated. The invented number is removed rather than re-tuned: this
-# module may not mint a contract constant. Callers that hold a pinned bound pass
-# it in explicitly; until one is recorded, the summary reports the magnitude in
-# pips and states that it is UNVALIDATED. See the fix note for the referral.
+# PR #440 invented ``MAX_PLAUSIBLE_SPREAD_PIPS = 100.0``, applied as
+# ``value > 100 * pip_size`` — algebraically a uniform 100-pip ceiling for every
+# pair, NOT a JPY-specific scaling error. What it could not catch is the JPY
+# 100x class: ``USD_JPY median=0.9`` price units is 90 pips, under the ceiling,
+# while the same class on a non-JPY pair lands at 9,000 pips and is caught.
+# The invented number is removed rather than re-tuned — this module may not mint
+# a contract constant — and `max_spread_pips` is made a REQUIRED argument so the
+# removal cannot silently become "no check". See the fix note for the referral.
 MAGNITUDE_AUTHORITY_STATUS: Final[str] = "REQUIRES_SEPARATE_CONTRACT_GATE_DECISION"
 
 _REQUIRED_ENTRY_KEYS: Final[tuple[str, ...]] = (
@@ -101,15 +102,25 @@ def _check_magnitude_bound(bound: Any) -> float | None:
     return float(bound)
 
 
-def validate_cost_table(table: Any, *, max_spread_pips: float | None = None) -> dict:
+def validate_cost_table(table: Any, *, max_spread_pips: float | None) -> dict:
     """Validate cost-table metadata shape (fail-closed). Returns a summary.
 
-    ``max_spread_pips`` is the pip-unit magnitude ceiling. It is deliberately
-    **not** defaulted to a number: no committed authority pins one (BL-5), and
-    inventing one here is what let a 100x JPY unit error validate. When it is
-    ``None`` the summary reports every statistic converted to the pair's own
-    pips and marks the magnitude UNVALIDATED, so a reader cannot mistake schema
-    validity for magnitude validity.
+    ``max_spread_pips`` is the pip-unit magnitude ceiling and is a **required**
+    keyword argument with no default. That is deliberate, and it is the
+    resolution of a genuine tension the internal audit surfaced:
+
+    * no committed authority pins a magnitude bound, so this module may not
+      invent one (BL-5) — PR #440's ``100.0`` was invented, and at 100 pips it
+      was too loose to catch a 100x JPY unit error (``USD_JPY median=0.9``
+      price units = 90 pips slipped under it);
+    * but simply defaulting to "no check" would have made the non-JPY case,
+      where that ceiling *did* work, strictly weaker — a 10,000x error
+      (``EUR_USD median=1.5`` = 15,000 pips) would pass unremarked.
+
+    Requiring the argument forces every caller to state a bound or to state
+    ``None`` — "no bound is pinned, magnitude UNVALIDATED" — so the choice is
+    always recorded and never inherited by accident. With ``None`` the summary
+    still reports every statistic converted to the pair's own pips.
     """
     ceiling_pips = _check_magnitude_bound(max_spread_pips)
     if not isinstance(table, dict):
@@ -204,8 +215,12 @@ def validate_cost_table(table: Any, *, max_spread_pips: float | None = None) -> 
         "p95_diagnostic_present": True,
         "real_spreads_computed": False,
         # BL-5: magnitude is reported, never asserted, unless a caller pins it.
+        # The flag is named for what it actually says — a bound was supplied and
+        # checked — not "the magnitude is valid": a caller is free to declare a
+        # bound so loose it excludes nothing, and `max_spread_pips_declared`
+        # alongside it is what makes that visible.
         "max_spread_pips_declared": ceiling_pips,
-        "spread_magnitude_validated": ceiling_pips is not None,
+        "magnitude_checked_against_declared_bound": ceiling_pips is not None,
         "max_observed_spread_pips": (max(pips_observed.values()) if pips_observed else None),
         "min_observed_spread_pips": (min(pips_observed.values()) if pips_observed else None),
         "magnitude_authority": (

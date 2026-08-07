@@ -53,7 +53,7 @@ from scripts.m15_gate3a.no_overlap import (
 )
 from scripts.m15_gate3a.pair_authority import PAIRS_20, PairAuthorityError, canonical_pair
 from scripts.m15_gate3a.warmup import WarmupPolicy, WarmupPolicyError
-from tests.m15_gate3a.roster_fixtures import design_roster, forward_roster
+from tests.m15_gate3a.roster_fixtures import design_roster
 
 requires_pandas = pytest.mark.skipif(
     importlib.util.find_spec("pandas") is None,
@@ -393,9 +393,9 @@ def test_r7_whole_bucket_gap_still_counted() -> None:
 
 
 def test_b2_reversed_span_rejected_by_per_file_bounds() -> None:
-    files = forward_roster(ts_min="2026-05-01T00:00:00Z", ts_max="2026-03-15T00:00:00Z")
+    files = design_roster(ts_min="2025-12-01T00:00:00Z", ts_max="2025-06-01T00:00:00Z")
     with pytest.raises(NoOverlapError, match="reversed span"):
-        assert_per_file_bounds(files, role="forward")
+        assert_per_file_bounds(files, role="design")
 
 
 def test_b2_reversed_span_rejected_by_each_bound_checker() -> None:
@@ -408,9 +408,9 @@ def test_b2_reversed_span_rejected_by_each_bound_checker() -> None:
 
 
 def test_b2_span_containing_dead_window_never_proven() -> None:
-    files = forward_roster(ts_min="2026-01-01T00:00:00Z", ts_max="2026-05-01T00:00:00Z")
-    with pytest.raises(NoOverlapError, match="dead window|FORWARD_FLOOR"):
-        assert_per_file_bounds(files, role="forward")
+    files = design_roster(ts_min="2026-01-01T00:00:00Z", ts_max="2026-05-01T00:00:00Z")
+    with pytest.raises(NoOverlapError, match="dead window|DESIGN_END"):
+        assert_per_file_bounds(files, role="design")
 
 
 def test_b2_boundary_constants_pinned_independently() -> None:
@@ -587,7 +587,9 @@ def test_b4_cost_schema_rejects_non_canonical_pair_spelling() -> None:
     from tests.m15_gate3a.test_cost_schema import _table  # reuse the fixture shape
 
     with pytest.raises(CostSchemaError, match="canonical"):
-        validate_cost_table(_table(entry={"pair": "usd_jpy", "pip_size": 0.01}))
+        validate_cost_table(
+            _table(entry={"pair": "usd_jpy", "pip_size": 0.01}), max_spread_pips=None
+        )
 
 
 # ==========================================================================
@@ -605,42 +607,48 @@ def test_r8_spread_unit_is_mandatory_and_pinned() -> None:
     t = _cost_table()
     del t["spread_unit"]
     with pytest.raises(CostSchemaError, match="spread_unit"):
-        validate_cost_table(t)
+        validate_cost_table(t, max_spread_pips=None)
     with pytest.raises(CostSchemaError, match="spread_unit"):
-        validate_cost_table(_cost_table(spread_unit="pip"))
-    assert validate_cost_table(_cost_table())["spread_unit"] == "price"
+        validate_cost_table(_cost_table(spread_unit="pip"), max_spread_pips=None)
+    assert validate_cost_table(_cost_table(), max_spread_pips=None)["spread_unit"] == "price"
 
 
 def test_r8_formula_string_must_match_the_frozen_plan() -> None:
     with pytest.raises(CostSchemaError, match="all_in_cost_formula"):
-        validate_cost_table(_cost_table(all_in_cost_formula="median + 0.0 + 0.0"))
+        validate_cost_table(
+            _cost_table(all_in_cost_formula="median + 0.0 + 0.0"), max_spread_pips=None
+        )
 
 
 def test_r8_quantiles_must_be_monotone() -> None:
     with pytest.raises(CostSchemaError, match="median <= p90 <= p95"):
         validate_cost_table(
-            _cost_table(entry={"median_spread": 0.0009, "p90_spread": 0.0002, "p95_spread": 0.0001})
+            _cost_table(
+                entry={"median_spread": 0.0009, "p90_spread": 0.0002, "p95_spread": 0.0001}
+            ),
+            max_spread_pips=None,
         )
     with pytest.raises(CostSchemaError, match="median <= p90 <= p95"):
         validate_cost_table(
             _cost_table(
                 entry={"median_spread": 0.00008, "p90_spread": 0.0003, "p95_spread": 0.0002}
-            )
+            ),
+            max_spread_pips=None,
         )
 
 
 def test_r8_padding_and_cell_remain_unloosenable() -> None:
     with pytest.raises(CostSchemaError):
-        validate_cost_table(_cost_table(execution_padding_pip=0.31))
+        validate_cost_table(_cost_table(execution_padding_pip=0.31), max_spread_pips=None)
     with pytest.raises(CostSchemaError):
-        validate_cost_table(_cost_table(flat_slippage_cell_pip=0.51))
+        validate_cost_table(_cost_table(flat_slippage_cell_pip=0.51), max_spread_pips=None)
 
 
 @pytest.mark.parametrize("bad", [float("nan"), float("inf"), float("-inf"), -1.0, True])
 @pytest.mark.parametrize("stat", ["median_spread", "p90_spread", "p95_spread"])
 def test_r8_non_finite_negative_and_bool_spreads_rejected(stat: str, bad) -> None:
     with pytest.raises(CostSchemaError):
-        validate_cost_table(_cost_table(entry={stat: bad}))
+        validate_cost_table(_cost_table(entry={stat: bad}), max_spread_pips=None)
 
 
 # ==========================================================================
@@ -785,7 +793,7 @@ def test_rf6_coverage_flag_is_reported_and_pinned() -> None:
     """20x3 coverage is deliberately REPORTED, not enforced (see the fix note)."""
     from tests.m15_gate3a.test_cost_schema import _table
 
-    partial = validate_cost_table(_table())
+    partial = validate_cost_table(_table(), max_spread_pips=None)
     assert partial["result"] == "COST_TABLE_SCHEMA_VALID"
     assert partial["full_20x3_coverage"] is False
     assert partial["pairs_covered"] == ["EUR_USD"]
@@ -803,7 +811,7 @@ def test_rf6_coverage_flag_is_reported_and_pinned() -> None:
         for pair in _EXPECTED_PAIRS_20
         for session in ("asia", "europe", "us")
     ]
-    complete = validate_cost_table(full)
+    complete = validate_cost_table(full, max_spread_pips=None)
     assert complete["entries_validated"] == 60
     assert complete["full_20x3_coverage"] is True
     assert complete["pairs_covered"] == sorted(_EXPECTED_PAIRS_20)
@@ -836,16 +844,37 @@ def test_nb1_refused_write_leaves_no_directory_behind(tmp_path, monkeypatch) -> 
 
 
 def test_rf4_the_suite_never_addresses_the_real_protected_tree() -> None:
-    """No test may name a real protected prefix as a write target."""
+    """No test may name a real protected prefix as a write target.
+
+    Anchored to ``__file__``, not the working directory: an earlier version used
+    a cwd-relative glob, so running pytest from anywhere else made the glob
+    empty and the guard pass vacuously. It now asserts it actually saw files,
+    scans every ``.py`` in the package, and matches a write anywhere in the
+    call rather than only on the same source line.
+    """
+    import ast
+
     from scripts.m15_gate3a.guards import _PROTECTED_PREFIXES
 
-    for path in sorted(Path("tests/m15_gate3a").glob("test_*.py")):
+    here = Path(__file__).resolve().parent
+    files = sorted(here.glob("*.py"))
+    assert len(files) >= 8, f"protected-tree scan found only {len(files)} files under {here}"
+
+    leaves = {p.rsplit("/", 1)[-1] for p in _PROTECTED_PREFIXES} | set(_PROTECTED_PREFIXES)
+    for path in files:
         source = path.read_text(encoding="utf-8")
-        for prefix in _PROTECTED_PREFIXES:
-            leaf = prefix.rsplit("/", 1)[-1]
-            for line in source.splitlines():
-                if leaf in line and "write_metadata_artifact" in line:
-                    raise AssertionError(f"{path}: write aimed at a protected tree: {line}")
+        tree = ast.parse(source)
+        for node in ast.walk(tree):
+            if not isinstance(node, ast.Call):
+                continue
+            name = getattr(node.func, "id", None) or getattr(node.func, "attr", None)
+            if name not in ("write_metadata_artifact", "write_text", "write_bytes", "mkdir"):
+                continue
+            segment = ast.get_source_segment(source, node) or ""
+            for leaf in leaves:
+                assert leaf not in segment, (
+                    f"{path.name}: {name}(...) aimed at a protected tree ({leaf}): {segment[:120]}"
+                )
 
 
 def test_rf6_a_nul_byte_raises_the_documented_exception(tmp_path) -> None:
@@ -905,9 +934,9 @@ def test_d2_lazy_iterables_cannot_produce_a_proof_on_zero_evidence() -> None:
     """`if not files` is truthiness on the container: a generator slipped past it."""
     for lazy in ((f for f in []), iter([]), (f for f in [{"a": 1}])):
         with pytest.raises(NoOverlapError, match="concrete sequence"):
-            assert_per_file_bounds(lazy, role="forward")
+            assert_per_file_bounds(lazy, role="design")
     with pytest.raises(NoOverlapError, match="empty file list"):
-        assert_per_file_bounds([], role="forward")
+        assert_per_file_bounds([], role="design")
 
 
 def test_d2_non_mapping_entries_and_expected_count() -> None:
@@ -1022,9 +1051,10 @@ def test_rf3_magnitude_is_reported_in_pips_and_marked_unvalidated_by_default() -
     from tests.m15_gate3a.test_cost_schema import _table
 
     summary = validate_cost_table(
-        _table(entry={"median_spread": 0.0009, "p90_spread": 0.0015, "p95_spread": 0.0020})
+        _table(entry={"median_spread": 0.0009, "p90_spread": 0.0015, "p95_spread": 0.0020}),
+        max_spread_pips=None,
     )
-    assert summary["spread_magnitude_validated"] is False
+    assert summary["magnitude_checked_against_declared_bound"] is False
     assert summary["max_spread_pips_declared"] is None
     assert summary["magnitude_authority"] == "REQUIRES_SEPARATE_CONTRACT_GATE_DECISION"
     # The magnitude is nonetheless made visible, in the pair's own pips.
@@ -1043,12 +1073,16 @@ def test_bl5_pip_conversion_is_pair_aware_so_a_100x_jpy_error_is_visible() -> No
 
     jpy = {"pair": "USD_JPY", "pip_size": PIP_JPY}
     jpy_table = _table(entry={**jpy, "median_spread": 0.9, "p90_spread": 1.0, "p95_spread": 1.1})
-    assert validate_cost_table(jpy_table)["max_observed_spread_pips"] == pytest.approx(110.0)
+    assert validate_cost_table(jpy_table, max_spread_pips=None)[
+        "max_observed_spread_pips"
+    ] == pytest.approx(110.0)
     with pytest.raises(CostSchemaError, match="caller-declared ceiling"):
         validate_cost_table(jpy_table, max_spread_pips=10.0)
 
     non_jpy = _table(entry={"median_spread": 0.9, "p90_spread": 1.0, "p95_spread": 1.1})
-    assert validate_cost_table(non_jpy)["max_observed_spread_pips"] == pytest.approx(11000.0)
+    assert validate_cost_table(non_jpy, max_spread_pips=None)[
+        "max_observed_spread_pips"
+    ] == pytest.approx(11000.0)
 
 
 def test_bl5_no_invented_threshold_constant_remains_in_the_module() -> None:
@@ -1077,7 +1111,8 @@ def test_bl5_zero_spread_is_accepted_per_the_in_repo_precedent() -> None:
     from tests.m15_gate3a.test_cost_schema import _table
 
     summary = validate_cost_table(
-        _table(entry={"median_spread": 0.0, "p90_spread": 0.0, "p95_spread": 0.0})
+        _table(entry={"median_spread": 0.0, "p90_spread": 0.0, "p95_spread": 0.0}),
+        max_spread_pips=None,
     )
     assert summary["min_observed_spread_pips"] == 0.0
     assert summary["result"] == "COST_TABLE_SCHEMA_VALID"

@@ -42,13 +42,27 @@ def normalise_spelling(path: str | Path) -> str:
     ``\\?\C:\x`` -> ``C:\x``; ``\\?\UNC\host\share`` -> ``\\host\share``
     (and the same for any casing of ``?\unc\``). Other spellings are returned
     unchanged — this is a prefix fold, not a resolution.
+
+    The fold applies **only** when a drive letter or ``UNC\`` follows. The
+    internal audit found the unconditional strip was itself a bypass: the
+    Win32 namespace also admits ``\\?\Volume{GUID}\...`` and
+    ``\\?\GLOBALROOT\Device\HarddiskVolumeN\...``, and stripping ``\\?\`` from
+    those leaves a **relative** path that then resolves against the working
+    directory — so a spelling naming the consumed-holdout tree was ALLOWED.
+    Left unfolded, ``Path.resolve()`` canonicalises them and the identity test
+    catches them; verified for every spelling, including the plain ``\\?\C:\``
+    case this fold was written for.
     """
     text = str(path)
     upper = text.upper()
     if upper.startswith(_EXTENDED_UNC):
         return "\\\\" + text[len(_EXTENDED_UNC) :]
     if upper.startswith(_EXTENDED):
-        return text[len(_EXTENDED) :]
+        rest = text[len(_EXTENDED) :]
+        # Only a `<letter>:` device is a drive whose extended spelling is a
+        # pure alias of an ordinary path. Anything else keeps its prefix.
+        if len(rest) >= 2 and rest[0].isascii() and rest[0].isalpha() and rest[1] == ":":
+            return rest
     return text
 
 
@@ -108,14 +122,17 @@ def resolve_candidate(path: Any) -> Path:
     if isinstance(path, Path):
         text = str(path)
     elif isinstance(path, str):
-        text = path
+        # `str(path)` again would re-enter a subclass's __str__, letting it show
+        # one string to the checks and another to `Path()`. Pin the character
+        # data once, as a plain `str`.
+        text = str.__str__(path)
     else:
         raise PathAuthorityError(f"path must be a str or Path, got {type(path).__name__}")
     if not text.strip():
         raise PathAuthorityError("empty path refused")
     if "\x00" in text:
         raise PathAuthorityError("path containing a NUL byte refused")
-    if text.upper().startswith(_DEVICE):
+    if text.startswith(_DEVICE):
         raise PathAuthorityError(r"device-namespace path (\\.\) refused")
     try:
         return Path(normalise_spelling(text)).resolve()

@@ -148,7 +148,36 @@ def _materialise(files: Any, *, role: str) -> tuple[Any, ...]:
             raise NoOverlapError(f"{role}: indexed access failed at {index}: {exc}") from exc
         if indexed is not a and indexed != a:
             raise NoOverlapError(f"{role}: indexed access disagrees with iteration at {index}")
-    return first
+
+    # Snapshot each record into a plain dict. A Mapping is free to answer
+    # `.get()` differently on every call — the internal audit built one whose
+    # `.get("pair")` cycled through PAIRS_20, so twenty references to a single
+    # record satisfied the roster while `_materialise` saw `a is b` throughout.
+    # Reading each record once, here, is what makes the roster pass and the
+    # bounds pass see the same evidence.
+    snapshot: list[dict] = []
+    identities: dict[int, int] = {}
+    for index, record in enumerate(first):
+        if not isinstance(record, Mapping):
+            raise NoOverlapError(
+                f"{role}: file record must be a mapping, got {type(record).__name__}"
+            )
+        # Twenty files means twenty record OBJECTS. One object appearing at two
+        # indices is a single file claiming to be two, however it answers: the
+        # internal audit built a Mapping that advanced through PAIRS_20 on each
+        # read, so twenty references to it presented as a complete roster with
+        # matching filenames and digests. Identity is what that cannot forge.
+        if id(record) in identities:
+            raise NoOverlapError(
+                f"{role}: the same record object appears at indices "
+                f"{identities[id(record)]} and {index} (duplicate evidence)"
+            )
+        identities[id(record)] = index
+        try:
+            snapshot.append(dict(record))
+        except Exception as exc:  # noqa: BLE001 - a record that cannot be read fails closed
+            raise NoOverlapError(f"{role}: record {index} could not be read: {exc}") from exc
+    return tuple(snapshot)
 
 
 def _roster_report(records: tuple[Any, ...], *, role: str) -> dict:
@@ -163,50 +192,64 @@ def _roster_report(records: tuple[Any, ...], *, role: str) -> dict:
     seen: dict[str, int] = {}
     duplicate: list[str] = []
     unknown: list[Any] = []
+    non_canonical: list[str] = []
     filenames: dict[str, int] = {}
     digests: dict[str, int] = {}
 
     for index, record in enumerate(records):
-        if not isinstance(record, Mapping):
-            raise NoOverlapError(
-                f"{role}: file record must be a mapping, got {type(record).__name__}"
-            )
+        raw_pair = record.get("pair")
         try:
-            pair = canonical_pair(record.get("pair"))
+            pair = canonical_pair(raw_pair)
         except PairAuthorityError:
-            unknown.append(record.get("pair"))
+            unknown.append(raw_pair)
             continue
+        if raw_pair != pair:
+            # The committed inventory declares `"pair": "one of PAIRS_20"`, and
+            # cost_schema already refuses a non-canonical spelling. Reported so
+            # the two consumers of the same frozen contract cannot disagree —
+            # but only after the duplicate classification above, so an alias of
+            # an already-seen pair is still named as the duplicate it is.
+            non_canonical.append(f"{raw_pair!r}->{pair}")
         if pair in seen:
             duplicate.append(pair)
         else:
             seen[pair] = index
 
+        # BL-1 (second round): identity keys are MANDATORY, not opt-in. The
+        # committed `required_schema_per_file` lists `filename` and `sha256` as
+        # required, and while they were optional the duplicate-evidence guards
+        # could simply be switched off by omitting them — twenty records naming
+        # twenty pairs while describing one physical file earned the token.
         filename = record.get("filename")
-        if filename is not None:
-            if not isinstance(filename, str) or not filename.strip():
-                raise NoOverlapError(f"{role}: file record {index} has a non-string filename")
-            if filename in filenames:
-                raise NoOverlapError(
-                    f"{role}: filename {filename!r} appears at records "
-                    f"{filenames[filename]} and {index} (duplicate evidence)"
-                )
-            filenames[filename] = index
+        if not isinstance(filename, str) or not filename.strip():
+            raise NoOverlapError(
+                f"{role}: file record {index} ({pair}) has no usable 'filename' "
+                "(required by the committed inventory schema)"
+            )
+        if filename in filenames:
+            raise NoOverlapError(
+                f"{role}: filename {filename!r} appears at records "
+                f"{filenames[filename]} and {index} (duplicate evidence)"
+            )
+        filenames[filename] = index
 
         digest = record.get("sha256")
-        if digest is not None:
-            if (
-                not isinstance(digest, str)
-                or len(digest) != _SHA256_HEX_LENGTH
-                or any(c not in "0123456789abcdefABCDEF" for c in digest)
-            ):
-                raise NoOverlapError(f"{role}: file record {index} has a malformed sha256")
-            key = digest.lower()
-            if key in digests:
-                raise NoOverlapError(
-                    f"{role}: sha256 {key} appears at records {digests[key]} and "
-                    f"{index} (duplicate evidence)"
-                )
-            digests[key] = index
+        if (
+            not isinstance(digest, str)
+            or len(digest) != _SHA256_HEX_LENGTH
+            or any(c not in "0123456789abcdefABCDEF" for c in digest)
+        ):
+            raise NoOverlapError(
+                f"{role}: file record {index} ({pair}) has no well-formed 'sha256' "
+                "(required by the committed inventory schema: 64-hex)"
+            )
+        key = digest.lower()
+        if key in digests:
+            raise NoOverlapError(
+                f"{role}: sha256 {key} appears at records {digests[key]} and "
+                f"{index} (duplicate evidence)"
+            )
+        digests[key] = index
 
     missing = [p for p in PAIRS_20 if p not in seen]
     report = {
@@ -217,14 +260,16 @@ def _roster_report(records: tuple[Any, ...], *, role: str) -> dict:
         "missing_pairs": missing,
         "duplicate_pairs": sorted(set(duplicate)),
         "unknown_pairs": [repr(u) for u in unknown],
+        "non_canonical_pair_spellings": sorted(set(non_canonical)),
     }
-    if missing or duplicate or unknown:
+    if missing or duplicate or unknown or non_canonical:
         raise NoOverlapError(
             f"{role}: roster does not match PAIRS_20 — "
             f"expected {len(PAIRS_20)}, got {len(records)} records; "
             f"missing={report['missing_pairs']}, "
             f"duplicate={report['duplicate_pairs']}, "
-            f"unknown={report['unknown_pairs']}"
+            f"unknown={report['unknown_pairs']}, "
+            f"non_canonical={report['non_canonical_pair_spellings']}"
         )
     return report
 
@@ -232,15 +277,32 @@ def _roster_report(records: tuple[Any, ...], *, role: str) -> dict:
 def assert_per_file_bounds(
     files: Sequence[Any], *, role: str, expected_count: int | None = None
 ) -> dict:
-    """Per-file ts-bound assertions for a role's inventory (design|forward).
+    """Per-file ts-bound assertions for the **design** inventory.
 
     The returned ``PROVEN_NO_DEAD_WINDOW_OVERLAP`` token is a claim about the
     whole 20-pair inventory, so it is only ever produced when the evidence is
-    re-scannable, bound to the canonical roster, and every record's span clears
-    the dead window. ``expected_count`` remains a caller-supplied cross-check —
-    on its own it can no longer produce the token.
+    re-scannable, bound to the canonical roster, carries the identity keys the
+    committed schema requires, and every record's span clears the dead window.
+    ``expected_count`` remains a caller-supplied cross-check — on its own it can
+    no longer produce the token.
+
+    ``role="forward"`` is **refused**. The roster binding above is derived from
+    ``design_m15_inventory.json``; the committed ``forward_epoch_inventory.json``
+    declares a different shape — no ``pair`` key at all, and a per-file
+    ``"role": "validation | holdout"`` split that may well mean two records per
+    pair. Applying the design roster to it would pre-decide an open contract,
+    which is exactly what BL-5 refused to do elsewhere in this change. The
+    forward inventory is `EMPTY__NO_FORWARD_DATA_EXISTS` with `file_count: 0`,
+    so nothing is blocked by refusing today.
     """
-    if role not in ("design", "forward"):
+    if role == "forward":
+        raise NoOverlapError(
+            "forward: per-file proof refused — the committed forward inventory "
+            "schema has no 'pair' key and splits each file by validation|holdout, "
+            "so the PAIRS_20 roster binding cannot be applied without inventing "
+            "the forward evidence shape. Requires separate contract Gate-decision."
+        )
+    if role != "design":
         raise NoOverlapError(f"unknown role {role!r}")
     records = _materialise(files, role=role)
     if not records:
@@ -250,21 +312,40 @@ def assert_per_file_bounds(
     report = _roster_report(records, role=role)
 
     checked = 0
+    spans: list[dict[str, str]] = []
     for record in records:
         tmin = record.get("ts_min_utc")
         tmax = record.get("ts_max_utc")
         if not tmin or not tmax:
             raise NoOverlapError(f"{role}: file missing ts bounds")
-        if role == "design":
-            assert_design_bounds(tmin, tmax)
-        else:
-            assert_forward_bounds(tmin, tmax)
+        assert_design_bounds(tmin, tmax)
+        # Record what was actually certified, so the proof artifact can be
+        # re-checked against the inventory it claims to prove.
+        spans.append(
+            {
+                "pair": canonical_pair(record["pair"]),
+                "sha256": str(record["sha256"]).lower(),
+                "ts_min_utc": _parse(tmin).isoformat(),
+                "ts_max_utc": _parse(tmax).isoformat(),
+            }
+        )
         checked += 1
     if checked != len(records):  # pragma: no cover - defensive
         raise NoOverlapError(f"{role}: checked {checked} of {len(records)} records")
     return {
         "role": role,
         "files_checked": checked,
+        "certified_spans": spans,
+        # The proof covers identity + ts bounds only. These committed
+        # `required_schema_per_file` keys are NOT verified here, and saying so
+        # is what stops the token being read as full inventory validation.
+        "schema_keys_not_verified": [
+            "size_bytes",
+            "row_count",
+            "eligible_event_count",
+            "gap_report",
+            "pip_size",
+        ],
         **report,
         "result": "PROVEN_NO_DEAD_WINDOW_OVERLAP",
     }

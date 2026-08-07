@@ -82,7 +82,9 @@ def _plain_utc_minute(ts: Any) -> datetime:
     ``pandas.Timestamp`` nanoseconds, or a subclass hiding it elsewhere — is
     still rejected there.
     """
-    if not isinstance(ts, (datetime, str)):
+    # M1 rows carry datetimes. Widening this to accept `str` was a loosening of
+    # the input contract with nothing asking for it, so it is narrowed back.
+    if not isinstance(ts, datetime):
         raise AggregationError("M1 row missing tz-aware 'ts' datetime")
     try:
         return to_utc_minute(ts)
@@ -176,7 +178,14 @@ def aggregate_m15(m1_rows: list[dict[str, Any]], *, pair: str) -> tuple[list[dic
     buckets: dict[datetime, list[tuple[datetime, dict[str, Any]]]] = {}
     seen_minutes: dict[datetime, set[datetime]] = {}
     dropped_crossed = 0
+    # BL-1's own lesson, applied here: `isinstance(m1_rows, list)` admits a list
+    # SUBCLASS, and `len(m1_rows)` is whatever its `__len__` says. Reporting
+    # `rows_ingested` from `len()` while counting retained/dropped in the loop
+    # let a lying `__len__` falsify the report's own accounting identity. Count
+    # what is actually iterated.
+    rows_ingested = 0
     for row in m1_rows:
+        rows_ingested += 1
         b, minute_ts = _validate_row(row)
         # F-1/B-1: completeness means 15 DISTINCT source minutes, compared on the
         # plain UTC minute — a duplicate differing only in a sub-minute remainder
@@ -229,8 +238,26 @@ def aggregate_m15(m1_rows: list[dict[str, Any]], *, pair: str) -> tuple[list[dic
         _assert_bar_finite(bar)
         bars.append(bar)
 
+    # BL-4 (second round): gap metrics are computed over every minute that HAD a
+    # source record — retained or dropped — so they describe *source coverage*,
+    # while the drop counters describe *quality rejection*. Computing them over
+    # retained minutes only made a fully-dropped bucket vanish from `order`
+    # entirely, so a file whose first bucket was 100% crossed reported
+    # missing_whole_buckets=0, missing_minute_count=0, max_gap_minutes=0 — a
+    # gapless, fully-eligible-looking file that had lost half its input.
+    source_minutes = sorted(m for minutes in seen_minutes.values() for m in minutes)
+    fully_dropped = sorted(b for b in seen_minutes if b not in buckets)
     gap_report = _build_gap_report(
-        order, all_minutes, bars, total_missing, pair, pip, dropped_crossed, len(m1_rows)
+        sorted(seen_minutes),
+        source_minutes,
+        bars,
+        total_missing,
+        pair,
+        pip,
+        dropped_crossed,
+        rows_ingested,
+        len(all_minutes),
+        fully_dropped,
     )
     return bars, gap_report
 
@@ -241,7 +268,12 @@ def _assert_bar_finite(bar: dict) -> None:
         v = bar[key]
         if not math.isfinite(v):
             raise AggregationError(f"derived bar value {key!r} is non-finite ({v!r})")
-    if bar["spread_close"] < 0:  # pragma: no cover - row coherence already forbids it
+    # Reachable since BL-4 moved the bid/ask cross out of `_assert_row_coherent`:
+    # a row object that changes between validation and bar construction can put
+    # a negative spread here, and this is the last guard before it reaches the
+    # cost model. (Previously marked `# pragma: no cover` on the premise that
+    # row coherence forbade it — that premise no longer holds.)
+    if bar["spread_close"] < 0:
         raise AggregationError(f"negative quoted spread_close {bar['spread_close']!r}")
 
 
@@ -254,6 +286,8 @@ def _build_gap_report(
     pip: float,
     dropped_crossed_quote_rows: int,
     rows_ingested: int,
+    rows_retained: int,
+    fully_dropped_buckets: list[datetime],
 ) -> dict:
     """Gap report with the schema keys the committed design inventory declares (R-7).
 
@@ -264,12 +298,24 @@ def _build_gap_report(
 
     BL-4: ``dropped_crossed_quote_rows`` is the second half of drop-and-count —
     the drop is never silent. ``rows_ingested`` / ``rows_retained`` make the
-    loss ratio explicit, so a pair whose rows were mostly or entirely dropped is
-    visible in the report rather than presenting as a merely sparse pair.
+    loss ratio explicit, and ``buckets_fully_dropped`` names the buckets that
+    had source rows but emitted no bar, so a file that lost whole windows to
+    anomalies cannot read as a gapless file.
+
+    **The gap metrics describe SOURCE coverage, the drop counters describe
+    quality rejection.** ``order`` and ``all_minutes`` are therefore built from
+    every minute that HAD a source record, retained or dropped. Computing them
+    from retained minutes only made a fully-dropped bucket disappear from the
+    span entirely and reported the file as gapless.
+
+    ``all_rows_dropped`` is reported rather than raised on: an acceptance
+    threshold for the drop ratio would be an invented number, and this module
+    does not mint contract constants. That threshold is referred alongside the
+    BL-5 magnitude bound.
 
     RF-2 — ``missing_minute_count`` semantics, stated exactly so a reader cannot
     infer the wrong one. It counts absent minutes strictly BETWEEN the first and
-    last observed minute of the whole input. It therefore:
+    last minute that had a source record. It therefore:
 
     * counts market-closure minutes (weekends, holidays) like any other hole —
       on a real design-span file closure will dominate the figure;
@@ -281,7 +327,11 @@ def _build_gap_report(
     is meant to record — all absent minutes, or only in-session ones — is a
     contract question this module may not settle on its own. It is referred as
     ``Requires separate contract Gate-decision``; both figures are emitted
-    meanwhile so neither reading is silently assumed.
+    meanwhile so neither reading is silently assumed. The committed per-file
+    ``gap_report`` object carries only ``missing_minute_count`` and
+    ``max_gap_minutes``, so the drop counters would NOT survive into the
+    inventory unless that schema is extended — which is itself part of the
+    referral, not something this module may decide.
     """
     missing_whole_buckets = 0
     if order:
@@ -310,8 +360,10 @@ def _build_gap_report(
         "total_missing_source_minutes_within_emitted_buckets": total_missing,
         "missing_whole_buckets": missing_whole_buckets,
         "rows_ingested": rows_ingested,
-        "rows_retained": len(all_minutes),
+        "rows_retained": rows_retained,
         "dropped_crossed_quote_rows": dropped_crossed_quote_rows,
+        "buckets_fully_dropped": [b.isoformat() for b in fully_dropped_buckets],
+        "all_rows_dropped": bool(rows_ingested) and rows_retained == 0,
         "imputation": False,
         "synthetic_weekend_bars": False,
         "mid_price_constructed": False,

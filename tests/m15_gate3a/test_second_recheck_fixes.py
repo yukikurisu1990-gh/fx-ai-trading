@@ -1,15 +1,23 @@
 """Regression tests for the second source-audit re-check (BL-1..BL-5, RF-1..RF-11).
 
-Every test here fails against the previous implementation and passes against
-this one; the fix note records the failing-before evidence per blocker. Nothing
-in this module reads real data, derives real M15, computes a real checksum or
-spread, trains, validates, evaluates or executes anything.
+Every **BL-tagged** test fails against the implementation it replaces and passes
+against this one; the fix note records the failing-before evidence per blocker.
+
+The **RF-tagged** tests are a different thing and are labelled as such: RF-2,
+RF-9, RF-10 and RF-11 were *coverage gaps*, not defects — the source already
+behaved correctly and simply had nothing pinning it, so those tests pass on the
+previous implementation too. The internal audit caught an earlier version of
+this docstring claiming otherwise for the whole module; in a file whose purpose
+is evidence, that distinction is the point.
+
+Nothing in this module reads real data, derives real M15, computes a real
+checksum or spread, trains, validates, evaluates or executes anything.
 """
 
 from __future__ import annotations
 
 import importlib.util
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from datetime import UTC, datetime, timedelta, timezone, tzinfo
 from pathlib import Path
 from typing import Any
@@ -17,7 +25,12 @@ from typing import Any
 import pytest
 
 from scripts.m15_gate3a.aggregation import AggregationError, aggregate_m15
-from scripts.m15_gate3a.no_overlap import NoOverlapError, assert_per_file_bounds
+from scripts.m15_gate3a.cost_schema import CostSchemaError, validate_cost_table
+from scripts.m15_gate3a.no_overlap import (
+    NoOverlapError,
+    assert_forward_bounds,
+    assert_per_file_bounds,
+)
 from scripts.m15_gate3a.pair_authority import PAIRS_20
 from scripts.m15_gate3a.path_authority import (
     PathAuthorityError,
@@ -30,6 +43,10 @@ from scripts.m15_gate3a.warmup import WarmupPolicy, WarmupPolicyError
 from tests.m15_gate3a.roster_fixtures import design_roster, file_record, forward_roster
 
 START = datetime(2025, 6, 2, 0, 0, tzinfo=UTC)
+PIP_NON_JPY = 0.0001
+# Anchored to this file, never the working directory: a cwd-relative read
+# silently yields nothing and makes a source-scanning test pass vacuously.
+REPO_ROOT = Path(__file__).resolve().parents[2]
 
 
 def _row(ts: Any, **over: Any) -> dict[str, Any]:
@@ -235,11 +252,137 @@ def test_bl1_duplicate_filename_or_digest_is_refused() -> None:
 
 
 def test_bl1_malformed_digest_is_refused() -> None:
-    for bad in ("", "z" * 64, "ab" * 31, 123, "0" * 63):
+    # 65 and 128 matter as much as 63: `!= 64` must not be weakenable to `< 64`.
+    for bad in ("", "z" * 64, "ab" * 31, 123, "0" * 63, "0" * 65, "0" * 128, None):
         roster = design_roster()
         roster[2] = {**roster[2], "sha256": bad}
-        with pytest.raises(NoOverlapError, match="malformed sha256"):
+        with pytest.raises(NoOverlapError, match="well-formed 'sha256'"):
             assert_per_file_bounds(roster, role="design")
+
+
+def test_bl1_identity_keys_are_mandatory_not_opt_in() -> None:
+    """Omitting them used to switch the duplicate-evidence guards off entirely.
+
+    Twenty records naming twenty distinct pairs while describing one physical
+    file earned the token, because the only guard that would have caught it —
+    the sha256 duplicate check — ran only ``if digest is not None``. The
+    committed ``required_schema_per_file`` lists both keys as required.
+    """
+    for key in ("filename", "sha256"):
+        roster = [{k: v for k, v in r.items() if k != key} for r in design_roster()]
+        with pytest.raises(NoOverlapError, match=f"'{key}'"):
+            assert_per_file_bounds(roster, role="design", expected_count=20)
+
+
+def test_bl1_a_stateful_mapping_cannot_impersonate_twenty_files() -> None:
+    """One record whose `.get("pair")` cycles the roster used to earn the token."""
+
+    class CyclingRecord(Mapping):
+        """One record that answers as a different file on every read.
+
+        It cycles the *identity* keys too, so the duplicate-filename and
+        duplicate-sha256 guards cannot catch it either — only reading each
+        record once, into a snapshot, does.
+        """
+
+        def __init__(self) -> None:
+            self._i = -1
+
+        def __getitem__(self, key):
+            if key == "pair":
+                self._i += 1
+            n = max(self._i, 0) % len(PAIRS_20)
+            return {
+                "pair": PAIRS_20[n],
+                "filename": f"candles_{PAIRS_20[n]}_M15.jsonl",
+                "sha256": f"{n:064x}",
+                "ts_min_utc": "2025-05-01T00:00:00Z",
+                "ts_max_utc": "2025-06-01T00:00:00Z",
+            }[key]
+
+        def __iter__(self):
+            return iter(("pair", "filename", "sha256", "ts_min_utc", "ts_max_utc"))
+
+        def __len__(self) -> int:
+            return 5
+
+        def __eq__(self, other) -> bool:
+            return True
+
+        def __hash__(self) -> int:
+            return 0
+
+    with pytest.raises(NoOverlapError, match="duplicate evidence|roster does not match"):
+        assert_per_file_bounds([CyclingRecord()] * 20, role="design", expected_count=20)
+
+
+def test_bl1_a_split_view_record_cannot_certify_spans_it_did_not_roster() -> None:
+    """Each record is read ONCE, into a snapshot, so both passes see one story.
+
+    Without that, ``_roster_report`` and the bounds loop each re-read the
+    record, and twenty *distinct* stateful records can show one pair to the
+    roster check and another to the certified-span record — a proof whose
+    evidence and whose conclusion describe different files.
+    """
+
+    class ShiftingRecord(Mapping):
+        def __init__(self, index: int) -> None:
+            self._index = index
+            self._reads = 0
+
+        def __getitem__(self, key):
+            if key == "pair":
+                self._reads += 1
+                # First read: the true pair, so the roster check is satisfied.
+                # Every later read: one fixed pair — a collision, not a rotation,
+                # because a rotated roster still sorts equal to PAIRS_20.
+                if self._reads > 1:
+                    return PAIRS_20[0]
+                return PAIRS_20[self._index % len(PAIRS_20)]
+            return {
+                "filename": f"f{self._index}.jsonl",
+                "sha256": f"{self._index:064x}",
+                "ts_min_utc": "2025-05-01T00:00:00Z",
+                "ts_max_utc": "2025-06-01T00:00:00Z",
+            }[key]
+
+        def __iter__(self):
+            return iter(("pair", "filename", "sha256", "ts_min_utc", "ts_max_utc"))
+
+        def __len__(self) -> int:
+            return 5
+
+    proof = assert_per_file_bounds(
+        [ShiftingRecord(i) for i in range(20)], role="design", expected_count=20
+    )
+    certified = [s["pair"] for s in proof["certified_spans"]]
+    assert sorted(certified) == sorted(PAIRS_20), (
+        "certified spans must name the same pairs the roster check verified"
+    )
+
+
+def test_bl1_proof_records_what_it_certified() -> None:
+    """A token that names no spans cannot be re-checked against its inventory."""
+    proof = assert_per_file_bounds(design_roster(), role="design", expected_count=20)
+    assert len(proof["certified_spans"]) == 20
+    assert {s["pair"] for s in proof["certified_spans"]} == set(PAIRS_20)
+    assert all(len(s["sha256"]) == 64 for s in proof["certified_spans"])
+    # and it says plainly which committed schema keys it did NOT verify
+    assert set(proof["schema_keys_not_verified"]) == {
+        "size_bytes",
+        "row_count",
+        "eligible_event_count",
+        "gap_report",
+        "pip_size",
+    }
+
+
+def test_bl1_non_canonical_pair_spelling_is_reported_like_cost_schema_does() -> None:
+    """One frozen contract must not get two answers from two consumers."""
+    roster = design_roster()
+    roster[0] = {**roster[0], "pair": "eur/usd"}  # canonicalises, but is not canonical
+    with pytest.raises(NoOverlapError, match="non_canonical="):
+        assert_per_file_bounds(roster, role="design")
 
 
 def test_bl1_a_complete_roster_proves_and_records_the_reconciliation() -> None:
@@ -255,11 +398,28 @@ def test_bl1_a_complete_roster_proves_and_records_the_reconciliation() -> None:
     assert proof["unknown_pairs"] == []
 
 
-def test_bl1_forward_role_is_bound_to_the_same_roster() -> None:
-    proof = assert_per_file_bounds(forward_roster(), role="forward", expected_count=20)
-    assert proof["result"] == "PROVEN_NO_DEAD_WINDOW_OVERLAP"
-    with pytest.raises(NoOverlapError, match="roster does not match"):
-        assert_per_file_bounds(forward_roster()[:10], role="forward")
+def test_bl1_forward_role_is_refused_rather_than_pre_deciding_its_shape() -> None:
+    """The design roster may not be projected onto an undecided forward contract.
+
+    ``artifacts/m15_gate3a/forward_epoch_inventory.json`` declares no ``pair``
+    key and a per-file ``"role": "validation | holdout"`` split, so requiring 20
+    distinct pairs there would invent the forward evidence shape — the same
+    thing BL-5 refused to do for the magnitude bound. The forward inventory is
+    ``EMPTY__NO_FORWARD_DATA_EXISTS`` with ``file_count: 0``, so nothing is lost.
+    """
+    for evidence in (forward_roster(), forward_roster()[:10], []):
+        with pytest.raises(NoOverlapError, match="Requires separate contract Gate-decision"):
+            assert_per_file_bounds(evidence, role="forward")
+    # the per-span forward checker is untouched and still enforces the floor
+    assert_forward_bounds("2026-05-01T00:00:00Z", "2026-06-30T23:59:59Z")
+    with pytest.raises(NoOverlapError):
+        assert_forward_bounds("2026-04-24T00:00:00Z", "2026-06-30T23:59:59Z")
+
+
+def test_bl1_unknown_role_never_carries_the_proof_token() -> None:
+    for role in ("holdout_leak", "validation", "", "DESIGN", "design "):
+        with pytest.raises(NoOverlapError, match="unknown role"):
+            assert_per_file_bounds(design_roster(), role=role)
 
 
 def test_bl1_records_missing_ts_bounds_still_fail_after_the_roster_check() -> None:
@@ -376,7 +536,7 @@ def test_bl2_no_module_reaches_for_the_host_zone() -> None:
     """
     forbidden = ("astimezone(", "utcnow(", "datetime.now(", "time.localtime(")
     for name in ("timeutil", "aggregation", "no_overlap", "warmup"):
-        source = Path(f"scripts/m15_gate3a/{name}.py").read_text(encoding="utf-8")
+        source = (REPO_ROOT / "scripts" / "m15_gate3a" / f"{name}.py").read_text(encoding="utf-8")
         code = "\n".join(line for line in source.splitlines() if not line.strip().startswith("#"))
         # strip docstrings crudely: they are the only other place the words appear
         code = code.replace("``astimezone``", "").replace("``astimezone(UTC)``", "")
@@ -420,13 +580,111 @@ def test_rf8_subclass_resolution_is_rejected_without_pandas() -> None:
     """RF-8: the whole B-1 proof used to skip in a pandas-free interpreter."""
     with pytest.raises(TimestampError, match="sub-microsecond"):
         to_utc_minute(NanoDatetime(2025, 6, 2, 0, 0, tzinfo=UTC))
-    with pytest.raises(TimestampError, match="beyond microseconds"):
+    with pytest.raises(TimestampError, match="disagrees with its own components"):
         to_utc_minute(ShiftedDatetime(2025, 6, 2, 0, 0, tzinfo=UTC))
 
     with pytest.raises(AggregationError, match="timestamp rejected"):
         aggregate_m15([_row(NanoDatetime(2025, 6, 2, 0, 0, tzinfo=UTC))], pair="EUR_USD")
     with pytest.raises(AggregationError, match="timestamp rejected"):
         aggregate_m15([_row(ShiftedDatetime(2025, 6, 2, 0, 0, tzinfo=UTC))], pair="EUR_USD")
+
+
+def test_bl2_sub_microsecond_is_refused_by_to_utc_not_only_to_utc_minute() -> None:
+    """The T-7 fail-open the internal audit found: truncation, not rejection.
+
+    ``no_overlap`` calls ``to_utc``, so applying the sub-microsecond check only
+    on the minute path left the dead-window and DESIGN_END limbs truncating. A
+    ``ts_max`` 500 ns past ``DESIGN_END`` rebuilt to exactly ``DESIGN_END`` and
+    earned the proof token, where the code this replaced had refused it.
+    """
+    from scripts.m15_gate3a.no_overlap import DESIGN_END, assert_design_bounds
+
+    past_end = NanoDatetime(2026, 2, 28, 23, 59, 59, tzinfo=UTC)
+    assert past_end.nanosecond == 500  # 500 ns PAST DESIGN_END
+    assert datetime(2026, 2, 28, 23, 59, 59, tzinfo=UTC) == DESIGN_END
+
+    with pytest.raises(TimestampError, match="refused rather than truncated"):
+        to_utc(past_end)
+    with pytest.raises(NoOverlapError):
+        assert_design_bounds("2025-05-01T00:00:00Z", past_end)
+
+
+@pytest.mark.parametrize(
+    "bad_ts",
+    [
+        datetime(2025, 6, 2, 0, 0, 0, 1, tzinfo=UTC),  # 1 microsecond
+        datetime(2025, 6, 2, 0, 0, 0, 500_000, tzinfo=UTC),  # half a second
+        datetime(2025, 6, 2, 0, 0, 30, tzinfo=UTC),  # 30 seconds
+    ],
+)
+def test_bl2_microsecond_and_second_limbs_of_minute_alignment(bad_ts: datetime) -> None:
+    """The microsecond limb had no test at either layer (only whole seconds did)."""
+    with pytest.raises(TimestampError, match="not minute-aligned"):
+        to_utc_minute(bad_ts)
+    with pytest.raises(AggregationError, match="not minute-aligned"):
+        aggregate_m15([_row(bad_ts)], pair="EUR_USD")
+    # to_utc keeps sub-minute precision — it is only the MINUTE claim that fails
+    assert to_utc(bad_ts) == bad_ts
+
+
+class LyingComponents(datetime):
+    """Overrides a component as a property, so a rebuild describes another instant."""
+
+    @property
+    def month(self) -> int:  # noqa: D102
+        return 1
+
+
+def test_bl2_a_component_lying_subclass_cannot_walk_past_the_dead_window() -> None:
+    """Reproduced by the internal audit: a two-line subclass defeated both gates."""
+    from scripts.m15_gate3a.no_overlap import assert_no_dead_window
+
+    inside_dead_window = LyingComponents(2026, 3, 15, 12, 0, tzinfo=UTC)
+    with pytest.raises(TimestampError, match="disagrees with its own components"):
+        to_utc(inside_dead_window)
+    with pytest.raises(NoOverlapError):
+        assert_no_dead_window(inside_dead_window, inside_dead_window, role="probe")
+
+    pre_floor = LyingComponents(2020, 1, 1, 0, 0, tzinfo=UTC)
+    with pytest.raises(WarmupPolicyError):
+        WarmupPolicy(w_bars=50, longest_feature_lookback_bars=50).assert_load_allowed(pre_floor)
+
+
+def test_bl2_iso_strings_may_not_smuggle_sub_microsecond_resolution() -> None:
+    """`datetime.fromisoformat` TRUNCATES past 6 fractional digits.
+
+    So the same instant was refused as a ``pandas.Timestamp`` (``.nanosecond``
+    is visible) and accepted as a string — the string being the fail-open side.
+    """
+    for text in (
+        "2026-01-01T00:00:00.000000001+00:00",
+        "2026-01-01T00:00:00.0000004+00:00",
+        "2026-02-28T23:59:59.000000500Z",
+    ):
+        with pytest.raises(TimestampError, match="fractional digits"):
+            to_utc(text)
+    # six digits or fewer is exact, and still accepted
+    assert to_utc("2026-01-01T00:00:00.000001+00:00").microsecond == 1
+    assert to_utc("2026-01-01T00:00:00.123456Z").microsecond == 123456
+
+
+def test_bl2_m1_row_timestamps_must_be_datetimes_not_strings() -> None:
+    """Widening the M1 row contract to accept `str` was an unrequested loosening."""
+    with pytest.raises(AggregationError, match="missing tz-aware 'ts' datetime"):
+        aggregate_m15([_row("2026-01-01T00:00:00+00:00")], pair="EUR_USD")
+
+
+def test_bl2_out_of_range_arithmetic_raises_the_documented_type() -> None:
+    """`naive_local - offset` could leak OverflowError past the guard's contract."""
+    from scripts.m15_gate3a.no_overlap import assert_design_bounds
+
+    extreme = datetime.min.replace(tzinfo=timezone(timedelta(hours=1)))
+    with pytest.raises(TimestampError, match="out of representable range"):
+        to_utc(extreme)
+    with pytest.raises(NoOverlapError):
+        assert_design_bounds(extreme, extreme)
+    with pytest.raises(WarmupPolicyError):
+        WarmupPolicy(w_bars=50, longest_feature_lookback_bars=50).assert_load_allowed(extreme)
 
 
 def test_rf8_pandas_is_present_under_the_dev_extra() -> None:
@@ -482,13 +740,22 @@ def test_bl3_identity_is_reached_at_any_depth_not_just_the_first_64(tmp_path: Pa
         assert is_within(deep, protected) is True, depth
 
 
-def test_bl3_no_fixed_walk_cap_constant_remains(tmp_path: Path) -> None:
-    """A numeric ancestor cap is the defect itself; there must be none to tune."""
+def test_bl3_no_fixed_walk_cap_constant_remains() -> None:
+    """A numeric ancestor cap is the defect itself; there must be none to tune.
+
+    Scoped to the containment walk rather than the whole module: an earlier
+    version asserted ``"range(" not in source``, which constrained every future
+    line in the file. The behavioural depth test above is the real guard; this
+    only stops the named constant coming back.
+    """
+    import inspect
+
     import scripts.m15_gate3a.path_authority as pa
 
     assert not hasattr(pa, "_MAX_ANCESTOR_WALK")
-    source = Path("scripts/m15_gate3a/path_authority.py").read_text(encoding="utf-8")
-    assert "range(" not in source
+    walk = inspect.getsource(pa.is_within)
+    assert "range(" not in walk
+    assert "[:" not in walk  # no slice truncating the ancestor chain
 
 
 def test_bl3_a_sibling_tree_at_any_depth_is_not_within(tmp_path: Path) -> None:
@@ -536,6 +803,57 @@ def test_bl3_a_genuinely_absent_protected_root_is_not_a_match(tmp_path: Path) ->
     assert is_within(absent / "child.jsonl", absent) is True  # name test still applies
 
 
+def test_bl3_extended_prefix_fold_only_applies_to_a_drive_or_unc(tmp_path: Path) -> None:
+    r"""The unconditional strip was itself the bypass.
+
+    ``\\?\Volume{GUID}\...`` and ``\\?\GLOBALROOT\Device\HarddiskVolumeN\...``
+    are absolute Win32 spellings. Stripping ``\\?\`` leaves them **relative**,
+    so they resolve against the working directory and containment fails open.
+    """
+    for spelling in (
+        r"\\?\Volume{9e556d10-77de-4b32-95e7-d94a2a2868ce}\Users\x\prot\s.json",
+        r"\\?\GLOBALROOT\Device\HarddiskVolume4\Users\x\prot\s.json",
+        r"\\?\globalroot\Device\HarddiskVolume4\Users\x\prot\s.json",
+    ):
+        assert normalise_spelling(spelling) == spelling, spelling
+        assert Path(normalise_spelling(spelling)).is_absolute() is True, spelling
+    # the two spellings that ARE pure aliases of an ordinary path still fold
+    assert Path(normalise_spelling(r"\\?\C:\x")).is_absolute()
+    assert normalise_spelling(r"\\?\UNC\host\share\x") == r"\\host\share\x"
+
+
+def test_bl3_an_uninterrogable_candidate_ancestor_fails_closed(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """RF-3's fail-closed rule applies to the probe side too, not just the root."""
+    protected = tmp_path / "protected"
+    protected.mkdir()
+    other = tmp_path / "other"
+    other.mkdir()
+    real_stat = Path.stat
+
+    def boom(self, *a, **k):
+        if self == other:
+            raise PermissionError("denied")
+        return real_stat(self, *a, **k)
+
+    monkeypatch.setattr(Path, "stat", boom)
+    with pytest.raises(PathAuthorityError, match="cannot interrogate"):
+        is_within(other / "child" / "x.jsonl", protected)
+
+
+def test_bl3_a_str_subclass_cannot_show_two_different_paths() -> None:
+    """`str(path)` twice would let __str__ answer the checks and the open() differently."""
+
+    class TwoFaced(str):
+        def __str__(self) -> str:  # noqa: D105
+            return "harmless.json"
+
+    sneaky = TwoFaced("\x00nul-and-more")
+    with pytest.raises(PathAuthorityError, match="NUL byte"):
+        resolve_candidate(sneaky)
+
+
 def test_bl3_malformed_and_device_paths_are_refused() -> None:
     for bad in ("", "   ", "x\x00y", 42, None, b"bytes", r"\\.\PhysicalDrive0", r"\\.\NUL"):
         with pytest.raises(PathAuthorityError):
@@ -563,9 +881,84 @@ def test_bl4_gap_report_exposes_the_full_drop_accounting() -> None:
     assert gap["imputation"] is False  # the drop is never back-filled
 
 
+def test_bl4_a_fully_dropped_bucket_never_reads_as_a_gapless_file() -> None:
+    """Gap metrics describe SOURCE coverage; drop counters describe rejection.
+
+    Computed over retained minutes only, a first bucket that was 100% crossed
+    disappeared from the span entirely and the file reported
+    ``missing_whole_buckets=0, missing_minute_count=0, max_gap_minutes=0`` —
+    gapless and fully eligible, having silently lost half its input.
+    """
+    rows = []
+    for i in range(15):  # bucket 0: every row crossed
+        r = _row(START + timedelta(minutes=i))
+        for k in ("o", "h", "l", "c"):
+            r[f"ask_{k}"] = r[f"bid_{k}"] - 0.0002
+        rows.append(r)
+    rows += [_row(START + timedelta(minutes=15 + i)) for i in range(15)]  # bucket 1: clean
+
+    bars, gap = aggregate_m15(rows, pair="EUR_USD")
+    assert len(bars) == 1 and bars[0]["eligible"] is True
+    assert gap["rows_ingested"] == 30
+    assert gap["rows_retained"] == 15
+    assert gap["dropped_crossed_quote_rows"] == 15
+    assert gap["buckets_fully_dropped"] == [START.isoformat()]
+    assert gap["all_rows_dropped"] is False
+    # the source span still covers both buckets, so the loss is visible
+    assert gap["missing_minute_count"] == 0  # every source minute was present
+    assert gap["n_buckets_emitted"] == 1
+
+
+def test_bl4_gap_metrics_describe_source_coverage_not_retained_coverage() -> None:
+    """A dropped minute WAS present in the source; it is not a coverage gap.
+
+    Computed over retained minutes only, dropping minute 5 out of a contiguous
+    0..14 run invents a one-minute hole that never existed in the data. The
+    drop counters are where that loss belongs.
+    """
+    rows = [_row(START + timedelta(minutes=i)) for i in range(15)]
+    for k in ("o", "h", "l", "c"):
+        rows[5][f"ask_{k}"] = rows[5][f"bid_{k}"] - 0.0002
+
+    _, gap = aggregate_m15(rows, pair="EUR_USD")
+    assert gap["missing_minute_count"] == 0  # the source run was contiguous
+    assert gap["max_gap_minutes"] == 0
+    assert gap["dropped_crossed_quote_rows"] == 1  # the loss is reported here
+    assert gap["rows_retained"] == 14
+
+
+def test_bl4_row_count_is_what_was_iterated_not_what_len_claimed() -> None:
+    """BL-1's lesson: `isinstance(x, list)` admits a subclass with a lying __len__."""
+
+    class LyingList(list):
+        def __len__(self) -> int:
+            return 15
+
+    rows = LyingList(_row(START + timedelta(minutes=i)) for i in range(3))
+    _, gap = aggregate_m15(rows, pair="EUR_USD")
+    assert gap["rows_ingested"] == 3, "rows_ingested must count iteration, not __len__"
+    assert gap["rows_ingested"] == gap["rows_retained"] + gap["dropped_crossed_quote_rows"]
+
+
+def test_bl4_all_rows_dropped_is_reported_not_raised() -> None:
+    """An acceptance threshold for the drop ratio would be an invented number."""
+    rows = []
+    for i in range(15):
+        r = _row(START + timedelta(minutes=i))
+        for k in ("o", "h", "l", "c"):
+            r[f"ask_{k}"] = r[f"bid_{k}"] - 0.0002
+        rows.append(r)
+    bars, gap = aggregate_m15(rows, pair="EUR_USD")
+    assert bars == []
+    assert gap["all_rows_dropped"] is True
+    assert gap["buckets_fully_dropped"] == [START.isoformat()]
+
+
 def test_bl4_matches_the_committed_stage25_0a_predicate() -> None:
     """The precedent this fix adopts is in the repo, not inferred from real data."""
-    source = Path("scripts/stage25_0a_build_path_quality_dataset.py").read_text(encoding="utf-8")
+    source = (REPO_ROOT / "scripts" / "stage25_0a_build_path_quality_dataset.py").read_text(
+        encoding="utf-8"
+    )
     assert "dropped_invalid_spread" in source
     assert "spread_pip < 0" in source
     assert "data anomaly" in source
@@ -652,13 +1045,60 @@ def test_rf10_high_must_bracket_open_and_close() -> None:
         aggregate_m15([_row(START, bid_o=1.00, ask_o=1.0001)], pair="EUR_USD")
 
 
+def test_bl5_the_magnitude_bound_is_a_required_argument() -> None:
+    """Removing the invented ceiling must not silently become "no check"."""
+    from tests.m15_gate3a.test_cost_schema import _table
+
+    with pytest.raises(TypeError, match="max_spread_pips"):
+        validate_cost_table(_table())  # type: ignore[call-arg]
+
+
+@pytest.mark.parametrize(
+    "observed_pips,ceiling,accepted",
+    [(10.0, 11.0, True), (10.0, 10.0, True), (10.0, 9.999, False), (10.0, 9.0, False)],
+)
+def test_bl5_the_ceiling_comparison_is_pinned_at_its_boundary(
+    observed_pips: float, ceiling: float, accepted: bool
+) -> None:
+    """The only rejection case was an 11x margin, so `>` could be loosened to `> 2*`."""
+    from tests.m15_gate3a.test_cost_schema import _table
+
+    price = observed_pips * PIP_NON_JPY
+    table = _table(entry={"median_spread": price, "p90_spread": price, "p95_spread": price})
+    if accepted:
+        summary = validate_cost_table(table, max_spread_pips=ceiling)
+        assert summary["magnitude_checked_against_declared_bound"] is True
+    else:
+        with pytest.raises(CostSchemaError, match="caller-declared ceiling"):
+            validate_cost_table(table, max_spread_pips=ceiling)
+
+
+def test_bl5_a_declared_bound_that_excludes_nothing_is_still_visible() -> None:
+    """The flag says a bound was checked, not that the magnitude is sane."""
+    from tests.m15_gate3a.test_cost_schema import _table
+
+    summary = validate_cost_table(_table(), max_spread_pips=1e12)
+    assert summary["magnitude_checked_against_declared_bound"] is True
+    assert summary["max_spread_pips_declared"] == 1e12  # the giveaway is reported alongside
+    assert summary["magnitude_authority"] == "CALLER_DECLARED"
+
+
+def test_rf1_duplicate_pair_session_cell_is_refused() -> None:
+    from tests.m15_gate3a.test_cost_schema import _table
+
+    table = _table()
+    table["entries"] = table["entries"] * 3
+    with pytest.raises(CostSchemaError, match="duplicate"):
+        validate_cost_table(table, max_spread_pips=None)
+
+
 def test_rf1_the_session_partition_check_runs_at_import_and_can_fail() -> None:
     """The pin must be *invoked*, not merely defined, and must actually reject."""
     import ast
 
     import scripts.m15_gate3a.cost_schema as cs
 
-    source = Path("scripts/m15_gate3a/cost_schema.py").read_text(encoding="utf-8")
+    source = (REPO_ROOT / "scripts" / "m15_gate3a" / "cost_schema.py").read_text(encoding="utf-8")
     tree = ast.parse(source)
     module_level_calls = {
         node.value.func.id

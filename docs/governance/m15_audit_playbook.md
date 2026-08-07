@@ -75,8 +75,11 @@ written for real:
 
 | Referral | Question | Raised by |
 | --- | --- | --- |
-| Spread magnitude bound | No committed authority pins an absolute upper (or lower) bound on a quoted spread. PR #440 invented `MAX_PLAUSIBLE_SPREAD_PIPS = 100.0`; it has been removed rather than re-tuned | BL-5 |
-| `missing_minute_count` semantics | Does the committed inventory's field count **all** absent minutes (closure included) or only in-session ones? Leading/trailing partial buckets also differ between the two emitted figures | RF-2 |
+| Spread magnitude bound | No committed authority pins an absolute upper (or lower) bound on a quoted spread. PR #440 invented `MAX_PLAUSIBLE_SPREAD_PIPS = 100.0`; it has been removed rather than re-tuned, and the bound is now a required caller-supplied argument so the omission cannot be silent | BL-5 |
+| `missing_minute_count` semantics | Does the committed inventory's field count **all** absent minutes (closure included) or only in-session ones? Leading/trailing partial buckets differ between the two emitted figures, and the committed per-file `gap_report` carries only two keys, so the crossed-quote drop counters would not survive into the inventory unless that schema is extended | RF-2 |
+| Crossed-quote disposition | The merged PR #439 audit prescribed `ask_* >= bid_*` as a hard assertion (R-2, `:411-412`). This change re-disposes it to a counted drop on the `stage25_0a` precedent. Re-disposing a recorded audit finding is not an implementing session's call | BL-4 |
+| Drop-ratio acceptance | Is there a threshold above which a pair's crossed-quote drop ratio is unacceptable? `all_rows_dropped` is reported, never raised on, because a ratio threshold would be an invented number | BL-4 |
+| Forward evidence shape | `forward_epoch_inventory.json` declares no `pair` key and a per-file `validation \| holdout` split. Until its shape is recorded, `assert_per_file_bounds(role="forward")` **refuses** rather than projecting the design roster onto it | BL-1 |
 
 ## 2. Research stop rules (mandatory for every session)
 
