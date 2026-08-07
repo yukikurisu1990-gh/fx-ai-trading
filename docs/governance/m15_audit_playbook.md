@@ -35,7 +35,7 @@ in prohibition lists (§10) and in template status vocabularies.
 
 ## 1. Current gate state
 
-Last reconciled against master at `0e19135` (2026-08-02); master CI green.
+Last reconciled against master at `c3a0468` (2026-08-08); master CI green.
 
 | Gate | State |
 | --- | --- |
@@ -52,34 +52,60 @@ Last reconciled against master at `0e19135` (2026-08-02); master CI green.
 | **Independent source-audit re-check of the F-1…F-5 fixes** | **executed — verdict `M15_AGGREGATION_DATASET_MACHINERY_SOURCE_AUDIT_BLOCKED_PENDING_TARGETED_FIXES`** (`docs/design/m15_aggregation_dataset_machinery_source_audit_recheck.md`). F-2…F-5 fixed; **F-1 defeated by `pandas.Timestamp` nanoseconds**; five blockers B-1…B-5 + ten required fixes. Containment re-derived CLEAN |
 | Second targeted-fix Work PR (B-1…B-5, R-1…R-10) (PR #440) | ✅ **merged** as `9c36cb0` (2026-08-03) — code + tests + docs + internal audit (`docs/design/m15_recheck_targeted_fixes_note.md`, status `M15_AGGREGATION_DATASET_MACHINERY_RECHECK_FIXES_PROPOSED`). Merged with the `uv.lock` inconsistency formally unresolved: **`uv sync --frozen` reproducibility is NOT claimed**, and no Red operation that presumes a frozen uv environment is approved until it is |
 | Second re-check attempt (PR #441) | **CLOSED unmerged — non-independent diagnostic review, no gate authority.** Authored in the same session as PR #440, so it does not satisfy policy §12. Its BL-1…BL-5 / RF-1…RF-11 findings are retained as **non-authoritative diagnostic input** only |
-| Third targeted-fix Work PR (BL-1…BL-5, RF-1…RF-11) | **OPEN, not merged** — `docs/design/m15_second_recheck_targeted_fixes_note.md` |
-| Second **independent** re-check | **NOT started** — must run in a session separate from every fix author, after the BL fix PR merges |
-| Gate-3a continuation (real design-span derivation) | **NOT authorised** until an independent re-check accepts the fixes |
+| Third targeted-fix Work PR (BL-1…BL-5, RF-1…RF-11) (PR #442) | ✅ **merged** as `c3a0468` (2026-08-07) — code + tests + docs (`docs/design/m15_second_recheck_targeted_fixes_note.md`), status `M15_AGGREGATION_DATASET_MACHINERY_SECOND_RECHECK_FIXES_PROPOSED`. Added `timeutil.py` + `path_authority.py`, and `pandas>=2.0,<4.0` to the `dev` extra (an Amber dependency change; `uv.lock` not regenerated, so `uv sync --frozen` reproducibility remains **unclaimed**). The merge recorded the fixes; it granted **no** audit acceptance |
+| **Third independent source-audit re-check** (this record) | **executed — verdict `M15_AGGREGATION_DATASET_MACHINERY_SOURCE_AUDIT_BLOCKED_PENDING_TARGETED_FIXES`** (`docs/design/m15_third_independent_source_audit_recheck.md`). Run in a session separate from every fix author, six independent roles. **Seven blockers B-1…B-7 + twenty-nine required fixes RF-1…RF-29.** Containment against real data / derivation / training / execution / broker / credentials re-derived **CLEAN** and proved, not inherited. Mutation resistance measured: 182 mutations, 154 killed, **19 genuine coverage holes** |
+| Fourth targeted-fix Work PR (B-1…B-7, RF-1…RF-29) | **NOT started** |
+| Fourth **independent** re-check | **NOT started** — must run in a session separate from every fix author |
+| Contract Gate-decision on referrals 2 / 3 / 4 (+ NR-A, NR-D) | **REQUIRED, not started** — human + ChatGPT ruling; see §1 referral table |
+| Gate-3a continuation (real design-span derivation) | **NOT authorised** until an independent re-check accepts the fixes **and** the contract Gate-decision resolves referrals 2/3/4 |
 
 **Official gate status:** `M15_AGGREGATION_DATASET_MACHINERY_SOURCE_AUDIT_BLOCKED_PENDING_TARGETED_FIXES`
-— the verdict of the merged PR #439 record. Nothing since has changed it: PR
-#440 recorded fixes without granting acceptance, and PR #441 was closed as a
+— reaffirmed by the third independent re-check at `c3a0468`. PR #440 and PR #442
+each recorded fixes without granting acceptance, and PR #441 was closed as a
 non-independent diagnostic review.
 
-**Next required step before any real data read:** the BL-1…BL-5 / RF-1…RF-11
-targeted-fix Work PR must be reviewed and merged, then a **genuinely
-independent** re-check (separate session, no implementation context) must
-accept it. Only then may a separately-authorised gate-3a continuation
-read/derive design-span data. (This supersedes-by-progress the earlier phrasing
-"the source audit is next": the *first* audit BLOCKED, the F-1…F-5 fixes
-merged, and the re-check BLOCKED again on defects those fixes did not cover.)
+**Next required steps before any real data read**, in order:
+
+1. **One** targeted-fix Work PR closing B-1…B-7 / RF-1…RF-29.
+2. A **fourth genuinely independent** re-check (separate session, no
+   implementation context) accepting it.
+3. A **human + ChatGPT contract Gate-decision** on referrals 2, 3 and 4 —
+   together with the two new referrals NR-A and NR-D, which are inseparable from
+   them. This should be taken **before** the fix PR settles the crossed-quote and
+   gap-report semantics, or the fix session will decide the same contract
+   questions the audit found it may not decide.
+4. A design decision for B-2: how a **byte-level** no-overlap proof is produced
+   at all, given the package must not read data.
+
+Only then may a separately-authorised gate-3a continuation read/derive
+design-span data. (This supersedes-by-progress the earlier phrasing "the source
+audit is next": the *first* audit BLOCKED, the F-1…F-5 fixes merged, the
+re-check BLOCKED again, the B-1…B-5 and BL-1…BL-5 fixes merged, and the third
+independent re-check BLOCKED again on defects those fixes did not cover.)
 
 **Open contract referrals** — decisions this machinery may not make for itself,
 each blocking nothing today but required before the corresponding artifact is
-written for real:
+written for real. The **Classification** column is the third independent
+re-check's evaluation at `c3a0468`; it is an audit finding, not a ruling, and
+only a human + ChatGPT Gate-decision closes any row.
 
-| Referral | Question | Raised by |
-| --- | --- | --- |
-| Spread magnitude bound | No committed authority pins an absolute upper (or lower) bound on a quoted spread. PR #440 invented `MAX_PLAUSIBLE_SPREAD_PIPS = 100.0`; it has been removed rather than re-tuned, and the bound is now a required caller-supplied argument so the omission cannot be silent | BL-5 |
-| `missing_minute_count` semantics | Does the committed inventory's field count **all** absent minutes (closure included) or only in-session ones? Leading/trailing partial buckets differ between the two emitted figures, and the committed per-file `gap_report` carries only two keys, so the crossed-quote drop counters would not survive into the inventory unless that schema is extended | RF-2 |
-| Crossed-quote disposition | The merged PR #439 audit prescribed `ask_* >= bid_*` as a hard assertion (R-2, `:411-412`). This change re-disposes it to a counted drop on the `stage25_0a` precedent. Re-disposing a recorded audit finding is not an implementing session's call | BL-4 |
-| Drop-ratio acceptance | Is there a threshold above which a pair's crossed-quote drop ratio is unacceptable? `all_rows_dropped` is reported, never raised on, because a ratio threshold would be an invented number | BL-4 |
-| Forward evidence shape | `forward_epoch_inventory.json` declares no `pair` key and a per-file `validation \| holdout` split. Until its shape is recorded, `assert_per_file_bounds(role="forward")` **refuses** rather than projecting the design roster onto it | BL-1 |
+| Referral | Classification | Question | Raised by |
+| --- | --- | --- | --- |
+| Spread magnitude bound | `MAY_DEFER` — binds at latest at the §6 pre-run gate ("cost tables fixed") | No committed authority pins an absolute upper (or lower) bound on a quoted spread. PR #440 invented `MAX_PLAUSIBLE_SPREAD_PIPS = 100.0`; it has been removed rather than re-tuned, and the bound is now a required caller-supplied argument so the omission cannot be silent. **Deferral conditions:** the continuation must pass `None` *explicitly*, and it is recorded that any finite positive value satisfies "a bound was declared" | BL-5 |
+| `missing_minute_count` semantics | **`MUST_RESOLVE_BEFORE_GATE3A_CONTINUATION`** | Does the committed inventory's field count **all** absent minutes (closure included) or only in-session ones? Leading/trailing partial buckets differ between the two emitted figures, and the committed per-file `gap_report` carries only two keys, so the crossed-quote drop counters would not survive into the inventory unless that schema is extended. **Third re-check adds a third cause of divergence:** crossed-quote drops are counted as missing source minutes in `total_missing_source_minutes_within_emitted_buckets`, contradicting the module's own docstring. The committed schema declares 2 keys; the code emits 17 | RF-2 |
+| Crossed-quote disposition | **`MUST_RESOLVE_BEFORE_GATE3A_CONTINUATION`** | The merged PR #439 audit prescribed `ask_* >= bid_*` as a hard assertion (R-2, `:411-412`). This change re-disposes it to a counted drop on the `stage25_0a` precedent. Re-disposing a recorded audit finding is not an implementing session's call. **Third re-check:** the disposition also flips `eligible` and therefore `eligible_event_count` — not diagnostics-only — and `stage25_0a` is not admissible authority under pre-registration §11's closed reuse taxonomy | BL-4 |
+| Drop-ratio acceptance | **`MUST_RESOLVE_BEFORE_GATE3A_CONTINUATION`** (derivative of the above; moot if that reverts to a hard assertion) | Is there a threshold above which a pair's crossed-quote drop ratio is unacceptable? `all_rows_dropped` is reported, never raised on, because a ratio threshold would be an invented number. The continuation **is** the adoption gate for the design dataset and no later gate re-derives it | BL-4 |
+| Forward evidence shape | `MAY_DEFER` — binds at the forward-epoch adoption continuation (earliest ≈ 2026-10) | `forward_epoch_inventory.json` declares no `pair` key and a per-file `validation \| holdout` split. Until its shape is recorded, `assert_per_file_bounds(role="forward")` **refuses** rather than projecting the design roster onto it. Deferral is itself committed: `forward_epoch_adoption_manifest.json:23-28` marks these `PENDING … [FIXED-AT gate 3a continuation]` | BL-1 |
+| **NR-A** — is `artifacts/m15_gate3a/` protected-immutable or the continuation's output directory? | **`MUST_RESOLVE_BEFORE_GATE3A_CONTINUATION`** | §9 requires it "untouched"; §5 requires the continuation to populate `design_m15_inventory.json` inside it; `guards._PROTECTED_PREFIXES` permits the write. Neither reading is supported over the other by any committed source | Third re-check (B-5) |
+| **NR-B** — in what format must the continuation emit `ts_min_utc` / `ts_max_utc`? | `MAY_DEFER` — but fixes the continuation's own output format | `timeutil` refuses >6 fractional digits; the committed M1 inventory named as `source_checksum_authority` writes 9 (`2025-04-24T22:03:00.000000000Z`). Refusing is fail-closed and safe; nothing decides whether the house format is normalised, re-emitted or accepted | Third re-check (NR-B) |
+| **NR-C** — who computes and attests `dead_window_bars_present: 0`? | **`MUST_RESOLVE_BEFORE_GATE3A_CONTINUATION`** | Declared in `design_m15_inventory.json:22` and emitted by **no** code path. Bound up with B-2: the T-7 helper certifies *declared* metadata and reads no bytes, so nothing in the machinery can produce the byte-level proof §5 requires | Third re-check (B-2) |
+| **NR-D** — duplicate source minutes abort the whole pair, crossed quotes are a counted drop | **`MUST_RESOLVE_BEFORE_GATE3A_CONTINUATION`** (resolve with the crossed-quote referral) | Two opposite dispositions for two anomaly classes, neither pinned by any committed authority | Third re-check (NR-D) |
+| **NR-E** — the lower spread-magnitude limb is already decided | `MAY_DEFER` (falls with the crossed-quote referral) | `cost_schema.py:181-186` accepts a zero spread on the same `stage25_0a` analogy whose standing the crossed-quote referral disputes | Third re-check (NR-E) |
+| **NR-F** — the frozen all-in-cost formula is dimensionally incoherent | `MAY_DEFER` — binds when cost tables are produced | `SPREAD_UNIT = "price"` while the formula adds pip-unit constants `0.3` / `0.5`. A conversion step is implied and nowhere stated. Flagged in a merged fix note but never previously referred | Third re-check (NR-F) |
+| **NR-G** — validation-role sample floors are unpinned | `MAY_DEFER` — binds at the validation kill gate | The committed spec says "below **the family's minimum**"; only holdout floors (`1000` raw / `400` N_eff) are frozen. The code correctly refuses to default, but the omission was never referred | Third re-check (NR-G) |
+| **NR-H** — the scrubber's four shape thresholds are invented numbers | `MAY_DEFER`, but interacts with the `missing_minute_count` referral | `artifacts.py:73-76`. The natural shape for 20 per-file gap reports is refused by a threshold no authority pins | Third re-check (NR-H) |
+| **NR-I** — the rollover exclusion window has no representation | `MAY_DEFER` — escalates if cost-table production is authorised | Ruling 4 freezes "rollover exclusion 21:55–22:15 UTC minimum — widen-only"; zero occurrences in the package, and `_check_session_partition()` requires the three sessions to tile all 1440 minutes, so no carve-out is expressible | Third re-check (NR-I) |
+| **NR-J** — merged-audit R-8 limb 4 was re-disposed without referral | **`MUST_RESOLVE_BEFORE_GATE3A_CONTINUATION`** (same governance class as the crossed-quote referral) | R-8 required "Fix all four before the tables are produced"; 20 × 3 coverage became a reported boolean with no raise | Third re-check (RF-19) |
 
 ## 2. Research stop rules (mandatory for every session)
 
