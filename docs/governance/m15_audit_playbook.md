@@ -56,7 +56,7 @@ Last reconciled against master at `c3a0468` (2026-08-08); master CI green.
 | **Third independent source-audit re-check** (this record) | **executed — verdict `M15_AGGREGATION_DATASET_MACHINERY_SOURCE_AUDIT_BLOCKED_PENDING_TARGETED_FIXES`** (`docs/design/m15_third_independent_source_audit_recheck.md`). Run in a session separate from every fix author, six independent roles. **Seven blockers B-1…B-7 + twenty-nine required fixes RF-1…RF-29.** Containment against real data / derivation / training / execution / broker / credentials re-derived **CLEAN** and proved, not inherited. Mutation resistance measured: 182 mutations, 154 killed, **19 genuine coverage holes** |
 | Fourth targeted-fix Work PR (B-1…B-7, RF-1…RF-29) | **NOT started** |
 | Fourth **independent** re-check | **NOT started** — must run in a session separate from every fix author |
-| Contract Gate-decision on referrals 2 / 3 / 4 (+ NR-A, NR-C, NR-D, NR-J) and the byte-level T-7 proof | **PREPARED, awaiting human + ChatGPT ruling** — `docs/design/m15_contract_design_gate_decision.md`, status `M15_GATE3A_CONTRACT_AND_PROOF_DESIGN_DECISION_PROPOSED`. Decides NR-A / NR-C / NR-D / NR-J and the byte-level proof contract from committed authority; **refers six items** (crossed-quote substance, drop-ratio rule, `missing_minute_count` semantics, NR-K source-digest-vs-T-1, design-span coverage expectation, closure calendar), each with a fail-closed default. Adds the negative-control rule and a twenty-term pinned-definition requirement |
+| Contract Gate-decision on referrals 2 / 3 / 4 (+ NR-A, NR-C, NR-D, NR-J, NR-K) and the byte-level T-7 proof | **RULED by human + ChatGPT; recorded, awaiting merge** — `docs/design/m15_contract_design_gate_decision.md`, status `M15_GATE3A_CONTRACT_AND_PROOF_DESIGN_DECISION_RULED`. Crossed quotes **hard fail-closed** (merged R-2 is authority; no drop-and-count); rejection tolerance **zero and structural**, not an empirical threshold; the missing-minute schema replaced by **six separately measured quantities**; **hashing is a byte read** (no raw-source re-hash without explicit read authorisation; proof subject = derived M15 bytes); T-7 coverage is **set equality** per pair against an approved calendar, not min/max containment; NR-A / NR-C / NR-D / NR-J decided; byte-level proof = **BI ∧ TC ∧ CV ∧ DB**, declaration-only tokens may never be promoted. Adds the negative-control rule and a twenty-term pinned-definition requirement. **Only open item:** `PRE_CONTINUATION_CALENDAR_ARTIFACT_APPROVAL_REQUIRED` |
 | Gate-3a continuation (real design-span derivation) | **NOT authorised** until an independent re-check accepts the fixes **and** the contract Gate-decision resolves referrals 2/3/4 |
 
 **Official gate status:** `M15_AGGREGATION_DATASET_MACHINERY_SOURCE_AUDIT_BLOCKED_PENDING_TARGETED_FIXES`
@@ -83,11 +83,16 @@ audit is next": the *first* audit BLOCKED, the F-1…F-5 fixes merged, the
 re-check BLOCKED again, the B-1…B-5 and BL-1…BL-5 fixes merged, and the third
 independent re-check BLOCKED again on defects those fixes did not cover.)
 
-**Open contract referrals** — decisions this machinery may not make for itself,
-each blocking nothing today but required before the corresponding artifact is
-written for real. The **Classification** column is the third independent
-re-check's evaluation at `c3a0468`; it is an audit finding, not a ruling, and
-only a human + ChatGPT Gate-decision closes any row.
+**Contract referrals.** Referrals **2, 3 and 4** and **NR-A / NR-C / NR-D / NR-J /
+NR-K** were **RULED by human + ChatGPT** and are recorded in
+`docs/design/m15_contract_design_gate_decision.md` (see the gate table above);
+they are **closed** and bind the targeted-fix Work PR — the Classification column
+below is retained as the historical audit finding that produced them, not as an
+open question. Referrals **1 and 5** remain genuinely open and deferred. The only
+item still requiring a human + ChatGPT decision before the continuation is
+**`PRE_CONTINUATION_CALENDAR_ARTIFACT_APPROVAL_REQUIRED`** — the concrete
+market-calendar artifact for the target epoch; its *contract* is already fixed,
+and no session may invent market hours.
 
 | Referral | Classification | Question | Raised by |
 | --- | --- | --- | --- |
