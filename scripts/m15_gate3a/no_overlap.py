@@ -32,7 +32,7 @@ from datetime import UTC, datetime, timedelta
 from typing import Any, Final
 
 from scripts.m15_gate3a.pair_authority import PAIRS_20, PairAuthorityError, canonical_pair
-from scripts.m15_gate3a.timeutil import TimestampError, to_utc
+from scripts.m15_gate3a.timeutil import TimestampError, format_utc_z, to_utc
 
 DESIGN_START: Final[datetime] = datetime(2025, 4, 25, 0, 0, 0, tzinfo=UTC)
 DESIGN_END: Final[datetime] = datetime(2026, 2, 28, 23, 59, 59, tzinfo=UTC)
@@ -449,8 +449,16 @@ def assert_per_file_bounds(
                 "pair": identity["pair"],
                 "sha256": identity["sha256"],
                 "filename": identity["filename"],
-                "ts_min_utc": lo.isoformat(),
-                "ts_max_utc": hi.isoformat(),
+                # C-2 / contract §12.23: the canonical emission form is
+                # `YYYY-MM-DDTHH:MM:SSZ` through the single formatter.
+                # `isoformat()` yields `+00:00`, which no committed gate-3a
+                # artifact uses and which the contract forbids in any
+                # artifact. The formatter refuses a non-zero microsecond
+                # rather than truncating it, so a sub-second bound fails
+                # closed here instead of being published in a spelling the
+                # committed artifacts never carry.
+                "ts_min_utc": format_utc_z(lo),
+                "ts_max_utc": format_utc_z(hi),
             }
         )
         checked += 1

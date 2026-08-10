@@ -29,7 +29,7 @@ from datetime import datetime
 from typing import Any
 
 from .no_overlap import FORWARD_FLOOR
-from .timeutil import TimestampError, to_utc
+from .timeutil import TimestampError, format_utc_z, to_utc
 
 
 class WarmupPolicyError(RuntimeError):
@@ -135,6 +135,7 @@ class WarmupPolicy:
             "w_bars": self.w_bars,
             "longest_feature_lookback_bars": self.longest_feature_lookback_bars,
             "first_eligible_bar_index": self.w_bars,
-            "forward_floor_utc": FORWARD_FLOOR.isoformat(),
+            # §12.23: canonical `...Z`, never `isoformat()`'s `+00:00`.
+            "forward_floor_utc": format_utc_z(FORWARD_FLOOR),
             "exact_w_frozen_at": "feature_implementation",
         }
