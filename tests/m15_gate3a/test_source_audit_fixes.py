@@ -17,6 +17,7 @@ from scripts.m15_gate3a.cost_schema import CostSchemaError, validate_cost_table
 from scripts.m15_gate3a.effective_n import (
     INSUFFICIENT_SAMPLE,
     NOT_EVALUATED,
+    RAW_TRADED_EVENT_COUNT,
     SUFFICIENT,
     EffectiveNError,
     effective_n,
@@ -25,6 +26,11 @@ from scripts.m15_gate3a.guards import RealDataRefusedError, assert_status_allowe
 from scripts.m15_gate3a.no_overlap import NoOverlapError, assert_design_bounds
 from scripts.m15_gate3a.pair_authority import PAIRS_20
 from scripts.m15_gate3a.warmup import WarmupPolicy, WarmupPolicyError
+
+# The package's single cost-table fixture. A second, locally-maintained copy used
+# to live here and drifted out of step with the committed plan the moment
+# RF-16/RF-17/D-10 changed what a valid table must carry.
+from tests.m15_gate3a.test_cost_schema import _table
 
 
 def _m1(ts: datetime, base: float = 1.10, half: float = 0.00005) -> dict:
@@ -71,7 +77,8 @@ def test_f1_fifteen_distinct_minutes_still_eligible() -> None:
     bars, gap = aggregate_m15(_bucket(15), pair="EUR_USD")
     assert bars[0]["n_source_bars"] == 15
     assert bars[0]["eligible"] is True
-    assert gap["n_eligible"] == 1
+    # R-2 / §12.20: `n_eligible` is renamed to the quantity it measures.
+    assert gap["complete_bucket_count"] == 1
 
 
 def test_f1_missing_minute_not_eligible() -> None:
@@ -93,7 +100,9 @@ def test_f1_missing_minute_not_eligible() -> None:
 def test_f2_non_finite_price_fails_closed(bad: float, key: str) -> None:
     rows = _bucket(15)
     rows[3][key] = bad
-    with pytest.raises(AggregationError, match="non-finite"):
+    # §9 AP-1: the non-finite value is on the INPUT row, so the M1-row guard is
+    # the one that must fire; the derived-bar guard has its own test.
+    with pytest.raises(AggregationError, match="M1 row key .* is non-finite"):
         aggregate_m15(rows, pair="EUR_USD")
 
 
@@ -120,11 +129,21 @@ def _pp(pair: str, raw: int, overlap: float) -> dict:
 
 def test_f3_unknown_role_raises() -> None:
     with pytest.raises(EffectiveNError, match="unknown role"):
-        effective_n([_pp("EUR_USD", 1000, 0.0)], cross_pair_corr=0.0, role="bogus")
+        effective_n(
+            [_pp("EUR_USD", 1000, 0.0)],
+            count_quantity=RAW_TRADED_EVENT_COUNT,
+            cross_pair_corr=0.0,
+            role="bogus",
+        )
 
 
 def test_f3_validation_not_default_sufficient() -> None:
-    r = effective_n([_pp("EUR_USD", 5, 0.0)], cross_pair_corr=0.0, role="validation")
+    r = effective_n(
+        [_pp("EUR_USD", 5, 0.0)],
+        count_quantity=RAW_TRADED_EVENT_COUNT,
+        cross_pair_corr=0.0,
+        role="validation",
+    )
     assert r["verdict"] == NOT_EVALUATED
     assert r["verdict"] != SUFFICIENT
 
@@ -132,6 +151,7 @@ def test_f3_validation_not_default_sufficient() -> None:
 def test_f3_validation_with_explicit_floors_applies_them() -> None:
     low = effective_n(
         [_pp("EUR_USD", 5, 0.0)],
+        count_quantity=RAW_TRADED_EVENT_COUNT,
         cross_pair_corr=0.0,
         role="validation",
         validation_raw_floor=100,
@@ -141,6 +161,7 @@ def test_f3_validation_with_explicit_floors_applies_them() -> None:
     assert low["floors_applied"] == {"raw_floor": 100.0, "neff_floor": 100.0}
     ok = effective_n(
         [_pp("EUR_USD", 500, 0.0)],
+        count_quantity=RAW_TRADED_EVENT_COUNT,
         cross_pair_corr=0.0,
         role="validation",
         validation_raw_floor=100,
@@ -151,13 +172,25 @@ def test_f3_validation_with_explicit_floors_applies_them() -> None:
 
 def test_f3_holdout_floors_unchanged() -> None:
     assert (
-        effective_n([_pp("EUR_USD", 900, 0.0)], cross_pair_corr=0.0)["verdict"]
+        effective_n(
+            [_pp("EUR_USD", 900, 0.0)],
+            count_quantity=RAW_TRADED_EVENT_COUNT,
+            cross_pair_corr=0.0,
+        )["verdict"]
         == INSUFFICIENT_SAMPLE
     )
-    low_eff = effective_n([_pp(PAIRS_20[i], 60, 0.9) for i in range(20)], cross_pair_corr=0.5)
+    low_eff = effective_n(
+        [_pp(PAIRS_20[i], 60, 0.9) for i in range(20)],
+        count_quantity=RAW_TRADED_EVENT_COUNT,
+        cross_pair_corr=0.5,
+    )
     assert low_eff["effective_n"] < 400 and low_eff["verdict"] == INSUFFICIENT_SAMPLE
     assert (
-        effective_n([_pp(PAIRS_20[i], 250, 0.0) for i in range(20)], cross_pair_corr=0.0)["verdict"]
+        effective_n(
+            [_pp(PAIRS_20[i], 250, 0.0) for i in range(20)],
+            count_quantity=RAW_TRADED_EVENT_COUNT,
+            cross_pair_corr=0.0,
+        )["verdict"]
         == SUFFICIENT
     )
 
@@ -167,50 +200,28 @@ def test_f3_holdout_floors_unchanged() -> None:
 # --------------------------------------------------------------------------
 
 
-def _table(entry_overrides: dict) -> dict:
-    entry = {
-        "pair": "EUR_USD",
-        "session": "europe",
-        "median_spread": 0.00008,
-        "p90_spread": 0.00015,
-        "p95_spread": 0.00020,
-        "pip_size": 0.0001,
-    }
-    entry.update(entry_overrides)
-    return {
-        "execution_padding_pip": 0.3,
-        "flat_slippage_cell_pip": 0.5,
-        "all_in_cost_formula": (
-            "cost(pair, session) = median_spread(pair, session) + 0.3 + 0.5 (primary)"
-        ),
-        "spread_unit": "price",
-        "claim_scope": "quote_cost_validity",
-        "entries": [entry],
-    }
-
-
 def test_f4_nan_median_fails() -> None:
-    with pytest.raises(CostSchemaError, match="finite"):
-        validate_cost_table(_table({"median_spread": float("nan")}), max_spread_pips=None)
+    with pytest.raises(CostSchemaError, match="finite non-negative"):
+        validate_cost_table(_table(entry={"median_spread": float("nan")}), max_spread_pips=None)
 
 
 def test_f4_inf_p90_fails() -> None:
-    with pytest.raises(CostSchemaError, match="finite"):
-        validate_cost_table(_table({"p90_spread": float("inf")}), max_spread_pips=None)
+    with pytest.raises(CostSchemaError, match="finite non-negative"):
+        validate_cost_table(_table(entry={"p90_spread": float("inf")}), max_spread_pips=None)
 
 
 def test_f4_neg_inf_p95_fails() -> None:
-    with pytest.raises(CostSchemaError, match="finite"):
-        validate_cost_table(_table({"p95_spread": float("-inf")}), max_spread_pips=None)
+    with pytest.raises(CostSchemaError, match="finite non-negative"):
+        validate_cost_table(_table(entry={"p95_spread": float("-inf")}), max_spread_pips=None)
 
 
 def test_f4_finite_non_negative_pass_and_missing_p95_still_fails() -> None:
     assert (
-        validate_cost_table(_table({}), max_spread_pips=None)["result"] == "COST_TABLE_SCHEMA_VALID"
+        validate_cost_table(_table(), max_spread_pips=None)["result"] == "COST_TABLE_SCHEMA_VALID"
     )
-    t = _table({})
+    t = _table()
     del t["entries"][0]["p95_spread"]
-    with pytest.raises(CostSchemaError):
+    with pytest.raises(CostSchemaError, match="missing key 'p95_spread'"):
         validate_cost_table(t, max_spread_pips=None)
 
 

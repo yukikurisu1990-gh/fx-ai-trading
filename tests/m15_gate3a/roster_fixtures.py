@@ -1,10 +1,15 @@
-"""Shared PAIRS_20 evidence builders for the no-overlap proof tests (BL-1).
+"""Shared PAIRS_20 evidence builders for the no-overlap declaration tests (BL-1).
 
-``assert_per_file_bounds`` now only emits ``PROVEN_NO_DEAD_WINDOW_OVERLAP`` for
-a complete, distinct, canonical 20-pair inventory, so every test that exercises
-the proof needs real roster evidence rather than a single record. These helpers
-build exactly that, and give each record the distinct ``filename``/``sha256``
-identity the committed ``design_m15_inventory.json`` schema declares.
+``assert_per_file_bounds`` only emits its declaration-only token
+(``DECLARED_SPANS_SELF_CONSISTENT__NOT_BYTE_LEVEL``, B-2 / D-11) for a complete,
+distinct, canonical 20-pair inventory, so every test that exercises it needs real
+roster evidence rather than a single record. These helpers build exactly that, and
+give each record the distinct ``filename``/``sha256`` identity the committed
+``design_m15_inventory.json`` schema declares.
+
+Nothing here is measured: the digests are synthetic counters, no file is opened
+and no byte is read, which is precisely why the token these fixtures can earn is
+declaration-only and never the byte-level proof playbook §5 requires.
 """
 
 from __future__ import annotations

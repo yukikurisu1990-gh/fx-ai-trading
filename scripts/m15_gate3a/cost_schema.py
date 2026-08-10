@@ -20,7 +20,27 @@ SESSIONS_UTC: Final[dict[str, str]] = {
 }
 EXECUTION_PADDING_PIP: Final[float] = 0.3
 FLAT_SLIPPAGE_CELL_PIP: Final[float] = 0.5
-CLAIM_SCOPE: Final[str] = "quote_cost_validity"
+# RF-17: the previous value ``"quote_cost_validity"`` was **code-minted**. The
+# committed plan's ``must_produce_before_gate7_authorisation.claim_scope`` reads
+# exactly as below, and the validator used to *refuse* the committed spelling —
+# i.e. no table written from the plan could have validated. Quoted verbatim from
+# ``artifacts/m15_gate3a/cost_table_plan_or_metadata.json``.
+CLAIM_SCOPE: Final[str] = "quote-cost-validity research claim; NOT a live-fill claim"
+
+# RF-16: both stress forms are mandatory in the committed plan ("stress_forms":
+# ["2x modelled cost", "p90 session spread substituted for median"]) and the data
+# source is restricted there too. Neither was required nor checked, so a table
+# omitting both returned COST_TABLE_SCHEMA_VALID — including a table whose
+# spreads came from validation or holdout span. Both strings are quoted verbatim
+# from the committed plan; nothing here is minted.
+STRESS_FORMS: Final[tuple[str, ...]] = (
+    "2x modelled cost",
+    "p90 session spread substituted for median",
+)
+DATA_SOURCE_RESTRICTION: Final[str] = (
+    "DESIGN span only (2025-04-25..2026-02-28); never validation/holdout; "
+    "frozen and committed as metadata"
+)
 
 
 # RF-1: the session partition is part of the frozen contract, so pin its
@@ -83,12 +103,30 @@ _REQUIRED_GLOBAL_KEYS: Final[tuple[str, ...]] = (
     "all_in_cost_formula",
     "spread_unit",
     "claim_scope",
+    "stress_forms",
+    "data_source_restriction",
     "entries",
 )
 
 
 class CostSchemaError(ValueError):
     """Raised when cost-table metadata violates the frozen schema."""
+
+
+def _check_stress_forms(value: Any) -> None:
+    """RF-16: both committed stress forms present, no repeats, nothing unauthorised."""
+    if not isinstance(value, list):
+        raise CostSchemaError("stress_forms must be a list of the plan's mandatory stress forms")
+    if any(not isinstance(v, str) or isinstance(v, bool) for v in value):
+        raise CostSchemaError("stress_forms entries must be strings")
+    if len(set(value)) != len(value):
+        raise CostSchemaError("stress_forms must not repeat a stress form")
+    missing = [f for f in STRESS_FORMS if f not in value]
+    if missing:
+        raise CostSchemaError(f"stress_forms is missing the mandatory form(s) {missing!r}")
+    unauthorised = [v for v in value if v not in STRESS_FORMS]
+    if unauthorised:
+        raise CostSchemaError(f"stress_forms carries unauthorised form(s) {unauthorised!r}")
 
 
 def _check_magnitude_bound(bound: Any) -> float | None:
@@ -121,6 +159,13 @@ def validate_cost_table(table: Any, *, max_spread_pips: float | None) -> dict:
     ``None`` — "no bound is pinned, magnitude UNVALIDATED" — so the choice is
     always recorded and never inherited by accident. With ``None`` the summary
     still reports every statistic converted to the pair's own pips.
+
+    **Coverage is enforced, not reported** (RF-19 / D-10 / §12.16): a table is
+    admissible only if it carries every one of the ``20 x 3 = 60`` canonical
+    ``(pair, session)`` cells. An incomplete table raises and names the missing
+    cells; there is deliberately no flag, parameter or partial mode, because a
+    recorded coverage flag is precisely how the previous re-disposition let a
+    one-entry table validate.
     """
     ceiling_pips = _check_magnitude_bound(max_spread_pips)
     if not isinstance(table, dict):
@@ -133,11 +178,18 @@ def validate_cost_table(table: Any, *, max_spread_pips: float | None) -> dict:
     if table["flat_slippage_cell_pip"] != FLAT_SLIPPAGE_CELL_PIP:
         raise CostSchemaError("flat_slippage_cell_pip must be 0.5")
     if table["claim_scope"] != CLAIM_SCOPE:
-        raise CostSchemaError("claim_scope must be 'quote_cost_validity'")
+        raise CostSchemaError(f"claim_scope must be the committed plan's spelling {CLAIM_SCOPE!r}")
     if table["spread_unit"] != SPREAD_UNIT:
         raise CostSchemaError(f"spread_unit must be {SPREAD_UNIT!r} (price units, per the plan)")
     if table["all_in_cost_formula"] != ALL_IN_COST_FORMULA:
         raise CostSchemaError("all_in_cost_formula must match the frozen plan string verbatim")
+    _check_stress_forms(table["stress_forms"])
+    if table["data_source_restriction"] != DATA_SOURCE_RESTRICTION:
+        raise CostSchemaError(
+            "data_source_restriction must match the committed plan verbatim "
+            f"({DATA_SOURCE_RESTRICTION!r}); a table sourced from validation or holdout span "
+            "is not admissible"
+        )
 
     entries = table["entries"]
     if not isinstance(entries, list) or not entries:
@@ -180,10 +232,15 @@ def validate_cost_table(table: Any, *, max_spread_pips: float | None) -> dict:
             stats[stat] = float(v)
         # BL-5: convert to the pair's own pips — pair-aware, and the only
         # magnitude statement this module can make from committed authority.
-        # No floor is imposed: a zero quoted spread is accepted here because the
-        # in-repo precedent (stage25_0a, which drops only `spread_pip < 0`, and
-        # `aggregation._assert_bar_finite`, which rejects only a negative
-        # spread_close) treats zero as observable rather than impossible.
+        # No floor is imposed because **no committed authority pins a lower
+        # bound on a quoted spread**, and this module may not mint one. That is
+        # the whole of the argument. The `stage25_0a` analogy this comment used
+        # to cite is REVOKED: the gate-3a contract Gate-decision §3 lists
+        # "citing scripts/stage25_0a_build_path_quality_dataset.py ... as
+        # authority for a family-A design semantic" under Forbidden, and D-1.7
+        # settles the zero-spread limb on its own grounds — `ask == bid` is not
+        # a crossed quote, and is refused only by a separate cost/spread
+        # contract if one is ever pinned (referral 1, still MAY_DEFER).
         for stat, value in stats.items():
             in_pips = value / expected_pip
             pips_observed[f"{pair}/{session}/{stat}"] = in_pips
@@ -206,14 +263,35 @@ def validate_cost_table(table: Any, *, max_spread_pips: float | None) -> dict:
             raise CostSchemaError(f"duplicate (pair, session): {key}")
         seen.add(key)
 
+    # RF-19 / D-10 (NR-J) / §12.16: insufficient required coverage **raises**; a
+    # reported coverage flag never permits continuation. Merged-audit R-8's
+    # fourth limb ("a one-entry table validates, so 20 x 3 coverage is
+    # unenforced — fix all four before the tables are produced") was re-disposed
+    # into the boolean this replaces. Both operands are already frozen
+    # (``PAIRS_20`` x ``SESSIONS_UTC``), so no number is minted here.
+    required_cells = {(p, s) for p in PAIRS_20 for s in SESSIONS_UTC}
+    missing_cells = sorted(f"{p}/{s}" for p, s in required_cells - seen)
+    if missing_cells:
+        raise CostSchemaError(
+            f"cost table must cover all {len(PAIRS_20)}x{len(SESSIONS_UTC)}="
+            f"{len(required_cells)} canonical (pair, session) cells; "
+            f"{len(missing_cells)} missing: {', '.join(missing_cells)}"
+        )
+
     return {
         "entries_validated": len(entries),
         "sessions": sorted(SESSIONS_UTC),
         "spread_unit": SPREAD_UNIT,
         "pairs_covered": sorted({p for p, _ in seen}),
-        "full_20x3_coverage": len(seen) == len(PAIRS_20) * len(SESSIONS_UTC),
-        "p95_diagnostic_present": True,
-        "real_spreads_computed": False,
+        # R-1 (negative control): ``full_20x3_coverage``, ``p95_diagnostic_present``
+        # and ``real_spreads_computed`` were removed. The first became incapable of
+        # holding ``False`` the moment coverage started raising — a vacuous field
+        # introduced by this very fix is exactly the class PR #442 created four of.
+        # The other two never could hold their opposite: they attest properties this
+        # validator does not measure, and R-1 requires such a field to be deleted,
+        # not reported. Both are enforced by refusals whose counter-cases are
+        # exercised in the suite (a table without ``p95_spread`` raises; the module
+        # computes no spread at all — see the audit's containment derivation).
         # BL-5: magnitude is reported, never asserted, unless a caller pins it.
         # The flag is named for what it actually says — a bound was supplied and
         # checked — not "the magnitude is valid": a caller is free to declare a

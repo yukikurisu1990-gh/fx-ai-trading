@@ -4,11 +4,28 @@ Dead-window data must NEVER be loaded. Forward-epoch warm-up uses forward-epoch
 bars only; the first ``w_bars`` forward bars are event-ineligible; ``w_bars``
 must be >= the longest feature lookback (including H1/H4 context). Loading any
 timestamp before the forward floor fails closed.
+
+**R-1, the negative-control rule.** ``as_metadata()`` used to emit
+``dead_window_loaded: False`` and ``first_w_bars_event_eligible: False`` as
+hard-coded constants. The first is the T-1 leakage claim itself asserted as a
+fact this class never measures — it observes no load and could not have emitted
+``True`` under any input. Both are therefore **deleted, not reported**, and each
+property is instead exposed as a genuinely two-valued predicate that the same
+code path answers both ways on a deliberately constructed counter-case:
+
+* :meth:`WarmupPolicy.loads_pre_forward` — ``True`` for a pre-forward timestamp,
+  ``False`` for a forward one; it is the predicate
+  :meth:`WarmupPolicy.assert_load_allowed` refuses on, so the enforcement and the
+  measurement cannot drift apart.
+* :meth:`WarmupPolicy.is_event_eligible` — ``False`` for every bar index below
+  ``w_bars``, ``True`` from ``w_bars`` onwards; the boundary itself is reported
+  as the measured ``first_eligible_bar_index``.
 """
 
 from __future__ import annotations
 
 from dataclasses import dataclass
+from datetime import datetime
 from typing import Any
 
 from .no_overlap import FORWARD_FLOOR
@@ -41,6 +58,45 @@ class WarmupPolicy:
                 f"{self.longest_feature_lookback_bars} (warm-up too short)"
             )
 
+    def is_event_eligible(self, bar_index: int) -> bool:
+        """R-1: measured event eligibility of the ``bar_index``-th forward bar.
+
+        Zero-based over forward-epoch bars. ``False`` for every index inside the
+        burn-in, ``True`` from ``w_bars`` onwards — a genuinely two-valued
+        answer replacing the constant ``first_w_bars_event_eligible: False``.
+        """
+        self.validate()
+        if isinstance(bar_index, bool) or not isinstance(bar_index, int) or bar_index < 0:
+            raise WarmupPolicyError("bar_index must be a non-negative integer")
+        return bar_index >= self.w_bars
+
+    def _resolve_load_ts(self, ts: Any) -> datetime:
+        """Validate the policy, then resolve ``ts`` **once** through the timestamp authority."""
+        self.validate()
+        try:
+            return to_utc(ts)
+        except TimestampError as exc:
+            raise WarmupPolicyError(f"load timestamp rejected: {exc}") from exc
+
+    @staticmethod
+    def _is_pre_forward(t: datetime) -> bool:
+        """The single pre-forward predicate; both the measurement and the refusal use it."""
+        return t < FORWARD_FLOOR
+
+    def loads_pre_forward(self, ts: Any) -> bool:
+        """R-1: measured answer to "would loading ``ts`` reach pre-forward data?".
+
+        ``True`` for any timestamp before the forward floor — which is exactly
+        what :meth:`assert_load_allowed` refuses — and ``False`` otherwise. It
+        replaces the constant ``dead_window_loaded: False``, which asserted the
+        T-1 leakage claim while measuring nothing. A malformed or naive
+        timestamp raises rather than answering ``False``: an unreadable
+        timestamp is not evidence of safety. ``ts`` is resolved exactly once, so
+        an object that answers differently on a second read cannot be measured
+        as forward and then loaded as pre-forward.
+        """
+        return self._is_pre_forward(self._resolve_load_ts(ts))
+
     def assert_load_allowed(self, ts: Any) -> None:
         """Fail closed if any load timestamp precedes the forward floor.
 
@@ -50,26 +106,35 @@ class WarmupPolicy:
         BL-2: awareness is decided by ``utcoffset()`` in the single timestamp
         authority, so a ``utcoffset()``-``None`` zone can no longer be read in
         the host's local time and slip under the forward floor.
+        R-1: the refusal and :meth:`loads_pre_forward` share one predicate and
+        one resolution of ``ts``, so the measured answer and the enforced one
+        cannot diverge.
         """
-        self.validate()
-        try:
-            t = to_utc(ts)
-        except TimestampError as exc:
-            raise WarmupPolicyError(f"load timestamp rejected: {exc}") from exc
-        if t < FORWARD_FLOOR:
+        t = self._resolve_load_ts(ts)
+        if self._is_pre_forward(t):
             raise WarmupPolicyError(
                 f"warm-up would load pre-forward data at {t.isoformat()} "
                 f"(< forward floor {FORWARD_FLOOR.isoformat()}); pre-forward load forbidden"
             )
 
     def as_metadata(self) -> dict:
+        """Warm-up metadata.
+
+        R-1: ``first_w_bars_event_eligible`` and ``dead_window_loaded`` are gone.
+        Neither could ever hold its opposite value, so neither was evidence,
+        while both read as measured facts — and ``dead_window_loaded: False`` was
+        the T-1 leakage claim itself emitted as a constant. ``w_bars``,
+        ``longest_feature_lookback_bars`` and the derived
+        ``first_eligible_bar_index`` are declared inputs and a derived boundary,
+        not self-attestations; the two properties are answered by
+        :meth:`is_event_eligible` and :meth:`loads_pre_forward`.
+        """
         self.validate()
         return {
             "policy": "forward_epoch_warmup_burn_in_T1",
             "w_bars": self.w_bars,
             "longest_feature_lookback_bars": self.longest_feature_lookback_bars,
-            "first_w_bars_event_eligible": False,
-            "dead_window_loaded": False,
+            "first_eligible_bar_index": self.w_bars,
             "forward_floor_utc": FORWARD_FLOOR.isoformat(),
             "exact_w_frozen_at": "feature_implementation",
         }

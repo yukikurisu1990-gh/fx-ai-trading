@@ -5,6 +5,7 @@ from __future__ import annotations
 import pytest
 
 from scripts.m15_gate3a.no_overlap import (
+    DECLARED_SPANS_SELF_CONSISTENT__NOT_BYTE_LEVEL,
     NoOverlapError,
     assert_design_bounds,
     assert_forward_bounds,
@@ -39,8 +40,16 @@ def test_any_role_intersecting_dead_window_fails() -> None:
 
 
 def test_per_file_bounds_design_pass_and_fail() -> None:
+    """B-2 / D-11: the token is declaration-only, and is imported, never spelled out.
+
+    ``PROVEN_NO_DEAD_WINDOW_OVERLAP`` overstated what this check establishes —
+    nothing here opens a file or measures a byte, so its maximal claim is that the
+    *declared* spans are self-consistent with the frozen constants. Comparing
+    against the imported constant rather than a string literal is what stops a
+    future rename from silently satisfying this assertion again.
+    """
     ok = assert_per_file_bounds(design_roster(), role="design", expected_count=20)
-    assert ok["result"] == "PROVEN_NO_DEAD_WINDOW_OVERLAP"
+    assert ok["result"] == DECLARED_SPANS_SELF_CONSISTENT__NOT_BYTE_LEVEL
     assert ok["files_checked"] == 20
     with pytest.raises(NoOverlapError):
         assert_per_file_bounds(design_roster(ts_max="2026-04-10T00:00:00Z"), role="design")

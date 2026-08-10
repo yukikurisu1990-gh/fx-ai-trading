@@ -118,15 +118,67 @@ def is_within(candidate: Path, protected: Path) -> bool:
     return any(_same_file(probe, protected_stat) for probe in (candidate, *candidate.parents))
 
 
+def _pin_path_characters(path: Path) -> str:
+    r"""Return a ``Path``'s own character data, or refuse a two-faced subclass.
+
+    RF-5: the ``str`` branch of :func:`resolve_candidate` was hardened against a
+    subclass showing one string to the checks and another to the consumer, but
+    the ``Path`` branch called plain ``str(path)`` and was not. Lead-verified:
+    a ``Path`` subclass whose ``__str__`` returned ``"artifacts/harmless"``
+    while carrying the consumed-holdout tree was **ALLOWED**, and the very same
+    object wrapped as ``Path(obj)`` was refused.
+
+    Two things are needed, because a ``Path`` reaches a consumer by two
+    different routes:
+
+    * the guard must judge the object's **own** path data, so it is read through
+      the unbound ``PurePath.__str__`` rather than through any override;
+    * an ``open()``/``mkdir()`` on the same object goes through
+      ``__fspath__``, which is defined as ``str(self)`` and therefore *does*
+      re-enter the override. So ``str(path)`` and ``os.fspath(path)`` must both
+      agree with that pinned rendering; a disagreement means the guard and the
+      consumer would be looking at different paths, and is refused outright
+      rather than resolved in either direction.
+    """
+    try:
+        pinned = Path.__str__(path)
+    except Exception as exc:  # noqa: BLE001 - a hostile subclass fails closed
+        raise PathAuthorityError(f"path object cannot be rendered: {exc}") from exc
+    for label, render in (("__str__", str), ("__fspath__", os.fspath)):
+        try:
+            shown = render(path)
+        except Exception as exc:  # noqa: BLE001 - a hostile subclass fails closed
+            raise PathAuthorityError(f"path object {label} raised: {exc}") from exc
+        if shown != pinned:
+            raise PathAuthorityError(
+                f"{type(path).__name__}.{label} disagrees with its own path data; "
+                "a path shown to the guard must be the path handed to the consumer"
+            )
+    return pinned
+
+
 def resolve_candidate(path: Any) -> Path:
     """Resolve *path* to an absolute ``Path``, or refuse.
 
-    Rejects non-path types, empty strings, embedded NUL bytes and the device
-    namespace outright; any resolution failure refuses rather than proceeding
-    with an unresolved spelling.
+    Rejects non-path types, empty strings, embedded NUL bytes, the device
+    namespace and **relative spellings** outright; any resolution failure
+    refuses rather than proceeding with an unresolved spelling.
+
+    §12.18 / D-7 — **relative paths are refused, not anchored.** ``Path(rel)
+    .resolve()`` consults the process working directory, so the same logical
+    path was ALLOWED from one directory and REFUSED from another
+    (lead-verified). D-7 permits either anchoring at the repository root or
+    requiring absolute paths; **requiring absolute paths is the fail-closed
+    choice** and is what this implements. Anchoring would decide containment
+    against ``repo_root / rel`` while the caller that later writes the path
+    still resolves it against the working directory — the guard and the
+    consumer would then be judging two different locations, which is the same
+    class of divergence RF-5 closes above. Refusal admits no path at all, so no
+    such gap can open, and the verdict for every accepted input is now a
+    function of the input alone.
     """
     if isinstance(path, Path):
-        text = str(path)
+        text = _pin_path_characters(path)
     elif isinstance(path, str):
         # `str(path)` again would re-enter a subclass's __str__, letting it show
         # one string to the checks and another to `Path()`. Pin the character
@@ -140,8 +192,14 @@ def resolve_candidate(path: Any) -> Path:
         raise PathAuthorityError("path containing a NUL byte refused")
     if text.startswith(_DEVICE):
         raise PathAuthorityError(r"device-namespace path (\\.\) refused")
+    candidate = Path(normalise_spelling(text))
+    if not candidate.is_absolute():
+        raise PathAuthorityError(
+            f"relative path {text!r} refused: containment would depend on the working "
+            "directory; supply an absolute path"
+        )
     try:
-        return Path(normalise_spelling(text)).resolve()
+        return candidate.resolve()
     except (OSError, ValueError, RuntimeError) as exc:
         raise PathAuthorityError(f"unresolvable path {text!r}: {exc}") from exc
 

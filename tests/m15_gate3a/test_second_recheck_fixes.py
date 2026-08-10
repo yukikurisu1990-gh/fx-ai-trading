@@ -10,6 +10,13 @@ previous implementation too. The internal audit caught an earlier version of
 this docstring claiming otherwise for the whole module; in a file whose purpose
 is evidence, that distinction is the point.
 
+**BL-4 is no longer represented here.** The contract Gate-decision (D-1 / §3)
+revoked the crossed-quote drop-and-count disposition BL-4 introduced and recorded
+the re-disposition as procedurally void, so the tests that pinned it are deleted
+rather than adjusted — see the section marker below for the per-test clause and
+for where the restored refusal is covered. A test that pins revoked behaviour is
+how a re-disposition becomes permanent.
+
 Nothing in this module reads real data, derives real M15, computes a real
 checksum or spread, trains, validates, evaluates or executes anything.
 """
@@ -17,6 +24,8 @@ checksum or spread, trains, validates, evaluates or executes anything.
 from __future__ import annotations
 
 import importlib.util
+import os
+import subprocess
 import sys
 from collections.abc import Mapping, Sequence
 from datetime import UTC, datetime, timedelta, timezone, tzinfo
@@ -28,6 +37,7 @@ import pytest
 from scripts.m15_gate3a.aggregation import AggregationError, aggregate_m15
 from scripts.m15_gate3a.cost_schema import CostSchemaError, validate_cost_table
 from scripts.m15_gate3a.no_overlap import (
+    DECLARED_SPANS_SELF_CONSISTENT__NOT_BYTE_LEVEL,
     NoOverlapError,
     assert_forward_bounds,
     assert_per_file_bounds,
@@ -122,10 +132,28 @@ def test_bl1_len_and_iteration_disagreement_never_proves_anything() -> None:
 
 
 def test_bl1_expected_count_alone_cannot_produce_the_token() -> None:
-    """Twenty copies of one record satisfied a twenty-file inventory."""
+    """Twenty copies of one record satisfied a twenty-file inventory.
+
+    §9 AP-1: the matcher used to read
+    ``"duplicate evidence|roster does not match"``. Three separate guards raise
+    "duplicate evidence" and a fourth raises the roster message, so the
+    alternation named none of them. ``_materialise``'s object-identity guard is
+    the one that fires here — it runs before the roster is ever built — and its
+    phrase belongs to that guard alone.
+    """
     one = design_roster()[0]
-    with pytest.raises(NoOverlapError, match="duplicate evidence|roster does not match"):
+    with pytest.raises(NoOverlapError, match="the same record object appears at indices"):
         assert_per_file_bounds([one] * 20, role="design", expected_count=20)
+
+
+def test_bl1_a_roster_short_of_pairs_20_is_named_by_the_roster_guard() -> None:
+    """The other limb the alternation stood in for, isolated.
+
+    Nineteen *distinct* records pass every duplicate-evidence guard, so only
+    ``_roster_report``'s PAIRS_20 binding can refuse them.
+    """
+    with pytest.raises(NoOverlapError, match="roster does not match PAIRS_20"):
+        assert_per_file_bounds(design_roster()[:-1], role="design")
 
 
 def test_bl1_empty_and_lazy_inputs_are_refused() -> None:
@@ -156,12 +184,20 @@ class IndexLyingSequence(Sequence):
 
 
 def test_bl1_unstable_evidence_is_refused() -> None:
-    with pytest.raises(NoOverlapError, match="not stable|indexed access disagrees"):
+    """§9 AP-1: the two-pass stability guard, named on its own.
+
+    ``UnstableSequence`` keeps ``__getitem__`` faithful to the *first* pass, so
+    the indexed-access guard cannot fire on it — only the pass-to-pass
+    comparison can. The indexed-access limb has its own test below, with its own
+    input (``IndexLyingSequence``).
+    """
+    with pytest.raises(NoOverlapError, match="iteration is not stable at index"):
         assert_per_file_bounds(UnstableSequence(design_roster()), role="design")
 
 
 def test_bl1_indexed_access_must_agree_with_iteration() -> None:
-    with pytest.raises(NoOverlapError, match="indexed access disagrees"):
+    """``IndexLyingSequence`` iterates identically twice, so only this limb can fire."""
+    with pytest.raises(NoOverlapError, match="indexed access disagrees with iteration at"):
         assert_per_file_bounds(IndexLyingSequence(design_roster()), role="design")
 
 
@@ -240,24 +276,46 @@ def test_bl1_missing_pair_key_entirely_is_unknown_not_ignored() -> None:
         assert_per_file_bounds(roster, role="design")
 
 
-def test_bl1_duplicate_filename_or_digest_is_refused() -> None:
+def test_bl1_duplicate_filename_is_refused() -> None:
+    """§9 AP-1: "duplicate evidence" alone names three different guards.
+
+    This test and the next are aimed at one guard each, with one input each,
+    and each matcher carries a phrase that belongs to that guard and nothing
+    else. (The third — one record object at two indices — is pinned by
+    ``test_bl1_expected_count_alone_cannot_produce_the_token``.)
+    """
     roster = design_roster()
     roster[4] = {**roster[4], "filename": roster[0]["filename"]}
-    with pytest.raises(NoOverlapError, match="duplicate evidence"):
+    with pytest.raises(NoOverlapError, match="filename .* appears at records"):
         assert_per_file_bounds(roster, role="design")
 
+
+def test_bl1_duplicate_digest_is_refused() -> None:
+    """The sha256 limb, on an input whose filenames are all still distinct."""
     roster = design_roster()
     roster[4] = {**roster[4], "sha256": roster[0]["sha256"]}
-    with pytest.raises(NoOverlapError, match="duplicate evidence"):
+    with pytest.raises(NoOverlapError, match="sha256 .* appears at records"):
         assert_per_file_bounds(roster, role="design")
 
 
-def test_bl1_malformed_digest_is_refused() -> None:
-    # 65 and 128 matter as much as 63: `!= 64` must not be weakenable to `< 64`.
-    for bad in ("", "z" * 64, "ab" * 31, 123, "0" * 63, "0" * 65, "0" * 128, None):
+def test_bl1_a_non_string_digest_is_refused_by_the_type_limb() -> None:
+    """§9 AP-1: the type limb and the shape limb emitted byte-identical text.
+
+    They now say different things, so each is pinned by its own input.
+    """
+    for bad in (123, None):
         roster = design_roster()
         roster[2] = {**roster[2], "sha256": bad}
-        with pytest.raises(NoOverlapError, match="well-formed 'sha256'"):
+        with pytest.raises(NoOverlapError, match="non-string 'sha256'"):
+            assert_per_file_bounds(roster, role="design")
+
+
+def test_bl1_a_malformed_digest_is_refused_by_the_shape_limb() -> None:
+    # 65 and 128 matter as much as 63: `!= 64` must not be weakenable to `< 64`.
+    for bad in ("", "z" * 64, "ab" * 31, "0" * 63, "0" * 65, "0" * 128):
+        roster = design_roster()
+        roster[2] = {**roster[2], "sha256": bad}
+        with pytest.raises(NoOverlapError, match="has no well-formed 'sha256'"):
             assert_per_file_bounds(roster, role="design")
 
 
@@ -313,7 +371,10 @@ def test_bl1_a_stateful_mapping_cannot_impersonate_twenty_files() -> None:
         def __hash__(self) -> int:
             return 0
 
-    with pytest.raises(NoOverlapError, match="duplicate evidence|roster does not match"):
+    # §9 AP-1: twenty references to ONE object are refused by the identity
+    # guard in `_materialise`, which runs before `.get("pair")` is ever called,
+    # so the roster limb the old alternation also named cannot fire here.
+    with pytest.raises(NoOverlapError, match="the same record object appears at indices"):
         assert_per_file_bounds([CyclingRecord()] * 20, role="design", expected_count=20)
 
 
@@ -386,9 +447,17 @@ def test_bl1_non_canonical_pair_spelling_is_reported_like_cost_schema_does() -> 
         assert_per_file_bounds(roster, role="design")
 
 
-def test_bl1_a_complete_roster_proves_and_records_the_reconciliation() -> None:
+def test_bl1_a_complete_roster_records_the_reconciliation_and_its_evidence_basis() -> None:
+    """B-2 / D-11: the token names its basis; the reconciliation is what is recorded.
+
+    ``PROVEN_NO_DEAD_WINDOW_OVERLAP`` is renamed to the declaration-only token —
+    nothing here opens a file or measures a byte, so a "PROVEN" spelling
+    overstated it. The constant is imported rather than repeated as a literal, so
+    a further rename cannot satisfy this assertion silently.
+    """
     proof = assert_per_file_bounds(design_roster(), role="design", expected_count=20)
-    assert proof["result"] == "PROVEN_NO_DEAD_WINDOW_OVERLAP"
+    assert proof["result"] == DECLARED_SPANS_SELF_CONSISTENT__NOT_BYTE_LEVEL
+    assert proof["files_opened"] == 0 and proof["bytes_measured"] == 0
     assert proof["files_checked"] == 20
     assert proof["expected_pair_count"] == 20
     assert proof["actual_record_count"] == 20
@@ -527,22 +596,141 @@ def test_bl2_conversion_is_pure_offset_arithmetic(hours: int) -> None:
     assert to_utc(aware).tzinfo is UTC
 
 
-def test_bl2_no_module_reaches_for_the_host_zone() -> None:
-    """The host clock must not participate, so no gate-3a module may call
-    ``astimezone``, ``utcnow``, ``now`` or ``localtime`` on a timestamp path.
+class HostZoneReached(BaseException):
+    """Raised by the tripwire below; a ``BaseException`` so no ``except`` eats it.
 
-    This is the structural half of BL-2: an environment-variable probe cannot
-    prove absence (``TZ`` needs ``tzset``, which Windows lacks), but the absence
-    of the call itself can be checked directly.
+    Every gate-3a module funnels caller-supplied timestamps through
+    :func:`to_utc`, and several of them wrap failures in their own error type
+    with a broad ``except``. Deriving from ``BaseException`` means a module that
+    reaches for the host zone cannot convert that into an ordinary refusal and
+    look well-behaved.
     """
-    forbidden = ("astimezone(", "utcnow(", "datetime.now(", "time.localtime(")
-    for name in ("timeutil", "aggregation", "no_overlap", "warmup"):
-        source = (REPO_ROOT / "scripts" / "m15_gate3a" / f"{name}.py").read_text(encoding="utf-8")
-        code = "\n".join(line for line in source.splitlines() if not line.strip().startswith("#"))
-        # strip docstrings crudely: they are the only other place the words appear
-        code = code.replace("``astimezone``", "").replace("``astimezone(UTC)``", "")
-        for call in forbidden:
-            assert call not in code, f"{name}.py reaches for the host zone via {call}"
+
+
+class AstimezoneTripwire(datetime):
+    """A tz-aware ``datetime`` that reports any attempt to convert it by zone.
+
+    ``astimezone`` is the one stdlib call that can reinterpret an instant
+    against the host's local zone — the BL-2 defect exactly — and the fix
+    replaced every use of it with explicit offset arithmetic. Any module still
+    reaching for it must do so on a timestamp its caller handed in, which is
+    this object.
+    """
+
+    def astimezone(self, tz: tzinfo | None = None) -> datetime:  # noqa: D102
+        raise HostZoneReached(f"astimezone({tz!r}) called on a caller-supplied timestamp")
+
+
+_DESIGN_TRIPWIRE = AstimezoneTripwire(2025, 5, 1, 0, 0, tzinfo=UTC)
+_FORWARD_TRIPWIRE = AstimezoneTripwire(2026, 5, 1, 0, 0, tzinfo=UTC)
+_DEAD_TRIPWIRE = AstimezoneTripwire(2026, 3, 15, 0, 0, tzinfo=UTC)
+
+
+def _timeutil_probes() -> None:
+    from scripts.m15_gate3a.timeutil import format_utc_z
+
+    assert to_utc(_DESIGN_TRIPWIRE) == datetime(2025, 5, 1, tzinfo=UTC)
+    assert to_utc_minute(_DESIGN_TRIPWIRE) == datetime(2025, 5, 1, tzinfo=UTC)
+    assert format_utc_z(_DESIGN_TRIPWIRE) == "2025-05-01T00:00:00Z"
+
+
+def _aggregation_probes() -> None:
+    bars, _gap = aggregate_m15([_row(_DESIGN_TRIPWIRE)], pair="EUR_USD")
+    assert bars[0]["ts"] == datetime(2025, 5, 1, tzinfo=UTC)
+
+
+def _no_overlap_probes() -> None:
+    from scripts.m15_gate3a.no_overlap import (
+        assert_design_bounds,
+        assert_no_dead_window,
+        is_dead_window_instant,
+    )
+
+    assert_design_bounds(_DESIGN_TRIPWIRE, _DESIGN_TRIPWIRE)
+    assert_forward_bounds(_FORWARD_TRIPWIRE, _FORWARD_TRIPWIRE)
+    assert_no_dead_window(_DESIGN_TRIPWIRE, _DESIGN_TRIPWIRE, role="probe")
+    assert is_dead_window_instant(_DESIGN_TRIPWIRE) is False
+    assert is_dead_window_instant(_DEAD_TRIPWIRE) is True
+    roster = [
+        {**r, "ts_min_utc": _DESIGN_TRIPWIRE, "ts_max_utc": _DESIGN_TRIPWIRE}
+        for r in design_roster()
+    ]
+    assert assert_per_file_bounds(roster, role="design")["files_checked"] == 20
+
+
+def _warmup_probes() -> None:
+    policy = WarmupPolicy(w_bars=50, longest_feature_lookback_bars=50)
+    assert policy.loads_pre_forward(_DESIGN_TRIPWIRE) is True
+    assert policy.loads_pre_forward(_FORWARD_TRIPWIRE) is False
+    policy.assert_load_allowed(_FORWARD_TRIPWIRE)
+
+
+def _coverage_probes() -> None:
+    from scripts.m15_gate3a.coverage import measure_pair_coverage
+    from tests.m15_gate3a.test_wp_proof_coverage_calendar import accounting
+
+    measurement = measure_pair_coverage(
+        pair="EUR_USD",
+        certified_bars=[{"ts": _DESIGN_TRIPWIRE, "n_source_bars": 15}],
+        minute_accounting=accounting(slots=1),
+        rejected_slots=[],
+    )
+    assert measurement.certified_slots == frozenset({datetime(2025, 5, 1, tzinfo=UTC)})
+
+
+def _calendar_probes() -> None:
+    from scripts.m15_gate3a.calendar_authority import validate_calendar
+    from tests.m15_gate3a.test_wp_proof_coverage_calendar import EPOCH, calendar_artifact
+
+    artifact = calendar_artifact(expected_m15_slots={pair: [_DESIGN_TRIPWIRE] for pair in PAIRS_20})
+    calendar = validate_calendar(artifact, expected_epoch=EPOCH)
+    assert calendar.expected_slots("EUR_USD") == frozenset({datetime(2025, 5, 1, tzinfo=UTC)})
+
+
+#: Every module in the package that accepts a caller-supplied timestamp, with a
+#: probe that drives it through its public surface. The remaining submodules —
+#: ``artifacts``, ``cost_schema``, ``effective_n``, ``guards``,
+#: ``pair_authority``, ``path_authority``, ``proof`` — take no timestamp from a
+#: caller at all, so there is nothing here for them to convert.
+_HOST_ZONE_PROBES = [
+    pytest.param(_timeutil_probes, id="timeutil"),
+    pytest.param(_aggregation_probes, id="aggregation"),
+    pytest.param(_no_overlap_probes, id="no_overlap"),
+    pytest.param(_warmup_probes, id="warmup"),
+    pytest.param(_coverage_probes, id="coverage"),
+    pytest.param(_calendar_probes, id="calendar_authority"),
+]
+
+
+@pytest.mark.parametrize("probe", _HOST_ZONE_PROBES)
+def test_bl2_no_module_converts_a_caller_supplied_timestamp_by_zone(probe: Any) -> None:
+    """§9 AP-2: BL-2's host-zone property, measured instead of read off the source.
+
+    The predecessor read four of the package's thirteen submodules as text and
+    asserted ``"astimezone(" not in source`` after crudely deleting the two
+    docstring spellings it knew about. That is an assertion about characters:
+    fragile against any rewording, silent about the other nine modules, and no
+    evidence at all that the *running* code leaves the host zone alone.
+
+    This drives each module that accepts a caller-supplied timestamp through
+    its public surface with a ``datetime`` subclass that raises if anything
+    converts it by zone, and asserts the exact instant that comes back — so the
+    probe cannot pass by the input being rejected either.
+    """
+    probe()
+
+
+def test_bl2_the_host_zone_tripwire_can_actually_fire() -> None:
+    """Non-vacuity floor: the tripwire must detect the very defect BL-2 fixed.
+
+    Without this, every probe above would keep passing if ``astimezone`` were
+    somehow not the thing being overridden.
+    """
+    with pytest.raises(HostZoneReached):
+        _DESIGN_TRIPWIRE.astimezone(UTC)
+    with pytest.raises(HostZoneReached):
+        # The BL-2 defect spelling: a no-argument conversion into the host zone.
+        _DESIGN_TRIPWIRE.astimezone()
 
 
 def test_bl2_to_utc_always_returns_a_plain_datetime() -> None:
@@ -579,7 +767,9 @@ class ShiftedDatetime(datetime):
 
 def test_rf8_subclass_resolution_is_rejected_without_pandas() -> None:
     """RF-8: the whole B-1 proof used to skip in a pandas-free interpreter."""
-    with pytest.raises(TimestampError, match="sub-microsecond"):
+    # §9 AP-1: "sub-microsecond" is said by both the subclass limb and the ISO
+    # string limb. The input is a datetime subclass, so only the former applies.
+    with pytest.raises(TimestampError, match="carries sub-microsecond resolution"):
         to_utc_minute(NanoDatetime(2025, 6, 2, 0, 0, tzinfo=UTC))
     with pytest.raises(TimestampError, match="disagrees with its own components"):
         to_utc_minute(ShiftedDatetime(2025, 6, 2, 0, 0, tzinfo=UTC))
@@ -604,7 +794,7 @@ def test_bl2_sub_microsecond_is_refused_by_to_utc_not_only_to_utc_minute() -> No
     assert past_end.nanosecond == 500  # 500 ns PAST DESIGN_END
     assert datetime(2026, 2, 28, 23, 59, 59, tzinfo=UTC) == DESIGN_END
 
-    with pytest.raises(TimestampError, match="refused rather than truncated"):
+    with pytest.raises(TimestampError, match="carries sub-microsecond resolution"):
         to_utc(past_end)
     with pytest.raises(NoOverlapError):
         assert_design_bounds("2025-05-01T00:00:00Z", past_end)
@@ -671,7 +861,7 @@ def test_bl2_iso_strings_may_not_smuggle_sub_microsecond_resolution() -> None:
 
 def test_bl2_m1_row_timestamps_must_be_datetimes_not_strings() -> None:
     """Widening the M1 row contract to accept `str` was an unrequested loosening."""
-    with pytest.raises(AggregationError, match="missing tz-aware 'ts' datetime"):
+    with pytest.raises(AggregationError, match="'ts' is not a datetime"):
         aggregate_m15([_row("2026-01-01T00:00:00+00:00")], pair="EUR_USD")
 
 
@@ -741,22 +931,44 @@ def test_bl3_identity_is_reached_at_any_depth_not_just_the_first_64(tmp_path: Pa
         assert is_within(deep, protected) is True, depth
 
 
-def test_bl3_no_fixed_walk_cap_constant_remains() -> None:
-    """A numeric ancestor cap is the defect itself; there must be none to tune.
+def test_bl3_the_ancestor_walk_visits_every_ancestor_with_no_cap(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """§9 AP-2: the absence of a cap is measured, not read out of the source.
 
-    Scoped to the containment walk rather than the whole module: an earlier
-    version asserted ``"range(" not in source``, which constrained every future
-    line in the file. The behavioural depth test above is the real guard; this
-    only stops the named constant coming back.
+    The predecessor called ``inspect.getsource(is_within)`` and asserted
+    ``"range(" not in walk`` / ``"[:" not in walk``. That is a claim about
+    characters: it passes for a capped walk spelled with ``itertools.islice``
+    and fails for an uncapped one that happens to mention ``range`` in a
+    comment. What the defect actually was — a walk that stops looking at some
+    depth and then *allows* — is directly observable by counting the probes.
+
+    ``_same_file`` is the per-ancestor probe, so a walk that visits the whole
+    chain calls it exactly ``1 + len(parents)`` times. A cap of any size, at any
+    depth, shows up here as a smaller count.
     """
-    import inspect
-
     import scripts.m15_gate3a.path_authority as pa
 
     assert not hasattr(pa, "_MAX_ANCESTOR_WALK")
-    walk = inspect.getsource(pa.is_within)
-    assert "range(" not in walk
-    assert "[:" not in walk  # no slice truncating the ancestor chain
+
+    protected = tmp_path / "protected"
+    protected.mkdir()
+    candidate = (tmp_path / "other").joinpath(*[f"d{i}" for i in range(200)]) / "leaf.jsonl"
+    expected_probes = 1 + len(candidate.parents)
+    assert expected_probes > 200  # non-vacuity floor: the chain really is deep
+
+    probed: list[Path] = []
+
+    def counting_same_file(probe: Path, protected_stat: object) -> bool:
+        probed.append(probe)
+        return False
+
+    monkeypatch.setattr(pa, "_same_file", counting_same_file)
+    assert pa.is_within(candidate, protected) is False
+    assert len(probed) == expected_probes, "the ancestor walk stopped short of the root"
+    assert probed[0] == candidate
+    assert probed[-1] == candidate.parents[-1]
+    assert len(set(probed)) == expected_probes  # every ancestor once, none skipped
 
 
 def test_bl3_a_sibling_tree_at_any_depth_is_not_within(tmp_path: Path) -> None:
@@ -798,10 +1010,26 @@ def test_bl3_an_uninterrogable_protected_root_fails_closed(
         is_within(tmp_path / "elsewhere" / "x.jsonl", protected)
 
 
-def test_bl3_a_genuinely_absent_protected_root_is_not_a_match(tmp_path: Path) -> None:
+def test_bl3_the_name_limb_still_refuses_under_an_absent_protected_root(
+    tmp_path: Path,
+) -> None:
+    """A path *named* under an absent protected root is still refused.
+
+    This test deliberately asserts only the REFUSAL. Its predecessor also
+    asserted ``is_within(unrelated, absent) is False``, which certified the
+    degraded case as desired behaviour — the anti-pattern the third independent
+    re-check recorded (§9, "no test may assert that a containment check
+    *allows* in a degraded, absent-root, or error condition").
+
+    The underlying limitation is real and is recorded as a residual blocker
+    rather than frozen here: when a protected root does not exist there is
+    nothing to be identical *to*, so only the name limb runs and an alias
+    spelling of that root is not caught. Every protected root is currently
+    present in a checkout, so the degraded path is not reachable in practice —
+    but that is a property of the tree, not of the guard.
+    """
     absent = tmp_path / "never-created"
-    assert is_within(tmp_path / "elsewhere.jsonl", absent) is False
-    assert is_within(absent / "child.jsonl", absent) is True  # name test still applies
+    assert is_within(absent / "child.jsonl", absent) is True
 
 
 def test_bl3_extended_prefix_fold_only_applies_to_a_drive_or_unc(tmp_path: Path) -> None:
@@ -848,7 +1076,9 @@ def test_bl3_an_uninterrogable_candidate_ancestor_fails_closed(
         return real_stat(self, *a, **k)
 
     monkeypatch.setattr(Path, "stat", boom)
-    with pytest.raises(PathAuthorityError, match="cannot interrogate"):
+    # §9 AP-1: the protected root is interrogable here (only `other` is not), so
+    # the guard that must fire is the PROBE one, never the protected-root one.
+    with pytest.raises(PathAuthorityError, match=r"cannot interrogate (?!protected root)"):
         is_within(other / "child" / "x.jsonl", protected)
 
 
@@ -876,69 +1106,45 @@ def test_bl3_resolve_candidate_returns_an_absolute_path(tmp_path: Path) -> None:
 
 
 # ==========================================================================
-# BL-4 — crossed quotes drop-and-count, per the in-repo stage25_0a precedent
+# BL-4 — REVOKED by the contract Gate-decision D-1 / §3.
+#
+# This section pinned crossed quotes as a counted drop, argued from the
+# ``stage25_0a`` precedent. D-1 restores the hard refusal — "a crossed-quote row
+# is never dropped-and-continued" (D-1.3), "eligibility ... never preserved by
+# dropping the offending observation" (D-1.5), "occurrence counts may be
+# recorded ... but recording is never grounds for acceptance" (D-1.6) — and
+# records the re-disposition as **procedurally void**. D-1.7 additionally removes
+# ``stage25_0a`` as admissible authority for a family-A design semantic at all.
+#
+# Seven tests are therefore deleted rather than adjusted:
+#   * ``test_bl4_gap_report_exposes_the_full_drop_accounting``      (D-1.3/1.6)
+#   * ``test_bl4_a_fully_dropped_bucket_never_reads_as_a_gapless_file`` (D-1.4)
+#   * ``test_bl4_gap_metrics_describe_source_coverage_not_retained_coverage``
+#                                                                   (D-1.3/1.5)
+#   * ``test_bl4_all_rows_dropped_is_reported_not_raised``          (D-1.3, D-2)
+#   * ``test_bl4_every_ohlc_limb_is_inspected_for_the_cross`` (4 params)  (D-1.3)
+#   * ``test_bl4_a_single_crossed_row_no_longer_destroys_the_whole_pair`` (D-1.4)
+#   * ``test_bl4_matches_the_committed_stage25_0a_predicate``            (D-1.7)
+# The last also asserted on another script's **source text**, which §13 forbids.
+#
+# The restored disposition is covered behaviourally by ``test_wp_aggregation.py``
+# — ``test_d1_crossed_{open,high,low,close}_pair_refuses`` are the four separate
+# per-limb tests with distinct match strings that D-1 requires, alongside
+# ``test_d1_one_crossed_row_makes_the_whole_bucket_uncertifiable`` and
+# ``test_d1_crossed_quote_refusal_survives_optimised_mode`` — so none of it is
+# duplicated here. What survives the revocation on its own subject is kept below.
 # ==========================================================================
 
 
-def test_bl4_gap_report_exposes_the_full_drop_accounting() -> None:
-    rows = [_row(START + timedelta(minutes=i)) for i in range(15)]
-    for k in ("o", "h", "l", "c"):
-        rows[3][f"ask_{k}"] = rows[3][f"bid_{k}"] - 0.0002
-    _, gap = aggregate_m15(rows, pair="EUR_USD")
-    for key in ("rows_ingested", "rows_retained", "dropped_crossed_quote_rows"):
-        assert key in gap
-    assert gap["rows_ingested"] == gap["rows_retained"] + gap["dropped_crossed_quote_rows"]
-    assert gap["imputation"] is False  # the drop is never back-filled
+def test_rows_ingested_is_what_was_iterated_not_what_len_claimed() -> None:
+    """BL-1's lesson, and it outlives BL-4: a list SUBCLASS can lie about ``__len__``.
 
-
-def test_bl4_a_fully_dropped_bucket_never_reads_as_a_gapless_file() -> None:
-    """Gap metrics describe SOURCE coverage; drop counters describe rejection.
-
-    Computed over retained minutes only, a first bucket that was 100% crossed
-    disappeared from the span entirely and the file reported
-    ``missing_whole_buckets=0, missing_minute_count=0, max_gap_minutes=0`` —
-    gapless and fully eligible, having silently lost half its input.
+    ``isinstance(x, list)`` admits a subclass, and ``len(x)`` is whatever its
+    ``__len__`` says, so ``rows_ingested`` must be incremented per iterated record.
+    The drop-accounting identity this used to assert alongside is gone with the
+    counters D-1 revoked; the surviving cross-check is against the D-3 minute
+    accounting, which measures minutes where ``rows_ingested`` counts reads.
     """
-    rows = []
-    for i in range(15):  # bucket 0: every row crossed
-        r = _row(START + timedelta(minutes=i))
-        for k in ("o", "h", "l", "c"):
-            r[f"ask_{k}"] = r[f"bid_{k}"] - 0.0002
-        rows.append(r)
-    rows += [_row(START + timedelta(minutes=15 + i)) for i in range(15)]  # bucket 1: clean
-
-    bars, gap = aggregate_m15(rows, pair="EUR_USD")
-    assert len(bars) == 1 and bars[0]["eligible"] is True
-    assert gap["rows_ingested"] == 30
-    assert gap["rows_retained"] == 15
-    assert gap["dropped_crossed_quote_rows"] == 15
-    assert gap["buckets_fully_dropped"] == [START.isoformat()]
-    assert gap["all_rows_dropped"] is False
-    # the source span still covers both buckets, so the loss is visible
-    assert gap["missing_minute_count"] == 0  # every source minute was present
-    assert gap["n_buckets_emitted"] == 1
-
-
-def test_bl4_gap_metrics_describe_source_coverage_not_retained_coverage() -> None:
-    """A dropped minute WAS present in the source; it is not a coverage gap.
-
-    Computed over retained minutes only, dropping minute 5 out of a contiguous
-    0..14 run invents a one-minute hole that never existed in the data. The
-    drop counters are where that loss belongs.
-    """
-    rows = [_row(START + timedelta(minutes=i)) for i in range(15)]
-    for k in ("o", "h", "l", "c"):
-        rows[5][f"ask_{k}"] = rows[5][f"bid_{k}"] - 0.0002
-
-    _, gap = aggregate_m15(rows, pair="EUR_USD")
-    assert gap["missing_minute_count"] == 0  # the source run was contiguous
-    assert gap["max_gap_minutes"] == 0
-    assert gap["dropped_crossed_quote_rows"] == 1  # the loss is reported here
-    assert gap["rows_retained"] == 14
-
-
-def test_bl4_row_count_is_what_was_iterated_not_what_len_claimed() -> None:
-    """BL-1's lesson: `isinstance(x, list)` admits a subclass with a lying __len__."""
 
     class LyingList(list):
         def __len__(self) -> int:
@@ -946,72 +1152,11 @@ def test_bl4_row_count_is_what_was_iterated_not_what_len_claimed() -> None:
 
     rows = LyingList(_row(START + timedelta(minutes=i)) for i in range(3))
     _, gap = aggregate_m15(rows, pair="EUR_USD")
+    assert len(rows) == 15  # the lie is live: without it this test proves nothing
     assert gap["rows_ingested"] == 3, "rows_ingested must count iteration, not __len__"
-    assert gap["rows_ingested"] == gap["rows_retained"] + gap["dropped_crossed_quote_rows"]
-
-
-def test_bl4_all_rows_dropped_is_reported_not_raised() -> None:
-    """An acceptance threshold for the drop ratio would be an invented number."""
-    rows = []
-    for i in range(15):
-        r = _row(START + timedelta(minutes=i))
-        for k in ("o", "h", "l", "c"):
-            r[f"ask_{k}"] = r[f"bid_{k}"] - 0.0002
-        rows.append(r)
-    bars, gap = aggregate_m15(rows, pair="EUR_USD")
-    assert bars == []
-    assert gap["all_rows_dropped"] is True
-    assert gap["buckets_fully_dropped"] == [START.isoformat()]
-
-
-def test_bl4_matches_the_committed_stage25_0a_predicate() -> None:
-    """The precedent this fix adopts is in the repo, not inferred from real data."""
-    source = (REPO_ROOT / "scripts" / "stage25_0a_build_path_quality_dataset.py").read_text(
-        encoding="utf-8"
-    )
-    assert "dropped_invalid_spread" in source
-    assert "spread_pip < 0" in source
-    assert "data anomaly" in source
-
-
-# Both sides internally coherent; exactly ONE limb crosses. Without these the
-# detector could inspect only the close and nothing would notice.
-_BID_SIDE = {"bid_o": 1.1000, "bid_h": 1.1010, "bid_l": 1.0990, "bid_c": 1.1005}
-_ASK_UNCROSSED = {"ask_o": 1.1000, "ask_h": 1.1010, "ask_l": 1.0990, "ask_c": 1.1005}
-_SINGLE_CROSS = {
-    "o": {"ask_o": 1.0999},
-    "h": {"ask_h": 1.1009},
-    "l": {"ask_l": 1.0989},
-    "c": {"ask_c": 1.1004},
-}
-
-
-@pytest.mark.parametrize("limb", ["o", "h", "l", "c"])
-def test_bl4_every_ohlc_limb_is_inspected_for_the_cross(limb: str) -> None:
-    """A cross on the open, high or low is as real as one on the close."""
-    row = {"ts": START, **_BID_SIDE, **_ASK_UNCROSSED}
-    clean = dict(row)
-    row.update(_SINGLE_CROSS[limb])
-    assert sum(row[f"ask_{k}"] < row[f"bid_{k}"] for k in "ohlc") == 1  # exactly one
-
-    bars, gap = aggregate_m15([row], pair="EUR_USD")
-    assert gap["dropped_crossed_quote_rows"] == 1, limb
-    assert bars == []
-    # control: the same row without the single cross is retained
-    _, clean_gap = aggregate_m15([clean], pair="EUR_USD")
-    assert clean_gap["dropped_crossed_quote_rows"] == 0
-
-
-def test_bl4_a_single_crossed_row_no_longer_destroys_the_whole_pair() -> None:
-    """Failing-before evidence: this call used to raise AggregationError."""
-    rows = [_row(START + timedelta(minutes=i)) for i in range(30)]
-    for k in ("o", "h", "l", "c"):
-        rows[20][f"ask_{k}"] = rows[20][f"bid_{k}"] - 0.0001
-    bars, gap = aggregate_m15(rows, pair="EUR_USD")
-    assert len(bars) == 2
-    assert bars[0]["eligible"] is True  # the untouched bucket keeps its eligibility
-    assert bars[1]["eligible"] is False  # only the affected bucket loses it
-    assert gap["dropped_crossed_quote_rows"] == 1
+    # R-2 term pinning: reads and minutes are different quantities that coincide
+    # only because duplicates and repeated row objects are refused.
+    assert gap["minute_accounting"]["observed_source_minute_count"] == 3
 
 
 # ==========================================================================
@@ -1049,9 +1194,14 @@ def test_rf9_emitted_bars_are_chronological_regardless_of_input_order() -> None:
 
 
 def test_rf10_high_must_bracket_open_and_close() -> None:
-    with pytest.raises(AggregationError, match="OHLC incoherent"):
+    """§9 AP-1: the incoherence is on the INPUT row, so the M1-row guard is named.
+
+    ``derived bar ... OHLC incoherent`` is the same phrase one stage later; a
+    bare ``"OHLC incoherent"`` could not have said which stage refused.
+    """
+    with pytest.raises(AggregationError, match="M1 row .* OHLC incoherent"):
         aggregate_m15([_row(START, bid_c=1.50, ask_c=1.5001)], pair="EUR_USD")
-    with pytest.raises(AggregationError, match="OHLC incoherent"):
+    with pytest.raises(AggregationError, match="M1 row .* OHLC incoherent"):
         aggregate_m15([_row(START, bid_o=1.00, ask_o=1.0001)], pair="EUR_USD")
 
 
@@ -1102,22 +1252,62 @@ def test_rf1_duplicate_pair_session_cell_is_refused() -> None:
         validate_cost_table(table, max_spread_pips=None)
 
 
-def test_rf1_the_session_partition_check_runs_at_import_and_can_fail() -> None:
-    """The pin must be *invoked*, not merely defined, and must actually reject."""
-    import ast
+def _load_cost_schema_copy_in_a_subprocess(path: Path) -> subprocess.CompletedProcess[str]:
+    """Import *path* as a standalone module in a clean interpreter.
 
-    import scripts.m15_gate3a.cost_schema as cs
+    ``scripts.m15_gate3a`` is already imported in this process, so the only way
+    to observe what happens *at import* is to do the import somewhere else.
+    """
+    # Loaded under a dotted name inside the real package so the module's own
+    # relative imports (`from .pair_authority import ...`) resolve normally.
+    loader = (
+        "import importlib.util,sys;"
+        f"sys.path.insert(0,{str(REPO_ROOT)!r});"
+        "spec=importlib.util.spec_from_file_location("
+        f"'scripts.m15_gate3a._cost_schema_probe',{str(path)!r});"
+        "m=importlib.util.module_from_spec(spec);"
+        "sys.modules[spec.name]=m;spec.loader.exec_module(m)"
+    )
+    return subprocess.run(  # noqa: S603 - synthetic source only, no data, no network
+        [sys.executable, "-c", loader],
+        capture_output=True,
+        text=True,
+        env={**os.environ, "PYTHONDONTWRITEBYTECODE": "1"},
+        check=False,
+    )
 
+
+def test_rf1_the_session_partition_check_runs_at_import(tmp_path: Path) -> None:
+    """§9 AP-2: proven by importing, not by reading the source for a call node.
+
+    The predecessor parsed ``cost_schema.py`` and asserted that
+    ``_check_session_partition`` appeared as a module-level ``ast.Expr`` call.
+    That is a statement about the text, not about what import does, and it
+    would have passed just as well if the call had been placed somewhere it
+    could never run. This imports a copy of the real module with an overlapping
+    partition substituted in and observes the import itself fail.
+    """
     source = (REPO_ROOT / "scripts" / "m15_gate3a" / "cost_schema.py").read_text(encoding="utf-8")
-    tree = ast.parse(source)
-    module_level_calls = {
-        node.value.func.id
-        for node in tree.body
-        if isinstance(node, ast.Expr)
-        and isinstance(node.value, ast.Call)
-        and isinstance(node.value.func, ast.Name)
-    }
-    assert "_check_session_partition" in module_level_calls
+    broken_source = source.replace('"asia": "00:00-07:59",', '"asia": "00:00-12:00",', 1)
+    # Non-vacuity floor: a substitution that silently did nothing would make the
+    # "import fails" assertion below meaningless.
+    assert broken_source != source, "the SESSIONS_UTC literal moved; update this probe"
+
+    control = tmp_path / "cost_schema_control.py"
+    control.write_text(source, encoding="utf-8")
+    ok = _load_cost_schema_copy_in_a_subprocess(control)
+    assert ok.returncode == 0, f"the unmodified copy must import cleanly: {ok.stderr[-800:]}"
+
+    broken = tmp_path / "cost_schema_broken.py"
+    broken.write_text(broken_source, encoding="utf-8")
+    failed = _load_cost_schema_copy_in_a_subprocess(broken)
+    assert failed.returncode != 0, "an overlapping session partition imported cleanly"
+    assert "overlaps another session" in failed.stderr
+
+
+def test_rf1_the_session_partition_check_can_actually_fail() -> None:
+    """Each refusal limb of the pin, driven directly."""
+    import scripts.m15_gate3a.cost_schema as cs
 
     for broken, why in (
         ({"a": "00:00-12:00", "b": "11:00-23:59"}, "overlaps"),

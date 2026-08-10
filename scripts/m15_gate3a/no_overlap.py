@@ -1,9 +1,28 @@
-"""No-overlap proof utilities (metadata-only) against the consumed dead window.
+"""No-overlap **declaration** utilities (metadata-only) against the dead window.
 
 Implements PR #430 T-7 + R-2b at the code level: design artifacts must end on or
 before ``DESIGN_END``; forward artifacts must begin on or after
 ``FORWARD_FLOOR``; the dead window (the consumed M1 holdout) must be absent from
 every role. Fail-closed; fixture-tested; reads no data.
+
+**Scope boundary (audit B-2, contract §12.13 / D-11 token discipline).** Nothing
+in this module opens a file, and nothing in it measures bytes. Every quantity it
+checks was *declared by the caller*. Its maximal claim is therefore the
+declaration-only token
+:data:`DECLARED_SPANS_SELF_CONSISTENT__NOT_BYTE_LEVEL`, which asserts only that
+the supplied inventory metadata is internally consistent with the frozen
+boundary constants. It says nothing about any file's contents.
+
+The byte-level vocabulary lives in :mod:`scripts.m15_gate3a.proof` and this
+module deliberately has **no import edge to it**, so no byte-level token string
+is reachable from here. Promotion — deriving a byte-level claim from
+declaration-only evidence — is forbidden by D-11 and is prevented structurally,
+not by comment: ``proof`` refuses a declaration record by type, and this module
+cannot name a byte-level token at all.
+
+The byte-reading producer/verifier packages that *can* discharge the byte-level
+proof are a separate gate (contract §15.4); this module is the reader-free
+contract enforcement, never a substitute for it.
 """
 
 from __future__ import annotations
@@ -37,6 +56,24 @@ if _DEAD_END_EXCLUSIVE != FORWARD_FLOOR:
     raise RuntimeError("dead-window end and the forward floor must be contiguous")
 
 
+# --- Token discipline (audit B-2; contract §11 "Token discipline", §12.13) ----
+#
+# The single token this module may emit. It names its own evidentiary basis in
+# its own spelling, so a reader of an emitted artifact cannot mistake it for the
+# byte-level proof playbook §5 requires. `proof.py` registers this string as
+# declaration-only and asserts it is disjoint from the byte-level vocabulary.
+DECLARED_SPANS_SELF_CONSISTENT__NOT_BYTE_LEVEL: Final[str] = (
+    "DECLARED_SPANS_SELF_CONSISTENT__NOT_BYTE_LEVEL"
+)
+
+# Stated in the result itself, because B-2 found the old result honest about the
+# five schema keys it skipped and silent about the far more important fact that
+# its bounds were never measured.
+DECLARATION_ONLY_EVIDENCE_BASIS: Final[str] = (
+    "CALLER_DECLARED_METADATA_ONLY__NO_FILE_OPENED__NO_BYTE_MEASURED"
+)
+
+
 class NoOverlapError(RuntimeError):
     """Raised when an artifact role overlaps the dead window or violates bounds."""
 
@@ -61,6 +98,17 @@ def _intersects_dead_window(ts_min: datetime, ts_max: datetime) -> bool:
     return not (ts_max < DEAD_START or ts_min >= _DEAD_END_EXCLUSIVE)
 
 
+def is_dead_window_instant(ts: Any) -> bool:
+    """True iff a single instant lies inside the dead window (final second included).
+
+    Exposed so the coverage limb can reject an expected or certified M15 slot
+    that sits inside the consumed M1 holdout without reaching into this module's
+    private predicate or re-deriving the frozen constants.
+    """
+    instant = _parse(ts)
+    return DEAD_START <= instant < _DEAD_END_EXCLUSIVE
+
+
 def _assert_ordered(lo: datetime, hi: datetime, *, what: str) -> None:
     """B-2: a reversed span must never reach the dead-window predicate.
 
@@ -74,32 +122,62 @@ def _assert_ordered(lo: datetime, hi: datetime, *, what: str) -> None:
         )
 
 
-def assert_design_bounds(ts_min: Any, ts_max: Any) -> None:
-    """Design artifact must sit within [DESIGN_START, DESIGN_END] and miss dead window."""
-    lo, hi = _parse(ts_min), _parse(ts_max)
+def _assert_design_bounds_parsed(lo: datetime, hi: datetime) -> None:
+    """Design bound checks over values that are **already** parsed (B-3).
+
+    Split out so the certifying caller can bound-check and publish the *same*
+    ``datetime`` objects. Each guard raises with a phrase unique to it, so a
+    test can pin one epoch limb without regex alternation (audit B-7a).
+    """
     _assert_ordered(lo, hi, what="design")
     if hi > DESIGN_END:
         raise NoOverlapError(
-            f"design ts_max {hi.isoformat()} > DESIGN_END {DESIGN_END.isoformat()}"
+            f"design ts_max {hi.isoformat()} exceeds the frozen design-epoch ceiling "
+            f"DESIGN_END {DESIGN_END.isoformat()}"
         )
     if lo < DESIGN_START:
         raise NoOverlapError(
-            f"design ts_min {lo.isoformat()} < DESIGN_START {DESIGN_START.isoformat()}"
+            f"design ts_min {lo.isoformat()} precedes the frozen design-epoch floor "
+            f"DESIGN_START {DESIGN_START.isoformat()}"
         )
-    if _intersects_dead_window(lo, hi):
+    # DEFENCE IN DEPTH, and unreachable while the frozen constants hold.
+    # `DEAD_START` is exactly one second after `DESIGN_END`, so any design span
+    # touching the dead window has already tripped the ceiling limb above. The
+    # internal audit proved this by mutation: nulling this limb *and* its
+    # forward twin leaves the whole suite green, so **no test can name either
+    # one**. It is retained deliberately — the import-time invariant is the only
+    # thing making it unreachable, and a future constant edit that slipped past
+    # that invariant would need this. It is documented rather than deleted, and
+    # rather than left to look like coverage: the regex alternation the audit
+    # removed (`"dead window|DESIGN_END"`) was passing *because* of the ceiling
+    # limb while appearing to exercise this one.
+    if _intersects_dead_window(lo, hi):  # pragma: no cover - unreachable while constants hold
         raise NoOverlapError("design artifact intersects the dead window")
+
+
+def _assert_forward_bounds_parsed(lo: datetime, hi: datetime) -> None:
+    """Forward bound checks over values that are **already** parsed (B-3, B-7a)."""
+    _assert_ordered(lo, hi, what="forward")
+    if lo < FORWARD_FLOOR:
+        raise NoOverlapError(
+            f"forward ts_min {lo.isoformat()} precedes the frozen forward-epoch floor "
+            f"FORWARD_FLOOR {FORWARD_FLOOR.isoformat()}"
+        )
+    # Unreachable twin of the design limb above, for the mirror reason:
+    # `_DEAD_END_EXCLUSIVE == FORWARD_FLOOR` (asserted at import), so a span with
+    # `lo >= FORWARD_FLOOR` cannot intersect. Same rationale for retention.
+    if _intersects_dead_window(lo, hi):  # pragma: no cover - unreachable while constants hold
+        raise NoOverlapError("forward artifact intersects the dead window")
+
+
+def assert_design_bounds(ts_min: Any, ts_max: Any) -> None:
+    """Design artifact must sit within [DESIGN_START, DESIGN_END] and miss dead window."""
+    _assert_design_bounds_parsed(_parse(ts_min), _parse(ts_max))
 
 
 def assert_forward_bounds(ts_min: Any, ts_max: Any) -> None:
     """Forward artifact must begin >= FORWARD_FLOOR and miss the dead window."""
-    lo, hi = _parse(ts_min), _parse(ts_max)
-    _assert_ordered(lo, hi, what="forward")
-    if lo < FORWARD_FLOOR:
-        raise NoOverlapError(
-            f"forward ts_min {lo.isoformat()} < FORWARD_FLOOR {FORWARD_FLOOR.isoformat()}"
-        )
-    if _intersects_dead_window(lo, hi):
-        raise NoOverlapError("forward artifact intersects the dead window")
+    _assert_forward_bounds_parsed(_parse(ts_min), _parse(ts_max))
 
 
 def assert_no_dead_window(ts_min: Any, ts_max: Any, *, role: str) -> None:
@@ -180,7 +258,9 @@ def _materialise(files: Any, *, role: str) -> tuple[Any, ...]:
     return tuple(snapshot)
 
 
-def _roster_report(records: tuple[Any, ...], *, role: str) -> dict:
+def _roster_report(
+    records: tuple[Any, ...], *, role: str
+) -> tuple[dict, tuple[dict[str, str], ...]]:
     """Bind the evidence to the canonical PAIRS_20 roster; refuse anything short of it.
 
     BL-1: the proof used to say nothing about *which* files it saw, so twenty
@@ -188,7 +268,13 @@ def _roster_report(records: tuple[Any, ...], *, role: str) -> dict:
     name a pair in the frozen universe, alias spellings collapse to the same
     canonical name (so ``eur/usd`` duplicates ``EUR_USD``), and the canonical
     roster must equal PAIRS_20 exactly — no missing, duplicate or unknown pair.
+
+    B-3 generalised: the canonical pair, filename and digest **certified here**
+    are returned so the publisher emits exactly these values. Re-deriving them
+    from the record a second time is the defect B-3 named for timestamps, and a
+    ``str`` subclass can drift across two reads the same way a ``tzinfo`` can.
     """
+    identities: list[dict[str, str]] = []
     seen: dict[str, int] = {}
     duplicate: list[str] = []
     unknown: list[Any] = []
@@ -220,8 +306,16 @@ def _roster_report(records: tuple[Any, ...], *, role: str) -> dict:
         # required, and while they were optional the duplicate-evidence guards
         # could simply be switched off by omitting them — twenty records naming
         # twenty pairs while describing one physical file earned the token.
-        filename = record.get("filename")
-        if not isinstance(filename, str) or not filename.strip():
+        raw_filename = record.get("filename")
+        if not isinstance(raw_filename, str):
+            raise NoOverlapError(
+                f"{role}: file record {index} ({pair}) has no usable 'filename' "
+                "(required by the committed inventory schema)"
+            )
+        # Collapse to a plain `str` BEFORE checking, so a subclass cannot answer
+        # the check with one value and the publication with another (B-3 class).
+        filename = str.__str__(raw_filename)
+        if not filename.strip():
             raise NoOverlapError(
                 f"{role}: file record {index} ({pair}) has no usable 'filename' "
                 "(required by the committed inventory schema)"
@@ -233,11 +327,15 @@ def _roster_report(records: tuple[Any, ...], *, role: str) -> dict:
             )
         filenames[filename] = index
 
-        digest = record.get("sha256")
-        if (
-            not isinstance(digest, str)
-            or len(digest) != _SHA256_HEX_LENGTH
-            or any(c not in "0123456789abcdefABCDEF" for c in digest)
+        raw_digest = record.get("sha256")
+        if not isinstance(raw_digest, str):
+            raise NoOverlapError(
+                f"{role}: file record {index} ({pair}) has a non-string 'sha256' "
+                "(required by the committed inventory schema: 64-hex)"
+            )
+        digest = str.__str__(raw_digest)
+        if len(digest) != _SHA256_HEX_LENGTH or any(
+            c not in "0123456789abcdefABCDEF" for c in digest
         ):
             raise NoOverlapError(
                 f"{role}: file record {index} ({pair}) has no well-formed 'sha256' "
@@ -250,6 +348,9 @@ def _roster_report(records: tuple[Any, ...], *, role: str) -> dict:
                 f"{index} (duplicate evidence)"
             )
         digests[key] = index
+        # Frozen at the moment of checking. These are the plain-`str` values the
+        # duplicate guards above actually used, so the publication cannot differ.
+        identities.append({"pair": pair, "filename": filename, "sha256": key})
 
     missing = [p for p in PAIRS_20 if p not in seen]
     report = {
@@ -271,7 +372,11 @@ def _roster_report(records: tuple[Any, ...], *, role: str) -> dict:
             f"unknown={report['unknown_pairs']}, "
             f"non_canonical={report['non_canonical_pair_spellings']}"
         )
-    return report
+    if len(identities) != len(records):  # pragma: no cover - defensive
+        raise NoOverlapError(
+            f"{role}: certified {len(identities)} identities for {len(records)} records"
+        )
+    return report, tuple(identities)
 
 
 def assert_per_file_bounds(
@@ -279,12 +384,21 @@ def assert_per_file_bounds(
 ) -> dict:
     """Per-file ts-bound assertions for the **design** inventory.
 
-    The returned ``PROVEN_NO_DEAD_WINDOW_OVERLAP`` token is a claim about the
-    whole 20-pair inventory, so it is only ever produced when the evidence is
-    re-scannable, bound to the canonical roster, carries the identity keys the
-    committed schema requires, and every record's span clears the dead window.
-    ``expected_count`` remains a caller-supplied cross-check — on its own it can
-    no longer produce the token.
+    The returned :data:`DECLARED_SPANS_SELF_CONSISTENT__NOT_BYTE_LEVEL` token is
+    a claim about the whole 20-pair inventory *as declared*, so it is only ever
+    produced when the evidence is re-scannable, bound to the canonical roster,
+    carries the identity keys the committed schema requires, and every record's
+    declared span clears the dead window. ``expected_count`` remains a
+    caller-supplied cross-check — on its own it can no longer produce the token.
+
+    **What this token is not (audit B-2, §12.13).** No file is opened, no byte is
+    read, and the declared ``sha256`` is checked for shape only — never against
+    any file's contents. Playbook §5's byte-level no-overlap proof is therefore
+    *not* discharged here and cannot be: the byte-level vocabulary lives in
+    :mod:`scripts.m15_gate3a.proof` and this module has no import edge to it, so
+    a byte-level token is not reachable from this function by any code path.
+    The result states this in ``evidence_basis`` rather than leaving a reader of
+    the emitted artifact to infer it.
 
     ``role="forward"`` is **refused**. The roster binding above is derived from
     ``design_m15_inventory.json``; the committed ``forward_epoch_inventory.json``
@@ -309,24 +423,34 @@ def assert_per_file_bounds(
         raise NoOverlapError(f"{role}: empty file list")
     if expected_count is not None and len(records) != expected_count:
         raise NoOverlapError(f"{role}: expected {expected_count} files, got {len(records)}")
-    report = _roster_report(records, role=role)
+    report, identities = _roster_report(records, role=role)
 
     checked = 0
     spans: list[dict[str, str]] = []
-    for record in records:
+    for record, identity in zip(records, identities, strict=True):
         tmin = record.get("ts_min_utc")
         tmax = record.get("ts_max_utc")
         if not tmin or not tmax:
             raise NoOverlapError(f"{role}: file missing ts bounds")
-        assert_design_bounds(tmin, tmax)
+        # B-3: parse ONCE, then check and publish the *same* objects. The
+        # previous code bound-checked one parse at `:321` and re-parsed the same
+        # inputs at `:328-329` to build `certified_spans`; the two parses were
+        # independent, so a drifting `tzinfo` returned the proof token while
+        # publishing a span inside the dead window — an artifact refuting itself.
+        lo = _parse(tmin)
+        hi = _parse(tmax)
+        _assert_design_bounds_parsed(lo, hi)
         # Record what was actually certified, so the proof artifact can be
-        # re-checked against the inventory it claims to prove.
+        # re-checked against the inventory it claims to prove. `identity` holds
+        # the very pair/digest strings the roster guards used, for the same
+        # reason.
         spans.append(
             {
-                "pair": canonical_pair(record["pair"]),
-                "sha256": str(record["sha256"]).lower(),
-                "ts_min_utc": _parse(tmin).isoformat(),
-                "ts_max_utc": _parse(tmax).isoformat(),
+                "pair": identity["pair"],
+                "sha256": identity["sha256"],
+                "filename": identity["filename"],
+                "ts_min_utc": lo.isoformat(),
+                "ts_max_utc": hi.isoformat(),
             }
         )
         checked += 1
@@ -336,9 +460,18 @@ def assert_per_file_bounds(
         "role": role,
         "files_checked": checked,
         "certified_spans": spans,
-        # The proof covers identity + ts bounds only. These committed
-        # `required_schema_per_file` keys are NOT verified here, and saying so
-        # is what stops the token being read as full inventory validation.
+        # The check covers declared identity + declared ts bounds only. These
+        # committed `required_schema_per_file` keys are NOT verified here, and
+        # saying so is what stops the token being read as inventory validation.
+        #
+        # These are quoted VERBATIM from the committed
+        # `artifacts/m15_gate3a/design_m15_inventory.json`, so `eligible_event_count`
+        # keeps the committed spelling even though §12.20 of the contract
+        # Gate-decision pins the measured quantity as `complete_bucket_count`
+        # (which is what `aggregation.py` now emits). Renaming the key here
+        # would desynchronise this list from the artifact it names. The rename
+        # lands with the inventory schema extension at the gate-3a
+        # continuation; recorded as a residual item, not silently reconciled.
         "schema_keys_not_verified": [
             "size_bytes",
             "row_count",
@@ -346,6 +479,13 @@ def assert_per_file_bounds(
             "gap_report",
             "pip_size",
         ],
+        # B-2: the bounds themselves are DECLARED, not measured. The old result
+        # was honest about the five keys above and silent about this, which is
+        # the more important omission.
+        "evidence_basis": DECLARATION_ONLY_EVIDENCE_BASIS,
+        "declared_not_measured": ["ts_min_utc", "ts_max_utc", "sha256", "filename"],
+        "files_opened": 0,
+        "bytes_measured": 0,
         **report,
-        "result": "PROVEN_NO_DEAD_WINDOW_OVERLAP",
+        "result": DECLARED_SPANS_SELF_CONSISTENT__NOT_BYTE_LEVEL,
     }
