@@ -1117,6 +1117,8 @@ def test_d1_name_limb_aliases_of_a_protected_path_refused(spelling: str) -> None
     of them are decided by the *identity* limb, which needs the protected tree
     to exist. The two halves are separated so this one measures only code.
     """
+    if spelling != "plain" and os.name != "nt":
+        pytest.skip(f"{spelling} is a Windows-namespace spelling; not constructible on this OS")
     protected = _protected_365d_ba_v1()
     alias = _alias_spellings(str(protected))[spelling]
     candidate = resolve_candidate(alias)
@@ -1139,6 +1141,13 @@ def test_d1_identity_limb_aliases_of_a_protected_path_refused(spelling: str) -> 
     premise is now measured and stated instead of being an invisible part of
     the assertion; when it holds, what is asserted is the code.
     """
+    if os.name != "nt":
+        # These are UNC / extended-UNC spellings of a Windows path. Built from a
+        # POSIX root they are not the same path in another spelling, they are
+        # nonsense — and the test would then measure the relative-path refusal
+        # instead of `os.path.samestat`. Skipping states that honestly rather
+        # than asserting a refusal that arrives for the wrong reason.
+        pytest.skip("UNC alias spellings are Windows-only; identity limb not exercisable here")
     protected = _protected_365d_ba_v1()
     if not protected.is_dir():
         pytest.skip("identity limb inapplicable: no protected tree to be identical to")

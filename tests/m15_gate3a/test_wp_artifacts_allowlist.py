@@ -14,6 +14,7 @@ audit B-7a for three rounds.
 from __future__ import annotations
 
 import json
+import os
 from decimal import Decimal
 from pathlib import Path
 
@@ -450,7 +451,18 @@ def test_rf9_a_blocked_parent_directory_is_reported_as_a_scrub_error(tmp_path: P
     blocker.write_text("not a directory", encoding="utf-8")
     out = blocker / "sub"
     body = {"ok": 1}
-    with pytest.raises(ArtifactScrubError, match="artifact write failed"):
+    # A file standing where a directory must be is uninterrogable. On POSIX that
+    # surfaces as NotADirectoryError inside the containment stat, so the path
+    # authority refuses before the writer runs; on Windows the writer reaches
+    # write_text and reports the scrub error. Both are fail-closed refusals from
+    # this package's own exception family, but they are DIFFERENT guards, so the
+    # expectation names the one this platform actually reaches (§9 AP-1: never
+    # paper over two guards with one matcher).
+    if os.name == "nt":
+        expected: tuple[type[Exception], str] = (ArtifactScrubError, "artifact write failed")
+    else:
+        expected = (RealDataRefusedError, "cannot interrogate")
+    with pytest.raises(expected[0], match=expected[1]):
         write_metadata_artifact(out, "ok.json", body)
     assert not out.exists()
     assert blocker.read_text(encoding="utf-8") == "not a directory"
