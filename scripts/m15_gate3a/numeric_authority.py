@@ -42,6 +42,15 @@ constant. It converts a type; the numeric *policy* stays with the caller, which
 also owns the exception type its callers are documented to catch — so every
 function here raises :class:`NumericAuthorityError` and each caller wraps it in
 its own error class.
+
+**Non-blocking item, closed with the P-1..P-7 round.** ``isinstance`` consults
+``__class__``, which an arbitrary object may claim, so
+``isinstance(value, int)`` could be satisfied by
+something the unbound ``int.__index__`` slot then refuses with a bare
+``TypeError``. That was still fail-closed, but it escaped the wrapping every
+caller is documented to do, arriving as a ``TypeError`` where the caller's own
+error class was promised. The slot calls are guarded so that spoofing lands on
+:class:`NumericAuthorityError` like every other refusal here.
 """
 
 from __future__ import annotations
@@ -60,6 +69,17 @@ class NumericAuthorityError(ValueError):
     """Raised when a value cannot be pinned to plain numeric character data."""
 
 
+def _index(value: Any, *, what: str) -> int:
+    """``int.__index__`` with ``__class__``-spoofing folded into this module's error."""
+    try:
+        return int.__index__(value)
+    except TypeError as exc:
+        raise NumericAuthorityError(
+            f"{what} claims to be an int but is a {type(value).__name__} that the int slot "
+            f"refuses: {exc}"
+        ) from exc
+
+
 def pin_number(value: Any, *, what: str) -> int | float:
     """Return *value*'s plain ``int``/``float`` character data, or fail closed.
 
@@ -70,9 +90,15 @@ def pin_number(value: Any, *, what: str) -> int | float:
     if isinstance(value, bool):
         raise NumericAuthorityError(f"{what} must be a number, not a bool")
     if isinstance(value, int):
-        return int.__index__(value)
+        return _index(value, what=what)
     if isinstance(value, float):
-        return float.__float__(value)
+        try:
+            return float.__float__(value)
+        except TypeError as exc:
+            raise NumericAuthorityError(
+                f"{what} claims to be a float but is a {type(value).__name__} that the float "
+                f"slot refuses: {exc}"
+            ) from exc
     raise NumericAuthorityError(f"{what} must be a number, got {type(value).__name__}")
 
 
@@ -87,7 +113,7 @@ def pin_int(value: Any, *, what: str) -> int:
         raise NumericAuthorityError(f"{what} must be an int, not a bool")
     if not isinstance(value, int):
         raise NumericAuthorityError(f"{what} must be an int, got {type(value).__name__}")
-    return int.__index__(value)
+    return _index(value, what=what)
 
 
 def pin_float(value: Any, *, what: str) -> float:

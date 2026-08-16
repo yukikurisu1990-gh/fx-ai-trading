@@ -76,7 +76,7 @@ from scripts.m15_gate3a.proof import (
     SUBJECT_DERIVED_M15_ARTIFACT,
     TOKEN_EVIDENTIARY_BASIS,
     TOKEN_VOCABULARY,
-    VERIFIER_INDEPENDENCE_BASIS,
+    VERIFIER_INDEPENDENCE_LIMIT,
     AggregateAssertionUnsatisfiedError,
     ConsumerRecheck,
     DeclarationRecord,
@@ -1168,7 +1168,7 @@ def test_no_byte_level_claim_token_appears_anywhere_in_the_returned_record() -> 
         "byte_level_status",
         "claim_withheld_because",
         "evidence_basis",
-        "verifier_independence_basis",
+        "verifier_independence_limit",
         "inventory_digest",
         "calendar_digest",
     ):
@@ -1197,7 +1197,7 @@ def test_the_record_states_that_this_layer_measured_no_bytes() -> None:
     assert result.bytes_measured == 0
     assert result.declared_not_measured == DECLARED_NOT_MEASURED_BY_THIS_LAYER
     assert set(result.declared_not_measured) >= {"sha256", "size_bytes", "certified_slots"}
-    assert result.verifier_independence_basis == VERIFIER_INDEPENDENCE_BASIS
+    assert result.verifier_independence_limit == VERIFIER_INDEPENDENCE_LIMIT
 
 
 def test_the_record_carries_no_one_valued_attestation_fields() -> None:
@@ -1220,7 +1220,7 @@ def test_a_hand_built_proof_result_cannot_be_constructed() -> None:
             byte_level_status=BYTE_LEVEL_NO_DEAD_WINDOW_OVERLAP_PROVEN,
             claim_withheld_because="",
             evidence_basis="",
-            verifier_independence_basis="",
+            verifier_independence_limit="",
             declared_not_measured=(),
             files_opened=0,
             bytes_measured=0,

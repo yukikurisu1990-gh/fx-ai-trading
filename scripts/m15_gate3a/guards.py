@@ -106,10 +106,11 @@ FORBIDDEN_STATUSES: Final[frozenset[str]] = frozenset(
 # Kept as its own frozenset rather than folded into `FORBIDDEN_STATUSES` for two
 # reasons. These are *claim tokens* of the proof contract, not readiness status
 # labels, and — the operative one — `artifacts._MAX_PROHIBITION_ENTRY_LEN` is
-# derived from the longest entry of `FORBIDDEN_STATUSES` (22). Adding a 41-char
-# token there would have RAISED that bound to 41, widening the window of
-# unscanned text a prohibition-list entry may contain. A fix that loosens a
-# neighbouring guard to close its own finding is not a fix.
+# derived from the longest entry of `FORBIDDEN_STATUSES` (22). Adding the 40-char
+# `BYTE_LEVEL_NO_DEAD_WINDOW_OVERLAP_PROVEN` there would have RAISED that bound
+# from 22 to 40, widening the window of unscanned text a prohibition-list entry
+# may contain. A fix that loosens a neighbouring guard to close its own finding
+# is not a fix.
 #
 # `scripts.m15_gate3a.proof` cross-checks at import that every token in its
 # `BYTE_LEVEL_CLAIM_TOKENS` appears here, so the two cannot drift apart.

@@ -29,6 +29,8 @@ import re
 from datetime import UTC, datetime, timedelta
 from typing import Any, Final
 
+from scripts.m15_gate3a.numeric_authority import NumericAuthorityError, pin_float
+
 # EVERY fractional group of an ISO timestamp, on EITHER ISO decimal separator.
 #
 # RF-1: this was ``\.(\d+)`` scanned with ``.search``, and both halves of that
@@ -94,6 +96,19 @@ def _reject_subclass_divergence(ts: Any, utc: datetime) -> None:
     what the ``.nanosecond`` limb is for, and neither limb is claimed to be
     universal over subclasses that hide a sub-microsecond remainder somewhere
     with no attribute to read.
+
+    **P-5 — both operands are pinned before the subtraction.** The check used to
+    be ``abs(ts.timestamp() - utc.timestamp())``, which is arithmetic on an
+    object the *caller* supplied: a subclass whose ``timestamp()`` returned a
+    ``float`` subclass overriding ``__sub__``/``__abs__`` answered every
+    subtraction with ``0.0`` and was ACCEPTED where the identical lie returned as
+    a plain ``float`` was REFUSED (measured: an hour of drift, and
+    :func:`format_utc_z` then emitted ``2025-06-02T00:00:00Z``). Both values now
+    go through the single numeric authority first, so the difference is computed
+    between two plain ``float``\\ s. A ``timestamp()`` returning something that
+    is not a number at all — which used to leak a bare ``TypeError`` out of
+    :func:`to_utc` — fails closed as a :class:`TimestampError` for the same
+    reason.
     """
     if getattr(ts, "nanosecond", 0):
         raise TimestampError(
@@ -103,9 +118,18 @@ def _reject_subclass_divergence(ts: Any, utc: datetime) -> None:
     if not isinstance(ts, datetime) or type(ts) is datetime:
         return
     try:
-        drift = abs(ts.timestamp() - utc.timestamp())
+        declared = ts.timestamp()
+        rebuilt = utc.timestamp()
     except (OverflowError, OSError, ValueError) as exc:
         raise TimestampError(f"timestamp() failed for {type(ts).__name__}: {exc}") from exc
+    try:
+        declared_seconds = pin_float(declared, what="timestamp()")
+        rebuilt_seconds = pin_float(rebuilt, what="timestamp()")
+    except NumericAuthorityError as exc:
+        raise TimestampError(
+            f"timestamp() did not return a number for {type(ts).__name__}: {exc}"
+        ) from exc
+    drift = abs(declared_seconds - rebuilt_seconds)
     if drift != 0.0:
         raise TimestampError(
             f"{type(ts).__name__} instant disagrees with its own components "

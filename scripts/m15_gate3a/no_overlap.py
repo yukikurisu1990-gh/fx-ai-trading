@@ -31,6 +31,7 @@ from collections.abc import Mapping, Sequence
 from datetime import UTC, datetime, timedelta
 from typing import Any, Final
 
+from scripts.m15_gate3a.numeric_authority import NumericAuthorityError, pin_int
 from scripts.m15_gate3a.pair_authority import PAIRS_20, PairAuthorityError, canonical_pair
 from scripts.m15_gate3a.timeutil import TimestampError, format_utc_z, to_utc
 
@@ -273,6 +274,10 @@ def _roster_report(
     are returned so the publisher emits exactly these values. Re-deriving them
     from the record a second time is the defect B-3 named for timestamps, and a
     ``str`` subclass can drift across two reads the same way a ``tzinfo`` can.
+
+    P-6: what it *reports* is only the roster the evidence was required to match.
+    See the comment at the raise site for why the six reconciliation fields it
+    used to return were deleted rather than kept.
     """
     identities: list[dict[str, str]] = []
     seen: dict[str, int] = {}
@@ -353,25 +358,40 @@ def _roster_report(
         identities.append({"pair": pair, "filename": filename, "sha256": key})
 
     missing = [p for p in PAIRS_20 if p not in seen]
-    report = {
-        "expected_pairs": list(PAIRS_20),
-        "expected_pair_count": len(PAIRS_20),
-        "actual_pairs": [p for p in PAIRS_20 if p in seen],
-        "actual_record_count": len(records),
-        "missing_pairs": missing,
-        "duplicate_pairs": sorted(set(duplicate)),
-        "unknown_pairs": [repr(u) for u in unknown],
-        "non_canonical_pair_spellings": sorted(set(non_canonical)),
-    }
-    if missing or duplicate or unknown or non_canonical:
+    duplicates = sorted(set(duplicate))
+    unknowns = [repr(u) for u in unknown]
+    non_canonical_spellings = sorted(set(non_canonical))
+    if missing or duplicates or unknowns or non_canonical_spellings:
         raise NoOverlapError(
             f"{role}: roster does not match PAIRS_20 — "
             f"expected {len(PAIRS_20)}, got {len(records)} records; "
-            f"missing={report['missing_pairs']}, "
-            f"duplicate={report['duplicate_pairs']}, "
-            f"unknown={report['unknown_pairs']}, "
-            f"non_canonical={report['non_canonical_pair_spellings']}"
+            f"missing={missing}, "
+            f"duplicate={duplicates}, "
+            f"unknown={unknowns}, "
+            f"non_canonical={non_canonical_spellings}"
         )
+    # P-6 — the R-1 trap, fourth instance on this PR. The raise above is
+    # unconditional on any of the four lists being non-empty, so on the only path
+    # that REACHES this line all four are `[]`, `actual_pairs` is
+    # `[p for p in PAIRS_20 if p in seen]` with every pair in `seen` (i.e. exactly
+    # `expected_pairs`), and `actual_record_count` is exactly `len(PAIRS_20)` —
+    # six fields that can only ever hold the favourable value, published as
+    # though they were a measured reconciliation. That is structurally the same
+    # defect round 2 deleted from `aggregate_assertions` and round 3 from
+    # `pairs_measured`, and the remedy is the same one: the four lists stay
+    # two-valued where they really are two-valued (the raise above, which names
+    # each of them), and the roster is recovered from the evidence instead —
+    # `certified_spans` carries one entry per record, built from the pair,
+    # filename and digest the guards above actually used.
+    #
+    # `expected_pairs`/`expected_pair_count` are KEPT: they disclose what the
+    # evidence was required to match, not a favourable property of the evidence,
+    # which is the same category as `declared_not_measured` and
+    # `schema_keys_not_verified`.
+    report = {
+        "expected_pairs": list(PAIRS_20),
+        "expected_pair_count": len(PAIRS_20),
+    }
     if len(identities) != len(records):  # pragma: no cover - defensive
         raise NoOverlapError(
             f"{role}: certified {len(identities)} identities for {len(records)} records"
@@ -421,8 +441,20 @@ def assert_per_file_bounds(
     records = _materialise(files, role=role)
     if not records:
         raise NoOverlapError(f"{role}: empty file list")
-    if expected_count is not None and len(records) != expected_count:
-        raise NoOverlapError(f"{role}: expected {expected_count} files, got {len(records)}")
+    if expected_count is not None:
+        # P-4: `len(records) != expected_count` asked the CALLER's object whether
+        # it matched. Measured: `expected_count=999` plain was refused and
+        # `expected_count=LyingInt(999)` — an `int` subclass answering every
+        # equality favourably — was accepted. The roster binding below
+        # independently forces PAIRS_20, so no favourable disposition was gained
+        # by it; this is the defence-in-depth half of the cross-check, and a
+        # guard that the caller can answer is not a cross-check at all.
+        try:
+            pinned_expected = pin_int(expected_count, what="expected_count")
+        except NumericAuthorityError as exc:
+            raise NoOverlapError(f"{role}: {exc}") from exc
+        if len(records) != pinned_expected:
+            raise NoOverlapError(f"{role}: expected {pinned_expected} files, got {len(records)}")
     report, identities = _roster_report(records, role=role)
 
     checked = 0
@@ -466,6 +498,26 @@ def assert_per_file_bounds(
         raise NoOverlapError(f"{role}: checked {checked} of {len(records)} records")
     return {
         "role": role,
+        # R-1, FIFTH INSTANCE — RETAINED BY RULING, and the reason is recorded
+        # rather than left implicit. On the only path that *returns*, this is
+        # always 20: `_roster_report` has already raised on any missing,
+        # duplicate, unknown or non-canonical pair, and the loop above raises if
+        # `checked != len(records)`. So it is the same tautology as the
+        # `actual_record_count` deleted from the roster report — a favourable
+        # quantity that can hold no other value.
+        #
+        # It is kept anyway because, unlike that field, `files_checked` is named
+        # in the committed `no_overlap_proof` allowlist (`artifacts.py:691`).
+        # Deleting it here would desynchronise the emitted record from the
+        # artifact vocabulary a committed schema declares, and this Work PR does
+        # not change committed schemas — the same reasoning that kept
+        # `eligible_event_count` in `schema_keys_not_verified`.
+        #
+        # Recorded as a residual for the next gate: if the artifact schema is
+        # revised, this field should go with `actual_record_count`. It must NOT
+        # be read as evidence that twenty files were examined — the roster
+        # binding is what establishes that, and `certified_spans` is what
+        # carries it.
         "files_checked": checked,
         "certified_spans": spans,
         # The check covers declared identity + declared ts bounds only. These

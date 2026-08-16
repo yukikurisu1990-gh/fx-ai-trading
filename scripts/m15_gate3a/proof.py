@@ -254,9 +254,27 @@ BYTE_LEVEL_CLAIM_WITHHELD_REASON: Final[str] = (
 #: requires the verifier not to share the producer's *scalar-derivation code*;
 #: nothing in a record can evidence that, so the limit is stated instead of an
 #: unconditional ``INDEPENDENT_VERIFIER`` being asserted.
-VERIFIER_INDEPENDENCE_BASIS: Final[str] = (
-    "DISTINCT_DECLARED_BYTE_STREAM_PASSES_OVER_THE_SAME_STAGED_ARTIFACT__"
-    "SHARED_SCALAR_DERIVATION_CODE_NOT_EXCLUDED_BY_THIS_LAYER"
+#:
+#: **P-7 — ruled explicitly, and restructured.** This constant used to open with
+#: ``DISTINCT_DECLARED_BYTE_STREAM_PASSES_OVER_THE_SAME_STAGED_ARTIFACT__``, and
+#: was named ``VERIFIER_INDEPENDENCE_BASIS`` on a field called
+#: ``verifier_independence_basis``. That opening clause is a **favourable
+#: assertion that can only ever hold one value**: :func:`assert_records_agree`
+#: *raises* when the verifier cites the producer's stream id and when the two
+#: passes name different artifacts, so no record carrying the sentence can ever
+#: have failed it. R-1 deletes exactly that shape, and the deliberate exception
+#: the module docstring records is for a constant that **denies** something.
+#:
+#: The decision taken here is to restructure rather than delete: the limitation
+#: half is real, is the only thing §11 leaves unevidenced, and a record that
+#: omitted it would be silent about it. So the sentence now leads with what is
+#: **not** excluded, names the pass-distinctness requirement as a precondition a
+#: raise enforces rather than as evidence, and the field is renamed
+#: ``verifier_independence_limit`` so its key cannot be read as an attestation.
+VERIFIER_INDEPENDENCE_LIMIT: Final[str] = (
+    "SHARED_SCALAR_DERIVATION_CODE_NOT_EXCLUDED_BY_THIS_LAYER__"
+    "TWO_DISTINCT_BYTE_STREAM_READS_ARE_A_PRECONDITION_A_RAISE_ENFORCES__"
+    "NOT_EVIDENCE_OF_INDEPENDENCE"
 )
 
 #: Every quantity this layer consumed as a caller declaration. Naming them is
@@ -833,7 +851,7 @@ class ProofResult:
     byte_level_status: str
     claim_withheld_because: str
     evidence_basis: str
-    verifier_independence_basis: str
+    verifier_independence_limit: str
     declared_not_measured: tuple[str, ...]
     files_opened: int
     bytes_measured: int
@@ -916,7 +934,89 @@ def _pin_token(value: Any, *, what: str) -> str:
     return str.__str__(value)
 
 
-def _assert_disclosure_untampered(result: ProofResult) -> None:
+def _pin_disclosure_count(value: Any, *, what: str) -> int:
+    """The plain ``int`` character data of a disclosure count, or refuse it (P-2).
+
+    ``(result.files_opened, result.bytes_measured) != (0, 0)`` compares the tuple
+    element-wise with ``==``, which asks the caller's own object whether it is
+    zero. An ``int`` subclass answering every equality favourably held 20 and 999
+    through that guard — an N-1 miss inside the N-2 fix.
+    """
+    try:
+        return pin_int(value, what=what)
+    except NumericAuthorityError as exc:
+        raise ProofNotUsableError(
+            f"{what} is not a plain integer count ({exc}); the proof record was rewritten "
+            "after construction"
+        ) from exc
+
+
+def _pin_declared_not_measured(value: Any) -> tuple[str, ...]:
+    """Pin every entry of the disclosure list before comparing any of them (P-1).
+
+    ``tuple(value) != DECLARED_NOT_MEASURED_BY_THIS_LAYER`` compares element-wise
+    with ``==``, so thirteen same-length ``str`` subclasses answering every
+    equality favourably passed it and were then copied verbatim onto the
+    approval. Measured with ``''`` (the disclosure of which quantities were
+    consumed as declarations simply erased), ``'-'``, ``'measured'`` and
+    ``'MEASURED_FROM_DERIVED_ARTIFACT_BYTES'`` — and every one of those payloads
+    scans clean, because a scrubber cannot know which thirteen names belong
+    there. The length check the N-2 test exercises catches only a *shortened*
+    list.
+    """
+    if isinstance(value, (str, bytes, bytearray)) or not isinstance(value, Sequence):
+        raise ProofNotUsableError(
+            f"declared_not_measured is not a list of quantity names but a "
+            f"{type(value).__name__}; the proof record was rewritten after construction"
+        )
+    entries = tuple(value)
+    if len(entries) != len(DECLARED_NOT_MEASURED_BY_THIS_LAYER):
+        raise ProofNotUsableError(
+            "the proof record's declared_not_measured list is not the one this layer emits; "
+            "shortening it would hide which quantities were consumed as declarations"
+        )
+    pinned = tuple(
+        _pin_token(entry, what=f"declared_not_measured[{index}]")
+        for index, entry in enumerate(entries)
+    )
+    for index, (got, expected) in enumerate(
+        zip(pinned, DECLARED_NOT_MEASURED_BY_THIS_LAYER, strict=True)
+    ):
+        if got != expected:
+            raise ProofNotUsableError(
+                f"the proof record's declared_not_measured entry {index} is {got!r}, not "
+                f"{expected!r}; this layer discloses a fixed list of the quantities it "
+                "consumed as declarations, and rewriting an entry hides one of them"
+            )
+    return pinned
+
+
+@dataclass(frozen=True, slots=True)
+class _PinnedDisclosure:
+    """The disclosure fields, read once as plain built-in character data (P-3).
+
+    :func:`_assert_disclosure_untampered` pinned each token *for its comparison*
+    and :func:`open_for_consumption` then published the caller's original object.
+    A ``str`` subclass whose character data spells
+    :data:`BYTE_LEVEL_PROOF_PENDING` while its ``__str__``, ``__repr__`` and
+    ``__format__`` spell :data:`BYTE_LEVEL_NO_DEAD_WINDOW_OVERLAP_PROVEN`
+    therefore minted an approval that was safe only to ``json.dumps`` and
+    asserted the byte-level claim to every other reader. B-3's rule — parse
+    once, then check and publish the **same** objects — was broken inside the
+    fix that exists to enforce it. This carries what was checked, and it is
+    what gets published.
+    """
+
+    byte_level_status: str
+    claim_withheld_because: str
+    evidence_basis: str
+    declared_not_measured: tuple[str, ...]
+    files_opened: int
+    bytes_measured: int
+    inventory_digest: str
+
+
+def _assert_disclosure_untampered(result: ProofResult) -> _PinnedDisclosure:
     """Re-check the token fields :func:`open_for_consumption` is about to repeat.
 
     **N-2.** ``open_for_consumption`` copied ``byte_level_status``,
@@ -935,6 +1035,16 @@ def _assert_disclosure_untampered(result: ProofResult) -> None:
     R-1 checks — every one of them is reachable, and each is exercised by a test
     that tampers exactly one field. Each divergence has its own raise site so a
     test can name which fired without a regex alternation.
+
+    **What it returns, and the one thing it cannot check (P-3).** It returns the
+    pinned values, so the caller publishes what was checked rather than the
+    caller's objects. ``inventory_digest`` is re-checked here too — it was
+    repeated onto the approval untouched, so a record tampered to
+    ``'NO_INVENTORY_EVER_EXISTED'`` put that on the approval as the inventory the
+    proof was evaluated over. What the re-check establishes is its **shape** and
+    its plain character data; substituting one well-formed 64-hex digest for
+    another is not detectable from the record alone, exactly as for
+    ``calendar_digest``. That limit is stated rather than papered over.
     """
     status = _pin_token(result.byte_level_status, what="byte_level_status")
     if status in BYTE_LEVEL_CLAIM_TOKENS:
@@ -948,9 +1058,10 @@ def _assert_disclosure_untampered(result: ProofResult) -> None:
             f"the proof record declares byte_level_status {status!r}; the only status this "
             f"reader-free layer can reach is {BYTE_LEVEL_PROOF_PENDING!r}"
         )
-    if _pin_token(result.evidence_basis, what="evidence_basis") != LIMB_EVALUATION_EVIDENCE_BASIS:
+    basis = _pin_token(result.evidence_basis, what="evidence_basis")
+    if basis != LIMB_EVALUATION_EVIDENCE_BASIS:
         raise ProofNotUsableError(
-            f"the proof record declares evidence_basis {result.evidence_basis!r}; this layer "
+            f"the proof record declares evidence_basis {basis!r}; this layer "
             f"evaluates limbs over caller-supplied records and its basis is always "
             f"{LIMB_EVALUATION_EVIDENCE_BASIS!r}"
         )
@@ -960,17 +1071,31 @@ def _assert_disclosure_untampered(result: ProofResult) -> None:
             f"the proof record declares claim_withheld_because {withheld!r}; the reason a "
             "byte-level claim is withheld is not a caller-settable field"
         )
-    if tuple(result.declared_not_measured) != DECLARED_NOT_MEASURED_BY_THIS_LAYER:
+    declared_not_measured = _pin_declared_not_measured(result.declared_not_measured)
+    files_opened = _pin_disclosure_count(result.files_opened, what="files_opened")
+    bytes_measured = _pin_disclosure_count(result.bytes_measured, what="bytes_measured")
+    if (files_opened, bytes_measured) != (0, 0):
         raise ProofNotUsableError(
-            "the proof record's declared_not_measured list is not the one this layer emits; "
-            "shortening it would hide which quantities were consumed as declarations"
-        )
-    if (result.files_opened, result.bytes_measured) != (0, 0):
-        raise ProofNotUsableError(
-            f"the proof record declares files_opened={result.files_opened!r} and "
-            f"bytes_measured={result.bytes_measured!r}; this layer opens no file and measures "
+            f"the proof record declares files_opened={files_opened!r} and "
+            f"bytes_measured={bytes_measured!r}; this layer opens no file and measures "
             "no byte, so a non-zero count means the record was rewritten"
         )
+    try:
+        inventory_digest = _require_hex_digest(result.inventory_digest, what="inventory_digest")
+    except ProofContractError as exc:
+        raise ProofNotUsableError(
+            f"the proof record's inventory_digest is no longer a well-formed digest ({exc}); "
+            "an approval repeats it as the inventory the proof was evaluated over"
+        ) from exc
+    return _PinnedDisclosure(
+        byte_level_status=status,
+        claim_withheld_because=withheld,
+        evidence_basis=basis,
+        declared_not_measured=declared_not_measured,
+        files_opened=files_opened,
+        bytes_measured=bytes_measured,
+        inventory_digest=inventory_digest,
+    )
 
 
 def assert_byte_level_claim(token: Any) -> str:
@@ -1173,15 +1298,16 @@ def assert_records_agree(producer: Any, verifier: Any) -> None:
     measured quantities means a derivation is wrong, not that a file moved, so it
     is reported separately rather than folded into a generic mismatch.
 
-    **How far "independent" is checkable here** (:data:`VERIFIER_INDEPENDENCE_BASIS`).
+    **How far "independent" is checkable here** (:data:`VERIFIER_INDEPENDENCE_LIMIT`).
     The old test was ``producer.digest_provenance != verifier.digest_provenance``,
     a tuple comparison that a verifier citing a *different file at the same pass
     index* satisfied. It now takes two distinct byte-stream passes over the
-    **same** named artifact. What no record can evidence is §11's real
-    requirement — that the verifier does not share the producer's
-    scalar-derivation code. That is a property of the P and V packages, which
-    are a later gate; this layer states the limit rather than asserting
-    ``INDEPENDENT_VERIFIER``.
+    **same** named artifact — enforced by the two raises below, which is why the
+    record states the *limit* rather than attesting that the passes were
+    distinct (P-7). What no record can evidence is §11's real requirement — that
+    the verifier does not share the producer's scalar-derivation code. That is a
+    property of the P and V packages, which are a later gate; this layer states
+    the limit rather than asserting ``INDEPENDENT_VERIFIER``.
     """
     if producer is None:
         raise ProofLimbAbsentError("the producer measurement record is absent")
@@ -1447,7 +1573,7 @@ def evaluate_four_limbs(
         byte_level_status=BYTE_LEVEL_PROOF_PENDING,
         claim_withheld_because=BYTE_LEVEL_CLAIM_WITHHELD_REASON,
         evidence_basis=LIMB_EVALUATION_EVIDENCE_BASIS,
-        verifier_independence_basis=VERIFIER_INDEPENDENCE_BASIS,
+        verifier_independence_limit=VERIFIER_INDEPENDENCE_LIMIT,
         declared_not_measured=DECLARED_NOT_MEASURED_BY_THIS_LAYER,
         files_opened=0,
         bytes_measured=0,
@@ -1499,6 +1625,12 @@ def open_for_consumption(result: Any, *, consumer_rechecks: Any) -> ConsumptionA
     still holds it. :func:`_assert_disclosure_untampered` does that, exactly as
     :func:`_limb_cv` re-checks ``per_pair`` for the same reason.
 
+    **P-3 — and it publishes what it pinned.** The N-2 fix pinned each token for
+    its *comparison* and then still built the approval out of ``result.<field>``,
+    so a two-faced ``str`` subclass passed the check on its character data and
+    reached the approval intact. Every disclosure field below now comes from
+    :class:`_PinnedDisclosure`.
+
     The returned :class:`ConsumptionApproval` **authorises no read**. It repeats
     the pending status and states, in the value itself, that this layer opened no
     file and measured no byte.
@@ -1507,7 +1639,7 @@ def open_for_consumption(result: Any, *, consumer_rechecks: Any) -> ConsumptionA
         raise ProofNotUsableError(
             f"consumption requires an evaluated ProofResult, got {type(result).__name__}"
         )
-    _assert_disclosure_untampered(result)
+    disclosure = _assert_disclosure_untampered(result)
     if consumer_rechecks is None:
         raise ProofNotUsableError(
             "no consumer re-verification supplied; a proof that has not been re-verified "
@@ -1542,9 +1674,23 @@ def open_for_consumption(result: Any, *, consumer_rechecks: Any) -> ConsumptionA
             f"no consumer re-verification for {missing}; every artifact is re-verified before "
             "any row of it is read"
         )
+    # P-3, second half: the identity map was VERIFIED from one read of
+    # `result._identity` and then PUBLISHED from three more reads of it per pair.
+    # `_identity` is a plain dict as `evaluate_four_limbs` builds it, but so was
+    # every other field before `object.__setattr__` — this package's declared
+    # threat model — and a Mapping that answers differently on each read would
+    # have published an identity nothing compared. Each identity is read once,
+    # here, and that object is what the approval carries.
+    verified: dict[str, _ArtifactIdentity] = {}
     for pair in PAIRS_20:
         recheck = by_pair[pair]
         identity = result._identity[pair]  # noqa: SLF001 - W3 is the accessor
+        if not isinstance(identity, _ArtifactIdentity):
+            raise ProofNotUsableError(
+                f"{pair}: the proof's identity entry is a {type(identity).__name__}, not the "
+                "record evaluate_four_limbs built; the proof was rewritten after construction"
+            )
+        verified[pair] = identity
         if recheck.artifact_id != identity.artifact_id:
             raise ProofDisagreementError(
                 f"{pair}: consumer re-verified artifact {recheck.artifact_id!r} but the proof "
@@ -1570,19 +1716,23 @@ def open_for_consumption(result: Any, *, consumer_rechecks: Any) -> ConsumptionA
                 f"{pair}: the artifact byte size changed between the proof "
                 f"({identity.size_bytes}) and consumption ({recheck.size_bytes}) — terminal"
             )
+    # P-3: every disclosure field published here is the value
+    # `_assert_disclosure_untampered` pinned and checked, never the object it was
+    # handed. A `str` subclass cannot show one spelling to the check and another
+    # to `str()`, `repr()` or an f-string on the approval.
     return ConsumptionApproval(
-        byte_level_status=result.byte_level_status,
-        claim_withheld_because=result.claim_withheld_because,
-        evidence_basis=result.evidence_basis,
-        declared_not_measured=result.declared_not_measured,
-        files_opened=0,
-        bytes_measured=0,
-        inventory_digest=result.inventory_digest,
+        byte_level_status=disclosure.byte_level_status,
+        claim_withheld_because=disclosure.claim_withheld_because,
+        evidence_basis=disclosure.evidence_basis,
+        declared_not_measured=disclosure.declared_not_measured,
+        files_opened=disclosure.files_opened,
+        bytes_measured=disclosure.bytes_measured,
+        inventory_digest=disclosure.inventory_digest,
         identity={
             pair: (
-                result._identity[pair].artifact_id,  # noqa: SLF001 - W3 is the accessor
-                result._identity[pair].sha256,  # noqa: SLF001 - W3 is the accessor
-                result._identity[pair].size_bytes,  # noqa: SLF001 - W3 is the accessor
+                verified[pair].artifact_id,
+                verified[pair].sha256,
+                verified[pair].size_bytes,
             )
             for pair in PAIRS_20
         },
@@ -1608,7 +1758,7 @@ __all__ = [
     "SUBJECT_DERIVED_M15_ARTIFACT",
     "TOKEN_EVIDENTIARY_BASIS",
     "TOKEN_VOCABULARY",
-    "VERIFIER_INDEPENDENCE_BASIS",
+    "VERIFIER_INDEPENDENCE_LIMIT",
     "AggregateAssertionUnsatisfiedError",
     "ConsumerRecheck",
     "ConsumptionApproval",

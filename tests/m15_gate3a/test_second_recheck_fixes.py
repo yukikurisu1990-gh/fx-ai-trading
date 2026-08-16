@@ -460,12 +460,13 @@ def test_bl1_a_complete_roster_records_the_reconciliation_and_its_evidence_basis
     assert proof["files_opened"] == 0 and proof["bytes_measured"] == 0
     assert proof["files_checked"] == 20
     assert proof["expected_pair_count"] == 20
-    assert proof["actual_record_count"] == 20
     assert proof["expected_pairs"] == list(PAIRS_20)
-    assert proof["actual_pairs"] == list(PAIRS_20)
-    assert proof["missing_pairs"] == []
-    assert proof["duplicate_pairs"] == []
-    assert proof["unknown_pairs"] == []
+    # P-6 relocated the roster half of this pin. `actual_pairs`,
+    # `actual_record_count`, `missing_pairs`, `duplicate_pairs`, `unknown_pairs`
+    # and `non_canonical_pair_spellings` could only ever hold the favourable
+    # value on the path that returns, so they are gone; the roster is recovered
+    # from the evidence the guards actually certified.
+    assert [span["pair"] for span in proof["certified_spans"]] == list(PAIRS_20)
 
 
 def test_bl1_forward_role_is_refused_rather_than_pre_deciding_its_shape() -> None:

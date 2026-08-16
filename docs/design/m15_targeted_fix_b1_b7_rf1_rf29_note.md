@@ -280,6 +280,59 @@ and was caught by audit every time, never by the implementer. That is the loop
 working — but the next independent re-check should assume the same pattern rather
 than treat a green suite as evidence of conformance.
 
+## 7c. Fourth round — and where the audit loop actually landed
+
+A second fresh-context re-audit found round 3 held on its three headline
+blockers and broke nothing, but was **incomplete**: its N-2 fix left three live
+routes, its N-1 sweep-scope claim was wrong for two modules, and the R-1 trap
+had a **fourth** instance in `no_overlap` — a module none of the rounds had
+touched. Seven fixes, all closed:
+
+| # | Finding | Fix |
+| --- | --- | --- |
+| P-1 | `declared_not_measured` compared element-wise with unpinned `==`; thirteen `str` subclasses with `__eq__ → True` passed and the **forged tuple was published verbatim** (including one that erased the disclosure entirely) | each element pinned before comparison; the **pinned** tuple published |
+| P-2 | `(files_opened, bytes_measured) != (0, 0)` unpinned — an N-1 miss *inside* the N-2 fix, in a file that already imported `pin_int` | pinned |
+| P-3 | `_pin_token` pinned for the comparison and published the **unpinned original** — B-3's own rule violated inside the fix meant to enforce it. A `str` subclass rendering the claim token under `str()`/`repr()`/f-string minted an approval | publish what was pinned; `inventory_digest` re-checked; **the identity half closed too** (published from three further reads of a map verified from one) |
+| P-4 | `expected_count` unpinned (`LyingInt(999)` accepted where plain `999` refused) | pinned |
+| P-5 | the BL-2/F-1 divergence guard subtracted before pinning, so a `float`-subclass instant liar was accepted where the plain-float liar was refused | both `timestamp()` results pinned before subtracting |
+| P-6 | R-1 fourth instance: six unfalsifiable favourable fields in the roster report | **all six deleted**; the roster is recoverable from `certified_spans`; `expected_pairs`/`expected_pair_count` kept as *requirement* disclosures |
+| P-7 | `verifier_independence_basis` opened with an unfalsifiable favourable clause | **restructured**, not kept and not deleted — renamed to `…_limit` and rewritten to lead with the denial and end `…NOT_EVIDENCE_OF_INDEPENDENCE` |
+
+The round also fixed `numeric_authority`'s `TypeError` escape (its docstring
+promised every function raises `NumericAuthorityError`, and a bare `TypeError`
+escaped the caller's documented wrapping) and a prose arithmetic error in
+`guards.py`.
+
+### The fifth R-1 instance — ruled, not silently kept
+
+The round found a **fifth** instance itself and, correctly, did **not** delete it
+out of scope: `no_overlap.py` `files_checked` is always `20` on the only path
+that returns, for exactly the reason P-6 names. It reported that this weakens
+P-6's coherence — the field deleted as `actual_record_count` is the same number
+`files_checked` still publishes under another name — and asked for a ruling.
+
+**Ruling: retained, and the reason recorded at the emission site.** Unlike
+`actual_record_count`, `files_checked` is named in the committed
+`no_overlap_proof` allowlist, and this Work PR does not change committed
+schemas — the same reasoning that kept `eligible_event_count` in
+`schema_keys_not_verified`. It is recorded as a **residual for the next gate**:
+if the artifact schema is revised, this field goes with `actual_record_count`.
+It must not be read as evidence that twenty files were examined.
+
+### What four rounds actually demonstrated
+
+Each round found real defects the previous round created or missed, and the R-1
+trap fired **five times** — caught by audit every time, never by the
+implementer. Two of those were created by fixes for other findings. The lead's
+own fix instruction was wrong once (`float(value)` is not a pin, because
+`float()` calls `__float__`). An auditor had to withdraw claims it could not
+stand behind, and a mutation study had to correct its own headline figure.
+
+The loop converged — round 4's findings are all bounded defence-in-depth rather
+than exploitable dispositions — but **the honest reading is that this machinery
+needs the independent re-check gate, not this session's assurance.** A green
+suite has been a poor predictor of conformance at every round of this PR.
+
 ## 8. Process deviation — disclosed
 
 During test reconciliation a subagent ran an unscoped `pytest tests/`, which
