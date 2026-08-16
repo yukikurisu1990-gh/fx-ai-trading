@@ -333,19 +333,160 @@ than exploitable dispositions — but **the honest reading is that this machiner
 needs the independent re-check gate, not this session's assurance.** A green
 suite has been a poor predictor of conformance at every round of this PR.
 
-## 8. Process deviation — disclosed
+## 7d. Reclassification of the five "residual blockers"
+
+Earlier drafts of this note called all five **residual blockers**. That label was
+too strong for every one of them. Reclassified against committed authority:
+
+| # | Item | Classification | Authority |
+| --- | --- | --- | --- |
+| 1 | Absent-protected-root name-limb-only case | **Defence-in-depth only** | The identity limb needs the root on disk; all protected roots are **git-tracked**, so a checkout always materialises them and the degraded path is unreachable in practice. The name limb — which is host-independent — still refuses anything *named* under a protected tree. The audit's own scoping was "a verdict flip on the refusal function, **not** a demonstrated write into a protected tree" |
+| 2 | `no_overlap` dead-window limbs unreachable while constants hold | **Defence-in-depth only** | `DEAD_START` is exactly one second after `DESIGN_END` and `_DEAD_END_EXCLUSIVE == FORWARD_FLOOR`, both asserted at import with explicit `raise` (not `assert`, so `python -O` cannot strip them). The ceiling and floor limbs decide every reachable case; these are retained against a future constant edit and are documented as such |
+| 3 | `eligible_event_count` term split | **Non-blocking observation with committed authority** | D-7: committed artifacts are populated by human-reviewed PR diff, and this Work PR does not change committed schemas. The confusable name cannot carry a real count — the allowlist admits it as a *key* (so `design_m15_inventory.json` still scans clean) and flags it as a *numeric* one. §12.20's pinned `complete_bucket_count` is what the code emits. The rename lands with the inventory schema extension at the continuation |
+| 4 | `files_checked` retained by ruling | **Non-blocking observation with committed authority** | Same authority as #3: it is named in the committed `no_overlap_proof` allowlist, so deleting it would desynchronise the emitted record from a committed schema this PR may not change. It is a tautology on the returning path, that is recorded at the emission site, and it is explicitly not to be read as evidence that twenty files were examined |
+| 5 | `measure_pair_coverage` has no bid/ask crossing check | **Defence-in-depth only** | D-1's refusal lives in `aggregation`, which is the only component that sees M1 rows; coverage consumes already-aggregated bars. The forged case is caught anyway by the 20-pair accounting cross-check and by `_assert_bar_certifiable` |
+
+**True residual blockers: zero.** None of the five prevents the contract from
+being satisfied as ruled in PR #443/#444, and each non-blocking item rests on a
+committed authority named above rather than on this session's judgement.
+
+## 7e. D-5.8 — referral status
+
+**Status: `Requires separate contract Gate-decision`.** Verified in the clean
+room at the final head:
+
+- **No implicit default and no invented threshold exists.** A search for a slot
+  count floor across `coverage.py` and `calendar_authority.py` returns only
+  prose; the sole numeric relation is `expected_minutes == 15 × |expected slots|`,
+  which is **arithmetic, not a threshold** (`coverage.py:661`).
+- **It fails closed while undecided.** An empty expected-slot set is refused —
+  *"absence of slots is never a statement that the market was closed"*
+  (`calendar_authority.py:295-296`) — and the referral is recorded in the
+  module's own docstring (`coverage.py:42-48`) rather than left to a reader.
+- **Whether it must resolve before the gate-3a continuation, or may defer, is
+  itself for the next contract Gate-decision.** The literal clause names *"a
+  single instant"*, which needs no invented number, while *"a sparse handful"*
+  does. This session deliberately does **not** decide which, and mints nothing.
+  Meanwhile the operative control is
+  `PRE_CONTINUATION_CALENDAR_ARTIFACT_APPROVAL_REQUIRED`: the expected slot set
+  comes only from an approved calendar artifact, which does not yet exist.
+
+## 8. Process-boundary breach — disclosed, isolated, and revalidated
 
 During test reconciliation a subagent ran an unscoped `pytest tests/`, which
-incidentally executed **host-gated tests that read local M1 data and a live
-`DATABASE_URL`**. Those tests skip in a clean environment and none imports
-`m15_gate3a`. The run was read-only; **no artifact was created or modified** (the
-untracked `artifacts/*.log` files all predate this session), no M15 was derived,
-no checksum or spread computed, and no evidence was produced or relied upon.
+incidentally executed **host-gated tests that read local research data and
+connected to a live database**. This section replaces an earlier version of it.
 
-It was nonetheless outside this PR's forbidden-action boundary and is recorded
-here rather than omitted. Every subsequent run — including the whole mutation
-study — was explicitly scoped to `tests/m15_gate3a/`, and later subagents were
-instructed not to repeat it.
+> **CORRECTION.** The earlier disclosure said *"The run was read-only."* **That
+> was wrong.** A later boundary investigation established from source that the
+> DB-gated tests perform `INSERT` / `UPDATE` / `DELETE`. The claim is withdrawn
+> and corrected below rather than amended silently. Nothing here rewrites the
+> history — the run happened, and it wrote.
+
+### What the run actually touched
+
+- **A live database, with writes.** The integration tests call
+  `load_dotenv(<repo>/.env, override=False)` at import, so `DATABASE_URL` was
+  available even though the shell environment was clean. In a clean room
+  **41 tests skip on `DATABASE_URL not set`**; those are exactly the ones that
+  executed here. They `INSERT` / `DELETE` / `UPDATE` fixture rows (brokers,
+  accounts, instruments, orders, positions) under fixed test IDs, with explicit
+  teardown `DELETE`s.
+- **Local research data, read only.** Four tests are gated on real M1 / curated
+  data being present (`tests/unit/test_stage24_1a_*`, `test_stage25_0*`,
+  `test_stage27_0f_*`, `tests/ml_step4/test_inventory.py`,
+  `tests/unit/test_calendar_service.py`). The host carries 358 untracked
+  `data/*.jsonl` M1 files; the repo tracks one CSV.
+
+### What it did **not** do
+
+- **No schema migration ran.** The only destructive schema test —
+  `tests/migration/test_roundtrip.py`, whose own docstring warns it *"drops all
+  44 D1 tables. Any data in the DB is lost."* — is excluded by
+  `pyproject.toml` `addopts = "… --ignore=tests/migration/test_roundtrip.py"`.
+  The two other migration tests that mention `downgrade` only assert that
+  `upgrade`/`downgrade` are **callable**; they never execute them and make no DB
+  contact.
+- **No tracked evidence was modified.** `tests/conftest.py` carries a
+  session-wide autouse fixture that hashes the eight protected tracked artifacts
+  at session start and **fails the session at teardown** if any changed. It did
+  not fire, and `git diff HEAD -- artifacts/` is empty.
+- **No artifact was produced.** Every untracked `artifacts/*.log` predates this
+  session.
+- **No credential was exposed.** `.env` is gitignored, **never tracked and never
+  committed** (`git log --all -- .env` is empty); the PR diff contains no
+  credential-shaped content; the PR body names `DATABASE_URL` only as an
+  identifier. No secret value was read, printed, copied or recorded during the
+  investigation.
+
+### Evidence discarded
+
+**The entire unscoped run is excluded from this PR's verification evidence.** No
+B-1…B-7 disposition, no RF-1…RF-29 disposition, no §12 conformance verdict and
+no mutation result rests on it — every such result came from runs scoped to
+`tests/m15_gate3a/` (plus `tests/contract/`), and all of them have now been
+re-derived in a clean room (§8a).
+
+### Residual exposure this session cannot close
+
+Whether the database that received those writes is a development or a
+production instance is **not determinable without reading the credential**,
+which is forbidden. The writes were test-scoped and self-cleaning, and no schema
+change occurred — but **confirming the target instance is a human decision**, and
+it is recorded here as an open process item rather than assumed benign.
+
+## 8a. Clean-room revalidation
+
+The final head was re-verified in an isolated environment built from
+`git archive c2ef65a`, containing **no `.env`, no `data/*.jsonl`, no model
+binaries**, with `DATABASE_URL` and every broker/storage credential unset, a
+temporary `HOME`/`TMPDIR`, and a **clean `pip install -e ".[dev]"`** (never
+`uv` — the lockfile is known-stale). Isolation was asserted in-process before
+any test ran.
+
+| Gate | Clean-room result |
+| --- | --- |
+| custom checks | exit 0 |
+| `ruff check` / `ruff format --check` | clean · 664 files formatted |
+| **M15 gate-3a suite** (B-1…B-7, RF-1…RF-29, §12 conformance) | **1100 passed, 1 skipped** |
+| contract tests | **500 passed** |
+| mutation battery over the contract's load-bearing limbs | **11 applied, 11 killed, 0 survived** |
+
+The clean-room figures are **identical** to those obtained on the host, so the
+acceptance evidence demonstrably does not depend on the breached resources.
+
+**Regression check against base.** `tests/unit` + `tests/ml_step4` were run in
+the clean room at both `ea40d2f` and `c2ef65a`: **27 failed / 3277 passed / 13
+skipped at each, with byte-identical failing-test sets.** PR #445 introduces
+**zero** new failures. Those 27 are pre-existing environment failures — tests
+that *fail* rather than *skip* when research data is absent, which is itself the
+follow-up issue in §8b.
+
+**Mutation honesty note.** The first clean-room batch reported two survivors and
+two spec-errors. On inspection all four were **harness defects, not test gaps**:
+one pattern matched a docstring instead of the code, one changed only an
+exception message that still substring-matched, and two patterns did not exist.
+Re-run against the real code sites, all four were **KILLED**. The corrected
+total is 11 valid mutants, 11 killed.
+
+## 8b. Follow-up issue — test-safety (separate Work PR, not this one)
+
+Not fixed here: changing the host-gated tests is unrelated to this PR's
+targeted-fix objective, and folding it in would violate one-objective-per-PR.
+Recorded for a separate **test-safety / infra Work PR**:
+
+1. A repository-wide `pytest` run must not enable local-data or live-database
+   tests on **mere resource presence**. Today `load_dotenv(...)` at import plus
+   `skipif(not DATABASE_URL)` means *having a `.env` on the machine* silently
+   opts you in.
+2. Live and real-data tests must require **explicit opt-in** (a marker plus a
+   deliberate flag or environment variable), not implicit availability.
+3. **Default test execution must touch no external or local research data**, and
+   no database.
+4. Tests that currently **fail** rather than **skip** when research data is
+   absent should be re-gated — the 27 pre-existing failures above are that
+   defect, and they make a clean-room run indistinguishable from a real
+   regression at a glance.
 
 ---
 
