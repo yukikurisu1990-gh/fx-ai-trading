@@ -59,6 +59,10 @@ Earlier re-check fixes retained:
   not appear twice: one record is one source minute, never fifteen.
 * **RF-18** — ``spread_open`` is emitted alongside ``spread_close``.
 * **R-6** — derived outputs are re-checked finite, not only the inputs.
+* **N-1** — every caller-supplied number is pinned to its plain character data
+  by :mod:`scripts.m15_gate3a.numeric_authority` *before* any comparison, so a
+  ``float`` subclass with an overridden ``__lt__`` can no longer decide whether
+  its own quote is crossed. See :func:`_assert_row_usable`.
 """
 
 from __future__ import annotations
@@ -68,6 +72,7 @@ from collections.abc import Mapping
 from datetime import datetime, timedelta
 from typing import Any, Final
 
+from .numeric_authority import NumericAuthorityError, pin_number
 from .pair_authority import canonical_pair, pip_size_for_pair
 from .timeutil import TimestampError, to_utc_minute
 
@@ -161,13 +166,30 @@ def _assert_row_usable(row: dict[str, Any], minute: datetime) -> None:
     D-2: there is no tolerance here. A row that violates the contract does not
     produce a smaller count — it refuses, and the bucket and file are not
     certifiable.
+
+    **N-1 — the numbers are pinned before anything is compared.** The type test
+    was ``isinstance(v, (int, float))``, which admits a *subclass*, and every
+    crossed-quote and coherence decision below was then a ``<`` / ``>`` against
+    the caller's own object. A two-faced ``float`` subclass overriding the
+    ordering dunders therefore answered "not crossed" to D-1 on a bucket whose
+    ask sat below its bid on all fifteen rows, and produced
+    ``n_source_bars=15, eligible=True, complete_bucket=True`` where the identical
+    plain-``float`` crossings refused 12 out of 12. The snapshot's values are
+    replaced **in place** with their plain character data
+    (:mod:`~scripts.m15_gate3a.numeric_authority`), so validation, bar
+    construction and the re-assertion on the derived bar all read the same
+    pinned numbers and no caller-controlled ``__lt__`` is ever consulted. This
+    is the numeric member of the family already closed for ``str`` (RF-6/RF-20),
+    ``Path`` (RF-5), ``datetime`` (BL-2) and ``Sequence`` (RF-4).
     """
     for k in _SIDE_KEYS:
-        v = row[k]
-        if isinstance(v, bool) or not isinstance(v, (int, float)):
-            raise AggregationError(f"M1 row key {k!r} must be numeric")
+        try:
+            v = pin_number(row[k], what=f"M1 row key {k!r}")
+        except NumericAuthorityError as exc:
+            raise AggregationError(f"M1 row key {k!r} must be numeric ({exc})") from exc
         if not math.isfinite(v):
             raise AggregationError(f"M1 row key {k!r} is non-finite ({v!r})")
+        row[k] = v
     _assert_row_coherent(row, minute)
     _assert_not_crossed(row, minute)
 

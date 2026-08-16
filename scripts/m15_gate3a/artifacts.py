@@ -26,6 +26,21 @@ a scrubber. This module folds NFKC, confusable (Cyrillic/Greek) homoglyphs,
 combining marks and zero-width/format characters, then scans **substrings**, in
 the manner :mod:`scripts.foundation_t2.scrub` already does in-repo.
 
+Two rules were added by the second-round audit:
+
+* **N-3 — the byte-level claim vocabulary is unwritable.** The scan vocabulary
+  is derived from ``FORBIDDEN_STATUSES`` *and*
+  :data:`~scripts.m15_gate3a.guards.UNWRITABLE_BYTE_LEVEL_CLAIM_TOKENS`. Before
+  that, a ``no_overlap_proof.json`` payload carrying ``"result":
+  "BYTE_LEVEL_NO_DEAD_WINDOW_OVERLAP_PROVEN"`` and a
+  ``MEASURED_FROM_DERIVED_ARTIFACT_BYTES__...`` source scanned clean and wrote,
+  while the strictly weaker ``BYTE_ADMISSIBLE`` was refused.
+* **§12.23 at the writer** — a timestamp rendered as ``...+00:00`` rather than
+  the canonical ``...Z`` is a finding. Every producer in this package already
+  goes through ``timeutil.format_utc_z``; the writer is where a payload that
+  never called it is still catchable. See :func:`_scan_timestamp_spelling` for
+  exactly how narrow the rule is.
+
 **What this module actually guarantees (RF-15).** The previous docstring claimed
 it "refuses to write under any protected real path". That was false and is not
 restated. What is true:
@@ -65,7 +80,12 @@ from typing import Any, Final
 
 from scripts.ml_step4 import evidence
 
-from .guards import FORBIDDEN_STATUSES, is_forbidden_status, refuse_real_path
+from .guards import (
+    FORBIDDEN_STATUSES,
+    UNWRITABLE_BYTE_LEVEL_CLAIM_TOKENS,
+    is_forbidden_status,
+    refuse_real_path,
+)
 from .pair_authority import PAIRS_20
 
 
@@ -209,8 +229,15 @@ def _dense(text: str) -> str:
 # claim; new labels added to `FORBIDDEN_STATUSES` therefore default to the
 # stricter treatment.
 _AMBIGUOUS_CLAIM_KEYS: Final[frozenset[str]] = frozenset({"PASS", "MEETS", "ROBUST", "VALIDATED"})
+# N-3: the byte-level claim vocabulary joins the substring scan. Each entry is a
+# long, unique, registered spelling, so it belongs to the *unambiguous* class by
+# the same rule as every other label here — a dense substring hit on
+# `BYTELEVELNODEADWINDOWOVERLAPPROVEN` or `MEASUREDFROMDERIVEDARTIFACTBYTES` is a
+# claim, never English. Listing the evidence-basis ROOT is what catches the two
+# full basis sentences and any future `..._BYTES__<whatever>` variant of them.
 _UNAMBIGUOUS_CLAIM_KEYS: Final[frozenset[str]] = (
-    frozenset(_dense(s) for s in FORBIDDEN_STATUSES) - _AMBIGUOUS_CLAIM_KEYS
+    frozenset(_dense(s) for s in (FORBIDDEN_STATUSES | UNWRITABLE_BYTE_LEVEL_CLAIM_TOKENS))
+    - _AMBIGUOUS_CLAIM_KEYS
 )
 # Words that turn an ambiguous token into an assertion about the subject.
 _CLAIM_CONNECTORS: Final[str] = (
@@ -790,6 +817,16 @@ def _is_numeric(value: Any) -> bool:
     return isinstance(value, (int, float)) and not isinstance(value, bool)
 
 
+# §12.23 — an ISO date-time carrying an explicit NUMERIC UTC offset instead of
+# the canonical `Z`. `datetime.isoformat()` renders exactly this. Both ISO
+# decimal separators are admitted in the fraction and both offset spellings
+# (`+00:00`, `+0000`) are matched, since either would be an isoformat-family
+# rendering; `Z` is the canonical form and is not matched.
+_ISO_OFFSET_TIMESTAMP_RE: Final[re.Pattern[str]] = re.compile(
+    r"\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}(?::\d{2})?(?:[.,]\d+)?[+-]\d{2}:?\d{2}"
+)
+
+
 def _non_finite(value: Any) -> bool:
     """D6 / RF-10: ``json.dumps`` emits the non-standard ``NaN`` / ``Infinity``.
 
@@ -818,6 +855,34 @@ def _scan_value_claims(value: Any, findings: list[str], *, exempt: bool) -> None
         return
     for hit in _claim_keys(value):
         findings.append(f"gate3a_forbidden_status_value:{hit}")
+
+
+def _scan_timestamp_spelling(text: Any, findings: list[str], key_label: str | None) -> None:
+    """§12.23 at the writer: refuse a timestamp rendered with a numeric offset.
+
+    :func:`scripts.m15_gate3a.timeutil.format_utc_z` is the single emission
+    authority and renders ``YYYY-MM-DDTHH:MM:SSZ``. §12.23 says the
+    ``datetime.isoformat()`` spelling — which yields ``+00:00`` — "must not reach
+    **any artifact**", and every *producer* in this package obeys that. Nothing
+    enforced it at the **writer**, which is the chokepoint where a payload
+    assembled by a caller that never called the formatter is still catchable: a
+    ``{"ts_min_utc": "2025-06-02T00:00:00+00:00"}`` payload scanned with
+    ``findings == []`` and wrote.
+
+    Deliberately narrow. This is a **spelling** check on values that already look
+    like timestamps, not a schema requirement that any key must carry one: only a
+    complete ``YYYY-MM-DDTHH:MM`` followed by an explicit numeric offset is a
+    finding. A bare date (``"2026-07-07"``), a date inside prose, and the
+    committed nine-zero-digit form ``"2025-04-24T22:03:00.000000000Z"`` — which
+    §12.23 expressly accepts, since all-zero excess carries no information — are
+    untouched. It is applied to keys as well as values, and is **not** exempted
+    inside a prohibition list, because a prohibition list has no occasion to
+    carry a timestamp at all.
+    """
+    if not isinstance(text, str):
+        return
+    for match in _ISO_OFFSET_TIMESTAMP_RE.finditer(_pin(text)):
+        findings.append(f"gate3a_non_canonical_timestamp:{key_label}:{match.group(0)}")
 
 
 # ---------------------------------------------------------------------------
@@ -873,6 +938,7 @@ def _scan_declared(
             if folded not in schema.allowed_keys:
                 findings.append(f"gate3a_undeclared_key:{pinned}")
             _scan_key_claims(pinned, value, findings)
+            _scan_timestamp_spelling(pinned, findings, key_label)
             child_exempt = exempt or folded in schema.prohibition_list_keys
             _scan_declared(
                 value,
@@ -924,6 +990,7 @@ def _scan_declared(
                 findings.append(f"gate3a_numeric_series_under_declared_key:{key_label}")
     elif isinstance(obj, str):
         _scan_value_claims(obj, findings, exempt=exempt)
+        _scan_timestamp_spelling(obj, findings, key_label)
         if exempt and len(_pin(obj)) > _MAX_PROHIBITION_ENTRY_LEN:
             findings.append(f"gate3a_prohibition_entry_too_long:{key_label}")
     elif obj is not None and not isinstance(obj, bool):
@@ -996,6 +1063,7 @@ def _scan_undeclared(
                 continue
             pinned = _pin(key)
             _scan_key_claims(pinned, value, findings)
+            _scan_timestamp_spelling(pinned, findings, key_label)
             _scan_undeclared(value, findings, counters, key_label=pinned)
         return
     if isinstance(obj, (list, tuple)):
@@ -1018,6 +1086,7 @@ def _scan_undeclared(
             findings.append("gate3a_numeric_cardinality_exceeded")
     elif isinstance(obj, str):
         _scan_value_claims(obj, findings, exempt=False)
+        _scan_timestamp_spelling(obj, findings, key_label)
 
 
 # ---------------------------------------------------------------------------

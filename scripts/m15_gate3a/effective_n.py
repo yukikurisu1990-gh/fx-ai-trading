@@ -45,6 +45,7 @@ import math
 from collections.abc import Sequence
 from typing import Any, Final
 
+from .numeric_authority import NumericAuthorityError, pin_int, pin_number
 from .pair_authority import PAIRS_20, PairAuthorityError, canonical_pair
 
 HORIZON_M15_BARS: Final[int] = 24
@@ -96,15 +97,34 @@ class CountQuantityError(EffectiveNError):
 
 
 def _require_count(value: Any, what: str) -> int:
-    if isinstance(value, bool) or not isinstance(value, int) or value < 0:
+    """A non-negative count, pinned to plain ``int`` character data first (N-1).
+
+    ``value < 0`` used to be asked of the caller's own object, so an ``int``
+    subclass overriding ``__lt__`` walked ``raw_event_count = -100`` through and
+    the record echoed it. The count is now read through
+    :func:`~scripts.m15_gate3a.numeric_authority.pin_int`, which returns the
+    integer the object actually holds, and the returned value is that plain
+    ``int`` — so nothing downstream carries the subclass either.
+    """
+    try:
+        pinned = pin_int(value, what=what)
+    except NumericAuthorityError as exc:
+        raise EffectiveNError(f"{what} must be a non-negative integer") from exc
+    if pinned < 0:
         raise EffectiveNError(f"{what} must be a non-negative integer")
-    return value
+    return pinned
 
 
 def _require_unit_fraction(value: Any, what: str) -> float:
+    """A finite fraction in ``[0, 1]``.
+
+    N-1: ``float(value)`` is **not** a pin — it calls ``type(value).__float__``,
+    so a subclass overriding it reports whatever it likes (measured:
+    ``float(F(-5.0)) == 0.0``). The base-class slot is used instead.
+    """
     if isinstance(value, bool) or not isinstance(value, (int, float)):
         raise EffectiveNError(f"{what} must be a number")
-    v = float(value)
+    v = float(pin_number(value, what=what))
     if not math.isfinite(v) or not (0.0 <= v <= 1.0):
         raise EffectiveNError(f"{what} must be a finite number in [0, 1]")
     return v
@@ -120,7 +140,9 @@ def _require_positive_floor(value: Any, what: str, *, integral: bool) -> float:
             raise EffectiveNError(f"{what} must be an integer")
     elif not isinstance(value, (int, float)):
         raise EffectiveNError(f"{what} must be a number")
-    v = float(value)
+    # N-1: same pin as above — a floor is what decides INSUFFICIENT_SAMPLE, so a
+    # subclass must not be able to report one value here and another to `<`.
+    v = float(pin_number(value, what=what))
     if not math.isfinite(v) or v <= 0:
         raise EffectiveNError(f"{what} must be a finite positive number")
     return v
@@ -238,7 +260,14 @@ def effective_n(
     records = _normalise_pairs(per_pair)
     corr = _require_unit_fraction(cross_pair_corr, "cross_pair_corr")
 
-    if isinstance(horizon_bars, bool) or not isinstance(horizon_bars, int) or horizon_bars < 1:
+    # N-1: pinned before the bound test and the frozen-value test, so an `int`
+    # subclass cannot answer one way to `< 1` / `!= 24` and another to the
+    # `rho_h` arithmetic below.
+    try:
+        horizon_bars = pin_int(horizon_bars, what="horizon_bars")
+    except NumericAuthorityError as exc:
+        raise EffectiveNError("horizon_bars must be a positive integer") from exc
+    if horizon_bars < 1:
         raise EffectiveNError("horizon_bars must be a positive integer")
     if horizon_bars != HORIZON_M15_BARS:
         # R-1: the horizon is frozen at 24 by Ruling 6. Pinning it only for the

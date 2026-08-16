@@ -233,6 +233,53 @@ falsified one mutation result (same-size edit inside one second). Every mutation
 run here used `PYTHONDONTWRITEBYTECODE=1`. Any future mutation study on this
 suite should do the same or it may silently under-report survivors.
 
+## 7b. Second audit round — a fresh-context re-audit found the first round defective
+
+Policy §13.3 step 7 requires the fixes be re-verified in a context that does not
+inherit the first conclusions. That re-audit found **three more blockers**, two
+of which the lead reproduced independently. This section records them because
+the pattern matters more than any individual defect.
+
+| Finding | Evidence | Disposition |
+| --- | --- | --- |
+| **N-1 — a lying `float` subclass defeated D-1** | Crossed-quote rows yielded `n_source_bars=15, eligible=True, complete_bucket=True` while identical plain-`float` crossings refused 12/12. Also reached `cost_schema` (`min_observed_spread_pips = -50000.0`) and `effective_n` (`raw = -100` accepted) | **Closed.** New `numeric_authority.py` pins numeric character data through the **unbound** `float.__float__` / `int.__index__` slots |
+| **N-2 — `open_for_consumption` minted a record carrying a claim token** | An `object.__setattr__`-tampered `ProofResult` produced a fresh `ConsumptionApproval` asserting `MEASURED_FROM_DERIVED_ARTIFACT_BYTES…` beside `files_opened=0` | **Closed.** All six token fields re-checked, mirroring `_limb_cv`'s existing `per_pair` re-check |
+| **N-3 — the byte-level claim token was writable into a scrub-clean artifact** | **No tampering needed**: `is_forbidden_status` was `False` for the claim token while `BYTE_ADMISSIBLE` — a strictly weaker claim — was `True`. A `no_overlap_proof.json` asserting the claim scanned clean and wrote | **Closed.** `UNWRITABLE_BYTE_LEVEL_CLAIM_TOKENS`, cross-checked **at import** so a rename cannot make a token writable |
+| **N-4 — the R-1 trap fired a THIRD time** | `CoverageResult.pairs_measured = tuple(PAIRS_20)` asserted a favourable constant — the same field deleted from `ProofResult` for that exact reason | **Closed by deletion**; the roster is recovered from `per_pair` |
+| **N-5 — `copy.deepcopy` / `pickle` bypassed the one-shot construction tokens** | Two forged `ValidatedCalendar`s driven to a satisfied `CoverageResult` | **Closed** on all five token-bearing records; the docstrings claiming the token "removes the public-API route" corrected — `deepcopy` *is* the public API |
+| **N-6 — two guards closed but unpinned** | Re-established by the new-guard mutation study with reachability controls | **Pinned by tests; source deliberately unchanged** — the study scoped these as a defence-in-depth loss and a verdict flip, explicitly **not** "bypass proven" |
+| **§12.23 unenforced at the writer** | An `isoformat` timestamp scanned clean and wrote, though every producer was correct | **Closed** with a narrow spelling rule (full date-time bearing a *numeric* offset only) |
+
+**Three corrections to this document's own earlier claims**, recorded rather than
+quietly amended:
+
+1. §7's *"Nothing was referred as `Requires separate contract Gate-decision`"* was
+   contradicted by §7a in the same document, which refers exactly that for D-5.8.
+   §7a is correct.
+2. §7a's *"every constant asserting a favourable property was deleted"* was false
+   when written — `pairs_measured` survived (N-4). It is true now.
+3. The lead's own fix instruction to *"reuse `float(value)`"* would **not** have
+   closed N-1: `float()` calls `__float__`, so a subclass still controls it.
+   Measured: `float(F(-5.0)) == 0.0` versus `float.__float__(F(-5.0)) == -5.0`.
+   The implementer caught this and used the unbound slot.
+
+**Beyond the brief**, the fix round found `warmup.py` unswept — the T-1 leakage
+boundary `w_bars < longest_feature_lookback_bars` was decided against the
+caller's object — and swept it.
+
+**Verification:** a 73-test revert harness, **100 % killed, zero pass-throughs**,
+tree restored byte-identically. It caught six of the round's *own* new tests that
+were controls rather than pins (an ordering-liar cannot defeat `==`), which were
+then completed. Separately, a mutation study of the round-1 guards ran 42 mutants:
+**38 killed, 2 import-refused, 2 survived** — the two survivors being N-6, pinned
+here.
+
+**The honest summary of this PR's fix cycle:** three rounds, and each round found
+real defects the previous one created or missed. The R-1 trap fired three times
+and was caught by audit every time, never by the implementer. That is the loop
+working — but the next independent re-check should assume the same pattern rather
+than treat a green suite as evidence of conformance.
+
 ## 8. Process deviation — disclosed
 
 During test reconciliation a subagent ran an unscoped `pytest tests/`, which

@@ -737,7 +737,9 @@ def test_the_calendar_never_shrinks_to_what_was_observed() -> None:
 def test_full_set_equality_over_20_pairs_is_the_coverage_conjunction() -> None:
     result = assert_full_coverage(full_measurements(), valid_calendar(), expected_epoch=EPOCH)
     assert isinstance(result, CoverageResult)
-    assert result.pairs_measured == PAIRS_20
+    # N-4: the roster is recovered from the per-pair MEASUREMENTS, not read off a
+    # `pairs_measured` field that was assigned `tuple(PAIRS_20)` unconditionally.
+    assert tuple(entry.pair for entry in result.per_pair) == PAIRS_20
     assert len(result.per_pair) == len(PAIRS_20)
     assert all(p.expected_slot_count == len(SLOTS) for p in result.per_pair)
 
@@ -1283,7 +1285,6 @@ def test_a_hand_built_coverage_result_cannot_be_constructed_at_all() -> None:
             per_pair=(
                 PairCoverage(pair=p, expected_slot_count=0, certified_slot_count=0) for p in ()
             ),
-            pairs_measured=(),
         )
 
 
@@ -1920,7 +1921,7 @@ def test_insufficient_coverage_raises_rather_than_returning_a_flag() -> None:
     # There is no `satisfied` flag to read: R-1 deletes a field that can only
     # ever hold one value, and the object's existence IS the conjunction.
     result = assert_full_coverage(full_measurements(), valid_calendar(), expected_epoch=EPOCH)
-    assert result.pairs_measured == PAIRS_20
+    assert tuple(entry.pair for entry in result.per_pair) == PAIRS_20
     assert {entry.pair for entry in result.per_pair} == set(PAIRS_20)
     assert all(entry.certified_slot_count == len(SLOTS) for entry in result.per_pair)
 

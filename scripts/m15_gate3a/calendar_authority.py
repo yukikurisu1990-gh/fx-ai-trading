@@ -124,16 +124,43 @@ class _CalendarConstructionToken:
     spent by the first construction so :func:`dataclasses.replace` cannot reuse
     it to mint a variant.
 
-    **What it does not do.** Python has no enforced privacy: a caller that
-    reaches into this module's private names can mint a token. The guard removes
-    the *public-API* route, not every route, and the module states that rather
-    than claiming an unforgeable capability.
+    **N-5 — the copy protocols were public API and are now refused.** This
+    docstring used to say the guard "removes the *public-API* route". It did
+    not: ``copy.copy``, ``copy.deepcopy`` and ``pickle`` are public API, and all
+    three rebuild a frozen ``slots`` dataclass through ``__reduce_ex__`` without
+    running ``__post_init__``, so each minted a calendar having spent no token.
+    The audit deep-copied a validated calendar, rewrote ``authority`` to "THE
+    OBSERVED DATA ITSELF" with ``object.__setattr__``, deep-copied *that* into a
+    second free instance, and drove both through coverage. All three protocols
+    now raise (:func:`_refuse_reconstruction`).
+
+    **What it still does not do.** Python has no enforced privacy: a caller that
+    reaches into this module's private names can mint a token, and
+    ``object.__setattr__`` still rewrites a real instance. The guard removes the
+    public-API construction routes, not every route, and the consumers re-check
+    what they depend on (see ``coverage.assert_full_coverage``'s dead-window and
+    design-epoch re-scan of the expected slot set) rather than trusting the type.
     """
 
     __slots__ = ("spent",)
 
     def __init__(self) -> None:
         self.spent = False
+
+
+def _refuse_reconstruction(self: Any, *_args: Any) -> None:
+    """Refuse ``copy.copy`` / ``copy.deepcopy`` / ``pickle`` (N-5).
+
+    Each of these rebuilds the instance without ``__post_init__``, which is
+    where the one-shot construction token is spent. A duplicated
+    :class:`ValidatedCalendar` is a second assertion about market hours that
+    :func:`validate_calendar` never made.
+    """
+    raise CalendarConstructionError(
+        f"a {type(self).__name__} may not be copied, deep-copied or pickled; those protocols "
+        "rebuild it without spending a construction token, so the copy would be a caller's own "
+        "assertion about market hours rather than a validated artifact"
+    )
 
 
 @dataclass(frozen=True, slots=True)
@@ -169,6 +196,10 @@ class ValidatedCalendar:
             )
         token.spent = True
         object.__setattr__(self, "_construction_token", None)
+
+    __copy__ = _refuse_reconstruction
+    __deepcopy__ = _refuse_reconstruction
+    __reduce__ = _refuse_reconstruction
 
     def expected_slots(self, pair: object) -> frozenset[datetime]:
         """Expected M15 slots for ``pair``, exactly as the artifact declared them."""

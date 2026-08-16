@@ -11,6 +11,7 @@ from __future__ import annotations
 import math
 from typing import Any, Final
 
+from .numeric_authority import NumericAuthorityError, pin_number
 from .pair_authority import PAIRS_20, canonical_pair, pip_size_for_pair
 
 SESSIONS_UTC: Final[dict[str, str]] = {
@@ -129,15 +130,39 @@ def _check_stress_forms(value: Any) -> None:
         raise CostSchemaError(f"stress_forms carries unauthorised form(s) {unauthorised!r}")
 
 
+def _pin_numeric(value: Any, *, what: str) -> Any:
+    """Plain numeric character data for a number; anything else unchanged (N-1).
+
+    ``isinstance(v, (int, float))`` admits a *subclass*, and a subclass owns
+    ``__lt__`` and ``__eq__``. The audit drove a ``float`` subclass whose
+    ordering dunders always answer "not less" straight through the
+    non-negativity guard below: ``median_spread = -5.0`` validated as
+    ``COST_TABLE_SCHEMA_VALID`` and the summary reported
+    ``min_observed_spread_pips = -50000.0``. Every number this validator
+    compares is therefore read once, as its plain character data.
+
+    Non-numbers pass through untouched so the *existing* refusal for each field
+    keeps firing with its own message — this closes a lying comparison without
+    re-routing a type error to a different raise site.
+    """
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        return value
+    return pin_number(value, what=what)
+
+
 def _check_magnitude_bound(bound: Any) -> float | None:
     """Validate a caller-supplied pip-unit magnitude bound, or accept 'none declared'."""
     if bound is None:
         return None
     if isinstance(bound, bool) or not isinstance(bound, (int, float)):
         raise CostSchemaError("max_spread_pips must be a number or None")
-    if not math.isfinite(bound) or bound <= 0:
+    try:
+        value = pin_number(bound, what="max_spread_pips")
+    except NumericAuthorityError as exc:  # pragma: no cover - guarded above
+        raise CostSchemaError(str(exc)) from exc
+    if not math.isfinite(value) or value <= 0:
         raise CostSchemaError("max_spread_pips must be a finite positive number of pips")
-    return float(bound)
+    return float(value)
 
 
 def validate_cost_table(table: Any, *, max_spread_pips: float | None) -> dict:
@@ -173,9 +198,11 @@ def validate_cost_table(table: Any, *, max_spread_pips: float | None) -> dict:
     for k in _REQUIRED_GLOBAL_KEYS:
         if k not in table:
             raise CostSchemaError(f"cost table missing global key {k!r}")
-    if table["execution_padding_pip"] != EXECUTION_PADDING_PIP:
+    padding = _pin_numeric(table["execution_padding_pip"], what="execution_padding_pip")
+    if padding != EXECUTION_PADDING_PIP:
         raise CostSchemaError("execution_padding_pip must be 0.3")
-    if table["flat_slippage_cell_pip"] != FLAT_SLIPPAGE_CELL_PIP:
+    slippage = _pin_numeric(table["flat_slippage_cell_pip"], what="flat_slippage_cell_pip")
+    if slippage != FLAT_SLIPPAGE_CELL_PIP:
         raise CostSchemaError("flat_slippage_cell_pip must be 0.5")
     if table["claim_scope"] != CLAIM_SCOPE:
         raise CostSchemaError(f"claim_scope must be the committed plan's spelling {CLAIM_SCOPE!r}")
@@ -214,7 +241,7 @@ def validate_cost_table(table: Any, *, max_spread_pips: float | None) -> dict:
                 f"pair must be the canonical spelling {pair!r}, got {e['pair']!r}"
             )
         expected_pip = pip_size_for_pair(pair)
-        if e["pip_size"] != expected_pip:
+        if _pin_numeric(e["pip_size"], what="pip_size") != expected_pip:
             raise CostSchemaError(
                 f"pip_size {e['pip_size']} for {pair} != authority {expected_pip}"
             )
@@ -225,6 +252,9 @@ def validate_cost_table(table: Any, *, max_spread_pips: float | None) -> dict:
             # old check silently accepted non-finite spreads).
             if isinstance(v, bool) or not isinstance(v, (int, float)):
                 raise CostSchemaError(f"{stat} for {pair}/{session} must be a number")
+            # N-1: pin the character data BEFORE the sign test. `v < 0` asked a
+            # caller-controlled `__lt__` whether the spread was negative.
+            v = pin_number(v, what=f"{stat} for {pair}/{session}")
             if not math.isfinite(v) or v < 0:
                 raise CostSchemaError(
                     f"{stat} for {pair}/{session} must be a finite non-negative number"

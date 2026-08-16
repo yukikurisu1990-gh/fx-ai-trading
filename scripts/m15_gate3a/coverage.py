@@ -62,6 +62,7 @@ from typing import Any, Final
 
 from scripts.m15_gate3a.calendar_authority import SLOT_MINUTES, ValidatedCalendar
 from scripts.m15_gate3a.no_overlap import DESIGN_END, DESIGN_START, is_dead_window_instant
+from scripts.m15_gate3a.numeric_authority import NumericAuthorityError, pin_int
 from scripts.m15_gate3a.pair_authority import PAIRS_20, PairAuthorityError, canonical_pair
 from scripts.m15_gate3a.timeutil import TimestampError, to_utc
 
@@ -140,6 +141,20 @@ class _CoverageConstructionToken:
     ``object.__setattr__`` can still tamper with a real record after the fact.
     That is why :func:`assert_full_coverage` and the proof's CV limb re-check the
     invariants they depend on instead of trusting the type alone.
+
+    **N-5 — the copy protocols were a public-API route and are now closed.** An
+    earlier revision of this docstring said the token "makes the *public-API*
+    route impossible". That was false: ``copy.copy``, ``copy.deepcopy`` and
+    ``pickle`` are all public API and all reconstruct a frozen ``slots``
+    dataclass through ``__reduce_ex__`` **without calling ``__post_init__``**, so
+    each one minted a fresh record having spent no token. The audit drove two
+    forged ``ValidatedCalendar`` objects (``authority="THE OBSERVED DATA
+    ITSELF"``) to a satisfied ``CoverageResult`` that way. Every token-bearing
+    record in this package now refuses all three (:func:`_refuse_reconstruction`).
+    ``dataclasses.replace`` and subclassing were already refused. What remains
+    open — and is stated rather than claimed away — is that a caller reaching
+    into private names, or using ``object.__setattr__`` on a real record, is
+    still not stopped by any of this; the re-checks are what cover that.
     """
 
     __slots__ = ("purpose", "spent")
@@ -147,6 +162,22 @@ class _CoverageConstructionToken:
     def __init__(self, purpose: str) -> None:
         self.purpose = purpose
         self.spent = False
+
+
+def _refuse_reconstruction(self: Any, *_args: Any) -> None:
+    """Refuse ``copy.copy`` / ``copy.deepcopy`` / ``pickle`` (N-5).
+
+    All three rebuild the instance without running ``__post_init__``, so all
+    three re-mint a construction-token-bearing record for free. A record that
+    only :func:`measure_pair_coverage` or :func:`assert_full_coverage` may mint
+    is not a value that may be duplicated: a second copy asserts a second
+    measurement that never happened.
+    """
+    raise CoverageConstructionError(
+        f"a {type(self).__name__} may not be copied, deep-copied or pickled; those protocols "
+        "rebuild the record without spending a construction token, so the copy would assert a "
+        "measurement that was never made"
+    )
 
 
 _MEASUREMENT_PURPOSE: Final[str] = "PairSlotMeasurement"
@@ -184,6 +215,13 @@ class PairSlotMeasurement:
         token.spent = True
         object.__setattr__(self, "_construction_token", None)
 
+    # N-5: the audit named four record types; this is the fifth of the same
+    # family. A deep-copied measurement is a second pair's worth of certified
+    # slots that `measure_pair_coverage` never measured.
+    __copy__ = _refuse_reconstruction
+    __deepcopy__ = _refuse_reconstruction
+    __reduce__ = _refuse_reconstruction
+
 
 @dataclass(frozen=True, slots=True)
 class PairCoverage:
@@ -209,12 +247,25 @@ class CoverageResult:
     coverage raises (D-10), so this object never describes a failure. Its
     *existence* is therefore the conjunction (D-8 / NR-C); it carries no
     ``satisfied`` flag, for the R-1 reason recorded on :class:`PairCoverage`.
+
+    **R-1 / N-4 — ``pairs_measured`` is deleted, not reported.** It was assigned
+    ``tuple(PAIRS_20)`` unconditionally, never derived from the evidence, and
+    could not hold another value: the roster is fixed and a short roster already
+    raises :class:`CoverageMeasurementMissingError` above. It asserted a
+    *favourable* property — precisely the ``n_pairs == 20`` non-evidence D-5.9
+    names — and the identically-named field on ``ProofResult`` had already been
+    deleted for that reason, so this was the same defect surviving one module
+    over. What was measured is in :attr:`per_pair`, whose entries carry counts
+    that vary with the evidence, and ``tuple(c.pair for c in per_pair)`` recovers
+    the roster from measurement rather than from an assertion. The remaining
+    constants on this package's records (``files_opened=0``,
+    ``bytes_measured=0``, the evidence bases, the withheld-claim reason) stay:
+    each is a **disclaimer** of something not done, which R-1 keeps.
     """
 
     calendar_digest: str
     calendar_epoch: str
     per_pair: tuple[PairCoverage, ...]
-    pairs_measured: tuple[str, ...]
     _construction_token: Any = field(default=None, repr=False, compare=False)
 
     def __post_init__(self) -> None:
@@ -230,6 +281,10 @@ class CoverageResult:
             )
         token.spent = True
         object.__setattr__(self, "_construction_token", None)
+
+    __copy__ = _refuse_reconstruction
+    __deepcopy__ = _refuse_reconstruction
+    __reduce__ = _refuse_reconstruction
 
 
 def _materialise_bars(bars: Any, *, pair: str) -> tuple[dict, ...]:
@@ -333,6 +388,14 @@ def _validate_minute_accounting(raw: Any, *, pair: str) -> dict[str, int]:
             raise MinuteAccountingError(
                 f"{pair}: minute_accounting[{key!r}] must be an int, got {type(value).__name__}"
             )
+        # N-1: pin the character data before `< 0` and before the identity
+        # arithmetic below. An `int` subclass owns `__lt__`, `__eq__` and
+        # `__add__`, so an unpinned accounting block could report six numbers
+        # that satisfy every check while holding six different values.
+        try:
+            value = pin_int(value, what=f"minute_accounting[{key!r}]")
+        except NumericAuthorityError as exc:  # pragma: no cover - guarded above
+            raise MinuteAccountingError(f"{pair}: {exc}") from exc
         if value < 0:
             raise MinuteAccountingError(f"{pair}: minute_accounting[{key!r}] is negative ({value})")
         values[key] = value
@@ -371,6 +434,12 @@ def _assert_bar_certifiable(bar: Mapping[str, Any], *, pair: str, index: int) ->
             f"{pair}: bar {index} declares {BAR_SOURCE_MINUTE_KEY!r} as "
             f"{type(n_source).__name__}, not a counted number of source minutes"
         )
+    # N-1: an `int` subclass owns `__eq__`, so the count that decides
+    # certifiability is read as plain character data before it is compared.
+    try:
+        n_source = pin_int(n_source, what=f"bar {index} {BAR_SOURCE_MINUTE_KEY!r}")
+    except NumericAuthorityError as exc:  # pragma: no cover - guarded above
+        raise BarNotCertifiableError(f"{pair}: {exc}") from exc
     if n_source != SLOT_MINUTES:
         raise BarNotCertifiableError(
             f"{pair}: bar {index} was constituted from {n_source} of the {SLOT_MINUTES} "
@@ -614,7 +683,6 @@ def assert_full_coverage(
         calendar_digest=calendar.content_digest,
         calendar_epoch=calendar.target_epoch,
         per_pair=tuple(per_pair),
-        pairs_measured=tuple(PAIRS_20),
         _construction_token=_CoverageConstructionToken(_RESULT_PURPOSE),
     )
 

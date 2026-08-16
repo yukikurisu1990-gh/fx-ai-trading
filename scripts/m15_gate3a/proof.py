@@ -40,12 +40,35 @@ It no longer does. The four limbs are still evaluated in full and still fail
 closed, but the best outcome reachable from this package is
 :data:`BYTE_LEVEL_PROOF_PENDING`, and every returned record says why: no
 byte-reading component is registered anywhere in the repository, and the
-producer/verifier packages that could be are gate 4 (§15.4). The claim tokens
-remain in the vocabulary because :func:`assert_byte_level_claim` and the
-promotion guard are defined in terms of them, but **no code path here returns
-one**. :data:`BYTE_LEVEL_PROOF_REFUTED` stays reachable — it is carried by
+producer/verifier packages that could be are gate 4 (§15.4).
+:data:`BYTE_LEVEL_PROOF_REFUTED` stays reachable — it is carried by
 :class:`ProofDisagreementError`, which is how a refutation actually leaves this
 layer.
+
+**N-3 — correction of a false claim previously carried here.** This paragraph
+used to say the claim tokens "remain in the vocabulary because
+:func:`assert_byte_level_claim` and the promotion guard are defined in terms of
+them, but **no code path here returns one**". That last clause is false and is
+retracted: :func:`assert_byte_level_claim` *returns* its argument, and its
+argument is a byte-level claim token by the time it returns (see its ``return
+token`` line). What is true, and is the whole of the claim, is narrower:
+
+* **no record-producing path** — :func:`evaluate_four_limbs` and
+  :func:`open_for_consumption` — mints a claim token. Both emit
+  :data:`BYTE_LEVEL_PROOF_PENDING`, and :func:`open_for_consumption` now
+  *re-checks* that rather than copying the field it was handed (N-2);
+* :func:`assert_byte_level_claim` is a **predicate-shaped guard**: it accepts a
+  token a caller already holds, refuses everything weaker by name, and hands
+  the same object back. It creates no token and reads no artifact.
+
+The two spellings are additionally **unwritable by this package**: they are
+registered in :data:`~scripts.m15_gate3a.guards.UNWRITABLE_BYTE_LEVEL_CLAIM_TOKENS`,
+so the artifact scrubber refuses any payload carrying one — together with the
+``MEASURED_FROM_DERIVED_ARTIFACT_BYTES`` evidence-basis root, which is the
+sentence a self-refuting artifact would have to write beside the token. Before
+that registration, a ``no_overlap_proof.json`` payload carrying ``"result":
+"BYTE_LEVEL_NO_DEAD_WINDOW_OVERLAP_PROVEN"`` scanned clean and wrote, while the
+strictly *weaker* ``BYTE_ADMISSIBLE`` was refused.
 
 Why promotion cannot happen here
 --------------------------------
@@ -99,12 +122,14 @@ from typing import Any, Final
 
 from scripts.m15_gate3a.calendar_authority import SLOT_MINUTES
 from scripts.m15_gate3a.coverage import CoverageResult
+from scripts.m15_gate3a.guards import UNWRITABLE_BYTE_LEVEL_CLAIM_TOKENS
 from scripts.m15_gate3a.no_overlap import (
     DECLARATION_ONLY_EVIDENCE_BASIS,
     DECLARED_SPANS_SELF_CONSISTENT__NOT_BYTE_LEVEL,
     NoOverlapError,
     assert_design_bounds,
 )
+from scripts.m15_gate3a.numeric_authority import NumericAuthorityError, pin_int
 from scripts.m15_gate3a.pair_authority import PAIRS_20, PairAuthorityError, canonical_pair
 from scripts.m15_gate3a.timeutil import TimestampError, to_utc
 
@@ -190,6 +215,27 @@ for _token in DECLARATION_ONLY_TOKENS:
 del _token
 if BYTE_LEVEL_STATUS_TOKENS & (BYTE_LEVEL_CLAIM_TOKENS | DECLARATION_ONLY_TOKENS):
     raise RuntimeError("byte-level status tokens must be disjoint from claim tokens")
+# N-3: the writer's prohibition and this vocabulary must not drift apart. If a
+# claim token is renamed here and the scrubber's list is not updated, the new
+# spelling becomes writable in the same edit — so the two are pinned to each
+# other at import, where `python -O` cannot strip the check.
+if not BYTE_LEVEL_CLAIM_TOKENS <= UNWRITABLE_BYTE_LEVEL_CLAIM_TOKENS:
+    raise RuntimeError(
+        "every byte-level claim token must be registered unwritable in "
+        "scripts.m15_gate3a.guards.UNWRITABLE_BYTE_LEVEL_CLAIM_TOKENS; "
+        f"{sorted(BYTE_LEVEL_CLAIM_TOKENS - UNWRITABLE_BYTE_LEVEL_CLAIM_TOKENS)} is not"
+    )
+# The reverse direction is deliberately NOT required: the unwritable set also
+# carries the evidence-basis root, which is not a token in this vocabulary.
+for _basis_token in BYTE_LEVEL_CLAIM_TOKENS:
+    if not any(
+        root in TOKEN_EVIDENTIARY_BASIS[_basis_token] for root in UNWRITABLE_BYTE_LEVEL_CLAIM_TOKENS
+    ):
+        raise RuntimeError(
+            f"the evidentiary basis of {_basis_token!r} names no registered unwritable root; "
+            "a payload could assert the measurement in prose beside a permitted token"
+        )
+del _basis_token
 if set(TOKEN_EVIDENTIARY_BASIS) != set(TOKEN_VOCABULARY):  # pragma: no cover - import guard
     raise RuntimeError("every token in the vocabulary must name its evidentiary basis")
 
@@ -236,6 +282,11 @@ FOUR_LIMBS: Final[tuple[str, ...]] = ("BI", "TC", "CV", "DB")
 
 #: Aggregate assertions committed in ``design_m15_inventory.json``. Each is a
 #: measured conjunction over the 20 pairs (D-8 / NR-C, §12.15).
+#:
+#: N-7: this tuple is consumed **only** by :func:`assert_measured_conjunction`,
+#: which itself has no non-test caller — see that function's docstring for why
+#: it is disclosed rather than re-routed. The names are the committed spellings
+#: and the limb that actually enforces them is :func:`_limb_tc`, inline.
 AGGREGATE_ASSERTIONS: Final[tuple[str, ...]] = (
     "dead_window_bars_present_is_zero",
     "all_ts_max_within_design_end",
@@ -345,11 +396,22 @@ def _require_content_digest(value: Any, *, what: str) -> str:
 
 
 def _require_count(value: Any, *, what: str, minimum: int) -> int:
+    """A bounded count, pinned to plain ``int`` character data first (N-1).
+
+    ``value < minimum`` was asked of the caller's own object; an ``int``
+    subclass owns ``__lt__`` and could answer "large enough" while holding any
+    value at all. The pinned ``int`` is what is returned, so the record stores
+    the number the object really held.
+    """
     if isinstance(value, bool) or not isinstance(value, int):
         raise ProofContractError(f"{what} must be an int, got {type(value).__name__}")
-    if value < minimum:
-        raise ProofContractError(f"{what} must be >= {minimum}, got {value}")
-    return value
+    try:
+        pinned = pin_int(value, what=what)
+    except NumericAuthorityError as exc:  # pragma: no cover - guarded above
+        raise ProofContractError(str(exc)) from exc
+    if pinned < minimum:
+        raise ProofContractError(f"{what} must be >= {minimum}, got {pinned}")
+    return pinned
 
 
 # ---------------------------------------------------------------------------
@@ -387,6 +449,12 @@ class Provenance:
             raise ProofCoMeasurementError("provenance stream_id must be a non-empty string")
         if isinstance(self.pass_index, bool) or not isinstance(self.pass_index, int):
             raise ProofCoMeasurementError("provenance pass_index must be an int")
+        # N-1: pinned before the bound test, and stored pinned so the pass
+        # identity a roster de-duplicates on is a plain int.
+        try:
+            object.__setattr__(self, "pass_index", pin_int(self.pass_index, what="pass_index"))
+        except NumericAuthorityError as exc:  # pragma: no cover - guarded above
+            raise ProofCoMeasurementError(f"provenance pass_index: {exc}") from exc
         if self.pass_index < 0:
             raise ProofCoMeasurementError("provenance pass_index must not be negative")
         try:
@@ -696,8 +764,18 @@ class _ProofConstructionToken:
     byte-level claim token, an empty aggregate map and
     ``calendar_digest='NO-CALENDAR-WAS-EVER-VALIDATED'``, and drove it through
     consumption with **no limb ever evaluated**. Same remedy as
-    :mod:`~scripts.m15_gate3a.coverage`, same acknowledged limit: it removes the
-    public-API route, not every route Python allows.
+    :mod:`~scripts.m15_gate3a.coverage`.
+
+    **N-5 — the copy protocols are refused.** This used to claim the token
+    "removes the public-API route". ``copy.copy``, ``copy.deepcopy`` and
+    ``pickle`` are public API and rebuild a frozen ``slots`` dataclass without
+    running ``__post_init__``, so each one minted a record having spent no
+    token. All three now raise. The acknowledged limit is unchanged and is
+    stated rather than claimed away: a caller reaching into this module's
+    private names can still mint a token, and ``object.__setattr__`` still
+    rewrites a real record — which is exactly why
+    :func:`open_for_consumption` re-checks the fields it repeats (N-2) instead
+    of inheriting them on trust.
     """
 
     __slots__ = ("purpose", "spent")
@@ -705,6 +783,20 @@ class _ProofConstructionToken:
     def __init__(self, purpose: str) -> None:
         self.purpose = purpose
         self.spent = False
+
+
+def _refuse_reconstruction(self: Any, *_args: Any) -> None:
+    """Refuse ``copy.copy`` / ``copy.deepcopy`` / ``pickle`` (N-5).
+
+    Each protocol reconstructs the instance without ``__post_init__``, where the
+    one-shot construction token is spent, so each was a free re-mint of a record
+    whose whole meaning is that a particular evaluation ran once.
+    """
+    raise ProofConstructionError(
+        f"a {type(self).__name__} may not be copied, deep-copied or pickled; those protocols "
+        "rebuild the record without spending a construction token, so the copy would assert an "
+        "evaluation that never ran"
+    )
 
 
 _PROOF_RESULT_PURPOSE: Final[str] = "ProofResult"
@@ -759,6 +851,10 @@ class ProofResult:
         )
         object.__setattr__(self, "_construction_token", None)
 
+    __copy__ = _refuse_reconstruction
+    __deepcopy__ = _refuse_reconstruction
+    __reduce__ = _refuse_reconstruction
+
 
 @dataclass(frozen=True, slots=True)
 class ConsumptionApproval:
@@ -790,6 +886,10 @@ class ConsumptionApproval:
         )
         object.__setattr__(self, "_construction_token", None)
 
+    __copy__ = _refuse_reconstruction
+    __deepcopy__ = _refuse_reconstruction
+    __reduce__ = _refuse_reconstruction
+
 
 # ---------------------------------------------------------------------------
 # Token discipline
@@ -801,12 +901,95 @@ def is_declaration_only(token: Any) -> bool:
     return token in DECLARATION_ONLY_TOKENS
 
 
+def _pin_token(value: Any, *, what: str) -> str:
+    """The plain character data of a token field, or refuse it (N-2).
+
+    ``str.__str__`` is the same pin :mod:`scripts.m15_gate3a.artifacts` and
+    :mod:`scripts.m15_gate3a.path_authority` use: a ``str`` subclass can show one
+    spelling to a comparison and another to whatever writes the artifact.
+    """
+    if not isinstance(value, str):
+        raise ProofNotUsableError(
+            f"{what} is a {type(value).__name__}, not a token string; the proof record was "
+            "rewritten after construction"
+        )
+    return str.__str__(value)
+
+
+def _assert_disclosure_untampered(result: ProofResult) -> None:
+    """Re-check the token fields :func:`open_for_consumption` is about to repeat.
+
+    **N-2.** ``open_for_consumption`` copied ``byte_level_status``,
+    ``claim_withheld_because`` and ``evidence_basis`` verbatim into a *freshly
+    minted* :class:`ConsumptionApproval`. A frozen dataclass is not sealed —
+    ``object.__setattr__`` is this package's own declared threat model, stated in
+    ``coverage.assert_full_coverage`` and on :class:`_ProofConstructionToken` —
+    so a tampered ``ProofResult`` yielded a brand-new approval asserting
+    ``BYTE_LEVEL_NO_DEAD_WINDOW_OVERLAP_PROVEN`` and
+    ``MEASURED_FROM_DERIVED_ARTIFACT_BYTES…`` beside its own ``files_opened=0``.
+    That is the self-refuting artifact B-2/B-3/§12.13 exist to prevent, minted by
+    this layer rather than smuggled through it.
+
+    The remedy is the one :func:`_limb_cv` already applies to ``per_pair``:
+    re-check the invariant rather than inherit it. These are **not** vacuous
+    R-1 checks — every one of them is reachable, and each is exercised by a test
+    that tampers exactly one field. Each divergence has its own raise site so a
+    test can name which fired without a regex alternation.
+    """
+    status = _pin_token(result.byte_level_status, what="byte_level_status")
+    if status in BYTE_LEVEL_CLAIM_TOKENS:
+        raise ProofPromotionError(
+            f"the proof record carries byte-level claim token {status!r}; evaluate_four_limbs "
+            "mints no claim token, so this record was rewritten after construction and a "
+            "consumption approval minted from it would assert a measurement no component made"
+        )
+    if status != BYTE_LEVEL_PROOF_PENDING:
+        raise ProofNotUsableError(
+            f"the proof record declares byte_level_status {status!r}; the only status this "
+            f"reader-free layer can reach is {BYTE_LEVEL_PROOF_PENDING!r}"
+        )
+    if _pin_token(result.evidence_basis, what="evidence_basis") != LIMB_EVALUATION_EVIDENCE_BASIS:
+        raise ProofNotUsableError(
+            f"the proof record declares evidence_basis {result.evidence_basis!r}; this layer "
+            f"evaluates limbs over caller-supplied records and its basis is always "
+            f"{LIMB_EVALUATION_EVIDENCE_BASIS!r}"
+        )
+    withheld = _pin_token(result.claim_withheld_because, what="claim_withheld_because")
+    if withheld != BYTE_LEVEL_CLAIM_WITHHELD_REASON:
+        raise ProofNotUsableError(
+            f"the proof record declares claim_withheld_because {withheld!r}; the reason a "
+            "byte-level claim is withheld is not a caller-settable field"
+        )
+    if tuple(result.declared_not_measured) != DECLARED_NOT_MEASURED_BY_THIS_LAYER:
+        raise ProofNotUsableError(
+            "the proof record's declared_not_measured list is not the one this layer emits; "
+            "shortening it would hide which quantities were consumed as declarations"
+        )
+    if (result.files_opened, result.bytes_measured) != (0, 0):
+        raise ProofNotUsableError(
+            f"the proof record declares files_opened={result.files_opened!r} and "
+            f"bytes_measured={result.bytes_measured!r}; this layer opens no file and measures "
+            "no byte, so a non-zero count means the record was rewritten"
+        )
+
+
 def assert_byte_level_claim(token: Any) -> str:
     """Return ``token`` if it is a byte-level claim; refuse anything weaker.
 
     This is the promotion guard in its most direct form: a declaration-only
     token offered where a byte-level claim is required is refused by name, and
     a pending or refuted status is not a claim either.
+
+    **N-3 — what "returns a claim token" does and does not mean here.** This
+    function hands back the object it was given, unchanged, once it has proved
+    that object is already a byte-level claim token. It mints nothing, reads no
+    artifact, and cannot turn weaker evidence into a claim — that is the whole
+    of its purpose. The module docstring's earlier assertion that "no code path
+    here returns one" was nonetheless wrong on its face and is corrected there.
+    Both claim spellings are registered unwritable
+    (:data:`~scripts.m15_gate3a.guards.UNWRITABLE_BYTE_LEVEL_CLAIM_TOKENS`), so a
+    token that reaches a caller through this function still cannot reach an
+    artifact.
     """
     if token in DECLARATION_ONLY_TOKENS:
         raise ProofPromotionError(
@@ -850,6 +1033,28 @@ def assert_measured_conjunction(name: str, per_pair: Any) -> bool:
 
     A missing measurement makes the assertion **unsatisfied — never vacuously
     true** (D-8). A declared count alone never establishes it.
+
+    **N-7 — this guard has no non-test caller, and that is stated rather than
+    implied.** :func:`_limb_tc` used to build a ``{assertion: {pair: True}}`` map
+    and hand it here; every value was a literal ``True`` written after the raises
+    above it, so the conjunction could not fail (R-1). The substance moved
+    *inline* into that limb, which now raises directly on each of the four
+    committed assertions — a genuine improvement, and it left this function and
+    :data:`AGGREGATE_ASSERTIONS` unrouted.
+
+    That is the same condition RF-15 forced :mod:`scripts.m15_gate3a.guards` to
+    disclose about three of its four public guards, so it is disclosed the same
+    way instead of being re-routed: **re-introducing a call from ``_limb_tc``
+    would mean re-deriving the per-pair map from measurements the limb has
+    already refused on, which is how the R-1 defect was built in the first
+    place.** What this function constrains is exactly what is handed to it, and
+    nothing more. It is retained because it is the executable statement of D-8's
+    disposition — *a missing measurement is unsatisfied, never vacuously true* —
+    and because the byte-reading producer/verifier packages at gate 4 (§15.4) are
+    where a real per-pair measurement map will exist to route through it. It is
+    **not** evidence that any aggregate assertion in
+    ``design_m15_inventory.json`` has been checked by this package, and must not
+    be cited as such.
     """
     if name not in AGGREGATE_ASSERTIONS:
         raise AggregateAssertionUnsatisfiedError(
@@ -1281,12 +1486,18 @@ def open_for_consumption(result: Any, *, consumer_rechecks: Any) -> ConsumptionA
     route to the proof's per-artifact identity: while that map was public a
     consumer could read the digests off the result and skip this call entirely.
 
-    The two checks that used to open this function — that the result carried a
-    byte-level claim token, and that it recorded all four limbs — are gone
-    because both fields are gone. A :class:`ProofResult` now exists only when
-    :func:`evaluate_four_limbs` evaluated all four limbs, and it never carries a
-    claim token; re-reading fields the constructor already guarantees would be
-    the vacuous check R-1 forbids, not a second line of defence.
+    **N-2 — the disclosure fields are re-checked, not copied.** An earlier
+    revision argued here that "re-reading fields the constructor already
+    guarantees would be the vacuous check R-1 forbids". That reasoning was
+    wrong, and it is retracted: the constructor guarantees what a field held *at
+    construction*, and a frozen dataclass is not sealed afterwards. This function
+    then **minted a new record** carrying those fields verbatim, so a
+    ``ProofResult`` tampered with ``object.__setattr__`` produced a fresh
+    ``ConsumptionApproval`` asserting a byte-level measurement beside
+    ``files_opened=0``. R-1 forbids reporting a field that can hold only one
+    value; it does not forbid verifying that a field a *consumer* handed back
+    still holds it. :func:`_assert_disclosure_untampered` does that, exactly as
+    :func:`_limb_cv` re-checks ``per_pair`` for the same reason.
 
     The returned :class:`ConsumptionApproval` **authorises no read**. It repeats
     the pending status and states, in the value itself, that this layer opened no
@@ -1296,6 +1507,7 @@ def open_for_consumption(result: Any, *, consumer_rechecks: Any) -> ConsumptionA
         raise ProofNotUsableError(
             f"consumption requires an evaluated ProofResult, got {type(result).__name__}"
         )
+    _assert_disclosure_untampered(result)
     if consumer_rechecks is None:
         raise ProofNotUsableError(
             "no consumer re-verification supplied; a proof that has not been re-verified "

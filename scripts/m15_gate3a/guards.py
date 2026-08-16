@@ -92,6 +92,40 @@ FORBIDDEN_STATUSES: Final[frozenset[str]] = frozenset(
     }
 )
 
+# N-3: the byte-level claim vocabulary, unwritable by this package while no
+# byte-reading component exists.
+#
+# `FORBIDDEN_STATUSES` above covered `BYTE_ADMISSIBLE` but not the strictly
+# STRONGER claims the T-7 proof contract defines, so
+# `is_forbidden_status("BYTE_LEVEL_NO_DEAD_WINDOW_OVERLAP_PROVEN")` was `False`
+# while the weaker label was `True`, and a `no_overlap_proof.json` payload
+# carrying `"result": "BYTE_LEVEL_NO_DEAD_WINDOW_OVERLAP_PROVEN"` beside
+# `"source": "MEASURED_FROM_DERIVED_ARTIFACT_BYTES__..."` scanned clean and
+# wrote — the self-refuting artifact B-2/B-3/§12.13 exist to prevent.
+#
+# Kept as its own frozenset rather than folded into `FORBIDDEN_STATUSES` for two
+# reasons. These are *claim tokens* of the proof contract, not readiness status
+# labels, and — the operative one — `artifacts._MAX_PROHIBITION_ENTRY_LEN` is
+# derived from the longest entry of `FORBIDDEN_STATUSES` (22). Adding a 41-char
+# token there would have RAISED that bound to 41, widening the window of
+# unscanned text a prohibition-list entry may contain. A fix that loosens a
+# neighbouring guard to close its own finding is not a fix.
+#
+# `scripts.m15_gate3a.proof` cross-checks at import that every token in its
+# `BYTE_LEVEL_CLAIM_TOKENS` appears here, so the two cannot drift apart.
+#
+# `MEASURED_FROM_DERIVED_ARTIFACT_BYTES` is the shared ROOT of both byte-level
+# evidentiary bases, not a token: listing the root rather than the two full
+# sentences means any `MEASURED_FROM_DERIVED_ARTIFACT_BYTES__<anything>` spelling
+# is caught by the scrubber's substring scan.
+UNWRITABLE_BYTE_LEVEL_CLAIM_TOKENS: Final[frozenset[str]] = frozenset(
+    {
+        "BYTE_LEVEL_NO_DEAD_WINDOW_OVERLAP_PROVEN",
+        "DERIVATION_IDENTITY_BOUND",
+        "MEASURED_FROM_DERIVED_ARTIFACT_BYTES",
+    }
+)
+
 _FORBIDDEN_OPERATIONS: Final[frozenset[str]] = frozenset(
     {
         "read_real_data",
@@ -216,18 +250,28 @@ def _comparison_key(status: str) -> str:
 # separator-normalised set: `k in NORMALISED` implies `_comparison_key(k)` is
 # here. Only this one is tested, to avoid a second condition that can never
 # fire independently.
+#
+# N-3: the byte-level claim vocabulary is folded in, so the predicate is
+# symmetric — it can no longer report `True` for `BYTE_ADMISSIBLE` and `False`
+# for the strictly stronger `BYTE_LEVEL_NO_DEAD_WINDOW_OVERLAP_PROVEN`.
 _FORBIDDEN_STATUS_KEYS: Final[frozenset[str]] = frozenset(
-    _comparison_key(s) for s in FORBIDDEN_STATUSES
+    _comparison_key(s) for s in (FORBIDDEN_STATUSES | UNWRITABLE_BYTE_LEVEL_CLAIM_TOKENS)
 )
 
 
 def is_forbidden_status(value: Any) -> bool:
-    """True iff *value* is a string naming a forbidden status (any spelling).
+    """True iff *value* is a string naming a forbidden status or claim (any spelling).
 
     Non-strings are **not** forbidden statuses and report ``False``; this is a
     predicate over labels, and the scrubber that calls it inspects arbitrary
     JSON values. Callers that must *refuse* rather than classify use
     :func:`assert_status_allowed`, which fails closed on the type (RF-13).
+
+    The comparison is exact over the whole string. Substring detection of the
+    byte-level evidentiary-basis prose — ``MEASURED_FROM_DERIVED_ARTIFACT_BYTES``
+    followed by anything — is the scrubber's job, not this predicate's, and
+    :mod:`scripts.m15_gate3a.artifacts` derives its scan vocabulary from
+    :data:`UNWRITABLE_BYTE_LEVEL_CLAIM_TOKENS` for that purpose.
     """
     return isinstance(value, str) and _comparison_key(value) in _FORBIDDEN_STATUS_KEYS
 

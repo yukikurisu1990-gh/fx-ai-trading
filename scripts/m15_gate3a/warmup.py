@@ -29,6 +29,7 @@ from datetime import datetime
 from typing import Any
 
 from .no_overlap import FORWARD_FLOOR
+from .numeric_authority import NumericAuthorityError, pin_int
 from .timeutil import TimestampError, format_utc_z, to_utc
 
 
@@ -44,6 +45,25 @@ class WarmupPolicy:
     longest_feature_lookback_bars: int
 
     def validate(self) -> None:
+        """Fail closed unless the warm-up is a positive, long-enough burn-in.
+
+        N-1: both counts are pinned to their plain ``int`` character data before
+        anything is compared, and the pinned value is stored back, so every later
+        read — the sufficiency test below, :meth:`is_event_eligible`'s boundary,
+        and the ``w_bars`` / ``first_eligible_bar_index`` that reach
+        :meth:`as_metadata` — sees the number the object really holds. Without
+        that, an ``int`` subclass owning ``__lt__`` could report a warm-up long
+        enough to cover the longest feature lookback while holding a shorter one,
+        which is the T-1 leakage boundary itself.
+        """
+        for name in ("w_bars", "longest_feature_lookback_bars"):
+            value = getattr(self, name)
+            if isinstance(value, bool) or not isinstance(value, int):
+                continue  # the per-field refusals below report the right name
+            try:
+                object.__setattr__(self, name, pin_int(value, what=name))
+            except NumericAuthorityError:  # pragma: no cover - guarded above
+                continue
         if isinstance(self.w_bars, bool) or not isinstance(self.w_bars, int) or self.w_bars <= 0:
             raise WarmupPolicyError("w_bars must be a positive integer")
         if (
@@ -66,9 +86,18 @@ class WarmupPolicy:
         answer replacing the constant ``first_w_bars_event_eligible: False``.
         """
         self.validate()
-        if isinstance(bar_index, bool) or not isinstance(bar_index, int) or bar_index < 0:
+        if isinstance(bar_index, bool) or not isinstance(bar_index, int):
             raise WarmupPolicyError("bar_index must be a non-negative integer")
-        return bar_index >= self.w_bars
+        # N-1: pinned before the bound test and before the eligibility decision,
+        # so an `int` subclass cannot answer "not negative" and "past the
+        # burn-in" while holding an index inside it.
+        try:
+            index = pin_int(bar_index, what="bar_index")
+        except NumericAuthorityError as exc:  # pragma: no cover - guarded above
+            raise WarmupPolicyError("bar_index must be a non-negative integer") from exc
+        if index < 0:
+            raise WarmupPolicyError("bar_index must be a non-negative integer")
+        return index >= self.w_bars
 
     def _resolve_load_ts(self, ts: Any) -> datetime:
         """Validate the policy, then resolve ``ts`` **once** through the timestamp authority."""
