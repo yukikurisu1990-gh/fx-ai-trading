@@ -79,3 +79,36 @@ def test_a_sub_second_instant_is_refused_rather_than_truncated() -> None:
     """§12.23: refuse, never truncate — the RF-1 lesson applied to emission."""
     with pytest.raises(TimestampError, match="microsecond"):
         format_utc_z(datetime(2026, 2, 28, 23, 59, 59, 500_000, tzinfo=UTC))
+
+
+class _LyingDigest(str):
+    """A digest whose character data is well-formed but whose ``__str__`` lies.
+
+    ``_roster_report`` pins the character data with ``str.__str__`` before using
+    it as the duplicate key, so the guards see the real 64-hex value. A
+    publication step that re-derived the field with ``str(record["sha256"])``
+    would publish the lie instead — the identity half of B-3.
+    """
+
+    def __str__(self) -> str:  # noqa: D105
+        return "not-a-digest-at-all"
+
+
+def test_b3_published_identity_is_the_identity_the_guards_used() -> None:
+    """B-3 was pinned for timestamps only; the identity keys were unpinned.
+
+    The mutation study found that re-deriving `sha256`/`filename` at publication
+    survived the whole suite. This pins the other half: what is published must be
+    the value the duplicate/shape guards actually ran on.
+    """
+    roster = _roster()
+    real_digest = f"{7:064x}"
+    roster[7] = {**roster[7], "sha256": _LyingDigest(real_digest)}
+
+    result = assert_per_file_bounds(roster, role="design", expected_count=20)
+    published = {span["pair"]: span for span in result["certified_spans"]}
+    span = published[str(roster[7]["pair"])]
+
+    assert span["sha256"] == real_digest, span["sha256"]
+    assert span["sha256"] != "not-a-digest-at-all"
+    assert span["filename"] == roster[7]["filename"]
