@@ -59,7 +59,7 @@ import math
 import re
 import unicodedata
 from contextlib import suppress
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Final
 
@@ -358,11 +358,23 @@ def _forbidden_key_hit(key: str) -> str | None:
 #     size of the schema's key vocabulary.
 _MAX_LIST_ITEMS: Final[int] = len(PAIRS_20)
 _MAX_PROHIBITION_ITEMS: Final[int] = len(FORBIDDEN_STATUSES)
+# The per-key half of the schema numeric budget, made explicit rather than left
+# implicit in the product below. A declared numeric key describes ONE quantity,
+# so the most it can legitimately carry is one value per roster entry plus one
+# aggregate — which is exactly the factor the schema budget was already derived
+# from. The mutation workstream reproduced 340 float price values parked under
+# the declared numeric key `pip_size` (chunked into 17 lists of 20, so neither
+# the list bound nor the schema-wide budget of 357 fired) scanning with
+# `findings=[]`. A declared key is a licence to hold *a* number, not a series.
+_MAX_VALUES_PER_NUMERIC_KEY: Final[int] = _MAX_LIST_ITEMS + 1
 
 # The committed `design_m15_inventory.json` `required_schema_per_file` block —
 # the only per-file record shape this gate has committed authority for. Its key
 # count and numeric-field count are what bound an *undeclared* payload, so the
-# backstop invents no threshold of its own.
+# backstop invents no threshold of its own. Transcribed verbatim, including the
+# confusable `eligible_event_count` (C-8): only the two *lengths* are consumed
+# below, and re-spelling the transcription would silently move a derived bound
+# while claiming to quote a committed artifact.
 _COMMITTED_PER_FILE_KEYS: Final[tuple[str, ...]] = (
     "filename",
     "pair",
@@ -397,6 +409,11 @@ class ArtifactSchema:
     ``prohibition_list_keys`` are the keys under which a forbidden label is
     *named as prohibited* rather than asserted — the one usage playbook §10
     permits, and the construct the previous denylist refused.
+
+    Being in ``numeric_keys`` licenses at most
+    :data:`_MAX_VALUES_PER_NUMERIC_KEY` values for that key across the whole
+    payload, not an array of arbitrary length: see
+    :func:`_scan_declared`.
     """
 
     stem: str
@@ -411,7 +428,7 @@ class ArtifactSchema:
 
     @property
     def max_numeric_leaves(self) -> int:
-        return (_MAX_LIST_ITEMS + 1) * len(self.numeric_keys)
+        return _MAX_VALUES_PER_NUMERIC_KEY * len(self.numeric_keys)
 
     @property
     def max_leaves(self) -> int:
@@ -499,6 +516,26 @@ _SCHEMAS: Final[tuple[ArtifactSchema, ...]] = (
             "all_ts_max_within_design_end",
             "all_ts_min_within_design_start",
             "artifact",
+            # C-8 / §12.20 — `eligible_event_count` is admissible as a *key* and
+            # NOT as a numeric one. The committed `design_m15_inventory.json`
+            # uses it inside `required_schema_per_file` to *describe* a field
+            # ("count of n_source_bars==15 buckets"), so removing it from the
+            # vocabulary outright would make committed evidence — which D-7 says
+            # is populated by human-reviewed PR diff and which this PR may not
+            # edit — stop scanning clean. Leaving it in `numeric_keys` was the
+            # worse failure the contract/specification audit named: the
+            # scrubber would silently accept a continuation that *populated*
+            # the confusable name, and confusing it with the effective-N spec's
+            # traded-event quantity clears the frozen floors by orders of
+            # magnitude and disarms `INSUFFICIENT_SAMPLE`. Declared here, the
+            # committed descriptive usage stays clean while a populated
+            # `eligible_event_count: 21500` is reported as
+            # `gate3a_undeclared_numeric_field`. §12.20's pinned name
+            # `complete_bucket_count` is the only spelling that may carry the
+            # quantity; retiring the old key from the vocabulary lands with the
+            # inventory schema extension at the continuation, in the same
+            # human-reviewed diff that repopulates the artifact.
+            "eligible_event_count",
             "filename",
             "files",
             "gap_report",
@@ -520,7 +557,6 @@ _SCHEMAS: Final[tuple[ArtifactSchema, ...]] = (
             "complete_bucket_count",
             "cost_hurdle_eligible_bar_count",
             "dead_window_bars_present",
-            "eligible_event_count",
             "expected_source_minute_count",
             "file_count",
             "max_gap_minutes",
@@ -793,6 +829,8 @@ def _scan_value_claims(value: Any, findings: list[str], *, exempt: bool) -> None
 class _Counters:
     numeric: int = 0
     leaves: int = 0
+    #: numeric leaves seen per *declared numeric* key, for the per-key bound.
+    per_numeric_key: dict[str, int] = field(default_factory=dict)
 
 
 def _scan_declared(
@@ -811,6 +849,24 @@ def _scan_declared(
                 findings.append(f"gate3a_non_string_key:{key!r}")
                 if _non_finite(key):
                     findings.append("gate3a_non_finite_key")
+                # F2-3: report the key AND scan what sits under it. The previous
+                # `continue` did neither: 30 x 8 numeric price rows under a
+                # single `int` key reported `gate3a_non_string_key:0` and the
+                # entire subtree beneath it was never examined, so one
+                # unrenderable key exempted a whole dataset. A non-string key
+                # declares nothing, so nothing below it may carry a numeric
+                # leaf, and the label it passes down must not be the *parent's*
+                # — `{"pip_size": {0: [...]}}` would then report a violation
+                # against `pip_size`, a key that really is declared numeric.
+                _scan_declared(
+                    value,
+                    schema,
+                    findings,
+                    counters,
+                    numeric_allowed=False,
+                    exempt=exempt,
+                    key_label=f"non_string_key({key!r})",
+                )
                 continue
             pinned = _pin(key)
             folded = pinned.strip().lower()
@@ -854,6 +910,18 @@ def _scan_declared(
             findings.append("gate3a_numeric_cardinality_exceeded")
         if not numeric_allowed:
             findings.append(f"gate3a_undeclared_numeric_field:{key_label}")
+        elif key_label is not None:
+            # F2-2: a declared numeric key may hold a value per roster entry
+            # plus an aggregate — the very factor `max_numeric_leaves` is
+            # derived from — and not a series. Without this, 340 prices chunked
+            # into 17 lists of 20 sat under `pip_size` with `findings=[]`:
+            # every chunk was within the list bound and the total was under the
+            # schema-wide budget, which is a budget for ALL numeric keys
+            # together.
+            seen = counters.per_numeric_key.get(key_label, 0) + 1
+            counters.per_numeric_key[key_label] = seen
+            if seen > _MAX_VALUES_PER_NUMERIC_KEY:
+                findings.append(f"gate3a_numeric_series_under_declared_key:{key_label}")
     elif isinstance(obj, str):
         _scan_value_claims(obj, findings, exempt=exempt)
         if exempt and len(_pin(obj)) > _MAX_PROHIBITION_ENTRY_LEN:
@@ -869,9 +937,12 @@ def _scan_declared(
 # Inherited O-2 / R-5 heuristics. They are a denylist and are kept only as a
 # backstop for payloads that declare no schema: >= 2 dicts each carrying >= 6
 # numeric (non-bool) immediate values (a full BA row has 8 numeric sides), and
-# >= 2 numeric arrays of equal length >= 4 (the columnar encoding of the same
-# rows). B-1 showed they can be re-keyed around, which is why the cardinality
-# budgets below run alongside them and count leaves rather than shapes.
+# >= 2 numeric arrays of length >= 4 (the columnar encoding of the same rows).
+# Both counts are taken over a container's members whether that container is a
+# `list`/`tuple` or a `dict` — counting them in lists alone was itself the
+# re-keying route (F2-2). B-1 showed shape heuristics can be re-keyed around at
+# all, which is why the cardinality budgets below run alongside them and count
+# leaves rather than shapes.
 _ROW_LIKE_MIN_RECORDS: Final[int] = 2
 _ROW_LIKE_MIN_NUMERIC_FIELDS: Final[int] = 6
 _COLUMNAR_MIN_SERIES: Final[int] = 2
@@ -880,6 +951,15 @@ _COLUMNAR_MIN_LENGTH: Final[int] = 4
 
 def _numeric_field_count(d: dict) -> int:
     return sum(1 for v in d.values() if _is_numeric(v))
+
+
+def _row_like_count(values: Any) -> int:
+    """How many of *values* are row-like records (a dict of >= 6 numeric fields)."""
+    return sum(
+        1
+        for value in values
+        if isinstance(value, dict) and _numeric_field_count(value) >= _ROW_LIKE_MIN_NUMERIC_FIELDS
+    )
 
 
 def _is_numeric_series(value: Any) -> bool:
@@ -897,24 +977,29 @@ def _scan_undeclared(
         series_count = sum(1 for v in obj.values() if _is_numeric_series(v))
         if series_count >= _COLUMNAR_MIN_SERIES:
             findings.append("gate3a_columnar_numeric_series")
+        # F2-2: the row-like count applied to `list`/`tuple` items only, so the
+        # identical records re-keyed as a dict-of-dicts were counted nowhere.
+        # 15 x 8 price rows that way land on exactly 120 numeric leaves — the
+        # undeclared budget, which bounds but does not exceed — and scanned with
+        # `findings=[]`. The record count is a property of the records, not of
+        # the container they were poured into.
+        if _row_like_count(obj.values()) >= _ROW_LIKE_MIN_RECORDS:
+            findings.append("gate3a_row_like_numeric_records")
         for key, value in obj.items():
             if not isinstance(key, str):
                 findings.append(f"gate3a_non_string_key:{key!r}")
                 if _non_finite(key):
                     findings.append("gate3a_non_finite_key")
-                _scan_undeclared(value, findings, counters, key_label=key_label)
+                # Same labelling rule as the declared scan: a finding raised
+                # under a non-string key names that key, never the parent's.
+                _scan_undeclared(value, findings, counters, key_label=f"non_string_key({key!r})")
                 continue
             pinned = _pin(key)
             _scan_key_claims(pinned, value, findings)
             _scan_undeclared(value, findings, counters, key_label=pinned)
         return
     if isinstance(obj, (list, tuple)):
-        row_like = sum(
-            1
-            for x in obj
-            if isinstance(x, dict) and _numeric_field_count(x) >= _ROW_LIKE_MIN_NUMERIC_FIELDS
-        )
-        if row_like >= _ROW_LIKE_MIN_RECORDS:
+        if _row_like_count(obj) >= _ROW_LIKE_MIN_RECORDS:
             findings.append("gate3a_row_like_numeric_records")
         numeric_rows = sum(1 for x in obj if _is_numeric_series(x))
         if numeric_rows >= _ROW_LIKE_MIN_RECORDS:

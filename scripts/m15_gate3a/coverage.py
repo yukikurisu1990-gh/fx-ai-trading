@@ -33,18 +33,35 @@ report (``report["minute_accounting"]``), including the identity
 ``expected == usable + absent + rejected``. Coverage cross-checks it against the
 measured slot set: unusable minutes must show up as missing slots, and a slot
 whose bucket could not be constituted because a source minute was rejected is
-**not counted as covered** (D-2.5, D-5.7).
+**not counted as covered** (D-2.5, D-5.7). The totals are supplied by the same
+caller as the bars, so they are never the *only* certifiability check —
+:func:`_assert_bar_certifiable` reads each bar's own fields (D-3.5, §12.7).
+
+What this module does **not** enforce
+-------------------------------------
+D-5.8 ("a single instant, or a sparse handful of points, **never** produces a
+proof token") is enforced here only against the *derivation*: a truncated
+derivation cannot equal a full calendar's slot set. It is **not** enforced
+against a calendar that itself declares one slot per pair. Any count floor is a
+number nobody pinned, and D-6 forbids this module to decide how many M15 buckets
+an epoch contains — that is a market-hours question owned by the calendar
+artifact. Raising the floor therefore **requires a separate contract
+Gate-decision**; the ruled control meanwhile is
+``PRE_CONTINUATION_CALENDAR_ARTIFACT_APPROVAL_REQUIRED``, the human + ChatGPT
+approval of the concrete artifact. What *is* enforced is the arithmetic relation
+between the calendar's slot count and the declared source-minute count, so the
+two cannot describe different epochs.
 """
 
 from __future__ import annotations
 
 from collections.abc import Mapping, Sequence
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Any, Final
 
 from scripts.m15_gate3a.calendar_authority import SLOT_MINUTES, ValidatedCalendar
-from scripts.m15_gate3a.no_overlap import is_dead_window_instant
+from scripts.m15_gate3a.no_overlap import DESIGN_END, DESIGN_START, is_dead_window_instant
 from scripts.m15_gate3a.pair_authority import PAIRS_20, PairAuthorityError, canonical_pair
 from scripts.m15_gate3a.timeutil import TimestampError, to_utc
 
@@ -61,6 +78,15 @@ MINUTE_ACCOUNTING_FIELDS: Final[tuple[str, ...]] = (
 
 #: Key under which a bar declares its bucket start.
 BAR_SLOT_KEY: Final[str] = "ts"
+
+#: Keys under which a bar declares whether its bucket could be constituted from
+#: **every** contract-required source minute (D-3.5 / §12.7). ``eligible`` is the
+#: frozen derivation manifest's retained alias of ``complete_bucket`` — the same
+#: measured quantity under two committed spellings, never a second measurement,
+#: which is why the two are required to agree rather than either being trusted.
+BAR_SOURCE_MINUTE_KEY: Final[str] = "n_source_bars"
+BAR_COMPLETE_KEY: Final[str] = "complete_bucket"
+BAR_COMPLETE_ALIAS_KEY: Final[str] = "eligible"
 
 
 class CoverageError(RuntimeError):
@@ -87,6 +113,46 @@ class MinuteAccountingError(CoverageError):
     """The six-field minute accounting is absent, malformed, or self-contradictory."""
 
 
+class BarNotCertifiableError(CoverageError):
+    """A bar without every contract-required source minute was offered (D-3.5)."""
+
+
+class CoverageConstructionError(CoverageError):
+    """A coverage record was built outside the function that measures it."""
+
+
+class _CoverageConstructionToken:
+    """One-shot capability to construct one coverage record.
+
+    ``PairSlotMeasurement`` and ``CoverageResult`` are public frozen dataclasses,
+    so "built only by ..." was a docstring and nothing more. The data-integrity
+    audit hand-built a ``CoverageResult`` with ``expected_slot_count=0`` and
+    ``calendar_digest="NO CALENDAR EVER EXISTED"`` and fed it to the proof's CV
+    limb. The token makes the *public-API* route impossible and is spent by the
+    first construction, so :func:`dataclasses.replace` cannot mint a variant from
+    a real record's token either.
+
+    ``purpose`` keeps the two record types' capabilities distinct: a token minted
+    to build a measurement cannot be redirected into a result.
+
+    **What it does not do.** Python has no enforced privacy; a caller reaching
+    into this module's private names can mint a token, and
+    ``object.__setattr__`` can still tamper with a real record after the fact.
+    That is why :func:`assert_full_coverage` and the proof's CV limb re-check the
+    invariants they depend on instead of trusting the type alone.
+    """
+
+    __slots__ = ("purpose", "spent")
+
+    def __init__(self, purpose: str) -> None:
+        self.purpose = purpose
+        self.spent = False
+
+
+_MEASUREMENT_PURPOSE: Final[str] = "PairSlotMeasurement"
+_RESULT_PURPOSE: Final[str] = "CoverageResult"
+
+
 @dataclass(frozen=True, slots=True)
 class PairSlotMeasurement:
     """What was actually measured for one pair. Built only by :func:`measure_pair_coverage`.
@@ -101,16 +167,38 @@ class PairSlotMeasurement:
     duplicate_slots: tuple[datetime, ...]
     rejected_slots: frozenset[datetime]
     minute_accounting: Mapping[str, int]
+    _construction_token: Any = field(default=None, repr=False, compare=False)
+
+    def __post_init__(self) -> None:
+        token = self._construction_token
+        if (
+            not isinstance(token, _CoverageConstructionToken)
+            or token.purpose != _MEASUREMENT_PURPOSE
+            or token.spent
+        ):
+            raise CoverageConstructionError(
+                "a PairSlotMeasurement is minted only by measure_pair_coverage(); a hand-built "
+                "instance is a caller's assertion about what an artifact contains, not a "
+                "measurement of it, and cannot certify a slot"
+            )
+        token.spent = True
+        object.__setattr__(self, "_construction_token", None)
 
 
 @dataclass(frozen=True, slots=True)
 class PairCoverage:
-    """The set-equality verdict for one pair, for the proof record."""
+    """The set-equality verdict for one pair, for the proof record.
+
+    There is no ``satisfied`` flag here. R-1 deletes a field that can only ever
+    hold one value, and once :func:`assert_full_coverage` raises on every
+    inequality the flag could only ever have been ``True`` — the audit's
+    ``aggregate_assertions`` defect, one level down. The two counts are what was
+    actually measured, and they vary with the evidence.
+    """
 
     pair: str
     expected_slot_count: int
     certified_slot_count: int
-    satisfied: bool
 
 
 @dataclass(frozen=True, slots=True)
@@ -118,18 +206,30 @@ class CoverageResult:
     """Coverage over the whole roster: the conjunction across 20 measured pairs.
 
     Only ever returned when every pair satisfied set equality — insufficient
-    coverage raises (D-10), so this object never describes a failure.
+    coverage raises (D-10), so this object never describes a failure. Its
+    *existence* is therefore the conjunction (D-8 / NR-C); it carries no
+    ``satisfied`` flag, for the R-1 reason recorded on :class:`PairCoverage`.
     """
 
     calendar_digest: str
     calendar_epoch: str
     per_pair: tuple[PairCoverage, ...]
     pairs_measured: tuple[str, ...]
+    _construction_token: Any = field(default=None, repr=False, compare=False)
 
-    @property
-    def satisfied(self) -> bool:
-        """The measured conjunction over the 20 pairs (D-8 / NR-C)."""
-        return len(self.per_pair) == len(PAIRS_20) and all(p.satisfied for p in self.per_pair)
+    def __post_init__(self) -> None:
+        token = self._construction_token
+        if (
+            not isinstance(token, _CoverageConstructionToken)
+            or token.purpose != _RESULT_PURPOSE
+            or token.spent
+        ):
+            raise CoverageConstructionError(
+                "a CoverageResult is minted only by assert_full_coverage(); a hand-built "
+                "instance asserts a 20-pair conjunction that was never evaluated"
+            )
+        token.spent = True
+        object.__setattr__(self, "_construction_token", None)
 
 
 def _materialise_bars(bars: Any, *, pair: str) -> tuple[dict, ...]:
@@ -192,6 +292,16 @@ def _normalise_slot(raw: Any, *, pair: str, what: str) -> datetime:
         raise CoverageEvidenceError(
             f"{pair}: {what} timestamp {slot.isoformat()} falls inside the consumed dead window"
         )
+    # CV and TC used to constrain disjoint evidence: TC bounded the *scanned*
+    # span by the frozen design epoch while coverage bounded nothing but the
+    # dead window, so a slot certified outside `[DESIGN_START, DESIGN_END]`
+    # passed coverage untouched. The epoch constants are the committed ones
+    # (D-5.10); nothing here redefines a boundary.
+    if slot < DESIGN_START or slot > DESIGN_END:
+        raise CoverageEvidenceError(
+            f"{pair}: {what} timestamp {slot.isoformat()} lies outside the frozen design epoch "
+            f"[{DESIGN_START.isoformat()}, {DESIGN_END.isoformat()}]"
+        )
     return slot
 
 
@@ -240,6 +350,56 @@ def _validate_minute_accounting(raw: Any, *, pair: str) -> dict[str, int]:
     return values
 
 
+def _assert_bar_certifiable(bar: Mapping[str, Any], *, pair: str, index: int) -> None:
+    """D-3.5 / §12.7: a certified bar has **every** contract-required source minute.
+
+    The refusal text one level up already said "a bar assembled from fewer than
+    all its contract-required minutes is not certifiable", but the only check was
+    on the minute-accounting *totals* — supplied by the same caller as the bars.
+    The adversarial workstream drove 20 pairs of ``n_source_bars=1,
+    complete_bucket=False`` bars to a satisfied coverage conjunction. The bar's
+    own fields are what decide certifiability, so they are what is read here.
+    """
+    if BAR_SOURCE_MINUTE_KEY not in bar:
+        raise BarNotCertifiableError(
+            f"{pair}: bar {index} declares no {BAR_SOURCE_MINUTE_KEY!r}, so nothing states how "
+            "many contract-required source minutes constituted its bucket"
+        )
+    n_source = bar[BAR_SOURCE_MINUTE_KEY]
+    if isinstance(n_source, bool) or not isinstance(n_source, int):
+        raise BarNotCertifiableError(
+            f"{pair}: bar {index} declares {BAR_SOURCE_MINUTE_KEY!r} as "
+            f"{type(n_source).__name__}, not a counted number of source minutes"
+        )
+    if n_source != SLOT_MINUTES:
+        raise BarNotCertifiableError(
+            f"{pair}: bar {index} was constituted from {n_source} of the {SLOT_MINUTES} "
+            "contract-required source minutes; a bar assembled from fewer than all of them is "
+            "not certifiable and never contributes a certified slot"
+        )
+    if BAR_COMPLETE_KEY not in bar:
+        raise BarNotCertifiableError(
+            f"{pair}: bar {index} declares no {BAR_COMPLETE_KEY!r} certifiability flag"
+        )
+    complete = bar[BAR_COMPLETE_KEY]
+    if not isinstance(complete, bool):
+        raise BarNotCertifiableError(
+            f"{pair}: bar {index} declares {BAR_COMPLETE_KEY!r} as {type(complete).__name__}, "
+            "not a measured boolean"
+        )
+    if not complete:
+        raise BarNotCertifiableError(
+            f"{pair}: bar {index} is flagged {BAR_COMPLETE_KEY}=False and is therefore not "
+            "certifiable; an incomplete bucket never contributes a certified slot"
+        )
+    if BAR_COMPLETE_ALIAS_KEY in bar and bar[BAR_COMPLETE_ALIAS_KEY] is not complete:
+        raise BarNotCertifiableError(
+            f"{pair}: bar {index} declares {BAR_COMPLETE_KEY}={complete!r} but its retained "
+            f"alias {BAR_COMPLETE_ALIAS_KEY}={bar[BAR_COMPLETE_ALIAS_KEY]!r}; the two committed "
+            "spellings name one measured quantity and cannot disagree"
+        )
+
+
 def measure_pair_coverage(
     *,
     pair: object,
@@ -270,6 +430,7 @@ def measure_pair_coverage(
             raise CoverageEvidenceError(
                 f"{canonical}: bar {index} declares no {BAR_SLOT_KEY!r} bucket start"
             )
+        _assert_bar_certifiable(bar, pair=canonical, index=index)
         slot = _normalise_slot(bar[BAR_SLOT_KEY], pair=canonical, what="certified bar")
         if slot in seen:
             duplicates.append(slot)
@@ -291,6 +452,7 @@ def measure_pair_coverage(
         duplicate_slots=tuple(duplicates),
         rejected_slots=rejected,
         minute_accounting=accounting,
+        _construction_token=_CoverageConstructionToken(_MEASUREMENT_PURPOSE),
     )
 
 
@@ -366,6 +528,31 @@ def assert_full_coverage(
         expected = calendar.expected_slots(pair)
         certified = measurement.certified_slots
 
+        # Defence in depth, and REACHABLE: `validate_calendar` and
+        # `measure_pair_coverage` both refuse a dead-window slot, but neither
+        # frozen dataclass is sealed — `object.__setattr__` replaces the slot
+        # mapping of a real, validated calendar, and no construction token can
+        # close that route. The consumed M1 holdout must never be counted as
+        # covered by any role, so the set that coverage actually decides over is
+        # re-checked here rather than inherited on trust.
+        for slot in sorted(expected):
+            if is_dead_window_instant(slot):
+                raise CoverageEvidenceError(
+                    f"{pair}: the calendar expects slot {slot.isoformat()}, which lies inside "
+                    "the consumed dead window; no role may expect a dead-window slot"
+                )
+            if slot < DESIGN_START or slot > DESIGN_END:
+                raise CoverageEvidenceError(
+                    f"{pair}: the calendar expects slot {slot.isoformat()} outside the frozen "
+                    f"design epoch [{DESIGN_START.isoformat()}, {DESIGN_END.isoformat()}]"
+                )
+        for slot in sorted(certified):
+            if is_dead_window_instant(slot):
+                raise CoverageEvidenceError(
+                    f"{pair}: slot {slot.isoformat()} is certified as covered while lying "
+                    "inside the consumed dead window"
+                )
+
         if measurement.duplicate_slots:
             slot = sorted(measurement.duplicate_slots)[0]
             raise CoverageSetMismatchError(
@@ -399,29 +586,47 @@ def assert_full_coverage(
                 "fewer than all its contract-required minutes is not certifiable"
             )
 
+        # The minute accounting and the calendar are two independently supplied
+        # quantities that describe the same epoch, and under the frozen
+        # 15-minute grid (D-3.5: every contract-required minute usable) the
+        # relation between them is arithmetic, not a threshold: an epoch of
+        # `len(expected)` buckets expects exactly `15 * len(expected)` source
+        # minutes. Binding them stops an accounting block that describes ten
+        # months from sitting beside a calendar that declares three slots.
+        expected_minutes = measurement.minute_accounting["expected_source_minute_count"]
+        if expected_minutes != SLOT_MINUTES * len(expected):
+            raise MinuteAccountingError(
+                f"{pair}: minute accounting expects {expected_minutes} source minute(s) while "
+                f"the calendar expects {len(expected)} M15 slot(s), which the frozen "
+                f"{SLOT_MINUTES}-minute grid constitutes from "
+                f"{SLOT_MINUTES * len(expected)}; the two describe different epochs"
+            )
+
         per_pair.append(
             PairCoverage(
                 pair=pair,
                 expected_slot_count=len(expected),
                 certified_slot_count=len(certified),
-                satisfied=True,
             )
         )
 
-    result = CoverageResult(
+    return CoverageResult(
         calendar_digest=calendar.content_digest,
         calendar_epoch=calendar.target_epoch,
         per_pair=tuple(per_pair),
         pairs_measured=tuple(PAIRS_20),
+        _construction_token=_CoverageConstructionToken(_RESULT_PURPOSE),
     )
-    if not result.satisfied:  # pragma: no cover - defensive
-        raise CoverageSetMismatchError("coverage conjunction over PAIRS_20 is not satisfied")
-    return result
 
 
 __all__ = [
+    "BAR_COMPLETE_ALIAS_KEY",
+    "BAR_COMPLETE_KEY",
     "BAR_SLOT_KEY",
+    "BAR_SOURCE_MINUTE_KEY",
     "MINUTE_ACCOUNTING_FIELDS",
+    "BarNotCertifiableError",
+    "CoverageConstructionError",
     "CoverageError",
     "CoverageEvidenceError",
     "CoverageMeasurementMissingError",

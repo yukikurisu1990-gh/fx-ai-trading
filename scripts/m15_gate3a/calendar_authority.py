@@ -107,13 +107,43 @@ class CalendarEpochMismatchError(CalendarAuthorityError):
     """The calendar's target epoch is not the epoch being certified (D-6.2)."""
 
 
+class CalendarConstructionError(CalendarAuthorityError):
+    """A :class:`ValidatedCalendar` was built outside :func:`validate_calendar`."""
+
+
+class _CalendarConstructionToken:
+    """One-shot capability to construct one :class:`ValidatedCalendar`.
+
+    A frozen dataclass documents its constructor in a docstring and enforces
+    nothing, so "constructed only by :func:`validate_calendar`" used to be a
+    comment. The data-integrity audit built ``ValidatedCalendar(authority="THE
+    OBSERVED DATA ITSELF", slot_source_field="reverse-inferred from
+    observation", ...)`` straight from the public API and used it to satisfy the
+    coverage limb — an artifact refuting D-6.1's single "Never" on its own face.
+    The token closes that: only :func:`validate_calendar` mints one, and it is
+    spent by the first construction so :func:`dataclasses.replace` cannot reuse
+    it to mint a variant.
+
+    **What it does not do.** Python has no enforced privacy: a caller that
+    reaches into this module's private names can mint a token. The guard removes
+    the *public-API* route, not every route, and the module states that rather
+    than claiming an unforgeable capability.
+    """
+
+    __slots__ = ("spent",)
+
+    def __init__(self) -> None:
+        self.spent = False
+
+
 @dataclass(frozen=True, slots=True)
 class ValidatedCalendar:
     """A calendar artifact that passed validation, and the slot set it declares.
 
-    Constructed only by :func:`validate_calendar`. It holds no observation and
-    exposes no way to inject one, so the expected slot set can never be narrowed
-    to whatever happened to be measured (D-6.1).
+    Minted only by :func:`validate_calendar`, and that is enforced by
+    :class:`_CalendarConstructionToken` rather than asserted in prose. It holds
+    no observation and exposes no way to inject one, so the expected slot set can
+    never be narrowed to whatever happened to be measured (D-6.1).
     """
 
     authority: str
@@ -127,6 +157,18 @@ class ValidatedCalendar:
     slot_source_field: str
     approval_basis: str = field(default=APPROVAL_BASIS_DECLARED)
     _slots: Mapping[str, frozenset[datetime]] = field(default_factory=dict)
+    _construction_token: Any = field(default=None, repr=False, compare=False)
+
+    def __post_init__(self) -> None:
+        token = self._construction_token
+        if not isinstance(token, _CalendarConstructionToken) or token.spent:
+            raise CalendarConstructionError(
+                "a ValidatedCalendar is minted only by validate_calendar(); a hand-built or "
+                "re-minted instance is a caller's own assertion about market hours, and D-6.1 "
+                "forbids an expected slot set that did not come from the calendar artifact"
+            )
+        token.spent = True
+        object.__setattr__(self, "_construction_token", None)
 
     def expected_slots(self, pair: object) -> frozenset[datetime]:
         """Expected M15 slots for ``pair``, exactly as the artifact declared them."""
@@ -161,6 +203,23 @@ def _require_text(artifact: Mapping[str, Any], key: str) -> str:
     if not text.strip():
         raise CalendarAmbiguousError(
             f"calendar field {key!r} is present but empty, so the artifact states nothing"
+        )
+    return text
+
+
+def _require_single_token(text: str, *, key: str) -> str:
+    """A digest/version field is one token, never prose.
+
+    D-6 requires the artifact to carry a "content digest / version" and
+    deliberately does not fix its algorithm, so a hex length cannot be demanded
+    here. What can be demanded is the *shape* of an identifier: the audit's
+    fabricated ``calendar_digest="NO CALENDAR EVER EXISTED"`` is a sentence, and
+    a sentence is not a version of anything.
+    """
+    if any(ch.isspace() for ch in text):
+        raise CalendarMalformedError(
+            f"calendar field {key!r} is {text!r}; a content digest or version is a single "
+            "token, never prose containing whitespace"
         )
     return text
 
@@ -302,6 +361,7 @@ def validate_calendar(artifact: Any, *, expected_epoch: str) -> ValidatedCalenda
         )
 
     fields = {key: _require_text(snapshot, key) for key in REQUIRED_CALENDAR_FIELDS}
+    fields["content_digest"] = _require_single_token(fields["content_digest"], key="content_digest")
 
     # Approval is checked before the slot set: an unapproved calendar is refused
     # whether or not its contents happen to be well-formed.
@@ -347,6 +407,7 @@ def validate_calendar(artifact: Any, *, expected_epoch: str) -> ValidatedCalenda
         slot_source_field=source_field,
         approval_basis=APPROVAL_BASIS_DECLARED,
         _slots=dict(slots),
+        _construction_token=_CalendarConstructionToken(),
     )
 
 
@@ -359,6 +420,7 @@ __all__ = [
     "CalendarAbsentError",
     "CalendarAmbiguousError",
     "CalendarAuthorityError",
+    "CalendarConstructionError",
     "CalendarEpochMismatchError",
     "CalendarMalformedError",
     "CalendarUnapprovedError",

@@ -23,6 +23,7 @@ this very suite:
 
 from __future__ import annotations
 
+import os
 import re
 from datetime import UTC, datetime, timedelta, timezone
 from pathlib import Path
@@ -39,6 +40,9 @@ from scripts.m15_gate3a.guards import (
 )
 from scripts.m15_gate3a.path_authority import PathAuthorityError, resolve_candidate
 from scripts.m15_gate3a.timeutil import TimestampError, format_utc_z, to_utc
+
+# Anchored to this file, never the working directory.
+REPO_ROOT = Path(__file__).resolve().parents[2]
 
 # ==========================================================================
 # RF-1 — the fractional-digit check saw one separator and one fraction
@@ -675,3 +679,48 @@ def test_rf15_the_routing_the_docstring_does_claim_actually_exists(
     with pytest.raises(RealDataRefusedError, match="refused real/protected path"):
         write_metadata_artifact(target_dir, "sneaky.json", {"note": "x"})
     assert not target_dir.exists(), "a refused write must leave nothing behind"
+
+
+# ---------------------------------------------------------------------------
+# F2-1 / device namespace — the two blanket refusals in `resolve_candidate`.
+# Both were found by the independent mutation/adversarial workstream: the ADS
+# spelling was ALLOWED and the write SUCCEEDED, and the guard only refused on a
+# second call once the stream existed — i.e. it failed open exactly on the
+# creating write. `PATH-device-allowed` survived mutation for an unprotected
+# path, so the blanket rule itself was unpinned.
+# ---------------------------------------------------------------------------
+
+
+def test_f2_1_a_stream_qualified_spelling_of_a_protected_tree_is_refused() -> None:
+    """The ADS bypass, pinned on the *first* call — before anything is created."""
+    protected = str(REPO_ROOT / "docs")
+    with pytest.raises(RealDataRefusedError, match="stream-qualified path"):
+        refuse_real_path(f"{protected}:probe_stream")
+
+
+def test_f2_1_a_stream_qualified_spelling_is_refused_anywhere_not_only_when_protected() -> None:
+    """It is a blanket spelling rule, not a containment outcome.
+
+    Pinned separately because a containment-only test would still pass if the
+    stream rule were deleted — the protected-tree case is decided twice.
+    """
+    with pytest.raises(PathAuthorityError, match="stream-qualified path"):
+        resolve_candidate(f"{REPO_ROOT / 'no-such-dir'}:stream")
+
+
+def test_f2_1_a_windows_drive_letter_colon_is_not_a_stream_suffix() -> None:
+    r"""The rule must not swallow `C:\...`, or every absolute Windows path dies."""
+    if os.name != "nt":
+        pytest.skip("drive-letter spellings are Windows-only")
+    resolved = resolve_candidate(str(REPO_ROOT / "docs"))
+    assert resolved == (REPO_ROOT / "docs").resolve()
+
+
+def test_the_device_namespace_is_refused_even_where_containment_would_not_fire() -> None:
+    """`PATH-device-allowed` survived: only the protected half was pinned.
+
+    An *unprotected* device path isolates the blanket rule, because containment
+    cannot be what refuses it.
+    """
+    with pytest.raises(PathAuthorityError, match="device-namespace path"):
+        resolve_candidate(r"\\.\PhysicalDrive0")

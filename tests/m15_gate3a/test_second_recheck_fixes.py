@@ -671,7 +671,14 @@ def _coverage_probes() -> None:
 
     measurement = measure_pair_coverage(
         pair="EUR_USD",
-        certified_bars=[{"ts": _DESIGN_TRIPWIRE, "n_source_bars": 15}],
+        certified_bars=[
+            {
+                "ts": _DESIGN_TRIPWIRE,
+                "n_source_bars": 15,
+                "complete_bucket": True,
+                "eligible": True,
+            }
+        ],
         minute_accounting=accounting(slots=1),
         rejected_slots=[],
     )

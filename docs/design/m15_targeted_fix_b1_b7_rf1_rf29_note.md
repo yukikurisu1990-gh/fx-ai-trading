@@ -191,6 +191,48 @@ implementer's relaxation. Nothing in this PR softens that.
 
 ---
 
+## 7a. Internal multi-agent audit (policy §13)
+
+Roles, none given another's conclusions: **implementation** (five parallel
+workstreams with disjoint file ownership) · **contract/specification** ·
+**adversarial/bypass** · **tests/mutation** · **data-integrity/proof-design** ·
+**containment/security**. The lead reproduced every blocker itself before
+accepting it, and rejected none of the audit's substantive findings.
+
+**The audit found the fix defective, and the fixes below were made in response.**
+
+| Finding | Disposition |
+| --- | --- |
+| **The byte-level `PROVEN` token was minted inside package C** — found *independently* by the contract role and the data-integrity role. §11 fixes C's maximal claim at the declaration-only token; the note's original "§15.4 deferral" framing was the convenient reading, not the correct one (§15.4 defers the *reader*) | **Closed.** No code path returns a claim token. Best outcome is `BYTE_LEVEL_PROOF_PENDING` with `claim_withheld_because = NO_REGISTERED_BYTE_READING_COMPONENT_EXISTS…`; all four limbs still evaluate and still fail closed |
+| **A `ValidatedCalendar` could be hand-built** with `authority="THE OBSERVED DATA ITSELF"`, `slot_source_field="reverse-inferred from observation"` — defeating D-6.1's single "Never" (lead-reproduced) | **Closed.** One-shot construction tokens, *spent* on first use so `dataclasses.replace` cannot re-mint from a real record |
+| **`assert_full_coverage` was satisfied over a slot set lying entirely inside the consumed dead window** (lead-reproduced) | **Closed.** Dead-window and design-epoch slot refusal; `assert_full_coverage` and `_limb_cv` re-check invariants rather than trusting the type |
+| **The emitted record asserted `MEASURED_FROM_DERIVED_ARTIFACT_BYTES…`** while measuring nothing — B-2 relocated into the new module | **Closed.** `evidence_basis`, `files_opened=0`, `bytes_measured=0`, `declared_not_measured` now reach the return value |
+| **Coverage never read bar certifiability** — 20 pairs of `complete_bucket=False` bars gave `COVERAGE SATISFIED` (§12.7) | **Closed.** Reads each bar's own fields, not the caller's totals |
+| **§12.23 unconformed** — `format_utc_z` was built in this PR and never called, so `+00:00` still reached the proof payload | **Closed.** Both emission sites routed through the single formatter |
+| **B-3 was pinned for timestamps only** — re-deriving the identity keys at publication survived the whole suite | **Closed.** Source was already correct; the test that constrains it is new and mutation-verified |
+| **NTFS alternate-data-stream bypass** — `<protected>/docs:probe_stream` was ALLOWED *and the write succeeded*, refusing only on the second call once the stream existed | **Closed.** Stream-qualified spellings refused before anything is created |
+| **Declared numeric keys accepted unbounded series**; a non-string key skipped a whole subtree | **Closed.** |
+| **`current_byte_level_proof_status()`** returned one constant — a new single-valued attestation created in the same edit that deleted eleven | **Closed by deletion.** So was `aggregate_assertions`, a literal-`True` map |
+| DI-5…DI-9, C-5, C-8 (both confusable spellings admitted) | **Closed.** C-8 resolved better than either option offered: `eligible_event_count` stays admissible as a *key* so the committed artifact scans clean, but **not** as a numeric one, so a continuation populating it with a real count is flagged |
+| **D-5.8 count floor** | **Deliberately NOT closed** — `Requires separate contract Gate-decision`. Enforcing "a sparse handful of points never produces a proof token" against a calendar that itself declares one slot per pair needs a number nobody pinned, and D-6 forbids this module to decide how many buckets an epoch contains |
+
+**Mutation study**: 203 mutants, 181 killed (**89.2%**), 22 survivors — 17 genuine
+gaps at audit time, since closed or pinned; 2 verified redundant, 2 verified
+equivalent, 1 disclosed harness artifact. Every fix above was re-verified by a
+36-case temporary-revert harness reporting `unverified: none`.
+
+**The R-1 trap fired twice on this PR** — once when the RF-19 fix made
+`full_20x3_coverage` incapable of being `False`, and once when
+`current_byte_level_proof_status()` was created. Both were caught by audit, not
+by the implementer. The constants that remain (`evidence_basis`,
+`files_opened=0`) are **disclaimers** asserting that nothing was measured, which
+DI-2 requires; every constant asserting a *favourable* property was deleted.
+
+**Methodological note worth carrying forward:** a stale `__pycache__` entry
+falsified one mutation result (same-size edit inside one second). Every mutation
+run here used `PYTHONDONTWRITEBYTECODE=1`. Any future mutation study on this
+suite should do the same or it may silently under-report survivors.
+
 ## 8. Process deviation — disclosed
 
 During test reconciliation a subagent ran an unscoped `pytest tests/`, which

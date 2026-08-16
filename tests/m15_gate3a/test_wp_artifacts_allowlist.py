@@ -1,4 +1,12 @@
-"""Per-artifact allowlist scrubber + writer — blocker B-1 and RF-6…RF-11 / RF-15 / RF-22 / RF-27.
+"""Per-artifact allowlist scrubber + writer.
+
+Covers B-1, RF-6…RF-11, RF-15, RF-22, RF-27, and the F2-2 / F2-3 / C-8
+findings from the independent mutation/adversarial workstream.
+
+The ``F2-*`` tests close defects the independent mutation/adversarial workstream
+reproduced on pristine source at head ``391e262``; the cardinality-budget,
+prohibition-length, undeclared-numeric and name-pin tests pin mutants that
+survived the previous suite untouched.
 
 Every accept in this file is paired with a refuse on the same rule, and every
 refuse with an accept: the negative-control rule (contract Gate-decision §10 R-1)
@@ -21,8 +29,13 @@ from pathlib import Path
 import pytest
 
 from scripts.m15_gate3a.artifacts import (
+    _MAX_LIST_ITEMS,
+    _MAX_PROHIBITION_ENTRY_LEN,
+    _MAX_VALUES_PER_NUMERIC_KEY,
+    _UNDECLARED_MAX_LEAVES,
     EXPECTED_ARTIFACT_FILES,
     ArtifactScrubError,
+    artifact_schema,
     assert_gate3a_clean,
     scan_gate3a,
     validate_metadata_artifact,
@@ -101,6 +114,20 @@ def _scrub_report_listing_its_prohibitions() -> dict[str, object]:
         },
         "findings": [],
     }
+
+
+def _nest(items: list[object], width: int = _MAX_LIST_ITEMS) -> list[object]:
+    """Fold *items* into lists no longer than *width*, so only the leaf count varies.
+
+    Every list this produces is within the declared list bound, which is what
+    makes the payloads below isolate the *cardinality* budgets: no
+    ``gate3a_list_longer_than_declared`` can fire and stand in for the finding
+    under test.
+    """
+    folded = list(items)
+    while len(folded) > width:
+        folded = [folded[i : i + width] for i in range(0, len(folded), width)]
+    return folded
 
 
 def _price_row(index: int) -> dict[str, float]:
@@ -632,6 +659,237 @@ def test_r1_the_module_mints_no_one_valued_self_attestation() -> None:
     assert not hasattr(artifacts_module, "cleanliness_report")
     assert scan_gate3a({"artifact": "scrub_report", "gate": "3a"}) == []
     assert scan_gate3a({"artifact": "scrub_report", "result": "PASS"}) != []
+
+
+# --------------------------------------------------------------------------
+# F2-2 — a declared numeric key is a licence for a value, not for a series
+# --------------------------------------------------------------------------
+
+
+def test_f2_2_a_declared_numeric_key_may_not_carry_a_price_series() -> None:
+    """Lead-reproduced fail-open: 340 prices under ``pip_size`` scanned clean.
+
+    Chunked into 17 lists of 20 no list exceeded the roster bound, and 340 sat
+    under the schema-wide numeric budget — which bounds *all* numeric keys
+    together and so cannot bound any one of them.
+    """
+    prices = [1.10 + i / 1e6 for i in range(340)]
+    chunked = _nest(list(prices))
+    payload = {"artifact": "design_m15_inventory", "pip_size": chunked}
+    assert "gate3a_numeric_series_under_declared_key:pip_size" in scan_gate3a(payload)
+
+
+def test_f2_2_the_per_key_bound_is_one_value_per_roster_entry_plus_an_aggregate() -> None:
+    """The boundary itself, both sides — the bound is derived, not chosen."""
+    assert _MAX_VALUES_PER_NUMERIC_KEY == len(PAIRS_20) + 1 == 21
+    per_pair = [0.01 if p.endswith("_JPY") else 0.0001 for p in PAIRS_20]
+    at_bound = {"artifact": "design_m15_inventory", "pip_size": [per_pair, [0.0001]]}
+    assert scan_gate3a(at_bound) == []
+    over = {"artifact": "design_m15_inventory", "pip_size": [per_pair, [0.0001, 0.0001]]}
+    assert "gate3a_numeric_series_under_declared_key:pip_size" in scan_gate3a(over)
+
+
+def test_f2_2_row_records_re_keyed_into_a_dict_container_are_still_counted() -> None:
+    """The row-like count ran over list items only, so a dict of rows was free.
+
+    15 x 8 sides lands on exactly the undeclared numeric budget — bounded, never
+    exceeded — so the budgets could not catch what the heuristic was not looking
+    at.
+    """
+    rows = {str(i): _price_row(i) for i in range(15)}
+    assert sum(len(row) for row in rows.values()) == 120
+    assert "gate3a_row_like_numeric_records" in scan_gate3a(rows)
+
+
+def test_f2_2_a_dict_of_small_records_is_not_a_dataset() -> None:
+    """Negative control: the record count is only a finding above the row shape."""
+    small = {str(i): {"granularity": 1.0, "horizon_overlap_factor": 2.0} for i in range(15)}
+    assert scan_gate3a(small) == []
+
+
+# --------------------------------------------------------------------------
+# F2-3 — a non-string key reported the key and skipped everything under it
+# --------------------------------------------------------------------------
+
+
+def test_f2_3_a_non_string_key_is_reported_and_its_subtree_is_still_scanned() -> None:
+    """Lead-reproduced: 30 x 8 numeric rows under an ``int`` key, one finding.
+
+    The declared scan reported ``gate3a_non_string_key:0`` and ``continue``d, so
+    the dataset beneath the unrenderable key was never examined at all.
+    """
+    rows = [_price_row(i) for i in range(30)]
+    findings = scan_gate3a({0: rows}, artifact="design_m15_inventory.json")
+    assert "gate3a_non_string_key:0" in findings
+    assert "gate3a_undeclared_key:b_o" in findings
+    assert "gate3a_undeclared_numeric_field:b_o" in findings
+
+
+def test_f2_3_a_non_string_key_over_a_clean_subtree_reports_only_the_key() -> None:
+    """Negative control: scanning the subtree must not manufacture findings."""
+    payload = {0: {"status": "SCHEMA_FIXED__POPULATED_AT_IMPLEMENTATION"}}
+    assert scan_gate3a(payload, artifact="design_m15_inventory.json") == ["gate3a_non_string_key:0"]
+
+
+def test_f2_3_a_finding_below_a_non_string_key_never_names_the_parent_key() -> None:
+    """``pip_size`` really is declared numeric; a violation under ``{0: ...}`` is not its."""
+    payload = {"pip_size": {0: [1.1005, 1.1006]}}
+    findings = scan_gate3a(payload, artifact="design_m15_inventory.json")
+    assert "gate3a_undeclared_numeric_field:non_string_key(0)" in findings
+    assert "gate3a_undeclared_numeric_field:pip_size" not in findings
+
+
+# --------------------------------------------------------------------------
+# Cardinality budgets — every one of these mutants survived the previous suite
+# --------------------------------------------------------------------------
+
+
+def test_the_declared_leaf_budget_is_enforced_at_its_derived_value() -> None:
+    """``leaf-declared`` mutant: 1600 declared string leaves scanned clean."""
+    schema = artifact_schema("design_m15_inventory")
+    assert schema is not None
+    assert schema.max_leaves == len(PAIRS_20) * len(schema.allowed_keys) == 700
+    at_budget = {"artifact": "design_m15_inventory", "sha256": _nest(["ab" * 32] * 699)}
+    assert scan_gate3a(at_budget) == []
+    over = {"artifact": "design_m15_inventory", "sha256": _nest(["ab" * 32] * 700)}
+    assert "gate3a_leaf_cardinality_exceeded" in scan_gate3a(over)
+
+
+def test_the_declared_numeric_budget_is_enforced_independently_of_the_per_key_bound() -> None:
+    """``numeric-declared`` mutant: 400 numeric leaves scanned clean.
+
+    Reached through a declared **non**-numeric key, so the schema-wide budget is
+    the only thing that can produce the finding — the per-key bound of F2-2 does
+    not apply here, and the two rules are shown to be separately reachable.
+    """
+    schema = artifact_schema("design_m15_inventory")
+    assert schema is not None
+    assert schema.max_numeric_leaves == _MAX_VALUES_PER_NUMERIC_KEY * len(schema.numeric_keys)
+    budget = schema.max_numeric_leaves
+    at_budget = {"artifact": "design_m15_inventory", "sha256": _nest([1.0] * budget)}
+    assert scan_gate3a(at_budget) == ["gate3a_undeclared_numeric_field:sha256"]
+    over = {"artifact": "design_m15_inventory", "sha256": _nest([1.0] * (budget + 1))}
+    assert "gate3a_numeric_cardinality_exceeded" in scan_gate3a(over)
+
+
+def test_the_undeclared_leaf_budget_is_enforced_at_its_derived_value() -> None:
+    """``leaf-undeclared`` mutant: 400 undeclared leaves scanned clean."""
+    assert _UNDECLARED_MAX_LEAVES == 200
+    assert scan_gate3a({"reason": ["x"] * _UNDECLARED_MAX_LEAVES}) == []
+    over = {"reason": ["x"] * (_UNDECLARED_MAX_LEAVES + 1)}
+    assert "gate3a_leaf_cardinality_exceeded" in scan_gate3a(over)
+
+
+def test_a_prohibition_entry_longer_than_any_label_loses_the_claim_scan_exemption() -> None:
+    """``SCRUB-prohibition-len-off`` mutant: prose inside a prohibition list.
+
+    The length bound is the only thing between the §10 prohibition-list
+    exemption and arbitrary text, because an exempt string is not claim-scanned
+    at all.
+    """
+    assert _MAX_PROHIBITION_ENTRY_LEN == max(len(s) for s in FORBIDDEN_STATUSES) == 22
+    prose = "this gate3a result is PRODUCTION_READY and MEETS every pre-registered criterion"
+    assert len(prose) == 79 > _MAX_PROHIBITION_ENTRY_LEN
+    report = _scrub_report_listing_its_prohibitions()
+    assert scan_gate3a(report, artifact="scrub_report.json") == []
+    report["forbidden_labels"] = [*sorted(FORBIDDEN_STATUSES)[:-1], prose]
+    findings = scan_gate3a(report, artifact="scrub_report.json")
+    assert "gate3a_prohibition_entry_too_long:forbidden_labels" in findings
+
+
+def test_a_numeric_series_under_a_non_numeric_declared_key_is_reported() -> None:
+    """``B1-undeclared-numeric-off`` mutant: prices under ``status`` scanned clean."""
+    smuggled = {"artifact": "design_m15_inventory", "status": [1.1005, 1.1006, 1.1007, 1.1008]}
+    assert "gate3a_undeclared_numeric_field:status" in scan_gate3a(smuggled)
+    declared = {"artifact": "design_m15_inventory", "pip_size": [1.1005, 1.1006, 1.1007, 1.1008]}
+    assert scan_gate3a(declared) == []
+
+
+# --------------------------------------------------------------------------
+# RF-6 — the name pin itself, which no test constrained
+# --------------------------------------------------------------------------
+
+
+class _RenderingLiarName(str):
+    """A ``str`` whose ``__str__`` hands back a *different*, check-evading name."""
+
+    def __str__(self) -> str:  # noqa: D105
+        return _TwoFacedName("../escaped.json")
+
+
+def test_rf6_the_name_is_read_as_pinned_character_data_not_as_it_renders(
+    tmp_path: Path,
+) -> None:
+    """``RF6-name-pin-revert`` mutant: ``_pin(name)`` -> ``str(name)``.
+
+    Under that mutant the checks and the join both read the *rendered* name,
+    which is itself a two-faced ``str`` that answers ``endswith``, ``!=`` and
+    ``in`` however the validator asks — so the artifact lands outside
+    ``out_dir`` entirely. RF-6's fix had no test at all until now.
+    """
+    out = tmp_path / "inner"
+    name = _RenderingLiarName("ok.json")
+    assert str(name) == "../escaped.json"  # the face it shows
+    written = write_metadata_artifact(out, name, {"ok": 1})
+    assert written.parent == out
+    assert written.name == "ok.json"
+    assert not (tmp_path / "escaped.json").exists()
+    assert sorted(p.name for p in tmp_path.iterdir()) == ["inner"]
+
+
+# --------------------------------------------------------------------------
+# C-8 / §12.20 — only the pinned term may carry the count
+# --------------------------------------------------------------------------
+
+
+def test_c8_the_confusable_count_name_may_describe_a_field_but_not_carry_one() -> None:
+    """§12.20 pins ``complete_bucket_count``; the old spelling must not count.
+
+    The committed ``design_m15_inventory.json`` uses ``eligible_event_count``
+    inside ``required_schema_per_file`` to *describe* a field, and D-7 puts that
+    artifact beyond this PR's reach — so the key stays in the vocabulary. What
+    changed is that it is no longer declared **numeric**: a continuation that
+    populates it is reported, which is the confusion §12.20 exists to prevent
+    (feeding a complete-bucket count where the effective-N spec means traded
+    events clears the frozen floors and disarms ``INSUFFICIENT_SAMPLE``).
+    """
+    described = {
+        "artifact": "design_m15_inventory",
+        "required_schema_per_file": {
+            "eligible_event_count": "count of n_source_bars==15 buckets",
+        },
+    }
+    assert scan_gate3a(described) == []
+    populated = {"artifact": "design_m15_inventory", "eligible_event_count": 21_500}
+    assert "gate3a_undeclared_numeric_field:eligible_event_count" in scan_gate3a(populated)
+    pinned = {"artifact": "design_m15_inventory", "complete_bucket_count": 21_500}
+    assert scan_gate3a(pinned) == []
+
+
+# --------------------------------------------------------------------------
+# §12.25 — the two payloads this gate must still be able to write
+# --------------------------------------------------------------------------
+
+
+def test_1225_the_populated_inventory_and_the_scrub_report_remain_writable(
+    tmp_path: Path,
+) -> None:
+    """Tightening the scrubber must not re-open B-1's mirror-image defect.
+
+    Scanning clean is necessary but not sufficient: both payloads must survive
+    the whole writer, path guard included.
+    """
+    out = tmp_path / "separate_output_directory"
+    inventory = write_metadata_artifact(out, "design_m15_inventory.json", _populated_inventory())
+    written = json.loads(inventory.read_text(encoding="utf-8"))
+    assert written["file_count"] == len(PAIRS_20) == 20
+    assert len(written["files"]) == 20
+
+    report = write_metadata_artifact(
+        out, "scrub_report.json", _scrub_report_listing_its_prohibitions()
+    )
+    labels = json.loads(report.read_text(encoding="utf-8"))["forbidden_labels"]
+    assert sorted(labels) == sorted(FORBIDDEN_STATUSES)
 
 
 def test_r1_the_expected_file_list_is_derived_and_has_a_consumer() -> None:

@@ -29,6 +29,7 @@ from scripts.m15_gate3a.calendar_authority import (
     CALENDAR_APPROVAL_MARKER,
     CalendarAbsentError,
     CalendarAmbiguousError,
+    CalendarConstructionError,
     CalendarEpochMismatchError,
     CalendarMalformedError,
     CalendarUnapprovedError,
@@ -36,11 +37,14 @@ from scripts.m15_gate3a.calendar_authority import (
     validate_calendar,
 )
 from scripts.m15_gate3a.coverage import (
+    BarNotCertifiableError,
+    CoverageConstructionError,
     CoverageEvidenceError,
     CoverageMeasurementMissingError,
     CoverageResult,
     CoverageSetMismatchError,
     MinuteAccountingError,
+    PairCoverage,
     PairSlotMeasurement,
     RejectedSlotCountedCoveredError,
     assert_full_coverage,
@@ -58,23 +62,28 @@ from scripts.m15_gate3a.no_overlap import (
 from scripts.m15_gate3a.pair_authority import PAIRS_20
 from scripts.m15_gate3a.proof import (
     AGGREGATE_ASSERTIONS,
+    BYTE_LEVEL_CLAIM_WITHHELD_REASON,
     BYTE_LEVEL_NO_DEAD_WINDOW_OVERLAP_PROVEN,
     BYTE_LEVEL_PROOF_PENDING,
     BYTE_LEVEL_PROOF_REFUTED,
     DECLARATION_ONLY_TOKENS,
+    DECLARED_NOT_MEASURED_BY_THIS_LAYER,
     DERIVATION_IDENTITY_BOUND,
     FOUR_LIMBS,
+    LIMB_EVALUATION_EVIDENCE_BASIS,
     ROLE_PRODUCER,
     ROLE_VERIFIER,
     SUBJECT_DERIVED_M15_ARTIFACT,
     TOKEN_EVIDENTIARY_BASIS,
     TOKEN_VOCABULARY,
+    VERIFIER_INDEPENDENCE_BASIS,
     AggregateAssertionUnsatisfiedError,
     ConsumerRecheck,
     DeclarationRecord,
     DerivationBinding,
     MeasurementRecord,
     ProofCoMeasurementError,
+    ProofConstructionError,
     ProofContractError,
     ProofDisagreementError,
     ProofLimbAbsentError,
@@ -86,7 +95,6 @@ from scripts.m15_gate3a.proof import (
     assert_byte_level_claim,
     assert_measured_conjunction,
     assert_records_agree,
-    current_byte_level_proof_status,
     evaluate_four_limbs,
     open_for_consumption,
     refuse_raw_source_rehash,
@@ -158,9 +166,21 @@ def accounting(
     }
 
 
+def bar(slot: str, **overrides: Any) -> dict[str, Any]:
+    """One certifiable bar, in the shape ``aggregation`` emits (D-3.5 / §12.7)."""
+    record: dict[str, Any] = {
+        "ts": slot,
+        "n_source_bars": MINUTES_PER_SLOT,
+        "complete_bucket": True,
+        "eligible": True,
+    }
+    record.update(overrides)
+    return {key: value for key, value in record.items() if value is not _OMIT}
+
+
 def bars(slots: tuple[str, ...] | list[str]) -> list[dict[str, Any]]:
     """Distinct bar objects, each declaring its bucket start under ``ts``."""
-    return [{"ts": slot, "n_source_bars": MINUTES_PER_SLOT} for slot in slots]
+    return [bar(slot) for slot in slots]
 
 
 def pair_measurement(
@@ -186,27 +206,38 @@ def digest(index: int) -> str:
     return f"{index:064x}"
 
 
-def provenance(stream: str, index: int = 1) -> Provenance:
-    return Provenance(stream_id=stream, pass_index=index)
+def published_id(pair: str) -> str:
+    return f"candles_{pair}_M15_365d_BA_DESIGN.jsonl"
+
+
+def staged_id(pair: str) -> str:
+    return f"{published_id(pair)}.staging"
+
+
+def provenance(stream: str, artifact_id: str, index: int = 1) -> Provenance:
+    return Provenance(stream_id=stream, pass_index=index, artifact_id=artifact_id)
 
 
 def measurement(
     pair: str, index: int, *, role: str = ROLE_PRODUCER, **overrides: Any
 ) -> MeasurementRecord:
-    prov = provenance(f"{role}-read-{pair}")
+    prov = provenance(f"{role}-read-{pair}", staged_id(pair))
     fields: dict[str, Any] = {
         "role": role,
         "pair": pair,
-        "artifact_id": f"candles_{pair}_M15_365d_BA_DESIGN.jsonl",
+        "artifact_id": published_id(pair),
         "subject": SUBJECT_DERIVED_M15_ARTIFACT,
         "sha256": digest(index + 1),
         "re_read_sha256": digest(index + 1),
-        "staged_artifact_id": f"candles_{pair}_M15_365d_BA_DESIGN.jsonl.staging",
+        "staged_artifact_id": staged_id(pair),
         "size_bytes": 4096 + index,
-        "row_count": 512 + index,
-        "bars_scanned": 512 + index,
-        "measured_ts_min": "2025-05-01T00:00:00Z",
-        "measured_ts_max": "2026-02-28T23:45:00Z",
+        # The scanned bar count is the certified slot count: CV is bound to the
+        # artifact BI and TC measured, so the fixture cannot describe a
+        # three-slot coverage set beside a five-hundred-bar scan.
+        "row_count": len(SLOTS),
+        "bars_scanned": len(SLOTS),
+        "measured_ts_min": SLOTS[0],
+        "measured_ts_max": SLOTS[-1],
         "dead_window_bars_by_bucket_start": 0,
         "dead_window_bars_by_contributing_minute": 0,
         "out_of_design_range_bar_count": 0,
@@ -243,19 +274,20 @@ def binding_set(**overrides: Any) -> list[DerivationBinding]:
     return out
 
 
+def recheck(pair: str, index: int, **overrides: Any) -> ConsumerRecheck:
+    fields: dict[str, Any] = {
+        "pair": pair,
+        "artifact_id": published_id(pair),
+        "sha256": digest(index + 1),
+        "size_bytes": 4096 + index,
+        "provenance": provenance(f"consumer-read-{pair}", published_id(pair), index=9),
+    }
+    fields.update(overrides)
+    return ConsumerRecheck(**fields)
+
+
 def recheck_set(**overrides: Any) -> list[ConsumerRecheck]:
-    out = []
-    for index, pair in enumerate(PAIRS_20):
-        fields: dict[str, Any] = {
-            "pair": pair,
-            "artifact_id": f"candles_{pair}_M15_365d_BA_DESIGN.jsonl",
-            "sha256": digest(index + 1),
-            "size_bytes": 4096 + index,
-            "provenance": provenance(f"consumer-read-{pair}", index=9),
-        }
-        fields.update(overrides)
-        out.append(ConsumerRecheck(**fields))
-    return out
+    return [recheck(pair, index, **overrides) for index, pair in enumerate(PAIRS_20)]
 
 
 def evaluated_proof(**overrides: Any):
@@ -421,6 +453,17 @@ def test_byte_level_claim_token_spellings_are_pinned() -> None:
     assert BYTE_LEVEL_PROOF_REFUTED == "BYTE_LEVEL_PROOF_REFUTED"
 
 
+def test_the_four_limb_and_aggregate_assertion_names_are_pinned() -> None:
+    """D-11 / D-8 name these; nothing else in the suite reads them by value."""
+    assert FOUR_LIMBS == ("BI", "TC", "CV", "DB")
+    assert set(AGGREGATE_ASSERTIONS) == {
+        "dead_window_bars_present_is_zero",
+        "all_ts_max_within_design_end",
+        "all_ts_min_within_design_start",
+        "file_count_is_20",
+    }
+
+
 def test_token_vocabulary_is_closed_and_every_token_names_its_basis() -> None:
     assert set(TOKEN_EVIDENTIARY_BASIS) == set(TOKEN_VOCABULARY)
     assert DECLARATION_ONLY_TOKENS.isdisjoint(
@@ -431,10 +474,20 @@ def test_token_vocabulary_is_closed_and_every_token_names_its_basis() -> None:
     assert all(basis.strip() for basis in TOKEN_EVIDENTIARY_BASIS.values())
 
 
-def test_default_byte_level_status_is_pending_because_nothing_has_been_measured() -> None:
-    assert current_byte_level_proof_status() == BYTE_LEVEL_PROOF_PENDING
+def test_a_pending_status_is_not_a_byte_level_claim() -> None:
     with pytest.raises(ProofContractError, match="is not a byte-level claim token"):
         assert_byte_level_claim(BYTE_LEVEL_PROOF_PENDING)
+
+
+def test_the_package_exposes_no_nullary_status_attestation() -> None:
+    """C-7 / R-1: a nullary function returning one constant is a one-valued field.
+
+    ``current_byte_level_proof_status()`` returned ``BYTE_LEVEL_PROOF_PENDING``
+    unconditionally — created by the very change that deleted eleven such
+    self-attestations. The pending status now reaches a caller only on a record
+    that also states what was and was not measured to arrive at it.
+    """
+    assert not hasattr(proof, "current_byte_level_proof_status")
 
 
 def test_a_declaration_record_may_not_carry_a_byte_level_token() -> None:
@@ -684,7 +737,6 @@ def test_the_calendar_never_shrinks_to_what_was_observed() -> None:
 def test_full_set_equality_over_20_pairs_is_the_coverage_conjunction() -> None:
     result = assert_full_coverage(full_measurements(), valid_calendar(), expected_epoch=EPOCH)
     assert isinstance(result, CoverageResult)
-    assert result.satisfied
     assert result.pairs_measured == PAIRS_20
     assert len(result.per_pair) == len(PAIRS_20)
     assert all(p.expected_slot_count == len(SLOTS) for p in result.per_pair)
@@ -773,11 +825,11 @@ def test_coverage_refuses_a_calendar_for_another_epoch() -> None:
 
 
 def test_one_bar_object_cannot_certify_two_slots() -> None:
-    bar = {"ts": SLOTS[0]}
+    repeated = bar(SLOTS[0])
     with pytest.raises(CoverageEvidenceError, match="one bar cannot certify two slots"):
         measure_pair_coverage(
             pair="EUR_USD",
-            certified_bars=[bar, bar, bar],
+            certified_bars=[repeated, repeated, repeated],
             minute_accounting=accounting(),
             rejected_slots=[],
         )
@@ -801,7 +853,7 @@ def test_a_certified_bar_off_the_bucket_grid_is_refused() -> None:
     with pytest.raises(CoverageEvidenceError, match="does not fall on the frozen"):
         measure_pair_coverage(
             pair="EUR_USD",
-            certified_bars=[{"ts": "2025-05-01T00:07:00Z"}],
+            certified_bars=[bar("2025-05-01T00:07:00Z")],
             minute_accounting=accounting(slots=1),
             rejected_slots=[],
         )
@@ -811,8 +863,220 @@ def test_a_certified_bar_inside_the_dead_window_is_refused() -> None:
     with pytest.raises(CoverageEvidenceError, match="falls inside the consumed dead window"):
         measure_pair_coverage(
             pair="EUR_USD",
-            certified_bars=[{"ts": "2026-03-15T00:00:00Z"}],
+            certified_bars=[bar("2026-03-15T00:00:00Z")],
             minute_accounting=accounting(slots=1),
+            rejected_slots=[],
+        )
+
+
+def test_a_certified_bar_outside_the_design_epoch_is_refused() -> None:
+    """C-5: CV bounded only the dead window while TC bounded the design span."""
+    outside = "2025-04-24T23:45:00Z"
+    assert to_utc(outside) < DESIGN_START
+    assert not is_dead_window_instant(outside)
+    with pytest.raises(CoverageEvidenceError, match="lies outside the frozen design epoch"):
+        measure_pair_coverage(
+            pair="EUR_USD",
+            certified_bars=[bar(outside)],
+            minute_accounting=accounting(slots=1),
+            rejected_slots=[],
+        )
+
+
+# ---------------------------------------------------------------------------
+# D-3.5 / §12.7 — a bar is certifiable only with EVERY required source minute
+# ---------------------------------------------------------------------------
+
+
+def test_a_bar_short_of_its_contract_required_minutes_certifies_nothing() -> None:
+    """The refusal text promised this; only the caller-supplied totals were read.
+
+    Twenty pairs of ``n_source_bars=1, complete_bucket=False`` bars reached a
+    satisfied coverage conjunction, because the only certifiability check was on
+    minute-accounting sums the same caller wrote.
+    """
+    with pytest.raises(BarNotCertifiableError, match="is not certifiable and never contributes"):
+        measure_pair_coverage(
+            pair="EUR_USD",
+            certified_bars=[bar(SLOTS[0], n_source_bars=1, complete_bucket=False, eligible=False)],
+            minute_accounting=accounting(slots=1),
+            rejected_slots=[],
+        )
+
+
+def test_a_bar_flagged_incomplete_certifies_nothing_even_with_all_minutes_claimed() -> None:
+    with pytest.raises(BarNotCertifiableError, match="an incomplete bucket never contributes"):
+        measure_pair_coverage(
+            pair="EUR_USD",
+            certified_bars=[bar(SLOTS[0], complete_bucket=False, eligible=False)],
+            minute_accounting=accounting(slots=1),
+            rejected_slots=[],
+        )
+
+
+def test_a_bar_that_declares_no_source_minute_count_certifies_nothing() -> None:
+    with pytest.raises(BarNotCertifiableError, match="nothing states how many"):
+        measure_pair_coverage(
+            pair="EUR_USD",
+            certified_bars=[bar(SLOTS[0], n_source_bars=_OMIT)],
+            minute_accounting=accounting(slots=1),
+            rejected_slots=[],
+        )
+
+
+def test_a_bar_that_declares_no_certifiability_flag_certifies_nothing() -> None:
+    with pytest.raises(BarNotCertifiableError, match="declares no 'complete_bucket'"):
+        measure_pair_coverage(
+            pair="EUR_USD",
+            certified_bars=[bar(SLOTS[0], complete_bucket=_OMIT, eligible=_OMIT)],
+            minute_accounting=accounting(slots=1),
+            rejected_slots=[],
+        )
+
+
+def test_the_two_committed_spellings_of_certifiability_cannot_disagree() -> None:
+    with pytest.raises(BarNotCertifiableError, match="cannot disagree"):
+        measure_pair_coverage(
+            pair="EUR_USD",
+            certified_bars=[bar(SLOTS[0], eligible=False)],
+            minute_accounting=accounting(slots=1),
+            rejected_slots=[],
+        )
+
+
+def test_a_full_roster_of_incomplete_bars_never_reaches_a_coverage_conjunction() -> None:
+    """The adversarial reproduction, end to end over all twenty pairs."""
+    with pytest.raises(BarNotCertifiableError, match="is not certifiable and never contributes"):
+        [
+            measure_pair_coverage(
+                pair=pair,
+                certified_bars=[
+                    bar(slot, n_source_bars=1, complete_bucket=False, eligible=False)
+                    for slot in SLOTS
+                ],
+                minute_accounting=accounting(),
+                rejected_slots=[],
+            )
+            for pair in PAIRS_20
+        ]
+
+
+# ---------------------------------------------------------------------------
+# Construction of coverage records
+# ---------------------------------------------------------------------------
+
+
+def test_a_hand_built_pair_slot_measurement_cannot_be_constructed() -> None:
+    """DI-3: the measurement type was public, so the measuring function was optional."""
+    with pytest.raises(CoverageConstructionError, match="a PairSlotMeasurement is minted only by"):
+        PairSlotMeasurement(
+            pair="EUR_USD",
+            certified_slots=frozenset({to_utc("2026-03-15T00:00:00Z")}),
+            duplicate_slots=(),
+            rejected_slots=frozenset(),
+            minute_accounting=accounting(),
+        )
+
+
+def test_a_tampered_calendar_cannot_smuggle_a_dead_window_slot_into_coverage() -> None:
+    """DI-3/DI-4, and the one route no construction token can close.
+
+    ``object.__setattr__`` replaces the slot mapping of a genuinely validated
+    calendar. Coverage therefore re-checks the set it actually decides over,
+    rather than inheriting the calendar's validation on trust.
+    """
+    calendar = valid_calendar()
+    dead = to_utc("2026-03-15T00:00:00Z")
+    assert is_dead_window_instant(dead)
+    object.__setattr__(calendar, "_slots", {pair: frozenset({dead}) for pair in PAIRS_20})
+    with pytest.raises(CoverageEvidenceError, match="no role may expect a dead-window slot"):
+        assert_full_coverage(full_measurements(), calendar, expected_epoch=EPOCH)
+
+
+def test_a_tampered_calendar_cannot_expect_a_slot_outside_the_design_epoch() -> None:
+    calendar = valid_calendar()
+    outside = to_utc("2026-04-25T00:00:00Z")
+    assert not is_dead_window_instant(outside)
+    assert outside > DESIGN_END
+    object.__setattr__(calendar, "_slots", {pair: frozenset({outside}) for pair in PAIRS_20})
+    with pytest.raises(CoverageEvidenceError, match="outside the frozen design epoch"):
+        assert_full_coverage(full_measurements(), calendar, expected_epoch=EPOCH)
+
+
+def test_a_tampered_measurement_cannot_certify_a_dead_window_slot() -> None:
+    measurements = full_measurements()
+    dead = to_utc("2026-03-15T00:00:00Z")
+    object.__setattr__(measurements[0], "certified_slots", measurements[0].certified_slots | {dead})
+    with pytest.raises(CoverageEvidenceError, match="while lying inside the consumed"):
+        assert_full_coverage(measurements, valid_calendar(), expected_epoch=EPOCH)
+
+
+def test_a_hand_built_validated_calendar_cannot_be_constructed() -> None:
+    """DI-3, verbatim from the audit's reproduction."""
+    with pytest.raises(CalendarConstructionError, match="minted only by validate_calendar"):
+        ValidatedCalendar(
+            authority="THE OBSERVED DATA ITSELF",
+            authority_version="whatever the data says",
+            timezone="UTC",
+            market_open_close_rule="whenever there happened to be data",
+            dst_rule="none",
+            exceptional_closure_handling="assume closure wherever data is absent",
+            target_epoch=EPOCH,
+            content_digest="none",
+            slot_source_field="reverse-inferred from observation",
+        )
+
+
+def test_a_real_calendars_token_cannot_be_re_used_to_mint_a_variant() -> None:
+    import dataclasses
+
+    calendar = valid_calendar()
+    with pytest.raises(CalendarConstructionError, match="minted only by validate_calendar"):
+        dataclasses.replace(calendar, authority="THE OBSERVED DATA ITSELF")
+
+
+def test_a_calendar_content_digest_may_not_be_prose() -> None:
+    with pytest.raises(CalendarMalformedError, match="never prose containing whitespace"):
+        validate_calendar(
+            calendar_artifact(content_digest="NO CALENDAR EVER EXISTED"), expected_epoch=EPOCH
+        )
+
+
+def test_an_empty_expected_slot_set_is_never_a_statement_that_the_market_was_closed() -> None:
+    slots = {pair: list(SLOTS) for pair in PAIRS_20}
+    slots["EUR_USD"] = []
+    with pytest.raises(CalendarMalformedError, match="absence of slots is never a statement"):
+        validate_calendar(calendar_artifact(expected_m15_slots=slots), expected_epoch=EPOCH)
+
+
+def test_set_equality_is_not_count_equality() -> None:
+    """One slot swapped for another, cardinality unchanged."""
+    measurements = full_measurements()
+    measurements[3] = pair_measurement(PAIRS_20[3], slots=[*SLOTS[:-1], "2025-05-01T00:45:00Z"])
+    with pytest.raises(CoverageSetMismatchError, match="must contain every expected slot"):
+        assert_full_coverage(measurements, valid_calendar(), expected_epoch=EPOCH)
+
+
+def test_the_calendar_and_the_minute_accounting_must_describe_one_epoch() -> None:
+    """The two are independently supplied; the frozen grid relates them exactly."""
+    measurements = [
+        pair_measurement(pair, minute_accounting=accounting(slots=len(SLOTS) + 1))
+        for pair in PAIRS_20
+    ]
+    with pytest.raises(MinuteAccountingError, match="the two describe different epochs"):
+        assert_full_coverage(measurements, valid_calendar(), expected_epoch=EPOCH)
+
+
+@pytest.mark.parametrize("missing", coverage.MINUTE_ACCOUNTING_FIELDS)
+def test_a_missing_minute_accounting_field_raises_the_modules_own_error(missing: str) -> None:
+    """RF-29 class: a missing key must not surface as a bare ``KeyError``."""
+    partial = accounting()
+    del partial[missing]
+    with pytest.raises(MinuteAccountingError, match="minute_accounting is missing"):
+        measure_pair_coverage(
+            pair="EUR_USD",
+            certified_bars=bars(SLOTS),
+            minute_accounting=partial,
             rejected_slots=[],
         )
 
@@ -872,15 +1136,119 @@ def test_a_legacy_gap_report_key_is_refused_by_the_closed_schema() -> None:
 # ===========================================================================
 
 
-def test_all_four_limbs_satisfied_mints_the_byte_level_claim() -> None:
+def test_all_four_limbs_satisfied_still_mints_no_byte_level_claim() -> None:
+    """DI-1: §11 emits a byte-level token only from a component that opened the file.
+
+    ``evaluate_four_limbs`` lives in component C, which never reads, and used to
+    return ``BYTE_LEVEL_NO_DEAD_WINDOW_OVERLAP_PROVEN`` from the best case.
+    """
     result = evaluated_proof()
-    assert result.token == BYTE_LEVEL_NO_DEAD_WINDOW_OVERLAP_PROVEN
-    assert result.derivation_token == DERIVATION_IDENTITY_BOUND
-    assert result.limbs_evaluated == frozenset(FOUR_LIMBS)
-    assert result.pairs_measured == PAIRS_20
-    assert result.evidentiary_basis == TOKEN_EVIDENTIARY_BASIS[result.token]
-    assert set(result.aggregate_assertions) == set(AGGREGATE_ASSERTIONS)
-    assert all(result.aggregate_assertions.values())
+    assert result.byte_level_status == BYTE_LEVEL_PROOF_PENDING
+    assert result.claim_withheld_because == BYTE_LEVEL_CLAIM_WITHHELD_REASON
+    with pytest.raises(ProofContractError, match="is not a byte-level claim token"):
+        assert_byte_level_claim(result.byte_level_status)
+
+
+def test_no_byte_level_claim_token_appears_anywhere_in_the_returned_record() -> None:
+    """Not "the token field is pending" — no field of it is a claim, at any depth."""
+    result = evaluated_proof()
+    claims = (
+        TOKEN_VOCABULARY
+        - DECLARATION_ONLY_TOKENS
+        - {
+            BYTE_LEVEL_PROOF_PENDING,
+            BYTE_LEVEL_PROOF_REFUTED,
+        }
+    )
+    assert claims == {BYTE_LEVEL_NO_DEAD_WINDOW_OVERLAP_PROVEN, DERIVATION_IDENTITY_BOUND}
+    emitted: set[str] = set()
+    for name in (
+        "byte_level_status",
+        "claim_withheld_because",
+        "evidence_basis",
+        "verifier_independence_basis",
+        "inventory_digest",
+        "calendar_digest",
+    ):
+        emitted.add(getattr(result, name))
+    emitted.update(result.declared_not_measured)
+    assert emitted.isdisjoint(claims)
+
+    approval = open_for_consumption(evaluated_proof(), consumer_rechecks=recheck_set())
+    approval_strings = {
+        approval.byte_level_status,
+        approval.claim_withheld_because,
+        approval.evidence_basis,
+        approval.inventory_digest,
+    }
+    approval_strings.update(approval.declared_not_measured)
+    for artifact_id, sha256, _size in approval.identity.values():
+        approval_strings.update({artifact_id, sha256})
+    assert approval_strings.isdisjoint(claims)
+
+
+def test_the_record_states_that_this_layer_measured_no_bytes() -> None:
+    """DI-2 (audit B-2, relocated): the honest disclosure reaches the value."""
+    result = evaluated_proof()
+    assert result.evidence_basis == LIMB_EVALUATION_EVIDENCE_BASIS
+    assert result.files_opened == 0
+    assert result.bytes_measured == 0
+    assert result.declared_not_measured == DECLARED_NOT_MEASURED_BY_THIS_LAYER
+    assert set(result.declared_not_measured) >= {"sha256", "size_bytes", "certified_slots"}
+    assert result.verifier_independence_basis == VERIFIER_INDEPENDENCE_BASIS
+
+
+def test_the_record_carries_no_one_valued_attestation_fields() -> None:
+    """DI-8 / R-1: the constant-True aggregate map and its siblings are deleted."""
+    result = evaluated_proof()
+    for deleted in (
+        "aggregate_assertions",
+        "derivation_token",
+        "limbs_evaluated",
+        "pairs_measured",
+        "token",
+    ):
+        assert not hasattr(result, deleted), deleted
+
+
+def test_a_hand_built_proof_result_cannot_be_constructed() -> None:
+    """The adversarial workstream drove one straight through consumption."""
+    with pytest.raises(ProofConstructionError, match="a ProofResult is minted only by"):
+        proof.ProofResult(
+            byte_level_status=BYTE_LEVEL_NO_DEAD_WINDOW_OVERLAP_PROVEN,
+            claim_withheld_because="",
+            evidence_basis="",
+            verifier_independence_basis="",
+            declared_not_measured=(),
+            files_opened=0,
+            bytes_measured=0,
+            inventory_digest=digest(1),
+            calendar_digest="NO-CALENDAR-WAS-EVER-VALIDATED",
+            _identity={},
+        )
+
+
+def test_a_hand_built_consumption_approval_cannot_be_constructed() -> None:
+    with pytest.raises(ProofConstructionError, match="a ConsumptionApproval is minted only by"):
+        proof.ConsumptionApproval(
+            byte_level_status=BYTE_LEVEL_NO_DEAD_WINDOW_OVERLAP_PROVEN,
+            claim_withheld_because="",
+            evidence_basis="",
+            declared_not_measured=(),
+            files_opened=0,
+            bytes_measured=0,
+            inventory_digest=digest(1),
+            identity={},
+        )
+
+
+def test_a_refutation_is_how_the_refuted_token_leaves_this_layer() -> None:
+    """DI-1 keeps ``BYTE_LEVEL_PROOF_REFUTED`` reachable; this is the route."""
+    producer = measurement("EUR_USD", 0)
+    verifier = measurement("EUR_USD", 0, role=ROLE_VERIFIER, size_bytes=1)
+    with pytest.raises(ProofDisagreementError) as excinfo:
+        assert_records_agree(producer, verifier)
+    assert excinfo.value.token == BYTE_LEVEL_PROOF_REFUTED
 
 
 def test_omitting_a_limb_argument_entirely_is_a_type_error() -> None:
@@ -900,27 +1268,71 @@ def test_the_cv_limb_cannot_be_omitted() -> None:
         evaluated_proof(coverage_result=None)
 
 
-def test_the_cv_limb_refuses_a_hand_built_unsatisfied_coverage_result() -> None:
-    """The conjunction guard is reachable from a caller, not only from `coverage`.
+def test_a_hand_built_coverage_result_cannot_be_constructed_at_all() -> None:
+    """DI-4: the fabricated CoverageResult the audit fed to the CV limb.
 
-    ``CoverageResult`` is a public frozen dataclass, so nothing stops a caller
-    constructing one that ``coverage`` would never have returned and handing it
-    to the proof. Its source carries
-    ``# pragma: no cover - coverage raises first``, which is a claim this test
-    contradicts: the guard fires, so the pragma sits on a reachable guard
-    (audit §9 AP-7, reported to the source workstream).
+    Before the construction token this built cleanly — ``expected_slot_count=0``
+    beside ``calendar_digest="NO CALENDAR EVER EXISTED"`` — and the only thing
+    standing between it and the byte-level claim was a ``.satisfied`` flag the
+    same caller controlled.
     """
-    hand_built = CoverageResult(
-        calendar_digest="0" * 64,
-        calendar_epoch=EPOCH,
-        per_pair=(),
-        pairs_measured=(),
-    )
-    assert hand_built.satisfied is False
-    with pytest.raises(
-        ProofLimbUnsatisfiedError, match="the 20-pair coverage conjunction is not held"
-    ):
-        evaluated_proof(coverage_result=hand_built)
+    with pytest.raises(CoverageConstructionError, match="a CoverageResult is minted only by"):
+        CoverageResult(
+            calendar_digest="NO CALENDAR EVER EXISTED",
+            calendar_epoch=EPOCH,
+            per_pair=(
+                PairCoverage(pair=p, expected_slot_count=0, certified_slot_count=0) for p in ()
+            ),
+            pairs_measured=(),
+        )
+
+
+def test_a_real_coverage_results_token_cannot_be_re_used_to_mint_a_variant() -> None:
+    """The token is spent by its first construction, so `replace` cannot re-mint."""
+    import dataclasses
+
+    real = assert_full_coverage(full_measurements(), valid_calendar(), expected_epoch=EPOCH)
+    with pytest.raises(CoverageConstructionError, match="a CoverageResult is minted only by"):
+        dataclasses.replace(real, calendar_digest="NO-CALENDAR-WAS-EVER-VALIDATED")
+
+
+def test_the_cv_limb_refuses_a_count_shaped_object() -> None:
+    """D-5.9 exactly: `n_pairs == 20` is not coverage evidence, refused by type."""
+
+    class CountsOnly:
+        n_pairs = len(PAIRS_20)
+        satisfied = True
+        calendar_digest = "counts-only"
+        per_pair = ()
+
+    with pytest.raises(ProofLimbUnsatisfiedError, match="a pair count is not coverage evidence"):
+        evaluated_proof(coverage_result=CountsOnly())
+
+
+def test_the_cv_limb_re_checks_the_roster_of_a_tampered_coverage_result() -> None:
+    """A construction token cannot stop ``object.__setattr__``; the limb re-checks."""
+    real = assert_full_coverage(full_measurements(), valid_calendar(), expected_epoch=EPOCH)
+    object.__setattr__(real, "per_pair", real.per_pair[:-1])
+    with pytest.raises(ProofLimbUnsatisfiedError, match="is not the canonical"):
+        evaluated_proof(coverage_result=real)
+
+
+def test_the_cv_limb_binds_the_certified_slot_count_to_the_scanned_bar_count() -> None:
+    """C-5: CV and BI/TC used to constrain disjoint evidence.
+
+    One certified slot per pair beside a fifty-thousand-bar scan satisfied every
+    limb, because nothing said the coverage evidence and the scanned artifact
+    were the same file.
+    """
+    wide: dict[str, Any] = {
+        "row_count": 5_000,
+        "bars_scanned": 5_000,
+        "measured_ts_max": "2026-02-28T23:45:00Z",
+    }
+    producers = [measurement(p, i, **wide) for i, p in enumerate(PAIRS_20)]
+    verifiers = [measurement(p, i, role=ROLE_VERIFIER, **wide) for i, p in enumerate(PAIRS_20)]
+    with pytest.raises(ProofLimbUnsatisfiedError, match="not describing the same file"):
+        evaluated_proof(producer_records=producers, verifier_records=verifiers)
 
 
 def test_the_db_limb_cannot_be_omitted() -> None:
@@ -980,6 +1392,44 @@ def test_bi_a_digest_not_reproduced_on_re_read_is_refused() -> None:
 def test_bi_row_count_must_be_what_the_full_scan_counted() -> None:
     with pytest.raises(ProofContractError, match="must be what the full scan counted"):
         measurement("EUR_USD", 0, bars_scanned=1)
+
+
+# --- DI-9: arithmetic floors on the scan, no invented threshold --------------
+
+
+def test_a_single_scanned_bar_cannot_have_two_distinct_endpoints() -> None:
+    """DI-9, the audit's exact case: ``bars_scanned=1`` beside a 303-day span."""
+    with pytest.raises(ProofContractError, match="a single bar cannot have two distinct"):
+        measurement(
+            "EUR_USD",
+            0,
+            row_count=1,
+            bars_scanned=1,
+            measured_ts_min="2025-05-01T00:00:00Z",
+            measured_ts_max="2026-02-28T23:45:00Z",
+        )
+
+
+def test_a_bar_count_above_the_measured_spans_capacity_is_refused() -> None:
+    """Necessary, not chosen: distinct bucket starts on the frozen grid are countable."""
+    with pytest.raises(ProofContractError, match="holds at most"):
+        measurement("EUR_USD", 0, row_count=len(SLOTS) + 1, bars_scanned=len(SLOTS) + 1)
+
+
+def test_a_reversed_measured_span_is_not_a_measurement() -> None:
+    with pytest.raises(ProofContractError, match="a reversed span is not a measurement"):
+        measurement("EUR_USD", 0, measured_ts_min=SLOTS[-1], measured_ts_max=SLOTS[0])
+
+
+def test_a_measured_endpoint_off_the_frozen_bucket_grid_is_refused() -> None:
+    with pytest.raises(ProofContractError, match="is not an M15 bucket start on the frozen"):
+        measurement("EUR_USD", 0, measured_ts_max="2025-05-01T00:37:00Z")
+
+
+def test_size_bytes_is_declared_here_and_the_record_says_so() -> None:
+    """DI-9: no bytes-per-row relation holds for every serialisation, so none is invented."""
+    assert "size_bytes" in DECLARED_NOT_MEASURED_BY_THIS_LAYER
+    assert "size_bytes" in evaluated_proof().declared_not_measured
 
 
 # --- TC ---------------------------------------------------------------------
@@ -1087,11 +1537,126 @@ def test_db_an_unnamed_derivation_is_refused() -> None:
 
 def test_a_digest_and_span_from_different_reads_are_refused() -> None:
     with pytest.raises(ProofCoMeasurementError, match="different byte-stream passes"):
-        measurement("EUR_USD", 0, span_provenance=provenance("second-read-EUR_USD", index=2))
+        measurement(
+            "EUR_USD",
+            0,
+            span_provenance=provenance("second-read-EUR_USD", staged_id("EUR_USD"), index=2),
+        )
+
+
+def test_a_verifier_reading_a_different_file_is_not_a_verifier() -> None:
+    """DI-6: independence was a tuple comparison of the two digest provenances.
+
+    A verifier citing a *different artifact at the same pass index* satisfied it
+    and was accepted as an independent re-measurement of the producer's file.
+    """
+    other = provenance("verifier-read-EUR_USD", staged_id("GBP_USD"))
+    producer = measurement("EUR_USD", 0)
+    verifier = measurement(
+        "EUR_USD",
+        0,
+        role=ROLE_VERIFIER,
+        staged_artifact_id=staged_id("GBP_USD"),
+        digest_provenance=other,
+        size_provenance=other,
+        span_provenance=other,
+        scan_provenance=other,
+    )
+    with pytest.raises(ProofDisagreementError, match="not a different one"):
+        assert_records_agree(producer, verifier)
+
+
+def test_a_verifier_re_walking_the_producers_stream_is_not_independent() -> None:
+    """DI-6: the old tuple comparison accepted the same stream at a later pass index.
+
+    Two passes over one open byte stream are not two reads: independence is a
+    distinct stream, and a bumped ``pass_index`` used to be enough to claim it.
+    """
+    stream = "one-and-only-read"
+    first = provenance(stream, staged_id("EUR_USD"), index=1)
+    second = provenance(stream, staged_id("EUR_USD"), index=2)
+    producer = measurement(
+        "EUR_USD",
+        0,
+        digest_provenance=first,
+        size_provenance=first,
+        span_provenance=first,
+        scan_provenance=first,
+    )
+    verifier = measurement(
+        "EUR_USD",
+        0,
+        role=ROLE_VERIFIER,
+        digest_provenance=second,
+        size_provenance=second,
+        span_provenance=second,
+        scan_provenance=second,
+    )
+    with pytest.raises(ProofContractError, match="rather than replaying the producer's read"):
+        assert_records_agree(producer, verifier)
+
+
+def test_a_provenance_must_name_the_artifact_the_record_describes() -> None:
+    """DI-5: two caller-chosen scalars bound to nothing served all twenty pairs."""
+    floating = provenance("one-read-for-everything", staged_id("USD_CHF"))
+    with pytest.raises(ProofCoMeasurementError, match="a provenance that names no particular"):
+        measurement(
+            "EUR_USD",
+            0,
+            digest_provenance=floating,
+            size_provenance=floating,
+            span_provenance=floating,
+            scan_provenance=floating,
+        )
+
+
+def test_a_provenance_that_names_no_artifact_cannot_be_built() -> None:
+    with pytest.raises(ProofCoMeasurementError, match="must name the artifact it read"):
+        Provenance(stream_id="a-read", pass_index=1, artifact_id="   ")
+
+
+def test_one_fabricated_pass_cannot_measure_twenty_artifacts() -> None:
+    """DI-5: one pass over one byte stream measured one artifact."""
+    producers = producer_set()
+    reused = provenance("producer-read-EUR_USD", staged_id(PAIRS_20[7]))
+    producers[7] = measurement(
+        PAIRS_20[7],
+        7,
+        digest_provenance=reused,
+        size_provenance=reused,
+        span_provenance=reused,
+        scan_provenance=reused,
+    )
+    with pytest.raises(ProofCoMeasurementError, match="one pass over one byte stream measures"):
+        evaluated_proof(producer_records=producers)
+
+
+def test_a_pair_measured_twice_in_the_proof_roster_is_refused() -> None:
+    """21 records in, 20 certified: the duplicate used to be discarded silently."""
+    producers = [*producer_set(), measurement(PAIRS_20[0], 0)]
+    with pytest.raises(ProofContractError, match="is measured twice"):
+        evaluated_proof(producer_records=producers)
+
+
+def test_two_pairs_staged_under_one_name_are_refused() -> None:
+    producers = producer_set()
+    shared_stage = staged_id(PAIRS_20[3])
+    swapped = provenance("producer-read-swapped", shared_stage)
+    producers[4] = measurement(
+        PAIRS_20[4],
+        4,
+        staged_artifact_id=shared_stage,
+        digest_provenance=swapped,
+        size_provenance=swapped,
+        span_provenance=swapped,
+        scan_provenance=swapped,
+    )
+    with pytest.raises(ProofContractError, match="twenty files means twenty staging identities"):
+        evaluated_proof(producer_records=producers)
 
 
 def test_a_verifier_replaying_the_producers_read_is_not_independent() -> None:
-    shared = provenance("one-and-only-read")
+    shared = provenance("one-and-only-read", staged_id("EUR_USD"))
     producer = measurement(
         "EUR_USD",
         0,
@@ -1158,6 +1723,22 @@ def test_w2_the_inventorys_own_digest_is_recorded_in_the_proof() -> None:
         evaluated_proof(inventory_digest="not-a-digest")
 
 
+def test_the_proof_shape_checks_the_calendar_digest_it_copies() -> None:
+    """``inventory_digest`` was shape-checked and ``calendar_digest`` was not."""
+    real = assert_full_coverage(full_measurements(), valid_calendar(), expected_epoch=EPOCH)
+    object.__setattr__(real, "calendar_digest", "NO CALENDAR EVER EXISTED")
+    with pytest.raises(ProofContractError, match="a content digest or version is a single"):
+        evaluated_proof(coverage_result=real)
+
+
+def test_consumption_requires_an_evaluated_proof_result() -> None:
+    with pytest.raises(ProofNotUsableError, match="consumption requires an evaluated ProofResult"):
+        open_for_consumption(
+            {"token": BYTE_LEVEL_NO_DEAD_WINDOW_OVERLAP_PROVEN},
+            consumer_rechecks=recheck_set(),
+        )
+
+
 def test_w3_a_proof_that_was_not_re_verified_is_not_usable() -> None:
     result = evaluated_proof()
     with pytest.raises(ProofNotUsableError, match="no consumer re-verification supplied"):
@@ -1185,13 +1766,7 @@ def test_w3_a_partial_recheck_leaves_artifacts_unusable() -> None:
 def test_w3_a_digest_change_between_proof_and_consumption_is_terminal() -> None:
     result = evaluated_proof()
     rechecks = recheck_set()
-    rechecks[7] = ConsumerRecheck(
-        pair=PAIRS_20[7],
-        artifact_id=f"candles_{PAIRS_20[7]}_M15_365d_BA_DESIGN.jsonl",
-        sha256=digest(31337),
-        size_bytes=4096 + 7,
-        provenance=provenance("consumer-read-late", index=9),
-    )
+    rechecks[7] = recheck(PAIRS_20[7], 7, sha256=digest(31337))
     with pytest.raises(ProofDisagreementError, match="digest changed between the proof"):
         open_for_consumption(result, consumer_rechecks=rechecks)
 
@@ -1199,21 +1774,62 @@ def test_w3_a_digest_change_between_proof_and_consumption_is_terminal() -> None:
 def test_w3_a_size_change_between_proof_and_consumption_is_terminal() -> None:
     result = evaluated_proof()
     rechecks = recheck_set()
-    rechecks[7] = ConsumerRecheck(
-        pair=PAIRS_20[7],
-        artifact_id=f"candles_{PAIRS_20[7]}_M15_365d_BA_DESIGN.jsonl",
-        sha256=digest(8),
-        size_bytes=1,
-        provenance=provenance("consumer-read-late", index=9),
-    )
+    rechecks[7] = recheck(PAIRS_20[7], 7, size_bytes=1)
     with pytest.raises(ProofDisagreementError, match="byte size changed between the proof"):
         open_for_consumption(result, consumer_rechecks=rechecks)
 
 
-def test_w3_a_fully_re_verified_proof_is_usable() -> None:
+def test_w3_replaying_the_producers_own_read_is_not_a_re_verification() -> None:
+    """DI-7: the recheck carried a provenance that nothing ever compared."""
+    result = evaluated_proof()
+    rechecks = recheck_set()
+    rechecks[7] = recheck(
+        PAIRS_20[7],
+        7,
+        provenance=provenance(f"producer-read-{PAIRS_20[7]}", published_id(PAIRS_20[7]), index=1),
+    )
+    with pytest.raises(ProofNotUsableError, match="requires the consumer's own fresh read"):
+        open_for_consumption(result, consumer_rechecks=rechecks)
+
+
+def test_w3_replaying_the_verifiers_read_is_not_a_re_verification_either() -> None:
+    result = evaluated_proof()
+    rechecks = recheck_set()
+    rechecks[7] = recheck(
+        PAIRS_20[7],
+        7,
+        provenance=provenance(f"verifier-read-{PAIRS_20[7]}", published_id(PAIRS_20[7]), index=1),
+    )
+    with pytest.raises(ProofNotUsableError, match="requires the consumer's own fresh read"):
+        open_for_consumption(result, consumer_rechecks=rechecks)
+
+
+def test_w3_a_recheck_must_cite_a_read_of_the_artifact_it_describes() -> None:
+    with pytest.raises(ProofContractError, match="a re-verification is of the artifact"):
+        recheck(
+            PAIRS_20[7],
+            7,
+            provenance=provenance("consumer-read-something-else", published_id("USD_CHF"), index=9),
+        )
+
+
+def test_w3_is_the_only_route_to_the_proofs_identity() -> None:
+    """DI-7: while the identity map was public, a consumer could skip W3 entirely."""
+    result = evaluated_proof()
+    assert not hasattr(result, "identity")
+    approval = open_for_consumption(result, consumer_rechecks=recheck_set())
+    assert set(approval.identity) == set(PAIRS_20)
+    assert approval.identity[PAIRS_20[0]] == (published_id(PAIRS_20[0]), digest(1), 4096)
+
+
+def test_w3_a_fully_re_verified_proof_still_authorises_no_read() -> None:
     approval = open_for_consumption(evaluated_proof(), consumer_rechecks=recheck_set())
-    assert approval.token == BYTE_LEVEL_NO_DEAD_WINDOW_OVERLAP_PROVEN
-    assert approval.pairs_reverified == PAIRS_20
+    assert approval.byte_level_status == BYTE_LEVEL_PROOF_PENDING
+    assert approval.claim_withheld_because == BYTE_LEVEL_CLAIM_WITHHELD_REASON
+    assert approval.files_opened == 0
+    assert approval.bytes_measured == 0
+    with pytest.raises(ProofContractError, match="is not a byte-level claim token"):
+        assert_byte_level_claim(approval.byte_level_status)
 
 
 # ===========================================================================
@@ -1298,8 +1914,19 @@ def test_no_entry_point_exposes_a_numeric_or_boolean_switch(entry_point: Any) ->
 def test_insufficient_coverage_raises_rather_than_returning_a_flag() -> None:
     """D-10 / NR-J: recording a coverage flag never permits continuation."""
     thin = [pair_measurement(pair, slots=SLOTS[:1]) for pair in PAIRS_20]
-    calendar = valid_calendar()
-    with pytest.raises(CoverageSetMismatchError):
-        assert_full_coverage(thin, calendar, expected_epoch=EPOCH)
+    with pytest.raises(CoverageSetMismatchError, match="must contain every expected slot"):
+        assert_full_coverage(thin, valid_calendar(), expected_epoch=EPOCH)
     # And the satisfied path is genuinely reachable, so the raise is not vacuous.
-    assert assert_full_coverage(full_measurements(), calendar, expected_epoch=EPOCH).satisfied
+    # There is no `satisfied` flag to read: R-1 deletes a field that can only
+    # ever hold one value, and the object's existence IS the conjunction.
+    result = assert_full_coverage(full_measurements(), valid_calendar(), expected_epoch=EPOCH)
+    assert result.pairs_measured == PAIRS_20
+    assert {entry.pair for entry in result.per_pair} == set(PAIRS_20)
+    assert all(entry.certified_slot_count == len(SLOTS) for entry in result.per_pair)
+
+
+def test_the_coverage_record_carries_no_one_valued_satisfied_flag() -> None:
+    """R-1, one level below the audit's ``aggregate_assertions`` finding."""
+    result = assert_full_coverage(full_measurements(), valid_calendar(), expected_epoch=EPOCH)
+    assert not hasattr(result, "satisfied")
+    assert not hasattr(result.per_pair[0], "satisfied")

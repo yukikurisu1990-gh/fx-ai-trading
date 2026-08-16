@@ -10,7 +10,14 @@ The diagnostic review of PR #440 defeated the protected-path guard twice:
   ``False`` (allowed) on exhaustion. A path 64 levels below the protected tree
   was ALLOWED while one at 63 was REFUSED.
 
-This module replaces both. Containment is decided over the *complete* ancestor
+This module replaces both. A third defeat, found by the mutation/adversarial
+workstream against *this* module, is closed by :func:`_reject_stream_suffix`:
+
+* **NTFS alternate data streams** — ``<protected>/docs:probe_stream`` writes
+  into the protected directory while ``docs`` remains a directory, so neither
+  the name walk nor ``samestat`` sees a match until the stream already exists.
+  The guard therefore allowed the *creating* write and refused only the second
+  call. Containment is decided over the *complete* ancestor
 chain (``Path.parents`` is finite by construction — no arbitrary cap to
 exhaust), the prefix fold is case-insensitive, and every failure mode refuses.
 
@@ -30,6 +37,9 @@ _EXTENDED_UNC: Final[str] = "\\\\?\\UNC\\"
 _EXTENDED: Final[str] = "\\\\?\\"
 # Device namespace: never a data path, and its aliasing rules differ. Refused.
 _DEVICE: Final[str] = "\\\\.\\"
+# The one position at which a colon is a drive-letter separator (`C:\...`) and
+# not an NTFS stream separator. See `_reject_stream_suffix`.
+_DRIVE_COLON_INDEX: Final[int] = 1
 
 
 class PathAuthorityError(ValueError):
@@ -70,6 +80,52 @@ def normalise_spelling(path: str | Path) -> str:
         if is_drive or Path(rest).is_absolute():
             return rest
     return text
+
+
+def _reject_stream_suffix(normalised: str) -> None:
+    r"""Refuse a path whose spelling names an NTFS alternate data stream.
+
+    A stream-qualified name (``<path>:<stream>``) **aliases the object it is
+    attached to without being that object**: ``docs:probe_stream`` writes into
+    the protected ``docs`` directory while ``docs`` stays a directory, so
+    ``Path.parents`` never names ``docs`` and ``stat()`` on the stream fails
+    with ``FileNotFoundError`` until the stream exists. Lead-reproduced on a
+    synthetic protected root: the *creating* write was **ALLOWED** and
+    succeeded, and only the second call — once the stream existed and
+    ``samestat`` could see it — refused. A containment guard that first refuses
+    after the write it was meant to prevent is fail-open where it matters.
+
+    This is the same family as the device-namespace and NUL-byte refusals in
+    :func:`resolve_candidate`: a spelling whose aliasing rules the name and
+    identity tests below cannot model is refused outright, before anything is
+    interrogated or created.
+
+    **Platform rule — the same on every platform, deliberately.** A colon is
+    permitted only as the drive-letter separator (index
+    ``_DRIVE_COLON_INDEX`` = 1, preceded by an ASCII letter: ``C:\...``); every
+    other colon is refused, on POSIX as well as on Windows, where ``:`` is a
+    legal filename character. Two reasons, in order:
+
+    * §12.18 requires the verdict to be a function of the path alone. Deciding
+      this on ``os.name`` would make the ubuntu CI host and the Windows
+      development host answer differently about the same string — exactly the
+      host-dependence the audit recorded against two other tests in this suite;
+    * this gate writes ``*.json`` metadata under caller-supplied output
+      directories and nothing else (``_validate_name`` already refuses ``:`` in
+      the filename), so a colon-bearing POSIX directory name is not a capability
+      being taken away. Refusing is the fail-closed choice and the stricter
+      reading wins.
+    """
+    for index, character in enumerate(normalised):
+        if character != ":":
+            continue
+        if index == _DRIVE_COLON_INDEX and normalised[0].isascii() and normalised[0].isalpha():
+            continue
+        raise PathAuthorityError(
+            f"stream-qualified path {normalised!r} refused: a ':' outside the "
+            "drive-letter position names an NTFS alternate data stream, which "
+            "aliases the object it is attached to without being that object"
+        )
 
 
 def _protected_stat(protected: Path) -> os.stat_result | None:
@@ -161,8 +217,10 @@ def resolve_candidate(path: Any) -> Path:
     """Resolve *path* to an absolute ``Path``, or refuse.
 
     Rejects non-path types, empty strings, embedded NUL bytes, the device
-    namespace and **relative spellings** outright; any resolution failure
-    refuses rather than proceeding with an unresolved spelling.
+    namespace, **stream-qualified spellings** (see
+    :func:`_reject_stream_suffix`) and **relative spellings** outright; any
+    resolution failure refuses rather than proceeding with an unresolved
+    spelling.
 
     §12.18 / D-7 — **relative paths are refused, not anchored.** ``Path(rel)
     .resolve()`` consults the process working directory, so the same logical
@@ -192,7 +250,9 @@ def resolve_candidate(path: Any) -> Path:
         raise PathAuthorityError("path containing a NUL byte refused")
     if text.startswith(_DEVICE):
         raise PathAuthorityError(r"device-namespace path (\\.\) refused")
-    candidate = Path(normalise_spelling(text))
+    normalised = normalise_spelling(text)
+    _reject_stream_suffix(normalised)
+    candidate = Path(normalised)
     if not candidate.is_absolute():
         raise PathAuthorityError(
             f"relative path {text!r} refused: containment would depend on the working "
