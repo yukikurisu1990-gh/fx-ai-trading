@@ -230,6 +230,79 @@ D3 8.4 の 8 項目は**MVP 必須**:
 | 「パイプラインが壊れていない」を確認 | 「主要ユースケースが動く」を確認 |
 | 例: 起動シーケンスの Step 1-5 がエラーを出さない | 例: 1 cycle の分足判断が end-to-end で通る (M12) |
 
+### 2.11 Test Safety — resource presence is not authorization
+
+**原則: リソースが「そこにある」ことは、それを使ってよいという許可ではない。**
+
+2026-08 の process-boundary incident で、リポジトリ全体の `pytest` が live
+database へ INSERT / DELETE を実行した。原因は 2 つで、どちらも「存在＝有効化」
+だった: test module が import 時に `load_dotenv()` を呼び、唯一のゲートが
+`skipif(not DATABASE_URL)` だったこと。`.env` が machine に置いてあるだけで、
+本人の意図と無関係に DB テストが有効化されていた。
+
+#### default の挙動
+
+`pytest` および `pytest tests/` は、**外部・ローカルの副作用を一切起こさない**。
+
+| 事象 | default run での回数 |
+|---|---|
+| external network connection | 0 |
+| external DB connection / write | 0 |
+| local research data read | 0 |
+| broker call / external storage call | 0 |
+| `.env` の読み込み | 0 |
+
+これは文書上の約束ではなく `tests/contract/test_default_run_side_effect_free.py`
+で固定されている。
+
+#### 明示的 opt-in
+
+| 対象 | 必要な条件 |
+|---|---|
+| live/local database | `RUN_DB_INTEGRATION_TESTS=1` **かつ** `DATABASE_URL` を caller が export |
+| local research data (`data/`) | `RUN_RESEARCH_DATA_TESTS=1` |
+| broker / object storage / network | `RUN_EXTERNAL_TESTS=1` |
+
+値は厳密に `"1"` のみ。`true` / `yes` / `0` は **fail-closed**（typo でゲートが
+開くことはない）。語彙は `tests/optin.py` に一元化されており、テスト側で
+`os.environ.get("DATABASE_URL")` を各自解決してはならない。
+
+```bash
+# database integration tests
+export DATABASE_URL='postgresql+psycopg://USER:PASSWORD@HOST:5432/DBNAME'  # synthetic placeholder
+RUN_DB_INTEGRATION_TESTS=1 pytest -m db
+
+# local research-data tests
+RUN_RESEARCH_DATA_TESTS=1 pytest -m research_data
+
+# broker / storage / network
+RUN_EXTERNAL_TESTS=1 pytest -m external
+```
+
+`tests/migration/test_roundtrip.py` は 44 テーブルを drop するため、上記に加えて
+`addopts` の `--ignore` を明示的に外す必要がある（三重ゲート）。
+
+#### `.env` はテスト中 load されない
+
+`tests/conftest.py` が conftest import 時点で `dotenv.load_dotenv` を無効化する。
+test module 自身の import 副作用だけでなく、`fx_ai_trading.config` を経由した
+間接 import も塞ぐ。**caller が environment を明示的に用意する**方式であり、
+production の `.env` 読み込み挙動は変更していない。
+
+#### 二重の構造ガード
+
+opt-in を忘れた場合でも通らないよう、`tests/conftest.py` は 3 つのガードを
+インストールする。
+
+1. `load_dotenv` の無効化
+2. `create_engine` — `sqlite` 以外は未認可なら `RuntimeError`（エラーメッセージに
+   接続文字列を含めない）
+3. `socket.connect` / `connect_ex` — loopback 以外は未認可なら `RuntimeError`
+
+さらに collection hook が `db` / `research_data` / `external` marker の付いた
+item を未認可なら skip する。この hook は collection 後に走るため、`-m` / `-k` /
+ファイル直接指定では回避できない。
+
 ---
 
 ## 3. ドキュメント運用

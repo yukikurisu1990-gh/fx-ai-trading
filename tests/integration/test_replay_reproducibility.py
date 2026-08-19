@@ -21,7 +21,6 @@ from __future__ import annotations
 
 import importlib.util
 import json
-import os
 import sys
 from collections.abc import Iterator
 from datetime import UTC, datetime, timedelta
@@ -29,16 +28,11 @@ from pathlib import Path
 from typing import Any
 
 import pytest
-from dotenv import load_dotenv
 from sqlalchemy import create_engine, text
 
-load_dotenv(Path(__file__).resolve().parents[2] / ".env", override=False)
-_DATABASE_URL = os.environ.get("DATABASE_URL", "").strip()
+from tests.optin import database_url, requires_db
 
-pytestmark = pytest.mark.skipif(
-    not _DATABASE_URL,
-    reason="DATABASE_URL not set — skipping integration tests",
-)
+pytestmark = [pytest.mark.db, requires_db]
 
 _REPO_ROOT = Path(__file__).resolve().parents[2]
 _SCRIPTS_DIR = _REPO_ROOT / "scripts"
@@ -72,7 +66,7 @@ def _load_seed() -> Any:
 
 @pytest.fixture(scope="module")
 def engine():
-    e = create_engine(_DATABASE_URL)
+    e = create_engine(database_url())
     yield e
     e.dispose()
 

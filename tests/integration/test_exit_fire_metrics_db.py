@@ -10,25 +10,17 @@ all fixture rows in module teardown.
 
 from __future__ import annotations
 
-import os
 from datetime import UTC, datetime, timedelta
-from pathlib import Path
 
 import pytest
-from dotenv import load_dotenv
 from sqlalchemy import create_engine, text
 
 from fx_ai_trading.common.clock import FixedClock
 from fx_ai_trading.config.common_keys_context import CommonKeysContext
 from fx_ai_trading.services.exit_fire_metrics import ExitFireMetricsService
+from tests.optin import database_url, requires_db
 
-load_dotenv(Path(__file__).resolve().parents[2] / ".env", override=False)
-
-_DATABASE_URL = os.environ.get("DATABASE_URL", "").strip()
-
-pytestmark = pytest.mark.skipif(
-    not _DATABASE_URL, reason="DATABASE_URL not set — skipping integration tests"
-)
+pytestmark = [pytest.mark.db, requires_db]
 
 _BROKER_ID = "__test_broker_efm__"
 _ACCOUNT_ID = "__test_account_efm__"
@@ -71,7 +63,7 @@ _CTX = CommonKeysContext(
 
 @pytest.fixture(scope="module")
 def engine():
-    e = create_engine(_DATABASE_URL)
+    e = create_engine(database_url())
     yield e
     e.dispose()
 

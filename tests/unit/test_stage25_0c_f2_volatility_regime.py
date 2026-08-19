@@ -15,6 +15,8 @@ import numpy as np
 import pandas as pd
 import pytest
 
+from tests.optin import has_research_data
+
 REPO_ROOT = Path(__file__).resolve().parents[2]
 SCRIPTS_DIR = REPO_ROOT / "scripts"
 if str(SCRIPTS_DIR) not in sys.path:
@@ -24,7 +26,7 @@ stage25_0c = importlib.import_module("stage25_0c_f2_volatility_regime_eval")
 
 DATA_DIR = REPO_ROOT / "data"
 LABEL_PARQUET = REPO_ROOT / "artifacts" / "stage25_0a" / "path_quality_dataset.parquet"
-_REPO_HAS_M1_DATA = (DATA_DIR / "candles_USD_JPY_M1_730d_BA.jsonl").exists()
+_REPO_HAS_M1_DATA = has_research_data("candles_USD_JPY_M1_730d_BA.jsonl")
 _REPO_HAS_LABELS = LABEL_PARQUET.exists()
 _skip_no_data = pytest.mark.skipif(
     not (_REPO_HAS_M1_DATA and _REPO_HAS_LABELS),
@@ -355,6 +357,7 @@ def test_feature_representation_dispatch_correct():
     assert "f2_c_high_count" in all_cols
 
 
+@pytest.mark.research_data
 @_skip_no_data
 def test_smoke_run_completes_with_data(tmp_path):
     # P1-A: --out-dir points at tmp_path so the smoke run never rewrites

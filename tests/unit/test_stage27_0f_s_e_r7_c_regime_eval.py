@@ -33,6 +33,8 @@ import numpy as np
 import pandas as pd
 import pytest
 
+from tests.optin import research_path, research_skip_reason
+
 REPO_ROOT = Path(__file__).resolve().parents[2]
 SCRIPTS_DIR = REPO_ROOT / "scripts"
 if str(SCRIPTS_DIR) not in sys.path:
@@ -218,16 +220,19 @@ def test_verify_volume_preflight_halts_on_missing_pair_file():
 
 
 # [27.0f NEW]
+@pytest.mark.research_data
 def test_load_m1_volume_series_returns_int_series_with_utc_index():
-    """Helper loads volume from existing M1 BA jsonl."""
-    # Try one real pair; if data file exists, verify shape
-    try:
-        vol = s27f.load_m1_volume_series("USD_JPY", days=730)
-        assert isinstance(vol, pd.Series)
-        assert vol.index.tz is not None  # UTC
-        assert len(vol) > 0
-    except FileNotFoundError:
-        pytest.skip("USD_JPY M1 BA 730d data file not present")
+    """Helper loads volume from existing M1 BA jsonl.
+
+    Gated before the read, not after: attempting the load and catching
+    FileNotFoundError would still have been a read of local research data.
+    """
+    if research_path("candles_USD_JPY_M1_730d_BA.jsonl") is None:
+        pytest.skip(research_skip_reason())
+    vol = s27f.load_m1_volume_series("USD_JPY", days=730)
+    assert isinstance(vol, pd.Series)
+    assert vol.index.tz is not None  # UTC
+    assert len(vol) > 0
 
 
 # ===========================================================================

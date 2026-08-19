@@ -6,20 +6,12 @@ Inserts fixture broker/account/instrument/position rows, verifies read, cleans u
 
 from __future__ import annotations
 
-import os
-from pathlib import Path
-
 import pytest
-from dotenv import load_dotenv
 from sqlalchemy import create_engine, text
 
-load_dotenv(Path(__file__).resolve().parents[2] / ".env", override=False)
+from tests.optin import database_url, requires_db
 
-_DATABASE_URL = os.environ.get("DATABASE_URL", "").strip()
-
-pytestmark = pytest.mark.skipif(
-    not _DATABASE_URL, reason="DATABASE_URL not set — skipping integration tests"
-)
+pytestmark = [pytest.mark.db, requires_db]
 
 _BROKER_ID = "__test_broker_pos__"
 _ACCOUNT_ID = "__test_account_pos__"
@@ -29,7 +21,7 @@ _SNAPSHOT_ID = "__test_snapshot_001__"
 
 @pytest.fixture(scope="module")
 def engine():
-    e = create_engine(_DATABASE_URL)
+    e = create_engine(database_url())
     yield e
     e.dispose()
 
