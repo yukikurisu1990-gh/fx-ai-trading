@@ -1,6 +1,7 @@
 """Integration tests: ExitFireMetricsService against a real DB (Cycle 6.9b).
 
-Requires DATABASE_URL (from .env or env var). Auto-skipped when unset.
+Requires RUN_DB_INTEGRATION_TESTS=1 and a DATABASE_URL the caller exported.
+Tests never read .env — having the resource is not authorization to use it.
 
 Inserts a controlled set of close_events fixture rows (with deterministic
 ``closed_at`` and ``pnl_realized`` values), exercises each public method,

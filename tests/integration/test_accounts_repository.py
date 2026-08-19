@@ -1,6 +1,7 @@
 """Integration tests for AccountsRepository.
 
-Requires DATABASE_URL (from .env or env var). Auto-skipped when unset.
+Requires RUN_DB_INTEGRATION_TESTS=1 and a DATABASE_URL the caller exported.
+Tests never read .env — having the resource is not authorization to use it.
 Inserts fixture broker/account rows, verifies read/write, then cleans up.
 """
 

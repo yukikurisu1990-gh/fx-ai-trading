@@ -252,8 +252,9 @@ database へ INSERT / DELETE を実行した。原因は 2 つで、どちらも
 | broker call / external storage call | 0 |
 | `.env` の読み込み | 0 |
 
-これは文書上の約束ではなく `tests/contract/test_default_run_side_effect_free.py`
-で固定されている。
+上表のうち network / DB / `.env` の各行は `tests/contract/test_default_run_side_effect_free.py`
+が固定している。research data と broker/storage の行は、gate を通らない読み取り
+経路が無いことを source scan で担保しており、実行時計測ではない。
 
 #### 明示的 opt-in
 
@@ -282,26 +283,58 @@ RUN_EXTERNAL_TESTS=1 pytest -m external
 `tests/migration/test_roundtrip.py` は 44 テーブルを drop するため、上記に加えて
 `addopts` の `--ignore` を明示的に外す必要がある（三重ゲート）。
 
-#### `.env` はテスト中 load されない
+#### `.env` はテスト中 read されない
 
-`tests/conftest.py` が conftest import 時点で `dotenv.load_dotenv` を無効化する。
-test module 自身の import 副作用だけでなく、`fx_ai_trading.config` を経由した
-間接 import も塞ぐ。**caller が environment を明示的に用意する**方式であり、
-production の `.env` 読み込み挙動は変更していない。
+`tests/conftest.py` が conftest import 時点で `dotenv.load_dotenv` を無効化し、
+さらに `PYTHON_DOTENV_DISABLED=1` を立てる（後者は python-dotenv が
+`load_dotenv` 内部で見るため、conftest より先に束縛された binding にも効き、
+子プロセスにも継承される）。
 
-#### 二重の構造ガード
+ただし `load_dotenv` を塞ぐだけでは足りない。実際、adversarial audit が
+`bootstrap_view.render()` を `env_path` なしで呼ぶ contract test を発見した
+——それは `Path.read_text()` でリポジトリ直下の `.env` を直接読んでおり、
+dotenv を一切経由しない。そのため **audit hook による guard 4** を入れてある:
+`open` event を監視し、リポジトリ自身の `.env` を開こうとしたら経路を問わず
+`RuntimeError` にする。audit hook は一度入れたら外せない。
 
-opt-in を忘れた場合でも通らないよう、`tests/conftest.py` は 3 つのガードを
-インストールする。
+**caller が environment を明示的に用意する**方式であり、production の `.env`
+読み込み挙動は変更していない。
 
-1. `load_dotenv` の無効化
-2. `create_engine` — `sqlite` 以外は未認可なら `RuntimeError`（エラーメッセージに
-   接続文字列を含めない）
+#### 4 つの構造ガード
+
+opt-in を忘れた場合でも通らないよう、`tests/conftest.py` は 4 つのガードを
+インストールする。認可は **conftest import 時点の snapshot** で判定する
+（実行時に `os.environ` を見ると、テストが `monkeypatch.setenv` した瞬間だけ
+ガードが開いてしまうため）。
+
+1. `load_dotenv` の無効化 + `PYTHON_DOTENV_DISABLED`
+2. `create_engine` — `sqlite` 以外は未認可なら `RuntimeError`（メッセージに
+   接続文字列を含めない。`://` を欠く不正な URL は `<unparsable>` に潰す）
 3. `socket.connect` / `connect_ex` — loopback 以外は未認可なら `RuntimeError`
+4. `open` audit hook — リポジトリの `.env` はどの経路でも開けない
 
 さらに collection hook が `db` / `research_data` / `external` marker の付いた
 item を未認可なら skip する。この hook は collection 後に走るため、`-m` / `-k` /
 ファイル直接指定では回避できない。
+
+#### ガードの限界（過信しないこと）
+
+正確に把握しておくべき点。
+
+- **guard 3 は DB の backstop ではない。** `psycopg[binary]` は libpq が C 側で
+  socket を開くため `socket.socket.connect` を通らない。DB を止めているのは
+  guard 2 と opt-in であって guard 3 ではない。
+- **DNS は塞いでいない。** `getaddrinfo` と UDP `sendto` は素通りする。guard 3 が
+  止めるのは TCP `connect` / `connect_ex` のみ。
+- **子プロセスはガードを継承しない**（`PYTHON_DOTENV_DISABLED` を除く）。
+- **`--ignore` は三重目のゲートではない。** `pytest tests/migration/test_roundtrip.py`
+  のようにファイルを直接指定すると `addopts` の `--ignore` は collection を
+  止めない（実測確認済み）。あの破壊的テストを守っているのは `db` marker +
+  `requires_db` の二重ゲートである。
+- **`external` marker は現時点で利用テストが 0 件。** broker / storage 系は
+  すべて mock 化済みで外に出ないため、語彙として先に用意してあるだけ。
+- `RUN_*` の値は前後の空白を除いて厳密に `1`。なお Windows の `os.environ` は
+  キーが大小文字を区別しないため、変数名の大小は問わない。
 
 ---
 

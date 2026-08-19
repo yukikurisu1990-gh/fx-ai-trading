@@ -106,6 +106,8 @@ def research_path(*parts: str) -> Path | None:
     """
     if not research_data_authorized():
         return None
+    if not parts:
+        raise ValueError("research_path() needs a file to resolve, not the data directory")
     candidate = DATA_DIR.joinpath(*parts)
     return candidate if candidate.exists() else None
 
@@ -152,18 +154,13 @@ def external_skip_reason() -> str:
 # --- ready-made marks -----------------------------------------------------
 # Evaluated at import time, which is correct: the authorising environment is
 # fixed for the whole session.
+#
+# Only the database mark is provided ready-made. Research-data callers build
+# their own ``skipif`` from :func:`has_research_data`, because they need the
+# stronger condition "opted in AND the file is there" — a ready-made mark that
+# checked only the opt-in would silently be a different gate.
 
 requires_db = pytest.mark.skipif(
     not db_tests_authorized(),
     reason=db_skip_reason() or "",
-)
-
-requires_research_data = pytest.mark.skipif(
-    not research_data_authorized(),
-    reason=research_skip_reason(),
-)
-
-requires_external = pytest.mark.skipif(
-    not external_tests_authorized(),
-    reason=external_skip_reason(),
 )

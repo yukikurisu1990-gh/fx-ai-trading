@@ -25,7 +25,6 @@ if str(SCRIPTS_DIR) not in sys.path:
 
 stage25_0b = importlib.import_module("stage25_0b_f1_volatility_expansion_eval")
 
-DATA_DIR = REPO_ROOT / "data"
 LABEL_PARQUET = REPO_ROOT / "artifacts" / "stage25_0a" / "path_quality_dataset.parquet"
 _REPO_HAS_M1_DATA = has_research_data("candles_USD_JPY_M1_730d_BA.jsonl")
 _REPO_HAS_LABELS = LABEL_PARQUET.exists()

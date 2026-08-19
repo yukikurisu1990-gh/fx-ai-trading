@@ -6,7 +6,8 @@ in M9/H-3a so the end-to-end exit flow is exercised on the post-Cycle-6.7d
 ``ExitExecutor`` itself was subsequently removed in M9/H-3c; this file
 no longer imports it.
 
-Requires DATABASE_URL (from .env or env var). Auto-skipped when unset.
+Requires RUN_DB_INTEGRATION_TESTS=1 and a DATABASE_URL the caller exported.
+Tests never read .env — having the resource is not authorization to use it.
 
 Flow:
   1. Module fixture inserts broker / account / instrument rows.

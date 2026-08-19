@@ -28,7 +28,11 @@ production code that a test module pulls in, is caught too.
 from __future__ import annotations
 
 import hashlib
+import ipaddress
+import os
+import re
 import socket
+import sys
 from pathlib import Path
 
 import pytest
@@ -76,14 +80,29 @@ def protect_tracked_artifacts():
 
 
 # ---------------------------------------------------------------------------
+# What counts as consent
+# ---------------------------------------------------------------------------
+# Read once, here, at conftest import. The guards below use this snapshot
+# rather than consulting ``os.environ`` when they fire, because a live lookup
+# would let any test disarm a guard for the duration of a ``monkeypatch.setenv``
+# — and this repository's own contract tests set those variables while checking
+# the opt-in vocabulary. Consent is what the caller supplied when the session
+# started, not what a fixture put in the environment a moment ago.
+
+_DB_AUTHORIZED = optin.db_tests_authorized()
+_NETWORK_AUTHORIZED = optin.external_tests_authorized() or _DB_AUTHORIZED
+
+
+# ---------------------------------------------------------------------------
 # Guard 1 — .env is never auto-loaded during a test session
 # ---------------------------------------------------------------------------
-# The incident route was: a test module (or ``fx_ai_trading.config``, imported
-# transitively) called ``load_dotenv`` at import, which populated
-# ``DATABASE_URL`` from the developer's own ``.env`` even though the shell was
-# clean. A caller who wants database tests exports the variable deliberately.
-
-_REAL_LOAD_DOTENV = None
+# The incident route was: a module called ``load_dotenv`` at import, which
+# populated ``DATABASE_URL`` from the developer's own ``.env`` even though the
+# shell was clean. Ten integration modules did it directly, and
+# ``tests/unit/test_f5_ingestion_provenance.py`` did it *indirectly* by importing
+# ``scripts.fetch_oanda_archive``, whose module body loads ``.env`` — so even a
+# plain unit-test run read it. A caller who wants database tests exports the
+# variable deliberately.
 
 
 def _refuse_load_dotenv(*_args: object, **_kwargs: object) -> bool:
@@ -92,26 +111,19 @@ def _refuse_load_dotenv(*_args: object, **_kwargs: object) -> bool:
 
 
 def _disable_dotenv_autoload() -> None:
-    global _REAL_LOAD_DOTENV
     import dotenv
     import dotenv.main
 
-    _REAL_LOAD_DOTENV = dotenv.load_dotenv
+    # Library-level backstop first: python-dotenv checks this inside
+    # ``load_dotenv`` itself, so it also covers a binding some module captured
+    # before this conftest was imported, and it is inherited by subprocesses.
+    os.environ["PYTHON_DOTENV_DISABLED"] = "1"
+
+    # Then the bindings, so the refusal is explicit rather than a silent no-op.
     # Both names: modules import either ``dotenv.load_dotenv`` or the
     # definition in ``dotenv.main``.
     dotenv.load_dotenv = _refuse_load_dotenv
     dotenv.main.load_dotenv = _refuse_load_dotenv
-
-
-@pytest.fixture
-def real_load_dotenv():
-    """Hand back the genuine ``load_dotenv`` to a test that needs to exercise it.
-
-    Deliberately explicit: a test asking for this fixture is stating that it
-    means to load a file it created itself, not the repository's ``.env``.
-    """
-    assert _REAL_LOAD_DOTENV is not None
-    return _REAL_LOAD_DOTENV
 
 
 # ---------------------------------------------------------------------------
@@ -123,10 +135,21 @@ def real_load_dotenv():
 _SAFE_ENGINE_SCHEMES = ("sqlite",)
 
 
+_SCHEME_SHAPE = re.compile(r"[a-z0-9_.]+")
+
+
 def _engine_scheme(url: object) -> str:
-    """Dialect name only — never the rest of the URL, which carries the password."""
+    """Dialect name only — never the rest of the URL, which carries the password.
+
+    ``str.split("://")`` returns the *whole* string when the separator is
+    absent, so a malformed ``DATABASE_URL`` would otherwise be echoed verbatim
+    into the refusal message. SQLAlchemy redacts that case; so does this.
+    """
     text = str(url)
-    return text.split("://", 1)[0].split("+", 1)[0].lower()
+    if "://" not in text:
+        return "<unparsable>"
+    scheme = text.split("://", 1)[0].split("+", 1)[0].lower()
+    return scheme if _SCHEME_SHAPE.fullmatch(scheme) else "<unparsable>"
 
 
 def _install_engine_guard() -> None:
@@ -138,7 +161,7 @@ def _install_engine_guard() -> None:
 
     def guarded_create_engine(url: object, *args: object, **kwargs: object) -> object:
         scheme = _engine_scheme(url)
-        if scheme not in _SAFE_ENGINE_SCHEMES and not optin.db_tests_authorized():
+        if scheme not in _SAFE_ENGINE_SCHEMES and not _DB_AUTHORIZED:
             raise RuntimeError(
                 f"a default test run may not build a {scheme!r} engine. "
                 f"{optin.db_skip_reason()}. Mark the test with @pytest.mark.db and "
@@ -155,20 +178,32 @@ def _install_engine_guard() -> None:
 # Guard 3 — no connection off the loopback interface without authorization
 # ---------------------------------------------------------------------------
 
-_LOOPBACK_HOSTS = frozenset({"127.0.0.1", "::1", "localhost", ""})
+_LOOPBACK_NAMES = frozenset({"", "localhost", "localhost.localdomain"})
 
 
-def _network_authorized() -> bool:
-    # A database opt-in authorises reaching that database's host; the external
-    # opt-in authorises brokers, object storage and everything else.
-    return optin.external_tests_authorized() or optin.db_tests_authorized()
+def _is_loopback(host_value: object) -> bool:
+    """Whole loopback range, not four spellings of it.
+
+    ``127.0.0.2`` and ``0:0:0:0:0:0:0:1`` are loopback too, CPython accepts a
+    ``bytes`` host, and a name comparison has to be case-insensitive. Anything
+    unrecognised is treated as remote — the failure direction is closed.
+    """
+    host = (
+        host_value.decode("ascii", "replace") if isinstance(host_value, bytes) else str(host_value)
+    )
+    if host.lower() in _LOOPBACK_NAMES:
+        return True
+    try:
+        return ipaddress.ip_address(host).is_loopback
+    except ValueError:
+        return False
 
 
 def _check_destination(address: object) -> None:
     if not isinstance(address, tuple) or not address:
         return  # AF_UNIX and friends never leave the machine
-    host = str(address[0])
-    if host in _LOOPBACK_HOSTS or _network_authorized():
+    host = address[0]
+    if _is_loopback(host) or _NETWORK_AUTHORIZED:
         return
     raise RuntimeError(
         f"a default test run may not open a network connection to {host!r}. "
@@ -192,9 +227,47 @@ def _install_socket_guard() -> None:
     socket.socket.connect_ex = guarded_connect_ex  # type: ignore[method-assign]
 
 
+# ---------------------------------------------------------------------------
+# Guard 4 — the repository's own .env may not be opened, by any route
+# ---------------------------------------------------------------------------
+# Guards 1-3 all patch a named function, so they only see the routes they know
+# about. This one does not care how the file is reached: an audit hook sits
+# under every ``open``, including ``Path.read_text``, ``io.open`` and the C
+# implementations, and an audit hook cannot be removed once installed.
+#
+# It found a real case that guard 1 could never have seen:
+# ``bootstrap_view.render()`` without ``env_path`` falls back to the repository
+# root and calls ``path.read_text()`` — a plain read, no dotenv involved.
+
+_REPO_ENV_FILE = str(_REPO_ROOT / ".env").lower()
+
+
+def _refuse_repo_dotenv_open(event: str, args: tuple) -> None:
+    if event != "open":
+        return
+    target = args[0]
+    if isinstance(target, int) or not isinstance(target, (str, bytes, os.PathLike)):
+        return  # a file descriptor, not a path
+    # Cheap first: almost nothing a test opens ends in ".env".
+    text = target if isinstance(target, str) else os.fsdecode(target)
+    if not text.endswith(".env"):
+        return
+    if os.path.abspath(text).lower() == _REPO_ENV_FILE:
+        raise RuntimeError(
+            "a test tried to open the repository's .env. Tests never read it — "
+            "pass an explicit path (a file under tmp_path) instead, and let the "
+            "caller supply real configuration through the environment."
+        )
+
+
+def _install_dotenv_read_guard() -> None:
+    sys.addaudithook(_refuse_repo_dotenv_open)
+
+
 _disable_dotenv_autoload()
 _install_engine_guard()
 _install_socket_guard()
+_install_dotenv_read_guard()
 
 
 # ---------------------------------------------------------------------------
@@ -203,11 +276,7 @@ _install_socket_guard()
 # This runs after collection, so it cannot be sidestepped by ``-m``, ``-k``,
 # or by naming a test file directly on the command line.
 
-_GATED_MARKERS: tuple[tuple[str, str], ...] = (
-    ("db", "database"),
-    ("research_data", "local research data"),
-    ("external", "external systems"),
-)
+_GATED_MARKERS: tuple[str, ...] = ("db", "research_data", "external")
 
 
 def _authorization_for(marker: str) -> tuple[bool, str]:
@@ -219,9 +288,9 @@ def _authorization_for(marker: str) -> tuple[bool, str]:
 
 
 def pytest_collection_modifyitems(config: pytest.Config, items: list[pytest.Item]) -> None:
-    decisions = {name: _authorization_for(name) for name, _ in _GATED_MARKERS}
+    decisions = {name: _authorization_for(name) for name in _GATED_MARKERS}
     for item in items:
-        for marker, _label in _GATED_MARKERS:
+        for marker in _GATED_MARKERS:
             if item.get_closest_marker(marker) is None:
                 continue
             authorized, reason = decisions[marker]

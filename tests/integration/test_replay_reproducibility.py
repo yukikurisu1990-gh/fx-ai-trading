@@ -14,7 +14,8 @@ their wiring.  This test exercises the full pipeline end-to-end:
 ``--replay file.jsonl`` → ``ReplayQuoteFeed`` → entry + exit ticks →
 ``positions`` / ``close_events`` rows → aggregated metrics dict.
 
-Requires DATABASE_URL; auto-skipped otherwise.
+Requires RUN_DB_INTEGRATION_TESTS=1 and a DATABASE_URL the caller exported.
+Tests never read .env — having the resource is not authorization to use it.
 """
 
 from __future__ import annotations

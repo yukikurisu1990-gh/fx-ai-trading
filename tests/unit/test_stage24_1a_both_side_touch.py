@@ -28,7 +28,6 @@ stage24_1a = importlib.import_module("stage24_1a_both_side_touch_eval")
 
 
 PIP = 0.0001
-DATA_DIR = REPO_ROOT / "data"
 _REPO_HAS_M1_DATA = has_research_data("candles_USD_JPY_M1_730d_BA.jsonl")
 _REPO_HAS_FROZEN = (REPO_ROOT / "artifacts" / "stage24_0a" / "frozen_entry_streams.json").exists()
 _skip_no_data = pytest.mark.skipif(not _REPO_HAS_M1_DATA, reason=research_gate_reason("M1 BA data"))

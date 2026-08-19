@@ -29,9 +29,32 @@ import sqlalchemy
 from tests import optin
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
+
+
+def _scrubbed_child_env() -> dict[str, str]:
+    """A child environment with every opt-in removed.
+
+    Inheriting the developer's shell would let ``RUN_EXTERNAL_TESTS=1`` disable
+    the child's socket guard, at which point a subprocess test asserting "no
+    side effects happened" would be asserting nothing at all.
+    """
+    env = dict(os.environ)
+    for name in optin.ALL_OPT_INS:
+        env.pop(name, None)
+    env.pop(optin.DB_URL_VAR, None)
+    env["PYTHONIOENCODING"] = "utf-8"
+    env["PYTHONDONTWRITEBYTECODE"] = "1"
+    return env
+
+
 TESTS_DIR = REPO_ROOT / "tests"
 
 _TEST_MODULES = sorted(TESTS_DIR.rglob("*.py"))
+
+# Four tests below assert "offenders == []" over this list. If the corpus were
+# ever empty — a moved file making parents[2] wrong, a restructured tests/ —
+# all four would pass having examined nothing.
+assert len(_TEST_MODULES) > 100, f"test corpus looks wrong: {len(_TEST_MODULES)} modules"
 
 
 # ---------------------------------------------------------------------------
@@ -176,10 +199,9 @@ class TestDotenvIsNeutralised:
 
         ``tests/unit/test_f5_ingestion_provenance.py`` imports
         ``scripts.fetch_oanda_archive``, and that module calls ``load_dotenv``
-        at import — without ``override=False``, so it would even overwrite
-        values the caller set deliberately. A default ``pytest`` therefore read
-        ``.env`` through a *unit* test, before any integration module was
-        involved. The guard has to reach that binding too.
+        at import. A default ``pytest`` therefore read ``.env`` through a
+        *unit* test, before any integration module was involved. The guard has
+        to reach that binding too.
         """
         import importlib
 
@@ -205,6 +227,47 @@ class TestDotenvIsNeutralised:
             "the module captured the real load_dotenv, so importing it read .env"
         )
 
+    @pytest.mark.parametrize(
+        "route",
+        [
+            "read_text",
+            "open",
+            "relative",
+            "dotenv_values",
+        ],
+    )
+    def test_the_repository_dotenv_cannot_be_opened_by_any_route(
+        self, monkeypatch: pytest.MonkeyPatch, route: str
+    ) -> None:
+        """Guard 4, the one that does not care how the file is reached.
+
+        Guards 1-3 patch named functions, so they only see routes they know
+        about. Two were found by audit that they could never have seen:
+        ``bootstrap_view.render()`` without ``env_path`` falls back to the repo
+        root and calls ``read_text()``, and ``dotenv.dotenv_values`` reads the
+        file without going through ``load_dotenv`` at all.
+        """
+        monkeypatch.chdir(REPO_ROOT)  # so the relative case is not cwd-dependent
+        with pytest.raises(RuntimeError, match="repository's .env"):
+            if route == "read_text":
+                (REPO_ROOT / ".env").read_text(encoding="utf-8")
+            elif route == "open":
+                with open(REPO_ROOT / ".env", encoding="utf-8"):
+                    pass
+            elif route == "relative":
+                with open(".env", encoding="utf-8"):
+                    pass
+            else:
+                import dotenv
+
+                dotenv.dotenv_values(REPO_ROOT / ".env")
+
+    def test_a_dotenv_elsewhere_is_still_openable(self, tmp_path: Path) -> None:
+        """The guard is about *this* .env, not about the name."""
+        other = tmp_path / ".env"
+        other.write_text("SYNTHETIC_PLACEHOLDER=not-a-credential\n", encoding="utf-8")
+        assert "SYNTHETIC_PLACEHOLDER" in other.read_text(encoding="utf-8")
+
     def test_no_test_module_loads_dotenv_at_import(self) -> None:
         """Import-time ``load_dotenv`` is the exact route the incident took."""
         offenders: list[str] = []
@@ -226,14 +289,22 @@ class TestDotenvIsNeutralised:
 
     def test_no_test_module_reads_database_url_directly(self) -> None:
         """``DATABASE_URL`` is read in one place — the opt-in module."""
-        allowed = {Path("tests/optin.py"), Path("tests/contract") / Path(__file__).name}
+        allowed = {
+            Path("tests/optin.py"),
+            Path("tests/contract") / Path(__file__).name,
+        }
+        # Every spelling, not just the two the first draft happened to use.
+        reads = re.compile(
+            r"""environ\.get\(\s*['"]DATABASE_URL['"]"""
+            r"""|environ\[\s*['"]DATABASE_URL['"]"""
+            r"""|getenv\(\s*['"]DATABASE_URL['"]""",
+        )
         offenders: list[str] = []
         for path in _TEST_MODULES:
             rel = path.relative_to(REPO_ROOT)
-            if rel in allowed or rel.parent / rel.name in allowed:
+            if rel in allowed:
                 continue
-            text = path.read_text(encoding="utf-8")
-            if 'environ.get("DATABASE_URL"' in text or "environ['DATABASE_URL'" in text:
+            if reads.search(path.read_text(encoding="utf-8")):
                 offenders.append(str(rel))
         assert offenders == [], (
             f"these modules resolve DATABASE_URL themselves instead of going "
@@ -260,15 +331,59 @@ class TestEngineGuard:
         with pytest.raises(RuntimeError, match="may not build"):
             sqlalchemy.create_engine("postgresql+psycopg://u:p@example.invalid:5432/d")
 
+    @pytest.mark.parametrize(
+        "url",
+        [
+            "postgresql+psycopg://user:hunter2@host:5432/db",
+            # No "://" at all — str.split would hand back the whole string, so
+            # this is the shape that leaks if the parser trusts the separator.
+            "postgresql:user:hunter2@host:5432/db",
+            "hunter2@host:5432",
+            "",
+        ],
+    )
     def test_refusal_does_not_echo_the_connection_string(
-        self, monkeypatch: pytest.MonkeyPatch
+        self, monkeypatch: pytest.MonkeyPatch, url: str
     ) -> None:
         monkeypatch.delenv(optin.DB_OPT_IN, raising=False)
         with pytest.raises(RuntimeError) as excinfo:
-            sqlalchemy.create_engine("postgresql+psycopg://user:hunter2@host:5432/db")
+            sqlalchemy.create_engine(url)
         message = str(excinfo.value)
         assert "hunter2" not in message
         assert "host:5432" not in message
+
+    def test_no_dotenv_escape_hatch_fixture_exists(self) -> None:
+        """A safety module must not ship an unused way around itself.
+
+        A fixture handing back the genuine ``load_dotenv`` would default, via
+        ``find_dotenv()``, to the repository's own ``.env`` — re-creating the
+        incident inside the change that exists to prevent it.
+        """
+        conftest_source = (TESTS_DIR / "conftest.py").read_text(encoding="utf-8")
+        assert "real_load_dotenv" not in conftest_source
+
+    def test_library_level_dotenv_switch_is_set(self) -> None:
+        """python-dotenv checks this inside ``load_dotenv`` itself, so it also
+        covers a binding captured before this conftest was imported, and
+        subprocesses inherit it."""
+        assert os.environ.get("PYTHON_DOTENV_DISABLED") == "1"
+
+    def test_granting_the_opt_in_mid_session_does_not_disarm_the_guard(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """Consent is what the caller supplied at session start.
+
+        The guards read a snapshot taken at conftest import. If they consulted
+        ``os.environ`` when they fired, any test — including the ones in this
+        file that exercise the opt-in vocabulary — could open them for the
+        duration of a ``monkeypatch.setenv``.
+        """
+        monkeypatch.setenv(optin.DB_OPT_IN, "1")
+        monkeypatch.setenv(optin.DB_URL_VAR, "postgresql+psycopg://u:p@h:5432/d")
+        assert optin.db_tests_authorized(), "precondition: the live lookup now says yes"
+
+        with pytest.raises(RuntimeError, match="may not build"):
+            sqlalchemy.create_engine("postgresql+psycopg://u:p@example.invalid:5432/d")
 
     def test_guard_is_installed_on_every_alias(self) -> None:
         import sqlalchemy.engine
@@ -338,7 +453,7 @@ class TestCollectionIsInert:
         If any module opened a connection while being imported, this bogus host
         would surface as a collection error. It must not.
         """
-        env = dict(os.environ)
+        env = _scrubbed_child_env()
         env[optin.DB_OPT_IN] = "1"
         env[optin.DB_URL_VAR] = "postgresql+psycopg://u:p@169.254.0.1:1/none"
         env["PYTHONIOENCODING"] = "utf-8"
@@ -388,8 +503,18 @@ class _StubItem:
         self.added.append(mark)
 
 
+_ROOT_CONFTEST_CACHE: list[object] = []
+
+
 def _load_root_conftest():
-    """Import tests/conftest.py as a module so its hook can be called directly."""
+    """Import tests/conftest.py as a module so its hook can be called directly.
+
+    Cached: executing the module re-runs the guard installers, and each run
+    wraps the already-wrapped ``socket.connect``. Once is enough, and once is
+    all the interpreter should have to carry.
+    """
+    if _ROOT_CONFTEST_CACHE:
+        return _ROOT_CONFTEST_CACHE[0]
     import importlib.util
 
     spec = importlib.util.spec_from_file_location(
@@ -398,6 +523,7 @@ def _load_root_conftest():
     assert spec is not None and spec.loader is not None
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
+    _ROOT_CONFTEST_CACHE.append(module)
     return module
 
 
@@ -461,8 +587,7 @@ class TestGatesAreApplied:
         End-to-end through the real suite, in a subprocess, with a DATABASE_URL
         present and the opt-in absent — the exact shape of the incident.
         """
-        env = dict(os.environ)
-        env.pop(optin.DB_OPT_IN, None)
+        env = _scrubbed_child_env()
         env[optin.DB_URL_VAR] = "postgresql+psycopg://u:p@169.254.0.1:1/none"
         env["PYTHONIOENCODING"] = "utf-8"
         env["PYTHONDONTWRITEBYTECODE"] = "1"

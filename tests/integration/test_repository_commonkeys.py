@@ -1,6 +1,6 @@
 """Integration tests: Common Keys context is required on all repository write methods.
 
-Pure signature introspection against a MagicMock engine - no database is
+Pure signature introspection against a MagicMock engine — no database is
 contacted, so this module runs in every default test session.
 
 Verifies that:

@@ -35,7 +35,7 @@ f5 = importlib.import_module("stage25_0f_f5_eval")
 def test_volume_preflight_passes_on_real_data():
     """Real M1 BA jsonl carries volume; pre-flight must pass for 1 pair.
 
-    Skipped when data files are absent (CI without the data dir).
+    Skipped unless RUN_RESEARCH_DATA_TESTS=1 and the file is present.
     """
     data_path = research_path("candles_EUR_USD_M1_730d_BA.jsonl")
     if data_path is None:

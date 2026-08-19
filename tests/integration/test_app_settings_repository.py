@@ -1,6 +1,7 @@
 """Integration tests for AppSettingsRepository.
 
-Requires DATABASE_URL (from .env or env var). Auto-skipped when unset.
+Requires RUN_DB_INTEGRATION_TESTS=1 and a DATABASE_URL the caller exported.
+Tests never read .env — having the resource is not authorization to use it.
 Reads and writes against the live app_settings table.
 """
 

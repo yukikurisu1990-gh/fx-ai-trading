@@ -15,7 +15,8 @@ from fx_ai_trading.services.calendar_service import (
     CalendarService,
     empty_calendar,
 )
-from tests.optin import research_path, research_skip_reason
+
+_REPO_ROOT = Path(__file__).resolve().parents[2]
 
 
 def _make(ts: str, ccy: str, name: str, imp: str) -> CalendarEvent:
@@ -215,9 +216,12 @@ class TestFeatureComputation:
 
     def test_real_csv_loads(self) -> None:
         # Smoke test: real curated CSV should load without errors.
-        path = research_path("economic_calendar", "events_2025_2026.csv")
-        if path is None:
-            pytest.skip(research_skip_reason())
+        # Tracked repository content (the only file git tracks under data/),
+        # so it ships in every checkout and this must keep running in CI. The
+        # research-data gate deliberately does not cover it.
+        path = _REPO_ROOT / "data" / "economic_calendar" / "events_2025_2026.csv"
+        if not path.exists():
+            pytest.skip("curated CSV not present in this checkout")
         svc = CalendarService.from_csv(path)
         # Expect at least 50 events across the 9-month window.
         total = sum(svc.event_count(c) for c in ("USD", "EUR", "JPY", "GBP", "AUD", "CAD"))
