@@ -247,6 +247,13 @@ class TestDotenvIsNeutralised:
         root and calls ``read_text()``, and ``dotenv.dotenv_values`` reads the
         file without going through ``load_dotenv`` at all.
         """
+        if route == "dotenv_values" and not (REPO_ROOT / ".env").exists():
+            # python-dotenv stats the path before opening it, so with no .env
+            # on the machine there is no ``open`` event for the hook to catch —
+            # and nothing to protect either. The other three routes call
+            # ``open`` regardless of existence, so they stay unconditional.
+            pytest.skip("no .env on this machine; dotenv_values stats before opening")
+
         monkeypatch.chdir(REPO_ROOT)  # so the relative case is not cwd-dependent
         with pytest.raises(RuntimeError, match="repository's .env"):
             if route == "read_text":
