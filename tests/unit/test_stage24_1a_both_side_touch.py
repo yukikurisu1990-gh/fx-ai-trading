@@ -15,7 +15,7 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-from tests.optin import has_research_data
+from tests.optin import has_research_data, research_gate_reason
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 SCRIPTS_DIR = REPO_ROOT / "scripts"
@@ -31,12 +31,10 @@ PIP = 0.0001
 DATA_DIR = REPO_ROOT / "data"
 _REPO_HAS_M1_DATA = has_research_data("candles_USD_JPY_M1_730d_BA.jsonl")
 _REPO_HAS_FROZEN = (REPO_ROOT / "artifacts" / "stage24_0a" / "frozen_entry_streams.json").exists()
-_skip_no_data = pytest.mark.skipif(
-    not _REPO_HAS_M1_DATA, reason="M1 BA data not present (CI env without data/ files)"
-)
+_skip_no_data = pytest.mark.skipif(not _REPO_HAS_M1_DATA, reason=research_gate_reason("M1 BA data"))
 _skip_no_data_or_frozen = pytest.mark.skipif(
     not (_REPO_HAS_M1_DATA and _REPO_HAS_FROZEN),
-    reason="M1 BA data or 24.0a frozen JSON not present (CI env without data/ files)",
+    reason=research_gate_reason("M1 BA data or the 24.0a frozen JSON"),
 )
 
 

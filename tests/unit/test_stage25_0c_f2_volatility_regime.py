@@ -15,7 +15,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from tests.optin import has_research_data
+from tests.optin import has_research_data, research_gate_reason
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 SCRIPTS_DIR = REPO_ROOT / "scripts"
@@ -30,7 +30,7 @@ _REPO_HAS_M1_DATA = has_research_data("candles_USD_JPY_M1_730d_BA.jsonl")
 _REPO_HAS_LABELS = LABEL_PARQUET.exists()
 _skip_no_data = pytest.mark.skipif(
     not (_REPO_HAS_M1_DATA and _REPO_HAS_LABELS),
-    reason="M1 data or 25.0a labels not present (CI env)",
+    reason=research_gate_reason("M1 data or the 25.0a labels"),
 )
 
 

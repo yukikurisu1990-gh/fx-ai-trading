@@ -122,6 +122,18 @@ def research_skip_reason() -> str:
     )
 
 
+def research_gate_reason(what: str) -> str:
+    """Skip reason that names the *actual* cause rather than guessing at it.
+
+    Two different situations produce the same closed gate — no opt-in, and
+    opted in but the file is missing — and a reason that only ever says "not
+    present" misreports the first one.
+    """
+    if not research_data_authorized():
+        return research_skip_reason()
+    return f"{what} not present in this environment"
+
+
 # --- external systems (broker, object storage, network) -------------------
 
 

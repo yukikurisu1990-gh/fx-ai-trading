@@ -15,7 +15,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from tests.optin import has_research_data
+from tests.optin import has_research_data, research_gate_reason
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 SCRIPTS_DIR = REPO_ROOT / "scripts"
@@ -27,9 +27,7 @@ stage25_0a = importlib.import_module("stage25_0a_build_path_quality_dataset")
 PIP = 0.0001
 DATA_DIR = REPO_ROOT / "data"
 _REPO_HAS_M1_DATA = has_research_data("candles_USD_JPY_M1_730d_BA.jsonl")
-_skip_no_data = pytest.mark.skipif(
-    not _REPO_HAS_M1_DATA, reason="M1 BA data not present (CI env without data/ files)"
-)
+_skip_no_data = pytest.mark.skipif(not _REPO_HAS_M1_DATA, reason=research_gate_reason("M1 BA data"))
 
 
 def _arr(*v: float) -> np.ndarray:

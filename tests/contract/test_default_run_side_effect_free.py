@@ -171,6 +171,40 @@ class TestDotenvIsNeutralised:
         assert dotenv.load_dotenv(env_file) is False
         assert "SYNTHETIC_TEST_ONLY_VAR" not in os.environ
 
+    def test_importing_a_script_module_cannot_populate_the_environment(self) -> None:
+        """The indirect route, pinned.
+
+        ``tests/unit/test_f5_ingestion_provenance.py`` imports
+        ``scripts.fetch_oanda_archive``, and that module calls ``load_dotenv``
+        at import — without ``override=False``, so it would even overwrite
+        values the caller set deliberately. A default ``pytest`` therefore read
+        ``.env`` through a *unit* test, before any integration module was
+        involved. The guard has to reach that binding too.
+        """
+        import importlib
+
+        module = importlib.import_module("scripts.fetch_oanda_archive")
+
+        # Non-vacuity: the module must still be one that calls load_dotenv at
+        # import, otherwise this test would silently stop proving anything.
+        source = (REPO_ROOT / "scripts" / "fetch_oanda_archive.py").read_text(encoding="utf-8")
+        tree = ast.parse(source)
+        module_level_calls = [
+            call
+            for node in tree.body
+            if not isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef))
+            for call in ast.walk(node)
+            if isinstance(call, ast.Call) and getattr(call.func, "id", None) == "load_dotenv"
+        ]
+        assert module_level_calls, (
+            "scripts/fetch_oanda_archive.py no longer calls load_dotenv at import — "
+            "this regression test has lost its subject and should be re-pointed"
+        )
+
+        assert module.load_dotenv.__name__ == "_refuse_load_dotenv", (
+            "the module captured the real load_dotenv, so importing it read .env"
+        )
+
     def test_no_test_module_loads_dotenv_at_import(self) -> None:
         """Import-time ``load_dotenv`` is the exact route the incident took."""
         offenders: list[str] = []
