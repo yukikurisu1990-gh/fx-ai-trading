@@ -26,6 +26,15 @@ Re-check fixes (PR #439):
   holdout role and is echoed in the record, so an override can no longer flip
   the verdict invisibly.
 
+Contract Gate-decision fixes:
+
+* **R-2 / §12.20** — ``effective_n()`` now takes a mandatory ``count_quantity``
+  literal and admits only ``"raw_traded_event_count"``. The confusable
+  ``complete_bucket_count`` / ``cost_hurdle_eligible_bar_count`` quantities are
+  refused by name.
+* **R-1 (negative control)** — the vacuous ``strategy_metrics_computed: False``
+  self-attestation was deleted rather than reported.
+
 Computes NO strategy metrics and reads NO validation / holdout data — the raw
 counts, overlap fractions and correlation are supplied by the caller.
 """
@@ -36,6 +45,7 @@ import math
 from collections.abc import Sequence
 from typing import Any, Final
 
+from .numeric_authority import NumericAuthorityError, pin_int, pin_number
 from .pair_authority import PAIRS_20, PairAuthorityError, canonical_pair
 
 HORIZON_M15_BARS: Final[int] = 24
@@ -46,21 +56,75 @@ SUFFICIENT: Final[str] = "SAMPLE_SUFFICIENT"
 NOT_EVALUATED: Final[str] = "NOT_EVALUATED_AT_THIS_ROLE"
 _KNOWN_ROLES: Final[frozenset[str]] = frozenset({"holdout", "validation"})
 
+# R-2 / §12.20 — the three pinned count-quantity names. They are *different
+# quantities with confusable names*. Each is a subset of the one before it, so
+# by construction (not by any new contract claim):
+#
+#   complete_bucket_count        >= cost_hurdle_eligible_bar_count
+#                                >= raw_traded_event_count
+#
+# The committed design inventory defines ``eligible_event_count`` as "count of
+# ``n_source_bars == 15`` buckets" (i.e. ``complete_bucket_count``), while the
+# APPROVED effective-N spec defines ``raw_event_count`` as "N_raw = number of
+# eligible **traded** events (``n_source_bars == 15`` buckets that pass the
+# cost-hurdle and fire an EV-gated trade)". Feeding the bucket count where the
+# traded-event count is meant clears the frozen floors (raw >= 1000, N_eff >=
+# 400) by orders of magnitude and thereby **disarms INSUFFICIENT_SAMPLE**, which
+# is this family's principal honest-failure mechanism. Only the traded-event
+# quantity is admissible here, and the caller must say which one it is passing.
+COMPLETE_BUCKET_COUNT: Final[str] = "complete_bucket_count"
+COST_HURDLE_ELIGIBLE_BAR_COUNT: Final[str] = "cost_hurdle_eligible_bar_count"
+RAW_TRADED_EVENT_COUNT: Final[str] = "raw_traded_event_count"
+PINNED_COUNT_QUANTITIES: Final[tuple[str, ...]] = (
+    COMPLETE_BUCKET_COUNT,
+    COST_HURDLE_ELIGIBLE_BAR_COUNT,
+    RAW_TRADED_EVENT_COUNT,
+)
+REQUIRED_COUNT_QUANTITY: Final[str] = RAW_TRADED_EVENT_COUNT
+
 
 class EffectiveNError(ValueError):
     """Raised when effective-N inputs violate the estimator contract."""
 
 
+class CountQuantityError(EffectiveNError):
+    """Raised when the declared count quantity is absent or is not the traded-event count.
+
+    A subclass so that every existing ``EffectiveNError`` handler keeps failing
+    closed, while a test can name this specific refusal without a regex
+    alternation that cannot tell which guard fired.
+    """
+
+
 def _require_count(value: Any, what: str) -> int:
-    if isinstance(value, bool) or not isinstance(value, int) or value < 0:
+    """A non-negative count, pinned to plain ``int`` character data first (N-1).
+
+    ``value < 0`` used to be asked of the caller's own object, so an ``int``
+    subclass overriding ``__lt__`` walked ``raw_event_count = -100`` through and
+    the record echoed it. The count is now read through
+    :func:`~scripts.m15_gate3a.numeric_authority.pin_int`, which returns the
+    integer the object actually holds, and the returned value is that plain
+    ``int`` — so nothing downstream carries the subclass either.
+    """
+    try:
+        pinned = pin_int(value, what=what)
+    except NumericAuthorityError as exc:
+        raise EffectiveNError(f"{what} must be a non-negative integer") from exc
+    if pinned < 0:
         raise EffectiveNError(f"{what} must be a non-negative integer")
-    return value
+    return pinned
 
 
 def _require_unit_fraction(value: Any, what: str) -> float:
+    """A finite fraction in ``[0, 1]``.
+
+    N-1: ``float(value)`` is **not** a pin — it calls ``type(value).__float__``,
+    so a subclass overriding it reports whatever it likes (measured:
+    ``float(F(-5.0)) == 0.0``). The base-class slot is used instead.
+    """
     if isinstance(value, bool) or not isinstance(value, (int, float)):
         raise EffectiveNError(f"{what} must be a number")
-    v = float(value)
+    v = float(pin_number(value, what=what))
     if not math.isfinite(v) or not (0.0 <= v <= 1.0):
         raise EffectiveNError(f"{what} must be a finite number in [0, 1]")
     return v
@@ -76,10 +140,44 @@ def _require_positive_floor(value: Any, what: str, *, integral: bool) -> float:
             raise EffectiveNError(f"{what} must be an integer")
     elif not isinstance(value, (int, float)):
         raise EffectiveNError(f"{what} must be a number")
-    v = float(value)
+    # N-1: same pin as above — a floor is what decides INSUFFICIENT_SAMPLE, so a
+    # subclass must not be able to report one value here and another to `<`.
+    v = float(pin_number(value, what=what))
     if not math.isfinite(v) or v <= 0:
         raise EffectiveNError(f"{what} must be a finite positive number")
     return v
+
+
+def _require_count_quantity(value: Any) -> None:
+    """R-2: refuse anything but the traded-event quantity, and refuse silence.
+
+    Exact-type ``str`` only: a ``str`` subclass can lie through ``__eq__`` and
+    ``__hash__``, and this single literal is what stands between a bucket count
+    and the frozen sample floors.
+    """
+    if type(value) is not str:
+        raise CountQuantityError(
+            "count_quantity must be one of the pinned name literals "
+            f"{PINNED_COUNT_QUANTITIES!r} (exact str), got {type(value).__name__}"
+        )
+    if value == REQUIRED_COUNT_QUANTITY:
+        return
+    if value == COMPLETE_BUCKET_COUNT:
+        raise CountQuantityError(
+            f"{COMPLETE_BUCKET_COUNT!r} counts complete 15-minute buckets, not traded events; "
+            f"the estimator requires {REQUIRED_COUNT_QUANTITY!r} (buckets that pass the "
+            "cost-hurdle and fire an EV-gated trade). Passing the bucket count clears the "
+            "frozen floors by orders of magnitude and disarms INSUFFICIENT_SAMPLE"
+        )
+    if value == COST_HURDLE_ELIGIBLE_BAR_COUNT:
+        raise CountQuantityError(
+            f"{COST_HURDLE_ELIGIBLE_BAR_COUNT!r} counts cost-hurdle-eligible bars, not the "
+            f"EV-gated trades that fired; the estimator requires {REQUIRED_COUNT_QUANTITY!r}"
+        )
+    raise CountQuantityError(
+        f"unknown count_quantity {value!r}; the pinned names are {PINNED_COUNT_QUANTITIES!r} "
+        f"and only {REQUIRED_COUNT_QUANTITY!r} is admissible here"
+    )
 
 
 def _normalise_pairs(per_pair: Sequence[Any]) -> list[dict[str, Any]]:
@@ -123,6 +221,7 @@ def _normalise_pairs(per_pair: Sequence[Any]) -> list[dict[str, Any]]:
 def effective_n(
     per_pair: Sequence[Any],
     *,
+    count_quantity: str,
     cross_pair_corr: float,
     horizon_bars: int = HORIZON_M15_BARS,
     role: str = "holdout",
@@ -135,20 +234,40 @@ def effective_n(
     "overlap_fraction"}`` records — the per-pair granularity the approved spec
     requires. Non-overlapping, independent inputs recover ``N_eff -> raw``.
 
+    ``count_quantity`` (R-2 / §12.20) is a **mandatory** keyword-only literal
+    naming which quantity the ``raw_event_count`` values actually are. It has no
+    default, exactly as ``max_spread_pips`` has none in ``cost_schema``: the one
+    thing that must never be inherited by accident is *which count* was fed. The
+    only admissible value is ``"raw_traded_event_count"``; passing
+    ``"complete_bucket_count"`` or ``"cost_hurdle_eligible_bar_count"`` — both
+    strictly larger quantities that the committed inventory and this spec name
+    confusably — raises ``CountQuantityError``. Feeding either where the
+    traded-event count is meant clears the frozen floors by orders of magnitude
+    and silently disarms ``INSUFFICIENT_SAMPLE``.
+
     Role handling is fail-closed: an unknown ``role`` raises;
     ``role="holdout"`` applies the frozen floors (raw >= 1000 AND N_eff >= 400)
     and pins the horizon to the contract value; ``role="validation"`` NEVER
     returns ``SAMPLE_SUFFICIENT`` by default — without validation floors it
     returns ``NOT_EVALUATED_AT_THIS_ROLE``, and floors that are supplied must be
-    complete, finite and positive.
+    complete, finite and positive. In both roles the floors are a **conjunction**:
+    raw and N_eff must each clear their own floor.
     """
+    _require_count_quantity(count_quantity)
     if role not in _KNOWN_ROLES:
         raise EffectiveNError(f"unknown role {role!r} (fail closed)")
 
     records = _normalise_pairs(per_pair)
     corr = _require_unit_fraction(cross_pair_corr, "cross_pair_corr")
 
-    if isinstance(horizon_bars, bool) or not isinstance(horizon_bars, int) or horizon_bars < 1:
+    # N-1: pinned before the bound test and the frozen-value test, so an `int`
+    # subclass cannot answer one way to `< 1` / `!= 24` and another to the
+    # `rho_h` arithmetic below.
+    try:
+        horizon_bars = pin_int(horizon_bars, what="horizon_bars")
+    except NumericAuthorityError as exc:
+        raise EffectiveNError("horizon_bars must be a positive integer") from exc
+    if horizon_bars < 1:
         raise EffectiveNError("horizon_bars must be a positive integer")
     if horizon_bars != HORIZON_M15_BARS:
         # R-1: the horizon is frozen at 24 by Ruling 6. Pinning it only for the
@@ -228,5 +347,11 @@ def effective_n(
         "n_eff_holdout_floor": N_EFF_HOLDOUT_FLOOR,
         "raw_holdout_trade_floor": RAW_HOLDOUT_TRADE_FLOOR,
         "verdict": verdict,
-        "strategy_metrics_computed": False,
+        # R-1 (negative control): ``strategy_metrics_computed: False`` was removed.
+        # It could never hold the other value, so it was not evidence of anything
+        # while reading as a measured fact. The property it claimed is established
+        # by the audit's containment derivation over this package, not by a
+        # constant this function emits about itself. ``count_quantity`` is likewise
+        # NOT echoed: only one value is admissible, so echoing it would recreate
+        # the same vacuous-attestation class in the same edit that closes it.
     }

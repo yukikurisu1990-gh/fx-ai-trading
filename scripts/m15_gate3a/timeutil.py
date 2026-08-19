@@ -17,6 +17,10 @@ Every timestamp entering the package now goes through this module. It rejects:
 
 Conversion to UTC is then done from the offset itself rather than by
 ``astimezone``, so the host clock can never participate. No data is read here.
+
+It is also the single **emission** authority (contract §12.23):
+:func:`format_utc_z` is the only renderer permitted to put a timestamp into an
+artifact, and ``datetime.isoformat()`` — which yields ``+00:00`` — must not.
 """
 
 from __future__ import annotations
@@ -25,9 +29,21 @@ import re
 from datetime import UTC, datetime, timedelta
 from typing import Any, Final
 
-# Fractional-seconds group of an ISO timestamp, used to catch resolution that
-# `datetime.fromisoformat` would silently truncate.
-_FRACTION_RE: Final[re.Pattern[str]] = re.compile(r"\.(\d+)")
+from scripts.m15_gate3a.numeric_authority import NumericAuthorityError, pin_float
+
+# EVERY fractional group of an ISO timestamp, on EITHER ISO decimal separator.
+#
+# RF-1: this was ``\.(\d+)`` scanned with ``.search``, and both halves of that
+# were wrong. ISO-8601 admits ``,`` as well as ``.`` as the decimal sign and
+# ``datetime.fromisoformat`` accepts it, so ``"…23:59:59,0000005+00:00"`` was
+# parsed and silently TRUNCATED while its ``.`` spelling was refused. A fraction
+# may also sit in the **offset** (``"…+00:00:00.9999999"``), which ``.search``
+# never reached because it stops at the first match. Scanned with ``finditer``.
+_FRACTION_RE: Final[re.Pattern[str]] = re.compile(r"[.,](\d+)")
+
+# Digits of an ISO fraction that `datetime` can represent. Anything past this is
+# information `fromisoformat` throws away without saying so.
+_MICROSECOND_DIGITS: Final[int] = 6
 
 
 class TimestampError(ValueError):
@@ -65,11 +81,34 @@ def _reject_subclass_divergence(ts: Any, utc: datetime) -> None:
       a two-line subclass reporting ``month == 1`` for a March instant, which
       walked a dead-window timestamp straight past the dead-window predicate.
 
-    The ``timestamp()`` cross-check catches the second class outright. Its
-    resolution is limited: a float64 second count near 2026 resolves ~4e-7 s,
-    so it cannot see a lone nanosecond — that is what the ``.nanosecond`` limb
-    is for, and neither limb is claimed to be universal over subclasses that
-    hide a sub-microsecond remainder somewhere with no attribute to read.
+    **What the ``timestamp()`` cross-check actually does (RF-2).** It compares
+    the subclass's own answer for its instant against the instant rebuilt from
+    its components, so it catches a subclass whose components and whose
+    ``timestamp()`` **disagree**. It does *not* catch a component lie as such:
+    a subclass that lies **consistently** — reporting the same wrong instant
+    from both its components and its ``timestamp()`` — agrees with itself and
+    passes. The earlier wording asserted that component lies were caught
+    outright, which is a guarantee this code does not have. What is guaranteed
+    is only the consistency of the two views, plus the ``.nanosecond`` limb.
+
+    Its resolution is limited in the other direction too: a float64 second count
+    near 2026 resolves ~4e-7 s, so it cannot see a lone nanosecond — that is
+    what the ``.nanosecond`` limb is for, and neither limb is claimed to be
+    universal over subclasses that hide a sub-microsecond remainder somewhere
+    with no attribute to read.
+
+    **P-5 — both operands are pinned before the subtraction.** The check used to
+    be ``abs(ts.timestamp() - utc.timestamp())``, which is arithmetic on an
+    object the *caller* supplied: a subclass whose ``timestamp()`` returned a
+    ``float`` subclass overriding ``__sub__``/``__abs__`` answered every
+    subtraction with ``0.0`` and was ACCEPTED where the identical lie returned as
+    a plain ``float`` was REFUSED (measured: an hour of drift, and
+    :func:`format_utc_z` then emitted ``2025-06-02T00:00:00Z``). Both values now
+    go through the single numeric authority first, so the difference is computed
+    between two plain ``float``\\ s. A ``timestamp()`` returning something that
+    is not a number at all — which used to leak a bare ``TypeError`` out of
+    :func:`to_utc` — fails closed as a :class:`TimestampError` for the same
+    reason.
     """
     if getattr(ts, "nanosecond", 0):
         raise TimestampError(
@@ -79,14 +118,51 @@ def _reject_subclass_divergence(ts: Any, utc: datetime) -> None:
     if not isinstance(ts, datetime) or type(ts) is datetime:
         return
     try:
-        drift = abs(ts.timestamp() - utc.timestamp())
+        declared = ts.timestamp()
+        rebuilt = utc.timestamp()
     except (OverflowError, OSError, ValueError) as exc:
         raise TimestampError(f"timestamp() failed for {type(ts).__name__}: {exc}") from exc
+    try:
+        declared_seconds = pin_float(declared, what="timestamp()")
+        rebuilt_seconds = pin_float(rebuilt, what="timestamp()")
+    except NumericAuthorityError as exc:
+        raise TimestampError(
+            f"timestamp() did not return a number for {type(ts).__name__}: {exc}"
+        ) from exc
+    drift = abs(declared_seconds - rebuilt_seconds)
     if drift != 0.0:
         raise TimestampError(
             f"{type(ts).__name__} instant disagrees with its own components "
             f"(drift {drift!r}s); refused"
         )
+
+
+def _assert_no_subsecond_information_loss(text: str, original: Any) -> None:
+    """Refuse an ISO string whose fractions carry a non-zero sub-microsecond digit.
+
+    ``datetime.fromisoformat`` keeps six fractional digits and discards the rest
+    in silence, so the excess has to be judged here, where it is still visible.
+    Contract §12.23 fixes the disposition:
+
+    * excess digits that are **all zero** carry no information — the committed
+      M1 predecessor inventory writes ``"2025-04-24T22:03:00.000000000Z"``, nine
+      digits of nothing — and are accepted;
+    * **any** non-zero digit past the microsecond is **refused, never
+      truncated**, whichever ISO decimal separator spells it and whether it sits
+      in the time or in the offset.
+
+    Both separators and every fraction in the string are examined (RF-1): the
+    previous single-``.``, first-match-only check refused ``".0000005"`` while
+    accepting ``",0000005"`` and any fraction in the offset.
+    """
+    for match in _FRACTION_RE.finditer(text):
+        digits = match.group(1)
+        excess = digits[_MICROSECOND_DIGITS:]
+        if any(digit != "0" for digit in excess):
+            raise TimestampError(
+                f"ISO timestamp {original!r} carries {len(digits)} fractional digits with a "
+                f"non-zero sub-microsecond remainder {excess!r}; refused rather than truncated"
+            )
 
 
 def to_utc(ts: Any) -> datetime:
@@ -96,28 +172,24 @@ def to_utc(ts: Any) -> datetime:
     carrying an explicit offset. The result is always a plain ``datetime``, so
     a subclass cannot carry its own comparison semantics past this boundary.
 
-    Sub-microsecond resolution is **refused, never truncated**. The internal
+    Sub-microsecond **information** is refused, never truncated. The internal
     audit found the truncating version fail-open at the T-7 boundary: a
     ``pandas.Timestamp`` 500 ns *past* ``DESIGN_END`` rebuilt to exactly
     ``DESIGN_END`` and was certified clean, where the code this replaced had
     refused it. Every caller of this function — including the dead-window and
     forward-floor predicates — gets that check, not only the minute path.
+    Excess fractional digits that are **all zero** lose nothing and are accepted
+    (§12.23); see :func:`_assert_no_subsecond_information_loss` for exactly what
+    that admits and what it refuses.
     """
     if isinstance(ts, str):
+        # `str(ts)` would re-enter a subclass's `__str__`, letting it show one
+        # string to these checks and another to the parser. Pin the character
+        # data once, as a plain `str` (RF-20 pins this against reversion).
         text = str.__str__(ts).strip()
         if not text:
             raise TimestampError("empty timestamp string")
-        # `datetime.fromisoformat` TRUNCATES beyond 6 fractional digits, so an
-        # ISO string carrying nanoseconds parsed clean while the equivalent
-        # `pandas.Timestamp` was refused — the same instant, two answers, with
-        # the string path being the fail-open one. Refuse the excess digits
-        # here, where they are still visible.
-        fraction = _FRACTION_RE.search(text)
-        if fraction and len(fraction.group(1)) > 6:
-            raise TimestampError(
-                f"ISO timestamp {ts!r} carries {len(fraction.group(1))} fractional digits; "
-                "sub-microsecond resolution is refused rather than truncated"
-            )
+        _assert_no_subsecond_information_loss(text, ts)
         try:
             parsed = datetime.fromisoformat(text.replace("Z", "+00:00"))
         except ValueError as exc:
@@ -155,3 +227,32 @@ def to_utc_minute(ts: Any) -> datetime:
     if utc.second != 0 or utc.microsecond != 0:
         raise TimestampError(f"timestamp {utc.isoformat()} is not minute-aligned")
     return utc
+
+
+def format_utc_z(ts: Any) -> str:
+    """Render an instant as ``YYYY-MM-DDTHH:MM:SSZ`` — the only artifact spelling.
+
+    Contract §12.23: every timestamp reaching an artifact goes through this one
+    formatter, and ``datetime.isoformat()`` — which renders the offset as
+    ``+00:00`` — may not. The input is put through :func:`to_utc` first, so this
+    inherits every refusal above and can never be handed a naive value, a lying
+    subclass, or a truncated sub-microsecond remainder.
+
+    A non-zero microsecond is **refused, not truncated**: the output format has
+    no fractional field, so rendering one would silently move the instant, which
+    is precisely the failure §12.23 exists to prevent. A caller legitimately
+    holding a sub-second instant must say so in its own units, not through this.
+
+    The components are formatted explicitly rather than through ``strftime``,
+    whose zero-padding of years before 1000 is platform-dependent.
+    """
+    utc = to_utc(ts)
+    if utc.microsecond:
+        raise TimestampError(
+            f"timestamp {utc!s} carries microsecond={utc.microsecond}; the canonical "
+            "artifact format has no fractional field and will not truncate it"
+        )
+    return (
+        f"{utc.year:04d}-{utc.month:02d}-{utc.day:02d}"
+        f"T{utc.hour:02d}:{utc.minute:02d}:{utc.second:02d}Z"
+    )
