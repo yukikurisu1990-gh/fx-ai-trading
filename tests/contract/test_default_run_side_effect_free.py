@@ -269,7 +269,13 @@ class TestDotenvIsNeutralised:
         assert "SYNTHETIC_PLACEHOLDER" in other.read_text(encoding="utf-8")
 
     def test_no_test_module_loads_dotenv_at_import(self) -> None:
-        """Import-time ``load_dotenv`` is the exact route the incident took."""
+        """Import-time ``load_dotenv`` is the exact route the incident took.
+
+        This scan matches the *name*, so an aliased import or a ``getattr``
+        would slip past it. It is a tripwire against the obvious reintroduction,
+        not a proof — the proof that ``.env`` stays unread is guard 4, which
+        watches the file rather than the call.
+        """
         offenders: list[str] = []
         for path in _TEST_MODULES:
             tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
@@ -385,13 +391,26 @@ class TestEngineGuard:
         with pytest.raises(RuntimeError, match="may not build"):
             sqlalchemy.create_engine("postgresql+psycopg://u:p@example.invalid:5432/d")
 
-    def test_guard_is_installed_on_every_alias(self) -> None:
+    def test_every_alias_actually_refuses(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        """Behaviour, not ``__name__``.
+
+        ``sqlalchemy.create_engine`` is a re-export; a module that imported
+        ``sqlalchemy.engine.create_engine`` or the definition in
+        ``sqlalchemy.engine.create`` would reach a different object. Asserting
+        the name only says the patch was applied, not that it bites.
+        """
         import sqlalchemy.engine
         import sqlalchemy.engine.create
 
-        assert sqlalchemy.create_engine.__name__ == "guarded_create_engine"
-        assert sqlalchemy.engine.create_engine.__name__ == "guarded_create_engine"
-        assert sqlalchemy.engine.create.create_engine.__name__ == "guarded_create_engine"
+        monkeypatch.delenv(optin.DB_OPT_IN, raising=False)
+        aliases = [
+            sqlalchemy.create_engine,
+            sqlalchemy.engine.create_engine,
+            sqlalchemy.engine.create.create_engine,
+        ]
+        for alias in aliases:
+            with pytest.raises(RuntimeError, match="may not build"):
+                alias("postgresql+psycopg://u:p@example.invalid:5432/d")
 
 
 # ---------------------------------------------------------------------------
