@@ -35,7 +35,7 @@ in prohibition lists (§10) and in template status vocabularies.
 
 ## 1. Current gate state
 
-Last reconciled against master at `c3a0468` (2026-08-08); master CI green.
+Last reconciled against master at `0e3b001` (2026-08-21); master CI green.
 
 | Gate | State |
 | --- | --- |
@@ -53,29 +53,33 @@ Last reconciled against master at `c3a0468` (2026-08-08); master CI green.
 | Second targeted-fix Work PR (B-1…B-5, R-1…R-10) (PR #440) | ✅ **merged** as `9c36cb0` (2026-08-03) — code + tests + docs + internal audit (`docs/design/m15_recheck_targeted_fixes_note.md`, status `M15_AGGREGATION_DATASET_MACHINERY_RECHECK_FIXES_PROPOSED`). Merged with the `uv.lock` inconsistency formally unresolved: **`uv sync --frozen` reproducibility is NOT claimed**, and no Red operation that presumes a frozen uv environment is approved until it is |
 | Second re-check attempt (PR #441) | **CLOSED unmerged — non-independent diagnostic review, no gate authority.** Authored in the same session as PR #440, so it does not satisfy policy §12. Its BL-1…BL-5 / RF-1…RF-11 findings are retained as **non-authoritative diagnostic input** only |
 | Third targeted-fix Work PR (BL-1…BL-5, RF-1…RF-11) (PR #442) | ✅ **merged** as `c3a0468` (2026-08-07) — code + tests + docs (`docs/design/m15_second_recheck_targeted_fixes_note.md`), status `M15_AGGREGATION_DATASET_MACHINERY_SECOND_RECHECK_FIXES_PROPOSED`. Added `timeutil.py` + `path_authority.py`, and `pandas>=2.0,<4.0` to the `dev` extra (an Amber dependency change; `uv.lock` not regenerated, so `uv sync --frozen` reproducibility remains **unclaimed**). The merge recorded the fixes; it granted **no** audit acceptance |
-| **Third independent source-audit re-check** (this record) | **executed — verdict `M15_AGGREGATION_DATASET_MACHINERY_SOURCE_AUDIT_BLOCKED_PENDING_TARGETED_FIXES`** (`docs/design/m15_third_independent_source_audit_recheck.md`). Run in a session separate from every fix author, six independent roles. **Seven blockers B-1…B-7 + twenty-nine required fixes RF-1…RF-29.** Containment against real data / derivation / training / execution / broker / credentials re-derived **CLEAN** and proved, not inherited. Mutation resistance measured: 182 mutations, 154 killed, **19 genuine coverage holes** |
-| Fourth targeted-fix Work PR (B-1…B-7, RF-1…RF-29) | **NOT started** |
-| Fourth **independent** re-check | **NOT started** — must run in a session separate from every fix author |
-| Contract Gate-decision on referrals 2 / 3 / 4 (+ NR-A, NR-C, NR-D, NR-J, NR-K) and the byte-level T-7 proof | **RULED by human + ChatGPT; recorded, awaiting merge** — `docs/design/m15_contract_design_gate_decision.md`, status `M15_GATE3A_CONTRACT_AND_PROOF_DESIGN_DECISION_RULED`. Crossed quotes **hard fail-closed** (merged R-2 is authority; no drop-and-count); rejection tolerance **zero and structural**, not an empirical threshold; the missing-minute schema replaced by **six separately measured quantities**; **hashing is a byte read** (no raw-source re-hash without explicit read authorisation; proof subject = derived M15 bytes); T-7 coverage is **set equality** per pair against an approved calendar, not min/max containment; NR-A / NR-C / NR-D / NR-J decided; byte-level proof = **BI ∧ TC ∧ CV ∧ DB**, declaration-only tokens may never be promoted. Adds the negative-control rule and a twenty-term pinned-definition requirement. **Only open item:** `PRE_CONTINUATION_CALENDAR_ARTIFACT_APPROVAL_REQUIRED` |
-| Gate-3a continuation (real design-span derivation) | **NOT authorised** until an independent re-check accepts the fixes **and** the contract Gate-decision resolves referrals 2/3/4 |
+| **Third independent source-audit re-check** (PR #443) | **executed — verdict `M15_AGGREGATION_DATASET_MACHINERY_SOURCE_AUDIT_BLOCKED_PENDING_TARGETED_FIXES`** (`docs/design/m15_third_independent_source_audit_recheck.md`). Run in a session separate from every fix author, six independent roles. **Seven blockers B-1…B-7 + twenty-nine required fixes RF-1…RF-29.** Containment against real data / derivation / training / execution / broker / credentials re-derived **CLEAN** and proved, not inherited. Mutation resistance measured: 182 mutations, 154 killed, **19 genuine coverage holes** |
+| Fourth targeted-fix Work PR (B-1…B-7, RF-1…RF-29) (PR #445) | ✅ **merged** as `adcfd52` (2026-08-19) — code + tests + docs (`docs/design/m15_targeted_fix_b1_b7_rf1_rf29_note.md`); tests 356 → 1100; new reader-free modules `proof.py`, `coverage.py`, `calendar_authority.py`, `numeric_authority.py`. The merge recorded the fixes; it granted **no** audit acceptance. The PR also discloses a process-boundary incident (an unscoped `pytest` run reached a live local database), resolved and revalidated |
+| Test-safety Work PR (PR #446) | ✅ **merged** as `0e3b001` (2026-08-20) — `tests/optin.py` + `tests/conftest.py` guards; the presence of a resource no longer authorises using it. Two residual routes recorded by the fourth re-check (§FR-19 there): the `.env` matcher is route-dependent, and the socket guard misses UDP/DNS |
+| **Fourth independent source-audit re-check** | **executed — verdict `M15_AGGREGATION_DATASET_MACHINERY_SOURCE_AUDIT_BLOCKED_PENDING_TARGETED_FIXES`** (`docs/design/m15_fourth_independent_source_audit_recheck.md`). Run in a session separate from every fix author, ten independent roles. **Nine blockers FB-1…FB-9 + nineteen required fixes FR-1…FR-19.** B-2, B-3, B-4 and B-7 re-derive **CLOSED** by re-running the original exploits; B-1 and B-5 CLOSED_BUT_NARROW; 27 of 29 RF items CLOSED. The blocking shape is *absent* guards, not broken ones: no `__init_subclass__` seals the token-bearing records, the writer validates one read and publishes another, reader-freedom is pinned by no test, and forbidden content reaches disk through three plain-JSON encodings. **D-5.8 classified `MUST_RESOLVE_BEFORE_GATE3A_CONTINUATION`** |
+| Contract Gate-decision on referrals 2 / 3 / 4 (+ NR-A, NR-C, NR-D, NR-J, NR-K) and the byte-level T-7 proof (PR #444) | ✅ **RULED by human + ChatGPT and merged** as `ea40d2f` (2026-08-08) — `docs/design/m15_contract_design_gate_decision.md`, status `M15_GATE3A_CONTRACT_AND_PROOF_DESIGN_DECISION_RULED`. Crossed quotes **hard fail-closed** (merged R-2 is authority; no drop-and-count); rejection tolerance **zero and structural**, not an empirical threshold; the missing-minute schema replaced by **six separately measured quantities**; **hashing is a byte read** (no raw-source re-hash without explicit read authorisation; proof subject = derived M15 bytes); T-7 coverage is **set equality** per pair against an approved calendar, not min/max containment; NR-A / NR-C / NR-D / NR-J decided; byte-level proof = **BI ∧ TC ∧ CV ∧ DB**, declaration-only tokens may never be promoted. Adds the negative-control rule and a twenty-term pinned-definition requirement. **Only open item:** `PRE_CONTINUATION_CALENDAR_ARTIFACT_APPROVAL_REQUIRED` |
+| Gate-3a continuation (real design-span derivation) | **NOT authorised.** Referrals 2/3/4 are RULED (PR #444), but no independent re-check has accepted the machinery, **D-5.8** is unresolved, and `PRE_CONTINUATION_CALENDAR_ARTIFACT_APPROVAL_REQUIRED` is open |
 
 **Official gate status:** `M15_AGGREGATION_DATASET_MACHINERY_SOURCE_AUDIT_BLOCKED_PENDING_TARGETED_FIXES`
-— reaffirmed by the third independent re-check at `c3a0468`. PR #440 and PR #442
-each recorded fixes without granting acceptance, and PR #441 was closed as a
-non-independent diagnostic review.
+— reaffirmed by the **fourth** independent re-check at `0e3b001`. PR #440, #442
+and #445 each recorded fixes without granting acceptance, and PR #441 was closed
+as a non-independent diagnostic review.
 
 **Next required steps before any real data read**, in order:
 
-1. **One** targeted-fix Work PR closing B-1…B-7 / RF-1…RF-29.
-2. A **fourth genuinely independent** re-check (separate session, no
+1. A **human + ChatGPT contract Gate-decision** on **D-5.8** (the coverage count
+   floor, classified `MUST_RESOLVE_BEFORE_GATE3A_CONTINUATION` by the fourth
+   re-check) and on the reading of contract §12.25 that PR #445 took. Taking it
+   **before** the next fix PR is the same lesson PR #444 recorded: otherwise the
+   fix session decides contract questions it may not decide.
+2. **One** targeted-fix Work PR closing FB-1…FB-9 / FR-1…FR-18. FR-19 is a
+   **separate** test-safety Work PR — it is not gate-3a research machinery.
+3. A **fifth genuinely independent** re-check (separate session, no
    implementation context) accepting it.
-3. A **human + ChatGPT contract Gate-decision** on referrals 2, 3 and 4 —
-   together with the two new referrals NR-A and NR-D, which are inseparable from
-   them. This should be taken **before** the fix PR settles the crossed-quote and
-   gap-report semantics, or the fix session will decide the same contract
-   questions the audit found it may not decide.
-4. A design decision for B-2: how a **byte-level** no-overlap proof is produced
-   at all, given the package must not read data.
+4. The **P/V reader design PR** (contract §15.4). Contract §12.14's
+   reader-freedom and reverse-caller pins should exist **before** it lands.
+5. **Calendar artifact approval** — `PRE_CONTINUATION_CALENDAR_ARTIFACT_APPROVAL_REQUIRED`.
+   Not discharged by an accepted source audit.
 
 Only then may a separately-authorised gate-3a continuation read/derive
 design-span data. (This supersedes-by-progress the earlier phrasing "the source
