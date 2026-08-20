@@ -1,30 +1,23 @@
 """Integration tests for AppSettingsRepository.
 
-Requires DATABASE_URL (from .env or env var). Auto-skipped when unset.
+Requires RUN_DB_INTEGRATION_TESTS=1 and a DATABASE_URL the caller exported.
+Tests never read .env — having the resource is not authorization to use it.
 Reads and writes against the live app_settings table.
 """
 
 from __future__ import annotations
 
-import os
-from pathlib import Path
-
 import pytest
-from dotenv import load_dotenv
 from sqlalchemy import create_engine
 
-load_dotenv(Path(__file__).resolve().parents[2] / ".env", override=False)
+from tests.optin import database_url, requires_db
 
-_DATABASE_URL = os.environ.get("DATABASE_URL", "").strip()
-
-pytestmark = pytest.mark.skipif(
-    not _DATABASE_URL, reason="DATABASE_URL not set — skipping integration tests"
-)
+pytestmark = [pytest.mark.db, requires_db]
 
 
 @pytest.fixture(scope="module")
 def engine():
-    e = create_engine(_DATABASE_URL)
+    e = create_engine(database_url())
     yield e
     e.dispose()
 

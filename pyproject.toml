@@ -78,4 +78,10 @@ testpaths = ["tests"]
 addopts = "-ra --strict-markers --ignore=tests/migration/test_roundtrip.py"
 markers = [
     "destructive: test drops/truncates real DB tables — run explicitly with -m destructive",
+    # Resource gates. Presence of the resource is not authorization to use it:
+    # each marker below is skipped by tests/conftest.py unless the matching
+    # opt-in in tests/optin.py is granted. See docs/development_rules.md §2.11.
+    "db: needs a live database — set RUN_DB_INTEGRATION_TESTS=1 and export DATABASE_URL",
+    "research_data: reads local research data — set RUN_RESEARCH_DATA_TESTS=1",
+    "external: reaches a broker, object storage or the network — set RUN_EXTERNAL_TESTS=1",
 ]

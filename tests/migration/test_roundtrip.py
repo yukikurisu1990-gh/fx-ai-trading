@@ -1,7 +1,8 @@
 """Migration roundtrip test: upgrade head -> downgrade base -> upgrade head.
 
-Requires a live PostgreSQL connection via DATABASE_URL (from .env or env var).
-Skipped automatically when DATABASE_URL is not set, so CI without a DB is safe.
+Requires an explicit opt-in (RUN_DB_INTEGRATION_TESTS=1) *and* a DATABASE_URL
+exported by the caller. Tests never read .env; resource presence alone is not
+authorization. Skipped otherwise, so CI without a DB is safe.
 
 WARNING: downgrade base drops all 44 D1 tables. Any data in the DB is lost.
 If the test fails mid-run, restore with: alembic upgrade head
@@ -9,16 +10,14 @@ If the test fails mid-run, restore with: alembic upgrade head
 
 from __future__ import annotations
 
-import os
 from pathlib import Path
 
 import pytest
-from dotenv import load_dotenv
 from sqlalchemy import create_engine, text
 
-load_dotenv(Path(__file__).resolve().parents[2] / ".env", override=False)
+from tests.optin import database_url, requires_db
 
-_DATABASE_URL = os.environ.get("DATABASE_URL", "").strip()
+pytestmark = [pytest.mark.db, pytest.mark.destructive, requires_db]
 
 
 def _table_count(engine) -> int:
@@ -47,11 +46,9 @@ def _run_alembic(command: str) -> None:
         alembic_cmd.downgrade(cfg, "base")
 
 
-@pytest.mark.destructive
-@pytest.mark.skipif(not _DATABASE_URL, reason="DATABASE_URL not set — skipping DB tests")
 def test_migration_roundtrip() -> None:
     """upgrade head -> downgrade base -> upgrade head must succeed with 44 tables."""
-    engine = create_engine(_DATABASE_URL)
+    engine = create_engine(database_url())
 
     # Step 1: ensure we start at head
     _run_alembic("upgrade_head")

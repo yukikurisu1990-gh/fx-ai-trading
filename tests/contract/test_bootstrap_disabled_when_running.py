@@ -7,6 +7,7 @@ render an editable form. Only a read-only warning is allowed.
 
 from __future__ import annotations
 
+from pathlib import Path
 from unittest.mock import patch
 
 from fx_ai_trading.dashboard.config_console import bootstrap_view
@@ -93,12 +94,16 @@ def test_form_rendered_when_pm_idle(tmp_path) -> None:
     assert "form_submit_button" in rendered
 
 
-def test_form_uses_clear_on_submit() -> None:
+def test_form_uses_clear_on_submit(tmp_path: Path) -> None:
     """clear_on_submit=True is required so plaintext secrets do not persist
     in session_state across reruns (development_rules.md §10.3.1)."""
     recorder = _StreamlitRecorder()
+    # env_path is mandatory here: without it render() falls back to the
+    # repository's own .env and reads it (bootstrap_view._default_env_path).
+    env = tmp_path / ".env"
+    env.write_text("SYNTHETIC_PLACEHOLDER=not-a-credential\n", encoding="utf-8")
     with patch("fx_ai_trading.dashboard.config_console.bootstrap_view.st", recorder):
-        bootstrap_view.render(engine=None, process_manager=_StubPM(running=False))
+        bootstrap_view.render(engine=None, process_manager=_StubPM(running=False), env_path=env)
 
     form_calls = [c for c in recorder.calls if c[0] == "form"]
     assert form_calls, "st.form must be used to wrap secret inputs"

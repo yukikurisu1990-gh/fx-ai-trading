@@ -15,6 +15,8 @@ from pathlib import Path
 import numpy as np
 import pytest
 
+from tests.optin import has_research_data, research_gate_reason
+
 REPO_ROOT = Path(__file__).resolve().parents[2]
 SCRIPTS_DIR = REPO_ROOT / "scripts"
 if str(SCRIPTS_DIR) not in sys.path:
@@ -26,15 +28,12 @@ stage24_1a = importlib.import_module("stage24_1a_both_side_touch_eval")
 
 
 PIP = 0.0001
-DATA_DIR = REPO_ROOT / "data"
-_REPO_HAS_M1_DATA = (DATA_DIR / "candles_USD_JPY_M1_730d_BA.jsonl").exists()
+_REPO_HAS_M1_DATA = has_research_data("candles_USD_JPY_M1_730d_BA.jsonl")
 _REPO_HAS_FROZEN = (REPO_ROOT / "artifacts" / "stage24_0a" / "frozen_entry_streams.json").exists()
-_skip_no_data = pytest.mark.skipif(
-    not _REPO_HAS_M1_DATA, reason="M1 BA data not present (CI env without data/ files)"
-)
+_skip_no_data = pytest.mark.skipif(not _REPO_HAS_M1_DATA, reason=research_gate_reason("M1 BA data"))
 _skip_no_data_or_frozen = pytest.mark.skipif(
     not (_REPO_HAS_M1_DATA and _REPO_HAS_FROZEN),
-    reason="M1 BA data or 24.0a frozen JSON not present (CI env without data/ files)",
+    reason=research_gate_reason("M1 BA data or the 24.0a frozen JSON"),
 )
 
 
@@ -349,6 +348,7 @@ def test_no_lookahead_t_plus_1_unused():
 # ---------------------------------------------------------------------------
 
 
+@pytest.mark.research_data
 @_skip_no_data
 def test_load_m1_ba_returns_full_ohlc():
     """load_m1_ba already returns the 8 OHLC columns; no API change needed."""
@@ -403,6 +403,7 @@ def _tracked_artifact_bytes(rel: str) -> bytes:
     return (REPO_ROOT / rel).read_bytes()
 
 
+@pytest.mark.research_data
 @_skip_no_data_or_frozen
 def test_24_0b_close_only_smoke_regression(tmp_path):
     """Smoke regression: 24.0b still executes successfully under unchanged
@@ -415,6 +416,7 @@ def test_24_0b_close_only_smoke_regression(tmp_path):
     assert _tracked_artifact_bytes("artifacts/stage24_0b/eval_report.md") == before
 
 
+@pytest.mark.research_data
 @_skip_no_data_or_frozen
 def test_24_0c_close_only_smoke_regression(tmp_path):
     before = _tracked_artifact_bytes("artifacts/stage24_0c/eval_report.md")
@@ -424,6 +426,7 @@ def test_24_0c_close_only_smoke_regression(tmp_path):
     assert _tracked_artifact_bytes("artifacts/stage24_0c/eval_report.md") == before
 
 
+@pytest.mark.research_data
 @_skip_no_data_or_frozen
 def test_24_0d_close_only_smoke_regression(tmp_path):
     before = _tracked_artifact_bytes("artifacts/stage24_0d/eval_report.md")

@@ -6,7 +6,8 @@ in M9/H-3a so the end-to-end exit flow is exercised on the post-Cycle-6.7d
 ``ExitExecutor`` itself was subsequently removed in M9/H-3c; this file
 no longer imports it.
 
-Requires DATABASE_URL (from .env or env var). Auto-skipped when unset.
+Requires RUN_DB_INTEGRATION_TESTS=1 and a DATABASE_URL the caller exported.
+Tests never read .env — having the resource is not authorization to use it.
 
 Flow:
   1. Module fixture inserts broker / account / instrument rows.
@@ -30,26 +31,18 @@ Surface mapping vs the deprecated ``ExitExecutor`` test
 
 from __future__ import annotations
 
-import os
 from collections.abc import Iterator
 from datetime import UTC, datetime
-from pathlib import Path
 
 import pytest
-from dotenv import load_dotenv
 from sqlalchemy import create_engine, text
 
 from fx_ai_trading.common.clock import FixedClock
 from fx_ai_trading.common.ulid import generate_ulid
 from fx_ai_trading.config.common_keys_context import CommonKeysContext
+from tests.optin import database_url, requires_db
 
-load_dotenv(Path(__file__).resolve().parents[2] / ".env", override=False)
-
-_DATABASE_URL = os.environ.get("DATABASE_URL", "").strip()
-
-pytestmark = pytest.mark.skipif(
-    not _DATABASE_URL, reason="DATABASE_URL not set — skipping integration tests"
-)
+pytestmark = [pytest.mark.db, requires_db]
 
 _BROKER_ID = "__test_broker_exit__"
 _ACCOUNT_ID = "__test_account_exit__"
@@ -67,7 +60,7 @@ _CTX = CommonKeysContext(
 
 @pytest.fixture(scope="module")
 def engine():
-    e = create_engine(_DATABASE_URL)
+    e = create_engine(database_url())
     yield e
     e.dispose()
 

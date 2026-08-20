@@ -16,6 +16,8 @@ import numpy as np
 import pandas as pd
 import pytest
 
+from tests.optin import research_path, research_skip_reason
+
 REPO_ROOT = Path(__file__).resolve().parents[2]
 SCRIPTS_DIR = REPO_ROOT / "scripts"
 if str(SCRIPTS_DIR) not in sys.path:
@@ -29,14 +31,15 @@ f5 = importlib.import_module("stage25_0f_f5_eval")
 # ---------------------------------------------------------------------------
 
 
+@pytest.mark.research_data
 def test_volume_preflight_passes_on_real_data():
     """Real M1 BA jsonl carries volume; pre-flight must pass for 1 pair.
 
-    Skipped when data files are absent (CI without the data dir).
+    Skipped unless RUN_RESEARCH_DATA_TESTS=1 and the file is present.
     """
-    data_path = REPO_ROOT / "data" / "candles_EUR_USD_M1_730d_BA.jsonl"
-    if not data_path.exists():
-        pytest.skip("M1 BA data not present in this environment")
+    data_path = research_path("candles_EUR_USD_M1_730d_BA.jsonl")
+    if data_path is None:
+        pytest.skip(research_skip_reason())
     diag = f5.verify_volume_preflight(["EUR_USD"], days=730)
     assert "EUR_USD" in diag
     assert diag["EUR_USD"]["volume_nonnull_fraction"] >= f5.VOLUME_MIN_NONNULL_FRACTION

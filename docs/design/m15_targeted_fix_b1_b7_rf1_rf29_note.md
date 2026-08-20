@@ -488,6 +488,26 @@ Recorded for a separate **test-safety / infra Work PR**:
    defect, and they make a clean-room run indistinguishable from a real
    regression at a glance.
 
+### Correction (2026-08-19, recorded by the test-safety Work PR)
+
+Item 4 above is **wrong about the cause**, and the correction is appended
+rather than substituted so the original claim stays visible.
+
+The 27 failures were **not** a resource-presence gating defect. They were an
+artefact of how this document's clean room was built: `git archive` produces a
+tree with no `.git` directory, and `scripts/ml_step4/manifest.py::git_code_sha()`
+shells out to `git rev-parse HEAD`, which exits 128 and is converted to
+`ManifestError`. All 27 sit in `tests/ml_step4/` and every one of them fails on
+that single provenance call — none of them fails for want of research data.
+
+Rebuilding the same clean room with `git clone --no-hardlinks` instead (still no
+`.env`, still no untracked `data/*.jsonl`, still a temp HOME and a clean
+`pip install -e ".[dev]"`) yields **3306 passed / 11 skipped / 0 failed** over
+`tests/unit` + `tests/ml_step4` at the same commit. The research-data tests
+*do* skip correctly, and always did.
+
+Items 1–3 stand and are what the test-safety Work PR implements.
+
 ---
 
 ## 9. Non-authorisation

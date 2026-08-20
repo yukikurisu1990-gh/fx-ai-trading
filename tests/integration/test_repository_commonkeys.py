@@ -1,6 +1,7 @@
 """Integration tests: Common Keys context is required on all repository write methods.
 
-Requires DATABASE_URL (from .env or env var). Auto-skipped when unset.
+Pure signature introspection against a MagicMock engine — no database is
+contacted, so this module runs in every default test session.
 
 Verifies that:
   1. Write methods without context raise TypeError (required positional arg).
@@ -10,21 +11,10 @@ Verifies that:
 from __future__ import annotations
 
 import inspect
-import os
-from pathlib import Path
 
 import pytest
-from dotenv import load_dotenv
 
 from fx_ai_trading.config.common_keys_context import CommonKeysContext
-
-load_dotenv(Path(__file__).resolve().parents[2] / ".env", override=False)
-
-_DATABASE_URL = os.environ.get("DATABASE_URL", "").strip()
-
-pytestmark = pytest.mark.skipif(
-    not _DATABASE_URL, reason="DATABASE_URL not set — skipping integration tests"
-)
 
 _CTX = CommonKeysContext(
     run_id="ck-integ-test",

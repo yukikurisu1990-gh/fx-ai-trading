@@ -230,6 +230,112 @@ D3 8.4 の 8 項目は**MVP 必須**:
 | 「パイプラインが壊れていない」を確認 | 「主要ユースケースが動く」を確認 |
 | 例: 起動シーケンスの Step 1-5 がエラーを出さない | 例: 1 cycle の分足判断が end-to-end で通る (M12) |
 
+### 2.11 Test Safety — resource presence is not authorization
+
+**原則: リソースが「そこにある」ことは、それを使ってよいという許可ではない。**
+
+2026-08 の process-boundary incident で、リポジトリ全体の `pytest` が live
+database へ INSERT / DELETE を実行した。原因は 2 つで、どちらも「存在＝有効化」
+だった: test module が import 時に `load_dotenv()` を呼び、唯一のゲートが
+`skipif(not DATABASE_URL)` だったこと。`.env` が machine に置いてあるだけで、
+本人の意図と無関係に DB テストが有効化されていた。
+
+#### default の挙動
+
+`pytest` および `pytest tests/` は、**外部・ローカルの副作用を一切起こさない**。
+
+| 事象 | default run での回数 |
+|---|---|
+| external network connection | 0 |
+| external DB connection / write | 0 |
+| local research data read | 0 |
+| broker call / external storage call | 0 |
+| `.env` の読み込み | 0 |
+
+上表のうち network / DB / `.env` の各行は `tests/contract/test_default_run_side_effect_free.py`
+が固定している。research data と broker/storage の行は、gate を通らない読み取り
+経路が無いことを source scan で担保しており、実行時計測ではない。
+
+#### 明示的 opt-in
+
+| 対象 | 必要な条件 |
+|---|---|
+| live/local database | `RUN_DB_INTEGRATION_TESTS=1` **かつ** `DATABASE_URL` を caller が export |
+| local research data (`data/`) | `RUN_RESEARCH_DATA_TESTS=1` |
+| broker / object storage / network | `RUN_EXTERNAL_TESTS=1` |
+
+値は厳密に `"1"` のみ。`true` / `yes` / `0` は **fail-closed**（typo でゲートが
+開くことはない）。語彙は `tests/optin.py` に一元化されており、テスト側で
+`os.environ.get("DATABASE_URL")` を各自解決してはならない。
+
+```bash
+# database integration tests
+export DATABASE_URL='postgresql+psycopg://USER:PASSWORD@HOST:5432/DBNAME'  # synthetic placeholder
+RUN_DB_INTEGRATION_TESTS=1 pytest -m db
+
+# local research-data tests
+RUN_RESEARCH_DATA_TESTS=1 pytest -m research_data
+
+# broker / storage / network
+RUN_EXTERNAL_TESTS=1 pytest -m external
+```
+
+`tests/migration/test_roundtrip.py` は 44 テーブルを drop するため、上記に加えて
+`addopts` の `--ignore` を明示的に外す必要がある（三重ゲート）。
+
+#### `.env` はテスト中 read されない
+
+`tests/conftest.py` が conftest import 時点で `dotenv.load_dotenv` を無効化し、
+さらに `PYTHON_DOTENV_DISABLED=1` を立てる（後者は python-dotenv が
+`load_dotenv` 内部で見るため、conftest より先に束縛された binding にも効き、
+子プロセスにも継承される）。
+
+ただし `load_dotenv` を塞ぐだけでは足りない。実際、adversarial audit が
+`bootstrap_view.render()` を `env_path` なしで呼ぶ contract test を発見した
+——それは `Path.read_text()` でリポジトリ直下の `.env` を直接読んでおり、
+dotenv を一切経由しない。そのため **audit hook による guard 4** を入れてある:
+`open` event を監視し、リポジトリ自身の `.env` を開こうとしたら経路を問わず
+`RuntimeError` にする。audit hook は一度入れたら外せない。
+
+**caller が environment を明示的に用意する**方式であり、production の `.env`
+読み込み挙動は変更していない。
+
+#### 4 つの構造ガード
+
+opt-in を忘れた場合でも通らないよう、`tests/conftest.py` は 4 つのガードを
+インストールする。認可は **conftest import 時点の snapshot** で判定する
+（実行時に `os.environ` を見ると、テストが `monkeypatch.setenv` した瞬間だけ
+ガードが開いてしまうため）。
+
+1. `load_dotenv` の無効化 + `PYTHON_DOTENV_DISABLED`
+2. `create_engine` — `sqlite` 以外は未認可なら `RuntimeError`（メッセージに
+   接続文字列を含めない。`://` を欠く不正な URL は `<unparsable>` に潰す）
+3. `socket.connect` / `connect_ex` — loopback 以外は未認可なら `RuntimeError`
+4. `open` audit hook — リポジトリの `.env` はどの経路でも開けない
+
+さらに collection hook が `db` / `research_data` / `external` marker の付いた
+item を未認可なら skip する。この hook は collection 後に走るため、`-m` / `-k` /
+ファイル直接指定では回避できない。
+
+#### ガードの限界（過信しないこと）
+
+正確に把握しておくべき点。
+
+- **guard 3 は DB の backstop ではない。** `psycopg[binary]` は libpq が C 側で
+  socket を開くため `socket.socket.connect` を通らない。DB を止めているのは
+  guard 2 と opt-in であって guard 3 ではない。
+- **DNS は塞いでいない。** `getaddrinfo` と UDP `sendto` は素通りする。guard 3 が
+  止めるのは TCP `connect` / `connect_ex` のみ。
+- **子プロセスはガードを継承しない**（`PYTHON_DOTENV_DISABLED` を除く）。
+- **`--ignore` は三重目のゲートではない。** `pytest tests/migration/test_roundtrip.py`
+  のようにファイルを直接指定すると `addopts` の `--ignore` は collection を
+  止めない（実測確認済み）。あの破壊的テストを守っているのは `db` marker +
+  `requires_db` の二重ゲートである。
+- **`external` marker は現時点で利用テストが 0 件。** broker / storage 系は
+  すべて mock 化済みで外に出ないため、語彙として先に用意してあるだけ。
+- `RUN_*` の値は前後の空白を除いて厳密に `1`。なお Windows の `os.environ` は
+  キーが大小文字を区別しないため、変数名の大小は問わない。
+
 ---
 
 ## 3. ドキュメント運用
