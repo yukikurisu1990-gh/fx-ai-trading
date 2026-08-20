@@ -20,6 +20,8 @@
   · `FORWARD_EPOCH_ADOPTION_BLOCKED_INSUFFICIENT_SAMPLE_ADOPTION_WAITS`
   · `M15_FIRST_COST_HURDLE_AWARE_PREREGISTRATION_ACCEPTABLE_FOR_GATE3A_DATASET_EPOCH_ADOPTION`
 - Open pre-continuation item: **`PRE_CONTINUATION_CALENDAR_ARTIFACT_APPROVAL_REQUIRED`**
+- Audit-process status: **`AUDIT_PROCESS_DEVIATION_NETWORK_OPERATION_OCCURRED`**
+  · **`AUDIT_VERDICT_RETAINS_AUTHORITY_AFTER_EVIDENCE_EXCLUSION`** (§2a, §2b)
 - Always binding: **`PRODUCTION_READINESS_NOT_CLAIMED`** · **`NO_EXECUTION_PERFORMED`**
 - Gate-3a continuation: **NOT authorised.** No calendar artifact approved,
   generated or authored. No real data read; nothing derived, trained, validated
@@ -100,6 +102,15 @@ Most of what is recorded here is an **absent** guard rather than a broken one,
 and no mutation study can find an absent guard. A mutation score is evidence
 about the guards that exist; it is not evidence of conformance.
 
+**One process defect in this audit itself.** A network operation was performed in
+breach of this audit's own no-network restriction. It is recorded in full at §2a
+(`AUDIT_PROCESS_DEVIATION_NETWORK_OPERATION_OCCURRED`), the single finding that
+rested on it has had that evidence discarded and replaced offline, and §2b sets
+out why the verdict retains authority on evidence that excludes it
+(`AUDIT_VERDICT_RETAINS_AUTHORITY_AFTER_EVIDENCE_EXCLUSION`). It is a defect of
+the audit, not a finding about the machinery, and it changes no blocker, no
+required fix and not the verdict.
+
 ---
 
 ## 2. Independence, and the limits of it
@@ -142,20 +153,226 @@ between mutants. PR #446's test-safety default was used as the boundary that mak
 this safe, and was verified sufficient for that purpose — with two residual routes
 recorded in §12.
 
-**Forbidden operations.** No real data read · no `.env` read · no DB connection or
-write · no raw-source hashing · no real M15 derivation · no validation, holdout,
-training, inference or execution · no broker, paper or live activity · no external
-storage · no credential use · no calendar artifact generated and no market hours
-invented · no D-5.8 threshold decided · `uv.lock` untouched · no source, test or
-frozen-contract file changed · no gate-3a continuation · no PR merged.
+**Forbidden operations — one occurred.** This audit's brief prohibited network
+access among other operations, and **one prohibited operation was performed**
+(§2a). The following were **not** performed: real data read · `.env` read ·
+DB connection or write · raw-source hashing · real M15 derivation · validation,
+holdout, training, inference or execution · broker, paper or live activity ·
+external storage · credential use · calendar artifact generation or market-hours
+invention · D-5.8 threshold decision · `uv.lock` modification · source, test or
+frozen-contract change · gate-3a continuation · PR merge.
 
-**One deviation, disclosed.** While establishing §12's socket finding, the
-dependency/test-safety role executed one DNS lookup of `example.com` and one
-6-byte UDP datagram to `192.0.2.1` (TEST-NET-1, non-routable). That exceeded the
-brief's no-network constraint. No credential, repository content or research data
-was transmitted, and no further network probe was made. It is recorded here rather
-than omitted, and the finding it supports (FR-15) is graded on the source, not on
-that probe.
+This document does **not** assert "no forbidden operation performed". An earlier
+revision of this record and its accompanying report did, beside a disclosure that
+contradicted it. That claim is **withdrawn** and replaced by §2a and §2b.
+
+---
+
+## 2a. Process deviation — `AUDIT_PROCESS_DEVIATION_NETWORK_OPERATION_OCCURRED`
+
+**Status recorded: `AUDIT_PROCESS_DEVIATION_NETWORK_OPERATION_OCCURRED`.**
+One violation of the audit's no-network restriction occurred during this session.
+It is recorded as it happened; the history is not rewritten.
+
+| | |
+| --- | --- |
+| **Responsible role** | Role 10 — dependency / import-graph and test-safety verification boundary. It was the only role whose subject touched network egress at all, and the only one that reported an operation of this kind. That is a self-declaration plus scope reasoning, not a traced guarantee about the other nine; it is stated at that strength deliberately |
+| **Operation 1** | One DNS lookup: `socket.getaddrinfo("example.com", 80)` |
+| **Purpose** | To establish, by execution rather than by inspection, that the test-safety socket guard does not cover name resolution |
+| **Operation 2** | One UDP datagram, **6 bytes**, via `socket.sendto` to `192.0.2.1:9` |
+| **Purpose** | To establish, by execution rather than by inspection, that the guard does not cover connectionless datagram send |
+| **Destination** | `192.0.2.1` is **TEST-NET-1** (RFC 5737 documentation space), not routable on the public internet; port 9 is the discard port. The datagram could not be delivered to any real host |
+| **Payload** | Length 6 bytes. **The byte content is not recorded** in any surviving artifact — see "limits of this reconstruction" below |
+| **External response** | The DNS lookup **did** receive a response (an address record). The UDP send received none, and none was awaited. The DNS response's *content* was used for nothing; only the fact that resolution completed was cited |
+| **Credentials used** | None |
+| **DB access** | None |
+| **Research-data read** | None |
+| **Broker / external storage** | None |
+| **Side effects on filesystem, artifacts, source or tests** | None. The role worked in a private sandbox copy; the repository working tree was unmodified throughout, and remains so |
+| **Used as audit evidence?** | **Yes — for FR-19(b) only.** That evidence is now discarded and replaced (§2b) |
+| **Further network probes** | None. The role stopped after observing the result and disclosed it in its own report |
+
+**Limits of this reconstruction, stated rather than glossed.** The role's probe
+script and its raw transcript were both removed during scratch cleanup before this
+correction began, so the reconstruction above rests on the role's own reported
+output and narrative as received in this session. Two consequences: the **byte
+content** of the 6-byte payload cannot be recovered, and the assertion that
+nothing sensitive was transmitted cannot be verified from the artifact.
+
+It can, however, be **bounded structurally**, which is stronger than taking the
+role's word for it: the sandbox every role worked in was a `git archive` extract
+of `0e3b001` that the lead created and verified to contain **no `.env`, no
+credentials and no real research data** (only `.env.example` and a committed
+economic-calendar fixture). There was no secret present in that working directory
+to transmit, whatever the six bytes were. The destination was non-routable in any
+case.
+
+The same structural bound is what carries the table's other negative rows. "No
+credentials used", "no DB access", "no research-data read" and "no broker or
+external storage" are the role's declarations *and* are bounded by the sandbox
+containing none of those things, by the opt-in variables never being set, and by
+the repository working tree being verifiably unmodified at every point since
+(`git status` clean for tracked files, `artifacts/**` untouched). They are not
+traced from a retained artifact, and this record does not pretend otherwise.
+
+## 2b. Evidence exclusion and offline re-derivation — `AUDIT_VERDICT_RETAINS_AUTHORITY_AFTER_EVIDENCE_EXCLUSION`
+
+**No network-derived result is used as evidence anywhere in this record.**
+
+Every blocker FB-1…FB-10 and every required fix FR-1…FR-21 was swept for
+dependence on the deviation. **Exactly one depended on it: FR-19(b).** All others
+rest on committed source, static and AST inspection, synthetic local objects,
+local temporary files, or mutation probes against a private copy — each
+lead-reproduced offline, as §4, §5 and §14 record.
+
+Per blocker, the offline method that establishes it:
+
+| Blocker | Offline method, lead-executed |
+| --- | --- |
+| FB-1 | in-process subclass of `ValidatedCalendar` / `PairSlotMeasurement` / the three proof records; `assert_full_coverage` called with local objects |
+| FB-2 | in-process `dict` subclass; write to a scratch directory; read the written file back |
+| FB-3 | three plain-JSON payloads through `scan_gate3a` and `write_metadata_artifact` into a scratch directory |
+| FB-4 | filesystem only, in a `git archive` extract: path spellings against `refuse_real_path`, then one write, then a directory listing |
+| FB-5 | in-process `str` subclasses against seven named guards, each with a plain-value control |
+| FB-6 | `dataclasses.asdict` / `astuple` on a locally constructed `ProofResult` |
+| FB-7 | `unicodedata` name lookup over a codepoint range, then `scan_gate3a` on local strings |
+| FB-8 | three source mutations on a private copy + the scoped pytest suite |
+| FB-9 | `scan_gate3a` on locally built payloads; a committed JSON file read; contract text read |
+| FB-10 | in-process object with a spoofed `__class__` against `WarmupPolicy` |
+
+None of the ten involves a socket, a name resolution, a database, `.env`, a
+credential, or real research data. Each is reproducible on a machine with no
+network at all.
+
+**FR-19(b): the network evidence is discarded and replaced.** The original basis
+was "the guarded run performed a DNS lookup and a UDP send and neither was
+refused". That is struck. The replacement establishes the same claim more
+precisely and without performing any network operation, by comparing the identity
+and provenance of the socket API in a pristine interpreter against one that has
+imported `tests.conftest` — **nothing is called**:
+
+```
+PRISTINE (conftest not imported)
+  socket.socket.connect      method_descriptor   socket.connect
+  socket.socket.sendto       method_descriptor   socket.sendto
+  socket.getaddrinfo         function            module=socket
+
+GUARDED (tests.conftest imported; no call made)
+  socket.socket.connect      function   _install_socket_guard.<locals>.guarded_connect      GUARDED
+  socket.socket.connect_ex   function   _install_socket_guard.<locals>.guarded_connect_ex   GUARDED
+  socket.socket.send         method_descriptor   socket.send            unpatched
+  socket.socket.sendall      method_descriptor   socket.sendall         unpatched
+  socket.socket.sendto       method_descriptor   socket.sendto          unpatched
+  socket.getaddrinfo         function            getaddrinfo            unpatched
+  socket.gethostbyname       builtin_function_or_method  gethostbyname  unpatched
+  socket.create_connection   function            create_connection      unpatched
+```
+
+Read against `tests/conftest.py:212-226`, which binds exactly two names, this
+shows *which* egress routes are covered rather than merely that one uncovered
+call succeeded. `create_connection` is unpatched as an object but calls
+`sock.connect()` internally, so TCP is covered transitively; `send`/`sendall`
+require a prior guarded `connect`. The genuinely uncovered routes are
+**connectionless datagram send** and **name resolution**, neither of which needs
+a `connect`. The replacement evidence is therefore *stronger* than what it
+replaces, and it is reproducible by anyone, offline. It was then reproduced
+independently, in a fresh context under a hard no-network rule, by the offline
+re-audit recorded at §2c — which also widened the finding without touching a
+socket.
+
+**One further re-derivation, for the same discipline.** FO-19's lockfile
+observation had been produced by a role running `uv lock --check --offline`.
+`--offline` disables network by design, but rather than rely on that the lead
+re-derived it as a pure file comparison, with `uv` not invoked at all — see FO-19,
+whose figure is corrected as a result.
+
+**Verdict authority.** The four conditions the correction task sets are met and
+are checkable above: the deviation occurred and is recorded (§2a); the final
+BLOCKED verdict depends on no network evidence (this section); top-level session
+independence is unaffected, since the deviation was a probe method, not a source
+of context (§2); and the BLOCKED decision rests on offline-reproducible evidence —
+ten blockers, each reproduced by the lead from local synthetic probes, mutation on
+a private copy, or static inspection. **Status recorded:
+`AUDIT_VERDICT_RETAINS_AUTHORITY_AFTER_EVIDENCE_EXCLUSION`.**
+
+The deviation is a **process** defect of this audit, not a technical finding about
+the machinery. It changes no blocker, no required fix, and not the verdict.
+
+## 2c. Offline re-audit of the responsible role's area
+
+The whole subject of the role that deviated — the import graph, capability
+containment, and the test-safety guards — was re-audited from scratch in a
+**fresh context** under a hard prohibition on network access, DNS, sockets, DB,
+`.env` and credentials. It was given no earlier conclusions. Its methods were:
+committed-source reading, AST and import-graph analysis, `tomllib` parsing,
+**object-identity and provenance comparison across two throwaway interpreters**,
+`inspect.getsource`, pure-function evaluation on synthetic values, a decoy `.env`
+containing only `DECOY=1` inside its own sandbox, synthetic marked tests,
+pass-through `os.stat`/`open` recorders with positive controls, an `open`-audit-hook
+pytest plugin over the full scoped run, and mutation on a private copy.
+
+**It reproduced both affected findings, and it did so without performing a single
+network operation** — which is the point, and the demonstration that the deviation
+was unnecessary as well as prohibited.
+
+**Corroborating FB-8** (reader-freedom and the reverse-caller set are pinned by
+nothing). Thirteen mutations, one at a time, `__pycache__` purged and
+`PYTHONDONTWRITEBYTECODE=1` on every run, with a live control that was killed:
+**eleven survived**, each at 1100 passed / 1 skipped. Beyond what §4 already
+records, two are worth naming: a **production** reverse caller added under
+`src/fx_ai_trading/` survives, and the *opposite* direction edge
+`coverage → proof` survives — the one pin that exists names one source module and
+three hardcoded targets, so a new module or a new forbidden target is invisible to
+it. Reader-freedom holds in fact at HEAD and is pinned by nothing.
+
+**Corroborating FR-19, and widening it.** The re-audit reached §2b's conclusion
+independently by the same identity method, and added detail this record had not
+had. It is recorded here rather than edited into FR-19's row, because FR-19
+belongs to a separate test-safety Work PR and this correction does not rewrite
+findings:
+
+- The `.env` matcher is defeated by **eight** spellings of the same file, not the
+  four first reported: adding the `\\?\` extended-length prefix, the NTFS default
+  data stream `.env::$DATA`, an 8.3 short name, and a UNC admin-share path. The
+  root cause is sharper than "case sensitivity": the constant is built with
+  `Path.resolve()` while the comparison uses `os.path.abspath()`, which normalises
+  but does not *resolve* — so the two sides are not the same normalisation.
+- The socket guard's uncovered surface is wider than `sendto` and name
+  resolution. **`_socket.socket.connect` — the C base class — is untouched**;
+  only the Python subclass attribute was rebound. And `socket.create_connection`
+  calls `getaddrinfo` *before* `sock.connect`, so on the ordinary
+  `http.client`/`requests` path **a DNS query carrying the hostname leaves before
+  the guard can fire**.
+- The route-independent remedy already exists in this repository, in code the
+  same programme wrote: `path_authority.py:131-170` decides containment by
+  `Path.stat()` + `os.path.samestat` **identity**, and its docstring names the
+  exact three aliases that beat a string test — UNC, junctions and 8.3 short
+  names. `conftest.py` does a string comparison instead.
+
+**Three further test-safety observations**, recorded for that separate PR and
+deliberately not mixed into the gate-3a findings: `pytest --noconftest` and any
+test module collected outside `tests/` receive no guards at all — and
+`tools/test_labels_bidask_vectorized.py:133-135` opens **real research data**
+under `data/`, inert today only because the file defines no `def test_` and the
+read sits behind `if __name__ == "__main__"`; guards 2, 3 and 4 do not cross into
+child processes (only `PYTHON_DOTENV_DISABLED` does), and the scoped suite spawns
+five children; and the engine guard re-derives **CLEAN**, including that its
+refusal cannot echo a connection string and that every DB path in the repository
+routes through `sqlalchemy.create_engine` or `engine_from_config`.
+
+**What the re-audit explicitly refused to prove, and left unproven.** It
+established by object identity that the unguarded routes are *not intercepted*.
+It did **not** establish that a packet would leave this machine — that depends on
+host egress policy and could only be settled by performing the operation. It also
+left unproven what `uv lock --check` would print, and whether the Proactor
+`ConnectEx` path bypasses the guard. Drawing that line, and stopping at it, is the
+discipline whose absence produced §2a.
+
+**Its own disclosed limitation.** A `grep` over `docs/design/*.md` surfaced index
+lines from this audit document, which was present in the working tree. The
+re-audit reports that it did not open the file, and every conclusion above is
+derived from source, AST, identity probes and mutation. Its independence is
+therefore high but not hermetic, and that is stated rather than claimed away.
 
 ---
 
@@ -638,7 +855,7 @@ none individually gate-stopping. They land with the blockers, in one Work PR.
 | FR-16 | `artifacts.py:794` `_MAX_PROHIBITION_ENTRY_LEN = 22`, derived from `FORBIDDEN_STATUSES` | The package **cannot list its own byte-level claim tokens in a prohibition list**: `BYTE_LEVEL_NO_DEAD_WINDOW_OVERLAP_PROVEN` (40 chars), `MEASURED_FROM_DERIVED_ARTIFACT_BYTES` (36) and `DERIVATION_IDENTITY_BOUND` (25) all exceed the bound → `gate3a_prohibition_entry_too_long`, and the write is refused. `guards.py:61` states these "may appear only in prohibition lists"; for these three they may appear nowhere. The bound was deliberately kept at 22 to avoid widening the unscanned window — a defensible trade that nevertheless leaves a stated permission unusable. |
 | FR-17 | `scripts/foundation_t2/constants.py:151`, reached via `scan_gate3a` → `evidence.scan_payload` | The mandatory scan path is **quadratic** on a long alphanumeric run: the pattern `[a-z0-9]+\.r2\.cloudflarestorage\.com` with `IGNORECASE` backtracks catastrophically. Lead-measured: 2 000 chars → 0.024 s, 8 000 → 0.355 s, 16 000 → 1.416 s (≈4× per doubling); a 306 KB base64 value did not finish in 110 s. There is no size bound and no timeout on the gatekeeper, so a large legitimate artifact makes the scrubber the thing that never returns. Inherited from the base scrubber, but on gate-3a's critical path. |
 | FR-18 | `scripts/ml_step4/evidence.py:137-165`, imported wholesale at `artifacts.py:81` | A **second writer reaches the committed gate-3a tree and overwrites it.** `evidence.write_report` applies `assert_clean` only, calls no `refuse_real_path`, and overwrites unconditionally; it is re-exported into the gate-3a namespace by the module-level import. `artifacts.py:52-54` claims the overwrite refusal "is what keeps the human-reviewed committed artifacts out of reach of a code path" — false as stated, and inconsistent with `:60` in the same file, which withdraws the claim for unrouted callers. No in-package code reaches it; the fix is to import the two functions actually used. |
-| FR-19 | `tests/conftest.py:214-227`, `:245-262` | Two test-safety residuals — for a **separate** Work PR, not the gate-3a fix. (a) The `.env` guard is route-dependent: the prefilter is a case-sensitive literal `endswith(".env")` and the comparison does not strip trailing dots or spaces, so `.ENV`, `.Env`, `.env.` and `.env ` each read the file in full during a guarded session (lead-verified against a **synthetic decoy**, never the real file). The contract test is named `test_the_repository_dotenv_cannot_be_opened_by_any_route`; the guarantee as stated is false. (b) The socket guard wraps only `connect`/`connect_ex`, so UDP `sendto` and DNS resolution are unguarded, while the contract suite's section heading is "nothing leaves the loopback interface". See §12. |
+| FR-19 | `tests/conftest.py:214-227`, `:245-262` | Two test-safety residuals — for a **separate** Work PR, not the gate-3a fix. (a) The `.env` guard is route-dependent: the prefilter is a case-sensitive literal `endswith(".env")` and the comparison does not strip trailing dots or spaces, so `.ENV`, `.Env`, `.env.` and `.env ` each read the file in full during a guarded session (lead-verified against a **synthetic decoy**, never the real file). The contract test is named `test_the_repository_dotenv_cannot_be_opened_by_any_route`; the guarantee as stated is false. (b) The socket guard covers only `connect`/`connect_ex`, so connectionless datagram send and name resolution are unguarded, while the contract suite's section heading is "nothing leaves the loopback interface". **Evidence basis replaced:** the finding was originally produced by a network probe, which is discarded under §2a/§2b; it now rests on an offline identity comparison of the socket API before and after the guards install, in which nothing is called (§2b). The claim is unchanged and the replacement evidence is stronger — it names *which* egress routes are covered rather than showing that one uncovered call succeeded. See §12. |
 | FR-20 | `proof.py:428`, `:474`; `coverage.py:397`, `:441`; `cost_schema.py:161`; `warmup.py:65`, `:96` | **`# pragma: no cover - guarded above` sits on reachable code at seven sites.** The comment asserts the preceding `isinstance` makes the `except NumericAuthorityError` unreachable; it does not, because `isinstance` consults `__class__` while `int.__index__` / `float.__float__` then refuse. Every one of the seven branches was entered by an executed probe. §13's anti-pattern list names "`# pragma: no cover` on a reachable guard" explicitly, and here the suppression sits on the exact path that carries **FB-10**. (Eleven other pragmas in the package re-derive as genuinely unreachable and are correct.) |
 | FR-21 | see §14's survivor table | **Nineteen genuine mutation survivors.** The source is correct in each case; nothing pins it. The material ones: a NaN under a *declared* numeric key scans clean if one guard is removed and nothing else catches it (`evidence.scan_payload` and `serialise` both pass NaN, so the writer would emit the non-standard `NaN` literal); the `absent` limb of coverage's `unusable` check; `complete_bucket` accepting a non-bool; the whole-string forbidden-status fallback, which is the only thing catching `"P A S S"` / `"M E E T S"` / `"R O B U S T"` / `"V A L I D A T E D"`; `pin_number(v)` → `float(v)` in `cost_schema` (the exact N-1 defect that module says it closed); `Path.resolve()` in the path authority; the producer/verifier agreement loop *inside* `evaluate_four_limbs`; the consumer's artifact-identity check; the CV roster's set equality; `is_declaration_only`, which has no test at all; and `is_event_eligible`'s validation call. |
 
@@ -771,10 +988,22 @@ none individually gate-stopping. They land with the blockers, in one Work PR.
   therefore verified only on a developer machine. The symlink identity test is
   the mirror case: it runs on CI and skips here. Neither gap is a defect, but no
   single environment exercises the whole containment surface.
-- **FO-19 — `uv.lock` remains stale** (`uv lock --check --offline` → exit 1; five
-  declared dependencies absent from the lock). CI uses `pip install -e ".[dev]"`,
-  so nothing is broken, but no reproducibility claim may cite the lockfile. Not
-  repaired; `uv sync` not run.
+- **FO-19 — `uv.lock` remains stale.** Re-derived twice as a pure file
+  comparison, with `uv` **not invoked at all** (not even `--offline`).
+  `uv.lock` carries 52 packages; **four declared dependencies have no package
+  entry** — `lightgbm`, `plotly`, `pyyaml`, `scikit-learn`. On the root-metadata
+  comparison `uv lock --check` actually performs, **seven top-level names
+  disagree**: those four plus `pyarrow` are in `pyproject` but absent from the
+  lock's `requires-dist`; `pytest` and `ruff` are in the lock's metadata but not
+  in `[project.dependencies]`; `pandas` is in the dev extra but absent from lock
+  metadata; and `metadata.requires-dev` is **empty**, so the lock predates the
+  `[project.optional-dependencies].dev` split entirely. `ruff`'s specifier also
+  disagrees (`==0.15.11` vs `>=0.6,<1.0`), though the resolved version happens to
+  match. An earlier revision of this record said "five declared dependencies",
+  counting `joblib`, which is transitive and not declared; corrected here. CI
+  uses `pip install -e ".[dev]"`, so nothing is broken, but **frozen-`uv`
+  reproducibility cannot be claimed for this tree**. Not repaired; `uv sync` not
+  run.
 
 ---
 
@@ -1108,10 +1337,14 @@ under `data/`, zero `.env`, zero sockets, zero DB**.
    and drop or case-fold the `endswith` fast path. Exposure is the developer
    machine — CI is Linux and case-sensitive — which is exactly where the original
    incident happened.
-2. **The socket guard wraps only `connect`/`connect_ex`,** so UDP `sendto` and DNS
-   resolution leave the machine while the contract suite's own section heading
-   reads "nothing leaves the loopback interface". No in-tree test uses either
-   route.
+2. **The socket guard covers only `connect`/`connect_ex`,** so connectionless
+   datagram send and name resolution are unguarded, while the contract suite's own
+   section heading reads "nothing leaves the loopback interface". No in-tree test
+   uses either route. Established by the **offline identity comparison in §2b** —
+   `tests/conftest.py:212-226` binds exactly two names, and `sendto`, `send`,
+   `sendall`, `getaddrinfo` and `gethostbyname` are all still the originals once
+   the guards are installed. Nothing was called. The network probe that originally
+   produced this finding is discarded (§2a, §2b).
 
 Two further scoping notes, neither a defect: child interpreters inherit no guard
 except `PYTHON_DOTENV_DISABLED` (five spawns inside `tests/m15_gate3a/`, all tiny
@@ -1119,6 +1352,39 @@ inline probes over synthetic input); and a *loopback* database remains reachable
 by construction — the engine guard is the only DB gate, and it holds only because
 every DB path in this repository happens to route through
 `sqlalchemy.create_engine`, which nothing pins.
+
+### FR-19's disposition, and its relation to §2a
+
+**FR-19 already encompasses the limitation the deviation exercised**, and it is
+the right container for it: FR-19(b) *is* the finding that the socket guard covers
+only `connect`/`connect_ex`, leaving connectionless datagram send and name
+resolution unguarded. No new item is needed, and none is created.
+
+Three consequences are worth recording rather than leaving implicit.
+
+1. **FR-19 stays out of the gate-3a fix.** It is a defect of the test harness, not
+   of the M15 research machinery, and §16 keeps it assigned to a **separate
+   test-safety Work PR**. It must not be folded into the FB/FR work, and this PR
+   changes no test-safety code.
+2. **The deviation is the motivating case for that follow-up, and should be cited
+   as one.** An audit role, working inside what the repository presents as a
+   safe-by-default environment, reached the public network without granting any
+   opt-in. That is exactly the class the test-safety change was written to remove
+   — the presence of a capability is not authorisation to use it — and it shows
+   the residual is reachable in ordinary use, not only in principle.
+3. **The proof of the gap does not depend on the deviation.** §2b's identity
+   comparison establishes it with nothing called, and §2c reproduces it
+   independently and widens it — the C base class `_socket.socket.connect` is
+   also unguarded, and `create_connection` resolves the hostname before the guard
+   fires. The follow-up PR has offline-reproducible evidence to work from and
+   need not repeat the operation. §2c additionally records three test-safety
+   observations for it: `--noconftest` and out-of-tree test modules are
+   unguarded, `tools/test_labels_bidask_vectorized.py` opens real research data
+   (inert today), and child processes inherit only `PYTHON_DOTENV_DISABLED`.
+   One limit is stated honestly: it is no longer recoverable whether the role's
+   probe process had the guards installed at all, since its script and transcript
+   were not retained. That is precisely why the substance now rests on the
+   identity comparison and not on the probe.
 
 ---
 
@@ -1280,6 +1546,11 @@ known-stale and `uv sync --frozen` reproducibility is **not** claimed.
 
 `PRODUCTION_READINESS_NOT_CLAIMED` · `NO_EXECUTION_PERFORMED` ·
 `FORWARD_EPOCH_ADOPTION_BLOCKED_INSUFFICIENT_SAMPLE_ADOPTION_WAITS`.
+
+This section states what the document **authorises**. It is not a statement that
+no prohibited operation occurred during the audit: one did, and it is recorded at
+§2a. See §2b for why the verdict nonetheless stands on evidence that excludes
+it.
 
 ---
 
