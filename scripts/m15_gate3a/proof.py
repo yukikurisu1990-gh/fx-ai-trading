@@ -2261,15 +2261,6 @@ def open_for_consumption(result: Any, *, consumer_rechecks: Any) -> ConsumptionA
             "no consumer re-verification supplied; a proof that has not been re-verified "
             "immediately before use is not usable"
         )
-    # `_refute` condemns the recheck it was pronounced over, and nothing read
-    # that mark: an audit refuted a proof, then re-offered the very same recheck
-    # objects to a freshly minted result and consumption succeeded. Either the
-    # ledger entry means something or `_refute` should not be writing it — §11's
-    # "the evidence a refutation was pronounced over is dead" says it means
-    # something.
-    if isinstance(consumer_rechecks, Mapping):
-        for pair, recheck in dict(consumer_rechecks).items():
-            _assert_not_refuted(recheck, what=f"the consumer re-verification for {pair}")
     if isinstance(consumer_rechecks, (str, bytes, bytearray)) or not isinstance(
         consumer_rechecks, Sequence
     ):
@@ -2291,6 +2282,13 @@ def open_for_consumption(result: Any, *, consumer_rechecks: Any) -> ConsumptionA
                 "ConsumerRecheck"
             )
         _assert_minted(item, what=f"consumer re-verification {index}")
+        # `_refute` condemns the recheck it was pronounced over, and nothing read
+        # that mark: an audit refuted a proof, minted a fresh one from the same
+        # evidence, re-offered the very same recheck objects, and consumption
+        # succeeded. §11 says the evidence a refutation was pronounced over is
+        # dead — either the ledger entry means that or `_refute` should not be
+        # writing it.
+        _assert_not_refuted(item, what=f"consumer re-verification {index}")
         if item.pair in by_pair:
             raise ProofNotUsableError(f"{item.pair} is re-verified twice")
         by_pair[item.pair] = item

@@ -523,3 +523,209 @@ def test_the_writer_still_writes_an_honest_artifact(tmp_path: Path) -> None:
             "scrub_report.json",
             {"artifact": "scrub_report", "result": "PRODUCTION_READY"},
         )
+
+
+# ---------------------------------------------------------------------------
+# Call-site pins. The helpers above exercise the primitives; these exercise the
+# places that use them, because a mutation battery showed the primitive tests
+# alone left every call site free.
+# ---------------------------------------------------------------------------
+
+
+def test_the_conjunction_key_pin_survives_a_key_that_lies_about_equality() -> None:
+    """A key whose real data is not its match target.
+
+    A plain `Masked` key is not enough: it inherits `str.__hash__`/`__eq__`, which
+    already use the real data, so the lookup fails with or without the pin. The
+    key has to answer the comparison itself — which is what `_pin_text` reading
+    character data through the unbound slot refuses.
+    """
+
+    class Impostor(str):
+        def __new__(cls, real: str, answers: str) -> Impostor:
+            obj = super().__new__(cls, real)
+            obj._answers = answers  # type: ignore[attr-defined]
+            return obj
+
+        def __eq__(self, other: object) -> bool:
+            return other == self._answers  # type: ignore[attr-defined]
+
+        def __hash__(self) -> int:
+            return hash(self._answers)  # type: ignore[attr-defined]
+
+    masked = {
+        Impostor(f"PAIR_NEVER_MEASURED_{index}", pair): True for index, pair in enumerate(PAIRS_20)
+    }
+    with pytest.raises(AggregateAssertionUnsatisfiedError, match="has no measurement for"):
+        assert_measured_conjunction("file_count_is_20", masked)
+
+
+def test_the_calendar_digest_collision_the_audit_built_no_longer_collides() -> None:
+    """The exact two-artifact construction, not an approximation of it.
+
+    Both members render the same three lines under `name=value`, because one puts
+    the injected boundary in `dst_rule` and the other puts it in
+    `exceptional_closure_handling`. Length-prefixing is what separates them.
+    """
+    base: dict[str, Any] = {
+        "authority": "A",
+        "authority_version": "1",
+        "timezone": "UTC",
+        "market_open_close_rule": "R",
+        "target_epoch": "EP",
+        "committed_artifact": "artifacts/x.json",
+        "committed_revision": "abc",
+        "slots_by_pair": dict.fromkeys(PAIRS_20, frozenset()),
+    }
+    left = calendar_content_digest(
+        **base,
+        dst_rule="EU_DST",
+        exceptional_closure_handling="NONE\nexceptional_closure_handling=XMAS",
+    )
+    right = calendar_content_digest(
+        **base,
+        dst_rule="EU_DST\nexceptional_closure_handling=NONE",
+        exceptional_closure_handling="XMAS",
+    )
+    assert left != right
+    # Negative control: identical content still digests identically.
+    same = dict(base, dst_rule="EU_DST", exceptional_closure_handling="NONE")
+    assert calendar_content_digest(**same) == calendar_content_digest(**same)
+
+
+def test_the_coverage_digest_is_taken_over_the_slots_the_limbs_decided_on() -> None:
+    """B-3 across the module boundary: one read must serve both.
+
+    `assert_full_coverage` pinned each pair's expected set and then handed the
+    *calendar* to the provenance check, which re-read `expected_slots(pair)`. An
+    audit made the two reads disagree: a run certified one slot per pair while
+    publishing the digest of the approved three-slot calendar, so the record
+    attested to content the limbs never saw.
+    """
+    from scripts.m15_gate3a.coverage import assert_full_coverage
+    from tests.m15_gate3a.test_wp_proof_coverage_calendar import (
+        EPOCH,
+        full_measurements,
+        valid_calendar,
+    )
+
+    calendar = valid_calendar()
+    honest = assert_full_coverage(full_measurements(), calendar, expected_epoch=EPOCH)
+
+    class TwoFaced:
+        """Answers the first read per pair honestly and later reads differently."""
+
+        def __init__(self, real: dict[str, frozenset]) -> None:
+            self._real = real
+            self.reads: dict[str, int] = {}
+
+        def get(self, pair: str, default: object = None) -> object:
+            count = self.reads.get(pair, 0) + 1
+            self.reads[pair] = count
+            if pair not in self._real:
+                return default
+            if count == 1:
+                return self._real[pair]
+            return frozenset(sorted(self._real[pair])[:1])
+
+    real = {pair: calendar.expected_slots(pair) for pair in PAIRS_20}
+    faces = TwoFaced(real)
+    object.__setattr__(calendar, "_slots", faces)
+    second = assert_full_coverage(full_measurements(), calendar, expected_epoch=EPOCH)
+    assert second.calendar_digest == honest.calendar_digest
+    assert faces.reads and all(count == 1 for count in faces.reads.values()), faces.reads
+
+
+def test_the_fr4_span_binding_is_pinned_at_its_call_site_not_only_in_the_helper() -> None:
+    """`PairCoverage` is publicly constructible and validates nothing.
+
+    `object.__setattr__` on a genuine `CoverageResult.per_pair` is this module's
+    declared threat model, and an audit answered both span comparisons with a
+    lying `datetime` subclass — a proof accepted a certified span years away from
+    the one the byte scan measured.
+    """
+    from scripts.m15_gate3a.coverage import assert_full_coverage
+    from scripts.m15_gate3a.proof import ProofLimbUnsatisfiedError, evaluate_four_limbs
+    from tests.m15_gate3a.test_wp_proof_coverage_calendar import (
+        EPOCH,
+        binding_set,
+        digest,
+        full_measurements,
+        producer_set,
+        valid_calendar,
+        verifier_set,
+    )
+
+    coverage = assert_full_coverage(full_measurements(), valid_calendar(), expected_epoch=EPOCH)
+    honest = coverage.per_pair[0]
+    liar = LyingInstant(
+        honest.certified_slot_min.year + 6,
+        honest.certified_slot_min.month,
+        honest.certified_slot_min.day,
+        tzinfo=UTC,
+    )
+    object.__setattr__(honest, "certified_slot_min", liar)
+    with pytest.raises(ProofLimbUnsatisfiedError, match="certifies slots from"):
+        evaluate_four_limbs(
+            producer_records=producer_set(),
+            verifier_records=verifier_set(),
+            coverage_result=coverage,
+            derivation_bindings=binding_set(),
+            inventory_digest=digest(4242),
+        )
+
+
+def test_the_verifier_artifact_check_reads_the_pass_as_character_data() -> None:
+    """One fabricated pass answered `==` for a file it did not name.
+
+    `_pin_pass` re-reads `stream_id` and `pass_index` for exactly this reason;
+    `artifact_id` sat beside them unpinned and decided two contract rules.
+    """
+    from scripts.m15_gate3a.proof import ProofContractError, assert_records_agree
+    from tests.m15_gate3a.test_wp_proof_coverage_calendar import (
+        producer_set,
+        verifier_set,
+    )
+
+    producers, verifiers = producer_set(), verifier_set()
+    honest_verifier = verifiers[0]
+    real = honest_verifier.digest_provenance.artifact_id
+    object.__setattr__(
+        honest_verifier.digest_provenance,
+        "artifact_id",
+        Masked("A_DIFFERENT_FILE", real),
+    )
+    with pytest.raises(ProofContractError):
+        assert_records_agree(producers[0], honest_verifier)
+
+
+def test_a_refuted_recheck_cannot_be_re_offered_against_a_fresh_proof() -> None:
+    """`_refute` condemned the recheck and nothing ever read the mark.
+
+    An audit refuted a proof, minted a fresh one from the same evidence, and
+    re-offered the very same recheck objects — consumption succeeded. §11 says
+    the evidence a refutation was pronounced over is dead; either the ledger
+    entry means that or `_refute` should not be writing it.
+    """
+    from scripts.m15_gate3a.proof import (
+        ProofDisagreementError,
+        open_for_consumption,
+    )
+    from tests.m15_gate3a.test_wp_proof_coverage_calendar import (
+        evaluated_proof,
+        published_id,
+        recheck,
+        recheck_set,
+    )
+
+    tampered = list(recheck_set())
+    tampered[0] = recheck(PAIRS_20[0], 0, size_bytes=999_999)
+    with pytest.raises(ProofDisagreementError):
+        open_for_consumption(evaluated_proof(), consumer_rechecks=tampered)
+    # The refutation was pronounced over these objects. A fresh proof minted from
+    # the same evidence must not rehabilitate them.
+    assert published_id(PAIRS_20[0])
+    with pytest.raises(ProofDisagreementError, match="already refuted"):
+        open_for_consumption(evaluated_proof(), consumer_rechecks=tampered)
+    # Negative control: an untouched recheck set is still accepted.
+    assert open_for_consumption(evaluated_proof(), consumer_rechecks=recheck_set())
