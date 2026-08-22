@@ -115,8 +115,14 @@ an earlier head of this PR and is false:
 ## 4. Verification
 
 **Suites.** Scoped `tests/m15_gate3a/` — **1589 passed, 1 skipped** (the skip is
-symlink creation, unavailable on this host). Full repository — **6060 passed,
-44 skipped**; every skip is a test-safety opt-in gate behaving as designed.
+symlink creation, unavailable on this host). Full repository — **6070 passed,
+40 skipped**, confirmed stable across three consecutive runs. Every skip is a
+test-safety opt-in gate behaving as designed: 27 database tests behind
+`RUN_DB_INTEGRATION_TESTS`, 10 research-data tests behind
+`RUN_RESEARCH_DATA_TESTS`, one optional heavy-model test, the symlink test and
+one that needs a shared console. Enumerated rather than counted, because "the
+presence of a `.env` is not authorization" is the control this repository
+learned the hard way.
 `ruff check`, `ruff format --check` and `tools/lint/run_custom_checks.py` clean.
 
 **Mutation.** A consolidated battery over the twenty guards this PR adds or
