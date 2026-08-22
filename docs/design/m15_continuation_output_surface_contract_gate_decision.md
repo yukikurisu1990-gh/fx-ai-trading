@@ -171,6 +171,79 @@ governs the metadata-evidence surface only**; the derived-data surface is a
 separate, currently ungoverned question and is named here so it is not assumed
 covered.
 
+### 3.9 The routing hole — the finding that governs all the others
+
+**A surface contract that binds only `write_metadata_artifact` binds nothing**,
+because a second writer reaches the same paths with none of its guards.
+
+`scripts/ml_step4/evidence.write_report` — a function in the *same module*
+`artifacts.py` already imports two names from (`scan_payload`, `serialise`, lines
+144–145) — is one import away and carries no `refuse_real_path`, no name
+validation, and a scrubber that legitimately permits metrics because `ml_step4`
+evidence legitimately carries them. Executed in a synthetic sandbox root whose
+`repo_root()` resolves inside the sandbox, so the protected prefixes were live:
+
+| call | result |
+| --- | --- |
+| `write_report(artifacts/m15_gate3a, "design_m15_inventory.json", …)` | **overwrote a committed artifact, 2 138 → 16 bytes** |
+| `write_report(docs/governance | data | models, "planted.json", …)` | **WROTE** into all three §12.18 protected trees |
+| `write_report(artifacts/m15_gate3a, "../../escaped.json", …)` | **WROTE** — traversal *in the filename*, landed at the repo root |
+| `write_report(artifacts, "planted_metrics.json", {"sharpe_ratio": 2.31, …})` | **WROTE** strategy metrics |
+
+**This is not a defect in `ml_step4`**, which is a different package with its own
+purpose, and it is **already disclosed** by `guards.py:22-25`:
+
+> "Each guard is individually fail-closed on the input it is given. Nothing here
+> asserts that a caller exists, that every write is routed, or that the package
+> is therefore contained: **containment of an *unrouted* caller is not a property
+> this module has, and must not be cited as one.**"
+
+The disclosure is honest. The **contract** gap is that §12.17 is written as
+though one writer exists. FR-18 closed the *re-export*
+`artifacts.evidence.write_report`; the function itself is unchanged and
+importable in one line — the programme's standing shape, where the printed
+spelling was closed and the family left open.
+
+**Consequence for the ruling:** any output-surface contract must carry a
+**routing obligation** — that the continuation writes through exactly one
+function and reaches no other write primitive — or it is an authority over one
+function rather than over the artifact surface. That obligation is derivable from
+`guards.py`'s own disclosure; what it must *name* as the sanctioned writer is
+part of the same referral as the directory.
+
+### 3.10 One capital letter defeats both existing identity defences
+
+`resolve_schema` reads the declaration with `payload.get("artifact")` — an
+exact-case dict lookup — while `_scan_declared` folds every key to lower case
+before the allowlist test. The two disagree, and the gap is a complete bypass.
+Executed:
+
+| payload key | filename | result |
+| --- | --- | --- |
+| `artifact: "continuation_summary"` | `scrub_report.json` | `gate3a_undeclared_artifact_name` ✓ |
+| **`Artifact: "continuation_summary"`** | `scrub_report.json` | **CLEAN** |
+| **`ARTIFACT: "continuation_summary"`** | `scrub_report.json` | **CLEAN** |
+| `artifact: "design_m15_inventory"` | `continuation.json` | `gate3a_artifact_name_mismatch` ✓ |
+| **`Artifact: "design_m15_inventory"`** | `continuation.json` | **CLEAN** |
+| `artifact: "scrub_report"` **+** `Artifact: "continuation_summary"` | `scrub_report.json` | **CLEAN** — two identities in one file, one invisible to the resolver |
+
+**Both refusals that constitute the current identity defence are one keystroke
+from off**, and the bypass is invisible to a green suite because `scan_gate3a`
+returns `[]`. A human reading the JSON sees an artifact identity; a reader doing
+`d["artifact"]` sees nothing. Any model keyed on the payload's `artifact` field
+inherits this unchanged.
+
+### 3.11 Directory identity is not a string
+
+Measured on NTFS with 8.3 names enabled and junction creation available without
+elevation: an `out_dir` that is an **NTFS junction** was accepted and the file
+landed at the junction's target — and `os.path.islink()` reported `False` for it,
+so a naive "is it a link?" clause does not see it. An **8.3 short-name alias** of
+a long directory was likewise accepted. `resolve_candidate` does follow both, so
+a rule comparing *resolved* paths holds where a rule comparing *strings* does
+not; and the approved root must additionally be required to be a real directory
+rather than a reparse point.
+
 ---
 
 ## 4. Options considered
@@ -195,13 +268,22 @@ research restriction wins. **C is the only shape that addresses both limbs.**
 
 Structured as four slots so the ruling supplies the values.
 
+**5.0 Routing — first, because without it the rest is advisory.** The
+continuation writes every artifact through exactly one sanctioned function and
+reaches no other write primitive, `scripts.ml_step4.evidence.write_report`
+included. Pinned by an AST sweep over the continuation's own modules and by an
+`open`-audit-hook test over a synthetic run. Derivable from `guards.py:22-25`'s
+own disclosure; *which* function is sanctioned belongs to the referral.
+
 **5.1 Identity.** An output's identity is its `ArtifactSchema`. The relation
 name→schema is **n:1** and must stay so — `cost_table_plan_or_metadata.json`
 declares `cost_table_plan`, so any 1:1 model breaks committed evidence on day
 one.
 
-**5.2 Declaration is mandatory at the write boundary.** Every write must carry a
-non-empty `str` `artifact` that resolves to a registered schema; the filename
+**5.2 Declaration is mandatory at the write boundary, and is read case-folded.**
+Every write must carry a non-empty `str` `artifact` that resolves to a registered
+schema; any key folding to `artifact` counts, and two disagreeing declaration
+keys are a hard finding (§3.10); the filename
 must resolve to the same schema. All eight committed artifacts already satisfy
 this, so the committed evidence is the negative control. **Sited at
 `write_metadata_artifact`, not `scan_gate3a`** — 46 existing negative controls
@@ -212,6 +294,9 @@ repair is weakening the new rule.
 **5.3 Names fold before they are judged.** A filename is reserved if its folded
 form matches a reserved stem. Without this, §3.3's nine spellings all remain
 writable and any "impersonation is forbidden" clause is unfalsifiable.
+
+**5.3a Directory identity is compared resolved, never as a string**, and the
+approved root must be a real directory rather than a reparse point (§3.11).
 
 **5.4 Location carries lifecycle.** `artifacts/m15_gate3a/*.json` is adopted
 evidence, reachable only by human-reviewed PR diff. One approved output root
@@ -299,6 +384,10 @@ Carried, not closed, by this packet:
 8. Enforcement of "never written": `effective_n_estimator_spec` and both forward
    artifacts are writable today — D-7's "never written" is a statement, not a
    mechanism.
+9. The routing obligation (§3.9 / §5.0), without which items 1–8 bind one
+   function rather than the surface.
+10. The case-folded declaration read (§3.10) — the current identity defence is
+    one capital letter from off.
 
 **Two carried obligations that this ruling does not close:** the derived-data
 surface (§3.8), and the gate-4 producer, which by §12.14 lives outside this
