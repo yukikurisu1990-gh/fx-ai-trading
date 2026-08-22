@@ -687,16 +687,37 @@ def test_the_verifier_artifact_check_reads_the_pass_as_character_data() -> None:
         verifier_set,
     )
 
+    class Impostor(str):
+        """Character data one thing, equality answers another."""
+
+        def __new__(cls, real: str, answers: str) -> Impostor:
+            obj = super().__new__(cls, real)
+            obj._answers = answers  # type: ignore[attr-defined]
+            return obj
+
+        def __eq__(self, other: object) -> bool:
+            return other == self._answers  # type: ignore[attr-defined]
+
+        def __ne__(self, other: object) -> bool:
+            return not self.__eq__(other)
+
+        def __hash__(self) -> int:
+            return hash(self._answers)  # type: ignore[attr-defined]
+
     producers, verifiers = producer_set(), verifier_set()
-    honest_verifier = verifiers[0]
-    real = honest_verifier.digest_provenance.artifact_id
+    producer, verifier = producers[0], verifiers[0]
+    # Negative control first: untouched records agree.
+    assert_records_agree(producer, verifier)
+    # A `Masked` str would not do here — it inherits `str.__eq__`, which already
+    # compares the real data, so the guard fires with or without the pin. The
+    # provenance has to answer the comparison itself.
     object.__setattr__(
-        honest_verifier.digest_provenance,
+        verifier.digest_provenance,
         "artifact_id",
-        Masked("A_DIFFERENT_FILE", real),
+        Impostor("A_DIFFERENT_FILE", producer.digest_provenance.artifact_id),
     )
     with pytest.raises(ProofContractError):
-        assert_records_agree(producers[0], honest_verifier)
+        assert_records_agree(producer, verifier)
 
 
 def test_a_refuted_recheck_cannot_be_re_offered_against_a_fresh_proof() -> None:
