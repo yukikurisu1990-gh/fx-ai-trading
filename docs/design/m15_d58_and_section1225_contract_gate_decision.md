@@ -1,8 +1,10 @@
 # M15 gate-3a contract Gate-decision — D-5.8 and §12.25
 
-- **Document class:** doc-only **Gate-decision** record (policy §14.2 — it judges
-  and prepares a formal contract determination). Executes nothing. Reads no real
-  data. Changes no source, no test, no committed artifact.
+- **Document class:** doc-only **Gate-decision** record (policy §14.2 — it
+  formally fixes research contracts). **This document records a human + ChatGPT
+  contract ruling** on two questions; the decisions bind when it is merged.
+  Executes nothing. Reads no real data. Changes no source, no test, no committed
+  artifact.
 - **Risk tier:** **Amber** (policy §3 — it concerns a frozen research contract,
   the M15 coverage limb, the artifact schema and the scrubber). **Not
   self-mergeable.**
@@ -10,18 +12,29 @@
   re-check (PR #447).
 - **Purpose:** freeze the two contract questions the merged audit left open, so
   that the single next targeted-fix Work PR **invents nothing and re-interprets
-  nothing**. Exactly two questions are in scope: **D-5.8** and **§12.25**.
+  nothing**. Exactly two questions are in scope: **D-5.8** and **§12.25**. Both
+  are now **RULED** (§1).
 
 ## Statuses
 
-- Required: **`M15_GATE3A_D5_8_AND_SECTION12_25_PENDING_HUMAN_CHATGPT_RULING`**
-- Also recorded: **`CONTRACT_CHANGE_REQUIRES_HUMAN_CHATGPT_RULING`** (§4.8, §5.7)
+- Required: **`M15_GATE3A_D5_8_AND_SECTION12_25_CONTRACT_RULED`**
+- D-5.8: **`D5_8_RULED_NO_NUMERIC_FLOOR_TRUSTED_CALENDAR_PROVENANCE_AND_SET_EQUALITY_REQUIRED`**
+- §12.25: **S1 `RULED`** · S2 **`REJECTED`** · S3 **`NOT_ADOPTED_IN_THIS_GATE`**
 - Carried: `M15_AGGREGATION_DATASET_MACHINERY_SOURCE_AUDIT_BLOCKED_PENDING_TARGETED_FIXES`
   · `M15_GATE3A_CONTRACT_AND_PROOF_DESIGN_DECISION_RULED`
   · `M15_AGGREGATION_DATASET_MACHINERY_IMPLEMENTED_SYNTHETIC_ONLY_NO_RUN`
   · `M15_GATE3A_DATASET_EPOCH_ADOPTION_PROPOSED`
   · `FORWARD_EPOCH_ADOPTION_BLOCKED_INSUFFICIENT_SAMPLE_ADOPTION_WAITS`
 - Open pre-continuation item: **`PRE_CONTINUATION_CALENDAR_ARTIFACT_APPROVAL_REQUIRED`**
+  — **still open**, and not discharged by these rulings. The *contract* for the
+  calendar is now fixed; the **concrete artifact** for the target epoch is not
+  approved.
+- Resolved by this document: D-5.8's `MUST_RESOLVE_BEFORE_GATE3A_CONTINUATION`
+  classification (merged audit §11) is **discharged at the contract level** by
+  §4.7's ruling. Two tokens this document carried while the packet was being
+  prepared — `M15_GATE3A_D5_8_AND_SECTION12_25_PENDING_HUMAN_CHATGPT_RULING` and
+  `CONTRACT_CHANGE_REQUIRES_HUMAN_CHATGPT_RULING` — are **superseded**; see §9 for
+  that history, which is recorded but is **not** the current status.
 - Always binding: **`PRODUCTION_READINESS_NOT_CLAIMED`** · **`NO_EXECUTION_PERFORMED`**
 - Gate-3a continuation: **NOT authorised.** Targeted-fix Work PR: **not started.**
 
@@ -32,25 +45,49 @@
 
 ---
 
-## 1. Why this document does not say `RULED`
+## 1. The rulings
 
-The completion state is **B**, not A. One of the two questions — **D-5.8** —
-turns on a quantity that **no committed authority anywhere in this repository
-pins**, and every way of supplying it either mints a number or decides a
-market-hours fact that the pre-registration explicitly reserves. Producing a
-`RULED` here would be the precise act contract §0 and §12's preamble forbid:
+Both questions are **RULED** by human + ChatGPT. This section states the current
+position; §9 records how it was reached.
 
-> *"An implementing session may not re-interpret them, relax them, or introduce a
-> threshold they do not contain."* (§0)
-> *"An implementing session **may not re-interpret a contract or invent a
-> threshold**."* (§12 preamble)
+### D-5.8 — `D5_8_RULED_NO_NUMERIC_FLOOR_TRUSTED_CALENDAR_PROVENANCE_AND_SET_EQUALITY_REQUIRED`
 
-So this document does the other half of the job properly: it establishes
-everything that **is** derivable, forecloses the wrong answers with evidence,
-and hands the decision-makers a packet they can rule from directly.
+**No numeric minimum `expected_m15_slot_count` floor is adopted.** D-5.8 is
+discharged instead by **trusted calendar provenance plus set equality**. The
+eight normative requirements are in §4.7.
 
-**What is settled here without a human ruling** (each a read-off from committed
-text, no meaning changed):
+The ruling rests on evidence, not on caution. No committed authority pins a
+numeric floor (§4.3); `1000` / `400` were already foreclosed by §10 R-2 (§4.3);
+and the independent audit demonstrated that a deterministic self-generated
+calendar rule produces **20,832 slots per pair** while passing floor, extent and
+continuity guards simultaneously (§4.2). **Slot count is therefore not the trust
+axis, and an arbitrary count floor would not solve the calendar-provenance
+problem it would appear to address.**
+
+D-5.8's `MUST_RESOLVE_BEFORE_GATE3A_CONTINUATION` classification from the merged
+audit is **discharged at the contract level** by this ruling.
+**`PRE_CONTINUATION_CALENDAR_ARTIFACT_APPROVAL_REQUIRED` remains open as a
+separate gate** — the contract is settled; the concrete artifact is not approved.
+
+### §12.25 — S1 RULED
+
+**S1 (strict) is `RULED`. S2 (permissive) is `REJECTED`. S3 is
+`NOT_ADOPTED_IN_THIS_GATE`.** Sentence 1 of committed §12.25 stands as a binding
+normative requirement, and the next targeted-fix Work PR conforms to it. §5.7
+carries the ruling and its consequences.
+
+Moving to S3 in future requires **its own explicit Contract Gate-decision**.
+
+§5.7 also records, and the next fix PR must not treat as a reason to relax:
+**strict §12.25 is not a complete security or data-containment defence** — a
+strict-conformant nested structure still carries a large numeric dataset clean
+(§5.3c). That is an argument for the FB-1 / FB-3 allowlist and scrubber controls,
+never against §12.25.
+
+### The evidence base both rulings rest on
+
+Each item is a read-off from committed text or a lead-reproduced probe, and each
+survives the rulings as the record of *why* they are what they are:
 
 1. **The count is the wrong axis.** §9 permits the calendar to supply *"a rule
    that generates [the slot set] deterministically"*, and a rule closing over the
@@ -58,8 +95,7 @@ text, no meaning changed):
    per pair, reaches both epoch ends, has a 60-minute maximum gap, and reports
    `absent = rejected = max_unavailable_gap = 0` — defeating a count floor, an
    extent criterion and a continuity criterion at once, **and disarming D-1, D-2
-   and D-3 with them** (§4.2). This is the most consequential finding in the
-   packet.
+   and D-3 with them** (§4.2). This is the finding the D-5.8 ruling turns on.
 2. No committed document pins a slot, bar, span, density or coverage floor for
    the **design** epoch. Reported as a negative result with the search that
    produced it (§4.3).
@@ -79,20 +115,17 @@ text, no meaning changed):
    fields with `gap_report` nested and scans clean under both rules, so the two
    clauses were never in conflict — the fixture manufactured one by putting two
    effective-N quantities in the per-file record (§5.3).
-8. Pending the ruling, committed governance already fixes the **interim**
-   reading — playbook §2.8 and `CLAUDE.md` make the narrower reading govern
-   *and* require human + ChatGPT review. Both halves, together (§5.6).
-9. **Placement and ordering** of any D-5.8 criterion are derivable and testable
-   without a contract decision, and getting them wrong silently breaks six
-   existing guards (§4.9).
-
-**What is not settled, and why it must not be:** the D-5.8 criterion and value
-(§4), and which reading of §12.25 governs permanently (§5). Both are decisions
-about research acceptance and the meaning of a merged contract.
+8. Committed governance already pointed the same way as the S1 ruling — playbook
+   §2.8 and `CLAUDE.md` make the narrower reading govern *and* require human +
+   ChatGPT review. The review has now happened, and it selected the narrower
+   reading (§5.6).
+9. **Placement and ordering** of any coverage-side check are derivable and
+   testable without a contract decision, and getting them wrong silently breaks
+   six existing guards (§4.9).
 
 ---
 
-## 2. Method, and its limits
+## 2. How the packet was prepared, and its limits
 
 Four independent roles were used — contract/governance · research-statistics and
 count semantics · adversarial/fail-open · testability/observable behaviour — none
@@ -127,7 +160,7 @@ bears on a decision it is cited as a dependency, not repaired.
 
 ---
 
-## 4. D-5.8 — the coverage count floor
+## 4. D-5.8 — the coverage adequacy question
 
 ### 4.1 Issue — the exact question, reconstructed from committed text
 
@@ -319,7 +352,7 @@ certified_slot_count)` and nothing about span or gaps, so no extent or continuit
 criterion is checkable from what `CoverageResult` exposes — the evidence-shape
 gap FR-4 records.
 
-### 4.6 Why a floor at all — the research-integrity argument
+### 4.6 What the ruling protects — the research-integrity argument
 
 The property that fails is **discrimination**: with a degenerate or
 observation-derived expectation the coverage token stops distinguishing a
@@ -351,50 +384,139 @@ downstream harms, each traced to committed text:
 4. **The C-3 pre-condition.** §6's median eligible `barrier_distance / cost`
    ratio becomes unmeasurable while still reporting a number.
 
-### 4.7 Options
+### 4.7 THE RULING — D-5.8
 
-| # | Criterion | Guarantees | Defeated by | Mints a number? |
-| --- | --- | --- | --- | --- |
-| **O1** | Numeric floor on expected slots per pair | Cardinality; anchored outside the caller only via D-11's `certified_slot_count == bars_scanned` | §4.2's rule closure (20,832 slots); the lying `__len__`; says *how many*, never *which* | **Yes**, and it implicitly decides the unfixed Ruling-4 exclusion calendar |
-| **O2** | Temporal extent — expected set reaches both epoch ends | Kills truncation-to-one-day | A two-point calendar (lead-verified: both ends, token minted); §4.2's closure reaches both ends free; **unsatisfiable at Saturday `DESIGN_END` without an invented tolerance** | **No** in strict form, **yes** once a tolerance is needed |
-| **O3** | Continuity / maximum gap | Kills the endpoint-only shape | **Vacuous on a singleton** — no adjacent pair, so the loop never runs and the single instant it exists to exclude passes; a G-spaced comb of ~0.5% of the grid clears it | **Yes, unavoidably** — G must exceed the longest legitimate closure, a market-hours fact |
-| **O4** | Approval-carried declared count — artifact declares `expected_m15_slot_count`; code checks declared == measured; the §9.6 approval covers the counts | Makes the count **visible to the approver**; puts the number where the authority is | Does **not** exclude degeneracy (1 == 1 passes); the calendar vocabulary is open, so a misspelt field is silently ignored; sited in `validate_calendar` it is bypassed by the FB-1 forged subclass | **No.** Requires a new required field in §9's carry list |
-| **O5** | Horizon/purge structural minimum — fewer than 25 consecutive slots cannot host one labelled event (`H = 24`, purge 25, both frozen) | Disposes of the literal *"single instant"* limb | Nearly everything else — 25 slots is 6¼ hours | **No.** But importing a *label* property into the coverage limb states a relation the contract has not stated |
-| **O6** | Halt-and-report — measured counts, span and gap profile as a declaration-only record; **no** coverage token | Invents nothing; matches §1's own expectation | Sequences rather than closes; still spends the irreversible read | **No** |
-| **O7** | **Provenance and ordering** — the expected slot set must be **materialised, digest-bound and approved before the derivation exists**, and the run must consume that materialisation, not a callable | Attacks the actual defect: severs `expected` from `observed`. Without it O1–O4 are all defeated by §4.2 | Nothing found; it is a precondition, not a sufficient criterion — it still needs a cardinality or extent criterion on top | **No.** Requires ruling on §9's *"or a rule that generates it deterministically"* |
+**`D5_8_RULED_NO_NUMERIC_FLOOR_TRUSTED_CALENDAR_PROVENANCE_AND_SET_EQUALITY_REQUIRED`**
 
-### 4.8 Trade-off and recommendation — on **sequence and shape only**
+Recorded as an **explicit human + ChatGPT contract ruling**, not as an
+interpretation of existing text. It replaces D-5.8's open question; §8.8's
+"never" is discharged by the requirements below rather than by a count.
 
-The roles converged from three directions on one conclusion: **O7 comes first, or
-nothing else means anything.**
+#### 4.7.1 The eight normative requirements
 
-- **O7 is the precondition.** §4.2 shows O1, O2 and O3 all fall to a single
-  §9-authorised construction, and that the same construction disarms D-1, D-2 and
-  D-3. Ruling a floor while §9's rule form stays open closes nothing.
-- **O4 has the best integrity properties and the worst readiness.** It is a
-  control on paper until **FB-1** (a subclass with a no-op `__post_init__` mints
-  any token-bearing record), **FR-7** (`content_digest` never bound to content)
-  and **FR-8** (the rule route accepts any callable) close. **Ruling O4 while
-  those are open produces an approval the code cannot enforce — worse than an
-  acknowledged gap, because it reads as closed.**
-- **O2 must not be published in its literal form** — Saturday `DESIGN_END`.
-- **O3 must not be adopted alone** — vacuous on the singleton it targets.
-- **O5 is free and weak** — a floor on absurdity, not adequacy. Adoptable today at
-  the cost of one arithmetic check.
-- **O6 costs nothing and buys nothing at this gate.**
-- **O1 is the most implementable and the only one that cannot be taken without
-  deciding market hours.**
+1. The expected M15 slot set is obtainable **only** from the approved calendar
+   artifact and its **committed provenance**.
+2. The source and the runtime **may not invent** the expected slot set from
+   observed data or from a self-generated rule.
+3. Where calendar **authority**, **provenance** or **epoch binding** is not
+   established, the behaviour is **fail-closed**.
+4. `assert_full_coverage` may recognise coverage as satisfied **only after both**
+   the PR #444 set-equality limbs **and** calendar-provenance validation hold.
+5. An expected slot count on its own — and likewise a minimum count, a temporal
+   extent criterion or a continuity criterion — **is not a substitute proof of
+   calendar authenticity**.
+6. **No independent numeric minimum slot-count threshold is established.**
+7. **No unauthorised numeric value** — `100`, `400`, `1000` or any other — is
+   introduced into source or tests for this purpose.
+8. Counts **may** be retained as a **diagnostic or recorded measurement**; they
+   **may not** serve as an acceptance authority substituting for trusted-calendar
+   provenance.
 
-**Recommendation, offered as a recommendation and not as a ruling:** rule **O7
-first and unconditionally**, together with closing FB-1 / FR-7 / FR-8; then **O4**
-as the vehicle for the number, because it puts the market-hours quantity in the
-approved artifact where §9 and §0 place that authority; **O5** may be adopted
-today at negligible cost. **Do not publish O2 in its literal form; do not adopt
-O3 alone; do not adopt O1 in code.**
+#### 4.7.2 Why the count was rejected as the trust axis
 
-**`CONTRACT_CHANGE_REQUIRES_HUMAN_CHATGPT_RULING`.** The lead states plainly that
-it is not choosing the criterion or any value: both are research-acceptance
-decisions, and the number is a market-hours quantity that §9 and §0 reserve.
+Four evidentiary grounds, each recorded above with its reproduction: no committed
+numeric floor exists (§4.3); `1000`/`400` are foreclosed by §10 R-2 and would
+disarm `INSUFFICIENT_SAMPLE` (§4.3); the self-generated-rule construction clears
+floor, extent and continuity guards together at 20,832 slots per pair (§4.2); and
+therefore a count floor would add a threshold without touching the defect it
+appears to address.
+
+#### 4.7.3 What this ruling forecloses, and what it adopts
+
+- **O1, O2, O3 and O5 are not adopted** — none is the trust axis; O1 and O3 mint
+  numbers, and O2 is unsatisfiable as stated (§4.3).
+- **O7 (provenance and ordering) is adopted**, as requirements 1–4.
+- **O4's count field is not adopted as an acceptance gate.** A declared count may
+  exist as a diagnostic under requirement 8; it may not decide admission.
+- **O6 is not needed** — the contract question is settled, so there is nothing to
+  return to a second Gate-decision.
+
+**Consequence for FR-8 (the `expected_m15_slot_rule` callable route).**
+Requirement 1 admits a generating rule only where it arrives with the approved
+artifact's committed provenance; requirement 2 forbids a self-generated one; and
+requirement 3 makes an unestablished provenance fail closed. An in-memory
+callable assembled at runtime has no committed provenance and so does not satisfy
+requirement 1. **The concrete provenance mechanism is implementation work for the
+targeted-fix Work PR, bounded by requirements 1–4** — this ruling fixes the
+contract, not the mechanism, and the fix PR may not widen it.
+
+#### 4.7.4 Allowed · Forbidden · Fail-closed
+
+- **Allowed:** measuring, recording and publishing per-pair expected and
+  certified counts as diagnostics (requirement 8); refusing an empty expected set
+  (already implemented); defence-in-depth checks that mint no number.
+- **Forbidden:** any numeric minimum slot-count threshold (requirements 6, 7);
+  inferring the expected set from observed data (D-6.1, requirement 2);
+  synthesising weekend or closure bars (D-6.3); any tolerance parameter (D-2);
+  reusing `1000` or `400` (§4.3); treating a count, an extent or a continuity
+  property as evidence of calendar authenticity (requirement 5).
+- **Fail-closed:** absent, malformed, unapproved, wrong-epoch or ambiguous
+  calendar → refuse (already implemented); **authority, provenance or epoch
+  binding not established → refuse** (requirement 3); a provenance check that
+  cannot be evaluated → refuse, never pass. Refusal **raises**; there is no
+  report-only path and no parameter (D-10).
+
+#### 4.7.5 Observable tests the targeted-fix Work PR must supply
+
+Each with a failing-before / passing-after pair, a unique
+`pytest.raises(match=...)` string and **no regex alternation** (§13):
+
+- A calendar whose expected slot set has no committed provenance is **refused**,
+  and the refusal names provenance uniquely.
+- The self-generated-rule construction of §4.2 — a deterministic rule closing
+  over the derivation — is **refused**. This is the ruling's headline case and
+  must be pinned directly.
+- `assert_full_coverage` refuses when provenance validation fails **even though**
+  set equality holds (requirement 4), and the message identifies which limb
+  failed.
+- A **negative control**: a well-formed calendar with established provenance is
+  accepted, so the check discriminates rather than refusing everything.
+- The **forged-subclass** regression that pins *placement* (§4.9), since a check
+  sited only in `validate_calendar` is bypassed today.
+- No test asserts a numeric slot-count minimum, and no such constant is
+  introduced (requirements 6, 7).
+
+#### 4.7.6 Implementation freedom remaining
+
+The exception type and message wording, provided the message names the failing
+condition uniquely; whether provenance validation is duplicated in
+`validate_calendar` as defence in depth; and the concrete representation of
+committed provenance — subject to §4.9's placement and ordering constraints, and
+to D-7, which makes any committed-artifact change a human-reviewed diff.
+
+#### 4.7.7 Disposition
+
+- **Must resolve before the targeted-fix Work PR?** Resolved — this is the
+  ruling.
+- **Must resolve before the gate-3a continuation?** The contract-level
+  requirement is **discharged**: the merged audit's
+  `MUST_RESOLVE_BEFORE_GATE3A_CONTINUATION` classification for D-5.8 is satisfied
+  by this ruling. **`PRE_CONTINUATION_CALENDAR_ARTIFACT_APPROVAL_REQUIRED` remains
+  a separate open gate**, and the continuation stays unauthorised until it and the
+  rest of §8's gate order are discharged.
+- **Further human + ChatGPT ruling required?** Not for D-5.8. The calendar
+  artifact approval is its own decision and is unaffected.
+
+**Term pinning.** `expected_m15_slot_count` joins §10 R-2's pinned terms as a
+**recorded diagnostic measurement, unit = M15 slots, per pair, declared by the
+approved calendar artifact and measured from it** — explicitly *not* an
+acceptance authority. It sits one confusion away from `complete_bucket_count`,
+from `usable_source_minute_count` (differs by the frozen factor 15), from §9's
+`daily coverage ≥ 0.60`, and from the 1000/400 holdout floors.
+
+### 4.8 Options considered, and their disposition
+
+Retained as the record of what was weighed. Disposition per §4.7.3.
+
+| # | Criterion | Defeated by / disposition | Mints a number? |
+| --- | --- | --- | --- |
+| **O1** | Numeric floor on expected slots per pair | §4.2's rule closure (20,832 slots); the lying `__len__`; says *how many*, never *which*. **NOT ADOPTED** | **Yes**, and it implicitly decides the unfixed Ruling-4 exclusion calendar |
+| **O2** | Temporal extent — expected set reaches both epoch ends | A two-point calendar (lead-verified); §4.2's closure reaches both ends free; **unsatisfiable at Saturday `DESIGN_END`**. **NOT ADOPTED** | **No** in strict form, **yes** once a tolerance is needed |
+| **O3** | Continuity / maximum gap | **Vacuous on a singleton** — the loop never runs, so the single instant it targets passes; a G-spaced comb of ~0.5% of the grid clears it. **NOT ADOPTED** | **Yes, unavoidably** — G must exceed the longest legitimate closure |
+| **O4** | Approval-carried declared count, checked declared == measured | Does not exclude degeneracy (1 == 1 passes); the open calendar vocabulary silently ignores a misspelt field; bypassed by the FB-1 forged subclass when sited in `validate_calendar`. **Count retained as a diagnostic only** (requirement 8), **not** as an acceptance gate | **No** |
+| **O5** | Horizon/purge structural minimum (`H = 24`, purge 25) | Closes only the literal *"single instant"*; 25 slots is 6¼ hours. **NOT ADOPTED** — requirement 5 makes count-shaped criteria non-substitutive | **No** |
+| **O6** | Halt-and-report, no coverage token | Sequences rather than closes; still spends the irreversible read. **NOT NEEDED** — the contract question is settled | **No** |
+| **O7** | **Provenance and ordering** — the expected slot set materialised, provenance-bound and approved before the derivation exists; the run consumes that, not a callable | Attacks the actual defect: severs `expected` from `observed`. **ADOPTED**, as requirements 1–4 | **No** |
 
 ### 4.9 Implementation guidance that needs no contract decision
 
@@ -429,49 +551,6 @@ fix PR does not have to guess:
   and `_coverage_probes` **affirmatively assert that a one-slot-per-pair calendar
   validates and a one-bar measurement certifies.** D-10's stated rationale —
   *"leaving it is how a re-disposition becomes permanent"* — applies.
-
-### 4.10 The fields a ruling must fill
-
-- **Allowed under every option:** measuring and reporting the per-pair expected
-  and certified counts; refusing an empty expected set (already implemented).
-- **Forbidden under every option:** inferring the expected set from observed data
-  (D-6.1); synthesising weekend or closure bars (D-6.3); any implementer-chosen
-  number; any tolerance parameter (D-2); reusing `1000` or `400` (§4.3).
-- **Fail-closed under every option:** absent, malformed, unapproved, wrong-epoch
-  or ambiguous calendar → refuse (already implemented); a criterion that cannot
-  be evaluated → refuse, never pass; **raises, terminal, no report-only path and
-  no parameter** (D-10).
-- **Observable tests required:** a failing-before / passing-after pair on
-  self-evidently synthetic slot sets, with a unique `pytest.raises(match=...)`
-  and **no alternation** (§13); a negative control just above the criterion so it
-  discriminates rather than refusing everything; the forged-subclass regression
-  that pins **placement**; and, for any continuity-shaped rule, a non-vacuity
-  test.
-- **Implementation freedom remaining:** the exception type and message wording
-  (provided the message names the criterion uniquely), and whether the check is
-  duplicated in `validate_calendar` as defence in depth.
-- **Must resolve before the targeted-fix Work PR?** **Yes** — playbook §1 lists
-  it as required step 1, for the stated reason that otherwise the fix session
-  decides a contract question it may not decide.
-- **Must resolve before the gate-3a continuation?** **Yes, unconditionally** —
-  merged audit §11 at `653a404`; no later gate re-derives the design dataset.
-- **Human + ChatGPT ruling required?** **Yes**, on: whether O7 is adopted and
-  whether §9's rule form survives; the criterion family; any numeric value, its
-  unit and level; whether §9.6's approval is extended to certify the per-pair
-  expected slot **counts** and whether §9's carry list gains a count field;
-  whether O4 may be ruled before FB-1 / FR-7 / FR-8 close; whether
-  `CoverageResult` must publish measured span and gap profile; and whether
-  committed source metadata may **sanity-bound** an independently declared
-  calendar — a different act from inferring one, and D-6.1 prohibits only the
-  latter.
-
-**Term pinning.** Whatever is chosen must join §10 R-2's pinned terms with its
-name, unit and declared-vs-measured status. *"Expected slot count"* is not among
-the twenty and sits one confusion away from `complete_bucket_count`, from
-`usable_source_minute_count` (differs by the frozen factor 15), from §9's
-`daily coverage ≥ 0.60`, and from the 1000/400 holdout floors.
-
----
 
 ## 5. §12.25 — the schema shape constraint
 
@@ -562,7 +641,7 @@ strict ruling must say whether one six-numeric record refuses.
 inventory (7 immediate numerics) is still refused, and FR-6 records that the
 `gap_report` the producer actually emits is unwritable into the committed schema.
 
-### 5.4 What is derivable without a human ruling
+### 5.4 What was derivable before the ruling, and grounds it
 
 **(i) A Work PR was not entitled to select between the readings.** §12.25 is a
 clause of a merged contract; §12's preamble forbids the Work PR carrying it to
@@ -588,129 +667,257 @@ general authorities D-1 cites (policy §14.2, §14.5, §12) apply here by their 
 terms — but extending the *remedy* to a new subject is legislating. That is why
 the ruling below stops where it does.
 
-### 5.5 Options
+### 5.5 THE RULING — §12.25
 
-| # | Option | Trade-offs |
-| --- | --- | --- |
-| **S1** | **Strict** — ≥6 immediate numerics refuses; flattened `gap_report` refuses; rewrite or delete the two pinning tests | Fail-closed; honours *"non-negotiable"*; the §12.20-conformant shape still writes. Cost: buys little against FB-3 (§5.3c), leaves the M1 diagnostic unresolved, and is unsatisfiable unless the ruling also settles where the two effective-N counts live (§5.3b) and whether one record can refuse (§5.3e) |
-| **S2** | **Permissive, expressly ruled** — the allowlist supersedes the shape denylist for declared schemas | Matches sentence 3 and B-1's mandate; resolves the M1 diagnostic. But it relaxes a clause headed non-negotiable, **must** be ruled by human + ChatGPT, and needs a compensating content bound — leaving `_scan_declared` with none licenses 336 numeric leaves and 660 unbounded string leaves |
-| **S3** | **Replace sentence 1 with the property it protected** — the admissible record shape is whatever the **committed schema** declares (D-7); the scrubber polices key vocabulary, cardinality and **value domain**, not shape; and the schema extension FR-6 shows is missing is required | Removes the tension at its root; makes the operative clause testable against what the producer emits. Adding domain binding (a count key may not carry `1.10001`) kills §5.3(c)'s nested-price payload, which neither S1 nor S2 catches. Cost: a genuine contract amendment; the extension must be specified |
+**S1 `RULED` · S2 `REJECTED` · S3 `NOT_ADOPTED_IN_THIS_GATE`.**
 
-**A trap the ruling should not fall into.** "Declaring a schema must not buy less
-scrutiny than declaring none" sounds unimpeachable and is **jointly unsatisfiable
-with §12.25's last clause** under the current calibration: the very payload
-sentence 2 requires to be writable produces findings when scanned schemaless. An
-implementer handed the bare property resolves it the cheap way — by **weakening
-the undeclared backstop**. If it is published at all it must ship with its
-tie-breaker: *conflicts are resolved by narrowing the schema or by replacing the
-shape predicate with a content predicate, never by weakening the backstop.*
+Recorded as an **explicit human + ChatGPT contract ruling**.
 
-### 5.6 The interim reading is already fixed by committed governance
+#### 5.5.1 What is ruled
+
+**Sentence 1 of committed §12.25 stands as a binding normative requirement.**
+Per-file records stay **nested** with **≤5 immediate numeric fields**; six
+refuses; flattening `gap_report` refuses. The next targeted-fix Work PR conforms
+to strict §12.25.
+
+**Grounds, as ruled:**
+
+- Under current governance a Work PR is **not permitted to re-interpret** a
+  merged contract clause on its own authority.
+- The selection PR #445 made was therefore **procedurally unauthorised** (§5.4).
+- **Implicit migration to S2** from the existing implementation **is forbidden**;
+  S2 may not be reached by inheritance, by CI-green, or by the fact that it is
+  already merged.
+- **S3 may become a contract-amendment candidate in future**, but it is **not
+  adopted in this Gate-decision**.
+- At this point **S1 is the most conservative and the only unique reading that
+  entails no change of meaning.**
+
+#### 5.5.2 Disposition of the three options
+
+| Option | Disposition |
+| --- | --- |
+| **S1 — strict** | **`RULED`.** Binding. The targeted-fix Work PR conforms |
+| **S2 — permissive** | **`REJECTED`.** Not adopted, and specifically not reachable by inheritance from the current implementation |
+| **S3 — replace sentence 1 with a committed-schema/domain-bound property** | **`NOT_ADOPTED_IN_THIS_GATE`.** A legitimate future candidate; **changing to S3 requires its own explicit Contract Gate-decision** |
+
+#### 5.5.3 The limitation this ruling does not cure — recorded, and not to be deleted
+
+**Strict §12.25 is not a complete security or data-containment defence.** The
+audit observation stands and must survive into the fix PR's context:
+
+```
+STRICT-conformant shape (immediate numerics = 3 <= 5, nested), 8 price columns x 20 pairs
+   -> CLEAN
+```
+
+A strict-conformant **nested** structure still carries a large numeric dataset.
+The shape rule is also orthogonal to FB-3's other two encodings — re-typing a
+dataset into a string leaf, and run-together key spellings (§5.3c).
+
+**This is not a reason to relax §12.25.** It is the evidence that the
+**FB-1 / FB-3 allowlist and scrubber controls are separately required**, and that
+they carry the containment burden the shape rule was never able to carry. The fix
+PR must treat §12.25 and those controls as complementary, and must not cite this
+limitation as grounds for weakening either.
+
+#### 5.5.4 Two sub-questions a strict implementation must resolve
+
+Both were surfaced by measurement (§5.3) and neither changes the ruling; both are
+implementation questions the fix PR must settle **without** widening the clause:
+
+- **Where the two effective-N quantities live.** `cost_hurdle_eligible_bar_count`
+  and `raw_traded_event_count` are pinned by §12.20 as **terms**, not as per-file
+  inventory fields. Adding them to the record is a committed-schema change by
+  human-reviewed diff (D-7). Absent such a diff, they do not belong in the
+  per-file record, and the §12.20-conformant shape — four immediate numerics,
+  `gap_report` nested — is what must scan clean.
+- **Whether one six-numeric record refuses.** The existing heuristic requires
+  **≥2** row-like records, so `6 immediate numerics × 1 record → []` today
+  (§5.3e). §12.25 speaks of a *record*. The fix PR implements the stricter
+  reading — a single six-numeric record refuses — consistent with the ambiguity
+  rule that produced S1; if it concludes it cannot, it records the blockage and
+  does not choose the looser behaviour.
+
+#### 5.5.5 Allowed · Forbidden · Fail-closed · Observable tests
+
+- **Allowed:** the §12.20-conformant per-file record (four immediate numerics,
+  `gap_report` nested), which scans clean and satisfies §12.25's second sentence
+  (§5.3a).
+- **Forbidden:** carrying S2 forward by inheritance; raising the numeric-field
+  bound to accommodate a record shape (§12.25's own last sentence forbids exactly
+  that); adopting S3 without a separate Contract Gate-decision.
+- **Fail-closed:** six or more immediate numeric fields refuses; a flattened
+  `gap_report` refuses; where the fix PR cannot determine the correct behaviour
+  it refuses and records, rather than admitting.
+- **Observable tests required:** a populated 20-record instance in the
+  §12.20-conformant shape **scans clean and writes** (§12.25 sentence 2, pinned
+  directly); a six-immediate-numeric record **refuses**; a flattened `gap_report`
+  **refuses**; each with a unique `match=` and no alternation. The two tests that
+  currently pin the permissive reading —
+  `test_b1_a_populated_twenty_record_inventory_is_accepted` and
+  `test_b1_a_flattened_gap_report_is_also_accepted` — must be **rewritten or
+  deleted**, and their docstrings' §12.25 exegesis removed. D-10's stated
+  rationale applies: *"leaving it is how a re-disposition becomes permanent."*
+
+#### 5.5.6 A trap the fix PR must not fall into
+
+"Declaring a schema must not buy less scrutiny than declaring none" sounds
+unimpeachable and is **jointly unsatisfiable with §12.25's last clause** under the
+current calibration: the very payload sentence 2 requires to be writable produces
+findings when scanned schemaless. An implementer handed the bare property resolves
+it the cheap way — by **weakening the undeclared backstop**. If the property is
+pursued at all, it comes with its tie-breaker: *conflicts are resolved by
+narrowing the schema or by replacing the shape predicate with a content
+predicate, never by weakening the backstop.*
+
+#### 5.5.7 Disposition
+
+- **Must resolve before the targeted-fix Work PR?** Resolved — this is the
+  ruling. The fix PR implements strict §12.25.
+- **Must resolve before the gate-3a continuation?** Resolved at the contract
+  level. The operative clause remains a **pre-derivation** requirement by its own
+  terms, and FB-9 remains a blocker to be closed by the fix PR.
+- **Further human + ChatGPT ruling required?** Only to move to S3, which needs
+  its own explicit Contract Gate-decision.
+
+### 5.6 How committed governance had already pointed this way
 
 Playbook §2.8: *"if what a gate permits is ambiguous, choose the NARROWER
 (no-run, no-read) interpretation **and require human + ChatGPT review**."*
 `CLAUDE.md`: *"the stricter reading of a research restriction wins."* Both halves
-together. So, derivably and without deciding the permanent meaning:
+applied: the narrower reading governed in the interim, and the required review has
+now taken place and selected it. The ruling in §5.5 is that review's outcome, not
+a continuation of the interim posture.
 
-> **Interim operative reading: S1 (strict).** Until a human + ChatGPT ruling says
-> otherwise, the fix PR implements the strict reading and may **not** carry
-> PR #445's permissive reading forward on the ground that it is merged and
-> CI-green. §5.3(a) establishes this costs the §12.20-conformant schema nothing.
-> §5.3(b) and (e) are the two sub-questions a strict implementation must have
-> answered — if the ruling does not settle them, the fix PR must record the
-> blockage rather than choose.
+## 6. Authority and requirements for the next targeted-fix Work PR
 
-### 5.7 Recommendation
+### 6.1 The Work PR's authority set
 
-**Rule S3** if the decision-makers are willing to amend §12.25 — it is the only
-option that discharges both §12.25's own diagnostic and FR-6, and the only one
-whose content bound catches §5.3(c). Otherwise **S1**. **S2 must not be reached
-by inheritance.** In the same ruling, direct what happens to
-`test_b1_a_populated_twenty_record_inventory_is_accepted` and
-`test_b1_a_flattened_gap_report_is_also_accepted`; if S2 or S3 is chosen, say
-expressly that sentence 1 is superseded so the next audit does not re-litigate
-it.
+The single next targeted-fix Work PR takes **all** of the following as authority,
+and nothing beyond it:
 
-**One narrow move that needs no ruling:** neutralising the two test docstrings
-and the flattened-acceptance assertion so the suite asserts *neither* reading. It
-removes a pin rather than adding one and changes no source behaviour. Still Amber
-(policy §8); belongs in the next Work PR.
+- **PR #447 FB-1 … FB-10** — the merged audit's blockers.
+- **PR #447 FR-1 … FR-18** and **FR-20 … FR-21** — its required fixes.
+- **PR #444** — the normative contract, in full.
+- **This document's D-5.8 ruling** (§4.7) —
+  `D5_8_RULED_NO_NUMERIC_FLOOR_TRUSTED_CALENDAR_PROVENANCE_AND_SET_EQUALITY_REQUIRED`.
+- **This document's §12.25 ruling** (§5.5) — **S1**.
 
-**`CONTRACT_CHANGE_REQUIRES_HUMAN_CHATGPT_RULING`** — on which reading governs
-permanently; whether sentence 1 is superseded; where the two effective-N counts
-live; whether one six-numeric record refuses; and the disposition of the two
-pinning tests.
+**FR-19 is not in that set.** It remains a **separate test-safety Work PR**
+requirement and must not be folded in.
 
-- **Must resolve before the targeted-fix Work PR?** **Yes** on the stricter
-  reading. Playbook §1 lists it as required step 1. The merged audit §16.4 allows
-  the fix PR to discharge §12.25 *by adopting the strict reading*, while §16's
-  recommendation and the playbook say rule it first; `CLAUDE.md`'s tie-breaker
-  selects "rule first". If the fix PR proceeds anyway, **the only lawful
-  self-discharge is S1.**
-- **Must resolve before the gate-3a continuation?** **Yes, unconditionally** —
-  the operative clause is by its own terms a pre-derivation requirement, FB-9 is
-  a blocker inside a merged BLOCKED verdict, and playbook §5 permits the
-  continuation only after the source audit is accepted.
+### 6.2 Requirements
 
----
-
-## 6. Requirements handed to the next targeted-fix Work PR
-
-1. Do **not** mint a D-5.8 count floor. Until ruled, §8.8 remains
-   **unenforced-and-disclosed** rather than silently satisfied; the existing
-   `coverage.py:40-53` disclosure is the correct posture and must not be removed
-   or softened. If the ruling adopts a criterion, site it in
-   `assert_full_coverage` and **after** the set-equality limbs (§4.9).
-2. Implement §12.25 on the **strict interim reading (S1)** unless and until a
-   human + ChatGPT ruling says otherwise; do not carry PR #445's permissive
-   reading forward by inheritance.
-3. Either rewrite/delete the two tests that pin the permissive reading, or
-   neutralise them so the suite asserts neither reading. Leaving them as they are
-   is how a re-disposition becomes permanent (D-10's stated rationale).
-4. Do not add `cost_hurdle_eligible_bar_count` or `raw_traded_event_count` to the
-   per-file inventory record without a committed-schema change by human-reviewed
-   diff (D-7).
-5. Carry FB-1…FB-10 and FR-1…FR-18, FR-20, FR-21 as the merged audit records
-   them. **FR-19 is a separate test-safety Work PR and must not be folded in.**
-6. If the ruling selects a D-5.8 option needing measured span or gap profile
-   (O2, O3), `PairCoverage` / `CoverageResult` must publish them — the same
-   evidence-shape gap FR-4 records; one change closes both.
-7. One numberless check may be added regardless of the ruling: `PairCoverage`
-   publishes `expected_slot_count` and `certified_slot_count` and nothing
-   compares them, so a record asserting 21,000 expected against 1 certified is
-   returned successfully today (§4.2). Comparing them mints nothing.
+1. **D-5.8 — implement provenance, not a count.** Requirements 1–8 of §4.7.1.
+   **Introduce no numeric minimum slot-count threshold and no unauthorised
+   numeric constant** into source or tests. Counts may be recorded as
+   diagnostics; they may not gate acceptance. Where authority, provenance or
+   epoch binding is not established, **fail closed**.
+2. **Coverage ordering.** `assert_full_coverage` recognises coverage only after
+   **both** the PR #444 set-equality limbs **and** calendar-provenance validation
+   hold (§4.7.1 requirement 4). Site any coverage-side check in
+   `assert_full_coverage` and **after** the set-equality limbs — in
+   `validate_calendar` alone it is bypassed by the FB-1 forged subclass, and
+   before the limbs it hijacks the guard identity of six existing tests (§4.9).
+3. **§12.25 — implement S1 (strict).** Six or more immediate numeric fields
+   refuses; a flattened `gap_report` refuses. Do **not** carry the permissive
+   reading forward by inheritance. Settle the two sub-questions in §5.5.4 without
+   widening the clause; if either cannot be settled, record the blockage rather
+   than choosing the looser behaviour.
+4. **Rewrite or delete** `test_b1_a_populated_twenty_record_inventory_is_accepted`
+   and `test_b1_a_flattened_gap_report_is_also_accepted`, and remove their
+   docstrings' §12.25 exegesis. Leaving them is how a re-disposition becomes
+   permanent (D-10's stated rationale).
+5. **Do not add** `cost_hurdle_eligible_bar_count` or `raw_traded_event_count` to
+   the per-file inventory record without a committed-schema change by
+   human-reviewed diff (D-7). The §12.20-conformant shape — four immediate
+   numerics, `gap_report` nested — is what must scan clean.
+6. **Do not treat §12.25 as containment.** §5.5.3 records that a
+   strict-conformant nested structure still carries a large numeric dataset; that
+   is an argument for the FB-1 / FB-3 allowlist and scrubber controls, never for
+   relaxing §12.25 or for deferring those controls.
+7. **One numberless check may be added regardless:** `PairCoverage` publishes
+   `expected_slot_count` and `certified_slot_count` and nothing compares them, so
+   a record asserting 21,000 expected against 1 certified is returned
+   successfully today (§4.2). Comparing them mints nothing.
+8. **Supply the observable tests** listed at §4.7.5 and §5.5.5, each with a
+   failing-before / passing-after pair, a unique `pytest.raises(match=...)` and no
+   regex alternation.
 
 ---
 
 ## 7. Non-authorisation
 
-This document authorises nothing and decides nothing that a human + ChatGPT must
-decide. It rules no D-5.8 criterion and no value; it invents no number and no
-market hours; it selects no permanent reading of §12.25; it changes no source, no
-test, no committed artifact and no frozen contract; it starts no Work PR; it
-generates and approves no calendar artifact; it does not lift the forward-epoch
-WAIT; and it does not authorise the gate-3a continuation.
+These rulings settle two contract questions. They authorise no operation.
+
+This document permits no real data read, no real M15 derivation, no checksum
+execution, no spread computation, no validation, holdout, training, inference,
+execution, or broker/paper/live activity. It adopts no epoch and does not lift
+the forward-epoch WAIT. **It generates and approves no calendar artifact and
+decides no market hours** — `PRE_CONTINUATION_CALENDAR_ARTIFACT_APPROVAL_REQUIRED`
+is untouched and remains open. It changes no source, no test and no committed
+artifact; it starts no Work PR; it implements no targeted fix and no FR-19; and
+it does not authorise the gate-3a continuation.
+
+Nothing in the preparation of this document used a forbidden operation: no source
+or test change · no artifact generated · no real-data read · no `.env` read · no
+DB · no network, DNS, UDP or TCP · no credential use · no derivation, validation,
+holdout, training or execution · no PR merged.
 
 `PRODUCTION_READINESS_NOT_CLAIMED` · `NO_EXECUTION_PERFORMED` ·
-`FORWARD_EPOCH_ADOPTION_BLOCKED_INSUFFICIENT_SAMPLE_ADOPTION_WAITS` ·
-`PRE_CONTINUATION_CALENDAR_ARTIFACT_APPROVAL_REQUIRED` remains open.
+`FORWARD_EPOCH_ADOPTION_BLOCKED_INSUFFICIENT_SAMPLE_ADOPTION_WAITS`.
 
 ---
 
 ## 8. Gate order from here
 
-1. **This Gate-decision** — human + ChatGPT rule D-5.8's criterion (§4.6–§4.8)
-   and §12.25's permanent reading (§5.5–§5.7).
-2. **One targeted-fix Work PR** — FB-1…FB-10 / FR-1…FR-18, FR-20, FR-21, plus
-   whatever this ruling fixes.
+1. **This Gate-decision** — D-5.8 and §12.25 **RULED**; merged on human + ChatGPT
+   approval.
+2. **One targeted-fix Work PR** — the authority set at §6.1, the requirements at
+   §6.2.
 3. **A separate test-safety Work PR** — FR-19.
 4. **A fifth independent source-audit re-check**, in a session separate from
    every fix author.
 5. **The P/V reader design PR** — §12.14's reader-freedom and reverse-caller pins
    should exist before it lands.
 6. **Calendar artifact approval** —
-   `PRE_CONTINUATION_CALENDAR_ARTIFACT_APPROVAL_REQUIRED`. If the ruling selects
-   O4, this approval also carries D-5.8's discharge, and must then explicitly
-   certify the per-pair expected slot counts.
+   **`PRE_CONTINUATION_CALENDAR_ARTIFACT_APPROVAL_REQUIRED`, still open.** The
+   D-5.8 ruling fixes the *contract* the artifact must satisfy — approved
+   provenance, epoch binding, no observation-derived expectation — but the
+   **concrete artifact for the target epoch is not approved**, and no ruling here
+   approves it.
 7. Only then a **separately-authorised gate-3a continuation** — Red, design-span
    only, metadata-only outputs.
+
+---
+
+## 9. How this decision was reached — history, not current status
+
+Recorded so the reasoning is auditable. **None of this is the current status**;
+the current status is §1 and the Statuses block.
+
+This document was first prepared as a **decision packet** rather than a ruling.
+At that point it carried
+`M15_GATE3A_D5_8_AND_SECTION12_25_PENDING_HUMAN_CHATGPT_RULING` and
+`CONTRACT_CHANGE_REQUIRES_HUMAN_CHATGPT_RULING`, on the ground that D-5.8's
+criterion and §12.25's permanent reading were decisions about research acceptance
+and the meaning of a merged contract, which contract §0 and §12's preamble
+reserve. Four independent roles — contract/governance, research-statistics and
+count semantics, adversarial/fail-open, and testability/observable behaviour —
+prepared the analysis, none given another's conclusions; the lead re-executed
+every decisive claim and corrected one of its own in the process.
+
+**Human + ChatGPT then ruled both questions**, and the rulings are recorded at
+§4.7 and §5.5. Two things about the outcome are worth preserving:
+
+- The D-5.8 ruling **did not select from the option table as offered**. It
+  adopted the packet's structural finding — that the count is not the trust axis
+  — and replaced the question with a provenance requirement, declining the
+  numeric floor outright. Options O1–O6 are recorded at §4.8 as not adopted.
+- The §12.25 ruling selected **S1**, the conservative reading that committed
+  governance had already made the interim position, and **rejected** S2 while
+  leaving S3 available only through a future explicit Contract Gate-decision.
+
+Both pending tokens are **superseded** by
+`M15_GATE3A_D5_8_AND_SECTION12_25_CONTRACT_RULED`.
