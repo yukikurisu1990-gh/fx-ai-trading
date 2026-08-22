@@ -390,7 +390,8 @@ def _cost_table(**entry_overrides: Any) -> dict[str, Any]:
 def test_n1_a_well_formed_cost_table_still_validates() -> None:
     """Reachability control: the refusals below are not refusing everything."""
     summary = validate_cost_table(_cost_table(), max_spread_pips=100.0)
-    assert summary["result"] == "COST_TABLE_SCHEMA_VALID"
+    # FR-5: `result` deleted; reachability is shown by the call returning.
+    assert summary["magnitude_authority"] == "CALLER_DECLARED"
 
 
 def test_n1_plain_negative_median_spread_is_refused() -> None:

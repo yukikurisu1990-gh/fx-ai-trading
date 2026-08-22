@@ -216,9 +216,9 @@ def test_f4_neg_inf_p95_fails() -> None:
 
 
 def test_f4_finite_non_negative_pass_and_missing_p95_still_fails() -> None:
-    assert (
-        validate_cost_table(_table(), max_spread_pips=None)["result"] == "COST_TABLE_SCHEMA_VALID"
-    )
+    # FR-5: `result` deleted; the finite non-negative table validating is the
+    # call returning, against the refusals immediately below.
+    validate_cost_table(_table(), max_spread_pips=None)
     t = _table()
     del t["entries"][0]["p95_spread"]
     with pytest.raises(CostSchemaError, match="missing key 'p95_spread'"):

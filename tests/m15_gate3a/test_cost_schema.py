@@ -134,18 +134,23 @@ def test_the_shared_fixture_is_the_complete_grid_the_other_tests_assume() -> Non
     assert len(table["entries"]) == EXPECTED_CELLS
     assert len({(e["pair"], e["session"]) for e in table["entries"]}) == EXPECTED_CELLS
     assert len(PAIRS_20) * len(SESSIONS) == EXPECTED_CELLS
-    assert validate_cost_table(table, max_spread_pips=None)["entries_validated"] == EXPECTED_CELLS
+    # FR-5: `entries_validated` was one-valued and is deleted. The fixture's
+    # completeness is asserted above; that it validates is the call returning.
+    validate_cost_table(table, max_spread_pips=None)
 
 
 def test_valid_cost_table_passes() -> None:
+    # FR-5: `result` was one-valued (the function raises on every invalid
+    # table), so the call returning IS the assertion.
     r = validate_cost_table(_table(), max_spread_pips=None)
-    assert r["result"] == "COST_TABLE_SCHEMA_VALID"
     # R-1 (negative control): ``p95_diagnostic_present`` and ``real_spreads_computed``
     # were single-valued self-attestations and are deleted, not reported. The
     # measured facts that replace them are asserted instead; the p95 property
     # itself is enforced by the refusal in ``test_missing_p95_fails`` below.
-    assert r["entries_validated"] == EXPECTED_CELLS
-    assert r["pairs_covered"] == sorted(PAIRS_20)
+    # FR-5: `entries_validated` and `pairs_covered` were one-valued and are
+    # deleted; coverage is enforced by the refusals, not reported.
+    assert "entries_validated" not in r
+    assert "pairs_covered" not in r
     assert r["sessions"] == sorted(SESSIONS)
 
 
@@ -181,7 +186,8 @@ def test_correct_jpy_pip_passes() -> None:
         ),
         max_spread_pips=None,
     )
-    assert r["result"] == "COST_TABLE_SCHEMA_VALID"
+    # FR-5: `result` deleted; a returned summary is the acceptance.
+    assert r["spread_unit"] == "price"
 
 
 def test_missing_claim_scope_fails() -> None:

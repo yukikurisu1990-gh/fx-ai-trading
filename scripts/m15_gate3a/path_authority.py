@@ -17,9 +17,43 @@ workstream against *this* module, is closed by :func:`_reject_stream_suffix`:
   into the protected directory while ``docs`` remains a directory, so neither
   the name walk nor ``samestat`` sees a match until the stream already exists.
   The guard therefore allowed the *creating* write and refused only the second
-  call. Containment is decided over the *complete* ancestor
-chain (``Path.parents`` is finite by construction — no arbitrary cap to
-exhaust), the prefix fold is case-insensitive, and every failure mode refuses.
+  call.
+
+A fourth, closed by :func:`_reject_win32_normalisable_component` (audit **FB-4**):
+
+* **Win32 name normalisation** — the OS trims trailing dots and spaces from a
+  path component before it opens it, so ``<root>/models.`` and ``<root>/models``
+  are the same directory. ``Path.resolve(strict=False)`` can only canonicalise a
+  component that *exists*; for an absent one it returns the spelling verbatim.
+  With ``models/`` absent — which is every fresh clone and every CI run, because
+  ``.gitignore`` lists it — ``models.`` therefore survived resolution, compared
+  unequal to ``models`` in the name test, had nothing to be identical *to* in the
+  identity test, and was ALLOWED; the ``mkdir``/``write_text`` that followed
+  created the **real** protected tree. Same shape as the stream case: the guard
+  first refused only after the write it existed to prevent.
+
+Containment is decided over the *complete* ancestor chain (``Path.parents`` is
+finite by construction — no arbitrary cap to exhaust) and the prefix fold is
+case-insensitive.
+
+**What is and is not a function of the input alone.** The *name* limb is: it
+reads only the spelling, and after FB-4 it covers every Win32 spelling that
+aliases another name (case, via ``PureWindowsPath``'s case-insensitive
+comparison; extended-length prefixes, via :func:`normalise_spelling`; streams and
+trailing dots/spaces, by refusal). The *identity* limb necessarily consults the
+filesystem — a junction cannot be recognised from its spelling. The invariant
+that makes that safe is the **name** limb, which consults no filesystem state
+at all, and `_reject_non_drive_namespace`, which refuses every spelling that is
+not an ordinary local drive path. Those two decide before any filesystem state
+is consulted.
+
+A second overclaim has since been withdrawn here. The identity limb alone can
+only turn an ALLOW into a REFUSE, but `resolve_candidate` calls `Path.resolve()`
+before either limb runs, and `resolve()` follows reparse points — so adding a
+junction *inside* a protected tree turns a REFUSE into an ALLOW. Filesystem
+state therefore does **not** make this authority uniformly stricter, and the
+sentence that said so has been removed rather than qualified. What the module
+guarantees is what the two state-free limbs above decide.
 
 Its only question is "does this path name, or sit under, a protected tree?".
 It reads no file contents.
@@ -28,6 +62,7 @@ It reads no file contents.
 from __future__ import annotations
 
 import os
+import re
 from pathlib import Path
 from typing import Any, Final
 
@@ -59,9 +94,13 @@ def normalise_spelling(path: str | Path) -> str:
     ``\\?\GLOBALROOT\Device\HarddiskVolumeN\...``, and stripping ``\\?\`` from
     those leaves a **relative** path that then resolves against the working
     directory — so a spelling naming the consumed-holdout tree was ALLOWED.
-    Left unfolded, ``Path.resolve()`` canonicalises them and the identity test
-    catches them; verified for every spelling, including the plain ``\\?\C:\``
-    case this fold was written for.
+    Left unfolded they keep their prefix and are refused outright by
+    :func:`_reject_non_drive_namespace`. An earlier version of this docstring
+    said ``Path.resolve()`` canonicalises them and the identity test catches
+    them, "verified for every spelling". **That was false** - measured,
+    ``resolve()`` returns the volume-GUID and UNC spellings unchanged, and with
+    the protected root absent the identity limb is silent - so the guarantee is
+    withdrawn and replaced by refusal.
     """
     text = str(path)
     upper = text.upper()
@@ -128,6 +167,128 @@ def _reject_stream_suffix(normalised: str) -> None:
         )
 
 
+# Win32 trims these from the end of a path component before it opens the path,
+# so `models.`, `models `, `models. ` and `models ...` all name `models`.
+_WIN32_TRIMMED_TRAILERS: Final[str] = ". "
+# Both separators, on every platform: this module refuses to let the verdict
+# depend on `os.sep` (see `_reject_stream_suffix`'s platform rule).
+_ANY_SEPARATOR: Final[re.Pattern[str]] = re.compile("[\\\\/]")
+# The two components that are *relative navigation*, not names. `resolve()`
+# collapses them; they are the only components allowed to end in a dot.
+_NAVIGATION_COMPONENTS: Final[frozenset[str]] = frozenset({".", ".."})
+
+
+def _reject_non_drive_namespace(normalised: str) -> None:
+    r"""Refuse every Win32 namespace that is not an ordinary local drive path.
+
+    ``_reject_win32_normalisable_component`` closes the trailing-dot/space family
+    FB-4 printed. It does not close the *namespace* family, and an internal audit
+    walked four members of that family straight through the guard and wrote a
+    real file into a real protected tree with the root absent:
+
+    * ``\?\UNC\localhost\C$\...\models`` and its lower-case spelling,
+    * ``\localhost\C$\...\models`` (the administrative share),
+    * ``\?\Volume{GUID}\...\models``,
+    * ``\?\GLOBALROOT\Device\HarddiskVolumeN\...\models``.
+
+    Each names the same directory as the drive spelling; none is folded by
+    :func:`normalise_spelling`; and — this is the part that made the earlier
+    reasoning wrong — ``Path.resolve()`` does **not** canonicalise them to the
+    drive spelling, so with the protected root absent the identity limb has
+    nothing to compare and the name limb never sees the protected name. The
+    docstring claim that ``resolve()`` catches them "verified for every
+    spelling" was false, and the write landed in ``<repo>/models``.
+
+    The remedy is an **allowlist**, because enumerating namespaces is the shape
+    of defect this programme keeps re-opening: the Win32 namespace admits
+    device paths, volume GUIDs, GLOBALROOT device chains, UNC shares and
+    administrative shares, and a denylist of those five is a denylist of the
+    five that were found. Gate-3a writes metadata into an ordinary local
+    directory and has no reason to address anything else, so the rule is that a
+    candidate must be a plain ``<letter>:\`` path after the extended-length fold
+    — and every other spelling is refused whether or not it aliases a protected
+    root, which also means the verdict no longer depends on filesystem state.
+
+    Non-Windows paths are unaffected: a POSIX absolute path has no drive letter
+    and no UNC form, so the rule applies only where ``\`` or a drive letter is
+    the platform's own addressing scheme.
+    """
+    if os.name != "nt":
+        return
+    if normalised.startswith("\\\\") or normalised.startswith("//"):
+        raise PathAuthorityError(
+            "refused UNC or device-namespace path: gate-3a addresses only ordinary "
+            "local drive paths, and a share, volume-GUID or GLOBALROOT spelling names "
+            "the same directory as a drive path while defeating both containment limbs"
+        )
+    drive = os.path.splitdrive(normalised)[0]
+    if not (len(drive) == 2 and drive[0].isascii() and drive[0].isalpha() and drive[1] == ":"):
+        raise PathAuthorityError(
+            f"refused path with no ordinary drive letter ({normalised[:40]!r}...); gate-3a "
+            "addresses only ordinary local drive paths"
+        )
+
+
+def _reject_win32_normalisable_component(normalised: str) -> None:
+    r"""Refuse a path with a component Win32 name normalisation would rewrite.
+
+    **The family, not the two spellings the audit printed.** Win32 trims *every*
+    trailing dot and space from a path component before opening it, so an
+    unbounded set of spellings — ``models.``, ``models ``, ``models...``,
+    ``models. . .`` — all name the one directory ``models``. The invariant here
+    is therefore stated over the normalisation itself: *a component is admissible
+    only if it is a fixed point of Win32's trailing-trim*. Any component that the
+    trim would change names something other than what it spells, and is refused.
+
+    Why refuse rather than normalise and re-test. Normalising would make this
+    authority judge ``models`` while the caller that later writes still passes
+    ``models.`` to ``open``/``mkdir`` — guard and consumer looking at two
+    different strings, which is the divergence class RF-5 and
+    :func:`_pin_path_characters` exist to close. Refusal admits no path at all,
+    so no such gap can open. It is the same disposition as the device-namespace,
+    NUL-byte and alternate-data-stream refusals: a spelling whose aliasing rules
+    the name and identity tests cannot model is refused before anything is
+    interrogated or created.
+
+    **Why the name limb has to carry this** (audit FB-4). The identity limb
+    cannot: ``Path.resolve(strict=False)`` canonicalises a trailing-dot component
+    only when it **exists**, and ``_protected_stat`` returns ``None`` for an
+    absent root because there is nothing to be identical *to*. With ``models/``
+    absent — every fresh clone, every CI run, since ``.gitignore`` lists it —
+    ``<root>/models.`` was ALLOWED and the ``mkdir`` that followed **created the
+    real protected tree**. Refusing on the spelling is what makes the name limb
+    complete, and completeness of the name limb is what makes the identity limb's
+    filesystem dependence monotone (it can then only add refusals).
+
+    **Platform rule — the same on every platform, deliberately.** POSIX permits a
+    filename ending in a dot or a space, so this refuses paths a POSIX host would
+    have accepted. That is the stricter reading, and §12.18's requirement that
+    one string get one verdict outranks the lost spelling: this gate writes
+    ``*.json`` metadata under caller-supplied output directories and nothing
+    else. ``.`` and ``..`` are exempt — they are navigation, not names, and
+    ``resolve()`` collapses them before any comparison.
+
+    **Extended-length spellings.** Under ``\\?\`` Win32 performs no normalisation
+    at all, so ``\\?\C:\repo\models.`` really is a directory distinct from
+    ``models``. :func:`normalise_spelling` has already folded that prefix away by
+    the time this runs, so such a path is refused too. Over-strict, and
+    deliberately so: admitting it would require this module to model two
+    different normalisation regimes selected by a prefix, and a guard that
+    branches on which aliasing rules apply is how the previous three defeats
+    happened.
+    """
+    for component in _ANY_SEPARATOR.split(normalised):
+        if not component or component in _NAVIGATION_COMPONENTS:
+            continue
+        trimmed = component.rstrip(_WIN32_TRIMMED_TRAILERS)
+        if trimmed != component:
+            raise PathAuthorityError(
+                f"win32-normalisable path component {component!r} refused: the platform "
+                f"trims trailing dots and spaces, so it names {trimmed!r}; a component that "
+                "is not a fixed point of that trim aliases a different directory"
+            )
+
+
 def _protected_stat(protected: Path) -> os.stat_result | None:
     """``stat`` of a protected root; ``None`` iff it is genuinely absent.
 
@@ -165,6 +326,29 @@ def is_within(candidate: Path, protected: Path) -> bool:
     string while naming the same directory: UNC aliases (``\\localhost\C$\...``),
     NTFS junctions and 8.3 short names. The walk visits the whole ancestor
     chain; there is no depth at which it stops looking and allows.
+
+    **Monotonicity, and why the name test has to be complete** (audit FB-4). The
+    identity test is skipped when the protected root is absent — there is nothing
+    to be identical *to* — so on an absent root the name test is the *only* thing
+    deciding containment. That is fail-closed only while the name test is
+    complete over the spellings that alias a name: casing (``PureWindowsPath``
+    compares case-insensitively), extended-length prefixes
+    (:func:`normalise_spelling`), and the spellings :func:`resolve_candidate`
+    refuses outright — device namespace, alternate data streams and
+    Win32-normalisable components. FB-4 was exactly this hole: ``models.`` passed
+    the name test and the absent root silenced the identity test, so the
+    *creating* write landed in the real protected tree. With the name test
+    complete, adding the identity test can only add refusals.
+
+    **The wider monotonicity claim that stood here is withdrawn.** It said
+    filesystem state "makes this authority stricter and never more permissive",
+    and that is false: :func:`resolve_candidate` calls ``Path.resolve()``, which
+    follows reparse points, so creating a junction *inside* a protected tree
+    turns a REFUSE into an ALLOW - measured with ``mklink /J``, no elevation
+    required. What is true, and all that is claimed now, is that the **name**
+    limb and :func:`_reject_non_drive_namespace` decide without consulting the
+    filesystem at all, so the spellings they own cannot be changed by on-disk
+    state.
     """
     if candidate == protected or protected in candidate.parents:
         return True
@@ -232,8 +416,17 @@ def resolve_candidate(path: Any) -> Path:
     still resolves it against the working directory — the guard and the
     consumer would then be judging two different locations, which is the same
     class of divergence RF-5 closes above. Refusal admits no path at all, so no
-    such gap can open, and the verdict for every accepted input is now a
-    function of the input alone.
+    such gap can open.
+
+    **What this does and does not make input-determined** (audit FB-4). Refusing
+    relative spellings removes the working directory from the verdict, and the
+    stream, device-namespace, NUL-byte and Win32-normalisation refusals remove
+    the spellings whose aliasing this function cannot model. What it does *not*
+    do — and what the previous sentence here wrongly claimed — is make the whole
+    containment verdict a function of the input alone: :func:`is_within`'s
+    identity limb reads the filesystem, and must, because a junction is invisible
+    in a spelling. The honest guarantee is :func:`is_within`'s monotonicity, and
+    it is stated there.
     """
     if isinstance(path, Path):
         text = _pin_path_characters(path)
@@ -252,7 +445,13 @@ def resolve_candidate(path: Any) -> Path:
         raise PathAuthorityError(r"device-namespace path (\\.\) refused")
     normalised = normalise_spelling(text)
     _reject_stream_suffix(normalised)
+    _reject_win32_normalisable_component(normalised)
     candidate = Path(normalised)
+    # AFTER the relative-spelling refusal below, so that a relative path keeps
+    # reporting the working-directory reason rather than "no drive letter",
+    # which is true of every relative path and would say nothing.
+    if candidate.is_absolute():
+        _reject_non_drive_namespace(normalised)
     if not candidate.is_absolute():
         raise PathAuthorityError(
             f"relative path {text!r} refused: containment would depend on the working "

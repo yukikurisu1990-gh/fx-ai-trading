@@ -170,8 +170,16 @@ def refuse_real_path(path: Any) -> None:
     candidate resolved against wherever the process happened to be — the same
     logical path was ALLOWED from one directory and REFUSED from another.
     ``resolve_candidate`` now refuses relative spellings outright (see its
-    docstring for why refusal rather than repo-root anchoring), so the verdict
-    for any path this accepts is a function of the path alone.
+    docstring for why refusal rather than repo-root anchoring), so the working
+    directory no longer participates in the verdict.
+
+    FB-4: the stronger claim that used to stand here — "the verdict for any path
+    this accepts is a function of the path alone" — is withdrawn. It is false of
+    the identity limb, which reads the filesystem and must. The guarantee is
+    ``path_authority.is_within``'s **monotonicity**: the name limb is complete
+    over the spellings that alias a name (including the Win32 trailing-dot/space
+    class that let ``models.`` through while ``models/`` was absent), and the
+    identity limb can then only add refusals.
     """
     root = repo_root()
     roots = tuple((root / prefix) for prefix in _PROTECTED_PREFIXES)
@@ -223,8 +231,30 @@ def normalise_status(status: str) -> str:
     separator variants that slipped past it — ``"production ready"``,
     ``"PRODUCTION-READY"`` and ``"Tier  1"`` all reduce to the same key as the
     canonical spelling.
+
+    **FB-5: the caller's object no longer answers the forbidden-status question.**
+    This began ``unicodedata.normalize("NFKC", status).strip().upper()``, and
+    ``unicodedata.normalize`` **returns the same object** when its input is
+    already NFKC-normal. For a ``str`` subclass that is the subclass instance, so
+    ``.strip()`` and ``.upper()`` were the *subclass's* overridable methods:
+    lead-measured, ``normalise_status(S("PASS"))`` returned ``TOTALLY_CLEAN``,
+    ``is_forbidden_status(S("PASS"))`` was ``False``, and
+    :func:`assert_status_allowed` **allowed** it, where the identical plain
+    ``"PASS"`` is refused.
+
+    The character data is therefore read once, through the unbound ``str.__str__``
+    slot — the same pin ``artifacts._pin``, ``path_authority.resolve_candidate``
+    and ``timeutil.to_utc`` use. ``str(status)`` would not do: it re-enters the
+    override. ``str.__str__`` returns a plain ``str`` for a subclass instance, so
+    every method called after it is ``str``'s own and no later step in the fold
+    can be intercepted. This is an invariant over the whole two-faced-``str``
+    family, not a guard against the two methods the audit happened to override.
+
+    A non-``str`` argument raises ``TypeError`` from the slot, exactly as it
+    previously did from ``unicodedata.normalize``. Refusing a non-``str`` *status*
+    is :func:`assert_status_allowed`'s job (RF-13), not this fold's.
     """
-    key = unicodedata.normalize("NFKC", status).strip().upper()
+    key = unicodedata.normalize("NFKC", str.__str__(status)).strip().upper()
     key = re.sub(r"[\s\-./]+", "_", key)
     return re.sub(r"_+", "_", key).strip("_")
 
@@ -291,4 +321,10 @@ def assert_status_allowed(status: Any) -> None:
             f"status must be a str to be checked, got {type(status).__name__}; refused unread"
         )
     if is_forbidden_status(status):
-        raise RealDataRefusedError(f"forbidden status {status!r} may not be asserted here")
+        # FB-5: the message quotes the PINNED character data. `{status!r}` calls
+        # `type(status).__repr__`, so a two-faced subclass could otherwise be
+        # refused correctly and then named as something harmless in the record of
+        # the refusal.
+        raise RealDataRefusedError(
+            f"forbidden status {str.__str__(status)!r} may not be asserted here"
+        )

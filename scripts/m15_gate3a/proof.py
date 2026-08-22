@@ -115,13 +115,14 @@ it is repeated here so it is not mistaken for an oversight.
 
 from __future__ import annotations
 
-from collections.abc import Mapping, Sequence
+import weakref
+from collections.abc import Iterator, Mapping, Sequence
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Any, Final
 
 from scripts.m15_gate3a.calendar_authority import SLOT_MINUTES
-from scripts.m15_gate3a.coverage import CoverageResult
+from scripts.m15_gate3a.coverage import CoverageResult, PairCoverage
 from scripts.m15_gate3a.guards import UNWRITABLE_BYTE_LEVEL_CLAIM_TOKENS
 from scripts.m15_gate3a.no_overlap import (
     DECLARATION_ONLY_EVIDENCE_BASIS,
@@ -131,6 +132,7 @@ from scripts.m15_gate3a.no_overlap import (
 )
 from scripts.m15_gate3a.numeric_authority import NumericAuthorityError, pin_int
 from scripts.m15_gate3a.pair_authority import PAIRS_20, PairAuthorityError, canonical_pair
+from scripts.m15_gate3a.sealing import assert_minted, register_minted, seal
 from scripts.m15_gate3a.timeutil import TimestampError, to_utc
 
 _SHA256_HEX_LENGTH: Final[int] = 64
@@ -343,10 +345,23 @@ class ProofLimbUnsatisfiedError(ProofContractError):
 
 
 class ProofDisagreementError(ProofContractError):
-    """Producer and verifier disagree. Fail-closed and terminal (D-11).
+    """Producer and verifier disagree. Fail-closed, and terminal for this evidence.
 
-    ``token`` is :data:`BYTE_LEVEL_PROOF_REFUTED`: the status is terminal, so a
-    later re-measurement does not rehabilitate the proof.
+    ``token`` is :data:`BYTE_LEVEL_PROOF_REFUTED`.
+
+    **FR-11 — what "terminal" means here, exactly.** This docstring used to say
+    "the status is terminal, so a later re-measurement does not rehabilitate the
+    proof", and nothing implemented it: the layer is stateless, so a caller that
+    caught this error and re-ran got :data:`BYTE_LEVEL_PROOF_PENDING` back with
+    no trace that a refutation had ever occurred. What is enforced now is that
+    the *evidence this error was pronounced over* is dead — every record and
+    every result named in the refusal is refused by identity from then on, with
+    the original refutation quoted back. What is **not** enforced, and is no
+    longer claimed, is terminality across a fresh evidence set or across
+    processes: that requires persisting the refuted status, which belongs to the
+    committed proof artifact and to the byte-reading packages at gate 4 (§15.4),
+    not to a layer that opens nothing. See the ledger above
+    :func:`_assert_not_refuted`.
     """
 
     token = BYTE_LEVEL_PROOF_REFUTED
@@ -365,14 +380,155 @@ class ProofConstructionError(ProofContractError):
 
 
 # ---------------------------------------------------------------------------
+# FR-11 — a refutation is terminal for the evidence it was pronounced over
+# ---------------------------------------------------------------------------
+#
+# Section 11 requires a disagreement to be fail-closed **and terminal**.
+# Fail-closed was real; terminality was a docstring property of a stateless
+# layer, so a caller that caught `ProofDisagreementError` and re-ran got
+# `BYTE_LEVEL_PROOF_PENDING` back with nothing recording that anything had ever
+# been refuted, and `BYTE_LEVEL_PROOF_REFUTED` reached no record.
+#
+# What is enforced here, and what is not — the distinction is the whole of the
+# honesty of the claim, so it is stated rather than left to be inferred:
+#
+# * **Enforced.** The evidence a refutation was pronounced over is dead. Any
+#   later use of a refuted measurement record, or of a refuted proof result, is
+#   refused by name and the refusal carries `BYTE_LEVEL_PROOF_REFUTED`, so
+#   catching the error and retrying with the same evidence cannot yield a clean
+#   result. The reason the refutation was pronounced is kept and re-reported,
+#   which is the record that one occurred.
+# * **Not enforced, and not claimed.** Terminality *across* evidence sets, and
+#   across processes. A caller that re-measures and builds fresh records is
+#   offering new evidence, and this reader-free layer holds no persistent state
+#   in which a refuted *artifact* could be remembered — it opens nothing, so it
+#   cannot tell that two record sets describe one file except by trusting the
+#   labels on them. Durable terminality belongs to the component that persists
+#   the proof status: the committed proof artifact, whose `result` field is
+#   exactly where `BYTE_LEVEL_PROOF_REFUTED` would be written, and the
+#   byte-reading producer/verifier packages at gate 4 (§15.4). The docstrings
+#   now say this instead of asserting a property this layer does not have.
+#
+# The ledger is keyed by object **identity**. A `WeakSet` cannot express it:
+# `weakref.ref` hashes and compares by *referent equality*, so condemning one
+# record would condemn every record equal to it, and rewriting a field
+# afterwards would silently un-condemn it. Entries are dropped by a weakref
+# callback when the object dies, which is what makes `id()` reuse harmless.
+_REFUTED: Final[dict[int, str]] = {}
+_REFUTED_WATCH: Final[dict[int, Any]] = {}
+
+
+def _mark_refuted(subject: Any, reason: str) -> None:
+    key = id(subject)
+
+    def _forget(_ref: Any, key: int = key) -> None:
+        _REFUTED.pop(key, None)
+        _REFUTED_WATCH.pop(key, None)
+
+    # No `try` and no pragma: every refutation subject is one of this module's
+    # sealed records, and `seal` refuses at **import** any slots dataclass
+    # declared without `weakref_slot=True`, so the reference is always
+    # constructible. A guard here would be an unreachable branch asserting the
+    # opposite, which is the FR-20 anti-pattern one line down from its own fix.
+    _REFUTED_WATCH[key] = weakref.ref(subject, _forget)
+    _REFUTED[key] = reason
+
+
+def _assert_not_refuted(subject: Any, *, what: str) -> None:
+    """Refuse evidence a refutation was already pronounced over (FR-11)."""
+    reason = _REFUTED.get(id(subject))
+    if reason is None:
+        return
+    raise ProofDisagreementError(
+        f"{what} was already refuted, and {BYTE_LEVEL_PROOF_REFUTED} is terminal: re-offering "
+        f"the same evidence does not rehabilitate it. The refutation was: {reason}"
+    )
+
+
+def _refute(message: str, *subjects: Any) -> ProofDisagreementError:
+    """Record the refutation against the evidence it condemns, then build the error.
+
+    Every :class:`ProofDisagreementError` this module raises over caller-supplied
+    evidence goes through here, so there is one place where "fail-closed" and
+    "terminal" are the same act rather than two properties of which only the
+    first was ever executed.
+    """
+    for subject in subjects:
+        _mark_refuted(subject, message)
+    return ProofDisagreementError(message)
+
+
+# ---------------------------------------------------------------------------
 # Field helpers
 # ---------------------------------------------------------------------------
+
+
+def _pin_text(value: Any, *, what: str, error: type[ProofContractError]) -> str:
+    """Read a ``str``'s real character data once, through the unbound slot (FB-5).
+
+    ``str.__str__`` is the pin :mod:`scripts.m15_gate3a.artifacts`,
+    :mod:`scripts.m15_gate3a.timeutil` and
+    :mod:`scripts.m15_gate3a.path_authority` already use, and
+    :func:`~scripts.m15_gate3a.numeric_authority.pin_int` is its numeric twin.
+
+    **Why one primitive and not five local fixes.** A ``str`` subclass owns
+    ``__eq__``, ``__hash__``, ``__str__``, ``__repr__`` and ``__format__``, so
+    *every* comparison written against the caller's own object — ``==``,
+    ``!=``, ``in`` against a ``frozenset``, use as a ``dict`` key — asks that
+    object whether it should be refused. FB-5 found five such comparisons in
+    this module alone, deciding D-4 (the proof subject), D-11 (the promotion
+    prohibition), the co-measurement roster de-dup, verifier independence, W3
+    consumer freshness and the producer/verifier split — each with a plain-value
+    control that was correctly refused. Patching those five would leave the
+    sixth. The family is "a contract rule decided against an object instead of
+    against its character data", and the structural remedy is to read the
+    character data once, at the boundary, decide everything downstream against
+    the plain value, and **store and publish that same value** (B-3 / P-3) so a
+    later reader cannot be shown a different spelling.
+
+    ``isinstance`` consults ``__class__``, which an arbitrary object may claim,
+    so the unbound slot is called inside a ``try``: a spoofed ``__class__``
+    lands on this module's documented error type instead of escaping as a bare
+    ``TypeError`` (the RF-29 class), exactly as ``numeric_authority._index``
+    does for ``int.__index__``.
+    """
+    if not isinstance(value, str):
+        raise error(f"{what} must be a string, got {type(value).__name__}")
+    try:
+        return str.__str__(value)
+    except TypeError as exc:
+        raise error(
+            f"{what} claims to be a str but is a {type(value).__name__} that the str slot "
+            f"refuses: {exc}"
+        ) from exc
+
+
+def _assert_minted(record: Any, *, what: str) -> None:
+    """:func:`~scripts.m15_gate3a.sealing.assert_minted` with this module's error type (FR-3).
+
+    ``object.__new__`` bypasses ``__post_init__`` outright — no ``__new__``
+    override can intercept it — so twenty forged :class:`MeasurementRecord`\\ s
+    carrying ``subject='RAW_M1_SOURCE_BYTES'``, ``size_bytes=-1``, a reversed
+    span and ``dead_window_bars_by_bucket_start=7`` were accepted by the roster:
+    every field check in ``__post_init__`` had run on nothing, and ``isinstance``
+    cannot tell the two apart. The registry can, because a record built that way
+    is absent from it.
+
+    The shared registry is keyed by object **identity**, which is what makes the
+    check answerable at all: it touches none of the record's own methods, so a
+    forgery cannot answer it with ``__eq__`` or ``__hash__``, a forgery whose
+    fields merely *equal* a live genuine record's is not authenticated, and a
+    genuine record whose field was rewritten afterwards is not de-authenticated
+    (that is the declared threat model, and it is caught by the field re-checks
+    at each boundary, which name the field).
+    """
+    assert_minted(record, what=what, error=ProofConstructionError)
 
 
 def _require_hex_digest(value: Any, *, what: str) -> str:
     if not isinstance(value, str):
         raise ProofContractError(f"{what} must be a 64-hex string, got {type(value).__name__}")
-    text = str.__str__(value)
+    text = _pin_text(value, what=what, error=ProofContractError)
     if len(text) != _SHA256_HEX_LENGTH or any(c not in _HEX_DIGITS for c in text):
         raise ProofContractError(f"{what} is not a well-formed 64-hex SHA-256 digest")
     return text.lower()
@@ -380,9 +536,11 @@ def _require_hex_digest(value: Any, *, what: str) -> str:
 
 def _require_identifier(value: Any, *, what: str) -> str:
     """An artifact identifier, never a path (D-11 "Identity")."""
-    if not isinstance(value, str) or not str.__str__(value).strip():
+    if not isinstance(value, str):
         raise ProofContractError(f"{what} must be a non-empty string")
-    text = str.__str__(value)
+    text = _pin_text(value, what=what, error=ProofContractError)
+    if not text.strip():
+        raise ProofContractError(f"{what} must be a non-empty string")
     if any(ch in text for ch in ("/", "\\", ":")):
         raise ProofContractError(
             f"{what} {text!r} looks like a path; identity is the artifact identifier, "
@@ -400,9 +558,7 @@ def _require_content_digest(value: Any, *, what: str) -> str:
     fabricated ``calendar_digest="NO CALENDAR EVER EXISTED"`` was copied into the
     proof record unchecked, and a sentence is not a version of anything.
     """
-    if not isinstance(value, str):
-        raise ProofContractError(f"{what} must be a string, got {type(value).__name__}")
-    text = str.__str__(value)
+    text = _pin_text(value, what=what, error=ProofContractError)
     if not text.strip():
         raise ProofContractError(f"{what} is empty, so the record names no calendar version")
     if any(ch.isspace() for ch in text):
@@ -425,7 +581,12 @@ def _require_count(value: Any, *, what: str, minimum: int) -> int:
         raise ProofContractError(f"{what} must be an int, got {type(value).__name__}")
     try:
         pinned = pin_int(value, what=what)
-    except NumericAuthorityError as exc:  # pragma: no cover - guarded above
+    except NumericAuthorityError as exc:
+        # FR-20: NOT unreachable, and the `# pragma: no cover - guarded above`
+        # that sat here asserted the opposite. `isinstance` consults
+        # `__class__`, which an arbitrary object may claim, and the unbound
+        # `int.__index__` slot then refuses it — so an object whose `__class__`
+        # says `int` enters this branch. It is pinned by a test.
         raise ProofContractError(str(exc)) from exc
     if pinned < minimum:
         raise ProofContractError(f"{what} must be >= {minimum}, got {pinned}")
@@ -437,7 +598,8 @@ def _require_count(value: Any, *, what: str, minimum: int) -> int:
 # ---------------------------------------------------------------------------
 
 
-@dataclass(frozen=True, slots=True)
+@seal(error=ProofConstructionError)
+@dataclass(frozen=True, slots=True, weakref_slot=True)
 class Provenance:
     """Which byte stream, which pass over it, and which artifact it was opened as.
 
@@ -463,15 +625,29 @@ class Provenance:
     artifact_id: str
 
     def __post_init__(self) -> None:
-        if not isinstance(self.stream_id, str) or not self.stream_id.strip():
+        # FB-5: `stream_id` was the one field of three that was neither pinned
+        # nor stored pinned, while `pass_index` went through `pin_int` and
+        # `artifact_id` through `_require_identifier`. It decides the
+        # co-measurement roster de-dup, the verifier-independence check and the
+        # W3 consumer-freshness check — three contract rules, all expressed as
+        # `==` or `in` against the caller's own object, so two `Provenance` over
+        # one real byte-stream pass could compare unequal and hash distinctly.
+        if not isinstance(self.stream_id, str):
             raise ProofCoMeasurementError("provenance stream_id must be a non-empty string")
+        stream_id = _pin_text(
+            self.stream_id, what="provenance stream_id", error=ProofCoMeasurementError
+        )
+        if not stream_id.strip():
+            raise ProofCoMeasurementError("provenance stream_id must be a non-empty string")
+        object.__setattr__(self, "stream_id", stream_id)
         if isinstance(self.pass_index, bool) or not isinstance(self.pass_index, int):
             raise ProofCoMeasurementError("provenance pass_index must be an int")
         # N-1: pinned before the bound test, and stored pinned so the pass
         # identity a roster de-duplicates on is a plain int.
         try:
             object.__setattr__(self, "pass_index", pin_int(self.pass_index, what="pass_index"))
-        except NumericAuthorityError as exc:  # pragma: no cover - guarded above
+        except NumericAuthorityError as exc:
+            # FR-20: reachable, for the reason recorded on `_require_count`.
             raise ProofCoMeasurementError(f"provenance pass_index: {exc}") from exc
         if self.pass_index < 0:
             raise ProofCoMeasurementError("provenance pass_index must not be negative")
@@ -485,9 +661,90 @@ class Provenance:
             raise ProofCoMeasurementError(
                 f"a byte-stream pass must name the artifact it read: {exc}"
             ) from exc
+        register_minted(self)
 
 
-@dataclass(frozen=True, slots=True)
+#: The `datetime` accessors, unbound. A `datetime` subclass can override
+#: `__eq__`, `year`, `isoformat` and every comparison operator, so reading them
+#: off the object asks the object to answer a question about itself.
+_INSTANT_PARTS: Final[tuple[str, ...]] = (
+    "year",
+    "month",
+    "day",
+    "hour",
+    "minute",
+    "second",
+    "microsecond",
+)
+
+
+def _pin_instant(value: Any, *, what: str) -> datetime:
+    """Rebuild a **plain** ``datetime`` from *value*'s components.
+
+    The FB-5 family, applied to instants. A comparison like
+    ``entry.certified_slot_min != record.measured_ts_min`` is answered by
+    whichever operand's ``__eq__`` Python reaches, so a subclass that reports one
+    span to the guard and another to the reader defeats it — an audit did exactly
+    that against the FR-4 binding. Reconstructing through the unbound descriptors
+    means the value that gets compared is character-for-character the value the
+    object holds, and a subclass has nothing left to override.
+    """
+    if not isinstance(value, datetime):
+        raise ProofContractError(f"{what} must be a datetime, got {type(value).__name__}")
+    try:
+        rebuilt = datetime(
+            *(getattr(datetime, name).__get__(value) for name in _INSTANT_PARTS),
+            tzinfo=datetime.tzinfo.__get__(value),
+        )
+    except (TypeError, ValueError, AttributeError) as exc:
+        raise ProofContractError(f"{what} is not plain datetime data: {exc}") from exc
+    if rebuilt.utcoffset() != timedelta(0):
+        raise ProofContractError(
+            f"{what} must be UTC-aware; a naive or offset instant is not comparable "
+            "with a measured span"
+        )
+    return rebuilt
+
+
+def _pin_artifact_id(provenance: Any, *, what: str) -> str:
+    """Re-read `Provenance.artifact_id`, for the reason `_pin_pass` exists.
+
+    ``artifact_id`` was pinned at construction and then compared raw at three
+    boundaries, while ``stream_id`` and ``pass_index`` beside it were re-read —
+    and the reason given for re-reading them, ``object.__setattr__`` on a real
+    record being this package's declared threat model, applies identically here.
+    An internal audit used the gap twice: one fabricated pass answered ``==`` for
+    all twenty pairs (defeating DI-5's remedy, that a provenance naming no
+    particular artifact cannot be reused across pairs), and a verifier whose pass
+    really named a different file passed the "reads the same artifact" check.
+    """
+    return _pin_text(provenance.artifact_id, what=f"{what} artifact_id", error=ProofContractError)
+
+
+def _pin_pass(provenance: Any, *, what: str) -> tuple[str, int]:
+    """The pass identity a roster de-duplicates on, as plain character data.
+
+    ``Provenance.__post_init__`` already pins both halves, so on a genuine,
+    untampered record this returns what is stored. It is re-read here because
+    ``object.__setattr__`` on a real record is this package's **declared** threat
+    model — stated on :class:`_ProofConstructionToken` and in
+    ``coverage.assert_full_coverage`` — and no minting registry can see it. The
+    de-dup that stops one fabricated pass serving twenty pairs (DI-5) is decided
+    on this value, so it is the value that must be plain.
+    """
+    _assert_minted(provenance, what=f"{what} provenance")
+    stream_id = _pin_text(
+        provenance.stream_id, what=f"{what} stream_id", error=ProofCoMeasurementError
+    )
+    try:
+        pass_index = pin_int(provenance.pass_index, what=f"{what} pass_index")
+    except NumericAuthorityError as exc:
+        raise ProofCoMeasurementError(f"{what} pass_index: {exc}") from exc
+    return stream_id, pass_index
+
+
+@seal(error=ProofConstructionError)
+@dataclass(frozen=True, slots=True, weakref_slot=True)
 class DeclarationRecord:
     """Caller-declared inventory metadata. Structurally **not** a measurement.
 
@@ -505,14 +762,24 @@ class DeclarationRecord:
     token: str = DECLARED_SPANS_SELF_CONSISTENT__NOT_BYTE_LEVEL
 
     def __post_init__(self) -> None:
-        if self.token not in DECLARATION_ONLY_TOKENS:
+        # FB-5 family: ``in`` against a ``frozenset`` is decided by the caller's
+        # own ``__hash__``/``__eq__``, so the token is read as character data
+        # first and a non-``str`` is not a token in this vocabulary at all.
+        token = self.token if isinstance(self.token, str) else None
+        if token is not None:
+            token = _pin_text(token, what="declaration record token", error=ProofPromotionError)
+        if token is None or token not in DECLARATION_ONLY_TOKENS:
             raise ProofPromotionError(
                 f"a declaration record may only carry a declaration-only token, got "
-                f"{self.token!r}; declared metadata never becomes a byte-level claim"
+                f"{token if token is not None else self.token!r}; declared metadata never "
+                "becomes a byte-level claim"
             )
+        object.__setattr__(self, "token", token)
+        register_minted(self)
 
 
-@dataclass(frozen=True, slots=True)
+@seal(error=ProofConstructionError)
+@dataclass(frozen=True, slots=True, weakref_slot=True)
 class MeasurementRecord:
     """One artifact, measured from its own bytes in a single pass.
 
@@ -543,18 +810,35 @@ class MeasurementRecord:
     scan_provenance: Provenance
 
     def __post_init__(self) -> None:
-        if self.role not in (ROLE_PRODUCER, ROLE_VERIFIER):
+        # FB-5: the producer/verifier split was decided by `in` against the
+        # caller's own object, so one record was accepted into **both** rosters.
+        role = self.role if isinstance(self.role, str) else None
+        if role is not None:
+            role = _pin_text(role, what="measurement role", error=ProofContractError)
+        if role is None or role not in (ROLE_PRODUCER, ROLE_VERIFIER):
             raise ProofContractError(
                 f"measurement role must be {ROLE_PRODUCER!r} or {ROLE_VERIFIER!r}, "
-                f"got {self.role!r}"
+                f"got {role if role is not None else self.role!r}"
             )
+        object.__setattr__(self, "role", role)
         # D-4: hashing is a byte read; the proof subject is the DERIVED artifact.
-        if self.subject != SUBJECT_DERIVED_M15_ARTIFACT:
+        # FB-5: a `str` subclass whose real character data was
+        # `RAW_M1_SOURCE_BYTES` answered this `!=` favourably and was accepted,
+        # which is D-4 defeated by the caller's own object. Decide on the
+        # character data, and store the character data.
+        subject = self.subject if isinstance(self.subject, str) else None
+        if subject is not None:
+            subject = _pin_text(
+                subject, what="measurement subject", error=RawSourceRehashForbiddenError
+            )
+        if subject is None or subject != SUBJECT_DERIVED_M15_ARTIFACT:
             raise RawSourceRehashForbiddenError(
-                f"measurement subject {self.subject!r} is not the derived M15 artifact; "
-                "raw source bytes are never hashed without their own explicit read "
+                f"measurement subject "
+                f"{subject if subject is not None else self.subject!r} is not the derived M15 "
+                "artifact; raw source bytes are never hashed without their own explicit read "
                 "authorisation, and 'checksum only' is not an exception"
             )
+        object.__setattr__(self, "subject", subject)
         try:
             object.__setattr__(self, "pair", canonical_pair(self.pair))
         except PairAuthorityError as exc:
@@ -629,7 +913,9 @@ class MeasurementRecord:
                     f"{self.pair}: {name}_provenance must be a Provenance, "
                     f"got {type(prov).__name__}"
                 )
-        distinct = {(p.stream_id, p.pass_index) for p in provenances.values()}
+        distinct = {
+            _pin_pass(prov, what=f"{self.pair} {name}") for name, prov in provenances.items()
+        }
         if len(distinct) != 1:
             raise ProofCoMeasurementError(
                 f"{self.pair}: digest, size, span and scan cite {len(distinct)} different "
@@ -637,12 +923,13 @@ class MeasurementRecord:
                 "byte stream and the record built atomically at the end of it"
             )
         for name, prov in provenances.items():
-            if prov.artifact_id != self.staged_artifact_id:
+            if _pin_artifact_id(prov, what=f"{name} pass") != self.staged_artifact_id:
                 raise ProofCoMeasurementError(
                     f"{self.pair}: the {name} pass says it read {prov.artifact_id!r} while the "
                     f"record describes {self.staged_artifact_id!r}; a provenance that names no "
                     "particular artifact can be reused across every quantity and every pair"
                 )
+        register_minted(self)
 
     def _assert_internally_consistent(self) -> None:
         """Arithmetic floors on the scan (DI-9). No threshold is introduced here.
@@ -688,7 +975,8 @@ class MeasurementRecord:
             )
 
 
-@dataclass(frozen=True, slots=True)
+@seal(error=ProofConstructionError)
+@dataclass(frozen=True, slots=True, weakref_slot=True)
 class DerivationBinding:
     """The DB limb's evidence for one artifact.
 
@@ -713,19 +1001,29 @@ class DerivationBinding:
             raise ProofContractError(f"derivation binding names an unusable pair: {exc}") from exc
         for name in ("script_name", "git_sha", "config_hash", "source_identity"):
             value = getattr(self, name)
-            if not isinstance(value, str) or not value.strip():
+            text = (
+                _pin_text(
+                    value, what=f"derivation binding field {name!r}", error=ProofContractError
+                )
+                if isinstance(value, str)
+                else None
+            )
+            if text is None or not text.strip():
                 raise ProofContractError(
                     f"derivation binding field {name!r} must be a non-empty string; the bytes "
                     "must be bound to a named script, git SHA, config hash and source identity"
                 )
+            object.__setattr__(self, name, text)
         object.__setattr__(
             self,
             "re_derivation_sha256",
             _require_hex_digest(self.re_derivation_sha256, what="re_derivation_sha256"),
         )
+        register_minted(self)
 
 
-@dataclass(frozen=True, slots=True)
+@seal(error=ProofConstructionError)
+@dataclass(frozen=True, slots=True, weakref_slot=True)
 class ConsumerRecheck:
     """A consumer's own re-measurement, taken immediately before use (W3)."""
 
@@ -749,29 +1047,109 @@ class ConsumerRecheck:
         )
         if not isinstance(self.provenance, Provenance):
             raise ProofContractError("consumer recheck must cite the read it performed")
-        if self.provenance.artifact_id != self.artifact_id:
+        # The consumer's own pass identity is what W3 freshness is decided on
+        # (`stream_id in identity.measured_stream_ids`), so it is authenticated
+        # and pinned here rather than trusted.
+        _pin_pass(self.provenance, what=f"{self.pair} consumer recheck")
+        if _pin_artifact_id(self.provenance, what="recheck provenance") != self.artifact_id:
             raise ProofContractError(
                 f"{self.pair}: the consumer's read says it opened "
                 f"{self.provenance.artifact_id!r} while the recheck describes "
                 f"{self.artifact_id!r}; a re-verification is of the artifact about to be read"
             )
+        register_minted(self)
 
 
-@dataclass(frozen=True, slots=True)
+@seal(error=ProofConstructionError)
+@dataclass(frozen=True, slots=True, weakref_slot=True)
 class _ArtifactIdentity:
     """What the proof was made about for one pair, and which passes made it.
 
     Private on purpose. W3 rules re-verification a *precondition of use*, and
     while the proof published its identity map any consumer could read the
     digest, size and identifier straight off the result and never call
-    :func:`open_for_consumption` at all. The identity is now reachable only
-    through that call, which is what makes the precondition genuine.
+    :func:`open_for_consumption` at all.
+
+    **FB-6 — the previous sentence here said the identity is "reachable only
+    through that call", and it was false.** Underscore-prefixing a dataclass
+    field hides it from nothing: :func:`dataclasses.asdict` and
+    :func:`dataclasses.astuple` recurse over dataclass fields themselves and
+    never consult ``__copy__``, ``__deepcopy__`` or ``__reduce__``, all three of
+    which this package had correctly refused. One plain stdlib call — no hostile
+    object, no private name — rebuilt the whole twenty-pair map, digests and
+    sizes included, with ``open_for_consumption`` never called. The claim is
+    made true by :class:`_IdentityVault`, which is what the field now holds; the
+    limit that remains is the one this package discloses everywhere else — a
+    caller reaching for a private attribute is not stopped by any of this.
     """
 
     artifact_id: str
     sha256: str
     size_bytes: int
     measured_stream_ids: frozenset[str]
+
+    def __post_init__(self) -> None:
+        register_minted(self)
+
+
+class _IdentityVault(Mapping[str, _ArtifactIdentity]):
+    """The per-artifact identity map, closed to the recursive stdlib copies (FB-6).
+
+    Gating the identity is this layer's **entire** enforcement of W3, so the
+    route that bypassed the gate is the route that mattered. It was not a
+    protocol this package had forgotten to refuse: ``asdict``/``astuple``
+    recurse into dataclasses, lists, tuples and ``dict`` objects and reach
+    :func:`copy.deepcopy` for **everything else**. This is a ``Mapping`` that is
+    none of those four, so both functions arrive at ``deepcopy`` — which is
+    refused here, by the same reasoning N-5 applied one function further in.
+
+    Structural rather than a fifth denylisted entry point: any future stdlib
+    walker that recurses over dataclass fields hits the same wall, because the
+    map is no longer a shape such a walker knows how to descend into.
+
+    ``__getstate__`` and ``__setstate__`` are refused too, and that was not an
+    afterthought: a ``slots=True`` dataclass **generates** ``__getstate__``, so
+    enumerating ``__copy__``/``__deepcopy__``/``__reduce__`` left the one member
+    of the family CPython writes for you, and an audit read the whole twenty-pair
+    map out of ``ProofResult().__getstate__()[9]`` — two plain stdlib calls, no
+    hostile object, no private name.
+
+    Two routes remain and are stated rather than claimed away: ``dict(vault)``
+    for a caller that already holds the private attribute, and
+    ``gc.get_referents(result)``, which reaches every attribute of every object
+    and cannot be refused at the language level. The disclosed limit of this
+    package is "reaching past the public surface is not stopped"; pretending
+    otherwise is the kind of claim these audits keep falsifying.
+    """
+
+    __slots__ = ("_by_pair", "__weakref__")
+
+    def __init__(self, by_pair: Mapping[str, _ArtifactIdentity]) -> None:
+        self._by_pair: dict[str, _ArtifactIdentity] = dict(by_pair)
+
+    def __getitem__(self, pair: str) -> _ArtifactIdentity:
+        return self._by_pair[pair]
+
+    def __iter__(self) -> Iterator[str]:
+        return iter(self._by_pair)
+
+    def __len__(self) -> int:
+        return len(self._by_pair)
+
+    def __repr__(self) -> str:
+        return f"<{type(self).__name__}: {len(self._by_pair)} artifact identities, withheld>"
+
+    def _refuse_copy(self, *_args: Any) -> Any:
+        raise ProofNotUsableError(
+            "the proof's per-artifact identity is reachable only through "
+            "open_for_consumption(); copying the record republishes every artifact's digest "
+            "and byte size with no W3 re-verification, which is the precondition of use it "
+            "exists to enforce"
+        )
+
+    __copy__ = _refuse_copy
+    __deepcopy__ = _refuse_copy
+    __reduce__ = _refuse_copy
 
 
 class _ProofConstructionToken:
@@ -803,20 +1181,6 @@ class _ProofConstructionToken:
         self.spent = False
 
 
-def _refuse_reconstruction(self: Any, *_args: Any) -> None:
-    """Refuse ``copy.copy`` / ``copy.deepcopy`` / ``pickle`` (N-5).
-
-    Each protocol reconstructs the instance without ``__post_init__``, where the
-    one-shot construction token is spent, so each was a free re-mint of a record
-    whose whole meaning is that a particular evaluation ran once.
-    """
-    raise ProofConstructionError(
-        f"a {type(self).__name__} may not be copied, deep-copied or pickled; those protocols "
-        "rebuild the record without spending a construction token, so the copy would assert an "
-        "evaluation that never ran"
-    )
-
-
 _PROOF_RESULT_PURPOSE: Final[str] = "ProofResult"
 _APPROVAL_PURPOSE: Final[str] = "ConsumptionApproval"
 
@@ -830,7 +1194,8 @@ def _spend(token: Any, *, purpose: str, what: str, minted_by: str) -> None:
     token.spent = True
 
 
-@dataclass(frozen=True, slots=True)
+@seal(error=ProofConstructionError)
+@dataclass(frozen=True, slots=True, weakref_slot=True)
 class ProofResult:
     """The four-limb evaluation over caller-supplied records — not a byte-level claim.
 
@@ -857,7 +1222,11 @@ class ProofResult:
     bytes_measured: int
     inventory_digest: str
     calendar_digest: str
-    _identity: Mapping[str, _ArtifactIdentity] = field(repr=False, compare=False)
+    #: FB-6: an `_IdentityVault`, not a plain mapping — see that class. The
+    #: annotation is the type `evaluate_four_limbs` mints; `open_for_consumption`
+    #: still validates what it finds here, because `object.__setattr__` can
+    #: replace it with anything.
+    _identity: _IdentityVault = field(repr=False, compare=False)
     _construction_token: Any = field(default=None, repr=False, compare=False)
 
     def __post_init__(self) -> None:
@@ -868,13 +1237,11 @@ class ProofResult:
             minted_by="evaluate_four_limbs",
         )
         object.__setattr__(self, "_construction_token", None)
-
-    __copy__ = _refuse_reconstruction
-    __deepcopy__ = _refuse_reconstruction
-    __reduce__ = _refuse_reconstruction
+        register_minted(self)
 
 
-@dataclass(frozen=True, slots=True)
+@seal(error=ProofConstructionError)
+@dataclass(frozen=True, slots=True, weakref_slot=True)
 class ConsumptionApproval:
     """The W3 re-verification result, and the only route to the proof's identity.
 
@@ -903,10 +1270,7 @@ class ConsumptionApproval:
             minted_by="open_for_consumption",
         )
         object.__setattr__(self, "_construction_token", None)
-
-    __copy__ = _refuse_reconstruction
-    __deepcopy__ = _refuse_reconstruction
-    __reduce__ = _refuse_reconstruction
+        register_minted(self)
 
 
 # ---------------------------------------------------------------------------
@@ -915,8 +1279,21 @@ class ConsumptionApproval:
 
 
 def is_declaration_only(token: Any) -> bool:
-    """True iff ``token`` rests on caller-declared metadata."""
-    return token in DECLARATION_ONLY_TOKENS
+    """True iff ``token`` rests on caller-declared metadata.
+
+    FB-5 family: ``in`` against a ``frozenset`` is answered by the caller's own
+    ``__hash__`` and ``__eq__``, so the character data is read first. A
+    non-``str`` is not a token in this closed vocabulary, so it is not
+    declaration-only either — and this is a predicate, not a guard, so it says
+    ``False`` rather than raising.
+    """
+    if not isinstance(token, str):
+        return False
+    try:
+        text = str.__str__(token)
+    except TypeError:
+        return False
+    return text in DECLARATION_ONLY_TOKENS
 
 
 def _pin_token(value: Any, *, what: str) -> str:
@@ -931,7 +1308,7 @@ def _pin_token(value: Any, *, what: str) -> str:
             f"{what} is a {type(value).__name__}, not a token string; the proof record was "
             "rewritten after construction"
         )
-    return str.__str__(value)
+    return _pin_text(value, what=what, error=ProofNotUsableError)
 
 
 def _pin_disclosure_count(value: Any, *, what: str) -> int:
@@ -991,7 +1368,8 @@ def _pin_declared_not_measured(value: Any) -> tuple[str, ...]:
     return pinned
 
 
-@dataclass(frozen=True, slots=True)
+@seal(error=ProofConstructionError)
+@dataclass(frozen=True, slots=True, weakref_slot=True)
 class _PinnedDisclosure:
     """The disclosure fields, read once as plain built-in character data (P-3).
 
@@ -1014,6 +1392,9 @@ class _PinnedDisclosure:
     files_opened: int
     bytes_measured: int
     inventory_digest: str
+
+    def __post_init__(self) -> None:
+        register_minted(self)
 
 
 def _assert_disclosure_untampered(result: ProofResult) -> _PinnedDisclosure:
@@ -1116,17 +1497,30 @@ def assert_byte_level_claim(token: Any) -> str:
     token that reaches a caller through this function still cannot reach an
     artifact.
     """
-    if token in DECLARATION_ONLY_TOKENS:
-        raise ProofPromotionError(
-            f"{token!r} rests on caller-declared metadata "
-            f"({TOKEN_EVIDENTIARY_BASIS[token]}) and can never be promoted to a "
-            "byte-level claim"
-        )
-    if token not in BYTE_LEVEL_CLAIM_TOKENS:
+    # FB-5, and the single most emphasised rule of this contract: both tests
+    # below are `in` against a `frozenset`, answered by the caller's own
+    # `__hash__`/`__eq__`. A `str` subclass whose real character data is the
+    # declaration-only token was handed straight back as an accepted byte-level
+    # claim, which is D-11's promotion prohibition defeated by the argument.
+    # Decide on the character data — and return the pinned value, not the
+    # caller's object, so what the caller goes on to write is what was checked
+    # (B-3 / P-3). For a plain `str` this is the same object.
+    if not isinstance(token, str):
         raise ProofContractError(
             f"{token!r} is not a byte-level claim token in the closed vocabulary"
         )
-    return token
+    text = _pin_text(token, what="byte-level claim token", error=ProofContractError)
+    if text in DECLARATION_ONLY_TOKENS:
+        raise ProofPromotionError(
+            f"{text!r} rests on caller-declared metadata "
+            f"({TOKEN_EVIDENTIARY_BASIS[text]}) and can never be promoted to a "
+            "byte-level claim"
+        )
+    if text not in BYTE_LEVEL_CLAIM_TOKENS:
+        raise ProofContractError(
+            f"{text!r} is not a byte-level claim token in the closed vocabulary"
+        )
+    return text
 
 
 # `current_byte_level_proof_status()` used to live here and returned
@@ -1139,8 +1533,21 @@ def assert_byte_level_claim(token: Any) -> str:
 
 
 def refuse_raw_source_rehash(subject: Any) -> None:
-    """Refuse any request to hash raw source bytes (D-4.1, D-4.7, §12.11)."""
-    if subject != SUBJECT_DERIVED_M15_ARTIFACT:
+    """Refuse any request to hash raw source bytes (D-4.1, D-4.7, §12.11).
+
+    FB-5: the dedicated D-4 guard **allowed** an object whose real character
+    data was ``RAW_M1_SOURCE_BYTES``, because ``!=`` asked that object whether
+    it should be refused, while the identical plain string was correctly
+    refused. A non-``str`` is refused outright: the only admissible subject is
+    one fixed string constant, so anything that merely *compares* equal to it is
+    not it.
+    """
+    if isinstance(subject, str):
+        subject = _pin_text(subject, what="hash subject", error=RawSourceRehashForbiddenError)
+        admissible = subject == SUBJECT_DERIVED_M15_ARTIFACT
+    else:
+        admissible = False
+    if not admissible:
         raise RawSourceRehashForbiddenError(
             f"refusing to hash {subject!r}: hashing is a byte read, unapproved raw source "
             "bytes are not read for checksum purposes, and the dead-window content of a raw "
@@ -1181,6 +1588,13 @@ def assert_measured_conjunction(name: str, per_pair: Any) -> bool:
     ``design_m15_inventory.json`` has been checked by this package, and must not
     be cited as such.
     """
+    # FB-5 family: `in` against a tuple of committed spellings is decided by the
+    # caller's own `__eq__`, so the name is read as character data first.
+    name = (
+        _pin_text(name, what="aggregate assertion name", error=AggregateAssertionUnsatisfiedError)
+        if isinstance(name, str)
+        else name
+    )
     if name not in AGGREGATE_ASSERTIONS:
         raise AggregateAssertionUnsatisfiedError(
             f"{name!r} is not one of the committed aggregate assertions {AGGREGATE_ASSERTIONS}"
@@ -1190,7 +1604,28 @@ def assert_measured_conjunction(name: str, per_pair: Any) -> bool:
             f"aggregate assertion {name!r} needs a per-pair measurement mapping, got "
             f"{type(per_pair).__name__}; a declared count is not a measurement"
         )
-    snapshot = dict(per_pair)
+    # The FB-5 family again, one level out: `pair not in snapshot` and
+    # `snapshot[pair]` are answered by the KEY's `__hash__`/`__eq__`, so a
+    # mapping keyed by objects whose real character data is
+    # `PAIR_NEVER_MEASURED_0..19` satisfied D-8's "a measurement for every pair
+    # in PAIRS_20". The name argument was pinned above and the keys were not.
+    # Rebuild the mapping on pinned string keys before any lookup.
+    snapshot: dict[str, Any] = {}
+    for raw_key, raw_value in dict(per_pair).items():
+        if not isinstance(raw_key, str):
+            raise AggregateAssertionUnsatisfiedError(
+                f"aggregate assertion {name!r} is keyed by a {type(raw_key).__name__}; "
+                "a per-pair measurement mapping is keyed by pair names"
+            )
+        pinned_key = _pin_text(
+            raw_key, what="per-pair key", error=AggregateAssertionUnsatisfiedError
+        )
+        if pinned_key in snapshot:
+            raise AggregateAssertionUnsatisfiedError(
+                f"aggregate assertion {name!r} names {pinned_key} twice; two keys that render "
+                "differently but hold one pair's character data are one measurement, not two"
+            )
+        snapshot[pinned_key] = raw_value
     for pair in PAIRS_20:
         if pair not in snapshot or snapshot[pair] is None:
             raise AggregateAssertionUnsatisfiedError(
@@ -1217,6 +1652,26 @@ def assert_measured_conjunction(name: str, per_pair: Any) -> bool:
 
 
 def _measurement_roster(records: Any, *, role: str) -> dict[str, MeasurementRecord]:
+    """Every admissible producer/verifier record for one role, keyed by pair.
+
+    **FR-3 — this is where twenty forgeries were accepted.** ``object.__new__``
+    bypasses ``__post_init__`` outright, so a ``MeasurementRecord`` carrying
+    ``subject='RAW_M1_SOURCE_BYTES'``, ``size_bytes=-1``, a reversed span and
+    ``dead_window_bars_by_bucket_start=7`` satisfied every ``isinstance`` here
+    while no field check had ever run on it. :func:`_assert_minted` closes that
+    route, and it is the only thing that can: no ``__new__`` override can
+    intercept ``object.__new__``, so the difference between a record and a
+    forgery is not visible on the object — only in the registry.
+
+    **And the registry is not sufficient either.** ``object.__setattr__`` on a
+    *genuine* record is this package's declared, unclosed threat model, and a
+    record rewritten that way is still registered. So the two fields that decide
+    a contract rule at this boundary — the D-4 subject and the producer/verifier
+    role — are re-read here as plain character data, the same "re-check rather
+    than inherit" the CV limb and the disclosure re-check already apply. Type,
+    registration and re-check are three independent limbs; none of them is
+    claimed to be the whole guard.
+    """
     if records is None:
         raise ProofLimbAbsentError(
             f"no {role} measurement records supplied; the BI limb cannot be evaluated"
@@ -1242,16 +1697,28 @@ def _measurement_roster(records: Any, *, role: str) -> dict[str, MeasurementReco
                 f"{role} record {index} is a {type(item).__name__}, not a MeasurementRecord; "
                 "only evidence measured from the artifact's own bytes is admissible"
             )
-        if item.role != role:
+        _assert_minted(item, what=f"{role} record {index}")
+        _assert_not_refuted(item, what=f"{role} record {index}")
+        # D-4 at the consumer boundary, on the character data: the dedicated
+        # guard is called rather than the check being re-typed here, so the two
+        # cannot drift apart.
+        refuse_raw_source_rehash(item.subject)
+        item_role = _pin_text(
+            item.role, what=f"{role} record {index} role", error=ProofContractError
+        )
+        if item_role != role:
             raise ProofContractError(
-                f"record {index} declares role {item.role!r} in the {role} record set"
+                f"record {index} declares role {item_role!r} in the {role} record set"
             )
-        if item.pair in by_pair:
+        item_pair = _pin_text(
+            item.pair, what=f"{role} record {index} pair", error=ProofContractError
+        )
+        if item_pair in by_pair:
             raise ProofContractError(
-                f"{role}: {item.pair} is measured twice; after canonicalisation each pair is "
+                f"{role}: {item_pair} is measured twice; after canonicalisation each pair is "
                 "measured exactly once"
             )
-        by_pair[item.pair] = item
+        by_pair[item_pair] = item
 
     # One pass over one byte stream measured one artifact, so two records citing
     # the same pass are describing the same file twice. Without this a single
@@ -1259,20 +1726,25 @@ def _measurement_roster(records: Any, *, role: str) -> dict[str, MeasurementReco
     passes: dict[tuple[str, int], str] = {}
     staged: dict[str, str] = {}
     for pair, item in by_pair.items():
-        key = (item.digest_provenance.stream_id, item.digest_provenance.pass_index)
+        key = _pin_pass(item.digest_provenance, what=f"{role} {pair} digest")
         if key in passes:
             raise ProofCoMeasurementError(
                 f"{role}: {pair} and {passes[key]} both cite byte-stream pass {key[0]!r} "
                 f"#{key[1]}; one pass over one byte stream measures one artifact"
             )
         passes[key] = pair
-        if item.staged_artifact_id in staged:
+        staged_id = _pin_text(
+            item.staged_artifact_id,
+            what=f"{role} {pair} staged_artifact_id",
+            error=ProofContractError,
+        )
+        if staged_id in staged:
             raise ProofContractError(
-                f"{role}: {pair} and {staged[item.staged_artifact_id]} were both hashed under "
-                f"the staging name {item.staged_artifact_id!r}; twenty files means twenty "
+                f"{role}: {pair} and {staged[staged_id]} were both hashed under "
+                f"the staging name {staged_id!r}; twenty files means twenty "
                 "staging identities"
             )
-        staged[item.staged_artifact_id] = pair
+        staged[staged_id] = pair
     return by_pair
 
 
@@ -1293,10 +1765,13 @@ _AGREEING_FIELDS: Final[tuple[str, ...]] = (
 def assert_records_agree(producer: Any, verifier: Any) -> None:
     """Producer and an independent verifier must agree field-by-field (D-11).
 
-    Any disagreement is fail-closed and terminal. A **digest match with a scalar
-    mismatch is the more alarming case**: identical bytes yielding different
-    measured quantities means a derivation is wrong, not that a file moved, so it
-    is reported separately rather than folded into a generic mismatch.
+    Any disagreement is fail-closed, and terminal for the two records it was
+    pronounced over — see :class:`ProofDisagreementError` for exactly how far
+    "terminal" reaches in a layer that holds no persistent state (FR-11). A
+    **digest match with a scalar mismatch is the more alarming case**: identical
+    bytes yielding different measured quantities means a derivation is wrong, not
+    that a file moved, so it is reported separately rather than folded into a
+    generic mismatch.
 
     **How far "independent" is checkable here** (:data:`VERIFIER_INDEPENDENCE_LIMIT`).
     The old test was ``producer.digest_provenance != verifier.digest_provenance``,
@@ -1320,26 +1795,40 @@ def assert_records_agree(producer: Any, verifier: Any) -> None:
         raise ProofPromotionError(
             "agreement is only defined between two MeasurementRecords measured from bytes"
         )
-    if producer.role != ROLE_PRODUCER or verifier.role != ROLE_VERIFIER:
+    _assert_minted(producer, what="the producer measurement record")
+    _assert_minted(verifier, what="the verifier measurement record")
+    _assert_not_refuted(producer, what="the producer measurement record")
+    _assert_not_refuted(verifier, what="the verifier measurement record")
+    producer_role = _pin_text(producer.role, what="producer record role", error=ProofContractError)
+    verifier_role = _pin_text(verifier.role, what="verifier record role", error=ProofContractError)
+    if producer_role != ROLE_PRODUCER or verifier_role != ROLE_VERIFIER:
         raise ProofContractError(
             f"agreement needs one {ROLE_PRODUCER} and one {ROLE_VERIFIER} record, got "
-            f"{producer.role!r} and {verifier.role!r}"
+            f"{producer_role!r} and {verifier_role!r}"
         )
     if producer.pair != verifier.pair:
-        raise ProofDisagreementError(
-            f"producer measured {producer.pair} while the verifier measured {verifier.pair}"
+        raise _refute(
+            f"producer measured {producer.pair} while the verifier measured {verifier.pair}",
+            producer,
+            verifier,
         )
-    if producer.digest_provenance.stream_id == verifier.digest_provenance.stream_id:
+    producer_stream, _ = _pin_pass(producer.digest_provenance, what="producer digest")
+    verifier_stream, _ = _pin_pass(verifier.digest_provenance, what="verifier digest")
+    if producer_stream == verifier_stream:
         raise ProofContractError(
             f"{producer.pair}: the verifier cites the producer's own byte-stream pass; a "
             "verifier re-measures independently rather than replaying the producer's read"
         )
-    if producer.digest_provenance.artifact_id != verifier.digest_provenance.artifact_id:
-        raise ProofDisagreementError(
+    producer_artifact = _pin_artifact_id(producer.digest_provenance, what="producer digest pass")
+    verifier_artifact = _pin_artifact_id(verifier.digest_provenance, what="verifier digest pass")
+    if producer_artifact != verifier_artifact:
+        raise _refute(
             f"{producer.pair}: the verifier's pass names artifact "
             f"{verifier.digest_provenance.artifact_id!r} while the producer's names "
             f"{producer.digest_provenance.artifact_id!r}; an independent verifier re-reads the "
-            "same artifact, not a different one"
+            "same artifact, not a different one",
+            producer,
+            verifier,
         )
 
     scalar_mismatches = [
@@ -1347,15 +1836,19 @@ def assert_records_agree(producer: Any, verifier: Any) -> None:
     ]
     if producer.sha256 == verifier.sha256:
         if scalar_mismatches:
-            raise ProofDisagreementError(
+            raise _refute(
                 f"{producer.pair}: producer and verifier agree on the digest but disagree on "
                 f"{scalar_mismatches}; identical bytes yielding different measurements means a "
-                "derivation is wrong — terminal"
+                "derivation is wrong — terminal",
+                producer,
+                verifier,
             )
         return
-    raise ProofDisagreementError(
+    raise _refute(
         f"{producer.pair}: producer digest {producer.sha256} != verifier digest "
-        f"{verifier.sha256}; the two reads did not see the same artifact — terminal"
+        f"{verifier.sha256}; the two reads did not see the same artifact — terminal",
+        producer,
+        verifier,
     )
 
 
@@ -1421,11 +1914,12 @@ def _limb_tc(records: Mapping[str, MeasurementRecord]) -> None:
             record.dead_window_bars_by_bucket_start
             != record.dead_window_bars_by_contributing_minute
         ):
-            raise ProofDisagreementError(
+            raise _refute(
                 f"TC limb: {pair} counts {record.dead_window_bars_by_bucket_start} dead-window "
                 f"bar(s) by bucket start and {record.dead_window_bars_by_contributing_minute} by "
                 "contributing source minute; the two definitions diverging means the bucketing "
-                "is wrong — terminal"
+                "is wrong — terminal",
+                record,
             )
         if record.dead_window_bars_by_bucket_start:
             raise ProofLimbUnsatisfiedError(
@@ -1445,13 +1939,28 @@ def _limb_cv(coverage_result: Any, records: Mapping[str, MeasurementRecord]) -> 
     CV and BI/TC used to constrain **disjoint** evidence: coverage decided over a
     slot set while BI and TC decided over a byte scan, and nothing said the two
     described the same artifact — a pair could certify one M15 slot beside a
-    ``bars_scanned=50_000`` measurement. Binding the certified slot count to the
-    scanned bar count is what makes the four limbs one proof rather than four
-    unrelated checks, and it is arithmetic rather than a threshold: each
-    certified slot is one bar of the scanned artifact, with no duplicate
-    (:class:`~scripts.m15_gate3a.coverage.CoverageSetMismatchError`) and no
-    uncertifiable bar
+    ``bars_scanned=50_000`` measurement. The certified slot count is bound to
+    the scanned bar count here, and the binding is arithmetic rather than a
+    threshold: each certified slot is one bar of the scanned artifact, with no
+    duplicate (:class:`~scripts.m15_gate3a.coverage.CoverageSetMismatchError`)
+    and no uncertifiable bar
     (:class:`~scripts.m15_gate3a.coverage.BarNotCertifiableError`).
+
+    **FR-4 - the binding is by cardinality AND by span.** It used to be by
+    cardinality alone, so two evidence sets of equal size over unrelated spans
+    satisfied one proof. ``PairCoverage`` now carries ``certified_slot_min`` and
+    ``certified_slot_max``, and both endpoints are compared against the byte
+    scan's measured span below, each raising separately so the message says which
+    end disagreed. Both sides are read through :func:`_pin_instant`, because a
+    ``datetime`` subclass can answer ``!=`` for itself.
+
+    Stated exactly, because this is a narrowing and not a closure: binding the
+    two **endpoints** does not bind the **set**. Two certified sets with the same
+    cardinality and the same first and last slot remain indistinguishable to this
+    limb, and will stay so until a measurement record publishes the scanned bar
+    set or a digest of it - a producer/verifier concern at gate 4 (§15.4), not
+    something this side of the boundary can derive.
+
     """
     if coverage_result is None:
         raise ProofLimbAbsentError(
@@ -1463,10 +1972,35 @@ def _limb_cv(coverage_result: Any, records: Mapping[str, MeasurementRecord]) -> 
             f"CV limb: expected a measured CoverageResult, got {type(coverage_result).__name__}; "
             "a pair count is not coverage evidence"
         )
+    _assert_minted(coverage_result, what="the CV limb's CoverageResult")
     # A CoverageResult is minted only by `assert_full_coverage`, but a frozen
     # dataclass is not sealed — `object.__setattr__` rewrites `per_pair` on a
     # real one. The roster is re-checked here rather than inherited on trust.
-    covered = {entry.pair: entry for entry in coverage_result.per_pair}
+    #
+    # Set equality, and a duplicate is a defect rather than a longer roster: a
+    # dict comprehension over `entry.pair` silently let a second entry for an
+    # already-certified pair *replace* the first, so a 21st `PairCoverage` was
+    # absorbed whenever it re-used a canonical name. Each pair is keyed on its
+    # plain character data (FB-5 family: a two-faced `pair` would answer two
+    # different keys) and may appear exactly once.
+    covered: dict[str, PairCoverage] = {}
+    for index, entry in enumerate(coverage_result.per_pair):
+        if not isinstance(entry, PairCoverage):
+            raise ProofLimbUnsatisfiedError(
+                f"CV limb: coverage entry {index} is a {type(entry).__name__}, not a "
+                "PairCoverage; the per-pair verdicts are what set equality was decided over"
+            )
+        entry_pair = _pin_text(
+            entry.pair,
+            what=f"CV limb: coverage entry {index} pair",
+            error=ProofLimbUnsatisfiedError,
+        )
+        if entry_pair in covered:
+            raise ProofLimbUnsatisfiedError(
+                f"CV limb: coverage certifies {entry_pair} twice; each pair is certified exactly "
+                "once, and a second entry would silently replace the first"
+            )
+        covered[entry_pair] = entry
     if sorted(covered) != sorted(PAIRS_20):
         raise ProofLimbUnsatisfiedError(
             f"CV limb: coverage was certified for {sorted(covered)}, which is not the canonical "
@@ -1475,11 +2009,57 @@ def _limb_cv(coverage_result: Any, records: Mapping[str, MeasurementRecord]) -> 
     for pair in PAIRS_20:
         entry = covered[pair]
         scanned = records[pair].bars_scanned
-        if entry.certified_slot_count != scanned:
+        try:
+            certified_slot_count = pin_int(
+                entry.certified_slot_count, what=f"CV limb: {pair} certified_slot_count"
+            )
+        except NumericAuthorityError as exc:
             raise ProofLimbUnsatisfiedError(
-                f"CV limb: {pair} certifies {entry.certified_slot_count} M15 slot(s) while the "
+                f"CV limb: {pair} certified slot count is not a plain integer ({exc}); a count "
+                "that answers a comparison for itself is not a measurement"
+            ) from exc
+        if certified_slot_count != scanned:
+            raise ProofLimbUnsatisfiedError(
+                f"CV limb: {pair} certifies {certified_slot_count} M15 slot(s) while the "
                 f"full byte scan counted {scanned} bar(s); the coverage evidence and the scanned "
                 "artifact are not describing the same file"
+            )
+        # FR-4: the count binding above says *how many*, never *which*. The audit
+        # satisfied the whole four-limb conjunction with coverage certified for
+        # 2025-05-01 beside a byte scan measured over 2025-12-01 — same
+        # cardinality, different months. `PairCoverage` now publishes the span of
+        # the set the equality limbs certified, so the two can be required to
+        # describe the same stretch of time as well as the same number of bars.
+        #
+        # This is a comparison of two *measured* quantities, not a threshold: no
+        # number is minted, and D-5.8's prohibition on count-shaped acceptance
+        # criteria is untouched — indeed this is the binding a count could never
+        # provide.
+        record = records[pair]
+        # Pinned, not compared raw. `PairCoverage` is publicly constructible and
+        # performs no validation, and `object.__setattr__` on a genuine
+        # `CoverageResult.per_pair` is this module's declared threat model — the
+        # same reason `certified_slot_count` sixteen lines above goes through
+        # `pin_int`. An audit answered both comparisons with a lying `datetime`
+        # subclass and had a proof accept a certified span three years from the
+        # one the byte scan measured.
+        certified_min = _pin_instant(entry.certified_slot_min, what=f"{pair} certified_slot_min")
+        certified_max = _pin_instant(entry.certified_slot_max, what=f"{pair} certified_slot_max")
+        measured_min = _pin_instant(record.measured_ts_min, what=f"{pair} measured_ts_min")
+        measured_max = _pin_instant(record.measured_ts_max, what=f"{pair} measured_ts_max")
+        if certified_min != measured_min:
+            raise ProofLimbUnsatisfiedError(
+                f"CV limb: {pair} certifies slots from "
+                f"{certified_min.isoformat()} while the full byte scan measured "
+                f"from {measured_min.isoformat()}; equal bar counts over different "
+                "spans are two unrelated measurements, not one proof"
+            )
+        if certified_max != measured_max:
+            raise ProofLimbUnsatisfiedError(
+                f"CV limb: {pair} certifies slots to "
+                f"{certified_max.isoformat()} while the full byte scan measured "
+                f"to {measured_max.isoformat()}; equal bar counts over different "
+                "spans are two unrelated measurements, not one proof"
             )
     return coverage_result
 
@@ -1505,6 +2085,7 @@ def _limb_db(bindings: Any, records: Mapping[str, MeasurementRecord]) -> None:
             raise ProofLimbUnsatisfiedError(
                 f"DB limb: binding {index} is a {type(item).__name__}, not a DerivationBinding"
             )
+        _assert_minted(item, what=f"derivation binding {index}")
         if item.pair in by_pair:
             raise ProofLimbUnsatisfiedError(f"DB limb: {item.pair} is bound twice")
         by_pair[item.pair] = item
@@ -1579,20 +2160,25 @@ def evaluate_four_limbs(
         bytes_measured=0,
         inventory_digest=_require_hex_digest(inventory_digest, what="inventory_digest"),
         calendar_digest=_require_content_digest(coverage.calendar_digest, what="calendar_digest"),
-        _identity={
-            p: _ArtifactIdentity(
-                artifact_id=producers[p].artifact_id,
-                sha256=producers[p].sha256,
-                size_bytes=producers[p].size_bytes,
-                measured_stream_ids=frozenset(
-                    {
-                        producers[p].digest_provenance.stream_id,
-                        verifiers[p].digest_provenance.stream_id,
-                    }
-                ),
-            )
-            for p in PAIRS_20
-        },
+        # FB-6: an `_IdentityVault`, not a plain dict — `dataclasses.asdict` and
+        # `astuple` recurse over dataclass fields and republished the whole map
+        # with `open_for_consumption` never called.
+        _identity=_IdentityVault(
+            {
+                p: _ArtifactIdentity(
+                    artifact_id=producers[p].artifact_id,
+                    sha256=producers[p].sha256,
+                    size_bytes=producers[p].size_bytes,
+                    measured_stream_ids=frozenset(
+                        {
+                            producers[p].digest_provenance.stream_id,
+                            verifiers[p].digest_provenance.stream_id,
+                        }
+                    ),
+                )
+                for p in PAIRS_20
+            }
+        ),
         _construction_token=_ProofConstructionToken(_PROOF_RESULT_PURPOSE),
     )
 
@@ -1611,6 +2197,18 @@ def open_for_consumption(result: Any, *, consumer_rechecks: Any) -> ConsumptionA
     set raises rather than being read as "nothing to check". It is also the only
     route to the proof's per-artifact identity: while that map was public a
     consumer could read the digests off the result and skip this call entirely.
+
+    **FB-6 — that last sentence was false while the map was an ordinary
+    ``dict`` under an underscore-prefixed field name.**
+    :func:`dataclasses.asdict` and :func:`dataclasses.astuple` recurse over
+    dataclass fields themselves and never consult ``__copy__``,
+    ``__deepcopy__`` or ``__reduce__``, so one plain stdlib call — no hostile
+    object, no private name — rebuilt all twenty identities with this function
+    never called, and W3's "precondition of use" was enforced by nothing. The
+    field now holds an :class:`_IdentityVault`, which both walkers reach only
+    through :func:`copy.deepcopy` and which refuses it. What remains open, and
+    is disclosed rather than claimed away, is direct access to the private
+    attribute.
 
     **N-2 — the disclosure fields are re-checked, not copied.** An earlier
     revision argued here that "re-reading fields the constructor already
@@ -1639,7 +2237,25 @@ def open_for_consumption(result: Any, *, consumer_rechecks: Any) -> ConsumptionA
         raise ProofNotUsableError(
             f"consumption requires an evaluated ProofResult, got {type(result).__name__}"
         )
-    disclosure = _assert_disclosure_untampered(result)
+    _assert_not_refuted(result, what="this proof result")
+    try:
+        disclosure = _assert_disclosure_untampered(result)
+    except ProofContractError:
+        raise
+    except Exception as exc:
+        # A result built by `object.__new__` has unset slots, so reading a
+        # disclosure field off it raises `AttributeError` rather than this
+        # module's documented type (the RF-29 class).
+        raise ProofNotUsableError(
+            f"the proof record's disclosure fields could not be read "
+            f"({type(exc).__name__}: {exc}); a record whose fields were never assigned asserts "
+            "an evaluation that never ran"
+        ) from exc
+    # FR-3, deliberately **after** the disclosure re-check: that check owns the
+    # diagnosis of a field rewritten after construction and must speak first,
+    # by name, about which field. What is left for the registry is the record
+    # that was never constructed at all.
+    _assert_minted(result, what="the ProofResult offered for consumption")
     if consumer_rechecks is None:
         raise ProofNotUsableError(
             "no consumer re-verification supplied; a proof that has not been re-verified "
@@ -1665,6 +2281,14 @@ def open_for_consumption(result: Any, *, consumer_rechecks: Any) -> ConsumptionA
                 f"consumer re-verification {index} is a {type(item).__name__}, not a "
                 "ConsumerRecheck"
             )
+        _assert_minted(item, what=f"consumer re-verification {index}")
+        # `_refute` condemns the recheck it was pronounced over, and nothing read
+        # that mark: an audit refuted a proof, minted a fresh one from the same
+        # evidence, re-offered the very same recheck objects, and consumption
+        # succeeded. §11 says the evidence a refutation was pronounced over is
+        # dead — either the ledger entry means that or `_refute` should not be
+        # writing it.
+        _assert_not_refuted(item, what=f"consumer re-verification {index}")
         if item.pair in by_pair:
             raise ProofNotUsableError(f"{item.pair} is re-verified twice")
         by_pair[item.pair] = item
@@ -1690,11 +2314,14 @@ def open_for_consumption(result: Any, *, consumer_rechecks: Any) -> ConsumptionA
                 f"{pair}: the proof's identity entry is a {type(identity).__name__}, not the "
                 "record evaluate_four_limbs built; the proof was rewritten after construction"
             )
+        _assert_minted(identity, what=f"{pair}: the proof's identity entry")
         verified[pair] = identity
         if recheck.artifact_id != identity.artifact_id:
-            raise ProofDisagreementError(
+            raise _refute(
                 f"{pair}: consumer re-verified artifact {recheck.artifact_id!r} but the proof "
-                f"was made about {identity.artifact_id!r}"
+                f"was made about {identity.artifact_id!r}",
+                result,
+                recheck,
             )
         # The recheck carried a provenance that nothing ever compared, so the
         # producer's own read satisfied W3 by being handed back verbatim. A
@@ -1707,14 +2334,18 @@ def open_for_consumption(result: Any, *, consumer_rechecks: Any) -> ConsumptionA
                 "producer's or the verifier's"
             )
         if recheck.sha256 != identity.sha256:
-            raise ProofDisagreementError(
+            raise _refute(
                 f"{pair}: the artifact digest changed between the proof ({identity.sha256}) and "
-                f"consumption ({recheck.sha256}) — terminal"
+                f"consumption ({recheck.sha256}) — terminal",
+                result,
+                recheck,
             )
         if recheck.size_bytes != identity.size_bytes:
-            raise ProofDisagreementError(
+            raise _refute(
                 f"{pair}: the artifact byte size changed between the proof "
-                f"({identity.size_bytes}) and consumption ({recheck.size_bytes}) — terminal"
+                f"({identity.size_bytes}) and consumption ({recheck.size_bytes}) — terminal",
+                result,
+                recheck,
             )
     # P-3: every disclosure field published here is the value
     # `_assert_disclosure_untampered` pinned and checked, never the object it was

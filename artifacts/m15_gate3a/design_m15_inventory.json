@@ -9,10 +9,17 @@
     "sha256": "64-hex of the derived M15 file bytes",
     "size_bytes": "positive int",
     "row_count": "positive int (complete + incomplete buckets)",
-    "eligible_event_count": "count of n_source_bars==15 buckets",
+    "complete_bucket_count": "count of n_source_bars==15 buckets",
     "ts_min_utc": ">= 2025-04-25T00:00:00Z",
     "ts_max_utc": "<= 2026-02-28T23:59:59Z",
-    "gap_report": {"missing_minute_count": "int", "max_gap_minutes": "int"},
+    "minute_accounting": {
+      "expected_source_minute_count": "int; minutes the approved calendar artifact says should exist for this pair in the certified span",
+      "observed_source_minute_count": "int; minutes for which a source record existed",
+      "absent_source_minute_count": "int; expected by the calendar, not present in the source",
+      "rejected_source_minute_count": "int; present in the source but not usable, because it violated a contract",
+      "usable_source_minute_count": "int; canonical, distinct minutes admissible to aggregation",
+      "max_unavailable_gap_minutes": "int; longest run of consecutive expected-but-not-usable minutes, measured against the expected calendar"
+    },
     "pip_size": "0.01 iff *_JPY else 0.0001"
   },
   "required_aggregate_assertions": {
@@ -21,5 +28,8 @@
     "all_ts_min_within_design_start": ">= 2025-04-25T00:00:00Z",
     "dead_window_bars_present": 0
   },
-  "scrub": {"raw_rows_committed": false, "metadata_only": true}
+  "scrub": {
+    "raw_rows_committed": false,
+    "metadata_only": true
+  }
 }

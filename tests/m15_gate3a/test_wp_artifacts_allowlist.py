@@ -51,12 +51,14 @@ from scripts.ml_step4.evidence import repo_root
 
 
 def _inventory_record(pair: str, index: int) -> dict[str, object]:
-    """One realistic populated per-file inventory record.
+    """One realistic populated per-file inventory record, in the §12.20 shape.
 
-    Eleven fields, six of them immediate numerics, plus the nested six-quantity
-    missing-minute block approved by the contract Gate-decision §5 (D-3). The
-    previous shape denylist refused this at six immediate numerics and refused it
-    again when the block was flattened (§12.25).
+    Nine fields, **four** of them immediate numerics, with the six-quantity
+    missing-minute block approved by the contract Gate-decision §5 (D-3) kept
+    **nested**. That is the shape PR #448 §5.5.4 fixes as the one that must scan
+    clean: `cost_hurdle_eligible_bar_count` and `raw_traded_event_count` are
+    pinned by §12.20 as *terms*, not as per-file fields, and adding them to the
+    record is a committed-schema change by human-reviewed diff (D-7).
     """
     return {
         "filename": f"candles_{pair}_M15_365d_BA_DESIGN.jsonl",
@@ -65,8 +67,6 @@ def _inventory_record(pair: str, index: int) -> dict[str, object]:
         "size_bytes": 4_812_345 + index,
         "row_count": 23_040,
         "complete_bucket_count": 21_500,
-        "cost_hurdle_eligible_bar_count": 18_003,
-        "raw_traded_event_count": 1_204,
         "pip_size": 0.01 if pair.endswith("_JPY") else 0.0001,
         "ts_min_utc": "2025-04-25T00:00:00Z",
         "ts_max_utc": "2026-02-28T23:45:00Z",
@@ -165,10 +165,24 @@ def test_b1a_row_records_are_refused_as_a_list_and_as_a_dict_of_dicts() -> None:
 
 
 def test_b1a_numeric_budget_discriminates_rather_than_refusing_everything() -> None:
-    """The same container shape below the budget is accepted (negative control)."""
-    small = {"per_file": {str(i): float(i) for i in range(100)}}
+    """The same container shape below the budget is accepted (negative control).
+
+    Every record here holds five immediate numerics — one under the §12.25 bound
+    — and none of them is a numeric *array*, so neither the shape rule, the
+    row-like heuristic nor the columnar heuristic can fire and stand in for the
+    cardinality budget under test. This payload isolates the budget.
+    """
+
+    def records(count: int) -> dict[str, object]:
+        return {
+            "per_file": {
+                str(i): {f"f{j}": float(i * 10 + j) for j in range(5)} for i in range(count)
+            }
+        }
+
+    small = records(20)
     assert scan_gate3a(small) == []
-    large = {"per_file": {str(i): float(i) for i in range(200)}}
+    large = records(25)
     assert "gate3a_numeric_cardinality_exceeded" in scan_gate3a(large)
 
 
@@ -280,8 +294,24 @@ def test_b1c_homoglyph_and_invisible_spellings_are_refused(label: str, spelling:
         assert_gate3a_clean({"result": spelling})
 
 
-def test_b1c_the_folding_does_not_refuse_unrelated_non_ascii() -> None:
-    assert scan_gate3a({"note": "市場 closure calendar — UTC only"}) == []
+@pytest.mark.parametrize(
+    "typography",
+    [
+        "closure calendar — UTC only",
+        "spread ≤ 0.5 pip · session partition",
+        "design span → forward epoch (no overlap)",
+        "±0 tolerance, 15° of freedom is not a thing",
+    ],
+)
+def test_b1c_the_folding_does_not_refuse_unrelated_non_ascii_typography(typography: str) -> None:
+    """FB-7's negative control: only non-ASCII **letters** are refused.
+
+    The em dash, the middle dot, the arrow, the plus-minus sign and the degree
+    sign are not letters, so the script restriction leaves ordinary typography
+    alone — which is what keeps it from being the mirror-image defect B-1
+    recorded, a scrubber that refuses what governance permits.
+    """
+    assert scan_gate3a({"note": typography}) == []
 
 
 # --------------------------------------------------------------------------
@@ -303,8 +333,16 @@ def test_b1_the_same_labels_are_refused_where_no_schema_declares_a_prohibition_l
         assert_gate3a_clean({"forbidden_labels": sorted(FORBIDDEN_STATUSES)})
 
 
-def test_b1_a_populated_twenty_record_inventory_is_accepted() -> None:
-    """§12.25: the continuation's own inventory must be writable before derivation."""
+def test_1225_a_populated_twenty_record_inventory_in_the_pinned_shape_is_accepted() -> None:
+    """§12.25 sentence 2, under the strict reading PR #448 §5.5 ruled.
+
+    Rewritten from ``test_b1_a_populated_twenty_record_inventory_is_accepted``,
+    which asserted ``immediate_numerics >= 6`` and pinned the reading the ruling
+    rejected. What sentence 2 requires writable is the **§12.20-conformant**
+    record — four immediate numerics with ``gap_report`` nested — and that is what
+    is asserted here, with the field count checked so the fixture cannot drift
+    into a shape the clause refuses without this test noticing.
+    """
     inventory = _populated_inventory()
     assert len(inventory["files"]) == len(PAIRS_20) == 20
     immediate_numerics = sum(
@@ -312,17 +350,10 @@ def test_b1_a_populated_twenty_record_inventory_is_accepted() -> None:
         for value in inventory["files"][0].values()
         if isinstance(value, (int, float)) and not isinstance(value, bool)
     )
-    assert immediate_numerics >= 6, "the shape §12.25 records as refused must be exercised"
+    assert immediate_numerics == 4
+    assert isinstance(inventory["files"][0]["gap_report"], dict)
     assert scan_gate3a(inventory) == []
     assert scan_gate3a(inventory, artifact="design_m15_inventory.json") == []
-
-
-def test_b1_a_flattened_gap_report_is_also_accepted() -> None:
-    """Nesting is no longer what decides admissibility — the key vocabulary is."""
-    inventory = _populated_inventory()
-    for record in inventory["files"]:
-        record.update(record.pop("gap_report"))
-    assert scan_gate3a(inventory) == []
 
 
 def test_b1_an_inventory_longer_than_the_frozen_roster_is_refused() -> None:
@@ -748,10 +779,20 @@ def test_the_declared_leaf_budget_is_enforced_at_its_derived_value() -> None:
     """``leaf-declared`` mutant: 1600 declared string leaves scanned clean."""
     schema = artifact_schema("design_m15_inventory")
     assert schema is not None
-    assert schema.max_leaves == len(PAIRS_20) * len(schema.allowed_keys) == 700
-    at_budget = {"artifact": "design_m15_inventory", "sha256": _nest(["ab" * 32] * 699)}
+    budget = schema.max_leaves
+    # Pinned to the derived VALUE, not to the expression that defines it. Writing
+    # `assert schema.max_leaves == len(PAIRS_20) * len(schema.allowed_keys)` makes
+    # the assertion the definition restated, so it can never fail and the drift
+    # pin is gone; an audit caught exactly that after the key set grew.
+    assert budget == 820, "the derived leaf budget moved; re-derive it deliberately"
+    assert budget == len(PAIRS_20) * len(schema.allowed_keys)
+    # Short leaves, so this measures the LEAF budget rather than the aggregate
+    # text budget: `"ab" * 32` x 820 is 52 450 characters, which the text
+    # aggregate refuses first and which would have made this test pass for the
+    # wrong reason.
+    at_budget = {"artifact": "design_m15_inventory", "sha256": _nest(["ab"] * (budget - 1))}
     assert scan_gate3a(at_budget) == []
-    over = {"artifact": "design_m15_inventory", "sha256": _nest(["ab" * 32] * 700)}
+    over = {"artifact": "design_m15_inventory", "sha256": _nest(["ab"] * budget)}
     assert "gate3a_leaf_cardinality_exceeded" in scan_gate3a(over)
 
 
@@ -801,7 +842,7 @@ def test_a_numeric_series_under_a_non_numeric_declared_key_is_reported() -> None
     """``B1-undeclared-numeric-off`` mutant: prices under ``status`` scanned clean."""
     smuggled = {"artifact": "design_m15_inventory", "status": [1.1005, 1.1006, 1.1007, 1.1008]}
     assert "gate3a_undeclared_numeric_field:status" in scan_gate3a(smuggled)
-    declared = {"artifact": "design_m15_inventory", "pip_size": [1.1005, 1.1006, 1.1007, 1.1008]}
+    declared = {"artifact": "design_m15_inventory", "pip_size": [0.0001, 0.01, 0.0001, 0.01]}
     assert scan_gate3a(declared) == []
 
 

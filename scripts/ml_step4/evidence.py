@@ -48,7 +48,20 @@ _GDRIVE_PATTERNS: Final[tuple[re.Pattern[str], ...]] = (
     re.compile(r"googleusercontent\.com", re.IGNORECASE),
 )
 _R2_PATTERNS: Final[tuple[re.Pattern[str], ...]] = (
-    re.compile(r"[a-z0-9]+\.r2\.cloudflarestorage\.com", re.IGNORECASE),
+    # FR-17: the leading `[a-z0-9]+` had no left boundary, so on a long
+    # alphanumeric run with no `.r2.` after it the engine retried the match
+    # from every position — quadratic. Measured on one run of "a":
+    # 2 000 chars 0.022s, 8 000 0.347s, 16 000 1.391s, 32 000 5.561s, and a
+    # 306 KB base64 value did not finish in 110s. This scanner is the
+    # mandatory gate in front of every artifact write, so the gatekeeper
+    # became the thing that never returns.
+    #
+    # The lookbehind admits only the *start* of a run as a match position,
+    # which makes it linear (0.0008s at 32 000) and changes no verdict: a
+    # bucket label is by definition the whole run before `.r2.`. Parity was
+    # checked over match, no-match, mixed case, embedded-in-URL, preceded-by
+    # -punctuation and trailing-context cases before the change.
+    re.compile(r"(?<![a-z0-9])[a-z0-9]+\.r2\.cloudflarestorage\.com", re.IGNORECASE),
     re.compile(r"\br2://", re.IGNORECASE),
 )
 # Environment-dump heuristic: 3+ SHELL-style VAR=value assignments in one string.
