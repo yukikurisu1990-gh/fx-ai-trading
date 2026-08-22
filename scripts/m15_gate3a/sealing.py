@@ -39,15 +39,20 @@ So this module does not add a fifth per-route guard. It closes the family:
 
 What this module deliberately does **not** claim
 ------------------------------------------------
-Python has no enforced privacy. A caller that reaches into this module's
-private names can mint a registration, and ``object.__setattr__`` still rewrites
-a field of a real record after the fact. **Those two routes remain open and are
+Python has no enforced privacy, and ``object.__setattr__`` still rewrites a
+field of a real record after the fact. **That route remains open and is
 disclosed rather than claimed away** — which is why every consumer still
 re-checks the invariants it depends on (``coverage.assert_full_coverage``
 re-scans the expected slot set for dead-window and design-epoch membership;
-``proof._limb_cv`` re-derives the roster) instead of trusting the type. Sealing
-raises the floor from "public API mints a forgery" to "you must reach into
-module privates", and says so.
+``proof._limb_cv`` re-derives the roster) instead of trusting the type.
+
+An earlier draft of this module said the remaining minting route was "reach into
+module privates". That was **false**: :func:`register_minted` is exported, so
+the route was one public call, and an internal audit walked it end to end to a
+satisfied four-limb proof over a calendar that never existed. The function now
+verifies its calling frame, so the remaining route is not a private name but a
+reconstructed code object — materially harder, and stated here rather than in a
+sentence that a reader would take as a guarantee.
 
 The registry holds **weak** references, so sealing a record costs no lifetime
 extension and a garbage-collected record cannot have its identity reused to
@@ -57,6 +62,7 @@ would have been wrong).
 
 from __future__ import annotations
 
+import sys
 from typing import Any
 from weakref import WeakValueDictionary
 
@@ -142,6 +148,16 @@ def seal[T: type](cls: T | None = None, *, error: type[Exception] = SealedRecord
     cls.__copy__ = _refuse_reconstruction  # type: ignore[attr-defined]
     cls.__deepcopy__ = _refuse_reconstruction  # type: ignore[attr-defined]
     cls.__reduce__ = _refuse_reconstruction  # type: ignore[attr-defined]
+    # `__getstate__` is the member of this family that a `slots=True` dataclass
+    # generates for itself. It is not reached through `__copy__`, `__deepcopy__`
+    # or `__reduce__`, so enumerating those three left it open: an internal audit
+    # called `ProofResult().__getstate__()` — two plain stdlib calls, no hostile
+    # object and no private name — and read the withheld twenty-pair identity
+    # map straight out of element 9, defeating the W3 re-verification precondition
+    # that `open_for_consumption` exists to enforce. Refusing the protocol itself
+    # is what closes the family rather than the printed payload.
+    cls.__getstate__ = _refuse_reconstruction  # type: ignore[attr-defined]
+    cls.__setstate__ = _refuse_reconstruction  # type: ignore[attr-defined]
 
     slots = getattr(cls, "__slots__", None)
     if slots is not None and "__weakref__" not in slots:
@@ -175,7 +191,35 @@ def register_minted(record: Any) -> None:
     construction check has passed — so a record that fails validation is never
     registered, and a record built by a route that skips ``__post_init__``
     (notably ``object.__new__``) is never registered either.
+
+    **The caller is verified, not trusted.** This function is exported, so
+    "registration happens only from ``__post_init__``" was a convention that any
+    caller could ignore: ``object.__new__`` a record, ``object.__setattr__`` its
+    fields, call ``register_minted`` — a public, documented name — and the
+    forgery authenticated. That is precisely the FR-3 route the registry exists
+    to close, and it made the registry a formality rather than a defence.
+
+    So the sanctioned path is checked structurally: the immediate calling frame
+    must be executing the code object of *this record's own class's*
+    ``__post_init__``. A forger cannot satisfy that without actually running the
+    real ``__post_init__``, which runs every construction check — at which point
+    the record is not a forgery. Nothing here depends on privacy, on a naming
+    convention, or on the caller's good behaviour.
+
+    The honest residual is stated in the module docstring: a caller who rebuilds
+    the class's ``__code__`` into a new function object with substituted globals
+    can still reach this line. That is a materially harder route than one public
+    call, and it is disclosed rather than claimed away.
     """
+    post_init = getattr(type(record), "__post_init__", None)
+    sanctioned = getattr(post_init, "__code__", None)
+    if sanctioned is None or sys._getframe(1).f_code is not sanctioned:
+        raise SealedRecordError(
+            f"a {type(record).__name__} may be registered as minted only from its own "
+            "__post_init__, after its construction checks have run; registration "
+            "attempted from another frame is exactly the forgery route the registry "
+            "exists to refuse"
+        )
     _MINTED[id(record)] = record
 
 

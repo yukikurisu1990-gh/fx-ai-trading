@@ -1131,38 +1131,40 @@ def test_d1_name_limb_aliases_of_a_protected_path_refused(spelling: str) -> None
 
 
 @pytest.mark.parametrize("spelling", ["unc_localhost", "unc_loopback", "extended_unc"])
-def test_d1_identity_limb_aliases_of_a_protected_path_refused(spelling: str) -> None:
-    """The spellings only the IDENTITY limb can decide, with the premise measured.
+def test_d1_namespace_aliases_are_refused_by_spelling_with_no_tree_on_disk(
+    spelling: str, tmp_path: Path
+) -> None:
+    """These three moved from the IDENTITY limb to the NAME limb, and that matters.
 
-    §9 AP-4: "in a copy without ``artifacts/ml_step4/365d_ba_v1`` the test
-    FAILS" — reproduced. These spellings do not resolve to a path named under
-    the protected tree, so the refusal can only come from ``os.path.samestat``,
-    which needs the tree to exist and the host to serve the admin share. That
-    premise is now measured and stated instead of being an invisible part of
-    the assertion; when it holds, what is asserted is the code.
+    They used to be decided by ``os.path.samestat``, which needs the protected
+    tree to **exist**. An internal audit against this branch showed what that
+    costs: with the root absent — which ``.gitignore`` guarantees for ``models/``
+    in every fresh clone — ``Path.resolve()`` does *not* canonicalise a UNC,
+    volume-GUID or GLOBALROOT spelling to the drive path, so the identity limb
+    has nothing to compare, the name limb never sees the protected name, and the
+    audit wrote a real file into ``<repo>/models`` through the real writer.
+
+    They are now refused as **spellings**, so the verdict no longer depends on
+    filesystem state at all. This test therefore asserts the stronger property
+    the old one could not: refusal with a path that has never existed.
     """
     if os.name != "nt":
-        # These are UNC / extended-UNC spellings of a Windows path. Built from a
-        # POSIX root they are not the same path in another spelling, they are
-        # nonsense — and the test would then measure the relative-path refusal
-        # instead of `os.path.samestat`. Skipping states that honestly rather
-        # than asserting a refusal that arrives for the wrong reason.
-        pytest.skip("UNC alias spellings are Windows-only; identity limb not exercisable here")
+        pytest.skip("UNC alias spellings are Windows-only")
     protected = _protected_365d_ba_v1()
-    if not protected.is_dir():
-        pytest.skip("identity limb inapplicable: no protected tree to be identical to")
     alias = _alias_spellings(str(protected))[spelling]
-    candidate = resolve_candidate(alias)
-    # Premise: this really is the identity limb, not the name limb in disguise.
-    assert candidate != protected and protected not in candidate.parents
-    try:
-        aliases_the_tree = os.path.samefile(candidate, protected)
-    except OSError as exc:
-        pytest.skip(f"{spelling} is not reachable on this host: {exc}")
-    if not aliases_the_tree:
-        pytest.skip(f"{spelling} does not alias the protected tree on this host")
-    with pytest.raises(RealDataRefusedError):
+    with pytest.raises(RealDataRefusedError, match="ordinary local drive"):
         refuse_real_path(alias)
+
+    # The property the old test could not reach: a target that does not exist,
+    # under a root that does not exist, in a directory nothing has created.
+    absent = _alias_spellings(str(tmp_path / "never_created" / "models"))[spelling]
+    with pytest.raises(RealDataRefusedError, match="ordinary local drive"):
+        refuse_real_path(absent)
+
+
+def test_d1_an_ordinary_local_path_is_not_caught_by_the_namespace_rule(tmp_path) -> None:
+    """Negative control: the namespace rule refuses spellings, not directories."""
+    refuse_real_path(tmp_path / "out" / "scrub_report.json")
 
 
 def test_d1_unrelated_paths_are_still_allowed(tmp_path) -> None:

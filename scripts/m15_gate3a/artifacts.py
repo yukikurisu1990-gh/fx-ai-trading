@@ -297,30 +297,63 @@ def _dense(text: str) -> str:
     return re.sub(r"[^0-9A-Za-z]+", "", _fold(text)).upper()
 
 
-def _non_ascii_letters(text: str) -> list[str]:
-    """Letters that survive folding and are still outside ASCII (FB-7).
+def _is_dense_kept(char: str) -> bool:
+    """True for exactly the characters ``_dense`` and ``_spaced`` retain."""
+    return char.isascii() and char.isalnum()
 
-    This is the **structural** half of the confusable defence, and the half that
-    does not need a table to be complete. ``_dense`` and ``_spaced`` delete every
-    character outside ``[0-9A-Za-z]``, so an unlisted letter-like codepoint does
-    not merely fail to fold — it *vanishes*, and the label closes up around the
-    hole. That is why one Cherokee codepoint defeated every forbidden label: the
-    scan compared ``BYTADMISSIBLE`` against ``BYTEADMISSIBLE`` and found nothing.
 
-    Rather than chase the next script, the comparison key is **restricted**: any
-    character that is still a letter after NFKC + confusable folding + NFKD +
-    invisible-character removal, and that is not ASCII, is reported. The scrubber
-    cannot prove such a character is not a homoglyph of a claim, and under
-    ``CLAUDE.md`` the stricter reading of a research restriction wins.
+def _fold_hazards(text: str) -> list[tuple[str, str]]:
+    """Non-ASCII codepoints that can launder a claim through the fold (FB-7).
 
-    Deliberately narrow in the other direction: only **letters** are reported.
-    Every committed gate-3a artifact is pure ASCII (verified over all eight), and
-    non-ASCII punctuation and symbols — em dashes, arrows, degree signs — are
-    untouched, so this refuses no committed content and no ordinary typography.
+    Two hazards, both derived from the fold's own mechanism rather than from a
+    table of scripts:
+
+    * **letter** — a character that is still a letter after NFKC + confusable
+      folding + NFKD + invisible-character removal, and is still outside ASCII.
+      The scrubber cannot prove such a character is not a homoglyph of a claim.
+
+    * **join** — the mechanism the letter rule alone does *not* cover, and the
+      one that defeated it. ``_dense`` and ``_spaced`` delete every character
+      outside ``[0-9A-Za-z]``, so a non-ASCII codepoint that is **not** a letter
+      does not merely fail to fold: it *vanishes*, and the label closes up around
+      the hole exactly as an unlisted letter would. ``PR<U+07C0>DUCTION_READY``
+      renders as the claim, denses to ``PRDUCTIONREADY``, and matched nothing.
+      Restricting the letter rule to ``category().startswith("L")`` left every
+      non-ASCII digit, symbol and mark — tens of thousands of codepoints — able
+      to do this, and 19 of the 24 forbidden labels fell to one substitution.
+
+      So the join rule targets the *deletion*, not the codepoint: take each
+      maximal run of characters the dense fold deletes; if that run sits between
+      two retained characters, and every character in it is non-ASCII, then the
+      run is invisible as a separator to a human reader while being a separator
+      to the scanner. Every character in it is reported.
+
+    The "every character in the run is non-ASCII" condition is what keeps
+    ordinary typography writable: in ``"1.5 -> higher"`` — or the same with a
+    real arrow — the run between ``5`` and ``h`` contains ASCII spaces, so the
+    reader sees the break the scanner sees and nothing is reported. It is only
+    when the *whole* separator is invisible that the two disagree. Verified
+    against all eight committed artifacts, which remain clean.
     """
-    return sorted(
-        {ch for ch in _fold(text) if unicodedata.category(ch).startswith("L") and not ch.isascii()}
-    )
+    folded = _fold(text)
+    hazards: dict[tuple[str, str], None] = {}
+    index = 0
+    length = len(folded)
+    while index < length:
+        if _is_dense_kept(folded[index]):
+            index += 1
+            continue
+        run_start = index
+        while index < length and not _is_dense_kept(folded[index]):
+            index += 1
+        run = folded[run_start:index]
+        if run_start > 0 and index < length and all(not c.isascii() for c in run):
+            for char in run:
+                hazards[("join", char)] = None
+    for char in folded:
+        if not char.isascii() and unicodedata.category(char).startswith("L"):
+            hazards[("letter", char)] = None
+    return sorted(hazards)
 
 
 # ---------------------------------------------------------------------------
@@ -434,38 +467,98 @@ _NEGATORS: Final[tuple[str, ...]] = (
 )
 
 
-def _dense_negated(dense: str, start: int) -> bool:
-    """True iff a negator ends exactly where the claim begins in the dense form."""
-    return any(dense[:start].endswith(negator) for negator in _NEGATORS)
+def _folded_projection(text: str, *, keep: str) -> tuple[str, list[int]]:
+    """A fold projection plus, for each output character, its index in ``_fold``.
+
+    ``keep="dense"`` reproduces :func:`_dense`; ``keep="spaced"`` reproduces
+    :func:`_spaced`. The index list is what lets a match found in a projection be
+    interrogated **in the folded text**, where token boundaries still exist. That
+    is the whole point: a projection that has deleted every separator cannot be
+    asked whether two things are one word, and FR-15's rule is a rule about words.
+    """
+    folded = _fold(text)
+    chars: list[str] = []
+    positions: list[int] = []
+    pending: int | None = None
+    for index, char in enumerate(folded):
+        if _is_dense_kept(char):
+            if pending is not None:
+                chars.append(" ")
+                positions.append(pending)
+                pending = None
+            chars.append(char.upper() if keep == "dense" else char)
+            positions.append(index)
+        elif keep == "spaced" and chars and pending is None:
+            # A separator run is emitted as one space, and only once a further
+            # retained character proves it separates rather than trails.
+            pending = index
+    if keep == "spaced":
+        return " " + "".join(chars) + " ", [-1, *positions, len(folded)]
+    return "".join(chars), positions
 
 
-def _spaced_negated(spaced: str, start: int) -> bool:
-    """True iff the word immediately before *start* in the spaced form negates."""
-    preceding = spaced[:start].split()
-    return bool(preceding) and preceding[-1].upper() in _NEGATORS
+def _negated(folded: str, positions: list[int], start: int) -> bool:
+    """True iff the **word** immediately before the claim is a negator (FR-15).
+
+    The rule this replaces was ``dense[:start].endswith(negator)`` — a
+    *character*-suffix test over a projection with no separators left in it. Any
+    word merely ending in a negator's letters therefore disarmed the claim, and
+    an internal audit wrote ``casino PRODUCTION_READY``, ``kimono
+    BYTE_LEVEL_...``, ``whenever PRODUCTION_READY`` and
+    ``UNBLOCKED_PRODUCTION_READY`` onto disk through the real writer with a clean
+    scan. ``casino`` ends in ``NO``; ``UNBLOCKED`` ends in ``BLOCKED``.
+
+    So the negator is read as a **token**, in the folded text where separators
+    still exist: walk left from the claim over the separator run, then take the
+    maximal alphanumeric run before it, and require *that whole word* to be a
+    negator. A word that merely ends in one is not one. This is applied to both
+    the dense and the spaced scan, so the two cannot disagree — previously only
+    the spaced scan (the four ambiguous labels) had word semantics, which is why
+    every *unambiguous* label was exposed and the four ambiguous ones were not.
+
+    The gap between negator and claim is deliberately not constrained beyond
+    "nothing else in between", because FR-15's own requirement is that honest
+    denials stay writable: ``NOT_PRODUCTION_READY``, ``no PASS is claimed`` and
+    ``this gate is not production ready`` are all denials and all write. The
+    accepted residual is an author who puts a genuine negator word immediately
+    before a claim without meaning a denial; that is a far narrower opening than
+    "any word ending in these letters", and it cannot be reached by an ordinary
+    English word the way the suffix rule could.
+    """
+    index = positions[start] - 1
+    while index >= 0 and not _is_dense_kept(folded[index]):
+        index -= 1
+    end = index + 1
+    while index >= 0 and _is_dense_kept(folded[index]):
+        index -= 1
+    return folded[index + 1 : end].upper() in _NEGATORS
 
 
 def _claim_keys(text: str) -> list[str]:
     """Forbidden-claim labels asserted in *text*, by substring and by folding.
 
-    "Asserted" rather than "present": an occurrence carrying an immediately
-    preceding negator is a **denial** and is not a finding (FR-15).
+    "Asserted" rather than "present": an occurrence spelled as an atomic negated
+    token is a **denial** and is not a finding (FR-15, see :func:`_negated`).
     """
     hits: list[str] = []
-    dense = _dense(text)
+    folded = _fold(text)
+    dense, dense_at = _folded_projection(text, keep="dense")
     for key in sorted(_UNAMBIGUOUS_CLAIM_KEYS):
         if not key:
             continue
         start = dense.find(key)
         while start != -1:
-            if not _dense_negated(dense, start):
+            if not _negated(folded, dense_at, start):
                 hits.append(key)
                 break
             start = dense.find(key, start + 1)
-    spaced = _spaced(text)
+    spaced, spaced_at = _folded_projection(text, keep="spaced")
     for key, exact, connected in _AMBIGUOUS_PATTERNS:
         for pattern in (exact, connected):
-            if any(not _spaced_negated(spaced, m.start()) for m in pattern.finditer(spaced)):
+            if any(
+                not _negated(folded, spaced_at, m.end() - len(key))
+                for m in pattern.finditer(spaced)
+            ):
                 hits.append(key)
                 break
     # The whole-string fallback. It is the ONLY thing that catches a label spelled
@@ -711,8 +804,16 @@ _MAX_TEXT_CHARS: Final[int] = len(_LONGEST_COMMITTED_STRING_VALUE)
 # as "64-hex of the derived M15 file bytes" — so this excises a digest and not an
 # arbitrary hex run.
 _SHA256_HEX_WIDTH: Final[int] = 64
+# EXACTLY the committed width, not `{64,}`. Open-ended was the defect: it excised
+# every hex run of 64 characters or more, so the digit-density limb — one of the
+# three the redesign calls independent — went blind to any hex payload up to the
+# per-leaf character bound. An internal audit wrote 383 KB carrying 22 400
+# exactly-recoverable float64 prices through a plain-JSON artifact with a clean
+# scan, larger than the 328 KB artifact FB-3(a) reported as the original defect.
+# A sha256 digest is 64 hex characters; a run of 65 is not a digest, and the
+# committed artifacts confirm it (verified: every `sha256` value is width 64).
 _HEX_DIGEST_RE: Final[re.Pattern[str]] = re.compile(
-    rf"(?<![0-9A-Za-z])[0-9a-fA-F]{{{_SHA256_HEX_WIDTH},}}(?![0-9A-Za-z])"
+    rf"(?<![0-9A-Za-z])[0-9a-fA-F]{{{_SHA256_HEX_WIDTH}}}(?![0-9A-Za-z])"
 )
 _DIGIT_RUN_RE: Final[re.Pattern[str]] = re.compile(r"\d+")
 
@@ -1294,6 +1395,8 @@ def _scan_key_claims(key: Any, value: Any, findings: list[str]) -> None:
     """Claim / metric checks for a dict key, with the RF-8 disclaimer exemption."""
     if not isinstance(key, str):
         return
+    for kind, char in _fold_hazards(key):
+        findings.append(f"gate3a_non_ascii_{kind}_in_key:{key}:{ord(char):04X}")
     denial = _is_denial(value)
     hits = _claim_keys(key)
     if hits and not denial:
@@ -1424,8 +1527,8 @@ def _scan_text_bounds(text: Any, findings: list[str], key_label: str | None) -> 
     runs = len(_DIGIT_RUN_RE.findall(_HEX_DIGEST_RE.sub(" ", pinned)))
     if runs > _MAX_VALUES_PER_NUMERIC_KEY:
         findings.append(f"gate3a_numeric_series_in_text:{key_label}:{runs}")
-    for letter in _non_ascii_letters(pinned):
-        findings.append(f"gate3a_non_ascii_letter:{key_label}:{ord(letter):04X}")
+    for kind, char in _fold_hazards(pinned):
+        findings.append(f"gate3a_non_ascii_{kind}:{key_label}:{ord(char):04X}")
 
 
 # ---------------------------------------------------------------------------

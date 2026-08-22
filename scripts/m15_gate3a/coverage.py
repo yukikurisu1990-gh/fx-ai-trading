@@ -799,9 +799,11 @@ def assert_full_coverage(
         )
 
     per_pair: list[PairCoverage] = []
+    pinned_by_pair: dict[str, frozenset[datetime]] = {}
     for pair in PAIRS_20:
         measurement = by_pair[pair]
         expected = _pinned_slot_set(calendar.expected_slots(pair), pair=pair, what="expected")
+        pinned_by_pair[pair] = expected
         certified = _pinned_slot_set(measurement.certified_slots, pair=pair, what="certified")
 
         # Defence in depth, and REACHABLE: `validate_calendar` and
@@ -903,7 +905,10 @@ def assert_full_coverage(
     # that the unverified value was being copied verbatim into
     # `ProofResult.calendar_digest`, leaving §12.12's "consumer re-verifies
     # before use" with nothing to re-verify on the calendar limb.
-    bound_digest = assert_calendar_provenance(calendar)
+    # The pinned sets are handed over rather than letting the digest re-read the
+    # calendar: two independent reads of one source let a two-faced slot source
+    # be certified against one content and digested against another (B-3).
+    bound_digest = assert_calendar_provenance(calendar, pinned_slots=pinned_by_pair)
 
     return CoverageResult(
         calendar_digest=bound_digest,

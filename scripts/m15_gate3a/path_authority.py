@@ -87,9 +87,13 @@ def normalise_spelling(path: str | Path) -> str:
     ``\\?\GLOBALROOT\Device\HarddiskVolumeN\...``, and stripping ``\\?\`` from
     those leaves a **relative** path that then resolves against the working
     directory — so a spelling naming the consumed-holdout tree was ALLOWED.
-    Left unfolded, ``Path.resolve()`` canonicalises them and the identity test
-    catches them; verified for every spelling, including the plain ``\\?\C:\``
-    case this fold was written for.
+    Left unfolded they keep their prefix and are refused outright by
+    :func:`_reject_non_drive_namespace`. An earlier version of this docstring
+    said ``Path.resolve()`` canonicalises them and the identity test catches
+    them, "verified for every spelling". **That was false** - measured,
+    ``resolve()`` returns the volume-GUID and UNC spellings unchanged, and with
+    the protected root absent the identity limb is silent - so the guarantee is
+    withdrawn and replaced by refusal.
     """
     text = str(path)
     upper = text.upper()
@@ -165,6 +169,57 @@ _ANY_SEPARATOR: Final[re.Pattern[str]] = re.compile("[\\\\/]")
 # The two components that are *relative navigation*, not names. `resolve()`
 # collapses them; they are the only components allowed to end in a dot.
 _NAVIGATION_COMPONENTS: Final[frozenset[str]] = frozenset({".", ".."})
+
+
+def _reject_non_drive_namespace(normalised: str) -> None:
+    r"""Refuse every Win32 namespace that is not an ordinary local drive path.
+
+    ``_reject_win32_normalisable_component`` closes the trailing-dot/space family
+    FB-4 printed. It does not close the *namespace* family, and an internal audit
+    walked four members of that family straight through the guard and wrote a
+    real file into a real protected tree with the root absent:
+
+    * ``\?\UNC\localhost\C$\...\models`` and its lower-case spelling,
+    * ``\localhost\C$\...\models`` (the administrative share),
+    * ``\?\Volume{GUID}\...\models``,
+    * ``\?\GLOBALROOT\Device\HarddiskVolumeN\...\models``.
+
+    Each names the same directory as the drive spelling; none is folded by
+    :func:`normalise_spelling`; and — this is the part that made the earlier
+    reasoning wrong — ``Path.resolve()`` does **not** canonicalise them to the
+    drive spelling, so with the protected root absent the identity limb has
+    nothing to compare and the name limb never sees the protected name. The
+    docstring claim that ``resolve()`` catches them "verified for every
+    spelling" was false, and the write landed in ``<repo>/models``.
+
+    The remedy is an **allowlist**, because enumerating namespaces is the shape
+    of defect this programme keeps re-opening: the Win32 namespace admits
+    device paths, volume GUIDs, GLOBALROOT device chains, UNC shares and
+    administrative shares, and a denylist of those five is a denylist of the
+    five that were found. Gate-3a writes metadata into an ordinary local
+    directory and has no reason to address anything else, so the rule is that a
+    candidate must be a plain ``<letter>:\`` path after the extended-length fold
+    — and every other spelling is refused whether or not it aliases a protected
+    root, which also means the verdict no longer depends on filesystem state.
+
+    Non-Windows paths are unaffected: a POSIX absolute path has no drive letter
+    and no UNC form, so the rule applies only where ``\`` or a drive letter is
+    the platform's own addressing scheme.
+    """
+    if os.name != "nt":
+        return
+    if normalised.startswith("\\\\") or normalised.startswith("//"):
+        raise PathAuthorityError(
+            "refused UNC or device-namespace path: gate-3a addresses only ordinary "
+            "local drive paths, and a share, volume-GUID or GLOBALROOT spelling names "
+            "the same directory as a drive path while defeating both containment limbs"
+        )
+    drive = os.path.splitdrive(normalised)[0]
+    if not (len(drive) == 2 and drive[0].isascii() and drive[0].isalpha() and drive[1] == ":"):
+        raise PathAuthorityError(
+            f"refused path with no ordinary drive letter ({normalised[:40]!r}...); gate-3a "
+            "addresses only ordinary local drive paths"
+        )
 
 
 def _reject_win32_normalisable_component(normalised: str) -> None:
@@ -376,6 +431,11 @@ def resolve_candidate(path: Any) -> Path:
     _reject_stream_suffix(normalised)
     _reject_win32_normalisable_component(normalised)
     candidate = Path(normalised)
+    # AFTER the relative-spelling refusal below, so that a relative path keeps
+    # reporting the working-directory reason rather than "no drive letter",
+    # which is true of every relative path and would say nothing.
+    if candidate.is_absolute():
+        _reject_non_drive_namespace(normalised)
     if not candidate.is_absolute():
         raise PathAuthorityError(
             f"relative path {text!r} refused: containment would depend on the working "

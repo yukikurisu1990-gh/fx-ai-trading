@@ -642,7 +642,19 @@ def calendar_content_digest(
             )
         # `str.__str__` is the unbound slot, so a `str` subclass cannot show one
         # spelling to the digest and another to a comparison (the FB-5 family).
-        lines.append(f"{name}={str.__str__(value)}")
+        #
+        # LENGTH-PREFIXED, not `name=value`. `_require_text` permits embedded
+        # newlines in all six free-text D-6 declarations, and the rendering joins
+        # lines with a newline, so `name=value` was an ambiguous encoding: an internal
+        # audit put the boundary inside a value and produced two calendars whose
+        # market-hours declarations differed field-for-field yet digested
+        # identically, from plain JSON, both passing provenance. Prefixing each
+        # value with its character count makes the encoding injective whatever the
+        # content holds, which is stronger than forbidding the separator — a
+        # denylist of characters is the shape of defect this programme keeps
+        # re-opening.
+        rendered = str.__str__(value)
+        lines.append(f"{name}[{len(rendered)}]={rendered}")
     for pair in PAIRS_20:
         if pair not in slots_by_pair:
             raise CalendarMalformedError(
@@ -654,8 +666,28 @@ def calendar_content_digest(
     return hashlib.sha256("\n".join(lines).encode("utf-8")).hexdigest()
 
 
-def recompute_content_digest(calendar: ValidatedCalendar) -> str:
-    """Re-derive :func:`calendar_content_digest` from a validated record's own fields."""
+def recompute_content_digest(
+    calendar: ValidatedCalendar,
+    *,
+    pinned_slots: Mapping[str, frozenset[datetime]] | None = None,
+) -> str:
+    """Re-derive :func:`calendar_content_digest` from a validated record's own fields.
+
+    *pinned_slots* is the B-3 single-read discipline reaching across the module
+    boundary. ``assert_full_coverage`` pins each pair's expected set once and
+    decides every §8 limb on that pinned object; if the digest were then taken by
+    re-reading ``calendar.expected_slots(pair)``, the record would attest to
+    content the limbs never saw. An internal audit exercised exactly that: a
+    two-faced slot source certified a one-slot-per-pair run while publishing the
+    digest of the approved three-slot calendar. Callers that have already pinned
+    the sets pass them here so that one read serves both the decision and the
+    attestation.
+    """
+    slots = (
+        {pair: pinned_slots[pair] for pair in PAIRS_20}
+        if pinned_slots is not None
+        else {pair: calendar.expected_slots(pair) for pair in PAIRS_20}
+    )
     return calendar_content_digest(
         authority=calendar.authority,
         authority_version=calendar.authority_version,
@@ -666,11 +698,15 @@ def recompute_content_digest(calendar: ValidatedCalendar) -> str:
         target_epoch=calendar.target_epoch,
         committed_artifact=calendar.committed_artifact,
         committed_revision=calendar.committed_revision,
-        slots_by_pair={pair: calendar.expected_slots(pair) for pair in PAIRS_20},
+        slots_by_pair=slots,
     )
 
 
-def assert_calendar_provenance(calendar: Any) -> str:
+def assert_calendar_provenance(
+    calendar: Any,
+    *,
+    pinned_slots: Mapping[str, frozenset[datetime]] | None = None,
+) -> str:
     """Consumer boundary for D-5.8 requirements 1-4; returns the bound digest.
 
     Sited at a **consumer**, not only inside :func:`validate_calendar`, because
@@ -715,7 +751,7 @@ def assert_calendar_provenance(calendar: Any) -> str:
             f"calendar content_digest is a {type(declared).__name__}, not a digest; the "
             "expected slot set is unbound to any committed content"
         )
-    recomputed = recompute_content_digest(calendar)
+    recomputed = recompute_content_digest(calendar, pinned_slots=pinned_slots)
     if str.__str__(declared) != recomputed:
         raise CalendarDigestMismatchError(
             f"calendar declares content_digest {str.__str__(declared)!r} but the content it "

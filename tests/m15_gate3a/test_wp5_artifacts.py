@@ -550,23 +550,39 @@ def test_fb7_the_two_mis_mapped_table_rows_are_gone() -> None:
 
 
 def test_fb7_no_single_codepoint_substitution_hides_a_label_while_looking_like_one() -> None:
-    """The systematic sweep the audit ran, re-run against the fix.
+    """The systematic sweep, re-run over the classes that defeated the first fix.
 
-    Every codepoint in the Cherokee syllabary is substituted for every ASCII
-    letter of every forbidden label — the sweep that previously reported 21/21
-    defeated. The invariant asserted is that a substitution cannot both scan
-    clean **and** leave anything the fold could not account for: a clean result
-    must have folded entirely to ASCII *and* spell a different word, which is a
-    visible misspelling (``LYTE_ADMISSIBLE``) rather than a hidden claim.
+    The predecessor swept **the Cherokee syllabary only**, and an internal audit
+    showed it was incapable of reporting the live family by construction: it
+    scored a candidate a defeat only if ``_non_ascii_letters`` was non-empty or
+    the dense form was unchanged, and the surviving substitutions — non-ASCII
+    *digits, symbols and marks* — satisfied neither, so 19 of 24 labels fell
+    while the test reported ``defeats == []``.
+
+    The sweep therefore covers a codepoint from every relevant general category,
+    including the four the audit used, and the invariant is now the one that
+    actually matters: a substitution either scans dirty, or it must not still
+    render as the label. A clean result is admissible only when the character
+    folded to ASCII and spelled a *different* word — a visible misspelling.
     """
-    from scripts.m15_gate3a.artifacts import _dense, _non_ascii_letters
+    from scripts.m15_gate3a.artifacts import _dense, _fold_hazards
 
-    cherokee = [chr(cp) for cp in range(0x13A0, 0x13F6)]
+    probes = [
+        *(chr(cp) for cp in range(0x13A0, 0x13F6)),  # Cherokee (Lo) - the old sweep
+        "߀",  # NKO DIGIT ZERO (Nd) - reads as O
+        "١",  # ARABIC-INDIC DIGIT ONE (Nd)
+        "∣",  # DIVIDES (Sm) - reads as I or l
+        "∧",  # LOGICAL AND (Sm) - reads as A
+        "∃",  # THERE EXISTS (Sm) - reads as E
+        "○",  # WHITE CIRCLE (So) - reads as O
+        "〇",  # IDEOGRAPHIC NUMBER ZERO (Nl)
+        "×",  # MULTIPLICATION SIGN (Sm) - reads as x
+    ]
     defeats: list[tuple[str, str]] = []
     examined = 0
     clean_and_folded = 0
-    for label in sorted(FORBIDDEN_STATUSES):
-        for char in cherokee:
+    for label in sorted(FORBIDDEN_STATUSES | UNWRITABLE_BYTE_LEVEL_CLAIM_TOKENS):
+        for char in probes:
             for i, original in enumerate(label):
                 if not (original.isascii() and original.isalpha()):
                     continue
@@ -574,13 +590,42 @@ def test_fb7_no_single_codepoint_substitution_hides_a_label_while_looking_like_o
                 candidate = label[:i] + char + label[i + 1 :]
                 if scan_gate3a({"result": candidate}) != []:
                     continue
-                if _non_ascii_letters(candidate) or _dense(candidate) == _dense(label):
+                if _fold_hazards(candidate) or _dense(candidate) == _dense(label):
                     defeats.append((label, unicodedata.name(char, hex(ord(char)))))
                 else:
+                    # Admissible: no hazard, and the dense form spells a
+                    # different word. Substitutions at a label's first or last
+                    # character land here — they delete a character the label
+                    # needs, so the result cannot render as the label.
                     clean_and_folded += 1
     assert examined > 5000, "the sweep must actually have run"
     assert clean_and_folded > 0, "the discriminating branch must have been exercised"
     assert defeats == []
+
+
+def test_fb7_a_non_letter_homoglyph_is_reported_as_a_fold_join() -> None:
+    """The specific mechanism, pinned separately from the sweep.
+
+    A non-ASCII character that is not a letter is *deleted* by the dense fold, so
+    the label closes up around the hole exactly as an unlisted letter would. The
+    join rule reports the deletion rather than the codepoint's category.
+    """
+    findings = scan_gate3a({"result": "PR߀DUCTION_READY"})
+    assert findings == ["gate3a_non_ascii_join:result:07C0"]
+
+
+def test_fb7_ordinary_non_ascii_typography_is_still_writable() -> None:
+    """Negative control: the join rule must not refuse a visible separator.
+
+    In ``"1.5 -> higher"`` the run between the alphanumerics contains ASCII
+    spaces, so a reader sees the break the scanner sees. Only a separator that is
+    *entirely* invisible makes the two disagree, and only that is reported.
+    """
+    assert scan_gate3a({"note": "1.5 → higher"}) == []
+    assert scan_gate3a({"note": "café latte"}) == []
+    # And the positive half, so this control discriminates: the same sentence
+    # with the separator made entirely invisible IS reported.
+    assert scan_gate3a({"note": "1.5→higher"}) == ["gate3a_non_ascii_join:note:2192"]
 
 
 def test_fb7_the_cyrillic_and_greek_table_still_names_the_label_it_spells() -> None:
