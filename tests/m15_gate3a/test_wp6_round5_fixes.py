@@ -16,6 +16,7 @@ import base64
 import copy
 import gc
 import json
+import os
 import pickle
 import struct
 from datetime import UTC, datetime
@@ -344,9 +345,21 @@ def test_fb4_a_namespace_spelling_is_refused_whatever_is_on_disk(spelling: str) 
     """
     tail = BS + "never_created" + BS + "models"
     candidate = _namespace_spellings(tail)[spelling]
-    with pytest.raises(PathAuthorityError, match="gate-3a addresses only ordinary"):
+    # Both platforms refuse; they refuse for different reasons, and asserting the
+    # reason is the point. On Windows these name a real directory and the
+    # namespace allowlist owns them. On POSIX a backslash is an ordinary
+    # filename character, so the string is a *relative* path — not an alias of
+    # anything — and the working-directory refusal is the correct answer. CI runs
+    # on Linux only, so without this branch the Windows half would be asserted
+    # nowhere; with it, each platform asserts what is true there.
+    expected = (
+        "gate-3a addresses only ordinary"
+        if os.name == "nt"
+        else "containment would depend on the working"
+    )
+    with pytest.raises(PathAuthorityError, match=expected):
         resolve_candidate(candidate)
-    with pytest.raises(RealDataRefusedError, match="gate-3a addresses only ordinary"):
+    with pytest.raises(RealDataRefusedError, match=expected):
         refuse_real_path(candidate)
 
 
