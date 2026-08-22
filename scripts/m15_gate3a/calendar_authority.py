@@ -231,7 +231,7 @@ class _CalendarConstructionToken:
     The audit deep-copied a validated calendar, rewrote ``authority`` to "THE
     OBSERVED DATA ITSELF" with ``object.__setattr__``, deep-copied *that* into a
     second free instance, and drove both through coverage. All three protocols
-    now raise (:func:`_refuse_reconstruction`).
+    now raise (:func:`~scripts.m15_gate3a.sealing.seal`).
 
     **What it still does not do.** Python has no enforced privacy: a caller that
     reaches into this module's private names can mint a token, and
@@ -245,21 +245,6 @@ class _CalendarConstructionToken:
 
     def __init__(self) -> None:
         self.spent = False
-
-
-def _refuse_reconstruction(self: Any, *_args: Any) -> None:
-    """Refuse ``copy.copy`` / ``copy.deepcopy`` / ``pickle`` (N-5).
-
-    Each of these rebuilds the instance without ``__post_init__``, which is
-    where the one-shot construction token is spent. A duplicated
-    :class:`ValidatedCalendar` is a second assertion about market hours that
-    :func:`validate_calendar` never made.
-    """
-    raise CalendarConstructionError(
-        f"a {type(self).__name__} may not be copied, deep-copied or pickled; those protocols "
-        "rebuild it without spending a construction token, so the copy would be a caller's own "
-        "assertion about market hours rather than a validated artifact"
-    )
 
 
 @seal(error=CalendarConstructionError)
@@ -325,10 +310,6 @@ class ValidatedCalendar:
         # it, so being *absent from the registry* is the only property that
         # distinguishes a forgery from a record this function actually minted.
         register_minted(self)
-
-    __copy__ = _refuse_reconstruction
-    __deepcopy__ = _refuse_reconstruction
-    __reduce__ = _refuse_reconstruction
 
     def expected_slots(self, pair: object) -> frozenset[datetime]:
         """Expected M15 slots for ``pair``, exactly as the artifact declared them."""
@@ -549,8 +530,16 @@ def _refuse_generating_rule_route(rule: Any) -> None:
     a diff cannot show one and a digest cannot cover one. Therefore **every**
     callable arriving on this route was assembled in this process at runtime,
     and requirement 2 forbids exactly that. The refusal is an invariant about
-    what a commit can carry, not a denylist of rule shapes, so no adjacent rule
-    form escapes it.
+    what a commit can carry, not a denylist of rule shapes. **It does not close
+    FR-8's second limb, and claiming otherwise here would be false**: the
+    prohibition this enforces is "do not hand me a callable", while the one the
+    ruling states is "do not derive the expectation from the observations". A
+    caller who evaluates the same closure a line earlier and passes the
+    materialised set reaches a satisfied coverage result, and an audit did
+    exactly that. The module docstring records why that residual cannot be closed
+    from inside a reader-free package - only reading the committed artifact
+    refuses it, which this package may not do - and the byte-reading V package at
+    gate 4 is where it lands.
 
     The interface loses nothing that the contract grants. A committed rule may
     still be *materialised into the slot set* by whatever produces the artifact;

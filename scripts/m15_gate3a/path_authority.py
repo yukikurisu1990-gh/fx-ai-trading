@@ -42,11 +42,18 @@ aliases another name (case, via ``PureWindowsPath``'s case-insensitive
 comparison; extended-length prefixes, via :func:`normalise_spelling`; streams and
 trailing dots/spaces, by refusal). The *identity* limb necessarily consults the
 filesystem — a junction cannot be recognised from its spelling. The invariant
-that makes that safe is **monotonicity**: the identity limb can only ever turn an
-ALLOW into a REFUSE, never the reverse, so filesystem state can make this
-authority stricter and never more permissive. That, and not "the verdict is a
-function of the input alone", is the guarantee this module has; the earlier
-wording overclaimed it, which is precisely what FB-4 falsified.
+that makes that safe is the **name** limb, which consults no filesystem state
+at all, and `_reject_non_drive_namespace`, which refuses every spelling that is
+not an ordinary local drive path. Those two decide before any filesystem state
+is consulted.
+
+A second overclaim has since been withdrawn here. The identity limb alone can
+only turn an ALLOW into a REFUSE, but `resolve_candidate` calls `Path.resolve()`
+before either limb runs, and `resolve()` follows reparse points — so adding a
+junction *inside* a protected tree turns a REFUSE into an ALLOW. Filesystem
+state therefore does **not** make this authority uniformly stricter, and the
+sentence that said so has been removed rather than qualified. What the module
+guarantees is what the two state-free limbs above decide.
 
 Its only question is "does this path name, or sit under, a protected tree?".
 It reads no file contents.
@@ -331,8 +338,17 @@ def is_within(candidate: Path, protected: Path) -> bool:
     Win32-normalisable components. FB-4 was exactly this hole: ``models.`` passed
     the name test and the absent root silenced the identity test, so the
     *creating* write landed in the real protected tree. With the name test
-    complete, adding the identity test can only add refusals, so filesystem state
-    makes this authority stricter and never more permissive.
+    complete, adding the identity test can only add refusals.
+
+    **The wider monotonicity claim that stood here is withdrawn.** It said
+    filesystem state "makes this authority stricter and never more permissive",
+    and that is false: :func:`resolve_candidate` calls ``Path.resolve()``, which
+    follows reparse points, so creating a junction *inside* a protected tree
+    turns a REFUSE into an ALLOW - measured with ``mklink /J``, no elevation
+    required. What is true, and all that is claimed now, is that the **name**
+    limb and :func:`_reject_non_drive_namespace` decide without consulting the
+    filesystem at all, so the spellings they own cannot be changed by on-disk
+    state.
     """
     if candidate == protected or protected in candidate.parents:
         return True

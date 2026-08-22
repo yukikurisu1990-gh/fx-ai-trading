@@ -171,7 +171,7 @@ class _CoverageConstructionToken:
     each one minted a fresh record having spent no token. The audit drove two
     forged ``ValidatedCalendar`` objects (``authority="THE OBSERVED DATA
     ITSELF"``) to a satisfied ``CoverageResult`` that way. Every token-bearing
-    record in this package now refuses all three (:func:`_refuse_reconstruction`).
+    record in this package now refuses all three (:func:`~scripts.m15_gate3a.sealing.seal`).
     ``dataclasses.replace`` and subclassing were already refused. What remains
     open — and is stated rather than claimed away — is that a caller reaching
     into private names, or using ``object.__setattr__`` on a real record, is
@@ -183,22 +183,6 @@ class _CoverageConstructionToken:
     def __init__(self, purpose: str) -> None:
         self.purpose = purpose
         self.spent = False
-
-
-def _refuse_reconstruction(self: Any, *_args: Any) -> None:
-    """Refuse ``copy.copy`` / ``copy.deepcopy`` / ``pickle`` (N-5).
-
-    All three rebuild the instance without running ``__post_init__``, so all
-    three re-mint a construction-token-bearing record for free. A record that
-    only :func:`measure_pair_coverage` or :func:`assert_full_coverage` may mint
-    is not a value that may be duplicated: a second copy asserts a second
-    measurement that never happened.
-    """
-    raise CoverageConstructionError(
-        f"a {type(self).__name__} may not be copied, deep-copied or pickled; those protocols "
-        "rebuild the record without spending a construction token, so the copy would assert a "
-        "measurement that was never made"
-    )
 
 
 _MEASUREMENT_PURPOSE: Final[str] = "PairSlotMeasurement"
@@ -217,7 +201,7 @@ class PairSlotMeasurement:
     ``eq=False`` — **identity equality, deliberately.** Two calls to
     :func:`measure_pair_coverage` with identical inputs are two separate
     measurements, and treating them as one value is the confusion
-    :func:`_refuse_reconstruction` already refuses in the copy direction ("a
+    :func:`~scripts.m15_gate3a.sealing.seal` already refuses in the copy direction ("a
     second copy asserts a second measurement that never happened").
 
     That semantic reason is now the **only** one. An earlier revision of this
@@ -259,9 +243,6 @@ class PairSlotMeasurement:
     # N-5: the audit named four record types; this is the fifth of the same
     # family. A deep-copied measurement is a second pair's worth of certified
     # slots that `measure_pair_coverage` never measured.
-    __copy__ = _refuse_reconstruction
-    __deepcopy__ = _refuse_reconstruction
-    __reduce__ = _refuse_reconstruction
 
 
 @seal(error=CoverageConstructionError)
@@ -346,10 +327,6 @@ class CoverageResult:
         token.spent = True
         object.__setattr__(self, "_construction_token", None)
         register_minted(self)
-
-    __copy__ = _refuse_reconstruction
-    __deepcopy__ = _refuse_reconstruction
-    __reduce__ = _refuse_reconstruction
 
 
 def _materialise_bars(bars: Any, *, pair: str) -> tuple[dict, ...]:

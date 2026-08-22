@@ -180,7 +180,7 @@ class ArtifactScrubError(RuntimeError):
 # A hand-maintained table cannot be completed by enumeration, and deriving a fold
 # from Unicode *names* is exactly the mistake the two deleted rows made ("CHEROKEE
 # LETTER A" is not an A). So the guarantee now rests on
-# :func:`_scan_non_ascii_letters`: after NFKC/NFKD folding, any character that is
+# :func:`_fold_hazards`: after NFKC/NFKD folding, any character that is
 # still a **letter** and still outside ASCII is itself a finding. This table
 # survives only so that a Cyrillic or Greek spelling of a label reports *which*
 # label it spells, instead of the generic script finding.
@@ -1588,7 +1588,12 @@ def _immediate_numeric_fields(obj: dict) -> int:
 
 
 def _scan_record_shape(
-    obj: dict, findings: list[str], key_label: str | None, *, is_declared_block: bool
+    obj: dict,
+    findings: list[str],
+    key_label: str | None,
+    *,
+    is_declared_block: bool,
+    block_limit: int = 0,
 ) -> None:
     """§12.25 (S1): a record stays nested with at most five immediate numerics.
 
@@ -1600,12 +1605,23 @@ def _scan_record_shape(
     D-3 minute accounting the contract mandates has exactly six fields. That
     exemption is a narrowing of the schema, not a widening of the clause — a
     block's keys must still be declared, and they may appear nowhere else.
+
+    **The exemption is bounded at the width that forced it.** Returning early for
+    a declared block set the clause's numeric bound to infinity for that key, and
+    a `gap_report` carrying thirteen immediate numerics scanned clean. PR #448
+    §5.5.5 forbids "raising the numeric-field bound to accommodate a record
+    shape"; exempting a key wholesale is that prohibition's limiting case. The
+    block bound is therefore the size of the D-3 accounting the contract
+    mandates. The bound is the number of keys the schema itself declares may sit
+    inside a block — derived, not chosen — so a block can never carry more
+    numerics than there are declared places to put them, and the exemption
+    admits exactly the shape it was granted for.
     """
-    if is_declared_block:
-        return
+    limit = block_limit if is_declared_block else _RECORD_MAX_IMMEDIATE_NUMERIC_FIELDS
     count = _immediate_numeric_fields(obj)
-    if count > _RECORD_MAX_IMMEDIATE_NUMERIC_FIELDS:
-        findings.append(f"gate3a_record_immediate_numeric_fields:{key_label}:{count}")
+    if count > limit:
+        label = "block" if is_declared_block else "record"
+        findings.append(f"gate3a_{label}_immediate_numeric_fields:{key_label}:{count}")
 
 
 def _scan_declared(
@@ -1624,6 +1640,7 @@ def _scan_declared(
             findings,
             key_label,
             is_declared_block=key_label is not None and key_label in schema.nested_block_keys,
+            block_limit=len(schema.block_only_keys),
         )
         for key, value in obj.items():
             if not isinstance(key, str):

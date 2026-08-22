@@ -70,7 +70,6 @@ __all__ = [
     "SealedRecordError",
     "assert_minted",
     "is_minted",
-    "refuse_reconstruction",
     "register_minted",
     "seal",
 ]
@@ -166,22 +165,6 @@ def seal[T: type](cls: T | None = None, *, error: type[Exception] = SealedRecord
             "be registered as minted; sealing it would silently fail closed on every mint"
         )
     return cls
-
-
-def refuse_reconstruction(self: Any, *_args: Any) -> None:
-    """Refuse ``copy.copy`` / ``copy.deepcopy`` / ``pickle`` with the default error.
-
-    All three rebuild the instance through ``__reduce_ex__`` without running
-    ``__post_init__``, so all three re-mint a record for free. A record only the
-    package may mint is not a value that may be duplicated: a second copy
-    asserts an authority that was never granted. :func:`seal` installs a variant
-    of this that raises the sealed class's own documented error type.
-    """
-    raise SealedRecordError(
-        f"a {type(self).__name__} may not be copied, deep-copied or pickled; those protocols "
-        "rebuild the record without running its construction checks, so the copy would assert "
-        "an authority that was never granted"
-    )
 
 
 def register_minted(record: Any) -> None:

@@ -1107,10 +1107,19 @@ class _IdentityVault(Mapping[str, _ArtifactIdentity]):
     walker that recurses over dataclass fields hits the same wall, because the
     map is no longer a shape such a walker knows how to descend into.
 
-    ``dict(vault)`` still works for a caller that already holds the private
-    attribute. That is deliberate — the disclosed limit of this package is
-    "reaching into private names is not stopped", and pretending otherwise is
-    the kind of claim these audits keep falsifying.
+    ``__getstate__`` and ``__setstate__`` are refused too, and that was not an
+    afterthought: a ``slots=True`` dataclass **generates** ``__getstate__``, so
+    enumerating ``__copy__``/``__deepcopy__``/``__reduce__`` left the one member
+    of the family CPython writes for you, and an audit read the whole twenty-pair
+    map out of ``ProofResult().__getstate__()[9]`` — two plain stdlib calls, no
+    hostile object, no private name.
+
+    Two routes remain and are stated rather than claimed away: ``dict(vault)``
+    for a caller that already holds the private attribute, and
+    ``gc.get_referents(result)``, which reaches every attribute of every object
+    and cannot be refused at the language level. The disclosed limit of this
+    package is "reaching past the public surface is not stopped"; pretending
+    otherwise is the kind of claim these audits keep falsifying.
     """
 
     __slots__ = ("_by_pair", "__weakref__")
@@ -1172,20 +1181,6 @@ class _ProofConstructionToken:
         self.spent = False
 
 
-def _refuse_reconstruction(self: Any, *_args: Any) -> None:
-    """Refuse ``copy.copy`` / ``copy.deepcopy`` / ``pickle`` (N-5).
-
-    Each protocol reconstructs the instance without ``__post_init__``, where the
-    one-shot construction token is spent, so each was a free re-mint of a record
-    whose whole meaning is that a particular evaluation ran once.
-    """
-    raise ProofConstructionError(
-        f"a {type(self).__name__} may not be copied, deep-copied or pickled; those protocols "
-        "rebuild the record without spending a construction token, so the copy would assert an "
-        "evaluation that never ran"
-    )
-
-
 _PROOF_RESULT_PURPOSE: Final[str] = "ProofResult"
 _APPROVAL_PURPOSE: Final[str] = "ConsumptionApproval"
 
@@ -1244,10 +1239,6 @@ class ProofResult:
         object.__setattr__(self, "_construction_token", None)
         register_minted(self)
 
-    __copy__ = _refuse_reconstruction
-    __deepcopy__ = _refuse_reconstruction
-    __reduce__ = _refuse_reconstruction
-
 
 @seal(error=ProofConstructionError)
 @dataclass(frozen=True, slots=True, weakref_slot=True)
@@ -1280,10 +1271,6 @@ class ConsumptionApproval:
         )
         object.__setattr__(self, "_construction_token", None)
         register_minted(self)
-
-    __copy__ = _refuse_reconstruction
-    __deepcopy__ = _refuse_reconstruction
-    __reduce__ = _refuse_reconstruction
 
 
 # ---------------------------------------------------------------------------
@@ -1959,30 +1946,21 @@ def _limb_cv(coverage_result: Any, records: Mapping[str, MeasurementRecord]) -> 
     and no uncertifiable bar
     (:class:`~scripts.m15_gate3a.coverage.BarNotCertifiableError`).
 
-    **FR-4 — the binding is by cardinality only, and the claim that it "makes
-    the four limbs one proof rather than four unrelated checks" was too strong.
-    It is retracted here rather than left standing.** Two evidence sets that
-    agree on *how many* slots there are still satisfy this limb while describing
-    different stretches of time: coverage certified for three slots on
-    ``2025-05-01`` and a byte scan measured over
-    ``2025-12-01T00:00…00:30`` are both three, and the conjunction holds. What
-    the count binding actually excludes is a *cardinality* mismatch — the
-    one-slot-beside-fifty-thousand-bars shape — and nothing more.
+    **FR-4 - the binding is by cardinality AND by span.** It used to be by
+    cardinality alone, so two evidence sets of equal size over unrelated spans
+    satisfied one proof. ``PairCoverage`` now carries ``certified_slot_min`` and
+    ``certified_slot_max``, and both endpoints are compared against the byte
+    scan's measured span below, each raising separately so the message says which
+    end disagreed. Both sides are read through :func:`_pin_instant`, because a
+    ``datetime`` subclass can answer ``!=`` for itself.
 
-    Closing it needs the coverage evidence to publish the **measured span** of
-    the slot set it certified.
-    :class:`~scripts.m15_gate3a.coverage.PairCoverage` publishes only
-    ``(pair, expected_slot_count, certified_slot_count)``, so span containment
-    is **not checkable from what a CoverageResult exposes**, and no amount of
-    work on this side of the boundary can derive it: this layer never sees the
-    slot set. The required change is in
-    :mod:`scripts.m15_gate3a.coverage` — ``PairCoverage`` carrying the minimum
-    and maximum certified slot as measured UTC instants — after which the
-    binding below extends to ``certified_slot_min == measured_ts_min`` and
-    ``certified_slot_max == measured_ts_max``. Until then the limitation is
-    stated, not papered over, and no count-based substitute is invented for it:
-    D-5.8 is ruled with **no numeric floor**, and a span cannot be inferred from
-    a count in any case.
+    Stated exactly, because this is a narrowing and not a closure: binding the
+    two **endpoints** does not bind the **set**. Two certified sets with the same
+    cardinality and the same first and last slot remain indistinguishable to this
+    limb, and will stay so until a measurement record publishes the scanned bar
+    set or a digest of it - a producer/verifier concern at gate 4 (§15.4), not
+    something this side of the boundary can derive.
+
     """
     if coverage_result is None:
         raise ProofLimbAbsentError(
