@@ -84,7 +84,7 @@ so a reviewer does not have to find it in the diff.
 | FR-19 | Out of scope by instruction: it belongs to a separate test-safety Work PR. |
 | §12.17 separate output directory | Never-overwrite is enforced; the output-directory concept is not implemented. Classified FO-1 by the merged audit. |
 | FB-3(a) residual | Within the aggregate budget an author can still encode a few kilobytes, and no scrubber can distinguish opaque text from prose. Two orders of magnitude removed, not eliminated. |
-| FR-8 second limb / D-5.8 §4.7.2 | A caller who materialises the rule one line earlier and passes the set is not refused. **This cannot be closed inside a reader-free package** — only reading the committed artifact refuses it — and PR #448 §4.7.3 places the mechanism at the byte-reading V package. The source docstring that claimed "no adjacent rule form escapes it" has been corrected to say the opposite. |
+| FR-8 second limb / D-5.8 §4.7.2 | A caller who materialises the rule one line earlier and passes the set is not refused. **This cannot be closed inside a reader-free package** — refuting it means comparing against the committed artifact's real bytes, and §12.14 keeps this package reader-free with "P and V live outside it". The source docstring that claimed "no adjacent rule form escapes it" has been corrected to say the opposite. **Citation corrected:** an earlier draft said PR #448 §4.7.3 "places the mechanism at the byte-reading V package". It says the opposite — the *provenance mechanism* is "implementation work for the targeted-fix Work PR, bounded by requirements 1–4", and that work was done here (provenance block, digest binding, epoch binding, requirement-3 fail-closed). What §4.7.3 does not do is close the residual, and the control that actually stands against a forged calendar is `PRE_CONTINUATION_CALENDAR_ARTIFACT_APPROVAL_REQUIRED`, which remains an open pre-continuation gate. |
 
 ---
 
@@ -208,3 +208,118 @@ that is the same thing as an independent session re-deriving it.
 
 **Next gate: the fifth independent source-audit re-check, in a separate
 top-level session.** Not started here.
+
+---
+
+## 7. Final disposition audit (read-only, at head `0a744e6`)
+
+A separate pass over the residual items, to establish whether each is genuinely
+deferrable with authority rather than a blocker wearing a defer label. Every
+behaviour below was executed against a `git archive` extract of this head; none
+of it is taken from §2.
+
+### 7.1 A scope defect found and fixed in this pass
+
+`git add -A scripts tests artifacts` in `f184fe5` staged **183 previously
+untracked files** under `artifacts/` — pre-existing research logs and
+`artifacts/stage29_0b/**`, 406 000 lines, inside a protected path, with no
+relation to this objective. That is a policy §14 violation and it was mine.
+They are removed from the index and left on disk untouched (`0a744e6`); the net
+diff is again 30 files. All 183 were verified restored to untracked.
+
+### 7.2 Dispositions
+
+**FR-12 — `FIXED_BY_APPROVED_SCHEMA_IMPLEMENTATION`.** PR #444 §5 approves the
+six-field schema and assigns implementation to the targeted-fix Work PR; D-7's
+human-reviewed diff is what this PR is. The diff adds exactly §5's six normative
+fields and §12.20's rename — no invented field, no invented semantics — and two
+tests pin the committed shape, one of them against
+`coverage.MINUTE_ACCOUNTING_FIELDS` so the two authorities cannot drift.
+
+**FR-9 — `DEFERRED_NO_COMMITTED_UPPER_BOUND_AUTHORITY`.** No committed clause
+bounds `observed_source_minute_count` above. Bounding it decides whether a source
+record may exist outside market hours: D-6.1 forbids inferring closure from data
+and D-6.3 forbids synthesising it. Executed — every *derivable* relation still
+bites (`expected = usable + absent + rejected`, `observed >= usable`,
+`max_gap <= absent + rejected`, each refusing with `MinuteAccountingError`); only
+the upper bound is open, and the count remains a diagnostic.
+
+**FR-11 — `DEFERRED_TO_PV_READER_GATE`.** Cross-evidence terminality needs
+persisted status; §12.14 keeps this package reader-free with "P and V live
+outside it". Executed — the layer mints no byte-level token (all three are
+refused as values), `evaluate_four_limbs` returns `BYTE_LEVEL_PROOF_PENDING` with
+`files_opened=0` and `bytes_measured=0`, and terminality *per evidence object* is
+enforced, including for `ConsumerRecheck`, which this PR found was being marked
+and never read.
+
+**FR-8 second limb — `SECOND_LIMB_DEFERRED_TO_GATE4_BYTE_READER`.** Authority is
+§12.14 plus the open gate `PRE_CONTINUATION_CALENDAR_ARTIFACT_APPROVAL_REQUIRED`
+— **not** §4.7.3, which assigns the provenance *mechanism* to this PR (see §2.3
+for that correction). The layer does not pretend the limb is satisfied: pending
+status is maintained and no byte-level claim is writable.
+
+**§12.17 — limb 2 `FIXED`, limb 3 `FIXED`, limb 1 `REQUIRES_CONTRACT_DECISION`.**
+Executed: a second write to the same path is refused, and `docs/`, `data/`,
+`models/` and both PR-B.1 trees are all refused as write targets. Limb 1 says
+"**Continuation** outputs go to a separate output directory" — the continuation
+is unauthorised and not performed, and D-7's trap sequences directory adoption
+*before* adding `artifacts/m15_gate3a` to `_PROTECTED_PREFIXES` (verified absent,
+so the trap is unsprung). No committed clause names the directory, so adopting
+one here would invent an unapproved value. The merged audit classifies this FO-1,
+non-blocking — **and it also says the limb "was handed to this Work PR and is not
+started", which is accurate and is not softened here.** It is a pre-continuation
+gate item, alongside the calendar-artifact approval.
+
+**FB-3(a) residual — `NON_BLOCKING_BY_COMMITTED_CONTRACT`.** Measured, not
+asserted. Three bounds, each derived from committed authority: per-leaf 499
+(byte-identical to the longest committed string value), per-token 64 (the sha256
+width `design_m15_inventory.json` declares), aggregate 9 980 (the frozen 20-pair
+universe times the longest committed string). The audit's own 2 000-row payload
+is refused on three limbs and the write raises. The strongest surviving encoding
+— pure A–Z, tokens under 64, respecting every bound — carries **8 960 characters,
+about 5.3 KB, about 658 float64 values, about 82 OHLC rows**, against the 2 000
+rows and 328 096 bytes FB-3(a) reported. This is not offered as "smaller, so
+acceptable": it is what follows necessarily from the contract permitting
+free-text descriptive fields at all, which it does — a 499-character prose
+`rationale` is committed evidence. Reaching zero requires a contract change
+forbidding free text, which is not this PR's to make.
+
+**Unknown artifact names — `REQUIRES_CONTRACT_OR_SCHEMA_DECISION`.** Two of three
+routes are fail-closed: an unknown name in the payload's `artifact` field raises
+`gate3a_undeclared_artifact_name`, and a known field written to a different
+filename raises `gate3a_artifact_name_mismatch`. The third is open — a payload
+that **omits** the field is writable to any `*.json` name and falls to the
+undeclared backstop. Executed at base `c7e477a` and at this head: **identical**,
+so this PR neither introduced nor widened it. Case A (roster-strict) cannot
+simply be applied, because §12.17 contemplates *continuation outputs* that are by
+definition not among the committed eight, and no clause names or types them. This
+is the **same missing decision as §12.17 limb 1** — what the continuation's output
+surface is — and the two should be settled in one Gate-decision before the
+continuation. Content bounding is not offered as a substitute for the name
+boundary.
+
+**FR-19 — `SEPARATE_TEST_SAFETY_WORK_PR`.** Out of scope by instruction; not
+implemented, not claimed, not present in the diff.
+
+**Windows FB-4 coverage —
+`NON_BLOCKING_PLATFORM_VALIDATION_GAP_FOR_NEXT_INDEPENDENT_AUDIT`.** The
+namespace tests exist in source and run on both platforms, asserting the reason
+each actually gives; CI is `ubuntu-latest` only, so Windows runtime behaviour is
+exercised on the developer host and not in CI. No static Windows bypass is
+visible in `_reject_non_drive_namespace`: measured via `os.path.splitdrive`, the
+drive-letter branch alone refuses all four namespace spellings, so the UNC branch
+is redundant rather than load-bearing.
+
+### 7.3 Structural fixes re-verified at this head
+
+FB-1 subclassing refused at class creation · the registry refuses a public mint
+and reports `is_minted=False` · FB-2 a two-faced dict yields the validated face ·
+FB-4 volume-GUID refused · FB-7 the non-letter homoglyph reported as
+`gate3a_non_ascii_join` · FB-10 `validate()`, `is_event_eligible` and
+`as_metadata` all refuse a `__class__`-spoofed int that answers `__index__`, with
+the honest control eligible at bar 24 and not at 23.
+
+**True residual source blockers: 0.** Two items require a Gate-decision before
+the continuation — §12.17 limb 1 and the artifact-name surface — and they are one
+question, not two. Neither is a defect in this PR's code, and neither is
+discharged by merging it.
