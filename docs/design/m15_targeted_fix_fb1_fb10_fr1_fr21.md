@@ -123,6 +123,15 @@ test-safety opt-in gate behaving as designed: 27 database tests behind
 one that needs a shared console. Enumerated rather than counted, because "the
 presence of a `.env` is not authorization" is the control this repository
 learned the hard way.
+
+**CI (`ubuntu-latest`, the authority).** `test` — **6065 passed, 45 skipped**;
+`contract-tests` — **553 passed, 1 skipped**. Both green at head `395e217`. The
+Linux/Windows skip difference is platform-gated tests, not a gate that stopped
+firing; the five FB-4 namespace tests assert the refusal *reason each platform
+actually gives*, because on POSIX a backslash is an ordinary filename character
+and those spellings are relative paths rather than aliases. CI being Linux-only
+means the Windows half of that family is asserted on the developer host and not
+in CI — stated here rather than left for the next audit to find.
 `ruff check`, `ruff format --check` and `tools/lint/run_custom_checks.py` clean.
 
 **Mutation.** A consolidated battery over the twenty guards this PR adds or
