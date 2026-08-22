@@ -54,8 +54,27 @@ class PairAuthorityError(ValueError):
 
 
 def _normalise_key(pair: str) -> str:
-    """Reduce a pair spelling to its canonical ``XXX_YYY`` key (no universe check)."""
-    key = pair.strip().upper()
+    """Reduce a pair spelling to its canonical ``XXX_YYY`` key (no universe check).
+
+    **FB-5: the caller's object does not get to answer the universe question.**
+    This began ``pair.strip().upper()`` and then called ``.replace()`` on the
+    result, so every step of the fold was a method a ``str`` subclass may
+    override. Lead-measured: an impostor whose real character data is
+    ``XXX_YYY`` and whose ``strip``/``upper``/``replace`` all return ``GBP_CHF``
+    was certified as ``GBP_CHF`` with ``pip_size 0.0001``, while ``no_overlap``
+    pinned ``filename`` and ``sha256`` of the *same* record — one record naming
+    two different pairs. Plain ``"XXX_YYY"`` is refused, so the guard was
+    answerable only by the object.
+
+    The character data is read once through the unbound ``str.__str__`` slot,
+    which returns a plain ``str`` for a subclass instance; every fold step after
+    it is ``str``'s own. ``str(pair)`` would not do — it re-enters the override.
+    This is the same pin ``artifacts._pin``, ``path_authority.resolve_candidate``
+    and ``timeutil.to_utc`` apply, and it is an invariant over the whole
+    two-faced-``str`` family rather than a guard against the three methods the
+    audit happened to override.
+    """
+    key = str.__str__(pair).strip().upper()
     for sep in _SEPARATORS:
         key = key.replace(sep, "_")
     while "__" in key:
@@ -90,14 +109,23 @@ def canonical_pair(pair: object) -> str:
     Accepts case, separator (``-`` ``/`` ``.`` space) and compact (``USDJPY``)
     spellings. Rejects non-strings, empty strings, and anything outside the
     frozen PAIRS_20 universe — including names that merely *look* like pairs.
+
+    FB-5: every read of *pair* below is of its **pinned** character data. The
+    emptiness test used to be ``pair.strip()``, an overridable method, and the
+    refusal message used ``{pair!r}``, which calls ``type(pair).__repr__`` — so a
+    two-faced object could be refused correctly and still be named as something
+    else in the record of its own refusal.
     """
-    if not isinstance(pair, str) or not pair.strip():
+    if not isinstance(pair, str):
         raise PairAuthorityError("pair must be a non-empty string")
-    key = _normalise_key(pair)
+    text = str.__str__(pair)
+    if not text.strip():
+        raise PairAuthorityError("pair must be a non-empty string")
+    key = _normalise_key(text)
     canonical = _INDEX.get(key)
     if canonical is None:
         raise PairAuthorityError(
-            f"pair {pair!r} (normalised {key!r}) is not in the frozen PAIRS_20 universe"
+            f"pair {text!r} (normalised {key!r}) is not in the frozen PAIRS_20 universe"
         )
     return canonical
 

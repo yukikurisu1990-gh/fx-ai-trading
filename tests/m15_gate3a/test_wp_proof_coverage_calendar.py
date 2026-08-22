@@ -114,6 +114,14 @@ SLOTS: tuple[str, ...] = (
 )
 MINUTES_PER_SLOT = 15
 
+#: The committed-provenance block D-5.8 requirement 1 makes mandatory. Both
+#: values are fictional placeholders: no file of this name exists, nothing here
+#: opens one, and the module under test resolves neither.
+PROVENANCE: dict[str, str] = {
+    "committed_artifact": "artifacts/m15_gate3a/SYNTHETIC_TEST_CALENDAR_DOES_NOT_EXIST.json",
+    "committed_revision": "0000000000000000000000000000000000000000",
+}
+
 _OMIT = object()
 
 
@@ -129,6 +137,12 @@ def calendar_artifact(**overrides: Any) -> dict[str, Any]:
     Neither this test nor the module under test decides any real market hour;
     the artifact for the target epoch is a separate human + ChatGPT approval
     item (``PRE_CONTINUATION_CALENDAR_ARTIFACT_APPROVAL_REQUIRED``).
+
+    ``content_digest`` is **computed from the artifact's own content** unless a
+    caller overrides it, because D-5.8 requires the declared digest to bind to
+    the content the calendar carries (FR-7). The provenance block is likewise a
+    placeholder naming a fictional committed file: nothing here is opened, and
+    the module under test resolves neither value.
     """
     artifact: dict[str, Any] = {
         "authority": "synthetic session authority (test fixture, not a real broker)",
@@ -138,12 +152,54 @@ def calendar_artifact(**overrides: Any) -> dict[str, Any]:
         "dst_rule": "declared by the injected artifact",
         "exceptional_closure_handling": "declared by the injected artifact",
         "target_epoch": EPOCH,
-        "content_digest": "synthetic-calendar-content-digest-v1",
         "approval": CALENDAR_APPROVAL_MARKER,
+        "provenance": dict(PROVENANCE),
         "expected_m15_slots": {pair: list(SLOTS) for pair in PAIRS_20},
     }
     artifact.update(overrides)
-    return {key: value for key, value in artifact.items() if value is not _OMIT}
+    artifact = {key: value for key, value in artifact.items() if value is not _OMIT}
+    if "content_digest" not in overrides:
+        artifact["content_digest"] = fixture_digest(artifact)
+    return artifact
+
+
+#: Well-formed single token that is not any calendar's real content digest. Used
+#: when a fixture is deliberately malformed, so that the refusal under test fires
+#: at its own guard rather than being masked by a missing-field refusal.
+UNCOMPUTABLE_DIGEST = "CONTENT_DIGEST_NOT_COMPUTABLE_FOR_THIS_DELIBERATELY_MALFORMED_FIXTURE"
+
+
+def fixture_digest(artifact: dict[str, Any]) -> str:
+    """The content digest of a fixture artifact, or a placeholder token.
+
+    A malformed fixture — a missing field, a slot off the grid, a rule instead of
+    a set — has no computable content digest, and the test that built it is
+    exercising a refusal that fires before the digest binding is ever reached.
+    The placeholder keeps ``content_digest`` present and correctly shaped so that
+    the earlier guard is the one that answers.
+    """
+    provenance = artifact.get("provenance")
+    if not isinstance(provenance, dict):
+        return UNCOMPUTABLE_DIGEST
+    raw_slots = artifact.get("expected_m15_slots")
+    if not isinstance(raw_slots, dict):
+        return UNCOMPUTABLE_DIGEST
+    try:
+        slots = {pair: frozenset(to_utc(slot) for slot in raw_slots[pair]) for pair in PAIRS_20}
+        return calendar_authority.calendar_content_digest(
+            authority=artifact["authority"],
+            authority_version=artifact["authority_version"],
+            timezone=artifact["timezone"],
+            market_open_close_rule=artifact["market_open_close_rule"],
+            dst_rule=artifact["dst_rule"],
+            exceptional_closure_handling=artifact["exceptional_closure_handling"],
+            target_epoch=artifact["target_epoch"],
+            committed_artifact=provenance["committed_artifact"],
+            committed_revision=provenance["committed_revision"],
+            slots_by_pair=slots,
+        )
+    except Exception:  # noqa: BLE001 - a malformed fixture has no computable digest
+        return UNCOMPUTABLE_DIGEST
 
 
 def valid_calendar(**overrides: Any) -> ValidatedCalendar:
@@ -151,12 +207,21 @@ def valid_calendar(**overrides: Any) -> ValidatedCalendar:
 
 
 def accounting(
-    *, slots: int = len(SLOTS), absent: int = 0, rejected: int = 0, max_gap: int = 0
-) -> dict[str, int]:
-    """The six D-3 quantities for a pair whose expected span is ``slots`` buckets."""
+    *,
+    slots: int = len(SLOTS),
+    absent: int = 0,
+    rejected: int = 0,
+    max_gap: int = 0,
+    **overrides: Any,
+) -> dict[str, Any]:
+    """The six D-3 quantities for a pair whose expected span is ``slots`` buckets.
+
+    ``**overrides`` writes a single field directly, so a test can break one of
+    the six relations without hand-building the whole block.
+    """
     expected = slots * MINUTES_PER_SLOT
     usable = expected - absent - rejected
-    return {
+    book: dict[str, Any] = {
         "expected_source_minute_count": expected,
         "observed_source_minute_count": usable + rejected,
         "absent_source_minute_count": absent,
@@ -164,6 +229,8 @@ def accounting(
         "usable_source_minute_count": usable,
         "max_unavailable_gap_minutes": max_gap,
     }
+    book.update(overrides)
+    return book
 
 
 def bar(slot: str, **overrides: Any) -> dict[str, Any]:
@@ -692,23 +759,18 @@ def test_an_alias_duplicate_pair_in_the_calendar_is_ambiguous() -> None:
         validate_calendar(calendar_artifact(expected_m15_slots=slots), expected_epoch=EPOCH)
 
 
-def test_a_generating_rule_is_accepted_and_must_be_deterministic() -> None:
+def test_a_generating_rule_has_no_committed_provenance_and_is_refused() -> None:
+    """D-5.8 requirement 1 replaces the "rule that generates it" route.
+
+    The previous behaviour of this test asserted that a rule *validates* provided
+    it answers the same way twice. Determinism was never the property in
+    question, and D-5.8 is ruled: an in-memory callable has no committed
+    provenance, so the route is refused however well it behaves.
+    """
     artifact = calendar_artifact(
         expected_m15_slots=_OMIT, expected_m15_slot_rule=lambda pair: list(SLOTS)
     )
-    calendar = validate_calendar(artifact, expected_epoch=EPOCH)
-    assert calendar.expected_slots("GBP_JPY") == frozenset(to_utc(s) for s in SLOTS)
-
-
-def test_a_non_deterministic_generating_rule_is_ambiguous() -> None:
-    counter = {"n": 0}
-
-    def rule(pair: str) -> list[str]:
-        counter["n"] += 1
-        return list(SLOTS) if counter["n"] % 2 else list(SLOTS[:2])
-
-    artifact = calendar_artifact(expected_m15_slots=_OMIT, expected_m15_slot_rule=rule)
-    with pytest.raises(CalendarAmbiguousError, match="is not deterministic for"):
+    with pytest.raises(calendar_authority.CalendarProvenanceError, match="no commit can carry it"):
         validate_calendar(artifact, expected_epoch=EPOCH)
 
 
@@ -1025,7 +1087,8 @@ def test_a_hand_built_validated_calendar_cannot_be_constructed() -> None:
             exceptional_closure_handling="assume closure wherever data is absent",
             target_epoch=EPOCH,
             content_digest="none",
-            slot_source_field="reverse-inferred from observation",
+            committed_artifact="the-observation-itself",
+            committed_revision="none",
         )
 
 

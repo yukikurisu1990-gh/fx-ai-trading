@@ -110,6 +110,29 @@ def is_dead_window_instant(ts: Any) -> bool:
     return DEAD_START <= instant < _DEAD_END_EXCLUSIVE
 
 
+def _publish_instant(value: datetime, *, what: str) -> str:
+    """Render a bound for publication, keeping this module's documented error type.
+
+    FR-10 (the RF-29 class). ``format_utc_z`` is the only permitted emission
+    spelling (§12.23) and it **refuses** rather than truncates a non-zero
+    microsecond — correct, but it raises :class:`TimestampError`, and this
+    module's whole public surface is documented to fail closed with
+    :class:`NoOverlapError`. A declared bound carrying microseconds cleared
+    :func:`_parse` and every bound check and then leaked the foreign exception
+    out of :func:`assert_per_file_bounds` at the publication step, so a caller
+    catching the documented type saw an uncaught error instead of a refusal.
+
+    Every publication in this module goes through here, rather than each call
+    site growing its own ``try``: the defect was one unconverted call site, and a
+    per-site remedy leaves the next one to the next audit. The refusal names the
+    field, so the record identifies which bound was unpublishable.
+    """
+    try:
+        return format_utc_z(value)
+    except TimestampError as exc:
+        raise NoOverlapError(f"{what} cannot be published in the canonical form: {exc}") from exc
+
+
 def _assert_ordered(lo: datetime, hi: datetime, *, what: str) -> None:
     """B-2: a reversed span must never reach the dead-window predicate.
 
@@ -489,8 +512,12 @@ def assert_per_file_bounds(
                 # rather than truncating it, so a sub-second bound fails
                 # closed here instead of being published in a spelling the
                 # committed artifacts never carry.
-                "ts_min_utc": format_utc_z(lo),
-                "ts_max_utc": format_utc_z(hi),
+                #
+                # FR-10: through `_publish_instant`, so that refusal arrives as
+                # this module's documented `NoOverlapError` and not as a
+                # `TimestampError` leaking from the emission layer.
+                "ts_min_utc": _publish_instant(lo, what=f"{role} {identity['pair']} ts_min_utc"),
+                "ts_max_utc": _publish_instant(hi, what=f"{role} {identity['pair']} ts_max_utc"),
             }
         )
         checked += 1
@@ -498,27 +525,34 @@ def assert_per_file_bounds(
         raise NoOverlapError(f"{role}: checked {checked} of {len(records)} records")
     return {
         "role": role,
-        # R-1, FIFTH INSTANCE — RETAINED BY RULING, and the reason is recorded
-        # rather than left implicit. On the only path that *returns*, this is
-        # always 20: `_roster_report` has already raised on any missing,
-        # duplicate, unknown or non-canonical pair, and the loop above raises if
-        # `checked != len(records)`. So it is the same tautology as the
-        # `actual_record_count` deleted from the roster report — a favourable
-        # quantity that can hold no other value.
+        # R-1, FIFTH INSTANCE — `files_checked` is **DELETED** (audit FR-5), and
+        # the retention argument that used to stand here is withdrawn as wrong on
+        # both of its limbs.
         #
-        # It is kept anyway because, unlike that field, `files_checked` is named
-        # in the committed `no_overlap_proof` allowlist (`artifacts.py:691`).
-        # Deleting it here would desynchronise the emitted record from the
-        # artifact vocabulary a committed schema declares, and this Work PR does
-        # not change committed schemas — the same reasoning that kept
-        # `eligible_event_count` in `schema_keys_not_verified`.
+        # The quantity itself was never in doubt: on the only path that *returns*
+        # it is always 20, because `_roster_report` has already raised on any
+        # missing, duplicate, unknown or non-canonical pair and the loop above
+        # raises if `checked != len(records)`. R-1 is unconditional about such a
+        # field — "a field that can only ever hold one value is deleted, not
+        # reported" — and the same reasoning already deleted `actual_record_count`
+        # from the roster report. Keeping this one made R-1 an application, not a
+        # rule, which is exactly what FR-5 names.
         #
-        # Recorded as a residual for the next gate: if the artifact schema is
-        # revised, this field should go with `actual_record_count`. It must NOT
-        # be read as evidence that twenty files were examined — the roster
-        # binding is what establishes that, and `certified_spans` is what
-        # carries it.
-        "files_checked": checked,
+        # The two grounds given for keeping it were both false:
+        #
+        # * "deleting it would desynchronise the emitted record from the artifact
+        #   vocabulary a committed schema declares" — `artifacts.py`'s per-stem
+        #   vocabulary is a **permission** list, not a required-key list. A
+        #   `no_overlap_proof` payload with `files_checked` omitted scans clean
+        #   (audit-verified), so nothing desynchronises and no committed schema is
+        #   changed by this deletion. The allowlist entry stays where it is,
+        #   unused;
+        # * "RETAINED BY RULING" — no committed ruling retains it, and contract §8
+        #   cites `files_checked=20` as the *shape of non-evidence*.
+        #
+        # What actually establishes that twenty files were declared is the roster
+        # binding, and `certified_spans` is what carries it — per record, with the
+        # pair, digest, filename and bounds that were checked.
         "certified_spans": spans,
         # The check covers declared identity + declared ts bounds only. These
         # committed `required_schema_per_file` keys are NOT verified here, and

@@ -50,7 +50,9 @@ def test_per_file_bounds_design_pass_and_fail() -> None:
     """
     ok = assert_per_file_bounds(design_roster(), role="design", expected_count=20)
     assert ok["result"] == DECLARED_SPANS_SELF_CONSISTENT__NOT_BYTE_LEVEL
-    assert ok["files_checked"] == 20
+    # FR-5: `files_checked` was always 20 on the only returning path and is
+    # deleted; the roster binding in `certified_spans` is what carries it.
+    assert len(ok["certified_spans"]) == 20
     with pytest.raises(NoOverlapError):
         assert_per_file_bounds(design_roster(ts_max="2026-04-10T00:00:00Z"), role="design")
 

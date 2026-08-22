@@ -55,22 +55,41 @@ class WarmupPolicy:
         that, an ``int`` subclass owning ``__lt__`` could report a warm-up long
         enough to cover the longest feature lookback while holding a shorter one,
         which is the T-1 leakage boundary itself.
+
+        **FB-10 / FR-20 — the pin is now the gate, not an optimisation.** The
+        loop used to skip pinning whenever ``isinstance(value, int)`` was false,
+        and to ``continue`` when the numeric authority *refused*, under a
+        a ``no cover - guarded above`` pragma asserting the refusal was
+        unreachable. Both were wrong for the same reason: ``isinstance`` consults
+        the object's ``__class__``, which any object may claim, while
+        ``int.__index__`` then refuses — so the refusal was reachable, the
+        ``continue`` swallowed it, and the ``isinstance``-based checks below
+        could not recover because they consult ``__class__`` too and ``<=`` is
+        answered by the object. Lead-reproduced: ``validate()`` **PASSED** for a
+        ``__class__``-spoofing ``w_bars``, ``as_metadata()`` published the spoof
+        as both ``w_bars`` and ``first_eligible_bar_index``, and eligibility
+        started at bar 1 instead of 24 — the T-1 burn-in disarmed while reporting
+        itself valid.
+
+        The structure is now: *pin first, and let the refusal out*. There is no
+        ``isinstance`` pre-check to disagree with the pin, so a value reaches the
+        numeric comparisons below only after it has been reduced to plain ``int``
+        character data. ``pin_int`` already refuses ``bool``, non-``int`` and
+        ``__class__``-spoofing objects, so the per-field type checks that used to
+        follow are subsumed by it rather than duplicated — a second check that
+        could disagree with the first is how this defect existed.
         """
         for name in ("w_bars", "longest_feature_lookback_bars"):
-            value = getattr(self, name)
-            if isinstance(value, bool) or not isinstance(value, int):
-                continue  # the per-field refusals below report the right name
             try:
-                object.__setattr__(self, name, pin_int(value, what=name))
-            except NumericAuthorityError:  # pragma: no cover - guarded above
-                continue
-        if isinstance(self.w_bars, bool) or not isinstance(self.w_bars, int) or self.w_bars <= 0:
+                pinned = pin_int(getattr(self, name), what=name)
+            except NumericAuthorityError as exc:
+                raise WarmupPolicyError(
+                    f"{name} must be a positive integer: it is not plain int character data ({exc})"
+                ) from exc
+            object.__setattr__(self, name, pinned)
+        if self.w_bars <= 0:
             raise WarmupPolicyError("w_bars must be a positive integer")
-        if (
-            isinstance(self.longest_feature_lookback_bars, bool)
-            or not isinstance(self.longest_feature_lookback_bars, int)
-            or self.longest_feature_lookback_bars <= 0
-        ):
+        if self.longest_feature_lookback_bars <= 0:
             raise WarmupPolicyError("longest_feature_lookback_bars must be a positive integer")
         if self.w_bars < self.longest_feature_lookback_bars:
             raise WarmupPolicyError(
@@ -84,17 +103,26 @@ class WarmupPolicy:
         Zero-based over forward-epoch bars. ``False`` for every index inside the
         burn-in, ``True`` from ``w_bars`` onwards — a genuinely two-valued
         answer replacing the constant ``first_w_bars_event_eligible: False``.
+
+        FR-20: the ``except NumericAuthorityError`` below carried
+        a ``no cover - guarded above`` pragma on the strength of an
+        ``isinstance`` pre-check. ``isinstance`` consults ``__class__``, so the
+        branch was reachable and the suppression hid it. Both the pre-check and
+        the pragma are gone: ``pin_int`` is the single gate on the index, exactly
+        as it is on ``w_bars`` in :meth:`validate` (FB-10), and its refusal is
+        reported rather than re-derived by a second test that could disagree.
         """
         self.validate()
-        if isinstance(bar_index, bool) or not isinstance(bar_index, int):
-            raise WarmupPolicyError("bar_index must be a non-negative integer")
         # N-1: pinned before the bound test and before the eligibility decision,
         # so an `int` subclass cannot answer "not negative" and "past the
         # burn-in" while holding an index inside it.
         try:
             index = pin_int(bar_index, what="bar_index")
-        except NumericAuthorityError as exc:  # pragma: no cover - guarded above
-            raise WarmupPolicyError("bar_index must be a non-negative integer") from exc
+        except NumericAuthorityError as exc:
+            raise WarmupPolicyError(
+                f"bar_index must be a non-negative integer: it is not plain int character "
+                f"data ({exc})"
+            ) from exc
         if index < 0:
             raise WarmupPolicyError("bar_index must be a non-negative integer")
         return index >= self.w_bars

@@ -58,7 +58,7 @@ would have been wrong).
 from __future__ import annotations
 
 from typing import Any
-from weakref import WeakSet
+from weakref import WeakValueDictionary
 
 __all__ = [
     "SealedRecordError",
@@ -76,10 +76,21 @@ class SealedRecordError(RuntimeError):
 
 #: Every record minted through the sanctioned path, weakly referenced.
 #:
-#: A ``WeakSet`` and not an ``id()`` set: CPython reuses ``id()`` after
-#: collection, so an ``id``-keyed registry would eventually authenticate a
-#: forgery that merely happened to land on a freed address.
-_MINTED: WeakSet[Any] = WeakSet()
+#: Keyed by ``id()`` with the **object itself as the weak value**, and every
+#: lookup re-checks identity (``entry is record``). Two hazards are closed at
+#: once, and both were live:
+#:
+#: * ``id()`` reuse — CPython reuses an address after collection, so an
+#:   ``id``-keyed *set* would eventually authenticate a forgery that merely
+#:   landed on a freed slot. Here the entry dies with its referent, and the
+#:   identity re-check refuses a stale hit anyway.
+#: * **hashability** — a ``WeakSet`` hashes its members, and a frozen dataclass
+#:   derives ``__hash__`` from its fields, so any record carrying a ``Mapping``
+#:   or ``list`` field is unhashable and could not be registered at all. That is
+#:   not hypothetical: ``ValidatedCalendar``, ``PairSlotMeasurement`` and
+#:   ``ProofResult`` all carry one. Keying on ``id()`` removes the requirement,
+#:   so sealing imposes no equality semantics on the records it protects.
+_MINTED: WeakValueDictionary[int, Any] = WeakValueDictionary()
 
 
 def seal[T: type](cls: T | None = None, *, error: type[Exception] = SealedRecordError):
@@ -165,20 +176,20 @@ def register_minted(record: Any) -> None:
     registered, and a record built by a route that skips ``__post_init__``
     (notably ``object.__new__``) is never registered either.
     """
-    _MINTED.add(record)
+    _MINTED[id(record)] = record
 
 
 def is_minted(record: Any) -> bool:
-    """True iff *record* went through the sanctioned minting path."""
-    try:
-        return record in _MINTED
-    except TypeError:  # pragma: no cover - unhashable forgery
-        return False
+    """True iff *record* went through the sanctioned minting path.
+
+    The identity re-check is what makes an ``id()`` key sound: a hit whose
+    referent is not this very object is a stale or reused address, and is no
+    evidence at all.
+    """
+    return _MINTED.get(id(record)) is record
 
 
-def assert_minted(
-    record: Any, *, what: str, error: type[Exception] = SealedRecordError
-) -> None:
+def assert_minted(record: Any, *, what: str, error: type[Exception] = SealedRecordError) -> None:
     """Fail closed unless *record* was minted through the sanctioned path.
 
     This is the check that closes **FR-3**. ``object.__new__(Cls)`` bypasses

@@ -144,22 +144,39 @@ def _pin_numeric(value: Any, *, what: str) -> Any:
     Non-numbers pass through untouched so the *existing* refusal for each field
     keeps firing with its own message — this closes a lying comparison without
     re-routing a type error to a different raise site.
+
+    The pin's own refusal is converted to :class:`CostSchemaError` (the RF-29
+    class, same family as FR-10). ``isinstance`` consults ``__class__``, so an
+    object claiming to be an ``int`` reaches ``pin_number`` and is refused there
+    by the unbound slot — correct, but it used to leave this module as a
+    ``NumericAuthorityError``, which is not a subclass of
+    :class:`CostSchemaError` and is therefore invisible to every caller
+    documented to catch this module's error.
     """
     if isinstance(value, bool) or not isinstance(value, (int, float)):
         return value
-    return pin_number(value, what=what)
+    try:
+        return pin_number(value, what=what)
+    except NumericAuthorityError as exc:
+        raise CostSchemaError(f"{what} is not plain numeric character data: {exc}") from exc
 
 
 def _check_magnitude_bound(bound: Any) -> float | None:
     """Validate a caller-supplied pip-unit magnitude bound, or accept 'none declared'."""
     if bound is None:
         return None
-    if isinstance(bound, bool) or not isinstance(bound, (int, float)):
-        raise CostSchemaError("max_spread_pips must be a number or None")
+    # FR-20: this used to be an `isinstance` pre-check followed by a
+    # `pin_number` whose refusal carried a `no cover - guarded
+    # above`. The pragma was false — `isinstance` consults `__class__`, which any
+    # object may claim, and `int.__index__` then refuses — so the branch was
+    # reachable and the suppression hid it from coverage. The pre-check is gone
+    # rather than kept alongside: `pin_number` already refuses `bool`, non-numbers
+    # and `__class__`-spoofing objects, and two checks that can disagree about
+    # the same value is the shape FB-10 had.
     try:
         value = pin_number(bound, what="max_spread_pips")
-    except NumericAuthorityError as exc:  # pragma: no cover - guarded above
-        raise CostSchemaError(str(exc)) from exc
+    except NumericAuthorityError as exc:
+        raise CostSchemaError(f"max_spread_pips must be a number or None: {exc}") from exc
     if not math.isfinite(value) or value <= 0:
         raise CostSchemaError("max_spread_pips must be a finite positive number of pips")
     return float(value)
@@ -254,7 +271,23 @@ def validate_cost_table(table: Any, *, max_spread_pips: float | None) -> dict:
                 raise CostSchemaError(f"{stat} for {pair}/{session} must be a number")
             # N-1: pin the character data BEFORE the sign test. `v < 0` asked a
             # caller-controlled `__lt__` whether the spread was negative.
-            v = pin_number(v, what=f"{stat} for {pair}/{session}")
+            #
+            # FR-21: mutating this to `float(v)` survives the suite — and
+            # `float(v)` calls `type(v).__float__`, so a lying subclass holding
+            # -50000.0 would validate and report `min_observed_spread_pips = 0.0`,
+            # which is the exact N-1 defect this module's comment above says it
+            # closed. The unbound-slot pin is the whole guard; it is now pinned by
+            # a test that fails under that mutation.
+            #
+            # The refusal is converted here too (RF-29 class): a `__class__`
+            # spoof clears the `isinstance` above and is refused by the slot, and
+            # that refusal must arrive as this module's own error type.
+            try:
+                v = pin_number(v, what=f"{stat} for {pair}/{session}")
+            except NumericAuthorityError as exc:
+                raise CostSchemaError(
+                    f"{stat} for {pair}/{session} is not plain numeric character data: {exc}"
+                ) from exc
             if not math.isfinite(v) or v < 0:
                 raise CostSchemaError(
                     f"{stat} for {pair}/{session} must be a finite non-negative number"
@@ -309,19 +342,38 @@ def validate_cost_table(table: Any, *, max_spread_pips: float | None) -> dict:
         )
 
     return {
-        "entries_validated": len(entries),
+        # R-1 (negative control), applied UNIFORMLY this time — audit FR-5.
+        #
+        # Already gone in the previous round: ``full_20x3_coverage``,
+        # ``p95_diagnostic_present``, ``real_spreads_computed``. The first became
+        # incapable of holding ``False`` the moment coverage started raising; the
+        # other two attest properties this validator does not measure.
+        #
+        # Gone NOW, for the identical reason, because keeping them made R-1 an
+        # application rather than a rule — which is the whole of FR-5:
+        #
+        # * ``entries_validated`` — always 60. Every entry contributes a distinct
+        #   ``(pair, session)`` cell (duplicates raise), every cell is inside
+        #   ``PAIRS_20 x SESSIONS_UTC`` (non-canonical pairs and unknown sessions
+        #   raise), and the coverage check raises unless all 60 are present. So
+        #   ``len(entries) == 60`` on every path that returns;
+        # * ``pairs_covered`` — always ``sorted(PAIRS_20)``, by the same argument;
+        # * ``result: "COST_TABLE_SCHEMA_VALID"`` — a verdict on a path reached
+        #   only by not raising. Contract §10 R-1 lists a one-valued
+        #   ``"result"`` string among the eleven self-attestations by name, so a
+        #   verdict token is not exempt from the rule.
+        #
+        # **The line this draws, stated so it can be refuted rather than guessed
+        # at.** What is deleted is any field asserting a property *of the table
+        # that was submitted*. What remains includes two frozen **definitions** —
+        # ``sessions`` and ``spread_unit`` — which are also constant, but assert
+        # nothing about the input: they declare the partition and the unit the
+        # numbers beside them are expressed in, the same class as
+        # ``warmup.as_metadata``'s ``policy`` key and the committed
+        # ``boundary_constants_utc``. Deleting a unit declaration would make the
+        # measured quantities unreadable, which R-1 does not ask for.
         "sessions": sorted(SESSIONS_UTC),
         "spread_unit": SPREAD_UNIT,
-        "pairs_covered": sorted({p for p, _ in seen}),
-        # R-1 (negative control): ``full_20x3_coverage``, ``p95_diagnostic_present``
-        # and ``real_spreads_computed`` were removed. The first became incapable of
-        # holding ``False`` the moment coverage started raising — a vacuous field
-        # introduced by this very fix is exactly the class PR #442 created four of.
-        # The other two never could hold their opposite: they attest properties this
-        # validator does not measure, and R-1 requires such a field to be deleted,
-        # not reported. Both are enforced by refusals whose counter-cases are
-        # exercised in the suite (a table without ``p95_spread`` raises; the module
-        # computes no spread at all — see the audit's containment derivation).
         # BL-5: magnitude is reported, never asserted, unless a caller pins it.
         # The flag is named for what it actually says — a bound was supplied and
         # checked — not "the magnitude is valid": a caller is free to declare a
@@ -334,5 +386,4 @@ def validate_cost_table(table: Any, *, max_spread_pips: float | None) -> dict:
         "magnitude_authority": (
             "CALLER_DECLARED" if ceiling_pips is not None else MAGNITUDE_AUTHORITY_STATUS
         ),
-        "result": "COST_TABLE_SCHEMA_VALID",
     }

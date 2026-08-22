@@ -1183,7 +1183,8 @@ def test_d2_non_mapping_entries_and_expected_count() -> None:
     with pytest.raises(NoOverlapError, match="must be a mapping"):
         assert_per_file_bounds(["not-a-record"] * 20, role="design")
     ok = design_roster()
-    assert assert_per_file_bounds(ok, role="design")["files_checked"] == 20
+    # FR-5: `files_checked` deleted; `certified_spans` carries the roster.
+    assert len(assert_per_file_bounds(ok, role="design")["certified_spans"]) == 20
     with pytest.raises(NoOverlapError, match="expected 19 files"):
         assert_per_file_bounds(ok, role="design", expected_count=19)
 
@@ -1401,7 +1402,9 @@ def test_bl5_zero_spread_is_accepted_because_no_committed_authority_floors_it() 
     summary = validate_cost_table(_table(pips=(0.0, 0.0, 0.0)), max_spread_pips=None)
     assert summary["min_observed_spread_pips"] == 0.0
     assert summary["max_observed_spread_pips"] == 0.0
-    assert summary["result"] == "COST_TABLE_SCHEMA_VALID"
+    # FR-5: `result` deleted; the zero-spread table validating is the call
+    # returning at all.
+    assert "result" not in summary
 
 
 def test_rf1_sessions_utc_tiles_the_day_exactly_once() -> None:

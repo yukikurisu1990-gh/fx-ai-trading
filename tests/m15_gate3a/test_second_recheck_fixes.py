@@ -458,7 +458,8 @@ def test_bl1_a_complete_roster_records_the_reconciliation_and_its_evidence_basis
     proof = assert_per_file_bounds(design_roster(), role="design", expected_count=20)
     assert proof["result"] == DECLARED_SPANS_SELF_CONSISTENT__NOT_BYTE_LEVEL
     assert proof["files_opened"] == 0 and proof["bytes_measured"] == 0
-    assert proof["files_checked"] == 20
+    # FR-5: `files_checked` deleted; the roster binding is the evidence.
+    assert len(proof["certified_spans"]) == 20
     assert proof["expected_pair_count"] == 20
     assert proof["expected_pairs"] == list(PAIRS_20)
     # P-6 relocated the roster half of this pin. `actual_pairs`,
@@ -656,7 +657,7 @@ def _no_overlap_probes() -> None:
         {**r, "ts_min_utc": _DESIGN_TRIPWIRE, "ts_max_utc": _DESIGN_TRIPWIRE}
         for r in design_roster()
     ]
-    assert assert_per_file_bounds(roster, role="design")["files_checked"] == 20
+    assert len(assert_per_file_bounds(roster, role="design")["certified_spans"]) == 20
 
 
 def _warmup_probes() -> None:

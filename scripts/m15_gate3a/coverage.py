@@ -37,34 +37,54 @@ whose bucket could not be constituted because a source minute was rejected is
 caller as the bars, so they are never the *only* certifiability check —
 :func:`_assert_bar_certifiable` reads each bar's own fields (D-3.5, §12.7).
 
-What this module does **not** enforce
--------------------------------------
-D-5.8 ("a single instant, or a sparse handful of points, **never** produces a
-proof token") is enforced here only against the *derivation*: a truncated
-derivation cannot equal a full calendar's slot set. It is **not** enforced
-against a calendar that itself declares one slot per pair. Any count floor is a
-number nobody pinned, and D-6 forbids this module to decide how many M15 buckets
-an epoch contains — that is a market-hours question owned by the calendar
-artifact. Raising the floor therefore **requires a separate contract
-Gate-decision**; the ruled control meanwhile is
-``PRE_CONTINUATION_CALENDAR_ARTIFACT_APPROVAL_REQUIRED``, the human + ChatGPT
-approval of the concrete artifact. What *is* enforced is the arithmetic relation
-between the calendar's slot count and the declared source-minute count, so the
-two cannot describe different epochs.
+D-5.8, as ruled
+---------------
+``D5_8_RULED_NO_NUMERIC_FLOOR_TRUSTED_CALENDAR_PROVENANCE_AND_SET_EQUALITY_REQUIRED``.
+The earlier revision of this docstring referred the "single instant, or a sparse
+handful of points" clause to a later contract Gate-decision, and that decision
+has now been taken. It rules **no numeric minimum slot-count floor**, on the
+evidence that a rule closing over the derivation clears a count floor, a
+temporal-extent criterion and a continuity criterion simultaneously — so a count
+is not the trust axis and a floor would not touch the defect it appears to
+address. **No slot-count threshold exists in this module and none may be added.**
+
+What discharges the clause instead is **trusted calendar provenance plus set
+equality**, and requirement 4 fixes the order: coverage is recognised only after
+**both** the set-equality limbs **and** calendar-provenance validation hold. So
+:func:`assert_full_coverage` runs every §8 limb first and then re-derives the
+calendar's content digest, through
+:func:`~scripts.m15_gate3a.calendar_authority.assert_calendar_provenance`.
+Placement is ruled too: a check sited only in ``validate_calendar`` is bypassed
+by a forged record, and a check sited *before* the set-equality limbs takes over
+the guard identity of six existing refusals.
+
+Counts survive as **diagnostics** (requirement 8): :class:`PairCoverage` carries
+the expected and certified cardinalities, and they are read from the members
+iteration actually yields rather than from an object's own ``__len__``. Also
+enforced, and mints nothing: the arithmetic relation between the calendar's slot
+count and the declared source-minute count, so the two cannot describe different
+epochs. ``PRE_CONTINUATION_CALENDAR_ARTIFACT_APPROVAL_REQUIRED`` — the human +
+ChatGPT approval of the concrete artifact — remains open and is not discharged
+by anything here.
 """
 
 from __future__ import annotations
 
-from collections.abc import Mapping, Sequence
+from collections.abc import Mapping, Sequence, Set
 from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Any, Final
 
-from scripts.m15_gate3a.calendar_authority import SLOT_MINUTES, ValidatedCalendar
+from scripts.m15_gate3a.calendar_authority import (
+    SLOT_MINUTES,
+    CalendarConstructionError,
+    ValidatedCalendar,
+    assert_calendar_provenance,
+)
 from scripts.m15_gate3a.no_overlap import DESIGN_END, DESIGN_START, is_dead_window_instant
 from scripts.m15_gate3a.numeric_authority import NumericAuthorityError, pin_int
 from scripts.m15_gate3a.pair_authority import PAIRS_20, PairAuthorityError, canonical_pair
-from scripts.m15_gate3a.sealing import seal
+from scripts.m15_gate3a.sealing import assert_minted, register_minted, seal
 from scripts.m15_gate3a.timeutil import TimestampError, to_utc
 
 #: The six separately-measured quantities ruled in D-3 §5, emitted by the
@@ -186,13 +206,28 @@ _RESULT_PURPOSE: Final[str] = "CoverageResult"
 
 
 @seal(error=CoverageConstructionError)
-@dataclass(frozen=True, slots=True, weakref_slot=True)
+@dataclass(frozen=True, slots=True, weakref_slot=True, eq=False)
 class PairSlotMeasurement:
     """What was actually measured for one pair. Built only by :func:`measure_pair_coverage`.
 
     Carrying the slot **set** rather than a count is the point: D-5.9 rules that
     ``n_pairs == 20`` alone is not coverage proof, and a count of certified bars
     is the same kind of non-evidence one level down.
+
+    ``eq=False`` — **identity equality, deliberately.** Two calls to
+    :func:`measure_pair_coverage` with identical inputs are two separate
+    measurements, and treating them as one value is the confusion
+    :func:`_refuse_reconstruction` already refuses in the copy direction ("a
+    second copy asserts a second measurement that never happened").
+
+    That semantic reason is now the **only** one. An earlier revision of this
+    docstring also argued that ``eq=False`` was what made the record
+    *registrable*, because the sealing registry was a ``WeakSet`` and a
+    field-derived hash over the ``Mapping`` field could not exist. The registry
+    was subsequently keyed on ``id()`` with an identity re-check
+    (:mod:`~scripts.m15_gate3a.sealing`), which imposes no equality semantics at
+    all — so that half of the justification is **withdrawn as obsolete** rather
+    than left standing as a reason that is no longer true.
     """
 
     pair: str
@@ -216,6 +251,10 @@ class PairSlotMeasurement:
             )
         token.spent = True
         object.__setattr__(self, "_construction_token", None)
+        # FB-1 / FR-3: the token is spent inside `__post_init__`, and
+        # `object.__new__` never runs `__post_init__`. Registration is therefore
+        # the only property a consumer can check that a forgery cannot fake.
+        register_minted(self)
 
     # N-5: the audit named four record types; this is the fifth of the same
     # family. A deep-copied measurement is a second pair's worth of certified
@@ -233,13 +272,34 @@ class PairCoverage:
     There is no ``satisfied`` flag here. R-1 deletes a field that can only ever
     hold one value, and once :func:`assert_full_coverage` raises on every
     inequality the flag could only ever have been ``True`` — the audit's
-    ``aggregate_assertions`` defect, one level down. The two counts are what was
-    actually measured, and they vary with the evidence.
+    ``aggregate_assertions`` defect, one level down. The counts and the span are
+    what was actually measured, and they vary with the evidence.
+
+    **``certified_slot_min`` / ``certified_slot_max`` exist to close audit FR-4.**
+    The proof's CV limb bound coverage to the byte scan by **cardinality alone**,
+    so coverage certified for one month and a byte scan measured over another
+    satisfied the four-limb conjunction together — the audit reproduced exactly
+    that with a May slot set and a December scan. A count cannot express *which*
+    slots were certified, and this layer is the only one that holds the slot set,
+    so the span has to be published from here or the binding cannot exist at all.
+    These are **measured** quantities, not a threshold: they are `min` and `max`
+    of the set the equality limbs just certified, so they mint no number and
+    D-5.8's prohibition on count-shaped acceptance criteria is untouched.
     """
 
     pair: str
     expected_slot_count: int
     certified_slot_count: int
+    certified_slot_min: datetime
+    certified_slot_max: datetime
+
+    def __post_init__(self) -> None:
+        # No construction token: this record carries only two counts already
+        # published inside a `CoverageResult`, and refusing hand construction
+        # would add a token without adding an authority. It is registered
+        # anyway, so a consumer that wants to distinguish an entry
+        # `assert_full_coverage` built from one `object.__new__` produced can.
+        register_minted(self)
 
 
 @seal(error=CoverageConstructionError)
@@ -285,6 +345,7 @@ class CoverageResult:
             )
         token.spent = True
         object.__setattr__(self, "_construction_token", None)
+        register_minted(self)
 
     __copy__ = _refuse_reconstruction
     __deepcopy__ = _refuse_reconstruction
@@ -365,7 +426,35 @@ def _normalise_slot(raw: Any, *, pair: str, what: str) -> datetime:
 
 
 def _validate_minute_accounting(raw: Any, *, pair: str) -> dict[str, int]:
-    """The six D-3 quantities, present, integral, non-negative, and self-consistent."""
+    """The six D-3 quantities, present, integral, non-negative, and self-consistent.
+
+    **FR-9 — "self-consistent" now covers all six.** It used to cover four: the
+    identity ``expected == usable + absent + rejected`` binds those, and
+    ``observed_source_minute_count`` and ``max_unavailable_gap_minutes`` stood in
+    no relation to anything. ``observed=999999`` beside ``usable=60``,
+    ``observed=0`` beside ``usable=60``, and ``max_unavailable_gap_minutes=999999``
+    beside ``absent = rejected = 0`` all validated. Two further relations follow
+    from D-3's own definitions and mint no number:
+
+    * a **usable** minute and a **rejected** minute were both *present in the
+      source*, and they are disjoint, so ``observed >= usable + rejected``;
+    * ``max_unavailable_gap_minutes`` is the longest **run** of consecutive
+      expected-but-not-usable minutes, and there are ``absent + rejected`` such
+      minutes in total, so ``max_unavailable_gap_minutes <= absent + rejected``.
+
+    Neither is a threshold: each is an inequality between two of the caller's own
+    numbers, so no constant is introduced and no minimum is decided.
+
+    **What is still unbounded, and why it is left so.** ``observed`` above
+    ``usable + rejected`` describes minutes that were *present in the source but
+    not expected by the calendar*, and D-3's six-field schema has no field for
+    them: the schema partitions the **expected** minutes only. Deciding whether
+    such a minute may exist — and what it means if it does — is a market-hours
+    question the calendar artifact owns and §9 deliberately leaves unfixed, so no
+    upper bound is asserted here. FR-9's first example
+    (``observed = 999999`` beside ``usable = 60``) therefore still validates at
+    this layer, and that is recorded rather than closed with an invented rule.
+    """
     if raw is None:
         raise MinuteAccountingError(
             f"{pair}: minute_accounting absent; coverage cannot be decided without the "
@@ -396,23 +485,44 @@ def _validate_minute_accounting(raw: Any, *, pair: str) -> dict[str, int]:
         # arithmetic below. An `int` subclass owns `__lt__`, `__eq__` and
         # `__add__`, so an unpinned accounting block could report six numbers
         # that satisfy every check while holding six different values.
+        #
+        # FR-20: the `# pragma: no cover - guarded above` that sat here asserted
+        # that the `isinstance` above makes this branch unreachable. It does not:
+        # `isinstance` consults `__class__`, which any object may claim, while
+        # the unbound `int.__index__` slot then refuses — so an object declaring
+        # `__class__ = int` reaches exactly this line. The pragma is removed and
+        # the branch is pinned by test instead (§13 names a pragma on a reachable
+        # guard as an anti-pattern).
         try:
             value = pin_int(value, what=f"minute_accounting[{key!r}]")
-        except NumericAuthorityError as exc:  # pragma: no cover - guarded above
+        except NumericAuthorityError as exc:
             raise MinuteAccountingError(f"{pair}: {exc}") from exc
         if value < 0:
             raise MinuteAccountingError(f"{pair}: minute_accounting[{key!r}] is negative ({value})")
         values[key] = value
     expected = values["expected_source_minute_count"]
-    total = (
-        values["usable_source_minute_count"]
-        + values["absent_source_minute_count"]
-        + values["rejected_source_minute_count"]
-    )
+    usable = values["usable_source_minute_count"]
+    absent = values["absent_source_minute_count"]
+    rejected = values["rejected_source_minute_count"]
+    total = usable + absent + rejected
     if expected != total:
         raise MinuteAccountingError(
             f"{pair}: minute accounting identity violated — expected {expected} != "
             f"usable+absent+rejected {total}"
+        )
+    observed = values["observed_source_minute_count"]
+    if observed < usable + rejected:
+        raise MinuteAccountingError(
+            f"{pair}: minute accounting reports {observed} observed source minute(s) while "
+            f"{usable + rejected} of them are classified usable or rejected; both kinds were "
+            "present in the source, so the observed count can never be the smaller"
+        )
+    unavailable_run = values["max_unavailable_gap_minutes"]
+    if unavailable_run > absent + rejected:
+        raise MinuteAccountingError(
+            f"{pair}: minute accounting reports a longest unavailable run of {unavailable_run} "
+            f"minute(s) while only {absent + rejected} expected minute(s) are unavailable at "
+            "all; a run cannot be longer than the set it is drawn from"
         )
     return values
 
@@ -440,9 +550,12 @@ def _assert_bar_certifiable(bar: Mapping[str, Any], *, pair: str, index: int) ->
         )
     # N-1: an `int` subclass owns `__eq__`, so the count that decides
     # certifiability is read as plain character data before it is compared.
+    # FR-20: reachable, for the reason recorded in `_validate_minute_accounting`
+    # — `isinstance` consults `__class__` and `int.__index__` then refuses. The
+    # pragma that claimed unreachability is removed and the branch is tested.
     try:
         n_source = pin_int(n_source, what=f"bar {index} {BAR_SOURCE_MINUTE_KEY!r}")
-    except NumericAuthorityError as exc:  # pragma: no cover - guarded above
+    except NumericAuthorityError as exc:
         raise BarNotCertifiableError(f"{pair}: {exc}") from exc
     if n_source != SLOT_MINUTES:
         raise BarNotCertifiableError(
@@ -539,6 +652,56 @@ def _materialise_rejected(raw: Any, *, pair: str) -> frozenset[datetime]:
     )
 
 
+def _pinned_slot_set(slots: Any, *, pair: str, what: str) -> frozenset[datetime]:
+    """A plain ``frozenset`` of plain UTC instants, built from what iteration yields.
+
+    Every set operation below — ``-``, ``==``, ``len`` — is a question the
+    caller's own object would otherwise answer. The audit's second D-5.8 probe is
+    exactly that: a ``frozenset`` subclass lying only about ``__len__`` produced a
+    **successfully returned** ``CoverageResult`` whose own record read
+    ``expected_slot_count=21000, certified_slot_count=1``, and nothing compared
+    the two. Ruling §4.9 asks for that comparison; this is the same closure one
+    step earlier and strictly stronger, because it refuses the lying object
+    instead of detecting one of its consequences — the ``__sub__`` and ``__eq__``
+    variants of the same family are closed by the same move.
+
+    This is the ``_materialise_bars`` pattern applied to sets: read the members
+    once, check the declared cardinality against the scanned one, and decide
+    everything afterwards against the plain rebuild. ``to_utc`` re-pins each
+    instant, so a ``datetime`` subclass cannot carry its own equality into the
+    set algebra either.
+    """
+    if isinstance(slots, (str, bytes, bytearray)) or not isinstance(slots, Set):
+        raise CoverageEvidenceError(
+            f"{pair}: {what} slots must be a set, got {type(slots).__name__}; coverage is "
+            "decided over a materialised set, never over an object asked to describe itself"
+        )
+    try:
+        declared = len(slots)
+        scanned = tuple(slots)
+    except (TypeError, ValueError) as exc:
+        raise CoverageEvidenceError(
+            f"{pair}: {what} slot set could not be re-scanned: {exc}"
+        ) from exc
+    if len(scanned) != declared:
+        raise CoverageEvidenceError(
+            f"{pair}: {what} slot set reports {declared} member(s) but iteration yields "
+            f"{len(scanned)}; a cardinality an object states about itself is not a measurement"
+        )
+    try:
+        pinned = frozenset(to_utc(slot) for slot in scanned)
+    except TimestampError as exc:
+        raise CoverageEvidenceError(
+            f"{pair}: {what} slot set carries an instant that is not exact UTC: {exc}"
+        ) from exc
+    if len(pinned) != declared:
+        raise CoverageEvidenceError(
+            f"{pair}: {what} slot set reports {declared} member(s) but they resolve to "
+            f"{len(pinned)} distinct UTC instant(s); two spellings of one instant are one slot"
+        )
+    return pinned
+
+
 def _roster(measurements: Any) -> dict[str, PairSlotMeasurement]:
     if isinstance(measurements, (str, bytes, bytearray)) or not isinstance(measurements, Sequence):
         raise CoverageEvidenceError(
@@ -554,6 +717,15 @@ def _roster(measurements: Any) -> dict[str, PairSlotMeasurement]:
                 f"measurement {index} is a {type(item).__name__}, not a measured "
                 "PairSlotMeasurement; counts are not coverage evidence"
             )
+        # FB-1 / FR-3: `isinstance` is satisfied by anything whose `__class__`
+        # says so, and `object.__new__(PairSlotMeasurement)` produces a real
+        # instance of the real class with `__post_init__` never run. The registry
+        # is the discriminator: a forgery was never minted, so it is absent.
+        assert_minted(
+            item,
+            what=f"coverage measurement {index}",
+            error=CoverageConstructionError,
+        )
         if item.pair in by_pair:
             raise CoverageEvidenceError(
                 f"{item.pair} is measured twice in the coverage roster; after "
@@ -575,13 +747,44 @@ def assert_full_coverage(
     and no tolerance parameter: D-2 rules the rejection tolerance zero and
     *structural*, and D-10 rules that insufficient coverage raises rather than
     being recorded as a flag.
+
+    **Order, ruled (D-5.8 requirement 4 and §4.9).** The set-equality limbs run
+    first, per pair; calendar-provenance validation runs after them, over the
+    whole roster, and only then is a :class:`CoverageResult` minted. Nothing here
+    tests a slot count against a threshold, because no threshold exists.
     """
     if not isinstance(calendar, ValidatedCalendar):
         raise CoverageEvidenceError(
             f"coverage requires a validated calendar authority, got {type(calendar).__name__}; "
             "an unvalidated calendar is not the coverage authority"
         )
-    if calendar.target_epoch != expected_epoch:
+    # FB-1 / FR-3, at the authority boundary rather than only at validation.
+    # `isinstance` above is satisfied by `object.__new__(ValidatedCalendar)`,
+    # which ran no validation at all; the registry is what tells them apart.
+    # This precedes the limbs deliberately and takes over no guard identity:
+    # every existing set-equality test supplies a genuinely minted calendar, so
+    # none of the six refusals §4.9 names can be answered here instead.
+    assert_minted(
+        calendar,
+        what="the calendar authority offered to coverage",
+        error=CalendarConstructionError,
+    )
+    # FB-5: this was the one unpinned comparison of the pair — `validate_calendar`
+    # pins the identical epoch bind correctly, so the two sides of one contract
+    # disagreed, and a two-faced `str` subclass was accepted here where the plain
+    # value raised. Both operands are read as plain character data before the
+    # comparison decides anything.
+    if not isinstance(expected_epoch, str):
+        raise CoverageEvidenceError(
+            f"expected_epoch must be a string naming the epoch being certified, got "
+            f"{type(expected_epoch).__name__}"
+        )
+    if not isinstance(calendar.target_epoch, str):
+        raise CoverageEvidenceError(
+            f"the calendar's target epoch is a {type(calendar.target_epoch).__name__}, not a "
+            "string; an epoch that is not character data binds nothing"
+        )
+    if str.__str__(calendar.target_epoch) != str.__str__(expected_epoch):
         raise CoverageEvidenceError(
             f"calendar targets epoch {calendar.target_epoch!r} but coverage is being "
             f"certified for {expected_epoch!r}"
@@ -598,8 +801,8 @@ def assert_full_coverage(
     per_pair: list[PairCoverage] = []
     for pair in PAIRS_20:
         measurement = by_pair[pair]
-        expected = calendar.expected_slots(pair)
-        certified = measurement.certified_slots
+        expected = _pinned_slot_set(calendar.expected_slots(pair), pair=pair, what="expected")
+        certified = _pinned_slot_set(measurement.certified_slots, pair=pair, what="certified")
 
         # Defence in depth, and REACHABLE: `validate_calendar` and
         # `measure_pair_coverage` both refuse a dead-window slot, but neither
@@ -675,17 +878,36 @@ def assert_full_coverage(
                 f"{SLOT_MINUTES * len(expected)}; the two describe different epochs"
             )
 
+        # Requirement 8: the counts are a recorded diagnostic, never an
+        # acceptance authority. They are the cardinalities of the pinned sets, so
+        # what is published is what was scanned.
         per_pair.append(
             PairCoverage(
                 pair=pair,
                 expected_slot_count=len(expected),
                 certified_slot_count=len(certified),
+                # FR-4: the span of the very set the limbs above certified.
+                # `certified` is non-empty here — an empty expected set is
+                # refused by the calendar authority and set equality has just
+                # held — so `min`/`max` are total.
+                certified_slot_min=min(certified),
+                certified_slot_max=max(certified),
             )
         )
 
+    # D-5.8 requirement 4: coverage is recognised only after BOTH the
+    # set-equality limbs above AND calendar-provenance validation. Placed here,
+    # after the loop, because a provenance check placed before it would answer
+    # for the six §8 refusals instead of them (ruling §4.9). The returned digest
+    # is the re-derived one, not the string the record carried in: FR-7 records
+    # that the unverified value was being copied verbatim into
+    # `ProofResult.calendar_digest`, leaving §12.12's "consumer re-verifies
+    # before use" with nothing to re-verify on the calendar limb.
+    bound_digest = assert_calendar_provenance(calendar)
+
     return CoverageResult(
-        calendar_digest=calendar.content_digest,
-        calendar_epoch=calendar.target_epoch,
+        calendar_digest=bound_digest,
+        calendar_epoch=str.__str__(calendar.target_epoch),
         per_pair=tuple(per_pair),
         _construction_token=_CoverageConstructionToken(_RESULT_PURPOSE),
     )

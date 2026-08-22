@@ -131,8 +131,10 @@ def test_rf17_claim_scope_is_the_committed_plan_spelling_not_a_code_minted_one()
     """The validator used to refuse the very spelling the committed plan declares."""
     assert CLAIM_SCOPE == PLAN_CLAIM_SCOPE
     assert _committed_plan()["claim_scope"] == CLAIM_SCOPE
-    summary = validate_cost_table(_full_table(), max_spread_pips=None)
-    assert summary["result"] == "COST_TABLE_SCHEMA_VALID"
+    # FR-5: the one-valued ``result`` token is gone. That the committed spelling
+    # is accepted is shown by the call returning at all, and by the refusal of the
+    # code-minted spelling in the next test.
+    assert validate_cost_table(_full_table(), max_spread_pips=None)["spread_unit"] == "price"
 
 
 def test_rf17_the_code_minted_claim_scope_is_now_refused() -> None:
@@ -223,10 +225,17 @@ def test_rf16_a_non_committed_data_source_restriction_is_refused(restriction: st
 
 
 def test_rf19_the_complete_60_cell_grid_validates() -> None:
+    """FR-5: ``entries_validated``, ``pairs_covered`` and ``result`` are deleted.
+
+    All three held one value on every returning path, which R-1 forbids. The
+    property this test names — the complete grid validates — is now expressed by
+    the call returning, against the refusals of the incomplete grids below.
+    """
     summary = validate_cost_table(_full_table(), max_spread_pips=None)
-    assert summary["entries_validated"] == EXPECTED_CELLS
-    assert summary["pairs_covered"] == sorted(PAIRS_20)
-    assert summary["result"] == "COST_TABLE_SCHEMA_VALID"
+    assert "entries_validated" not in summary
+    assert "pairs_covered" not in summary
+    assert "result" not in summary
+    assert len(_full_table()["entries"]) == EXPECTED_CELLS
 
 
 def test_rf19_a_one_entry_table_is_refused_and_names_the_missing_cells() -> None:
@@ -247,8 +256,10 @@ def test_rf19_the_59_vs_60_boundary_raises_and_names_the_single_missing_cell() -
         validate_cost_table(_full_table(entries=entries), max_spread_pips=None)
     assert "AUD_USD" not in str(exc.value)  # only the genuinely absent cell is named
     entries.append(dropped)
-    restored = validate_cost_table(_full_table(entries=entries), max_spread_pips=None)
-    assert restored["entries_validated"] == EXPECTED_CELLS
+    assert len(entries) == EXPECTED_CELLS
+    # FR-5: restoring the cell makes the call return instead of raising; there is
+    # no longer a one-valued count field to read the same fact off.
+    validate_cost_table(_full_table(entries=entries), max_spread_pips=None)
 
 
 def test_rf19_a_full_pair_roster_with_one_session_missing_is_refused() -> None:
