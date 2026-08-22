@@ -1,0 +1,14 @@
+================================================================================
+Stage 18.0d - M1-native regime experts (zeta: Session of day)
+  M1-scale lookback only. _mp_cap=100,000
+================================================================================
+Building M1 features (Session of day regime)...
+  M1 ready (182.9s)
+  EUR_USD regime distribution: {'r2': 367621, 'r1': 248490, 'r3': 124153}
+  folds: 5
+
+Training 3 regime-specific M1 LGBMs...
+    M1-zeta fold 1/5 (r1=817,461, r2=1,078,615, r3=842,647)
+    M1-zeta fold 2/5 (r1=834,847, r2=1,093,113, r3=837,171)
+    M1-zeta fold 3/5 (r1=686,666, r2=962,175, r3=744,892)
+    M1-zeta fold 4/5 (r1=589,645, r2=802,290, r3=657,585)

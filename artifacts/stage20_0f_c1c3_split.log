@@ -1,0 +1,72 @@
+==============================================================================================================
+Stage 20.0f - C1/C3 weak-trend signal: 21-22 UTC vs daily split
+==============================================================================================================
+
+Building features + labels + fwd...
+  done (152s)
+  Using F2 multi_tf feat: 41 features
+
+Walk-forward predict (F2 baseline_full)...
+  fold 1 done
+  fold 2 done
+  fold 3 done
+  fold 4 done
+  fold 5 done
+  WF done (174s, n=7,392,285)
+
+==============================================================================================================
+PER-CLASS × TIME-WINDOW BREAKDOWN
+==============================================================================================================
+
+  [C1 weak_up] total n=15,061
+    ALL          : n=   15,061  P(up)=0.678  E[fwd/ATR]=+2.0834  SNR=0.270  avg_fwd=+3.53p  long_TP/SL= 16.9%/ 82.2%  short_TP/SL= 16.3%/ 83.3%
+    21-22 UTC    : n=    9,263  P(up)=0.781  E[fwd/ATR]=+3.3680  SNR=0.411  avg_fwd=+5.54p  long_TP/SL= 13.7%/ 82.9%  short_TP/SL= 14.5%/ 85.5%
+    DAILY (other): n=    5,798  P(up)=0.513  E[fwd/ATR]=+0.0313  SNR=0.005  avg_fwd=+0.32p  long_TP/SL= 17.0%/ 82.2%  short_TP/SL= 16.4%/ 83.2%
+
+  [C3 weak_down] total n=11,639
+    ALL          : n=   11,639  P(up)=0.364  E[fwd/ATR]=-1.3780  SNR=0.183  avg_fwd=-2.65p  long_TP/SL= 15.8%/ 83.0%  short_TP/SL= 17.3%/ 81.7%
+    21-22 UTC    : n=    5,809  P(up)=0.238  E[fwd/ATR]=-2.6071  SNR=0.271  avg_fwd=-4.75p  long_TP/SL= 17.3%/ 82.7%  short_TP/SL= 21.3%/ 78.7%
+    DAILY (other): n=    5,830  P(up)=0.489  E[fwd/ATR]=-0.1532  SNR=0.037  avg_fwd=-0.56p  long_TP/SL= 15.8%/ 83.0%  short_TP/SL= 17.2%/ 81.8%
+
+  [C0 strong_up] total n=358
+    ALL          : n=      358  P(up)=0.782  E[fwd/ATR]=+6.5840  SNR=0.458  avg_fwd=+7.88p  long_TP/SL=  0.0%/100.0%  short_TP/SL= 33.3%/ 66.7%
+    21-22 UTC    : n=      349  P(up)=0.791  E[fwd/ATR]=+6.7832  SNR=0.467  avg_fwd=+8.26p  long_TP/SL=  nan%/  nan%  short_TP/SL=  nan%/  nan%
+    DAILY (other): n=        9  P(up)=0.444  E[fwd/ATR]=-1.1415  SNR=0.773  avg_fwd=-6.58p  long_TP/SL=  0.0%/100.0%  short_TP/SL= 33.3%/ 66.7%
+
+  [C4 strong_dn] total n=136
+    ALL          : n=      136  P(up)=0.132  E[fwd/ATR]=-4.7481  SNR=0.876  avg_fwd=-18.42p  long_TP/SL=  7.1%/ 92.9%  short_TP/SL= 14.3%/ 78.6%
+    21-22 UTC    : n=      126  P(up)=0.079  E[fwd/ATR]=-5.2740  SNR=1.009  avg_fwd=-20.42p  long_TP/SL=  0.0%/100.0%  short_TP/SL=  0.0%/100.0%
+    DAILY (other): n=       10  P(up)=0.800  E[fwd/ATR]=+1.8783  SNR=0.660  avg_fwd=+6.78p  long_TP/SL= 10.0%/ 90.0%  short_TP/SL= 20.0%/ 70.0%
+
+  [C2 range] total n=7,365,091
+    ALL          : n=7,365,091  P(up)=0.505  E[fwd/ATR]=+0.0249  SNR=0.005  avg_fwd=+0.05p  long_TP/SL= 11.7%/ 87.9%  short_TP/SL= 11.4%/ 88.2%
+    21-22 UTC    : n=  554,037  P(up)=0.503  E[fwd/ATR]=-0.0180  SNR=0.003  avg_fwd=-0.02p  long_TP/SL= 10.8%/ 86.5%  short_TP/SL=  8.8%/ 88.6%
+    DAILY (other): n=6,811,054  P(up)=0.506  E[fwd/ATR]=+0.0284  SNR=0.006  avg_fwd=+0.06p  long_TP/SL= 11.7%/ 88.0%  short_TP/SL= 11.5%/ 88.2%
+
+==============================================================================================================
+DAILY C1/C3 EV ESTIMATE (assume 1.0 pip avg spread cost)
+==============================================================================================================
+
+  [C1 daily] n=3,022  avg_atr=3.68p  avg_fwd=+0.32p
+    Triple-barrier (TP=5.5p / SL=3.7p):
+      TP rate=16.98%  SL rate=82.20%  TO=0.83%
+      EV per trade = 0.170×5.5 - 0.822×3.7 - 1 spread = -3.09p
+    Time-exit (close at horizon, no barriers):
+      EV per trade = +0.32p - 1 spread = -0.68p
+    Naive annual extrapolation:
+      n per year = 3024
+      Triple-barrier annual PnL = -9335 pip
+      Time-exit annual PnL    = -2046 pip
+    NOTE: real n drops with currency dedup + top_K. ~30-50% capture realistic.
+
+  [C3 daily] n=3,445  avg_atr=3.66p  avg_fwd=+0.56p
+    Triple-barrier (TP=5.5p / SL=3.7p):
+      TP rate=17.24%  SL rate=81.80%  TO=0.96%
+      EV per trade = 0.172×5.5 - 0.818×3.7 - 1 spread = -3.04p
+    Time-exit (close at horizon, no barriers):
+      EV per trade = +0.56p - 1 spread = -0.44p
+    Naive annual extrapolation:
+      n per year = 3448
+      Triple-barrier annual PnL = -10497 pip
+      Time-exit annual PnL    = -1509 pip
+    NOTE: real n drops with currency dedup + top_K. ~30-50% capture realistic.

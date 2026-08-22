@@ -733,7 +733,10 @@ def _roster(measurements: Any) -> dict[str, PairSlotMeasurement]:
             )
         by_pair[item.pair] = item
     unknown = sorted(set(by_pair) - set(PAIRS_20))
-    if unknown:  # pragma: no cover - canonical_pair already bounds the universe
+    # NOT pragma'd, for the reason `_limb_cv` gives for re-checking the roster:
+    # `canonical_pair` bounds what construction accepts, not what a record holds
+    # afterwards, and an audit reached this branch with `object.__setattr__`.
+    if unknown:
         raise CoverageEvidenceError(f"measurements name pairs outside PAIRS_20: {unknown}")
     return by_pair
 

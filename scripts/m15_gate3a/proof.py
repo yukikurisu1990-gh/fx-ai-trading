@@ -118,7 +118,7 @@ from __future__ import annotations
 import weakref
 from collections.abc import Iterator, Mapping, Sequence
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Any, Final
 
 from scripts.m15_gate3a.calendar_authority import SLOT_MINUTES
@@ -664,6 +664,63 @@ class Provenance:
         register_minted(self)
 
 
+#: The `datetime` accessors, unbound. A `datetime` subclass can override
+#: `__eq__`, `year`, `isoformat` and every comparison operator, so reading them
+#: off the object asks the object to answer a question about itself.
+_INSTANT_PARTS: Final[tuple[str, ...]] = (
+    "year",
+    "month",
+    "day",
+    "hour",
+    "minute",
+    "second",
+    "microsecond",
+)
+
+
+def _pin_instant(value: Any, *, what: str) -> datetime:
+    """Rebuild a **plain** ``datetime`` from *value*'s components.
+
+    The FB-5 family, applied to instants. A comparison like
+    ``entry.certified_slot_min != record.measured_ts_min`` is answered by
+    whichever operand's ``__eq__`` Python reaches, so a subclass that reports one
+    span to the guard and another to the reader defeats it — an audit did exactly
+    that against the FR-4 binding. Reconstructing through the unbound descriptors
+    means the value that gets compared is character-for-character the value the
+    object holds, and a subclass has nothing left to override.
+    """
+    if not isinstance(value, datetime):
+        raise ProofContractError(f"{what} must be a datetime, got {type(value).__name__}")
+    try:
+        rebuilt = datetime(
+            *(getattr(datetime, name).__get__(value) for name in _INSTANT_PARTS),
+            tzinfo=datetime.tzinfo.__get__(value),
+        )
+    except (TypeError, ValueError, AttributeError) as exc:
+        raise ProofContractError(f"{what} is not plain datetime data: {exc}") from exc
+    if rebuilt.utcoffset() != timedelta(0):
+        raise ProofContractError(
+            f"{what} must be UTC-aware; a naive or offset instant is not comparable "
+            "with a measured span"
+        )
+    return rebuilt
+
+
+def _pin_artifact_id(provenance: Any, *, what: str) -> str:
+    """Re-read `Provenance.artifact_id`, for the reason `_pin_pass` exists.
+
+    ``artifact_id`` was pinned at construction and then compared raw at three
+    boundaries, while ``stream_id`` and ``pass_index`` beside it were re-read —
+    and the reason given for re-reading them, ``object.__setattr__`` on a real
+    record being this package's declared threat model, applies identically here.
+    An internal audit used the gap twice: one fabricated pass answered ``==`` for
+    all twenty pairs (defeating DI-5's remedy, that a provenance naming no
+    particular artifact cannot be reused across pairs), and a verifier whose pass
+    really named a different file passed the "reads the same artifact" check.
+    """
+    return _pin_text(provenance.artifact_id, what=f"{what} artifact_id", error=ProofContractError)
+
+
 def _pin_pass(provenance: Any, *, what: str) -> tuple[str, int]:
     """The pass identity a roster de-duplicates on, as plain character data.
 
@@ -866,7 +923,7 @@ class MeasurementRecord:
                 "byte stream and the record built atomically at the end of it"
             )
         for name, prov in provenances.items():
-            if prov.artifact_id != self.staged_artifact_id:
+            if _pin_artifact_id(prov, what=f"{name} pass") != self.staged_artifact_id:
                 raise ProofCoMeasurementError(
                     f"{self.pair}: the {name} pass says it read {prov.artifact_id!r} while the "
                     f"record describes {self.staged_artifact_id!r}; a provenance that names no "
@@ -994,7 +1051,7 @@ class ConsumerRecheck:
         # (`stream_id in identity.measured_stream_ids`), so it is authenticated
         # and pinned here rather than trusted.
         _pin_pass(self.provenance, what=f"{self.pair} consumer recheck")
-        if self.provenance.artifact_id != self.artifact_id:
+        if _pin_artifact_id(self.provenance, what="recheck provenance") != self.artifact_id:
             raise ProofContractError(
                 f"{self.pair}: the consumer's read says it opened "
                 f"{self.provenance.artifact_id!r} while the recheck describes "
@@ -1560,7 +1617,28 @@ def assert_measured_conjunction(name: str, per_pair: Any) -> bool:
             f"aggregate assertion {name!r} needs a per-pair measurement mapping, got "
             f"{type(per_pair).__name__}; a declared count is not a measurement"
         )
-    snapshot = dict(per_pair)
+    # The FB-5 family again, one level out: `pair not in snapshot` and
+    # `snapshot[pair]` are answered by the KEY's `__hash__`/`__eq__`, so a
+    # mapping keyed by objects whose real character data is
+    # `PAIR_NEVER_MEASURED_0..19` satisfied D-8's "a measurement for every pair
+    # in PAIRS_20". The name argument was pinned above and the keys were not.
+    # Rebuild the mapping on pinned string keys before any lookup.
+    snapshot: dict[str, Any] = {}
+    for raw_key, raw_value in dict(per_pair).items():
+        if not isinstance(raw_key, str):
+            raise AggregateAssertionUnsatisfiedError(
+                f"aggregate assertion {name!r} is keyed by a {type(raw_key).__name__}; "
+                "a per-pair measurement mapping is keyed by pair names"
+            )
+        pinned_key = _pin_text(
+            raw_key, what="per-pair key", error=AggregateAssertionUnsatisfiedError
+        )
+        if pinned_key in snapshot:
+            raise AggregateAssertionUnsatisfiedError(
+                f"aggregate assertion {name!r} names {pinned_key} twice; two keys that render "
+                "differently but hold one pair's character data are one measurement, not two"
+            )
+        snapshot[pinned_key] = raw_value
     for pair in PAIRS_20:
         if pair not in snapshot or snapshot[pair] is None:
             raise AggregateAssertionUnsatisfiedError(
@@ -1754,7 +1832,9 @@ def assert_records_agree(producer: Any, verifier: Any) -> None:
             f"{producer.pair}: the verifier cites the producer's own byte-stream pass; a "
             "verifier re-measures independently rather than replaying the producer's read"
         )
-    if producer.digest_provenance.artifact_id != verifier.digest_provenance.artifact_id:
+    producer_artifact = _pin_artifact_id(producer.digest_provenance, what="producer digest pass")
+    verifier_artifact = _pin_artifact_id(verifier.digest_provenance, what="verifier digest pass")
+    if producer_artifact != verifier_artifact:
         raise _refute(
             f"{producer.pair}: the verifier's pass names artifact "
             f"{verifier.digest_provenance.artifact_id!r} while the producer's names "
@@ -1978,18 +2058,29 @@ def _limb_cv(coverage_result: Any, records: Mapping[str, MeasurementRecord]) -> 
         # criteria is untouched — indeed this is the binding a count could never
         # provide.
         record = records[pair]
-        if entry.certified_slot_min != record.measured_ts_min:
+        # Pinned, not compared raw. `PairCoverage` is publicly constructible and
+        # performs no validation, and `object.__setattr__` on a genuine
+        # `CoverageResult.per_pair` is this module's declared threat model — the
+        # same reason `certified_slot_count` sixteen lines above goes through
+        # `pin_int`. An audit answered both comparisons with a lying `datetime`
+        # subclass and had a proof accept a certified span three years from the
+        # one the byte scan measured.
+        certified_min = _pin_instant(entry.certified_slot_min, what=f"{pair} certified_slot_min")
+        certified_max = _pin_instant(entry.certified_slot_max, what=f"{pair} certified_slot_max")
+        measured_min = _pin_instant(record.measured_ts_min, what=f"{pair} measured_ts_min")
+        measured_max = _pin_instant(record.measured_ts_max, what=f"{pair} measured_ts_max")
+        if certified_min != measured_min:
             raise ProofLimbUnsatisfiedError(
                 f"CV limb: {pair} certifies slots from "
-                f"{entry.certified_slot_min.isoformat()} while the full byte scan measured "
-                f"from {record.measured_ts_min.isoformat()}; equal bar counts over different "
+                f"{certified_min.isoformat()} while the full byte scan measured "
+                f"from {measured_min.isoformat()}; equal bar counts over different "
                 "spans are two unrelated measurements, not one proof"
             )
-        if entry.certified_slot_max != record.measured_ts_max:
+        if certified_max != measured_max:
             raise ProofLimbUnsatisfiedError(
                 f"CV limb: {pair} certifies slots to "
-                f"{entry.certified_slot_max.isoformat()} while the full byte scan measured "
-                f"to {record.measured_ts_max.isoformat()}; equal bar counts over different "
+                f"{certified_max.isoformat()} while the full byte scan measured "
+                f"to {measured_max.isoformat()}; equal bar counts over different "
                 "spans are two unrelated measurements, not one proof"
             )
     return coverage_result
@@ -2192,6 +2283,15 @@ def open_for_consumption(result: Any, *, consumer_rechecks: Any) -> ConsumptionA
             "no consumer re-verification supplied; a proof that has not been re-verified "
             "immediately before use is not usable"
         )
+    # `_refute` condemns the recheck it was pronounced over, and nothing read
+    # that mark: an audit refuted a proof, then re-offered the very same recheck
+    # objects to a freshly minted result and consumption succeeded. Either the
+    # ledger entry means something or `_refute` should not be writing it — §11's
+    # "the evidence a refutation was pronounced over is dead" says it means
+    # something.
+    if isinstance(consumer_rechecks, Mapping):
+        for pair, recheck in dict(consumer_rechecks).items():
+            _assert_not_refuted(recheck, what=f"the consumer re-verification for {pair}")
     if isinstance(consumer_rechecks, (str, bytes, bytearray)) or not isinstance(
         consumer_rechecks, Sequence
     ):

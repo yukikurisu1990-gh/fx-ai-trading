@@ -1,0 +1,60 @@
+>>> AUD_CAD M5 1095d
+  req#46: empty page; advancing cursor by 5000 bars
+DONE: requests=46 candles_written=223262 -> data\candles_AUD_CAD_M5_1095d_BA.jsonl
+>>> AUD_JPY M5 1095d
+  req#46: empty page; advancing cursor by 5000 bars
+DONE: requests=46 candles_written=223382 -> data\candles_AUD_JPY_M5_1095d_BA.jsonl
+>>> AUD_NZD M5 1095d
+  req#46: empty page; advancing cursor by 5000 bars
+DONE: requests=46 candles_written=223254 -> data\candles_AUD_NZD_M5_1095d_BA.jsonl
+>>> AUD_USD M5 1095d
+  req#46: empty page; advancing cursor by 5000 bars
+DONE: requests=46 candles_written=223372 -> data\candles_AUD_USD_M5_1095d_BA.jsonl
+>>> CHF_JPY M5 1095d
+  req#46: empty page; advancing cursor by 5000 bars
+DONE: requests=46 candles_written=222119 -> data\candles_CHF_JPY_M5_1095d_BA.jsonl
+>>> EUR_AUD M5 1095d
+  req#46: empty page; advancing cursor by 5000 bars
+DONE: requests=46 candles_written=223376 -> data\candles_EUR_AUD_M5_1095d_BA.jsonl
+>>> EUR_CAD M5 1095d
+  req#46: empty page; advancing cursor by 5000 bars
+DONE: requests=46 candles_written=223369 -> data\candles_EUR_CAD_M5_1095d_BA.jsonl
+>>> EUR_CHF M5 1095d
+  req#46: empty page; advancing cursor by 5000 bars
+DONE: requests=46 candles_written=223234 -> data\candles_EUR_CHF_M5_1095d_BA.jsonl
+>>> EUR_GBP M5 1095d
+  req#46: empty page; advancing cursor by 5000 bars
+DONE: requests=46 candles_written=223392 -> data\candles_EUR_GBP_M5_1095d_BA.jsonl
+>>> EUR_JPY M5 1095d
+  req#46: empty page; advancing cursor by 5000 bars
+DONE: requests=46 candles_written=223374 -> data\candles_EUR_JPY_M5_1095d_BA.jsonl
+>>> EUR_USD M5 1095d
+  req#46: empty page; advancing cursor by 5000 bars
+DONE: requests=46 candles_written=223424 -> data\candles_EUR_USD_M5_1095d_BA.jsonl
+>>> GBP_AUD M5 1095d
+  req#46: empty page; advancing cursor by 5000 bars
+DONE: requests=46 candles_written=223043 -> data\candles_GBP_AUD_M5_1095d_BA.jsonl
+>>> GBP_CHF M5 1095d
+  req#46: empty page; advancing cursor by 5000 bars
+DONE: requests=46 candles_written=222647 -> data\candles_GBP_CHF_M5_1095d_BA.jsonl
+>>> GBP_JPY M5 1095d
+  req#46: empty page; advancing cursor by 5000 bars
+DONE: requests=46 candles_written=223371 -> data\candles_GBP_JPY_M5_1095d_BA.jsonl
+>>> GBP_USD M5 1095d
+  req#46: empty page; advancing cursor by 5000 bars
+DONE: requests=46 candles_written=223381 -> data\candles_GBP_USD_M5_1095d_BA.jsonl
+>>> NZD_JPY M5 1095d
+  req#46: empty page; advancing cursor by 5000 bars
+DONE: requests=46 candles_written=223119 -> data\candles_NZD_JPY_M5_1095d_BA.jsonl
+>>> NZD_USD M5 1095d
+  req#46: empty page; advancing cursor by 5000 bars
+DONE: requests=46 candles_written=223335 -> data\candles_NZD_USD_M5_1095d_BA.jsonl
+>>> USD_CAD M5 1095d
+  req#46: empty page; advancing cursor by 5000 bars
+DONE: requests=46 candles_written=223400 -> data\candles_USD_CAD_M5_1095d_BA.jsonl
+>>> USD_CHF M5 1095d
+  req#46: empty page; advancing cursor by 5000 bars
+DONE: requests=46 candles_written=223250 -> data\candles_USD_CHF_M5_1095d_BA.jsonl
+>>> USD_JPY M5 1095d
+  req#46: empty page; advancing cursor by 5000 bars
+DONE: requests=46 candles_written=223376 -> data\candles_USD_JPY_M5_1095d_BA.jsonl

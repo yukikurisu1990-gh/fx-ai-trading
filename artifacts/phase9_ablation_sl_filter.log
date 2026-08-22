@@ -1,0 +1,22 @@
+
+=== Feature group 1/1 [365d spread=False] ===
+Loading candle data ...
+  loaded 1 pairs
+Building features ...
+  EUR_USD [365d] spread=False
+
+[A_baseline] ベースライン: 45特徴量, 正則化なし, 固定80/20, 365d
+C:\Users\yukik\fx-ai-trading\.venv\Lib\site-packages\sklearn\utils\validation.py:2691: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+  n=54  hit=25.9%  PnL=-4pip  Sharpe=-0.0143  MaxDD=-32.1pip
+  [group 1 done - memory released]
+
+=========================================================================================================
+ABLATION RESULTS (EV-gate=ON, anti-pyramiding=ON, Top-K=3, conf>=0.40)
+  Baseline: A_baseline (fixed 80/20, 365d) => Sharpe=-0.0143  PnL=-4pip
+=========================================================================================================
+Cell              Data       N   Hit%   PnL(pip)   Sharpe    MaxDD   dSharpe    PnL比  Description
+---------------------------------------------------------------------------------------------------------
+A_baseline        365d      54   25.9%         -4  -0.0143    -32.1   +0.0000    1.00x  ベースライン: 45特徴量, 正則化なし, 固定80/20, 365d
+---------------------------------------------------------------------------------------------------------
+dSharpe/PnL比: vs A_baseline. anti-pyramiding: 同一ペアはhorizon=20バー再エントリー禁止.

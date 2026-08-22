@@ -1,0 +1,267 @@
+================================================================================
+Stage 6.1 - M1 Return regression diagnostic
+  Target: (close[t+40] - close[t]) / atr[t] (ATR-normalized return)
+  Model: LGBMRegressor, multipair, 47 base features + pair_id
+  Outcome: existing triple-barrier labels (H=40, TP=1.5/SL=1.0)
+================================================================================
+  loaded 20 pairs
+  features built (26.0s)
+  feat_cols: 47 features
+  labels + regression target built (24.5s)
+  target sample (EUR_USD): q01=-14.354  q50=+0.054  q99=+14.268  std=5.854
+  folds: 5
+C:\Users\yukik\fx-ai-trading\.venv\Lib\site-packages\sklearn\utils\validation.py:2691: UserWarning: X does not have valid feature names, but LGBMRegressor was fitted with feature names
+  warnings.warn(
+C:\Users\yukik\fx-ai-trading\.venv\Lib\site-packages\sklearn\utils\validation.py:2691: UserWarning: X does not have valid feature names, but LGBMRegressor was fitted with feature names
+  warnings.warn(
+C:\Users\yukik\fx-ai-trading\.venv\Lib\site-packages\sklearn\utils\validation.py:2691: UserWarning: X does not have valid feature names, but LGBMRegressor was fitted with feature names
+  warnings.warn(
+C:\Users\yukik\fx-ai-trading\.venv\Lib\site-packages\sklearn\utils\validation.py:2691: UserWarning: X does not have valid feature names, but LGBMRegressor was fitted with feature names
+  warnings.warn(
+C:\Users\yukik\fx-ai-trading\.venv\Lib\site-packages\sklearn\utils\validation.py:2691: UserWarning: X does not have valid feature names, but LGBMRegressor was fitted with feature names
+  warnings.warn(
+C:\Users\yukik\fx-ai-trading\.venv\Lib\site-packages\sklearn\utils\validation.py:2691: UserWarning: X does not have valid feature names, but LGBMRegressor was fitted with feature names
+  warnings.warn(
+C:\Users\yukik\fx-ai-trading\.venv\Lib\site-packages\sklearn\utils\validation.py:2691: UserWarning: X does not have valid feature names, but LGBMRegressor was fitted with feature names
+  warnings.warn(
+C:\Users\yukik\fx-ai-trading\.venv\Lib\site-packages\sklearn\utils\validation.py:2691: UserWarning: X does not have valid feature names, but LGBMRegressor was fitted with feature names
+  warnings.warn(
+C:\Users\yukik\fx-ai-trading\.venv\Lib\site-packages\sklearn\utils\validation.py:2691: UserWarning: X does not have valid feature names, but LGBMRegressor was fitted with feature names
+  warnings.warn(
+C:\Users\yukik\fx-ai-trading\.venv\Lib\site-packages\sklearn\utils\validation.py:2691: UserWarning: X does not have valid feature names, but LGBMRegressor was fitted with feature names
+  warnings.warn(
+C:\Users\yukik\fx-ai-trading\.venv\Lib\site-packages\sklearn\utils\validation.py:2691: UserWarning: X does not have valid feature names, but LGBMRegressor was fitted with feature names
+  warnings.warn(
+C:\Users\yukik\fx-ai-trading\.venv\Lib\site-packages\sklearn\utils\validation.py:2691: UserWarning: X does not have valid feature names, but LGBMRegressor was fitted with feature names
+  warnings.warn(
+C:\Users\yukik\fx-ai-trading\.venv\Lib\site-packages\sklearn\utils\validation.py:2691: UserWarning: X does not have valid feature names, but LGBMRegressor was fitted with feature names
+  warnings.warn(
+C:\Users\yukik\fx-ai-trading\.venv\Lib\site-packages\sklearn\utils\validation.py:2691: UserWarning: X does not have valid feature names, but LGBMRegressor was fitted with feature names
+  warnings.warn(
+C:\Users\yukik\fx-ai-trading\.venv\Lib\site-packages\sklearn\utils\validation.py:2691: UserWarning: X does not have valid feature names, but LGBMRegressor was fitted with feature names
+  warnings.warn(
+C:\Users\yukik\fx-ai-trading\.venv\Lib\site-packages\sklearn\utils\validation.py:2691: UserWarning: X does not have valid feature names, but LGBMRegressor was fitted with feature names
+  warnings.warn(
+C:\Users\yukik\fx-ai-trading\.venv\Lib\site-packages\sklearn\utils\validation.py:2691: UserWarning: X does not have valid feature names, but LGBMRegressor was fitted with feature names
+  warnings.warn(
+C:\Users\yukik\fx-ai-trading\.venv\Lib\site-packages\sklearn\utils\validation.py:2691: UserWarning: X does not have valid feature names, but LGBMRegressor was fitted with feature names
+  warnings.warn(
+C:\Users\yukik\fx-ai-trading\.venv\Lib\site-packages\sklearn\utils\validation.py:2691: UserWarning: X does not have valid feature names, but LGBMRegressor was fitted with feature names
+  warnings.warn(
+C:\Users\yukik\fx-ai-trading\.venv\Lib\site-packages\sklearn\utils\validation.py:2691: UserWarning: X does not have valid feature names, but LGBMRegressor was fitted with feature names
+  warnings.warn(
+    fold 1/5 done (27s, 516,090 records)
+C:\Users\yukik\fx-ai-trading\.venv\Lib\site-packages\sklearn\utils\validation.py:2691: UserWarning: X does not have valid feature names, but LGBMRegressor was fitted with feature names
+  warnings.warn(
+C:\Users\yukik\fx-ai-trading\.venv\Lib\site-packages\sklearn\utils\validation.py:2691: UserWarning: X does not have valid feature names, but LGBMRegressor was fitted with feature names
+  warnings.warn(
+C:\Users\yukik\fx-ai-trading\.venv\Lib\site-packages\sklearn\utils\validation.py:2691: UserWarning: X does not have valid feature names, but LGBMRegressor was fitted with feature names
+  warnings.warn(
+C:\Users\yukik\fx-ai-trading\.venv\Lib\site-packages\sklearn\utils\validation.py:2691: UserWarning: X does not have valid feature names, but LGBMRegressor was fitted with feature names
+  warnings.warn(
+C:\Users\yukik\fx-ai-trading\.venv\Lib\site-packages\sklearn\utils\validation.py:2691: UserWarning: X does not have valid feature names, but LGBMRegressor was fitted with feature names
+  warnings.warn(
+C:\Users\yukik\fx-ai-trading\.venv\Lib\site-packages\sklearn\utils\validation.py:2691: UserWarning: X does not have valid feature names, but LGBMRegressor was fitted with feature names
+  warnings.warn(
+C:\Users\yukik\fx-ai-trading\.venv\Lib\site-packages\sklearn\utils\validation.py:2691: UserWarning: X does not have valid feature names, but LGBMRegressor was fitted with feature names
+  warnings.warn(
+C:\Users\yukik\fx-ai-trading\.venv\Lib\site-packages\sklearn\utils\validation.py:2691: UserWarning: X does not have valid feature names, but LGBMRegressor was fitted with feature names
+  warnings.warn(
+C:\Users\yukik\fx-ai-trading\.venv\Lib\site-packages\sklearn\utils\validation.py:2691: UserWarning: X does not have valid feature names, but LGBMRegressor was fitted with feature names
+  warnings.warn(
+C:\Users\yukik\fx-ai-trading\.venv\Lib\site-packages\sklearn\utils\validation.py:2691: UserWarning: X does not have valid feature names, but LGBMRegressor was fitted with feature names
+  warnings.warn(
+C:\Users\yukik\fx-ai-trading\.venv\Lib\site-packages\sklearn\utils\validation.py:2691: UserWarning: X does not have valid feature names, but LGBMRegressor was fitted with feature names
+  warnings.warn(
+C:\Users\yukik\fx-ai-trading\.venv\Lib\site-packages\sklearn\utils\validation.py:2691: UserWarning: X does not have valid feature names, but LGBMRegressor was fitted with feature names
+  warnings.warn(
+C:\Users\yukik\fx-ai-trading\.venv\Lib\site-packages\sklearn\utils\validation.py:2691: UserWarning: X does not have valid feature names, but LGBMRegressor was fitted with feature names
+  warnings.warn(
+C:\Users\yukik\fx-ai-trading\.venv\Lib\site-packages\sklearn\utils\validation.py:2691: UserWarning: X does not have valid feature names, but LGBMRegressor was fitted with feature names
+  warnings.warn(
+C:\Users\yukik\fx-ai-trading\.venv\Lib\site-packages\sklearn\utils\validation.py:2691: UserWarning: X does not have valid feature names, but LGBMRegressor was fitted with feature names
+  warnings.warn(
+C:\Users\yukik\fx-ai-trading\.venv\Lib\site-packages\sklearn\utils\validation.py:2691: UserWarning: X does not have valid feature names, but LGBMRegressor was fitted with feature names
+  warnings.warn(
+C:\Users\yukik\fx-ai-trading\.venv\Lib\site-packages\sklearn\utils\validation.py:2691: UserWarning: X does not have valid feature names, but LGBMRegressor was fitted with feature names
+  warnings.warn(
+C:\Users\yukik\fx-ai-trading\.venv\Lib\site-packages\sklearn\utils\validation.py:2691: UserWarning: X does not have valid feature names, but LGBMRegressor was fitted with feature names
+  warnings.warn(
+C:\Users\yukik\fx-ai-trading\.venv\Lib\site-packages\sklearn\utils\validation.py:2691: UserWarning: X does not have valid feature names, but LGBMRegressor was fitted with feature names
+  warnings.warn(
+C:\Users\yukik\fx-ai-trading\.venv\Lib\site-packages\sklearn\utils\validation.py:2691: UserWarning: X does not have valid feature names, but LGBMRegressor was fitted with feature names
+  warnings.warn(
+    fold 2/5 done (24s, 847,384 records)
+C:\Users\yukik\fx-ai-trading\.venv\Lib\site-packages\sklearn\utils\validation.py:2691: UserWarning: X does not have valid feature names, but LGBMRegressor was fitted with feature names
+  warnings.warn(
+C:\Users\yukik\fx-ai-trading\.venv\Lib\site-packages\sklearn\utils\validation.py:2691: UserWarning: X does not have valid feature names, but LGBMRegressor was fitted with feature names
+  warnings.warn(
+C:\Users\yukik\fx-ai-trading\.venv\Lib\site-packages\sklearn\utils\validation.py:2691: UserWarning: X does not have valid feature names, but LGBMRegressor was fitted with feature names
+  warnings.warn(
+C:\Users\yukik\fx-ai-trading\.venv\Lib\site-packages\sklearn\utils\validation.py:2691: UserWarning: X does not have valid feature names, but LGBMRegressor was fitted with feature names
+  warnings.warn(
+C:\Users\yukik\fx-ai-trading\.venv\Lib\site-packages\sklearn\utils\validation.py:2691: UserWarning: X does not have valid feature names, but LGBMRegressor was fitted with feature names
+  warnings.warn(
+C:\Users\yukik\fx-ai-trading\.venv\Lib\site-packages\sklearn\utils\validation.py:2691: UserWarning: X does not have valid feature names, but LGBMRegressor was fitted with feature names
+  warnings.warn(
+C:\Users\yukik\fx-ai-trading\.venv\Lib\site-packages\sklearn\utils\validation.py:2691: UserWarning: X does not have valid feature names, but LGBMRegressor was fitted with feature names
+  warnings.warn(
+C:\Users\yukik\fx-ai-trading\.venv\Lib\site-packages\sklearn\utils\validation.py:2691: UserWarning: X does not have valid feature names, but LGBMRegressor was fitted with feature names
+  warnings.warn(
+C:\Users\yukik\fx-ai-trading\.venv\Lib\site-packages\sklearn\utils\validation.py:2691: UserWarning: X does not have valid feature names, but LGBMRegressor was fitted with feature names
+  warnings.warn(
+C:\Users\yukik\fx-ai-trading\.venv\Lib\site-packages\sklearn\utils\validation.py:2691: UserWarning: X does not have valid feature names, but LGBMRegressor was fitted with feature names
+  warnings.warn(
+C:\Users\yukik\fx-ai-trading\.venv\Lib\site-packages\sklearn\utils\validation.py:2691: UserWarning: X does not have valid feature names, but LGBMRegressor was fitted with feature names
+  warnings.warn(
+C:\Users\yukik\fx-ai-trading\.venv\Lib\site-packages\sklearn\utils\validation.py:2691: UserWarning: X does not have valid feature names, but LGBMRegressor was fitted with feature names
+  warnings.warn(
+C:\Users\yukik\fx-ai-trading\.venv\Lib\site-packages\sklearn\utils\validation.py:2691: UserWarning: X does not have valid feature names, but LGBMRegressor was fitted with feature names
+  warnings.warn(
+C:\Users\yukik\fx-ai-trading\.venv\Lib\site-packages\sklearn\utils\validation.py:2691: UserWarning: X does not have valid feature names, but LGBMRegressor was fitted with feature names
+  warnings.warn(
+C:\Users\yukik\fx-ai-trading\.venv\Lib\site-packages\sklearn\utils\validation.py:2691: UserWarning: X does not have valid feature names, but LGBMRegressor was fitted with feature names
+  warnings.warn(
+C:\Users\yukik\fx-ai-trading\.venv\Lib\site-packages\sklearn\utils\validation.py:2691: UserWarning: X does not have valid feature names, but LGBMRegressor was fitted with feature names
+  warnings.warn(
+C:\Users\yukik\fx-ai-trading\.venv\Lib\site-packages\sklearn\utils\validation.py:2691: UserWarning: X does not have valid feature names, but LGBMRegressor was fitted with feature names
+  warnings.warn(
+C:\Users\yukik\fx-ai-trading\.venv\Lib\site-packages\sklearn\utils\validation.py:2691: UserWarning: X does not have valid feature names, but LGBMRegressor was fitted with feature names
+  warnings.warn(
+C:\Users\yukik\fx-ai-trading\.venv\Lib\site-packages\sklearn\utils\validation.py:2691: UserWarning: X does not have valid feature names, but LGBMRegressor was fitted with feature names
+  warnings.warn(
+C:\Users\yukik\fx-ai-trading\.venv\Lib\site-packages\sklearn\utils\validation.py:2691: UserWarning: X does not have valid feature names, but LGBMRegressor was fitted with feature names
+  warnings.warn(
+    fold 3/5 done (22s, 1,146,046 records)
+C:\Users\yukik\fx-ai-trading\.venv\Lib\site-packages\sklearn\utils\validation.py:2691: UserWarning: X does not have valid feature names, but LGBMRegressor was fitted with feature names
+  warnings.warn(
+C:\Users\yukik\fx-ai-trading\.venv\Lib\site-packages\sklearn\utils\validation.py:2691: UserWarning: X does not have valid feature names, but LGBMRegressor was fitted with feature names
+  warnings.warn(
+C:\Users\yukik\fx-ai-trading\.venv\Lib\site-packages\sklearn\utils\validation.py:2691: UserWarning: X does not have valid feature names, but LGBMRegressor was fitted with feature names
+  warnings.warn(
+C:\Users\yukik\fx-ai-trading\.venv\Lib\site-packages\sklearn\utils\validation.py:2691: UserWarning: X does not have valid feature names, but LGBMRegressor was fitted with feature names
+  warnings.warn(
+C:\Users\yukik\fx-ai-trading\.venv\Lib\site-packages\sklearn\utils\validation.py:2691: UserWarning: X does not have valid feature names, but LGBMRegressor was fitted with feature names
+  warnings.warn(
+C:\Users\yukik\fx-ai-trading\.venv\Lib\site-packages\sklearn\utils\validation.py:2691: UserWarning: X does not have valid feature names, but LGBMRegressor was fitted with feature names
+  warnings.warn(
+C:\Users\yukik\fx-ai-trading\.venv\Lib\site-packages\sklearn\utils\validation.py:2691: UserWarning: X does not have valid feature names, but LGBMRegressor was fitted with feature names
+  warnings.warn(
+C:\Users\yukik\fx-ai-trading\.venv\Lib\site-packages\sklearn\utils\validation.py:2691: UserWarning: X does not have valid feature names, but LGBMRegressor was fitted with feature names
+  warnings.warn(
+C:\Users\yukik\fx-ai-trading\.venv\Lib\site-packages\sklearn\utils\validation.py:2691: UserWarning: X does not have valid feature names, but LGBMRegressor was fitted with feature names
+  warnings.warn(
+C:\Users\yukik\fx-ai-trading\.venv\Lib\site-packages\sklearn\utils\validation.py:2691: UserWarning: X does not have valid feature names, but LGBMRegressor was fitted with feature names
+  warnings.warn(
+C:\Users\yukik\fx-ai-trading\.venv\Lib\site-packages\sklearn\utils\validation.py:2691: UserWarning: X does not have valid feature names, but LGBMRegressor was fitted with feature names
+  warnings.warn(
+C:\Users\yukik\fx-ai-trading\.venv\Lib\site-packages\sklearn\utils\validation.py:2691: UserWarning: X does not have valid feature names, but LGBMRegressor was fitted with feature names
+  warnings.warn(
+C:\Users\yukik\fx-ai-trading\.venv\Lib\site-packages\sklearn\utils\validation.py:2691: UserWarning: X does not have valid feature names, but LGBMRegressor was fitted with feature names
+  warnings.warn(
+C:\Users\yukik\fx-ai-trading\.venv\Lib\site-packages\sklearn\utils\validation.py:2691: UserWarning: X does not have valid feature names, but LGBMRegressor was fitted with feature names
+  warnings.warn(
+C:\Users\yukik\fx-ai-trading\.venv\Lib\site-packages\sklearn\utils\validation.py:2691: UserWarning: X does not have valid feature names, but LGBMRegressor was fitted with feature names
+  warnings.warn(
+C:\Users\yukik\fx-ai-trading\.venv\Lib\site-packages\sklearn\utils\validation.py:2691: UserWarning: X does not have valid feature names, but LGBMRegressor was fitted with feature names
+  warnings.warn(
+C:\Users\yukik\fx-ai-trading\.venv\Lib\site-packages\sklearn\utils\validation.py:2691: UserWarning: X does not have valid feature names, but LGBMRegressor was fitted with feature names
+  warnings.warn(
+C:\Users\yukik\fx-ai-trading\.venv\Lib\site-packages\sklearn\utils\validation.py:2691: UserWarning: X does not have valid feature names, but LGBMRegressor was fitted with feature names
+  warnings.warn(
+C:\Users\yukik\fx-ai-trading\.venv\Lib\site-packages\sklearn\utils\validation.py:2691: UserWarning: X does not have valid feature names, but LGBMRegressor was fitted with feature names
+  warnings.warn(
+C:\Users\yukik\fx-ai-trading\.venv\Lib\site-packages\sklearn\utils\validation.py:2691: UserWarning: X does not have valid feature names, but LGBMRegressor was fitted with feature names
+  warnings.warn(
+    fold 4/5 done (27s, 1,676,190 records)
+C:\Users\yukik\fx-ai-trading\.venv\Lib\site-packages\sklearn\utils\validation.py:2691: UserWarning: X does not have valid feature names, but LGBMRegressor was fitted with feature names
+  warnings.warn(
+C:\Users\yukik\fx-ai-trading\.venv\Lib\site-packages\sklearn\utils\validation.py:2691: UserWarning: X does not have valid feature names, but LGBMRegressor was fitted with feature names
+  warnings.warn(
+C:\Users\yukik\fx-ai-trading\.venv\Lib\site-packages\sklearn\utils\validation.py:2691: UserWarning: X does not have valid feature names, but LGBMRegressor was fitted with feature names
+  warnings.warn(
+C:\Users\yukik\fx-ai-trading\.venv\Lib\site-packages\sklearn\utils\validation.py:2691: UserWarning: X does not have valid feature names, but LGBMRegressor was fitted with feature names
+  warnings.warn(
+C:\Users\yukik\fx-ai-trading\.venv\Lib\site-packages\sklearn\utils\validation.py:2691: UserWarning: X does not have valid feature names, but LGBMRegressor was fitted with feature names
+  warnings.warn(
+C:\Users\yukik\fx-ai-trading\.venv\Lib\site-packages\sklearn\utils\validation.py:2691: UserWarning: X does not have valid feature names, but LGBMRegressor was fitted with feature names
+  warnings.warn(
+C:\Users\yukik\fx-ai-trading\.venv\Lib\site-packages\sklearn\utils\validation.py:2691: UserWarning: X does not have valid feature names, but LGBMRegressor was fitted with feature names
+  warnings.warn(
+C:\Users\yukik\fx-ai-trading\.venv\Lib\site-packages\sklearn\utils\validation.py:2691: UserWarning: X does not have valid feature names, but LGBMRegressor was fitted with feature names
+  warnings.warn(
+C:\Users\yukik\fx-ai-trading\.venv\Lib\site-packages\sklearn\utils\validation.py:2691: UserWarning: X does not have valid feature names, but LGBMRegressor was fitted with feature names
+  warnings.warn(
+C:\Users\yukik\fx-ai-trading\.venv\Lib\site-packages\sklearn\utils\validation.py:2691: UserWarning: X does not have valid feature names, but LGBMRegressor was fitted with feature names
+  warnings.warn(
+C:\Users\yukik\fx-ai-trading\.venv\Lib\site-packages\sklearn\utils\validation.py:2691: UserWarning: X does not have valid feature names, but LGBMRegressor was fitted with feature names
+  warnings.warn(
+C:\Users\yukik\fx-ai-trading\.venv\Lib\site-packages\sklearn\utils\validation.py:2691: UserWarning: X does not have valid feature names, but LGBMRegressor was fitted with feature names
+  warnings.warn(
+C:\Users\yukik\fx-ai-trading\.venv\Lib\site-packages\sklearn\utils\validation.py:2691: UserWarning: X does not have valid feature names, but LGBMRegressor was fitted with feature names
+  warnings.warn(
+C:\Users\yukik\fx-ai-trading\.venv\Lib\site-packages\sklearn\utils\validation.py:2691: UserWarning: X does not have valid feature names, but LGBMRegressor was fitted with feature names
+  warnings.warn(
+C:\Users\yukik\fx-ai-trading\.venv\Lib\site-packages\sklearn\utils\validation.py:2691: UserWarning: X does not have valid feature names, but LGBMRegressor was fitted with feature names
+  warnings.warn(
+C:\Users\yukik\fx-ai-trading\.venv\Lib\site-packages\sklearn\utils\validation.py:2691: UserWarning: X does not have valid feature names, but LGBMRegressor was fitted with feature names
+  warnings.warn(
+C:\Users\yukik\fx-ai-trading\.venv\Lib\site-packages\sklearn\utils\validation.py:2691: UserWarning: X does not have valid feature names, but LGBMRegressor was fitted with feature names
+  warnings.warn(
+C:\Users\yukik\fx-ai-trading\.venv\Lib\site-packages\sklearn\utils\validation.py:2691: UserWarning: X does not have valid feature names, but LGBMRegressor was fitted with feature names
+  warnings.warn(
+C:\Users\yukik\fx-ai-trading\.venv\Lib\site-packages\sklearn\utils\validation.py:2691: UserWarning: X does not have valid feature names, but LGBMRegressor was fitted with feature names
+  warnings.warn(
+C:\Users\yukik\fx-ai-trading\.venv\Lib\site-packages\sklearn\utils\validation.py:2691: UserWarning: X does not have valid feature names, but LGBMRegressor was fitted with feature names
+  warnings.warn(
+    fold 5/5 done (20s, 1,690,430 records)
+
+  total predictions: 1,690,430
+
+Total test predictions: 1,690,430
+  pred  min=-5.698  max=+5.478  mean=-0.032  std=0.480
+  |pred| q50=0.223  q90=0.741  q99=1.668  q99.9=2.892
+
+====================================================================================================
+SIGNED PRED BUCKET TABLE (M1 LGBMRegressor)
+====================================================================================================
+  pred bucket                 n     TP%     SL%     TO%    edge%   avg_pred
+  ------------------------------------------------------------------------------
+  (-inf, -1.0]           52,119   14.5%   85.1%    0.4%   -70.7%    -1.435
+  (-1.0, -0.5]          148,476   12.6%   87.0%    0.4%   -74.4%    -0.690
+  (-0.5, -0.3]          158,584   11.9%   87.8%    0.3%   -75.9%    -0.390
+  (-0.3, -0.1]          297,140   11.5%   88.2%    0.3%   -76.7%    -0.190
+  (-0.1, +0.1]          422,831   11.3%   88.4%    0.3%   -77.1%    +0.001
+  (+0.1, +0.3]          315,838   11.3%   88.4%    0.3%   -77.1%    +0.189
+  (+0.3, +0.5]          147,898   11.7%   88.0%    0.3%   -76.4%    +0.387
+  (+0.5, +1.0]          116,685   12.3%   87.3%    0.4%   -75.0%    +0.681
+  (+1.0, +inf]           30,859   13.2%   86.4%    0.3%   -73.2%    +1.428
+====================================================================================================
+
+CUMULATIVE LONG-SIDE: pred ≥ threshold (assume long entry)
+     thr          n     TP%     SL%    edge%
+  --------------------------------------------
+   +0.05    716,992   11.6%   88.1%   -76.4%
+   +0.10    611,280   11.7%   88.0%   -76.3%
+   +0.20    427,951   11.9%   87.8%   -75.9%
+   +0.30    295,442   12.1%   87.6%   -75.5%
+   +0.50    147,544   12.5%   87.1%   -74.7%
+   +0.70     76,297   13.0%   86.6%   -73.6%
+   +1.00     30,859   13.2%   86.4%   -73.2%
+   +1.50      8,844   13.0%   86.4%   -73.3%
+   +2.00      3,134   13.9%   85.6%   -71.7%
+====================================================================================================
+
+CUMULATIVE SHORT-SIDE: pred ≤ -threshold (assume short entry)
+     thr          n     TP%     SL%    edge%
+  --------------------------------------------
+   -0.05    757,525   12.0%   87.7%   -75.7%
+   -0.10    656,319   12.1%   87.6%   -75.5%
+   -0.20    485,225   12.3%   87.3%   -75.0%
+   -0.30    359,179   12.6%   87.1%   -74.5%
+   -0.50    200,595   13.1%   86.5%   -73.4%
+   -0.70    114,347   13.7%   85.8%   -72.1%
+   -1.00     52,119   14.5%   85.1%   -70.7%
+   -1.50     15,831   15.0%   84.5%   -69.6%
+   -2.00      5,412   15.2%   84.2%   -69.0%
+====================================================================================================

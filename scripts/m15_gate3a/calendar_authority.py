@@ -171,10 +171,6 @@ CALENDAR_CONTENT_DIGEST_DOMAIN: Final[str] = "M15_GATE3A_CALENDAR_CONTENT_DIGEST
 #: is real and checked in-process, while "this content is what the named commit
 #: carries" is a declaration by the artifact that a reader-free package cannot
 #: verify and does not claim to.
-PROVENANCE_BASIS_DECLARED_AND_DIGEST_BOUND: Final[str] = (
-    "PROVENANCE_DECLARED_BY_ARTIFACT__CONTENT_DIGEST_BOUND_IN_PROCESS__"
-    "COMMITMENT_NOT_VERIFIED_BY_THIS_READER_FREE_PACKAGE"
-)
 
 
 class CalendarAuthorityError(RuntimeError):
@@ -302,7 +298,6 @@ class ValidatedCalendar:
     committed_artifact: str
     committed_revision: str
     approval_basis: str = field(default=APPROVAL_BASIS_DECLARED)
-    provenance_basis: str = field(default=PROVENANCE_BASIS_DECLARED_AND_DIGEST_BOUND)
     _slots: Mapping[str, frozenset[datetime]] = field(default_factory=dict)
     _construction_token: Any = field(default=None, repr=False, compare=False)
 
@@ -344,7 +339,11 @@ class ValidatedCalendar:
                 f"calendar queried for a pair outside the frozen PAIRS_20 universe: {exc}"
             ) from exc
         slots = self._slots.get(canonical)
-        if slots is None:  # pragma: no cover - validation guarantees all 20
+        # NOT pragma'd. The premise was "validation guarantees all 20", which is
+        # exactly the inherit-on-trust this module refuses everywhere else:
+        # `object.__setattr__` on a validated record is the declared, unclosed
+        # threat model, and an audit reached this branch through it.
+        if slots is None:
             raise CalendarMalformedError(
                 f"calendar declares no expected M15 slot set for {canonical}"
             )
@@ -873,7 +872,6 @@ def validate_calendar(artifact: Any, *, expected_epoch: str) -> ValidatedCalenda
         committed_artifact=provenance["committed_artifact"],
         committed_revision=provenance["committed_revision"],
         approval_basis=APPROVAL_BASIS_DECLARED,
-        provenance_basis=PROVENANCE_BASIS_DECLARED_AND_DIGEST_BOUND,
         _slots=dict(slots),
         _construction_token=_CalendarConstructionToken(),
     )
@@ -884,7 +882,6 @@ __all__ = [
     "CALENDAR_APPROVAL_MARKER",
     "CALENDAR_ARTIFACT_FIELDS",
     "CALENDAR_CONTENT_DIGEST_DOMAIN",
-    "PROVENANCE_BASIS_DECLARED_AND_DIGEST_BOUND",
     "PROVENANCE_FIELD",
     "REQUIRED_CALENDAR_FIELDS",
     "REQUIRED_PROVENANCE_FIELDS",

@@ -1,0 +1,144 @@
+﻿sweep: 200 cells  (2H x 10TP/SL x 2fk x 5ct)  train_runs=40  n_est=200
+
+Loading candle data (365d_BA) ...
+  loaded 20 pairs
+
+Building base features ...
+  AUD_CAD
+  AUD_JPY
+  AUD_NZD
+  AUD_USD
+  CHF_JPY
+  EUR_AUD
+  EUR_CAD
+  EUR_CHF
+  EUR_GBP
+  EUR_JPY
+  EUR_USD
+  GBP_AUD
+  GBP_CHF
+  GBP_JPY
+  GBP_USD
+  NZD_JPY
+  NZD_USD
+  USD_CAD
+  USD_CHF
+  USD_JPY
+train runs: 40  sim cells: 200
+
+--- HORIZON=20 ---
+  H20_TP1.0_SL1.0_fk1.0 [train] ...
+    ct=0.40  n=314  hit=35.0%  PnL=-196pip  Sharpe=-0.1108
+    ct=0.45  n=308  hit=34.4%  PnL=-256pip  Sharpe=-0.1450
+    ct=0.50  n=288  hit=33.0%  PnL=-264pip  Sharpe=-0.1697
+    ct=0.55  n=211  hit=28.4%  PnL=-277pip  Sharpe=-0.2655
+    ct=0.60  n=141  hit=29.8%  PnL=-183pip  Sharpe=-0.2473
+  H20_TP1.0_SL1.0_fk1.5 [train] ...
+    ct=0.40  n=565  hit=31.3%  PnL=-454pip  Sharpe=-0.1651
+    ct=0.45  n=564  hit=31.6%  PnL=-428pip  Sharpe=-0.1587
+    ct=0.50  n=538  hit=32.5%  PnL=-355pip  Sharpe=-0.1387
+    ct=0.55  n=461  hit=31.2%  PnL=-304pip  Sharpe=-0.1382
+    ct=0.60  n=359  hit=32.0%  PnL=-258pip  Sharpe=-0.1530
+  H20_TP1.5_SL1.0_fk1.0 [train] ...
+    ct=0.40  n=688  hit=24.3%  PnL=-218pip  Sharpe=-0.0673
+    ct=0.45  n=451  hit=22.6%  PnL=-178pip  Sharpe=-0.0884
+    ct=0.50  n=276  hit=26.8%  PnL=13pip  Sharpe=0.0099
+    ct=0.55  n=149  hit=24.2%  PnL=-45pip  Sharpe=-0.0687
+    ct=0.60  n=69  hit=27.5%  PnL=7pip  Sharpe=0.0205
+  H20_TP1.5_SL1.0_fk1.5 [train] ...
+    ct=0.40  n=891  hit=24.9%  PnL=-112pip  Sharpe=-0.0270
+    ct=0.45  n=623  hit=25.4%  PnL=14pip  Sharpe=0.0048
+    ct=0.50  n=405  hit=21.5%  PnL=-138pip  Sharpe=-0.0744
+    ct=0.55  n=258  hit=21.7%  PnL=-106pip  Sharpe=-0.0969
+    ct=0.60  n=168  hit=17.3%  PnL=-141pip  Sharpe=-0.2071
+  H20_TP1.5_SL1.5_fk1.0 [train] ...
+    ct=0.40  n=908  hit=34.0%  PnL=-792pip  Sharpe=-0.1284
+    ct=0.45  n=840  hit=34.3%  PnL=-711pip  Sharpe=-0.1273
+    ct=0.50  n=666  hit=35.7%  PnL=-474pip  Sharpe=-0.1081
+    ct=0.55  n=389  hit=36.5%  PnL=-239pip  Sharpe=-0.0868
+    ct=0.60  n=176  hit=33.0%  PnL=-244pip  Sharpe=-0.1913
+  H20_TP1.5_SL1.5_fk1.5 [train] ...
+    ct=0.40  n=1,395  hit=32.2%  PnL=-1,090pip  Sharpe=-0.1270
+    ct=0.45  n=1,343  hit=32.3%  PnL=-1,023pip  Sharpe=-0.1253
+    ct=0.50  n=1,103  hit=30.6%  PnL=-850pip  Sharpe=-0.1315
+    ct=0.55  n=731  hit=26.7%  PnL=-813pip  Sharpe=-0.1965
+    ct=0.60  n=457  hit=27.1%  PnL=-439pip  Sharpe=-0.1755
+  H20_TP2.0_SL1.0_fk1.0 [train] ...
+    ct=0.40  n=448  hit=19.2%  PnL=-3pip  Sharpe=-0.0013
+    ct=0.45  n=237  hit=21.9%  PnL=100pip  Sharpe=0.0932
+    ct=0.50  n=128  hit=22.7%  PnL=43pip  Sharpe=0.0698
+    ct=0.55  n=52  hit=28.8%  PnL=55pip  Sharpe=0.2258
+    ct=0.60  n=24  hit=25.0%  PnL=2pip  Sharpe=0.0210
+  H20_TP2.0_SL1.0_fk1.5 [train] ...
+    ct=0.40  n=635  hit=20.9%  PnL=112pip  Sharpe=0.0374
+    ct=0.45  n=383  hit=19.8%  PnL=29pip  Sharpe=0.0163
+    ct=0.50  n=228  hit=21.1%  PnL=18pip  Sharpe=0.0167
+    ct=0.55  n=143  hit=18.2%  PnL=-28pip  Sharpe=-0.0406
+    ct=0.60  n=87  hit=20.7%  PnL=8pip  Sharpe=0.0201
+  H20_TP2.0_SL1.5_fk1.0 [train] ...
+    ct=0.40  n=1,434  hit=23.9%  PnL=-445pip  Sharpe=-0.0567
+    ct=0.45  n=841  hit=24.4%  PnL=-297pip  Sharpe=-0.0647
+    ct=0.50  n=437  hit=24.7%  PnL=-96pip  Sharpe=-0.0427
+    ct=0.55  n=204  hit=23.0%  PnL=-57pip  Sharpe=-0.0553
+    ct=0.60  n=99  hit=20.2%  PnL=-59pip  Sharpe=-0.1114
+  H20_TP2.0_SL1.5_fk1.5 [train] ...
+    ct=0.40  n=1,926  hit=22.7%  PnL=-976pip  Sharpe=-0.1003
+    ct=0.45  n=1,250  hit=23.0%  PnL=-701pip  Sharpe=-0.1112
+    ct=0.50  n=752  hit=20.7%  PnL=-525pip  Sharpe=-0.1434
+    ct=0.55  n=413  hit=20.8%  PnL=-258pip  Sharpe=-0.1320
+    ct=0.60  n=225  hit=22.7%  PnL=-35pip  Sharpe=-0.0324
+  H20_TP2.0_SL2.0_fk1.0 [train] ...
+    ct=0.40  n=1,985  hit=28.6%  PnL=-1,819pip  Sharpe=-0.1411
+    ct=0.45  n=1,520  hit=28.0%  PnL=-1,178pip  Sharpe=-0.1308
+    ct=0.50  n=911  hit=27.9%  PnL=-950pip  Sharpe=-0.1772
+    ct=0.55  n=453  hit=28.7%  PnL=-479pip  Sharpe=-0.1733
+    ct=0.60  n=202  hit=30.2%  PnL=-32pip  Sharpe=-0.0255
+  H20_TP2.0_SL2.0_fk1.5 [train] ...
+    ct=0.40  n=2,003  hit=28.2%  PnL=-1,522pip  Sharpe=-0.1179
+    ct=0.45  n=1,553  hit=28.3%  PnL=-1,307pip  Sharpe=-0.1373
+    ct=0.50  n=987  hit=28.6%  PnL=-778pip  Sharpe=-0.1309
+    ct=0.55  n=526  hit=24.5%  PnL=-538pip  Sharpe=-0.1740
+    ct=0.60  n=257  hit=21.4%  PnL=-284pip  Sharpe=-0.2052
+  H20_TP3.0_SL1.0_fk1.0 [train] ...
+    ct=0.40  n=264  hit=8.3%  PnL=-110pip  Sharpe=-0.0895
+    ct=0.45  n=147  hit=8.8%  PnL=-74pip  Sharpe=-0.1377
+    ct=0.50  n=89  hit=9.0%  PnL=-24pip  Sharpe=-0.0706
+    ct=0.55  n=57  hit=14.0%  PnL=30pip  Sharpe=0.1163
+    ct=0.60  n=27  hit=18.5%  PnL=38pip  Sharpe=0.2365
+  H20_TP3.0_SL1.0_fk1.5 [train] ...
+    ct=0.40  n=206  hit=8.7%  PnL=-15pip  Sharpe=-0.0168
+    ct=0.45  n=129  hit=11.6%  PnL=21pip  Sharpe=0.0342
+    ct=0.50  n=84  hit=6.0%  PnL=-64pip  Sharpe=-0.2621
+    ct=0.55  n=54  hit=9.3%  PnL=-14pip  Sharpe=-0.0699
+    ct=0.60  n=29  hit=10.3%  PnL=-7pip  Sharpe=-0.0731
+  H20_TP3.0_SL1.5_fk1.0 [train] ...
+    ct=0.40  n=534  hit=13.3%  PnL=-161pip  Sharpe=-0.0686
+    ct=0.45  n=310  hit=13.2%  PnL=-32pip  Sharpe=-0.0229
+    ct=0.50  n=195  hit=12.8%  PnL=-28pip  Sharpe=-0.0330
+    ct=0.55  n=114  hit=14.0%  PnL=29pip  Sharpe=0.0506
+    ct=0.60  n=68  hit=16.2%  PnL=23pip  Sharpe=0.0762
+  H20_TP3.0_SL1.5_fk1.5 [train] ...
+    ct=0.40  n=796  hit=13.6%  PnL=-57pip  Sharpe=-0.0156
+    ct=0.45  n=470  hit=15.7%  PnL=34pip  Sharpe=0.0145
+    ct=0.50  n=276  hit=13.4%  PnL=-21pip  Sharpe=-0.0151
+    ct=0.55  n=165  hit=18.8%  PnL=98pip  Sharpe=0.1129
+    ct=0.60  n=93  hit=21.5%  PnL=79pip  Sharpe=0.1466
+  H20_TP3.0_SL2.0_fk1.0 [train] ...
+    ct=0.40  n=988  hit=16.9%  PnL=-360pip  Sharpe=-0.0776
+    ct=0.45  n=529  hit=16.8%  PnL=-177pip  Sharpe=-0.0727
+    ct=0.50  n=277  hit=14.8%  PnL=-181pip  Sharpe=-0.1557
+    ct=0.55  n=142  hit=12.0%  PnL=-115pip  Sharpe=-0.2077
+    ct=0.60  n=67  hit=9.0%  PnL=-64pip  Sharpe=-0.2990
+  H20_TP3.0_SL2.0_fk1.5 [train] ...
+    ct=0.40  n=1,184  hit=16.6%  PnL=-428pip  Sharpe=-0.0747
+    ct=0.45  n=654  hit=14.8%  PnL=-240pip  Sharpe=-0.0774
+    ct=0.50  n=369  hit=14.6%  PnL=-142pip  Sharpe=-0.0806
+    ct=0.55  n=196  hit=13.3%  PnL=-92pip  Sharpe=-0.0931
+    ct=0.60  n=107  hit=17.8%  PnL=-15pip  Sharpe=-0.0268
+  H20_TP3.0_SL3.0_fk1.0 [train] ...
+    ct=0.40  n=1,359  hit=18.2%  PnL=-1,126pip  Sharpe=-0.1428
+    ct=0.45  n=819  hit=18.7%  PnL=-741pip  Sharpe=-0.1636
+    ct=0.50  n=450  hit=17.3%  PnL=-487pip  Sharpe=-0.2068
+    ct=0.55  n=229  hit=16.6%  PnL=-257pip  Sharpe=-0.2123
+    ct=0.60  n=120  hit=20.0%  PnL=-58pip  Sharpe=-0.0820
+  H20_TP3.0_SL3.0_fk1.5 [train] ...

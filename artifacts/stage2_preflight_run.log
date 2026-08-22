@@ -1,0 +1,16 @@
+Traceback (most recent call last):
+  File "C:\Users\yukik\fx-ai-trading\scripts\tabular_targeted_verification_v2_expanded.py", line 445, in <module>
+    sys.exit(main())
+             ^^^^^^
+  File "C:\Users\yukik\fx-ai-trading\scripts\tabular_targeted_verification_v2_expanded.py", line 334, in main
+    data = SR.load_full_historic_data(days=args.days)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\yukik\fx-ai-trading\scripts\_verification_harness\sentinel_runner.py", line 159, in load_full_historic_data
+    pair_runtime_map[pair] = stage28_0a._build_pair_runtime(pair, days=span_days)
+                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\yukik\fx-ai-trading\scripts\stage28_0a_a1_objective_redesign_eval.py", line 1210, in _build_pair_runtime
+    m1 = load_m1_ba(pair, days=days)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\yukik\fx-ai-trading\scripts\stage23_0a_build_outcome_dataset.py", line 143, in load_m1_ba
+    raise FileNotFoundError(path)
+FileNotFoundError: C:\Users\yukik\fx-ai-trading\data\candles_EUR_USD_M1_1095d_BA.jsonl

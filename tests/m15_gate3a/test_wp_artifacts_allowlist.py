@@ -779,11 +779,20 @@ def test_the_declared_leaf_budget_is_enforced_at_its_derived_value() -> None:
     """``leaf-declared`` mutant: 1600 declared string leaves scanned clean."""
     schema = artifact_schema("design_m15_inventory")
     assert schema is not None
-    budget = len(PAIRS_20) * len(schema.allowed_keys)
-    assert schema.max_leaves == budget
-    at_budget = {"artifact": "design_m15_inventory", "sha256": _nest(["ab" * 32] * (budget - 1))}
+    budget = schema.max_leaves
+    # Pinned to the derived VALUE, not to the expression that defines it. Writing
+    # `assert schema.max_leaves == len(PAIRS_20) * len(schema.allowed_keys)` makes
+    # the assertion the definition restated, so it can never fail and the drift
+    # pin is gone; an audit caught exactly that after the key set grew.
+    assert budget == 820, "the derived leaf budget moved; re-derive it deliberately"
+    assert budget == len(PAIRS_20) * len(schema.allowed_keys)
+    # Short leaves, so this measures the LEAF budget rather than the aggregate
+    # text budget: `"ab" * 32` x 820 is 52 450 characters, which the text
+    # aggregate refuses first and which would have made this test pass for the
+    # wrong reason.
+    at_budget = {"artifact": "design_m15_inventory", "sha256": _nest(["ab"] * (budget - 1))}
     assert scan_gate3a(at_budget) == []
-    over = {"artifact": "design_m15_inventory", "sha256": _nest(["ab" * 32] * budget)}
+    over = {"artifact": "design_m15_inventory", "sha256": _nest(["ab"] * budget)}
     assert "gate3a_leaf_cardinality_exceeded" in scan_gate3a(over)
 
 

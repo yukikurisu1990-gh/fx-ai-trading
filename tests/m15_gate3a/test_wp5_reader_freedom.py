@@ -42,7 +42,11 @@ PACKAGE_DIR = Path(__file__).resolve().parents[2] / "scripts" / "m15_gate3a"
 PACKAGE = "scripts.m15_gate3a"
 
 #: Every module of the package. The floor below stops a glob that finds nothing.
-MODULES: tuple[Path, ...] = tuple(sorted(PACKAGE_DIR.glob("*.py")))
+#: RECURSIVE. `glob("*.py")` covered only the package's top level, so a
+#: subpackage - `scripts/m15_gate3a/io/__init__.py` carrying `import socket`,
+#: `import subprocess` and `Path(p).read_bytes()` - left every AST test in this
+#: file green. The property §12.14 states is over `scripts/m15_gate3a/**`.
+MODULES: tuple[Path, ...] = tuple(sorted(PACKAGE_DIR.rglob("*.py")))
 _MODULE_FLOOR = 15
 
 
@@ -64,14 +68,42 @@ def _called_names(tree: ast.Module) -> set[str]:
 
 
 def _module_scope_imports(tree: ast.Module) -> set[str]:
-    """Imports at module scope only — a function-local import is not a load."""
+    """Every import in the module, at any nesting depth.
+
+    Reading ``tree.body`` was a defect, not an economy. An internal audit put
+    ``import subprocess`` inside a function and ``try: import socket`` at module
+    scope and both left this file green: the first is not in ``tree.body`` at all,
+    and the second is inside a ``Try`` node whose body ``tree.body`` does not
+    descend into. A capability is a capability wherever it is spelled — a
+    function-local import still binds the module at first call — so the sweep
+    walks the whole tree.
+    """
     out: set[str] = set()
-    for node in tree.body:
+    for node in ast.walk(tree):
         if isinstance(node, ast.Import):
             out.update(alias.name for alias in node.names)
         elif isinstance(node, ast.ImportFrom) and node.module and node.level == 0:
             out.add(node.module)
     return out
+
+
+def _referenced_names(tree: ast.Module) -> set[str]:
+    """Every attribute and bare name the module *mentions*, not merely calls.
+
+    ``_called_names`` looked only at ``ast.Call`` callees, which an audit defeated
+    five ways at once: ``_R = Path.read_bytes`` then ``_R(p)``,
+    ``getattr(p, "read" + "_bytes")()``, ``hashlib.file_digest(fh, ...)``,
+    ``fileobj.read()`` on a caller-supplied handle, and ``subprocess.run`` behind
+    a function-local import. Binding a read primitive to another name is not less
+    of a read; the reference itself is the capability.
+    """
+    names: set[str] = set()
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Attribute):
+            names.add(node.attr)
+        elif isinstance(node, ast.Name):
+            names.add(node.id)
+    return names
 
 
 def test_the_module_sweep_is_not_vacuous() -> None:
@@ -92,8 +124,28 @@ FORBIDDEN_CALLS: frozenset[str] = frozenset(
         "open",
         "read_text",
         "read_bytes",
+        "read",
+        "readall",
+        "readinto",
         "readline",
         "readlines",
+        "FileIO",
+        "BufferedReader",
+        "TextIOWrapper",
+        "mmap",
+        "file_digest",
+        "run",
+        "call",
+        "communicate",
+        "create_connection",
+        "socket",
+        "recv",
+        "recv_into",
+        "recvfrom",
+        "send",
+        "sendall",
+        "urlretrieve",
+        "request",
         "fdopen",
         "loadtxt",
         "memmap",
@@ -136,32 +188,219 @@ PERMITTED_FS_CALLS: dict[str, frozenset[str]] = {
 }
 
 
+def _permitted_qualified(node: ast.Attribute) -> bool:
+    """True for the two qualified names this package legitimately mentions.
+
+    Structural, not textual. The predecessor exempted `compile` whenever the
+    **file** contained the substring `"re.compile"` anywhere — which disabled the
+    rule for every call in that module. Here the exemption is the shape of the
+    node itself: `re.compile` and `json.loads`, and nothing else.
+    """
+    return isinstance(node.value, ast.Name) and (
+        (node.value.id == "re" and node.attr == "compile")
+        or (node.value.id == "json" and node.attr == "loads")
+    )
+
+
+#: The subset of `FORBIDDEN_CALLS` that is also forbidden as a **bare** name.
+#: The rest are checked only as attributes, because words like `run`, `read`,
+#: `call` and `send` are ordinary local-variable names — `aggregation.py` counts
+#: a `run` of unusable minutes — and flagging those would be noise that a future
+#: reader silences by weakening the rule. A capability reached as a bare name is
+#: either a builtin or an imported module, and the import sweep owns the latter.
+FORBIDDEN_BARE_NAMES: frozenset[str] = frozenset({"open", "eval", "exec", "compile", "__import__"})
+
+
+def _forbidden_references(tree: ast.Module) -> set[str]:
+    """Forbidden primitives *referenced* anywhere, with the two exemptions."""
+    hits: set[str] = set()
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Attribute) and node.attr in FORBIDDEN_CALLS:
+            if not _permitted_qualified(node):
+                hits.add(node.attr)
+        elif isinstance(node, ast.Name) and node.id in FORBIDDEN_BARE_NAMES:
+            hits.add(node.id)
+    return hits
+
+
+def _referenced_attributes(tree: ast.Module) -> set[str]:
+    """Attribute names only. A filesystem primitive is always reached as one.
+
+    Bare names are excluded here (unlike :func:`_referenced_names`) because a
+    local variable called `stat` is not `os.stat`, and flagging it is the kind of
+    noise that gets a rule relaxed rather than fixed.
+    """
+    return {node.attr for node in ast.walk(tree) if isinstance(node, ast.Attribute)}
+
+
+def _module_string_constants(tree: ast.Module) -> dict[str, frozenset[str]]:
+    """Module-level names bound to a literal collection of strings."""
+    out: dict[str, frozenset[str]] = {}
+    for node in tree.body:
+        if not (isinstance(node, (ast.Assign, ast.AnnAssign)) and node.value is not None):
+            continue
+        targets = node.targets if isinstance(node, ast.Assign) else [node.target]
+        value = node.value
+        if isinstance(value, ast.Call) and value.args:
+            value = value.args[0]
+        if not isinstance(value, (ast.Tuple, ast.List, ast.Set)):
+            continue
+        if not all(isinstance(e, ast.Constant) and isinstance(e.value, str) for e in value.elts):
+            continue
+        for target in targets:
+            if isinstance(target, ast.Name):
+                out[target.id] = frozenset(e.value for e in value.elts)  # type: ignore[attr-defined]
+    return out
+
+
+def _loop_bindings(tree: ast.Module) -> dict[str, str]:
+    """Loop variable -> the name of the iterable it walks, where both are plain."""
+    out: dict[str, str] = {}
+    for node in ast.walk(tree):
+        pairs = []
+        if isinstance(node, (ast.For, ast.AsyncFor, ast.comprehension)):
+            pairs.append((node.target, node.iter))
+        for target, iterable in pairs:
+            if isinstance(target, ast.Name) and isinstance(iterable, ast.Name):
+                out[target.id] = iterable.id
+    return out
+
+
+def _inline_loop_literals(tree: ast.Module) -> dict[str, frozenset[str]]:
+    """Loop variable -> the string literals of an **inline** iterable.
+
+    `for name in ("committed_artifact", "committed_revision"):` is as statically
+    enumerable as a module constant; it just is not a name.
+    """
+    out: dict[str, frozenset[str]] = {}
+    for node in ast.walk(tree):
+        pairs = []
+        if isinstance(node, (ast.For, ast.AsyncFor, ast.comprehension)):
+            pairs.append((node.target, node.iter))
+        for target, iterable in pairs:
+            if not (
+                isinstance(target, ast.Name)
+                and isinstance(iterable, (ast.Tuple, ast.List, ast.Set))
+            ):
+                continue
+            if all(isinstance(e, ast.Constant) and isinstance(e.value, str) for e in iterable.elts):
+                out[target.id] = frozenset(e.value for e in iterable.elts)  # type: ignore[attr-defined]
+    return out
+
+
 def test_no_gate3a_module_calls_a_read_network_or_subprocess_primitive() -> None:
     """FB-8: the property four audit records rest on, pinned at last.
 
-    Mutation this kills: adding `Path(p).read_bytes()`, `open(...)`,
-    `socket.connect(...)` or `subprocess.run(...)` anywhere in the package.
+    Mutations this kills, each of which previously left the suite green: a
+    function-local `import subprocess` with `subprocess.run(...)`;
+    `hashlib.file_digest(fh, "sha256")`; `_R = Path.read_bytes` then `_R(p)`;
+    `io.FileIO(p).readall()`; `mmap.mmap(fd, 0)`;
+    `socket.create_connection(...).sendall(...)`; `fileobj.read()` on a
+    caller-supplied handle with no `open` anywhere in the module.
+
+    The rule is over **references**, not calls, because binding a primitive to
+    another name is not less of a read — which is exactly how four of those
+    seven escaped a callee-name denylist.
     """
     offenders: list[str] = []
     for path in MODULES:
-        for name in sorted(_called_names(_tree(path)) & FORBIDDEN_CALLS):
-            # `json.loads`-style names are absent by construction; `compile` is
-            # `re.compile` in this package, which is not a code-compile.
-            if name == "compile" and "re.compile" in path.read_text(encoding="utf-8"):
-                continue
+        for name in sorted(_forbidden_references(_tree(path))):
             offenders.append(f"{path.name}:{name}")
     assert offenders == [], (
         f"gate-3a must contain no read / network / subprocess primitive (§12.14); found {offenders}"
     )
 
 
+def test_no_gate3a_module_computes_the_name_it_reaches_for() -> None:
+    """`getattr(p, "read" + "_bytes")()` defeats every name-based rule above.
+
+    `getattr` has legitimate uses here (`sealing` looks up `__post_init__`), so
+    it is not forbidden — but its attribute argument must be a **literal**, which
+    is what makes the reference sweep above complete rather than advisory.
+    """
+    offenders: list[str] = []
+    for path in MODULES:
+        tree = _tree(path)
+        constants = _module_string_constants(tree)
+        loops = _loop_bindings(tree)
+        inline = _inline_loop_literals(tree)
+        for node in ast.walk(tree):
+            if not (isinstance(node, ast.Call) and isinstance(node.func, ast.Name)):
+                continue
+            if node.func.id != "getattr" or len(node.args) < 2:
+                continue
+            attribute = node.args[1]
+            if isinstance(attribute, ast.Constant) and isinstance(attribute.value, str):
+                reachable = {attribute.value}
+            elif isinstance(attribute, ast.Name):
+                # The package's real use: iterate a module-level tuple of field
+                # names. That set is statically enumerable, so the reachable
+                # attribute names are still known and can still be checked.
+                iterable = loops.get(attribute.id)
+                reachable = inline.get(attribute.id) or constants.get(iterable or "", frozenset())
+                if not reachable:
+                    offenders.append(f"{path.name}:{node.lineno}:unresolvable")
+                    continue
+            else:
+                offenders.append(f"{path.name}:{node.lineno}:computed")
+                continue
+            for reached in sorted(reachable & FORBIDDEN_CALLS):
+                offenders.append(f"{path.name}:{node.lineno}:{reached}")
+    assert offenders == [], (
+        "a computed attribute name defeats every name-based reader-freedom rule; "
+        f"getattr must take a literal that is not a forbidden primitive, but {offenders}"
+    )
+
+
+#: Every filesystem-touching name in `pathlib.Path` and `os` that is not already
+#: in `FORBIDDEN_CALLS`. An ALLOWLIST complement, not a denylist of eight: the
+#: predecessor's docstring claimed "the filesystem surface is exactly what the
+#: docstrings claim it is" while checking eight names, so adding `write_bytes`,
+#: `touch` or `rename` to `proof.py` - a module the tests say touches the
+#: filesystem not at all - left the suite green.
+FS_MUTATING_NAMES: frozenset[str] = frozenset(
+    # Deliberately excludes names that collide with non-filesystem methods of
+    # ordinary types - `replace` (`str`, `datetime`, `dataclasses`), `copy`
+    # (`dict`), `move`, `truncate`, `link`. Those would be noise, and noise is
+    # what gets a rule weakened later rather than fixed. Every name below is a
+    # filesystem primitive and nothing else.
+    {
+        "mkdir",
+        "makedirs",
+        "write_text",
+        "write_bytes",
+        "touch",
+        "unlink",
+        "remove",
+        "rmdir",
+        "removedirs",
+        "rmtree",
+        "rename",
+        "symlink_to",
+        "hardlink_to",
+        "symlink",
+        "chmod",
+        "chown",
+        "copyfile",
+        "copytree",
+        "exists",
+        "is_file",
+        "is_dir",
+        "stat",
+        "lstat",
+        "samestat",
+        "samefile",
+        "resolve",
+    }
+)
+
+
 def test_only_the_two_writer_modules_touch_the_filesystem_at_all() -> None:
     """The filesystem surface is exactly what the docstrings claim it is."""
-    fs_names = frozenset().union(*PERMITTED_FS_CALLS.values())
     offenders: list[str] = []
     for path in MODULES:
         permitted = PERMITTED_FS_CALLS.get(path.name, frozenset())
-        for name in sorted(_called_names(_tree(path)) & fs_names):
+        for name in sorted(_referenced_attributes(_tree(path)) & FS_MUTATING_NAMES):
             if name not in permitted:
                 offenders.append(f"{path.name}:{name}")
     assert offenders == [], (
@@ -222,19 +461,43 @@ PERMITTED_OUTBOUND: dict[str, frozenset[str]] = {
 }
 
 
+#: Every first-party top-level package in this repository. The outbound sweep
+#: used to filter on ``scripts`` alone, which left the direction that matters
+#: most — gate-3a importing **production code** under `src/fx_ai_trading` —
+#: entirely unpinned; an audit added `import fx_ai_trading.config` to
+#: `pair_authority.py` and this file stayed green.
+FIRST_PARTY_ROOTS: frozenset[str] = frozenset(
+    {"scripts", "src", "fx_ai_trading", "tools", "migrations", "tests"}
+)
+
+
 def _outbound_bindings() -> dict[str, set[str]]:
+    """First-party imports leaving the package, from anywhere in the tree.
+
+    ``.body`` missed function-local imports — including the one this pin's own
+    docstring named as the mutation it kills, `from scripts.ml_step4.data_adapter
+    import Real365dBaProvider` written inside a function.
+    """
     bound: dict[str, set[str]] = {}
     for path in MODULES:
-        for node in _tree(path).body:
+        for node in ast.walk(_tree(path)):
             if isinstance(node, ast.ImportFrom) and node.module and node.level == 0:
-                if node.module.startswith(PACKAGE):
+                # The trailing dot is load-bearing: without it a sibling whose
+                # dotted name merely begins with the package name - an audit
+                # used `scripts.m15_gate3a_reader`, holding a `read_bytes`
+                # helper - was treated as intra-package and dropped from the
+                # outbound surface entirely. `_intra_edges` already got this
+                # right; this did not.
+                if node.module == PACKAGE or node.module.startswith(PACKAGE + "."):
                     continue
-                if node.module.split(".")[0] != "scripts":
+                if node.module.split(".")[0] not in FIRST_PARTY_ROOTS:
                     continue
                 bound.setdefault(node.module, set()).update(a.name for a in node.names)
             elif isinstance(node, ast.Import):
                 for alias in node.names:
-                    if alias.name.startswith("scripts") and not alias.name.startswith(PACKAGE):
+                    root = alias.name.split(".")[0]
+                    inside = alias.name == PACKAGE or alias.name.startswith(PACKAGE + ".")
+                    if root in FIRST_PARTY_ROOTS and not inside:
                         bound.setdefault(alias.name, set()).add("<module>")
     return bound
 
@@ -260,9 +523,15 @@ def test_the_first_party_outbound_surface_is_exactly_what_is_permitted() -> None
 def test_importing_the_package_loads_no_third_party_module() -> None:
     """Runtime companion to the AST sweep, in a fresh interpreter."""
     probe = (
-        "import sys;"
-        "import scripts.m15_gate3a.proof, scripts.m15_gate3a.artifacts,"
-        " scripts.m15_gate3a.aggregation, scripts.m15_gate3a.cost_schema;"
+        "import sys, importlib, pathlib;"
+        # EVERY module in the package. Importing four of sixteen left
+        # `effective_n`, `warmup` and `__init__` outside the transitive closure,
+        # so a capability import in any of them escaped this test as well as the
+        # AST sweep that read only `tree.body`.
+        "names=sorted(p.stem for p in pathlib.Path('scripts/m15_gate3a').glob('*.py'));"
+        "[importlib.import_module('scripts.m15_gate3a.' + n)"
+        " for n in names if n != '__init__'];"
+        "assert len(names) >= 15, names;"
         "bad=[m for m in ('pandas','numpy','lightgbm','joblib','sklearn','sqlalchemy',"
         "'dotenv','requests','socket','subprocess','ssl','pyarrow') if m in sys.modules];"
         "print(','.join(bad))"
@@ -285,17 +554,76 @@ def test_importing_the_package_loads_no_third_party_module() -> None:
 
 #: Trees permitted to import the package. Everything else — and `src/` above
 #: all — is a forbidden reverse caller.
-PERMITTED_CALLER_ROOTS: tuple[str, ...] = ("scripts/m15_gate3a", "tests/m15_gate3a")
+#: Trailing separators are load-bearing: without them a *sibling* whose name
+#: merely begins with the package name — `scripts/m15_gate3a_continuation/`,
+#: which is the name the suite's own fixtures use for the gate-4 byte-reading
+#: producer, or `scripts/m15_gate3a_evil.py` — counted as "inside the package".
+PERMITTED_CALLER_ROOTS: tuple[str, ...] = ("scripts/m15_gate3a/", "tests/m15_gate3a/")
+
+
+#: Directories that are not first-party source. Everything else in the repo is
+#: swept, because enumerating the five directories that existed when the pin was
+#: written meant a new top-level `apps/` — or a `.py` at the repo root — was an
+#: unpinned home for a reverse caller.
+NON_SOURCE_DIRS: frozenset[str] = frozenset(
+    {
+        ".git",
+        ".venv",
+        "venv",
+        "__pycache__",
+        "node_modules",
+        ".mypy_cache",
+        ".pytest_cache",
+        ".ruff_cache",
+        "build",
+        "dist",
+        "site-packages",
+    }
+)
 
 
 def _repo_python_files() -> list[Path]:
     root = repo_root()
-    out: list[Path] = []
-    for sub in ("src", "scripts", "tests", "tools", "migrations"):
-        base = root / sub
-        if base.exists():
-            out.extend(p for p in base.rglob("*.py") if "__pycache__" not in p.parts)
-    return out
+    return [
+        path
+        for path in root.rglob("*.py")
+        if not (NON_SOURCE_DIRS & set(path.relative_to(root).parts))
+    ]
+
+
+def _imported_module_names(tree: ast.Module, rel: str) -> set[str]:
+    """Every module name this file imports, **including relative and dynamic**.
+
+    Three spellings previously escaped: `from . import m15_gate3a` and
+    `from .m15_gate3a import proof` (relative — `node.module` is `None` or bare),
+    `importlib.import_module("scripts.m15_gate3a.proof")` and
+    `__import__("...")` (the name is a string literal, not an AST import at all).
+    """
+    package_parts = rel.split("/")[:-1]
+    names: set[str] = set()
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Import):
+            names.update(alias.name for alias in node.names)
+        elif isinstance(node, ast.ImportFrom):
+            if node.level:
+                base = package_parts[: len(package_parts) - node.level + 1]
+                prefix = ".".join([*base, node.module] if node.module else base)
+            else:
+                prefix = node.module or ""
+            names.add(prefix)
+            names.update(f"{prefix}.{alias.name}" for alias in node.names)
+        elif isinstance(node, ast.Call):
+            func = node.func
+            dynamic = (isinstance(func, ast.Name) and func.id == "__import__") or (
+                isinstance(func, ast.Attribute) and func.attr == "import_module"
+            )
+            if dynamic:
+                names.update(
+                    arg.value
+                    for arg in node.args
+                    if isinstance(arg, ast.Constant) and isinstance(arg.value, str)
+                )
+    return names
 
 
 def test_the_package_has_no_reverse_caller_outside_itself_and_its_own_tests() -> None:
@@ -317,16 +645,9 @@ def test_the_package_has_no_reverse_caller_outside_itself_and_its_own_tests() ->
             tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
         except (SyntaxError, UnicodeDecodeError):  # pragma: no cover - not our concern
             continue
-        for node in ast.walk(tree):
-            names_it = (
-                (node.module or "",)
-                if isinstance(node, ast.ImportFrom)
-                else tuple(a.name for a in node.names)
-                if isinstance(node, ast.Import)
-                else ()
-            )
-            if any(PACKAGE in name for name in names_it):
-                offenders.append(f"{rel}:{node.lineno}")
+        for name in _imported_module_names(tree, rel):
+            if name == PACKAGE or name.startswith(PACKAGE + "."):
+                offenders.append(f"{rel}:{name}")
     assert offenders == [], (
         "§12.14 pins the reverse-caller set: nothing outside the package and its own "
         f"tests may import it, but {offenders} does"

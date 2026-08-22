@@ -265,9 +265,6 @@ def test_d58_a_well_formed_calendar_with_committed_provenance_is_accepted() -> N
     calendar = valid_calendar()
     assert calendar.committed_artifact == PROVENANCE["committed_artifact"]
     assert calendar.committed_revision == PROVENANCE["committed_revision"]
-    assert (
-        calendar.provenance_basis == calendar_authority.PROVENANCE_BASIS_DECLARED_AND_DIGEST_BOUND
-    )
     assert calendar.expected_slots("EUR_USD") == frozenset(to_utc(s) for s in SLOTS)
 
 
@@ -539,7 +536,6 @@ def forged_calendar() -> ValidatedCalendar:
         "exceptional_closure_handling",
         "target_epoch",
         "approval_basis",
-        "provenance_basis",
         "committed_artifact",
         "committed_revision",
     ):

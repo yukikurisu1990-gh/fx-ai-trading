@@ -1,0 +1,105 @@
+================================================================================
+Stage 1.1 - Feature importances from M15 + CSI best config
+================================================================================
+loaded 20 pairs
+features+labels built (10.9s)
+CSI features built (0.8s)
+
+50 features
+17 folds, training fold 1 only for importance dump
+trained (24.5s)
+
+################################################################################
+# Feature importances (51 features, sorted by GAIN)
+################################################################################
+  rank  feature                            split            gain   gain%
+  ----------------------------------------------------------------------
+     1  bb_pct_b                             694         60358.8   11.6%
+     2  spread_zscore_50                     704         39577.6    7.6%
+     3  d1_atr_14                            608         33505.4    6.4%
+     4  spread_now_pip                       559         32830.3    6.3%
+     5  spread_ma_ratio_20                   827         28454.4    5.5%
+     6  atr_14                               918         26524.2    5.1%
+     7  d1_range_pct                         517         16689.9    3.2%
+     8  h8_return_1                          669         16688.2    3.2%
+     9  bb_width                             536         14253.5    2.7%
+    10  h8_return_3                          546         13627.4    2.6%
+    11  h1_volatility                        554         13594.6    2.6%
+    12  h4_full_return_1                     619         13015.5    2.5%
+    13  pair_id                              399         12756.8    2.4%
+    14  d1_return_3                          498         11052.6    2.1%
+    15  h1_return_3                          534         11045.4    2.1%
+    16  h4_atr_14                            448         10386.8    2.0%
+    17  h1_return_1                          526         10282.2    2.0%
+    18  h4_full_return_3                     464         10280.5    2.0%
+    19  csi_quote                            492          8872.3    1.7%
+    20  w1_return_1                          470          8619.8    1.7%
+    21  h8_volatility                        339          8231.1    1.6%
+    22  h1_rsi_14                            424          8215.3    1.6%
+    23  h1_bb_pct_b                          415          8160.5    1.6%
+    24  rsi_14                               339          7131.9    1.4%
+    25  w1_range_pct                         347          7029.5    1.3%
+    26  h4_full_volatility                   384          6914.0    1.3%
+    27  h4_full_ma_slope                     323          6551.9    1.3%
+    28  bb_upper                             102          6112.4    1.2%
+    29  h8_rsi_14                            307          5568.0    1.1%
+    30  h4_full_bb_pct_b                     283          5433.5    1.0%
+    31  h1_ma_slope                          296          5223.3    1.0%
+    32  h4_full_rsi_14                       284          5146.5    1.0%
+    33  macd_signal                          254          5143.8    1.0%
+    34  h8_bb_pct_b                          274          4960.0    1.0%
+    35  h8_ma_slope                          270          4925.9    0.9%
+    36  macd_histogram                       271          4678.5    0.9%
+    37  csi_base                             272          4388.1    0.8%
+    38  csi_diff_signed                      250          3983.8    0.8%
+    39  h8_trend_slope                       150          3656.5    0.7%
+    40  bb_lower                             153          3146.9    0.6%
+    41  macd_line                            162          2810.2    0.5%
+    42  h4_full_trend_slope                  121          2503.6    0.5%
+    43  sma_50                                96          2301.5    0.4%
+    44  ema_12                                76          2229.2    0.4%
+    45  h1_trend_slope                       103          1974.9    0.4%
+    46  bb_middle                             68          1729.9    0.3%
+    47  ema_26                                55          1253.4    0.2%
+    48  sma_20                                 0             0.0    0.0%
+    49  h4_full_trend_dir                      0             0.0    0.0%
+    50  h1_trend_dir                           0             0.0    0.0%
+    51  h8_trend_dir                           0             0.0    0.0%
+
+################################################################################
+# Group analysis
+################################################################################
+
+  group           n_feat        sum_gain   gain%    avg/feat
+  ------------------------------------------------------------
+  spread               3        100862.4   19.3%     33620.8
+  mtf_d1               3         61247.9   11.7%     20416.0
+  upper_h1             8         58496.2   11.2%      7312.0
+  atr_base             1         26524.2    5.1%     26524.2
+  bb_band              3         23512.7    4.5%      7837.6
+  csi                  3         17244.1    3.3%      5748.0
+  mtf_w1               2         15649.3    3.0%      7824.6
+  pair_id              1         12756.8    2.4%     12756.8
+  macd                 3         12632.6    2.4%      4210.9
+  mtf_h4               1         10386.8    2.0%     10386.8
+  close_smooth         5          7513.9    1.4%      1502.8
+  rsi                  1          7131.9    1.4%      7131.9
+
+################################################################################
+# Bottom 15 features by gain (candidates for removal)
+################################################################################
+  sma_20                        split=   0  gain=       0.0  (0.00%)
+  h1_trend_dir                  split=   0  gain=       0.0  (0.00%)
+  h4_full_trend_dir             split=   0  gain=       0.0  (0.00%)
+  h8_trend_dir                  split=   0  gain=       0.0  (0.00%)
+  ema_26                        split=  55  gain=    1253.4  (0.24%)
+  bb_middle                     split=  68  gain=    1729.9  (0.33%)
+  h1_trend_slope                split= 103  gain=    1974.9  (0.38%)
+  ema_12                        split=  76  gain=    2229.2  (0.43%)
+  sma_50                        split=  96  gain=    2301.5  (0.44%)
+  h4_full_trend_slope           split= 121  gain=    2503.6  (0.48%)
+  macd_line                     split= 162  gain=    2810.2  (0.54%)
+  bb_lower                      split= 153  gain=    3146.9  (0.60%)
+  h8_trend_slope                split= 150  gain=    3656.5  (0.70%)
+  csi_diff_signed               split= 250  gain=    3983.8  (0.76%)
+  csi_base                      split= 272  gain=    4388.1  (0.84%)

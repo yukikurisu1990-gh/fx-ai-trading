@@ -1060,22 +1060,23 @@ def test_fr17_text_already_refused_as_unbounded_never_reaches_the_base_scanner(
     assert len(calls) == 1
 
 
-@pytest.mark.parametrize("length", [2_000, 8_000, 16_000, 32_000])
-def test_fr17_a_long_alphanumeric_run_no_longer_scales_quadratically(length: int) -> None:
-    """Failing-before, lead-measured: 2 000 -> 0.024 s, 8 000 -> 0.355 s,
-    16 000 -> 1.416 s, 32 000 -> ~6 s; and a 306 KB single-run base64 value did not
-    finish in 75 s.
+@pytest.mark.parametrize("width", [2_000, 8_000, 16_000, 32_000])
+def test_fr17_a_long_alphanumeric_run_is_refused_promptly(width: int) -> None:
+    """FR-17, restated for what the fix actually guarantees.
 
-    The lengths stop at 32 000 deliberately. The blow-up is quadratic, so the
-    306 KB payload the audit used would take a regression's run into the tens of
-    minutes — an unbounded hang is a worse pin than a bounded failure. 32 000
-    already separates the two behaviours by three orders of magnitude.
+    This used to assert that a long alphanumeric run *scanned* in bounded time.
+    It no longer scans at all: `gate3a_oversize_text_token` refuses any run wider
+    than a committed sha256 digest, which is the FB-3(a) fix. What still needs
+    pinning is that the refusal is **prompt** — the original defect was a scanner
+    that did not return, and a gate that never closes is worse than one that says
+    no. The root-cause timing pin, on the pattern itself, lives in
+    `test_wp5_lead_reconciliation.py`; this is the end-to-end half.
     """
     started = time.perf_counter()
-    findings = scan_gate3a({"note": "a" * length})
+    findings = scan_gate3a({"note": "a" * width})
     elapsed = time.perf_counter() - started
-    assert findings == [] or all(f.startswith("gate3a_oversize_text:") for f in findings)
-    assert elapsed < 0.5, f"{length} chars took {elapsed:.3f}s"
+    assert any(f.startswith("gate3a_oversize_text") for f in findings), findings
+    assert elapsed < 1.0, f"{width} characters took {elapsed:.3f}s to refuse"
 
 
 def test_fr17_a_payload_within_the_bounds_still_reaches_the_base_scrubber() -> None:

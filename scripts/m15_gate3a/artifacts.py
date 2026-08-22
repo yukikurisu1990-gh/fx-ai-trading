@@ -817,6 +817,40 @@ _HEX_DIGEST_RE: Final[re.Pattern[str]] = re.compile(
 )
 _DIGIT_RUN_RE: Final[re.Pattern[str]] = re.compile(r"\d+")
 
+# FB-3(a), fourth iteration. The three text limbs bound ONE LEAF, and the leaf
+# budget counts leaves rather than characters, so the same dataset chunked below
+# `_MAX_TEXT_CHARS` restored the whole channel: an internal audit wrote 412 KB of
+# hex (400 000 characters, byte-exact float64 prices) and then, after the hex
+# excision was narrowed, 244 KB of letters-only base32 — which costs *zero*
+# digit density because `\d` never matches a letter. Bounding characters alone
+# would have been another round of the same chase.
+#
+# What actually separates description from payload is the TOKEN. Prose has
+# words: the longest maximal alphanumeric run in any of the eight committed
+# artifacts is 14 characters ("implementation"). An encoded dataset has one
+# enormous token, because separators are what it cannot afford. So the bound is
+# the widest token the committed schemas themselves require — a sha256 digest,
+# whose width `design_m15_inventory.json` declares — and it is derived from that
+# declaration rather than chosen. A payload must now carry a separator every 64
+# characters, which puts it back in front of the digit-density limb it was
+# re-encoded to evade, and multiplies its character cost against the aggregate
+# budget below.
+_MAX_TEXT_TOKEN_CHARS: Final[int] = _SHA256_HEX_WIDTH
+_TOKEN_RE: Final[re.Pattern[str]] = re.compile(r"[0-9A-Za-z]+")
+
+# The aggregate the per-leaf limbs never had. Derived from two committed
+# authorities and nothing else: the frozen 20-pair universe, and the longest
+# string value any committed artifact carries. One maximal description per pair
+# is the most a per-pair metadata artifact can legitimately need — measured, the
+# largest committed artifact totals 2 357 characters and a fully populated
+# twenty-record inventory totals 5 239, both comfortably inside it.
+#
+# Stated honestly rather than claimed away: this is a bound, not a proof. Inside
+# 9 980 characters an author can still encode a few kilobytes, and no scrubber
+# can tell opaque text from prose. It removes roughly two orders of magnitude
+# from the channel; the ruling's layered controls are what stand behind it.
+_MAX_TEXT_CHARS_TOTAL: Final[int] = len(PAIRS_20) * _MAX_TEXT_CHARS
+
 # ---------------------------------------------------------------------------
 # FB-3(c) — a declared numeric key carries a value from its own domain
 # ---------------------------------------------------------------------------
@@ -1527,6 +1561,10 @@ def _scan_text_bounds(text: Any, findings: list[str], key_label: str | None) -> 
     runs = len(_DIGIT_RUN_RE.findall(_HEX_DIGEST_RE.sub(" ", pinned)))
     if runs > _MAX_VALUES_PER_NUMERIC_KEY:
         findings.append(f"gate3a_numeric_series_in_text:{key_label}:{runs}")
+    for token in _TOKEN_RE.findall(pinned):
+        if len(token) > _MAX_TEXT_TOKEN_CHARS:
+            findings.append(f"gate3a_oversize_text_token:{key_label}:{len(token)}")
+            break
     for kind, char in _fold_hazards(pinned):
         findings.append(f"gate3a_non_ascii_{kind}:{key_label}:{ord(char):04X}")
 
@@ -1968,6 +2006,23 @@ def _refuse_json_constant(constant: str) -> None:
     raise ValueError(f"non-standard JSON constant {constant}")
 
 
+def _total_text_chars(snapshot: Any) -> int:
+    """Characters across every string in the snapshot, keys included.
+
+    The per-leaf limbs never had an aggregate, and the leaf budget counts leaves
+    rather than characters, so a dataset chunked below the per-leaf bound cost
+    nothing at all. Decided on the snapshot, so a two-faced container cannot
+    present a small payload here and a large one to the writer.
+    """
+    if isinstance(snapshot, str):
+        return len(snapshot)
+    if isinstance(snapshot, dict):
+        return sum(_total_text_chars(k) + _total_text_chars(v) for k, v in snapshot.items())
+    if isinstance(snapshot, list):
+        return sum(_total_text_chars(v) for v in snapshot)
+    return 0
+
+
 def _scan_snapshot(snapshot: Any, artifact: str | None) -> tuple[list[str], str | None]:
     """Scan an already-snapshotted payload; return its findings and its bytes.
 
@@ -1981,12 +2036,17 @@ def _scan_snapshot(snapshot: Any, artifact: str | None) -> tuple[list[str], str 
     module has already refused as unbounded is refused; it is not additionally
     handed to a scanner that may not return.
 
-    What that buys, stated exactly rather than overclaimed: every string reaching
-    the base scanner is at most :data:`_MAX_TEXT_CHARS` long and there are at most
-    ``schema.max_leaves`` of them, so the cost is **bounded** — the theoretical
-    worst legitimate payload measures ~1.4 s, and the 306 KB case that previously
-    did not terminate measures ~0.4 s. It is not made fast; it is made finite,
-    which is the property a gatekeeper needs.
+    What that buys, stated exactly. An earlier version of this paragraph said
+    "every string reaching the base scanner is at most :data:`_MAX_TEXT_CHARS`
+    long" — that was **false** by roughly three orders of magnitude, because
+    ``evidence.scan_payload`` hands ``json.dumps`` of the *whole document* to the
+    base scanner as one string, not one string per leaf. The true bound is
+    :data:`_MAX_TEXT_CHARS_TOTAL` over the document, which is what makes the cost
+    finite; and the root cause was fixed as well, in ``scripts/ml_step4``, where
+    the pattern's missing left boundary made it quadratic. Measured after both:
+    380 KB scans in 0.041 s where 306 KB previously did not finish in 110 s. It
+    is not made fast; it is made finite, which is the property a gatekeeper
+    needs.
 
     The serialisation is performed **once**, here, and returned. That is what
     reconciles RF-11's internal ``serialise`` with the writer's: there is one
@@ -2011,6 +2071,10 @@ def _scan_snapshot(snapshot: Any, artifact: str | None) -> tuple[list[str], str 
             )
     except RecursionError:
         findings.append("gate3a_payload_too_deeply_nested")
+
+    total_text = _total_text_chars(snapshot)
+    if total_text > _MAX_TEXT_CHARS_TOTAL:
+        findings.append(f"gate3a_oversize_text_total:{total_text}")
 
     # RF-11: a payload declared clean that `serialise` cannot write used to die
     # with a bare `TypeError` at the write. It fails here, as a scrub error.

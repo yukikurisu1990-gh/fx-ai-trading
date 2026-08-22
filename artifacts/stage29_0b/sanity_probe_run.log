@@ -1,0 +1,77 @@
+C:\Users\yukik\fx-ai-trading\.venv\Lib\site-packages\sklearn\utils\validation.py:2691: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+C:\Users\yukik\fx-ai-trading\.venv\Lib\site-packages\sklearn\utils\validation.py:2691: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+C:\Users\yukik\fx-ai-trading\.venv\Lib\site-packages\sklearn\utils\validation.py:2691: UserWarning: X does not have valid feature names, but LGBMRegressor was fitted with feature names
+  warnings.warn(
+C:\Users\yukik\fx-ai-trading\.venv\Lib\site-packages\sklearn\utils\validation.py:2691: UserWarning: X does not have valid feature names, but LGBMRegressor was fitted with feature names
+  warnings.warn(
+=== Stage 29.0b-β A0-broad Sequence/NN eval (20 pairs) ===
+Closed 3-architecture allowlist (α-fixed; NG#A0B-1): S1 LSTM / S2 Temporal CNN / S3 Transformer
+R7-A FIXED (4 features): ['pair', 'direction', 'atr_at_signal_pip', 'spread_at_signal_pip']
+Windowed input: N=32 M5 bars × 8 channels (bid_OHLC + ask_OHLC)
+Fixed: tabular S-E for control + multiclass S-B for baseline; top-q quantile family [5.0, 10.0, 20.0, 30.0, 40.0]; symmetric Huber α=0.9; sample_weight=1
+Train-time vs verdict-time wall: early stopping on val Huber loss; verdict on val Sharpe.
+Option 9c simple case: Phase 28 §10 inherited directly (target unchanged); 29.0a per-target baselines DIAGNOSTIC-ONLY 2nd reference.
+
+Detecting CUDA device per PR #353 §4...
+  device=cuda:0; CUDA available
+  labels rows: 4056120
+Loading M1 runtime per pair...
+  EUR_USD: m1 rows 740264 (  5.2s)
+  GBP_USD: m1 rows 740908 (  5.1s)
+  AUD_USD: m1 rows 737087 (  5.0s)
+  NZD_USD: m1 rows 735593 (  5.0s)
+  USD_CHF: m1 rows 737060 (  5.0s)
+  USD_CAD: m1 rows 739566 (  5.0s)
+  EUR_GBP: m1 rows 734979 (  5.0s)
+  USD_JPY: m1 rows 740393 (  5.0s)
+  EUR_JPY: m1 rows 740735 (  5.1s)
+  GBP_JPY: m1 rows 742493 (  5.0s)
+  AUD_JPY: m1 rows 741663 (  5.0s)
+  NZD_JPY: m1 rows 736025 (  5.0s)
+  CHF_JPY: m1 rows 735552 (  5.0s)
+  EUR_CHF: m1 rows 737398 (  5.0s)
+  EUR_AUD: m1 rows 741957 (  5.0s)
+  EUR_CAD: m1 rows 740629 (  5.1s)
+  AUD_NZD: m1 rows 738189 (  5.1s)
+  AUD_CAD: m1 rows 732062 (  5.1s)
+  GBP_AUD: m1 rows 740045 (  5.1s)
+  GBP_CHF: m1 rows 736762 (  5.0s)
+  split: train=2941032, val=517422, test=597666
+R7-A row-drop...
+  train: n_input=2941032 n_kept=2941032 n_dropped=0
+  val: n_input=517422 n_kept=517422 n_dropped=0
+  test: n_input=597666 n_kept=597666 n_dropped=0
+Precomputing inherited triple-barrier realised PnL...
+  train n_finite=2941032 val=517422 test=597666 (221.9s)
+Verifying causality guard on TRAIN sample (n=1000)...
+  causality guard PASS: n_sampled=1000 n_valid_windows=1000 n_violations=0
+Building windowed dataset per split...
+  train: 2940604/2941032 valid (1443.7s)
+  val: 517422/517422 valid (253.9s)
+  test: 597666/597666 valid (293.4s)
+  windowed coverage HALT gate: PASS
+Fitting tabular LightGBM S-E regressor (C-d2-arch-control 7th anchor)...
+  tabular S-E: fit 8.6s
+Fitting S-B multiclass head (C-sb-baseline FAIL-FAST)...
+  multiclass S-B: fit+predict 19.6s
+Building C-d2-arch-control scores inside sequence-cell harness...
+
+=== 29.0b-β SANITY PROBE (per PR #354 §16) ===
+  train: total=2941032 TP=565106 (19.215%) SL=2184896 (74.290%) TIME=191030 (6.495%)
+  val: total=517422 TP=85767 (16.576%) SL=399306 (77.172%) TIME=32349 (6.252%)
+  test: total=597666 TP=106976 (17.899%) SL=451646 (75.568%) TIME=39044 (6.533%)
+  per-pair TIME-share check: 0 pair(s) over 99%
+  D-1 binding check (sequence-cell extension):
+    OK: barrier + windowed input both bid/ask-only (no mid; D-1 preserved)
+  windowed coverage train: 99.985% (2940604/2941032; HALT < 95%)
+  windowed coverage val: 100.000% (517422/517422; HALT < 95%)
+  windowed coverage test: 100.000% (597666/597666; HALT < 95%)
+  causality guard: n_sampled=1000 n_violations=0
+  harness verification (C-d2-arch-control tabular eval inside sequence harness): PASS
+=== SANITY PROBE: PASS ===
+
+sanity probe results: C:\Users\yukik\fx-ai-trading\artifacts\stage29_0b\sanity_probe.json
+
+--sanity-probe-only set; exiting after probe.
