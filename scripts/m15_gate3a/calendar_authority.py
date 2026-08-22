@@ -51,6 +51,7 @@ from typing import Any, Final
 
 from scripts.m15_gate3a.no_overlap import is_dead_window_instant
 from scripts.m15_gate3a.pair_authority import PAIRS_20, PairAuthorityError, canonical_pair
+from scripts.m15_gate3a.sealing import seal
 from scripts.m15_gate3a.timeutil import TimestampError, to_utc
 
 # The M15 bucket grid, taken verbatim from the committed derivation manifest
@@ -163,7 +164,8 @@ def _refuse_reconstruction(self: Any, *_args: Any) -> None:
     )
 
 
-@dataclass(frozen=True, slots=True)
+@seal(error=CalendarConstructionError)
+@dataclass(frozen=True, slots=True, weakref_slot=True)
 class ValidatedCalendar:
     """A calendar artifact that passed validation, and the slot set it declares.
 

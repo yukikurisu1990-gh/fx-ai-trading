@@ -131,6 +131,7 @@ from scripts.m15_gate3a.no_overlap import (
 )
 from scripts.m15_gate3a.numeric_authority import NumericAuthorityError, pin_int
 from scripts.m15_gate3a.pair_authority import PAIRS_20, PairAuthorityError, canonical_pair
+from scripts.m15_gate3a.sealing import seal
 from scripts.m15_gate3a.timeutil import TimestampError, to_utc
 
 _SHA256_HEX_LENGTH: Final[int] = 64
@@ -437,7 +438,8 @@ def _require_count(value: Any, *, what: str, minimum: int) -> int:
 # ---------------------------------------------------------------------------
 
 
-@dataclass(frozen=True, slots=True)
+@seal(error=ProofConstructionError)
+@dataclass(frozen=True, slots=True, weakref_slot=True)
 class Provenance:
     """Which byte stream, which pass over it, and which artifact it was opened as.
 
@@ -487,7 +489,8 @@ class Provenance:
             ) from exc
 
 
-@dataclass(frozen=True, slots=True)
+@seal(error=ProofConstructionError)
+@dataclass(frozen=True, slots=True, weakref_slot=True)
 class DeclarationRecord:
     """Caller-declared inventory metadata. Structurally **not** a measurement.
 
@@ -512,7 +515,8 @@ class DeclarationRecord:
             )
 
 
-@dataclass(frozen=True, slots=True)
+@seal(error=ProofConstructionError)
+@dataclass(frozen=True, slots=True, weakref_slot=True)
 class MeasurementRecord:
     """One artifact, measured from its own bytes in a single pass.
 
@@ -688,7 +692,8 @@ class MeasurementRecord:
             )
 
 
-@dataclass(frozen=True, slots=True)
+@seal(error=ProofConstructionError)
+@dataclass(frozen=True, slots=True, weakref_slot=True)
 class DerivationBinding:
     """The DB limb's evidence for one artifact.
 
@@ -725,7 +730,8 @@ class DerivationBinding:
         )
 
 
-@dataclass(frozen=True, slots=True)
+@seal(error=ProofConstructionError)
+@dataclass(frozen=True, slots=True, weakref_slot=True)
 class ConsumerRecheck:
     """A consumer's own re-measurement, taken immediately before use (W3)."""
 
@@ -757,7 +763,8 @@ class ConsumerRecheck:
             )
 
 
-@dataclass(frozen=True, slots=True)
+@seal(error=ProofConstructionError)
+@dataclass(frozen=True, slots=True, weakref_slot=True)
 class _ArtifactIdentity:
     """What the proof was made about for one pair, and which passes made it.
 
@@ -830,7 +837,8 @@ def _spend(token: Any, *, purpose: str, what: str, minted_by: str) -> None:
     token.spent = True
 
 
-@dataclass(frozen=True, slots=True)
+@seal(error=ProofConstructionError)
+@dataclass(frozen=True, slots=True, weakref_slot=True)
 class ProofResult:
     """The four-limb evaluation over caller-supplied records — not a byte-level claim.
 
@@ -874,7 +882,8 @@ class ProofResult:
     __reduce__ = _refuse_reconstruction
 
 
-@dataclass(frozen=True, slots=True)
+@seal(error=ProofConstructionError)
+@dataclass(frozen=True, slots=True, weakref_slot=True)
 class ConsumptionApproval:
     """The W3 re-verification result, and the only route to the proof's identity.
 
@@ -991,7 +1000,8 @@ def _pin_declared_not_measured(value: Any) -> tuple[str, ...]:
     return pinned
 
 
-@dataclass(frozen=True, slots=True)
+@seal(error=ProofConstructionError)
+@dataclass(frozen=True, slots=True, weakref_slot=True)
 class _PinnedDisclosure:
     """The disclosure fields, read once as plain built-in character data (P-3).
 

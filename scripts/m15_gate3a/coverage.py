@@ -64,6 +64,7 @@ from scripts.m15_gate3a.calendar_authority import SLOT_MINUTES, ValidatedCalenda
 from scripts.m15_gate3a.no_overlap import DESIGN_END, DESIGN_START, is_dead_window_instant
 from scripts.m15_gate3a.numeric_authority import NumericAuthorityError, pin_int
 from scripts.m15_gate3a.pair_authority import PAIRS_20, PairAuthorityError, canonical_pair
+from scripts.m15_gate3a.sealing import seal
 from scripts.m15_gate3a.timeutil import TimestampError, to_utc
 
 #: The six separately-measured quantities ruled in D-3 §5, emitted by the
@@ -184,7 +185,8 @@ _MEASUREMENT_PURPOSE: Final[str] = "PairSlotMeasurement"
 _RESULT_PURPOSE: Final[str] = "CoverageResult"
 
 
-@dataclass(frozen=True, slots=True)
+@seal(error=CoverageConstructionError)
+@dataclass(frozen=True, slots=True, weakref_slot=True)
 class PairSlotMeasurement:
     """What was actually measured for one pair. Built only by :func:`measure_pair_coverage`.
 
@@ -223,7 +225,8 @@ class PairSlotMeasurement:
     __reduce__ = _refuse_reconstruction
 
 
-@dataclass(frozen=True, slots=True)
+@seal(error=CoverageConstructionError)
+@dataclass(frozen=True, slots=True, weakref_slot=True)
 class PairCoverage:
     """The set-equality verdict for one pair, for the proof record.
 
@@ -239,7 +242,8 @@ class PairCoverage:
     certified_slot_count: int
 
 
-@dataclass(frozen=True, slots=True)
+@seal(error=CoverageConstructionError)
+@dataclass(frozen=True, slots=True, weakref_slot=True)
 class CoverageResult:
     """Coverage over the whole roster: the conjunction across 20 measured pairs.
 
