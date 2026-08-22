@@ -1,6 +1,0 @@
-================================================================================
-M1 V2 class_weight sweep
-  variants: ['none', 'balanced', 'mild_balanced', 'small_boost', 'cost_sensitive', 'moderate']
-================================================================================
-
-[1/3] Loading candles ...
