@@ -1,435 +1,472 @@
 # M15 gate-3a — continuation output-surface Contract Gate-decision
 
 **Type.** Contract Gate-decision PR (policy §14.2). **Risk tier.** Amber —
-doc-only, but it fixes a research contract governing protected paths. Merging
-needs human + ChatGPT approval.
+doc-only, and it fixes a research contract governing protected paths.
 
 **Completion state.**
-`M15_GATE3A_CONTINUATION_OUTPUT_SURFACE_PENDING_HUMAN_CHATGPT_RULING`
-· `CONTRACT_CHANGE_REQUIRES_HUMAN_CHATGPT_RULING`
+`M15_GATE3A_CONTINUATION_OUTPUT_SURFACE_CONTRACT_RULED`
 
-**Statuses, unchanged and carried.** `PRODUCTION_READINESS_NOT_CLAIMED` ·
+**Current status.**
+
+- **Human + ChatGPT ruling completed.** The rulings in §2 are normative.
+- **Continuation output surface contract RULED.**
+- **Source implementation PENDING** — nothing in §2 is implemented. This document
+  changes no source, no test and no artifact.
+- **Gate-3a continuation NOT authorised.**
+- **Source-audit acceptance NOT granted.** The fifth independent source-audit has
+  not been started.
+
+**Statuses carried, unchanged.** `PRODUCTION_READINESS_NOT_CLAIMED` ·
 `NO_EXECUTION_PERFORMED` ·
 `FORWARD_EPOCH_ADOPTION_BLOCKED_INSUFFICIENT_SAMPLE_ADOPTION_WAITS` ·
-`PRE_CONTINUATION_CALENDAR_ARTIFACT_APPROVAL_REQUIRED`. Gate-3a continuation is
-**not** authorised. The fifth independent source-audit has **not** been started.
-No source, test or artifact is changed by this PR.
+`PRE_CONTINUATION_CALENDAR_ARTIFACT_APPROVAL_REQUIRED`.
+
+`M15_GATE3A_CONTINUATION_OUTPUT_SURFACE_PENDING_HUMAN_CHATGPT_RULING` and
+`CONTRACT_CHANGE_REQUIRES_HUMAN_CHATGPT_RULING` are **superseded**. They are
+recorded in §8 as history and are **not** the current status.
 
 ---
 
-## 1. The question
+## 1. The question this decision answers
 
 **By what authority is the set of output artifacts that the gate-3a continuation
-may produce defined?** Specifically, which of *filename · artifact identifier ·
-artifact type · output directory · schema · status · provenance* is the identity
-authority, which is the permission authority, and how do they bind.
-
-Two items previously tracked separately — **§12.17 limb 1** (the "separate output
-directory" that has no mechanism) and **unknown artifact names** (a payload that
-declares no identity is writable under any `*.json` name) — are one question.
-Both are limbs of a single absent object: a declared output surface.
+may produce defined?** §12.17 limb 1 (a "separate output directory" with no
+mechanism) and the unknown-artifact-name gap were one question — two limbs of a
+single absent object, a declared output surface. Both are ruled here.
 
 ---
 
-## 2. What the committed authority already settles
+## 2. The ruling
 
-**D-7 / NR-A is RULED and closed** (PR #444 §7). The playbook's referral table
-still shows NR-A as `MUST_RESOLVE_BEFORE_GATE3A_CONTINUATION`, but the playbook's
-own preamble governs it: the rulings "are **closed** … the Classification column
-below is retained as the historical audit finding that produced them, not as an
-open question." **This packet does not reopen NR-A.** It completes a successor
-item that D-7 itself created.
+### 2.1 Ruling 1 — No new continuation artifact identities
 
-D-7 settles, verbatim:
+The artifact identities the continuation may produce are **limited to the
+existing committed identities playbook §5 already enumerates**:
 
-- Playbook §9 is a per-PR merge-scope check, **not** immutability.
-- **Population happens through a human-reviewed PR diff. No code path writes into
-  the protected tree.**
-- The continuation's **outputs go to a separate output directory** and **never
-  overwrite existing protected evidence**.
-- `effective_n_estimator_spec.json` and both forward artifacts are **never
-  written** by this continuation.
-- **Trap:** do not add `artifacts/m15_gate3a` to `_PROTECTED_PREFIXES` until the
-  separate output directory is adopted. *(Verified unsprung at `70bf38b`.)*
-
-**The premise that made this question look hard is false.** PR #449 §7.2 recorded
-that "§12.17 contemplates continuation outputs that are by definition not among
-the committed eight". Playbook §5 enumerates the continuation's outputs:
-
-> - Produce the **design M15 inventory + checksums** (populating the PR #431
->   schema; 20 files; per-file ts-bounds).
-> - Produce the **byte-level no-overlap proof** …
-> - Optionally produce **cost tables from the design span only**, if and only if
->   explicitly authorised in the approval …
-
-Those are `design_m15_inventory`, `no_overlap_proof` and
-`cost_table_plan_or_metadata` — **three of the committed eight, by name**. The
-gate-3a continuation needs **no new artifact name**. What it needs is a second
-*location* and a *lifecycle* distinction for identities that already exist. The
-earlier framing is withdrawn here.
-
----
-
-## 3. Measured present behaviour
-
-All executed read-only against `70bf38b` in a `git archive` sandbox. Nothing was
-written inside the repository.
-
-### 3.1 There is no identity authority — only an opportunistic schema lookup
-
-`_validate_name` validates **shape only** and consults no roster.
-`resolve_schema` is the single site where a filename and a schema meet, and it
-binds them **only if the payload volunteers a non-empty `str` `artifact` field**.
-A miss returns `(None, [])` — no finding — and the payload falls to the
-undeclared backstop.
-
-**Seven spellings of "declare nothing" each buy an arbitrary filename:**
-
-| `artifact` value | result under filename `gate3a_continuation.json` |
-| --- | --- |
-| absent · `""` · `"   "` · `123` · `None` · `["x"]` · `{}` | **CLEAN — accepted** |
-
-Measured **identical at base `c7e477a`**: this PR's predecessor neither
-introduced nor widened it.
-
-### 3.2 The reserved surface is nine names, not eight
-
-`cost_table_plan_or_metadata.json` declares `"artifact": "cost_table_plan"`, and
-the alias is registered. Consequence, executed: **`cost_table_plan.json` — a
-filename that has never been committed or reviewed — resolves to a full declared
-schema and writes.**
-
-### 3.3 Reserved-name impersonation is live, and the family is wide
-
-Filenames receive `str.__str__` pinning and **no** NFKC, confusable fold or
-invisible-character strip — the FB-7 machinery protects payload content and not
-the namespace. Executed, into one directory already holding the genuine
-`scrub_report.json`:
-
-| spelling | result |
-| --- | --- |
-| `" scrub_report.json"` (leading space) | **WROTE** |
-| `"scrub_repοrt.json"` (Greek omicron) | **WROTE** |
-| `"ѕcrub_report.json"` (Cyrillic es) | **WROTE** |
-| `"ｓcrub_report.json"` (fullwidth) | **WROTE** |
-| `"scrub​report.json"` (zero-width) | **WROTE** |
-| `"scrub report.json"` (NBSP) | **WROTE** |
-| `" scrub_report .json"` | **WROTE** |
-| `"scrub_report.json.json"` · `"scrub_report_v2.json"` | **WROTE** |
-| `"Scrub_Report.json"` (case) | refused **only** because NTFS `exists()` folds — CI is `ubuntu-latest`, where it writes |
-
-**Nine files rendering as one reserved name coexisted in a single directory.**
-This is not recorded in any prior audit and is the strongest single argument that
-a name authority is needed and that it must fold.
-
-### 3.4 §12.17 limb 1 has no representation at all
-
-`write_metadata_artifact(out_dir, name, payload)` takes `out_dir` as a free
-caller argument. Accepted: `<repo>/artifacts`, `<repo>/artifacts/m15_gate3a`,
-`<repo>/src/anywhere`, a path outside the repository entirely. Refused: the seven
-`_PROTECTED_PREFIXES` roots, relative spellings, traversal. **Limbs 2 and 3 are
-implemented and proven; limb 1 is absent.** `write_metadata_artifact` has **no
-non-test caller**, so tightening it costs nothing today.
-
-### 3.5 D-7's status authority has no operand for three of the eight
-
-`cost_table_plan_or_metadata`, `no_overlap_proof` and `scrub_report` carry no
-`status` — and their schemas **forbid** the key (`gate3a_undeclared_key:status`).
-Two of those three are exactly what playbook §5 directs the continuation to
-produce. Making D-7's status rule operative would require both a source change
-and a committed-evidence change that **no clause pre-approves**.
-
-### 3.6 Declaring a schema can weaken content control
-
-| surface | max numeric leaves | max leaves |
+| Playbook §5 output | Canonical artifact identity | Canonical filename |
 | --- | --- | --- |
-| declared `design_m15_inventory` | **441** | 820 |
-| declared `no_overlap_proof` | 84 | 820 |
-| declared `scrub_report` | 21 | 500 |
-| undeclared backstop | 120 | 200 |
+| design M15 inventory + checksums | `design_m15_inventory` | `design_m15_inventory.json` |
+| byte-level no-overlap proof | `no_overlap_proof` | `no_overlap_proof.json` |
+| cost tables, **only** if explicitly authorised in the approval | `cost_table_plan` | `cost_table_plan_or_metadata.json` |
 
-Routing an output at a reserved name is not automatically the stricter choice.
-One of the three is looser than the backstop.
+No new artifact identity is added for the continuation. **That a current code
+path can write an artifact is never a reason to promote it to authority.**
 
-### 3.7 `_SCHEMAS` is also the directory manifest
+Where a new artifact type or name is genuinely required:
+**`NEW_ARTIFACT_IDENTITY_REQUIRES_SEPARATE_CONTRACT_GATE_DECISION`.**
 
-`tests/m15_gate3a/test_recheck_fixes.py:898` asserts
-`[p.name for p in paths] == sorted(EXPECTED_ARTIFACT_FILES)` — **set equality
-between the schema table and the on-disk contents of `artifacts/m15_gate3a`**.
-The code therefore already implements "the committed eight are the whole
-namespace, and the namespace is that one directory". Any model registering a
-continuation artifact in `_SCHEMAS` breaks this pin, and the cheap repair —
-relaxing equality to a subset — silently destroys it.
+### 2.2 Ruling 2 — Dedicated continuation output root
 
-### 3.8 Two output surfaces, not one
+The normative root for continuation candidate outputs is:
 
-`write_metadata_artifact` refuses any name not ending `.json`, so the 20 derived
-M15 `.jsonl` files cannot pass through it. They belong to the aggregation script
-the derivation manifest records as `TO_BE_CREATED_AT_GATE5`, and PR #444 §11 says
-the data root "is a runtime argument and is never committed". **This packet
-governs the metadata-evidence surface only**; the derived-data surface is a
-separate, currently ungoverned question and is named here so it is not assumed
-covered.
+```
+artifacts/m15_gate3a_continuation/
+```
 
-### 3.9 The routing hole — the finding that governs all the others
+It is a **sibling** of `artifacts/m15_gate3a/`, deliberately **not** a subtree of
+it. The reason is measured and structural: `path_authority.is_within` protects a
+root **together with its whole subtree**, so a staging root placed inside the
+committed evidence tree could never coexist with D-7's trap step of adding
+`artifacts/m15_gate3a` to `_PROTECTED_PREFIXES`, and would collide with the
+promotion lifecycle in §2.3.
 
-**A surface contract that binds only `write_metadata_artifact` binds nothing**,
-because a second writer reaches the same paths with none of its guards.
+Normative:
 
-`scripts/ml_step4/evidence.write_report` — a function in the *same module*
-`artifacts.py` already imports two names from (`scan_payload`, `serialise`, lines
-144–145) — is one import away and carries no `refuse_real_path`, no name
-validation, and a scrubber that legitimately permits metrics because `ml_step4`
-evidence legitimately carries them. Executed in a synthetic sandbox root whose
-`repo_root()` resolves inside the sandbox, so the protected prefixes were live:
+- A continuation candidate output may be written **only** beneath this root.
+- Arbitrary output directories are forbidden.
+- A caller-supplied arbitrary output directory is forbidden.
+- Path traversal is forbidden.
+- Direct writes by the continuation writer into any protected root are
+  forbidden — `docs/`, `data/`, `models/`, the committed evidence and proof
+  trees, and every other current protected tree.
 
-| call | result |
+### 2.3 Ruling 3 — Candidate lifecycle
+
+A continuation output is **not authoritative evidence at the moment it is
+generated**. The lifecycle is:
+
+```
+generate candidate  →  verify candidate  →  human-reviewed promotion
+```
+
+Normative:
+
+1. A continuation execution creates new candidates **only** under the candidate
+   root.
+2. Candidate generation never overwrites a committed or protected artifact.
+3. A candidate is **never** automatically promoted to committed evidence.
+4. Promotion happens as a **human-reviewed diff / approved repository change**.
+5. At promotion, schema, identity, status and provenance are **re-verified**.
+6. The existence of a generated candidate is **not** gate evidence by itself.
+7. In-place overwrite of a previously committed artifact is forbidden.
+
+**Overwrite and collision:**
+
+- A collision with an existing candidate filename **fails closed**.
+- Silent overwrite is forbidden.
+- Automatic replacement is forbidden.
+- A mechanism that lets the **caller** decide how to avoid a version collision is
+  forbidden.
+- The lifecycle mechanism itself is implemented by the later Work PR, to this
+  contract.
+
+### 2.4 Ruling 4 — Single continuation routing authority
+
+**`ALL_GATE3A_CONTINUATION_OUTPUT_WRITES_MUST_ROUTE_THROUGH_THE_APPROVED_CONTINUATION_OUTPUT_AUTHORITY`**
+
+For continuation artifacts, the following may **not** be used to bypass that
+authority: a direct call to a generic writer; an alternate writer;
+`scripts/ml_step4/evidence.write_report`; generic JSON writers; generic report
+writers; `open(..., "w")`; `Path.write_text` / `Path.write_bytes`; or any
+equivalent filesystem sink.
+
+**This is not an instruction to remove the repository's generic writers.** What
+is forbidden is *their use as a route for writing a gate-3a continuation
+artifact*. The later Work PR pins this boundary with static import and
+reverse-caller tests.
+
+### 2.5 Ruling 5 — The filename is not the permission authority
+
+A caller does **not** acquire permission to write a continuation artifact by
+choosing a filename. The normative model is:
+
+```
+caller supplies:            artifact_id
+routing authority resolves: artifact_id -> canonical filename
+                                        -> schema
+                                        -> output class
+                                        -> status authority
+                                        -> provenance requirements
+                                        -> continuation root
+```
+
+A design in which a caller names an arbitrary file and thereby determines the
+artifact identity is forbidden. **`filename != authority`.**
+
+### 2.6 Ruling 6 — Typed artifact registry, separated from the schema registry
+
+The schema registry and the artifact permission/identity registry are
+**separated**. `_SCHEMAS` may no longer serve simultaneously as schema registry,
+committed-directory manifest and artifact permission roster.
+
+The later Work PR implements a typed artifact authority whose logical fields are
+at minimum: canonical `artifact_id` · canonical filename · schema reference ·
+output class · status authority · provenance requirement · lifecycle class ·
+continuation-output eligibility.
+
+Uniqueness is required: **one `artifact_id` → one canonical continuation
+identity.** Permission escalation via an alias is forbidden.
+
+### 2.7 Ruling 7 — Canonical artifact declaration key
+
+Only the **exact canonical key** declares artifact identity. Case folding is
+**not** a permission-discovery mechanism.
+
+`artifact` is canonical. `Artifact`, `ARTIFACT`, `ArTiFaCt`, a Unicode lookalike,
+a zero-width insertion and any confusable spelling are **not** canonical
+declaration keys.
+
+The present divergence — an exact-case schema lookup beside a case-folded
+scrubber lookup — is forbidden. An unknown or malformed declaration **fails
+closed**.
+
+### 2.8 Ruling 8 — Reserved filename canonicalisation
+
+A reserved or canonical artifact filename requires an **exact match on the
+canonical basename**. Forbidden: case variants · Unicode confusables ·
+zero-width characters · trailing dots · trailing spaces · alternate separator
+spellings · any equivalent rendered filename · namespace aliases ·
+reserved-name impersonation.
+
+FB-7 canonicalisation applies to **content**; filename identity enforcement is a
+**separate boundary** and both are implemented. **That two names render
+identically is never a reason to admit one.**
+
+### 2.9 Unknown artifact behaviour
+
+An unknown artifact identity handed to the continuation routing authority
+**fails closed**. A new identity may **not** be inferred from a filename, from
+the presence of a schema, from a writable directory, or from a free-text
+declaration.
+
+**`UNKNOWN_CONTINUATION_ARTIFACTS_FAIL_CLOSED_TYPED_REGISTRY_REQUIRED`**
+
+A genuinely new artifact requires its own Contract Gate-decision.
+
+### 2.10 Committed roster ≠ continuation eligibility
+
+Membership of the committed artifact roster and eligibility to be *generated by
+the continuation* are **different properties**. The typed registry carries an
+explicit `continuation_output_eligible` authority, and **only** playbook §5's
+outputs are eligible.
+
+For every other committed artifact: being readable or committed does **not** make
+it generable by the continuation writer, and being reserved does **not** make it
+overwritable by the continuation writer. `effective_n_estimator_spec` and both
+forward artifacts remain **never written**, per D-7.
+
+### 2.11 `cost_table_plan.json`
+
+Not adopted as a ninth committed or continuation artifact. That the current code
+can write it is not authority.
+
+The mapping to an existing identity **is** available from committed authority and
+therefore needs no invention: `artifacts/m15_gate3a/cost_table_plan_or_metadata.json`
+declares `"artifact": "cost_table_plan"`, so the committed evidence states both
+halves — canonical identity `cost_table_plan`, canonical filename
+`cost_table_plan_or_metadata.json`. **The filename `cost_table_plan.json` is
+refused**; the identity `cost_table_plan` resolves to the committed filename.
+
+No roster addition is made by any Work PR. Had the mapping not been derivable, the
+disposition would have been `REQUIRES_SEPARATE_ARTIFACT_CONTRACT_DECISION`.
+
+### 2.12 D-7 status authority
+
+**`CONTINUATION_OUTPUT_REQUIRES_EXPLICIT_COMMITTED_STATUS_AUTHORITY`**
+
+Every continuation-output-eligible artifact requires a status authority. Where an
+artifact currently has no status operand: an implicit PASS is forbidden; treating
+it as continuation-authoritative while its status is absent is forbidden; and
+substituting a generic global status is forbidden.
+
+Measured, and directly engaged by this rule: `no_overlap_proof` and
+`cost_table_plan_or_metadata` — **two of the three eligible outputs** — carry no
+`status`, and their schemas presently *forbid* the key. `scrub_report` is in the
+same position.
+
+The later Work PR implements the status operand **from existing contract**. Where
+an artifact's status semantics are **not** uniquely derivable from committed
+authority, that artifact is
+**`STATUS_AUTHORITY_REQUIRES_CONTRACT_DECISION`** and fails closed. No Work PR
+invents new research semantics.
+
+### 2.13 Provenance
+
+A continuation output requires a committed provenance binding, at minimum to:
+design epoch identity · artifact identity · generating contract/version ·
+the relevant upstream approved authority · candidate lifecycle state.
+
+A correct path, filename and schema do **not** by themselves establish authority.
+Missing, malformed or unapproved provenance **fails closed**.
+
+---
+
+## 3. Dispositions fixed by this decision
+
+| Item | Disposition |
 | --- | --- |
-| `write_report(artifacts/m15_gate3a, "design_m15_inventory.json", …)` | **overwrote a committed artifact, 2 138 → 16 bytes** |
-| `write_report(docs/governance | data | models, "planted.json", …)` | **WROTE** into all three §12.18 protected trees |
-| `write_report(artifacts/m15_gate3a, "../../escaped.json", …)` | **WROTE** — traversal *in the filename*, landed at the repo root |
-| `write_report(artifacts, "planted_metrics.json", {"sharpe_ratio": 2.31, …})` | **WROTE** strategy metrics |
-
-**This is not a defect in `ml_step4`**, which is a different package with its own
-purpose, and it is **already disclosed** by `guards.py:22-25`:
-
-> "Each guard is individually fail-closed on the input it is given. Nothing here
-> asserts that a caller exists, that every write is routed, or that the package
-> is therefore contained: **containment of an *unrouted* caller is not a property
-> this module has, and must not be cited as one.**"
-
-The disclosure is honest. The **contract** gap is that §12.17 is written as
-though one writer exists. FR-18 closed the *re-export*
-`artifacts.evidence.write_report`; the function itself is unchanged and
-importable in one line — the programme's standing shape, where the printed
-spelling was closed and the family left open.
-
-**Consequence for the ruling:** any output-surface contract must carry a
-**routing obligation** — that the continuation writes through exactly one
-function and reaches no other write primitive — or it is an authority over one
-function rather than over the artifact surface. That obligation is derivable from
-`guards.py`'s own disclosure; what it must *name* as the sanctioned writer is
-part of the same referral as the directory.
-
-### 3.10 One capital letter defeats both existing identity defences
-
-`resolve_schema` reads the declaration with `payload.get("artifact")` — an
-exact-case dict lookup — while `_scan_declared` folds every key to lower case
-before the allowlist test. The two disagree, and the gap is a complete bypass.
-Executed:
-
-| payload key | filename | result |
-| --- | --- | --- |
-| `artifact: "continuation_summary"` | `scrub_report.json` | `gate3a_undeclared_artifact_name` ✓ |
-| **`Artifact: "continuation_summary"`** | `scrub_report.json` | **CLEAN** |
-| **`ARTIFACT: "continuation_summary"`** | `scrub_report.json` | **CLEAN** |
-| `artifact: "design_m15_inventory"` | `continuation.json` | `gate3a_artifact_name_mismatch` ✓ |
-| **`Artifact: "design_m15_inventory"`** | `continuation.json` | **CLEAN** |
-| `artifact: "scrub_report"` **+** `Artifact: "continuation_summary"` | `scrub_report.json` | **CLEAN** — two identities in one file, one invisible to the resolver |
-
-**Both refusals that constitute the current identity defence are one keystroke
-from off**, and the bypass is invisible to a green suite because `scan_gate3a`
-returns `[]`. A human reading the JSON sees an artifact identity; a reader doing
-`d["artifact"]` sees nothing. Any model keyed on the payload's `artifact` field
-inherits this unchanged.
-
-### 3.11 Directory identity is not a string
-
-Measured on NTFS with 8.3 names enabled and junction creation available without
-elevation: an `out_dir` that is an **NTFS junction** was accepted and the file
-landed at the junction's target — and `os.path.islink()` reported `False` for it,
-so a naive "is it a link?" clause does not see it. An **8.3 short-name alias** of
-a long directory was likewise accepted. `resolve_candidate` does follow both, so
-a rule comparing *resolved* paths holds where a rule comparing *strings* does
-not; and the approved root must additionally be required to be a real directory
-rather than a reparse point.
+| **§12.17 limb 1** | **RULED** — by the dedicated continuation root (§2.2), typed artifact routing (§2.4, §2.6), canonical artifact identity (§2.5, §2.7, §2.8) and the candidate lifecycle (§2.3) |
+| **§12.17 limb 2** | already **FIXED** — overwrite refusal, implemented and proven |
+| **§12.17 limb 3** | already **FIXED** — protected-tree refusal, implemented and proven |
+| **§12.17 overall** | **`SECTION_12_17_RULED_AND_IMPLEMENTATION_REQUIRED`** |
+| **Unknown artifact names** | was `REQUIRES_CONTRACT_OR_SCHEMA_DECISION`; **resolved** → `UNKNOWN_CONTINUATION_ARTIFACTS_FAIL_CLOSED_TYPED_REGISTRY_REQUIRED`. Source implementation is the later Work PR |
+| **Routing bypass** | a **first-class contract requirement** (§2.4), not a fix-note footnote |
+| **Derivation manifest divergence** | **`TARGETED_IMPLEMENTATION_FIX_REQUIRED`** — see §5.3 |
+| **FR-19** | unchanged: `SEPARATE_TEST_SAFETY_WORK_PR`, out of scope |
 
 ---
 
-## 4. Options considered
+## 4. The measured evidence this ruling rests on
 
-| | A — fixed name allowlist | B — typed extensible surface | C — hybrid |
-| --- | --- | --- | --- |
-| Enforceable today | Nearly free; the tables exist | Nothing: no type, output-class, directory, required-key or provenance concept exists in `ArtifactSchema` | Name half free; type half not |
-| Satisfies §12.17 limb 1 | **No** — a name roster is not a directory | Only if the tuple's directory element is enforced, which needs the missing concept | **Yes** |
-| Fails closed on unknown names | Yes | Only if the type authority is itself closed and required | Yes |
-| Invents a vocabulary | No | **Yes** — "artifact type" / "output class" appear nowhere in committed authority | Partly |
-| Effect on future review class | Every new name is a Gate-decision | **Lowers** it: new names become ordinary Work PRs | Mixed |
-| Existing-suite cost | Highest — breaks the never-overwrite pin's own fixtures | Breaks three roster pins incl. §3.7 | Moderate, mechanical |
+All executed read-only at `70bf38b`, in a sandbox; nothing was written inside the
+repository. Retained because the ruling's shape follows from these facts.
 
-**A is not foreclosed the way PR #449 assumed** (§2), but it does not answer
-§12.17, which is about a *place*. **B lowers the amount of human review a
-protected surface receives**, and under `CLAUDE.md` the stricter reading of a
-research restriction wins. **C is the only shape that addresses both limbs.**
+**4.1 The continuation needs no new artifact name.** Playbook §5 enumerates its
+outputs, and all three map to committed identities (§2.1). An earlier draft of
+this packet asserted the opposite; that assertion is withdrawn.
 
----
+**4.2 D-7 / NR-A is closed.** The playbook's referral table still shows NR-A as
+`MUST_RESOLVE_BEFORE_GATE3A_CONTINUATION`, but its own preamble governs: the
+column is "the historical audit finding that produced them, not an open
+question". This decision completes a *successor* item D-7 created.
 
-## 5. Recommended ruling — offered, not adopted
+**4.3 The routing hole — the finding that governs the rest.**
+`scripts/ml_step4/evidence.write_report`, a function in the same module
+`artifacts.py` already imports two names from, is one import away and carries no
+path guard and no name validation. Executed in a synthetic sandbox root: it
+**overwrote a committed artifact, 2 138 → 16 bytes**, wrote into
+`docs/governance`, `data` and `models`, accepted `../../escaped.json` as a
+*filename*, and accepted strategy metrics. `guards.py:22-25` already disclosed
+that "containment of an *unrouted* caller is not a property this module has". The
+contract gap was that §12.17 was written as though one writer exists. §2.4 closes
+it.
 
-Structured as four slots so the ruling supplies the values.
+**4.4 One capital letter defeated both identity defences.** `resolve_schema` read
+`payload.get("artifact")` exact-case while the key allowlist folded. `Artifact`
+and `ARTIFACT` each defeated *both* `gate3a_undeclared_artifact_name` and
+`gate3a_artifact_name_mismatch`, and a payload could carry two identities with one
+invisible to the resolver — with `scan_gate3a` returning `[]`. §2.7 closes it.
 
-**5.0 Routing — first, because without it the rest is advisory.** The
-continuation writes every artifact through exactly one sanctioned function and
-reaches no other write primitive, `scripts.ml_step4.evidence.write_report`
-included. Pinned by an AST sweep over the continuation's own modules and by an
-`open`-audit-hook test over a synthetic run. Derivable from `guards.py:22-25`'s
-own disclosure; *which* function is sanctioned belongs to the referral.
+**4.5 Reserved-name impersonation was live and wide.** Filenames received
+`str.__str__` and no fold, while payload content received the full FB-7
+treatment. Nine spellings rendering as one reserved name coexisted in a single
+directory: leading space, Greek omicron, Cyrillic es, fullwidth, zero-width,
+NBSP, `" x .json"`, double extension, `_v2`. Case variance was refused **only**
+because NTFS folds `exists()`; CI is `ubuntu-latest`, where it writes. §2.8
+closes it.
 
-**5.1 Identity.** An output's identity is its `ArtifactSchema`. The relation
-name→schema is **n:1** and must stay so — `cost_table_plan_or_metadata.json`
-declares `cost_table_plan`, so any 1:1 model breaks committed evidence on day
-one.
+**4.6 Seven spellings of "declare nothing"** — absent, `""`, `"   "`, `123`,
+`None`, `["x"]`, `{}` — each bought an arbitrary `*.json` filename. Measured
+**identical at base `c7e477a`**: inherited, not introduced. §2.7 and §2.9 close
+it.
 
-**5.2 Declaration is mandatory at the write boundary, and is read case-folded.**
-Every write must carry a non-empty `str` `artifact` that resolves to a registered
-schema; any key folding to `artifact` counts, and two disagreeing declaration
-keys are a hard finding (§3.10); the filename
-must resolve to the same schema. All eight committed artifacts already satisfy
-this, so the committed evidence is the negative control. **Sited at
-`write_metadata_artifact`, not `scan_gate3a`** — 46 existing negative controls
-call `scan_gate3a` with neither an `artifact=` nor a declaring payload, and
-moving the rule there converts every one of them into a failure whose cheapest
-repair is weakening the new rule.
+**4.7 The accepted filename surface was nine, not eight.**
+`cost_table_plan.json` has never been committed and resolved to a full declared
+schema. §2.11 refuses the filename and fixes the identity mapping.
 
-**5.3 Names fold before they are judged.** A filename is reserved if its folded
-form matches a reserved stem. Without this, §3.3's nine spellings all remain
-writable and any "impersonation is forbidden" clause is unfalsifiable.
+**4.8 §12.17 limb 1 had no representation at all.** `out_dir` was a free caller
+argument; a path outside the repository was accepted. `write_metadata_artifact`
+has **no non-test caller**, so §2.2's confinement costs nothing today.
 
-**5.3a Directory identity is compared resolved, never as a string**, and the
-approved root must be a real directory rather than a reparse point (§3.11).
+**4.9 Directory identity is not a string.** An `out_dir` that was an NTFS
+junction was accepted and the file landed at the junction's target — with
+`os.path.islink()` reporting `False` — and an 8.3 short-name alias was likewise
+accepted. Directory identity must therefore be compared **resolved**, and the
+approved root required to be a real directory rather than a reparse point.
 
-**5.4 Location carries lifecycle.** `artifacts/m15_gate3a/*.json` is adopted
-evidence, reachable only by human-reviewed PR diff. One approved output root
-holds proposed outputs. Same identity, same schema, different directory. This
-invents no field and no name — but **the root's value is not derivable** (§6).
+**4.10 `_SCHEMAS` was three authorities at once.**
+`tests/m15_gate3a/test_recheck_fixes.py:898` asserts set equality between the
+schema table and the on-disk contents of `artifacts/m15_gate3a`. §2.6 separates
+them; the later Work PR must preserve that manifest pin deliberately rather than
+relax it to a subset.
 
-**5.5 The roster splits from the manifest.** §3.7's equality must be preserved
-deliberately by separating the schema registry from the committed-directory
-manifest, not by relaxing it.
+**4.11 Declaring a schema could weaken content control.**
+`design_m15_inventory` permits 441 numeric leaves against the undeclared
+backstop's 120 (`no_overlap_proof` 84, `scrub_report` 21). A reserved name is not
+automatically the stricter route.
 
-**Explicitly not offered:** content bounding as any part of the answer. PR #449
-§7.2 measured the residual at ~8,960 characters ≈ 82 OHLC rows. Content bounds
-do not resolve a name or surface authority.
+**4.12 Two output surfaces.** The metadata writer refuses `.jsonl`, so the 20
+derived M15 data files belong to the aggregation script the derivation manifest
+records as `TO_BE_CREATED_AT_GATE5`. This decision governs the **metadata
+evidence** surface; the derived-data surface is not ruled here and must not be
+assumed covered.
 
----
-
-## 6. What only human + ChatGPT may decide
-
-1. **The output root's literal path.** No committed clause names one. The repo
-   convention is `artifacts/<gate-or-stage>/<run-identity>/`, and it carries at
-   least three incompatible run-identity conventions. `artifacts/m15_gate3a_continuation`
-   appears in PR #447 only as *an example of a path that currently ALLOWs* and in
-   two test fixtures as a `script_name` string — **an illustration and a fixture
-   string are not authority.**
-2. **A hard constraint whoever names it must know:** `is_within` treats a
-   directory as protected together with its whole subtree, so a root spelled
-   *inside* `artifacts/m15_gate3a/` is permanently incompatible with D-7's trap.
-   The root must be **disjoint** from every protected prefix, and its leaf must
-   differ from every protected leaf.
-3. **Whether the root is fixed, per-run or per-epoch.** PR #444 §1 says the first
-   continuation "may well halt", and never-overwrite makes a directory one-shot —
-   a single fixed literal strands the retry.
-4. **Whether provenance is mandatory on metadata outputs, and its field list.**
-   No committed definition exists for metadata artifacts; §11's four-field
-   `DerivationBinding` is scoped to derived bytes.
-5. **Whether `status` becomes mandatory**, given §3.5.
-6. **Whether the `cost_table_plan` alias is retained (roster of nine) or retired
-   (eight).**
-7. **Whether a new output type needs a Work PR, a Contract Gate-decision, or a
-   human-reviewed schema diff.** *The ruling sets the future review class:* A
-   makes every new name a Gate-decision, B makes it a Work PR. Answering this
-   silently would decide how much human review this surface gets.
-8. **What happens if the continuation has no writable name** under a strict
-   eight-name roster — ruled deliberately, not discovered at run time.
+**4.13 A §12.25 collision to pre-empt at gate 4.** `proof.MeasurementRecord`
+carries exactly **six** immediate integer fields against S1's cap of **five** —
+measured, a flat serialisation refuses. The gate-4 record must nest; raising the
+bound is forbidden by PR #448 §5.5.5.
 
 ---
 
-## 7. D-7 relation and review classes
+## 5. Requirements on the later implementation Work PR
 
-D-7's clause is a **mechanism requirement (human-reviewed diff), not a
-prohibition** — the error PR #449 corrected in its FR-12 disposition. Derived
-classes:
+### 5.1 Scope
 
-| Change | Vehicle |
-| --- | --- |
-| Schema change whose semantics a merged Gate-decision already approved | **Work PR** (executed precedent: PR #449's FR-12) |
-| Schema change whose semantics are not yet approved | **Contract Gate-decision**, then Work PR |
-| Populating an artifact with measured values | **Execution-evidence PR**, post-approval |
-| Adding a new artifact identity to the roster | **Contract Gate-decision** *under present authority* — but item 7 of §6 may change this |
+Continuation typed registry · dedicated candidate root enforcement · single
+routing authority · generic-writer bypass prevention · artifact-key exactness ·
+filename canonical identity · reserved-name impersonation prevention · D-7 status
+authority enforcement · provenance enforcement · `_SCHEMAS` authority separation ·
+§12.17 limb 1 implementation · unknown-artifact fail-closed · derivation manifest
+six-field fix · regression and adversarial tests · static reverse-caller and
+import tests · internal audit and mutation testing.
 
----
+**FR-19 is not included.**
 
-## 8. Implementation requirements for the later Work PR
+### 5.2 Implementation freedom, and its limit
 
-Carried, not closed, by this packet:
+The mechanism is free — class, enum, dataclass, immutable mapping, registry
+module, router object. The **observable contract** is not: single routing
+authority · typed identity · fixed candidate root · fail-closed unknown identity ·
+no arbitrary filename · no alternate-writer bypass · explicit status · explicit
+provenance · candidate/promotion lifecycle.
 
-1. `_APPROVED_OUTPUT_ROOT` as a module-level constant, enforced inside
-   `write_metadata_artifact` via `is_within` containment — never a string prefix,
-   never conditional on repo-relativity (a conditional rule never fires in any
-   test).
-2. Mandatory declaration (§5.2) with its own finding token, distinct from both
-   `gate3a_undeclared_artifact_name` and `gate3a_artifact_name_mismatch`.
-3. Folded reserved-name matching (§5.3), with the nine spellings of §3.3 as the
-   regression set.
-4. The name check must run **after** every structural name guard, or it shadows
-   five existing single-guard tests.
-5. `artifacts/m15_gate3a` joins `_PROTECTED_PREFIXES` **in the same PR** that
-   adopts the root, discharging D-7's trap; and a set-equality pin on the prefix
-   roster in both directions — an addition to it is currently caught by nothing.
-6. Playbook §5 must be amended in the same PR: it still names
-   `artifacts/m15_gate3a` as the continuation's write target, which is the
-   remaining half of the trap's precondition.
-7. Re-engineer the RF-9 partial-write cleanup test, whose only vehicle is an
-   over-long filename that a name roster would refuse earlier.
-8. Enforcement of "never written": `effective_n_estimator_spec` and both forward
-   artifacts are writable today — D-7's "never written" is a statement, not a
-   mechanism.
-9. The routing obligation (§3.9 / §5.0), without which items 1–8 bind one
-   function rather than the surface.
-10. The case-folded declaration read (§3.10) — the current identity defence is
-    one capital letter from off.
-
-**Two carried obligations that this ruling does not close:** the derived-data
-surface (§3.8), and the gate-4 producer, which by §12.14 lives outside this
-package and is therefore not bound by anything in `artifacts.py` unless a clause
-says so.
-
-**A collision to pre-empt:** `proof.MeasurementRecord` carries exactly **six**
-immediate integer fields against §12.25 S1's cap of **five** — measured, a flat
-serialisation refuses. The gate-4 record must nest. Raising the bound is
-forbidden by PR #448 §5.5.5.
-
----
-
-## 9. A divergence found while reading, outside this packet's scope
+### 5.3 Derivation manifest divergence
 
 `design_m15_derivation_manifest.json` still declares
 `"missing_minute_policy": "… per-file gap report (count + max gap) …"` while
-`design_m15_inventory.json` now declares the six-field `minute_accounting`.
-**Two committed authorities disagree about one quantity** — the R-2 failure mode
-PR #449's own FR-12 fix was closing. Its semantics are already approved by PR
-#444 §5, so it is a **Work PR** item; it is currently in no PR's scope and is
-recorded here so the fifth audit does not have to find it.
+`design_m15_inventory.json` declares the six-field `minute_accounting` that PR
+#444 §5 approved and PR #449 implemented. **This is not a contract choice** — it
+is an implementation divergence from the current committed schema.
+`TARGETED_IMPLEMENTATION_FIX_REQUIRED`: the Work PR aligns the derivation
+manifest, the schema declaration and the tests to the approved six-field schema.
+**No new schema semantics are invented.**
+
+### 5.4 Observable requirements the tests must pin
+
+1. A known eligible `artifact_id` resolves to its canonical candidate path, and
+   only that path.
+2. An unknown `artifact_id` is refused.
+3. A caller-supplied filename cannot change the canonical identity.
+4. `Artifact`, `ARTIFACT` and every non-canonical declaration key are refused.
+5. A reserved-name confusable is refused.
+6. A protected path is refused.
+7. A traversal path is refused.
+8. An alternate writer cannot produce a continuation artifact.
+9. A direct overwrite is refused.
+10. An existing-candidate collision is refused.
+11. A missing status authority is refused.
+12. Missing provenance is refused.
+13. A schema mismatch is refused.
+14. An `artifact_id` / filename mismatch is refused.
+15. An `artifact_id` / schema mismatch is refused.
+16. A non-continuation committed artifact is refused by the continuation writer.
+17. A candidate is not automatically authoritative.
+18. Promotion requires a reviewed repository diff.
+19. `_SCHEMAS` alone cannot grant write permission.
+20. The current six-field minute-accounting schema is used consistently.
+
+Each refusal carries its own finding token and a negative control beside it, per
+§13's anti-pattern rules; and the D-7 trap is discharged in the same PR — once
+the candidate root is enforced, `artifacts/m15_gate3a` joins
+`_PROTECTED_PREFIXES`, and playbook §5's clause naming that tree as the write
+target is amended with it.
 
 ---
 
-## 10. Why this is `PENDING` and not `RULED`
+## 6. Changes that will still require human-reviewed contract/schema authority
 
-Policy §14.2 reserves changing a research contract to a Gate-decision; §5
-requires human + ChatGPT to merge an Amber PR and advance a gate; §12 forbids an
-AI that performed an audit from giving final approval. PR #444 §0 forbids an
-implementing session from introducing a value the contract does not contain — and
-a directory name is exactly that. PR #448 §5.4(i) recorded that a Work PR
-selecting between §12.25's two readings was *"ultra vires regardless of which
-reading is right"*; this is stronger, because §12.17 limb 1 has no readings at
-all, only a missing value.
+A new continuation artifact identity · adding continuation eligibility · a new
+output root · adding or changing status semantics · changing lifecycle semantics ·
+changing the promotion rule · changing the protected or reserved surface.
 
-The decisive precedent is PR #448 §9: the last question of this class was
-prepared as a packet, and the human + ChatGPT ruling **did not select from the
-option table** — it replaced the question with a provenance requirement. Four
-roles and a re-executing lead did not predict that. An AI pre-setting `RULED`
-here would be both improper and, on the record, unreliable.
+An ordinary implementation refactor that changes none of these is a Work PR.
 
-If human + ChatGPT rule, **this same file** is amended to `RULED` with the
-pending history preserved as history — the PR #448 pattern — and no second PR is
-opened.
+---
+
+## 7. Sequence from here
+
+1. This Contract Gate-decision merges on human + ChatGPT approval.
+2. The continuation output-surface implementation Work PR.
+3. That PR merges after review.
+4. The FR-19 test-safety Work PR.
+5. The **fifth independent source-audit**, in a fresh top-level session — **not
+   before the contract implementation**.
+6. P/V byte-reader work.
+7. Concrete calendar artifact approval.
+8. Only then, an authorised gate-3a continuation.
+
+**This ruling does not discharge
+`PRE_CONTINUATION_CALENDAR_ARTIFACT_APPROVAL_REQUIRED`.** A completed output
+writer does not authorise a continuation; the calendar artifact approval remains
+a separate, open gate.
+
+---
+
+## 8. History — recorded, and not the current status
+
+This document was first prepared as a **decision packet** carrying
+`M15_GATE3A_CONTINUATION_OUTPUT_SURFACE_PENDING_HUMAN_CHATGPT_RULING` and
+`CONTRACT_CHANGE_REQUIRES_HUMAN_CHATGPT_RULING`, on the ground that no committed
+clause named an output directory and that naming one would invent an unapproved
+value. Both tokens are **superseded** by §2.
+
+The packet offered three options — **A** a fixed artifact-name allowlist, **B** a
+typed extensible surface, **C** a hybrid — and recommended C's shape while
+reserving eight items to human + ChatGPT, chief among them the directory's
+literal path.
+
+**The ruling is close to C in shape but is not the option as offered.** It adopts
+the typed registry and the dedicated root, and it adds two things the packet
+raised but did not resolve: the **routing authority** as a first-class
+requirement, and the **candidate → promotion lifecycle**, which no option had.
+It also settles items the packet had reserved — the canonical declaration key,
+reserved-name canonicalisation, the `cost_table_plan.json` disposition, the
+status-authority requirement and the provenance requirement — and it names the
+root `artifacts/m15_gate3a_continuation/`, as a sibling of the committed tree
+rather than a subtree, for the containment reason recorded in §2.2.
+
+An earlier draft also asserted that §12.17 contemplates continuation outputs "by
+definition not among the committed eight". That assertion was **wrong** —
+playbook §5 enumerates them and all are committed identities — and it is
+withdrawn in §4.1. It is recorded here because it was the premise that made the
+question appear to require a new namespace, and it did not.
