@@ -3,8 +3,13 @@
 **Type.** Gate-decision PR (policy §14.2). **Risk tier.** Amber — doc-only, and
 it defines a research boundary.
 
-**Completion state.**
+**Completion state.** One, unchanged:
 `M15_MINIMUM_RESEARCH_GATE_PENDING_HUMAN_CHATGPT_RULING`
+
+**Zero-data feasibility disposition** (§0, a carried status — *not* a second
+completion state, and not a verdict on family A):
+`SAMPLE_FLOOR_REACHABILITY_NOT_DETERMINABLE_WITHOUT_MEASURED_INPUTS` ·
+`ZERO_DATA_FEASIBILITY_BEFORE_REAL_DATA`
 
 **Statuses carried, unchanged.**
 `M15_AGGREGATION_DATASET_MACHINERY_SOURCE_AUDIT_BLOCKED_PENDING_TARGETED_FIXES` ·
@@ -25,6 +30,324 @@ label in this document sits inside this list or inside a prohibition sentence.
 
 **Nothing here is executed.** No source, test or artifact is changed; no data is
 read; no dataset is downloaded; no model is trained; no evaluation is run.
+
+---
+
+## 0. Zero-data feasibility — the most upstream question
+
+`ZERO_DATA_FEASIBILITY_BEFORE_REAL_DATA`. Before Q1–Q11 are ruled, a cheaper
+question is asked: **using committed authority and no data at all, can M15
+Family A ever reach the frozen sample floors?** If it provably could not, every
+question below that presupposes a real-data read would not need answering.
+
+**This is a derivation, not a gate.** It advances nothing, appears nowhere in the
+playbook's gate order, and passing or failing it changes no research state. It is
+arithmetic over committed constants, performed in this document: **no code is
+executed, no stage is run, nothing is read.**
+
+### 0.1 The committed quantities
+
+| Quantity | Value | Committed source |
+| --- | --- | --- |
+| horizon `H` | 24 M15 bars (6 h) | Ruling 6; spec `frozen_parameters.H_m15_bars`; `effective_n.py:51` |
+| raw trade floor | ≥ 1,000 holdout trades | prereg §9 H; `effective_n.py:53` |
+| effective-N floor | ≥ 400 | prereg §9 H; `effective_n.py:52` |
+| turnover ceiling | ≤ 40 trades/day portfolio-wide | prereg §9 H; also binds validation as "the turnover budget" (§9.V, Rulings 9 and 10) |
+| pair universe | PAIRS_20 | Ruling 2 / R-2a |
+| pair trade concentration | ≤ 0.40 — a **max single-pair share** (`metrics.py:154`) | prereg §9 H |
+| `rho_h` | `1 + (H−1) × mean_overlap_fraction` | spec `horizon_overlap_factor` |
+| `rho_x` | `1 + (P−1) × mean_abs_pairwise_corr` | spec `cross_pair_discount` |
+| `N_eff` | `Σ(N_raw_p / rho_h_p) / rho_x` | spec `portfolio_effective`; `effective_n.py:283–302` |
+| holdout span | ≥ 2 months — a **minimum with no maximum** | Ruling 2; "adoption waits" |
+
+**The hinge.** The ceiling and `N_raw` constrain the same variable: the spec
+defines `N_raw` as "eligible **traded** events … that **fire an EV-gated trade**",
+and `effective_n.py:63–73` pins it against the two strictly larger confusable
+counts, noting that feeding either "clears the frozen floors by orders of
+magnitude and thereby **disarms `INSUFFICIENT_SAMPLE`**". Were `N_raw` the
+eligible-*bar* count, the ceiling would not bind it and none of this would run.
+
+### 0.2 Three inputs are empirical — and that is the result
+
+`mean_overlap_fraction`, `mean_abs_pairwise_corr` and the event rate itself are
+**not frozen**.
+
+- The spec ties the correlation to "per-pair **daily PnL** series, estimated on
+  **DESIGN data only** and frozen". A daily-PnL series does not exist until a
+  strategy has been fitted and run on the design span — **the stages this
+  derivation sits upstream of.** The input that most moves the answer is produced
+  by the work it is meant to precede.
+- `mean_overlap_fraction` is **not** in `frozen_parameters` and, unlike the
+  correlation, is not even scoped to design data — on the plain reading it is
+  measured on the evaluated role's own realised gaps, making it structurally
+  unknowable in advance.
+- No committed authority bounds the traded-event rate **from below**; the ceiling
+  bounds it only from above.
+
+### 0.3 The decisive arithmetic: the deflator budget
+
+The sharpest zero-data statement available is not a duration but a **budget**. At
+the ceiling `R = 40/day` over a 2-month holdout (61 calendar × 5/7 ≈ 43.6 weekday
+days), the maximum attainable raw count is `40 × 43.6 = 1,744`, so `N_eff ≥ 400`
+requires
+
+> **`(1 + 23·ω) × (1 + 19·c) ≤ 4.36`**
+
+— the *entire* deflation budget, for both effects combined, at the frozen minimum
+span and the maximum permitted rate. Equivalently: `c ≤ 0.177` when `ω = 0`, or
+`ω ≤ 0.146` when `c = 0`. (Using gate 4's "~43 trading days" the budget is 4.30,
+`c ≤ 0.174`, `ω ≤ 0.144`.)
+
+**That budget is easily exceeded by ordinary trade arrival alone.** Under a
+Poisson process at exactly the ceiling, `mean_overlap_fraction = 0.213` and
+`rho_h = 5.90` — which **exceeds the whole 4.36 budget on its own**, giving
+`N_eff = 296 < 400` even at zero cross-pair correlation. So a 2-month holdout at
+the ceiling is infeasible under Poisson arrivals **at any correlation whatever**.
+
+This is gate 4's already-recorded "intentionally demanding but narrow" corridor,
+quantified.
+
+### 0.4 Three corrections to earlier, more confident versions of this derivation
+
+**(a) The turnover ceiling does not force `rho_h = 1`.** An earlier draft argued
+that ≤ 40 trades/day over 20 pairs gives a mean same-pair gap of 48 bars against a
+24-bar horizon, so `rho_h = 1` exactly. That computes `φ(mean gap)`; the spec asks
+for the **mean of the overlap fraction** "estimated per pair from the realised
+inter-event gaps". `φ` is convex, so by Jensen `E[φ(g)] ≥ φ(E[g])` — the mean-gap
+argument bounds the mean overlap only from **below**, and that bound is vacuous
+whenever the mean gap exceeds the horizon. `rho_h = 1` holds **iff no same-pair
+trade ever fires within 6 hours of the previous one**, which is a claim about the
+realised process, not a consequence of a rate ceiling. **Withdrawn.**
+
+**(b) The ceiling is a holdout *mean*, so it bounds `rho_h` not at all.**
+`turnover()` is `n_trades / n_trading_days` (`metrics.py:120`) — a portfolio
+average over the span, not a per-day cap. A mean-only constraint admits arbitrary
+clustering: `sup rho_h = 24`. Two trades an hour apart on one pair inside a London
+session is not exotic and yields `rho_h ≈ 10.6` at exactly the frozen ceiling.
+
+**(c) The concentration cap admits far worse than one hot pair, and accrual is
+not monotone in concentration.** `≤ 0.40` bounds the *largest* pair's share, so
+several pairs may sit near it. Under regular arrivals: one pair at 16/day with the
+other 19 at 1.26/day accrues `Σ N_eff_pair = 24.9/day` — but **three pairs at
+13.33/day each (share 0.333, equally legal) accrue 2.34/day**, roughly 10× worse,
+because every active pair crosses the overlap threshold at once. An internal
+review put this corner at ~4.3 years by applying `P = 20` to a three-pair
+allocation; `P` is the *contributing* count, so recomputed consistently it is
+~1.1 years. **Neither the 24.9/day figure nor the 4.3-year figure is adopted.**
+
+### 0.5 The "3.3 years" figure — and why rejecting it was wrong
+
+The figure appears **nowhere** in the repository: `3.3 year`, `33,500` and
+`838 trading` return zero hits across `docs/`, `artifacts/` and `scripts/`.
+
+Its arithmetic reproduces exactly: `ω = 0.5 → rho_h = 12.5`, `c = 0.3 → rho_x =
+6.7`, `400 × 12.5 × 6.7 = 33,500` trades, `÷ 40/day = 838` weekday days ≈ 3.32
+years.
+
+An earlier version of this section **rejected** it on the ground that `ω = 0.5`
+requires 8 trades/pair/day — 160/day portfolio-wide, four times the ceiling.
+**That rejection was wrong, and the reason matters more than the figure.** It
+holds only under regular arrivals. At exactly the frozen ceiling, `ω = 0.5` is
+reached by one clustered doublet per pair per day — and, decisively, it is what
+**the pre-registration's own draft estimator** yields. Prereg §9:
+
+> Draft estimator (for the design audit to fix): block-adjust by horizon (events
+> per pair thinned by **mean overlap factor ≈ horizon/mean inter-event gap**)
+
+At the ceiling that is `24/48 = 0.5`, hence `rho_h = 12.5` — the inherited premise
+exactly. **So the 3.3-year figure is the frozen turnover ceiling fed through a
+committed formula, not an out-of-contract assumption.**
+
+The APPROVED spec supersedes the draft under T-6, and the spec's arithmetic is
+what `INSUFFICIENT_SAMPLE` is computed from. But **the two committed formulas
+disagree by 12.5× in `rho_h` at the frozen ceiling**, and an earlier version of
+this section resolved that disagreement silently, in the direction that makes the
+family look feasible. The divergence is recorded here as an open item, not
+resolved: `DRAFT_AND_APPROVED_OVERLAP_ESTIMATORS_DIVERGE_AT_THE_FROZEN_CEILING`.
+
+### 0.6 Two estimator routes that raise `N_eff` without breaking any rule
+
+Both go **around** `effective_n()`, not through it — its internal hardening
+(`count_quantity` pinning, per-pair rather than scalar-collapsed computation,
+canonical pair identity, the frozen-horizon check) is real, and I found no way
+past any of it.
+
+**(a) `P` is caller-supplied, and a smaller universe is *faster* to the floors.**
+The spec says `P = number of pairs **contributing**`; `effective_n.py:280` takes
+`n_pairs = len(records)` with only an upper bound. Under a fixed portfolio
+turnover budget the numerator is capped at 40/day regardless of how many pairs
+share it, while `rho_x = 1 + (P−1)·c` falls as `P` falls. At the ceiling and
+corr 0.3, with every pair below the overlap threshold:
+
+| `P` | rate/pair | `rho_x` | `N_eff`/day | weekday days to the floors |
+| --- | --- | --- | --- | --- |
+| 20 | 2.00 | 6.70 | 5.97 | 67 |
+| 12 | 3.33 | 4.30 | 9.30 | 43 |
+| **10** | **4.00** | **3.70** | **10.81** | **37** |
+| 9 | 4.44 | 3.40 | 3.57 | 112 |
+| 5 | 8.00 | 2.20 | 1.45 | 275 |
+
+**The contract's fastest route to the sample floors is ten pairs, not twenty** —
+45% off the required span, at a 0.100 share, far inside the 0.40 cap — until
+`P = 9` pushes each pair over the 4/day overlap threshold and the gain reverses
+sharply. Separately, a pair that fired no trades adds nothing to the numerator
+while raising `rho_x`, so simply *omitting* it is a free gain. Nothing pins `P`
+to `PAIRS_20`, and nothing ties the `P` used for `rho_x` to the pair set the
+concentration cap is computed over.
+
+**(b) `mean_abs_pairwise_corr` has no production rule and no defined freeze
+point.** The spec fixes the symbol and the span and nothing else — not which
+strategy's PnL, not whether idle pair-days enter the series, not the correlation
+method, not entry- versus exit-day attribution (the same ambiguity Q10(i) records
+for the Sharpe series, on the same daily series), not the minimum observations
+behind the estimate. The same artifact asserts
+`no_strategy_metrics_computed_at_gate3a: true` while defining the quantity on
+per-pair **daily PnL**, which is a strategy metric — so the freeze point is
+undefined and whoever computes it first sets it. And a daily correlation is the
+wrong resolution for a 6-hour horizon: at the projected ~0.56 trades/pair/day most
+pair-days are idle, and idle days pull `|corr|` toward zero, so the estimator
+**understates dependence most in exactly the sparse regime this family expects**.
+`PAIRS_20` also draws 40 currency legs from 8 currencies, so 88 of its 190
+pair-pairs share a leg and a single scalar mean cannot carry that block structure.
+
+Two referrals follow, in the playbook's register format:
+
+| Referral | Disposition | Basis |
+| --- | --- | --- |
+| **NR-K** — `P` in `rho_x` is caller-controlled and is not pinned to `PAIRS_20` | `MUST_RESOLVE_BEFORE_ANY_EFFECTIVE_N_VERDICT` | Omitting zero-trade or tail pairs raises `N_eff` at no numerator cost and can flip the verdict with both the raw floor and the 0.40 cap satisfied |
+| **NR-L** — `mean_abs_pairwise_corr` has no production rule and no freeze point | `MUST_RESOLVE_BEFORE_ANY_EFFECTIVE_N_VERDICT` | Method, idle-day handling, day attribution, minimum observations and the freeze gate are all unpinned, and the value sits in the denominator that decides `INSUFFICIENT_SAMPLE` |
+
+Accordingly §12's earlier remark that "`rho_x` already carries the dependence the
+edge question needs" is **withdrawn as unestablished**.
+
+### 0.7 Verdict
+
+**`SAMPLE_FLOOR_REACHABILITY_NOT_DETERMINABLE_WITHOUT_MEASURED_INPUTS`.** Of the
+three dispositions this exercise could return, the answer is the third — and
+**neither** of the other two is provable.
+
+- **`STRUCTURALLY_INFEASIBLE` is not established.** Ruling 2 fixes a holdout
+  *minimum* with no maximum and "adoption waits" is frozen, so every duration is
+  finite; and no committed source lower-bounds `mean_abs_pairwise_corr`, which an
+  infeasibility proof would need. Family A survives on zero-data grounds.
+- **`STRUCTURALLY_FEASIBLE` is not established either, and this packet does not
+  assert it.** What is established is narrower: the frozen criteria set is **not
+  self-contradictory** — a non-empty satisfying region exists. That is a fact
+  about the criteria, not about M15.
+- **Three inputs are empirical, not two**, and an earlier version of this section
+  declared the first of them settled at 1.00, which is the error the rest
+  inherited: `mean_overlap_fraction`, `mean_abs_pairwise_corr`, and the realised
+  event rate at each registered `ev_min`.
+- **Missing authorities, named:** `EVENT_RATE_NOT_COMMITTED` ·
+  `MEAN_OVERLAP_FRACTION_NOT_FROZEN_AND_ROLE_MEASURED` ·
+  `MEAN_ABS_PAIRWISE_CORR_NOT_YET_ESTIMATED_DESIGN_DATA_ONLY` ·
+  `DRAFT_AND_APPROVED_OVERLAP_ESTIMATORS_DIVERGE_AT_THE_FROZEN_CEILING` · NR-K ·
+  NR-L.
+
+**So this calculation does not moot Q1 or Q3.** An honest grid spans roughly 25
+weekday days to over a decade, and a range that wide decides nothing. The hope
+recorded earlier in this packet — that the zero-data calculation might be
+"decisive" and make the real-data questions unnecessary — is **withdrawn**.
+
+**What it does establish is worth keeping, and it runs the other way.** It refutes
+the *reverse* claim, that the floors are comfortably reachable at the frozen
+minimum: §0.3's budget is 4.36 and an ordinary Poisson arrival process spends 5.90
+on its own, and at the prereg's own projected ~11/day the **raw** floor alone needs
+≈4.1 months before any deflator is applied. **The frozen 2-month minimum is very
+likely the wrong span** — which is what gate 4 said, and why it directed gate 3a to
+size the holdout generously. And it converts the open question into the one a
+human can actually rule on: *for each corner of the grid, what forward-accrual
+date does `T_h` imply?* The committed record already places the earliest feasible
+forward adoption at ≈ 2026-10 on a ~5-month requirement, so a central case of
+~11 months of holdout puts `T_h` in mid-2027, and a 2.4-year holdout puts it near
+the end of 2028. A long holdout is permitted; it is simply not free, and the price
+is calendar time this packet should quote rather than elide.
+
+**And what it cannot address at all.** The floors count **events, not
+information**: at `ev_min = 0.0` a trade with `EV = +0.001` pip clears them
+exactly as one with `EV = +2` pips does, and neither the spec nor `effective_n()`
+weights by signal. "The frozen floors are reachable" is therefore not "the design
+can detect an edge", and §7's R5 rule — "`failed` may not be returned on a sample
+the design could not have detected an edge in" — reaches for a power calculation
+the `N_eff` floors do not supply. Nothing here bears on whether an edge exists, in
+either direction.
+
+**This re-derives a committed note, it does not discover a constraint.** Gate 4
+already computed the same corridor and already ruled on it: "with turnover ≤
+40/day and ≥ 1,000 holdout trades, a 2-month holdout (~43 trading days) gives a
+feasible corridor of [1,000 … ~1,720] trades — intentionally demanding but
+narrow. **Gate 3a should prefer a holdout longer than the 2-month minimum when
+accrued data allows**", and "a false rejection into `INSUFFICIENT_SAMPLE` is
+**recoverable by adopting more forward data — acceptable by design**".
+
+**Two scope caveats on every duration here.** They are **holdout-only**: prereg
+§3.1 requires validation ≥ 3 months ahead of the holdout and §3.2 an embargo of ≥
+25 M15 bars at the boundary, so the forward-epoch calendar requirement is
+`3 months + embargo + D`, against an earliest feasible adoption of ≈ 2026-10. And
+they price only the **holdout** leg: the spec's validation limb refers to "the
+family's minimum" with no antecedent, and `effective_n.py` fails closed to
+`NOT_EVALUATED_AT_THIS_ROLE` rather than inheriting the holdout floor. If a
+validation floor is ever set at parity the requirement roughly doubles. That is an
+open Ruling-11 referral, not a gap this derivation may fill.
+
+### 0.8 What a negative result could and could not mean
+
+Stated **in advance**, so a finding cannot later be read as an argument for
+relaxation.
+
+**It could not close Family A.** Prereg §1 closes the family on sample grounds
+only for an `INSUFFICIENT_SAMPLE` "**that cannot be remedied by the registered
+data plan**" — and the registered plan *contains* the remedy. Demonstrating
+unreachability at the frozen minimum establishes that **the minimum is the wrong
+span**, not that no admissible span exists. Irremediability would require showing
+that no holdout length reachable by forward accrual clears the floors — a far
+stronger claim this arithmetic does not attempt. A family disposition is never
+self-granted in any case.
+
+**The admissible responses are exactly two:** a holdout longer than the frozen
+minimum, which the contract already prefers; or a human + ChatGPT ruling on Family
+A's continuation or scope. **Lowering the raw or effective-N floors, and raising
+the ≤ 40/day ceiling, are not among them** — Ruling 10 forbids loosening, and the
+ceiling was considered and settled by gate 4, which recorded that it "is a budget,
+**not a target**".
+
+**Feasibility may not be demonstrated by assuming operation at the ceiling.**
+Every rate here is a conditional arithmetic identity, never a design target — and
+the ceiling is an outcome, not a dial: Ruling 9 selects the operating point by
+validation net expectancy subject to the budget, so nothing pushes the rate toward
+40/day.
+
+**And a reachable result authorises nothing.** It does not discharge Q1 or Q3,
+does not permit a real-data read, does not shorten the forward-epoch WAIT or the
+≈ 2026-10 earliest-accrual record, and does not discharge
+`PRE_CONTINUATION_CALENDAR_ARTIFACT_APPROVAL_REQUIRED`. The symmetry is
+deliberate: an unstated positive branch is where "feasible" gets read as
+"proceed".
+
+**`INSUFFICIENT_SAMPLE` is reserved and is not emitted here.** It is a *measured*
+verdict of `effective_n()` at `role ∈ {validation, holdout}`; §4 R-9 and §6
+reserve it, and a zero-data derivation cannot produce one. No token proposed by
+this section contains it, `FAILED`, or `FAMILY_A`.
+
+**Duration is not a free variable either.** Because "adopt more forward data" is a
+pre-blessed remedy, "we need a longer holdout" could otherwise be invoked after
+seeing a short one fail — a power calculation performed after the result, which
+R-1 names as the failure mode. So: the span is **fixed at forward-epoch adoption,
+before any validation or holdout computation**, together with the (rate, overlap,
+correlation) assumption used to size it; prereg §3.2 already bars in-flight
+extension, since the holdout is consumed "upon any decision-bearing observation of
+it"; and re-running this grid after any real-data observation is a **post-hoc
+power calculation**, recordable as a diagnostic and referable, never citable as
+authority to extend.
+
+**Conditionality disclosed.** Durations are in weekday UTC days — a convention
+Q10 refers back as unfixed — and the arrival processes named here (regular,
+Poisson, clustered doublet) are **modelling references, not committed authority**.
+The "~43 trading days" figure is gate 4's. The 96-buckets/day figure is an
+arithmetic ceiling, not an eligible-slot count: Ruling 4's rollover exclusion
+removes at least two buckets and the holiday calendar is `[FIXED-AT design audit]`
+and unfixed. No expected slot set is inferred from data or a self-generated rule
+(§4 R-3).
 
 ---
 
@@ -551,6 +874,24 @@ registered before the campaign starts, or left entirely to the design audit and
 gate 3a, which own it. Exploratory estimates of these quantities are diagnostics
 and are labelled as such.
 
+**Two further levers, added after §0's derivation exposed them.**
+
+- **The event rate.** §0 makes the traded-event rate the single unfrozen quantity
+  governing whether a frozen sample floor is reached. Choosing an `ev_min`
+  operating point, a variant or a threshold **in order to raise the event rate so
+  a floor clears** is this requirement's own route applied to a different
+  quantity: it disarms a frozen floor while loosening no threshold and while
+  listing every variant honestly. Ruling 9's selection metric — validation net
+  expectancy subject to the turnover budget — is not substitutable by trade count,
+  and no feasibility corridor may become an input to `ev_min` selection.
+- **The reported pair count `P`.** `rho_x = 1 + (P−1)·c` takes `P` from the
+  caller, and §0.6 measures the effect: under a fixed turnover budget a smaller
+  reported universe reaches the floors *faster*, and omitting a pair that fired no
+  trades is a free gain. `P` is reported over the full `PAIRS_20` universe,
+  including pairs that fired nothing; the pair set used for `P`, the pair set the
+  concentration cap is computed over, and `PAIRS_20` are reported together and
+  must be the same twenty.
+
 ---
 
 ## 5. The anti-overengineering test
@@ -691,7 +1032,11 @@ model whose training data overlaps the exploratory slice, the dead window or the
 consumed `365d_BA` holdout (Ruling 8: from-scratch only, no deployed-model reuse).
 No number from a fenced legacy route may serve as the baseline (C-8).
 
-**A zero-data calculation R0 must include, and it may moot Q1 and Q3.** Before any
+**A zero-data calculation R0 must include — and §0 has now performed it.** §0 is
+the authority for what follows; the paragraph below is retained because it
+specifies the *stage* obligation, but its earlier claim that the calculation "may
+moot Q1 and Q3" is **withdrawn** (§0.7): the honest grid spans roughly 25 weekday
+days to over a decade and therefore decides neither question. Before any
 real-data read is requested, establish from committed numbers alone whether the
 frozen sample floors are reachable at all. The inputs are all committed: the M1
 flagship fired **8,082 trades over 48 UTC days** (168.4/day portfolio); the prereg
@@ -702,11 +1047,14 @@ fractions and mean absolute pairwise correlations, and report the raw count and
 holdout length required for `N_eff ≥ 400`. **If the grid shows the floors
 unreachable at the frozen horizon, universe and minimum holdout span, that is
 reported to human + ChatGPT as a Ruling-10 referral before any real-data read is
-authorised** — it would mean family A terminates in `INSUFFICIENT_SAMPLE` whatever
-the edge, and no exploratory result could change it. The property that makes M15
-attractive over M1 — a ~15× lower event rate — is the same property that pushes
-the sample floor away. This calculation reads nothing, costs nothing, and is the
-cheapest decisive thing in the whole packet.
+authorised**. What such a finding would and would not mean is fixed in advance at
+§0.8: it could **not** close family A, because prereg §1 closes on sample grounds
+only for an `INSUFFICIENT_SAMPLE` "that cannot be remedied by the registered data
+plan" and the registered plan contains the remedy. A lower event rate is one of the
+four mechanisms prereg §1 lists for preferring M15, and it is also the mechanism
+that moves a fixed trade-count floor further away; recording that tension is a
+statement about the interaction of two frozen criteria, **not evidence about
+whether M15 carries an edge**. This calculation reads nothing and costs nothing.
 
 **A constraint the committed frame imposes on R4.** The frozen holdout lives on
 the **forward epoch**, which §3.1 records as "not yet adopted", and the forward
@@ -818,8 +1166,18 @@ freezes "design 2025-04-25→2026-02-28 (**exploratory only**, never evidence,
 to the formal family — and R-2a bars "inclusion/exclusion decisions **anywhere in
 this family**". A subset is also not the multiple-comparison saving it looks like:
 what controls selection is registering the set in advance (R-7), not shrinking it,
-and **dropping pairs lowers effective-N**, since `N_eff` rises with the number of
-contributing pairs. The narrow question is therefore whether an explicitly
+and the effect of pair count on effective-N **depends on what is held fixed — and
+under a fixed turnover budget the committed estimator rewards a *smaller*
+universe**. An earlier version of this packet asserted that "dropping pairs lowers
+effective-N, since `N_eff` rises with the number of contributing pairs"; that is
+**withdrawn as backwards**. It holds only with per-pair counts fixed. With the
+*portfolio total* fixed — the regime the ≤ 40 trades/day ceiling creates — the
+numerator is capped regardless of how many pairs share it while
+`rho_x = 1 + (P−1)·c` falls with `P`: at the ceiling and corr 0.3 the frozen floors
+are reached in 67 weekday days at `P = 20` and **37 at `P = 10`**, reversing only
+below `P = 10` when each pair crosses the overlap threshold (§0.6). Dropping pairs
+is an effective-N **inflation** route, so the case against a subset rests on R-2a
+and R-7 alone, never on an arithmetic penalty that does not exist. The narrow question is therefore whether an explicitly
 registered subset may be used for **cost** reasons without constituting a pair
 selection within family A. **Default if unruled: `PAIRS_20`.**
 
@@ -890,7 +1248,13 @@ holdout live on a forward epoch the exploratory stage cannot touch, exploratory
 search does not inflate the *formal* family's error rate — **provided** R-10 holds
 and no frozen contract value is set from an exploratory variant. On that reading
 C-7 bounds only the formal families. The alternative reading is that any search
-over family A's own design role counts against C-7. This packet does not choose.
+over family A's own design role counts against C-7.
+
+**Default if unruled, per playbook §2.8:** exploratory search over family A's own
+design role **does** count against the C-7 budget. Where what a gate permits is
+ambiguous the narrower reading governs until a ruling adopts the wider one —
+exactly as Q7's `N = 1` does. An earlier version of this packet said only that it
+"does not choose", which left the wider reading in force by omission.
 
 **Q10 — three researcher degrees of freedom sit inside a frozen threshold.**
 `daily portfolio Sharpe (ann., UTC-day)` is frozen at ≥ 0.8 and the sampling
@@ -1070,6 +1434,57 @@ was corrected.
 
 ---
 
+### 12.1 Second review round — the zero-data feasibility derivation
+
+Five further independent doc-only roles were run against the derivation before it
+was written into §0: quantitative feasibility, prereg/contract authority, research
+methodology, an adversarial "can `N_eff` be inflated?" brief, and
+governance/minimum-scope. They were given the lead's derivation **to attack**, and
+they defeated its central claim.
+
+**What they overturned.** The lead's first derivation concluded that the turnover
+ceiling structurally excludes horizon overlap, so `rho_h = 1.00` exactly and the
+frozen floors are reachable in months — verdict `STRUCTURALLY_FEASIBLE`. Three
+independent defects killed it: the spec's `mean_overlap_fraction` is a **mean over
+realised gaps**, so Jensen's inequality runs against the mean-gap argument; the
+turnover figure is a holdout **mean** (`metrics.py:120`), which bounds no
+individual gap; and the concentration cap bounds only the *largest* pair's share.
+Every arithmetic figure in the original derivation reproduced exactly — **the
+errors were entirely in the premises**, which is why a green calculation was not
+evidence of a sound one.
+
+**What they found that the lead had missed entirely.** The pre-registration
+contains its **own draft overlap estimator** — "mean overlap factor ≈
+horizon/mean inter-event gap" — which at the frozen ceiling yields exactly the
+`overlap = 0.5` premise the lead had rejected as out-of-contract. The lead's
+rejection was wrong, and two committed formulas disagree by 12.5× at the frozen
+ceiling (§0.5). The adversarial role additionally found that the reported pair
+count `P` is caller-controlled and that a *smaller* universe reaches the floors
+faster (§0.6) — the exact opposite of what this packet's Q2 asserted.
+
+**Where the lead overrode a role.** Two roles put the maximum-concentration corner
+at ~4.3 years. Recomputed, that figure applies `P = 20` to a three-pair
+allocation, while the spec defines `P` as the *contributing* count; consistently
+computed it is ~1.1 years. **The 4.3-year figure is not adopted**, and neither is
+the lead's own earlier 24.9/day accrual, which was one allocation presented as the
+worst case.
+
+**Corrections this packet makes to its own earlier text**, each named in place
+rather than quietly edited: the `rho_h = 1` claim (§0.4a); the rejection of the
+3.3-year figure (§0.5); Q2's pair-count monotonicity, which had the sign backwards
+(§8); the "may moot Q1 and Q3" expectation (§7, §13); "`rho_x` already carries the
+dependence the edge question needs" (§0.6); and Q9's silence, which left the wider
+reading in force by omission (§8).
+
+**And the anti-overengineering test was applied to this round too.** Declined:
+replacing the committed estimator with a statistically better-behaved one —
+Ruling 10 permits only tightening or referral, and the committed form is what
+`INSUFFICIENT_SAMPLE` is computed from, so its crudeness is recorded (NR-K, NR-L)
+and not acted on. Also declined: adopting any of the modelling processes named in
+§0 as contract values. They are references for a grid, not authority.
+
+---
+
 ## 13. Completion state
 
 **`M15_MINIMUM_RESEARCH_GATE_PENDING_HUMAN_CHATGPT_RULING`.**
@@ -1091,9 +1506,48 @@ because ruling those stages with the iteration budget blank grants an unbounded
 budget by omission. Q7 now carries a derived fail-closed default, which converts
 it from a blocker into an ordinary ruling item.
 
-**The cheapest thing in this packet is also the most decisive.** §7's zero-data
-feasibility calculation reads nothing, needs no authorisation beyond R0, and could
-establish that the frozen sample floors are unreachable at the frozen horizon,
-universe and minimum holdout span — in which case family A terminates in
-`INSUFFICIENT_SAMPLE` whatever the edge, and Q1 and Q3 need not be answered at
-all. It should be run before any of them is ruled.
+**The zero-data feasibility question has now been answered, and the answer is
+"undetermined".** §0 performs the derivation as arithmetic over committed
+constants — nothing executed, nothing read. An earlier version of this packet
+called it "the cheapest decisive thing in the whole packet" and expected it might
+make Q1 and Q3 unnecessary. **That expectation is withdrawn**: three inputs are
+empirical, not two; an honest grid spans roughly 25 weekday days to over a decade;
+and a range that wide moots nothing.
+
+What survives is narrower and still useful. The derivation **refutes the reverse
+claim** — that the floors are comfortably reachable at the frozen 2-month
+minimum — and it re-derives, rather than discovers, the corridor gate 4 already
+recorded as "intentionally demanding but narrow" with "adopt more forward data" as
+its pre-blessed remedy. It also converts the question into one a human can rule
+on: what forward-accrual date does each corner imply, against a committed earliest
+adoption of ≈ 2026-10?
+
+**Q1–Q11, classified.** Every item in §8 is by construction human-ruled; the
+classification records the *primary* disposition and what changes if the
+zero-data derivation had come out infeasible.
+
+| Q | Disposition now (verdict: undetermined) | If family A were infeasible |
+| --- | --- | --- |
+| **Q1** derivation-artifact precondition | **REQUIRED_NOW** · default **(b)** is `DERIVABLE_FROM_COMMITTED_AUTHORITY`; departing from it `REQUIRES_HUMAN_CHATGPT_RULING` | MOOT |
+| **Q2** pair set | `DERIVABLE_FROM_COMMITTED_AUTHORITY` — default `PAIRS_20` | MOOT, but **sensitive**: infeasibility invites widening the universe, which R-2a bars and which §0.6 shows is not the free win it looks like |
+| **Q3** dataset, and whether reading may begin | `REQUIRES_HUMAN_CHATGPT_RULING` (Red, policy §6); the reader limb is `DEFERRED_TO_PRODUCTION` (PR #450 §10 row E) | MOOT |
+| **Q4** historical period | `DERIVABLE_FROM_COMMITTED_AUTHORITY` — design span only | **Flips to `REQUIRES_HUMAN_CHATGPT_RULING`, and dangerously**: infeasibility pushes directly at a wider epoch, which Ruling 2 non-authorises. Nothing in §0 is an argument for one |
+| **Q5** exploratory cost model | `DERIVABLE_FROM_COMMITTED_AUTHORITY` | exploratory limb MOOT; the cost tables persist as a `DEFERRED_TO_PRODUCTION` T-6 item |
+| **Q6** initial model family / R2-before-R3 | `DERIVABLE_FROM_COMMITTED_AUTHORITY` — Ruling 8 freezes the family and §7 settles the sequencing; barely a live question | MOOT |
+| **Q7** iteration budget | `DERIVABLE_FROM_COMMITTED_AUTHORITY` for `N = 1`; `REQUIRES_HUMAN_CHATGPT_RULING` only to raise. Blocks R2–R4 | MOOT |
+| **Q8** where exploratory outputs live | **REQUIRED_NOW** · `REQUIRES_HUMAN_CHATGPT_RULING` — and it blocks **any stage that writes, including R0** | mostly MOOT while the work is doc arithmetic; live the moment anything is written |
+| **Q9** C-7 budget | `REQUIRES_HUMAN_CHATGPT_RULING`; narrower reading now in force as the default | exploratory limb MOOT; survives for family B |
+| **Q10** three Sharpe degrees of freedom | **REQUIRED_NOW** · `REQUIRES_HUMAN_CHATGPT_RULING` — §0's durations depend on Q10(ii)'s day convention, so the packet is circular with itself until it is ruled | **survives** |
+| **Q11** is the Sharpe criterion measurable at the 2-month minimum | `REQUIRES_HUMAN_CHATGPT_RULING` | **survives** |
+
+**Q10 and Q11 are the only two that survive an infeasibility verdict**, which is
+itself the argument for having taken the derivation first. **Q11 and §0 are one
+referral with two limbs**, not two: the same frozen 2-month minimum, questioned in
+the sample-count dimension and the Sharpe-precision dimension, with the same
+remedy — a longer holdout. They should be ruled together, or a human may settle
+one and leave the other silently standing.
+
+**And the earlier scoping claim is short by two, not one.** It said only Q1 blocks;
+the previous revision added Q7 (blocks R2–R4). Q8 also blocks every stage that
+writes, **including R0**, because §3.7 permits writes only beneath a named
+research-scratch root and §9 reserves naming it to a Contract Gate-decision.
