@@ -21,9 +21,19 @@ completion state, and not a verdict on family A):
 
 **Still open after that ruling:**
 `EXACT_D_SELECTION_BLOCKED_BY_Q10_AND_REMAINING_DURATION_AUTHORITY` ·
-`Q10_PENDING_HUMAN_CHATGPT_RULING` (§8.2 — the duration unit and the
-continuation-date freeze; Q10(i)–(iii) unchanged and unruled) ·
+`Q10_A_RULED_ELAPSED_UTC_CALENDAR_SPAN` ·
+`Q10_II_DAY_IDENTITY_RULED_UTC_CALENDAR_DATE_EXPECTED_SLOTS_FROM_APPROVED_CALENDAR_AUTHORITY` ·
+`Q10_B_RULED_EXPLICIT_HUMAN_CHATGPT_UTC_WINDOW_DECLARATION_REQUIRED_BEFORE_CONTINUATION` ·
+`UTC_WINDOW_DECLARATION_MUST_PRECEDE_GATE3A_CONTINUATION_AUTHORISATION` ·
+`SAME_D_DIFFERENT_WINDOW_IS_RESELECTION` ·
+`D_IS_ELAPSED_UTC_TIME != SAMPLE_COUNT_IS_CALENDAR_TIME` ·
+`EXACT_D_SELECTION_STILL_PENDING_UPSTREAM_AUTHORITIES` ·
+`NR_K_PENDING_HUMAN_CHATGPT_RULING` ·
 `DURATION_WINDOW_FREEZE_REQUIRES_HUMAN_CHATGPT_DECISION` ·
+
+**Q10 is not closed** — its original limbs **(i)** entry- vs exit-day PnL
+attribution and **(iii)** the annualisation factor remain
+`REQUIRES_HUMAN_CHATGPT_RULING` (§8.2.8). Other still-open items: ·
 `GATE3A_CONTINUATION_DATE_NOT_FROZEN_RESIDUAL_AFTER_Q11_SECTION0_RULING` ·
 `NR_K_REQUIRES_HUMAN_CHATGPT_RULING_AFTER_Q10` ·
 `NR_L_REQUIRES_HUMAN_CHATGPT_RULING` ·
@@ -57,7 +67,9 @@ status. The unit `D` is denominated in is Q10-A (§8.2) and is unruled.
 
 **Historical:** `Q11_AND_SECTION0_PENDING_HUMAN_CHATGPT_RULING` — **SUPERSEDED BY
 HUMAN + CHATGPT RULING** (§8.1.0). `Q10_NEXT_HUMAN_CHATGPT_RULING_REQUIRED` —
-renamed `Q10_PENDING_HUMAN_CHATGPT_RULING` (§8.2); no change of state.
+renamed `Q10_PENDING_HUMAN_CHATGPT_RULING` (§8.2), then **SUPERSEDED** for Q10-A,
+Q10(ii) and Q10-B by the rulings at §8.2.0; it does **not** carry over to
+Q10(i)/(iii), which are recorded separately.
 
 **Statuses carried, unchanged.**
 `M15_AGGREGATION_DATASET_MACHINERY_SOURCE_AUDIT_BLOCKED_PENDING_TARGETED_FIXES` ·
@@ -2023,13 +2035,129 @@ the ruling.
 
 ---
 
-### 8.2 Q10 — decision packet: the duration unit and the continuation-date freeze
+### 8.2 Q10-A / Q10(ii) / Q10-B — RULED. Duration unit, day identity, window declaration
 
-**`Q10_PENDING_HUMAN_CHATGPT_RULING`.** Not ruled here. After §8.1 this is what
-blocks `D`. The packet below states the questions, the authority, the options and
-a recommendation; it **applies nothing**.
+**`Q10_A_RULED_ELAPSED_UTC_CALENDAR_SPAN`** ·
+**`Q10_II_DAY_IDENTITY_RULED_UTC_CALENDAR_DATE_EXPECTED_SLOTS_FROM_APPROVED_CALENDAR_AUTHORITY`** ·
+**`Q10_B_RULED_EXPLICIT_HUMAN_CHATGPT_UTC_WINDOW_DECLARATION_REQUIRED_BEFORE_CONTINUATION`**
 
-#### 8.2.0 Scope — what Q10 is, and what these two questions are
+**Status change.** `Q10_PENDING_HUMAN_CHATGPT_RULING` is **HISTORICAL —
+SUPERSEDED BY HUMAN + CHATGPT RULING** for these three questions only. **Q10 is
+not closed**: its original limbs **(i)** entry- versus exit-day PnL attribution and
+**(iii)** the annualisation factor remain open and unruled (§8.2.8). §8.2.1–§8.2.7
+are the material the rulings were taken on and are retained as supporting record,
+except where §8.2.0 supersedes them — in particular §8.2.6's recommendations are
+now **adopted**, not offered, and §8.2.4's option set for the date is historical.
+
+#### 8.2.0 The rulings, as recorded
+
+Three rulings received from human + ChatGPT and recorded here as **authority**.
+
+**Ruling Q10-A — `D` is an elapsed calendar span on the UTC clock.**
+The window is defined by UTC boundaries and the duration is that elapsed span. `D`
+is **not** a weekday count, **not** a trading-day count, **not** an eligible-day
+count, **not** a realised-event count and **not** an M15-bar count.
+**`Q10_A_RULED_ELAPSED_UTC_CALENDAR_SPAN`.**
+
+*Disposition against committed text: a **derivation**, not an amendment.* Every
+role span in the contract is already denominated this way — prereg §3.1's table is
+headed "Span (UTC)" and gives dates; Ruling 2 states the minimums in months;
+prereg §4 commits "**No DST logic (UTC only)**"; prereg §3.2/§12 call `T_v`/`T_h`
+the forward **calendar boundaries**. No committed source offers a competing
+denomination for a role span, and none defines a weekday day, a trading day, an
+eligible-day duration rule or separate DST duration semantics anywhere in the M15
+contract. Nothing is contradicted and no latitude is removed.
+
+**Ruling Q10(ii) — day identity is the UTC calendar date; expected slots come from
+the approved calendar authority.**
+**`Q10_II_DAY_IDENTITY_RULED_UTC_CALENDAR_DATE_EXPECTED_SLOTS_FROM_APPROVED_CALENDAR_AUTHORITY`.**
+Responsibility is split and the split is the point:
+
+> `DAY_IDENTITY = UTC_CALENDAR_DATE` · `EXPECTED_SLOT_MEMBERSHIP = APPROVED_CALENDAR_AUTHORITY`
+
+**This does not mean all 96 slots of a UTC date are expected**, and it authors no
+weekend rule, no holiday rule, no closure rule and no DST rule.
+
+*Disposition: the second half **confirms** committed text; the first half is the
+new part.* D-5 makes coverage a set equality against an *expected* slot set and
+D-6 rules that set "**never inferred from the raw source**";
+`calendar_authority.py` states the expected M15 slot set is obtainable "**only**
+from the approved calendar artifact", and that the module "validates an injected
+calendar — **it never authors one**". The ruling selects the *day identity* and
+leaves slot membership exactly where the contract already put it.
+
+**Ruling Q10-B — the exact UTC window is declared explicitly by human + ChatGPT
+before the continuation is authorised.**
+**`Q10_B_RULED_EXPLICIT_HUMAN_CHATGPT_UTC_WINDOW_DECLARATION_REQUIRED_BEFORE_CONTINUATION`.**
+Exact `T_v`, exact `T_h`, the exact holdout window and the exact operative `D` are
+declared by human + ChatGPT **before** the forward-epoch adoption Gate-3a
+continuation is authorised.
+
+**Forbidden anchor rules**, because the anchor is a governance choice and not a
+discovered property of the data: the first available date · the latest available
+date · "today" · the maximum available dataset date · a date required to reach
+`N_eff` · a date chosen after observing empirical overlap · after empirical
+correlation · after a sample count · after Sharpe or returns · any automatic "use
+all available history".
+
+**Sequence.** `UTC_WINDOW_DECLARATION_MUST_PRECEDE_GATE3A_CONTINUATION_AUTHORISATION`:
+(1) upstream authorities resolved; (2) human + ChatGPT explicitly declare the exact
+UTC window; (3) the declaration is frozen; (4) only then may the Gate-3a
+continuation be separately authorised. **"Choose dates" and "inspect data" may not
+be combined into one execution step.**
+
+*Disposition: a **tightening**, not an amendment.* Forward-epoch adoption is
+already Red and already requires an explicitly authorised PR; the ruling fixes
+*when* the window is declared relative to that authorisation and bars a set of
+data-derived anchors. It removes latitude that committed text left open; it
+contradicts nothing. In particular it does not disturb "adoption waits", which
+governs whether enough data has accrued — a precondition on *authorisation*, not a
+rule for *choosing* the window.
+
+**The window, not merely its length.** Consistent with §8.1's ruling, what freezes
+is the whole window identity — `T_v`, `T_h`, the holdout start and end, and the
+inclusion/exclusion convention once an authority fixes it. Re-declaring a window
+of the *same* length at a *different* position is a reselection:
+**`SAME_D_DIFFERENT_WINDOW_IS_RESELECTION`**, and it is not silently permitted.
+
+##### The distinction these rulings must not be read across
+
+**`D_IS_ELAPSED_UTC_TIME != SAMPLE_COUNT_IS_CALENDAR_TIME`.** Defining `D` as a
+calendar span does **not** count weekends as samples, does **not** make holidays
+eligible events, and does **not** turn closed-market intervals into observations.
+`D` is **window / time-axis authority only**. `N_eff`, raw observation counts,
+overlap and every other sample-accounting quantity stay with their own registered
+authorities, and the unit of `D` may not be borrowed for any of them.
+
+A concrete consequence worth stating, because it corrects an expectation this
+packet once held: **the coverage row still does not catch a window padded with
+closed days.** Under Q10(ii) the denominator is built from dates the approved
+calendar recognises, so padding adds neither numerator nor denominator and the
+ratio is unchanged. §8.2.5's earlier claim that coverage would catch it was already
+withdrawn; the ruling **confirms** that withdrawal rather than reversing it. The
+mitigation rests on the **sample floors**, which count events.
+
+##### What these rulings do **not** decide
+
+- **No numeric `D`.** Not two months, not any month count, day count, weekday
+  count or bar count. Two months remains a **lower bound only**, and
+  **`EXACT_D_SELECTION_STILL_PENDING_UPSTREAM_AUTHORITIES`**.
+- **No month arithmetic.** Q10-A settles the *unit*, not the boundary arithmetic
+  inside "≥ 2 months". Whether that minimum is same-day-of-month addition, a fixed
+  day count, or something else — and the end-of-month rule it would need — remains
+  a **narrow downstream duration-boundary question** (§8.2.3). No end-of-month
+  convention is invented, and the ruling does not reopen Q10-A to settle it.
+- **Q10(i) and Q10(iii).** Untouched and not derivable from an elapsed-UTC `D`
+  (§8.2.8).
+- **Family A's fate.** The Zero-Data verdict
+  `SAMPLE_FLOOR_REACHABILITY_NOT_DETERMINABLE_WITHOUT_MEASURED_INPUTS` stands.
+  These rulings define **planning semantics**; they prove neither that
+  `N_eff ≥ 400` is reachable nor that it is unreachable, and neither passes nor
+  fails family A.
+- **The calendar artifact.** `PRE_CONTINUATION_CALENDAR_ARTIFACT_APPROVAL_REQUIRED`
+  is untouched. **No coverage denominator may be measured before it is approved.**
+
+#### 8.2.1 Scope — what Q10 is, and what these two questions are
 
 **Q10 as committed (§8) has exactly three limbs, and none of them is the duration
 unit or the continuation date.** Verbatim, it asks about researcher degrees of
@@ -2062,7 +2190,7 @@ days ("a 2-month holdout (~43 trading days) gives a feasible corridor of
 `61 × 40 = 2,440` and widen the committed corridor by ~42% — a loosening reached
 by redefining a unit rather than a threshold.
 
-#### 8.2.1 Authority inventory — what is fixed, and what is not
+#### 8.2.2 Authority inventory — what is fixed, and what is not
 
 | Committed | Source | What it does **not** fix |
 | --- | --- | --- |
@@ -2071,7 +2199,7 @@ by redefining a unit rather than a threshold.
 | Role spans as **calendar UTC dates**: design 2025-04-25 → 2026-02-28; dead window 2026-03-01 → 2026-04-24; forward epoch ≥ 2026-04-25 | prereg §3.1 | Nothing about eligible-day counts |
 | Role minimums as **months**: "minimums validation ≥ 3 mo, holdout ≥ 2 mo"; recorded machine-readably as `validation_min_span_months` / `holdout_min_span_months` | Ruling 2; adoption manifest | Whether "month" means a **calendar** month — the word *calendar* is not in the source and is the reading Q10-A puts — and the month-arithmetic anchoring inside it |
 | Purge/embargo as **bars**: "≥ horizon + 1 = **25 M15 bars** at every role boundary" | prereg §3.2 | — |
-| `T_v` / `T_h` are the forward **calendar boundaries** ("Exact forward validation/holdout **calendar boundaries** … [FIXED-AT gate 3a]"), recorded as `validation_span_utc` / `holdout_span_utc`, both `PENDING`, `[FIXED-AT gate 3a **continuation**]` | prereg §3.1/§3.2; adoption manifest | Their values, and the date they are fixed on. "Instants" is this packet's word, offered in §8.2.2 as a reading, not as committed authority |
+| `T_v` / `T_h` are the forward **calendar boundaries** ("Exact forward validation/holdout **calendar boundaries** … [FIXED-AT gate 3a]"), recorded as `validation_span_utc` / `holdout_span_utc`, both `PENDING`, `[FIXED-AT gate 3a **continuation**]` | prereg §3.1/§3.2; adoption manifest | Their values, and the date they are fixed on. "Instants" is this packet's word, offered in §8.2.3 as a reading, not as committed authority |
 
 **Not committed anywhere, verified by search:**
 
@@ -2129,7 +2257,7 @@ than in the same unit. **`D` is the length of the holdout role — epoch geometr
 not model mechanics.** That is strongly indicated by the contract's own stated
 reasons, not merely by a tally.
 
-#### 8.2.2 Q10-A — in what unit is `D` measured?
+#### 8.2.3 Q10-A — in what unit is `D` measured?
 
 **Exact question.** `D` is a span. Every span in the frozen contract is
 denominated in calendar UTC time and every offset in bars. Is `D` therefore
@@ -2204,7 +2332,7 @@ boundaries for the committed spans. Whether that generalises to `T_v` / `T_h` is
 not stated. It is a small fourth limb and is referred with Q10-A rather than
 assumed.
 
-#### 8.2.3 Q10-B — how is the continuation date anchored?
+#### 8.2.4 Q10-B — how is the continuation date anchored?
 
 **Exact question.** §8.1's ruling freezes `D` *at* the forward-epoch adoption
 Gate-3a continuation, but fixes nothing about **when that continuation happens**.
@@ -2269,7 +2397,7 @@ entire sizing basis**, so an unfixed date carries all of `D`. That is the residu
 is Red, requires an explicitly authorised PR, and
 `PRE_CONTINUATION_CALENDAR_ARTIFACT_APPROVAL_REQUIRED` is outstanding.
 
-#### 8.2.4 Calendar dependency, and the anti-overengineering judgement
+#### 8.2.5 Calendar dependency, and the anti-overengineering judgement
 
 The question worth asking plainly: **does defining the unit of `D` really require
 a production-grade approved calendar artifact?**
@@ -2278,7 +2406,7 @@ a production-grade approved calendar artifact?**
 draft said only Option A avoids
 `PRE_CONTINUATION_CALENDAR_ARTIFACT_APPROVAL_REQUIRED`, and called it "the
 production dependency this gate was created to sit upstream of". **Both halves are
-wrong against committed text, and the claim contradicted §8.2.3 four paragraphs
+wrong against committed text, and the claim contradicted §8.2.4 four paragraphs
 earlier.** The contract Gate-decision §9 requires the calendar artifact for the
 target epoch to be approved by human + ChatGPT **before the gate-3a continuation
 runs** — and the freeze *is* that continuation — so an approved calendar exists at
@@ -2321,7 +2449,7 @@ question is only half closed.
 It would apply immediately under Option B or C, and that asymmetry is itself the
 strongest argument for A.
 
-#### 8.2.5 Recommendation — offered, not applied
+#### 8.2.6 Recommendation — offered, not applied
 
 **Q10-A: Option A (elapsed calendar UTC time), with the month-arithmetic
 sub-decision referred.** *Authority:* every span in the contract is already
@@ -2357,7 +2485,7 @@ is the unit under which a thin span most visibly fails the coverage and sample
 rows, and B-2 does not license a longer span on demand — it requires the target to
 be declared before anything is known.
 
-#### 8.2.6 Compatibility, dependencies and status
+#### 8.2.7 Compatibility, dependencies and status
 
 **Q11 + §0 compatibility.** Nothing here loosens the ruling: two months stays a
 **floor**; `D` and the window are still frozen **once**, before decision-bearing
@@ -2383,7 +2511,7 @@ freeze-point, if adopted, would have the same shape as Q10-A's.
 
 **Where fixing Q10-A actually moves the pressure** is not onto `P` but onto
 **Q10(ii)**: `D` in calendar days plus a presence-based coverage denominator leaves
-no row sensitive to how much of a span was closed (§8.2.4). Q10-A and Q10(ii)
+no row sensitive to how much of a span was closed (§8.2.5). Q10-A and Q10(ii)
 should be ruled together, or the day question is only half closed.
 
 **NR-L.** Not ruled. The committed constraint stands: correlation is estimated on
@@ -2399,6 +2527,142 @@ any writing stage) · Q9 (narrower default) · Q10(i)–(iii) · FR-19 (open) ·
 **Status: `Q10_PENDING_HUMAN_CHATGPT_RULING`.** Q10-A is close to derivable and is
 offered as such; Q10-B is a genuine choice with no committed answer. Neither is
 applied.
+
+#### 8.2.8 What remains open after these rulings, and in what order
+
+**Q10 is not closed.** Its two original limbs survive, and neither is derivable
+from an elapsed-UTC `D`:
+
+| Limb | Status | Why the Q10-A ruling does not settle it |
+| --- | --- | --- |
+| **Q10(i)** entry- vs exit-day PnL attribution | `REQUIRES_HUMAN_CHATGPT_RULING` | Choosing the *day identity* fixes what a day **is**; it does not fix **which** day a trade whose horizon straddles midnight is attributed to. A 24-bar horizon makes that a live question whatever the identity. |
+| **Q10(iii)** annualisation factor | `REQUIRES_HUMAN_CHATGPT_RULING` | The unit of `D` and the constant that annualises a daily Sharpe are different objects. Fixing the first does not fix the second, and no committed source fixes the second for M15. |
+
+**And the exact `D` is still blocked.**
+**`EXACT_D_SELECTION_STILL_PENDING_UPSTREAM_AUTHORITIES`.** The recorded ordering:
+
+1. Q10-A / Q10(ii) / Q10-B — **ruled** (§8.2.0).
+2. **NR-K** — pair-universe and `P` authority (§8.3).
+3. **NR-L** — correlation production rule and freeze point.
+4. Remaining duration-sizing authority, including Q10(i), Q10(iii) and the
+   month-arithmetic boundary question (§8.2.3).
+5. Human + ChatGPT declaration of the exact `T_v` / `T_h` / `D`.
+6. Only after **every** other minimum-gate requirement is resolved may execution
+   authorisation be considered at all.
+
+Steps 2–4 precede step 5 deliberately: declaring the window before the pair
+universe and the correlation authority are settled would fix `D` against a sample
+model still open to change.
+
+### 8.3 NR-K — decision packet: the pair universe and `P`
+
+**`NR_K_PENDING_HUMAN_CHATGPT_RULING`.** Not ruled here, and **not uniquely
+derivable** from committed authority — see §8.3.4. This packet states the
+questions, reconstructs the authority and offers a recommendation; it **applies
+nothing**. NR-K also retains the disposition §0.6 gave it,
+`MUST_RESOLVE_BEFORE_ANY_EFFECTIVE_N_VERDICT`.
+
+#### 8.3.1 The mechanism, reconstructed from committed text
+
+`N_eff = Σ(N_raw_p / rho_h_p) / rho_x`, with `rho_x = 1 + (P − 1) × mean_abs_pairwise_corr`.
+`P` shrinks the denominator as it falls. And **`P` is supplied by the caller**:
+`effective_n.py` takes `n_pairs = len(records)`, bounded only above. So a smaller
+reported universe raises `N_eff` — measured earlier in this packet at **67 weekday
+days to the floors at `P = 20` against 37 at `P = 10`** at the turnover ceiling and
+corr 0.3 (§0.6, `NON_NORMATIVE_DIAGNOSTIC_ONLY`).
+
+**Three committed texts already bear on this, and all three must be cited together
+or the question looks more open than it is:**
+
+- **The spec** defines `P` as "the number of pairs **contributing**" — a phrase
+  that does not by itself say contributing *what*.
+- **R-2a / Ruling 2** fix the **universe** at `PAIRS_20` and bar
+  "inclusion/exclusion decisions **anywhere in this family**". The universe is
+  therefore already frozen; NR-K is not a request to freeze it.
+- **§4 R-10** already requires that "`P` is reported over the full `PAIRS_20`
+  universe, including pairs that fired nothing", and that the pair set used for
+  `P`, the set the concentration cap is computed over, and `PAIRS_20` "must be the
+  same twenty".
+
+**So NR-K is a defect in the estimator's *caller* contract, not a hole in the
+universe rule.** What is unresolved is whether the *committed* requirement is the
+spec's word "contributing" or §4's "same twenty" — two readings of the same
+symbol, pulling opposite ways, with `effective_n.py` enforcing neither.
+
+#### 8.3.2 The four questions, kept separate
+
+**NR-K1 — what is `P`?** The candidate readings, none of which committed text
+uniquely selects: the full registered `PAIRS_20` · pairs with data · pairs with
+trades · pairs contributing to the result · pairs surviving filters · the
+portfolio allocation count · some other committed definition. The spec says
+"contributing"; §4 says "the same twenty"; the code says `len(records)`. **Not
+inferred here.**
+
+**NR-K2 — when is `P` frozen?** Boundaries to evaluate against authority: at
+design / pre-registration · at the Gate-3a continuation, alongside the window
+(§8.2.0) · before validation · after a data-availability check. Note the shape is
+the same as Q10-A's ordering constraint, but the shape is not authority.
+
+**NR-K3 — could pairs be dropped for sample-floor convenience?** The arithmetic
+says yes: `drop pairs → lower rho_x → higher N_eff`, and §0.6 quantifies it. The
+question is whether anything *forbids* it post hoc. R-2a bars inclusion/exclusion
+decisions and §4 requires the same twenty — but `effective_n.py` accepts a short
+record list without complaint, so the bar is contractual, not enforced.
+
+**NR-K4 — which removals are legitimate?** These must not be treated as one class:
+
+| Removal ground | Character |
+| --- | --- |
+| Pre-registered scope | Decided before anything is known |
+| Structurally unavailable pair | A fact about the world |
+| Schema-invalid pair | A fact about the data's admissibility |
+| Insufficient coverage | A *measured* property, and coverage is itself a frozen acceptance row |
+| Performance-driven | Outcome-dependent |
+| Correlation-driven | Outcome-dependent, and it moves `rho_x` directly |
+| `N_eff`-driven | Outcome-dependent, and it is the lever itself |
+
+The first three are decidable without observing results; the last three are not,
+and the fourth sits between them. Collapsing the seven into "dropping pairs" is
+what would make the question look answerable when it is not.
+
+#### 8.3.3 Recommendation — offered, not applied
+
+**`PAIR_UNIVERSE_SELECTION_MUST_BE_OUTCOME_BLIND`**, and `P` must not be
+adjustable merely to make `N_eff` pass.
+
+*Authority:* it is the same principle §8.1's ruling adopted for the duration, and
+R-2a plus §4 R-10 already point the same way. *Benefit:* it closes the arithmetic
+lever without touching the universe. *Risk:* the principle does not by itself pick
+between NR-K1's readings, and it needs an enforcement point NR-K2 must supply.
+*Contract amendment:* probably none, if the ruling adopts §4's "same twenty"
+reading — but that is a reading, not a derivation, and it is the ruling's to make.
+
+**This is a recommendation, not a ruling**, and it may not be cited as one. If
+genuine choice remains — and §8.3.4 says it does —
+**`NR_K_PENDING_HUMAN_CHATGPT_RULING`** stands.
+
+#### 8.3.4 Why this is not derivable
+
+Two committed texts describe the same symbol differently — the spec's
+"contributing" and §4's "the same twenty" — and no committed source reconciles
+them or fixes a freeze point for `P`. `effective_n.py` enforces neither. Selecting
+between them is a reading, and under CLAUDE.md the stricter one governs meanwhile,
+which is §4's — but a default in force is not a ruling, and NR-K2 and NR-K4 remain
+open regardless.
+
+#### 8.3.5 Dependencies
+
+**NR-L stays after NR-K**, unruled, with its committed constraint intact: the
+correlation is estimated on the **DESIGN span only, never validation/holdout**.
+Its open items — the production method, idle-day handling, day attribution, and
+the within-design freeze point — are separate from NR-K's and are not merged here.
+**`NR_L_REQUIRES_HUMAN_CHATGPT_RULING`.**
+
+**Relation to the Q10 rulings.** `P` is a sample-accounting quantity, not a
+time-axis one, so `D_IS_ELAPSED_UTC_TIME != SAMPLE_COUNT_IS_CALENDAR_TIME` applies
+directly: nothing in Q10-A, Q10(ii) or Q10-B bears on `P`, and fixing the window
+does not fix the universe. What fixing the window *does* do is remove the duration
+lever, which is why NR-K is now the next place the pressure goes.
 
 ---
 
@@ -2715,6 +2979,26 @@ a market calendar that `calendar_authority.py` refuses by design and a committed
 test refuses by provenance. Calendar time's defect is variance; Option B's is an
 open post-freeze bias route. A precision cost beats a bias route.
 
+### 12.5 Sixth review round — recording the Q10 rulings
+
+Three fresh doc-only roles — time and calendar semantics, prereg and governance,
+and an adversarial pair/duration brief — checked this amendment. Their findings
+and the lead's disposition of each are recorded below the table in the PR body and
+in the commit record; the substantive corrections they produced are already applied
+in §8.2 and §8.3.
+
+**The gating check first.** §4 of the task made recording the rulings conditional
+on the reported committed authorities re-verifying. They do: prereg §4's UTC /
+`floor(ts/15min)` / bucket-start / "No DST logic (UTC only)"; Ruling 4's UTC-hour
+sessions; prereg §3.1's calendar-UTC role spans; Ruling 2's minimums in months;
+prereg §3.2/§12's forward **calendar boundaries**. And the reported absences hold
+within the M15 contract: no weekday-day definition, no trading-day definition, no
+holiday-table day unit, no eligible-day duration rule, no separate DST duration
+semantics. Two scoped exceptions were already recorded in §8.2.2 and are unchanged —
+the M1-lineage `TRADING_DAY_DEFINITION` in `scripts/ml_step4/contract.py`, which
+binds no M15 quantity, and a US DST rule in a legacy economic-event generator,
+which family A may not cite. **No stop condition; the rulings were applied.**
+
 ---
 
 ## 13. Completion state
@@ -2751,17 +3035,34 @@ observed before the freeze, **`D` can be sized on availability metadata alone, a
 therefore cannot be sized to reach `N_eff ≥ 400` at all** — coherent with the
 instruction to accept the result, and the price of an outcome-blind duration.
 
-**§8.2 is the Q10 decision packet** and rules nothing. It separates two questions
-§8.1's ruling newly exposed — **Q10-A**, the unit `D` is measured in, and
-**Q10-B**, how the continuation date is anchored — from **Q10 as committed**,
-which is three Sharpe degrees of freedom and contains neither. Q10-A is close to
-derivable: the contract denominates every span in calendar UTC and every offset in
-bars, and only that reading needs no unbuilt calendar artifact. Q10-B is a genuine
-choice: no committed latest bound, no trigger rule, and no artifact field records
-the date. Both recommendations are **offered, not applied**, and the ordering is
-stated — **the unit must be fixed no later than the `D` freeze**, or "the
-convention changed, so `D` must be recomputed" becomes a post-freeze reselection
-route wearing a definitional label.
+**§8.2 records three human + ChatGPT rulings.** `D` is an **elapsed calendar span
+on the UTC clock** — not a weekday, trading-day, eligible-day, event or bar count
+(a *derivation* from committed text). The coverage day is the **UTC calendar
+date**, with expected slots coming **only from the approved calendar authority** —
+which does *not* make all 96 slots of a date expected and authors no
+weekend/holiday/closure/DST rule (its second half *confirms* D-6; its first half is
+the new part). And the exact `T_v`, `T_h`, window and operative `D` are **declared
+explicitly by human + ChatGPT before the continuation is authorised**, with
+data-derived anchors forbidden and "choose dates + inspect data" barred from being
+one step (a *tightening*, not an amendment).
+
+**The distinction these rulings must not be read across:**
+`D_IS_ELAPSED_UTC_TIME != SAMPLE_COUNT_IS_CALENDAR_TIME`. A calendar-span `D` does
+not count weekends as samples, holidays as eligible events, or closed intervals as
+observations. `D` is time-axis authority only; sample accounting stays with its own
+registered authorities. One consequence, stated because this packet once expected
+the opposite: **coverage still does not catch a window padded with closed days** —
+the ruling confirms that withdrawal rather than reversing it, and the mitigation
+rests on the sample floors, which count events.
+
+**Q10 is not closed.** Limbs **(i)** entry- vs exit-day attribution and **(iii)**
+the annualisation factor remain open and are **not** derivable from an elapsed-UTC
+`D` (§8.2.8). No numeric `D` is chosen; two months stays a lower bound, and
+`EXACT_D_SELECTION_STILL_PENDING_UPSTREAM_AUTHORITIES`. **§8.3 is the NR-K decision
+packet** — four separated questions, a recommendation offered not applied, and
+`NR_K_PENDING_HUMAN_CHATGPT_RULING` because the spec's "contributing" and §4's
+"same twenty" describe the same symbol differently and the estimator enforces
+neither.
 
 **Unchanged by the ruling:** the Zero-Data verdict
 `SAMPLE_FLOOR_REACHABILITY_NOT_DETERMINABLE_WITHOUT_MEASURED_INPUTS`; Q1
@@ -2812,11 +3113,14 @@ zero-data derivation had come out infeasible.
 | **Q8** where exploratory outputs live | **REQUIRED_NOW** · `REQUIRES_HUMAN_CHATGPT_RULING` — and it blocks **any stage that writes, including R0** | mostly MOOT while the work is doc arithmetic; live the moment anything is written |
 | **Q9** C-7 budget | `REQUIRES_HUMAN_CHATGPT_RULING`; narrower reading now in force as the default | exploratory limb MOOT; survives for family B |
 | **Q11 + §0** — at what holdout length the Sharpe criterion discriminates, whether the adopted span must reach it, and when `D` is fixed | **PARTLY RULED** (§8.1.0) · `Q11_AND_SECTION0_RULED_ON_FREEZE_SEMANTICS`. **Ruled:** two months is a floor; `D` frozen once at the forward-epoch continuation before any data; no post-freeze reselection. **Not ruled:** the discriminating length (no committed α), whether `D` must reach it, and the exact numeric `D` (Q10) | **survives** — the unruled limbs |
-| **Q10-A** in what unit is `D` measured | **NEXT**, and split. The **unit** is `DERIVABLE_FROM_COMMITTED_AUTHORITY` — the holdout is bounded by two forward calendar boundaries, Ruling 2 states its minimum in months, prereg §4 commits "UTC only"; departing from it `REQUIRES_HUMAN_CHATGPT_RULING`. **Three sub-limbs are not derivable** and stay `Q10_PENDING_HUMAN_CHATGPT_RULING` (§8.2.2): month arithmetic (a nominal 2 months is **59–62 calendar / 41–45 weekday days**), the end-of-month rule, and the anchor. Recommended Option A, **not applied** | **survives** |
-| **Q10-B** how the continuation date is anchored | **NEXT** · `Q10_PENDING_HUMAN_CHATGPT_RULING` (§8.2.3) · `DURATION_WINDOW_FREEZE_REQUIRES_HUMAN_CHATGPT_DECISION` — a genuine choice; no committed latest bound, no trigger rule, no artifact field records the date | **survives** |
-| **Q10(i)–(iii)** the three Sharpe degrees of freedom | `REQUIRES_HUMAN_CHATGPT_RULING` — unchanged and **not** absorbed by §8.2; Q10-A/Q10-B are adjacent questions, not restatements | **survives** |
+| **Q10-A** in what unit is `D` measured | **RULED** (§8.2.0) · `Q10_A_RULED_ELAPSED_UTC_CALENDAR_SPAN` — elapsed calendar span on the UTC clock; not weekday, trading-day, eligible-day, event or bar counts. A **derivation** from committed text. The month-arithmetic boundary question stays open as a narrow downstream item (§8.2.3) | n/a — ruled |
+| **Q10(ii)** the coverage-denominator day | **RULED** (§8.2.0) · `Q10_II_DAY_IDENTITY_RULED_UTC_CALENDAR_DATE_EXPECTED_SLOTS_FROM_APPROVED_CALENDAR_AUTHORITY` — day identity = UTC calendar date; expected slots **only** from the approved calendar authority. Does **not** make all 96 slots of a date expected, and authors no weekend/holiday/closure/DST rule | n/a — ruled |
+| **Q10-B** how the continuation window is anchored | **RULED** (§8.2.0) · `Q10_B_RULED_EXPLICIT_HUMAN_CHATGPT_UTC_WINDOW_DECLARATION_REQUIRED_BEFORE_CONTINUATION` — exact `T_v`/`T_h`/window/`D` declared by human + ChatGPT **before** continuation authorisation; a list of data-derived anchors forbidden. A **tightening**, not an amendment | n/a — ruled |
+| **Q10(i)** entry- vs exit-day PnL attribution | `REQUIRES_HUMAN_CHATGPT_RULING` — **not** settled by Q10(ii): fixing what a day *is* does not fix which day a horizon-straddling trade lands on | **survives** |
+| **Q10(iii)** annualisation factor | `REQUIRES_HUMAN_CHATGPT_RULING` — **not** settled by Q10-A: the unit of `D` and the constant annualising a daily Sharpe are different objects | **survives** |
+| **Exact `D`** | `EXACT_D_SELECTION_STILL_PENDING_UPSTREAM_AUTHORITIES` — ordering recorded at §8.2.8: NR-K, then NR-L, then remaining duration authority, then the human + ChatGPT window declaration | **survives** |
 | **Gate-3a continuation date** (the **forward-epoch adoption** continuation, not the design-span one) | `GATE3A_CONTINUATION_DATE_NOT_FROZEN_RESIDUAL_AFTER_Q11_SECTION0_RULING` — **now carried by Q10-B (§8.2.3)**, discharging §8.1.9's "put it with Q10". Already constrained by §8.1.0 (the date may not be informed by any strategy-run quantity); unconstrained as to a *positive* selection rule | survives |
-| **NR-K** `P` caller-supplied | `NR_K_REQUIRES_HUMAN_CHATGPT_RULING_AFTER_Q10` — independent of `D`; **not** a pair-universe remedy (R-2a bars one) | survives |
+| **NR-K** `P` caller-supplied | **NEXT** · `NR_K_PENDING_HUMAN_CHATGPT_RULING` · `MUST_RESOLVE_BEFORE_ANY_EFFECTIVE_N_VERDICT` — decision packet at §8.3, four questions separated (what `P` is · when frozen · droppable for convenience? · which removals are legitimate). **Not derivable**: the spec's "contributing" and §4's "same twenty" describe the same symbol differently and `effective_n.py` enforces neither. Recommendation offered, **not applied** | survives |
 | **NR-L** `mean_abs_pairwise_corr` has no production rule or freeze point | `NR_L_REQUIRES_HUMAN_CHATGPT_RULING` — its earlier role here is **mooted** by Ruling B (the correlation may no longer inform `D`); survives as its own question | survives |
 
 **Q10 and Q11 are the only two that survive an infeasibility verdict**, which is
