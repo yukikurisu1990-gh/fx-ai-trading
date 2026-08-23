@@ -4,7 +4,8 @@
 doc-only, and it fixes a research contract governing protected paths.
 
 **Completion state.**
-`M15_GATE3A_CONTINUATION_OUTPUT_SURFACE_CONTRACT_RULED`
+`M15_GATE3A_CONTINUATION_OUTPUT_SURFACE_CONTRACT_RULED` ·
+`NO_OPEN_CONTRACT_QUESTIONS_REMAIN_WITHIN_PR450_SCOPE`
 
 **Current status.**
 
@@ -15,6 +16,11 @@ doc-only, and it fixes a research contract governing protected paths.
 - **Gate-3a continuation NOT authorised.**
 - **Source-audit acceptance NOT granted.** The fifth independent source-audit has
   not been started.
+- **No contract question remains open within this PR's scope.** The five that
+  were open are ruled in §3.1. Out of scope and still open, each on its own
+  track: the implementation Work PR · FR-19 · the P/V byte reader · calendar
+  artifact approval · the fifth independent source-audit · gate-3a execution
+  authorisation · Minimum Research Gate design (§8.1).
 
 **Base.** master `70bf38b` — the merged targeted-fix Work PR (PR #449).
 **Not self-mergeable** (policy §14.7: a Gate-decision PR is never Green).
@@ -101,11 +107,29 @@ would refuse the whole candidate root once D-7's trap step lands, deadlocking th
 contract. `path_authority.is_within` is already component-wise and is correct;
 any new check must be too.
 
-**Scope.** This root and this authority govern the continuation's **metadata
-evidence** artifacts — the identities of §2.1. The derived M15 data surface (the
-20 `.jsonl` files the derivation manifest records as `TO_BE_CREATED_AT_GATE5`) is
-**not ruled here** (§4.12), and that it is unruled is **not permission**:
-`DERIVED_DATA_OUTPUT_SURFACE_REQUIRES_SEPARATE_CONTRACT_GATE_DECISION`.
+**Scope — RULED.**
+**`UNENUMERATED_DERIVED_DATA_OUTPUT_IS_NOT_CONTINUATION_AUTHORISED`.**
+
+This root and this authority govern the continuation's **metadata evidence**
+artifacts — the identities of §2.1. **No new derived-data surface is authorised by
+this decision.** Continuation output eligibility is limited to the outputs
+playbook §5 already enumerates, and therefore at present to the three existing
+approved identities of §2.1 and nothing else.
+
+None of the following is implicitly added to the continuation output surface: a
+derived dataset · an intermediate dataset · a feature dump · a temporary research
+artifact · a diagnostic data file · a transformed market-data artifact · an
+additional evidence artifact. The 20 derived M15 `.jsonl` files the derivation
+manifest records as `TO_BE_CREATED_AT_GATE5` are among the unauthorised, and that
+they are unruled is **not permission** — until authority exists, no continuation
+execution may write a derived-data file anywhere, inside this root or outside it,
+and a `.jsonl` beneath this root refuses the whole root under §2.4's closed-set
+rule.
+
+Where such a surface is genuinely needed, authority comes from a **separate
+Contract Gate-decision**, or from a **Minimum Research Gate** if one is later
+defined (§8.1). **A Work PR may not add a derived-data identity for its own
+convenience.**
 
 Normative:
 
@@ -180,18 +204,38 @@ change.
 
 An unrecognised spelling fails closed rather than defaulting.
 
-**What "verify" means, and what this decision does not settle.** Schema
-validation, the scrub scan and a successful write are **producer-side acts and
-are not verification**. The nearest committed definition of a verifier is PR #444
-§11's independent **V**, which re-measures bytes — and §12.14 keeps
-`scripts/m15_gate3a/**` reader-free with P and V outside it, so **the Work PR at
-§7 step 2 cannot implement verification**; the P/V reader is §7 step 6. The Work
-PR therefore ships verification as an **unsatisfiable precondition**: a candidate
-stays `CANDIDATE_UNVERIFIED`, no component in the reader-free package can advance
-it, and promotion of an unverified candidate is refused. Whether "verify
-candidate" means V's four-limb re-measurement or something lighter is **not
-settled by this decision**:
-`CANDIDATE_VERIFICATION_DEFINITION_REQUIRES_CONTRACT_DECISION`.
+**`CANDIDATE_VERIFICATION` — defined (RULED).** Schema validation, the scrub
+scan and a successful write are **producer-side acts and are not verification**.
+`CANDIDATE_VERIFICATION` is the conjunction of **all** of the following over a
+candidate artifact, each fail-closed:
+
+- the canonical artifact identity is resolved **by the typed registry**;
+- continuation eligibility holds for that identity (§2.10);
+- the canonical filename matches (§2.8, byte equality);
+- containment in the approved candidate root holds (§2.2);
+- the payload matches the identity's schema;
+- an **explicit committed status authority exists** for that identity (§2.12);
+- the required status representation matches the schema;
+- the provenance requirements of §2.13 are satisfied;
+- identity, schema, filename and status authority are **mutually consistent**,
+  with no disagreement between any pair;
+- the collision refusal holds (§2.3);
+- the overwrite refusal holds (§2.3);
+- the artifact did **not** arrive through an alternate routing bypass (§2.4's
+  closed-set rule).
+
+**`CANDIDATE_VERIFIED != BYTE_LEVEL_PROVEN`.** Candidate verification is
+explicitly **not** byte identity proof, not an independent byte re-read, not
+persisted-byte provenance verification, and not a P/V reader proof. Those remain
+the responsibility of the later P/V reader and the byte-level gate, and this
+definition may not be read as discharging any of them. A `CANDIDATE_VERIFIED`
+artifact **may not be promoted to committed evidence on that basis alone**;
+promotion additionally requires §2.3 item 4, including byte-level verification
+where a later gate requires it.
+
+This definition is discharged **entirely inside the reader-free package** — it
+reads no bytes of any artifact it did not itself write — so, unlike a byte-level
+proof, the Work PR at §7 step 2 **can** implement it.
 
 Normative:
 
@@ -199,12 +243,17 @@ Normative:
    root.
 2. Candidate generation never overwrites a committed or protected artifact.
 3. A candidate is **never** automatically promoted to committed evidence.
-4. Promotion happens as a **human-reviewed repository diff**. Its destination is
-   `artifacts/m15_gate3a/` at the canonical filename §2.1 fixes. It is **never
-   Green** and merging it requires human + ChatGPT approval. Whether it is an
-   Execution-evidence PR alone or an Execution-evidence PR followed by an
-   independent post-run Gate-decision (policy §14.8 shows both) is **not settled
-   here**: `PROMOTION_PR_CLASS_REQUIRES_CONTRACT_DECISION`.
+4. **Promotion is an Execution-evidence PR (RULED).**
+   `CANDIDATE_TO_COMMITTED_EVIDENCE_PROMOTION_REQUIRES_EXECUTION_EVIDENCE_PR`.
+   Its destination is `artifacts/m15_gate3a/` at the canonical filename §2.1
+   fixes. It is **never Green** and is **never an ordinary Work PR** — promotion
+   is not code implementation but an **irreversible evidence decision**, raising a
+   run's output to repository authority. It requires: human review · ChatGPT
+   review · `CANDIDATE_VERIFICATION` (§2.3) · byte-level verification where a
+   later gate requires it · a reviewed diff · an **explicit promotion decision**.
+   **Automatic promotion is forbidden**; promotion on CI-green alone is
+   forbidden; and an automatic commit or promotion immediately following writer
+   execution is forbidden.
 5. At promotion, schema, identity, status, provenance **and the content scan**
    are re-verified.
 6. **A candidate is not gate evidence, in any combination.** Until `PROMOTED` it
@@ -244,21 +293,30 @@ Normative:
 - The lifecycle mechanism itself is implemented by the later Work PR, to this
   contract.
 
-**Re-run after a designed halt — not resolved here.** PR #444 §1 records that the
-first continuation may well halt and that resolving it "requires a new contract
-Gate-decision informed by an approved read-only measurement" — a second
-authorised run is the expected sequel. Under §2.2 and §2.5 the candidate path is a
-pure function of `artifact_id`, so each eligible identity is writable **exactly
-once for the lifetime of the candidate root**, and nothing here names an actor or
-procedure that may clear, rotate or version that root — which sits inside
-`artifacts/**`, a protected path. Recorded as open, not closed by implication:
-**`CANDIDATE_REGENERATION_AFTER_HALT_REQUIRES_CONTRACT_DECISION`.** Two bounded
-observations for that decision: a per-run segment *derived by the authority* from
-committed provenance is not the caller-chosen mechanism this ruling forbids, but
-it is a new output-root shape and §6 reserves it; and **deletion is the wrong
-resolution** — a halted run's candidates *are* the measurements the halt exists to
-produce. Until then a second run into an occupied root fails closed, which is
-correct: it stops, and it stops loudly.
+**Re-run after a designed halt — RULED.**
+**`DESIGNED_HALT_OUTPUT_IS_TERMINAL_FOR_THE_CURRENT_RUN_IDENTITY`.**
+
+PR #444 §1 records that the first continuation may well halt by design. Once that
+halt has occurred, its output is **terminal for that run identity**. For the same
+run identity, epoch identity and experiment identity, and **after the halted
+result has been seen**, it is forbidden to regenerate, retry with modified
+contents, overwrite, replace, or silently re-run.
+
+A further run requires **all** of: a new explicit execution authorisation · a
+**new run identity** · the prior halted evidence **preserved** · no overwrite of
+the prior halted candidate · a documented reason.
+
+**The purpose is research integrity, not tidiness.** Regenerating after seeing a
+result is the researcher-degrees-of-freedom failure this rule exists to prevent:
+a halt that can be re-rolled is not a halt, and evidence selected after the fact
+is not evidence. **Deletion is therefore also the wrong resolution** — a halted
+run's candidates *are* the measurements PR #444 §1 says the halt exists to
+produce.
+
+No Work PR may add an exception. A change to halt semantics requires its own
+Contract Gate-decision. Until a new authorisation and run identity exist, a second
+run into an occupied root fails closed — which is correct: it stops, and it stops
+loudly.
 
 **The candidate root is never committed by accident.**
 `artifacts/m15_gate3a_continuation/` is added to `.gitignore` by the
@@ -302,6 +360,15 @@ The requirement is therefore stated as an **acceptance** property:
 - Nothing about "not calling the generic writers" is claimed or tested as
   containment. **This is not an instruction to remove them**; they remain, and
   they simply cannot produce an artifact that survives verification.
+
+**Route enumeration is not extended, deliberately.** The measured routes recorded
+in §4 — junctions, `O_EXCL`, `os.replace`, `os.link`, sixteen `write_report`
+functions, audit-hook coverage — are evidence for *why* an acceptance property is
+required, **not a denylist to be maintained**. This document does not enumerate
+the operating system's write primitives and will not grow such a list; closure is
+never claimed from a route denylist. The abstract contract above stands, and the
+later Work PR proves it as an acceptance property: **no bypass route exists**, and
+**nothing but the approved routing authority can write into the candidate root**.
 
 **Pinning.** The Work PR pins this with a **runtime `sys.addaudithook` trace**, in
 the manner PR #446 established (`tests/conftest.py`) and `test_wp5_reader_freedom`
@@ -475,11 +542,24 @@ status, and no committed source names the value it takes once the continuation
 populates it (verified: the token appears only in the artifact itself, in PR #444
 §7's citation of it, and in test fixtures).
 
-**Admitting the key.** Extending the `no_overlap_proof` and
-`cost_table_plan_or_metadata` schema vocabularies by the single key `status` is a
-schema change; whether this ruling grants it is **not recorded**, and the document
-does not decide it: `STATUS_KEY_ADMISSION_REQUIRES_CONTRACT_DECISION`. §6's
-reservation governs any change to what a status **means**.
+**Admitting the key — RULED.**
+**`STATUS_KEY_ADMISSION_IS_EXACT_AND_AUTHORITY_BOUND`.**
+
+Only the **canonical exact key** the typed registry or the committed schema
+specifies is admitted. Forbidden: case-insensitive admission · `Status` ·
+`STATUS` · a Unicode lookalike · a zero-width variant · an unknown alias · a
+dynamically inferred status key · any substring or heuristic match. This is the
+same boundary §2.7 draws for the artifact declaration key, and for the same
+reason: folding is not a permission-discovery mechanism.
+
+**`KEY_EXISTS != STATUS_AUTHORITY_EXISTS`.** Admitting the key does not supply the
+authority. Where an artifact's committed status **semantics** cannot be uniquely
+derived from committed authority, that artifact is
+`STATUS_AUTHORITY_REQUIRES_CONTRACT_DECISION` and **both its write and its
+promotion fail closed**. No Work PR invents a value or a meaning — `PASS`,
+`READY`, `COMPLETE`, `ACCEPTED` and every sibling are inventions unless committed
+authority names them. §6's reservation continues to govern any change to what a
+status means.
 
 **Foreseeable consequence, recorded so it is not a surprise.** On this rule **all
 three** eligible outputs may fail closed at the first continuation for want of a
@@ -544,12 +624,31 @@ no independent audit has accepted any of this machinery, and this decision grant
 none. Limb numbering follows PR #449 §7; §12.17's literal clauses are read
 verbatim above.
 
-**Left open by this decision, each recorded rather than closed by implication:**
-`CANDIDATE_VERIFICATION_DEFINITION_REQUIRES_CONTRACT_DECISION` ·
-`PROMOTION_PR_CLASS_REQUIRES_CONTRACT_DECISION` ·
-`CANDIDATE_REGENERATION_AFTER_HALT_REQUIRES_CONTRACT_DECISION` ·
-`STATUS_KEY_ADMISSION_REQUIRES_CONTRACT_DECISION` ·
-`DERIVED_DATA_OUTPUT_SURFACE_REQUIRES_SEPARATE_CONTRACT_GATE_DECISION`.
+**The five questions this decision once left open are now RULED**
+(`NO_OPEN_CONTRACT_QUESTIONS_REMAIN_WITHIN_PR450_SCOPE`). Each is recorded in
+§3.1 with its old question, the ruling, the normative consequence and the
+implementation requirement it creates. The five tokens that carried them —
+`CANDIDATE_VERIFICATION_DEFINITION_REQUIRES_CONTRACT_DECISION`,
+`PROMOTION_PR_CLASS_REQUIRES_CONTRACT_DECISION`,
+`CANDIDATE_REGENERATION_AFTER_HALT_REQUIRES_CONTRACT_DECISION`,
+`STATUS_KEY_ADMISSION_REQUIRES_CONTRACT_DECISION` and
+`DERIVED_DATA_OUTPUT_SURFACE_REQUIRES_SEPARATE_CONTRACT_GATE_DECISION` — are
+**HISTORICAL — SUPERSEDED BY HUMAN + CHATGPT RULING** and are not current status.
+
+Two tokens that look similar are **not** superseded and remain standing rules:
+`NEW_ARTIFACT_IDENTITY_REQUIRES_SEPARATE_CONTRACT_GATE_DECISION` (§2.1) and the
+per-artifact `STATUS_AUTHORITY_REQUIRES_CONTRACT_DECISION` (§2.12), which is the
+fail-closed disposition Ruling 4 explicitly retains.
+
+### 3.1 The five rulings
+
+| Old question | Ruling | Normative consequence | Implementation requirement |
+| --- | --- | --- | --- |
+| What does "verify candidate" mean? | `CANDIDATE_VERIFICATION` defined as a twelve-part conjunction over identity, eligibility, filename, containment, schema, status authority, status representation, provenance, mutual consistency, collision, overwrite and routing (§2.3) | **`CANDIDATE_VERIFIED != BYTE_LEVEL_PROVEN`** — it is not byte identity proof, an independent re-read, persisted-byte provenance, or a P/V proof, and it never suffices for promotion alone | Implementable inside the reader-free package; tests must show a verified candidate **mints no byte-proof token** |
+| What PR class performs promotion? | `CANDIDATE_TO_COMMITTED_EVIDENCE_PROMOTION_REQUIRES_EXECUTION_EVIDENCE_PR` | Never Green, never an ordinary Work PR; human + ChatGPT, candidate verification, byte-level verification where a later gate requires it, reviewed diff, explicit decision. No automatic promotion, none on CI-green, none following writer execution | Governance pins: an ordinary Work PR mechanism **cannot** promote; the candidate path is **not** committed-evidence authority |
+| May a run regenerate after a designed halt? | `DESIGNED_HALT_OUTPUT_IS_TERMINAL_FOR_THE_CURRENT_RUN_IDENTITY` | For the same run / epoch / experiment identity, after seeing the result: no regenerate, retry-with-changes, overwrite, replace or silent re-run. A further run needs new authorisation, a **new run identity**, preserved prior evidence, no overwrite, a documented reason | Tests: same-run-identity regeneration refused · prior halted output preserved · new run identity required |
+| Which `status` keys are admitted? | `STATUS_KEY_ADMISSION_IS_EXACT_AND_AUTHORITY_BOUND`, and `KEY_EXISTS != STATUS_AUTHORITY_EXISTS` | Canonical exact key only; case, alias, lookalike, zero-width, inferred and heuristic spellings refused. Without committed status semantics the artifact fails closed for write **and** promotion; no invented values | Tests: exact canonical key only · alias/case/confusable refused · no status authority → fail closed |
+| Is a derived-data surface authorised? | `UNENUMERATED_DERIVED_DATA_OUTPUT_IS_NOT_CONTINUATION_AUTHORISED` | Eligibility stays limited to playbook §5's enumerated outputs. No dataset, intermediate, feature dump, diagnostic, transformed market-data or additional evidence artifact is implicitly added | Tests: an unenumerated derived identity is refused · an arbitrary intermediate output cannot gain continuation eligibility |
 
 ---
 
@@ -662,7 +761,9 @@ committed-directory-manifest separation · a positive containment primitive ·
 reparse-point refusal · atomic `O_EXCL` creation · the `.gitignore` entry for the
 candidate root · derivation manifest six-field fix · regression and adversarial
 tests · a runtime `sys.addaudithook` routing pin · static reverse-caller and
-import tests · internal audit and mutation testing.
+import tests · `CANDIDATE_VERIFICATION` as defined in §2.3 · the halt-terminality
+rule · exact status-key admission · refusal of unenumerated derived-data
+identities · internal audit and mutation testing.
 
 **FR-19 is not included.**
 
@@ -855,6 +956,33 @@ failure modes intact. The list below is the replacement.
     declaration in source. "Used consistently" is not an assertion; equality
     against literals is.
 
+**From the five rulings of §3.1**
+
+29. **A candidate that satisfies `CANDIDATE_VERIFICATION` mints no byte-level
+    token.** All twelve limbs pass, and the result still carries the pending
+    byte-level status with `files_opened == 0`; no route in the reader-free
+    package advances it to a byte-level claim. *Control:* a candidate failing any
+    one limb is refused, one case per limb with its own token.
+30. **An ordinary Work PR mechanism cannot promote.** No callable in
+    `scripts/m15_gate3a/**` moves a candidate into `artifacts/m15_gate3a/`
+    (item 24), and the candidate path is asserted **not** to be committed-evidence
+    authority: a consumer of gate evidence handed a candidate path refuses.
+31. **Regeneration under the same run identity is refused**, after a halt, with
+    its own token; the prior halted candidate is **still present and unmodified**
+    after the refusal (asserted on its bytes, not merely its existence); and a
+    **new run identity** with a fresh authorisation is accepted. *Control:* the
+    new-identity path succeeds where the same-identity path refused.
+32. **Only the canonical exact status key is admitted** — `Status`, `STATUS`, a
+    lookalike, a zero-width variant and an alias are each refused, one case per
+    spelling. *Control:* the canonical key is accepted. And **`KEY_EXISTS !=
+    STATUS_AUTHORITY_EXISTS`**: a payload carrying the canonical key for an
+    artifact with no committed status semantics is refused for write **and** for
+    promotion.
+33. **An unenumerated derived-data identity is refused**, and an arbitrary
+    intermediate output cannot acquire continuation eligibility by any route —
+    including being written, being schema-valid, or sitting beneath the candidate
+    root. *Control:* one of §2.1's three enumerated identities is accepted.
+
 **Mutation acceptance bar.** The Work PR runs and reports a mutation study in PR
 #444 §13's table shape, mutating **call sites, not only primitives** — the recorded
 first pass killed 12 of 20 because only primitives were mutated. At minimum, one
@@ -865,8 +993,11 @@ adding a promotion helper; calling a generic writer from a **new module outside
 registry from `_SCHEMAS` filtered by filename; folding the declaration key on both
 sides; refusing only one confusable; returning `None` in place of raising;
 defaulting eligibility to true; accepting `cost_table_plan.json`; minting a status;
-requiring one provenance field of several; and aligning the inventory while leaving
-the derivation manifest. **Every one must be killed by an identifiable named test,
+requiring one provenance field of several; aligning the inventory while leaving
+the derivation manifest; having `CANDIDATE_VERIFICATION` mint a byte-level token;
+adding a promotion route reachable from an ordinary Work PR; permitting
+regeneration under the same run identity; case-folding the status key; and
+granting continuation eligibility to an unenumerated derived-data identity. **Every one must be killed by an identifiable named test,
 and no newly-introduced survivor is admitted.**
 
 **The D-7 trap is discharged in the same PR** — once the candidate root is
@@ -942,6 +1073,7 @@ merged.
 
 ## 8. Sequence from here
 
+
 1. This Contract Gate-decision merges on human + ChatGPT approval.
 2. The continuation output-surface implementation Work PR.
 3. That PR merges on human + ChatGPT approval — Amber, not self-mergeable
@@ -961,6 +1093,20 @@ merged.
 `PRE_CONTINUATION_CALENDAR_ARTIFACT_APPROVAL_REQUIRED`.** A completed output
 writer does not authorise a continuation; the calendar artifact approval remains
 a separate, open gate.
+
+### 8.1 Minimum Research Gate — a planning note, not a design
+
+Recorded so a later session does not mistake its absence for a decision: the
+condition for **production-grade evidence infrastructure** and the condition for
+**establishing whether M15 has research value at all** need not be the same gate.
+A "Minimum Research Gate" — a read-only, non-promoting route to answer the second
+question without discharging the first — is **definable as a separate gate** and
+may be proposed later.
+
+**Nothing about it is designed, permitted or implied here.** This decision does
+not authorise real-data access, does not authorise research execution, does not
+add a derived-data surface, and does not discharge the calendar gate. Any such
+gate is its own Contract Gate-decision.
 
 ---
 
@@ -1010,3 +1156,22 @@ junction and reports `False`. The most consequential findings were that the
 earlier observable-requirement list left 15 of 17 mutations alive, that §12.17's
 limb 3 had been mislabelled, that §5.4 pointed at a playbook clause that does not
 exist, and that §2.8 claimed an implementation that does not exist.
+
+**Second ruling round.** The document then carried five open contract questions —
+the definition of candidate verification, the promotion PR class, regeneration
+after a designed halt, `status`-key admission, and the derived-data surface. Human
++ ChatGPT ruled all five; §3.1 records each with its old question, the ruling, the
+normative consequence and the implementation requirement it creates, and §2 now
+carries them as normative text. The five tokens that expressed the open state are
+**HISTORICAL — SUPERSEDED BY HUMAN + CHATGPT RULING**.
+
+Two of the five went further than the packet had framed them. Promotion was
+recorded as an open choice between two PR classes; the ruling fixed it as an
+**Execution-evidence PR** on the ground that promotion is an irreversible evidence
+decision rather than code implementation. And regeneration after a halt had been
+framed as an operability problem — how a re-run reaches a fresh path; the ruling
+reframed it as **research integrity**, making a halted run's output terminal for
+that run identity precisely so that a result cannot be re-rolled after it is seen.
+Neither is what the packet's own analysis would have produced, which is the second
+time in this programme that the human ruling replaced the question rather than
+selecting from the options offered.
