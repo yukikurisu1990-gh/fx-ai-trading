@@ -11,6 +11,13 @@ completion state, and not a verdict on family A):
 `SAMPLE_FLOOR_REACHABILITY_NOT_DETERMINABLE_WITHOUT_MEASURED_INPUTS` ·
 `ZERO_DATA_FEASIBILITY_BEFORE_REAL_DATA`
 
+**Unified referral disposition** (§8.1, a carried status):
+`Q11_AND_SECTION0_ARE_ONE_REFERRAL` ·
+`Q11_AND_SECTION0_PENDING_HUMAN_CHATGPT_RULING` ·
+`REGISTERED_DATA_PLAN_REFERENT_AND_CONTENTS_NOT_DETERMINABLE` ·
+`NO_GENERAL_CONTRACT_AMENDMENT_PROCEDURE_REGISTERED` ·
+`SPAN_SIZING_BASIS_NOT_COMMITTED`
+
 **Statuses carried, unchanged.**
 `M15_AGGREGATION_DATASET_MACHINERY_SOURCE_AUDIT_BLOCKED_PENDING_TARGETED_FIXES` ·
 `M15_GATE3A_CONTINUATION_OUTPUT_SURFACE_CORE_RULED_PRODUCTION_DEPENDENCIES_DEFERRED`
@@ -58,7 +65,7 @@ executed, no stage is run, nothing is read.**
 | `rho_h` | `1 + (H−1) × mean_overlap_fraction` | spec `horizon_overlap_factor` |
 | `rho_x` | `1 + (P−1) × mean_abs_pairwise_corr` | spec `cross_pair_discount` |
 | `N_eff` | `Σ(N_raw_p / rho_h_p) / rho_x` | spec `portfolio_effective`; `effective_n.py:283–302` |
-| holdout span | ≥ 2 months — a **minimum with no maximum** | Ruling 2; "adoption waits" |
+| holdout span | ≥ 2 months, actual boundaries `[FIXED-AT gate-3a continuation]` — a **minimum**; no committed source states a maximum | Ruling 2; absence of a maximum verified across the prereg, the gate-4 audit, the gate-3a record and the playbook |
 
 **The hinge.** The ceiling and `N_raw` constrain the same variable: the spec
 defines `N_raw` as "eligible **traded** events … that **fire an EV-gated trade**",
@@ -187,10 +194,14 @@ corr 0.3, with every pair below the overlap threshold:
 | 9 | 4.44 | 3.40 | 3.57 | 112 |
 | 5 | 8.00 | 2.20 | 1.45 | 275 |
 
-**The contract's fastest route to the sample floors is ten pairs, not twenty** —
-45% off the required span, at a 0.100 share, far inside the 0.40 cap — until
-`P = 9` pushes each pair over the 4/day overlap threshold and the gain reverses
-sharply. Separately, a pair that fired no trades adds nothing to the numerator
+**The fastest route to the sample floors *through the estimator* is ten
+contributing pairs, not twenty** — 45% off the required span, at a 0.100 share,
+far inside the 0.40 cap — until `P = 9` pushes each pair over the 4/day overlap
+threshold and the gain reverses sharply. **The contract offers no such route:**
+Ruling 2 / R-2a fix the universe at PAIRS_20 and bar "inclusion/exclusion
+decisions anywhere in this family". NR-K is therefore a defect in the
+**estimator's caller contract**, not a permitted pair-universe remedy, and it must
+not be merged with the duration limb (§8.1.8). Separately, a pair that fired no trades adds nothing to the numerator
 while raising `rho_x`, so simply *omitting* it is a free gain. Nothing pins `P`
 to `PAIRS_20`, and nothing ties the `P` used for `rho_x` to the pair set the
 concentration cap is computed over.
@@ -226,10 +237,14 @@ edge question needs" is **withdrawn as unestablished**.
 three dispositions this exercise could return, the answer is the third — and
 **neither** of the other two is provable.
 
-- **`STRUCTURALLY_INFEASIBLE` is not established.** Ruling 2 fixes a holdout
-  *minimum* with no maximum and "adoption waits" is frozen, so every duration is
-  finite; and no committed source lower-bounds `mean_abs_pairwise_corr`, which an
-  infeasibility proof would need. Family A survives on zero-data grounds.
+- **`STRUCTURALLY_INFEASIBLE` is not established.** A proof would need a
+  committed lower bound on `mean_abs_pairwise_corr` and on `mean_overlap_fraction`
+  — no committed source supplies either — and a committed **maximum** holdout span
+  to rule a required duration out, where only a minimum exists. That is the whole
+  of the argument. It is **not** a claim that a required duration is reachable:
+  "adoption waits" fixes *when* adoption may happen, not that accrual continues or
+  that the programme waits. Family A survives on zero-data grounds because
+  infeasibility is unproven, not because a long enough holdout is available.
 - **`STRUCTURALLY_FEASIBLE` is not established either, and this packet does not
   assert it.** What is established is narrower: the frozen criteria set is **not
   self-contradictory** — a non-empty satisfying region exists. That is a fact
@@ -297,7 +312,12 @@ relaxation.
 
 **It could not close Family A.** Prereg §1 closes the family on sample grounds
 only for an `INSUFFICIENT_SAMPLE` "**that cannot be remedied by the registered
-data plan**" — and the registered plan *contains* the remedy. Demonstrating
+data plan**" — but that clause sits under the heading "**What closes the family
+before any holdout touch**", so it governs a *pre-holdout* verdict only, and "the
+registered data plan" is undefined (§8.1.4). An earlier version of this sentence
+said "the registered plan *contains* the remedy"; that is **withdrawn** as
+unsupported. On a holdout-role verdict the contract is simply silent — it neither
+closes family A nor keeps it open. Demonstrating
 unreachability at the frozen minimum establishes that **the minimum is the wrong
 span**, not that no admissible span exists. Irremediability would require showing
 that no holdout length reachable by forward accrual clears the floors — a far
@@ -305,11 +325,20 @@ stronger claim this arithmetic does not attempt. A family disposition is never
 self-granted in any case.
 
 **The admissible responses are exactly two:** a holdout longer than the frozen
-minimum, which the contract already prefers; or a human + ChatGPT ruling on Family
+minimum — a preference gate 4 recorded **non-bindingly**, outside its T-list, and
+which the frozen pre-registration does not express at all; or a human + ChatGPT
+ruling on Family
 A's continuation or scope. **Lowering the raw or effective-N floors, and raising
 the ≤ 40/day ceiling, are not among them** — Ruling 10 forbids loosening, and the
 ceiling was considered and settled by gate 4, which recorded that it "is a budget,
 **not a target**".
+
+**And infeasibility may not be demonstrated by assuming operation at the
+minimum.** Ruling 2 fixes a floor, not a duration, and `T_h` is `[FIXED-AT gate-3a
+continuation]`. Every quantity computed at 43.6 weekday days in §0 and in Q11 is a
+**conditional arithmetic identity at the floor**, never a property of the holdout
+family A will actually be evaluated on. A minimum is a budget, not a target — in
+the same sense, and for the same reason, as the ≤ 40/day ceiling.
 
 **Feasibility may not be demonstrated by assuming operation at the ceiling.**
 Every rate here is a conditional arithmetic identity, never a design target — and
@@ -874,7 +903,7 @@ registered before the campaign starts, or left entirely to the design audit and
 gate 3a, which own it. Exploratory estimates of these quantities are diagnostics
 and are labelled as such.
 
-**Two further levers, added after §0's derivation exposed them.**
+**Three further levers, added after §0's derivation exposed them.**
 
 - **The event rate.** §0 makes the traded-event rate the single unfrozen quantity
   governing whether a frozen sample floor is reached. Choosing an `ev_min`
@@ -891,6 +920,18 @@ and are labelled as such.
   including pairs that fired nothing; the pair set used for `P`, the pair set the
   concentration cap is computed over, and `PAIRS_20` are reported together and
   must be the same twenty.
+- **The holdout duration `D` (`T_h`).** It is a formal-contract free parameter
+  `[FIXED-AT gate-3a continuation]`, and the only one that moves **both** frozen
+  sample criteria at once — `N_eff` grows with the span while the annualised-Sharpe
+  standard error falls as `1/√D`. It is also the parameter **this gate is most
+  likely to set by accident**, because the only inputs a sizing calculation has —
+  the traded-event rate, `mean_overlap_fraction` and `mean_abs_pairwise_corr` — are
+  the design-span estimates this requirement already governs. **No duration may be
+  derived from an exploratory estimate chosen after that estimate's result was
+  seen.** Under this requirement's second branch `D` is left entirely to the
+  gate-3a continuation, which owns it. Two of those three inputs are measured on
+  the evaluated role itself, so the sizing input is a **declared assumption, never
+  a measurement** (§8.1.3).
 
 ---
 
@@ -1268,15 +1309,402 @@ Settling these after results are seen is the R-1 failure. This gate does not set
 them; it **refers them back**, which Ruling 10 permits. Meanwhile every reported
 Sharpe states which convention it used.
 
-**Q11 — is the frozen Sharpe criterion measurable at the frozen minimum holdout?**
-Ruling 2 fixes the holdout minimum at 2 months, ≈ 43 weekday UTC days, where the
-SE of an annualised Sharpe is ≈ **2.4**. A true Sharpe of exactly 0.8 would then be
-observed above 0.8 roughly half the time. For comparison, the M1 flagship's
-−18.91 was unambiguous on 48 days only because it sat ≈ 8 standard errors from
-zero. The threshold is not thereby wrong, and this gate neither changes nor
-proposes to change it — Ruling 10 forbids loosening. It refers the question back,
-because the cheapest place to learn the answer is **before** a real-data read, not
-after a one-shot holdout has been consumed.
+**Q11 — at what holdout length does the frozen Sharpe criterion discriminate,
+must the adopted span reach it, and when is that span fixed?** **Ruled together
+with §0 as one referral — see §8.1**, which carries the full packet.
+
+An earlier version asked whether the criterion is "measurable at the frozen
+**minimum** holdout". That heading embedded the conflation the referral exists to
+expose: the minimum is a floor on *adoption*, not the span the criterion will be
+evaluated on. It is also the mirror of an error §0.8 already guards against for
+the ceiling.
+
+Ruling 2 fixes a holdout **minimum** of 2 months (≈ 43.6 weekday UTC days) and no
+maximum; at that floor the SE of an annualised Sharpe is ≈ **2.4** — a figure
+insensitive to Q10(iii)'s unfixed annualisation, since the day count moves with the
+factor, and equivalent to `SE ≈ 1/√(holdout in years)`. It is a **best case**: at
+Q10(ii)'s 0.60 coverage floor it is ≈ **3.10**, and positive lag-1 autocorrelation
+— structurally expected in a continuation family whose 6-hour horizon straddles the
+UTC-day boundary on ~25% of trades — inflates it further. Fat tails do not: at a
+per-period Sharpe of 0.05 the skew and kurtosis terms move it under 3%.
+
+At that floor a **no-edge** strategy is observed at Sharpe ≥ 0.8 about **37%** of
+the time. (The companion figure — a target-edge strategy observed there ~50% of
+the time — is **invariant in `D`** and is not a fact about the minimum; see
+§8.1.5a.) For comparison, the M1 flagship's −18.91 was unambiguous on 48 days only
+because it sat ≈ 8 standard errors from zero.
+
+**The threshold is not in question.** Ruling 10 forbids loosening and this gate
+neither changes nor proposes to change it. **Nor is a duration an acceptance
+proof.** And unlike §0's limb, **this one has no verdict**: `INSUFFICIENT_SAMPLE`
+is defined only on raw and effective counts, so an imprecise Sharpe on a
+contract-compliant span yields an ordinary pass/fail. What is referred is `D`, the
+α it is judged at — no error rate is committed anywhere — and the point at which
+`D` is fixed. §8.1 carries the authority, the options and the recommendation.
+
+
+---
+
+### 8.1 The unified referral — the frozen 2-month minimum (Q11 + §0)
+
+`Q11_AND_SECTION0_ARE_ONE_REFERRAL`. This subsection is the decision packet for
+the single question the two limbs share. It **rules nothing**.
+
+#### 8.1.1 Why they are one referral
+
+Not because they resemble each other. Because they share all four of:
+
+| | |
+| --- | --- |
+| **Same authority** | Ruling 2's holdout span — not the §9 threshold table |
+| **Same variable** | the holdout duration `D` (`T_h`), and both limbs relax monotonically in it |
+| **Same remedy** | a longer `D`, **fixed at forward-epoch adoption** — never an extension of a measured span |
+| **Same decision boundary** | *when* `D` may be set, and on what information |
+
+And each makes the **same conflation**: each computes at "the frozen minimum" as
+though the minimum were the operative duration. It is not — §8.1.2.
+
+**Neither limb dominates the parameter space.** An earlier draft of this
+subsection claimed the Q11 limb strictly dominates. **That claim is withdrawn.**
+The limbs cross where `(1 + 23·ω)(1 + 19·c) > 106.5` — the same product form §0.3
+budgets at 4.36 — and the crossover sits *inside* the regimes this document
+already names:
+
+| Holdout length each limb needs (weekday UTC days) | c = 0.054 | c = 0.3 | c = 0.5 |
+| --- | --- | --- | --- |
+| §0 limb — regular arrivals | 25 | 67 | 105 |
+| §0 limb — Poisson at the ceiling | 120 | 395 | 620 |
+| §0 limb — clustered doublet (§0.4b, "not exotic") | 215 | 709 | **1,111** |
+| §0 limb — the prereg's own draft estimator (§0.5) | 253 | 838 | **1,312** |
+| Q11 limb, at an α this contract never committed | 1,065 | 1,065 | 1,065 |
+
+At the grid's own highest correlation the effective-N limb **overtakes** Q11. The
+earlier table selected precisely the two regimes in which Q11 wins.
+
+**So the unification does not rest on dominance. It rests on plannability, which
+is a stronger ground.** The Q11 limb is a function of the **day count alone** —
+untouched by `rho_h`, `rho_x`, `P` or the trade count — so it is computable from
+calendar arithmetic at the moment the contract requires the duration to be fixed.
+The effective-N limb depends on three quantities every one of which is produced by
+running the strategy on the span being sized (§8.1.3), so **at gate 3a it cannot
+be sized at all.** That asymmetry is the reason they must be ruled together: fix a
+discrimination standard and gate-3a sizing becomes a calendar computation with no
+research outcome in it; leave it unfixed and **no availability-only rule justifies
+any duration whatsoever.**
+
+#### 8.1.2 The exact 2-month authority — a floor, not a target
+
+Verbatim, and it says *minimums* in both places:
+
+> prereg §3.1 — "frozen minimum spans (Ruling 2): **validation ≥ 3 months and
+> holdout ≥ 2 months**"
+>
+> Ruling 2 — "**minimums** validation ≥ 3 mo, holdout ≥ 2 mo; adoption waits if
+> data insufficient"
+
+There is **no committed maximum** anywhere, and this packet invents none. So
+"2 months" is a floor; the operative duration is `T_h`, marked `[FIXED-AT gate
+3a]` — and, precisely, **at the gate-3a *continuation***: gate 3a has run and
+expressly did not fix it (`m15_gate3a_dataset_epoch_adoption.md`: the boundaries
+"remain **[FIXED-AT gate-3a continuation]** when the data exists"; the manifest
+carries `"holdout_span_utc": "PENDING"`).
+
+**The minimum must not be read as the planned duration.** Gate 4 points the other
+way — "gate 3a should prefer a holdout longer than the 2-month minimum when
+accrued forward data allows" — but that sentence is labelled **"Feasibility note
+(non-binding)"** in the audit itself and is absent from the binding T-1…T-7 list.
+An earlier draft of this packet called it a direction; it is a preference, and the
+frozen pre-registration expresses none. **The word "longer" appears nowhere in the
+pre-registration.**
+
+**And the minimum is not an acceptance criterion.** It is absent from §9's frozen
+table, and failing it produces no verdict — only "adoption waits". Three things
+must stay apart: a **span-admissibility floor at adoption** (Ruling 2); a **wait
+rule** (prereg §3.1); and the **§9 count floors**, which are the only things that
+produce a sample verdict. §0 and Q11 both compute at the first; what actually
+binds is the third, on whatever span the first two produced.
+
+**A scope correction this packet owes itself.** Ruling 10's loosening prohibition
+binds "**the design audit**" over "**these thresholds**" — the §9 V/H tables. The
+span minimums are Ruling 2, not §9. **Ruling 10 therefore does not reach the
+duration**, and no argument here rests on pretending it does. Ruling 10 continues
+to govern the Sharpe threshold, the sample floors and the turnover ceiling, none
+of which this referral proposes to change.
+
+#### 8.1.3 What is derivable
+
+- **The holdout branch is closed, and more strongly than "barred".** The holdout
+  is consumed "at its single authorised evaluation, or upon any decision-bearing
+  observation of it **(including via an invalid run)**". Any longer window ending
+  later still **contains** the consumed span, so an "extended holdout" is a window
+  with an already-read prefix. And a genuinely disjoint later window is not an
+  extension at all — prereg §3.1 already names it **Disjoint replication**, "a
+  further, later or separately adopted span | future decision", a separate gate.
+  **Post-measurement extension of a measured holdout has no coherent object.**
+- **The invalid-run ceremony does not reach this case.** #422→#425 requires an
+  invalidator proven *independently of the result*, a **code-only** fix, and a
+  re-measurement of the *same* data with no feedback loop. A duration change
+  satisfies none of the three: it changes the data, its trigger is the observed
+  sample, and it is definitionally a change to the split. R-1 already cites that
+  ceremony correctly as the **counter-example**; it must not be reached for here.
+- **The latest admissible freeze is earlier than "before the holdout is read".**
+  `T_v` and `T_h` are fixed at the **same moment** (prereg §3.1), and validation
+  runs on the **same forward epoch** as the holdout. So a `T_h` still movable
+  after validation would be sized on that epoch's own realised event rate — the
+  best available predictor of the holdout's, from an adjacent span, same strategy,
+  same regime. The freeze point is the forward-epoch **gate-3a continuation**.
+- **Sizing can only ever be a declared assumption, never a measurement.** Of
+  `N_eff`'s three inputs, `N_raw` and `rho_h` are produced by running the strategy
+  on the span being sized, and `rho_h` is not even scoped to design data. **Two of
+  three are unavailable in principle before the run.** It follows that
+  `INSUFFICIENT_SAMPLE` at holdout is **not an error**: it is the contract's
+  pre-declared output for a sizing assumption that was declared in advance and
+  turned out wrong. Read as an error it invites remediation, and "we need more
+  data" becomes a lever; read correctly there is nothing to remediate.
+
+#### 8.1.4 What is **not** derivable — and one of these defeats an earlier claim
+
+- **The validation branch is open, and an earlier statement in this packet was
+  wrong about it.** §0.8 said post-hoc extension is "already barred". That is true
+  of the **holdout** branch only. `effective_n_estimator_spec.json`
+  (`APPROVED_SPEC`) resolves a **measured** validation insufficiency to: "family A
+  closes **or adoption waits** per the frozen contract; **no holdout is touched**."
+  A validation sample cannot be insufficient before adoption — there is no sample —
+  so this is a post-measurement trigger with re-adoption as an authorised
+  disposition, on a branch where consumption never fires. The disjunction has **no
+  selector**, the validation floors are caller-supplied (`effective_n.py` fails
+  closed to `NOT_EVALUATED_AT_THIS_ROLE`), "the family's minimum" has no
+  antecedent, and the validation span is nowhere declared consumed or one-shot.
+- **The closure clause does not reach a holdout-role verdict at all, and an
+  earlier claim in this packet was wrong about it.** §0.8 said "the registered plan
+  *contains* the remedy". **Withdrawn.** The clause sits under the heading "**What
+  closes the family before any holdout touch:**", so it governs a *pre-holdout*
+  verdict only. A holdout-role `INSUFFICIENT_SAMPLE` is governed by §9 H, Ruling 11
+  ("an effective-N failure prevents holdout acceptance") and the estimator spec
+  ("holdout acceptance cannot be granted") — **none of which states a remedy or a
+  closure.** So the contract neither closes family A on this ground nor keeps it
+  open; it is silent.
+- **"The registered data plan" is undefined.** The phrase occurs **exactly once**
+  in the pre-registration and once repo-wide — in the clause itself; `remed*`
+  likewise occurs exactly once, on the same line. Two readings are available and
+  they move the clause in **opposite** directions: the plan as prereg §3 (which
+  contains a minimum, no maximum, and only pre-adoption freedoms), or the plan as
+  the gate-3a adoption record (under which the remedy set is strictly narrower).
+  Playbook §2.8 requires the narrower reading until a ruling adopts the wider one.
+  **`REGISTERED_DATA_PLAN_REFERENT_AND_CONTENTS_NOT_DETERMINABLE`.**
+- **No general amendment procedure is registered.** Ruling 10's tighten-or-refer
+  clause is scoped to §9's acceptance thresholds; **Ruling 2 carries no such clause
+  at all**, and the prereg's only amendment idiom is instance-scoped. So citing
+  "a Ruling-10 referral" against a span change does not hold —
+  **`NO_GENERAL_CONTRACT_AMENDMENT_PROCEDURE_REGISTERED`**, and the only route is a
+  fresh human + ChatGPT ruling.
+- **And this limb has no verdict.** `INSUFFICIENT_SAMPLE` is defined only on raw
+  and effective **counts**, so an imprecise Sharpe on a contract-compliant span
+  yields an ordinary pass/fail. §0's limb has a named verdict and a (pre-holdout)
+  closure clause; Q11's limb has neither. **A ruling that supplies a remedy only
+  for the counts limb would leave the Sharpe limb with no verdict, no remedy and no
+  closure — silently standing**, which is precisely what merging the referral
+  exists to prevent.
+- **The remedy clause's scope is genuinely ambiguous, and the drift is recorded.**
+  prereg §3.1 qualifies it — "if insufficient forward data has accrued **at
+  adoption time**, adoption waits" — and its direction is anti-shrink only
+  ("impatience cannot **shrink** the holdout"). But the one downstream place the
+  rule is quoted, `m15_gate3a_dataset_epoch_adoption.md`, renders it as "if
+  insufficient forward data has accrued, adoption waits" — **dropping the
+  qualifier**, and introducing it as "the frozen contract's own rule". The
+  de-qualified form is timeless, and it is the form the estimator spec then applies
+  to a measured result.
+- **Gate 4 §11 is the strongest foothold for the permissive reading**, and it is in
+  an *accepted* audit: "a false rejection into `INSUFFICIENT_SAMPLE` is
+  **recoverable by adopting more forward data — acceptable by design**." Read
+  post-holdout it contradicts the consumption rule; read pre-adoption it merely
+  restates "adoption waits". Both readings fit the words.
+- **No error rate is committed anywhere.** The ≥ 0.8 threshold is frozen; the
+  type-I and type-II rates it is meant to deliver are not — not in the prereg, not
+  in gate 4, not in the estimator spec. So "measurable" has no fixed meaning, and
+  any claim of the form "the criterion needs `D` = X" silently supplies one.
+- **No committed artifact records the assumption a span was sized from.** The
+  adoption manifest enumerates what gets fixed at the continuation — source, spans,
+  inventory hash, retention binding, no-overlap proof — and **no sizing rationale**.
+  So "we re-derived from a corrected assumption" has no baseline to be checked
+  against.
+
+#### 8.1.5 What the Sharpe limb does and does not say — three corrections
+
+Stated because an earlier draft of this packet got each of them wrong, and each
+error ran in the direction of making the case look stronger than it is.
+
+**(a) The 50% figure is invariant in `D` and is not a fact about the minimum.**
+`P(observed ≥ 0.8 | true = 0.8) = 0.5` at **every** holdout length — 43.6 days,
+one year, ten years. It is a tautology of comparing an unbiased estimator with its
+own true value under a symmetric sampling law. Only the false-positive limb moves:
+≈ 37% at the minimum, 21% at one trading year, 5% at 1,065 days. An earlier draft
+presented both as consequences of the frozen minimum; only one is.
+
+**(b) Any stated "required duration" imports an error rate the contract never
+committed.** A corpus search of the pre-registration, the gate-4 audit and the
+estimator spec finds **no** significance level, confidence statement, power target
+or standard-error requirement — for the Sharpe row or any other. The ≥ 0.8
+criterion is a bare **point comparison** on a realised statistic, frozen "as
+printed". So `1,065` is not a neutral consequence of the SE; it is the length at
+which a no-edge strategy clears 0.8 only 5% of the time, and the answer swings
+**12×** across plausible α:
+
+| α (one-sided) | 0.25 | 0.20 | 0.10 | 0.05 | 0.01 |
+| --- | --- | --- | --- | --- | --- |
+| weekday days | 179 | 279 | 647 | 1,065 | 2,131 |
+
+`1,065` additionally accepts a **50% false-negative rate at the target edge**; a
+conventionally powered design (α = 0.05, power 0.80) needs ≈ 2,434 weekday days
+≈ 9.7 years. **Choosing α is the ruling being asked for, not an input to it.**
+
+**(c) The discrimination gap overstates the frame, and the real exposure is the
+false negative.** 37% is the marginal false-positive rate of **one row of a
+ten-row conjunction** — and the Sharpe row is *nested inside* the `net expectancy
+> 0` row rather than additional to it, since an annualised Sharpe ≥ 0.8 > 0
+implies positive mean daily PnL. Gate 4 §11 already ruled the conjunction
+"demanding", validation must be passed first, and gates 8–10 plus mandatory
+disjoint replication sit *after* holdout acceptance — **so a false positive is
+caught.** This packet's own §10 and §7 R5 already make expectancy, not Sharpe, the
+discriminating statistic.
+
+A false negative is not caught. The holdout is consumed and unrepeatable. And this
+is the part duration cannot fix: a strategy at a true annualised Sharpe of **1.2 —
+50% above the frozen target — is vetoed by the Sharpe row alone 43% of the time at
+the minimum and still 21% at 1,065 days**, and a strategy sitting exactly at 0.8
+is vetoed 50% of the time **at every `D`**. That is an inherent property of a
+point comparison. **It is emphatically not an argument to lower 0.8** — Ruling 10
+forbids it, and tightening would make the false-negative rate worse.
+
+#### 8.1.6 What information may set `D`
+
+The intuitive split — "availability metadata yes, research outcomes no" — is the
+wrong axis, because a trade **count** looks like metadata and is not.
+`N_raw` counts events that "pass the cost-hurdle **and fire an EV-gated trade**",
+so it is a monotone functional of how much positive expected edge the model
+believes it sees. The operative rule is **self-reference**:
+
+> A quantity may inform the duration decision only if **(i)** it is computable
+> without running any strategy on any span, or **(ii)** it is a DESIGN-span
+> quantity estimated under a rule registered before the estimate was produced and
+> frozen before `D` is fixed. **No quantity realised in the span whose length is
+> being chosen may inform that choice** — not its trade count, not its gaps, not
+> its coverage, not its correlation.
+
+| | |
+| --- | --- |
+| **Admissible (limb i)** | calendar span; weekday and session counts; rollover and holiday exclusions; pair inventory; source-minute completeness |
+| **Admissible (limb ii), conditionally** | `mean_abs_pairwise_corr` — the *only* deflator the spec scopes to DESIGN data, "never validation/holdout". Conditional on **NR-L** being closed first, since its freeze point is undefined and nothing today guarantees it is frozen *before* `D` is chosen |
+| **Inadmissible** | `N_raw` · realised inter-event gaps and `rho_h` (also role-measured) · eligible-bar counts (cost-table dependent — limb ii at best, never on the sized span) · `daily coverage` (numerator is days with trades) · every performance metric |
+
+#### 8.1.6 The options
+
+Presented with authority, benefit, risk and consequence. **This packet selects
+none.**
+
+**Option A — 2 months is only a floor, and extension after measurement is
+permitted.**
+*Authority:* Ruling 2's floor with no maximum; gate 4 §11's "recoverable by
+adopting more forward data" — **a non-binding risk note, outside the T-list, never
+carried into the pre-registration**; the estimator spec's validation branch.
+*Benefit:* Family A is not lost to a sizing mistake.
+*Risk:* **Destroys the holdout.** `N_eff` and the Sharpe SE are monotone in the
+same `D`, so any `D` short enough to risk `INSUFFICIENT_SAMPLE` is short enough
+that the Sharpe estimate is uninformative — the escape hatch and the failure fire
+on the same knob. That is optional stopping with the stopping statistic coupled to
+the test statistic by construction. At the minimum, an edgeless strategy clears
+0.8 about **37%** of the time per look.
+*Consequence:* On the holdout branch it has no coherent object (§8.1.3).
+*Amendment:* Yes — prereg §3.2's consumption rule.
+
+**Option B — the exact duration is frozen before any outcome inspection.**
+*Authority:* prereg §3.1's `[FIXED-AT gate 3a]`; Ruling 1's "gate 3a must complete
+before any implementation PR reads or derives data"; gate order §10 places
+adoption four gates before the single run.
+*Benefit:* Preserves the holdout. And it **forces the disclosure** — because the
+SE falls only as `1/√D`, a human who must write `T_h` down in advance is
+confronted with the real cost and rules on it knowingly. Under A that cost is
+never quoted.
+*Risk:* Freezing the *number* without freezing the *assumption* leaves it
+re-derivable from a design-span estimate chosen after its result was seen; and
+"before any outcome inspection" is an intention unless tied to a committed event.
+*Consequence:* `INSUFFICIENT_SAMPLE` becomes a real possible outcome, accepted in
+advance.
+*Amendment:* **No.** This is what the contract already says, made checkable.
+
+**Option C — exactly 2 months for family A.**
+*Authority:* **none found.** No committed text makes the minimum a maximum.
+*Risk:* Contradicts gate 4 §5's accepted "should prefer a holdout longer than the
+2-month minimum". And §0 shows it is very likely the wrong span — the deflator
+budget is 4.36 and ordinary Poisson arrival spends 5.90 alone. **C maximises the
+probability of landing in `INSUFFICIENT_SAMPLE` on a one-shot holdout, i.e. it
+manufactures the situation in which Option A gets argued for.**
+*Amendment:* Yes — it would convert a floor into a ceiling.
+
+**Option D — an authority-derived sizing rule.** `D` = the longest holdout the
+accrued forward data supports at adoption, subject to ≥ 2 months and ≥ 3 months of
+validation preceding it.
+*Authority:* gate 4 §5 and §11 read as instruction — **though the audit labels
+them non-binding**; Ruling 2's floor; prereg §3.1's `[FIXED-AT gate 3a]`. Every
+limb committed **except one**.
+*Risk:* The uncommitted limb is the **adoption decision date**, and that is exactly
+where the lever migrates — "wait one more month before adopting" is arithmetically
+identical to "extend the holdout by one month". Playbook §1 gives an *earliest*
+(≈ 2026-10) and no latest.
+*Consequence:* **D is safe iff the adoption decision date is frozen with the same
+discipline the duration would otherwise need.** Unfrozen, D is A wearing a
+different hat.
+*Amendment:* No, if the adoption date is fixed; otherwise yes in effect.
+
+#### 8.1.7 Recommendation — offered, not applied
+
+**Option B, or equivalently D with the adoption decision date frozen alongside
+`D`.**
+
+*Authority:* it is what prereg §3.1, Ruling 1 and gate order §10 already provide;
+no amendment is required. *Benefit:* it is the only class that preserves the
+holdout's meaning, and it surfaces the true cost before it is paid rather than
+after. *Research-integrity risk:* the residual is that the freeze is asserted
+rather than checkable — closed by the wording below. *Operational consequence:* a
+materially longer wait than ≈ 2026-10, and `INSUFFICIENT_SAMPLE` accepted in
+advance as a real outcome. *Effect on family A:* it is **not** closed; it is sized
+honestly, and a sizing that proves wrong yields a pre-declared verdict rather than
+a remediation. *Contract amendment required:* **no** — which is itself the
+strongest argument for it over A and C, both of which need one.
+
+This recommendation is **not** chosen because it keeps family A alive. On the
+contrary, it makes an unfavourable outcome more likely to be reached and recorded.
+
+**Normative wording candidate** (for the ruling to adopt, amend or reject):
+
+> `T_v` and `T_h` appear as literal UTC instants in the committed forward-epoch
+> adoption artifact, together with the `(rate, overlap, correlation)` assumption
+> used to derive them. That commit is an **ancestor of the code SHA of the
+> validation run**, and no later commit alters either value. No quantity realised
+> on the forward epoch informs either. `INSUFFICIENT_SAMPLE` is the pre-declared
+> outcome of a wrong sizing assumption, not a defect, and is not remediated by
+> lengthening a span that has been measured.
+
+Three checks, all mechanical, all over committed objects. No new machinery, no
+artifact, no threshold, no maximum.
+
+#### 8.1.8 Dependencies
+
+**NR-K** (`P` caller-supplied) and **NR-L** (`mean_abs_pairwise_corr` has no
+production rule or freeze point) are **not ruled here** and are
+`REQUIRES_HUMAN_CHATGPT_RULING_AFTER_Q11_SECTION0`. They must not be merged into
+this one: the duration remedy, the pair-universe remedy and the correlation
+estimate are three separate levers on the same floor, and collapsing them would
+let a ruling on one be read as settling the others. **NR-L is a precondition for
+Option B's limb (ii)** — the correlation may inform `D` only if it is frozen
+first.
+
+Not ruled here and unaffected: **Q1** stays `REQUIRED_NOW`, default (b) — real-data
+read remains unauthorised and read-only confers no exemption. **Q3** depends on Q1.
+**Q8** blocks any stage that writes. **Q9** keeps the narrower reading as its
+default. **Q10** is *upstream* of this referral, not parallel to it: every duration
+stated anywhere in this packet depends on Q10(ii)'s day convention, so a ruling
+here is conditional on Q10.
 
 ---
 
@@ -1485,14 +1913,67 @@ and not acted on. Also declined: adopting any of the modelling processes named i
 
 ---
 
+### 12.2 Third review round — the Q11 + §0 unified referral
+
+Four fresh doc-only roles — prereg/contract interpretation, statistical sample
+planning, research integrity and degrees of freedom, and an adversarial "can the
+duration be changed after outcomes are seen?" — were given the lead's
+reconstruction **to attack**. They defeated four of its claims. Every decisive
+finding was re-verified by the lead at source before adoption.
+
+| Claim the lead made | Outcome |
+| --- | --- |
+| "The Q11 limb strictly dominates" | **Refuted.** It fails at the grid's own highest correlation: the clustered-doublet and prereg-draft regimes need 1,111 and 1,312 weekday days against Q11's 1,065. The earlier table selected exactly the two regimes where Q11 wins. |
+| "…without inventing any test", alongside a figure of ~1,065 days | **Self-contradictory.** 1,065 *is* a one-sided 5% test. The answer swings 12× across plausible α (179 → 2,131 days), and 1,065 additionally accepts a 50% false-negative rate at the target edge. |
+| The 37%/50% pair as consequences of the minimum | **Half wrong.** The 50% limb is invariant in `D` — a tautology at every holdout length. Only the 37% moves. |
+| "the registered plan *contains* the remedy" (§0.8) | **Withdrawn.** The clause is headed "what closes the family **before any holdout touch**", so it never reaches a holdout-role verdict; and its key term is undefined. |
+| "post-hoc extension already barred" (§0.8) | **True of one branch only.** The estimator spec resolves a *measured* validation insufficiency to "family A closes **or adoption waits** … no holdout is touched" — post-measurement re-adoption, unselected, on a branch where consumption never fires. |
+| gate 4 "directed" a longer holdout | **Non-binding.** The audit labels it "Feasibility note (non-binding)" and omits it from T-1…T-7. |
+| "the contract's fastest route … is ten pairs" (§0.6) | **Not a contract route.** R-2a bars pair selection; NR-K is an estimator caller-contract defect. |
+
+**Two findings the roles supplied that the lead had missed entirely.** The
+discrimination framing **overstates** the frame — 37% is one row of a ten-row
+conjunction, and the Sharpe row is *nested inside* the `net > 0` row rather than
+additional to it — while the real exposure is the **false negative**, which the
+gate ordering does not absorb and which duration cannot cure: a strategy at a true
+Sharpe of 1.2, half again the target, is vetoed 43% of the time at the minimum.
+And the unification's correct ground is not dominance but **plannability**: the
+Sharpe limb is a function of the day count alone, so it is the only limb sizeable
+at the moment the contract requires the duration to be fixed.
+
+**Where the lead overrode a role.** One report concluded the two limbs are unified
+partly by "one limb strictly dominating". The statistical recomputation refutes
+that and the lead verified the refutation independently; the unification is
+retained on plannability instead.
+
+**Anti-overengineering.** Nothing was added beyond the referral: no maximum
+holdout, no extension rule, no error rate, no new machinery, no production
+hardening. Declined: inventing an α; inventing a validation floor; merging NR-K or
+NR-L into this referral; and treating "wait long enough" as an acceptance proof.
+
+---
+
 ## 13. Completion state
 
-**`M15_MINIMUM_RESEARCH_GATE_PENDING_HUMAN_CHATGPT_RULING`.**
+**`M15_MINIMUM_RESEARCH_GATE_PENDING_HUMAN_CHATGPT_RULING`** — one completion
+state, unchanged. The unified referral carries
+`Q11_AND_SECTION0_PENDING_HUMAN_CHATGPT_RULING` as a status, not as a second
+completion state.
 
 The boundaries (§3), the integrity requirements (§4), the scope test (§5), the
 non-implications (§6), the staged flow (§7), the output classification (§9) and
 the metric set (§10) are derived from committed authority and are offered as
 ruled text.
+
+**§8.1 is the decision packet for the frozen 2-month minimum**, and it rules
+nothing. What is *derivable* there: the holdout branch is closed — post-measurement
+extension of a measured span has no coherent object — and the latest admissible
+freeze is the gate-3a continuation, earlier than "before the holdout is read".
+What is *not*: the validation branch, the referent and contents of "the registered
+data plan", the α at which the Sharpe criterion is judged, and the basis on which
+a span may be sized at all. A recommendation is offered (Option B / D with the
+adoption date frozen) with its authority, benefit, risk and consequence, and is
+**not applied**.
 
 **Q1 blocks the gate from being useful without a ruling**, and Q2–Q11 are genuine
 choices. An AI may not settle them: Q1 in particular decides whether M15 research
@@ -1538,14 +2019,24 @@ zero-data derivation had come out infeasible.
 | **Q8** where exploratory outputs live | **REQUIRED_NOW** · `REQUIRES_HUMAN_CHATGPT_RULING` — and it blocks **any stage that writes, including R0** | mostly MOOT while the work is doc arithmetic; live the moment anything is written |
 | **Q9** C-7 budget | `REQUIRES_HUMAN_CHATGPT_RULING`; narrower reading now in force as the default | exploratory limb MOOT; survives for family B |
 | **Q10** three Sharpe degrees of freedom | **REQUIRED_NOW** · `REQUIRES_HUMAN_CHATGPT_RULING` — §0's durations depend on Q10(ii)'s day convention, so the packet is circular with itself until it is ruled | **survives** |
-| **Q11** is the Sharpe criterion measurable at the 2-month minimum | `REQUIRES_HUMAN_CHATGPT_RULING` | **survives** |
+| **Q11 + §0** — at what holdout length the Sharpe criterion discriminates, whether the adopted span must reach it, and when `D` is fixed | **REQUIRED_NOW** · `Q11_AND_SECTION0_PENDING_HUMAN_CHATGPT_RULING` — **one referral, §8.1**; the minimum is not the operative duration | **survives** |
+| **NR-K** `P` caller-supplied | `REQUIRES_HUMAN_CHATGPT_RULING_AFTER_Q11_SECTION0` — dependent follow-up; **not** a pair-universe remedy (R-2a bars one) | survives |
+| **NR-L** `mean_abs_pairwise_corr` has no production rule or freeze point | `REQUIRES_HUMAN_CHATGPT_RULING_AFTER_Q11_SECTION0` — dependent follow-up, **and a precondition** for the correlation informing `D` | survives |
 
 **Q10 and Q11 are the only two that survive an infeasibility verdict**, which is
 itself the argument for having taken the derivation first. **Q11 and §0 are one
 referral with two limbs**, not two: the same frozen 2-month minimum, questioned in
 the sample-count dimension and the Sharpe-precision dimension, with the same
-remedy — a longer holdout. They should be ruled together, or a human may settle
-one and leave the other silently standing.
+remedy — **a longer `D`, fixed at the gate-3a continuation before any validation or
+holdout computation, never an extension of a span that has been measured**. §8.1
+is that referral.
+
+**They are not symmetric in consequence, and the ruling must be told so.** §0's
+limb has a named verdict (`INSUFFICIENT_SAMPLE`) and a closure clause — scoped
+"before any holdout touch". Q11's limb has **neither**. A ruling that supplies a
+remedy only for the counts limb would leave the Sharpe limb with no verdict, no
+remedy and no closure, silently standing — which is exactly the outcome merging
+them prevents.
 
 **And the earlier scoping claim is short by two, not one.** It said only Q1 blocks;
 the previous revision added Q7 (blocks R2–R4). Q8 also blocks every stage that
