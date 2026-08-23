@@ -11,12 +11,27 @@ completion state, and not a verdict on family A):
 `SAMPLE_FLOOR_REACHABILITY_NOT_DETERMINABLE_WITHOUT_MEASURED_INPUTS` ·
 `ZERO_DATA_FEASIBILITY_BEFORE_REAL_DATA`
 
-**Unified referral disposition** (§8.1, a carried status):
-`Q11_AND_SECTION0_ARE_ONE_REFERRAL` ·
-`Q11_AND_SECTION0_PENDING_HUMAN_CHATGPT_RULING` ·
+**Unified referral — RULED** (§8.1, human + ChatGPT):
+`Q11_AND_SECTION0_RULED_FREEZE_D_AT_GATE3A_CONTINUATION_BEFORE_DATA` ·
+`TWO_MONTH_HOLDOUT_IS_A_MINIMUM_NOT_THE_OPERATIVE_DURATION` ·
+`HOLDOUT_DURATION_D_IS_FROZEN_ONCE_AT_GATE3A_CONTINUATION_BEFORE_DATA` ·
+`POST_FREEZE_DURATION_RESELECTION_IS_FORBIDDEN_FOR_CURRENT_FAMILY_A` ·
+`DURATION_SELECTION_MUST_BE_OUTCOME_BLIND` ·
+`Q11_AND_SECTION0_RULED_ON_FREEZE_SEMANTICS`
+
+**Still open after that ruling:**
+`EXACT_D_SELECTION_BLOCKED_BY_Q10_AND_REMAINING_DURATION_AUTHORITY` ·
+`Q10_NEXT_HUMAN_CHATGPT_RULING_REQUIRED` ·
+`GATE3A_CONTINUATION_DATE_NOT_FROZEN_RESIDUAL_AFTER_Q11_SECTION0_RULING` ·
+`NR_K_REQUIRES_HUMAN_CHATGPT_RULING_AFTER_Q10` ·
+`NR_L_REQUIRES_HUMAN_CHATGPT_RULING` ·
 `REGISTERED_DATA_PLAN_REFERENT_AND_CONTENTS_NOT_DETERMINABLE` ·
 `NO_GENERAL_CONTRACT_AMENDMENT_PROCEDURE_REGISTERED` ·
-`SPAN_SIZING_BASIS_NOT_COMMITTED`
+`SPAN_SIZING_BASIS_NOT_COMMITTED` ·
+`FR_19_OPEN_PRECONDITION_CANDIDATE_FOR_FUTURE_RESEARCH_EXECUTION`
+
+**Historical:** `Q11_AND_SECTION0_PENDING_HUMAN_CHATGPT_RULING` — **SUPERSEDED BY
+HUMAN + CHATGPT RULING** (§8.1.0).
 
 **Statuses carried, unchanged.**
 `M15_AGGREGATION_DATASET_MACHINERY_SOURCE_AUDIT_BLOCKED_PENDING_TARGETED_FIXES` ·
@@ -1310,8 +1325,12 @@ them; it **refers them back**, which Ruling 10 permits. Meanwhile every reported
 Sharpe states which convention it used.
 
 **Q11 — at what holdout length does the frozen Sharpe criterion discriminate,
-must the adopted span reach it, and when is that span fixed?** **Ruled together
-with §0 as one referral — see §8.1**, which carries the full packet.
+must the adopted span reach it, and when is that span fixed?** **RULED together
+with §0 as one referral — see §8.1**, which carries the ruling. In summary: the
+two-month value is a **floor**, `D` is frozen **once at the Gate-3a continuation
+boundary before any data**, and post-freeze reselection is forbidden. The **exact
+numeric `D` is not ruled** and is blocked by Q10. The text below is the material
+the ruling was taken on.
 
 An earlier version asked whether the criterion is "measurable at the frozen
 **minimum** holdout". That heading embedded the conflation the referral exists to
@@ -1345,10 +1364,99 @@ contract-compliant span yields an ordinary pass/fail. What is referred is `D`, t
 
 ---
 
-### 8.1 The unified referral — the frozen 2-month minimum (Q11 + §0)
+### 8.1 Q11 + §0 — RULED. Holdout-duration freeze semantics
 
-`Q11_AND_SECTION0_ARE_ONE_REFERRAL`. This subsection is the decision packet for
-the single question the two limbs share. It **rules nothing**.
+**`Q11_AND_SECTION0_RULED_FREEZE_D_AT_GATE3A_CONTINUATION_BEFORE_DATA`** ·
+`Q11_AND_SECTION0_ARE_ONE_REFERRAL`
+
+**Status change.** `Q11_AND_SECTION0_PENDING_HUMAN_CHATGPT_RULING` is
+**HISTORICAL — SUPERSEDED BY HUMAN + CHATGPT RULING**, recorded here rather than
+deleted. §8.1.1–§8.1.6 below are the material the ruling was taken on and are
+retained as supporting record; §8.1.7's option set is likewise historical.
+
+#### 8.1.0 The ruling, as recorded
+
+A human + ChatGPT ruling has been received on the unified Q11 + §0 referral and is
+recorded here as **authority**. Three limbs.
+
+**Ruling A — the two-month value is a floor, not the operative duration.**
+The committed `holdout ≥ 2 months` is a lower bound. It is **not**
+`holdout = 2 months`, and no part of this packet — §0, Q11, sample feasibility or
+Sharpe measurability — may be reasoned as though it were.
+**`TWO_MONTH_HOLDOUT_IS_A_MINIMUM_NOT_THE_OPERATIVE_DURATION`.**
+
+**Ruling B — the exact `D` is frozen once, at the Gate-3a continuation boundary,
+before data.** Option B of §8.1.7 is adopted. The freeze precedes, at minimum,
+every one of: validation data observation · holdout data observation · empirical
+`N_eff` · empirical overlap · empirical pair correlation · Sharpe · returns · hit
+rate · signal strength · **any** model-performance outcome. Because validation and
+the holdout share one forward epoch, *"just before the holdout is read"* is **too
+late**; the freeze is at the continuation boundary.
+**`HOLDOUT_DURATION_D_IS_FROZEN_ONCE_AT_GATE3A_CONTINUATION_BEFORE_DATA`.**
+
+**Ruling C — no post-freeze reselection.** After the freeze, `D` may not be
+extended, shortened, reselected, rerolled or replaced. Specifically forbidden:
+lengthening on seeing `N_eff` fall short · lengthening on seeing sample counts ·
+changing on seeing correlation · changing on seeing Sharpe · lengthening on
+negative performance · shortening on promising performance. **An
+insufficient-sample outcome at the frozen `D` is accepted as the result.** A
+different `D` is not a remedy and not a retry:
+**`NEW_EXPLICIT_PREREGISTRATION_OR_CONTRACT_DECISION_REQUIRED`.**
+**`POST_FREEZE_DURATION_RESELECTION_IS_FORBIDDEN_FOR_CURRENT_FAMILY_A`.**
+
+**Normative wording.** `HOLDOUT_DURATION_IS_A_MINIMUM_PLUS_A_SINGLE_PRE_DATA_FREEZE`
+
+> The committed two-month value is a **lower bound, not the operative holdout
+> duration**. The exact holdout duration `D` **SHALL** be fixed **once**, at the
+> Gate-3a continuation boundary, **before** validation or holdout data, empirical
+> sample quantities, correlation estimates, or research-performance outcomes are
+> observed. Once fixed for Family A, `D` **SHALL NOT** be extended, shortened,
+> reselected or rerun in response to measured sample sufficiency or research
+> outcomes. Selecting a different `D` after the freeze requires a new explicit
+> pre-registration or contract decision.
+
+**Governing principle.** **`DURATION_SELECTION_MUST_BE_OUTCOME_BLIND`.** The
+purpose of the ruling is singular: the span may not be chosen, or re-chosen, in
+the light of what the data turned out to say.
+
+**And the closure clause is not a remedy.** The prereg's "cannot be remedied by
+the registered data plan" **may not** be read as authorising an unregistered
+duration extension. Committed text registers no extension rule, so there is: no
+automatic extension remedy, no post-hoc remedy triggered by measured
+insufficiency, and no open-ended "keep extending until `N_eff` passes". The
+earlier phrasing "the registered data plan *contains* the remedy" is withdrawn and
+is not current authority (§8.1.4).
+
+##### What this ruling does **not** decide
+
+- **The exact numeric `D`.** Not in days, weekday days, calendar months, bars or
+  years. **`EXACT_D_SELECTION_BLOCKED_BY_Q10_AND_REMAINING_DURATION_AUTHORITY`** —
+  Q10 is the upstream authority on day convention and duration semantics and is
+  unruled, and no committed source supplies an α, a power target or a
+  false-negative tolerance. None is invented here.
+- **Family A's fate.** The Zero-Data verdict
+  `SAMPLE_FLOOR_REACHABILITY_NOT_DETERMINABLE_WITHOUT_MEASURED_INPUTS` stands
+  unchanged. Freeze *semantics* are settled; reachability is not, and this ruling
+  neither passes nor fails family A.
+- **NR-K, NR-L, Q1, Q3, Q8, Q9.** Untouched — see §8.1.9.
+
+So the ruling is best read as: **`Q11_AND_SECTION0_RULED_ON_FREEZE_SEMANTICS`**.
+
+##### The consequence the ruling creates, stated rather than left implicit
+
+Ruling B bars observing **empirical pair correlation** before the freeze. That
+**forecloses limb (ii)** of §8.1.6's sizing partition, whose only example was the
+design-span `mean_abs_pairwise_corr`. So `D` may be sized on **availability
+metadata alone** — calendar span, weekday and session counts, rollover and holiday
+exclusions, pair inventory, source-minute completeness.
+
+**It follows that `D` cannot be sized to reach `N_eff ≥ 400` at all.** Every input
+that would let anyone target that floor is now either outcome-side or foreclosed.
+That is not an oversight in the ruling; it is coherent with Ruling C, which
+instructs that the result at the frozen `D` be accepted. It does mean the
+programme is choosing a span on availability and accepting whatever sample it
+yields — which is the price of an outcome-blind duration, and is worth naming
+before it is paid rather than after.
 
 #### 8.1.1 Why they are one referral
 
@@ -1369,6 +1477,10 @@ subsection claimed the Q11 limb strictly dominates. **That claim is withdrawn.**
 The limbs cross where `(1 + 23·ω)(1 + 19·c) > 106.5` — the same product form §0.3
 budgets at 4.36 — and the crossover sits *inside* the regimes this document
 already names:
+
+**`NON_NORMATIVE_DIAGNOSTIC_ONLY` — every figure in this table is a derived
+diagnostic, appears in no committed source, and may not be cited as a required
+duration or used to size `D` (§8.1.5, and Ruling B's "exact `D` not ruled").**
 
 | Holdout length each limb needs (weekday UTC days) | c = 0.054 | c = 0.3 | c = 0.5 |
 | --- | --- | --- | --- |
@@ -1531,6 +1643,13 @@ of which this referral proposes to change.
 
 #### 8.1.5 What the Sharpe limb does and does not say — three corrections
 
+**`NON_NORMATIVE_DIAGNOSTIC_ONLY`.** Every number in this subsection — and in
+§8.1.1's crossover table — is a derived diagnostic, not committed authority. None
+of `~1,065`, `~1,111`, `~1,312`, `37%`, `43%`, the one-sided 5%, or any α or power
+figure appears in any committed source. They are retained because they show *why*
+the referral was needed; **none may be promoted to contract justification, cited
+as a required duration, or used to size `D`.**
+
 Stated because an earlier draft of this packet got each of them wrong, and each
 error ran in the direction of making the case look stronger than it is.
 
@@ -1584,11 +1703,19 @@ wrong axis, because a trade **count** looks like metadata and is not.
 so it is a monotone functional of how much positive expected edge the model
 believes it sees. The operative rule is **self-reference**:
 
+**Superseded in part by Ruling B (§8.1.0): limb (ii) is foreclosed.** The ruling
+bars observing empirical pair correlation before the freeze, and the design-span
+`mean_abs_pairwise_corr` was limb (ii)'s only example. **`D` is therefore sized on
+limb (i) alone.** The partition is retained below because limb (ii) still governs
+quantities other than `D`, and because the rule's *shape* — self-reference — is
+what generalises.
+
 > A quantity may inform the duration decision only if **(i)** it is computable
-> without running any strategy on any span, or **(ii)** it is a DESIGN-span
+> without running any strategy on any span, or ~~**(ii)** it is a DESIGN-span
 > quantity estimated under a rule registered before the estimate was produced and
-> frozen before `D` is fixed. **No quantity realised in the span whose length is
-> being chosen may inform that choice** — not its trade count, not its gaps, not
+> frozen before `D` is fixed~~ *(foreclosed for `D` by Ruling B)*. **No quantity
+> realised in the span whose length is being chosen may inform that choice** — not
+> its trade count, not its gaps, not
 > its coverage, not its correlation.
 
 | | |
@@ -1597,10 +1724,12 @@ believes it sees. The operative rule is **self-reference**:
 | **Admissible (limb ii), conditionally** | `mean_abs_pairwise_corr` — the *only* deflator the spec scopes to DESIGN data, "never validation/holdout". Conditional on **NR-L** being closed first, since its freeze point is undefined and nothing today guarantees it is frozen *before* `D` is chosen |
 | **Inadmissible** | `N_raw` · realised inter-event gaps and `rho_h` (also role-measured) · eligible-bar counts (cost-table dependent — limb ii at best, never on the sized span) · `daily coverage` (numerator is days with trades) · every performance metric |
 
-#### 8.1.6 The options
+#### 8.1.7 The options — HISTORICAL, superseded by Ruling B
 
-Presented with authority, benefit, risk and consequence. **This packet selects
-none.**
+**Historical record.** These are the four classes the ruling was taken on.
+**Option B is adopted** (§8.1.0 Ruling B); A and C are refused; D survives only in
+the form B already requires. The analysis is retained so the ruling can be checked
+against what it chose between, not because any choice remains open.
 
 **Option A — 2 months is only a floor, and extension after measurement is
 permitted.**
@@ -1656,10 +1785,14 @@ discipline the duration would otherwise need.** Unfrozen, D is A wearing a
 different hat.
 *Amendment:* No, if the adoption date is fixed; otherwise yes in effect.
 
-#### 8.1.7 Recommendation — offered, not applied
+#### 8.1.8 The recommendation that was offered — and what the ruling did with it
 
 **Option B, or equivalently D with the adoption decision date frozen alongside
-`D`.**
+`D`** — **adopted by the ruling as Ruling B.** One limb of the recommendation was
+*not* carried: the ruling fixes the freeze of `D` and does **not** state that the
+Gate-3a continuation *date* is itself frozen. §8.1.9 records that as a live
+residual, because a late adoption date is arithmetically equivalent to a longer
+`D`.
 
 *Authority:* it is what prereg §3.1, Ruling 1 and gate order §10 already provide;
 no amendment is required. *Benefit:* it is the only class that preserves the
@@ -1688,23 +1821,81 @@ contrary, it makes an unfavourable outcome more likely to be reached and recorde
 Three checks, all mechanical, all over committed objects. No new machinery, no
 artifact, no threshold, no maximum.
 
-#### 8.1.8 Dependencies
+#### 8.1.9 Dependencies and residuals
+
+**The live residual: the Gate-3a continuation *date* is not frozen.** Ruling B
+freezes `D` at the continuation boundary. It does not fix **when that boundary is
+declared reached** — and because `D` is bounded by accrued data, choosing a later
+adoption date is arithmetically equivalent to choosing a longer `D`. Committed
+authority gives an *earliest* (≈ 2026-10) and no latest. The ruling therefore
+closes the direct lever and leaves an indirect one open. It is not closed here,
+because closing it would be ruling something the ruling did not rule:
+**`GATE3A_CONTINUATION_DATE_NOT_FROZEN_RESIDUAL_AFTER_Q11_SECTION0_RULING`.**
+The residual is narrower than the original lever — a late date cannot be chosen in
+response to a measured `N_eff`, since Ruling B puts the freeze before every
+measurement — but it is not nothing, and it should be put with Q10.
 
 **NR-K** (`P` caller-supplied) and **NR-L** (`mean_abs_pairwise_corr` has no
-production rule or freeze point) are **not ruled here** and are
-`REQUIRES_HUMAN_CHATGPT_RULING_AFTER_Q11_SECTION0`. They must not be merged into
-this one: the duration remedy, the pair-universe remedy and the correlation
-estimate are three separate levers on the same floor, and collapsing them would
-let a ruling on one be read as settling the others. **NR-L is a precondition for
-Option B's limb (ii)** — the correlation may inform `D` only if it is frozen
-first.
+production rule or freeze point) are **not ruled**, and the ruling changes their
+sequencing rather than their substance:
+
+| | Status | Relation to the ruling |
+| --- | --- | --- |
+| **NR-K** | `NR_K_REQUIRES_HUMAN_CHATGPT_RULING_AFTER_Q10` | Independent of `D`. Whether a `P` freeze-point is also needed, and whether it must precede the `D` freeze, is to be settled after Q10. It is **not** a pair-universe remedy — R-2a bars pair selection outright. |
+| **NR-L** | `NR_L_REQUIRES_HUMAN_CHATGPT_RULING` | Ruling B **moots its earlier role here**: the correlation may no longer inform `D` at all, since it is an empirical quantity and the freeze precedes every empirical observation. NR-L survives as its own question — where the correlation is measured from (training / validation / holdout) and when it is frozen — and no value is invented. |
+
+**They must not be merged into the duration question.** Three separate levers act
+on the same floor, and collapsing them would let a ruling on one read as settling
+the others.
 
 Not ruled here and unaffected: **Q1** stays `REQUIRED_NOW`, default (b) — real-data
-read remains unauthorised and read-only confers no exemption. **Q3** depends on Q1.
-**Q8** blocks any stage that writes. **Q9** keeps the narrower reading as its
-default. **Q10** is *upstream* of this referral, not parallel to it: every duration
-stated anywhere in this packet depends on Q10(ii)'s day convention, so a ruling
-here is conditional on Q10.
+read remains unauthorised and read-only confers no exemption; permitting it needs
+an explicit contract amendment. **Q3** depends on Q1. **Q8** blocks any stage that
+writes. **Q9** keeps the playbook §2.8 narrower reading as its default.
+
+**Q10 is now the next upstream ruling** — see §8.2.
+
+**And `N = 1` is not reopened by this.** A different `D` is not a second research
+iteration, a retry or a confirmation run. Ruling C routes it through
+`NEW_EXPLICIT_PREREGISTRATION_OR_CONTRACT_DECISION_REQUIRED` precisely so it
+cannot be laundered into one: **within the same Family A and the same
+pre-registration, a post-freeze rerun is forbidden.**
+
+---
+
+### 8.2 Q10 — the next upstream ruling
+
+**`Q10_NEXT_HUMAN_CHATGPT_RULING_REQUIRED`.** Not ruled here. It is upstream of
+everything numeric in this packet, and after §8.1 it is what blocks `D`.
+
+**What Q10 has to settle.** The frozen criterion is `daily portfolio Sharpe
+(ann., UTC-day) ≥ 0.8`, and the sampling *unit* is committed. What is not:
+
+- **What a "day" is** for the purposes of a duration — calendar days, weekday UTC
+  days, eligible trading days after Ruling 4's rollover exclusion and the
+  `[FIXED-AT design audit]` holiday calendar, sessions, or bars. These give
+  materially different answers: the same two-month floor is 61 calendar days or
+  ≈ 43.6 weekday days, and the corridor in §0 moves with the choice.
+- **Which of those `D` is denominated in**, and whether the duration unit and the
+  annualisation factor must sit on the same clock — 5/7 implies ≈ 260.7 weekday
+  days per year against an annualisation of 252, a ~1.7% inconsistency no
+  committed source resolves.
+- **The coverage denominator** for `daily coverage ≥ 0.60`, which changes both the
+  active-day count and the reported Sharpe level.
+- **Its relation to the sample-planning arithmetic**, since every figure in §0 and
+  §8.1 is stated in weekday UTC days by convention, not by authority.
+
+**Is it derivable?** Partly, and the parts differ. Committed *arithmetic* points at
+trading days — gate 4 computes "a 2-month holdout (~43 trading days)", and the M1
+precedent used 8,082 trades over 48 UTC days — but neither is a **definition**, and
+what counts as a trading day is itself unfixed while Ruling 4's holiday policy
+remains `[FIXED-AT design audit]`. So: **the convention is not derivable today,
+and choosing one is a ruling.** Whether it is an amendment or a gap-filling
+decision depends on which limb, and this packet does not pre-judge that.
+
+**What Q10 must not do.** It may not loosen the ≥ 0.8 threshold, the sample floors
+or the turnover ceiling. Ruling 10 permits tightening or referral only, and the
+threshold is not in question — only the units it is evaluated in.
 
 ---
 
@@ -1965,15 +2156,32 @@ non-implications (§6), the staged flow (§7), the output classification (§9) a
 the metric set (§10) are derived from committed authority and are offered as
 ruled text.
 
-**§8.1 is the decision packet for the frozen 2-month minimum**, and it rules
-nothing. What is *derivable* there: the holdout branch is closed — post-measurement
-extension of a measured span has no coherent object — and the latest admissible
-freeze is the gate-3a continuation, earlier than "before the holdout is read".
-What is *not*: the validation branch, the referent and contents of "the registered
-data plan", the α at which the Sharpe criterion is judged, and the basis on which
-a span may be sized at all. A recommendation is offered (Option B / D with the
-adoption date frozen) with its authority, benefit, risk and consequence, and is
-**not applied**.
+**§8.1 records a human + ChatGPT ruling on the frozen 2-month minimum.** Two
+months is a **floor**, not the operative duration; the exact `D` is frozen **once,
+at the Gate-3a continuation boundary, before any validation or holdout data,
+empirical sample quantity, correlation estimate or performance outcome**; and
+post-freeze extension, shortening, reselection, rerolling and replacement are
+forbidden for the current Family A. An insufficient-sample outcome at the frozen
+`D` is accepted as the result; a different `D` requires a new explicit
+pre-registration or contract decision. The governing principle is
+`DURATION_SELECTION_MUST_BE_OUTCOME_BLIND`.
+
+**What the ruling did not settle, and what it newly exposes.** The **exact numeric
+`D` is not ruled** — blocked by Q10, and by the absence of any committed α or power
+target; none is invented. **Q10 is now the next upstream ruling** (§8.2). The
+ruling also leaves one indirect lever open: it freezes `D` at the continuation
+boundary but does not fix **when that boundary is declared reached**, and a later
+adoption date is arithmetically equivalent to a longer `D`
+(`GATE3A_CONTINUATION_DATE_NOT_FROZEN_RESIDUAL_AFTER_Q11_SECTION0_RULING`). And it
+carries a consequence worth naming: because empirical correlation may not be
+observed before the freeze, **`D` can be sized on availability metadata alone, and
+therefore cannot be sized to reach `N_eff ≥ 400` at all** — coherent with the
+instruction to accept the result, and the price of an outcome-blind duration.
+
+**Unchanged by the ruling:** the Zero-Data verdict
+`SAMPLE_FLOOR_REACHABILITY_NOT_DETERMINABLE_WITHOUT_MEASURED_INPUTS`; Q1
+(`REQUIRED_NOW`, default (b)); NR-K and NR-L, both unruled; FR-19, open; and
+`N = 1`, which a post-freeze rerun may not be laundered into reopening.
 
 **Q1 blocks the gate from being useful without a ruling**, and Q2–Q11 are genuine
 choices. An AI may not settle them: Q1 in particular decides whether M15 research
@@ -2019,9 +2227,11 @@ zero-data derivation had come out infeasible.
 | **Q8** where exploratory outputs live | **REQUIRED_NOW** · `REQUIRES_HUMAN_CHATGPT_RULING` — and it blocks **any stage that writes, including R0** | mostly MOOT while the work is doc arithmetic; live the moment anything is written |
 | **Q9** C-7 budget | `REQUIRES_HUMAN_CHATGPT_RULING`; narrower reading now in force as the default | exploratory limb MOOT; survives for family B |
 | **Q10** three Sharpe degrees of freedom | **REQUIRED_NOW** · `REQUIRES_HUMAN_CHATGPT_RULING` — §0's durations depend on Q10(ii)'s day convention, so the packet is circular with itself until it is ruled | **survives** |
-| **Q11 + §0** — at what holdout length the Sharpe criterion discriminates, whether the adopted span must reach it, and when `D` is fixed | **REQUIRED_NOW** · `Q11_AND_SECTION0_PENDING_HUMAN_CHATGPT_RULING` — **one referral, §8.1**; the minimum is not the operative duration | **survives** |
-| **NR-K** `P` caller-supplied | `REQUIRES_HUMAN_CHATGPT_RULING_AFTER_Q11_SECTION0` — dependent follow-up; **not** a pair-universe remedy (R-2a bars one) | survives |
-| **NR-L** `mean_abs_pairwise_corr` has no production rule or freeze point | `REQUIRES_HUMAN_CHATGPT_RULING_AFTER_Q11_SECTION0` — dependent follow-up, **and a precondition** for the correlation informing `D` | survives |
+| **Q11 + §0** — freeze semantics for the holdout duration | **RULED** (§8.1.0) · `Q11_AND_SECTION0_RULED_FREEZE_D_AT_GATE3A_CONTINUATION_BEFORE_DATA`. Two months is a floor; `D` frozen once at the continuation boundary before any data; no post-freeze reselection. **Exact `D` not ruled** | n/a — ruled |
+| **Q10** day convention and duration semantics | **NEXT** · `Q10_NEXT_HUMAN_CHATGPT_RULING_REQUIRED` — now the upstream blocker for `D` (§8.2) | **survives** |
+| **Gate-3a continuation date** | `GATE3A_CONTINUATION_DATE_NOT_FROZEN_RESIDUAL_AFTER_Q11_SECTION0_RULING` — the indirect lever the ruling leaves open; put it with Q10 | survives |
+| **NR-K** `P` caller-supplied | `NR_K_REQUIRES_HUMAN_CHATGPT_RULING_AFTER_Q10` — independent of `D`; **not** a pair-universe remedy (R-2a bars one) | survives |
+| **NR-L** `mean_abs_pairwise_corr` has no production rule or freeze point | `NR_L_REQUIRES_HUMAN_CHATGPT_RULING` — its earlier role here is **mooted** by Ruling B (the correlation may no longer inform `D`); survives as its own question | survives |
 
 **Q10 and Q11 are the only two that survive an infeasibility verdict**, which is
 itself the argument for having taken the derivation first. **Q11 and §0 are one
