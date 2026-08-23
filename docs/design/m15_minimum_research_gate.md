@@ -984,7 +984,12 @@ and are labelled as such.
   trades is a free gain. `P` is reported over the full `PAIRS_20` universe,
   including pairs that fired nothing; the pair set used for `P`, the pair set the
   concentration cap is computed over, and `PAIRS_20` are reported together and
-  must be the same twenty.
+  must be the same twenty. **This limb is the Option-A candidate and does not take
+  effect unless the NR-K ruling adopts it (§8.3).** Adopting §4 as ruled text does
+  **not** decide NR-K1: if the ruling picks a different reading, this bullet — and
+  §10's "all pairs shown, not the survivors" — are re-read against it. Recorded
+  because §8.3 says `NR_K_PENDING_HUMAN_CHATGPT_RULING` while this bullet, left
+  unqualified, would have settled it by the back door.
 - **The holdout duration `D` (`T_h`).** It is a formal-contract free parameter
   `[FIXED-AT gate-3a continuation]`, and the only one that moves **both** frozen
   sample criteria at once — `N_eff` grows with the span while the annualised-Sharpe
@@ -2814,8 +2819,26 @@ availability check" requires observing the data, and a real-data read is
 **unauthorised** (Q1, default (b)). It is also NR-K3's lever wearing a
 freeze-point label: it lets a measured property of the span set `P`.
 
-**No committed source fixes a freeze point for `P` at all.** That is the gap,
-and it is separate from the definition conflict.
+**The registered universe needs no freeze point — it already has one.** R-2a and
+Ruling 2 fixed it at Family A pre-registration and `pair_authority.PAIRS_20`
+value-pins it. **What is unpinned is the forward epoch**, and the artifacts locate
+the gap exactly: the design manifest records `source_pairs = "PAIRS_20 (fixed; no
+inclusion/exclusion)"` and the design inventory requires `pair: "one of PAIRS_20"`
+with `file_count: 20`, while the forward adoption manifest carries **no pair field**
+and omits the pair universe from its deferral block, and the forward inventory's
+schema has **no `pair` field and no 20-file assertion**. The spec reports per role
+`["validation","holdout"]` — the two roles nothing pins. So the remedy available to
+the ruling is a **mirror of an existing committed pin**, not an invention.
+**`PAIR_UNIVERSE_FREEZE_POINT_NOT_COMMITTED`**, scoped to the forward epoch and to
+`P`'s binding — not to the universe.
+
+**And the all-20 posture is committed in more places than §8.3.1 named.** D-5
+normative 1–3 ("The roster **exactly equals** the canonical `PAIRS_20`"; "**All 20
+pairs are measured**"; "a missing measurement is false/unsatisfied"); D-10's rule
+that all `20 × 3 = 60` `(pair, session)` cost cells be present "or
+`validate_cost_table` refuses" — a **second independent fail-closed all-20 path**;
+and the design inventory's `file_count: 20`. None defines `P`; together they are
+the strongest evidence of the contract's posture.
 
 #### 8.3.5 NR-K3 and NR-K4 — which removals are legitimate?
 
@@ -2833,7 +2856,7 @@ zero-contribution ground entirely, which is the packet's own strongest lever:
 | **D. Insufficient coverage** | D-5 requires the roster to equal `PAIRS_20` and a missing measurement to be unsatisfied; D-10 makes insufficient coverage **raise**. Fail-closed — but see §8.3.6 for its **span limit**. **And which "coverage" matters**: the contract Gate-decision pins "coverage" among terms "used in **incompatible senses**". Only D-5 set-equality coverage is structural; prereg §9's `daily coverage ≥ 0.60` has a **trades-based numerator** and is an *outcome*, so a removal justified by it belongs with the outcome-driven grounds below, not here. |
 | **E. Sample-floor-driven** | Forbidden in substance by `DURATION_SELECTION_MUST_BE_OUTCOME_BLIND`'s sibling logic, but **not by any committed clause naming `P`**. This is the gap NR-K exists for. |
 | **F. Correlation-driven** | Same gap, and entangled with NR-L, whose source is fixed to the DESIGN span but whose method and freeze point are unregistered. |
-| **G. Performance-driven** | Barred in spirit by R-2a's "no inclusion/exclusion decisions anywhere in this family"; no clause names `P` specifically. |
+| **G. Performance-driven** | **Barred in text** by the one clause broad enough to reach it — prereg §3.2's R-2a-**compliance** bullet, "no inclusion/exclusion decisions **anywhere in this family**". R-2a's *own* text is narrower: "the pair universe is fixed at PAIRS_20 **by convention** — no pair inclusion/exclusion decisions **at design time**". The family-wide bar therefore rests on prereg §3.2 alone; the stricter reading governs. No clause names `P`. |
 | **H. Zero-contribution** — a pair fired no eligible or EV-gated events | **No committed disposition, and the fail-closed defences do not reach it.** Coverage certifies M15 **slots**, not **events**, so a zero-trade pair is *fully certified*, nothing halts, and the roster is complete. `raw_event_count = 0` removes nothing from the numerator while `rho_x` falls. This is the only ground on which the spec's own word "contributing" reads as *licence* rather than as a gap, and it is the **cheapest route to the floors**. It need not even be framed as a removal: "I did not drop it; it was never contributing." |
 
 **The adversarial default, stated because the table would otherwise read as a
@@ -2908,6 +2931,14 @@ pass — illustratively `0.45 / 0.20 / 0.20 / 0.15` fails, and dropping the 0.45
 gives `0.364 / 0.364 / 0.273`, which passes. That is an outcome-driven removal
 wearing a **frozen acceptance criterion** as its justification, and it belongs with
 the outcome-driven grounds in §8.3.5.
+
+**One authority caveat.** The **0.40 value** is committed for family A (prereg §9);
+the **quantity** is not. "Pair trade concentration" is defined in no family-A
+document, and its only implementation is M1-lineage — which prereg §11 admits only
+"reusable after **audit/wrapping**" and which PR #444's D-1 bars from being cited
+as authority for a family-A design semantic. `scripts/m15_gate3a/` contains no
+concentration metric. A consequence for §4's proposal: "the same twenty" is **not
+implementable as that metric stands**, because it never consults `PAIRS_20`.
 
 #### 8.3.8 The distinction the readings list does not draw — and why the form cares
 
@@ -3021,8 +3052,10 @@ scoped:** whether `c`'s estimation pair set must equal `P`'s pair set is an NR-K
 question by subject and an NR-L question by object
 (`P_AND_CORRELATION_INDEX_SET_NOT_BOUND`, §8.3.8). It is recorded, not assigned.
 
-**Order.** NR-K → mean-overlap unit → NR-L → Q10(i)/(iii) → duration-boundary
-arithmetic → the exact window declaration.
+**Order** (refining §8.2.8 step 3 and carrying its step 6 forward): NR-K →
+mean-overlap unit → NR-L → Q10(i)/(iii) → duration-boundary arithmetic → the exact
+window declaration → **and only then, per §8.2.8 step 6, may execution
+authorisation be considered at all.**
 
 
 ## 9. Output classification
@@ -3413,6 +3446,20 @@ adversarial pair-shrinkage brief — checked the committed packet.
 rosters to be accepted, and `effective_n()` has **no production caller**, so a
 full-roster ruling is not an additive change.
 
+**A third role reported after the first two were folded in, and found two more.**
+**§4 R-10 silently fixed `P` = 20** in the half §13 offers as ruled text — so
+adopting the packet as written would have decided NR-K1 by the back door while §8.3
+recorded it as pending. Conditioned on the ruling. And **R-2a was misquoted**: its
+own text is "fixed at PAIRS_20 **by convention** — no pair inclusion/exclusion
+decisions **at design time**", so the family-wide bar rests on prereg §3.2's
+compliance clause **alone**, which occurs once in the repository. The packet now
+says so rather than attributing the broader wording to R-2a. It also under-cited
+the all-20 posture by three committed sources (D-5 normative 1–3, D-10's 60-cell
+cost rule, the design inventory's `file_count: 20`), asked "when must the universe
+be frozen?" when the universe is already frozen and the **forward epoch** is the
+gap, and omitted that the concentration *quantity* — as opposed to its 0.40 value —
+is defined only in M1-lineage code that prereg §11 admits "after audit/wrapping".
+
 **The adversarial case that the recommendation is wrong was made in full and did
 not survive** — the phantom-deflator objection is real but errs **conservatively**,
 and the committed precedent runs the other way: R-1 hardened `horizon_bars` from a
@@ -3432,8 +3479,9 @@ superseded by the ruling at §8.1.0**, and was never a second completion state.
 
 The boundaries (§3), the integrity requirements (§4), the scope test (§5), the
 non-implications (§6), the staged flow (§7), the output classification (§9) and
-the metric set (§10) are derived from committed authority and are offered as
-ruled text.
+the metric set (§10) are derived from committed authority and are offered as ruled
+text — **except R-10's `P` limb, which §8.3.1 records as this packet's own
+proposal, not authority**, and which does not decide NR-K1.
 
 **§8.1 records a human + ChatGPT ruling on the frozen 2-month minimum.** Two
 months is a **floor**, not the operative duration; the exact `D` is frozen **once,
