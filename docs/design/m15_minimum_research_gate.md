@@ -3470,15 +3470,28 @@ The gap has no committed unit. The candidates are not stylistic:
 | **Elapsed wall-clock / calendar time** | minutes or hours | a weekend is ~60 hours, so every cross-weekend pair scores `ω = 0` |
 | **Event index** | "the k-th trade", ignoring time | makes `ω` a function of ordering alone |
 
-**The weekend case separates them by the full width of the band.** Two same-pair
-trades, one Friday 21:00 UTC and the next Monday 00:00 UTC. In elapsed calendar
-time the gap is 51 hours — far beyond a 6-hour horizon, so the contribution is
-**0**. Counted in bars that **exist**, it is 4 bars to the Friday close plus 8 bars
-from the Sunday open — **12 bars, half the horizon** — so the contribution is
-**0.5**. One pair of trades, one unit choice, and the two answers sit at opposite
-ends of §8.4.2's admissible band. *`NON_NORMATIVE_DIAGNOSTIC_ONLY` — an
-illustration of the unit's leverage, not a measurement, and not a claim about any
-realised session boundary.*
+**A closed-market interval separates the candidates by the full width of the
+band**, and the argument needs no session boundary to make it. Take two same-pair
+trades separated by a market closure, one shortly before it and one shortly after.
+In **elapsed calendar time** the gap contains the whole closure, so any closure of
+material length puts the gap far beyond a 6-hour horizon and the contribution is
+**0**. Counted in **bars that exist**, the closure contributes **nothing at all** —
+prereg §4 commits "**no synthetic bars across market close**" — so the gap is only
+the open bars on either side, and two trades placed near the close and near the
+reopen are **near-adjacent in that unit**, giving a contribution near **1**. One
+pair of trades, one unit choice, and the two answers sit at opposite ends of
+§8.4.2's admissible band.
+
+*An earlier draft of this paragraph made the point with a concrete Friday-evening
+to Monday-morning example and a 0.5 contribution. **Withdrawn**: that arithmetic
+required a weekly close instant and a reopen instant, and **this repository authors
+neither**. `calendar_authority.py` "validates an injected calendar. **It never
+authors one**" and "contains no market open/close instant, no DST transition date,
+and no holiday", because D-6 makes the expected slot set the approved artifact's
+property and never an inference. No closure length, boundary or reopen time is
+asserted here, and none may be inferred from this illustration — the leverage comes
+from a closure **existing**, which prereg §4 already commits, not from where it
+falls. `NON_NORMATIVE_DIAGNOSTIC_ONLY`.*
 
 **And the same choice re-scales `H` itself.** The contract's own gloss is "24 M15
 bars **(6 hours)**", which is exact only inside a continuously-open session, because
