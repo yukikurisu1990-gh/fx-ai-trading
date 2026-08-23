@@ -36,7 +36,9 @@ attribution and **(iii)** the annualisation factor remain
 `EXACT_D_SELECTION_STILL_PENDING_UPSTREAM_AUTHORITIES` ·
 `DURATION_BOUNDARY_ARITHMETIC_AND_ENDPOINT_CONVENTION_PENDING_HUMAN_CHATGPT_RULING` ·
 `COVERAGE_DENOMINATOR_PAIR_TO_PORTFOLIO_LEVEL_NOT_RULED` ·
-`NR_K_PENDING_HUMAN_CHATGPT_RULING` ·
+`NR_K_PENDING_HUMAN_CHATGPT_RULING` (§8.3 — decision packet complete) ·
+`P_DEFINITION_CONFLICT_SPEC_CONTRIBUTING_VS_UNIVERSE_FIXED` ·
+`PAIR_UNIVERSE_FREEZE_POINT_NOT_COMMITTED` ·
 `DURATION_WINDOW_FREEZE_REQUIRES_HUMAN_CHATGPT_DECISION` ·
 `GATE3A_CONTINUATION_DATE_NOT_FROZEN_RESIDUAL_AFTER_Q11_SECTION0_RULING` ·
 `NR_K_REQUIRES_HUMAN_CHATGPT_RULING_AFTER_Q10` ·
@@ -2707,151 +2709,208 @@ Steps 2–4 precede step 5 deliberately: declaring the window before the pair
 universe and the correlation authority are settled would fix `D` against a sample
 model still open to change.
 
-### 8.3 NR-K — decision packet: the pair universe and `P`
+### 8.3 NR-K — decision packet: `P` and the pair-universe authority
 
-**`NR_K_PENDING_HUMAN_CHATGPT_RULING`.** Not ruled here, and **not uniquely
-derivable** from committed authority — see §8.3.4. This packet states the
-questions, reconstructs the authority and offers a recommendation; it **applies
-nothing**. NR-K also retains the disposition §0.6 gave it,
-`MUST_RESOLVE_BEFORE_ANY_EFFECTIVE_N_VERDICT`.
+**`NR_K_PENDING_HUMAN_CHATGPT_RULING`** · `MUST_RESOLVE_BEFORE_ANY_EFFECTIVE_N_VERDICT`.
+Not ruled here, and **not uniquely derivable** (§8.3.9). This packet reconstructs
+the authority from source, separates the four questions, and offers a
+recommendation. It **applies nothing**, and it fixes no value of `P`.
 
-#### 8.3.1 The mechanism, reconstructed from committed text
+#### 8.3.1 What the committed sources actually say
 
-`N_eff = Σ(N_raw_p / rho_h_p) / rho_x`, with `rho_x = 1 + (P − 1) × mean_abs_pairwise_corr`.
-`P` shrinks the denominator as it falls. And **`P` is supplied by the caller**:
-`effective_n.py` takes `n_pairs = len(records)`, bounded only above. So a smaller
-reported universe raises `N_eff` — measured earlier in this packet at **67 weekday
-days to the floors at `P = 20` against 37 at `P = 10`** at the turnover ceiling and
-corr 0.3 (§0.6, `NON_NORMATIVE_DIAGNOSTIC_ONLY`).
+Reconstructed by reading the sources, not by inheriting a summary.
 
-**Two committed texts and one proposal bear on this, and an earlier draft of this
-paragraph confused the third with the first two:**
-
-- **Committed — the spec** defines `P` as "the number of pairs **contributing**", a
-  phrase that does not by itself say contributing *what*. It is the **only**
-  committed definition of `P`.
-- **Committed — R-2a / Ruling 2** fix the **universe** at `PAIRS_20` and bar
-  inclusion/exclusion decisions in this family. The universe is already frozen;
-  NR-K is not a request to freeze it.
-- **NOT committed — §4 R-10 of this packet**, which *proposes* that `P` be reported
-  over the full `PAIRS_20` universe and that the three pair sets "must be the same
-  twenty". That phrase occurs **nowhere in the repository outside this file**, and
-  §13 records §4 as "offered as ruled text" in a packet still
-  `PENDING_HUMAN_CHATGPT_RULING`. **It may not be cited as a committed counterweight
-  to the spec, and an earlier draft did exactly that.**
-
-**The genuinely committed counterweight is in the same gate package, and it is not
-§4.** `scripts/m15_gate3a/coverage.py` requires the full roster: `assert_full_coverage`
-is "**Set equality for every pair in PAIRS_20, or raise (D-5, D-10)** … Returns only
-on the full 20-pair conjunction. There is **no report-only mode and no tolerance
-parameter**", and a short roster raises `CoverageMeasurementMissingError`. So two
-modules of one package take **opposite roster positions over the same universe**:
-coverage **halts** on a short roster on a ruled basis, while `effective_n`
-**accepts** one silently. That asymmetry is the committed evidence for the
-full-roster posture — though it is still **not** a derivation of `P`, because
-D-5/D-10 rule *coverage*, not `rho_x`.
-
-**So NR-K is a defect in the estimator's *caller* contract, not a hole in the
-universe rule.** Membership is in fact enforced — `canonical_pair` rejects anything
-outside `PAIRS_20` and duplicates raise — so **only completeness is unbounded**.
-And because the numerator and the raw total sum over the same records, dropping a
-**zero-trade** pair is a strict free gain: nothing leaves the numerator and `rho_x`
-falls.
-
-#### 8.3.2 The four questions, kept separate
-
-**NR-K1 — what is `P`?** The candidate readings, none of which committed text
-uniquely selects: the full registered `PAIRS_20` · pairs with data · pairs with
-trades · pairs contributing to the result · pairs surviving filters · the
-portfolio allocation count · some other committed definition. The spec says
-"contributing"; §4 says "the same twenty"; the code says `len(records)`. **Not
-inferred here.**
-
-**NR-K2 — when is `P` frozen?** Boundaries to evaluate against authority: at
-design / pre-registration · at the Gate-3a continuation, alongside the window
-(§8.2.0) · before validation · after a data-availability check — **flagged, not neutral:
-freezing `P` after an availability check lets a measured property of the role span
-set `P`, which is NR-K3's lever under a different name**. Note the shape is the
-same as Q10-A's ordering constraint, but the shape is not authority.
-
-**NR-K3 — could pairs be dropped for sample-floor convenience?** The arithmetic
-says yes: `drop pairs → lower rho_x → higher N_eff`, and §0.6 quantifies it. The
-question is whether anything *forbids* it post hoc. R-2a bars inclusion/exclusion
-decisions and §4 requires the same twenty — but `effective_n.py` accepts a short
-record list without complaint, so the bar is contractual, not enforced.
-
-**NR-K4 — which removals are legitimate?** These must not be treated as one class:
-
-| Removal ground | Character |
+| Finding | Source |
 | --- | --- |
-| Pre-registered scope | Decided before anything is known |
-| Structurally unavailable pair | A fact about the world |
-| Schema-invalid pair | A fact about the data's admissibility |
-| Insufficient coverage | A *measured* property, and coverage is itself a frozen acceptance row |
-| Performance-driven | Outcome-dependent |
-| Correlation-driven | Outcome-dependent, and it moves `rho_x` directly |
-| `N_eff`-driven | Outcome-dependent, and it is the lever itself |
+| `n_pairs = len(records)`, bounded **above** by `len(PAIRS_20)` and **not below**; `rho_x = 1.0 + (n_pairs - 1) * corr` | `scripts/m15_gate3a/effective_n.py` |
+| Membership **is** enforced — `canonical_pair` rejects anything outside the universe, and duplicates raise | `scripts/m15_gate3a/pair_authority.py` |
+| The **only committed definition**: "`P` = number of pairs **contributing**". What "contributing" means is defined **nowhere** | `effective_n_estimator_spec.json` |
+| "the frozen PAIRS_20 universe (**Ruling 2 — fixed, no selection**)" | `pair_authority.py` |
+| "pair universe fixed at **PAIRS_20** (the 20 inventory pairs — **no inclusion/exclusion decisions anywhere in this family**)" | prereg R-2a compliance clause |
+| Coverage: "**Set equality for every pair in PAIRS_20, or raise (D-5, D-10)** … Returns only on the full 20-pair conjunction. There is **no report-only mode and no tolerance parameter**"; a short roster raises `CoverageMeasurementMissingError` | `scripts/m15_gate3a/coverage.py` |
+| Concentration is the **max single-pair trade share**, capped at ≤ 0.40 | `scripts/ml_step4/metrics.py`; prereg §9 |
 
-The first three are decidable without observing results; the last three are not,
-and the fourth sits between them. Collapsing the seven into "dropping pairs" is
-what would make the question look answerable when it is not.
+**So the conflict is precise, and it is not a hole in the universe rule.** The
+*universe* is fixed at twenty with no selection, in two independent places. The
+*estimator's* `P` says "contributing" and its implementation accepts fewer than
+twenty without complaint. **Only completeness is unbounded** — membership and
+uniqueness are enforced.
 
-**The adversarial default, stated because the table otherwise reads as a menu.**
-Under committed authority the number of legitimate `P`-reducing removals for family
-A may be **zero**, and each row must be argued *against* a fail-closed halt rather
-than assumed available. *Pre-registered scope* is empty for family A — R-2a fixes
-it at the twenty. *Structurally unavailable* and *insufficient coverage* run into
-D-5's per-pair set equality and D-10's raise-on-deficit: a pair with no data is a
-coverage deficit that **halts** the continuation, and dropping it instead is the
-silently-smaller-count outcome the contract forbids. *Schema-invalid* runs into
-D-2's **zero and structural** rejection tolerance: a rejected observation is
-coverage loss, never a smaller roster, and a non-zero tolerance "requires a separate
-contract Gate-decision". The last three are barred outright. **If the first
-continuation halts because a pair cannot be certified, that is the contract
-working** — a `P`-reducing remedy would be a relaxation needing its own
-Gate-decision, not a reading of the word "contributing".
+**A caution this packet owes itself.** §4 of *this document* proposes that the
+pair set used for `P`, the concentration set and `PAIRS_20` "must be the same
+twenty". **That is this packet's own proposal, not committed authority** — the
+phrase occurs nowhere else in the repository and §13 records §4 as "offered as
+ruled text" in a still-`PENDING` packet. An earlier draft of this subsection cited
+it as committed; that is withdrawn and must not recur.
 
-#### 8.3.3 Recommendation — offered, not applied
+#### 8.3.2 The adversarial property, confirmed and quantified
 
-**`PAIR_UNIVERSE_SELECTION_MUST_BE_OUTCOME_BLIND`**, and `P` must not be
-adjustable merely to make `N_eff` pass.
+`rho_x = 1 + (P − 1)·c` falls monotonically in `P`, and `N_eff = Σ(N_raw_p/rho_h_p)/rho_x`.
+So **smaller `P` → smaller `rho_x` → larger `N_eff`**, mechanically.
 
-*Authority:* it is the same principle §8.1's ruling adopted for the duration, and
-R-2a plus §4 R-10 already point the same way. *Benefit:* it closes the arithmetic
-lever without touching the universe. *Risk:* the principle does not by itself pick
-between NR-K1's readings, and it needs an enforcement point NR-K2 must supply.
-*Contract amendment:* probably none, if the ruling adopts §4's "same twenty"
-reading — but that is a reading, not a derivation, and it is the ruling's to make.
+**Dropping a zero-trade pair is a strict free gain**: the numerator and the raw
+total are summed over the *same* records, so a pair contributing nothing removes
+nothing from the numerator while `rho_x` falls. Nothing in the estimator objects.
 
-**This is a recommendation, not a ruling**, and it may not be cited as one. If
-genuine choice remains — and §8.3.4 says it does —
-**`NR_K_PENDING_HUMAN_CHATGPT_RULING`** stands.
+Earlier measurement in this packet, `NON_NORMATIVE_DIAGNOSTIC_ONLY`: at the
+turnover ceiling and corr 0.3, the floors are reached in **67 weekday days at
+`P = 20` against 37 at `P = 10`** (§0.6).
 
-#### 8.3.4 Why this is not derivable
+#### 8.3.3 NR-K1 — what exactly is `P`?
 
-**One committed text defines the symbol — the spec's "contributing" — and nothing
-committed says what "contributing" means.** §4's "same twenty" is this packet's
-proposal, not a competing authority, so there is no committed conflict to resolve
-and **no default in force**; there is an undefined term. The `coverage.py`
-asymmetry above is evidence of the contract's posture, not a definition of `P`. And
-no committed source fixes a freeze point for `P` at all. NR-K1, NR-K2 and NR-K4 are
-open on their own terms.
+Candidate readings, none of which committed text uniquely selects:
 
-#### 8.3.5 Dependencies
+full registered `PAIRS_20` count · design-universe count · available-data pair
+count · valid-schema pair count · coverage-passing pair count · pairs producing
+trades · pairs contributing non-zero samples · portfolio allocation count · pairs
+surviving some filter · another committed concept.
 
-**NR-L stays after NR-K**, unruled, with its committed constraint intact: the
-correlation is estimated on the **DESIGN span only, never validation/holdout**.
-Its open items — the production method, idle-day handling, day attribution, and
-the within-design freeze point — are separate from NR-K's and are not merged here.
-**`NR_L_REQUIRES_HUMAN_CHATGPT_RULING`.**
+**Recorded as a definition conflict, not silently merged:** the spec says
+"contributing"; `pair_authority.py` and R-2a say the universe is fixed at twenty
+with no selection; the implementation accepts any cardinality from 1 to 20.
+**`P_DEFINITION_CONFLICT_SPEC_CONTRIBUTING_VS_UNIVERSE_FIXED`.** Two of the ten
+readings have no committed referent at all — "portfolio allocation count" is
+defined nowhere in the M15 contract, and "pairs surviving some filter" has no
+per-pair filter to survive, the cost hurdle and EV gate being per-*event*. They are
+listed for completeness, not as live candidates.
 
-**Relation to the Q10 rulings.** `P` is a sample-accounting quantity, not a
-time-axis one, so `D_IS_ELAPSED_UTC_TIME != SAMPLE_COUNT_IS_CALENDAR_TIME` applies
-directly: nothing in Q10-A, Q10(ii) or Q10-B bears on `P`, and fixing the window
-does not fix the universe. What fixing the window *does* do is remove the duration
-lever, which is why NR-K is now the next place the pressure goes.
+#### 8.3.4 NR-K2 — when must the universe be frozen?
 
----
+Candidate boundaries: Family A pre-registration · the design audit · Gate-3a
+adoption · the Gate-3a continuation · before any real-data read · after a
+structural availability check · before validation · before holdout.
+
+**One of these cannot be the default under this gate.** "After a structural
+availability check" requires observing the data, and a real-data read is
+**unauthorised** (Q1, default (b)). It is also NR-K3's lever wearing a
+freeze-point label: it lets a measured property of the span set `P`.
+
+**No committed source fixes a freeze point for `P` at all.** That is the gap,
+and it is separate from the definition conflict.
+
+#### 8.3.5 NR-K3 and NR-K4 — which removals are legitimate?
+
+The seven grounds, kept distinct, with what committed text says about each:
+
+| Ground | Committed disposition |
+| --- | --- |
+| **A. Pre-registered exclusion** | **Empty for family A.** R-2a fixes the registered scope at the twenty, so there is no pre-registered exclusion to invoke. |
+| **B. Structurally unavailable** | Not silent — see §8.3.6. The coverage path is **fail-closed**. |
+| **C. Contract-invalid** (schema / coverage failure) | D-2 rules the rejection tolerance **zero and structural**: a rejected observation is *coverage loss*, never a smaller roster, and a non-zero tolerance "requires a separate contract Gate-decision". |
+| **D. Sample-floor-driven** | Forbidden in substance by `DURATION_SELECTION_MUST_BE_OUTCOME_BLIND`'s sibling logic, but **not by any committed clause naming `P`**. This is the gap NR-K exists for. |
+| **E. Correlation-driven** | Same gap, and entangled with NR-L, whose source is fixed to the DESIGN span but whose method and freeze point are unregistered. |
+| **F. Performance-driven** | Barred in spirit by R-2a's "no inclusion/exclusion decisions anywhere in this family"; no clause names `P` specifically. |
+
+**The adversarial default, stated because the table would otherwise read as a
+menu.** Under committed authority the number of legitimate `P`-reducing removals
+for family A may be **zero**, and each row must be argued *against* a fail-closed
+halt rather than assumed available. If the first continuation halts because a pair
+cannot be certified, **that is the contract working** — a `P`-reducing remedy would
+be a relaxation needing its own Gate-decision, not a reading of the word
+"contributing".
+
+#### 8.3.6 The structural-invalid consequence — three semantics, and what committed text supports
+
+If one pair cannot satisfy required coverage or schema:
+
+1. **Family A fails closed.**
+2. The pair is excluded and `P` shrinks.
+3. The pair is excluded but the deflator keeps the original universe count.
+
+**For the coverage path, committed text supports (1) and only (1).**
+`assert_full_coverage` "Returns only on the full 20-pair conjunction. There is no
+report-only mode and no tolerance parameter", a short roster raises
+`CoverageMeasurementMissingError`, and D-10 rules that insufficient coverage
+**raises rather than being recorded as a flag**. A pair that cannot be certified
+**halts the continuation**; it is not dropped, and `P` does not shrink.
+
+**What is *not* settled** is whether that fail-closed semantics reaches the
+effective-N estimator at all. Coverage and `effective_n` are different modules with
+different rulings — D-5/D-10 govern coverage, not `rho_x` — and the estimator
+accepts a short roster silently. **Two modules of one gate package therefore take
+opposite roster positions over the same universe.** Semantics (3) is coherent and
+is nowhere considered in committed text; it is put here because it is the option
+that preserves the deflator's meaning while allowing a pair to be uncertifiable.
+
+#### 8.3.7 Interaction with the concentration cap
+
+Shrinking `P` does not move `N_eff` in isolation. The cap is the **max single-pair
+trade share** ≤ 0.40, so at uniform allocation `1/P ≤ 0.40` forces **`P ≥ 3`**.
+
+**It is a weak brake, and saying so matters.** It binds nothing between `P = 20`
+and `P = 3` — which is exactly the range where the `N_eff` gain lives. It is
+recorded as an interaction, not as a control, and **this packet does not change the
+0.40 cap.**
+
+#### 8.3.8 The options
+
+**Option A — `P` = registered `PAIRS_20`, permanently (always 20).**
+*For:* strongest against sample-shopping; simple; exactly reproducible; matches
+`pair_authority.py`'s "fixed, no selection" and R-2a. *Against:* if a pair is
+genuinely uncertifiable, the deflator counts a pair that contributed nothing —
+though under §8.3.6 that case **halts** rather than proceeding, so the objection
+may be moot. Collides verbally with the spec's word "contributing".
+
+**Option B — the universe is frozen pre-data; `P` is that frozen cardinality.**
+*For:* handles structural exclusions **before** anything is observed; outcome-blind
+by construction. *Against:* needs an eligibility authority that does not exist, and
+the boundary against availability-driven judgement is exactly where the lever
+lives.
+
+**Option C — `P` = the actual contributing count.**
+*For:* the estimator's own word, and arguably its natural semantics. *Against:*
+every disappearance — no trades, weak signal, high correlation, failed coverage —
+shrinks `P` and **improves** `N_eff`. This is the largest researcher degree of
+freedom in the estimator and it is currently the *implemented* behaviour.
+
+**Option D — an authority-derived alternative**, if the ruling finds one this
+packet did not.
+
+#### 8.3.9 Recommendation — offered, not applied
+
+**Freeze the registered Family A pair universe outcome-blind, and take `P` for the
+`N_eff` computation from that frozen universe authority.** A pair that later shows
+no trades, a weak signal, high correlation or a low sample contribution **does not
+shrink `P`** on that ground alone. Whether a *structurally or contract-invalid*
+pair is excluded from `P` is left to the ruling, because §8.3.6 shows committed
+text answers it for coverage and is silent for the estimator.
+
+*Authority:* R-2a and `pair_authority.py` both fix the universe with no selection;
+`coverage.py` shows the contract's full-roster posture. *Benefit:* it closes the
+arithmetic lever without touching the universe rule or the concentration cap.
+*Risk:* it does not by itself pick between §8.3.3's readings, and it needs the
+freeze point §8.3.4 says nobody has fixed. *Contract amendment:* likely none for
+Option A or B; Option C would need one to be *constrained*, since it is what the
+code does today.
+
+**Proposed normative wording** (for the ruling to adopt, amend or reject):
+
+> `PAIR_UNIVERSE_SELECTION_MUST_BE_OUTCOME_BLIND`, and **`P` SHALL NOT be reduced
+> after the pair-universe freeze for the purpose of improving `N_eff`, cross-pair
+> deflation, sample sufficiency, or research performance.** Structural or
+> contract-invalid pairs are handled by the fail-closed semantics that already
+> govern them, not by silently shrinking `P`.
+
+**This is a recommendation, not a ruling, and may not be cited as one.**
+
+#### 8.3.10 Why this is not derivable, and what stays separate
+
+**Not derivable.** There is **one** committed definition of `P` — "contributing" —
+and it is undefined; the universe rule and the estimator's implementation point
+opposite ways; and no committed source fixes a freeze point. The `coverage.py`
+asymmetry is *evidence of the contract's posture*, not a definition of `P`, because
+D-5/D-10 rule coverage and not `rho_x`. **`NR_K_PENDING_HUMAN_CHATGPT_RULING`.**
+
+**Kept separate, and not ruled here.** **NR-L** — correlation source fixed to the
+**DESIGN span only, never validation/holdout**; method, idle-day handling, day
+attribution and freeze point all unregistered. **`MEAN_OVERLAP_FRACTION_UNIT_NOT_REGISTERED`**
+— `rho_h`, not `rho_x`; a different deflator and a different question. This packet
+decides only whether the pair universe may be changed to advantage, whatever the
+correlation turns out to be.
+
+**Order.** NR-K → mean-overlap unit → NR-L → Q10(i)/(iii) → duration-boundary
+arithmetic → the exact window declaration.
+
 
 ## 9. Output classification
 
@@ -3275,11 +3334,19 @@ rests on the sample floors, which count events.
 **Q10 is not closed.** Limbs **(i)** entry- vs exit-day attribution and **(iii)**
 the annualisation factor remain open and are **not** derivable from an elapsed-UTC
 `D` (§8.2.8). No numeric `D` is chosen; two months stays a lower bound, and
-`EXACT_D_SELECTION_STILL_PENDING_UPSTREAM_AUTHORITIES`. **§8.3 is the NR-K decision
-packet** — four separated questions, a recommendation offered not applied, and
-`NR_K_PENDING_HUMAN_CHATGPT_RULING` because the spec's "contributing" and §4's
-"same twenty" describe the same symbol differently and the estimator enforces
-neither.
+`EXACT_D_SELECTION_STILL_PENDING_UPSTREAM_AUTHORITIES`. **§8.3 is the completed NR-K decision packet.** Reconstructed from source: the
+universe is fixed at twenty "with no selection" in two independent places, while
+the estimator's only committed definition of `P` is "pairs **contributing**" — a
+word defined nowhere — and its implementation accepts any cardinality from 1 to 20.
+Smaller `P` mechanically raises `N_eff`, and dropping a **zero-trade** pair is a
+strict free gain. The seven removal grounds are kept distinct, with the
+**adversarial default** that the number of legitimate ones may be **zero**. For the
+coverage path the structural-invalid consequence is **fail-closed** — an
+uncertifiable pair **halts** the continuation rather than shrinking `P` — but that
+governs coverage, not `rho_x`, so **two modules of one package take opposite roster
+positions**. The concentration cap forces `P ≥ 3` and is otherwise a **weak brake**,
+binding nothing across the range where the gain lives. Recommendation offered, not
+applied; **no `P` value is fixed**, and `NR_K_PENDING_HUMAN_CHATGPT_RULING` stands.
 
 **Unchanged by the ruling:** the Zero-Data verdict
 `SAMPLE_FLOOR_REACHABILITY_NOT_DETERMINABLE_WITHOUT_MEASURED_INPUTS`; Q1
@@ -3339,7 +3406,7 @@ zero-data derivation had come out infeasible.
 | **Gate-3a continuation date** (the **forward-epoch adoption** continuation, not the design-span one) | `GATE3A_CONTINUATION_DATE_NOT_FROZEN_RESIDUAL_AFTER_Q11_SECTION0_RULING` — **carried by Q10-B, ruled at §8.2.0** (its packet is §8.2.4), discharging
 §8.1.9's "put it with Q10" — narrowed by the forbidden-anchor list, though no
 latest bound is set. Already constrained by §8.1.0 (the date may not be informed by any strategy-run quantity); unconstrained as to a *positive* selection rule | survives |
-| **NR-K** `P` caller-supplied | **NEXT** · `NR_K_PENDING_HUMAN_CHATGPT_RULING` · `MUST_RESOLVE_BEFORE_ANY_EFFECTIVE_N_VERDICT` — decision packet at §8.3, four questions separated (what `P` is · when frozen · droppable for convenience? · which removals are legitimate). **Not derivable**: the spec's "contributing" and §4's "same twenty" describe the same symbol differently and `effective_n.py` enforces neither. Recommendation offered, **not applied** | survives |
+| **NR-K** `P` and the pair universe | **NEXT** · `NR_K_PENDING_HUMAN_CHATGPT_RULING` · `MUST_RESOLVE_BEFORE_ANY_EFFECTIVE_N_VERDICT` — packet complete at §8.3. **Not derivable**: one committed definition ("contributing") and it is undefined; the universe rule ("fixed, no selection") and the implementation (`len(records)`, no lower bound) point opposite ways; **no committed freeze point** exists. Coverage is **fail-closed on a short roster**, so a uncertifiable pair **halts** rather than shrinking `P` — but that ruling governs coverage, not `rho_x`. Recommendation offered, **not applied**; no `P` value fixed | survives |
 | **NR-L** `mean_abs_pairwise_corr` has no production rule or freeze point | `NR_L_REQUIRES_HUMAN_CHATGPT_RULING` — its earlier role here is **mooted** by Ruling B (the correlation may no longer inform `D`); survives as its own question | survives |
 
 **Q10 and Q11 are the only two that survive an infeasibility verdict**, which is
