@@ -4,8 +4,15 @@
 doc-only, and it fixes a research contract governing protected paths.
 
 **Completion state.**
-`M15_GATE3A_CONTINUATION_OUTPUT_SURFACE_CONTRACT_RULED` ·
-`ALL_FIVE_REFERRED_CONTRACT_QUESTIONS_RULED`
+`M15_GATE3A_CONTINUATION_OUTPUT_SURFACE_CORE_RULED_PRODUCTION_DEPENDENCIES_DEFERRED`
+· `ALL_FIVE_REFERRED_CONTRACT_QUESTIONS_RULED` ·
+`PRODUCTION_CONTINUATION_NOT_READY`
+
+The earlier token `M15_GATE3A_CONTINUATION_OUTPUT_SURFACE_CONTRACT_RULED` is
+**superseded**: it was read as "the output surface is settled", and it is not.
+The **core** output-surface contract is settled; the implementation does not
+exist; three production contract dependencies remain open (§10); and
+production-grade continuation is not approved. Nothing in §2 is withdrawn.
 
 **Current status.**
 
@@ -18,12 +25,20 @@ doc-only, and it fixes a research contract governing protected paths.
   not been started.
 - **The five referred contract questions are ruled** (§3.1). **Three further
   contract questions surfaced from the doc-only review of those rulings and are
-  recorded, not closed** (§3.2): the §12.14 reader-freedom scope for the
+  recorded, not closed** (§3.2, §10): the §12.14 reader-freedom scope for the
   continuation writer, the candidate payload's schema admission, and the
   status-semantics question §2.12 foresees. The earlier token
   `NO_OPEN_CONTRACT_QUESTIONS_REMAIN_WITHIN_PR450_SCOPE` is **withdrawn** — it
   was accurate about the five and wrong about the document, and the honest claim
   is the narrower one.
+- **This decision is closed here, deliberately, without solving them** (§10).
+  The programme's objective is to find out whether M15 carries a cost-inclusive,
+  out-of-sample edge — not to complete evidence infrastructure first. Continuing
+  to design the production continuation surface inside this PR is disproportionate
+  to that objective, so the remaining production dependencies are **deferred with
+  their authority recorded**, and the separate **Minimum Research Gate** governs
+  read-only research in the meantime. A deferral is not a solution and is not
+  recorded as one.
 - **Out of scope and still open, each on its own track:** the implementation Work
   PR · FR-19 · the P/V byte reader · calendar artifact approval · the fifth
   independent source-audit · gate-3a execution authorisation · Minimum Research
@@ -1561,3 +1576,34 @@ questions, and saying so was wrong.
 
 One proposed remedy was corrected on measurement: the reparse-point detector must
 be `os.lstat`, since `os.stat` follows the junction and reports `False`.
+
+---
+
+## 10. Deferred production dependencies — closed here, not solved
+
+This decision **stops** at the core contract. Each item below is deferred with
+its authority, and **none is claimed to be resolved**. None may be resolved by a
+Work PR.
+
+| # | Dependency | Why deferred | Where it returns |
+| --- | --- | --- | --- |
+| **A** | **Reader-freedom scope.** §12.14's pin forbids, by reference and with no per-module exemption, every directory-enumeration primitive and `open` — so §2.4's closed-set enumeration, §2.3's `O_CREAT \| O_EXCL` creation and limb 12 of `CANDIDATE_VERIFICATION` cannot be implemented inside the package (measured, §3.2) | Resolving it means either moving the mechanism outside the package or amending a frozen contract; both are larger than this decision | The production continuation contract, or the P/V reader design PR |
+| **B** | **Candidate payload schema admission.** No committed schema declares `provenance` or `candidate_lifecycle_state`; both are refused today as `gate3a_undeclared_key` | Which schema authority carries them is undecided, and §6 reserves the change | A Contract Gate-decision before production continuation implementation |
+| **C** | **Status-semantics gate.** Post-population status semantics for the eligible artifacts are not uniquely derivable from committed authority; all three carry `STATUS_AUTHORITY_REQUIRES_CONTRACT_DECISION` | A Work PR inventing a value is the failure §2.12 forbids by name | Its own Contract Gate-decision |
+| **D** | **FR-19** | Out of scope by instruction throughout | A separate test-safety Work PR |
+| **E** | **P/V byte reader** | Introduces the repository's first new read capability since the gate-P1 inspector; needs its own audit | A separate later gate |
+| **F** | **Calendar artifact approval** | `PRE_CONTINUATION_CALENDAR_ARTIFACT_APPROVAL_REQUIRED` is untouched by this decision and **still required for formal gate continuation** | Human + ChatGPT, real-data-independent |
+| **G** | **Full independent source audit** | The official gate status remains `M15_AGGREGATION_DATASET_MACHINERY_SOURCE_AUDIT_BLOCKED_PENDING_TARGETED_FIXES` | On return to the production-grade path |
+
+**What deferral does not mean.** It does not authorise the continuation, does not
+grant source-audit acceptance, does not permit a Work PR to fill any gap above,
+and does not weaken §2. The core rulings of §2 stand in full and bind any later
+implementation.
+
+**Relationship to the Minimum Research Gate.** These are production-evidence
+dependencies. They govern whether the continuation may produce *authoritative
+evidence*. They are **not** preconditions for read-only research into whether M15
+carries an edge at all — that question is governed by the separate Minimum
+Research Gate, and the two are deliberately not the same gate.
+
+---
