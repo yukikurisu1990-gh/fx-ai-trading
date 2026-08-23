@@ -5,7 +5,7 @@ doc-only, and it fixes a research contract governing protected paths.
 
 **Completion state.**
 `M15_GATE3A_CONTINUATION_OUTPUT_SURFACE_CONTRACT_RULED` ·
-`NO_OPEN_CONTRACT_QUESTIONS_REMAIN_WITHIN_PR450_SCOPE`
+`ALL_FIVE_REFERRED_CONTRACT_QUESTIONS_RULED`
 
 **Current status.**
 
@@ -16,11 +16,20 @@ doc-only, and it fixes a research contract governing protected paths.
 - **Gate-3a continuation NOT authorised.**
 - **Source-audit acceptance NOT granted.** The fifth independent source-audit has
   not been started.
-- **No contract question remains open within this PR's scope.** The five that
-  were open are ruled in §3.1. Out of scope and still open, each on its own
-  track: the implementation Work PR · FR-19 · the P/V byte reader · calendar
-  artifact approval · the fifth independent source-audit · gate-3a execution
-  authorisation · Minimum Research Gate design (§8.1).
+- **The five referred contract questions are ruled** (§3.1). **Three further
+  contract questions surfaced from the doc-only review of those rulings and are
+  recorded, not closed** (§3.2): the §12.14 reader-freedom scope for the
+  continuation writer, the candidate payload's schema admission, and the
+  status-semantics question §2.12 foresees. The earlier token
+  `NO_OPEN_CONTRACT_QUESTIONS_REMAIN_WITHIN_PR450_SCOPE` is **withdrawn** — it
+  was accurate about the five and wrong about the document, and the honest claim
+  is the narrower one.
+- **Out of scope and still open, each on its own track:** the implementation Work
+  PR · FR-19 · the P/V byte reader · calendar artifact approval · the fifth
+  independent source-audit · gate-3a execution authorisation · Minimum Research
+  Gate — neither designed nor proposed, a planning note only (§8.1) · whether the
+  §5.3 alignment removes `gap_report` (a schema narrowing) · the derived M15
+  `.jsonl` output surface (§2.2, §6).
 
 **Base.** master `70bf38b` — the merged targeted-fix Work PR (PR #449).
 **Not self-mergeable** (policy §14.7: a Gate-decision PR is never Green).
@@ -45,7 +54,7 @@ above is inside this prohibition list or inside a prohibition sentence — §2.1
 
 `M15_GATE3A_CONTINUATION_OUTPUT_SURFACE_PENDING_HUMAN_CHATGPT_RULING` and
 `CONTRACT_CHANGE_REQUIRES_HUMAN_CHATGPT_RULING` are **superseded**. They are
-recorded in §8 as history and are **not** the current status.
+recorded in §9 as history and are **not** the current status.
 
 ---
 
@@ -127,8 +136,10 @@ and a `.jsonl` beneath this root refuses the whole root under §2.4's closed-set
 rule.
 
 Where such a surface is genuinely needed, authority comes from a **separate
-Contract Gate-decision**, or from a **Minimum Research Gate** if one is later
-defined (§8.1). **A Work PR may not add a derived-data identity for its own
+Contract Gate-decision** — including one that a later "Minimum Research Gate"
+proposal (§8.1) might take the form of. **A Minimum Research Gate is not a
+lighter alternative to a Contract Gate-decision and confers no authority of its
+own.** **A Work PR may not add a derived-data identity for its own
 convenience.**
 
 Normative:
@@ -191,18 +202,40 @@ generate candidate  →  verify candidate  →  human-reviewed promotion
 **`candidate_lifecycle_state` — pinned (PR #444 §10 R-2).** R-2 names
 "verified"/"certified" among the terms requiring pinning; this document uses them
 in a new sense and pins them here. The state is a **closed enumeration** whose
-members are the boundaries of the lifecycle above; §2.6's "lifecycle class" and
-§2.13's "candidate lifecycle state" are this same field. Adding a state is a §6
+members are the boundaries of the lifecycle above; §2.13's "candidate lifecycle state" is this field. §2.6's registry column
+**"lifecycle class" is not**: the registry is a static per-*identity* table and
+may not carry a per-*instance* value that changes over an artifact's life — a
+permission table that mutates at runtime is the escalation surface §2.5 and §2.6
+exist to close. The registry column declares **which lifecycle governs the
+identity**; the per-instance state lives only in the candidate's own provenance
+block. Adding a state is a §6
 change.
 
 | State | Meaning | Set by |
 | --- | --- | --- |
 | `CANDIDATE_UNVERIFIED` | written under the candidate root by the routing authority; producer-side validation only | the continuation writer, at write |
-| `CANDIDATE_VERIFIED__NOT_COMMITTED_EVIDENCE` | an independent verifier re-measured the bytes and every limb agreed | the verifier |
-| `CANDIDATE_REFUTED` | the verifier disagreed, or a limb failed — **terminal** | the verifier |
+| `CANDIDATE_VERIFIED__NOT_COMMITTED_EVIDENCE` | every limb of `CANDIDATE_VERIFICATION` agreed. **No byte of any artifact was re-read**; this is not §12.12's re-measurement | the candidate verifier |
+| `CANDIDATE_REFUTED` | a limb of `CANDIDATE_VERIFICATION` failed — **terminal** | the candidate verifier |
 | `PROMOTED` | the promotion diff of item 4 has merged | the human-reviewed diff — **never a code path** |
 
 An unrecognised spelling fails closed rather than defaulting.
+
+**The candidate verifier is not V.** §12.14's *P* and *V* are the byte-level
+producer and verifier of §12.12 and live outside `scripts/m15_gate3a/**`. The
+*candidate verifier* here is a different component doing a different job — it is
+`CANDIDATE_VERIFICATION` and nothing more. In source it is named **candidate
+verifier** and may not be called *V*, *the verifier* or *the independent
+verifier*.
+
+**Where the verdict lives.** A written candidate is immutable: no flag clears the
+hard stop, and no code path in the package renames, replaces or rewrites one. So
+the on-disk `candidate_lifecycle_state` of every candidate is and stays
+`CANDIDATE_UNVERIFIED` for its whole life beneath the candidate root.
+`CANDIDATE_VERIFIED__NOT_COMMITTED_EVIDENCE` and `CANDIDATE_REFUTED` are states
+**of the verification act**, recorded in the promotion diff's review record;
+`PROMOTED` is the only state a *file* ever carries other than
+`CANDIDATE_UNVERIFIED`, and only after the promotion diff merges. A **persisted**
+verifier record would be a new artifact identity, which §2.1 and §6 reserve.
 
 **`CANDIDATE_VERIFICATION` — defined (RULED).** Schema validation, the scrub
 scan and a successful write are **producer-side acts and are not verification**.
@@ -233,9 +266,37 @@ artifact **may not be promoted to committed evidence on that basis alone**;
 promotion additionally requires §2.3 item 4, including byte-level verification
 where a later gate requires it.
 
-This definition is discharged **entirely inside the reader-free package** — it
-reads no bytes of any artifact it did not itself write — so, unlike a byte-level
-proof, the Work PR at §7 step 2 **can** implement it.
+Schema validation as the *producer* performed it is not verification: the
+verifier never accepts the producer's verdict, it re-decides each limb against
+the artifact as it stands. Limbs 10 and 11 are properties of the **write act**
+rather than of the payload, and are discharged by re-deciding the refusal against
+the current state of the root — the canonical path is occupied by exactly this
+candidate and by nothing else, and no committed or protected path was touched.
+
+**Eleven limbs are discharged inside the reader-free package; the twelfth is
+not, and this decision does not change §12.14.** Limbs 1–11 are decided against
+the in-memory payload, the typed registry, the schema table and path metadata.
+The twelfth — the closed-set limb — requires enumerating every entry beneath the
+candidate root, and **measured at `70bf38b`**, `listdir`, `scandir`, `walk`,
+`iterdir`, `glob`, `rglob` and `iglob` are all members of `FORBIDDEN_CALLS` in
+`tests/m15_gate3a/test_wp5_reader_freedom.py`, which applies §12.14 over
+**references** to **every** module under `scripts/m15_gate3a/**` recursively with
+**no per-module exemption**. `PERMITTED_FS_CALLS` cannot admit them: it is a
+complement over names *not* in `FORBIDDEN_CALLS` (measured: the two sets do not
+intersect). The same pin blocks the `O_CREAT | O_EXCL` creation §2.3 and §5.4
+item 20 mandate, since every route to that flag is an `open`.
+
+**`READER_FREEDOM_SCOPE_FOR_THE_CONTINUATION_WRITER_REQUIRES_A_SEPARATE_CONTRACT_GATE_DECISION`.**
+Until it exists the twelfth limb is fail-closed, so no candidate reaches
+`CANDIDATE_VERIFIED__NOT_COMMITTED_EVIDENCE` and no promotion is possible. That
+is correct behaviour, not a defect: it stops, and it stops loudly. Three
+resolutions are admissible and **the Work PR may take none of them on its own
+authority**: site the closed-set verifier and the creation primitive **outside**
+the package, which changes §5.2's placement clause; amend §12.14 to admit a
+directory enumeration and an `O_EXCL` create scoped to the candidate root, which
+§6 reserves; or discharge the limb in the **human-reviewed promotion diff**,
+where a reviewer enumerates the root. **Widening `FORBIDDEN_CALLS`, adding an
+exemption to it, or narrowing `MODULES` is forbidden under all three.**
 
 Normative:
 
@@ -253,7 +314,22 @@ Normative:
    later gate requires it · a reviewed diff · an **explicit promotion decision**.
    **Automatic promotion is forbidden**; promotion on CI-green alone is
    forbidden; and an automatic commit or promotion immediately following writer
-   execution is forbidden.
+   execution is forbidden. **A Work PR diff may not carry the content of any
+   candidate**, whole or in part, by any route — copy, paste, transcription,
+   patch, or generation from a candidate's values. Items 24 and 30 pin the
+   absence of a *code* path; this clause binds the *diff*, which no test can. A
+   schema-alignment diff (§5.3) is distinguished from a promotion by exactly this
+   property: every byte derives from committed authority and none from a
+   candidate. A diff whose content is traceable to a candidate **is** a
+   promotion, whatever it is labelled.
+
+   **Promotion changes the bytes, by design and visibly.** The promoted file
+   carries `PROMOTED`; the candidate carries `CANDIDATE_UNVERIFIED` and no code
+   path may change it. The promotion diff therefore edits **that one field and no
+   other**, and the promoted file's digest is deliberately **not** the digest
+   §2.13 recorded for the candidate. The diff records both and states that the
+   single differing field is the lifecycle state; a promoted file differing in any
+   other byte is refused at review.
 5. At promotion, schema, identity, status, provenance **and the content scan**
    are re-verified.
 6. **A candidate is not gate evidence, in any combination.** Until `PROMOTED` it
@@ -264,7 +340,12 @@ Normative:
    returns the question "with measurements in hand". A measurement read out of an
    unpromoted candidate **may** be quoted as input to the new Gate-decision §1
    requires, labelled `MEASURED_FROM_UNPROMOTED_CANDIDATE`, and may not satisfy
-   any gate criterion. Quoting a measurement is not promoting an artifact.
+   any gate criterion. Quoting a measurement is not promoting an artifact. The
+   quotation carries the candidate's SHA-256, byte size and producing run
+   identity, so a later reader can tell which run the number came from; a
+   measurement may **inform** the decision and may never **be** it, and a
+   threshold chosen to accommodate a quoted value is the "threshold invented at
+   the point of failure" PR #444 §1 forbids.
 7. **No code path may overwrite a committed artifact, in place or otherwise.**
    This binds executing code, not a reviewed diff. D-7 rules that population
    happens through a human-reviewed PR diff; `design_m15_inventory.json` carries
@@ -296,27 +377,88 @@ Normative:
 **Re-run after a designed halt — RULED.**
 **`DESIGNED_HALT_OUTPUT_IS_TERMINAL_FOR_THE_CURRENT_RUN_IDENTITY`.**
 
-PR #444 §1 records that the first continuation may well halt by design. Once that
-halt has occurred, its output is **terminal for that run identity**. For the same
-run identity, epoch identity and experiment identity, and **after the halted
-result has been seen**, it is forbidden to regenerate, retry with modified
-contents, overwrite, replace, or silently re-run.
+**What a halt is.** Any termination of a continuation execution that does not end
+with every authorised artifact written and `CANDIDATE_VERIFICATION` satisfied for
+each: a fail-closed refusal, a partial run, an unhandled error, an abort, and —
+the case §2.12 makes most likely — a run that writes **nothing at all**. There is
+no category of "an error, not a halt". Classifying an outcome as something other
+than a halt is a §6 change.
 
-A further run requires **all** of: a new explicit execution authorisation · a
-**new run identity** · the prior halted evidence **preserved** · no overwrite of
-the prior halted candidate · a documented reason.
+**Terminality.** Once a halt has occurred its outcome is terminal: it may not be
+regenerated, retried with modified contents, overwritten, replaced, re-run
+silently, or discarded. Terminality attaches to the **halted question** — the
+artifact identity under the frozen design epoch — not only to the run identity.
+**A changed run identity does not make a re-run permissible; it is the record of
+a re-run separately authorised, never the thing that authorises it** — and a code
+SHA that changed for an unrelated commit, including the commit recording this
+halt, is not a new run identity for this rule. Terminality **does not depend on
+whether anyone looked**: running again before reading the output is not a way to
+stay outside this rule.
 
-**The purpose is research integrity, not tidiness.** Regenerating after seeing a
-result is the researcher-degrees-of-freedom failure this rule exists to prevent:
-a halt that can be re-rolled is not a halt, and evidence selected after the fact
-is not evidence. **Deletion is therefore also the wrong resolution** — a halted
-run's candidates *are* the measurements PR #444 §1 says the halt exists to
-produce.
+**"Epoch identity" and "experiment identity" are not axes a researcher sets.**
+Epoch identity is PR #444's frozen design epoch. **"Experiment identity" has no
+separate definition in this programme and this decision creates none** — for
+gate-3a there is one experiment, the design-span continuation playbook §5
+enumerates, and no relabelling by a runner, a Work PR or an implementer creates a
+second. A claim that a further run is "a different experiment" is a §6 change.
 
-No Work PR may add an exception. A change to halt semantics requires its own
-Contract Gate-decision. Until a new authorisation and run identity exist, a second
-run into an occupied root fails closed — which is correct: it stops, and it stops
-loudly.
+**A further run** requires **all** of: an execution authorisation completing
+**playbook §6** — whose "The run is **exactly once**; no rerun-into-search" binds
+here unchanged — authorising **exactly one** further execution and **naming its
+run identity in advance**; a **new run identity** byte-equal to the one that
+authorisation names, never one the runner mints for itself; a **committed halt
+record** for the prior run, already merged; the prior halted evidence **preserved
+and byte-unchanged**, with no overwrite, deletion, rotation, archival or clearing
+of it or of the root; and a **recorded basis that the prior result was invalid
+for a reason independent of its value**. That last is the standard this
+repository already applied to the one precedent of its kind — the ML Step 4
+corrected second run, approved as "**exactly one** corrected second first-run
+attempt" on a "proven pip-unit implementation bug", with "no tuning and no
+feedback loop", concluding it "a re-measurement of an invalid measurement, not a
+second optimisation attempt". **"A documented reason" is not that standard**, and
+a result that is merely unwelcome does not meet it.
+
+**The halt record.** A halt is recorded in the repository **before** any further
+run is authorised, by a human-reviewed diff in an Execution-evidence PR, on
+**playbook §7's** single-run execution report template — including its
+`no-rerun declaration`, its `no-tuning-after-result declaration` and its
+"failures/deviations (honest, verbatim)" field. **A halt that produced no
+candidate is recorded in exactly the same way** — producing no bytes is not
+producing no evidence, and §2.12's foreseeable three-to-none halt is the case
+this clause exists for. The halt record, not the untracked candidate root, is the
+durable and reviewable object this rule is enforced against.
+
+**What the writer enforces, and what it does not.** Reader-freedom (§12.14) bars
+the package from reading an artifact it did not itself write, so the writer
+**cannot** compare its run identity against an occupying candidate's, and **must
+not be built to try**. The writer's whole contribution is the **run-identity-blind**
+collision refusal: a second write at an occupied canonical path fails closed on
+**every** run identity, with no exception for a new one, and no argument, flag,
+environment variable or configuration may clear it. Everything above concerning
+authorisation, run identity, the halt record and the basis for a further run is
+**governance**, enforced by human review of committed records. Implementing
+terminality as a run-identity comparison inside the writer is **forbidden**.
+
+**Where a further run's output goes.** The prior halted candidate keeps the
+canonical path, so a further run requires that candidate to have been promoted or
+otherwise dispositioned by a human-reviewed §6 diff **before** it executes; the
+runner never resolves the conflict for itself. Absent that disposition the further
+run fails closed at the collision — correctly, and loudly.
+
+**Resolving a halt is a contract decision, not a re-run.** PR #444 §1 rules that
+resolution requires a new contract Gate-decision informed by an approved
+read-only measurement. **A halt answered by re-running rather than by deciding is
+the failure this rule names, however complete its paperwork.**
+
+**The purpose is research integrity, not tidiness.** A halt that can be re-rolled
+is not a halt, and evidence selected after the fact is not evidence. **Deletion is
+therefore also the wrong resolution** — and so are a fresh clone, a second working
+tree, a `git clean`, and a CI runner starting from an empty root. The candidate
+root is `.gitignore`d and is therefore **not** a preservation mechanism; that is
+precisely why preservation is discharged by the committed halt record.
+
+No Work PR may add an exception. A change to halt semantics, to what counts as a
+halt, or to how a run identity is issued requires its own Contract Gate-decision.
 
 **The candidate root is never committed by accident.**
 `artifacts/m15_gate3a_continuation/` is added to `.gitignore` by the
@@ -366,9 +508,17 @@ in §4 — junctions, `O_EXCL`, `os.replace`, `os.link`, sixteen `write_report`
 functions, audit-hook coverage — are evidence for *why* an acceptance property is
 required, **not a denylist to be maintained**. This document does not enumerate
 the operating system's write primitives and will not grow such a list; closure is
-never claimed from a route denylist. The abstract contract above stands, and the
-later Work PR proves it as an acceptance property: **no bypass route exists**, and
-**nothing but the approved routing authority can write into the candidate root**.
+never claimed from a route denylist. **What the Work PR proves is the closed-set property, not a universal
+negative.** "No bypass route exists" is not provable and is not the acceptance
+criterion; the criterion is that **every entry beneath the candidate root either
+carries a provenance record the routing authority emitted, or the whole root
+refuses** — which holds against routes nobody enumerated, because it never asks
+how the bytes arrived. Where §5.4 names routes or audit events they are a
+**non-exhaustive corpus exercising that property, never the property itself**,
+and each such sweep is extended by the implementer with at least one route this
+document does not name. The provenance record is carried **in the artifact's own
+bytes**: a side-car manifest beneath the root is appendable by the same alternate
+writer and would make the closed set self-certifying.
 
 **Pinning.** The Work PR pins this with a **runtime `sys.addaudithook` trace**, in
 the manner PR #446 established (`tests/conftest.py`) and `test_wp5_reader_freedom`
@@ -542,15 +692,39 @@ status, and no committed source names the value it takes once the continuation
 populates it (verified: the token appears only in the artifact itself, in PR #444
 §7's citation of it, and in test fixtures).
 
+**Re-using the pre-population value is not a status authority.**
+`SCHEMA_FIXED__POPULATED_AT_IMPLEMENTATION` is committed, so writing it onto a
+*populated* candidate is not an invented value and would pass the invention test
+below — which is exactly why it is refused here by name. A status asserting the
+artifact is unpopulated may not be carried onto a populated one. The derivability
+test is whether committed authority names the value the artifact takes **in the
+state the candidate is in**, not whether it names *some* value for that artifact.
+`design_m15_inventory` therefore carries `STATUS_AUTHORITY_REQUIRES_CONTRACT_DECISION`
+for its populated state, and **all three** eligible identities are on that
+disposition today.
+
 **Admitting the key — RULED.**
 **`STATUS_KEY_ADMISSION_IS_EXACT_AND_AUTHORITY_BOUND`.**
 
-Only the **canonical exact key** the typed registry or the committed schema
-specifies is admitted. Forbidden: case-insensitive admission · `Status` ·
+Only the **canonical exact key** the committed schema admits for that artifact
+**and** the typed registry names for that identity is admitted — both, never
+either. The two are not interchangeable: the schema is authority over the key's
+**representation**, the registry over the **status authority**, and a
+disagreement fails closed under §2.3's mutual-consistency limb rather than
+resolving in favour of either. Forbidden: case-insensitive admission · `Status` ·
 `STATUS` · a Unicode lookalike · a zero-width variant · an unknown alias · a
 dynamically inferred status key · any substring or heuristic match. This is the
 same boundary §2.7 draws for the artifact declaration key, and for the same
 reason: folding is not a permission-discovery mechanism.
+
+**This rules the spelling, not the schema.** `STATUS_KEY_ADMISSION_IS_EXACT_AND_AUTHORITY_BOUND`
+fixes *which* key is admitted wherever a `status` key is already admissible. It
+does **not** admit `status` into any schema that presently forbids it, and this
+decision does not authorise that change: §6 reserves it. `no_overlap_proof` and
+`cost_table_plan_or_metadata` therefore still forbid the key and fail closed on
+**both** limbs — without the key they have no status authority, and with it they
+fail their own schema. A registry row may not supply by declaration what the
+committed schema withholds.
 
 **`KEY_EXISTS != STATUS_AUTHORITY_EXISTS`.** Admitting the key does not supply the
 authority. Where an artifact's committed status **semantics** cannot be uniquely
@@ -568,6 +742,16 @@ question is settled. That halt is **by design**: the response is a Contract
 Gate-decision fixing the status semantics from committed authority, never a
 relaxation, and never an implementer supplying a value to turn a suite green.
 
+**This halt differs from PR #444 §1's in one respect, stated so it is not
+discovered at the point of failure.** §1's halt returns the question "with
+measurements in hand"; this one produces **nothing on disk** — with all three
+identities refused no candidate is written, and §2.2 authorises no diagnostic
+file or additional evidence artifact to carry the measurement instead, so §2.3
+item 6's `MEASURED_FROM_UNPROMOTED_CANDIDATE` route is unavailable. The halt is
+still recorded, on playbook §7's template (§2.3). The correct response is the
+status Gate-decision named above, taken **before** the continuation runs, and
+never a surface added at the point of failure to capture what the halt withheld.
+
 The later Work PR implements the status operand **from existing contract**. Where
 an artifact's status semantics are **not** uniquely derivable from committed
 authority, that artifact is
@@ -584,7 +768,13 @@ artifact's identity **and content digest** · `candidate_lifecycle_state` from
 §2.3's enumeration · **run identity** (run ID, code SHA, PR head/base) ·
 **derivation binding** (the named aggregation script at a named git SHA, the
 config hash, the named source identity — PR #444 §11 limb DB) · **the candidate's
-own measured identity** (SHA-256 and byte size, co-measured from one pass) ·
+own measured identity** (SHA-256 and byte size, co-measured from one pass
+over a canonical rendering of the payload **with the provenance block's own digest
+and byte-size fields excluded** — no field can cover itself,
+exactly as `calendar_authority.calendar_content_digest` excludes `content_digest`
+for this reason). This measurement is taken over the bytes the writer holds in
+memory before the write: **it opens no file, it is not a byte read, it does not
+discharge §12.12 limb 4, and it mints no byte-level token** ·
 generation timestamp through the single formatter of §12.23. The recorded path is
 the **resolved** path, not the spelling handed to the writer.
 
@@ -597,6 +787,37 @@ required; a single "provenance absent" check does not satisfy this section.
 "Committed" means each value resolves to committed authority. It does not mean
 the candidate's provenance is itself committed; a candidate is not, until
 promotion.
+
+**What limb 8 can and cannot establish.** Every value in the block is supplied by
+the caller: a reader-free, subprocess-free package cannot obtain a git SHA, a PR
+head or base, a run ID or a config hash, and may not digest a committed artifact
+it may not open. Limb 8 therefore checks **presence, type, shape,
+closed-vocabulary membership and internal consistency**, and — for a
+coverage-bearing artifact — that the declared calendar `content_digest` is the
+digest of the calendar content the caller handed in. It does **not** establish
+that the named commit carries that content, that the run identity is new, or that
+the code SHA is the code that ran. That residual is carried by
+`PRE_CONTINUATION_CALENDAR_ARTIFACT_APPROVAL_REQUIRED`, by the promotion diff and
+by the later P/V reader. Read "unapproved provenance fails closed" accordingly:
+*unapproved* means **not matching the approval the registry row names**, never
+*independently verified against it*.
+
+**Where the provenance record lives, and its present admissibility.** It is
+carried **inside the artifact's own payload** — not a sidecar file, companion
+`.json`, manifest, index or log, any of which §2.4's closed-set rule refuses.
+**Measured at `70bf38b`: no committed schema declares a `provenance` key or a
+`candidate_lifecycle_state` key**, and `artifacts.py` refuses every undeclared
+key as `gate3a_undeclared_key` — so both are refused today, exactly as `status`
+is. Admitting them is a schema change reserved by §6, and this decision does not
+grant it:
+**`CANDIDATE_PAYLOAD_SCHEMA_ADMISSION_REQUIRES_CONTRACT_DECISION`.** Until that
+authority exists the artifact fails closed for write and for promotion. **No Work
+PR admits the keys, invents a sidecar, or drops a provenance limb to make a write
+succeed.**
+
+Any record shape this contract introduces conforms to §12.25 S1 as PR #448 §5.5.1
+ruled it — nested, ≤5 immediate numeric fields; the bound is never raised to
+accommodate a shape.
 
 A correct path, filename and schema do **not** by themselves establish authority.
 Missing, malformed or unapproved provenance **fails closed**.
@@ -638,7 +859,8 @@ implementation requirement it creates. The five tokens that carried them —
 Two tokens that look similar are **not** superseded and remain standing rules:
 `NEW_ARTIFACT_IDENTITY_REQUIRES_SEPARATE_CONTRACT_GATE_DECISION` (§2.1) and the
 per-artifact `STATUS_AUTHORITY_REQUIRES_CONTRACT_DECISION` (§2.12), which is the
-fail-closed disposition Ruling 4 explicitly retains.
+fail-closed disposition the fourth ruling of §3.1
+(`STATUS_KEY_ADMISSION_IS_EXACT_AND_AUTHORITY_BOUND`) explicitly retains.
 
 ### 3.1 The five rulings
 
@@ -648,7 +870,26 @@ fail-closed disposition Ruling 4 explicitly retains.
 | What PR class performs promotion? | `CANDIDATE_TO_COMMITTED_EVIDENCE_PROMOTION_REQUIRES_EXECUTION_EVIDENCE_PR` | Never Green, never an ordinary Work PR; human + ChatGPT, candidate verification, byte-level verification where a later gate requires it, reviewed diff, explicit decision. No automatic promotion, none on CI-green, none following writer execution | Governance pins: an ordinary Work PR mechanism **cannot** promote; the candidate path is **not** committed-evidence authority |
 | May a run regenerate after a designed halt? | `DESIGNED_HALT_OUTPUT_IS_TERMINAL_FOR_THE_CURRENT_RUN_IDENTITY` | For the same run / epoch / experiment identity, after seeing the result: no regenerate, retry-with-changes, overwrite, replace or silent re-run. A further run needs new authorisation, a **new run identity**, preserved prior evidence, no overwrite, a documented reason | Tests: same-run-identity regeneration refused · prior halted output preserved · new run identity required |
 | Which `status` keys are admitted? | `STATUS_KEY_ADMISSION_IS_EXACT_AND_AUTHORITY_BOUND`, and `KEY_EXISTS != STATUS_AUTHORITY_EXISTS` | Canonical exact key only; case, alias, lookalike, zero-width, inferred and heuristic spellings refused. Without committed status semantics the artifact fails closed for write **and** promotion; no invented values | Tests: exact canonical key only · alias/case/confusable refused · no status authority → fail closed |
-| Is a derived-data surface authorised? | `UNENUMERATED_DERIVED_DATA_OUTPUT_IS_NOT_CONTINUATION_AUTHORISED` | Eligibility stays limited to playbook §5's enumerated outputs. No dataset, intermediate, feature dump, diagnostic, transformed market-data or additional evidence artifact is implicitly added | Tests: an unenumerated derived identity is refused · an arbitrary intermediate output cannot gain continuation eligibility |
+| Is a derived-data surface authorised? | `UNENUMERATED_DERIVED_DATA_OUTPUT_IS_NOT_CONTINUATION_AUTHORISED` | Eligibility stays limited to playbook §5's enumerated outputs. No dataset, intermediate, feature dump, **temporary research artifact**, diagnostic, transformed market-data or additional evidence artifact is implicitly added, **and no continuation execution writes a derived-data file anywhere, inside the candidate root or outside it** | Tests: an unenumerated derived identity is refused · an arbitrary intermediate output cannot gain continuation eligibility |
+
+---
+
+### 3.2 Three contract questions the review of these rulings surfaced
+
+Recorded, not closed. None was among the five referred; each arose from checking
+whether the five could be implemented as ruled. This is why the completion state
+claims `ALL_FIVE_REFERRED_CONTRACT_QUESTIONS_RULED` and not the wider token an
+earlier draft carried.
+
+| Token | What surfaced it |
+| --- | --- |
+| `READER_FREEDOM_SCOPE_FOR_THE_CONTINUATION_WRITER_REQUIRES_A_SEPARATE_CONTRACT_GATE_DECISION` | §12.14's pin forbids, by reference and with no per-module exemption, every directory-enumeration primitive **and** `open` — so §2.4's closed-set enumeration, §2.3's `O_CREAT \| O_EXCL` creation and limb 12 of `CANDIDATE_VERIFICATION` cannot be implemented inside the package. Measured at `70bf38b`; `PERMITTED_FS_CALLS` cannot admit them, being a complement over names not in `FORBIDDEN_CALLS`. |
+| `CANDIDATE_PAYLOAD_SCHEMA_ADMISSION_REQUIRES_CONTRACT_DECISION` | No committed schema declares `provenance` or `candidate_lifecycle_state`, so both are refused today as `gate3a_undeclared_key` — exactly as `status` is. §2.13 and §5.4 item 23 require them. |
+| The status-semantics Gate-decision §2.12 foresees | Carried by the standing per-artifact `STATUS_AUTHORITY_REQUIRES_CONTRACT_DECISION`; all three eligible identities are on that disposition. |
+
+Each fails closed until decided, and **no Work PR may resolve any of them** —
+not by widening `FORBIDDEN_CALLS`, not by admitting a schema key, not by
+supplying a status value.
 
 ---
 
@@ -780,7 +1021,9 @@ One placement is not free: `test_wp5_reader_freedom.py` pins the reverse-caller
 set to `scripts/m15_gate3a/` and `tests/m15_gate3a/`, so the routing authority and
 its callers live **inside** the package, and that pin is **narrowed to the one
 named caller**, never widened. A new writing module is added to that file's
-per-module filesystem allowlist with its exact surface.
+per-module filesystem allowlist with its exact surface, and `path_authority.py`'s
+entry gains `lstat`, which §2.2 requires and the current allowlist does not
+carry.
 
 ### 5.3 Derivation manifest divergence
 
@@ -814,8 +1057,19 @@ sweep carries a **non-vacuity floor**. This is PR #444 §10 R-1 (the
 negative-control rule) and PR #444 §13 (anti-patterns forbidden).
 
 An earlier draft of this list was measured against a deliberately degenerate
-implementation and **15 of 17 mutations survived it**, with all six reviewed
-failure modes intact. The list below is the replacement.
+implementation and **15 of 17 mutations survived it**. The draft that replaced it
+was measured the same way after the five rulings landed and **four of the five
+rulings still fell** to an implementation green on every requirement. The list
+below is the second replacement, and the scope repairs — repository-wide promotion
+sweep, whole-filesystem audit trace, signature pin, literal status pin — are what
+close that gap rather than any new count of items.
+
+**"Failing-before" means failing against the mutant, not against absence.** None
+of the subjects below exists at `70bf38b`, so a collection error is not the
+failing-before state: it is produced identically by a test that pins the wrong
+property. For each requirement the failing-before state is demonstrated against
+the mutant the acceptance bar pairs with it, on an otherwise complete
+implementation, and the report names that mutant beside the test.
 
 **Identity and registry**
 
@@ -873,10 +1127,15 @@ failure modes intact. The list below is the replacement.
 12. **The D-7 trap is discharged**: `artifacts/m15_gate3a` is a member of
     `_PROTECTED_PREFIXES`, and a write at each of the eight committed filenames
     raises.
-13. **The authority's public signature accepts no path, path fragment, directory
-    or filename from the caller** — pinned against the signature, not by passing a
-    bad value. A traversal, protected or absolute value handed to `artifact_id` is
-    refused as an unknown identity, not path-validated.
+13. **The authority's public signature accepts nothing that could carry
+    permission** — pinned against the signature, not by passing a bad value. No
+    path, path fragment, directory or filename; and equally no registry, schema
+    table, eligibility set, status authority, root, run identity, epoch or
+    experiment label, authorisation object, or `**kwargs`. The only caller-supplied
+    values are `artifact_id` and the payload; every other operand is derived by the
+    authority from committed inputs, and any extra argument raises. A traversal,
+    protected or absolute value handed to `artifact_id` is refused as an unknown
+    identity, not path-validated.
 14. **A root spelling Win32 trailing-trim would rewrite is refused with the root
     absent, before any `mkdir`.**
 15. **No alternate writer produces an accepted continuation artifact.** Two limbs,
@@ -896,8 +1155,15 @@ failure modes intact. The list below is the replacement.
     filesystem-mutating audit event naming a path beneath the candidate root
     except from the authority's own frame. Events are enumerated over CPython's
     audit table — `open`, `os.rename`, `os.link`, `os.symlink`, `os.mkdir`,
-    `os.remove`, `os.truncate`, `shutil.copyfile`, `subprocess.Popen` — because
-    `os.replace` and `os.link` emit no `open` event at all.
+    `os.remove`, `os.rmdir`, `os.chmod`, `os.truncate`, `shutil.copyfile`,
+    `subprocess.Popen` — because `os.replace` and `os.link` emit no `open` event at
+    all. **The trace is whole-filesystem, not root-scoped**: it records the
+    complete set of paths any filesystem-mutating event named during the
+    execution, and asserts that set **equal** to the expected candidate paths.
+    Restricting it to the candidate root leaves a write into
+    `artifacts/m15_gate3a/`, into any other `artifacts/` subtree, or a
+    derived-data file written outside the root entirely unobserved. The event list
+    is declared non-exhaustive: the assertion is the path-set equality.
 
 **Payload, status, provenance**
 
@@ -911,12 +1177,22 @@ failure modes intact. The list below is the replacement.
 20. **A collision at the canonical candidate path fails closed, atomically** —
     created with `O_CREAT | O_EXCL`, never `exists()`-then-write (measured: the
     check-then-write shape truncates a file appearing between the two calls). The
-    refusal is reachable from the production path and names the occupying
-    candidate's run identity.
-21. **The current status dispositions are pinned as measured, not invented.**
-    Each eligible identity whose status authority is not derivable from committed
-    authority is refused by name with its own token. Inventing a status semantics
-    to turn this green is forbidden by §2.12 and is itself a contract breach.
+    refusal is reachable from the production path, and names the canonical
+    candidate path and the refusal token **only** — never a field read out of the
+    occupant, which §12.14 forbids the package to read.
+21. **The three current status dispositions are pinned by literal.** All three
+    eligible identities — `design_m15_inventory`, `no_overlap_proof` and
+    `cost_table_plan` — are asserted, **by name and by literal**, to carry
+    `STATUS_AUTHORITY_REQUIRES_CONTRACT_DECISION`, and each is refused for write
+    **and** for promotion, one case and one token per identity. A row whose
+    disposition changes turns CI red. A row's status authority must resolve to a
+    status the **same artifact identity** declares: pointing two or more rows at
+    one artifact's status is the generic-global substitution §2.12 forbids and is
+    refused by name. Positive controls elsewhere that need an accepted write are
+    built on a **fixture registry row**, and a named test asserts the fixture
+    registry is unreachable from any production call path. Inventing a status
+    semantics — or carrying `SCHEMA_FIXED__POPULATED_AT_IMPLEMENTATION` onto a
+    populated candidate — to turn this green is a contract breach.
 22. **Each provenance field of §2.13 is individually required** — one case per
     field removed, each with a distinct token, plus one with provenance absent.
     *Control:* the complete binding is accepted. And **two distinct runs cannot
@@ -928,12 +1204,23 @@ failure modes intact. The list below is the replacement.
     Every file beneath the root carries `candidate_lifecycle_state`; every
     consumer of gate evidence in the package refuses a payload carrying a
     non-promoted state. *Control:* the promoted state is accepted.
-24. **No code path can promote.** No callable in `scripts/m15_gate3a/**` copies,
+24. **No code path can promote, repository-wide.** **No callable anywhere in the
+    repository** — inside `scripts/m15_gate3a/**` or outside it, including
+    `tools/`, `src/`, repository-root scripts, console-script entry points,
+    `Makefile`/`justfile` targets and `.github/workflows/**` steps — copies,
     moves, renames, links or writes from the candidate root into
-    `artifacts/m15_gate3a/`; the package exposes no `promote`/`install`/`publish`
-    callable; and no `shutil.copy*`, `shutil.move`, `os.replace`, `os.rename`,
-    `Path.rename` or `Path.replace` appears in it. *Control:* the same payload to
-    a permitted candidate path succeeds.
+    `artifacts/m15_gate3a/`; the sweep carries a non-vacuity floor on files and
+    workflow steps read. The package exposes no
+    `promote`/`install`/`publish`/`clear`/`clean`/`reset`/`archive`/`rotate`/`prune`
+    callable over either tree, and none of `shutil.copy*`, `shutil.move`,
+    `shutil.rmtree`, `os.replace`, `os.rename`, `os.remove`, `os.unlink`,
+    `os.rmdir`, `os.truncate`, `Path.rename`, `Path.replace` or `Path.unlink`
+    appears in it. **Removing a candidate is as forbidden as promoting one** — a
+    halted candidate that can be deleted is a halt that can be re-rolled.
+    *Control:* the same payload to a permitted candidate path succeeds. **The
+    process limb carries no test and is not claimed to:** "promotion is an
+    Execution-evidence PR" is discharged by governance and human review, never by
+    a green suite, and no report may cite a green §5.4 as evidence of it.
 25. **`candidate_lifecycle_state` can never reach `PROMOTED` in-process** —
     refused through every route `sealing` already covers, and an unrecognised
     spelling fails closed. **`CANDIDATE_REFUTED` is terminal**: no later call
@@ -958,30 +1245,67 @@ failure modes intact. The list below is the replacement.
 
 **From the five rulings of §3.1**
 
-29. **A candidate that satisfies `CANDIDATE_VERIFICATION` mints no byte-level
-    token.** All twelve limbs pass, and the result still carries the pending
-    byte-level status with `files_opened == 0`; no route in the reader-free
-    package advances it to a byte-level claim. *Control:* a candidate failing any
-    one limb is refused, one case per limb with its own token.
-30. **An ordinary Work PR mechanism cannot promote.** No callable in
-    `scripts/m15_gate3a/**` moves a candidate into `artifacts/m15_gate3a/`
-    (item 24), and the candidate path is asserted **not** to be committed-evidence
-    authority: a consumer of gate evidence handed a candidate path refuses.
-31. **Regeneration under the same run identity is refused**, after a halt, with
-    its own token; the prior halted candidate is **still present and unmodified**
-    after the refusal (asserted on its bytes, not merely its existence); and a
-    **new run identity** with a fresh authorisation is accepted. *Control:* the
-    new-identity path succeeds where the same-identity path refused.
-32. **Only the canonical exact status key is admitted** — `Status`, `STATUS`, a
-    lookalike, a zero-width variant and an alias are each refused, one case per
-    spelling. *Control:* the canonical key is accepted. And **`KEY_EXISTS !=
-    STATUS_AUTHORITY_EXISTS`**: a payload carrying the canonical key for an
-    artifact with no committed status semantics is refused for write **and** for
-    promotion.
-33. **An unenumerated derived-data identity is refused**, and an arbitrary
-    intermediate output cannot acquire continuation eligibility by any route —
-    including being written, being schema-valid, or sitting beneath the candidate
-    root. *Control:* one of §2.1's three enumerated identities is accepted.
+29. **`CANDIDATE_VERIFICATION` neither mints nor discharges a byte-level claim.**
+    Three limbs. *(a)* Every limb passes and the result carries the pending
+    byte-level status with `files_opened == 0`. *(b) The discriminating control is
+    that the field can hold another value*: the same result type, constructed from
+    a refutation, carries the refuted token — without it, (a) pins a field with one
+    possible value, which R-1 forbids reporting. *(c)* A verified record handed to
+    the promotion precondition does **not** satisfy that check's byte-level limb,
+    and the refusal names the limb. *Control:* a candidate failing any one limb is
+    refused, one case per limb with its own token.
+30. **The candidate path is not committed-evidence authority.** A consumer of
+    gate evidence handed a candidate path refuses; and a payload carrying a
+    promoted state that did not arrive through a committed diff is refused. The
+    code limb is item 24, repository-wide.
+31. **A second write at an occupied canonical candidate path is refused on every
+    run identity**, with its own token — including a *new* run identity carrying a
+    fresh authorisation, which is refused **identically**, because the writer is
+    run-identity-blind (§2.3) and reader-free (§12.14). After each refusal the
+    prior halted candidate is **still present and unmodified**, asserted on its
+    bytes. *Control:* the same payload at an **unoccupied** canonical path for a
+    different eligible identity succeeds — **the discriminating attribute is
+    occupancy, never the run identity.** Two further pins: the writer reads **no
+    byte** of the occupant, asserted by audit hook, so its refusal names no field
+    of it; and no argument, flag, environment variable, configuration value or run
+    identity reaches any code path that clears, deletes, truncates, renames or
+    moves the occupant.
+31a. **The package keeps no run ledger.** No module persists, reads or consults
+    any record of prior runs — no run-state file, ledger, marker, lockfile or
+    dotfile, beneath the candidate root or elsewhere — so no run can consult its
+    predecessor's outcome; §2.4's closed-set rule refuses the whole root if such a
+    file appears. *Control:* the run-identity-blind collision refusal still fires
+    with the root containing only the canonical candidate.
+32. **Status-key admission is byte equality, and the key is not the authority.**
+    *(a)* Admission is decided by byte equality against the canonical key, after
+    **no** transformation — no fold, no NFC/NFKC, no strip, no confusable fold, no
+    heuristic. *(b) Property, not enumeration:* over a generated corpus of
+    transformations — case variants, NFKC and NFC forms, confusables, zero-width
+    insertions, **leading and trailing whitespace**, and at least three spellings
+    this document does not name — **every** non-byte-equal spelling is refused,
+    with a non-vacuity floor, and a test asserts that replacing the byte
+    comparison with any normalise-then-compare turns the sweep red. Measured at
+    `70bf38b`, the present scan is `_pin(key).strip().lower()`, which admits
+    `Status`, `STATUS`, `" status "` and `"status "` — the pad and the case fold
+    are the live fail-opens, and a corpus that omits them tests only spellings
+    already refused. *(c)* A payload carrying both the canonical key and a
+    non-canonical spelling is refused rather than resolved to either. *(d)
+    `KEY_EXISTS != STATUS_AUTHORITY_EXISTS`:* the canonical key on an artifact with
+    no committed status semantics is refused for write **and** promotion.
+    *Control:* the canonical key on a **fixture registry row** carrying a status
+    authority is accepted; no production row is added to construct a control.
+33. **No derived-data file is written, anywhere.** *(a)* An unenumerated
+    derived-data identity is refused, and an arbitrary intermediate output cannot
+    acquire continuation eligibility by any route. *(b) The "anywhere" limb of
+    §2.2:* the whole-filesystem path-set equality of item 16 shows the execution
+    created no file outside the expected candidate paths — in particular no
+    `.jsonl`, dataset, feature dump or temporary research artifact under `data*`,
+    `artifacts/`, the repository root, `TMP` or the working directory. **A route
+    that opens the file inside a third-party library is caught here and by nothing
+    else** — the static sweep of item 15 does not see `DataFrame.to_json`,
+    `to_parquet`, `numpy.save` or `csv.writer`. *(c)* A `.jsonl` beneath the
+    candidate root refuses the whole root. *Control:* one enumerated identity is
+    accepted and the path set is exactly its one canonical path.
 
 **Mutation acceptance bar.** The Work PR runs and reports a mutation study in PR
 #444 §13's table shape, mutating **call sites, not only primitives** — the recorded
@@ -995,9 +1319,19 @@ sides; refusing only one confusable; returning `None` in place of raising;
 defaulting eligibility to true; accepting `cost_table_plan.json`; minting a status;
 requiring one provenance field of several; aligning the inventory while leaving
 the derivation manifest; having `CANDIDATE_VERIFICATION` mint a byte-level token;
-adding a promotion route reachable from an ordinary Work PR; permitting
-regeneration under the same run identity; case-folding the status key; and
-granting continuation eligibility to an unenumerated derived-data identity. **Every one must be killed by an identifiable named test,
+adding a promotion helper **in a new module
+outside `scripts/m15_gate3a/`** — a repository-root `.py` importing nothing from
+the package, and a `.github/workflows/` step running `cp` — and an in-package
+`clear_candidate_root()` using `shutil.rmtree`; accepting a write at an occupied
+canonical path when the run identity differs; adding a run-scoped or dated
+subdirectory that avoids the collision; adding a run ledger the writer consults;
+case-folding the status key, padding it with whitespace, and pointing two registry
+rows at one artifact's committed status; granting continuation eligibility to an
+unenumerated derived-data identity, and writing a derived `.jsonl` **outside** the
+candidate root through a library writer that opens the file internally; making the
+registry an injectable parameter with the compliant table as its default; and
+treating "byte-level verification where a later gate requires it" as satisfied
+because no later gate has yet spoken. **Every one must be killed by an identifiable named test,
 and no newly-introduced survivor is admitted.**
 
 **The D-7 trap is discharged in the same PR** — once the candidate root is
@@ -1024,19 +1358,30 @@ inside an ordinary Work PR without a Gate-decision recording it:
 - a new continuation artifact identity, or a new canonical filename
 - granting continuation eligibility to any further artifact
 - a new output root, or widening the candidate root
-- adding or changing status semantics, and admitting `status` into any schema
-  that presently forbids it
+- adding or changing status semantics, and admitting `status`, `provenance`,
+  `candidate_lifecycle_state` or any other key into a schema that presently
+  forbids it
+- the §12.14 reader-freedom scope for the continuation writer (§2.3, §3.2)
 - changing lifecycle semantics, the promotion rule, or the promotion PR class
 - changing the protected or reserved surface, including `_PROTECTED_PREFIXES` and
   the `path_authority` roots
-- performing a promotion, and clearing, rotating, versioning or deleting the
-  candidate root or any candidate in it
+- performing a promotion — **Red**, because the operation is irreversible and the
+  merge is the operation — and clearing, rotating, versioning, archiving or
+  deleting the candidate root or any candidate in it, **by any means, including an
+  operator action taken outside a PR**. `git clean`, a fresh clone, a second
+  working tree and a CI runner starting from an empty root remove the file without
+  removing the obligation; that is why §2.3 discharges preservation through a
+  committed halt record rather than through the untracked root
+- changing what counts as a halt, the terminality of a halted outcome, or any
+  requirement on a further run after one
+- how a run identity is issued, and any mechanism by which a runner or writer
+  mints one for itself instead of receiving the one the authorisation names
 - any change to the artifact or evidence schema, the scrubber's vocabulary or
   thresholds, or the guards (policy §3)
 - any change to a frozen research contract — PR #444's D-series and §12, PR #448's
   rulings, and §2 of this document
 - any change to a governance document, other than the three edits §5.4 fixes
-- any change to the §7 sequence, or the discharge of any pre-continuation item
+- any change to the §8 sequence, or the discharge of any pre-continuation item
 - any edit to a committed artifact under `artifacts/m15_gate3a/` other than the
   one §5.3 fixes
 - the derived M15 data output surface — the 20 `.jsonl` files — which this
@@ -1086,8 +1431,19 @@ merged.
 7. Concrete calendar artifact approval.
 8. Only then a **separately-authorised** gate-3a continuation (playbook §5) —
    **Red**, design-span only, metadata-only outputs.
-9. The promotion diff for any verified candidate, and the independent post-run
-   judgement of it.
+9. **If the continuation halts — the expected outcome on §2.12 and PR #444 §1** —
+   the §2.3 halt record merges as an Execution-evidence PR on playbook §7's
+   template, whether or not any candidate was written. It authorises nothing
+   further.
+10. The **new contract Gate-decision** PR #444 §1 requires, informed by an
+    approved read-only measurement. Only a decision recorded there authorises a
+    further execution, and it names the single run identity that execution may
+    use. **A further run is never the response to a halt; it is only ever the
+    implementation of a decision already taken.**
+11. **One Execution-evidence PR** carrying a run and its evidence; where a
+    candidate verified, its content is the promotion diff of §2.3 item 4.
+12. **A separate independent post-run Gate-decision PR** judging step 11, in a
+    session separate from the one that ran it. It is never combined with it.
 
 **This ruling does not discharge
 `PRE_CONTINUATION_CALENDAR_ARTIFACT_APPROVAL_REQUIRED`.** A completed output
@@ -1175,3 +1531,33 @@ that run identity precisely so that a result cannot be re-rolled after it is see
 Neither is what the packet's own analysis would have produced, which is the second
 time in this programme that the human ruling replaced the question rather than
 selecting from the options offered.
+
+**Second review round, and what it cost.** Five fresh doc-only roles reviewed the
+recorded rulings. The result was the same shape as the first round and worse in
+degree: an implementation green on **every** observable requirement then in the
+document defeated **four of the five rulings**. Promotion fell to a helper placed
+outside `scripts/m15_gate3a/**`, which every sweep was scoped away from; halt
+terminality fell twice, to a caller-supplied run identity and to `shutil.rmtree`
+of the root — and the requirement written to pin it **certified the first route as
+correct behaviour**, the fail-open-frozen-as-expected anti-pattern PR #444 §13
+names; status fell to pointing all three registry rows at one artifact's real
+committed status; and the derived-data rule fell to a library writer outside the
+root. The repairs that close them are scope repairs, not new items: a
+repository-wide promotion sweep, a whole-filesystem audit trace, a signature pin
+admitting only `artifact_id` and the payload, and a literal status pin.
+
+Two roles independently found that **§12.14 makes three mandated mechanisms
+unimplementable inside the package** — the closed-set enumeration, the
+`O_CREAT | O_EXCL` creation, and verification's twelfth limb — and the lead
+verified it: every enumeration primitive and `open` are in `FORBIDDEN_CALLS`, over
+references, across all sixteen modules, with `PERMITTED_FS_CALLS` disjoint from
+it. A third gap followed: no committed schema declares `provenance` or
+`candidate_lifecycle_state`, so both are refused today. Those two, with the
+status-semantics question §2.12 already foresaw, are recorded in §3.2 as newly
+surfaced and **not closed** — and the completion token an earlier draft carried,
+`NO_OPEN_CONTRACT_QUESTIONS_REMAIN_WITHIN_PR450_SCOPE`, is withdrawn as an
+overclaim. The five referred questions are ruled; the document is not free of open
+questions, and saying so was wrong.
+
+One proposed remedy was corrected on measurement: the reparse-point detector must
+be `os.lstat`, since `os.stat` follows the junction and reports `False`.
