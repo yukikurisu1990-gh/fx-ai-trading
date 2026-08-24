@@ -75,6 +75,29 @@ which is event-index and is foreclosed.
 **No empirical readiness is claimed**: `ω` cannot be authoritatively instantiated
 before that approval.
 
+**Calendar residuals — RULED** (§8.4.0, Ruling ω-12, human + ChatGPT):
+**`OMEGA_CALENDAR_AUTHORITY_RULED_SINGLE_FROZEN_VERSION_REQUIRED`** ·
+**`OMEGA_CALENDAR_AUTHORITY_RULED_PENDING_APPROVED_CALENDAR_INSTANTIATION`** ·
+`OMEGA_SLOT_MEMBERSHIP_AUTHORITY_IS_THE_D6_CLOSURE_MARKET_CALENDAR_EXPECTED_M15_SLOTS` ·
+`MEAN_OVERLAP_DOES_NOT_OWN_ROLLOVER_OR_HOLIDAY_RULES` ·
+`OMEGA_SLOT_MEMBERSHIP_AUTHORITY_MUST_BE_SINGLE_VERSIONED_AND_FROZEN_BEFORE_WINDOW_DECLARATION` ·
+`CALENDAR_FREEZE_PRECEDES_WINDOW_FREEZE_PRECEDES_DATA_OBSERVATION` ·
+`OMEGA_CALENDAR_CONTENT_MUST_BE_OUTCOME_BLIND` ·
+`POST_OBSERVATION_CALENDAR_MUTATION_IS_FORBIDDEN_FOR_CURRENT_FAMILY_A` ·
+`T6_LATER_CALENDAR_MAY_NOT_RETROACTIVELY_CHANGE_OMEGA_SLOT_MEMBERSHIP_FOR_AN_ALREADY_FROZEN_FAMILY_A_WINDOW` ·
+`ONE_FROZEN_CALENDAR_VERSION_GOVERNS_BOTH_OMEGA_AND_COVERAGE` ·
+`Q10_B_WINDOW_DECLARATION_PRESUPPOSES_A_FROZEN_CALENDAR_VERSION`
+
+**Two concrete authorities, and they are different objects.** **A** — the D-6
+closure/market calendar artifact, carrying `expected_m15_slots` (a *materialised* set;
+the generating-rule spelling is refused by name), `authority_version`,
+`content_digest`, `target_epoch` and the approval marker — governs **slot membership**
+and is `ω`'s sole authority. **B** — Ruling 4's holiday / thin-liquidity calendar,
+which T-6 re-pointed to "approved before gate 7" — governs **event eligibility** only,
+and never membership. **No schema is invented**: the identity fields already exist in
+the committed interface. **Neither artifact exists yet**, and no calendar is created
+here.
+
 **Four limbs were derived and are confirmed; six are explicit human + ChatGPT
 choices** — the clock, the weighting, the zero-event and one-event dispositions, the
 freeze semantics and the no-redesign rule (§8.4.0's own table says which is which).
@@ -102,14 +125,13 @@ arithmetic) ·
 `OVERLAP_PER_RECORD_PROVENANCE_UNBOUND` · `NO_TURNOVER_DERIVED_GAP_BOUND` ·
 `NO_CLIPPING_WITHOUT_COMMITTED_AUTHORITY` ·
 `MEAN_OVERLAP_CLOCK_DEPENDS_ON_APPROVED_CALENDAR_AUTHORITY` ·
-`CALENDAR_CONTENT_DETERMINES_OMEGA_SUBSTRATE` ·
-`NO_OUTCOME_BLINDNESS_REQUIREMENT_BINDS_CALENDAR_CONTENT` ·
-`OMEGA_DEPENDENCE_NOT_DISCLOSED_AT_CALENDAR_APPROVAL` ·
-`OMEGA_SUBSTRATE_CONTENT_MAY_MOVE_AFTER_THE_METHOD_FREEZE` ·
-`OMEGA_SUBSTRATE_CALENDAR_IDENTITY_NOT_SETTLED` ·
+`CALENDAR_CONTENT_DETERMINES_OMEGA_SUBSTRATE` (the surface remains; the **prohibition
+is now supplied** by Ruling ω-12(e)) ·
+`LATER_EVENT_ELIGIBILITY_CALENDAR_MAY_STILL_MOVE_THE_EVENT_SET` (bounded conservative
+by Ruling 4's widen-only clause) · `OMEGA_CALENDAR_AMENDMENT_CLASSIFICATION_NOT_SETTLED` ·
+`CALENDAR_FREEZE_CHECKABILITY_IMPLEMENTATION_PENDING` ·
 `NO_PROHIBITION_BINDS_THE_CHOICE_OF_CORRELATION_STATISTIC` ·
 `ROUND_11_REVIEW_COVERAGE_PARTIAL_TWO_OF_THREE_ROLES_TERMINATED` ·
-`ROLLOVER_AND_HOLIDAY_SLOT_ELIGIBILITY_RELATIVE_TO_THE_OMEGA_CLOCK_NOT_SETTLED` ·
 `MEAN_OVERLAP_CLOCK_AMENDMENT_CLASSIFICATION_NOT_SETTLED` ·
 `M15_PREDICTION_HORIZON_CLOCK_IS_COINED_BY_THIS_RULING_NOT_REGISTERED` ·
 `ROLE_SPAN_HORIZON_TRUNCATION_RULE_NOT_REGISTERED` ·
@@ -175,7 +197,13 @@ that is not `D`'s.
 `MEAN_OVERLAP_CORE_DERIVED_READY_FOR_REVIEW`,
 `MEAN_OVERLAP_FRACTION_UNIT_NOT_REGISTERED`,
 `GAP_AND_HORIZON_MUST_BE_READ_ON_THE_SAME_CLOCK` (subsumed by the stronger
-same-*horizon*-clock token), `SAME_CLOCK_RULE_DOES_NOT_YET_IDENTIFY_THE_CLOCK_SUBSTRATE`
+same-*horizon*-clock token), `ROLLOVER_AND_HOLIDAY_SLOT_ELIGIBILITY_RELATIVE_TO_THE_OMEGA_CLOCK_NOT_SETTLED`,
+`OMEGA_SUBSTRATE_CALENDAR_IDENTITY_NOT_SETTLED`,
+`NO_OUTCOME_BLINDNESS_REQUIREMENT_BINDS_CALENDAR_CONTENT` and
+`OMEGA_DEPENDENCE_NOT_DISCLOSED_AT_CALENDAR_APPROVAL` (all four **ruled by
+Ruling ω-12**), `OMEGA_SUBSTRATE_CONTENT_MAY_MOVE_AFTER_THE_METHOD_FREEZE` (closed by
+ω-12 **for slot membership**; survives for the event set),
+`SAME_CLOCK_RULE_DOES_NOT_YET_IDENTIFY_THE_CLOCK_SUBSTRATE`
 and `OMEGA_H_CONSTANCY_DISCHARGED_ONLY_ON_A_BARS_THAT_EXIST_READING` and
 `MEAN_OVERLAP_UNIT_TIED_TO_AN_UNREGISTERED_HORIZON_CLOCK` (all three **discharged by
 Ruling ω-11**, which names the substrate), `NO_ADJACENT_GAP_DOES_NOT_AUTOMATICALLY_MEAN_ZERO_OVERLAP`
@@ -3549,22 +3577,25 @@ convenience.
 
 **`MEAN_OVERLAP_RULED_EVENT_LEVEL_SAME_HORIZON_CLOCK_EQUAL_WEIGHT_ROLE_LOCAL`** ·
 **`MEAN_OVERLAP_CLOCK_SUBSTRATE_RULED_APPROVED_CALENDAR_ELIGIBLE_SLOTS`** ·
+**`OMEGA_CALENDAR_AUTHORITY_RULED_SINGLE_FROZEN_VERSION_REQUIRED`** ·
+**`OMEGA_CALENDAR_AUTHORITY_RULED_PENDING_APPROVED_CALENDAR_INSTANTIATION`** ·
 **`MEAN_OVERLAP_FULL_SEMANTICS_RULED_PENDING_CALENDAR_INSTANTIATION`**
 
 **The semantics are near-complete; the instantiation is not.** The substrate, the
 unit, the transform order, the weighting, the endpoint cases, the aggregation, the
-pair identity, the freeze and the no-redesign rule are now ruled. **Two limbs are
+pair identity, the freeze and the no-redesign rule are now ruled. **One limb is
 not**: the horizon's behaviour at a role-span boundary
-(`ROLE_SPAN_HORIZON_TRUNCATION_RULE_NOT_REGISTERED`) and whether Ruling 4's rollover
-and holiday windows are absent from the eligible-slot sequence
-(`ROLLOVER_AND_HOLIDAY_SLOT_ELIGIBILITY_RELATIVE_TO_THE_OMEGA_CLOCK_NOT_SETTLED`) —
-and **the second is a question about what `ω` *means*, not about when an artifact
-exists**, so it is not cured by the calendar's approval. The operative status is
+(`ROLE_SPAN_HORIZON_TRUNCATION_RULE_NOT_REGISTERED`). The rollover/holiday limb — a
+question about what `ω` *means*, not about when an artifact exists — is **ruled by
+Ruling ω-12(b)**: those slots are **in** the sequence, and Ruling 4 bars the **event**,
+not the slot. The operative status is
 therefore
-**`MEAN_OVERLAP_SEMANTICS_RULED_EXCEPT_ROLE_SPAN_AND_ROLLOVER_PENDING_CALENDAR_INSTANTIATION`**;
-`MEAN_OVERLAP_FULL_SEMANTICS_RULED_PENDING_CALENDAR_INSTANTIATION` is the ruling's own
-wording and is retained beside it, qualified rather than dropped, because a review
-found the word "full" would bury a semantic residual inside an instantiation token.
+**`MEAN_OVERLAP_SEMANTICS_RULED_EXCEPT_ROLE_SPAN_PENDING_CALENDAR_INSTANTIATION`** —
+the **rollover limb is now ruled** by Ruling ω-12(b), so only the role-span boundary
+remains semantic. `MEAN_OVERLAP_FULL_SEMANTICS_RULED_PENDING_CALENDAR_INSTANTIATION`
+is the ruling's own wording and is retained beside it, qualified rather than dropped,
+because a review found the word "full" would bury a semantic residual inside an
+instantiation token.
 
 **No empirical readiness is claimed**: `ω` cannot be authoritatively computed until the
 approved calendar artifact exists (`PRE_CONTINUATION_CALENDAR_ARTIFACT_APPROVAL_REQUIRED`),
@@ -4010,7 +4041,9 @@ and that stands. Those remain the calendar authority's to supply.
   **`NO_OUTCOME_BLINDNESS_REQUIREMENT_BINDS_CALENDAR_CONTENT`** ·
   **`OMEGA_DEPENDENCE_NOT_DISCLOSED_AT_CALENDAR_APPROVAL`**. Whether to attach an
   outcome-blindness clause and a disclosure requirement to the calendar approval is for
-  the ruling; this packet names the gap and closes none of it.
+  the ruling; this packet names the gap and closes none of it. — **Both are now
+  supplied by Ruling ω-12(e)**: `OMEGA_CALENDAR_CONTENT_MUST_BE_OUTCOME_BLIND` and the
+  disclosure obligation. The prohibition now follows the lever.
 - **The timing asymmetry §8.2.5 named for `D` applies here, and is recorded rather
   than left to be found.** Binding `ω`'s substrate to calendar content makes `ω` a
   function of an artifact's contents. **§8.2.5 rejected an eligible-day `D` on exactly
@@ -4019,7 +4052,11 @@ and that stands. Those remain the calendar authority's to supply.
   frozen number never changes. Ruling ω-9 freezes `ω`'s **method**, not the calendar's
   content, so if the rollover/holiday limb resolves toward *calendar*-ineligibility, a
   later approval still moves every `ω` with the frozen method unchanged.
-  **`OMEGA_SUBSTRATE_CONTENT_MAY_MOVE_AFTER_THE_METHOD_FREEZE`.**
+  **`OMEGA_SUBSTRATE_CONTENT_MAY_MOVE_AFTER_THE_METHOD_FREEZE`** — **closed for slot
+  membership by Ruling ω-12(a)/(f)**, structurally rather than by prohibition alone,
+  since the post-freeze artifact is B and B does not govern membership. It **survives
+  for the event set**: `LATER_EVENT_ELIGIBILITY_CALENDAR_MAY_STILL_MOVE_THE_EVENT_SET`,
+  bounded conservative by Ruling 4's widen-only clause.
 - **And "the approved calendar authority" is itself ambiguous between two artifacts
   with different approval timings.** §8.2.2 records both: the **D-6 closure/market
   calendar**, approved *before* the continuation
@@ -4029,7 +4066,8 @@ and that stands. Those remain the calendar authority's to supply.
   gate 7'** — i.e. **after** the `D` freeze". Ruling ω-11 cites the first and leaves the
   second's relation open, so **which artifact the substrate depends on is not
   determined**, and one branch is a post-freeze artifact. The ruling should say which.
-  **`OMEGA_SUBSTRATE_CALENDAR_IDENTITY_NOT_SETTLED`.**
+  **`OMEGA_SUBSTRATE_CALENDAR_IDENTITY_NOT_SETTLED`** — **RULED by ω-12(a)**: Authority
+  **A**'s `expected_m15_slots` governs, B never does.
 - **What the discharge does and does not remove.** Naming the substrate removes the
   *choice between* substrates. It does **not** remove the width:
   `ROLLOVER_AND_HOLIDAY_SLOT_ELIGIBILITY_RELATIVE_TO_THE_OMEGA_CLOCK_NOT_SETTLED`
@@ -4064,6 +4102,161 @@ and that stands. Those remain the calendar authority's to supply.
 
 **No favourable classification is asserted here.** The one limb that could have been
 called a mere tightening — the external binding — is the one sent to NOT SETTLED.
+
+##### Ruling ω-12 — the four calendar residuals, ruled as one
+
+**`OMEGA_CALENDAR_AUTHORITY_RULED_SINGLE_FROZEN_VERSION_REQUIRED`** ·
+**`OMEGA_CALENDAR_AUTHORITY_RULED_PENDING_APPROVED_CALENDAR_INSTANTIATION`**
+
+Ruling ω-11 named the substrate and left four residuals. They are ruled here **as one
+question**, because they are one question: *which* calendar authority defines `ω`'s
+eligible-slot sequence, *when* it must be frozen, and *what* may change afterwards.
+
+###### The candidates, enumerated before anything is called "the approved calendar"
+
+| # | Candidate | What it is | Status / timing |
+| --- | --- | --- | --- |
+| **A** | **The D-6 closure/market calendar artifact** — "a **versioned, committed** closure/market calendar artifact for the target epoch" | Carries `authority`, `authority_version`, `timezone`, **`market_open_close_rule`**, **`dst_rule`**, **`exceptional_closure_handling`**, `target_epoch`, `content_digest`, `approval`, a committed **provenance** block, and — decisively — **`expected_m15_slots`**, a *materialised* slot set. The generating-rule spelling `expected_m15_slot_rule` is **refused by name** (FR-8), so D-5.8 requirement 1 admits only the materialised route | **Approved before the continuation** — `PRE_CONTINUATION_CALENDAR_ARTIFACT_APPROVAL_REQUIRED`. **Does not yet exist.** |
+| **B** | **Ruling 4's holiday / abnormal-thin-liquidity event-eligibility exclusion calendar** | Governs whether a trade may be **scored** in a window: "Rollover windows and low-liquidity holiday sessions are **event-ineligible** (cost there is unmodelled, so no trade may be scored there)". The rollover window itself is frozen at **21:55–22:15 UTC minimum**, "**widen only for conservatism; it must not be narrowed**" | `[FIXED-AT design audit]`, then **T-6 re-pointed to "implementation, approved before gate 7"** — i.e. **after** the window freeze. **Does not yet exist.** |
+| — | `scripts/m15_gate3a/calendar_authority.py` | An **interface**, not an artifact: it "validates an injected calendar. **It never authors one**" | Committed; **not a candidate** — it supplies no slot |
+| — | Prereg §4's M15 bucket convention (`floor(ts / 15 min)`, UTC, no DST) | The **grid**, not the slot set. §8.2.2: it "fixes the **bucketing** basis … does not, on its face, denominate a *duration*" | Committed; **not a candidate** for membership |
+| — | Prereg §5's session partition (Asia / Europe / US UTC hour ranges) | A partition **within** open hours, for cost attribution | Committed; **not a membership authority** |
+
+###### The distinction that resolves the whole question
+
+**A governs slot *membership*; B governs event *eligibility*.** They are different
+objects, and once that is seen the four residuals fall out together:
+
+- A's own field list carries `market_open_close_rule`, `dst_rule` and
+  `exceptional_closure_handling`, and its `expected_m15_slots` **is** the slot set.
+  A therefore already owns weekend, holiday and exceptional closure — as *membership*.
+- B removes **events from slots**, not slots from the sequence. A rollover slot is a
+  slot the market is open in; prereg §5 makes it **event**-ineligible, not absent.
+
+**(a) Authority selection — the Option-B structure, on committed grounds.**
+**`OMEGA_SLOT_MEMBERSHIP_AUTHORITY_IS_THE_D6_CLOSURE_MARKET_CALENDAR_EXPECTED_M15_SLOTS`.**
+`ω`'s eligible-slot sequence is **Authority A's `expected_m15_slots`, and nothing
+else**. B refines only event eligibility and **never** slot membership. "Whichever
+approved calendar is latest" is **not** a valid rule and is refused by name.
+
+**(b) Rollover and holiday ownership.**
+**`MEAN_OVERLAP_DOES_NOT_OWN_ROLLOVER_OR_HOLIDAY_RULES`.** `ω` follows the selected
+artifact's **exact slot membership** and derives no rollover, weekend, holiday,
+session-break, early-close or exceptional-closure rule of its own. Market-hours
+semantics stay inside the calendar authority — where `calendar_authority.py` puts
+them and where this packet authors none. *Consequence, stated because it is the
+answer to the residual: a rollover slot is **in** `ω`'s sequence, because it is a slot;
+what prereg §5 removes is the **event**, not the slot.*
+
+**(c) One authority, one version, frozen before the window is declared.**
+**`OMEGA_SLOT_MEMBERSHIP_AUTHORITY_MUST_BE_SINGLE_VERSIONED_AND_FROZEN_BEFORE_WINDOW_DECLARATION`.**
+Exactly **one** artifact, at exactly **one** version, with exactly **one** slot-membership
+set, fixed **before** the exact `T_v`/`T_h`/`D` declaration, and not swappable after any
+result or metadata is observed. **No schema is invented here**: the identity fields
+already exist in the committed interface — `authority_version`, `content_digest`
+("a digest/version field is one token, never prose"), `target_epoch` with a
+fail-closed epoch-mismatch check, and the approval marker. The requirement is
+therefore **conceptual and already expressible**; where the producing/verifying
+implementation is deferred, the status is
+**`CALENDAR_FREEZE_CHECKABILITY_IMPLEMENTATION_PENDING`**, which is **not** a blocker
+to this ruling.
+
+**(d) Ordering.**
+**`CALENDAR_FREEZE_PRECEDES_WINDOW_FREEZE_PRECEDES_DATA_OBSERVATION`.** The order is:
+**1.** calendar authority selected → **2.** its content/version frozen → **3.** `ω`
+slot-membership semantics fixed → **4.** the exact UTC window declared → **5.** the
+continuation separately authorised → **6.** and only then may real-data-dependent
+calculation occur. *No committed source states a conflicting order; what existed was
+silence, which is why the residual arose.*
+
+**(e) Outcome-blindness and post-observation mutation.**
+**`OMEGA_CALENDAR_CONTENT_MUST_BE_OUTCOME_BLIND`** ·
+**`POST_OBSERVATION_CALENDAR_MUTATION_IS_FORBIDDEN_FOR_CURRENT_FAMILY_A`.** Calendar
+content may **not** be modified in response to realised `N_eff`, realised `ω`, realised
+overlap, correlation, sample count, model performance, Sharpe, returns, pair failures,
+or convenience in reaching a threshold. This is the clause the previous round recorded
+as **missing** — `NO_OUTCOME_BLINDNESS_REQUIREMENT_BINDS_CALENDAR_CONTENT` and
+`OMEGA_DEPENDENCE_NOT_DISCLOSED_AT_CALENDAR_APPROVAL` — and it is supplied here: the
+prohibition now **follows the lever to where the lever went**. The `ω` dependence is to
+be disclosed at the calendar approval, so that an approver approving a *coverage*
+calendar is told the same artifact sets `rho_h` and `N_eff`.
+
+**(f) The T-6 re-pointing, addressed rather than papered over.**
+**`T6_LATER_CALENDAR_MAY_NOT_RETROACTIVELY_CHANGE_OMEGA_SLOT_MEMBERSHIP_FOR_AN_ALREADY_FROZEN_FAMILY_A_WINDOW`.**
+T-6's exact wording is "concurrency/exposure caps + **holiday calendar** deferred to
+implementation, **approved before gate 7**". Under limb (a) that later artifact is **B**,
+which governs event eligibility and **not** slot membership, so on the ruled structure
+it **cannot** retroactively move `ω`'s sequence — the alibi the previous round
+identified is closed **structurally**, not merely by prohibition. The rule above is
+retained anyway, to close the residual **pointer-update** route: a later artifact must
+not be re-designated as `ω`'s membership authority for a window already frozen.
+
+###### Amendment after freeze — the four cases kept apart
+
+| Case | Disposition |
+| --- | --- |
+| **A. Defect correction found *before* any decision-bearing data observation** | Permitted: re-freeze at a **new stated version**, with the superseded version and its identity retained. Nothing is observed yet, so nothing is selected on its effect. |
+| **B. Defect correction found *after* data observation** | **The current Family A window may not silently continue.** A corrected membership set changes `ω` for results already observed, which is `POST_OBSERVATION_CALENDAR_MUTATION_IS_FORBIDDEN_FOR_CURRENT_FAMILY_A`. It requires a **new explicit pre-registration or contract decision**, and the old version and old result stay **traceable**. |
+| **C. Semantic change to eligibility** (membership actually differs) | Same as B, whenever the window is frozen: **no silent replacement**. Before the freeze it is case A. |
+| **D. Administrative rename or pointer change**, membership byte-identical | Permitted, and **must not be used to smuggle C**: identity is the `content_digest`, not the name. A rename that moves membership is case C. |
+
+*This defines no evidence lifecycle and no artifact schema beyond the fields already
+committed.*
+
+###### Interactions, stated because two of them are ordering constraints
+
+- **Q10-B.** The exact `T_v`/`T_h`/window is declared by human + ChatGPT **before**
+  continuation authorisation. Limb (d) puts the **calendar freeze before that
+  declaration** — otherwise the declaration would be made against a slot universe
+  that can still move. `Q10_B_WINDOW_DECLARATION_PRESUPPOSES_A_FROZEN_CALENDAR_VERSION`.
+- **Q10(ii).** Coverage's expected-slot membership already comes from the approved
+  calendar authority. **The same frozen version governs both** `ω`'s eligible-slot
+  sequence and coverage's expected-slot membership — one Family A evaluation may not
+  contain two incompatible slot universes. Nothing committed distinguishes them, and
+  both point at A's `expected_m15_slots`.
+  `ONE_FROZEN_CALENDAR_VERSION_GOVERNS_BOTH_OMEGA_AND_COVERAGE`.
+- **D-5.8.** Unchanged and consistent: **no numeric floor**, trusted calendar
+  provenance plus **set equality**, and the runtime may not invent expected slots.
+  This ruling adds nothing to that — it makes `ω` a **consumer** of the same
+  materialised `expected_m15_slots`, and `ω` invents no slot independently. The
+  generating-rule route stays refused.
+
+###### No fallback
+
+If the required frozen calendar authority is unavailable or unapproved: `ω` is **not
+authoritatively measurable**; coverage's expected-slot membership is likewise not
+authoritatively measurable insofar as it depends on the same authority; and there is
+**no fallback to the continuous UTC grid and no inference of market hours**. That may
+**block formal continuation**, and it does **not** authorise creating a calendar here.
+
+###### What this ruling does not settle
+
+- **B can still change the *event set* after its later approval**, and that is a
+  different mechanism from slot membership: widening event-ineligibility removes
+  events, which moves both `N_raw` and the gap sequence. Ruling 4's **widen-only for
+  conservatism** clause bounds the direction, so the residual is conservative — but it
+  is real. **`LATER_EVENT_ELIGIBILITY_CALENDAR_MAY_STILL_MOVE_THE_EVENT_SET`.**
+- **The approval marker is artifact-declared, not evidence.** The committed interface
+  says so in terms: `APPROVAL_DECLARED_BY_ARTIFACT__NOT_EVIDENCE_THAT_APPROVAL_OCCURRED`.
+  A frozen, approved-looking artifact is checkable only as far as its own declaration.
+- **`CALENDAR_FREEZE_CHECKABILITY_IMPLEMENTATION_PENDING`** — no source or test is
+  changed here, so nothing enforces limbs (c)–(f) in code.
+- Neither artifact **exists**. This ruling fixes *which* authority and *when*; it does
+  not instantiate one, and `PRE_CONTINUATION_CALENDAR_ARTIFACT_APPROVAL_REQUIRED`
+  stands.
+
+###### Amendment classification — per limb
+
+| Limb | Classification |
+| --- | --- |
+| (a) A governs membership, B governs event eligibility | **Ambiguity resolution.** Both roles are already what the committed field lists and prereg §5 say; the ruling names which one `ω` consumes. Nothing committed is reversed. |
+| (b) `ω` owns no rollover/holiday rule | **Ambiguity resolution**, and it *narrows* this packet: `ω` is confined to consuming membership. |
+| (c) single versioned frozen authority · (d) ordering | **Tightening.** Latitude that existed — "whichever approved calendar is latest", and an unordered freeze — is removed. The identity fields already exist, so no schema is added. |
+| (e) outcome-blindness · (f) T-6 non-retroaction | **NOT SETTLED.** Each adds a requirement no committed source carries — a blindness obligation on calendar authorship and approval, a disclosure obligation, and a non-retroaction rule. Whether such additions need a contract-amendment procedure cannot be answered, because **no general contract-amendment procedure is registered anywhere in this repository** (`NO_GENERAL_CONTRACT_AMENDMENT_PROCEDURE_REGISTERED`). **`OMEGA_CALENDAR_AMENDMENT_CLASSIFICATION_NOT_SETTLED`.** |
+
+**No favourable classification is asserted.** The two limbs that most help this packet
+— the outcome-blindness clause and the non-retroaction rule — are the two sent to NOT
+SETTLED.
 
 ##### Carried forward unchanged, and restated because they are still live
 
@@ -4148,9 +4341,10 @@ and review.
   approval is a human + ChatGPT gate, so it is the right place — but it is recorded
   rather than left implicit.
 - **`ROLLOVER_AND_HOLIDAY_SLOT_ELIGIBILITY_RELATIVE_TO_THE_OMEGA_CLOCK_NOT_SETTLED`**
-  (Ruling ω-11): whether Ruling 4's event-ineligible rollover and holiday windows are
-  absent from the calendar-eligible sequence, or present but barred from carrying
-  events, is a property of the artifact and of Ruling 4.
+  (Ruling ω-11) — **RULED by ω-12(b)**: those windows are **present in the sequence
+  and barred from carrying events**, because Authority A governs slot *membership* and
+  Ruling 4 governs event *eligibility*. `ω` derives no rollover or holiday rule of its
+  own.
 - **The paragraph below is HISTORICAL for `ω`**, retained because it records what
   Ruling ω-1 alone achieved and because the token still has force outside the overlap
   arithmetic:
@@ -5708,7 +5902,16 @@ candidates it thereby closes. And the ruling
 **cannot** close NR-L3/NR-L4 without also deciding Q10(i); doing so implicitly would
 settle the Sharpe series' day rule by the back door.
 
-**Status.** **`NR_L_PARTIALLY_DERIVED_BLOCKED_BY_Q10_I_AND_HUMAN_RULINGS`.** The
+**The `ω` / calendar dependency is now conceptually closed, and NR-L is unaffected by
+that.** Rulings ω-11 and ω-12 settle `ω`'s substrate, its authority, its freeze
+ordering and its immutability, so nothing upstream of NR-L remains open on the
+overlap side. **None of it reaches `c`**: the calendar governs *slot membership*, and
+`c` is a correlation of per-pair **daily PnL** — a different object on a different
+index. `ONE_FROZEN_CALENDAR_VERSION_GOVERNS_BOTH_OMEGA_AND_COVERAGE` binds `ω` and
+coverage, **not** `c`, and NR-L's date alignment (NR-L8) is its own question.
+
+**Status.** **`NR_L_PARTIALLY_DERIVED_BLOCKED_BY_Q10_I_AND_HUMAN_RULINGS`** — unchanged
+by Ruling ω-12. The
 formula and the span are committed and re-verified; **nothing else is**, and two of
 the eight questions cannot close in this sequence at all. Closure is not forced: the
 packet stops where the authority stops.
@@ -6528,9 +6731,33 @@ this packet creates no calendar. What replaces the old researcher freedom is an
 since whoever authors and approves the calendar determines the sequence `ω` is
 measured on. D-6 places that authority there deliberately and the approval is a human
 + ChatGPT gate, so it is the right place; it is recorded rather than left implicit.
-Two further residuals survive: whether Ruling 4's event-ineligible rollover and
-holiday windows are also *calendar*-ineligible slots is **not settled**, and no code
-enforces any limb. `PRE_CONTINUATION_CALENDAR_ARTIFACT_APPROVAL_REQUIRED`
+**And Ruling ω-12 rules the four calendar residuals as one.** Two concrete
+authorities exist in committed text and they are **different objects**: **A**, the D-6
+closure/market calendar carrying a *materialised* `expected_m15_slots` (the
+generating-rule spelling is refused by name) plus `authority_version`,
+`content_digest` and `target_epoch`, governs **slot membership** and is `ω`'s sole
+authority; **B**, Ruling 4's holiday / thin-liquidity calendar that T-6 re-pointed to
+"approved before gate 7", governs **event eligibility** and never membership. So a
+rollover slot is **in** `ω`'s sequence and Ruling 4 bars the **event**, not the slot,
+and `ω` derives no rollover or holiday rule of its own. Exactly **one** artifact at
+**one** version must be frozen **before** the window is declared — no schema is
+invented, the identity fields already exist — and the order is **calendar freeze →
+window freeze → data observation**. Calendar content must be **outcome-blind**, with
+post-observation mutation forbidden for current Family A and the `ω` dependence
+disclosed at approval; a later artifact may not be re-designated as `ω`'s membership
+authority for an already-frozen window. The **same frozen version governs both `ω` and
+coverage**, and D-5.8 is unchanged — `ω` is a *consumer* of `expected_m15_slots` and
+invents no slot. **If the calendar is unavailable, `ω` is not authoritatively
+measurable: no continuous-grid fallback, no inferred market hours** — which may block
+formal continuation and authorises creating no calendar here.
+
+**What ω-12 leaves.** B may still move the **event set** after its later approval,
+bounded conservative by Ruling 4's widen-only clause
+(`LATER_EVENT_ELIGIBILITY_CALENDAR_MAY_STILL_MOVE_THE_EVENT_SET`); the approval marker
+is **artifact-declared, not evidence**; nothing enforces any limb in code
+(`CALENDAR_FREEZE_CHECKABILITY_IMPLEMENTATION_PENDING`); the role-span truncation limb
+is untouched; and whether the outcome-blindness and non-retroaction limbs need an
+amendment procedure is **not settled**. **Neither artifact exists.** `PRE_CONTINUATION_CALENDAR_ARTIFACT_APPROVAL_REQUIRED`
 remains binding wherever instantiating that clock needs the artifact. And **no code
 enforces any limb**: `ω` is still a bare caller scalar with no gaps attached, so the
 implementation pin and `OVERLAP_PER_RECORD_PROVENANCE_UNBOUND` belong to a separate
