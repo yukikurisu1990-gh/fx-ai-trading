@@ -3973,8 +3973,12 @@ runs from quoted committed text; where a step is a reading, it is labelled.
 **D-ω-1 — an event *is a bar*, so ordering is total, ties cannot arise, and the
 minimum gap is one bar. (MO-8.)** The count is over **buckets**: `raw_event_count`
 is "`n_source_bars == 15` **buckets** that pass the cost-hurdle and fire an EV-gated
-trade". Prereg §6 says the same thing in the other direction: "**a bar is an
-eligible event** only if `1.5 × ATR14_M15 ≥ 2.0 × cost(pair, session)`". Prereg §4
+trade". Prereg §6 indexes the wider set the same way — "**a bar is an eligible
+event** only if `1.5 × ATR14_M15 ≥ 2.0 × cost(pair, session)`" — and the two are
+**not** the same set: traded events are the subset of eligible events that fired,
+and the gap here is between **traded** events (§8.4.7's count domain). The step used
+below is only the containment `traded ⊆ eligible ⊆ that pair's buckets`, which both
+sentences give. Prereg §4
 fixes the bar's identity — `floor(timestamp / 15 min)` on the UTC clock, bar
 timestamp = bucket start, "**No DST logic (UTC only)**". Four consequences follow
 without adding anything:
