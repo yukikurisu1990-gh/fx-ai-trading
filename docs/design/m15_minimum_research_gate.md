@@ -3561,12 +3561,25 @@ across to the **event-spacing axis**, which is what §8.2.0's own guard-rail
 (`D_IS_ELAPSED_UTC_TIME != SAMPLE_COUNT_IS_CALENDAR_TIME`) says by naming *overlap*
 among the quantities that keep their own authorities.
 
-**One consequence worth stating, because it repairs a derivation.** §8.4.10's D-ω-2
-was conditional on three things, the third being that `H` is a **constant, contiguous
-length on the chosen clock**. Under this ruling `H` is 24 units of the *same* clock
-the gap is counted in, so both horizons are 24 units long in that clock's index and
-the third condition is **discharged by construction**. D-ω-2 now rests on the ruled
-clock and on Ruling ω-2's next-event restriction alone.
+**One consequence worth stating, because it repairs a derivation — and one limit on
+it.** §8.4.10's D-ω-2 was conditional on three things, the third being that `H` is a
+**constant, contiguous length on the chosen clock**. Under this ruling `H` is 24 units
+of the *same* clock the gap is counted in, so two horizons are 24 units long in that
+clock's index and the third condition is **discharged by construction** — for every
+event whose horizon lies wholly inside the role span.
+
+**It is not discharged at the role-span boundary, and that is stated rather than
+glossed.** An event firing within `H` of the end of its role span has a horizon that
+is either **truncated** — shorter than 24 units, so the equal-length premise fails for
+that interval — or **excluded**, in which case the event is not in the index at all.
+Committed M15 machinery carries **no rule either way**: the only positional
+implementation, `scripts/ml_step4/labels.py`, *excludes* such bars
+(`if … i + horizon + 1 >= n: continue`), but it is unadopted M1-lineage code that
+prereg §11 admits only "after audit/wrapping". §8.4.15 records this as an adjacent
+gap; the ruling does **not** fill it, and D-ω-2's discharge is scoped accordingly.
+**`HORIZON_TRUNCATION_AT_ROLE_SPAN_BOUNDARY_NOT_REGISTERED`** — and it bears on MO-5's
+last-event limb, since at the small `n` §8.4.12 shows is decisive one truncated
+horizon is not negligible.
 
 ##### Ruling ω-2 — event-level transform, then arithmetic mean
 
