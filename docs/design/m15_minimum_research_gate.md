@@ -68,7 +68,7 @@ sequence** — `H = 24` consecutive eligible slots, `g` in eligible-slot steps. 
 continuous-grid fallback, no heuristic clock, no inferred market hours, and **no
 market-hours semantics are authored here**. The ruling takes the branch that
 **imports** `PRE_CONTINUATION_CALENDAR_ARTIFACT_APPROVAL_REQUIRED` and that runs
-**conservative** (skipping closed slots shortens `g`, raising `ω` and `rho_h`).
+**conservative** (omitting *ineligible* slots shortens `g`, raising `ω` and `rho_h`).
 **No empirical readiness is claimed**: `ω` cannot be authoritatively instantiated
 before that approval.
 
@@ -3920,12 +3920,26 @@ supply.
   continuous-grid reading was the **only one instantiable without an unbuilt
   approval**. This ruling selects a calendar-dependent reading, and therefore
   **accepts that approval as a precondition** rather than avoiding it.
-- **Conservative:** an eligible-slot sequence **skips closed slots**, so `g` counted
-  on it is **smaller** than the same gap counted on the continuous grid. Smaller `g`
-  gives larger `overlap_i`, larger `ω`, larger `rho_h` and therefore **smaller
+- **Conservative:** the eligible-slot sequence is a **subset** of the continuous grid,
+  so for **every** pair of adjacent events `g` counted on it is **smaller than or
+  equal to** the same gap counted on the grid — with equality wherever no ineligible
+  slot intervenes. Since `H` is 24 units of whichever sequence is used, a smaller `g`
+  gives a larger `overlap_i`, a larger `ω`, a larger `rho_h` and therefore **smaller
   `N_eff`**. The ruling picks the end that makes the sample floors **harder**, not
-  easier. *Direction only; `NON_NORMATIVE_DIAGNOSTIC_ONLY` and no magnitude is
-  claimed.*
+  easier. *Direction only, and it is a subset argument rather than a claim about any
+  closure schedule: `NON_NORMATIVE_DIAGNOSTIC_ONLY`, no magnitude claimed, and no
+  market hours presupposed — "ineligible" is whatever the approved calendar says, and
+  this packet does not say.*
+
+- **And the substrate is immune to data presence, which matters more than it looks.**
+  The eligible-slot sequence is **calendar-derived**, not data-derived: a slot's
+  eligibility is a property of the approved artifact, so a data outage does not move
+  the clock — it shows up as a **coverage deficit**, where D-5 puts it. That is the
+  difference between this substrate and a "bars that exist" reading, which would make
+  `ω` a function of data presence and so re-enter the inference D-6 forbids —
+  `calendar_authority.py` "never reverse-infers 'there is no data, therefore the market
+  was closed'". The ruling therefore avoids that inference rather than merely declining
+  it.
 
 **It aligns `ω` with the authority the contract already uses for slots.** D-5 makes
 coverage a set equality against an **expected** M15 slot set, and D-6 rules that
@@ -6291,7 +6305,7 @@ naming the substrate as the **approved-calendar eligible M15 slot sequence** for
 eligible-slot steps; there is **no continuous-grid fallback, no heuristic clock and no
 inferred market-hours clock**, and no market-hours semantics are authored. The ruling
 takes the branch that **imports** `PRE_CONTINUATION_CALENDAR_ARTIFACT_APPROVAL_REQUIRED`
-and that runs **conservative** — skipping closed slots shortens `g`, raising `ω` and
+and that runs **conservative** — omitting *ineligible* slots shortens `g`, raising `ω` and
 `rho_h` and so lowering `N_eff`. It also discharges D-ω-2's remaining constancy
 condition, since `H` is 24 consecutive units of that index for every event.
 
