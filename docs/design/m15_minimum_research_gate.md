@@ -127,8 +127,9 @@ arithmetic) ·
 `MEAN_OVERLAP_CLOCK_DEPENDS_ON_APPROVED_CALENDAR_AUTHORITY` ·
 `CALENDAR_CONTENT_DETERMINES_OMEGA_SUBSTRATE` (the surface remains; the **prohibition
 is now supplied** by Ruling ω-12(e)) ·
-`LATER_EVENT_ELIGIBILITY_CALENDAR_MAY_STILL_MOVE_THE_EVENT_SET` (bounded conservative
-by Ruling 4's widen-only clause) · `OMEGA_CALENDAR_AMENDMENT_CLASSIFICATION_NOT_SETTLED` ·
+`LATER_EVENT_ELIGIBILITY_CALENDAR_MAY_STILL_MOVE_THE_EVENT_SET` ·
+`WIDEN_ONLY_IS_CONSERVATIVE_FOR_THE_EVENT_COUNT_NOT_FOR_N_EFF` (removing an event
+**merges gaps**, lowering `ω`, so the direction on `N_eff` is indeterminate) · `OMEGA_CALENDAR_AMENDMENT_CLASSIFICATION_NOT_SETTLED` ·
 `CALENDAR_FREEZE_CHECKABILITY_IMPLEMENTATION_PENDING` ·
 `NO_PROHIBITION_BINDS_THE_CHOICE_OF_CORRELATION_STATISTIC` ·
 `ROUND_11_REVIEW_COVERAGE_PARTIAL_TWO_OF_THREE_ROLES_TERMINATED` ·
@@ -202,7 +203,7 @@ same-*horizon*-clock token), `ROLLOVER_AND_HOLIDAY_SLOT_ELIGIBILITY_RELATIVE_TO_
 `NO_OUTCOME_BLINDNESS_REQUIREMENT_BINDS_CALENDAR_CONTENT` and
 `OMEGA_DEPENDENCE_NOT_DISCLOSED_AT_CALENDAR_APPROVAL` (all four **ruled by
 Ruling ω-12**), `OMEGA_SUBSTRATE_CONTENT_MAY_MOVE_AFTER_THE_METHOD_FREEZE` (closed by
-ω-12 **for slot membership**; survives for the event set),
+ω-12 **for slot membership**; survives for the event set, and **not** conservatively),
 `SAME_CLOCK_RULE_DOES_NOT_YET_IDENTIFY_THE_CLOCK_SUBSTRATE`
 and `OMEGA_H_CONSTANCY_DISCHARGED_ONLY_ON_A_BARS_THAT_EXIST_READING` and
 `MEAN_OVERLAP_UNIT_TIED_TO_AN_UNREGISTERED_HORIZON_CLOCK` (all three **discharged by
@@ -4231,11 +4232,23 @@ authoritatively measurable insofar as it depends on the same authority; and ther
 
 ###### What this ruling does not settle
 
-- **B can still change the *event set* after its later approval**, and that is a
-  different mechanism from slot membership: widening event-ineligibility removes
-  events, which moves both `N_raw` and the gap sequence. Ruling 4's **widen-only for
-  conservatism** clause bounds the direction, so the residual is conservative — but it
-  is real. **`LATER_EVENT_ELIGIBILITY_CALENDAR_MAY_STILL_MOVE_THE_EVENT_SET`.**
+- **B can still change the *event set* after its later approval, and — correcting a
+  claim this ruling first made — that residual is NOT conservative.** Widening
+  event-ineligibility removes events, which moves both `N_raw` and the gap sequence.
+  Ruling 4's **widen-only for conservatism** clause is conservative for the **event
+  count**: fewer events makes the raw ≥ 1,000 floor harder. It is **not** conservative
+  for `N_eff`, because removing an event **merges two gaps into one**, and a longer gap
+  gives a *smaller* overlap, a *smaller* `ω`, a *smaller* `rho_h` and therefore a
+  *larger* `N_eff_pair`. The two effects oppose and neither dominates in general.
+  Lead-verified, `NON_NORMATIVE_DIAGNOSTIC_ONLY`: a pair with events at slots
+  `0, 10, 20` has `ω = 0.583`, `rho_h = 14.42`, `N_eff_pair = 0.208`; drop the middle
+  event and it becomes `ω = 0.167`, `rho_h = 4.83`, `N_eff_pair = 0.414` — a **rise**.
+  On a denser sequence the same operation lowers it (`0.274 → 0.240`). The direction is
+  therefore **indeterminate and sometimes anti-conservative**, and an earlier drafting
+  of this bullet calling the residual "bounded conservative by Ruling 4's widen-only
+  clause" is **withdrawn**.
+  **`LATER_EVENT_ELIGIBILITY_CALENDAR_MAY_STILL_MOVE_THE_EVENT_SET`** ·
+  **`WIDEN_ONLY_IS_CONSERVATIVE_FOR_THE_EVENT_COUNT_NOT_FOR_N_EFF`.**
 - **The approval marker is artifact-declared, not evidence.** The committed interface
   says so in terms: `APPROVAL_DECLARED_BY_ARTIFACT__NOT_EVIDENCE_THAT_APPROVAL_OCCURRED`.
   A frozen, approved-looking artifact is checkable only as far as its own declaration.
@@ -6751,9 +6764,11 @@ invents no slot. **If the calendar is unavailable, `ω` is not authoritatively
 measurable: no continuous-grid fallback, no inferred market hours** — which may block
 formal continuation and authorises creating no calendar here.
 
-**What ω-12 leaves.** B may still move the **event set** after its later approval,
-bounded conservative by Ruling 4's widen-only clause
-(`LATER_EVENT_ELIGIBILITY_CALENDAR_MAY_STILL_MOVE_THE_EVENT_SET`); the approval marker
+**What ω-12 leaves.** B may still move the **event set** after its later approval, and
+that residual is **not** conservative — widen-only is conservative for the event
+*count*, while removing an event **merges gaps** and can *raise* `N_eff`
+(`LATER_EVENT_ELIGIBILITY_CALENDAR_MAY_STILL_MOVE_THE_EVENT_SET`,
+`WIDEN_ONLY_IS_CONSERVATIVE_FOR_THE_EVENT_COUNT_NOT_FOR_N_EFF`); the approval marker
 is **artifact-declared, not evidence**; nothing enforces any limb in code
 (`CALENDAR_FREEZE_CHECKABILITY_IMPLEMENTATION_PENDING`); the role-span truncation limb
 is untouched; and whether the outcome-blindness and non-retroaction limbs need an
