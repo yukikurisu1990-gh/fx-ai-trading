@@ -46,8 +46,8 @@ For the current Family A, **`P = 20`**, and the authority is the frozen register
 **Next decision — the mean overlap fraction** (§8.4, a completed decision packet,
 **not ruled**): `MEAN_OVERLAP_FRACTION_UNIT_NOT_REGISTERED` ·
 `MEAN_OVERLAP_FRACTION_IS_AN_EFFECTIVE_N_AUTHORITY_PARAMETER` ·
-`OVERLAP_MEASURED_ON_THE_SPAN_IT_JUDGES_WHILE_CORRELATION_IS_FROZEN_ON_DESIGN` ·
-`HORIZON_EXTENT_IN_WALL_CLOCK_DEPENDS_ON_THE_UNRULED_GAP_UNIT` ·
+`NOTHING_PREVENTS_OVERLAP_BEING_MEASURED_ON_THE_SPAN_IT_JUDGES_WHILE_CORRELATION_IS_FROZEN_ON_DESIGN` ·
+`HORIZON_WALL_CLOCK_EXTENT_NOT_REGISTERED` ·
 `Q10_A_DOES_NOT_RULE_THE_GAP_UNIT` ·
 `DRAFT_AND_APPROVED_OVERLAP_FORMULATIONS_ARE_DIFFERENT_OBJECTS_AND_DIVERGE_INSIDE_THE_HORIZON`
 
@@ -80,9 +80,12 @@ defence, and must supply its own".
 
 **`NON_NORMATIVE_DIAGNOSTIC_ONLY` — document-wide.** Every duration, α, power,
 false-positive, false-negative, deflator and standard-error figure in §0, §8.1,
-§8.2 and §12 is a derived diagnostic computed under stated modelling assumptions,
+§8.2, **§8.3, §8.4** and §12 is a derived diagnostic computed under stated modelling
+assumptions,
 and appears in **no** committed source — notably ~1,065 / ~1,111 / ~1,312 weekday
-days, 37%, 43%, 50%, the one-sided 5%, SE ≈ 2.4 / 3.10, the 4.36 budget and 5.90.
+days, 37%, 43%, 50%, the one-sided 5%, SE ≈ 2.4 / 3.10, the 4.36 budget, 5.90,
+§8.3.0/§8.3.2's `×1.05 / ×1.29 / ×1.74 / ×1.81 / ×3.44 / ×6.70` and the 20.9× swing,
+and §8.4's `ω = 0.146`, the 6.25× divergence and every row of its comparison table.
 **None may be promoted to contract justification, cited as a required duration, or
 used to size `D`** (Ruling B: the exact `D` is not ruled).
 
@@ -98,8 +101,11 @@ that is not `D`'s.
 **Historical:** `NR_K_PENDING_HUMAN_CHATGPT_RULING`,
 `NR_K_REQUIRES_HUMAN_CHATGPT_RULING_AFTER_Q10`,
 `P_DEFINITION_CONFLICT_SPEC_CONTRIBUTING_VS_UNIVERSE_FIXED` and
-`PAIR_UNIVERSE_FREEZE_POINT_NOT_COMMITTED` — **SUPERSEDED BY HUMAN + CHATGPT
-RULING** (§8.3.0).
+`PAIR_UNIVERSE_FREEZE_POINT_NOT_COMMITTED` — **discharged as to `P`'s binding
+only** (§8.3.0, §8.3.4); its **forward-epoch limb survives** and is carried above
+beside `NO_FORWARD_SPAN_FULL_ROSTER_COVERAGE_GATE_COMMITTED`, which may or may not
+be the same gap — the coverage gate and the forward inventory schema are two
+separate absences.
 `DRAFT_AND_APPROVED_OVERLAP_ESTIMATORS_DIVERGE_AT_THE_FROZEN_CEILING` —
 **superseded by**
 `DRAFT_AND_APPROVED_OVERLAP_FORMULATIONS_ARE_DIFFERENT_OBJECTS_AND_DIVERGE_INSIDE_THE_HORIZON`
@@ -194,8 +200,12 @@ requires
 > **`(1 + 23·ω) × (1 + 19·c) ≤ 4.36`**
 
 *(The `19` is `P − 1`. It was an assumption when this was written; since §8.3.0 it
-rests on **`NR_K_RULED_P_EQUALS_FROZEN_REGISTERED_FAMILY_A_UNIVERSE`**, which leaves
-`ω` the last unpinned term in the inequality — see §8.4.2.)*
+rests on **`NR_K_RULED_P_EQUALS_FROZEN_REGISTERED_FAMILY_A_UNIVERSE`**. **Two** terms
+remain unpinned, not one — `ω` (§8.4) and `c` (NR-L) — and an earlier version of
+this note said `ω` was "the last", which is **withdrawn**. At the diagnostic
+`c = 0.3` used throughout this document, `rho_x = 6.70` exceeds the whole 4.36
+budget on its own, just as `rho_h = 5.90` does under Poisson. Neither may be treated
+as the residual of the other.)*
 
 — the *entire* deflation budget, for both effects combined, at the frozen minimum
 span and the maximum permitted rate. Equivalently: `c ≤ 0.177` when `ω = 0`, or
@@ -260,7 +270,10 @@ reached by one clustered doublet per pair per day — and, decisively, it is wha
 
 At the ceiling that is `24/48 = 0.5`, hence `rho_h = 12.5` — the inherited premise
 exactly. **So the 3.3-year figure is the frozen turnover ceiling fed through a
-committed formula, not an out-of-contract assumption.**
+committed formula, not an out-of-contract assumption.** — **HISTORICAL; WITHDRAWN at §8.4.3
+and in the paragraph below**: `24/48` is the draft's *divisor*, not an `ω`, so this
+is a unit-type splice rather than either committed formula. The figure survives as
+reachable by **clustering**, not by this route.
 
 The APPROVED spec supersedes the draft under T-6, and the spec's arithmetic is
 what `INSUFFICIENT_SAMPLE` is computed from. But **the two committed formulas
@@ -310,8 +323,10 @@ needed**, not a live route. Read with that: **the fastest route to the sample fl
 *through the estimator* was ten contributing pairs, not twenty** — 45% off the required span, at a 0.100 share,
 far inside the 0.40 cap — until `P = 9` pushes each pair over the 4/day overlap
 threshold and the gain reverses sharply. **The contract offers no such route:**
-Ruling 2 / R-2a fix the universe at PAIRS_20 and bar "inclusion/exclusion
-decisions anywhere in this family". NR-K is therefore a defect in the
+Ruling 2 / R-2a fix the universe at PAIRS_20, and prereg §3.2's
+**R-2a-compliance clause** bars "inclusion/exclusion decisions anywhere in this
+family" — §8.3.5 ground G records why the family-wide bar rests on that clause and
+not on R-2a's own text, which reaches only design time. NR-K is therefore a defect in the
 **estimator's caller contract**, not a permitted pair-universe remedy, and it must
 not be merged with the duration limb (§8.1.9). Separately, a pair that fired no trades adds nothing to the numerator
 while raising `rho_x`, so simply *omitting* it is a free gain. Nothing pins `P`
@@ -1050,10 +1065,20 @@ and are labelled as such.
     is computed over, and `PAIRS_20`" to "be the same twenty". §8.3.0 rules the
     **first** of those three and expressly leaves the 0.40 cap as a **separate
     authority**; `pair_contribution` iterates the **traded** list, so the cap's set is
-    the traded set by implementation. The requirement is therefore reduced to what is
-    ruled — the three sets are **reported together**, and `P`'s set is the registered
-    twenty — and the claim that all three **must be** the same twenty is **withdrawn as
-    unruled**. `P_AND_CORRELATION_INDEX_SET_NOT_BOUND` and
+    the traded set by implementation. The requirement therefore splits into one ruled limb and one retained
+    proposal: **ruled**, `P`'s set is the registered twenty (§8.3.0); **this packet's
+    own proposal and not ruled**, that the three sets be reported together — §8.3.0
+    says nothing about a joint report and §10 requires none. The claim that all three
+    **must be** the same twenty is **withdrawn**, and the decisive reason is the
+    ruling's own rather than the weak one of unruledness: the concentration set **is**
+    the traded set by implementation, so requiring it to equal the registered twenty
+    would impose exactly the all-twenty-must-trade obligation §8.3.0 forecloses. The
+    withdrawal is therefore a *consequence* of the ruling, not a loosening beside it. Withdrawing it also
+    withdraws the mitigation it would have supplied against §8.3.7's drop-motive,
+    which is why that item is recorded as surviving rather than resolved — though the
+    mitigation was narrow: adding zero-share members cannot move a maximum, so the
+    requirement was arithmetically inert against the **zero-trade** route and bit only
+    on the drop-the-highest-share route. `P_AND_CORRELATION_INDEX_SET_NOT_BOUND` and
     `CONCENTRATION_CAP_DROP_MOTIVE_SURVIVES_NR_K` are the open items behind it.
 - **The holdout duration `D` (`T_h`).** It is a formal-contract free parameter
   `[FIXED-AT gate-3a continuation]`, and the only one that moves **both** frozen
@@ -1345,8 +1370,9 @@ which, and the stricter reading currently wins.
 **Q2 — initial pair set, with the default already against a subset.** Ruling 2
 freezes "design 2025-04-25→2026-02-28 (**exploratory only**, never evidence,
 **fixed PAIRS_20**)" — PAIRS_20 is pinned to the exploratory role itself, not only
-to the formal family — and R-2a bars "inclusion/exclusion decisions **anywhere in
-this family**". A subset is also not the multiple-comparison saving it looks like:
+to the formal family — and prereg §3.2's **R-2a-compliance clause** bars
+"inclusion/exclusion decisions **anywhere in this family**"; R-2a's own text reaches
+only design time (§8.3.5 ground G). A subset is also not the multiple-comparison saving it looks like:
 what controls selection is registering the set in advance (R-7), not shrinking it,
 and the effect of pair count on effective-N **depends on what is held fixed — and
 under a fixed turnover budget the committed estimator rewards a *smaller*
@@ -1358,8 +1384,9 @@ numerator is capped regardless of how many pairs share it while
 `rho_x = 1 + (P−1)·c` falls with `P`: at the ceiling and corr 0.3 the frozen floors
 are reached in 67 weekday days at `P = 20` and **37 at `P = 10`**, reversing only
 below `P = 10` when each pair crosses the overlap threshold (§0.6). Dropping pairs
-is an effective-N **inflation** route, so the case against a subset rests on R-2a
-and R-7 alone, never on an arithmetic penalty that does not exist. The narrow question is therefore whether an explicitly
+is an effective-N **inflation** route, so the case against a subset rests on
+prereg §3.2's compliance clause and R-7 alone, never on an arithmetic penalty that
+does not exist. The narrow question is therefore whether an explicitly
 registered subset may be used for **cost** reasons without constituting a pair
 selection within family A. **Default if unruled: `PAIRS_20`.**
 
@@ -2738,11 +2765,14 @@ record of Q10's relation to it.* Not ruled then, and sequenced after Q10 by §8.
 **No token is proposed for
 it here.** An earlier draft offered
 `PAIR_UNIVERSE_MUST_BE_FROZEN_NO_LATER_THAN_D_FREEZE`; that **named the wrong
-object and is withdrawn** — the *universe* is already frozen (R-2a bars pair
-selection outright). §4 of this document *proposes* that the pair set used for `P`,
-the concentration set and `PAIRS_20` "must be the same twenty", but **§4 is this
-packet's own pending proposal, not authority for a withdrawal** (§8.3.1) — the same
-defect §12.5 records elsewhere, recurring here. NR-K is the estimator's *caller*
+object and is withdrawn** — the *universe* is already frozen (prereg §3.2's
+compliance clause bars pair selection family-wide; R-2a's own bar is design-time).
+§4 of this document *proposes* that the pair set used for `P`, the concentration set
+and `PAIRS_20` "must be the same twenty", but **§4 is this packet's own proposal,
+not authority for a withdrawal** (§8.3.1) — the same defect §12.5 records elsewhere,
+recurring here. *§8.3.0 has since ruled `P`'s set and §4 has withdrawn the
+concentration limb as unruled; the withdrawal above stands, its reasoning is
+corrected here.* NR-K is the estimator's *caller*
 contract, not a universe freeze. Recorded
 only as an ordering observation **for the NR-K ruling, not for this one**: a `P`
 freeze-point, if adopted, would have the same shape as Q10-A's.
@@ -2791,15 +2821,23 @@ from an elapsed-UTC `D`:
 6. Human + ChatGPT declaration of the exact `T_v` / `T_h` / `D`.
 7. The remaining Minimum Research Gate questions — Q1, Q8, FR-19 and the rest
    of §8.
-8. Only after **every** mandatory minimum-gate requirement is resolved may
-   execution authorisation be considered at all.
+8. Only after **every** *other* minimum-gate requirement is resolved may
+   execution authorisation be considered at all. *(An intermediate draft of this
+   step wrote "every **mandatory** … requirement". "Mandatory" is defined nowhere in
+   this document and would be classified by whoever wished to proceed; the closed
+   quantifier is restored, and the stricter reading governs.)*
 
 Steps 2–5 precede step 6 deliberately: declaring the window before the pair
 universe, the overlap authority and the correlation authority are settled would fix
 `D` against a sample model still open to change. **Step 3 was inserted after the
-NR-K ruling**, which left `ω` as the last unpinned term in §0.3's deflation
-inequality (§8.4.2). Step 8 is unconditional, and no earlier step may be read as
-partial authorisation.
+NR-K ruling**, which left **`ω` and `c`** as the two unpinned terms in §0.3's
+deflation inequality; `ω` is sequenced first because it carries neither a span scope
+nor a freeze obligation, where `c` carries both (§8.4.2). **Step 8 is unconditional,
+and no earlier step may be read as partial authorisation.** Step 6 is not an
+authorisation either — but it **is** irreversible: the window declaration is a freeze
+bound from the first push by `SAME_D_DIFFERENT_WINDOW_IS_RESELECTION`, and it is
+taken before step 7's questions, Q1 included. That ordering is deliberate, since the
+declaration must precede accrual (Q10-B), and it does not relax step 8.
 
 ### 8.3 NR-K — RULED. `P` and the pair-universe authority
 
@@ -2809,10 +2847,10 @@ partial authorisation.
 `P_DEFINITION_CONFLICT_SPEC_CONTRIBUTING_VS_UNIVERSE_FIXED` are **HISTORICAL —
 SUPERSEDED BY HUMAN + CHATGPT RULING** (§8.3.0). §8.3.1–§8.3.11 are the material
 the ruling was taken on and are retained as supporting record, except where
-§8.3.0 supersedes them: **§8.3.9's option set is historical** — the ruling selects
-Option A's cardinality on Option B's authority object — and **§8.3.10's
-recommendation is what the ruling adopted**, extended in three places §8.3.10 did
-not reach (the enumerated forbidden substitutions, the `P = 1` bar, and the
+§8.3.0 supersedes them — **§8.3.3's "`P` is not bound across roles" limb**,
+**§8.3.4's freeze-point limb as to `P`'s binding**, **§8.3.9's option set** — the ruling selects
+Option A's cardinality on Option B's authority object (all marked in place) — and **§8.3.10's recommendation is what the ruling
+adopted**, extended in three places §8.3.10 did not reach (the enumerated forbidden substitutions, the `P = 1` bar, and the
 narrowing of the word "contributing"). `MUST_RESOLVE_BEFORE_ANY_EFFECTIVE_N_VERDICT`
 is **discharged for NR-K** and continues to bind NR-L and the mean-overlap unit.
 
@@ -2878,17 +2916,37 @@ contributing" is exactly the sentence the narrowing above forecloses.
 **`P` may not collapse to one.**
 **`P_MUST_NOT_COLLAPSE_TO_ONE_BY_POST_HOC_CONTRIBUTOR_SELECTION`.** At `P = 1`,
 `rho_x = 1 + (1−1)·c = 1.0` exactly and the cross-pair deflator **vanishes** —
-§8.3.1 records that `effective_n()` accepts this today and that a committed test
-requires `P = 1` to return a live `SAMPLE_SUFFICIENT`. What is barred is the
+§8.3.1 records that `effective_n()` accepts this today and that **four** committed
+tests require a `P = 1` roster to return `SAMPLE_SUFFICIENT` — two at holdout and
+two at validation. What is barred is the
 **post-hoc route to it**, not `P = 1` as general mathematics: a family whose
 registered universe is a single pair is not addressed here, and this ruling says
 nothing about it.
+
+**One further reason for the bar, which the recommendation did not reach.**
+`effective_n()` echoes `rho_x` but not `cross_pair_corr`. At `P = 20`,
+`c = (rho_x − 1)/19` is recoverable from the record; at `P = 1`, `rho_x = 1.0`
+whatever `c` was, and the correlation becomes **unrecoverable from the artifact**.
+The bar therefore buys auditability of `c`, not only arithmetic.
+
+**Scope: "the current Family A" is meant literally.** A successor family inherits
+none of this. Family B is reachable by contract (Ruling 12) after family A closes,
+and it would need this ruling **re-taken**, not merely a new universe declared.
 
 **A registered pair that fails does not authorise shrinkage.**
 **`REGISTERED_PAIR_FAILURE_DOES_NOT_AUTHORISE_P_SHRINKAGE`.** Where a registered
 pair fails, the response is the **existing fail-closed semantics** that already
 govern that failure, or **adoption waits** — not a smaller `P`. No new fail-state
 vocabulary is invented here, and none may be invented to route around this clause.
+
+**The boundary between this clause and the "normal outcome" above, because both
+readings would be damaging.** A registered pair that **fires nothing** is the normal
+outcome named above: it triggers nothing in either direction — it neither shrinks
+`P` nor halts the family. This clause addresses the different case of a pair that
+cannot be **certified** (coverage, schema, cost-cell), and routes that to the
+fail-closed semantics already governing it. **Zero trades is not such a failure**,
+and may not be argued into this clause from either side: not as a licence (§8.3.5
+ground H), and not as a halt.
 
 **A different universe requires a new decision.**
 **`NEW_EXPLICIT_PREREGISTRATION_OR_CONTRACT_DECISION_REQUIRED`.** There is to be no
@@ -2914,9 +2972,9 @@ collapsed into one label:
 
 | Limb | Classification | Basis |
 | --- | --- | --- |
-| `P` reads from the registered universe rather than an observed count | **Ambiguity resolution** | The universe rule already says "fixed, **no selection**" (`pair_authority.py`, Ruling 2) and prereg §3.2's compliance clause bars inclusion/exclusion decisions. The spec's "contributing" was undefined; the ruling takes the reading that agrees with the universe rule rather than the one that contradicts it. Nothing committed is reversed. |
-| The forbidden-substitution list and the `P = 1` bar | **Tightening** | Latitude that existed is removed. `effective_n()` accepts any cardinality in `[1, 20]`, and **four committed tests positively require short rosters to be accepted with a live verdict** (§8.3.1). Behaviour that passes today will not pass under this ruling. |
-| Whether that tightening needs an amendment procedure | **NOT SETTLED HERE** | The ruling does not contradict the APPROVED spec's sentence — "contributing" is *narrowed*, not replaced — so on its face it is not an amendment of the spec text. But it **invalidates committed tests**, and this repository records `NO_GENERAL_CONTRACT_AMENDMENT_PROCEDURE_REGISTERED`. Whether a binding interpretation carrying a test consequence must run an amendment procedure cannot be answered from committed governance, so this packet does **not** assert "not an amendment". **`NR_K_AMENDMENT_CLASSIFICATION_OF_THE_TEST_INVALIDATING_LIMB_NOT_SETTLED`.** |
+| `P` reads from the registered universe rather than an observed count | **Ambiguity resolution** | The universe rule already says "fixed, **no selection**" (`pair_authority.py`, Ruling 2), and **prereg §3.2's R-2a-compliance clause** bars inclusion/exclusion decisions "**anywhere in this family**" — the one committed sentence that reaches validation and holdout, since Ruling 2's "fixed PAIRS_20" sits in its design-span clause and R-2a's own bar is design-time. The spec's "contributing" was undefined; the ruling takes the reading that agrees with the universe rule rather than the one that contradicts it. **No committed *sentence* is reversed.** Committed *behaviour* is: this limb is what makes a four-pair roster non-conforming, so the test consequence — and the amendment question in the row below — attach to **this** limb as well as to the next one. |
+| The forbidden-substitution list and the `P = 1` bar | **Tightening** | Latitude that existed is removed. `effective_n()` accepts any cardinality in `[1, 20]`, and **sixteen committed tests across four files positively require short rosters to be accepted with a live verdict** — four of them requiring a `P = 1` roster to return `SAMPLE_SUFFICIENT` (§8.3.1). Behaviour that passes today will not pass under this ruling. |
+| Whether that tightening needs an amendment procedure | **NOT SETTLED HERE** | The ruling does not contradict the APPROVED spec's sentence — "contributing" is *narrowed*, not replaced — so on its face it is not an amendment of the spec text. But it **invalidates committed tests**, and **no general contract-amendment procedure is registered anywhere in this repository** — `NO_GENERAL_CONTRACT_AMENDMENT_PROCEDURE_REGISTERED` is this packet's own token for that absence, not a citation, and the lead confirmed the token and the phrase "amendment procedure" occur nowhere outside this document. Whether a binding interpretation carrying a test consequence must run an amendment procedure cannot be answered from committed governance, so this packet does **not** assert "not an amendment" **for either limb**. **`NR_K_AMENDMENT_CLASSIFICATION_OF_THE_TEST_INVALIDATING_LIMB_NOT_SETTLED`.** |
 
 **What the ruling settles downstream, and it is more than `P`.** §8.3.8 recorded
 that `rho_x = 1 + (P−1)c` is an equicorrelated variance-inflation factor whose `P`
@@ -2939,6 +2997,41 @@ entirely.** What survives is the narrower question of whether `c`'s estimation s
   any slot outside the design span and `P` decides at holdout. Same residual as the
   pin above, seen from the coverage side.
 - **`P_AND_CORRELATION_INDEX_SET_NOT_BOUND`** (§8.3.8) survives as an NR-L item.
+- **The purpose limb is not mirrored on the correlation side.** The normative clause
+  is written about `P`. But `rho_x = 1 + (P − 1)c` falls in **`c`** as well as in
+  `P`, and `corr` arrives as a bare scalar with no pair-set identity attached, so at
+  a fixed `P = 20` a correlation-estimation set chosen to lower `c` raises `N_eff` by
+  the very mechanism this clause forbids on the `P` side. NR-K does not close it and
+  is not extended to close it — writing a `c` prohibition here would rule NR-L by the
+  back door. **NR-L must**: an outcome-driven `c`-set is the same defect in the other
+  factor. **`OUTCOME_DRIVEN_CORRELATION_SET_IS_THE_SAME_LEVER_IN_THE_OTHER_FACTOR`.**
+  **And it is not the smaller residual.** With `P` fixed, `rho_x = 1 + 19c`, so `c`
+  now carries the whole of the cross-pair deflator's variability. Against §8.3.2's
+  closed form at this document's diagnostic `c = 0.3`: the **forbidden** `20 → 10`
+  shrink bought `×1.81` on `N_eff`; a `c` of 0.15 buys `×1.74` and a `c` of 0.05 buys
+  `×3.44` — **larger than the shrink just prohibited** — with `P` at twenty
+  throughout and every clause of this ruling obeyed literally.
+  *`NON_NORMATIVE_DIAGNOSTIC_ONLY`.* Note for NR-L that prereg §3.2's "no
+  inclusion/exclusion decisions **anywhere in this family**" — the clause that closes
+  §8.3.5 ground G — is on its face the same clause a correlation-estimation subset
+  would have to answer to, so NR-L may be **confirming** a bar rather than deciding
+  from a blank slate. Whether estimating a statistic over a subset *is* an
+  inclusion/exclusion decision in that clause's sense is a contract reading and is
+  NR-L's to make.
+- **`PER_RECORD_COUNT_PROVENANCE_UNBOUND`** (§8.3.1), which this ruling **promotes**
+  rather than closes. `canonical_pair` checks a record's **label**; nothing binds
+  that record's `raw_event_count` and `overlap_fraction` to the pair it names, no
+  committed test asserts provenance, and `effective_n()` has no production caller.
+  With `P`, `rho_x` and the raw total all held constant, re-pairing the same counts
+  against the same overlap fractions across the twenty labels moves `N_eff` **alone**.
+  Taking the module's own audited B-3 shapes (`50 @ ω = 0.0`, `8000 @ ω = 1.0`,
+  `c = 0`) and exchanging only which label carries which: `50/1 + 8000/24 = 383.33 →
+  INSUFFICIENT_SAMPLE` becomes `8000/1 + 50/24 = 8002.08 → SAMPLE_SUFFICIENT`, a
+  **20.9× swing** on an identical roster, an identical `P = 20`, an identical raw
+  total and an identical multiset of reported overlap fractions.
+  *`NON_NORMATIVE_DIAGNOSTIC_ONLY`.* No committed check can see it, and the
+  implementation pin as described above would not close it — that pin is about roster
+  **completeness**.
 - **`CONCENTRATION_CAP_DROP_MOTIVE_SURVIVES_NR_K`.** §8.3.7's finding — that
   dropping the highest-share pair can convert a 0.40 cap failure into a pass — is an
   **allocation** question, not a `P` question: `max_trade_share` is computed over the
@@ -2967,7 +3060,7 @@ Reconstructed by reading the sources, not by inheriting a summary.
 | `n_pairs = len(records)`, bounded **above** by `len(PAIRS_20)` and below **only by non-emptiness** — `P ≥ 1`, with **no completeness requirement**. `rho_x = 1.0 + (n_pairs - 1) * corr`, so **at `P = 1` the cross-pair deflator is exactly 1.0 and disappears entirely** | `scripts/m15_gate3a/effective_n.py` |
 | Membership **is** enforced — `canonical_pair` rejects anything outside the universe — and duplicates raise, at a *different* layer (`effective_n.py`, not `pair_authority.py`). **Neither layer enforces completeness** | `pair_authority.py`; `effective_n.py` |
 | **Nothing binds a record's counts to the pair it names.** `canonical_pair` checks the *label*; no committed test asserts per-record provenance, and **`effective_n()` has no production caller** — every importer is a test. **`PER_RECORD_COUNT_PROVENANCE_UNBOUND`** | `effective_n.py`; `tests/m15_gate3a/**` |
-| **No test pins completeness**, and four committed tests positively *require* short rosters to be accepted with a live verdict — including `P = 1` returning `SAMPLE_SUFFICIENT`. A ruling for the full roster is therefore **not an additive change** | `tests/m15_gate3a/test_effective_n.py`, `test_recheck_fixes.py` |
+| **No test pins completeness**, and **sixteen** committed tests across **four** files positively *require* short rosters to be accepted with a live verdict — every one calling `effective_n()` with a roster of fewer than twenty records and asserting a verdict token. **Four** of them require a `P = 1` roster to return `SAMPLE_SUFFICIENT`: two at holdout (`test_raw_floor_boundary_is_pinned`, `test_r2_the_traded_event_quantity_is_admissible`) and two at validation (`test_f3_validation_with_explicit_floors_applies_them`, `test_rf23_validation_is_sufficient_only_when_both_floors_are_cleared`). A ruling for the full roster is therefore **not an additive change**. *An earlier draft said "four committed tests" and cited two files; recounted at source by the lead.* | `tests/m15_gate3a/test_effective_n.py`, `test_recheck_fixes.py`, `test_source_audit_fixes.py`, `test_wp_cost_effn_warmup_status.py` |
 | The **only committed definition**: "`P` = number of pairs **contributing**". What "contributing" means is defined **nowhere** | `effective_n_estimator_spec.json` |
 | "the frozen PAIRS_20 universe (**Ruling 2 — fixed, no selection**)" | `pair_authority.py` |
 | "pair universe fixed at **PAIRS_20** (the 20 inventory pairs — **no inclusion/exclusion decisions anywhere in this family**)" | prereg R-2a compliance clause |
@@ -3027,12 +3120,20 @@ surviving some filter · another committed concept.
 with no selection; the implementation accepts any cardinality from 1 to 20.
 **`P_DEFINITION_CONFLICT_SPEC_CONTRIBUTING_VS_UNIVERSE_FIXED`.**
 
-**And `P` is not bound across roles.** The spec requires reporting
+**And `P` was not bound across roles.** The spec requires reporting
 `per_role: ["validation","holdout"]` but nowhere requires the *same* roster at
 each, and `effective_n` is a separate call per role with its own record list. A
-validation run at `P = 20` and a holdout at `P = 10` violates nothing committed.
-Whether `P` must be identical at design, validation and holdout is part of NR-K1
-and is **not decided here**. Two of the ten
+validation run at `P = 20` and a holdout at `P = 10` violated nothing committed
+**when this was written**.
+
+**Superseded by §8.3.0.** `P` is read from the registered universe *before anything
+is observed*, so it is the same registered twenty at design, at validation and at
+holdout, and a short **holdout** roster is a contract violation whatever the
+validation roster was — which matters because holdout is where `P` decides. The
+spec's `per_role` reporting requirement does not license a different roster per
+role. What survives is that **nothing detects it**:
+`NO_FORWARD_SPAN_FULL_ROSTER_COVERAGE_GATE_COMMITTED` and
+`P_AUTHORITY_RULED_IMPLEMENTATION_COMPLETENESS_PIN_PENDING`. Two of the ten
 readings have no committed referent at all — "portfolio allocation count" is
 defined nowhere in the M15 contract. "Pairs surviving some filter" has no per-pair
 *filter* — **but the frozen cost-hurdle threshold is `cost(pair, session)`, a
@@ -3054,9 +3155,13 @@ availability check" requires observing the data, and a real-data read is
 **unauthorised** (Q1, default (b)). It is also NR-K3's lever wearing a
 freeze-point label: it lets a measured property of the span set `P`.
 
-**The registered universe needs no freeze point — it already has one.** R-2a and
-Ruling 2 fixed it at Family A pre-registration and `pair_authority.PAIRS_20`
-value-pins it. **What is unpinned is the forward epoch**, and the artifacts locate
+**The registered universe needs no freeze point — it already has one.** Prereg
+§3.2's R-2a-compliance clause and Ruling 2 fixed it at Family A pre-registration and
+`pair_authority.PAIRS_20` value-pins it. *(Scope, because the two authorities differ
+in reach: Ruling 2's "fixed PAIRS_20" sits inside its **design-span** clause and
+R-2a's own bar is design-time, so the one committed sentence reaching validation and
+holdout — the roles at which `P` decides — is prereg §3.2's compliance clause. The
+stricter reading governs.)* **What is unpinned is the forward epoch**, and the artifacts locate
 the gap exactly: the design manifest records `source_pairs = "PAIRS_20 (fixed; no
 inclusion/exclusion)"` and the design inventory requires `pair: "one of PAIRS_20"`
 with `file_count: 20`, while the forward adoption manifest carries **no pair field**
@@ -3065,7 +3170,10 @@ schema has **no `pair` field and no 20-file assertion**. The spec reports per ro
 `["validation","holdout"]` — the two roles nothing pins. So the remedy available to
 the ruling is a **mirror of an existing committed pin**, not an invention.
 **`PAIR_UNIVERSE_FREEZE_POINT_NOT_COMMITTED`**, scoped to the forward epoch and to
-`P`'s binding — not to the universe.
+`P`'s binding — not to the universe. **Partly discharged by §8.3.0**: `P`'s binding
+is ruled — `P` is read from the registered universe, so no separate `P` freeze point
+is needed and none precedes the `D` freeze. The **forward-epoch limb survives**, and
+the header's Historical list must not be read as retiring more than that.
 
 **And the all-20 posture is committed in more places than §8.3.1 named.** D-5
 normative 1–3 ("The roster **exactly equals** the canonical `PAIRS_20`"; "**All 20
@@ -3184,8 +3292,8 @@ pair-set identity attached, neither in the call nor in the returned record** —
 the spec defines it over "per-pair **daily PnL** series … estimated on **DESIGN**
 data only and frozen", a different object on a different span. The one committed
 sentence juxtaposes `P` and `c` and never says they index the same set.
-**`P_AND_CORRELATION_INDEX_SET_NOT_BOUND`** — an open item assigned to neither
-NR-K nor NR-L today.
+**`P_AND_CORRELATION_INDEX_SET_NOT_BOUND`** — assigned to neither NR-K nor NR-L
+when this was written; **§8.3.0 and §8.3.11 assign it to NR-L**, `P` being ruled.
 
 **Why that matters for the formula.** `rho_x = 1 + (P−1)c` is the classical
 **equicorrelated variance-inflation factor**: for a sum over an index set `S`,
@@ -3326,13 +3434,13 @@ ruled, only the correlation side is still free, so
 what that ruling bought: a fixed `P` removes the compounding case where a stale
 `c₂₀` would be applied to a shrinking subset with a larger true `c_S`.
 
-**Order** (refining §8.2.8 step 3 and carrying its step 6 forward): NR-K —
+**Order** (refining §8.2.8 steps 2–3 and carrying its step 8 forward): NR-K —
 **ruled** (§8.3.0) → **mean-overlap unit and aggregation** (§8.4, the next
 decision) → NR-L → Q10(i)/(iii) → duration-boundary arithmetic → the exact
 `T_v` / `T_h` / `D` declaration → the remaining Minimum Research Gate questions
-(Q1, Q8, FR-19 and the rest of §8) → **and only after every mandatory requirement
-is resolved may execution authorisation be considered at all.** This is the
-recorded order; it is restated at §13 and it is not a suggestion about
+(Q1, Q8, FR-19 and the rest of §8) → **and only after every *other* minimum-gate
+requirement is resolved may execution authorisation be considered at all.** This is
+the recorded order; it is restated at §13 and it is not a suggestion about
 convenience.
 
 ### 8.4 Mean overlap fraction — decision packet: unit, formula, aggregation
@@ -3355,18 +3463,24 @@ Reconstructed by reading the sources, not by inheriting a summary.
 | The **only committed characterisation of `ω`**: "`mean_overlap_fraction` in [0,1] = **mean fraction of a trade's horizon that overlaps the next same-pair trade's horizon**, estimated **per pair** from the **realised inter-event gaps**. Non-overlapping events ⇒ `rho_h → 1`." | same |
 | **`ω` is not in `frozen_parameters`.** That block holds exactly three entries — `H_m15_bars: 24`, `N_eff_holdout_floor: 400`, `raw_holdout_trade_floor: 1000` | same |
 | **`ω` is not span-scoped at all.** The spec carries `correlation_estimation_data` — "DESIGN span only …; never validation/holdout; frozen once and recorded" — and there is **no counterpart key for the overlap**, in this artifact or any other | same; repo-wide grep |
-| `ω` is a **caller input**, validated only as a finite number in `[0, 1]`; the module's own docstring says "the raw counts, **overlap fractions** and correlation are **supplied by the caller**" | `effective_n.py:120–129`, module docstring |
+| `ω` is a **caller input**, validated only as a finite number in `[0, 1]`; the module's own docstring says "the raw counts, **overlap fractions** and correlation are **supplied by the caller**" | `effective_n.py` `_require_unit_fraction` (118–130), module docstring |
 | A **second committed formulation**, textually different: "Draft estimator (for the design audit to fix): block-adjust by horizon (events per pair **thinned by mean overlap factor ≈ horizon/mean inter-event gap**)" | prereg §9 |
-| The horizon: "**Horizon (Ruling 6 — FROZEN): 24 M15 bars (6 hours)**. No horizon … search"; purge/embargo "≥ horizon + 1 = **25 M15 bars**" | prereg §3.2, §8 |
+| The horizon: "**Horizon (Ruling 6 — FROZEN): 24 M15 bars (6 hours)**. No horizon … search"; purge/embargo "≥ horizon + 1 = **25 M15 bars**" | prereg **§6**, §3.2 |
 | The event domain: `raw_event_count` = "eligible **traded** events (`n_source_bars == 15` buckets that pass the cost-hurdle and fire an EV-gated trade)", and `effective_n()` refuses `complete_bucket_count` and `cost_hurdle_eligible_bar_count` **by name** | spec; `effective_n.py` `_require_count_quantity` |
 | The grid: "bars bucketed by `floor(timestamp / 15 min)` on the **UTC** clock … **No DST logic (UTC only)**"; and "**no synthetic bars across market close**" | prereg §4 |
 | The 400 floor "bounds a derived real whose inputs — **realised inter-event gaps** and daily-PnL correlations — are undefined for a slot set" | PR #448 contract Gate-decision |
 
-**So the shape of the gap is precise, and the shape of the measurement is not.**
-The *object* is textually determinate — a per-pair mean, over trades, of a fraction
+**So the shape of the gap is partly determinate, and the shape of the measurement
+is not.** The spec's *wording* points at a per-pair mean, over trades, of a fraction
 of one trade's horizon overlapped by **the next same-pair trade's** horizon,
-computed from realised inter-event gaps in the **traded-event** domain. What is
-undetermined is the **unit** the gap is measured in, the **function** that maps a
+computed from realised inter-event gaps. **That reading is put to the ruling as
+MO-1, not assumed here** — an earlier draft called it "textually determinate" and
+then asked MO-1 whether it held, which is the two positions a packet may not hold at
+once. Each of MO-1's three limbs is *suggested* by the sentence and *compelled* by
+none, and MO-1(b) in particular runs **anti-conservative**: counting only the next
+trade understates dependence exactly when horizons stack three deep, which §0.4(b)
+shows is admissible at the frozen ceiling. Beyond MO-1, what is undetermined is the
+**unit** the gap is measured in, the **function** that maps a
 gap to a fraction, the **order** of the mean and that function, the treatment of
 **endpoints** (zero-event, one-event, last-event), the **within-pair** weighting,
 and **who fixes the value and when**.
@@ -3376,9 +3490,12 @@ and **who fixes the value and when**.
 **Against the correlation, `ω` is the unprotected twin.** Both are deflator inputs;
 both are unit fractions; both decide `INSUFFICIENT_SAMPLE`. But `c` is span-scoped
 ("DESIGN span only; never validation/holdout"), **frozen once**, and **recorded**;
-`ω` has none of the three. `ω` is therefore measured, by default, **on the very span
-whose verdict it decides** — the holdout — while `c` may not be.
-**`OVERLAP_MEASURED_ON_THE_SPAN_IT_JUDGES_WHILE_CORRELATION_IS_FROZEN_ON_DESIGN`.**
+`ω` has none of the three. **Nothing prevents `ω` being measured on the very span whose verdict it decides** —
+the holdout — while `c` may not be. Stated that way deliberately: MO-7 records that
+**nothing computes `ω` at all** today, so the present tense would overstate it, and
+the older token `MEAN_OVERLAP_FRACTION_NOT_FROZEN_AND_ROLE_MEASURED` (§0.7) likewise
+asserts a role-measurement that MO-6 records as unregistered — it is superseded here.
+**`NOTHING_PREVENTS_OVERLAP_BEING_MEASURED_ON_THE_SPAN_IT_JUDGES_WHILE_CORRELATION_IS_FROZEN_ON_DESIGN`.**
 Whether that asymmetry is correct is a question, not a defect claim: `ω` is a
 statistic of *sample structure*, not of performance, and a structural statistic
 arguably must come from the span it describes. **But nobody has recorded that
@@ -3387,9 +3504,11 @@ reasoning, and nothing stops it being read the other way.**
 **Against the horizon, the omission is sharper, and it has a committed precedent.**
 `rho_h = 1 + (H − 1)·ω` has exactly two inputs. `H` is frozen at 24 *and pinned in
 code*: R-1 hardened `horizon_bars` from a caller-settable input into a value that
-raises on any override, and the recorded reason was that a settable one "could flip
-the verdict invisibly" — the pin was later widened from the holdout role to **every**
-role for the same reason. `ω` multiplies `(H − 1)` **in the same expression**, spans
+raises on any value other than the frozen 24, the recorded reason being that the pin
+means "an override **can no longer** flip the verdict invisibly" (`effective_n.py`
+module docstring, R-1) — and the in-code note widening it records that "pinning it
+only for the holdout role still let a validation verdict be flipped by an override,
+so it is now frozen for every role". `ω` multiplies `(H − 1)` **in the same expression**, spans
 the full `[0, 1]`, and is a free caller input with no producer, no formula, no span
 and no freeze point. **R-1's own rationale applies to `ω` verbatim and was never
 applied.** This is the same argument §12.6 recorded in NR-K's favour, pointed at the
@@ -3401,8 +3520,15 @@ deflation budget at the frozen minimum span and the maximum permitted rate is
 **4.36**, which `rho_h` alone exhausts at **`ω = 0.146`**. So the admissible band is
 roughly the **bottom 15% of `ω`'s domain**, and every question below can move `ω`
 across it. Now that §8.3.0 fixes `P = 20`, the `(P − 1) = 19` in that budget rests on
-a ruling rather than on an assumption — which leaves `ω` as the **last unpinned term
-in the inequality**.
+a ruling rather than on an assumption. **`ω` is not thereby the last unpinned
+term** — an earlier draft said so and it is **withdrawn**. `c` is unruled too
+(NR-L), and by the same budget its admissible band is the bottom **17.7%** of its
+domain against `ω`'s 14.6%. What the ruling changed is that `rho_x`'s **cardinality**
+is fixed while its **value** is not, so **both** deflators still turn entirely on an
+unruled caller-supplied scalar. `ω` is sequenced first because it carries **neither**
+a span scope nor a freeze obligation, where `c` carries both — "DESIGN span only …
+frozen once and recorded" — even though `c`'s method, pair set and freeze *moment*
+are unregistered.
 
 #### 8.4.3 The two committed formulations are different objects — and §0.5 mislocated the divergence
 
@@ -3412,29 +3538,47 @@ by its own sentence, what events are "**thinned by**" — a **divisor**, whose v
 `H/ḡ` exceeds 1 exactly when the mean gap falls inside the horizon. They have
 different ranges and different positions in the arithmetic.
 
-**One consequence is decisive and mechanical.** `_require_unit_fraction` refuses any
-value outside `[0, 1]` — a committed test refuses a fraction "just above one" by
-name. So the prereg draft's quantity is **inadmissible as `overlap_fraction`
-throughout the overlapping regime**, which is the only regime the adjustment exists
-for. The draft's number lands inside `[0, 1]` only when `ḡ > H`, i.e. precisely
-where the spec says the answer is `rho_h → 1` anyway.
+**One consequence is decisive and mechanical.** The APPROVED spec's own definition
+says `mean_overlap_fraction` is "**in [0,1]**", and `_require_unit_fraction` enforces
+it — a committed test refuses a fraction "just above one" by name. *(Contract first,
+code second: the bar is the spec's, and the implementation only holds it.)* So the
+prereg draft's quantity is **inadmissible as `overlap_fraction` throughout the
+overlapping regime**, which is the only regime the adjustment exists for. The
+draft's number lands inside `[0, 1]` only when `ḡ > H`, i.e. precisely where the
+spec says the answer is `rho_h → 1` anyway.
+
+**And the draft's sentence is incoherent at one end whichever way it is read.** As a
+**divisor**, `H/ḡ < 1` at `ḡ > H` would *inflate* the count; as a **multiplier**,
+`H/ḡ > 1` inside the horizon would do the same. Each reading needs a repair, at
+opposite ends. Everything below applies `max(1, H/ḡ)` — the divisor reading with the
+sub-unit end clamped — and **that clamp is this packet's, not the prereg's**, which
+writes `H/ḡ` and no clamp. The clamp is near-forced by the word "thinned by", but it
+is a reading, and it must be labelled as one.
 
 **Which forces a correction to §0.5, and it runs against this packet's earlier
 convenience.** §0.5 wrote that at the frozen ceiling the draft "yields" `0.5`,
 "hence `rho_h = 12.5`", and concluded that "the two committed formulas disagree by
-12.5× in `rho_h` at the frozen ceiling". Taking each formulation **on its own
-terms** at a mean gap of 48 bars: the draft thins by `max(1, 24/48) = 1` — no
-thinning — and the spec's own clause says non-overlapping events give `rho_h → 1`.
-**They agree at the ceiling.** The `12.5` was produced by feeding the *draft's
-divisor* into the *spec's fraction slot*, which is a unit-type splice, not either
-committed formula. **Withdrawn.**
+12.5× in `rho_h` at the frozen ceiling". The `12.5` was produced by feeding the
+*draft's divisor* into the *spec's fraction slot*, where it is multiplied by
+`(H − 1)`. That is a unit-type splice under any reading, and it is **withdrawn**.
 
-**The divergence is real; it lives elsewhere.** Taking the spec's two pinned
-endpoints with the natural fraction `max(0, 1 − g/H)` — labelled as a *reading*,
-since §8.4.1 records that the spec never writes a formula — and the draft's
-`max(1, H/ḡ)`, under regular arrivals: *`NON_NORMATIVE_DIAGNOSTIC_ONLY`.*
+**But the ceiling relationship is *undetermined*, not agreed — and an intermediate
+draft of this subsection said "they agree", which is also withdrawn.** Under the
+clamped-divisor repair the two give `1.00` and `1.00` at a 48-bar mean gap; under the
+multiplier repair the draft thins by 0.5 there, an effective `rho_h` of `2.00`
+against the spec-style `1.00`. **Which repair applies is unruled**, so the agreement
+rests on the packet's own clamp. Recording "they agree" would resolve — in the
+feasibility-favourable direction §0.5 itself names, since `rho_h = 1.00` at the
+ceiling frees the entire 4.36 budget for `c` — a divergence this packet exists to
+keep open.
 
-| mean gap (M15 bars) | spec-style `rho_h` | draft divisor | ratio |
+**The divergence is real, and inside the horizon it is large under either repair.**
+Taking the spec's two pinned endpoints with the natural fraction `max(0, 1 − g/H)` —
+labelled as a *reading*, since §8.4.1 records that the spec never writes a formula —
+and the draft's `max(1, H/ḡ)` — a *reading* too, per the clamp caveat above — under
+regular arrivals: *`NON_NORMATIVE_DIAGNOSTIC_ONLY`.*
+
+| mean gap (M15 bars) | spec-style `rho_h`, i.e. `1 + 23·max(0, 1 − ḡ/H)` at the **mean** gap (`φ(E[g])`, the quantity §0.4(a) withdrew as an *argument*) | draft divisor `max(1, H/ḡ)` | ratio |
 | --- | --- | --- | --- |
 | 48 | 1.00 | 1.00 | **1.00×** |
 | 24 | 1.00 | 1.00 | **1.00×** |
@@ -3444,8 +3588,10 @@ since §8.4.1 records that the spec never writes a formula — and the draft's
 | 3 | 21.12 | 8.00 | 2.64× |
 | 1 | 23.04 | 24.00 | 0.96× |
 
-They agree at both ends, diverge by up to ~6.25× **inside** the horizon, and even
-**cross** at the dense end. The open item is therefore renamed:
+Under this repair they coincide at both ends, diverge by up to ~6.25× **inside**
+the horizon — the true maximum of the ratio is `6.261` at `ḡ ≈ 12.52` — and even
+**cross** at the dense end, the crossover sitting just below `ḡ = 1`. Under the
+multiplier repair the ceiling row instead reads `1.00` against `2.00`. The open item is therefore renamed:
 `DRAFT_AND_APPROVED_OVERLAP_ESTIMATORS_DIVERGE_AT_THE_FROZEN_CEILING` is
 **superseded** by **`DRAFT_AND_APPROVED_OVERLAP_FORMULATIONS_ARE_DIFFERENT_OBJECTS_AND_DIVERGE_INSIDE_THE_HORIZON`**.
 
@@ -3464,11 +3610,12 @@ The gap has no committed unit. The candidates are not stylistic:
 
 | Candidate | What it counts | Where it bites |
 | --- | --- | --- |
-| **M15 bars on the continuous UTC grid** | grid slots, including closed periods | the grid is committed (`floor(timestamp / 15 min)`, UTC, no DST) and this is the unit `H` is stated in |
+| **M15 bars on the continuous UTC grid** | grid slots, including closed periods | the grid is committed (`floor(timestamp / 15 min)`, UTC, no DST) — but §8.2.2 records that it fixes the **bucketing basis** and "does not, on its face, denominate a *duration*", and `calendar_authority.py` calls it "the frozen derivation contract, **not a market-hours decision**". It does not by itself say which slots carry bars |
 | **M15 bars that exist** | buckets actually produced — "**no synthetic bars across market close**" | a weekend contributes **zero** bars, so two trades either side of it can be adjacent |
-| **Complete buckets only** (`n_source_bars == 15`) | the eligibility unit | thin holiday sessions produce incomplete buckets; whether they consume horizon is unregistered |
-| **Elapsed wall-clock / calendar time** | minutes or hours | a weekend is ~60 hours, so every cross-weekend pair scores `ω = 0` |
-| **Event index** | "the k-th trade", ignoring time | makes `ω` a function of ordering alone |
+| **Complete buckets only** (`n_source_bars == 15`) | the eligibility unit | a bucket short of fifteen source minutes exists as a bar but is never an event; whether such bars consume horizon is unregistered |
+| **Elapsed time, including closed periods** | minutes or hours on the wall clock | any closure longer than the horizon's wall-clock extent puts every gap across it beyond the horizon, so the contribution is `0` |
+| **Elapsed time, excluding closed periods** | wall-clock time with closures removed | behaves like the bars-that-exist reading, and additionally needs the approved calendar artifact to say what is excluded |
+| **Event index** | "the k-th trade", ignoring time | under MO-1(b)'s *next-event* reading the index gap is **identically 1**, so `ω` collapses to a constant independent of the data; it varies only if MO-1(b) is varied too |
 
 **A closed-market interval separates the candidates by the full width of the
 band**, and the argument needs no session boundary to make it. Take two same-pair
@@ -3478,9 +3625,43 @@ material length puts the gap far beyond a 6-hour horizon and the contribution is
 **0**. Counted in **bars that exist**, the closure contributes **nothing at all** —
 prereg §4 commits "**no synthetic bars across market close**" — so the gap is only
 the open bars on either side, and two trades placed near the close and near the
-reopen are **near-adjacent in that unit**, giving a contribution near **1**. One
-pair of trades, one unit choice, and the two answers sit at opposite ends of
-§8.4.2's admissible band.
+reopen are **near-adjacent in that unit**. On the spec's own characterisation —
+"the fraction of a trade's horizon that overlaps the next same-pair trade's
+horizon" — two near-coincident horizons overlap almost entirely, so the contribution
+is near **1**. *That upper endpoint is a reading of the characterisation, not one of
+the two endpoints §8.4.7 records as pinned.* One pair of trades, one unit choice,
+and the two answers sit at opposite ends of `ω`'s whole domain — one inside
+§8.4.2's admissible band and one roughly seven times beyond its top. (A single
+contribution is not `ω`, which is a mean over events; the point is the leverage,
+not the resulting mean.)
+
+**One committed constraint already bears on the route, without closing the
+question.** The merged D-5.8 Gate-decision — ruling a different question two lines
+below the sentence §8.4.1 quotes from it — records that where a quantity turns on
+the closed-market fraction, "any admissible answer must be
+**market-hours-independent, or carried by the approved calendar artifact**". Two
+candidates here, *bars that exist* and *complete buckets only*, are neither: they
+need no calendar to compute, but they make `ω` a function of **data presence** and
+cannot distinguish a data outage from a closure — which is in effect the inference
+`calendar_authority.py` refuses ("never reverse-infers 'there is no data, therefore
+the market was closed'"). **That foreclosure's scope is D-5.8 and it does *not* rule
+MO-2.** It is recorded because a ruler choosing either candidate thereby imports
+`PRE_CONTINUATION_CALENDAR_ARTIFACT_APPROVAL_REQUIRED`, the same unbuilt dependency
+§8.2.3 weighed against Option B for `D`.
+
+**Three committed sources point at the bar family, and none of them rules it.**
+§8.2.2's own reason-giving rule — "**Model mechanics** — every quantity defined by
+the label horizon or the feature lookback — is denominated in **M15 bars**", which
+§8.2.0 invokes when recording this very open item; `warmup.py`'s `bar_index`,
+"Zero-based over forward-epoch **bars**"; and prereg §9's `horizon / mean
+inter-event gap`, whose quotient is dimensionless only if the gap shares `H`'s unit.
+Recorded as evidence, **not as a ruling** — the prereg draft is expressly "for the
+design audit to fix" and §8.4.3 shows it is a different object.
+
+**And §8.2.3's Option-C circularity objection does not transfer here.** `D` is a
+pre-freeze *planning* quantity, so defining it by observed slots is circular; `ω` is
+a *measured statistic*, so data-dependence is not circularity. Option C may not be
+cited to foreclose the bars-that-exist or complete-buckets candidates.
 
 *An earlier draft of this paragraph made the point with a concrete Friday-evening
 to Monday-morning example and a 0.5 contribution. **Withdrawn**: that arithmetic
@@ -3493,23 +3674,41 @@ asserted here, and none may be inferred from this illustration — the leverage 
 from a closure **existing**, which prereg §4 already commits, not from where it
 falls. `NON_NORMATIVE_DIAGNOSTIC_ONLY`.*
 
-**And the same choice re-scales `H` itself.** The contract's own gloss is "24 M15
-bars **(6 hours)**", which is exact only inside a continuously-open session, because
-prereg §4 forbids synthetic bars across market close. A 24-bar horizon opened on a
-Friday evening is 6 hours on the continuous-grid reading and spans the weekend on
-the bars-that-exist reading. `H` is frozen at **24 bars** by Ruling 6 precisely so
-it cannot be re-scaled — and leaving the gap's unit open re-scales it by the back
-door. **`HORIZON_EXTENT_IN_WALL_CLOCK_DEPENDS_ON_THE_UNRULED_GAP_UNIT`.**
+**And the horizon's own wall-clock extent is unfixed too — separately.** The
+contract's gloss is "24 M15 bars **(6 hours)**", exact only where the counted bars
+are contiguous grid slots; prereg §4 forbids synthetic bars across market close, so
+a 24-bar horizon opened shortly before a closure is 6 hours on the continuous-grid
+reading and reaches past the closure on the bars-that-exist reading. The contract
+does not settle which — seven lines after the "(6 hours)" gloss, **prereg §6
+describes the same frozen horizon as a "4–8 h horizon (vs 20 min)"**, and no
+committed source reconciles the two. Nor does the machinery: `scripts/m15_gate3a/`
+carries `HORIZON_M15_BARS = 24` as a pinned scalar and **no counting rule at all**,
+and the only positional implementation anywhere — `scripts/ml_step4/labels.py`'s
+`bars[i + 1 : i + 1 + horizon]` — is M1-lineage code prereg §11 admits only "after
+audit/wrapping", not adopted here.
+**`HORIZON_WALL_CLOCK_EXTENT_NOT_REGISTERED`.**
+
+**This is adjacent to the gap unit, not produced by it, and an earlier claim that it
+was is withdrawn.** The gap unit cannot reach the horizon the label machinery
+applies, so it does not "re-scale `H` by the back door" — that earlier wording
+claimed a causal path that does not exist. What is true is narrower: "fraction **of
+a trade's horizon**" is well defined only if the gap and `H` are read in the **same**
+unit, so answering MO-2 fixes how `H` is read **inside `ω`'s arithmetic**, and
+nowhere else.
 
 **Q10-A does not answer this, and must not be cited as if it did.** Ruling Q10-A
 fixes `D` as an elapsed UTC calendar span — that is authority over the **duration
-axis**, the length of a role window. The gap unit is authority over the **horizon
-axis**, the spacing between two events inside a window. §8.2's own guard-rail is
-exactly this distinction: `D_IS_ELAPSED_UTC_TIME != SAMPLE_COUNT_IS_CALENDAR_TIME`,
-recorded there because a calendar-span `D` "does not count weekends as samples,
-holidays as eligible events, or closed intervals as observations". Reading Q10-A
-across into `ω` would do the thing that guard-rail forbids, and would do it in the
-direction that lowers `ω`. **`Q10_A_DOES_NOT_RULE_THE_GAP_UNIT`.**
+axis**, the length of a role window. The gap unit is authority over the
+**event-spacing axis**, the spacing between two events inside a window. §8.2's own
+guard-rail is exactly this distinction:
+`D_IS_ELAPSED_UTC_TIME != SAMPLE_COUNT_IS_CALENDAR_TIME`, recorded there because
+defining `D` as a calendar span "does **not** count weekends as samples, does
+**not** make holidays eligible events, and does **not** turn closed-market intervals
+into observations" — and because that same guard-rail names **overlap** among the
+quantities that "stay with their own registered authorities", so that "the unit of
+`D` may not be borrowed for any of them". Reading Q10-A across into `ω` would do the
+thing the guard-rail forbids by name, and would do it in the direction that lowers
+`ω`. **`Q10_A_DOES_NOT_RULE_THE_GAP_UNIT`.**
 
 #### 8.4.5 What the form assumes, and nobody registered
 
@@ -3522,29 +3721,46 @@ answers, and none is a defect claim.**
   next trade" and "how many horizons are open at once" track each other; **under
   clustering they do not**, and §0.4(b)/§0.4(c) show clustering is admissible at the
   frozen ceiling. Whether `ω` should be the next-trade overlap or the mean count of
-  concurrently open horizons is a **modelling choice the spec settles by wording and
-  nobody has examined**.
-- **The mean is unweighted in the spec's wording** ("mean fraction … of a trade's
-  horizon"), which weights every event equally regardless of how much of the span it
-  sits in.
+  concurrently open horizons is a **modelling choice the spec's wording suggests,
+  that nobody has examined, and that is put as MO-1(b)** — not one the spec settles.
+- **The spec's wording reads as an unweighted mean** ("mean fraction … of a trade's
+  horizon"), weighting every event equally regardless of how much of the span it sits
+  in. Whether it *is* unweighted is **MO-1(c)**, and MO-6 lists the within-pair
+  weighting as open.
 - **`rho_h` enters as a divisor of a count**, so a per-pair `ω` measured with error
   does not average out across pairs — it is a ratio, and errors compound with the
-  numerator.
+  numerator. **And the bias runs anti-conservatively**: `1/(1 + 23ω)` is convex in
+  `ω`, so mean-zero error in a per-pair `ω` raises expected `N_eff`. Same Jensen
+  argument as MO-4, in the other variable.
 
 #### 8.4.6 The seven questions
 
 **MO-1 — the mean of what, exactly, over what index?** The spec says "mean fraction
-of a trade's horizon that overlaps **the next same-pair trade's** horizon". Confirm
-or vary: (a) the index is the pair's **traded events** in the `raw_traded_event_count`
-domain; (b) the overlap is against the **immediately next** event only, not against
-all events whose horizons intersect; (c) the mean is **unweighted**.
+of a trade's horizon that overlaps **the next same-pair trade's** horizon".
+(a) The index is the pair's **traded events** — settled by that sentence, since the
+objects being spaced are trades, and restated here only so the mean's index is stated
+in full; **not offered for variation** (§8.4.7). Confirm or vary: (b) the overlap is
+against the **immediately next** event only, not against all events whose horizons
+intersect; (c) the mean is **unweighted**. Limb (b) is the one with a direction:
+next-event-only **understates** dependence under clustering, which is
+anti-conservative.
 
 **MO-2 — in what unit is the inter-event gap measured?** M15 bars on the continuous
 UTC grid · M15 bars that exist (no synthetic bars across market close) · complete
 buckets only (`n_source_bars == 15`) · elapsed wall-clock time · calendar time
-including closed periods · event index · other. §8.4.4 shows the choice can move a
-single pair of trades from `ω`-contribution 0 to 0.5, and re-scales `H`'s wall-clock
-extent with it.
+**including** closed periods · elapsed time **excluding** closed periods · event
+index · other. The two elapsed readings are separated because they behave like the
+first and second bar readings respectively, and the exclusion reading additionally
+needs the approved calendar artifact to say what is excluded; an earlier list wrote
+"elapsed wall-clock time · calendar time including closed periods" without saying
+which was which. §8.4.4 shows the choice can move a single pair of trades from an
+`ω`-contribution of `0` to one near `1`, and that the wall-clock extent of `H` is
+separately unregistered. Note also that "gap" already has a **different** committed
+referent in this machinery: `aggregation.py` emits a `gap_report` with
+`max_gap_minutes` / `max_unavailable_gap_minutes`, a **missing-minute** diagnostic
+denominated in minutes. That is a term collision of the kind the contract
+Gate-decision flags, and its minute denomination is **not** precedent for an
+elapsed-time inter-event gap.
 
 **MO-3 — what is the exact overlap formula?** The spec pins two endpoints — the
 result lies in `[0, 1]`, and non-overlapping events give `rho_h → 1` — and writes no
@@ -3585,7 +3801,18 @@ into one portfolio scalar from a single aggregate `overlap_fraction`, a substitu
 that was "not equivalent when overlap varies across pairs and … not conservative"
 (audited counter-example: `383.33 → INSUFFICIENT_SAMPLE` under the spec against
 `644.00 → SAMPLE_SUFFICIENT` under the collapse). `ω` is **per pair**. This question
-is **not** open.
+is **settled by committed text and is not reopened by this packet.**
+
+**But what is settled is the rule, not its enforcement.** The per-pair *form* is
+enforced — `_normalise_pairs` requires an `overlap_fraction` on every record — while
+**nothing binds a record's `overlap_fraction` to that pair's realised gaps**, exactly
+as `PER_RECORD_COUNT_PROVENANCE_UNBOUND` (§8.3.1) records for the counts. One
+portfolio-mean `ω̄` supplied in all twenty slots reproduces the collapsed arithmetic
+**identically**, since `Σ Nₚ/(1 + 23ω̄) = (Σ Nₚ)/(1 + 23ω̄)`; on the audited
+counter-example that is `50/12.5 + 8000/12.5 = 644.00` — the pre-B-3 number, through
+the post-B-3 signature, with every guard satisfied. *`NON_NORMATIVE_DIAGNOSTIC_ONLY`.*
+**`OVERLAP_PER_RECORD_PROVENANCE_UNBOUND`.** This reopens no aggregation rule; it is
+why MO-7's producer and freeze point are load-bearing.
 *Within a pair — open.* Over which events, with what weighting, with `n` or `n − 1`
 in the denominator, and whether `ω` is measured **separately per role**. The spec
 requires reporting `per_role: [validation, holdout]` but never says `ω` is
@@ -3600,17 +3827,39 @@ span it judges — as `c` is — or measured on it, is the question, and it must
 answered **before** any continuation, because after the fact the choice is
 unfalsifiable.
 
+**And *whose* `ω` is it?** `PER_RECORD_COUNT_PROVENANCE_UNBOUND` (§8.3.1) binds a
+record's label but not its numbers, and `overlap_fraction` rides the **same record**
+as `raw_event_count`. A producer rule that does not also bind `ω_p` to pair `p`
+leaves the pairing of counts with overlaps free — the one degree of freedom `P = 20`
+does not remove (§8.3.0), and worth up to a 20.9× swing on the audited shapes.
+
 #### 8.4.7 What is already fixed, and must not be reopened under cover of this packet
 
 - **`H = 24` M15 bars** — Ruling 6, FROZEN, pinned in code for every role (R-1).
 - **`ω ∈ [0, 1]`**, enforced; and **non-overlapping events ⇒ `rho_h → 1`**.
 - **Per-pair granularity** — `rho_h` is per pair; the portfolio-scalar collapse is a
-  closed defect (B-3), not an option.
+  closed defect (B-3), not an option **in the function's signature** — though nothing
+  yet binds each record's `ω` to its own pair (MO-6,
+  `OVERLAP_PER_RECORD_PROVENANCE_UNBOUND`).
 - **The count domain** — `raw_traded_event_count` only; `complete_bucket_count` and
-  `cost_hurdle_eligible_bar_count` are refused **by name**, and the gap is measured
-  between **traded events**, not between slots.
+  `cost_hurdle_eligible_bar_count` are refused **by name**. *That the **gap** also
+  runs between **trades** rather than between slots is sourced to the spec's own
+  sentence — "a **trade's** horizon … the **next same-pair trade's** horizon" — and
+  **not** to `_require_count_quantity`, which governs which *count* is fed and says
+  nothing about the spacing domain. Two roles split on this: one held the gap domain
+  fixed, the other that it was unsourced. Both are half right, and the resolution is
+  the re-sourcing above — MO-1(a) is settled by the spec's sentence, and the
+  `count_quantity` refusal is not the authority for it. It fixes what the gap runs
+  **between**; it does not fix the unit it is **counted in**, which is MO-2 and stays
+  open, the grid-slot unit included.*
 - **`P = 20`** — §8.3.0. `ω` and `P` are inputs to **different** deflators, and
   nothing in this packet reaches `rho_x`.
+- **`ω` may not anchor the window.** Ruling Q10-B forbids anchoring on "a date
+  chosen after observing empirical **label** overlap (`mean_overlap_fraction` /
+  `rho_h`)". Whatever MO-7 decides, no answer may make the declared validation start,
+  `T_v`, `T_h` or the holdout window responsive to a measured `ω`;
+  `SAME_D_DIFFERENT_WINDOW_IS_RESELECTION` applies unchanged. This is the one ruled
+  clause that names `ω` by name.
 - **The turnover ceiling is not a gap bound.** `turnover()` is
   `n_trades / n_trading_days` — a **portfolio mean over the span**, not a per-day cap
   and not a lower bound on any individual inter-event gap. §0.4(b) records that a
@@ -3624,7 +3873,7 @@ unfalsifiable.
 footing as `P` and `c`, for four reasons that are all matters of record: it is one of
 the two inputs to `rho_h`, and the other one is **frozen and pinned in code**; it
 spans a range within which roughly the bottom 15% is admissible against §0.3's
-budget; it has **no producer, no artifact, no span and no freeze point**, so whoever
+budget **at the frozen minimum span and the maximum permitted rate**; it has **no producer, no artifact, no span and no freeze point**, so whoever
 computes it first sets it; and the seven questions above are choices between
 committed readings, not implementation conveniences — each of MO-2, MO-3 and MO-4 can
 move the verdict on its own.
@@ -4054,6 +4303,50 @@ flip the verdict invisibly. Option A does to `P` what R-1 did to the horizon. Th
 recommendation stands; two of its supporting arguments were weaker than stated and
 one dismissal was unsound, all corrected above.
 
+### 12.7 Eighth review round — recording the NR-K ruling, and the mean-overlap packet
+
+Recorded **after** the roles returned, per the rule §12.5 established. Four
+independent doc-only roles — prereg/pair-universe authority, effective-N estimator
+semantics, an adversarial/research-integrity brief, and horizon/time-axis coherence
+— read the committed head. Each was given the sources, the diff and the contract,
+and none was given another role's conclusions. Every decisive finding below was
+re-verified at source by the lead before being applied; two were corrected in the
+process.
+
+**The lead found one defect itself, before any role returned**, during the source
+verification this document requires of its own claims: §8.4.4's weekend illustration
+asserted a Friday close and a Sunday reopen, and **this repository authors neither**
+— `calendar_authority.py` "validates an injected calendar. It never authors one" and
+"contains no market open/close instant, no DST transition date, and no holiday".
+Withdrawn and replaced with the parametric form at `f4d857f`; the horizon role
+independently reached the same finding.
+
+| Defect | Outcome |
+| --- | --- |
+| **"`ω` is the last unpinned term"** — asserted **four times** | **False, and false in the direction that understates exposure.** `P` was pinned; `c` was not. §0.3's inequality has **two** unpinned terms, and at the document's own diagnostic `c = 0.3` the cross-pair factor `rho_x = 6.70` exceeds the whole 4.36 budget alone — exactly as `rho_h = 5.90` does. Corrected at all four sites, with the band comparison (`ω` 14.6%, `c` 17.7%) stated. |
+| **"every *other* minimum-gate requirement" silently became "every *mandatory*"** | A **weakening**, undisclosed in the commit message, of the one unconditional clause in the ordering. "Mandatory" is defined nowhere and would be classified by whoever wished to proceed. Closed quantifier **restored** at all three sites; the stricter reading governs. |
+| **§13's NR-K row still read `NEXT · NR_K_PENDING_HUMAN_CHATGPT_RULING`** | A flat contradiction of the ruling being recorded, in the register a reader consults for status — and it repeated the "an uncertifiable pair **halts**" claim §12.6 had corrected to design-span-only. Rewritten; a **mean-overlap row** added, which the table lacked. |
+| **"four committed tests"** | An undercount of ~4×, and the stated basis of the *Tightening* classification. Lead AST recount, independently reproduced by a role: **sixteen** tests across **four** files require a short roster to be accepted with a live verdict, and **four** require a `P = 1` roster to return `SAMPLE_SUFFICIENT` — two at holdout, two at validation. The row cited two files. |
+| **§8.3.3's "`P` is not bound across roles" left live** | The header enumerated only §8.3.9/§8.3.10 as superseded, so an unqualified sentence saying "a validation run at `P = 20` and a holdout at `P = 10` violates nothing committed" survived a ruling that fixes `P` — at the one role where `P` decides. Superseded in place, and §8.3.0 now says "the same registered twenty **at every role**". |
+| **`PER_RECORD_COUNT_PROVENANCE_UNBOUND` omitted from the residuals** | The ruling **promotes** it rather than closing it. With `P`, `rho_x` and the raw total constant, re-pairing the same counts against the same overlaps across the twenty labels moves `N_eff` alone: the module's own audited B-3 shapes give `383.33 → INSUFFICIENT_SAMPLE` or `8002.08 → SAMPLE_SUFFICIENT`, a **20.9× swing**, depending only on which label carries which. Added, and mirrored into MO-7. |
+| **The `c`-side route left unnamed** | Two roles reached it independently. `rho_x = 1 + 19c` at a fixed `P`, so `c` now carries the whole deflator; a `c` of 0.05 buys `×3.44` on `N_eff` — **more than the `20 → 10` shrink the ruling just forbade** (`×1.81`). Recorded as a residual with an instruction to NR-L, **not** as a normative clause: writing a `c` prohibition into NR-K would rule NR-L by the back door, the exact defect §12.6 caught in §4. |
+| **§8.4.3's "they agree at the ceiling"** | Rests on `max(1, H/ḡ)` — **this packet's clamp, not the prereg's**, which writes no clamp. The draft's sentence is incoherent at one end under either repair, and under the *multiplier* repair the ceiling reads `1.00` against `2.00`, i.e. **not** agreement. Restated as **undetermined**. The `12.5` withdrawal stands; the replacement claim does not. Noted because it errs toward feasibility — `rho_h = 1.00` at the ceiling frees the whole budget for `c` — which is the direction §0.5 itself names as the failure to watch. |
+| **§8.4.1 and §8.4.5 pre-answered MO-1** | "The object is **textually determinate**" beside an MO-1 that asks the ruling to "confirm or vary" the same three limbs; and §8.4.5 twice stating them as settled. Recast as a *reading* put to the ruling, with the direction named: next-event-only **understates** dependence under clustering, which is anti-conservative. |
+| **The zero-trade carve-out had no boundary against the failure clause** | "Fires nothing is a normal outcome" and "registered pair failure → fail-closed" sat three paragraphs apart with nothing saying which governs a silent pair. Both readings were damaging — one pre-blesses the drop-motive, the other halts the family on one quiet pair. Boundary stated. |
+| **R-2a misquoted at three live sites** | §12.6 recorded this correction as applied; it had reached §8.3.5 ground G only. §0.6, §8 Q2 and §8.2.7 still attributed "anywhere in this family" to R-2a, whose own text is "by convention … at design time". All three corrected; the family-wide bar rests on prereg §3.2's compliance clause alone. |
+| **The self-citation defect at a fourth site** | §12.4's declined-proposals row still cited "§4 already requires the three pair sets to be the same twenty". A historical record, so **appended to, not rewritten**. |
+| **The header retired a token §8.3.0 did not** | `PAIR_UNIVERSE_FREEZE_POINT_NOT_COMMITTED` marked SUPERSEDED while §8.3.4 still stated it live. Split: discharged as to `P`'s binding, **forward-epoch limb survives**. |
+| **`NON_NORMATIVE_DIAGNOSTIC_ONLY` did not cover §8.3 or §8.4** | The document-wide rule enumerated §0, §8.1, §8.2 and §12, so the new sections' figures were outside it. Scope extended and the new figures enumerated. |
+| Smaller corrections | `NO_GENERAL_CONTRACT_AMENDMENT_PROCEDURE_REGISTERED` is **this packet's own token for an absence**, not a citation ("this repository records" withdrawn); the event-index candidate collapses to a **constant**, not "a function of ordering"; the grid candidate no longer answers MO-2 in its own table cell; the "~60 hours" weekend length and the "thin holiday sessions" inference removed; the §8.2.0 guard-rail restored **verbatim** and its overlap limb added; the R-1 rationale quoted in the source's own words; prereg §6 corrected from §8; `_require_unit_fraction` cited at 118–130; MO-6's unqualified prohibition scoped; §8.3.11's cross-reference moved from step 6 to step 8. |
+
+**Findings the roles supplied that the packet did not have.** `OVERLAP_PER_RECORD_PROVENANCE_UNBOUND` — the B-3 closure is of the *rule*, not its enforcement, and one portfolio-mean `ω̄` in all twenty slots reproduces the collapsed arithmetic **identically**, `Σ Nₚ/(1+23ω̄) = (Σ Nₚ)/(1+23ω̄)`, giving `644.00` on the audited counter-example through the post-B-3 signature. `HORIZON_WALL_CLOCK_EXTENT_NOT_REGISTERED` — prereg §6 calls the same frozen horizon "24 M15 bars (6 hours)" and, seven lines later, a "4–8 h horizon", `scripts/m15_gate3a/` carries no counting rule at all, and the only positional implementation is unadopted M1-lineage code. The **D-5.8 Foreclosure 2** — "any admissible answer must be market-hours-independent, or carried by the approved calendar artifact" — bears on MO-2's route without closing it. And the `P = 1` bar buys **auditability of `c`**: at `P = 1`, `rho_x = 1.0` whatever `c` was, so the correlation is unrecoverable from the record.
+
+**One disagreement between roles, resolved on the evidence, not by vote.** On whether the *gap domain* is fixed: one role held §8.4.7 right to close it, another that closing it was unsourced because `_require_count_quantity` governs the count and not the spacing. Both were half right. The gap runs between **trades** on the authority of the spec's own sentence — "a **trade's** horizon … the **next same-pair trade's** horizon" — and **not** on the authority of the count-quantity refusal. Re-sourced accordingly; MO-1(a) is settled by that sentence and is no longer offered for variation.
+
+**One role's endorsement was not adopted.** The estimator role, reading the pre-`f4d857f` text, reported §8.4.4's weekend arithmetic as checking out and noted the 22:00 boundary was "consistent with Ruling 4's frozen 21:55–22:15 UTC exclusion". Consistency with a *rollover exclusion window* is not authorship of a weekly close, and D-6 makes the expected slot set the approved artifact's property. The withdrawal stands.
+
+**The adversarial case was made in full and eight of its attacks survived**; six did not. Those that failed are recorded because their failure is part of the evidence: `P = 20` is nowhere readable as "all pairs must trade" (foreclosed in five places); a pair cannot be declared "not registered"; the zero-trade carve-out does **not** give back `N_eff` through allocation — starving a pair *lowers* `N_eff` and makes the raw floor harder, the only gain being on `max_trade_share`, which the packet already records; implementation short-roster behaviour is nowhere treated as authority; the turnover ceiling is nowhere used as a gap bound; and the amendment classification does not dodge the question, since the packet declines to assert "not an amendment" and says why.
+
 ---
 
 ## 13. Completion state
@@ -4086,8 +4379,9 @@ pre-registration or contract decision. The governing principle is
 
 **What the ruling did not settle, and what it newly exposes.** The **exact numeric
 `D` is not ruled** — blocked by Q10, and by the absence of any committed α or power
-target; none is invented. **Q10-A, Q10(ii) and Q10-B are ruled** (§8.2.0); **NR-K is now the next decision**
-(§8.3), with Q10(i)/(iii) still open (§8.2.8). The
+target; none is invented. **Q10-A, Q10(ii) and Q10-B are ruled** (§8.2.0); **NR-K is ruled** (§8.3.0), and
+**the mean-overlap unit and aggregation is now the next decision** (§8.4), with
+Q10(i)/(iii) still open (§8.2.8). The
 ruling also leaves one indirect lever open: it freezes `D` at the continuation
 boundary but does not fix **when that boundary is declared reached**, and a later
 adoption date is arithmetically equivalent to a longer `D`
@@ -4140,8 +4434,9 @@ carry equal weight or show signal — stated here as it is stated first in §8.3
 because it is the misreading the ruling is likeliest to be put to.
 
 **What the ruling leaves open, and it is not nothing.** No source or test is
-changed: `effective_n()` still accepts `P = 1` and four committed tests still
-require short rosters to be accepted, so
+changed: `effective_n()` still accepts `P = 1`, **four** committed tests still
+require a `P = 1` roster to return `SAMPLE_SUFFICIENT`, and **sixteen** across four
+files still require short rosters to be accepted, so
 `P_AUTHORITY_RULED_IMPLEMENTATION_COMPLETENESS_PIN_PENDING` and the missing forward
 roster gate (`NO_FORWARD_SPAN_FULL_ROSTER_COVERAGE_GATE_COMMITTED`) are the same
 residual seen from two sides. The **correlation** pair set stays unruled
@@ -4153,8 +4448,10 @@ requires an amendment procedure is **not settled**, and this packet does not ass
 that it does not: `NO_GENERAL_CONTRACT_AMENDMENT_PROCEDURE_REGISTERED` is why.
 
 **§8.4 is the next decision packet — the mean overlap fraction — and it is NOT
-ruled.** `ω` is the last unpinned term in §0.3's deflation inequality now that `P`
-is fixed: it is not in `frozen_parameters`, it carries **no span scope at all**
+ruled.** With `P` fixed, §0.3's deflation inequality has **two** unpinned terms
+left, not one — `ω` and `c` (NR-L) — and `ω` is sequenced first because it is the
+weaker-protected of the two: it is not in `frozen_parameters`, it carries **no span
+scope at all**
 where the correlation carries "DESIGN span only … frozen once and recorded", and it
 is a bare caller input while the *other* input to the same expression — `H` — is
 frozen and pinned in code under R-1 for exactly the reason that applies to `ω`. The
@@ -4173,8 +4470,8 @@ subsection stands.
 **The recorded order** (§8.2.8, §8.3.11): NR-K **ruled** → mean-overlap unit and
 aggregation → NR-L → Q10(i)/(iii) → duration-boundary arithmetic → the exact
 `T_v`/`T_h`/`D` declaration → the remaining Minimum Research Gate questions
-(Q1, Q8, FR-19 and the rest of §8) → **and only after every mandatory requirement
-is resolved may execution authorisation be considered at all.**
+(Q1, Q8, FR-19 and the rest of §8) → **and only after every *other* minimum-gate
+requirement is resolved may execution authorisation be considered at all.**
 
 **Unchanged by these rulings:** the Zero-Data verdict
 `SAMPLE_FLOOR_REACHABILITY_NOT_DETERMINABLE_WITHOUT_MEASURED_INPUTS` — `P` was never
@@ -4237,11 +4534,12 @@ zero-data derivation had come out infeasible.
 | **Q10-B** how the continuation window is anchored | **RULED** (§8.2.0) · `Q10_B_RULED_EXPLICIT_HUMAN_CHATGPT_UTC_WINDOW_DECLARATION_REQUIRED_BEFORE_CONTINUATION` — exact `T_v`/`T_h`/window/`D` declared by human + ChatGPT **before** continuation authorisation; a list of data-derived anchors forbidden. A **tightening**, not an amendment | n/a — ruled |
 | **Q10(i)** entry- vs exit-day PnL attribution | `REQUIRES_HUMAN_CHATGPT_RULING` — **not** settled by Q10(ii): fixing what a day *is* does not fix which day a horizon-straddling trade lands on | **survives** |
 | **Q10(iii)** annualisation factor | `REQUIRES_HUMAN_CHATGPT_RULING` — **not** settled by Q10-A: the unit of `D` and the constant annualising a daily Sharpe are different objects | **survives** |
-| **Exact `D`** | `EXACT_D_SELECTION_STILL_PENDING_UPSTREAM_AUTHORITIES` — ordering recorded at §8.2.8: NR-K, then NR-L, then remaining duration authority, then the human + ChatGPT window declaration | **survives** |
+| **Exact `D`** | `EXACT_D_SELECTION_STILL_PENDING_UPSTREAM_AUTHORITIES` — ordering recorded at §8.2.8: NR-K (**ruled**), then the **mean-overlap unit and aggregation**, then NR-L, then remaining duration authority, then the human + ChatGPT window declaration, then the remaining minimum-gate questions | **survives** |
 | **Gate-3a continuation date** (the **forward-epoch adoption** continuation, not the design-span one) | `GATE3A_CONTINUATION_DATE_NOT_FROZEN_RESIDUAL_AFTER_Q11_SECTION0_RULING` — **carried by Q10-B, ruled at §8.2.0** (its packet is §8.2.4), discharging
 §8.1.9's "put it with Q10" — narrowed by the forbidden-anchor list, though no
 latest bound is set. Already constrained by §8.1.0 (the date may not be informed by any strategy-run quantity); unconstrained as to a *positive* selection rule | survives |
-| **NR-K** `P` and the pair universe | **NEXT** · `NR_K_PENDING_HUMAN_CHATGPT_RULING` · `MUST_RESOLVE_BEFORE_ANY_EFFECTIVE_N_VERDICT` — packet complete at §8.3. **Not derivable**: one committed definition ("contributing") and it is undefined; the universe rule ("fixed, no selection") and the implementation (`len(records)`, no lower bound) point opposite ways; **no committed freeze point** exists. Coverage is **fail-closed on a short roster**, so a uncertifiable pair **halts** rather than shrinking `P` — but that ruling governs coverage, not `rho_x`. Recommendation offered, **not applied**; no `P` value fixed | survives |
+| **NR-K** `P` and the pair universe | **RULED** (§8.3.0) · `NR_K_RULED_P_EQUALS_FROZEN_REGISTERED_FAMILY_A_UNIVERSE` — `P = 20` for current Family A, the authority object being the frozen registered `PAIRS_20` universe; `MUST_RESOLVE_BEFORE_ANY_EFFECTIVE_N_VERDICT` **discharged for NR-K**. It was **not derivable**: the one committed definition ("contributing") was undefined, and the implementation accepted `len(records) ≥ 1`. What survives is the **implementation pin** (`P_AUTHORITY_RULED_IMPLEMENTATION_COMPLETENESS_PIN_PENDING`) and the missing forward roster gate — `assert_full_coverage` halts an uncertifiable pair on the **design span only**, while `P` decides at holdout (`NO_FORWARD_SPAN_FULL_ROSTER_COVERAGE_GATE_COMMITTED`) | ruled; residuals survive |
+| **Mean overlap fraction** `ω` — unit, formula, aggregation, freeze point | **NEXT** · `MEAN_OVERLAP_FRACTION_UNIT_NOT_REGISTERED` · `MUST_RESOLVE_BEFORE_ANY_EFFECTIVE_N_VERDICT` — packet complete at §8.4, seven questions (MO-1…MO-7), none answered. `ω` is not frozen, carries **no span scope at all**, and is a bare caller input while `H`, the other input to the same expression, is frozen and pinned under R-1 | survives |
 | **NR-L** `mean_abs_pairwise_corr` has no production rule or freeze point | `NR_L_REQUIRES_HUMAN_CHATGPT_RULING` — its earlier role here is **mooted** by Ruling B (the correlation may no longer inform `D`); survives as its own question | survives |
 
 **Q10 and Q11 are the only two that survive an infeasibility verdict**, which is
