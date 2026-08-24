@@ -52,7 +52,7 @@ packet, **not ruled**): **`MEAN_OVERLAP_PENDING_HUMAN_CHATGPT_RULING`** ·
 `ZERO_EVENT_OMEGA_MUST_NOT_HALT_A_NORMAL_OUTCOME` ·
 `MEAN_OVERLAP_PAIR_SET_MUST_NOT_SHRINK` · `NO_TURNOVER_DERIVED_GAP_BOUND` ·
 `NO_CLIPPING_WITHOUT_COMMITTED_AUTHORITY` ·
-`OMEGA_METHOD_MUST_NOT_BE_SELECTED_AFTER_SEEING_THE_SPAN_IT_JUDGES` ·
+`OMEGA_METHOD_MUST_NOT_BE_SELECTED_AFTER_OBSERVING_GAP_STRUCTURE_ON_ANY_SPAN` ·
 `MEAN_OVERLAP_CLOCK_DEPENDS_ON_APPROVED_CALENDAR_AUTHORITY` ·
 `MEAN_OVERLAP_AMENDMENT_CLASSIFICATION_NOT_SETTLED` ·
 `MEAN_OVERLAP_FRACTION_UNIT_NOT_REGISTERED` ·
@@ -294,8 +294,14 @@ family look feasible. The divergence is recorded here as an open item, not
 resolved: `DRAFT_AND_APPROVED_OVERLAP_ESTIMATORS_DIVERGE_AT_THE_FROZEN_CEILING`.
 
 **Corrected at §8.4.3 — read that with this.** Taking each formulation on its own
-terms, the two **agree** at the frozen ceiling (`rho_h = 1.00` both ways at a mean
-gap of 48 bars) and diverge by up to ~6.25× **inside** the horizon. The `12.5`
+terms, the ceiling relationship is **undetermined, not agreed**: under §8.4.3's
+clamped-divisor repair the two read `1.00` and `1.00` at a 48-bar mean gap, under the
+multiplier repair `1.00` against `2.00`, and **which repair applies is unruled**. An
+intermediate reading that said the two "agree" at the ceiling is **withdrawn at
+§8.4.3** — it rested on a clamp that packet supplied rather than on the prereg, and
+it errs toward feasibility, since `rho_h = 1.00` at the ceiling frees the entire 4.36
+budget for `c`. Inside the horizon they diverge by up to ~6.25× under the
+clamped-divisor repair. The `12.5`
 above came from feeding the draft's *divisor* into the spec's *fraction* slot, which
 is a unit-type splice rather than either committed formula — the draft's quantity is
 a thinning **factor** whose value exceeds 1 in the overlapping regime, and
@@ -392,7 +398,9 @@ three dispositions this exercise could return, the answer is the third — and
   inherited: `mean_overlap_fraction`, `mean_abs_pairwise_corr`, and the realised
   event rate at each registered `ev_min`.
 - **Missing authorities, named:** `EVENT_RATE_NOT_COMMITTED` ·
-  `MEAN_OVERLAP_FRACTION_NOT_FROZEN_AND_ROLE_MEASURED` ·
+  `MEAN_OVERLAP_FRACTION_NOT_FROZEN_AND_ROLE_MEASURED` — **superseded at §8.4.2**,
+  which records that nothing computes `ω` at all today, so "role-measured" overstates
+  it ·
   `MEAN_OVERLAP_FRACTION_UNIT_NOT_REGISTERED` (§8.4) ·
   `MEAN_ABS_PAIRWISE_CORR_NOT_YET_ESTIMATED_DESIGN_DATA_ONLY` ·
   `DRAFT_AND_APPROVED_OVERLAP_FORMULATIONS_ARE_DIFFERENT_OBJECTS_AND_DIVERGE_INSIDE_THE_HORIZON`
@@ -3511,10 +3519,11 @@ once. Each of MO-1's three limbs is *suggested* by the sentence and *compelled* 
 none, and MO-1(b) in particular runs **anti-conservative**: counting only the next
 trade understates dependence exactly when horizons stack three deep, which §0.4(b)
 shows is admissible at the frozen ceiling. Beyond MO-1, what is undetermined is the
-**unit** the gap is measured in, the **function** that maps a
-gap to a fraction, the **order** of the mean and that function, the treatment of
-**endpoints** (zero-event, one-event, last-event), the **within-pair** weighting,
-and **who fixes the value and when**.
+**unit** the gap is measured in, the treatment of **endpoints** (zero-event,
+one-event, last-event), the **within-pair** weighting, and **who fixes the value and
+when**. The **function** that maps a gap to a fraction and the **order** of the mean
+and that function are **derived** at §8.4.10 (D-ω-2, D-ω-4) and are offered for
+confirmation, not as choices.
 
 #### 8.4.2 The asymmetry that makes this an authority question
 
@@ -3575,7 +3584,8 @@ it — a committed test refuses a fraction "just above one" by name. *(Contract 
 code second: the bar is the spec's, and the implementation only holds it.)* So the
 prereg draft's quantity is **inadmissible as `overlap_fraction` throughout the
 overlapping regime**, which is the only regime the adjustment exists for. The
-draft's number lands inside `[0, 1]` only when `ḡ > H`, i.e. precisely where the
+draft's number lands inside `[0, 1]` only when `ḡ ≥ H` (it is exactly `1` at
+`ḡ = H`), i.e. precisely where the
 spec says the answer is `rho_h → 1` anyway.
 
 **And the draft's sentence is incoherent at one end whichever way it is read.** As a
@@ -3595,7 +3605,9 @@ convenience.** §0.5 wrote that at the frozen ceiling the draft "yields" `0.5`,
 
 **But the ceiling relationship is *undetermined*, not agreed — and an intermediate
 draft of this subsection said "they agree", which is also withdrawn.** Under the
-clamped-divisor repair the two give `1.00` and `1.00` at a 48-bar mean gap; under the
+clamped-divisor repair the two give `1.00` and `1.00` at a 48-bar mean gap — the
+value the frozen ceiling implies **only under equal allocation across the twenty
+pairs**, which §0.4(c) shows the concentration cap does not require — while under the
 multiplier repair the draft thins by 0.5 there, an effective `rho_h` of `2.00`
 against the spec-style `1.00`. **Which repair applies is unruled**, so the agreement
 rests on the packet's own clamp. Recording "they agree" would resolve — in the
@@ -3621,7 +3633,10 @@ regular arrivals: *`NON_NORMATIVE_DIAGNOSTIC_ONLY`.*
 
 Under this repair they coincide at both ends, diverge by up to ~6.25× **inside**
 the horizon — the true maximum of the ratio is `6.261` at `ḡ ≈ 12.52` — and even
-**cross** at the dense end, the crossover sitting just below `ḡ = 1`. Under the
+**cross** at the dense end — the crossover sitting just **above** `ḡ = 1`, at
+`ḡ ≈ 1.043`, which matters because D-ω-1 derives a **one-bar minimum gap**, so the
+crossing region is narrowly *inside* the reachable domain rather than beyond it.
+Under the
 multiplier repair the ceiling row instead reads `1.00` against `2.00`. The open item is therefore renamed:
 `DRAFT_AND_APPROVED_OVERLAP_ESTIMATORS_DIVERGE_AT_THE_FROZEN_CEILING` is
 **superseded** by **`DRAFT_AND_APPROVED_OVERLAP_FORMULATIONS_ARE_DIFFERENT_OBJECTS_AND_DIVERGE_INSIDE_THE_HORIZON`**.
@@ -3680,14 +3695,25 @@ MO-2.** It is recorded because a ruler choosing either candidate thereby imports
 `PRE_CONTINUATION_CALENDAR_ARTIFACT_APPROVAL_REQUIRED`, the same unbuilt dependency
 §8.2.3 weighed against Option B for `D`.
 
-**Three committed sources point at the bar family, and none of them rules it.**
-§8.2.2's own reason-giving rule — "**Model mechanics** — every quantity defined by
-the label horizon or the feature lookback — is denominated in **M15 bars**", which
-§8.2.0 invokes when recording this very open item; `warmup.py`'s `bar_index`,
+**Two committed sources and one of this packet's own readings point at the bar
+family, and none of them rules it.** §8.2.2's reason-giving rule — "**Model
+mechanics** — every quantity defined by the label horizon or the feature lookback —
+is denominated in **M15 bars**" — is **this document's own distillation from the
+contract, not a committed sentence**, and §8.2.0 says of it in terms that "nothing
+rules it and **Q10-A does not**"; an earlier draft of this paragraph listed it as
+committed, which is withdrawn. The two that are committed: `warmup.py`'s `bar_index`,
 "Zero-based over forward-epoch **bars**"; and prereg §9's `horizon / mean
 inter-event gap`, whose quotient is dimensionless only if the gap shares `H`'s unit.
 Recorded as evidence, **not as a ruling** — the prereg draft is expressly "for the
 design audit to fix" and §8.4.3 shows it is a different object.
+
+**And one committed source of structural gaps needs no calendar at all.** Prereg §5
+(Ruling 4, **FROZEN as minimum**) makes the rollover window **21:55–22:15 UTC
+minimum** event-ineligible, "widen it only for conservatism; it must not be
+narrowed". That guarantees a break in every pair's event sequence every day without
+any market closure and without importing the approved calendar — so closures are not
+the only source of structural gaps, and the MO-2 candidates differ on this one too.
+No length or widening is assumed here beyond the committed minimum.
 
 **And §8.2.3's Option-C circularity objection does not transfer here.** `D` is a
 pre-freeze *planning* quantity, so defining it by observed slots is circular; `ω` is
@@ -3763,6 +3789,21 @@ answers, and none is a defect claim.**
   numerator. **And the bias runs anti-conservatively**: `1/(1 + 23ω)` is convex in
   `ω`, so mean-zero error in a per-pair `ω` raises expected `N_eff`. Same Jensen
   argument as MO-4, in the other variable.
+- **The weighting limb spans the whole range, and it is this packet's largest
+  unquantified lever.** Every other open limb here carries a magnitude; this one had
+  none. For any weights `wᵢ ≥ 0` summing to 1, `ω` lies in
+  `[minᵢ overlap(gᵢ), maxᵢ overlap(gᵢ)]`. **With all four of §8.4.10's derivations
+  confirmed and the realised gap sequence held fixed**, a pair carrying one
+  adjacent-event gap and one gap at or beyond the horizon has `rho_h` reachable
+  anywhere in `[1.00, 23.04]` by the weighting choice alone — the entire admissible
+  range. And the direction is unconditional: `overlap` is non-increasing in `g`, so a
+  weighting that puts more mass on longer intervals lowers `ω` for **every** gap
+  sequence. On §0.3's own Poisson diagnostic at the frozen ceiling, interval-length
+  weighting gives `ω = 0.033` and `rho_h = 1.75` against the unweighted `0.213` and
+  `5.90` — a 3.37× move in `N_eff`, and the difference between §0.3's infeasibility
+  conclusion and `N_eff = 996` at `c = 0`. *`NON_NORMATIVE_DIAGNOSTIC_ONLY`. No
+  weighting is proposed or recommended; the point is the span of MO-1(c) and MO-6's
+  within-pair limb, which §0.3 does not record that its headline turns on.*
 
 #### 8.4.6 The questions
 
@@ -3817,9 +3858,17 @@ elapsed-time inter-event gap.
 
 **MO-3 — what is the exact overlap formula?** The spec pins two endpoints — the
 result lies in `[0, 1]`, and non-overlapping events give `rho_h → 1` — and writes no
-formula. `max(0, 1 − g/H)` satisfies both endpoints; so do others, including convex
-and step-shaped alternatives, which differ materially in between. **This packet does
-not choose one.**
+formula — but the endpoints are not the basis. **§8.4.10's D-ω-2 derives the
+function from the spec's characterising sentence**, "the fraction of **a trade's
+horizon** that overlaps **the next same-pair trade's horizon**", which fixes it
+uniquely once `H` is a constant contiguous length on the gap's clock. Convex and
+step-shaped alternatives satisfy the two endpoints but are **not** admissible
+readings of that sentence — with one exception D-ω-2 names: where the two horizons
+are *not* of equal length on the chosen clock, the true form is
+`max(0, min(L_i − g, L_{i+1}))/L_i`, which is step-shaped, and that is a consequence
+of MO-2 rather than a free choice of functional form. **This packet therefore
+chooses none by preference; it offers a derivation for confirmation (§8.4.10),
+conditional on MO-2's clock and on MO-1(b).**
 
 **MO-4 — `mean(overlap_i)` or `overlap(mean_gap)`?** Separating the mathematics from
 the authority, because the two answers differ:
@@ -3832,9 +3881,15 @@ substantially positive: §0.3's Poisson diagnostic at the frozen ceiling gives
 it holds whatever the ruling says.*
 *The authority.* The spec's phrase "estimated per pair from the realised inter-event
 **gaps**" (plural) reads naturally as the per-event mean, and §0.4(a) already
-**withdrew** the mean-gap argument on exactly this ground. But "estimated from the
-gaps" is also literally satisfied by averaging the gaps first, and **no committed
-source forecloses it**. The anti-conservative reading is the one still standing open.
+**withdrew** the mean-gap argument on exactly this ground. "Estimated from the gaps"
+is *literally* satisfied by averaging the gaps first, which is why the reading was
+carried this far — but **§8.4.10's D-ω-4 forecloses it from the spec's own words**:
+"mean **fraction**" makes *fraction* the object and *mean* its operator, and
+reversing them to "fraction at the mean gap" inverts the two. Its only textual
+support was the draft, which D-ω-3 places as superseded. **MO-4 is offered as a
+derivation for confirmation, not as an open choice**; Option B is retained at
+§8.4.13 only so the ruling can refuse it by name, and the anti-conservative reading
+is what a rejection of D-ω-4 would reinstate.
 
 **MO-5 — zero-event, one-event and idle-day handling.** A pair with **no** events
 has no gaps, so `ω` is undefined — yet `_require_unit_fraction` demands a number and
@@ -3929,7 +3984,7 @@ no gaps at all, so nothing in the estimator can check that any of it held
   `n_trades / n_trading_days` — a **portfolio mean over the span**, not a per-day cap
   and not a lower bound on any individual inter-event gap. §0.4(b) records that a
   mean-only constraint admits arbitrary clustering, with `sup rho_h = 24` at exactly
-  the frozen ceiling. **No answer to MO-1…MO-7 may be derived from `≤ 40 trades/day`,
+  the frozen ceiling. **No answer to MO-1…MO-8 may be derived from `≤ 40 trades/day`,
   and no bound on `ω` may be inferred from it.**
 
 #### 8.4.8 Why this is an authority parameter, not an implementation detail
@@ -3939,9 +3994,9 @@ footing as `P` and `c`, for four reasons that are all matters of record: it is o
 the two inputs to `rho_h`, and the other one is **frozen and pinned in code**; it
 spans a range within which roughly the bottom 15% is admissible against §0.3's
 budget **at the frozen minimum span and the maximum permitted rate**; it has **no producer, no artifact, no span and no freeze point**, so whoever
-computes it first sets it; and the seven questions above are choices between
-committed readings, not implementation conveniences — each of MO-2, MO-3 and MO-4 can
-move the verdict on its own.
+computes it first sets it; and the **eight** questions above are choices or
+derivations between committed readings, not implementation conveniences — **four are
+derived (§8.4.10)**, and each of MO-2, MO-3 and MO-4 can move the verdict on its own.
 
 The parallel with NR-K is exact and is the reason this is the next decision rather
 than a note: NR-K existed because a verdict-deciding input was caller-supplied with
@@ -3978,7 +4033,10 @@ event** only if `1.5 × ATR14_M15 ≥ 2.0 × cost(pair, session)`" — and the t
 **not** the same set: traded events are the subset of eligible events that fired,
 and the gap here is between **traded** events (§8.4.7's count domain). The step used
 below is only the containment `traded ⊆ eligible ⊆ that pair's buckets`, which both
-sentences give. Prereg §4
+sentences give — and the containment is all that is taken, because the *eligible*
+set is `cost_hurdle_eligible_bar_count`, a quantity `_require_count_quantity`
+**refuses by name**. Prereg §6 corroborates the **type** of the index, never its
+extension. Prereg §4
 fixes the bar's identity — `floor(timestamp / 15 min)` on the UTC clock, bar
 timestamp = bucket start, "**No DST logic (UTC only)**". Four consequences follow
 without adding anything:
@@ -3987,14 +4045,24 @@ without adding anything:
   the order is **total and deterministic**, since bucket starts are distinct;
 - **at most one event per pair per bucket** — the committed quantity counts buckets,
   so the bucket is the unit of count, and two same-pair events in one bucket are not
-  representable in `raw_event_count`. *(Whether an execution layer could emit two
-  orders inside one bucket is an implementation question; it cannot change the unit
-  the committed count is denominated in, and if it happened the committed count
-  would under-count by its own definition. That is a defect to raise elsewhere, not
-  a degree of freedom here.)*
+  representable in `raw_event_count`. **And prereg §8 is the direct authority, which
+  an earlier draft of this bullet missed**: the frozen EV gate is stated "for each
+  eligible **bar** and direction `d ∈ {long, short}` … **Trade direction `d` iff
+  `EV_d ≥ ev_min` and `EV_d > EV_{−d}`**" (Ruling 8/9, FROZEN). The rule is per
+  **bar**, and its strict `>` lets at most one direction fire. *(An execution layer
+  emitting two orders inside one bucket would therefore be **contract-non-conforming
+  for family A**, not a free implementation choice. Were it to happen, the committed
+  count would under-count by its own definition and `ω` would **under**-state
+  overlap — the anti-conservative direction. Concurrency and exposure caps are
+  `[FIXED-AT design audit]` and can only restrict this further.)*
 - therefore **ties and simultaneous same-pair events cannot arise**, the **minimum
-  gap is one bar**, a **zero gap is impossible**, and a **negative gap is
-  impossible**;
+  gap is one bucket step** — one bar in MO-2's bar readings, and the corresponding
+  minimum in whichever unit MO-2 fixes — a **zero gap is impossible**, and a
+  **negative gap is impossible**. Jointly with D-ω-2 this also gives
+  `overlap_i ≤ 23/24` and **`sup rho_h = 23.04`** for any `ω` computed *from realised
+  gaps*, which refines the `sup rho_h = 24` written at §0.4(b), §8.4.2 and A-ω-3;
+  it does **not** bound a *conventional* `ω` supplied under MO-5 for a pair with no
+  gaps, so §8.4.12's 24× range at one event stands as written;
 - a **day or week boundary raises no ordering question**, because the grid is one
   UTC clock with no DST logic. *(It does raise the MO-2 unit question — how far
   apart two events across a closure are — which is a different matter.)*
@@ -4022,9 +4090,30 @@ Three things worth stating precisely:
 - **It satisfies both pinned endpoints** — the result lies in `[0, 1]`, and
   `g ≥ H` gives `0`, hence "Non-overlapping events ⇒ `rho_h → 1`".
 
-*Conditional on two things and no more:* MO-2's unit (`g` and `H` must be read on
-the same clock — see D-ω-2a) and MO-1(b)'s next-event restriction. It is **not**
-conditional on any statistical assumption.
+*Conditional on **three** things, and on no statistical assumption:* MO-2's unit
+(`g` and `H` must be read on the same clock — see D-ω-2a); MO-1(b)'s next-event
+restriction; and **that `H` is a constant, contiguous length on that clock**.
+
+**The third condition is not free, and an earlier draft of this derivation said
+"two things and no more".** §8.4.4 is why: `HORIZON_WALL_CLOCK_EXTENT_NOT_REGISTERED`,
+"whether such bars consume horizon is unregistered" for incomplete buckets, and
+prereg §4's "no synthetic bars across market close" together mean that on the
+continuous-grid, complete-buckets and elapsed-time clocks two horizons need **not**
+have equal length and a horizon need not be contiguous. Where the lengths differ,
+interval arithmetic gives `max(0, min(L_i − g, L_{i+1})) / L_i`, which is **flat then
+linear** — *not* `max(0, 1 − g/H)`, *not* linear in `g`, and *not* a function of `g`
+alone — while the spec requires `ω` to be estimated "from the realised inter-event
+**gaps**". §8.4.4's rule that answering MO-2 "fixes how `H` is read inside `ω`'s
+arithmetic" restores a constant `H` **by stipulation**, at the cost of detaching
+`ω`'s `H` from the label machinery's; **that step is a reading, and is labelled as
+one here.** So D-ω-2 is derived **for any clock on which `H` is a constant contiguous
+24** — which is §8.4.14 limb 1's *recommended* half, not its derived half.
+
+*One further assumption, and it runs the safe way.* D-ω-2 treats every trade's
+horizon as the full frozen `H`. Prereg §6's geometry lets TP or SL end a trade early,
+so an information-window reading would give a **shorter** overlap. That direction is
+**conservative** — larger `ω`, smaller `N_eff` — so it strengthens the derivation
+rather than qualifying it, and no reading is proposed here.
 
 **D-ω-2a — the same-unit requirement is itself derivable, even though the unit is
 not.** "Fraction of a trade's horizon" is a ratio of two lengths, so `g` and `H`
@@ -4033,6 +4122,15 @@ fraction of anything. **`GAP_AND_HORIZON_MUST_BE_READ_ON_THE_SAME_CLOCK`.** This
 does **not** choose the clock — MO-2 stays open — but it removes the mixed readings
 from the option set, and it is why §8.4.4's candidates are candidates for *both*
 quantities at once.
+
+**One candidate it appears to eliminate, recorded rather than removed.** MO-2's
+**event index** requires reading `H` in *events*; `H` is committed only as 24 M15
+**bars**, so on its face D-ω-2a excludes it. It is left in MO-2's list because the
+elimination is a consequence of a derivation still awaiting confirmation, and
+because the direction matters: event index is the `ω`-**maximising** candidate
+(`overlap ≡ 23/24`, `rho_h ≡ 23.04` under MO-1(b)), so removing it silently would
+narrow the option set at the **conservative** end. §8.4.4's own objection to it —
+that `ω` collapses to a constant — is a different one.
 
 **D-ω-3 — the draft estimator is illustrative and superseded; it is not a competing
 normative formulation. (Bears on MO-3 and MO-4.)** Determined from text rather than
@@ -4062,6 +4160,13 @@ over. That is `ω = mean_i(overlap(g_i))` — **Option A**. `f(E[g])` requires r
 "mean fraction" as "fraction at the mean gap", which inverts the two words, and its
 only textual support was the superseded draft.
 
+**Which mean is *not* derived here.** D-ω-4 fixes the **order** of the transform and
+the average — a claim that holds under any weights, since `Σ wᵢ f(gᵢ)` versus
+`f(Σ wᵢ gᵢ)` is the same distinction whatever the `wᵢ` — and fixes **nothing** about
+the weights themselves, which are **MO-1(c)** and MO-6's within-pair limb and stay
+open. §8.4.5's third bullet records how large that residual is. The `0.213` cited
+below is §0.3's **unweighted** value.
+
 **Direction, stated because it is the reason this is not a detail.** `f` is convex,
 so by Jensen `E[f(g)] ≥ f(E[g])` always: **Option B is the anti-conservative one**,
 uniformly. §0.3's Poisson diagnostic at the frozen ceiling is `E[f(g)] = 0.213`
@@ -4072,7 +4177,9 @@ withdrawn claim.
 
 **D-ω-5 — cross-pair aggregation is settled: `rho_h` is per pair. (MO-6,
 across-pairs limb.)** Unchanged from MO-6 and restated here so the derivable set is
-in one place: the spec fixes `N_eff_pair = N_raw_pair / rho_h_pair` with
+in one place. Its most direct authority is the spec's own sentence — `ω` is
+"estimated **per pair** from the realised inter-event gaps" — which forecloses
+pooling by itself; the spec then fixes `N_eff_pair = N_raw_pair / rho_h_pair` with
 `granularity: [portfolio, per_pair]`, and the portfolio-scalar collapse is a
 **recorded defect** (B-3) with an audited counter-example, not an option. **Pooling
 all inter-event gaps across all twenty pairs into one `ω` is therefore foreclosed**
@@ -4087,9 +4194,14 @@ per-role limbs, and MO-7.
 
 #### 8.4.11 Adversarial properties — the routes a ruling must close by name
 
-Each is a way to lower `ω`, lower `rho_h` and raise `N_eff` while obeying the
-letter of everything already committed. They are recorded as **first-class
-properties**, not as accusations, and none of the arithmetic below is normative.
+Each raises `N_eff` while obeying the letter of everything already committed. They
+fall into **two kinds**, and an earlier draft of this sentence defined the class as
+"ways to lower `ω`", which reaches only the first kind and misses the two largest.
+Some **lower `ω` itself** — A-ω-2, A-ω-3, A-ω-4, A-ω-5, A-ω-7. Others leave **every
+reported `ω` value unchanged** and move `N_eff` by re-pairing or sharing them —
+A-ω-1, A-ω-6 — so **no check that inspects the reported overlap fractions can see
+them**. They are recorded as **first-class properties**, not as accusations, and none
+of the arithmetic below is normative.
 
 **A-ω-1 — `PAIR_LABEL_ASSIGNMENT_MUST_NOT_BE_REARRANGED_TO_REDUCE_OMEGA`.** An
 event belongs to the registered pair it occurred on; a pair's `ω` is computed from
@@ -4110,24 +4222,60 @@ interaction §8.4.12 records with the NR-K ruling.
 "**Portfolio-average trades per day**". A portfolio average over a span is not a
 per-day cap, not a per-pair rate, and **not a lower bound on any individual gap**.
 Three specific conversions are forbidden: `≤ 40/day` → a fixed gap; a mean turnover
-→ every gap; a turnover ceiling → a minimum gap. §0.4(b) records why —
-`sup rho_h = 24` at exactly the frozen ceiling.
+→ every gap; a turnover ceiling → a minimum gap. §0.4(b) records why: a mean-only
+constraint admits arbitrary clustering, right up to the supremum of `rho_h` at
+exactly the frozen ceiling (see the refinement of that supremum at D-ω-1). **No
+answer to MO-1…MO-8 may be derived from it.**
 
 **A-ω-4 — `NO_CLIPPING_WITHOUT_COMMITTED_AUTHORITY`.** No cap, floor, clamp,
 winsorisation or `0.5`-style ceiling may be applied to `g`, to `overlap_i` or to
-`ω` unless committed text supplies it. Two bounds *are* committed and are not
-clipping: `ω ∈ [0, 1]` (the spec's own definition, enforced by
-`_require_unit_fraction`) and D-ω-2's `max(0, ·)`, which is interval arithmetic.
+`ω` unless committed text supplies it. **Two** bounds are committed: `ω ∈ [0, 1]`
+(the spec's own definition, enforced by `_require_unit_fraction`) and
+**non-overlapping events ⇒ `rho_h → 1`**. A third expression is not a bound at all:
+D-ω-2's `max(0, ·)` is **interval arithmetic** — an intersection length cannot be
+negative — but D-ω-2 is a **derivation offered for confirmation**, conditional on
+MO-2 and MO-1(b), so it **may not be cited as committed authority until confirmed**.
+An earlier draft of this bullet listed it as committed, which is the promotion this
+very property exists to forbid.
 Everything else is invention — and this packet has already had to withdraw one
 clamp of its own (§8.4.3's `max(1, H/ḡ)`), which is why the prohibition is written
 down rather than assumed.
 
-**A-ω-5 — `OMEGA_METHOD_MUST_NOT_BE_SELECTED_AFTER_SEEING_THE_SPAN_IT_JUDGES`.**
+**A-ω-5 — `OMEGA_METHOD_MUST_NOT_BE_SELECTED_AFTER_OBSERVING_GAP_STRUCTURE_ON_ANY_SPAN`.**
 Because `ω` carries no span scope (§8.4.2), the method, the unit, the aggregation
 weighting and the pair set could each be chosen after the fact, and the choice would
 be **unfalsifiable** afterwards. This is the `ω` analogue of
 `DURATION_SELECTION_MUST_BE_OUTCOME_BLIND` (§8.1.0) and of §8.3.0's non-reduction
 clause, and it is what MO-7 must answer.
+
+**Outcome-blindness as to the *judged* span is not sufficient, and the earlier token
+said only that.** The DESIGN span is not the span `ω` judges, is fully informative
+about gap structure, and carries no bar on `ω` at all — so a method chosen on DESIGN
+gap structure and then applied to holdout obeys every word of the old token while
+retaining the whole of the informativeness. The property must reach **any** span,
+which is what §8.4.14 limb 6's "frozen before data" means; the token is renamed
+accordingly and the old spelling is **superseded**.
+
+**And a pre-data freeze does not by itself protect MO-2, because the favourable
+direction is known in advance.** §8.2.0 already records it — an elapsed reading
+"lengthens those gaps, lowers `rho_h` … and therefore **raises `N_eff` with no event
+added and no threshold touched**". Structurally, for every consecutive pair of events
+`g` measured on the continuous grid is **≥** `g` measured over bars that exist, with
+equality only where no closed period intervenes, so under any non-increasing overlap
+function the continuous-grid reading is **weakly `ω`-minimising for every dataset**.
+A ruler who has seen no data at all can therefore still take the feasibility-favourable
+end of MO-2. §8.4.4 records the *magnitude* of that lever but presents the candidates
+symmetrically; the ordering being fixed in advance is recorded here. **Outcome-blindness
+is necessary and not sufficient: MO-2 needs a reason, not merely a timestamp.**
+
+**A-ω-8 — neither frozen floor can see any of this, which is why MO-7 is the only
+enforcement point.** The raw ≥ 1,000 floor is `Σ raw_event_count` and contains no
+`ω` at all. The ≤ 0.40 concentration cap is computed over the **traded** set and is
+invariant under A-ω-1, since permuting counts across labels leaves the multiset and
+hence the maximum share unchanged. So **neither floor detects A-ω-1, A-ω-2, A-ω-4,
+A-ω-5, A-ω-6 or A-ω-7**. §8.3.0 makes the same point for the `P` lever ("with the raw
+floor unable to see the change"); it holds here for every route above, and it is the
+reason MO-7's producer and freeze point are the only place enforcement could live.
 
 **A-ω-6 — the pooled route.** Pooling gaps across pairs (D-ω-5) is foreclosed by the
 spec and by B-3, and it is worth naming *why* it would be attractive: pooling
@@ -4136,11 +4284,21 @@ shared `ω̄` in all twenty slots reproduces the pre-B-3 collapsed arithmetic ex
 (`Σ Nₚ/(1+23ω̄) = (Σ Nₚ)/(1+23ω̄)`). The rule is committed; the enforcement is not.
 
 **A-ω-7 — `MEAN_OVERLAP_PAIR_SET_MUST_NOT_SHRINK`.** §8.3.0 fixed `P` at the frozen
-registered twenty for `rho_x`. It ruled nothing about `ω`, so the same lever exists
-one deflator over: computing `ω` over **active pairs only**, **pairs with trades
-only**, or **the lowest-overlap pairs only** would do to `rho_h` what NR-K forbids
-for `rho_x`. Recorded as a property for the ruling to close — **not** asserted as
-already ruled, and §8.4.14 keeps it out of the derived set for exactly that reason.
+registered twenty for `rho_x`. It ruled nothing about `ω`, so the same *motive*
+exists one deflator over — **but the lever has a different shape, and an earlier
+draft of this property named the wrong object.** `rho_h = 1 + (H − 1)·ω` carries
+**no pair count** at all; `P` appears in `rho_x` and nowhere else, so there is no
+cardinality in `rho_h` for a shrink to act on. And §8.4.12 records that a fixed
+`P = 20` forces all twenty records to be present with an `overlap_fraction` on each,
+which `_normalise_pairs` requires. So "computing `ω` over **active pairs only**,
+**pairs with trades only**, or **the lowest-overlap pairs only**" cannot remove a
+slot: it can only decide **what value fills the slot of a pair excluded from the
+measurement**, which is **MO-5 together with `OVERLAP_PER_RECORD_PROVENANCE_UNBOUND`**.
+The property a ruling must close is therefore *which pairs' realised gaps produce
+which record's `overlap_fraction`, and what an excluded record carries* — **not** the
+cardinality of a set. Recorded as a property for the ruling to close — **not**
+asserted as already ruled, and §8.4.14 keeps it out of the derived set for exactly
+that reason.
 
 #### 8.4.12 Zero- and one-event pairs — and the collision with the NR-K ruling
 
@@ -4169,15 +4327,50 @@ prevent. **`ZERO_EVENT_OMEGA_MUST_NOT_HALT_A_NORMAL_OUTCOME`.**
 The two properties are compatible, and the packet says how without ruling it: the
 inert case (zero events) and the load-bearing case (one or few events) can be
 disposed of **differently**, because they differ arithmetically. A-ω-2 bites on the
-second; the first needs a value that is recorded as **conventional and inert**
-rather than measured. Which convention, and whether the one-event case is refused,
-deferred or given a stated value, is **MO-5 and is not decided here**.
+second; the first needs a value that is recorded as **conventional and inert** rather
+than measured. Which convention, and whether the one-event case is refused, deferred
+or given a stated value, is **MO-5 and is not decided here**.
+
+**Three qualifications this needs, and the last is uncomfortable.**
+
+- **The twenty-slot obligation runs through the current signature.** `effective_n()`
+  derives `n_pairs = len(records)` and takes no separate `P`, so `P = 20` implies
+  twenty records implies twenty `overlap_fraction` values. `P_AUTHORITY_RULED_IMPLEMENTATION_COMPLETENESS_PIN_PENDING`
+  (§8.3.0) means the pin has **not landed**: `effective_n()` still accepts `P = 1`,
+  so today the cheapest evasion of a zero-event pair's `ω` is not any convention but
+  **omitting the record**, which no code prevents. An estimator taking `P` separately
+  would dissolve the collision entirely. The collision is real under the committed
+  signature; it is not unavoidable in principle.
+- **The one-event lever is bounded, and saying so helps the ruling.** A one-event
+  record contributes at most `1.000` and at least `1/23.04 = 0.043`, so each such
+  pair is worth **≤ 0.957** units of `Σ N_eff_pair`. With `k ≤ 19` such pairs the whole
+  lever is `≤ 0.957k / rho_x` — **≤ 18.2 units of `N_eff`, about 4.5% of the 400 floor
+  at `c = 0` and 0.7% at the diagnostic `c = 0.3`**. *`NON_NORMATIVE_DIAGNOSTIC_ONLY`.*
+  That cuts **for** a strict disposition: refusing or deferring the one-event case
+  costs almost nothing, which strengthens A-ω-2 rather than weakening it.
+- **MO-6's denominator limb can decide MO-5's one-event limb by accident.** In a pair
+  with `n` events there are `n − 1` gaps. Dividing `n − 1` overlap terms by `n` —
+  equivalently letting the last event contribute a zero term, a reading MO-5 itself
+  offers — multiplies `ω` by `(n−1)/n`, which the raw floor keeps above 0.98 wherever
+  the budget binds. But **at `n = 1` it yields `ω = 0/1 = 0` automatically**, answering
+  the one-event limb without ever confronting A-ω-2. The two limbs are listed
+  separately and the ruling should not settle the second by settling the first.
+
+**And the split's own basis is worth naming rather than assumed.** It is principled
+**on arithmetic** — at `n = 0` the value provably cannot move anything. But the two
+cases are **evidentially identical**: neither pair has observed a single gap. So the
+rule "the convention may be chosen freely where it has no effect, and must be decided
+where it does" is, at exactly one event, the same criterion as *choosing a convention
+by its effect* — the shape A-ω-5 exists to forbid. **Whether the arithmetic effect or
+the evidential state governs is part of MO-5, and this packet does not choose.**
 
 #### 8.4.13 The options
 
 Stated for the limbs that remain choices. §8.4.10's four derivations are **not**
-re-offered as options — offering a derived limb as a choice is itself a way of
-reopening it.
+re-offered as open options — offering a derived limb as a choice is itself a way of
+reopening it. **Option B is the single exception**, and is listed as the derivation's
+*negation* so the ruling can refuse it by name rather than by omission, not as a live
+alternative.
 
 **Option A — realised event-level overlap mean.** Same pair; deterministic event
 ordering (D-ω-1); one clock for `g` and `H` (D-ω-2a); the interval-arithmetic
@@ -4209,10 +4402,10 @@ Seven limbs, each marked with what actually backs it. **Only the limbs marked
 
 | # | Limb | Backing |
 | --- | --- | --- |
-| 1 | `g` and `H` read on **one clock**, and that clock the M15 prediction clock | **`GAP_AND_HORIZON_MUST_BE_READ_ON_THE_SAME_CLOCK` is derived** (D-ω-2a); *that the clock is bars* is **recommended, not derived** — the pull is real (events are bar-identified per D-ω-1, §8.2.2 denominates model mechanics in bars, `warmup.py` counts by `bar_index`) but no committed source rules it, and **which** bar sequence remains open (§8.4.4) |
-| 2 | Overlap computed **per adjacent event interval**, by interval arithmetic | **Derived** (D-ω-2), conditional on limb 1 and on MO-1(b) |
+| 1 | `g` and `H` read on **one clock**, and that clock an **M15 bar** clock (*which* bar sequence is MO-2's and stays open) | **`GAP_AND_HORIZON_MUST_BE_READ_ON_THE_SAME_CLOCK` is derived** (D-ω-2a); *that the clock is bars* is **recommended, not derived** — the pull is real (events are bar-identified per D-ω-1; `warmup.py` counts by `bar_index`; §8.2.2 *reads* the contract as denominating model mechanics in bars, which is this document's distillation and **not** committed text) but no committed source rules it, and **which** bar sequence remains open (§8.4.4). An earlier version of this cell named an "M15 prediction clock" — a term that occurs nowhere in the repository outside it, and therefore a coined unit this packet may not introduce; **withdrawn** |
+| 2 | Overlap computed **per adjacent event interval**, by interval arithmetic | **Derived *given* limb 1's recommended half** (D-ω-2) — also conditional on MO-1(b), and on `H` being a **constant contiguous** length on the chosen clock, which is limb 1's open half. Not derived independently of limb 1 |
 | 3 | Average the **event-level overlaps**, never transform the average gap | **Derived** (D-ω-3 + D-ω-4) |
-| 4 | Preserve **registered pair identity**; an event's gaps belong to its own pair | **Recommended** — A-ω-1; nothing committed enforces it |
+| 4 | Preserve **registered pair identity**; an event's gaps belong to its own pair | **Rule derived, enforcement not committed.** The rule is the same spec sentence D-ω-5 rests on — `ω` is "estimated **per pair** from the realised inter-event gaps". What is uncommitted is its **enforcement**: `OVERLAP_PER_RECORD_PROVENANCE_UNBOUND` / A-ω-1, which is the half that stays recommended |
 | 5 | **No post-hoc pair dropping** on the `ω` side | **Recommended by analogy, and expressly not derived.** §8.3.0 ruled the *`rho_x`* pair set; extending it to `ω` is the natural reading of the same principle but is **not** what was ruled (A-ω-7) |
 | 6 | Formula, unit and aggregation weighting **frozen before data**; only the value computed afterwards | **Recommended** — A-ω-5; `ω` has no committed span scope, and `c`'s "DESIGN span only … frozen once and recorded" is the nearest committed analogue, not an authority over `ω` |
 | 7 | The no-adjacent-gap case **decided, not defaulted to `ω = 0`** | **Recommended** — A-ω-2, and **scoped by §8.4.12**: it must not become a halt on a zero-event pair, which §8.3.0 rules a normal outcome |
@@ -4227,7 +4420,11 @@ not supply one.
 **Is a contract amendment required?** For limbs 2 and 3 — **no**: they restate the
 APPROVED spec's own words, and the text they displace is expressly a draft "for the
 design audit to fix". For limb 1's derived half — **no**, for the same reason.
-For limbs 1-bars, 4, 5, 6 and 7 — **not determinable here**, on the same ground
+**And one branch of a question, not of the recommendation, is an amendment branch:**
+MO-1(b) invites the ruling to "confirm or vary" the spec's own explicit words, "the
+**next same-pair trade's** horizon". *Varying* committed spec text falls under the
+same unsettled classification as the limbs below. For limbs 1-bars, 4-enforcement,
+5, 6 and 7 — **not determinable here**, on the same ground
 §8.3.0 recorded for NR-K: they add requirements the spec does not carry, and
 **no general contract-amendment procedure is registered anywhere in this
 repository** (`NO_GENERAL_CONTRACT_AMENDMENT_PROCEDURE_REGISTERED`, this packet's
@@ -4236,26 +4433,64 @@ own token for that absence). **`MEAN_OVERLAP_AMENDMENT_CLASSIFICATION_NOT_SETTLE
 #### 8.4.15 Status, and the handoff
 
 **`MEAN_OVERLAP_PENDING_HUMAN_CHATGPT_RULING`** — because five of the nine objects
-are genuine choices no committed source makes: the **unit** (MO-2), MO-1's
+are genuine choices no committed source **settles**: the **unit** (MO-2), MO-1's
 next-event and unweighted limbs, **zero/one-event** semantics (MO-5), **within-pair
 weighting and role separation** (MO-6), and the **measurement source and freeze
 point** (MO-7). An AI may not settle any of them, and this packet invents no
 statistical formula.
 
+**One partial exception, and it is a derivation rather than a choice.**
+`ZERO_EVENT_OMEGA_MUST_NOT_HALT_A_NORMAL_OUTCOME` (§8.4.12) follows from §8.3.0's
+**recorded ruling**, and it removes the flatly fail-closed answer to MO-5's
+**zero-event** limb from the option set. It is offered for confirmation on the same
+footing as §8.4.10's four. Everything else in MO-5 — the convention itself, and the
+whole of the **one-event** limb — remains open. Recorded because a removal of a
+fail-closed option runs in the `ω`-permissive direction and must not pass as a
+by-product.
+
 **`MEAN_OVERLAP_CORE_DERIVED_READY_FOR_REVIEW`** — for the four that are derivable
 and are offered for confirmation rather than choice: **MO-8** event ordering
-(D-ω-1), **MO-3** the overlap function (D-ω-2, conditional on the clock), **MO-4**
-`E[f(gap)]` over `f(E[gap])` (D-ω-3 + D-ω-4), and **MO-6's across-pairs limb**
-(D-ω-5). Plus `GAP_AND_HORIZON_MUST_BE_READ_ON_THE_SAME_CLOCK` (D-ω-2a).
+(D-ω-1); **MO-3** the overlap function (D-ω-2 — conditional on **three** things, all
+of which are in the pending list above: MO-2's clock, **MO-1(b)'s next-event
+restriction**, and `H` being a **constant contiguous** length on that clock);
+**MO-4** `E[f(gap)]` over `f(E[gap])` (D-ω-3 + D-ω-4, which fixes the **order** of
+the transform and the average and **not** the weights); and **MO-6's across-pairs
+limb** (D-ω-5). Plus `GAP_AND_HORIZON_MUST_BE_READ_ON_THE_SAME_CLOCK` (D-ω-2a).
+
+**And what the four derivations do *not* buy, stated because the count invites the
+opposite reading.** They settle the **shape** of the arithmetic; they narrow the
+reachable range of `rho_h` **scarcely at all**, which the five open limbs still span
+in full — the weighting limb alone reaches `[1.00, 23.04]` with all four confirmed
+and the gap sequence fixed (§8.4.5), MO-2 moves a single contribution from `0` to
+near `1` in a direction known in advance (A-ω-5), and A-ω-1/A-ω-6 move `N_eff` by up
+to 20.9× with **every reported `ω` unchanged**. "Four of nine derived" is a count of
+**objects**, not progress on the deflator's range, and must not be read as the
+latter.
 
 **Carried open, and named:** `MEAN_OVERLAP_FRACTION_UNIT_NOT_REGISTERED` ·
-`MEAN_OVERLAP_CLOCK_DEPENDS_ON_APPROVED_CALENDAR_AUTHORITY` — if the ruling picks a
-bar sequence whose membership the approved calendar defines, `ω` acquires
-`PRE_CONTINUATION_CALENDAR_ARTIFACT_APPROVAL_REQUIRED` as a dependency (§8.4.4) ·
-`OVERLAP_PER_RECORD_PROVENANCE_UNBOUND` · `MEAN_OVERLAP_PAIR_SET_MUST_NOT_SHRINK` ·
+`MEAN_OVERLAP_CLOCK_DEPENDS_ON_APPROVED_CALENDAR_AUTHORITY` — if the ruling picks
+**any of MO-2's calendar-dependent candidates**, namely *bars that exist*, *complete
+buckets only*, or *elapsed time **excluding** closed periods*, then `ω` acquires
+`PRE_CONTINUATION_CALENDAR_ARTIFACT_APPROVAL_REQUIRED` as a dependency (§8.4.4); the
+continuous-grid, elapsed-**including**-closures and event-index candidates do not
+carry it, and an earlier version of this token said only "a bar sequence", which
+would not have fired on the third · `OVERLAP_PER_RECORD_PROVENANCE_UNBOUND` ·
+`PER_RECORD_COUNT_PROVENANCE_UNBOUND` · `MEAN_OVERLAP_PAIR_SET_MUST_NOT_SHRINK` ·
 `ZERO_EVENT_OMEGA_MUST_NOT_HALT_A_NORMAL_OUTCOME` ·
 `MEAN_OVERLAP_AMENDMENT_CLASSIFICATION_NOT_SETTLED` ·
-`HORIZON_WALL_CLOCK_EXTENT_NOT_REGISTERED`.
+`HORIZON_WALL_CLOCK_EXTENT_NOT_REGISTERED` ·
+`DRAFT_AND_APPROVED_OVERLAP_FORMULATIONS_ARE_DIFFERENT_OBJECTS_AND_DIVERGE_INSIDE_THE_HORIZON`
+— which D-ω-3 expressly does **not** retire · `Q10_A_DOES_NOT_RULE_THE_GAP_UNIT` ·
+`NOTHING_PREVENTS_OVERLAP_BEING_MEASURED_ON_THE_SPAN_IT_JUDGES_WHILE_CORRELATION_IS_FROZEN_ON_DESIGN` ·
+`OMEGA_METHOD_MUST_NOT_BE_SELECTED_AFTER_OBSERVING_GAP_STRUCTURE_ON_ANY_SPAN`.
+
+**One adjacent gap, recorded and not filled.** D-ω-2's equal-length premise also
+assumes no event's horizon is cut short by the **end of its role span**. The only
+positional implementation, `scripts/ml_step4/labels.py`, *excludes* such bars rather
+than truncating them — but that is unadopted M1-lineage code (prereg §11, "after
+audit/wrapping"), and nothing in `scripts/m15_gate3a/` carries a rule. At the small-`n`
+regime §8.4.12 shows is decisive, one truncated horizon is not negligible. It sits
+beside MO-5's last-event limb; **no rule is proposed here**.
 
 **Handoff — NR-L is next, and this packet touches none of it.** After the
 mean-overlap ruling, NR-L decides the correlation's **pair set**, **method**,
@@ -4722,6 +4957,67 @@ independently reached the same finding.
 
 ---
 
+### 12.8 Ninth review round — the completed mean-overlap packet
+
+Recorded **after** the roles returned, per the rule §12.5 established. Three
+independent doc-only roles — estimator/statistical semantics, event-time and
+aggregation semantics, and an adversarial `N_eff`-inflation brief — read the
+committed packet. None was given another's conclusions. Every decisive finding was
+re-verified at source by the lead before being applied.
+
+**The lead found one defect itself, before any role returned:** D-ω-1 cited prereg
+§6's "a bar is an **eligible** event" as saying "the same thing" as the spec's
+`raw_event_count`, which counts **traded** events. They are different sets, and the
+*eligible* one is the quantity `_require_count_quantity` refuses by name. Corrected
+at `9e5f30b` to the containment the derivation actually needs; one role reached the
+same finding independently.
+
+| Defect | Outcome |
+| --- | --- |
+| **D-ω-2 said "conditional on two things and no more"** | It needs a **third**: that `H` is a **constant, contiguous** length on the chosen clock. The packet's own §8.4.4 is why — `HORIZON_WALL_CLOCK_EXTENT_NOT_REGISTERED`, unregistered horizon consumption by incomplete buckets, and prereg §4's "no synthetic bars across market close". Where lengths differ, interval arithmetic gives `max(0, min(L_i − g, L_{i+1}))/L_i`, which is **flat then linear** — the lead verified that at `g = 1` against a 12-bar next horizon it is `0.50`, not the derived `0.958`. The stipulation that restores a constant `H` is now **labelled as a reading**, and limb 2 is re-marked "derived *given* limb 1's recommended half". |
+| **MO-3 and MO-4 still told a ruler they were open** | Four sites (§8.4.1, MO-3, MO-4, §8.4.8) survived the addition of §8.4.10 unchanged — including MO-4's "no committed source forecloses it. The anti-conservative reading is the one still standing open", the direct negation of D-ω-4, pointing at the Jensen-anti-conservative option. This is the "two positions at once" defect §8.4.1 had already withdrawn once for MO-1. All four corrected. |
+| **§0.5 still asserted the "agreement" §8.4.3 withdrew** | And cited §8.4.3 as its authority. The document's most upstream feasibility section carried the withdrawn claim, resolved feasibility-favourably (`rho_h = 1.00` at the ceiling frees the whole 4.36 budget for `c`), under a pointer to the section refusing it. Two roles found it. |
+| **"Three committed sources point at the bar family"** | One of the three is **§8.2.2 — a section of this packet**. The self-citation defect, for the **fifth** time in this PR. Now "two committed sources and one of this packet's own readings", with §8.2.0's own "nothing rules it and Q10-A does not" quoted against it. |
+| **"the M15 prediction clock"** | A **coined unit name**, occurring nowhere in the repository outside that one line, in a packet whose first sentence says it invents no gap unit. Withdrawn. |
+| **D-ω-1's one-event-per-bucket rested on a parenthetical** | **prereg §8 is the direct authority and was missed**: the frozen EV gate is "for each eligible **bar** and direction `d ∈ {long, short}` … Trade direction `d` iff `EV_d ≥ ev_min` and `EV_d > EV_{−d}`" (Ruling 8/9, FROZEN) — per bar, strict `>`, at most one direction. So two orders in one bucket is **contract-non-conforming for family A**, not "an implementation question"; and its direction (`ω` under-stated) is now named. |
+| **A-ω-7 named the wrong object** | `rho_h = 1 + (H−1)·ω` carries **no pair count** — `P` lives in `rho_x` alone — and a fixed `P = 20` already forces twenty filled slots. So "compute `ω` over active pairs only" cannot remove a slot; it can only decide **what value fills an excluded pair's slot**, which is MO-5 plus `OVERLAP_PER_RECORD_PROVENANCE_UNBOUND`. As written the property would have closed something NR-K already closed and left the live lever untouched. |
+| **§8.4.11's opening mis-defined its own class** | "Ways to lower `ω`" reaches five of the seven properties and **misses the two largest**: A-ω-1 and A-ω-6 leave every reported `ω` **unchanged** and move `N_eff` by re-pairing or sharing them, so no check inspecting the reported values can see them. Split into two kinds. |
+| **A-ω-4 listed `max(0, ·)` among the *committed* bounds** | D-ω-2 is a derivation **offered for confirmation** and conditional on MO-2 and MO-1(b). Promoting it into the committed column is exactly what A-ω-4 exists to forbid. The two committed bounds are `ω ∈ [0,1]` and non-overlapping ⇒ `rho_h → 1`. |
+| **A-ω-5 did not close what it named** | Outcome-blindness *as to the judged span* is insufficient: the **DESIGN span is not the span `ω` judges**, is fully informative about gap structure, and carries no bar on `ω` — so a method chosen there and applied to holdout obeyed every word. Renamed `OMEGA_METHOD_MUST_NOT_BE_SELECTED_AFTER_OBSERVING_GAP_STRUCTURE_ON_ANY_SPAN`. **And a pre-data freeze does not protect MO-2 either**, because `g` on the continuous grid is ≥ `g` over bars that exist for *every* consecutive pair, so the continuous-grid reading is weakly `ω`-minimising **for every dataset** — the favourable end is knowable without seeing any data. |
+| **MO-5 was called a choice "no committed source makes"** while §8.4.12 narrowed it | `ZERO_EVENT_OMEGA_MUST_NOT_HALT_A_NORMAL_OUTCOME` follows from §8.3.0's **recorded ruling**, so it is a derivation, and it removes the one **fail-closed** answer MO-5 had — in the `ω`-permissive direction. Now recorded as a partial exception offered for confirmation, with the one-event limb expressly still open. |
+| The crossover "just **below** `ḡ = 1`" | It is at **`ḡ ≈ 1.043`**, just *above* — and since D-ω-1 derives a one-bar minimum gap, the crossing is narrowly **inside** the reachable domain, not beyond it. Two roles found it independently. |
+| Smaller corrections | `sup rho_h` refines to **23.04** for any `ω` from realised gaps (not for a conventional one); the 48-bar mean gap imports **equal allocation**, which §0.4(c) shows the cap does not require; the draft's value lands in `[0,1]` at `ḡ ≥ H`, not `> H`; the turnover prohibition and the derived/choice count now reach **MO-8**; `event index` is flagged as the candidate D-ω-2a appears to eliminate and as the `ω`-**maximising** one; the calendar token now names **three** candidate readings rather than "a bar sequence"; D-ω-5 gains its most direct authority ("estimated **per pair**"); MO-1(b)'s *vary* branch is flagged as an amendment branch; §0.7's role-measured token gets its supersession pointer; and the horizon-truncation gap at a role-span boundary is recorded, unfilled. |
+
+**The finding that most changes how the packet should be read.** The adversarial role
+asked what the four derivations actually buy, and the answer is: **the shape of the
+arithmetic, and almost none of the range.** With all four confirmed and the realised
+gap sequence held fixed, the **weighting limb alone** — MO-1(c) and MO-6's
+within-pair limb, both open — puts `rho_h` anywhere in `[1.00, 23.04]`, the entire
+admissible range, because `overlap` is non-increasing in `g` and any reweighting
+toward longer intervals lowers `ω` unconditionally. On §0.3's own Poisson diagnostic
+the lead confirmed interval-length weighting gives `ω = 0.033`, `rho_h = 1.75`
+against the unweighted `0.213`, `5.90` — a 3.37× move, and the difference between
+§0.3's *infeasibility* conclusion and `N_eff = 996` at `c = 0`. **§0.3's headline
+turns on an unruled limb and neither section recorded that it does.** Now recorded at
+§8.4.5, §8.4.15 and here.
+
+**Two further findings the roles supplied.** Neither frozen floor can see any `ω`
+route — the raw floor contains no `ω`, and the concentration cap is invariant under
+a permutation of counts across labels — so MO-7's producer and freeze point are the
+**only** place enforcement could live (A-ω-8). And MO-6's `n`-versus-`n−1` denominator
+limb **decides MO-5's one-event limb by accident**: at `n = 1` the `n`-denominator
+reading yields `ω = 0` automatically, answering it without confronting A-ω-2.
+
+**One question a role raised that this packet deliberately does not answer.** The
+zero/one-event split is principled *on arithmetic* — at `n = 0` the value provably
+cannot move anything — but the two cases are **evidentially identical**, neither
+having observed a single gap. So "choose freely where it has no effect, decide where
+it does" is, at exactly one event, the same criterion as choosing a convention by its
+effect, which is the shape A-ω-5 forbids. Whether the arithmetic effect or the
+evidential state governs is now stated as part of MO-5, unresolved.
+
+---
+
 ## 13. Completion state
 
 **`M15_MINIMUM_RESEARCH_GATE_PENDING_HUMAN_CHATGPT_RULING`** — one completion
@@ -4836,9 +5132,10 @@ ordering** — `raw_event_count` counts *buckets* and prereg §6 says "a **bar**
 eligible event", so a pair's events are a subset of its buckets, the order is total
 and deterministic, ties and simultaneous same-pair events cannot arise, and the
 minimum gap is one bar; **the overlap function** — two horizons of the same frozen
-length `H` offset by `g` intersect in `max(0, H − g)`, so
-`overlap_i = max(0, 1 − g_i/H)` is interval arithmetic and the `max(0, ·)` is **not**
-a clamp; **`E[f(gap)]` over `f(E[gap])`** — the spec says "**mean fraction**", and
+length `H`, constant and contiguous on the chosen clock, offset by `g` intersect in
+`max(0, H − g)`, so `overlap_i = max(0, 1 − g_i/H)` is interval arithmetic and the
+`max(0, ·)` is **not** a clamp, conditional on MO-2's clock and on MO-1(b), both of
+which remain open; **`E[f(gap)]` over `f(E[gap])`** — the spec says "**mean fraction**", and
 the draft that suggested otherwise is expressly "for the design audit to fix", which
 T-6 then did by approving this spec, so the draft is **superseded and illustrative**;
 and **per-pair `rho_h`**, which forecloses pooling gaps across pairs. Plus
@@ -4848,11 +5145,23 @@ readings without choosing the clock.
 **Five are genuine choices and are not decided** — the **unit** (MO-2), MO-1's
 next-event and unweighted limbs, **zero/one-event** semantics (MO-5), **within-pair
 weighting and role separation** (MO-6), and the **measurement source and freeze
-point** (MO-7). The adversarial properties a ruling must close are recorded by name:
+point** (MO-7).
+
+**And "four of nine derived" is a count of objects, not progress on the deflator's
+range.** The derivations settle the *shape* of the arithmetic and narrow the
+reachable range of `rho_h` **scarcely at all**: with all four confirmed and the gap
+sequence fixed, the **weighting limb alone** spans `[1.00, 23.04]` — the whole
+admissible range — and on §0.3's own Poisson diagnostic interval-length weighting
+moves `rho_h` from `5.90` to `1.75`, which is the difference between §0.3's
+infeasibility conclusion and `N_eff = 996` at `c = 0`. *`NON_NORMATIVE_DIAGNOSTIC_ONLY`;
+no weighting is proposed.* Neither frozen floor can detect any of it — the raw floor
+contains no `ω`, and the concentration cap is invariant under a permutation of counts
+across labels — so MO-7's producer and freeze point are the only enforcement point
+that could exist. The adversarial properties a ruling must close are recorded by name:
 `PAIR_LABEL_ASSIGNMENT_MUST_NOT_BE_REARRANGED_TO_REDUCE_OMEGA`,
 `NO_ADJACENT_GAP_DOES_NOT_AUTOMATICALLY_MEAN_ZERO_OVERLAP`,
 `NO_TURNOVER_DERIVED_GAP_BOUND`, `NO_CLIPPING_WITHOUT_COMMITTED_AUTHORITY`,
-`OMEGA_METHOD_MUST_NOT_BE_SELECTED_AFTER_SEEING_THE_SPAN_IT_JUDGES` and
+`OMEGA_METHOD_MUST_NOT_BE_SELECTED_AFTER_OBSERVING_GAP_STRUCTURE_ON_ANY_SPAN` and
 `MEAN_OVERLAP_PAIR_SET_MUST_NOT_SHRINK` — the last because §8.3.0 ruled the
 **`rho_x`** pair set and said nothing about `ω`'s, so the same lever exists one
 deflator over and the packet expressly does **not** assert NR-K into it.
