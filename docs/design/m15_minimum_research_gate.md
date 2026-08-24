@@ -62,7 +62,10 @@ For the current Family A, **`P = 20`**, and the authority is the frozen register
 **`MEAN_OVERLAP_CLOCK_SUBSTRATE_RULED_APPROVED_CALENDAR_ELIGIBLE_SLOTS`** ·
 `OMEGA_CLOCK_SUBSTRATE_MUST_NOT_BE_CHOSEN_TO_MINIMISE_RHO_H` ·
 **`MEAN_OVERLAP_SEMANTICS_RULED_EXCEPT_ROLE_SPAN_AND_ROLLOVER_PENDING_CALENDAR_INSTANTIATION`**
-(the ruling's own `MEAN_OVERLAP_FULL_SEMANTICS_RULED_PENDING_CALENDAR_INSTANTIATION`, qualified — **two** limbs remain semantic, not instantiation-pending: the role-span boundary, and the rollover/holiday **membership outcome**, whose *ownership* Ruling ω-12(b) rules while its outcome stays A's content)
+— **HISTORICAL under Ruling ω-13**; the operative status is
+`MEAN_OVERLAP_MINIMUM_RESEARCH_CONTRACT_RULED_PENDING_CALENDAR_INSTANTIATION`, under
+which the rollover/holiday membership outcome is a `RUNTIME_CALENDAR_INSTANTIATION_OUTCOME`
+and the role-span boundary is the one genuinely-open `ω` semantic item
 
 **`H` and `g` are both counted on the approved-calendar eligible M15 slot
 sequence** — `H = 24` consecutive eligible slots, `g` in eligible-slot steps. No
@@ -99,17 +102,26 @@ is chosen.**
 `FR_8_SECOND_LIMB_OPEN_MATERIALISED_SET_MAY_STILL_BE_DERIVATION_TRACKING` and
 `NO_LOCUS_RECORDS_THE_FROZEN_CALENDAR_VERSION_IDENTITY`, both
 **`DEFERRED_PRODUCTION_CHECKABILITY`**, subject to
-`ONE_SELECTABLE_IMMUTABLE_CALENDAR_INSTANCE_IS_AN_EXECUTION_PREREQUISITE` and
-`CALENDAR_VERSION_IDENTITY_RECORDING_IMPLEMENTATION_PENDING`. The concrete
-rollover/holiday membership set is a **`RUNTIME_CALENDAR_INSTANTIATION_OUTCOME`**.
+`ONE_SELECTABLE_IMMUTABLE_CALENDAR_INSTANCE_WITH_RECORDED_IDENTITY_IS_AN_EXECUTION_PREREQUISITE`
+and `CALENDAR_VERSION_IDENTITY_RECORDING_IMPLEMENTATION_PENDING`. **Where that
+prerequisite does not hold the deferral lapses** and residual 5 is a
+`MINIMUM_RESEARCH_GATE_BLOCKER`. What is **not** deferred is §5's own R-6 lightweight
+record: any output consuming a calendar must record its `authority_version`,
+`content_digest` and `target_epoch`. The concrete rollover/holiday membership set is a
+**`RUNTIME_CALENDAR_INSTANTIATION_OUTCOME`**, a classification that **depends on
+residual 5's deferral holding**.
 
 **Calendar residuals — RULED** (§8.4.0, Ruling ω-12, human + ChatGPT):
 **`OMEGA_CALENDAR_AUTHORITY_RULED_SINGLE_FROZEN_VERSION_REQUIRED`** ·
 **`OMEGA_CALENDAR_AUTHORITY_RULED_PENDING_APPROVED_CALENDAR_INSTANTIATION`** ·
 `OMEGA_SLOT_MEMBERSHIP_AUTHORITY_IS_THE_D6_CLOSURE_MARKET_CALENDAR_EXPECTED_M15_SLOTS` ·
 `MEAN_OVERLAP_DOES_NOT_OWN_ROLLOVER_OR_HOLIDAY_RULES` ·
-`OMEGA_SLOT_MEMBERSHIP_AUTHORITY_MUST_BE_SINGLE_VERSIONED_AND_FROZEN_BEFORE_WINDOW_DECLARATION` ·
-`CALENDAR_FREEZE_PRECEDES_WINDOW_FREEZE_PRECEDES_DATA_OBSERVATION` ·
+`OMEGA_SLOT_MEMBERSHIP_AUTHORITY_MUST_BE_SINGLE_VERSIONED_AND_FROZEN_BEFORE_WINDOW_DECLARATION`
+(the single-versioned and frozen elements stand; the **`BEFORE_WINDOW_DECLARATION`**
+element is **historical** — Ruling ω-13(a) materialises the forward-epoch artifact
+**for** the declaration) ·
+`CALENDAR_FREEZE_PRECEDES_WINDOW_FREEZE_PRECEDES_DATA_OBSERVATION` — **HISTORICAL,
+superseded by Ruling ω-13(a)** ·
 `OMEGA_CALENDAR_CONTENT_MUST_BE_OUTCOME_BLIND` ·
 `POST_OBSERVATION_CALENDAR_MUTATION_IS_FORBIDDEN_FOR_CURRENT_FAMILY_A` ·
 `T6_LATER_CALENDAR_MAY_NOT_RETROACTIVELY_CHANGE_OMEGA_SLOT_MEMBERSHIP_FOR_AN_ALREADY_FROZEN_FAMILY_A_WINDOW` ·
@@ -155,19 +167,38 @@ arithmetic) ·
 `MEAN_OVERLAP_CLOCK_DEPENDS_ON_APPROVED_CALENDAR_AUTHORITY` ·
 `CALENDAR_CONTENT_DETERMINES_OMEGA_SUBSTRATE` (the surface remains; the **prohibition
 is now supplied** by Ruling ω-12(e)) ·
-`LATER_EVENT_ELIGIBILITY_CALENDAR_MAY_STILL_MOVE_THE_EVENT_SET` ·
+`LATER_EVENT_ELIGIBILITY_CALENDAR_MAY_STILL_MOVE_THE_EVENT_SET` — **closed for
+current Family A by Ruling ω-13(b)**, and surviving for any later family ·
 `WIDEN_ONLY_IS_CONSERVATIVE_FOR_THE_EVENT_COUNT_NOT_FOR_N_EFF` (removing an event
 **merges gaps**, lowering `ω`, so the direction on `N_eff` is indeterminate) · `OMEGA_CALENDAR_AMENDMENT_CLASSIFICATION_NOT_SETTLED` ·
 `CALENDAR_FREEZE_CHECKABILITY_IMPLEMENTATION_PENDING` ·
-`POST_DECLARATION_PRE_OBSERVATION_CALENDAR_DEFECT_ROUTE_NOT_SETTLED` ·
+`POST_DECLARATION_PRE_OBSERVATION_CALENDAR_DEFECT_ROUTE_NOT_SETTLED` —
+**enlarged** by Ruling ω-13(a), not classified by it: it now governs the **initial**
+materialisation of the forward-epoch Calendar A and not merely a re-freeze, because
+under (a) that artifact is first authored after the declaration is pushed, which makes
+ω-12's case A structurally unreachable and this the **only** route ·
+`ROLLOVER_AND_HOLIDAY_SLOT_ELIGIBILITY_RELATIVE_TO_THE_OMEGA_CLOCK_NOT_SETTLED` —
+ownership ruled by ω-12(b); the **membership outcome** is classified
+`RUNTIME_CALENDAR_INSTANTIATION_OUTCOME` by Ruling ω-13 and is therefore **documented
+and not closed**, not discharged ·
+`NO_PRE_DATA_FAMILY_A_EVENT_ELIGIBILITY_CONTRACT_EXISTS` ·
+`PRE_DATA_FAMILY_A_EVENT_ELIGIBILITY_CONTRACT_REQUIRED_BEFORE_CONTINUATION` (Ruling
+ω-13(b) states the obligation; **no such artifact exists and this packet creates
+none**) ·
 `ROLE_SPAN_HORIZON_TRUNCATION_RULE_NOT_REGISTERED` (the one genuinely-open `ω`
-**semantic** item; carried, and **not** a gate blocker unless shown to move a result
-after decision-bearing information) ·
+**semantic** item. Ruling ω-13 does **not** classify it — it is not among the six — and
+it is **not** demoted: §8.4.0 says the ruling "does **not** fill it", committed
+machinery "carries **no rule either way**", and `OVERLAP_PER_RECORD_PROVENANCE_UNBOUND`
+leaves the arm selectable **at computation time**. Either the truncation rule is part of
+the method `OMEGA_METHOD_IS_PRE_DATA_FROZEN_OMEGA_VALUE_IS_ROLE_LOCAL_MEASURED` requires
+frozen before data — in which case it must be registered **before** `ω` is measured, and
+it is not enumerated in ω-9's frozen-method list — or it is not, in which case the arm
+is selectable **after** decision-bearing observation.
+**`ROLE_SPAN_TRUNCATION_ARM_SELECTION_POINT_NOT_BOUND`**) ·
 `NO_PROHIBITION_BINDS_THE_CHOICE_OF_CORRELATION_STATISTIC` ·
 `ROUND_11_REVIEW_COVERAGE_PARTIAL_TWO_OF_THREE_ROLES_TERMINATED` ·
 `MEAN_OVERLAP_CLOCK_AMENDMENT_CLASSIFICATION_NOT_SETTLED` ·
 `M15_PREDICTION_HORIZON_CLOCK_IS_COINED_BY_THIS_RULING_NOT_REGISTERED` ·
-`ROLE_SPAN_HORIZON_TRUNCATION_RULE_NOT_REGISTERED` ·
 `MEAN_OVERLAP_PAIR_SET_MUST_NOT_SHRINK` — **partly discharged only**: Rulings ω-5/ω-6
 fix what value fills an excluded pair's slot, while its provenance half stays open as
 `OVERLAP_PER_RECORD_PROVENANCE_UNBOUND` ·
@@ -2974,13 +3005,14 @@ from an elapsed-UTC `D`:
 
 1. Q10-A / Q10(ii) / Q10-B — **ruled** (§8.2.0).
 2. **NR-K** — pair-universe and `P` authority — **ruled** (§8.3.0).
-3. **Mean-overlap contract** — **closed for Minimum Research Gate purposes**
-   (§8.4.0, Rulings ω-1…ω-13). Method, clock, pair handling, window/calendar ordering,
-   event-eligibility freeze and pair-calendar freedom all ruled; **instantiation waits
-   on the approved calendar artifact**, and two items are deferred outside the gate as
-   production checkability.
-   **5a.** *Within* step 6: the window is declared, **then** Calendar A is materialised
-   for it and frozen, **then** the window may not be reselected (Ruling ω-13(a)).
+3. **Mean-overlap contract** — **RULED for Minimum Research Gate purposes,
+   instantiation pending** (§8.4.0, Rulings ω-1…ω-13). Method, clock, pair handling,
+   window/calendar ordering, event-eligibility freeze and pair-calendar freedom all
+   ruled; **instantiation waits on the approved calendar artifact**, and two items are
+   deferred outside the gate as production checkability. *"Closed" is avoided: R-9
+   requires every exploratory result to report `N_eff` with the overlap fractions shown,
+   and no authoritative `ω` is measurable until an artifact that does not yet exist is
+   approved.*
 4. **NR-L** — correlation pair set, statistic, series, day attribution, idle days,
    undefined cases, source span and freeze point — **the next decision** (§8.5,
    packet complete, not ruled). Note `NR_L_DAY_ATTRIBUTION_DEPENDS_ON_Q10_I`: two of
@@ -2988,6 +3020,13 @@ from an elapsed-UTC `D`:
 5. Remaining duration-sizing authority, including Q10(i), Q10(iii) and the
    month-arithmetic boundary question (§8.2.3).
 6. Human + ChatGPT declaration of the exact `T_v` / `T_h` / `D`.
+   **6a.** *After step 6 and before step 8*: the declared window is frozen, **then** the
+   **forward-epoch** Calendar A is materialised **for** that declaration, frozen and
+   approved, and the window may **not** be reselected on calendar content (Ruling
+   ω-13(a); §8.2.0's "between (3) and (4)"). This adds **no authorisation** and does not
+   divide step 6, which §8.2.0 fixes as one event with one artifact. *Earlier draftings
+   labelled this "5a", placed it "within step 6", and then attached it to ordering item
+   3 — three numberings, none agreeing; it belongs here.*
 7. The remaining Minimum Research Gate questions — Q1, Q8, FR-19 and the rest
    of §8.
 8. Only after **every** *other* minimum-gate requirement is resolved may
@@ -3622,21 +3661,23 @@ convenience.
 
 **The semantics are near-complete; the instantiation is not.** The substrate, the
 unit, the transform order, the weighting, the endpoint cases, the aggregation, the
-pair identity, the freeze and the no-redesign rule are now ruled. **Two limbs are
+pair identity, the freeze and the no-redesign rule are now ruled. **One limb is
 not**: the horizon's behaviour at a role-span boundary
-(`ROLE_SPAN_HORIZON_TRUNCATION_RULE_NOT_REGISTERED`), and the rollover/holiday
-**membership outcome** — Ruling ω-12(b) rules its *ownership* (A decides, `ω` derives no
-rule) and leaves the outcome to A's content, which is a question about what `ω` *means*
-and is not cured by the artifact's approval. The operative status is
-therefore
+(`ROLE_SPAN_HORIZON_TRUNCATION_RULE_NOT_REGISTERED`). The rollover/holiday **membership
+outcome** was the second such limb — Ruling ω-12(b) rules its *ownership* (A decides,
+`ω` derives no rule) and leaves the outcome to A's content — until Ruling ω-13
+classified that outcome a `RUNTIME_CALENDAR_INSTANTIATION_OUTCOME`; it is **documented
+and not closed**. The operative status is therefore
 **`MEAN_OVERLAP_MINIMUM_RESEARCH_CONTRACT_RULED_PENDING_CALENDAR_INSTANTIATION`**
-(Ruling ω-13) — the contract semantics are **closed for Minimum Research Gate
-purposes**. The earlier
+(Ruling ω-13) — the contract semantics are **ruled for Minimum Research Gate purposes,
+with instantiation pending**; "closed" is avoided, because R-9 requires the overlap
+fractions to be shown with every reported `N_eff` and no authoritative `ω` is
+measurable before the artifact exists. The earlier
 `MEAN_OVERLAP_SEMANTICS_RULED_EXCEPT_ROLE_SPAN_AND_ROLLOVER_PENDING_CALENDAR_INSTANTIATION`
-is **historical**: its rollover limb is a
-`RUNTIME_CALENDAR_INSTANTIATION_OUTCOME` under ω-13, and the **role-span truncation
-limb** is the one genuinely-open semantic item, carried as such rather than as a gate
-blocker unless it is shown to move a result after decision-bearing information.
+is **historical** as to its rollover limb only. The **role-span truncation limb** is
+**not** classified by ω-13 — it is not among the six residuals — and it is carried
+**unclassified**, with `ROLE_SPAN_TRUNCATION_ARM_SELECTION_POINT_NOT_BOUND` recording
+that nothing binds *when* the arm is chosen.
 Historically, and retained because it records what the earlier rounds held: **two**
 limbs remained semantic. Ruling ω-12(b) rules the rollover limb's **ownership**
 (A decides membership; `ω` derives no rule), and its **outcome** stays A's content, so
@@ -4241,7 +4282,8 @@ the calendar author as much as this packet.
 and its **outcome** is A's content, unknowable before A exists. ω-11's `0`-to-near-`1`
 daily lever therefore **relocates into A's content**, bound only by (e).
 
-**(c) One authority, one version, frozen before the window is declared.**
+**(c) One authority, one version — SUPERSEDED IN PART BY RULING ω-13(a) as to
+ordering.**
 **`OMEGA_SLOT_MEMBERSHIP_AUTHORITY_MUST_BE_SINGLE_VERSIONED_AND_FROZEN_BEFORE_WINDOW_DECLARATION`.**
 Exactly **one** artifact, at exactly **one** version, with exactly **one**
 slot-membership declaration — **scoped to a single `target_epoch`**, because committed
@@ -4249,7 +4291,10 @@ code refuses reuse across epochs ("a calendar is never reused across epochs") an
 `target_epoch` sits inside the `content_digest`, so the design span and the forward
 epoch necessarily carry **different** artifacts at different digests. "Exactly one"
 means one **per epoch**, binding `ω` and coverage *within* that epoch; it is not a
-claim that Family A has a single artifact. *(The declaration is also **per pair**: the
+claim that Family A has a single artifact. *The single-versioned and frozen elements
+stand; the **ordering** element — "before the window declaration" — is **historical**,
+reversed by Ruling ω-13(a), which materialises the forward-epoch artifact **for** the
+declaration.* *(The declaration is also **per pair**: the
 validated calendar carries one `expected_m15_slots` set for each of `PAIRS_20`.)* Fixed
 **before** the exact `T_v`/`T_h`/`D` declaration, and not swappable after any
 result or metadata is observed. **No schema is invented here**: the identity fields
@@ -4273,14 +4318,19 @@ slot-membership semantics fixed → **4.** the exact UTC window declared → **5
 continuation separately authorised → **6.** and only then may real-data-dependent
 calculation occur.
 
-**This list is an *insertion into*, not a replacement for, the recorded order.** Steps
-1–3 precede §8.2.8's step 6; step 4 **is** §8.2.8's step 6; and §8.2.8's **step 7** —
+**This list is an *insertion into*, not a replacement for, the recorded order — and
+its mapping is HISTORICAL under Ruling ω-13(a).** *As written here:* steps 1–3 precede
+§8.2.8's step 6; step 4 **is** §8.2.8's step 6. *Under ω-13(a) the mapping is instead:
+§8.2.8's **step 6 is the declaration**, and the forward-epoch Calendar A's
+materialisation, freeze and approval fall **after step 6 and before step 8**.* Either
+way, and §8.2.8's **step 7** —
 the remaining Minimum Research Gate questions, Q1, Q8, FR-19 and the rest of §8 — and
 **step 8**, execution authorisation, unconditional, are unchanged and still stand
 between the declaration and any run. An earlier drafting of this six-step list omitted
 step 7, which is readable as authorising the continuation straight off the
 declaration. The three restatements of the recorded order (§8.2.8, §8.3.11, §13) are
-**not amended here**.
+**not amended here** — *and §8.2.8 is subsequently amended by Ruling ω-13(a), which
+inserts step 6a; §8.3.11 and §13 are not*.
 
 **And a committed source *does* state a conflicting placement, surfaced rather than
 smoothed.** §8.2.0 — a recorded ruling section of this document — says of the calendar
@@ -4335,7 +4385,7 @@ not be re-designated as `ω`'s membership authority for a window already frozen.
 
 | Case | Disposition |
 | --- | --- |
-| **A. Defect correction found *before* the window declaration is pushed** | Permitted: re-freeze at a **new stated version**, with the superseded version and its identity retained. *The ground is **not** "nothing is observed yet, so nothing is selected on its effect" — that was an earlier drafting and it is **withdrawn**, because the sign of a membership change is knowable with no data at all. The ground is that no window is fixed and the superseded version stays traceable.* **After the declaration is pushed but before decision-bearing observation, case A does not apply**: §8.1.0 fixes the declaration at the first push and `SAME_D_DIFFERENT_WINDOW_IS_RESELECTION` binds from it, so a re-freeze there is made against a **known window** and re-opens the lever (d) closes. That routes to **B**, and whether the declaration must then be re-taken is **`POST_DECLARATION_PRE_OBSERVATION_CALENDAR_DEFECT_ROUTE_NOT_SETTLED`**. Repeated pre-declaration re-freezing toward a membership set that raises `N_eff` is a violation of **(e)**, not an exercise of case A. |
+| **A. Defect correction found *before* the window declaration is pushed** | Permitted: re-freeze at a **new stated version**, with the superseded version and its identity retained. *The ground is **not** "nothing is observed yet, so nothing is selected on its effect" — that was an earlier drafting and it is **withdrawn**, because the sign of a membership change is knowable with no data at all. The ground is that no window is fixed and the superseded version stays traceable.* **After the declaration is pushed but before decision-bearing observation, case A does not apply**: §8.1.0 fixes the declaration at the first push and `SAME_D_DIFFERENT_WINDOW_IS_RESELECTION` binds from it, so a re-freeze there is made against a **known window** and re-opens the lever (d) closes. That routes to **B**, and whether the declaration must then be re-taken is **`POST_DECLARATION_PRE_OBSERVATION_CALENDAR_DEFECT_ROUTE_NOT_SETTLED`**. Repeated pre-declaration re-freezing toward a membership set that raises `N_eff` is a violation of **(e)**, not an exercise of case A. **Under Ruling ω-13(a) this case is structurally unreachable for the forward-epoch Calendar A**, because that artifact is materialised *from* the pushed declaration, so no version of it exists before the push. Every forward-epoch defect correction therefore routes to **B**, and `POST_DECLARATION_PRE_OBSERVATION_CALENDAR_DEFECT_ROUTE_NOT_SETTLED` is promoted from a corner case to **the only route** — a missing **route**, not a missing prohibition: the substantive lever stays barred by **(e)**, including on "the known analytic sign of the effect", and by `CALENDAR_MATERIALISATION_MAY_NOT_REOPEN_WINDOW_SELECTION` on the window side. *The clause "re-opens the lever (d) closes" above is historical; (d) is superseded.* |
 | **B. Defect correction found *after* data observation** | **The current Family A window may not silently continue.** A corrected membership set changes `ω` for results already observed, which is `POST_OBSERVATION_CALENDAR_MUTATION_IS_FORBIDDEN_FOR_CURRENT_FAMILY_A`. It requires a **new explicit pre-registration or contract decision**, and the old version and old result stay **traceable**. |
 | **C. Semantic change to eligibility** (membership actually differs) | Same as B, whenever the window is frozen: **no silent replacement**. Before the freeze it is case A. |
 | **D. Administrative rename or pointer change**, membership byte-identical | Permitted **only where nothing digest-covered moves**, and **must not be used to smuggle C**. *An earlier drafting gave the ground as "identity is the `content_digest`, not the name" — which is **inverted**: `calendar_content_digest()` covers `committed_artifact` and `committed_revision` as well as the slot sets, and `committed_artifact` **is** a name ("looks like a path … a name a human reviewer resolves"). The name is **inside** the identity.* So a rename with byte-identical membership still yields a **different `content_digest`**, and is therefore a **new stated version** under case A or B by timing — never a silent pointer swap. |
@@ -4346,9 +4396,9 @@ committed.*
 ###### Interactions, stated because two of them are ordering constraints
 
 - **Q10-B.** The exact `T_v`/`T_h`/window is declared by human + ChatGPT **before**
-  continuation authorisation. Limb (d) puts the **calendar freeze before that
-  declaration**. *But Q10-B does not itself presuppose it, and an earlier drafting said
-  it did.* Under Ruling Q10-A `D` is an elapsed UTC span and expressly "**not** an
+  continuation authorisation. *Historical:* limb (d) put the **calendar freeze before that
+  declaration** — reversed by Ruling ω-13(a). *And Q10-B does not itself presuppose
+  either order, though an earlier drafting said it presupposed (d)'s.* Under Ruling Q10-A `D` is an elapsed UTC span and expressly "**not** an
   eligible-day count", and Q10-B declares **literal UTC instants**, so the declared
   object is not denominated on the slot universe; Q10-B's own embargo paragraph in fact
   *contemplates* the approval landing later and defends by declaring the holdout start
@@ -4436,6 +4486,8 @@ the estimator's own signature, not merely unenforced in general
   **`FR_8_SECOND_LIMB_OPEN_MATERIALISED_SET_MAY_STILL_BE_DERIVATION_TRACKING`** —
   classified **`DEFERRED_PRODUCTION_CHECKABILITY`** by Ruling ω-13: the rule against it
   exists, the *verification* does not, and a reader-free package cannot supply one.
+  Subject, like residual 5, to
+  `ONE_SELECTABLE_IMMUTABLE_CALENDAR_INSTANCE_WITH_RECORDED_IDENTITY_IS_AN_EXECUTION_PREREQUISITE`.
 - **The freeze has no recorded anchor.** `content_digest` is recomputed from the content
   the artifact carries, so it is self-consistent for **any** artifact and cannot by
   itself distinguish the frozen version from a substitute; and the approval marker is
@@ -4445,7 +4497,9 @@ the estimator's own signature, not merely unenforced in general
   covers the absence of *code*, not the absence of a *record*.
   **`NO_LOCUS_RECORDS_THE_FROZEN_CALENDAR_VERSION_IDENTITY`** — classified
   **`DEFERRED_PRODUCTION_CHECKABILITY`** by Ruling ω-13, subject to
-  `ONE_SELECTABLE_IMMUTABLE_CALENDAR_INSTANCE_IS_AN_EXECUTION_PREREQUISITE`.
+  `ONE_SELECTABLE_IMMUTABLE_CALENDAR_INSTANCE_WITH_RECORDED_IDENTITY_IS_AN_EXECUTION_PREREQUISITE`
+  — **the deferral lapses where that prerequisite does not hold**, and the R-6
+  reproducibility record is **not** part of it.
 - **Membership is per pair, and nothing constrains how the sets may differ.**
   `expected_m15_slots` maps each of the twenty registered pairs to its own slot set, and
   `ω_p` is measured on pair `p`'s set — so a calendar author holds **twenty** independent
@@ -4469,7 +4523,7 @@ the estimator's own signature, not merely unenforced in general
 | (a) A governs membership, B governs event eligibility | **Ambiguity resolution.** Both roles are already what the committed field lists and prereg §5 say; the ruling names which one `ω` consumes. Nothing committed is reversed. |
 | (b) `ω` owns no rollover/holiday rule | **Ambiguity resolution as to ownership.** Confining `ω` to consuming membership narrows this packet, and prereg §4's "the session/rollover exclusion windows for *event eligibility* are defined in §5/§6, **not by deleting data**" is the contract's own voice for it. *An earlier drafting also decided the **membership outcome** here, in the feasibility-favourable direction; that is withdrawn, so no arm is chosen and none is classified.* |
 | (c) single versioned frozen authority | **Tightening as to authority selection; NOT SETTLED as to the single-version obligation.** Refusing "whichever approved calendar is latest" removes latitude. But **no committed source binds two consumers to one `content_digest`** — this ruling's own Q10(ii) interaction says "nothing committed distinguishes them", and nothing committed *binds* them either, so `ONE_FROZEN_CALENDAR_VERSION_GOVERNS_BOTH_OMEGA_AND_COVERAGE` is an **addition**. That no schema is added is a separate and true point; it does not convert an added obligation into a tightening. |
-| (d) ordering | **NOT SETTLED — an addition that also reverses a committed placement.** §8.2.0 puts the calendar approval "between (3) and (4)", i.e. after the declaration; this limb puts it before. Reversing a committed placement is not removing latitude, and by the criterion the last row applies it adds a requirement no committed source carries. *An earlier drafting classified (c) and (d) together as a plain tightening on the ground that the freeze was "unordered"; it was not.* |
+| (d) ordering — **HISTORICAL, the limb is superseded by Ruling ω-13(a), which restores §8.2.0's placement** | **NOT SETTLED — an addition that also reversed a committed placement.** §8.2.0 puts the calendar approval "between (3) and (4)", i.e. after the declaration; this limb puts it before. Reversing a committed placement is not removing latitude, and by the criterion the last row applies it adds a requirement no committed source carries. *An earlier drafting classified (c) and (d) together as a plain tightening on the ground that the freeze was "unordered"; it was not.* |
 | (e) outcome-blindness · (f) T-6 non-retroaction | **NOT SETTLED.** Each adds a requirement no committed source carries — a blindness obligation on calendar authorship and approval, a disclosure obligation, and a non-retroaction rule. Whether such additions need a contract-amendment procedure cannot be answered, because **no general contract-amendment procedure is registered anywhere in this repository** — `NO_GENERAL_CONTRACT_AMENDMENT_PROCEDURE_REGISTERED` being **this packet's own token for that absence, not a citation**. **`OMEGA_CALENDAR_AMENDMENT_CLASSIFICATION_NOT_SETTLED`.** |
 
 **No favourable classification is asserted anywhere in this table.** The sentence
@@ -4487,12 +4541,36 @@ unresolved freedom materially change the research result, the event sequence, `�
 available**?* If yes, it is a research-blocking contract issue and is ruled here. If
 it concerns only **evidence provenance, auditability, production verification,
 implementation checkability or artifact-identity recording**, it is documented and
-**deferred outside** the Minimum Research Gate. This packet exists to make research
-**safe**, not to complete production-grade evidence infrastructure — and the previous
-rounds had begun promoting every discovered defect into a gate blocker regardless of
-whether it moved a result.
+**deferred outside** the Minimum Research Gate, **recorded against a named later
+gate**. This packet exists to make research **safe**, not to complete production-grade
+evidence infrastructure.
+
+**This test is §5's first limb and does not replace §5.** §5's **second limb** governs
+unchanged — *absent this, could the exploratory work damage, contaminate, or later be
+mistaken for committed evidence?* **Yes → IN, whatever the first answer** — and **§5 may
+never be cited to strike a §3 boundary**. Nor does *after decision-bearing information
+is available* narrow the first limb: §8.4.11's A-ω-5 records that **"a pre-data freeze
+does not by itself protect MO-2, because the favourable direction is known in
+advance"**, and ω-12's case A withdrew the same defence because "the sign of a
+membership change is knowable with no data at all". A freedom whose favourable arm is
+knowable with **no data** is therefore IN even though it is exercised before any
+observation. Where the classification is unclear the item is a **blocker**, not a
+deferral: the stricter reading of a research restriction governs.
+
+*An earlier drafting of this paragraph said the previous rounds "had begun promoting
+every discovered defect into a gate blocker regardless of whether it moved a result".
+That is **withdrawn as false**: at the head this ruling was taken on, the word "blocker"
+occurred **twice** in the whole document, and one of the two was ω-12 declining to call
+an item one. No round did this, and the test needs no such premise.*
 
 ###### The six residuals, classified explicitly
+
+**Six are *selected* for classification, not enumerated exhaustively.** The other items
+ω-12 left open are unchanged and are **not** classified here — including
+`POST_DECLARATION_PRE_OBSERVATION_CALENDAR_DEFECT_ROUTE_NOT_SETTLED`, which (a)
+**enlarges**, and `ROLE_SPAN_HORIZON_TRUNCATION_RULE_NOT_REGISTERED`, which ω-13 does
+not reach at all. ω-12's amendment cases A–D were derived on the superseded (d) order
+and are **not** re-derived here.
 
 | # | Residual | Classification |
 | --- | --- | --- |
@@ -4509,10 +4587,21 @@ The order is:
 
 > **1.** the experiment/window identity is declared **without reading decision-bearing
 > data** → **2.** that frozen declaration is the **input** from which Calendar A is
-> mechanically materialised → **3.** Calendar A is frozen → **4.** the declared window
-> may **not** be changed or reselected because of calendar content → **5.** only after
-> *both* the declaration and the calendar are frozen may decision-bearing data
-> observation occur.
+> mechanically materialised → **3.** Calendar A is frozen **and approved** → **4.** the
+> declared window may **not** be changed or reselected because of calendar content →
+> **5.** only after *both* the declaration and the calendar are frozen may
+> decision-bearing data observation occur — and **only** subject to §8.2.8's **step 7**
+> (the remaining Minimum Research Gate questions) and **step 8**, which is
+> unconditional. **This list is an insertion into the recorded order, never a
+> replacement for it, and no step of it is an authorisation.**
+
+**Scope: the forward epoch only.** This order governs the **forward-epoch** Calendar A
+— the artifact whose `target_epoch` §8.2.0 says "is determined by the declared window".
+It does **not** reach the **design-epoch** Calendar A, which ω-12(c)'s "one **per
+epoch**" already separates and which the audit playbook's prerequisite 5 requires
+*before* the design-span continuation may "read/derive design-span data". Nothing here
+reorders that artifact, and an unqualified reading of this limb would have forbidden
+what the playbook requires.
 
 *This **supersedes Ruling ω-12(d)**, which put the calendar freeze **before** the
 window declaration and which a review found both conflicting and circular.* §8.2.0
@@ -4530,15 +4619,19 @@ is **discharged**.
 to inspect calendar density, the expected slot count, the overlap implications, `ω` or
 `N_eff`, and then choose a more favourable `T_v`/`T_h`/`D`. The predeclared window
 identity **binds** for current Family A unless a new explicit pre-registration or
-contract decision is taken — which is `SAME_D_DIFFERENT_WINDOW_IS_RESELECTION` and
-`POST_FREEZE_DURATION_RESELECTION_IS_FORBIDDEN_FOR_CURRENT_FAMILY_A` applied to this
-step. **No `T_v`, `T_h` or `D` value is chosen here.**
+contract decision is taken — a route whose **sufficiency is itself unruled**
+(`NEW_PREREGISTRATION_SUFFICIENCY_FOR_A_DIFFERENT_D_NOT_RULED`), so it is named here as
+the *only* route and not as an available one. `SAME_D_DIFFERENT_WINDOW_IS_RESELECTION`
+and `POST_FREEZE_DURATION_RESELECTION_IS_FORBIDDEN_FOR_CURRENT_FAMILY_A` apply to this
+step, and §8.2.0 binds the declaration **from the first push**, so there is **no
+interval in which the window is mutable and calendar content is visible**. **No `T_v`, `T_h` or `D` value is chosen here.**
 
 **Relation to Q10-B, restated so the two read as one sequence.** Q10-B still requires
 the exact human + ChatGPT declaration **before continuation authorisation**. The
 composed order is: **declaration → Calendar A materialised for that exact declaration →
-Calendar A frozen → (later) continuation may be considered.** Q10-B is unchanged, and
-the earlier claim that it *presupposed* a frozen calendar stays withdrawn.
+Calendar A frozen and approved → §8.2.8's step 7, then its unconditional step 8 →
+(later) continuation may be considered.** Q10-B is unchanged, and the earlier claim
+that it *presupposed* a frozen calendar stays withdrawn.
 
 **(b) Event eligibility must be frozen before data.**
 **`OMEGA_EVENT_ELIGIBILITY_RULES_MUST_BE_PRE_DATA_FROZEN`** ·
@@ -4548,6 +4641,23 @@ inclusion in the `ω` / `N_eff` event sequence** must have its **operative seman
 frozen before decision-bearing data observation. This is the limb that made residual 2
 a blocker: slot membership being fixed is not enough, because eligibility decides which
 events exist at all.
+
+**And "semantics" here means *closed* semantics — without this the limb does not
+bind.** A rule may not **delegate** its content to an artifact, table or calendar that
+is not itself frozen before decision-bearing observation. Otherwise a rule of the form
+*"ineligible if the slot falls in a low-liquidity holiday session **as listed in the
+calendar approved before gate 7**"* would have complete operative semantics, frozen
+pre-data, and would therefore satisfy this limb **and** fall inside the carve-out
+below — while its content arrived after the freeze and moved the event set. Where a
+rule delegates, **the delegated content is part of the pre-data freeze and the rule is
+not frozen until that content is**.
+**`FAMILY_A_ELIGIBILITY_SEMANTICS_MAY_NOT_DELEGATE_TO_A_POST_FREEZE_ARTIFACT`.**
+
+**The freeze moment is named, because the non-retroaction limb needs something to
+protect.** The **current Family A event sequence is frozen at the moment the last such
+semantic *and its content* are frozen**, which is before any decision-bearing
+observation. The non-retroaction limb protects the sequence from that moment, and the
+carve-out below reaches only rules frozen **in that complete sense**.
 
 **Calendar B is not thereby pulled forward wholesale.** Two classes are separated:
 **(A) semantics affecting current Family A event inclusion** — must be frozen before
@@ -4562,11 +4672,32 @@ classification, rollover classification, thin liquidity, low or high spread, ove
 `N_eff`, correlation or model performance — **unless that rule was already frozen
 before data observation**.
 
-*If the committed architecture only permits Calendar B's approval after the freeze,
-the conflict is **not** thereby dissolved: a narrow **pre-data Family A eligibility
-contract** must be frozen separately, and the later Calendar B may not override it
-retroactively. Only the required semantics are ruled here; **no such artifact is
-created**.*
+**The committed architecture *does* place Calendar B's approval after the freeze** —
+T-6 re-points it to "implementation, approved before gate 7" — so this is not a
+conditional: the conflict is **not** dissolved by the split alone, and a narrow
+**pre-data Family A eligibility contract** must be frozen separately, before any
+decision-bearing observation, with the later Calendar B unable to override it
+retroactively. *An earlier drafting wrote this as an "if", which leaves a reader
+entitled to hold the antecedent unestablished and skip the separate freeze.*
+
+**Its content is bound like the others.** ω-12(e)'s outcome-blindness names "A's slot
+membership and B's event-eligibility content"; this contract is a **third** object, and
+it is bound on the same terms — **`OMEGA_CALENDAR_CONTENT_MUST_BE_OUTCOME_BLIND` reaches
+it too**, because a pre-data freeze is not by this packet's own standard sufficient
+when the favourable sign is computable with no data. Its declaration is a **human +
+ChatGPT** act, as Q10-B's is, and no decision-bearing observation may occur before it:
+**`PRE_OBSERVATION_FAMILY_A_EVENT_ELIGIBILITY_CONTRACT_REQUIRED`**. Only the required
+semantics are ruled here; **no such artifact is created**, and who authors it, where it
+is recorded and how it is checked are `DEFERRED_PRODUCTION_CHECKABILITY` alongside
+residual 5.
+
+**And its absence is registered, not assumed away.** No such contract exists, nothing in
+committed text requires one to be produced, and Calendar B's committed approval point is
+after the freeze — so until one is frozen, the Family A event sequence is still fixed by
+an artifact approved after the freeze, and (b) is satisfiable in principle and
+unsatisfied in fact. **`NO_PRE_DATA_FAMILY_A_EVENT_ELIGIBILITY_CONTRACT_EXISTS`** ·
+**`PRE_DATA_FAMILY_A_EVENT_ELIGIBILITY_CONTRACT_REQUIRED_BEFORE_CONTINUATION`**, carried
+on the open list beside `PRE_CONTINUATION_CALENDAR_ARTIFACT_APPROVAL_REQUIRED`.
 
 **(c) Pair-specific slot variation must be calendar-derived, never researcher-chosen.**
 **`PAIR_SPECIFIC_SLOT_VARIATION_MUST_BE_CALENDAR_DERIVED_NOT_RESEARCHER_SELECTED`.**
@@ -4576,8 +4707,20 @@ by frozen Calendar A, from the registered pair identity, under pre-data rules, a
 
 **This does not require the twenty sets to be identical.** Legitimate differences may
 exist wherever Calendar A derives them deterministically from pair identity and
-calendar rules — the prohibition is on **researcher choice**, not on deterministic
-pair-specific calendars. Forbidden accordingly:
+calendar rules — the prohibition is on **choice by any party, the calendar author no
+less than the researcher, and they may be the same person**, not on deterministic
+pair-specific calendars.
+
+**Determinism is not itself the safeguard, and the ruling does not pretend otherwise.**
+**Any fixed per-pair table is deterministic**, so twenty hand-written sets indexed by
+pair identity would satisfy the words while constraining nothing. The operative bar is
+therefore the anti-optimisation clause below, not the word "deterministic". And the
+property is **not expressible in the route that reaches `ω` today**: FR-8 refuses the
+generating-rule spelling, so A carries a *materialised* set, and a derived set and a
+hand-tuned set are **byte-identical objects**. The one route that could express it is
+D-5.8 requirement 1's — a generating rule arriving **with the approved artifact's
+committed provenance**. Until that route is used, **(c) inherits FR-8's second limb**,
+and its verification is deferred with residual 4 rather than supplied here. Forbidden accordingly:
 **`PAIR_CALENDAR_VARIATION_MUST_NOT_BE_OPTIMISED_AGAINST_EFFECTIVE_N`** — choosing a
 broader calendar for one pair and a narrower one for another, altering closure
 treatment by pair after seeing counts, choosing a per-pair clock to minimise `ω`, or
@@ -4587,16 +4730,31 @@ tuning pair calendars to pass `N_eff`.
 
 **4 — FR-8's second limb.** The concern is that a *materialised* slot set could still
 have been produced by evaluating a derivation-closing rule one line earlier, which
-would make `ω` a function of the data it deflates. **The rule against it already
-exists** — Calendar A is the authority, its content must be outcome-blind (ω-12(e)),
-and (a)–(c) above freeze the order, the eligibility semantics and the pair variation.
+would make `ω` a function of the data it deflates. **The rule against it already exists,
+and it is committed rather than added here** — D-6 places the expected slot set with an
+authority from which it is "**never inferred from the raw source**", and
+`calendar_authority.py` "never reverse-infers 'there is no data, therefore the market
+was closed'"; ω-11 relies on exactly that when it calls the substrate "immune to data
+presence". ω-12(e)'s outcome-blindness sits on top of it, and (b) and (c) freeze the
+eligibility semantics and the pair variation. *An earlier drafting grounded this on
+ω-12(e) and (a) alone: (e)'s enumerated triggers do not reach a set derived from **data
+presence** rather than from an outcome, and (a) orders the **researcher's** observation,
+not the calendar author's access.*
 What is missing is the **verification**, which a reader-free package cannot supply and
-which the interface itself says is deferred to the byte-reading gate. So this is
+which the interface itself says is deferred to the byte-reading gate. **That deferral is
+not new here**: PR #449 recorded it as **`SECOND_LIMB_DEFERRED_TO_GATE4_BYTE_READER`**,
+on the authority of §12.14 plus the open gate
+`PRE_CONTINUATION_CALENDAR_ARTIFACT_APPROVAL_REQUIRED` — *not* §4.7.3, a misattribution
+that PR #449 §2.3 corrected and which is not reintroduced. So residual 4's
+classification agrees with a committed deferral rather than creating one, and it is
+subject to the same qualification as residual 5 below. So this is
 **provenance checkability, not a remaining statistical freedom** —
 **provided** one frozen calendar set is used, its semantics are pre-data fixed, and the
 researcher cannot mutate or substitute it after observation, all of which (a)–(c) now
-require. **FR-8 is not closed globally**, it stays visible, and it does **not** block
-read-only exploratory research.
+require. **FR-8 is not closed globally**, it stays visible, and it is **not the reason** any
+read-only exploratory research is unavailable — **nothing here makes such research
+available**: §11's non-authorisation, and Q1, Q3 and Q8, continue to govern whether it
+may begin at all.
 
 **5 — no locus records the frozen version identity.** The conceptual contract already
 requires **one frozen version**; the absence of a storage or schema locus to record
@@ -4604,14 +4762,35 @@ requires **one frozen version**; the absence of a storage or schema locus to rec
 **`CALENDAR_VERSION_IDENTITY_RECORDING_IMPLEMENTATION_PENDING`.** No schema field and no
 artifact machinery is invented here.
 
+**What is *not* deferred.** §5's own OUT table already puts provenance **IN as R-6's
+lightweight record** — "the conclusion needs to be reproducible, not forensically
+attributable" — so any output that consumes a calendar **SHALL** record that calendar's
+`authority_version`, `content_digest` and `target_epoch` in its R-6 reproducibility
+record. That is a record, not a schema; it invents no field; and it is the research-side
+half of this residual, which the classification would otherwise have deferred along with
+the rest. What **is** deferred is the **production locus** — a committed storage or
+schema anchor a later audit can verify against.
+
 **The qualification, stated because the deferral depends on it.** Both deferrals hold
 **only if the research execution path can operate against one explicitly selected,
-immutable calendar instance**. If the implementation literally cannot distinguish which
-calendar is in use, that is a **future implementation prerequisite before execution**,
-not documentation polish —
-**`ONE_SELECTABLE_IMMUTABLE_CALENDAR_INSTANCE_IS_AN_EXECUTION_PREREQUISITE`**. What must
-not happen is the reverse: turning a schema or recording gap into a **statistical
-contract question**.
+immutable calendar instance *and that instance's identity is recorded with any result it
+produces*** — selectability alone does not distinguish a second run against a
+**substituted** instance from the first, which is exactly the post-observation route
+`POST_OBSERVATION_CALENDAR_MUTATION_IS_FORBIDDEN_FOR_CURRENT_FAMILY_A` bars normatively
+and nothing detects. If the implementation cannot do both, that is a **future
+implementation prerequisite before execution**, not documentation polish —
+**`ONE_SELECTABLE_IMMUTABLE_CALENDAR_INSTANCE_WITH_RECORDED_IDENTITY_IS_AN_EXECUTION_PREREQUISITE`**.
+
+**The negative branch is stated, because otherwise the "only if" carries no
+consequence.** Where the prerequisite holds, the residual verification is deferred and
+becomes an execution prerequisite. Where it does **not** hold — where the implementation
+cannot select one immutable instance, or cannot record which one it used — the deferral
+**lapses** and residual 5 is a **`MINIMUM_RESEARCH_GATE_BLOCKER`**, because the freeze
+then has nothing to check it against and the bar on post-observation substitution
+becomes unfalsifiable. *Recorded as a deliberate split: blocker 2's **remedy** is a gate
+matter, and the **record** of that remedy is production checkability.* What must not
+happen is the reverse: turning a schema or recording gap into a **statistical contract
+question**.
 
 ###### 6 — the rollover / holiday membership outcome
 
@@ -4622,10 +4801,26 @@ frozen. The concrete slot set is therefore an **output of approved calendar
 instantiation**, not a contract choice, and this packet decides none of it.
 
 *Why this is a classification and not a dodge.* The **freedom** the residual carried —
-that the membership outcome could be settled later, in a favourable direction, on a
-daily window — is closed by ω-12(e)'s outcome-blindness together with (a)'s ordering
-and (b)'s eligibility freeze. What remains unknown is the **value**, and an unknown
-value that nobody may choose on its effect is an instantiation outcome, not a lever.
+that the membership outcome could be settled later, after observation, in a favourable
+direction, on a daily window — is closed **as to timing** by (a) and (b), which put the
+calendar freeze and the eligibility freeze before any decision-bearing observation, and
+**as to motive** by ω-12(e)'s outcome-blindness. What remains unknown is the **value**,
+and an unknown value that nobody may choose on its effect is an instantiation outcome,
+not a lever.
+
+**Three things recorded rather than softened.** First, **(a) does not narrow the
+outcome**: ω-12(d) and ω-13(a) both freeze the calendar before data, and what (a)
+changes is that Calendar A is now materialised **for an already-declared window** — so
+its author knows `T_v`, `T_h` and `D`, and therefore the **magnitude** of the rollover
+lever as well as its sign, where ω-12's rejected arm would have kept the author
+window-blind. That is a real cost of adopting §8.2.0's placement, and it is stated
+rather than presented as a gain. Second, the closure is **by prohibition, not
+structural**, and the prohibition it rests on — ω-12(e) — is itself classified **NOT
+SETTLED** and enforced by no code
+(`CALENDAR_FREEZE_CHECKABILITY_IMPLEMENTATION_PENDING`). Third, and consequently, this
+classification **depends on residual 5's deferral holding**: (e) has no locus to be
+checked against, so if that deferral lapses under the qualification above, residual 6
+reverts to a lever. **`RESIDUAL_6_OUTCOME_CLASSIFICATION_DEPENDS_ON_RESIDUAL_5_DEFERRAL_HOLDING`.**
 
 **And no market-hours semantics is authored here.** No Friday close, no Sunday open, no
 DST time, no broker rollover window, no holiday table and no exceptional closure date.
@@ -4637,9 +4832,29 @@ Those are calendar **inputs**, not contract choices for this PR.
 about `ω` or the calendar reopens the Minimum Research Gate **only** if it demonstrates
 a remaining freedom capable of **materially changing the research result after
 decision-bearing information is available**. Otherwise it is classified as
-implementation, evidence, checkability or production-hardening, recorded there, and the
-gate stays closed. *This is a rule about classification, not about severity: a serious
-implementation defect is still serious, and still not a gate blocker.*
+implementation, evidence, checkability or production-hardening, recorded **against a
+named later gate**, and the gate stays closed. *This is a rule about classification, not
+about severity: a serious implementation defect is still serious, and still not a gate
+blocker.*
+
+**Four things bind it, so it cannot be used to dismiss findings.** *Who decides* —
+classifying a contested finding is a **human + ChatGPT** act on the same footing as this
+ruling; an AI session may **propose** a classification and may never adopt one, and **the
+implementing session may not classify its own finding out of the gate**.
+**`OMEGA_FINDING_CLASSIFICATION_IS_A_HUMAN_CHATGPT_CALL`.** *What "material" means* —
+any capacity to change `ω`, `N_eff`, the event sequence or experiment selection **at
+all**; §0's verdict is
+`SAMPLE_FLOOR_REACHABILITY_NOT_DETERMINABLE_WITHOUT_MEASURED_INPUTS`, so no margin exists
+from which a threshold could be derived. *What "available" means* — decision-bearing
+**observation** in the committed sense, by any party in the research path, **the
+calendar author included**. *And what happens when it is unclear* — the item is treated
+as a **`MINIMUM_RESEARCH_GATE_BLOCKER`** until ruled otherwise.
+**`UNCLEAR_OMEGA_FINDING_CLASSIFICATION_DEFAULTS_TO_BLOCKER`.**
+
+**This rule does not licence a pre-data freedom whose favourable direction is knowable
+with no data.** ω-12(e) already refuses "nothing has been observed" as a defence, and
+§5's second limb governs alongside this test — otherwise the boundary would
+auto-classify out of the gate exactly the class (e) had to be widened to catch.
 
 ###### Status
 
@@ -4650,9 +4865,32 @@ value is calculated**; and the actual calendar must still be instantiated and ap
 **This is not a claim of production readiness**, and
 `PRE_CONTINUATION_CALENDAR_ARTIFACT_APPROVAL_REQUIRED` stands.
 
-**Amendment classification.** (a) **resolves a conflict in favour of the committed
-placement** — it withdraws this packet's own ω-12(d) and adopts §8.2.0's, so it removes
-an inconsistency this document introduced rather than amending the contract. (b) and
+**Amendment classification.** (a) **withdraws a limb of a previously recorded human +
+ChatGPT ruling.** ω-12(d) is recorded at §8.4.0 as *received authority*, not as this
+packet's own proposal, so (a) is not a self-correction of drafting: **superseding a
+recorded ruling is itself a ruling only human + ChatGPT may take**, and it is taken here
+as one. Its *content* is nonetheless the least-amending option available — ω-12(d) was
+classified **NOT SETTLED — an addition that also reversed a committed placement** — so
+withdrawing it and restoring §8.2.0's committed placement moves no committed
+requirement. *But (a) carries a further effect beyond the reversal, a **tightening**,
+stated rather than left silent:* `CALENDAR_MATERIALISATION_MAY_NOT_REOPEN_WINDOW_SELECTION`
+adds a forbidden anchor — calendar density and expected slot count — that **Q10-B's
+forbidden-anchor list does not carry**. Under CLAUDE.md's stricter-reading rule the
+tighter reading governs; it is not an amendment, and it is not an inconsistency-removal
+either.
+
+**And the mirror image is named, because (a) does not close it.** §8.1.6's limb (i)
+admits "rollover and holiday exclusions" among the availability metadata `D` may be
+sized on, so the declarer at step 1 may lawfully know the *shape* of the exclusions even
+though the forward-epoch Calendar A does not yet exist to be read. What (a) forecloses
+is reliance on **that artifact's content**; it bars **reselection** on calendar content,
+not an **initial** declaration informed by the exclusion shape. What restrains that is
+Q10-B's forbidden-anchor list — in particular "a date required to reach `N_eff`" —
+together with `DURATION_SELECTION_MUST_BE_OUTCOME_BLIND`, not this limb. *An earlier
+drafting said (a) forecloses limb (i) outright; that overstated it, since limb (i)'s
+admissible inputs are availability metadata, not the artifact.*
+**`INITIAL_WINDOW_DECLARATION_MAY_KNOW_THE_EXCLUSION_SHAPE_BOUND_ONLY_BY_Q10_B_AND_OUTCOME_BLINDNESS`.**
+(b) and
 (c) are **NOT SETTLED**: each adds a requirement no committed source carries — a
 pre-data freeze obligation on eligibility semantics, a non-retroaction rule, and a
 determinism obligation on per-pair variation — and whether such additions need an
@@ -4662,6 +4900,14 @@ procedure is registered anywhere in this repository**
 absence). **`OMEGA_RECLASSIFICATION_AMENDMENT_CLASSIFICATION_NOT_SETTLED`.** The
 reclassification itself is a **judgement about scope**, not a contract change: it moves
 no committed requirement, and every deferred item stays documented.
+
+**No favourable classification is asserted anywhere in this ruling.** Three of the six
+residuals are classified downward — two deferred and one an instantiation outcome — and
+each is stated with the ground that would defeat it: the two deferrals **lapse** under
+the qualification above, and residual 6's disposition depends on residual 5's. A reader
+must be able to see which classifications would not survive a disagreement. *The
+sentence sits here rather than inside the table because an earlier round scoped the
+equivalent sentence to one row while other rows carried favourable classifications.*
 
 ##### Carried forward unchanged, and restated because they are still live
 
@@ -7044,6 +7290,61 @@ excluded; **"no schema is invented" is exactly true**; D-5.8 compatibility holds
 nothing in ω-12 generates a calendar, authorises data access or claims empirical
 readiness.
 
+### 12.12 Thirteenth review round — the reclassification
+
+**Three separated doc-only roles, all three completed**, each given the source, the
+diff and the contract and **none given another role's conclusions**: **contract and
+ordering consistency** (does ω-13(a)'s order hold against Q10-B, §8.2.0, §8.1.0 and
+§8.2.8, and does anything in the document still carry the superseded order?),
+**adversarial refutation** (argue the ruling is wrong, and hunt the bypass routes the
+prohibitions miss), and **gate-versus-production classification** (is any deferral
+actually a live freedom, and is any blocker actually only checkability?). Round 11's
+partial coverage is **not** relabelled by that: it stands where it stands, and this
+round's completeness is this round's only.
+
+**No role could reach an artifact.** Neither Calendar A nor Calendar B exists, so every
+finding is about the *text of the contract*, and none rests on a measurement.
+
+| Defect | Outcome |
+| --- | --- |
+| **The eligibility freeze could be satisfied by delegation** | Limb (b) required an eligibility rule's "**operative semantics**" to be frozen pre-data, and the post-hoc prohibition carved out rules "already frozen before data observation". A rule of the form *"ineligible if the slot falls in a low-liquidity holiday session **as listed in the calendar approved before gate 7**"* has complete operative semantics, frozen pre-data — and its content arrives after the freeze and moves the event set. It satisfied the limb **and** the carve-out. **`FAMILY_A_ELIGIBILITY_SEMANTICS_MAY_NOT_DELEGATE_TO_A_POST_FREEZE_ARTIFACT`**, and the freeze moment is now named: the sequence is frozen when the last semantic **and its content** are. A hole in the blocker the ruling had just closed. |
+| **The governing test was narrower than §5, and its motivation was false** | ω-13's single question added a temporal qualifier §5's first limb does not carry, and **omitted §5's second limb entirely** — the limb that admits R-8 and that "may never be cited to strike a §3 boundary". Restated as §5's first limb, with the second governing unchanged, an unclear case defaulting to **blocker**, and A-ω-5's "a pre-data freeze does not by itself protect MO-2" governing alongside. Separately, the sentence *"the previous rounds had begun promoting every discovered defect into a gate blocker"* is **withdrawn as false**: at the base head the word "blocker" occurred **twice** in the whole document, one of them ω-12 declining to call an item one. The lead verified both counts at source. |
+| **The boundary rule named no judge, no standard and no default** | `NEW_OMEGA_FINDINGS_DO_NOT_AUTOMATICALLY_BECOME_RESEARCH_BLOCKERS` said what a finding must show and nothing about who decides — the shape §8.4.0 had already corrected once ("softens a committed bar into a judgement call with no named judge"). Now bound four ways: classification is a **human + ChatGPT** call and never the implementing session's; "material" means **any** capacity to move `ω`, `N_eff`, the event sequence or experiment selection; "available" means decision-bearing **observation** by any party **including the calendar author**; and an unclear case is a **blocker**. |
+| **The deferral's "only if" was self-cancelling** | Both branches of the qualification deferred, so the condition carried no consequence. The negative branch now **bites**: where the implementation cannot select one immutable instance *and record which one it used*, the deferral **lapses** and residual 5 is a `MINIMUM_RESEARCH_GATE_BLOCKER`. The prerequisite was also on the wrong half — selectability without recording leaves the freeze unfalsifiable — so it is renamed `ONE_SELECTABLE_IMMUTABLE_CALENDAR_INSTANCE_WITH_RECORDED_IDENTITY_IS_AN_EXECUTION_PREREQUISITE`. |
+| **Residual 5's deferral swept in a half §5 puts IN** | §5's OUT table reads "Provenance binding to committed authority — **OUT** for exploratory; **IN** as R-6's lightweight record". A result computed against an unidentified calendar is not reproducible in R-6's sense. The research-side half is restored as an obligation to record `authority_version`, `content_digest` and `target_epoch` with any output that consumes a calendar; only the **production locus** is deferred. |
+| **Residual 6 was presented as closed, and it is not** | Three corrections. **(a) does not narrow the outcome** — it hands the calendar author the declared window, so the author knows the rollover lever's **magnitude** as well as its sign, where ω-12's rejected arm kept them window-blind; that is a **cost** of adopting §8.2.0's placement. The closure is **by prohibition, not structural**. And it **depends on residual 5's deferral holding**, since ω-12(e) has no locus to be checked against — `RESIDUAL_6_OUTCOME_CLASSIFICATION_DEPENDS_ON_RESIDUAL_5_DEFERRAL_HOLDING`. |
+| **(b) stated an obligation with no artifact, no owner and nothing tracking it** | The required pre-data Family A eligibility contract does not exist, nothing requires anyone to produce one, and Calendar B's approval remains "before gate 7" — after the freeze. Registered rather than assumed away: `NO_PRE_DATA_FAMILY_A_EVENT_ELIGIBILITY_CONTRACT_EXISTS` · `PRE_DATA_FAMILY_A_EVENT_ELIGIBILITY_CONTRACT_REQUIRED_BEFORE_CONTINUATION`. Also, the remedy's antecedent is **settled, not conditional** — T-6 does place B's approval after the freeze — and the contract is a **third** object ω-12(e) must reach. |
+| **(a) withdraws a recorded ruling, and the classification said otherwise** | It read "it withdraws **this packet's own** ω-12(d)". §8.4.0's preamble says ω-12 is "a ruling received from human + ChatGPT and recorded here as **authority**". Superseding it is itself a ruling only human + ChatGPT may take, and it is now recorded as one. Its *content* remains the least-amending option, since ω-12(d) was already **NOT SETTLED**. |
+| **The "no favourable classification" sentence was missing for the fourth time** | Three of six rows classify downward and the section carried no such sentence — the defect §12.9 and §12.11 each fixed once. Added, with the defeating ground for each downward classification stated beside it. |
+| **The role-span limb was demoted without being classified** | The header called `ROLE_SPAN_HORIZON_TRUNCATION_RULE_NOT_REGISTERED` "**not** a gate blocker unless shown to move a result", although ω-13 does not classify it — it is not among the six — and §8.4.0 says the ruling "does **not** fill it". The dilemma is now recorded instead: either the truncation rule belongs to the frozen method and must be registered before `ω` is measured, or it does not and the arm is selectable **at computation time**. **`ROLE_SPAN_TRUNCATION_ARM_SELECTION_POINT_NOT_BOUND`.** |
+| **A token disappeared from the only list a reader scans** | `ROLLOVER_AND_HOLIDAY_SLOT_ELIGIBILITY_RELATIVE_TO_THE_OMEGA_CLOCK_NOT_SETTLED` was dropped from the header open list while six other sites still call it open and §12.11 still says it "is **restored to the open list**". Restored, glossed with its ω-13 classification. A visibility regression on the very item the round was asked about. |
+| **(a) was said to foreclose §8.1.6's limb (i); it does not** | Limb (i) admits "rollover and holiday exclusions" as **availability metadata**, not as the artifact. (a) forecloses reliance on the artifact's *content* and bars **reselection**; it does not bar an **initial** declaration informed by the exclusion shape, which Q10-B's forbidden anchors and `DURATION_SELECTION_MUST_BE_OUTCOME_BLIND` restrain instead. The overstatement is withdrawn and the mirror image named. |
+| **Determinism is not a safeguard, and (c) cannot be checked** | Any fixed per-pair table is deterministic, so twenty hand-written sets would satisfy the word while constraining nothing; the operative bar is the anti-optimisation clause. And a derived set and a hand-tuned set are **byte-identical** in a materialised `expected_m15_slots`, so **(c) inherits FR-8's second limb**. The prohibition is also made agent-neutral: it binds "the calendar author no less than the researcher, and they may be the same person". |
+| **Residual 4's ground did not reach the case** | It rested on ω-12(e) and (a); (e)'s triggers do not reach a set derived from **data presence** rather than an outcome, and (a) orders the *researcher's* observation, not the calendar author's access. Re-grounded on D-6's "never inferred from the raw source" and `calendar_authority.py`'s refusal to reverse-infer closure from missing data — the same property ω-11 relies on. The deferral is also matched to PR #449's committed `SECOND_LIMB_DEFERRED_TO_GATE4_BYTE_READER` rather than created here. |
+| Smaller corrections | ω-12(c)'s ordering half and two header tokens still carried the superseded order, and §13 stated it outright; (a) is scoped to the **forward epoch**, since the playbook's prerequisite 5 requires a design-epoch calendar *before* the design-span continuation; ω-12's case A is now **structurally unreachable**, promoting `POST_DECLARATION_PRE_OBSERVATION_CALENDAR_DEFECT_ROUTE_NOT_SETTLED` to the only route; the "new pre-registration" escape is marked **unruled** rather than available; §8.2.8's insertion carried three disagreeing numberings ("5a", "within step 6", attached to ordering item 3) and now sits at **step 6a**; the six are marked **selected, not enumerated**; the composed Q10-B order now carries steps 7 and 8; the FR-8 read-only sentence no longer reads as clearance; "**CLOSED** for Minimum Research Gate purposes" is restated as **RULED, instantiation pending**; §8.4's status paragraph contradicted itself within one paragraph; and a duplicate header token was removed. |
+
+**Findings the lead did not adopt.** One role proposed replacing
+`DEFERRED_PRODUCTION_CHECKABILITY` with the playbook's existing `MAY_DEFER` vocabulary;
+that is a contract-vocabulary choice for the ruler, and PR #444 already records twenty
+terms "used in incompatible senses across committed documents", so coining is not made
+worse by leaving this one where the ruling put it — **recorded as an open question, not
+resolved**. One role could not determine from the document alone whether ω-13 was
+*received* as a ruling or *recorded as a proposal*; the answer is that it is recorded as
+received, on the same footing as ω-1…ω-12, and its standing is the approver's to
+confirm.
+
+**Attacks that did not survive the sources**, recorded because their failure is
+evidence: residuals **1, 2 and 3 are correctly blockers**, each re-derived independently
+before the ruling's reasons were read; **(a)'s order does dissolve the circularity** and
+matches §8.2.0's "between (3) and (4)" and Q10-B's four-step Sequence; **(c) neither
+requires the twenty sets to be identical nor permits tuning**; **nothing authors a
+market-hours fact or generates a calendar** — the market-hours paragraph is a pure
+negative list, which is precisely the defect §12.11 found in ω-12(b) and which is not
+repeated; **no `T_v`, `T_h` or `D` value is chosen**; the `NON_NORMATIVE_DIAGNOSTIC_ONLY`
+block is untouched and **no new number is minted anywhere in the diff**; and NR-K,
+Q10-A/(ii)/B, Q10(i)/(iii), Q11 + §0, Q1/Q3/Q8/Q9, FR-19, the Zero-Data verdict, NR-L's
+status and round 11's partial-coverage record are all intact and unrelabelled.
+
 ---
 
 ## 13. Completion state
@@ -7204,10 +7505,11 @@ authority; **B**, Ruling 4's holiday / thin-liquidity calendar that T-6 re-point
 stays A's content: *if* A declares a rollover slot, Ruling 4 bars the **event**, not the
 slot; *if* A declares it closed, it was never a member.
 `ROLLOVER_AND_HOLIDAY_SLOT_ELIGIBILITY_RELATIVE_TO_THE_OMEGA_CLOCK_NOT_SETTLED`
-therefore **survives**. Exactly **one** artifact at
-**one** version must be frozen **before** the window is declared — no schema is
-invented, the identity fields already exist — and the order is **calendar freeze →
-window freeze → data observation**. Calendar content must be **outcome-blind**, with
+therefore **survives**. Exactly **one** artifact at **one**
+version **per epoch** must be frozen for the declared window — no schema is invented,
+the identity fields already exist — and the order, as corrected by Ruling ω-13(a), is
+**window declaration → calendar materialisation → calendar freeze → data
+observation**; ω-12(d)'s "calendar freeze → window freeze" is **historical**. Calendar content must be **outcome-blind**, with
 post-observation mutation forbidden for current Family A and the `ω` dependence
 disclosed at approval; a later artifact may not be re-designated as `ω`'s membership
 authority for an already-frozen window. The **same frozen version governs both `ω` and
@@ -7233,17 +7535,27 @@ twenty sets need not be identical, but the variation must be deterministic and n
 tuned against `N_eff`). **Two are deferred outside the gate** as
 `DEFERRED_PRODUCTION_CHECKABILITY` — FR-8's second limb and the missing identity locus,
 both documented, neither closed, and both conditional on
-`ONE_SELECTABLE_IMMUTABLE_CALENDAR_INSTANCE_IS_AN_EXECUTION_PREREQUISITE`. **One is a
+`ONE_SELECTABLE_IMMUTABLE_CALENDAR_INSTANCE_WITH_RECORDED_IDENTITY_IS_AN_EXECUTION_PREREQUISITE`
+— **where that does not hold the deferral lapses** and residual 5 is a blocker; and §5's
+R-6 lightweight record (`authority_version`, `content_digest`, `target_epoch` with any
+output that consumes a calendar) is **not** deferred with it. **One is a
 `RUNTIME_CALENDAR_INSTANTIATION_OUTCOME`** — the concrete rollover/holiday membership
-set, whose *freedom* is closed by outcome-blindness plus the new ordering and freeze
-even though its *value* is unknown.
+set, whose *freedom* is closed as to timing by the new ordering and freeze and as to
+motive by outcome-blindness, even though its *value* is unknown, and whose disposition
+**depends on residual 5's deferral holding**.
 
 **And a boundary, so the audit stops expanding.**
 `NEW_OMEGA_FINDINGS_DO_NOT_AUTOMATICALLY_BECOME_RESEARCH_BLOCKERS`: a future `ω` or
 calendar finding reopens the gate **only** if it shows a remaining freedom capable of
 moving a result after decision-bearing information; otherwise it is implementation,
-evidence, checkability or production-hardening. That is a rule about **classification,
-not severity**. The mean-overlap contract is therefore
+evidence, checkability or production-hardening, **recorded against a named later gate**.
+That is a rule about **classification, not severity** — and it is bound four ways so it
+cannot dismiss findings: the classification is a **human + ChatGPT** call and never a
+session's own; "material" means any capacity to move `ω`, `N_eff`, the event sequence or
+experiment selection **at all**; "available" means decision-bearing **observation** by
+any party including the calendar author; and an unclear case is a **blocker** until
+ruled otherwise. **This test is §5's first limb, not a replacement for §5**, whose
+second limb governs unchanged and may never be cited to strike a §3 boundary. The mean-overlap contract is therefore
 **`MEAN_OVERLAP_MINIMUM_RESEARCH_CONTRACT_RULED_PENDING_CALENDAR_INSTANTIATION`** —
 **not** a claim of production readiness, and no empirical value is computed.
 
