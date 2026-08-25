@@ -8912,9 +8912,10 @@ three attempts, each in the same round as the ruling meant to earn it. The revie
 since returned and is recorded at **§12.15**, and it found further defects in this very
 section (the unfrozen `W̄`/`L̄` and label-geometry inputs, the unlocked turnover axes,
 the phantom citation itself). **`CLOSURE_CLAIM_WITHHELD_PENDING_A_SEPARATE_INDEPENDENT_ROUND`**
-· **`CLOSURE_CLAIM_MAY_NOT_BE_MADE_IN_THE_SAME_ROUND_AS_THE_RULING_IT_RESTS_ON`** — a
-procedural rule this packet earns the hard way, and the only one that would have caught
-all three attempts.
+· **`CLOSURE_CLAIM_MAY_NOT_BE_MADE_IN_THE_SAME_ROUND_AS_THE_RULING_IT_RESTS_ON`** —
+**withdrawn as over-broad at §8.8.0** and replaced by
+**`CLOSURE_CLAIM_REQUIRES_COMPLETED_REVIEW_AND_NO_UNRESOLVED_MATERIAL_BLOCKER`**: the
+failure was the phantom citation and the live blockers, not the calendar.
 
 **What would let it stand.** The two blockers c-10 left *are* closed on their merits by
 c-11 and c-12. What is missing is an independent round that returns **after** those
@@ -9011,6 +9012,257 @@ arithmetic, purge, warm-up and interval convention of §8.6.2 · Q1, Q3, Q8, Q9 
 `SAMPLE_FLOOR_REACHABILITY_NOT_DETERMINABLE_WITHOUT_MEASURED_INPUTS`, which nothing here
 moves. **Real-data read remains unauthorised.**
 **`PRODUCTION_READINESS_NOT_CLAIMED`** · **`NO_EXECUTION_PERFORMED`**.
+
+### 8.8 The closing round — the `c` generator, the freeze rule, and the Sharpe guard order
+
+A ruling received from human + ChatGPT and recorded here as **authority**. It is taken
+**before** this round's review; the closure decision at §8.8.6 is taken **after** it, and
+only on what the review actually returned.
+
+**`C_13_RULED_CHRONOLOGICAL_EXPANDING_WINDOW_WALK_FORWARD_WITH_THE_COMMITTED_PURGE`** ·
+**`C_14_ENUMERATION_DOES_NOT_LIMIT_THE_ALL_DECISION_BEARING_INPUTS_RULE`** ·
+**`Q10_III_A_RULED_PRE_FILL_ACTIVE_OBSERVATION_GUARDS_PRECEDE_CALENDAR_ZERO_FILL`**
+
+#### 8.8.0 A governance rule of this packet's own, corrected
+
+§8.7.6 installed **`CLOSURE_CLAIM_MAY_NOT_BE_MADE_IN_THE_SAME_ROUND_AS_THE_RULING_IT_RESTS_ON`**
+after the third failed closure attempt. **That rule is withdrawn as over-broad**, and no
+committed authority independently requires it. Diagnosing the failure as *timing* was
+wrong: what actually failed each time was that the review had not returned, that a
+**phantom §12.15 citation** stood in for it, and that material blockers were still live.
+A ceremonial extra round would have fixed none of those.
+
+**`CLOSURE_CLAIM_REQUIRES_COMPLETED_REVIEW_AND_NO_UNRESOLVED_MATERIAL_BLOCKER`.** Closure
+may be declared at the end of the same round **if and only if** all five hold: the ruling
+is recorded; the required review roles **actually returned**; the decisive findings were
+**re-verified by the lead at source**; every material research blocker that review exposed
+is resolved; and **no fabricated or premature review-completion claim is used**. The
+prohibition that matters is on the fabrication, not on the calendar.
+
+#### 8.8.1 The existing prediction-generator machinery, reconstructed
+
+Repo-wide, not package-scoped — the error §12.15 recorded.
+
+| Machinery | Semantics, read at source | Fit for Family A |
+| --- | --- | --- |
+| `scripts/stage22_0e_meta_labeling.walk_forward_oos_folds` | Sorts `entry_ts`, cuts **5 quintiles**, yields **4** OOS folds; fold `k` trains on `entry_ts <= edges[k]` and tests on `(edges[k], edges[k+1]]`. **`k = 0` is dropped**, so the first quintile is never predicted | **Shape yes, semantics no.** It has **no purge**: a label whose horizon crosses `edges[k]` sits in training while its outcome sits in the test fold. Stage-22 / Phase-9 lineage, admissible under prereg §11 only **after audit/wrapping** |
+| `fx_ai_trading.services.ml.training.train_walk_forward` (via `scripts/train_ml_baseline.py`) | Expanding window: `train_mask = ts < val_start`, fixed `val_months` step, first validation window starts at `min_ts + 30·train_months` days | **No.** Also **no purge**; month arithmetic is `30·months`, not calendar; and decisively **it emits no per-row predictions** — it computes `_compute_metrics(y_val_raw, y_pred)` and discards `y_pred`, returning only fold metrics and a model |
+| `scripts/compare_multipair_v6_meta.py` | Runs Layer-1 inference over the model's **own `train_slice`** and argues in its docstring that this "is fine" | **No** — it is the in-sample shape c-11 refuses by name |
+| `scripts/ml_step4/` (M1 lineage) | Single chronological 70/15/15 with purge/embargo; builds `prob_map` for `val_idx ∪ hold_idx` only | **No** — one cut, not a walk-forward, and it predicts only the tail |
+
+**So the repository supplies the *pattern* and not the *semantics*.** Both walk-forward
+implementations are **expanding-window chronological** — which is the right shape — and
+**neither carries a purge**, which is the one thing Family A's frozen contract requires
+at a boundary. Forcing reuse would import a leakage route, so §9's instruction applies:
+**do not force reuse.**
+**`EXISTING_WALK_FORWARD_MACHINERY_SUPPLIES_THE_PATTERN_NOT_THE_PURGE`.**
+
+#### 8.8.2 Ruling c-13 — the generator's shape
+
+**`C_13_RULED_CHRONOLOGICAL_EXPANDING_WINDOW_WALK_FORWARD_WITH_THE_COMMITTED_PURGE`.**
+
+The DESIGN `c`-series is generated by a **chronological expanding-window walk-forward**:
+
+> The DESIGN span is partitioned into contiguous, date-aligned blocks by a rule fixed
+> before any data is observed. For each block after the first, the model is fitted on
+> **all earlier DESIGN observations**, **minus the last 25 M15 bars immediately preceding
+> the block**, and predicts **that block only**. The first block receives **no
+> predictions**. One partition governs **every pair and every `config_id`**.
+
+**Every property §8.7's c-11 requires is satisfied by construction**, and each is a
+consequence of the shape rather than an added promise: no same-observation target
+leakage, because a prediction's model is fitted strictly before its own block; strict
+chronological causality; no validation or holdout observation anywhere, since the whole
+construction lives inside DESIGN; a deterministic assignment of every prediction to its
+training history; and no result-driven fold reselection, because the partition is frozen
+under c-12/c-14 before measurement.
+
+**Two properties are derived rather than chosen.**
+
+- **The purge is 25 M15 bars**, not an invented number: prereg §3.2 freezes
+  "purge/embargo ≥ horizon + 1 = **25 M15 bars** at every role boundary", and applying a
+  frozen purge to an additional boundary type is a **tightening**. It is counted **in
+  bars, never wall-clock** — §4 records why (a Friday-afternoon signal's 24-bar label
+  reaches into Monday).
+- **No trailing gap is needed.** §4's R-2 derives that a design placing training data
+  *after* a tested slice needs a gap ≥ the longest feature lookback (≈ 224 M15 bars for
+  an H4 ATR-14). **An expanding window has no trailing edge**, so that parameter never
+  arises. *That is the reason this shape is chosen over a rolling fixed-width window*:
+  it is the only member of the family that needs no unregistered number for its gap.
+
+**One parameter remains genuinely unregistered, and it is isolated rather than
+invented.** The **first predicted date** — equivalently the minimum training history
+before the first block — has **no committed value**, and it materially changes `c`. The
+retraining cadence does not: this ruling fixes it at **one retrain per block**, and the
+block boundaries follow from the same parameter, so there is exactly **one** open
+number.
+**`C_DESIGN_GENERATOR_PENDING_ONE_EXACT_PARAMETER_DECISION`** — the first predicted
+DESIGN date.
+
+**Its direction is knowable, and both limbs point the same way.** An **earlier** first
+predicted date means (i) fewer structurally unpredicted dates, so fewer common zeros,
+which §8.7.2 measured as *lowering* `c`; and (ii) shorter early training windows, so
+noisier per-pair models, more pair-idiosyncratic noise, which c-11 records as *diluting*
+`|r|`. **Both lower `c`, lower `rho_x` and raise `N_eff`** — so an earlier start is the
+**anti-conservative** arm on both limbs, and by §8.4.11's A-ω-5 standard a pre-data
+freeze alone does not protect it. It is therefore a **`MINIMUM_RESEARCH_GATE_BLOCKER`**,
+stated as exactly one narrow question and not dissolved:
+**`EARLIER_FIRST_PREDICTED_DATE_IS_THE_ANTI_CONSERVATIVE_ARM_ON_BOTH_LIMBS`.**
+
+*No value is invented here.* §9 forbids adding exact values that are not committed, and
+no committed source supplies this one; the stage-22 quintile split is fenced lineage and
+`train_months = 6` is a CLI default in an unrelated module. **What is available is the
+direction**, which is what a human + ChatGPT ruling needs in order to choose without
+choosing on an outcome.
+
+#### 8.8.3 Ruling c-14 — the freeze rule is not a whitelist, and fold-locality is scoped
+
+**`ENUMERATION_DOES_NOT_LIMIT_THE_ALL_DECISION_BEARING_INPUTS_RULE`.**
+`ALL_DECISION_BEARING_C_MAP_INPUTS_MUST_BE_FROZEN_BEFORE_C_MEASUREMENT` is the
+authority; §8.7.3's table is **illustrative and audit-oriented**, never an exhaustive
+licence. **The inclusion test governs**: an input falls under c-12 if changing it can
+change the DESIGN predictions, which DESIGN events or trades exist, the daily PnL values,
+the daily PnL dates, any pairwise correlation entry, or `c`. **No session may classify an
+input out of scope**; an unclear case is a human + ChatGPT question defaulting to
+blocker.
+
+**And fold-locality is scoped to where leakage actually arises**, because over-applying
+it would convert static metadata into machinery for nothing. Each input is classified:
+
+| Class | Inputs | Treatment |
+| --- | --- | --- |
+| **Target / outcome-derived** | `W̄`/`L̄` (magnitudes of realised barrier outcomes) · the **cost table**, because prereg §6 makes `TP_dist`, `SL_dist` and the eligibility hurdle functions of `cost`, so a span-wide table builds observation *i*'s own label out of data that includes *i* · the calibration · any target-conditioned transform | **Fold-local** for `c` generation: fitted on the fold's training portion only. The frozen whole-DESIGN values continue to govern **validation and holdout** unchanged |
+| **Exogenous / static** | per-pair pip-size authority · the session partition · the M15 aggregation identity (`n_source_bars == 15`, UTC bucketing, per-side OHLC, missing-minute policy) · feature **definitions** | **Not** fold-local. Frozen under c-12 like any other input, but they carry no target information and making them fold-local would be machinery for nothing |
+| **Frozen by independent authority** | model family and hyperparameters · class weighting · pair universe · horizon · DESIGN span · day attribution · idle rule · date index · the coefficient and its weighting | Unchanged; already frozen elsewhere |
+
+*An earlier drafting of c-11 listed "any scaler" among the statistics that must be
+fold-local. That is narrowed: a transform fitted on features **without using targets**
+is span-derived but not target-derived, and c-11's own rule is about the observation's
+**own target**. A supervised or target-conditioned transform stays fold-local.* §4's
+R-2's broader list remains this packet's **proposal**, not authority.
+**`FOLD_LOCALITY_IS_REQUIRED_FOR_TARGET_DERIVED_INPUTS_ONLY`.**
+
+**T-6 and Calendar B, closed for `c` with no schedule loophole.**
+`FAMILY_A_ELIGIBILITY_SEMANTICS_MAY_NOT_DELEGATE_TO_A_POST_FREEZE_ARTIFACT` (Ruling
+ω-13(b)) governs here in terms: **a rule is not frozen until the content it points at is
+frozen**. So where an operative research eligibility semantic depends on external
+calendar content, **that content must be fixed before the `c` series is generated** — a
+frozen rule text pointing at a table that arrives later does **not** satisfy c-12. And a
+later Calendar B artifact **may not retroactively change the already-frozen DESIGN
+`c`-generating event or PnL series**
+(`POST_C_FREEZE_ELIGIBILITY_CHANGES_MUST_NOT_RETROACTIVELY_CHANGE_C_DESIGN`). The
+operational and production remainder keeps T-6's schedule, and
+`OMEGA_EVENT_ELIGIBILITY_RULES_MUST_BE_PRE_DATA_FROZEN` continues to bind the forward
+roles independently of this `c` test.
+
+#### 8.8.4 Ruling Q10(iii)-a — the guards run before the zero-fill
+
+**`Q10_III_A_RULED_PRE_FILL_ACTIVE_OBSERVATION_GUARDS_PRECEDE_CALENDAR_ZERO_FILL`.**
+
+**The committed guards, read at source and not paraphrased.** `annualised_daily_sharpe`
+carries exactly **two**, and no others exist anywhere in the metric path: it returns
+`0.0` when `len(values) < 2`, and `0.0` when `sd == 0 or not math.isfinite(sd)`, where
+`sd` is `statistics.stdev` — **sample** standard deviation, `ddof = 1`. Its own docstring
+records the intent: "*undefined Sharpe reported as 0.0, never NaN*". **Validation and
+holdout share one implementation** — `body.py` calls it directly for validation and
+`compute_all` for holdout — so **no role-specific guard exists**, and none is created
+here. `acceptance.py` only compares the reported number against
+`min_daily_portfolio_sharpe_annualised = 0.8`; the guard lives in the metric, not in the
+acceptance layer.
+
+**The ruled order, and it may not be permuted.**
+
+> trade outcomes → **active-date** aggregated PnL → **the two committed guards, evaluated
+> on the active-date observation set** → if and only if both pass: reindex onto the
+> complete registered UTC calendar-date index → fill idle dates with **zero** → daily
+> mean and sample stdev on the complete series → annualise by **`√365`**.
+
+**Why the order carries the whole weight.** §12.15 recorded that a complete index
+**disables both guards**: `len < 2` can essentially never fire on a role span, and
+`sd == 0` fires only when no trade exists at all — so a single active date yields exactly
+`sign(x)·√(365/N)`, about **+2.45 at a 61-date span**, against a frozen floor of `0.8`,
+where the committed code returns `0.0`. Evaluating the guards **on the pre-fill active
+set** restores both exactly: one active date still fails `len < 2`, and two active dates
+carrying identical values still fail `sd == 0` rather than having variance manufactured
+for them by the calendar. **`COMPLETE_INDEX_DISABLES_THE_DEGENERATE_SHARPE_GUARDS` is
+closed by this ordering**, not merely recorded.
+
+**No new threshold is invented.** No minimum active-day count is created — not ten, not
+twenty, not any number. The guards used are **exactly** the two committed ones, applied
+to the observation set they were written for. **`NO_NEW_SHARPE_OBSERVATION_THRESHOLD_IS_CREATED`.**
+
+**What is unchanged by this limb.** The index, the idle-zero rule, Q10(i) attribution and
+`√365` all stand as ruled at §8.7.4. **Coverage is untouched** — `daily_coverage`
+computes from the **trade list** and `holdout_trading_days`, shares no object with the
+Sharpe series, and neither its frozen `≥ 0.60` threshold nor Ruling Q10(ii)'s denominator
+moves. **Max drawdown is untouched, and provably so**: `max_equity_drawdown` is a running
+peak-to-trough over the cumulative daily sum, so an inserted zero repeats the previous
+equity level and leaves every partial sum, the running peak and the maximum gap
+identical — re-verified against the implementation and on all-negative, leading-idle,
+trailing-idle, interior-gap and single-date series. **Q10(iii) is not a max-drawdown
+rewrite**, and the frozen `≤ 0.15` row does not move.
+**`MAXDD_IS_INVARIANT_TO_IDLE_DATE_ZERO_FILL`.**
+
+**And the clock reaches validation selection, so it is frozen before validation.**
+`select_threshold` takes the **argmax** of the validation daily Sharpe with no
+trade-count floor, so the index, the guards and the factor together can change **which
+operating point reaches the holdout**.
+**`VALIDATION_SHARPE_CLOCK_AND_GUARD_SEMANTICS_MUST_BE_PRE_VALIDATION_FROZEN`** ·
+**`SHARPE_SEMANTICS_MAY_NOT_DIFFER_BETWEEN_VALIDATION_AND_HOLDOUT`** — the index, the
+idle rule, the guard order and the annualisation factor are identical at both roles and
+may not be changed between them to improve a result.
+
+#### 8.8.5 The turnover ruling, re-verified
+
+**`TURNOVER_CEILING_COUNTS_TRADES_BY_ENTRY_UTC_DATE`** stands. Re-read at source and no
+committed contradiction found: prereg §9's row is "turnover upper bound | **≤ 40
+trades/day portfolio-wide**" and names no day; Ruling Q10(ii) expressly leaves the
+ceiling's day unruled.
+
+**The exact formula, so nothing is silently altered.** `turnover(n_trades,
+n_trading_days)` returns `n_trades / n_trading_days`; it is called as
+`turnover(len(trades), n_days)` with `n_days = len({t.day for t in trades})`. So the
+committed quantity is **total trades divided by the number of distinct active dates** —
+a portfolio **mean over active dates**, which is what its docstring says. It is **not** a
+maximum per-day count.
+
+**This ruling closes the definition of "day" and nothing else.** Each registered trade is
+counted **exactly once**, against the UTC date containing its **decision-bar** entry
+marker (`TradeSignal.entry = i`, not prereg §6's next-bar fill), so
+`turnover_count[date]` is the number of trade entries whose decision timestamp falls on
+that date. Under the committed mean the numerator carries no date, so what this fixes is
+the **day set the mean divides by**. **Whether the ceiling is that mean or a per-day cap
+remains unregistered**, as does the active-versus-calendar denominator axis — both stay
+open, both are **locked pre-observation**, and both have their permissive arms named
+(`max ≥ mean`, so the mean is permissive **and** incumbent; a larger denominator lowers
+measured turnover). **Nothing else in the formula is altered.**
+
+#### 8.8.6 Status — and the closure decision is deferred to after the review
+
+**Recorded now:** c-13, c-14 and Q10(iii)-a are ruled; the turnover ruling is
+re-verified; the over-broad closure rule of §8.7.6 is **withdrawn** and replaced by
+`CLOSURE_CLAIM_REQUIRES_COMPLETED_REVIEW_AND_NO_UNRESOLVED_MATERIAL_BLOCKER`.
+
+**Not recorded now, and deliberately:** whether
+`NO_NR_L_MINIMUM_RESEARCH_CONTRACT_BLOCKER_REMAINS`. **This subsection is written before
+this round's review roles have returned**, and under the corrected rule the claim
+requires a completed review whose material findings are resolved. §8.8.7 records the
+decision **after** they return, and it is the only place in this document where that
+decision is taken. *Nothing here may be read as anticipating it.*
+
+**What is known to remain open before the review runs**, so the decision has a baseline:
+**`C_DESIGN_GENERATOR_PENDING_ONE_EXACT_PARAMETER_DECISION`** — the first predicted
+DESIGN date — is a live `MINIMUM_RESEARCH_GATE_BLOCKER` with a knowable anti-conservative
+arm. **On the record as it stands, closure is not available**, and the review's task is
+to find whether anything *else* is live as well.
+
+**Unchanged by this round.** `EXACT_WINDOW_NOT_READY_FOR_DECLARATION_FORWARD_EPOCH_DOES_NOT_EXIST`;
+§8.6.2's boundary arithmetic, purge, warm-up and second-granularity interval convention;
+Q1 (`REQUIRED_NOW`, default (b)), Q3, Q8, Q9; `FR_19_SEPARATE_TEST_SAFETY_WORK_PR_OPEN`;
+`MINIMUM_CALENDAR_IDENTITY_RECORD_REQUIRED_BEFORE_DATA_EXECUTION`;
+`SAMPLE_FLOOR_REACHABILITY_NOT_DETERMINABLE_WITHOUT_MEASURED_INPUTS`. **Real-data read
+remains unauthorised.** **`PRODUCTION_READINESS_NOT_CLAIMED`** ·
+**`NO_EXECUTION_PERFORMED`**.
 
 ---
 
