@@ -29,7 +29,8 @@ completion state, and not a verdict on family A):
 `D_IS_ELAPSED_UTC_TIME != SAMPLE_COUNT_IS_CALENDAR_TIME`
 
 **Q10 is not closed** — limb **(iii)**, the annualisation factor, remains
-`Q10_III_PENDING_HUMAN_CHATGPT_RULING` (§8.2.8; packet at §8.6). Limb **(i)**, entry- vs exit-day PnL
+**RULED** at §8.7.4 (`Q10_III_RULED_COMPLETE_UTC_CALENDAR_DATE_SHARPE_INDEX_IDLE_ZERO_ANNUALISED_BY_SQRT_365`);
+`Q10_III_PENDING_HUMAN_CHATGPT_RULING` is **HISTORICAL**. Limb **(i)**, entry- vs exit-day PnL
 attribution, is **RULED** (§8.5.0, bundled with NR-L).
 
 **NR-K — RULED** (§8.3.0, human + ChatGPT):
@@ -191,16 +192,18 @@ and the filter-then-select versus select-then-check **order is unregistered**
 **select-then-check** as the governing default, which refuses a rescue and so invents
 no selection rule).
 
-**`NO_NR_L_MINIMUM_RESEARCH_CONTRACT_BLOCKER_REMAINS` is NOT claimed — two blockers
-survive Ruling c-10**, both surfaced by the review that followed it and both classified
-by this document's own §8.4.13 test rather than by a category invented for them:
-**`C_DESIGN_SPAN_RUN_IN_SAMPLE_STATUS_NOT_REGISTERED`** — no committed source says
-whether the DESIGN-span run behind `c` is in-sample, the two readings give different
-`c`, and an unclear direction **defaults to blocker**; and
-**`C_MAP_INPUT_FREEZE_CONFLICTS_WITH_T6_HOLIDAY_CALENDAR_SCHEDULE`** — c-10 requires the
-map's *inputs* frozen before the map is built, and T-6 puts the holiday /
-thin-liquidity calendar's approval "before gate 7", after any point at which the map
-could be built.
+**Two blockers survived Ruling c-10 and are now CLOSED by §8.7.**
+`C_DESIGN_SPAN_RUN_IN_SAMPLE_STATUS_NOT_REGISTERED` is ruled by **c-11** —
+`DESIGN_C_SERIES_MUST_BE_GENERATED_WITHOUT_SAME_OBSERVATION_TARGET_LEAKAGE`, with the
+`c` index refined to the **declared `c`-generation span** so that structurally
+trade-free dates are never entered as idle zeros. `C_MAP_INPUT_FREEZE_CONFLICTS_WITH_T6_HOLIDAY_CALENDAR_SCHEDULE`
+is ruled by **c-12** — every decision-bearing input frozen before measurement, with the
+Calendar B collision resolved by **scope, not schedule**: only the subset of eligibility
+semantics that reaches current Family A is pre-`c` frozen, and a later Calendar B may
+not retroactively alter a frozen `c_design`
+(`POST_C_FREEZE_ELIGIBILITY_CHANGES_MUST_NOT_RETROACTIVELY_CHANGE_C_DESIGN`).
+**`NO_NR_L_MINIMUM_RESEARCH_CONTRACT_BLOCKER_REMAINS`** — claimed at §8.7.6, after that
+round's review returned, and with the history of its two earlier withdrawals attached.
 
 **⚠ And c-10 corrects a premise this document carried.** §8.5.0 said the family
 registers "three decision thresholds **and** three `ev_min` points", nine
@@ -241,7 +244,12 @@ residual 5, carried unchanged and **not** reopened)
 
 **Next decision — §8.6, one packet, three coupled questions** (Q10(iii) · the
 duration boundaries · the exact `T_v`/`T_h`/`D` declaration): **complete, NOT ruled**.
-**`Q10_III_PENDING_HUMAN_CHATGPT_RULING`** — the only committed authority is prereg
+**`Q10_III_RULED_COMPLETE_UTC_CALENDAR_DATE_SHARPE_INDEX_IDLE_ZERO_ANNUALISED_BY_SQRT_365`**
+(§8.7.4) — the daily portfolio Sharpe is computed on the **complete UTC calendar-date
+index of the evaluated role's span**, an idle date carrying **zero**, trades attributed
+by Q10(i), annualised by **`√365`**. **maxDD is provably invariant** to that zero-fill,
+and **coverage and turnover do not share the series**, so no other frozen row moves.
+The material below is what the ruling was taken on: the only committed authority was prereg
 §9's row label "**ann., UTC-day**"; `TRADING_DAYS_PER_YEAR = 252` is **M1 precedent**,
 and because the committed Sharpe series is indexed on **active dates** it matches
 neither a trading-day nor a calendar clock — `√252` there is the **permissive** arm,
@@ -272,8 +280,25 @@ Also carried: `T_V_IS_THE_VALIDATION_END_INSTANT_T_H_IS_THE_HOLDOUT_END_INSTANT`
 `SPAN_MINIMA_ARE_NOT_ELIGIBLE_EVENT_MINIMA` ·
 `Q10_III_HAS_NO_COMMITTED_FACTOR_ONLY_AN_M1_PRECEDENT` ·
 `Q10_III_OPTION_B_DEPENDS_ON_THE_CALENDAR_AUTHORITY` ·
-**`TURNOVER_CEILING_DAY_STILL_UNREGISTERED`** ·
-`TURNOVER_DAY_MUST_NOT_BE_BOUND_TO_THE_PNL_ATTRIBUTION_DAY_BY_INHERITANCE`.
+**`TURNOVER_CEILING_COUNTS_TRADES_BY_ENTRY_UTC_DATE`** (§8.7.5 — each trade counted
+**once**, on its **entry** date; `TURNOVER_CEILING_DAY_STILL_UNREGISTERED` is
+**HISTORICAL**) ·
+`TURNOVER_DAY_MUST_NOT_BE_BOUND_TO_THE_PNL_ATTRIBUTION_DAY_BY_INHERITANCE` (honoured:
+Q10(i)'s **realised-outcome** date is the exit date, turnover's **initiation** date is
+the entry date) · still unregistered and **not** ruled by it:
+`TURNOVER_CEILING_MEAN_VERSUS_PER_DAY_CAP_STILL_UNREGISTERED` ·
+`TURNOVER_DENOMINATOR_ACTIVE_VERSUS_CALENDAR_AXIS_STILL_UNREGISTERED`.
+
+**Q10(i)+NR-L's two surviving blockers are CLOSED by §8.7**: **c-11**
+(`DESIGN_C_SERIES_MUST_BE_GENERATED_WITHOUT_SAME_OBSERVATION_TARGET_LEAKAGE`, with the
+`c` index refined to the **declared `c`-generation span** so structurally trade-free
+dates are never idle zeros) and **c-12**
+(`ALL_DECISION_BEARING_C_MAP_INPUTS_MUST_BE_FROZEN_BEFORE_C_MEASUREMENT` ·
+`C_OBSERVATION_MUST_NOT_TRIGGER_UPSTREAM_RECONFIGURATION` ·
+`POST_C_FREEZE_ELIGIBILITY_CHANGES_MUST_NOT_RETROACTIVELY_CHANGE_C_DESIGN`, the Calendar
+B collision resolved by **scope, not schedule**).
+**`NO_NR_L_MINIMUM_RESEARCH_CONTRACT_BLOCKER_REMAINS`** — claimed at §8.7.6 after that
+round's review returned, and with both earlier withdrawals of the same claim attached.
 
 **Still open after the ω ruling** — carried, not discharged:
 `PAIR_LABEL_ASSIGNMENT_MUST_NOT_BE_REARRANGED_TO_REDUCE_OMEGA` (ruled as a
@@ -658,7 +683,7 @@ Two referrals follow, in the playbook's register format:
 | Referral | Disposition | Basis |
 | --- | --- | --- |
 | **NR-K** — `P` in `rho_x` is caller-controlled and is not pinned to `PAIRS_20` | **RULED** (§8.3.0) — `NR_K_RULED_P_EQUALS_FROZEN_REGISTERED_FAMILY_A_UNIVERSE`; `P = 20` for current Family A. The **implementation pin** and the forward-span roster gate remain open | Omitting zero-trade or tail pairs raises `N_eff` at no numerator cost and can flip the verdict with both the raw floor and the 0.40 cap satisfied — which is what the ruling forbids |
-| **NR-L** — `mean_abs_pairwise_corr` has no production rule and no freeze point | **RULED** (§8.5.0, bundled with Q10(i)) — `NR_L_MINIMUM_RESEARCH_CONTRACT_RULED_PENDING_IMPLEMENTATION_AND_DESIGN_MEASUREMENT`; `MUST_RESOLVE_BEFORE_ANY_EFFECTIVE_N_VERDICT` **discharged as to the contract, not as to the value** | Method, idle-day handling, day attribution and the freeze gate were all unpinned, and the value sits in the denominator that decides `INSUFFICIENT_SAMPLE`. Minimum observations is now answered by construction — c-6 puts every pair on the same 310-date index, so `n = 310` for every entry. The producing-configuration blocker that survived the first ruling is **closed by Ruling c-10**: `c_design` is computed for **every** registered candidate configuration before validation, the map is frozen, and validation selects a `config_id` only. **But `NO_NR_L_MINIMUM_RESEARCH_CONTRACT_BLOCKER_REMAINS` is NOT claimed**: two blockers survive c-10 — `C_DESIGN_SPAN_RUN_IN_SAMPLE_STATUS_NOT_REGISTERED` and `C_MAP_INPUT_FREEZE_CONFLICTS_WITH_T6_HOLIDAY_CALENDAR_SCHEDULE` |
+| **NR-L** — `mean_abs_pairwise_corr` has no production rule and no freeze point | **RULED** (§8.5.0, bundled with Q10(i)) — `NR_L_MINIMUM_RESEARCH_CONTRACT_RULED_PENDING_IMPLEMENTATION_AND_DESIGN_MEASUREMENT`; `MUST_RESOLVE_BEFORE_ANY_EFFECTIVE_N_VERDICT` **discharged as to the contract, not as to the value** | Method, idle-day handling, day attribution and the freeze gate were all unpinned, and the value sits in the denominator that decides `INSUFFICIENT_SAMPLE`. Minimum observations is now answered by construction — c-6 puts every pair on the same 310-date index, so `n = 310` for every entry. The producing-configuration blocker that survived the first ruling is **closed by Ruling c-10**: `c_design` is computed for **every** registered candidate configuration before validation, the map is frozen, and validation selects a `config_id` only. The two blockers that survived it — `C_DESIGN_SPAN_RUN_IN_SAMPLE_STATUS_NOT_REGISTERED` and `C_MAP_INPUT_FREEZE_CONFLICTS_WITH_T6_HOLIDAY_CALENDAR_SCHEDULE` — are **closed by §8.7** (c-11, c-12), where **`NO_NR_L_MINIMUM_RESEARCH_CONTRACT_BLOCKER_REMAINS`** is claimed |
 
 Accordingly §12's earlier remark that "`rho_x` already carries the dependence the
 edge question needs" is **withdrawn as unestablished**.
@@ -3116,7 +3141,7 @@ from an elapsed-UTC `D`:
 | Limb | Status | Why the Q10-A ruling does not settle it |
 | --- | --- | --- |
 | **Q10(i)** entry- vs exit-day PnL attribution | **RULED** (§8.5.0) — **`Q10_I_RULED_REALIZED_PNL_ATTRIBUTED_TO_EXIT_UTC_DATE`**; `REQUIRES_HUMAN_CHATGPT_RULING` is **HISTORICAL** | Choosing the *day identity* fixes what a day **is**; it did not fix **which** day a trade whose horizon straddles midnight is attributed to, and a 24-bar horizon makes that live whatever the identity. Ruled with NR-L in one bundled decision, because `c` is defined on a daily series that does not exist until this is fixed. The ruling reaches **seven** quantities through `MetricTrade.day` — `c`, the daily Sharpe, max drawdown, daily coverage and turnover at holdout, plus the **validation** daily Sharpe that selects the operating point and the **validation turnover** figure inside prereg §9.V's kill gate — and **loosens no frozen threshold**, while `Q10_I_MUST_NOT_BE_RESELECTED_AFTER_OBSERVING_ANY_METRIC_IT_MOVES` therefore binds validation observations too. It does **not** define the `≤ 40 trades/day` ceiling's day, which Ruling Q10(ii) leaves unruled. |
-| **Q10(iii)** annualisation factor | `Q10_III_PENDING_HUMAN_CHATGPT_RULING` — **packet complete at §8.6**, not ruled | The unit of `D` and the constant that annualises a daily Sharpe are different objects. Fixing the first does not fix the second, and no committed source fixes the second for M15: the only authority is prereg §9's row label "**ann., UTC-day**", and `TRADING_DAYS_PER_YEAR = 252` is **M1 precedent**. §8.6.1 shows the committed Sharpe series is indexed on **active dates**, so `√252` is coherent with neither a trading-day nor a calendar clock — and it is the **permissive** arm, by up to ~1.9× in the sparse regime this family expects. |
+| **Q10(iii)** annualisation factor | **RULED** (§8.7.4) · `Q10_III_RULED_COMPLETE_UTC_CALENDAR_DATE_SHARPE_INDEX_IDLE_ZERO_ANNUALISED_BY_SQRT_365`; `Q10_III_PENDING_HUMAN_CHATGPT_RULING` is **HISTORICAL**. Complete UTC calendar-date index for the evaluated role's span · idle date = zero · Q10(i) attribution · **`√365`** | The unit of `D` and the constant that annualises a daily Sharpe are different objects. Fixing the first does not fix the second, and no committed source fixes the second for M15: the only authority is prereg §9's row label "**ann., UTC-day**", and `TRADING_DAYS_PER_YEAR = 252` is **M1 precedent**. §8.6.1 shows the committed Sharpe series is indexed on **active dates**, so `√252` is coherent with neither a trading-day nor a calendar clock — and it is the **permissive** arm, by up to ~1.9× in the sparse regime this family expects. |
 
 **And the exact `D` is still blocked.**
 **`EXACT_D_SELECTION_STILL_PENDING_UPSTREAM_AUTHORITIES`.** The recorded ordering:
@@ -7219,9 +7244,8 @@ three, which **narrows** the multiple-comparison surface rather than widening it
 ###### Status after c-10
 
 **`NR_L_MINIMUM_RESEARCH_CONTRACT_RULED_PENDING_IMPLEMENTATION_AND_DESIGN_MEASUREMENT`**
-· **two blockers survive, so `NO_NR_L_MINIMUM_RESEARCH_CONTRACT_BLOCKER_REMAINS` is NOT
-claimed** — `C_DESIGN_SPAN_RUN_IN_SAMPLE_STATUS_NOT_REGISTERED` and
-`C_MAP_INPUT_FREEZE_CONFLICTS_WITH_T6_HOLIDAY_CALENDAR_SCHEDULE`.
+· the two blockers that survived c-10 are **closed by §8.7** (c-11, c-12), and
+**`NO_NR_L_MINIMUM_RESEARCH_CONTRACT_BLOCKER_REMAINS`** is claimed there.
 
 `P` authority fixed (§8.3.0) · `c`'s formula, universe, entries, weighting,
 absolute-value placement, series, cost layer, date index, idle rule and undefined-case
@@ -7231,13 +7255,12 @@ daily PnL constructed, no data read** · implementation and checkability remain 
 `PRODUCTION_READINESS_NOT_CLAIMED`.
 
 *The claim `NO_NR_L_MINIMUM_RESEARCH_CONTRACT_BLOCKER_REMAINS` was made here on the
-strength of the corrected candidate set, and is **withdrawn** — for the second time,
-and on the same test both times.* Two blockers survive c-10, and both were found by the
-review that followed it: the **in-sample status** of the DESIGN-span run, and the
-**collision** between c-10's own input-freeze requirement and T-6's schedule for the
-holiday calendar. Everything **else** carried out of §8.5.0 and c-10 is implementation,
-checkability, or an accepted cost of a frozen rule. *Recorded rather than smoothed: a
-closure claim made in the same round as the ruling that earns it has now been wrong
+strength of the corrected candidate set, and was **withdrawn** — for the second time,
+and on the same test both times.* The two blockers that survived c-10 — the **in-sample
+status** of the DESIGN-span run and the **collision** between c-10's input-freeze
+requirement and T-6's schedule — are **closed by §8.7's Rulings c-11 and c-12**, and the
+claim is made there instead, after that round's review returned. *Recorded rather than
+smoothed: a closure claim made in the same round as the ruling that earns it was wrong
 twice, and the second time the correcting evidence was already in the document.*
 
 ##### What is derived, what is ruled, and what stays open
@@ -7861,9 +7884,11 @@ the value is not measured — together with the residuals §8.5.0 classifies.
 
 ### 8.6 Q10(iii), the duration boundaries, and the exact `T_v` / `T_h` / `D` declaration — decision packet
 
-**`Q10_III_PENDING_HUMAN_CHATGPT_RULING`** ·
+**`Q10_III_RULED_COMPLETE_UTC_CALENDAR_DATE_SHARPE_INDEX_IDLE_ZERO_ANNUALISED_BY_SQRT_365`**
+(§8.7.4; `Q10_III_PENDING_HUMAN_CHATGPT_RULING` **HISTORICAL**) ·
 **`EXACT_WINDOW_NOT_READY_FOR_DECLARATION_FORWARD_EPOCH_DOES_NOT_EXIST`** ·
-**`TURNOVER_CEILING_DAY_STILL_UNREGISTERED`**
+**`TURNOVER_CEILING_COUNTS_TRADES_BY_ENTRY_UTC_DATE`** (§8.7.5;
+`TURNOVER_CEILING_DAY_STILL_UNREGISTERED` **HISTORICAL**)
 
 **Not ruled here.** One packet, three coupled questions: the **annualisation factor**
 for the daily Sharpe, the **duration-boundary arithmetic**, and what must be true
@@ -8285,7 +8310,9 @@ reconstructs; it is **not** ruled, and Q10-i may not be cited as ruling it.
 
 #### 8.6.7 Status
 
-- **Q10(iii)** — **`Q10_III_PENDING_HUMAN_CHATGPT_RULING`.** Not derived: the only
+- **Q10(iii)** — **RULED at §8.7.4**;
+  `Q10_III_PENDING_HUMAN_CHATGPT_RULING` is **HISTORICAL**. As the packet stood, and it
+  is why the ruling had to decide the clock first: not derived, because the only
   committed authority is the row label "ann., UTC-day", and `√252` is M1 precedent.
   Not adopted by convention. The two coherent families are set out at §8.6.1 and the
   incoherent-but-permissive one is named.
@@ -8299,11 +8326,387 @@ reconstructs; it is **not** ruled, and Q10-i may not be cited as ruling it.
   is **not** a contract gap: zero forward bars exist, no forward source is admitted,
   and the frozen minimum span has not accrued. `INSUFFICIENT_SAMPLE__ADOPTION_WAITS`
   is the committed and unchanged disposition.
-- **Turnover day** — **`TURNOVER_CEILING_DAY_STILL_UNREGISTERED`**, stated as a
-  question and not bound to Q10-i.
+- **Turnover day** — **RULED at §8.7.5**,
+  `TURNOVER_CEILING_COUNTS_TRADES_BY_ENTRY_UTC_DATE`, deliberately **not** inherited
+  from Q10-i. Two narrower questions stay unregistered and are **not** ruled by it:
+  mean versus per-day cap, and the active-versus-calendar denominator axis Ruling
+  Q10(ii) left open.
 
 **Nothing here authorises anything.** No date is chosen, no factor is adopted, no
 calendar is created, no data is read, no count is estimated.
+**`PRODUCTION_READINESS_NOT_CLAIMED`** · **`NO_EXECUTION_PERFORMED`**.
+
+### 8.7 The bundled ruling — DESIGN generation, the `c`-input freeze, Q10(iii) and the turnover day
+
+A ruling received from human + ChatGPT and recorded here as **authority**. One decision
+round closing four items: the two blockers §12.14 left on Ruling c-10, plus Q10(iii)
+and the turnover-ceiling day.
+
+**`C_11_RULED_DESIGN_C_SERIES_GENERATED_WITHOUT_SAME_OBSERVATION_TARGET_LEAKAGE`** ·
+**`C_12_RULED_ALL_DECISION_BEARING_C_MAP_INPUTS_FROZEN_BEFORE_C_MEASUREMENT`** ·
+**`Q10_III_RULED_COMPLETE_UTC_CALENDAR_DATE_SHARPE_INDEX_IDLE_ZERO_ANNUALISED_BY_SQRT_365`** ·
+**`TURNOVER_CEILING_COUNTS_TRADES_BY_ENTRY_UTC_DATE`**
+
+**Not ruled here**, said first: no exact `T_v` / `T_h` / `D`, no forward epoch, no
+calendar, no fold count and no CV machinery; **no empirical prediction, PnL, `c`,
+Sharpe, turnover, `ω` or `N_eff` is computed**; no data is read. NR-K, `ω`, Q10(i),
+Q10-A/(ii)/B and c-1…c-10's already-ruled limbs are **not reopened**.
+
+#### 8.7.1 The committed authority, re-read at source
+
+| What committed text actually says | Where |
+| --- | --- |
+| The roles are **Design (exploratory) · DEAD window · Validation · Frozen holdout · Disjoint replication**. **There is no training-span role.** | prereg §3.1 |
+| Calibration is "isotonic regression, fit on a split **carved from the training span only** — never validation, never holdout; **no calibration-method search**" — so "the training span" is *named* and never *defined* | prereg §8 |
+| `W̄`/`L̄` are "estimated on **design data** and **frozen** (never re-fit on validation/holdout)"; the model is "**from-scratch training only**"; params frozen; "**no model-family search**" | prereg §8 |
+| Validation and holdout are in the **forward epoch**, which does not exist; so the only span available for fitting is **DESIGN** | prereg §3.1 |
+| **No out-of-fold, cross-validation, walk-forward or rolling-origin machinery exists anywhere** in `scripts/ml_step4/` or `scripts/m15_gate3a/` | repo-wide read |
+| The M1-lineage implementation trains **one model per pair** on `train_idx` only, then builds `prob_map` for `needed = val_idx ∪ hold_idx` **only**; training bars get `prob_map.get(i, (0.0, 0.0))` and are never turned into signals. **There is no in-sample prediction path in committed code at all.** | `scripts/ml_step4/body.py:486-512` |
+| The M1 split is a single chronological 70/15/15 cut with a purge/embargo | `scripts/ml_step4/split.py` |
+| Sharpe: `annualised_daily_sharpe` = `mean / sample_stdev * sqrt(trading_days_per_year)`, default `TRADING_DAYS_PER_YEAR = 252` — **M1-lineage**, and prereg §11 makes metric helpers reusable only "**after audit/wrapping**", a condition the gate-4 audit did not discharge | `scripts/ml_step4/metrics.py`, `contract.py` |
+| The only M15 Sharpe authority is the frozen row "daily portfolio Sharpe (**ann., UTC-day**) ≥ 0.8". **No factor, and no `sqrt` of anything, appears in the prereg** | prereg §9 |
+| `daily_portfolio_pnl` returns `sorted(by_day.items())` from a trade-keyed dict — **only dates carrying a trade** | `scripts/ml_step4/metrics.py` |
+| `max_equity_drawdown` consumes **that same series**; `daily_coverage` and `n_days` are computed from **`trades`**, not from the series | `scripts/ml_step4/metrics.py` |
+| Turnover is `n_trades / n_trading_days` — the **numerator carries no date at all** — and its docstring reads "**Portfolio-average trades per day**" | `scripts/ml_step4/metrics.py` |
+| The frozen row is "turnover upper bound \| **≤ 40 trades/day portfolio-wide**", and §9.V requires the kill gate to be met "**within the turnover budget**". Neither says **which** day, nor whether the ceiling is a mean or a per-day cap | prereg §9, §9.V |
+| Ruling Q10(ii) expressly leaves the ceiling's day open: it "does **not** define the 'day' of the `≤ 40 trades/day` turnover ceiling, which remains a §9 FROZEN row with an undefined day and is **not ruled here**" | §8.2.0 |
+
+**So the classification is: `absent`, not `committed`, on all four questions.** §4's R-2
+(the single chronological cut, the ≥ 25-bar intra-span purge, the trailing-gap rule for
+walk-forward) is **this packet's own proposal**, offered as ruled text in a still-pending
+packet — the same status §12.5 recorded for R-10, and it is **not** cited here as
+authority. **`SECTION_4_R2_IS_THIS_PACKETS_PROPOSAL_NOT_COMMITTED_AUTHORITY`.**
+
+#### 8.7.2 Ruling c-11 — how the DESIGN `c`-series is generated
+
+**`C_11_RULED_DESIGN_C_SERIES_GENERATED_WITHOUT_SAME_OBSERVATION_TARGET_LEAKAGE`** ·
+**`DESIGN_C_SERIES_MUST_BE_GENERATED_WITHOUT_SAME_OBSERVATION_TARGET_LEAKAGE`.**
+
+**The rule.** Every DESIGN-span prediction entering a `c_design[config_id]` series must
+come from a model whose fit **did not use that observation's own target**, and no
+statistic fitted on data that includes an observation may be used to generate that
+observation's prediction — the cost table, `W̄`/`L̄`, the calibration and any scaler
+included. **Option A (train on the whole DESIGN span, predict back onto it) is
+refused.** The permitted shape is a leakage-safe chronological design — purged
+out-of-fold, walk-forward or rolling-origin — and **this ruling fixes no fold count, no
+window length and no CV machinery**; those are implementation, and none exists today.
+
+**Why it is a ruling and not a derivation.** No committed source selects a
+prediction-generation method for the DESIGN span, and prereg §3.1 defines no training
+role that could imply one. What committed material *does* show is that the repository
+has **no in-sample prediction path at all** — the M1-lineage producer builds
+probabilities only for validation and holdout indices — so Option A would require
+building something that has never existed, and Option C (a model trained on a
+pre-DESIGN span) is unavailable because **no adopted span precedes DESIGN**. Option A is
+therefore refused on a research-integrity ruling, not on a source fact, and this is
+labelled as such.
+
+**The direction, stated as a reading and not as a theorem.** Models are fitted **per
+pair** (`body.py`), so a model that has seen an observation's own target fits that
+pair's idiosyncratic noise; idiosyncratic components are close to independent across
+pairs, which **dilutes `|r|`, lowers `c`, lowers `rho_x` and raises `N_eff`** — the
+anti-conservative direction, and the same mechanism c-7 records. It is a reading
+because shared features could equally overfit common structure; it is enough to make
+"frozen before the data" an incomplete defence under §8.4.11's A-ω-5 standard, which is
+why the leakage-safe arm is taken.
+
+**And the interaction with c-6 is the part that could not be left implicit.** A
+leakage-safe generator cannot produce a prediction for the earliest DESIGN dates —
+there is nothing yet to fit on — so **some prefix of the 310-date index is structurally
+trade-free under every admissible option**, and under the naive application of the
+committed M1 shape (train on the head, predict on the tail) it would be roughly the
+whole training portion. Those dates are **not** idle in c-7's sense: c-7's ground is
+that "a day on which the strategy did not trade is a realised daily outcome of zero",
+and a date on which the strategy **could not** trade because no model existed yet is not
+that. Left as zeros they would be indistinguishable from idle days and would drive `|r|`
+toward its uncentred-cosine limit on a shrunken support — a **large, invisible,
+anti-conservative distortion**, since zeros are already the ruled idle value.
+
+**So the index is refined, and the refinement is declared rather than discovered.**
+**`C_INDEX_IS_THE_DECLARED_C_GENERATION_SPAN_NOT_THE_WHOLE_DESIGN_SPAN`.** The `c` date
+index is the **declared `c`-generation span**: the contiguous sub-span of DESIGN over
+which the declared generation method yields predictions **for every registered pair**.
+It is **declared before any data is observed**, is a deterministic function of the
+declared method, and is **identical across all pairs and all `config_id`s**. Within it
+c-6 and c-7 apply unchanged — one common complete UTC calendar-date index, idle
+pair-date = zero. Outside it, dates are **not members of the index**, and are **not**
+entered as zeros.
+
+*This refines Ruling c-6 and says so.* c-6 fixed the index at the full 310 DESIGN dates
+in a round where the generation method was unruled; c-11 makes the boundary a function
+of the now-ruled method. **It is not the activity-dependent selection c-6 forbids** —
+the boundary is fixed by a pre-declared method, not by observed activity, it cannot
+differ between pairs or configurations, and no party may move it after seeing anything.
+**`C_GENERATION_SPAN_MUST_NOT_BE_CHOSEN_OR_ADJUSTED_AFTER_ANY_OBSERVATION`** ·
+**`C_GENERATION_SPAN_IS_ONE_SPAN_FOR_ALL_PAIRS_AND_ALL_CONFIG_IDS`.** And c-9's
+"measured on the **full** DESIGN span" is correspondingly read as **the full declared
+generation span**, which is the honest restatement rather than a quiet narrowing.
+
+**One route is named and refused.** Restricting the `c` series to a single chronological
+cut's out-of-sample **tail** while calling the rest idle is forbidden: it is the
+structural-zero distortion above, wearing c-7's clothes.
+**`STRUCTURAL_NON_PREDICTION_DATES_ARE_NEVER_ENTERED_AS_IDLE_ZEROS`.**
+
+**What is not ruled.** The generation method's own parameters — fold count, window
+length, step, the trailing-gap size if a rolling origin is used — are **implementation**,
+and they are constrained by c-12 below rather than chosen here.
+**`C_GENERATION_METHOD_PARAMETERS_ARE_IMPLEMENTATION_BOUND_BY_C_12`.**
+
+#### 8.7.3 Ruling c-12 — every input that can move a `c` value is frozen first
+
+**`ALL_DECISION_BEARING_C_MAP_INPUTS_MUST_BE_FROZEN_BEFORE_C_MEASUREMENT`.**
+
+c-10 froze the map's **keys**; this freezes its **values**. The decision-bearing inputs,
+enumerated so the freeze has a scope rather than a slogan:
+
+| Input | Status before this ruling |
+| --- | --- |
+| the registered candidate set and each `config_id` / `ev_min` | frozen by c-10 |
+| the **generation method** and its parameters, and the declared **`c`-generation span** | ruled at c-11; parameters frozen **here** |
+| model family, hyperparameters, class weighting, calibration method | frozen by prereg §8 |
+| the **feature list and its definitions** | frozen at the design audit (prereg §7) |
+| the **warm-up `W`** | `[FIXED-AT implementation]` — **frozen here relative to `c`** |
+| the **cost model and cost table**, and the cost **cell** | table frozen by prereg §5; the cell ruled by c-4 |
+| the **pair universe** | frozen by NR-K / c-1 |
+| the **DESIGN span** and the date index | committed / c-11 |
+| the **day-attribution rule** | ruled by Q10(i) |
+| **Calendar A slot membership**, where it reaches DESIGN event eligibility | Ruling ω-12/ω-13 |
+| **Calendar B event-eligibility semantics**, where they reach current Family A | T-6 puts approval "before gate 7" — **after** any point the map could be built |
+| **rollover exclusion window** | prereg §5 permits gate 3a / the design audit to **widen** it |
+| **concurrency / exposure caps** | `[FIXED-AT design audit]` |
+| the idle-day rule, common date index, coefficient, weighting, absolute-value placement, undefined-case disposition | ruled by c-2…c-8 |
+
+**The rule.** **No value in the `c` map may be measured until every input above is
+frozen**, and once measured, none of them may change for current Family A.
+**`THE_MAP_IS_BUILT_ONCE_AND_A_CHANGED_INPUT_IS_NOT_A_NEW_MEASUREMENT_IT_IS_A_RESELECTION`**
+— rebuilding the map after moving an input is variant-shopping under another name.
+
+**And observing `c` may not reach back.**
+**`C_OBSERVATION_MUST_NOT_TRIGGER_UPSTREAM_RECONFIGURATION`.** A measured `c`, a derived
+`rho_x`, an `N_eff` or a sample-floor verdict may **not** cause any change to the model
+fit method, the generation method or its span, the feature set, calendar eligibility,
+the cost model or cell, the `ev_min` set, the DESIGN span, the date index or the
+idle-day rule. This closes the last direction c-10 left open: c-10 barred selecting
+*among* configurations on `c`; this bars reconfiguring *the inputs* on `c`.
+
+**The Calendar B collision, resolved without pulling the operational calendar
+forward.** `C_MAP_INPUT_FREEZE_CONFLICTS_WITH_T6_HOLIDAY_CALENDAR_SCHEDULE` is closed by
+splitting the artifact from the semantics, which is what Ruling ω-13(b) already does for
+the event sequence:
+**`POST_C_FREEZE_ELIGIBILITY_CHANGES_MUST_NOT_RETROACTIVELY_CHANGE_C_DESIGN`.**
+
+- The **subset of eligibility semantics capable of changing current Family A's
+  DESIGN-span event inclusion or daily PnL** must be frozen **before** the `c` map is
+  measured — with `FAMILY_A_ELIGIBILITY_SEMANTICS_MAY_NOT_DELEGATE_TO_A_POST_FREEZE_ARTIFACT`
+  (Ruling ω-13(b)) governing, so a rule may not satisfy the freeze by pointing at a
+  table approved later.
+- **Everything else in Calendar B may land on its committed schedule.** A later
+  operational or production calendar is not required to be frozen early; T-6's "approved
+  before gate 7" stands for that remainder.
+- A later Calendar B **may not retroactively alter a frozen `c_design` value**, and a
+  `c` re-measured under later eligibility semantics is **not** the frozen `c` and may not
+  be substituted for it.
+
+*So the conflict was between a **schedule** and a **scope**, and the scope is what
+narrows.* **`ONLY_THE_FAMILY_A_REACHING_SUBSET_OF_CALENDAR_B_IS_PRE_C_FROZEN`.**
+
+**Ordering, restated end to end.**
+
+> **1.** freeze the candidate configuration set (c-10) → **2.** freeze every
+> decision-bearing input above, including the Family-A-reaching eligibility semantics →
+> **3.** generate the DESIGN prediction and per-pair daily net PnL series under c-11 →
+> **4.** compute `c_design[config_id]` for every registered candidate under c-1…c-9 →
+> **5.** freeze the complete map → **6.** only then may validation be observed for
+> operating-point selection → **7.** validation selects one `config_id` → **8.** the
+> already-frozen `c` is attached mechanically.
+
+**No step of this is an authorisation**, and nothing here authorises a DESIGN-span run.
+
+#### 8.7.4 Ruling Q10(iii) — the Sharpe clock, the idle day and the factor, decided together
+
+**`Q10_III_RULED_COMPLETE_UTC_CALENDAR_DATE_SHARPE_INDEX_IDLE_ZERO_ANNUALISED_BY_SQRT_365`.**
+
+Three limbs, decided as one because none of them is answerable alone:
+
+1. **Sampling clock.** The daily portfolio Sharpe is computed on the **complete UTC
+   calendar-date index of the evaluated role's span** — every UTC calendar date from the
+   role's start date through its end date inclusive — **not** on dates that happen to
+   carry a trade.
+2. **Idle days.** A date with no trade attributed to it carries **zero** realised PnL.
+   Trades are attributed by **Q10(i)**, unchanged — the exit UTC date — and multiple
+   trades on one date are **summed**.
+3. **Annualisation.** `√365`, the dates-per-year of that index.
+   **`SHARPE_ANNUALISATION_FACTOR_IS_SQRT_365`.** Leap years are **not** distinguished:
+   at the frozen minimum spans the 365 / 365.25 difference is under a tenth of a per
+   cent, and inventing a year-specific factor would be machinery with no authority
+   behind it.
+
+**Why the clock had to be ruled first.** `√252` was never committed — it is an M1
+default in a helper prereg §11 admits only "after audit/wrapping", and the gate-4 audit
+tightened nothing about the Sharpe, so it does not carry by reuse either. And it is
+**incoherent** with the committed series: annualising by `√k` presumes `k` observations
+per year *on the series' own clock*, and the committed series is indexed on **active
+dates**. §8.6.1 sets out the two coherent families; this ruling takes **(B)** — complete
+index, data-independent factor — over **(A)**, whose factor is the realised
+observations-per-year and is therefore a **function of the measured activity rate**.
+**`SHARPE_ANNUALISATION_CLOCK_MUST_BE_PRE_DATA_FIXED`**: estimating an annual active-day
+count from realised data and annualising by it, varying the factor by configuration,
+using coverage to choose the factor, or choosing between 252 and 365 after seeing which
+improves the Sharpe are all **forbidden**.
+
+**What this does and does not move — checked at source rather than assumed.**
+
+- **The Sharpe itself moves**, and that is the point: the row's factor was never fixed,
+  so this **fills an empty slot** rather than changing a committed value. Its direction
+  against the M1 default is **conditional**, not uniform: `√252` on an active index over
+  `√365` on the complete index is `√(252/(365a))` at active share `a`, which exceeds 1
+  below `a ≈ 0.690` and is **below** it above — so no claim is made that this ruling is
+  the conservative arm, only that it is the **coherent** one.
+- **Max equity drawdown does not move at all, and that is provable.**
+  `max_equity_drawdown` is a running peak-to-trough on the cumulative daily sum;
+  inserting zero-PnL dates leaves every partial sum unchanged and merely repeats the
+  previous equity level, so the running peak and the maximum peak-to-trough gap are
+  **identical**. Verified against the implementation and by synthetic arithmetic.
+  **`MAXDD_IS_INVARIANT_TO_IDLE_DATE_ZERO_FILL`** · **`NON_NORMATIVE_DIAGNOSTIC_ONLY`**.
+  The frozen `≤ 0.15` row is untouched.
+- **Daily coverage does not move**, and is **not** re-denominated. `daily_coverage`
+  computes `len({t.day for t in trades}) / holdout_trading_days` from the **trade list**,
+  never from the Sharpe series; the two share no object. Ruling Q10(ii)'s denominator —
+  the UTC calendar dates the approved calendar authority recognises as carrying at least
+  one expected M15 slot — stands unchanged, and the frozen `≥ 0.60` threshold is
+  untouched. **This ruling deliberately does not give coverage and the Sharpe a common
+  index**; metric-specific semantics stay separate.
+- **Turnover does not move by this limb.** `n_days` is computed from the trade list, not
+  from the Sharpe series. What moves it is §8.7.5, and only its denominator.
+- `cost_sensitivity`'s per-cell Sharpes move with the primary one; they carry no frozen
+  threshold, the stressed-cost row being denominated in day-independent expectancy.
+
+**The consistency with NR-L is noted and not leaned on.** c-6 and c-7 already take a
+complete UTC calendar-date index with idle = zero for `c`, and this ruling takes the same
+shape for the Sharpe. **That is consistency, not entailment**: no committed source makes
+NR-L's index govern the Sharpe, and this limb is ruled on its own ground — the
+incoherence of `√252` with an active-date index — not derived from c-6.
+
+**And no market-hours fact is authored.** "Every UTC calendar date in the role's span"
+needs no calendar authority; whether any of those dates can carry a trade is a
+calendar-authority question this ruling does not answer, exactly as c-6 does not.
+
+**Derived versus ruled.** *Derived*: that `√252` is not committed; that it is incoherent
+with the committed active-date index; that maxDD is invariant to zero-fill; that
+coverage and turnover do not share the series. *Ruled*: the complete-date index, idle =
+zero, and `√365`.
+
+#### 8.7.5 Ruling — the turnover-ceiling day
+
+**`TURNOVER_CEILING_COUNTS_TRADES_BY_ENTRY_UTC_DATE`.**
+
+Each trade is counted **exactly once**, against the UTC calendar date containing its
+**entry** marker. A trade whose exit falls on a later date does **not** generate a second
+count; several entries on one date each count; an open position spanning dates remains
+**one** initiation. No position-duration rule is created.
+
+**Why entry, and why this is not inherited from Q10(i).** The turnover ceiling
+constrains **trading activity and initiation frequency** — how often the strategy commits
+— whereas Q10(i) fixes the date on which an **outcome becomes realised**. They measure
+different things, and reasoning "PnL uses the exit date, therefore turnover does too"
+would be inheritance rather than a ruling. Recorded explicitly:
+**Q10(i)'s realised-outcome date is the exit date; the turnover initiation date is the
+entry date**, and the two are deliberately different.
+**`TURNOVER_DAY_MUST_NOT_BE_BOUND_TO_THE_PNL_ATTRIBUTION_DAY_BY_INHERITANCE`.**
+
+**What the committed implementation makes of this, stated precisely.** `turnover()` is
+`n_trades / n_trading_days`, and **its numerator carries no date at all** — every trade
+counts once regardless. So under the committed **mean** reading this ruling fixes only
+which dates form the **denominator**: the set of distinct **entry** UTC dates. Under a
+**per-day-cap** reading it would also fix the per-date numerator. **Which of those two
+the frozen row means is a separate question this ruling does not decide** — the mean is
+a reading of the implementation's own docstring, the frozen row says only "≤ 40
+trades/day portfolio-wide", and settling it would change the ceiling's meaning.
+**`TURNOVER_CEILING_MEAN_VERSUS_PER_DAY_CAP_STILL_UNREGISTERED`.**
+
+**And it does not touch the axis Ruling Q10(ii) warned about.** Q10(ii) left the
+ceiling's day open and warned that reading it in **calendar** days would widen gate 4's
+corridor by ~42% — "a loosening Ruling 10 forbids, and one that citing this ruling must
+not achieve". Entry-versus-exit is a different axis: **both are active-date sets**, and
+this ruling takes neither toward calendar days. The
+active-versus-calendar-versus-calendar-authority question stays exactly where Q10(ii)
+left it. **`TURNOVER_DENOMINATOR_ACTIVE_VERSUS_CALENDAR_AXIS_STILL_UNREGISTERED`.**
+
+**Authority classification.** **Absent, therefore ruled.** No committed source names an
+attribution date for turnover; the implementation has no attribution rule to read off,
+because its numerator is date-free.
+
+#### 8.7.6 Status after §8.7
+
+**`NR_L_MINIMUM_RESEARCH_CONTRACT_RULED_PENDING_IMPLEMENTATION_AND_DESIGN_MEASUREMENT`** ·
+**`NO_NR_L_MINIMUM_RESEARCH_CONTRACT_BLOCKER_REMAINS`** ·
+**`Q10_III_RULED`** · **`TURNOVER_CEILING_DAY_RULED_ENTRY_UTC_DATE`.**
+
+**The closure claim is made deliberately and with its history attached.** It was made
+and withdrawn twice, both times in the same round as the ruling meant to earn it. It is
+made now because the two surviving blockers are closed on their merits — c-11 rules the
+generation semantics and c-12 freezes every input that can move a value — and because
+**this round's review has run and returned** (§12.15) rather than being anticipated.
+**If a later finding names a remaining freedom capable of moving `c`, `N_eff`, the event
+sequence or experiment selection, the claim fails again**, and Ruling ω-13's boundary
+governs how that is judged: a human + ChatGPT call, never a session's own, with an
+unclear case defaulting to blocker.
+
+**What remains, classified — and none of it is a research-result freedom.**
+
+- **Minimum execution prerequisites**: `MINIMUM_CALENDAR_IDENTITY_RECORD_REQUIRED_BEFORE_DATA_EXECUTION` ·
+  `ONE_SELECTABLE_IMMUTABLE_CALENDAR_INSTANCE_WITH_RECORDED_IDENTITY_IS_AN_EXECUTION_PREREQUISITE` ·
+  `PRE_CONTINUATION_CALENDAR_ARTIFACT_APPROVAL_REQUIRED` ·
+  `PRE_DATA_FAMILY_A_EVENT_ELIGIBILITY_CONTRACT_REQUIRED_BEFORE_CONTINUATION`.
+- **Implementation and checkability**: `C_INDEX_SET_NOT_RECORDED_IN_ANY_ARTIFACT`
+  (contested deferral) · `NR_L_PAIRWISE_COMPLETENESS_IMPLEMENTATION_PENDING` ·
+  `NR_L_CONFIGURATION_COVERAGE_IMPLEMENTATION_PENDING` · `C_HAS_NO_PRODUCER_AND_NO_ARTIFACT` ·
+  `C_GENERATION_METHOD_PARAMETERS_ARE_IMPLEMENTATION_BOUND_BY_C_12` ·
+  `EXIT_DAY_ATTRIBUTION_BREAKS_ONE_COMMITTED_TEST_FIXTURE` ·
+  `EXIT_DAY_ATTRIBUTION_REQUIRES_A_NEW_DAY_MAP_AT_THE_SECOND_CALL_SITE` ·
+  `C_IMPLEMENTATION_MAY_NOT_REINTRODUCE_A_FORBIDDEN_ALIGNMENT_OR_SUBSTITUTION_BY_LIBRARY_DEFAULT`.
+- **Accepted costs of frozen rules**, none selectable by anyone:
+  `IDLE_ZERO_FILL_DILUTES_CORRELATION_IN_THE_SPARSE_REGIME` ·
+  `C_EQUAL_WEIGHTING_IS_EXACT_ONLY_UNDER_EQUAL_PER_PAIR_VARIANCES` ·
+  `CORRELATION_DATE_INDEX_COMMON_MODE_DIRECTION_NOT_ESTABLISHED` ·
+  `MEAN_ABS_ESTIMATOR_HAS_A_POSITIVE_NULL_FLOOR_AT_310_DATES` ·
+  `C_NEAR_DEGENERACY_IS_NOT_COVERED_BY_c_8_AND_MAY_NOT_BE_SILENTLY_REPAIRED` ·
+  `SHARPE_DAY_SET_AND_CORRELATION_DAY_SET_ARE_DIFFERENT_OBJECTS` (**narrowed**: both are
+  now complete UTC calendar-date indices with idle = zero, over **different spans** —
+  the `c` generation span and the evaluated role's span).
+- **Still unregistered, and recorded as questions rather than closed**:
+  `TURNOVER_CEILING_MEAN_VERSUS_PER_DAY_CAP_STILL_UNREGISTERED` ·
+  `TURNOVER_DENOMINATOR_ACTIVE_VERSUS_CALENDAR_AXIS_STILL_UNREGISTERED` ·
+  `SELECTION_VERSUS_CERTIFIABILITY_ORDER_NOT_REGISTERED` (carried with the
+  select-then-check default) · `KILL_GATE_READS_THE_REGISTERED_SET_NOT_THE_ELIGIBLE_SUBSET` ·
+  `SQRT_K_FORM_ASSUMES_SERIAL_INDEPENDENCE_NOT_COMMITTED` ·
+  `DURATION_BOUNDARY_ARITHMETIC_AND_ENDPOINT_CONVENTION_PENDING_HUMAN_CHATGPT_RULING` ·
+  `SPAN_MINIMA_ARE_NOT_ELIGIBLE_EVENT_MINIMA`. **None of these is an NR-L statistical
+  choice**; each is either a metric-semantics question outside `c` or a routing question
+  with a fail-closed default already attached.
+
+**Amendment classification.** c-11 and c-12's freeze rule, the Calendar B scope split,
+`C_OBSERVATION_MUST_NOT_TRIGGER_UPSTREAM_RECONFIGURATION`, Q10(iii)'s three limbs and the
+turnover-day rule are all **additions no committed source carries**. c-11's refinement
+of the `c` index is an **amendment to Ruling c-6 within this packet**, made explicitly
+rather than by silence. Whether such additions need a contract-amendment procedure
+cannot be answered, because **no general contract-amendment procedure is registered
+anywhere in this repository**
+(`NO_GENERAL_CONTRACT_AMENDMENT_PROCEDURE_REGISTERED`, this packet's own token for that
+absence). **`SECTION_8_7_AMENDMENT_CLASSIFICATION_NOT_SETTLED`.**
+
+**No favourable classification is asserted anywhere in this ruling.** Q10(iii)'s
+direction against the M1 default is **conditional and unclaimed**; c-11 **increases** the
+work and forecloses the only generation shape the repository can currently produce;
+c-12 forecloses four inputs that were free; and c-11's index refinement is recorded as
+an amendment to a prior ruling of this packet rather than presented as a clarification.
+
+**Unchanged by this ruling.** The exact `T_v` / `T_h` / `D`
+(`EXACT_WINDOW_NOT_READY_FOR_DECLARATION_FORWARD_EPOCH_DOES_NOT_EXIST`) · the boundary
+arithmetic, purge, warm-up and interval convention of §8.6.2 · Q1, Q3, Q8, Q9 ·
+`FR_19_SEPARATE_TEST_SAFETY_WORK_PR_OPEN` ·
+`SAMPLE_FLOOR_REACHABILITY_NOT_DETERMINABLE_WITHOUT_MEASURED_INPUTS`, which nothing here
+moves. **Real-data read remains unauthorised.**
 **`PRODUCTION_READINESS_NOT_CLAIMED`** · **`NO_EXECUTION_PERFORMED`**.
 
 ---
@@ -9500,12 +9903,11 @@ three `ev_min` points, nine configurations" imported the **M1** threshold grid;
 prereg Ruling 9 forbids a raw probability threshold as a decision rule, and the
 registered set is **three `ev_min` points and one horizon — three configurations**.
 The blocker survived the correction, narrowed, and c-10 closes it.
-**`NO_NR_L_MINIMUM_RESEARCH_CONTRACT_BLOCKER_REMAINS` is NOT claimed.** Two blockers
-survive c-10 — `C_DESIGN_SPAN_RUN_IN_SAMPLE_STATUS_NOT_REGISTERED` (the DESIGN-span
-run's in-sample status is unregistered, the two readings give different `c`, and an
-unclear direction defaults to blocker) and
-`C_MAP_INPUT_FREEZE_CONFLICTS_WITH_T6_HOLIDAY_CALENDAR_SCHEDULE` (c-10 requires the
-map's inputs frozen before it is built; T-6 approves the holiday calendar afterwards).
+The two blockers that survived c-10 are **closed by §8.7**: **c-11** rules the
+DESIGN-span generation semantics (leakage-safe, with the `c` index refined to the
+declared generation span), and **c-12** freezes every decision-bearing input and
+resolves the Calendar B collision by **scope** rather than schedule.
+**`NO_NR_L_MINIMUM_RESEARCH_CONTRACT_BLOCKER_REMAINS`** is claimed at §8.7.6.
 
 **The recorded order** (§8.2.8, §8.3.11): NR-K **ruled** → mean-overlap clock,
 formula and aggregation **ruled** → **NR-L + Q10(i) ruled** → Q10(iii) →
@@ -9577,14 +9979,14 @@ zero-data derivation had come out infeasible.
 | **Q10(ii)** the coverage-denominator day | **RULED** (§8.2.0) · `Q10_II_DAY_IDENTITY_RULED_UTC_CALENDAR_DATE_EXPECTED_SLOTS_FROM_APPROVED_CALENDAR_AUTHORITY` — day identity = UTC calendar date; expected slots **only** from the approved calendar authority. Does **not** make all 96 slots of a date expected, and authors no weekend/holiday/closure/DST rule | n/a — ruled |
 | **Q10-B** how the continuation window is anchored | **RULED** (§8.2.0) · `Q10_B_RULED_EXPLICIT_HUMAN_CHATGPT_UTC_WINDOW_DECLARATION_REQUIRED_BEFORE_CONTINUATION` — exact `T_v`/`T_h`/window/`D` declared by human + ChatGPT **before** continuation authorisation; a list of data-derived anchors forbidden. A **tightening**, not an amendment | n/a — ruled |
 | **Q10(i)** entry- vs exit-day PnL attribution | `REQUIRES_HUMAN_CHATGPT_RULING` — **not** settled by Q10(ii): fixing what a day *is* does not fix which day a horizon-straddling trade lands on | **survives** |
-| **Q10(iii)** annualisation factor | `Q10_III_PENDING_HUMAN_CHATGPT_RULING` — **not** settled by Q10-A: the unit of `D` and the constant annualising a daily Sharpe are different objects. **Packet complete at §8.6, not ruled.** The only committed authority is prereg §9's "ann., UTC-day"; `√252` is **M1 precedent**, and the committed Sharpe series is indexed on **active dates**, so `√252` matches neither clock and is the **permissive** arm with an analytically knowable direction | **survives; packet complete** |
+| **Q10(iii)** annualisation factor | **RULED** (§8.7.4) · `Q10_III_RULED_COMPLETE_UTC_CALENDAR_DATE_SHARPE_INDEX_IDLE_ZERO_ANNUALISED_BY_SQRT_365` — complete UTC calendar-date index, idle = zero, Q10(i) attribution, **`√365`**; maxDD provably invariant, coverage and turnover untouched. Not settled by Q10-A: the unit of `D` and the constant annualising a daily Sharpe are different objects. The only committed authority is prereg §9's "ann., UTC-day"; `√252` is **M1 precedent**, and the committed Sharpe series was indexed on **active dates**, so `√252` matched neither clock | **ruled** |
 | **Exact `D`** | `EXACT_D_SELECTION_STILL_PENDING_UPSTREAM_AUTHORITIES` — ordering recorded at §8.2.8: NR-K (**ruled**), the **mean-overlap unit and aggregation** (**ruled**, §8.4.0), then **NR-L** (§8.5, next), then remaining duration authority, then the human + ChatGPT window declaration, then the remaining minimum-gate questions | **survives** |
 | **Gate-3a continuation date** (the **forward-epoch adoption** continuation, not the design-span one) | `GATE3A_CONTINUATION_DATE_NOT_FROZEN_RESIDUAL_AFTER_Q11_SECTION0_RULING` — **carried by Q10-B, ruled at §8.2.0** (its packet is §8.2.4), discharging
 §8.1.9's "put it with Q10" — narrowed by the forbidden-anchor list, though no
 latest bound is set. Already constrained by §8.1.0 (the date may not be informed by any strategy-run quantity); unconstrained as to a *positive* selection rule | survives |
 | **NR-K** `P` and the pair universe | **RULED** (§8.3.0) · `NR_K_RULED_P_EQUALS_FROZEN_REGISTERED_FAMILY_A_UNIVERSE` — `P = 20` for current Family A, the authority object being the frozen registered `PAIRS_20` universe; `MUST_RESOLVE_BEFORE_ANY_EFFECTIVE_N_VERDICT` **discharged for NR-K**. It was **not derivable**: the one committed definition ("contributing") was undefined, and the implementation accepted `len(records) ≥ 1`. What survives is the **implementation pin** (`P_AUTHORITY_RULED_IMPLEMENTATION_COMPLETENESS_PIN_PENDING`) and the missing forward roster gate — `assert_full_coverage` halts an uncertifiable pair on the **design span only**, while `P` decides at holdout (`NO_FORWARD_SPAN_FULL_ROSTER_COVERAGE_GATE_COMMITTED`) | ruled; residuals survive |
 | **Mean overlap fraction** `ω` — clock, formula, aggregation, freeze | **RULED** (§8.4.0) · `MEAN_OVERLAP_RULED_EVENT_LEVEL_SAME_HORIZON_CLOCK_EQUAL_WEIGHT_ROLE_LOCAL` — `g` and `H` on the **same registered M15 prediction clock**; `overlap_i = max(0, 1 − g_i/H)` per **adjacent** same-pair interval, then an **equal-weight arithmetic mean** (`E[f]`, never `f(E)`); the mean-gap approximation is **not an allowed authority**; `rho_h` **pair-local**, pooling forbidden; registered pair labels may not be rearranged; zero-event pairs contribute nothing and are **retained in `P`**; a one-event pair takes `ω_p = 0` with raw contribution **one**; **method frozen pre-data, value measured role-locally**; measurement may decide the verdict but may **not** redirect the experiment. **Four limbs derived and confirmed, six explicit human + ChatGPT choices.** Residuals: `HORIZON_WALL_CLOCK_EXTENT_NOT_REGISTERED` (reduced to one unknown binding `g` and `H` alike), `OVERLAP_PER_RECORD_PROVENANCE_UNBOUND`, the implementation pin, and `MEAN_OVERLAP_AMENDMENT_CLASSIFICATION_NOT_SETTLED` | ruled; residuals survive |
-| **NR-L** `mean_abs_pairwise_corr` — pair set, statistic, series, day attribution, idle days, undefined cases, common date alignment, freeze — **bundled with Q10(i)** | **RULED** (§8.5.0) · `NR_L_MINIMUM_RESEARCH_CONTRACT_RULED_PENDING_IMPLEMENTATION_AND_DESIGN_MEASUREMENT` · `Q10_I_RULED_REALIZED_PNL_ATTRIBUTED_TO_EXIT_UTC_DATE`. `c = mean_{p<q} |r_pq|`, equal-weight **Pearson** over the **190** unordered off-diagonal entries of the frozen `PAIRS_20`, on per-pair daily **net realised** PnL at the primary cost cell, attributed to the **exit** UTC date, on **one common complete DESIGN UTC calendar-date index** (310 dates) with **idle = zero**, **failing closed** on any undefined required entry, measured **once** on the full DESIGN span, method frozen now, never reselected after a downstream observation. **Two limbs derived-under-a-stated-reading** (c-1 and c-2, from the equicorrelated identity the committed form is — an identity that appears in **no** committed source, so the reading is this ruling's), the rest human + ChatGPT choices — **three of which run against conservatism or are unestablished** (c-7's mechanism, c-2's false equal-variance assumption, c-6's common-idle frame). **The one blocker that survived — `NR_L_GENERATING_CONFIGURATION_NOT_REGISTERED` — is closed by Ruling c-10**: `c_design[config_id]` for **every** registered candidate (three `ev_min` points, not the nine §8.5.0 wrongly claimed), computed before validation, map frozen, `config_id` selected by the committed rule alone, `c` attached mechanically, no post-selection recomputation — **but two blockers survive it**, `C_DESIGN_SPAN_RUN_IN_SAMPLE_STATUS_NOT_REGISTERED` and `C_MAP_INPUT_FREEZE_CONFLICTS_WITH_T6_HOLIDAY_CALENDAR_SCHEDULE`, so `NO_NR_L_MINIMUM_RESEARCH_CONTRACT_BLOCKER_REMAINS` is **not** claimed. `MUST_RESOLVE_BEFORE_ANY_EFFECTIVE_N_VERDICT` **discharged as to the contract**, not as to the value. Residuals: `C_INDEX_SET_NOT_RECORDED_IN_ANY_ARTIFACT` (deferral **contested**, and the R-6 record now has to name the index's cardinality and the 190-entry count, because **bounds alone cannot discriminate**), `NR_L_PAIRWISE_COMPLETENESS_IMPLEMENTATION_PENDING` (every short roster **raises** `N_eff`), `C_HAS_NO_PRODUCER_AND_NO_ARTIFACT`, `EXIT_DAY_ATTRIBUTION_BREAKS_ONE_COMMITTED_TEST_FIXTURE` and `EXIT_DAY_ATTRIBUTION_REQUIRES_A_NEW_DAY_MAP_AT_THE_SECOND_CALL_SITE`, and five accepted costs of the ruled construction. *As the packet stood before the ruling:* seven questions, none answered. With `P` and `ω`'s method ruled, `rho_x = 1 + 19c` makes **`c` the whole of the cross-pair deflator**, and the last unruled decision packet — not the last freedom in the arithmetic. The **span is committed and closed** (DESIGN only, never validation/holdout, frozen once); everything between the symbol and the span is unregistered, and **the object the definition names — a per-pair daily PnL series — has no constructor in this repository**. Hard dependency: `NR_L_DAY_ATTRIBUTION_DEPENDS_ON_Q10_I`, so NR-L3/NR-L4 could not close before Q10(i) — which is why the two were ruled as **one** decision. Its earlier role in sizing `D` remains **mooted** by Ruling B | ruled; residuals survive |
+| **NR-L** `mean_abs_pairwise_corr` — pair set, statistic, series, day attribution, idle days, undefined cases, common date alignment, freeze — **bundled with Q10(i)** | **RULED** (§8.5.0) · `NR_L_MINIMUM_RESEARCH_CONTRACT_RULED_PENDING_IMPLEMENTATION_AND_DESIGN_MEASUREMENT` · `Q10_I_RULED_REALIZED_PNL_ATTRIBUTED_TO_EXIT_UTC_DATE`. `c = mean_{p<q} |r_pq|`, equal-weight **Pearson** over the **190** unordered off-diagonal entries of the frozen `PAIRS_20`, on per-pair daily **net realised** PnL at the primary cost cell, attributed to the **exit** UTC date, on **one common complete DESIGN UTC calendar-date index** (310 dates) with **idle = zero**, **failing closed** on any undefined required entry, measured **once** on the full DESIGN span, method frozen now, never reselected after a downstream observation. **Two limbs derived-under-a-stated-reading** (c-1 and c-2, from the equicorrelated identity the committed form is — an identity that appears in **no** committed source, so the reading is this ruling's), the rest human + ChatGPT choices — **three of which run against conservatism or are unestablished** (c-7's mechanism, c-2's false equal-variance assumption, c-6's common-idle frame). **The one blocker that survived — `NR_L_GENERATING_CONFIGURATION_NOT_REGISTERED` — is closed by Ruling c-10**: `c_design[config_id]` for **every** registered candidate (three `ev_min` points, not the nine §8.5.0 wrongly claimed), computed before validation, map frozen, `config_id` selected by the committed rule alone, `c` attached mechanically, no post-selection recomputation. The two blockers that survived it — `C_DESIGN_SPAN_RUN_IN_SAMPLE_STATUS_NOT_REGISTERED` and `C_MAP_INPUT_FREEZE_CONFLICTS_WITH_T6_HOLIDAY_CALENDAR_SCHEDULE` — are **closed by §8.7's c-11 and c-12**, where `NO_NR_L_MINIMUM_RESEARCH_CONTRACT_BLOCKER_REMAINS` is claimed. `MUST_RESOLVE_BEFORE_ANY_EFFECTIVE_N_VERDICT` **discharged as to the contract**, not as to the value. Residuals: `C_INDEX_SET_NOT_RECORDED_IN_ANY_ARTIFACT` (deferral **contested**, and the R-6 record now has to name the index's cardinality and the 190-entry count, because **bounds alone cannot discriminate**), `NR_L_PAIRWISE_COMPLETENESS_IMPLEMENTATION_PENDING` (every short roster **raises** `N_eff`), `C_HAS_NO_PRODUCER_AND_NO_ARTIFACT`, `EXIT_DAY_ATTRIBUTION_BREAKS_ONE_COMMITTED_TEST_FIXTURE` and `EXIT_DAY_ATTRIBUTION_REQUIRES_A_NEW_DAY_MAP_AT_THE_SECOND_CALL_SITE`, and five accepted costs of the ruled construction. *As the packet stood before the ruling:* seven questions, none answered. With `P` and `ω`'s method ruled, `rho_x = 1 + 19c` makes **`c` the whole of the cross-pair deflator**, and the last unruled decision packet — not the last freedom in the arithmetic. The **span is committed and closed** (DESIGN only, never validation/holdout, frozen once); everything between the symbol and the span is unregistered, and **the object the definition names — a per-pair daily PnL series — has no constructor in this repository**. Hard dependency: `NR_L_DAY_ATTRIBUTION_DEPENDS_ON_Q10_I`, so NR-L3/NR-L4 could not close before Q10(i) — which is why the two were ruled as **one** decision. Its earlier role in sizing `D` remains **mooted** by Ruling B | ruled; residuals survive |
 
 **Q10 and Q11 are the only two that survive an infeasibility verdict**, which is
 itself the argument for having taken the derivation first. **Q11 and §0 are one
