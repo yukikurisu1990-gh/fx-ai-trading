@@ -195,8 +195,11 @@ no selection rule).
 **Two blockers survived Ruling c-10 and are now CLOSED by §8.7.**
 `C_DESIGN_SPAN_RUN_IN_SAMPLE_STATUS_NOT_REGISTERED` is ruled by **c-11** —
 `DESIGN_C_SERIES_MUST_BE_GENERATED_WITHOUT_SAME_OBSERVATION_TARGET_LEAKAGE`, with the
-`c` index refined to the **declared `c`-generation span** so that structurally
-trade-free dates are never entered as idle zeros. `C_MAP_INPUT_FREEZE_CONFLICTS_WITH_T6_HOLIDAY_CALENDAR_SCHEDULE`
+Rulings c-6 and c-7 **unamended**: a structurally trade-free date is
+carried as a zero, because a **common** trade-free prefix measurably **raises** `|r|`
+rather than diluting it, which is the conservative arm — while c-7's economic
+justification does not reach those dates and the generation method
+**may not be selected for the span or sparsity it produces**. `C_MAP_INPUT_FREEZE_CONFLICTS_WITH_T6_HOLIDAY_CALENDAR_SCHEDULE`
 is ruled by **c-12** — every decision-bearing input frozen before measurement, with the
 Calendar B collision resolved by **scope, not schedule**: only the subset of eligibility
 semantics that reaches current Family A is pre-`c` frozen, and a later Calendar B may
@@ -291,8 +294,9 @@ the entry date) · still unregistered and **not** ruled by it:
 
 **Q10(i)+NR-L's two surviving blockers are CLOSED by §8.7**: **c-11**
 (`DESIGN_C_SERIES_MUST_BE_GENERATED_WITHOUT_SAME_OBSERVATION_TARGET_LEAKAGE`, with the
-`c` index refined to the **declared `c`-generation span** so structurally trade-free
-dates are never idle zeros) and **c-12**
+Rulings c-6/c-7 **unamended** — a structurally trade-free date stays a
+zero, since a **common** prefix measurably raises `|r|`, and the generation method may
+not be selected for the span or sparsity it produces) and **c-12**
 (`ALL_DECISION_BEARING_C_MAP_INPUTS_MUST_BE_FROZEN_BEFORE_C_MEASUREMENT` ·
 `C_OBSERVATION_MUST_NOT_TRIGGER_UPSTREAM_RECONFIGURATION` ·
 `POST_C_FREEZE_ELIGIBILITY_CHANGES_MUST_NOT_RETROACTIVELY_CHANGE_C_DESIGN`, the Calendar
@@ -8410,42 +8414,50 @@ because shared features could equally overfit common structure; it is enough to 
 "frozen before the data" an incomplete defence under §8.4.11's A-ω-5 standard, which is
 why the leakage-safe arm is taken.
 
-**And the interaction with c-6 is the part that could not be left implicit.** A
-leakage-safe generator cannot produce a prediction for the earliest DESIGN dates —
-there is nothing yet to fit on — so **some prefix of the 310-date index is structurally
-trade-free under every admissible option**, and under the naive application of the
-committed M1 shape (train on the head, predict on the tail) it would be roughly the
-whole training portion. Those dates are **not** idle in c-7's sense: c-7's ground is
-that "a day on which the strategy did not trade is a realised daily outcome of zero",
-and a date on which the strategy **could not** trade because no model existed yet is not
-that. Left as zeros they would be indistinguishable from idle days and would drive `|r|`
-toward its uncentred-cosine limit on a shrunken support — a **large, invisible,
-anti-conservative distortion**, since zeros are already the ruled idle value.
+**And the interaction with c-6 had to be worked out, because an earlier drafting of
+this limb got its direction wrong.** A leakage-safe generator cannot produce a
+prediction for the earliest DESIGN dates — there is nothing yet to fit on — so **some
+prefix of the 310-date index is structurally trade-free under every admissible option**,
+and under the naive application of the committed M1 shape (train on the head, predict on
+the tail) it would be roughly the whole training portion.
 
-**So the index is refined, and the refinement is declared rather than discovered.**
-**`C_INDEX_IS_THE_DECLARED_C_GENERATION_SPAN_NOT_THE_WHOLE_DESIGN_SPAN`.** The `c` date
-index is the **declared `c`-generation span**: the contiguous sub-span of DESIGN over
-which the declared generation method yields predictions **for every registered pair**.
-It is **declared before any data is observed**, is a deterministic function of the
-declared method, and is **identical across all pairs and all `config_id`s**. Within it
-c-6 and c-7 apply unchanged — one common complete UTC calendar-date index, idle
-pair-date = zero. Outside it, dates are **not members of the index**, and are **not**
-entered as zeros.
+*The earlier drafting called that "a large, invisible, anti-conservative distortion" and
+refined the `c` index to a declared generation span on the strength of it. **Both are
+withdrawn.** The direction claim is measurably false.* The structural prefix is
+**common to every pair simultaneously** — no model exists for any of them — and a
+**common** zero block is not c-7's case at all. c-7's idle dates arrive on *different*
+dates per pair, which dilutes; a shared block adds a common-mode component instead.
+Measured on synthetic series with a shared factor, `E|ρ|` rises **monotonically and
+mildly** as the common prefix grows: at 30% per-pair activity, `0.0814 → 0.0832 →
+0.0850 → 0.0865` for prefixes of 0, 100, 300 and 700 dates against 300 live dates; at
+80% activity, `0.2030 → 0.2157`. **`NON_NORMATIVE_DIAGNOSTIC_ONLY`**; synthetic
+arithmetic, no data read. So the effect is **small (~6% at a 70% prefix) and
+conservative** — it *raises* `c`, raises `rho_x` and *lowers* `N_eff`.
 
-*This refines Ruling c-6 and says so.* c-6 fixed the index at the full 310 DESIGN dates
-in a round where the generation method was unruled; c-11 makes the boundary a function
-of the now-ruled method. **It is not the activity-dependent selection c-6 forbids** —
-the boundary is fixed by a pre-declared method, not by observed activity, it cannot
-differ between pairs or configurations, and no party may move it after seeing anything.
-**`C_GENERATION_SPAN_MUST_NOT_BE_CHOSEN_OR_ADJUSTED_AFTER_ANY_OBSERVATION`** ·
-**`C_GENERATION_SPAN_IS_ONE_SPAN_FOR_ALL_PAIRS_AND_ALL_CONFIG_IDS`.** And c-9's
-"measured on the **full** DESIGN span" is correspondingly read as **the full declared
-generation span**, which is the honest restatement rather than a quiet narrowing.
+**So Ruling c-6 stands unamended, and that is the stricter arm.** The `c` index remains
+the full common DESIGN UTC calendar-date index of c-6, and a structurally trade-free
+date carries **zero** under c-7's rule. Refining the index to a declared generation span
+would have been an **amendment to a prior ruling of this packet with no conservatism
+argument behind it**, and under CLAUDE.md's stricter-reading rule the unamended arm
+governs. It also removes a freedom the refinement would have created: with no span to
+declare, there is no span to choose.
 
-**One route is named and refused.** Restricting the `c` series to a single chronological
-cut's out-of-sample **tail** while calling the rest idle is forbidden: it is the
-structural-zero distortion above, wearing c-7's clothes.
-**`STRUCTURAL_NON_PREDICTION_DATES_ARE_NEVER_ENTERED_AS_IDLE_ZEROS`.**
+**Two things are recorded rather than smoothed.** First, **c-7's economic justification
+does not reach these dates** even though its rule does: "a day on which the strategy did
+not trade is a realised daily outcome of zero" is not true of a date on which the
+strategy **could not** trade because no model existed. The rule is kept because its
+direction is conservative, not because the justification extends.
+**`STRUCTURALLY_TRADE_FREE_DATES_ARE_CARRIED_AS_ZEROS_ON_DIRECTION_NOT_ON_C_7_S_GROUND`.**
+Second, the **generation method still determines how many such dates there are**, so it
+is a lever on `c` — a **conservative** one, and bound anyway: the method is frozen under
+c-12, and **it may not be selected for the span or the sparsity it produces**, nor
+adjusted after any observation.
+**`C_GENERATION_METHOD_MUST_NOT_BE_SELECTED_FOR_THE_SPAN_OR_SPARSITY_IT_PRODUCES`.**
+
+**One route is still named and refused.** Restricting the `c` series to a single
+chronological cut's out-of-sample **tail** — dropping the rest of the index rather than
+carrying it as zeros — is forbidden, because it shrinks the index and is barred by c-6
+and c-9. **`C_SERIES_INDEX_MAY_NOT_BE_SHRUNK_TO_THE_OUT_OF_SAMPLE_TAIL`.**
 
 **What is not ruled.** The generation method's own parameters — fold count, window
 length, step, the trailing-gap size if a rolling origin is used — are **implementation**,
@@ -8673,7 +8685,8 @@ unclear case defaulting to blocker.
   `C_NEAR_DEGENERACY_IS_NOT_COVERED_BY_c_8_AND_MAY_NOT_BE_SILENTLY_REPAIRED` ·
   `SHARPE_DAY_SET_AND_CORRELATION_DAY_SET_ARE_DIFFERENT_OBJECTS` (**narrowed**: both are
   now complete UTC calendar-date indices with idle = zero, over **different spans** —
-  the `c` generation span and the evaluated role's span).
+  the DESIGN span for `c`, the evaluated role's span for the Sharpe) ·
+  `STRUCTURALLY_TRADE_FREE_DATES_ARE_CARRIED_AS_ZEROS_ON_DIRECTION_NOT_ON_C_7_S_GROUND`.
 - **Still unregistered, and recorded as questions rather than closed**:
   `TURNOVER_CEILING_MEAN_VERSUS_PER_DAY_CAP_STILL_UNREGISTERED` ·
   `TURNOVER_DENOMINATOR_ACTIVE_VERSUS_CALENDAR_AXIS_STILL_UNREGISTERED` ·
@@ -8687,9 +8700,9 @@ unclear case defaulting to blocker.
 
 **Amendment classification.** c-11 and c-12's freeze rule, the Calendar B scope split,
 `C_OBSERVATION_MUST_NOT_TRIGGER_UPSTREAM_RECONFIGURATION`, Q10(iii)'s three limbs and the
-turnover-day rule are all **additions no committed source carries**. c-11's refinement
-of the `c` index is an **amendment to Ruling c-6 within this packet**, made explicitly
-rather than by silence. Whether such additions need a contract-amendment procedure
+turnover-day rule are all **additions no committed source carries**. **No prior ruling
+of this packet is amended**: c-11's first drafting refined Ruling c-6's index and that
+refinement is **withdrawn**, so c-6 and c-7 stand exactly as ruled. Whether such additions need a contract-amendment procedure
 cannot be answered, because **no general contract-amendment procedure is registered
 anywhere in this repository**
 (`NO_GENERAL_CONTRACT_AMENDMENT_PROCEDURE_REGISTERED`, this packet's own token for that
@@ -8698,8 +8711,9 @@ absence). **`SECTION_8_7_AMENDMENT_CLASSIFICATION_NOT_SETTLED`.**
 **No favourable classification is asserted anywhere in this ruling.** Q10(iii)'s
 direction against the M1 default is **conditional and unclaimed**; c-11 **increases** the
 work and forecloses the only generation shape the repository can currently produce;
-c-12 forecloses four inputs that were free; and c-11's index refinement is recorded as
-an amendment to a prior ruling of this packet rather than presented as a clarification.
+c-12 forecloses four inputs that were free; and c-11's own first drafting is recorded
+as **withdrawn on a measured direction that contradicted it**, rather than quietly
+rewritten.
 
 **Unchanged by this ruling.** The exact `T_v` / `T_h` / `D`
 (`EXACT_WINDOW_NOT_READY_FOR_DECLARATION_FORWARD_EPOCH_DOES_NOT_EXIST`) · the boundary
