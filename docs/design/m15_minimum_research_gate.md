@@ -180,7 +180,14 @@ attached **mechanically**. One-way only —
 **`SELECTED_CONFIG_USES_PREEXISTING_FROZEN_C_ONLY`**. An undefined `c` makes a
 candidate **ineligible** and does **not** shrink the registered set
 (`UNDEFINED_C_MAKES_A_CANDIDATE_INELIGIBLE_IT_DOES_NOT_SILENTLY_SHRINK_THE_REGISTERED_SET`);
-the map's key set must equal the registered candidate set.
+the map's key set must equal the registered candidate set, an uncertifiable entry being
+the recorded marker `C_UNCERTIFIABLE` and **never** a substituted number
+(`AN_UNCERTIFIABLE_ENTRY_IS_A_RECORDED_MARKER_NEVER_A_NUMBER`). ⚠ Eligibility
+filtering **is** a route by which `c`'s *certifiability* — not its value — reaches the
+selection; it is nobody's choice, its direction is **conservative** (the sparsest
+candidate is both the likeliest to be uncertifiable and the one with the lowest `c`),
+and the filter-then-select versus select-then-check **order is unregistered**
+(`SELECTION_VERSUS_CERTIFIABILITY_ORDER_NOT_REGISTERED`).
 **`NO_NR_L_MINIMUM_RESEARCH_CONTRACT_BLOCKER_REMAINS`.**
 
 **⚠ And c-10 corrects a premise this document carried.** §8.5.0 said the family
@@ -6920,6 +6927,16 @@ three different eligible-trade sets — `EV_d ≥ ev_min` admits strictly fewer 
 `ev_min` rises — hence three different per-pair daily series and **three different
 `c`**. Nothing in c-1…c-9 said which one.
 
+**The corrected set was checked for exhaustiveness, not just for the threshold
+error.** Prereg §8 freezes the **model family** (LightGBM, `learning_rate = 0.05`,
+`num_leaves = 31`, `n_estimators = 200`; "no model-family search", "no post-result
+model changes"), the **class-weighting** default ("weights are never changed post
+hoc"), and the **calibration** ("isotonic regression … **no calibration-method
+search**"); §7 freezes the **feature list** "at the design audit and hashed into the
+contract"; Ruling 6 freezes the **horizon** at 24. So `ev_min` is the **only**
+registered multiplicity, which is exactly what §12 row 10's "one horizon, three
+`ev_min`" says.
+
 **And everything else in the pipeline is a single frozen value, not a candidate set.**
 The cost table is frozen from design-span spreads (§5); `W̄`/`L̄` are "estimated on
 design data and **frozen** (never re-fit on validation/holdout)"; calibration is
@@ -7001,20 +7018,48 @@ the entry level and c-1 refuses at the pair level, so it is refused here at the
 configuration level too.
 **`UNDEFINED_C_MAKES_A_CANDIDATE_INELIGIBLE_IT_DOES_NOT_SILENTLY_SHRINK_THE_REGISTERED_SET`.**
 
+**And this limb has to be reconciled with the completeness property below, because as
+first drafted the two contradicted each other.** Completeness requires the map to
+carry an entry for **every** registered `config_id`; ineligibility says a candidate
+whose `c` is undefined is skipped. If an undefined candidate simply had no entry, the
+map would be incomplete and no selection could be authoritative — which is whole-family
+blocking, not candidate-level ineligibility. The reconciliation: **the map carries an
+entry for every registered `config_id`, and an entry may be the recorded marker
+`C_UNCERTIFIABLE` instead of a number.** That is **not** the substitution c-8 forbids —
+c-8 refuses a *numeric* stand-in that would enter the arithmetic; a recorded
+uncertifiability marker enters no arithmetic, produces no `rho_x`, and makes the
+candidate ineligible rather than cheap.
+**`AN_UNCERTIFIABLE_ENTRY_IS_A_RECORDED_MARKER_NEVER_A_NUMBER`.**
+
+**And the honest consequence is stated rather than buried: eligibility filtering *is* a
+route by which `c` reaches the selection.** If the committed rule would have selected a
+candidate that is ineligible, the selected candidate changes — so `c`'s
+*certifiability*, though not its *value*, has moved the outcome. Three things bound it
+and none of them dissolve it. It is **not a freedom**: nobody chooses it, the marker is
+a determined consequence of a frozen construction, and no party may induce or avoid it
+on its effect (ω-12(e)'s outcome-blindness reaches the calendar; `C_MUST_NOT_BE_A_CONFIGURATION_SELECTION_CRITERION`
+reaches this). Its **direction is knowable**: c-8 fires when some pair has no
+DESIGN-span trade under that configuration, which is likeliest at the **highest**
+`ev_min`, i.e. the sparsest candidate — and the sparsest candidate is the one c-7's
+mechanism gives the **lowest** `c`. So the filter removes the `N_eff`-favourable
+candidate: the interference runs **conservative**. And the **order is unregistered** —
+filter-then-select and select-then-check give different outcomes, and nothing committed
+sequences them. **`SELECTION_VERSUS_CERTIFIABILITY_ORDER_NOT_REGISTERED`** is that gap,
+and it is carried, not cured.
+
 **No new validation metric is invented**, and the committed selection metric is not
-touched. **And the interaction is recorded rather than resolved**: if the
-committed selection rule would select a candidate that is ineligible under this limb,
-what follows is **not** ruled here — nothing committed sequences "selection" against
-"deflator certifiability", and inventing an order would be inventing a selection rule.
-**`SELECTION_VERSUS_CERTIFIABILITY_ORDER_NOT_REGISTERED`** — carried, and it is **not**
-a licence to pick whichever order is favourable: where the order matters, the stricter
-reading governs and the case is a human + ChatGPT question.
+touched. Nothing committed sequences "selection" against "deflator certifiability", and
+inventing an order would be inventing a selection rule — so the order is **not** ruled
+here, it is **not** a licence to pick whichever order is favourable, and where it
+matters the stricter reading governs and the case is a human + ChatGPT question.
 
 ###### Configuration completeness
 
 **`set(c_design.keys()) == the registered candidate configuration set`** must hold
 before any validation selection is treated as authoritative. A partial map is a
-partial search, and a partial search is a chooser.
+partial search, and a partial search is a chooser. **Every registered `config_id` has
+an entry**; an entry is either a `c` value or the recorded marker `C_UNCERTIFIABLE`
+(above), never nothing and never a substituted number.
 
 This is a **contract property**, not a test and not a schema: no artifact machinery is
 created here, and none is required to state it.
