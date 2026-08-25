@@ -220,6 +220,33 @@ one may now select on it).
 `MINIMUM_CALENDAR_IDENTITY_RECORD_REQUIRED_BEFORE_DATA_EXECUTION` (Ruling ω-13's
 residual 5, carried unchanged and **not** reopened)
 
+**Next decision — §8.6, one packet, three coupled questions** (Q10(iii) · the
+duration boundaries · the exact `T_v`/`T_h`/`D` declaration): **complete, NOT ruled**.
+**`Q10_III_PENDING_HUMAN_CHATGPT_RULING`** — the only committed authority is prereg
+§9's row label "**ann., UTC-day**"; `TRADING_DAYS_PER_YEAR = 252` is **M1 precedent**,
+and because the committed Sharpe series is indexed on **active dates** it matches
+neither a trading-day nor a calendar clock — `√252` there is the **permissive** arm,
+by up to ~1.9× in the sparse regime, with an analytically knowable direction
+(`Q10_III_SQRT_252_ON_AN_ACTIVE_DATE_INDEX_IS_THE_PERMISSIVE_ARM`). **No factor is
+adopted by convention.**
+**`EXACT_WINDOW_NOT_READY_FOR_DECLARATION_FORWARD_EPOCH_DOES_NOT_EXIST`** — and that is
+**not a contract gap**: the committed forward-epoch adoption manifest carries
+`ADOPTION_BLOCKED__FORWARD_DATA_NOT_YET_ACCRUED`,
+`INSUFFICIENT_SAMPLE__ADOPTION_WAITS` and **zero forward-epoch bars in the repository**,
+with `validation_span_utc` / `holdout_span_utc` / `forward_epoch_source` all `PENDING`.
+The boundaries themselves are **reconstructed and largely committed** — design span,
+dead window, forward floor, validation ≥ 3 months, holdout ≥ 2 months, purge/embargo
+**25 M15 bars counted in bars never wall-clock**, and
+`ROLE_SPANS_ARE_CLOSED_INTERVALS_WITH_ONE_SECOND_ADJACENCY`. Warm-up is already
+regulated by gate 4's **T-1** (burn-in inside the forward epoch, event-ineligible), so
+it cannot expand any role's sample; the numeric `W` is frozen at implementation. Also
+carried: `T_V_IS_THE_VALIDATION_END_INSTANT_T_H_IS_THE_HOLDOUT_END_INSTANT` ·
+`SPAN_MINIMA_ARE_NOT_ELIGIBLE_EVENT_MINIMA` ·
+`Q10_III_HAS_NO_COMMITTED_FACTOR_ONLY_AN_M1_PRECEDENT` ·
+`Q10_III_OPTION_B_DEPENDS_ON_THE_CALENDAR_AUTHORITY` ·
+**`TURNOVER_CEILING_DAY_STILL_UNREGISTERED`** ·
+`TURNOVER_DAY_MUST_NOT_BE_BOUND_TO_THE_PNL_ATTRIBUTION_DAY_BY_INHERITANCE`.
+
 **Still open after the ω ruling** — carried, not discharged:
 `PAIR_LABEL_ASSIGNMENT_MUST_NOT_BE_REARRANGED_TO_REDUCE_OMEGA` (ruled as a
 prohibition, **unenforced in code**) · `HORIZON_WALL_CLOCK_EXTENT_NOT_REGISTERED`
@@ -3061,7 +3088,7 @@ from an elapsed-UTC `D`:
 | Limb | Status | Why the Q10-A ruling does not settle it |
 | --- | --- | --- |
 | **Q10(i)** entry- vs exit-day PnL attribution | **RULED** (§8.5.0) — **`Q10_I_RULED_REALIZED_PNL_ATTRIBUTED_TO_EXIT_UTC_DATE`**; `REQUIRES_HUMAN_CHATGPT_RULING` is **HISTORICAL** | Choosing the *day identity* fixes what a day **is**; it did not fix **which** day a trade whose horizon straddles midnight is attributed to, and a 24-bar horizon makes that live whatever the identity. Ruled with NR-L in one bundled decision, because `c` is defined on a daily series that does not exist until this is fixed. The ruling reaches **seven** quantities through `MetricTrade.day` — `c`, the daily Sharpe, max drawdown, daily coverage and turnover at holdout, plus the **validation** daily Sharpe that selects the operating point and the **validation turnover** figure inside prereg §9.V's kill gate — and **loosens no frozen threshold**, while `Q10_I_MUST_NOT_BE_RESELECTED_AFTER_OBSERVING_ANY_METRIC_IT_MOVES` therefore binds validation observations too. It does **not** define the `≤ 40 trades/day` ceiling's day, which Ruling Q10(ii) leaves unruled. |
-| **Q10(iii)** annualisation factor | `REQUIRES_HUMAN_CHATGPT_RULING` | The unit of `D` and the constant that annualises a daily Sharpe are different objects. Fixing the first does not fix the second, and no committed source fixes the second for M15. |
+| **Q10(iii)** annualisation factor | `Q10_III_PENDING_HUMAN_CHATGPT_RULING` — **packet complete at §8.6**, not ruled | The unit of `D` and the constant that annualises a daily Sharpe are different objects. Fixing the first does not fix the second, and no committed source fixes the second for M15: the only authority is prereg §9's row label "**ann., UTC-day**", and `TRADING_DAYS_PER_YEAR = 252` is **M1 precedent**. §8.6.1 shows the committed Sharpe series is indexed on **active dates**, so `√252` is coherent with neither a trading-day nor a calendar clock — and it is the **permissive** arm, by up to ~1.9× in the sparse regime this family expects. |
 
 **And the exact `D` is still blocked.**
 **`EXACT_D_SELECTION_STILL_PENDING_UPSTREAM_AUTHORITIES`.** The recorded ordering:
@@ -3082,7 +3109,11 @@ from an elapsed-UTC `D`:
    made two of its limbs unclosable while Q10(i) was open. The **contract** is fixed;
    the **value** is unmeasured and implementation remains.
 5. Remaining duration-sizing authority, including **Q10(iii)** and the
-   month-arithmetic boundary question (§8.2.3). **Q10(i) is no longer among them.**
+   month-arithmetic boundary question (§8.2.3). **Q10(i) is no longer among them**,
+   and the whole of this step is now a **completed decision packet at §8.6**
+   (Q10(iii) + the duration boundaries + the exact-window declaration
+   requirements) — **not ruled**. §8.6.4 records that the declaration at step 6
+   **cannot yet be taken**, and why: `EXACT_WINDOW_NOT_READY_FOR_DECLARATION_FORWARD_EPOCH_DOES_NOT_EXIST`.
 6. Human + ChatGPT declaration of the exact `T_v` / `T_h` / `D`.
    **6a.** *After step 6 and before step 8*: the declared window is frozen, **then** the
    **forward-epoch** Calendar A is materialised **for** that declaration, frozen and
@@ -7684,6 +7715,296 @@ ruled — **replaced** by **c-9**'s
 the value is not measured — together with the residuals §8.5.0 classifies.
 
 
+### 8.6 Q10(iii), the duration boundaries, and the exact `T_v` / `T_h` / `D` declaration — decision packet
+
+**`Q10_III_PENDING_HUMAN_CHATGPT_RULING`** ·
+**`EXACT_WINDOW_NOT_READY_FOR_DECLARATION_FORWARD_EPOCH_DOES_NOT_EXIST`** ·
+**`TURNOVER_CEILING_DAY_STILL_UNREGISTERED`**
+
+**Not ruled here.** One packet, three coupled questions: the **annualisation factor**
+for the daily Sharpe, the **duration-boundary arithmetic**, and what must be true
+before human + ChatGPT can declare the exact `T_v` / `T_h` / `D`. **No date is
+invented, no factor is adopted by convention, and no data is read.** Nothing in §8.5
+or §8.4 is reopened.
+
+#### 8.6.1 Q10(iii) — the annualisation factor
+
+**The committed authority is one table cell, and it names no factor.**
+
+| What committed text says | Where |
+| --- | --- |
+| "daily portfolio Sharpe (**ann., UTC-day**) \| **≥ 0.8**" — FROZEN, and the design audit may only tighten | prereg §9 holdout acceptance table |
+| "Sharpe is computed on **UTC-day portfolio sums** (as in M1), acknowledged as correlated across pairs" | prereg §9, the daily-aggregation sentence |
+| **No annualisation factor, and no `sqrt` of anything, appears anywhere in the prereg** | repo-wide grep of the prereg |
+| `TRADING_DAYS_PER_YEAR = 252`, and `annualised_daily_sharpe` returns `mean / sample_stdev * sqrt(trading_days_per_year)` | `scripts/ml_step4/contract.py:95`, `scripts/ml_step4/metrics.py:59-75` — **M1-lineage**, "reusable **after audit/wrapping**" (prereg §11) |
+| **`scripts/m15_gate3a/` computes no Sharpe at all** | repo-wide grep |
+
+So `252` is **precedent, not authority**, exactly as the entry-marker constructors
+were for Q10(i). **`Q10_III_HAS_NO_COMMITTED_FACTOR_ONLY_AN_M1_PRECEDENT`.**
+
+**The sampling clock is the question, and it is not what either convention assumes.**
+`daily_portfolio_pnl` builds its series from a dict keyed by `t.day` and returns
+`sorted(by_day.items())`, so it emits **only dates that carry a trade**. The Sharpe
+series' index is therefore **active portfolio dates** — neither 252 trading days nor
+365 calendar dates, and *not* the complete 310-date index Ruling c-6 gives `c`
+(`SHARPE_DAY_SET_AND_CORRELATION_DAY_SET_ARE_DIFFERENT_OBJECTS`, §8.5.0).
+
+**Annualising a per-observation Sharpe by `√k` is only coherent when `k` is the number
+of observations per year *on the series' own clock*.** That collapses the candidates
+into **two coherent families and one incoherent one**:
+
+| Reading | Index | Factor | Coherent? |
+| --- | --- | --- | --- |
+| **(A)** | active dates, as committed | `√(realised observations per year)` | **Yes** — but the factor is a **function of the realised activity rate**, i.e. empirical |
+| **(B)** | a **complete** date index with idle dates entered as zero | `√(dates per year of that index)` | **Yes**, and the factor is **data-independent** — but it changes the *index* of a frozen acceptance row |
+| **(C)** | active dates, as committed | `√252` | **No** — it annualises an active-date series by a trading-day count that series does not have |
+
+*(A) and (B) are numerically close*, because zero-filling scales the mean by the
+active share and the standard deviation by roughly its square root; on synthetic
+series at active shares of 60/310, 100/310 and 180/310 they agree to within a few
+per cent. **`NON_NORMATIVE_DIAGNOSTIC_ONLY`**; synthetic arithmetic, no data read.
+
+**And (C) — the reading the M1 code implements — is the permissive arm, by a large
+factor, with an analytically knowable direction.** On the same synthetic series, where
+the daily mean is positive:
+
+| active dates / 310 | (C) `active × √252` | (B) `zero-filled × √365` | ratio |
+| --- | --- | --- | --- |
+| 180 | 2.72 | 2.49 | ×1.1 |
+| 100 | 1.23 | 0.85 | ×1.5 |
+| 60 | 4.01 | 2.08 | ×1.9 |
+
+**`NON_NORMATIVE_DIAGNOSTIC_ONLY`.** The gap widens as activity thins, and §0.6
+projects roughly **0.56 trades per pair per day**, so the sparse regime is the expected
+one. Against a threshold frozen at **≥ 0.8**, that is not a rounding difference. **By
+§8.4.11's A-ω-5 standard, "it is the convention" and "it was frozen before the data"
+are *not* defences for (C): its favourable direction is knowable with no data at
+all.** **`Q10_III_SQRT_252_ON_AN_ACTIVE_DATE_INDEX_IS_THE_PERMISSIVE_ARM`.**
+
+**What the ruling must decide, stated as a choice and not steered.** Either **(A)** —
+keep the committed index and accept a **data-dependent** factor, with the
+outcome-blindness problem that creates — or **(B)** — complete the index with idle
+zeros and take a data-independent factor, which is the same construction Ruling c-7
+already took for `c` and which would close
+`SHARPE_DAY_SET_AND_CORRELATION_DAY_SET_ARE_DIFFERENT_OBJECTS`, **at the cost of
+changing the measured value of a frozen §9 row**. Ruling 10 bars *loosening a
+threshold*; neither option touches the number, and §8.5.0 has already recorded that
+this is the **weaker** footing §8.2.0 did not have to rely on
+(`Q10_I_RESTS_ON_OUTCOME_BLINDNESS_NOT_ON_A_SHOWN_TIGHTENING`). **This packet does not
+choose**, and expressly does not adopt `√252` by convention.
+
+**Two things it will not do by accident.** It does **not** redefine day attribution —
+Q10-i governs, unchanged, whichever index is chosen. And if (B) is taken, **which**
+dates a complete Sharpe index contains is a **calendar-authority** question — every
+UTC date, or the dates the approved Calendar A recognises — and **no market-hours fact
+is authored here**. **`Q10_III_OPTION_B_DEPENDS_ON_THE_CALENDAR_AUTHORITY`.**
+
+#### 8.6.2 The duration boundaries, reconstructed
+
+Every row re-read at source. **No date below is invented.**
+
+| Boundary | Value | Authority |
+| --- | --- | --- |
+| Design span | **2025-04-25 → 2026-02-28** | prereg §3.1; `DESIGN_START` / `DESIGN_END` = `2025-04-25T00:00:00Z` / `2026-02-28T23:59:59Z` (`scripts/m15_gate3a/no_overlap.py:38-39`) |
+| Dead window | **2026-03-01 → 2026-04-24**, "excluded from every role at every timeframe" | prereg §3.1 (R-2b); `DEAD_START` / `DEAD_END` |
+| Forward-epoch floor | **2026-04-25T00:00:00Z**, "no earlier than" | prereg §3.1; `FORWARD_FLOOR` |
+| Validation | `2026-04-25 → T_v`, **≥ 3 months** | prereg §3.1 + Ruling 2 |
+| Holdout | `T_v (+embargo) → T_h`, **≥ 2 months**, one-shot | prereg §3.1 + Ruling 2 |
+| Purge / embargo | **≥ horizon + 1 = 25 M15 bars at every role boundary**, horizon frozen at 24 by Ruling 6 | prereg §3.2 |
+| Ordering | design < dead window < validation < holdout < replication | prereg §3.2 |
+| Forward-epoch **ceiling** | **none committed** — `assert_forward_bounds` imposes a floor only | `no_overlap.py:182-195` |
+| `D` | elapsed calendar span on the **UTC clock**; `D_IS_ELAPSED_UTC_TIME != SAMPLE_COUNT_IS_CALENDAR_TIME` | Ruling Q10-A (§8.2.0) |
+
+**The interval convention is closed, and it is committed rather than assumed.** The
+constants end at `:59:59` and the next role begins at `00:00:00` the following date —
+`no_overlap.py` states it in terms ("`DEAD_START` is exactly one second after
+`DESIGN_END`") and asserts `DESIGN_START < DESIGN_END < DEAD_START <= DEAD_END <
+FORWARD_FLOOR` at import; `coverage.py` bound-checks with `slot < DESIGN_START or slot
+> DESIGN_END`. So each role span is **`[start, end]` closed**, with a **one-second
+gap** between adjacent roles at the date boundary.
+**`ROLE_SPANS_ARE_CLOSED_INTERVALS_WITH_ONE_SECOND_ADJACENCY`** — which is what makes
+"every UTC calendar date from `DESIGN_START`'s date through `DESIGN_END`'s date
+inclusive" (Ruling c-6, 310 dates) the right reading rather than an off-by-one.
+
+**Validation / holdout separation is settled, and does not need a new purge.** The
+25-bar purge/embargo is `horizon + 1`, so a validation event's 24-bar label **cannot**
+reach into the holdout; the gate-4 design audit records exactly that — "purge/embargo
+25 M15 bars for horizon 24: **adequate at the validation/holdout boundary (labels
+cannot straddle)**" — and adds that the design→validation boundary is *additionally*
+protected by the ~8-week dead window. **The purge is counted in bars, never
+wall-clock**, and **§4** of this document already records why: a Friday-afternoon signal
+bar's 24-bar label reaches into Monday, so an elapsed-time purge of the same nominal
+length would not purge it. **No new purge is invented here.**
+
+**Warm-up is already regulated, and it does not expand any role's sample.** Gate 4's
+**T-1 (binding tightening)**: dead-window data is **never loaded for any purpose**; all
+indicators initialise **only from forward-epoch bars**; the first `W` bars of the
+forward epoch are a **warm-up burn-in — event-ineligible, used only to warm
+indicators** — with `W ≥ the longest feature lookback across all groups including
+H1/H4 context`, the exact `W` frozen at implementation. So the distinction §22 of the
+brief asks about is committed: **warm-up bars are read but are not decision-bearing
+sample members**, and they sit **inside** the forward epoch rather than before it.
+What is **not** fixed is the numeric `W`, which is a design-span-estimated quantity
+governed by R-10 and frozen at implementation.
+**`WARM_UP_W_IS_FROZEN_AT_IMPLEMENTATION_NOT_HERE`.**
+
+*One arithmetic consequence worth naming, because it bears on `D`.* The burn-in is
+event-ineligible, so the **first `W` bars of validation carry no events**. A validation
+span of exactly three months therefore yields **fewer than three months of eligible
+events**, and the same holds at the holdout's start after the embargo. The frozen
+minima are **span** minima, not eligible-event minima, and no committed source
+converts between them. **`SPAN_MINIMA_ARE_NOT_ELIGIBLE_EVENT_MINIMA`** — recorded, not
+resolved, and **no count is estimated**.
+
+#### 8.6.3 What `T_v` and `T_h` actually denote
+
+Read off prereg §3.1's table rather than from the shorthand:
+
+- **`T_v`** is the **validation end instant**, and simultaneously the anchor the
+  holdout is measured from: validation is `2026-04-25 → T_v`, holdout is
+  `T_v (+embargo) → T_h`.
+- **`T_h`** is the **holdout end instant**.
+- Both are **[FIXED-AT gate 3a]**, declared "when the forward epoch is adopted".
+- Under the closed convention above, an instant of the `…T23:59:59Z` form denotes an
+  inclusive end; the holdout then begins at the first bar **25 M15 bars after** `T_v`.
+- Neither is a *duration*. `D` — the elapsed UTC span — is a **derived** quantity of
+  the declared instants, not a third independent declaration.
+
+**`T_V_IS_THE_VALIDATION_END_INSTANT_T_H_IS_THE_HOLDOUT_END_INSTANT`** — recorded
+because "T_v/T_h" as bare shorthand has been used in this document for a boundary, a
+duration and a pair of dates, and the three are different objects.
+
+#### 8.6.4 Why the exact window cannot be declared yet — and it is not a contract gap
+
+**The committed forward-epoch adoption manifest already answers this**, and it answers
+it against declaration:
+
+> `status: "ADOPTION_BLOCKED__FORWARD_DATA_NOT_YET_ACCRUED"` ·
+> `verdict: "INSUFFICIENT_SAMPLE__ADOPTION_WAITS"` · `as_of_utc: "2026-07-07"` ·
+> `committed_forward_epoch_bars_in_repo: 0` — "The committed `365d_BA` epoch **ENDS**
+> 2026-04-24T20:59Z … it contains **ZERO** bars at or after the forward-epoch floor
+> 2026-04-25. **There is no forward-epoch source in the repository.**" ·
+> `validation_span_utc: "PENDING"` · `holdout_span_utc: "PENDING"` ·
+> `forward_epoch_source: "PENDING"`
+
+That is **committed availability metadata** — the class §8.1.6 limb (i) admits for
+sizing `D` — not a data read. Two independent facts follow:
+
+1. **The forward-epoch source does not exist.** Zero bars, no admitted source. This is
+   not a question a ruling can close; it is a **data-acquisition and adoption** step,
+   and the manifest already routes it through "a Gate-P2-style adoption".
+2. **The minimum span has not accrued.** The frozen requirement is validation ≥ 3
+   months **plus** holdout ≥ 2 months ≈ **5 months** of forward span from the
+   2026-04-25 floor. Elapsed from that floor to the present record date is **122 days
+   ≈ 4.0 months** — pure calendar arithmetic on a committed constant, no data. The
+   manifest's own estimates say the same: earliest data-complete ≈ **2026-09-25**,
+   earliest feasible adoption ≈ **2026-10**.
+
+**So `EXACT_WINDOW_READY_FOR_HUMAN_CHATGPT_DECLARATION` is NOT claimed.** The
+operative status is
+**`EXACT_WINDOW_NOT_READY_FOR_DECLARATION_FORWARD_EPOCH_DOES_NOT_EXIST`**, and the
+committed disposition for exactly this case is already frozen and unchanged: **adoption
+waits**, "the verdict `INSUFFICIENT_SAMPLE` exists precisely so that impatience cannot
+shrink the holdout".
+
+**What must be true before the declaration can be taken**, listed so the remaining
+work is a list and not a judgement:
+
+1. A **forward-epoch source** exists, is acquired and is admitted under the adoption
+   the manifest names (**Red**: an external data step, not a contract decision).
+2. At least the frozen minimum span has **accrued** — validation ≥ 3 months, holdout
+   ≥ 2 months, plus the 25-bar embargo between them.
+3. The **calendar artifact** is approved: `PRE_CONTINUATION_CALENDAR_ARTIFACT_APPROVAL_REQUIRED`
+   still stands, and Ruling ω-13(a) fixes the order — **declare the window → materialise
+   Calendar A *for* that declaration → freeze and approve it → no reselection on
+   calendar content → only then decision-bearing observation**. Nothing here creates a
+   calendar.
+4. The remaining Minimum Research Gate questions are resolved — §8.2.8's step 7, Q1,
+   Q8, FR-19 and the rest of §8 — and its **step 8 is unconditional**.
+5. Q10(iii) is ruled, because the annualised Sharpe row cannot be evaluated without it.
+6. `MINIMUM_CALENDAR_IDENTITY_RECORD_REQUIRED_BEFORE_DATA_EXECUTION` (Ruling ω-13,
+   residual 5) and the c-side records §8.5.0 and c-10 require are in place as
+   **execution prerequisites**.
+
+**And what is already frozen about the declaration, carried forward unchanged from
+Ruling Q11/§0 and Q10-B:** two months is a **floor**, not the operative duration; `D`
+is frozen **once**, at the forward-epoch adoption continuation, **before data**; there
+is no post-freeze extend, shorten or reselect, and a different `D` needs a new explicit
+pre-registration or contract decision — a route whose sufficiency is itself unruled
+(`NEW_PREREGISTRATION_SUFFICIENCY_FOR_A_DIFFERENT_D_NOT_RULED`);
+`DURATION_SELECTION_MUST_BE_OUTCOME_BLIND`; and the declaration is a **human +
+ChatGPT** act taken before continuation authorisation (Q10-B).
+
+**The forbidden anchors, restated because this is the packet a declaration would be
+taken from.** No boundary may be chosen from a measured `N_eff`, a realised `c`, a
+realised `ω`, a Sharpe or any performance figure; no span may be extended until a
+sample floor passes; no boundary may be slid until validation looks favourable; and
+calendar density and expected slot count are forbidden anchors under
+`CALENDAR_MATERIALISATION_MAY_NOT_REOPEN_WINDOW_SELECTION`.
+
+#### 8.6.5 How the window meets the sample floors — the shape only
+
+Committed formulae only, **no count estimated**:
+
+`N_eff = (Σ_p N_raw_p / rho_h_p) / rho_x`, with `rho_h_p = 1 + 23·ω_p` (H = 24 frozen)
+and `rho_x = 1 + 19c` (P = 20 ruled). The holdout floors are a **conjunction**:
+`N_raw ≥ 1000` **and** `N_eff ≥ 400`.
+
+A longer holdout span raises `N_raw` roughly in proportion to elapsed time at a fixed
+event rate, and leaves `rho_x` untouched — `c` is DESIGN-measured and frozen before the
+holdout exists. Its effect on `rho_h` is **not** signed: more events on the same clock
+shorten the gaps and *raise* `ω`. So "a longer window clears the floors" is **not**
+derivable, and the packet does not derive it.
+**`SAMPLE_FLOOR_REACHABILITY_NOT_DETERMINABLE_WITHOUT_MEASURED_INPUTS`** stands
+unchanged, and §0's verdict is not moved by anything in this packet.
+
+#### 8.6.6 The turnover-ceiling day — still unregistered, and the question stated
+
+Ruling Q10(ii) expressly left it open: `DAY_IDENTITY = UTC_CALENDAR_DATE` "does **not**
+define the 'day' of the **`≤ 40 trades/day` turnover ceiling**, which remains a §9
+FROZEN row with an undefined day and is **not ruled here**", warning that reading it in
+calendar days would widen gate 4's committed corridor by **~42%** — "a loosening
+Ruling 10 forbids, and one that **citing this ruling must not achieve**". §8.5.0
+repeated the guard for Q10-i.
+
+**The two days are kept distinct, and this packet does not bind them.** Q10-i fixes the
+**PnL attribution** day; the turnover ceiling's day is a **counting** day, and the
+committed implementation divides by `len({t.day for t in trades})` — **active** dates —
+which is a third reading again. The candidates are: active dates (the implementation),
+every UTC calendar date in the evaluated span, or the dates the approved calendar
+authority recognises. They differ by roughly the active share, and the direction is
+knowable: a **larger** denominator lowers measured turnover and makes the `≤ 40`
+ceiling easier to clear.
+
+**`TURNOVER_CEILING_DAY_STILL_UNREGISTERED`** · **`TURNOVER_DAY_MUST_NOT_BE_BOUND_TO_THE_PNL_ATTRIBUTION_DAY_BY_INHERITANCE`.**
+It is stated here as a decision question because it shares the daily clock this packet
+reconstructs; it is **not** ruled, and Q10-i may not be cited as ruling it.
+
+#### 8.6.7 Status
+
+- **Q10(iii)** — **`Q10_III_PENDING_HUMAN_CHATGPT_RULING`.** Not derived: the only
+  committed authority is the row label "ann., UTC-day", and `√252` is M1 precedent.
+  Not adopted by convention. The two coherent families are set out at §8.6.1 and the
+  incoherent-but-permissive one is named.
+- **Duration boundaries** — **reconstructed and largely committed**: the design span,
+  the dead window, the forward floor, the two frozen minima, the 25-bar purge, the
+  ordering, the closed-interval convention and T-1's warm-up regime all have
+  authority. Open: the numeric `W`, `SPAN_MINIMA_ARE_NOT_ELIGIBLE_EVENT_MINIMA`, and
+  the absence of any committed forward-epoch **ceiling**.
+- **Exact `T_v` / `T_h` / `D`** —
+  **`EXACT_WINDOW_NOT_READY_FOR_DECLARATION_FORWARD_EPOCH_DOES_NOT_EXIST`.** The block
+  is **not** a contract gap: zero forward bars exist, no forward source is admitted,
+  and the frozen minimum span has not accrued. `INSUFFICIENT_SAMPLE__ADOPTION_WAITS`
+  is the committed and unchanged disposition.
+- **Turnover day** — **`TURNOVER_CEILING_DAY_STILL_UNREGISTERED`**, stated as a
+  question and not bound to Q10-i.
+
+**Nothing here authorises anything.** No date is chosen, no factor is adopted, no
+calendar is created, no data is read, no count is estimated.
+**`PRODUCTION_READINESS_NOT_CLAIMED`** · **`NO_EXECUTION_PERFORMED`**.
+
+---
+
 ## 9. Output classification
 
 Everything produced under this gate is
@@ -8893,7 +9214,7 @@ zero-data derivation had come out infeasible.
 | **Q10(ii)** the coverage-denominator day | **RULED** (§8.2.0) · `Q10_II_DAY_IDENTITY_RULED_UTC_CALENDAR_DATE_EXPECTED_SLOTS_FROM_APPROVED_CALENDAR_AUTHORITY` — day identity = UTC calendar date; expected slots **only** from the approved calendar authority. Does **not** make all 96 slots of a date expected, and authors no weekend/holiday/closure/DST rule | n/a — ruled |
 | **Q10-B** how the continuation window is anchored | **RULED** (§8.2.0) · `Q10_B_RULED_EXPLICIT_HUMAN_CHATGPT_UTC_WINDOW_DECLARATION_REQUIRED_BEFORE_CONTINUATION` — exact `T_v`/`T_h`/window/`D` declared by human + ChatGPT **before** continuation authorisation; a list of data-derived anchors forbidden. A **tightening**, not an amendment | n/a — ruled |
 | **Q10(i)** entry- vs exit-day PnL attribution | `REQUIRES_HUMAN_CHATGPT_RULING` — **not** settled by Q10(ii): fixing what a day *is* does not fix which day a horizon-straddling trade lands on | **survives** |
-| **Q10(iii)** annualisation factor | `REQUIRES_HUMAN_CHATGPT_RULING` — **not** settled by Q10-A: the unit of `D` and the constant annualising a daily Sharpe are different objects | **survives** |
+| **Q10(iii)** annualisation factor | `Q10_III_PENDING_HUMAN_CHATGPT_RULING` — **not** settled by Q10-A: the unit of `D` and the constant annualising a daily Sharpe are different objects. **Packet complete at §8.6, not ruled.** The only committed authority is prereg §9's "ann., UTC-day"; `√252` is **M1 precedent**, and the committed Sharpe series is indexed on **active dates**, so `√252` matches neither clock and is the **permissive** arm with an analytically knowable direction | **survives; packet complete** |
 | **Exact `D`** | `EXACT_D_SELECTION_STILL_PENDING_UPSTREAM_AUTHORITIES` — ordering recorded at §8.2.8: NR-K (**ruled**), the **mean-overlap unit and aggregation** (**ruled**, §8.4.0), then **NR-L** (§8.5, next), then remaining duration authority, then the human + ChatGPT window declaration, then the remaining minimum-gate questions | **survives** |
 | **Gate-3a continuation date** (the **forward-epoch adoption** continuation, not the design-span one) | `GATE3A_CONTINUATION_DATE_NOT_FROZEN_RESIDUAL_AFTER_Q11_SECTION0_RULING` — **carried by Q10-B, ruled at §8.2.0** (its packet is §8.2.4), discharging
 §8.1.9's "put it with Q10" — narrowed by the forbidden-anchor list, though no
