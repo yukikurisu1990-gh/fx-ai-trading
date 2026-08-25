@@ -220,7 +220,6 @@ frozen before data — in which case it must be registered **before** `ω` is me
 it is not enumerated in ω-9's frozen-method list — or it is not, in which case the arm
 is selectable **after** decision-bearing observation.
 **`ROLE_SPAN_TRUNCATION_ARM_SELECTION_POINT_NOT_BOUND`**) ·
-`NO_PROHIBITION_BINDS_THE_CHOICE_OF_CORRELATION_STATISTIC` ·
 `ROUND_11_REVIEW_COVERAGE_PARTIAL_TWO_OF_THREE_ROLES_TERMINATED` ·
 `MEAN_OVERLAP_CLOCK_AMENDMENT_CLASSIFICATION_NOT_SETTLED` ·
 `M15_PREDICTION_HORIZON_CLOCK_IS_COINED_BY_THIS_RULING_NOT_REGISTERED` ·
@@ -6263,13 +6262,17 @@ share of straddling trades is estimated, because that would require data.
 distinguishes this limb from `c`'s absolute-value placement below: nothing makes entry
 or exit the `N_eff`-favourable arm for every dataset. It is therefore protected by the
 pre-data freeze in the way A-ω-5 records that a *knowable-direction* choice is not.
-**`Q10_I_HAS_NO_ANALYTICALLY_KNOWABLE_FAVOURABLE_DIRECTION`** — recorded as a reason
-this ruling is safe to take pre-data, **not** as a reason it could have been left open.
+**`Q10_I_NO_ANALYTICALLY_KNOWABLE_FAVOURABLE_DIRECTION_WAS_FOUND`** — recorded as a
+reason this ruling is safe to take pre-data, **not** as a reason it could have been
+left open, and deliberately named as a **search that came back empty** rather than as
+a proof that no such direction exists.
 
 ##### What Q10-i reaches, and what it does not
 
-`MetricTrade.day` is a **single field with five consumers**, so this ruling is not
-confined to `c`. Re-read at source, it reaches:
+`MetricTrade.day` is a **single field with three direct readers** —
+`daily_portfolio_pnl`, `daily_coverage`, and `compute_all`'s `n_days` — and through
+them **five** quantities, so this ruling is not confined to `c`. Re-read at source, it
+reaches:
 
 | Consumer | How the day rule enters | Frozen threshold |
 | --- | --- | --- |
@@ -6278,6 +6281,11 @@ confined to `c`. Re-read at source, it reaches:
 | max equity drawdown | same series | `<= 0.15` |
 | daily coverage | `days = {t.day for t in trades}` — the **numerator** | `>= 0.60` |
 | turnover | `n_days = len({t.day for t in trades})` — the **denominator** | `<= 40 trades/day` |
+
+`cost_sensitivity` re-derives the daily Sharpe at each of the three cost cells off the
+**same** `daily_portfolio_pnl` series, so it moves too; it carries no frozen threshold
+of its own, because the stressed-cost acceptance row is denominated in **expectancy**,
+which is day-independent.
 
 **So the ruling changes measured values under four frozen acceptance rows, and it
 loosens none of them.** Ruling 10 bars *loosening a threshold*; no threshold is
@@ -6431,14 +6439,24 @@ on which the strategy did not trade is a realised daily outcome of zero, and any
 "missing" treatment reintroduces exactly the activity-dependent date deletion c-6
 forbids.
 
-**And the ruling accepts a known anti-conservative direction, in the open.** §8.5.7
-records it, and it is not softened here: where pairs' activity is close to
-independent, common zeros **dilute `|r|` toward zero**, which lowers `c`, lowers
-`rho_x` and **raises `N_eff`** — and §0.6 projects roughly **0.56 trades per pair per
-day**, so most pair-dates are idle and this is exactly the expected regime. The
-direction is **conditional** — where activity co-occurs the dilution does not arise —
-but it is analytically knowable, so by §8.4.11's A-ω-5 standard *"chosen before the
-data"* is **not** a defence for it. Two things make it the ruling anyway, and both are
+**And the ruling accepts a known anti-conservative direction, in the open — with the
+mechanism stated exactly, because the loose version of it is wrong.** As the
+common-idle share of the index grows, both means fall toward zero and the Pearson
+coefficient converges to the **uncentred cosine similarity of the two active-date
+vectors** over that index. Where activity is close to **exclusive** the two supports
+are near-disjoint, that cosine is near zero, and `|r|` collapses — which lowers `c`,
+lowers `rho_x` and **raises `N_eff`**. §0.6 projects roughly **0.56 trades per pair per
+day**, so a large idle share is exactly the expected regime and this is the direction
+that matters here. But it is **not unconditional, and the ruling does not claim it
+is**: where activity **co-occurs**, common zeros can leave `|r|` unchanged, can flip
+its sign, and can make it **larger** than the centred coefficient on active dates —
+`p = [1, 2, 3]`, `q = [3, 2, 3]` has a centred `r` of exactly `0` on its
+active dates and a zero-limit `r` of `16/√308 ≈ 0.912`. **`NON_NORMATIVE_DIAGNOSTIC_ONLY`**; the example is synthetic
+arithmetic and reads no data. *An earlier drafting said common zeros "dilute `|r|`
+toward zero", which names the sparse-exclusive case as though it were the rule; the
+mechanism above replaces it.* What survives unchanged is that the direction **is
+analytically knowable in the regime this family expects**, so by §8.4.11's A-ω-5
+standard *"chosen before the data"* is **not** a defence for it. Two things make it the ruling anyway, and both are
 stated as reasons rather than as derivations: every alternative is an
 activity-dependent selection route, which is a *larger* and **invisible** freedom; and
 the committed dependence note points `rho_x` at the correlation of the daily portfolio
@@ -6469,9 +6487,12 @@ name**, not adopted.
 310-date index, "insufficient overlapping observations" and "no common dates" **cannot
 arise**. Pearson is undefined exactly when a leg has zero sample variance, and a
 zero-filled daily series is constant only if the pair's daily net PnL is identical on
-all 310 dates — which, for a series that is zero on every idle date, means the pair
-produced **no DESIGN-span trade at all** (or, degenerately, exactly equal daily sums on
-every one of the 310 dates). So the fail-closed trigger is narrow and nameable, and
+all 310 dates — so, if that pair has at least one idle date, the constant is
+**zero** and the pair produced no DESIGN-span trade with a non-zero daily net sum —
+in practice, no DESIGN-span trade at all. The only other way in is fully degenerate:
+a pair whose daily net sums are **exactly equal on every one of the 310 dates**. *No
+claim is made here about which dates are idle: that would be a market-hours fact, and
+this ruling authors none.* So the fail-closed trigger is narrow and nameable, and
 §8.5.8's four cases reduce to it. **`UNDEFINED_CORRELATION_SEMANTICS_PENDING_HUMAN_CHATGPT_RULING`
 is closed.**
 
@@ -6684,7 +6705,8 @@ side**: its favourable direction is knowable **before any data**, so a pre-data 
 does not protect it. There is **no `C_STATISTIC_MUST_NOT_BE_SELECTED_TO_MINIMISE_RHO_X`
 token** to match `OMEGA_CLOCK_SUBSTRATE_MUST_NOT_BE_CHOSEN_TO_MINIMISE_RHO_H`, and this
 packet does not create one — it records the gap.
-**`NO_PROHIBITION_BINDS_THE_CHOICE_OF_CORRELATION_STATISTIC`.**
+**`NO_PROHIBITION_BINDS_THE_CHOICE_OF_CORRELATION_STATISTIC`** — **closed by Ruling
+c-3**, which supplies `C_STATISTIC_MUST_NOT_BE_SELECTED_TO_MINIMISE_RHO_X`.
 
 #### 8.5.3 NR-L1 — which pair set enters `c`?
 
