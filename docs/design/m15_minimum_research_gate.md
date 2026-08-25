@@ -169,14 +169,36 @@ reading: gate 3a fixes the **method**, the **measurement** happens later) ·
 HISTORICAL**. `MEAN_ABS_PAIRWISE_CORR_NOT_YET_ESTIMATED_DESIGN_DATA_ONLY` **survives**:
 the contract is ruled, the value is not measured.
 
-**One blocker survives it**, named rather than closed:
-**`NR_L_GENERATING_CONFIGURATION_NOT_REGISTERED`** — c-1…c-9 fix *how* `c` is computed
-and **not which DESIGN-span configuration produces the series**, which §4's **R-10**
-names as its sharpest case and hands to "the design audit and gate 3a, which own it".
-§8.5.0 is that gate-3a decision, registers no producer rule, and enumerates candidate
-dispositions **without choosing one**. Also carried:
+**The one blocker it left is now RULED — Ruling c-10** (§8.5.0, human + ChatGPT):
+**`NR_L_C_PRECOMPUTED_FOR_ALL_REGISTERED_CONFIGURATIONS_BEFORE_VALIDATION_SELECTED_BY_CONFIG_ID_ONLY`**.
+A DESIGN-only `c_design[config_id]` is computed for **every** preregistered candidate
+configuration **before any validation observation**, the complete map is **frozen**,
+the committed validation rule then selects one `config_id`, and the frozen `c` is
+attached **mechanically**. One-way only —
+**`C_MUST_NOT_BE_A_CONFIGURATION_SELECTION_CRITERION`** ·
+**`VALIDATION_SELECTION_MAY_SELECT_CONFIG_ID_BUT_MAY_NOT_SELECT_OR_RECOMPUTE_C`** ·
+**`SELECTED_CONFIG_USES_PREEXISTING_FROZEN_C_ONLY`**. An undefined `c` makes a
+candidate **ineligible** and does **not** shrink the registered set
+(`UNDEFINED_C_MAKES_A_CANDIDATE_INELIGIBLE_IT_DOES_NOT_SILENTLY_SHRINK_THE_REGISTERED_SET`);
+the map's key set must equal the registered candidate set.
+**`NO_NR_L_MINIMUM_RESEARCH_CONTRACT_BLOCKER_REMAINS`.**
+
+**⚠ And c-10 corrects a premise this document carried.** §8.5.0 said the family
+registers "three decision thresholds **and** three `ev_min` points", nine
+configurations. `THRESHOLD_CANDIDATES` / `MAX_CONFIGURATIONS` are **M1-lineage**
+(`scripts/ml_step4/contract.py`), and prereg **Ruling 9** says twice that "a raw
+probability threshold alone is explicitly **not** a permitted decision rule". The
+registered candidate set is **three `ev_min` points `{0.0, 0.25, 0.5}` and one
+horizon — three configurations**, confirmed at prereg §8, §12 row 10 and §16 Ruling 9.
+**`SECTION_8_5_0_NINE_CONFIGURATION_CLAIM_WITHDRAWN_THE_REGISTERED_SET_IS_THREE_EV_MIN_POINTS`.**
+Also carried from c-10: `NR_L_CONFIGURATION_COVERAGE_IMPLEMENTATION_PENDING` ·
+`C_DESIGN_SPAN_RUN_IN_SAMPLE_STATUS_NOT_REGISTERED` ·
+`SELECTION_VERSUS_CERTIFIABILITY_ORDER_NOT_REGISTERED` ·
+`C_10_AMENDMENT_CLASSIFICATION_NOT_SETTLED` ·
+`CONFIGURATION_SET_AND_IDENTITIES_ARE_FROZEN_BEFORE_C_IS_MEASURED` ·
 `C_PRODUCING_CONFIGURATION_REGISTRATION_IMPLEMENTATION_PENDING` ·
-`NOTHING_BOUNDS_DESIGN_SPAN_ACTIVITY_AND_A_SPARSER_RUN_DILUTES_C`.
+`NOTHING_BOUNDS_DESIGN_SPAN_ACTIVITY_AND_A_SPARSER_RUN_DILUTES_C` (**narrowed**: no
+one may now select on it).
 
 **Carried out of that ruling, none of them a research-result freedom:**
 `C_INDEX_SET_NOT_RECORDED_IN_ANY_ARTIFACT` (`DEFERRED_PRODUCTION_CHECKABILITY`, with
@@ -581,7 +603,7 @@ Two referrals follow, in the playbook's register format:
 | Referral | Disposition | Basis |
 | --- | --- | --- |
 | **NR-K** — `P` in `rho_x` is caller-controlled and is not pinned to `PAIRS_20` | **RULED** (§8.3.0) — `NR_K_RULED_P_EQUALS_FROZEN_REGISTERED_FAMILY_A_UNIVERSE`; `P = 20` for current Family A. The **implementation pin** and the forward-span roster gate remain open | Omitting zero-trade or tail pairs raises `N_eff` at no numerator cost and can flip the verdict with both the raw floor and the 0.40 cap satisfied — which is what the ruling forbids |
-| **NR-L** — `mean_abs_pairwise_corr` has no production rule and no freeze point | **RULED** (§8.5.0, bundled with Q10(i)) — `NR_L_MINIMUM_RESEARCH_CONTRACT_RULED_PENDING_IMPLEMENTATION_AND_DESIGN_MEASUREMENT`; `MUST_RESOLVE_BEFORE_ANY_EFFECTIVE_N_VERDICT` **discharged as to the contract, not as to the value** | Method, idle-day handling, day attribution and the freeze gate were all unpinned, and the value sits in the denominator that decides `INSUFFICIENT_SAMPLE`. Minimum observations is now answered by construction — c-6 puts every pair on the same 310-date index, so `n = 310` for every entry. **One blocker survives**: which DESIGN-span configuration produces the series (`NR_L_GENERATING_CONFIGURATION_NOT_REGISTERED`) |
+| **NR-L** — `mean_abs_pairwise_corr` has no production rule and no freeze point | **RULED** (§8.5.0, bundled with Q10(i)) — `NR_L_MINIMUM_RESEARCH_CONTRACT_RULED_PENDING_IMPLEMENTATION_AND_DESIGN_MEASUREMENT`; `MUST_RESOLVE_BEFORE_ANY_EFFECTIVE_N_VERDICT` **discharged as to the contract, not as to the value** | Method, idle-day handling, day attribution and the freeze gate were all unpinned, and the value sits in the denominator that decides `INSUFFICIENT_SAMPLE`. Minimum observations is now answered by construction — c-6 puts every pair on the same 310-date index, so `n = 310` for every entry. The producing-configuration blocker that survived the first ruling is **closed by Ruling c-10**: `c_design` is computed for **every** registered candidate configuration before validation, the map is frozen, and validation selects a `config_id` only. **`NO_NR_L_MINIMUM_RESEARCH_CONTRACT_BLOCKER_REMAINS`** |
 
 Accordingly §12's earlier remark that "`rho_x` already carries the dependence the
 edge question needs" is **withdrawn as unestablished**.
@@ -6723,7 +6745,10 @@ on activity at all**, and a sparser operating point dilutes `|r|` in the regime 
 projects. It becomes a *free* lunch only under
 `NR_L_GENERATING_CONFIGURATION_NOT_REGISTERED`; where one configuration governs both
 spans, sparsity trades `c` against the raw floor. The two compound, which is a further
-reason the blocker above is a blocker.
+reason the blocker below was a blocker — **and Ruling c-10 closes that half**: with
+`c_design` computed and frozen for every registered `ev_min` point before the selector
+runs, no party can prefer the sparser one *for its `c`*. What survives is that the
+committed selection metric is itself activity-correlated, which is Ruling 9's design.
 
 **`C_FAIL_CLOSED_CAN_BE_TRIGGERED_BY_A_NORMAL_OUTCOME_AND_THAT_IS_ACCEPTED`** — carried
 as an accepted cost, not as a defect, and the route out is a new explicit
@@ -6758,18 +6783,29 @@ Ruling ω-12 states it.
   the span. §8.5.9 recorded that "nothing committed says it is forbidden" and that
   NR-K's non-reduction clause and Ruling ω-10 both stop short of `c`; this supplies it.
 
-##### The one thing this ruling does NOT close — the producing configuration
+##### The one thing §8.5.0 did not close — the producing configuration — CLOSED BY RULING c-10
 
-**`NR_L_GENERATING_CONFIGURATION_NOT_REGISTERED`** ·
-**`MINIMUM_RESEARCH_GATE_BLOCKER`.**
+**`NR_L_GENERATING_CONFIGURATION_NOT_REGISTERED`** — **HISTORICAL, closed by Ruling
+c-10 below.** The subsection is retained as the material that ruling was taken on.
+
+**⚠ And one sentence of it was wrong at source.** It said the family carries "three
+registered decision **thresholds** … and three registered `ev_min` operating points",
+nine configurations. `THRESHOLD_CANDIDATES` and `MAX_CONFIGURATIONS` are **M1-lineage**
+(`scripts/ml_step4/contract.py`), and prereg Ruling 9 states twice that "**a raw
+probability threshold alone is explicitly not a permitted decision rule**". The
+registered candidate set for current Family A is **three `ev_min` points and one
+horizon — three configurations**. Ruling c-10 records the correction; the blocker
+survived it, narrowed.
 
 **c-1…c-9 fix how `c` is computed from a series. They do not fix which run produces
 the series.** `c` is a statistic of the trades a *particular* DESIGN-span
 configuration generated — its feature list, warm-up, model, EV-gate `W̄`/`L̄`, cost
-hurdle and decision threshold. The family carries three registered decision
-thresholds (`THRESHOLD_CANDIDATES = (0.35, 0.40, 0.45)`, `MAX_CONFIGURATIONS = 3`) and
-three registered `ev_min` operating points, and **each combination yields a different
-trade set, a different daily series and a different `c`**.
+hurdle and operating point. *(As written, and wrongly:)* the family carries three
+registered decision thresholds (`THRESHOLD_CANDIDATES = (0.35, 0.40, 0.45)`,
+`MAX_CONFIGURATIONS = 3`) and three registered `ev_min` operating points, and each
+combination yields a different trade set, a different daily series and a different
+`c`. **The true registered variation is the three `ev_min` points alone**, and the
+conclusion is unchanged: three trade sets, three daily series, three values of `c`.
 
 **The route obeys every ruled word.** Run several exploratory design-span variants,
 read each variant's `c`, declare `c` from the lowest. c-1 is satisfied — all twenty
@@ -6820,6 +6856,215 @@ lesser point: even once a producer rule is registered, no artifact today binds t
 configuration identity behind `c` to the configuration identity behind the evaluated
 run.
 
+##### Ruling c-10 — the producing configuration, and the correction of a premise this document carried
+
+**`NR_L_C_PRECOMPUTED_FOR_ALL_REGISTERED_CONFIGURATIONS_BEFORE_VALIDATION_SELECTED_BY_CONFIG_ID_ONLY`**
+
+A ruling received from human + ChatGPT and recorded here as **authority**. It closes
+`NR_L_GENERATING_CONFIGURATION_NOT_REGISTERED`, the one blocker §8.5.0 left open.
+
+###### First, the registered configuration set — and it is not what §8.5.0 said
+
+**§8.5.0 said "three registered decision thresholds and three registered `ev_min`
+points", nine configurations. That is WRONG and is withdrawn.** It imported the
+**M1** threshold grid into M15. Re-read at source:
+
+| What committed text says | Where |
+| --- | --- |
+| **`ev_min ∈ {0.0, 0.25, 0.5}` pips; chosen on validation only; tie rule: smallest passing `ev_min`; selection metric: validation net expectancy subject to the turnover budget. The selected operating point is evaluated on the holdout exactly once.** Ruling 9, **FROZEN** | prereg §8, operating-point selection |
+| "**A raw probability threshold alone is explicitly not a permitted decision rule**", stated twice | prereg §8 (EV-gate mechanism, and again in Ruling 9) |
+| Multiple-comparison budget: "small pre-registered candidate sets (**one horizon, three `ev_min`**)" | prereg §12 risk register, row 10 |
+| `ev_min ∈ {0.0, 0.25, 0.5}` pips; validation-only selection; tie = smallest passing; selected point evaluated on holdout exactly once; **raw probability threshold alone forbidden** | prereg §16, **Ruling 9** |
+| `THRESHOLD_CANDIDATES = (0.35, 0.40, 0.45)`, `MAX_CONFIGURATIONS = 3` ("3 validation threshold variants; 1 on holdout"), `THRESHOLD_TIE_RULE`, `PRODUCTION_DEFAULT_THRESHOLD = 0.40` — all in the **M1 flagship** module, beside `HORIZON_M1_BARS` and M1's `COMMON_WINDOW_*` instants | `scripts/ml_step4/contract.py:70-83` |
+
+So the registered candidate set for current Family A is **three `ev_min` operating
+points and one horizon — three configurations, not nine**, and the probability
+threshold M1 searched over is **forbidden** here as a decision rule. The M1 constants
+are unadopted M1-lineage (prereg §11), and citing them as M15's candidate grid was the
+same class of error §8.5.6 records for the day-attribution precedent.
+**`SECTION_8_5_0_NINE_CONFIGURATION_CLAIM_WITHDRAWN_THE_REGISTERED_SET_IS_THREE_EV_MIN_POINTS`.**
+
+**The blocker survives the correction, narrowed.** Three `ev_min` points still give
+three different eligible-trade sets — `EV_d ≥ ev_min` admits strictly fewer events as
+`ev_min` rises — hence three different per-pair daily series and **three different
+`c`**. Nothing in c-1…c-9 said which one.
+
+**And everything else in the pipeline is a single frozen value, not a candidate set.**
+The cost table is frozen from design-span spreads (§5); `W̄`/`L̄` are "estimated on
+design data and **frozen** (never re-fit on validation/holdout)"; calibration is
+fitted on train-only with **"no calibration-method search"**; the feature list and the
+warm-up `W` are design-span estimates the design audit and gate 3a own. Those are
+governed by §4's **R-10** and are **not** re-opened here: R-10 already bars taking any
+of them "from an exploratory variant chosen after its results were seen".
+
+###### The ruling
+
+**`c` is not one value from one reference configuration.** A DESIGN-only `c` is
+computed **separately for every preregistered candidate configuration**, before any
+validation observation, using the method already ruled at c-1…c-9 unchanged:
+
+> `c_design[config_id]` for **every** `config_id` in the registered candidate set —
+> for current Family A, the three `ev_min` operating points `{0.0, 0.25, 0.5}`.
+
+**The sequence, in order, and no step of it is an authorisation.**
+
+> **1.** the complete candidate configuration set is preregistered → **2.** every
+> configuration identity is frozen → **3.** before any validation observation, the
+> DESIGN-only per-pair daily series is built for **each** configuration → **4.**
+> `c_design[config_id]` is computed for each by the c-1…c-9 method → **5.** the
+> complete mapping `config_id → c_design` is **frozen** → **6.** the committed
+> validation selection rule is applied → **7.** validation selects exactly one
+> `config_id` → **8.** the already-frozen `c_design[config_id]` is attached
+> **mechanically** → **9.** only then may later gates use that `c` → **10.** the
+> holdout remains later, and untouched.
+
+**Why this closes the freedom rather than relocating it.** The map is **complete** and
+**frozen before** anything downstream is seen, so there is nothing left to choose: the
+only remaining act is a lookup, and the key is supplied by a selection rule that never
+sees `c`. Variant-shopping needs a chooser, and after step 5 there is none.
+
+###### One-way selection — the limb the ruling turns on
+
+**`C_MUST_NOT_BE_A_CONFIGURATION_SELECTION_CRITERION`** ·
+**`VALIDATION_SELECTION_MAY_SELECT_CONFIG_ID_BUT_MAY_NOT_SELECT_OR_RECOMPUTE_C`.**
+
+Permitted direction: **validation result → selected `config_id` → the already-frozen
+`c_design[config_id]`**. Forbidden direction: **`c_design` → configuration
+selection**, in any form — directly, through `rho_x`, through `N_eff`, through a
+sample-floor verdict, or through a count of undefined pairwise entries.
+
+**And `c` may not become a tie-breaker.** The committed tie rule is already fixed and
+`c` is not in it: Ruling 9 fixes the selection metric as **validation net expectancy
+subject to the turnover budget** and the tie rule as **the smallest passing
+`ev_min`** — deterministic, and blind to `c`. Choosing a configuration for a lower
+`c`, a higher `N_eff`, a more favourable `rho_x`, or fewer undefined pairwise entries
+is **forbidden**, and none of them may be introduced as a secondary criterion.
+*Where tie semantics are unregistered elsewhere, they stay their own question: this
+ruling does not repair them through `c`, and may not be cited as doing so.*
+
+###### No post-selection recomputation
+
+**`SELECTED_CONFIG_USES_PREEXISTING_FROZEN_C_ONLY`.** Once validation has selected a
+`config_id`, the attached `c` is the one frozen at step 5. It may **not** be
+recomputed on a different DESIGN sub-window, nor under a changed idle-day rule, pair
+universe, cost treatment, Q10(i) attribution, coefficient or absolute-value placement;
+it may **not** be recomputed "for the selected configuration only" after validation is
+seen; and alternative `c` versions may **not** be compared. This is c-9's bar with the
+producer now inside its scope — the omission §12.13 recorded.
+
+###### One candidate whose `c` is undefined
+
+If a preregistered candidate configuration cannot yield an authoritative `c` because
+c-8 fires on it, **that candidate is ineligible to become the final selected
+configuration for current Family A** — and **its failure does not delete it from the
+registered candidate set**, and does not shrink the preregistered universe before the
+committed validation process runs.
+
+*The three levels are kept apart deliberately.* **Candidate-level invalidity** — one
+`config_id` cannot carry a certified deflator. **Validation-selection eligibility** —
+that candidate cannot be the selected one. **Whole-family invalidity** — reached only
+where the committed `failure_handling` reaches it, unchanged: at validation, family A
+closes **or adoption waits**; at holdout, acceptance cannot be granted. Silently
+dropping the candidate to preserve the search would be the same shape c-8 refuses at
+the entry level and c-1 refuses at the pair level, so it is refused here at the
+configuration level too.
+**`UNDEFINED_C_MAKES_A_CANDIDATE_INELIGIBLE_IT_DOES_NOT_SILENTLY_SHRINK_THE_REGISTERED_SET`.**
+
+**No new validation metric is invented**, and the committed selection metric is not
+touched. **And the interaction is recorded rather than resolved**: if the
+committed selection rule would select a candidate that is ineligible under this limb,
+what follows is **not** ruled here — nothing committed sequences "selection" against
+"deflator certifiability", and inventing an order would be inventing a selection rule.
+**`SELECTION_VERSUS_CERTIFIABILITY_ORDER_NOT_REGISTERED`** — carried, and it is **not**
+a licence to pick whichever order is favourable: where the order matters, the stricter
+reading governs and the case is a human + ChatGPT question.
+
+###### Configuration completeness
+
+**`set(c_design.keys()) == the registered candidate configuration set`** must hold
+before any validation selection is treated as authoritative. A partial map is a
+partial search, and a partial search is a chooser.
+
+This is a **contract property**, not a test and not a schema: no artifact machinery is
+created here, and none is required to state it.
+**`NR_L_CONFIGURATION_COVERAGE_IMPLEMENTATION_PENDING`** — nothing in code or evidence
+binds the key set of the map to the registered candidate set, or binds the `config_id`
+behind a reported `c` to the `config_id` behind the evaluated run. Classified
+**implementation and checkability**, and the R-6 lightweight record §8.5.0 already
+requires is extended by one field: **the `config_id`** the reported `c` was measured
+under. That is a record, not a schema, and it invents no field.
+
+###### Freeze semantics
+
+The **method** (c-1…c-9) and the **configuration set** are frozen **before data**. The
+`c` **values** are DESIGN-measured, once each. After they are measured: no
+configuration may be added or removed, no `ev_min` value may change, no horizon may
+change, no `config_id` may be aliased or renamed, and no reordering may be used to
+obscure which value belongs to which configuration.
+**`CONFIGURATION_SET_AND_IDENTITIES_ARE_FROZEN_BEFORE_C_IS_MEASURED`.**
+
+###### What this ruling does not fix, stated rather than left implicit
+
+- **Whether the DESIGN-span series behind `c` is in-sample.** Producing design-span
+  trades needs a model, and no committed source says whether that model is fitted on
+  the whole design span and predicted back onto it, or under an internal design-span
+  split. The two give different daily series and therefore different `c`, and the
+  direction is not established. **`C_DESIGN_SPAN_RUN_IN_SAMPLE_STATUS_NOT_REGISTERED`**
+  — a **residual of the committed design**, not of this ruling, and it is **not** a
+  chooser once the map is complete and frozen, because every configuration is built
+  the same way. It is recorded because a reader must not take "`c` is fully specified"
+  to mean more than the c-limbs say.
+- **The other design-span-estimated quantities** — the cost table, `W̄`/`L̄`, the
+  feature list, the warm-up `W`. Each is a single frozen value governed by **R-10**,
+  not a candidate set, and this ruling neither re-opens nor re-affirms them.
+- **`NOTHING_BOUNDS_DESIGN_SPAN_ACTIVITY_AND_A_SPARSER_RUN_DILUTES_C`** survives in a
+  **narrowed** form: a sparser *registered* `ev_min` still dilutes `|r|`, but no one
+  may now select on it, because all three values are computed and frozen before the
+  selector runs and the selector is blind to `c`. What remains is that the **committed
+  selection metric itself** — validation net expectancy subject to the turnover budget
+  — is correlated with activity; that is Ruling 9's design, not a freedom this ruling
+  creates.
+
+###### Amendment classification
+
+**Confirmation as to R-10, addition as to the mechanism.** R-10 already forbids taking
+a frozen contract parameter "from an exploratory variant chosen after its results were
+seen" and offers two dispositions — a rule registered before the campaign, or "the
+design audit and **gate 3a, which own it**". This ruling **is** gate 3a exercising the
+second, so the *prohibition* is confirmed rather than added. The **mechanism** —
+compute for all, freeze the map, select by `config_id` only — is an **addition** no
+committed source carries, as are the completeness property and the
+undefined-candidate disposition. Whether such additions need a contract-amendment
+procedure cannot be answered, because **no general contract-amendment procedure is
+registered anywhere in this repository**
+(`NO_GENERAL_CONTRACT_AMENDMENT_PROCEDURE_REGISTERED`, this packet's own token for
+that absence). **`C_10_AMENDMENT_CLASSIFICATION_NOT_SETTLED`.**
+
+**No favourable classification is asserted here.** The ruling **increases** the work —
+three DESIGN-span correlation matrices instead of one — and it removes an arm that
+would have been available under any single-reference-configuration reading. Its one
+recorded cost is that it says nothing about the in-sample question above, and its
+premise correction reduced the registered set from a claimed nine to a committed
+three, which **narrows** the multiple-comparison surface rather than widening it.
+
+###### Status after c-10
+
+**`NR_L_MINIMUM_RESEARCH_CONTRACT_RULED_PENDING_IMPLEMENTATION_AND_DESIGN_MEASUREMENT`**
+· **`NO_NR_L_MINIMUM_RESEARCH_CONTRACT_BLOCKER_REMAINS`.**
+
+`P` authority fixed (§8.3.0) · `c`'s formula, universe, entries, weighting,
+absolute-value placement, series, cost layer, date index, idle rule and undefined-case
+disposition fixed (c-1…c-9) · day attribution fixed (Q10-i) · **configuration-to-`c`
+generation fixed (c-10)** · **no empirical `c` measured, no correlation computed, no
+daily PnL constructed, no data read** · implementation and checkability remain ·
+`PRODUCTION_READINESS_NOT_CLAIMED`.
+
+The claim `NO_NR_L_MINIMUM_RESEARCH_CONTRACT_BLOCKER_REMAINS` is made **after** source
+verification of the registered candidate set, and **it was withheld one round ago when
+the same claim was false**. Every item still carried out of §8.5.0 and c-10 is
+implementation, checkability, an accepted cost of a frozen rule, or a residual of the
+committed design that no party may select on.
+
 ##### What is derived, what is ruled, and what stays open
 
 Each limb is marked with **what actually backs it**. No limb is called derived because
@@ -6837,6 +7082,7 @@ it is convenient.
 | c-7, idle = zero | **Human + ChatGPT ruling**, taken **with a knowable anti-conservative direction accepted in the open**. |
 | c-8, fail closed | **Human + ChatGPT ruling** on the disposition; the **routing** into `failure_handling` is committed, and the collapse to a single trigger case is **derived** from c-6 + c-7. |
 | c-9, span / freeze / no recalculation | **Span committed**; **freeze point and the no-recalculation bar are ruled**; the gate-3a reading is a **reading**. |
+| c-10, the producing configuration | **Prohibition confirmed** — §4's R-10 already bars variant-shopping and hands the remedy to gate 3a. **Mechanism ruled**: compute `c_design` for **every** registered configuration before validation, freeze the map, select by `config_id` only. The registered set is **three `ev_min` points**, re-read at source, and §8.5.0's "nine configurations" is **withdrawn**. |
 
 **Amendment classification.** c-1, c-2, c-4's cost layer, c-6's boundaries and c-9's
 span are **derivations or confirmations** — they move no committed requirement.
@@ -6929,12 +7175,12 @@ and the freeze. **No `c` is calculated, no correlation is computed, no daily PnL
 constructed and no data is read.** Implementation and checkability remain, and
 **`PRODUCTION_READINESS_NOT_CLAIMED`**.
 
-**One NR-L Minimum Research Gate blocker remains, and it is named rather than
-closed**: `NR_L_GENERATING_CONFIGURATION_NOT_REGISTERED` — which DESIGN-span
-configuration produces the series `c` is measured on. *An earlier drafting of this
-paragraph said "**No** NR-L Minimum Research Gate blocker remains"; that is
-**withdrawn as false**, and it was falsified by this ruling's own test.* Every **other**
-item left is implementation, checkability, or an accepted cost of a frozen rule — and
+**`NO_NR_L_MINIMUM_RESEARCH_CONTRACT_BLOCKER_REMAINS`** — but only **after Ruling
+c-10**, and the history is kept rather than tidied: as first recorded this paragraph
+said "**No** NR-L Minimum Research Gate blocker remains", that was **withdrawn as
+false** because `NR_L_GENERATING_CONFIGURATION_NOT_REGISTERED` was live, and it is
+reinstated here only because c-10 closes that blocker on a re-verified registered
+candidate set. Every item left is implementation, checkability, or an accepted cost of a frozen rule — and
 by Ruling ω-13's boundary a future finding reopens this contract **only** if it names
 a remaining freedom capable of moving `c`, `N_eff`, the event sequence or experiment
 selection, with the classification a **human + ChatGPT** call and an unclear case
@@ -8549,17 +8795,33 @@ record** is not), `NR_L_PAIRWISE_COMPLETENESS_IMPLEMENTATION_PENDING`,
 `MINIMUM_CALENDAR_IDENTITY_RECORD_REQUIRED_BEFORE_DATA_EXECUTION`, Ruling ω-13's
 residual 5 carried forward unchanged as a **future execution prerequisite** and
 **not** reopened. **One NR-L Minimum Research Gate blocker survives and is named
-rather than closed** — **`NR_L_GENERATING_CONFIGURATION_NOT_REGISTERED`**: c-1…c-9 fix
-how `c` is computed from a series and **not which DESIGN-span configuration produces
-that series**, and the family carries three registered decision thresholds and three
-registered `ev_min` points, each giving a different trade set and a different `c`. §4's
+rather than closed — **and then closed by Ruling c-10**.
+**`NR_L_GENERATING_CONFIGURATION_NOT_REGISTERED`**: c-1…c-9 fixed how `c` is computed
+from a series and **not which DESIGN-span configuration produces that series**. §4's
 **R-10** forbids taking such a quantity "from an exploratory variant chosen after its
 results were seen", names `mean_abs_pairwise_corr` as its **sharpest case**, and hands
-the remedy to "the design audit and gate 3a, which own it" — and §8.5.0 **is** that
-gate-3a decision and registers no producer rule. It is a freedom with an analytically
-knowable favourable direction, so under §8.4.13 it is **IN**. Candidate dispositions
-are enumerated at §8.5.0 and **none is chosen**, because a producer rule is a human +
-ChatGPT choice.
+the remedy to "the design audit and gate 3a, which own it".
+
+**Ruling c-10 is gate 3a exercising that disposition.**
+**`NR_L_C_PRECOMPUTED_FOR_ALL_REGISTERED_CONFIGURATIONS_BEFORE_VALIDATION_SELECTED_BY_CONFIG_ID_ONLY`**
+— a DESIGN-only `c_design[config_id]` for **every** preregistered candidate, computed
+before any validation observation; the complete map **frozen**; the committed
+validation rule then selecting one `config_id`; the frozen `c` attached mechanically.
+The permitted direction is **validation result → `config_id` → frozen `c`**, never
+`c → configuration`; `c` may not become a tie-breaker, and Ruling 9's tie rule
+(**smallest passing `ev_min`**) is already committed and blind to it; and there is no
+post-selection recomputation. An undefined `c` makes a candidate **ineligible to be
+selected** and does **not** delete it from the registered set. The map's key set must
+equal the registered candidate set, which is a **contract property**, with
+`NR_L_CONFIGURATION_COVERAGE_IMPLEMENTATION_PENDING` carried as implementation.
+
+**And it corrects this document's own premise.** §8.5.0's "three thresholds **and**
+three `ev_min` points, nine configurations" imported the **M1** threshold grid;
+prereg Ruling 9 forbids a raw probability threshold as a decision rule, and the
+registered set is **three `ev_min` points and one horizon — three configurations**.
+The blocker survived the correction, narrowed, and c-10 closes it.
+**`NO_NR_L_MINIMUM_RESEARCH_CONTRACT_BLOCKER_REMAINS`**, claimed here only after that
+source re-verification and withheld one round ago when the same claim was false.
 
 **The recorded order** (§8.2.8, §8.3.11): NR-K **ruled** → mean-overlap clock,
 formula and aggregation **ruled** → **NR-L + Q10(i) ruled** → Q10(iii) →
@@ -8638,7 +8900,7 @@ zero-data derivation had come out infeasible.
 latest bound is set. Already constrained by §8.1.0 (the date may not be informed by any strategy-run quantity); unconstrained as to a *positive* selection rule | survives |
 | **NR-K** `P` and the pair universe | **RULED** (§8.3.0) · `NR_K_RULED_P_EQUALS_FROZEN_REGISTERED_FAMILY_A_UNIVERSE` — `P = 20` for current Family A, the authority object being the frozen registered `PAIRS_20` universe; `MUST_RESOLVE_BEFORE_ANY_EFFECTIVE_N_VERDICT` **discharged for NR-K**. It was **not derivable**: the one committed definition ("contributing") was undefined, and the implementation accepted `len(records) ≥ 1`. What survives is the **implementation pin** (`P_AUTHORITY_RULED_IMPLEMENTATION_COMPLETENESS_PIN_PENDING`) and the missing forward roster gate — `assert_full_coverage` halts an uncertifiable pair on the **design span only**, while `P` decides at holdout (`NO_FORWARD_SPAN_FULL_ROSTER_COVERAGE_GATE_COMMITTED`) | ruled; residuals survive |
 | **Mean overlap fraction** `ω` — clock, formula, aggregation, freeze | **RULED** (§8.4.0) · `MEAN_OVERLAP_RULED_EVENT_LEVEL_SAME_HORIZON_CLOCK_EQUAL_WEIGHT_ROLE_LOCAL` — `g` and `H` on the **same registered M15 prediction clock**; `overlap_i = max(0, 1 − g_i/H)` per **adjacent** same-pair interval, then an **equal-weight arithmetic mean** (`E[f]`, never `f(E)`); the mean-gap approximation is **not an allowed authority**; `rho_h` **pair-local**, pooling forbidden; registered pair labels may not be rearranged; zero-event pairs contribute nothing and are **retained in `P`**; a one-event pair takes `ω_p = 0` with raw contribution **one**; **method frozen pre-data, value measured role-locally**; measurement may decide the verdict but may **not** redirect the experiment. **Four limbs derived and confirmed, six explicit human + ChatGPT choices.** Residuals: `HORIZON_WALL_CLOCK_EXTENT_NOT_REGISTERED` (reduced to one unknown binding `g` and `H` alike), `OVERLAP_PER_RECORD_PROVENANCE_UNBOUND`, the implementation pin, and `MEAN_OVERLAP_AMENDMENT_CLASSIFICATION_NOT_SETTLED` | ruled; residuals survive |
-| **NR-L** `mean_abs_pairwise_corr` — pair set, statistic, series, day attribution, idle days, undefined cases, common date alignment, freeze — **bundled with Q10(i)** | **RULED** (§8.5.0) · `NR_L_MINIMUM_RESEARCH_CONTRACT_RULED_PENDING_IMPLEMENTATION_AND_DESIGN_MEASUREMENT` · `Q10_I_RULED_REALIZED_PNL_ATTRIBUTED_TO_EXIT_UTC_DATE`. `c = mean_{p<q} |r_pq|`, equal-weight **Pearson** over the **190** unordered off-diagonal entries of the frozen `PAIRS_20`, on per-pair daily **net realised** PnL at the primary cost cell, attributed to the **exit** UTC date, on **one common complete DESIGN UTC calendar-date index** (310 dates) with **idle = zero**, **failing closed** on any undefined required entry, measured **once** on the full DESIGN span, method frozen now, never reselected after a downstream observation. **Two limbs derived-under-a-stated-reading** (c-1 and c-2, from the equicorrelated identity the committed form is — an identity that appears in **no** committed source, so the reading is this ruling's), the rest human + ChatGPT choices — **three of which run against conservatism or are unestablished** (c-7's mechanism, c-2's false equal-variance assumption, c-6's common-idle frame). **One blocker survives**: `NR_L_GENERATING_CONFIGURATION_NOT_REGISTERED` — which DESIGN-span configuration produces the series, which §4's R-10 names as its sharpest case and hands to this gate. `MUST_RESOLVE_BEFORE_ANY_EFFECTIVE_N_VERDICT` **discharged as to the contract**, not as to the value. Residuals: `C_INDEX_SET_NOT_RECORDED_IN_ANY_ARTIFACT` (deferral **contested**, and the R-6 record now has to name the index's cardinality and the 190-entry count, because **bounds alone cannot discriminate**), `NR_L_PAIRWISE_COMPLETENESS_IMPLEMENTATION_PENDING` (every short roster **raises** `N_eff`), `C_HAS_NO_PRODUCER_AND_NO_ARTIFACT`, `EXIT_DAY_ATTRIBUTION_BREAKS_ONE_COMMITTED_TEST_FIXTURE` and `EXIT_DAY_ATTRIBUTION_REQUIRES_A_NEW_DAY_MAP_AT_THE_SECOND_CALL_SITE`, and five accepted costs of the ruled construction. *As the packet stood before the ruling:* seven questions, none answered. With `P` and `ω`'s method ruled, `rho_x = 1 + 19c` makes **`c` the whole of the cross-pair deflator**, and the last unruled decision packet — not the last freedom in the arithmetic. The **span is committed and closed** (DESIGN only, never validation/holdout, frozen once); everything between the symbol and the span is unregistered, and **the object the definition names — a per-pair daily PnL series — has no constructor in this repository**. Hard dependency: `NR_L_DAY_ATTRIBUTION_DEPENDS_ON_Q10_I`, so NR-L3/NR-L4 could not close before Q10(i) — which is why the two were ruled as **one** decision. Its earlier role in sizing `D` remains **mooted** by Ruling B | ruled; residuals survive |
+| **NR-L** `mean_abs_pairwise_corr` — pair set, statistic, series, day attribution, idle days, undefined cases, common date alignment, freeze — **bundled with Q10(i)** | **RULED** (§8.5.0) · `NR_L_MINIMUM_RESEARCH_CONTRACT_RULED_PENDING_IMPLEMENTATION_AND_DESIGN_MEASUREMENT` · `Q10_I_RULED_REALIZED_PNL_ATTRIBUTED_TO_EXIT_UTC_DATE`. `c = mean_{p<q} |r_pq|`, equal-weight **Pearson** over the **190** unordered off-diagonal entries of the frozen `PAIRS_20`, on per-pair daily **net realised** PnL at the primary cost cell, attributed to the **exit** UTC date, on **one common complete DESIGN UTC calendar-date index** (310 dates) with **idle = zero**, **failing closed** on any undefined required entry, measured **once** on the full DESIGN span, method frozen now, never reselected after a downstream observation. **Two limbs derived-under-a-stated-reading** (c-1 and c-2, from the equicorrelated identity the committed form is — an identity that appears in **no** committed source, so the reading is this ruling's), the rest human + ChatGPT choices — **three of which run against conservatism or are unestablished** (c-7's mechanism, c-2's false equal-variance assumption, c-6's common-idle frame). **The one blocker that survived — `NR_L_GENERATING_CONFIGURATION_NOT_REGISTERED` — is closed by Ruling c-10**: `c_design[config_id]` for **every** registered candidate (three `ev_min` points, not the nine §8.5.0 wrongly claimed), computed before validation, map frozen, `config_id` selected by the committed rule alone, `c` attached mechanically, no post-selection recomputation. **`NO_NR_L_MINIMUM_RESEARCH_CONTRACT_BLOCKER_REMAINS`.** `MUST_RESOLVE_BEFORE_ANY_EFFECTIVE_N_VERDICT` **discharged as to the contract**, not as to the value. Residuals: `C_INDEX_SET_NOT_RECORDED_IN_ANY_ARTIFACT` (deferral **contested**, and the R-6 record now has to name the index's cardinality and the 190-entry count, because **bounds alone cannot discriminate**), `NR_L_PAIRWISE_COMPLETENESS_IMPLEMENTATION_PENDING` (every short roster **raises** `N_eff`), `C_HAS_NO_PRODUCER_AND_NO_ARTIFACT`, `EXIT_DAY_ATTRIBUTION_BREAKS_ONE_COMMITTED_TEST_FIXTURE` and `EXIT_DAY_ATTRIBUTION_REQUIRES_A_NEW_DAY_MAP_AT_THE_SECOND_CALL_SITE`, and five accepted costs of the ruled construction. *As the packet stood before the ruling:* seven questions, none answered. With `P` and `ω`'s method ruled, `rho_x = 1 + 19c` makes **`c` the whole of the cross-pair deflator**, and the last unruled decision packet — not the last freedom in the arithmetic. The **span is committed and closed** (DESIGN only, never validation/holdout, frozen once); everything between the symbol and the span is unregistered, and **the object the definition names — a per-pair daily PnL series — has no constructor in this repository**. Hard dependency: `NR_L_DAY_ATTRIBUTION_DEPENDS_ON_Q10_I`, so NR-L3/NR-L4 could not close before Q10(i) — which is why the two were ruled as **one** decision. Its earlier role in sizing `D` remains **mooted** by Ruling B | ruled; residuals survive |
 
 **Q10 and Q11 are the only two that survive an infeasibility verdict**, which is
 itself the argument for having taken the derivation first. **Q11 and §0 are one
