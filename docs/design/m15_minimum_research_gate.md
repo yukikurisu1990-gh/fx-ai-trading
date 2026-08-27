@@ -259,10 +259,14 @@ and **coverage and turnover do not share the series**, so no other frozen row mo
 The material below is what the ruling was taken on: the only committed authority was prereg
 §9's row label "**ann., UTC-day**"; `TRADING_DAYS_PER_YEAR = 252` is **M1 precedent**,
 and because the committed Sharpe series is indexed on **active dates** it matches
-neither a trading-day nor a calendar clock — `√252` there is the **permissive** arm,
-by up to ~1.9× in the sparse regime, with an analytically knowable direction
-(`Q10_III_SQRT_252_ON_AN_ACTIVE_DATE_INDEX_IS_THE_PERMISSIVE_ARM`). **No factor is
-adopted by convention.**
+neither a trading-day nor a calendar clock. Its **direction against `√252` is
+conditional and unclaimed** — `C/B ≈ √(252/(365a))` at active share `a`, crossing 1 near
+`a = 252/365 ≈ 0.690` — and establishing which side obtains needs the market-hours fact
+this packet must not author
+(`Q10_III_SQRT_252_IS_PERMISSIVE_ONLY_BELOW_252_ACTIVE_DATES_PER_YEAR`; the earlier
+`…_IS_THE_PERMISSIVE_ARM` spelling and the "~1.9× in the sparse regime" figure are
+**superseded and withdrawn**, §8.6.1). **No factor is adopted by convention.** The guard
+order is ruled at §8.8.4 and the **exclusion** rule at §8.9.2.
 **`EXACT_WINDOW_NOT_READY_FOR_DECLARATION_FORWARD_EPOCH_DOES_NOT_EXIST`** — and that is
 **not a contract gap**: the committed forward-epoch adoption manifest carries
 `ADOPTION_BLOCKED__FORWARD_DATA_NOT_YET_ACCRUED`,
@@ -1811,7 +1815,8 @@ attributes a trade's PnL to a UTC day — at a 24-bar horizon a 20:00 UTC entry
 closes the next UTC day, and entry- versus exit-day attribution changes the series
 and its volatility; (ii) the denominator of `daily coverage ≥ 0.60` — calendar
 days, weekday UTC days, or days with at least one eligible bar; (iii) the
-annualisation factor, where `sqrt(252)` versus `sqrt(365)` moves a Sharpe by ~20%.
+annualisation factor, where `sqrt(252)` versus `sqrt(365)` moves a Sharpe by ~20%
+*(**since ruled**: `√365` on the complete UTC calendar-date index, §8.7.4/§8.8.4/§8.9.2)*.
 Settling these after results are seen is the R-1 failure. This gate does not settle
 them; it **refers them back**, which Ruling 10 permits. Meanwhile every reported
 Sharpe states which convention it used.
@@ -3148,7 +3153,7 @@ from an elapsed-UTC `D`:
 | Limb | Status | Why the Q10-A ruling does not settle it |
 | --- | --- | --- |
 | **Q10(i)** entry- vs exit-day PnL attribution | **RULED** (§8.5.0) — **`Q10_I_RULED_REALIZED_PNL_ATTRIBUTED_TO_EXIT_UTC_DATE`**; `REQUIRES_HUMAN_CHATGPT_RULING` is **HISTORICAL** | Choosing the *day identity* fixes what a day **is**; it did not fix **which** day a trade whose horizon straddles midnight is attributed to, and a 24-bar horizon makes that live whatever the identity. Ruled with NR-L in one bundled decision, because `c` is defined on a daily series that does not exist until this is fixed. The ruling reaches **seven** quantities through `MetricTrade.day` — `c`, the daily Sharpe, max drawdown, daily coverage and turnover at holdout, plus the **validation** daily Sharpe that selects the operating point and the **validation turnover** figure inside prereg §9.V's kill gate — and **loosens no frozen threshold**, while `Q10_I_MUST_NOT_BE_RESELECTED_AFTER_OBSERVING_ANY_METRIC_IT_MOVES` therefore binds validation observations too. It does **not** define the `≤ 40 trades/day` ceiling's day, which Ruling Q10(ii) leaves unruled. |
-| **Q10(iii)** annualisation factor | **RULED** (§8.7.4) · `Q10_III_RULED_COMPLETE_UTC_CALENDAR_DATE_SHARPE_INDEX_IDLE_ZERO_ANNUALISED_BY_SQRT_365`; `Q10_III_PENDING_HUMAN_CHATGPT_RULING` is **HISTORICAL**. Complete UTC calendar-date index for the evaluated role's span · idle date = zero · Q10(i) attribution · **`√365`** | The unit of `D` and the constant that annualises a daily Sharpe are different objects. Fixing the first does not fix the second, and no committed source fixes the second for M15: the only authority is prereg §9's row label "**ann., UTC-day**", and `TRADING_DAYS_PER_YEAR = 252` is **M1 precedent**. §8.6.1 shows the committed Sharpe series is indexed on **active dates**, so `√252` is coherent with neither a trading-day nor a calendar clock — and it is the **permissive** arm, by up to ~1.9× in the sparse regime this family expects. |
+| **Q10(iii)** annualisation factor | **RULED** (§8.7.4) · `Q10_III_RULED_COMPLETE_UTC_CALENDAR_DATE_SHARPE_INDEX_IDLE_ZERO_ANNUALISED_BY_SQRT_365`; `Q10_III_PENDING_HUMAN_CHATGPT_RULING` is **HISTORICAL**. Complete UTC calendar-date index for the evaluated role's span · idle date = zero · Q10(i) attribution · **`√365`** | The unit of `D` and the constant that annualises a daily Sharpe are different objects. Fixing the first does not fix the second, and no committed source fixes the second for M15: the only authority is prereg §9's row label "**ann., UTC-day**", and `TRADING_DAYS_PER_YEAR = 252` is **M1 precedent**. §8.6.1 shows the committed Sharpe series is indexed on **active dates**, so `√252` is coherent with neither a trading-day nor a calendar clock; its direction against `√252` is **conditional**, crossing near `a = 252/365 ≈ 0.690` (§8.6.1's three corrections govern). Guard order at §8.8.4; **guard failure excludes the candidate** at §8.9.2. |
 
 **And the exact `D` is still blocked.**
 **`EXACT_D_SELECTION_STILL_PENDING_UPSTREAM_AUTHORITIES`.** The recorded ordering:
@@ -9422,6 +9427,197 @@ this much in its own work is that it is not the round that closes the contract.*
 ChatGPT decision on the **first predicted DESIGN date**; a human + ChatGPT decision on
 whether a **fired guard excludes a candidate** from selection; and a review in which the
 **generator and adversarial perspectives actually run**.
+
+### 8.9 The two remaining statistical blockers — ruled
+
+A ruling received from human + ChatGPT and recorded here as **authority**. It closes the
+two blockers §8.8.7 recorded as live. The closure **decision** is taken at §8.9.6, after
+the two review perspectives that failed in round 16 have actually returned.
+
+**`C_15_RULED_FIRST_PREDICTED_DESIGN_DATE_IS_THE_25_PERCENT_PREFIX_BOUNDARY`** ·
+**`GUARD_FAILURE_EXCLUDES_CANDIDATE_FROM_VALIDATION_SELECTION`**
+
+#### 8.9.1 Ruling c-15 — the first predicted DESIGN date
+
+**The rule.** The **first `ceil(0.25 × N_design_dates)` dates** of the frozen DESIGN UTC
+calendar-date index are **training-only** and receive no predictions. Every remaining
+date is a **one-date prediction block** under c-13's chronological expanding-window
+walk-forward, with the committed **25 M15-bar purge** immediately preceding each block
+unchanged, and with every target/outcome-derived DESIGN input handled **fold-locally** at
+each walk-forward state under c-14.
+
+**`n_initial_training_dates = ceil(0.25 × N_design_dates)`**, and the first predicted
+date is **mechanically recomputed from the committed DESIGN constants** — it is not a
+literal in this document that could drift from them.
+
+**Instantiated against source, re-verified for this ruling.** `no_overlap.py` carries
+`DESIGN_START = 2025-04-25T00:00:00Z` and `DESIGN_END = 2026-02-28T23:59:59Z`, so the
+index is **2025-04-25 … 2026-02-28 inclusive = 310 dates** — the reported span confirmed,
+not assumed. Therefore:
+
+| Quantity | Value |
+| --- | --- |
+| `N_design_dates` | **310** |
+| `0.25 × N` | 77.5 |
+| `n_initial_training_dates = ceil(77.5)` | **78** |
+| Training-only block | **2025-04-25 … 2025-07-11** |
+| **First predicted DESIGN date** | **2025-07-12** |
+| Predicted dates | **232** (2025-07-12 … 2026-02-28), 74.84% of the index |
+
+**This is an outcome-blind contract choice, and no optimality is claimed for it.** 25% is
+not derived, is not argued to be statistically best, and is not tuned: it is a
+**declared, mechanical, pre-data boundary** whose only job is to remove the researcher
+discretion §8.8.2 isolated. Its arm is fixed **before** any DESIGN observation, and the
+prefix may **not** be changed after seeing `c`, `rho_x`, `N_eff`, a Sharpe, a sample-floor
+verdict or any other measured quantity.
+**`C_TRAINING_PREFIX_IS_AN_OUTCOME_BLIND_CONTRACT_CHOICE_NOT_AN_OPTIMALITY_CLAIM`** ·
+**`C_TRAINING_PREFIX_MAY_NOT_BE_CHANGED_AFTER_ANY_MEASURED_QUANTITY_IS_SEEN`.**
+
+**Why a ruling was the only available move, and what it costs.** §8.8.2 established that
+the parameter's direction is knowable — an **earlier** first predicted date is
+anti-conservative on both limbs — so leaving it open left a lever that a pre-data freeze
+alone does not protect (§8.4.11's A-ω-5 standard). No committed source supplies a value,
+and §9's rule forbids inventing one from the machinery: the stage-22 quintile split is
+fenced lineage and `train_months = 6` is a CLI default in an unrelated module. **A human
++ ChatGPT declaration is therefore the only instrument that removes the freedom without
+deriving a number that does not exist**, and that is what this is. The cost is stated:
+**a quarter of the DESIGN index carries no prediction**, those dates are carried as zeros
+under c-6/c-7, and §8.7.2 measured that a **common** zero prefix mildly *raises* `|ρ|` —
+so the prefix's own effect on `c` is **conservative**, while the shorter early training
+windows it avoids would have run the other way.
+
+**What c-15 does not touch.** The 25-bar purge, the one-date block width, the
+one-partition-for-all-pairs-and-configs rule, and c-14's fold-local treatment are
+unchanged; `C_GENERATION_METHOD_MUST_NOT_BE_SELECTED_FOR_THE_SPAN_OR_SPARSITY_IT_PRODUCES`
+continues to bind, and with the prefix now fixed there is nothing left for it to bind
+**on the partition** — it survives for any future method question.
+**`C_DESIGN_GENERATOR_PENDING_ONE_EXACT_PARAMETER_DECISION` is DISCHARGED.**
+
+#### 8.9.2 Ruling Q10(iii)-b — a fired guard excludes the candidate
+
+**`GUARD_FAILURE_EXCLUDES_CANDIDATE_FROM_VALIDATION_SELECTION`.**
+
+**A guard failure is not a Sharpe of zero.** Where either committed guard fires, the
+candidate's Sharpe is **undefined**, the candidate is **ineligible for validation
+selection**, and it is **removed from the argmax domain** rather than entered into it
+with a number. A candidate with a **valid negative** Sharpe remains **eligible** — being
+bad is not being undefined. **No selectable numeric sentinel is permitted**: `0.0`, and
+any other stand-in value, may not be placed into the selector.
+**`A_FIRED_GUARD_YIELDS_NO_SELECTABLE_VALUE`.**
+
+**If every registered candidate is guard-failed, there is no selection.** The family does
+**not** proceed to the holdout: the outcome is **fail-closed**, routed into the committed
+`failure_handling` — family A closes or adoption waits — exactly as an uncertifiable `c`
+is at c-8. No candidate is promoted by default, and
+`PRODUCTION_DEFAULT_THRESHOLD` may **not** be reached through an all-degenerate tie.
+**`ALL_CANDIDATES_GUARD_FAILED_IS_FAIL_CLOSED_NOT_A_DEFAULT_SELECTION`.**
+
+**The processing order, restated end to end and not permutable.**
+
+> **1.** filter to the registered evaluation span — discard every trade whose Q10(i)
+> attributed date is not a member of the complete registered UTC calendar-date index, at
+> **both** edges → **2.** aggregate **active-date** daily PnL over the surviving trades
+> → **3.** apply the **existing committed** insufficient-observation and variance guards
+> to that in-index active-date set → **4.** if either fires, the candidate is
+> **ineligible** and no value is produced → **5.** otherwise reindex onto the complete
+> UTC calendar-date index → **6.** fill idle dates with **zero** → **7.** compute the
+> Sharpe on the complete series → **8.** annualise by **`√365`**.
+
+**No new threshold is created.** The guards are the two committed ones —
+`len(values) < 2` and `sd == 0 or not finite`, sample stdev — applied to the observation
+set they were written for. **No minimum active-day count is invented**, and
+`NO_NEW_SHARPE_OBSERVATION_THRESHOLD_IS_CREATED` stands: this ruling changes what a
+**fired** guard *does*, never when it fires.
+
+**What this closes, and one thing it settles as a by-product.**
+`GUARD_SENTINEL_ZERO_IS_SELECTABLE_AT_VALIDATION_ARGMAX` is **DISCHARGED** — the route
+by which an undefined candidate outscored a defined-but-negative one is removed at its
+source, because there is no longer a value to outscore with. And
+`KILL_GATE_READS_THE_REGISTERED_SET_NOT_THE_ELIGIBLE_SUBSET`, which recorded a state with
+**no committed disposition** — a family passing prereg §9.V while no configuration is
+selectable — now has one: **fail-closed, no holdout**. The two objects stay distinct and
+are not merged: §9.V is an **expectancy-and-turnover** kill gate on the registered set,
+and the Sharpe guard governs **selection eligibility**; a family may satisfy the first
+and still have no selectable candidate, and that is the case just disposed of.
+**`KILL_GATE_AND_SELECTION_ELIGIBILITY_ARE_DIFFERENT_OBJECTS_BOTH_NOW_DISPOSED`.**
+
+**Scope, stated because two selectors exist in the record.** Prereg §8's **committed**
+selection metric is validation net **expectancy** subject to the turnover budget, which
+is per-trade and annualisation-free — the Sharpe guard does not reach it. The committed
+**implementation** selects on the validation daily Sharpe argmax, and it is that selector
+this ruling binds. Where they diverge,
+`Q10_III_REACHES_THE_OPERATING_POINT_ONLY_VIA_AN_IMPLEMENTATION_THAT_DIVERGES_FROM_THE_COMMITTED_SELECTION_METRIC`
+continues to record the divergence; this ruling does not resolve it and does not need to.
+
+**And it is locked pre-observation**, on the same footing as the clock itself:
+`Q10_III_MUST_NOT_BE_RESELECTED_AFTER_OBSERVING_ANY_METRIC_IT_MOVES` binds the exclusion
+rule as it binds the guard order — neither may be selected or permuted after observing a
+Sharpe on any span, a DESIGN-span diagnostic included.
+
+#### 8.9.3 The mandatory Sharpe standard error — disposition
+
+**It is mandatory to report and it enters no threshold comparison.** §10 requires every
+headline estimate to carry a standard error and states that "**a Sharpe reported without
+that number is not a result**". Re-read at source, **no acceptance criterion consumes
+it**: `acceptance.py` compares the Sharpe against
+`min_daily_portfolio_sharpe_annualised = 0.8` and reads no standard error, and no SE
+appears in `contract.py`'s criteria. So the SE **cannot move a verdict** — but its
+**absence invalidates the report**, which is why it is not merely diagnostic either.
+**`SHARPE_SE_IS_MANDATORY_TO_REPORT_AND_ENTERS_NO_THRESHOLD_COMPARISON`.**
+
+**It is aligned to the ruled clock, and that alignment is the point.** Because the ruled
+statistic is annualised by `√365` over the **complete registered UTC calendar-date
+index**, the SE must be `≈ sqrt(365 / N)` on that same index — **≈ 2.45 on a 61-date
+span** — and the earlier `sqrt(252/N)` ≈ 1.07 / 1.38 figures are **superseded** as the
+reporting requirement (§10, corrected in round 16). A reporting convention on a different
+clock from the statistic it reports is the same incoherence Q10(iii) ruled out of the
+statistic itself.
+
+**Where `√252` survives in this document it is historical or diagnostic, and is marked.**
+It appears in §8.6.1's reading table as the **refused** cell (C), in §8.6.1's ratio
+arithmetic, and in §8's earlier statements of the then-open question. **None of those is
+a live convention.** `TRADING_DAYS_PER_YEAR = 252` remains in committed **source**, which
+**this PR does not change**: the divergence between the ruled contract and the M1-lineage
+default is `SHARPE_INDEX_AND_FACTOR_MAY_NOT_BE_ADOPTED_SEPARATELY`'s reading (E), and it
+is an **implementation** obligation on the executing PR, not a contract question.
+**`SOURCE_STILL_DEFAULTS_TO_252_AND_THE_IMPLEMENTING_PR_MUST_CHANGE_IT_TOGETHER_WITH_THE_INDEX`.**
+
+#### 8.9.4 What this round maintains without reopening
+
+**`ALL_DECISION_BEARING_C_MAP_INPUTS_MUST_BE_FROZEN_BEFORE_C_MEASUREMENT`** stands, with
+its enumeration **explicitly non-exhaustive** and the inclusion test governing; no
+session may classify an input out of scope. **Upstream semantics may not be changed after
+`c` is measured** — `C_OBSERVATION_MUST_NOT_TRIGGER_UPSTREAM_RECONFIGURATION` and
+`THE_MAP_IS_BUILT_ONCE_AND_A_CHANGED_INPUT_IS_NOT_A_NEW_MEASUREMENT_IT_IS_A_RESELECTION`
+are unchanged.
+
+**`TURNOVER_CEILING_COUNTS_TRADES_BY_ENTRY_UTC_DATE`** stands, and remains deliberately
+**distinct** from Q10(i)'s exit-date PnL attribution: the ceiling constrains initiation
+frequency, Q10(i) fixes when an outcome is realised.
+`TURNOVER_DAY_MUST_NOT_BE_BOUND_TO_THE_PNL_ATTRIBUTION_DAY_BY_INHERITANCE` is unchanged,
+as are the two unregistered turnover axes and their pre-observation locks.
+
+**Untouched by this round**: NR-K · `ω` and its clock and calendar semantics · Q10(i) ·
+the exact `T_v`/`T_h`/`D` · Q1, Q3, Q8, Q9 · FR-19 · the minimum calendar identity
+prerequisite · the Zero-Data verdict.
+**`EXACT_WINDOW_NOT_READY_FOR_DECLARATION_FORWARD_EPOCH_DOES_NOT_EXIST`** ·
+**`SAMPLE_FLOOR_REACHABILITY_NOT_DETERMINABLE_WITHOUT_MEASURED_INPUTS`** ·
+**`PRODUCTION_READINESS_NOT_CLAIMED`** · **`NO_EXECUTION_PERFORMED`**.
+
+#### 8.9.5 Status before the review
+
+Both blockers §8.8.7 recorded are **discharged on their merits**: c-15 fixes the
+generator's last parameter, and Q10(iii)-b removes the sentinel route. **No closure is
+claimed here.** Under `CLOSURE_CLAIM_REQUIRES_COMPLETED_REVIEW_AND_NO_UNRESOLVED_MATERIAL_BLOCKER`
+the decision requires the two perspectives that failed in round 16 — the **DESIGN
+generator / leakage** role and the **adversarial researcher-freedom** role — to actually
+return. §8.9.6 records the decision, and it is the only place in this document where it
+is taken. *Nothing above may be read as anticipating it.*
+
+**No favourable classification is asserted in this ruling.** c-15 declares a boundary it
+does not derive and says so; its 25% is not claimed optimal; a quarter of the DESIGN
+index is knowingly given up; and Q10(iii)-b's exclusion rule creates a fail-closed state
+that can halt a family which would otherwise have selected a candidate.
 
 ---
 
