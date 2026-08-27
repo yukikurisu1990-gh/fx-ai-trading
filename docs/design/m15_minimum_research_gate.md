@@ -9473,6 +9473,35 @@ verdict or any other measured quantity.
 **`C_TRAINING_PREFIX_IS_AN_OUTCOME_BLIND_CONTRACT_CHOICE_NOT_AN_OPTIMALITY_CLAIM`** ·
 **`C_TRAINING_PREFIX_MAY_NOT_BE_CHANGED_AFTER_ANY_MEASURED_QUANTITY_IS_SEEN`.**
 
+**And "outcome-blind" must not be read as "conservative" — 25% is not the conservative
+extreme, and this ruling says so rather than letting the label imply it.** §8.8.2
+established that a **larger** prefix is conservative on both limbs, so the conservative
+extreme is a **larger** number, not this one. What a larger prefix costs is the other
+half of the trade, and it is real: fewer live dates make `c` a **noisier estimate**, and
+a higher structural-zero share makes it measure proportionately less about the strategy.
+On synthetic series — two pairs, per-pair activity share 0.45, shared factor loading 1.2,
+per-trade PnL `N(0.4, 2.0)`, 400 replicates, the index held at 310 dates — `E|ρ|` rises
+monotonically with the prefix while its dispersion rises **faster**:
+
+| prefix | live dates | `E\|ρ\|` | sd |
+| --- | --- | --- | --- |
+| 0 (0%) | 310 | 0.1188 | 0.0530 |
+| **78 (25%)** | **232** | **0.1223** | **0.0597** |
+| 155 (50%) | 155 | 0.1293 | 0.0688 |
+| 232 (75%) | 78 | 0.1425 | 0.0924 |
+
+**`NON_NORMATIVE_DIAGNOSTIC_ONLY`**; synthetic arithmetic, no data read, and the
+generating model is stated so the figures are reproducible from the text. **So 25% sits
+near the low-conservatism end of the axis**, buying estimator coverage at the cost of
+conservatism in the deflator. That is a **trade the declaration makes, not a safety
+property it has**, and a reader must be able to see which.
+**`C_TRAINING_PREFIX_TRADES_DEFLATOR_CONSERVATISM_FOR_ESTIMATOR_COVERAGE`.**
+
+*The freedom is removed rather than exercised well.* Declaring any value fixes the
+parameter for current Family A; what makes this declaration admissible is that it is
+made **before any DESIGN observation** and may never be revisited on one — not that the
+value chosen is the safest available. **`DECLARING_A_VALUE_REMOVES_THE_FREEDOM_IT_DOES_NOT_MAKE_THE_VALUE_OPTIMAL`.**
+
 **Why a ruling was the only available move, and what it costs.** §8.8.2 established that
 the parameter's direction is knowable — an **earlier** first predicted date is
 anti-conservative on both limbs — so leaving it open left a lever that a pre-data freeze
