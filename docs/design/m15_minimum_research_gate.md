@@ -9989,6 +9989,462 @@ or test was changed.**
 
 ---
 
+### 8.10 The statistical contract surface — full inventory
+
+**No ruling is taken in this section.** It is an **enumeration and classification**
+round, opened because §8.9.6 recorded
+`THE_STATISTICAL_CONTRACT_SURFACE_IS_NOT_YET_ENUMERATED_AND_CLOSURE_ESTIMATES_HAVE_BEEN_WRONG_FOUR_TIMES`.
+Four consecutive rounds closed the blockers they were given and discovered new ones of
+the same kind, so the failure is not in the rulings — it is that nobody has ever written
+down the whole surface. This section writes it down.
+
+**`NO_RULING_IS_TAKEN_IN_THE_INVENTORY_ROUND`** · **`NO_VALUE_IS_ASSIGNED_TO_AN_UNREGISTERED_PARAMETER_HERE`**
+· **`NO_CLOSURE_IS_CLAIMED_BY_AN_INVENTORY`.** Existing rulings are cited and confirmed,
+never amended; where the inventory finds an earlier section of *this* document wrong, the
+correction is recorded at §8.10.5 and the underlying ruling stands.
+
+#### 8.10.0 Method, and the limits of what an inventory can establish
+
+The pipeline was traced **from source**, end to end, and for each named quantity the
+question asked was not "does the contract mention it" but **"which committed producer
+actually computes it, and what does that producer do when nobody tells it what to do"**.
+That distinction is the whole point: a parameter named in a frozen contract but supplied
+by a caller-overridable default is not frozen, and a quantity named in a spec with **no
+producer at all** is not implemented conservatively — it is unimplemented, and the
+implementing PR will choose.
+
+**An inventory cannot prove its own completeness.** What it can do is state the search
+that was run, so a later round can tell whether a missed surface was missed by the method
+or by the execution of it. The search was: (a) every module under `scripts/m15_gate3a/`
+and `scripts/ml_step4/`, plus `src/fx_ai_trading/services/ml/`; (b) the four committed
+contract documents — prereg (PR #429), the gate-4 design audit (PR #430), the gate-3a
+adoption record (PR #431), and the audit playbook's referral register; (c) the four
+committed gate-3a artifacts; (d) a targeted hunt for the eleven **hidden-multiplicity
+shapes** listed at §8.10.4. **`INVENTORY_COMPLETENESS_IS_A_CLAIM_ABOUT_THE_SEARCH_NOT_ABOUT_THE_SURFACE`.**
+
+**Two things this inventory is *not*.** It is not a claim that the listed
+`COMMITTED_AND_FROZEN` rows are correct — only that an authority fixes them. And it is
+not a re-audit: where the audit playbook already carries a referral (NR-A…NR-J), the
+inventory records the **existing** classification and says so, rather than presenting a
+known item as newly found.
+
+#### 8.10.1 The traced route, and where it stops being implemented
+
+| Stage | Committed producer | State |
+| --- | --- | --- |
+| raw M1 `365d_BA` → M15 bars | `scripts/m15_gate3a/aggregation.py` (`BUCKET_MINUTES = 15`, `FULL_BUCKET_SOURCE_BARS = 15`) | implemented, synthetic-only, **source audit BLOCKED** at the fourth re-check |
+| calendar / slot membership | `calendar_authority.py` — validates an artifact | implemented; **the artifact does not exist** |
+| coverage | `coverage.py` — set equality per pair | implemented |
+| feature construction (M15) | **none** — `ml_step4/features.py` binds the **M1** trainer's `_FEATURE_COLS`; prereg §7 defers the native-M15 builder to the implementation audit | **not implemented** |
+| labels / barriers | `ml_step4/labels.py` (`bulk_labels`, `atr14`) — M1 geometry, **no cost floor, no eligibility hurdle** | partially reusable; the M15 limbs are **not implemented** |
+| training | `services/ml/training.py` (`train_walk_forward`) and `ml_step4/trainer.py` | exist, both M1-lineage; **neither purges**, and `train_walk_forward` discards `y_pred` |
+| calibration | **none** — `contract.CALIBRATION = "none_raw_predict_proba"` | **not implemented** |
+| prediction → EV gate → trade | **none** for the EV gate; `ml_step4/simulator.py` applies 1-position-per-pair | EV gate **not implemented** |
+| cost application | `cost_schema.py` validates a table; **no table exists** and none is produced before the implementation PR | **not implemented** |
+| validation metrics | `ml_step4/metrics.py` | implemented, M1 conventions |
+| configuration selection | `ml_step4/thresholds.py:select_threshold` — sweeps **probability thresholds** | implemented, **wrong knob** for Family A |
+| `c` | **none** | **no producer anywhere in the repository** |
+| `ω` | **none** | **no producer anywhere in the repository** |
+| `N_eff` | `m15_gate3a/effective_n.py` | implemented; consumes `c` and `ω` as caller-supplied scalars |
+| holdout metrics | `ml_step4/metrics.py` | shared with validation, no role-specific variant |
+| acceptance | `ml_step4/acceptance.py` + `contract.ACCEPTANCE_CRITERIA` | implemented against the **M1** acceptance table |
+
+**The shape of the gap is worth naming before the table.** The two inputs that carry the
+entire deflator — `c` and `ω` — have **no producer at all**, while `N_eff`, which consumes
+them, is fully implemented and hardened. Everything between the model and the trade —
+calibration, the EV gate, the cost table, the M15 features, the eligibility hurdle — is
+likewise unimplemented. **So the implementing PR is not wiring up frozen decisions; it is
+making most of them for the first time**, and that is the mechanism behind the four
+rounds of late discoveries.
+
+#### 8.10.2 The inventory
+
+Statuses are the round's fixed vocabulary. `UNREGISTERED_RESEARCH_CHOICE`,
+`FREEZE_TOO_LATE` and `CONFLICTING_AUTHORITIES` are the next round's decision set;
+`IMPLEMENTATION_CHECKABILITY_ONLY` and `EXECUTION_PREREQUISITE_ONLY` are not.
+
+**Prereg** = `docs/design/m15_first_cost_hurdle_aware_preregistration_design.md`;
+**audit T-n** = `docs/design/m15_first_cost_hurdle_aware_design_audit_fable5.md` §15;
+**playbook** = `docs/governance/m15_audit_playbook.md` §1's referral register.
+
+##### A. Data source, epoch, span
+
+| ID | Surface | Authority | Value / method | Freeze point | Moves result? | Status | Problem |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| S-01 | DESIGN span | prereg §3.1 Ruling 2; `no_overlap.py:38-39` | 2025-04-25 → 2026-02-28T23:59:59Z (310 UTC dates) | gate 3 | yes — the whole `c` index | `COMMITTED_AND_FROZEN` | — |
+| S-02 | Dead window | prereg §3.1 R-2b; `no_overlap.py:40-41` | 2026-03-01 → 2026-04-24T23:59:59Z, dead for every role | gate 3 | yes | `COMMITTED_AND_FROZEN` | — |
+| S-03 | Forward-epoch floor | `no_overlap.py:42` | 2026-04-25T00:00:00Z | gate 3 | yes | `COMMITTED_AND_FROZEN` | — |
+| S-04 | `T_v` / validation span | prereg §3.1 `[FIXED-AT gate 3a]`; Q10-B (§8.2.0) | **unvalued**; ≥ 3 months | declared by human + ChatGPT before continuation | yes | `HUMAN_CHATGPT_RULED` (procedure) | the **value** is undeclarable — `EXACT_WINDOW_NOT_READY_FOR_DECLARATION_FORWARD_EPOCH_DOES_NOT_EXIST` |
+| S-05 | Holdout span / `D` | prereg §3.1; Ruling B (§8.1.0); Q10-A (§8.2.0) | **unvalued**; ≥ 2 months, elapsed UTC | frozen once at the continuation, before data | yes | `HUMAN_CHATGPT_RULED` (procedure) | value pending; `EXACT_D_SELECTION_STILL_PENDING_UPSTREAM_AUTHORITIES` |
+| S-06 | Source dataset identity | prereg §4; `design_m15_derivation_manifest.json` | the 20 committed `365d_BA` M1 BA files | gate 3a | yes | `COMMITTED_AND_FROZEN` | the derived M15 artifact does not exist yet |
+| S-07 | M15 bucket convention | prereg §4 Ruling 3; `aggregation.py:79-80` | `floor(ts/15min)` UTC, bar ts = bucket start, per-side OHLC, no mid | gate 3 | yes | `COMMITTED_AND_FROZEN` | — |
+| S-07a | M15 slot-grid alignment enforcement | `coverage.py:383` checks `slot.minute % SLOT_MINUTES or slot.second or slot.microsecond`; `split.py:162` `assert_m1_aligned(ts, *, bar_seconds=60)` runs its whole-minute check **only when `bar_seconds == 60`** | the M15 lineage enforces the grid; the `ml_step4` split path **self-disables** its alignment check for any non-M1 bar length | — | yes — which timestamps are admissible split boundaries | `UNREGISTERED_RESEARCH_CHOICE` | *newly identified here*: an M15 caller passing `bar_seconds=900` gets no grid check from `split.py`, and no M15 caller exists to say which module owns the rule |
+| S-07b | Which per-bar spread the cost model consumes | prereg §4 — quoted spread = `ask_c − bid_c`, 'plus open-side variant recorded'; `aggregation.py:393-394` emits **both** `spread_open` and `spread_close` | close-side is the authority; the open-side variant is diagnostic | gate 3 | yes | `COMMITTED_AND_FROZEN` | two keys are emitted and nothing in code enforces which one a cost-table producer reads |
+| S-08 | Partial-bucket eligibility | prereg §4 Ruling 3; `aggregation.py:80` | `n_source_bars == 15` required for an event | gate 3 | yes — which bars can be events | `COMMITTED_AND_FROZEN` | — |
+| S-09 | Missing-minute semantics | playbook referral **RF-2** | committed schema declares 2 keys; the code emits 17 | `MUST_RESOLVE_BEFORE_GATE3A_CONTINUATION` | yes — via `eligible_event_count` | `CONFLICTING_AUTHORITIES` | **already referred**; ruled in part by PR #444 (six measured quantities) |
+| S-10 | Crossed-quote disposition | PR #444 ruling; playbook referral | **hard fail-closed** (`ask == bid` not crossed) | ruled | yes — flips `eligible` | `HUMAN_CHATGPT_RULED` | — |
+| S-11 | Spread magnitude ceiling | `cost_schema.py:91` `MAGNITUDE_AUTHORITY_STATUS = "REQUIRES_SEPARATE_CONTRACT_GATE_DECISION"`; playbook referral (BL-5) | **required caller argument**, no committed value; `None` is an explicit legal choice | `MAY_DEFER`, binds at cost-table production | yes — which bars survive | `UNREGISTERED_RESEARCH_CHOICE` | **already referred**, deferral conditions recorded |
+
+##### B. Calendar and eligibility
+
+| ID | Surface | Authority | Value / method | Freeze point | Moves result? | Status | Problem |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| S-12 | Calendar A — slot membership | Ruling ω-12/ω-13 (§8.4.0); `calendar_authority.py` | materialised `expected_m15_slots`, single frozen version, approval marker | window declaration → materialisation → freeze | yes — `ω`, coverage, eligibility | `HUMAN_CHATGPT_RULED` | **the artifact does not exist**: `PRE_CONTINUATION_CALENDAR_ARTIFACT_APPROVAL_REQUIRED` |
+| S-13 | Calendar B — event eligibility (holiday / thin liquidity) | prereg §5 `[FIXED-AT design audit]`, re-pointed by audit **T-6** to "implementation, approved before gate 7" | **unvalued** | after the point c-12 requires it frozen | yes | `FREEZE_TOO_LATE` | c-12 resolved this **by scope** for current Family A; the schedule collision itself is unresolved |
+| S-14 | Rollover exclusion window | prereg §5 Ruling 4 — 21:55–22:15 UTC **minimum**, widen-only | a **floor**, not a value; gate 3a / the design audit may widen | widen-only, unbounded above | yes — event count, gaps, `ω` | `UNREGISTERED_RESEARCH_CHOICE` (the width above the floor) | playbook **NR-I**: zero occurrences in the package, and `_check_session_partition()` requires the three sessions to tile all 1440 minutes, so no carve-out is even expressible |
+| S-15 | Session partition | prereg §5 Ruling 4; `cost_schema.py:17-21` | Asia 00:00–07:59 / Europe 08:00–15:59 / US 16:00–23:59 UTC | gate 3 | yes — every cost and payoff cell | `COMMITTED_AND_FROZEN` | — |
+| S-16 | Coverage denominator level | `COVERAGE_DENOMINATOR_PAIR_TO_PORTFOLIO_LEVEL_NOT_RULED` (§8.2.0) | per-pair set equality is ruled; the **portfolio** roll-up is not | — | yes — the 0.60 gate | `UNREGISTERED_RESEARCH_CHOICE` | carried since §8.2 |
+
+##### C. Features
+
+| ID | Surface | Authority | Value / method | Freeze point | Moves result? | Status | Problem |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| S-17 | The final feature list | prereg §7 "frozen **at the design audit**"; prereg §11 "Native-M15 feature-builder review **[FIXED-AT implementation audit]**" | **unvalued**; the M1 `V4_BASE_FEATURE_COLS` (39) is bound only for the M1 lineage (`ml_step4/features.py:148`) | design / implementation audit — **after** c-12's freeze point | yes — sets `p̂` for **every** bar | `FREEZE_TOO_LATE` | §8.9.6 item 2. **Scope cannot resolve it**, unlike Calendar B |
+| S-18 | Which after-audit feature groups are admitted (H1/H4 context, realised-vol) | prereg §7 — "allowed **only after audit**" | **unvalued** | implementation audit | yes | `UNREGISTERED_RESEARCH_CHOICE` | three independent admit/exclude decisions, each moving `p̂` |
+| S-19 | Feature window / lookback parameters | prereg §7 — "warmups/windows revalidated" at the native-M15 review | **unvalued** for M15; the M1 builder's are literals in `scripts/train_lgbm_models.py` | implementation audit | yes | `UNREGISTERED_RESEARCH_CHOICE` | the only precedent, `train_lgbm_models._add_features`, is **internally inconsistent**: ATR14 is guarded at `min_periods=14` under an `F8_ATR_WARMUP_GUARDED` marker while EMA-12/26, the MACD signal, the RSI EWMs, SMA-20/std-20 and SMA-50 all use `min_periods=1` (`:124-154`). A native-M15 builder inherits a convention that disagrees with itself |
+| S-20 | `ATR14` period and `min_periods` | `labels.py:154` `atr14(bars, *, period=14, min_periods=14)`; prereg §6 names "ATR14_M15" | 14 / 14 **as defaults**, and `bulk_labels` calls `atr14(bars)` with no arguments | — | yes — barriers **and** the eligibility hurdle | `CONFLICTING_AUTHORITIES` | the contract names a period, not a warm-up rule; both are overridable keyword defaults, and no M15 caller exists to pin them. Three ATR implementations disagree: `labels.py:154` guards at 14, `train_lgbm_models.py:167` guards at 14 but its **H4/D1** ATRs use `min_periods=1` (`:397`, `:415`), and `services/feature_service.py:339` has **no guard at all** — it returns `high − low` on a single bar rather than `None` |
+| S-20a | Which price series `ATR14_M15` is computed on | prereg §6 names "ATR14_M15" and no series; `labels.py:154-183` computes it on **mid** true ranges | **unvalued** by the contract; the one implementation uses mid, which prereg §4 forbids constructing *at aggregation time* | — | yes — barrier widths **and** the eligibility hurdle | `UNREGISTERED_RESEARCH_CHOICE` | *newly identified here*: bid, ask and mid give different ATRs, hence different `TP_dist`, `SL_dist` and different eligible-bar sets |
+| S-20b | `contract.ATR_PERIOD` / `ATR_MIN_PERIODS` | `contract.py:58-59`, echoed into the label-contract descriptor at `:209-210` | declared, hashed — and **never read** by the ATR producer, which carries its own `period=14, min_periods=14` defaults | — | yes | `CONFLICTING_AUTHORITIES` | *newly identified here*: changing the contract constant changes the recorded hash and **not** the ATR actually computed |
+| S-19a | NaN / warm-up fill conventions for features | none for M15; the precedent builder uses `fillna(50.0)` for RSI, `fillna(0.5)` for `bb_pct_b`, `fillna(0.0)` for `bb_width`, and `df[cols].fillna(0.0)` at two call sites | **unvalued** | implementation | yes — degenerate early rows are scored, not skipped | `UNREGISTERED_RESEARCH_CHOICE` | *newly identified here*; interacts with S-19 and S-22 |
+| S-21 | Forward-epoch warm-up `W` | audit **T-1**; `warmup.py` `WarmupPolicy(w_bars, longest_feature_lookback_bars)` | **unvalued** — "exact `w_bars` frozen at feature impl" | implementation | on the forward roles only; gate 4's T-1 makes it event-**ineligible**, so it cannot expand a sample | `UNREGISTERED_RESEARCH_CHOICE` | the class enforces `w_bars ≥ longest lookback` but supplies neither number |
+| S-22 | DESIGN-span warm-up | **none** | **no policy exists** — T-1 is scoped to the forward epoch | — | yes — the first eligible DESIGN bar per pair, hence the `c` series' left edge | `UNREGISTERED_RESEARCH_CHOICE` | *newly identified here*: the warm-up question was answered for the forward epoch and never for DESIGN |
+
+##### D. Labels and horizon
+
+| ID | Surface | Authority | Value / method | Freeze point | Moves result? | Status | Problem |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| S-23 | Horizon | prereg §6 Ruling 6; `effective_n.py:47` `HORIZON_M15_BARS = 24` | **24 M15 bars**, and `effective_n` refuses any other value for **every** role | gate 3 | yes | `COMMITTED_AND_FROZEN` | — |
+| S-24 | Barrier multipliers | prereg §6 Ruling 6 | `TP = 1.5 × ATR14`, `SL = 1.0 × ATR14` | gate 3 | yes | `COMMITTED_AND_FROZEN` | `labels.py:189-190` takes them as caller arguments; no M15 caller exists |
+| S-25 | Spread floors on barriers | prereg §6 Ruling 6 | `TP_dist ≥ 3.0 × cost`, `SL_dist ≥ 2.0 × cost` | gate 3 | yes | `COMMITTED_AND_FROZEN` | **no implementation** — `bulk_labels` has no cost term |
+| S-26 | Cost-hurdle eligibility | prereg §6 Ruling 6 | `1.5 × ATR14 ≥ 2.0 × cost` | gate 3 | yes — whether a bar is an event at all | `COMMITTED_AND_FROZEN` | **no implementation anywhere** |
+| S-27 | SL-first tie, timeout MTM on the exit side | prereg §6; `labels.py` | SL-first strict; timeout scored at horizon-end exit-side close | gate 3 | yes | `COMMITTED_AND_FROZEN` | — |
+| S-28 | Entry / exit marker convention | prereg §6 + the committed constructors | decision bar `i`, next-bar fill, `exit_bar = i + 1 + offset` | gate 3 | yes — the date every trade is attributed to | `COMMITTED_AND_FROZEN` | `EXIT_DAY_ATTRIBUTION_REQUIRES_A_NEW_DAY_MAP_AT_THE_SECOND_CALL_SITE` |
+| S-29 | Barrier/cost ratio trigger | prereg §6; **hardened by audit T-3** | median eligible ratio < 3.0 → **gate-7 authorisation BLOCKED** pending a new human + ChatGPT ruling | gate 5 → 7 | it is a **stop**, not a parameter | `HUMAN_CHATGPT_RULED` | see §8.10.5 — §8.7.3 cited the *un-hardened* prereg wording |
+
+##### E. Model, training, calibration
+
+| ID | Surface | Authority | Value / method | Freeze point | Moves result? | Status | Problem |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| S-30 | Model family | prereg §8 Ruling 8 | LightGBM 3-class, from scratch, no family search | gate 3 | yes | `COMMITTED_AND_FROZEN` | — |
+| S-31 | Hyperparameters | prereg §8 Ruling 8 | `learning_rate 0.05 / num_leaves 31 / n_estimators 200 / verbose −1` | gate 3 | yes | `COMMITTED_AND_FROZEN` | — |
+| S-32 | Class weighting | prereg §8 Ruling 8 | **none**; changing it needs a design amendment | gate 3 | yes | `COMMITTED_AND_FROZEN` | — |
+| S-33 | Seed / determinism | prereg §8 `bounded_not_bitwise_guaranteed`; `contract.py:120-125` `seed_policy = "wiring_pr_responsibility_trainer_defines_none"` | **no seed is pinned**, by two differently-worded policies | wiring / execution PR | yes — `c_design[config_id]` differences can be partly seed artifacts | `CONFLICTING_AUTHORITIES` | two policies, one unpinned number; interacts with `AN_IDENTICAL_INPUT_REBUILD_IS_A_RESELECTION_AND_THE_FIRST_BUILD_GOVERNS` |
+| S-31a | A second LightGBM convention | `services/ml/training.py:50-63` `DEFAULT_PARAMS` | `n_estimators 100` vs the frozen **200**, `num_leaves 15` vs **31**, plus `max_depth 4`, `feature_fraction 0.8`, `bagging_fraction 0.8`, `bagging_freq 5` and `random_state 42` — none of which the frozen contract has | — | yes | `CONFLICTING_AUTHORITIES` | *newly identified here*: the repository's only expanding-window trainer carries a hyperparameter set that contradicts Ruling 8, **and** pins a seed the frozen contract declines to pin |
+| S-34 | Training span per fold | Ruling c-13 (§8.8.2), Ruling c-15 (§8.9.1) | chronological expanding window; first predicted date **2025-07-12** | ruled | yes | `HUMAN_CHATGPT_RULED` | — |
+| S-35 | Retraining cadence | Ruling c-13 | one retrain per one-UTC-date block; **one fit serves every `config_id`** | ruled | yes | `HUMAN_CHATGPT_RULED` | — |
+| S-36 | Purge / embargo | prereg §3.2; `split.py:110` `train_label_end = train_end − purge_bars` | **25 M15 bars**, counted in bars | gate 3 | yes | `COMMITTED_AND_FROZEN` | `split.py`'s own default is the **M1** value 21 (`contract.PURGE_EMBARGO_BARS`); no M15 caller exists |
+| S-37 | Calibration method | prereg §8 Ruling 8 | **isotonic regression**, no method search | gate 3 | yes | `COMMITTED_AND_FROZEN` | `contract.py:120` carries `CALIBRATION = "none_raw_predict_proba"` for the M1 lineage — no isotonic implementation exists |
+| S-38 | Calibration inner split | prereg §8 — "a split **carved from the training span only**" | **unvalued**: no fraction, no chronological/random placement, no purge at its own boundary | — | yes — via `p̂` → `EV_d` → the trade set | `UNREGISTERED_RESEARCH_CHOICE` | §8.9.6 item 1; anti-conservative limb knowable |
+| S-39 | Isotonic fit parameters | **none** | `out_of_bounds` / clipping / tie handling unstated | — | yes — `p̂` at the tails, where the EV gate bites | `UNREGISTERED_RESEARCH_CHOICE` | *newly identified here*. The repository's **only** isotonic producer is fenced stage-27 lineage — `stage27_0c_s_d_calibrated_ev_eval.py:377`, `IsotonicRegression(out_of_bounds="clip", y_min=0.0, y_max=1.0)`, one-vs-rest per class with per-row renormalisation, fitted on OOF predictions from a **random** 5-fold permutation (`:281-298`, `OOF_SEED = 42`, explicitly time-blind). Every one of those choices is a live decision for Family A, and the precedent's fold assignment is the one thing c-11 forbids outright |
+
+##### F. Decision rule and operating point
+
+| ID | Surface | Authority | Value / method | Freeze point | Moves result? | Status | Problem |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| S-40 | Decision rule | prereg §8 Ruling 9 | `EV_d = p̂_d·W̄ − (1−p̂_d)·L̄ − cost`; trade iff `EV_d ≥ ev_min` **and** `EV_d > EV_{−d}`; a raw probability threshold is **forbidden** | gate 3 | yes | `COMMITTED_AND_FROZEN` | **no implementation** |
+| S-40a | Disposition of an exact EV tie between the two directions | prereg §8 Ruling 9 — trade `d` iff `EV_d ≥ ev_min` **and** `EV_d > EV_{−d}` (strict) | an exact tie ⇒ **neither** direction trades | gate 3 | yes | `COMMITTED_AND_FROZEN` | the two committed precedents resolve the analogous tie in **opposite** directions — `body.py:95` `p_long >= p_short` gives **long**, `inference.py:65` `proba.argmax()` with `_DECODE[0] = -1` gives **short**. No M15 implementation exists to take the contract's arm |
+| S-41 | `ev_min` candidate set | prereg §8 Ruling 9; §8.5.0 Ruling c-10 | `{0.0, 0.25, 0.5}` — **three** configurations, one horizon | gate 3 | yes | `COMMITTED_AND_FROZEN` | — |
+| S-42 | `W̄` / `L̄` estimator | **audit T-2 (binding)** | `W̄` = design-data mean traded-direction PnL given the TP class; `L̄` = design-data mean \|PnL\| given the complement (SL **and** timeout MTM, netted); frozen once, recorded | gate 5 / 7 | yes | `COMMITTED_AND_FROZEN` **as to the estimator** | see §8.10.5 — §8.7.3 said "no estimator is registered", which T-2 refutes. What T-2 does **not** fix: the within-design **fit span** (c-11/c-14 now scope it fold-locally for generation), outlier handling, and the disposition of a `(pair, session)` cell with **zero** TP-class trades |
+| S-43 | Which validation selector governs | prereg §8 Ruling 9 says validation net **expectancy**; `thresholds.py:48` defaults `selection_metric="daily_portfolio_sharpe"` and `candidates=THRESHOLD_CANDIDATES` (probability thresholds) | two different selectors on two different knobs | — | yes — it decides whether Ruling Q10(iii)-b binds at all | `CONFLICTING_AUTHORITIES` | §8.9.6 item 4 |
+| S-44 | Sweep-completeness refusal | `thresholds.py:76-81` — `ThresholdSelectionError` unless the sweep covers the registered set **exactly** | fail-closed | committed | yes — it decides what "excluded from the argmax" can mean | `CONFLICTING_AUTHORITIES` | §8.9.6 item 3 |
+| S-45 | Tie rule | prereg §8 Ruling 9 — **smallest passing `ev_min`**; `thresholds.py:98` — prefer `production_default` else `min(tied)` | two different tie rules | — | yes | `CONFLICTING_AUTHORITIES` | the committed code's rule prefers a **default**, which has no analogue in the `ev_min` set |
+| S-43a | What the selection record reports as the swept candidate set | `thresholds.py:41` — `as_dict()` returns `list(contract.THRESHOLD_CANDIDATES)` | the **contract's** set, regardless of the `candidates=` actually passed | — | no — the value does not move; the **record** does | `IMPLEMENTATION_CHECKABILITY_ONLY` | *newly identified here*: a caller sweeping a different set is recorded as having swept the registered one, which defeats the multiplicity control the same module's completeness check exists to enforce |
+| S-46 | Guard-failure disposition | Ruling Q10(iii)-b (§8.9.2) | a fired guard **excludes** the candidate; all-failed ⇒ fail-closed | ruled | yes | `HUMAN_CHATGPT_RULED` | binds only if S-43 resolves to a selector it reaches |
+| S-47 | Invalid / uncertifiable-`c` candidate handling | Ruling c-10 (§8.5.0) | ineligible, never a substituted number; `SELECTION_VERSUS_CERTIFIABILITY_ORDER_NOT_REGISTERED` carried with select-then-check as default | ruled in part | yes | `UNREGISTERED_RESEARCH_CHOICE` (the order) | carried since c-10 |
+| S-48 | Where a fail-closed validation lands | `VALIDATION_BRANCH_DISJUNCTION_HAS_NO_SELECTOR_...` | "Family A closes" **or** "adoption waits" — no selector | — | yes — one ends the family, the other preserves a later attempt | `UNREGISTERED_RESEARCH_CHOICE` | §8.9.6 item 5 |
+
+##### G. Costs
+
+| ID | Surface | Authority | Value / method | Freeze point | Moves result? | Status | Problem |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| S-49 | All-in cost formula | prereg §5 Ruling 5; `cost_schema.py:22-23,78` | `median_spread(pair, session) + 0.3 + 0.5` | gate 3 | yes | `COMMITTED_AND_FROZEN` | playbook **NR-F**: `SPREAD_UNIT = "price"` while the constants are pips — a conversion step is implied and nowhere stated |
+| S-50 | The numeric cost table | prereg §5 `[FIXED-AT gate 3a or design audit]`; audit **T-6**; `cost_table_plan_or_metadata.json` selects **Option B — defer production to the implementation PR** | **unvalued** | implementation PR, human-approved before gate 7 | yes — eligibility, barriers, EV, net PnL | `UNREGISTERED_RESEARCH_CHOICE` | the plan artifact fixes the *recipe*; the numbers do not exist |
+| S-51 | Which cost table a fold uses | Ruling c-11 (§8.7.2), Ruling c-14 as corrected (§8.8.3) | **fold-local** for `c` generation; the frozen table governs validation/holdout | ruled | yes | `HUMAN_CHATGPT_RULED` | the fold-local estimator itself is S-50's recipe applied to a shorter span — its small-sample behaviour is unstated |
+| S-52 | Cost cell | prereg §5; contract `PRIMARY_COST_CELL_PIPS = 0.5`; Ruling c-4 | 0.5 pip primary; 0.0 / 1.0 diagnostic | gate 3 | yes | `COMMITTED_AND_FROZEN` | — |
+| S-53a | How cost enters PnL | prereg §5 (`cost(pair, session)`); `metrics.py:39` `net_pnl = gross − cell_pips` | the contract's cost is **per pair × session**; the only implemented net-PnL path subtracts a **flat scalar cell** | — | yes — every net metric and the `c` series | `CONFLICTING_AUTHORITIES` | *newly identified here*: `PRIMARY_COST_CELL_PIPS = 0.5` is an M1 convention; no per-pair/session-cost expectancy exists in code |
+| S-53 | Stress forms | prereg §5; `cost_schema.py:37` | 2× cost and p90 spread substitution; **p95 diagnostic** added by audit T-7 | gate 3 / 4 | yes — an acceptance row | `COMMITTED_AND_FROZEN` | — |
+
+##### H. Metrics
+
+| ID | Surface | Authority | Value / method | Freeze point | Moves result? | Status | Problem |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| S-54 | Daily PnL attribution | Ruling Q10(i) (§8.5.0) | whole realised PnL to the **exit** UTC date | ruled | yes — five quantities | `HUMAN_CHATGPT_RULED` | `EXIT_DAY_ATTRIBUTION_BREAKS_ONE_COMMITTED_TEST_FIXTURE` |
+| S-55 | Sharpe sampling index | Ruling Q10(iii) (§8.7.4) | complete UTC calendar-date index of the role's span; idle = zero | ruled | yes | `HUMAN_CHATGPT_RULED` | — |
+| S-56 | Sharpe annualisation factor | Ruling Q10(iii) | `√365` | ruled | yes | `HUMAN_CHATGPT_RULED` | `metrics.py:62` still defaults to `contract.TRADING_DAYS_PER_YEAR = 252`, overridable at three call sites |
+| S-57 | Sharpe guards and their order | Ruling Q10(iii)-a (§8.8.4) | membership filter → the two committed guards → zero-fill | ruled | yes | `HUMAN_CHATGPT_RULED` | — |
+| S-58 | Sparse-but-defined Sharpe | `SPARSE_CANDIDATE_CAN_CLEAR_THE_SHARPE_FLOOR_AT_VALIDATION_UNDER_ANY_INDEX_READING` | no trade-count floor anywhere in the selector; `m = 2` reaches **3.49** against a `0.8` floor | — | yes | `UNREGISTERED_RESEARCH_CHOICE` | §8.9.6 item 7 |
+| S-59 | Mandatory Sharpe SE | §10, updated by Q10(iii)/(iii)-a | `sqrt(365/N)` on the complete index; `m` reported beside every Sharpe | ruled | reporting requirement | `HUMAN_CHATGPT_RULED` | — |
+| S-60 | maxDD notional | audit **T-5**; `contract.py:104` `FIXED_NOTIONAL_EQUITY_PIPS = 10_000.0` | 10,000 pips unless a new ruling | gate 4 | yes — an acceptance row | `COMMITTED_AND_FROZEN` | — |
+| S-61 | Turnover attribution day | §8.7.5 | each trade once, on its **entry** UTC date | ruled | yes | `HUMAN_CHATGPT_RULED` | — |
+| S-62 | Turnover: mean vs per-day cap | `TURNOVER_CEILING_MEAN_VERSUS_PER_DAY_CAP_STILL_UNREGISTERED` | `metrics.py:120` computes a **mean**; prereg §9 says "≤ 40 trades/day" | — | yes — an acceptance row | `UNREGISTERED_RESEARCH_CHOICE` | carried since §8.6.6 |
+| S-63 | Turnover denominator axis | `TURNOVER_DENOMINATOR_ACTIVE_VERSUS_CALENDAR_AXIS_STILL_UNREGISTERED`; `metrics.py:227` | the **contract** is silent; the committed code passes `n_days = len({t.day for t in trades})` — the **active** axis — while `daily_coverage` in the same call uses the **full** holdout-day count | — | yes | `UNREGISTERED_RESEARCH_CHOICE` | carried since §8.6.6, and now with a source fact attached: the implemented arm is the **conservative** one (a smaller denominator raises turnover against a `≤ 40` ceiling), and the two denominators in one `compute_all` call are **different objects** |
+| S-64 | Daily coverage denominator | Ruling Q10(ii) (§8.2.0) | distinct UTC calendar dates; expected slots **only** from the approved calendar | ruled | yes | `HUMAN_CHATGPT_RULED` | `NOT_COMPUTABLE_WITHOUT_APPROVED_CALENDAR` |
+| S-65 | Concurrency / exposure caps | prereg §9 `[FIXED-AT design audit]`, re-pointed by audit **T-6** to implementation | **unvalued**; `simulator.py` and `contract.MAX_OPEN_POSITIONS_PER_PAIR = 1` implement one-per-pair for the M1 lineage | implementation, approved before gate 7 | yes — the **event sequence** `ω` is measured on | `FREEZE_TOO_LATE` | already a c-12 row; recorded here with its direction, which c-12 did not state |
+
+##### I. `c`, `ω`, `N_eff`
+
+| ID | Surface | Authority | Value / method | Freeze point | Moves result? | Status | Problem |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| S-65a | Per-pair daily PnL series | the object `c` is defined over (`effective_n_estimator_spec.json`, Ruling c-3) | **no constructor exists**: `metrics.py:44 daily_portfolio_pnl` sums **across** pairs and discards the pair; `metrics.py:135 pair_contribution` gives per-pair **totals**, never a dated series | — | yes — it is `c`'s entire input | `UNREGISTERED_RESEARCH_CHOICE` | already recorded at §8.5 as "no constructor in this repository"; restated here because it is the reason S-66 has no reachable route |
+| S-65b | Re-entry timing under the concurrency rule | `simulator.py:65` `busy = s.pair in open_until and s.entry < open_until[s.pair]` — strict `<` | a signal entering **exactly** at the prior exit is accepted, so back-to-back trades are allowed | — | yes — it sets the **inter-event gap**, hence `ω` | `UNREGISTERED_RESEARCH_CHOICE` | *newly identified here*: a zero gap gives `overlap = 1`, the `ω`-maximal case. Conservative for `N_eff`, but nothing in the contract chooses it, and prereg §12 risk 8 defers overlapping-position accounting |
+| S-66 | `c` definition | Ruling NR-L c-1…c-9 (§8.5.0) | `mean_{p<q} \|r_pq\|`, equal-weight Pearson, 190 entries, net realised PnL at the primary cell, one common complete DESIGN index, idle = zero, fail-closed | ruled | yes | `HUMAN_CHATGPT_RULED` | `C_HAS_NO_PRODUCER_AND_NO_ARTIFACT` |
+| S-67 | `c` generating configuration | Ruling c-10 | `c_design[config_id]` for every registered candidate, map frozen before validation | ruled | yes | `HUMAN_CHATGPT_RULED` | `NR_L_CONFIGURATION_COVERAGE_IMPLEMENTATION_PENDING` |
+| S-68 | `c` generation semantics | Rulings c-11 / c-13 / c-14 / c-15 | leakage-safe expanding-window walk-forward, one-date blocks, 25-bar purge, fold-local fitted statistics, 25% prefix | ruled | yes | `HUMAN_CHATGPT_RULED` | — |
+| S-69 | `c`-map input freeze | Ruling c-12 | every decision-bearing input frozen before measurement; enumeration **non-exhaustive** | ruled | yes | `HUMAN_CHATGPT_RULED` | collides with S-13, S-17, S-65 schedules |
+| S-70 | `c` pair universe | Ruling c-1 / NR-K | the frozen `PAIRS_20`; 190 unordered entries | ruled | yes | `HUMAN_CHATGPT_RULED` | — |
+| S-71 | `ω` semantics | Rulings ω-1…ω-13 (§8.4.0) | event-level `max(0, 1 − g/H)`, equal weight per adjacent interval, pair-local, approved-calendar eligible-slot clock | ruled | yes | `HUMAN_CHATGPT_RULED` | instantiation waits on S-12; **no producer exists** |
+| S-72 | `ω` role-span truncation | `ROLE_SPAN_HORIZON_TRUNCATION_RULE_NOT_REGISTERED` / `ROLE_SPAN_TRUNCATION_ARM_SELECTION_POINT_NOT_BOUND` | unregistered; the arm may be selectable at computation time | — | yes | `UNREGISTERED_RESEARCH_CHOICE` | the one genuinely-open `ω` semantic item |
+| S-73 | `P` | Ruling NR-K (§8.3.0) | `P = 20`, the frozen registered universe | ruled | yes | `HUMAN_CHATGPT_RULED` | `effective_n.py:284` computes `rho_x` from `n_pairs = len(records)` — the **supplied** roster, not 20 (`P_AUTHORITY_RULED_IMPLEMENTATION_COMPLETENESS_PIN_PENDING`) |
+| S-74 | `rho_h`, `rho_x`, `N_eff` arithmetic | `effective_n_estimator_spec.json` (`APPROVED_SPEC`, audit T-6); `effective_n.py` | `rho_h = 1+(H−1)ω_p`, `N_eff_pair = N_raw_p/rho_h_p`, `rho_x = 1+(P−1)c`, `N_eff = ΣN_eff_pair/rho_x` | gate 3a | yes | `COMMITTED_AND_FROZEN` | — |
+| S-75 | `N_raw` count quantity | `effective_n.py:83` `REQUIRED_COUNT_QUANTITY = "raw_traded_event_count"` | mandatory keyword, no default; the two confusable larger quantities are refused by name | ruled (PR #444 R-2) | yes | `COMMITTED_AND_FROZEN` | — |
+| S-76 | Holdout sample floors | prereg §9; `effective_n.py:49-50` | `raw ≥ 1000` **and** `N_eff ≥ 400`, conjunctive | gate 3 | yes | `COMMITTED_AND_FROZEN` | — |
+| S-77 | **Validation** sample floors | `effective_n.py:227-228` — `validation_raw_floor=None`, `validation_neff_floor=None`; spec says "below **the family's minimum**" | **unvalued**; the code refuses to default and returns `NOT_EVALUATED_AT_THIS_ROLE` | — | yes — the validation kill gate | `UNREGISTERED_RESEARCH_CHOICE` | playbook **NR-G**, `MAY_DEFER` — **already referred**, and it is the same shape as this packet's recurring finding |
+
+##### J. Acceptance
+
+| ID | Surface | Authority | Value / method | Freeze point | Moves result? | Status | Problem |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| S-78 | Validation kill gate | prereg §9.V Ruling 10 | net expectancy > 0 **and** gross ≥ 1.5 × cost at ≥ 1 registered point, within the turnover budget | gate 3 | yes | `COMMITTED_AND_FROZEN` | `KILL_GATE_READS_THE_REGISTERED_SET_NOT_THE_ELIGIBLE_SUBSET` |
+| S-79 | Holdout acceptance table | prereg §9.H Ruling 10 | twelve rows, frozen as printed; the design audit may only tighten | gate 3 | yes | `COMMITTED_AND_FROZEN` | — |
+| S-80 | The implemented acceptance criteria | `contract.py:128-140` `ACCEPTANCE_CRITERIA` | `min_holdout_trades = 300`; no effective-N row; no stress row; no class-frequency row | committed for **M1** | yes | `CONFLICTING_AUTHORITIES` | prereg §9 requires **≥ 1,000** trades and an effective-N gate; the committed evaluator implements neither |
+| S-81 | Acceptance-criteria override | `acceptance.py:105` `AcceptanceEvaluator(criteria: dict \| None = None)` | any caller may substitute the whole criteria dict | — | yes — every acceptance row | `CONFLICTING_AUTHORITIES` | a frozen table that a keyword argument replaces is not frozen at the call site |
+| S-82 | Timeout-share trigger | audit **T-4** | > 60% holdout timeout share → mandatory post-run investigation, **not** an acceptance gate | gate 4 | reporting / defect trigger | `COMMITTED_AND_FROZEN` | — |
+| S-83 | Class-frequency handling | prereg §9 | recorded; defect trigger only | gate 3 | no | `COMMITTED_AND_FROZEN` | — |
+
+##### K. Record, checkability and execution prerequisites
+
+| ID | Surface | Authority | Status |
+| --- | --- | --- | --- |
+| S-84 | `C_INDEX_SET_NOT_RECORDED_IN_ANY_ARTIFACT` | §8.5.0 | `IMPLEMENTATION_CHECKABILITY_ONLY` (deferral **contested**; §5's R-6 record is not deferred) |
+| S-85 | `NO_LOCUS_RECORDS_THE_FROZEN_C_MAP_INPUT_SET` / `C_INPUT_FREEZE_CHECKABILITY_IMPLEMENTATION_PENDING` | §8.7.3 | `IMPLEMENTATION_CHECKABILITY_ONLY` — deferral **lapses** where the execution path cannot record which build produced the map |
+| S-86 | `C_LEAKAGE_RULE_IS_UNCHECKABLE_UNTIL_THE_GENERATION_RECORD_EXISTS` | §8.7.2 | `IMPLEMENTATION_CHECKABILITY_ONLY` |
+| S-87 | `NR_L_PAIRWISE_COMPLETENESS_IMPLEMENTATION_PENDING` | §8.5.0 | `IMPLEMENTATION_CHECKABILITY_ONLY` (every short roster **raises** `N_eff`) |
+| S-88 | `PAIR_LABEL_ASSIGNMENT_MUST_NOT_BE_REARRANGED_TO_REDUCE_OMEGA` | §8.4.0 | `IMPLEMENTATION_CHECKABILITY_ONLY` — ruled as a prohibition, unenforced in code |
+| S-89 | `OVERLAP_PER_RECORD_PROVENANCE_UNBOUND` | §8.4.0 | `IMPLEMENTATION_CHECKABILITY_ONLY` |
+| S-90 | `CALENDAR_FREEZE_CHECKABILITY_IMPLEMENTATION_PENDING` / `NO_LOCUS_RECORDS_THE_FROZEN_CALENDAR_VERSION_IDENTITY` | §8.4.0 | `IMPLEMENTATION_CHECKABILITY_ONLY`; deferral lapses against `ONE_SELECTABLE_IMMUTABLE_CALENDAR_INSTANCE_...` |
+| S-90a | Two provenance policies for the code SHA | `manifest.py:47-59` fails closed; `train_lgbm_models.py:469-485` returns the sentinel `unknown` | `IMPLEMENTATION_CHECKABILITY_ONLY` — *newly identified here* |
+| S-91 | `PRE_CONTINUATION_CALENDAR_ARTIFACT_APPROVAL_REQUIRED` | PR #444 | `EXECUTION_PREREQUISITE_ONLY` |
+| S-92 | `MINIMUM_CALENDAR_IDENTITY_RECORD_REQUIRED_BEFORE_DATA_EXECUTION` | ω-13 residual 5 | `EXECUTION_PREREQUISITE_ONLY` |
+| S-93 | `FR_19_SEPARATE_TEST_SAFETY_WORK_PR_OPEN` | §3.5 | `EXECUTION_PREREQUISITE_ONLY` |
+| S-94 | Source-audit acceptance of the aggregation machinery | playbook §1 — `..._SOURCE_AUDIT_BLOCKED_PENDING_TARGETED_FIXES` | `EXECUTION_PREREQUISITE_ONLY` |
+| S-95 | Forward-epoch existence | playbook §1 — `FORWARD_EPOCH_ADOPTION_BLOCKED_INSUFFICIENT_SAMPLE_ADOPTION_WAITS` | `EXECUTION_PREREQUISITE_ONLY` |
+| S-96 | Q8 — where exploratory outputs live | §8 | `EXECUTION_PREREQUISITE_ONLY` (blocks any stage that writes, including R0) |
+| S-97 | Amendment procedure | `NO_GENERAL_CONTRACT_AMENDMENT_PROCEDURE_REGISTERED` | `UNREGISTERED_RESEARCH_CHOICE` — governance, not statistics; listed so it is not mistaken for settled |
+| S-98 | `NR-A` — is `artifacts/m15_gate3a/` immutable or the continuation's output dir | playbook (B-5) | `CONFLICTING_AUTHORITIES` — **already referred**, `MUST_RESOLVE_BEFORE_GATE3A_CONTINUATION`; closed as to the continuation's outputs by PR #450 §5 |
+| S-99 | `NR-B` / `NR-H` / `NR-J` / drop-ratio / forward evidence shape | playbook | already referred; `IMPLEMENTATION_CHECKABILITY_ONLY` or `MUST_RESOLVE_BEFORE_GATE3A_CONTINUATION` as the register records — **not** re-classified here |
+
+#### 8.10.3 Known favourable directions — recorded, not ruled
+
+Where one arm of an open surface is analytically favourable **without seeing any data**,
+§8.4.11's A-ω-5 standard says a pre-data freeze alone does not protect it. Those arms:
+
+| ID | Favourable arm | Mechanism | Effect |
+| --- | --- | --- | --- |
+| S-17 | a **narrower / weaker** feature list | poorer per-pair fits → more idiosyncratic PnL → lower `\|r\|` | **lower `c`** → **higher `N_eff`** |
+| S-38 | a **larger** calibration carve | smaller fit portion → noisier models → same mechanism | **lower `c`** → **higher `N_eff`** |
+| S-65 | a **tighter** concurrency cap | thins events → **longer** inter-event gaps → smaller `ω` | **lower `ω`** → lower `rho_h` → **higher `N_eff`** |
+| S-14 | a **wider** rollover exclusion | removes events, merging gaps — the `WIDEN_ONLY_IS_CONSERVATIVE_FOR_THE_EVENT_COUNT_NOT_FOR_N_EFF` shape | **direction on `N_eff` indeterminate**, and that is itself the finding |
+| S-56 | `√252` over `√365` | conditional on active share `a`; permissive below `a ≈ 0.690` | **higher Sharpe** in the sparse regime |
+| S-58 | a **sparser** candidate | complete-index scaling rewards sparsity on a signed argmax | **higher Sharpe**, easier selection |
+| S-62 / S-63 | turnover as a **mean** over a **calendar** denominator | both enlarge the denominator or smooth the peak | **easier** turnover-budget compliance |
+| S-77 | **no** validation floors | `NOT_EVALUATED_AT_THIS_ROLE` is not a failure | **easier** passage of the kill gate |
+| S-80 / S-81 | the **M1** criteria dict | `min_holdout_trades = 300` versus prereg's 1,000; no effective-N row | **easier** holdout acceptance |
+| S-22 | a **shorter** DESIGN warm-up | more early eligible bars per pair | more early common activity → direction on `c` **not established** |
+| S-20a | ATR on **mid** rather than the traded side | a mid ATR is systematically smaller than a spread-inclusive one at the same volatility | **more** bars clear `1.5 × ATR ≥ 2 × cost` → a larger event set. Direction on `c` not established; direction on **sample count** is |
+| S-31a | the second LightGBM convention (`n_estimators 100`, bagging, `random_state 42`) | fewer trees and subsampling give noisier per-pair fits | **lower `c`** → **higher `N_eff`** |
+| S-65b | strict `<` re-entry (back-to-back trades allowed) | zero gap ⇒ `overlap = 1` | **higher `ω`** → **lower `N_eff`** — the **conservative** arm, recorded so the asymmetry is visible |
+
+**No arm above is selected here, and naming a direction is not an accusation.** Most of
+these are choices an implementer would make for ordinary engineering reasons; the point
+of recording them is that the favourable direction is knowable in advance, which is
+exactly the condition under which "we froze it before looking at the data" stops being a
+sufficient defence.
+
+#### 8.10.4 Hidden multiplicity found in source
+
+Places where the **code** offers more than one behaviour while the contract names one or
+none. Each is a call-site surface, not a contract surface, and each is why "the contract
+freezes it" and "the run cannot vary it" are different statements.
+
+| Site | The multiplicity | Consequence |
+| --- | --- | --- |
+| `thresholds.py:47-51` | three overridable defaults: `selection_metric`, `candidates`, `production_default` | the selector's **metric** and its **knob** are both caller-chosen (S-43) |
+| `acceptance.py:105` | `criteria: dict \| None = None` | the entire frozen acceptance table is replaceable at the call site (S-81) |
+| `metrics.py:62, 192, 212` | `trading_days_per_year` default `252`, at **three** entry points | the ruled `√365` must be passed at every one of them, or the M1 default wins (S-56) |
+| `metrics.py:60-76` | `len(values) < 2` and `sd == 0` both return the **sentinel** `0.0` | the guard-sentinel route Q10(iii)-b closes — and it is a *value*, not an exception |
+| `labels.py:154` | `atr14(..., period=14, min_periods=14)`, called by `bulk_labels` with no arguments | ATR geometry and its warm-up are defaults (S-20) |
+| `labels.py:185-190` | `bulk_labels(horizon, tp_mult, sl_mult, pip_size)` all caller-supplied | the frozen label geometry is enforced by no committed M15 caller (S-24) |
+| `split.py:80` | `purge_bars` defaults to `contract.PURGE_EMBARGO_BARS = 21` — the **M1** value | the M15 value 25 must be passed explicitly (S-36) |
+| `effective_n.py:227-228` | `validation_raw_floor` / `validation_neff_floor` default `None` | validation sample sufficiency is un-evaluated by default (S-77) |
+| `effective_n.py:284` | `rho_x` uses `n_pairs = len(records)` | a short roster **raises** `N_eff` (S-73) |
+| `cost_schema.py:185` | `max_spread_pips` required but `None` is legal and means "no ceiling" | an explicit `None` satisfies "a bound was declared" (S-11) |
+| `services/ml/training.py:105-190` | `train_walk_forward` — expanding window, `30 * months` arithmetic, **no purge**, and `y_pred` is discarded | not reusable as the `c` generator; and its month arithmetic is a second, divergent span convention |
+| `scripts/compare_multipair_v*` (21 scripts) | `_generate_folds(train_days=90, test_days=7, step_days=7)` + `_compute_retrain_schedule` | a **rolling** family with three more free parameters; `v23_realism` purges by row count, the rest do not |
+| `contract.py:120-125` vs prereg §8 | two seed policies, neither pinning a seed | `c_design[config_id]` differences can be partly seed artifacts (S-33) |
+| `metrics.py:227` vs `:236-237` | `turnover` and `daily_coverage` are handed **different** day counts in the same call | the two "per day" figures do not share a denominator (S-63) |
+| `metrics.py:120-133` | both `turnover` and `daily_coverage` return `0.0` when the denominator is `<= 0` | a zero denominator reads as perfect turnover and zero coverage rather than raising |
+| `aggregation.py:277` | `aggregate_m15(..., expected_minutes=None)` | without it the calendar-derived accounting fields are `None` rather than an error |
+| `services/feature_service.py:339, 634` | `_atr` / `_atr_from_bars` return `high − low` (or `0.0`) below the period instead of `None` | a live-path ATR with no warm-up, reachable by any caller that imports it |
+| `src/.../labeling/triple_barrier.py:22` | a **second** triple-barrier labeler — fixed-pip, close-only, mid-only, `pip_size=0.0001` default | a different label geometry with a non-JPY pip default baked in |
+| `services/ml/training.py:105` | `train_walk_forward(..., train_months=6, val_months=1)` with `30 * months` day arithmetic | a third, divergent span convention |
+| `stage27_0c...py:281-298` | `make_oof_fold_assignment(n_rows, n_folds=5, seed=42)` — a **random** permutation | the only isotonic precedent is time-blind (S-39) |
+| `split.py:162-165` | `assert_m1_aligned` runs its whole-minute check **only if `bar_seconds == 60`** | passing `bar_seconds=900` disables the alignment enforcement (S-07a) |
+| `split.py:76-139` vs `:170-204` | **two** split implementations — float-seconds timestamps vs exact-`Fraction` bar indices — and the fixture and real paths use different ones (`body.py:191` / `:443`) | a boundary bar can be classified differently by the two |
+| `body.py:493-500` | three timestamp comparisons re-derived from `build_split`'s float boundaries | bars in `[train_label_end, train_end)` and `[val_label_end, holdout_start)` fall into **no** segment |
+| `body.py:366-372` | a class absent from `model.classes_` scores `0.0` | a model that never saw shorts silently prices every short at zero rather than failing |
+| `thresholds.py:41` | `as_dict()` reports the **contract's** candidate list, not the one swept | the record cannot detect an off-contract sweep (S-43a) |
+| `metrics.py:198` vs `acceptance.py:59` | cost-cell keys are formatted `f"{cell:.1f}pip"` while the acceptance lookup hard-codes `"cost_sensitivity.1.0pip.…"` | a cell of `1.25` keys as `"1.2pip"` and the lookup silently becomes `PROVENANCE_MISSING` |
+| `acceptance.py:141` | `reason = next(r for r in INVALID_REASONS if r in triggers)` | when several invalidations fire, **tuple order alone** decides the reported status |
+| `contract.py:58-59` vs `labels.py:154` | `ATR_PERIOD` / `ATR_MIN_PERIODS` are hashed into the label-contract descriptor and read by nothing | the contract constant and the computed ATR can diverge silently (S-20b) |
+| `services/ml/training.py:50-63` | a second `DEFAULT_PARAMS` — 100 trees, 15 leaves, bagging, `random_state 42` | contradicts Ruling 8 and pins a seed the contract declines (S-31a) |
+| `train_lgbm_models.py:537-558` | CLI `--train-frac` default **0.80**, plus `--horizon`, `--tp-mult`, `--sl-mult` | a **third** split ratio and three label parameters settable from the command line |
+| `train_lgbm_models.py:574-577` | bid/ask file missing ⇒ silent fallback to **mid-only** candles, with `price_mode` recorded after the fact | the B-2 bid/ask geometry degrades to mid on a file-existence test |
+| `proof.py:417-418` | `_REFUTED` is **process-global mutable state** | the same evidence can yield a different outcome depending on what ran earlier in the process |
+| `simulator.py:59, 65` | ordering key `(entry, pair, direction)`; re-entry test `entry < open_until` | at equal entry, alphabetical pair decides who claims the slot; equal-instant re-entry is allowed (S-65b) |
+| five class-encoding tables | `body._CLASS_INDEX`, `trainer._CLASS_ORDER`, `inference._DECODE`, `services.ml.training._LABEL_ENCODE`, `train_lgbm_models._LABEL_ENCODE` | one mapping, five copies; `body.py` reads its copy as a **positional index** at `:94` and as a **class label** at `:366` |
+| four pip authorities | `data_adapter.pip_size_for`, `pair_authority.pip_size_for_pair`, `train_lgbm_models._PIP_SIZE`, and the fixture-only `data_adapter.PIP_SIZE = 0.0001` | INV-1 was caused by confusing two of them |
+| nine tie-breaks in the trade path | direction (`>=`, long), threshold (`<`, equal trades), barrier (`<=`, SL), both-clear (`<=`, long), simulator order, simulator re-entry, concurrency events (exits first), selection (default then smallest), acceptance (tuple order) | each is a silent convention; **none** is named in the frozen contract |
+
+#### 8.10.5 Corrections this inventory makes to earlier sections of this document
+
+Tracing the authorities from source found **three** places where this packet's own text
+overstated or misstated a gap. Each is corrected here; none of the underlying rulings
+changes.
+
+1. **§8.7.3's `W̄`/`L̄` row is wrong.** It says prereg §8 "freezes only 'never re-fit on
+   validation/holdout' — **no estimator, conditioning set or within-design fit span is
+   registered**". The **gate-4 design audit's T-2 is binding and pins the estimator and
+   the conditioning set** by name: `W̄(pair, session)` is the design-data mean
+   traded-direction PnL conditional on the direction's TP class, and `L̄(pair, session)`
+   the design-data mean absolute traded-direction PnL conditional on the complement — SL
+   hits **and** timeouts, timeout MTM included, signed losses and gains netted within the
+   complement — estimated once, frozen, recorded in evidence. The audit reached this
+   deliberately, calling the unpinned formula the EV gate's "only degree of freedom".
+   **What remains open is narrower and is restated at S-42**: the within-design fit span
+   (now scoped fold-locally for generation by c-11/c-14), outlier handling, and the
+   disposition of a `(pair, session)` cell with zero TP-class trades.
+   **`SECTION_8_7_3_W_BAR_L_BAR_ROW_IS_CORRECTED_BY_AUDIT_T_2`.**
+2. **`PREREG_SECTION_6_BARRIER_RATIO_RECONSIDERATION_IS_AN_UNCLOSED_UPSTREAM_ROUTE`
+   overstates the route.** It cites prereg §6's "median eligible ratio < 3.0 triggers
+   **design-audit reconsideration**". The gate-4 audit **hardened** that to **T-3**:
+   a ratio below 3.0 **BLOCKS gate-7 execution authorisation pending a new human +
+   ChatGPT ruling**. A block is not a reconfiguration, so the automatic upstream-rewrite
+   reading is **withdrawn**. The token survives in a narrower form — a new ruling could
+   still reconfigure inputs — and is restated as
+   **`T_3_CONVERTS_THE_BARRIER_RATIO_ROUTE_FROM_AN_AUTOMATIC_RECONSIDERATION_TO_A_HUMAN_RULED_BLOCK`**.
+   §8.9.6's item 6 is corrected accordingly.
+3. **Three items this packet has been discussing were already on the record as
+   referrals.** The audit playbook's register carries **NR-G** (validation sample floors
+   unpinned, `MAY_DEFER`), **NR-I** (the rollover window has no representation, and the
+   session partition's tiling check makes a carve-out inexpressible), and **NR-F** (the
+   cost formula adds pip constants to a price-unit spread). They are recorded at S-77,
+   S-14 and S-49 with their **existing** classifications. Presenting them as new
+   discoveries would have inflated this round's finding count with items a prior audit
+   already found. **`THREE_INVENTORY_ROWS_ARE_EXISTING_PLAYBOOK_REFERRALS_NOT_NEW_FINDINGS`.**
+
+**The count.** **111** surfaces are classified:
+
+| Status | Count |
+| --- | --- |
+| `COMMITTED_AND_FROZEN` | **34** |
+| `HUMAN_CHATGPT_RULED` | **23** |
+| `UNREGISTERED_RESEARCH_CHOICE` | **23** |
+| `CONFLICTING_AUTHORITIES` | **12** |
+| `IMPLEMENTATION_CHECKABILITY_ONLY` | **10** |
+| `EXECUTION_PREREQUISITE_ONLY` | **6** |
+| `FREEZE_TOO_LATE` | **3** |
+| `DERIVED` | 0 |
+| `NOT_APPLICABLE` | 0 |
+
+**38 rows form the next round's decision set** — the `UNREGISTERED_RESEARCH_CHOICE`,
+`FREEZE_TOO_LATE` and `CONFLICTING_AUTHORITIES` totals — and they are listed with their
+questions at §8.10.7. `DERIVED` is empty deliberately: a derivation from committed
+authority is recorded here as the ruling or the constant it produced, not as a separate
+status, and inventing a `DERIVED` row would let a session mark its own reasoning as
+authority.
+
+
+#### 8.10.7 The decision set for the next round — stated, not answered
+
+Every row whose status is `UNREGISTERED_RESEARCH_CHOICE`, `FREEZE_TOO_LATE` or
+`CONFLICTING_AUTHORITIES`. **No option is recommended and no question is answered here.**
+Rows marked *(register)* are already on the audit playbook's referral register or already
+partly ruled; they are listed so the set is complete, **not** re-opened by this section.
+
+**`M15_STATISTICAL_CONTRACT_DECISION_SET_STATED_NOT_ANSWERED`.**
+
+##### Group 1 — the generator and its inputs (these gate `c`)
+
+| ID | Exact question | Options as they stand | Why result-bearing | Depends on |
+| --- | --- | --- | --- | --- |
+| S-17 | The feature list is frozen at the design / implementation audit, **after** c-12's freeze point. Which moves — the freeze, or the `c` generation? | (a) bring the feature freeze forward to before `c` generation; (b) sequence `c` generation after the implementation audit; (c) a scoped subset — **shown not to exist**, since the list sets `p̂` for every bar | sets `p̂` for every bar ⇒ the trade set ⇒ `c` | c-12; S-18, S-19 |
+| S-18 | Which after-audit feature groups are admitted — native-M15 base, H1/H4 context, realised volatility? | three independent admit/exclude decisions | each changes `p̂` | S-17 |
+| S-19 | What are the M15 feature windows / lookbacks, and what warm-up convention applies per feature? | the only precedent (`train_lgbm_models._add_features`) is internally inconsistent — ATR guarded at 14, eight other indicators at `min_periods=1` | changes early-span features ⇒ early trades ⇒ the `c` series' left edge | S-17, S-21, S-22 |
+| S-20 | Is `ATR14_M15` the `labels.py` convention (`period=14, min_periods=14`, mid true range) or one of the two divergent implementations? | three ATR implementations disagree, one with no warm-up at all | ATR sets both barriers **and** the eligibility hurdle | S-19 |
+| S-21 | What is the forward-epoch warm-up `w_bars`? | unvalued; the class enforces only `w_bars ≥ longest lookback` | forward roles only; T-1 makes it event-ineligible so it cannot expand a sample | S-19 |
+| S-22 | Is there a DESIGN-span warm-up policy at all, and if so what? | (a) none — first bar with a defined ATR is eligible; (b) an explicit burn-in mirroring T-1 | sets each pair's first eligible DESIGN bar ⇒ the left edge of the `c` series | S-19, S-20 |
+| S-38 | What is the isotonic calibration inner split — fraction, chronological or random placement, and does its own boundary purge? | unvalued; prereg gives only "carved from the training span only" | `p̂` ⇒ `EV_d ≥ ev_min` ⇒ the trade set ⇒ `c`. **Anti-conservative limb knowable** | S-37 |
+| S-39 | What isotonic fit parameters — out-of-bounds handling, `y_min`/`y_max`, per-class one-vs-rest, renormalisation? | the only precedent is fenced stage-27 lineage, and its fold assignment is **random** — the one thing c-11 forbids | `p̂` at the tails, which is where the EV gate bites | S-38 |
+| S-33 | Is a seed pinned, and under which of the two policies? | prereg `bounded_not_bitwise_guaranteed` vs `contract.py`'s `wiring_pr_responsibility_trainer_defines_none`; neither names a seed | an unseeded refit makes `c_design[config_id]` differences partly seed artifacts | `AN_IDENTICAL_INPUT_REBUILD_IS_A_RESELECTION_...` |
+| S-19a | What NaN / warm-up fill convention applies to M15 features? | unvalued; the precedent uses three different indicator sentinels and a blanket `fillna(0.0)` | degenerate early rows are **scored**, not skipped | S-19, S-22 |
+| S-20a | On which price series is `ATR14_M15` computed — bid, ask or mid? | prereg §6 names no series; the one implementation uses **mid**, which prereg §4 forbids constructing at aggregation time | ATR sets `TP_dist`, `SL_dist` **and** the eligibility hurdle, so the series choice changes the event set | S-20, S-26 |
+| S-20b | Should `contract.ATR_PERIOD` / `ATR_MIN_PERIODS` bind the ATR producer, or be removed? | they are hashed into the label-contract descriptor and read by nothing | the recorded contract and the computed ATR can diverge silently | S-20 |
+| S-31a | Does `services/ml/training.DEFAULT_PARAMS` bind anything for Family A? | it contradicts Ruling 8 on `n_estimators` and `num_leaves`, adds `max_depth`/bagging, and pins `random_state = 42` where the contract declines to pin a seed | the repository's only expanding-window trainer is the natural thing to reuse for the `c` generator | S-30, S-31, S-33 |
+| S-65a | What constructs the per-pair daily PnL series `c` is defined over? | no constructor exists; the two nearest helpers give a portfolio series or per-pair totals | it is `c`'s entire input | S-54 |
+
+##### Group 2 — costs, payoffs and eligibility
+
+| ID | Exact question | Options as they stand | Why result-bearing | Depends on |
+| --- | --- | --- | --- | --- |
+| S-50 | What produces the numeric cost table, on what estimator, and when? | the plan artifact selects **Option B — defer production to the implementation PR**; the recipe is fixed, the numbers do not exist | eligibility, barrier floors, EV and net PnL | S-51, T-6 |
+| S-51 | What is the fold-local cost estimator's small-sample behaviour — a minimum cell count, a fallback, or fail-closed? | unstated; c-11 requires fold-locality but names no estimator behaviour | early folds have few observations per `(pair, session)` cell | S-50, c-11 |
+| S-42-r | What is the within-design fit span for `W̄`/`L̄`, how are outliers handled, and what happens to a `(pair, session)` cell with **zero** TP-class trades? | audit T-2 pins the estimator and the conditioning set; these three limbs it does not reach | `EV_d` ⇒ the trade set | T-2, c-11/c-14 |
+| S-53a | Does net PnL subtract `cost(pair, session)` or the flat scalar cell? | the contract says the former; the only implemented path does the latter | every net metric, and the `c` series itself | S-49, S-50 |
+| S-11 | What is the spread magnitude ceiling? *(register — BL-5, `MAY_DEFER`)* | a required caller argument; an explicit `None` is a legal "bound declared" | which bars survive validation | S-50 |
+| S-14 | How wide is the rollover exclusion window above its 21:55–22:15 floor, and how is it represented? *(register — NR-I)* | widen-only, unbounded above; **zero occurrences in the package**, and `_check_session_partition()` requires the three sessions to tile all 1440 minutes, so no carve-out is expressible | removes events, merging gaps — direction on `N_eff` **indeterminate** | S-15, ω |
+| S-13 | Calendar B (holiday / thin liquidity) is `[FIXED-AT design audit]`, re-pointed by T-6 to "implementation, approved before gate 7" — after c-12's freeze point | c-12 resolved it **by scope** for current Family A; the schedule collision itself is open | event eligibility ⇒ the trade set | c-12, T-6 |
+| S-26 / S-40 | Nothing implements the eligibility hurdle `1.5 × ATR14 ≥ 2.0 × cost` or the EV gate; `ev_min` appears **nowhere** in the repository | not a contract question — an implementation gap, listed because the family's *defining condition* and its *decision rule* are both unwritten | everything downstream | S-50, S-42-r |
+
+##### Group 3 — selection and the validation gate
+
+| ID | Exact question | Options as they stand | Why result-bearing | Depends on |
+| --- | --- | --- | --- | --- |
+| S-43 | Which validation selector governs — prereg §8's net-expectancy `ev_min` selector, or the committed `select_threshold`? | the committed one sweeps **probability thresholds**, which prereg Ruling 9 forbids by name, on a `daily_portfolio_sharpe` default | decides **whether Ruling Q10(iii)-b binds at all** | S-44, S-45, S-46 |
+| S-44 | Given the sweep-completeness refusal, what does "excluded from the argmax domain" mean operationally? | (a) fail the family closed on any single guard failure; (b) relax the committed multiplicity control | a halt versus a different operating point reaching the holdout | S-43, Q10(iii)-b |
+| S-45 | Which tie rule — prereg's *smallest passing `ev_min`* or the code's *prefer the production default, else smallest*? | two rules; the code's "default" has no analogue in the `ev_min` set | which configuration reaches the holdout | S-43 |
+| S-47 | Filter-then-select or select-then-check for `c`-certifiability? | carried with **select-then-check** as the governing default | which candidate is selectable | c-10 |
+| S-48 | Where does a fail-closed validation land — "Family A closes" or "adoption waits"? | no selector exists | one ends the family; the other preserves a later attempt on more forward data | Q11/§0 |
+| S-58 | Is there a minimum active-date or trade-count floor at validation selection? | none anywhere in the selector; `m = 2` reaches **3.49** against a `0.8` floor | a two-day candidate can win the argmax | S-43, S-77 |
+| S-77 | What are the **validation** sample floors? *(register — NR-G, `MAY_DEFER`)* | unvalued; the code returns `NOT_EVALUATED_AT_THIS_ROLE` rather than defaulting | the validation kill gate | S-76 |
+
+##### Group 4 — metrics and acceptance
+
+| ID | Exact question | Options as they stand | Why result-bearing | Depends on |
+| --- | --- | --- | --- | --- |
+| S-62 | Is the turnover ceiling a **mean** or a per-day cap? | `metrics.py:120` computes a mean; prereg §9 says "≤ 40 trades/day" | an acceptance row, and the validation kill gate's budget | S-61 |
+| S-63 | Active-day or calendar-day turnover denominator? | the contract is silent; the code passes the **active** axis, which is the conservative one, while `daily_coverage` in the same call uses the full day count | an acceptance row | S-62, Q10(iii) |
+| S-16 | How does per-pair coverage roll up to a portfolio figure? | per-pair set equality is ruled; the roll-up is not | the `0.60` acceptance row | Q10(ii), S-12 |
+| S-80 | Which acceptance table governs — prereg §9's twelve rows or `contract.ACCEPTANCE_CRITERIA`? | the committed evaluator uses `min_holdout_trades = 300` against prereg's **1,000**, and consults no effective-N | holdout acceptance | S-79 |
+| S-81 | Should `AcceptanceEvaluator` accept a caller-supplied criteria dict at all? | it does, by keyword default | a frozen table replaceable at the call site is not frozen | S-80 |
+| S-09 | Missing-minute semantics — which absent minutes are counted? *(register — RF-2, ruled in part by PR #444)* | PR #444 ruled six separately measured quantities; the committed schema still declares two keys | `eligible_event_count` | PR #444 |
+| S-98 | Is `artifacts/m15_gate3a/` immutable or the continuation's output directory? *(register — NR-A; closed as to the continuation's outputs by PR #450 §5)* | listed for completeness | where evidence lands | PR #450 |
+
+##### Group 5 — `ω` and governance
+
+| ID | Exact question | Options as they stand | Why result-bearing | Depends on |
+| --- | --- | --- | --- | --- |
+| S-65b | Is re-entry allowed at the instant of the prior exit? | `simulator.py:65` uses strict `<`, so yes — a zero inter-event gap, the `ω`-maximal case | a zero gap gives `overlap = 1`; it is the **conservative** arm for `N_eff`, but nothing in the contract chooses it | S-65, S-71 |
+| S-07a | Which module owns M15 slot-grid alignment on the split path? | `coverage.py` enforces the grid; `split.assert_m1_aligned` **self-disables** for any non-M1 bar length | which timestamps are admissible split boundaries | S-36 |
+| S-72 | What is the role-span horizon-truncation rule for `ω`, and at what point is the arm selected? | unregistered; `ROLE_SPAN_TRUNCATION_ARM_SELECTION_POINT_NOT_BOUND` leaves it selectable at computation time | `ω` ⇒ `rho_h` ⇒ `N_eff` | ω-9, S-12 |
+| S-65 | What are the concurrency / exposure caps? | `[FIXED-AT design audit]`, re-pointed by T-6 to implementation — after c-12's freeze point | sets the **event sequence** `ω` is measured on; a **tighter** cap lowers `ω` and **raises** `N_eff` | T-6, c-12, S-72 |
+| S-97 | Is there a general contract-amendment procedure? | `NO_GENERAL_CONTRACT_AMENDMENT_PROCEDURE_REGISTERED` | governance, not statistics — listed so it is not mistaken for settled | — |
+
+**Ordering is not proposed here either.** The dependency column shows which questions
+constrain which, and nothing more; whether they are taken as one round or several is a
+human + ChatGPT decision, and §14's one-objective-one-PR rule bears on it.
+
+---
+
 ## 9. Output classification
 
 Everything produced under this gate is
