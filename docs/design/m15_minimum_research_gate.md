@@ -344,6 +344,36 @@ claimed** (§8.9.6): `C_GENERATION_CALIBRATION_SPLIT_IS_A_SECOND_UNREGISTERED_GE
 `C_DESIGN_GENERATOR_PENDING_ONE_EXACT_PARAMETER_DECISION` is discharged **only** as to
 the first predicted DESIGN date.
 
+**§8.10 — the statistical contract surface INVENTORY** (enumeration and classification
+only; **no ruling is taken there**):
+**`STATISTICAL_CONTRACT_SURFACE_INVENTORY_INCOMPLETE_FIRST_PASS_MISSED_THIRTY_EIGHT_SURFACES_AND_ONE_SEARCH_ELEMENT`**
+· `NO_RULING_IS_TAKEN_IN_THE_INVENTORY_ROUND` ·
+`NO_VALUE_IS_ASSIGNED_TO_AN_UNREGISTERED_PARAMETER_HERE` · `NO_CLOSURE_IS_CLAIMED_BY_AN_INVENTORY`
+· `INVENTORY_COMPLETENESS_IS_A_CLAIM_ABOUT_THE_SEARCH_NOT_ABOUT_THE_SURFACE` ·
+`INVENTORY_COMPLETENESS_REQUIRES_A_ROUND_THAT_ADDS_NOTHING_AND_RECLASSIFIES_NOTHING` ·
+`THE_DECISION_SET_IS_DEFINED_BY_STATUS_NOT_BY_THIS_INDEX` ·
+`M15_STATISTICAL_CONTRACT_DECISION_SET_STATED_NOT_ANSWERED`.
+
+**149 surfaces classified; 77 form the next round's decision set.** The route was traced
+from source end to end, and the shape of the gap is this: **`c` and `ω` — the two inputs
+carrying the entire cross-pair and overlap deflator — have no producer anywhere in the
+repository**, while `N_eff`, which consumes them, is fully implemented and hardened.
+Calibration, the EV gate, the numeric cost table, the native-M15 feature builder and the
+eligibility hurdle `1.5 × ATR14 ≥ 2.0 × cost` are all unimplemented, and **`ev_min` occurs
+zero times in the repository**. So the implementing PR is not wiring up frozen decisions;
+it is making most of them for the first time.
+
+**The inventory's own first pass was incomplete and says so.** A three-role
+missing-surface review (§12.18, full coverage) took it from **111 → 149** surfaces and
+**38 → 77** decision items, found a **method** defect — the search omitted this
+document's own open-token registers, so eight of the header's fifteen "Still open" tokens
+were absent — and reclassified three rows. The largest single omission was
+**`S-111`: no currency numeraire** for a portfolio PnL series that sums pips across twenty
+pairs, which sits under every metric **and** under `c`. §8.10.5 also corrects three
+statements this document had been carrying: audit **T-2** *does* pin the `W̄`/`L̄`
+estimator, audit **T-3** hardened the barrier-ratio route to a human-ruled **block**, and
+the calibration-carve direction is **conditional** on two unregistered arms.
+
 **Still open after the ω ruling** — carried, not discharged:
 `PAIR_LABEL_ASSIGNMENT_MUST_NOT_BE_REARRANGED_TO_REDUCE_OMEGA` (ruled as a
 prohibition, **unenforced in code**) · `HORIZON_WALL_CLOCK_EXTENT_NOT_REGISTERED`
@@ -420,6 +450,11 @@ carried here as a **precondition candidate for future research execution**, whic
 is a note about sequencing, not a change of disposition. §3.5's finding stands
 undiluted: this gate "inherits no working `.env` defence and no working network
 defence, and must supply its own".
+
+**`M15_MINIMUM_RESEARCH_STATISTICAL_CONTRACT_NOT_CLOSED`** — maintained. The inventory
+is an enumeration, not a closure instrument, and the two closure tokens
+`NO_NR_L_MINIMUM_RESEARCH_CONTRACT_BLOCKER_REMAINS` and
+`M15_MINIMUM_RESEARCH_STATISTICAL_CONTRACT_CLOSED` remain **NOT recorded** (§8.9.6).
 
 **`NON_NORMATIVE_DIAGNOSTIC_ONLY` — document-wide.** Every duration, α, power,
 false-positive, false-negative, deflator and standard-error figure in §0, §8.1,
@@ -8622,7 +8657,7 @@ enumerated so the freeze has a scope rather than a slogan:
 | **rollover exclusion window** | prereg §5 permits gate 3a / the design audit to **widen** it |
 | **concurrency / exposure caps** | `[FIXED-AT design audit]` |
 | the idle-day rule, common date index, coefficient, weighting, absolute-value placement, undefined-case disposition | ruled by c-2…c-8 |
-| **`W̄` / `L̄` and the estimator that produces them** | prereg §8 freezes only "never re-fit on validation/holdout" — **no estimator, conditioning set or within-design fit span is registered**, and `EV_d ≥ ev_min` decides which DESIGN bars trade |
+| **`W̄` / `L̄` and the estimator that produces them** | ⚠ **CORRECTED at §8.10.5** — this row said "**no estimator, conditioning set or within-design fit span is registered**", which the gate-4 audit's **binding T-2** refutes: it pins `W̄` as the design-data mean traded-direction PnL conditional on the direction's TP class and `L̄` as the mean absolute PnL conditional on the complement (SL **and** timeouts, MTM included, netted), estimated once and frozen. What remains open is the within-design **fit span** (scoped fold-locally for generation by c-11/c-14), outlier handling, and a `(pair, session)` cell with **zero** TP-class trades. `EV_d ≥ ev_min` still decides which DESIGN bars trade |
 | **Label geometry** — the `TP_dist`/`SL_dist` multipliers, the ATR-14 period, the SL-first tie rule, timeout mark-to-market on the exit side, horizon 24 | prereg §6 / Ruling 6 — every trade's PnL and its exit date |
 | **The cost-hurdle eligibility rule** `1.5 × ATR14 ≥ 2.0 × cost` | prereg §6 / Ruling 6 — whether a bar is an event at all |
 | **M15 aggregation identity** — `n_source_bars == 15`, UTC bucketing, per-side OHLC, missing-minute policy, weekend bucket termination, the spread convention | prereg §4 / Ruling 3, `[FIXED-AT gate 3a]` — which M15 bars exist to be events |
@@ -9944,7 +9979,11 @@ that closure is not available. The lead agrees, having verified each at source:
    prereg §6's "median eligible ratio < 3.0 triggers design-audit reconsideration" is a
    design-data observation that reconfigures c-12's inputs, and
    `C_OBSERVATION_MUST_NOT_TRIGGER_UPSTREAM_RECONFIGURATION` is scoped to observing `c`
-   and does not reach it.
+   and does not reach it. ⚠ **NARROWED at §8.10.5**: the gate-4 audit's binding **T-3**
+   hardened that clause from "reconsideration" to "**gate-7 execution authorisation
+   BLOCKED pending a new human + ChatGPT ruling**". A block is not an automatic
+   reconfiguration, so the strong reading is **withdrawn**; the route survives only in
+   the narrow form that a **new ruling** could still reconfigure inputs.
 7. **`SPARSE_CANDIDATE_CAN_CLEAR_THE_SHARPE_FLOOR_AT_VALIDATION_UNDER_ANY_INDEX_READING`**
    — Q10(iii)-b closes the **sentinel** route only. A candidate with two in-index active
    dates still reports up to **3.49** against a `0.8` floor, with no trade-count floor
@@ -10020,7 +10059,20 @@ and `scripts/ml_step4/`, plus `src/fx_ai_trading/services/ml/`; (b) the four com
 contract documents — prereg (PR #429), the gate-4 design audit (PR #430), the gate-3a
 adoption record (PR #431), and the audit playbook's referral register; (c) the four
 committed gate-3a artifacts; (d) a targeted hunt for the eleven **hidden-multiplicity
-shapes** listed at §8.10.4. **`INVENTORY_COMPLETENESS_IS_A_CLAIM_ABOUT_THE_SEARCH_NOT_ABOUT_THE_SURFACE`.**
+shapes** listed at §8.10.4; and — **added after the missing-surface review defeated the
+first pass on exactly this** — (e) **this document's own live-token registers**, the
+"Still open" block in the header and the per-section residual lists.
+**`INVENTORY_COMPLETENESS_IS_A_CLAIM_ABOUT_THE_SEARCH_NOT_ABOUT_THE_SURFACE`.**
+
+**⚠ The first pass's search was missing element (e), and it cost eight surfaces.** The
+adversarial role diffed every `UPPER_SNAKE` token in this document against the tokens
+appearing inside §8.10 and found that **eight of the fifteen tokens on the header's own
+"Still open" register** appeared nowhere in the inventory — including the one the
+document itself says "**survives** wherever the frozen horizon's wall-clock extent
+matters to something other than the overlap arithmetic". An inventory that reads the
+whole repository and not its own open list is not a method error of degree; it is the
+predictable one. Recorded as a **method** defect, not only an execution one.
+**`THE_FIRST_PASS_SEARCH_OMITTED_THIS_DOCUMENTS_OWN_OPEN_TOKEN_REGISTER`.**
 
 **Two things this inventory is *not*.** It is not a claim that the listed
 `COMMITTED_AND_FROZEN` rows are correct — only that an authority fixes them. And it is
@@ -10043,8 +10095,8 @@ known item as newly found.
 | cost application | `cost_schema.py` validates a table; **no table exists** and none is produced before the implementation PR | **not implemented** |
 | validation metrics | `ml_step4/metrics.py` | implemented, M1 conventions |
 | configuration selection | `ml_step4/thresholds.py:select_threshold` — sweeps **probability thresholds** | implemented, **wrong knob** for Family A |
-| `c` | **none** | **no producer anywhere in the repository** |
-| `ω` | **none** | **no producer anywhere in the repository** |
+| `c` | **none** | **no producer anywhere in the repository** — re-checked repo-wide for this section: `mean_abs_pairwise_corr` occurs only in a docstring and a test docstring, and every `.corr(` / `corrcoef` in `scripts/` is a **rolling basket/DXY correlation** or a **cross-strategy** PnL correlation, never cross-pair daily PnL |
+| `ω` | **none** | **no producer anywhere in the repository** — `overlap_fraction` appears only as a **required input key** validated by `effective_n.py:193, 213`; nothing binds it to a pair's realised inter-event gaps |
 | `N_eff` | `m15_gate3a/effective_n.py` | implemented; consumes `c` and `ω` as caller-supplied scalars |
 | holdout metrics | `ml_step4/metrics.py` | shared with validation, no role-specific variant |
 | acceptance | `ml_step4/acceptance.py` + `contract.ACCEPTANCE_CRITERIA` | implemented against the **M1** acceptance table |
@@ -10114,10 +10166,12 @@ Statuses are the round's fixed vocabulary. `UNREGISTERED_RESEARCH_CHOICE`,
 | ID | Surface | Authority | Value / method | Freeze point | Moves result? | Status | Problem |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | S-23 | Horizon | prereg §6 Ruling 6; `effective_n.py:47` `HORIZON_M15_BARS = 24` | **24 M15 bars**, and `effective_n` refuses any other value for **every** role | gate 3 | yes | `COMMITTED_AND_FROZEN` | — |
+| S-23a | The clock the 24-bar horizon window is counted on | the only implementation is **positional** — `labels.py:229` `window = bars[i + 1 : i + 1 + horizon]`, inspecting no timestamp — while §8.4.10's `ω` derivation reads it as **registered M15 slots** and expressly detaches `ω`'s `H` from "the label machinery's" | rows present, calendar slots, complete buckets and elapsed time are four different clocks | — | yes — the exit bar, the exit **date**, the timeout MTM price and the traded-event set | `CONFLICTING_AUTHORITIES` | *found by the training-surface review*: the three clocks diverge wherever a slot has no bar (all-minutes-missing bucket, crossed-quote drop, market closure). Under the row reading a Friday-late window silently reaches into Monday; under a slot reading it expires. `HORIZON_WALL_CLOCK_EXTENT_NOT_REGISTERED` survives **outside `ω`** and this is where it lands |
 | S-24 | Barrier multipliers | prereg §6 Ruling 6 | `TP = 1.5 × ATR14`, `SL = 1.0 × ATR14` | gate 3 | yes | `COMMITTED_AND_FROZEN` | `labels.py:189-190` takes them as caller arguments; no M15 caller exists |
 | S-25 | Spread floors on barriers | prereg §6 Ruling 6 | `TP_dist ≥ 3.0 × cost`, `SL_dist ≥ 2.0 × cost` | gate 3 | yes | `COMMITTED_AND_FROZEN` | **no implementation** — `bulk_labels` has no cost term |
 | S-26 | Cost-hurdle eligibility | prereg §6 Ruling 6 | `1.5 × ATR14 ≥ 2.0 × cost` | gate 3 | yes — whether a bar is an event at all | `COMMITTED_AND_FROZEN` | **no implementation anywhere** |
 | S-27 | SL-first tie, timeout MTM on the exit side | prereg §6; `labels.py` | SL-first strict; timeout scored at horizon-end exit-side close | gate 3 | yes | `COMMITTED_AND_FROZEN` | — |
+| S-27a | The **both-directions-clear** label tie | prereg §6 freezes the **same-bar SL-first** tie only; `labels.py:104-105` resolves both-clear with `return LABEL_LONG if long_tp_idx <= short_tp_idx else LABEL_SHORT` | the both-clear arm is unregistered, and `<=` awards **long** on an exact tie | — | yes — it sets the training target on exactly the wide-range bars this family exists to trade | `UNREGISTERED_RESEARCH_CHOICE` | *found by the training-surface review*: reachable at M15 whenever one bar's `bid_h` clears the long TP and its `ask_l` clears the short TP |
 | S-28 | Entry / exit marker convention | prereg §6 + the committed constructors | decision bar `i`, next-bar fill, `exit_bar = i + 1 + offset` | gate 3 | yes — the date every trade is attributed to | `COMMITTED_AND_FROZEN` | `EXIT_DAY_ATTRIBUTION_REQUIRES_A_NEW_DAY_MAP_AT_THE_SECOND_CALL_SITE` |
 | S-29 | Barrier/cost ratio trigger | prereg §6; **hardened by audit T-3** | median eligible ratio < 3.0 → **gate-7 authorisation BLOCKED** pending a new human + ChatGPT ruling | gate 5 → 7 | it is a **stop**, not a parameter | `HUMAN_CHATGPT_RULED` | see §8.10.5 — §8.7.3 cited the *un-hardened* prereg wording |
 
@@ -10126,15 +10180,20 @@ Statuses are the round's fixed vocabulary. `UNREGISTERED_RESEARCH_CHOICE`,
 | ID | Surface | Authority | Value / method | Freeze point | Moves result? | Status | Problem |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | S-30 | Model family | prereg §8 Ruling 8 | LightGBM 3-class, from scratch, no family search | gate 3 | yes | `COMMITTED_AND_FROZEN` | — |
-| S-31 | Hyperparameters | prereg §8 Ruling 8 | `learning_rate 0.05 / num_leaves 31 / n_estimators 200 / verbose −1` | gate 3 | yes | `COMMITTED_AND_FROZEN` | — |
+| S-30a | The fitted model's and calibrator's **pair scope** | **nothing** — prereg §8 says "LightGBM 3-class classifier" and `model_config()` carries **no scope field**, so `model_config_hash()` cannot tell the two apart | one pooled model over `PAIRS_20`, or one per pair. c-13's normative text reads pooled ("fitted on **all earlier DESIGN observations**") while its cost aside presumes per-pair (`20 × 232 = 4,640` fits) and calls the difference "implementation, **not a contract question**" | — | yes — maximal, and **directly on `c`** | `UNREGISTERED_RESEARCH_CHOICE` | *found by the training-surface review, and it corrects this packet*: a **pooled** model gives all twenty pairs one decision function ⇒ common signal ⇒ **higher `c`** ⇒ lower `N_eff`; **per-pair** fits give idiosyncratic signal ⇒ **lower `c`** ⇒ **higher `N_eff`**. The contract pins the pair scope of the other two fitted objects — `cost(pair, session)` and `W̄`/`L̄(pair, session)` — and of these two it pins neither |
+| S-31 | Hyperparameters | prereg §8 Ruling 8 | `learning_rate 0.05 / num_leaves 31 / n_estimators 200 / verbose −1` — **four** knobs of roughly twenty | gate 3 | yes | `COMMITTED_AND_FROZEN` | the four named values are frozen; see S-31b and S-31c for what the freeze does **not** reach |
+| S-31b | `LGBM_OBJECTIVE` / `LGBM_NUM_CLASS` | `contract.py:118-119`, echoed into `model_config()` at `:183-184` and hashed | declared, **hashed** — and read by no producer: `trainer.py:52` passes `{**LGBM_PARAMS, "n_estimators": …}` only, so sklearn infers the objective from `y` | — | yes | `CONFLICTING_AUTHORITIES` | *found by the training-surface review* — the S-20b shape one level up. A fold whose training slice holds only two of `{−1, 0, +1}` silently fits a **binary** objective with a two-column `predict_proba`, and `num_class = 3` is enforced nowhere. Under c-13 that is ~4,640 fits, with the earliest one-date blocks the likeliest to be class-degenerate |
+| S-31c | The unnamed hyperparameter remainder, and the library version supplying it | `pyproject.toml:23` `lightgbm>=4.3,<5.0` — a **range** | `min_child_samples`, `max_depth`, `min_child_weight`, `min_split_gain`, subsampling, `colsample_bytree`, regularisation, `boosting_type`, `max_bin`, `n_jobs` all take **library defaults** | — | yes | `UNREGISTERED_RESEARCH_CHOICE` | *found by the training-surface review*: `min_child_samples = 20` bites hardest exactly where c-13 puts the shortest histories, and a minor release inside the pinned range can move a default — hence the research result — with no contract change. `uv.lock` is a known non-authority here |
 | S-32 | Class weighting | prereg §8 Ruling 8 | **none**; changing it needs a design amendment | gate 3 | yes | `COMMITTED_AND_FROZEN` | — |
-| S-33 | Seed / determinism | prereg §8 `bounded_not_bitwise_guaranteed`; `contract.py:120-125` `seed_policy = "wiring_pr_responsibility_trainer_defines_none"` | **no seed is pinned**, by two differently-worded policies | wiring / execution PR | yes — `c_design[config_id]` differences can be partly seed artifacts | `CONFLICTING_AUTHORITIES` | two policies, one unpinned number; interacts with `AN_IDENTICAL_INPUT_REBUILD_IS_A_RESELECTION_AND_THE_FIRST_BUILD_GOVERNS` |
+| S-33 | Seed / determinism | prereg §8 `bounded_not_bitwise_guaranteed`; `contract.py:193` `"seed_policy": "wiring_pr_responsibility_trainer_defines_none"`, inside `model_config()` and therefore inside `model_config_hash()`. *An earlier drafting of this row cited `contract.py:120-125`, which is the `CALIBRATION` constant and a prose comment; corrected on a review finding* | **no seed is pinned**, by two differently-worded policies | wiring / execution PR | yes — `c_design[config_id]` differences can be partly seed artifacts | `CONFLICTING_AUTHORITIES` | two policies, one unpinned number; interacts with `AN_IDENTICAL_INPUT_REBUILD_IS_A_RESELECTION_AND_THE_FIRST_BUILD_GOVERNS` |
 | S-31a | A second LightGBM convention | `services/ml/training.py:50-63` `DEFAULT_PARAMS` | `n_estimators 100` vs the frozen **200**, `num_leaves 15` vs **31**, plus `max_depth 4`, `feature_fraction 0.8`, `bagging_fraction 0.8`, `bagging_freq 5` and `random_state 42` — none of which the frozen contract has | — | yes | `CONFLICTING_AUTHORITIES` | *newly identified here*: the repository's only expanding-window trainer carries a hyperparameter set that contradicts Ruling 8, **and** pins a seed the frozen contract declines to pin |
-| S-34 | Training span per fold | Ruling c-13 (§8.8.2), Ruling c-15 (§8.9.1) | chronological expanding window; first predicted date **2025-07-12** | ruled | yes | `HUMAN_CHATGPT_RULED` | — |
-| S-35 | Retraining cadence | Ruling c-13 | one retrain per one-UTC-date block; **one fit serves every `config_id`** | ruled | yes | `HUMAN_CHATGPT_RULED` | — |
-| S-36 | Purge / embargo | prereg §3.2; `split.py:110` `train_label_end = train_end − purge_bars` | **25 M15 bars**, counted in bars | gate 3 | yes | `COMMITTED_AND_FROZEN` | `split.py`'s own default is the **M1** value 21 (`contract.PURGE_EMBARGO_BARS`); no M15 caller exists |
+| S-34 | Training span per fold | Ruling c-13 (§8.8.2), Ruling c-15 (§8.9.1) | chronological expanding window; first predicted date **2025-07-12** | ruled | yes | `HUMAN_CHATGPT_RULED` | **scoped to DESIGN** — the rulings say so in their own text, and as first drafted this row read as settling the family's training scheme. See S-34a |
+| S-35 | Retraining cadence | Ruling c-13 | one retrain per one-UTC-date block; **one fit serves every `config_id`** | ruled | yes | `HUMAN_CHATGPT_RULED` | **scoped to DESIGN** — see S-34a |
+| S-34a | The model-fitting regime for the **validation** and **holdout** roles | **none.** c-13/c-15 are scoped to DESIGN by their own text ("the whole construction lives inside DESIGN"); c-11's frozen-values carve-out names `W̄`/`L̄`, the cost table and the calibration — **not the fitted model**; §8.7.1 already records that "the training span" is *named and never defined*. The only precedent, `body.py:504`, fits **once** on `train_idx` and never refits | one static DESIGN fit, an expanding walk-forward through the forward epoch, or a single refit at the validation→holdout boundary | — | yes — it sets `p̂` for every forward bar, hence the §9.V kill gate, which candidate reaches the holdout, `N_raw` at both roles, and every acceptance row | `UNREGISTERED_RESEARCH_CHOICE` | **found independently by BOTH review roles.** Under the static arm a model fitted no later than 2026-02-28 scores a holdout ending ≈ 2026-12 — six to ten months stale; and `c_design`, generated under c-13's walk-forward, would then be the correlation of a **different model-generating process** from the one whose counts it deflates |
+| S-36 | Purge / embargo | prereg §3.2 — "**≥** horizon + 1 = **25 M15 bars** at every role boundary"; `split.py:110` `train_label_end = train_end − purge_bars` | a **floor**, widen-only — the same shape as S-14's rollover window, not a fixed value | gate 3 | yes | `UNREGISTERED_RESEARCH_CHOICE` (the width **above** the floor) | ⚠ **reclassified on a review finding.** This row first read `COMMITTED_AND_FROZEN` on a "25 bars" reading that drops prereg's `≥`; S-14 was classified `UNREGISTERED_RESEARCH_CHOICE` for the identical "floor, not a value" shape, so the two rows contradicted each other. Ruling c-13 pins **exactly 25** for `c` generation; nothing pins the width at a **role** boundary. `split.py`'s own default is the **M1** value 21, and no M15 caller exists |
 | S-37 | Calibration method | prereg §8 Ruling 8 | **isotonic regression**, no method search | gate 3 | yes | `COMMITTED_AND_FROZEN` | `contract.py:120` carries `CALIBRATION = "none_raw_predict_proba"` for the M1 lineage — no isotonic implementation exists |
 | S-38 | Calibration inner split | prereg §8 — "a split **carved from the training span only**" | **unvalued**: no fraction, no chronological/random placement, no purge at its own boundary | — | yes — via `p̂` → `EV_d` → the trade set | `UNREGISTERED_RESEARCH_CHOICE` | §8.9.6 item 1; anti-conservative limb knowable |
+| S-38a | Is the base model refitted on the **full** training span after the calibration carve? | **none** | (a) keep the model fitted on the reduced portion; (b) refit on the full span with the calibrator fitted against the smaller model | — | yes | `UNREGISTERED_RESEARCH_CHOICE` | *found by the training-surface review, and it inverts an argument this packet relies on*: S-38's and §8.9.1's "a larger carve ⇒ a smaller fit portion ⇒ noisier models ⇒ lower `c`" holds **only under arm (a)**. Under arm (b) the carve size does not touch the fit portion and that anti-conservative direction does not exist. See §8.10.5 correction 4 |
 | S-39 | Isotonic fit parameters | **none** | `out_of_bounds` / clipping / tie handling unstated | — | yes — `p̂` at the tails, where the EV gate bites | `UNREGISTERED_RESEARCH_CHOICE` | *newly identified here*. The repository's **only** isotonic producer is fenced stage-27 lineage — `stage27_0c_s_d_calibrated_ev_eval.py:377`, `IsotonicRegression(out_of_bounds="clip", y_min=0.0, y_max=1.0)`, one-vs-rest per class with per-row renormalisation, fitted on OOF predictions from a **random** 5-fold permutation (`:281-298`, `OOF_SEED = 42`, explicitly time-blind). Every one of those choices is a live decision for Family A, and the precedent's fold assignment is the one thing c-11 forbids outright |
 
 ##### F. Decision rule and operating point
@@ -10143,7 +10202,7 @@ Statuses are the round's fixed vocabulary. `UNREGISTERED_RESEARCH_CHOICE`,
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | S-40 | Decision rule | prereg §8 Ruling 9 | `EV_d = p̂_d·W̄ − (1−p̂_d)·L̄ − cost`; trade iff `EV_d ≥ ev_min` **and** `EV_d > EV_{−d}`; a raw probability threshold is **forbidden** | gate 3 | yes | `COMMITTED_AND_FROZEN` | **no implementation** |
 | S-40a | Disposition of an exact EV tie between the two directions | prereg §8 Ruling 9 — trade `d` iff `EV_d ≥ ev_min` **and** `EV_d > EV_{−d}` (strict) | an exact tie ⇒ **neither** direction trades | gate 3 | yes | `COMMITTED_AND_FROZEN` | the two committed precedents resolve the analogous tie in **opposite** directions — `body.py:95` `p_long >= p_short` gives **long**, `inference.py:65` `proba.argmax()` with `_DECODE[0] = -1` gives **short**. No M15 implementation exists to take the contract's arm |
-| S-41 | `ev_min` candidate set | prereg §8 Ruling 9; §8.5.0 Ruling c-10 | `{0.0, 0.25, 0.5}` — **three** configurations, one horizon | gate 3 | yes | `COMMITTED_AND_FROZEN` | — |
+| S-40b | A class absent from a fold's training slice | `body.py:365-372` — `i_short = classes.index(…) if … in classes else None`, then `p[i_short] if i_short is not None else 0.0` | the missing class is priced at exactly **`0.0`**, silently | — | yes | `UNREGISTERED_RESEARCH_CHOICE` | *found by the training-surface review*: under the EV gate `p̂ = 0` gives `EV = −L̄ − cost < 0 ≤ ev_min`, so that **direction is switched off for the whole block** with nothing recorded. Compounds S-31b, and is likeliest in c-13's earliest one-date blocks | prereg §8 Ruling 9; §8.5.0 Ruling c-10 | `{0.0, 0.25, 0.5}` — **three** configurations, one horizon | gate 3 | yes | `COMMITTED_AND_FROZEN` | — |
 | S-42 | `W̄` / `L̄` estimator | **audit T-2 (binding)** | `W̄` = design-data mean traded-direction PnL given the TP class; `L̄` = design-data mean \|PnL\| given the complement (SL **and** timeout MTM, netted); frozen once, recorded | gate 5 / 7 | yes | `COMMITTED_AND_FROZEN` **as to the estimator** | see §8.10.5 — §8.7.3 said "no estimator is registered", which T-2 refutes. What T-2 does **not** fix: the within-design **fit span** (c-11/c-14 now scope it fold-locally for generation), outlier handling, and the disposition of a `(pair, session)` cell with **zero** TP-class trades |
 | S-43 | Which validation selector governs | prereg §8 Ruling 9 says validation net **expectancy**; `thresholds.py:48` defaults `selection_metric="daily_portfolio_sharpe"` and `candidates=THRESHOLD_CANDIDATES` (probability thresholds) | two different selectors on two different knobs | — | yes — it decides whether Ruling Q10(iii)-b binds at all | `CONFLICTING_AUTHORITIES` | §8.9.6 item 4 |
 | S-44 | Sweep-completeness refusal | `thresholds.py:76-81` — `ThresholdSelectionError` unless the sweep covers the registered set **exactly** | fail-closed | committed | yes — it decides what "excluded from the argmax" can mean | `CONFLICTING_AUTHORITIES` | §8.9.6 item 3 |
@@ -10162,7 +10221,8 @@ Statuses are the round's fixed vocabulary. `UNREGISTERED_RESEARCH_CHOICE`,
 | S-51 | Which cost table a fold uses | Ruling c-11 (§8.7.2), Ruling c-14 as corrected (§8.8.3) | **fold-local** for `c` generation; the frozen table governs validation/holdout | ruled | yes | `HUMAN_CHATGPT_RULED` | the fold-local estimator itself is S-50's recipe applied to a shorter span — its small-sample behaviour is unstated |
 | S-52 | Cost cell | prereg §5; contract `PRIMARY_COST_CELL_PIPS = 0.5`; Ruling c-4 | 0.5 pip primary; 0.0 / 1.0 diagnostic | gate 3 | yes | `COMMITTED_AND_FROZEN` | — |
 | S-53a | How cost enters PnL | prereg §5 (`cost(pair, session)`); `metrics.py:39` `net_pnl = gross − cell_pips` | the contract's cost is **per pair × session**; the only implemented net-PnL path subtracts a **flat scalar cell** | — | yes — every net metric and the `c` series | `CONFLICTING_AUTHORITIES` | *newly identified here*: `PRIMARY_COST_CELL_PIPS = 0.5` is an M1 convention; no per-pair/session-cost expectancy exists in code |
-| S-53 | Stress forms | prereg §5; `cost_schema.py:37` | 2× cost and p90 spread substitution; **p95 diagnostic** added by audit T-7 | gate 3 / 4 | yes — an acceptance row | `COMMITTED_AND_FROZEN` | — |
+| S-53 | Stress forms | prereg §5; `cost_schema.py:37-40` | the two form **names** are frozen and any other is refused; **p95 diagnostic** added by audit T-7 | gate 3 / 4 | yes — an acceptance row | `COMMITTED_AND_FROZEN` | only the **names** are frozen — see S-53b for the operational definition |
+| S-53b | The **depth** of a stress recomputation | prereg §5 — "**all metrics recomputed** at `2 × cost`" / "recomputed with p90 substituted" | shallow (re-price the frozen trade set) or deep (re-derive eligibility, barrier floors, labels, the fit and the EV gate). Cost enters **four** places — the hurdle, the barrier floors, `EV_d` and net PnL — so the two readings can differ by the entire trade population. **NO PRODUCER**: the only implemented analogue, `metrics.py:188-203 cost_sensitivity`, sweeps flat cells `{0.0, 0.5, 1.0}`, not `2 × cost(pair, session)` and not a p90 substitution | — | yes — "stressed-cost survival" is a holdout acceptance row | `UNREGISTERED_RESEARCH_CHOICE` | *found by the metrics-surface review* |
 
 ##### H. Metrics
 
@@ -10187,7 +10247,7 @@ Statuses are the round's fixed vocabulary. `UNREGISTERED_RESEARCH_CHOICE`,
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | S-65a | Per-pair daily PnL series | the object `c` is defined over (`effective_n_estimator_spec.json`, Ruling c-3) | **no constructor exists**: `metrics.py:44 daily_portfolio_pnl` sums **across** pairs and discards the pair; `metrics.py:135 pair_contribution` gives per-pair **totals**, never a dated series | — | yes — it is `c`'s entire input | `UNREGISTERED_RESEARCH_CHOICE` | already recorded at §8.5 as "no constructor in this repository"; restated here because it is the reason S-66 has no reachable route |
 | S-65b | Re-entry timing under the concurrency rule | `simulator.py:65` `busy = s.pair in open_until and s.entry < open_until[s.pair]` — strict `<` | a signal entering **exactly** at the prior exit is accepted, so back-to-back trades are allowed | — | yes — it sets the **inter-event gap**, hence `ω` | `UNREGISTERED_RESEARCH_CHOICE` | *newly identified here*: a zero gap gives `overlap = 1`, the `ω`-maximal case. Conservative for `N_eff`, but nothing in the contract chooses it, and prereg §12 risk 8 defers overlapping-position accounting |
-| S-66 | `c` definition | Ruling NR-L c-1…c-9 (§8.5.0) | `mean_{p<q} \|r_pq\|`, equal-weight Pearson, 190 entries, net realised PnL at the primary cell, one common complete DESIGN index, idle = zero, fail-closed | ruled | yes | `HUMAN_CHATGPT_RULED` | `C_HAS_NO_PRODUCER_AND_NO_ARTIFACT` |
+| S-66 | `c` definition | Ruling NR-L c-1…c-9 (§8.5.0) | `mean_{p<q} \|r_pq\|`, equal-weight Pearson, 190 entries, net realised PnL at the primary cell, one common complete DESIGN index, idle = zero, fail-closed | ruled | yes | `HUMAN_CHATGPT_RULED` | `C_HAS_NO_PRODUCER_AND_NO_ARTIFACT`, re-verified repo-wide. The nearest structural precedent — the `compare_multipair_v13…v26` pairwise helper — correlates **strategies**, not pairs, and substitutes **`0.0`** on all three undefined cases, which is the arm Ruling c-8 forbids by name |
 | S-67 | `c` generating configuration | Ruling c-10 | `c_design[config_id]` for every registered candidate, map frozen before validation | ruled | yes | `HUMAN_CHATGPT_RULED` | `NR_L_CONFIGURATION_COVERAGE_IMPLEMENTATION_PENDING` |
 | S-68 | `c` generation semantics | Rulings c-11 / c-13 / c-14 / c-15 | leakage-safe expanding-window walk-forward, one-date blocks, 25-bar purge, fold-local fitted statistics, 25% prefix | ruled | yes | `HUMAN_CHATGPT_RULED` | — |
 | S-69 | `c`-map input freeze | Ruling c-12 | every decision-bearing input frozen before measurement; enumeration **non-exhaustive** | ruled | yes | `HUMAN_CHATGPT_RULED` | collides with S-13, S-17, S-65 schedules |
@@ -10196,7 +10256,8 @@ Statuses are the round's fixed vocabulary. `UNREGISTERED_RESEARCH_CHOICE`,
 | S-72 | `ω` role-span truncation | `ROLE_SPAN_HORIZON_TRUNCATION_RULE_NOT_REGISTERED` / `ROLE_SPAN_TRUNCATION_ARM_SELECTION_POINT_NOT_BOUND` | unregistered; the arm may be selectable at computation time | — | yes | `UNREGISTERED_RESEARCH_CHOICE` | the one genuinely-open `ω` semantic item |
 | S-73 | `P` | Ruling NR-K (§8.3.0) | `P = 20`, the frozen registered universe | ruled | yes | `HUMAN_CHATGPT_RULED` | `effective_n.py:284` computes `rho_x` from `n_pairs = len(records)` — the **supplied** roster, not 20 (`P_AUTHORITY_RULED_IMPLEMENTATION_COMPLETENESS_PIN_PENDING`) |
 | S-74 | `rho_h`, `rho_x`, `N_eff` arithmetic | `effective_n_estimator_spec.json` (`APPROVED_SPEC`, audit T-6); `effective_n.py` | `rho_h = 1+(H−1)ω_p`, `N_eff_pair = N_raw_p/rho_h_p`, `rho_x = 1+(P−1)c`, `N_eff = ΣN_eff_pair/rho_x` | gate 3a | yes | `COMMITTED_AND_FROZEN` | — |
-| S-75 | `N_raw` count quantity | `effective_n.py:83` `REQUIRED_COUNT_QUANTITY = "raw_traded_event_count"` | mandatory keyword, no default; the two confusable larger quantities are refused by name | ruled (PR #444 R-2) | yes | `COMMITTED_AND_FROZEN` | — |
+| S-75 | `N_raw` count quantity | `effective_n.py:83` `REQUIRED_COUNT_QUANTITY = "raw_traded_event_count"` | mandatory keyword, no default; the two confusable larger **bucket** quantities are refused by name | ruled (PR #444 R-2) | yes | `COMMITTED_AND_FROZEN` | the pin closes the bucket-vs-trade confusion; it does **not** close S-75a |
+| S-75a | Pre- or post-**concurrency-filter** traded events | the spec says "buckets that pass the cost-hurdle **and fire an EV-gated trade**"; `simulator.py:66-75` splits exactly that set into `accepted_trades` and `ignored_signals` with `"reason": "pair_position_open"` | the gate fired and no position opened — two live readings of one pinned name | — | yes — it sets `N_raw` against the `≥ 1000` floor and `N_eff` against `≥ 400` | `UNREGISTERED_RESEARCH_CHOICE` | *found by the metrics-surface review*: if `N_raw` counts suppressed signals while `ω` is measured on accepted trades, the numerator inflates while `rho_h` does not — **anti-conservative on both frozen floors** |
 | S-76 | Holdout sample floors | prereg §9; `effective_n.py:49-50` | `raw ≥ 1000` **and** `N_eff ≥ 400`, conjunctive | gate 3 | yes | `COMMITTED_AND_FROZEN` | — |
 | S-77 | **Validation** sample floors | `effective_n.py:227-228` — `validation_raw_floor=None`, `validation_neff_floor=None`; spec says "below **the family's minimum**" | **unvalued**; the code refuses to default and returns `NOT_EVALUATED_AT_THIS_ROLE` | — | yes — the validation kill gate | `UNREGISTERED_RESEARCH_CHOICE` | playbook **NR-G**, `MAY_DEFER` — **already referred**, and it is the same shape as this packet's recurring finding |
 
@@ -10205,22 +10266,33 @@ Statuses are the round's fixed vocabulary. `UNREGISTERED_RESEARCH_CHOICE`,
 | ID | Surface | Authority | Value / method | Freeze point | Moves result? | Status | Problem |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | S-78 | Validation kill gate | prereg §9.V Ruling 10 | net expectancy > 0 **and** gross ≥ 1.5 × cost at ≥ 1 registered point, within the turnover budget | gate 3 | yes | `COMMITTED_AND_FROZEN` | `KILL_GATE_READS_THE_REGISTERED_SET_NOT_THE_ELIGIBLE_SUBSET` |
+| S-78a | What "gross expectancy" **is** in `gross ≥ 1.5 × all-in cost` | prereg §9.V and §9.H require it; `metrics.py:13` — `gross_pnl_pips` "**already embeds spread exactly once** (B-2 geometry)"; `labels.py:65-66` — the barrier distances carry the ask-entry / bid-exit geometry structurally | the only implemented "gross" is **already net of spread**, while the all-in cost **contains** that spread (`median_spread + 0.3 + 0.5`) | — | yes — the kill gate decides whether the holdout is consumed at all | `CONFLICTING_AUTHORITIES` | *found by the metrics-surface review*: on the implemented reading the comparison charges spread on **both** sides. **NO PRODUCER** of a spread-free PnL exists |
+| S-78b | How `cost(pair, session)` aggregates into the scalar on the right of `≥ 1.5 × cost` | **none** | cost is 60 per-pair × session cells; expectancy is one portfolio per-trade scalar. Trade-weighted mean, unweighted 60-cell mean, per-pair conjunction and per-cell are all admissible readings | — | yes — the kill gate and a holdout row | `UNREGISTERED_RESEARCH_CHOICE` | *found by the metrics-surface review*: the readings diverge exactly when trades concentrate in cheap cells, which is what a cost-hurdle-aware family produces by construction. `acceptance.py:179-221` has **no** gross-vs-cost row at all |
 | S-79 | Holdout acceptance table | prereg §9.H Ruling 10 | twelve rows, frozen as printed; the design audit may only tighten | gate 3 | yes | `COMMITTED_AND_FROZEN` | — |
 | S-80 | The implemented acceptance criteria | `contract.py:128-140` `ACCEPTANCE_CRITERIA` | `min_holdout_trades = 300`; no effective-N row; no stress row; no class-frequency row | committed for **M1** | yes | `CONFLICTING_AUTHORITIES` | prereg §9 requires **≥ 1,000** trades and an effective-N gate; the committed evaluator implements neither |
 | S-81 | Acceptance-criteria override | `acceptance.py:105` `AcceptanceEvaluator(criteria: dict \| None = None)` | any caller may substitute the whole criteria dict | — | yes — every acceptance row | `CONFLICTING_AUTHORITIES` | a frozen table that a keyword argument replaces is not frozen at the call site |
-| S-82 | Timeout-share trigger | audit **T-4** | > 60% holdout timeout share → mandatory post-run investigation, **not** an acceptance gate | gate 4 | reporting / defect trigger | `COMMITTED_AND_FROZEN` | — |
-| S-83 | Class-frequency handling | prereg §9 | recorded; defect trigger only | gate 3 | no | `COMMITTED_AND_FROZEN` | — |
+| S-79a | The provenance-completeness predicate | `acceptance.py:137` `if not provenance_complete:` → hard `PROVENANCE_MISSING`; **both** call sites pass a literal — `body.py:257` and `body.py:545`, `provenance_complete=True` | the computed half (`REQUIRED_METRIC_PATHS`, nine paths) checks **no** prereg §9 mandatory evidence item; `evidence.py` is a scrubber/writer with no schema | — | yes — a hard invalidation that short-circuits every quality row | `UNREGISTERED_RESEARCH_CHOICE` | *found independently by the metrics and adversarial reviews*: a literal `True` is the difference between an invalid-run status and a MEETS / DOES_NOT_MEET verdict. **And the sibling limb**: `acceptance.py:113` takes `hard_triggers: set[str] | None = None` and **no call site ever supplies one**, so of the ten `ML_STEP4_RUN_INVALID_*` reasons none has a detector — not even the computable one, since `vrep["all_match"]` is recorded at `body.py:604`/`:644` and never converted to `CHECKSUM_MISMATCH` |
+| S-79b | Pair **positive-PnL** concentration `≤ 0.50` | prereg §9; `metrics.py:141-151` | denominator is `total_pos = Σ max(net_pnl, 0)` — **winners only** — so the metric is a share of gross winnings, not of net contribution; `:150` returns `0.0` when `total_pos <= 0` | — | yes — a holdout acceptance row | `UNREGISTERED_RESEARCH_CHOICE` | *found by the metrics-surface review*: on an all-losing holdout every share becomes `0.0`, `max_positive_pnl_share = 0.0`, and the `≤ 0.50` row **passes** — fail-open |
+| S-79c | Pair **trade** concentration `≤ 0.40` | prereg §9; §8.3.8 already records that the quantity "is defined in no family-A document" | `metrics.py:149` `n_trades / n` over the **traded** set, while NR-K fixes `P` over the **registered** set | — | yes — a holdout acceptance row | `UNREGISTERED_RESEARCH_CHOICE` | recorded here for completeness; the defect is §8.3.8's, not this round's |
+| S-80a | Which acceptance failures are hard invalidations and which are soft misses | `acceptance.py:132-136` routes **both** `trade_count < min_holdout_trades` **and** `coverage < min_daily_coverage_frac` to the hard `INSUFFICIENT_OOS_SAMPLE`; prereg §9 makes only the trade-count row a hard route and leaves coverage an ordinary table row | two vocabularies coexist — `effective_n.INSUFFICIENT_SAMPLE` vs `acceptance.INSUFFICIENT_OOS_SAMPLE` | — | yes — prereg §3.2 attaches holdout **consumption** and the invalid-run ceremony to an *invalid* run, not to a DOES_NOT_MEET | `CONFLICTING_AUTHORITIES` | *found by the metrics-surface review* |
+| S-82 | Timeout-share trigger | audit **T-4** | the **threshold** `> 60%` is frozen; a post-run investigation, not an acceptance gate | gate 4 | reporting / defect trigger | `COMMITTED_AND_FROZEN` | the threshold is frozen; the **quantity** is not — see S-82a |
+| S-82a | The exit-type / timeout-share **quantity** | **NO PRODUCER**: `bulk_labels` returns `label`, the two PnLs and the two exit offsets — **no exit type**; `labels.py:279-286` returns `sl_idx`, else `tp_idx`, else `horizon − 1`, so an offset of `horizon − 1` is **three-way ambiguous** between SL-at-last-bar, TP-at-last-bar and timeout | and the label class `LABEL_TIMEOUT` is a **different quantity** from the traded direction's timeout: a bar labelled LONG can be a timeout for a traded short. No denominator is registered | — | evidence and the gate-8 audit; reaches acceptance only through S-79a | `UNREGISTERED_RESEARCH_CHOICE` | *found by the metrics-surface review* |
+| S-83 | Class-frequency handling | prereg §9 — "recorded; **defect trigger only, not a standalone pass/fail gate**" | recorded | gate 3 | see S-83a | `COMMITTED_AND_FROZEN` | the §9 row is frozen; S-83a is the clause that contradicts it |
+| S-83a | What class distribution "makes the sample invalid" | prereg §8 Ruling 8 — "**If the class distribution makes the sample invalid, the run takes `INSUFFICIENT_SAMPLE` or invalid-status handling**" (repeated at risk 6) **against** prereg §9's "defect trigger only, not a standalone pass/fail gate" | no criterion states what "invalid" means; the only class-frequency code in the tree is an M1-lineage CLI outside both packages | — | **yes** — under §8's clause the class distribution can route the run to `INSUFFICIENT_SAMPLE`, a holdout-acceptance outcome | `CONFLICTING_AUTHORITIES` | *found by the metrics-surface review*, which also showed S-83's "Moves result? no" was established on the §9 citation alone |
 
 ##### K. Record, checkability and execution prerequisites
 
 | ID | Surface | Authority | Status |
 | --- | --- | --- | --- |
 | S-84 | `C_INDEX_SET_NOT_RECORDED_IN_ANY_ARTIFACT` | §8.5.0 | `IMPLEMENTATION_CHECKABILITY_ONLY` (deferral **contested**; §5's R-6 record is not deferred) |
+| S-84a | Per-currency exposure — a mandatory evidence item with **no producer** | prereg §9 and the approved effective-N spec both name it the monitoring instrument for cross-pair dependence; `MetricTrade(pair, day, gross_pnl_pips)` carries **no direction and no size**, so it is not computable from the record type the metrics layer consumes | `UNREGISTERED_RESEARCH_CHOICE` — *found by the metrics-surface review*. It carries no threshold of its own and reaches acceptance through the `concurrency/exposure` row whose **cap** S-65 inventories while nothing inventoried the **quantity the cap would bind** |
+| S-84b | Concurrency metrics — defined, never called | `metrics.py:165-185 concurrency_profile` has **no non-test caller** and is absent from `compute_all`; `:178-184` appends a sample **only when `delta == 1`**, so `mean_concurrency` is an entry-event-weighted average of occupancy-at-entry, not a time-weighted mean | `UNREGISTERED_RESEARCH_CHOICE` — *found by the metrics-surface review*; lowest reach of the set, recorded because prereg §9 makes it mandatory |
 | S-85 | `NO_LOCUS_RECORDS_THE_FROZEN_C_MAP_INPUT_SET` / `C_INPUT_FREEZE_CHECKABILITY_IMPLEMENTATION_PENDING` | §8.7.3 | `IMPLEMENTATION_CHECKABILITY_ONLY` — deferral **lapses** where the execution path cannot record which build produced the map |
 | S-86 | `C_LEAKAGE_RULE_IS_UNCHECKABLE_UNTIL_THE_GENERATION_RECORD_EXISTS` | §8.7.2 | `IMPLEMENTATION_CHECKABILITY_ONLY` |
 | S-87 | `NR_L_PAIRWISE_COMPLETENESS_IMPLEMENTATION_PENDING` | §8.5.0 | `IMPLEMENTATION_CHECKABILITY_ONLY` (every short roster **raises** `N_eff`) |
 | S-88 | `PAIR_LABEL_ASSIGNMENT_MUST_NOT_BE_REARRANGED_TO_REDUCE_OMEGA` | §8.4.0 | `IMPLEMENTATION_CHECKABILITY_ONLY` — ruled as a prohibition, unenforced in code |
 | S-89 | `OVERLAP_PER_RECORD_PROVENANCE_UNBOUND` | §8.4.0 | `IMPLEMENTATION_CHECKABILITY_ONLY` |
+| S-89a | **`PER_RECORD_COUNT_PROVENANCE_UNBOUND`** (§8.3.1) — the **count** limb, a different token | §8.3.1, which the NR-K ruling **promotes** rather than closes: nothing binds a record's counts to the pair it names, and re-pairing the same counts against the same overlap fractions across twenty labels turns `383.33 → INSUFFICIENT_SAMPLE` into `8002.08 → SAMPLE_SUFFICIENT` — a **20.9× swing** on an identical roster, an identical `P`, an identical raw total and an identical multiset of overlap fractions | `UNREGISTERED_RESEARCH_CHOICE` — ⚠ **added on a review finding**: S-89 carried only the *overlap* limb and classified it checkability-only. A defect that flips the sample verdict is not checkability-only, and the two limbs are separate tokens |
 | S-90 | `CALENDAR_FREEZE_CHECKABILITY_IMPLEMENTATION_PENDING` / `NO_LOCUS_RECORDS_THE_FROZEN_CALENDAR_VERSION_IDENTITY` | §8.4.0 | `IMPLEMENTATION_CHECKABILITY_ONLY`; deferral lapses against `ONE_SELECTABLE_IMMUTABLE_CALENDAR_INSTANCE_...` |
 | S-90a | Two provenance policies for the code SHA | `manifest.py:47-59` fails closed; `train_lgbm_models.py:469-485` returns the sentinel `unknown` | `IMPLEMENTATION_CHECKABILITY_ONLY` — *newly identified here* |
 | S-91 | `PRE_CONTINUATION_CALENDAR_ARTIFACT_APPROVAL_REQUIRED` | PR #444 | `EXECUTION_PREREQUISITE_ONLY` |
@@ -10233,6 +10305,32 @@ Statuses are the round's fixed vocabulary. `UNREGISTERED_RESEARCH_CHOICE`,
 | S-98 | `NR-A` — is `artifacts/m15_gate3a/` immutable or the continuation's output dir | playbook (B-5) | `CONFLICTING_AUTHORITIES` — **already referred**, `MUST_RESOLVE_BEFORE_GATE3A_CONTINUATION`; closed as to the continuation's outputs by PR #450 §5 |
 | S-99 | `NR-B` / `NR-H` / `NR-J` / drop-ratio / forward evidence shape | playbook | already referred; `IMPLEMENTATION_CHECKABILITY_ONLY` or `MUST_RESOLVE_BEFORE_GATE3A_CONTINUATION` as the register records — **not** re-classified here |
 
+**The count, after the missing-surface review.** **149** surfaces are classified.
+The first pass classified **111**; the review added **38** and reclassified **3**.
+
+| Status | First pass | After review |
+| --- | --- | --- |
+| `UNREGISTERED_RESEARCH_CHOICE` | 23 | **55** |
+| `COMMITTED_AND_FROZEN` | 34 | **32** |
+| `HUMAN_CHATGPT_RULED` | 23 | **23** |
+| `CONFLICTING_AUTHORITIES` | 12 | **19** |
+| `IMPLEMENTATION_CHECKABILITY_ONLY` | 10 | **10** |
+| `EXECUTION_PREREQUISITE_ONLY` | 6 | **7** |
+| `FREEZE_TOO_LATE` | 3 | **3** |
+| `DERIVED` | 0 | 0 |
+| `NOT_APPLICABLE` | 0 | 0 |
+| **Total** | **111** | **149** |
+
+**77 rows form the next round's decision set** — every row carrying
+`UNREGISTERED_RESEARCH_CHOICE`, `FREEZE_TOO_LATE` or `CONFLICTING_AUTHORITIES`. The first
+pass put that figure at 38. **The review roughly doubled it**, and that fact is the
+round's most useful output: it measures how far a single-pass enumeration of this surface
+falls short, on a surface four consecutive rulings rounds had already worked over.
+
+`DERIVED` is empty deliberately: a derivation from committed authority is recorded here as
+the ruling or the constant it produced, not as a separate status, and inventing a
+`DERIVED` row would let a session mark its own reasoning as authority.
+
 #### 8.10.3 Known favourable directions — recorded, not ruled
 
 Where one arm of an open surface is analytically favourable **without seeing any data**,
@@ -10241,7 +10339,8 @@ Where one arm of an open surface is analytically favourable **without seeing any
 | ID | Favourable arm | Mechanism | Effect |
 | --- | --- | --- | --- |
 | S-17 | a **narrower / weaker** feature list | poorer per-pair fits → more idiosyncratic PnL → lower `\|r\|` | **lower `c`** → **higher `N_eff`** |
-| S-38 | a **larger** calibration carve | smaller fit portion → noisier models → same mechanism | **lower `c`** → **higher `N_eff`** |
+| S-38 | a **larger** calibration carve | smaller fit portion → noisier models → same mechanism | **lower `c`** → **higher `N_eff`** — ⚠ **conditional on S-38a**: it holds only if the base model is **not** refitted on the full span after the carve. Under the refit arm the carve size does not touch the fit portion and this direction does not exist |
+| S-30a | **per-pair** rather than pooled fitting | twenty idiosyncratic decision functions rather than one common one | **lower `c`** → **higher `N_eff`** — and ⚠ **this table assumed the anti-conservative arm**: the S-38 and S-31a rows above both reason from "noisier **per-pair** models", which presupposes an arm S-30a shows is itself unregistered |
 | S-65 | a **tighter** concurrency cap | thins events → **longer** inter-event gaps → smaller `ω` | **lower `ω`** → lower `rho_h` → **higher `N_eff`** |
 | S-14 | a **wider** rollover exclusion | removes events, merging gaps — the `WIDEN_ONLY_IS_CONSERVATIVE_FOR_THE_EVENT_COUNT_NOT_FOR_N_EFF` shape | **direction on `N_eff` indeterminate**, and that is itself the finding |
 | S-56 | `√252` over `√365` | conditional on active share `a`; permissive below `a ≈ 0.690` | **higher Sharpe** in the sparse regime |
@@ -10253,6 +10352,13 @@ Where one arm of an open surface is analytically favourable **without seeing any
 | S-20a | ATR on **mid** rather than the traded side | a mid ATR is systematically smaller than a spread-inclusive one at the same volatility | **more** bars clear `1.5 × ATR ≥ 2 × cost` → a larger event set. Direction on `c` not established; direction on **sample count** is |
 | S-31a | the second LightGBM convention (`n_estimators 100`, bagging, `random_state 42`) | fewer trees and subsampling give noisier per-pair fits | **lower `c`** → **higher `N_eff`** |
 | S-65b | strict `<` re-entry (back-to-back trades allowed) | zero gap ⇒ `overlap = 1` | **higher `ω`** → **lower `N_eff`** — the **conservative** arm, recorded so the asymmetry is visible |
+
+**Two of these rows were themselves defective, and the defect is the one this table
+exists to catch.** The S-38 and S-31a directions were written assuming per-pair fitting
+and no post-carve refit — two unregistered arms, one of them (per-pair) the
+anti-conservative one. A favourable-direction table that silently presumes a favourable
+arm is worse than none, because it reads as having checked. Both rows now carry their
+condition. **`A_DIRECTION_CLAIM_INHERITS_EVERY_UNREGISTERED_ARM_IT_PRESUPPOSES`.**
 
 **No arm above is selected here, and naming a direction is not an accusation.** Most of
 these are choices an implementer would make for ordinary engineering reasons; the point
@@ -10303,6 +10409,7 @@ freezes it" and "the run cannot vary it" are different statements.
 | `simulator.py:59, 65` | ordering key `(entry, pair, direction)`; re-entry test `entry < open_until` | at equal entry, alphabetical pair decides who claims the slot; equal-instant re-entry is allowed (S-65b) |
 | five class-encoding tables | `body._CLASS_INDEX`, `trainer._CLASS_ORDER`, `inference._DECODE`, `services.ml.training._LABEL_ENCODE`, `train_lgbm_models._LABEL_ENCODE` | one mapping, five copies; `body.py` reads its copy as a **positional index** at `:94` and as a **class label** at `:366` |
 | four pip authorities | `data_adapter.pip_size_for`, `pair_authority.pip_size_for_pair`, `train_lgbm_models._PIP_SIZE`, and the fixture-only `data_adapter.PIP_SIZE = 0.0001` | INV-1 was caused by confusing two of them |
+| `compare_multipair_v23_realism.py:2085-2103` (and `v13`…`v26`) | the repository's **only** pairwise-correlation helper: `0.0` substituted when `mask.sum() < 5`, when either series has zero std, and when `corrcoef` returns non-finite | three undefined-case substitutions — exactly the arm Ruling c-8 rules **fail-closed** against; and it correlates **strategies**, not pairs, so it is a precedent and not a `c` producer |
 | nine tie-breaks in the trade path | direction (`>=`, long), threshold (`<`, equal trades), barrier (`<=`, SL), both-clear (`<=`, long), simulator order, simulator re-entry, concurrency events (exits first), selection (default then smallest), acceptance (tuple order) | each is a silent convention; **none** is named in the frozen contract |
 
 #### 8.10.5 Corrections this inventory makes to earlier sections of this document
@@ -10333,7 +10440,23 @@ changes.
    still reconfigure inputs — and is restated as
    **`T_3_CONVERTS_THE_BARRIER_RATIO_ROUTE_FROM_AN_AUTOMATIC_RECONSIDERATION_TO_A_HUMAN_RULED_BLOCK`**.
    §8.9.6's item 6 is corrected accordingly.
-3. **Three items this packet has been discussing were already on the record as
+3. **§8.9.1's and S-38's anti-conservative direction for the calibration carve is
+   conditional, and was stated unconditionally.** "A larger carve leaves a smaller fit
+   portion, noisier per-pair models, more pair-idiosyncratic noise, a diluted `|r|` and a
+   higher `N_eff`" holds **only** if the base model is not refitted on the full training
+   span after the carve — an arm nothing registers (S-38a) — and it further presupposes
+   **per-pair** fitting, which nothing registers either (S-30a). The blocker
+   `C_GENERATION_CALIBRATION_SPLIT_IS_A_SECOND_UNREGISTERED_GENERATOR_PARAMETER_WITH_A_KNOWABLE_ANTI_CONSERVATIVE_LIMB`
+   **stands** — an unregistered parameter reaching `c` is a blocker whichever way its
+   direction runs — but the words "knowable anti-conservative limb" are now **read as
+   conditional on S-38a and S-30a**, and §8.10.3 carries the condition.
+   **`THE_CALIBRATION_CARVE_DIRECTION_IS_CONDITIONAL_ON_TWO_UNREGISTERED_ARMS`.**
+4. **`C_DESIGN_GENERATOR_PENDING_ONE_EXACT_PARAMETER_DECISION`'s discharge did not reach
+   the forward roles, and no section said so.** c-13 and c-15 settle the generator for
+   the **DESIGN** span; nothing settles what fits `p̂` at validation and holdout (S-34a),
+   and both review roles found it independently. §8.8.2's and §8.9.1's rows are scoped
+   accordingly rather than rewritten.
+5. **Three items this packet has been discussing were already on the record as
    referrals.** The audit playbook's register carries **NR-G** (validation sample floors
    unpinned, `MAY_DEFER`), **NR-I** (the rollover window has no representation, and the
    session partition's tiling check makes a carve-out inexpressible), and **NR-F** (the
@@ -10342,36 +10465,108 @@ changes.
    discoveries would have inflated this round's finding count with items a prior audit
    already found. **`THREE_INVENTORY_ROWS_ARE_EXISTING_PLAYBOOK_REFERRALS_NOT_NEW_FINDINGS`.**
 
-**The count.** **111** surfaces are classified:
+##### L. Surfaces added by the missing-surface review (§8.10.6)
 
-| Status | Count |
-| --- | --- |
-| `COMMITTED_AND_FROZEN` | **34** |
-| `HUMAN_CHATGPT_RULED` | **23** |
-| `UNREGISTERED_RESEARCH_CHOICE` | **23** |
-| `CONFLICTING_AUTHORITIES` | **12** |
-| `IMPLEMENTATION_CHECKABILITY_ONLY` | **10** |
-| `EXECUTION_PREREQUISITE_ONLY` | **6** |
-| `FREEZE_TOO_LATE` | **3** |
-| `DERIVED` | 0 |
-| `NOT_APPLICABLE` | 0 |
+Kept as their own group so the review's contribution is auditable rather than folded
+invisibly into the first pass. Every row was **re-verified at source by the lead** before
+being entered.
 
-**38 rows form the next round's decision set** — the `UNREGISTERED_RESEARCH_CHOICE`,
-`FREEZE_TOO_LATE` and `CONFLICTING_AUTHORITIES` totals — and they are listed with their
-questions at §8.10.7. `DERIVED` is empty deliberately: a derivation from committed
-authority is recorded here as the ruling or the constant it produced, not as a separate
-status, and inventing a `DERIVED` row would let a session mark its own reasoning as
-authority.
+| ID | Surface | Authority | Value / method | Freeze point | Moves result? | Status | Problem |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| S-100 | Endpoint convention and boundary arithmetic for `T_v` / `T_h` / `D` | `DURATION_BOUNDARY_ARITHMETIC_AND_ENDPOINT_CONVENTION_PENDING_HUMAN_CHATGPT_RULING` (§8.2.8 step 5) | unruled | — | yes — which bars fall in validation vs holdout at the boundary instant, hence the holdout trade count against `≥ 1000` | `UNREGISTERED_RESEARCH_CHOICE` | S-04/S-05 record only that the *values* are pending; the **convention** is a separate object |
+| S-101 | A gate that detects a short **forward-span** roster | `NO_FORWARD_SPAN_FULL_ROSTER_COVERAGE_GATE_COMMITTED` | none — `assert_full_coverage` raises for any slot outside the design span, and `P` decides at holdout | — | yes — a pair silently absent from the forward span **raises** `N_eff` via `rho_x = 1 + (len(records) − 1)c` | `UNREGISTERED_RESEARCH_CHOICE` | S-73 pins the authority, S-87 covers the `c`-map's 190 entries; neither is the forward-roster gate |
+| S-102 | The concentration cap's drop motive | `CONCENTRATION_CAP_DROP_MOTIVE_SURVIVES_NR_K` (§8.3.7) | `max_trade_share` is computed over the **traded** set, so it moves when a pair stops trading while `P` stays at 20 | — | yes — a holdout acceptance row | `UNREGISTERED_RESEARCH_CHOICE` | recorded by §8.3.7 as "recorded, not resolved"; it had no inventory row |
+| S-103 | When the continuation **declaration** is made | `GATE3A_CONTINUATION_DATE_NOT_FROZEN_RESIDUAL_AFTER_Q11_SECTION0_RULING` | §8.2.4 records the lever as **relocated, not discharged** — a longer `D` remains selectable by declaring later | — | yes — sets `D`, `T_v`, `T_h`, every forward sample size and the `N_eff ≥ 400` floor | `UNREGISTERED_RESEARCH_CHOICE` | — |
+| S-104 | What "the registered data plan" refers to | `REGISTERED_DATA_PLAN_REFERENT_AND_CONTENTS_NOT_DETERMINABLE` (§8.1.4) | two readings | — | yes — it decides whether an `INSUFFICIENT_SAMPLE` **closes** Family A or is remediable | `CONFLICTING_AUTHORITIES` | the same disjunction S-48 records for the validation branch, on the **sample** branch |
+| S-105 | Span-sizing basis · new-preregistration sufficiency for a different `D` · freeze-checkability wording | `SPAN_SIZING_BASIS_NOT_COMMITTED` · `NEW_PREREGISTRATION_SUFFICIENCY_FOR_A_DIFFERENT_D_NOT_RULED` · `FREEZE_CHECKABILITY_WORDING_NOT_ADOPTED` | three open header tokens | — | yes — each bears on whether a declared span or a re-declared `D` is admissible | `UNREGISTERED_RESEARCH_CHOICE` (three instances, one row) | grouped because they share one question: what makes a span declaration admissible |
+| S-106 | The eight unsettled **amendment classifications** | `NR_K_..._NOT_SETTLED` · `C_10_AMENDMENT_CLASSIFICATION_NOT_SETTLED` · `MEAN_OVERLAP_AMENDMENT_CLASSIFICATION_NOT_SETTLED` · `MEAN_OVERLAP_CLOCK_...` · `OMEGA_CALENDAR_...` · `OMEGA_RECLASSIFICATION_...` · `NR_L_AND_Q10_I_...` · §8.7's own | each decides whether a ruling is a **tightening** (stands) or a **contract amendment** (needs fresh preregistration under `NO_GENERAL_CONTRACT_AMENDMENT_PROCEDURE_REGISTERED`) | — | yes — acceptance-bearing for every ruling each touches | `UNREGISTERED_RESEARCH_CHOICE` (eight instances) | ⚠ the first pass collapsed all eight into S-97 and called them "governance, not statistics"; that understated them |
+| S-107 | The route when a frozen calendar is found **defective** after declaration | `POST_DECLARATION_PRE_OBSERVATION_CALENDAR_DEFECT_ROUTE_NOT_SETTLED` — **enlarged** by ω-13(a) to govern the *initial* materialisation, making it the **only** route | unsettled | — | yes — a calendar replacement moves `ω`, coverage, slot eligibility and `N_eff` | `UNREGISTERED_RESEARCH_CHOICE` | S-12/S-90 cover approval and identity recording, not the defect route |
+| S-108 | Who judges the Calendar-B **scope** classification | `CALENDAR_B_SCOPE_CLASSIFICATION_HAS_NO_NAMED_JUDGE` · `PRE_DATA_FAMILY_A_CONTRACT_MUST_NOW_ALSO_NAME_THE_PNL_REACHING_SUBSET` (§8.7.3) | no owner named | — | yes — the scope is what c-12 used to resolve the collision | `UNREGISTERED_RESEARCH_CHOICE` | S-13 records that the collision was resolved by scope, not that the scope judgement is unowned |
+| S-109 | The `√k` annualisation **form** | `SQRT_K_FORM_ASSUMES_SERIAL_INDEPENDENCE_NOT_COMMITTED` (§8.6.1) | no committed source addresses serial dependence of the daily series, and none is estimated | — | yes — the reported Sharpe is compared to a `0.8` floor | `UNREGISTERED_RESEARCH_CHOICE` | S-56 records the **factor** and S-59 the SE; both presume the form |
+| S-110 | Pre-data Family A **event-eligibility contract** | `NO_PRE_DATA_FAMILY_A_EVENT_ELIGIBILITY_CONTRACT_EXISTS` · `PRE_DATA_FAMILY_A_EVENT_ELIGIBILITY_CONTRACT_REQUIRED_BEFORE_CONTINUATION` (ω-13(b)) | the obligation is stated; **no such artifact exists** | before continuation | — | `EXECUTION_PREREQUISITE_ONLY` | §8.7.6 lists it among the minimum execution prerequisites; the first pass's K table omitted it |
+| S-111 | **Currency numeraire for the portfolio PnL series** | **none.** `metrics.py:44-49` sums `net_pnl` across all twenty pairs into one daily series; `PNL_UNIT = "pips_post_cost"`; the pip authority gives only `0.01` / `0.0001`. A search for *numeraire*, *account currency*, *pip value* and *quote currency* across the prereg and the gate-4 audit returns **zero hits** | one USD_JPY pip and one EUR_USD pip are added as equal | — | yes — the daily portfolio series, hence Sharpe, maxDD, expectancy, **both** concentration rows, and the per-pair series `c` is defined on | `UNREGISTERED_RESEARCH_CHOICE` | ⚠ **the largest single omission of the first pass.** It sits under every metric in group H and under `c` itself |
+| S-112 | Position sizing / relative pair weighting | `contract.py:91-92` `STAKE_UNITS_PER_TRADE = 1.0`, `NON_COMPOUNDING = True` — **M1-lineage**; no M15 authority names a stake or a weighting rule, and the prereg has no sizing section | unvalued for M15 | — | yes — with S-111 it fixes how per-pair PnL aggregates into the portfolio series | `UNREGISTERED_RESEARCH_CHOICE` | S-60 is only the maxDD denominator; there was no sizing row at all |
+| S-113 | Which timestamp of a trade selects its `(pair, session)` cost cell | **NO PRODUCER**: the three sessions are defined; `session` appears in `ml_step4` only as the stub `"session not evaluated"` and a `"diagnostic_only"` label | the decision bar, the next-bar fill and the exit bar can sit in three different sessions | — | yes — it changes which bars are events (S-26), the barrier widths (S-25) and `EV_d` | `UNREGISTERED_RESEARCH_CHOICE` | §8.7.5 rules the analogous marker question **for turnover only**, and says so |
+| S-114 | Which date decides **role membership** for the counts | Q10(i) rules PnL to the **exit** date and §8.7.4 rules series membership by the attributed date; §8.7.5 rules turnover to the **entry** date. Nothing rules which date puts a trade in the holdout at all for `raw_traded_event_count`, `trade_count`, `expectancy_pips` or `min_holdout_trades`. The implemented arm is **entry**-based (`body.py:488-501`) | two live readings | — | yes | `UNREGISTERED_RESEARCH_CHOICE` | a trade entered on the last holdout day whose exit falls outside the span is **excluded from the Sharpe series by ruling** yet counted in `N_raw` against the `≥ 1000` floor and in the expectancy numerator and denominator |
+| S-115 | First-bar-of-span true range | `labels.py:167-169` — at `i == 0`, `tr = mids_h[i] − mids_l[i]`, no prior close | a truncated TR₀, so the ATR series depends on where the supplied array begins — in the committed path, the common-window trim, not the pair's history start | — | yes — shifts ATR over the first ~14 defined bars ⇒ `TP_dist` / `SL_dist` and the eligibility hurdle | `UNREGISTERED_RESEARCH_CHOICE` | S-22 asks *whether* a DESIGN warm-up exists; it does not cover what the estimator does at index 0 |
+| S-116 | Whether an **incomplete bucket** consumes a horizon slot or a purge bar | `aggregation.py:373-379` emits a bar for any bucket with ≥ 1 usable minute, flagged `complete_bucket=False`, and nothing removes it from the array; `labels.py:229`'s window and `split.py:201-202`'s purge both count **array positions** | so an ineligible bucket still consumes one | — | yes — the effective horizon and the effective purge both shrink in gappy stretches | `UNREGISTERED_RESEARCH_CHOICE` | named twice elsewhere in this document and given no inventory row by the first pass |
+| S-117 | A fold-local cost table is **structurally inadmissible** to the committed validator | Ruling c-11 requires fold-local tables for `c` generation; `cost_schema.py:231-236` requires `data_source_restriction` to equal the whole-DESIGN string **verbatim** or it raises, and `:335-342` raises unless all `20 × 3 = 60` cells are present | an early fold covering 78 of 310 dates can neither honestly carry that string nor populate 60 cells | — | yes — whether `c` can be generated at all, and what the fallback is | `CONFLICTING_AUTHORITIES` | ⚠ S-51 recorded only "its small-sample behaviour is unstated" — a weaker and different statement than "the committed validator refuses it by identity string **and** by coverage raise" |
 
+#### 8.10.6 The missing-surface review, and the completeness status
+
+**`STATISTICAL_CONTRACT_SURFACE_INVENTORY_INCOMPLETE_FIRST_PASS_MISSED_THIRTY_EIGHT_SURFACES_AND_ONE_SEARCH_ELEMENT`.**
+
+**This is not statistical contract closure and is not a step toward it.** It is a status
+about an *enumeration*: how much of the surface has been written down, and how confident
+anyone may be that the list is finished. The answer is that it is **not** finished.
+
+**Three roles ran, all three returned, and each was given the inventory, the source and
+the contract — never another role's conclusions.** The question put to each was the single
+one §8 of the brief specifies: *is there a decision-bearing choice not in this inventory
+that could change Family A's result, its candidate selection, its `N_eff`, or its holdout
+acceptance?* No role was permitted to propose a ruling and none did.
+
+| Role | Verdict | Contribution |
+| --- | --- | --- |
+| **Training / calibration / prediction surface** | incomplete | 6 missing surfaces, 2 named-but-unclassified, 4 misclassifications — including one **wrong citation** in the inventory's own text |
+| **Metrics / selection / effective-N surface** | incomplete | 12 missing surfaces, 6 rows it would re-classify. It could not falsify any cited authority at source |
+| **Adversarial hidden-degree-of-freedom** | incomplete | 25 missing surfaces, 3 refutable claims, **1 method defect**, 1 numbering gap |
+
+**Two findings arrived independently from two roles**, which is the strongest signal the
+round produced: **S-34a** — that c-13/c-15 settle the generator for **DESIGN only** and
+nothing settles what fits `p̂` at validation and holdout — and **S-78a/S-79a** — that the
+kill gate's "gross" operand and the provenance predicate are both undefined or hard-coded.
+Convergence from two roles that never saw each other's work is evidence in a way a single
+role's confidence is not.
+
+**Why the status is INCOMPLETE, in the terms the round set itself.**
+
+1. **A method element was missing, not just an execution slip.** §8.10.0's stated search
+   listed the code trees, the contract documents, the artifacts and the multiplicity
+   shapes — and **not this document's own open-token registers**. Eight of the fifteen
+   tokens on the header's "Still open" block were absent from the inventory. Element (e)
+   is now part of the method; the fact that it had to be added is why no completeness
+   claim is available this round.
+2. **The count moved by a third on one review round.** 111 → 149 surfaces, and the
+   decision set 38 → 77. An enumeration that nearly doubles its own decision set the
+   first time it is attacked has not demonstrated convergence.
+3. **The inventory carried defects of its own**, each corrected above: S-33 cited the
+   wrong lines for the seed policy; S-36 read prereg's "**≥** 25 M15 bars" as a fixed
+   value while S-14 classified the identical floor shape as unregistered; S-89 carried
+   the *overlap* provenance limb and classified it checkability-only, while the *count*
+   limb — a separate token with a measured **20.9×** `N_eff` swing — had no row at all;
+   and §8.10.3's own favourable-direction table presupposed **per-pair** fitting, which
+   S-30a shows is itself unregistered.
+
+**What would make the next inventory pass closeable**, stated so the bar is not
+re-invented later: the search must include the open-token registers from the start; a
+round must add **no** new surface on a full three-role attack; and no row may be
+reclassified by that attack. None of the three held here.
+**`INVENTORY_COMPLETENESS_REQUIRES_A_ROUND_THAT_ADDS_NOTHING_AND_RECLASSIFIES_NOTHING`.**
+
+**What is *not* claimed.** That the 149 rows are correctly classified — only that an
+authority was read for each. That the `COMMITTED_AND_FROZEN` rows are *right* — only that
+something fixes them. That the decision set is complete — the status above says it is not.
+And nothing here touches `M15_MINIMUM_RESEARCH_STATISTICAL_CONTRACT_NOT_CLOSED`,
+`EXACT_WINDOW_NOT_READY_FOR_DECLARATION_FORWARD_EPOCH_DOES_NOT_EXIST`,
+`SAMPLE_FLOOR_REACHABILITY_NOT_DETERMINABLE_WITHOUT_MEASURED_INPUTS`,
+`PRODUCTION_READINESS_NOT_CLAIMED` or `NO_EXECUTION_PERFORMED`.
 
 #### 8.10.7 The decision set for the next round — stated, not answered
 
 Every row whose status is `UNREGISTERED_RESEARCH_CHOICE`, `FREEZE_TOO_LATE` or
-`CONFLICTING_AUTHORITIES`. **No option is recommended and no question is answered here.**
-Rows marked *(register)* are already on the audit playbook's referral register or already
-partly ruled; they are listed so the set is complete, **not** re-opened by this section.
+`CONFLICTING_AUTHORITIES` — **77 rows** after the missing-surface review. **No option is
+recommended and no question is answered here.** Rows marked *(register)* are already on
+the audit playbook's referral register or already partly ruled; they are listed so the set
+is complete, **not** re-opened by this section.
 
 **`M15_STATISTICAL_CONTRACT_DECISION_SET_STATED_NOT_ANSWERED`.**
+
+**The membership rule governs, not this listing.** Groups 1–5 below were written against
+the first pass's 38; groups 6–8 carry the 39 the review added. Where a row appears in
+§8.10.2 with one of the three statuses and is not repeated below, **the status governs and
+the row is in the set** — a decision set that could be shrunk by an omission in its own
+index would defeat itself. **`THE_DECISION_SET_IS_DEFINED_BY_STATUS_NOT_BY_THIS_INDEX`.**
 
 ##### Group 1 — the generator and its inputs (these gate `c`)
 
@@ -10438,6 +10633,59 @@ partly ruled; they are listed so the set is complete, **not** re-opened by this 
 | S-72 | What is the role-span horizon-truncation rule for `ω`, and at what point is the arm selected? | unregistered; `ROLE_SPAN_TRUNCATION_ARM_SELECTION_POINT_NOT_BOUND` leaves it selectable at computation time | `ω` ⇒ `rho_h` ⇒ `N_eff` | ω-9, S-12 |
 | S-65 | What are the concurrency / exposure caps? | `[FIXED-AT design audit]`, re-pointed by T-6 to implementation — after c-12's freeze point | sets the **event sequence** `ω` is measured on; a **tighter** cap lowers `ω` and **raises** `N_eff` | T-6, c-12, S-72 |
 | S-97 | Is there a general contract-amendment procedure? | `NO_GENERAL_CONTRACT_AMENDMENT_PROCEDURE_REGISTERED` | governance, not statistics — listed so it is not mistaken for settled | — |
+
+
+##### Group 6 — carried on this document's own open register (added by the review)
+
+| ID | Exact question | Options as they stand | Why result-bearing | Depends on |
+| --- | --- | --- | --- | --- |
+| S-100 | What is the endpoint convention and boundary arithmetic for `T_v` / `T_h` / `D`? | unruled; `DURATION_BOUNDARY_ARITHMETIC_AND_ENDPOINT_CONVENTION_PENDING_HUMAN_CHATGPT_RULING` | which bars fall in validation vs holdout at the boundary instant, hence the holdout count against `≥ 1000` | S-04, S-05, S-36 |
+| S-101 | What gate detects a short **forward-span** roster? | none exists | a pair silently absent from the forward span **raises** `N_eff` | S-73, S-87 |
+| S-102 | Does the 0.40 concentration cap's drop motive need closing? | recorded, not resolved, at §8.3.7 | `max_trade_share` is over the **traded** set, so it moves when a pair stops trading | S-79c |
+| S-103 | When is the continuation **declaration** made? | the lever is relocated, not discharged — a longer `D` remains selectable by declaring later | sets `D`, `T_v`, `T_h` and every forward sample size | S-04, S-05 |
+| S-104 | What does "the registered data plan" refer to? | two readings | decides whether an `INSUFFICIENT_SAMPLE` **closes** Family A or is remediable | S-48 |
+| S-105 | What makes a span declaration admissible — sizing basis, sufficiency of a new preregistration for a different `D`, freeze-checkability wording? | three open tokens | whether a declared or re-declared span may be cited at all | S-100, S-103 |
+| S-106 | For each of **eight** rulings, is it a tightening or a contract amendment? | unsettled in all eight | an amendment needs fresh preregistration under `NO_GENERAL_CONTRACT_AMENDMENT_PROCEDURE_REGISTERED`; a tightening stands | S-97 |
+| S-107 | What is the route when a frozen calendar is found **defective** after declaration? | unsettled, and ω-13(a) made it the **only** route | a calendar replacement moves `ω`, coverage and `N_eff` | S-12, S-90 |
+| S-108 | Who judges the Calendar-B **scope** classification? | no owner named | the scope is what c-12 used to resolve the collision | S-13 |
+| S-109 | Is the `√k` annualisation **form** admissible on a serially dependent daily series? | no committed source addresses it and none is estimated | the reported Sharpe is compared to a `0.8` floor | S-56, S-59 |
+
+##### Group 7 — aggregation, units and role membership (added by the review)
+
+| ID | Exact question | Options as they stand | Why result-bearing | Depends on |
+| --- | --- | --- | --- | --- |
+| S-111 | In what numeraire is the portfolio PnL series summed? | **none registered.** One USD_JPY pip and one EUR_USD pip are currently added as equal | the daily portfolio series ⇒ Sharpe, maxDD, expectancy, both concentration rows, **and the per-pair series `c` is defined on** | S-112, S-54 |
+| S-112 | What is the position size / relative pair weighting? | the only constants are M1-lineage `STAKE_UNITS_PER_TRADE = 1.0`, `NON_COMPOUNDING = True`; the prereg has no sizing section | with S-111 it fixes how per-pair PnL aggregates | S-111 |
+| S-113 | Which timestamp of a trade selects its `(pair, session)` cost cell? | decision bar, next-bar fill or exit bar — three different sessions are possible; **no producer** | changes which bars are events, the barrier widths and `EV_d` | S-15, S-25, S-26 |
+| S-114 | Which date decides **role membership** for the counts? | the implemented arm is **entry**-based while Sharpe/`c` membership is ruled on the **exit** date | a trade excluded from the Sharpe series by ruling is still counted in `N_raw` against `≥ 1000` and in expectancy | S-54, S-61, S-75a |
+| S-89a | Does anything bind a record's **counts** to the pair it names? | nothing does | a re-pairing of the same counts against the same overlap fractions swings `N_eff` **20.9×**, flipping the sample verdict | S-73, S-87 |
+
+##### Group 8 — label and cost machinery (added by the review)
+
+| ID | Exact question | Options as they stand | Why result-bearing | Depends on |
+| --- | --- | --- | --- | --- |
+| S-23a | On what clock is the 24-bar horizon window counted? | rows present, registered slots, complete buckets or elapsed time — the one implementation counts **rows**, and `effective_n` then multiplies a bar-count `H` against a slot-count `ω` | the exit bar, the exit **date**, the timeout MTM price and the traded-event set | S-23, S-71, S-116 |
+| S-116 | Does an **incomplete bucket** consume a horizon slot and a purge bar? | it does today, by array position | the effective horizon and effective purge both shrink in gappy stretches | S-08, S-23a, S-36 |
+| S-115 | What is the true range at the **first bar** of the supplied array? | truncated — no prior close — so ATR depends on where the array begins | shifts `TP_dist` / `SL_dist` and the eligibility hurdle over the first ~14 defined bars | S-20, S-22 |
+| S-27a | How is a **both-directions-clear** bar labelled? | unregistered; `<=` awards **long** on an exact tie | sets the training target on exactly the wide-range bars this family exists to trade | S-27 |
+| S-30a | Is the model (and the calibrator) fitted **per pair** or **pooled**? | c-13's normative text reads pooled, its cost aside presumes per-pair and calls the difference implementation | **directly on `c`**: pooled ⇒ common signal ⇒ higher `c`; per-pair ⇒ lower `c` ⇒ **higher `N_eff`** | S-31, S-38a |
+| S-31b | Should `LGBM_OBJECTIVE` / `LGBM_NUM_CLASS` bind the fit, or be removed from the hash? | declared and hashed, read by nothing | a class-degenerate fold silently fits a **binary** objective | S-31, S-40b |
+| S-31c | Which library defaults fill the ~16 unnamed hyperparameters, and at which LightGBM version? | `lightgbm>=4.3,<5.0` is a **range** | a minor release can move a default, hence the result, with no contract change | S-31 |
+| S-34a | What fits `p̂` at **validation and holdout**? | one static DESIGN fit, a walk-forward through the forward epoch, or one refit at the boundary | sets `p̂` for every forward bar ⇒ the kill gate, selection, `N_raw`, acceptance | c-13, c-15, S-30a |
+| S-38a | Is the base model refitted on the full training span **after** the calibration carve? | unregistered — and the arm decides whether S-38's anti-conservative direction exists at all | `p̂` for every bar | S-38 |
+| S-40b | What happens when a class is absent from a fold's training slice? | priced at exactly `0.0`, silently | the EV gate then switches that **direction off for the whole block**, unrecorded | S-31b, S-40 |
+| S-53b | How **deep** is a stress recomputation? | shallow re-pricing or full re-derivation of eligibility, barriers, labels and the fit | "stressed-cost survival" is a holdout acceptance row; the readings can differ by the whole trade population | S-49, S-50 |
+| S-75a | Is `N_raw` counted **before** or **after** the concurrency filter? | the pinned name admits both | if it counts suppressed signals while `ω` is measured on accepted trades, the numerator inflates and `rho_h` does not | S-65, S-71 |
+| S-78a | What is "gross expectancy" in `gross ≥ 1.5 × all-in cost`? | the only implemented "gross" is already net of spread, while the cost contains that spread | the kill gate decides whether the holdout is consumed at all | S-49, S-78b |
+| S-78b | How does `cost(pair, session)` aggregate into the comparator scalar? | trade-weighted, unweighted 60-cell, per-pair conjunction or per-cell | the kill gate and a holdout row | S-78a, S-50 |
+| S-79a | What computes provenance completeness, and what supplies the hard triggers? | both call sites pass a literal `True`, and no call site ever supplies `hard_triggers` | the whole difference between MEETS, DOES_NOT_MEET and RUN_INVALID | S-80a |
+| S-79b / S-79c | What are the two concentration quantities, and what happens on an all-losing holdout? | the positive-PnL denominator is winners-only and returns `0.0`, so the `≤ 0.50` row **passes** vacuously | two holdout acceptance rows | S-102 |
+| S-80a | Which acceptance failures are hard invalidations and which are soft misses? | the code routes coverage to a hard trigger; prereg does not | it decides whether the holdout-forfeiture ceremony applies | S-80 |
+| S-82a | What is the exit-type / timeout-share quantity, and its denominator? | **no producer**; an offset of `horizon − 1` is three-way ambiguous | mandatory evidence, hence S-79a | S-79a |
+| S-83a | What class distribution "makes the sample invalid"? | prereg §8 permits an `INSUFFICIENT_SAMPLE` route; prereg §9 says defect-trigger only | a holdout-acceptance outcome | S-83 |
+| S-84a / S-84b | What produces per-currency exposure and the concurrency metrics? | neither has a production producer; `MetricTrade` carries no direction or size | mandatory evidence, and the quantities S-65's caps would bind | S-65, S-79a |
+| S-117 | How is a fold-local cost table admitted, given that the committed validator refuses it by verbatim identity string **and** by a 60-cell raise? | c-11 requires fold-local tables; `validate_cost_table` cannot accept one | whether `c` can be generated at all | c-11, S-50, S-51 |
+| S-07a / S-19a / S-20a / S-20b / S-65b | the remaining source-level rows added above | see §8.10.2 | see §8.10.2 | — |
 
 **Ordering is not proposed here either.** The dependency column shows which questions
 constrain which, and nothing more; whether they are taken as one round or several is a
@@ -11549,10 +11797,112 @@ requires.
 
 ---
 
+### 12.18 Nineteenth review round — the surface inventory, and a missing-surface review only
+
+**Coverage FULL: three roles dispatched, three returned.** This round took **no ruling**.
+The roles were forbidden to propose one, and none did. Each was given §8.10, the source
+tree and the contract documents — never another role's conclusions — and each was asked
+the single question the round's brief specifies: *is there a decision-bearing choice not
+in this inventory that could change Family A's result, its candidate selection, its
+`N_eff`, or its holdout acceptance?*
+**`ROUND_18_MISSING_SURFACE_REVIEW_COVERAGE_FULL_THREE_OF_THREE`.**
+
+**All three answered yes.** The completeness status is
+`STATISTICAL_CONTRACT_SURFACE_INVENTORY_INCOMPLETE_FIRST_PASS_MISSED_THIRTY_EIGHT_SURFACES_AND_ONE_SEARCH_ELEMENT`
+(§8.10.6). The inventory grew **111 → 149** surfaces and its decision set **38 → 77**.
+
+**Two lead passes preceded the roles**, and both mattered. Two breadth sweeps ran first —
+one tracing every named contract quantity to its producer, one hunting eleven
+hidden-multiplicity shapes across `scripts/m15_gate3a/`, `scripts/ml_step4/` and
+`src/fx_ai_trading/services/ml/`. Between them they established the finding that frames
+the whole section: **`c` and `ω`, the two inputs carrying the entire deflator, have no
+producer anywhere in the repository**, while `N_eff`, which consumes them, is fully
+implemented and hardened — and `ev_min` occurs **zero** times in the repository, so the
+family's decision rule is unwritten as well.
+
+**Findings adopted from the training / calibration / prediction role.**
+
+| Finding | Outcome |
+| --- | --- |
+| **c-13/c-15 settle the generator for DESIGN only** — nothing settles what fits `p̂` at validation and holdout | **S-34a**, and S-34/S-35 scoped. Found **independently** by the metrics role as well |
+| **The model's and calibrator's pair scope is unregistered** — c-13's normative text reads pooled, its cost aside presumes per-pair and calls the difference "implementation, not a contract question" | **S-30a**. It is *directly* on `c`: pooled ⇒ one common decision function ⇒ higher `c`; per-pair ⇒ **lower `c` ⇒ higher `N_eff`**. §8.10.3 had silently presupposed the per-pair arm |
+| `LGBM_OBJECTIVE` / `LGBM_NUM_CLASS` are declared, **hashed**, and passed to no fit | **S-31b** — the S-20b shape one level up. A class-degenerate fold silently trains a binary objective |
+| Four of ~20 hyperparameters are named; the rest are library defaults under `lightgbm>=4.3,<5.0`, a **range** | **S-31c** |
+| The 24-bar horizon window's **clock** — the one implementation counts rows, and `effective_n` multiplies that bar-count `H` against a slot-count `ω` | **S-23a**. Found independently by the adversarial role |
+| Is the base model refitted on the full span **after** the calibration carve? | **S-38a** — and it **inverts** the anti-conservative direction §8.9.1 and S-38 assert for the carve |
+| The **both-directions-clear** label tie is unregistered; `<=` awards long | **S-27a** |
+| A class absent from a fold's slice is priced at exactly `0.0`, switching that direction off for the whole block | **S-40b** |
+| **S-33 cited the wrong lines** for the seed policy | corrected: `contract.py:193`, inside `model_config()` |
+
+**Findings adopted from the metrics / selection / effective-N role.**
+
+| Finding | Outcome |
+| --- | --- |
+| "**Gross** expectancy" in `gross ≥ 1.5 × cost` — the only implemented gross **already embeds spread once**, while the cost contains that spread | **S-78a**; the comparison charges spread on both sides |
+| The `1.5 × cost` comparand has **no aggregation rule** from 60 cells to one scalar | **S-78b** |
+| The **depth** of a stress recomputation is unstated, and the only analogue sweeps flat cells | **S-53b**, S-53 scoped |
+| `N_raw` admits a **pre- or post-concurrency-filter** reading | **S-75a**, S-75 scoped |
+| `provenance_complete=True` is a **literal** at both call sites | **S-79a** |
+| Hard-invalidation vs soft-miss routing diverges from prereg on the coverage row | **S-80a** |
+| Positive-PnL concentration is winners-only and **fail-open** on an all-losing holdout | **S-79b**, with S-79c for its sibling |
+| Exit-type counts have **no producer**, and offset `horizon − 1` is three-way ambiguous | **S-82a**, S-82 scoped |
+| prereg §8 permits an `INSUFFICIENT_SAMPLE` route from the class distribution that §9 forbids | **S-83a**, S-83 scoped |
+| Per-currency exposure and concurrency metrics: mandatory evidence, **no producer** | **S-84a**, **S-84b** |
+
+**Findings adopted from the adversarial role**, which defeated the completeness claim
+outright:
+
+| Finding | Outcome |
+| --- | --- |
+| **Method defect** — the stated search omitted this document's **own** open-token registers; 8 of the header's 15 "Still open" tokens were absent from the inventory | element **(e)** added to §8.10.0, and **S-100…S-109** entered |
+| **No currency numeraire.** `daily_portfolio_pnl` sums pips across twenty pairs; *numeraire*, *account currency*, *pip value* and *quote currency* return **zero hits** across the prereg and the gate-4 audit | **S-111** — the single largest omission of the first pass. It sits under every metric in group H **and** under `c` |
+| No position-sizing or pair-weighting rule for M15 | **S-112** |
+| Which timestamp selects a trade's `(pair, session)` cost cell — no producer | **S-113** |
+| Which date decides **role membership** for the counts — the implemented arm is entry-based while Sharpe/`c` membership is ruled on exit | **S-114** |
+| **S-36 was misclassified**: prereg says "**≥** horizon + 1 = 25 M15 bars", a *floor*, and S-14 classifies the identical shape as unregistered | reclassified `UNREGISTERED_RESEARCH_CHOICE` for the width above the floor |
+| **S-89 carried the wrong limb**: `PER_RECORD_COUNT_PROVENANCE_UNBOUND` is a separate token with a measured **20.9×** `N_eff` swing — enough to flip the sample verdict, so not checkability-only | **S-89a** |
+| A fold-local cost table is **structurally inadmissible** to `validate_cost_table` — refused by verbatim identity string and by a 60-cell raise | **S-117**; S-51's "small-sample behaviour is unstated" was the weaker statement |
+| First-bar true range is truncated; an incomplete bucket still consumes a horizon slot and a purge bar | **S-115**, **S-116** |
+| The count table sat inside §8.10.5 and there was no §8.10.6 | table moved into §8.10.2; §8.10.6 is the review record |
+
+**Every adopted finding was re-verified at source by the lead before entry**, and the
+decisive ones were re-read line by line: the `≥` in prereg §3.2; the zero-hit numeraire
+search; `validate_cost_table`'s verbatim `data_source_restriction` comparison and its
+60-cell raise; `provenance_complete=True` at both call sites; `LGBM_OBJECTIVE` reaching
+only `model_config()`; `seed_policy` at `contract.py:193`; and `PER_RECORD_COUNT_PROVENANCE_UNBOUND`
+existing as a distinct token at §8.3.1.
+
+**One lead check that changed a claim rather than confirming it.** Before the roles
+returned, the lead re-checked the "no `c` producer anywhere" claim repo-wide rather than
+asserting it — the shape this packet has got wrong three times. It survived, but only
+narrowly: the `compare_multipair_v13…v26` family **does** carry a pairwise-correlation
+helper, and it substitutes `0.0` on all three undefined cases — the arm Ruling c-8 forbids
+by name. It correlates **strategies**, not pairs, so it is a precedent and not a producer,
+and §8.10.2 now says so.
+
+**No inter-role disagreement.** Where two roles reached the same surface (S-34a, and the
+kill-gate/provenance pair) they agreed independently. No role's claim was declined; three
+were **narrowed** on re-verification — the adversarial role's `EXECUTION_PREREQUISITE_ONLY`
+suggestion for S-101 was recorded as `UNREGISTERED_RESEARCH_CHOICE` because the missing
+gate is a contract question before it is a prerequisite; its eight amendment
+classifications were entered as one row (S-106) with the count stated rather than as eight
+rows; and its three "span admissibility" tokens were grouped as S-105 for the same reason.
+
+**No ruling was taken, no value was assigned to an unregistered parameter, no closure was
+claimed, and no execution was authorised.** No source or test was changed and no data was
+read.
+
+---
+
 ## 13. Completion state
 
 **`M15_MINIMUM_RESEARCH_GATE_PENDING_HUMAN_CHATGPT_RULING`** — one completion
-state, unchanged, because **Q1 and Q8** remain unruled. *(An earlier drafting also
+state, unchanged, because **Q1 and Q8** remain unruled. Alongside it, and **not** a
+second completion state: `M15_MINIMUM_RESEARCH_STATISTICAL_CONTRACT_NOT_CLOSED` (§8.9.6,
+seven live blockers) and
+`STATISTICAL_CONTRACT_SURFACE_INVENTORY_INCOMPLETE_FIRST_PASS_MISSED_THIRTY_EIGHT_SURFACES_AND_ONE_SEARCH_ELEMENT`
+(§8.10.6 — an enumeration status, **not** a closure judgement; §8.10.7 carries the 77-item
+decision set it produces). *(An earlier drafting also
 listed **Q10(iii)**; it is ruled at §8.7.4, and the completion state is unchanged on
 Q1 and Q8 alone.)* The unified referral's
 earlier status `Q11_AND_SECTION0_PENDING_HUMAN_CHATGPT_RULING` is **historical,
