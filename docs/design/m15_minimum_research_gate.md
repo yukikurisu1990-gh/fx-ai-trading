@@ -29,8 +29,13 @@ completion state, and not a verdict on family A):
 `D_IS_ELAPSED_UTC_TIME != SAMPLE_COUNT_IS_CALENDAR_TIME`
 
 **Q10 is not closed** — limb **(iii)**, the annualisation factor, remains
-**RULED** at §8.7.4 (`Q10_III_RULED_COMPLETE_UTC_CALENDAR_DATE_SHARPE_INDEX_IDLE_ZERO_ANNUALISED_BY_SQRT_365`);
-`Q10_III_PENDING_HUMAN_CHATGPT_RULING` is **HISTORICAL**. Limb **(i)**, entry- vs exit-day PnL
+**RULED** — limb **(iii)** covers the **Sharpe sampling index, the idle-day rule and the
+annualisation factor** at §8.7.4
+(`Q10_III_RULED_COMPLETE_UTC_CALENDAR_DATE_SHARPE_INDEX_IDLE_ZERO_ANNUALISED_BY_SQRT_365`),
+and its **guard order** at §8.8.4
+(`Q10_III_A_RULED_PRE_FILL_ACTIVE_OBSERVATION_GUARDS_PRECEDE_CALENDAR_ZERO_FILL`);
+**where the two differ, §8.8.4 governs**. `Q10_III_PENDING_HUMAN_CHATGPT_RULING` is
+**HISTORICAL**. Limb **(i)**, entry- vs exit-day PnL
 attribution, is **RULED** (§8.5.0, bundled with NR-L).
 
 **NR-K — RULED** (§8.3.0, human + ChatGPT):
@@ -8763,14 +8768,30 @@ factor change together or not at all.**
 - **The zero-fill limb's own direction is knowable with no data, and it is the
   tightening one.** Inserting idle zeros multiplies `mean/sd` by
   `(m/N)·√[(N−1)(Q−S²/m)/((m−1)(Q−S²/N))] ≤ 1`, with equality only when the index is
-  fully active — so **limb 2 alone weakly reduces the reported Sharpe for every
-  series**, checked algebraically and on 80,000 randomised synthetic series with **no
-  counterexample and a maximum ratio of exactly 1.0**. Limb 3 alone moves it the other
-  way by a fixed `√(365/252) ≈ 1.204`. Only the **composite** is conditional; the parts
-  are not, and §8.4.11's A-ω-5 standard is met by stating both.
-  **`SHARPE_IDLE_ZERO_FILL_WEAKLY_REDUCES_THE_REPORTED_SHARPE`** ·
-  **`NON_NORMATIVE_DIAGNOSTIC_ONLY`**.
-- **Two fail-closed guards stop firing, and that is where limb 2's direction reverses.**
+  fully active — so **limb 2 alone weakly reduces the *magnitude* of the reported
+  Sharpe for every series**, checked algebraically and on 80,000 randomised synthetic
+  series with **no counterexample and a maximum ratio of exactly 1.0**. **It does not
+  reduce the *signed* value, and an earlier drafting said it did.** For a
+  **negative-mean** series the same factor `≤ 1` moves the reported Sharpe *toward zero*,
+  i.e. **upward** — measured: `m = 3` of 61 goes from `−19,085.9` to `−4.31`, `m = 20`
+  from `−3,198.7` to `−13.23`. `select_threshold` argmaxes the **signed** value, so where
+  a candidate set is uniformly loss-making the complete index **rewards the sparsest
+  candidate** rather than penalising it (`−4.31` at `m = 3` beats `−13.23` at `m = 20` at
+  equal per-active-day quality). §8.7.4's "penalises sparser candidates" is **withdrawn
+  as one-sided**, and the anti-conservative arm is named under §8.4.11's A-ω-5 standard
+  rather than left implicit. Limb 3 alone moves the value the other way by a fixed
+  `√(365/252) ≈ 1.204`.
+  **`SHARPE_IDLE_ZERO_FILL_WEAKLY_REDUCES_THE_MAGNITUDE_AND_RAISES_A_NEGATIVE_SHARPE`** ·
+  **`ZERO_FILL_REWARDS_SPARSITY_ON_THE_NEGATIVE_BRANCH`** ·
+  **`NON_NORMATIVE_DIAGNOSTIC_ONLY`**. *The earlier token
+  `SHARPE_IDLE_ZERO_FILL_WEAKLY_REDUCES_THE_REPORTED_SHARPE` is **withdrawn as
+  directionally false**.*
+- **⚠ Superseded in part by Ruling Q10(iii)-a (§8.8.4).** The guards now run on the
+  **pre-fill in-index active set**, so what follows describes the **ungated** reading
+  that ruling replaced; `COMPLETE_INDEX_DISABLES_THE_DEGENERATE_SHARPE_GUARDS` is no
+  longer an accepted cost for the `m = 1` and all-equal cases, and the residual that
+  survives is recorded at §8.8.4. **Two fail-closed guards stop firing, and that is where
+  limb 2's direction reverses.**
   `annualised_daily_sharpe` returns `0.0` for fewer than two observations or zero
   variance. On the committed active-date index those fire on genuine sparsity; on a
   complete index the first can never fire and the second only when no trade exists. A
@@ -9192,10 +9213,28 @@ acceptance layer.
 
 **The ruled order, and it may not be permuted.**
 
-> trade outcomes → **active-date** aggregated PnL → **the two committed guards, evaluated
-> on the active-date observation set** → if and only if both pass: reindex onto the
-> complete registered UTC calendar-date index → fill idle dates with **zero** → daily
-> mean and sample stdev on the complete series → annualise by **`√365`**.
+> trade outcomes → **Q10(i) attribution** → **discard every trade whose attributed date
+> is not a member of the complete registered UTC calendar-date index of the role's
+> declared span**, at **both** edges
+> (`SHARPE_SERIES_MEMBERSHIP_IS_DECIDED_BY_THE_ATTRIBUTED_DATE_AND_THE_INDEX_IS_NEVER_EXTENDED`,
+> §8.7.4) → **active-date** aggregated PnL **over the surviving trades only** → **the two
+> committed guards, evaluated on that in-index active-date observation set** → if and
+> only if both pass: reindex onto the complete registered index → fill idle dates with
+> **zero** → daily mean and sample stdev on the complete series → annualise by **`√365`**.
+
+**`MEMBERSHIP_FILTERING_PRECEDES_THE_GUARDS_AND_THE_GUARDS_PRECEDE_THE_FILL`.** *An
+earlier drafting of this block omitted the membership step, and the omission reproduced
+the exact number the ruling claims to close*: with one in-index active date and one trade
+attributed outside the span, the guards would have run on a two-element set and passed,
+the reindex would then have dropped the out-of-index date, and the reported figure would
+be the **+2.45** single-active-date case. A guard evaluated on a set larger than the
+statistic's own index is not a guard.
+
+**And "active" is defined here, because two readings diverge exactly at the gate.**
+**Active** means, per §8.7.4's limb 2, a date to which **at least one in-index trade is
+attributed**, irrespective of whether its aggregated PnL is zero. A date whose trades net
+to exactly `0.0` is **active**: it counts toward `len` and it enters `stdev`.
+**`ACTIVE_MEANS_AT_LEAST_ONE_ATTRIBUTED_TRADE_NOT_NON_ZERO_PNL`.**
 
 **Why the order carries the whole weight.** §12.15 recorded that a complete index
 **disables both guards**: `len < 2` can essentially never fire on a role span, and
@@ -9205,7 +9244,20 @@ where the committed code returns `0.0`. Evaluating the guards **on the pre-fill 
 set** restores both exactly: one active date still fails `len < 2`, and two active dates
 carrying identical values still fail `sd == 0` rather than having variance manufactured
 for them by the calendar. **`COMPLETE_INDEX_DISABLES_THE_DEGENERATE_SHARPE_GUARDS` is
-closed by this ordering**, not merely recorded.
+closed by this ordering** — the named object, the guards' disablement, is undone and
+parity with the committed metric restored.
+
+**It does not follow that validation is contained, and this ruling does not claim it.**
+The two guards are **definedness** guards, not sparsity guards: they block `m = 1` and
+the all-equal cases and nothing else. The supremum of the filled Sharpe at `m` in-index
+active dates on an `N`-date span is `√(365·m(N−1)/(N(N−m)))` — **3.49 at `m = 2` and
+4.31 at `m = 3` on a 61-date span**, against a frozen floor of `0.8` — and a `1e-7`
+perturbation of two identical values moves the reported figure from `0.0` to `3.49`.
+**Holdout is contained** by the conjunctive `≥ 1,000` trade, `≤ 40`/day and `≥ 0.60`
+coverage rows; **validation is not**.
+**`SPARSE_CANDIDATE_CAN_CLEAR_THE_SHARPE_FLOOR_AT_VALIDATION_UNDER_ANY_INDEX_READING`** —
+a property of the committed metric, neither created nor removed by this ruling ·
+**`NON_NORMATIVE_DIAGNOSTIC_ONLY`**.
 
 **No new threshold is invented.** No minimum active-day count is created — not ten, not
 twenty, not any number. The guards used are **exactly** the two committed ones, applied
@@ -9230,7 +9282,26 @@ operating point reaches the holdout**.
 **`VALIDATION_SHARPE_CLOCK_AND_GUARD_SEMANTICS_MUST_BE_PRE_VALIDATION_FROZEN`** ·
 **`SHARPE_SEMANTICS_MAY_NOT_DIFFER_BETWEEN_VALIDATION_AND_HOLDOUT`** — the index, the
 idle rule, the guard order and the annualisation factor are identical at both roles and
-may not be changed between them to improve a result.
+may not be changed between them to improve a result. **And
+`Q10_III_MUST_NOT_BE_RESELECTED_AFTER_OBSERVING_ANY_METRIC_IT_MOVES` (§8.7.4) binds this
+sub-limb by name**: the guard order may not be selected or permuted after observing any
+Sharpe on **any** span, a DESIGN-span diagnostic included. A pre-validation freeze *date*
+is necessary and not sufficient — the prohibition is on the **observation**, not the
+calendar, which is the same correction §8.8.0 makes to the closure rule.
+
+**⚠ And a fired guard is not an exclusion — this ruling creates a route it does not
+close.** A guard that fires returns exactly `0.0` into `select_threshold`'s **argmax**,
+and `0.0` beats every genuine **negative** Sharpe. So a candidate whose Sharpe is
+*undefined* can outscore candidates whose Sharpe is defined and bad, and an
+all-degenerate sweep ties at `0.0` and resolves silently to
+`PRODUCTION_DEFAULT_THRESHOLD`. Against the incumbent §8.7.4 state this **changes which
+operating point reaches the holdout**, in the direction of selecting the candidate about
+which **least is known**. Whether a fired guard should instead make a candidate
+**ineligible** for selection is a human + ChatGPT question **this ruling does not
+answer** — answering it here would either invent the observation threshold
+`NO_NEW_SHARPE_OBSERVATION_THRESHOLD_IS_CREATED` forbids, or risk emptying the candidate
+set. **`GUARD_SENTINEL_ZERO_IS_SELECTABLE_AT_VALIDATION_ARGMAX`** — carried as a live
+**`MINIMUM_RESEARCH_GATE_BLOCKER`**.
 
 #### 8.8.5 The turnover ruling, re-verified
 
@@ -9273,8 +9344,9 @@ decision is taken. *Nothing here may be read as anticipating it.*
 **What is known to remain open before the review runs**, so the decision has a baseline:
 **`C_DESIGN_GENERATOR_PENDING_ONE_EXACT_PARAMETER_DECISION`** — the first predicted
 DESIGN date — is a live `MINIMUM_RESEARCH_GATE_BLOCKER` with a knowable anti-conservative
-arm. **On the record as it stands, closure is not available**, and the review's task is
-to find whether anything *else* is live as well.
+arm. **On the record as it stands, closure is not available**, and the review's task was to
+find whether anything *else* is live as well. **It was: §8.8.7 records the decision —
+closure is NOT taken**, on two live blockers and partial review coverage.
 
 **Unchanged by this round.** `EXACT_WINDOW_NOT_READY_FOR_DECLARATION_FORWARD_EPOCH_DOES_NOT_EXIST`;
 §8.6.2's boundary arithmetic, purge, warm-up and second-granularity interval convention;
@@ -9283,6 +9355,73 @@ Q1 (`REQUIRED_NOW`, default (b)), Q3, Q8, Q9; `FR_19_SEPARATE_TEST_SAFETY_WORK_P
 `SAMPLE_FLOOR_REACHABILITY_NOT_DETERMINABLE_WITHOUT_MEASURED_INPUTS`. **Real-data read
 remains unauthorised.** **`PRODUCTION_READINESS_NOT_CLAIMED`** ·
 **`NO_EXECUTION_PERFORMED`**.
+
+#### 8.8.7 The closure decision — taken after the review, and it is NOT closure
+
+**`NR_L_MINIMUM_RESEARCH_CONTRACT_RULED_PENDING_IMPLEMENTATION_AND_DESIGN_MEASUREMENT`** ·
+**`CLOSURE_NOT_AVAILABLE_TWO_LIVE_BLOCKERS_AND_PARTIAL_REVIEW_COVERAGE`**
+
+**`NO_NR_L_MINIMUM_RESEARCH_CONTRACT_BLOCKER_REMAINS` is NOT claimed.** Under
+`CLOSURE_CLAIM_REQUIRES_COMPLETED_REVIEW_AND_NO_UNRESOLVED_MATERIAL_BLOCKER` (§8.8.0),
+**three of its five conditions fail**, and each is stated rather than argued around.
+
+**Condition 2 fails — the review did not complete.** Three doc-only roles were
+dispatched; **one returned**. The **DESIGN generator / target-leakage** role and the
+**adversarial remaining-freedom** role both terminated on an account-level weekly API
+limit, having produced nothing beyond an opening line.
+**`ROUND_16_REVIEW_COVERAGE_PARTIAL_ONE_OF_THREE_ROLES_RETURNED`** — recorded on the same
+footing as `ROUND_11_REVIEW_COVERAGE_PARTIAL_TWO_OF_THREE_ROLES_TERMINATED`, which this
+document has never relabelled and does not relabel now. **The two perspectives that did
+not run are precisely the two that would have attacked Rulings c-13 and c-14** — the
+generator and the freeze — so the coverage gap sits directly over this round's largest
+new surface, and it is **not** cured by the lead's own verification.
+
+**Condition 4 fails — material blockers are live**, two of them, and the second was
+created by this round's own ruling:
+
+1. **`C_DESIGN_GENERATOR_PENDING_ONE_EXACT_PARAMETER_DECISION`** — the first predicted
+   DESIGN date. No committed source supplies it, §9's rule forbids inventing one, and its
+   direction is knowable and **anti-conservative on both limbs**: an earlier start means
+   fewer common zeros (lowers `c`) and noisier early models (dilutes `|r|`).
+2. **`GUARD_SENTINEL_ZERO_IS_SELECTABLE_AT_VALIDATION_ARGMAX`** — a guard that fires
+   returns exactly `0.0` into `select_threshold`'s argmax, where it beats every genuine
+   **negative** Sharpe. **Ruling Q10(iii)-a creates this route**: relative to the
+   incumbent §8.7.4 state it changes which operating point reaches the holdout, toward
+   the candidate about which least is known. Whether a fired guard should make a
+   candidate **ineligible** is a human + ChatGPT question §8.8.4 expressly declines,
+   because answering it would either invent the observation threshold
+   `NO_NEW_SHARPE_OBSERVATION_THRESHOLD_IS_CREATED` forbids or risk emptying the
+   candidate set.
+
+**Condition 3 is met, and is the only reason this round is worth recording.** Every
+decisive finding the returning role reported was re-verified by the lead at source before
+being applied: the membership-filter gap that reproduced the +2.45 case; the sentinel
+argmax; the signed-versus-magnitude direction error; and the `m = 2` supremum of 3.49
+against a 0.8 floor. Two further defects were found by the lead **before** any role
+returned — c-13's unstated block width, which made its "one parameter" claim false, and
+the withdrawn index refinement of the previous round.
+
+**What this round did settle**, so the remaining work is a list and not a mood: the
+generator's **shape** (c-13), the freeze rule's **scope and non-exhaustiveness** (c-14),
+the Sharpe **guard order** (Q10(iii)-a), the turnover **day**, and §8.8.0's correction of
+this packet's own over-broad closure rule. Those stand. What does not is the claim that
+nothing is left.
+
+**`Q10_III_RULED_FULL_UTC_DATE_INDEX_IDLE_ZERO_PRE_FILL_GUARDS_SQRT365`** is recorded for
+the parts that are ruled — index, idle rule, guard order, factor — **with
+`GUARD_SENTINEL_ZERO_IS_SELECTABLE_AT_VALIDATION_ARGMAX` carried against it**, and with
+instantiation still pending the Q10-B declaration.
+
+**No favourable classification is asserted here.** This round's own ruling created one of
+the two live blockers; one of its direction claims was withdrawn as directionally false;
+its guard-order block omitted a step that reproduced the number it claimed to close; and
+its review coverage was one role in three. **The honest disposition of a round that found
+this much in its own work is that it is not the round that closes the contract.**
+
+**What closure would now require**, stated so the next round is bounded: a human +
+ChatGPT decision on the **first predicted DESIGN date**; a human + ChatGPT decision on
+whether a **fired guard excludes a candidate** from selection; and a review in which the
+**generator and adversarial perspectives actually run**.
 
 ---
 
@@ -9349,7 +9488,15 @@ interval and the number of observations behind it. For iid daily returns the SE 
 an annualised Sharpe on `N` daily observations is ≈ `sqrt(252/N)` — ≈ **1.07** on
 the exploratory span's ~221 weekday UTC days, ≈ 1.38 at the 0.60 coverage floor,
 and autocorrelation and fat tails make both optimistic. **A Sharpe reported
-without that number is not a result.** Per-trade expectancy carries a standard
+without that number is not a result.** *Updated by Rulings Q10(iii) (§8.7.4) and
+Q10(iii)-a (§8.8.4):* the annualisation factor is `√365` and `N` is the count of the
+**complete registered UTC calendar-date index** of the role's span, so the mandatory SE
+is ≈ `sqrt(365/N)` — **≈ 2.45 on a 61-date span**. The `sqrt(252/N)`, 1.07 and 1.38
+figures above are **superseded** as the reporting requirement, and are retained only as
+the exploratory-span diagnostic they were. And where a guard fires, the reported `0.0`
+is a **sentinel, not an estimate**: it carries no standard error, and it must be
+recorded as `SHARPE_UNDEFINED_GUARD_FIRED` with the in-index active-date count `m`
+beside it, **never as a measured zero**. Per-trade expectancy carries a standard
 error computed on the **effective-N**, never the raw count. Because Sharpe at this
 span cannot separate 0.8 from 0 at any conventional level, **net expectancy per
 trade is the discriminating statistic and daily Sharpe the comparability
@@ -10228,6 +10375,62 @@ every registered operating point; Option C is unavailable on a **source** ground
 `no_overlap` raises below `DESIGN_START`; the concurrency rule, pair universe, date index
 and idle rule **are** in c-12's table; and three of the five "still unregistered" items
 **do** earn their exemption.
+
+### 12.16 Seventeenth review round — §8.8's rulings
+
+**⚠ Coverage was PARTIAL: one of three roles returned.** Three doc-only roles were
+dispatched — **DESIGN generator / target-leakage / fold-local semantics**, **Sharpe
+guard order / annualisation / validation selection**, and **adversarial remaining
+researcher freedom**. Only the **Sharpe** role reported. The other two terminated on an
+account-level **weekly API limit** after producing an opening line and nothing else.
+**`ROUND_16_REVIEW_COVERAGE_PARTIAL_ONE_OF_THREE_ROLES_RETURNED`.**
+
+**The gap sits over this round's largest new surface.** The two roles that did not run
+are the two that would have attacked **Rulings c-13 and c-14** — the generator shape and
+the input freeze — which are exactly the material this round added. Round 11's partial
+record is **not** relabelled by this, and this one is not softened by the lead's own
+verification having gone well.
+
+**Found by the lead before any role returned.** c-13 claimed **one** open parameter while
+specifying only "date-aligned blocks" — false, since an unspecified block width is a
+second parameter that moves `c`. Fixed by ruling every block after the first to be
+exactly **one UTC date**, which makes the partition a deterministic function of the first
+predicted date alone; the retrain-per-date cost is named as implementation. Two further
+points were added at the same time: the 25-bar purge's sufficiency is **derivable** (last
+admissible training bar at `block_start − 25`, exit at most 24 bars later, label closes
+one bar clear), and a **training label belongs to the fold that fitted it**, because the
+fold-local cost table makes prereg §6's barriers fold-dependent.
+
+| Defect | Outcome |
+| --- | --- |
+| **The guard order omitted the membership filter, and the omission reproduced the exact case it claimed to close** | §8.7.4 rules that a trade whose Q10(i) exit date falls outside the role span is not a series member. §8.8.4's order block went straight from active-date aggregation to the guards, so a trade attributed outside the span sat in the guarded set and was dropped at the *reindex* — leaving one non-zero date in 61 and the reported **+2.45**, the very figure the ruling says is closed. Membership filtering now **precedes** the guards, at both edges. **`MEMBERSHIP_FILTERING_PRECEDES_THE_GUARDS_AND_THE_GUARDS_PRECEDE_THE_FILL`.** |
+| **A fired guard is not an exclusion — and this ruling created the route** | A guard that fires returns exactly `0.0` into `select_threshold`'s argmax, where it **beats every genuine negative Sharpe**; an all-degenerate sweep ties at `0.0` and resolves silently to the production default. Verified: argmax over `{0.35: 0.0, 0.40: −17.59, 0.45: −27.97}` selects **0.35**. Against the incumbent §8.7.4 state this **changes which operating point reaches the holdout**, toward the candidate about which least is known. Carried as a live **blocker**; making a fired guard an exclusion is a human + ChatGPT question §8.8.4 declines rather than answers. |
+| **The zero-fill direction claim was one-sided** | "Limb 2 weakly reduces the reported Sharpe **for every series**" is directionally **false**: a factor `≤ 1` moves a **negative** Sharpe *toward zero*, i.e. upward. Measured: `m = 3` of 61 goes `−19,085.9 → −4.31`; `m = 20` goes `−3,198.7 → −13.23`. Since `select_threshold` argmaxes the **signed** value, the complete index **rewards the sparsest candidate** on a loss-making sweep — so §8.7.4's "penalises sparser candidates" is **withdrawn as one-sided** and the anti-conservative arm is named under A-ω-5. |
+| **"Closed by this ordering" overstated the result** | The guards are **definedness** guards, not sparsity guards: they block `m = 1` and the all-equal cases only. The supremum at `m` in-index active dates is `√(365·m(N−1)/(N(N−m)))` — **3.49 at m = 2, 4.31 at m = 3** on a 61-date span, against a `0.8` floor — and a `1e-7` perturbation of two identical values moves the figure from `0.0` to `3.49`. Holdout is contained by the conjunctive rows; **validation is not**. |
+| **§8.7.4 and §8.8.4 asserted opposite dispositions of one token** | §8.7.4 still called `COMPLETE_INDEX_DISABLES_THE_DEGENERATE_SHARPE_GUARDS` "**an accepted cost**" while §8.8.4 said it was closed. The diff had touched neither. §8.7.4's bullet is now marked superseded in part, with the residual pointed at §8.8.4. |
+| **"Active-date observation set" was undefined at the one site where it decides the value** | Date-with-a-trade versus date-with-non-zero-PnL diverge exactly at the gate: two offsetting trades on one date give `len = 2` under one reading and `len = 1` under the other, and the readings differ by `2.446` versus `0.0`. Defined as **at least one attributed in-index trade**, zero net included. |
+| **The freeze lock was a calendar lock where an observation lock exists** | A pre-validation freeze date is satisfiable while the guard order is chosen after observing a **DESIGN-span** Sharpe. `Q10_III_MUST_NOT_BE_RESELECTED_AFTER_OBSERVING_ANY_METRIC_IT_MOVES` now binds this sub-limb by name — the prohibition is on the observation, not the calendar, which is §8.8.0's own correction applied to itself. |
+| **The header did not register Q10(iii)-a, and misdescribed limb (iii)** | The token appeared only inside §8.8. The header now names both sites, states that **§8.8.4 governs** where they differ, and describes limb (iii) as the index, the idle rule **and** the factor rather than the factor alone. |
+| **§10's mandatory Sharpe standard error was still on the `√252` weekday clock** | §10 requires an SE of `sqrt(252/N)` ≈ 1.07 and says "a Sharpe reported without that number is not a result" — inconsistent with this document's own ruled annualisation. Updated to `sqrt(365/N)` ≈ **2.45 at a 61-date span**, with the added requirement that a guard-fired `0.0` be recorded as `SHARPE_UNDEFINED_GUARD_FIRED` with its active-date count, **never as a measured zero**. |
+
+**Attacks that did not survive the sources**, recorded because their failure is evidence:
+there are **exactly two** committed Sharpe guards and no others in the metric path;
+validation and holdout **share one implementation** with no role-specific variant; **no
+new observation threshold** is created by §8.8.4; **maxDD is invariant** to the zero-fill,
+re-verified independently on leading-idle, trailing-idle, interior-gap, single-date,
+all-negative and empty-active cases plus 200,000 randomised interleavings with zero
+mismatches; **coverage is untouched**, sharing no object with the Sharpe series; there is
+**no filled-passes/active-fails gap**, since `sd(filled) = 0` with `m < N` forces all
+values zero and the active guard fires first; `√365` **remains coherent** with the ruled
+index, the guard being a gate rather than an estimator; and **no market-hours fact, data
+authorisation or empirical estimate** appears in §8.8.4 — and, unlike the previous round,
+**the §12 citation it makes is real**.
+
+**Findings not adopted as ruled changes.** The returning role offered two dispositions it
+could not settle — whether a fired guard should exclude a candidate, and whether §8.8.4
+needs its own amendment classification. Both are recorded as open human + ChatGPT
+questions rather than decided here. **No inter-role disagreement arose**, for the
+unsatisfactory reason that only one role returned.
 
 ---
 
