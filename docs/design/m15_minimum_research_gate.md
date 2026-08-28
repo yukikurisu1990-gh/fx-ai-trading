@@ -357,7 +357,7 @@ or a live/demo authorisation. Track A may vary features, labels, models, hyperpa
 the training scheme, calibration, `ev_min`, thresholds, costs, entry/exit logic, regime
 filters and `c`/`ω` estimators freely —
 `SPECIFICATION_CHANGE_INSIDE_TRACK_A_IS_NOT_A_CONTRACT_VIOLATION` — but
-**`NO_TRACK_A_NUMBER_MAY_BECOME_A_TRACK_B_FROZEN_VALUE`** (§4's R-10 undiluted).
+**`A_TRACK_A_VALUE_ENTERS_TRACK_B_ONLY_BY_NAMED_RE_PREREGISTRATION_WITH_ITS_PROVENANCE_RECORDED`** — the flat `NO_TRACK_A_NUMBER_MAY_BECOME_A_TRACK_B_FROZEN_VALUE` spelling is **withdrawn as unsatisfiable** (§8.11.2), since a candidate is *made of* values; what stays absolute is that a Track A number is never **evidence**.
 Track A's span is the **DESIGN span only**
 (`TRACK_A_SPAN_IS_THE_DESIGN_SPAN_UNTIL_A_SEPARATE_EPOCH_ADOPTION_RULING`); the dead
 window and everything at or after 2026-04-25 stay excluded, and §3.6 is **not** relaxed.
@@ -383,6 +383,17 @@ NR-K, ω, Q10(i), Q10(iii) and the `c` rulings are **retained in full**:
 **`THE_SPLIT_RELOCATES_THE_MULTIPLICITY_PROBLEM_IT_DOES_NOT_REMOVE_IT`** ·
 **`REASSIGNING_A_BLOCKER_TO_A_LATER_GATE_IS_NOT_DISCHARGING_IT`** — §8.9.6's seven
 blockers are **not** discharged, and no closure is claimed.
+
+**⚠ The first drafting of the split LEAKED, and the routes are recorded rather than
+summarised.** A three-role promotion-route review (§12.19, full coverage) found that
+**every** role could get exploratory-tuned choices into formal evidence. The deepest route
+needs nobody to do anything unusual: **Ruling c-12's input freeze is a *sequencing* rule
+whose only guarantee was Q1**, so once Q1 is amended a session satisfies c-12 to the letter
+while every input was chosen having surveyed the design span
+(`C_12_IS_A_PRE_DATA_FREEZE_AND_TRACK_A_MAKES_IT_UNSATISFIABLE_IN_ITS_ORIGINAL_SENSE`).
+Sixteen further limbs are recorded at §8.11.12, five statements of this amendment were
+shown **wrong** and corrected in place, and **§9 governs over §8.11.2(2)**, which suspends
+the re-pre-registration route until §9 and R-10 are amended by their own ruling.
 
 **The amendment is not an authorisation.** The first real read waits on a new
 **Minimum Research Execution Gate** (§8.11.9): Q8's scratch root · FR-19 · the read route ·
@@ -10862,18 +10873,64 @@ evidence, governs unchanged.
 **What may be varied freely, and varying it is not a contract violation.** Feature sets ·
 feature parameters · model families · hyperparameters · the training scheme · calibration
 method and split · `ev_min` · thresholds and decision logic · labels and barrier geometry ·
-cost assumptions · entry and exit logic · regime filters · `c` and `ω` estimator
-experiments · `N_eff` diagnostics. **Changing a specification mid-exploration is the
+cost assumptions · entry and exit logic · regime filters · `c` estimator experiments ·
+`ω` and `N_eff` **diagnostics**. *`ω` is scoped on a review finding (§8.11.12 A-8): Ruling
+ω-9 freezes ω's **method** before data and ω-10 forbids a measured `ω` from changing "the
+overlap method, the weighting, the research iteration, or the model design", so listing
+"`ω` estimator experiments" as free-vary contradicted the same paragraph's claim that
+ω-1…ω-13 are retained in full. Track A may **compute and report** the registered estimator;
+where an experiment varies ω's frozen method limbs its output is a **method study**, never
+an `ω`, and never the `ω` a Track B `N_eff` consumes.* **Changing a specification mid-exploration is the
 point of the track, and is expressly not a contract violation.**
 **`SPECIFICATION_CHANGE_INSIDE_TRACK_A_IS_NOT_A_CONTRACT_VIOLATION`.**
 
-**What that permission does *not* extend to.** It permits varying a choice **inside Track
-A**. It does not permit a Track A result to *set* a frozen contract value — §4's **R-10**
-stands undiluted: a value chosen after seeing exploratory results is not a pre-registered
-value, and `mean_abs_pairwise_corr` is R-10's own named sharpest case. A Track A `c`, a
-Track A cost table, a Track A `W̄`/`L̄`, a Track A warm-up and a Track A threshold are all
-`NON_DECISION_BEARING_EXPLORATORY_ONLY` and none may become a Track B input by being
-copied across. **`NO_TRACK_A_NUMBER_MAY_BECOME_A_TRACK_B_FROZEN_VALUE`.**
+**What that permission does *not* extend to — and the first drafting of this rule was
+unsatisfiable.** It said flatly `NO_TRACK_A_NUMBER_MAY_BECOME_A_TRACK_B_FROZEN_VALUE`.
+**Withdrawn**: that cannot be complied with, because the whole point of the split is that
+Track B confirms a candidate Track A selected, and a candidate is *made of* values —
+an `ev_min`, a feature list, a barrier ratio. A prohibition the contract's own structure
+guarantees will be broken is worse than none, and this packet has recorded the same shape
+once before, when c-11's straddle ban named inputs prereg §5 and §8 freeze over design
+data.
+
+**The satisfiable rule, in two parts.**
+
+1. **A Track A result may never be cited as *evidence***, in a formal GO, a Gate-3a
+   pass, a holdout claim, a novelty claim, a production-readiness claim, **or in any
+   decision this programme records** — including an epoch-adoption argument, a
+   sample-floor reachability finding, a Q10-B window declaration and the Track B freeze
+   ruling itself. `NON_DECISION_BEARING_EXPLORATORY_ONLY` is absolute and the list is
+   **illustrative, not exhaustive**. *An earlier drafting wrote "as a measured result
+   **standing on its own**" and gave a closed six-item list; both are **withdrawn** — the
+   qualifier exempted a Track A number cited jointly with a Track B one, and prereg §3.1's
+   own ban is unqualified ("results never citable as evidence"), so a closed list narrows
+   a committed text while claiming to restate it.*
+2. **A Track A *value or specification choice* may become a Track B *frozen input* only
+   by explicit re-pre-registration**: a human + ChatGPT ruling that (i) **identifies the
+   input** — for a scalar, its value; for a fitted object, its estimator, its fitting span
+   and its content digest; for a specification, its full text — (ii) **records that its
+   provenance is exploratory**, and (iii) is taken **before any confirmation-span
+   observation**, in R-7's verifiable form (§8.11.12 G-3). Silent carry-across is
+   forbidden. *An earlier drafting made the subject "a Track A **number**"; **withdrawn**,
+   because the vary-freely list above is overwhelmingly non-numeric — the feature list,
+   which sets `p̂` for every bar, is not a number.*
+   **`A_TRACK_A_VALUE_OR_SPECIFICATION_ENTERS_TRACK_B_ONLY_BY_IDENTIFIED_RE_PREREGISTRATION_WITH_ITS_PROVENANCE_RECORDED`.**
+3. **And that route may not reach anything prereg Rulings 1–13 already froze.** §4's
+   **R-1** is explicit: "**Where a frozen value already exists, the registration adopts it
+   unchanged** … It may tighten; it may not loosen, substitute or **re-derive**, and any
+   departure is a **contract amendment requiring a human + ChatGPT ruling, not a
+   registration**." Track A's vary-freely list overlaps Rulings 5, 6, 7, 8 and 9 almost
+   exactly, so without this limb "re-pre-registration" would be a new name for the
+   loosening R-1 says is not a registration. A Track A-tuned variant of a prereg-frozen
+   value needs a **prereg amendment**, not this route.
+   **`RE_PREREGISTRATION_MAY_NOT_REACH_A_VALUE_PREREG_RULINGS_1_TO_13_ALREADY_FROZE`.**
+
+**This honours §4's R-10 rather than evading it.** R-10 says a value chosen after seeing
+exploratory results **is not a pre-registered value** — so the remedy is to *make it one,
+explicitly and on the record*, not to pretend it was never chosen that way. What R-10
+forbids and this rule still forbids is the silent version: a number arriving in the frozen
+contract with no statement of where it came from. `mean_abs_pairwise_corr` is R-10's own
+named sharpest case and is treated at §8.11.10(1).
 
 **The rulings already taken are not preconditions for Track A.** NR-K, ω-1…ω-13,
 Q10(i), Q10(iii)/(iii)-a/(iii)-b and c-1…c-15 are **retained in full** and are **not
@@ -10913,9 +10970,15 @@ into exploratory training; the check is a call, not a promise.
 
 #### 8.11.4 `EXPLORATORY_SEEN_DATA` — the marking rule and its ledger
 
-**The rule.** From the moment any Track A activity observes a span — reading, aggregating,
-deriving, training on, evaluating on, plotting, or summarising it — that span is
-**`EXPLORATORY_SEEN_DATA`**. Thereafter it may **not** serve as a final untouched holdout,
+**The rule.** From the moment **any activity in either track** observes a span — reading,
+aggregating, deriving, training on, evaluating on, plotting, or summarising it — that span
+is **`EXPLORATORY_SEEN_DATA`**. *An earlier drafting scoped the trigger to "any **Track A**
+activity"; **withdrawn**, because it left a Track B confirmation spending nothing: with
+"once" read as once **per candidate**, successive candidates could each be confirmed on the
+same reserved span, each honestly claiming unseen data. A confirmation consumes its span.*
+**`A_TRACK_B_CONFIRMATION_MARKS_ITS_SPAN_SEEN_AND_THE_RESERVED_SPAN_IS_SINGLE_USE`** —
+consistent with playbook §6's committed "the run is **exactly once**; no
+rerun-into-search". Thereafter it may **not** serve as a final untouched holdout,
 as forward-confirmation evidence, or as formal novelty evidence.
 
 **This is a deliberate expenditure, not a defect.** Nothing about a span becoming seen is
@@ -10934,6 +10997,32 @@ because the alternative invites slicing:
 3. **An entry is never removed, narrowed or downgraded.** A seen span does not become
    unseen because a run was discarded, a script failed, a result was not used, or a
    session ended.
+4. **Marking follows the *source* minutes, and reaches every timeframe over the same
+   interval.** Observing M15 bars over an interval marks that interval — for M1, M5, H1,
+   H4, D1 and any other aggregation of the same minutes — because they are the same
+   underlying quotes seen at a different resolution. *The timeframe field records **how**
+   an interval was seen; it never narrows **what** was seen.* Without this, "I looked at
+   M15, so H1 is untouched" is a one-line defeat of the whole rule.
+   **`SEEN_MARKING_FOLLOWS_THE_SOURCE_MINUTES_AND_REACHES_EVERY_TIMEFRAME_OVER_THEM`.**
+5. **Marking reaches every pair over the interval.** Observing an interval for one pair
+   marks it for **all twenty**. The pair field records **which** pairs were read; it never
+   narrows **what** was seen. Without this, the carve §8.11.5 forbids on the time axis —
+   "including by carving a 'held-back' slice out of a span that was surveyed as a whole" —
+   is simply performed one axis over, and it would be incoherent with `c`, a single scalar
+   over all twenty pairs' design series.
+   **`SEEN_MARKING_REACHES_EVERY_PAIR_OVER_THE_INTERVAL`.**
+6. **A discarded run counts.** A run whose result was rejected, unread or thrown away has
+   still spent its data and still consumed exploration breadth (§8.11.10(2)). A negative
+   exploratory result is information about which designs fail, and it is not free.
+   **`A_DISCARDED_EXPLORATORY_RUN_STILL_SPENDS_ITS_DATA_AND_ITS_BREADTH`.**
+
+7. **The window is declared *before* the read, not after it.** A Track A run records the
+   interval it intends to touch **before** touching it, and the recorded intent is what
+   binds. Rules 1–6 above are all triggered by "a window a Track A run touched", which is
+   self-reported; without a write-ahead the ledger records confession rather than intent,
+   and the two touches whose recording matters most — the dead window and the reserved
+   forward epoch — are exactly the two nobody would volunteer.
+   **`THE_SEEN_LEDGER_IS_WRITE_AHEAD_INTENT_IS_DECLARED_BEFORE_THE_READ`.**
 
 **`EXPLORATORY_SEEN_LEDGER_IS_APPEND_ONLY_AND_UNRECORDED_MEANS_SEEN`.** The ledger's
 concrete location and format are **not invented here** — they belong with Q8's output
@@ -10955,17 +11044,40 @@ same candidate, and it does not begin before the candidate is fixed in writing.
 order:
 
 1. **Declare the candidate** — the logic, in enough detail that its execution path is
-   determinate.
+   determinate — **by human + ChatGPT approval, in R-7's verifiable form**, and as its own
+   recorded decision. *Added on a review finding: approval attached only at step 4, which
+   is about **surfaces**, so the single most consequential choice in the programme — which
+   hypothesis gets the one reserved span — would have been taken by a session, with a
+   step-4 approval readable afterwards as having covered it.*
+   **`THE_CANDIDATE_DECLARATION_IS_ITS_OWN_HUMAN_CHATGPT_DECISION`.**
 2. **Trace the actual execution path** through the pipeline, end to end.
 3. **Extract from the §8.10 catalog every surface that path reaches**, and only those.
 4. **Freeze that subset by human + ChatGPT ruling**, before any confirmation data is
    observed.
 5. **Implement and test** against the frozen subset.
-6. **Run the confirmation** on reserved, unseen data, once.
+6. **Publish the disclosure set, before the run** — the exploration-breadth record
+   (§8.11.10(2)), the `EXPLORATORY_SEEN_DATA` ledger reference, the per-input seen-span
+   statement required by §8.11.10(1), and the statement that the candidate is
+   **post-hoc-selected** (§8.11.10(3)). *Added on a review finding: these four duties were
+   written only inside §8.11.10, under a heading that opens "None is closed here", and a
+   Track B run could have completed in full conformance with this list while disclosing
+   none of them.* **`THE_DISCLOSURE_SET_IS_A_TRACK_B_STEP_NOT_A_FOOTNOTE`.**
+7. **Run the confirmation** on reserved, unseen data, once — and the run still passes
+   playbook §6 (pre-run authorisation), §7 (the run report) and §8 (post-run audit).
+   *These six steps are the freeze procedure, not a complete confirmation procedure, and
+   an earlier drafting ended at "run … once" as though they were.*
 
 **Extraction is fail-closed and is not the implementer's call.** A surface is *reached*
 if the candidate's execution path reads it, writes it, branches on it, or produces a
-number that depends on it. Where reachability is unclear the surface is **in scope** —
+number that depends on it — **and reach is judged against the contract's requirement set,
+not against what the implementation happens to contain.** *Added on a review finding
+(§8.11.12 A-3): defined over the implementation alone, a control the code simply **lacks**
+is not "unclear" but definitively absent, so it would never trigger the default-to-blocker
+and would drop out of the frozen subset — with no session having scoped anything out.*
+**A control the contract requires and the candidate omits is a reached surface *and* a
+defect**, and the trace is audited against the catalog by a role that did not write it.
+**`AN_OMITTED_MANDATORY_CONTROL_IS_A_REACHED_SURFACE_NOT_AN_ABSENT_ONE`.** Where
+reachability is unclear the surface is **in scope** —
 §8.4.13's default-to-blocker test applies unchanged — and **no session may classify a
 surface out of scope**; that classification is a human + ChatGPT call, exactly as
 §8.7.3's c-12 rule already provides.
@@ -11013,8 +11125,15 @@ weekend-gap defect independently in two scripts." Both halves are carried:
   **`PREREG_3_1_PREREG_4_AND_PLAYBOOK_2_1_2_2_ARE_AMENDED_FOR_TRACK_A_ONLY`.**
 - **The second-derivation-path cost is *not* absorbed.** It is a live decision, because
   the three ways to pay it are materially different and none is free:
-  (i) run the **committed** `aggregation.py` on real data, which means lifting its
-  `assert_synthetic_only` guard while its source audit stands **BLOCKED**;
+  (i) run the **committed** `aggregation.py` on real rows. ⚠ *A first drafting of this
+  option said that means "lifting its `assert_synthetic_only` guard". **Withdrawn — there
+  is no such guard.*** `aggregate_m15` is a pure function over row dicts that reads no
+  files; "synthetic rows only" is its **docstring**, and `assert_synthetic_only` is
+  defined in `guards.py` and called by **nothing** outside its own test. So this option
+  needs **no code change and trips no refusal**: what has actually contained the module
+  is the **absence of a reader** — the P/V reader is still a future design PR — and its
+  source audit standing **BLOCKED**. Option (i) is therefore "give the audit-blocked
+  aggregator its first real-data caller", which is a larger step than it first read as;
   (ii) write a **second**, fenced research aggregator, which is the two-implementation
   structure that produced one identical defect twice;
   (iii) complete the source audit first, which is the cost the split exists to avoid.
@@ -11033,9 +11152,26 @@ does not grant an authorisation.**
 observation would convert it to `EXPLORATORY_SEEN_DATA` and destroy the confirmation value
 it is being reserved for.
 
-`EXACT_WINDOW_NOT_READY_FOR_DECLARATION_FORWARD_EPOCH_DOES_NOT_EXIST` is **maintained**:
-the repository holds **zero** forward-epoch bars, so no `T_v`, `T_h` or `D` is invented
-here, and Q10-B's declaration procedure is unchanged.
+`EXACT_WINDOW_NOT_READY_FOR_DECLARATION_FORWARD_EPOCH_DOES_NOT_EXIST` is **maintained**,
+and no `T_v`, `T_h` or `D` is invented here; Q10-B's declaration procedure is unchanged.
+
+**⚠ A first drafting justified that with "the repository holds zero forward-epoch bars".
+That is false and is withdrawn.** It is true of the **adopted `365d_BA` epoch**, whose
+latest bar is `2026-04-24T20:59Z` — and false of the **repository**, because §3.6 of this
+same document says so at first hand: "The committed archive snapshot
+(`artifacts/oanda_archive_2026-05-31/`, 3650 days) **already contains forward-epoch
+bars**, so this is an access rule, not a hypothetical." The reservation therefore rests on
+the **access rule**, not on absence, which is the stronger and the correct ground.
+
+**And the reservation extends to metadata, because the bars are not the only exposure.**
+`artifacts/oanda_archive_2026-05-31/candles_manifest.json` is **git-tracked** and carries,
+per pair × granularity, `row_count`, `first_time`, `last_time` and `sha256` — a committed
+count and bound of the reserved interval, obtainable with no data access at all. Those are
+precisely the sizing quantities §4's R-10 warns are set by accident. So: **any committed
+inventory, row count, timestamp bound, checksum or gap report that describes the reserved
+interval is reserved on the same footing as its bars, and reading one is a markable
+observation** under §8.11.4.
+**`THE_FORWARD_RESERVATION_COVERS_METADATA_ABOUT_THE_INTERVAL_NOT_ONLY_ITS_BARS`.**
 
 **Track A does not wait for it.** The forward epoch's existence is a **Track B** entry
 condition and is expressly **not** a Track A precondition. That is the second thing this
@@ -11068,11 +11204,14 @@ happens only after it. Its minimum checklist:
 | 1 | **Q8** — the exploratory scratch root and writer | §3.7 permits writes only beneath a named research-scratch root, and §9 reserves naming it to a Contract Gate-decision. Q8 blocks **every** stage that writes, including R0. Unresolved until this gate |
 | 2 | **FR-19** — test safety | `FR_19_SEPARATE_TEST_SAFETY_WORK_PR_OPEN`; §3.5 records that this gate "inherits no working `.env` defence and no working network defence, and must supply its own". Two residual routes are recorded by the fourth re-check |
 | 3 | **The historical-data read route** | which files, which reader, read-only, and how the span guards are called on every path |
-| 4 | **`RESEARCH_SCRATCH_M15_DERIVATION_ROUTE_NOT_SELECTED`** | §8.11.6's three-way choice; the one item on this list that changes what code exists |
+| 4 | **`RESEARCH_SCRATCH_M15_DERIVATION_ROUTE_NOT_SELECTED`** | §8.11.6's three-way choice. *An earlier drafting called it "the one item on this list that changes what code exists"; **withdrawn** — the corrected arm (i) needs **no** code change and trips no refusal, which makes it the **least** visible of the three in a diff, not the most* |
 | 5 | **Network / DB / broker isolation** | §3.1–§3.4, proved rather than asserted |
 | 6 | **Output location, and no production side effects** | nothing writes into the evidence tree, the continuation root, or `artifacts/m15_gate3a/` |
 | 7 | **The `EXPLORATORY_SEEN_DATA` ledger** | location, format and the append-only property, per §8.11.4 |
 | 8 | **Calendar identity for Track A** | see below |
+| 9 | **The exploration-breadth record** | §8.11.10(2) requires `K` to be recorded **as it accrues** "because it cannot be reconstructed afterwards", and the first drafting of this checklist gave it no instrument. In R-7's unit: per configuration — pair set × feature set × model × hyperparameters × threshold × split — never per script invocation, and narrowing a sweep after reading its output **adds** to `K` |
+| 10 | **Playbook §5 and §6** | §8.11.12's correction 1: Q1 required a ruling for option (a) to reconcile **playbook §5** ("only after the source audit (re-check) is **accepted**") and **playbook §6** ("before **ANY** single run"), and §8.11.6 amended neither. Both are unamended and both still block Track A's first read |
+| 11 | **Propagate the split into the governance documents** | §8.11.12's G-8: `docs/governance/` contains no mention of either track, playbook §7's run report has no **track field**, and CLAUDE.md's "Read first" list names the playbook — not this document. Until the playbook carries the split, a session reading only the playbook reads the unamended contract |
 
 **On the calendar, one deliberate reduction.** Track A does not need the
 formal-evidence-grade calendar provenance — `authority_version`, `content_digest`,
@@ -11088,17 +11227,36 @@ Track B**. **`TRACK_A_CALENDAR_IDENTITY_REQUIREMENT_IS_AN_EXECUTION_GATE_QUESTIO
 Four consequences follow from the split. None is closed here; each is recorded so it is
 answered deliberately rather than by whoever gets there first.
 
-**(1) The deflator's span becomes seen.** `c` is committed as a **DESIGN-span** quantity
-(`effective_n_estimator_spec.json`: "estimated on DESIGN data only and frozen"), and once
-Track A runs, the design span is `EXPLORATORY_SEEN_DATA`. So Track B's cross-pair deflator
-would be estimated on data the researcher has looked at. `c` is a nuisance parameter and
-not an alpha estimate, and Ruling c-10 already forbids `c` from being a selection
-criterion — but §8.4.11's A-ω-5 standard says a pre-data freeze does not protect a choice
-whose favourable direction is knowable, and a researcher who has seen the design span
-knows more about `c` than one who has not. The available arms — re-measure `c` on the
-untouched confirmation span, or carry the DESIGN `c` with its seen status recorded — are
-**not selected here**, and the stricter reading governs until they are.
-**`C_DESIGN_SPAN_BECOMES_EXPLORATORY_SEEN_AND_THE_DEFLATOR_SPAN_QUESTION_IS_REFERRED`.**
+**(1) Every DESIGN-fitted input Track B inherits becomes seen — not only `c`.** Once
+Track A runs, the design span is `EXPLORATORY_SEEN_DATA`, and Ruling **c-14** is explicit
+that "the frozen whole-DESIGN values continue to govern **validation and holdout**
+unchanged". By committed authority that is **five** objects, not one:
+
+| Inherited object | Committed as DESIGN-fitted by | Why it matters |
+| --- | --- | --- |
+| the **cost table** | prereg §5 — "from design-span M15 quoted spreads … frozen from design data" | prereg §6 makes `TP_dist`, `SL_dist` **and the eligibility hurdle** functions of `cost`, and prereg §9's kill gate is `gross ≥ 1.5 × cost`. A lower cost estimate lowers the hurdle, adds events, raises net **and** raises `N` |
+| **`W̄` / `L̄`** | prereg §8 — "estimated on design data and frozen (never re-fit on validation/holdout)", pinned by audit T-2 | sets `EV_d`, hence the trade set |
+| the **calibrator** | prereg §8 — isotonic "fit on a split carved from the training span only" | sets `p̂` at the tails, where the EV gate bites |
+| the **fitted model** | nothing fixes it — S-34a records that one live arm is "one static DESIGN fit" | on that arm, `p̂` for **every** forward bar comes from an object fitted wholly on seen data |
+| **`c`** | `effective_n_estimator_spec.json` — "estimated on DESIGN data only and frozen" | `rho_x`'s numerator; §4's R-10 names it the sharpest case |
+
+*An earlier drafting referred only `c`, called its effect "one non-obvious effect", and
+applied §8.4.11's A-ω-5 standard to the single **nuisance parameter** in the list while
+leaving the four objects that build the confirmation's labels and predictions unmentioned.
+**Withdrawn.** The A-ω-5 argument applies verbatim, and harder, to the cost table.* All
+five are referred on the same footing, and **the confirmation record must state, for each,
+that its fitting span is `EXPLORATORY_SEEN_DATA`**.
+**`ALL_FIVE_DESIGN_FITTED_TRACK_B_INPUTS_ARE_REFERRED_NOT_ONLY_C`.**
+
+**And the two arms offered for `c` were not orderable, so "the stricter reading governs"
+bound nothing.** Arm 1 — re-measure `c` on the confirmation span — is **forbidden by the
+committed `APPROVED_SPEC`** (`"DESIGN span only … never validation/holdout"`) and would
+make an acceptance criterion a function of the holdout, which prereg §3.2 counts as
+consuming it. Arm 2 leaks seen-span content forward. They are strict in **opposite**
+directions, so no default ordered them. **Withdrawn and replaced by a stop:** *no Track B
+confirmation may proceed until the deflator-span question is ruled by human + ChatGPT*.
+**`NO_TRACK_B_CONFIRMATION_UNTIL_THE_DEFLATOR_SPAN_QUESTION_IS_RULED`** — and arm 1 is
+recorded as **spec-forbidden as it stands**, not as a live option.
 
 **(2) Exploration breadth is unbounded and Q9's default says it is not free.** Q9's
 governing default, taken from playbook §2.8's narrower-reading rule, is that "exploratory
@@ -11137,6 +11295,17 @@ order submission · production deployment · any formal holdout claim · any Gat
 claim · any production-readiness claim. Research execution stays inside the explicitly
 declared historical research scope of §8.11.3.
 
+**§4's R-1…R-10 bind Track A in full.** A first drafting named only R-10 as surviving,
+which read as suspending the rest (§8.11.12 A-9). Three are directly engaged: **R-1**
+(registered before results are seen), **R-2**'s "**Nothing changes after the slice is
+read** — no feature, threshold, model, cost assumption or pair set", and **R-7**'s
+advance-registration limb. Track A's free-vary permission runs **up to** the
+`EXPLORATORY_OOS_SLICE` read and **never after it**, and **Q7's `N = 1` binds unchanged** —
+the slice is consumed at its first decision-bearing observation, and raising `N` is a
+separate human + ChatGPT loosening this amendment does not take.
+**`SECTION_4_R_1_TO_R_10_BIND_TRACK_A_AND_THE_FREE_VARY_PERMISSION_ENDS_AT_THE_SLICE_READ`** ·
+**`Q7_N_EQUALS_1_BINDS_TRACK_A_AND_THE_SPLIT_DOES_NOT_RAISE_IT`.**
+
 **Unchanged and maintained.** `EXACT_WINDOW_NOT_READY_FOR_DECLARATION_FORWARD_EPOCH_DOES_NOT_EXIST`
 · `SAMPLE_FLOOR_REACHABILITY_NOT_DETERMINABLE_WITHOUT_MEASURED_INPUTS` ·
 `PRODUCTION_READINESS_NOT_CLAIMED` · `NO_EXECUTION_PERFORMED` ·
@@ -11148,12 +11317,310 @@ declared historical research scope of §8.11.3.
 
 **And no closure is claimed.** `M15_MINIMUM_RESEARCH_STATISTICAL_CONTRACT_CLOSED` is
 **not** declared, `NO_NR_L_MINIMUM_RESEARCH_CONTRACT_BLOCKER_REMAINS` is **not** declared,
-and §8.9.6's seven live blockers are **not** discharged — they are reassigned from "before
-any research" to "before the confirmation that touches them".
+and §8.9.6's seven live blockers are **not** discharged.
 **`REASSIGNING_A_BLOCKER_TO_A_LATER_GATE_IS_NOT_DISCHARGING_IT`.**
+
+**⚠ And the reassignment is narrower than first written.** A first drafting reassigned all
+seven "from 'before any research' to 'before the confirmation that touches them'".
+**Withdrawn as to two of them** (§8.11.12 A-2): blockers **1** (the calibration split) and
+**2** (the feature list) bind **upstream of Track A** — §8.9.6's own words are that the
+feature list is frozen "later than the point at which c-12 requires every decision-bearing
+`c`-map input frozen" and "admits no scope narrowing, because it determines `p̂` for every
+bar" — so moving them later commits the exact error §8.9.6 diagnosed as this packet's
+recurring shape, "a freeze requirement whose schedule points past the moment it must bind".
+The reassignment reaches only blockers whose binding moment is **downstream** of Track A.
+**`BLOCKERS_THAT_BIND_UPSTREAM_OF_TRACK_A_ARE_NOT_REASSIGNED_BY_THE_SPLIT`.**
 
 **No data was read, no derivation was run, no candidate was selected, no surface was
 frozen, and no source or test was changed by this amendment.**
+
+#### 8.11.12 The promotion-route review, and the eight further limbs it forced
+
+Three roles reviewed **the split only** — leakage/holdout separation, governance/evidence
+separation, and an adversarial hunt — each asked the single question the round specifies:
+*can exploratory-seen data or exploratory-tuned choices be silently promoted into formal
+confirmation evidence under this contract?* **Every role answered yes.** The routes each
+found are closed above where the fix belonged to an existing paragraph; the eight below
+needed their own text. §12.19 records the round.
+
+**`THE_FIRST_DRAFTING_OF_THE_SPLIT_LEAKED_AND_THE_ROUTES_ARE_RECORDED_NOT_SUMMARISED`.**
+
+**F-5 — the design span's own trailing edge leaks into the dead window, and no purge
+stops it.** `DESIGN_END` is **2026-02-28**, a **Saturday**; the last tradeable design bars
+are Friday **2026-02-27**. §4's R-2 states the mechanism in its own words — "A
+**Friday-afternoon signal bar's 24-bar label reaches into Monday**" — and at this edge that
+Monday is **2026-03-02**, inside the consumed dead window. R-2's 25-bar purge is scoped
+"immediately preceding **the slice**", i.e. the internal `EXPLORATORY_OOS_SLICE` boundary;
+**nothing purges at `DESIGN_END` itself**. Worse, the guard §8.11.3 cites cannot see it:
+`no_overlap` is declaration-checking by design and says so —
+`CALLER_DECLARED_METADATA_ONLY__NO_FILE_OPENED__NO_BYTE_MEASURED` — so a span **declared**
+as ending `2026-02-28T23:59:59` passes `assert_design_bounds` while its labels read March
+bars. *§8.11.3's "the check is a call, not a promise" therefore overstated what the call
+proves: it proves the **declaration** is self-consistent, not that the read stayed inside
+it.* **A trailing purge of ≥ 25 M15 bars applies at `DESIGN_END`, on the same footing as
+at any role boundary**, and no bar whose label window crosses `2026-03-01T00:00:00Z` may be
+labelled, trained on, or scored in Track A.
+**`A_TRAILING_PURGE_APPLIES_AT_DESIGN_END_AND_THE_DECLARATION_GUARD_CANNOT_DETECT_ITS_ABSENCE`.**
+
+**F-7 — §3.6 governs both tracks, and Track B's warm-up must be self-contained.** §3.6's
+blanket sentence — "**No stage may read, aggregate, plot, summarise or otherwise observe
+any bar timestamped at or after 2026-03-01**" — is kept "unchanged and maintained", but
+§8.11.3 quoted it inside the *dead-window* row only, inviting a reading on which it is a
+Track-A-only rule and Track B inherits no dead-window ban from it. Both halves are
+resolved: **the dead-window prohibition binds both tracks absolutely**, and **the
+at-or-after-2026-03-01 prohibition binds Track A absolutely and binds Track B except for
+the forward epoch it is authorised to evaluate** — which is what the sentence was written
+to protect, not to forbid. Consequently **Track B's warm-up and every lookback must be
+self-contained inside the forward epoch**, which is T-1's rule and is enforced in committed
+code by `warmup.py`'s `assert_load_allowed` — a helper whose only callers today are tests.
+**`SECTION_3_6_BINDS_BOTH_TRACKS_AND_TRACK_B_WARM_UP_IS_FORWARD_EPOCH_SELF_CONTAINED`.**
+
+**F-2 — the carry-across rule needed a *span*-side trigger, not only a provenance-side
+one.** As first written it gated a value that *came from Track A*; it said nothing about
+Track B **re-deriving** the same estimator over the same, now-seen, design span — which is
+exactly what c-14 requires it to do. The provenance answer is then honestly "not
+exploratory" while the contamination, which lives in the **span**, is untouched. Added:
+**any quantity estimated on a span marked `EXPLORATORY_SEEN_DATA` is subject to
+§8.11.2(2)'s identification and provenance record regardless of which track computed it**,
+and Track B's frozen DESIGN-fitted inputs must be recomputed from the §4 derivation
+artifact, never inherited from whatever derivation Track A happened to use.
+**`THE_CARRY_ACROSS_TRIGGER_IS_THE_SPAN_NOT_ONLY_THE_PROVENANCE`.**
+
+**G-3 — "before" was self-certified everywhere, and §4 already carries the fix.** Each
+timing protection — the re-pre-registration "taken before any confirmation-span
+observation", the freeze "before any confirmation data is observed", the candidate "fixed
+in writing" — was an assertion with no evidentiary form. §4's **R-7** already specifies
+one: the registration is "committed to the branch **before** the run, and the run record
+cites that registration commit SHA, **which must be an ancestor of the run's code SHA**
+… **A registration that cannot be shown to predate the result is not one.**" **R-7's form
+governs the candidate declaration, every re-pre-registration ruling and the step-4 freeze**,
+and each must be **cited by SHA in the confirmation record** — §8.11.2(2) required only
+that a ruling be *taken*, so published Track B evidence need never have named which of its
+inputs carried exploratory provenance.
+**`R_7_VERIFIABLE_ORDERING_GOVERNS_EVERY_BEFORE_IN_THIS_AMENDMENT`.**
+
+**G-6 — the classification inverted on the two records that constrain it.** §8.11.2 labels
+"every number, table, plot, model, artifact, log and conclusion produced in Track A"
+`NON_DECISION_BEARING_EXPLORATORY_ONLY`, and §9 adds "never automatically promoted". The
+`EXPLORATORY_SEEN_DATA` ledger and the exploration-breadth record are Track A products —
+so the contract labelled its own two enforcement records non-citable, and
+`NO_TRACK_B_CONFIRMATION_ON_A_SPAN_ANY_TRACK_A_RUN_TOUCHED` would have been enforced by an
+artifact a formal claim may not cite. **Both are hereby `BINDING_GOVERNANCE_RECORD`, not
+research output**: they constrain a formal claim, they are cited in it, and the
+non-decision-bearing label does not reach them. Their location is a Minimum Research
+Execution Gate item alongside Q8's root.
+**`THE_SEEN_LEDGER_AND_THE_BREADTH_RECORD_ARE_BINDING_GOVERNANCE_RECORDS`.**
+
+**G-8 — the split exists only here, and the mandatory reading list points elsewhere.** A
+search of `docs/governance/` returns **zero** hits for "Track A", "Track B",
+`EXPLORATORY_SEEN`, `NON_DECISION_BEARING` or "Minimum Research Execution Gate". Playbook
+§7's single-run report template has **no track field**; §8's required final statuses are
+the four `M15_SINGLE_RUN_EVIDENCE_*` strings, one containing `MEETS`, with nothing fencing
+that vocabulary off from a Track A run; §9's merge checklist has no line for a
+research-scratch root; and §6 — "Pre-run authorisation template (**before ANY single
+run**)" — requires an accepted source audit and an adopted forward epoch, both of which
+§8.11 says Track A needs neither of, while §8.11.6 amends only playbook §2.1–§2.2.
+CLAUDE.md's "Read first" list names the **playbook and the policy**, not this design
+document: the amending text sits outside the mandatory reading list and the amended texts
+sit inside it, unamended. **Until the playbook carries the split, a session that reads only
+the playbook is reading the unamended contract, and the unamended text governs that
+session.** Propagating the split into playbook §6/§7/§8/§9 — including a required
+**track field** on the run report and merge checklist — is a **precondition of the Minimum
+Research Execution Gate**, not a tidying task.
+**`THE_SPLIT_DOES_NOT_BIND_A_SESSION_READING_ONLY_THE_PLAYBOOK_UNTIL_THE_PLAYBOOK_CARRIES_IT`.**
+
+**G-9 — Track A's output naming is unguarded and item 6 has no committed enforcement.**
+§9 constrains the output **root** ("must reuse no committed artifact identity or canonical
+filename") and not the filenames inside it, while §5 rules reserved-filename impersonation
+**OUT** on the ground that "the researcher is not the attacker here" — a ruling §9 itself
+says is honest **only** under a constant root with no caller-supplied component, which Q8
+has not yet supplied. Meanwhile `guards._PROTECTED_PREFIXES` does **not** list
+`artifacts/m15_gate3a` (open referral NR-A), so `refuse_real_path` permits exactly the
+write §8.11.9 item 6 forbids, and §3.7 already records that "a research runner is by
+definition an unrouted caller". Given this repository's history — a writer that overwrote a
+committed artifact 2138 → 16 bytes, and demonstrated reserved-name impersonation — two
+things are added: **no Track A output file may bear the canonical filename of any
+committed artifact, anywhere**, and **§8.11.9 item 6 is recorded as having no committed
+enforcement while NR-A is unresolved**.
+**`NO_TRACK_A_FILE_MAY_BEAR_A_COMMITTED_ARTIFACTS_CANONICAL_FILENAME`** ·
+**`EXECUTION_GATE_ITEM_6_HAS_NO_COMMITTED_ENFORCEMENT_WHILE_NR_A_IS_OPEN`.**
+
+**G-10 — two tokens read as grants when quoted alone.**
+`Q1_RULED_HISTORICAL_DATA_READ_PERMITTED_FOR_NON_DECISION_BEARING_EXPLORATORY_RESEARCH_ONLY`
+and `EXPLORATORY_RESEARCH_STATISTICAL_FREEZE_NOT_REQUIRED` carry their disqualifiers in
+prose elsewhere ("This document is not that authorisation"), which is not this packet's own
+house style — `RESEARCH_SCRATCH_M15_DERIVATION_ROUTE_NOT_SELECTED` and
+`..._NOT_READY_FOR_DECLARATION` attach the negation to the token. Both are hereby paired,
+and the pair travels with them wherever either is quoted:
+**`Q1_AMENDMENT_IS_A_PRECONDITION_REMOVAL_NOT_A_READ_AUTHORISATION`** ·
+**`EXPLORATORY_FREEZE_NOT_REQUIRED_IS_NOT_AN_EXECUTION_PERMISSION`.**
+
+**And one consequence no single paragraph stated, aggregated here because it is the
+amendment's real price.** Combined with §8.11.3's three exclusions, **once Track A begins
+there is no unseen historical data left in this repository at all**: the design span is
+spent, the dead window is dead, and the deeper archive is non-authorised. The only possible
+confirmation span is then a forward epoch that currently holds no adopted bars, with the
+earliest feasible adoption ≈ **2026-10**. **The amendment is irreversible on first read**,
+and it forecloses any second confirmation without a new epoch-adoption ruling. That is a
+defensible trade and it is the human's to make — but it must be visible before the first
+read, not after it.
+**`AFTER_TRACK_A_BEGINS_NO_UNSEEN_HISTORICAL_DATA_REMAINS_AND_THE_STEP_IS_IRREVERSIBLE`.**
+
+**A-1 — the deepest route: Ruling c-12's freeze is a *sequencing* rule whose only
+guarantee was Q1.** c-12's operative sentence is purely temporal — "**No value in the `c`
+map may be measured until every input above is frozen**" — and it never had to require
+those inputs be chosen *blind to DESIGN data*, because Q1 made a DESIGN read impossible
+before the freeze. **§8.11.6 removes exactly that precondition.** After Track A, a session
+can satisfy c-12 to the letter — freeze every input, then build the map once — while every
+one of those inputs was chosen having surveyed the design span. c-12's own free-vary
+overlap is item-for-item: the generation method and its parameters, the model family,
+hyperparameters and calibration, **the feature list**, the warm-up `W`, **the cost model
+and table**, the label geometry, the eligibility rule, **`W̄`/`L̄` and their estimator**,
+and the aggregation identity. c-12 even names the residual itself —
+`C_OBSERVATION_MUST_NOT_TRIGGER_UPSTREAM_RECONFIGURATION` "is scoped to observing **`c`**"
+— so a design-span observation that is *not* `c`, which is the whole of Track A, may
+reconfigure every upstream input; and `NO_LOCUS_RECORDS_THE_FROZEN_C_MAP_INPUT_SET` means
+the record could not show it. **The amendment assigned c-12 to "Track B inputs" without
+asking whether Track B can still comply, and the honest answer is that a *pre-data* freeze
+requirement does not survive a contract that lawfully permits the data to be seen first.**
+This is **not** repaired by re-wording: it is referred as the amendment's largest open
+question. **`C_12_IS_A_PRE_DATA_FREEZE_AND_TRACK_A_MAKES_IT_UNSATISFIABLE_IN_ITS_ORIGINAL_SENSE`**
+— and **no Track B `c` map may be built until it is ruled**, on the same stop as
+§8.11.10(1)'s deflator-span question.
+
+**A-2 — two of §8.9.6's seven blockers bind *upstream* of Track A, and reassigning them
+commits the error §8.9.6 diagnosed.** §8.11.11 reassigned all seven "from 'before any
+research' to 'before the confirmation that touches them'". Blockers 1 (the calibration
+split) and 2 (the feature list) bind **before the DESIGN-span measurement** — §8.9.6's own
+words for blocker 2 are that the feature list is frozen "**later** than the point at which
+c-12 requires every decision-bearing `c`-map input frozen" and "admits no scope narrowing,
+because it determines `p̂` for every bar". §8.9.6's closing diagnosis names the shape
+exactly: "a freeze requirement **whose schedule points past the moment it must bind**".
+**The blanket reassignment commits that error on §8.9.6's own list**, and §8.10.3 supplies
+the motive for both (a narrower feature list and a larger carve each lower `c` and raise
+`N_eff`). Corrected: **the reassignment reaches only blockers whose binding moment is
+downstream of Track A**; blockers 1 and 2 bind **upstream** and are **not** reassigned.
+**`BLOCKERS_THAT_BIND_UPSTREAM_OF_TRACK_A_ARE_NOT_REASSIGNED_BY_THE_SPLIT`.**
+
+**A-3 — "reached" was defined over the implementation, so an omitted control was
+definitively not reached.** Track A may write the pipeline without implementing the
+existing rulings; Track B then extracts "every surface that path reaches, **and only
+those**"; and a control the code simply **lacks** is not "unclear" — it is definitively
+absent, so it never triggers the default-to-blocker and drops out of the frozen subset.
+`SURFACE_EXTRACTION_FAILS_CLOSED_AND_NO_SESSION_MAY_SCOPE_A_SURFACE_OUT` is literally
+honoured: no *session* scopes anything out; the **code** does. §8.10.1 makes this the
+normal case rather than the exotic one — features, calibration, the EV gate, the cost
+table, `c` and `ω` are all unimplemented today, so Track A is where they get written for
+the first time, and candidate omissions with recorded favourable directions include the
+concurrency cap, the rollover window, the ATR warm-up guard and the purge. Corrected:
+**reach is judged against the contract's requirement set, not against the candidate's
+implementation. A control the contract requires and the implementation omits is a reached
+surface **and** a defect**, and the trace is audited against the catalog by a role that
+did not write it. **`AN_OMITTED_MANDATORY_CONTROL_IS_A_REACHED_SURFACE_NOT_AN_ABSENT_ONE`.**
+
+**A-4 — §9 forbids in terms what §8.11.2 permits, and §8.11 is 300 lines away.** §9 still
+reads: "Any cost table, `W̄`/`L̄` payoff estimate, effective-N input, warm-up `W` or spread
+statistic produced under this gate is `RESEARCH_SCRATCH_NON_AUTHORITATIVE` and **may not
+become a frozen contract value** (R-10)." Under CLAUDE.md's stricter-reading rule **§9
+governs**, and the conflict is now flagged at both sites rather than left for whichever
+section a future session happens to read.
+**`SECTION_9_GOVERNS_AND_THE_RE_PREREGISTRATION_ROUTE_IS_SUSPENDED_UNTIL_SECTION_9_IS_AMENDED`.**
+
+**A-5 — the ceremony discloses provenance and discounts nothing, and the breadth record
+has no instrument.** §8.11.2(2) requires identification, provenance and ordering; it does
+**not** require the packet put to the human to state how many arms were tried or which
+direction was favourable, so a human can freeze the exploration's argmax with full
+ceremony. §8.10.3's own standard is the test that should apply and does not: "the
+favourable direction is knowable in advance, which is **exactly the condition under which
+'we froze it before looking at the data' stops being a sufficient defence**." And
+§8.11.10(2) says breadth "must be recorded **as it accrues**, because it cannot be
+reconstructed afterwards" while §8.11.9's checklist had an item for the seen-ledger and
+**none** for the breadth record — the one thing that must be recorded live had no
+instrument, and R-7's `K` was never mentioned. Corrected: **the re-pre-registration packet
+must state `K` in R-7's unit and name the favourable direction where one is knowable**,
+and the breadth record joins §8.11.9 as **item 9**.
+**`THE_RE_PREREGISTRATION_PACKET_STATES_K_AND_THE_KNOWABLE_FAVOURABLE_DIRECTION`.**
+
+**A-6 — Q7's `N = 1` was never carried into the split, and it is the hardest constraint on
+Track A.** §8.11 names Q1, Q3, Q8 and Q9 and never Q7. Q7's standing default: the
+`EXPLORATORY_OOS_SLICE` "is consumed at its **first decision-bearing observation**", budget
+**`N = 1`**, "**Raising N is a loosening and needs the ruling**" — and Q7's own rationale is
+this round's concern verbatim: "unbounded design-span search does not merely over-fit an
+exploratory figure — **it selects the contract family A commits to**." §8.11.5 mentioned
+the slice only to deny it holdout status, carrying no budget, while §8.11.2 said in spirit
+the opposite. Corrected: **Q7's `N = 1` binds Track A unchanged** — the slice is read once,
+every iteration happens on the training portion, and raising `N` is a separate human +
+ChatGPT loosening this amendment does **not** take.
+**`Q7_N_EQUALS_1_BINDS_TRACK_A_AND_THE_SPLIT_DOES_NOT_RAISE_IT`.**
+
+**A-7 — a failed Track B feeds the next candidate's selection.** Candidate #1 fails;
+candidate #2 is chosen by people who have read that report; candidate #2 is confirmed on
+forward data no *Track A* run touched. The marking fix at §8.11.4 closes the span limb, but
+not the **knowledge** limb: the ledger records spans, and this route runs through a
+*result*. Corrected: **a completed Track B confirmation is itself a decision-bearing
+observation of the forward epoch**, so a second candidate is not confirmed on the remainder
+without a human + ChatGPT ruling that states what candidate #1's outcome contributed to
+candidate #2's selection, and how the second claim is deflated for it.
+**`A_SECOND_CANDIDATE_AFTER_A_FAILED_CONFIRMATION_NEEDS_ITS_OWN_RULING_AND_DEFLATION`.**
+
+**A-8 — `ω`'s method is pre-data-frozen by ruling, and the split listed it as free-vary.**
+Ruling ω-9 freezes ω's **method** "before data" — the clock, the overlap function, the
+`E[f]` order, the weighting, the pair-local aggregation, the zero/one-event semantics and
+the pair-identity rule — and Ruling ω-10 forbids a measured `ω` from changing "the overlap
+method, the weighting, **the research iteration, or the model design**". §8.11.2 listed
+"`c` and `ω` estimator experiments" among Track A's free-vary items and simultaneously
+claimed ω-1…ω-13 were "retained in full … not deleted, weakened or reopened". **Both cannot
+hold.** Corrected: Track A may run `ω` **diagnostics** — computing the registered estimator
+and reporting it — and may **not** vary ω's frozen method limbs; where a Track A experiment
+does vary them, its output is a **method study**, not an `ω`, and may never be the `ω` a
+Track B `N_eff` consumes. `MEASUREMENT_MAY_DETERMINE_THE_VERDICT_BUT_MUST_NOT_REDIRECT_THE_EXPERIMENT`
+binds Track A too. **`TRACK_A_MAY_DIAGNOSE_OMEGA_AND_MAY_NOT_VARY_ITS_FROZEN_METHOD_LIMBS`.**
+
+**A-9 — §4's R-1…R-9 were never said to bind Track A, and naming only R-10 read as
+suspending the rest.** §8.11.2 named **only** R-10 as surviving and §8.11.11's
+"unchanged and maintained" list carried §3.1–§3.7 and a set of statuses but **not §4**.
+Three are directly engaged: **R-1** ("registered before results are seen"), **R-2**'s last
+bullet ("**Nothing changes after the slice is read** — no feature, threshold, model, cost
+assumption or pair set"), and **R-7**'s advance-registration limb. Corrected: **§4's R-1…
+R-10 bind Track A in full**, with one stated interaction — R-2's "nothing changes after the
+slice is read" is what makes Q7's `N = 1` operative, and Track A's free-vary permission
+runs **up to** the slice read, never after it.
+**`SECTION_4_R_1_TO_R_10_BIND_TRACK_A_AND_THE_FREE_VARY_PERMISSION_ENDS_AT_THE_SLICE_READ`.**
+
+##### Five claims §8.11 made that the review showed were wrong
+
+1. **"Both halves are carried" of Q1's price — false.** Q1 states a **third** obligation:
+   "Playbook §5 binds any design-span derivation PR with 'only after the source audit
+   (re-check) is **accepted**', and playbook §6 gates '**ANY** single run' … A ruling would
+   have to state that these govern the *production-evidence* path … **or amend them**."
+   §8.11.6 amended prereg §3.1, prereg §4 and playbook §2.1–§2.2 and never mentioned
+   playbook §5 or §6. **Track A's first read remains blocked by two unamended clauses this
+   amendment did not know about**, and reconciling them is a Minimum Research Execution
+   Gate precondition — not something this session takes.
+   **`PLAYBOOK_5_AND_6_ARE_UNAMENDED_AND_STILL_BLOCK_TRACK_A_S_FIRST_READ`.**
+2. **"This honours §4's R-10 rather than evading it" — wrong on R-10's own text.** R-10 is
+   a **closed two-arm disjunction**: "Each is **either** estimated by a rule registered
+   **before the campaign starts**, **or** left entirely to the design audit and gate 3a,
+   which own it." A ruling taken *after* the campaign that names the value is **neither**
+   arm. §8.11.2(2) creates a **third** arm, which is an **amendment** of R-10 and is
+   recorded as one. **`THE_RE_PREREGISTRATION_ROUTE_IS_A_THIRD_ARM_AND_THEREFORE_AN_AMENDMENT_OF_R_10`.**
+3. **The c-11 precedent cited for that remedy does not support it.** c-11's unsatisfiable
+   straddle ban was resolved **by scope** — fold-local tables for generation, frozen tables
+   for validation and holdout, the cost recorded — a substantive narrowing that *preserved*
+   the guarantee. It was not a legalised carry with a provenance note. The citation is
+   **withdrawn as support**; the withdrawal of the flat ban stands on its own unsatisfiability.
+4. **"The two-track shape is the committed contract's own shape" — half its support
+   fails.** The prereg §3.1 half holds. The §7 half does not: §7 is headed "**Proposed**
+   staged flow" inside this unruled packet, and §12.17 records that "**R-2 remains a
+   proposal**" — R-2 being the requirement that defines the `EXPLORATORY_OOS_SLICE` the
+   sentence cites. The claim is narrowed to prereg §3.1 alone.
+5. **"ω-1…ω-13 retained in full, not weakened" — not sustainable** as to ω-9 and ω-10
+   (A-8), nor the parallel claim for c-12 (A-1). Corrected at both.
+
+**One structural gap the review named and this round closes: §8.11 had no §12 review
+round.** Every prior ruling in this packet carries a numbered independent round; the
+amendment that amends three committed texts and restructures the packet had none. §12.19
+is that round.
 
 ---
 
@@ -11193,6 +11660,15 @@ effective-N input, warm-up `W` or spread statistic produced under this gate is
 `RESEARCH_SCRATCH_NON_AUTHORITATIVE` and may not become a frozen contract value
 (R-10). A value chosen after seeing exploratory results is not a pre-registered
 value.
+
+**⚠ This sentence and §8.11.2(2) are in direct conflict, and this one governs.** §8.11's
+two-track amendment provides a re-pre-registration route by which a Track A value may
+become a Track B frozen input; the sentence above forbids it outright, and §8.11.12's
+correction 2 shows the route is a **third arm** of R-10's closed two-arm disjunction —
+therefore an amendment of R-10, not an application of it. Under CLAUDE.md's stricter
+reading of a research restriction, **§9 governs and the re-pre-registration route is
+suspended until §9 and R-10 are amended by their own human + ChatGPT ruling.**
+**`SECTION_9_GOVERNS_AND_THE_RE_PREREGISTRATION_ROUTE_IS_SUSPENDED_UNTIL_SECTION_9_IS_AMENDED`.**
 
 ---
 
@@ -12361,6 +12837,107 @@ rows; and its three "span admissibility" tokens were grouped as S-105 for the sa
 **No ruling was taken, no value was assigned to an unregistered parameter, no closure was
 claimed, and no execution was authorised.** No source or test was changed and no data was
 read.
+
+---
+
+### 12.19 Twentieth review round — the two-track split, promotion routes only
+
+**Coverage FULL: three roles dispatched, three returned.** Scope was **the split alone**,
+by instruction: no role re-audited §8.10's 149 surfaces or proposed a ruling on any of its
+77 decision items, and none did. Each was given §8.11, the source tree and the contract
+documents — never another role's conclusions — and each was asked the single question:
+*can exploratory-seen data or exploratory-tuned choices be silently promoted into formal
+confirmation evidence under this contract?*
+**`ROUND_19_PROMOTION_ROUTE_REVIEW_COVERAGE_FULL_THREE_OF_THREE`.**
+
+**All three answered YES.** Leakage/holdout separation found **7** routes,
+governance/evidence separation **10**, the adversarial hunt **10** plus **five wrong
+claims** in §8.11's own text. Overlap was substantial and is not double-counted; the
+distinct limbs are recorded at §8.11.12 and in the sections they belong to.
+
+**Two lead corrections landed before the roles returned**, and both were confirmed
+independently:
+
+- **`NO_TRACK_A_NUMBER_MAY_BECOME_A_TRACK_B_FROZEN_VALUE` was unsatisfiable** — a candidate
+  is *made of* values, so the split's own structure guaranteed the rule would be broken.
+  Withdrawn and replaced. *The replacement then failed on three further counts the roles
+  found — its subject was "number", its trigger was provenance rather than span, and it
+  created a third arm of R-10 — so the first fix was itself incomplete.*
+- **The `assert_synthetic_only` claim was false.** `aggregate_m15` is a pure function over
+  row dicts; "synthetic rows only" is a docstring; the guard has **no non-test caller**
+  repo-wide. What has contained the module is the absence of a reader plus its BLOCKED
+  audit status — which makes §8.11.6's arm (i) larger than first written, and the **least**
+  visible of the three in a diff.
+
+**The single most consequential finding, from the adversarial role.** Ruling **c-12**'s
+input freeze is a **sequencing** rule — "no value in the `c` map may be measured until
+every input above is frozen" — and it never had to require those inputs be chosen *blind*
+to design data, because **Q1 made a design read impossible before the freeze**. §8.11.6
+removes exactly that precondition. After Track A, a session can satisfy c-12 to the letter
+while every one of its inputs was chosen having surveyed the span, and
+`NO_LOCUS_RECORDS_THE_FROZEN_C_MAP_INPUT_SET` means the record could not show it. c-12's
+frozen-input table and Track A's free-vary list are item-for-item the same set. **The
+amendment assigned c-12 to "Track B inputs" without asking whether Track B can still
+comply.** Recorded as a stop, not a re-wording: no Track B `c` map is built until it is
+ruled.
+
+**What each role forced into the text.**
+
+| Route | Where it is now closed or referred |
+| --- | --- |
+| Only **one of five** DESIGN-fitted Track B inputs was referred — the cost table, `W̄`/`L̄`, the calibrator and the fitted model were unmentioned, and the one referred was the nuisance parameter | §8.11.10(1), rewritten with the five-object table; the A-ω-5 argument applies "verbatim, and harder" to the cost table |
+| The `c` arms were not orderable — arm 1 is **forbidden by the APPROVED_SPEC** and would make an acceptance criterion a function of the holdout — so "the stricter reading governs" bound nothing | replaced by a **stop**: no Track B confirmation until the deflator-span question is ruled |
+| The carry-across rule was keyed on **provenance**, so re-deriving on the seen span launders it; and "names the value" cannot reach a fitted model, calibrator or 60-cell table | §8.11.12 F-2 — a **span**-side trigger, and identification by estimator + fitting span + content digest |
+| **`DESIGN_END` is a Saturday**; a Friday design bar's 24-bar label reaches Monday **2026-03-02**, inside the dead window. No trailing purge exists there, and `no_overlap` is declaration-checking by design so it cannot detect the read | §8.11.12 F-5 — a trailing purge at `DESIGN_END`, and §8.11.3's "a call, not a promise" corrected: the call proves the **declaration** is self-consistent |
+| The ledger closed the **timeframe** axis and left the **pair** axis open, and had no write-ahead | §8.11.4 rules 5 and 7 |
+| A **Track B** run marked nothing, so "once" was once **per candidate** and successive candidates could each be confirmed on the same reserved span | §8.11.4's trigger now reaches both tracks; the reserved span is single-use |
+| §3.6's blanket sentence was quoted only in the dead-window row, inviting a Track-A-only reading | §8.11.12 F-7 — it binds both tracks; Track B's warm-up is forward-epoch self-contained |
+| The rule's subject was "a Track A **number**", while the free-vary list is overwhelmingly **non-numeric** | §8.11.2(2) |
+| The route could reach values **prereg Rulings 1–13** already froze, which §4's R-1 says needs a prereg amendment, "not a registration" | §8.11.2(3) |
+| Every "**before**" was self-certified; §4's **R-7** already owns the verifiable form and was never invoked | §8.11.12 G-3 — R-7 governs the candidate declaration, every re-pre-registration and the step-4 freeze, cited by SHA |
+| The **seen-ledger** and the **breadth record** were classified `NON_DECISION_BEARING_EXPLORATORY_ONLY` by the amendment's own sweeping rule — the contract labelled its two enforcement records non-citable | §8.11.12 G-6 — both are `BINDING_GOVERNANCE_RECORD` |
+| The disclosure duties lived under a heading beginning "**None is closed here**" and were not Track B steps | §8.11.5 step 6 |
+| The **candidate declaration** had no approval and no PR class; step-4 approval could be read afterwards as covering it | §8.11.5 step 1 |
+| `docs/governance/` mentions neither track; playbook §7's run report has **no track field**; CLAUDE.md's "Read first" names the playbook, not this document | §8.11.12 G-8 and execution-gate item 11 — until the playbook carries the split, a session reading only the playbook reads the unamended contract |
+| Track A output **filenames** were unguarded, and `guards._PROTECTED_PREFIXES` omits `artifacts/m15_gate3a` (NR-A), so item 6 has no committed enforcement | §8.11.12 G-9 |
+| Two tokens read as **grants** when quoted alone | §8.11.12 G-10 — each now travels with its negation |
+| "Reached" was defined over the **implementation**, so a control the code omits is definitively not reached and drops out of the frozen subset | §8.11.5 — reach is judged against the **contract's requirement set** |
+| **Q7's `N = 1`** was never carried into the split — the hardest constraint on Track A, and §8.11.2 said the opposite in spirit | §8.11.11 — Q7 binds unchanged; the free-vary permission ends at the slice read |
+| §4's **R-1…R-9** were never said to bind Track A; naming only R-10 read as suspending them | §8.11.11 |
+| `ω`'s **method** is pre-data-frozen by ω-9 and protected by ω-10, yet "ω estimator experiments" was on the free-vary list beside a claim that ω-1…ω-13 are retained in full | §8.11.2 — Track A may **diagnose** `ω`, not vary its frozen method limbs |
+| A failed Track B feeds the **next** candidate's selection, and the ledger has no Track B side for *knowledge* | §8.11.12 A-7 — a second candidate needs its own ruling and deflation |
+| The ceremony discloses provenance and **discounts nothing**; `K` had no instrument although §8.11.10(2) says it must be recorded as it accrues | §8.11.12 A-5 and execution-gate item 9 |
+| Two of §8.9.6's seven blockers bind **upstream** of Track A, so the blanket reassignment committed the error §8.9.6 diagnosed | §8.11.11 — blockers 1 and 2 are **not** reassigned |
+
+**Five claims §8.11 made that the review showed were wrong** are recorded at §8.11.12,
+each corrected in place: Q1's price had a **third** obligation (playbook §5 and §6) the
+amendment never mentioned and which still blocks Track A's first read; "this honours R-10"
+is wrong because R-10 is a **closed two-arm disjunction** and the route is a third arm;
+the c-11 precedent cited for that remedy was resolved by **scope-narrowing**, not by a
+legalised carry; "the committed contract's own shape" loses half its support because §7 is
+a **proposal**; and "ω retained in full" is not sustainable beside the free-vary list.
+
+**No role's finding was declined.** Three were **narrowed** on lead re-verification: the
+leakage role's Route 4 rested partly on a manifest claim that is true (`candles_manifest.json`
+is git-tracked and carries `row_count` / `first_time` / `last_time` / `sha256` per pair ×
+granularity) and partly on calling §8.11.7's premise false — it is false of the
+**repository** and true of the **adopted epoch**, and the correction says which; the
+governance role's Route 2 and the adversarial role's Route 7 are the same route seen from
+two sides and are recorded once, in two limbs (span and knowledge); and the adversarial
+role's suggestion that §9's conflict be resolved in §8.11's favour was **declined** —
+CLAUDE.md's stricter reading makes §9 govern, so the re-pre-registration route is
+**suspended** rather than blessed.
+
+**Every decisive claim was re-verified at source by the lead before being applied**,
+including: prereg §3.2's "**≥** horizon + 1"; `2026-02-28` being a Saturday and `2026-03-02`
+a Monday; R-10's two-arm sentence; R-7's ancestry requirement; R-1's "may not loosen,
+substitute or re-derive"; Q7's `N = 1`; ω-9's frozen-method table and ω-10's prohibition;
+§9's "may not become a frozen contract value"; the `APPROVED_SPEC`'s "never
+validation/holdout"; `assert_synthetic_only`'s absence of a caller; and
+`_PROTECTED_PREFIXES` omitting `artifacts/m15_gate3a`.
+
+**No ruling beyond the one the round was given was taken. No data was read, no candidate
+was selected, no surface was frozen, and no source or test was changed.**
 
 ---
 
