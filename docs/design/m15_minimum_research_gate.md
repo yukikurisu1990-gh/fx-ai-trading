@@ -344,6 +344,51 @@ claimed** (§8.9.6): `C_GENERATION_CALIBRATION_SPLIT_IS_A_SECOND_UNREGISTERED_GE
 `C_DESIGN_GENERATOR_PENDING_ONE_EXACT_PARAMETER_DECISION` is discharged **only** as to
 the first predicted DESIGN date.
 
+**§8.12 — the GOVERNANCE CONSISTENCY AMENDMENT — RULED** (human + ChatGPT). §8.11 split
+the programme; this makes the split hold **against the governance documents above it**.
+**`GOVERNANCE_CONSISTENCY_AMENDMENT_RULED`** ·
+**`CONTRACT_PERMISSION_IS_NOT_EXECUTION_AUTHORISATION`** ·
+**`TRACK_A_EXECUTION_REQUIRES_GOVERNANCE_PROPAGATION_COMPLETE`** ·
+**`EXPLORATORY_RESULT_REQUIRES_EXPLICIT_REPREREGISTRATION_BEFORE_FORMAL_CONFIRMATION`** ·
+**`TRACK_B_FREEZE_MUST_PRECEDE_ALL_FORMAL_CONFIRMATION_OBSERVATION`**.
+
+**Playbook §5 and §6 are reconciled by scope, not relaxation** — §5 governs the gate-3a
+continuation (its shape forbids the training and strategy metrics Track A exists to do),
+§6 governs the formal single-shot run (it requires an adopted forward epoch and a
+once-only run). Neither is loosened; Track B still passes §6 in full; §5's safety clauses
+are imposed on Track A **directly**, and playbook §2 moves in exactly one narrow limb
+(`PLAYBOOK_2_1_AND_2_2_ADMIT_ONE_NARROW_TRACK_A_EXCEPTION_AND_NOTHING_ELSE_IN_SECTION_2_MOVES`).
+**Playbook §9 is not relaxed**: a Track A PR reports conclusions and `K`, **not** numbers
+(`PLAYBOOK_9_IS_NOT_RELAXED_AND_A_TRACK_A_PR_REPORTS_CONCLUSIONS_NOT_NUMBERS`), and
+`A_TRACK_A_DERIVATION_IS_NOT_THE_SECTION_4_ARTIFACT_AND_MAY_NOT_BE_RECORDED_AS_ONE`.
+
+**R-10 gains an explicit third arm and §9's flat prohibition is amended to admit it**;
+the earlier `SECTION_9_GOVERNS_AND_THE_RE_PREREGISTRATION_ROUTE_IS_SUSPENDED_…` is
+**HISTORICAL**. Arm 3 is admissible only with **all eight limbs** (§8.12.4): exploration
+declared ended · the quantity fully identified · **exploratory provenance recorded** ·
+**`K` in R-7's unit** · any knowable favourable direction named · human + ChatGPT ruling in
+**R-7's verifiable form** · **before** any confirmation observation, and **void — not
+late** if after · and **`NO_EXPLORATORY_PERFORMANCE_FIGURE_ENTERS_A_FORMAL_ACCEPTANCE_CLAIM`**.
+`ARM_3_DISCLOSES_THE_SELECTION_IT_DOES_NOT_UNDO_IT` — the value is **not** pre-registered
+in arm 1's sense. Promotion runs through **eight steps and no other route**
+(`A_QUANTITY_THAT_SKIPPED_THE_EIGHT_STEPS_IS_EXCLUDED_NOT_RETROSPECTIVELY_APPROVED`).
+
+**c-12 is re-defined for Track B** because it is a purely *temporal* rule whose force came
+entirely from Q1:
+`C_12_ORIGINAL_PRE_DATA_SENSE_IS_NOT_RECOVERABLE_AFTER_TRACK_A_AND_IS_REPLACED_NOT_RESTORED`,
+replaced by `TRACK_B_FREEZE_MUST_PRECEDE_ALL_FORMAL_CONFIRMATION_OBSERVATION` with
+`NO_TRACK_B_CONFIRMATION_UNTIL_THE_DEFLATOR_SPAN_QUESTION_IS_RULED` standing over all of it.
+**`SEEN_IS_TERMINAL_AND_NO_RULING_CAN_RESTORE_UNSEEN_STATUS`**: the design span is the
+Track A **development dataset**, the unseen forward epoch the Track B **confirmation
+dataset**, and the transition is one-way.
+
+**⚠ Track A still cannot start, on three independent unmet conditions** (§8.12.10):
+governance propagation **P-1…P-8** complete (`GOVERNANCE_PROPAGATION_IMPLEMENTATION_PENDING`
+— CLAUDE.md's "Read first" list does not name this document, and **P-7** amends frozen
+pre-registration text and needs its own ruling); the **Minimum Research Execution Gate**
+passed on a named head; and `RESEARCH_SCRATCH_M15_DERIVATION_ROUTE_NOT_SELECTED` decided.
+**`WHERE_THIS_PACKET_AND_A_GOVERNANCE_DOCUMENT_DISAGREE_THE_GOVERNANCE_DOCUMENT_GOVERNS_UNTIL_PROPAGATED`.**
+
 **§8.11 — the TWO-TRACK AMENDMENT — RULED** (human + ChatGPT). Family A research
 splits into **Track A — Exploratory M15 Research** and **Track B — Formal Confirmation**:
 **`M15_RESEARCH_MODEL_SPLIT_EXPLORATORY_AND_FORMAL_CONFIRMATION`** ·
@@ -1509,6 +1554,28 @@ variant chosen after its results were seen.** Each is either estimated by a rule
 registered before the campaign starts, or left entirely to the design audit and
 gate 3a, which own it. Exploratory estimates of these quantities are diagnostics
 and are labelled as such.
+
+**⚠ AMENDED at §8.12.4 — R-10 now has a third arm.** The two arms above are a
+**closed disjunction**, and the Two-Track model's promotion route is neither of
+them, so §12.19 correctly recorded it as an amendment rather than an application.
+The amendment is taken by the instrument **R-1** itself names — "a **contract
+amendment requiring a human + ChatGPT ruling**, not a registration" — and it is
+coherent because arm 2 **already** permits a value to be set by an authority that
+has seen design data: R-10 never forbade *knowledge of the span*, it forbade an
+**unrecorded** variant chosen because its result was seen.
+
+> **Arm 3 — post-exploration re-pre-registration.** Admissible **only** with all
+> eight limbs at §8.12.4: exploration declared ended · the quantity named and
+> fully identified (estimator, fitting span and content digest for a fitted
+> object) · **exploratory provenance recorded** · **`K` stated in R-7's unit** ·
+> any **knowable favourable direction named** with the arm the value sits on ·
+> the ruling taken by human + ChatGPT in **R-7's verifiable form** · taken
+> **before any formal-confirmation observation**, and **void — not late** if
+> after · and **no exploratory performance figure travels with it**.
+
+**`R_10_ARM_3_POST_EXPLORATION_RE_PREREGISTRATION_WITH_FULL_DISCLOSURE`** ·
+**`ARM_3_DISCLOSES_THE_SELECTION_IT_DOES_NOT_UNDO_IT`** — the value is **not**
+pre-registered in arm 1's sense and the confirmation record may not say it is.
 
 **Three further levers, added after §0's derivation exposed them.**
 
@@ -8749,6 +8816,18 @@ enumerated so the freeze has a scope rather than a slogan:
 **The rule.** **No value in the `c` map may be measured until every input above is
 frozen**, and once measured, none of them may change for current Family A.
 
+**⚠ RE-DEFINED for Track B at §8.12.6, because this rule is purely *temporal* and its
+force came entirely from Q1.** While a design read was impossible before the freeze,
+"frozen first" and "chosen blind" were the same thing; §8.11.6 separates them, so after
+Track A this sentence is satisfiable to the letter with every input chosen post-hoc. The
+replacement ordering is: Track A ends → candidate re-pre-registration under R-10 arm 3 →
+all Track-B decision-bearing inputs frozen → `c`-generating semantics frozen → **only then**
+any formal-confirmation observation → `c` measured.
+**`TRACK_B_FREEZE_MUST_PRECEDE_ALL_FORMAL_CONFIRMATION_OBSERVATION`** ·
+**`C_12_ORIGINAL_PRE_DATA_SENSE_IS_NOT_RECOVERABLE_AFTER_TRACK_A_AND_IS_REPLACED_NOT_RESTORED`**
+— and `NO_TRACK_B_CONFIRMATION_UNTIL_THE_DEFLATOR_SPAN_QUESTION_IS_RULED` stands over all
+of it.
+
 **The enumeration governs, and it is *not* claimed complete by inspection.** Where an
 input is decision-bearing but unlisted,
 `ALL_DECISION_BEARING_C_MAP_INPUTS_MUST_BE_FROZEN_BEFORE_C_MEASUREMENT` governs and this
@@ -11624,6 +11703,409 @@ is that round.
 
 ---
 
+### 8.12 The Governance Consistency Amendment — RULED
+
+A human + ChatGPT ruling, recorded here as **authority**. §8.11 split the research
+programme into two tracks; this amendment makes that split hold **against the governance
+documents above it**, which §12.19's adversarial role showed it did not.
+
+**`GOVERNANCE_CONSISTENCY_AMENDMENT_RULED`** ·
+**`CONTRACT_PERMISSION_IS_NOT_EXECUTION_AUTHORISATION`** ·
+**`TRACK_A_EXECUTION_REQUIRES_GOVERNANCE_PROPAGATION_COMPLETE`** ·
+**`EXPLORATORY_RESULT_REQUIRES_EXPLICIT_REPREREGISTRATION_BEFORE_FORMAL_CONFIRMATION`** ·
+**`TRACK_B_FREEZE_MUST_PRECEDE_ALL_FORMAL_CONFIRMATION_OBSERVATION`**
+
+#### 8.12.0 The ruling, as recorded
+
+1. **Track A's historical read is permitted at the governance layer too**, not only in
+   this packet — and the permission is a **contract permission**, not an execution
+   authorisation.
+2. **Playbook §5 and §6 are reconciled by scope, not by relaxation.** §5 governs the
+   gate-3a continuation; §6 governs the formal single-shot run. Neither is loosened, and
+   the Formal-Confirmation-side protections in both stand untouched.
+3. **R-10 gains an explicit third arm**, and §9's flat prohibition is amended to admit it.
+   The suspension recorded at §9 is **lifted by this ruling**, which is the instrument
+   R-1 itself names for the purpose: "a **contract amendment requiring a human + ChatGPT
+   ruling**, not a registration".
+4. **Promotion from Track A to Track B runs through eight mandatory steps** and through no
+   other route.
+5. **c-12 is re-defined for Track B**: the freeze must precede all **formal-confirmation
+   observation**, and the fact that specifications were chosen after seeing design data is
+   **recorded as exploratory provenance, never concealed**.
+6. **`EXPLORATORY_SEEN_DATA` is irreversible.** Existing historical data is the Track A
+   **development dataset**; the unseen forward epoch is the Track B **confirmation
+   dataset**. The roles do not swap back.
+7. **Governance propagation is enumerated and is a precondition of execution**, not a
+   tidying task.
+
+**What this ruling does not do.** It authorises no read, no derivation, no training, no
+evaluation and no run; it selects no candidate; it freezes no surface; it invents no date;
+it reads no forward-epoch data or metadata; and it changes no file outside this document.
+Q8, FR-19, the read route, isolation, the scratch root, the seen-ledger implementation and
+calendar identity are **not** settled here — they are the Minimum Research Execution
+Gate's (§8.12.11).
+
+#### 8.12.1 The distinction the whole amendment rests on
+
+**`CONTRACT_PERMISSION_IS_NOT_EXECUTION_AUTHORISATION`.**
+
+| | Contract permission | Execution authorisation |
+| --- | --- | --- |
+| What it answers | *May this class of work exist under the contract at all?* | *May this specific operation run now?* |
+| Who gives it | a human + ChatGPT contract ruling | a named gate, against a checklist, on a named head |
+| What it produces | a permitted route | a permitted **run** |
+| This amendment | **gives one** | **gives none** |
+
+Every prior confusion in this packet's history has run through this seam: an approval of a
+*document* being read afterwards as an approval of an *operation*. So the two are named,
+and the second is withheld explicitly rather than by omission.
+
+#### 8.12.2 Playbook §2, §5 and §6 — reconciled by scope
+
+**Playbook §2.1 / §2.2 — the stop rules.** They read: "**No real read before audit
+acceptance:** if a task asks for a real data read before the machinery source audit … is
+accepted, REFUSE and redirect to the audit gate", and the same for a real M15 derivation.
+These are **session-behaviour instructions**, which is why §8.11.6's amendment of them
+inside this packet does not reach a session that reads the playbook alone.
+
+**The reconciliation, and it is narrow.** §2.1 and §2.2 protect the **production-evidence
+path**: the machinery whose audit is BLOCKED is the machinery that produces the *committed*
+design-M15 artifact and the byte-level proof. A **Track A research-scratch derivation** is a
+different object with a different output class. The exception is therefore stated at the
+narrowest scope that works, and **only** these three limbs move:
+
+- a **Track A** historical read, on the **design span only**,
+- producing output classified `NON_DECISION_BEARING_EXPLORATORY_ONLY` and
+  `RESEARCH_SCRATCH_NON_AUTHORITATIVE`,
+- **after** the Minimum Research Execution Gate has passed on a named head.
+
+**Everything else in §2 stands, and three clauses bind Track A with particular force**:
+§2.3 (no forward-epoch adoption), §2.4 (no validation, holdout, execution or *formal*
+strategy metrics without an approved gate — Track A's metrics are exploratory and carry no
+verdict), §2.5 (no automatic chaining of irreversible stages — Track A's own R1 → R3 → R4
+are separate gates), §2.6 (forbidden labels), §2.7 (doc-only purity), §2.8 (the ambiguity
+rule: the narrower reading governs), §2.9 (approval scope is exact).
+**`PLAYBOOK_2_1_AND_2_2_ADMIT_ONE_NARROW_TRACK_A_EXCEPTION_AND_NOTHING_ELSE_IN_SECTION_2_MOVES`.**
+
+**Playbook §5 — the gate-3a continuation template.** Its first clause ("Only after the
+source audit (re-check) is **accepted**") was reported as blocking Track A's first read.
+Re-read at source, §5 is titled "**Gate-3a continuation template (future design-span
+derivation PR)**" and its shape is unusable for Track A on its own terms: it requires
+"**No validation computation; no holdout evaluation; no strategy metrics; no training; no
+execution**" and "**metadata-only / scrub-clean** outputs", while Track A's whole purpose
+is to train models and compute strategy metrics. **§5 therefore describes a different
+object and does not govern Track A** — it is not relaxed, and the gate-3a continuation it
+governs still requires an accepted source audit.
+
+**But §5's safety clauses are not left behind.** Four of them are imposed on Track A
+directly, on this ruling's own authority rather than by inheritance:
+
+| §5 clause | Applies to Track A? |
+| --- | --- |
+| Only after the source audit is accepted | **No** — this is the production-evidence gate. Track A's equivalent precondition is the Minimum Research Execution Gate |
+| **Design-span only**; the dead window excluded from every artifact | **Yes, unchanged** |
+| **No forward-epoch adoption**; forward remains WAIT | **Yes, unchanged** |
+| No validation computation, no holdout evaluation, no formal strategy metrics, no execution | **Yes for validation, holdout and execution.** Track A **does** train and compute exploratory metrics, which is exactly why §5's shape does not fit it |
+| Metadata-only / scrub-clean outputs | **No** — replaced by `NON_DECISION_BEARING_EXPLORATORY_ONLY` outputs beneath Q8's scratch root, which never enter the evidence tree |
+| Produce the design M15 inventory + checksums; the byte-level no-overlap proof | **No** — those are the *committed* artifacts of the gate-3a continuation. A Track A derivation produces neither, and **may not be mistaken for one** |
+| No `NEW_EPOCH_ADOPTED`, no `BYTE_ADMISSIBLE` | **Yes, unchanged** |
+
+**`PLAYBOOK_5_GOVERNS_THE_GATE_3A_CONTINUATION_NOT_TRACK_A_AND_ITS_SAFETY_CLAUSES_ARE_IMPOSED_DIRECTLY`** ·
+**`A_TRACK_A_DERIVATION_IS_NOT_THE_SECTION_4_ARTIFACT_AND_MAY_NOT_BE_RECORDED_AS_ONE`.**
+
+**Playbook §6 — "Pre-run authorisation template (before ANY single run)".** Read literally,
+"ANY single run" reaches Track A's R2/R3/R4. Read against its own contents it cannot: it
+requires "**Forward epoch adopted**", "Cost tables fixed", "All acceptance criteria
+frozen", "The run is **exactly once**; no rerun-into-search", and holdout touched only
+after the validation kill gate. Those are the conditions of the **formal single-shot run**,
+and none of them is satisfiable — or meaningful — for an exploratory iteration.
+
+**§6 governs the Formal Confirmation run. It is not relaxed, and Track B still passes it
+in full.** Track A gets its own, separate pre-run checklist at §8.12.11, which **inherits
+three of §6's clauses verbatim** because they protect things Track A can still damage:
+
+- **No consumed-window leakage** — 2026-03-01 → 2026-04-24 dead at all timeframes for all
+  roles, **including feature warm-up**;
+- **No legacy-evidence dependency** — the C-8 declaration holds;
+- **T-1's dead-window prohibition**, which is the same boundary seen from the audit side.
+
+**`PLAYBOOK_6_GOVERNS_THE_FORMAL_SINGLE_SHOT_RUN_AND_TRACK_A_HAS_ITS_OWN_CHECKLIST`** ·
+**`TRACK_B_STILL_PASSES_PLAYBOOK_6_IN_FULL`.**
+
+**One thing this section deliberately does not do.** It does not claim the scope reading
+was always obvious. §5 and §6 were written when there was one research path, so their
+titles carry a universality their contents do not. Reading them as scoped is a
+**construction**, and it is recorded as one — which is why §8.12.9 requires the playbook
+itself to be amended rather than left to be re-construed by each session.
+
+#### 8.12.3 Playbook §9 — the merge checklist, and what a Track A PR may contain
+
+§9's checklist forbids, in any Amber/Red PR: "**no raw data / raw candles / predictions /
+model outputs / validation-holdout metrics / trade-level rows**" and "**prior evidence
+directories untouched** (`artifacts/ml_step4/365d_ba_v1/*`, `artifacts/m15_gate3a/*`)".
+
+**None of this is relaxed.** A Track A results PR satisfies it the same way every other PR
+does — by **not containing those things**. Concretely:
+
+- Track A's numeric output lives beneath Q8's research-scratch root and is **not committed
+  to the repository** by the results PR.
+- What a Track A PR may carry is a **prose finding** — what was tried, what the exploration
+  concluded, and the `K` count — with no raw rows, no per-trade records, no predictions, no
+  model binaries and no committed metric tables.
+- "validation-holdout metrics" in §9 means the **formal** roles' metrics. A Track A
+  exploratory metric is not one, but it is also **not automatically publishable**: it is
+  `NON_DECISION_BEARING_EXPLORATORY_ONLY`, and putting a table of them in a PR body invites
+  precisely the citation this whole structure forbids. **Default: report the conclusion and
+  the breadth, not the numbers.**
+- `artifacts/m15_gate3a/*` stays untouched. §8.11.12 G-9 already records that
+  `guards._PROTECTED_PREFIXES` **omits** that directory (open referral NR-A), so the
+  checklist item currently has no committed enforcement — that gap is unchanged and is
+  restated here rather than quietly relied upon.
+
+**`PLAYBOOK_9_IS_NOT_RELAXED_AND_A_TRACK_A_PR_REPORTS_CONCLUSIONS_NOT_NUMBERS`.**
+
+**And §9 cannot currently tell the two tracks apart.** It has no track field, so a Track A
+PR and a Track B PR present identically at the merge checkpoint. Adding one is
+propagation item **P-4** (§8.12.9).
+
+#### 8.12.4 R-10's third arm, and the amendment of §9
+
+**The conflict, stated exactly.** §4's **R-10** ends: "**No quantity destined to be frozen
+into the family-A contract may be taken from an exploratory variant chosen after its
+results were seen.** Each is **either** estimated by a rule registered **before the campaign
+starts**, **or** left entirely to the design audit and gate 3a, which own it." §9 restates
+it as a flat prohibition. §8.11.2(2)'s re-pre-registration route is **neither** arm, so
+§12.19 correctly recorded it as an amendment of R-10 and this packet suspended it.
+
+**The suspension is lifted by this ruling, and R-10 gains a third arm.** The instrument is
+the one R-1 itself names: "any departure is a **contract amendment requiring a human +
+ChatGPT ruling**, not a registration." That is what this is.
+
+**Why a third arm is coherent rather than a hole.** R-10's arm 2 already permits a value to
+be set **by an authority that has seen design data** — the design audit and gate 3a "own
+it". So R-10 never forbade *knowledge of the design span*; it forbade a **variant chosen
+because its result was seen**, unrecorded. The third arm keeps that prohibition and pays
+for the knowledge with disclosure:
+
+> **Arm 3 — post-exploration re-pre-registration.** A quantity or specification selected
+> during Track A may be frozen into the Track B contract if and only if **all** of the
+> following hold, and a failure of any one of them means the quantity may **not** be
+> frozen:
+>
+> 1. **Exploration has ended** and is declared ended.
+> 2. The quantity is **named and fully identified** — for a scalar, its value; for a fitted
+>    object, its estimator, its fitting span and its content digest; for a specification,
+>    its full text.
+> 3. Its **exploratory provenance is recorded**: that it was selected during Track A,
+>    against what alternatives, and on what span.
+> 4. The **exploration breadth `K`** is stated in R-7's unit — per configuration, pair set
+>    × feature set × model × hyperparameters × threshold × split, never per script
+>    invocation, and narrowing a sweep after reading its output **adds** to `K`.
+> 5. Where a **favourable direction is analytically knowable** (§8.4.11's A-ω-5 standard,
+>    §8.10.3's table), it is **named**, together with which arm the chosen value sits on.
+> 6. The ruling is taken by **human + ChatGPT**, in **R-7's verifiable form** — committed
+>    before the run, with the registration commit SHA cited in the confirmation record and
+>    an ancestor of the run's code SHA.
+> 7. It is taken **before any formal-confirmation observation**. A re-pre-registration
+>    taken after confirmation data has been observed is **void**, not late.
+> 8. **No exploratory performance figure travels with it.** The Track B acceptance
+>    evaluation is computed only on confirmation data; a Track A Sharpe, expectancy,
+>    coverage, turnover, maxDD or `N_eff` may not appear in, support, or be averaged into a
+>    formal acceptance claim.
+
+**`R_10_ARM_3_POST_EXPLORATION_RE_PREREGISTRATION_WITH_FULL_DISCLOSURE`** ·
+**`ARM_3_IS_VOID_NOT_LATE_IF_CONFIRMATION_DATA_HAS_BEEN_OBSERVED`** ·
+**`NO_EXPLORATORY_PERFORMANCE_FIGURE_ENTERS_A_FORMAL_ACCEPTANCE_CLAIM`.**
+
+**What arm 3 does not buy.** It does not make the value pre-registered in arm 1's sense,
+and the confirmation record must not say it is. §8.11.10(3) stands: Track B confirms a
+**post-hoc-selected hypothesis**, which is a weaker claim than confirming a pre-registered
+one, and `Q9_C7_DEFAULT_IS_UNCHANGED_AND_COLLIDES_WITH_TRACK_A_BREADTH` is still live — the
+`K` disclosure required at limb 4 is what makes that collision answerable later, not what
+answers it now.
+**`ARM_3_DISCLOSES_THE_SELECTION_IT_DOES_NOT_UNDO_IT`.**
+
+#### 8.12.5 The promotion rule — eight steps, and no other route
+
+**`EXPLORATORY_RESULT_REQUIRES_EXPLICIT_REPREREGISTRATION_BEFORE_FORMAL_CONFIRMATION`.**
+
+| # | Step | Fails closed if |
+| --- | --- | --- |
+| 1 | **Exploration ends** and is declared ended, with the `EXPLORATORY_SEEN_DATA` ledger closed for that campaign | any Track A activity continues on the candidate afterwards |
+| 2 | **The candidate logic is declared by human + ChatGPT**, in R-7's verifiable form, as its own recorded decision | a session declares it, or the declaration cannot be shown to predate what follows |
+| 3 | **The candidate specification and its execution path are recorded** in enough detail that the path is determinate | the path cannot be traced without re-reading exploratory code |
+| 4 | **Exploratory provenance is disclosed** — arm 3 limbs 3, 4 and 5 | `K` is unknown, or a knowable favourable direction is unnamed |
+| 5 | **The decision-bearing surfaces the candidate touches are identified**, against the **contract's requirement set** and not against what the implementation contains | an omitted mandatory control is treated as an absent surface |
+| 6 | **Those surfaces are frozen** for Formal Confirmation, by human + ChatGPT ruling | any surface is scoped out by a session |
+| 7 | **No confirmation data is observed until step 6 completes** | any observation precedes the freeze — arm 3 is then **void** |
+| 8 | **Confirmation runs on the unseen forward epoch**, once, passing playbook §6, §7 and §8 | the span was touched by any prior run in either track |
+
+**There is no other route.** A specification, value or fitted object reaching the Track B
+contract without steps 1–8 is not promoted — it is **excluded**, and its presence is a
+defect to be reported, not an irregularity to be regularised afterwards.
+**`A_QUANTITY_THAT_SKIPPED_THE_EIGHT_STEPS_IS_EXCLUDED_NOT_RETROSPECTIVELY_APPROVED`.**
+
+#### 8.12.6 c-12, re-defined for Track B
+
+**The defect §12.19 found.** Ruling c-12 says "**No value in the `c` map may be measured
+until every input above is frozen**" — a purely **temporal** rule. Its force came entirely
+from Q1: while a design read was impossible before the freeze, "frozen first" and "chosen
+blind" were the same thing. §8.11.6 separates them, and c-12's sentence survives while its
+guarantee does not.
+
+**The re-definition, in the only order that is now coherent.**
+
+1. **Track A ends** (§8.12.5 step 1).
+2. **Candidate re-pre-registration** under R-10 arm 3, with provenance and `K` disclosed.
+3. **Every Track-B decision-bearing input is frozen** — c-12's enumeration, read as
+   non-exhaustive exactly as c-12 already requires.
+4. **The `c`-generating semantics are frozen** — c-11, c-13, c-14, c-15, and the
+   deflator-span question §8.11.10(1) refers.
+5. **Only then may any formal-confirmation or other decision-bearing observation occur.**
+6. **`c` is measured.**
+
+**`TRACK_B_FREEZE_MUST_PRECEDE_ALL_FORMAL_CONFIRMATION_OBSERVATION`.**
+
+**And the honest part, which is the point of the re-definition.** Steps 3 and 4 happen
+*after* the design span has been seen. c-12's original sense — a freeze that precedes **any**
+observation of the data the inputs were chosen on — is **not recoverable** once Track A has
+run, and this amendment does not pretend otherwise.
+**`C_12_ORIGINAL_PRE_DATA_SENSE_IS_NOT_RECOVERABLE_AFTER_TRACK_A_AND_IS_REPLACED_NOT_RESTORED`.**
+What replaces it is: the freeze precedes all **confirmation** observation; the selection is
+**disclosed** under arm 3 rather than concealed; and
+`C_DESIGN_SPAN_BECOMES_EXPLORATORY_SEEN_AND_THE_DEFLATOR_SPAN_QUESTION_IS_REFERRED` remains
+**open**, with `NO_TRACK_B_CONFIRMATION_UNTIL_THE_DEFLATOR_SPAN_QUESTION_IS_RULED` standing
+as a stop over the whole of Track B.
+
+**Two consequences carried without repair.** `NO_LOCUS_RECORDS_THE_FROZEN_C_MAP_INPUT_SET`
+means nothing in the record distinguishes a first build from a rebuilt one, so arm 3 limb 2's
+content digest is the only checkable anchor there will be. And
+`C_OBSERVATION_MUST_NOT_TRIGGER_UPSTREAM_RECONFIGURATION` remains scoped to observing `c`
+and does **not** reach a Track A observation of anything else — which is the residual, named
+rather than closed.
+
+#### 8.12.7 Two datasets, two roles, and one irreversible transition
+
+**The structure, stated once so it is not re-derived per session.**
+
+| Dataset | Role | Status once used |
+| --- | --- | --- |
+| Existing historical data — the **design span**, 2025-04-25 → 2026-02-28 | **Track A development dataset** | `EXPLORATORY_SEEN_DATA` from first observation, permanently |
+| The **unseen forward epoch**, at or after 2026-04-25 | **Track B confirmation dataset**, reserved | untouched until Track B's single run |
+| The **dead window**, 2026-03-01 → 2026-04-24 | none — consumed M1 holdout | dead for every role at every timeframe, unchanged |
+
+**The transition is one-way.** A span that has become `EXPLORATORY_SEEN_DATA` does not
+return to untouched status, is not usable as Formal Confirmation unseen evidence, and the
+read cannot be undone — not by discarding the result, not by a failed run, not by a new
+session, and not by a later ruling, because a ruling cannot un-see data.
+**`SEEN_IS_TERMINAL_AND_NO_RULING_CAN_RESTORE_UNSEEN_STATUS`.**
+
+**And the price is restated here, in the section a reader will reach before acting.** Once
+Track A begins, **there is no unseen historical data left in this repository** — the design
+span is spent, the dead window is dead, and `730d_BA` / `3650d_BA` remain non-authorised by
+prereg Ruling 2. The only remaining confirmation dataset is a forward epoch with no adopted
+bars.
+
+#### 8.12.8 Forward epoch — maintained, and untouched by this amendment
+
+`EXACT_WINDOW_NOT_READY_FOR_DECLARATION_FORWARD_EPOCH_DOES_NOT_EXIST` is **maintained**.
+The forward epoch's existence is a **Track B** entry condition and **not** a Track A
+precondition (`FORWARD_EPOCH_EXISTENCE_IS_A_TRACK_B_ENTRY_CONDITION_NOT_A_TRACK_A_PRECONDITION`).
+
+**In this amendment, specifically:** no exact date is invented; no `T_v`, `T_h` or `D` is
+chosen; no forward data is generated; and **no forward-epoch metadata is read** — which
+includes the row counts, timestamp bounds and checksums that
+`THE_FORWARD_RESERVATION_COVERS_METADATA_ABOUT_THE_INTERVAL_NOT_ONLY_ITS_BARS` places under
+the same reservation. Q10-B's declaration procedure is unchanged.
+
+#### 8.12.9 Governance propagation — what must change, and where
+
+The Two-Track model currently exists **only in this document**, which CLAUDE.md's mandatory
+"Read first" list does **not** name. A session that reads the governance documents alone
+reads the unamended contract and will correctly refuse a Track A read. The following files
+must be amended in **their own PRs** — this doc-only amendment changes none of them.
+
+**`GOVERNANCE_PROPAGATION_IMPLEMENTATION_PENDING`.**
+
+| # | File | What must change | Tier |
+| --- | --- | --- | --- |
+| **P-1** | `CLAUDE.md` | Add `docs/design/m15_minimum_research_gate.md` to the "Read first" list for M15 work, and state the Track A / Track B distinction in the working rules | Amber — governance doc |
+| **P-2** | `docs/governance/m15_audit_playbook.md` §2 | Record the single narrow Track A exception to §2.1 / §2.2 (§8.12.2), and that §2.3–§2.9 are unchanged | Amber |
+| **P-3** | playbook §5 and §6 | State the scope construction explicitly: §5 governs the gate-3a continuation, §6 the formal single-shot run; add the Track A pre-run checklist as its own subsection | Amber |
+| **P-4** | playbook §7 and §9 | Add a required **track field** to the single-run report template and to the merge checklist, so Track A and Track B records are distinguishable at the checkpoint | Amber |
+| **P-5** | playbook §1 gate table and §3 gate order | Insert the **Minimum Research Execution Gate** and Track A/Track B in the gate ladder | Amber |
+| **P-6** | `docs/governance/autonomous_development_policy.md` | Confirm whether a Track A research run is Red (real-data read) — it is — and that no Green or Amber path reaches it | Amber |
+| **P-7** | `docs/design/m15_first_cost_hurdle_aware_preregistration_design.md` §3.1, §4, §11 | Record the Track A carve-out to "before any real read", and that a Track A derivation is not the §4 artifact | **Red-adjacent Amber** — amends a frozen pre-registration; needs its own human + ChatGPT ruling |
+| **P-8** | `docs/prompts/m15_claude_operating_prefix.md`, `docs/prompts/m15_future_audit_templates.md` | Carry the track distinction into the task contract and the audit templates | Amber |
+
+**P-7 is not a documentation update.** prereg §14's non-authorisation statements and
+Ruling 1's gate ordering are frozen pre-registration text; amending them is the same class
+of act as this ruling and requires its own. It is listed so it is not performed by a session
+in passing.
+**`PREREG_AMENDMENT_P_7_REQUIRES_ITS_OWN_HUMAN_CHATGPT_RULING`.**
+
+#### 8.12.10 Authority precedence — why Track A still cannot start
+
+**`TRACK_A_EXECUTION_REQUIRES_GOVERNANCE_PROPAGATION_COMPLETE`.**
+
+Approving the Two-Track contract does **not** make Track A executable. Three independent
+conditions gate the first read, and **all three are currently unmet**:
+
+1. **Governance propagation (P-1 … P-8) is complete**, so that the authority chain a
+   session actually reads carries the split. Until then, a session reading the playbook is
+   reading the unamended contract, and playbook §2.8's ambiguity rule makes the **narrower,
+   no-read** interpretation govern.
+2. **The Minimum Research Execution Gate has passed** on a named head (§8.12.11).
+3. **The `RESEARCH_SCRATCH_M15_DERIVATION_ROUTE_NOT_SELECTED` choice has been made** —
+   Track A cannot read M15 bars that no route produces.
+
+**And the precedence rule itself, stated so it cannot be inverted.** Where this document and
+a governance document disagree, **the governance document governs** until propagated —
+CLAUDE.md is explicit that "the repository documents win over the prompt, and the stricter
+reading of a research restriction wins", and this packet is not exempt from that merely
+because it is where the amendment was written.
+**`WHERE_THIS_PACKET_AND_A_GOVERNANCE_DOCUMENT_DISAGREE_THE_GOVERNANCE_DOCUMENT_GOVERNS_UNTIL_PROPAGATED`.**
+
+#### 8.12.11 Deferred to the Minimum Research Execution Gate
+
+Not settled here, and not settleable by a session: **Q8**'s exploratory scratch/write root ·
+**FR-19** test safety · the historical-data **read route** · `RESEARCH_SCRATCH_M15_DERIVATION_ROUTE_NOT_SELECTED`
+· **network / DB / broker isolation** · the **output location** and its no-production-side-effect
+proof · the **`EXPLORATORY_SEEN_DATA` ledger** implementation · **Track A calendar identity**
+· the **exploration-breadth (`K`) record** instrument · **playbook §5 and §6** reconciliation
+in the playbook itself · **governance propagation P-1…P-8** · and the **research execution
+code** itself.
+
+**The gate also owns Track A's own pre-run checklist**, inheriting from playbook §6 the three
+clauses that still bite: no consumed-window leakage including feature warm-up; no
+legacy-evidence dependency (C-8); and the dead-window prohibition at all timeframes for all
+roles.
+
+#### 8.12.12 What this amendment maintains
+
+`M15_RESEARCH_MODEL_SPLIT_EXPLORATORY_AND_FORMAL_CONFIRMATION` ·
+`EXPLORATORY_RESEARCH_STATISTICAL_FREEZE_NOT_REQUIRED` ·
+`FORMAL_CONFIRMATION_REQUIRES_CANDIDATE_SPECIFIC_FREEZE` ·
+`EXACT_WINDOW_NOT_READY_FOR_DECLARATION_FORWARD_EPOCH_DOES_NOT_EXIST` ·
+`SAMPLE_FLOOR_REACHABILITY_NOT_DETERMINABLE_WITHOUT_MEASURED_INPUTS` ·
+`PRODUCTION_READINESS_NOT_CLAIMED` · `NO_EXECUTION_PERFORMED` ·
+`M15_MINIMUM_RESEARCH_GATE_PENDING_HUMAN_CHATGPT_RULING` ·
+`M15_MINIMUM_RESEARCH_STATISTICAL_CONTRACT_NOT_CLOSED` ·
+`STATISTICAL_CONTRACT_SURFACE_INVENTORY_INCOMPLETE_…` ·
+`FR_19_SEPARATE_TEST_SAFETY_WORK_PR_OPEN` · Q8 unresolved until the execution gate ·
+§3.1–§3.7's boundaries in full · every §8.11.12 limb · and §8.9.6's seven blockers, of which
+**1 and 2 bind upstream of Track A and are not reassigned**.
+
+**Prohibited throughout, in both tracks, unless a later named gate authorises it
+separately:** broker execution · live trading · demo trading · order submission · production
+deployment · any formal holdout, Gate-3a-pass or production-readiness claim.
+
+**In producing this amendment: no data was read, no forward-epoch metadata was read, no
+derivation was run, no training or evaluation occurred, no candidate was selected, no
+surface was frozen, no date was invented, and no file outside this document was changed.**
+
+---
+
 ## 9. Output classification
 
 Everything produced under this gate is
@@ -11661,14 +12143,21 @@ effective-N input, warm-up `W` or spread statistic produced under this gate is
 (R-10). A value chosen after seeing exploratory results is not a pre-registered
 value.
 
-**⚠ This sentence and §8.11.2(2) are in direct conflict, and this one governs.** §8.11's
-two-track amendment provides a re-pre-registration route by which a Track A value may
-become a Track B frozen input; the sentence above forbids it outright, and §8.11.12's
-correction 2 shows the route is a **third arm** of R-10's closed two-arm disjunction —
-therefore an amendment of R-10, not an application of it. Under CLAUDE.md's stricter
-reading of a research restriction, **§9 governs and the re-pre-registration route is
-suspended until §9 and R-10 are amended by their own human + ChatGPT ruling.**
-**`SECTION_9_GOVERNS_AND_THE_RE_PREREGISTRATION_ROUTE_IS_SUSPENDED_UNTIL_SECTION_9_IS_AMENDED`.**
+**⚠ AMENDED at §8.12.4, and the earlier suspension is lifted.** This sentence and
+§8.11.2(2) were in direct conflict; §8.11.12's correction 2 showed the route to be a
+**third arm** of R-10's closed two-arm disjunction, so this packet suspended it
+(`SECTION_9_GOVERNS_AND_THE_RE_PREREGISTRATION_ROUTE_IS_SUSPENDED_UNTIL_SECTION_9_IS_AMENDED`
+— now **HISTORICAL**). The Governance Consistency Amendment supplies exactly the instrument
+that suspension named: a human + ChatGPT contract ruling amending **both** §9 and R-10.
+
+**The sentence above therefore reads with one exception and no others.** A cost table,
+`W̄`/`L̄` estimate, effective-N input, warm-up `W` or spread statistic produced under this
+gate may become a frozen contract value **only** through **R-10 arm 3** — post-exploration
+re-pre-registration under all eight limbs at §8.12.4. Absent any limb, the flat prohibition
+governs unchanged, and a quantity that skipped the eight steps of §8.12.5 is **excluded,
+not retrospectively approved**. Nothing here permits an exploratory **performance** figure
+to enter a formal acceptance claim.
+**`SECTION_9_ADMITS_R_10_ARM_3_AND_NO_OTHER_ROUTE`.**
 
 ---
 
