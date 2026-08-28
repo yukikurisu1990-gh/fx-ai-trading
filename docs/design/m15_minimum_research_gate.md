@@ -364,7 +364,9 @@ are imposed on Track A **directly**, and playbook §2 moves in exactly one narro
 
 **R-10 gains an explicit third arm and §9's flat prohibition is amended to admit it**;
 the earlier `SECTION_9_GOVERNS_AND_THE_RE_PREREGISTRATION_ROUTE_IS_SUSPENDED_…` is
-**HISTORICAL**. Arm 3 is admissible only with **all eight limbs** (§8.12.4): exploration
+**HISTORICAL**. Arm 3 is admissible only with **all nine limbs** (§8.12.4) — the ninth
+being that it **does not reach a prereg Ruling 1–13 or audit T-1…T-7 frozen value**, which
+needs a prereg amendment (P-7) instead: exploration
 declared ended · the quantity fully identified · **exploratory provenance recorded** ·
 **`K` in R-7's unit** · any knowable favourable direction named · human + ChatGPT ruling in
 **R-7's verifiable form** · **before** any confirmation observation, and **void — not
@@ -382,7 +384,22 @@ replaced by `TRACK_B_FREEZE_MUST_PRECEDE_ALL_FORMAL_CONFIRMATION_OBSERVATION` wi
 Track A **development dataset**, the unseen forward epoch the Track B **confirmation
 dataset**, and the transition is one-way.
 
-**⚠ Track A still cannot start, on three independent unmet conditions** (§8.12.10):
+**⚠ The first drafting of THIS amendment also leaked** — three roles, three returned, all
+three answered yes (§12.20). **arm 3's coherence argument was wrong**: R-10 has no
+"unrecorded" qualifier and arm 2's authority sees **data, never results**, so arm 3 is a
+**deliberate exception** to R-10, not an extension of it
+(`ARM_3_IS_A_DELIBERATE_EXCEPTION_TO_R_10_NOT_AN_EXTENSION_OF_ITS_LOGIC`). **And the line it
+must hold is "strategy input versus acceptance-test term", not "figure versus choice"** —
+`ARM_3_DOES_NOT_REACH_A_TERM_IN_AN_ACCEPTANCE_TEST`, and the five quantities §9 used to name
+are **outside** arm 3 by limb 9. **`R_7_VERIFIABLE_ORDERING_GOVERNS_EVERY_BEFORE_IN_THIS_AMENDMENT`
+is FALSE** — an ancestry test orders commits, not observations, so limb 7 is unverifiable
+and `OBSERVATION_ORDER_IS_NOT_PROVABLE_FROM_THE_RECORD_AND_THIS_IS_A_LIMIT_NOT_A_CONTROL`.
+Twenty-three further limbs and ten wrong claims are recorded at §8.12.13, including that
+**"unsatisfiable therefore inapplicable" is an invalid inference** — scope follows the
+**gate ladder** instead.
+
+**⚠ Track A still cannot start, on FIVE independent unmet conditions** (§8.12.10), which
+gate **every Track A activity and not only the first read**:
 governance propagation **P-1…P-8** complete (`GOVERNANCE_PROPAGATION_IMPLEMENTATION_PENDING`
 — CLAUDE.md's "Read first" list does not name this document, and **P-7** amends frozen
 pre-registration text and needs its own ruling); the **Minimum Research Execution Gate**
@@ -400,9 +417,12 @@ Every Track A output is **`NON_DECISION_BEARING_EXPLORATORY_ONLY`** and may neve
 for a formal GO, a Gate-3a pass, production readiness, holdout evidence, novelty evidence
 or a live/demo authorisation. Track A may vary features, labels, models, hyperparameters,
 the training scheme, calibration, `ev_min`, thresholds, costs, entry/exit logic, regime
-filters and `c`/`ω` estimators freely —
+filters and `c` estimators freely, and may **diagnose** `ω` without varying its ω-9-frozen
+method limbs —
 `SPECIFICATION_CHANGE_INSIDE_TRACK_A_IS_NOT_A_CONTRACT_VIOLATION` — but
-**`A_TRACK_A_VALUE_ENTERS_TRACK_B_ONLY_BY_NAMED_RE_PREREGISTRATION_WITH_ITS_PROVENANCE_RECORDED`** — the flat `NO_TRACK_A_NUMBER_MAY_BECOME_A_TRACK_B_FROZEN_VALUE` spelling is **withdrawn as unsatisfiable** (§8.11.2), since a candidate is *made of* values; what stays absolute is that a Track A number is never **evidence**.
+**`A_TRACK_A_VALUE_OR_SPECIFICATION_ENTERS_TRACK_B_ONLY_BY_IDENTIFIED_RE_PREREGISTRATION_WITH_ITS_PROVENANCE_RECORDED`**
+*(the `…VALUE…NAMED…` spelling is **withdrawn**: the subject is a value **or
+specification**, and a feature list is identified, not named)* — the flat `NO_TRACK_A_NUMBER_MAY_BECOME_A_TRACK_B_FROZEN_VALUE` spelling is **withdrawn as unsatisfiable** (§8.11.2), since a candidate is *made of* values; what stays absolute is that a Track A number is never **evidence**.
 Track A's span is the **DESIGN span only**
 (`TRACK_A_SPAN_IS_THE_DESIGN_SPAN_UNTIL_A_SEPARATE_EPOCH_ADOPTION_RULING`); the dead
 window and everything at or after 2026-04-25 stay excluded, and §3.6 is **not** relaxed.
@@ -1559,13 +1579,20 @@ and are labelled as such.
 **closed disjunction**, and the Two-Track model's promotion route is neither of
 them, so §12.19 correctly recorded it as an amendment rather than an application.
 The amendment is taken by the instrument **R-1** itself names — "a **contract
-amendment requiring a human + ChatGPT ruling**, not a registration" — and it is
-coherent because arm 2 **already** permits a value to be set by an authority that
-has seen design data: R-10 never forbade *knowledge of the span*, it forbade an
-**unrecorded** variant chosen because its result was seen.
+amendment requiring a human + ChatGPT ruling**, not a registration". ⚠ *An earlier
+drafting justified it as "coherent because arm 2 already permits a value to be set
+by an authority that has seen design data", and added that R-10 forbade only an
+"**unrecorded**" variant. **Both are withdrawn at §8.12.13 C-14**: R-10's text
+carries no such qualifier, and arm 2's authority — the gate-3a continuation — is
+bound by playbook §5 to "no strategy metrics; no training", so it sees **data** and
+never **results**, which an arm 3 promoter does.* Arm 3 is therefore a **deliberate
+exception** to R-10, opened with its cost accepted and bounded by the nine limbs,
+the eight steps, R-2, and the acceptance-test-term exclusion — **not** an extension
+of R-10's own logic.
 
 > **Arm 3 — post-exploration re-pre-registration.** Admissible **only** with all
-> eight limbs at §8.12.4: exploration declared ended · the quantity named and
+> nine limbs at §8.12.4 — including that it **does not reach a prereg Ruling 1–13 or
+> audit T-1…T-7 frozen value**: exploration declared ended · the quantity named and
 > fully identified (estimator, fitting span and content digest for a fitted
 > object) · **exploratory provenance recorded** · **`K` stated in R-7's unit** ·
 > any **knowable favourable direction named** with the arm the value sits on ·
@@ -11476,7 +11503,10 @@ governs the candidate declaration, every re-pre-registration ruling and the step
 and each must be **cited by SHA in the confirmation record** — §8.11.2(2) required only
 that a ruling be *taken*, so published Track B evidence need never have named which of its
 inputs carried exploratory provenance.
-**`R_7_VERIFIABLE_ORDERING_GOVERNS_EVERY_BEFORE_IN_THIS_AMENDMENT`.**
+**`R_7_VERIFIABLE_ORDERING_GOVERNS_EVERY_BEFORE_IN_THIS_AMENDMENT`** — ⚠ **shown FALSE
+and withdrawn at §8.12.13.** R-7's ancestry test orders a **commit** against a **commit**;
+it cannot order a commit against an **observation**, which leaves no commit. It verifies
+that a ruling predates a *run*, and not that it predates a *look*.
 
 **G-6 — the classification inverted on the two records that constrain it.** §8.11.2 labels
 "every number, table, plot, model, artifact, log and conclusion produced in Track A"
@@ -11603,7 +11633,11 @@ statistic produced under this gate is `RESEARCH_SCRATCH_NON_AUTHORITATIVE` and *
 become a frozen contract value** (R-10)." Under CLAUDE.md's stricter-reading rule **§9
 governs**, and the conflict is now flagged at both sites rather than left for whichever
 section a future session happens to read.
-**`SECTION_9_GOVERNS_AND_THE_RE_PREREGISTRATION_ROUTE_IS_SUSPENDED_UNTIL_SECTION_9_IS_AMENDED`.**
+**`SECTION_9_GOVERNS_AND_THE_RE_PREREGISTRATION_ROUTE_IS_SUSPENDED_UNTIL_SECTION_9_IS_AMENDED`**
+— *this round's disposition, and now **HISTORICAL**: the suspension named the instrument
+that would lift it, and §8.12.4's Governance Consistency Amendment is that instrument. The
+route is admitted as **R-10 arm 3** under eight mandatory limbs, and absent any limb the
+flat prohibition governs unchanged.*
 
 **A-5 — the ceremony discloses provenance and discounts nothing, and the breadth record
 has no instrument.** §8.11.2(2) requires identification, provenance and ordering; it does
@@ -11779,12 +11813,26 @@ narrowest scope that works, and **only** these three limbs move:
   `RESEARCH_SCRATCH_NON_AUTHORITATIVE`,
 - **after** the Minimum Research Execution Gate has passed on a named head.
 
-**Everything else in §2 stands, and three clauses bind Track A with particular force**:
-§2.3 (no forward-epoch adoption), §2.4 (no validation, holdout, execution or *formal*
-strategy metrics without an approved gate — Track A's metrics are exploratory and carry no
-verdict), §2.5 (no automatic chaining of irreversible stages — Track A's own R1 → R3 → R4
-are separate gates), §2.6 (forbidden labels), §2.7 (doc-only purity), §2.8 (the ambiguity
-rule: the narrower reading governs), §2.9 (approval scope is exact).
+**Everything else in §2 stands, and it is quoted rather than paraphrased.** §2.4 reads,
+verbatim: "**No validation, holdout, training, execution, or strategy metrics** without an
+explicit approved gate — refuse and redirect." ⚠ *An earlier drafting rendered it as "no
+validation, holdout, execution or **formal** strategy metrics", dropping `training` and
+inserting a qualifier the rule does not contain — a stop rule narrowed by a paraphrase.
+**Withdrawn.*** §2.4 is not relaxed at all: it requires an **explicit approved gate**, and
+Track A has them —
+
+| Track A stage | The explicit approved gate §2.4 requires |
+| --- | --- |
+| **R0** synthetic correctness | none needed (no real data), but Q8 must be resolved before anything is written |
+| **R1** first real-data read | the **Minimum Research Execution Gate**, on a named head |
+| **R2 / R3** baselines and training | **their own Red approval each** — §2.5 forbids chaining a read into training |
+| **R4** the `EXPLORATORY_OOS_SLICE` evaluation | **its own Red approval**, and Q7's `N = 1` consumes the slice at its first decision-bearing observation |
+| holdout, execution, any formal verdict | **no gate exists and none is created here** |
+
+Also standing, and biting Track A directly: §2.3 (no forward-epoch adoption), §2.5 (no
+automatic chaining of irreversible stages), §2.6 (forbidden labels), §2.7 (doc-only
+purity), §2.8 (the ambiguity rule: the narrower reading governs), §2.9 (approval scope is
+exact — it covers the operation and head it names).
 **`PLAYBOOK_2_1_AND_2_2_ADMIT_ONE_NARROW_TRACK_A_EXCEPTION_AND_NOTHING_ELSE_IN_SECTION_2_MOVES`.**
 
 **Playbook §5 — the gate-3a continuation template.** Its first clause ("Only after the
@@ -11807,6 +11855,7 @@ directly, on this ruling's own authority rather than by inheritance:
 | **No forward-epoch adoption**; forward remains WAIT | **Yes, unchanged** |
 | No validation computation, no holdout evaluation, no formal strategy metrics, no execution | **Yes for validation, holdout and execution.** Track A **does** train and compute exploratory metrics, which is exactly why §5's shape does not fit it |
 | Metadata-only / scrub-clean outputs | **No** — replaced by `NON_DECISION_BEARING_EXPLORATORY_ONLY` outputs beneath Q8's scratch root, which never enter the evidence tree |
+| **Optionally produce cost tables from the design span only, *if and only if explicitly authorised in the approval*** (median + p90 + p95; padding 0.3; cell 0.5) | **Yes — the condition transfers verbatim.** ⚠ *Added on a review finding: the first drafting dropped this row entirely, while Track A's own **R1** computes exactly those statistics — "the per-pair × session spread distribution (median / p90 / p95)" — and §8.11.10(1) records the cost table as the sharpest of the five inherited objects.* A Track A run may produce design-span cost/spread statistics **only** where the Minimum Research Execution Gate's approval **names them**, and what it produces is `NON_DECISION_BEARING_EXPLORATORY_ONLY` — never a frozen cost table, which R-1 and arm 3 limb 9 reserve to a prereg amendment |
 | Produce the design M15 inventory + checksums; the byte-level no-overlap proof | **No** — those are the *committed* artifacts of the gate-3a continuation. A Track A derivation produces neither, and **may not be mistaken for one** |
 | No `NEW_EPOCH_ADOPTED`, no `BYTE_ADMISSIBLE` | **Yes, unchanged** |
 
@@ -11822,15 +11871,59 @@ and none of them is satisfiable — or meaningful — for an exploratory iterati
 
 **§6 governs the Formal Confirmation run. It is not relaxed, and Track B still passes it
 in full.** Track A gets its own, separate pre-run checklist at §8.12.11, which **inherits
-three of §6's clauses verbatim** because they protect things Track A can still damage:
+every §6 clause that can still bite it** — and the list is not closed at three, which an
+earlier drafting wrongly did:
 
 - **No consumed-window leakage** — 2026-03-01 → 2026-04-24 dead at all timeframes for all
   roles, **including feature warm-up**;
 - **No legacy-evidence dependency** — the C-8 declaration holds;
-- **T-1's dead-window prohibition**, which is the same boundary seen from the audit side.
+- **T-1's dead-window prohibition**, the same boundary seen from the audit side;
+- **⚠ No chronology or purge contamination — §6's "chronology + purge 25 bars".** *Added on
+  a review finding.* Inside Track A this means both the 25-bar purge at the
+  `EXPLORATORY_OOS_SLICE` boundary (§4's R-2) **and** §8.11.12 F-5's **trailing purge at
+  `DESIGN_END`** — no bar whose label window crosses `2026-03-01T00:00:00Z` may be labelled,
+  trained on or scored. F-5 also records that the committed declaration guard **cannot
+  detect its absence**, so this item is verified by inspecting the labelling code's own
+  window arithmetic, not by calling `assert_design_bounds`;
+- **⚠ The T-3 ratio rule is *not* inherited, and that is a live question, not a decision.**
+  §6 requires "median eligible barrier/cost < 3.0 **BLOCKS** the run pending a new ruling",
+  and §7's R5 makes the same number a `failed` verdict for Track A. But §8.11.2(1) makes a
+  Track A result uncitable "in any decision this programme records", so a Track A
+  measurement can neither discharge §6's checkbox nor, on its face, fire the block. **Both
+  readings are unacceptable** — one wastes a safety finding, the other lets an uncitable
+  number tick a formal pre-run gate — and neither is chosen here.
+  **`WHICH_DERIVATION_SUPPLIES_THE_T_3_RATIO_AND_WHETHER_A_TRACK_A_MEASUREMENT_CAN_FIRE_ITS_BLOCK_IS_UNRULED`**
+  — a Minimum Research Execution Gate item.
 
 **`PLAYBOOK_6_GOVERNS_THE_FORMAL_SINGLE_SHOT_RUN_AND_TRACK_A_HAS_ITS_OWN_CHECKLIST`** ·
 **`TRACK_B_STILL_PASSES_PLAYBOOK_6_IN_FULL`.**
+
+**⚠ And the inference this section first used to reach that reading is invalid, so it is
+replaced.** The first drafting argued that §5 "**describes a different object and does not
+govern Track A**" *because* §5's clauses forbid what Track A does, and that §6 "read
+against its own contents … cannot" reach Track A for the same reason. **That inference is
+wrong.** An activity violating a checklist clause normally means the activity is
+**forbidden**, not that the checklist is **inapplicable** — and the same section
+simultaneously imposes playbook §2.8's "the narrower reading governs" on Track A while
+resolving §5's and §6's scope ambiguity in the **wider, permissive** direction.
+
+**It is also a precedent that would transfer to Track B and must not.** Playbook §6's
+first two items are "Source audit (incl. F-1…F-5 re-check) **accepted**" and "Design-span
+derivation (gate-3a continuation) **accepted**" — both currently unmet, the audit being
+BLOCKED. If "unsatisfiable therefore inapplicable" were a valid move, §6 could be argued
+away from **Track B** on the identical ground, and `TRACK_B_STILL_PASSES_PLAYBOOK_6_IN_FULL`
+would collapse.
+
+**What the scope reading actually rests on, stated properly.** Not that §5 and §6 are
+unsatisfiable for Track A, but that each is the template of a **named gate in playbook §3's
+ladder** — §5 the gate-3a continuation, §6 the gate-7 pre-run authorisation — and Track A
+is neither of those gates. Scope follows the **gate ladder**, not the difficulty of
+compliance. On that ground §5's and §6's clauses do not *inapply*: they simply belong to
+gates Track A does not enter, and every clause of theirs that protects something Track A
+can still damage is imposed on Track A **directly** in the two tables above, with the
+§8.12.11 checklist as its instrument.
+**`SCOPE_FOLLOWS_THE_GATE_LADDER_NOT_THE_DIFFICULTY_OF_COMPLIANCE`** ·
+**`UNSATISFIABLE_THEREFORE_INAPPLICABLE_IS_AN_INVALID_INFERENCE_AND_IS_WITHDRAWN`.**
 
 **One thing this section deliberately does not do.** It does not claim the scope reading
 was always obvious. §5 and §6 were written when there was one research path, so their
@@ -11852,11 +11945,13 @@ does — by **not containing those things**. Concretely:
 - What a Track A PR may carry is a **prose finding** — what was tried, what the exploration
   concluded, and the `K` count — with no raw rows, no per-trade records, no predictions, no
   model binaries and no committed metric tables.
-- "validation-holdout metrics" in §9 means the **formal** roles' metrics. A Track A
-  exploratory metric is not one, but it is also **not automatically publishable**: it is
-  `NON_DECISION_BEARING_EXPLORATORY_ONLY`, and putting a table of them in a PR body invites
-  precisely the citation this whole structure forbids. **Default: report the conclusion and
-  the breadth, not the numbers.**
+- **Track A exploratory metrics are not published in a PR body, a commit message, a
+  status token, an artifact name or a doc section.** ⚠ *An earlier drafting made this a
+  "**Default**", which a session may override; playbook §9's line is a **prohibition**, and
+  replacing a prohibition with a default is a relaxation. **Withdrawn.*** A Track A PR
+  reports the **conclusion** and the **`K` count**; the numbers stay beneath Q8's root. The
+  reason is not tidiness: a number in the permanent record is citable forever, and
+  §8.11.2(1) forbids a Track A result in "**any decision this programme records**".
 - `artifacts/m15_gate3a/*` stays untouched. §8.11.12 G-9 already records that
   `guards._PROTECTED_PREFIXES` **omits** that directory (open referral NR-A), so the
   checklist item currently has no committed enforcement — that gap is unchanged and is
@@ -11888,9 +11983,11 @@ because its result was seen**, unrecorded. The third arm keeps that prohibition 
 for the knowledge with disclosure:
 
 > **Arm 3 — post-exploration re-pre-registration.** A quantity or specification selected
-> during Track A may be frozen into the Track B contract if and only if **all** of the
-> following hold, and a failure of any one of them means the quantity may **not** be
-> frozen:
+> during Track A may be frozen into the Track B contract only if **all nine** of the
+> following hold — they are **necessary and not sufficient** (§8.12.13 C-22: the eight
+> steps of §8.12.5, §4's **R-2**, and
+> **`ARM_3_DOES_NOT_REACH_A_TERM_IN_AN_ACCEPTANCE_TEST`** apply on top) — and a failure of
+> any one of them means the quantity may **not** be frozen:
 >
 > 1. **Exploration has ended** and is declared ended.
 > 2. The quantity is **named and fully identified** — for a scalar, its value; for a fitted
@@ -11912,7 +12009,20 @@ for the knowledge with disclosure:
 >    evaluation is computed only on confirmation data; a Track A Sharpe, expectancy,
 >    coverage, turnover, maxDD or `N_eff` may not appear in, support, or be averaged into a
 >    formal acceptance claim.
+> 9. **It does not reach anything already frozen by prereg Rulings 1–13 or by the gate-4
+>    audit's T-1…T-7.** ⚠ *Added on a review finding: the first drafting closed the limb
+>    set at eight and dropped §8.11.2(3)'s exclusion, while citing R-1's
+>    contract-amendment clause as arm 3's own authority — which opened the reading that
+>    arm 3 **is** that amendment and may therefore replace a prereg-frozen value. It is
+>    not.* Track A's vary-freely list overlaps Rulings **5, 6, 7, 8 and 9** almost exactly
+>    — the cost model, the label geometry, the feature policy, the model family and
+>    calibration, and the `ev_min` grid — and §4's **R-1** governs every one of them:
+>    "**Where a frozen value already exists, the registration adopts it unchanged** … It
+>    may tighten; it may not loosen, substitute or **re-derive**." A Track A-tuned variant
+>    of any of those needs a **prereg amendment** — propagation item **P-7**, with its own
+>    human + ChatGPT ruling — and arm 3 is **not** that instrument.
 
+**`ARM_3_DOES_NOT_REACH_A_PREREG_RULING_1_TO_13_OR_AUDIT_T_1_TO_T_7_FROZEN_VALUE`** ·
 **`R_10_ARM_3_POST_EXPLORATION_RE_PREREGISTRATION_WITH_FULL_DISCLOSURE`** ·
 **`ARM_3_IS_VOID_NOT_LATE_IF_CONFIRMATION_DATA_HAS_BEEN_OBSERVED`** ·
 **`NO_EXPLORATORY_PERFORMANCE_FIGURE_ENTERS_A_FORMAL_ACCEPTANCE_CLAIM`.**
@@ -11961,8 +12071,19 @@ guarantee does not.
    non-exhaustive exactly as c-12 already requires.
 4. **The `c`-generating semantics are frozen** — c-11, c-13, c-14, c-15, and the
    deflator-span question §8.11.10(1) refers.
-5. **Only then may any formal-confirmation or other decision-bearing observation occur.**
-6. **`c` is measured.**
+5. **`c` is measured**, and its value, its input set and its generating code's digest are
+   **committed**.
+6. **Only then may any formal-confirmation observation occur.**
+
+⚠ *A first drafting put the measurement at step 6, **after** the observation was unlocked
+at step 5, and called the ordering "the only one that is now coherent". Both are wrong and
+are **withdrawn**: measuring `c` before the observation is also coherent and is strictly
+stronger, and leaving `c` to be measured afterwards left room to rebuild the map on an
+unfavourable value with — as this section already concedes —* `NO_LOCUS_RECORDS_THE_FROZEN_C_MAP_INPUT_SET` *meaning no record distinguishes a
+first build from a rebuilt one. Committing the value and the digest at step 5 is the anchor
+`AN_IDENTICAL_INPUT_REBUILD_IS_A_RESELECTION_AND_THE_FIRST_BUILD_GOVERNS` previously
+lacked.*
+**`C_IS_MEASURED_AND_COMMITTED_BEFORE_ANY_CONFIRMATION_OBSERVATION`.**
 
 **`TRACK_B_FREEZE_MUST_PRECEDE_ALL_FORMAL_CONFIRMATION_OBSERVATION`.**
 
@@ -12048,8 +12169,12 @@ in passing.
 
 **`TRACK_A_EXECUTION_REQUIRES_GOVERNANCE_PROPAGATION_COMPLETE`.**
 
-Approving the Two-Track contract does **not** make Track A executable. Three independent
-conditions gate the first read, and **all three are currently unmet**:
+Approving the Two-Track contract does **not** make Track A executable. **Five** independent
+conditions gate Track A — and they gate **every Track A activity, not only the first read**,
+because §8.11.12 A-3 records that Track A is where the features, the calibration, the EV
+gate, the cost table, `c` and `ω` all get written for the first time, so specification
+choices are made in the implementation and not only in the run. *An earlier drafting said
+"three … gate the first read"; **withdrawn on both counts**.* All five are currently unmet:
 
 1. **Governance propagation (P-1 … P-8) is complete**, so that the authority chain a
    session actually reads carries the split. Until then, a session reading the playbook is
@@ -12057,7 +12182,28 @@ conditions gate the first read, and **all three are currently unmet**:
    no-read** interpretation govern.
 2. **The Minimum Research Execution Gate has passed** on a named head (§8.12.11).
 3. **The `RESEARCH_SCRATCH_M15_DERIVATION_ROUTE_NOT_SELECTED` choice has been made** —
-   Track A cannot read M15 bars that no route produces.
+   Track A cannot read M15 bars that no route produces. And because §8.11.9 item 4 records
+   that arm (i) "needs **no** code change and trips no refusal", the choice counts as made
+   only when it appears **in a diff** — an explicit committed caller — never as a decision
+   a session reports having taken.
+4. **§8.9.6's blockers 1 and 2 are ruled** — the **calibration inner split** and the
+   **feature list**. §8.12.12 records that these two "bind **upstream** of Track A and are
+   **not** reassigned" by the split, so they gate Track A's start and not Track B's freeze.
+   *An earlier drafting left them out of this list, where a session reading §8.12.10 alone
+   would have started Track A with both open.*
+5. **The Minimum Research Execution Gate's own open items are closed** — in particular
+   `WHICH_DERIVATION_SUPPLIES_THE_T_3_RATIO_AND_WHETHER_A_TRACK_A_MEASUREMENT_CAN_FIRE_ITS_BLOCK_IS_UNRULED`,
+   which decides whether Track A can even report the finding that would stop the programme.
+
+**And passing that gate authorises one operation, not a campaign.** CLAUDE.md places
+**real-data reads** and **training** in the **Red** tier — "explicit human + ChatGPT
+approval **before** you run it" — and playbook §2.5 forbids automatic chaining: "real-data
+read → training … are separate gates with separate approvals". Both apply **inside** Track
+A. §7's own flow already says so — "**Each Red stage is its own gate.** R1 (first real-data
+read), R3 (training) and R4 (evaluation) are each Red" — so the Minimum Research Execution
+Gate authorises **R1 only**, and R3 and R4 need their own approvals on their own heads. A
+Track A campaign is a sequence of Red gates, not one permission.
+**`TRACK_A_R1_R3_R4_REMAIN_SEPARATE_RED_GATES_AND_THE_EXECUTION_GATE_AUTHORISES_R1_ONLY`.**
 
 **And the precedence rule itself, stated so it cannot be inverted.** Where this document and
 a governance document disagree, **the governance document governs** until propagated —
@@ -12093,8 +12239,12 @@ roles.
 `M15_MINIMUM_RESEARCH_STATISTICAL_CONTRACT_NOT_CLOSED` ·
 `STATISTICAL_CONTRACT_SURFACE_INVENTORY_INCOMPLETE_…` ·
 `FR_19_SEPARATE_TEST_SAFETY_WORK_PR_OPEN` · Q8 unresolved until the execution gate ·
-§3.1–§3.7's boundaries in full · every §8.11.12 limb · and §8.9.6's seven blockers, of which
-**1 and 2 bind upstream of Track A and are not reassigned**.
+§3.1–§3.7's boundaries in full · every §8.11.12 limb · **Q7's `N = 1`** on the
+`EXPLORATORY_OOS_SLICE`, which binds Track A unchanged and which arm 3's `K` does **not**
+substitute for — `K` counts configurations, `N` counts slice observations, and they are
+different budgets · §4's **R-1…R-10** binding Track A with arm 3 as R-10's only new limb ·
+and §8.9.6's seven blockers, of which **1 and 2 bind upstream of Track A and are not
+reassigned**.
 
 **Prohibited throughout, in both tracks, unless a later named gate authorises it
 separately:** broker execution · live trading · demo trading · order submission · production
@@ -12103,6 +12253,343 @@ deployment · any formal holdout, Gate-3a-pass or production-readiness claim.
 **In producing this amendment: no data was read, no forward-epoch metadata was read, no
 derivation was run, no training or evaluation occurred, no candidate was selected, no
 surface was frozen, no date was invented, and no file outside this document was changed.**
+
+#### 8.12.13 The consistency review, and the further limbs it forced
+
+Three roles reviewed **this amendment only** — authority/playbook consistency,
+exploratory→formal evidence leakage, and an adversarial sequencing/freeze-bypass hunt.
+Findings whose fix belonged to an existing paragraph are closed there; those below needed
+their own text. §12.20 records the round.
+
+**`THE_GOVERNANCE_CONSISTENCY_AMENDMENT_ALSO_LEAKED_ON_FIRST_DRAFTING`.**
+
+##### The finding that changes what this amendment can claim
+
+**C-1 — R-7's ancestry test cannot order a commit against an *observation*, and the whole
+sequencing discipline was resting on the claim that it could.** §8.11.12 G-3 asserted
+`R_7_VERIFIABLE_ORDERING_GOVERNS_EVERY_BEFORE_IN_THIS_AMENDMENT`. R-7's form is: the
+registration "committed to the branch **before** the run", with its SHA "an **ancestor of
+the run's code SHA**". That orders **commit against commit**. An observation leaves no
+commit. So arm 3 **limb 6** (a ruling predates a *run*) is verifiable, and **limb 7** (a
+ruling predates a *look*) is **not** — and limb 7 is the one the amendment's own headline
+token, `TRACK_B_FREEZE_MUST_PRECEDE_ALL_FORMAL_CONFIRMATION_OBSERVATION`, names. A
+confirmation-span observation followed by a freeze commit followed by a run produces a
+record **byte-identical** to the compliant order.
+
+**Three things follow, and the third is a limit rather than a fix.**
+
+1. **A write-ahead obligation is extended to Track B.** §8.11.4 rule 7's write-ahead is
+   Track-A-scoped ("**a Track A run** records the interval it intends to touch **before**
+   touching it"), and so is rule 1's `unrecorded means seen` presumption. Both now bind
+   **both tracks**: a confirmation-span observation is declared, in a **committed** object,
+   before it occurs, and the freeze ruling's commit must be an **ancestor of that
+   declaration's commit**. That is the only ordering fact R-7's machinery can actually
+   establish here.
+   **`A_CONFIRMATION_OBSERVATION_IS_DECLARED_IN_A_COMMITTED_OBJECT_BEFORE_IT_OCCURS`.**
+2. **The read path must be closed for the interval the ordering claims.** A positive
+   declaration cannot prove a negative. What can support one is that **no route to the
+   confirmation data existed** between the freeze and the declared observation — which is
+   an execution-gate design requirement, not a sentence.
+   **`ORDERING_IS_SUPPORTED_BY_A_CLOSED_READ_PATH_NOT_ONLY_BY_A_DECLARATION`.**
+3. **And the residual is stated rather than closed.** *That an observation did not occur is
+   not provable from any record this contract can produce.* The discipline raises the cost
+   of an out-of-order act and makes the compliant path cheap and legible; it does not make
+   the out-of-order act detectable. Anyone relying on it should know which of the two it
+   is. **`OBSERVATION_ORDER_IS_NOT_PROVABLE_FROM_THE_RECORD_AND_THIS_IS_A_LIMIT_NOT_A_CONTROL`.**
+
+##### Definitions and scope the first drafting left open
+
+**C-2 — "observation" is defined once, and does not depend on who says which track they
+are in.** The amendment used three widths — "confirmation data has been observed", "no
+confirmation data is observed", and "any formal-confirmation **or other decision-bearing**
+observation" — while `decision-bearing` is used across this document and defined nowhere,
+and while §8.11.2 makes **everything produced in Track A** non-decision-bearing **by
+production site**. A rule whose trigger is disarmed by declaring which track you are in is
+not a rule. **The single definition: to observe a span is to read, aggregate, derive, train
+on, evaluate on, plot or summarise it — §8.11.4's own enumeration — irrespective of track,
+intent, or whether the result was used.** The three widths are read at that one width.
+**`OBSERVATION_IS_DEFINED_BY_THE_SECTION_8_11_4_ENUMERATION_AND_IS_TRACK_INDEPENDENT`.**
+
+**C-3 — the prohibitions are restored to §3.6's "no stage" form.** §8.11.12 F-7 rewrote
+§3.6's "**No stage may** read, aggregate, plot, summarise or otherwise observe any bar
+timestamped at or after 2026-03-01" into two-track language while trying to close a
+Track-A-only reading — which left CI jobs, audits, maintenance scripts, test fixtures and
+any session that has declared no track outside both the prohibition and the marking
+obligation. **The subject is every process run in this repository, not every track.**
+**`THE_OBSERVATION_PROHIBITION_AND_THE_MARKING_OBLIGATION_BIND_EVERY_PROCESS_NOT_EVERY_TRACK`.**
+
+**C-4 — "exploration has ended" is a programme state, not a campaign state.** §8.12.5 step
+1 read "for that campaign" and its fail-closed column "on the candidate", so exploration
+could continue on candidates #2…#n while candidate #1 was frozen and confirmed. Corrected:
+**the declaration is programme-wide and one-way**; restarting Track A on **any** candidate
+afterwards needs a new human + ChatGPT ruling, and `K` **carries over** rather than
+resetting. And §8.11.12 A-7's rule — that a second candidate after a failed confirmation
+needs its own ruling and its own deflation — is **part of the eight steps**, not a
+footnote; the first drafting claimed "there is no other route" while omitting it.
+**`EXPLORATION_ENDED_IS_PROGRAMME_WIDE_AND_K_CARRIES_OVER_ACROSS_CANDIDATES`.**
+
+**C-5 — `K` counts what could have been evaluated, not what someone looked at.** R-7 defines
+`K` as "the number of evaluations **whose result was observed**", which lets a frozen
+selector, an ensemble or a multi-operating-point candidate carry unbounded internal search
+into a single "one candidate, one run" record — and playbook §7 already expects metrics
+"**per registered `ev_min`**", so multi-point candidates are the norm. For arm 3 limb 4,
+**`K` is the cardinality of the configuration set the frozen candidate can evaluate at
+confirmation**, plus every configuration whose result was observed during Track A.
+**`K_COUNTS_THE_EVALUABLE_CONFIGURATION_SET_NOT_ONLY_THE_OBSERVED_EVALUATIONS`.**
+
+**C-6 — limb 8 reaches the freeze decision's *inputs*, not only the claim's text.** As
+written it forbade an exploratory performance figure from appearing in, supporting or being
+averaged into a formal acceptance claim — a rule about a **document**. The route it leaves
+open is that the figure is shown to the person taking the step-6 freeze. Consistently with
+arm 3's own disclosure principle, that is **not forbidden and not concealed**: where an
+exploratory performance figure was part of the input to a freeze decision, the
+re-pre-registration packet **records that it was, and records the figure**.
+**`AN_EXPLORATORY_FIGURE_SHOWN_TO_A_FREEZE_DECISION_IS_RECORDED_IN_THE_PACKET`.**
+
+##### Records, and the instruments that were missing
+
+**C-7 — the two binding governance records must be committed, and §3.7 currently forbids
+where they would live.** §8.11.12 G-6 made the `EXPLORATORY_SEEN_DATA` ledger and the
+breadth record `BINDING_GOVERNANCE_RECORD`; §8.12.3 says Track A output "is **not committed
+to the repository**"; and §3.7 confines a research run's writes to a scratch root and bars
+it from `docs/`. The result was that the only records able to constrain a formal claim
+would live outside git, where **append-only is a wish**. Corrected: **both are committed
+objects**, they are **not** research-run output, and their writer, path, schema and commit
+obligation are a **named exception** to §3.7's scratch confinement — to be defined at the
+execution gate (propagation item **P-4** extends to registering them in playbook §9 as
+records the gate explicitly produces).
+**`THE_SEEN_LEDGER_AND_THE_BREADTH_RECORD_ARE_COMMITTED_OBJECTS_AND_A_NAMED_EXCEPTION_TO_SECTION_3_7`.**
+
+**C-8 — "void" needs a declarer, a record, a consequence and a status word.** Limb 7 makes
+a late re-pre-registration "**void, not late**" and §8.12.5 makes a skipped step an
+exclusion "to be **reported**" — with no one named to declare it, no evidence but the
+ledger, no disposition for work already done, and **no status vocabulary to report it in**:
+playbook §8's required final statuses are four, none of which is void. And the incentives
+run the wrong way, because self-declaring destroys the programme's only confirmation span.
+So: **void is declared by a party other than the executing session**, on the committed
+ledger and declaration objects; the work done under a void registration is
+`NON_DECISION_BEARING_EXPLORATORY_ONLY` and the span it touched is
+`EXPLORATORY_SEEN_DATA`; and playbook §8 gains a fifth status for it — propagation item
+**P-9**. **`VOID_IS_DECLARED_BY_A_NON_EXECUTING_PARTY_AND_NEEDS_ITS_OWN_PLAYBOOK_STATUS`.**
+
+**C-9 — a RULED section that cites no external approval identifier is not authority.** This
+amendment opens "A human + ChatGPT ruling, recorded here as **authority**" — with no PR
+number, no approved head SHA and no date, while imposing R-7's verifiable form on the acts
+it governs. The strongest formal requirement in the packet was absent from the act that
+creates the requirement, and nothing would stop a later section retiring this one on the
+same one-line self-description. **Every RULED section in this document carries the approval
+identifier — PR number, the head SHA approved, and the date — and a RULED section without
+one may not be cited as authority.** Applying it to the sections already written is
+propagation item **P-10**.
+**`A_RULED_SECTION_WITHOUT_AN_APPROVAL_IDENTIFIER_MAY_NOT_BE_CITED_AS_AUTHORITY`.**
+
+**C-10 — "governance propagation complete" needs a predicate and a token.**
+`GOVERNANCE_PROPAGATION_IMPLEMENTATION_PENDING` had no positive counterpart, so §8.12.10's
+condition 1 could only ever be satisfied by prose self-assessment — and the packet's own
+house rule (§8.11.12 G-10) is that a token travels with its negation. Each of P-1…P-10
+carries a **mechanically checkable predicate**: the target file, the clause it must contain,
+and the text that must appear. Completion is recorded once, as
+**`GOVERNANCE_PROPAGATION_COMPLETE`**, and only when every predicate holds on a named
+master SHA. Until then `GOVERNANCE_PROPAGATION_IMPLEMENTATION_PENDING` governs.
+**`PROPAGATION_COMPLETENESS_IS_A_PREDICATE_ON_NAMED_FILES_NOT_A_SELF_ASSESSMENT`.**
+
+##### Propagation items the first list missed
+
+**C-11 — playbook §8, §4 and the rest of prereg.** Three additions and one widening:
+
+| # | File | What must change |
+| --- | --- | --- |
+| **P-9** | playbook **§8** — post-run audit template and its four required final statuses | §8.11.12 G-8 named §6/§7/§8/§9 and the first list covered only §6, §7 and §9. §8's four `M15_SINGLE_RUN_EVIDENCE_*` strings — one containing `MEETS` — are fenced to **Formal Confirmation**, the template gains a **track field**, and a **fifth status for a void registration** (C-8) is added |
+| **P-11** | playbook **§4** — the source-contamination audit template | It is the repository's **only** containment checklist and says it is "for **any future machinery audit**", yet its items require "**Real-data read routes** — none reachable" and "**Real M15 derivation routes** — none enabled" — which Track A's execution code must, by construction, have. Either those items **invert** for a Track A audit (declared and bounded, rather than absent) or Track A code has **no** containment audit at all. The broker / network / DB / credential / model-binary / forward-epoch items stay at "none", and §4's three final statuses need a Track A counterpart. **Not decided here** |
+| **P-7** *(widened)* | prereg **§3.1, §4, §10, §11, §13, §14 and §16 Ruling 1** | The first list named §3.1, §4 and §11 while its own explanatory paragraph named §14 and Ruling 1 — so P-7 as written could be completed while prereg §10 ("gates … **none skippable**"), §14 ("no raw data access; no metric computation") and Ruling 1 still forbade the read, and a session could then record propagation as complete. Under CLAUDE.md's stricter-reading rule those unamended clauses would govern |
+| **P-10** | this document | Apply C-9's approval-identifier requirement to every RULED section |
+
+**`P_11_TRACK_A_CONTAINMENT_AUDIT_TEMPLATE_DOES_NOT_EXIST_AND_IS_NOT_CREATED_HERE`.**
+
+##### One structural gap this section closes, and one it inherits
+
+**C-12 — §8.12 had no §12 review round when written.** §8.11.12 recorded exactly this
+defect for §8.11 — "the amendment that amends three committed texts and restructures the
+packet had none" — and §8.12, which amends R-10, §9 and c-12, repeated it. §12.20 is that
+round.
+
+**C-13 — the ordering discipline does not protect the surfaces most worth protecting, and
+that is inherited, not created.** §8.10.3 lists fourteen surfaces whose favourable
+direction is **knowable without data**, and §8.10.3's own standard is that this is "exactly
+the condition under which 'we froze it before looking at the data' stops being a sufficient
+defence". On those surfaces an in-order freeze and an out-of-order freeze produce the
+**same value**, so no sequencing rule — this one included — is the operative control.
+`ARM_3_DISCLOSES_THE_SELECTION_IT_DOES_NOT_UNDO_IT` and R-7's own "**Recording is
+disclosure, not control**" already say so. What would be operative — a `K`-discount applied
+to the acceptance threshold, an independent implementation, or a pre-declared direction
+verified afterwards — is **not created here**, and
+`Q9_C7_DEFAULT_IS_UNCHANGED_AND_COLLIDES_WITH_TRACK_A_BREADTH` remains the live referral it
+was. **`SEQUENCING_IS_NOT_THE_OPERATIVE_CONTROL_ON_AN_ANALYTICALLY_KNOWABLE_DIRECTION`.**
+
+##### The finding that changes what arm 3 is
+
+**C-14 — arm 3's coherence argument added a word to R-10 and equated two different kinds
+of knowledge. It is withdrawn, and arm 3 is re-grounded as what it actually is.**
+
+The first drafting argued: "R-10's arm 2 already permits a value to be set **by an
+authority that has seen design data** … R-10 never forbade *knowledge of the span*; it
+forbade an **unrecorded** variant chosen because its result was seen." Both halves fail.
+
+- **R-10 contains no such qualifier.** Its text is: "No quantity destined to be frozen into
+  the family-A contract may be taken from an exploratory variant chosen after **its results
+  were seen**." *Unrecorded* was added by the drafting, and the addition was then written
+  into §4 itself. **Removed from both.**
+- **arm 2's authority does not see results.** The gate-3a continuation is bound by playbook
+  §5 to "**No validation computation; no holdout evaluation; no strategy metrics; no
+  training; no execution**" and "**metadata-only / scrub-clean** outputs". It sees **data**
+  and never **results**. An arm 3 promoter sees results. Equating the two was the error.
+
+**So arm 3 is not a coherent extension of R-10's own logic. It is a deliberate exception to
+R-10, opened by human + ChatGPT ruling with the cost accepted**, and this document will say
+so rather than dress it as consistency. What makes it admissible is not that it resembles
+arm 2 — it does not — but that the alternative was a programme that cannot start, and that
+the exception is bounded by nine limbs, the eight steps, and the exclusions below.
+**`ARM_3_IS_A_DELIBERATE_EXCEPTION_TO_R_10_NOT_AN_EXTENSION_OF_ITS_LOGIC`** ·
+**`THE_UNRECORDED_QUALIFIER_WAS_ADDED_TO_R_10_BY_DRAFTING_AND_IS_REMOVED`.**
+
+**C-15 — the line arm 3 must hold is not "figure versus choice"; it is "strategy input
+versus acceptance-test term".** limb 8 forbids an exploratory *figure* from entering a
+formal acceptance claim. It does not forbid an exploratory *choice* from moving the
+**boundary the claim is tested against** — and §9's amended sentence named five classes as
+promotable: a cost table, `W̄`/`L̄`, an effective-N input, the warm-up `W`, and a spread
+statistic. At least four of those are **terms in prereg §9's own acceptance arithmetic**:
+`cost` sets `TP_dist`, `SL_dist` and the eligibility hurdle and appears in the kill gate as
+`gross ≥ 1.5 × cost`; `c` sits in `rho_x`, the denominator of `N_eff`, against a frozen
+floor. §8.11.10(1) already records that "**a lower cost estimate lowers the hurdle, adds
+events, raises net *and* raises `N`**".
+
+**Two things close it, and the first was already there.**
+
+1. **limb 9 excludes most of them by construction**, and §9's sentence contradicted that.
+   The cost model is prereg **Ruling 5**; the label geometry and the hurdle **Ruling 6**;
+   the feature policy **Ruling 7**; the model family and calibration **Ruling 8**; the
+   `ev_min` grid **Ruling 9**; `W̄`/`L̄` audit **T-2**; the warm-up `W` audit **T-1**. Every
+   one is therefore **outside arm 3** and needs a **prereg amendment** (P-7). §9's "may
+   become a frozen contract value only through R-10 arm 3" is corrected accordingly: for
+   those quantities the answer is **not arm 3 at all**.
+2. **And the general rule, so the next quantity is not argued case by case:** **a quantity
+   that is a term in an acceptance test — a threshold's comparand, an eligibility
+   condition, a deflator, or a sample-floor input — is outside arm 3**, whether or not a
+   prereg ruling names it. Arm 3 reaches quantities the **strategy** consumes, never
+   quantities the **test** consumes.
+   **`ARM_3_DOES_NOT_REACH_A_TERM_IN_AN_ACCEPTANCE_TEST`.**
+
+**C-16 — limb 8's six-item list is illustrative, not closed.** It enumerated Sharpe,
+expectancy, coverage, turnover, maxDD and `N_eff` — reproducing the closed-list defect
+§8.11.2(1) had just withdrawn for the same reason ("a closed list narrows a committed text
+while claiming to restate it"), and omitting the one §0 identifies as decisive: the
+**traded-event rate**, "the single unfrozen quantity governing whether a frozen sample
+floor is reached". Also omitted: raw event counts, hit rate, timeout share, gross/net
+return, and any stability figure. **A performance figure is any quantity derived from
+executing the strategy on data that could move acceptance, selection or sizing**, and the
+list is illustrative.
+**`LIMB_8_IS_ILLUSTRATIVE_AND_A_PERFORMANCE_FIGURE_IS_DEFINED_FUNCTIONALLY`.**
+
+**C-17 — "formal acceptance claim" is defined, and limb 8 reaches the same set §8.11.2(1)
+does.** The phrase appeared twice and was defined nowhere, so the candidate declaration and
+the step-6 freeze ruling — neither of which is an acceptance claim — sat outside it. limb 8
+is read at §8.11.2(1)'s width: **any decision this programme records**. And §7's R5 verdict
+is squarely inside it — "clearly promising" is an exploratory expectancy compared to a
+threshold and to "the null expectation for the campaign's `K`", which is a
+multiple-comparison-corrected performance claim, not a bare conclusion. **R5's verdict word
+may be reported; its constituent figures may not**, and §6's "clearly-marked non-evidence
+background" is not a licence to the contrary — §8.11.2(1) governs where they meet.
+**`LIMB_8_REACHES_ANY_DECISION_THIS_PROGRAMME_RECORDS_AND_R5_IS_ONE`.**
+
+##### Guarantees the first drafting re-defined for c-12 alone
+
+**C-18 — c-9, c-11 and c-13 carry the same Q1-dependent guarantee and were left
+unexamined.** §8.12.6 diagnosed c-12 as "purely temporal, its force entirely from Q1" and
+re-defined it. Three siblings have the identical shape:
+
+| Ruling | The sentence whose force was Q1 | What survives Track A |
+| --- | --- | --- |
+| **c-9** | "Method — **frozen by this ruling**, before any DESIGN-span correlation is observed. **That is a fact about the record, not an assumption: no design-span derivation has run**" | the *fact about the record* is **erased** by Track A. The method freeze survives only as an ordinary pre-confirmation freeze |
+| **c-11** | "the method is frozen under c-12, and **it may not be selected for the span or the sparsity it produces**" | the prohibition survives; its **checkability does not** — limb 5's direction-naming is the only remaining instrument, and it is self-reported |
+| **c-13** | "no result-driven fold reselection, because the partition is frozen under c-12/c-14 **before measurement**" | "before measurement" survives; "not result-driven" does **not**, since the results are Track A's |
+
+**None of these is repaired here.** They are recorded so that the next session does not read
+c-9's "fact about the record" as still true.
+**`C_9_C_11_AND_C_13_CARRY_THE_SAME_Q1_DEPENDENT_GUARANTEE_AND_ARE_NOT_REPAIRED_BY_THIS_AMENDMENT`.**
+
+**C-19 — c-15's siblings, and a contradiction between two live lists.** c-15 fixed the first
+predicted DESIGN date as a **pre-data declaration**, admissible because it was "made
+**before any DESIGN observation** and may never be revisited on one". §8.9.1 named four
+siblings with no committed value — the **calibration inner split**, the **final feature
+list**, the **`W̄`/`L̄` estimator**, the **ATR14 warm-up** — two of which §8.12.12 keeps as
+blockers binding **upstream** of Track A, while §8.11.2's free-vary list offers the same two
+for free variation. **Both cannot hold.** The upstream reading governs, on playbook §2.8:
+blockers 1 and 2 must be **ruled before Track A starts** (§8.12.10 condition 4), and until
+they are, the calibration split and the feature list are **not** Track A free-vary items.
+**`THE_UPSTREAM_BLOCKERS_ARE_NOT_TRACK_A_FREE_VARY_ITEMS_UNTIL_RULED`.**
+
+**C-20 — the turnover budget's two axes were locked pre-observation, and Track A ends the
+state that lock presumed.** §8.7.5 locked the mean-versus-cap axis and the
+active-versus-calendar denominator "pre-observation … their **permissive arms are named**",
+and the calendar reading widens the gate-4 corridor by about **42%** — "a loosening Ruling
+10 forbids". The budget is a **selection filter** inside §9.V's kill gate. arm 3's subject
+is "a quantity or specification", which reaches both axes. Under C-15 they are **terms in an
+acceptance test** and therefore **outside arm 3**; whether §8.7.5's pre-observation lock
+survives Track A at all is **not decided here**.
+**`THE_TURNOVER_AXES_ARE_OUTSIDE_ARM_3_AND_WHETHER_THEIR_PRE_OBSERVATION_LOCK_SURVIVES_TRACK_A_IS_UNRULED`.**
+
+**C-21 — inherited call-site defaults are choices, and neither limb 4 nor step 5 catches
+them.** Track A writes the pipeline first, so it decides by **default** what nobody records
+as a decision: `select_threshold`'s `selection_metric` defaults to `daily_portfolio_sharpe`
+where Ruling 9's committed metric is validation net expectancy; `AcceptanceEvaluator`
+accepts a caller-supplied `criteria` dict replacing the whole frozen table;
+`annualised_daily_sharpe` defaults to `252` against the ruled `√365`. None is an axis of
+`K` — which counts "pair set × feature set × model × hyperparameters × threshold × split" —
+and step 5's fail-closed catches an **omitted** control, not a **silently supplied** one.
+**Every inherited default that differs from a ruled or frozen value is a Track A choice, is
+disclosed under limb 3, and is a reached surface under step 5.**
+**`AN_INHERITED_CALL_SITE_DEFAULT_THAT_DIFFERS_FROM_A_RULED_VALUE_IS_A_DISCLOSED_CHOICE`.**
+
+**C-22 — arm 3's "if and only if" claimed sufficiency it does not have.** The nine limbs are
+**necessary, not sufficient**: §8.12.5's eight steps add two conditions the limbs do not
+carry (surface identification and the freeze ruling), §4's **R-2** adds "**Nothing changes
+after the slice is read** — no feature, threshold, model, cost assumption or pair set", and
+C-15 adds the acceptance-test-term exclusion. **"If and only if" is withdrawn; the limbs are
+necessary conditions and the promotion is admissible only when the steps, R-2 and C-15 also
+hold.** **`THE_NINE_LIMBS_ARE_NECESSARY_NOT_SUFFICIENT`.**
+
+**C-23 — one correction to §8.12.6's own claim.** It said arm 3 limb 2's content digest
+would be "**the only checkable anchor there will be**" for a `c` rebuild. That is wrong:
+c-11 already requires the R-6 record to carry "the **generation method identity**, its
+**fold / window / step boundaries as explicit UTC date ranges**, and, per fold, **which
+fitted statistics were used and over what rows**", with
+`C_LEAKAGE_RULE_IS_UNCHECKABLE_UNTIL_THE_GENERATION_RECORD_EXISTS` standing until it does.
+The digest is **one** anchor; that record is the other, and it is the more informative.
+
+##### Claims this amendment made that the review showed were wrong
+
+1. **`R_7_VERIFIABLE_ORDERING_GOVERNS_EVERY_BEFORE_IN_THIS_AMENDMENT`** — false; R-7 orders
+   commits, not observations (C-1). Withdrawn at its own site.
+2. **"Unsatisfiable, therefore inapplicable"** — an invalid inference, and one that would
+   transfer to Track B, since playbook §6's first two items are also unmet today.
+   Withdrawn; scope now follows the **gate ladder** (§8.12.2).
+3. **"Three independent conditions gate the first read"** — wrong twice: there are **five**,
+   and they gate every Track A activity, not only the read (§8.12.10).
+4. **"The only order that is now coherent"** — the stronger order exists and is now adopted:
+   `c` is measured and committed **before** any confirmation observation (§8.12.6).
+5. **`PLAYBOOK_9_IS_NOT_RELAXED…`** while the text said "**Default**" — a default is not a
+   prohibition. Withdrawn (§8.12.3).
+6. **"There is no other route"** for promotion — the eight steps omitted §8.11.5's
+   disclosure set and §8.11.12 A-7's second-candidate ruling (C-4).
+7. **The arm 3 limb set closed at eight** while §8.11.2(3) excluded prereg-frozen values —
+   corrected to nine (§8.12.4).
+8. **The §5 clause table omitted the cost-table clause**, the one §5 clause conditioned on
+   explicit approval, while Track A's own R1 computes exactly those statistics (§8.12.2).
+9. **playbook §2.4 was paraphrased** with `training` dropped and `formal` inserted — a stop
+   rule narrowed by a quotation (§8.12.2).
+10. **The header summary retained two withdrawn spellings** — "`c`/`ω` estimators freely"
+    after ω-9 was re-scoped, and the `…VALUE…NAMED…` token after §8.11.2 corrected it to
+    `…VALUE_OR_SPECIFICATION…IDENTIFIED…`.
 
 ---
 
@@ -12150,14 +12637,28 @@ value.
 — now **HISTORICAL**). The Governance Consistency Amendment supplies exactly the instrument
 that suspension named: a human + ChatGPT contract ruling amending **both** §9 and R-10.
 
-**The sentence above therefore reads with one exception and no others.** A cost table,
-`W̄`/`L̄` estimate, effective-N input, warm-up `W` or spread statistic produced under this
-gate may become a frozen contract value **only** through **R-10 arm 3** — post-exploration
-re-pre-registration under all eight limbs at §8.12.4. Absent any limb, the flat prohibition
-governs unchanged, and a quantity that skipped the eight steps of §8.12.5 is **excluded,
-not retrospectively approved**. Nothing here permits an exploratory **performance** figure
-to enter a formal acceptance claim.
-**`SECTION_9_ADMITS_R_10_ARM_3_AND_NO_OTHER_ROUTE`.**
+**The sentence above therefore reads with one narrow exception — and, for the five
+quantities it names, the exception does not apply.** ⚠ *A first drafting said they "may
+become a frozen contract value **only** through R-10 arm 3", which contradicted arm 3's own
+limb 9 and is **withdrawn** (§8.12.13 C-15).* Each of those five is already frozen
+elsewhere: the **cost table** and **spread statistic** by prereg Ruling 5, **`W̄`/`L̄`** by
+audit **T-2**, the **warm-up `W`** by audit **T-1**, and the **effective-N input `c`** by
+the committed `APPROVED_SPEC` — so **limb 9 puts every one of them outside arm 3**, and a
+Track A-tuned variant of any needs a **prereg amendment** (P-7), not this route. Four of
+them are also **terms in prereg §9's acceptance arithmetic** — `cost` sets the eligibility
+hurdle and the `gross ≥ 1.5 × cost` kill gate; `c` sits in `rho_x`, the denominator of
+`N_eff` against a frozen floor — and **`ARM_3_DOES_NOT_REACH_A_TERM_IN_AN_ACCEPTANCE_TEST`**
+excludes them a second time, independently of whether any ruling names them.
+
+**What arm 3 does reach** is a quantity or specification the **strategy** consumes and the
+**test** does not, and only under all nine limbs, the eight steps of §8.12.5, §4's R-2
+("Nothing changes after the slice is read"), and the acceptance-test exclusion — the limbs
+being **necessary, not sufficient**. Absent any of them the flat prohibition governs
+unchanged, and a quantity that skipped the steps is **excluded, not retrospectively
+approved**. Nothing here permits an exploratory **performance** figure — defined
+functionally at §8.12.13 C-16, not by the six-item list — to enter any decision this
+programme records.
+**`SECTION_9_ADMITS_A_NARROW_ARM_3_AND_NOT_THE_FIVE_QUANTITIES_IT_USED_TO_NAME`.**
 
 ---
 
@@ -13430,6 +13931,123 @@ was selected, no surface was frozen, and no source or test was changed.**
 
 ---
 
+### 12.20 Twenty-first review round — the Governance Consistency Amendment only
+
+**Coverage FULL: three roles dispatched, three returned.** Scope was **§8.12 alone**, by
+instruction: no role re-audited §8.10's 149 surfaces or its 77 decision items, and none
+did. Each was given §8.12, §8.11, the governance documents and the source — never another
+role's conclusions.
+**`ROUND_20_GOVERNANCE_CONSISTENCY_REVIEW_COVERAGE_FULL_THREE_OF_THREE`.**
+
+| Role | Question | Verdict |
+| --- | --- | --- |
+| **Authority / playbook consistency** | after §8.12, does a session following the authority chain wrongly refuse permitted work, or wrongly permit forbidden work? | **9 contradictions, all with a wrongly-permit direction** |
+| **Exploratory → formal evidence leakage** | can seen data or an exploratory result still reach formal confirmation evidence? | **YES — 13 routes** |
+| **Adversarial sequencing / freeze bypass** | can the ordering be bypassed indistinguishably? | **YES — 13 bypasses** |
+
+**All three answered yes**, and the round is recorded as
+`THE_GOVERNANCE_CONSISTENCY_AMENDMENT_ALSO_LEAKED_ON_FIRST_DRAFTING`. Overlap between the
+roles was substantial and is not double-counted; the distinct limbs are at §8.12.13.
+
+**The three findings that changed what the amendment can claim**, each re-verified at
+source by the lead:
+
+1. **arm 3's coherence argument added a word to R-10 and equated two different kinds of
+   knowledge** (leakage role, W-1). R-10's text has no "**unrecorded**" qualifier — the
+   drafting added it, and wrote the addition into §4 itself. And arm 2's authority, the
+   gate-3a continuation, is bound by playbook §5 to "**no strategy metrics; no training**"
+   — it sees **data** and never **results**, which an arm 3 promoter does. **Arm 3 is a
+   deliberate exception to R-10, not an extension of its logic**, and §8.12.4 now says so.
+2. **The line arm 3 must hold is not "figure versus choice" but "strategy input versus
+   acceptance-test term"** (leakage role, route 1). §9's amended sentence named five
+   promotable classes, and four are terms in prereg §9's own acceptance arithmetic —
+   `cost` sets the eligibility hurdle and the `gross ≥ 1.5 × cost` kill gate; `c` sits in
+   `rho_x` against a frozen floor. limb 9 already excluded them (Rulings 5–9, T-1, T-2,
+   the `APPROVED_SPEC`), and §9's sentence contradicted its own limb. Corrected twice
+   over: by limb 9, and by the general rule
+   **`ARM_3_DOES_NOT_REACH_A_TERM_IN_AN_ACCEPTANCE_TEST`**.
+3. **R-7's ancestry test cannot order a commit against an observation** (adversarial role,
+   B-1). It orders **commit against commit**; an observation leaves no commit. So limb 6
+   is verifiable and **limb 7 is not** — and limb 7 is what the amendment's headline token
+   names. `R_7_VERIFIABLE_ORDERING_GOVERNS_EVERY_BEFORE_IN_THIS_AMENDMENT`, asserted last
+   round, is **false and withdrawn**. A write-ahead obligation now binds both tracks, the
+   read path must be closed for the interval claimed, and the residual — *that an
+   observation did not occur is not provable from any record this contract can produce* —
+   is stated as a **limit, not a control**.
+
+**Adopted from the authority role** (§8.12.2, §8.12.3, §8.12.9, §8.12.10): the arm 3 limb
+set had dropped §8.11.2(3)'s prereg exclusion while citing R-1's amendment clause as its
+own authority — reinstated as **limb 9**; the §5 clause table had omitted the one §5 clause
+conditioned on explicit approval, **cost tables from the design span**, while Track A's own
+R1 computes exactly those statistics; playbook **§2.4** had been paraphrased with `training`
+dropped and `formal` inserted — a stop rule narrowed by a quotation, now quoted verbatim
+with each Track A stage mapped to the gate §2.4 requires; the propagation list had missed
+playbook **§8** (named by G-8) and playbook **§4**, the repository's only containment
+checklist, whose items require "**real-data read routes — none reachable**" of code Track A
+must by construction have; **P-7**'s prereg list was narrower than its own explanatory
+paragraph, so propagation could be recorded complete while §10, §14 and Ruling 1 still
+forbade the read; and the Track A checklist had inherited "three" §6 clauses of which two
+are the same boundary, omitting **purge**.
+
+**Adopted from the adversarial role** beyond B-1: "**exploration has ended**" was a campaign
+state, so exploration could continue on other candidates while one was confirmed — now
+programme-wide and one-way, with `K` carrying over; "**observation**" was undefined and
+disarmed by declaring a track — now fixed to §8.11.4's enumeration, track-independent;
+§3.6's "**no stage**" form was rewritten into two-track language, leaving CI jobs, audits
+and untracked sessions outside both the prohibition and the marking obligation — restored;
+`K` counted only observed evaluations, letting a multi-operating-point candidate carry
+unbounded search into "one candidate, one run" — now the **evaluable configuration set**;
+the two binding governance records were required to be committed while §3.7 confines
+research writes to a scratch root and bars `docs/` — now a **named exception**; "**void**"
+had no declarer, evidence, consequence or status word — now declared by a non-executing
+party, with playbook §8 gaining a fifth status (P-9); "governance propagation complete" had
+no positive token or predicate — now `GOVERNANCE_PROPAGATION_COMPLETE` on a per-item
+checkable predicate; and a **RULED section citing no approval identifier** could be retired
+by the next section's one-line self-description — now every RULED section carries PR number,
+approved head SHA and date, or may not be cited as authority (P-10).
+
+**And the ordering it forced on `c`.** §8.12.6 first placed the measurement **after** the
+confirmation observation was unlocked and called that "the only order that is now
+coherent". Both were wrong: measuring and **committing** `c` before the observation is also
+coherent and is strictly stronger, and it supplies the anchor
+`AN_IDENTICAL_INPUT_REBUILD_IS_A_RESELECTION_AND_THE_FIRST_BUILD_GOVERNS` previously lacked.
+
+**Ten claims §8.12 made were shown wrong and are corrected in place** (§8.12.13), including
+that "unsatisfiable therefore inapplicable" is an **invalid inference** — and one that would
+transfer to Track B, since playbook §6's first two items are unmet today as well. Scope now
+follows the **gate ladder**, not the difficulty of compliance.
+
+**Findings recorded rather than repaired.** c-9, c-11 and c-13 carry the same Q1-dependent
+guarantee c-12 did and are **not** re-defined here — c-9's "**that is a fact about the
+record, not an assumption: no design-span derivation has run**" is erased by Track A, and
+the packet should not read it as still true. And §8.12.13 C-13 records the limit that
+frames the whole discipline: on the fourteen surfaces §8.10.3 lists as having an
+analytically knowable favourable direction, an in-order freeze and an out-of-order freeze
+produce the **same value**, so sequencing is not the operative control there —
+`ARM_3_DISCLOSES_THE_SELECTION_IT_DOES_NOT_UNDO_IT` and R-7's own "**Recording is
+disclosure, not control**" already said so, and what would be operative is not created here.
+
+**Lead re-verification.** Every decisive claim was re-read at source before being applied:
+R-10's two-arm sentence and the absence of "unrecorded"; playbook §5's "no strategy metrics;
+no training" and its cost-table clause; playbook §2.4 verbatim; playbook §4's "for **any
+future machinery audit**" and its "none reachable" items; playbook §6's first two items and
+its purge clause; playbook §8's four required final statuses; R-7's ancestry sentence; R-1's
+adopt-unchanged list; prereg §9's kill-gate arithmetic; and c-11's R-6 generation-record
+requirement, which refutes §8.12.6's claim that limb 2's digest would be "the only checkable
+anchor".
+
+**Two roles reported that the file changed under them mid-review**, because the lead was
+applying the first role's findings while the others still ran. The line anchors in their
+reports are therefore working-tree positions; no finding was affected, and two defects were
+already closed by the time the later roles reached them — recorded here so the overlap is
+not mistaken for independent confirmation.
+
+**No ruling beyond the one this round was given was taken. No data or forward-epoch
+metadata was read, no candidate was selected, no surface was frozen, and no source or test
+was changed.**
+
+---
+
 ## 13. Completion state
 
 **`M15_MINIMUM_RESEARCH_GATE_PENDING_HUMAN_CHATGPT_RULING`** — one completion
@@ -13437,6 +14055,13 @@ state, unchanged, because **Q8** remains unruled — **Q1 is amended and partly 
 at §8.11.6 (`Q1_RULED_HISTORICAL_DATA_READ_PERMITTED_FOR_NON_DECISION_BEARING_EXPLORATORY_RESEARCH_ONLY`,
 Track A only; the §4 derivation artifact still gates Track B), and Q3's authorisation limb
 is folded into the Minimum Research Execution Gate. Alongside it, and **not** second completion states:
+**`GOVERNANCE_CONSISTENCY_AMENDMENT_RULED`** ·
+**`TRACK_A_EXECUTION_REQUIRES_GOVERNANCE_PROPAGATION_COMPLETE`** ·
+`CONTRACT_PERMISSION_IS_NOT_EXECUTION_AUTHORISATION` ·
+`GOVERNANCE_PROPAGATION_IMPLEMENTATION_PENDING` ·
+`EXPLORATORY_RESULT_REQUIRES_EXPLICIT_REPREREGISTRATION_BEFORE_FORMAL_CONFIRMATION` ·
+`TRACK_B_FREEZE_MUST_PRECEDE_ALL_FORMAL_CONFIRMATION_OBSERVATION` (§8.12 — the split now
+holds against the governance documents above it, **and Track A still cannot start**);
 **`M15_RESEARCH_MODEL_SPLIT_EXPLORATORY_AND_FORMAL_CONFIRMATION`** ·
 `EXPLORATORY_RESEARCH_STATISTICAL_FREEZE_NOT_REQUIRED` ·
 `FORMAL_CONFIRMATION_REQUIRES_CANDIDATE_SPECIFIC_FREEZE` (§8.11 — the two-track amendment;
