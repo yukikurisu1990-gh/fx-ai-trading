@@ -381,6 +381,22 @@ execution-safety boundaries**, and each surface's committed **prohibitions** sti
 gates 5→7, and `A_TRACK_A_FINDING_MAY_STOP_THE_PROGRAMME_AND_MAY_NEVER_ADVANCE_IT` — so a
 Track A ratio **fires** T-3's block while **not** discharging playbook §6's checkbox.
 
+**⚠ The first drafting of this cleanup ALSO leaked** — three roles, three returned, all
+three against it (§12.21). **`ω` was wrongly listed as carried**: ω-9 makes it **role-local**,
+measured on the confirmation role's own event sequence, never carried (§8.13.2a).
+**Condition 5 forbade the very quantities the rule carries** — C-16's functional definition
+captures `c`, `W̄`/`L̄` and the cost table as performance figures — so it now governs the
+**companions**, not the carried value. **The coherence argument was false**: c-10 says `c`
+is "a statistic of the trades a ***particular* DESIGN-span configuration** generated", so
+`C_METHOD_IS_ALREADY_RULED…` is **withdrawn** and
+**`THE_CARRY_IS_A_FORM_OF_ARM_3_AND_ARM_3_S_LIMBS_4_5_AND_9_APPLY_ON_TOP`**. **The freeze
+had no upper bound** — `N_eff` is computable before any confirmation observation — so
+**`THE_CANDIDATE_FREEZE_IS_ONCE_PER_PROGRAMME_AND_A_SECOND_FREEZE_IS_A_SECOND_CANDIDATE`**,
+an abandoned freeze is committed and counts toward `K`, and recomputing `N_eff` after an
+unfavourable one is a **reselection**. Seventeen further limbs and ten wrong claims at
+§8.13.13. **`THE_TWO_TRACK_SECTIONS_ARE_RULED_AS_RECORDED_AND_NOT_YET_CITABLE_AS_AUTHORITY`**
+until the approving head SHA exists.
+
 **Two blocking conditions are removed and the removal is the point.** §8.12.10's condition 4
 (blockers 1 and 2 before Track A) is **withdrawn** to Track B candidate pre-registration, and
 condition 5 (the T-3 attribution) is **discharged**.
@@ -12665,7 +12681,20 @@ The digest is **one** anchor; that record is the other, and it is the more infor
 
 ### 8.13 The Two-Track Semantic Cleanup — RULED
 
-A human + ChatGPT ruling, recorded here as **authority**. §8.11 split the programme, §8.12
+**Approval identifier** (required by §8.12.13 C-9): **PR #451** · approved head SHA
+**`APPROVAL_IDENTIFIER_PENDING_UNTIL_MERGE`** · date **2026-08-29**.
+
+**⚠ And C-9's consequence is accepted rather than evaded.** C-9 says "a RULED section
+without one may not be cited as authority", and the approving head SHA does not exist until
+this PR is approved and merged. So **§8.11, §8.12 and §8.13 are RULED-as-recorded and may
+not yet be cited as authority outside this packet** — which is the correct state, because
+the PR is not merged and the approval is not on the record. The identifier is completed at
+merge; until then `APPROVAL_IDENTIFIER_PENDING_UNTIL_MERGE` travels with each of them, and
+**P-10** applies it to the earlier sections.
+**`THE_TWO_TRACK_SECTIONS_ARE_RULED_AS_RECORDED_AND_NOT_YET_CITABLE_AS_AUTHORITY`.**
+
+A human + ChatGPT ruling, recorded here as **authority once the identifier above is
+completed**. §8.11 split the programme, §8.12
 made the split hold against the governance documents, and this settles the **semantics** the
 two previous rounds left in tension: what may cross from Track A into Track B, what may
 never, and what genuinely has to be fixed before exploration can begin.
@@ -12679,9 +12708,10 @@ never, and what genuinely has to be fixed before exploration can begin.
 
 1. **Evidence and candidate-specification input are different objects**, and the contract
    separates them by name rather than by the class of quantity.
-2. **Data-derived nuisance and acceptance parameters estimated in Track A — `c`, `ω`, the
-   cost nuisance terms, `W̄`/`L̄` — may enter Track B**, not as evidence, but as
-   **explicitly re-registered fixed candidate parameters**, under six conditions.
+2. **Data-derived nuisance and candidate parameters estimated in Track A — `c`, the cost
+   nuisance terms, `W̄`/`L̄` — may enter Track B**, not as evidence, but as **explicitly
+   re-registered fixed candidate parameters**, under **seven** conditions (§8.13.2).
+   ⚠ **`ω` is not among the carried parameters** — see §8.13.2a.
 3. **`ARM_3_DOES_NOT_REACH_A_TERM_IN_AN_ACCEPTANCE_TEST` was too wide and is narrowed.**
    What may not cross is an acceptance **outcome**; a fixed acceptance **parameter** may,
    re-registered.
@@ -12715,22 +12745,32 @@ computed without and which have no other source. A rule that makes the confirmat
 | | Carries into Track B? | Why |
 | --- | --- | --- |
 | **Acceptance outcome** — a Sharpe, an expectancy, a coverage or turnover figure, a maxDD, an `N_eff` **verdict**, a traded-event rate, a hit rate, a timeout share, a gross/net return, an R5 verdict, a pass/fail | **Never.** `NON_DECISION_BEARING_EXPLORATORY_ONLY`, absolute | These say **whether the strategy worked**. That is precisely the question Track B exists to answer on unseen data, and importing an answer to it is importing the conclusion |
-| **Candidate specification parameter** — a value the candidate cannot be *identified* without: `c`, `ω`, `W̄`/`L̄`, the cost table's cells, the calibration split, the feature list, `ev_min`, barrier geometry | **Yes, by explicit re-registration** (§8.13.2) | These say **which candidate this is**. Without them the thing to be confirmed is not determinate, and Track B would have to re-derive them — which is redesign |
+| **Candidate specification parameter** — a value the candidate cannot be *identified* without: `c`, `W̄`/`L̄`, the cost table's cells, the calibration split, the feature list, `ev_min`, barrier geometry. **`ω` is not one** — §8.13.2a | **Yes, by explicit re-registration** (§8.13.2) | These say **which candidate this is**. Without them the thing to be confirmed is not determinate, and Track B would have to re-derive them — which is redesign |
 
 **The test, in one sentence.** *Does the quantity help identify the candidate, or does it
 report how the candidate performed?* The first may be re-registered and fixed; the second
 may not cross under any procedure.
 **`THE_LINE_IS_IDENTIFIES_THE_CANDIDATE_VERSUS_REPORTS_HOW_IT_PERFORMED`.**
 
-**And one thing that makes this coherent rather than convenient.** `c`'s and `ω`'s
-**methods are already ruled** — c-1…c-15 fix the coefficient, the entry set, the weighting,
-the series, the day attribution, the idle rule, the undefined-case disposition, the span,
-the generator and the training prefix; ω-1…ω-13 fix the clock, the overlap function, the
-`E[f]` order, the weighting, the pair-local aggregation and the zero/one-event semantics.
-So what Track A carries forward is **not a variant it chose**, but **the output of a frozen
-method applied to a frozen span**. That is materially different from carrying a Sharpe,
-which no ruling constrains at all.
-**`C_AND_OMEGA_METHODS_ARE_ALREADY_RULED_SO_WHAT_CROSSES_IS_A_FROZEN_METHODS_OUTPUT`.**
+**⚠ And the argument a first drafting gave for why this is coherent is false.** It said
+`c`'s method is ruled by c-1…c-15, therefore "what Track A carries forward is **not a
+variant it chose**, but **the output of a frozen method applied to a frozen span**".
+**Withdrawn at §8.13.13 D-12.** Ruling **c-10** says the opposite in its own words: `c` is
+"a statistic of the trades a ***particular* DESIGN-span configuration** generated — its
+feature list, warm-up, model, EV-gate `W̄`/`L̄`, cost hurdle and operating point", and
+§12.14 records **four inputs that decide every `c` value and are unfixed**. c-1…c-15 freeze
+the **series → scalar** statistic; they do not freeze the **pipeline that produces the
+series**, which §8.13.4 makes free-vary. So what crosses **is** a variant Track A chose,
+seen through a frozen statistic.
+
+**The consequence is taken, not softened: the carry is a form of arm 3.** Arm 3's **limb 4**
+(`K` in R-7's unit), **limb 5** (name any analytically knowable favourable direction and
+which arm the value sits on) and **limb 9** (no prereg-frozen *method*), together with the
+**eight steps of §8.12.5** and §4's **R-2**, apply **on top of** §8.13.2's eight conditions.
+**`THE_CARRY_IS_A_FORM_OF_ARM_3_AND_ARM_3_S_LIMBS_4_5_AND_9_APPLY_ON_TOP`.** The
+`C_AND_OMEGA_METHODS_ARE_ALREADY_RULED…` spelling is withdrawn on both halves — false for
+`ω`, which §8.4.2 records as carrying "**no span scope at all**" (§8.13.2a), and false for
+`c` for the reason above.
 
 **What this does *not* dissolve, stated plainly.** A researcher who varies the feature list
 in Track A varies `c` **indirectly**, and §8.10.3 records that direction as knowable: a
@@ -12744,9 +12784,18 @@ condition 7 is the only counterweight this cleanup adds.
 
 **`EXPLORATORY_DERIVED_NUISANCE_PARAMETERS_MAY_ENTER_TRACK_B_ONLY_AS_EXPLICITLY_REREGISTERED_FIXED_CANDIDATE_PARAMETERS`.**
 
-A data-derived parameter estimated during Track A — `c`, `ω`, the cost nuisance terms,
-`W̄`/`L̄`, and any other quantity the candidate cannot be identified without — may be carried
-into the Track B contract **if and only if all** of the following hold:
+A data-derived parameter estimated during Track A — `c`, the cost nuisance terms,
+`W̄`/`L̄`, and any other quantity the candidate cannot be identified without (**not `ω`** —
+§8.13.2a) — may be carried
+into the Track B contract only if **all eight** of the following hold. They are **necessary
+and not sufficient**: §8.11.2 limb 2's identification form governs on top, and it is
+type-dependent — **for a scalar**, its value; **for a fitted object** (an isotonic
+calibrator, a trained model, a 60-cell cost table), its **estimator, its fitting span and
+its content digest**; **for a specification**, its **full text**. A first drafting wrote
+"if and only if" over conditions phrased for estimated values alone, which left a chosen
+**specification** — a model family, a decision rule, an entry/exit rule — satisfying
+conditions 1 to 3 vacuously.
+**`THE_CARRY_CONDITIONS_ARE_NECESSARY_NOT_SUFFICIENT_AND_SECTION_8_11_2_LIMB_2_S_TYPE_DEPENDENT_IDENTIFICATION_GOVERNS`.**
 
 1. **Exploratory provenance is stated** — that the value was estimated during Track A, on
    `EXPLORATORY_SEEN_DATA`, and is not evidence.
@@ -12756,11 +12805,30 @@ into the Track B contract **if and only if all** of the following hold:
 3. **It is not re-estimated on Track B confirmation data.** Ever.
 4. **It is not changed after seeing any Track B result.** A change is a **reselection**, and
    the confirmation is void.
-5. **No exploratory performance figure travels with it** — §8.13.1's first row, and the
-   functional definition at §8.12.13 C-16 governs, not a closed list.
+5. **No *other* exploratory performance figure travels with it** — a Sharpe, expectancy,
+   coverage, turnover, maxDD, `N_eff` verdict, event rate, hit rate, R5 verdict, pass/fail,
+   or a comparison of any of these against a threshold. ⚠ *A first drafting wrote "no
+   exploratory performance figure travels with it" and made C-16's functional definition
+   governing — under which `c`, `ω`, `W̄`/`L̄` and the cost table **are themselves**
+   performance figures, so the condition forbade what the rule exists to carry.
+   **Corrected at §8.13.13 D-11**: condition 5 governs the **companions**, not the carried
+   value.* And where the carried set makes an acceptance outcome **reconstructible** —
+   `W̄`, `L̄` and `cost` are the terms of `EV_d`, so a design-span expectancy is — the
+   packet **says so and names which outcome**.
+   **`CONDITION_5_GOVERNS_THE_COMPANIONS_NOT_THE_CARRIED_VALUE`.**
 6. **It is used only as a fixed parameter of the Track B acceptance rule**, never as an
    input that the confirmation re-derives, tunes or checks.
-7. **⚠ The comparison set is carried with it.** Ruling **c-10** already requires
+7. **⚠ The value must have been estimated under the *declared candidate's own*
+   configuration.** A `c` estimated in Track A under a feature list, calibration split and
+   cost table that differ from the declared candidate's is **not that candidate's `c`**,
+   and carrying it would attach one candidate's deflator to another. If the configuration
+   differs in any respect, the value is **re-derived on the DESIGN span** — once, before
+   any confirmation observation — under the declared configuration. *Added on a review
+   finding: §8.13.4's withdrawal of §8.12.10 condition 4 rests on the `c` map being built
+   at candidate pre-registration, and step 5's carry provision would otherwise let a value
+   predate the candidate it is attached to.*
+   **`A_CARRIED_VALUE_MUST_HAVE_BEEN_ESTIMATED_UNDER_THE_DECLARED_CANDIDATES_OWN_CONFIGURATION`.**
+8. **⚠ The comparison set is carried with it.** Ruling **c-10** already requires
    `c_design[config_id]` for **every** registered candidate configuration, with the complete
    map frozen before any validation observation. Under the two-track model that obligation
    is what makes condition 1's disclosure checkable: the pre-registration records **the
@@ -12772,8 +12840,12 @@ into the Track B contract **if and only if all** of the following hold:
 
 **This closes the deflator-span referral, and says which arm was taken.** §8.11.10(1) left
 two arms — re-measure `c` on the untouched confirmation span, or carry the DESIGN `c` with
-its seen status recorded — and §8.12.13 recorded that arm 1 is **forbidden** by the
-committed `APPROVED_SPEC` ("DESIGN span only … never validation/holdout"). Conditions 2 and
+its seen status recorded — and **§8.11.10(1) itself** recorded that arm 1 is **forbidden**
+by the committed `APPROVED_SPEC` ("DESIGN span only … never validation/holdout").
+*⚠ A first drafting attributed that to §8.12.13; corrected. It matters: since the stop's own
+section already recorded arm 1 as forbidden, the stop never rested on "two arms that cannot
+be ordered", so this is a **correction of the stop's premise**, not the resolution of an
+open choice.* Conditions 2 and
 3 **take arm 2 explicitly**: the DESIGN-span value is carried, its seen status is on the
 record, and the confirmation never re-measures it.
 **`NO_TRACK_B_CONFIRMATION_UNTIL_THE_DEFLATOR_SPAN_QUESTION_IS_RULED` is DISCHARGED** —
@@ -12787,6 +12859,49 @@ available for it. What replaces that defence is conditions 1, 2, 3, 4 and 7 toge
 value is fixed before the confirmation, never re-derived on it, and recorded alongside what
 it was chosen against. **That is weaker than a pre-data freeze and is recorded as weaker.**
 **`THE_CARRIED_DEFLATOR_HAS_NO_PRE_DATA_DEFENCE_AND_ITS_PROTECTION_IS_DISCLOSURE_PLUS_FIXITY`.**
+
+#### 8.13.2a `ω` is **not** carried — Ruling ω-9 already places it, and this cleanup misread it
+
+**⚠ A first drafting of §8.13.0(2), §8.13.1, §8.13.3's table and §8.13.7 step 3 listed `ω`
+among the parameters carried from Track A. That is wrong and is withdrawn.**
+
+**Ruling ω-9 places `ω` on the opposite side from `c`, and says so in those words.** Its
+authority table reads: "**The realised `ω` value** — **Mechanically calculated** from the
+registered realised event sequence of **the role whose `N_eff` is being evaluated**", and
+its backing paragraph states that it "resolves the asymmetry in the *opposite* direction
+from `c`: **`c` is frozen on DESIGN and reused; `ω` is a role-local** …". §8.4.4 adds that
+"**Where the acceptance floor is the holdout one, its effective-N verdict uses `ω` measured
+mechanically from the frozen holdout event sequence**."
+
+**So the two quantities are governed differently, and the difference is not a gap:**
+
+| | Span authority | Track B treatment |
+| --- | --- | --- |
+| **`c`** | committed `APPROVED_SPEC`: "DESIGN span only … never validation/holdout; frozen once and recorded" | **carried** under §8.13.2's seven conditions |
+| **`ω`** | ω-9: **role-local**, calculated from the event sequence of the role being evaluated; §8.4.2 records **no span scope at all** | **measured on the confirmation role's own event sequence**, mechanically, under the frozen ω-1…ω-13 method. **Never carried, never re-registered, never a candidate parameter** |
+
+**`OMEGA_IS_ROLE_LOCAL_AND_IS_MEASURED_ON_THE_CONFIRMATION_ROLE_NOT_CARRIED_FROM_TRACK_A`.**
+
+**Three consequences, and the first strengthens the contract rather than weakening it.**
+
+1. **A Track A `ω` cannot reach the acceptance verdict at all.** It is an exploratory
+   diagnostic (§8.11.2, as scoped by §8.12.13 A-8), and the `ω` that enters a Track B
+   `N_eff` is computed from confirmation-role events the researcher has not seen.
+2. **The indirect route remains, and is where it belongs.** A candidate's concurrency
+   cap, entry/exit logic and eligibility rule determine the event sequence `ω` is measured
+   on, and §8.10.3's S-65 records that a **tighter** cap lowers `ω` and **raises** `N_eff`.
+   Those are **candidate specification** items, frozen at §8.13.7 step 3 and disclosed
+   under §8.13.2 conditions 1 and 5 — so the lever is disclosed at the place it actually
+   sits, not at `ω`.
+3. **§8.13.8's prohibition is corrected in one word.** It forbids "re-estimating `c` or
+   `ω`" after the freeze. For `c` that is right. For `ω` the forbidden thing is the
+   opposite: **failing** to measure it on the confirmation role, or substituting a Track A
+   value for it. **`SUBSTITUTING_A_TRACK_A_OMEGA_FOR_THE_CONFIRMATION_ROLES_OWN_IS_THE_PROHIBITED_ACT`.**
+
+**And `ω`'s own open item is unaffected.** `ROLE_SPAN_HORIZON_TRUNCATION_RULE_NOT_REGISTERED`
+and `ROLE_SPAN_TRUNCATION_ARM_SELECTION_POINT_NOT_BOUND` remain the genuinely-open `ω`
+semantic items, and `MEAN_OVERLAP_MINIMUM_RESEARCH_CONTRACT_RULED_PENDING_CALENDAR_INSTANTIATION`
+still gates any authoritative `ω` on the approved calendar artifact.
 
 #### 8.13.3 `ARM_3_DOES_NOT_REACH_A_TERM_IN_AN_ACCEPTANCE_TEST` — narrowed
 
@@ -12804,7 +12919,8 @@ setting the bar; it also stopped the bar being **computable**.
 > fail, a verdict, or any figure reporting how the strategy performed — may **never** cross,
 > by arm 3 or any other route. A **fixed acceptance parameter** — a value the test's
 > arithmetic consumes and which identifies the candidate rather than scoring it — **may**
-> cross, under §8.13.2's seven conditions and no other way.
+> cross, under §8.13.2's seven conditions and no other way — and `ω` is not one of them
+> (§8.13.2a).
 
 **Which side each of §9's five named quantities falls on**, since the previous round put all
 five outside arm 3 and that was part of the over-reach:
@@ -12812,7 +12928,7 @@ five outside arm 3 and that was part of the over-reach:
 | Quantity | Side | Route |
 | --- | --- | --- |
 | **`c`** (`mean_abs_pairwise_corr`) | fixed acceptance parameter | §8.13.2, conditions 1–7 |
-| **`ω`** (`mean_overlap_fraction`) | fixed acceptance parameter | §8.13.2 |
+| **`ω`** (`mean_overlap_fraction`) | ⚠ **neither** — **role-local** | **not carried.** ω-9 measures it on the confirmation role's own event sequence; §8.13.2a |
 | **`W̄` / `L̄`** | fixed candidate parameter | §8.13.2; the **estimator** stays pinned by audit **T-2** |
 | **The cost table / spread statistics** | fixed candidate parameter | §8.13.2; the **formula** stays frozen by prereg Ruling 5 (`median_spread + 0.3 + 0.5`) |
 | **The warm-up `W`** | fixed candidate parameter | §8.13.2; audit **T-1**'s sufficiency rule (`W ≥ longest feature lookback`) is unchanged |
@@ -12824,9 +12940,14 @@ cost formula, T-2's estimator semantics, T-1's sufficiency condition, Ruling 6's
 multipliers, Ruling 9's `ev_min` set — **none of which arm 3 may touch**. It is **not** true
 of the **numeric value a frozen method produces when applied to design data**, which is
 what those rulings always contemplated being filled in later: prereg §5 says the spread
-tables are "**frozen from design data**", T-2 says `W̄`/`L̄` are "**estimated on design data
-and frozen**", T-1 says `W` is "**frozen at implementation**". Filling a frozen method's
-value is not amending the method.
+tables are "**frozen from design data
+[FIXED-AT gate 3a or design audit]**", **prereg §8** says `W̄`/`L̄` are "**estimated on
+design data and frozen**" with **T-2** pinning their conditioning set and "**frozen once,
+recorded in evidence**", and T-1 says `W` is "**frozen at implementation**". *⚠ A first
+drafting dropped prereg §5's bracket — the clause that places the tables in R-10's **arm 2**,
+"the design audit and gate 3a, **which own it**" — and attributed prereg §8's words to T-2.
+Both corrected.* Filling a frozen method's value is not amending the method — **provided
+every unfrozen parameter that determines the value is pinned with it** (§8.13.13 D-15).
 **`LIMB_9_EXCLUDES_A_RULINGS_METHOD_NOT_THE_VALUE_THAT_METHOD_PRODUCES_ON_DESIGN_DATA`** ·
 **`CHANGING_A_FROZEN_METHOD_STILL_NEEDS_A_PREREG_AMENDMENT_P_7`.**
 
@@ -12845,11 +12966,11 @@ exploration.
 | **The feature list**, and which after-audit groups are admitted | **free to vary** | prereg §7's **prohibitions** — no M1-derived features, no consumed-window features, no holdout feature selection |
 | **Feature parameters, windows, warm-up conventions** | **free to vary** | causality; no look-ahead |
 | **The T-3 ratio derivation and the hurdle's inputs** | **free to vary and to measure** | §8.13.6 |
-| **Model family and hyperparameters** | **free to vary** | nothing, in Track A |
+| **Model family and hyperparameters** | **free to vary** | §4's **R-1…R-10**, and the free-vary permission **ends at the `EXPLORATORY_OOS_SLICE` read** (R-2: "Nothing changes after the slice is read") |
 | **Training scheme** — fold geometry, cadence, purge width | **free to vary** | the design-span boundary and §8.12.2's `DESIGN_END` trailing purge |
-| **`ev_min`, decision thresholds, decision logic** | **free to vary** | nothing, in Track A |
+| **`ev_min`, decision thresholds, decision logic** | **free to vary** | as above; prereg Ruling 9 forbids a raw probability threshold **as a decision rule** in any case |
 | **Cost assumptions** | **free to vary** | the design span; a Track A cost figure is not the frozen table |
-| **Entry / exit logic, regime filters, concurrency** | **free to vary** | nothing, in Track A |
+| **Entry / exit logic, regime filters, concurrency** | **free to vary** | as above — and §8.10.3's **S-65** records the direction: a **tighter** concurrency cap lowers `ω` and **raises** `N_eff`, so it is disclosed under §8.13.2 condition 5 |
 
 **Two conditions imposed by earlier rounds are withdrawn.** §8.12.10's condition 4 required
 §8.9.6's blockers **1 (the calibration inner split)** and **2 (the feature list)** to be
@@ -12861,7 +12982,10 @@ at **Track B candidate pre-registration** (§8.13.7 step 4), so blockers 1 and 2
 would freeze, before any exploration, the two surfaces exploration most needs to compare.
 **`BLOCKERS_1_AND_2_BIND_AT_TRACK_B_CANDIDATE_PREREGISTRATION_NOT_AT_TRACK_A_START`.**
 
-**What does not become free.** Everything at §8.13.5, plus every §3 boundary, plus the
+**What does not become free.** Everything at §8.13.5, plus every §3 boundary, plus §4's
+**R-1…R-10** in full — including **R-2's "Nothing changes after the slice is read"**, which
+ends the free-vary permission at the `EXPLORATORY_OOS_SLICE` read — plus **Q7's `N = 1`**,
+which consumes that slice at its **first decision-bearing observation**, plus the
 prohibitions inside the surfaces above — a surface being *variable* does not make its
 committed **prohibitions** negotiable. Track A may choose a feature list; it may not choose
 one containing M1-derived features.
@@ -12925,10 +13049,20 @@ condition 5 falls with it.
 1. **Track A ends** — programme-wide, one-way, `K` closed and carried (§8.12.13 C-4).
 2. **The candidate is selected and declared** by human + ChatGPT, in R-7's verifiable form
    (§8.12.5 step 2).
-3. **The candidate specification is re-pre-registered** — and this is the step this cleanup
-   makes complete. It fixes, with exploratory provenance stated: the **feature list** · the
+3. **The candidate specification is re-pre-registered.** **Every surface §8.13.4 permits
+   Track A to vary is fixed here** — that closure governs, and the list below is
+   **illustrative**. *A first drafting called this list complete and closed it; it omitted
+   feature **parameters and windows**, the **fold geometry and retrain cadence**, the
+   **entry/exit logic, regime filters and concurrency**, and the **T-3 hurdle inputs** —
+   four of §8.13.4's nine rows — which C-16 already ruled is how a closed list narrows a
+   committed text while claiming to restate it.*
+   **`EVERY_SURFACE_TRACK_A_MAY_VARY_IS_FIXED_AT_CANDIDATE_PREREGISTRATION_AND_THE_LIST_IS_ILLUSTRATIVE`.**
+   Illustratively, with exploratory provenance stated: the **feature list**, its
+   **parameters, windows and warm-up conventions** · the **fold geometry, retrain cadence
+   and purge width** · the **entry/exit logic, regime filters and concurrency caps** · the
+   **T-3 hurdle inputs** · the
    **model family and hyperparameters** · the **calibration method and its inner split** ·
-   the **`c` and `ω` values**, with estimator and source span · the **cost semantics and
+   the **`c` value**, with estimator and source span (**`ω` is *not* fixed here — §8.13.2a**) · the **cost semantics and
    table values** · **`W̄`/`L̄`** · the **`ev_min` and decision rule** · the **selector** ·
    the **warm-up `W`** · the **barrier geometry** · and the **comparison set** condition 7
    requires.
@@ -12938,7 +13072,14 @@ condition 5 falls with it.
    §8.9.6's blockers 1 and 2 bind.
 5. **`c` is measured and committed** — value, input set and generating code digest — **and
    this happens before step 6, not after** (§8.12.13). Where `c` was already estimated in
-   Track A and carried under §8.13.2, step 5 **records** it rather than re-deriving it.
+   Track A and carried under §8.13.2, step 5 **recomputes it on the §4 derivation
+   artifact** under the declared candidate's own configuration, and the result **must equal
+   the carried value**; a mismatch is a **defect to be reported**, never a new value to
+   adopt. ⚠ *A first drafting said step 5 "**records** it rather than re-deriving it", which
+   collided with §8.11.12 **F-2** — "Track B's frozen DESIGN-fitted inputs must be
+   **recomputed from the §4 derivation artifact**, never inherited from whatever derivation
+   Track A happened to use" — a limb §8.13.12 maintains. F-2 governs (§8.13.13 D-13).*
+   **`A_CARRIED_VALUE_IS_RECOMPUTED_ON_THE_SECTION_4_ARTIFACT_AT_STEP_5_AND_A_MISMATCH_IS_A_DEFECT`.**
 6. **Only then may the unseen confirmation epoch be observed.**
 7. **Formal metrics and acceptance** are computed on confirmation data alone, passing
    playbook §6, §7 and §8.
@@ -13043,6 +13184,366 @@ to §8.13.7 step 4, and **condition 5** (the T-3 attribution) is **discharged** 
 **Three conditions remain** — propagation, the gate, and the derivation route — and they
 gate **every Track A activity**, not only the first read.
 **`TRACK_A_IS_BLOCKED_ON_THREE_EXECUTION_SAFETY_CONDITIONS_AND_NO_STRATEGY_FREEZE`.**
+
+#### 8.13.13 The cleanup review, and the limbs it forced
+
+Three roles reviewed **§8.13 only** — Track A freedom versus Track B freeze consistency,
+exploratory→formal parameter leakage, and an adversarial confirmation-redesign hunt.
+Findings whose fix belonged to an existing paragraph are closed there; those below needed
+their own text. §12.21 records the round.
+
+**`THE_SEMANTIC_CLEANUP_ALSO_LEAKED_ON_FIRST_DRAFTING`.**
+
+##### The two findings that change what the cleanup does
+
+**D-1 — the freeze had no upper bound, so Track B could be redesigned without ever touching
+confirmation data.** §8.13.8's prohibition fires only "**on the basis of anything seen in
+confirmation data**"; §8.13.2 condition 4 fires only "**after seeing any Track B result**";
+arm 3 limb 7 voids a re-registration only "**after confirmation data has been observed**";
+and §8.13.7 makes `N_eff` **computable at step 5, before the observation at step 6**. Put
+together, a researcher could freeze, compute `N_eff`, find it below the floor, revise the
+feature list or the concurrency cap along §8.10.3's **knowable** favourable directions
+(S-17, S-30a, S-38, S-65), re-derive `c` on the design span, re-register and re-freeze —
+repeating until the floor clears — **without observing one confirmation bar and without
+breaking one sentence**. The final record would be byte-identical to a single compliant
+pass, and C-13 already records that the `K`-discount which would deflate it **is not
+created here**.
+
+**Closed by three limbs, and none of them is a new number.**
+
+1. **The candidate declaration and its freeze are once per programme.** Step 1's
+   "exploration ends" is programme-wide and one-way (§8.12.13 C-4); the declaration at
+   step 2 and the freeze at step 4 inherit that. **A second freeze is a second candidate**,
+   requiring its own human + ChatGPT declaration, its own `K` accrual, and — after a
+   completed confirmation — §8.11.12 A-7's ruling and deflation.
+   **`THE_CANDIDATE_FREEZE_IS_ONCE_PER_PROGRAMME_AND_A_SECOND_FREEZE_IS_A_SECOND_CANDIDATE`.**
+2. **Every freeze is committed, including an abandoned one.** A freeze that is superseded
+   is **not deleted**: its specification, its `c`, its `N_eff` and the reason it was
+   abandoned are committed at the time they existed. Without this the loop is invisible;
+   with it, it is countable.
+   **`AN_ABANDONED_FREEZE_IS_COMMITTED_NOT_DELETED_AND_COUNTS_TOWARD_K`.**
+3. **`c` and `N_eff` are computed once per candidate, and the value is committed at
+   computation time** — not at re-registration time (§8.13.2 conditions 2 and 8, and the
+   §8.12.13 anchor `AN_IDENTICAL_INPUT_REBUILD_IS_A_RESELECTION_AND_THE_FIRST_BUILD_GOVERNS`).
+   A recomputation after seeing an unfavourable `N_eff` is a **reselection**, whether or
+   not any confirmation data was observed.
+   **`RECOMPUTING_N_EFF_AFTER_SEEING_AN_UNFAVOURABLE_ONE_IS_A_RESELECTION_EVEN_BEFORE_ANY_CONFIRMATION_OBSERVATION`.**
+
+**And the limit is stated with it.** These make the loop **countable and disclosed**; they
+do not make it impossible, and `OBSERVATION_ORDER_IS_NOT_PROVABLE_FROM_THE_RECORD_AND_THIS_IS_A_LIMIT_NOT_A_CONTROL`
+applies here too. The operative control on an analytically knowable direction remains
+uncreated (§8.12.13 C-13).
+
+**D-2 — three independent tokens still said the opposite of §8.13.4, and a withdrawal that
+does not name them does not reach them.** §8.12.10's condition 4 was withdrawn, but
+**`BLOCKERS_THAT_BIND_UPSTREAM_OF_TRACK_A_ARE_NOT_REASSIGNED_BY_THE_SPLIT`** (§8.11.12
+A-2), **`THE_UPSTREAM_BLOCKERS_ARE_NOT_TRACK_A_FREE_VARY_ITEMS_UNTIL_RULED`** (§8.12.13
+C-19) and §8.12.12's "blockers 1 and 2 bind upstream of Track A and are **not** reassigned"
+all stood — and §8.13.12's own maintenance clause keeps "every §8.11.12 and §8.12.13 limb
+**not expressly narrowed here**", so they were maintained by the very section that
+contradicted them.
+
+**All three are expressly narrowed now, and the reasoning is met head-on rather than
+overridden.** A-2's argument was §8.9.6's own diagnosis — "a freeze requirement whose
+schedule points past the moment it must bind" — applied to blockers 1 and 2 because the
+`c` map was built on the design span with nothing before it. **Under the two-track model
+there is something before it**: the map is built at candidate pre-registration, *after*
+exploration and *before* any confirmation observation, and §8.13.2's new condition 7
+requires the carried value to have been estimated under the **declared candidate's own**
+configuration. So the schedule no longer points past the binding moment — it points **at**
+it. That is why the withdrawal is available, and it would not have been without condition 7.
+**`A_2_AND_C_19_ARE_EXPRESSLY_NARROWED_BECAUSE_CONDITION_7_MOVES_THE_BINDING_MOMENT_ONTO_THE_FREEZE`.**
+
+##### T-3 — three misquotations, and a state where the block cannot fire
+
+**D-3.** §8.13.6 made three errors, each corrected at its own site:
+
+1. **prereg §6 was quoted with "before implementation" removed.** Its text is: "**before
+   implementation**, the actual distribution of `barrier_distance / cost` on design data
+   must be derived and recorded". Since §8.11.12 A-3 records that Track A is where the
+   features, calibration, EV gate and cost table "**get written for the first time**",
+   Track A *is* implementation, and classifying the measurement as a Track A surface
+   **inverts** prereg §6's timing. prereg §6 is added to propagation as **P-15**, and until
+   it is amended `WHERE_THIS_PACKET_AND_A_GOVERNANCE_DOCUMENT_DISAGREE_THE_GOVERNANCE_DOCUMENT_GOVERNS_UNTIL_PROPAGATED`
+   means **prereg §6 governs**.
+2. **playbook §6 was said to "still require the ratio computed from the §4 derivation
+   artifact".** It does not — its item reads only "ratio rule **computed**", naming no
+   source. §8.13.10's own **P-14** says §6 "**must say** which derivation supplies it",
+   i.e. that it does not yet. The claim is **withdrawn**; which derivation supplies the
+   checkbox is **unruled**, and P-14 is where it is settled.
+3. **§8.11.2(1) was read as a prohibition on *advancing*.** Its text forbids **citation**:
+   "may never be cited as *evidence* … **or in any decision this programme records**", with
+   the list "**illustrative, not exhaustive**". Firing T-3's block *is* a decision this
+   programme records. So the asymmetry
+   `A_TRACK_A_FINDING_MAY_STOP_THE_PROGRAMME_AND_MAY_NEVER_ADVANCE_IT` is **not** a reading
+   of §8.11.2(1); it is a **new and narrow exception to it**, and is recorded as one:
+   **`STOPPING_CITATION_IS_AN_EXPRESS_NARROW_EXCEPTION_TO_SECTION_8_11_2_1_NOT_A_READING_OF_IT`**
+   — a Track A finding may be cited **only** to halt or to refuse, never to permit, pass,
+   discharge or proceed.
+
+**D-4 — and the state where nothing fires at all.** §8.13.4 makes the T-3 measurement "free
+to vary **and to measure**" — a permission, not a duty — while Track B computes "on
+**confirmation data alone**". So after the split there is, on the formal path, **no
+design-span ratio computation at all**, and a Track A that simply never measures it leaves
+T-3's block unfired and playbook §6's checkbox unfillable. **The measurement is therefore a
+duty, not a permission**: the ratio is computed on the design span under the **declared
+candidate's frozen cost table**, before candidate pre-registration completes, and the value
+is committed. Whether that value may **discharge** playbook §6's checkbox stays with P-14.
+**`THE_T_3_RATIO_MEASUREMENT_IS_A_DUTY_UNDER_THE_DECLARED_CANDIDATES_COST_TABLE_NOT_A_PERMISSION`.**
+
+##### Orderings, enumerations and the second subset
+
+**D-5 — four orderings existed; one canonical ordering governs.** §8.11.5, §8.12.5,
+§8.12.6 and §8.13.7 each state a sequence, and Ruling c-12's own site at §8.7.3 still
+carried the ordering §8.12.6 **withdrew** ("only then any formal-confirmation observation
+→ `c` measured"). **§8.13.7 is the canonical ordering**, it is a **merge** of the other
+three rather than a replacement, and it absorbs the three steps it had dropped: §8.11.5
+step 5 (**implement and test** against the frozen subset), §8.11.5 step 6 (**publish the
+disclosure set before the run** — `THE_DISCLOSURE_SET_IS_A_TRACK_B_STEP_NOT_A_FOOTNOTE`),
+and §8.12.5 step 4 (**disclose exploratory provenance** under arm 3 limbs 3, 4 and 5).
+§8.7.3's withdrawn ordering is marked at its own site.
+**`SECTION_8_13_7_IS_THE_CANONICAL_ORDERING_AND_MERGES_RATHER_THAN_REPLACES`.**
+
+**D-6 — the acceptance-computation subset needed the same machinery as the first.**
+§8.13.9 named a second subset and gave it no reach definition, no fail-closed default and
+no scope-out prohibition, and §8.13.7 had no step that extracts or freezes it. Corrected:
+**a surface is in the acceptance-computation subset if any quantity the acceptance test
+consumes depends on it** — which reaches `c`, `ω`, `N_eff`, the Sharpe conventions
+(`√365`, the complete index, the idle rule, the guard order), coverage and its denominator,
+turnover with its day and axis, maxDD with its notional, the sample floors, and the
+acceptance thresholds themselves. Where membership is unclear the surface is **in scope**,
+and **no session may scope one out** — §8.11.5's rule applied to the second subset. Its
+extraction and freeze happen at **step 4**, alongside the first.
+**`THE_ACCEPTANCE_COMPUTATION_SUBSET_IS_EXTRACTED_AT_STEP_4_AND_FAILS_CLOSED_LIKE_THE_FIRST`.**
+
+**D-7 — the post-freeze prohibition is a closure, not a list.** §8.13.8's enumeration
+omitted `W̄`/`L̄`, entry/exit logic, regime filters, concurrency, feature parameters and
+windows, fold geometry and retrain cadence — and C-16 already ruled that a closed list
+narrows a committed text while claiming to restate it. **The prohibition is: *nothing fixed
+at step 3 or step 4 changes after step 4*, and the enumeration is illustrative.** It also
+reaches the **implementation**: since §8.11.5 step 5 places implementation after the freeze,
+the frozen subset includes the **code identity** — the metric, selection and acceptance
+modules are pinned by commit SHA at step 4, and a change to them after it is a change to
+the candidate.
+**`NOTHING_FIXED_AT_STEP_3_OR_4_CHANGES_AFTER_STEP_4_AND_THE_CODE_IDENTITY_IS_PART_OF_IT`.**
+
+**D-8 — a frozen grid is not a frozen candidate.** §8.13.8 forbids *changing* `ev_min`, a
+threshold or the decision rule, which leaves registering several operating points and
+choosing among them after the run. **A Track B candidate carries exactly one operating
+point.** Where the committed selector would evaluate a set, the set's cardinality is part
+of `K` and the selection rule is frozen at step 3 with it.
+**`A_TRACK_B_CANDIDATE_CARRIES_EXACTLY_ONE_OPERATING_POINT`.**
+
+##### Two claims about the span, corrected
+
+**D-9 — "a completed Track B run marks it seen" contradicted §8.11.4 rule 3.** Rule 3 is
+explicit that a span does not become unseen "because a run was **discarded**, a script
+**failed**, a result was not used, or a session ended", and §8.11.4's trigger reaches "any
+activity in **either track**". **Marking follows contact, not completion**; the word
+"completed" is **withdrawn**.
+**`A_TRACK_B_RUN_MARKS_ITS_SPAN_ON_CONTACT_NOT_ON_COMPLETION`.**
+
+**D-10 — "a confirmation dataset that no longer exists" was too strong.** §8.1.2 records
+that the two-month holdout is a **floor** with "**no committed maximum**", and §8.11.12
+A-7 expressly contemplates a second candidate on **the remainder**, with its own ruling and
+its own deflation. So a failed confirmation does not necessarily exhaust the epoch.
+Corrected: **the span the confirmation touched is spent; any untouched remainder is
+available only under A-7's ruling and deflation**, and the declaration at Q10-B fixes which
+part is which **before** the first confirmation, never after.
+**`THE_TOUCHED_SPAN_IS_SPENT_AND_ANY_REMAINDER_IS_AVAILABLE_ONLY_UNDER_A_7`.**
+
+##### Smaller corrections
+
+- **`c`'s estimator experiments.** §8.11.2 still lists "`c` estimator experiments" as a
+  Track A free-vary item, while §8.13.1's coherence argument depends on `c` crossing as
+  "the output of a **frozen** method". Scoped the way `ω` was at §8.12.13 A-8: Track A may
+  **compute and report** `c` under the ruled c-1…c-15 method; an experiment that varies
+  those limbs is a **method study**, never a `c`, and never the `c` a Track B `N_eff`
+  consumes. **`TRACK_A_MAY_COMPUTE_C_UNDER_THE_RULED_METHOD_AND_A_METHOD_VARIANT_IS_NOT_A_C`.**
+- **`W̄`/`L̄`'s pin is narrower than stated.** §8.13.3 said the estimator "stays pinned by
+  audit **T-2**"; S-42-r records that T-2 reaches neither the within-design **fit span**,
+  nor **outlier handling**, nor a `(pair, session)` cell with **zero TP-class trades**.
+  Those three are Track A choices, disclosed at step 3.
+- **`§8.13.5` gains three items** the first drafting omitted: the **`EXPLORATORY_OOS_SLICE`
+  and Q7's `N = 1`** (a single-use, irreversible Track A resource with no counting
+  instrument — `K` counts configurations, `N` counts slice observations, and they are
+  different budgets); the **`DESIGN_END` trailing purge** of §8.11.12 F-5, whose absence
+  the committed declaration guard **cannot detect**; and the **turnover axes and the
+  `rho_x` pair-count population**, which §8.12.13 C-20 and S-73 record as movable and
+  which the acceptance arithmetic consumes.
+- **§8.12.10's condition 1 said "P-1 … P-8"** where §8.13.11 says "P-1 … P-14"; corrected
+  to **P-1 … P-15** at both, P-15 being prereg §6 (D-3).
+- **§8.12.10 carried a duplicated clause** ("and they gate — and they gate"); repaired.
+
+##### The finding that changes what the carry rule is
+
+**D-11 — condition 5 forbade the very quantities the rule exists to carry.** Condition 5
+says "no exploratory performance figure travels with it — the **functional definition at
+§8.12.13 C-16 governs**", and C-16 defines a performance figure as "**any quantity derived
+from executing the strategy on data that could move acceptance, selection or sizing**". By
+that definition **`c`, `ω`, `W̄`/`L̄` and the cost table are all performance figures**: `c`
+is a statistic of the *net realised PnL series* the strategy produced, `ω` of its *realised
+inter-event gaps*, `W̄`/`L̄` of its *traded-direction PnL*. §8.13.2 therefore prohibited, in
+condition 5, exactly what conditions 1–4 and 6–8 permit — and a rule that is unsatisfiable
+as written gets narrowed silently in practice, leaving §8.13.1's illustrative table as the
+only operative constraint. That is the closed-list defect C-16 itself withdrew.
+
+**The rule is repaired by saying what "travels with it" means.**
+
+> Condition 5 governs the **companions**, not the carried value. The carried parameter is
+> admitted by conditions 1–4 and 6–8 and is **not** disqualified by being, on C-16's
+> functional definition, a quantity derived from executing the strategy — it necessarily
+> is. What may not travel with it is **any other** exploratory figure: a Sharpe, an
+> expectancy, a coverage, a turnover, a maxDD, an `N_eff` verdict, an event rate, a hit
+> rate, a pass/fail, an R5 verdict, or a comparison of any of these against a threshold.
+
+**`CONDITION_5_GOVERNS_THE_COMPANIONS_NOT_THE_CARRIED_VALUE`.**
+
+**And the consequence that cannot be legislated away is disclosed instead.** `W̄`, `L̄` and
+`cost` are the terms of prereg §8's `EV_d`, and `W̄`/`L̄` are by audit T-2's own definition
+**design-data mean traded PnL** conditional on the barrier class — so a design-span
+expectancy is **reconstructible** from the carried set together with the frozen `p̂`
+generator. §8.13.1's first row forbids *reporting* it; it cannot forbid it being
+*computable*. Rather than pretend otherwise: **where the carried set permits an acceptance
+outcome to be reconstructed, the re-pre-registration packet says so and names which
+outcome**, and the confirmation record repeats it. Concealing a reconstructible quantity
+would be worse than disclosing it.
+**`WHERE_THE_CARRIED_SET_RECONSTRUCTS_AN_ACCEPTANCE_OUTCOME_THE_PACKET_SAYS_SO_AND_NAMES_IT`.**
+
+**D-12 — "the output of a frozen method applied to a frozen span" is false, and it was the
+cleanup's coherence argument.** Ruling **c-10** says in its own words that `c` is "a
+statistic of the trades a ***particular* DESIGN-span configuration** generated — its
+feature list, warm-up, model, EV-gate `W̄`/`L̄`, cost hurdle and operating point", and
+§12.14 records that **four inputs that decide every `c` value are unfixed** — the warm-up
+`W`, Ruling 4's rollover window, the holiday exclusion policy, and the concurrency caps.
+c-1…c-15 freeze the **series → scalar** statistic; they do **not** freeze the pipeline that
+produces the series, and §8.13.4 makes that pipeline free-vary. So what crosses **is** a
+variant Track A chose, seen through a frozen statistic.
+
+**Withdrawn, and the consequence taken rather than softened.** The carry is **a form of
+arm 3**, not an alternative to it. Arm 3's **limb 4** (`K` in R-7's unit), **limb 5** (name
+any analytically knowable favourable direction and the arm the value sits on), **limb 9**
+(no prereg-frozen *method*), the **eight steps of §8.12.5**, and §4's **R-2** all apply on
+top of §8.13.2's eight conditions. §8.13.2's conditions are **necessary**, never sufficient.
+**`THE_CARRY_IS_A_FORM_OF_ARM_3_AND_ARM_3_S_LIMBS_4_5_AND_9_APPLY_ON_TOP`** ·
+**`C_METHOD_IS_ALREADY_RULED_SO_WHAT_CROSSES_IS_A_FROZEN_METHODS_OUTPUT` — WITHDRAWN**: the
+statistic is frozen, the pipeline behind it is not.
+
+**D-13 — the carry collides with §8.11.12 F-2, which is maintained.** F-2 requires that
+"Track B's frozen DESIGN-fitted inputs must be **recomputed from the §4 derivation
+artifact**, never inherited from whatever derivation Track A happened to use", while
+§8.13.7 step 5 says step 5 "**records** it rather than re-deriving it". F-2 governs, and
+step 5 is corrected: at step 5 the carried value is **recomputed on the §4 derivation
+artifact** under the declared candidate's own configuration and the frozen method, and the
+result must **equal** the Track A value. A mismatch is a **defect to be reported**, not a
+new value to adopt — and it is the one check that would catch a Track A derivation that
+differed from the committed one.
+**`A_CARRIED_VALUE_IS_RECOMPUTED_ON_THE_SECTION_4_ARTIFACT_AT_STEP_5_AND_A_MISMATCH_IS_A_DEFECT`.**
+
+**D-14 — c-10 does not produce the comparison set condition 8 relies on.** c-10's map is
+`c_design[config_id]` over "the three `ev_min` operating points `{0.0, 0.25, 0.5}`" of the
+**registered candidate set** — which, under the two-track model, is not fixed until Track B
+candidate pre-registration. The alternatives Track A compared — a different feature list, a
+different model — were never `config_id`s and their `c` was never computed under the frozen
+method. So condition 8's "the values for the candidates it was selected against" is, in the
+general case, empty, and §8.13.1 called it "the only counterweight this cleanup adds".
+
+**Given its own obligation instead of borrowing c-10's.** The re-pre-registration packet
+records, for **every candidate configuration Track A compared and whose result it
+observed**: its identity, the value of each carried parameter **where computed**, and
+**where not computed, that fact**. This is a Track A record obligation accruing **as the
+comparison happens** — it cannot be reconstructed afterwards, exactly as `K` cannot — and it
+is a `BINDING_GOVERNANCE_RECORD` under §8.12.13 G-6, not research output.
+**`THE_COMPARISON_RECORD_IS_ITS_OWN_TRACK_A_OBLIGATION_ACCRUING_AS_THE_COMPARISON_HAPPENS`** ·
+**`CONDITION_8_DOES_NOT_REST_ON_C_10_WHICH_DOES_NOT_PRODUCE_THAT_SET_UNDER_THE_TWO_TRACK_MODEL`.**
+
+**D-15 — the frozen formula's *input population* is not frozen, so choosing a value can
+choose a method.** §8.13.3 separates a ruling's **method** (excluded from arm 3) from the
+**value it produces on design data** (carriable). But prereg §5's spread tables are "frozen
+from design data **[FIXED-AT gate 3a or design audit]**", and the population the median is
+taken over — which bars are excluded as rollover or holiday — is governed by Ruling 4's
+"**21:55–22:15 UTC minimum**, widen-only" and a holiday calendar `[FIXED-AT design audit]`,
+**neither of which is a fixed value**. §12.14 lists both among the four inputs that "each
+moves every value". So the method/value line holds only if the population is pinned too.
+**Carrying a value requires that every unfrozen method parameter determining it is
+enumerated, fixed and disclosed in the same packet** — the rollover width, the holiday
+exclusion set, the concurrency cap and the warm-up `W` by name.
+**`CARRYING_A_VALUE_REQUIRES_PINNING_EVERY_UNFROZEN_METHOD_PARAMETER_THAT_DETERMINES_IT`.**
+
+**D-16 — four surfaces that set `ω` and `cost` are on neither the step 3 list nor the
+post-freeze prohibition.** The **concurrency / exposure caps**, the **rollover window
+width**, the **holiday exclusion calendar** and the **regime filters** appear in §8.13.4 as
+free-vary, in §8.10.3 (S-65) as having a knowable direction on `N_eff`, and in audit **T-6**
+as items fixed "at implementation, human-approved before gate 7" — and in neither §8.13.7
+step 3 nor §8.13.8. D-7's closure rule covers them ("nothing fixed at step 3 or step 4
+changes after step 4"), and D-15 names them explicitly for the packet. Recorded so the
+closure is not read as abstract.
+
+**D-17 — the stopping asymmetry does not hold in three directions, and is narrowed.**
+`A_TRACK_A_FINDING_MAY_STOP_THE_PROGRAMME_AND_MAY_NEVER_ADVANCE_IT` fails because
+(a) **avoiding** a stop is equivalent to advancing — Track A may vary the hurdle inputs and
+the cost assumptions, so selecting only candidates whose median ratio clears 3.0 means T-3
+never fires, and the cost cell that produced that is then carried; (b) **no one is named to
+declare a stop fired**, and §8.12.13 C-8 already established for the analogous case that
+self-declaration is incentive-incompatible because it destroys the programme's only
+confirmation span; and (c) **the candidate selection is itself an advance** taken on Track A
+findings, which §8.11.10(3) records outright.
+
+**Narrowed, with the two obligations that make it operative:**
+
+> A Track A result may be cited **only to halt or to refuse** — never to permit, pass,
+> discharge or proceed. **Every stop condition that fired or was approached during Track A
+> — T-3's ratio, an `N_eff` shortfall, a c-8 uncertifiability, a kill-gate-shaped failure —
+> is recorded in the re-pre-registration packet for every candidate compared**, and **the
+> firing of a stop is declared by a party other than the executing session**, on the
+> committed comparison record (D-14).
+
+**`STOP_CONDITIONS_ARE_RECORDED_FOR_EVERY_COMPARED_CANDIDATE_AND_A_STOP_IS_DECLARED_BY_A_NON_EXECUTING_PARTY`.**
+
+##### Three misquotations in §8.13, corrected at their sites
+
+1. **"§8.12.13 recorded that arm 1 is forbidden by the committed `APPROVED_SPEC`"** — that
+   is **§8.11.10(1)**, not §8.12.13. And the correction matters for a second reason: since
+   §8.11.10(1) already recorded arm 1 as forbidden, the deflator-span stop never rested on
+   "two arms that cannot be ordered". Its discharge at §8.13.2 is a **correction of the
+   stop's premise**, not the resolution of an open choice, and is recorded as such.
+2. **prereg §5 was quoted as "the spread tables are frozen from design data"**, dropping
+   "**[FIXED-AT gate 3a or design audit]**" — the very clause that places them in R-10's
+   **arm 2**, the arm that belongs to "the design audit and gate 3a, **which own it**".
+3. **"T-2 says `W̄`/`L̄` are 'estimated on design data and frozen'"** — those are **prereg
+   §8**'s words. T-2's are "estimated once on design data, **frozen, recorded in
+   evidence**", and T-2's contribution is the *conditioning set*, not the freeze.
+
+##### And one item that stays open rather than being closed here
+
+**The turnover axes are now unreachable from both sides.** §8.12.13 C-20 records the
+mean-versus-cap axis and the active-versus-calendar denominator as "locked pre-observation"
+with their permissive arms named, and leaves whether that lock survives Track A **unruled**.
+§8.13.5 excludes strategy parameters from the Track A start conditions, so they cannot be
+fixed before Track A; and the pre-observation lock cannot be satisfied once Track A computes
+a single turnover figure. **Neither side is available**, and this cleanup does not resolve
+it — it is added to the Minimum Research Execution Gate.
+**`THE_TURNOVER_AXES_ARE_FIXABLE_NEITHER_BEFORE_NOR_AFTER_TRACK_A_AND_THE_COLLISION_IS_UNRULED`.**
+
+##### Claims §8.13 made that the review showed were wrong
+
+1. **`ω` listed among carried parameters** — ω-9 makes it **role-local**, measured on the
+   role whose `N_eff` is evaluated. Corrected at §8.13.2a, and
+   `C_AND_OMEGA_METHODS_ARE_ALREADY_RULED…` withdrawn: §8.4.2 records that `ω` carries
+   "**no span scope at all**", so the frozen-span premise is false for it.
+2. **"under six conditions"** where §8.13.2 states seven — now eight with condition 7.
+3. **"if and only if all"** over conditions phrased for estimated values, which a chosen
+   **specification** satisfies vacuously — corrected to necessary-not-sufficient with
+   §8.11.2 limb 2's type-dependent identification governing.
+4. **Step 3's list called complete** while omitting four of §8.13.4's nine rows.
+5. **"nothing, in Track A"** in three rows of §8.13.4, against §8.13.12's own maintenance of
+   §4's R-1…R-10 and Q7's `N = 1`.
+6. **The three T-3 misquotations** (D-3).
+7. **"a completed Track B run marks it seen"** (D-9) and **"a confirmation dataset that no
+   longer exists"** (D-10).
+8. **§8.13 carried no approval identifier** while §8.12.13 C-9 requires one — corrected at
+   the section head, and the consequence accepted:
+   `THE_TWO_TRACK_SECTIONS_ARE_RULED_AS_RECORDED_AND_NOT_YET_CITABLE_AS_AUTHORITY`.
 
 #### 8.13.12 Maintained, and still not authorised
 
@@ -14531,6 +15032,106 @@ not mistaken for independent confirmation.
 **No ruling beyond the one this round was given was taken. No data or forward-epoch
 metadata was read, no candidate was selected, no surface was frozen, and no source or test
 was changed.**
+
+---
+
+### 12.21 Twenty-second review round — the Two-Track Semantic Cleanup only
+
+**Coverage FULL: three roles dispatched, three returned.** Scope was **§8.13 alone**, by
+instruction: no role re-audited §8.10's 149 surfaces, and none did. Each was given §8.13,
+§8.11, §8.12, the governance documents and the source — never another role's conclusions.
+**`ROUND_21_SEMANTIC_CLEANUP_REVIEW_COVERAGE_FULL_THREE_OF_THREE`.**
+
+| Role | Verdict |
+| --- | --- |
+| **Track A freedom vs Track B freeze consistency** | **8 inconsistencies** |
+| **Exploratory → formal parameter leakage** | **YES — 10 routes**, plus **10 wrong citations** |
+| **Adversarial confirmation redesign** | **YES — 12 redesign routes**, plus **10 wrong claims** |
+
+**All three answered against the cleanup**, and the round is recorded as
+`THE_SEMANTIC_CLEANUP_ALSO_LEAKED_ON_FIRST_DRAFTING`. The distinct limbs are at §8.13.13.
+
+**The four findings that changed what the cleanup is**, each re-verified at source:
+
+1. **`ω` was listed as a carried parameter, and Ruling ω-9 places it on the opposite
+   side.** ω-9's own authority table: "**The realised `ω` value** — **Mechanically
+   calculated** from the registered realised event sequence of **the role whose `N_eff` is
+   being evaluated**", and its backing paragraph says it "resolves the asymmetry in the
+   ***opposite* direction from `c`**". §8.4.2 records that `ω` carries "**no span scope at
+   all**". §8.13.2a corrects it: `ω` is **role-local**, measured on the confirmation role's
+   own event sequence, **never carried** — which is the safer disposition, and the indirect
+   lever moves to where it belongs, the candidate's concurrency and entry/exit
+   specification.
+2. **Condition 5 forbade the very quantities the rule exists to carry.** It made C-16's
+   functional definition governing — "**any quantity derived from executing the strategy on
+   data that could move acceptance, selection or sizing**" — under which `c`, `W̄`/`L̄` and
+   the cost table **are** performance figures. §8.13.2 therefore prohibited in condition 5
+   what conditions 1–4 and 6–8 permit. Corrected: condition 5 governs the **companions**,
+   not the carried value — and where the carried set makes an acceptance outcome
+   **reconstructible** (`W̄`, `L̄` and `cost` are the terms of `EV_d`), the packet **says so
+   and names it** rather than pretending otherwise.
+3. **The coherence argument was false.** "What crosses is the output of a **frozen method**
+   applied to a frozen span" is contradicted by Ruling c-10 in its own words — `c` is "a
+   statistic of the trades a ***particular* DESIGN-span configuration** generated" — and by
+   §12.14's record of **four unfixed inputs that move every `c` value**. c-1…c-15 freeze the
+   series→scalar statistic, not the pipeline producing the series. **The carry is therefore
+   a form of arm 3**, and arm 3's limbs 4, 5 and 9, the eight steps and R-2 apply on top.
+4. **The freeze had no upper bound.** §8.13.8 fires only on what is "seen in **confirmation
+   data**", condition 4 only "after seeing any **Track B result**", limb 7 only after
+   confirmation data is observed — while §8.13.7 makes `N_eff` computable at **step 5,
+   before** the observation. A researcher could freeze, compute `N_eff`, revise along
+   §8.10.3's knowable directions, re-derive `c` on the design span and re-freeze, without
+   observing one confirmation bar. Closed by three limbs: the candidate freeze is **once per
+   programme**, an **abandoned freeze is committed and counts toward `K`**, and recomputing
+   `N_eff` after seeing an unfavourable one is a **reselection even before any confirmation
+   observation**.
+
+**Also adopted.** Three tokens still asserting the opposite of §8.13.4 — A-2, C-19 and
+§8.12.12's clause — are **expressly narrowed**, with the reasoning met rather than
+overridden: condition 7 (a carried value must have been estimated under the **declared
+candidate's own configuration**) moves the binding moment onto the freeze, which is why the
+withdrawal is available at all. Step 3's list is **illustrative** with a closure — **every
+surface §8.13.4 permits Track A to vary is fixed there** — after it was found to omit four
+of §8.13.4's nine rows. §8.13.8's prohibition becomes the closure *nothing fixed at step 3
+or 4 changes after step 4*, reaching the **code identity**, since implementation follows the
+freeze. A Track B candidate carries **exactly one operating point**. §8.13.7 is the
+**canonical ordering** and merges §8.11.5, §8.12.5 and §8.12.6 rather than replacing them,
+absorbing the three steps it had dropped. The acceptance-computation subset gets the same
+reach definition, fail-closed default and scope-out prohibition as the first, extracted at
+step 4. Step 5 **recomputes** a carried value on the §4 artifact — §8.11.12 F-2 requires it
+— and a mismatch is a defect. Condition 8's comparison set becomes **its own Track A
+obligation** after c-10 was shown not to produce one under the two-track model. The three
+misquotations of T-3 are corrected, and the **measurement becomes a duty**, since Track A
+could otherwise simply never measure the ratio and leave the block unfired.
+
+**Claims corrected in place**: ten, listed at §8.13.13 — including three misattributed
+citations (arm 1's prohibition is §8.11.10(1)'s, not §8.12.13's; prereg §5's
+"**[FIXED-AT gate 3a or design audit]**" bracket was dropped; prereg §8's words were
+attributed to T-2), "six conditions" where there were seven, "if and only if" over
+conditions that a chosen **specification** satisfies vacuously, "nothing, in Track A" in
+three rows against §4's R-1…R-10 and Q7's `N = 1`, and "a **completed** Track B run marks it
+seen" against §8.11.4 rule 3.
+
+**One structural defect closed and one accepted.** §8.13 carried **no approval identifier**,
+which §8.12.13 C-9 requires — corrected at the section head, and the consequence accepted
+rather than evaded:
+**`THE_TWO_TRACK_SECTIONS_ARE_RULED_AS_RECORDED_AND_NOT_YET_CITABLE_AS_AUTHORITY`** until the
+approving head SHA exists, which is the correct state while the PR is unmerged. And §8.13
+had **no §12 review round** when written — the third consecutive repetition of a defect
+§8.12.13 C-12 recorded; this is that round.
+
+**Left open rather than closed.** The turnover axes are now **fixable neither before nor
+after Track A** — §8.13.5 excludes strategy parameters from the start conditions and C-20's
+pre-observation lock cannot survive the first Track A turnover figure. And C-13's limit
+stands unchanged: on the surfaces with an analytically knowable favourable direction, an
+in-order and an out-of-order freeze produce the **same value**, so sequencing is not the
+operative control and the control that would be — a `K`-discount on the acceptance
+threshold, an independent implementation, a pre-declared and verified direction — **is still
+not created**.
+
+**No ruling beyond the one this round was given was taken. No data or forward-epoch metadata
+was read, no candidate was selected, no parameter was frozen, and no source or test was
+changed.**
 
 ---
 
