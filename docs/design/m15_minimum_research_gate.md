@@ -344,6 +344,51 @@ claimed** (§8.9.6): `C_GENERATION_CALIBRATION_SPLIT_IS_A_SECOND_UNREGISTERED_GE
 `C_DESIGN_GENERATOR_PENDING_ONE_EXACT_PARAMETER_DECISION` is discharged **only** as to
 the first predicted DESIGN date.
 
+**§8.13 — the TWO-TRACK SEMANTIC CLEANUP — RULED** (human + ChatGPT). Settles what may
+cross from Track A into Track B, and what must genuinely be fixed before exploration starts.
+**`TWO_TRACK_SEMANTICS_CLEANED_FOR_EXPLORATION_THEN_CONFIRMATION`** ·
+**`EXPLORATORY_DERIVED_NUISANCE_PARAMETERS_MAY_ENTER_TRACK_B_ONLY_AS_EXPLICITLY_REREGISTERED_FIXED_CANDIDATE_PARAMETERS`** ·
+**`TRACK_A_MAY_VARY_EXPLORATORY_STRATEGY_SURFACES_WITHIN_EXECUTION_SAFETY_BOUNDARIES`** ·
+**`TRACK_B_IS_CONFIRMATION_NOT_REDESIGN`**.
+
+**The line is `THE_LINE_IS_IDENTIFIES_THE_CANDIDATE_VERSUS_REPORTS_HOW_IT_PERFORMED`.** An
+**acceptance outcome** — a Sharpe, expectancy, coverage, turnover, maxDD, event rate, hit
+rate, an `N_eff` verdict, an R5 verdict, a pass/fail — **never** crosses. A **candidate
+specification parameter** — `c`, `ω`, `W̄`/`L̄`, the cost table's values, the calibration
+split, the feature list, `ev_min`, barrier geometry — **may**, under §8.13.2's **seven
+conditions**: provenance stated · value, estimator and source span frozen at candidate
+pre-registration · never re-estimated on confirmation data · never changed on a Track B
+result · no performance figure travelling with it · used only as a fixed acceptance
+parameter · and **the comparison set carried with it**, which Ruling **c-10** already
+requires. What crosses is a **frozen method's output on a frozen span**, not a variant
+someone chose (`C_AND_OMEGA_METHODS_ARE_ALREADY_RULED_SO_WHAT_CROSSES_IS_A_FROZEN_METHODS_OUTPUT`).
+
+**`ARM_3_DOES_NOT_REACH_A_TERM_IN_AN_ACCEPTANCE_TEST` is NARROWED** — it also excluded `c`
+and `ω` and so made the acceptance arithmetic **uncomputable**. The operative rule is
+**`ARM_3_DOES_NOT_REACH_AN_ACCEPTANCE_OUTCOME_BUT_MAY_CARRY_A_REREGISTERED_FIXED_ACCEPTANCE_PARAMETER`**,
+and limb 9 is narrowed on one axis only:
+`LIMB_9_EXCLUDES_A_RULINGS_METHOD_NOT_THE_VALUE_THAT_METHOD_PRODUCES_ON_DESIGN_DATA`.
+**`NO_TRACK_B_CONFIRMATION_UNTIL_THE_DEFLATOR_SPAN_QUESTION_IS_RULED` is DISCHARGED** — arm 2
+taken: carry the DESIGN value with its seen status recorded, and
+`THE_CARRIED_DEFLATOR_HAS_NO_PRE_DATA_DEFENCE_AND_ITS_PROTECTION_IS_DISCLOSURE_PLUS_FIXITY`.
+
+**Track A may vary every exploratory strategy surface** — calibration split · feature list
+and parameters · the T-3 ratio derivation · model family and hyperparameters · training
+scheme · `ev_min` · decision logic · cost assumptions · entry/exit logic — **within
+execution-safety boundaries**, and each surface's committed **prohibitions** still bind.
+**`WHAT_IS_FROZEN_BEFORE_TRACK_A_IS_THE_SAFETY_BOUNDARY_NOT_THE_STRATEGY_CHOICE`.**
+**T-3 is classified**: its **measurement** is a Track A surface, its **consequence** binds
+gates 5→7, and `A_TRACK_A_FINDING_MAY_STOP_THE_PROGRAMME_AND_MAY_NEVER_ADVANCE_IT` — so a
+Track A ratio **fires** T-3's block while **not** discharging playbook §6's checkbox.
+
+**Two blocking conditions are removed and the removal is the point.** §8.12.10's condition 4
+(blockers 1 and 2 before Track A) is **withdrawn** to Track B candidate pre-registration, and
+condition 5 (the T-3 attribution) is **discharged**.
+**`TRACK_A_IS_BLOCKED_ON_THREE_EXECUTION_SAFETY_CONDITIONS_AND_NO_STRATEGY_FREEZE`** —
+governance propagation **P-1…P-14**, the Minimum Research Execution Gate, and the derivation
+route decided **in a diff**. **`TRACK_B_IS_CONFIRMATION_NOT_REDESIGN`**, and
+`A_POST_FREEZE_CHANGE_VOIDS_THE_CONFIRMATION_AND_DOES_NOT_YIELD_A_CORRECTED_ONE`.
+
 **§8.12 — the GOVERNANCE CONSISTENCY AMENDMENT — RULED** (human + ChatGPT). §8.11 split
 the programme; this makes the split hold **against the governance documents above it**.
 **`GOVERNANCE_CONSISTENCY_AMENDMENT_RULED`** ·
@@ -379,7 +424,8 @@ in arm 1's sense. Promotion runs through **eight steps and no other route**
 entirely from Q1:
 `C_12_ORIGINAL_PRE_DATA_SENSE_IS_NOT_RECOVERABLE_AFTER_TRACK_A_AND_IS_REPLACED_NOT_RESTORED`,
 replaced by `TRACK_B_FREEZE_MUST_PRECEDE_ALL_FORMAL_CONFIRMATION_OBSERVATION` with
-`NO_TRACK_B_CONFIRMATION_UNTIL_THE_DEFLATOR_SPAN_QUESTION_IS_RULED` standing over all of it.
+`NO_TRACK_B_CONFIRMATION_UNTIL_THE_DEFLATOR_SPAN_QUESTION_IS_RULED` **DISCHARGED at
+§8.13.2**, which carries the DESIGN-span value with its seen status recorded.
 **`SEEN_IS_TERMINAL_AND_NO_RULING_CAN_RESTORE_UNSEEN_STATUS`**: the design span is the
 Track A **development dataset**, the unseen forward epoch the Track B **confirmation
 dataset**, and the transition is one-way.
@@ -8852,8 +8898,7 @@ all Track-B decision-bearing inputs frozen → `c`-generating semantics frozen �
 any formal-confirmation observation → `c` measured.
 **`TRACK_B_FREEZE_MUST_PRECEDE_ALL_FORMAL_CONFIRMATION_OBSERVATION`** ·
 **`C_12_ORIGINAL_PRE_DATA_SENSE_IS_NOT_RECOVERABLE_AFTER_TRACK_A_AND_IS_REPLACED_NOT_RESTORED`**
-— and `NO_TRACK_B_CONFIRMATION_UNTIL_THE_DEFLATOR_SPAN_QUESTION_IS_RULED` stands over all
-of it.
+— and **`NO_TRACK_B_CONFIRMATION_UNTIL_THE_DEFLATOR_SPAN_QUESTION_IS_RULED` — DISCHARGED at §8.13.2**, which takes the second arm explicitly: the DESIGN-span value is **carried** with its seen status recorded and is never re-measured on confirmation data. Arm 1 stays spec-forbidden.
 
 **The enumeration governs, and it is *not* claimed complete by inspection.** Where an
 input is decision-bearing but unlisted,
@@ -11361,8 +11406,10 @@ make an acceptance criterion a function of the holdout, which prereg §3.2 count
 consuming it. Arm 2 leaks seen-span content forward. They are strict in **opposite**
 directions, so no default ordered them. **Withdrawn and replaced by a stop:** *no Track B
 confirmation may proceed until the deflator-span question is ruled by human + ChatGPT*.
-**`NO_TRACK_B_CONFIRMATION_UNTIL_THE_DEFLATOR_SPAN_QUESTION_IS_RULED`** — and arm 1 is
-recorded as **spec-forbidden as it stands**, not as a live option.
+**`NO_TRACK_B_CONFIRMATION_UNTIL_THE_DEFLATOR_SPAN_QUESTION_IS_RULED` — DISCHARGED at §8.13.2**, which takes the second arm explicitly: the DESIGN-span value is **carried** with its seen status recorded and is never re-measured on confirmation data. Arm 1 stays spec-forbidden. `C_DESIGN_SPAN_BECOMES_EXPLORATORY_SEEN_AND_THE_DEFLATOR_SPAN_QUESTION_IS_REFERRED`
+is **HISTORICAL** — answered, not withdrawn — and the cost of the arm taken is recorded at
+§8.13.2: the carried deflator has **no pre-data defence**, and its protection is disclosure
+plus fixity.
 
 **(2) Exploration breadth is unbounded and Q9's default says it is not free.** Q9's
 governing default, taken from playbook §2.8's narrower-reading rule, is that "exploratory
@@ -11986,7 +12033,9 @@ for the knowledge with disclosure:
 > during Track A may be frozen into the Track B contract only if **all nine** of the
 > following hold — they are **necessary and not sufficient** (§8.12.13 C-22: the eight
 > steps of §8.12.5, §4's **R-2**, and
-> **`ARM_3_DOES_NOT_REACH_A_TERM_IN_AN_ACCEPTANCE_TEST`** apply on top) — and a failure of
+> **`ARM_3_DOES_NOT_REACH_AN_ACCEPTANCE_OUTCOME_BUT_MAY_CARRY_A_REREGISTERED_FIXED_ACCEPTANCE_PARAMETER`**
+> (§8.13.3, narrowing the earlier `…_A_TERM_IN_AN_ACCEPTANCE_TEST` spelling) apply on
+> top) — and a failure of
 > any one of them means the quantity may **not** be frozen:
 >
 > 1. **Exploration has ended** and is declared ended.
@@ -12095,8 +12144,9 @@ run, and this amendment does not pretend otherwise.
 What replaces it is: the freeze precedes all **confirmation** observation; the selection is
 **disclosed** under arm 3 rather than concealed; and
 `C_DESIGN_SPAN_BECOMES_EXPLORATORY_SEEN_AND_THE_DEFLATOR_SPAN_QUESTION_IS_REFERRED` remains
-**open**, with `NO_TRACK_B_CONFIRMATION_UNTIL_THE_DEFLATOR_SPAN_QUESTION_IS_RULED` standing
-as a stop over the whole of Track B.
+**answered** at §8.13.2 by carrying the DESIGN-span value with its seen status recorded;
+`NO_TRACK_B_CONFIRMATION_UNTIL_THE_DEFLATOR_SPAN_QUESTION_IS_RULED` is **DISCHARGED** and
+no longer stops Track B.
 
 **Two consequences carried without repair.** `NO_LOCUS_RECORDS_THE_FROZEN_C_MAP_INPUT_SET`
 means nothing in the record distinguishes a first build from a rebuilt one, so arm 3 limb 2's
@@ -12169,12 +12219,15 @@ in passing.
 
 **`TRACK_A_EXECUTION_REQUIRES_GOVERNANCE_PROPAGATION_COMPLETE`.**
 
-Approving the Two-Track contract does **not** make Track A executable. **Five** independent
-conditions gate Track A — and they gate **every Track A activity, not only the first read**,
+Approving the Two-Track contract does **not** make Track A executable. **Three** independent
+conditions gate Track A — *an earlier drafting listed five; conditions 4 and 5 are withdrawn
+and discharged at §8.13.4 and §8.13.6, both having been strategy-freeze conditions rather
+than safety ones* — and they gate — and they gate **every Track A activity, not only the first read**,
 because §8.11.12 A-3 records that Track A is where the features, the calibration, the EV
 gate, the cost table, `c` and `ω` all get written for the first time, so specification
-choices are made in the implementation and not only in the run. *An earlier drafting said
-"three … gate the first read"; **withdrawn on both counts**.* All five are currently unmet:
+choices are made in the implementation and not only in the run. *An even earlier drafting
+said "three … gate the **first read**"; the "first read" half stays **withdrawn**.* All
+three are currently unmet:
 
 1. **Governance propagation (P-1 … P-8) is complete**, so that the authority chain a
    session actually reads carries the split. Until then, a session reading the playbook is
@@ -12186,14 +12239,24 @@ choices are made in the implementation and not only in the run. *An earlier draf
    that arm (i) "needs **no** code change and trips no refusal", the choice counts as made
    only when it appears **in a diff** — an explicit committed caller — never as a decision
    a session reports having taken.
-4. **§8.9.6's blockers 1 and 2 are ruled** — the **calibration inner split** and the
-   **feature list**. §8.12.12 records that these two "bind **upstream** of Track A and are
-   **not** reassigned" by the split, so they gate Track A's start and not Track B's freeze.
-   *An earlier drafting left them out of this list, where a session reading §8.12.10 alone
-   would have started Track A with both open.*
-5. **The Minimum Research Execution Gate's own open items are closed** — in particular
-   `WHICH_DERIVATION_SUPPLIES_THE_T_3_RATIO_AND_WHETHER_A_TRACK_A_MEASUREMENT_CAN_FIRE_ITS_BLOCK_IS_UNRULED`,
-   which decides whether Track A can even report the finding that would stop the programme.
+4. ⚠ **WITHDRAWN at §8.13.4.** This condition required §8.9.6's blockers **1** (the
+   calibration inner split) and **2** (the feature list) to be ruled before Track A starts,
+   on the ground that they bind "upstream" of the `c`-map freeze. That was right **under
+   the single-track structure**, where the map was built on the design span with no prior
+   exploration. Under the two-track model the map is built at **Track B candidate
+   pre-registration** (§8.13.7 step 4), so both blockers bind **there** — and making them
+   Track A start conditions would freeze, before any exploration, the two surfaces
+   exploration most needs to compare.
+   **`BLOCKERS_1_AND_2_BIND_AT_TRACK_B_CANDIDATE_PREREGISTRATION_NOT_AT_TRACK_A_START`.**
+5. ⚠ **DISCHARGED at §8.13.6.**
+   `WHICH_DERIVATION_SUPPLIES_THE_T_3_RATIO_AND_WHETHER_A_TRACK_A_MEASUREMENT_CAN_FIRE_ITS_BLOCK_IS_UNRULED`
+   is answered: T-3's **measurement** is a Track A strategy surface, its **consequence**
+   binds gates 5→7, and a Track A measurement **fires** T-3's block while **not**
+   discharging playbook §6's checkbox — because §8.11.2(1) stops a Track A result
+   **advancing** the programme, and a finding that **stops** it is not advancement.
+
+**So three conditions remain, and all three are execution safety**:
+`TRACK_A_IS_BLOCKED_ON_THREE_EXECUTION_SAFETY_CONDITIONS_AND_NO_STRATEGY_FREEZE`.
 
 **And passing that gate authorises one operation, not a campaign.** CLAUDE.md places
 **real-data reads** and **training** in the **Red** tier — "explicit human + ChatGPT
@@ -12477,7 +12540,14 @@ events, raises net *and* raises `N`**".
    condition, a deflator, or a sample-floor input — is outside arm 3**, whether or not a
    prereg ruling names it. Arm 3 reaches quantities the **strategy** consumes, never
    quantities the **test** consumes.
-   **`ARM_3_DOES_NOT_REACH_A_TERM_IN_AN_ACCEPTANCE_TEST`.**
+   **`ARM_3_DOES_NOT_REACH_A_TERM_IN_AN_ACCEPTANCE_TEST`** — ⚠ **NARROWED at §8.13.3.** As
+   written this also excluded `c` and `ω`, the two quantities `N_eff` cannot be computed
+   without and which have no source other than a design-span estimate, so it stopped the
+   acceptance arithmetic being **computable**. The operative rule is now
+   **`ARM_3_DOES_NOT_REACH_AN_ACCEPTANCE_OUTCOME_BUT_MAY_CARRY_A_REREGISTERED_FIXED_ACCEPTANCE_PARAMETER`**:
+   an acceptance **outcome** never crosses; a fixed acceptance **parameter** may, under
+   §8.13.2's seven conditions. The prohibition on an exploratory **result** setting the bar
+   is unchanged.
 
 **C-16 — limb 8's six-item list is illustrative, not closed.** It enumerated Sharpe,
 expectancy, coverage, turnover, maxDD and `N_eff` — reproducing the closed-list defect
@@ -12593,6 +12663,414 @@ The digest is **one** anchor; that record is the other, and it is the more infor
 
 ---
 
+### 8.13 The Two-Track Semantic Cleanup — RULED
+
+A human + ChatGPT ruling, recorded here as **authority**. §8.11 split the programme, §8.12
+made the split hold against the governance documents, and this settles the **semantics** the
+two previous rounds left in tension: what may cross from Track A into Track B, what may
+never, and what genuinely has to be fixed before exploration can begin.
+
+**`TWO_TRACK_SEMANTICS_CLEANED_FOR_EXPLORATION_THEN_CONFIRMATION`** ·
+**`EXPLORATORY_DERIVED_NUISANCE_PARAMETERS_MAY_ENTER_TRACK_B_ONLY_AS_EXPLICITLY_REREGISTERED_FIXED_CANDIDATE_PARAMETERS`** ·
+**`TRACK_A_MAY_VARY_EXPLORATORY_STRATEGY_SURFACES_WITHIN_EXECUTION_SAFETY_BOUNDARIES`** ·
+**`TRACK_B_IS_CONFIRMATION_NOT_REDESIGN`**
+
+#### 8.13.0 The ruling, as recorded
+
+1. **Evidence and candidate-specification input are different objects**, and the contract
+   separates them by name rather than by the class of quantity.
+2. **Data-derived nuisance and acceptance parameters estimated in Track A — `c`, `ω`, the
+   cost nuisance terms, `W̄`/`L̄` — may enter Track B**, not as evidence, but as
+   **explicitly re-registered fixed candidate parameters**, under six conditions.
+3. **`ARM_3_DOES_NOT_REACH_A_TERM_IN_AN_ACCEPTANCE_TEST` was too wide and is narrowed.**
+   What may not cross is an acceptance **outcome**; a fixed acceptance **parameter** may,
+   re-registered.
+4. **Track A may vary every exploratory strategy surface** — calibration split, feature
+   list and parameters, the T-3 ratio derivation and hurdle inputs, model family and
+   hyperparameters, training scheme, `ev_min`, decision logic, cost assumptions, entry/exit
+   logic — **within execution-safety boundaries**.
+5. **What must be fixed before Track A starts is execution safety, not strategy choice.**
+   Two conditions added in earlier rounds on strategy-freeze grounds are **withdrawn**.
+6. **T-3 is classified**: its *measurement* is a Track A strategy surface; its *consequence*
+   binds gate 7.
+7. **Track B is where a fixed candidate is confirmed on unseen data**, never where one is
+   redesigned.
+
+**What this ruling does not do.** It authorises no read, no derivation, no training, no
+evaluation, no run; it selects no candidate; it freezes no candidate parameter; it invents
+no value or date; it reads no data or forward-epoch metadata; and it changes no file outside
+this document. **`NO_TRACK_A_EXECUTION_AUTHORISATION_IS_GRANTED_BY_THIS_CLEANUP`.**
+
+#### 8.13.1 The distinction the cleanup rests on
+
+The previous two rounds drew the line in two places and neither held. §8.11 drew it at
+**figure versus choice** — defeated, because a choice moves the boundary a figure is tested
+against. §8.12.13 C-15 then drew it at **strategy input versus acceptance-test term** —
+which held, but excluded `c` and `ω`, the two quantities the acceptance arithmetic cannot be
+computed without and which have no other source. A rule that makes the confirmation
+*uncomputable* is not conservative; it is just a different failure.
+
+**The line that holds is between what a quantity *says* and what it *is for*.**
+
+| | Carries into Track B? | Why |
+| --- | --- | --- |
+| **Acceptance outcome** — a Sharpe, an expectancy, a coverage or turnover figure, a maxDD, an `N_eff` **verdict**, a traded-event rate, a hit rate, a timeout share, a gross/net return, an R5 verdict, a pass/fail | **Never.** `NON_DECISION_BEARING_EXPLORATORY_ONLY`, absolute | These say **whether the strategy worked**. That is precisely the question Track B exists to answer on unseen data, and importing an answer to it is importing the conclusion |
+| **Candidate specification parameter** — a value the candidate cannot be *identified* without: `c`, `ω`, `W̄`/`L̄`, the cost table's cells, the calibration split, the feature list, `ev_min`, barrier geometry | **Yes, by explicit re-registration** (§8.13.2) | These say **which candidate this is**. Without them the thing to be confirmed is not determinate, and Track B would have to re-derive them — which is redesign |
+
+**The test, in one sentence.** *Does the quantity help identify the candidate, or does it
+report how the candidate performed?* The first may be re-registered and fixed; the second
+may not cross under any procedure.
+**`THE_LINE_IS_IDENTIFIES_THE_CANDIDATE_VERSUS_REPORTS_HOW_IT_PERFORMED`.**
+
+**And one thing that makes this coherent rather than convenient.** `c`'s and `ω`'s
+**methods are already ruled** — c-1…c-15 fix the coefficient, the entry set, the weighting,
+the series, the day attribution, the idle rule, the undefined-case disposition, the span,
+the generator and the training prefix; ω-1…ω-13 fix the clock, the overlap function, the
+`E[f]` order, the weighting, the pair-local aggregation and the zero/one-event semantics.
+So what Track A carries forward is **not a variant it chose**, but **the output of a frozen
+method applied to a frozen span**. That is materially different from carrying a Sharpe,
+which no ruling constrains at all.
+**`C_AND_OMEGA_METHODS_ARE_ALREADY_RULED_SO_WHAT_CROSSES_IS_A_FROZEN_METHODS_OUTPUT`.**
+
+**What this does *not* dissolve, stated plainly.** A researcher who varies the feature list
+in Track A varies `c` **indirectly**, and §8.10.3 records that direction as knowable: a
+narrower feature list gives more idiosyncratic per-pair PnL, a lower `c`, a higher `N_eff`
+and a `INSUFFICIENT_SAMPLE` verdict avoided — §4's **R-10** names exactly this as its
+sharpest case. **Re-registration discloses that; it does not undo it.**
+`ARM_3_DISCLOSES_THE_SELECTION_IT_DOES_NOT_UNDO_IT` stands unweakened, and §8.13.2's
+condition 7 is the only counterweight this cleanup adds.
+
+#### 8.13.2 The carry rule for data-derived fixed parameters
+
+**`EXPLORATORY_DERIVED_NUISANCE_PARAMETERS_MAY_ENTER_TRACK_B_ONLY_AS_EXPLICITLY_REREGISTERED_FIXED_CANDIDATE_PARAMETERS`.**
+
+A data-derived parameter estimated during Track A — `c`, `ω`, the cost nuisance terms,
+`W̄`/`L̄`, and any other quantity the candidate cannot be identified without — may be carried
+into the Track B contract **if and only if all** of the following hold:
+
+1. **Exploratory provenance is stated** — that the value was estimated during Track A, on
+   `EXPLORATORY_SEEN_DATA`, and is not evidence.
+2. **The exact value, the estimator and the source span are frozen at candidate
+   pre-registration** — the value itself, the ruled method that produced it cited by
+   section, and the span as explicit UTC dates.
+3. **It is not re-estimated on Track B confirmation data.** Ever.
+4. **It is not changed after seeing any Track B result.** A change is a **reselection**, and
+   the confirmation is void.
+5. **No exploratory performance figure travels with it** — §8.13.1's first row, and the
+   functional definition at §8.12.13 C-16 governs, not a closed list.
+6. **It is used only as a fixed parameter of the Track B acceptance rule**, never as an
+   input that the confirmation re-derives, tunes or checks.
+7. **⚠ The comparison set is carried with it.** Ruling **c-10** already requires
+   `c_design[config_id]` for **every** registered candidate configuration, with the complete
+   map frozen before any validation observation. Under the two-track model that obligation
+   is what makes condition 1's disclosure checkable: the pre-registration records **the
+   value for the selected candidate and the values for the candidates it was selected
+   against**, so "the candidate with the lowest `c` was chosen" is visible in the record
+   rather than inferable only by someone who watched. Where a comparison candidate's value
+   was never computed, that is recorded too.
+   **`THE_CARRIED_PARAMETER_TRAVELS_WITH_THE_COMPARISON_SET_C_10_ALREADY_REQUIRES`.**
+
+**This closes the deflator-span referral, and says which arm was taken.** §8.11.10(1) left
+two arms — re-measure `c` on the untouched confirmation span, or carry the DESIGN `c` with
+its seen status recorded — and §8.12.13 recorded that arm 1 is **forbidden** by the
+committed `APPROVED_SPEC` ("DESIGN span only … never validation/holdout"). Conditions 2 and
+3 **take arm 2 explicitly**: the DESIGN-span value is carried, its seen status is on the
+record, and the confirmation never re-measures it.
+**`NO_TRACK_B_CONFIRMATION_UNTIL_THE_DEFLATOR_SPAN_QUESTION_IS_RULED` is DISCHARGED** —
+`C_DESIGN_SPAN_BECOMES_EXPLORATORY_SEEN_AND_THE_DEFLATOR_SPAN_QUESTION_IS_REFERRED` is
+**HISTORICAL**, answered rather than withdrawn.
+**`THE_DEFLATOR_SPAN_ARM_IS_CARRY_THE_DESIGN_VALUE_WITH_ITS_SEEN_STATUS_RECORDED`.**
+
+**And the cost that arm carries is not hidden.** The deflator is estimated on data the
+researcher has seen, so §8.4.11's A-ω-5 standard applies and the pre-data defence is not
+available for it. What replaces that defence is conditions 1, 2, 3, 4 and 7 together: the
+value is fixed before the confirmation, never re-derived on it, and recorded alongside what
+it was chosen against. **That is weaker than a pre-data freeze and is recorded as weaker.**
+**`THE_CARRIED_DEFLATOR_HAS_NO_PRE_DATA_DEFENCE_AND_ITS_PROTECTION_IS_DISCLOSURE_PLUS_FIXITY`.**
+
+#### 8.13.3 `ARM_3_DOES_NOT_REACH_A_TERM_IN_AN_ACCEPTANCE_TEST` — narrowed
+
+**The token as written was too wide.** §8.12.13 C-15 put outside arm 3 "a quantity that is a
+term in an acceptance test — a threshold's comparand, an eligibility condition, a deflator,
+or a sample-floor input". `c` is a deflator and `ω` a sample-floor input, so the rule
+excluded the two quantities `N_eff` cannot be computed without — and neither has any source
+other than a design-span estimate. The rule was written to stop an exploratory **result**
+setting the bar; it also stopped the bar being **computable**.
+
+**Narrowed, and the replacement is the operative rule.**
+
+> **`ARM_3_DOES_NOT_REACH_AN_ACCEPTANCE_OUTCOME_BUT_MAY_CARRY_A_REREGISTERED_FIXED_ACCEPTANCE_PARAMETER`.**
+> An **acceptance outcome** — the value of a metric the acceptance test compares, a pass or
+> fail, a verdict, or any figure reporting how the strategy performed — may **never** cross,
+> by arm 3 or any other route. A **fixed acceptance parameter** — a value the test's
+> arithmetic consumes and which identifies the candidate rather than scoring it — **may**
+> cross, under §8.13.2's seven conditions and no other way.
+
+**Which side each of §9's five named quantities falls on**, since the previous round put all
+five outside arm 3 and that was part of the over-reach:
+
+| Quantity | Side | Route |
+| --- | --- | --- |
+| **`c`** (`mean_abs_pairwise_corr`) | fixed acceptance parameter | §8.13.2, conditions 1–7 |
+| **`ω`** (`mean_overlap_fraction`) | fixed acceptance parameter | §8.13.2 |
+| **`W̄` / `L̄`** | fixed candidate parameter | §8.13.2; the **estimator** stays pinned by audit **T-2** |
+| **The cost table / spread statistics** | fixed candidate parameter | §8.13.2; the **formula** stays frozen by prereg Ruling 5 (`median_spread + 0.3 + 0.5`) |
+| **The warm-up `W`** | fixed candidate parameter | §8.13.2; audit **T-1**'s sufficiency rule (`W ≥ longest feature lookback`) is unchanged |
+
+**⚠ And limb 9 is narrowed with it, on exactly one axis.** Limb 9 excluded anything prereg
+Rulings 1–13 or audit T-1…T-7 already froze, on the ground that a Track A-tuned variant
+needs a prereg amendment. That remains true of a ruling's **method, formula or rule** — the
+cost formula, T-2's estimator semantics, T-1's sufficiency condition, Ruling 6's barrier
+multipliers, Ruling 9's `ev_min` set — **none of which arm 3 may touch**. It is **not** true
+of the **numeric value a frozen method produces when applied to design data**, which is
+what those rulings always contemplated being filled in later: prereg §5 says the spread
+tables are "**frozen from design data**", T-2 says `W̄`/`L̄` are "**estimated on design data
+and frozen**", T-1 says `W` is "**frozen at implementation**". Filling a frozen method's
+value is not amending the method.
+**`LIMB_9_EXCLUDES_A_RULINGS_METHOD_NOT_THE_VALUE_THAT_METHOD_PRODUCES_ON_DESIGN_DATA`** ·
+**`CHANGING_A_FROZEN_METHOD_STILL_NEEDS_A_PREREG_AMENDMENT_P_7`.**
+
+#### 8.13.4 What Track A may vary
+
+**`TRACK_A_MAY_VARY_EXPLORATORY_STRATEGY_SURFACES_WITHIN_EXECUTION_SAFETY_BOUNDARIES`.**
+
+Every surface below is a **Track A strategy surface**. None is a precondition of Track A's
+start, and **no earlier freeze timing is a reason to make one so** — the whole point of the
+split is that a confirmation-grade freeze is required of a confirmation, not of an
+exploration.
+
+| Surface | Status for Track A | What still binds |
+| --- | --- | --- |
+| **Calibration inner split** — fraction, placement, purge at its own boundary | **free to vary** | prereg §8's isotonic **method**; the split is carved from the **training span only** |
+| **The feature list**, and which after-audit groups are admitted | **free to vary** | prereg §7's **prohibitions** — no M1-derived features, no consumed-window features, no holdout feature selection |
+| **Feature parameters, windows, warm-up conventions** | **free to vary** | causality; no look-ahead |
+| **The T-3 ratio derivation and the hurdle's inputs** | **free to vary and to measure** | §8.13.6 |
+| **Model family and hyperparameters** | **free to vary** | nothing, in Track A |
+| **Training scheme** — fold geometry, cadence, purge width | **free to vary** | the design-span boundary and §8.12.2's `DESIGN_END` trailing purge |
+| **`ev_min`, decision thresholds, decision logic** | **free to vary** | nothing, in Track A |
+| **Cost assumptions** | **free to vary** | the design span; a Track A cost figure is not the frozen table |
+| **Entry / exit logic, regime filters, concurrency** | **free to vary** | nothing, in Track A |
+
+**Two conditions imposed by earlier rounds are withdrawn.** §8.12.10's condition 4 required
+§8.9.6's blockers **1 (the calibration inner split)** and **2 (the feature list)** to be
+ruled *before Track A starts*, on the ground that they bind "upstream" of the `c`-map freeze.
+That reasoning was correct **under the single-track structure**, where the `c` map was built
+on the design span with no prior exploration. Under the two-track model the `c` map is built
+at **Track B candidate pre-registration** (§8.13.7 step 4), so blockers 1 and 2 bind **there**
+— which is where §8.13.2 conditions 2 and 7 place them. Making them Track A start conditions
+would freeze, before any exploration, the two surfaces exploration most needs to compare.
+**`BLOCKERS_1_AND_2_BIND_AT_TRACK_B_CANDIDATE_PREREGISTRATION_NOT_AT_TRACK_A_START`.**
+
+**What does not become free.** Everything at §8.13.5, plus every §3 boundary, plus the
+prohibitions inside the surfaces above — a surface being *variable* does not make its
+committed **prohibitions** negotiable. Track A may choose a feature list; it may not choose
+one containing M1-derived features.
+
+#### 8.13.5 What must be fixed before Track A starts — execution safety only
+
+**The principle: freeze the safe boundary of exploration, not the content of it.**
+**`WHAT_IS_FROZEN_BEFORE_TRACK_A_IS_THE_SAFETY_BOUNDARY_NOT_THE_STRATEGY_CHOICE`.**
+
+| # | Must be fixed / prepared before Track A | Why it is safety and not strategy |
+| --- | --- | --- |
+| 1 | **Historical read scope and the allowed data span** — design span only; dead window and forward epoch excluded | Reading the wrong span is irreversible and destroys the confirmation dataset |
+| 2 | **The scratch / output root** (Q8) and the write scope (§3.7) | An unrouted writer has already overwritten a committed artifact once in this repository |
+| 3 | **No broker, no live, no demo, no order submission** | §3.1; irreversible and externally visible |
+| 4 | **DB / network isolation**, proved rather than asserted | §3.2–§3.4; an unscoped test run has already written to a live DB once |
+| 5 | **The `EXPLORATORY_SEEN_DATA` ledger** — write-ahead, append-only, committed | It is what makes the one-way transition auditable |
+| 6 | **The breadth (`K`) record** | §8.11.10(2): it "cannot be reconstructed afterwards" |
+| 7 | **The derivation / read execution route** | `RESEARCH_SCRATCH_M15_DERIVATION_ROUTE_NOT_SELECTED` |
+| 8 | **Test safety** (FR-19) | This gate "inherits no working `.env` defence and no working network defence" |
+| 9 | **Governance / read authority propagation** | Until the playbook carries the split, a session reading it refuses correctly |
+| 10 | **Track A run identity** — enough to tell which run touched which span | The ledger is useless without it |
+
+**None of these is a strategy parameter, and no strategy parameter belongs on this list.**
+That separation is the cleanup's operative result: it is what turns the next stage into a
+**`MINIMUM_RESEARCH_EXECUTION_GATE`** rather than another statistical-freeze round.
+
+#### 8.13.6 T-3 — classified
+
+**Re-read at source.** The gate-4 audit's T-3 is: "Median eligible barrier/cost ratio < 3.0
+on design data → **gate-7 execution authorisation BLOCKED** pending a new human + ChatGPT
+ruling", and its **Binds** column reads "**gates 5→7**". prereg §6 requires that "the actual
+distribution of `barrier_distance / cost` on design data must be **derived and recorded**".
+§7's **R1** already lists that derivation as Track A work: "the distribution of
+`barrier_distance / cost` on eligible bars and its median (T-3)".
+
+**So T-3 has two halves and they land on different sides.**
+
+| Half | Classification |
+| --- | --- |
+| **The measurement** — deriving the ratio distribution on design data | **Track A exploratory strategy surface.** It is measured *in* Track A, on the span Track A reads, using inputs Track A varies |
+| **The consequence** — a median below 3.0 blocks gate-7 execution authorisation | **A gate-7 condition**, binding gates 5→7. It is not a Track A start condition and never was |
+
+**`T_3_MEASUREMENT_IS_A_TRACK_A_SURFACE_AND_T_3_CONSEQUENCE_BINDS_GATE_7`.**
+
+**Which resolves the question the previous round left open**, and resolves it the way the
+sources already pointed. `WHICH_DERIVATION_SUPPLIES_THE_T_3_RATIO_AND_WHETHER_A_TRACK_A_MEASUREMENT_CAN_FIRE_ITS_BLOCK_IS_UNRULED`
+was raised because §8.11.2(1) makes a Track A result uncitable in "any decision this
+programme records", which appeared to stop a Track A measurement from firing T-3's block.
+**It does not, and the asymmetry is deliberate**: §8.11.2(1) prevents a Track A result being
+used to *advance* the programme. **A finding that stops it is not advancement.** A Track A
+measurement showing a median ratio below 3.0 **fires T-3's block**; it does **not** discharge
+T-3's checkbox in playbook §6, which still requires the ratio computed from the §4 derivation
+artifact on the formal path.
+**`A_TRACK_A_FINDING_MAY_STOP_THE_PROGRAMME_AND_MAY_NEVER_ADVANCE_IT`** ·
+**`A_TRACK_A_RATIO_FIRES_T_3_BUT_DOES_NOT_DISCHARGE_PLAYBOOK_6_S_CHECKBOX`.**
+`WHICH_DERIVATION_SUPPLIES_THE_T_3_RATIO_…_IS_UNRULED` is **DISCHARGED**, and §8.12.10's
+condition 5 falls with it.
+
+#### 8.13.7 Track B's ordering, restated in full
+
+1. **Track A ends** — programme-wide, one-way, `K` closed and carried (§8.12.13 C-4).
+2. **The candidate is selected and declared** by human + ChatGPT, in R-7's verifiable form
+   (§8.12.5 step 2).
+3. **The candidate specification is re-pre-registered** — and this is the step this cleanup
+   makes complete. It fixes, with exploratory provenance stated: the **feature list** · the
+   **model family and hyperparameters** · the **calibration method and its inner split** ·
+   the **`c` and `ω` values**, with estimator and source span · the **cost semantics and
+   table values** · **`W̄`/`L̄`** · the **`ev_min` and decision rule** · the **selector** ·
+   the **warm-up `W`** · the **barrier geometry** · and the **comparison set** condition 7
+   requires.
+4. **Track B's decision-bearing surfaces are frozen** — the candidate's execution path is
+   traced against the **contract's requirement set**, the surfaces it reaches are extracted
+   from §8.10's catalog, and c-12's enumeration is applied to the `c` map. This is where
+   §8.9.6's blockers 1 and 2 bind.
+5. **`c` is measured and committed** — value, input set and generating code digest — **and
+   this happens before step 6, not after** (§8.12.13). Where `c` was already estimated in
+   Track A and carried under §8.13.2, step 5 **records** it rather than re-deriving it.
+6. **Only then may the unseen confirmation epoch be observed.**
+7. **Formal metrics and acceptance** are computed on confirmation data alone, passing
+   playbook §6, §7 and §8.
+
+**And the prohibition that makes the ordering mean something.** A parameter estimated on
+Track A historical data is **not re-measured after Track B begins**. Re-measurement on the
+confirmation span is forbidden by the committed `APPROVED_SPEC` for `c`, and by condition 3
+for every carried parameter; re-measurement on the design span after a Track B result is
+seen is a **reselection** under condition 4.
+**`A_CARRIED_PARAMETER_IS_RECORDED_AT_STEP_5_NEVER_RE_DERIVED`.**
+
+#### 8.13.8 Track B is confirmation, not redesign
+
+**`TRACK_B_IS_CONFIRMATION_NOT_REDESIGN`.** Track B is not a place where a candidate is
+improved, tuned, repaired or re-specified. It is where a **candidate already fixed in every
+respect** meets data nobody has looked at.
+
+**Forbidden after the freeze, on the basis of anything seen in confirmation data:** changing
+the feature list · changing the model or its hyperparameters · changing the calibration
+method or its split · re-estimating `c` or `ω` · changing the cost model, table or cell ·
+changing `ev_min`, a threshold, or the decision rule · changing the selector or its tie rule
+· changing the barrier geometry, the horizon or the eligibility hurdle · changing the
+warm-up · changing the span, the purge or the role boundaries.
+
+**Any of these is a reselection, and a reselection voids the confirmation** — it does not
+produce a corrected one. The remedy for a candidate that needed changing is a **new
+candidate**, which needs its own declaration, its own re-pre-registration, its own freeze,
+and — because the confirmation span is single-use and a completed Track B run marks it seen
+— **a confirmation dataset that no longer exists** without a new epoch adoption.
+**`A_POST_FREEZE_CHANGE_VOIDS_THE_CONFIRMATION_AND_DOES_NOT_YIELD_A_CORRECTED_ONE`.**
+
+**One consequence worth stating where a reader will meet it.** Because the reserved span is
+single-use, **Track B is effectively one shot per accrued forward epoch**. That is the
+committed one-shot discipline (playbook §6: "the run is **exactly once**; no
+rerun-into-search"), not a new restriction — but under the two-track model it is the thing
+that makes Track A's freedom affordable, and it should be visible before Track A starts
+rather than discovered after.
+
+#### 8.13.9 The inventory's role — unchanged
+
+**`FORMAL_CONFIRMATION_SURFACE_CATALOG`** stands. Track A does not freeze all 149 surfaces;
+at candidate declaration, **two** subsets are extracted and frozen:
+
+1. the surfaces the **candidate's execution path** touches, judged against the contract's
+   requirement set (§8.12.13 C-3: an omitted mandatory control is a **reached** surface and
+   a defect, not an absent one), and
+2. the surfaces the **formal metric and acceptance computation** touches — which is where
+   `c`, `ω`, `N_eff`, the Sharpe conventions, coverage, turnover and maxDD enter even when
+   the strategy path does not reach them.
+
+The second subset was implicit before and is named here, because a candidate can touch no
+`c`-map machinery at all while its acceptance verdict depends entirely on it.
+**`TWO_SUBSETS_ARE_EXTRACTED_THE_EXECUTION_PATHS_AND_THE_ACCEPTANCE_COMPUTATIONS`.**
+
+**And the catalog's incompleteness is unchanged.**
+`STATISTICAL_CONTRACT_SURFACE_INVENTORY_INCOMPLETE_…` and
+`CATALOG_INCOMPLETENESS_MEANS_ABSENCE_FROM_IT_IS_NOT_EVIDENCE_OF_ABSENCE` both stand: an
+extraction may never treat "not in the catalog" as "not a surface".
+
+#### 8.13.10 What this cleanup adds to governance propagation
+
+**P-1 … P-11 are maintained** (§8.12.9, §8.12.13). This round identifies three further
+places where an old freeze timing contradicts Track A's freedom. **No file outside this
+document is changed.**
+
+| # | File | The contradiction this cleanup exposes |
+| --- | --- | --- |
+| **P-12** | prereg **§7** and **§8** | Both fix a surface "at the design audit" / "at implementation" — the feature list, the calibration split — with no notion that an exploratory stage precedes them. The propagation must record that those freezes bind at **Track B candidate pre-registration**, and that Track A varies them |
+| **P-13** | gate-4 audit **T-1, T-2, T-6** | Each defers a value to "implementation" or "the design audit" with the same single-track assumption. T-2's estimator and T-1's sufficiency rule stay frozen; their **values** are Track A-estimated and carried under §8.13.2 — which the audit's own text does not contemplate and which a reader of the audit alone would refuse |
+| **P-14** | playbook **§3** gate order and **§6** | §6's ratio-rule checkbox must say which derivation supplies it (§8.13.6), and §3's ladder must place Track A, the Minimum Research Execution Gate and Track B so that the "gates 5→7" scope of T-3 is unambiguous |
+
+**`GOVERNANCE_PROPAGATION_IMPLEMENTATION_PENDING`** now covers **P-1 … P-14**, and
+`GOVERNANCE_PROPAGATION_COMPLETE` requires every one of them on a named master SHA.
+
+#### 8.13.11 The Execution Gate — the remaining items
+
+**`MINIMUM_RESEARCH_EXECUTION_GATE`** is the next stage, and after this cleanup its list
+contains **no strategy-exploration parameter**:
+
+1. **Governance propagation** P-1 … P-14, on a named master SHA.
+2. **Q8** — the exploratory scratch / write root and its writer.
+3. **FR-19** — test safety.
+4. **The historical read route** — which files, which reader, read-only, and how the span
+   guards are called on every path.
+5. **The derivation route** — `RESEARCH_SCRATCH_M15_DERIVATION_ROUTE_NOT_SELECTED`, decided
+   **in a diff**.
+6. **Network / DB / broker isolation**, proved.
+7. **The output root**, and a no-production-side-effect demonstration.
+8. **The `EXPLORATORY_SEEN_DATA` ledger** — write-ahead, append-only, committed, with the
+   §3.7 exception named.
+9. **The breadth (`K`) record** — instrument and unit.
+10. **Track A calendar / run identity** — the reduced, research-grade form
+    (`TRACK_A_CALENDAR_IDENTITY_REQUIREMENT_IS_AN_EXECUTION_GATE_QUESTION`).
+11. **A Track A containment audit template** — playbook §4's items inverted for a stage that
+    must have a read route (`P_11_TRACK_A_CONTAINMENT_AUDIT_TEMPLATE_DOES_NOT_EXIST_AND_IS_NOT_CREATED_HERE`).
+12. **Minimal research execution code**, and its own R1 approval — **R1 only**; R3 and R4
+    remain separate Red gates.
+
+**Two items are removed from the blocking set by this cleanup**, and the removal is the
+point of it: §8.12.10's **condition 4** (blockers 1 and 2 ruled before Track A) is withdrawn
+to §8.13.7 step 4, and **condition 5** (the T-3 attribution) is **discharged** at §8.13.6.
+**Three conditions remain** — propagation, the gate, and the derivation route — and they
+gate **every Track A activity**, not only the first read.
+**`TRACK_A_IS_BLOCKED_ON_THREE_EXECUTION_SAFETY_CONDITIONS_AND_NO_STRATEGY_FREEZE`.**
+
+#### 8.13.12 Maintained, and still not authorised
+
+**Maintained:** `EXACT_WINDOW_NOT_READY_FOR_DECLARATION_FORWARD_EPOCH_DOES_NOT_EXIST` ·
+`SAMPLE_FLOOR_REACHABILITY_NOT_DETERMINABLE_WITHOUT_MEASURED_INPUTS` ·
+`PRODUCTION_READINESS_NOT_CLAIMED` · `NO_EXECUTION_PERFORMED` ·
+`M15_MINIMUM_RESEARCH_GATE_PENDING_HUMAN_CHATGPT_RULING` ·
+`M15_MINIMUM_RESEARCH_STATISTICAL_CONTRACT_NOT_CLOSED` ·
+`M15_RESEARCH_MODEL_SPLIT_EXPLORATORY_AND_FORMAL_CONFIRMATION` ·
+`GOVERNANCE_CONSISTENCY_AMENDMENT_RULED` ·
+`TRACK_A_EXECUTION_REQUIRES_GOVERNANCE_PROPAGATION_COMPLETE` ·
+`SEEN_IS_TERMINAL_AND_NO_RULING_CAN_RESTORE_UNSEEN_STATUS` ·
+`OBSERVATION_ORDER_IS_NOT_PROVABLE_FROM_THE_RECORD_AND_THIS_IS_A_LIMIT_NOT_A_CONTROL` ·
+`ARM_3_IS_A_DELIBERATE_EXCEPTION_TO_R_10_NOT_AN_EXTENSION_OF_ITS_LOGIC` ·
+`THE_NINE_LIMBS_ARE_NECESSARY_NOT_SUFFICIENT` · Q7's `N = 1` · §4's R-1…R-10 ·
+§3.1–§3.7 in full · every §8.11.12 and §8.12.13 limb not expressly narrowed here.
+
+**Still prohibited in both tracks without a separate named gate:** broker execution · live
+trading · demo trading · order submission · production deployment · any formal holdout,
+Gate-3a-pass or production-readiness claim.
+
+**In producing this cleanup: no data was read, no forward-epoch metadata was read, no
+derivation was run, no training or evaluation occurred, no candidate was selected, no
+parameter was frozen, no value or date was invented, and no file outside this document was
+changed.**
+
+---
+
 ## 9. Output classification
 
 Everything produced under this gate is
@@ -12647,8 +13125,13 @@ the committed `APPROVED_SPEC` — so **limb 9 puts every one of them outside arm
 Track A-tuned variant of any needs a **prereg amendment** (P-7), not this route. Four of
 them are also **terms in prereg §9's acceptance arithmetic** — `cost` sets the eligibility
 hurdle and the `gross ≥ 1.5 × cost` kill gate; `c` sits in `rho_x`, the denominator of
-`N_eff` against a frozen floor — and **`ARM_3_DOES_NOT_REACH_A_TERM_IN_AN_ACCEPTANCE_TEST`**
-excludes them a second time, independently of whether any ruling names them.
+`N_eff` against a frozen floor. ⚠ *A first drafting excluded them a second time under
+`ARM_3_DOES_NOT_REACH_A_TERM_IN_AN_ACCEPTANCE_TEST`; that token is **narrowed at §8.13.3**,
+because it also made the acceptance arithmetic uncomputable.* Under
+**`ARM_3_DOES_NOT_REACH_AN_ACCEPTANCE_OUTCOME_BUT_MAY_CARRY_A_REREGISTERED_FIXED_ACCEPTANCE_PARAMETER`**
+each of the five is a **fixed candidate parameter**, and each may be carried into Track B
+under §8.13.2's seven conditions — as a **value produced by an already-frozen method**, never
+as a variant of the method itself, which still needs a prereg amendment (P-7).
 
 **What arm 3 does reach** is a quantity or specification the **strategy** consumes and the
 **test** does not, and only under all nine limbs, the eight steps of §8.12.5, §4's R-2
@@ -13965,7 +14448,10 @@ source by the lead:
    `rho_x` against a frozen floor. limb 9 already excluded them (Rulings 5–9, T-1, T-2,
    the `APPROVED_SPEC`), and §9's sentence contradicted its own limb. Corrected twice
    over: by limb 9, and by the general rule
-   **`ARM_3_DOES_NOT_REACH_A_TERM_IN_AN_ACCEPTANCE_TEST`**.
+   **`ARM_3_DOES_NOT_REACH_A_TERM_IN_AN_ACCEPTANCE_TEST`** — *the general rule is
+   subsequently **narrowed at §8.13.3**, which found it excluded `c` and `ω` and so made
+   the acceptance arithmetic uncomputable; limb 9's exclusion of a ruling's **method** is
+   unchanged, and only the **value a frozen method produces** may be carried*.
 3. **R-7's ancestry test cannot order a commit against an observation** (adversarial role,
    B-1). It orders **commit against commit**; an observation leaves no commit. So limb 6
    is verifiable and **limb 7 is not** — and limb 7 is what the amendment's headline token
@@ -14055,6 +14541,12 @@ state, unchanged, because **Q8** remains unruled — **Q1 is amended and partly 
 at §8.11.6 (`Q1_RULED_HISTORICAL_DATA_READ_PERMITTED_FOR_NON_DECISION_BEARING_EXPLORATORY_RESEARCH_ONLY`,
 Track A only; the §4 derivation artifact still gates Track B), and Q3's authorisation limb
 is folded into the Minimum Research Execution Gate. Alongside it, and **not** second completion states:
+**`TWO_TRACK_SEMANTICS_CLEANED_FOR_EXPLORATION_THEN_CONFIRMATION`** ·
+`EXPLORATORY_DERIVED_NUISANCE_PARAMETERS_MAY_ENTER_TRACK_B_ONLY_AS_EXPLICITLY_REREGISTERED_FIXED_CANDIDATE_PARAMETERS` ·
+`TRACK_A_MAY_VARY_EXPLORATORY_STRATEGY_SURFACES_WITHIN_EXECUTION_SAFETY_BOUNDARIES` ·
+`TRACK_B_IS_CONFIRMATION_NOT_REDESIGN` ·
+`TRACK_A_IS_BLOCKED_ON_THREE_EXECUTION_SAFETY_CONDITIONS_AND_NO_STRATEGY_FREEZE` (§8.13 —
+the semantic cleanup; **no Track A execution authorisation is granted by it**);
 **`GOVERNANCE_CONSISTENCY_AMENDMENT_RULED`** ·
 **`TRACK_A_EXECUTION_REQUIRES_GOVERNANCE_PROPAGATION_COMPLETE`** ·
 `CONTRACT_PERMISSION_IS_NOT_EXECUTION_AUTHORISATION` ·
