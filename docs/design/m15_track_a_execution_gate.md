@@ -334,10 +334,11 @@ observation is recorded as an input; taking it is a human + ChatGPT act.
 ## 11. The containment audit and what it actually checks
 
 `scripts/m15_track_a/containment.py` is the executable form of playbook §4's
-Track A variant. It runs **twelve** checks, in two groups.
+Track A variant. It runs **twelve** checks — all twelve are named below, in two
+groups.
 
-**Behavioural probes — these carry the verdict.** Each arms the guards and then
-attempts the forbidden thing, requiring a refusal:
+**Six behavioural probes — these carry the verdict.** Each arms the guards and
+then actually attempts the forbidden thing, requiring a refusal:
 
 | Probe | Attempts |
 | --- | --- |
@@ -347,25 +348,38 @@ attempts the forbidden thing, requiring a refusal:
 | `subprocess` | launching a process |
 | `database` | a remote SQLAlchemy engine |
 | `read_route_gated` | the declared route with no grant |
-| `read_body_absent` | drives the route's own AST — this, not a literal, is what sets `no_market_data_read` |
 
 Every probe is chosen so a *failure of the guard* is still harmless: the read
 probe names a file that does not exist, so an absent hook yields
 `FileNotFoundError`, never a real read.
 
-**Structural checks — advisory, and labelled so.** `single_read_route`,
-`authorization_not_ambient`, `write_root`, `derivation_route`. The module roster
-is **enumerated from the directory**, not hand-written, so a new module is
-scanned by existing.
+**Six source and state checks — advisory, and labelled so.**
+`broker_live_demo` (every named forbidden operation refuses), `read_body_absent`,
+`single_read_route`, `authorization_not_ambient`, `write_root`,
+`derivation_route`. The module roster is **enumerated from the directory**, not
+hand-written, so a new module is scanned by existing.
 
-**What an earlier drafting claimed and did not do.** The first version of this
+`read_body_absent` reads the route's own AST and requires two things: no
+`return` anywhere in `read_historical`, and its **last** statement is
+`raise NotImplementedError(...)`. It is **not** a behavioural probe, and an
+earlier drafting's docstring claimed it "drives the route to the end of its
+gate sequence", which it never did. Consequently `no_market_data_read` is
+**not** licensed by it alone: the report sets that field only when this check
+*and* the behavioural `market_data_read_refused` probe both pass. Either alone
+has been defeated in review — the source check by a two-line
+`if False: raise NotImplementedError` decoy above a live body, and a
+behavioural probe by a body that is simply never called.
+
+**What earlier draftings claimed and did not do.** The first version of this
 section listed eight checks including "no forbidden import reaches the package"
 and "no route reaches a forward-epoch span". Neither was in the audit: the
 import pin lives in `tests/m15_gate3a/test_wp5_reader_freedom.py`, and the
 forward-epoch limb lives in `read_route.assert_span_admissible`. That version
 also answered "is the route gated?" by scanning source text for the gates'
-names — which a **docstring** listing those names satisfied. Both are corrected;
-the false description is recorded rather than quietly replaced.
+names — which a **docstring** listing those names satisfied. The second version
+said "twelve checks" and then named eleven, omitting `broker_live_demo`, and
+put `read_body_absent` in the probe table. All are corrected; the false
+descriptions are recorded rather than quietly replaced.
 
 Final statuses:
 `TRACK_A_EXECUTION_CONTAINMENT_VERIFIED_NO_UNGATED_ROUTE` /
@@ -414,9 +428,10 @@ does not complete them — PR #451's does.
 Three separated roles were dispatched against head `f0a5bc9`, each given the
 source, the diff and the contract and **not** the other roles' conclusions:
 execution containment / test safety, governance and authorisation sequencing,
-and adversarial bypass. All three returned. Their findings, the fixes applied
-and the re-verification are recorded in the pull request body; the head reported
-there is the post-fix head, not `f0a5bc9`.
+and adversarial bypass. All three returned. A **fourth, fresh** audit context
+then re-verified the fixes against head `474e273`. Their findings and the fixes
+are recorded in the pull request body; the head reported there is the final
+post-fix head, not `f0a5bc9` and not `474e273`.
 
 **An earlier drafting of this section asserted, in the past tense, that the
 roles had run and that a post-fix re-verification had been recorded — at a head
@@ -447,6 +462,45 @@ five of the same defects:
 - And the governance half asserted things the source did not support — §11's
   check list, §13 above, and a turnover ruling whose central defence §8.10.3 had
   already foreclosed for those exact two surfaces (§10.4).
+
+### 13.1 The re-verification, and what the *fixes* broke
+
+The fourth context was asked specifically to hunt for defects created by the
+round-one fixes, because four of the last five rounds in this programme
+produced one. It found **four**, all in the audit-hook rewrite, and all of them
+the same shape: *moving to a stronger mechanism does not close a class of hole,
+because the new mechanism has its own surface.*
+
+| What the rewrite did | What it missed |
+| --- | --- |
+| handled the `open` audit event | **every other filesystem event** — `os.rename`, `os.remove`, `os.mkdir`, `os.rmdir`, `os.truncate`, `os.link`, `os.symlink`, `os.chmod`. `os.rename` of a candle file out of the repository, then an ordinary read, was a **complete escape** |
+| read the `open` event's *mode* | for `os.open` CPython passes `mode=None` and puts the flags in the **third** argument, so `Path.touch`, `tempfile.mkstemp` and an `O_TRUNC` on an append-only ledger were all classified as reads |
+| matched `artifacts/oanda_archive` by prefix | the directory that exists is `artifacts/oanda_archive_2026-05-31`, and `startswith("artifacts/oanda_archive/")` is False — the **whole committed 10-year archive** was readable. Case-flipped and `\\?\` spellings of `data/` were open too |
+| imported `scratch` lazily, inside the hook | the import's own `open` calls re-entered the hook against a half-initialised module, so `install_all()` **crashed** in any process that had not already imported `scratch`. Every test file imports it at module top, so the suite never saw it — only a real caller did |
+
+It also found that `tuple.__len__` had been left unpinned beside the pinned
+`tuple.__getitem__`; that the host was read through `str(...)`, which a
+subclass overrides; that the guard's own root-resolution failure meant
+*permitted*; that a non-`IsolationError` escaping the hook broke unrelated I/O;
+that the gated read window was process-wide rather than per-thread; that
+deleting a claim file silently reset `N = 1` while the ledger still recorded
+the spend; and that the "atomic on POSIX and Windows" claim for `O_APPEND` was
+false — the Windows CRT emulates it as seek-then-write, and four processes
+still lost 5–13% of their lines.
+
+All are fixed and each carries a test that fails at `474e273`. The append
+ledger is now taken under an explicit `O_CREAT | O_EXCL` lock, measured at
+120/120 lines over six four-process rounds; the earlier scheme measured
+105–113. Two further Windows facts were found while fixing it and are recorded
+in the source: a lock whose delete is still pending reports
+`ERROR_ACCESS_DENIED`, not `ERROR_FILE_EXISTS`, so the retry has to catch
+`PermissionError` too; and a path check on a file another process is unlinking
+resolves through `\$Extend\$Deleted` and fails, so the lock path is derived
+from the already-checked ledger path rather than re-checked.
+
+**The suite was green at every one of these heads.** That is now five rounds in
+this programme at which a green suite predicted conformance and an independent
+context found blockers.
 
 ## 14. Non-authorisation statement
 

@@ -29,7 +29,9 @@ Two things this module adds that the gate-3a guards do not cover
 
 from __future__ import annotations
 
+import contextlib
 import os
+import time
 from pathlib import Path
 from typing import Any, Final
 
@@ -121,23 +123,71 @@ APPEND_ONLY_FILENAMES: Final[frozenset[str]] = frozenset(
 )
 
 
+#: How long :func:`append_line` waits for the ledger lock before refusing.
+APPEND_LOCK_TIMEOUT_SECONDS: Final[float] = 30.0
+_APPEND_LOCK_POLL_SECONDS: Final[float] = 0.002
+
+
 def append_line(path: Path, line: str) -> None:
-    """Append one line to a ledger, as a single atomic write.
+    """Append one line to a ledger, under a cross-process lock.
+
+    Two failed attempts are recorded here because the third is only
+    understandable against them.
 
     ``open(path, "a")`` goes through a buffered text wrapper: under concurrent
-    writers, lines interleave and some are lost outright — measured at 109 of
-    120 with four processes. A single ``os.write`` to a descriptor opened
-    ``O_APPEND`` is atomic for a line-sized payload on both POSIX and Windows,
-    which is what an append-only governance record needs.
+    writers, lines interleave and whole records are lost — measured at 109 of
+    120 with four processes. Replacing it with a single ``os.write`` to a
+    descriptor opened ``O_APPEND`` was **not** the fix, though the docstring
+    then claimed atomicity "on both POSIX and Windows": the Windows CRT
+    emulates ``O_APPEND`` as seek-then-write, which is not atomic across
+    processes, and the same probe then measured 105–113 of 120.
+
+    So the lock is explicit — an ``O_CREAT | O_EXCL`` lock file, the same
+    primitive :mod:`~scripts.m15_track_a.oos_budget` uses successfully for the
+    ``N = 1`` claim, because it is the only cross-process mutual exclusion
+    available here without a lock service. A writer that cannot take the lock
+    within :data:`APPEND_LOCK_TIMEOUT_SECONDS` **refuses**; it does not write
+    unlocked.
     """
-    assert_writable(path)
-    path.parent.mkdir(parents=True, exist_ok=True)
+    # The lock is derived from the **resolved** ledger path, and is not
+    # re-checked: it lives in the directory that was just cleared, and a path
+    # check on a file that another process is unlinking right now resolves
+    # through Windows' `\$Extend\$Deleted` and fails with access denied. The
+    # check belongs on the path a caller supplied, not on one this function
+    # derives from it.
+    resolved = assert_writable(path)
+    lock = resolved.with_name(resolved.name + ".lock")
+    resolved.parent.mkdir(parents=True, exist_ok=True)
     payload = (line + "\n").encode("utf-8")
-    fd = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_APPEND, 0o644)
+
+    deadline = time.monotonic() + APPEND_LOCK_TIMEOUT_SECONDS
+    while True:
+        try:
+            os.close(os.open(lock, os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o644))
+            break
+        # ``FileExistsError`` is another writer holding the lock. ``PermissionError``
+        # is the same thing one moment later: Windows reports ERROR_ACCESS_DENIED,
+        # not ERROR_FILE_EXISTS, for a name whose delete is still pending — and
+        # catching only the first lost 27 of 120 lines in one measured round,
+        # because the writer crashed instead of retrying.
+        except (FileExistsError, PermissionError):
+            if time.monotonic() >= deadline:
+                raise ScratchRootError(
+                    f"could not take the append lock for {path.name} within "
+                    f"{APPEND_LOCK_TIMEOUT_SECONDS}s. Refusing rather than appending "
+                    "unlocked — an unlocked append loses whole records."
+                ) from None
+            time.sleep(_APPEND_LOCK_POLL_SECONDS)
+
     try:
-        os.write(fd, payload)
+        fd = os.open(resolved, os.O_WRONLY | os.O_CREAT | os.O_APPEND, 0o644)
+        try:
+            os.write(fd, payload)
+        finally:
+            os.close(fd)
     finally:
-        os.close(fd)
+        with contextlib.suppress(OSError):  # the lock is ours and inside the root
+            os.unlink(lock)
 
 
 def assert_writable(path: Any) -> Path:
@@ -197,6 +247,7 @@ def is_writable(path: Any) -> bool:
 
 __all__ = [
     "FORBIDDEN_WRITE_PREFIXES",
+    "APPEND_LOCK_TIMEOUT_SECONDS",
     "APPEND_ONLY_FILENAMES",
     "RESERVED_ARTIFACT_FILENAMES",
     "SCRATCH_ROOT_RELATIVE",

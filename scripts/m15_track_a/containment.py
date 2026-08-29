@@ -85,7 +85,16 @@ _PERMITTED_FILE_OPENERS: Final[dict[str, str]] = {
 }
 
 #: Call names that open something.  Explicitly **not** a completeness claim —
-#: see the module docstring. The behavioural probes are what carry the verdict.
+#: see the module docstring.  A re-verification defeated this set with
+#: ``pandas.read_feather`` and with an alias, so the alias *binding* is now
+#: caught too; the set itself still cannot be complete, and the behavioural
+#: probes are what carry the verdict.
+#:
+#: ``connect`` is deliberately **not** here. It is a database verb, not a file
+#: one, and including it made the sweep flag ``real_connect =
+#: socket.socket.connect`` in the isolation guard itself — the same
+#: flags-its-own-source shape the substring version had. Database access is the
+#: audit hook's ``sqlite3.connect`` limb and the engine guard, not this sweep's.
 _READER_NAMES: Final[frozenset[str]] = frozenset(
     {
         "open",
@@ -109,7 +118,6 @@ _READER_NAMES: Final[frozenset[str]] = frozenset(
         "copyfile",
         "copy2",
         "FileIO",
-        "connect",
         "ZipFile",
     }
 )
@@ -315,33 +323,69 @@ def _check_read_route_refuses_without_a_grant() -> CheckResult:
     return CheckResult("read_route_gated", False, "an ungranted read was not refused")
 
 
-def _check_read_body_is_absent() -> CheckResult:
-    """With every gate satisfied, the route still reads nothing.
+def _terminal_raise_is_not_implemented(body: list[ast.stmt]) -> bool:
+    """Whether the **last** statement of a body is ``raise NotImplementedError(...)``.
 
-    This is what licenses ``no_market_data_read`` in the report: it is measured
-    by driving the route to the end of its gate sequence, not asserted.
+    Following the last statement, rather than asking whether such a raise exists
+    *anywhere*, is the point. The first drafting asked the weaker question and a
+    two-line decoy defeated it:
+
+        if False:
+            raise NotImplementedError("...")
+        return open(path, "rb").read()
+
+    A live body with a dead raise in it satisfied "there is a raise"; it does
+    not satisfy "the function ends in one".
     """
-    source = (Path(read_route.__file__)).read_text(encoding="utf-8")
-    tree = ast.parse(source)
+    if not body:
+        return False
+    last = body[-1]
+    if isinstance(last, ast.Raise):
+        exc = last.exc
+        func = getattr(exc, "func", None) if isinstance(exc, ast.Call) else exc
+        return getattr(func, "id", None) == "NotImplementedError"
+    if isinstance(last, ast.With):
+        return _terminal_raise_is_not_implemented(last.body)
+    if isinstance(last, ast.Try):
+        return _terminal_raise_is_not_implemented(last.body)
+    return False
+
+
+def _check_read_body_is_absent() -> CheckResult:
+    """The route's own body, at source: no return, and it ends in a raise.
+
+    **This is a source-level statement about this head, not a behavioural
+    probe** — and an earlier drafting's docstring claimed it was "measured by
+    driving the route to the end of its gate sequence", which it never did.
+    Driving the route for real would need a grant and a ledger declaration, and
+    would have this audit write to a governance record; so the honest scope is
+    stated instead of overclaimed, and ``no_market_data_read`` is no longer
+    licensed by this check alone (see :func:`audit`).
+
+    Two conditions, both necessary: the function contains **no ``return``**, and
+    its final statement **is** ``raise NotImplementedError(...)``.
+    """
+    tree = ast.parse(Path(read_route.__file__).read_text(encoding="utf-8"))
     for node in ast.walk(tree):
         if isinstance(node, ast.FunctionDef) and node.name == "read_historical":
-            raises = [n for n in ast.walk(node) if isinstance(n, ast.Raise)]
-            names = {
-                getattr(getattr(n.exc, "func", None), "id", None)
-                for n in raises
-                if isinstance(n.exc, ast.Call)
-            }
-            if "NotImplementedError" in names:
+            if any(isinstance(child, ast.Return) for child in ast.walk(node)):
+                return CheckResult(  # pragma: no cover - true once a body is supplied
+                    "read_body_absent",
+                    False,
+                    "read_historical returns a value — it has a body, and this audit no "
+                    "longer establishes that nothing is read",
+                )
+            if _terminal_raise_is_not_implemented(node.body):
                 return CheckResult(
                     "read_body_absent",
                     True,
-                    "read_historical ends in NotImplementedError; no read is implemented",
+                    "read_historical returns nothing and its last statement is "
+                    "raise NotImplementedError; no read is implemented at this head",
                 )
-            return CheckResult(  # pragma: no cover - true once a body is supplied
+            return CheckResult(  # pragma: no cover
                 "read_body_absent",
                 False,
-                "read_historical has a body — this audit no longer establishes that nothing "
-                "is read, and the report's no_market_data_read field must not be trusted",
+                "read_historical does not end in raise NotImplementedError",
             )
     return CheckResult("read_body_absent", False, "read_historical not found")  # pragma: no cover
 
@@ -379,6 +423,15 @@ def _check_single_read_route() -> CheckResult:
             )
             if name in _READER_NAMES:
                 findings.append(f"{module_name}:{node.lineno} {name}()")
+        for node in ast.walk(tree):
+            # ``_reader = builtins.open`` then ``_reader(path)`` — the call site
+            # carries a name the sweep has never heard of, so the *binding* is
+            # what has to be caught. Still not completeness; see the docstring.
+            if isinstance(node, ast.Assign):
+                value = node.value
+                bound = getattr(value, "id", None) or getattr(value, "attr", None)
+                if bound in _READER_NAMES:
+                    findings.append(f"{module_name}:{node.lineno} aliases {bound}")
     if findings:
         return CheckResult("single_read_route", False, f"file-access calls outside: {findings}")
     return CheckResult(
@@ -482,19 +535,20 @@ def audit() -> dict[str, Any]:
         if installed_by_audit:
             isolation.uninstall_all()
     passed = all(result.passed for result in results)
-    body_absent = next(
-        (r.passed for r in results if r.name == "read_body_absent"),
-        False,
-    )
+    by_name = {result.name: result.passed for result in results}
+    # Two conditions, deliberately: the route has no body at this head **and**
+    # the process actually refused a market-data read. Either alone has been
+    # defeated in review — the source check by a dead-code decoy, and a
+    # behavioural probe cannot see a body that was never called.
+    no_read = bool(by_name.get("read_body_absent") and by_name.get("market_data_read_refused"))
     return {
         "status": STATUS_CONTAINED if passed else STATUS_BREACHED,
         "checks": [result.as_record() for result in results],
         "guards_installed_by_audit": installed_by_audit,
         "modules_scanned": list(package_modules()),
-        # Measured by _check_read_body_is_absent, not asserted: the field is a
-        # statement about this head's code, and it goes False the moment a read
-        # body is supplied.
-        "no_market_data_read": bool(body_absent),
+        # Derived, not asserted: True only when the route has no body at this
+        # head AND the process refused a market-data read during this audit.
+        "no_market_data_read": no_read,
         "scope": (
             "execution containment only — not a hostile-input audit, not mutation "
             "resistance, and not a substitute for the gate-6 source-contamination audit"

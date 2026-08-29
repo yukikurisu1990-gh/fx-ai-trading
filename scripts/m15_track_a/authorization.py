@@ -253,6 +253,11 @@ def grant_covers(
         return False
     if type(pairs) is not tuple:
         raise AuthorizationMalformedError("requested pairs must be a tuple")
+    if not pairs:
+        # ``all(...)`` over an empty tuple is True, so an empty request was
+        # "covered" by every grant. A request for no pairs is malformed, not
+        # universally authorised.
+        raise AuthorizationMalformedError("a request must name at least one pair")
     granted = {_require_text(pair, "grant pair") for pair in grant.pairs}
     return all(_require_text(pair, "requested pair") in granted for pair in pairs)
 
@@ -309,7 +314,16 @@ def require_authorization(
     if operation not in KNOWN_OPERATIONS:
         raise AuthorizationError(f"{TOKEN}: unknown operation {operation!r} (fail closed)")
     if identity is not None:
-        code_sha = getattr(identity, "code_sha", None)
+        from scripts.m15_track_a.identity import RunIdentity
+
+        if type(identity) is not RunIdentity:
+            # Duck-typing the head check in a module that pins ``type(x) is str``
+            # everywhere else would let any object with a matching attribute
+            # satisfy it.
+            raise AuthorizationError(
+                f"{TOKEN}: identity must be exactly a RunIdentity, not a {type(identity).__name__}."
+            )
+        code_sha = identity.code_sha
         if code_sha != grant.approved_head_sha:
             raise AuthorizationError(
                 f"{TOKEN}: the grant was approved against head {grant.approved_head_sha!r} "

@@ -119,15 +119,31 @@ def claim_path(index: int) -> Path:
 
 
 def observations_spent() -> int:
-    """How many decision-bearing slice observations have been claimed.
+    """How many decision-bearing slice observations have been spent.
 
-    Counted from the **claim files**, not from the ledger: a claim is what the
-    OS arbitrated, and the ledger line is written afterwards.
+    The **greater** of two counts: the claim files the OS arbitrated, and the
+    ledger lines already written. Counting claims alone was fail-open — a
+    deleted claim file reset the budget while the ledger still carried the
+    observation, so the evidence of the spend existed and was never consulted.
+
+    **A limit stated rather than hidden.** Deleting *both* the claim file and
+    the ledger — or the whole scratch directory — does reset this count, and
+    nothing in-process can prevent that: the guards refuse a delete from inside
+    a guarded run, and a shell does not go through them.
+    `SEEN_IS_TERMINAL_AND_NO_RULING_CAN_RESTORE_UNSEEN_STATUS` is a governance
+    fact about the data, not a property this file can enforce, and committing
+    the ledger is the control that would make it durable — a
+    governance-propagation item, not something this module decides.
     """
     root = scratch.scratch_root()
     if not root.exists():
         return 0
-    return sum(1 for index in range(1, OOS_BUDGET_N + 1) if claim_path(index).exists())
+    claims = sum(1 for index in range(1, OOS_BUDGET_N + 1) if claim_path(index).exists())
+    path = budget_path()
+    recorded = 0
+    if path.exists():
+        recorded = sum(1 for line in path.read_text(encoding="utf-8").splitlines() if line.strip())
+    return max(claims, recorded)
 
 
 def remaining() -> int:

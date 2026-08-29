@@ -10,29 +10,41 @@ The first draft of this module patched named functions: ``socket.socket.connect`
 ``sqlalchemy.create_engine``, and so on.  An independent review defeated that
 design six ways, and every defeat was the same shape — **a patched attribute
 protects only the callers who look the attribute up afterwards**:
+``_socket.socket.connect`` is a different object; ``asyncio``'s Windows proactor
+reaches the stack through ``ConnectEx``; every DB module in this repository does
+``from sqlalchemy import create_engine`` at **import** time; ``subprocess`` and
+``os.system`` leave the process; ``socket.sendmsg`` was unpatched; and a
+``tuple`` subclass can show the guard one destination while CPython reads
+another out of the raw slots.
 
-* ``_socket.socket.connect`` is a different object from ``socket.socket.connect``;
-* ``asyncio``'s Windows proactor reaches the stack through ``ConnectEx`` and
-  never touches the Python method at all;
-* every DB module in this repository does ``from sqlalchemy import
-  create_engine`` at **import** time, so it holds the original long before
-  ``install_all()`` runs;
-* ``subprocess`` and ``os.system`` leave the process entirely;
-* ``socket.sendmsg`` exists on Linux and was not patched;
-* and a ``tuple`` subclass can show the guard one destination through
-  ``__getitem__`` while CPython reads another out of the raw slots.
+``sys.addaudithook`` has none of those properties: CPython raises its audit
+events from inside the C implementation, below every Python-level alias.
 
-``sys.addaudithook`` has none of those properties.  CPython raises its audit
-events from inside the C implementation, **after** argument parsing and
-**below** every Python-level alias, so one hook sees ``socket``, ``_socket``,
-``asyncio``, a pre-bound ``create_engine``, a subprocess launch and a raw
-``sqlite3.connect`` alike.  ``tests/conftest.py`` already reached this
-conclusion for the ``.env`` guard — "guards 1-3 all patch a named function, so
-they only see the routes they know about" — and this module now follows it.
+Why the *second* draft was wrong too, and what changed
+------------------------------------------------------
 
-The attribute patches are kept as a **second line**, because they produce a far
-better error message at the call site than an audit hook can.  They are not the
-mechanism.
+A fresh re-verification then defeated the audit-hook draft in four more ways,
+all of them created by that rewrite:
+
+* it handled the ``open`` event and **no other filesystem event**, so
+  ``os.rename``, ``os.remove``, ``os.truncate``, ``os.link``, ``os.mkdir`` and
+  friends walked straight past it — and ``os.rename`` of a candle file out of
+  the repository, followed by an ordinary read, was a complete escape;
+* for ``os.open`` CPython passes ``mode=None`` and puts the flags in the
+  **third** argument, so a mode-only test answered "not a write" and
+  ``os.open(..., O_WRONLY | O_TRUNC)`` truncated an append-only ledger;
+* the market-data prefix test was a raw ``startswith`` on
+  ``"artifacts/oanda_archive"`` + ``"/"``, which does not match the directory
+  that actually exists, ``artifacts/oanda_archive_2026-05-31/`` — the entire
+  committed 10-year archive was readable;
+* and the hook imported :mod:`~scripts.m15_track_a.scratch` **lazily, from
+  inside itself**, so the import's own ``open`` calls re-entered the hook
+  against a half-initialised module and ``install_all()`` crashed in any
+  process that had not already imported ``scratch``.
+
+So: every path-bearing audit event is handled, the ``open`` event's flags are
+read when its mode is ``None``, paths are normalised (case, ``\\?\\``, symlinks)
+before any prefix test, and ``scratch`` is imported at module scope.
 
 What is refused
 ---------------
@@ -40,30 +52,30 @@ What is refused
 * **Network** — connect, datagram send, ``sendmsg``, and every name-resolution
   entry point, to anything that is not loopback.  Also any ``asyncio``
   connection attempt, unconditionally: R1 needs none.
-* **Subprocess** — ``subprocess``, ``os.system``, ``os.exec*``, ``os.spawn*``.
-  A subprocess escapes every in-process guard at once.
+* **Subprocess** — a subprocess escapes every in-process guard at once.
 * **Database** — SQLAlchemy engines on anything but in-memory SQLite, and any
   ``sqlite3.connect`` to a file.
-* **Writes inside the repository** that land outside the Track A scratch root.
+* **Every mutating filesystem operation inside the repository** that lands
+  outside the Track A scratch root — create, write, append, truncate, rename,
+  replace, delete, mkdir, rmdir, link, symlink, chmod, utime, copy, move.
   Build caches are exempt; the evidence tree is not.
-* **Reads of the market-data trees** unless a gated read is in progress —
-  :mod:`~scripts.m15_track_a.read_route` opens that window only after all of its
-  gates pass, so ``pandas.read_json("data/candles_….jsonl")`` from anywhere else
-  in the process is refused.  This is the limb that makes "one read route" a
-  property of the **process** rather than a property of one function.
-* **Broker / live / demo / order submission** — refused by name, so a call to
-  one produces an error that says which prohibition it hit.
+* **Reads of the market-data trees** unless a gated read is in progress.
+* **Broker / live / demo / order submission** — refused by name.
 
 What this is not
 ----------------
 
-It is **not** a sandbox, and it is not proof against code that is deliberately
-attacking it from inside the same process.  Nothing in-process can be, because
-such code can disarm any in-process guard — or simply do the forbidden thing
-directly.  What these guards buy is that an **accidental** boundary crossing
-fails loudly at the moment it happens, and that a **deliberate** one has to
-appear in a diff as an explicit act.  That is the claim this module makes, and
-it does not make a larger one.
+It is **not** a sandbox, and it is not proof against code deliberately
+attacking it from inside the same process: such code can disarm any in-process
+guard, or simply do the forbidden thing directly. What these guards buy is that
+an **accidental** boundary crossing fails loudly at the moment it happens, and
+that a deliberate one has to appear in a diff as an explicit act.
+
+Two limits worth naming rather than hiding. A **hardlink** already created
+inside the scratch root cannot be distinguished from an ordinary file by any
+path test — the defence against it is that ``os.link`` is itself refused. And
+the hook costs roughly **5x** on ``open``; that is affordable for a research
+run and would not be for a hot loop.
 """
 
 from __future__ import annotations
@@ -72,9 +84,11 @@ import ipaddress
 import os
 import socket
 import sys
+import threading
 from dataclasses import dataclass, field
-from pathlib import Path
 from typing import Any, Final
+
+from scripts.m15_track_a import scratch
 
 TOKEN: Final[str] = "TRACK_A_R1_ISOLATION_ENFORCED"
 
@@ -94,59 +108,81 @@ FORBIDDEN_OPERATIONS: Final[dict[str, str]] = {
     "external_storage_write": "§3.4 — no external storage",
 }
 
-#: Repository subtrees a run may write to even though they sit inside the repo.
-#: Build and tool caches only — nothing that carries research meaning.
-_WRITABLE_REPO_CACHES: Final[tuple[str, ...]] = (
-    "__pycache__",
-    ".pytest_cache",
-    ".mypy_cache",
-    ".ruff_cache",
-    ".git",
+#: Repository directory names a run may write inside even though they sit in the
+#: repo.  Build and tool caches only — nothing that carries research meaning.
+#: ``.git`` is deliberately **absent**: a research run has no business writing
+#: hooks or config, and an earlier drafting listed it.
+_WRITABLE_REPO_CACHES: Final[frozenset[str]] = frozenset(
+    {"__pycache__", ".pytest_cache", ".mypy_cache", ".ruff_cache"}
 )
 
-#: Repository subtrees holding market data.  Reads refuse unless a gated read is
-#: in progress.  ``artifacts/oanda_archive_*`` is matched by prefix.
-_MARKET_DATA_ROOTS: Final[tuple[str, ...]] = ("data", "artifacts/oanda_archive")
+#: First-level repository entries holding market data.  Matched on the **path
+#: component**, and ``artifacts/oanda_archive*`` by component prefix, because
+#: the directory on disk is ``artifacts/oanda_archive_2026-05-31``.
+_MARKET_DATA_DIRS: Final[tuple[str, ...]] = ("data",)
+_MARKET_DATA_ARTIFACT_PREFIXES: Final[tuple[str, ...]] = ("oanda_archive",)
 
 #: Audit events that mean "a process is being launched".
-_SUBPROCESS_EVENTS: Final[tuple[str, ...]] = (
-    "subprocess.Popen",
-    "os.system",
-    "os.exec",
-    "os.spawn",
-    "os.posix_spawn",
-    "os.startfile",
+_SUBPROCESS_EVENTS: Final[frozenset[str]] = frozenset(
+    {"subprocess.Popen", "os.system", "os.exec", "os.spawn", "os.posix_spawn", "os.startfile"}
 )
 
 #: Audit events that mean "a name is being resolved on the network".
-_RESOLUTION_EVENTS: Final[tuple[str, ...]] = (
-    "socket.getaddrinfo",
-    "socket.gethostbyname",
-    "socket.gethostbyaddr",
+_RESOLUTION_EVENTS: Final[frozenset[str]] = frozenset(
+    {"socket.getaddrinfo", "socket.gethostbyname", "socket.gethostbyaddr"}
 )
 
 #: Audit events that mean "bytes are leaving this machine".
-_EGRESS_EVENTS: Final[tuple[str, ...]] = (
-    "socket.connect",
-    "socket.sendto",
-    "socket.sendmsg",
+_EGRESS_EVENTS: Final[frozenset[str]] = frozenset(
+    {"socket.connect", "socket.sendto", "socket.sendmsg"}
 )
+
+#: Path-bearing audit events that **mutate**, and how many leading arguments are
+#: paths.  ``os.replace`` raises ``os.rename``; ``shutil.move`` raises both its
+#: own event and the underlying ones.
+_MUTATING_PATH_EVENTS: Final[dict[str, int]] = {
+    "os.rename": 2,
+    "os.remove": 1,
+    "os.unlink": 1,
+    "os.mkdir": 1,
+    "os.rmdir": 1,
+    "os.truncate": 1,
+    "os.link": 2,
+    "os.symlink": 2,
+    "os.chmod": 1,
+    "os.chown": 1,
+    "os.utime": 1,
+    "shutil.copyfile": 2,
+    "shutil.copymode": 2,
+    "shutil.copystat": 2,
+    "shutil.move": 2,
+    "shutil.unpack_archive": 2,
+}
 
 
 class IsolationError(RuntimeError):
     """Raised when a Track A run reaches a boundary it may not cross."""
 
 
+# ---------------------------------------------------------------------------
+# Destinations
+# ---------------------------------------------------------------------------
+
+
 def _is_loopback(host_value: object) -> bool:
     """Whole loopback range, not four spellings of it.
 
-    ``127.0.0.2`` and ``0:0:0:0:0:0:0:1`` are loopback too, CPython accepts a
-    ``bytes`` host, and a name comparison has to be case-insensitive. Anything
-    unrecognised is treated as remote.
+    The host is pinned to an exact ``str``/``bytes`` first. A ``str`` subclass
+    can override ``__str__`` to show a guard ``"localhost"`` while CPython's
+    ``"et"`` argument converter reads the real buffer, so anything that is not
+    exactly one of those two types is treated as **remote**.
     """
-    host = (
-        host_value.decode("ascii", "replace") if isinstance(host_value, bytes) else str(host_value)
-    )
+    if type(host_value) is bytes:
+        host = host_value.decode("ascii", "replace")
+    elif type(host_value) is str:
+        host = host_value
+    else:
+        return False
     if host.lower() in _LOOPBACK_NAMES:
         return True
     try:
@@ -158,13 +194,15 @@ def _is_loopback(host_value: object) -> bool:
 def _destination_host(address: object) -> object | None:
     """The host an address tuple really names, or ``None`` for a local family.
 
-    ``tuple.__getitem__`` is used rather than ``address[0]``: a ``tuple``
-    subclass can override ``__getitem__`` to show a guard ``"localhost"`` while
-    CPython's ``getsockaddrarg`` reads a remote host straight out of the raw
-    slots. Reading the slot the C code reads closes that gap.
+    Both ``tuple.__len__`` and ``tuple.__getitem__`` are called unbound: a
+    ``tuple`` subclass can override either — reporting length 0 so the guard
+    treats the address as a local family, or returning a loopback host from
+    ``__getitem__`` — while CPython's ``getsockaddrarg`` reads the raw slots.
     """
-    if not isinstance(address, tuple) or len(address) == 0:
+    if not isinstance(address, tuple):
         return None  # AF_UNIX and friends never leave the machine
+    if tuple.__len__(address) == 0:
+        return None
     return tuple.__getitem__(address, 0)
 
 
@@ -179,165 +217,239 @@ def _check_destination(address: object, *, how: str) -> None:
 
 
 # ---------------------------------------------------------------------------
-# The audit hook — the primary control
+# Paths
 # ---------------------------------------------------------------------------
 
-#: True while the guards are armed.  An audit hook cannot be removed once added,
-#: so ``uninstall_all`` disarms rather than detaches, and the hook is a no-op
-#: when disarmed.
-_armed: bool = False
-
-#: True while a gated historical read is in progress.  Only
-#: :mod:`~scripts.m15_track_a.read_route` opens this window, and only after all
-#: of its gates have passed.
-_read_window_open: bool = False
-
-_hook_installed: bool = False
+_EXTENDED_PREFIXES: Final[tuple[tuple[str, str], ...]] = (
+    ("\\\\?\\UNC\\", "\\\\"),
+    ("//?/UNC/", "\\\\"),
+    ("\\\\?\\", ""),
+    ("//?/", ""),
+)
 
 
-def _repo_root() -> Path:
-    # Imported lazily: ``scratch`` must not import this module back.
-    from scripts.m15_track_a import scratch
+def _normalise(raw: object, *, resolve_links: bool) -> str | None:
+    """An absolute, case-normalised path string, or ``None`` if unclassifiable.
 
-    return scratch.repo_root()
-
-
-def _scratch_root() -> Path:
-    from scripts.m15_track_a import scratch
-
-    return scratch.scratch_root()
-
-
-def _relative_to_repo(raw: object) -> str | None:
-    """The path as a POSIX-style repo-relative string, or ``None`` if outside."""
+    Three things happen here that a raw ``os.path.relpath`` did not do: the
+    Win32 extended prefixes are stripped, ``normcase`` folds case on the
+    filesystems that ignore it, and — for a mutating operation — ``realpath``
+    follows a symlink, so a link inside the scratch root cannot point at
+    ``docs/``. A hardlink has no "true" path and is not reachable this way;
+    ``os.link`` is refused instead.
+    """
     if isinstance(raw, int):
-        return None  # already-open file descriptor; the open that made it was seen
+        return None  # an already-open descriptor: the open that made it was seen
     try:
-        candidate = Path(os.fsdecode(raw))
+        text = os.fsdecode(raw)
     except (TypeError, ValueError):
         return None
+    if not text:
+        return None
+    for prefix, replacement in _EXTENDED_PREFIXES:
+        if text.startswith(prefix):
+            text = replacement + text[len(prefix) :]
+            break
     try:
-        resolved = candidate if candidate.is_absolute() else Path.cwd() / candidate
-        relative = os.path.relpath(str(resolved), str(_repo_root()))
+        absolute = os.path.realpath(text) if resolve_links else os.path.abspath(text)
+        return os.path.normcase(absolute)
     except (OSError, ValueError):
         return None
-    if relative.startswith(".."):
-        return None
-    return relative.replace(os.sep, "/")
 
 
-def _is_write_mode(mode: object) -> bool:
-    if isinstance(mode, int):
-        return bool(mode & (os.O_WRONLY | os.O_RDWR | os.O_APPEND | os.O_CREAT | os.O_TRUNC))
-    text = str(mode)
-    return any(flag in text for flag in ("w", "a", "x", "+"))
+def _root(getter: Any, what: str) -> str:
+    """A normalised root, or a **refusal** — never a silent permit.
 
-
-def _is_append_only(mode: object) -> bool:
-    if isinstance(mode, int):
-        return bool(mode & os.O_APPEND) and not bool(mode & os.O_TRUNC)
-    text = str(mode)
-    return "a" in text and "w" not in text and "+" not in text
-
-
-def _check_append_only(args: tuple[Any, ...]) -> None:
-    """A `BINDING_GOVERNANCE_RECORD` may be appended to and never rewritten.
-
-    Checked against the **scratch root**, not against the repository: the
-    scratch root is wherever the module constant points, and an append-only
-    record is append-only there. One ``Path.write_text("")`` erases a ledger
-    that ``SEEN_IS_TERMINAL_AND_NO_RULING_CAN_RESTORE_UNSEEN_STATUS`` says
-    cannot be restored, and an append-only *API* binds only its own callers.
+    An earlier drafting resolved the repository root inside the same ``try``
+    that swallowed path errors and returned ``None``, and ``None`` meant
+    "outside the repository, therefore permitted". A guard whose own failure
+    mode is "permit everything" is not fail-closed.
     """
-    from scripts.m15_track_a import scratch
-
     try:
-        candidate = Path(os.fsdecode(args[0]))
+        return os.path.normcase(os.path.abspath(str(getter())))
+    except Exception as exc:  # noqa: BLE001 - any failure here must fail closed
+        raise IsolationError(
+            f"{TOKEN}: the {what} could not be resolved ({exc}), so no path can be "
+            "classified. Refusing rather than permitting."
+        ) from exc
+
+
+def _relative_parts(candidate: str, root: str) -> tuple[str, ...] | None:
+    """The path's components relative to ``root``, or ``None`` if outside it."""
+    if candidate == root:
+        return ()
+    prefixed = root if root.endswith(os.sep) else root + os.sep
+    if not candidate.startswith(prefixed):
+        return None
+    return tuple(part for part in candidate[len(prefixed) :].split(os.sep) if part)
+
+
+def _is_market_data(parts: tuple[str, ...]) -> bool:
+    if not parts:
+        return False
+    if parts[0] in _MARKET_DATA_DIRS:
+        return True
+    return (
+        parts[0] == "artifacts"
+        and len(parts) > 1
+        and any(parts[1].startswith(prefix) for prefix in _MARKET_DATA_ARTIFACT_PREFIXES)
+    )
+
+
+def _is_write_mode(mode: object, flags: object = None) -> bool:
+    """Whether an ``open`` event describes a write.
+
+    For :func:`os.open` CPython passes ``mode=None`` and puts the real flags in
+    the event's **third** argument. Reading only the mode meant every
+    ``os.open`` — including ``Path.touch``, ``tempfile.mkstemp`` and an
+    ``O_TRUNC`` on an append-only ledger — was classified as a read.
+    """
+    if isinstance(mode, str):
+        return any(flag in mode for flag in ("w", "a", "x", "+"))
+    write_flags = os.O_WRONLY | os.O_RDWR | os.O_APPEND | os.O_CREAT | os.O_TRUNC
+    for value in (flags, mode):
+        if isinstance(value, int) and not isinstance(value, bool):
+            return bool(value & write_flags)
+    # Neither a recognised mode nor recognised flags: fail closed.
+    return True
+
+
+def _is_append_only_mode(mode: object, flags: object = None) -> bool:
+    if isinstance(mode, str):
+        return "a" in mode and "w" not in mode and "+" not in mode
+    for value in (flags, mode):
+        if isinstance(value, int) and not isinstance(value, bool):
+            return bool(value & os.O_APPEND) and not bool(value & os.O_TRUNC)
+    return False
+
+
+def assert_write_allowed(raw: object, *, what: str = "write to") -> None:
+    """Refuse a mutating operation that lands in the repo outside the scratch root."""
+    candidate = _normalise(raw, resolve_links=True)
+    if candidate is None:
+        raise IsolationError(
+            f"{TOKEN}: a Track A run may not {what} a path it cannot classify ({raw!r}). "
+            "An unclassifiable destination fails closed."
+        )
+    parts = _relative_parts(candidate, _root(scratch.repo_root, "repository root"))
+    if parts is None:
+        return  # outside the repository: temp dirs, site-packages, the OS
+    if any(part in _WRITABLE_REPO_CACHES for part in parts):
+        return
+    if _relative_parts(candidate, _root(scratch.scratch_root, "scratch root")) is not None:
+        return
+    raise IsolationError(
+        f"{TOKEN}: a Track A run may not {what} {'/'.join(parts)!r}. Every mutating "
+        "operation goes beneath the Track A scratch root; the repository's source, docs, "
+        "data, models and evidence trees are read-only to a research run."
+    )
+
+
+def _check_append_only(raw: object, mode: object, flags: object) -> None:
+    """A `BINDING_GOVERNANCE_RECORD` may be appended to and never rewritten."""
+    try:
+        name = os.path.basename(os.fsdecode(raw))
     except (TypeError, ValueError):
         return
-    if candidate.name not in scratch.APPEND_ONLY_FILENAMES:
+    if name not in scratch.APPEND_ONLY_FILENAMES:
         return
-    if not _is_write_mode(args[1]) or _is_append_only(args[1]):
+    if not _is_write_mode(mode, flags) or _is_append_only_mode(mode, flags):
         return
-    try:
-        root = scratch.scratch_root()
-        resolved = candidate if candidate.is_absolute() else Path.cwd() / candidate
-        inside = not os.path.relpath(str(resolved), str(root)).startswith("..")
-    except (OSError, ValueError):  # pragma: no cover
-        inside = False
-    if inside:
+    candidate = _normalise(raw, resolve_links=False)
+    root = _root(scratch.scratch_root, "scratch root")
+    if candidate is not None and _relative_parts(candidate, root) is not None:
         raise IsolationError(
-            f"{TOKEN}: {candidate.name!r} is an append-only governance record and may not "
-            "be opened for truncation or overwrite."
+            f"{TOKEN}: {name!r} is an append-only governance record and may not be opened "
+            "for truncation or overwrite. An append-only API binds only its own callers."
         )
 
 
 def _check_open(args: tuple[Any, ...]) -> None:
-    if len(args) < 2:
-        return
-    _check_append_only(args)
-    relative = _relative_to_repo(args[0])
-    if relative is None:
-        return  # outside the repository: temp dirs, site-packages, the OS
-    parts = relative.split("/")
-    if any(part in _WRITABLE_REPO_CACHES for part in parts):
+    raw = args[0] if args else None
+    mode = args[1] if len(args) > 1 else None
+    flags = args[2] if len(args) > 2 else None
+
+    _check_append_only(raw, mode, flags)
+
+    if _is_write_mode(mode, flags):
+        assert_write_allowed(raw, what="open for writing")
         return
 
-    if _is_write_mode(args[1]):
-        try:
-            scratch_relative = os.path.relpath(str(_repo_root() / relative), str(_scratch_root()))
-        except (OSError, ValueError):
-            scratch_relative = ".."
-        if scratch_relative.startswith(".."):
-            raise IsolationError(
-                f"{TOKEN}: a Track A run may not write to {relative!r}. Every write goes "
-                "beneath the Track A scratch root; the repository's source, docs, data, "
-                "models and evidence trees are read-only to a research run."
-            )
+    if _read_window_depth():
         return
-
-    if _read_window_open:
-        return
-    if any(relative == root or relative.startswith(root + "/") for root in _MARKET_DATA_ROOTS):
+    candidate = _normalise(raw, resolve_links=False)
+    if candidate is None:
+        return  # a read of something unlocatable is not a market-data read
+    parts = _relative_parts(candidate, _root(scratch.repo_root, "repository root"))
+    if parts is not None and _is_market_data(parts):
         raise IsolationError(
-            f"{TOKEN}: a Track A run may not read {relative!r} outside the gated read "
+            f"{TOKEN}: a Track A run may not read {'/'.join(parts)!r} outside the gated read "
             "route. Market data is reached through "
             "scripts.m15_track_a.read_route.read_historical, which requires an explicit "
             "authorisation grant, an admissible span and a prior seen-data declaration."
         )
 
 
+# ---------------------------------------------------------------------------
+# The audit hook
+# ---------------------------------------------------------------------------
+
+#: True while the guards are armed.  An audit hook cannot be removed once added,
+#: so ``uninstall_all`` disarms rather than detaches.
+_armed: bool = False
+_hook_installed: bool = False
+
+#: The gated read window is **per thread**: one thread holding it must not open
+#: ``data/`` to every other thread in the process.  Re-entrant, so a nested
+#: window does not close the outer one on exit.
+_window = threading.local()
+
+
+def _read_window_depth() -> int:
+    return int(getattr(_window, "depth", 0))
+
+
 def _audit_hook(event: str, args: tuple[Any, ...]) -> None:
     if not _armed:
         return
-    if event in _EGRESS_EVENTS:
-        if len(args) >= 2:
-            _check_destination(args[1], how="reach")
-        return
-    if event in _RESOLUTION_EVENTS:
-        if args and not _is_loopback(args[0]):
+    try:
+        if event in _EGRESS_EVENTS:
+            if len(args) >= 2:
+                _check_destination(args[1], how="reach")
+        elif event in _RESOLUTION_EVENTS:
+            if args and not _is_loopback(args[0]):
+                raise IsolationError(
+                    f"{TOKEN}: a Track A run may not resolve {args[0]!r}. A name lookup "
+                    "reaches a resolver on the network before any connection is opened."
+                )
+        elif event in _SUBPROCESS_EVENTS:
             raise IsolationError(
-                f"{TOKEN}: a Track A run may not resolve {args[0]!r}. A name lookup reaches "
-                "a resolver on the network before any connection is opened, so it is "
-                "refused on the same footing as the connection."
+                f"{TOKEN}: a Track A run may not launch a process ({event}). A subprocess "
+                "escapes every in-process guard at once — network, database and write "
+                "containment alike."
             )
-        return
-    if event in _SUBPROCESS_EVENTS:
+        elif event == "sqlite3.connect":
+            target = str(args[0]) if args else ""
+            if target not in {":memory:", ""}:
+                raise IsolationError(
+                    f"{TOKEN}: a Track A run may not open the database {target!r}. §3.2 — "
+                    "external DB access is off for R1."
+                )
+        elif event == "open":
+            _check_open(args)
+        elif event in _MUTATING_PATH_EVENTS:
+            for index in range(min(_MUTATING_PATH_EVENTS[event], len(args))):
+                if not isinstance(args[index], int):
+                    assert_write_allowed(args[index], what=event.split(".")[-1])
+    except IsolationError:
+        raise
+    except Exception as exc:  # noqa: BLE001 - an internal failure must fail closed
+        # An earlier drafting let a non-IsolationError escape the hook and break
+        # an unrelated operation with an unrelated traceback. Converting it here
+        # keeps the failure closed *and* typed.
         raise IsolationError(
-            f"{TOKEN}: a Track A run may not launch a process ({event}). A subprocess "
-            "escapes every in-process guard at once — network, database and write "
-            "containment alike."
-        )
-    if event == "sqlite3.connect":
-        target = str(args[0]) if args else ""
-        if target not in {":memory:", ""}:
-            raise IsolationError(
-                f"{TOKEN}: a Track A run may not open the database {target!r}. §3.2 — "
-                "external DB access is off for R1."
-            )
-        return
-    if event == "open":
-        _check_open(args)
+            f"{TOKEN}: the guard could not decide about {event!r} ({exc!r}), so it refused."
+        ) from exc
 
 
 def install_audit_hook() -> None:
@@ -359,12 +471,7 @@ class _Installed:
     """What was patched, so a caller can undo it in a test."""
 
     network: bool = False
-    connect: Any = None
-    connect_ex: Any = None
-    sendto: Any = None
-    getaddrinfo: Any = None
-    gethostbyname: Any = None
-    asyncio_create_connection: Any = None
+    patched: list[tuple[Any, str, Any]] = field(default_factory=list)
     engine_targets: list[tuple[Any, str, Any]] = field(default_factory=list)
     database: bool = False
 
@@ -378,9 +485,8 @@ def _ensure_state() -> _Installed:
     A previous drafting let :func:`install_database_guard` create ``_state`` as a
     side effect while :func:`install_network_guard` early-returned on
     ``_state is not None``. Installing the database guard first therefore left
-    the network completely open while ``is_installed()`` answered True — the
-    one condition both routes check. Each limb now carries its own flag and
-    ``is_installed`` requires all three.
+    the network completely open while ``is_installed()`` answered True. Each
+    limb now carries its own flag and ``is_installed`` requires all three.
     """
     global _state
     if _state is None:
@@ -390,21 +496,17 @@ def _ensure_state() -> _Installed:
 
 def install_network_guard() -> None:
     """Refuse non-loopback TCP connects, UDP sends, name resolution and asyncio."""
+    import asyncio.base_events
+
     state = _ensure_state()
     if state.network:
         return
 
-    state.connect = socket.socket.connect
-    state.connect_ex = socket.socket.connect_ex
-    state.sendto = socket.socket.sendto
-    state.getaddrinfo = socket.getaddrinfo
-    state.gethostbyname = socket.gethostbyname
-
-    real_connect = state.connect
-    real_connect_ex = state.connect_ex
-    real_sendto = state.sendto
-    real_getaddrinfo = state.getaddrinfo
-    real_gethostbyname = state.gethostbyname
+    real_connect = socket.socket.connect
+    real_connect_ex = socket.socket.connect_ex
+    real_sendto = socket.socket.sendto
+    real_getaddrinfo = socket.getaddrinfo
+    real_gethostbyname = socket.gethostbyname
 
     def guarded_connect(self: socket.socket, address: object) -> object:
         _check_destination(address, how="connect to")
@@ -414,44 +516,47 @@ def install_network_guard() -> None:
         _check_destination(address, how="connect to")
         return real_connect_ex(self, address)
 
-    def guarded_sendto(self: socket.socket, data: object, *args: object) -> object:
-        if args:
-            _check_destination(args[-1], how="send a datagram to")
-        return real_sendto(self, data, *args)
+    def guarded_sendto(self: socket.socket, data: object, *rest: object) -> object:
+        if rest:
+            _check_destination(rest[-1], how="send a datagram to")
+        return real_sendto(self, data, *rest)
 
-    def guarded_getaddrinfo(host: object, *args: object, **kwargs: object) -> object:
+    def guarded_getaddrinfo(host: object, *rest: object, **kwargs: object) -> object:
         if not _is_loopback(host):
             raise IsolationError(f"{TOKEN}: a Track A run may not resolve {host!r}.")
-        return real_getaddrinfo(host, *args, **kwargs)
+        return real_getaddrinfo(host, *rest, **kwargs)
 
     def guarded_gethostbyname(host: object) -> object:
         if not _is_loopback(host):
             raise IsolationError(f"{TOKEN}: a Track A run may not resolve {host!r}.")
         return real_gethostbyname(host)
 
-    socket.socket.connect = guarded_connect  # type: ignore[method-assign]
-    socket.socket.connect_ex = guarded_connect_ex  # type: ignore[method-assign]
-    socket.socket.sendto = guarded_sendto  # type: ignore[method-assign]
-    socket.getaddrinfo = guarded_getaddrinfo  # type: ignore[assignment]
-    socket.gethostbyname = guarded_gethostbyname  # type: ignore[assignment]
-
-    try:
-        import asyncio.base_events
-
-        state.asyncio_create_connection = asyncio.base_events.BaseEventLoop.create_connection
-
-        async def refuse_create_connection(*_args: object, **_kwargs: object) -> object:
-            raise IsolationError(
-                f"{TOKEN}: a Track A run may not open an asyncio connection. R1 needs no "
-                "network at all, and the Windows proactor reaches the stack below the "
-                "socket methods."
-            )
-
-        asyncio.base_events.BaseEventLoop.create_connection = (  # type: ignore[method-assign]
-            refuse_create_connection
+    async def refuse_create_connection(*_args: object, **_kwargs: object) -> object:
+        raise IsolationError(
+            f"{TOKEN}: a Track A run may not open an asyncio connection. R1 needs no "
+            "network at all, and the Windows proactor reaches the stack below the "
+            "socket methods."
         )
-    except ImportError:  # pragma: no cover - asyncio is always present
-        pass
+
+    # Each original is recorded **before** its assignment, so a failure part-way
+    # through is still fully revertible. An earlier drafting reverted only
+    # ``if state.network``, which a partial install never sets — leaving a stray
+    # guarded function that a later re-install would record as "the original".
+    for target, attribute, original, replacement in (
+        (socket.socket, "connect", real_connect, guarded_connect),
+        (socket.socket, "connect_ex", real_connect_ex, guarded_connect_ex),
+        (socket.socket, "sendto", real_sendto, guarded_sendto),
+        (socket, "getaddrinfo", real_getaddrinfo, guarded_getaddrinfo),
+        (socket, "gethostbyname", real_gethostbyname, guarded_gethostbyname),
+        (
+            asyncio.base_events.BaseEventLoop,
+            "create_connection",
+            asyncio.base_events.BaseEventLoop.create_connection,
+            refuse_create_connection,
+        ),
+    ):
+        state.patched.append((target, attribute, original))
+        setattr(target, attribute, replacement)
 
     state.network = True
 
@@ -459,11 +564,12 @@ def install_network_guard() -> None:
 def install_database_guard() -> None:
     """Refuse any SQLAlchemy engine that is not in-memory SQLite.
 
-    A no-op when SQLAlchemy is absent. Note this limb is **advisory**: a module
-    that did ``from sqlalchemy import create_engine`` at import time holds the
-    original, and this repository's DB modules all do. The audit hook's
-    ``socket.connect`` and ``sqlite3.connect`` limbs are what actually stop the
-    connection those callers would open.
+    Advisory only, and named as such: a module that did ``from sqlalchemy import
+    create_engine`` at import time holds the original, and this repository's DB
+    modules all do. SQLAlchemy is also lazy, so *building* an engine opens
+    nothing and raises no audit event. The audit hook's ``socket.connect`` and
+    ``sqlite3.connect`` limbs are what actually stop the connection such a
+    caller would open.
     """
     state = _ensure_state()
     if state.database:
@@ -506,8 +612,7 @@ def assert_operation_allowed(operation: str) -> None:
 
     Unlike the audit hook this cannot be enforced structurally — there is no
     single primitive "submit an order" goes through — so it is a checkpoint a
-    caller invokes. It is here so the prohibition has an executable form and an
-    error message that names the boundary.
+    caller invokes.
     """
     if operation in FORBIDDEN_OPERATIONS:
         raise IsolationError(
@@ -530,25 +635,15 @@ def uninstall_all() -> None:
     control cannot be unhooked, only switched off by code that could equally
     have called the forbidden thing directly.
     """
-    global _state, _armed, _read_window_open
+    global _state, _armed
     _armed = False
-    _read_window_open = False
+    _window.depth = 0
     state = _state
     _state = None
     if state is None:
         return
-    if state.network and state.connect is not None:
-        socket.socket.connect = state.connect  # type: ignore[method-assign]
-        socket.socket.connect_ex = state.connect_ex  # type: ignore[method-assign]
-        socket.socket.sendto = state.sendto  # type: ignore[method-assign]
-        socket.getaddrinfo = state.getaddrinfo  # type: ignore[assignment]
-        socket.gethostbyname = state.gethostbyname  # type: ignore[assignment]
-        if state.asyncio_create_connection is not None:
-            import asyncio.base_events
-
-            asyncio.base_events.BaseEventLoop.create_connection = (  # type: ignore[method-assign]
-                state.asyncio_create_connection
-            )
+    for target, attribute, original in reversed(state.patched):
+        setattr(target, attribute, original)
     for module, attribute, original in state.engine_targets:
         setattr(module, attribute, original)
 
@@ -567,31 +662,34 @@ def is_armed() -> bool:
 
 
 class gated_read_window:  # noqa: N801 - a context manager reads as a noun here
-    """Open the market-data read window for the duration of a gated read.
+    """Open the market-data read window, **for this thread only**.
 
     Only :mod:`~scripts.m15_track_a.read_route` uses this, and only after every
-    gate has passed. Outside it, a read of ``data/`` or the archive is refused
-    by the audit hook wherever in the process it originates — which is what
-    makes "exactly one read route" a property of the process rather than a
-    property of one function that a caller may simply decline to call.
+    gate has passed. Outside it, a read of the market-data trees is refused by
+    the audit hook wherever in the process it originates — which is what makes
+    "exactly one read route" a property of the process rather than a property
+    of one function that a caller may decline to call.
+
+    Thread-local and re-entrant: an earlier drafting used a process-wide flag,
+    so one thread's gated read opened ``data/`` to every other thread, and a
+    nested window closed the outer one on exit.
     """
 
     def __enter__(self) -> gated_read_window:
-        global _read_window_open
         if not _armed:
             raise IsolationError(
                 f"{TOKEN}: the read window may not be opened while the guards are disarmed."
             )
-        _read_window_open = True
+        _window.depth = _read_window_depth() + 1
         return self
 
     def __exit__(self, *_exc: object) -> None:
-        global _read_window_open
-        _read_window_open = False
+        _window.depth = max(0, _read_window_depth() - 1)
 
 
 def is_read_window_open() -> bool:
-    return _read_window_open
+    """Whether **this thread** currently holds the gated read window."""
+    return _read_window_depth() > 0
 
 
 __all__ = [
@@ -599,6 +697,7 @@ __all__ = [
     "TOKEN",
     "IsolationError",
     "assert_operation_allowed",
+    "assert_write_allowed",
     "gated_read_window",
     "install_all",
     "install_audit_hook",
