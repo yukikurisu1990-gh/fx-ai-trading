@@ -270,7 +270,7 @@ def require_authorization(
     span_end_utc: str,
     pairs: tuple[str, ...],
     timeframe: str,
-    identity: Any = None,
+    identity: Any,
 ) -> ReadGrant:
     """Return the grant if it covers the requested scope; otherwise raise.
 
@@ -286,9 +286,12 @@ def require_authorization(
       ``object.__setattr__`` rewrites a frozen field after it. Every field is
       re-checked here, against the same rules.
     * **The approved head is compared, not merely shaped.** A 40-hex string that
-      is never equal to anything is decoration. When an identity is supplied its
-      ``code_sha`` must equal the grant's ``approved_head_sha`` — CLAUDE.md's
-      "any head change voids the approval", in executable form.
+      is never equal to anything is decoration. The run's ``identity.code_sha``
+      must equal the grant's ``approved_head_sha`` — CLAUDE.md's "any head
+      change voids the approval", in executable form. ``identity`` is
+      **required**: it defaulted to ``None`` and skipped the check silently,
+      which is fail-open on the one thing an approval names that a machine can
+      verify.
 
     What it still cannot do: stop code in the same process from constructing a
     wider grant than the human approved. Nothing in-process can, because such
@@ -313,23 +316,21 @@ def require_authorization(
     _revalidate(grant)
     if operation not in KNOWN_OPERATIONS:
         raise AuthorizationError(f"{TOKEN}: unknown operation {operation!r} (fail closed)")
-    if identity is not None:
-        from scripts.m15_track_a.identity import RunIdentity
+    from scripts.m15_track_a.identity import RunIdentity
 
-        if type(identity) is not RunIdentity:
-            # Duck-typing the head check in a module that pins ``type(x) is str``
-            # everywhere else would let any object with a matching attribute
-            # satisfy it.
-            raise AuthorizationError(
-                f"{TOKEN}: identity must be exactly a RunIdentity, not a {type(identity).__name__}."
-            )
-        code_sha = identity.code_sha
-        if code_sha != grant.approved_head_sha:
-            raise AuthorizationError(
-                f"{TOKEN}: the grant was approved against head {grant.approved_head_sha!r} "
-                f"and the run is on {code_sha!r}. An approval covers the head it names; a "
-                "head change voids it (CLAUDE.md)."
-            )
+    if type(identity) is not RunIdentity:
+        # Duck-typing the head check in a module that pins ``type(x) is str``
+        # everywhere else would let any object with a matching attribute
+        # satisfy it.
+        raise AuthorizationError(
+            f"{TOKEN}: identity must be exactly a RunIdentity, not a {type(identity).__name__}."
+        )
+    if identity.code_sha != grant.approved_head_sha:
+        raise AuthorizationError(
+            f"{TOKEN}: the grant was approved against head {grant.approved_head_sha!r} and "
+            f"the run is on {identity.code_sha!r}. An approval covers the head it names; a "
+            "head change voids it (CLAUDE.md)."
+        )
     if not grant_covers(
         grant,
         operation=operation,

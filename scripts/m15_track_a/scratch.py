@@ -125,7 +125,34 @@ APPEND_ONLY_FILENAMES: Final[frozenset[str]] = frozenset(
 
 #: How long :func:`append_line` waits for the ledger lock before refusing.
 APPEND_LOCK_TIMEOUT_SECONDS: Final[float] = 30.0
+
+#: After this long, a lock is treated as abandoned and broken.  A lock leaks on
+#: ``SIGKILL`` or ``os._exit``, and nothing else clears it: without this, one
+#: killed writer halts every governance ledger permanently, which is a denial of
+#: service on the write-ahead declaration that must precede any read.  The
+#: window is two orders of magnitude longer than a real append (milliseconds),
+#: so breaking a lock this old does not race a live writer.
+APPEND_LOCK_STALE_SECONDS: Final[float] = 120.0
+
 _APPEND_LOCK_POLL_SECONDS: Final[float] = 0.002
+
+
+def _break_lock_if_abandoned(lock: Path) -> None:
+    """Remove a lock whose holder is gone.
+
+    Judged by age alone. A PID would be more precise and is not reliable: the
+    number is reused, and the holder may be on another machine sharing the
+    directory. Age is coarse and cannot wrongly break a live lock, because an
+    append takes milliseconds and the threshold is two minutes.
+    """
+    try:
+        age = time.time() - lock.stat().st_mtime
+    except OSError:
+        return
+    if age < APPEND_LOCK_STALE_SECONDS:
+        return
+    with contextlib.suppress(OSError):
+        os.unlink(lock)
 
 
 def append_line(path: Path, line: str) -> None:
@@ -147,7 +174,10 @@ def append_line(path: Path, line: str) -> None:
     ``N = 1`` claim, because it is the only cross-process mutual exclusion
     available here without a lock service. A writer that cannot take the lock
     within :data:`APPEND_LOCK_TIMEOUT_SECONDS` **refuses**; it does not write
-    unlocked.
+    unlocked. A lock older than :data:`APPEND_LOCK_STALE_SECONDS` is treated as
+    abandoned and broken — without that, one writer killed mid-append halts
+    every ledger permanently, and the write-ahead declaration that must precede
+    any read is the first thing it halts.
     """
     # The lock is derived from the **resolved** ledger path, and is not
     # re-checked: it lives in the directory that was just cleared, and a path
@@ -171,6 +201,7 @@ def append_line(path: Path, line: str) -> None:
         # catching only the first lost 27 of 120 lines in one measured round,
         # because the writer crashed instead of retrying.
         except (FileExistsError, PermissionError):
+            _break_lock_if_abandoned(lock)
             if time.monotonic() >= deadline:
                 raise ScratchRootError(
                     f"could not take the append lock for {path.name} within "
@@ -247,6 +278,7 @@ def is_writable(path: Any) -> bool:
 
 __all__ = [
     "FORBIDDEN_WRITE_PREFIXES",
+    "APPEND_LOCK_STALE_SECONDS",
     "APPEND_LOCK_TIMEOUT_SECONDS",
     "APPEND_ONLY_FILENAMES",
     "RESERVED_ARTIFACT_FILENAMES",

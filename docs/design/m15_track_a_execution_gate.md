@@ -337,8 +337,8 @@ observation is recorded as an input; taking it is a human + ChatGPT act.
 Track A variant. It runs **twelve** checks — all twelve are named below, in two
 groups.
 
-**Six behavioural probes — these carry the verdict.** Each arms the guards and
-then actually attempts the forbidden thing, requiring a refusal:
+**Seven behavioural probes — these carry the verdict.** Each arms the guards
+and then actually attempts the forbidden thing, requiring a refusal:
 
 | Probe | Attempts |
 | --- | --- |
@@ -347,28 +347,34 @@ then actually attempts the forbidden thing, requiring a refusal:
 | `network` | a non-loopback connect and a non-loopback name lookup |
 | `subprocess` | launching a process |
 | `database` | a remote SQLAlchemy engine |
+| `broker_live_demo` | each of the six named forbidden operations |
 | `read_route_gated` | the declared route with no grant |
 
 Every probe is chosen so a *failure of the guard* is still harmless: the read
 probe names a file that does not exist, so an absent hook yields
 `FileNotFoundError`, never a real read.
 
-**Six source and state checks — advisory, and labelled so.**
-`broker_live_demo` (every named forbidden operation refuses), `read_body_absent`,
+**Five source checks — advisory, and labelled so.** `read_body_absent`,
 `single_read_route`, `authorization_not_ambient`, `write_root`,
 `derivation_route`. The module roster is **enumerated from the directory**, not
 hand-written, so a new module is scanned by existing.
 
-`read_body_absent` reads the route's own AST and requires two things: no
-`return` anywhere in `read_historical`, and its **last** statement is
-`raise NotImplementedError(...)`. It is **not** a behavioural probe, and an
-earlier drafting's docstring claimed it "drives the route to the end of its
-gate sequence", which it never did. Consequently `no_market_data_read` is
-**not** licensed by it alone: the report sets that field only when this check
-*and* the behavioural `market_data_read_refused` probe both pass. Either alone
-has been defeated in review — the source check by a two-line
-`if False: raise NotImplementedError` decoy above a live body, and a
-behavioural probe by a body that is simply never called.
+`read_body_absent` reads the route's own AST. It is **not** a behavioural probe
+— an earlier drafting's docstring claimed it "drives the route to the end of its
+gate sequence", which it never did — and it requires three things: no `return`
+and no `yield` anywhere in `read_historical`; its **last** statement is
+`raise NotImplementedError(...)`; and **every call it makes is one of the
+declared gates**. The third is the load-bearing one. The first two alone were
+defeated end to end: a body that read a file with `numpy.memmap` and stored the
+bytes in a module global has no `return`, ends in the raise, and used a name no
+reader list contained. An allowlist over the calls does not depend on having
+anticipated the reader.
+
+`no_market_data_read` is set only when **the audit as a whole passed**, and
+`read_body_absent` passed, and the behavioural `market_data_read_refused` probe
+passed. An earlier drafting computed it independently of the verdict, so a
+`BREACHED` report still carried `no_market_data_read: True` and the field could
+be quoted on its own.
 
 **What earlier draftings claimed and did not do.** The first version of this
 section listed eight checks including "no forbidden import reaches the package"
@@ -378,7 +384,10 @@ forward-epoch limb lives in `read_route.assert_span_admissible`. That version
 also answered "is the route gated?" by scanning source text for the gates'
 names — which a **docstring** listing those names satisfied. The second version
 said "twelve checks" and then named eleven, omitting `broker_live_demo`, and
-put `read_body_absent` in the probe table. All are corrected; the false
+put `read_body_absent` in the probe table; the code's own section banner said
+eight probes while this document said six and the PR body said seven. All are
+corrected — seven and five — and a test now compares this section against
+`containment.CHECKS` so the three cannot drift apart again. The false
 descriptions are recorded rather than quietly replaced.
 
 Final statuses:
@@ -428,10 +437,15 @@ does not complete them — PR #451's does.
 Three separated roles were dispatched against head `f0a5bc9`, each given the
 source, the diff and the contract and **not** the other roles' conclusions:
 execution containment / test safety, governance and authorisation sequencing,
-and adversarial bypass. All three returned. A **fourth, fresh** audit context
-then re-verified the fixes against head `474e273`. Their findings and the fixes
-are recorded in the pull request body; the head reported there is the final
-post-fix head, not `f0a5bc9` and not `474e273`.
+and adversarial bypass. All three returned. Two further **fresh** audit
+contexts then re-verified, against `474e273` and against `3b7d3de`. Their
+findings and the fixes are recorded in the pull request body.
+
+**The head this document describes is the one the PR reports as final.** It is
+not `f0a5bc9`, `474e273` or `3b7d3de` — each of those was superseded by the
+round its own re-verification produced. A reviewer should read the PR body for
+the head, and should treat this sentence as the only claim this section makes
+about which head is current.
 
 **An earlier drafting of this section asserted, in the past tense, that the
 roles had run and that a post-fix re-verification had been recorded — at a head
@@ -501,6 +515,33 @@ from the already-checked ledger path rather than re-checked.
 **The suite was green at every one of these heads.** That is now five rounds in
 this programme at which a green suite predicted conformance and an independent
 context found blockers.
+
+### 13.2 The second re-verification, and what *those* fixes broke
+
+A second fresh context audited `3b7d3de` and found the round-two fixes had
+created two more blockers and left five path bypasses open. The through-line is
+one sentence: **a path decision made on a string is a decision about a
+spelling, not about a file.** Measured on this machine, `data/`,
+`FX-AI-~1\data`, `\\localhost\C$\…\data`, `\\.\C:\…\data`, `DATA/` and a
+junction all name the same directory, and only two of the six were caught —
+because the read path used `abspath` while only the write path used `realpath`.
+
+| Defect | Fix |
+| --- | --- |
+| **Created by the fix:** an `int` file descriptor was "unclassifiable", and round two had made unclassifiable fatal. CPython writes every `.pyc` through `_io.FileIO(fd, "wb")`, so a guarded run **died on its first uncached import** — and `containment.audit()` died with it. The suite passed only because `__pycache__` was warm | an `int` is permitted; the `open` that produced it was already checked |
+| **Created by the fix:** `read_body_absent`'s "no `return`, terminal `raise`" test was satisfied by a body reading through `numpy.memmap` into a module global, and `no_market_data_read` was computed independently of the verdict — so a `BREACHED` report still carried `True` | an allowlist over the calls the route may make, plus gating the field on the overall verdict |
+| Five read spellings — 8.3 short names, `\\localhost\C$`, `\\?\UNC\`, `\\.\`, and a junction — reached the filesystem | `realpath` for every decision, plus a **filesystem-identity** fallback: `(st_dev, st_ino)` is the same for all of them |
+| The same UNC spelling bypassed **write** containment, including the `os.rename`-a-candle-file escape §13.1 records as closed. An `os.rmdir` reached a real repository directory | the same identity fallback |
+| The append-only ledger could be zeroed by six filename spellings (trailing dot, trailing space, `::$DATA`, two case variants, and `os.open` with `O_TRUNC`) | exact `(st_dev, st_ino)` identity against the ledgers that exist, plus a normalised, case-folded, stream-stripped name for one that does not |
+| A leaked lock was a permanent denial of service on every ledger — and the write-ahead declaration is the first thing it halts | a lock older than `APPEND_LOCK_STALE_SECONDS` is broken |
+| The read window leaked to sibling coroutines | pinned to the thread **and task** that opened it. A bare `ContextVar` is not enough: a `Task` copies the context at creation, so a task spawned inside the window inherits it |
+| The alias sweep caught one binding form of seven | every *reference* to a reader name, plus `getattr` with a constant |
+| `identity` defaulted to `None`, silently skipping the head-SHA comparison | required |
+
+**Three rounds, and each round's fix created the next round's blockers.** That
+is the strongest single argument in this document for why an execution gate
+needs independent re-verification rather than a green suite, and it is recorded
+here rather than in a commit message.
 
 ## 14. Non-authorisation statement
 

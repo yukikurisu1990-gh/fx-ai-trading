@@ -11,6 +11,7 @@ from scripts.m15_track_a.authorization import (
     ReadGrant,
     require_authorization,
 )
+from scripts.m15_track_a.identity import CALENDAR_UTC_DATES_NO_MARKET_HOURS, RunIdentity
 
 _SHA = "0" * 40
 
@@ -29,6 +30,15 @@ def _grant(**overrides: object) -> ReadGrant:
     return ReadGrant(**kwargs)  # type: ignore[arg-type]
 
 
+def _identity(code_sha: str = _SHA) -> RunIdentity:
+    return RunIdentity(
+        run_id="authorization-test",
+        code_sha=code_sha,
+        calendar_semantics=CALENDAR_UTC_DATES_NO_MARKET_HOURS,
+        started_at_utc="2026-01-01T00:00:00Z",
+    )
+
+
 def _require(grant: object, **overrides: object) -> ReadGrant:
     kwargs: dict[str, object] = {
         "operation": authorization.OPERATION_HISTORICAL_READ,
@@ -36,6 +46,9 @@ def _require(grant: object, **overrides: object) -> ReadGrant:
         "span_end_utc": "2025-06-01",
         "pairs": ("EUR_USD",),
         "timeframe": "M1",
+        # ``identity`` is a required argument: it defaulted to ``None`` and
+        # skipped the head-SHA comparison silently.
+        "identity": _identity(),
     }
     kwargs.update(overrides)
     return require_authorization(grant, **kwargs)  # type: ignore[arg-type]

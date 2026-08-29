@@ -30,13 +30,18 @@ The lesson is not "write a longer list of reader names". It is that a source
 scan can only ever answer *did the author write the thing I thought to look
 for*. So the checks below are ordered:
 
-1. **Behavioural probes** come first and carry the verdict. They arm the guards
-   and then actually attempt the forbidden thing — a write into ``docs/``, a
-   read under ``data/``, a remote engine, a subprocess — and require a refusal.
-   A probe cannot be satisfied by a comment.
-2. **Structural checks** come second and are advisory in exactly the way a
+1. **Seven behavioural probes** come first and carry the verdict. They arm the
+   guards and then actually attempt the forbidden thing — a write into
+   ``docs/``, a read under ``data/``, a remote engine, a subprocess, a named
+   broker operation, an ungranted read — and require a refusal. A probe cannot
+   be satisfied by a comment.
+2. **Five source checks** come second and are advisory in exactly the way a
    source scan has to be. Their roster is **enumerated from the directory**, so
-   a new module is scanned by existing.
+   a new module is scanned by existing. ``read_body_absent`` is one of these,
+   not a probe, and it is an **allowlist** over the calls the route may make —
+   a re-verification wrote a reader using ``numpy.memmap`` and a module global
+   that satisfied every "does it look absent?" test, so the answer cannot be a
+   longer list of reader names.
 
 Every probe is chosen so that a *failure of the guard* is still harmless: the
 read probe names a file that does not exist, so if the hook were absent the
@@ -153,7 +158,7 @@ def package_modules() -> tuple[str, ...]:
 
 
 # ---------------------------------------------------------------------------
-# Behavioural probes — these carry the verdict
+# Behavioural probes (7) — these carry the verdict
 # ---------------------------------------------------------------------------
 
 
@@ -351,6 +356,29 @@ def _terminal_raise_is_not_implemented(body: list[ast.stmt]) -> bool:
     return False
 
 
+#: The only calls ``read_historical`` may contain.  An allowlist, because the
+#: question "does this function read?" cannot be answered by listing the ways to
+#: read — a re-verification wrote a body using ``numpy.memmap`` and a module
+#: global, with no ``return`` and a terminal ``raise NotImplementedError``, and
+#: every check passed.  Any call that is not one of the declared gates is a
+#: finding, whatever it is called.
+_PERMITTED_READ_ROUTE_CALLS: Final[frozenset[str]] = frozenset(
+    {
+        "is_installed",
+        "ReadRouteError",
+        "require_authorization",
+        "assert_span_admissible",
+        "assert_declared",
+        "record_grant",
+        "gated_read_window",
+        "NotImplementedError",
+    }
+)
+
+
+# --- source checks -----------------------------------------------------------
+
+
 def _check_read_body_is_absent() -> CheckResult:
     """The route's own body, at source: no return, and it ends in a raise.
 
@@ -362,25 +390,56 @@ def _check_read_body_is_absent() -> CheckResult:
     stated instead of overclaimed, and ``no_market_data_read`` is no longer
     licensed by this check alone (see :func:`audit`).
 
-    Two conditions, both necessary: the function contains **no ``return``**, and
-    its final statement **is** ``raise NotImplementedError(...)``.
+    Three conditions, all necessary, and the third is the one that matters:
+
+    1. the function contains no ``return`` and no ``yield``;
+    2. its final statement **is** ``raise NotImplementedError(...)``;
+    3. every call it makes is one of :data:`_PERMITTED_READ_ROUTE_CALLS`.
+
+    Conditions 1 and 2 alone were defeated end to end: a body that read a file
+    with ``numpy.memmap`` and stored the bytes in a module global has no
+    ``return``, ends in the raise, and used a name no reader list contained.
+    An allowlist over the calls does not depend on having anticipated the
+    reader.
     """
     tree = ast.parse(Path(read_route.__file__).read_text(encoding="utf-8"))
     for node in ast.walk(tree):
         if isinstance(node, ast.FunctionDef) and node.name == "read_historical":
-            if any(isinstance(child, ast.Return) for child in ast.walk(node)):
+            if any(
+                isinstance(child, ast.Return | ast.Yield | ast.YieldFrom)
+                for child in ast.walk(node)
+            ):
                 return CheckResult(  # pragma: no cover - true once a body is supplied
                     "read_body_absent",
                     False,
-                    "read_historical returns a value — it has a body, and this audit no "
-                    "longer establishes that nothing is read",
+                    "read_historical returns or yields a value — it has a body, and this "
+                    "audit no longer establishes that nothing is read",
+                )
+            unexpected = sorted(
+                {
+                    name
+                    for child in ast.walk(node)
+                    if isinstance(child, ast.Call)
+                    for name in [
+                        getattr(child.func, "id", None) or getattr(child.func, "attr", None)
+                    ]
+                    if name is not None and name not in _PERMITTED_READ_ROUTE_CALLS
+                }
+            )
+            if unexpected:
+                return CheckResult(  # pragma: no cover - true once a body is supplied
+                    "read_body_absent",
+                    False,
+                    f"read_historical calls {unexpected}, which are not among its declared "
+                    "gates — the route has a body and this audit no longer establishes "
+                    "that nothing is read",
                 )
             if _terminal_raise_is_not_implemented(node.body):
                 return CheckResult(
                     "read_body_absent",
                     True,
-                    "read_historical returns nothing and its last statement is "
-                    "raise NotImplementedError; no read is implemented at this head",
+                    "read_historical returns nothing, calls only its declared gates, "
+                    "and ends in raise NotImplementedError",
                 )
             return CheckResult(  # pragma: no cover
                 "read_body_absent",
@@ -391,8 +450,49 @@ def _check_read_body_is_absent() -> CheckResult:
 
 
 # ---------------------------------------------------------------------------
-# Structural checks — advisory, and labelled as such
+# Source checks (5) — advisory, and labelled as such
 # ---------------------------------------------------------------------------
+
+
+def _alias_findings(module_name: str, tree: ast.AST) -> list[str]:
+    """Every *reference* to a reader name, not one binding form.
+
+    An earlier drafting inspected ``ast.Assign`` whose value was a bare
+    ``Name``/``Attribute``. A re-verification bound the same callable seven
+    other ways — ``getattr(builtins, "open")``, a dict subscript, tuple
+    unpacking, an annotated assignment, a walrus, ``from builtins import open
+    as _r``, and ``getattr(_pd, "read_parquet")`` — and only the control was
+    caught.
+
+    So the rule is now: a reader name appearing **anywhere** in the module, as
+    a name, an attribute, an import alias, or a string constant handed to
+    ``getattr``, is a finding. That is noisier and it is the right polarity.
+    """
+    findings: list[str] = []
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Call):
+            func = node.func
+            direct = getattr(func, "id", None) or getattr(func, "attr", None)
+            if direct == "getattr":
+                for argument in node.args[1:2]:
+                    if isinstance(argument, ast.Constant) and argument.value in _READER_NAMES:
+                        findings.append(f"{module_name}:{node.lineno} getattr({argument.value!r})")
+            continue
+        if isinstance(node, ast.ImportFrom):
+            findings.extend(
+                f"{module_name}:{node.lineno} imports {alias.name}"
+                for alias in node.names
+                if alias.name in _READER_NAMES
+            )
+            continue
+        name = None
+        if isinstance(node, ast.Name):
+            name = node.id
+        elif isinstance(node, ast.Attribute):
+            name = node.attr
+        if name in _READER_NAMES:
+            findings.append(f"{module_name}:{node.lineno} references {name}")
+    return findings
 
 
 def _check_single_read_route() -> CheckResult:
@@ -423,15 +523,7 @@ def _check_single_read_route() -> CheckResult:
             )
             if name in _READER_NAMES:
                 findings.append(f"{module_name}:{node.lineno} {name}()")
-        for node in ast.walk(tree):
-            # ``_reader = builtins.open`` then ``_reader(path)`` — the call site
-            # carries a name the sweep has never heard of, so the *binding* is
-            # what has to be caught. Still not completeness; see the docstring.
-            if isinstance(node, ast.Assign):
-                value = node.value
-                bound = getattr(value, "id", None) or getattr(value, "attr", None)
-                if bound in _READER_NAMES:
-                    findings.append(f"{module_name}:{node.lineno} aliases {bound}")
+        findings.extend(_alias_findings(module_name, tree))
     if findings:
         return CheckResult("single_read_route", False, f"file-access calls outside: {findings}")
     return CheckResult(
@@ -536,11 +628,14 @@ def audit() -> dict[str, Any]:
             isolation.uninstall_all()
     passed = all(result.passed for result in results)
     by_name = {result.name: result.passed for result in results}
-    # Two conditions, deliberately: the route has no body at this head **and**
-    # the process actually refused a market-data read. Either alone has been
-    # defeated in review — the source check by a dead-code decoy, and a
-    # behavioural probe cannot see a body that was never called.
-    no_read = bool(by_name.get("read_body_absent") and by_name.get("market_data_read_refused"))
+    # Three conditions, deliberately. The route has no body at this head, the
+    # process actually refused a market-data read, and **the audit as a whole
+    # passed** — an earlier drafting computed this field independently of the
+    # verdict, so a BREACHED report still carried `no_market_data_read: True`
+    # and the field could be quoted on its own.
+    no_read = bool(
+        passed and by_name.get("read_body_absent") and by_name.get("market_data_read_refused")
+    )
     return {
         "status": STATUS_CONTAINED if passed else STATUS_BREACHED,
         "checks": [result.as_record() for result in results],

@@ -80,6 +80,7 @@ def _require(grant: object, **overrides: object) -> object:
         "span_end_utc": "2025-06-30",
         "pairs": ("EUR_USD",),
         "timeframe": "M1",
+        "identity": _identity(),
     }
     kwargs.update(overrides)
     return authorization.require_authorization(grant, **kwargs)  # type: ignore[arg-type]

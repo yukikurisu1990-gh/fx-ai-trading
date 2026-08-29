@@ -80,8 +80,11 @@ run and would not be for a hot loop.
 
 from __future__ import annotations
 
+import contextvars
+import functools
 import ipaddress
 import os
+import pathlib
 import socket
 import sys
 import threading
@@ -228,15 +231,20 @@ _EXTENDED_PREFIXES: Final[tuple[tuple[str, str], ...]] = (
 )
 
 
-def _normalise(raw: object, *, resolve_links: bool) -> str | None:
-    """An absolute, case-normalised path string, or ``None`` if unclassifiable.
+def _normalise(raw: object) -> str | None:
+    """An absolute, link-resolved, case-normalised path, or ``None`` if unclassifiable.
 
-    Three things happen here that a raw ``os.path.relpath`` did not do: the
-    Win32 extended prefixes are stripped, ``normcase`` folds case on the
-    filesystems that ignore it, and — for a mutating operation — ``realpath``
-    follows a symlink, so a link inside the scratch root cannot point at
-    ``docs/``. A hardlink has no "true" path and is not reachable this way;
-    ``os.link`` is refused instead.
+    ``realpath`` is used for **every** decision, reads included. An earlier
+    drafting used the cheaper ``abspath`` on the read path only, and a
+    re-verification walked straight through it: measured on this machine,
+    ``realpath`` expands an 8.3 short name (``FX-AI-~1`` → ``fx-ai-trading``),
+    resolves the ``\\.\\`` device namespace and follows a junction, while
+    ``abspath`` does none of those. A junction inside the scratch root pointing
+    at ``data/`` returned real bytes through the read guard.
+
+    What ``realpath`` does **not** normalise — also measured — is the UNC form
+    ``\\localhost\\C$\\…``, which addresses the same volume by another name.
+    That is what :func:`_inside_protected` is for.
     """
     if isinstance(raw, int):
         return None  # an already-open descriptor: the open that made it was seen
@@ -251,8 +259,7 @@ def _normalise(raw: object, *, resolve_links: bool) -> str | None:
             text = replacement + text[len(prefix) :]
             break
     try:
-        absolute = os.path.realpath(text) if resolve_links else os.path.abspath(text)
-        return os.path.normcase(absolute)
+        return os.path.normcase(os.path.realpath(text))
     except (OSError, ValueError):
         return None
 
@@ -282,6 +289,87 @@ def _relative_parts(candidate: str, root: str) -> tuple[str, ...] | None:
     if not candidate.startswith(prefixed):
         return None
     return tuple(part for part in candidate[len(prefixed) :].split(os.sep) if part)
+
+
+#: How far up a path the identity walk climbs before giving up.
+_IDENTITY_WALK_LIMIT: Final[int] = 64
+
+
+@functools.lru_cache(maxsize=8)
+def _identity_map(repo_text: str, scratch_text: str) -> dict[tuple[int, int], str]:
+    """``(st_dev, st_ino)`` of every protected root, by role.
+
+    A filesystem identity is exact where a string is not: measured on this
+    machine, ``…/data``, ``…\\FX-AI-~1\\data``, ``\\localhost\\C$\\…\\data`` and
+    ``…/DATA`` all report the same ``st_dev``/``st_ino``. Cached on the two root
+    strings, so a test that repoints the scratch root gets its own entry.
+    """
+    identities: dict[tuple[int, int], str] = {}
+    repo = pathlib.Path(repo_text)
+    candidates: list[tuple[str, pathlib.Path]] = [("scratch", pathlib.Path(scratch_text))]
+    for name in _MARKET_DATA_DIRS:
+        candidates.append(("market_data", repo / name))
+    artifacts = repo / "artifacts"
+    try:
+        for entry in artifacts.iterdir():
+            if entry.is_dir() and any(
+                entry.name.startswith(prefix) for prefix in _MARKET_DATA_ARTIFACT_PREFIXES
+            ):
+                candidates.append(("market_data", entry))
+    except OSError:
+        pass
+    candidates.append(("repo", repo))
+    for role, path in candidates:
+        try:
+            stat = os.stat(path)
+        except OSError:
+            continue
+        identities.setdefault((stat.st_dev, stat.st_ino), role)
+    return identities
+
+
+def _inside_protected(candidate: str, repo_text: str, scratch_text: str) -> str | None:
+    """Which protected root really contains ``candidate``, by filesystem identity.
+
+    The nearest protected ancestor wins, so the scratch root and the
+    market-data trees are recognised before the repository that contains them.
+    Only reached when the cheap string test has already said "outside the
+    repository" — which is the case a second spelling of the same volume
+    produces.
+    """
+    identities = _identity_map(repo_text, scratch_text)
+    current = candidate
+    for _ in range(_IDENTITY_WALK_LIMIT):
+        try:
+            stat = os.stat(current)
+        except OSError:
+            stat = None
+        if stat is not None:
+            role = identities.get((stat.st_dev, stat.st_ino))
+            if role is not None:
+                return role
+        parent = os.path.dirname(current)
+        if not parent or parent == current:
+            return None
+        current = parent
+    return None  # pragma: no cover - 64 levels is not a real path
+
+
+def _classify(candidate: str) -> tuple[str, tuple[str, ...]]:
+    """One of ``outside`` / ``cache`` / ``scratch`` / ``market_data`` / ``repo``."""
+    repo_text = _root(scratch.repo_root, "repository root")
+    scratch_text = _root(scratch.scratch_root, "scratch root")
+    parts = _relative_parts(candidate, repo_text)
+    if parts is not None:
+        if any(part in _WRITABLE_REPO_CACHES for part in parts):
+            return "cache", parts
+        if _relative_parts(candidate, scratch_text) is not None:
+            return "scratch", parts
+        if _is_market_data(parts):
+            return "market_data", parts
+        return "repo", parts
+    role = _inside_protected(candidate, repo_text, scratch_text)
+    return (role or "outside"), ()
 
 
 def _is_market_data(parts: tuple[str, ...]) -> bool:
@@ -324,48 +412,100 @@ def _is_append_only_mode(mode: object, flags: object = None) -> bool:
 
 
 def assert_write_allowed(raw: object, *, what: str = "write to") -> None:
-    """Refuse a mutating operation that lands in the repo outside the scratch root."""
-    candidate = _normalise(raw, resolve_links=True)
+    """Refuse a mutating operation that lands in the repo outside the scratch root.
+
+    An ``int`` is an already-open descriptor and is **permitted**: the ``open``
+    that produced it was checked, and every other event in the hook already
+    skips ints. An earlier drafting refused it, which broke far more than it
+    guarded — CPython writes every ``.pyc`` through ``_io.FileIO(fd, "wb")``, so
+    a Track A run died on its first uncached import, and ``containment.audit()``
+    died with it. The suite never saw it because ``__pycache__`` was warm.
+    """
+    if isinstance(raw, int):
+        return
+    candidate = _normalise(raw)
     if candidate is None:
         raise IsolationError(
             f"{TOKEN}: a Track A run may not {what} a path it cannot classify ({raw!r}). "
             "An unclassifiable destination fails closed."
         )
-    parts = _relative_parts(candidate, _root(scratch.repo_root, "repository root"))
-    if parts is None:
-        return  # outside the repository: temp dirs, site-packages, the OS
-    if any(part in _WRITABLE_REPO_CACHES for part in parts):
+    role, parts = _classify(candidate)
+    if role in {"outside", "cache", "scratch"}:
         return
-    if _relative_parts(candidate, _root(scratch.scratch_root, "scratch root")) is not None:
-        return
+    where = "/".join(parts) if parts else candidate
     raise IsolationError(
-        f"{TOKEN}: a Track A run may not {what} {'/'.join(parts)!r}. Every mutating "
-        "operation goes beneath the Track A scratch root; the repository's source, docs, "
-        "data, models and evidence trees are read-only to a research run."
+        f"{TOKEN}: a Track A run may not {what} {where!r}. Every mutating operation goes "
+        "beneath the Track A scratch root; the repository's source, docs, data, models and "
+        "evidence trees are read-only to a research run."
     )
 
 
+def _ledger_identities(scratch_text: str) -> dict[tuple[int, int], str]:
+    """``(st_dev, st_ino)`` of every append-only ledger that exists."""
+    identities: dict[tuple[int, int], str] = {}
+    root = pathlib.Path(scratch_text)
+    for name in scratch.APPEND_ONLY_FILENAMES:
+        try:
+            stat = os.stat(root / name)
+        except OSError:
+            continue
+        identities[(stat.st_dev, stat.st_ino)] = name
+    return identities
+
+
 def _check_append_only(raw: object, mode: object, flags: object) -> None:
-    """A `BINDING_GOVERNANCE_RECORD` may be appended to and never rewritten."""
-    try:
-        name = os.path.basename(os.fsdecode(raw))
-    except (TypeError, ValueError):
-        return
-    if name not in scratch.APPEND_ONLY_FILENAMES:
+    """A `BINDING_GOVERNANCE_RECORD` may be appended to and never rewritten.
+
+    Two tests, because either alone has been defeated. The first is **exact**:
+    if the target already exists and its ``(st_dev, st_ino)`` is a ledger's,
+    it is that ledger whatever the caller typed — an earlier drafting compared
+    the raw basename case-sensitively, and six spellings truncated a real
+    ledger to zero bytes (trailing dot, trailing space, ``::$DATA``, uppercase,
+    mixed case, and ``os.open`` with ``O_TRUNC`` under any of them).
+
+    The second catches a ledger that does not exist yet: the **normalised**
+    basename, case-folded, with an NTFS stream suffix stripped. ``abspath``
+    already removes the trailing dot and space that Windows ignores; the stream
+    suffix it does not.
+    """
+    if isinstance(raw, int):
         return
     if not _is_write_mode(mode, flags) or _is_append_only_mode(mode, flags):
         return
-    candidate = _normalise(raw, resolve_links=False)
-    root = _root(scratch.scratch_root, "scratch root")
-    if candidate is not None and _relative_parts(candidate, root) is not None:
+    scratch_text = _root(scratch.scratch_root, "scratch root")
+
+    try:
+        stat = os.stat(os.fsdecode(raw))
+    except (OSError, TypeError, ValueError):
+        stat = None
+    if stat is not None:
+        name = _ledger_identities(scratch_text).get((stat.st_dev, stat.st_ino))
+        if name is not None:
+            raise IsolationError(
+                f"{TOKEN}: {name!r} is an append-only governance record and may not be "
+                "opened for truncation or overwrite. An append-only API binds only its "
+                "own callers."
+            )
+
+    candidate = _normalise(raw)
+    if candidate is None:
+        return
+    name = os.path.basename(candidate).split(":", 1)[0].casefold()
+    if name not in {entry.casefold() for entry in scratch.APPEND_ONLY_FILENAMES}:
+        return
+    if _relative_parts(candidate, scratch_text) is not None:
         raise IsolationError(
             f"{TOKEN}: {name!r} is an append-only governance record and may not be opened "
-            "for truncation or overwrite. An append-only API binds only its own callers."
+            "for truncation or overwrite."
         )
 
 
 def _check_open(args: tuple[Any, ...]) -> None:
     raw = args[0] if args else None
+    if isinstance(raw, int):
+        # An already-open descriptor. The open that produced it was checked, and
+        # every other event in the hook skips ints too.
+        return
     mode = args[1] if len(args) > 1 else None
     flags = args[2] if len(args) > 2 else None
 
@@ -377,14 +517,15 @@ def _check_open(args: tuple[Any, ...]) -> None:
 
     if _read_window_depth():
         return
-    candidate = _normalise(raw, resolve_links=False)
+    candidate = _normalise(raw)
     if candidate is None:
         return  # a read of something unlocatable is not a market-data read
-    parts = _relative_parts(candidate, _root(scratch.repo_root, "repository root"))
-    if parts is not None and _is_market_data(parts):
+    role, parts = _classify(candidate)
+    if role == "market_data":
+        where = "/".join(parts) if parts else candidate
         raise IsolationError(
-            f"{TOKEN}: a Track A run may not read {'/'.join(parts)!r} outside the gated read "
-            "route. Market data is reached through "
+            f"{TOKEN}: a Track A run may not read {where!r} outside the gated read route. "
+            "Market data is reached through "
             "scripts.m15_track_a.read_route.read_historical, which requires an explicit "
             "authorisation grant, an admissible span and a prior seen-data declaration."
         )
@@ -399,14 +540,46 @@ def _check_open(args: tuple[Any, ...]) -> None:
 _armed: bool = False
 _hook_installed: bool = False
 
-#: The gated read window is **per thread**: one thread holding it must not open
-#: ``data/`` to every other thread in the process.  Re-entrant, so a nested
-#: window does not close the outer one on exit.
-_window = threading.local()
+
+@dataclass(frozen=True)
+class _WindowOwner:
+    """Who opened the read window, and how deep they are inside it."""
+
+    thread_id: int
+    task: int | None
+    depth: int
+
+
+#: The gated read window, pinned to the **thread and task that opened it**.
+#:
+#: Three draftings were needed. A module-level flag opened ``data/`` to every
+#: other thread. A ``threading.local`` opened it to every other coroutine on the
+#: same thread. A bare ``ContextVar`` looked right and is not: a ``Task`` copies
+#: the current context at creation, so a task spawned *inside* the window
+#: inherits it — measured, a sibling task's read reached the filesystem. So the
+#: owner is recorded and compared, and an inherited copy fails the comparison.
+_window: contextvars.ContextVar[_WindowOwner | None] = contextvars.ContextVar(
+    "track_a_read_window", default=None
+)
+
+
+def _current_task_id() -> int | None:
+    try:
+        import asyncio
+
+        task = asyncio.current_task()
+    except (ImportError, RuntimeError):
+        return None
+    return None if task is None else id(task)
 
 
 def _read_window_depth() -> int:
-    return int(getattr(_window, "depth", 0))
+    owner = _window.get()
+    if owner is None:
+        return 0
+    if owner.thread_id != threading.get_ident() or owner.task != _current_task_id():
+        return 0  # an inherited copy, not the holder
+    return owner.depth
 
 
 def _audit_hook(event: str, args: tuple[Any, ...]) -> None:
@@ -637,7 +810,7 @@ def uninstall_all() -> None:
     """
     global _state, _armed
     _armed = False
-    _window.depth = 0
+    _window.set(None)
     state = _state
     _state = None
     if state is None:
@@ -670,25 +843,36 @@ class gated_read_window:  # noqa: N801 - a context manager reads as a noun here
     "exactly one read route" a property of the process rather than a property
     of one function that a caller may decline to call.
 
-    Thread-local and re-entrant: an earlier drafting used a process-wide flag,
-    so one thread's gated read opened ``data/`` to every other thread, and a
-    nested window closed the outer one on exit.
+    Pinned to the thread **and the task** that opened it, and re-entrant.
+    Three earlier draftings were wrong: a process-wide flag opened ``data/`` to
+    every other thread; a ``threading.local`` opened it to every other coroutine
+    on the same thread; and a bare ``ContextVar`` is *copied into* a child task,
+    so a task spawned inside the window inherited it. Comparing the recorded
+    owner is what makes an inherited copy inert.
     """
+
+    _token: contextvars.Token[_WindowOwner | None]
 
     def __enter__(self) -> gated_read_window:
         if not _armed:
             raise IsolationError(
                 f"{TOKEN}: the read window may not be opened while the guards are disarmed."
             )
-        _window.depth = _read_window_depth() + 1
+        self._token = _window.set(
+            _WindowOwner(
+                thread_id=threading.get_ident(),
+                task=_current_task_id(),
+                depth=_read_window_depth() + 1,
+            )
+        )
         return self
 
     def __exit__(self, *_exc: object) -> None:
-        _window.depth = max(0, _read_window_depth() - 1)
+        _window.reset(self._token)
 
 
 def is_read_window_open() -> bool:
-    """Whether **this thread** currently holds the gated read window."""
+    """Whether **this context** currently holds the gated read window."""
     return _read_window_depth() > 0
 
 
