@@ -175,7 +175,13 @@ def _install_engine_guard() -> None:
 
 
 # ---------------------------------------------------------------------------
-# Guard 3 — no connection off the loopback interface without authorization
+# Guard 3 — nothing leaves the loopback interface without authorization
+#
+# A ``connect``-only guard has two residual routes, both recorded by the
+# FR-19 test-safety review: a datagram socket reaches a remote host through
+# ``sendto`` without ever calling ``connect``, and a name lookup reaches a
+# resolver on the network before any connection is opened.  Both are guarded
+# here on the same footing as ``connect``.
 # ---------------------------------------------------------------------------
 
 _LOOPBACK_NAMES = frozenset({"", "localhost", "localhost.localdomain"})
@@ -199,21 +205,27 @@ def _is_loopback(host_value: object) -> bool:
         return False
 
 
-def _check_destination(address: object) -> None:
+def _refuse(what: str, host: object) -> None:
+    raise RuntimeError(
+        f"a default test run may not {what} {host!r}. {optin.external_skip_reason()}."
+    )
+
+
+def _check_destination(address: object, what: str = "open a network connection to") -> None:
     if not isinstance(address, tuple) or not address:
         return  # AF_UNIX and friends never leave the machine
     host = address[0]
     if _is_loopback(host) or _NETWORK_AUTHORIZED:
         return
-    raise RuntimeError(
-        f"a default test run may not open a network connection to {host!r}. "
-        f"{optin.external_skip_reason()}."
-    )
+    _refuse(what, host)
 
 
 def _install_socket_guard() -> None:
     real_connect = socket.socket.connect
     real_connect_ex = socket.socket.connect_ex
+    real_sendto = socket.socket.sendto
+    real_getaddrinfo = socket.getaddrinfo
+    real_gethostbyname = socket.gethostbyname
 
     def guarded_connect(self: socket.socket, address: object) -> object:
         _check_destination(address)
@@ -223,8 +235,28 @@ def _install_socket_guard() -> None:
         _check_destination(address)
         return real_connect_ex(self, address)
 
+    def guarded_sendto(self: socket.socket, data: object, *args: object) -> object:
+        # ``sendto(data, address)`` and ``sendto(data, flags, address)`` — the
+        # destination is the last positional argument in both spellings.
+        if args:
+            _check_destination(args[-1], "send a datagram to")
+        return real_sendto(self, data, *args)
+
+    def guarded_getaddrinfo(host: object, *args: object, **kwargs: object) -> object:
+        if not _is_loopback(host) and not _NETWORK_AUTHORIZED:
+            _refuse("resolve the name", host)
+        return real_getaddrinfo(host, *args, **kwargs)
+
+    def guarded_gethostbyname(host: object) -> object:
+        if not _is_loopback(host) and not _NETWORK_AUTHORIZED:
+            _refuse("resolve the name", host)
+        return real_gethostbyname(host)
+
     socket.socket.connect = guarded_connect  # type: ignore[method-assign]
     socket.socket.connect_ex = guarded_connect_ex  # type: ignore[method-assign]
+    socket.socket.sendto = guarded_sendto  # type: ignore[method-assign]
+    socket.getaddrinfo = guarded_getaddrinfo  # type: ignore[assignment]
+    socket.gethostbyname = guarded_gethostbyname  # type: ignore[assignment]
 
 
 # ---------------------------------------------------------------------------

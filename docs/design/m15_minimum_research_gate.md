@@ -13525,6 +13525,17 @@ a single turnover figure. **Neither side is available**, and this cleanup does n
 it — it is added to the Minimum Research Execution Gate.
 **`THE_TURNOVER_AXES_ARE_FIXABLE_NEITHER_BEFORE_NOR_AFTER_TRACK_A_AND_THE_COLLISION_IS_UNRULED`.**
 
+*Subsequently ruled at the execution gate*
+(`docs/design/m15_track_a_execution_gate.md` §10):
+**`TURNOVER_AXES_FIXED_AT_THE_COMMITTED_IMPLEMENTATION_MEAN_OVER_ACTIVE_DAYS`** —
+both axes are recorded at the arms the committed `metrics.py` already takes, so
+no threshold moves, nothing is selected that was not already selected, and the
+one axis on which the permissive and incumbent arms diverge is fixed at the
+**stricter** arm, which Ruling 10 requires and which no observation could make
+attractive. The deadlock dissolves because these are measurement conventions of
+an incumbent implementation, not the strategy parameters §8.13.5 excludes. S-62
+and S-63 remain live Track B surfaces.
+
 ##### Claims §8.13 made that the review showed were wrong
 
 1. **`ω` listed among carried parameters** — ω-9 makes it **role-local**, measured on the

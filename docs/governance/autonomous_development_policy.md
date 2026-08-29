@@ -81,6 +81,23 @@ work and re-checked against the final diff before opening the PR.
 The PR body must state the final risk classification and the reasoning, so a
 reviewer can check the classification itself and not only the diff.
 
+## 2a. The Two-Track model, and where a Track A run sits
+
+M15 Family A research is split into **Track A** (exploratory,
+`NON_DECISION_BEARING_EXPLORATORY_ONLY`) and **Track B** (formal confirmation on
+unseen data) — `docs/design/m15_minimum_research_gate.md` §8.11–§8.13.
+
+**A Track A run is Red.** It is a real-data read, and §6's Red tier names
+real-data reads and training explicitly. No Green or Amber path reaches one:
+building the *infrastructure* for it is Amber, passing the **Minimum Research
+Execution Gate** is Amber, and neither authorises the run. Inside Track A, R1
+(first read), R3 (training) and R4 (evaluation) are **three separate Red gates**
+with three separate approvals — an execution-gate pass authorises **R1 only**.
+
+**Track A output is never evidence**, so a task that would cite one in a formal
+GO, a Gate-3a pass, a holdout claim or a production-readiness claim is refused
+regardless of tier.
+
 ## 3. Protected paths and protected actions — Amber or higher
 
 Any change touching the following is **Amber at minimum**, regardless of how

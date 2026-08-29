@@ -10,9 +10,48 @@ Before any M15 / ML Step 4 / post-M1 research work, read:
   the audit checklists
 - `docs/prompts/m15_claude_operating_prefix.md` — the five-field task contract
 - `docs/prompts/m15_future_audit_templates.md` — optional prompt templates
+- `docs/design/m15_minimum_research_gate.md` — **the Two-Track model**: §8.11
+  (Exploratory / Formal Confirmation split), §8.12 (governance consistency),
+  §8.13 (semantic cleanup). Read it before any Track A or Track B work; the
+  playbook and prereg carry the split only as far as this propagation has taken
+  it, and where they disagree with that packet **they govern until propagated**
+- `docs/design/m15_track_a_execution_gate.md` — the **Minimum Research
+  Execution Gate**: the apparatus that has to be in place before a Track A R1
+  read may be authorised, and the turnover-axis ruling taken with it
 
 For ordinary Green engineering (lint, CI, docs, tests, refactors) the
 autonomous development policy alone is enough.
+
+## The Two-Track model — read this before any M15 research task
+
+M15 Family A research is split. Which track a task belongs to changes what is
+permitted, and a task that does not say is **Track B** until someone rules
+otherwise.
+
+- **Track A — Exploratory.** May vary features, labels, models, hyperparameters,
+  the training scheme, calibration, `ev_min`, thresholds, costs and entry/exit
+  logic. Every output is **`NON_DECISION_BEARING_EXPLORATORY_ONLY`** and may
+  never be cited for a formal GO, a Gate-3a pass, holdout evidence, novelty
+  evidence, production readiness — or in any decision this programme records.
+  Track A does **not** require the 77-item statistical freeze and does **not**
+  require the forward epoch to exist.
+- **Track B — Formal Confirmation.** One declared candidate, frozen in every
+  respect, run **once** on unseen forward data. Not a place to redesign.
+
+**Track A cannot start yet.** Three execution-safety conditions gate it, all
+currently unmet: governance propagation complete, the **Minimum Research
+Execution Gate** passed on a named head, and the derivation route decided **in a
+diff**. `TRACK_A_EXECUTION_REQUIRES_GOVERNANCE_PROPAGATION_COMPLETE`. The
+apparatus for all three is `scripts/m15_track_a/` and
+`docs/design/m15_track_a_execution_gate.md`; **building it is not passing the
+gate**, which needs review, approval and merge on a named head. Inside
+Track A, R1 (first read), R3 (training) and R4 (evaluation) remain **separate
+Red gates** — an execution-gate pass authorises **R1 only**.
+
+**A contract permission is not an execution authorisation.** The Two-Track
+contract being approved does not authorise a read; a read needs an explicit
+human + ChatGPT grant naming the operation, span, pairs, timeframe and approved
+head SHA (`scripts/m15_track_a/authorization.py`).
 
 ## Working rules
 

@@ -438,6 +438,28 @@ class TestSocketGuard:
         with socket.socket() as sock, pytest.raises(RuntimeError, match="network connection"):
             sock.connect_ex(("example.invalid", 80))
 
+    def test_datagram_send_is_guarded(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        """FR-19 residual route 1: ``sendto`` reaches a host without ``connect``."""
+        monkeypatch.delenv(optin.EXTERNAL_OPT_IN, raising=False)
+        monkeypatch.delenv(optin.DB_OPT_IN, raising=False)
+        with (
+            socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sock,
+            pytest.raises(RuntimeError, match="datagram"),
+        ):
+            sock.sendto(b"x", ("203.0.113.1", 53))
+
+    def test_name_resolution_is_guarded(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        """FR-19 residual route 2: a lookup reaches a resolver before any connect."""
+        monkeypatch.delenv(optin.EXTERNAL_OPT_IN, raising=False)
+        monkeypatch.delenv(optin.DB_OPT_IN, raising=False)
+        with pytest.raises(RuntimeError, match="resolve the name"):
+            socket.getaddrinfo("example.invalid", 80)
+        with pytest.raises(RuntimeError, match="resolve the name"):
+            socket.gethostbyname("example.invalid")
+
+    def test_loopback_resolution_still_works(self) -> None:
+        assert socket.getaddrinfo("localhost", None)
+
     def test_loopback_still_works(self) -> None:
         """Local fake servers (e.g. the SMTP dispatch test) must keep working."""
         with socket.socket() as server:

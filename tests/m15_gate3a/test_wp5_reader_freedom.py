@@ -558,7 +558,58 @@ def test_importing_the_package_loads_no_third_party_module() -> None:
 #: merely begins with the package name — `scripts/m15_gate3a_continuation/`,
 #: which is the name the suite's own fixtures use for the gate-4 byte-reading
 #: producer, or `scripts/m15_gate3a_evil.py` — counted as "inside the package".
-PERMITTED_CALLER_ROOTS: tuple[str, ...] = ("scripts/m15_gate3a/", "tests/m15_gate3a/")
+PERMITTED_CALLER_ROOTS: tuple[str, ...] = (
+    "scripts/m15_gate3a/",
+    "tests/m15_gate3a/",
+    # Track A's R1 execution infrastructure imports this package's reader-free
+    # authorities — the path authority, the span constants and the aggregation
+    # bucket constants — rather than re-implementing them, which would make a
+    # fourth path authority and a second set of span constants.  The permission
+    # is narrow and is pinned by
+    # ``test_track_a_imports_only_reader_free_names_from_this_package`` below:
+    # this root may import the reader-free names on the allowlist and nothing
+    # else.  Without that companion test this entry would weaken FB-8's pin
+    # rather than scope it.
+    "scripts/m15_track_a/",
+    "tests/m15_track_a/",
+)
+
+#: What ``scripts/m15_track_a/`` may import from this package.  Every entry is
+#: reader-free: a pure path predicate, a frozen span constant, a declaration
+#: check that opens no file, or an integer.  ``proof``, ``artifacts``,
+#: ``coverage``, ``calendar_authority`` and ``sealing`` are deliberately absent —
+#: they carry evidence semantics Track A must not reach, and a Track A run is a
+#: future real-data reader, so its import surface into this package is the one
+#: place a reader could be introduced by the back door.
+TRACK_A_PERMITTED_IMPORTS: dict[str, frozenset[str]] = {
+    "scripts.m15_gate3a.path_authority": frozenset(
+        {"PathAuthorityError", "is_within", "resolve_candidate"}
+    ),
+    "scripts.m15_gate3a.no_overlap": frozenset(
+        {"DESIGN_END", "DESIGN_START", "assert_design_bounds", "assert_no_dead_window"}
+    ),
+    "scripts.m15_gate3a.aggregation": frozenset({"BUCKET_MINUTES", "FULL_BUCKET_SOURCE_BARS"}),
+}
+
+#: The sweep below covers ``scripts/m15_track_a/`` only.  Track A's *tests* may
+#: import more — one of them probes ``guards.refuse_real_path`` to demonstrate
+#: the gap NR-A leaves — because a test that proves a guard does not reach a
+#: path must be able to call that guard.  Production Track A code may not, and
+#: that is what this pin binds.
+
+#: Modules Track A may not import from this package at all, named so the failure
+#: message says why rather than only that.
+TRACK_A_FORBIDDEN_MODULES: frozenset[str] = frozenset(
+    {
+        "scripts.m15_gate3a.proof",
+        "scripts.m15_gate3a.artifacts",
+        "scripts.m15_gate3a.coverage",
+        "scripts.m15_gate3a.calendar_authority",
+        "scripts.m15_gate3a.sealing",
+        "scripts.m15_gate3a.effective_n",
+        "scripts.m15_gate3a.cost_schema",
+    }
+)
 
 
 #: Directories that are not first-party source. Everything else in the repo is
@@ -651,6 +702,60 @@ def test_the_package_has_no_reverse_caller_outside_itself_and_its_own_tests() ->
     assert offenders == [], (
         "§12.14 pins the reverse-caller set: nothing outside the package and its own "
         f"tests may import it, but {offenders} does"
+    )
+
+
+def test_track_a_imports_only_reader_free_names_from_this_package() -> None:
+    """The companion pin for ``scripts/m15_track_a/``'s entry in the permitted roots.
+
+    Track A is a **future real-data reader**, so its import surface into this
+    package is the one place a reader could enter by the back door: an import of
+    ``proof`` or ``artifacts`` would give a reading stage the evidence semantics
+    this package exists to keep away from one.  Adding Track A to
+    ``PERMITTED_CALLER_ROOTS`` without this test would have widened FB-8's pin
+    instead of scoping it.
+
+    Mutation this kills: ``from scripts.m15_gate3a.proof import ...`` anywhere
+    under ``scripts/m15_track_a/``, and a new symbol pulled from an otherwise
+    permitted module.
+    """
+    root = repo_root()
+    track_a = root / "scripts" / "m15_track_a"
+    assert track_a.is_dir(), "non-vacuity: the Track A package must exist for this pin to bind"
+    files = sorted(track_a.rglob("*.py"))
+    assert files, "non-vacuity: no Track A source files were swept"
+
+    offenders: list[str] = []
+    for path in files:
+        rel = path.relative_to(root).as_posix()
+        tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+        for node in ast.walk(tree):
+            if isinstance(node, ast.ImportFrom):
+                module = node.module or ""
+                if not (module == PACKAGE or module.startswith(PACKAGE + ".")):
+                    continue
+                if module in TRACK_A_FORBIDDEN_MODULES:
+                    offenders.append(f"{rel}: imports the forbidden module {module}")
+                    continue
+                permitted = TRACK_A_PERMITTED_IMPORTS.get(module)
+                if permitted is None:
+                    offenders.append(f"{rel}: imports {module}, which is not on the allowlist")
+                    continue
+                for alias in node.names:
+                    if alias.name not in permitted:
+                        offenders.append(f"{rel}: imports {module}.{alias.name}, not allowlisted")
+            elif isinstance(node, ast.Import):
+                for alias in node.names:
+                    name = alias.name
+                    if name == PACKAGE or name.startswith(PACKAGE + "."):
+                        offenders.append(
+                            f"{rel}: `import {name}` — Track A imports named symbols from the "
+                            "allowlist, never a whole module"
+                        )
+
+    assert offenders == [], (
+        "Track A may import only the reader-free names on TRACK_A_PERMITTED_IMPORTS from "
+        f"this package, but {offenders}"
     )
 
 

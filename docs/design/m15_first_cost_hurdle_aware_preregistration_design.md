@@ -439,6 +439,27 @@ items below carry explicit [FIXED-AT …] markers and do not block this merge.
 **Before any production claim:** disjoint replication (gate 9) + separate
 paper/live gates (gate 10).
 
+## 13a. Two-Track amendment (recorded, pending PR #451 approval)
+
+`docs/design/m15_minimum_research_gate.md` §8.11–§8.13 split Family A research
+into **Track A** (exploratory) and **Track B** (formal confirmation). The
+following clauses of this pre-registration are affected, and each is amended
+**for Track A only** — Track B inherits them unchanged:
+
+| Clause | Amendment |
+| --- | --- |
+| §3.1 "usable only after the §4 derivation artifact exists" | For **Track A**, a research-scratch derivation is permitted after the Minimum Research Execution Gate and an explicit read grant. It is **not** the §4 artifact and may never be recorded as one. Track B still requires the §4 artifact |
+| §4 "requires a Gate-P2-style adoption artifact **before any real read**" | Same carve-out, same limits |
+| §7 feature policy "the final feature list is frozen **at the design audit**" | Track A **varies** the feature list; the freeze binds at **Track B candidate pre-registration** |
+| §8 model & calibration "isotonic … training-span-only fit split" | The **method** stays frozen; Track A varies the **split**, which is fixed at Track B candidate pre-registration |
+| §10 "gates … none skippable" | Unchanged. The Two-Track ladder **adds** gates (playbook §3); it skips none |
+| §11 source reuse | A Track A research derivation reuses the committed gate-3a aggregator; its audit status is inherited and recorded, not cleared |
+| §6 barrier/spread ratio "**before implementation** … derived and recorded" | The derivation is a **Track A duty**, performed under the declared candidate's frozen cost table. A Track A measurement **fires** T-3's block; it does not discharge playbook §6's checkbox |
+| §16 Ruling 1 gate-3a placement | Unchanged for the committed artifact; the Track A carve-out above is the only exception |
+
+**Nothing here authorises a read, a derivation, training, evaluation or a run**,
+and §14 below is unchanged.
+
 ## 14. Non-authorisation statements
 
 This document authorises **nothing**: no implementation; no training; no
