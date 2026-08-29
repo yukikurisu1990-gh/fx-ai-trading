@@ -283,8 +283,12 @@ def test_the_gate_document_does_not_use_the_retired_status_or_field() -> None:
         for number, line in enumerate(
             (REPO / relative).read_text(encoding="utf-8").splitlines(), 1
         ):
-            if "used to read" in line or "formerly" in line or "renamed" in line:
-                continue  # a deliberate historical reference, which §13 needs
+            # A line that says the name is gone is the opposite of a live use.
+            if any(
+                marker in line
+                for marker in ("used to read", "formerly", "renamed", "retired", "no longer")
+            ):
+                continue
             for name in retired:
                 assert name not in line, f"{relative}:{number} still uses {name}"
     doc = (REPO / "docs" / "design" / "m15_track_a_execution_gate.md").read_text(encoding="utf-8")

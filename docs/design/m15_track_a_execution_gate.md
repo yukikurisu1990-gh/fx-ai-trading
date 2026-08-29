@@ -734,6 +734,76 @@ apparatus should weigh it — and because the one thing that has held across all
 five rounds is that **every defect was found by a context that had not written
 the code.**
 
+### 13.5 The fifth re-verification, and the change that ends the pattern
+
+A fifth fresh context audited the round-five head and found two categories.
+
+**The apparatus did not run.** With the guards armed on a clean checkout,
+**every module import died.** The cache exemption keyed on a `.pyc` *file*, and
+the first thing a cold import does is create the `__pycache__` *directory*;
+`IsolationError` is a `RuntimeError`, so the `except OSError` that makes
+`exist_ok=True` work never saw it. The virtual environment lives inside the
+checkout here, so third-party imports died too. That is a functional blocker
+that five rounds of security review had not surfaced, because every round ran
+in a process whose caches were already warm.
+
+**And the routes.** Every listed pyarrow target was reachable under its
+*defining* name (`pa.OSFile is pa.lib.OSFile`), and re-importing the package
+rebound the re-export back to the original. Seven listed **classes** were
+replaced by functions, so `isinstance` broke process-wide — the round-four
+defect again, while a comment claimed the list held no class targets. sqlite
+`ATTACH` landed through `Cursor.execute` and through SQLAlchemy's own DBAPI
+path. `mmap` on an `O_RDWR|O_APPEND` descriptor, `shutil.copy2`,
+`_winapi.CreateFile` and `_winapi.CopyFile2` each destroyed the ledger, and all
+four are real CPython audit events this module had claimed to handle in full.
+
+One of those is worth recording as a **measured limit** rather than a defect:
+`pyarrow._fs` cannot be patched at all. Replacing any name in it — the abstract
+`FileSystem`, `LocalFileSystem`, `SubTreeFileSystem` — breaks `pyarrow._hdfs`
+on import with `KeyError: '__pyx_vtable__'`. **A guard that breaks the
+dependency it guards is not an option**, so the module is disclosed through
+`unpatchable_native_targets()` instead, and §6 points a reviewer at it.
+
+#### The change that is not another patch
+
+Six independent audit contexts each found a route the audit had certified
+against, and **each time the fix went to the specific route and never to the
+claim.** That is the defect class, and it is the one this round closes:
+
+- `TRACK_A_EXECUTION_CONTAINMENT_VERIFIED_NO_UNGATED_ROUTE` is **retired**. No
+  in-process audit can establish "no ungated route". The status is
+  `…_PROBES_PASSED_BOUNDED_ASSURANCE`, and a test forbids the words *verified*,
+  *proven* and *guaranteed* in it.
+- Every report carries **`bounds`** — five statements of what it does not
+  establish — so the qualification travels with the verdict and cannot be
+  dropped in quotation.
+- `no_market_data_read`, which read `True` while three separate rewrites of the
+  route read a file, is now `declared_gate_sequence_matches_at_this_head`.
+- The report separates `behavioural_checks` from `source_checks_advisory`, so a
+  reader can tell which half carries the verdict.
+
+#### And the tests
+
+The fifth reviewer's closing diagnosis was that *every fix has been to the
+specific attack, and the regression test has been written to the specific
+attack too* — with two proofs: `.git/__pycache__/x.pyc` slipped past a test
+that pinned the filename `x`, and a cold-import test set `PYTHONPYCACHEPREFIX`
+outside the repository, certifying a configuration a real run does not have.
+
+`tests/m15_track_a/test_defect_classes.py` is written against the **class**. It
+enumerates `NATIVE_REFUSED_TARGETS` and requires every entry to refuse; sweeps
+the same list for lost type identity; imports the dependency's own graph to
+prove the guard did not break it; requires the disclosure channel to be
+non-empty while a known gap exists; cold-imports every package found on disk
+**without** `PYTHONPYCACHEPREFIX`; sweeps the protected roots rather than the
+one that failed; and asserts the status carries no universal claim.
+
+**Six rounds. Eight independent audit contexts. Every defect was found by a
+context that had not written the code, and a green suite predicted conformance
+at every single head.** A reviewer weighing this apparatus should weigh that
+first, and should read §6's bound and the report's `bounds` before quoting any
+status from it.
+
 ## 14. Non-authorisation statement
 
 Nothing in this document or in `scripts/m15_track_a/` authorises a real-data
