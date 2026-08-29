@@ -465,9 +465,25 @@ twice over. They are one number now, and the test reads the split out of the
 section rather than only checking that the twelve names appear somewhere in it.
 The false descriptions are recorded rather than quietly replaced.
 
-Final statuses:
-`TRACK_A_EXECUTION_CONTAINMENT_VERIFIED_NO_UNGATED_ROUTE` /
-`TRACK_A_EXECUTION_CONTAINMENT_BREACHED_UNGATED_ROUTE_FOUND`.
+### The verdict says only what the audit did
+
+`TRACK_A_EXECUTION_CONTAINMENT_PROBES_PASSED_BOUNDED_ASSURANCE` /
+`TRACK_A_EXECUTION_CONTAINMENT_PROBE_FAILED`.
+
+It used to read `…_VERIFIED_NO_UNGATED_ROUTE`, and **that phrasing is the defect
+this PR kept reproducing in new places: the artefact claimed more than the
+mechanism delivers.** Six independent audit contexts each found a route the
+audit had certified against, and each time the fix went to the specific route —
+never to the claim. No in-process audit can establish "no ungated route": a C
+extension, a rewritten source file, a reflected reader and a pre-seeded hardlink
+are all outside what it can see, and three of those were demonstrated end to end
+*against a report that said VERIFIED*.
+
+So every report now carries `bounds`, a list of what it does **not** establish,
+and the field formerly called `no_market_data_read` is
+`declared_gate_sequence_matches_at_this_head` — which is what it checks. The
+report also separates `behavioural_checks` from `source_checks_advisory`, so a
+consumer can tell which half carries the verdict.
 
 It is an **execution-containment** check, not a hostile-input audit, and it does
 not replace the gate-6 source-contamination audit Track B still needs.
@@ -624,7 +640,7 @@ for CPython's own I/O and **not** for a third-party C extension.
 with every guard installed, and this repository already calls `pq.read_table`.
 No in-process mechanism closes that class. The response is in two parts, and
 the second matters as much as the first: the native readers this repository
-depends on are named in `isolation.NATIVE_READER_TARGETS` and refused at their
+depends on are named in `isolation.NATIVE_REFUSED_TARGETS` and refused at their
 Python entry points, **and §6 now states the bound** — the guarantee is exactly
 that list, the audit cannot detect a native reader nobody listed, and only
 something outside the process closes the class.

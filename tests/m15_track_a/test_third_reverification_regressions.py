@@ -315,7 +315,7 @@ def test_a_cold_bytecode_cache_still_works_with_the_native_guard(tmp_path: Path)
             + "isolation.install_all();"
             + "import fractions, difflib, csv;"
             + "r = containment.audit();"
-            + "print('AUDIT', r['status'], r['no_market_data_read'])",
+            + "print('AUDIT', r['status'], r['declared_gate_sequence_matches_at_this_head'])",
         ],
         capture_output=True,
         text=True,
@@ -323,7 +323,9 @@ def test_a_cold_bytecode_cache_still_works_with_the_native_guard(tmp_path: Path)
         timeout=300,
     )
     assert result.returncode == 0, result.stderr[-2000:]
-    assert "AUDIT TRACK_A_EXECUTION_CONTAINMENT_VERIFIED_NO_UNGATED_ROUTE True" in result.stdout
+    assert (
+        "AUDIT TRACK_A_EXECUTION_CONTAINMENT_PROBES_PASSED_BOUNDED_ASSURANCE True" in result.stdout
+    )
 
 
 def test_a_directory_descriptor_open_is_refused(guards: object) -> None:

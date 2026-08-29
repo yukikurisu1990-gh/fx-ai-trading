@@ -137,7 +137,35 @@ FORBIDDEN_OPERATIONS: Final[dict[str, str]] = {
 #: hooks or config, and an earlier drafting listed it.  ``__pycache__`` is not
 #: here either — see :func:`_is_build_cache`, which keys on the **file** rather
 #: than on the directory it sits in.
-_TOOL_CACHE_DIRS: Final[frozenset[str]] = frozenset({".pytest_cache", ".mypy_cache", ".ruff_cache"})
+_TOOL_CACHE_DIRS: Final[frozenset[str]] = frozenset(
+    {
+        ".pytest_cache",
+        ".mypy_cache",
+        ".ruff_cache",
+        ".hypothesis",
+        "htmlcov",
+        # The virtual environment lives **inside** the checkout here
+        # (``sys.executable`` is ``<repo>/.venv/Scripts/python.exe``), so a run
+        # that cannot write into it cannot import a third-party dependency for
+        # the first time.
+        ".venv",
+        "venv",
+        ".tox",
+        ".nox",
+        "build",
+        "dist",
+    }
+)
+
+#: Tool outputs that sit at the repository root rather than in a directory.
+_TOOL_OUTPUT_FILES: Final[frozenset[str]] = frozenset(
+    {".coverage", "coverage.xml", "junit.xml", ".coverage.xml"}
+)
+
+#: Roots whose *contents* are protected, so no cache exemption reaches inside
+#: them.  A ``__pycache__`` under ``data/`` is not a bytecode cache; a ``.pyc``
+#: under ``.git/`` is not one either.
+_NO_EXEMPTION_INSIDE: Final[frozenset[str]] = frozenset({".git", "data", "models"})
 
 #: First-level repository entries holding market data.  Matched on the **path
 #: component**, and ``artifacts/oanda_archive*`` by component prefix, because
@@ -184,6 +212,32 @@ _MARKET_DATA_ARTIFACT_PREFIXES: Final[tuple[str, ...]] = ("oanda_archive",)
 #: nobody listed. That bound is stated in the module docstring and in §6 of the
 #: gate document, and it is the honest half of this design.
 NATIVE_REFUSED_TARGETS: Final[tuple[tuple[str, str], ...]] = (
+    # The **defining** modules first. ``pa.OSFile is pa.lib.OSFile`` and
+    # ``pq.read_table is pyarrow.parquet.core.read_table`` — rebinding one
+    # re-export leaves the object reachable under its real name, and
+    # re-importing the package rebinds the re-export back to it. Patching the
+    # definition covers every alias, present and future.
+    ("pyarrow.lib", "OSFile"),
+    ("pyarrow.lib", "memory_map"),
+    ("pyarrow.lib", "input_stream"),
+    ("pyarrow.lib", "output_stream"),
+    # ``pyarrow._fs`` is deliberately absent, and this is a measured fact rather
+    # than an oversight: replacing **any** name in that module — the abstract
+    # ``FileSystem``, ``LocalFileSystem``, ``SubTreeFileSystem`` — breaks
+    # ``pyarrow._hdfs``'s Cython vtable initialisation on import
+    # (``KeyError: '__pyx_vtable__'``). A guard that breaks the dependency it
+    # guards is not an option, so the module is disclosed rather than patched;
+    # see :data:`NATIVE_DISCLOSED_UNGUARDABLE`. The pure-Python re-exports in
+    # ``pyarrow.fs`` **are** patched, which covers the ordinary caller.
+    ("pyarrow.parquet.core", "read_table"),
+    ("pyarrow.parquet.core", "write_table"),
+    ("pyarrow.parquet.core", "ParquetFile"),
+    ("pyarrow.parquet.core", "ParquetDataset"),
+    # sqlite is deliberately **not** a refuse-outright target: an in-memory
+    # connection has to keep working. The audit hook's ``sqlite3.connect`` limb
+    # refuses a file, and the ATTACH guard is installed through the connection
+    # factory on both ``sqlite3`` and ``sqlite3.dbapi2`` — which is the module
+    # SQLAlchemy drives.
     ("pyarrow", "OSFile"),
     ("pyarrow", "memory_map"),
     ("pyarrow", "input_stream"),
@@ -192,6 +246,8 @@ NATIVE_REFUSED_TARGETS: Final[tuple[tuple[str, str], ...]] = (
     ("pyarrow.parquet", "write_table"),
     ("pyarrow.parquet", "ParquetFile"),
     ("pyarrow.parquet", "ParquetDataset"),
+    ("pyarrow.fs", "LocalFileSystem"),
+    ("pyarrow.fs", "SubTreeFileSystem"),
     ("pyarrow.dataset", "dataset"),
     ("pyarrow.dataset", "write_dataset"),
     ("pyarrow.feather", "read_table"),
@@ -248,6 +304,22 @@ NATIVE_REFUSED_CLASS_METHODS: Final[tuple[tuple[str, str, tuple[str, ...]], ...]
     ),
 )
 
+#: Native entry points that are **known reachable and cannot be guarded
+#: in-process**, disclosed rather than left implicit.
+#:
+#: :func:`unpatchable_native_targets` returns these alongside anything that
+#: failed to patch at run time, so the disclosure channel §6 points a reviewer
+#: at is populated whether the obstruction is discovered or already known.
+NATIVE_DISCLOSED_UNGUARDABLE: Final[tuple[str, ...]] = (
+    "pyarrow._fs.* (LocalFileSystem, SubTreeFileSystem, FileSystem.from_uri) — "
+    "measured: replacing any name in that module breaks pyarrow._hdfs on import "
+    "with KeyError: '__pyx_vtable__'. The pure-Python re-exports in pyarrow.fs "
+    "are guarded; the defining module is reachable and is not",
+    "methods on any immutable extension type, reached on an instance obtained "
+    "without going through a patched constructor",
+    "ctypes / _winapi calls made directly against kernel32",
+)
+
 #: Consumed-holdout evidence.  Not market data, but exploratory design tuned
 #: against a figure from a consumed holdout is the same leakage in a different
 #: costume, so reads are refused on the same footing.
@@ -291,7 +363,18 @@ _MUTATING_PATH_EVENTS: Final[dict[str, int]] = {
     "shutil.copystat": 2,
     "shutil.move": 2,
     "shutil.unpack_archive": 2,
+    # Raised by CPython and previously unhandled, which falsified this module's
+    # own "every path-bearing audit event is handled". ``shutil.copy2`` on
+    # Windows skips the ``shutil.copyfile`` event and lands here instead.
+    "_winapi.CreateFile": 1,
+    "_winapi.CreateJunction": 2,
+    "_winapi.CopyFile2": 2,
+    "msvcrt.open_osfhandle": 0,
+    "mmap.__new__": 0,
 }
+
+#: Events whose first argument is a **descriptor**, not a path.
+_FD_ARGUMENT_EVENTS: Final[frozenset[str]] = frozenset({"mmap.__new__", "msvcrt.open_osfhandle"})
 
 
 class IsolationError(RuntimeError):
@@ -545,7 +628,20 @@ def _is_build_cache(parts: tuple[str, ...]) -> bool:
     """
     if not parts:
         return False
-    if parts[0] in _TOOL_CACHE_DIRS:
+    if parts[0] in _NO_EXEMPTION_INSIDE:
+        # ``.git/__pycache__/x.pyc`` is not a bytecode cache, and neither is
+        # anything under ``data/``. The exemption does not reach inside a tree
+        # whose contents are the thing being protected.
+        return False
+    if parts[0] in _TOOL_CACHE_DIRS or parts[0] in _TOOL_OUTPUT_FILES:
+        return True
+    if parts[0].startswith(".coverage"):
+        return True
+    # The **directory** itself. Creating it is what a cold import does first,
+    # and refusing that made the apparatus unrunnable: every module import on a
+    # clean checkout died, because ``IsolationError`` is a ``RuntimeError`` and
+    # the ``except OSError`` that makes ``exist_ok=True`` work never sees it.
+    if parts[-1] == "__pycache__":
         return True
     if len(parts) >= 2 and parts[-2] == "__pycache__":
         name = parts[-1]
@@ -624,11 +720,19 @@ def _is_write_mode(mode: object, flags: object = None) -> bool:
 
 
 def _is_append_only_mode(mode: object, flags: object = None) -> bool:
+    """Whether the open is append-**only**, i.e. cannot rewrite existing bytes.
+
+    ``O_RDWR | O_APPEND`` is *not* append-only: the descriptor can be mapped and
+    the file rewritten in place. An earlier drafting treated it as append-only
+    and the ledger-destruction check returned before it looked.
+    """
     if isinstance(mode, str):
         return "a" in mode and "w" not in mode and "+" not in mode
     for value in (flags, mode):
         if isinstance(value, int) and not isinstance(value, bool):
-            return bool(value & os.O_APPEND) and not bool(value & os.O_TRUNC)
+            if value & (os.O_TRUNC | os.O_RDWR):
+                return False
+            return bool(value & os.O_APPEND)
     return False
 
 
@@ -876,6 +980,11 @@ def _audit_hook(event: str, args: tuple[Any, ...]) -> None:
                 )
         elif event == "open":
             _check_open(args)
+        elif event in _FD_ARGUMENT_EVENTS:
+            # ``mmap`` on a descriptor rewrites bytes in place with no further
+            # event, so the ledger check has to run on the descriptor itself.
+            if args:
+                assert_ledger_not_destroyed(args[0], what=f"mapped for writing ({event})")
         elif event in _MUTATING_PATH_EVENTS:
             verb = event.split(".")[-1]
             for index in range(min(_MUTATING_PATH_EVENTS[event], len(args))):
@@ -1052,15 +1161,18 @@ def install_native_reader_guard() -> None:
         if not callable(original):
             continue
         label = f"{module_name}.{dotted}"
+        replacement, note = _refusal_for(original, label)
         try:
-            setattr(owner, attribute, _refusing_native(label))
+            setattr(owner, attribute, replacement)
         except (TypeError, AttributeError):
             # An immutable extension type. Recorded rather than swallowed: an
             # entry on the list that is not actually refused is worse than an
             # entry that is missing, because the list is what §6 tells a
             # reviewer to rely on.
-            state.unpatchable.append(label)
+            state.unpatchable.append(f"{label} (attribute is read-only)")
             continue
+        if note:
+            state.unpatchable.append(note)
         state.patched.append((owner, attribute, original))
 
     for module_name, class_name, methods in NATIVE_REFUSED_CLASS_METHODS:
@@ -1085,6 +1197,35 @@ def install_native_reader_guard() -> None:
     _install_dirfd_guard(state)
     _install_sqlite_attach_guard(state)
     state.native = True
+
+
+def _refusal_for(original: Any, label: str) -> tuple[Any, str | None]:
+    """A refusing stand-in for ``original``, preserving its **type identity**.
+
+    For a class, the stand-in is a **subclass** whose construction raises, so
+    ``isinstance(x, module.Name)`` keeps working and keeps meaning something.
+    Replacing a class with a plain function was the round-four defect: it made
+    ``isinstance`` raise ``arg 2 must be a type`` process-wide. Round five's
+    note claimed the list held no class targets — it held seven, and the
+    defect came straight back.
+
+    Where a class cannot be subclassed (a final extension type), the caller is
+    handed a function **and a disclosure string**, because a guard that quietly
+    changes ``isinstance`` is worse than one that says it did.
+    """
+    if isinstance(original, type):
+        namespace = {
+            "__init__": _refusing_native(label),
+            "__new__": _refusing_native(label),
+        }
+        try:
+            return type(original.__name__, (original,), namespace), None
+        except TypeError:
+            return (
+                _refusing_native(label),
+                f"{label} (a final extension type: refused, but isinstance no longer works)",
+            )
+    return _refusing_native(label), None
 
 
 def _refusing_native(label: str) -> Any:
@@ -1136,39 +1277,73 @@ def _install_sqlite_attach_guard(state: _Installed) -> None:
     """
     import sqlite3
 
-    class _GuardedConnection(sqlite3.Connection):
-        def _check(self, sql: Any) -> None:
-            if isinstance(sql, str) and "attach" in sql.lower():
-                raise IsolationError(
-                    f"{TOKEN}: a Track A run may not ATTACH a database. It creates a file "
-                    "and raises no audit event, so nothing else would see it."
-                )
+    def _check_sql(sql: Any) -> None:
+        if isinstance(sql, str) and "attach" in sql.lower():
+            raise IsolationError(
+                f"{TOKEN}: a Track A run may not ATTACH a database. It creates a file and "
+                "raises no audit event, so nothing else would see it."
+            )
 
+    class _GuardedCursor(sqlite3.Cursor):
         def execute(self, sql: Any = "", *args: Any, **kwargs: Any) -> Any:
-            self._check(sql)
+            _check_sql(sql)
             return super().execute(sql, *args, **kwargs)
 
         def executemany(self, sql: Any = "", *args: Any, **kwargs: Any) -> Any:
-            self._check(sql)
+            _check_sql(sql)
             return super().executemany(sql, *args, **kwargs)
 
         def executescript(self, sql: Any = "", *args: Any, **kwargs: Any) -> Any:
-            self._check(sql)
+            _check_sql(sql)
             return super().executescript(sql, *args, **kwargs)
 
-    real_connect = sqlite3.connect
+    class _GuardedConnection(sqlite3.Connection):
+        """Guards the connection **and** the cursors it hands out.
 
-    def guarded_connect(*args: Any, **kwargs: Any) -> Any:
-        if kwargs.get("factory") not in (None, sqlite3.Connection):
-            raise IsolationError(
-                f"{TOKEN}: a Track A run may not supply a sqlite3 connection factory; the "
-                "ATTACH guard is installed through it."
-            )
-        kwargs["factory"] = _GuardedConnection
-        return real_connect(*args, **kwargs)
+        An earlier drafting overrode ``Connection.execute`` only.
+        ``conn.cursor().execute("ATTACH …")`` never touches it, and neither does
+        SQLAlchemy, which drives the DBAPI directly — both created a file inside
+        ``data/``.
+        """
 
-    state.patched.append((sqlite3, "connect", real_connect))
-    sqlite3.connect = guarded_connect  # type: ignore[assignment]
+        def cursor(self, factory: Any = None) -> Any:
+            return super().cursor(factory or _GuardedCursor)
+
+        def execute(self, sql: Any = "", *args: Any, **kwargs: Any) -> Any:
+            _check_sql(sql)
+            return super().execute(sql, *args, **kwargs)
+
+        def executemany(self, sql: Any = "", *args: Any, **kwargs: Any) -> Any:
+            _check_sql(sql)
+            return super().executemany(sql, *args, **kwargs)
+
+        def executescript(self, sql: Any = "", *args: Any, **kwargs: Any) -> Any:
+            _check_sql(sql)
+            return super().executescript(sql, *args, **kwargs)
+
+    def _guard_connect(real: Any) -> Any:
+        def guarded(*args: Any, **kwargs: Any) -> Any:
+            if kwargs.get("factory") not in (None, sqlite3.Connection):
+                raise IsolationError(
+                    f"{TOKEN}: a Track A run may not supply a sqlite3 connection factory; "
+                    "the ATTACH guard is installed through it."
+                )
+            kwargs["factory"] = _GuardedConnection
+            return real(*args, **kwargs)
+
+        return guarded
+
+    # Every module that exposes the same function object. ``sqlite3.connect is
+    # sqlite3.dbapi2.connect is _sqlite3.connect``, and SQLAlchemy imports from
+    # whichever one it likes.
+    import sqlite3.dbapi2
+
+    for module in (sqlite3, sqlite3.dbapi2):
+        real = getattr(module, "connect", None)
+        if real is None:  # pragma: no cover
+            continue
+        state.patched.append((module, "connect", real))
+        module.connect = _guard_connect(real)
 
 
 def install_database_guard() -> None:
@@ -1276,7 +1451,8 @@ def unpatchable_native_targets() -> tuple[str, ...]:
     exactly :data:`NATIVE_REFUSED_TARGETS`; an entry on that list which is not
     actually refused would make the statement false, and silently.
     """
-    return tuple(_state.unpatchable) if _state is not None else ()
+    discovered = tuple(_state.unpatchable) if _state is not None else ()
+    return NATIVE_DISCLOSED_UNGUARDABLE + discovered
 
 
 def is_armed() -> bool:
@@ -1347,6 +1523,7 @@ __all__ = [
     "FORBIDDEN_OPERATIONS",
     "TOKEN",
     "IsolationError",
+    "NATIVE_DISCLOSED_UNGUARDABLE",
     "NATIVE_REFUSED_CLASS_METHODS",
     "NATIVE_REFUSED_TARGETS",
     "assert_operation_allowed",

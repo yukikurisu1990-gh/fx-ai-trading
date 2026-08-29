@@ -418,7 +418,7 @@ def test_the_containment_audit_reports_contained(guards: object) -> None:
     failed = [check for check in report["checks"] if not check["passed"]]
     assert failed == [], failed
     assert report["status"] == containment.STATUS_CONTAINED
-    assert report["no_market_data_read"] is True
+    assert report["declared_gate_sequence_matches_at_this_head"] is True
     assert report["guards_installed_by_audit"] is False
 
 

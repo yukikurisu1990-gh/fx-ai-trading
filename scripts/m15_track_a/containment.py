@@ -75,8 +75,43 @@ from typing import Any, Final
 from scripts.m15_track_a import authorization, derivation, isolation, read_route, scratch
 
 #: Final statuses this audit may report.  Closed set; anything else is a bug.
-STATUS_CONTAINED: Final[str] = "TRACK_A_EXECUTION_CONTAINMENT_VERIFIED_NO_UNGATED_ROUTE"
-STATUS_BREACHED: Final[str] = "TRACK_A_EXECUTION_CONTAINMENT_BREACHED_UNGATED_ROUTE_FOUND"
+#: The verdict this audit is entitled to reach.
+#:
+#: It used to read ``…_VERIFIED_NO_UNGATED_ROUTE``, and that phrasing is the
+#: defect this whole PR kept reproducing in new places: **the artefact claimed
+#: more than the mechanism delivers.** Six independent audit contexts each found
+#: a route the audit had certified against, and each time the fix went to the
+#: specific route — never to the claim. No in-process audit can establish "no
+#: ungated route": a C extension, a rewritten source file, a reflected reader
+#: and a pre-seeded hardlink are all outside what it can see, and three of those
+#: were demonstrated end to end **against a report that said VERIFIED**.
+#:
+#: So the status now names what the audit actually did: it ran its probes and
+#: they passed. What that does and does not license is enumerated in
+#: :data:`AUDIT_BOUNDS`, emitted with every report, so the verdict cannot be
+#: picked up without the qualification.
+STATUS_CONTAINED: Final[str] = "TRACK_A_EXECUTION_CONTAINMENT_PROBES_PASSED_BOUNDED_ASSURANCE"
+STATUS_BREACHED: Final[str] = "TRACK_A_EXECUTION_CONTAINMENT_PROBE_FAILED"
+
+#: What a passing report does **not** establish.  Emitted with every report.
+AUDIT_BOUNDS: Final[tuple[str, ...]] = (
+    "It does not establish that no route reads market data. It establishes that "
+    "the probed boundaries refused, and that the committed source of "
+    "read_historical at this head matches the declared gate sequence.",
+    "The source checks are advisory. Six audit rounds each defeated the "
+    "then-current version with a way of reading it did not anticipate: a "
+    "numpy.memmap behind a module global, a Subscript callee, a Subscript that "
+    "is not a call, a bare-Name decorator, an f-string format spec, a shadowed "
+    "permitted name, a default argument, and a second definition of the route.",
+    "A C extension that calls the OS directly is invisible to the audit hook. "
+    "The named ones are refused (isolation.NATIVE_REFUSED_TARGETS); the ones "
+    "that cannot be are listed by isolation.unpatchable_native_targets().",
+    "A hardlink pre-seeded into the working tree defeats every path test, and "
+    "code running in this process can disarm any in-process guard.",
+    "What this apparatus buys is that an accidental boundary crossing fails "
+    "loudly, and a deliberate one has to appear in a diff. It is not a sandbox, "
+    "and a passing report is not a substitute for reading the diff.",
+)
 
 #: The modules a Track A run is allowed to reach a read through.  A read route
 #: appearing anywhere else in this package is a finding.
@@ -458,6 +493,30 @@ _PERMITTED_READ_ROUTE_CALLS: Final[frozenset[str]] = frozenset(
 # --- source checks -----------------------------------------------------------
 
 
+def _module_level_rebindings(tree: ast.AST) -> set[str]:
+    """Names **assigned** at module level, which a name-based allowlist sees through.
+
+    Only ``Assign`` and ``AnnAssign``. A ``def``, a ``class`` or an ``import``
+    that binds one of these names *is* where the name comes from — that is the
+    declared gate arriving, not a rebinding of it. ``gated_read_window =
+    _Window`` is the shape that matters: it leaves the allowlist checking a
+    name that now means something else.
+    """
+    names: set[str] = set()
+    for node in getattr(tree, "body", []):
+        targets: list[ast.expr] = []
+        if isinstance(node, ast.Assign):
+            targets = list(node.targets)
+        elif isinstance(node, ast.AnnAssign):
+            targets = [node.target]
+        for target in targets:
+            if isinstance(target, ast.Name):
+                names.add(target.id)
+            elif isinstance(target, ast.Tuple):
+                names.update(e.id for e in target.elts if isinstance(e, ast.Name))
+    return names
+
+
 def _check_read_body_is_absent() -> CheckResult:
     """The route's own body, at source: no return, and it ends in a raise.
 
@@ -491,75 +550,96 @@ def _check_read_body_is_absent() -> CheckResult:
     over the vocabulary of reading, and that is why it is the last one.
     """
     tree = ast.parse(Path(read_route.__file__).read_text(encoding="utf-8"))
-    for node in ast.walk(tree):
-        if isinstance(node, ast.FunctionDef) and node.name == "read_historical":
-            if any(
-                isinstance(child, ast.Return | ast.Yield | ast.YieldFrom)
-                for child in ast.walk(node)
-            ):
-                return CheckResult(  # pragma: no cover - true once a body is supplied
-                    "read_body_absent",
-                    False,
-                    "read_historical returns or yields a value — it has a body, and this "
-                    "audit no longer establishes that nothing is read",
-                )
-            unexpected: set[str] = set()
-            if node.decorator_list:
-                unexpected.add("a decorator (it runs at definition time)")
-            for child in ast.walk(node):
-                if isinstance(child, ast.FormattedValue) and child.format_spec is not None:
-                    # ``f"{SLURP:README.md}"`` calls ``__format__`` with the spec,
-                    # and an object can read a file there. The declared body's
-                    # f-string has no specs.
-                    unexpected.add(f"an f-string format spec at line {child.lineno}")
-                if type(child) not in _PERMITTED_READ_ROUTE_NODES:
-                    unexpected.add(
-                        f"{type(child).__name__} node at line {child.lineno}"
-                        if hasattr(child, "lineno")
-                        else type(child).__name__
-                    )
-                if isinstance(child, ast.Call):
-                    func = child.func
-                    if not isinstance(func, ast.Name | ast.Attribute):
-                        # ``_T["slurp"](path)`` — the callee is a Subscript, so
-                        # there is no name to compare and an earlier drafting
-                        # simply skipped it. A call this check cannot name is a
-                        # finding, not an exemption.
-                        unexpected.add(f"<{type(func).__name__} callee at line {child.lineno}>")
-                        continue
-                    name = getattr(func, "id", None) or getattr(func, "attr", None)
-                    if name is None or name not in _PERMITTED_READ_ROUTE_CALLS:
-                        unexpected.add(str(name))
-                elif isinstance(child, ast.Name) and child.id in _INDIRECTION_NAMES:
-                    # A reader assembled at runtime never appears as a call name.
-                    unexpected.add(f"{child.id} (indirection)")
-            if unexpected:
-                unexpected = sorted(unexpected)
-                return CheckResult(  # pragma: no cover - true once a body is supplied
-                    "read_body_absent",
-                    False,
-                    f"read_historical calls {unexpected}, which are not among its declared "
-                    "gates — the route has a body and this audit no longer establishes "
-                    "that nothing is read",
-                )
-            if _terminal_raise_is_not_implemented(node.body):
-                return CheckResult(
-                    "read_body_absent",
-                    True,
-                    "read_historical returns nothing, calls only its declared gates, "
-                    "and ends in raise NotImplementedError",
-                )
-            return CheckResult(  # pragma: no cover
-                "read_body_absent",
-                False,
-                "read_historical does not end in raise NotImplementedError",
+
+    definitions = [
+        node
+        for node in ast.walk(tree)
+        if isinstance(node, ast.FunctionDef) and node.name == "read_historical"
+    ]
+    if len(definitions) != 1:
+        # An earlier drafting ``return``ed on the first match, so a second,
+        # live definition later in the file was never inspected at all.
+        return CheckResult(
+            "read_body_absent",
+            False,
+            f"{len(definitions)} definitions of read_historical; the route must be one function",
+        )
+    node = definitions[0]
+
+    shadowed = sorted(_module_level_rebindings(tree) & _PERMITTED_READ_ROUTE_CALLS)
+    if shadowed:
+        # ``gated_read_window = _Window`` at module level makes a permitted call
+        # name mean something else. The allowlist checks the *name*, so a
+        # rebinding turns any one of its entries into a free call.
+        return CheckResult(
+            "read_body_absent",
+            False,
+            f"module-level rebinding of permitted call name(s) {shadowed}: the allowlist "
+            "checks names, so rebinding one makes it mean anything",
+        )
+
+    defaults = [d for d in node.args.defaults + node.args.kw_defaults if d is not None]
+    if any(isinstance(d, ast.Call | ast.Subscript) for d in defaults):
+        # A default argument is evaluated at **import** time, before any gate
+        # exists to be passed.
+        return CheckResult(
+            "read_body_absent",
+            False,
+            "a default argument is evaluated at import time, before any gate runs",
+        )
+
+    if any(isinstance(c, ast.Return | ast.Yield | ast.YieldFrom) for c in ast.walk(node)):
+        return CheckResult(  # pragma: no cover - true once a body is supplied
+            "read_body_absent",
+            False,
+            "read_historical returns or yields a value — it has a body, and this audit no "
+            "longer establishes that nothing is read",
+        )
+
+    unexpected: set[str] = set()
+    if node.decorator_list:
+        unexpected.add("a decorator (it runs at definition time)")
+    for child in ast.walk(node):
+        if isinstance(child, ast.FormattedValue) and child.format_spec is not None:
+            # ``f"{S:README.md}"`` calls ``__format__`` with the spec, and an
+            # object can read a file there.
+            unexpected.add(f"an f-string format spec at line {child.lineno}")
+        if type(child) not in _PERMITTED_READ_ROUTE_NODES:
+            unexpected.add(
+                f"{type(child).__name__} node at line {child.lineno}"
+                if hasattr(child, "lineno")
+                else type(child).__name__
             )
-    return CheckResult("read_body_absent", False, "read_historical not found")  # pragma: no cover
+        if isinstance(child, ast.Call):
+            func = child.func
+            if not isinstance(func, ast.Name | ast.Attribute):
+                unexpected.add(f"<{type(func).__name__} callee at line {child.lineno}>")
+                continue
+            name = getattr(func, "id", None) or getattr(func, "attr", None)
+            if name is None or name not in _PERMITTED_READ_ROUTE_CALLS:
+                unexpected.add(str(name))
+        elif isinstance(child, ast.Name) and child.id in _INDIRECTION_NAMES:
+            unexpected.add(f"{child.id} (indirection)")
+    if unexpected:
+        return CheckResult(
+            "read_body_absent",
+            False,
+            f"read_historical contains {sorted(unexpected)}, which are not among its "
+            "declared gates — the route has a body and this audit no longer establishes "
+            "that nothing is read",
+        )
 
-
-# ---------------------------------------------------------------------------
-# Source checks (6) — advisory, and labelled as such
-# ---------------------------------------------------------------------------
+    if not _terminal_raise_is_not_implemented(node.body):
+        return CheckResult(  # pragma: no cover
+            "read_body_absent", False, "read_historical does not end in raise NotImplementedError"
+        )
+    return CheckResult(
+        "read_body_absent",
+        True,
+        "read_historical is the only definition, no permitted call name is rebound, it "
+        "returns nothing, every node and call is on the declared list, and it ends in "
+        "raise NotImplementedError",
+    )
 
 
 def _indirection_findings(module_name: str, tree: ast.AST) -> list[str]:
@@ -819,9 +899,15 @@ def audit() -> dict[str, Any]:
         "checks": [result.as_record() for result in results],
         "guards_installed_by_audit": installed_by_audit,
         "modules_scanned": list(package_modules()),
-        # Derived, not asserted: True only when the route has no body at this
-        # head AND the process refused a market-data read during this audit.
-        "no_market_data_read": no_read,
+        "behavioural_checks": list(BEHAVIOURAL_CHECKS),
+        "source_checks_advisory": list(SOURCE_CHECKS),
+        "bounds": list(AUDIT_BOUNDS),
+        # Renamed from ``no_market_data_read``, which said more than it could
+        # support: three separate rewrites of the route read a file while that
+        # field said True. What it means now is exactly what it checks — the
+        # committed source at this head matches the declared gate sequence, and
+        # the process refused the market-data read this audit attempted.
+        "declared_gate_sequence_matches_at_this_head": no_read,
         "scope": (
             "execution containment only — not a hostile-input audit, not mutation "
             "resistance, and not a substitute for the gate-6 source-contamination audit"
@@ -835,6 +921,7 @@ def audit_report_path() -> Path:
 
 __all__ = [
     "BEHAVIOURAL_CHECKS",
+    "AUDIT_BOUNDS",
     "CHECKS",
     "SOURCE_CHECKS",
     "DECLARED_DERIVATION_ROUTE_MODULE",

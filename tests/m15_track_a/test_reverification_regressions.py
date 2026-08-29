@@ -408,10 +408,10 @@ def test_no_market_data_read_needs_both_the_source_and_the_behavioural_check() -
     """Either alone has been defeated: the source check by a decoy, the probe by never calling."""
     report = containment.audit()
     by_name = {check["check"]: check["passed"] for check in report["checks"]}
-    assert report["no_market_data_read"] is (
+    assert report["declared_gate_sequence_matches_at_this_head"] is (
         by_name["read_body_absent"] and by_name["market_data_read_refused"]
     )
-    assert report["no_market_data_read"] is True
+    assert report["declared_gate_sequence_matches_at_this_head"] is True
 
 
 def test_an_aliased_reader_is_caught_by_the_structural_sweep() -> None:

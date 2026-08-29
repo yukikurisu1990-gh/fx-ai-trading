@@ -251,8 +251,9 @@ training / execution routes — none exist**". That holds for **R1**, and it doe
 **not** hold for R3/R4, which §8.12.2 records as training and computing
 exploratory metrics. An auditor applying §4 to a later Track A stage must not
 read the R1 answer forward. The executable form is `scripts/m15_track_a/containment.py`, and its
-final statuses are `TRACK_A_EXECUTION_CONTAINMENT_VERIFIED_NO_UNGATED_ROUTE` /
-`TRACK_A_EXECUTION_CONTAINMENT_BREACHED_UNGATED_ROUTE_FOUND`. It is an
+final statuses are `TRACK_A_EXECUTION_CONTAINMENT_PROBES_PASSED_BOUNDED_ASSURANCE` /
+`TRACK_A_EXECUTION_CONTAINMENT_PROBE_FAILED` — deliberately not "verified", and
+every report carries a `bounds` list of what it does **not** establish. It is an
 **execution-containment** check, not a hostile-input audit, and it does not
 replace the gate-6 source-contamination audit Track B still needs.
 

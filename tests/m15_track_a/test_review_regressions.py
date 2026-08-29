@@ -462,7 +462,7 @@ def test_the_audit_measures_rather_than_asserts_that_nothing_is_read() -> None:
     report = containment.audit()
     body_absent = next(c for c in report["checks"] if c["check"] == "read_body_absent")
     assert body_absent["passed"] is True
-    assert report["no_market_data_read"] is body_absent["passed"]
+    assert report["declared_gate_sequence_matches_at_this_head"] is body_absent["passed"]
 
 
 def test_the_audit_probes_behaviour_not_only_source() -> None:

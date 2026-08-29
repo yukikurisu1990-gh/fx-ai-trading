@@ -170,7 +170,7 @@ def test_a_cold_bytecode_cache_does_not_break_a_guarded_run(tmp_path: Path) -> N
             + "isolation.install_all();"
             + "import fractions, difflib, statistics, csv, uuid;"
             + "r = containment.audit();"
-            + "print('AUDIT', r['status'], r['no_market_data_read'])",
+            + "print('AUDIT', r['status'], r['declared_gate_sequence_matches_at_this_head'])",
         ],
         capture_output=True,
         text=True,
@@ -178,7 +178,9 @@ def test_a_cold_bytecode_cache_does_not_break_a_guarded_run(tmp_path: Path) -> N
         timeout=300,
     )
     assert result.returncode == 0, result.stderr[-2000:]
-    assert "AUDIT TRACK_A_EXECUTION_CONTAINMENT_VERIFIED_NO_UNGATED_ROUTE True" in result.stdout
+    assert (
+        "AUDIT TRACK_A_EXECUTION_CONTAINMENT_PROBES_PASSED_BOUNDED_ASSURANCE True" in result.stdout
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -323,8 +325,8 @@ def test_no_market_data_read_is_gated_on_the_overall_verdict() -> None:
     """A BREACHED report still carried ``no_market_data_read: True``, quotable on its own."""
     report = containment.audit()
     if report["status"] == containment.STATUS_BREACHED:  # pragma: no cover - green today
-        assert report["no_market_data_read"] is False
-    assert report["no_market_data_read"] is (
+        assert report["declared_gate_sequence_matches_at_this_head"] is False
+    assert report["declared_gate_sequence_matches_at_this_head"] is (
         report["status"] == containment.STATUS_CONTAINED
         and all(
             check["passed"]
