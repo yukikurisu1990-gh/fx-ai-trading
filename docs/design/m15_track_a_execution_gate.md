@@ -152,10 +152,18 @@ installed on the primitives, not at call sites:
 
 Local file reads are **not** blocked wholesale: Track A exists to perform one.
 Which files it may touch is decided by the classifier, which uses `realpath`
-**and** filesystem identity — on this machine `data/`, `FX-AI-~1\data`,
-`\\localhost\C$\…\data`, `\\.\C:\…\data`, `DATA/` and a junction all name the
-same directory and report the same `(st_dev, st_ino)`, and a string test caught
-only two of the six.
+**and** — when the string test says "outside" — filesystem identity. On this
+machine `data/`, `FX-AI-~1\data`, `\\localhost\C$\…\data`, `DATA/` and a
+junction all name the same directory and report the same `(st_dev, st_ino)`,
+and a string test caught only two of them.
+
+Two forms of Win32 namespace path **reduce**: `\\?\UNC\…` and `\\?\X:\…`.
+Anything else — a volume-GUID path, a device path — is **refused rather than
+reduced**. An earlier drafting stripped the prefix unconditionally, which turned
+`\\?\Volume{GUID}\…\data\x` into a *relative* path; `realpath` anchored it
+under the working directory, the cheap string test then **succeeded** on that
+wrong path, and the identity walk — which only runs when the string test fails —
+never ran. The read landed.
 
 ### The guarantee is bounded, and the bound is named
 
@@ -171,12 +179,38 @@ is parquet.
 **No in-process mechanism closes that class.** A C extension calling
 `CreateFileW` or `open(2)` is below anything Python can hook; the complete
 answers are all outside the process — a sandbox, a container, a filesystem ACL.
-What `isolation.NATIVE_READER_TARGETS` does instead is name the native readers
-this repository depends on and refuse them at their Python entry points. It is
-a **denylist**, its coverage is exactly that list, and the containment audit
-**cannot detect a native reader nobody listed**. A reviewer should read the
-apparatus as "an accidental crossing fails loudly, and a deliberate one has to
-appear in a diff" — not as a sandbox.
+What `isolation.NATIVE_REFUSED_TARGETS` does instead is name the native readers
+this repository depends on and **refuse them outright** while the guards are
+armed.
+
+**Refuse, not classify** — and the difference is the whole of a round. The
+first version of this guard wrapped each target and worked out generically which
+argument was the path and whether the call was a read or a write. A
+re-verification took it apart four ways at once, because fifteen heterogeneous
+APIs do not share a signature: `pa.output_stream` has no `mode`, so the wrapper
+called it a read and it **wrote into `docs/`, into `src/`, and truncated the
+append-only ledger**; `pq.write_table`'s first argument is a Table, so every
+call was refused *including outside the repository* while the keyword form was
+not checked at all; the read/write decision fell back to whether the destination
+path happened to contain the letter `x`; and `pa.fs.LocalFileSystem` is a class,
+so wrapping the constructor checked nothing and replacing the class broke
+`isinstance` process-wide. A refusal needs none of that. R1 has no read body, so
+it has nothing to parse and no reason to call any of them.
+
+Two consequences a reviewer should hold onto:
+
+- **The bound is the list, and it is now true of the list.** Where a target
+  cannot be replaced — `sqlite3.Connection` and pyarrow's filesystem class are
+  immutable extension types — it is either guarded another way (a refusing
+  subclass, a connection factory) or **disclosed** by
+  `isolation.unpatchable_native_targets()`. An entry that is listed but not
+  actually refused is worse than a missing one, because this paragraph is what
+  tells you to rely on it.
+- **A native reader nobody listed is a hole, and the containment audit cannot
+  find it.** `pyarrow.dataset`, `pyarrow.orc`, `lightgbm.Booster` and a raw
+  `ctypes` call were all reached in review before they were added; the next one
+  will be too. Read the apparatus as "an accidental crossing fails loudly, and a
+  deliberate one has to appear in a diff" — not as a sandbox.
 
 The same two residual routes — UDP and DNS — were also open in the **test
 session's** guard (`tests/conftest.py`), recorded by the FR-19 review and left
@@ -421,9 +455,15 @@ names — which a **docstring** listing those names satisfied. The second versio
 said "twelve checks" and then named eleven, omitting `broker_live_demo`, and
 put `read_body_absent` in the probe table; the code's own section banner said
 eight probes while this document said six and the PR body said seven. All are
-corrected — seven and five — and a test now compares this section against
-`containment.CHECKS` so the three cannot drift apart again. The false
-descriptions are recorded rather than quietly replaced.
+corrected — **six and six** — and a test compares both lists against
+`containment.BEHAVIOURAL_CHECKS` / `SOURCE_CHECKS`.
+
+The count then drifted twice more after that sentence was first written: this
+section said six while its own summary line still said "seven and five", and
+the module banner said seven and five again. Three artefacts, three numbers,
+twice over. They are one number now, and the test reads the split out of the
+section rather than only checking that the twelve names appear somewhere in it.
+The false descriptions are recorded rather than quietly replaced.
 
 Final statuses:
 `TRACK_A_EXECUTION_CONTAINMENT_VERIFIED_NO_UNGATED_ROUTE` /
@@ -619,10 +659,64 @@ requires an attacker who can already write the working tree, which is a
 different threat model from the one this gate addresses, and it is recorded
 here rather than left implicit.
 
-**Four rounds, and each round's fix created the next round's blockers.** That
-is the strongest single argument in this document for why an execution gate
-needs independent re-verification rather than a green suite, and it is recorded
-here rather than in a commit message.
+### 13.4 The fourth re-verification — the fix was the largest hole in the head
+
+A fourth fresh context audited the round-four head, and the finding is the
+sharpest instance of the pattern in this document: **the native-reader guard
+added to close the C-extension hole was itself the biggest opening in the
+apparatus.**
+
+It was a generic wrapper that worked out, for each of fifteen APIs, which
+argument was the path and whether the call was a read or a write. Heterogeneous
+APIs do not share a signature, so it got all of that wrong at once:
+
+| What the wrapper assumed | What happened |
+| --- | --- |
+| there is a `mode` argument | `pa.output_stream` has none, so it was classified a *read* — and a read was refused only for market data. It **wrote into `docs/` and `src/`, and truncated the append-only ledger**: a write route that had not existed before the guard was added |
+| `args[0]` is the path | `pq.write_table`'s first argument is a Table. Every call was refused **including outside the repository** — the repository's own `build_feature_store.py` could not run — while `pq.write_table(table=…, where=…)` was not checked at all |
+| a mode is a `str` in `args[1]` | for `pq.write_table(t, path)` the read/write decision was made by asking whether the **destination path** contained `w`, `a`, `x` or `+` |
+| a listed target is a function | `pa.fs.LocalFileSystem` is a class. Wrapping the constructor checked nothing, the instance methods stayed original — and replacing the class with a function made `isinstance` raise **process-wide** |
+
+The response is a design change, not another patch: **refuse, do not classify.**
+Every entry in `NATIVE_REFUSED_TARGETS` raises while the guards are armed, with
+no argument inspected. That costs the use of pyarrow inside a Track A run, which
+R1 does not need because it has no read body; an implementing PR that needs one
+adds a narrow wrapper *with that API's signature in front of it*. Where the
+target is an immutable extension type, it is guarded by a refusing **subclass**
+(`LocalFileSystem`) or through a factory (`sqlite3`), and anything that still
+cannot be replaced is disclosed by `unpatchable_native_targets()` — because an
+entry that is listed but not refused is worse than a missing one, and §6 is what
+tells a reviewer to rely on the list.
+
+**Also created by round four and closed here:** the cache exemption's
+`_NEVER_EXEMPT_ROOTS` contained `src`, so writing a `src/**/__pycache__/*.pyc`
+refused and **a cold import of any `src/` module died** — the round-three defect,
+re-created for one subtree, and the regression test written to cover it set
+`PYTHONPYCACHEPREFIX` outside the repository, so it certified a configuration a
+real run does not have. The exemption now keys on the **file** (`.pyc`, or the
+`.pyc.<n>` temporary CPython renames) rather than on the directory, which fixes
+both directions at once.
+
+**Also closed:** `\?\Volume{GUID}\…` was reduced to a *relative* path, so the
+cheap string test succeeded on a wrong path and the identity walk never ran —
+only two namespace forms reduce now, and the rest are refused; `sqlite3`'s
+`ATTACH` created a file inside `data/` with no audit event; `os.rename` of the
+**scratch root itself** took the whole governance-record tree out of the
+repository, because the source classified as `scratch` and the destination as
+`outside`; the read-route check was defeated by a `Subscript` that is not a
+callee, by a bare-`Name` decorator and by an f-string format spec, and is now an
+allowlist over **node types** rather than over call names; and the module
+exemption in the structural sweep skipped the reflection check too, so a reader
+assembled from `builtins.__dict__["open"]` inside a permitted opener went
+unscanned.
+
+**Five rounds, and each round's fix created the next round's blockers.** That is
+the strongest single argument in this document for why an execution gate needs
+independent re-verification rather than a green suite. It is recorded here, and
+not only in a commit message, because a reviewer deciding whether to trust this
+apparatus should weigh it — and because the one thing that has held across all
+five rounds is that **every defect was found by a context that had not written
+the code.**
 
 ## 14. Non-authorisation statement
 

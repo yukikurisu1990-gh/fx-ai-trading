@@ -177,9 +177,15 @@ def test_a_write_into_the_repository_outside_the_scratch_root_is_refused(
 
 def test_build_caches_inside_the_repository_stay_writable(guards: object, tmp_path: Path) -> None:
     """Blocking ``__pycache__`` would break imports, and it carries no research meaning."""
-    relative = scratch.repo_root() / "scripts" / "__pycache__" / "__probe__.tmp"
-    # Only the guard's verdict is under test; nothing is created.
-    isolation._check_open((str(relative), "w"))
+    # The exemption keys on the **file**, not on the directory: an arbitrary
+    # file in a ``__pycache__`` is not a cache file, and treating it as one made
+    # ``data/__pycache__/candles.jsonl`` readable. CPython writes
+    # ``foo.cpython-312.pyc`` and a ``.pyc.<n>`` temporary, so both count.
+    for name in ("probe.cpython-312.pyc", "probe.cpython-312.pyc.2726146608560"):
+        relative = scratch.repo_root() / "scripts" / "__pycache__" / name
+        isolation._check_open((str(relative), "w"))
+    with pytest.raises(isolation.IsolationError):
+        isolation._check_open((str(scratch.repo_root() / "scripts" / "__pycache__" / "x.tmp"), "w"))
 
 
 def test_a_read_under_the_data_tree_is_refused_outside_the_gated_window(

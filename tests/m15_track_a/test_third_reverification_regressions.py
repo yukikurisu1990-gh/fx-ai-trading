@@ -74,22 +74,37 @@ def test_the_repositorys_own_parquet_reader_is_guarded(guards: object) -> None:
         pq.read_table(str(REPO / "data" / "__nx__.parquet"))
 
 
-def test_a_native_reader_outside_the_repository_still_works(guards: object) -> None:
-    """The guard confines the repository; it does not break the dependency."""
+def test_a_native_reader_is_refused_everywhere_not_classified(guards: object) -> None:
+    """The guard **refuses**; it does not try to work out which argument is a path.
+
+    An earlier drafting wrapped each target and guessed. A re-verification took
+    that apart four ways at once, because fifteen heterogeneous APIs do not
+    share a signature: ``pa.output_stream`` has no ``mode``, so it was called a
+    read and wrote into ``docs/``; ``pq.write_table``'s first argument is a
+    Table, so every call was refused *including outside the repository*, while
+    the keyword form was not checked at all.
+
+    Refusing outright costs the use of pyarrow inside a Track A run — which R1
+    does not need, because it has no read body — and buys a guard with no
+    argument parsing to get wrong.
+    """
     pa = pytest.importorskip("pyarrow")
     with tempfile.NamedTemporaryFile(suffix=".bin", delete=False) as handle:
         handle.write(b"payload")
     try:
-        with pa.OSFile(handle.name, "rb") as stream:
-            assert stream.read() == b"payload"
+        with pytest.raises(isolation.IsolationError):
+            pa.OSFile(handle.name, "rb")
     finally:
         Path(handle.name).unlink()
+    isolation.uninstall_all()
+    with pa.OSFile(__file__, "rb") as stream:
+        assert stream.read(1)  # unarmed, the dependency is untouched
 
 
 def test_the_bounded_guarantee_is_stated_rather_than_implied() -> None:
     """A denylist of C entry points is the honest shape; it must not read as complete."""
-    assert ("pyarrow", "OSFile") in isolation.NATIVE_READER_TARGETS
-    assert ("pyarrow.parquet", "read_table") in isolation.NATIVE_READER_TARGETS
+    assert ("pyarrow", "OSFile") in isolation.NATIVE_REFUSED_TARGETS
+    assert ("pyarrow.parquet", "read_table") in isolation.NATIVE_REFUSED_TARGETS
     source = Path(isolation.__file__).read_text(encoding="utf-8")
     assert "No in-process mechanism can close that class" in source
 

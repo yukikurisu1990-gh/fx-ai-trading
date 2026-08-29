@@ -35,7 +35,7 @@ complete answers are outside the process (a sandbox, a container, a filesystem
 ACL). What this module does instead is name the C readers this repository
 actually depends on and refuse them at their Python entry points, and say
 plainly that the guarantee is bounded by that list. See
-:data:`NATIVE_READER_TARGETS`.
+:data:`NATIVE_REFUSED_TARGETS`.
 
 Why the *second* draft was wrong too, and what changed
 ------------------------------------------------------
@@ -91,8 +91,12 @@ that a deliberate one has to appear in a diff as an explicit act.
 Two limits worth naming rather than hiding. A **hardlink** already created
 inside the scratch root cannot be distinguished from an ordinary file by any
 path test — the defence against it is that ``os.link`` is itself refused. And
-the hook costs roughly **5x** on ``open``; that is affordable for a research
-run and would not be for a hot loop.
+the hook costs roughly **6x** on an ordinary ``open`` (measured 41 µs → 248 µs
+over 400 iterations), and considerably more when the identity walk has to stat
+a long ancestor chain. An earlier drafting of this line said 5x while the code
+resolved both roots from the filesystem on every event; the repository root is
+memoised now. It is affordable for a research run and would not be for a hot
+loop.
 """
 
 from __future__ import annotations
@@ -128,16 +132,12 @@ FORBIDDEN_OPERATIONS: Final[dict[str, str]] = {
     "external_storage_write": "§3.4 — no external storage",
 }
 
-#: Repository directory names a run may write inside even though they sit in the
-#: repo.  Build and tool caches only — nothing that carries research meaning.
+#: Tool caches a run may write inside even though they sit in the repo.
 #: ``.git`` is deliberately **absent**: a research run has no business writing
-#: hooks or config, and an earlier drafting listed it.
-_WRITABLE_REPO_CACHES: Final[frozenset[str]] = frozenset(
-    {"__pycache__", ".pytest_cache", ".mypy_cache", ".ruff_cache"}
-)
-
-#: Repository roots no exemption reaches, whatever sits inside them.
-_NEVER_EXEMPT_ROOTS: Final[frozenset[str]] = frozenset({".git", "data", "docs", "src", "models"})
+#: hooks or config, and an earlier drafting listed it.  ``__pycache__`` is not
+#: here either — see :func:`_is_build_cache`, which keys on the **file** rather
+#: than on the directory it sits in.
+_TOOL_CACHE_DIRS: Final[frozenset[str]] = frozenset({".pytest_cache", ".mypy_cache", ".ruff_cache"})
 
 #: First-level repository entries holding market data.  Matched on the **path
 #: component**, and ``artifacts/oanda_archive*`` by component prefix, because
@@ -145,31 +145,107 @@ _NEVER_EXEMPT_ROOTS: Final[frozenset[str]] = frozenset({".git", "data", "docs", 
 _MARKET_DATA_DIRS: Final[tuple[str, ...]] = ("data",)
 _MARKET_DATA_ARTIFACT_PREFIXES: Final[tuple[str, ...]] = ("oanda_archive",)
 
-#: Third-party entry points that reach the filesystem **below** the audit hook.
+#: Third-party entry points that reach the filesystem **below** the audit hook,
+#: and are therefore **refused outright** while the guards are armed.
 #:
-#: Each is ``(module, attribute)``. They are patched, not hooked, because an
-#: audit hook cannot see them: the implementation is C or C++ and never enters
-#: CPython's ``io`` layer. This is a **denylist**, with the polarity this module
-#: otherwise avoids — and it is the honest shape here, because the set of C
-#: extensions in a process is open. It covers the ones this repository depends
-#: on; a new native reader is a new entry, and
-#: :func:`scripts.m15_track_a.containment.audit` cannot detect its absence.
-NATIVE_READER_TARGETS: Final[tuple[tuple[str, str], ...]] = (
+#: Each is ``(module, dotted attribute)``; a dotted attribute names a method on a
+#: class, so the class object itself is never replaced.
+#:
+#: Why refuse rather than classify
+#: -------------------------------
+#:
+#: The previous drafting wrapped each target and tried to work out, generically,
+#: which argument was the path and whether the call was a read or a write. A
+#: re-verification took that apart in four ways at once, and the reason is
+#: structural rather than incidental: fifteen heterogeneous APIs do not share a
+#: signature.
+#:
+#: * ``pa.output_stream`` has no ``mode`` parameter, so the wrapper called it a
+#:   read — and a "read" was only refused for market data. It wrote into
+#:   ``docs/``, into ``src/``, and **truncated the append-only ledger**.
+#: * ``pq.write_table``'s first argument is a ``Table``. Reading ``args[0]`` as a
+#:   path refused every call, including ones outside the repository, and
+#:   ``pq.write_table(table=…, where=…)`` was not checked at all.
+#: * The read/write decision fell back to "is ``args[1]`` a str containing
+#:   ``w``/``a``/``x``/``+``" — i.e. it was decided by whether the *destination
+#:   path* happened to contain the letter x.
+#: * ``pa.fs.LocalFileSystem`` is a **class**; the reads are on its instance
+#:   methods, so wrapping the constructor checked nothing, and replacing the
+#:   class broke ``isinstance`` process-wide.
+#:
+#: A refusal needs none of that. Track A R1 has no read body, so it has nothing
+#: to parse and no reason to call any of these. An implementing PR that needs
+#: one adds a narrow wrapper **with that API's signature in front of it**, and
+#: re-runs the containment audit — the same "a body, not a policy" discipline
+#: the rest of this package is built on.
+#:
+#: The list is still a **denylist**, its coverage is exactly these names, and
+#: :func:`scripts.m15_track_a.containment.audit` cannot detect a native reader
+#: nobody listed. That bound is stated in the module docstring and in §6 of the
+#: gate document, and it is the honest half of this design.
+NATIVE_REFUSED_TARGETS: Final[tuple[tuple[str, str], ...]] = (
     ("pyarrow", "OSFile"),
     ("pyarrow", "memory_map"),
     ("pyarrow", "input_stream"),
     ("pyarrow", "output_stream"),
     ("pyarrow.parquet", "read_table"),
-    ("pyarrow.parquet", "ParquetFile"),
     ("pyarrow.parquet", "write_table"),
+    ("pyarrow.parquet", "ParquetFile"),
+    ("pyarrow.parquet", "ParquetDataset"),
+    ("pyarrow.dataset", "dataset"),
+    ("pyarrow.dataset", "write_dataset"),
     ("pyarrow.feather", "read_table"),
     ("pyarrow.feather", "read_feather"),
     ("pyarrow.feather", "write_feather"),
     ("pyarrow.csv", "read_csv"),
+    ("pyarrow.csv", "open_csv"),
+    ("pyarrow.csv", "write_csv"),
+    ("pyarrow.json", "read_json"),
+    ("pyarrow.orc", "read_table"),
+    ("pyarrow.orc", "write_table"),
+    ("pyarrow.orc", "ORCFile"),
     ("pyarrow.ipc", "open_file"),
     ("pyarrow.ipc", "open_stream"),
-    ("pyarrow.fs", "LocalFileSystem"),
+    ("pyarrow.ipc", "RecordBatchFileReader"),
+    ("pyarrow.ipc", "RecordBatchStreamReader"),
+    ("lightgbm", "Booster"),
     ("h5py", "File"),
+    ("polars", "read_parquet"),
+    ("polars", "read_csv"),
+    ("polars", "scan_parquet"),
+    ("polars", "scan_csv"),
+    ("duckdb", "connect"),
+    ("duckdb", "read_parquet"),
+    ("duckdb", "read_csv"),
+)
+
+#: Classes whose **methods** reach the filesystem, and which cannot be patched
+#: in place: ``pyarrow.fs.LocalFileSystem`` is a Cython extension type and
+#: ``setattr`` on it raises ``cannot set … attribute of immutable type``.
+#:
+#: They are replaced by a **subclass** whose named methods refuse. A subclass
+#: and not a function, because an earlier drafting bound the name to a function
+#: and ``isinstance(x, pa.fs.LocalFileSystem)`` then raised
+#: ``arg 2 must be a type`` process-wide. A subclass stays a type, so
+#: ``isinstance`` keeps working; the one behaviour that changes is that an
+#: instance built **before** the guards were installed is no longer an instance
+#: of the rebound name — and a Track A run has none.
+NATIVE_REFUSED_CLASS_METHODS: Final[tuple[tuple[str, str, tuple[str, ...]], ...]] = (
+    (
+        "pyarrow.fs",
+        "LocalFileSystem",
+        (
+            "open_input_file",
+            "open_input_stream",
+            "open_output_stream",
+            "open_append_stream",
+            "create_dir",
+            "delete_file",
+            "delete_dir",
+            "move",
+            "copy_file",
+        ),
+    ),
 )
 
 #: Consumed-holdout evidence.  Not market data, but exploratory design tuned
@@ -278,12 +354,47 @@ def _check_destination(address: object, *, how: str) -> None:
 # Paths
 # ---------------------------------------------------------------------------
 
-_EXTENDED_PREFIXES: Final[tuple[tuple[str, str], ...]] = (
-    ("\\\\?\\UNC\\", "\\\\"),
-    ("//?/UNC/", "\\\\"),
-    ("\\\\?\\", ""),
-    ("//?/", ""),
+#: Extended-namespace prefixes, and what they reduce to.  Only two forms
+#: reduce: a UNC form and a drive form.  **Nothing else is reduced** — an
+#: earlier drafting stripped the prefix unconditionally, which turned a
+#: volume-GUID path into a *relative* one. ``realpath`` then anchored it under
+#: the current directory, the cheap string test succeeded on that wrong path,
+#: and the identity walk — which only runs when the string test *fails* —
+#: never ran. The read landed.
+_EXTENDED_UNC_PREFIXES: Final[tuple[str, ...]] = (
+    "\\\\?\\UNC\\",
+    "//?/UNC/",
 )
+_EXTENDED_PLAIN_PREFIXES: Final[tuple[str, ...]] = (
+    "\\\\?\\",
+    "//?/",
+    "\\\\.\\",
+    "//./",
+)
+
+
+def _reduce_namespace(text: str) -> str:
+    """Reduce a Win32 namespace spelling to a drive or UNC path, or refuse it.
+
+    Only two forms reduce: an extended UNC path and an extended drive path. A
+    volume-GUID path or a device path names the same bytes by a route no path
+    arithmetic can relate to the repository root, so it is **refused** rather
+    than mangled into something that looks classifiable.
+    """
+    for prefix in _EXTENDED_UNC_PREFIXES:
+        if text.startswith(prefix):
+            return "\\\\" + text[len(prefix) :]
+    for prefix in _EXTENDED_PLAIN_PREFIXES:
+        if text.startswith(prefix):
+            rest = text[len(prefix) :]
+            if len(rest) >= 2 and rest[1] == ":" and rest[0].isalpha():
+                return rest
+            raise IsolationError(
+                f"{TOKEN}: a Track A run may not name a path through the Win32 device or "
+                f"volume namespace ({text!r}). It reaches the same bytes by a route no "
+                "path arithmetic can relate to the repository root."
+            )
+    return text
 
 
 def _normalise(raw: object) -> str | None:
@@ -309,10 +420,7 @@ def _normalise(raw: object) -> str | None:
         return None
     if not text:
         return None
-    for prefix, replacement in _EXTENDED_PREFIXES:
-        if text.startswith(prefix):
-            text = replacement + text[len(prefix) :]
-            break
+    text = _reduce_namespace(text)
     try:
         return os.path.normcase(os.path.realpath(text))
     except (OSError, ValueError):
@@ -417,20 +525,48 @@ def _is_consumed_evidence(parts: tuple[str, ...]) -> bool:
 
 
 def _is_build_cache(parts: tuple[str, ...]) -> bool:
-    """A file sitting **directly inside** a build-cache directory.
+    """A file the interpreter or a tool must be able to write inside the repo.
 
-    ``any(part in caches for part in parts)`` was too generous in a way that
-    mattered: it made ``data/__pycache__/candles.jsonl`` a cache path, and after
-    the read branch was routed through the classifier that turned a refused
-    market-data read into a permitted one. The exemption exists for ``.pyc``
-    files, so it is written as "the parent directory is a cache".
+    Two rules, and both are narrow because both broad versions broke something.
+
+    * A **bytecode** file in a ``__pycache__`` directory, anywhere. Not "any file
+      in a ``__pycache__`` directory" — that made
+      ``data/__pycache__/candles.jsonl`` a cache path and turned a refused
+      market-data read into a permitted one. And not "any ``__pycache__``
+      outside a protected root" either — that excluded ``src/``, and a cold
+      import of any ``src/`` module then **died**, because ``IsolationError`` is
+      a ``RuntimeError`` and CPython's ``except OSError`` around ``set_data``
+      does not catch it.
+    * A **tool cache** as the first component. Those hold arbitrary files and
+      nothing protected lives under them.
+
+    CPython writes ``foo.cpython-312.pyc.<n>`` and renames, so the temporary
+    form counts too.
     """
-    if parts and parts[0] in _NEVER_EXEMPT_ROOTS:
-        # A cache directory *inside* one of these does not launder it. ``.git``
-        # was already off the cache list and came back through the side door as
-        # ``.git/__pycache__/…``.
+    if not parts:
         return False
-    return len(parts) >= 2 and parts[-2] in _WRITABLE_REPO_CACHES
+    if parts[0] in _TOOL_CACHE_DIRS:
+        return True
+    if len(parts) >= 2 and parts[-2] == "__pycache__":
+        name = parts[-1]
+        head = name.rsplit(".", 1)
+        return name.endswith(".pyc") or (len(head) == 2 and head[0].endswith(".pyc"))
+    return False
+
+
+#: Verbs that would take the scratch root away rather than create it.  ``mkdir``
+#: is deliberately absent: ``append_line`` creates the root on first use.
+_DESTRUCTIVE_VERBS: Final[frozenset[str]] = frozenset(
+    {"rename", "replace", "remove", "unlink", "rmdir", "move", "link", "symlink", "truncate"}
+)
+
+
+def _is_scratch_root_itself(candidate: str) -> bool:
+    """True when the path *is* the scratch root rather than something inside it."""
+    scratch_text = _root(scratch.scratch_root, "scratch root")
+    if candidate == scratch_text:
+        return True
+    return _stat_key(candidate) is not None and _stat_key(candidate) == _stat_key(scratch_text)
 
 
 def _classify(candidate: str) -> tuple[str, tuple[str, ...]]:
@@ -513,6 +649,16 @@ def assert_write_allowed(raw: object, *, what: str = "write to") -> None:
         raise IsolationError(
             f"{TOKEN}: a Track A run may not {what} a path it cannot classify ({raw!r}). "
             "An unclassifiable destination fails closed."
+        )
+    if what in _DESTRUCTIVE_VERBS and _is_scratch_root_itself(candidate):
+        # Renaming or moving the scratch root takes the whole
+        # BINDING_GOVERNANCE_RECORD tree out of the repository in one call, and
+        # every per-file ledger check is handed a *directory* whose identity is
+        # not a ledger's and whose name is not a ledger name.
+        raise IsolationError(
+            f"{TOKEN}: a Track A run may not {what} the scratch root itself. It holds the "
+            "append-only governance records, and moving it destroys them as surely as "
+            "truncating them."
         )
     role, parts = _classify(candidate)
     if role in {"outside", "cache", "scratch"}:
@@ -770,6 +916,7 @@ class _Installed:
     engine_targets: list[tuple[Any, str, Any]] = field(default_factory=list)
     database: bool = False
     native: bool = False
+    unpatchable: list[str] = field(default_factory=list)
 
 
 _state: _Installed | None = None
@@ -857,102 +1004,171 @@ def install_network_guard() -> None:
     state.network = True
 
 
+def _import_or_none(module_name: str) -> Any:
+    try:
+        return importlib.import_module(module_name)
+    except Exception:  # noqa: BLE001 - an absent or broken optional dependency
+        return None
+
+
+def _resolve_attribute(module: Any, dotted: str) -> tuple[Any, str] | None:
+    """``(owner, attribute)`` for a possibly dotted name, or ``None`` if absent."""
+    owner = module
+    parts = dotted.split(".")
+    for part in parts[:-1]:
+        owner = getattr(owner, part, None)
+        if owner is None:
+            return None
+    if not hasattr(owner, parts[-1]):
+        return None
+    return owner, parts[-1]
+
+
 def install_native_reader_guard() -> None:
     """Refuse the C-extension file entry points the audit hook cannot see.
 
-    This is the limb that exists because the hook's central claim has a limit.
-    ``pyarrow``'s file layer is C++: ``pa.OSFile``, ``pa.memory_map`` and
-    ``pq.read_table`` reach the filesystem without raising a single Python audit
-    event, and a re-verification used them to read ``data/`` and write into
-    ``docs/`` with every other guard installed.
+    This limb exists because the hook's central claim has a limit: ``pyarrow``'s
+    file layer is C++ and raises no Python audit event, so it reached the
+    filesystem with every other guard installed.
 
-    Each target is replaced by a wrapper that runs the **same** classification
-    the hook would have run — so a native read of an unprotected file still
-    works, and a native read of ``data/`` refuses. Modules that are not
-    installed are skipped.
-
-    Its shape is a denylist and its coverage is bounded by
-    :data:`NATIVE_READER_TARGETS`. That is stated rather than hidden: a native
-    reader nobody listed is a hole, no in-process mechanism can find it, and
-    only something outside the process — a sandbox, a container, a filesystem
-    ACL — closes the class.
+    Each target in :data:`NATIVE_REFUSED_TARGETS` is replaced by a function that
+    **always raises** while armed. No argument is inspected, because inspecting
+    them generically is what failed — see that constant's own note. Modules that
+    are not installed are skipped, and a dotted target names a **method**, so no
+    class object is replaced and ``isinstance`` keeps working.
     """
     state = _ensure_state()
     if state.native:
         return
-    for module_name, attribute in NATIVE_READER_TARGETS:
+    for module_name, dotted in NATIVE_REFUSED_TARGETS:
+        module = _import_or_none(module_name)
+        if module is None:
+            continue
+        resolved = _resolve_attribute(module, dotted)
+        if resolved is None:
+            continue
+        owner, attribute = resolved
+        original = getattr(owner, attribute)
+        if not callable(original):
+            continue
+        label = f"{module_name}.{dotted}"
         try:
-            module = importlib.import_module(module_name)
-        except Exception:  # noqa: BLE001 - an absent or broken optional dependency
+            setattr(owner, attribute, _refusing_native(label))
+        except (TypeError, AttributeError):
+            # An immutable extension type. Recorded rather than swallowed: an
+            # entry on the list that is not actually refused is worse than an
+            # entry that is missing, because the list is what §6 tells a
+            # reviewer to rely on.
+            state.unpatchable.append(label)
             continue
-        original = getattr(module, attribute, None)
-        if original is None or not callable(original):
+        state.patched.append((owner, attribute, original))
+
+    for module_name, class_name, methods in NATIVE_REFUSED_CLASS_METHODS:
+        module = _import_or_none(module_name)
+        original_class = getattr(module, class_name, None) if module else None
+        if not isinstance(original_class, type):
             continue
-        state.patched.append((module, attribute, original))
-        setattr(module, attribute, _guarded_native(original, f"{module_name}.{attribute}"))
+        label = f"{module_name}.{class_name}"
+        namespace = {
+            method: _refusing_native(f"{label}.{method}")
+            for method in methods
+            if hasattr(original_class, method)
+        }
+        try:
+            refusing = type(class_name, (original_class,), namespace)
+        except TypeError:  # pragma: no cover - a final extension type
+            state.unpatchable.append(label)
+            continue
+        state.patched.append((module, class_name, original_class))
+        setattr(module, class_name, refusing)
+
+    _install_dirfd_guard(state)
+    _install_sqlite_attach_guard(state)
+    state.native = True
+
+
+def _refusing_native(label: str) -> Any:
+    """A stand-in that refuses, whatever it is handed."""
+
+    def refuse(*_args: Any, **_kwargs: Any) -> Any:
+        raise IsolationError(
+            f"{TOKEN}: a Track A run may not call {label}. It reaches the filesystem "
+            "through a C extension, below every Python audit event, so it is refused "
+            "outright rather than classified — fifteen heterogeneous APIs do not share a "
+            "signature, and guessing which argument was the path is what let an earlier "
+            "drafting write into docs/ and truncate the append-only ledger. R1 has no read "
+            "body and no reason to call it; an implementing PR that needs one adds a narrow "
+            "wrapper with this API's signature in front of it."
+        )
+
+    refuse.__name__ = label.rsplit(".", 1)[-1]
+    return refuse
+
+
+def _install_dirfd_guard(state: _Installed) -> None:
+    """Refuse ``os.open(..., dir_fd=…)``: the audit event does not carry ``dir_fd``."""
     real_os_open = os.open
 
     def guarded_os_open(path: Any, flags: int, mode: int = 0o777, *, dir_fd: Any = None) -> int:
         if dir_fd is not None:
-            # CPython's ``open`` audit event carries ``(path, None, flags)`` and
-            # **not** ``dir_fd``, so the hook resolves a relative name against
-            # the cwd and reaches the wrong verdict. ``dir_fd`` is unavailable on
-            # Windows and available on the Linux CI runner, so this is guarded
-            # rather than assumed absent.
             raise IsolationError(
                 f"{TOKEN}: a Track A run may not open {path!r} relative to a directory "
-                "descriptor. The audit event does not carry dir_fd, so the path cannot be "
-                "classified."
+                "descriptor. The audit event carries only (path, None, flags), so a "
+                "relative name would be resolved against the wrong directory."
             )
         return real_os_open(path, flags, mode)
 
     state.patched.append((os, "open", real_os_open))
     os.open = guarded_os_open  # type: ignore[assignment]
 
-    state.native = True
 
+def _install_sqlite_attach_guard(state: _Installed) -> None:
+    """Refuse ``ATTACH``: it creates a file and raises no audit event.
 
-def _guarded_native(original: Any, label: str) -> Any:
-    """Wrap a native entry point in the classification the audit hook would do."""
+    ``sqlite3.connect`` is guarded by the hook and an in-memory connection is
+    permitted — but ``ATTACH DATABASE '<repo>/data/x'`` then creates a file
+    inside the most protected tree with no event at all. Measured: a 0-byte
+    file appeared under ``data/``.
 
-    def guarded(*args: Any, **kwargs: Any) -> Any:
-        target = args[0] if args else kwargs.get("path") or kwargs.get("source")
-        if target is not None and not isinstance(target, int):
-            mode = kwargs.get("mode")
-            if mode is None and len(args) > 1 and isinstance(args[1], str):
-                mode = args[1]
-            writing = isinstance(mode, str) and any(f in mode for f in ("w", "a", "x", "+"))
-            try:
-                if writing:
-                    assert_ledger_not_destroyed(target, what="written by a native writer")
-                    assert_write_allowed(target, what=f"write through {label}")
-                else:
-                    _refuse_native_read(target, label)
-            except IsolationError:
-                raise
-            except Exception:  # noqa: BLE001 - an unclassifiable argument is not a path
-                pass
-        return original(*args, **kwargs)
+    ``sqlite3.Connection`` is an immutable extension type, so its methods
+    cannot be patched. ``connect`` takes a ``factory``, though, so the guard is
+    installed by making every connection an instance of a refusing subclass.
+    """
+    import sqlite3
 
-    guarded.__name__ = getattr(original, "__name__", "guarded")
-    guarded.__doc__ = getattr(original, "__doc__", None)
-    return guarded
+    class _GuardedConnection(sqlite3.Connection):
+        def _check(self, sql: Any) -> None:
+            if isinstance(sql, str) and "attach" in sql.lower():
+                raise IsolationError(
+                    f"{TOKEN}: a Track A run may not ATTACH a database. It creates a file "
+                    "and raises no audit event, so nothing else would see it."
+                )
 
+        def execute(self, sql: Any = "", *args: Any, **kwargs: Any) -> Any:
+            self._check(sql)
+            return super().execute(sql, *args, **kwargs)
 
-def _refuse_native_read(target: Any, label: str) -> None:
-    if _read_window_depth():
-        return
-    candidate = _normalise(target)
-    if candidate is None:
-        return
-    role, parts = _classify(candidate)
-    if role in {"market_data", "evidence"}:
-        where = "/".join(parts) if parts else candidate
-        raise IsolationError(
-            f"{TOKEN}: a Track A run may not read {where!r} through {label}. That entry "
-            "point is a C extension and raises no Python audit event, so it is guarded "
-            "here by name rather than by the hook."
-        )
+        def executemany(self, sql: Any = "", *args: Any, **kwargs: Any) -> Any:
+            self._check(sql)
+            return super().executemany(sql, *args, **kwargs)
+
+        def executescript(self, sql: Any = "", *args: Any, **kwargs: Any) -> Any:
+            self._check(sql)
+            return super().executescript(sql, *args, **kwargs)
+
+    real_connect = sqlite3.connect
+
+    def guarded_connect(*args: Any, **kwargs: Any) -> Any:
+        if kwargs.get("factory") not in (None, sqlite3.Connection):
+            raise IsolationError(
+                f"{TOKEN}: a Track A run may not supply a sqlite3 connection factory; the "
+                "ATTACH guard is installed through it."
+            )
+        kwargs["factory"] = _GuardedConnection
+        return real_connect(*args, **kwargs)
+
+    state.patched.append((sqlite3, "connect", real_connect))
+    sqlite3.connect = guarded_connect  # type: ignore[assignment]
 
 
 def install_database_guard() -> None:
@@ -1053,6 +1269,16 @@ def is_installed() -> bool:
     )
 
 
+def unpatchable_native_targets() -> tuple[str, ...]:
+    """Listed native targets that could **not** be refused on this interpreter.
+
+    Disclosed rather than swallowed. §6 tells a reviewer the guarantee is
+    exactly :data:`NATIVE_REFUSED_TARGETS`; an entry on that list which is not
+    actually refused would make the statement false, and silently.
+    """
+    return tuple(_state.unpatchable) if _state is not None else ()
+
+
 def is_armed() -> bool:
     """True when the audit hook is armed, whatever else is installed."""
     return _armed
@@ -1121,7 +1347,8 @@ __all__ = [
     "FORBIDDEN_OPERATIONS",
     "TOKEN",
     "IsolationError",
-    "NATIVE_READER_TARGETS",
+    "NATIVE_REFUSED_CLASS_METHODS",
+    "NATIVE_REFUSED_TARGETS",
     "assert_operation_allowed",
     "assert_write_allowed",
     "gated_read_window",
@@ -1130,6 +1357,7 @@ __all__ = [
     "assert_ledger_not_destroyed",
     "install_database_guard",
     "install_native_reader_guard",
+    "unpatchable_native_targets",
     "install_network_guard",
     "is_armed",
     "is_installed",

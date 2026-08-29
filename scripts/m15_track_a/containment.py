@@ -30,18 +30,24 @@ The lesson is not "write a longer list of reader names". It is that a source
 scan can only ever answer *did the author write the thing I thought to look
 for*. So the checks below are ordered:
 
-1. **Seven behavioural probes** come first and carry the verdict. They arm the
-   guards and then actually attempt the forbidden thing — a write into
-   ``docs/``, a read under ``data/``, a remote engine, a subprocess, a named
-   broker operation, an ungranted read — and require a refusal. A probe cannot
-   be satisfied by a comment.
-2. **Five source checks** come second and are advisory in exactly the way a
-   source scan has to be. Their roster is **enumerated from the directory**, so
-   a new module is scanned by existing. ``read_body_absent`` is one of these,
-   not a probe, and it is an **allowlist** over the calls the route may make —
-   a re-verification wrote a reader using ``numpy.memmap`` and a module global
-   that satisfied every "does it look absent?" test, so the answer cannot be a
-   longer list of reader names.
+1. **Six behavioural probes** come first and carry the verdict
+   (:data:`BEHAVIOURAL_CHECKS`). They arm the guards and then actually attempt
+   the forbidden thing — a write into ``docs/``, a read under ``data/``, a
+   remote engine, a subprocess, an ungranted read — and require a refusal. A
+   probe cannot be satisfied by a comment.
+2. **Six source checks** come second (:data:`SOURCE_CHECKS`) and are advisory
+   in exactly the way a source scan has to be. ``broker_live_demo`` is one of
+   them, not a probe: it iterates ``FORBIDDEN_OPERATIONS`` and calls
+   ``assert_operation_allowed``, which raises **iff** the name is in that same
+   dict, so it cannot fail and it attempts nothing.
+
+Their roster is **enumerated from the directory**, so a new module is scanned by
+existing. ``read_body_absent`` is a source check too, and it is an **allowlist
+over the AST node types** the route may contain — three rounds of allowlisting
+*call names* were each defeated by a way of reading that is not a call: a
+``numpy.memmap`` behind a module global, a ``Subscript`` callee, a ``Subscript``
+that is not a callee at all, a bare-``Name`` decorator, and an f-string format
+spec. The answer was never going to be a longer list of reader names.
 
 Every probe is chosen so that a *failure of the guard* is still harmless: the
 read probe names a file that does not exist, so if the hook were absent the
@@ -92,6 +98,13 @@ _PERMITTED_FILE_OPENERS: Final[dict[str, str]] = {
     "access is governed by the same audit hook as everything else",
 }
 
+#: The one module allowed to reflect.  Refusing a C-extension entry point means
+#: resolving ``(module, attribute)`` pairs at run time, which is
+#: ``getattr`` with a computed name by construction — and the reflection is the
+#: guard being installed, not a reader being assembled. Its own file access is
+#: governed by the same audit hook as every other module's.
+_PERMITTED_REFLECTION: Final[frozenset[str]] = frozenset({"scripts.m15_track_a.isolation"})
+
 #: Call names that open something.  Explicitly **not** a completeness claim —
 #: see the module docstring.  A re-verification defeated this set with
 #: ``pandas.read_feather`` and with an alias, so the alias *binding* is now
@@ -127,6 +140,14 @@ _READER_NAMES: Final[frozenset[str]] = frozenset(
         "copy2",
         "FileIO",
         "ZipFile",
+        "OSFile",
+        "input_stream",
+        "output_stream",
+        "open_input_file",
+        "open_input_stream",
+        "open_output_stream",
+        "LocalFileSystem",
+        "Booster",
     }
 )
 
@@ -161,7 +182,7 @@ def package_modules() -> tuple[str, ...]:
 
 
 # ---------------------------------------------------------------------------
-# Behavioural probes (7) — these carry the verdict
+# Behavioural probes (6) — these carry the verdict
 # ---------------------------------------------------------------------------
 
 
@@ -369,7 +390,55 @@ def _terminal_raise_is_not_implemented(body: list[ast.stmt]) -> bool:
 #: the read route is a finding on its own: a reader assembled from
 #: ``getattr(builtins, "op" + "en")`` has no call name to compare.
 _INDIRECTION_NAMES: Final[frozenset[str]] = frozenset(
-    {"getattr", "__import__", "eval", "exec", "vars", "globals", "locals", "__builtins__"}
+    {
+        "getattr",
+        "__import__",
+        "eval",
+        "exec",
+        "vars",
+        "globals",
+        "locals",
+        "__builtins__",
+        "__dict__",
+        "__getattribute__",
+    }
+)
+
+#: The AST node types ``read_historical`` may contain.
+#:
+#: An **allowlist over node types**, because three rounds of allowlisting over
+#: *call names* kept losing to things that read without being a call the check
+#: could name: a ``Subscript`` (``SLURP["path"]`` on an object whose
+#: ``__getitem__`` reads), a bare-``Name`` decorator that reads at definition
+#: time, and an f-string whose ``__format__`` reads. None of those is a
+#: recognisable call, and no list of reader names reaches them.
+#:
+#: The permitted set is exactly what the declared gate sequence needs. Anything
+#: else — a subscript, a lambda, a dict display, a comprehension, an ``await``,
+#: an import — is a finding, and extending the set is a diff a reviewer sees.
+_PERMITTED_READ_ROUTE_NODES: Final[frozenset[type[ast.AST]]] = frozenset(
+    {
+        ast.arg,
+        ast.arguments,
+        ast.Assign,
+        ast.Attribute,
+        ast.Call,
+        ast.Constant,
+        ast.Expr,
+        ast.FormattedValue,
+        ast.FunctionDef,
+        ast.If,
+        ast.JoinedStr,
+        ast.keyword,
+        ast.Load,
+        ast.Name,
+        ast.Not,
+        ast.Raise,
+        ast.Store,
+        ast.UnaryOp,
+        ast.With,
+        ast.withitem,
+    }
 )
 
 _PERMITTED_READ_ROUTE_CALLS: Final[frozenset[str]] = frozenset(
@@ -400,17 +469,26 @@ def _check_read_body_is_absent() -> CheckResult:
     stated instead of overclaimed, and ``no_market_data_read`` is no longer
     licensed by this check alone (see :func:`audit`).
 
-    Three conditions, all necessary, and the third is the one that matters:
+    Four conditions, and the fourth is the one that finally holds:
 
     1. the function contains no ``return`` and no ``yield``;
     2. its final statement **is** ``raise NotImplementedError(...)``;
-    3. every call it makes is one of :data:`_PERMITTED_READ_ROUTE_CALLS`.
+    3. every call it makes is one of :data:`_PERMITTED_READ_ROUTE_CALLS`, and no
+       call has a callee this check cannot name;
+    4. every **node type** in it is one of
+       :data:`_PERMITTED_READ_ROUTE_NODES`, and it carries no decorator.
 
-    Conditions 1 and 2 alone were defeated end to end: a body that read a file
-    with ``numpy.memmap`` and stored the bytes in a module global has no
-    ``return``, ends in the raise, and used a name no reader list contained.
-    An allowlist over the calls does not depend on having anticipated the
-    reader.
+    Each condition was added because the previous set was defeated end to end.
+    1 and 2 fell to a body that read through ``numpy.memmap`` into a module
+    global. 3 fell to ``_T["slurp"](path)``, whose callee is a ``Subscript``, and
+    then to ``SLURP["path"]`` — a subscript that is not a call at all, so there
+    was no callee to reject — as well as to a bare-``Name`` decorator and an
+    f-string whose ``__format__`` read.
+
+    The pattern is worth naming: **a list of ways to read cannot be completed,
+    and each round of extending it was defeated by a way of reading that is not
+    a call.** 4 is an allowlist over the *shape* of the function rather than
+    over the vocabulary of reading, and that is why it is the last one.
     """
     tree = ast.parse(Path(read_route.__file__).read_text(encoding="utf-8"))
     for node in ast.walk(tree):
@@ -426,7 +504,20 @@ def _check_read_body_is_absent() -> CheckResult:
                     "audit no longer establishes that nothing is read",
                 )
             unexpected: set[str] = set()
+            if node.decorator_list:
+                unexpected.add("a decorator (it runs at definition time)")
             for child in ast.walk(node):
+                if isinstance(child, ast.FormattedValue) and child.format_spec is not None:
+                    # ``f"{SLURP:README.md}"`` calls ``__format__`` with the spec,
+                    # and an object can read a file there. The declared body's
+                    # f-string has no specs.
+                    unexpected.add(f"an f-string format spec at line {child.lineno}")
+                if type(child) not in _PERMITTED_READ_ROUTE_NODES:
+                    unexpected.add(
+                        f"{type(child).__name__} node at line {child.lineno}"
+                        if hasattr(child, "lineno")
+                        else type(child).__name__
+                    )
                 if isinstance(child, ast.Call):
                     func = child.func
                     if not isinstance(func, ast.Name | ast.Attribute):
@@ -467,8 +558,38 @@ def _check_read_body_is_absent() -> CheckResult:
 
 
 # ---------------------------------------------------------------------------
-# Source checks (5) — advisory, and labelled as such
+# Source checks (6) — advisory, and labelled as such
 # ---------------------------------------------------------------------------
+
+
+def _indirection_findings(module_name: str, tree: ast.AST) -> list[str]:
+    """Names that let a caller build a reader the source never spells.
+
+    Separate from :func:`_alias_findings` because it applies to **every**
+    module, permitted openers included: ``getattr(builtins, "op" + "en")`` and
+    ``builtins.__dict__["open"]`` produce a reader whose name appears nowhere,
+    and a module allowed to call ``open`` in plain sight is not allowed to
+    assemble one out of sight.
+    """
+    findings: list[str] = []
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Call):
+            direct = getattr(node.func, "id", None) or getattr(node.func, "attr", None)
+            if direct == "getattr":
+                for argument in node.args[1:2]:
+                    if not isinstance(argument, ast.Constant):
+                        findings.append(
+                            f"{module_name}:{node.lineno} getattr() with a computed name"
+                        )
+            elif direct in _INDIRECTION_NAMES and direct != "getattr":
+                findings.append(f"{module_name}:{node.lineno} {direct}()")
+        elif isinstance(node, ast.Attribute) and node.attr in {
+            "__dict__",
+            "__builtins__",
+            "__getattribute__",
+        }:
+            findings.append(f"{module_name}:{node.lineno} reflects through {node.attr}")
+    return findings
 
 
 def _alias_findings(module_name: str, tree: ast.AST) -> list[str]:
@@ -531,8 +652,6 @@ def _check_single_read_route() -> CheckResult:
     """
     findings: list[str] = []
     for module_name in package_modules():
-        if module_name in _PERMITTED_FILE_OPENERS:
-            continue
         module = importlib.import_module(module_name)
         source_file = getattr(module, "__file__", None)
         if source_file is None:  # pragma: no cover
@@ -549,9 +668,17 @@ def _check_single_read_route() -> CheckResult:
                 if isinstance(func, ast.Attribute)
                 else None
             )
-            if name in _READER_NAMES:
+            if name in _READER_NAMES and module_name not in _PERMITTED_FILE_OPENERS:
                 findings.append(f"{module_name}:{node.lineno} {name}()")
-        findings.extend(_alias_findings(module_name, tree))
+        # The **indirection** sweep runs on every module, permitted openers
+        # included. Skipping a module wholesale is what let a reader added to
+        # one of the ledger modules go unscanned; the exemption those modules
+        # carry is for calling ``open`` on their own ledger in plain sight, not
+        # for assembling a reader by reflection.
+        if module_name not in _PERMITTED_REFLECTION:
+            findings.extend(_indirection_findings(module_name, tree))
+        if module_name not in _PERMITTED_FILE_OPENERS:
+            findings.extend(_alias_findings(module_name, tree))
     if findings:
         return CheckResult("single_read_route", False, f"file-access calls outside: {findings}")
     return CheckResult(

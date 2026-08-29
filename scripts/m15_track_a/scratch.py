@@ -83,9 +83,16 @@ class ScratchRootError(RuntimeError):
     """Raised when a Track A write is outside the scratch root or is otherwise refused."""
 
 
+#: Resolved once.  ``Path.resolve()`` hits the filesystem, and the isolation
+#: hook asks for this root on **every** file operation in the process — it was
+#: a measurable share of the guard's cost. The repository root cannot move
+#: while the interpreter is running.
+_REPO_ROOT: Final[Path] = Path(__file__).resolve().parents[2]
+
+
 def repo_root() -> Path:
     """The repository root, derived from this file's location."""
-    return Path(__file__).resolve().parents[2]
+    return _REPO_ROOT
 
 
 def scratch_root() -> Path:
