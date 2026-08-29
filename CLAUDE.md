@@ -30,28 +30,52 @@ otherwise.
 
 - **Track A — Exploratory.** May vary features, labels, models, hyperparameters,
   the training scheme, calibration, `ev_min`, thresholds, costs and entry/exit
-  logic. Every output is **`NON_DECISION_BEARING_EXPLORATORY_ONLY`** and may
-  never be cited for a formal GO, a Gate-3a pass, holdout evidence, novelty
-  evidence, production readiness — or in any decision this programme records.
-  Track A does **not** require the 77-item statistical freeze and does **not**
-  require the forward epoch to exist.
+  logic. Every output is **both** `NON_DECISION_BEARING_EXPLORATORY_ONLY` **and**
+  `RESEARCH_SCRATCH_NON_AUTHORITATIVE`, and may never be cited for a formal GO,
+  a Gate-3a pass, holdout evidence, novelty evidence, production readiness — or
+  in any decision this programme records. Track A does **not** require the
+  77-item statistical freeze and does **not** require the forward epoch to
+  exist.
+  **A surface being variable does not make its committed prohibitions
+  negotiable** (§8.13.4): Track A may choose a feature list, but not one
+  containing M1-derived features; the vary-freely list overlaps prereg Rulings
+  5–9 almost exactly, and each row of §8.13.4 carries a "what still binds"
+  column that this summary does not reproduce. Read it before varying anything,
+  and read §8.12.10 first — two of the surfaces (the calibration split and the
+  feature list) are **not** Track A free-vary items until their upstream
+  blockers are ruled.
 - **Track B — Formal Confirmation.** One declared candidate, frozen in every
   respect, run **once** on unseen forward data. Not a place to redesign.
 
-**Track A cannot start yet.** Three execution-safety conditions gate it, all
-currently unmet: governance propagation complete, the **Minimum Research
-Execution Gate** passed on a named head, and the derivation route decided **in a
-diff**. `TRACK_A_EXECUTION_REQUIRES_GOVERNANCE_PROPAGATION_COMPLETE`. The
-apparatus for all three is `scripts/m15_track_a/` and
+**Track A cannot start yet.** Do not read this as a snapshot — evaluate it:
+
+0. **PR #451 approved and merged.** Until then §8.11–§8.13 carry
+   `APPROVAL_IDENTIFIER_PENDING_UNTIL_MERGE` and
+   `THE_TWO_TRACK_SECTIONS_ARE_RULED_AS_RECORDED_AND_NOT_YET_CITABLE_AS_AUTHORITY`,
+   so the Two-Track model — including everything in this section — is
+   **provisional**, and the propagation into this file, the playbook, the
+   policy and the pre-registration rests on authority that is not yet citable.
+1. `TRACK_A_EXECUTION_REQUIRES_GOVERNANCE_PROPAGATION_COMPLETE` — the
+   **P-1 … P-15** predicate, true **on a named master SHA** (§8.12.13 C-10).
+   It is a predicate on named files, never a self-assessment.
+2. The **Minimum Research Execution Gate** passed on a named head.
+3. The derivation route decided **in a diff**.
+
+The apparatus for 1–3 is `scripts/m15_track_a/` and
 `docs/design/m15_track_a_execution_gate.md`; **building it is not passing the
 gate**, which needs review, approval and merge on a named head. Inside
 Track A, R1 (first read), R3 (training) and R4 (evaluation) remain **separate
-Red gates** — an execution-gate pass authorises **R1 only**.
+Red gates**. §8.12.10 records that an execution-gate pass reaches **R1 only** —
+a statement of **scope**, not of sufficiency: it makes R1 eligible to be
+authorised, and the read still needs its own grant.
 
 **A contract permission is not an execution authorisation.** The Two-Track
-contract being approved does not authorise a read; a read needs an explicit
-human + ChatGPT grant naming the operation, span, pairs, timeframe and approved
-head SHA (`scripts/m15_track_a/authorization.py`).
+contract being approved does not authorise a read, and neither does a passed
+execution gate; a read needs an explicit human + ChatGPT grant naming the
+operation, span, pairs, timeframe and approved head SHA. `ReadGrant`
+(`scripts/m15_track_a/authorization.py`) is where such an approval is
+**recorded and enforced in-process** — the object does not verify that the
+approval exists, so constructing one is never the act of granting it.
 
 ## Working rules
 

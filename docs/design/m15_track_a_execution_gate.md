@@ -16,7 +16,7 @@ apparatus for a Red operation; they do not perform it and do not authorise it.
 
 The Two-Track amendment (`docs/design/m15_minimum_research_gate.md` §8.11–§8.13)
 made exploratory M15 research **contractually** permissible. It deliberately
-stopped there: `CONTRACT_PERMISSION_IS_NOT_EXECUTION_AUTHORISATION` (§8.12.3).
+stopped there: `CONTRACT_PERMISSION_IS_NOT_EXECUTION_AUTHORISATION` (§8.12 header and §8.12.1).
 
 This gate is the missing half — the apparatus that makes a Track A R1 run
 **safe to authorise**, so that the authorisation, when it is given, is a
@@ -36,7 +36,7 @@ do*.
 
 | # | Step | State |
 | --- | --- | --- |
-| 1 | Two-Track contract approval and merge (PR #451) | not taken |
+| 1 | Two-Track contract approval and merge (PR #451) | **not taken** — this branch is stacked on `2cdb687`, PR #451's unmerged head, so §8.11–§8.13 are `…NOT_YET_CITABLE_AS_AUTHORITY` and every propagated statement here is provisional (§12) |
 | 2 | This execution gate reviewed, approved, merged | this PR |
 | 3 | Explicit human + ChatGPT **real-data read authorisation** | not requested |
 | 4 | Track A R1 execution | not performed |
@@ -44,6 +44,14 @@ do*.
 Steps 2 and 3 are distinct on purpose. A merged execution gate says the
 apparatus is sound; only step 3 says a read may happen, and it names the span
 it covers.
+
+**On "the execution gate authorises R1 only".** §8.12.10's token says the gate
+reaches **R1 and no further** — R3 and R4 need their own Red approvals. It is a
+statement of *scope*, not of *sufficiency*: reaching a gate is not passing
+through it, and the read still needs the explicit grant of step 3. Wherever
+this programme's documents carry the "authorises R1 only" phrasing, that is the
+reading, and the checklist at playbook §5a keeps the grant **outside** its items
+so that a fully-ticked gate cannot be mistaken for a granted read.
 
 ## 2. The design rule every module here follows
 
@@ -207,95 +215,157 @@ That cost is not paid by the code. It is paid by the authorisation — which nam
 the operation and the head — and by
 `A_TRACK_A_DERIVATION_IS_NOT_THE_SECTION_4_ARTIFACT_AND_MAY_NOT_BE_RECORDED_AS_ONE`.
 
-## 10. The turnover two-axis collision — RULED here
+## 10. The turnover two-axis collision — dissolved for execution, **referred** for decision
 
 ### 10.1 The collision
 
 §8.7.5 locked two unregistered axes of the turnover budget **pre-observation**,
 naming their permissive arms:
 
-- **Axis 1 — mean versus per-day cap.** `metrics.py:120` computes a **mean**;
-  prereg §9 says "≤ 40 trades/day". Since `max ≥ mean`, the mean is the
-  permissive arm, and it is also the **incumbent** — it is what the committed
-  code does.
-- **Axis 2 — active-day versus calendar-day denominator.** The contract is
-  silent; the committed code passes the **active** axis. The calendar
-  denominator is larger, so it is the permissive arm — and §8.12.13 C-20 records
-  that taking it widens the gate-4 corridor by about **42%**, "a loosening
+- **Axis 1 — mean versus per-day cap.** `scripts/ml_step4/metrics.py:120-124`
+  computes `n_trades / n_trading_days` — a **mean**; prereg §9 says "≤ 40
+  trades/day portfolio-wide", enforced as `turnover <=
+  max_turnover_trades_per_day` at `scripts/ml_step4/acceptance.py:200-203`
+  against the frozen `40.0` at `scripts/ml_step4/contract.py:134`. Since
+  `max ≥ mean`, the mean is the permissive arm.
+- **Axis 2 — the denominator.** §8.6.6 records that the candidates are **four,
+  not two**: active dates (the implementation — `metrics.py:227` computes
+  `n_days = len({t.day for t in trades})` and hands it to `turnover` at `:236`
+  — and the *smallest* denominator, hence the strictest reading); the
+  registered R-5 denominator `distinct_utc_calendar_dates_in_holdout`, which
+  `compute_all` already receives and already uses for `daily_coverage` in the
+  same call; every UTC calendar date in the evaluated span; and the dates an
+  approved calendar authority recognises. §8.12.13 C-20 records that the
+  calendar reading widens the gate-4 corridor by about **42%** — "a loosening
   Ruling 10 forbids".
 
 §8.13.13 then recorded the deadlock:
 `THE_TURNOVER_AXES_ARE_FIXABLE_NEITHER_BEFORE_NOR_AFTER_TRACK_A_AND_THE_COLLISION_IS_UNRULED`
-— §8.13.5 excludes strategy parameters from the Track A start conditions, so the
-axes cannot be fixed before Track A; and the pre-observation lock cannot be
-satisfied once Track A computes a single turnover figure.
+— the axes cannot be fixed before Track A, and the pre-observation lock cannot
+be satisfied once Track A computes a single turnover figure.
 
-### 10.2 The ruling
+### 10.2 What this gate rules, and what it deliberately does not
 
-**`TURNOVER_AXES_FIXED_AT_THE_COMMITTED_IMPLEMENTATION_MEAN_OVER_ACTIVE_DAYS`.**
+**`A_TRACK_A_TURNOVER_FIGURE_IS_REPORTED_ON_EVERY_CANDIDATE_AXIS_AND_IS_NEVER_COMPARED_TO_THE_FROZEN_CEILING`.**
 
-Both axes are fixed **now**, at the arms the committed implementation already
-takes: the turnover figure is the **mean** trades per day over the **active**-day
-denominator.
+A Track A run that computes turnover reports it on **every** candidate — both
+statistics on axis 1, all four denominators on axis 2 — side by side, and
+compares none of them to prereg §9's ceiling. No axis is selected.
 
-### 10.3 Why this is the minimum rule, and introduces no new research threshold
+**No axis selection is taken here.** The selection is
+**`THE_TURNOVER_AXIS_SELECTION_IS_REFERRED_TO_HUMAN_CHATGPT_AT_TRACK_B_CANDIDATE_PRE_REGISTRATION`**,
+and §10.4 records the analysis a ruling body would need.
 
-1. **No threshold moves.** The ceiling stays prereg §9's ≤ 40 trades/day. What
-   is fixed is what the *measured* number means, not what it must be under.
-2. **Nothing is chosen that was not already chosen.** Both arms are what
-   `metrics.py` computes on this PR's base head. The ruling **records** an
-   incumbent; it does not select among live options. The pre-observation
-   requirement is therefore satisfied by construction: the arms were fixed in
-   committed code long before Track A existed, and this document is written
-   before the first read.
-3. **Ruling 10 is satisfied on both axes.** Neither arm widens the corridor
-   relative to today's behaviour — by definition, since it *is* today's
-   behaviour. C-20's 42% widening arises only from switching axis 2 to the
-   calendar denominator, which is **not** taken.
-4. **§8.7.5's permissive-arm preference is honoured on axis 1 and overridden on
-   axis 2.** On axis 1 the permissive arm and the incumbent coincide, so there
-   is nothing to trade off. On axis 2 they diverge, and CLAUDE.md's rule
-   applies: *the stricter reading of a research restriction wins*. Ruling 10's
-   prohibition on loosening is the stricter reading; §8.7.5's naming of a
-   permissive arm was a tie-break convention, not a licence to loosen. The
-   override is recorded here rather than being read into §8.7.5.
-5. **The lock's purpose is served.** A pre-observation lock exists so that an
-   observation-informed choice cannot benefit the chooser. Here no choice is
-   being made after any observation, because no observation exists — and the
-   arm taken on the one axis where the arms differ is the **stricter** one,
-   which could not benefit a chooser even if it were being chosen late.
-6. **These are not strategy parameters.** §8.13.5 excludes strategy parameters
-   from the Track A start conditions. A measurement convention of an incumbent
-   implementation is not a candidate, a threshold, a feature or a
-   hyperparameter, so §8.13.5 does not reach it and the "cannot be fixed before
-   Track A" limb of the deadlock does not apply.
+### 10.3 Why the deadlock dissolves without a selection
 
-### 10.4 What this ruling does **not** do
+The deadlock is only a deadlock for a rule that must **compare** a Track A
+figure to the frozen ceiling. Nothing requires that:
 
-- It does **not** discharge S-62 or S-63 as inventory surfaces. They remain
-  decision-bearing for **Track B**, whose freeze is taken at candidate
-  pre-registration; this ruling binds the *Track A* reading and the incumbent
-  code path.
-- It does **not** settle the gate-4 corridor question, which is a Track B
-  acceptance matter.
-- It does **not** touch the turnover **numerator**, the entry-date attribution
-  (§8.7.5), or Q10(iii) — which §8.13's review confirmed does not move turnover
-  at all.
-- It creates no new token that a later reading can widen: the fixed arms are
-  stated as the two concrete conventions, not as a principle.
+1. **A Track A figure cannot discharge an acceptance row anyway.** §8.11.2(1)
+   makes every Track A output `NON_DECISION_BEARING_EXPLORATORY_ONLY`, and
+   §8.13's carry table puts a turnover figure in the row that "may **never**"
+   cross to Track B. A number that may not reach the acceptance test does not
+   need the acceptance test's convention fixed before it can be computed.
+2. **Reporting every candidate removes the choice, rather than making it.** The
+   thing §8.7.5's lock protects against is an experimenter selecting the
+   convention that flatters the result after seeing it. If all of them are
+   recorded, side by side, on every run, there is nothing to select and nothing
+   an observation could inform.
+3. **Nothing frozen moves.** The ceiling, the numerator, §8.7.5's entry-date
+   attribution and Q10(iii) are all untouched, and Ruling 10's prohibition on
+   loosening is not engaged, because no comparison is performed at all.
+4. **These are start conditions the gate can supply.** §8.13.5 excludes
+   *strategy parameters* from the Track A start conditions. "Record every
+   candidate and compare none" is a reporting obligation on the run, not a
+   parameter of the strategy, so the gate may impose it.
 
-## 11. Containment result
+### 10.4 The analysis the referred selection will need — recorded now, before any data
+
+An earlier drafting of this section **did** rule the axes, at "mean over active
+days", and defended the choice as a pre-observation freeze of the incumbent
+implementation. The independent governance review defeated that defence, and
+the defeats are recorded here rather than discarded, because a ruling body will
+meet the same arguments:
+
+- **The pre-observation defence is foreclosed for these two surfaces
+  specifically.** §8.10.3's "known favourable directions" table names
+  **S-62 / S-63 — turnover as a mean over a calendar denominator** as
+  analytically favourable *without seeing any data*, and §8.4.11's A-ω-5
+  standard says a pre-data freeze alone does not protect such an arm. C-13
+  restates it: `SEQUENCING_IS_NOT_THE_OPERATIVE_CONTROL_ON_AN_ANALYTICALLY_KNOWABLE_DIRECTION`.
+  So "no observation exists yet" is not an argument for taking the mean.
+- **§8.7.5 names permissive arms; it does not prefer them.** Its words are that
+  the permissive arms are named "so that leaving them open is not mistaken for
+  leaving them neutral" — a **disclosure of the risk direction**. Reading a
+  disclosure as a licence is the invalid-inference shape §8.12.13 withdrew.
+- **"No threshold moves" is false on axis 1.** §8.7.5 says settling
+  mean-versus-cap "would change the ceiling's **meaning**". A strategy averaging
+  20 trades/day with one 60-trade day passes under the mean and fails under the
+  cap. The numeral is stable; the criterion is not.
+- **The incumbent is not the baseline Ruling 10 uses**, and it is not committed
+  for this family: Ruling 10 baselines on the frozen prereg §9 row, and
+  `scripts/ml_step4/metrics.py` is **M1-lineage**, which prereg §11 admits only
+  "reusable after audit/wrapping". There is no committed M15 turnover
+  implementation to be incumbent.
+- **The axes are already classified.** C-15/C-20 place them as **terms in an
+  acceptance test**, outside arm 3, and leave the survival of §8.7.5's lock
+  expressly unruled. This gate does not displace that classification.
+- **§8.13.13 contains both limbs of the deadlock.** It excludes strategy
+  parameters from the start conditions *and* adds the turnover axes to §8.13.5's
+  list. The contradiction is inherited, not resolved here, and it is one of the
+  things the referral has to settle.
+
+**Directional note for the ruling body, not a decision:** on axis 2 the
+active-date denominator is the strictest of the four and is the only one that
+cannot widen the corridor. CLAUDE.md's stricter-reading rule points at it. That
+observation is recorded as an input; taking it is a human + ChatGPT act.
+
+### 10.5 What §10 does **not** do
+
+- It does **not** discharge S-62 or S-63. They remain live Track B surfaces.
+- It does **not** settle the gate-4 corridor question.
+- It does **not** touch the turnover numerator, §8.7.5's entry-date attribution,
+  or Q10(iii) — which §8.13's review confirmed does not move turnover at all.
+- It carries **no approval identifier**, and under §8.12.13 C-9 a section
+  without one may not be cited as authority. §10.2 is an execution-gate
+  reporting obligation, which the gate may impose; it is not a ruling on a
+  frozen acceptance row, and it must not be read as one.
+
+## 11. The containment audit and what it actually checks
 
 `scripts/m15_track_a/containment.py` is the executable form of playbook §4's
-Track A variant. It walks the package's **AST** rather than matching substrings
-— the first draft matched substrings and flagged its own source, which is the
-shape of false assurance this whole programme keeps finding.
+Track A variant. It runs **twelve** checks, in two groups.
 
-Eight checks: exactly one read route; exactly one derivation route; every route
-gated by `authorization`; no ungated file-opening call outside the three ledger
-modules; the write root is a constant; the isolation guards cover every named
-boundary; no forbidden import reaches the package; and no route reaches a
-forward-epoch span.
+**Behavioural probes — these carry the verdict.** Each arms the guards and then
+attempts the forbidden thing, requiring a refusal:
+
+| Probe | Attempts |
+| --- | --- |
+| `write_containment_enforced` | a write into `docs/` |
+| `market_data_read_refused` | a read under `data/` outside the gated window |
+| `network` | a non-loopback connect and a non-loopback name lookup |
+| `subprocess` | launching a process |
+| `database` | a remote SQLAlchemy engine |
+| `read_route_gated` | the declared route with no grant |
+| `read_body_absent` | drives the route's own AST — this, not a literal, is what sets `no_market_data_read` |
+
+Every probe is chosen so a *failure of the guard* is still harmless: the read
+probe names a file that does not exist, so an absent hook yields
+`FileNotFoundError`, never a real read.
+
+**Structural checks — advisory, and labelled so.** `single_read_route`,
+`authorization_not_ambient`, `write_root`, `derivation_route`. The module roster
+is **enumerated from the directory**, not hand-written, so a new module is
+scanned by existing.
+
+**What an earlier drafting claimed and did not do.** The first version of this
+section listed eight checks including "no forbidden import reaches the package"
+and "no route reaches a forward-epoch span". Neither was in the audit: the
+import pin lives in `tests/m15_gate3a/test_wp5_reader_freedom.py`, and the
+forward-epoch limb lives in `read_route.assert_span_admissible`. That version
+also answered "is the route gated?" by scanning source text for the gates'
+names — which a **docstring** listing those names satisfied. Both are corrected;
+the false description is recorded rather than quietly replaced.
 
 Final statuses:
 `TRACK_A_EXECUTION_CONTAINMENT_VERIFIED_NO_UNGATED_ROUTE` /
@@ -304,31 +374,79 @@ Final statuses:
 It is an **execution-containment** check, not a hostile-input audit, and it does
 not replace the gate-6 source-contamination audit Track B still needs.
 
-## 12. Governance propagation
+## 12. Governance propagation — done, and not done
 
-The Two-Track model no longer requires reading PR #451 to discover:
+**`GOVERNANCE_PROPAGATION_IS_NOT_COMPLETE_AT_THIS_HEAD`.**
 
-| Where | What |
-| --- | --- |
-| `CLAUDE.md` | "Read first" entry; a Two-Track section before the working rules |
-| playbook §2.1/§2.2 | the one narrow Track A exception to "no real read" |
-| playbook §3 | the Two-Track gate ladder, MREG → A-R1 → A-R2/R3 → A-R4 → B-0 → B-1 |
-| playbook §4 | the four items that **invert** for a Track A containment audit |
-| playbook §5, §6 | scope notes fencing the formal templates to Track B |
-| playbook §5a | this gate's own template |
-| playbook §6 | the ratio checkbox names which derivation supplies it |
-| playbook §7 | a track field |
-| playbook §8 | the four `M15_SINGLE_RUN_EVIDENCE_*` statuses fenced to Track B, plus `..._VOID_REGISTRATION_NOT_LATE` |
-| playbook §9 | merge-checklist additions |
-| policy §2a | **a Track A run is Red**; R1/R3/R4 are three separate Red gates |
-| prereg §13a | the clause-by-clause Two-Track amendment table |
+§8.12.13 C-10 makes completeness "a predicate on named files, not a
+self-assessment", holding **only on a named master SHA**. This branch is not on
+master and PR #451 is unmerged, so the predicate is false here whatever the
+table below says.
 
-## 13. Independent review
+| Item | Target | State at this head |
+| --- | --- | --- |
+| P-1 | `CLAUDE.md` | done |
+| P-2 | playbook §2 | done |
+| P-3 | playbook §5/§6 + a Track A checklist | done (§5a) |
+| P-4 | playbook §7/§9 track field | done |
+| **P-5** | playbook **§1 gate table** + §3 ladder | §3 done; **§1 reconciled, gate table not rebuilt** |
+| P-6 | policy | done (§2a) |
+| **P-7** | prereg §3.1/§4/§10/§11/§13/§14/§16 | §13a **drafted, NOT IN FORCE** — `PREREG_AMENDMENT_P_7_REQUIRES_ITS_OWN_HUMAN_CHATGPT_RULING` |
+| **P-8** | `docs/prompts/*` | done |
+| P-9 | playbook §8 | done |
+| **P-10** | approval identifiers on every RULED MRG section | **not done** — belongs to PR #451, at its merge |
+| P-11 | playbook §4 | done |
+| P-12 | prereg §7/§8 | done |
+| **P-13** | gate-4 audit T-1/T-2/T-6 | done |
+| P-14 | playbook §3 + §6 ratio checkbox | done |
+| P-15 | prereg §6 | done |
 
-Three separated roles were run against the source and diff, without the other
-roles' conclusions: **execution containment / test safety**, **governance and
-authorisation sequencing**, and **adversarial bypass**. Their findings and the
-post-fix re-verification are recorded in the pull request body.
+**And the whole propagation rests on authority that is not yet citable.**
+§8.12.13 C-9 and the packet's own approval line record
+`THE_TWO_TRACK_SECTIONS_ARE_RULED_AS_RECORDED_AND_NOT_YET_CITABLE_AS_AUTHORITY`,
+with `APPROVAL_IDENTIFIER_PENDING_UNTIL_MERGE` travelling with §8.11, §8.12 and
+§8.13 until PR #451 is approved and merged. Every propagated statement in this
+PR cites those sections. They are therefore **provisional**, and this PR's merge
+does not complete them — PR #451's does.
+
+## 13. Independent review of this head
+
+Three separated roles were dispatched against head `f0a5bc9`, each given the
+source, the diff and the contract and **not** the other roles' conclusions:
+execution containment / test safety, governance and authorisation sequencing,
+and adversarial bypass. All three returned. Their findings, the fixes applied
+and the re-verification are recorded in the pull request body; the head reported
+there is the post-fix head, not `f0a5bc9`.
+
+**An earlier drafting of this section asserted, in the past tense, that the
+roles had run and that a post-fix re-verification had been recorded — at a head
+that contained the sentence and predated the roles' reports.** That is a
+forward reference asserted as completed, the shape §12.15 records against this
+programme and the governance forbids outright. It was caught by one of the
+roles it described. The correction is recorded here rather than made silently.
+
+**What the round found, in summary** — three roles, converging independently on
+five of the same defects:
+
+- The isolation guards were **route-dependent**: installing the database guard
+  first left every socket primitive unpatched while `is_installed()` answered
+  True, and `_socket`, `asyncio`, `subprocess`, a pre-bound `create_engine` and
+  `sendmsg` were never covered at all. Replaced by a `sys.addaudithook` as the
+  primary control.
+- The scratch root was **advisory**: a plain `open(…, "w")` wrote anywhere. The
+  audit hook now confines writes process-wide.
+- There was **no single read route at process level** — `data/` was open to any
+  caller that simply declined to use the route. The hook now refuses reads under
+  `data/` outside the gated window.
+- The containment audit **certified on structure**: a gateless route whose
+  docstring named the gates passed, and a module absent from the hand-written
+  roster was never scanned.
+- Six shapes of **forged grant** passed `require_authorization`, the approved
+  head SHA was never compared to anything, and `N = 1` could be spent four times
+  by four processes.
+- And the governance half asserted things the source did not support — §11's
+  check list, §13 above, and a turnover ruling whose central defence §8.10.3 had
+  already foreclosed for those exact two surfaces (§10.4).
 
 ## 14. Non-authorisation statement
 

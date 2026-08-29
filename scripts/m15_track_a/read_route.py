@@ -34,6 +34,7 @@ not a policy.
 
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from typing import Any, Final
@@ -46,6 +47,8 @@ from scripts.m15_gate3a.no_overlap import (
 )
 from scripts.m15_track_a import authorization, isolation, seen_ledger
 from scripts.m15_track_a.identity import RunIdentity
+
+_DATE_RE: Final[re.Pattern[str]] = re.compile(r"\A\d{4}-\d{2}-\d{2}\Z")
 
 #: The one route's own name, so a containment audit can assert there is one.
 ROUTE_ID: Final[str] = "track_a_r1_local_historical_read_v1"
@@ -75,16 +78,36 @@ class ReadRequest:
     warmup_extension_start_utc: str
 
     def __post_init__(self) -> None:
+        if type(self.timeframe) is not str or not self.timeframe.strip():  # noqa: E721
+            raise ReadRouteError("timeframe must be a non-empty plain str")
         for field, value in (
             ("span_start_utc", self.span_start_utc),
             ("span_end_utc", self.span_end_utc),
-            ("timeframe", self.timeframe),
             ("warmup_extension_start_utc", self.warmup_extension_start_utc),
         ):
-            if type(value) is not str or not value.strip():  # noqa: E721
-                raise ReadRouteError(f"{field} must be a non-empty plain str")
+            # A zero-padded ISO date, checked here rather than three gates later.
+            # The ordering test below and the coverage test in ``authorization``
+            # are both string comparisons, and a string comparison of dates is
+            # chronological only once both operands are known to be padded:
+            # "2025-1-05" sorts *after* "2025-02-01" at index five.
+            if type(value) is not str:  # noqa: E721
+                raise ReadRouteError(f"{field} must be a plain str, got {type(value).__name__}")
+            if not _DATE_RE.match(value):
+                raise ReadRouteError(f"{field} must be an ISO UTC date YYYY-MM-DD, got {value!r}")
         if type(self.pairs) is not tuple or not self.pairs:
             raise ReadRouteError("pairs must be a non-empty tuple")
+        for pair in self.pairs:
+            # Pinned with ``type(...) is not str`` like every other object here.
+            # A ``str`` subclass may lie through ``__hash__``/``__eq__`` while
+            # holding different content, and both the grant's pair check and the
+            # ledger's are set membership — so an unpinned element defeats the
+            # pair scope of the authorisation and of the seen-data record at once.
+            if type(pair) is not str or not pair.strip():  # noqa: E721
+                raise ReadRouteError(f"malformed pair in request: {pair!r}")
+        if self.span_start_utc > self.span_end_utc:
+            raise ReadRouteError(
+                f"span_start_utc {self.span_start_utc} is after span_end_utc {self.span_end_utc}"
+            )
         if self.warmup_extension_start_utc > self.span_start_utc:
             raise ReadRouteError(
                 "warmup_extension_start_utc must be at or before span_start_utc — a warm-up "
@@ -156,13 +179,14 @@ def read_historical(
             "operation that discovers the network is reachable."
         )
 
-    authorization.require_authorization(
+    checked = authorization.require_authorization(
         grant,
         operation=authorization.OPERATION_HISTORICAL_READ,
         span_start_utc=request.touched_start_utc,
         span_end_utc=request.span_end_utc,
         pairs=request.pairs,
         timeframe=request.timeframe,
+        identity=identity,
     )
 
     assert_span_admissible(request)
@@ -173,12 +197,18 @@ def read_historical(
         pairs=request.pairs,
     )
 
-    raise NotImplementedError(
-        f"{NOT_IMPLEMENTED_TOKEN}: every gate passed and no data was read. The read body is "
-        f"deliberately absent — route {ROUTE_ID!r} over {SOURCE_DESCRIPTION}. A future "
-        f"implementing PR supplies it, for run {identity.run_id!r}, and adds nothing to the "
-        "policy above."
-    )
+    # The scope the run claimed, on the record, before anything is opened. An
+    # approval that leaves no trace of the scope it was exercised at cannot be
+    # audited against the approval document afterwards.
+    seen_ledger.record_grant(checked, identity, route=ROUTE_ID)
+
+    with isolation.gated_read_window():
+        raise NotImplementedError(
+            f"{NOT_IMPLEMENTED_TOKEN}: every gate passed and no data was read. The read "
+            f"body is deliberately absent — route {ROUTE_ID!r} over {SOURCE_DESCRIPTION}. "
+            f"A future implementing PR supplies it, for run {identity.run_id!r}, and adds "
+            "nothing to the policy above."
+        )
 
 
 __all__ = [

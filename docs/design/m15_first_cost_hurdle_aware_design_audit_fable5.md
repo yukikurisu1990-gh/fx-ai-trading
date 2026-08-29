@@ -53,6 +53,27 @@ Forbidden-label note: this document does not assert `PASS`, `Tier 1`,
   program budget. The multiplicity surface is as small as a real experiment
   can be.
 
+## 1a. Two-Track scope of this audit's tightenings (recorded, provisional)
+
+This audit predates the Two-Track split
+(`docs/design/m15_minimum_research_gate.md` §8.11–§8.13) and reads throughout as
+though one research route existed. Its tightenings still bind, and the split
+changes **when**, not **whether**:
+
+| Tightening | Track A | Track B |
+| --- | --- | --- |
+| **T-1** — the R-2a/R-2b loophole closed | binds. It is a leakage boundary, and Track A's exemptions are from *freezes*, never from leakage controls | binds unchanged |
+| **T-2** — `W̄` / `L̄` estimated once on design data, frozen, recorded in evidence | the **conditioning set** binds; the **freeze** binds at Track B candidate pre-registration, not during exploration | binds unchanged |
+| **T-6** — the cost-model tightening | binds as a **method**; Track A may vary cost *values* under §8.13.4 and may not vary the method | binds unchanged, values included |
+| **T-3** — the barrier/cost ratio block | **fires** on a Track A measurement, and a Track A measurement does **not** discharge playbook §6's checkbox (§8.13.6) | binds unchanged |
+| T-4, T-5, T-7 | unchanged — none is a freeze Track A is exempt from | unchanged |
+
+The general rule this table applies: **a tightening that prevents leakage binds
+on both tracks; a tightening that freezes a value binds where the freeze
+does** — at Track B candidate pre-registration. Nothing here relaxes a
+tightening, and this section carries no approval identifier, so it records the
+scope reading rather than ruling it.
+
 ## 2. Audit scope
 
 Read adversarially: the frozen contract (all 16 sections); the PR #428 audit

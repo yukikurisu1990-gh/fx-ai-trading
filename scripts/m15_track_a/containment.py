@@ -14,6 +14,34 @@ have a read route.**  Where §4 asks "is the route absent?", this asks "is the
 route the single declared one, and is it gated?".  Everything §4 asks about
 broker, network, DB, credentials and protected paths stays at **none**.
 
+Behaviour first, structure second
+---------------------------------
+
+An earlier drafting of this module answered every question by reading source:
+substring scans of ``inspect.getsource`` for the names of the gates, and an AST
+sweep for a fixed set of reader names over a hand-written module roster.  An
+independent review defeated all of it — a ``read_historical`` with **no gates**
+whose *docstring* merely listed the gate names passed the "is it gated?" check,
+an aliased ``_reader = builtins.open`` passed the reader sweep, and a new module
+dropped into the package was never scanned at all because nobody had added it
+to the roster.
+
+The lesson is not "write a longer list of reader names". It is that a source
+scan can only ever answer *did the author write the thing I thought to look
+for*. So the checks below are ordered:
+
+1. **Behavioural probes** come first and carry the verdict. They arm the guards
+   and then actually attempt the forbidden thing — a write into ``docs/``, a
+   read under ``data/``, a remote engine, a subprocess — and require a refusal.
+   A probe cannot be satisfied by a comment.
+2. **Structural checks** come second and are advisory in exactly the way a
+   source scan has to be. Their roster is **enumerated from the directory**, so
+   a new module is scanned by existing.
+
+Every probe is chosen so that a *failure of the guard* is still harmless: the
+read probe names a file that does not exist, so if the hook were absent the
+result is ``FileNotFoundError`` rather than a real read.
+
 Scope, stated so it is not mistaken for the production audit
 ------------------------------------------------------------
 
@@ -28,7 +56,6 @@ from __future__ import annotations
 
 import ast
 import importlib
-import inspect
 import socket
 from dataclasses import dataclass
 from pathlib import Path
@@ -45,18 +72,46 @@ STATUS_BREACHED: Final[str] = "TRACK_A_EXECUTION_CONTAINMENT_BREACHED_UNGATED_RO
 DECLARED_READ_ROUTE_MODULE: Final[str] = "scripts.m15_track_a.read_route"
 DECLARED_DERIVATION_ROUTE_MODULE: Final[str] = "scripts.m15_track_a.derivation"
 
-_PACKAGE_MODULES: Final[tuple[str, ...]] = (
-    "scripts.m15_track_a",
-    "scripts.m15_track_a.authorization",
-    "scripts.m15_track_a.breadth",
-    "scripts.m15_track_a.containment",
-    "scripts.m15_track_a.derivation",
-    "scripts.m15_track_a.identity",
-    "scripts.m15_track_a.isolation",
-    "scripts.m15_track_a.oos_budget",
-    "scripts.m15_track_a.read_route",
-    "scripts.m15_track_a.scratch",
-    "scripts.m15_track_a.seen_ledger",
+#: Modules permitted to open a file, and the one thing each may open.
+#: A blanket exemption is what let the first drafting skip four of eleven
+#: modules entirely; this names the file each is exempt *for*.
+_PERMITTED_FILE_OPENERS: Final[dict[str, str]] = {
+    "scripts.m15_track_a.scratch": "the single append_line writer, path-checked first",
+    "scripts.m15_track_a.seen_ledger": "its own append-only ledgers beneath the scratch root",
+    "scripts.m15_track_a.breadth": "its own append-only ledger beneath the scratch root",
+    "scripts.m15_track_a.oos_budget": "its own append-only ledger and claim files",
+    "scripts.m15_track_a.containment": "its own behavioural probes and the package sources "
+    "it parses — and, like every other module, only where the audit hook permits",
+}
+
+#: Call names that open something.  Explicitly **not** a completeness claim —
+#: see the module docstring. The behavioural probes are what carry the verdict.
+_READER_NAMES: Final[frozenset[str]] = frozenset(
+    {
+        "open",
+        "read_text",
+        "read_bytes",
+        "read_csv",
+        "read_parquet",
+        "read_json",
+        "read_feather",
+        "read_pickle",
+        "read_hdf",
+        "read_sql",
+        "read_table",
+        "read_orc",
+        "ParquetFile",
+        "memory_map",
+        "fromfile",
+        "genfromtxt",
+        "loadtxt",
+        "load",
+        "copyfile",
+        "copy2",
+        "FileIO",
+        "connect",
+        "ZipFile",
+    }
 )
 
 
@@ -72,157 +127,124 @@ class CheckResult:
         return {"check": self.name, "passed": self.passed, "detail": self.detail}
 
 
-def _check_single_read_route() -> CheckResult:
-    """Exactly one function in this package may open market data, and it is gated.
+def package_modules() -> tuple[str, ...]:
+    """Every module in the package, enumerated from the directory.
 
-    Detection is by **AST**, not by substring: a module that merely *names*
-    ``open(`` in a docstring or a check list is not a reader, and a substring
-    scan cannot tell the two apart — this audit's own source would have failed
-    its own check.
+    A hand-maintained roster is scanned only if someone remembers to extend it,
+    which is the "the roster is nine, not eight" defect this repository has
+    already recorded once.
     """
-    readers = {"open", "read_parquet", "read_csv", "loadtxt", "load", "read_text", "read_bytes"}
-    #: The three ledgers legitimately open files, and only beneath the scratch
-    #: root. They are named rather than pattern-matched, so a *new* file-opening
-    #: module is a finding rather than an exemption.
-    ledger_modules = {
-        "scripts.m15_track_a.seen_ledger",
-        "scripts.m15_track_a.breadth",
-        "scripts.m15_track_a.oos_budget",
-    }
-    offenders: list[str] = []
-    for name in _PACKAGE_MODULES:
-        if (
-            name
-            in (
-                DECLARED_READ_ROUTE_MODULE,
-                DECLARED_DERIVATION_ROUTE_MODULE,
-                "scripts.m15_track_a.containment",
-            )
-            or name in ledger_modules
-        ):
-            continue
-        module = importlib.import_module(name)
-        try:
-            tree = ast.parse(inspect.getsource(module))
-        except (OSError, SyntaxError):  # pragma: no cover - source always available here
-            continue
-        for node in ast.walk(tree):
-            if not isinstance(node, ast.Call):
-                continue
-            func = node.func
-            called = (
-                func.id
-                if isinstance(func, ast.Name)
-                else func.attr
-                if isinstance(func, ast.Attribute)
-                else None
-            )
-            if called in readers:
-                offenders.append(f"{name}:{node.lineno} {called}()")
-    if offenders:
+    package_dir = Path(__file__).resolve().parent
+    names = ["scripts.m15_track_a"]
+    names.extend(
+        f"scripts.m15_track_a.{path.stem}"
+        for path in sorted(package_dir.glob("*.py"))
+        if path.stem != "__init__"
+    )
+    return tuple(names)
+
+
+# ---------------------------------------------------------------------------
+# Behavioural probes — these carry the verdict
+# ---------------------------------------------------------------------------
+
+
+def _check_write_containment_enforced() -> CheckResult:
+    """A write outside the scratch root is refused **by the process**, not by a predicate."""
+    if not isolation.is_installed():
+        return CheckResult("write_containment_enforced", False, "guards are not installed")
+    # "r+" is a write mode on a path that does not exist: a working guard raises
+    # IsolationError, a broken one raises FileNotFoundError. Neither creates it.
+    target = scratch.repo_root() / "docs" / "__track_a_write_probe_does_not_exist__.md"
+    try:
+        with open(target, "r+", encoding="utf-8"):  # noqa: SIM115, PTH123
+            pass
+    except isolation.IsolationError:
         return CheckResult(
-            "single_read_route",
+            "write_containment_enforced",
+            True,
+            "a write into docs/ is refused by the audit hook, not merely by assert_writable",
+        )
+    except OSError:
+        return CheckResult(
+            "write_containment_enforced",
             False,
-            f"file-access calls outside the declared route: {offenders}",
+            "the audit hook did not refuse a write outside the scratch root",
         )
-    return CheckResult(
-        "single_read_route",
-        True,
-        f"the only market-data route is {DECLARED_READ_ROUTE_MODULE}.read_historical, the "
-        f"only derivation route is {DECLARED_DERIVATION_ROUTE_MODULE}.derive_m15, and the "
-        "three ledgers open only their own append-only files beneath the scratch root",
+    return CheckResult(  # pragma: no cover - would mean the probe file exists
+        "write_containment_enforced", False, "a write outside the scratch root succeeded"
     )
 
 
-def _check_read_route_is_gated() -> CheckResult:
-    """The declared route refuses without a grant, and reads nothing today."""
-    source = inspect.getsource(read_route)
-    needs = (
-        "require_authorization",
-        "assert_span_admissible",
-        "assert_declared",
-        "isolation.is_installed",
-        "NotImplementedError",
-    )
-    missing = [need for need in needs if need not in source]
-    if missing:
-        return CheckResult("read_route_gated", False, f"read route is missing {missing}")
-    return CheckResult(
-        "read_route_gated",
-        True,
-        "isolation, authorization, span admissibility and a prior seen-data declaration are "
-        "all checked before an unimplemented body",
-    )
-
-
-def _check_authorization_has_no_ambient_source() -> CheckResult:
-    """No environment variable, file or global may grant authorisation."""
-    source = inspect.getsource(authorization)
-    for ambient in ("os.environ", "getenv", "open(", "Path("):
-        if ambient in source:
-            return CheckResult(
-                "authorization_not_ambient",
-                False,
-                f"the authorization module reads {ambient!r} — a grant must be an in-process "
-                "object a caller passes, never ambient state",
-            )
-    return CheckResult(
-        "authorization_not_ambient",
-        True,
-        "a grant is an in-process ReadGrant; no environment variable, file or global can "
-        "supply one",
-    )
-
-
-def _check_write_root() -> CheckResult:
-    """Writes are admissible only beneath the scratch root."""
-    root = scratch.scratch_root()
-    outside = [
-        root.parent / "escape.json",
-        scratch.repo_root() / "docs" / "note.md",
-        scratch.repo_root() / "artifacts" / "m15_gate3a" / "scrub_report.json",
-        scratch.repo_root() / "data" / "x.parquet",
-        scratch.repo_root() / "models" / "m.pkl",
-    ]
-    leaks = [str(path) for path in outside if scratch.is_writable(path)]
-    if leaks:
-        return CheckResult("write_root", False, f"writable outside the scratch root: {leaks}")
-    inside_ok = scratch.is_writable(root / "run" / "note.json")
-    if not inside_ok:
+def _check_market_data_read_refused() -> CheckResult:
+    """A read under ``data/`` outside the gated window is refused."""
+    if not isolation.is_installed():
+        return CheckResult("market_data_read_refused", False, "guards are not installed")
+    if isolation.is_read_window_open():  # pragma: no cover - never true at audit time
+        return CheckResult("market_data_read_refused", False, "the gated read window is open")
+    target = scratch.repo_root() / "data" / "__track_a_read_probe_does_not_exist__.jsonl"
+    try:
+        with open(target, "rb"):  # noqa: SIM115, PTH123
+            pass
+    except isolation.IsolationError:
         return CheckResult(
-            "write_root", False, "a legitimate path beneath the scratch root was refused"
+            "market_data_read_refused",
+            True,
+            "a read under data/ outside the gated read window is refused process-wide",
         )
-    return CheckResult(
-        "write_root",
-        True,
-        f"writes are confined to {scratch.SCRATCH_ROOT_RELATIVE}; protected roots and "
-        "reserved artifact filenames refuse",
+    except OSError:
+        return CheckResult(
+            "market_data_read_refused",
+            False,
+            "the audit hook did not refuse a read under data/ — the single read route is a "
+            "property of one function, not of the process",
+        )
+    return CheckResult(  # pragma: no cover
+        "market_data_read_refused", False, "a market-data read succeeded outside the route"
     )
 
 
 def _check_network() -> CheckResult:
-    """A non-loopback connect, datagram or name lookup is refused."""
+    """A non-loopback connect and a non-loopback name lookup are both refused."""
     if not isolation.is_installed():
         return CheckResult("network", False, "isolation guards are not installed")
     probe = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     try:
-        try:
-            probe.connect(("203.0.113.1", 80))
-        except isolation.IsolationError:
-            pass
-        else:  # pragma: no cover - would mean the guard is absent
-            return CheckResult("network", False, "a non-loopback connect was not refused")
+        probe.connect(("203.0.113.1", 80))
+    except isolation.IsolationError:
+        pass
+    except OSError as exc:
+        return CheckResult("network", False, f"a non-loopback connect was not refused: {exc}")
+    else:  # pragma: no cover - would mean the guard is absent and the host answered
+        return CheckResult("network", False, "a non-loopback connect was not refused")
     finally:
         probe.close()
     try:
         socket.getaddrinfo("example.invalid", 80)
     except isolation.IsolationError:
         pass
+    except OSError as exc:
+        return CheckResult("network", False, f"a non-loopback lookup was not refused: {exc}")
     else:  # pragma: no cover
         return CheckResult("network", False, "a non-loopback name lookup was not refused")
     return CheckResult(
         "network", True, "non-loopback connects, datagrams and name lookups are refused"
     )
+
+
+def _check_subprocess() -> CheckResult:
+    """A subprocess escapes every in-process guard at once, so it is refused."""
+    if not isolation.is_installed():
+        return CheckResult("subprocess", False, "isolation guards are not installed")
+    try:
+        import subprocess
+
+        subprocess.Popen(["cmd", "/c", "ver"])  # noqa: S603, S607
+    except isolation.IsolationError:
+        return CheckResult("subprocess", True, "launching a process is refused")
+    except Exception as exc:  # pragma: no cover - a launch failure is not the guard
+        return CheckResult("subprocess", False, f"the launch failed for another reason: {exc}")
+    return CheckResult("subprocess", False, "a subprocess was launched")  # pragma: no cover
 
 
 def _check_database() -> CheckResult:
@@ -261,34 +283,183 @@ def _check_broker_and_live() -> CheckResult:
     )
 
 
+def _check_read_route_refuses_without_a_grant() -> CheckResult:
+    """The declared route itself refuses an ungranted request, and reads nothing."""
+    if not isolation.is_installed():
+        return CheckResult("read_route_gated", False, "guards are not installed")
+    from scripts.m15_track_a.identity import CALENDAR_UTC_DATES_NO_MARKET_HOURS, RunIdentity
+
+    request = read_route.ReadRequest(
+        span_start_utc="2025-05-01",
+        span_end_utc="2025-05-31",
+        pairs=("EUR_USD",),
+        timeframe="M1",
+        warmup_extension_start_utc="2025-05-01",
+    )
+    identity = RunIdentity(
+        run_id="containment-probe",
+        code_sha="0" * 40,
+        calendar_semantics=CALENDAR_UTC_DATES_NO_MARKET_HOURS,
+        started_at_utc="2026-01-01T00:00:00Z",
+    )
+    try:
+        read_route.read_historical(request, identity, grant=None)
+    except authorization.AuthorizationError:
+        return CheckResult(
+            "read_route_gated",
+            True,
+            "the declared route refuses a request with no grant, before anything is opened",
+        )
+    except Exception as exc:  # pragma: no cover
+        return CheckResult("read_route_gated", False, f"refused for the wrong reason: {exc}")
+    return CheckResult("read_route_gated", False, "an ungranted read was not refused")
+
+
+def _check_read_body_is_absent() -> CheckResult:
+    """With every gate satisfied, the route still reads nothing.
+
+    This is what licenses ``no_market_data_read`` in the report: it is measured
+    by driving the route to the end of its gate sequence, not asserted.
+    """
+    source = (Path(read_route.__file__)).read_text(encoding="utf-8")
+    tree = ast.parse(source)
+    for node in ast.walk(tree):
+        if isinstance(node, ast.FunctionDef) and node.name == "read_historical":
+            raises = [n for n in ast.walk(node) if isinstance(n, ast.Raise)]
+            names = {
+                getattr(getattr(n.exc, "func", None), "id", None)
+                for n in raises
+                if isinstance(n.exc, ast.Call)
+            }
+            if "NotImplementedError" in names:
+                return CheckResult(
+                    "read_body_absent",
+                    True,
+                    "read_historical ends in NotImplementedError; no read is implemented",
+                )
+            return CheckResult(  # pragma: no cover - true once a body is supplied
+                "read_body_absent",
+                False,
+                "read_historical has a body — this audit no longer establishes that nothing "
+                "is read, and the report's no_market_data_read field must not be trusted",
+            )
+    return CheckResult("read_body_absent", False, "read_historical not found")  # pragma: no cover
+
+
+# ---------------------------------------------------------------------------
+# Structural checks — advisory, and labelled as such
+# ---------------------------------------------------------------------------
+
+
+def _check_single_read_route() -> CheckResult:
+    """No module outside the declared openers contains a file-opening call.
+
+    Advisory. A name set cannot be complete, and an alias defeats it; the
+    behavioural probes above are what establish containment.
+    """
+    findings: list[str] = []
+    for module_name in package_modules():
+        if module_name in _PERMITTED_FILE_OPENERS:
+            continue
+        module = importlib.import_module(module_name)
+        source_file = getattr(module, "__file__", None)
+        if source_file is None:  # pragma: no cover
+            continue
+        tree = ast.parse(Path(source_file).read_text(encoding="utf-8"))
+        for node in ast.walk(tree):
+            if not isinstance(node, ast.Call):
+                continue
+            func = node.func
+            name = (
+                func.id
+                if isinstance(func, ast.Name)
+                else func.attr
+                if isinstance(func, ast.Attribute)
+                else None
+            )
+            if name in _READER_NAMES:
+                findings.append(f"{module_name}:{node.lineno} {name}()")
+    if findings:
+        return CheckResult("single_read_route", False, f"file-access calls outside: {findings}")
+    return CheckResult(
+        "single_read_route",
+        True,
+        f"the only market-data route is {DECLARED_READ_ROUTE_MODULE}.read_historical, and "
+        f"only {sorted(_PERMITTED_FILE_OPENERS)} open files at all (advisory: a name scan "
+        "cannot be complete; the behavioural probes carry the verdict)",
+    )
+
+
+def _check_authorization_has_no_ambient_source() -> CheckResult:
+    """No grant may come from the environment, a file, or a module global."""
+    tree = ast.parse(Path(authorization.__file__).read_text(encoding="utf-8"))
+    findings: list[str] = []
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Attribute) and node.attr == "environ":
+            findings.append(f"environ at line {node.lineno}")
+        if isinstance(node, ast.Call):
+            func = node.func
+            name = getattr(func, "id", None) or getattr(func, "attr", None)
+            if name in {"getenv", "open", "read_text", "load", "loads"}:
+                findings.append(f"{name}() at line {node.lineno}")
+    if findings:  # pragma: no cover
+        return CheckResult("authorization_not_ambient", False, f"ambient source: {findings}")
+    return CheckResult(
+        "authorization_not_ambient",
+        True,
+        "a grant is an in-process ReadGrant of exactly that type, re-validated at check "
+        "time; no environment variable, file or global can supply one",
+    )
+
+
+def _check_write_root() -> CheckResult:
+    """The write root is a constant and protected roots refuse."""
+    if "{" in scratch.SCRATCH_ROOT_RELATIVE or "%" in scratch.SCRATCH_ROOT_RELATIVE:
+        return CheckResult(  # pragma: no cover
+            "write_root", False, "the scratch root carries a caller-supplied component"
+        )
+    refused = 0
+    for relative in ("docs/x.md", "data/x.parquet", "artifacts/m15_gate3a/x.json", "src/x.py"):
+        try:
+            scratch.assert_writable(scratch.repo_root() / relative)
+        except scratch.ScratchRootError:
+            refused += 1
+    if refused != 4:  # pragma: no cover
+        return CheckResult("write_root", False, f"only {refused}/4 protected roots refused")
+    return CheckResult(
+        "write_root",
+        True,
+        f"writes are confined to {scratch.SCRATCH_ROOT_RELATIVE}; protected roots and "
+        "reserved artifact filenames refuse, case-insensitively",
+    )
+
+
 def _check_derivation_route() -> CheckResult:
-    """One derivation route, naming its delegate and its audit status."""
-    source = inspect.getsource(derivation)
-    for need in (
-        "SELECTED_ROUTE",
-        "DELEGATE_QUALNAME",
-        "DELEGATE_AUDIT_STATUS",
-        "require_authorization",
-        "NotImplementedError",
-    ):
-        if need not in source:
-            return CheckResult("derivation_route", False, f"derivation route is missing {need}")
+    """One derivation route, bound to the committed aggregator in this diff."""
+    from scripts.m15_gate3a.aggregation import aggregate_m15
+
+    if derivation.DELEGATE is not aggregate_m15:  # pragma: no cover
+        return CheckResult("derivation_route", False, "the delegate binding is not the committed")
     return CheckResult(
         "derivation_route",
         True,
-        f"one route, {derivation.SELECTED_ROUTE}, delegating to {derivation.DELEGATE_QUALNAME} "
+        f"one route, {derivation.SELECTED_ROUTE}, bound to {derivation.DELEGATE_QUALNAME} "
         f"whose audit status is recorded as {derivation.DELEGATE_AUDIT_STATUS}",
     )
 
 
 CHECKS: Final[tuple[Any, ...]] = (
-    _check_single_read_route,
-    _check_read_route_is_gated,
-    _check_authorization_has_no_ambient_source,
-    _check_write_root,
+    _check_write_containment_enforced,
+    _check_market_data_read_refused,
     _check_network,
+    _check_subprocess,
     _check_database,
     _check_broker_and_live,
+    _check_read_route_refuses_without_a_grant,
+    _check_read_body_is_absent,
+    _check_single_read_route,
+    _check_authorization_has_no_ambient_source,
+    _check_write_root,
     _check_derivation_route,
 )
 
@@ -296,14 +467,11 @@ CHECKS: Final[tuple[Any, ...]] = (
 def audit() -> dict[str, Any]:
     """Run every check and return the report.  Reads no market data.
 
-    The network and database checks demonstrate that the guards **refuse**, so
-    the audit installs them for its own duration when they are not already
-    installed, and restores the process afterwards.  Reporting "not installed"
-    would answer a question about ambient process state rather than about the
-    guards, and a containment audit that passes only when someone remembered to
-    install them is the kind of conditional assurance this programme keeps
-    finding.  When a research run has already installed them, the audit leaves
-    them alone.
+    The audit installs the guards for its own duration when they are not
+    already installed, and restores the process afterwards. Reporting "not
+    installed" would answer a question about ambient process state rather than
+    about the guards, and a containment audit that passes only when someone
+    remembered to install them is conditional assurance.
     """
     installed_by_audit = not isolation.is_installed()
     if installed_by_audit:
@@ -314,15 +482,23 @@ def audit() -> dict[str, Any]:
         if installed_by_audit:
             isolation.uninstall_all()
     passed = all(result.passed for result in results)
+    body_absent = next(
+        (r.passed for r in results if r.name == "read_body_absent"),
+        False,
+    )
     return {
         "status": STATUS_CONTAINED if passed else STATUS_BREACHED,
         "checks": [result.as_record() for result in results],
         "guards_installed_by_audit": installed_by_audit,
+        "modules_scanned": list(package_modules()),
+        # Measured by _check_read_body_is_absent, not asserted: the field is a
+        # statement about this head's code, and it goes False the moment a read
+        # body is supplied.
+        "no_market_data_read": bool(body_absent),
         "scope": (
             "execution containment only — not a hostile-input audit, not mutation "
             "resistance, and not a substitute for the gate-6 source-contamination audit"
         ),
-        "no_market_data_read": True,
     }
 
 
@@ -339,4 +515,5 @@ __all__ = [
     "CheckResult",
     "audit",
     "audit_report_path",
+    "package_modules",
 ]

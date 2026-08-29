@@ -34,8 +34,10 @@ formal claim, so the non-decision-bearing label does not reach it.
 from __future__ import annotations
 
 import json
+from collections.abc import Mapping
 from dataclasses import dataclass
 from pathlib import Path
+from types import MappingProxyType
 from typing import Any, Final
 
 from scripts.m15_track_a import scratch
@@ -58,6 +60,19 @@ CONFIGURATION_AXES: Final[tuple[str, ...]] = (
 )
 
 
+def _pin_bool(value: Any) -> bool:
+    """Exactly a ``bool``.
+
+    The writer pins ``result_observed`` with ``type(...) is not bool`` and the
+    reader used ``bool(...)``, so a ledger line carrying ``0`` reconstructed as
+    ``False`` with no error — silently undercounting ``K``. A reader that is
+    laxer than its writer is the hole, whatever the writer checks.
+    """
+    if type(value) is not bool:  # noqa: E721
+        raise BreadthRecordError(f"result_observed must be a bool in the record, got {value!r}")
+    return value
+
+
 class BreadthRecordError(RuntimeError):
     """Raised when a breadth entry is malformed."""
 
@@ -67,15 +82,15 @@ class ConfigurationEntry:
     """One configuration Track A evaluated, and whether its result was observed."""
 
     run_id: str
-    axes: dict[str, str]
+    axes: Mapping[str, str]
     result_observed: bool
     note: str = ""
 
     def __post_init__(self) -> None:
         if type(self.run_id) is not str or not self.run_id.strip():  # noqa: E721
             raise BreadthRecordError("run_id must be a non-empty plain str")
-        if type(self.axes) is not dict:  # noqa: E721
-            raise BreadthRecordError("axes must be a dict")
+        if not isinstance(self.axes, Mapping):
+            raise BreadthRecordError("axes must be a mapping")
         missing = [axis for axis in CONFIGURATION_AXES if axis not in self.axes]
         if missing:
             raise BreadthRecordError(
@@ -93,6 +108,10 @@ class ConfigurationEntry:
                 raise BreadthRecordError(f"axis {axis!r} must be a non-empty plain str")
         if type(self.result_observed) is not bool:  # noqa: E721
             raise BreadthRecordError("result_observed must be a bool")
+        # ``frozen=True`` freezes the *binding*, not the dict behind it. Without
+        # this, ``entry.axes["model"] = ...`` changes ``configuration_key`` after
+        # validation and can inject an axis the closed-set check already refused.
+        object.__setattr__(self, "axes", MappingProxyType(dict(self.axes)))
         if type(self.note) is not str:  # noqa: E721
             raise BreadthRecordError("note must be a str")
 
@@ -147,7 +166,7 @@ def read_entries() -> tuple[ConfigurationEntry, ...]:
             ConfigurationEntry(
                 run_id=payload["run_id"],
                 axes=dict(payload["axes"]),
-                result_observed=bool(payload["result_observed"]),
+                result_observed=_pin_bool(payload["result_observed"]),
                 note=payload.get("note", ""),
             )
         )

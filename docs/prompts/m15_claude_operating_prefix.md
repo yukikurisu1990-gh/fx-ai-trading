@@ -23,7 +23,23 @@ TASK CONTRACT
    autonomous_development_policy.md §2-§8 and applies the higher of the two.
 4. HARD BOUNDARIES — what must not be crossed in this task.
 5. COMPLETION CRITERIA — what "done" means, and whether to merge or stop.
+6. TRACK — Track A (exploratory) or Track B (formal confirmation), for any
+   M15 Family A research task.
 ```
+
+**Field 6 — the track, and its default.** M15 Family A research is split
+(`docs/design/m15_minimum_research_gate.md` §8.11–§8.13). Which track a task
+belongs to changes what is permitted, so a prompt that does not say is
+**Track B** — the stricter side, currently blocked on the forward epoch. That
+default is this repository's addition, recorded in `CLAUDE.md`; it is not a
+clause of the contract packet.
+
+A Track A task is **Red** and needs, in order: PR #451 approved and merged; the
+P-1…P-15 propagation predicate true on a named master SHA; the **Minimum
+Research Execution Gate** passed on a named head
+(`docs/design/m15_track_a_execution_gate.md`); and then a separate explicit
+human + ChatGPT read grant. Naming Track A in field 6 authorises none of them,
+and R1 / R3 / R4 are three separate Red gates.
 
 What the session does with it:
 

@@ -29,6 +29,7 @@ Two things this module adds that the gate-3a guards do not cover
 
 from __future__ import annotations
 
+import os
 from pathlib import Path
 from typing import Any, Final
 
@@ -95,6 +96,50 @@ def _forbidden_roots() -> tuple[tuple[Path, str], ...]:
     return tuple((root / prefix, prefix) for prefix in FORBIDDEN_WRITE_PREFIXES)
 
 
+#: The reserved names, case-folded once.  NTFS and macOS both treat
+#: ``Scrub_Report.JSON`` and ``scrub_report.json`` as the same file, so a
+#: case-sensitive membership test refuses one spelling of a name and admits
+#: another spelling of the same file. §8.12.13 G-9 says "no Track A file may
+#: bear one, **anywhere**" — which is a statement about the file, not about how
+#: the caller happened to type it.
+_RESERVED_FOLDED: Final[frozenset[str]] = frozenset(
+    name.casefold() for name in RESERVED_ARTIFACT_FILENAMES
+)
+
+#: Files beneath the scratch root that may only ever be **appended** to.
+#: :mod:`~scripts.m15_track_a.isolation` reads this set to refuse a truncating
+#: open of any of them: an append-only API binds only its own callers, and one
+#: ``Path.write_text("")`` erases a `BINDING_GOVERNANCE_RECORD` that no ruling
+#: can restore.
+APPEND_ONLY_FILENAMES: Final[frozenset[str]] = frozenset(
+    {
+        "exploratory_seen_ledger.jsonl",
+        "exploratory_oos_budget.jsonl",
+        "exploration_breadth.jsonl",
+        "track_a_authorization_ledger.jsonl",
+    }
+)
+
+
+def append_line(path: Path, line: str) -> None:
+    """Append one line to a ledger, as a single atomic write.
+
+    ``open(path, "a")`` goes through a buffered text wrapper: under concurrent
+    writers, lines interleave and some are lost outright — measured at 109 of
+    120 with four processes. A single ``os.write`` to a descriptor opened
+    ``O_APPEND`` is atomic for a line-sized payload on both POSIX and Windows,
+    which is what an append-only governance record needs.
+    """
+    assert_writable(path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    payload = (line + "\n").encode("utf-8")
+    fd = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_APPEND, 0o644)
+    try:
+        os.write(fd, payload)
+    finally:
+        os.close(fd)
+
+
 def assert_writable(path: Any) -> Path:
     """Return the resolved path if Track A may write it; otherwise raise.
 
@@ -132,7 +177,7 @@ def assert_writable(path: Any) -> Path:
         )
 
     name = candidate.name
-    if name in RESERVED_ARTIFACT_FILENAMES:
+    if name.casefold() in _RESERVED_FOLDED:
         raise ScratchRootError(
             f"Track A write refused: {name!r} is the canonical filename of a committed "
             "artifact. A Track A output may not bear one, anywhere — a file that looks "
@@ -152,9 +197,11 @@ def is_writable(path: Any) -> bool:
 
 __all__ = [
     "FORBIDDEN_WRITE_PREFIXES",
+    "APPEND_ONLY_FILENAMES",
     "RESERVED_ARTIFACT_FILENAMES",
     "SCRATCH_ROOT_RELATIVE",
     "ScratchRootError",
+    "append_line",
     "assert_writable",
     "is_writable",
     "repo_root",

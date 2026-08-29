@@ -38,6 +38,7 @@ seen-data ledger is.
 from __future__ import annotations
 
 import json
+import os
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Final
@@ -47,6 +48,9 @@ from scripts.m15_track_a.identity import RunIdentity
 from scripts.m15_track_a.scratch import ScratchRootError, assert_writable
 
 OOS_BUDGET_FILENAME: Final[str] = "exploratory_oos_budget.jsonl"
+
+#: One empty file per claimed observation.  See :func:`claim_path`.
+OOS_CLAIM_TEMPLATE: Final[str] = "exploratory_oos_claim_{index:04d}.claim"
 
 #: Q7's fail-closed default.  Raising it is a human + ChatGPT loosening and
 #: shows up as a change to this line.
@@ -100,12 +104,30 @@ def budget_path() -> Path:
     return scratch.scratch_root() / OOS_BUDGET_FILENAME
 
 
+def claim_path(index: int) -> Path:
+    """The claim file for observation ``index``.
+
+    A separate, empty file per observation, created with ``O_CREAT | O_EXCL``.
+    That flag pair is the only cross-process mutual exclusion available without
+    a lock service: the OS guarantees exactly one creator, so exactly one caller
+    can hold observation *i*. Reading a count and then appending is not
+    equivalent — four concurrent processes measured four successful "consumes"
+    of a budget of one, and three of the four appends were lost as well, so the
+    record under-reported the very over-spend it failed to prevent.
+    """
+    return scratch.scratch_root() / OOS_CLAIM_TEMPLATE.format(index=index)
+
+
 def observations_spent() -> int:
-    """How many decision-bearing slice observations have been recorded."""
-    path = budget_path()
-    if not path.exists():
+    """How many decision-bearing slice observations have been claimed.
+
+    Counted from the **claim files**, not from the ledger: a claim is what the
+    OS arbitrated, and the ledger line is written afterwards.
+    """
+    root = scratch.scratch_root()
+    if not root.exists():
         return 0
-    return sum(1 for line in path.read_text(encoding="utf-8").splitlines() if line.strip())
+    return sum(1 for index in range(1, OOS_BUDGET_N + 1) if claim_path(index).exists())
 
 
 def remaining() -> int:
@@ -150,10 +172,35 @@ def consume(observation: SliceObservation, identity: RunIdentity) -> Path:
     except ScratchRootError as exc:  # pragma: no cover - the path is a module constant
         raise OosBudgetError(f"budget path refused by the scratch authority: {exc}") from exc
     path.parent.mkdir(parents=True, exist_ok=True)
-    payload = {"observation": observation.as_record(), "identity": identity.as_record()}
-    line = json.dumps(payload, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
-    with path.open("a", encoding="utf-8", newline="\n") as handle:
-        handle.write(line + "\n")
+
+    # Claim the slot atomically before recording it.  ``assert_budget_available``
+    # above gives the caller a readable error in the ordinary case; this is what
+    # makes the budget hold when two runs race for the last observation.
+    claimed = None
+    for index in range(1, OOS_BUDGET_N + 1):
+        candidate = claim_path(index)
+        assert_writable(candidate)
+        try:
+            handle = os.open(candidate, os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o644)
+        except FileExistsError:
+            continue
+        os.close(handle)
+        claimed = index
+        break
+    if claimed is None:
+        raise OosBudgetError(
+            f"{BUDGET_EXHAUSTED_TOKEN}: every one of Q7's N = {OOS_BUDGET_N} slot(s) is "
+            "already claimed. Another run holds it; the slice is consumed."
+        )
+
+    payload = {
+        "observation": observation.as_record(),
+        "identity": identity.as_record(),
+        "claim_index": claimed,
+    }
+    scratch.append_line(
+        path, json.dumps(payload, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
+    )
     return path
 
 
@@ -166,6 +213,7 @@ __all__ = [
     "SliceObservation",
     "assert_budget_available",
     "budget_path",
+    "claim_path",
     "consume",
     "observations_spent",
     "remaining",

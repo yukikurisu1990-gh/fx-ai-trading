@@ -48,7 +48,11 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any, Final
 
-from scripts.m15_gate3a.aggregation import BUCKET_MINUTES, FULL_BUCKET_SOURCE_BARS
+from scripts.m15_gate3a.aggregation import (
+    BUCKET_MINUTES,
+    FULL_BUCKET_SOURCE_BARS,
+    aggregate_m15,
+)
 from scripts.m15_track_a import authorization, isolation, seen_ledger
 from scripts.m15_track_a.identity import RunIdentity
 from scripts.m15_track_a.read_route import ReadRequest, assert_span_admissible
@@ -56,8 +60,17 @@ from scripts.m15_track_a.read_route import ReadRequest, assert_span_admissible
 #: The selected arm, named so the choice is greppable.
 SELECTED_ROUTE: Final[str] = "arm_i_committed_gate3a_aggregate_m15_on_research_scratch_output"
 
-#: The committed callable this route delegates to.  Named as a string as well as
-#: imported, so a containment audit can assert the binding without importing.
+#: The committed callable this route delegates to — **bound**, not described.
+#:
+#: §8.12.10 condition 3 says the choice "counts as made only when it appears in a
+#: diff — an explicit committed caller — never as a decision a session reports
+#: having taken". A docstring naming the function is a report; this binding is
+#: the diff. It is still not a *call*: the body is absent, so what the diff
+#: commits is which implementation this route will use, not a use of it.
+DELEGATE = aggregate_m15
+
+#: The same name as a string, so a containment audit can assert the binding
+#: without importing the delegate.
 DELEGATE_QUALNAME: Final[str] = "scripts.m15_gate3a.aggregation.aggregate_m15"
 
 #: What a Track A derivation is **not**.
@@ -113,13 +126,14 @@ def derive_m15(
         )
 
     read_request = request.read_request
-    authorization.require_authorization(
+    checked = authorization.require_authorization(
         grant,
         operation=authorization.OPERATION_M15_DERIVATION,
         span_start_utc=read_request.touched_start_utc,
         span_end_utc=read_request.span_end_utc,
         pairs=read_request.pairs,
         timeframe=read_request.timeframe,
+        identity=identity,
     )
 
     assert_span_admissible(read_request)
@@ -129,6 +143,8 @@ def derive_m15(
         span_end_utc=read_request.span_end_utc,
         pairs=read_request.pairs,
     )
+
+    seen_ledger.record_grant(checked, identity, route=SELECTED_ROUTE)
 
     raise NotImplementedError(
         f"{NOT_IMPLEMENTED_TOKEN}: every gate passed and nothing was derived. The selected "
@@ -140,6 +156,7 @@ def derive_m15(
 
 
 __all__ = [
+    "DELEGATE",
     "DELEGATE_AUDIT_STATUS",
     "DELEGATE_QUALNAME",
     "NOT_IMPLEMENTED_TOKEN",

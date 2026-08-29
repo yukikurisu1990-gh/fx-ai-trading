@@ -439,7 +439,24 @@ items below carry explicit [FIXED-AT …] markers and do not block this merge.
 **Before any production claim:** disjoint replication (gate 9) + separate
 paper/live gates (gate 10).
 
-## 13a. Two-Track amendment (recorded, pending PR #451 approval)
+## 13a. Two-Track amendment — **DRAFTED, NOT IN FORCE**
+
+**`PREREG_AMENDMENT_P_7_REQUIRES_ITS_OWN_HUMAN_CHATGPT_RULING`.**
+
+`docs/design/m15_minimum_research_gate.md` §8.12.10 records P-7 as
+"**Red-adjacent Amber** — amends a frozen pre-registration; **needs its own
+human + ChatGPT ruling** … listed so it is not performed by a session in
+passing". This section is therefore a **draft of the amendment for that ruling
+to act on**, not the amendment. Until the ruling is recorded here with a PR
+number, an approved head SHA and a date, **every clause of this
+pre-registration stands unamended**, and where they conflict with the table
+below the unamended clauses govern — including §10's "gates … none skippable",
+§14's "this document authorises nothing", and Ruling 1's gate placement.
+PR #451's approval is **not** this ruling: P-7 requires its own.
+
+**Approval identifier:** none. `A_RULED_SECTION_WITHOUT_AN_APPROVAL_IDENTIFIER_MAY_NOT_BE_CITED_AS_AUTHORITY`.
+
+### 13a.1 The draft table
 
 `docs/design/m15_minimum_research_gate.md` §8.11–§8.13 split Family A research
 into **Track A** (exploratory) and **Track B** (formal confirmation). The

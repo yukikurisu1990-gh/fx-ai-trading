@@ -116,6 +116,15 @@ and no session may invent market hours.
 | **NR-I** — the rollover exclusion window has no representation | `MAY_DEFER` — escalates if cost-table production is authorised | Ruling 4 freezes "rollover exclusion 21:55–22:15 UTC minimum — widen-only"; zero occurrences in the package, and `_check_session_partition()` requires the three sessions to tile all 1440 minutes, so no carve-out is expressible | Third re-check (NR-I) |
 | **NR-J** — merged-audit R-8 limb 4 was re-disposed without referral | **`MUST_RESOLVE_BEFORE_GATE3A_CONTINUATION`** (same governance class as the crossed-quote referral) | R-8 required "Fix all four before the tables are produced"; 20 × 3 coverage became a reported boolean with no raise | Third re-check (RF-19) |
 
+**Scope of the step list above (Two-Track).** Those steps are the route to
+the **gate-3a continuation** — the committed design-M15 derivation, and every
+formal read that depends on it. They are **not** the route to a **Track A**
+exploratory read, which §2.1's narrow exception governs and which runs through
+the Minimum Research Execution Gate instead (§3's ladder, §5a's template).
+Neither route shortens the other: a Track A read discharges none of the steps
+above, and passing the execution gate does not advance the continuation by one
+item.
+
 ## 2. Research stop rules (mandatory for every session)
 
 These are substantive research boundaries. Procedural stop rules — and the
@@ -128,11 +137,14 @@ rules — protected paths, upward escalation, the Green allowlist — are policy
    read before the machinery source audit (currently: the F-1…F-5 re-check)
    is accepted, REFUSE and redirect to the audit gate. **One narrow exception**
    (`docs/design/m15_minimum_research_gate.md` §8.12.2): a **Track A**
-   historical read, on the **design span only**, producing
-   `NON_DECISION_BEARING_EXPLORATORY_ONLY` output, **after** the Minimum
-   Research Execution Gate has passed on a named head **and** an explicit human
-   + ChatGPT read grant covers the operation. Absent any of those three, refuse
-   as before. Nothing else in §2 moves.
+   historical read, on the **design span only**, producing output classified
+   **both** `NON_DECISION_BEARING_EXPLORATORY_ONLY` **and**
+   `RESEARCH_SCRATCH_NON_AUTHORITATIVE`, **after** the Minimum Research
+   Execution Gate has passed on a named head **and** an explicit human +
+   ChatGPT read grant covers the operation. That is **five** conditions, not
+   three — the exception's own three limbs plus the two execution conditions —
+   and absent **any one of the five**, refuse as before. Nothing else in §2
+   moves.
 2. **No real M15 derivation before audit acceptance:** same refusal + redirect,
    and the same single Track A exception — a research-scratch derivation whose
    output is **not** the prereg §4 artifact and may never be recorded as one.
@@ -177,6 +189,12 @@ inserted here so a session reading this file alone sees it:
 
 Track A does **not** require the forward epoch to exist; Track B does.
 
+Rows `B-0` and `B-1` are a **compression**. §8.12.0(4) records that "promotion
+from Track A to Track B runs through **eight mandatory steps** and through no
+other route", restated as seven ordered steps at §8.13.7. The ladder above
+names where promotion sits in the order; it does not replace the route, and a
+session preparing a promotion reads §8.13.7 rather than this table.
+
 
 **PR shape for this order (policy §14).** Each audit or adoption step below is
 a **Gate-decision PR** — it judges or changes the research state. The work it
@@ -219,12 +237,20 @@ and Gate-P2-style adoption artifacts.
 
 **Scope note (Track A).** The checklist below asks whether a read route is
 *absent*. That is right for the gate-3a machinery and impossible for **Track A**,
-whose whole purpose is to have one. For a Track A audit, four items **invert** —
-"real-data read routes: none reachable" becomes "**exactly one, declared and
-gated**", and likewise for the derivation route, the write root and the
-authorisation gate — while **everything else stays at none**: broker, network,
+whose whole purpose is to have one. **Two** of §4's own items invert:
+"real-data read routes — none reachable" becomes "**exactly one, declared and
+gated**", and "real M15 derivation routes — none enabled" becomes "**exactly
+one, selected in a diff**". Two further items are **added**, because §4 has no
+counterpart to them: a single declared **write root**, and a single
+**authorisation gate**. Everything else stays at **none**: broker, network,
 external DB, credentials, model binaries, forward-epoch access, protected-path
-writes. The executable form is `scripts/m15_track_a/containment.py`, and its
+writes.
+
+One §4 item needs care rather than inversion: "**validation / holdout /
+training / execution routes — none exist**". That holds for **R1**, and it does
+**not** hold for R3/R4, which §8.12.2 records as training and computing
+exploratory metrics. An auditor applying §4 to a later Track A stage must not
+read the R1 answer forward. The executable form is `scripts/m15_track_a/containment.py`, and its
 final statuses are `TRACK_A_EXECUTION_CONTAINMENT_VERIFIED_NO_UNGATED_ROUTE` /
 `TRACK_A_EXECUTION_CONTAINMENT_BREACHED_UNGATED_ROUTE_FOUND`. It is an
 **execution-containment** check, not a hostile-input audit, and it does not
@@ -330,7 +356,15 @@ authorises **R1 only** — R3 (training) and R4 (evaluation) remain separate Red
 gates with separate approvals (policy §6, §2.5). Every item verified true, with
 citations, on a **named head**:
 
-- [ ] Governance propagation complete (this section's own existence is part of it).
+- [ ] **PR #451 approved and merged.** Until it is, §8.11–§8.13 carry
+      `APPROVAL_IDENTIFIER_PENDING_UNTIL_MERGE` and
+      `THE_TWO_TRACK_SECTIONS_ARE_RULED_AS_RECORDED_AND_NOT_YET_CITABLE_AS_AUTHORITY`
+      — so every item below rests on authority that is not yet citable.
+- [ ] **Governance propagation complete**, evaluated as §8.12.13 C-10 defines
+      it: the **P-1 … P-15** predicate, true **on a named master SHA**.
+      `PROPAGATION_COMPLETENESS_IS_A_PREDICATE_ON_NAMED_FILES_NOT_A_SELF_ASSESSMENT`
+      — the existence of this section is not evidence for it, and the residual
+      list lives at `docs/design/m15_track_a_execution_gate.md` §12.
 - [ ] **Q8** — the research-scratch write root is a module constant with no
       caller-supplied component (`scripts/m15_track_a/scratch.py`), and writes
       outside it refuse.
@@ -339,9 +373,6 @@ citations, on a **named head**:
 - [ ] **One** historical read route, gated
       (`scripts/m15_track_a/read_route.py`), and **one** derivation route,
       selected in a diff (`scripts/m15_track_a/derivation.py`).
-- [ ] An explicit human + ChatGPT **read grant** naming the operation, span,
-      pairs, timeframe and approved head SHA — a contract permission is not an
-      execution authorisation.
 - [ ] **Isolation** — network, external DB, broker, live, demo and order
       submission all refuse, demonstrated by the containment audit
       (`scripts/m15_track_a/containment.py`), not asserted.
@@ -357,8 +388,24 @@ citations, on a **named head**:
       timeframes for all roles, **including feature warm-up** — and the
       `DESIGN_END` trailing purge, which the declaration guard cannot detect.
 - [ ] **No legacy-evidence dependency** (C-8 declaration held).
-- [ ] Track A output is `NON_DECISION_BEARING_EXPLORATORY_ONLY` and lands
-      nowhere near the evidence tree.
+- [ ] Track A output is **both** `NON_DECISION_BEARING_EXPLORATORY_ONLY` and
+      `RESEARCH_SCRATCH_NON_AUTHORITATIVE`, and lands nowhere near the evidence
+      tree.
+
+**The read grant is deliberately NOT an item of this checklist.** It is the
+**next** step, taken after the gate passes:
+
+> **Step 3 (separate).** An explicit human + ChatGPT **read grant** naming the
+> operation, span, pairs, timeframe and approved head SHA
+> (`scripts/m15_track_a/authorization.py`). A contract permission is not an
+> execution authorisation, and neither is a passed gate. If the grant were an
+> item here, a fully-ticked §5a would *be* the authorisation — which is exactly
+> the collapse §8.12.1 says "every prior confusion in this packet's history has
+> run through".
+
+**On "the gate authorises R1 only":** that phrase states the **scope** a gate
+pass can reach — R1, never R3 or R4 — not that a pass is **sufficient** for R1.
+Reaching a gate is not passing through it.
 
 ## 6. Pre-run authorisation template (before ANY single run)
 

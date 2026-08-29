@@ -175,19 +175,20 @@ class ReadGrant:
         pairs: tuple[str, ...],
         timeframe: str,
     ) -> bool:
-        """True only when this grant covers **all** of the requested scope.
+        """Convenience wrapper over :func:`grant_covers`.
 
-        Coverage is containment, not overlap: a request reaching one day beyond
-        the granted span is not covered, and a request naming one pair the grant
-        omits is not covered.
+        The gate itself never calls this method: an overridable method is a
+        thing a subclass can make answer ``True``. :func:`require_authorization`
+        calls the module-level function against the grant's fields instead.
         """
-        if operation != self.operation:
-            return False
-        if timeframe != self.timeframe:
-            return False
-        if span_start_utc < self.span_start_utc or span_end_utc > self.span_end_utc:
-            return False
-        return set(pairs).issubset(set(self.pairs))
+        return grant_covers(
+            self,
+            operation=operation,
+            span_start_utc=span_start_utc,
+            span_end_utc=span_end_utc,
+            pairs=pairs,
+            timeframe=timeframe,
+        )
 
     def as_record(self) -> dict[str, Any]:
         """The grant as a plain dict, for the ledger and the run record."""
@@ -202,6 +203,60 @@ class ReadGrant:
         }
 
 
+def _revalidate(grant: ReadGrant) -> None:
+    """Re-run every construction check on an existing grant.
+
+    ``__post_init__`` runs from ``__init__``. It does not run for
+    ``object.__new__``, for an unpickled instance, or after an
+    ``object.__setattr__`` on a frozen field. Re-running the checks here means
+    the gate validates the object it was handed rather than the object it
+    assumes was constructed.
+    """
+    try:
+        ReadGrant.__post_init__(grant)
+    except AuthorizationMalformedError:
+        raise
+    except Exception as exc:  # pragma: no cover - a malformed object of any shape
+        raise AuthorizationMalformedError(f"grant failed re-validation: {exc}") from exc
+
+
+def grant_covers(
+    grant: ReadGrant,
+    *,
+    operation: str,
+    span_start_utc: str,
+    span_end_utc: str,
+    pairs: tuple[str, ...],
+    timeframe: str,
+) -> bool:
+    """True only when the grant covers **all** of the requested scope.
+
+    Coverage is containment, not overlap: a request reaching one day beyond the
+    granted span is not covered, and a request naming one pair the grant omits
+    is not covered.
+
+    Both sides of every comparison are validated first. A string comparison of
+    span bounds is chronological only once both operands are known to be
+    zero-padded ISO dates: an unpadded ``2025-1-15`` sorts *after* ``2025-06-01``
+    at index five, so an unvalidated request date reads as inside the grant when
+    it is outside it.
+    """
+    _require_date(span_start_utc, "requested span_start_utc")
+    _require_date(span_end_utc, "requested span_end_utc")
+    _require_date(grant.span_start_utc, "granted span_start_utc")
+    _require_date(grant.span_end_utc, "granted span_end_utc")
+    if _require_text(operation, "operation") != _require_text(grant.operation, "grant.operation"):
+        return False
+    if _require_text(timeframe, "timeframe") != _require_text(grant.timeframe, "grant.timeframe"):
+        return False
+    if span_start_utc < grant.span_start_utc or span_end_utc > grant.span_end_utc:
+        return False
+    if type(pairs) is not tuple:
+        raise AuthorizationMalformedError("requested pairs must be a tuple")
+    granted = {_require_text(pair, "grant pair") for pair in grant.pairs}
+    return all(_require_text(pair, "requested pair") in granted for pair in pairs)
+
+
 def require_authorization(
     grant: Any,
     *,
@@ -210,11 +265,32 @@ def require_authorization(
     span_end_utc: str,
     pairs: tuple[str, ...],
     timeframe: str,
+    identity: Any = None,
 ) -> ReadGrant:
     """Return the grant if it covers the requested scope; otherwise raise.
 
     ``grant=None`` is the ordinary case today and raises with the token, so a
     caller reading the traceback learns what is missing rather than what broke.
+
+    Three deliberate strictnesses, each closing a defeat found by review:
+
+    * **Exact type, not ``isinstance``.** A ``ReadGrant`` subclass can neutralise
+      ``__post_init__`` and answer coverage however it likes.
+    * **Re-validation at check time, not only at construction.**
+      ``object.__new__(ReadGrant)`` never runs ``__post_init__``, and
+      ``object.__setattr__`` rewrites a frozen field after it. Every field is
+      re-checked here, against the same rules.
+    * **The approved head is compared, not merely shaped.** A 40-hex string that
+      is never equal to anything is decoration. When an identity is supplied its
+      ``code_sha`` must equal the grant's ``approved_head_sha`` — CLAUDE.md's
+      "any head change voids the approval", in executable form.
+
+    What it still cannot do: stop code in the same process from constructing a
+    wider grant than the human approved. Nothing in-process can, because such
+    code could bypass this function entirely. The controls for that are the
+    audit hook in :mod:`~scripts.m15_track_a.isolation`, which makes the read
+    itself fail, and the grant being recorded so the scope it claimed is
+    auditable against the approval document.
     """
     if grant is None:
         raise AuthorizationError(
@@ -223,14 +299,25 @@ def require_authorization(
             "operation, the span, the pairs, the timeframe and the approved head SHA "
             "(scripts.m15_track_a.authorization.ReadGrant)."
         )
-    if not isinstance(grant, ReadGrant):
+    if type(grant) is not ReadGrant:
         raise AuthorizationError(
-            f"{TOKEN}: {operation} refused. A grant must be a ReadGrant constructed from a "
-            f"recorded approval, not a {type(grant).__name__}."
+            f"{TOKEN}: {operation} refused. A grant must be exactly a ReadGrant constructed "
+            f"from a recorded approval, not a {type(grant).__name__} — a subclass can "
+            "neutralise the construction checks and answer coverage however it likes."
         )
+    _revalidate(grant)
     if operation not in KNOWN_OPERATIONS:
         raise AuthorizationError(f"{TOKEN}: unknown operation {operation!r} (fail closed)")
-    if not grant.covers(
+    if identity is not None:
+        code_sha = getattr(identity, "code_sha", None)
+        if code_sha != grant.approved_head_sha:
+            raise AuthorizationError(
+                f"{TOKEN}: the grant was approved against head {grant.approved_head_sha!r} "
+                f"and the run is on {code_sha!r}. An approval covers the head it names; a "
+                "head change voids it (CLAUDE.md)."
+            )
+    if not grant_covers(
+        grant,
         operation=operation,
         span_start_utc=span_start_utc,
         span_end_utc=span_end_utc,
@@ -250,6 +337,7 @@ def require_authorization(
 
 __all__ = [
     "KNOWN_OPERATIONS",
+    "grant_covers",
     "OPERATION_HISTORICAL_READ",
     "OPERATION_M15_DERIVATION",
     "OPERATION_OOS_SLICE_READ",

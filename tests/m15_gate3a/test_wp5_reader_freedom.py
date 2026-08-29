@@ -588,8 +588,24 @@ TRACK_A_PERMITTED_IMPORTS: dict[str, frozenset[str]] = {
     "scripts.m15_gate3a.no_overlap": frozenset(
         {"DESIGN_END", "DESIGN_START", "assert_design_bounds", "assert_no_dead_window"}
     ),
-    "scripts.m15_gate3a.aggregation": frozenset({"BUCKET_MINUTES", "FULL_BUCKET_SOURCE_BARS"}),
+    # ``aggregate_m15`` is the derivation route's delegate, bound in the diff
+    # because §8.12.10 condition 3 requires "an explicit committed caller"
+    # rather than a decision a session reports having taken.  It is reader-free:
+    # a pure function over row dicts, and ``scripts/m15_gate3a/aggregation.py``
+    # opens no file anywhere.
+    "scripts.m15_gate3a.aggregation": frozenset(
+        {"BUCKET_MINUTES", "FULL_BUCKET_SOURCE_BARS", "aggregate_m15"}
+    ),
 }
+
+#: What ``tests/m15_track_a/`` may import from this package.  Wider than the
+#: production allowlist by exactly one module — a test that demonstrates a guard
+#: does **not** reach a path has to be able to call that guard — and pinned all
+#: the same, because a test root added to ``PERMITTED_CALLER_ROOTS`` with no pin
+#: widens FB-8 through the back door just as a source root would.
+TRACK_A_TEST_PERMITTED_MODULES: frozenset[str] = frozenset(
+    set(TRACK_A_PERMITTED_IMPORTS) | {"scripts.m15_gate3a.guards"}
+)
 
 #: The sweep below covers ``scripts/m15_track_a/`` only.  Track A's *tests* may
 #: import more — one of them probes ``guards.refuse_real_path`` to demonstrate
@@ -755,6 +771,54 @@ def test_track_a_imports_only_reader_free_names_from_this_package() -> None:
 
     assert offenders == [], (
         "Track A may import only the reader-free names on TRACK_A_PERMITTED_IMPORTS from "
+        f"this package, but {offenders}"
+    )
+
+
+def test_track_a_tests_import_only_the_modules_their_own_pin_permits() -> None:
+    """``tests/m15_track_a/`` was added to the permitted roots with no pin of its own.
+
+    A test root is still a root. Without this, any module in this package —
+    ``proof``, ``artifacts``, ``sealing`` — could be imported from a Track A
+    test and the reverse-caller sweep would stay green, which is scoping the
+    permission on the source side and widening it on the test side.
+
+    Mutation this kills: ``from scripts.m15_gate3a.proof import ...`` under
+    ``tests/m15_track_a/``.
+    """
+    root = repo_root()
+    track_a_tests = root / "tests" / "m15_track_a"
+    assert track_a_tests.is_dir(), "non-vacuity: the Track A test package must exist"
+    files = sorted(track_a_tests.rglob("*.py"))
+    assert files, "non-vacuity: no Track A test files were swept"
+
+    offenders: list[str] = []
+    for path in files:
+        rel = path.relative_to(root).as_posix()
+        tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+        for node in ast.walk(tree):
+            modules: list[str] = []
+            if isinstance(node, ast.ImportFrom):
+                # ``from scripts.m15_gate3a import guards`` names the submodule
+                # in the alias, not in ``node.module`` — resolve it, or the pin
+                # reads the package itself and misses what was actually pulled.
+                modules = (
+                    [f"{PACKAGE}.{alias.name}" for alias in node.names]
+                    if node.module == PACKAGE
+                    else [node.module or ""]
+                )
+            elif isinstance(node, ast.Import):
+                modules = [alias.name for alias in node.names]
+            for module in modules:
+                if not (module == PACKAGE or module.startswith(PACKAGE + ".")):
+                    continue
+                if module in TRACK_A_FORBIDDEN_MODULES:
+                    offenders.append(f"{rel}: imports the forbidden module {module}")
+                elif module not in TRACK_A_TEST_PERMITTED_MODULES:
+                    offenders.append(f"{rel}: imports {module}, not on the test allowlist")
+
+    assert offenders == [], (
+        "Track A tests may import only the modules on TRACK_A_TEST_PERMITTED_MODULES from "
         f"this package, but {offenders}"
     )
 

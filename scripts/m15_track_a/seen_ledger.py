@@ -56,6 +56,9 @@ from scripts.m15_track_a.scratch import ScratchRootError, assert_writable
 
 LEDGER_FILENAME: Final[str] = "exploratory_seen_ledger.jsonl"
 
+#: Where an exercised authorisation is recorded, beside the interval it covered.
+GRANT_LEDGER_FILENAME: Final[str] = "track_a_authorization_ledger.jsonl"
+
 #: The ledger's own classification.  It constrains a formal claim, so the
 #: non-decision-bearing label does not reach it (§8.12.13 G-6).
 LEDGER_CLASSIFICATION: Final[str] = "BINDING_GOVERNANCE_RECORD"
@@ -65,6 +68,19 @@ _DATE_RE: Final[re.Pattern[str]] = re.compile(r"\A\d{4}-\d{2}-\d{2}\Z")
 
 class SeenLedgerError(RuntimeError):
     """Raised when a declaration is malformed, or a read is attempted undeclared."""
+
+
+def _require_pair(value: Any) -> str:
+    """Pin a pair name to an exact ``str``.
+
+    Membership here is ``__hash__``/``__eq__``, so a ``str`` subclass can hash
+    and compare as ``EUR_USD`` while holding ``XAU_USD``. That would void the
+    pair scope of the seen-data record — the record would say one pair was seen
+    while another was read.
+    """
+    if type(value) is not str or not value.strip():  # noqa: E721
+        raise SeenLedgerError(f"malformed pair: {value!r}")
+    return value
 
 
 def _require_date(value: Any, what: str) -> str:
@@ -115,7 +131,7 @@ class SeenDeclaration:
             "classification": LEDGER_CLASSIFICATION,
         }
 
-    def covers(self, *, span_start_utc: str, span_end_utc: str, pairs: tuple[str, ...]) -> bool:
+    def covers(self, *, span_start_utc: str, span_end_utc: str, pairs: tuple[str, ...]) -> bool:  # noqa: E501
         """True when this declaration covers the requested interval and pairs.
 
         **Timeframe is deliberately ignored** (rule 4): declaring M15 over an
@@ -124,7 +140,8 @@ class SeenDeclaration:
         """
         if span_start_utc < self.span_start_utc or span_end_utc > self.span_end_utc:
             return False
-        return set(pairs).issubset(set(self.pairs))
+        declared = {_require_pair(pair) for pair in self.pairs}
+        return all(_require_pair(pair) in declared for pair in pairs)
 
 
 def ledger_path() -> Path:
@@ -150,11 +167,39 @@ def declare(declaration: SeenDeclaration, identity: RunIdentity) -> Path:
     except ScratchRootError as exc:  # pragma: no cover - the path is a module constant
         raise SeenLedgerError(f"ledger path refused by the scratch authority: {exc}") from exc
 
-    path.parent.mkdir(parents=True, exist_ok=True)
     entry = {"declaration": declaration.as_record(), "identity": identity.as_record()}
     line = json.dumps(entry, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
-    with path.open("a", encoding="utf-8", newline="\n") as handle:
-        handle.write(line + "\n")
+    scratch.append_line(path, line)
+    return path
+
+
+def grant_ledger_path() -> Path:
+    """Where the scope an approval was exercised at is recorded."""
+    return scratch.scratch_root() / GRANT_LEDGER_FILENAME
+
+
+def record_grant(grant: Any, identity: RunIdentity, *, route: str) -> Path:
+    """Record the authorisation a route ran under, before it runs.
+
+    A grant that leaves no trace cannot be audited against the approval
+    document it claims to come from. This is the record that makes the claimed
+    scope checkable after the fact — it does not make the claim true, and this
+    module does not pretend it does.
+    """
+    path = grant_ledger_path()
+    try:
+        assert_writable(path)
+    except ScratchRootError as exc:  # pragma: no cover - the path is a constant
+        raise SeenLedgerError(f"grant ledger path refused: {exc}") from exc
+    entry = {
+        "grant": grant.as_record(),
+        "identity": identity.as_record(),
+        "route": route,
+        "classification": LEDGER_CLASSIFICATION,
+    }
+    scratch.append_line(
+        path, json.dumps(entry, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
+    )
     return path
 
 
@@ -206,12 +251,15 @@ def assert_declared(*, span_start_utc: str, span_end_utc: str, pairs: tuple[str,
 
 
 __all__ = [
+    "GRANT_LEDGER_FILENAME",
     "LEDGER_CLASSIFICATION",
     "LEDGER_FILENAME",
     "SeenDeclaration",
     "SeenLedgerError",
     "assert_declared",
     "declare",
+    "grant_ledger_path",
     "ledger_path",
+    "record_grant",
     "read_declarations",
 ]
