@@ -17,8 +17,25 @@ reaches the stack through ``ConnectEx``; every DB module in this repository does
 ``tuple`` subclass can show the guard one destination while CPython reads
 another out of the raw slots.
 
-``sys.addaudithook`` has none of those properties: CPython raises its audit
-events from inside the C implementation, below every Python-level alias.
+``sys.addaudithook`` has none of those properties **for anything that goes
+through CPython's own I/O**: the events are raised from inside the C
+implementation, below every Python-level alias.
+
+And that qualifier is load-bearing, because it was missing. A later
+re-verification showed the hook does **not** see a third-party C extension that
+calls the OS directly: ``pyarrow.OSFile`` and ``pyarrow.memory_map`` read
+``data/`` and wrote into ``docs/`` with every guard installed, because pyarrow's
+file layer is C++ and raises no Python audit event. This repository already
+depends on it — ``scripts/evaluate_ml_baseline.py`` calls ``pq.read_table`` —
+so it is not hypothetical.
+
+**No in-process mechanism can close that class.** A C extension that calls
+``CreateFileW`` or ``open(2)`` is below anything Python can hook, and the only
+complete answers are outside the process (a sandbox, a container, a filesystem
+ACL). What this module does instead is name the C readers this repository
+actually depends on and refuse them at their Python entry points, and say
+plainly that the guarantee is bounded by that list. See
+:data:`NATIVE_READER_TARGETS`.
 
 Why the *second* draft was wrong too, and what changed
 ------------------------------------------------------
@@ -81,7 +98,7 @@ run and would not be for a hot loop.
 from __future__ import annotations
 
 import contextvars
-import functools
+import importlib
 import ipaddress
 import os
 import pathlib
@@ -119,11 +136,49 @@ _WRITABLE_REPO_CACHES: Final[frozenset[str]] = frozenset(
     {"__pycache__", ".pytest_cache", ".mypy_cache", ".ruff_cache"}
 )
 
+#: Repository roots no exemption reaches, whatever sits inside them.
+_NEVER_EXEMPT_ROOTS: Final[frozenset[str]] = frozenset({".git", "data", "docs", "src", "models"})
+
 #: First-level repository entries holding market data.  Matched on the **path
 #: component**, and ``artifacts/oanda_archive*`` by component prefix, because
 #: the directory on disk is ``artifacts/oanda_archive_2026-05-31``.
 _MARKET_DATA_DIRS: Final[tuple[str, ...]] = ("data",)
 _MARKET_DATA_ARTIFACT_PREFIXES: Final[tuple[str, ...]] = ("oanda_archive",)
+
+#: Third-party entry points that reach the filesystem **below** the audit hook.
+#:
+#: Each is ``(module, attribute)``. They are patched, not hooked, because an
+#: audit hook cannot see them: the implementation is C or C++ and never enters
+#: CPython's ``io`` layer. This is a **denylist**, with the polarity this module
+#: otherwise avoids — and it is the honest shape here, because the set of C
+#: extensions in a process is open. It covers the ones this repository depends
+#: on; a new native reader is a new entry, and
+#: :func:`scripts.m15_track_a.containment.audit` cannot detect its absence.
+NATIVE_READER_TARGETS: Final[tuple[tuple[str, str], ...]] = (
+    ("pyarrow", "OSFile"),
+    ("pyarrow", "memory_map"),
+    ("pyarrow", "input_stream"),
+    ("pyarrow", "output_stream"),
+    ("pyarrow.parquet", "read_table"),
+    ("pyarrow.parquet", "ParquetFile"),
+    ("pyarrow.parquet", "write_table"),
+    ("pyarrow.feather", "read_table"),
+    ("pyarrow.feather", "read_feather"),
+    ("pyarrow.feather", "write_feather"),
+    ("pyarrow.csv", "read_csv"),
+    ("pyarrow.ipc", "open_file"),
+    ("pyarrow.ipc", "open_stream"),
+    ("pyarrow.fs", "LocalFileSystem"),
+    ("h5py", "File"),
+)
+
+#: Consumed-holdout evidence.  Not market data, but exploratory design tuned
+#: against a figure from a consumed holdout is the same leakage in a different
+#: costume, so reads are refused on the same footing.
+_CONSUMED_EVIDENCE_ROOTS: Final[tuple[tuple[str, ...], ...]] = (
+    ("artifacts", "ml_step4"),
+    ("artifacts", "gate_p1_pr_b"),
+)
 
 #: Audit events that mean "a process is being launched".
 _SUBPROCESS_EVENTS: Final[frozenset[str]] = frozenset(
@@ -244,7 +299,7 @@ def _normalise(raw: object) -> str | None:
 
     What ``realpath`` does **not** normalise — also measured — is the UNC form
     ``\\localhost\\C$\\…``, which addresses the same volume by another name.
-    That is what :func:`_inside_protected` is for.
+    That is what the identity walk in :func:`_repo_relative` is for.
     """
     if isinstance(raw, int):
         return None  # an already-open descriptor: the open that made it was seen
@@ -291,85 +346,58 @@ def _relative_parts(candidate: str, root: str) -> tuple[str, ...] | None:
     return tuple(part for part in candidate[len(prefixed) :].split(os.sep) if part)
 
 
-#: How far up a path the identity walk climbs before giving up.
-_IDENTITY_WALK_LIMIT: Final[int] = 64
+#: How far up a path the identity walk climbs before failing **closed**.
+_IDENTITY_WALK_LIMIT: Final[int] = 256
 
 
-@functools.lru_cache(maxsize=8)
-def _identity_map(repo_text: str, scratch_text: str) -> dict[tuple[int, int], str]:
-    """``(st_dev, st_ino)`` of every protected root, by role.
-
-    A filesystem identity is exact where a string is not: measured on this
-    machine, ``…/data``, ``…\\FX-AI-~1\\data``, ``\\localhost\\C$\\…\\data`` and
-    ``…/DATA`` all report the same ``st_dev``/``st_ino``. Cached on the two root
-    strings, so a test that repoints the scratch root gets its own entry.
-    """
-    identities: dict[tuple[int, int], str] = {}
-    repo = pathlib.Path(repo_text)
-    candidates: list[tuple[str, pathlib.Path]] = [("scratch", pathlib.Path(scratch_text))]
-    for name in _MARKET_DATA_DIRS:
-        candidates.append(("market_data", repo / name))
-    artifacts = repo / "artifacts"
+def _stat_key(path: str) -> tuple[int, int] | None:
     try:
-        for entry in artifacts.iterdir():
-            if entry.is_dir() and any(
-                entry.name.startswith(prefix) for prefix in _MARKET_DATA_ARTIFACT_PREFIXES
-            ):
-                candidates.append(("market_data", entry))
+        stat = os.stat(path)
     except OSError:
-        pass
-    candidates.append(("repo", repo))
-    for role, path in candidates:
-        try:
-            stat = os.stat(path)
-        except OSError:
-            continue
-        identities.setdefault((stat.st_dev, stat.st_ino), role)
-    return identities
+        return None
+    return (stat.st_dev, stat.st_ino)
 
 
-def _inside_protected(candidate: str, repo_text: str, scratch_text: str) -> str | None:
-    """Which protected root really contains ``candidate``, by filesystem identity.
+def _repo_relative(candidate: str, repo_text: str, scratch_text: str) -> tuple[str, ...] | None:
+    """The path's components relative to the repository root, or ``None`` if outside.
 
-    The nearest protected ancestor wins, so the scratch root and the
-    market-data trees are recognised before the repository that contains them.
-    Only reached when the cheap string test has already said "outside the
-    repository" — which is the case a second spelling of the same volume
-    produces.
+    The cheap string test first. When that says "outside", walk the ancestors
+    comparing ``(st_dev, st_ino)`` — because a second spelling of the same
+    volume is not a string away from the first. Measured on this machine,
+    ``…/data``, ``…\\FX-AI-~1\\data``, ``\\localhost\\C$\\…\\data`` and ``…/DATA``
+    all report the same identity, and ``realpath`` normalises only the first
+    three of those.
+
+    Returning the **components below the root** rather than a yes/no is what
+    lets every later test work on real names. An earlier drafting instead
+    enumerated ``artifacts/oanda_archive*`` into an ``lru_cache``d identity map,
+    which went stale the moment a new archive directory appeared — and the
+    enumeration was never needed.
     """
-    identities = _identity_map(repo_text, scratch_text)
+    parts = _relative_parts(candidate, repo_text)
+    if parts is not None:
+        return parts
+    repo_key = _stat_key(repo_text)
+    if repo_key is None:
+        raise IsolationError(
+            f"{TOKEN}: the repository root could not be stat'd, so no path can be "
+            "classified. Refusing rather than permitting."
+        )
+    trail: list[str] = []
     current = candidate
     for _ in range(_IDENTITY_WALK_LIMIT):
-        try:
-            stat = os.stat(current)
-        except OSError:
-            stat = None
-        if stat is not None:
-            role = identities.get((stat.st_dev, stat.st_ino))
-            if role is not None:
-                return role
+        if _stat_key(current) == repo_key:
+            return tuple(reversed(trail))
         parent = os.path.dirname(current)
         if not parent or parent == current:
             return None
+        trail.append(os.path.basename(current))
         current = parent
-    return None  # pragma: no cover - 64 levels is not a real path
-
-
-def _classify(candidate: str) -> tuple[str, tuple[str, ...]]:
-    """One of ``outside`` / ``cache`` / ``scratch`` / ``market_data`` / ``repo``."""
-    repo_text = _root(scratch.repo_root, "repository root")
-    scratch_text = _root(scratch.scratch_root, "scratch root")
-    parts = _relative_parts(candidate, repo_text)
-    if parts is not None:
-        if any(part in _WRITABLE_REPO_CACHES for part in parts):
-            return "cache", parts
-        if _relative_parts(candidate, scratch_text) is not None:
-            return "scratch", parts
-        if _is_market_data(parts):
-            return "market_data", parts
-        return "repo", parts
-    role = _inside_protected(candidate, repo_text, scratch_text)
-    return (role or "outside"), ()
+    raise IsolationError(
+        f"{TOKEN}: {candidate!r} is more than {_IDENTITY_WALK_LIMIT} components deep and "
+        "could not be classified. Refusing rather than permitting — a walk that gives up "
+        "must not mean 'outside the repository'."
+    )
 
 
 def _is_market_data(parts: tuple[str, ...]) -> bool:
@@ -382,6 +410,63 @@ def _is_market_data(parts: tuple[str, ...]) -> bool:
         and len(parts) > 1
         and any(parts[1].startswith(prefix) for prefix in _MARKET_DATA_ARTIFACT_PREFIXES)
     )
+
+
+def _is_consumed_evidence(parts: tuple[str, ...]) -> bool:
+    return any(parts[: len(root)] == root for root in _CONSUMED_EVIDENCE_ROOTS)
+
+
+def _is_build_cache(parts: tuple[str, ...]) -> bool:
+    """A file sitting **directly inside** a build-cache directory.
+
+    ``any(part in caches for part in parts)`` was too generous in a way that
+    mattered: it made ``data/__pycache__/candles.jsonl`` a cache path, and after
+    the read branch was routed through the classifier that turned a refused
+    market-data read into a permitted one. The exemption exists for ``.pyc``
+    files, so it is written as "the parent directory is a cache".
+    """
+    if parts and parts[0] in _NEVER_EXEMPT_ROOTS:
+        # A cache directory *inside* one of these does not launder it. ``.git``
+        # was already off the cache list and came back through the side door as
+        # ``.git/__pycache__/…``.
+        return False
+    return len(parts) >= 2 and parts[-2] in _WRITABLE_REPO_CACHES
+
+
+def _classify(candidate: str) -> tuple[str, tuple[str, ...]]:
+    """One of ``outside`` / ``scratch`` / ``market_data`` / ``evidence`` / ``cache`` / ``repo``.
+
+    The order matters and is the opposite of the first drafting's: the
+    protected trees are tested **before** the cache exemption, so a cache
+    directory cannot appear inside one and launder it.
+    """
+    repo_text = _root(scratch.repo_root, "repository root")
+    scratch_text = _root(scratch.scratch_root, "scratch root")
+    parts = _repo_relative(candidate, repo_text, scratch_text)
+    if parts is None:
+        return "outside", ()
+    scratch_parts = _relative_parts(candidate, scratch_text)
+    if scratch_parts is None:
+        scratch_key = _stat_key(scratch_text)
+        if scratch_key is not None:
+            probe = candidate
+            for _ in range(_IDENTITY_WALK_LIMIT):
+                if _stat_key(probe) == scratch_key:
+                    scratch_parts = ()
+                    break
+                parent = os.path.dirname(probe)
+                if not parent or parent == probe:
+                    break
+                probe = parent
+    if scratch_parts is not None:
+        return "scratch", parts
+    if _is_market_data(parts):
+        return "market_data", parts
+    if _is_consumed_evidence(parts):
+        return "evidence", parts
+    if _is_build_cache(parts):
+        return "cache", parts
+    return "repo", parts
 
 
 def _is_write_mode(mode: object, flags: object = None) -> bool:
@@ -453,6 +538,59 @@ def _ledger_identities(scratch_text: str) -> dict[tuple[int, int], str]:
     return identities
 
 
+def _ledger_name_for(raw: object) -> str | None:
+    """The append-only ledger this argument names, or ``None``.
+
+    ``raw`` may be a path **or an int file descriptor**: ``os.ftruncate`` — which
+    is what ``file.truncate()`` becomes — raises ``os.truncate`` with the
+    descriptor, and skipping ints let a caller open the ledger ``O_APPEND``
+    (permitted) and then truncate it to nothing.
+    """
+    scratch_text = _root(scratch.scratch_root, "scratch root")
+    ledgers = _ledger_identities(scratch_text)
+    if isinstance(raw, int):
+        try:
+            stat = os.fstat(raw)
+        except OSError:
+            return None
+        return ledgers.get((stat.st_dev, stat.st_ino))
+    try:
+        stat = os.stat(os.fsdecode(raw))
+    except (OSError, TypeError, ValueError):
+        stat = None
+    if stat is not None:
+        name = ledgers.get((stat.st_dev, stat.st_ino))
+        if name is not None:
+            return name
+    candidate = _normalise(raw)
+    if candidate is None:
+        return None
+    name = os.path.basename(candidate).split(":", 1)[0].casefold()
+    if name not in {entry.casefold() for entry in scratch.APPEND_ONLY_FILENAMES}:
+        return None
+    if _relative_parts(candidate, scratch_text) is None:
+        return None
+    return name
+
+
+def assert_ledger_not_destroyed(raw: object, *, what: str) -> None:
+    """Refuse any mutating operation on an append-only ledger except an append.
+
+    An earlier drafting wired this into the ``open`` event alone, so the record
+    was destroyable seven other ways: ``os.ftruncate`` on an appending
+    descriptor, ``os.truncate`` by path, ``os.remove``, ``os.rename`` away,
+    ``os.replace`` over it, ``shutil.move`` over it, and a native writer.
+    """
+    name = _ledger_name_for(raw)
+    if name is None:
+        return
+    raise IsolationError(
+        f"{TOKEN}: {name!r} is an append-only governance record and may not be {what}. "
+        "It records what a run has seen, and "
+        "SEEN_IS_TERMINAL_AND_NO_RULING_CAN_RESTORE_UNSEEN_STATUS."
+    )
+
+
 def _check_append_only(raw: object, mode: object, flags: object) -> None:
     """A `BINDING_GOVERNANCE_RECORD` may be appended to and never rewritten.
 
@@ -472,32 +610,7 @@ def _check_append_only(raw: object, mode: object, flags: object) -> None:
         return
     if not _is_write_mode(mode, flags) or _is_append_only_mode(mode, flags):
         return
-    scratch_text = _root(scratch.scratch_root, "scratch root")
-
-    try:
-        stat = os.stat(os.fsdecode(raw))
-    except (OSError, TypeError, ValueError):
-        stat = None
-    if stat is not None:
-        name = _ledger_identities(scratch_text).get((stat.st_dev, stat.st_ino))
-        if name is not None:
-            raise IsolationError(
-                f"{TOKEN}: {name!r} is an append-only governance record and may not be "
-                "opened for truncation or overwrite. An append-only API binds only its "
-                "own callers."
-            )
-
-    candidate = _normalise(raw)
-    if candidate is None:
-        return
-    name = os.path.basename(candidate).split(":", 1)[0].casefold()
-    if name not in {entry.casefold() for entry in scratch.APPEND_ONLY_FILENAMES}:
-        return
-    if _relative_parts(candidate, scratch_text) is not None:
-        raise IsolationError(
-            f"{TOKEN}: {name!r} is an append-only governance record and may not be opened "
-            "for truncation or overwrite."
-        )
+    assert_ledger_not_destroyed(raw, what="opened for truncation or overwrite")
 
 
 def _check_open(args: tuple[Any, ...]) -> None:
@@ -528,6 +641,13 @@ def _check_open(args: tuple[Any, ...]) -> None:
             "Market data is reached through "
             "scripts.m15_track_a.read_route.read_historical, which requires an explicit "
             "authorisation grant, an admissible span and a prior seen-data declaration."
+        )
+    if role == "evidence":
+        where = "/".join(parts) if parts else candidate
+        raise IsolationError(
+            f"{TOKEN}: a Track A run may not read {where!r}. That tree holds **consumed "
+            "holdout** evidence, and exploratory design tuned against a figure from a "
+            "consumed holdout is the same leakage in a different costume."
         )
 
 
@@ -611,9 +731,11 @@ def _audit_hook(event: str, args: tuple[Any, ...]) -> None:
         elif event == "open":
             _check_open(args)
         elif event in _MUTATING_PATH_EVENTS:
+            verb = event.split(".")[-1]
             for index in range(min(_MUTATING_PATH_EVENTS[event], len(args))):
+                assert_ledger_not_destroyed(args[index], what=verb + "d")
                 if not isinstance(args[index], int):
-                    assert_write_allowed(args[index], what=event.split(".")[-1])
+                    assert_write_allowed(args[index], what=verb)
     except IsolationError:
         raise
     except Exception as exc:  # noqa: BLE001 - an internal failure must fail closed
@@ -647,6 +769,7 @@ class _Installed:
     patched: list[tuple[Any, str, Any]] = field(default_factory=list)
     engine_targets: list[tuple[Any, str, Any]] = field(default_factory=list)
     database: bool = False
+    native: bool = False
 
 
 _state: _Installed | None = None
@@ -734,6 +857,104 @@ def install_network_guard() -> None:
     state.network = True
 
 
+def install_native_reader_guard() -> None:
+    """Refuse the C-extension file entry points the audit hook cannot see.
+
+    This is the limb that exists because the hook's central claim has a limit.
+    ``pyarrow``'s file layer is C++: ``pa.OSFile``, ``pa.memory_map`` and
+    ``pq.read_table`` reach the filesystem without raising a single Python audit
+    event, and a re-verification used them to read ``data/`` and write into
+    ``docs/`` with every other guard installed.
+
+    Each target is replaced by a wrapper that runs the **same** classification
+    the hook would have run — so a native read of an unprotected file still
+    works, and a native read of ``data/`` refuses. Modules that are not
+    installed are skipped.
+
+    Its shape is a denylist and its coverage is bounded by
+    :data:`NATIVE_READER_TARGETS`. That is stated rather than hidden: a native
+    reader nobody listed is a hole, no in-process mechanism can find it, and
+    only something outside the process — a sandbox, a container, a filesystem
+    ACL — closes the class.
+    """
+    state = _ensure_state()
+    if state.native:
+        return
+    for module_name, attribute in NATIVE_READER_TARGETS:
+        try:
+            module = importlib.import_module(module_name)
+        except Exception:  # noqa: BLE001 - an absent or broken optional dependency
+            continue
+        original = getattr(module, attribute, None)
+        if original is None or not callable(original):
+            continue
+        state.patched.append((module, attribute, original))
+        setattr(module, attribute, _guarded_native(original, f"{module_name}.{attribute}"))
+    real_os_open = os.open
+
+    def guarded_os_open(path: Any, flags: int, mode: int = 0o777, *, dir_fd: Any = None) -> int:
+        if dir_fd is not None:
+            # CPython's ``open`` audit event carries ``(path, None, flags)`` and
+            # **not** ``dir_fd``, so the hook resolves a relative name against
+            # the cwd and reaches the wrong verdict. ``dir_fd`` is unavailable on
+            # Windows and available on the Linux CI runner, so this is guarded
+            # rather than assumed absent.
+            raise IsolationError(
+                f"{TOKEN}: a Track A run may not open {path!r} relative to a directory "
+                "descriptor. The audit event does not carry dir_fd, so the path cannot be "
+                "classified."
+            )
+        return real_os_open(path, flags, mode)
+
+    state.patched.append((os, "open", real_os_open))
+    os.open = guarded_os_open  # type: ignore[assignment]
+
+    state.native = True
+
+
+def _guarded_native(original: Any, label: str) -> Any:
+    """Wrap a native entry point in the classification the audit hook would do."""
+
+    def guarded(*args: Any, **kwargs: Any) -> Any:
+        target = args[0] if args else kwargs.get("path") or kwargs.get("source")
+        if target is not None and not isinstance(target, int):
+            mode = kwargs.get("mode")
+            if mode is None and len(args) > 1 and isinstance(args[1], str):
+                mode = args[1]
+            writing = isinstance(mode, str) and any(f in mode for f in ("w", "a", "x", "+"))
+            try:
+                if writing:
+                    assert_ledger_not_destroyed(target, what="written by a native writer")
+                    assert_write_allowed(target, what=f"write through {label}")
+                else:
+                    _refuse_native_read(target, label)
+            except IsolationError:
+                raise
+            except Exception:  # noqa: BLE001 - an unclassifiable argument is not a path
+                pass
+        return original(*args, **kwargs)
+
+    guarded.__name__ = getattr(original, "__name__", "guarded")
+    guarded.__doc__ = getattr(original, "__doc__", None)
+    return guarded
+
+
+def _refuse_native_read(target: Any, label: str) -> None:
+    if _read_window_depth():
+        return
+    candidate = _normalise(target)
+    if candidate is None:
+        return
+    role, parts = _classify(candidate)
+    if role in {"market_data", "evidence"}:
+        where = "/".join(parts) if parts else candidate
+        raise IsolationError(
+            f"{TOKEN}: a Track A run may not read {where!r} through {label}. That entry "
+            "point is a C extension and raises no Python audit event, so it is guarded "
+            "here by name rather than by the hook."
+        )
+
+
 def install_database_guard() -> None:
     """Refuse any SQLAlchemy engine that is not in-memory SQLite.
 
@@ -798,6 +1019,7 @@ def install_all() -> None:
     install_audit_hook()
     install_network_guard()
     install_database_guard()
+    install_native_reader_guard()
 
 
 def uninstall_all() -> None:
@@ -826,7 +1048,9 @@ def is_installed() -> bool:
 
     "Something was patched" is not the question a read route needs answered.
     """
-    return bool(_armed and _state is not None and _state.network and _state.database)
+    return bool(
+        _armed and _state is not None and _state.network and _state.database and _state.native
+    )
 
 
 def is_armed() -> bool:
@@ -851,24 +1075,41 @@ class gated_read_window:  # noqa: N801 - a context manager reads as a noun here
     owner is what makes an inherited copy inert.
     """
 
-    _token: contextvars.Token[_WindowOwner | None]
+    _tokens: list[contextvars.Token[_WindowOwner | None]]
+
+    def __init__(self) -> None:
+        # A list, not a single attribute: reusing one instance for a nested
+        # ``with`` made the outer ``__exit__`` reset an already-used Token,
+        # which raises — and left the window open for the rest of the process.
+        self._tokens = []
 
     def __enter__(self) -> gated_read_window:
         if not _armed:
             raise IsolationError(
                 f"{TOKEN}: the read window may not be opened while the guards are disarmed."
             )
-        self._token = _window.set(
-            _WindowOwner(
-                thread_id=threading.get_ident(),
-                task=_current_task_id(),
-                depth=_read_window_depth() + 1,
+        self._tokens.append(
+            _window.set(
+                _WindowOwner(
+                    thread_id=threading.get_ident(),
+                    task=_current_task_id(),
+                    depth=_read_window_depth() + 1,
+                )
             )
         )
         return self
 
     def __exit__(self, *_exc: object) -> None:
-        _window.reset(self._token)
+        # Never raises, and closes rather than leaks if the token cannot be
+        # reset: a window that stays open is a market-data read route.
+        if not self._tokens:
+            _window.set(None)
+            return
+        token = self._tokens.pop()
+        try:
+            _window.reset(token)
+        except (ValueError, RuntimeError):
+            _window.set(None)
 
 
 def is_read_window_open() -> bool:
@@ -880,12 +1121,15 @@ __all__ = [
     "FORBIDDEN_OPERATIONS",
     "TOKEN",
     "IsolationError",
+    "NATIVE_READER_TARGETS",
     "assert_operation_allowed",
     "assert_write_allowed",
     "gated_read_window",
     "install_all",
     "install_audit_hook",
+    "assert_ledger_not_destroyed",
     "install_database_guard",
+    "install_native_reader_guard",
     "install_network_guard",
     "is_armed",
     "is_installed",

@@ -87,6 +87,9 @@ _PERMITTED_FILE_OPENERS: Final[dict[str, str]] = {
     "scripts.m15_track_a.oos_budget": "its own append-only ledger and claim files",
     "scripts.m15_track_a.containment": "its own behavioural probes and the package sources "
     "it parses — and, like every other module, only where the audit hook permits",
+    "scripts.m15_track_a.isolation": "the enforcement layer itself: it names os.open in order "
+    "to guard dir_fd, and patches third-party entry points by reflection. Its own file "
+    "access is governed by the same audit hook as everything else",
 }
 
 #: Call names that open something.  Explicitly **not** a completeness claim —
@@ -362,6 +365,13 @@ def _terminal_raise_is_not_implemented(body: list[ast.stmt]) -> bool:
 #: global, with no ``return`` and a terminal ``raise NotImplementedError``, and
 #: every check passed.  Any call that is not one of the declared gates is a
 #: finding, whatever it is called.
+#: Names that let a caller build any other name at runtime.  Their presence in
+#: the read route is a finding on its own: a reader assembled from
+#: ``getattr(builtins, "op" + "en")`` has no call name to compare.
+_INDIRECTION_NAMES: Final[frozenset[str]] = frozenset(
+    {"getattr", "__import__", "eval", "exec", "vars", "globals", "locals", "__builtins__"}
+)
+
 _PERMITTED_READ_ROUTE_CALLS: Final[frozenset[str]] = frozenset(
     {
         "is_installed",
@@ -415,18 +425,25 @@ def _check_read_body_is_absent() -> CheckResult:
                     "read_historical returns or yields a value — it has a body, and this "
                     "audit no longer establishes that nothing is read",
                 )
-            unexpected = sorted(
-                {
-                    name
-                    for child in ast.walk(node)
-                    if isinstance(child, ast.Call)
-                    for name in [
-                        getattr(child.func, "id", None) or getattr(child.func, "attr", None)
-                    ]
-                    if name is not None and name not in _PERMITTED_READ_ROUTE_CALLS
-                }
-            )
+            unexpected: set[str] = set()
+            for child in ast.walk(node):
+                if isinstance(child, ast.Call):
+                    func = child.func
+                    if not isinstance(func, ast.Name | ast.Attribute):
+                        # ``_T["slurp"](path)`` — the callee is a Subscript, so
+                        # there is no name to compare and an earlier drafting
+                        # simply skipped it. A call this check cannot name is a
+                        # finding, not an exemption.
+                        unexpected.add(f"<{type(func).__name__} callee at line {child.lineno}>")
+                        continue
+                    name = getattr(func, "id", None) or getattr(func, "attr", None)
+                    if name is None or name not in _PERMITTED_READ_ROUTE_CALLS:
+                        unexpected.add(str(name))
+                elif isinstance(child, ast.Name) and child.id in _INDIRECTION_NAMES:
+                    # A reader assembled at runtime never appears as a call name.
+                    unexpected.add(f"{child.id} (indirection)")
             if unexpected:
+                unexpected = sorted(unexpected)
                 return CheckResult(  # pragma: no cover - true once a body is supplied
                     "read_body_absent",
                     False,
@@ -475,8 +492,19 @@ def _alias_findings(module_name: str, tree: ast.AST) -> list[str]:
             direct = getattr(func, "id", None) or getattr(func, "attr", None)
             if direct == "getattr":
                 for argument in node.args[1:2]:
-                    if isinstance(argument, ast.Constant) and argument.value in _READER_NAMES:
-                        findings.append(f"{module_name}:{node.lineno} getattr({argument.value!r})")
+                    if isinstance(argument, ast.Constant):
+                        if argument.value in _READER_NAMES:
+                            findings.append(
+                                f"{module_name}:{node.lineno} getattr({argument.value!r})"
+                            )
+                    else:
+                        # ``getattr(builtins, "op" + "en")`` — the name is not in
+                        # the source, so no name-based sweep can see it.
+                        findings.append(
+                            f"{module_name}:{node.lineno} getattr() with a computed name"
+                        )
+            elif direct in _INDIRECTION_NAMES:
+                findings.append(f"{module_name}:{node.lineno} {direct}()")
             continue
         if isinstance(node, ast.ImportFrom):
             findings.extend(
@@ -593,6 +621,29 @@ def _check_derivation_route() -> CheckResult:
     )
 
 
+#: The behavioural probes, in order.  Each arms the guards and attempts the
+#: forbidden thing.  ``broker_live_demo`` is deliberately **not** here: it
+#: iterates ``FORBIDDEN_OPERATIONS`` and calls ``assert_operation_allowed``,
+#: which raises iff the name is in that same dict — it cannot fail and it
+#: attempts nothing, so calling it a probe overstated it.
+BEHAVIOURAL_CHECKS: Final[tuple[str, ...]] = (
+    "write_containment_enforced",
+    "market_data_read_refused",
+    "network",
+    "subprocess",
+    "database",
+    "read_route_gated",
+)
+
+SOURCE_CHECKS: Final[tuple[str, ...]] = (
+    "broker_live_demo",
+    "read_body_absent",
+    "single_read_route",
+    "authorization_not_ambient",
+    "write_root",
+    "derivation_route",
+)
+
 CHECKS: Final[tuple[Any, ...]] = (
     _check_write_containment_enforced,
     _check_market_data_read_refused,
@@ -656,7 +707,9 @@ def audit_report_path() -> Path:
 
 
 __all__ = [
+    "BEHAVIOURAL_CHECKS",
     "CHECKS",
+    "SOURCE_CHECKS",
     "DECLARED_DERIVATION_ROUTE_MODULE",
     "DECLARED_READ_ROUTE_MODULE",
     "STATUS_BREACHED",

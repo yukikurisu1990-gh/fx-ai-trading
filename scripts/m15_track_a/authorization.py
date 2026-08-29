@@ -287,11 +287,12 @@ def require_authorization(
       re-checked here, against the same rules.
     * **The approved head is compared, not merely shaped.** A 40-hex string that
       is never equal to anything is decoration. The run's ``identity.code_sha``
-      must equal the grant's ``approved_head_sha`` — CLAUDE.md's "any head
-      change voids the approval", in executable form. ``identity`` is
-      **required**: it defaulted to ``None`` and skipped the check silently,
-      which is fail-open on the one thing an approval names that a machine can
-      verify.
+      must equal the grant's ``approved_head_sha``. ``identity`` is
+      **required**: it defaulted to ``None`` and skipped the check silently.
+      Note the limit — ``code_sha`` is **caller-asserted** and is never derived
+      from the running tree, so this enforces *consistency* between the grant
+      and the run's own claim, not CLAUDE.md's "any head change voids the
+      approval". Establishing the latter is the reviewer's job at the gate.
 
     What it still cannot do: stop code in the same process from constructing a
     wider grant than the human approved. Nothing in-process can, because such

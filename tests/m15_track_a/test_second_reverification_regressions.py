@@ -117,7 +117,19 @@ def test_a_junction_into_the_data_tree_refuses(tmp_path: Path) -> None:
     try:
         link.symlink_to(REPO / "data", target_is_directory=True)
     except (OSError, NotImplementedError):
-        pytest.skip("link creation is not permitted on this host")
+        # A symlink needs privilege on Windows; a **junction** does not, and a
+        # junction is the form an attacker would actually use. Falling back
+        # means the defence is exercised somewhere rather than always skipped.
+        if sys.platform != "win32":
+            pytest.skip("link creation is not permitted on this host")
+        made = subprocess.run(  # noqa: S603
+            ["cmd", "/c", "mklink", "/J", str(link), str(REPO / "data")],
+            capture_output=True,
+            timeout=60,
+            check=False,
+        )
+        if made.returncode != 0 or not link.exists():
+            pytest.skip("neither a symlink nor a junction could be created on this host")
     isolation.install_all()
     try:
         with pytest.raises(isolation.IsolationError), open(link / "__nx__.jsonl", "rb"):  # noqa: PTH123

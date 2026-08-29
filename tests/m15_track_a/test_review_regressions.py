@@ -123,6 +123,8 @@ def test_is_installed_requires_every_limb() -> None:
         assert not isolation.is_installed(), "a network-only install is not an installation"
         isolation.install_audit_hook()
         isolation.install_database_guard()
+        assert not isolation.is_installed(), "the native-reader limb is not up yet"
+        isolation.install_native_reader_guard()
         assert isolation.is_installed()
     finally:
         isolation.uninstall_all()

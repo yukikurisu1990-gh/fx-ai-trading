@@ -150,9 +150,33 @@ installed on the primitives, not at call sites:
 | External DB | `create_engine` patched at **three** module targets; in-memory SQLite only |
 | Broker / live / demo / order submit / production deploy / external storage | refused by name, with the boundary quoted in the error |
 
-Local file reads are **not** blocked: Track A exists to perform one, and which
-files it may touch is `read_route`'s and `scratch`'s job, not the socket
-guard's.
+Local file reads are **not** blocked wholesale: Track A exists to perform one.
+Which files it may touch is decided by the classifier, which uses `realpath`
+**and** filesystem identity — on this machine `data/`, `FX-AI-~1\data`,
+`\\localhost\C$\…\data`, `\\.\C:\…\data`, `DATA/` and a junction all name the
+same directory and report the same `(st_dev, st_ino)`, and a string test caught
+only two of the six.
+
+### The guarantee is bounded, and the bound is named
+
+`sys.addaudithook` is route-independent **for anything that goes through
+CPython's own I/O**. It is not route-independent for a third-party **C
+extension** that calls the OS directly: `pyarrow.OSFile` and
+`pyarrow.memory_map` read `data/` and wrote into `docs/` with every guard
+installed, because pyarrow's file layer is C++ and raises no Python audit
+event. This repository already depends on it —
+`scripts/evaluate_ml_baseline.py` calls `pq.read_table`, and the feature store
+is parquet.
+
+**No in-process mechanism closes that class.** A C extension calling
+`CreateFileW` or `open(2)` is below anything Python can hook; the complete
+answers are all outside the process — a sandbox, a container, a filesystem ACL.
+What `isolation.NATIVE_READER_TARGETS` does instead is name the native readers
+this repository depends on and refuse them at their Python entry points. It is
+a **denylist**, its coverage is exactly that list, and the containment audit
+**cannot detect a native reader nobody listed**. A reviewer should read the
+apparatus as "an accidental crossing fails loudly, and a deliberate one has to
+appear in a diff" — not as a sandbox.
 
 The same two residual routes — UDP and DNS — were also open in the **test
 session's** guard (`tests/conftest.py`), recorded by the FR-19 review and left
@@ -337,8 +361,8 @@ observation is recorded as an input; taking it is a human + ChatGPT act.
 Track A variant. It runs **twelve** checks — all twelve are named below, in two
 groups.
 
-**Seven behavioural probes — these carry the verdict.** Each arms the guards
-and then actually attempts the forbidden thing, requiring a refusal:
+**Six behavioural probes — these carry the verdict.** Each arms the guards and
+then actually attempts the forbidden thing, requiring a refusal:
 
 | Probe | Attempts |
 | --- | --- |
@@ -347,24 +371,35 @@ and then actually attempts the forbidden thing, requiring a refusal:
 | `network` | a non-loopback connect and a non-loopback name lookup |
 | `subprocess` | launching a process |
 | `database` | a remote SQLAlchemy engine |
-| `broker_live_demo` | each of the six named forbidden operations |
 | `read_route_gated` | the declared route with no grant |
 
 Every probe is chosen so a *failure of the guard* is still harmless: the read
 probe names a file that does not exist, so an absent hook yields
 `FileNotFoundError`, never a real read.
 
-**Five source checks — advisory, and labelled so.** `read_body_absent`,
-`single_read_route`, `authorization_not_ambient`, `write_root`,
-`derivation_route`. The module roster is **enumerated from the directory**, not
+**Six source checks — advisory, and labelled so.** `broker_live_demo`,
+`read_body_absent`, `single_read_route`, `authorization_not_ambient`,
+`write_root`, `derivation_route`.
+
+`broker_live_demo` sat in the probe table for two rounds and does not belong
+there: it iterates `FORBIDDEN_OPERATIONS` and calls `assert_operation_allowed`,
+which raises **iff** the name is in that same dict. It cannot fail and it
+attempts nothing. The split is now pinned in code as
+`containment.BEHAVIOURAL_CHECKS` / `SOURCE_CHECKS`, and a test compares both
+against this section, so the document, the code and the PR body cannot drift
+apart again — the previous drift test only checked that all twelve names
+appeared somewhere. The module roster is **enumerated from the directory**, not
 hand-written, so a new module is scanned by existing.
 
 `read_body_absent` reads the route's own AST. It is **not** a behavioural probe
 — an earlier drafting's docstring claimed it "drives the route to the end of its
-gate sequence", which it never did — and it requires three things: no `return`
+gate sequence", which it never did — and it requires four things: no `return`
 and no `yield` anywhere in `read_historical`; its **last** statement is
-`raise NotImplementedError(...)`; and **every call it makes is one of the
-declared gates**. The third is the load-bearing one. The first two alone were
+`raise NotImplementedError(...)`; **every call it makes is one of the declared
+gates**; and **no call whose callee has no name**. The last was added because
+`_T["slurp"](path)` has a `Subscript` callee, so there was nothing to compare
+and the check silently skipped it — a reader assembled from
+`getattr(builtins, "op" + "en")` then passed all three earlier conditions. The first two alone were
 defeated end to end: a body that read a file with `numpy.memmap` and stored the
 bytes in a module global has no `return`, ends in the raise, and used a name no
 reader list contained. An allowlist over the calls does not depend on having
@@ -538,7 +573,53 @@ because the read path used `abspath` while only the write path used `realpath`.
 | The alias sweep caught one binding form of seven | every *reference* to a reader name, plus `getattr` with a constant |
 | `identity` defaulted to `None`, silently skipping the head-SHA comparison | required |
 
-**Three rounds, and each round's fix created the next round's blockers.** That
+### 13.3 The third re-verification — and the one finding that changed the claim
+
+A third fresh context audited the round-three head. It found two more blockers
+created by that round, and one that goes to the apparatus's central claim.
+
+**The claim itself was too strong.** `sys.addaudithook` is route-independent
+for CPython's own I/O and **not** for a third-party C extension.
+`pyarrow.OSFile` and `pyarrow.memory_map` read `data/` and wrote into `docs/`
+with every guard installed, and this repository already calls `pq.read_table`.
+No in-process mechanism closes that class. The response is in two parts, and
+the second matters as much as the first: the native readers this repository
+depends on are named in `isolation.NATIVE_READER_TARGETS` and refused at their
+Python entry points, **and §6 now states the bound** — the guarantee is exactly
+that list, the audit cannot detect a native reader nobody listed, and only
+something outside the process closes the class.
+
+**Created by the round-three fix:**
+
+| Defect | Fix |
+| --- | --- |
+| The cache exemption ran **before** the market-data test, and round three had routed reads through the classifier — so `data/__pycache__/candles.jsonl` was *refused* at the previous head and *readable* at the next. `.git/__pycache__/…` was writable for the same reason, despite `.git` having been taken off the cache list | protected trees are tested first; the exemption requires the **parent** directory to be a cache; and a set of roots no exemption reaches |
+| `_inside_protected` returned `None` past 64 levels, and `None` meant "outside, therefore permitted" — a deep path spelled through the administrative share read real bytes | the walk fails **closed**, at 256 |
+
+**Also closed:** `_identity_map`'s `lru_cache` went stale when an archive
+directory appeared after the first call — the enumeration it cached was never
+needed, and the walk now returns the components below the repository root so
+the ordinary name tests do the work; the append-only ledger was destroyable by
+`os.ftruncate` on an appending descriptor, `os.truncate`, `unlink`, `rename`,
+`replace` and a native writer, because the check was wired into the `open`
+event alone; a reused `gated_read_window` instance made `__exit__` reset an
+already-used `Token`, which **raised** and left the window open for the rest of
+the process; `os.open(..., dir_fd=…)` bypasses the classifier because the audit
+event does not carry `dir_fd`, and CI is `ubuntu-latest` where `dir_fd` exists;
+consumed-holdout evidence under `artifacts/ml_step4/` and
+`artifacts/gate_p1_pr_b/` was readable, which is the same leakage in a different
+costume; and the ledger's own bytes differed by platform, because `os.open`
+defaults to text mode on Windows and turned every `\n` into CRLF.
+
+**Left open, and named rather than fixed:** a **hardlink** pre-seeded into the
+working tree defeats path-based containment in both directions, and cannot be
+detected by any path test — the ledger's `(st_dev, st_ino)` check catches it
+there, but a general one would need to enumerate the protected trees. It
+requires an attacker who can already write the working tree, which is a
+different threat model from the one this gate addresses, and it is recorded
+here rather than left implicit.
+
+**Four rounds, and each round's fix created the next round's blockers.** That
 is the strongest single argument in this document for why an execution gate
 needs independent re-verification rather than a green suite, and it is recorded
 here rather than in a commit message.

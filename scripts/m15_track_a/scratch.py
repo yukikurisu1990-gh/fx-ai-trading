@@ -190,10 +190,15 @@ def append_line(path: Path, line: str) -> None:
     resolved.parent.mkdir(parents=True, exist_ok=True)
     payload = (line + "\n").encode("utf-8")
 
+    nonce = f"{os.getpid()}:{id(payload)}".encode()
     deadline = time.monotonic() + APPEND_LOCK_TIMEOUT_SECONDS
     while True:
         try:
-            os.close(os.open(lock, os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o644))
+            handle = os.open(lock, os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o644)
+            try:
+                os.write(handle, nonce)
+            finally:
+                os.close(handle)
             break
         # ``FileExistsError`` is another writer holding the lock. ``PermissionError``
         # is the same thing one moment later: Windows reports ERROR_ACCESS_DENIED,
@@ -211,14 +216,27 @@ def append_line(path: Path, line: str) -> None:
             time.sleep(_APPEND_LOCK_POLL_SECONDS)
 
     try:
-        fd = os.open(resolved, os.O_WRONLY | os.O_CREAT | os.O_APPEND, 0o644)
+        # ``O_BINARY`` matters: on Windows ``os.open`` defaults to text mode, so
+        # the line terminator this function writes reached the file as CRLF and
+        # the ledger's bytes differed by platform. A BINDING_GOVERNANCE_RECORD
+        # that may later be hashed has to be byte-identical wherever it was
+        # written.
+        fd = os.open(
+            resolved,
+            os.O_WRONLY | os.O_CREAT | os.O_APPEND | getattr(os, "O_BINARY", 0),
+            0o644,
+        )
         try:
             os.write(fd, payload)
         finally:
             os.close(fd)
     finally:
-        with contextlib.suppress(OSError):  # the lock is ours and inside the root
-            os.unlink(lock)
+        # Unlink only **our** lock. A holder that stalled past the staleness
+        # threshold would otherwise delete the lock a second writer had since
+        # taken, and a third could then enter alongside it.
+        with contextlib.suppress(OSError):
+            if lock.read_bytes() == nonce:
+                os.unlink(lock)
 
 
 def assert_writable(path: Any) -> Path:
