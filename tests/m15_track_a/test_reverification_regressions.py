@@ -27,6 +27,14 @@ from scripts.m15_track_a import authorization, containment, identity, isolation,
 
 REPO = scratch.repo_root()
 
+#: Whether this filesystem ignores case. The guard case-folds because NTFS and
+#: APFS do; on a case-sensitive filesystem — the CI runner is Linux — ``DATA/``
+#: is a **different** directory that holds nothing, so refusing it is neither
+#: required nor possible. The property is one of the filesystem, not of the
+#: code, and the test says so rather than asserting one platform's behaviour
+#: everywhere.
+CASE_INSENSITIVE_FS = (REPO / "docs").is_dir() and (REPO / "DOCS").is_dir()
+
 
 @pytest.fixture
 def scratch_at(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
@@ -114,10 +122,13 @@ def test_every_spelling_of_the_market_data_trees_refuses(guards: object, relativ
 
     The committed 10-year archive was readable from anywhere in the process.
     """
+    if relative[0].isupper() and not CASE_INSENSITIVE_FS:
+        pytest.skip("this filesystem is case-sensitive; the spelling names another directory")
     with pytest.raises(isolation.IsolationError), open(REPO / relative, "rb"):  # noqa: PTH123
         pass
 
 
+@pytest.mark.skipif(sys.platform != "win32", reason="a Win32 namespace prefix")
 def test_an_extended_unc_spelling_refuses(guards: object) -> None:
     """``Path.resolve`` does not canonicalise ``\\\\?\\``; the guard strips it first."""
     target = "\\\\?\\" + str(REPO / "data" / "__nope__.jsonl")

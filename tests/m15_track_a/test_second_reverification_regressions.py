@@ -26,6 +26,17 @@ REPO = scratch.repo_root()
 UNC = r"\\localhost\C$" + str(REPO)[2:]
 SHORT_REPO = r"C:\Users\yukik\FX-AI-~1"
 
+#: Every spelling below is a Win32 namespace form — an 8.3 short name, an
+#: administrative share, the device namespace. On a POSIX filesystem they are
+#: ordinary relative names that address nothing, so the property under test does
+#: not exist there. The CI runner is Linux.
+WINDOWS_ONLY = pytest.mark.skipif(sys.platform != "win32", reason="Win32 path namespaces")
+
+#: Whether this filesystem ignores case (NTFS and APFS do; the CI runner's does
+#: not). A case variant of a ledger name is the *same file* only where this
+#: holds.
+CASE_INSENSITIVE_FS = (REPO / "docs").is_dir() and (REPO / "DOCS").is_dir()
+
 
 @pytest.fixture
 def guards() -> object:
@@ -60,6 +71,7 @@ def scratch_at(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
         ("device namespace", r"\\.\\" + str(REPO) + r"\data\__nx__.jsonl"),
     ],
 )
+@WINDOWS_ONLY
 def test_every_spelling_of_a_market_data_read_refuses(
     guards: object, label: str, path: str
 ) -> None:
@@ -84,6 +96,7 @@ def test_every_spelling_of_a_market_data_read_refuses(
         ("8.3 open r+", lambda: open(SHORT_REPO + r"\docs\__nx__.md", "r+")),  # noqa: PTH123, SIM115
     ],
 )
+@WINDOWS_ONLY
 def test_every_spelling_of_a_repository_write_refuses(
     guards: object, label: str, call: object
 ) -> None:
@@ -166,6 +179,7 @@ def test_a_cold_bytecode_cache_does_not_break_a_guarded_run(tmp_path: Path) -> N
     ["", ".", " ", "::$DATA"],
     ids=["plain", "trailing-dot", "trailing-space", "ntfs-stream"],
 )
+@WINDOWS_ONLY
 def test_a_ledger_cannot_be_truncated_by_a_win32_name_variant(
     guards: object, scratch_at: Path, suffix: str
 ) -> None:
@@ -182,6 +196,9 @@ def test_a_ledger_cannot_be_truncated_by_a_win32_name_variant(
 def test_a_ledger_cannot_be_truncated_by_a_case_variant(
     guards: object, scratch_at: Path, name: str
 ) -> None:
+    """A case variant is the same file only on a case-insensitive filesystem."""
+    if not CASE_INSENSITIVE_FS:
+        pytest.skip("this filesystem is case-sensitive; the variant names another file")
     path = scratch_at / "exploratory_seen_ledger.jsonl"
     scratch.append_line(path, '{"probe": 1}')
     before = path.read_bytes()
@@ -190,6 +207,7 @@ def test_a_ledger_cannot_be_truncated_by_a_case_variant(
     assert path.read_bytes() == before
 
 
+@WINDOWS_ONLY
 def test_a_ledger_cannot_be_truncated_through_os_open(guards: object, scratch_at: Path) -> None:
     path = scratch_at / "exploratory_seen_ledger.jsonl"
     scratch.append_line(path, '{"probe": 1}')
