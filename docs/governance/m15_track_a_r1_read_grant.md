@@ -2,6 +2,15 @@
 
 **Status:** `TRACK_A_R1_HISTORICAL_DEVELOPMENT_READ_EXPLICITLY_AUTHORIZED`
 
+**Approval identifier: PR #454**, merged at the head that carries this file.
+§8.12.13 **C-9** refuses a ruling "recorded here as authority — with no PR
+number, no approved head SHA and no date" and a review role was right that the
+first drafting of this document was exactly that shape: its `approver_record`
+pointed at itself. The identifier is the PR, the date is below, and the approved
+head SHA is in §1. **Before that PR merges this record is not citable
+authority**; the merge is what confers it, and no edit to this file is needed
+when it happens.
+
 **Always-binding:** `NO_REAL_DATA_READ_PERFORMED` · `NO_EXECUTION_PERFORMED` ·
 `PRODUCTION_READINESS_NOT_CLAIMED` ·
 `FORWARD_EPOCH_ADOPTION_BLOCKED_INSUFFICIENT_SAMPLE_ADOPTION_WAITS`
@@ -30,14 +39,34 @@ Recorded as an explicit human + ChatGPT decision, 2026-08-31.
 | **timeframe** | `M1` |
 | **approved_head_sha** | `6b75aab0161fe7caf74b4260feec8d43cbfd618e` |
 | **approved_implementation_fingerprint** | `497e187bb9fcfbc51a348d59c486bccf8d0e7c27c6fbf52cc28908a8073a7018` |
-| **approver_record** | this document, `docs/governance/m15_track_a_r1_read_grant.md` §1 |
+| **approver_record** | `PR #454 · docs/governance/m15_track_a_r1_read_grant.md §1 (2026-08-31)` |
 
 Both dates are **inclusive UTC calendar dates**: 248 dates, `2025-04-25`
 through `2025-12-28`.
 
-The twenty pairs, from `scripts/m15_gate3a/pair_authority.py` — the grant names
-the universe, not a copy of it, and the constructor normalises through that
-authority:
+The twenty pairs, from `scripts/m15_gate3a/pair_authority.py`, listed in full
+because a governance record a reader has to run code to understand is not a
+record. A test pins this list against `PAIRS_20`.
+
+**What the constructor does with them, stated accurately** — a review role found
+the first drafting claiming "the constructor normalises through that authority",
+which is false and reproducible in one call:
+
+```python
+ReadGrant(..., pairs=("eur/usd", "XAU_USD", "not a pair at all"), ...)  # constructs
+```
+
+`ReadGrant.__post_init__` requires each pair to be a non-empty `str` and rejects
+duplicates; it does **not** call `canonical_pair`. Normalisation happens later
+and in two places: `grant_covers` compares pair sets **for equality**, so a
+grant spelled non-canonically covers no canonical request (measured: the grant
+above returns `False` for `("EUR_USD",)`), and `read_route._pairs_to_read`
+canonicalises through `pair_authority` before any path is built. Both are
+fail-closed, so the mis-statement did not widen anything — but a governance
+record describing a mechanism that does not exist is worth correcting rather
+than leaving for the next reader to trip over.
+
+The list, canonical and complete:
 
 ```
 AUD_CAD  AUD_JPY  AUD_NZD  AUD_USD  CHF_JPY
@@ -64,7 +93,7 @@ GRANT = ReadGrant(
     approved_implementation_fingerprint=(
         "497e187bb9fcfbc51a348d59c486bccf8d0e7c27c6fbf52cc28908a8073a7018"
     ),
-    approver_record="docs/governance/m15_track_a_r1_read_grant.md §1 (2026-08-31)",
+    approver_record="PR #454 · docs/governance/m15_track_a_r1_read_grant.md §1 (2026-08-31)",
 )
 ```
 
@@ -97,7 +126,7 @@ Each of these is refused by a named mechanism, not only by this list.
 | **`EXPLORATORY_OOS_SLICE`**, `2025-12-29 … 2026-02-28` | the grant's own span; `ReadGrant.__post_init__` refuses a `track_a_historical_read` grant naming a slice date at all; `read_route.assert_development_only` on the touched interval; and again on the computed window |
 | the **dead window**, `2026-03-01 … 2026-04-24` | `assert_span_admissible` via `no_overlap`; a row-level refusal |
 | the **forward epoch**, `2026-04-25` onward | `assert_span_admissible`; a row-level `FORWARD_FLOOR` refusal |
-| any date outside `2025-04-25 … 2025-12-28`, **warm-up included** | the grant ∩ request intersection; the ledger's write-ahead declaration |
+| any date outside `2025-04-25 … 2025-12-28`, **warm-up included** | `grant_covers`, inside `require_authorization` — measured, and this is a correction: an earlier drafting credited the grant ∩ request intersection, which **narrows** rather than refuses. Below `DESIGN_START` it is `assert_span_admissible` |
 | any pair outside `PAIRS_20` | `pair_authority`, before a path is built |
 | any timeframe but `M1` | the route refuses a grant naming another, including `M15` |
 | the **M1 → M15 derivation** | `track_a_m15_research_derivation` is a separate operation and a separate grant |
@@ -108,7 +137,21 @@ Each of these is refused by a named mechanism, not only by this list.
 
 **A warm-up extension is not an exemption.** A bar read only to prime an
 indicator is read. A request whose warm-up reaches before `2025-04-25` or whose
-span reaches past `2025-12-28` is **refused, not trimmed**.
+span reaches past `2025-12-28` is **refused, not trimmed**. Measured, not
+assumed: eleven boundary cases were driven through the route against this exact
+grant, and the only two that returned rows were the authorised corpus and a
+single authorised day.
+
+**Two precision notes**, neither of which changes the scope:
+
+- the route's end-of-day instant is `23:59:59`, so the final microsecond of
+  `2025-12-28` is not read. M1 bars sit on minute boundaries, so nothing is
+  lost; it is an **under**-read, and it is recorded so "248 inclusive dates" is
+  not read as a claim about sub-second edges;
+- the grant carries **no expiry and no single-use limit**. It stays valid while
+  the fingerprint matches, at any head. That is deliberate — seen-data is spent
+  at the first read and a second read of the same interval costs nothing further
+  — but it is stated rather than left to be inferred.
 
 ## 4. Seen-data — what this costs, and when
 
@@ -168,6 +211,22 @@ running tree at check time —
 
   It is the weaker of the two: identical implementation bytes read identically
   wherever they sit in the graph.
+
+## 5a. One asymmetry, recorded and deliberately not fixed in this commit
+
+`_assert_operation_span` bounds a `track_a_historical_read` grant from **above**
+— it may not name a slice date — and does not bound it from **below**: a grant
+starting `2020-01-01` constructs. A review role measured it.
+
+It does not widen this grant, which starts exactly at `DESIGN_START`, and a read
+under such a grant is refused by `assert_span_admissible` before any file is
+opened. **It is left alone here on purpose.** Closing it means editing
+`scripts/m15_track_a/authorization.py`, which is on the fingerprint surface;
+that would change `approved_implementation_fingerprint`, which would invalidate
+the grant this commit exists to record, which would make this commit no longer
+authorization-only. The mechanism working as designed is precisely why the fix
+does not belong in this commit. Recorded as
+`HISTORICAL_READ_GRANT_HAS_NO_LOWER_SPAN_BOUND_DEFERRED_TO_A_WORK_PR`.
 
 ## 6. What remains before a read
 

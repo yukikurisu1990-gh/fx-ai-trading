@@ -34,6 +34,25 @@ GRANT_DOCUMENT = (
 )
 
 
+#: Every field the §1 table must carry.  Checked as a **set**, because the
+#: failure this guards against is silent: the first drafting's pattern excluded
+#: backticks from the value, so the two rows whose values contain one — `pairs`
+#: and `approver_record` — were dropped, and no assertion noticed because no
+#: assertion read them. Two review roles found it independently.
+REQUIRED_FIELDS = frozenset(
+    {
+        "operation",
+        "span_start_utc",
+        "span_end_utc",
+        "pairs",
+        "timeframe",
+        "approved_head_sha",
+        "approved_implementation_fingerprint",
+        "approver_record",
+    }
+)
+
+
 def _recorded() -> dict[str, str]:
     """The §1 table, parsed. Deliberately not imported from a Python constant.
 
@@ -42,8 +61,16 @@ def _recorded() -> dict[str, str]:
     act of recording the grant would then change the value the grant records.
     """
     text = GRANT_DOCUMENT.read_text(encoding="utf-8")
-    rows = dict(re.findall(r"^\| \*\*(\w+)\*\* \| `?([^`|]+?)`? \|$", text, re.MULTILINE))
-    assert rows, "the grant document's §1 table did not parse"
+    rows: dict[str, str] = {}
+    for name, value in re.findall(r"^\| \*\*(\w+)\*\* \| (.+?) \|$", text, re.MULTILINE):
+        assert name not in rows, f"the §1 table names {name} twice"
+        rows[name] = value.strip().strip("`")
+    missing = REQUIRED_FIELDS - set(rows)
+    assert not missing, (
+        f"the grant document's §1 table did not yield {sorted(missing)}. Either a field was "
+        "removed from the record or the table's formatting changed; both need a human to "
+        "look, which is why this refuses rather than testing whatever it did parse."
+    )
     return rows
 
 
@@ -57,6 +84,47 @@ def test_the_recorded_fingerprint_still_matches_the_implementation() -> None:
         "changed after the grant was approved, so the grant no longer covers what "
         "would run. Do not edit the recorded value: the grant needs re-approval."
     )
+
+
+def test_the_documents_pair_list_is_the_frozen_universe() -> None:
+    """The twenty spellings a reader sees, against the authority.
+
+    Unpinned until two review roles said so: the tests built their grants from
+    `tuple(sorted(PAIRS_20))`, so the block a human actually reads could have
+    drifted from the universe while the suite stayed green.
+    """
+    text = GRANT_DOCUMENT.read_text(encoding="utf-8")
+    block = re.search(r"The list, canonical and complete:\n\n```\n(.+?)```", text, re.S)
+    assert block, "the canonical pair block is not where the parser expects it"
+    listed = block.group(1).split()
+    assert len(listed) == len(set(listed)) == 20
+    assert set(listed) == set(PAIRS_20)
+
+
+def test_the_documents_grant_code_block_matches_the_table() -> None:
+    """The copy-pasteable block is what someone will actually transcribe."""
+    text = GRANT_DOCUMENT.read_text(encoding="utf-8")
+    block = re.search(r"GRANT = ReadGrant\((.+?)\n\)", text, re.S)
+    assert block, "the §1 grant code block is not where the parser expects it"
+    body = block.group(1)
+    recorded = _recorded()
+    for field in ("span_start_utc", "span_end_utc", "timeframe", "approved_head_sha"):
+        assert f'{field}="{recorded[field]}"' in body, field
+    assert recorded["approved_implementation_fingerprint"] in body
+    assert recorded["approver_record"] in body
+    assert "OPERATION_HISTORICAL_READ" in body
+    assert "tuple(sorted(PAIRS_20))" in body
+
+
+def test_the_recorded_approver_record_names_an_external_identifier() -> None:
+    """C-9: a ruling with no PR number is not citable authority.
+
+    The first drafting's `approver_record` pointed at the document containing
+    it. A review role cited C-9 by name.
+    """
+    record = _recorded()["approver_record"]
+    assert re.search(r"PR #\d+", record), record
+    assert re.search(r"\d{4}-\d{2}-\d{2}", record), record
 
 
 def test_the_recorded_scope_is_the_ruled_scope() -> None:
@@ -155,6 +223,10 @@ def test_the_grant_document_is_outside_the_fingerprint_surface() -> None:
     grant is a document, so the commit that records it changes no covered byte.
     """
     surface = {path.resolve() for path in containment.implementation_surface()}
+    # Non-empty first: ``all()`` over an empty set is True, so without this the
+    # two assertions below would pass on a surface that had collapsed to
+    # nothing — which is exactly how an earlier defect in this package hid.
+    assert len(surface) > 12, len(surface)
     assert GRANT_DOCUMENT.resolve() not in surface
     assert all(path.suffix == ".py" for path in surface)
 
