@@ -59,18 +59,52 @@ next section enforceable rather than merely stated.
 
 | Element | Value | Authority |
 | --- | --- | --- |
-| **operation** | `track_a_historical_read` | R1 reads; it does not derive. The derivation is a **separate** grant under `track_a_m15_research_derivation` |
+| **operation** | `track_a_historical_read` | The operation R1 performs on this route is a read of the **M1 source**. Turning those bars into M15 is a different closed operation with its own grant (`track_a_m15_research_derivation`) — not because R1 has no derivation in it, but because the two are separately authorised |
 | **pairs** | the frozen **`PAIRS_20`** universe, all twenty | `scripts/m15_gate3a/pair_authority.py`; `aggregation.py` "fails closed outside the frozen PAIRS_20 universe" |
 | **timeframe** | **`M1`** | R1 reads the source bars. The committed 365d_BA epoch is M1 bid/ask; M15 does not exist until the derivation runs. `read_route.SOURCE_DESCRIPTION` names "the committed 365d_BA M1 bid/ask files" |
-| **approved head SHA** | **`37edbb0…`** (full 40 hex), the merged master | `require_authorization` compares it to `identity.code_sha` |
+| **approved head SHA** | ⛔ **NOT DETERMINED** | see §4a |
 | **span start** | **2025-04-25** | `no_overlap.DESIGN_START`; prereg §3.1 "Design (exploratory) 2025-04-25 → 2026-02-28" |
 | **excluded — dead window** | 2026-03-01 → 2026-04-24 | `no_overlap.DEAD_START`/`DEAD_END`; the consumed M1 holdout, quarantined at every timeframe for every role |
 | **excluded — forward epoch** | 2026-04-25 onward | `no_overlap.FORWARD_FLOOR`. It is the **Track B confirmation dataset** and does not exist yet (`FORWARD_EPOCH_ADOPTION_BLOCKED_INSUFFICIENT_SAMPLE_ADOPTION_WAITS`) |
 | **span end** | ⛔ **NOT DETERMINED** | see §4 |
 
+## 4a. Why the approved head is not determined either
+
+An earlier drafting of the table above named **`37edbb0`**, the merged master,
+and that was wrong in a way worth recording rather than quietly fixing.
+
+`require_authorization` compares `approved_head_sha` to `identity.code_sha`, so
+the grant names **the code that will run the read**. At `37edbb0`
+`read_historical` raises `NotImplementedError` and reads nothing: a grant naming
+it authorises a read that cannot happen. The head that *can* perform the read is
+the one carrying the body — this PR's — and it is **not merged and not
+approved**. Naming an unmerged head in a grant would be worse still: the grant
+would point at code that can still change.
+
+So the head is determined by a rule, not yet by a value:
+
+`APPROVED_HEAD_IS_THE_MERGED_HEAD_CARRYING_THE_READ_BODY_WHICH_DOES_NOT_EXIST_YET`
+
+The value is filled in at the same moment as the span end, by the same human +
+ChatGPT decision, and not before.
+
 ## 4. Why the span end cannot be derived — the blocker
 
 **`THE_EXPLORATORY_OOS_SLICE_BOUNDARY_IS_UNRECORDED_AND_R_2_REQUIRES_IT_BEFORE_R1`.**
+
+**First, R-2's standing, because it decides how this block should be read.**
+R-2 lives in the contract packet's §4, and C-9 holds that the packet's §8.11 /
+§8.12 / §8.13 rulings cannot be cited as authority while no approved head SHA
+carries them. R-2 is in the same position: it is **this programme's own stated
+restriction, not a ruling anyone has approved**.
+
+That does not weaken the block — it is why the block is correct. The repository
+rule is that *the stricter reading of a research restriction wins*. A recorded
+restriction that has not been ratified is still the stricter reading, and the
+looser reading ("no approved authority quarantines the slice, so read the whole
+design span") is exactly the reading that rule exists to refuse. If a future
+ruling **retires** R-2, the span end becomes derivable in one line; until then
+it is not.
 
 §4's **R-2** defines the slice and quarantines it, in its own words:
 
@@ -111,10 +145,18 @@ Three consequences, and together they close the question:
   boundaries, `[FIXED-AT gate 3a]`, and are not the design span's internal split.
 
 **And no non-empty prefix of the design span is provably outside the slice.**
-The slice is the *final* contiguous portion, so a prefix is safe only if it ends
-before the earliest admissible slice start — and with no upper bound on the
-slice's size, the earliest admissible start is the design start itself. There is
-no span this document could grant that is provably clear of the quarantine.
+The slice is the *final* contiguous portion, so a prefix is clear of it only if
+it ends before the slice begins — and **no committed source bounds how large the
+slice may be**, so no prefix can be shown to end before it.
+
+Stated precisely, because the earlier drafting of this paragraph overstated it:
+this is an argument from a *missing upper bound*, not a claim that the slice
+plausibly consumes the whole design span. A slice that left no training data
+would be degenerate, and R-2's purge — "≥ 25 M15 bars of the design span
+immediately preceding the slice are dropped **from training**" — presupposes
+training data before it. So a sane boundary certainly leaves a large prefix. The
+point is that "certainly" is not "derivably": picking the prefix would mean
+picking the number, and picking the number is the decision §5 refers upward.
 
 **Fail closed.** No development span is granted.
 

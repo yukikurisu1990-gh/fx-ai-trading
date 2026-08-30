@@ -102,12 +102,18 @@ AUDIT_BOUNDS: Final[tuple[str, ...]] = (
     "body, gated but present. It establishes that the probed boundaries refused, "
     "and that the committed source of read_historical at this head is the "
     "declared route: one definition, one open, on a path from source_path_for, "
-    "inside the gated read window.",
-    "The source checks are advisory. Six audit rounds each defeated the "
+    "inside the gated read window, with no other reader anywhere in its module.",
+    "It does not establish that a read stays inside what was AUTHORISED, either. "
+    "That is the route's own arithmetic, not this audit's: two review roles "
+    "found the first drafting of the body reading the grant's span and pair list "
+    "rather than the intersection with the request, so a grant wider than the "
+    "request read undeclared data, on both axes, while every check here passed.",
+    "The source checks are advisory. Seven audit rounds each defeated the "
     "then-current version with a way of reading it did not anticipate: a "
     "numpy.memmap behind a module global, a Subscript callee, a Subscript that "
     "is not a call, a bare-Name decorator, an f-string format spec, a shadowed "
-    "permitted name, a default argument, and a second definition of the route.",
+    "permitted name, a default argument, a second definition of the route, and a "
+    "covert read placed in a module helper rather than in the route itself.",
     "A C extension that calls the OS directly is invisible to the audit hook. "
     "The named ones are refused (isolation.NATIVE_REFUSED_TARGETS); the ones "
     "that cannot be are listed by isolation.unpatchable_native_targets().",
@@ -133,9 +139,14 @@ _PERMITTED_FILE_OPENERS: Final[dict[str, str]] = {
     "scripts.m15_track_a.oos_budget": "its own append-only ledger and claim files",
     "scripts.m15_track_a.containment": "its own behavioural probes and the package sources "
     "it parses — and, like every other module, only where the audit hook permits",
-    "scripts.m15_track_a.read_route": "the one declared market-data route — its single open "
-    "is pinned by _check_read_body_is_declared to a path from source_path_for, inside the "
-    "gated read window, so this module's exemption is bounded by a check rather than by trust",
+    "scripts.m15_track_a.read_route": "the one declared market-data route. This entry "
+    "exempts the module from the name sweep below, and a review role measured what that "
+    "bought an attacker: four helpers in this module became the only code in the package "
+    "that could open a file with no source check at all, and a covert read added to one of "
+    "them kept the audit at PASS. So _check_read_body_is_declared now sweeps this module "
+    "**whole** — every reader-name call in it must be the one open the body performs, on a "
+    "path from source_path_for, inside the gated read window. The exemption is bounded by "
+    "that check rather than by trust",
     "scripts.m15_track_a.isolation": "the enforcement layer itself: it names os.open in order "
     "to guard dir_fd, and patches third-party entry points by reflection. Its own file "
     "access is governed by the same audit hook as everything else",
@@ -481,26 +492,28 @@ _PERMITTED_READ_ROUTE_NODES: Final[frozenset[type[ast.AST]]] = frozenset(
         ast.UnaryOp,
         ast.With,
         ast.withitem,
-        # Added with the body: a per-pair loop, a per-line loop, a bounds
-        # comparison, the dict it accumulates into, and the try/except that
-        # turns a malformed line into a refusal.
+        # Added with the body: a per-pair loop, a per-line loop, the bounds
+        # comparisons, the dict it accumulates into, and the try/except that
+        # turns a malformed line into a refusal.  The set is exactly what the
+        # body uses and no more, so widening it is a diff a reviewer sees.
         ast.For,
         ast.Compare,
         ast.Lt,
+        ast.LtE,
         ast.Gt,
+        ast.GtE,
         ast.NotEq,
-        ast.Eq,
+        ast.IsNot,
         ast.BoolOp,
-        ast.Or,
+        ast.And,
+        ast.Break,
         ast.Continue,
         ast.Dict,
         ast.Return,
         ast.Subscript,
-        ast.Index,
         ast.Try,
         ast.ExceptHandler,
         ast.AnnAssign,
-        ast.Starred,
         ast.List,
         ast.Tuple,
     }
@@ -515,7 +528,6 @@ _PERMITTED_READ_ROUTE_CALLS: Final[frozenset[str]] = frozenset(
         "assert_declared",
         "record_grant",
         "gated_read_window",
-        "NotImplementedError",
         # The body's own vocabulary, added in the diff that supplied the body.
         # Extending this set is a change a reviewer sees, which is the point.
         "source_path_for",
@@ -524,14 +536,17 @@ _PERMITTED_READ_ROUTE_CALLS: Final[frozenset[str]] = frozenset(
         "enumerate",
         "strip",
         "loads",
+        "_source_timestamp",
         "_row_from_source",
+        "_pairs_to_read",
         "is_dead_window_instant",
         "isoformat",
+        "date",
         "append",
-        "canonical_pair",
         "_as_instant",
+        "max",
+        "min",
         "HistoricalRead",
-        "JSONDecodeError",
     }
 )
 
@@ -604,11 +619,21 @@ def _check_read_body_is_declared() -> CheckResult:
     5. every node type is on :data:`_PERMITTED_READ_ROUTE_NODES`, and the
        function carries no decorator;
     6. the body opens **exactly one** thing — a path obtained from
-       ``source_path_for`` — and does so **inside** ``gated_read_window``.
+       ``source_path_for`` — and does so **inside** ``gated_read_window``;
+    7. and **the module around it** contains no other reader at all.
 
     Conditions 1–5 are inherited from the absent-body check and each of them
-    was added because the previous set had been defeated end to end. 6 is the
-    new one, and it is what "one route, no fallback" means once a route exists.
+    was added because the previous set had been defeated end to end. 6 is what
+    "one route, no fallback" means once a route exists.
+
+    7 exists because 1–6 read **one function** while
+    :data:`_PERMITTED_FILE_OPENERS` exempts the **module**. A review role
+    measured the gap: it added four lines to ``_row_from_source`` — a helper, so
+    outside conditions 1–6 — read an undeclared market-data file from them, and
+    the audit still returned ``PASS`` on every check. Its first attempt used
+    ``globals()`` and ``_indirection_findings`` caught it; the second used no
+    reflection and nothing did. So the name sweep the exemption removes is put
+    back here with one pinned exception: the single open the body performs.
     """
     tree = ast.parse(Path(read_route.__file__).read_text(encoding="utf-8"))
 
@@ -736,12 +761,40 @@ def _check_read_body_is_declared() -> CheckResult:
             "would refuse it — or worse, it is outside the window the hook keys on",
         )
 
+    # The one open the body performs is the pinned exception, named by the
+    # exact finding the sweep would raise for it and by nothing broader — a
+    # line-number exemption would also swallow anything else written on that
+    # line.
+    pinned = f"{DECLARED_READ_ROUTE_MODULE}:{opened.lineno} references open"
+    strays: list[str] = []
+    for child in ast.walk(tree):
+        if not isinstance(child, ast.Call) or child is opens[0]:
+            continue
+        callee = child.func
+        reader = getattr(callee, "id", None) or getattr(callee, "attr", None)
+        if reader in _READER_NAMES:
+            strays.append(f"{reader} at line {child.lineno}")
+    seen_pinned = False
+    for finding in _alias_findings(DECLARED_READ_ROUTE_MODULE, tree):
+        if finding == pinned and not seen_pinned:
+            seen_pinned = True
+            continue
+        strays.append(finding)
+    if strays:
+        return CheckResult(
+            "read_body_declared",
+            False,
+            f"the read route module reads outside its one declared open: {sorted(strays)}. "
+            "Its exemption from the name sweep covers that one open and nothing else.",
+        )
+
     return CheckResult(
         "read_body_declared",
         True,
         "read_historical is the only definition, no permitted call name is rebound, every "
-        "node and call is on the declared list, and it opens exactly one path — the one "
-        "source_path_for returns — inside the gated read window",
+        "node and call is on the declared list, it opens exactly one path — the one "
+        "source_path_for returns — inside the gated read window, and no other code in the "
+        "module opens anything",
     )
 
 

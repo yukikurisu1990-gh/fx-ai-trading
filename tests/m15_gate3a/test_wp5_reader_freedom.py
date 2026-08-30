@@ -590,10 +590,16 @@ TRACK_A_PERMITTED_IMPORTS: dict[str, frozenset[str]] = {
     # passed, because ``no_overlap`` checks metadata and says so
     # (``CALLER_DECLARED_METADATA_ONLY__NO_FILE_OPENED__NO_BYTE_MEASURED``). It
     # is a pure predicate over one parsed instant and opens nothing.
+    #
+    # ``FORWARD_FLOOR`` joins it for the row-level refusal beside that one: a
+    # review role observed that nothing in the route stopped a forward-epoch row,
+    # and that the committed files merely happen not to contain one — a property
+    # of the data, not of the code. It is a frozen ``datetime`` constant.
     "scripts.m15_gate3a.no_overlap": frozenset(
         {
             "DESIGN_END",
             "DESIGN_START",
+            "FORWARD_FLOOR",
             "assert_design_bounds",
             "assert_no_dead_window",
             "is_dead_window_instant",
@@ -602,7 +608,13 @@ TRACK_A_PERMITTED_IMPORTS: dict[str, frozenset[str]] = {
     # ``canonical_pair`` normalises and universe-checks a pair name before R1
     # builds a source path from it, so an unknown or non-canonical spelling
     # fails closed before any path exists. The module opens no file at all.
-    "scripts.m15_gate3a.pair_authority": frozenset({"PAIRS_20", "canonical_pair"}),
+    # ``PairAuthorityError`` is its refusal type, imported so the read route can
+    # re-raise an unknown pair as its own ``ReadRouteError`` instead of letting a
+    # foreign exception type escape a documented boundary. A ``ValueError``
+    # subclass reads nothing.
+    "scripts.m15_gate3a.pair_authority": frozenset(
+        {"PAIRS_20", "PairAuthorityError", "canonical_pair"}
+    ),
     # ``aggregate_m15`` is the derivation route's delegate, bound in the diff
     # because §8.12.10 condition 3 requires "an explicit committed caller"
     # rather than a decision a session reports having taken.  It is reader-free:

@@ -1,4 +1,4 @@
-"""The **one** historical read route for Track A, and it does not read today.
+"""The **one** historical read route for Track A.
 
 §8.13.5 item 1 and the execution gate's item 4 require a single route, so there
 is exactly one function here that could open a market-data file, and it refuses
@@ -25,18 +25,40 @@ Five gates, in order, all fail-closed
 What the body does, and what it deliberately does not
 -----------------------------------------------------
 
-It resolves one committed 365d_BA M1 bid/ask file per requested pair, reads the
-lines whose timestamp falls inside the **granted** span, and returns them in the
-row shape ``scripts.m15_gate3a.aggregation.aggregate_m15`` consumes. That is
-all. It does not aggregate, label, featurise, fit, score or write anything
-except the ledger entries the gates above already require.
+It resolves one committed 365d_BA M1 bid/ask file per pair, reads the lines whose
+timestamp falls inside the window, and returns them in the row shape
+``scripts.m15_gate3a.aggregation.aggregate_m15`` consumes. That is all. It does
+not aggregate, label, featurise, fit, score or write anything except the ledger
+entries the gates above already require.
 
-**Every bound it applies comes from the grant, not from its arguments.** The
-request says what the caller wants; :func:`~scripts.m15_track_a.authorization.
-require_authorization` has already refused anything the grant does not cover, and
-the body then re-derives its per-pair file list and its timestamp window **from
-the checked grant object**, so a request that somehow widened after the check
-cannot widen the read.
+**Every bound it applies is the narrowest of the three that constrain it.** An
+earlier drafting took the window and the pair list from the **grant** alone,
+reasoning that a request mutated after the gate could not then widen the read.
+True, and it inverted the safety: coverage is *containment*, so a grant may be
+**wider** than the request, and the wider part passed neither
+``assert_span_admissible`` nor the seen-data declaration. Two review roles
+reproduced it independently -- a one-month declaration with a full-design-span
+grant returned ten months, and a one-pair declaration with a two-pair grant
+opened two files. So the window and the pair list are now the **intersection**
+of grant and request: no wider than the grant, so no unauthorised byte; no wider
+than the request, so a mutated request cannot widen it; and therefore no wider
+than what was declared.
+
+**What it reads is bounded, and the bound is stated exactly.** The source is one
+JSONL file per pair covering the whole epoch, and there is no index, so finding
+the window means scanning. Two properties keep that scan honest, and neither is
+an assumption about the data:
+
+* price fields are materialised **only** for rows inside the window -- every
+  other line is decoded for its timestamp and discarded;
+* the scan **stops** at the first row past the window, and the source is
+  required to be strictly increasing in time for that stop to be sound. A source
+  that is not refuses the read; it never returns a silently truncated one.
+
+Together those mean the consumed dead window and the forward epoch -- which sit
+at the *end* of the file, after every admissible window -- are never reached.
+What the scan does touch is stated without softening:
+`SCAN_DECODES_TIMESTAMPS_OF_EARLIER_ROWS_IN_THE_SAME_FILE`.
 
 **There is one source and no fallback.** ``train_lgbm_models.py`` has an "if the
 BA file is missing, use mid" branch; that shape is why §8.13.5 asked for a single
@@ -55,11 +77,12 @@ from typing import Any, Final
 from scripts.m15_gate3a.no_overlap import (
     DESIGN_END,
     DESIGN_START,
+    FORWARD_FLOOR,
     assert_design_bounds,
     assert_no_dead_window,
     is_dead_window_instant,
 )
-from scripts.m15_gate3a.pair_authority import canonical_pair
+from scripts.m15_gate3a.pair_authority import PairAuthorityError, canonical_pair
 from scripts.m15_track_a import (
     OUTPUT_CLASSIFICATION,
     OUTPUT_CLASSIFICATION_SECONDARY,
@@ -74,9 +97,6 @@ _DATE_RE: Final[re.Pattern[str]] = re.compile(r"\A\d{4}-\d{2}-\d{2}\Z")
 
 #: The one route's own name, so a containment audit can assert there is one.
 ROUTE_ID: Final[str] = "track_a_r1_local_historical_read_v1"
-
-#: The status a caller gets instead of data, today.
-NOT_IMPLEMENTED_TOKEN: Final[str] = "TRACK_A_HISTORICAL_READ_NOT_IMPLEMENTED_NO_DATA_IS_READ"
 
 #: The single admissible source. Named so a second source is a diff, not a flag.
 SOURCE_DESCRIPTION: Final[str] = (
@@ -101,6 +121,12 @@ SOURCE_TIMEFRAME: Final[str] = "M1"
 #: timestamp plus per-side OHLC.  Named here so the read produces exactly the
 #: shape the selected derivation route consumes and nothing more.
 ROW_TIMESTAMP_KEY: Final[str] = "ts"
+#: What the scan touches beyond the window, stated rather than softened.  See
+#: the module docstring: reaching row *n* in a JSONL file means decoding rows
+#: 1..n-1, so the timestamps of earlier rows in the same file are decoded. Their
+#: prices are not materialised, and nothing after the window is reached at all.
+SCAN_DISCLOSURE: Final[str] = "SCAN_DECODES_TIMESTAMPS_OF_EARLIER_ROWS_IN_THE_SAME_FILE"
+
 ROW_SIDE_KEYS: Final[tuple[str, ...]] = (
     "bid_o",
     "bid_h",
@@ -291,18 +317,63 @@ def _parse_source_timestamp(text: Any) -> datetime:
     return parsed.astimezone(UTC)
 
 
-def _row_from_source(raw: Any, *, pair: str, line_number: int) -> dict[str, Any]:
-    """One source line as an ``aggregate_m15`` row, or refuse.
+def _source_timestamp(raw: Any, *, pair: str, line_number: int) -> datetime:
+    """The timestamp of one source line, and nothing else from it.
 
-    Refuses rather than degrades, on the same footing as the aggregator it feeds:
-    a missing key, a non-finite value or an unparseable timestamp is an error,
-    never a dropped row and never a substituted default.
+    Split out from :func:`_row_from_source` so the span filter can run **before**
+    the prices are materialised. A review role measured the earlier ordering: a
+    malformed row outside the granted span still failed the read, which proved
+    that every line in the file was being parsed in full. Prices outside the
+    window are now never turned into floats.
     """
     if not isinstance(raw, dict):
         raise ReadRouteError(f"{pair} line {line_number}: source row is not an object")
-    row: dict[str, Any] = {
-        ROW_TIMESTAMP_KEY: _parse_source_timestamp(raw.get(_SOURCE_TIMESTAMP_FIELD))
-    }
+    return _parse_source_timestamp(raw.get(_SOURCE_TIMESTAMP_FIELD))
+
+
+def _pairs_to_read(*, granted: tuple[str, ...], requested: tuple[str, ...]) -> tuple[str, ...]:
+    """The canonical pairs this read may open: the intersection, narrowest wins.
+
+    Refuses rather than narrows. A requested pair the grant does not name is a
+    contradiction -- ``grant_covers`` passed, so the request changed since -- and
+    silently dropping it would hide that. Two spellings of one pair are refused
+    for the same reason: folding them into one key loses the caller's meaning.
+    """
+    try:
+        granted_canonical = frozenset(canonical_pair(pair) for pair in granted)
+        requested_canonical = tuple(canonical_pair(pair) for pair in requested)
+    except PairAuthorityError as exc:
+        raise ReadRouteError(f"Track A read refused: {exc}") from exc
+    seen: list[str] = []
+    for pair in requested_canonical:
+        if pair in seen:
+            raise ReadRouteError(
+                f"Track A read refused: {pair} is named twice in the request. Two spellings "
+                "of one pair would fold into one result key, so the request is ambiguous."
+            )
+        if pair not in granted_canonical:
+            raise ReadRouteError(
+                f"Track A read refused: {pair} is not in the grant, although the coverage "
+                "check passed. The request changed after it was checked."
+            )
+        seen.append(pair)
+    if not seen:
+        raise ReadRouteError("Track A read refused: the request names no pair to read.")
+    return tuple(seen)
+
+
+def _row_from_source(
+    raw: Any, timestamp: datetime, *, pair: str, line_number: int
+) -> dict[str, Any]:
+    """One source line as an ``aggregate_m15`` row, or refuse.
+
+    Refuses rather than degrades, on the same footing as the aggregator it feeds:
+    a missing key or a non-finite value is an error, never a dropped row and
+    never a substituted default. The timestamp is passed in because
+    :func:`_source_timestamp` has already parsed it to decide this row is inside
+    the window.
+    """
+    row: dict[str, Any] = {ROW_TIMESTAMP_KEY: timestamp}
     for key in ROW_SIDE_KEYS:
         if key not in raw:
             raise ReadRouteError(f"{pair} line {line_number}: source row missing {key!r}")
@@ -324,13 +395,19 @@ def read_historical(
     *,
     grant: Any = None,
 ) -> object:
-    """The single Track A historical read route.  Refuses, then raises NotImplementedError.
+    """The single Track A historical read route.
 
-    Every gate is checked **before** the unimplemented body, so a future
-    implementing PR cannot accidentally satisfy the signature while skipping
-    one: by the time control reaches the body, isolation is installed, a
-    covering grant exists, the span is admissible and the interval was declared
-    ahead of the read.
+    Every gate is checked **before** the body, so by the time a byte is opened
+    isolation is installed, a covering grant exists, the span is admissible, the
+    interval was declared ahead of the read, and the grant's exercised scope is
+    on the record.
+
+    Returns a :class:`HistoricalRead`. Refuses — never degrades, never
+    substitutes a second source — on any of: no grant, a grant that does not
+    cover the request, an approved head that is not this run's, a timeframe this
+    route does not read, an inadmissible span, an undeclared interval, a missing
+    source file, a malformed row, or a row inside the dead window or at the
+    forward-epoch floor.
     """
     if not isolation.is_installed():
         raise ReadRouteError(
@@ -362,10 +439,25 @@ def read_historical(
     # audited against the approval document afterwards.
     seen_ledger.record_grant(checked, identity, route=ROUTE_ID)
 
-    # Every bound below is taken from the **checked grant**, never from the
-    # request. The request said what the caller wanted and the gate has already
-    # refused anything wider; re-deriving from ``checked`` means a request object
-    # mutated after the check cannot widen what is opened.
+    # Every bound below is the **narrowest** of the three that constrain this
+    # read, on both axes, and that is a correction of an earlier drafting.
+    #
+    # That drafting took the window and the pair list from the **grant** alone,
+    # reasoning that a request mutated after the gate could not then widen the
+    # read. True, and it inverted the safety: coverage is *containment*, so a
+    # grant may be **wider** than the request, and the wider part was never
+    # declared to the seen-data ledger and never passed
+    # ``assert_span_admissible``. Two review roles reproduced it independently:
+    # a May declaration with a full-design-span grant returned September and
+    # February rows, and a one-pair declaration with a two-pair grant opened two
+    # files. Ten months and a second pair would have become
+    # `EXPLORATORY_SEEN_DATA` with one month and one pair on the record —
+    # and seen-data is irreversible, so an under-record cannot be repaired.
+    #
+    # The intersection is no wider than the grant (so no unauthorised byte), no
+    # wider than the request (so a mutated request cannot widen it), and
+    # therefore no wider than the declaration (which was checked against the
+    # request). Narrowest wins.
     if checked.timeframe != SOURCE_TIMEFRAME:
         raise ReadRouteError(
             f"Track A read refused: this route reads {SOURCE_TIMEFRAME} source bars, and the "
@@ -374,12 +466,24 @@ def read_historical(
             "separate grant."
         )
 
-    lo = _as_instant(checked.span_start_utc, end_of_day=False)
-    hi = _as_instant(checked.span_end_utc, end_of_day=True)
+    lo = max(
+        _as_instant(checked.span_start_utc, end_of_day=False),
+        _as_instant(request.touched_start_utc, end_of_day=False),
+    )
+    hi = min(
+        _as_instant(checked.span_end_utc, end_of_day=True),
+        _as_instant(request.span_end_utc, end_of_day=True),
+    )
+    if hi < lo:
+        raise ReadRouteError(
+            "Track A read refused: the grant and the request do not overlap in time, so "
+            "there is no interval that is both authorised and declared."
+        )
+    pairs_to_read = _pairs_to_read(granted=checked.pairs, requested=request.pairs)
 
     rows: dict[str, list[dict[str, Any]]] = {}
     with isolation.gated_read_window():
-        for pair in checked.pairs:
+        for pair in pairs_to_read:
             path = source_path_for(pair)
             if not path.is_file():
                 # A refusal, not a substitution. The "if the BA file is missing,
@@ -391,6 +495,7 @@ def read_historical(
                     "fallback; a missing file is not a reason to read a different one."
                 )
             collected: list[dict[str, Any]] = []
+            previous = None
             with path.open(encoding="utf-8") as handle:
                 for line_number, line in enumerate(handle, 1):
                     if not line.strip():
@@ -401,12 +506,32 @@ def read_historical(
                         raise ReadRouteError(
                             f"{pair} line {line_number}: source line is not JSON"
                         ) from exc
-                    row = _row_from_source(raw, pair=pair, line_number=line_number)
-                    timestamp = row[ROW_TIMESTAMP_KEY]
-                    if timestamp < lo or timestamp > hi:
-                        # Outside the granted span. Skipped rather than refused:
-                        # the file spans more than the grant does, and reading
-                        # past the grant is the thing this line prevents.
+                    # The timestamp only. The prices of a row outside the window
+                    # are never materialised — a review role measured the earlier
+                    # ordering by putting a malformed row outside the span and
+                    # watching an inside-the-span read fail on it.
+                    timestamp = _source_timestamp(raw, pair=pair, line_number=line_number)
+                    if previous is not None and timestamp <= previous:
+                        # The stop below is only sound on an ordered source, so
+                        # the order is **enforced**, not assumed. Refusing here
+                        # is the difference between "this source is not what the
+                        # route expects" and a silently truncated read.
+                        raise ReadRouteError(
+                            f"Track A read refused: {pair} line {line_number} is at "
+                            f"{timestamp.isoformat()}, not after the previous row. This route "
+                            "reads a strictly increasing source; it will not guess the order."
+                        )
+                    previous = timestamp
+                    if timestamp > hi:
+                        # Stop, rather than skip to the end of the file. The
+                        # consumed dead window and the forward epoch sit after
+                        # every admissible window, so stopping here is what keeps
+                        # them unread — relying on the file not containing them
+                        # would be a property of the data, not of the route.
+                        break
+                    if timestamp < lo:
+                        # Before the window. Its prices are not decoded; its
+                        # timestamp is, and SCAN_DISCLOSURE says so.
                         continue
                     if is_dead_window_instant(timestamp):
                         # Belt and braces. ``assert_span_admissible`` already
@@ -418,16 +543,31 @@ def read_historical(
                             f"Track A read refused: {pair} carries a row at "
                             f"{timestamp.isoformat()}, inside the consumed dead window."
                         )
-                    collected.append(row)
-            rows[canonical_pair(pair)] = collected
+                    if timestamp >= FORWARD_FLOOR:
+                        # The forward epoch is Track B's confirmation dataset.
+                        # The committed 365d_BA files end before it, so today
+                        # this can only fire on a file that is not the declared
+                        # epoch — which is exactly when it should. A review role
+                        # noted that relying on the file's contents is an
+                        # accident of the data, not a property of the route.
+                        raise ReadRouteError(
+                            f"Track A read refused: {pair} carries a row at "
+                            f"{timestamp.isoformat()}, at or after the forward-epoch floor "
+                            f"{FORWARD_FLOOR.date()}. That span is Track B's confirmation "
+                            "dataset and no Track A operation may touch it."
+                        )
+                    collected.append(
+                        _row_from_source(raw, timestamp, pair=pair, line_number=line_number)
+                    )
+            rows[pair] = collected
 
     return HistoricalRead(
         run_id=identity.run_id,
         operation=authorization.OPERATION_HISTORICAL_READ,
         timeframe=SOURCE_TIMEFRAME,
         epoch=SOURCE_EPOCH,
-        span_start_utc=checked.span_start_utc,
-        span_end_utc=checked.span_end_utc,
+        span_start_utc=lo.date().isoformat(),
+        span_end_utc=hi.date().isoformat(),
         rows_by_pair=rows,
     )
 

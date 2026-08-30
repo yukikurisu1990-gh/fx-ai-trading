@@ -289,11 +289,14 @@ def test_the_read_window_does_not_leak_to_a_sibling_coroutine(guards: object) ->
 def test_a_read_route_that_calls_anything_but_its_gates_is_a_finding() -> None:
     """A body using ``numpy.memmap`` and a module global passed every earlier check.
 
-    No ``return``, a terminal ``raise NotImplementedError``, and a name no
-    reader list contained — so the answer cannot be a longer reader list. The
-    check is an **allowlist** over the calls the route may make.
+    A name no reader list contained — so the answer cannot be a longer reader
+    list. The check is an **allowlist** over the calls the route may make.
+
+    (The original assertion here was that ``NotImplementedError`` is on the
+    allowlist, from when the body's last statement raised it. The body reads
+    now, so that name is gone from the list; what the test is about — the
+    allowlist polarity — is unchanged.)
     """
-    assert "NotImplementedError" in containment._PERMITTED_READ_ROUTE_CALLS
     for gate in ("require_authorization", "assert_span_admissible", "assert_declared"):
         assert gate in containment._PERMITTED_READ_ROUTE_CALLS
     assert "memmap" not in containment._PERMITTED_READ_ROUTE_CALLS

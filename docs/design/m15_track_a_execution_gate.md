@@ -444,7 +444,7 @@ that answer licensed a claim that nothing could be read. That question is
 gone.** R1 has a body now. Pretending otherwise would be the overclaiming this
 document spent six rounds retiring, so the check asks the question that still
 has a useful answer: **is the body the one route that was declared, reading only
-the one declared source?** Six conditions:
+the one declared source?** Seven conditions:
 
 1. exactly **one** `read_historical`, so a second live definition cannot hide
    behind the first;
@@ -456,9 +456,22 @@ the one declared source?** Six conditions:
    compare and the check silently skipped it);
 5. every **node type** is on the declared list, and no decorator;
 6. the body opens **exactly one** thing — a path from `source_path_for` — and
-   does so **inside** `gated_read_window`.
+   does so **inside** `gated_read_window`;
+7. and **the module around it** contains no other reader at all.
 
 Condition 6 is what "one route, no fallback" means once a route exists.
+
+**Condition 7 exists because a review role defeated 1–6.** They read one
+*function*, while listing `read_route` in `_PERMITTED_FILE_OPENERS` exempts the
+whole *module* from the reader-name sweep — which made this module's four
+helpers the only code in the package that could open a file with no source check
+at all. The role added four lines to `_row_from_source`, read an undeclared
+market-data file from them, and the audit returned `PASS` on every check. Its
+first attempt used `globals()` and `_indirection_findings` caught it; the second
+used no reflection and nothing did. So the sweep the exemption removes is put
+back, with exactly one pinned exception: the single `open` the body performs,
+identified by the exact finding string it produces rather than by its line
+number, so nothing else written on that line is swallowed with it.
 
 **And one defence moved rather than disappeared.** `ast.Subscript` had to become
 a permitted node type, because the body does `row[key]`. A bare subscript was
@@ -946,18 +959,59 @@ is gated, and its body is absent", and that a future PR "adds a body, not a
 policy". That PR is this one. The gates are unchanged; a body was added beneath
 them.
 
-**What it does.** For each pair the **checked grant** names, it resolves one
-committed `365d_BA` M1 bid/ask file from a module-constant template, reads the
-lines whose timestamp falls inside the **granted** span, and returns them in the
-row shape `aggregate_m15` consumes. Nothing else: no aggregation, no labels, no
-features, no fit, no score, and no write beyond the ledger entries the gates
-already require.
+**What it does.** For each pair it may read, it resolves one committed
+`365d_BA` M1 bid/ask file from a module-constant template, reads the lines whose
+timestamp falls inside the window, and returns them in the row shape
+`aggregate_m15` consumes. Nothing else: no aggregation, no labels, no features,
+no fit, no score, and no write beyond the ledger entries the gates already
+require.
 
-**Every bound comes from the grant, not from the request.** The request says
-what the caller wants; `require_authorization` has already refused anything the
-grant does not cover; and the body then re-derives its file list and its
-timestamp window **from the checked grant object**. A request mutated after the
-check cannot widen the read.
+**Every bound is the narrowest of the three that constrain it — and the first
+drafting of this section said the opposite.** It said "every bound comes from
+the grant, not from the request", reasoning that a request mutated after the
+gate could not then widen the read. True, and it inverted the safety. Coverage
+is *containment*, so a grant may legitimately be **wider** than the request, and
+the wider part passed neither `assert_span_admissible` nor the seen-data
+declaration — both of which are checked against the **request**.
+
+Two review roles reproduced it independently, on two different axes:
+
+* **time** — a May declaration, a May request and a full-design-span grant
+  returned September and February rows;
+* **pairs** — a one-pair declaration with a two-pair grant **opened both files**,
+  which the time-axis fix alone did not touch.
+
+Ten months and a second pair would have become `EXPLORATORY_SEEN_DATA` with one
+month and one pair on the record. Seen-data is irreversible, so an under-record
+is not something a later entry repairs.
+
+The window and the pair list are therefore the **intersection** of grant and
+request: no wider than the grant, so no unauthorised byte; no wider than the
+request, so a mutated request still cannot widen it; and therefore no wider than
+what was declared. A requested pair the grant does not name, or two spellings of
+one pair, are **refused** rather than silently dropped or folded — both mean the
+request is not what the gate checked.
+
+**What the scan touches, stated exactly.** The source is one JSONL file per pair
+covering the whole epoch and there is no index, so finding the window means
+scanning. A review role measured what that cost under the first drafting: a
+malformed row *outside* the granted span still failed an inside-the-span read,
+which proved every line in the file was being parsed in full — including the
+consumed dead window, which this repository's own PR #444 ruling
+("**hashing IS a byte read**") would count as read. Two properties now bound it,
+and neither is an assumption about the data:
+
+* prices are materialised **only** for rows inside the window; every other line
+  is decoded for its timestamp and discarded;
+* the scan **stops** at the first row past the window, and the source is
+  *required* to be strictly increasing for that stop to be sound — a source that
+  is not refuses the read rather than returning a silently truncated one.
+
+The dead window and the forward epoch sit after every admissible window, so
+stopping is what keeps them unread; relying on the committed files not
+containing them would be a property of the data, not of the route. What remains
+is disclosed rather than softened, as `read_route.SCAN_DISCLOSURE`:
+`SCAN_DECODES_TIMESTAMPS_OF_EARLIER_ROWS_IN_THE_SAME_FILE`.
 
 **One source, no fallback.** `train_lgbm_models.py` has an "if the BA file is
 missing, use mid" branch — the shape §8.13.5 asked for a single route to remove.
@@ -967,25 +1021,60 @@ Here a missing file is a **refusal**. A test asserts it on the AST: exactly one
 **Two things the body adds to the gates rather than inheriting.** A grant naming
 `M15` is refused, because M15 does not exist until the derivation runs and is a
 separate operation with a separate grant. And a **row** whose timestamp falls in
-the dead window is refused even when the declared interval passed
-`assert_span_admissible` — `no_overlap` checks declarations and says so
+the dead window, or at or after `FORWARD_FLOOR`, is refused even when the
+declared interval passed `assert_span_admissible` — `no_overlap` checks
+declarations and says so
 (`CALLER_DECLARED_METADATA_ONLY__NO_FILE_OPENED__NO_BYTE_MEASURED`), so the
 declaration being clean is not evidence that the bytes are.
+
+**Both of those row-level refusals are unreachable at this head, and the tests
+say so rather than implying coverage they do not have.** With the window clamped
+to the request, and the request bounded at `DESIGN_END` by
+`assert_span_admissible`, and `DEAD_START` exactly one second after `DESIGN_END`,
+no row the scan reaches can be in either quarantined span. They stay in as a
+backstop for a head where `assert_span_admissible` is weakened, and the test that
+covers them asserts the *ordering property that makes them unreachable* instead
+of pretending to exercise them.
 
 **The containment audit's question changed with it.** `read_body_absent` asked
 whether the body was *absent*, and that answer licensed a claim that nothing
 could be read. It is now `read_body_declared` and asks whether the body is **the
 declared route**: one definition, one `open`, on a path from `source_path_for`,
-inside `gated_read_window`. §11 records the six conditions and the one defence
+inside `gated_read_window`. §11 records the seven conditions and the one defence
 that had to move — `ast.Subscript` is permitted now, because the body does
 `row[key]`, so the rule narrowed to "a subscript on a **module-level** name is a
 finding" and keeps catching `SLURP["path"]`.
 
-**And it is still ungranted.** `docs/design/m15_track_a_r1_read_authorization.md`
-records why: the development span's end cannot be derived, because R-2 requires
-the `EXPLORATORY_OOS_SLICE` boundary to be "chosen and recorded before stage R1"
-and no committed source names it. The body exists; the authorisation that would
-let it run does not.
+**The seventh condition exists because a review role defeated the first six.**
+Conditions 1–6 read **one function**, while adding `read_route` to
+`_PERMITTED_FILE_OPENERS` exempts the whole **module** from the reader-name
+sweep. The role measured the gap that opened: it put four lines into
+`_row_from_source` — a helper, so outside conditions 1–6 — read an undeclared
+market-data file from them, and **every audit check still returned PASS**. Its
+first attempt used `globals()` and the indirection sweep caught it; the second
+used no reflection and nothing did. The exemption is now bounded by the sweep it
+removes: every reader-name reference in the module must be the one open the body
+performs, pinned by its exact finding string rather than by its line.
+
+That the hole was opened by this PR's own fix, and closed only because a role
+went looking, is the same shape §13.1–§13.5 record five times over. It is
+recorded here for the same reason: **a green suite has never once predicted
+conformance in this package.**
+
+**And it is still ungranted, on two counts.**
+`docs/design/m15_track_a_r1_read_authorization.md` records both.
+
+1. The development span's **end** cannot be derived: R-2 requires the
+   `EXPLORATORY_OOS_SLICE` boundary to be "chosen and recorded before stage R1"
+   and no committed source names it.
+2. The **approved head SHA** is not determined either. A grant names the code
+   that will run the read, and at the merged master `37edbb0` the body does not
+   exist; the head that carries it is this PR's, unmerged and unapproved. An
+   earlier drafting of the authorization document put `37edbb0` in the table,
+   which would have authorised a read against code that cannot perform one.
+
+The body exists; the authorisation that would let it run does not, and this PR
+does not create one.
 
 ## 14. Non-authorisation statement
 
