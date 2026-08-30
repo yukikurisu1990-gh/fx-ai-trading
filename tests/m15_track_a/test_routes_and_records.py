@@ -213,9 +213,7 @@ def test_derivation_needs_its_own_grant(
         ),
         identity,
     )
-    request = derivation.DerivationRequest(
-        read_request=_request(), read=None, calendar_a=None
-    )
+    request = derivation.DerivationRequest(read_request=_request(), read=None, calendar_a=None)
     with pytest.raises(authorization.AuthorizationError):
         derivation.derive_m15(request, identity, grant=_grant())
 

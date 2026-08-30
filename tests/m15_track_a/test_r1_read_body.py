@@ -264,9 +264,7 @@ def test_a_development_grant_does_not_authorise_a_derivation(sandbox: Path, guar
     _declare(run)
     with pytest.raises(authorization.AuthorizationError):
         derivation.derive_m15(
-            derivation.DerivationRequest(
-                read_request=_request(), read=None, calendar_a=None
-            ),
+            derivation.DerivationRequest(read_request=_request(), read=None, calendar_a=None),
             run,
             grant=_grant(),
         )
