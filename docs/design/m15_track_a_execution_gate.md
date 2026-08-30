@@ -540,12 +540,22 @@ not replace the gate-6 source-contamination audit Track B still needs.
 
 ## 12. Governance propagation — done, and not done
 
-**`GOVERNANCE_PROPAGATION_IS_NOT_COMPLETE_AT_THIS_HEAD`.**
+**`GOVERNANCE_PROPAGATION_COMPLETE_AT_THE_MERGED_HEAD_OF_PR_455`** — superseding
+`GOVERNANCE_PROPAGATION_IS_NOT_COMPLETE_AT_THIS_HEAD`, which stood from this
+document's own merge until PR #455.
 
 §8.12.13 C-10 makes completeness "a predicate on named files, not a
-self-assessment", holding **only on a named master SHA**. This branch is not on
-master and PR #451 is unmerged, so the predicate is false here whatever the
-table below says.
+self-assessment", holding **only on a named master SHA**. When this section was
+written the branch was not on master and PR #451 was unmerged, so the predicate
+was false whatever the table said. Both conditions are gone: #451 merged as
+`4f45515`, #452 as `37edbb0`, #453 as `6b75aab`, #454 as `d694377`, and the three
+outstanding items below are discharged by PR #455.
+
+**The predicate was false on 2026-08-31 and nobody had checked.** An R1 execution
+command arrived, and this row — CLAUDE.md's *first* Track A precondition, ahead
+of the execution gate and the derivation route — was one of six things that
+turned out not to hold. That is what a predicate on named files is for, and it
+only works if someone evaluates it. The table below is now the evaluation.
 
 | Item | Target | State at this head |
 | --- | --- | --- |
@@ -553,25 +563,33 @@ table below says.
 | P-2 | playbook §2 | done |
 | P-3 | playbook §5/§6 + a Track A checklist | done (§5a) |
 | P-4 | playbook §7/§9 track field | done |
-| **P-5** | playbook **§1 gate table** + §3 ladder | §3 done; **§1 reconciled, gate table not rebuilt** |
+| **P-5** | playbook **§1 gate table** + §3 ladder | **done at PR #455** — §3 was already done; the §1 table stopped at PR #444 and now carries #449, #450, #451, #452, #453, #454, the refused execution command and #455, reconciled against `d694377` |
 | P-6 | policy | done (§2a) |
 | **P-7** | prereg §3.1/§4/§10/§11/§13/§14/§16 | **DISCHARGED** — §13a **RULED, IN FORCE** by the human + ChatGPT round of 2026-08-30. The first drafting covered §3.1/§4/§11/§16 only and called §10 and §14 "unchanged", which would have recorded P-7 complete while three clauses still forbade the read; a contract-consistency review caught that before the ruling was taken, and the table now carries §10 item 3, §13 and §14 |
 | **P-8** | `docs/prompts/*` | done |
 | P-9 | playbook §8 | done |
-| **P-10** | approval identifiers on every RULED MRG section | **not done** — belongs to PR #451, at its merge |
+| **P-10** | approval identifiers on every RULED MRG section | **done** — discharged by PR #451's merge as `4f45515` (2026-08-30), which is the identifier `APPROVAL_IDENTIFIER_PENDING_UNTIL_MERGE` was waiting on. Recorded here at PR #455 because a merge that nobody writes down is not a predicate on a named file |
 | P-11 | playbook §4 | done |
 | P-12 | prereg §7/§8 | done — and **now in force**, since its text is §13a's, which was `NOT IN FORCE` when this row first read "done" |
-| **P-13** | gate-4 audit T-1/T-2/T-6 | done as a **scope reading**; §1a there carries no approval identifier and records the reading rather than ruling it |
+| **P-13** | gate-4 audit T-1/T-2/T-6 | **done at PR #455** — the scope reading now has a ruling and an approval identifier behind it. T-3's stage ownership and numerator are ruled in `docs/governance/m15_track_a_t3_stage_ruling.md` (PR #455); T-1 (dead-window never loaded) and T-6 (cost tables / effective-N re-pointing) are unchanged and were never the open half |
 | P-14 | playbook §3 + §6 ratio checkbox | done |
 | P-15 | prereg §6 | done — same dependency on §13a being in force, and same correction |
 
-**And the whole propagation rests on authority that is not yet citable.**
-§8.12.13 C-9 and the packet's own approval line record
-`THE_TWO_TRACK_SECTIONS_ARE_RULED_AS_RECORDED_AND_NOT_YET_CITABLE_AS_AUTHORITY`,
-with `APPROVAL_IDENTIFIER_PENDING_UNTIL_MERGE` travelling with §8.11, §8.12 and
-§8.13 until PR #451 is approved and merged. Every propagated statement in this
-PR cites those sections. They are therefore **provisional**, and this PR's merge
-does not complete them — PR #451's does.
+**The authority is citable now.** §8.12.13 C-9 and the packet's own approval
+line carried
+`THE_TWO_TRACK_SECTIONS_ARE_RULED_AS_RECORDED_AND_NOT_YET_CITABLE_AS_AUTHORITY`
+and `APPROVAL_IDENTIFIER_PENDING_UNTIL_MERGE` with §8.11, §8.12 and §8.13 until
+PR #451 was approved and merged. It was, as `4f45515` on 2026-08-30. Every
+propagated statement in this document rests on authority that is cited by a
+merge commit rather than by a promise.
+
+**What completeness does and does not buy.** It discharges CLAUDE.md's Track A
+precondition 1 and nothing else. Precondition 2 (the execution gate passed on a
+named head) and precondition 3 (the derivation route decided in a diff) are
+separate, and **none of the three is a read authorisation**. Two explicit human +
+ChatGPT grants — one to read, one to derive — remain, and this document has said
+from its first draft that a contract permission is not an execution
+authorisation.
 
 ## 13. Independent review of this head
 

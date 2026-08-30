@@ -778,7 +778,10 @@ def assert_write_allowed(raw: object, *, what: str = "write to") -> None:
 def _ledger_identities(scratch_text: str) -> dict[tuple[int, int], str]:
     """``(st_dev, st_ino)`` of every append-only ledger that exists."""
     identities: dict[tuple[int, int], str] = {}
-    root = pathlib.Path(scratch_text)
+    # The governance ledgers moved into ``<scratch>/ledger/`` so they can be
+    # committed while the research output around them stays ignored. They are
+    # still inside the scratch root, so nothing else here changes.
+    root = pathlib.Path(scratch_text) / scratch.LEDGER_SUBDIRECTORY
     for name in scratch.APPEND_ONLY_FILENAMES:
         try:
             stat = os.stat(root / name)

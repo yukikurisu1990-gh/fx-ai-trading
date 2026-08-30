@@ -42,6 +42,24 @@ from scripts.m15_gate3a.path_authority import PathAuthorityError, is_within, res
 #: function takes it as an argument.
 SCRATCH_ROOT_RELATIVE: Final[str] = "artifacts/track_a_scratch"
 
+#: The Track A **governance ledger** root, and it is deliberately a different
+#: directory from the scratch root above.
+#:
+#: §8.13.5 item 5 requires the `EXPLORATORY_SEEN_DATA` ledger to be "write-ahead,
+#: append-only, **committed** — it is what makes the one-way transition
+#: auditable". It was living under the scratch root, which `.gitignore` excludes
+#: by name ("Never evidence, and never swept into a commit"). A review role put
+#: the two side by side: the irreversible record of what had been seen would
+#: have survived only in an untracked, deletable file, and the design purpose it
+#: exists for would not have held.
+#:
+#: Both requirements are real and they pull apart, so the roots do too. Research
+#: output stays ignored; the ledgers that record an irreversible transition are
+#: committed. Separating them is also what §6 of the R1 enablement brief asks
+#: for in as many words: "research outputとは分離".
+LEDGER_SUBDIRECTORY: Final[str] = "ledger"
+LEDGER_ROOT_RELATIVE: Final[str] = f"{SCRATCH_ROOT_RELATIVE}/{LEDGER_SUBDIRECTORY}"
+
 #: Roots Track A may never write into.  The first four are
 #: ``guards._PROTECTED_PREFIXES``; ``artifacts/m15_gate3a`` is added here because
 #: NR-A leaves it out of that tuple while §8.11.9 item 6 forbids the write.
@@ -98,6 +116,25 @@ def repo_root() -> Path:
 def scratch_root() -> Path:
     """The absolute Track A scratch root.  Not created here."""
     return repo_root() / SCRATCH_ROOT_RELATIVE
+
+
+def ledger_root() -> Path:
+    """The committed governance-ledger root, created on demand.
+
+    A **subdirectory of the scratch root**, and that placement is the whole
+    design. It gives the two properties that pull against each other:
+
+    * ``.gitignore`` ignores the scratch root's *contents* and then un-ignores
+      this one directory by name, so the ledgers are committed while research
+      output stays out of every commit;
+    * every write still lands inside the scratch root, so the isolation layer's
+      classification, its append-only ledger identities and ``assert_writable``
+      need no exception carved into them. A sibling root would have required
+      one in each, and those are the most-audited surfaces in this package.
+    """
+    root = scratch_root() / LEDGER_SUBDIRECTORY
+    root.mkdir(parents=True, exist_ok=True)
+    return root
 
 
 def _forbidden_roots() -> tuple[tuple[Path, str], ...]:

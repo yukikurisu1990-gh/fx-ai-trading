@@ -131,7 +131,10 @@ class ConfigurationEntry:
 
 
 def breadth_path() -> Path:
-    return scratch.scratch_root() / BREADTH_FILENAME
+    # §8.13.5 item 6: the breadth record 'cannot be reconstructed
+    # afterwards', so it is committed for the same reason the seen ledger
+    # is, and lives beside it.
+    return scratch.ledger_root() / BREADTH_FILENAME
 
 
 def record(entry: ConfigurationEntry, identity: RunIdentity) -> Path:

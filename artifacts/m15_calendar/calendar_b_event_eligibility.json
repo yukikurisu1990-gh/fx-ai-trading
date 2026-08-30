@@ -1,0 +1,50 @@
+{
+ "authority": "m15_gate3a_ruling4_event_eligibility_calendar",
+ "authority_version": "1.0.0",
+ "timezone": "UTC",
+ "target_epoch": "365d_BA",
+ "governs": "EVENT_ELIGIBILITY_ONLY_NEVER_SLOT_MEMBERSHIP",
+ "span_start_utc": "2025-04-25",
+ "span_end_utc": "2025-12-28",
+ "approval": "CALENDAR_ARTIFACT_APPROVED_BY_HUMAN_AND_CHATGPT",
+ "provenance": {
+  "committed_artifact": "artifacts/m15_calendar/calendar_b_event_eligibility.json",
+  "committed_revision": "d69437780039be8301e9462c1f853d79abdc1763"
+ },
+ "rollover_exclusion_utc": {
+  "start": "21:55",
+  "end": "22:15",
+  "basis": "Ruling 4 FROZEN as minimum; widen only for conservatism, never narrow",
+  "applied_at": "the committed minimum"
+ },
+ "holiday_thin_liquidity_dates_utc": [],
+ "holiday_list_status": "RULING_4_HOLIDAY_THIN_LIQUIDITY_LIST_IS_EMPTY_BECAUSE_NO_DESIGN_AUDIT_HAS_FIXED_ONE",
+ "holiday_list_consequence": "no date is excluded for illiquidity, so the eligible-bar rate is OVERSTATED and the barrier/cost ratio's eligible population includes thin sessions. Anti-conservative for the rate, conservative for T-3. A design audit fixing the list changes both.",
+ "sessions_utc": {
+  "asia": "00:00-07:59",
+  "europe": "08:00-15:59",
+  "us": "16:00-23:59"
+ },
+ "pairs": [
+  "EUR_USD",
+  "GBP_USD",
+  "AUD_USD",
+  "NZD_USD",
+  "USD_CHF",
+  "USD_CAD",
+  "EUR_GBP",
+  "USD_JPY",
+  "EUR_JPY",
+  "GBP_JPY",
+  "AUD_JPY",
+  "NZD_JPY",
+  "CHF_JPY",
+  "EUR_CHF",
+  "EUR_AUD",
+  "EUR_CAD",
+  "AUD_NZD",
+  "AUD_CAD",
+  "GBP_AUD",
+  "GBP_CHF"
+ ]
+}

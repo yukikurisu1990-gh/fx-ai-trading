@@ -49,19 +49,28 @@ otherwise.
 - **Track B — Formal Confirmation.** One declared candidate, frozen in every
   respect, run **once** on unseen forward data. Not a place to redesign.
 
-**Track A cannot start yet.** Do not read this as a snapshot — evaluate it:
+**Track A R1 is implementation-ready and unauthorised.** Do not read this as a
+snapshot — evaluate it:
 
-0. **PR #451 approved and merged.** Until then §8.11–§8.13 carry
-   `APPROVAL_IDENTIFIER_PENDING_UNTIL_MERGE` and
-   `THE_TWO_TRACK_SECTIONS_ARE_RULED_AS_RECORDED_AND_NOT_YET_CITABLE_AS_AUTHORITY`,
-   so the Two-Track model — including everything in this section — is
-   **provisional**, and the propagation into this file, the playbook, the
-   policy and the pre-registration rests on authority that is not yet citable.
+0. **PR #451 approved and merged** — done, `4f45515` (2026-08-30). §8.11–§8.13
+   are citable authority; `APPROVAL_IDENTIFIER_PENDING_UNTIL_MERGE` and
+   `THE_TWO_TRACK_SECTIONS_ARE_RULED_AS_RECORDED_AND_NOT_YET_CITABLE_AS_AUTHORITY`
+   are discharged.
 1. `TRACK_A_EXECUTION_REQUIRES_GOVERNANCE_PROPAGATION_COMPLETE` — the
    **P-1 … P-15** predicate, true **on a named master SHA** (§8.12.13 C-10).
-   It is a predicate on named files, never a self-assessment.
+   Discharged at PR #455; the per-item table is
+   `docs/design/m15_track_a_execution_gate.md` §12. It is a predicate on named
+   files, never a self-assessment — **and on 2026-08-31 an execution command
+   arrived while it was false and nobody had evaluated it.** Evaluate it.
 2. The **Minimum Research Execution Gate** passed on a named head.
-3. The derivation route decided **in a diff**.
+3. The derivation route decided **in a diff** — done, and it now has a **body**
+   (PR #455). `aggregate_m15` refuses real rows outside it.
+
+**What is actually left is two grants, and neither is a session's to issue:** an
+explicit human + ChatGPT `track_a_historical_read` grant, and a separate
+`track_a_m15_research_derivation` grant, both against the implementation
+fingerprint of a merged head. The grant recorded in PR #454 is **invalid** — the
+enablement work moved the fingerprint, by design.
 
 The apparatus for 1–3 is `scripts/m15_track_a/` and
 `docs/design/m15_track_a_execution_gate.md`; **building it is not passing the
@@ -87,7 +96,12 @@ execution gate; a read needs an explicit human + ChatGPT grant naming the
 operation, span, pairs, timeframe and approved head SHA. `ReadGrant`
 (`scripts/m15_track_a/authorization.py`) is where such an approval is
 **recorded and enforced in-process** — the object does not verify that the
-approval exists, so constructing one is never the act of granting it.
+approval exists, so constructing one is never the act of granting it. It binds
+to a **measured implementation fingerprint**, so any change on the declared
+surface voids it with no human in the loop.
+
+**A read grant does not authorise a derivation.** They are separate closed
+operations with separate grants, and `derive_m15` refuses without its own.
 
 ## Working rules
 

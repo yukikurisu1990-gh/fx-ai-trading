@@ -101,7 +101,7 @@ class SliceObservation:
 
 
 def budget_path() -> Path:
-    return scratch.scratch_root() / OOS_BUDGET_FILENAME
+    return scratch.ledger_root() / OOS_BUDGET_FILENAME
 
 
 def claim_path(index: int) -> Path:
@@ -115,7 +115,7 @@ def claim_path(index: int) -> Path:
     of a budget of one, and three of the four appends were lost as well, so the
     record under-reported the very over-spend it failed to prevent.
     """
-    return scratch.scratch_root() / OOS_CLAIM_TEMPLATE.format(index=index)
+    return scratch.ledger_root() / OOS_CLAIM_TEMPLATE.format(index=index)
 
 
 def observations_spent() -> int:

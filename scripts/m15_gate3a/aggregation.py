@@ -72,6 +72,7 @@ from collections.abc import Mapping
 from datetime import datetime, timedelta
 from typing import Any, Final
 
+from .derivation_containment import assert_derivation_authorised
 from .numeric_authority import NumericAuthorityError, pin_number
 from .pair_authority import canonical_pair, pip_size_for_pair
 from .timeutil import TimestampError, to_utc_minute
@@ -300,6 +301,13 @@ def aggregate_m15(
     :class:`AggregationError`; none of them yields a smaller count or a
     quietly-ineligible bar.
     """
+    # Containment first, before the input is read at all. A guard placed after
+    # the caller has already been trusted is caller discipline, and caller
+    # discipline is what let real rows reach this function without passing
+    # through the authorised Track A derivation route -- see
+    # ``derivation_containment`` for the bypass this closes.
+    assert_derivation_authorised(m1_rows)
+
     # fail-closed FIRST (unknown/off-universe pair raises), and D5: the emitted
     # artifact must carry the CANONICAL label, not the caller's spelling — the
     # committed design inventory requires "one of PAIRS_20" and cost_schema
