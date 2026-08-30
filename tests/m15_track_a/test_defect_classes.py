@@ -34,6 +34,19 @@ from scripts.m15_track_a import containment, isolation, scratch
 
 REPO = scratch.repo_root()
 
+#: Phrases that mark a mention of a retired name as historical rather than live.
+_RETIREMENT_MARKERS: tuple[str, ...] = (
+    "used to read",
+    "formerly",
+    "renamed",
+    "retired",
+    "no longer",
+    "withdrawn",
+    "an earlier drafting",
+    "superseded",
+    "stale",
+)
+
 
 @pytest.fixture
 def guards() -> object:
@@ -275,19 +288,31 @@ def test_the_report_separates_the_verdict_carrying_checks_from_the_advisory_ones
 
 def test_the_gate_document_does_not_use_the_retired_status_or_field() -> None:
     """A renamed token left behind in prose is the drift this PR kept producing."""
-    retired = ("NATIVE_READER_TARGETS", "VERIFIED_NO_UNGATED_ROUTE")
+    # The propagation **targets** are swept too. A review round found the
+    # retired turnover token alive in `m15_minimum_research_gate.md` — a file
+    # this test did not read — pointing at the very section that withdrew it.
+    # A drift test that covers the source and not the places the source was
+    # copied to is the same instance-not-class mistake this module exists for.
+    retired = (
+        "NATIVE_READER_TARGETS",
+        "VERIFIED_NO_UNGATED_ROUTE",
+        "TURNOVER_AXES_FIXED_AT_THE_COMMITTED_IMPLEMENTATION_MEAN_OVER_ACTIVE_DAYS",
+    )
     for relative in (
         "docs/design/m15_track_a_execution_gate.md",
         "docs/governance/m15_audit_playbook.md",
+        "docs/design/m15_minimum_research_gate.md",
+        "docs/design/m15_first_cost_hurdle_aware_preregistration_design.md",
+        "CLAUDE.md",
     ):
-        for number, line in enumerate(
-            (REPO / relative).read_text(encoding="utf-8").splitlines(), 1
-        ):
-            # A line that says the name is gone is the opposite of a live use.
-            if any(
-                marker in line
-                for marker in ("used to read", "formerly", "renamed", "retired", "no longer")
-            ):
+        lines = (REPO / relative).read_text(encoding="utf-8").splitlines()
+        for number, line in enumerate(lines, 1):
+            # A *sentence* saying the name is gone is the opposite of a live
+            # use, and a sentence wraps across lines. Checking the line alone
+            # failed a historical reference whose marker sat on the line above,
+            # so the unit is the surrounding window rather than the line.
+            window = " ".join(lines[max(0, number - 3) : number + 2]).lower()
+            if any(marker in window for marker in _RETIREMENT_MARKERS):
                 continue
             for name in retired:
                 assert name not in line, f"{relative}:{number} still uses {name}"

@@ -145,6 +145,16 @@ rules — protected paths, upward escalation, the Green allowlist — are policy
    three — the exception's own three limbs plus the two execution conditions —
    and absent **any one of the five**, refuse as before. Nothing else in §2
    moves.
+
+   These five are **not** the same enumeration as CLAUDE.md's "three
+   execution-safety conditions" (§8.12.10) or the four-step order in
+   `docs/design/m15_track_a_execution_gate.md` §1. They overlap and neither
+   contains the other, so the governing set is their **union**: PR #451 merged;
+   the P-1…P-15 propagation predicate true on a named master SHA; the Minimum
+   Research Execution Gate passed on a named head; the derivation route
+   committed in a diff; the read confined to the design span; the output
+   carrying both classifications; and an explicit read grant. **The stricter
+   reading wins where they differ.**
 2. **No real M15 derivation before audit acceptance:** same refusal + redirect,
    and the same single Track A exception — a research-scratch derivation whose
    output is **not** the prereg §4 artifact and may never be recorded as one.
@@ -356,6 +366,13 @@ executable half is `scripts/m15_track_a/`.
 authorises **R1 only** — R3 (training) and R4 (evaluation) remain separate Red
 gates with separate approvals (policy §6, §2.5). Every item verified true, with
 citations, on a **named head**:
+
+*Decisions the human + ChatGPT round of 2026-08-30 closed, so a session
+does not reopen them:* the turnover axes (prereg **§9a**), prereg **§13a**
+(`P_7_DISCHARGED_AT_THIS_RULING`),
+`TRACK_A_R1_BOUNDED_ASSURANCE_THREAT_MODEL_ACCEPTED` and
+`GENERAL_ADVERSARIAL_AUDIT_COMPLETE_FOR_TRACK_A_R1_BOUNDED_SCOPE`
+(gate document §15). **None of them authorises a read.**
 
 - [ ] **PR #451 approved and merged.** Until it is, §8.11–§8.13 carry
       `APPROVAL_IDENTIFIER_PENDING_UNTIL_MERGE` and

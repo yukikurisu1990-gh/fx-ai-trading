@@ -12624,6 +12624,14 @@ acceptance test** and therefore **outside arm 3**; whether §8.7.5's pre-observa
 survives Track A at all is **not decided here**.
 **`THE_TURNOVER_AXES_ARE_OUTSIDE_ARM_3_AND_WHETHER_THEIR_PRE_OBSERVATION_LOCK_SURVIVES_TRACK_A_IS_UNRULED`.**
 
+*Answered by the human + ChatGPT round of 2026-08-30.* The axes are ruled at
+prereg **§9a**, **before any Track A activity**, so §8.7.5's pre-observation
+lock is **satisfied rather than tested for survival** — the question of whether
+it outlives a first turnover figure does not arise. C-20's classification
+stands: the axes were, and remain, terms in an acceptance test and outside
+arm 3, which is why the ruling was recorded in the pre-registration and not
+here.
+
 **C-21 — inherited call-site defaults are choices, and neither limb 4 nor step 5 catches
 them.** Track A writes the pipeline first, so it decides by **default** what nobody records
 as a decision: `select_threshold`'s `selection_metric` defaults to `daily_portfolio_sharpe`
@@ -13525,16 +13533,33 @@ a single turnover figure. **Neither side is available**, and this cleanup does n
 it — it is added to the Minimum Research Execution Gate.
 **`THE_TURNOVER_AXES_ARE_FIXABLE_NEITHER_BEFORE_NOR_AFTER_TRACK_A_AND_THE_COLLISION_IS_UNRULED`.**
 
-*Subsequently ruled at the execution gate*
-(`docs/design/m15_track_a_execution_gate.md` §10):
-**`TURNOVER_AXES_FIXED_AT_THE_COMMITTED_IMPLEMENTATION_MEAN_OVER_ACTIVE_DAYS`** —
-both axes are recorded at the arms the committed `metrics.py` already takes, so
-no threshold moves, nothing is selected that was not already selected, and the
-one axis on which the permissive and incumbent arms diverge is fixed at the
-**stricter** arm, which Ruling 10 requires and which no observation could make
-attractive. The deadlock dissolves because these are measurement conventions of
-an incumbent implementation, not the strategy parameters §8.13.5 excludes. S-62
-and S-63 remain live Track B surfaces.
+*Subsequently ruled — but not here, and not as an earlier drafting of this
+cross-reference said.* That drafting recorded
+`TURNOVER_AXES_FIXED_AT_THE_COMMITTED_IMPLEMENTATION_MEAN_OVER_ACTIVE_DAYS` as
+having been ruled at the execution gate. **It was withdrawn there** — the
+execution gate's own §10.4 records that "an earlier drafting of this section
+**did** rule the axes, at 'mean over active days' … the independent governance
+review **defeated that defence**" — and the cross-reference was not updated with
+it. Two independent review roles found the stale paragraph pointing at the very
+section that retired it, and describing the **permissive** arm as the stricter
+one. It is corrected here rather than deleted, because a phantom citation on a
+frozen acceptance surface is exactly the failure this packet exists to catch.
+
+**The axes are ruled**, by the human + ChatGPT Gate-decision round of
+**2026-08-30**, and the ruling lives where C-15 and C-20 put these surfaces —
+in the pre-registration, not here:
+`docs/design/m15_first_cost_hurdle_aware_preregistration_design.md` **§9a**.
+
+**`TURNOVER_CEILING_RULED_PER_DAY_CAP_ON_THE_ENTRY_DATE_MAXIMUM`** ·
+**`TURNOVER_DENOMINATOR_AXIS_IS_NON_BINDING_UNDER_THE_CAP_AND_STAYS_UNREGISTERED`.**
+
+Axis A is fixed at the **per-day cap** — the strict arm, so Ruling 10 is
+satisfied by construction and any move back to the mean is a loosening
+requiring its own ruling. Axis B is **not** ruled: a date carrying no trades
+cannot raise a maximum, so all four §8.6.6 candidates return the same verdict
+under the cap. S-62 and S-63 remain live inventory surfaces, and
+`THE_TURNOVER_AXES_ARE_FIXABLE_NEITHER_BEFORE_NOR_AFTER_TRACK_A_AND_THE_COLLISION_IS_UNRULED`
+above is **superseded** by §9a.
 
 ##### Claims §8.13 made that the review showed were wrong
 

@@ -148,8 +148,11 @@ def record(entry: ConfigurationEntry, identity: RunIdentity) -> Path:
     path.parent.mkdir(parents=True, exist_ok=True)
     payload = {"entry": entry.as_record(), "identity": identity.as_record()}
     line = json.dumps(payload, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
-    with path.open("a", encoding="utf-8", newline="\n") as handle:
-        handle.write(line + "\n")
+    # Through the locked writer, like the other three ledgers. This one used a
+    # bare ``open(..., "a")``, and §13.1 records that shape losing 5-13% of its
+    # lines under four concurrent writers — which would silently **undercount**
+    # `K`, the one number arm 3 exists to disclose.
+    scratch.append_line(path, line)
     return path
 
 

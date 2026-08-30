@@ -310,9 +310,19 @@ A Track A run that computes turnover reports it on **every** candidate — both
 statistics on axis 1, all four denominators on axis 2 — side by side, and
 compares none of them to prereg §9's ceiling. No axis is selected.
 
-**No axis selection is taken here.** The selection is
-**`THE_TURNOVER_AXIS_SELECTION_IS_REFERRED_TO_HUMAN_CHATGPT_AT_TRACK_B_CANDIDATE_PRE_REGISTRATION`**,
-and §10.4 records the analysis a ruling body would need.
+**No axis selection is taken here.** The selection was referred —
+`THE_TURNOVER_AXIS_SELECTION_IS_REFERRED_TO_HUMAN_CHATGPT_AT_TRACK_B_CANDIDATE_PRE_REGISTRATION`
+— and §10.4 records the analysis the ruling body needed.
+
+**The referral has since been answered.** The human + ChatGPT Gate-decision
+round of **2026-08-30** ruled the axes, in the pre-registration where C-15 and
+C-20 place them — `…preregistration_design.md` **§9a**:
+**`TURNOVER_CEILING_RULED_PER_DAY_CAP_ON_THE_ENTRY_DATE_MAXIMUM`** and
+**`TURNOVER_DENOMINATOR_AXIS_IS_NON_BINDING_UNDER_THE_CAP_AND_STAYS_UNREGISTERED`**.
+Axis A is fixed at the **strict** arm, so Ruling 10 is satisfied by
+construction; Axis B is not ruled, because a date with no trades cannot raise a
+maximum and all four §8.6.6 candidates then agree. §10.2's reporting obligation
+survives the ruling and is **extended to both tracks** by §9a.
 
 ### 10.3 Why the deadlock dissolves without a selection
 
@@ -505,15 +515,15 @@ table below says.
 | P-4 | playbook §7/§9 track field | done |
 | **P-5** | playbook **§1 gate table** + §3 ladder | §3 done; **§1 reconciled, gate table not rebuilt** |
 | P-6 | policy | done (§2a) |
-| **P-7** | prereg §3.1/§4/§10/§11/§13/§14/§16 | §13a **drafted, NOT IN FORCE** — `PREREG_AMENDMENT_P_7_REQUIRES_ITS_OWN_HUMAN_CHATGPT_RULING` |
+| **P-7** | prereg §3.1/§4/§10/§11/§13/§14/§16 | **DISCHARGED** — §13a **RULED, IN FORCE** by the human + ChatGPT round of 2026-08-30. The first drafting covered §3.1/§4/§11/§16 only and called §10 and §14 "unchanged", which would have recorded P-7 complete while three clauses still forbade the read; a contract-consistency review caught that before the ruling was taken, and the table now carries §10 item 3, §13 and §14 |
 | **P-8** | `docs/prompts/*` | done |
 | P-9 | playbook §8 | done |
 | **P-10** | approval identifiers on every RULED MRG section | **not done** — belongs to PR #451, at its merge |
 | P-11 | playbook §4 | done |
-| P-12 | prereg §7/§8 | done |
-| **P-13** | gate-4 audit T-1/T-2/T-6 | done |
+| P-12 | prereg §7/§8 | done — and **now in force**, since its text is §13a's, which was `NOT IN FORCE` when this row first read "done" |
+| **P-13** | gate-4 audit T-1/T-2/T-6 | done as a **scope reading**; §1a there carries no approval identifier and records the reading rather than ruling it |
 | P-14 | playbook §3 + §6 ratio checkbox | done |
-| P-15 | prereg §6 | done |
+| P-15 | prereg §6 | done — same dependency on §13a being in force, and same correction |
 
 **And the whole propagation rests on authority that is not yet citable.**
 §8.12.13 C-9 and the packet's own approval line record
@@ -803,6 +813,102 @@ context that had not written the code, and a green suite predicted conformance
 at every single head.** A reviewer weighing this apparatus should weigh that
 first, and should read §6's bound and the report's `bounds` before quoting any
 status from it.
+
+## 15. The final Human + ChatGPT Gate-decision round — 2026-08-30
+
+Four decisions were reserved for a human + ChatGPT round before Track A could
+begin. This section records them and nothing else: no surface was re-audited,
+no new adversarial search was run, and no statistical question outside these
+four was reopened.
+
+### 15.1 The turnover axes — RULED
+
+Recorded in the pre-registration at **§9a**, because C-15 and C-20 place these
+surfaces in prereg §9 / Ruling 10 territory, outside arm 3 — a ruling written
+only here or in the contract packet would fall to C-9 and to the
+unamended-clause rule.
+
+**`TURNOVER_CEILING_RULED_PER_DAY_CAP_ON_THE_ENTRY_DATE_MAXIMUM`** ·
+**`TURNOVER_DENOMINATOR_AXIS_IS_NON_BINDING_UNDER_THE_CAP_AND_STAYS_UNREGISTERED`** ·
+**`A_TURNOVER_FIGURE_IS_REPORTED_ON_EVERY_CANDIDATE_AXIS_IN_BOTH_TRACKS`.**
+
+It was a **genuine human choice, not a derivation** — the "calendar is a ~42%
+loosening" argument needs the incumbent as its baseline, and §10.4 established
+there is no committed M15 turnover implementation to be one, which leaves
+"loosening" without a referent on these axes and Ruling 10 selecting nothing.
+The chosen rule tightens, closes both axes with one decision, and cannot be
+moved back without a visible loosening ruling. The numeral 40 is unchanged and
+no new threshold was created. §9a records the accepted cost: a single outlier
+day can now close family A by a convention rather than by economics, and
+`metrics.py`/`acceptance.py` need a per-date maximum that they do not yet have.
+
+### 15.2 prereg §13a / P-7 — RULED
+
+**`PREREG_TWO_TRACK_AMENDMENT_RULED_AND_IN_FORCE_FOR_TRACK_A_ONLY`** ·
+**`P_7_DISCHARGED_AT_THIS_RULING`.**
+
+The draft was **not** sufficient and was widened before adoption. As drafted it
+covered §3.1, §4, §11 and §16, said §10 was "unchanged" and said "§14 below is
+unchanged" — so adopting it would have discharged P-7 on paper while prereg
+§10 item 3 ("gate 3a … must complete before any implementation PR reads or
+derives data", and §8.11.12 A-3 makes Track A implementation), §13 and §14 ("no
+raw data access; no metric computation") each still forbade the read. That is
+precisely the failure §8.12.13's widened P-7 was written to prevent. Rows for
+§10, §13 and §14 were added, and rows were added for the §8 model freeze,
+Ruling 9's `ev_min` grid, Ruling 5's cost model and §6's no-label-search — four
+clauses C-15 limb 1 names, whose silence would have re-frozen surfaces §8.13.4
+declares free to vary. The §8 row's "training span only" limb was restored, and
+§13a's claim that the ladder "skips none" was corrected: playbook §1 places
+**A-R1 before the gate-3a continuation**, so it reorders as well as adds.
+
+### 15.3 The bounded-assurance threat model — ACCEPTED
+
+**`TRACK_A_R1_BOUNDED_ASSURANCE_THREAT_MODEL_ACCEPTED`.**
+
+#452 is accepted as **bounded assurance, not a sandbox**. The known
+limitations — an unlisted C extension, `pyarrow._fs` and anything else
+`unpatchable_native_targets()` discloses, a hardlink pre-seeded into the working
+tree, and code deliberately disarming an in-process guard — are accepted as
+**residual risk for Track A R1**, on the criterion that R1's purpose is not
+production-grade isolation but to make an **accidental** boundary crossing fail
+loudly and a **deliberate** one appear in a diff.
+
+The acceptance is conditional on two properties that were checked, not assumed:
+the limitations are **disclosed** (§6, `AUDIT_BOUNDS`,
+`unpatchable_native_targets()`), and the report claims no more than
+`…_PROBES_PASSED_BOUNDED_ASSURANCE`. An independent review re-ran 35 of the
+listed native targets, 17 boundary probes and 17 intended-path refusals against
+a clean clone and found the disclosures matched the code. **Absence of a
+production sandbox is not, on its own, a reason to block.**
+
+### 15.4 The general adversarial audit — CLOSED for this scope
+
+**`GENERAL_ADVERSARIAL_AUDIT_COMPLETE_FOR_TRACK_A_R1_BOUNDED_SCOPE`.**
+
+"No unknown attack route exists" is **no longer a merge condition** for Track A
+R1. Six fix rounds and eight independent audit contexts is where this stops.
+
+What still blocks, from here: a **concrete, reproducible** defect inside the
+Track A R1 threat model — historical data readable without an explicit
+authorisation; network, DB or broker reachable; a write outside the scratch
+root from the intended Track A path; the seen ledger, `K` or `N = 1` bypassable;
+or the apparatus not running on a clean checkout.
+
+What does **not** block: a theoretical C-extension bypass nobody has exhibited;
+anything that only a real sandbox would close; production hardening; a
+pre-seeded hardlink; in-process self-disarming.
+
+### 15.5 What this round did not do
+
+It did not merge either PR, did not authorise a read, and did not re-open the
+149-surface inventory. **Two review roles** ran — contract consistency, and
+bounded-assurance / merge risk — and both were asked the same question: whether
+a material blocker remained for a human decision. Both found the same one, a
+**doc-only** defect: this PR's own diff had left a **withdrawn** turnover ruling
+alive in the contract packet, citing as its authority the very section that
+retired it, and calling the permissive arm the stricter one. It is corrected,
+and the drift test that missed it — it swept the source documents but not the
+files the source is propagated **into** — now sweeps the propagation targets too.
 
 ## 14. Non-authorisation statement
 

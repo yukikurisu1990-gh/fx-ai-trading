@@ -17,7 +17,9 @@ Before any M15 / ML Step 4 / post-M1 research work, read:
   it, and where they disagree with that packet **they govern until propagated**
 - `docs/design/m15_track_a_execution_gate.md` — the **Minimum Research
   Execution Gate**: the apparatus that has to be in place before a Track A R1
-  read may be authorised, and the turnover-axis ruling taken with it
+  read may be authorised. Its §10 takes a **reporting obligation**, not an axis
+  selection; the turnover axes are ruled in the pre-registration at **§9a**
+  (`TURNOVER_CEILING_RULED_PER_DAY_CAP_ON_THE_ENTRY_DATE_MAXIMUM`)
 
 For ordinary Green engineering (lint, CI, docs, tests, refactors) the
 autonomous development policy alone is enough.
@@ -63,7 +65,17 @@ otherwise.
 
 The apparatus for 1–3 is `scripts/m15_track_a/` and
 `docs/design/m15_track_a_execution_gate.md`; **building it is not passing the
-gate**, which needs review, approval and merge on a named head. Inside
+gate**, which needs review, approval and merge on a named head.
+
+**Settled by the human + ChatGPT Gate-decision round of 2026-08-30**
+(`docs/design/m15_track_a_execution_gate.md` §15): the turnover axes
+(prereg §9a), prereg §13a / P-7
+(`P_7_DISCHARGED_AT_THIS_RULING`),
+`TRACK_A_R1_BOUNDED_ASSURANCE_THREAT_MODEL_ACCEPTED`, and
+`GENERAL_ADVERSARIAL_AUDIT_COMPLETE_FOR_TRACK_A_R1_BOUNDED_SCOPE`. **None of
+those authorises a read.** From here, a blocker is a concrete, reproducible
+defect inside the Track A R1 threat model — not a theoretical bypass and not
+the absence of a sandbox. Inside
 Track A, R1 (first read), R3 (training) and R4 (evaluation) remain **separate
 Red gates**. §8.12.10 records that an execution-gate pass reaches **R1 only** —
 a statement of **scope**, not of sufficiency: it makes R1 eligible to be
