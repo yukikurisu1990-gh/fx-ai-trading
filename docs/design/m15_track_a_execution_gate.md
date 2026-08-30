@@ -1096,9 +1096,21 @@ constants: 310 design dates, `ceil(0.20 x 310) = 62`, slice
 and no clock — asserted on its AST, after a first draft of that very test was
 defeated by the word "environment" appearing in the module's prose.
 
-The quarantine is enforced by `read_route.assert_development_only`, which
+The quarantine is enforced in **three** places, because a review role drove all
+62 slice dates through a single one of them. `read_route.assert_development_only`
 refuses — never trims — a `track_a_historical_read` whose **touched** interval,
-warm-up included, reaches `2025-12-29`. It sits beside `assert_span_admissible`
+warm-up included, reaches `2025-12-29`; the route re-applies the same check to
+the **computed window**, after every request field has stopped being consulted;
+and `ReadGrant` itself refuses to be constructed over a slice date for that
+operation, with the mirror rule for `track_a_exploratory_oos_slice_read`.
+
+The reproduction that forced all three: a `ReadRequest` **subclass** answering
+`span_end_utc` honestly at the gates and widening afterwards — the route reads
+that field three times — combined with a grant reaching `2026-02-28`, returned
+the whole quarantined slice. The route now pins `type(request) is ReadRequest`
+exactly, as it already did for the grant. The same role also found
+`derivation.derive_m15` applying `assert_span_admissible` but **not** the slice
+gate, while its docstring claimed it carried the read route's gates. It sits beside `assert_span_admissible`
 rather than inside it: the design-span and dead-window bounds come from the
 committed `no_overlap` module, this one comes from a ruling, and collapsing them
 would hide which authority refused a read.
@@ -1120,19 +1132,56 @@ because the commit that records it moves `HEAD`.
 `ReadGrant` gains an eighth required field,
 `approved_implementation_fingerprint`, and the gate refuses unless it equals
 `containment.implementation_fingerprint()` **measured from the running tree**: a
-sha256 over every `scripts/m15_track_a/*.py` plus the two `m15_gate3a` modules
-`read_route` imports, with paths and the file count hashed alongside the bytes.
-The surface is located from the package's own directory, so the value does not
-depend on where the repository is checked out.
+sha256 over every `.py` under `scripts/m15_track_a/` plus the **transitive**
+first-party import closure, with paths and the file count hashed alongside the
+bytes, line endings normalised, and every module resolved through `importlib`
+rather than by path arithmetic.
 
-So an authorization-only commit keeps the grant valid, and **any** change to
-what a read does voids it with no human in the loop. The limit is stated rather
-than implied: this binds the implementation, not the ancestry. Whether the
-execution head descends from the approved head is a `git` question, and reaching
-git from inside a gated read means spawning a process the isolation layer exists
-to refuse — so it stays a gate-time obligation on the reviewer
-(`git merge-base --is-ancestor`, `git diff --stat`), and it is the weaker of the
-two, since identical implementation bytes read identically wherever they sit.
+**Three of those words are corrections a review role forced, and each was a
+measured hole, not a tidy-up.**
+
+* *Transitive.* The first drafting listed the modules the package imports
+  directly. `no_overlap` imports `timeutil`, and `timeutil.to_utc` is what
+  `is_dead_window_instant` is built on: shifting it by 400 days disabled the
+  route's dead-window row guard **with the fingerprint unchanged and the grant
+  still valid**. `numeric_authority`, both package `__init__.py` files and
+  `ml_step4/data_adapter.py` were outside in the same way. Worse, the anti-drift
+  test written to catch exactly this walked only the package's own files, so it
+  passed while the drift was already present.
+* *Through `importlib`.* `scripts` has no `__init__.py`, so it is a PEP 420
+  namespace package and `PYTHONPATH` alone can serve `scripts.m15_gate3a` from
+  elsewhere. Path arithmetic hashed the repository's pristine file while the
+  process ran the shadow — matching fingerprint, valid grant, **and nothing in
+  any diff at all**. `find_spec` resolves what will actually be imported.
+* *Line endings normalised.* `core.autocrlf` is true here and CI is Linux, so
+  one commit produced two different values. That is not a bypass, but it would
+  have made the workflow unworkable: a value recorded from CI could never match
+  the host the read runs on, and flipping the git setting would have voided a
+  grant with no code change.
+
+**And one of those fixes introduced a fourth defect, caught by measurement
+rather than by review.** `import importlib` does not bind `importlib.util`, and
+the resolver caught `AttributeError` — so every sibling resolved to `None` and
+the surface silently shrank back to twelve files while the code said "closure".
+An over-broad `except` turned a missing import into precisely the silent
+weakening the function exists to prevent. The import is explicit now and
+`AttributeError` is no longer caught.
+
+So an authorization-only commit keeps the grant valid, and a change to anything
+on the **declared surface** voids it with no human in the loop. Stated that way
+deliberately: an earlier drafting of this paragraph said "**any** change to what
+a read does", and that was the overclaiming this document has spent eight rounds
+retiring. `AUDIT_BOUNDS` names what a source fingerprint cannot see — an
+`UNCHECKED_HASH` `.pyc` (which needs no craft and is gitignored), an installed
+dependency, a non-`.py` file loaded at run time.
+
+The other limit, also stated rather than implied: this binds the implementation,
+not the ancestry. Whether the execution head descends from the approved head is
+a `git` question, and reaching git from inside a gated read means spawning a
+process the isolation layer exists to refuse — so it stays a gate-time
+obligation on the reviewer (`git merge-base --is-ancestor`, `git diff --stat`),
+and it is the weaker of the two, since identical implementation bytes read
+identically wherever they sit.
 
 **Nothing here issues a grant.** No `ReadGrant` is committed in this PR, and
 that is the point of the sequence: a grant names the fingerprint of a **merged**

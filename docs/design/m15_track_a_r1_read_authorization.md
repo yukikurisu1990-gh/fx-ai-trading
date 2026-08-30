@@ -115,40 +115,65 @@ head.** `ReadGrant` gains an eighth required field,
 it equals `containment.implementation_fingerprint()` **computed from the running
 tree** at check time.
 
-The fingerprint is a sha256 over the declared implementation surface: every
-`.py` under `scripts/m15_track_a/` **recursively**, plus every `m15_gate3a`
-module the package imports — `aggregation`, `no_overlap`, `pair_authority`,
-`path_authority`. Paths are hashed with the bytes, and the file count with both,
-so renaming a module or swapping two files does not cancel out. The surface is
-located from the **package's own directory**, not from a repository root, so it
-describes the code that is actually imported and gives the same value on the
-approver's machine and the reviewer's.
+The fingerprint is a sha256 over the implementation surface: every `.py` under
+`scripts/m15_track_a/` **recursively**, plus the **transitive first-party import
+closure** of those files, each module resolved through `importlib.find_spec`.
+Paths are hashed with the bytes, the file count with both, and line endings are
+normalised first.
 
-Two of those details were measured rather than assumed, and both were wrong in
-the first drafting:
+**The surface is computed, not declared, and every word of that sentence is a
+correction.** Three draftings were measured and broken:
 
-* it globbed **non-recursively**, so `m15_track_a/helpers/reader.py` would have
-  been outside the fingerprint entirely — the read logic could move one
-  directory down and keep an old grant valid;
-* it listed only the two modules `read_route` imports, leaving `aggregation`
-  (the derivation route's delegate) and `path_authority` (which decides what is
-  inside the scratch root) uncovered.
+1. it globbed **non-recursively**, so `m15_track_a/helpers/reader.py` would have
+   been outside the fingerprint entirely;
+2. it declared a hand-written list of `m15_gate3a` siblings — and a declared
+   list follows imports one hop. `no_overlap` imports `timeutil`, and
+   `timeutil.to_utc` is what `is_dead_window_instant` is built on: shifting it
+   by 400 days **disabled the route's dead-window row guard with the fingerprint
+   unchanged and the grant still valid**. `numeric_authority`, both package
+   `__init__.py` files and `ml_step4/data_adapter.py` were outside the same way.
+   The anti-drift test written to catch this walked only the package's own files
+   and so passed while the drift was already there;
+3. it resolved siblings by **path arithmetic**. `scripts` has no `__init__.py`,
+   so it is a PEP 420 namespace package and `PYTHONPATH` alone can serve
+   `scripts.m15_gate3a` from elsewhere. Path arithmetic hashed the repository's
+   pristine file while the process ran the shadow — matching fingerprint, valid
+   grant, **and nothing in any diff**.
 
-A test now pins the sibling list against the package's **actual** imports, since
-the failure mode is a fifth import that nobody adds to the list.
+**And the fix for (2) introduced a fourth defect that only measurement caught.**
+`import importlib` does not bind `importlib.util`, and the resolver caught
+`AttributeError`; every sibling resolved to `None` and the surface silently
+shrank back to twelve files while the code said "closure". An over-broad
+`except` turned a missing import into exactly the silent weakening the function
+exists to prevent.
 
-Coverage was then measured on clones, not argued: a byte changed in
-`read_route.py`, `isolation.py` or `no_overlap.py`, a new module, a module in a
-new subdirectory, and a deleted module each change the value; a byte-identical
-copy at a different path does not.
+A fifth detail is not a bypass but would have made this workflow unusable:
+`core.autocrlf` is true on the authoring host and CI runs Linux, so **one commit
+produced two different fingerprints**. The value recorded from CI could never
+have matched the host the read runs on, and flipping the git setting would have
+voided a grant with no code change at all. Line endings are normalised before
+hashing.
+
+**Coverage is measured on clones, not argued.** Each of these changes the value:
+a byte in `read_route.py`, `isolation.py`, `no_overlap.py`, `timeutil.py`,
+`numeric_authority.py`, `m15_gate3a/__init__.py`, `ml_step4/data_adapter.py` or
+`ml_step4/__init__.py`; a new module; a module in a new subdirectory; a deleted
+module; a `PYTHONPATH` shadow of `scripts.m15_gate3a`. A byte-identical copy at
+a different path, and a CRLF-vs-LF checkout of one commit, do not.
+
+What it still does not see is in `AUDIT_BOUNDS`: an `UNCHECKED_HASH` `.pyc`
+(which needs no craft, and which `__pycache__` being gitignored keeps out of any
+diff), an installed dependency, and a non-`.py` file loaded at run time.
 
 What this buys, exactly:
 
 | Change after approval | Old check | Ruled check |
 | --- | --- | --- |
 | a commit recording the grant, or a document | ❌ voided the grant | ✅ grant stands |
-| one byte of `read_route.py`, `isolation.py`, `no_overlap.py`, … | ✅ if honest | ✅ **always** |
+| one byte anywhere on the declared surface | ✅ if honest | ✅ **always** |
+| a `PYTHONPATH` shadow of `scripts.m15_gate3a` | ❌ passed | ✅ refused |
 | a caller asserting the approved head while running other code | ❌ passed | ✅ refused |
+| an `UNCHECKED_HASH` `.pyc` over unchanged source | ❌ passed | ❌ passes — disclosed |
 
 ### The sequence, and it is the plain one
 
@@ -293,15 +318,83 @@ nothing it returns observes the slice.
 
 ### The quarantine is enforced, not just recorded
 
-`read_route.assert_development_only` refuses any `track_a_historical_read` whose
-**touched** interval — warm-up included — reaches `slice_start` or later. It sits
-beside `assert_span_admissible` rather than inside it, because the design-span
-and dead-window bounds come from the committed `no_overlap` module while this
-boundary comes from a ruling, and collapsing the two would hide which authority
-refused a read.
+Three places, because a review role drove all 62 slice dates through a single
+one of them.
 
-It **refuses**; it does not trim. A read silently shortened to the development
-span leaves the caller believing it got what it asked for.
+1. `read_route.assert_development_only` refuses any `track_a_historical_read`
+   whose **touched** interval — warm-up included — reaches `slice_start` or
+   later. It sits beside `assert_span_admissible` rather than inside it, because
+   the design-span and dead-window bounds come from the committed `no_overlap`
+   module while this boundary comes from a ruling, and collapsing the two would
+   hide which authority refused a read.
+2. The route re-applies the same check to the **computed window**, after the
+   grant∩request intersection and after every request field has stopped being
+   consulted.
+3. `ReadGrant.__post_init__` refuses to construct a `track_a_historical_read`
+   grant naming a slice date at all — with the mirror rule for
+   `track_a_exploratory_oos_slice_read`, which may name **only** slice dates, so
+   an OOS approval cannot be spent on development data under a different name.
+
+**Why three.** A review role built a `ReadRequest` **subclass** whose
+`span_end_utc` answered honestly for the first six reads and widened afterwards —
+the route consults that field three times, at the admissibility gate, at the
+slice gate, and again when the window is computed. Paired with a grant reaching
+`2026-02-28`, it returned the whole quarantined slice, and the seen-data ledger
+recorded the development span. Narrowing the grant to the ruled corpus reduced
+the same attack to zero slice rows, which is what makes (3) load-bearing rather
+than decorative. The route now also pins `type(request) is ReadRequest` exactly,
+as it already did for the grant — the module's own prose had named that threat
+for pair names and left it open for dates.
+
+The same role found `derivation.derive_m15` applying `assert_span_admissible`
+but not the slice gate, while its docstring claimed it carried the read route's
+gates. Its body is still absent so nothing was derived, but deriving M15 bars
+over the slice is "computing a statistic over it"; the gate is there now.
+
+Each of them **refuses**; none trims. A read silently shortened to the
+development span leaves the caller believing it got what it asked for.
+
+### What this ruling puts in conflict, recorded and NOT resolved here
+
+Giving the boundary a date makes a collision concrete for the first time, and it
+is recorded rather than quietly absorbed.
+
+**The 25% prefix ruling (§8.9.1, c-15) is committed authority** and fixes
+`232` predicted DESIGN dates, `2025-07-12 … 2026-02-28`. Those 232 dates
+**include all 62 slice dates**. R-2 quarantines the slice from "describing,
+plotting or computing a statistic over it" before R4. Both cannot hold as
+written. Exactly one of these must be true, and **no recorded ruling says
+which**:
+
+* the `c`-map's estimation is an R4-or-later activity, and R-2 does not reach
+  it; or
+* the predicted dates available to it before R4 number **170**, not 232.
+
+The arithmetic is consistent with either: `248 = 78 + 170`.
+
+`SECTION_4_R2_IS_THIS_PACKETS_PROPOSAL_NOT_COMMITTED_AUTHORITY` — R-2 is the
+proposal, c-15 the authority. This document applies the **stricter** reading, as
+the repository rule requires, so the slice stays quarantined. But the stricter
+reading silently changes a number a committed ruling states, and that is a
+change no session may make on its own.
+
+**It does not block this read.** The development span is `2025-04-25 …
+2025-12-28` under either resolution, so R1's scope is unaffected. The conflict
+binds a later stage. Recorded as
+`C_MAP_PREDICTED_DATE_COUNT_VS_OOS_SLICE_QUARANTINE_UNRESOLVED_REFERRED`.
+
+### The purge obligation this read hands downstream
+
+`A_TRAILING_PURGE_APPLIES_AT_THE_SLICE_BOUNDARY_AND_IS_NOT_DISCHARGED_BY_THIS_READ`.
+
+The read returns bars up to `2025-12-28`. A signal bar late on that date has a
+24-bar label window reaching into `2025-12-29`, where there is no returned data —
+so a naive labeller does not produce a *missing* label, it produces a **wrong**
+one (a timeout or a zero). R-2's ≥ 25 M15 bar purge is exactly the remedy, and
+it is a **training-stage** obligation this read does not and cannot discharge.
+Recorded here as a token rather than as prose so a later stage cannot treat the
+reasoning above as having dealt with it. It is the same shape as §8.11.12 F-5's
+trailing purge at `DESIGN_END`, and §8.11.3 requires **both**.
 
 ## 5. The development `ReadGrant`, in full
 

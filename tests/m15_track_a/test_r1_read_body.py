@@ -25,7 +25,7 @@ from scripts.m15_track_a import (
     scratch,
     seen_ledger,
 )
-from scripts.m15_track_a.oos_slice import DEVELOPMENT_END_UTC
+from scripts.m15_track_a.oos_slice import DEVELOPMENT_END_UTC, SLICE_START_UTC
 
 #: The fingerprint of the tree these tests run against. A grant binds to the
 #: measured implementation, not to a caller-asserted head, so a synthetic
@@ -243,7 +243,16 @@ def test_an_oos_slice_grant_does_not_authorise_a_development_read(
     """
     run = _run()
     _declare(run)
-    slice_grant = _grant(operation=authorization.OPERATION_OOS_SLICE_READ)
+    # Two authorities refuse this now, and the stronger one is new: an OOS grant
+    # cannot even be **constructed** over development dates, so the mismatch
+    # cannot be dressed up as a question of scope.
+    with pytest.raises(authorization.AuthorizationMalformedError, match="only name dates inside"):
+        _grant(operation=authorization.OPERATION_OOS_SLICE_READ)
+    slice_grant = _grant(
+        operation=authorization.OPERATION_OOS_SLICE_READ,
+        span_start_utc=SLICE_START_UTC,
+        span_end_utc="2026-02-28",
+    )
     with pytest.raises(authorization.AuthorizationError):
         read_route.read_historical(_request(), run, grant=slice_grant)
 
@@ -377,7 +386,9 @@ def test_a_dead_window_row_in_the_source_is_never_reached(sandbox: Path, guards:
     **grant** ending `2026-04-30`, as though that were an ordinary pairing. It
     was the defect: the read window came from the grant, so the route reached
     into the dead window and then refused what it found there. Refusing is not
-    the guarantee worth having — **not reaching it** is.
+    the guarantee worth having — **not reaching it** is. (Since the R-2 ruling
+    a grant cannot name `2026-04-30` at all, so the pairing is now impossible
+    twice over; the guarantee asserted here is still the one about the scan.)
 
     So the guarantee asserted now is the stronger one. The dead window and the
     forward epoch lie after `DESIGN_END`, every admissible window ends at or
@@ -396,7 +407,7 @@ def test_a_dead_window_row_in_the_source_is_never_reached(sandbox: Path, guards:
     result = read_route.read_historical(
         _request(span_end_utc=DEVELOPMENT_END_UTC),
         run,
-        grant=_grant(span_end_utc="2026-04-30"),
+        grant=_grant(span_end_utc=DEVELOPMENT_END_UTC),
     )
     returned = [row[read_route.ROW_TIMESTAMP_KEY] for row in result.rows_by_pair["EUR_USD"]]
     assert returned == [datetime(2025, 5, 2, 12, 0, tzinfo=UTC)]
@@ -459,7 +470,7 @@ def test_a_grant_wider_than_the_request_does_not_widen_the_read(
     result = read_route.read_historical(
         _request(span_end_utc="2025-05-31"),
         run,
-        grant=_grant(span_end_utc="2026-02-28"),
+        grant=_grant(span_end_utc=DEVELOPMENT_END_UTC),
     )
     returned = [row[read_route.ROW_TIMESTAMP_KEY] for row in result.rows_by_pair["EUR_USD"]]
     assert returned == [datetime(2025, 5, 2, 12, 0, tzinfo=UTC)]

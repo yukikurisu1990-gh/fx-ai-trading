@@ -55,7 +55,11 @@ from scripts.m15_gate3a.aggregation import (
 )
 from scripts.m15_track_a import authorization, isolation, seen_ledger
 from scripts.m15_track_a.identity import RunIdentity
-from scripts.m15_track_a.read_route import ReadRequest, assert_span_admissible
+from scripts.m15_track_a.read_route import (
+    ReadRequest,
+    assert_development_only,
+    assert_span_admissible,
+)
 
 #: The selected arm, named so the choice is greppable.
 SELECTED_ROUTE: Final[str] = "arm_i_committed_gate3a_aggregate_m15_on_research_scratch_output"
@@ -137,6 +141,12 @@ def derive_m15(
     )
 
     assert_span_admissible(read_request)
+    # Added after a review role found it missing. Deriving M15 bars over the
+    # slice is "computing a statistic over it", which R-2 forbids before R4 —
+    # and this route's docstring claimed it applied the read route's gates,
+    # which stopped being true the moment that route grew a slice gate. The body
+    # is still absent, so nothing was derived; the gate composition was wrong.
+    assert_development_only(read_request)
 
     seen_ledger.assert_declared(
         span_start_utc=read_request.touched_start_utc,

@@ -45,15 +45,18 @@ tail data and introduces nothing.
 The arithmetic is integer, not floating point
 ---------------------------------------------
 
-``ceil(0.20 * 310)`` in binary floating point is not obviously 62, and a
-boundary that depends on the rounding of ``0.2`` is a boundary nobody can check
-by hand.  ``-(-n * 20 // 100)`` is exact integer ceiling division and gives the
-same answer for every ``n`` the ruling could ever be applied to.
+``0.20 * 310`` happens to be exactly ``62.0``, so nothing is wrong with the
+committed span's own arithmetic — an earlier drafting of this paragraph
+overstated that, and a review role was right to say so.  The reason for integer
+arithmetic is the general one: ``0.2`` has no exact binary representation, so
+``ceil(0.2 * n)`` is off by one for some ``n``, and a rule whose correctness
+depends on which ``n`` it is applied to is not a rule anyone can check by hand.
+``-(-n * 20 // 100)`` is exact integer ceiling division for every ``n``.
 """
 
 from __future__ import annotations
 
-from datetime import date, datetime, timedelta
+from datetime import UTC, date, datetime, timedelta
 from typing import Final
 
 from scripts.m15_gate3a.no_overlap import DESIGN_END, DESIGN_START
@@ -113,8 +116,10 @@ def _as_date(value: datetime | date) -> date:
 
     ``datetime`` is a ``date`` subclass, so an ``isinstance`` test in the wrong
     order silently accepts one — the shape that produced F-1 in an earlier
-    round. The datetime branch is therefore tested **first**, and a naive one is
-    refused rather than read in whatever timezone the host happens to be in.
+    round. The datetime branch is therefore tested **first**; a naive one is
+    refused rather than read in whatever timezone the host happens to be in; and
+    an aware one is **converted to UTC before its date is taken**, because a
+    non-UTC offset moves the calendar date across the boundary.
     """
     if isinstance(value, datetime):
         if value.utcoffset() is None:
@@ -122,7 +127,14 @@ def _as_date(value: datetime | date) -> date:
                 f"a naive datetime has no UTC date: {value!r}. Reinterpreting it in the "
                 "host timezone is how a bar moves across a boundary."
             )
-        return value.date()
+        # ``.astimezone(UTC)`` first, and this is a fix. The earlier drafting
+        # called ``.date()`` on the value as given, which is its **local** date:
+        # a review role measured 2025-12-28T23:00-09:00 — which is
+        # 2025-12-29T08:00Z, inside the slice — being reported clear, and
+        # 2025-12-29T06:00+09:00 — 2025-12-28T21:00Z, development data — being
+        # reported inside. The docstring below already named that failure for
+        # the naive case and then let it through for the aware one.
+        return value.astimezone(UTC).date()
     if type(value) is date:
         return value
     raise OosSliceError(f"expected a date or an aware datetime, got {type(value).__name__}")

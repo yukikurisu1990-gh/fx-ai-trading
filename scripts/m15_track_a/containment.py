@@ -71,6 +71,7 @@ from __future__ import annotations
 import ast
 import hashlib
 import importlib
+import importlib.util
 import socket
 from dataclasses import dataclass
 from pathlib import Path
@@ -121,11 +122,14 @@ AUDIT_BOUNDS: Final[tuple[str, ...]] = (
     "A hardlink pre-seeded into the working tree defeats every path test, and "
     "code running in this process can disarm any in-process guard.",
     "The implementation fingerprint a ReadGrant binds to is taken over .py "
-    "SOURCE files. It does not see a hand-written .pyc whose header matches the "
-    "source it shadows, an installed dependency changing underneath, or a "
-    "non-.py file the code loads at run time. It is the same class of limit as "
-    "the hardlink above: it makes an accidental change fail loudly and a "
-    "deliberate one appear in a diff.",
+    "SOURCE files, so it does not see the compiled form. A review role measured "
+    "that this needs no craft: one py_compile call with "
+    "PycInvalidationMode.UNCHECKED_HASH produces a .pyc that CPython loads "
+    "without consulting the source at all, and __pycache__ is gitignored, so "
+    "this one does NOT appear in a diff either. Run with python -B or "
+    "PYTHONDONTWRITEBYTECODE=1 and an empty __pycache__ if that matters to the "
+    "reader. It also does not see an installed dependency changing underneath, "
+    "or a non-.py file the code loads at run time.",
     "What this apparatus buys is that an accidental boundary crossing fails "
     "loudly, and a deliberate one has to appear in a diff. It is not a sandbox, "
     "and a passing report is not a substitute for reading the diff.",
@@ -135,33 +139,38 @@ AUDIT_BOUNDS: Final[tuple[str, ...]] = (
 #: is taken over exactly these, and a grant binds to the value it had when the
 #: approval was given.
 #:
-#: The list is deliberately whole-directory rather than a hand-picked set of
-#: modules: a hand-picked set is one a later diff can quietly step outside, by
-#: adding a module or moving logic into one that is not listed.  The
-#: `m15_gate3a` entries are named individually, and the list is **every** module
-#: in that package this one imports — not only the two `read_route` reaches.
-#: `aggregation` is the derivation route's delegate and `path_authority` decides
-#: what counts as inside the scratch root, so a change to either changes what an
-#: authorised operation does.  A test pins the list against the actual imports,
-#: because the failure mode here is a new import that nobody adds to the list.
+#: **The surface is computed, not listed, and that is a correction.** Two
+#: earlier draftings declared it: first every `scripts/m15_track_a/*.py` plus the
+#: two `m15_gate3a` modules `read_route` imports, then plus the two more the
+#: package imports. A review role measured what a declared list still missed and
+#: broke both:
 #:
-#: The directory is located from **this module's own file**, not from
-#: ``scratch.repo_root()``.  The fingerprint has to describe the code that is
-#: actually imported and about to run; a repository root is a caller-influenced
-#: value, and several tests legitimately point it at a temporary tree.
+#: * `no_overlap` imports `timeutil`, and `timeutil.to_utc` is what
+#:   `is_dead_window_instant` is built on. Shifting it by 400 days disabled the
+#:   route's dead-window row guard **with the fingerprint unchanged and the
+#:   grant still valid**. `numeric_authority` and
+#:   `scripts.ml_step4.data_adapter` (which `pair_authority` imports) were
+#:   outside in the same way. A declared list follows imports one hop; the code
+#:   that runs follows them all the way down.
+#: * the anti-drift test was blind to exactly this, because it walked only the
+#:   package's own files for `scripts.m15_gate3a.` prefixes — so it passed while
+#:   the drift it existed to catch was already present.
 #:
-#: The two `m15_gate3a` files are named as **paths beside this package**, not
-#: imported as modules.  Importing them here would hand this module the whole
-#: module object, and WP5's reader-freedom pin refuses that on sight — rightly,
-#: since a module object carries every name in it. Resolving the sibling
-#: directory needs no import at all, so there is nothing for the pin to weigh,
-#: and a missing file still fails closed below.
-IMPLEMENTATION_SURFACE_SIBLINGS: Final[tuple[str, ...]] = (
-    "m15_gate3a/aggregation.py",
-    "m15_gate3a/no_overlap.py",
-    "m15_gate3a/pair_authority.py",
-    "m15_gate3a/path_authority.py",
-)
+#: So the surface is the **transitive import closure** of the package, over
+#: first-party `scripts.*` modules, resolved through ``importlib`` rather than by
+#: path arithmetic. Resolving through the import system is what closes the
+#: second hole the same role found: `scripts` has no `__init__.py`, so it is a
+#: PEP 420 namespace package and `PYTHONPATH` alone can serve
+#: `scripts.m15_gate3a` from somewhere else. Path arithmetic hashed the
+#: repository's pristine file while the process ran the shadow — matching
+#: fingerprint, valid grant, and **nothing in any diff**. ``find_spec`` resolves
+#: what will actually be imported, so the shadow is what gets hashed and the
+#: mismatch refuses the read.
+IMPLEMENTATION_SURFACE_ROOT_PACKAGE: Final[str] = "scripts"
+
+#: The modules the closure starts from: the whole package, discovered on disk so
+#: that a module nobody imports yet is still covered.
+IMPLEMENTATION_SURFACE_PACKAGE: Final[str] = "scripts.m15_track_a"
 
 #: The modules a Track A run is allowed to reach a read through.  A read route
 #: appearing anywhere else in this package is a finding.
@@ -571,6 +580,14 @@ _PERMITTED_READ_ROUTE_CALLS: Final[frozenset[str]] = frozenset(
         # while the slice boundary comes from a human + ChatGPT ruling, and
         # collapsing the two would hide which authority refused a read.
         "assert_development_only",
+        # The same slice gate again, applied to the **computed window** rather
+        # than to a request field, and the type pin that stops a subclass
+        # answering a field differently on each read. Both were added after a
+        # review role drove the whole quarantined slice through the gates with a
+        # lying ReadRequest subclass.
+        "assert_clear_of_slice",
+        "type",
+        "str",
         "assert_declared",
         "record_grant",
         "gated_read_window",
@@ -844,6 +861,61 @@ def _check_read_body_is_declared() -> CheckResult:
     )
 
 
+def _first_party_imports(tree: ast.AST) -> set[str]:
+    """Every ``scripts.*`` module name one source file imports."""
+    prefix = f"{IMPLEMENTATION_SURFACE_ROOT_PACKAGE}."
+    names: set[str] = set()
+    for node in ast.walk(tree):
+        if isinstance(node, ast.ImportFrom):
+            module = node.module or ""
+            if node.level:
+                # A relative import inside the package. Resolved against the
+                # package rather than skipped, because "we only follow absolute
+                # imports" is a rule a later diff can step around with one dot.
+                module = f"{IMPLEMENTATION_SURFACE_PACKAGE}.{module}".rstrip(".")
+            if module == IMPLEMENTATION_SURFACE_ROOT_PACKAGE or module.startswith(prefix):
+                names.add(module)
+                for alias in node.names:
+                    names.add(f"{module}.{alias.name}")
+        elif isinstance(node, ast.Import):
+            for alias in node.names:
+                if alias.name == IMPLEMENTATION_SURFACE_ROOT_PACKAGE or alias.name.startswith(
+                    prefix
+                ):
+                    names.add(alias.name)
+    return names
+
+
+def _module_source(name: str) -> Path | None:
+    """The file ``import name`` would actually load, or None if it is not one.
+
+    ``find_spec`` rather than a path computation: it consults ``sys.path``, so a
+    shadowed package is resolved to the shadow. That is the whole point — the
+    fingerprint must describe the code that will run, not the code the
+    repository happens to contain.
+    """
+    try:
+        spec = importlib.util.find_spec(name)
+    except (ImportError, ValueError):
+        # ``ImportError`` covers ModuleNotFoundError and "parent is not a
+        # package", which is what a ``module.SYMBOL`` name produces.
+        #
+        # ``AttributeError`` is deliberately **not** caught, and that is a fix.
+        # It was, and ``import importlib`` alone does not bind
+        # ``importlib.util`` — so every call raised AttributeError, every
+        # sibling resolved to None, and the surface silently shrank to this
+        # package's own twelve files. The measurement said 12 and the code said
+        # "transitive closure". An over-broad except turned a missing import
+        # into exactly the silent weakening this function exists to prevent.
+        return None
+    if spec is None or not spec.origin or not spec.origin.endswith(".py"):
+        # A namespace package (``scripts`` itself) has no origin, and an
+        # extension module has no source. Neither is a file this can hash;
+        # ``scripts`` is covered by its children.
+        return None
+    return Path(spec.origin).resolve()
+
+
 def _surface_name(path: Path) -> str:
     """``m15_track_a/read_route.py`` — the package and the file, nothing above it.
 
@@ -852,19 +924,21 @@ def _surface_name(path: Path) -> str:
     than on the approver's and would make the field uncheckable. A file below a
     subdirectory keeps its subdirectory, so moving one is a change.
     """
-    package = Path(__file__).resolve().parent
-    try:
-        return f"{package.name}/{path.resolve().relative_to(package).as_posix()}"
-    except ValueError:
-        # A sibling package's file, named the same way: ``m15_gate3a/x.py``.
-        return f"{path.parent.name}/{path.name}"
+    parts = path.resolve().parts
+    for index, part in enumerate(parts):
+        if part == IMPLEMENTATION_SURFACE_ROOT_PACKAGE and index + 1 < len(parts):
+            return "/".join(parts[index + 1 :])
+    return path.name
 
 
 def implementation_surface() -> tuple[Path, ...]:
     """Every source file the fingerprint covers, in a stable order.
 
+    The package's own files, plus the transitive closure of the first-party
+    modules they import, resolved through the import system.
+
     Sorted by the package-relative name rather than by whatever order the
-    filesystem hands back, because a fingerprint that depends on directory
+    filesystem or a set hands back, because a fingerprint that depends on
     iteration order is a fingerprint that changes for no reason on another host.
     """
     package = Path(__file__).resolve().parent
@@ -874,12 +948,31 @@ def implementation_surface() -> tuple[Path, ...]:
     # grant valid. There is no subdirectory today; the point is that adding one
     # cannot silently escape.
     found = {path.resolve() for path in package.rglob("*.py") if "__pycache__" not in path.parts}
-    for relative in IMPLEMENTATION_SURFACE_SIBLINGS:
-        found.add((package.parent / relative).resolve())
+    pending = list(found)
+    while pending:
+        source = pending.pop()
+        try:
+            tree = ast.parse(source.read_text(encoding="utf-8"))
+        except (OSError, SyntaxError) as exc:
+            raise RuntimeError(
+                f"the implementation surface includes {source}, which cannot be parsed: {exc}. "
+                "A fingerprint over a surface that cannot be read is not a fingerprint."
+            ) from exc
+        for name in _first_party_imports(tree):
+            # Every ancestor package too: importing
+            # ``scripts.m15_gate3a.no_overlap`` executes
+            # ``scripts/m15_gate3a/__init__.py`` on the way, so that file is
+            # code the read runs and has to be inside the fingerprint.
+            parts = name.split(".")
+            for depth in range(1, len(parts) + 1):
+                resolved = _module_source(".".join(parts[:depth]))
+                if resolved is not None and resolved not in found:
+                    found.add(resolved)
+                    pending.append(resolved)
     for path in found:
         if not path.is_file():
             raise RuntimeError(
-                f"the declared implementation surface names {path}, which is not a file. "
+                f"the implementation surface names {path}, which is not a file. "
                 "A fingerprint over a surface that is not all present is not a fingerprint."
             )
     return tuple(sorted(found, key=_surface_name))
@@ -907,7 +1000,15 @@ def implementation_fingerprint() -> str:
     for path in files:
         digest.update(_surface_name(path).encode())
         digest.update(b"\0")
-        digest.update(hashlib.sha256(path.read_bytes()).hexdigest().encode())
+        # Line endings are normalised before hashing. ``core.autocrlf`` is true
+        # on the authoring host and the CI runner is Linux, so the same commit
+        # produced two different values — which would have made the approval
+        # workflow unworkable, since the value recorded from CI could never
+        # match the host the read runs on, and flipping the git setting would
+        # have voided a grant with no code change at all. A review role measured
+        # both values on one commit.
+        body = path.read_bytes().replace(b"\r\n", b"\n")
+        digest.update(hashlib.sha256(body).hexdigest().encode())
         digest.update(b"\n")
     return digest.hexdigest()
 

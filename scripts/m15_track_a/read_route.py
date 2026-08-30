@@ -434,6 +434,19 @@ def read_historical(
     source file, a malformed row, or a row inside the dead window or at the
     forward-epoch floor.
     """
+    if type(request) is not ReadRequest:
+        # Pinned exactly, like the grant. A subclass can answer any field with a
+        # property, and this route reads ``span_end_utc`` more than once — at
+        # the admissibility gate, at the slice gate, and again when the window
+        # is computed. A review role built exactly that: a subclass answering
+        # honestly six times and then widening, which passed every gate and
+        # returned the whole quarantined slice.
+        raise ReadRouteError(
+            f"Track A read refused: request must be exactly a ReadRequest, not a "
+            f"{type(request).__name__}. A subclass can answer a field differently each "
+            "time it is read, and the gates would then be checking a different request "
+            "from the one that is executed."
+        )
     if not isolation.is_installed():
         raise ReadRouteError(
             "Track A read refused: isolation guards are not installed. Call "
@@ -505,6 +518,15 @@ def read_historical(
             "Track A read refused: the grant and the request do not overlap in time, so "
             "there is no interval that is both authorised and declared."
         )
+    # The gates above checked *the request's* strings. This checks the interval
+    # that will actually be opened, after the intersection and after every field
+    # has stopped being consulted. Belt and braces against the same shape twice
+    # over: a request whose fields change between reads, and a grant whose span
+    # runs past the ruled development corpus.
+    try:
+        assert_clear_of_slice(lo, hi, what="Track A development read refused (window)")
+    except OosSliceError as exc:
+        raise ReadRouteError(str(exc)) from exc
     pairs_to_read = _pairs_to_read(granted=checked.pairs, requested=request.pairs)
 
     rows: dict[str, list[dict[str, Any]]] = {}

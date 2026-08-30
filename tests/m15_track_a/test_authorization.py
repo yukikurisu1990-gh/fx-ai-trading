@@ -25,7 +25,10 @@ def _grant(**overrides: object) -> ReadGrant:
     kwargs: dict[str, object] = {
         "operation": authorization.OPERATION_HISTORICAL_READ,
         "span_start_utc": "2025-04-25",
-        "span_end_utc": "2026-02-28",
+        # The ruled development corpus. A track_a_historical_read grant may not
+        # name a date inside the EXPLORATORY_OOS_SLICE, so 2026-02-28 no longer
+        # constructs.
+        "span_end_utc": "2025-12-28",
         "pairs": ("EUR_USD", "USD_JPY"),
         "timeframe": "M1",
         "approved_head_sha": _SHA,
@@ -104,7 +107,7 @@ def test_a_non_grant_object_is_refused() -> None:
     "overrides",
     [
         {"operation": "something_else"},
-        {"span_start_utc": "2026-02-28", "span_end_utc": "2025-04-25"},  # reversed
+        {"span_start_utc": "2025-12-28", "span_end_utc": "2025-04-25"},  # reversed
         {"span_start_utc": "25-04-2025"},  # not ISO
         {"span_start_utc": "2025-02-30"},  # not a real date
         {"pairs": ()},

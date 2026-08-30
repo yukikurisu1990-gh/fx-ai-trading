@@ -8,6 +8,7 @@ which is what the fingerprint is taken over.
 from __future__ import annotations
 
 import hashlib
+import shutil
 from datetime import date, datetime, timedelta
 from pathlib import Path
 
@@ -220,58 +221,151 @@ def test_the_fingerprint_is_stable_and_covers_the_declared_surface() -> None:
     assert "m15_gate3a/pair_authority.py" in names
 
 
-def test_the_surface_covers_every_gate3a_module_the_package_imports() -> None:
-    """The failure mode is a new import nobody adds to the declared list.
+def test_the_surface_is_the_whole_transitive_first_party_closure() -> None:
+    """A declared list follows imports one hop; the code that runs follows them all.
 
-    A hand-maintained list of sibling files drifts the moment someone imports a
-    fifth module, and a grant would then survive a change to it. So the list is
-    checked against the imports rather than trusted.
+    A review role measured what a declared list missed: ``no_overlap`` imports
+    ``timeutil``, and ``timeutil.to_utc`` is what ``is_dead_window_instant`` is
+    built on. Shifting it by 400 days disabled the route's dead-window row guard
+    with the fingerprint unchanged and the grant still valid. So the surface is
+    computed, and this test walks the closure independently rather than
+    restating the answer.
     """
     import ast
 
-    package = Path(containment.__file__).parent
-    imported: set[str] = set()
-    for source in package.rglob("*.py"):
-        if "__pycache__" in source.parts:
+    names = {containment._surface_name(path) for path in containment.implementation_surface()}
+    seen: set[Path] = set()
+    pending = [
+        path
+        for path in Path(containment.__file__).parent.rglob("*.py")
+        if "__pycache__" not in path.parts
+    ]
+    while pending:
+        source = pending.pop().resolve()
+        if source in seen:
             continue
+        seen.add(source)
         for node in ast.walk(ast.parse(source.read_text(encoding="utf-8"))):
-            if isinstance(node, ast.ImportFrom) and (node.module or "").startswith(
-                "scripts.m15_gate3a."
+            modules: list[str] = []
+            if (
+                isinstance(node, ast.ImportFrom)
+                and (node.module or "") in {"scripts"}
+                or (isinstance(node, ast.ImportFrom) and (node.module or "").startswith("scripts."))
             ):
-                imported.add(node.module.split(".")[2])
+                # ``from scripts import train_lgbm_models`` counts too: a lazy
+                # first-party import inside a function is still code the read
+                # runs, and it was the one this walk missed first time round.
+                modules = [node.module, *[f"{node.module}.{a.name}" for a in node.names]]
             elif isinstance(node, ast.Import):
-                for alias in node.names:
-                    if alias.name.startswith("scripts.m15_gate3a."):
-                        imported.add(alias.name.split(".")[2])
-    declared = {
-        entry.split("/")[1].removesuffix(".py")
-        for entry in containment.IMPLEMENTATION_SURFACE_SIBLINGS
-    }
-    assert imported <= declared, f"imported but not fingerprinted: {sorted(imported - declared)}"
+                modules = [a.name for a in node.names if a.name.startswith("scripts")]
+            for name in modules:
+                parts = name.split(".")
+                for depth in range(2, len(parts) + 1):
+                    resolved = containment._module_source(".".join(parts[:depth]))
+                    if resolved is not None and resolved not in seen:
+                        pending.append(resolved)
+    expected = {containment._surface_name(path) for path in seen}
+    assert expected == names, f"surface disagrees with the closure: {expected ^ names}"
 
 
-def test_a_module_in_a_subdirectory_would_be_covered() -> None:
-    """``glob`` would not have found it; ``rglob`` does.
+def test_the_transitive_dependencies_a_review_role_named_are_covered() -> None:
+    """Named individually, because these five were the measured gap."""
+    names = {containment._surface_name(path) for path in containment.implementation_surface()}
+    for required in (
+        "m15_gate3a/timeutil.py",
+        "m15_gate3a/numeric_authority.py",
+        "m15_gate3a/__init__.py",
+        "ml_step4/data_adapter.py",
+        "ml_step4/__init__.py",
+    ):
+        assert required in names, f"{required} is outside the fingerprint again"
 
-    There is no subdirectory in the package today. The point is that adding one
-    cannot move the read logic outside what a grant is bound to.
+
+def test_a_missing_importlib_util_cannot_silently_empty_the_surface() -> None:
+    """The bug that made this function claim a closure and measure twelve files.
+
+    ``import importlib`` alone does not bind ``importlib.util``, and the
+    resolver caught ``AttributeError`` — so every sibling resolved to ``None``
+    and the surface shrank to the package's own files with no error anywhere.
+    Two pins: the module imports ``importlib.util`` explicitly, and the resolver
+    no longer swallows ``AttributeError``.
     """
+    import ast
     import inspect
 
-    source = inspect.getsource(containment.implementation_surface)
-    assert ".rglob(" in source
-    assert ".glob(" not in source.replace(".rglob(", "")
+    source = Path(containment.__file__).read_text(encoding="utf-8")
+    assert "import importlib.util" in source
+
+    # On the AST. A substring sweep matched the word in the comment that
+    # explains why it is not caught -- the third time this exact false positive
+    # has appeared in this package's tests.
+    resolver = ast.parse(inspect.getsource(containment._module_source)).body[0]
+    caught = {
+        name.id
+        for node in ast.walk(resolver)
+        if isinstance(node, ast.ExceptHandler)
+        for name in ast.walk(node.type)
+        if isinstance(name, ast.Name)
+    }
+    assert "AttributeError" not in caught, caught
+    assert len(containment.implementation_surface()) > 12
 
 
-def test_the_fingerprint_does_not_depend_on_where_the_repository_sits(
-    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
-) -> None:
-    """The approver and the reviewer compute it on different machines."""
-    from scripts.m15_track_a import scratch
+def test_the_fingerprint_ignores_line_endings() -> None:
+    """The same commit must not hash differently on Windows and on CI.
 
-    before = containment.implementation_fingerprint()
-    monkeypatch.setattr(scratch, "repo_root", lambda: tmp_path)
-    assert containment.implementation_fingerprint() == before
+    ``core.autocrlf`` is true on the authoring host and the CI runner is Linux.
+    A review role measured two different values for one commit, which would make
+    the approval workflow unworkable: the value recorded from CI could never
+    match the host the read runs on.
+    """
+    files = containment.implementation_surface()
+    original = containment.implementation_fingerprint()
+
+    def digest(transform: object) -> str:
+        running = hashlib.sha256()
+        running.update(f"{len(files)}\n".encode())
+        for path in files:
+            running.update(containment._surface_name(path).encode())
+            running.update(b"\0")
+            body = path.read_bytes().replace(b"\r\n", b"\n")
+            if transform == "crlf":
+                body = body.replace(b"\n", b"\r\n")
+            running.update(hashlib.sha256(body.replace(b"\r\n", b"\n")).hexdigest().encode())
+            running.update(b"\n")
+        return running.hexdigest()
+
+    assert digest("lf") == original
+    assert digest("crlf") == original
+
+
+def test_the_fingerprint_does_not_depend_on_where_the_repository_sits(tmp_path: Path) -> None:
+    """The approver and the reviewer compute it on different machines.
+
+    This test used to patch ``scratch.repo_root`` — which
+    ``implementation_surface`` does not call, so it could not fail. A review role
+    said so. It now copies the packages to a different path and imports **there**,
+    in a separate interpreter, which is the thing the claim is about.
+    """
+    import subprocess
+    import sys
+
+    root = Path(containment.__file__).resolve().parent.parent
+    shutil.copytree(root, tmp_path / "scripts", ignore=shutil.ignore_patterns("__pycache__"))
+    elsewhere = subprocess.run(
+        [
+            sys.executable,
+            "-c",
+            f"import sys; sys.path.insert(0, r'{tmp_path}');"
+            "from scripts.m15_track_a import containment;"
+            "print(containment.implementation_fingerprint())",
+        ],
+        capture_output=True,
+        text=True,
+        cwd=str(tmp_path),
+    )
+    assert elsewhere.returncode == 0, elsewhere.stderr[-800:]
+    assert elsewhere.stdout.strip() == containment.implementation_fingerprint()
 
 
 def test_changing_one_covered_byte_changes_the_fingerprint(tmp_path: Path) -> None:
@@ -285,7 +379,7 @@ def test_changing_one_covered_byte_changes_the_fingerprint(tmp_path: Path) -> No
         for path in files:
             running.update(containment._surface_name(path).encode())
             running.update(b"\0")
-            body = path.read_bytes() + (extra if path == mutated else b"")
+            body = path.read_bytes().replace(b"\r\n", b"\n") + (extra if path == mutated else b"")
             running.update(hashlib.sha256(body).hexdigest().encode())
             running.update(b"\n")
         return running.hexdigest()
@@ -375,16 +469,104 @@ def test_the_development_grant_does_not_cover_the_slice() -> None:
 
 
 def test_reading_the_slice_stays_a_separate_operation() -> None:
-    """An OOS grant does not drive the development route, and vice versa."""
+    """An OOS grant does not drive the development route, and vice versa.
+
+    Two mechanisms, and the second is stronger than this test originally
+    assumed. `covers` refuses the operation mismatch; and an OOS grant can no
+    longer even be **constructed** over development dates, so the mismatch
+    cannot be dressed up as a scope question.
+    """
     assert authorization.OPERATION_OOS_SLICE_READ != authorization.OPERATION_HISTORICAL_READ
-    oos = _grant(operation=authorization.OPERATION_OOS_SLICE_READ)
+    with pytest.raises(authorization.AuthorizationMalformedError, match="only name dates inside"):
+        _grant(operation=authorization.OPERATION_OOS_SLICE_READ)
+    oos = _grant(
+        operation=authorization.OPERATION_OOS_SLICE_READ,
+        span_start_utc=oos_slice.SLICE_START_UTC,
+        span_end_utc=oos_slice.SLICE_END_UTC,
+    )
     assert not oos.covers(
         operation=authorization.OPERATION_HISTORICAL_READ,
+        span_start_utc=oos_slice.SLICE_START_UTC,
+        span_end_utc=oos_slice.SLICE_END_UTC,
+        pairs=("EUR_USD",),
+        timeframe="M1",
+    )
+
+
+@pytest.mark.parametrize(
+    "operation,start,end,refused",
+    [
+        (authorization.OPERATION_HISTORICAL_READ, "2025-04-25", "2025-12-28", False),
+        (authorization.OPERATION_HISTORICAL_READ, "2025-04-25", "2025-12-29", True),
+        (authorization.OPERATION_HISTORICAL_READ, "2025-04-25", "2026-02-28", True),
+        (authorization.OPERATION_OOS_SLICE_READ, "2025-12-29", "2026-02-28", False),
+        (authorization.OPERATION_OOS_SLICE_READ, "2025-12-28", "2026-02-28", True),
+        (authorization.OPERATION_OOS_SLICE_READ, "2025-04-25", "2025-12-28", True),
+    ],
+)
+def test_a_grant_may_not_name_a_span_its_operation_cannot_read(
+    operation: str, start: str, end: str, refused: bool
+) -> None:
+    """The ruling lives on the grant object, where no request can reach it.
+
+    A review role drove all 62 slice dates through the route with a lying
+    `ReadRequest` subclass, and narrowing the grant to the ruled corpus reduced
+    the same attack to zero slice rows. That makes the grant's own ceiling the
+    load-bearing backstop rather than a formality.
+    """
+    if refused:
+        with pytest.raises(authorization.AuthorizationMalformedError):
+            _grant(operation=operation, span_start_utc=start, span_end_utc=end)
+    else:
+        _grant(operation=operation, span_start_utc=start, span_end_utc=end)
+
+
+def test_a_request_subclass_cannot_answer_a_field_differently_each_time() -> None:
+    """The other half of the same reproduction: the route pins the request type."""
+
+    class Lying(read_route.ReadRequest):
+        _n = 0
+
+        @property  # type: ignore[misc]
+        def span_end_utc(self) -> str:  # type: ignore[override]
+            type(self)._n += 1
+            return oos_slice.DEVELOPMENT_END_UTC if type(self)._n <= 6 else oos_slice.SLICE_END_UTC
+
+        @span_end_utc.setter
+        def span_end_utc(self, value: str) -> None:
+            pass
+
+    lying = Lying(
         span_start_utc=oos_slice.DEVELOPMENT_START_UTC,
         span_end_utc=oos_slice.DEVELOPMENT_END_UTC,
         pairs=("EUR_USD",),
         timeframe="M1",
+        warmup_extension_start_utc=oos_slice.DEVELOPMENT_START_UTC,
     )
+    with pytest.raises(read_route.ReadRouteError, match="exactly a ReadRequest"):
+        read_route.read_historical(lying, _identity(), grant=_grant())
+
+
+def test_the_derivation_route_carries_the_slice_gate_too() -> None:
+    """Deriving M15 over the slice is computing a statistic over it."""
+    # On the AST, and by line number, not by substring position: the first
+    # drafting of this assertion compared string offsets and lost to the word
+    # "NotImplementedError" appearing in the docstring.
+    import ast
+    import inspect
+
+    from scripts.m15_track_a import derivation
+
+    tree = ast.parse(inspect.getsource(derivation.derive_m15))
+    gates = [
+        node.lineno
+        for node in ast.walk(tree)
+        if isinstance(node, ast.Call)
+        and getattr(node.func, "id", None) == "assert_development_only"
+    ]
+    raises = [node.lineno for node in ast.walk(tree) if isinstance(node, ast.Raise)]
+    assert gates, "the derivation route does not apply the slice gate"
+    assert min(gates) < max(raises), "the slice gate runs after the body"
 
 
 def test_the_ruling_token_is_the_one_the_decision_records() -> None:

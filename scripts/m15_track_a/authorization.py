@@ -108,6 +108,50 @@ def _require_date(value: Any, what: str) -> str:
     return text
 
 
+def _assert_operation_span(operation: str, start: str, end: str) -> None:
+    """A grant may not name a span its own operation is not allowed to read.
+
+    Coverage is *containment*, so a grant is allowed to be wider than the
+    request it covers — and a review role turned that into the whole exploit:
+    with a grant reaching `2026-02-28`, a `ReadRequest` subclass that answered
+    honestly at the gates and widened afterwards returned all 62 quarantined
+    slice dates. Narrowing the grant to the ruled corpus reduced the same attack
+    to zero slice rows, which makes the grant's own ceiling the load-bearing
+    backstop rather than a formality.
+
+    So the ruling is enforced on the **grant object**, where no caller-supplied
+    request can reach it:
+
+    * `track_a_historical_read` may not name a date at or after the
+      `EXPLORATORY_OOS_SLICE` start;
+    * `track_a_exploratory_oos_slice_read` may name **only** slice dates —
+      the same rule in the other direction, so an OOS approval cannot be spent
+      on development data either.
+
+    `track_a_m15_research_derivation` is deliberately not constrained here: it
+    derives over whatever its own read was authorised for, and its route applies
+    the development gate itself.
+    """
+    from scripts.m15_track_a.oos_slice import DEVELOPMENT_END_UTC, SLICE_END_UTC, SLICE_START_UTC
+
+    if operation == OPERATION_HISTORICAL_READ and end > DEVELOPMENT_END_UTC:
+        raise AuthorizationMalformedError(
+            f"a {OPERATION_HISTORICAL_READ} grant may not reach {end}: the committed "
+            f"development corpus ends at {DEVELOPMENT_END_UTC}, and "
+            f"{SLICE_START_UTC}..{SLICE_END_UTC} is the EXPLORATORY_OOS_SLICE, which R-2 "
+            "quarantines from every stage before R4. Reading it is a separate operation "
+            f"({OPERATION_OOS_SLICE_READ}) with its own approval and an N = 1 budget."
+        )
+    if operation == OPERATION_OOS_SLICE_READ and not (
+        start >= SLICE_START_UTC and end <= SLICE_END_UTC
+    ):
+        raise AuthorizationMalformedError(
+            f"a {OPERATION_OOS_SLICE_READ} grant may only name dates inside "
+            f"{SLICE_START_UTC}..{SLICE_END_UTC}, and this one names {start}..{end}. An OOS "
+            "approval is not a licence to read development data under a different name."
+        )
+
+
 @dataclass(frozen=True)
 class ReadGrant:
     """One explicit human + ChatGPT authorisation, scoped to what it names.
@@ -137,6 +181,7 @@ class ReadGrant:
         end = _require_date(self.span_end_utc, "span_end_utc")
         if start > end:
             raise AuthorizationMalformedError(f"span_start_utc {start} is after span_end_utc {end}")
+        _assert_operation_span(operation, start, end)
 
         if type(self.pairs) is not tuple:
             raise AuthorizationMalformedError("pairs must be a tuple")
@@ -315,9 +360,11 @@ def require_authorization(
 
       What replaces it is measured from disk:
       :func:`~scripts.m15_track_a.containment.implementation_fingerprint` hashes
-      the declared implementation surface — every ``scripts/m15_track_a/*.py``
-      plus the two ``m15_gate3a`` modules ``read_route`` imports — and it must
-      equal the value the grant records. So a commit that adds an authorisation
+      declared implementation surface — every ``.py`` under
+      ``scripts/m15_track_a/`` plus the **transitive** first-party import
+      closure, resolved through ``importlib`` so that a shadowed module is
+      hashed as it will actually be loaded — and it must equal the value the
+      grant records. So a commit that adds an authorisation
       record, a document or a governance note keeps the grant valid, and **any**
       change to what a read actually does invalidates it, whatever head the
       caller claims to be on.
@@ -368,7 +415,17 @@ def require_authorization(
         )
     from scripts.m15_track_a.containment import implementation_fingerprint
 
-    measured = implementation_fingerprint()
+    try:
+        measured = implementation_fingerprint()
+    except Exception as exc:
+        # Wrapped, so a caller's ``except AuthorizationError`` cannot be walked
+        # straight past by a bare RuntimeError from the surface walk. The
+        # polarity is unchanged — an unmeasurable surface refuses the read —
+        # but it now refuses as the type this module documents.
+        raise AuthorizationError(
+            f"{TOKEN}: the implementation surface could not be measured, so the grant "
+            f"cannot be checked against it: {exc}"
+        ) from exc
     if measured != grant.approved_implementation_fingerprint:
         raise AuthorizationError(
             f"{TOKEN}: the grant was approved against implementation "
