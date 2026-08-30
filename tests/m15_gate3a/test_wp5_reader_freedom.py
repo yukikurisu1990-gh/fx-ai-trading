@@ -585,9 +585,24 @@ TRACK_A_PERMITTED_IMPORTS: dict[str, frozenset[str]] = {
     "scripts.m15_gate3a.path_authority": frozenset(
         {"PathAuthorityError", "is_within", "resolve_candidate"}
     ),
+    # ``is_dead_window_instant`` joins the set with R1's read body: the body
+    # refuses a **row** inside the dead window even when the declared interval
+    # passed, because ``no_overlap`` checks metadata and says so
+    # (``CALLER_DECLARED_METADATA_ONLY__NO_FILE_OPENED__NO_BYTE_MEASURED``). It
+    # is a pure predicate over one parsed instant and opens nothing.
     "scripts.m15_gate3a.no_overlap": frozenset(
-        {"DESIGN_END", "DESIGN_START", "assert_design_bounds", "assert_no_dead_window"}
+        {
+            "DESIGN_END",
+            "DESIGN_START",
+            "assert_design_bounds",
+            "assert_no_dead_window",
+            "is_dead_window_instant",
+        }
     ),
+    # ``canonical_pair`` normalises and universe-checks a pair name before R1
+    # builds a source path from it, so an unknown or non-canonical spelling
+    # fails closed before any path exists. The module opens no file at all.
+    "scripts.m15_gate3a.pair_authority": frozenset({"PAIRS_20", "canonical_pair"}),
     # ``aggregate_m15`` is the derivation route's delegate, bound in the diff
     # because §8.12.10 condition 3 requires "an explicit committed caller"
     # rather than a decision a session reports having taken.  It is reader-free:
