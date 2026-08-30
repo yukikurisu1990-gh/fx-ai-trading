@@ -2,16 +2,17 @@
  "authority": "m15_gate3a_d6_closure_calendar",
  "authority_version": "1.0.0",
  "timezone": "UTC",
- "market_open_close_rule": "FX spot week: opens Sunday 22:00 UTC, closes Friday 22:00 UTC; membership is continuous within the week",
+ "market_open_close_rule": "PROPOSED, NOT APPROVED: FX spot week opening Sunday 22:00 UTC and closing Friday 22:00 UTC. No committed source states this, the true OANDA boundary is New York 17:00 (21:00Z under EDT), and Track A may not author market hours (omega-12). Referred to human + ChatGPT.",
  "dst_rule": "none applied: all boundaries are fixed UTC instants (CALENDAR_UTC_DATES_NO_MARKET_HOURS, prereg 3.7)",
  "exceptional_closure_handling": "exceptional closures are NOT membership events; they are event-eligibility events and belong to Calendar B (Ruling 4). Calendar A declares no closure beyond the weekly one",
  "target_epoch": "365d_BA",
- "content_digest": "4861b9b63d42bcd46ad872791efb5f4e3c83bf51154c91e31558a0f7eb4eb99f",
+ "content_digest": "acf27108fa1158c789e03a163ce449fc9b08e4b3d415cd0efe99d854b76670b7",
  "approval": "CALENDAR_ARTIFACT_APPROVED_BY_HUMAN_AND_CHATGPT",
  "provenance": {
   "committed_artifact": "artifacts/m15_calendar/calendar_a_closure.json",
   "committed_revision": "d69437780039be8301e9462c1f853d79abdc1763"
  },
+ "proposal_status": "CALENDAR_A_PROPOSED_NOT_APPROVED_MARKET_HOURS_REFERRED_TO_HUMAN_AND_CHATGPT",
  "expected_m15_slots_shared": [
   "2025-04-25T00:00:00Z",
   "2025-04-25T00:15:00Z",

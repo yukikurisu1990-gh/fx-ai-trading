@@ -71,7 +71,10 @@ from typing import Any, Final
 from scripts.m15_gate3a.calendar_authority import (
     CALENDAR_APPROVAL_MARKER,
     SLOT_MINUTES,
+    CalendarAuthorityError,
+    ValidatedCalendar,
     calendar_content_digest,
+    validate_calendar,
 )
 from scripts.m15_gate3a.cost_schema import SESSIONS_UTC
 from scripts.m15_gate3a.pair_authority import PAIRS_20
@@ -85,6 +88,30 @@ from scripts.m15_gate3a.timeutil import format_utc_z
 #: landed there. It is also a ``FORBIDDEN_WRITE_PREFIXES`` entry for Track A.
 #: These calendars are committed **authorities**, not gate-3a evidence, so they
 #: get their own tree rather than a raised budget in someone else's.
+#: ⚠ Neither calendar is an approved authority. Both are **proposals**.
+#:
+#: `m15_track_a_execution_gate.md` §8, merged at `37edbb0`, is explicit:
+#: "requiring it of Track A would block exploration on an artefact that does not
+#: exist, for no leakage reason. The calendar reading is a **declared label** …
+#: **Track A may not author market hours (ω-12)**". Authoring a market calendar
+#: is precisely what ω-12 forbids, and `identity.py` says the same thing in this
+#: package's own words: "no approved calendar artifact exists and Track A may
+#: not invent one".
+#:
+#: So these functions produce a **candidate for human + ChatGPT approval**, and
+#: the artifacts carry a status field saying so. `validate_calendar`'s
+#: ``approval`` marker is an *interface token* — the module's own docstring says
+#: it "neither performs nor evidences the approval" — and stamping it does not
+#: make one. Until a human + ChatGPT ruling approves a market-hours boundary,
+#: R1 runs **without** a calendar and reports coverage as a declared-label
+#: diagnostic, which is the route §8 already provides for.
+CALENDAR_A_PROPOSAL_STATUS: Final[str] = (
+    "CALENDAR_A_PROPOSED_NOT_APPROVED_MARKET_HOURS_REFERRED_TO_HUMAN_AND_CHATGPT"
+)
+CALENDAR_B_PROPOSAL_STATUS: Final[str] = (
+    "CALENDAR_B_PROPOSED_NOT_APPROVED_HOLIDAY_LIST_EMPTY_AND_UNFIXED"
+)
+
 #: Calendar A's identity.
 CALENDAR_A_AUTHORITY: Final[str] = "m15_gate3a_d6_closure_calendar"
 CALENDAR_A_VERSION: Final[str] = "1.0.0"
@@ -95,7 +122,23 @@ CALENDAR_B_AUTHORITY: Final[str] = "m15_gate3a_ruling4_event_eligibility_calenda
 CALENDAR_B_VERSION: Final[str] = "1.0.0"
 CALENDAR_B_ARTIFACT: Final[str] = "artifacts/m15_calendar/calendar_b_event_eligibility.json"
 
-#: The committed FX week, in UTC. Sunday 22:00 open, Friday 22:00 close.
+#: ⚠ **A PROPOSED FX week, not a committed one, and it is very likely WRONG.**
+#:
+#: An earlier revision of this file called these constants "the committed FX
+#: week". They are not committed: `grep -rniE "sunday 22:00|friday 22:00|FX
+#: week"` finds nothing outside this file. Calling an invented boundary
+#: "committed" is the worst version of the overclaiming this package keeps
+#: retiring, and it is withdrawn.
+#:
+#: Worse, a review role measured that it is **factually wrong**. OANDA's week
+#: opens at New York 17:00, which is **21:00Z under EDT** and 22:00Z only under
+#: EST, and roughly 27 of the development corpus's weeks are EDT. This
+#: repository's own `scripts/stage22_0a_scalp_label_design.py:247` counts
+#: `hour_utc == 21` as week-open on the same data. Under a real read, a Calendar
+#: A built from these constants aborts the first Sunday with
+#: "60 source minute(s) lie outside the expected-slot authority".
+#:
+#: `SESSION_WEEK_BOUNDARY_IS_A_MARKET_HOURS_FACT_TRACK_A_MAY_NOT_AUTHOR_OMEGA_12`
 FX_WEEK_OPEN_WEEKDAY: Final[int] = 6  # Sunday, ``datetime.weekday()``
 FX_WEEK_OPEN_MINUTE_OF_DAY: Final[int] = 22 * 60
 FX_WEEK_CLOSE_WEEKDAY: Final[int] = 4  # Friday
@@ -111,8 +154,10 @@ HOLIDAY_LIST_STATUS: Final[str] = (
 )
 
 MARKET_OPEN_CLOSE_RULE: Final[str] = (
-    "FX spot week: opens Sunday 22:00 UTC, closes Friday 22:00 UTC; "
-    "membership is continuous within the week"
+    "PROPOSED, NOT APPROVED: FX spot week opening Sunday 22:00 UTC and closing "
+    "Friday 22:00 UTC. No committed source states this, the true OANDA boundary "
+    "is New York 17:00 (21:00Z under EDT), and Track A may not author market "
+    "hours (omega-12). Referred to human + ChatGPT."
 )
 DST_RULE: Final[str] = (
     "none applied: all boundaries are fixed UTC instants "
@@ -176,6 +221,10 @@ def expected_slots(span_start_utc: str, span_end_utc: str) -> tuple[datetime, ..
     return tuple(slots)
 
 
+#: Key the committed file uses for the proposal status. Not part of the
+#: validator's closed vocabulary, so it is stripped before validation.
+PROPOSAL_STATUS_FIELD: Final[str] = "proposal_status"
+
 #: Key the committed file uses for the one shared slot list.
 SHARED_SLOTS_FIELD: Final[str] = "expected_m15_slots_shared"
 
@@ -194,8 +243,7 @@ def calendar_a_committed_form(artifact: dict[str, Any]) -> dict[str, Any]:
     That is a storage form, not a generating rule: every instant is a literal in
     the committed file, which is what D-5.8 requires and what
     ``expected_m15_slot_rule`` is refused for. The fan-out copies bytes; it
-    computes no boundary. A test asserts the loaded artifact is identical to the
-    in-memory one this module builds, so the two cannot drift.
+    computes no boundary.
     """
     shared: list[str] | None = None
     for pair in PAIRS_20:
@@ -208,6 +256,13 @@ def calendar_a_committed_form(artifact: dict[str, Any]) -> dict[str, Any]:
                 "stores one list and cannot represent per-pair sets"
             )
     committed = {key: value for key, value in artifact.items() if key != "expected_m15_slots"}
+    # The proposal status lives **only** in the committed form. ``validate_calendar``
+    # enforces a closed vocabulary — "a misspelt or extra key is refused rather
+    # than silently ignored and left outside the content digest" — so an extra
+    # field in the validator artifact is refused, correctly. The status belongs
+    # with the bytes a human reads, and ``load_calendar_a`` strips it before the
+    # validator sees it.
+    committed[PROPOSAL_STATUS_FIELD] = CALENDAR_A_PROPOSAL_STATUS
     committed[SHARED_SLOTS_FIELD] = shared
     committed[SLOT_ROSTER_FIELD] = list(PAIRS_20)
     return committed
@@ -222,7 +277,7 @@ def load_calendar_a(committed: dict[str, Any]) -> dict[str, Any]:
     artifact = {
         key: value
         for key, value in committed.items()
-        if key not in (SHARED_SLOTS_FIELD, SLOT_ROSTER_FIELD)
+        if key not in (SHARED_SLOTS_FIELD, SLOT_ROSTER_FIELD, PROPOSAL_STATUS_FIELD)
     }
     artifact["expected_m15_slots"] = {pair: shared for pair in roster}
     return artifact
@@ -288,6 +343,7 @@ def calendar_b_artifact(
     validator is exactly the conflation §8.4.0 warns about.
     """
     return {
+        "proposal_status": CALENDAR_B_PROPOSAL_STATUS,
         "authority": CALENDAR_B_AUTHORITY,
         "authority_version": CALENDAR_B_VERSION,
         "timezone": "UTC",
@@ -319,9 +375,82 @@ def calendar_b_artifact(
     }
 
 
+def validated_calendar_a(artifact: Any, *, expected_epoch: str) -> Any:
+    """Validate a Calendar A artifact **here**, inside `m15_gate3a`.
+
+    Track A must not import `calendar_authority` — WP5's reader-freedom pin
+    forbids it, and an earlier revision of this work narrowed that prohibition
+    to make a Calendar A dependency work. A review role called that a
+    rationalisation and was right: the alternative was always to put the
+    validation on this side of the boundary, where the validator already lives.
+    So it is here, the prohibition is restored, and Track A receives a record it
+    cannot mint.
+    """
+    return validate_calendar(artifact, expected_epoch=expected_epoch)
+
+
+def is_validated_calendar(candidate: Any) -> bool:
+    """Whether an object is a record `validate_calendar` minted."""
+    return isinstance(candidate, ValidatedCalendar)
+
+
+def calendar_error_type() -> type[BaseException]:
+    """`CalendarAuthorityError`, without Track A importing the module."""
+    return CalendarAuthorityError
+
+
+def bucket_overlaps_rollover(moment: datetime) -> bool:
+    """Whether an M15 bucket **overlaps** the rollover window at any minute.
+
+    Testing the bucket *start* silently narrows Ruling 4's "21:55-22:15 UTC
+    minimum -- widen only for conservatism; never narrow". M15 starts fall on
+    :00/:15/:30/:45, so a start test excludes only the 22:00 bucket: the 21:45
+    bucket spans 21:45-22:00 and keeps 21:55-21:59 inside it, and its closing
+    spread is the 21:59 quote -- the widest of the day, feeding straight into
+    the median. A review role measured 5 such bars per pair per week, 176 across
+    the development corpus. Overlap widens the exclusion, which is the direction
+    Ruling 4 permits.
+    """
+    start = _minute_of_day(moment)
+    end = start + SLOT_MINUTES
+    return start < ROLLOVER_END_MINUTE_OF_DAY and end > ROLLOVER_START_MINUTE_OF_DAY
+
+
+def validate_calendar_b(calendar_b: Any, *, expected_epoch: str) -> dict[str, Any]:
+    """Check Calendar B's identity and epoch, or refuse.
+
+    Calendar A goes through ``validate_calendar``; Calendar B was handed around
+    as a raw dict with nothing checked at all. A review role measured the
+    consequence: ``survey(derived, calendar_b={})`` ran, and a Calendar B whose
+    holiday list excluded every date silently produced
+    ``T3_NOT_MEASURABLE_NO_ELIGIBLE_BARS``. An unauthenticated object was
+    deciding the eligible population, and therefore T-3.
+    """
+    if not isinstance(calendar_b, dict) or not calendar_b:
+        raise CalendarAuthorityError(
+            "Calendar B is absent or not a mapping; event eligibility fails closed"
+        )
+    if calendar_b.get("authority") != CALENDAR_B_AUTHORITY:
+        raise CalendarAuthorityError(
+            f"Calendar B declares authority {calendar_b.get('authority')!r}, "
+            f"not {CALENDAR_B_AUTHORITY!r}"
+        )
+    if calendar_b.get("target_epoch") != expected_epoch:
+        raise CalendarAuthorityError(
+            f"Calendar B targets {calendar_b.get('target_epoch')!r} and the read is "
+            f"{expected_epoch!r}"
+        )
+    if calendar_b.get("governs") != "EVENT_ELIGIBILITY_ONLY_NEVER_SLOT_MEMBERSHIP":
+        raise CalendarAuthorityError("Calendar B does not declare its governing scope")
+    for key in ("rollover_exclusion_utc", "holiday_thin_liquidity_dates_utc", "sessions_utc"):
+        if key not in calendar_b:
+            raise CalendarAuthorityError(f"Calendar B is missing {key!r}")
+    return calendar_b
+
+
 def is_event_eligible(moment: datetime, calendar_b: dict[str, Any]) -> bool:
     """Whether an M15 bucket start is event-eligible under Calendar B."""
-    if in_rollover_window(moment):
+    if bucket_overlaps_rollover(moment):
         return False
     excluded = set(calendar_b.get("holiday_thin_liquidity_dates_utc", ()))
     return moment.date().isoformat() not in excluded
@@ -330,9 +459,11 @@ def is_event_eligible(moment: datetime, calendar_b: dict[str, Any]) -> bool:
 __all__ = [
     "CALENDAR_A_ARTIFACT",
     "CALENDAR_A_AUTHORITY",
+    "CALENDAR_A_PROPOSAL_STATUS",
     "CALENDAR_A_VERSION",
     "CALENDAR_B_ARTIFACT",
     "CALENDAR_B_AUTHORITY",
+    "CALENDAR_B_PROPOSAL_STATUS",
     "CALENDAR_B_VERSION",
     "DST_RULE",
     "EXCEPTIONAL_CLOSURE_HANDLING",
@@ -342,13 +473,18 @@ __all__ = [
     "ROLLOVER_START_MINUTE_OF_DAY",
     "SHARED_SLOTS_FIELD",
     "SLOT_ROSTER_FIELD",
+    "bucket_overlaps_rollover",
     "calendar_a_artifact",
     "calendar_a_committed_form",
     "calendar_b_artifact",
+    "calendar_error_type",
     "expected_slots",
     "in_fx_week",
     "in_rollover_window",
     "is_event_eligible",
+    "is_validated_calendar",
     "load_calendar_a",
     "session_of",
+    "validate_calendar_b",
+    "validated_calendar_a",
 ]

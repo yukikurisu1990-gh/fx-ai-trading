@@ -540,9 +540,18 @@ not replace the gate-6 source-contamination audit Track B still needs.
 
 ## 12. Governance propagation — done, and not done
 
-**`GOVERNANCE_PROPAGATION_COMPLETE_AT_THE_MERGED_HEAD_OF_PR_455`** — superseding
-`GOVERNANCE_PROPAGATION_IS_NOT_COMPLETE_AT_THIS_HEAD`, which stood from this
-document's own merge until PR #455.
+**`GOVERNANCE_PROPAGATION_IS_NOT_COMPLETE_AT_THIS_HEAD`** — and an earlier
+revision of PR #455 replaced this token with a completion claim, which two
+review roles refuted item by item. The claim is **withdrawn**; the token stands.
+
+C-10 makes completeness a predicate on **named files**. P-10 and P-13 name
+`m15_minimum_research_gate.md` and the gate-4 design audit, and PR #455 does not
+touch either: the MRG still carries `APPROVAL_IDENTIFIER_PENDING_UNTIL_MERGE`
+and `…NOT_YET_CITABLE_AS_AUTHORITY`, and the design audit's §1a still reads
+"(recorded, **provisional**) … this section carries no approval identifier".
+Recording a discharge in a *different* file is exactly what "a predicate on named
+files, not a self-assessment" refuses — and the withdrawn revision said so in
+its own sentence while doing it.
 
 §8.12.13 C-10 makes completeness "a predicate on named files, not a
 self-assessment", holding **only on a named master SHA**. When this section was
@@ -563,28 +572,29 @@ only works if someone evaluates it. The table below is now the evaluation.
 | P-2 | playbook §2 | done |
 | P-3 | playbook §5/§6 + a Track A checklist | done (§5a) |
 | P-4 | playbook §7/§9 track field | done |
-| **P-5** | playbook **§1 gate table** + §3 ladder | **done at PR #455** — §3 was already done; the §1 table stopped at PR #444 and now carries #449, #450, #451, #452, #453, #454, the refused execution command and #455, reconciled against `d694377` |
+| **P-5** | playbook **§1 gate table** + §3 ladder | **done at PR #455** — §3 was already done; the §1 table stopped at PR #444 and now carries #449, #450, #451, #452, #453, #454, the refused execution command and #455, reconciled against `d694377`. This one **is** a change to the named file |
 | P-6 | policy | done (§2a) |
 | **P-7** | prereg §3.1/§4/§10/§11/§13/§14/§16 | **DISCHARGED** — §13a **RULED, IN FORCE** by the human + ChatGPT round of 2026-08-30. The first drafting covered §3.1/§4/§11/§16 only and called §10 and §14 "unchanged", which would have recorded P-7 complete while three clauses still forbade the read; a contract-consistency review caught that before the ruling was taken, and the table now carries §10 item 3, §13 and §14 |
 | **P-8** | `docs/prompts/*` | done |
 | P-9 | playbook §8 | done |
-| **P-10** | approval identifiers on every RULED MRG section | **done** — discharged by PR #451's merge as `4f45515` (2026-08-30), which is the identifier `APPROVAL_IDENTIFIER_PENDING_UNTIL_MERGE` was waiting on. Recorded here at PR #455 because a merge that nobody writes down is not a predicate on a named file |
+| **P-10** | approval identifiers on every RULED MRG section | **NOT DONE.** PR #451 merged as `4f45515`, so the identifier now *exists* — but the named file, `m15_minimum_research_gate.md`, still carries `APPROVAL_IDENTIFIER_PENDING_UNTIL_MERGE` and `…NOT_YET_CITABLE_AS_AUTHORITY` and records no merge SHA. An earlier revision of PR #455 marked this done by writing the discharge into *this* file instead, which a review role correctly called out |
 | P-11 | playbook §4 | done |
 | P-12 | prereg §7/§8 | done — and **now in force**, since its text is §13a's, which was `NOT IN FORCE` when this row first read "done" |
-| **P-13** | gate-4 audit T-1/T-2/T-6 | **done at PR #455** — the scope reading now has a ruling and an approval identifier behind it. T-3's stage ownership and numerator are ruled in `docs/governance/m15_track_a_t3_stage_ruling.md` (PR #455); T-1 (dead-window never loaded) and T-6 (cost tables / effective-N re-pointing) are unchanged and were never the open half |
+| **P-13** | gate-4 audit T-1/T-2/T-6 | **NOT DONE.** The named file's §1a still reads "(recorded, **provisional**)" and "carries no approval identifier, so it records the scope reading rather than ruling it", and PR #455 does not touch it. The T-3 stage ruling is a *new* document, and two review roles have challenged its two limbs (`m15_track_a_r1_enablement_referrals.md` §5–§6), so it is not a discharge either |
 | P-14 | playbook §3 + §6 ratio checkbox | done |
 | P-15 | prereg §6 | done — same dependency on §13a being in force, and same correction |
 
-**The authority is citable now.** §8.12.13 C-9 and the packet's own approval
-line carried
+**The Two-Track authority is citable; the propagation is not complete.** Those
+are different claims and an earlier revision of this section ran them together.
+§8.12.13 C-9 and the packet's own approval line carried
 `THE_TWO_TRACK_SECTIONS_ARE_RULED_AS_RECORDED_AND_NOT_YET_CITABLE_AS_AUTHORITY`
 and `APPROVAL_IDENTIFIER_PENDING_UNTIL_MERGE` with §8.11, §8.12 and §8.13 until
 PR #451 was approved and merged. It was, as `4f45515` on 2026-08-30. Every
 propagated statement in this document rests on authority that is cited by a
 merge commit rather than by a promise.
 
-**What completeness does and does not buy.** It discharges CLAUDE.md's Track A
-precondition 1 and nothing else. Precondition 2 (the execution gate passed on a
+**What completeness would buy, when it is reached.** It discharges CLAUDE.md's
+Track A precondition 1 and nothing else. Precondition 2 (the execution gate passed on a
 named head) and precondition 3 (the derivation route decided in a diff) are
 separate, and **none of the three is a read authorisation**. Two explicit human +
 ChatGPT grants — one to read, one to derive — remain, and this document has said

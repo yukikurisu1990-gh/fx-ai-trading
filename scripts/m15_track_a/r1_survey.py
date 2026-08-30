@@ -56,7 +56,11 @@ from datetime import datetime
 from typing import Any, Final
 
 from scripts.m15_gate3a.aggregation import to_pips
-from scripts.m15_gate3a.calendar_build import is_event_eligible, session_of
+from scripts.m15_gate3a.calendar_build import (
+    is_event_eligible,
+    session_of,
+    validate_calendar_b,
+)
 from scripts.m15_gate3a.cost_schema import (
     EXECUTION_PADDING_PIP,
     FLAT_SLIPPAGE_CELL_PIP,
@@ -208,6 +212,14 @@ def _session_spreads(
     by_session: dict[str, list[float]] = {name: [] for name in SESSIONS_UTC}
     for bar in bars:
         moment: datetime = bar["ts"]
+        if not bar.get("complete_bucket"):
+            # Ruling 3 FROZEN: "event/label eligibility requires a complete
+            # bucket (n_source_bars == 15). Incomplete buckets are recorded for
+            # gap diagnostics only -- they must not create labels or trade
+            # events." The first drafting never looked at this flag, so
+            # incomplete buckets entered the eligible population, the spread
+            # median and the T-3 ratio. Measured by a review role.
+            continue
         if not is_event_eligible(moment, calendar_b):
             continue
         by_session[session_of(moment)].append(to_pips(bar["ask_c"] - bar["bid_c"], pair))
@@ -234,6 +246,7 @@ def survey(
             f"route, got {type(derived).__name__}."
         )
 
+    calendar_b = validate_calendar_b(calendar_b, expected_epoch=derived.epoch)
     pairs = tuple(sorted(derived.bars_by_pair))
     schema: dict[str, Any] = {}
     coverage: dict[str, Any] = {}
@@ -284,6 +297,12 @@ def survey(
         pair_ratios: list[float] = []
         for bar, atr_pips in zip(bars, atr, strict=True):
             moment: datetime = bar["ts"]
+            # Ruling 3 FROZEN, as above. ATR still sees the bar -- the committed
+            # manifest says incomplete buckets are "retained for indicator
+            # history" -- which is why the flag is tested here, not in
+            # ``wilder_atr``.
+            if not bar.get("complete_bucket"):
+                continue
             if not is_event_eligible(moment, calendar_b):
                 continue
             session = session_of(moment)

@@ -54,7 +54,10 @@ _TS_RE: Final[re.Pattern[str]] = re.compile(r"\A\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d
 #: Calendar readings a Track A run may declare.  A closed set: an unrecognised
 #: label fails closed rather than becoming a new, undocumented convention.
 #: ``utc_calendar_dates_no_market_hours`` is the only reading available today,
-#: because no approved calendar artifact exists and Track A may not invent one.
+#: because no approved calendar artifact exists and Track A may not invent one
+#: (omega-12). PR #455 produced a **proposed** Calendar A and a review role showed
+#: why this sentence still stands: the boundary it invented was both uncommitted
+#: and factually wrong. See docs/governance/m15_track_a_r1_enablement_referrals.md.
 CALENDAR_UTC_DATES_NO_MARKET_HOURS: Final[str] = "utc_calendar_dates_no_market_hours"
 
 KNOWN_CALENDAR_SEMANTICS: Final[frozenset[str]] = frozenset({CALENDAR_UTC_DATES_NO_MARKET_HOURS})

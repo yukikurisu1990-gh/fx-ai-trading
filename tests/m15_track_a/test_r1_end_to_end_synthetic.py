@@ -29,12 +29,12 @@ from pathlib import Path
 import pytest
 
 from scripts.m15_gate3a import derivation_containment as dc
-from scripts.m15_gate3a.calendar_authority import validate_calendar
 from scripts.m15_gate3a.calendar_build import (
+    bucket_overlaps_rollover,
     calendar_a_artifact,
     calendar_b_artifact,
     in_fx_week,
-    in_rollover_window,
+    validated_calendar_a,
 )
 from scripts.m15_gate3a.pair_authority import PAIRS_20
 from scripts.m15_track_a import (
@@ -321,8 +321,11 @@ def test_the_declaration_precedes_the_read(dry_run: dict) -> None:
 
 def test_rollover_bars_are_excluded_from_eligibility(dry_run: dict) -> None:
     """Ruling 4's 21:55-22:15 window, at the committed minimum."""
-    assert in_rollover_window(datetime(2025, 5, 5, 22, 0, tzinfo=UTC))
-    assert not in_rollover_window(datetime(2025, 5, 5, 21, 45, tzinfo=UTC))
+    # Overlap, not start: the 21:45 bucket covers 21:55-21:59 and is excluded.
+    # A start test kept it, which narrowed Ruling 4's minimum.
+    assert bucket_overlaps_rollover(datetime(2025, 5, 5, 22, 0, tzinfo=UTC))
+    assert bucket_overlaps_rollover(datetime(2025, 5, 5, 21, 45, tzinfo=UTC))
+    assert not bucket_overlaps_rollover(datetime(2025, 5, 5, 21, 30, tzinfo=UTC))
     counted = sum(
         session["bars_considered"]
         for pair in dry_run["survey"].pairs
@@ -578,7 +581,7 @@ def test_the_calendar_covers_the_whole_authorised_development_corpus() -> None:
         target_epoch=EPOCH,
         committed_revision="synthetic-dry-run",
     )
-    validated = validate_calendar(artifact, expected_epoch=EPOCH)
+    validated = validated_calendar_a(artifact, expected_epoch=EPOCH)
     assert set(validated.pairs) == set(PAIRS_20)
     slots = validated.expected_slots("EUR_USD")
     assert len(slots) > 16_000

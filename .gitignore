@@ -204,3 +204,7 @@ artifacts/track_a_scratch/*
 # broad ignore rule cannot quietly re-capture them.
 !artifacts/track_a_scratch/ledger/
 !artifacts/track_a_scratch/ledger/**
+# ...but not the lock files: a committed lock has a fresh mtime on checkout,
+# so `_break_lock_if_abandoned` will not break it for 120 s and every
+# write-ahead declaration refuses in the meantime.
+artifacts/track_a_scratch/ledger/*.lock

@@ -76,12 +76,13 @@ from scripts.m15_gate3a.aggregation import (
     FULL_BUCKET_SOURCE_BARS,
     aggregate_m15,
 )
-from scripts.m15_gate3a.calendar_authority import (
-    CalendarAuthorityError,
-    ValidatedCalendar,
-    validate_calendar,
+from scripts.m15_gate3a.calendar_build import (
+    calendar_error_type,
+    is_validated_calendar,
+    validated_calendar_a,
 )
 from scripts.m15_gate3a.derivation_containment import authorised_derivation_window
+from scripts.m15_gate3a.pair_authority import PairAuthorityError, canonical_pair
 from scripts.m15_track_a import authorization, isolation, seen_ledger
 from scripts.m15_track_a.identity import RunIdentity
 from scripts.m15_track_a.read_route import (
@@ -196,7 +197,38 @@ class DerivedM15:
         }
 
 
-def expected_minutes_for(calendar: ValidatedCalendar, pair: str) -> frozenset[datetime]:
+def _pairs_to_derive(*, granted: tuple[str, ...], requested: tuple[str, ...]) -> tuple[str, ...]:
+    """The intersection of grant and request. Narrowest wins.
+
+    The read route learned this twice — coverage is *containment*, so a grant
+    may be wider than the request, and looping the **grant**'s pair list derives
+    pairs the declaration never covered. This route inherited the original
+    defect rather than the fix: a review role passed a one-pair request with a
+    two-pair grant and got two pairs back.
+    """
+    try:
+        granted_canonical = frozenset(canonical_pair(pair) for pair in granted)
+        requested_canonical = tuple(canonical_pair(pair) for pair in requested)
+    except PairAuthorityError as exc:
+        raise DerivationRouteError(f"Track A derivation refused: {exc}") from exc
+    chosen: list[str] = []
+    for pair in requested_canonical:
+        if pair in chosen:
+            raise DerivationRouteError(
+                f"Track A derivation refused: {pair} is named twice in the request."
+            )
+        if pair not in granted_canonical:
+            raise DerivationRouteError(
+                f"Track A derivation refused: {pair} is not in the grant, although the "
+                "coverage check passed. The request changed after it was checked."
+            )
+        chosen.append(pair)
+    if not chosen:
+        raise DerivationRouteError("Track A derivation refused: no pair to derive.")
+    return tuple(chosen)
+
+
+def expected_minutes_for(calendar: Any, pair: str) -> frozenset[datetime]:
     """Calendar A's expected **M15 slots**, as the expected **M1 minutes** they contain.
 
     Two granularities meet here and they are not the same authority spelled
@@ -218,7 +250,7 @@ def expected_minutes_for(calendar: ValidatedCalendar, pair: str) -> frozenset[da
     return frozenset(minutes)
 
 
-def _validated_calendar(calendar_a: Any, *, epoch: str) -> ValidatedCalendar:
+def _validated_calendar(calendar_a: Any, *, epoch: str) -> Any:
     """Calendar A, validated for this epoch, or refuse.
 
     An already-validated record is accepted so a caller that validated once does
@@ -231,12 +263,12 @@ def _validated_calendar(calendar_a: Any, *, epoch: str) -> ValidatedCalendar:
             "the coverage authority and is never inferred from the data (PR #444 D-6), so a "
             "derivation without it would produce coverage accounting with no authority."
         )
-    if isinstance(calendar_a, ValidatedCalendar):
+    if is_validated_calendar(calendar_a):
         validated = calendar_a
     else:
         try:
-            validated = validate_calendar(calendar_a, expected_epoch=epoch)
-        except CalendarAuthorityError as exc:
+            validated = validated_calendar_a(calendar_a, expected_epoch=epoch)
+        except calendar_error_type() as exc:
             raise DerivationRouteError(
                 f"Track A derivation refused: Calendar A did not validate for epoch "
                 f"{epoch!r}: {exc}"
@@ -315,13 +347,29 @@ def derive_m15(
             f"Track A derivation refused: the read is {request.read.timeframe} and the "
             f"request names {read_request.timeframe}."
         )
+    # The read's own span is **checked**, not inherited. ``HistoricalRead`` is a
+    # public frozen dataclass, so a hand-built one passed every gate and put its
+    # own span straight into the record: a review role recorded
+    # `1970-01-01 .. 2099-12-31` that way, and separately derived five days of
+    # bars under a one-day grant. Nothing new was read either time -- the defect
+    # is that the derivation's record disagreed with its own authorisation.
+    if not (
+        read_request.touched_start_utc <= request.read.span_start_utc
+        and request.read.span_end_utc <= read_request.span_end_utc
+    ):
+        raise DerivationRouteError(
+            f"Track A derivation refused: the read covers "
+            f"{request.read.span_start_utc}..{request.read.span_end_utc}, which is not "
+            f"inside the gated interval {read_request.touched_start_utc}.."
+            f"{read_request.span_end_utc}."
+        )
 
     calendar = _validated_calendar(request.calendar_a, epoch=request.read.epoch)
 
     bars_by_pair: dict[str, list[dict[str, Any]]] = {}
     gap_reports: dict[str, dict[str, Any]] = {}
     with authorised_derivation_window():
-        for pair in checked.pairs:
+        for pair in _pairs_to_derive(granted=checked.pairs, requested=read_request.pairs):
             rows = request.read.rows_by_pair.get(pair)
             if rows is None:
                 raise DerivationRouteError(

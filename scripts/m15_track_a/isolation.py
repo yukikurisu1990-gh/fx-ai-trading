@@ -665,6 +665,18 @@ def _is_scratch_root_itself(candidate: str) -> bool:
     return _stat_key(candidate) is not None and _stat_key(candidate) == _stat_key(scratch_text)
 
 
+def _is_ledger_root_itself(candidate: str) -> bool:
+    """True when the path *is* the governance-ledger directory."""
+    try:
+        ledger_text = _root(scratch.ledger_root, "ledger root")
+    except Exception:  # noqa: BLE001 - an unresolvable root fails closed below
+        return False
+    if candidate == ledger_text:
+        return True
+    key = _stat_key(candidate)
+    return key is not None and key == _stat_key(ledger_text)
+
+
 def _classify(candidate: str) -> tuple[str, tuple[str, ...]]:
     """One of ``outside`` / ``scratch`` / ``market_data`` / ``evidence`` / ``cache`` / ``repo``.
 
@@ -753,6 +765,21 @@ def assert_write_allowed(raw: object, *, what: str = "write to") -> None:
         raise IsolationError(
             f"{TOKEN}: a Track A run may not {what} a path it cannot classify ({raw!r}). "
             "An unclassifiable destination fails closed."
+        )
+    if what in _DESTRUCTIVE_VERBS and _is_ledger_root_itself(candidate):
+        # The same protection as the scratch root, for the same reason, and its
+        # absence was a regression this package introduced when the governance
+        # ledgers moved into `<scratch>/ledger/`. A review role measured it:
+        # renaming that one directory carried all four BINDING_GOVERNANCE_RECORD
+        # files out of the repository, `ledger_root()` re-created an empty one on
+        # the next call, and the seen ledger could be rewritten from line one.
+        # `SEEN_IS_TERMINAL_AND_NO_RULING_CAN_RESTORE_UNSEEN_STATUS` and Q7's
+        # `N = 1` both went with it, in a single permitted call.
+        raise IsolationError(
+            f"{TOKEN}: a Track A run may not {what} the governance ledger directory. It "
+            "holds the append-only seen-data, authorisation, breadth and OOS-budget "
+            "records, and moving it destroys them as surely as truncating them -- and "
+            "worse, the next call silently re-creates an empty one."
         )
     if what in _DESTRUCTIVE_VERBS and _is_scratch_root_itself(candidate):
         # Renaming or moving the scratch root takes the whole

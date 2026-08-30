@@ -582,23 +582,11 @@ PERMITTED_CALLER_ROOTS: tuple[str, ...] = (
 #: reader, so its import surface into this package is the one place a reader
 #: could be introduced by the back door.
 #:
-#: ⚠ **``calendar_authority`` was in that list and has been moved out of it, by
-#: a narrow named-symbol entry rather than by deleting the prohibition.** That
-#: is a change to a committed restriction and is recorded as one, in
-#: ``docs/governance/m15_track_a_r1_enablement_ruling.md`` §3.
-#:
-#: The conflict is real and it is between two committed rules, not between a
-#: rule and a convenience. D-6 holds that the expected slot set comes **only**
-#: from the validated calendar artifact and is "never inferred from observed
-#: data"; stage R1 must measure missingness and coverage; Track A is what runs
-#: R1. So Track A must reach a *validated* calendar, and the only thing that
-#: mints one is ``validate_calendar``. A Track A that cannot reach it can only
-#: satisfy D-6 by inferring the slot set, which is the thing D-6 forbids.
-#:
-#: What the original prohibition protects is preserved: the three names below
-#: are the **validator, its record type and its error**, and none of them makes
-#: an evidence claim. ``coverage``, ``proof`` and ``sealing`` — which do — stay
-#: forbidden, and ``TRACK_A_FORBIDDEN_MODULES`` still names them.
+#: ``calendar_authority`` is **not** here, and an earlier revision of the R1
+#: enablement work that put it here has been reverted — see the note on
+#: ``TRACK_A_FORBIDDEN_MODULES`` below for why that was wrong and what replaced
+#: it. ``cost_schema``'s three frozen constants are a **proposed** narrowing,
+#: recorded as a referral rather than as a ruling.
 TRACK_A_PERMITTED_IMPORTS: dict[str, frozenset[str]] = {
     "scripts.m15_gate3a.path_authority": frozenset(
         {"PathAuthorityError", "is_within", "resolve_candidate"}
@@ -633,12 +621,6 @@ TRACK_A_PERMITTED_IMPORTS: dict[str, frozenset[str]] = {
     "scripts.m15_gate3a.pair_authority": frozenset(
         {"PAIRS_20", "PairAuthorityError", "canonical_pair"}
     ),
-    # See the note above: the validator, its record type and its error, and
-    # nothing else from that module. Reader-free — ``validate_calendar`` takes
-    # an already-loaded mapping and opens no file.
-    "scripts.m15_gate3a.calendar_authority": frozenset(
-        {"CalendarAuthorityError", "ValidatedCalendar", "validate_calendar"}
-    ),
     # The derivation-bypass containment. It exists precisely so that Track A's
     # aggregation cannot escape its authorised route, so Track A importing it is
     # the intended direction. stdlib-only by construction: a test below pins
@@ -658,13 +640,18 @@ TRACK_A_PERMITTED_IMPORTS: dict[str, frozenset[str]] = {
     # arithmetic; it reads no file and no price.
     "scripts.m15_gate3a.calendar_build": frozenset(
         {
+            "bucket_overlaps_rollover",
             "calendar_a_artifact",
             "calendar_b_artifact",
+            "calendar_error_type",
             "in_fx_week",
             "in_rollover_window",
             "is_event_eligible",
+            "is_validated_calendar",
             "load_calendar_a",
             "session_of",
+            "validate_calendar_b",
+            "validated_calendar_a",
         }
     ),
     # Ruling 5's frozen cost constants and Ruling 4's frozen session partition.
@@ -708,31 +695,31 @@ TRACK_A_TEST_PERMITTED_MODULES: frozenset[str] = frozenset(
 #: Modules Track A may not import from this package at all, named so the failure
 #: message says why rather than only that.
 #:
-#: ⚠ ``calendar_authority`` and ``cost_schema`` were here and have been removed,
-#: each replaced by a **narrow named-symbol entry** in
-#: ``TRACK_A_PERMITTED_IMPORTS`` above rather than by opening the module. Both
-#: removals are recorded in ``docs/governance/m15_track_a_r1_enablement_ruling.md``
-#: §3, because deleting an entry from this set is a change to a committed
-#: restriction and not a housekeeping edit.
+#: ⚠ **``calendar_authority`` was briefly removed from this set and has been put
+#: back.** An earlier revision of the R1 enablement work took it out, citing
+#: ``docs/governance/m15_track_a_r1_enablement_ruling.md`` §3 — **a file that did
+#: not exist**. Two review roles found the dangling citation independently, and
+#: a third pointed at the merged authority the justification contradicted:
+#: ``m15_track_a_execution_gate.md`` §8 (`37edbb0`) says "requiring it of Track A
+#: would **block exploration on an artefact that does not exist, for no leakage
+#: reason**". The reasoning offered — that D-6 forces Track A to reach the
+#: validator — was a rationalisation, and the alternative was always available:
+#: the validation now happens in ``calendar_build.validated_calendar_a``, on
+#: this side of the boundary, and Track A receives a record it cannot mint.
 #:
-#: * ``calendar_authority`` — D-6 makes the validated calendar the **only**
-#:   admissible source of the expected slot set, and stage R1 must measure
-#:   coverage. A Track A that cannot reach the validator can satisfy D-6 only by
-#:   inferring the slot set, which is exactly what D-6 forbids. Three names are
-#:   permitted: the validator, its record type, its error.
-#: * ``cost_schema`` — R1 needs Ruling 5's two frozen cost constants and Ruling
-#:   4's frozen session partition. Three constants are permitted;
-#:   ``validate_cost_table`` and the rest of the module stay out of reach, and a
-#:   test below pins that the permitted set is constants only.
-#:
-#: ``proof``, ``artifacts``, ``coverage``, ``sealing`` and ``effective_n`` are
-#: untouched: each makes or carries an **evidence claim**, which is what this
-#: set exists to keep away from a future real-data reader.
+#: ``cost_schema`` stays out of this set, and that narrowing is **still a change
+#: to a committed restriction**. What is permitted is three frozen constants —
+#: Ruling 5's two cost pads and Ruling 4's session partition —
+#: ``validate_cost_table`` and everything else stay unreachable. It is recorded
+#: as a **proposed** narrowing in
+#: ``docs/governance/m15_track_a_r1_enablement_referrals.md``, not as a ruling a
+#: session took.
 TRACK_A_FORBIDDEN_MODULES: frozenset[str] = frozenset(
     {
         "scripts.m15_gate3a.proof",
         "scripts.m15_gate3a.artifacts",
         "scripts.m15_gate3a.coverage",
+        "scripts.m15_gate3a.calendar_authority",
         "scripts.m15_gate3a.sealing",
         "scripts.m15_gate3a.effective_n",
     }

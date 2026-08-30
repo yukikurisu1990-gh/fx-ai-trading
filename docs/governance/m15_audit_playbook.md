@@ -397,14 +397,16 @@ only where something was run or read, never where something was believed.
       `APPROVAL_IDENTIFIER_PENDING_UNTIL_MERGE` and
       `THE_TWO_TRACK_SECTIONS_ARE_RULED_AS_RECORDED_AND_NOT_YET_CITABLE_AS_AUTHORITY`
       are **discharged**. §8.11–§8.13 are citable authority.
-- [x] **Governance propagation complete**, as §8.12.13 C-10 defines it: the
-      **P-1 … P-15** predicate on named files. Discharged at PR #455 — P-5 by
-      the §1 gate-table rebuild above, P-10 by PR #451's merge, P-13 by the
-      approval identifier now carried in the T-3 stage ruling. The per-item
-      table is `docs/design/m15_track_a_execution_gate.md` §12.
+- [ ] **Governance propagation complete**, as §8.12.13 C-10 defines it: the
+      **P-1 … P-15** predicate on named files. **Still open.** PR #455 earned
+      P-5 by rebuilding the §1 gate table above, and an earlier revision of it
+      also ticked this box on the strength of P-10 and P-13 — which two review
+      roles refuted: the MRG still carries `APPROVAL_IDENTIFIER_PENDING_UNTIL_MERGE`
+      and the gate-4 design audit's §1a still reads "(recorded, provisional)".
+      Recording a discharge in a different file is what
       `PROPAGATION_COMPLETENESS_IS_A_PREDICATE_ON_NAMED_FILES_NOT_A_SELF_ASSESSMENT`
-      — this tick cites the files, and the existence of this section is still
-      not evidence for it.
+      refuses. The per-item table is
+      `docs/design/m15_track_a_execution_gate.md` §12.
 - [x] **Q8** — `scratch.SCRATCH_ROOT_RELATIVE` is a module constant with no
       caller-supplied component, and `assert_writable` refuses outside it.
       Tested: `test_a_write_outside_the_permitted_roots_is_refused`.
@@ -435,13 +437,16 @@ only where something was run or read, never where something was believed.
       committed beside the seen ledger. R1 records an entry with
       `result_observed=False`, so `K` is explicitly **0** rather than absent:
       R1 measures and scores nothing.
-- [x] **Run and calendar identity** — `RunIdentity` carries
-      `CALENDAR_UTC_DATES_NO_MARKET_HOURS` as a declared label. **Calendar A and
-      B now exist** (`artifacts/m15_calendar/`), authored from the calendar and
-      the frozen contract alone by `scripts/m15_gate3a/calendar_build.py`, and
-      Calendar A is validated through `validate_calendar` before the derivation
-      uses it. Track A does not author market hours: it consumes a committed
-      artifact, and refuses if none is supplied.
+- [ ] **Run and calendar identity** — the identity half is done:
+      `RunIdentity` carries `CALENDAR_UTC_DATES_NO_MARKET_HOURS` as a declared
+      label. The calendar half is **not**. PR #455 produced Calendar A and B
+      (`artifacts/m15_calendar/`) and an earlier revision called them authored
+      authorities; a review role showed the FX-week boundary in Calendar A is
+      **invented and factually wrong** (OANDA opens at NY 17:00 = 21:00Z under
+      EDT, and ~27 corpus weeks are EDT), and that authoring one at all is what
+      ω-12 forbids. They are labelled proposals now, and the question — approved
+      calendar, or §8's declared-label diagnostic — is referred:
+      `docs/governance/m15_track_a_r1_enablement_referrals.md` §2.
 - [x] **Q7's `N = 1`** on the `EXPLORATORY_OOS_SLICE` is enforced at run time
       (`oos_budget`), and `K` is not a substitute for `N`. The slice is
       `2025-12-29 … 2026-02-28` and a `track_a_historical_read` grant **cannot be

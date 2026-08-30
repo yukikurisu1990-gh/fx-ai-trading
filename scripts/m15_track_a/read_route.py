@@ -571,6 +571,18 @@ def read_historical(
             # why every existing synthetic test keeps working unchanged while a
             # genuine read latches the process.
             real = is_committed_source(path)
+            if real:
+                # **Before the file is opened**, and that ordering is a fix. The
+                # first drafting latched after the row loop and the docstring
+                # claimed "a caller cannot receive real rows without the latch
+                # being set" -- the reverse of what the code did. A review role
+                # measured it: a malformed row 501 lines in refuses the read
+                # *after* 500 real rows exist, the latch never fires, and the
+                # rows are reachable from ``exc.__traceback__`` with the marker
+                # strippable by a plain dict copy. Both mechanisms failed at
+                # once. Latching early can only over-refuse, which is the side
+                # to be wrong on.
+                mark_real_rows_handed_out()
             collected: list[dict[str, Any]] = []
             previous = None
             with path.open(encoding="utf-8") as handle:
@@ -638,12 +650,6 @@ def read_historical(
                         stamp_real_provenance(built)
                     collected.append(built)
             rows[pair] = collected
-            if real:
-                # Latched **after** the rows exist and before they are returned,
-                # so a caller cannot receive real rows without the latch being
-                # set. It is one-way; there is no reset, because a reset is the
-                # bypass this closes.
-                mark_real_rows_handed_out()
 
     return HistoricalRead(
         run_id=identity.run_id,

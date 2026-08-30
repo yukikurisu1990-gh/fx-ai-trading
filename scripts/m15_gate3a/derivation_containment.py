@@ -56,8 +56,11 @@ the standard the rest of this apparatus is held to.
 
 from __future__ import annotations
 
+import contextvars
+import threading
 from collections.abc import Iterator, Mapping, Sequence
 from contextlib import contextmanager
+from dataclasses import dataclass
 from typing import Any, Final
 
 #: Key the read route stamps on rows drawn from the committed data root.
@@ -72,7 +75,43 @@ DERIVATION_BYPASS_TOKEN: Final[str] = (
 )
 
 _real_rows_handed_out: bool = False
-_derivation_window_depth: int = 0
+
+
+@dataclass(frozen=True)
+class _WindowOwner:
+    """Who opened the derivation window, and how deep they are inside it."""
+
+    thread_id: int
+    task: int | None
+    depth: int
+
+
+#: The authorised derivation window, pinned to the **thread and task that opened
+#: it**, mirroring ``isolation._window``.
+#:
+#: The first drafting was a plain module global and its docstring claimed it was
+#: "on the model of ``isolation.gated_read_window``" — which is precisely the
+#: model that module records having rejected three times: "a process-wide flag
+#: opened ``data/`` to every other thread; a ``threading.local`` opened it to
+#: every other coroutine on the same thread; and a bare ``ContextVar`` is
+#: *copied into* a child task". A review role measured all of it here: while the
+#: authorised route held the window, an arbitrary aggregation of real rows
+#: succeeded from another thread **and** from a child asyncio task. Per-pair
+#: parallelism is an obvious optimisation, so that is a bypass reachable by
+#: accident, not only by intent.
+_window: contextvars.ContextVar[_WindowOwner | None] = contextvars.ContextVar(
+    "track_a_derivation_window", default=None
+)
+
+
+def _current_task_id() -> int | None:
+    try:
+        import asyncio
+
+        task = asyncio.current_task()
+    except (ImportError, RuntimeError):
+        return None
+    return None if task is None else id(task)
 
 
 class DerivationContainmentError(RuntimeError):
@@ -124,22 +163,31 @@ def is_real_row(row: Any) -> bool:
 def authorised_derivation_window() -> Iterator[None]:
     """Open while the authorised derivation route is calling the aggregator.
 
-    Re-entrant and exception-safe, on the model of
-    ``isolation.gated_read_window``. **Opening it is not an authorisation**: the
-    route opens it only after its own gates have passed, so what it marks is
-    "the gates ran", not "the caller would like them to have".
+    Re-entrant, exception-safe, and **scoped to the opening thread and task**.
+    A sibling thread or a child task sees the window as closed, because the
+    owner is compared rather than merely present — a ``ContextVar`` alone is
+    copied into a child ``Task`` at creation and would be inherited.
+
+    **Opening it is not an authorisation**: the route opens it only after its
+    own gates have passed, so what it marks is "the gates ran", not "the caller
+    would like them to have".
     """
-    global _derivation_window_depth
-    _derivation_window_depth += 1
+    owner = _window.get()
+    here = (threading.get_ident(), _current_task_id())
+    depth = owner.depth + 1 if owner is not None and (owner.thread_id, owner.task) == here else 1
+    token = _window.set(_WindowOwner(thread_id=here[0], task=here[1], depth=depth))
     try:
         yield
     finally:
-        _derivation_window_depth -= 1
+        _window.reset(token)
 
 
 def derivation_window_open() -> bool:
-    """Whether an authorised derivation is in progress."""
-    return _derivation_window_depth > 0
+    """Whether an authorised derivation is in progress **on this thread and task**."""
+    owner = _window.get()
+    if owner is None:
+        return False
+    return (owner.thread_id, owner.task) == (threading.get_ident(), _current_task_id())
 
 
 def assert_derivation_authorised(rows: Any) -> None:
