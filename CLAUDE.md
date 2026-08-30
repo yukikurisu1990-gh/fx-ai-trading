@@ -10,9 +10,84 @@ Before any M15 / ML Step 4 / post-M1 research work, read:
   the audit checklists
 - `docs/prompts/m15_claude_operating_prefix.md` — the five-field task contract
 - `docs/prompts/m15_future_audit_templates.md` — optional prompt templates
+- `docs/design/m15_minimum_research_gate.md` — **the Two-Track model**: §8.11
+  (Exploratory / Formal Confirmation split), §8.12 (governance consistency),
+  §8.13 (semantic cleanup). Read it before any Track A or Track B work; the
+  playbook and prereg carry the split only as far as this propagation has taken
+  it, and where they disagree with that packet **they govern until propagated**
+- `docs/design/m15_track_a_execution_gate.md` — the **Minimum Research
+  Execution Gate**: the apparatus that has to be in place before a Track A R1
+  read may be authorised. Its §10 takes a **reporting obligation**, not an axis
+  selection; the turnover axes are ruled in the pre-registration at **§9a**
+  (`TURNOVER_CEILING_RULED_PER_DAY_CAP_ON_THE_ENTRY_DATE_MAXIMUM`)
 
 For ordinary Green engineering (lint, CI, docs, tests, refactors) the
 autonomous development policy alone is enough.
+
+## The Two-Track model — read this before any M15 research task
+
+M15 Family A research is split. Which track a task belongs to changes what is
+permitted, and a task that does not say is **Track B** until someone rules
+otherwise.
+
+- **Track A — Exploratory.** May vary features, labels, models, hyperparameters,
+  the training scheme, calibration, `ev_min`, thresholds, costs and entry/exit
+  logic. Every output is **both** `NON_DECISION_BEARING_EXPLORATORY_ONLY` **and**
+  `RESEARCH_SCRATCH_NON_AUTHORITATIVE`, and may never be cited for a formal GO,
+  a Gate-3a pass, holdout evidence, novelty evidence, production readiness — or
+  in any decision this programme records. Track A does **not** require the
+  77-item statistical freeze and does **not** require the forward epoch to
+  exist.
+  **A surface being variable does not make its committed prohibitions
+  negotiable** (§8.13.4): Track A may choose a feature list, but not one
+  containing M1-derived features; the vary-freely list overlaps prereg Rulings
+  5–9 almost exactly, and each row of §8.13.4 carries a "what still binds"
+  column that this summary does not reproduce. Read it before varying anything,
+  and read §8.12.10 first — two of the surfaces (the calibration split and the
+  feature list) are **not** Track A free-vary items until their upstream
+  blockers are ruled.
+- **Track B — Formal Confirmation.** One declared candidate, frozen in every
+  respect, run **once** on unseen forward data. Not a place to redesign.
+
+**Track A cannot start yet.** Do not read this as a snapshot — evaluate it:
+
+0. **PR #451 approved and merged.** Until then §8.11–§8.13 carry
+   `APPROVAL_IDENTIFIER_PENDING_UNTIL_MERGE` and
+   `THE_TWO_TRACK_SECTIONS_ARE_RULED_AS_RECORDED_AND_NOT_YET_CITABLE_AS_AUTHORITY`,
+   so the Two-Track model — including everything in this section — is
+   **provisional**, and the propagation into this file, the playbook, the
+   policy and the pre-registration rests on authority that is not yet citable.
+1. `TRACK_A_EXECUTION_REQUIRES_GOVERNANCE_PROPAGATION_COMPLETE` — the
+   **P-1 … P-15** predicate, true **on a named master SHA** (§8.12.13 C-10).
+   It is a predicate on named files, never a self-assessment.
+2. The **Minimum Research Execution Gate** passed on a named head.
+3. The derivation route decided **in a diff**.
+
+The apparatus for 1–3 is `scripts/m15_track_a/` and
+`docs/design/m15_track_a_execution_gate.md`; **building it is not passing the
+gate**, which needs review, approval and merge on a named head.
+
+**Settled by the human + ChatGPT Gate-decision round of 2026-08-30**
+(`docs/design/m15_track_a_execution_gate.md` §15): the turnover axes
+(prereg §9a), prereg §13a / P-7
+(`P_7_DISCHARGED_AT_THIS_RULING`),
+`TRACK_A_R1_BOUNDED_ASSURANCE_THREAT_MODEL_ACCEPTED`, and
+`GENERAL_ADVERSARIAL_AUDIT_COMPLETE_FOR_TRACK_A_R1_BOUNDED_SCOPE`. **None of
+those authorises a read.** From here, a blocker is a concrete, reproducible
+defect inside the Track A R1 threat model — not a theoretical bypass and not
+the absence of a sandbox. Inside
+Track A, R1 (first read), R3 (training) and R4 (evaluation) remain **separate
+Red gates**. §8.12.10 records that an execution-gate pass reaches **R1 only** —
+a statement of **scope**, not of sufficiency: it makes R1 eligible to be
+authorised, and the read still needs its own grant.
+
+**A contract permission is not an execution authorisation.** The Two-Track
+contract being approved does not authorise a read, and neither does a passed
+execution gate; a read needs an explicit human + ChatGPT grant naming the
+operation, span, pairs, timeframe and approved head SHA. `ReadGrant`
+(`scripts/m15_track_a/authorization.py`) is where such an approval is
+**recorded and enforced in-process** — the object does not verify that the
+approval exists, so constructing one is never the act of granting it.
 
 ## Working rules
 

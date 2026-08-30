@@ -116,6 +116,15 @@ and no session may invent market hours.
 | **NR-I** — the rollover exclusion window has no representation | `MAY_DEFER` — escalates if cost-table production is authorised | Ruling 4 freezes "rollover exclusion 21:55–22:15 UTC minimum — widen-only"; zero occurrences in the package, and `_check_session_partition()` requires the three sessions to tile all 1440 minutes, so no carve-out is expressible | Third re-check (NR-I) |
 | **NR-J** — merged-audit R-8 limb 4 was re-disposed without referral | **`MUST_RESOLVE_BEFORE_GATE3A_CONTINUATION`** (same governance class as the crossed-quote referral) | R-8 required "Fix all four before the tables are produced"; 20 × 3 coverage became a reported boolean with no raise | Third re-check (RF-19) |
 
+**Scope of the step list above (Two-Track).** Those steps are the route to
+the **gate-3a continuation** — the committed design-M15 derivation, and every
+formal read that depends on it. They are **not** the route to a **Track A**
+exploratory read, which §2.1's narrow exception governs and which runs through
+the Minimum Research Execution Gate instead (§3's ladder, §5a's template).
+Neither route shortens the other: a Track A read discharges none of the steps
+above, and passing the execution gate does not advance the continuation by one
+item.
+
 ## 2. Research stop rules (mandatory for every session)
 
 These are substantive research boundaries. Procedural stop rules — and the
@@ -126,8 +135,29 @@ rules — protected paths, upward escalation, the Green allowlist — are policy
 
 1. **No real read before audit acceptance:** if a task asks for a real data
    read before the machinery source audit (currently: the F-1…F-5 re-check)
-   is accepted, REFUSE and redirect to the audit gate.
-2. **No real M15 derivation before audit acceptance:** same refusal + redirect.
+   is accepted, REFUSE and redirect to the audit gate. **One narrow exception**
+   (`docs/design/m15_minimum_research_gate.md` §8.12.2): a **Track A**
+   historical read, on the **design span only**, producing output classified
+   **both** `NON_DECISION_BEARING_EXPLORATORY_ONLY` **and**
+   `RESEARCH_SCRATCH_NON_AUTHORITATIVE`, **after** the Minimum Research
+   Execution Gate has passed on a named head **and** an explicit human +
+   ChatGPT read grant covers the operation. That is **five** conditions, not
+   three — the exception's own three limbs plus the two execution conditions —
+   and absent **any one of the five**, refuse as before. Nothing else in §2
+   moves.
+
+   These five are **not** the same enumeration as CLAUDE.md's "three
+   execution-safety conditions" (§8.12.10) or the four-step order in
+   `docs/design/m15_track_a_execution_gate.md` §1. They overlap and neither
+   contains the other, so the governing set is their **union**: PR #451 merged;
+   the P-1…P-15 propagation predicate true on a named master SHA; the Minimum
+   Research Execution Gate passed on a named head; the derivation route
+   committed in a diff; the read confined to the design span; the output
+   carrying both classifications; and an explicit read grant. **The stricter
+   reading wins where they differ.**
+2. **No real M15 derivation before audit acceptance:** same refusal + redirect,
+   and the same single Track A exception — a research-scratch derivation whose
+   output is **not** the prereg §4 artifact and may never be recorded as one.
 3. **No forward-epoch adoption** before sufficient forward data accrues AND an
    explicitly authorised gate-3a continuation PR exists — refuse and redirect.
 4. **No validation, holdout, training, execution, or strategy metrics**
@@ -151,6 +181,30 @@ rules — protected paths, upward escalation, the Green allowlist — are policy
    voids it (policy §10).
 
 ## 3. Remaining gate order
+
+**The Two-Track ladder** (`docs/design/m15_minimum_research_gate.md` §8.11–§8.13),
+inserted here so a session reading this file alone sees it:
+
+| # | Gate | Template |
+| --- | --- | --- |
+| — | Two-Track contract approval (PR #451) | — |
+| **MREG** | **Minimum Research Execution Gate** — Track A R1 enablement | §5a |
+| A-R1 | Track A first real-data read (Red) | §5a + an explicit read grant |
+| A-R2/R3 | Track A baselines and training (Red, **separate approvals**) | policy §6 |
+| A-R4 | Track A `EXPLORATORY_OOS_SLICE` evaluation (Red; Q7 `N = 1`) | policy §6 |
+| B-0 | Track A ends; candidate declared and re-pre-registered | §8.13.7 |
+| B-1 | Track B surfaces frozen; `c` measured and committed | §8.13.7 |
+| gate 3a cont. | The committed design-M15 derivation | §5 |
+| gate 7 | The formal single-shot run | §6, §7, §8 |
+
+Track A does **not** require the forward epoch to exist; Track B does.
+
+Rows `B-0` and `B-1` are a **compression**. §8.12.0(4) records that "promotion
+from Track A to Track B runs through **eight mandatory steps** and through no
+other route", restated as seven ordered steps at §8.13.7. The ladder above
+names where promotion sits in the order; it does not replace the route, and a
+session preparing a promotion reads §8.13.7 rather than this table.
+
 
 **PR shape for this order (policy §14).** Each audit or adoption step below is
 a **Gate-decision PR** — it judges or changes the research state. The work it
@@ -190,6 +244,28 @@ a gate-3a continuation with its own approval, byte-level no-overlap proof,
 and Gate-P2-style adoption artifacts.
 
 ## 4. Source-contamination audit template (reusable checklist)
+
+**Scope note (Track A).** The checklist below asks whether a read route is
+*absent*. That is right for the gate-3a machinery and impossible for **Track A**,
+whose whole purpose is to have one. **Two** of §4's own items invert:
+"real-data read routes — none reachable" becomes "**exactly one, declared and
+gated**", and "real M15 derivation routes — none enabled" becomes "**exactly
+one, selected in a diff**". Two further items are **added**, because §4 has no
+counterpart to them: a single declared **write root**, and a single
+**authorisation gate**. Everything else stays at **none**: broker, network,
+external DB, credentials, model binaries, forward-epoch access, protected-path
+writes.
+
+One §4 item needs care rather than inversion: "**validation / holdout /
+training / execution routes — none exist**". That holds for **R1**, and it does
+**not** hold for R3/R4, which §8.12.2 records as training and computing
+exploratory metrics. An auditor applying §4 to a later Track A stage must not
+read the R1 answer forward. The executable form is `scripts/m15_track_a/containment.py`, and its
+final statuses are `TRACK_A_EXECUTION_CONTAINMENT_PROBES_PASSED_BOUNDED_ASSURANCE` /
+`TRACK_A_EXECUTION_CONTAINMENT_PROBE_FAILED` — deliberately not "verified", and
+every report carries a `bounds` list of what it does **not** establish. It is an
+**execution-containment** check, not a hostile-input audit, and it does not
+replace the gate-6 source-contamination audit Track B still needs.
 
 Use for the F-1…F-5 re-check and for any future machinery audit. The audit
 must be **independent**: performed by a session separate from the one that
@@ -254,6 +330,14 @@ rewrite → `M15_AGGREGATION_DATASET_MACHINERY_SOURCE_AUDIT_REQUIRES_REWRITE`.
 
 ## 5. Gate-3a continuation template (future design-span derivation PR)
 
+**Scope.** This template governs the **gate-3a continuation** — the PR that
+produces the *committed* design-M15 artifact and the byte-level proof. It does
+**not** govern **Track A**, which is a different gate in §3's ladder and whose
+whole purpose is the training and strategy metrics the clauses below forbid.
+Scope follows the gate ladder, not the difficulty of compliance. Track A's
+equivalent precondition is the **Minimum Research Execution Gate** (§5a), and
+four of the clauses below are imposed on it directly there.
+
 Binding shape — every clause mandatory:
 
 - Only after the source audit (re-check) is **accepted**.
@@ -273,7 +357,80 @@ Binding shape — every clause mandatory:
 - **No `NEW_EPOCH_ADOPTED`.** **No `BYTE_ADMISSIBLE`** unless separately
   ruled. Forward epoch remains **WAIT**.
 
+## 5a. Minimum Research Execution Gate template (Track A R1 enablement)
+
+The gate's own record is `docs/design/m15_track_a_execution_gate.md`, and its
+executable half is `scripts/m15_track_a/`.
+
+**Scope.** Track A's first real-data read, and nothing else. Passing it
+authorises **R1 only** — R3 (training) and R4 (evaluation) remain separate Red
+gates with separate approvals (policy §6, §2.5). Every item verified true, with
+citations, on a **named head**:
+
+*Decisions the human + ChatGPT round of 2026-08-30 closed, so a session
+does not reopen them:* the turnover axes (prereg **§9a**), prereg **§13a**
+(`P_7_DISCHARGED_AT_THIS_RULING`),
+`TRACK_A_R1_BOUNDED_ASSURANCE_THREAT_MODEL_ACCEPTED` and
+`GENERAL_ADVERSARIAL_AUDIT_COMPLETE_FOR_TRACK_A_R1_BOUNDED_SCOPE`
+(gate document §15). **None of them authorises a read.**
+
+- [ ] **PR #451 approved and merged.** Until it is, §8.11–§8.13 carry
+      `APPROVAL_IDENTIFIER_PENDING_UNTIL_MERGE` and
+      `THE_TWO_TRACK_SECTIONS_ARE_RULED_AS_RECORDED_AND_NOT_YET_CITABLE_AS_AUTHORITY`
+      — so every item below rests on authority that is not yet citable.
+- [ ] **Governance propagation complete**, evaluated as §8.12.13 C-10 defines
+      it: the **P-1 … P-15** predicate, true **on a named master SHA**.
+      `PROPAGATION_COMPLETENESS_IS_A_PREDICATE_ON_NAMED_FILES_NOT_A_SELF_ASSESSMENT`
+      — the existence of this section is not evidence for it, and the residual
+      list lives at `docs/design/m15_track_a_execution_gate.md` §12.
+- [ ] **Q8** — the research-scratch write root is a module constant with no
+      caller-supplied component (`scripts/m15_track_a/scratch.py`), and writes
+      outside it refuse.
+- [ ] **FR-19** — a default `pytest` reaches no real DB, no `.env`, no external
+      network, no broker, no real historical read, no production storage.
+- [ ] **One** historical read route, gated
+      (`scripts/m15_track_a/read_route.py`), and **one** derivation route,
+      selected in a diff (`scripts/m15_track_a/derivation.py`).
+- [ ] **Isolation** — network, external DB, broker, live, demo and order
+      submission all refuse, demonstrated by the containment audit
+      (`scripts/m15_track_a/containment.py`), not asserted.
+- [ ] **Seen-data ledger** — write-ahead, append-only, and the interval declared
+      *before* it is touched, warm-up included.
+- [ ] **Breadth (`K`) record** — in R-7's unit, recorded as it accrues.
+- [ ] **Run and calendar identity** — research-grade, not evidence-grade
+      provenance; the calendar reading is a declared label, and Track A may not
+      author market hours.
+- [ ] **Q7's `N = 1`** on the `EXPLORATORY_OOS_SLICE` is enforced at run time,
+      and `K` is not a substitute for `N`.
+- [ ] **No consumed-window leakage** — 2026-03-01 → 2026-04-24 dead at all
+      timeframes for all roles, **including feature warm-up** — and the
+      `DESIGN_END` trailing purge, which the declaration guard cannot detect.
+- [ ] **No legacy-evidence dependency** (C-8 declaration held).
+- [ ] Track A output is **both** `NON_DECISION_BEARING_EXPLORATORY_ONLY` and
+      `RESEARCH_SCRATCH_NON_AUTHORITATIVE`, and lands nowhere near the evidence
+      tree.
+
+**The read grant is deliberately NOT an item of this checklist.** It is the
+**next** step, taken after the gate passes:
+
+> **Step 3 (separate).** An explicit human + ChatGPT **read grant** naming the
+> operation, span, pairs, timeframe and approved head SHA
+> (`scripts/m15_track_a/authorization.py`). A contract permission is not an
+> execution authorisation, and neither is a passed gate. If the grant were an
+> item here, a fully-ticked §5a would *be* the authorisation — which is exactly
+> the collapse §8.12.1 says "every prior confusion in this packet's history has
+> run through".
+
+**On "the gate authorises R1 only":** that phrase states the **scope** a gate
+pass can reach — R1, never R3 or R4 — not that a pass is **sufficient** for R1.
+Reaching a gate is not passing through it.
+
 ## 6. Pre-run authorisation template (before ANY single run)
+
+**Scope.** The **formal single-shot run** — Track B's confirmation. Its items
+require an adopted forward epoch, fixed cost tables and a once-only run, none of
+which is satisfiable or meaningful for an exploratory iteration; Track A's
+pre-run checklist is §5a. **Track B passes this in full.**
 
 All of the following must be verified true, with citations, before a run is
 authorised:
@@ -285,7 +442,11 @@ authorised:
 - [ ] Cost tables fixed (design-span data only; committed metadata).
 - [ ] Effective-N estimator fixed and human-approved.
 - [ ] T-1…T-7 satisfied (warm-up W frozen; EV payoff semantics pinned; ratio
-      rule computed — median eligible barrier/cost < 3.0 BLOCKS the run
+      rule computed **from the §4 derivation artifact under the declared
+      candidate's frozen cost table** — a Track A measurement **fires** T-3's
+      block but does **not** discharge this checkbox, because §8.11.2(1) stops a
+      Track A result advancing the programme while a finding that *stops* it is
+      not advancement; median eligible barrier/cost < 3.0 BLOCKS the run
       pending a new ruling; timeout-share trigger armed; maxDD notional =
       10,000 pips; deferred items approved; no-overlap proofs + p95 present).
 - [ ] No consumed-window leakage (2026-03-01 → 2026-04-24 dead at all
@@ -302,6 +463,11 @@ authorised:
 
 ## 7. Single-run execution report template (required fields)
 
+**Track field (required).** Every run report names its track: `TRACK_A` or
+`TRACK_B`. A `TRACK_A` report may not use §8's `M15_SINGLE_RUN_EVIDENCE_*`
+vocabulary, which is **Formal Confirmation only**; it reports a conclusion and
+its `K` count, never its numbers.
+
 - run ID · code SHA · PR head/base SHAs
 - data artifact IDs (design/validation/holdout inventories + checksums)
 - validation decision (per registered `ev_min`; metrics per operating point)
@@ -314,6 +480,20 @@ authorised:
 - exact tests run + results · failures/deviations (honest, verbatim)
 
 ## 8. Post-run audit template (checklist)
+
+**Track field (required).** A post-run audit names its track. The four
+statuses below are **Formal Confirmation (Track B) only** — a Track A run may
+not carry one, and in particular may not carry the one containing `MEETS`.
+
+**A fifth status, for a void registration** (§8.12.13 C-8): where a
+re-pre-registration is declared void — taken after confirmation data was
+observed — the run is recorded
+`M15_SINGLE_RUN_EVIDENCE_VOID_REGISTRATION_NOT_LATE`, the work done under it is
+`NON_DECISION_BEARING_EXPLORATORY_ONLY`, and the span it touched is
+`EXPLORATORY_SEEN_DATA`. **Void is declared by a party other than the executing
+session**, on the committed ledger and declaration objects.
+
+
 
 - [ ] data lineage (inventory → checksums → run inputs)
 - [ ] code SHA (manifest = executed commit)
@@ -372,6 +552,11 @@ anything touching a protected path (policy §3) does.)
 - [ ] statuses correct (required + carried + always-binding present;
       forbidden labels only in prohibition lists)
 - [ ] non-authorisation statements present
+- [ ] **track named** — `TRACK_A` or `TRACK_B` — for any PR carrying run output
+- [ ] **no Track A numeric output committed**; a Track A PR reports the
+      conclusion and the `K` count, not the numbers
+- [ ] research-scratch root untouched by anything but Track A
+      (`artifacts/track_a_scratch/`)
 
 ## 10. Forbidden labels and wording
 

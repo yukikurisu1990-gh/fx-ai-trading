@@ -324,6 +324,126 @@ points → **family A closed, no holdout consumed**.
 these thresholds or refer them back for a new human + ChatGPT ruling — it may
 not loosen them.
 
+### 9a. The turnover row's two axes — RULED
+
+**A human + ChatGPT ruling, recorded here as authority.**
+**Approval identifier:** PR **#452** · date **2026-08-30** ·
+approved head SHA `APPROVAL_IDENTIFIER_HEAD_SHA_RECORDED_AT_MERGE`
+(the same convention §8.12.13 C-9's own consequence paragraph accepts for an
+unmerged head). Taken on the route Ruling 10 itself names — "**or refer them
+back for a new human + ChatGPT ruling**".
+
+**The numeral does not move. `≤ 40 trades/day portfolio-wide` is unchanged, and
+no new threshold is created by this ruling.**
+
+#### What was open
+
+`TURNOVER_CEILING_MEAN_VERSUS_PER_DAY_CAP_STILL_UNREGISTERED` (§8.7.5) and
+`TURNOVER_DENOMINATOR_ACTIVE_VERSUS_CALENDAR_AXIS_STILL_UNREGISTERED` (§8.7.5,
+§8.6.6). Both were classified `UNREGISTERED_RESEARCH_CHOICE` in the §8.10
+inventory (S-62, S-63), and §8.13.13 recorded the deadlock
+`THE_TURNOVER_AXES_ARE_FIXABLE_NEITHER_BEFORE_NOR_AFTER_TRACK_A_AND_THE_COLLISION_IS_UNRULED`.
+
+- **Axis A — mean versus per-day cap.** Two candidates, and the set is closed.
+  `max ≥ mean`, so the **mean is the permissive arm**, and it is what
+  `scripts/ml_step4/metrics.py:120-124` computes.
+- **Axis B — the denominator.** §8.6.6 records **four** candidates: active
+  dates (the implementation, the **smallest** denominator, hence the strictest
+  reading); the registered R-5 denominator
+  `distinct_utc_calendar_dates_in_holdout`, which `compute_all` already
+  receives in the same call; every UTC calendar date in the evaluated span; and
+  the dates an approved calendar authority recognises. A **larger** denominator
+  lowers measured turnover, and §8.12.13 C-20 records that the calendar reading
+  widens the gate-4 corridor by about **42%** — "a loosening Ruling 10 forbids".
+
+#### Why this is a human choice and not a derivation
+
+It looks derivable — `max ≥ mean` and "active dates are the strictest of the
+four" together with CLAUDE.md's stricter-reading rule appear to select one
+corner. The derivation fails at a precise point, and the failure is recorded
+rather than papered over:
+
+- The "calendar widens the corridor by ~42%, therefore loosening" argument needs
+  the **incumbent** as its baseline, and the execution gate's own review
+  established that "**the incumbent is not the baseline Ruling 10 uses** … there
+  is no committed M15 turnover implementation to be incumbent" —
+  `scripts/ml_step4/metrics.py` is M1-lineage, which §11 admits only "reusable
+  after audit/wrapping". Without a baseline, "loosening" has no referent on
+  these axes and Ruling 10 selects nothing.
+- Deciding what the frozen row *means* is the question itself, so a rule of the
+  form "pick the arm that is not a loosening" is circular here.
+- §8.10.3 names **S-62 / S-63 — the mean over a calendar denominator** as
+  analytically favourable *without seeing any data*, and §8.4.11's A-ω-5 with
+  §8.12.13 C-13 hold that a pre-data freeze alone does not protect such an arm:
+  `SEQUENCING_IS_NOT_THE_OPERATIVE_CONTROL_ON_AN_ANALYTICALLY_KNOWABLE_DIRECTION`.
+  So "we chose before looking" is not available as a defence for the mean.
+
+#### The ruling
+
+**`TURNOVER_CEILING_RULED_PER_DAY_CAP_ON_THE_ENTRY_DATE_MAXIMUM`.**
+
+**Axis A is ruled at the per-day cap.** The turnover criterion is satisfied when
+**no single UTC date carries more than 40 portfolio-wide trades**. The date of a
+trade is the one §8.7.5 already ruled: the UTC calendar date of the **decision
+bar** `TradeSignal.entry = i`, not the next-bar fill
+(`TURNOVER_ENTRY_MARKER_IS_THE_DECISION_BAR_NOT_THE_NEXT_BAR_FILL`).
+
+**`TURNOVER_DENOMINATOR_AXIS_IS_NON_BINDING_UNDER_THE_CAP_AND_STAYS_UNREGISTERED`.**
+
+**Axis B is not ruled, because under the cap it cannot change the verdict.** A
+cap is a maximum over dates, and a date carrying zero trades cannot raise a
+maximum — so all four §8.6.6 candidates return the same pass/fail. Axis B stays
+`UNREGISTERED_RESEARCH_CHOICE`; S-62 and S-63 remain live inventory surfaces. If
+a future ruling ever moves Axis A back to a mean, **Axis B must be ruled first**,
+and that move is a **loosening** requiring its own human + ChatGPT ruling.
+
+**`A_TURNOVER_FIGURE_IS_REPORTED_ON_EVERY_CANDIDATE_AXIS_IN_BOTH_TRACKS`.**
+
+Every run — Track A and Track B alike — **reports** both statistics and all four
+denominators side by side. Only the cap is compared to the ceiling. This
+extends the execution gate's Track A reporting obligation to Track B, so the
+record needed to revisit the choice is never lost.
+
+#### Why this rule and not another
+
+- **It tightens.** A cap is never weaker than a mean on the same data, so
+  Ruling 10's prohibition is satisfied by construction, and no separate
+  acceptance of a loosening is required.
+- **It cannot be switched back for convenience.** Any move off the cap is a
+  loosening, which Ruling 10 forbids outright and which would therefore have to
+  be argued as a fresh human + ChatGPT ruling, in public, against this text.
+  Choosing the permissive arm would have left the opposite property: a later
+  tightening is always permitted, so the choice would have stayed switchable.
+- **It closes both axes with one decision**, and §8.7.5 had already anticipated
+  this reading: "Under a **per-day-cap** reading it would also fix the per-date
+  numerator." The cap is fully specified by rulings already in force.
+- **It matches what the row says.** "≤ 40 trades/day portfolio-wide", inside a
+  §9.V kill gate a strategy must stay "**within**", reads as a budget not to be
+  exceeded on a day rather than on average.
+
+#### The cost of this ruling, accepted rather than absorbed
+
+- **It is materially stricter.** A strategy averaging 20 trades/day with one
+  60-trade day passes under the mean and fails under the cap. Family A can
+  therefore be closed by a single outlier day — by a **convention**, not by
+  economics. That risk is accepted here deliberately, on the ground that the
+  permissive arm is the one §8.10.3 flags and A-ω-5 refuses to protect.
+- **It requires implementation work.** `scripts/ml_step4/metrics.py` emits only
+  a mean, and `scripts/ml_step4/acceptance.py:198-202` compares it. A per-date
+  maximum has to be added and the comparison re-pointed. Those are protected
+  paths (Amber) and belong to a later PR; **this ruling does not perform them**,
+  and until they are done the committed code does not implement this row.
+- **`daily_coverage` keeps its own denominator.** S-63 recorded that turnover
+  and coverage do not share one; under the cap they are different kinds of
+  statistic and the mismatch simply ceases to be one. S-63 is not thereby
+  discharged as an inventory surface.
+
+#### What this ruling does not do
+
+It does not touch the turnover **numerator**, §8.7.5's entry-date attribution,
+Q10(ii), Q10(iii), the gate-4 corridor question, or any other row of §9. It
+authorises no read, no derivation, no training and no run.
+
 **Mandatory evidence schema (C-5):** exit-type counts (TP/SL/timeout),
 timeout share, gross/net layer decomposition, class frequencies, concurrency
 metrics, per-currency exposure, full cost-model metadata, EV-gate metadata
@@ -438,6 +558,66 @@ items below carry explicit [FIXED-AT …] markers and do not block this merge.
 
 **Before any production claim:** disjoint replication (gate 9) + separate
 paper/live gates (gate 10).
+
+## 13a. Two-Track amendment — **RULED, IN FORCE**
+
+**A human + ChatGPT ruling, recorded here as authority.**
+**Approval identifier:** PR **#452** · date **2026-08-30** ·
+approved head SHA `APPROVAL_IDENTIFIER_HEAD_SHA_RECORDED_AT_MERGE`.
+
+This is the ruling `PREREG_AMENDMENT_P_7_REQUIRES_ITS_OWN_HUMAN_CHATGPT_RULING`
+reserved. `docs/design/m15_minimum_research_gate.md` §8.12.10 records P-7 as
+"**Red-adjacent Amber** — amends a frozen pre-registration; **needs its own
+human + ChatGPT ruling** … listed so it is not performed by a session in
+passing". PR #451's approval was not this ruling; this is.
+
+**Scope, and why the first drafting of this section was not enough.** §8.12.13's
+widened P-7 names prereg **§3.1, §4, §10, §11, §13, §14 and §16 Ruling 1**,
+because "P-7 as written could be completed while prereg §10 ('gates … **none
+skippable**'), §14 ('no raw data access; no metric computation') and Ruling 1
+still forbade the read, **and a session could then record propagation as
+complete**". The first drafting of this section covered §3.1, §4, §11 and §16,
+said §10 was "unchanged", and said "§14 below is unchanged" — so adopting it
+would have discharged P-7 on paper while three clauses still blocked the read.
+An independent contract-consistency review found that before this ruling was
+taken. **The table below carries all of them.**
+
+**What this amendment does not do.** It does not authorise a read, a
+derivation, training, evaluation or a run; it does not weaken any Track B
+control; and it does not re-freeze, before exploration, any surface §8.13.4
+permits Track A to vary.
+
+### 13a.1 The amendment
+
+`docs/design/m15_minimum_research_gate.md` §8.11–§8.13 split Family A research
+into **Track A** (exploratory) and **Track B** (formal confirmation). The
+following clauses are amended **for Track A only** — Track B inherits every one
+of them unchanged.
+
+| Clause | Amendment |
+| --- | --- |
+| **§3.1** "usable only after the §4 derivation artifact exists" | For **Track A**, a research-scratch derivation is permitted after the Minimum Research Execution Gate has passed and an explicit human + ChatGPT read grant covers the operation. It is **not** the §4 artifact and may never be recorded as one. Track B still requires the §4 artifact |
+| **§4** "requires a Gate-P2-style adoption artifact **before any real read**" | Same carve-out, same limits |
+| **§6** barrier/spread ratio "**before implementation** … derived and recorded" | The derivation is a **Track A duty**, performed under the declared candidate's frozen cost table. Its "before implementation" timing is **re-sited into Track A**, before Track B candidate pre-registration completes. A Track A measurement **fires** T-3's block; it does **not** discharge playbook §6's checkbox (§8.13.6) |
+| **§7** feature policy "the final feature list is frozen **at the design audit**" | Track A **varies** the feature list; the freeze binds at **Track B candidate pre-registration**. §7's **prohibitions** are unaffected and bind Track A in full: no M1-derived features, no consumed-window features, no holdout feature selection |
+| **§8** calibration "isotonic … training-span-only fit split" | The **method** stays frozen and the split is still **carved from the training span only — never validation, never holdout**. Track A varies the split's fraction, placement and purge, which are fixed at Track B candidate pre-registration |
+| **§8** model policy — LightGBM params frozen, "no model-family search", "no post-result model changes" | For **Track A** the model family and hyperparameters are **free to vary** (§8.13.4), which is what exploration is for. What still binds: §4's R-1…R-10; the free-vary permission **ends at the `EXPLORATORY_OOS_SLICE` read** (R-2, "Nothing changes after the slice is read"); and "no post-result model changes" binds **within** Track B unchanged. The frozen params return as the **Track B** default unless the candidate pre-registration names others with exploratory provenance |
+| **§8 / Ruling 9** `ev_min ∈ {0.0, 0.25, 0.5}` | For **Track A**, `ev_min`, decision thresholds and decision logic are **free to vary** (§8.13.4). Ruling 9's prohibition on a raw probability threshold **as a decision rule** binds in both tracks. The registered grid binds again at Track B candidate pre-registration |
+| **§5 / Ruling 5** cost model FROZEN | For **Track A**, cost assumptions are **free to vary** (§8.13.4). A Track A cost figure is **not** the frozen table and may never be recorded as one; the frozen table binds Track B unchanged |
+| **§6** "no label-parameter search" | For **Track A**, barrier geometry and the T-3 hurdle inputs are **free to vary and to measure** (§8.13.4, §8.13.6). The prohibition binds Track B unchanged |
+| **§10** "Execution protocol (gates for this family — **none skippable**)", item 3 "gate 3a … **must complete before any implementation PR reads or derives data**" | §8.11.12 A-3 records that Track A is where features, calibration, the EV gate and the cost table "get written for the first time", so **Track A is implementation** and item 3 reaches it. For **Track A**, item 3's precondition is **re-sited**: the Minimum Research Execution Gate passing on a named head, plus an explicit read grant, replaces it. The committed gate-3a derivation remains a precondition of the **§4 artifact and of Track B**. And the heading is corrected: the Two-Track ladder does not only *add* gates — playbook §1 places **A-R1 before the gate-3a continuation**, so it **reorders** them. Nothing is skipped |
+| **§11** source reuse | A Track A research derivation reuses the committed gate-3a aggregator; its audit status is inherited and recorded, not cleared |
+| **§13** "Must resolve before implementation (gates 4–5 / gate 3a)" | That list binds **gates 4–7 and Track B**. It does **not** gate a Track A exploratory read, which is governed by the Minimum Research Execution Gate and the read grant. Its §6 barrier/spread entry is re-sited by the §6 row above |
+| **§14** "This document authorises **nothing**: … no raw data access; no metric computation" | Unchanged as a statement about **this document**: §14 continues to authorise nothing, and nothing in this pre-registration is a source of authority for any read. It is amended only to record that it is **not a standing prohibition that survives an independent authorisation** — a Track A read and the exploratory metric computation that follows it are authorised, if at all, by the explicit human + ChatGPT read grant taken under the Minimum Research Execution Gate, which draws no authority from this document. `NO_EXECUTION_PERFORMED` and `PRODUCTION_READINESS_NOT_CLAIMED` are untouched, and §14 binds Track B in full |
+| **§16 Ruling 1** gate-3a placement | Unchanged for the committed artifact; the Track A carve-out above is the only exception |
+
+**`PREREG_TWO_TRACK_AMENDMENT_RULED_AND_IN_FORCE_FOR_TRACK_A_ONLY`** ·
+**`P_7_DISCHARGED_AT_THIS_RULING`.**
+
+Where a clause is **not** listed above, it stands unamended and governs both
+tracks. Where this table and an unamended clause conflict, **this table governs
+for Track A and the unamended clause governs for Track B** — the reverse of the
+rule that applied while this section was a draft.
 
 ## 14. Non-authorisation statements
 

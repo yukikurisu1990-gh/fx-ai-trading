@@ -189,3 +189,7 @@ artifacts/stage29_0a/sweep_results.json
 artifacts/stage29_0a/aggregate_summary.json
 artifacts/stage29_0a/val_selected_cell.json
 artifacts/stage29_0a/sanity_probe.json
+
+# Track A research scratch — NON_DECISION_BEARING_EXPLORATORY_ONLY output.
+# Never evidence, and never swept into a commit by an over-broad "git add".
+artifacts/track_a_scratch/

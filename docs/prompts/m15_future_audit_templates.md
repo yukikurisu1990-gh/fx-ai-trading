@@ -8,6 +8,14 @@
 - No template below authorises real data, validation, holdout, training, or
   execution. Templates 4–6 are usable ONLY after their gate-specific human +
   ChatGPT approval exists; pasting a template is never itself an approval.
+- **Two-Track scope.** Every template here is written for the **formal**
+  (Track B) route and for the gate-3a machinery audits. None of them is a
+  Track A template: the Track A containment audit is playbook §4's Track A
+  variant, executable as `scripts/m15_track_a/containment.py`, and the Track A
+  enablement checklist is playbook **§5a**. Applying a Track B template to a
+  Track A stage produces a false verdict in both directions — §4's
+  "no read route exists" fails a stage that must have one, and §8's
+  `M15_SINGLE_RUN_EVIDENCE_*` statuses are Track B only.
 
 **These templates are optional.** The normal prompt is the five-field task
 contract in `docs/prompts/m15_claude_operating_prefix.md`; the session reads
