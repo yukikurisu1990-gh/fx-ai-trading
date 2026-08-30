@@ -22,6 +22,11 @@ import pytest
 
 from scripts.m15_track_a import authorization, containment, identity, isolation, scratch
 
+#: The fingerprint of the tree these tests run against. A grant binds to the
+#: measured implementation, not to a caller-asserted head, so a synthetic
+#: grant has to carry the real value or every gate refuses it.
+APPROVED_FINGERPRINT = containment.implementation_fingerprint()
+
 REPO = scratch.repo_root()
 UNC = r"\\localhost\C$" + str(REPO)[2:]
 SHORT_REPO = r"C:\Users\yukik\FX-AI-~1"
@@ -365,6 +370,7 @@ def test_the_identity_is_a_required_argument() -> None:
         pairs=("EUR_USD",),
         timeframe="M1",
         approved_head_sha="a" * 40,
+        approved_implementation_fingerprint=APPROVED_FINGERPRINT,
         approver_record="PR #452 recorded approval",
     )
     with pytest.raises(TypeError, match="identity"):

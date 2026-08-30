@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from scripts.m15_track_a import authorization
+from scripts.m15_track_a import authorization, containment
 from scripts.m15_track_a.authorization import (
     AuthorizationError,
     AuthorizationMalformedError,
@@ -12,6 +12,11 @@ from scripts.m15_track_a.authorization import (
     require_authorization,
 )
 from scripts.m15_track_a.identity import CALENDAR_UTC_DATES_NO_MARKET_HOURS, RunIdentity
+
+#: The fingerprint of the tree these tests run against. A grant binds to the
+#: measured implementation, not to a caller-asserted head, so a synthetic
+#: grant has to carry the real value or every gate refuses it.
+APPROVED_FINGERPRINT = containment.implementation_fingerprint()
 
 _SHA = "0" * 40
 
@@ -24,6 +29,7 @@ def _grant(**overrides: object) -> ReadGrant:
         "pairs": ("EUR_USD", "USD_JPY"),
         "timeframe": "M1",
         "approved_head_sha": _SHA,
+        "approved_implementation_fingerprint": APPROVED_FINGERPRINT,
         "approver_record": "PR #451 §8.13 approval record",
     }
     kwargs.update(overrides)

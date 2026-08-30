@@ -1,13 +1,20 @@
 # M15 Track A R1 — historical read authorization
 
-**Status:** `TRACK_A_R1_HISTORICAL_DEVELOPMENT_READ_GRANT_BLOCKED_SLICE_BOUNDARY_UNRECORDED`
+**Status:** `TRACK_A_R1_READ_SCOPE_AND_AUTHORIZATION_SEQUENCE_RULED`
+
+**Rulings recorded here** (human + ChatGPT, 2026-08-30):
+`EXPLORATORY_OOS_SLICE_RULED_AS_FINAL_TWENTY_PERCENT_OF_COMMITTED_DESIGN_UTC_DATES` ·
+`READ_GRANT_BINDS_TO_APPROVED_IMPLEMENTATION_ANCESTRY_NOT_SELF_REFERENTIAL_EXECUTION_HEAD`
+
+**Still not granted, and not executed.** The scope is now determined; issuing the
+grant is a separate step and running the read is a separate approval again.
 
 **Always-binding:** `NO_REAL_DATA_READ_PERFORMED` · `NO_EXECUTION_PERFORMED` ·
 `PRODUCTION_READINESS_NOT_CLAIMED` ·
 `FORWARD_EPOCH_ADOPTION_BLOCKED_INSUFFICIENT_SAMPLE_ADOPTION_WAITS`
 
-**Risk tier:** Amber. This document records an authorization analysis and a
-blocker. It grants nothing.
+**Risk tier:** Amber. This document records an authorization analysis and two
+rulings. **It grants nothing** — see §8.
 
 ---
 
@@ -20,14 +27,19 @@ naming the operation, span, pairs, timeframe and approved head SHA.
 This document derives that scope **from the committed authorities only**. It
 invents no date.
 
-**Its finding is that the grant cannot be issued today**, and the reason is a
-single missing prior decision that the contract itself requires to be taken
-before R1. Everything else in the scope is determined, and is recorded here so
-that the grant can be issued in one step once that decision exists.
+**An earlier revision of it found the grant could not be issued at all**, for two
+reasons: the `EXPLORATORY_OOS_SLICE` boundary was unrecorded, so the development
+span's end was underivable, and `approved_head_sha` was self-defeating, because
+recording a grant moves `HEAD`. Both are now closed by ruling — §4 and §4a —
+and the earlier reasoning is kept rather than deleted, because what a boundary
+was *chosen against* is the only evidence that it was chosen outcome-blind.
+
+Every element of the scope is now determined. **Issuing the grant is still a
+separate act, and running the read is a separate approval after that.**
 
 ## 2. The `ReadGrant` schema, from source
 
-`scripts/m15_track_a/authorization.py` — seven required fields, each validated
+`scripts/m15_track_a/authorization.py` — **eight** required fields, each validated
 at construction and **re-validated** at check time:
 
 | Field | Type | Constraint |
@@ -62,51 +74,122 @@ next section enforceable rather than merely stated.
 | **operation** | `track_a_historical_read` | The operation R1 performs on this route is a read of the **M1 source**. Turning those bars into M15 is a different closed operation with its own grant (`track_a_m15_research_derivation`) — not because R1 has no derivation in it, but because the two are separately authorised |
 | **pairs** | the frozen **`PAIRS_20`** universe, all twenty | `scripts/m15_gate3a/pair_authority.py`; `aggregation.py` "fails closed outside the frozen PAIRS_20 universe" |
 | **timeframe** | **`M1`** | R1 reads the source bars. The committed 365d_BA epoch is M1 bid/ask; M15 does not exist until the derivation runs. `read_route.SOURCE_DESCRIPTION` names "the committed 365d_BA M1 bid/ask files" |
-| **approved head SHA** | ⛔ **NOT DETERMINED** | see §4a |
+| **approved head SHA** | the merged head carrying the approved read implementation | §4a — recorded, and **not** compared to `identity.code_sha` |
+| **approved implementation fingerprint** | `containment.implementation_fingerprint()` at that head | §4a — the field the gate actually enforces, measured from the tree |
 | **span start** | **2025-04-25** | `no_overlap.DESIGN_START`; prereg §3.1 "Design (exploratory) 2025-04-25 → 2026-02-28" |
 | **excluded — dead window** | 2026-03-01 → 2026-04-24 | `no_overlap.DEAD_START`/`DEAD_END`; the consumed M1 holdout, quarantined at every timeframe for every role |
 | **excluded — forward epoch** | 2026-04-25 onward | `no_overlap.FORWARD_FLOOR`. It is the **Track B confirmation dataset** and does not exist yet (`FORWARD_EPOCH_ADOPTION_BLOCKED_INSUFFICIENT_SAMPLE_ADOPTION_WAITS`) |
-| **span end** | ⛔ **NOT DETERMINED** | see §4 |
+| **span end** | **2025-12-28** | §4 — the day before the ruled `EXPLORATORY_OOS_SLICE` |
 
-## 4a. Why the approved head is not determined either
+## 4a. RULED — what a grant binds to
 
-An earlier drafting of the table above named **`37edbb0`**, the merged master,
-and that was wrong in a way worth recording rather than quietly fixing.
+**`READ_GRANT_BINDS_TO_APPROVED_IMPLEMENTATION_ANCESTRY_NOT_SELF_REFERENTIAL_EXECUTION_HEAD`.**
 
-`require_authorization` compares `approved_head_sha` to `identity.code_sha`, so
-the grant names **the code that will run the read**. At `37edbb0`
-`read_historical` raises `NotImplementedError` and reads nothing: a grant naming
-it authorises a read that cannot happen. The head that *can* perform the read is
-the one carrying the body — this PR's — and it is **not merged and not
-approved**. Naming an unmerged head in a grant would be worse still: the grant
-would point at code that can still change.
+### The problem, confirmed from source before it was fixed
 
-So the head is determined by a rule, not yet by a value:
+`require_authorization` used to refuse unless
+`identity.code_sha == grant.approved_head_sha`. Reading the two definitions
+together shows what that actually was:
 
-`APPROVED_HEAD_IS_THE_MERGED_HEAD_CARRYING_THE_READ_BODY_WHICH_DOES_NOT_EXIST_YET`
+- `RunIdentity.code_sha` is **caller-asserted**. `identity.py` derives it from
+  nothing; the module's own docstring said so, and the check's docstring
+  admitted the limit.
+- `ReadGrant.approved_head_sha` is likewise a string the grant's author writes.
 
-The value is filled in at the same moment as the span end, by the same human +
-ChatGPT decision, and not before.
+So the check compared **two caller-asserted strings**. It refused an honest run
+at the wrong head and refused a dishonest one never — a caller running anything
+at all could assert the approved head and pass.
 
-## 4. Why the span end cannot be derived — the blocker
+**And the self-reference was real, not theoretical.** A grant has to be recorded
+in the repository before it is exercised; recording it is a commit; the commit
+moves `HEAD`. An honest run at the new head is then refused by the grant that
+the commit exists to record. There is no head an author can write into the field
+that satisfies it: naming the pre-commit head fails at execution, and naming the
+post-commit head is impossible because the commit does not exist yet.
 
-**`THE_EXPLORATORY_OOS_SLICE_BOUNDARY_IS_UNRECORDED_AND_R_2_REQUIRES_IT_BEFORE_R1`.**
+### The ruling
 
-**First, R-2's standing, because it decides how this block should be read.**
-R-2 lives in the contract packet's §4, and C-9 holds that the packet's §8.11 /
-§8.12 / §8.13 rulings cannot be cited as authority while no approved head SHA
-carries them. R-2 is in the same position: it is **this programme's own stated
-restriction, not a ruling anyone has approved**.
+**A grant binds to the approved *implementation*, measured, not to an asserted
+head.** `ReadGrant` gains an eighth required field,
+`approved_implementation_fingerprint`, and `require_authorization` refuses unless
+it equals `containment.implementation_fingerprint()` **computed from the running
+tree** at check time.
 
-That does not weaken the block — it is why the block is correct. The repository
-rule is that *the stricter reading of a research restriction wins*. A recorded
-restriction that has not been ratified is still the stricter reading, and the
-looser reading ("no approved authority quarantines the slice, so read the whole
-design span") is exactly the reading that rule exists to refuse. If a future
-ruling **retires** R-2, the span end becomes derivable in one line; until then
-it is not.
+The fingerprint is a sha256 over the declared implementation surface: every
+`.py` under `scripts/m15_track_a/` **recursively**, plus every `m15_gate3a`
+module the package imports — `aggregation`, `no_overlap`, `pair_authority`,
+`path_authority`. Paths are hashed with the bytes, and the file count with both,
+so renaming a module or swapping two files does not cancel out. The surface is
+located from the **package's own directory**, not from a repository root, so it
+describes the code that is actually imported and gives the same value on the
+approver's machine and the reviewer's.
 
-§4's **R-2** defines the slice and quarantines it, in its own words:
+Two of those details were measured rather than assumed, and both were wrong in
+the first drafting:
+
+* it globbed **non-recursively**, so `m15_track_a/helpers/reader.py` would have
+  been outside the fingerprint entirely — the read logic could move one
+  directory down and keep an old grant valid;
+* it listed only the two modules `read_route` imports, leaving `aggregation`
+  (the derivation route's delegate) and `path_authority` (which decides what is
+  inside the scratch root) uncovered.
+
+A test now pins the sibling list against the package's **actual** imports, since
+the failure mode is a fifth import that nobody adds to the list.
+
+Coverage was then measured on clones, not argued: a byte changed in
+`read_route.py`, `isolation.py` or `no_overlap.py`, a new module, a module in a
+new subdirectory, and a deleted module each change the value; a byte-identical
+copy at a different path does not.
+
+What this buys, exactly:
+
+| Change after approval | Old check | Ruled check |
+| --- | --- | --- |
+| a commit recording the grant, or a document | ❌ voided the grant | ✅ grant stands |
+| one byte of `read_route.py`, `isolation.py`, `no_overlap.py`, … | ✅ if honest | ✅ **always** |
+| a caller asserting the approved head while running other code | ❌ passed | ✅ refused |
+
+### The sequence, and it is the plain one
+
+1. **#453's final head is fixed** and its implementation reviewed.
+2. **Human + ChatGPT approve that implementation head.**
+3. #453 is merged. The merge commit changes `HEAD` and changes **no** covered
+   file, so the fingerprint is unchanged.
+4. An **authorization-only** commit records the `ReadGrant`, carrying the
+   approved head SHA and that fingerprint.
+5. The read runs at a head at or after (4). The fingerprint check passes because
+   nothing on the implementation surface moved.
+6. Any substantive change re-opens the approval, automatically: the fingerprint
+   no longer matches and the grant is refused with no human in the loop.
+
+### The limit, stated rather than implied
+
+This binds the **implementation**, not the **ancestry**. Whether the execution
+head descends from the approved head is a `git` question, and reaching git from
+inside a gated read means spawning a process the isolation layer exists to
+refuse. It stays a **gate-time obligation on the reviewer**, discharged with
+
+```
+git merge-base --is-ancestor <approved_head_sha> HEAD
+git diff --stat <approved_head_sha>..HEAD
+```
+
+and it is the weaker of the two checks: a head with identical implementation
+bytes reads identically wherever it sits in the graph.
+
+Two further limits, on the same footing as the rest of this apparatus:
+the fingerprint covers **source files**, so it does not see an installed
+dependency changing under it; and code in the same process can bypass any
+in-process check, which is what `AUDIT_BOUNDS` has said throughout.
+
+## 4. RULED — the `EXPLORATORY_OOS_SLICE` boundary
+
+**`EXPLORATORY_OOS_SLICE_RULED_AS_FINAL_TWENTY_PERCENT_OF_COMMITTED_DESIGN_UTC_DATES`.**
+
+### What R-2 fixed, and what it left open
+
+§4's **R-2**, in its own words:
 
 > **Chronological only** — the **final contiguous portion of the design span**,
 > the M1 precedent's shape. No random split, no shuffled k-fold …
@@ -118,73 +201,141 @@ it is not.
 > **Purge counted in bars, never wall-clock.** ≥ 25 M15 bars (`horizon + 1`) of
 > the design span immediately preceding the slice are dropped from training.
 
-Three consequences, and together they close the question:
+R-2 fixed the **shape** and the **timing of the decision**. It fixed no
+**size** — and the previous revision of this document therefore refused to name
+a date, recording
+`THE_EXPLORATORY_OOS_SLICE_BOUNDARY_IS_UNRECORDED_AND_R_2_REQUIRES_IT_BEFORE_R1`
+after searching the contract packet, the pre-registration, the gate-4 design
+audit, the playbook and the policy.
 
-1. **The slice is inside the design span.** So a grant reading
-   `2025-04-25 → 2026-02-28` under `track_a_historical_read` would authorise
-   reading the slice — which R-2 forbids before R4, and which
-   `track_a_exploratory_oos_slice_read` exists precisely to keep separate.
-2. **The development corpus therefore ends before the slice**, minus the
-   ≥ 25-bar purge: `development_end = slice_start − purge`.
-3. **`slice_start` is named by no committed source.** Searched: the contract
-   packet, the pre-registration, the gate-4 design audit, the playbook and the
-   policy. R-2 states the *shape* ("final contiguous portion") and the *timing
-   of the decision* ("before stage R1"), and nothing states its size, fraction
-   or date.
+**Two near-misses were checked and rejected then, and are still rejected:**
 
-**Two near-misses, checked and rejected as the boundary:**
-
-- **The 25% training prefix** (§8.8) fixes `n_initial_training_dates = 78`,
-  a training-only block `2025-04-25 … 2025-07-11`, first predicted DESIGN date
-  `2025-07-12`, over `N_design_dates = 310`. That is the **`c`-map estimator's**
-  prefix — an *initial* block for `rho_x`/`c` — **not** the `EXPLORATORY_OOS_SLICE`,
-  which is a *final* block for evaluation. Different surface, different end of
-  the span, different purpose. Citing it as the slice boundary would be
-  inventing an authority.
+- **The 25% training prefix** (§8.8) fixes `n_initial_training_dates = 78`, a
+  training-only block `2025-04-25 … 2025-07-11`, over `N_design_dates = 310`.
+  That is the **`c`-map estimator's** *initial* block — the opposite end of the
+  span, for a different purpose.
 - **T_v / T_h** (prereg §3.1) are the **forward epoch's** validation/holdout
-  boundaries, `[FIXED-AT gate 3a]`, and are not the design span's internal split.
+  boundaries, `[FIXED-AT gate 3a]`, not a design-span internal split.
 
-**And no non-empty prefix of the design span is provably outside the slice.**
-The slice is the *final* contiguous portion, so a prefix is clear of it only if
-it ends before the slice begins — and **no committed source bounds how large the
-slice may be**, so no prefix can be shown to end before it.
+Neither is the slice. So the size was a genuine human decision, and it has now
+been taken.
 
-Stated precisely, because the earlier drafting of this paragraph overstated it:
-this is an argument from a *missing upper bound*, not a claim that the slice
-plausibly consumes the whole design span. A slice that left no training data
-would be degenerate, and R-2's purge — "≥ 25 M15 bars of the design span
-immediately preceding the slice are dropped **from training**" — presupposes
-training data before it. So a sane boundary certainly leaves a large prefix. The
-point is that "certainly" is not "derivably": picking the prefix would mean
-picking the number, and picking the number is the decision §5 refers upward.
+### The ruling
 
-**Fail closed.** No development span is granted.
+The `EXPLORATORY_OOS_SLICE` is the **final 20% of the committed DESIGN span,
+counted in UTC calendar dates**:
 
-## 5. What the next decision is, exactly
+* the unit is the **UTC calendar date** — consistent with §3.7's
+  `CALENDAR_UTC_DATES_NO_MARKET_HOURS`;
+* the population is the **committed DESIGN span only**;
+* `tail = ceil(0.20 × number_of_design_dates)`;
+* the tail is **contiguous** and ends on the last design date;
+* **no weekday or market-day snapping**;
+* computed **without looking at any price, outcome or metric**;
+* it is the **N = 1** exploratory OOS (`oos_budget`), consumed at its first
+  decision-bearing observation;
+* it is **completely separate** from every ordinary development read;
+* once read, it is **not reused**.
 
-One human + ChatGPT decision, and it is one R-2 already requires **before R1**:
+**A human chose the fraction. No human chose a date.** That separation is why
+the arithmetic lives in `scripts/m15_track_a/oos_slice.py` rather than in prose:
+`0.20` is a number that can be argued about before any data exists, and
+`2025-12-29` is a consequence of it and two committed constants. The module
+reads no file, no environment variable and no clock, and a test asserts that on
+its AST.
 
-> **Choose and record the `EXPLORATORY_OOS_SLICE` boundary** — the start date of
-> the final contiguous portion of the design span reserved for the single R4
-> evaluation.
+### The derivation, in full
 
-It must be **outcome-blind**, taken before any DESIGN observation, and — on the
-model of the 25% prefix ruling — stated as a **declared, mechanical, pre-data
-boundary** whose job is to remove researcher discretion, with no optimality
-claimed for it. Once it exists, the development grant follows mechanically:
+Every input is a committed constant; every step is integer or calendar
+arithmetic.
+
+| Step | Source | Value |
+| --- | --- | --- |
+| `DESIGN_START` | `no_overlap.py` | `2025-04-25` |
+| `DESIGN_END` | `no_overlap.py` | `2026-02-28` (23:59:59Z) |
+| `number_of_design_dates` | inclusive date count | **310** |
+| `tail` | `ceil(0.20 × 310)` | **62** |
+| `slice_start` | `DESIGN_END − (tail − 1)` days | **2025-12-29** |
+| `slice_end` | `= DESIGN_END`; a *final* portion ends nowhere else | **2026-02-28** |
+| `development_end` | `slice_start − 1` day | **2025-12-28** |
+| `development_start` | `= DESIGN_START` | **2025-04-25** |
+
+**310 is a cross-check, not a coincidence.** The pre-registration's 25%-prefix
+ruling (§8.8) arrived at `N_design_dates = 310` independently, which confirms the
+counting convention — inclusive, UTC dates — rather than supplying a second
+authority for it.
+
+The ceiling is computed as `-(-n * 20 // 100)`, exact integer arithmetic. A
+boundary that depended on how binary floating point rounds `0.2` would be a
+boundary nobody could check by hand.
+
+### Why the ≥ 25-bar purge is **not** subtracted from the read span
+
+The earlier revision sketched `span_end_utc = slice_start − ≥25 M15 bars`. That
+is wrong, in a way worth recording:
+
+1. **The purge is a *training* exclusion.** R-2 says those bars "are dropped
+   **from training**". Dropping a bar from training is a stage that runs on data
+   this read has already returned.
+2. **It is counted in bars, and counting bars requires reading them.** Making
+   the read span depend on an eligible-bar index is circular: R1 is the read.
+3. **Converting it to calendar days would mean inventing a number.** "Enough
+   days to certainly contain 25 M15 bars" depends on weekends and holidays, and
+   picking a safe margin is exactly the invention this document refuses.
+
+So the read stops at `development_end`, and the purge binds downstream — the
+same division §8.11.12 **F-5** already records at `DESIGN_END` itself, where a
+Friday-afternoon signal bar's 24-bar label reaches into the dead window. The
+labels are purged; the bars are read.
+
+This read returns **M1 rows only** — no labels, no features, no statistics — so
+nothing it returns observes the slice.
+
+### The quarantine is enforced, not just recorded
+
+`read_route.assert_development_only` refuses any `track_a_historical_read` whose
+**touched** interval — warm-up included — reaches `slice_start` or later. It sits
+beside `assert_span_admissible` rather than inside it, because the design-span
+and dead-window bounds come from the committed `no_overlap` module while this
+boundary comes from a ruling, and collapsing the two would hide which authority
+refused a read.
+
+It **refuses**; it does not trim. A read silently shortened to the development
+span leaves the caller believing it got what it asked for.
+
+## 5. The development `ReadGrant`, in full
+
+The scope that follows from §4 and §4a, and the only scope an ordinary Track A
+R1 read may be granted:
 
 ```
-span_start_utc = 2025-04-25                       (DESIGN_START)
-span_end_utc   = slice_start − ≥25 M15 bars       (R-2 purge)
+operation                          = track_a_historical_read
+span_start_utc                     = 2025-04-25
+span_end_utc                       = 2025-12-28
+pairs                              = PAIRS_20   (all twenty)
+timeframe                          = M1
+approved_head_sha                  = <the merged head carrying the approved implementation>
+approved_implementation_fingerprint = <containment.implementation_fingerprint() at that head>
+approver_record                    = <the recorded human + ChatGPT approval>
 ```
 
-and the ≥ 25-bar purge is counted **in bars, never wall-clock** (R-2), so the
-arithmetic needs the eligible-bar index, not a calendar subtraction.
+248 UTC dates. Excluded, each by its own mechanism:
 
-Note also §8.11.12 **F-5**: a trailing purge of ≥ 25 M15 bars applies at
-`DESIGN_END` itself, because a Friday-afternoon signal bar's 24-bar label reaches
-into the dead window. That purge binds the *labels*, not this read's span, and it
-is recorded here so the two are not confused.
+| Excluded | From | Enforced by |
+| --- | --- | --- |
+| `EXPLORATORY_OOS_SLICE` `2025-12-29 … 2026-02-28` | the grant span, and the route | `assert_development_only`, and a separate operation |
+| dead window `2026-03-01 … 2026-04-24` | every role, every timeframe | `assert_span_admissible`, `no_overlap` |
+| forward epoch `2026-04-25` onward | every Track A operation | `assert_span_admissible`, and a row-level floor |
+| anything outside the grant | — | the grant ∩ request intersection |
+
+**Warm-up does not get an exemption.** A warm-up extension that reaches past
+`2025-12-28` is refused, not trimmed: a bar read to prime an indicator is read.
+
+**The two grants that are not this one.** Reading the slice is
+`track_a_exploratory_oos_slice_read`, with its own approval and `N = 1`; deriving
+M15 is `track_a_m15_research_derivation`, with its own approval. Neither is
+implied by this one, and `grant_covers` refuses a grant for one operation
+driving another.
 
 ## 6. The seen-data consequence — irreversible, and stated before any read
 
@@ -205,7 +356,7 @@ moment it is read, and it does not return.
   **confirmation** dataset. `SEEN_IS_TERMINAL_AND_NO_RULING_CAN_RESTORE_UNSEEN_STATUS`
   — the roles do not swap back, and no ruling restores unseen status.
 
-## 7. What a grant, when issued, will not cover
+## 7. What the grant, when issued, will not cover
 
 Recorded now so the eventual grant is read narrowly:
 
@@ -216,6 +367,7 @@ Recorded now so the eventual grant is read narrowly:
   grant, and playbook §2.5 forbids chaining irreversible stages;
 - **not** the forward epoch, in any role;
 - **not** the dead window 2026-03-01 → 2026-04-24;
+- **not** any date from **2025-12-29** onward, by span and by route;
 - **not** Formal Confirmation, and no Track A output may be cited for one;
 - **not** training, evaluation, calibration or any fitted object — R1 reads;
   R3 and R4 are separate Red gates with separate approvals;
@@ -224,7 +376,25 @@ Recorded now so the eventual grant is read narrowly:
 
 ## 8. Non-authorisation statement
 
-This document authorises **nothing**. No `ReadGrant` is issued by it, no read is
-performed, and the read route's body refuses without a grant regardless of what
-is written here. `NO_REAL_DATA_READ_PERFORMED`; `NO_EXECUTION_PERFORMED`;
+This document authorises **nothing**, and that is unchanged by the two rulings
+it now records. A determined scope is not a grant, and a grant is not an
+execution command.
+
+**No `ReadGrant` is issued here, and none is committed anywhere in this PR.**
+That is deliberate. A grant needs the approved head SHA and the implementation
+fingerprint of a **merged** head, and no such head exists while this PR is open;
+committing a grant that names an unmerged head would point an authorisation at
+code that can still change. §4a step 4 puts the grant in a separate
+authorization-only commit after merge, which is the simplest order that is also
+checkable.
+
+Three things remain outstanding, in order, and none of them is discharged by
+this document:
+
+1. human + ChatGPT approval of **this implementation head**;
+2. the authorization-only commit **recording** the grant §5 specifies;
+3. an explicit **execution command** for the read itself.
+
+The route refuses without a grant regardless of what is written here.
+`NO_REAL_DATA_READ_PERFORMED`; `NO_EXECUTION_PERFORMED`;
 `PRODUCTION_READINESS_NOT_CLAIMED`.

@@ -92,6 +92,7 @@ from scripts.m15_track_a import (
     seen_ledger,
 )
 from scripts.m15_track_a.identity import RunIdentity
+from scripts.m15_track_a.oos_slice import OosSliceError, assert_clear_of_slice
 
 _DATE_RE: Final[re.Pattern[str]] = re.compile(r"\A\d{4}-\d{2}-\d{2}\Z")
 
@@ -235,6 +236,30 @@ def assert_span_admissible(request: ReadRequest) -> None:
             f"{DESIGN_START.date()}..{DESIGN_END.date()} and the dead window is excluded "
             f"from every role at every timeframe. ({exc})"
         ) from exc
+
+
+def assert_development_only(request: ReadRequest) -> None:
+    """Refuse a development read that reaches into the `EXPLORATORY_OOS_SLICE`.
+
+    ``assert_span_admissible`` bounds the interval at the design span and clears
+    it of the dead window. Neither of those sees the slice, because the slice is
+    *inside* the design span — which is exactly why R-2 needed its boundary
+    recorded before R1, and why this route stayed blocked until it was.
+
+    The refusal is on the **touched** interval, warm-up included. A warm-up
+    extension that reaches forward into the slice reads the slice; that it was
+    only meant to prime an indicator changes nothing about which bars were
+    opened. Refused rather than trimmed: silently shortening a read leaves the
+    caller believing it got what it asked for.
+    """
+    try:
+        assert_clear_of_slice(
+            _as_instant(request.touched_start_utc, end_of_day=False),
+            _as_instant(request.span_end_utc, end_of_day=True),
+            what="Track A development read refused",
+        )
+    except OosSliceError as exc:
+        raise ReadRouteError(str(exc)) from exc
 
 
 @dataclass(frozen=True)
@@ -427,6 +452,7 @@ def read_historical(
     )
 
     assert_span_admissible(request)
+    assert_development_only(request)
 
     seen_ledger.assert_declared(
         span_start_utc=request.touched_start_utc,
@@ -584,6 +610,7 @@ __all__ = [
     "HistoricalRead",
     "ReadRequest",
     "ReadRouteError",
+    "assert_development_only",
     "assert_span_admissible",
     "read_historical",
     "source_path_for",

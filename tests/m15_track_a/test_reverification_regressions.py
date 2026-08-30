@@ -25,6 +25,11 @@ import pytest
 
 from scripts.m15_track_a import authorization, containment, identity, isolation, oos_budget, scratch
 
+#: The fingerprint of the tree these tests run against. A grant binds to the
+#: measured implementation, not to a caller-asserted head, so a synthetic
+#: grant has to carry the real value or every gate refuses it.
+APPROVED_FINGERPRINT = containment.implementation_fingerprint()
+
 REPO = scratch.repo_root()
 
 #: Whether this filesystem ignores case. The guard case-folds because NTFS and
@@ -346,6 +351,7 @@ def test_a_request_naming_no_pairs_is_refused() -> None:
         pairs=("EUR_USD",),
         timeframe="M1",
         approved_head_sha="a" * 40,
+        approved_implementation_fingerprint=APPROVED_FINGERPRINT,
         approver_record="PR #452 recorded approval",
     )
     with pytest.raises(authorization.AuthorizationMalformedError):
@@ -372,6 +378,7 @@ def test_the_identity_is_pinned_to_its_own_type() -> None:
         pairs=("EUR_USD",),
         timeframe="M1",
         approved_head_sha="a" * 40,
+        approved_implementation_fingerprint=APPROVED_FINGERPRINT,
         approver_record="PR #452 recorded approval",
     )
     with pytest.raises(authorization.AuthorizationError, match="RunIdentity"):

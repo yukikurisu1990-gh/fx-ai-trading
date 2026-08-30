@@ -25,6 +25,12 @@ from scripts.m15_track_a import (
     scratch,
     seen_ledger,
 )
+from scripts.m15_track_a.oos_slice import DEVELOPMENT_END_UTC
+
+#: The fingerprint of the tree these tests run against. A grant binds to the
+#: measured implementation, not to a caller-asserted head, so a synthetic
+#: grant has to carry the real value or every gate refuses it.
+APPROVED_FINGERPRINT = containment.implementation_fingerprint()
 
 APPROVED_SHA = "a" * 40
 DEV_START = "2025-05-01"
@@ -76,6 +82,7 @@ def _grant(**overrides: object) -> authorization.ReadGrant:
         "pairs": ("EUR_USD",),
         "timeframe": "M1",
         "approved_head_sha": APPROVED_SHA,
+        "approved_implementation_fingerprint": APPROVED_FINGERPRINT,
         "approver_record": "synthetic test grant",
     }
     fields.update(overrides)
@@ -144,10 +151,31 @@ def test_no_grant_is_refused(sandbox: Path, guards: object) -> None:
         read_route.read_historical(_request(), _run(), grant=None)
 
 
-def test_a_wrong_approved_head_sha_is_refused(sandbox: Path, guards: object) -> None:
-    """An approval covers the head it names; a head change voids it."""
-    with pytest.raises(authorization.AuthorizationError, match="head"):
-        read_route.read_historical(_request(), _run(code_sha="c" * 40), grant=_grant())
+def test_a_changed_implementation_voids_the_grant(sandbox: Path, guards: object) -> None:
+    """An approval covers the implementation it was given against.
+
+    Replaces a test that asserted a mismatched ``code_sha`` was refused. That
+    compared two caller-asserted strings and blocked the authorization-only
+    commit; this compares the grant's recorded fingerprint against the tree.
+    """
+    stale = _grant(approved_implementation_fingerprint="b" * 64)
+    with pytest.raises(authorization.AuthorizationError, match="implementation"):
+        read_route.read_historical(_request(), _run(), grant=stale)
+
+
+def test_a_run_at_a_descendant_head_still_reads(sandbox: Path, guards: object) -> None:
+    """The sequencing this whole change exists for.
+
+    Recording a `ReadGrant` in the repository moves `HEAD`, so the run that
+    exercises the grant is on a head the grant cannot name. That is allowed
+    exactly as far as the implementation is unchanged — which is what the
+    fingerprint measures — and no further.
+    """
+    _write_source(sandbox, "EUR_USD", [datetime(2025, 5, 2, 12, 0, tzinfo=UTC)])
+    run = _run(code_sha="d" * 40)
+    _declare(run)
+    result = read_route.read_historical(_request(), run, grant=_grant())
+    assert len(result.rows_by_pair["EUR_USD"]) == 1
 
 
 def test_a_pair_outside_the_grant_is_refused(sandbox: Path, guards: object) -> None:
@@ -364,15 +392,15 @@ def test_a_dead_window_row_in_the_source_is_never_reached(sandbox: Path, guards:
         [datetime(2025, 5, 2, 12, 0, tzinfo=UTC), datetime(2026, 3, 10, 12, 0, tzinfo=UTC)],
     )
     run = _run()
-    _declare(run, span_end_utc="2026-02-28")
+    _declare(run, span_end_utc=DEVELOPMENT_END_UTC)
     result = read_route.read_historical(
-        _request(span_end_utc="2026-02-28"),
+        _request(span_end_utc=DEVELOPMENT_END_UTC),
         run,
         grant=_grant(span_end_utc="2026-04-30"),
     )
     returned = [row[read_route.ROW_TIMESTAMP_KEY] for row in result.rows_by_pair["EUR_USD"]]
     assert returned == [datetime(2025, 5, 2, 12, 0, tzinfo=UTC)]
-    assert result.span_end_utc == "2026-02-28", "the wider grant does not widen the window"
+    assert result.span_end_utc == DEVELOPMENT_END_UTC, "the wider grant does not widen the window"
 
 
 def test_the_window_can_never_reach_the_dead_window(sandbox: Path, guards: object) -> None:

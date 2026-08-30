@@ -24,6 +24,11 @@ from scripts.m15_track_a import (
 )
 from scripts.m15_track_a.identity import RunIdentity, RunIdentityError
 
+#: The fingerprint of the tree these tests run against. A grant binds to the
+#: measured implementation, not to a caller-asserted head, so a synthetic
+#: grant has to carry the real value or every gate refuses it.
+APPROVED_FINGERPRINT = containment.implementation_fingerprint()
+
 _SHA = "a" * 40
 
 
@@ -73,6 +78,7 @@ def _grant(**overrides: object) -> authorization.ReadGrant:
         "pairs": ("EUR_USD",),
         "timeframe": "M1",
         "approved_head_sha": _SHA,
+        "approved_implementation_fingerprint": APPROVED_FINGERPRINT,
         "approver_record": "PR #451 approval record",
     }
     kwargs.update(overrides)

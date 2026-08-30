@@ -1076,6 +1076,70 @@ conformance in this package.**
 The body exists; the authorisation that would let it run does not, and this PR
 does not create one.
 
+## 17. The two blockers R1 was left on, and how they were closed
+
+`TRACK_A_R1_READ_SCOPE_AND_AUTHORIZATION_SEQUENCE_RULED`.
+
+§16 ended with the read body implemented and ungranted on two counts. Both are
+now closed by human + ChatGPT ruling, recorded in full in
+`docs/design/m15_track_a_r1_read_authorization.md` §4 and §4a.
+
+**1. `EXPLORATORY_OOS_SLICE_RULED_AS_FINAL_TWENTY_PERCENT_OF_COMMITTED_DESIGN_UTC_DATES`.**
+R-2 fixed the slice's shape and the timing of the decision but not its size, and
+the size was a genuine human choice. It is now the final 20% of the committed
+DESIGN span in UTC calendar dates, and the dates fall out of two committed
+constants: 310 design dates, `ceil(0.20 x 310) = 62`, slice
+`2025-12-29 … 2026-02-28`, development span `2025-04-25 … 2025-12-28`.
+
+**A human chose `0.20`; nobody chose `2025-12-29`.** The arithmetic lives in
+`scripts/m15_track_a/oos_slice.py`, which reads no file, no environment variable
+and no clock — asserted on its AST, after a first draft of that very test was
+defeated by the word "environment" appearing in the module's prose.
+
+The quarantine is enforced by `read_route.assert_development_only`, which
+refuses — never trims — a `track_a_historical_read` whose **touched** interval,
+warm-up included, reaches `2025-12-29`. It sits beside `assert_span_admissible`
+rather than inside it: the design-span and dead-window bounds come from the
+committed `no_overlap` module, this one comes from a ruling, and collapsing them
+would hide which authority refused a read.
+
+The ≥ 25-bar purge is deliberately **not** subtracted from the read span. R-2
+drops those bars "from training", counting **in bars** — and counting bars means
+reading them, so making the read span depend on the purge is circular. The bars
+are read; the labels are purged downstream, the same division §8.11.12 F-5
+already records at `DESIGN_END`.
+
+**2. `READ_GRANT_BINDS_TO_APPROVED_IMPLEMENTATION_ANCESTRY_NOT_SELF_REFERENTIAL_EXECUTION_HEAD`.**
+The self-reference was real and was confirmed from source, not assumed.
+`require_authorization` refused unless `identity.code_sha` equalled
+`grant.approved_head_sha` — **two caller-asserted strings**, since `code_sha` is
+never derived from the running tree. It refused an honest run at the wrong head,
+refused a dishonest one never, and made recording a grant invalidate that grant,
+because the commit that records it moves `HEAD`.
+
+`ReadGrant` gains an eighth required field,
+`approved_implementation_fingerprint`, and the gate refuses unless it equals
+`containment.implementation_fingerprint()` **measured from the running tree**: a
+sha256 over every `scripts/m15_track_a/*.py` plus the two `m15_gate3a` modules
+`read_route` imports, with paths and the file count hashed alongside the bytes.
+The surface is located from the package's own directory, so the value does not
+depend on where the repository is checked out.
+
+So an authorization-only commit keeps the grant valid, and **any** change to
+what a read does voids it with no human in the loop. The limit is stated rather
+than implied: this binds the implementation, not the ancestry. Whether the
+execution head descends from the approved head is a `git` question, and reaching
+git from inside a gated read means spawning a process the isolation layer exists
+to refuse — so it stays a gate-time obligation on the reviewer
+(`git merge-base --is-ancestor`, `git diff --stat`), and it is the weaker of the
+two, since identical implementation bytes read identically wherever they sit.
+
+**Nothing here issues a grant.** No `ReadGrant` is committed in this PR, and
+that is the point of the sequence: a grant names the fingerprint of a **merged**
+head, and none exists while the PR is open. Approval of the implementation, the
+authorization-only commit, and the execution command remain three separate
+steps.
+
 ## 14. Non-authorisation statement
 
 Nothing in this document or in `scripts/m15_track_a/` authorises a real-data

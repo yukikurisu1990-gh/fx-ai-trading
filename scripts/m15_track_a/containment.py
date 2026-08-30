@@ -69,6 +69,7 @@ widening it here would be the over-engineering §5 tests for.
 from __future__ import annotations
 
 import ast
+import hashlib
 import importlib
 import socket
 from dataclasses import dataclass
@@ -119,9 +120,47 @@ AUDIT_BOUNDS: Final[tuple[str, ...]] = (
     "that cannot be are listed by isolation.unpatchable_native_targets().",
     "A hardlink pre-seeded into the working tree defeats every path test, and "
     "code running in this process can disarm any in-process guard.",
+    "The implementation fingerprint a ReadGrant binds to is taken over .py "
+    "SOURCE files. It does not see a hand-written .pyc whose header matches the "
+    "source it shadows, an installed dependency changing underneath, or a "
+    "non-.py file the code loads at run time. It is the same class of limit as "
+    "the hardlink above: it makes an accidental change fail loudly and a "
+    "deliberate one appear in a diff.",
     "What this apparatus buys is that an accidental boundary crossing fails "
     "loudly, and a deliberate one has to appear in a diff. It is not a sandbox, "
     "and a passing report is not a substitute for reading the diff.",
+)
+
+#: The source files whose bytes decide what a read does.  The fingerprint below
+#: is taken over exactly these, and a grant binds to the value it had when the
+#: approval was given.
+#:
+#: The list is deliberately whole-directory rather than a hand-picked set of
+#: modules: a hand-picked set is one a later diff can quietly step outside, by
+#: adding a module or moving logic into one that is not listed.  The
+#: `m15_gate3a` entries are named individually, and the list is **every** module
+#: in that package this one imports — not only the two `read_route` reaches.
+#: `aggregation` is the derivation route's delegate and `path_authority` decides
+#: what counts as inside the scratch root, so a change to either changes what an
+#: authorised operation does.  A test pins the list against the actual imports,
+#: because the failure mode here is a new import that nobody adds to the list.
+#:
+#: The directory is located from **this module's own file**, not from
+#: ``scratch.repo_root()``.  The fingerprint has to describe the code that is
+#: actually imported and about to run; a repository root is a caller-influenced
+#: value, and several tests legitimately point it at a temporary tree.
+#:
+#: The two `m15_gate3a` files are named as **paths beside this package**, not
+#: imported as modules.  Importing them here would hand this module the whole
+#: module object, and WP5's reader-freedom pin refuses that on sight — rightly,
+#: since a module object carries every name in it. Resolving the sibling
+#: directory needs no import at all, so there is nothing for the pin to weigh,
+#: and a missing file still fails closed below.
+IMPLEMENTATION_SURFACE_SIBLINGS: Final[tuple[str, ...]] = (
+    "m15_gate3a/aggregation.py",
+    "m15_gate3a/no_overlap.py",
+    "m15_gate3a/pair_authority.py",
+    "m15_gate3a/path_authority.py",
 )
 
 #: The modules a Track A run is allowed to reach a read through.  A read route
@@ -137,8 +176,9 @@ _PERMITTED_FILE_OPENERS: Final[dict[str, str]] = {
     "scripts.m15_track_a.seen_ledger": "its own append-only ledgers beneath the scratch root",
     "scripts.m15_track_a.breadth": "its own append-only ledger beneath the scratch root",
     "scripts.m15_track_a.oos_budget": "its own append-only ledger and claim files",
-    "scripts.m15_track_a.containment": "its own behavioural probes and the package sources "
-    "it parses — and, like every other module, only where the audit hook permits",
+    "scripts.m15_track_a.containment": "its own behavioural probes, the package sources "
+    "it parses, and the declared implementation surface it fingerprints — and, like every "
+    "other module, only where the audit hook permits",
     "scripts.m15_track_a.read_route": "the one declared market-data route. This entry "
     "exempts the module from the name sweep below, and a review role measured what that "
     "bought an attacker: four helpers in this module became the only code in the package "
@@ -525,6 +565,12 @@ _PERMITTED_READ_ROUTE_CALLS: Final[frozenset[str]] = frozenset(
         "ReadRouteError",
         "require_authorization",
         "assert_span_admissible",
+        # The EXPLORATORY_OOS_SLICE gate, added with the R-2 ruling. It sits
+        # beside assert_span_admissible rather than inside it: the design-span
+        # and dead-window bounds come from the committed no_overlap module,
+        # while the slice boundary comes from a human + ChatGPT ruling, and
+        # collapsing the two would hide which authority refused a read.
+        "assert_development_only",
         "assert_declared",
         "record_grant",
         "gated_read_window",
@@ -796,6 +842,74 @@ def _check_read_body_is_declared() -> CheckResult:
         "source_path_for returns — inside the gated read window, and no other code in the "
         "module opens anything",
     )
+
+
+def _surface_name(path: Path) -> str:
+    """``m15_track_a/read_route.py`` — the package and the file, nothing above it.
+
+    An absolute path would make the fingerprint depend on where the repository
+    is checked out, which would be a different value on the reviewer's machine
+    than on the approver's and would make the field uncheckable. A file below a
+    subdirectory keeps its subdirectory, so moving one is a change.
+    """
+    package = Path(__file__).resolve().parent
+    try:
+        return f"{package.name}/{path.resolve().relative_to(package).as_posix()}"
+    except ValueError:
+        # A sibling package's file, named the same way: ``m15_gate3a/x.py``.
+        return f"{path.parent.name}/{path.name}"
+
+
+def implementation_surface() -> tuple[Path, ...]:
+    """Every source file the fingerprint covers, in a stable order.
+
+    Sorted by the package-relative name rather than by whatever order the
+    filesystem hands back, because a fingerprint that depends on directory
+    iteration order is a fingerprint that changes for no reason on another host.
+    """
+    package = Path(__file__).resolve().parent
+    # ``rglob``, not ``glob``. A non-recursive glob would leave
+    # ``m15_track_a/helpers/reader.py`` outside the fingerprint entirely, so a
+    # later diff could move the read logic one directory down and keep an old
+    # grant valid. There is no subdirectory today; the point is that adding one
+    # cannot silently escape.
+    found = {path.resolve() for path in package.rglob("*.py") if "__pycache__" not in path.parts}
+    for relative in IMPLEMENTATION_SURFACE_SIBLINGS:
+        found.add((package.parent / relative).resolve())
+    for path in found:
+        if not path.is_file():
+            raise RuntimeError(
+                f"the declared implementation surface names {path}, which is not a file. "
+                "A fingerprint over a surface that is not all present is not a fingerprint."
+            )
+    return tuple(sorted(found, key=_surface_name))
+
+
+def implementation_fingerprint() -> str:
+    """A sha256 over the declared implementation surface, path and bytes.
+
+    **What an approval is actually pinned to.**  ``ReadGrant.approved_head_sha``
+    names the head an approval was given against, and the check that used to
+    enforce it compared it to ``RunIdentity.code_sha`` — one caller-asserted
+    string against another. That caught an honest caller at the wrong head and
+    caught a dishonest one never, and it made an authorization-only commit
+    invalidate the very grant it was recording. This is measured from the tree
+    instead.
+
+    Paths are hashed alongside the bytes, so moving a file's contents into a
+    differently-named module changes the value; and the count is hashed too, so
+    deleting one file while adding another with identical bytes does not cancel
+    out.
+    """
+    digest = hashlib.sha256()
+    files = implementation_surface()
+    digest.update(f"{len(files)}\n".encode())
+    for path in files:
+        digest.update(_surface_name(path).encode())
+        digest.update(b"\0")
+        digest.update(hashlib.sha256(path.read_bytes()).hexdigest().encode())
+        digest.update(b"\n")
+    return digest.hexdigest()
 
 
 def _indirection_findings(module_name: str, tree: ast.AST) -> list[str]:
