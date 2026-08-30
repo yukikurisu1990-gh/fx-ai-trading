@@ -32,6 +32,11 @@ from scripts.m15_track_a import (
     seen_ledger,
 )
 
+#: The fingerprint of the tree these tests run against. A grant binds to the
+#: measured implementation, not to a caller-asserted head, so a synthetic
+#: grant has to carry the real value or every gate refuses it.
+APPROVED_FINGERPRINT = containment.implementation_fingerprint()
+
 
 @pytest.fixture
 def scratch_at(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
@@ -67,6 +72,7 @@ def _grant(**overrides: object) -> authorization.ReadGrant:
         "pairs": ("EUR_USD",),
         "timeframe": "M1",
         "approved_head_sha": "a" * 40,
+        "approved_implementation_fingerprint": APPROVED_FINGERPRINT,
         "approver_record": "PR #452 recorded approval",
     }
     fields.update(overrides)
@@ -234,6 +240,7 @@ def test_a_readgrant_subclass_is_refused() -> None:
         pairs=("EUR_USD",),
         timeframe="M1",
         approved_head_sha="not-a-sha",
+        approved_implementation_fingerprint=APPROVED_FINGERPRINT,
         approver_record="x",
     )
     with pytest.raises(authorization.AuthorizationError):
@@ -282,11 +289,31 @@ def test_an_unpadded_request_date_cannot_read_as_inside_the_grant() -> None:
         _require(grant, span_start_utc="2025-1-15")
 
 
-def test_the_approved_head_must_equal_the_run_head() -> None:
+def test_the_grant_binds_to_the_measured_implementation_not_the_asserted_head() -> None:
+    """This test used to assert the head equality that has now been replaced.
+
+    The old assertion was ``identity.code_sha == grant.approved_head_sha``, and
+    the reason it is gone is worth keeping in the test that used to enforce it:
+    both sides are **caller-asserted**. ``code_sha`` is never derived from the
+    running tree, so the check refused an honest run at the wrong head and
+    refused a dishonest one never — while making the act of committing a grant
+    invalidate that same grant, because the commit moves ``HEAD``.
+
+    What binds now is measured from disk. So:
+
+    * a run whose head differs from the approved head still passes, provided the
+      implementation is byte-identical — that is the authorization-only commit
+      the sequencing needs;
+    * a grant whose recorded fingerprint is not this tree's is refused, whatever
+      head the caller claims to be on.
+    """
     grant = _grant(approved_head_sha="a" * 40)
     assert _require(grant, identity=_identity("a" * 40)) is grant
-    with pytest.raises(authorization.AuthorizationError, match="head"):
-        _require(grant, identity=_identity("c" * 40))
+    assert _require(grant, identity=_identity("c" * 40)) is grant
+
+    stale = _grant(approved_head_sha="a" * 40, approved_implementation_fingerprint="b" * 64)
+    with pytest.raises(authorization.AuthorizationError, match="implementation"):
+        _require(stale, identity=_identity("a" * 40))
 
 
 # ---------------------------------------------------------------------------
@@ -460,7 +487,7 @@ def test_the_audit_scans_every_module_on_disk() -> None:
 
 def test_the_audit_measures_rather_than_asserts_that_nothing_is_read() -> None:
     report = containment.audit()
-    body_absent = next(c for c in report["checks"] if c["check"] == "read_body_absent")
+    body_absent = next(c for c in report["checks"] if c["check"] == "read_body_declared")
     assert body_absent["passed"] is True
     assert report["declared_gate_sequence_matches_at_this_head"] is body_absent["passed"]
 

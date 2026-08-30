@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from scripts.m15_track_a import authorization
+from scripts.m15_track_a import authorization, containment
 from scripts.m15_track_a.authorization import (
     AuthorizationError,
     AuthorizationMalformedError,
@@ -13,6 +13,11 @@ from scripts.m15_track_a.authorization import (
 )
 from scripts.m15_track_a.identity import CALENDAR_UTC_DATES_NO_MARKET_HOURS, RunIdentity
 
+#: The fingerprint of the tree these tests run against. A grant binds to the
+#: measured implementation, not to a caller-asserted head, so a synthetic
+#: grant has to carry the real value or every gate refuses it.
+APPROVED_FINGERPRINT = containment.implementation_fingerprint()
+
 _SHA = "0" * 40
 
 
@@ -20,10 +25,14 @@ def _grant(**overrides: object) -> ReadGrant:
     kwargs: dict[str, object] = {
         "operation": authorization.OPERATION_HISTORICAL_READ,
         "span_start_utc": "2025-04-25",
-        "span_end_utc": "2026-02-28",
+        # The ruled development corpus. A track_a_historical_read grant may not
+        # name a date inside the EXPLORATORY_OOS_SLICE, so 2026-02-28 no longer
+        # constructs.
+        "span_end_utc": "2025-12-28",
         "pairs": ("EUR_USD", "USD_JPY"),
         "timeframe": "M1",
         "approved_head_sha": _SHA,
+        "approved_implementation_fingerprint": APPROVED_FINGERPRINT,
         "approver_record": "PR #451 §8.13 approval record",
     }
     kwargs.update(overrides)
@@ -98,7 +107,7 @@ def test_a_non_grant_object_is_refused() -> None:
     "overrides",
     [
         {"operation": "something_else"},
-        {"span_start_utc": "2026-02-28", "span_end_utc": "2025-04-25"},  # reversed
+        {"span_start_utc": "2025-12-28", "span_end_utc": "2025-04-25"},  # reversed
         {"span_start_utc": "25-04-2025"},  # not ISO
         {"span_start_utc": "2025-02-30"},  # not a real date
         {"pairs": ()},

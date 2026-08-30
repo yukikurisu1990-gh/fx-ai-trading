@@ -24,6 +24,11 @@ from scripts.m15_track_a import (
 )
 from scripts.m15_track_a.identity import RunIdentity, RunIdentityError
 
+#: The fingerprint of the tree these tests run against. A grant binds to the
+#: measured implementation, not to a caller-asserted head, so a synthetic
+#: grant has to carry the real value or every gate refuses it.
+APPROVED_FINGERPRINT = containment.implementation_fingerprint()
+
 _SHA = "a" * 40
 
 
@@ -69,10 +74,13 @@ def _grant(**overrides: object) -> authorization.ReadGrant:
     kwargs: dict[str, object] = {
         "operation": authorization.OPERATION_HISTORICAL_READ,
         "span_start_utc": "2025-04-25",
-        "span_end_utc": "2026-02-28",
+        # The ruled development corpus, not the whole design span: a
+        # track_a_historical_read grant may not name a slice date at all.
+        "span_end_utc": "2025-12-28",
         "pairs": ("EUR_USD",),
         "timeframe": "M1",
         "approved_head_sha": _SHA,
+        "approved_implementation_fingerprint": APPROVED_FINGERPRINT,
         "approver_record": "PR #451 approval record",
     }
     kwargs.update(overrides)
@@ -129,11 +137,21 @@ def test_read_refuses_without_a_grant(guards: object, identity: RunIdentity) -> 
 def test_read_refuses_a_span_reaching_the_dead_window(
     guards: object, identity: RunIdentity
 ) -> None:
-    """DEAD_START is exactly one second after DESIGN_END; a slip pulls consumed bars in."""
-    request = _request(span_end_utc="2026-03-01")
-    grant = _grant(span_end_utc="2026-03-01")
-    with pytest.raises(read_route.ReadRouteError):
-        read_route.read_historical(request, identity, grant=grant)
+    """DEAD_START is exactly one second after DESIGN_END; a slip pulls consumed bars in.
+
+    The grant now stops at the ruled development corpus, so a dead-window
+    *request* is refused by `assert_span_admissible` before the window is
+    computed, and a dead-window *grant* can no longer be constructed at all.
+    Both are asserted, because they are two different authorities refusing.
+    """
+    with pytest.raises(read_route.ReadRouteError, match="not admissible"):
+        read_route.assert_span_admissible(_request(span_end_utc="2026-03-01"))
+    with pytest.raises(authorization.AuthorizationMalformedError):
+        _grant(span_end_utc="2026-03-01")
+    # And through the route, where the grant refuses first because it is checked
+    # first -- three authorities, and the outermost one wins.
+    with pytest.raises(authorization.AuthorizationError):
+        read_route.read_historical(_request(span_end_utc="2026-03-01"), identity, grant=_grant())
 
 
 def test_read_refuses_without_a_prior_seen_declaration(
@@ -143,7 +161,7 @@ def test_read_refuses_without_a_prior_seen_declaration(
         read_route.read_historical(_request(), identity, grant=_grant())
 
 
-def test_read_reaches_an_unimplemented_body_once_every_gate_passes(
+def test_read_reaches_the_declared_body_once_every_gate_passes(
     sandbox: Path, guards: object, identity: RunIdentity
 ) -> None:
     seen_ledger.declare(
@@ -157,7 +175,10 @@ def test_read_reaches_an_unimplemented_body_once_every_gate_passes(
         ),
         identity,
     )
-    with pytest.raises(NotImplementedError, match=read_route.NOT_IMPLEMENTED_TOKEN):
+    # Every gate passes, so control reaches the body. The body then refuses,
+    # because the declared source file is not present in a test environment —
+    # and a missing source is a **refusal**, never a substitution.
+    with pytest.raises(read_route.ReadRouteError, match="not present under"):
         read_route.read_historical(_request(), identity, grant=_grant())
 
 

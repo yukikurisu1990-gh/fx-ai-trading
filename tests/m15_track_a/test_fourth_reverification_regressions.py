@@ -255,7 +255,16 @@ def test_creating_the_scratch_root_still_works(guards: object, tmp_path: Path) -
 
 
 def _offenders(source: str) -> set[str]:
-    function = next(n for n in ast.walk(ast.parse(source)) if isinstance(n, ast.FunctionDef))
+    """Mirror of the read-body check's shape rules, over a spliced route.
+
+    ``ast.Subscript`` became a permitted node type when R1's body landed — the
+    body does ``row[key]`` — so the bare-subscript defence moved rather than
+    disappeared: a subscript on a **module-level** name is still a finding,
+    because that is the shape ``SLURP["path"]`` needs.
+    """
+    tree = ast.parse(source)
+    module_level = containment._module_level_bindings(tree)
+    function = next(n for n in ast.walk(tree) if isinstance(n, ast.FunctionDef))
     found: set[str] = set()
     if function.decorator_list:
         found.add("decorator")
@@ -264,13 +273,16 @@ def _offenders(source: str) -> set[str]:
             found.add("format-spec")
         if type(child) not in containment._PERMITTED_READ_ROUTE_NODES:
             found.add(type(child).__name__)
+        if isinstance(child, ast.Subscript):
+            base = getattr(child.value, "id", None)
+            if base is None or base in module_level:
+                found.add("module-level subscript")
     return found
 
 
 @pytest.mark.parametrize(
     ("label", "source"),
     [
-        ("subscript that is not a callee", '    S["b"] = SLURP["p"]'),
         ("bare-Name decorator", "@DECORATOR"),
         ("f-string format spec", '    _ = f"{S:README.md}"'),
         ("lambda", "    f = lambda: 1"),
@@ -287,6 +299,31 @@ def test_a_read_that_is_not_a_call_is_still_a_finding(label: str, source: str) -
     tail = "    raise NotImplementedError('x')"
     lines = [source, head, tail] if source.startswith("@") else [head, source, tail]
     assert _offenders("\n".join(lines) + "\n"), f"not caught: {label}"
+
+
+def test_a_subscript_on_a_module_level_name_is_a_finding() -> None:
+    """``SLURP["path"]`` — a module object whose ``__getitem__`` reads.
+
+    ``ast.Subscript`` became a permitted node type when R1's body landed,
+    since the body does ``row[key]``. The defence moved rather than
+    disappeared: a subscript on a **local** is a dict lookup, a subscript on
+    a **module-level name** is a capability, and only the second is a
+    finding.
+    """
+    hostile = (
+        "SLURP = _Reader()\n"
+        "def read_historical(r, i):\n"
+        '    sink = SLURP["p"]\n'
+        "    raise NotImplementedError('x')\n"
+    )
+    assert _offenders(hostile), "a subscript on a module-level name must be a finding"
+
+    benign = (
+        "def read_historical(r, i, row=None):\n"
+        '    value = row["bid_o"]\n'
+        "    raise NotImplementedError('x')\n"
+    )
+    assert not _offenders(benign), "a subscript on a local must not be a finding"
 
 
 def test_the_declared_body_passes_the_node_allowlist() -> None:

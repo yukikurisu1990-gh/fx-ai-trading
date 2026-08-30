@@ -422,7 +422,7 @@ probe names a file that does not exist, so an absent hook yields
 `FileNotFoundError`, never a real read.
 
 **Six source checks — advisory, and labelled so.** `broker_live_demo`,
-`read_body_absent`, `single_read_route`, `authorization_not_ambient`,
+`read_body_declared`, `single_read_route`, `authorization_not_ambient`,
 `write_root`, `derivation_route`.
 
 `broker_live_demo` sat in the probe table for two rounds and does not belong
@@ -435,25 +435,65 @@ apart again — the previous drift test only checked that all twelve names
 appeared somewhere. The module roster is **enumerated from the directory**, not
 hand-written, so a new module is scanned by existing.
 
-`read_body_absent` reads the route's own AST. It is **not** a behavioural probe
-— an earlier drafting's docstring claimed it "drives the route to the end of its
-gate sequence", which it never did — and it requires four things: no `return`
-and no `yield` anywhere in `read_historical`; its **last** statement is
-`raise NotImplementedError(...)`; **every call it makes is one of the declared
-gates**; and **no call whose callee has no name**. The last was added because
-`_T["slurp"](path)` has a `Subscript` callee, so there was nothing to compare
-and the check silently skipped it — a reader assembled from
-`getattr(builtins, "op" + "en")` then passed all three earlier conditions. The first two alone were
+`read_body_declared` reads the route's own AST. It is **not** a behavioural
+probe — an earlier drafting's docstring claimed it "drives the route to the end
+of its gate sequence", which it never did.
+
+**Until R1's body landed, this check asked whether the body was *absent*, and
+that answer licensed a claim that nothing could be read. That question is
+gone.** R1 has a body now. Pretending otherwise would be the overclaiming this
+document spent six rounds retiring, so the check asks the question that still
+has a useful answer: **is the body the one route that was declared, reading only
+the one declared source?** Seven conditions:
+
+1. exactly **one** `read_historical`, so a second live definition cannot hide
+   behind the first;
+2. **no module-level rebinding** of a permitted call name;
+3. no default argument that is a call or a subscript — those run at import time,
+   before any gate exists;
+4. every call is on the declared list, and **no call whose callee has no name**
+   (`_T["slurp"](path)` had a `Subscript` callee, so there was nothing to
+   compare and the check silently skipped it);
+5. every **node type** is on the declared list, and no decorator;
+6. the body opens **exactly one** thing — a path from `source_path_for` — and
+   does so **inside** `gated_read_window`;
+7. and **the module around it** contains no other reader at all.
+
+Condition 6 is what "one route, no fallback" means once a route exists.
+
+**Condition 7 exists because a review role defeated 1–6.** They read one
+*function*, while listing `read_route` in `_PERMITTED_FILE_OPENERS` exempts the
+whole *module* from the reader-name sweep — which made this module's four
+helpers the only code in the package that could open a file with no source check
+at all. The role added four lines to `_row_from_source`, read an undeclared
+market-data file from them, and the audit returned `PASS` on every check. Its
+first attempt used `globals()` and `_indirection_findings` caught it; the second
+used no reflection and nothing did. So the sweep the exemption removes is put
+back, with exactly one pinned exception: the single `open` the body performs,
+identified by the exact finding string it produces rather than by its line
+number, so nothing else written on that line is swallowed with it.
+
+**And one defence moved rather than disappeared.** `ast.Subscript` had to become
+a permitted node type, because the body does `row[key]`. A bare subscript was
+previously a finding, and that is what caught `SLURP["path"]` — an object whose
+`__getitem__` reads. So the rule is now narrower and equivalent: a subscript on
+a **local** is a dict lookup and is fine; a subscript on a **module-level name**
+is a capability and is a finding. The first two alone were
 defeated end to end: a body that read a file with `numpy.memmap` and stored the
 bytes in a module global has no `return`, ends in the raise, and used a name no
 reader list contained. An allowlist over the calls does not depend on having
 anticipated the reader.
 
-`no_market_data_read` is set only when **the audit as a whole passed**, and
-`read_body_absent` passed, and the behavioural `market_data_read_refused` probe
-passed. An earlier drafting computed it independently of the verdict, so a
-`BREACHED` report still carried `no_market_data_read: True` and the field could
-be quoted on its own.
+`declared_gate_sequence_matches_at_this_head` is set only when **the audit as
+a whole passed**, and `read_body_declared` passed, and the behavioural
+`market_data_read_refused` probe passed. An earlier drafting computed it
+independently of the verdict, so a `BREACHED` report still carried it as `True`
+and the field could be quoted on its own.
+
+**It has never meant "nothing can be read", and since R1's body landed it does
+not even mean "nothing is read".** It means: the reading this head performs is
+the one route that was declared, and an *ungated* market-data read is still
+refused.
 
 **What earlier draftings claimed and did not do.** The first version of this
 section listed eight checks including "no forbidden import reaches the package"
@@ -909,6 +949,245 @@ alive in the contract packet, citing as its authority the very section that
 retired it, and calling the permissive arm the stricter one. It is corrected,
 and the drift test that missed it — it swept the source documents but not the
 files the source is propagated **into** — now sweeps the propagation targets too.
+
+## 16. R1's read body — implemented, and still ungranted
+
+**`TRACK_A_R1_HISTORICAL_READ_IMPLEMENTED_PENDING_A_GRANT_AND_AN_EXECUTION_COMMAND`.**
+
+§2's design rule said "every route that could reach real data exists, is named,
+is gated, and its body is absent", and that a future PR "adds a body, not a
+policy". That PR is this one. The gates are unchanged; a body was added beneath
+them.
+
+**What it does.** For each pair it may read, it resolves one committed
+`365d_BA` M1 bid/ask file from a module-constant template, reads the lines whose
+timestamp falls inside the window, and returns them in the row shape
+`aggregate_m15` consumes. Nothing else: no aggregation, no labels, no features,
+no fit, no score, and no write beyond the ledger entries the gates already
+require.
+
+**Every bound is the narrowest of the three that constrain it — and the first
+drafting of this section said the opposite.** It said "every bound comes from
+the grant, not from the request", reasoning that a request mutated after the
+gate could not then widen the read. True, and it inverted the safety. Coverage
+is *containment*, so a grant may legitimately be **wider** than the request, and
+the wider part passed neither `assert_span_admissible` nor the seen-data
+declaration — both of which are checked against the **request**.
+
+Two review roles reproduced it independently, on two different axes:
+
+* **time** — a May declaration, a May request and a full-design-span grant
+  returned September and February rows;
+* **pairs** — a one-pair declaration with a two-pair grant **opened both files**,
+  which the time-axis fix alone did not touch.
+
+Ten months and a second pair would have become `EXPLORATORY_SEEN_DATA` with one
+month and one pair on the record. Seen-data is irreversible, so an under-record
+is not something a later entry repairs.
+
+The window and the pair list are therefore the **intersection** of grant and
+request: no wider than the grant, so no unauthorised byte; no wider than the
+request, so a mutated request still cannot widen it; and therefore no wider than
+what was declared. A requested pair the grant does not name, or two spellings of
+one pair, are **refused** rather than silently dropped or folded — both mean the
+request is not what the gate checked.
+
+**What the scan touches, stated exactly.** The source is one JSONL file per pair
+covering the whole epoch and there is no index, so finding the window means
+scanning. A review role measured what that cost under the first drafting: a
+malformed row *outside* the granted span still failed an inside-the-span read,
+which proved every line in the file was being parsed in full — including the
+consumed dead window, which this repository's own PR #444 ruling
+("**hashing IS a byte read**") would count as read. Two properties now bound it,
+and neither is an assumption about the data:
+
+* prices are materialised **only** for rows inside the window; every other line
+  is decoded for its timestamp and discarded;
+* the scan **stops** at the first row past the window, and the source is
+  *required* to be strictly increasing for that stop to be sound — a source that
+  is not refuses the read rather than returning a silently truncated one.
+
+The dead window and the forward epoch sit after every admissible window, so
+stopping is what keeps them unread; relying on the committed files not
+containing them would be a property of the data, not of the route. What remains
+is disclosed rather than softened, as `read_route.SCAN_DISCLOSURE`:
+`SCAN_DECODES_TIMESTAMPS_OF_EARLIER_ROWS_IN_THE_SAME_FILE`.
+
+**One source, no fallback.** `train_lgbm_models.py` has an "if the BA file is
+missing, use mid" branch — the shape §8.13.5 asked for a single route to remove.
+Here a missing file is a **refusal**. A test asserts it on the AST: exactly one
+`open` in the route, and every `except` re-raises.
+
+**Two things the body adds to the gates rather than inheriting.** A grant naming
+`M15` is refused, because M15 does not exist until the derivation runs and is a
+separate operation with a separate grant. And a **row** whose timestamp falls in
+the dead window, or at or after `FORWARD_FLOOR`, is refused even when the
+declared interval passed `assert_span_admissible` — `no_overlap` checks
+declarations and says so
+(`CALLER_DECLARED_METADATA_ONLY__NO_FILE_OPENED__NO_BYTE_MEASURED`), so the
+declaration being clean is not evidence that the bytes are.
+
+**Both of those row-level refusals are unreachable at this head, and the tests
+say so rather than implying coverage they do not have.** With the window clamped
+to the request, and the request bounded at `DESIGN_END` by
+`assert_span_admissible`, and `DEAD_START` exactly one second after `DESIGN_END`,
+no row the scan reaches can be in either quarantined span. They stay in as a
+backstop for a head where `assert_span_admissible` is weakened, and the test that
+covers them asserts the *ordering property that makes them unreachable* instead
+of pretending to exercise them.
+
+**The containment audit's question changed with it.** `read_body_absent` asked
+whether the body was *absent*, and that answer licensed a claim that nothing
+could be read. It is now `read_body_declared` and asks whether the body is **the
+declared route**: one definition, one `open`, on a path from `source_path_for`,
+inside `gated_read_window`. §11 records the seven conditions and the one defence
+that had to move — `ast.Subscript` is permitted now, because the body does
+`row[key]`, so the rule narrowed to "a subscript on a **module-level** name is a
+finding" and keeps catching `SLURP["path"]`.
+
+**The seventh condition exists because a review role defeated the first six.**
+Conditions 1–6 read **one function**, while adding `read_route` to
+`_PERMITTED_FILE_OPENERS` exempts the whole **module** from the reader-name
+sweep. The role measured the gap that opened: it put four lines into
+`_row_from_source` — a helper, so outside conditions 1–6 — read an undeclared
+market-data file from them, and **every audit check still returned PASS**. Its
+first attempt used `globals()` and the indirection sweep caught it; the second
+used no reflection and nothing did. The exemption is now bounded by the sweep it
+removes: every reader-name reference in the module must be the one open the body
+performs, pinned by its exact finding string rather than by its line.
+
+That the hole was opened by this PR's own fix, and closed only because a role
+went looking, is the same shape §13.1–§13.5 record five times over. It is
+recorded here for the same reason: **a green suite has never once predicted
+conformance in this package.**
+
+**And it is still ungranted, on two counts.**
+`docs/design/m15_track_a_r1_read_authorization.md` records both.
+
+1. The development span's **end** cannot be derived: R-2 requires the
+   `EXPLORATORY_OOS_SLICE` boundary to be "chosen and recorded before stage R1"
+   and no committed source names it.
+2. The **approved head SHA** is not determined either. A grant names the code
+   that will run the read, and at the merged master `37edbb0` the body does not
+   exist; the head that carries it is this PR's, unmerged and unapproved. An
+   earlier drafting of the authorization document put `37edbb0` in the table,
+   which would have authorised a read against code that cannot perform one.
+
+The body exists; the authorisation that would let it run does not, and this PR
+does not create one.
+
+## 17. The two blockers R1 was left on, and how they were closed
+
+`TRACK_A_R1_READ_SCOPE_AND_AUTHORIZATION_SEQUENCE_RULED`.
+
+§16 ended with the read body implemented and ungranted on two counts. Both are
+now closed by human + ChatGPT ruling, recorded in full in
+`docs/design/m15_track_a_r1_read_authorization.md` §4 and §4a.
+
+**1. `EXPLORATORY_OOS_SLICE_RULED_AS_FINAL_TWENTY_PERCENT_OF_COMMITTED_DESIGN_UTC_DATES`.**
+R-2 fixed the slice's shape and the timing of the decision but not its size, and
+the size was a genuine human choice. It is now the final 20% of the committed
+DESIGN span in UTC calendar dates, and the dates fall out of two committed
+constants: 310 design dates, `ceil(0.20 x 310) = 62`, slice
+`2025-12-29 … 2026-02-28`, development span `2025-04-25 … 2025-12-28`.
+
+**A human chose `0.20`; nobody chose `2025-12-29`.** The arithmetic lives in
+`scripts/m15_track_a/oos_slice.py`, which reads no file, no environment variable
+and no clock — asserted on its AST, after a first draft of that very test was
+defeated by the word "environment" appearing in the module's prose.
+
+The quarantine is enforced in **three** places, because a review role drove all
+62 slice dates through a single one of them. `read_route.assert_development_only`
+refuses — never trims — a `track_a_historical_read` whose **touched** interval,
+warm-up included, reaches `2025-12-29`; the route re-applies the same check to
+the **computed window**, after every request field has stopped being consulted;
+and `ReadGrant` itself refuses to be constructed over a slice date for that
+operation, with the mirror rule for `track_a_exploratory_oos_slice_read`.
+
+The reproduction that forced all three: a `ReadRequest` **subclass** answering
+`span_end_utc` honestly at the gates and widening afterwards — the route reads
+that field three times — combined with a grant reaching `2026-02-28`, returned
+the whole quarantined slice. The route now pins `type(request) is ReadRequest`
+exactly, as it already did for the grant. The same role also found
+`derivation.derive_m15` applying `assert_span_admissible` but **not** the slice
+gate, while its docstring claimed it carried the read route's gates. It sits beside `assert_span_admissible`
+rather than inside it: the design-span and dead-window bounds come from the
+committed `no_overlap` module, this one comes from a ruling, and collapsing them
+would hide which authority refused a read.
+
+The ≥ 25-bar purge is deliberately **not** subtracted from the read span. R-2
+drops those bars "from training", counting **in bars** — and counting bars means
+reading them, so making the read span depend on the purge is circular. The bars
+are read; the labels are purged downstream, the same division §8.11.12 F-5
+already records at `DESIGN_END`.
+
+**2. `READ_GRANT_BINDS_TO_APPROVED_IMPLEMENTATION_ANCESTRY_NOT_SELF_REFERENTIAL_EXECUTION_HEAD`.**
+The self-reference was real and was confirmed from source, not assumed.
+`require_authorization` refused unless `identity.code_sha` equalled
+`grant.approved_head_sha` — **two caller-asserted strings**, since `code_sha` is
+never derived from the running tree. It refused an honest run at the wrong head,
+refused a dishonest one never, and made recording a grant invalidate that grant,
+because the commit that records it moves `HEAD`.
+
+`ReadGrant` gains an eighth required field,
+`approved_implementation_fingerprint`, and the gate refuses unless it equals
+`containment.implementation_fingerprint()` **measured from the running tree**: a
+sha256 over every `.py` under `scripts/m15_track_a/` plus the **transitive**
+first-party import closure, with paths and the file count hashed alongside the
+bytes, line endings normalised, and every module resolved through `importlib`
+rather than by path arithmetic.
+
+**Three of those words are corrections a review role forced, and each was a
+measured hole, not a tidy-up.**
+
+* *Transitive.* The first drafting listed the modules the package imports
+  directly. `no_overlap` imports `timeutil`, and `timeutil.to_utc` is what
+  `is_dead_window_instant` is built on: shifting it by 400 days disabled the
+  route's dead-window row guard **with the fingerprint unchanged and the grant
+  still valid**. `numeric_authority`, both package `__init__.py` files and
+  `ml_step4/data_adapter.py` were outside in the same way. Worse, the anti-drift
+  test written to catch exactly this walked only the package's own files, so it
+  passed while the drift was already present.
+* *Through `importlib`.* `scripts` has no `__init__.py`, so it is a PEP 420
+  namespace package and `PYTHONPATH` alone can serve `scripts.m15_gate3a` from
+  elsewhere. Path arithmetic hashed the repository's pristine file while the
+  process ran the shadow — matching fingerprint, valid grant, **and nothing in
+  any diff at all**. `find_spec` resolves what will actually be imported.
+* *Line endings normalised.* `core.autocrlf` is true here and CI is Linux, so
+  one commit produced two different values. That is not a bypass, but it would
+  have made the workflow unworkable: a value recorded from CI could never match
+  the host the read runs on, and flipping the git setting would have voided a
+  grant with no code change.
+
+**And one of those fixes introduced a fourth defect, caught by measurement
+rather than by review.** `import importlib` does not bind `importlib.util`, and
+the resolver caught `AttributeError` — so every sibling resolved to `None` and
+the surface silently shrank back to twelve files while the code said "closure".
+An over-broad `except` turned a missing import into precisely the silent
+weakening the function exists to prevent. The import is explicit now and
+`AttributeError` is no longer caught.
+
+So an authorization-only commit keeps the grant valid, and a change to anything
+on the **declared surface** voids it with no human in the loop. Stated that way
+deliberately: an earlier drafting of this paragraph said "**any** change to what
+a read does", and that was the overclaiming this document has spent eight rounds
+retiring. `AUDIT_BOUNDS` names what a source fingerprint cannot see — an
+`UNCHECKED_HASH` `.pyc` (which needs no craft and is gitignored), an installed
+dependency, a non-`.py` file loaded at run time.
+
+The other limit, also stated rather than implied: this binds the implementation,
+not the ancestry. Whether the execution head descends from the approved head is
+a `git` question, and reaching git from inside a gated read means spawning a
+process the isolation layer exists to refuse — so it stays a gate-time
+obligation on the reviewer (`git merge-base --is-ancestor`, `git diff --stat`),
+and it is the weaker of the two, since identical implementation bytes read
+identically wherever they sit.
+
+**Nothing here issues a grant.** No `ReadGrant` is committed in this PR, and
+that is the point of the sequence: a grant names the fingerprint of a **merged**
+head, and none exists while the PR is open. Approval of the implementation, the
+authorization-only commit, and the execution command remain three separate
+steps.
 
 ## 14. Non-authorisation statement
 

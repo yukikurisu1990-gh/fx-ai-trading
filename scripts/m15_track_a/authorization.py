@@ -68,6 +68,7 @@ KNOWN_OPERATIONS: Final[frozenset[str]] = frozenset(
 )
 
 _SHA_RE: Final[re.Pattern[str]] = re.compile(r"\A[0-9a-f]{40}\Z")
+_FINGERPRINT_RE: Final[re.Pattern[str]] = re.compile(r"\A[0-9a-f]{64}\Z")
 _DATE_RE: Final[re.Pattern[str]] = re.compile(r"\A\d{4}-\d{2}-\d{2}\Z")
 
 
@@ -107,6 +108,50 @@ def _require_date(value: Any, what: str) -> str:
     return text
 
 
+def _assert_operation_span(operation: str, start: str, end: str) -> None:
+    """A grant may not name a span its own operation is not allowed to read.
+
+    Coverage is *containment*, so a grant is allowed to be wider than the
+    request it covers — and a review role turned that into the whole exploit:
+    with a grant reaching `2026-02-28`, a `ReadRequest` subclass that answered
+    honestly at the gates and widened afterwards returned all 62 quarantined
+    slice dates. Narrowing the grant to the ruled corpus reduced the same attack
+    to zero slice rows, which makes the grant's own ceiling the load-bearing
+    backstop rather than a formality.
+
+    So the ruling is enforced on the **grant object**, where no caller-supplied
+    request can reach it:
+
+    * `track_a_historical_read` may not name a date at or after the
+      `EXPLORATORY_OOS_SLICE` start;
+    * `track_a_exploratory_oos_slice_read` may name **only** slice dates —
+      the same rule in the other direction, so an OOS approval cannot be spent
+      on development data either.
+
+    `track_a_m15_research_derivation` is deliberately not constrained here: it
+    derives over whatever its own read was authorised for, and its route applies
+    the development gate itself.
+    """
+    from scripts.m15_track_a.oos_slice import DEVELOPMENT_END_UTC, SLICE_END_UTC, SLICE_START_UTC
+
+    if operation == OPERATION_HISTORICAL_READ and end > DEVELOPMENT_END_UTC:
+        raise AuthorizationMalformedError(
+            f"a {OPERATION_HISTORICAL_READ} grant may not reach {end}: the committed "
+            f"development corpus ends at {DEVELOPMENT_END_UTC}, and "
+            f"{SLICE_START_UTC}..{SLICE_END_UTC} is the EXPLORATORY_OOS_SLICE, which R-2 "
+            "quarantines from every stage before R4. Reading it is a separate operation "
+            f"({OPERATION_OOS_SLICE_READ}) with its own approval and an N = 1 budget."
+        )
+    if operation == OPERATION_OOS_SLICE_READ and not (
+        start >= SLICE_START_UTC and end <= SLICE_END_UTC
+    ):
+        raise AuthorizationMalformedError(
+            f"a {OPERATION_OOS_SLICE_READ} grant may only name dates inside "
+            f"{SLICE_START_UTC}..{SLICE_END_UTC}, and this one names {start}..{end}. An OOS "
+            "approval is not a licence to read development data under a different name."
+        )
+
+
 @dataclass(frozen=True)
 class ReadGrant:
     """One explicit human + ChatGPT authorisation, scoped to what it names.
@@ -122,6 +167,7 @@ class ReadGrant:
     pairs: tuple[str, ...]
     timeframe: str
     approved_head_sha: str
+    approved_implementation_fingerprint: str
     approver_record: str
 
     def __post_init__(self) -> None:
@@ -135,6 +181,7 @@ class ReadGrant:
         end = _require_date(self.span_end_utc, "span_end_utc")
         if start > end:
             raise AuthorizationMalformedError(f"span_start_utc {start} is after span_end_utc {end}")
+        _assert_operation_span(operation, start, end)
 
         if type(self.pairs) is not tuple:
             raise AuthorizationMalformedError("pairs must be a tuple")
@@ -155,6 +202,17 @@ class ReadGrant:
                 "approved_head_sha must be a full 40-character lowercase hex SHA — an "
                 "abbreviated or absent SHA cannot identify the head an approval was given "
                 f"against (got {sha!r})"
+            )
+
+        fingerprint = _require_text(
+            self.approved_implementation_fingerprint, "approved_implementation_fingerprint"
+        )
+        if not _FINGERPRINT_RE.match(fingerprint):
+            raise AuthorizationMalformedError(
+                "approved_implementation_fingerprint must be a full 64-character lowercase "
+                "hex sha256 of the declared implementation surface, as returned by "
+                "scripts.m15_track_a.containment.implementation_fingerprint() at the head "
+                f"the approval was given against (got {fingerprint!r})"
             )
 
         record = _require_text(self.approver_record, "approver_record")
@@ -199,6 +257,7 @@ class ReadGrant:
             "pairs": list(self.pairs),
             "timeframe": self.timeframe,
             "approved_head_sha": self.approved_head_sha,
+            "approved_implementation_fingerprint": self.approved_implementation_fingerprint,
             "approver_record": self.approver_record,
         }
 
@@ -285,14 +344,42 @@ def require_authorization(
       ``object.__new__(ReadGrant)`` never runs ``__post_init__``, and
       ``object.__setattr__`` rewrites a frozen field after it. Every field is
       re-checked here, against the same rules.
-    * **The approved head is compared, not merely shaped.** A 40-hex string that
-      is never equal to anything is decoration. The run's ``identity.code_sha``
-      must equal the grant's ``approved_head_sha``. ``identity`` is
-      **required**: it defaulted to ``None`` and skipped the check silently.
-      Note the limit — ``code_sha`` is **caller-asserted** and is never derived
-      from the running tree, so this enforces *consistency* between the grant
-      and the run's own claim, not CLAUDE.md's "any head change voids the
-      approval". Establishing the latter is the reviewer's job at the gate.
+    * **The approved implementation is measured, not asserted.** This replaced
+      an equality between ``identity.code_sha`` and ``grant.approved_head_sha``,
+      and the replacement is recorded rather than quietly made, because it
+      *removed* a check.
+
+      That check compared two **caller-asserted** strings: ``code_sha`` is never
+      derived from the running tree, so a caller running anything at all could
+      assert the approved head and pass. It therefore refused an honest run at
+      the wrong head and refused a dishonest one never — and, worse, it made the
+      sequence in which an approval is recorded self-defeating. Committing a
+      grant into the repository moves ``HEAD``; an honest run at the new head
+      would then be refused by the grant that commit exists to record
+      (`READ_GRANT_BINDS_TO_APPROVED_IMPLEMENTATION_ANCESTRY_NOT_SELF_REFERENTIAL_EXECUTION_HEAD`).
+
+      What replaces it is measured from disk:
+      :func:`~scripts.m15_track_a.containment.implementation_fingerprint` hashes
+      declared implementation surface — every ``.py`` under
+      ``scripts/m15_track_a/`` plus the **transitive** first-party import
+      closure, resolved through ``importlib`` so that a shadowed module is
+      hashed as it will actually be loaded — and it must equal the value the
+      grant records. So a commit that adds an authorisation
+      record, a document or a governance note keeps the grant valid, and **any**
+      change to what a read actually does invalidates it, whatever head the
+      caller claims to be on.
+
+      ``identity`` is still **required** and its ``code_sha`` is still recorded
+      with the exercised grant: it defaulted to ``None`` once and skipped the
+      head check silently.
+
+      The limit, stated: this binds the **implementation**, not the *ancestry*.
+      Whether the execution head descends from the approved head is a `git`
+      question, and reaching git from inside a gated read would mean spawning a
+      process the isolation layer exists to refuse. It is a gate-time obligation
+      on the reviewer, written down in the execution gate document, not an
+      in-process check — and it is the weaker of the two, since a head with
+      identical implementation bytes reads identically wherever it sits.
 
     What it still cannot do: stop code in the same process from constructing a
     wider grant than the human approved. Nothing in-process can, because such
@@ -326,11 +413,28 @@ def require_authorization(
         raise AuthorizationError(
             f"{TOKEN}: identity must be exactly a RunIdentity, not a {type(identity).__name__}."
         )
-    if identity.code_sha != grant.approved_head_sha:
+    from scripts.m15_track_a.containment import implementation_fingerprint
+
+    try:
+        measured = implementation_fingerprint()
+    except Exception as exc:
+        # Wrapped, so a caller's ``except AuthorizationError`` cannot be walked
+        # straight past by a bare RuntimeError from the surface walk. The
+        # polarity is unchanged — an unmeasurable surface refuses the read —
+        # but it now refuses as the type this module documents.
         raise AuthorizationError(
-            f"{TOKEN}: the grant was approved against head {grant.approved_head_sha!r} and "
-            f"the run is on {identity.code_sha!r}. An approval covers the head it names; a "
-            "head change voids it (CLAUDE.md)."
+            f"{TOKEN}: the implementation surface could not be measured, so the grant "
+            f"cannot be checked against it: {exc}"
+        ) from exc
+    if measured != grant.approved_implementation_fingerprint:
+        raise AuthorizationError(
+            f"{TOKEN}: the grant was approved against implementation "
+            f"{grant.approved_implementation_fingerprint!r} (head "
+            f"{grant.approved_head_sha!r}) and the tree this run is executing hashes to "
+            f"{measured!r}. The read implementation changed after the approval, so the "
+            "approval does not cover it. Recording an authorisation, a document or a "
+            "governance note does not change this value; changing what a read does always "
+            "does."
         )
     if not grant_covers(
         grant,
