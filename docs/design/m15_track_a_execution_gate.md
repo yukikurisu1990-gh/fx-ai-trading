@@ -422,7 +422,7 @@ probe names a file that does not exist, so an absent hook yields
 `FileNotFoundError`, never a real read.
 
 **Six source checks — advisory, and labelled so.** `broker_live_demo`,
-`read_body_absent`, `single_read_route`, `authorization_not_ambient`,
+`read_body_declared`, `single_read_route`, `authorization_not_ambient`,
 `write_root`, `derivation_route`.
 
 `broker_live_demo` sat in the probe table for two rounds and does not belong
@@ -435,25 +435,52 @@ apart again — the previous drift test only checked that all twelve names
 appeared somewhere. The module roster is **enumerated from the directory**, not
 hand-written, so a new module is scanned by existing.
 
-`read_body_absent` reads the route's own AST. It is **not** a behavioural probe
-— an earlier drafting's docstring claimed it "drives the route to the end of its
-gate sequence", which it never did — and it requires four things: no `return`
-and no `yield` anywhere in `read_historical`; its **last** statement is
-`raise NotImplementedError(...)`; **every call it makes is one of the declared
-gates**; and **no call whose callee has no name**. The last was added because
-`_T["slurp"](path)` has a `Subscript` callee, so there was nothing to compare
-and the check silently skipped it — a reader assembled from
-`getattr(builtins, "op" + "en")` then passed all three earlier conditions. The first two alone were
+`read_body_declared` reads the route's own AST. It is **not** a behavioural
+probe — an earlier drafting's docstring claimed it "drives the route to the end
+of its gate sequence", which it never did.
+
+**Until R1's body landed, this check asked whether the body was *absent*, and
+that answer licensed a claim that nothing could be read. That question is
+gone.** R1 has a body now. Pretending otherwise would be the overclaiming this
+document spent six rounds retiring, so the check asks the question that still
+has a useful answer: **is the body the one route that was declared, reading only
+the one declared source?** Six conditions:
+
+1. exactly **one** `read_historical`, so a second live definition cannot hide
+   behind the first;
+2. **no module-level rebinding** of a permitted call name;
+3. no default argument that is a call or a subscript — those run at import time,
+   before any gate exists;
+4. every call is on the declared list, and **no call whose callee has no name**
+   (`_T["slurp"](path)` had a `Subscript` callee, so there was nothing to
+   compare and the check silently skipped it);
+5. every **node type** is on the declared list, and no decorator;
+6. the body opens **exactly one** thing — a path from `source_path_for` — and
+   does so **inside** `gated_read_window`.
+
+Condition 6 is what "one route, no fallback" means once a route exists.
+
+**And one defence moved rather than disappeared.** `ast.Subscript` had to become
+a permitted node type, because the body does `row[key]`. A bare subscript was
+previously a finding, and that is what caught `SLURP["path"]` — an object whose
+`__getitem__` reads. So the rule is now narrower and equivalent: a subscript on
+a **local** is a dict lookup and is fine; a subscript on a **module-level name**
+is a capability and is a finding. The first two alone were
 defeated end to end: a body that read a file with `numpy.memmap` and stored the
 bytes in a module global has no `return`, ends in the raise, and used a name no
 reader list contained. An allowlist over the calls does not depend on having
 anticipated the reader.
 
-`no_market_data_read` is set only when **the audit as a whole passed**, and
-`read_body_absent` passed, and the behavioural `market_data_read_refused` probe
-passed. An earlier drafting computed it independently of the verdict, so a
-`BREACHED` report still carried `no_market_data_read: True` and the field could
-be quoted on its own.
+`declared_gate_sequence_matches_at_this_head` is set only when **the audit as
+a whole passed**, and `read_body_declared` passed, and the behavioural
+`market_data_read_refused` probe passed. An earlier drafting computed it
+independently of the verdict, so a `BREACHED` report still carried it as `True`
+and the field could be quoted on its own.
+
+**It has never meant "nothing can be read", and since R1's body landed it does
+not even mean "nothing is read".** It means: the reading this head performs is
+the one route that was declared, and an *ungated* market-data read is still
+refused.
 
 **What earlier draftings claimed and did not do.** The first version of this
 section listed eight checks including "no forbidden import reaches the package"
@@ -909,6 +936,56 @@ alive in the contract packet, citing as its authority the very section that
 retired it, and calling the permissive arm the stricter one. It is corrected,
 and the drift test that missed it — it swept the source documents but not the
 files the source is propagated **into** — now sweeps the propagation targets too.
+
+## 16. R1's read body — implemented, and still ungranted
+
+**`TRACK_A_R1_HISTORICAL_READ_IMPLEMENTED_PENDING_A_GRANT_AND_AN_EXECUTION_COMMAND`.**
+
+§2's design rule said "every route that could reach real data exists, is named,
+is gated, and its body is absent", and that a future PR "adds a body, not a
+policy". That PR is this one. The gates are unchanged; a body was added beneath
+them.
+
+**What it does.** For each pair the **checked grant** names, it resolves one
+committed `365d_BA` M1 bid/ask file from a module-constant template, reads the
+lines whose timestamp falls inside the **granted** span, and returns them in the
+row shape `aggregate_m15` consumes. Nothing else: no aggregation, no labels, no
+features, no fit, no score, and no write beyond the ledger entries the gates
+already require.
+
+**Every bound comes from the grant, not from the request.** The request says
+what the caller wants; `require_authorization` has already refused anything the
+grant does not cover; and the body then re-derives its file list and its
+timestamp window **from the checked grant object**. A request mutated after the
+check cannot widen the read.
+
+**One source, no fallback.** `train_lgbm_models.py` has an "if the BA file is
+missing, use mid" branch — the shape §8.13.5 asked for a single route to remove.
+Here a missing file is a **refusal**. A test asserts it on the AST: exactly one
+`open` in the route, and every `except` re-raises.
+
+**Two things the body adds to the gates rather than inheriting.** A grant naming
+`M15` is refused, because M15 does not exist until the derivation runs and is a
+separate operation with a separate grant. And a **row** whose timestamp falls in
+the dead window is refused even when the declared interval passed
+`assert_span_admissible` — `no_overlap` checks declarations and says so
+(`CALLER_DECLARED_METADATA_ONLY__NO_FILE_OPENED__NO_BYTE_MEASURED`), so the
+declaration being clean is not evidence that the bytes are.
+
+**The containment audit's question changed with it.** `read_body_absent` asked
+whether the body was *absent*, and that answer licensed a claim that nothing
+could be read. It is now `read_body_declared` and asks whether the body is **the
+declared route**: one definition, one `open`, on a path from `source_path_for`,
+inside `gated_read_window`. §11 records the six conditions and the one defence
+that had to move — `ast.Subscript` is permitted now, because the body does
+`row[key]`, so the rule narrowed to "a subscript on a **module-level** name is a
+finding" and keeps catching `SLURP["path"]`.
+
+**And it is still ungranted.** `docs/design/m15_track_a_r1_read_authorization.md`
+records why: the development span's end cannot be derived, because R-2 requires
+the `EXPLORATORY_OOS_SLICE` boundary to be "chosen and recorded before stage R1"
+and no committed source names it. The body exists; the authorisation that would
+let it run does not.
 
 ## 14. Non-authorisation statement
 

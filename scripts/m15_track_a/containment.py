@@ -42,12 +42,15 @@ for*. So the checks below are ordered:
    dict, so it cannot fail and it attempts nothing.
 
 Their roster is **enumerated from the directory**, so a new module is scanned by
-existing. ``read_body_absent`` is a source check too, and it is an **allowlist
-over the AST node types** the route may contain — three rounds of allowlisting
-*call names* were each defeated by a way of reading that is not a call: a
-``numpy.memmap`` behind a module global, a ``Subscript`` callee, a ``Subscript``
-that is not a callee at all, a bare-``Name`` decorator, and an f-string format
-spec. The answer was never going to be a longer list of reader names.
+existing. ``read_body_declared`` is a source check too, and it is an
+**allowlist over the AST node types** the route may contain — three rounds of
+allowlisting *call names* were each defeated by a way of reading that is not a
+call: a ``numpy.memmap`` behind a module global, a ``Subscript`` callee, a
+``Subscript`` that is not a callee at all, a bare-``Name`` decorator, and an
+f-string format spec. The answer was never going to be a longer list of reader
+names. Since R1's body landed, that check no longer asks whether the route is
+*empty* — it asks whether the route is **the declared one**: one definition,
+one ``open``, on a path from ``source_path_for``, inside the gated window.
 
 Every probe is chosen so that a *failure of the guard* is still harmless: the
 read probe names a file that does not exist, so if the hook were absent the
@@ -95,9 +98,11 @@ STATUS_BREACHED: Final[str] = "TRACK_A_EXECUTION_CONTAINMENT_PROBE_FAILED"
 
 #: What a passing report does **not** establish.  Emitted with every report.
 AUDIT_BOUNDS: Final[tuple[str, ...]] = (
-    "It does not establish that no route reads market data. It establishes that "
-    "the probed boundaries refused, and that the committed source of "
-    "read_historical at this head matches the declared gate sequence.",
+    "It does not establish that no route reads market data — R1 now HAS a read "
+    "body, gated but present. It establishes that the probed boundaries refused, "
+    "and that the committed source of read_historical at this head is the "
+    "declared route: one definition, one open, on a path from source_path_for, "
+    "inside the gated read window.",
     "The source checks are advisory. Six audit rounds each defeated the "
     "then-current version with a way of reading it did not anticipate: a "
     "numpy.memmap behind a module global, a Subscript callee, a Subscript that "
@@ -128,6 +133,9 @@ _PERMITTED_FILE_OPENERS: Final[dict[str, str]] = {
     "scripts.m15_track_a.oos_budget": "its own append-only ledger and claim files",
     "scripts.m15_track_a.containment": "its own behavioural probes and the package sources "
     "it parses — and, like every other module, only where the audit hook permits",
+    "scripts.m15_track_a.read_route": "the one declared market-data route — its single open "
+    "is pinned by _check_read_body_is_declared to a path from source_path_for, inside the "
+    "gated read window, so this module's exemption is bounded by a check rather than by trust",
     "scripts.m15_track_a.isolation": "the enforcement layer itself: it names os.open in order "
     "to guard dir_fd, and patches third-party entry points by reflection. Its own file "
     "access is governed by the same audit hook as everything else",
@@ -473,6 +481,28 @@ _PERMITTED_READ_ROUTE_NODES: Final[frozenset[type[ast.AST]]] = frozenset(
         ast.UnaryOp,
         ast.With,
         ast.withitem,
+        # Added with the body: a per-pair loop, a per-line loop, a bounds
+        # comparison, the dict it accumulates into, and the try/except that
+        # turns a malformed line into a refusal.
+        ast.For,
+        ast.Compare,
+        ast.Lt,
+        ast.Gt,
+        ast.NotEq,
+        ast.Eq,
+        ast.BoolOp,
+        ast.Or,
+        ast.Continue,
+        ast.Dict,
+        ast.Return,
+        ast.Subscript,
+        ast.Index,
+        ast.Try,
+        ast.ExceptHandler,
+        ast.AnnAssign,
+        ast.Starred,
+        ast.List,
+        ast.Tuple,
     }
 )
 
@@ -486,11 +516,43 @@ _PERMITTED_READ_ROUTE_CALLS: Final[frozenset[str]] = frozenset(
         "record_grant",
         "gated_read_window",
         "NotImplementedError",
+        # The body's own vocabulary, added in the diff that supplied the body.
+        # Extending this set is a change a reviewer sees, which is the point.
+        "source_path_for",
+        "is_file",
+        "open",
+        "enumerate",
+        "strip",
+        "loads",
+        "_row_from_source",
+        "is_dead_window_instant",
+        "isoformat",
+        "append",
+        "canonical_pair",
+        "_as_instant",
+        "HistoricalRead",
+        "JSONDecodeError",
     }
 )
 
 
 # --- source checks -----------------------------------------------------------
+
+
+def _module_level_bindings(tree: ast.AST) -> set[str]:
+    """Every name bound at module level — assignments, defs, classes, imports.
+
+    Wider than :func:`_module_level_rebindings`, and used for a different
+    question: not "was a gate name shadowed" but "could this subscript be
+    reaching a module object that reads".
+    """
+    names = set(_module_level_rebindings(tree))
+    for node in getattr(tree, "body", []):
+        if isinstance(node, ast.FunctionDef | ast.ClassDef):
+            names.add(node.name)
+        elif isinstance(node, ast.Import | ast.ImportFrom):
+            names.update(alias.asname or alias.name.split(".")[0] for alias in node.names)
+    return names
 
 
 def _module_level_rebindings(tree: ast.AST) -> set[str]:
@@ -517,37 +579,36 @@ def _module_level_rebindings(tree: ast.AST) -> set[str]:
     return names
 
 
-def _check_read_body_is_absent() -> CheckResult:
-    """The route's own body, at source: no return, and it ends in a raise.
+def _check_read_body_is_declared() -> CheckResult:
+    """The route's body, at source: it is the declared route and nothing else.
 
-    **This is a source-level statement about this head, not a behavioural
-    probe** — and an earlier drafting's docstring claimed it was "measured by
-    driving the route to the end of its gate sequence", which it never did.
-    Driving the route for real would need a grant and a ledger declaration, and
-    would have this audit write to a governance record; so the honest scope is
-    stated instead of overclaimed, and ``no_market_data_read`` is no longer
-    licensed by this check alone (see :func:`audit`).
+    **A source-level statement about this head, not a behavioural probe.**
 
-    Four conditions, and the fourth is the one that finally holds:
+    Until the body existed this check asked whether it was *absent*, and the
+    answer licensed a claim that nothing could be read. That question is gone —
+    R1 has a body now — and pretending otherwise would be the overclaiming this
+    package spent six rounds retiring. What replaces it is the question that
+    still has a useful answer: **is the body the one route that was declared,
+    reading only the one declared source?**
 
-    1. the function contains no ``return`` and no ``yield``;
-    2. its final statement **is** ``raise NotImplementedError(...)``;
-    3. every call it makes is one of :data:`_PERMITTED_READ_ROUTE_CALLS`, and no
+    Six conditions:
+
+    1. exactly **one** ``read_historical``, so a second live definition cannot
+       hide behind the first;
+    2. **no module-level rebinding** of a permitted call name — the allowlist
+       checks names, and a rebinding makes a name mean anything;
+    3. no default argument that is a call or a subscript, since those run at
+       import time, before any gate exists;
+    4. every call in the body is on :data:`_PERMITTED_READ_ROUTE_CALLS`, and no
        call has a callee this check cannot name;
-    4. every **node type** in it is one of
-       :data:`_PERMITTED_READ_ROUTE_NODES`, and it carries no decorator.
+    5. every node type is on :data:`_PERMITTED_READ_ROUTE_NODES`, and the
+       function carries no decorator;
+    6. the body opens **exactly one** thing — a path obtained from
+       ``source_path_for`` — and does so **inside** ``gated_read_window``.
 
-    Each condition was added because the previous set was defeated end to end.
-    1 and 2 fell to a body that read through ``numpy.memmap`` into a module
-    global. 3 fell to ``_T["slurp"](path)``, whose callee is a ``Subscript``, and
-    then to ``SLURP["path"]`` — a subscript that is not a call at all, so there
-    was no callee to reject — as well as to a bare-``Name`` decorator and an
-    f-string whose ``__format__`` read.
-
-    The pattern is worth naming: **a list of ways to read cannot be completed,
-    and each round of extending it was defeated by a way of reading that is not
-    a call.** 4 is an allowlist over the *shape* of the function rather than
-    over the vocabulary of reading, and that is why it is the last one.
+    Conditions 1–5 are inherited from the absent-body check and each of them
+    was added because the previous set had been defeated end to end. 6 is the
+    new one, and it is what "one route, no fallback" means once a route exists.
     """
     tree = ast.parse(Path(read_route.__file__).read_text(encoding="utf-8"))
 
@@ -557,10 +618,8 @@ def _check_read_body_is_absent() -> CheckResult:
         if isinstance(node, ast.FunctionDef) and node.name == "read_historical"
     ]
     if len(definitions) != 1:
-        # An earlier drafting ``return``ed on the first match, so a second,
-        # live definition later in the file was never inspected at all.
         return CheckResult(
-            "read_body_absent",
+            "read_body_declared",
             False,
             f"{len(definitions)} definitions of read_historical; the route must be one function",
         )
@@ -568,11 +627,8 @@ def _check_read_body_is_absent() -> CheckResult:
 
     shadowed = sorted(_module_level_rebindings(tree) & _PERMITTED_READ_ROUTE_CALLS)
     if shadowed:
-        # ``gated_read_window = _Window`` at module level makes a permitted call
-        # name mean something else. The allowlist checks the *name*, so a
-        # rebinding turns any one of its entries into a free call.
         return CheckResult(
-            "read_body_absent",
+            "read_body_declared",
             False,
             f"module-level rebinding of permitted call name(s) {shadowed}: the allowlist "
             "checks names, so rebinding one makes it mean anything",
@@ -580,29 +636,19 @@ def _check_read_body_is_absent() -> CheckResult:
 
     defaults = [d for d in node.args.defaults + node.args.kw_defaults if d is not None]
     if any(isinstance(d, ast.Call | ast.Subscript) for d in defaults):
-        # A default argument is evaluated at **import** time, before any gate
-        # exists to be passed.
         return CheckResult(
-            "read_body_absent",
+            "read_body_declared",
             False,
             "a default argument is evaluated at import time, before any gate runs",
         )
 
-    if any(isinstance(c, ast.Return | ast.Yield | ast.YieldFrom) for c in ast.walk(node)):
-        return CheckResult(  # pragma: no cover - true once a body is supplied
-            "read_body_absent",
-            False,
-            "read_historical returns or yields a value — it has a body, and this audit no "
-            "longer establishes that nothing is read",
-        )
-
+    module_level_names = _module_level_bindings(tree)
     unexpected: set[str] = set()
     if node.decorator_list:
         unexpected.add("a decorator (it runs at definition time)")
+    opens: list[ast.Call] = []
     for child in ast.walk(node):
         if isinstance(child, ast.FormattedValue) and child.format_spec is not None:
-            # ``f"{S:README.md}"`` calls ``__format__`` with the spec, and an
-            # object can read a file there.
             unexpected.add(f"an f-string format spec at line {child.lineno}")
         if type(child) not in _PERMITTED_READ_ROUTE_NODES:
             unexpected.add(
@@ -616,29 +662,86 @@ def _check_read_body_is_absent() -> CheckResult:
                 unexpected.add(f"<{type(func).__name__} callee at line {child.lineno}>")
                 continue
             name = getattr(func, "id", None) or getattr(func, "attr", None)
-            if name is None or name not in _PERMITTED_READ_ROUTE_CALLS:
+            if name == "open":
+                opens.append(child)
+            elif name is None or name not in _PERMITTED_READ_ROUTE_CALLS:
                 unexpected.add(str(name))
         elif isinstance(child, ast.Name) and child.id in _INDIRECTION_NAMES:
             unexpected.add(f"{child.id} (indirection)")
+        elif isinstance(child, ast.Subscript):
+            # The body needs subscripts — ``row[key]``, ``rows[pair]`` — so the
+            # node type is permitted. What is **not** permitted is a subscript
+            # on a **module-level** name: ``SLURP["path"]``, where ``SLURP`` is
+            # a module object whose ``__getitem__`` reads, is how a reader hides
+            # behind something that is not a call. A subscript on a local is a
+            # dict lookup; a subscript on a module global is a capability.
+            base = child.value
+            base_name = getattr(base, "id", None)
+            if base_name is None or base_name in module_level_names:
+                unexpected.add(
+                    f"a subscript on {base_name or type(base).__name__!s} at line "
+                    f"{child.lineno} — subscripting a module-level name can read"
+                )
     if unexpected:
         return CheckResult(
-            "read_body_absent",
+            "read_body_declared",
             False,
             f"read_historical contains {sorted(unexpected)}, which are not among its "
-            "declared gates — the route has a body and this audit no longer establishes "
-            "that nothing is read",
+            "declared gates and source access",
         )
 
-    if not _terminal_raise_is_not_implemented(node.body):
-        return CheckResult(  # pragma: no cover
-            "read_body_absent", False, "read_historical does not end in raise NotImplementedError"
+    if len(opens) != 1:
+        return CheckResult(
+            "read_body_declared",
+            False,
+            f"read_historical opens {len(opens)} things; the declared route opens exactly "
+            "one, the source file for the pair it is reading",
         )
+    opened = opens[0].func
+    if not (isinstance(opened, ast.Attribute) and getattr(opened.value, "id", None) == "path"):
+        return CheckResult(
+            "read_body_declared",
+            False,
+            "the one open is not on the `path` bound from source_path_for",
+        )
+
+    assigns_path_from_source = any(
+        isinstance(child, ast.Assign)
+        and any(getattr(t, "id", None) == "path" for t in child.targets)
+        and isinstance(child.value, ast.Call)
+        and (getattr(child.value.func, "id", None) == "source_path_for")
+        for child in ast.walk(node)
+    )
+    if not assigns_path_from_source:
+        return CheckResult(
+            "read_body_declared",
+            False,
+            "`path` is not obtained from source_path_for, so the source is not the declared one",
+        )
+
+    inside_window = any(
+        isinstance(child, ast.With)
+        and any(
+            getattr(getattr(item.context_expr, "func", None), "attr", None) == "gated_read_window"
+            for item in child.items
+        )
+        and any(descendant is opens[0] for descendant in ast.walk(child))
+        for child in ast.walk(node)
+    )
+    if not inside_window:
+        return CheckResult(
+            "read_body_declared",
+            False,
+            "the source open is not inside isolation.gated_read_window(), so the audit hook "
+            "would refuse it — or worse, it is outside the window the hook keys on",
+        )
+
     return CheckResult(
-        "read_body_absent",
+        "read_body_declared",
         True,
-        "read_historical is the only definition, no permitted call name is rebound, it "
-        "returns nothing, every node and call is on the declared list, and it ends in "
-        "raise NotImplementedError",
+        "read_historical is the only definition, no permitted call name is rebound, every "
+        "node and call is on the declared list, and it opens exactly one path — the one "
+        "source_path_for returns — inside the gated read window",
     )
 
 
@@ -844,7 +947,7 @@ BEHAVIOURAL_CHECKS: Final[tuple[str, ...]] = (
 
 SOURCE_CHECKS: Final[tuple[str, ...]] = (
     "broker_live_demo",
-    "read_body_absent",
+    "read_body_declared",
     "single_read_route",
     "authorization_not_ambient",
     "write_root",
@@ -859,7 +962,7 @@ CHECKS: Final[tuple[Any, ...]] = (
     _check_database,
     _check_broker_and_live,
     _check_read_route_refuses_without_a_grant,
-    _check_read_body_is_absent,
+    _check_read_body_is_declared,
     _check_single_read_route,
     _check_authorization_has_no_ambient_source,
     _check_write_root,
@@ -892,7 +995,7 @@ def audit() -> dict[str, Any]:
     # verdict, so a BREACHED report still carried `no_market_data_read: True`
     # and the field could be quoted on its own.
     no_read = bool(
-        passed and by_name.get("read_body_absent") and by_name.get("market_data_read_refused")
+        passed and by_name.get("read_body_declared") and by_name.get("market_data_read_refused")
     )
     return {
         "status": STATUS_CONTAINED if passed else STATUS_BREACHED,
@@ -902,11 +1005,11 @@ def audit() -> dict[str, Any]:
         "behavioural_checks": list(BEHAVIOURAL_CHECKS),
         "source_checks_advisory": list(SOURCE_CHECKS),
         "bounds": list(AUDIT_BOUNDS),
-        # Renamed from ``no_market_data_read``, which said more than it could
-        # support: three separate rewrites of the route read a file while that
-        # field said True. What it means now is exactly what it checks — the
-        # committed source at this head matches the declared gate sequence, and
-        # the process refused the market-data read this audit attempted.
+        # What it means is exactly what it checks: the committed source at this
+        # head is the declared route, and the process refused the ungated
+        # market-data read this audit attempted. It has never meant "nothing can
+        # be read", and since the body landed it does not even mean "nothing is
+        # read" — it means the reading is the one route that was declared.
         "declared_gate_sequence_matches_at_this_head": no_read,
         "scope": (
             "execution containment only — not a hostile-input audit, not mutation "

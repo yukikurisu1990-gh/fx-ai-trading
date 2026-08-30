@@ -460,7 +460,7 @@ def test_the_audit_scans_every_module_on_disk() -> None:
 
 def test_the_audit_measures_rather_than_asserts_that_nothing_is_read() -> None:
     report = containment.audit()
-    body_absent = next(c for c in report["checks"] if c["check"] == "read_body_absent")
+    body_absent = next(c for c in report["checks"] if c["check"] == "read_body_declared")
     assert body_absent["passed"] is True
     assert report["declared_gate_sequence_matches_at_this_head"] is body_absent["passed"]
 

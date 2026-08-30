@@ -409,7 +409,7 @@ def test_no_market_data_read_needs_both_the_source_and_the_behavioural_check() -
     report = containment.audit()
     by_name = {check["check"]: check["passed"] for check in report["checks"]}
     assert report["declared_gate_sequence_matches_at_this_head"] is (
-        by_name["read_body_absent"] and by_name["market_data_read_refused"]
+        by_name["read_body_declared"] and by_name["market_data_read_refused"]
     )
     assert report["declared_gate_sequence_matches_at_this_head"] is True
 

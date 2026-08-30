@@ -20,23 +20,36 @@ Five gates, in order, all fail-closed
    exploratory training.
 4. **Seen-data declaration** — a prior write-ahead declaration covering the
    whole interval, *including the warm-up extension*.
-5. **The read itself** — which is `NotImplementedError` today, deliberately.
+5. **The read itself** — the minimum that returns M1 rows and nothing else.
 
-Why the read is unimplemented rather than implemented-and-disabled
-------------------------------------------------------------------
+What the body does, and what it deliberately does not
+-----------------------------------------------------
 
-Because "implemented but gated" and "not implemented" fail differently under a
-mistake.  A gated implementation runs the moment a gate is bypassed; an absent
-implementation cannot.  The gates above are what a future implementing PR will
-have to satisfy, and they are written and tested now so that PR adds a body and
-not a policy.
+It resolves one committed 365d_BA M1 bid/ask file per requested pair, reads the
+lines whose timestamp falls inside the **granted** span, and returns them in the
+row shape ``scripts.m15_gate3a.aggregation.aggregate_m15`` consumes. That is
+all. It does not aggregate, label, featurise, fit, score or write anything
+except the ledger entries the gates above already require.
+
+**Every bound it applies comes from the grant, not from its arguments.** The
+request says what the caller wants; :func:`~scripts.m15_track_a.authorization.
+require_authorization` has already refused anything the grant does not cover, and
+the body then re-derives its per-pair file list and its timestamp window **from
+the checked grant object**, so a request that somehow widened after the check
+cannot widen the read.
+
+**There is one source and no fallback.** ``train_lgbm_models.py`` has an "if the
+BA file is missing, use mid" branch; that shape is why §8.13.5 asked for a single
+route, and a missing file here is a **refusal**, never a substitution.
 """
 
 from __future__ import annotations
 
+import json
 import re
 from dataclasses import dataclass
 from datetime import UTC, datetime
+from pathlib import Path
 from typing import Any, Final
 
 from scripts.m15_gate3a.no_overlap import (
@@ -44,8 +57,17 @@ from scripts.m15_gate3a.no_overlap import (
     DESIGN_START,
     assert_design_bounds,
     assert_no_dead_window,
+    is_dead_window_instant,
 )
-from scripts.m15_track_a import authorization, isolation, seen_ledger
+from scripts.m15_gate3a.pair_authority import canonical_pair
+from scripts.m15_track_a import (
+    OUTPUT_CLASSIFICATION,
+    OUTPUT_CLASSIFICATION_SECONDARY,
+    authorization,
+    isolation,
+    scratch,
+    seen_ledger,
+)
 from scripts.m15_track_a.identity import RunIdentity
 
 _DATE_RE: Final[re.Pattern[str]] = re.compile(r"\A\d{4}-\d{2}-\d{2}\Z")
@@ -61,6 +83,37 @@ SOURCE_DESCRIPTION: Final[str] = (
     "the committed 365d_BA M1 bid/ask files named by the PR-B.1 inventory, restricted "
     "to the DESIGN span"
 )
+
+#: The committed epoch this route reads, and the only one it can name.
+SOURCE_EPOCH: Final[str] = "365d_BA"
+
+#: The one filename shape, as a template with no caller-supplied component.
+SOURCE_FILENAME_TEMPLATE: Final[str] = "candles_{pair}_M1_{epoch}.jsonl"
+
+#: Where those files live, relative to the repository root.
+SOURCE_DIRECTORY_RELATIVE: Final[str] = "data"
+
+#: The timeframe this route reads.  M15 does not exist until the derivation
+#: runs, so a grant naming M15 does not describe anything this route can open.
+SOURCE_TIMEFRAME: Final[str] = "M1"
+
+#: The row keys ``aggregate_m15`` requires, in its own order: the bucket
+#: timestamp plus per-side OHLC.  Named here so the read produces exactly the
+#: shape the selected derivation route consumes and nothing more.
+ROW_TIMESTAMP_KEY: Final[str] = "ts"
+ROW_SIDE_KEYS: Final[tuple[str, ...]] = (
+    "bid_o",
+    "bid_h",
+    "bid_l",
+    "bid_c",
+    "ask_o",
+    "ask_h",
+    "ask_l",
+    "ask_c",
+)
+
+#: The source field each row key is read from.  ``time`` is OANDA's spelling.
+_SOURCE_TIMESTAMP_FIELD: Final[str] = "time"
 
 
 class ReadRouteError(RuntimeError):
@@ -158,6 +211,113 @@ def assert_span_admissible(request: ReadRequest) -> None:
         ) from exc
 
 
+@dataclass(frozen=True)
+class HistoricalRead:
+    """What one Track A R1 read returns, and its classification.
+
+    Deliberately not a bare dict: the classification travels with the data, so a
+    downstream stage cannot pick up the rows without it.
+    """
+
+    run_id: str
+    operation: str
+    timeframe: str
+    epoch: str
+    span_start_utc: str
+    span_end_utc: str
+    rows_by_pair: dict[str, list[dict[str, Any]]]
+
+    #: Every Track A output carries both labels (§8.11.2, §8.12.2).
+    classification: str = OUTPUT_CLASSIFICATION
+    classification_secondary: str = OUTPUT_CLASSIFICATION_SECONDARY
+
+    @property
+    def row_count(self) -> int:
+        return sum(len(rows) for rows in self.rows_by_pair.values())
+
+    def as_record(self) -> dict[str, Any]:
+        """A summary safe to log.  Counts only — never a bar, never a price."""
+        return {
+            "run_id": self.run_id,
+            "operation": self.operation,
+            "timeframe": self.timeframe,
+            "epoch": self.epoch,
+            "span_start_utc": self.span_start_utc,
+            "span_end_utc": self.span_end_utc,
+            "rows_by_pair": {pair: len(rows) for pair, rows in self.rows_by_pair.items()},
+            "row_count": self.row_count,
+            "classification": self.classification,
+            "classification_secondary": self.classification_secondary,
+        }
+
+
+def source_path_for(pair: str) -> Path:
+    """The one committed file a pair's M1 bid/ask rows come from.
+
+    A module constant template with no caller-supplied directory component, and
+    the pair normalised through the committed authority first, so an unknown or
+    non-canonical spelling fails closed before a path is built.
+    """
+    canonical = canonical_pair(pair)
+    return (
+        scratch.repo_root()
+        / SOURCE_DIRECTORY_RELATIVE
+        / SOURCE_FILENAME_TEMPLATE.format(pair=canonical, epoch=SOURCE_EPOCH)
+    )
+
+
+def _parse_source_timestamp(text: Any) -> datetime:
+    """One OANDA timestamp, as a tz-aware UTC datetime, or refuse.
+
+    ``fromisoformat`` handles the offset spellings; a naive value is refused
+    rather than assumed UTC, because assuming it is how a host timezone
+    reinterprets a bar.
+    """
+    if type(text) is not str:  # noqa: E721
+        raise ReadRouteError(f"source timestamp must be a plain str, got {type(text).__name__}")
+    candidate = text.replace("Z", "+00:00")
+    # OANDA writes nanoseconds; ``fromisoformat`` accepts at most microseconds.
+    if "." in candidate:
+        head, _, tail = candidate.partition(".")
+        digits = "".join(c for c in tail if c.isdigit())[:6]
+        offset = tail[len(digits) :].lstrip("0123456789")
+        candidate = f"{head}.{digits.ljust(6, '0')}{offset}"
+    try:
+        parsed = datetime.fromisoformat(candidate)
+    except ValueError as exc:
+        raise ReadRouteError(f"source timestamp is not ISO-8601: {text!r}") from exc
+    if parsed.utcoffset() is None:
+        raise ReadRouteError(f"source timestamp is not timezone-aware: {text!r}")
+    return parsed.astimezone(UTC)
+
+
+def _row_from_source(raw: Any, *, pair: str, line_number: int) -> dict[str, Any]:
+    """One source line as an ``aggregate_m15`` row, or refuse.
+
+    Refuses rather than degrades, on the same footing as the aggregator it feeds:
+    a missing key, a non-finite value or an unparseable timestamp is an error,
+    never a dropped row and never a substituted default.
+    """
+    if not isinstance(raw, dict):
+        raise ReadRouteError(f"{pair} line {line_number}: source row is not an object")
+    row: dict[str, Any] = {
+        ROW_TIMESTAMP_KEY: _parse_source_timestamp(raw.get(_SOURCE_TIMESTAMP_FIELD))
+    }
+    for key in ROW_SIDE_KEYS:
+        if key not in raw:
+            raise ReadRouteError(f"{pair} line {line_number}: source row missing {key!r}")
+        try:
+            value = float(raw[key])
+        except (TypeError, ValueError) as exc:
+            raise ReadRouteError(
+                f"{pair} line {line_number}: {key!r} is not a finite number: {raw[key]!r}"
+            ) from exc
+        if value != value or value in (float("inf"), float("-inf")):
+            raise ReadRouteError(f"{pair} line {line_number}: {key!r} is not finite")
+        row[key] = value
+    return row
+
+
 def read_historical(
     request: ReadRequest,
     identity: RunIdentity,
@@ -202,21 +362,89 @@ def read_historical(
     # audited against the approval document afterwards.
     seen_ledger.record_grant(checked, identity, route=ROUTE_ID)
 
-    with isolation.gated_read_window():
-        raise NotImplementedError(
-            f"{NOT_IMPLEMENTED_TOKEN}: every gate passed and no data was read. The read "
-            f"body is deliberately absent — route {ROUTE_ID!r} over {SOURCE_DESCRIPTION}. "
-            f"A future implementing PR supplies it, for run {identity.run_id!r}, and adds "
-            "nothing to the policy above."
+    # Every bound below is taken from the **checked grant**, never from the
+    # request. The request said what the caller wanted and the gate has already
+    # refused anything wider; re-deriving from ``checked`` means a request object
+    # mutated after the check cannot widen what is opened.
+    if checked.timeframe != SOURCE_TIMEFRAME:
+        raise ReadRouteError(
+            f"Track A read refused: this route reads {SOURCE_TIMEFRAME} source bars, and the "
+            f"grant names {checked.timeframe!r}. M15 does not exist until "
+            "scripts.m15_track_a.derivation runs, which is a separate operation and a "
+            "separate grant."
         )
+
+    lo = _as_instant(checked.span_start_utc, end_of_day=False)
+    hi = _as_instant(checked.span_end_utc, end_of_day=True)
+
+    rows: dict[str, list[dict[str, Any]]] = {}
+    with isolation.gated_read_window():
+        for pair in checked.pairs:
+            path = source_path_for(pair)
+            if not path.is_file():
+                # A refusal, not a substitution. The "if the BA file is missing,
+                # use mid" fallback in train_lgbm_models.py is the shape §8.13.5
+                # asked for a single route to remove.
+                raise ReadRouteError(
+                    f"Track A read refused: {path.name} is not present under "
+                    f"{SOURCE_DIRECTORY_RELATIVE}/. This route has one source and no "
+                    "fallback; a missing file is not a reason to read a different one."
+                )
+            collected: list[dict[str, Any]] = []
+            with path.open(encoding="utf-8") as handle:
+                for line_number, line in enumerate(handle, 1):
+                    if not line.strip():
+                        continue
+                    try:
+                        raw = json.loads(line)
+                    except json.JSONDecodeError as exc:
+                        raise ReadRouteError(
+                            f"{pair} line {line_number}: source line is not JSON"
+                        ) from exc
+                    row = _row_from_source(raw, pair=pair, line_number=line_number)
+                    timestamp = row[ROW_TIMESTAMP_KEY]
+                    if timestamp < lo or timestamp > hi:
+                        # Outside the granted span. Skipped rather than refused:
+                        # the file spans more than the grant does, and reading
+                        # past the grant is the thing this line prevents.
+                        continue
+                    if is_dead_window_instant(timestamp):
+                        # Belt and braces. ``assert_span_admissible`` already
+                        # refused a declared interval that touches the dead
+                        # window; this refuses a *row* that does, whatever the
+                        # declaration said, because no_overlap checks metadata
+                        # and cannot see bytes.
+                        raise ReadRouteError(
+                            f"Track A read refused: {pair} carries a row at "
+                            f"{timestamp.isoformat()}, inside the consumed dead window."
+                        )
+                    collected.append(row)
+            rows[canonical_pair(pair)] = collected
+
+    return HistoricalRead(
+        run_id=identity.run_id,
+        operation=authorization.OPERATION_HISTORICAL_READ,
+        timeframe=SOURCE_TIMEFRAME,
+        epoch=SOURCE_EPOCH,
+        span_start_utc=checked.span_start_utc,
+        span_end_utc=checked.span_end_utc,
+        rows_by_pair=rows,
+    )
 
 
 __all__ = [
-    "NOT_IMPLEMENTED_TOKEN",
     "ROUTE_ID",
+    "ROW_SIDE_KEYS",
+    "ROW_TIMESTAMP_KEY",
     "SOURCE_DESCRIPTION",
+    "SOURCE_DIRECTORY_RELATIVE",
+    "SOURCE_EPOCH",
+    "SOURCE_FILENAME_TEMPLATE",
+    "SOURCE_TIMEFRAME",
+    "HistoricalRead",
     "ReadRequest",
     "ReadRouteError",
     "assert_span_admissible",
     "read_historical",
+    "source_path_for",
 ]

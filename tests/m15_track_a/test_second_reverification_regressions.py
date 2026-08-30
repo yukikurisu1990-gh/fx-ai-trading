@@ -331,7 +331,7 @@ def test_no_market_data_read_is_gated_on_the_overall_verdict() -> None:
         and all(
             check["passed"]
             for check in report["checks"]
-            if check["check"] in {"read_body_absent", "market_data_read_refused"}
+            if check["check"] in {"read_body_declared", "market_data_read_refused"}
         )
     )
 

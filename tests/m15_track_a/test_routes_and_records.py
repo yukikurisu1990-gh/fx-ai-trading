@@ -143,7 +143,7 @@ def test_read_refuses_without_a_prior_seen_declaration(
         read_route.read_historical(_request(), identity, grant=_grant())
 
 
-def test_read_reaches_an_unimplemented_body_once_every_gate_passes(
+def test_read_reaches_the_declared_body_once_every_gate_passes(
     sandbox: Path, guards: object, identity: RunIdentity
 ) -> None:
     seen_ledger.declare(
@@ -157,7 +157,10 @@ def test_read_reaches_an_unimplemented_body_once_every_gate_passes(
         ),
         identity,
     )
-    with pytest.raises(NotImplementedError, match=read_route.NOT_IMPLEMENTED_TOKEN):
+    # Every gate passes, so control reaches the body. The body then refuses,
+    # because the declared source file is not present in a test environment —
+    # and a missing source is a **refusal**, never a substitution.
+    with pytest.raises(read_route.ReadRouteError, match="not present under"):
         read_route.read_historical(_request(), identity, grant=_grant())
 
 
