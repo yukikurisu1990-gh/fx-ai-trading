@@ -506,10 +506,23 @@ only where something was run or read, never where something was believed.
       plus `test_the_derivation_route_has_no_row_level_guards` for what the
       route does and does not enforce.
 
-`TRACK_A_R1_PREFLIGHT_COMPLETE_15_OF_15` ·
-`AUTHORIZED_NOT_EXECUTED_AWAITING_AN_EXPLICIT_EXECUTION_COMMAND` — every
-mechanical prerequisite is in place and demonstrated on synthetic data end to
-end, and both grants are recorded. **Nothing has been read.**
+`TRACK_A_R1_DUAL_GRANT_INTEGRITY_REMEDIATED` ·
+`TRACK_A_R1_IMPLEMENTATION_READY_PENDING_REISSUED_DUAL_GRANTS` — **and the two
+boxes above are ticked on grants that PR #457 has since invalidated.**
+
+PR #457 closed the two authorization-integrity defects the review of PR #456
+disclosed. Both fixes edit the declared surface, so the fingerprint moved off
+`e43583e0…` and `require_authorization` now refuses both recorded grants. The
+record at `docs/governance/m15_track_a_r1_dual_grants.md` is kept unedited as a
+historical governance record; re-issuing is a separate act from rewriting.
+
+So §5a is **13 of 15 in substance**: every mechanical prerequisite is in place
+and demonstrated on synthetic data end to end, and the two grant rows need
+re-issuing against the new fingerprint before they are true again. The rows are
+left ticked with this paragraph attached rather than silently un-ticked, because
+what happened is not that the grants were never given — it is that giving them
+and then improving the implementation are both correct, and the binding is what
+notices. **Nothing has been read.**
 
 **Read this before treating 15 of 15 as permission.**
 

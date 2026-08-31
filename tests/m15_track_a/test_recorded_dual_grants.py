@@ -4,11 +4,18 @@
 own `.py` sources — which is what the fingerprint is taken over — the grant
 document, or synthetic bytes in a temporary tree.
 
-The companion file `test_recorded_read_grant.py` asserts the *previous* grant is
-**invalid** at this head. This one asserts the two new ones are **valid**, and
-the pair is deliberate: an implementation change has to break exactly one of the
-two files, and if a change ever leaves both green the fingerprint stopped
-covering something.
+**Both grants recorded here are now INVALID**, and this file asserts that rather
+than hiding it. PR #457 closed the two authorization-integrity defects the review
+of PR #456 disclosed, both fixes edit the declared surface, and the fingerprint
+moved from `e43583e0…` to a new value. The recorded numbers are left untouched —
+editing one would forge an approval nobody gave — so every assertion about
+validity is inverted instead, the same way `test_recorded_read_grant.py` handles
+the grant before these two.
+
+What still holds, and is still tested here, is everything the grants said about
+**scope**: the span, the pairs, the timeframe, the operations, and what neither
+of them reaches. Those are facts about a ruling and did not change; only the
+implementation they were bound to did.
 
 **Nothing here authorises a read.** These are assertions about a record. The
 execution command is a separate human act, and no test can stand in for it.
@@ -107,35 +114,64 @@ def _grant(name: str) -> authorization.ReadGrant:
 
 
 @pytest.mark.parametrize("name", sorted(SECTIONS))
-def test_the_recorded_fingerprint_is_this_implementation(name: str) -> None:
-    """Measured, not transcribed.
+def test_the_recorded_grant_is_invalidated_by_the_integrity_fix(name: str) -> None:
+    """**Both recorded grants are now INVALID, and this asserts it.**
 
-    A number copied out of a previous session's report is not an authority, and
-    this is the assertion that makes the difference observable.
+    They were valid when PR #456 recorded them. PR #457 closed the two
+    authorization-integrity defects the review of that PR disclosed — the
+    derivation's missing row-level scope layer and the fingerprint's
+    misresolved relative imports — and both fixes edit the declared surface.
+    So the fingerprint moved from `e43583e0…`, and neither grant covers what
+    would run.
+
+    That is the mechanism working, exactly as
+    `READ_GRANT_BINDS_TO_APPROVED_IMPLEMENTATION_ANCESTRY_NOT_SELF_REFERENTIAL_EXECUTION_HEAD`
+    intends, and it was expected before the work started: §5 of the remediation
+    brief says "今回のsource変更によりimplementation fingerprintは変わる。これは
+    expected", and forbids preserving the old grants by narrowing the surface.
+    The surface got **wider**, not narrower — 26 files to 29.
+
+    The assertion is therefore inverted rather than updated, and the recorded
+    numbers are left untouched: editing one would be forging an approval nobody
+    gave. New grants are issued in a separate authorization-only step once this
+    head is merged and approved.
     """
     recorded = _recorded(name)["approved_implementation_fingerprint"]
     assert re.fullmatch(r"[0-9a-f]{64}", recorded), recorded
-    assert recorded == containment.implementation_fingerprint()
+    assert recorded == "e43583e0d72b6f89a0cfe53b375b3b1d9df6062418423ec56a7db83c0d7bd752", (
+        "the recorded value changed. It is the number a human approved; a later session may "
+        "not rewrite it, and re-issuing is not the same act as editing."
+    )
+    assert recorded != containment.implementation_fingerprint(), (
+        "the recorded grant still matches this implementation. Either the integrity fix did "
+        "not reach the declared surface — which would mean row_scope and the corrected import "
+        "resolution are outside it — or the recorded value was edited. Both are defects."
+    )
 
 
 @pytest.mark.parametrize("name", sorted(SECTIONS))
-def test_the_recorded_grant_is_accepted_by_the_gate(name: str) -> None:
-    """Not merely equal — accepted, by `require_authorization`, on this tree."""
+def test_the_invalidated_grant_is_actually_refused_at_the_gate(name: str) -> None:
+    """Not merely unequal — refused, by `require_authorization`, on this tree.
+
+    An inequality between two strings is a weak claim: it would also hold if the
+    fingerprint check had been removed from the gate. This runs the gate.
+    """
     recorded = _recorded(name)
-    authorization.require_authorization(
-        _grant(name),
-        operation=recorded["operation"],
-        span_start_utc=oos_slice.DEVELOPMENT_START_UTC,
-        span_end_utc=oos_slice.DEVELOPMENT_END_UTC,
-        pairs=tuple(sorted(PAIRS_20)),
-        timeframe="M1",
-        identity=identity.RunIdentity(
-            run_id=f"recorded-{name}-grant-check",
-            code_sha=recorded["approved_head_sha"],
-            calendar_semantics=identity.CALENDAR_UTC_DATES_NO_MARKET_HOURS,
-            started_at_utc="2026-08-31T00:00:00Z",
-        ),
-    )
+    with pytest.raises(authorization.AuthorizationError, match="implementation"):
+        authorization.require_authorization(
+            _grant(name),
+            operation=recorded["operation"],
+            span_start_utc=oos_slice.DEVELOPMENT_START_UTC,
+            span_end_utc=oos_slice.DEVELOPMENT_END_UTC,
+            pairs=tuple(sorted(PAIRS_20)),
+            timeframe="M1",
+            identity=identity.RunIdentity(
+                run_id=f"recorded-{name}-grant-check",
+                code_sha=recorded["approved_head_sha"],
+                calendar_semantics=identity.CALENDAR_UTC_DATES_NO_MARKET_HOURS,
+                started_at_utc="2026-08-31T00:00:00Z",
+            ),
+        )
 
 
 def test_the_two_grants_name_the_two_operations() -> None:
@@ -425,18 +461,19 @@ def test_the_derivation_route_has_no_row_level_guards() -> None:
     assert "assert_development_only" in derive_source
 
 
-def test_the_disclosed_closure_gap_is_still_exactly_this() -> None:
-    """Section 7's disclosure, measured, so the gap cannot widen unnoticed.
+def test_the_closure_gap_disclosed_at_pr_456_is_closed() -> None:
+    """The disclosure this file carried, now asserted as **closed**.
 
-    `containment._first_party_imports` resolves every *relative* import against
-    `scripts.m15_track_a` whatever package the file is in, so a relative import
-    in `scripts/m15_gate3a/` resolves to a module that does not exist and is
-    dropped. The declared surface is therefore not the transitive closure the
-    grant document originally claimed it was.
+    At PR #456 this test pinned the gap: `_first_party_imports` resolved every
+    relative import against `scripts.m15_track_a` whatever package the file was
+    in, so relative imports inside `scripts/m15_gate3a/` resolved to modules
+    that do not exist and were dropped, and two files sat outside a surface the
+    grant record called "the transitive first-party import closure". Its failure
+    message said what to do when the resolver was fixed, and PR #457 fixed it.
 
-    Asserted as a bounded fact rather than a failure: two files, both off the
-    Track A read path. If the set grows, this fails and the disclosure in §7 is
-    no longer true.
+    Kept rather than deleted, with the assertion inverted: the property the
+    grants depend on is worth a standing test, and the closure is computed here
+    rather than taken from the function under test.
     """
     import ast
     import importlib.util
@@ -482,14 +519,10 @@ def test_the_disclosed_closure_gap_is_still_exactly_this() -> None:
                     stack.append(found)
 
     outside = {path.relative_to(root).as_posix() for path in seen - surface}
-    assert outside == {
-        "scripts/ml_step4/contract.py",
-        "scripts/ml_step4/inventory.py",
-    }, (
-        f"the closure gap disclosed in section 7 of the grant document changed: {sorted(outside)}. "
-        "Either the resolver was fixed (update section 7 and re-issue the grants, because "
-        "containment.py is on the surface) or a new module escaped it (a wider hole than the "
-        "one a human approved these grants knowing about)."
+    assert not outside, (
+        f"the closure gap is back: {sorted(outside)}. PR #457 closed it by resolving relative "
+        "imports against the importing file's own package; if these files are outside the "
+        "surface again, a change to what runs no longer voids a grant bound to it."
     )
 
 
@@ -577,14 +610,19 @@ def replica(tmp_path_factory: pytest.TempPathFactory) -> Path:
     return tree
 
 
-def test_recording_a_governance_document_keeps_both_grants_valid(replica: Path) -> None:
-    """Section 7's first claim, measured on a copy rather than argued."""
+def test_recording_a_governance_document_does_not_move_the_fingerprint(replica: Path) -> None:
+    """Section 7's first claim, measured on a copy rather than argued.
+
+    Still the load-bearing property for the grants that will be re-issued
+    against the new fingerprint: the commit that records an authorization must
+    not invalidate the authorization it records. Asserted on the value alone —
+    the recorded grants no longer match it, which is what
+    `test_the_recorded_grant_is_invalidated_by_the_integrity_fix` says.
+    """
     before = _fingerprint_in(replica)
     (replica / "docs").mkdir(exist_ok=True)
     (replica / "docs" / "another_grant_record.md").write_text("recorded\n", encoding="utf-8")
     assert _fingerprint_in(replica) == before
-    for name in SECTIONS:
-        assert _recorded(name)["approved_implementation_fingerprint"] == before
 
 
 @pytest.mark.parametrize(

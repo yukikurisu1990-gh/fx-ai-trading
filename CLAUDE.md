@@ -49,8 +49,9 @@ otherwise.
 - **Track B — Formal Confirmation.** One declared candidate, frozen in every
   respect, run **once** on unseen forward data. Not a place to redesign.
 
-**Track A R1 is implementation-ready and both grants are now recorded; no read has
-been performed.** Do not read this as a snapshot — evaluate it:
+**Track A R1 is implementation-ready; the two recorded grants were invalidated by
+the PR #457 integrity fix and need re-issuing. No read has been performed.** Do
+not read this as a snapshot — evaluate it:
 
 0. **PR #451 approved and merged** — done, `4f45515` (2026-08-30). §8.11–§8.13
    are citable authority; `APPROVAL_IDENTIFIER_PENDING_UNTIL_MERGE` and
@@ -90,13 +91,17 @@ grants directed in the same breath that nothing be executed, so R1 stands
 `docs/governance/m15_audit_playbook.md` §5a before treating 15 of 15 as
 permission.
 
-**Two disclosed weaknesses in the grant binding**, found by review at PR #456 and
-not yet fixed, because fixing them moves the fingerprint and voids the grants:
-`containment` resolves *relative* imports against `scripts.m15_track_a` whatever
-package the file is in, so `scripts/m15_gate3a`'s own relative imports are
-dropped and the declared surface (26 files) is **not** the transitive closure
-(28); and `derive_m15` gates the declaration but not the rows, and does not pin
-the request type the way `read_historical` does.
+**Both weaknesses are fixed at PR #457, and fixing them invalidated both
+grants** — which is the binding working, and was expected. `containment` now
+resolves relative imports against the importing file's own package, so the
+surface (29 files) **is** the transitive closure; and `derive_m15` validates
+every input row against the grant-request intersection and pins both request
+types. The PR #456 record is kept unedited as history.
+
+**What is left is re-issuing the two grants against the new fingerprint**, which
+is a human act and not a session's. Until then Track A R1 has an implementation
+that is ready and no valid authorisation:
+`TRACK_A_R1_IMPLEMENTATION_READY_PENDING_REISSUED_DUAL_GRANTS`.
 
 The apparatus for 1–3 is `scripts/m15_track_a/` and
 `docs/design/m15_track_a_execution_gate.md`; **building it is not passing the

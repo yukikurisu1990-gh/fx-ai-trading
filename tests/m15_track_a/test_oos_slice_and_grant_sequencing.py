@@ -245,17 +245,26 @@ def test_the_surface_is_the_whole_transitive_first_party_closure() -> None:
         if source in seen:
             continue
         seen.add(source)
+        # The importing file's own package, so a **relative** import resolves the
+        # way Python resolves it. This walk used to follow absolute imports only,
+        # which meant it shared the blind spot it exists to catch: it agreed with
+        # a surface that had dropped every relative dependency of
+        # ``scripts/m15_gate3a/``, and two files sat outside the closure with
+        # this test green.
+        package = containment._module_package(source)
         for node in ast.walk(ast.parse(source.read_text(encoding="utf-8"))):
             modules: list[str] = []
-            if (
-                isinstance(node, ast.ImportFrom)
-                and (node.module or "") in {"scripts"}
-                or (isinstance(node, ast.ImportFrom) and (node.module or "").startswith("scripts."))
-            ):
-                # ``from scripts import train_lgbm_models`` counts too: a lazy
-                # first-party import inside a function is still code the read
-                # runs, and it was the one this walk missed first time round.
-                modules = [node.module, *[f"{node.module}.{a.name}" for a in node.names]]
+            if isinstance(node, ast.ImportFrom):
+                base = node.module or ""
+                if node.level:
+                    parts = package.split(".")
+                    anchor = ".".join(parts[: len(parts) - (node.level - 1)])
+                    base = f"{anchor}.{base}".rstrip(".") if base else anchor
+                if base == "scripts" or base.startswith("scripts."):
+                    # ``from scripts import train_lgbm_models`` counts too: a lazy
+                    # first-party import inside a function is still code the read
+                    # runs, and it was the one this walk missed first time round.
+                    modules = [base, *[f"{base}.{a.name}" for a in node.names]]
             elif isinstance(node, ast.Import):
                 modules = [a.name for a in node.names if a.name.startswith("scripts")]
             for name in modules:
