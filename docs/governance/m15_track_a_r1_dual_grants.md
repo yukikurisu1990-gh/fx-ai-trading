@@ -44,6 +44,12 @@ what either route does voids **both** at once.
 | **approved_implementation_fingerprint** | `e43583e0d72b6f89a0cfe53b375b3b1d9df6062418423ec56a7db83c0d7bd752` |
 | **approver_record** | `PR #456 · docs/governance/m15_track_a_r1_dual_grants.md §2 (2026-08-31)` |
 
+**Recorded on the human operator's explicit written instruction of 2026-08-31 to
+issue this grant against the merged implementation.** PR #456's human + ChatGPT
+approval and merge is the act that confers authority; before that merge this is
+a draft. `approver_record` points at this section because this paragraph is
+where the approval is written down.
+
 248 inclusive UTC calendar dates.
 
 ```python
@@ -76,6 +82,10 @@ READ_GRANT = ReadGrant(
 | **approved_head_sha** | `fc3e0f881d424844ca6823ae2708b76839c313dc` |
 | **approved_implementation_fingerprint** | `e43583e0d72b6f89a0cfe53b375b3b1d9df6062418423ec56a7db83c0d7bd752` |
 | **approver_record** | `PR #456 · docs/governance/m15_track_a_r1_dual_grants.md §3 (2026-08-31)` |
+
+**Recorded on the same human instruction of 2026-08-31, and approved by the same
+merge.** Two grants, one decision; §2.5 is why the decision produces two objects
+rather than one widened.
 
 **`timeframe` is `M1`, and that is not a typo.** The grant names the timeframe of
 the **input** the derivation consumes, which is what `grant_covers` compares
@@ -153,13 +163,13 @@ makes the recorded value reproducible on another machine.
 | Not authorized | Refused by |
 | --- | --- |
 | **`EXPLORATORY_OOS_SLICE`** `2025-12-29 … 2026-02-28` | `assert_development_only` on the touched interval and again on the computed window — on **both** routes, and see §5a for which layer stops which |
-| the **dead window** `2026-03-01 … 2026-04-24` | `assert_span_admissible` via `no_overlap`; a row-level refusal |
-| the **forward epoch**, `2026-04-25` onward | `assert_span_admissible`; a row-level `FORWARD_FLOOR` refusal |
+| the **dead window** `2026-03-01 … 2026-04-24` | `assert_span_admissible` via `no_overlap` on both routes; **plus** a row-level refusal on the read route only (§5a) |
+| the **forward epoch**, `2026-04-25` onward | `assert_span_admissible` on both routes; **plus** a row-level `FORWARD_FLOOR` refusal on the read route only (§5a) |
 | **pre-DESIGN** data, before `2025-04-25` | `assert_span_admissible`, on the warm-up-widened interval |
 | any date outside `2025-04-25 … 2025-12-28`, **warm-up included** | `grant_covers` inside `require_authorization`; the grant ∩ request intersection on both routes |
 | any pair outside `PAIRS_20` | `pair_authority`, before a path is built |
 | any timeframe but `M1` | the read route refuses a grant naming another |
-| a **direct `aggregate_m15`** call | `derivation_containment` — a process latch and a per-row marker, checked inside the aggregator |
+| a **direct `aggregate_m15`** call | `derivation_containment` — a process latch, which is the load-bearing half, plus a per-row provenance marker whose limits §5a records |
 | **training, fitting, evaluation, calibration** | R3 and R4 are separate Red gates with separate approvals |
 | Sharpe, `c`, `ω`, `N_eff` as empirical figures | not authorised here in any form |
 | the **T-3 measurement** | a Track A duty at the *declared candidate under its frozen cost table* — not R1's, and R1 reaches no verdict |
@@ -172,27 +182,65 @@ trimmed**.
 
 ## 5a. The slice defence is not symmetric, and this is where it differs
 
-Recording these grants turned up a fact worth stating plainly rather than
-leaving in the code: **a `track_a_m15_research_derivation` grant can be
-constructed over slice dates. A `track_a_historical_read` grant cannot.**
+**The read route has three layers of span defence. The derivation route has
+one.** Two review roles at PR #456 measured the difference; an earlier revision
+of this document asserted the opposite, so it is set out here in full rather
+than summarised.
 
-`_assert_operation_span` constrains two operations and deliberately not the
-third — its docstring says so: `track_a_m15_research_derivation` "derives over
-whatever its own read was authorised for, and its route applies the development
-gate itself." So the derivation has **one** layer where the read has two.
+**Layer 1 — the grant constructor. Present for the read, absent for the
+derivation.** `_assert_operation_span` constrains `track_a_historical_read` (may
+not reach past `2025-12-28`) and `track_a_exploratory_oos_slice_read` (may name
+only slice dates), and constrains `track_a_m15_research_derivation` **not at
+all** — not the slice, not the dead window, not the forward epoch, not
+`1900-01-01 … 2099-12-31`. That is deliberate; its docstring says the derivation
+"derives over whatever its own read was authorised for, and its route applies
+the development gate itself."
 
-That compensating control was measured, not assumed. `derive_m15` runs
-`require_authorization` → `assert_span_admissible` →
-`assert_development_only(read_request)` → `DELEGATE`, and the third call refuses
-the whole slice, a span reaching one day into it, and a warm-up extension that
-reaches back into it — before any aggregation happens.
+**Layer 2 — the declaration gate. Present on both, and it works.** `derive_m15`
+runs `require_authorization` → `assert_span_admissible` →
+`assert_development_only(read_request)` → `DELEGATE`, and the third refuses the
+whole slice, a span reaching one day into it, and a warm-up extension reaching
+back into it, before any aggregation. Measured, not assumed.
 
-Neither recorded grant names a slice date, so the asymmetry costs these two
-authorizations nothing. It is recorded because the earlier revision of this
-document claimed the grant constructor refused **both** operations, which is
-false, and a reviewer who believed it would have counted a layer that is not
-there. `test_a_derivation_grant_over_the_slice_is_stopped_by_the_route` pins the
-real behaviour in both directions.
+**Layer 3 — the row-level guards. Present for the read, absent for the
+derivation.** `read_historical` carries `is_dead_window_instant`, the
+`FORWARD_FLOOR` row check, `assert_clear_of_slice` on the computed window, and
+`type(request) is not ReadRequest` — because, as its own commentary says,
+metadata checks "cannot see bytes" and "a subclass can answer a field
+differently each time it is read". **`derive_m15` carries none of the four.** It
+gates what a request *declares* and never compares a row's timestamp against the
+interval it just gated. An adversarial role demonstrated both consequences on
+synthetic rows: rows dated inside the slice, the dead window and the forward
+epoch aggregate under the recorded Grant B; and a `ReadRequest` subclass honest
+at the gates and widened afterwards produces a `DerivedM15` labelled over the
+slice while the seen-data ledger records five development days.
+
+**What this does and does not mean.**
+
+- It **does not** reach protected data. No route in this repository can produce
+  slice, dead-window or forward rows: `read_historical` refuses them at three
+  layers, and it is the only reader. The demonstration had to hand-build the
+  rows.
+- It **does** mean Grant B's span constrains the *declaration* and not the
+  *bytes*, so the guarantee is one layer thinner than the read's.
+- It **matters at execution time**, because no R1 orchestrator exists in this
+  repository yet (`DerivationRequest(` appears in no committed script). Whoever
+  writes the read→derive composition must pass the **same** `ReadRequest` object
+  to both calls. Building it twice is the failure mode.
+
+**Neither recorded grant names a slice, dead-window or forward date**, so this
+costs these two authorizations nothing. It is disclosed because a reviewer who
+believed the earlier text would have counted layers that are not there.
+
+`DERIVATION_ROUTE_ROW_LEVEL_GUARDS_AND_REQUEST_TYPE_PIN_ABSENT_REFERRED` —
+closing the gap means editing `derivation.py`, which is on the fingerprint
+surface and would void both grants the moment it merged. It is therefore a
+separate Work PR, taken **before** any execution command, not folded into an
+authorization-only record.
+
+`test_a_derivation_grant_over_the_slice_is_stopped_by_the_route` and
+`test_the_derivation_route_has_no_row_level_guards` pin both halves — the layer
+that holds and the layer that is missing — so neither can change silently.
 
 ## 6. Seen-data — what this costs, and when
 
@@ -223,14 +271,38 @@ tree at check time
 - **A commit that records an authorization or a document keeps them valid.** The
   commit adding *this file* moves `HEAD` and changes no covered file. A test
   asserts it.
-- **Any change on the declared surface voids both**, with no human in the loop:
-  every `.py` under `scripts/m15_track_a/` plus its transitive first-party import
-  closure, resolved through `importlib` so a shadowed module is hashed as it
-  would actually be loaded. That includes the read route, the derivation route,
-  the survey, the containment module, the session windows and the aggregator.
+- **Any change on the declared surface voids both**, with no human in the loop.
+  The surface is **26 files**: every `.py` under `scripts/m15_track_a/` plus an
+  import closure resolved through `importlib`, so a shadowed module is hashed as
+  it would actually be loaded. It covers the read route, the derivation route,
+  the survey, `authorization`, `containment`, `derivation_containment`,
+  `session_windows`, `aggregation`, `no_overlap`, `timeutil` and the data
+  adapter — and also `scripts/train_lgbm_models.py`, so editing that research
+  script voids both grants too.
+- **The surface is not the transitive closure, and this record does not claim it
+  is.** `containment._first_party_imports` resolves every **relative** import
+  against `scripts.m15_track_a` regardless of which package the file is in, so
+  `scripts/m15_gate3a/aggregation.py`'s four relative imports resolve to modules
+  that do not exist and are dropped. Measured at this head: surface **26**, true
+  closure **28**; the two outside it are `scripts/ml_step4/contract.py` and
+  `scripts/ml_step4/inventory.py`, both off the Track A read path
+  (`inventory` is reached only from `RealDataAdapter.verify()`, which Track A
+  never calls). The reachable consequence an adversarial role demonstrated: a
+  **new** module added to `scripts/m15_gate3a/` and imported relatively is
+  outside the surface, so rewriting it afterwards leaves the fingerprint —
+  and both grants — unchanged.
+  `FINGERPRINT_SURFACE_IS_NOT_THE_TRANSITIVE_CLOSURE_RELATIVE_IMPORTS_MISRESOLVED_REFERRED`:
+  fixing it edits `containment.py`, which is *on* the surface and would void
+  these grants the moment it merged, so it is a separate Work PR taken before
+  any execution command. `test_the_disclosed_closure_gap_is_still_exactly_this`
+  pins the gap so it cannot widen unnoticed.
 - **What a source fingerprint cannot see** is in `containment.AUDIT_BOUNDS`: an
   `UNCHECKED_HASH` `.pyc` over unchanged source, an installed dependency, a
-  non-`.py` file loaded at run time.
+  non-`.py` file loaded at run time. Add to that list the closure gap above, and
+  the fact that the surface is walked **outward** from `scripts/m15_track_a/`:
+  a future R1 runner that *imports* the package is not in the closure and would
+  not void either grant. That is intended — the routes gate regardless of
+  caller — but it is not something the fingerprint protects.
 - **Ancestry is a gate-time reviewer obligation**, not an in-process check — git
   is unreachable from inside a gated read:
 
@@ -252,10 +324,31 @@ invalidation and that the number was not rewritten.
 
 `TRACK_A_R1_DUAL_GRANTS_RECORDED_AND_PREFLIGHT_COMPLETE_READY_FOR_EXPLICIT_EXECUTION_COMMAND`.
 
-Exactly one thing: an **explicit human + ChatGPT execution command** naming the
+**One human act, and one piece of engineering.**
+
+The human act: an **explicit human + ChatGPT execution command** naming the
 operation, the span, the pairs, the timeframe and the head it runs on. Recording
 these grants is not that command, and constructing a `ReadGrant` object in code
-is not the act of granting one.
+is not the act of granting one. A real-data read is **Red**, and CLAUDE.md wants
+that approval *before the run*, which is an act rather than a document state —
+so neither these grants, nor a passed execution gate, nor playbook §5a at 15 of
+15 supplies it. The instruction that authorised these grants directed in the
+same breath that nothing be executed.
+
+The engineering, stated because "exactly one thing" would be false without it:
+**there is no R1 orchestrator in this repository.** `DerivationRequest(` appears
+in no committed script, no module in `scripts/m15_track_a/` has a `__main__`,
+and the only read → derive → survey composition that exists is a pytest fixture.
+Writing that runner is Amber code work, and §5a is the reason it has to pass one
+`ReadRequest` object to both calls rather than building it twice.
+
+Two disclosed defects should be closed before that runner is pointed at real
+data — `DERIVATION_ROUTE_ROW_LEVEL_GUARDS_AND_REQUEST_TYPE_PIN_ABSENT_REFERRED`
+(§5a) and
+`FINGERPRINT_SURFACE_IS_NOT_THE_TRANSITIVE_CLOSURE_RELATIVE_IMPORTS_MISRESOLVED_REFERRED`
+(§7). Both edit the fingerprint surface, so both void these grants and require
+re-issue on the new fingerprint. That is the mechanism working, not an
+obstacle.
 
 ## 10. Referrals these grants do not touch
 
