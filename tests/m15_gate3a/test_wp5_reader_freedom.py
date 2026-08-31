@@ -638,20 +638,19 @@ TRACK_A_PERMITTED_IMPORTS: dict[str, frozenset[str]] = {
     # Calendar A/B authoring and the two frozen predicates R1 needs to place a
     # bar in a session and to apply Ruling 4's rollover exclusion. Pure calendar
     # arithmetic; it reads no file and no price.
-    "scripts.m15_gate3a.calendar_build": frozenset(
+    # The two session predicates whose content is committed: Ruling 4's frozen
+    # session partition and its frozen rollover window. ``calendar_build`` --
+    # which authored a market calendar -- is deleted; this module adds no
+    # market-hours claim, and a hand-written oracle test pins that it has not
+    # grown one back.
+    "scripts.m15_gate3a.session_windows": frozenset(
         {
+            "COVERAGE_STATUS",
+            "HOLIDAY_CONSEQUENCE",
+            "HOLIDAY_STATUS",
             "bucket_overlaps_rollover",
-            "calendar_a_artifact",
-            "calendar_b_artifact",
-            "calendar_error_type",
-            "in_fx_week",
-            "in_rollover_window",
-            "is_event_eligible",
-            "is_validated_calendar",
-            "load_calendar_a",
+            "is_event_eligible_window",
             "session_of",
-            "validate_calendar_b",
-            "validated_calendar_a",
         }
     ),
     # Ruling 5's frozen cost constants and Ruling 4's frozen session partition.

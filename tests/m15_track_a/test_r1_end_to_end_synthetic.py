@@ -29,14 +29,6 @@ from pathlib import Path
 import pytest
 
 from scripts.m15_gate3a import derivation_containment as dc
-from scripts.m15_gate3a.calendar_build import (
-    bucket_overlaps_rollover,
-    calendar_a_artifact,
-    calendar_b_artifact,
-    in_fx_week,
-    validated_calendar_a,
-)
-from scripts.m15_gate3a.pair_authority import PAIRS_20
 from scripts.m15_track_a import (
     authorization,
     breadth,
@@ -100,11 +92,14 @@ def _write_minutes(sandbox: Path, pair: str, *, start: str, end: str) -> Path:
     true range, a zero ATR and no eligible bar, which would let the survey
     report "nothing eligible" for a reason that is an artefact of the fixture.
 
-    Only minutes **inside the FX week** are written. The first drafting wrote
-    straight through Friday 22:00 UTC, and the aggregator refused the whole
-    derivation: 120 source minutes lay outside the expected-slot authority. That
-    was Calendar A doing its job on a fixture that was wrong, and it is kept as
-    its own negative test below rather than smoothed away here.
+    **Every minute of the span is written, with no market-hours filter.** The
+    first drafting filtered the fixture through the same ``in_fx_week``
+    predicate the calendar used, so the two agreed by construction and could not
+    disagree — which is how an invented and factually wrong week boundary passed
+    twenty-seven tests. There is no calendar now, and no predicate to agree
+    with: the fixture is minutes, and the session/rollover predicates are
+    checked against a hand-written oracle in
+    ``tests/m15_gate3a/test_session_windows_independent_oracle.py``.
     """
     path = sandbox / "data" / read_route.SOURCE_FILENAME_TEMPLATE.format(pair=pair, epoch=EPOCH)
     jpy = pair.endswith("_JPY")
@@ -115,9 +110,6 @@ def _write_minutes(sandbox: Path, pair: str, *, start: str, end: str) -> Path:
     index = 0
     with path.open("w", encoding="utf-8") as handle:
         while moment < stop:
-            if not in_fx_week(moment):
-                moment += timedelta(minutes=1)
-                continue
             swing = (index % 40) - 20
             mid = base + swing * tick
             half = tick  # a 2-tick quoted spread
@@ -187,22 +179,6 @@ def _declare(run: identity.RunIdentity, **overrides: object) -> None:
     seen_ledger.declare(seen_ledger.SeenDeclaration(**fields), run)  # type: ignore[arg-type]
 
 
-def _calendars() -> tuple[dict, dict]:
-    a = calendar_a_artifact(
-        span_start_utc=SPAN_START,
-        span_end_utc=SPAN_END,
-        target_epoch=EPOCH,
-        committed_revision="synthetic-dry-run",
-    )
-    b = calendar_b_artifact(
-        span_start_utc=SPAN_START,
-        span_end_utc=SPAN_END,
-        target_epoch=EPOCH,
-        committed_revision="synthetic-dry-run",
-    )
-    return a, b
-
-
 @pytest.fixture
 def dry_run(sandbox: Path, guards_installed: object) -> dict:
     """The whole R1 control path, once, so the cases below can assert on it."""
@@ -213,9 +189,8 @@ def dry_run(sandbox: Path, guards_installed: object) -> dict:
     read = read_route.read_historical(
         _request(), run, grant=_grant(authorization.OPERATION_HISTORICAL_READ)
     )
-    calendar_a, calendar_b = _calendars()
     derived = derivation.derive_m15(
-        derivation.DerivationRequest(read_request=_request(), read=read, calendar_a=calendar_a),
+        derivation.DerivationRequest(read_request=_request(), read=read),
         run,
         grant=_grant(authorization.OPERATION_M15_DERIVATION),
     )
@@ -234,11 +209,10 @@ def dry_run(sandbox: Path, guards_installed: object) -> dict:
     )
     result = r1_survey.survey(
         derived,
-        calendar_b=calendar_b,
         containment_status=containment.STATUS_CONTAINED,
         breadth_k=breadth.current_k(),
     )
-    return {"read": read, "derived": derived, "survey": result, "run": run, "b": calendar_b}
+    return {"read": read, "derived": derived, "survey": result, "run": run}
 
 
 # ---------------------------------------------------------------------------
@@ -271,8 +245,19 @@ def test_every_required_r1_output_is_present_and_populated(dry_run: dict) -> Non
             assert spread["p95_pip"] is not None
             assert record["cost_table"][pair][session] is not None
             assert record["eligibility"][pair][session]["eligible_rate"] is not None
-    assert record["barrier_cost_ratio"]["n_eligible"] > 0
-    assert record["barrier_cost_ratio"]["median"] is not None
+    # All three barrier readings are reported, unranked, with no verdict.
+    for name in ("pre_floor_tp", "post_floor_tp", "post_floor_sl"):
+        variant = record["barrier_cost_ratio"]["variants"][name]
+        assert variant["n"] > 0
+        assert variant["median"] is not None
+    # No calendar authority, so the calendar-derived accounting is absent --
+    # reported as absent rather than filled in.
+    # No calendar authority, so the calendar-derived fields are absent --
+    # reported as absent rather than filled in. The observed fields are present.
+    accounting = record["coverage"]["EUR_USD"]["gap_report"]["minute_accounting"]
+    assert accounting["expected_source_minute_count"] is None
+    assert accounting["absent_source_minute_count"] is None
+    assert accounting["observed_source_minute_count"] > 0
     # K is **zero**, and that is the correct answer rather than a missing one.
     # `current_k` counts configurations "whose result was observed", and R1
     # observes no result: it measures the corpus, it scores nothing. The entry
@@ -282,26 +267,31 @@ def test_every_required_r1_output_is_present_and_populated(dry_run: dict) -> Non
     assert breadth.read_entries(), "no breadth entry was recorded at all"
 
 
-def test_the_derivation_used_calendar_a_as_its_slot_authority(dry_run: dict) -> None:
+def test_the_derivation_records_that_coverage_has_no_authority(dry_run: dict) -> None:
+    """No approved calendar exists, so the derivation says so rather than pretending.
+
+    `PRE_CONTINUATION_CALENDAR_ARTIFACT_APPROVAL_REQUIRED` is open, D-6 forbids
+    an implementer authoring a calendar, and omega-12 forbids Track A authoring
+    market hours. The aggregator's calendar-derived accounting therefore comes
+    back ``None`` -- and that is reported, not filled in.
+    """
     derived = dry_run["derived"]
-    assert derived.calendar_authority == "m15_gate3a_d6_closure_calendar"
-    assert derived.calendar_content_digest
+    assert derived.coverage_status == (
+        "COVERAGE_AUTHORITY_ABSENT_R1_REPORTS_A_DECLARED_LABEL_DIAGNOSTIC"
+    )
     for report in derived.gap_reports.values():
-        assert report, "the gap report is empty, so coverage had no authority"
+        assert report["minute_accounting"]["expected_source_minute_count"] is None
 
 
-def test_the_survey_reports_the_t3_numerator_it_used_and_its_alternatives(
-    dry_run: dict,
-) -> None:
-    """The ruling is re-readable against the numbers, not only against the prose."""
+def test_the_survey_reaches_no_t3_verdict(dry_run: dict) -> None:
+    """T-3 is a later-stage duty (D-3/D-4); R1 reports and does not decide."""
     ratio = dry_run["survey"].barrier_cost_ratio
-    assert ratio["numerator"] == "pre_floor_tp"
-    variants = ratio["variants_reported_for_the_ruling"]
-    assert set(variants) == set(r1_survey.T3_NUMERATOR_VARIANTS)
-    # The post-floor reading is structurally >= 3.0, which is why it is not the
-    # ruled numerator. Measured here rather than argued.
-    assert variants["post_floor_tp"]["median"] >= r1_survey.T3_MEDIAN_RATIO_THRESHOLD
-    assert ratio["t3_status"].startswith("T3_MEDIAN_ELIGIBLE_BARRIER_COST_RATIO")
+    assert ratio["numerator_ruling"] == "UNRULED_ALL_THREE_READINGS_REPORTED"
+    assert set(ratio["variants"]) == set(r1_survey.BARRIER_VARIANTS)
+    assert "t3_status" not in ratio
+    assert "threshold" not in ratio
+    text = json.dumps(dry_run["survey"].as_record())
+    assert "T3_MEDIAN" not in text, "R1 emitted a T-3 verdict"
 
 
 def test_the_ledgers_are_written_under_the_committed_root(dry_run: dict) -> None:
@@ -321,11 +311,9 @@ def test_the_declaration_precedes_the_read(dry_run: dict) -> None:
 
 def test_rollover_bars_are_excluded_from_eligibility(dry_run: dict) -> None:
     """Ruling 4's 21:55-22:15 window, at the committed minimum."""
-    # Overlap, not start: the 21:45 bucket covers 21:55-21:59 and is excluded.
-    # A start test kept it, which narrowed Ruling 4's minimum.
-    assert bucket_overlaps_rollover(datetime(2025, 5, 5, 22, 0, tzinfo=UTC))
-    assert bucket_overlaps_rollover(datetime(2025, 5, 5, 21, 45, tzinfo=UTC))
-    assert not bucket_overlaps_rollover(datetime(2025, 5, 5, 21, 30, tzinfo=UTC))
+    # The predicate itself is checked against a hand-written oracle in
+    # tests/m15_gate3a/test_session_windows_independent_oracle.py. Here we only
+    # assert that the survey *applied* it.
     counted = sum(
         session["bars_considered"]
         for pair in dry_run["survey"].pairs
@@ -381,10 +369,7 @@ def test_a_derivation_without_its_own_grant_is_refused(
     read = read_route.read_historical(
         _request(), run, grant=_grant(authorization.OPERATION_HISTORICAL_READ)
     )
-    calendar_a, _ = _calendars()
-    request = derivation.DerivationRequest(
-        read_request=_request(), read=read, calendar_a=calendar_a
-    )
+    request = derivation.DerivationRequest(read_request=_request(), read=read)
     with pytest.raises(authorization.AuthorizationError):
         derivation.derive_m15(request, run, grant=_grant(authorization.OPERATION_HISTORICAL_READ))
     with pytest.raises(authorization.AuthorizationError):
@@ -450,76 +435,6 @@ def test_a_timeframe_outside_the_route_is_refused(sandbox: Path, guards_installe
         )
 
 
-def test_a_source_minute_outside_calendar_a_is_refused(
-    sandbox: Path, guards_installed: object
-) -> None:
-    """Calendar A is the slot authority, and a minute it does not declare refuses.
-
-    Found by the fixture rather than by design: the first drafting wrote minutes
-    through Friday 22:00 UTC, past the FX week close, and the derivation refused
-    with "120 source minute(s) lie outside the expected-slot authority".
-    """
-    for pair in PAIRS:
-        path = _write_minutes(sandbox, pair, start=SPAN_START, end=SPAN_END)
-        with path.open("a", encoding="utf-8") as handle:
-            row = {"time": "2025-05-09T22:30:00Z"}
-            row.update({key: 1.1 for key in read_route.ROW_SIDE_KEYS})
-            handle.write(json.dumps(row) + chr(10))
-    run = _run()
-    _declare(run)
-    read = read_route.read_historical(
-        _request(), run, grant=_grant(authorization.OPERATION_HISTORICAL_READ)
-    )
-    calendar_a, _ = _calendars()
-    with pytest.raises(Exception, match="outside the expected-slot authority"):
-        derivation.derive_m15(
-            derivation.DerivationRequest(read_request=_request(), read=read, calendar_a=calendar_a),
-            run,
-            grant=_grant(authorization.OPERATION_M15_DERIVATION),
-        )
-
-
-def test_a_calendar_for_another_epoch_is_refused(sandbox: Path, guards_installed: object) -> None:
-    for pair in PAIRS:
-        _write_minutes(sandbox, pair, start=SPAN_START, end=SPAN_END)
-    run = _run()
-    _declare(run)
-    read = read_route.read_historical(
-        _request(), run, grant=_grant(authorization.OPERATION_HISTORICAL_READ)
-    )
-    wrong = calendar_a_artifact(
-        span_start_utc=SPAN_START,
-        span_end_utc=SPAN_END,
-        target_epoch="some_other_epoch",
-        committed_revision="synthetic-dry-run",
-    )
-    with pytest.raises(derivation.DerivationRouteError, match="Calendar A"):
-        derivation.derive_m15(
-            derivation.DerivationRequest(read_request=_request(), read=read, calendar_a=wrong),
-            run,
-            grant=_grant(authorization.OPERATION_M15_DERIVATION),
-        )
-
-
-def test_a_derivation_without_a_calendar_is_refused(
-    sandbox: Path, guards_installed: object
-) -> None:
-    """Coverage with no authority is what R1 was blocked on; it stays refused."""
-    for pair in PAIRS:
-        _write_minutes(sandbox, pair, start=SPAN_START, end=SPAN_END)
-    run = _run()
-    _declare(run)
-    read = read_route.read_historical(
-        _request(), run, grant=_grant(authorization.OPERATION_HISTORICAL_READ)
-    )
-    with pytest.raises(derivation.DerivationRouteError, match="no Calendar A"):
-        derivation.derive_m15(
-            derivation.DerivationRequest(read_request=_request(), read=read, calendar_a=None),
-            run,
-            grant=_grant(authorization.OPERATION_M15_DERIVATION),
-        )
-
-
 def test_an_undeclared_interval_is_refused(sandbox: Path, guards_installed: object) -> None:
     for pair in PAIRS:
         _write_minutes(sandbox, pair, start=SPAN_START, end=SPAN_END)
@@ -553,9 +468,8 @@ def test_a_write_outside_the_permitted_roots_is_refused() -> None:
 
 def test_the_survey_refuses_anything_but_an_authorised_derivation() -> None:
     """A dict of bars is not a DerivedM15, and the survey will not measure one."""
-    _, calendar_b = _calendars()
     with pytest.raises(r1_survey.R1SurveyError):
-        r1_survey.survey({"EUR_USD": []}, calendar_b=calendar_b)  # type: ignore[arg-type]
+        r1_survey.survey({"EUR_USD": []})  # type: ignore[arg-type]
 
 
 def test_the_guards_must_be_installed(sandbox: Path) -> None:
@@ -571,19 +485,3 @@ def test_network_db_and_broker_stay_refused(guards_installed: object) -> None:
 
     with pytest.raises(isolation.IsolationError):
         socket.socket().connect(("93.184.216.34", 80))
-
-
-def test_the_calendar_covers_the_whole_authorised_development_corpus() -> None:
-    """The dry run uses a week; the real one uses 248 days. Both must be authorable."""
-    artifact = calendar_a_artifact(
-        span_start_utc=oos_slice.DEVELOPMENT_START_UTC,
-        span_end_utc=oos_slice.DEVELOPMENT_END_UTC,
-        target_epoch=EPOCH,
-        committed_revision="synthetic-dry-run",
-    )
-    validated = validated_calendar_a(artifact, expected_epoch=EPOCH)
-    assert set(validated.pairs) == set(PAIRS_20)
-    slots = validated.expected_slots("EUR_USD")
-    assert len(slots) > 16_000
-    assert min(slots).date().isoformat() == oos_slice.DEVELOPMENT_START_UTC
-    assert max(slots).date().isoformat() == oos_slice.DEVELOPMENT_END_UTC

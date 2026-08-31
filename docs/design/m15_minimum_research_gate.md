@@ -394,7 +394,8 @@ had no upper bound** — `N_eff` is computable before any confirmation observati
 **`THE_CANDIDATE_FREEZE_IS_ONCE_PER_PROGRAMME_AND_A_SECOND_FREEZE_IS_A_SECOND_CANDIDATE`**,
 an abandoned freeze is committed and counts toward `K`, and recomputing `N_eff` after an
 unfavourable one is a **reselection**. Seventeen further limbs and ten wrong claims at
-§8.13.13. **`THE_TWO_TRACK_SECTIONS_ARE_RULED_AS_RECORDED_AND_NOT_YET_CITABLE_AS_AUTHORITY`**
+§8.13.13. **`THE_TWO_TRACK_SECTIONS_ARE_RULED_AND_CITABLE_AS_AUTHORITY_FROM_MERGE_4F45515`**
+(superseding `…_NOT_YET_CITABLE_AS_AUTHORITY` at PR #451's merge; see §8.13's approval line)
 until the approving head SHA exists.
 
 **Two blocking conditions are removed and the removal is the point.** §8.12.10's condition 4
@@ -12690,16 +12691,22 @@ The digest is **one** anchor; that record is the other, and it is the more infor
 ### 8.13 The Two-Track Semantic Cleanup — RULED
 
 **Approval identifier** (required by §8.12.13 C-9): **PR #451** · approved head SHA
-**`APPROVAL_IDENTIFIER_PENDING_UNTIL_MERGE`** · date **2026-08-29**.
+**`2cdb687`** · merge commit **`4f45515`** · date **2026-08-29**, merged **2026-08-30**.
 
-**⚠ And C-9's consequence is accepted rather than evaded.** C-9 says "a RULED section
-without one may not be cited as authority", and the approving head SHA does not exist until
-this PR is approved and merged. So **§8.11, §8.12 and §8.13 are RULED-as-recorded and may
-not yet be cited as authority outside this packet** — which is the correct state, because
-the PR is not merged and the approval is not on the record. The identifier is completed at
-merge; until then `APPROVAL_IDENTIFIER_PENDING_UNTIL_MERGE` travels with each of them, and
-**P-10** applies it to the earlier sections.
-**`THE_TWO_TRACK_SECTIONS_ARE_RULED_AS_RECORDED_AND_NOT_YET_CITABLE_AS_AUTHORITY`.**
+**C-9's consequence was accepted rather than evaded, and it is now discharged.** C-9 says
+"a RULED section without one may not be cited as authority", and the approving head SHA did
+not exist until the PR was approved and merged. It has been:
+**`APPROVAL_IDENTIFIER_COMPLETED_AT_MERGE_4F45515`**, and the identifier above applies to
+**§8.11, §8.12 and §8.13 alike** — which is what **P-10** required. They are citable
+authority.
+
+**`THE_TWO_TRACK_SECTIONS_ARE_RULED_AND_CITABLE_AS_AUTHORITY_FROM_MERGE_4F45515`**,
+superseding `THE_TWO_TRACK_SECTIONS_ARE_RULED_AS_RECORDED_AND_NOT_YET_CITABLE_AS_AUTHORITY`.
+
+⚠ **This paragraph was written in PR #455 and is the discharge itself, not a report of
+one.** An earlier revision of that PR recorded P-10 as done in a *different* file, which is
+exactly what "a predicate on **named files**, not a self-assessment" refuses; two review
+roles caught it. P-10 names this file, so the discharge is written here.
 
 A human + ChatGPT ruling, recorded here as **authority once the identifier above is
 completed**. §8.11 split the programme, §8.12
@@ -13579,7 +13586,8 @@ above is **superseded** by §9a.
    longer exists"** (D-10).
 8. **§8.13 carried no approval identifier** while §8.12.13 C-9 requires one — corrected at
    the section head, and the consequence accepted:
-   `THE_TWO_TRACK_SECTIONS_ARE_RULED_AS_RECORDED_AND_NOT_YET_CITABLE_AS_AUTHORITY`.
+   `THE_TWO_TRACK_SECTIONS_ARE_RULED_AND_CITABLE_AS_AUTHORITY_FROM_MERGE_4F45515`
+   (this line read `…_NOT_YET_CITABLE_AS_AUTHORITY` until PR #451 merged as `4f45515`).
 
 #### 8.13.12 Maintained, and still not authorised
 
@@ -15151,7 +15159,7 @@ seen" against §8.11.4 rule 3.
 **One structural defect closed and one accepted.** §8.13 carried **no approval identifier**,
 which §8.12.13 C-9 requires — corrected at the section head, and the consequence accepted
 rather than evaded:
-**`THE_TWO_TRACK_SECTIONS_ARE_RULED_AS_RECORDED_AND_NOT_YET_CITABLE_AS_AUTHORITY`** until the
+**`THE_TWO_TRACK_SECTIONS_ARE_RULED_AND_CITABLE_AS_AUTHORITY_FROM_MERGE_4F45515`** — the
 approving head SHA exists, which is the correct state while the PR is unmerged. And §8.13
 had **no §12 review round** when written — the third consecutive repetition of a defect
 §8.12.13 C-12 recorded; this is that round.

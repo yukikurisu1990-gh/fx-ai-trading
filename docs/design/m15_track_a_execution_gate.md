@@ -540,18 +540,30 @@ not replace the gate-6 source-contamination audit Track B still needs.
 
 ## 12. Governance propagation — done, and not done
 
-**`GOVERNANCE_PROPAGATION_IS_NOT_COMPLETE_AT_THIS_HEAD`** — and an earlier
-revision of PR #455 replaced this token with a completion claim, which two
-review roles refuted item by item. The claim is **withdrawn**; the token stands.
+**`GOVERNANCE_PROPAGATION_COMPLETE_AT_THIS_HEAD`** — and this is the second
+time PR #455 has made that claim, so the difference matters.
 
-C-10 makes completeness a predicate on **named files**. P-10 and P-13 name
-`m15_minimum_research_gate.md` and the gate-4 design audit, and PR #455 does not
-touch either: the MRG still carries `APPROVAL_IDENTIFIER_PENDING_UNTIL_MERGE`
-and `…NOT_YET_CITABLE_AS_AUTHORITY`, and the design audit's §1a still reads
-"(recorded, **provisional**) … this section carries no approval identifier".
-Recording a discharge in a *different* file is exactly what "a predicate on named
-files, not a self-assessment" refuses — and the withdrawn revision said so in
-its own sentence while doing it.
+The **first** attempt wrote the discharge for P-10 and P-13 into *this* file
+while the files those items name were untouched. Two review roles refuted it
+item by item, and they were right: "a predicate on **named files**, not a
+self-assessment" refuses exactly that, and the withdrawn revision said so in its
+own sentence while doing it.
+
+The discharge is now **in the named files**:
+
+* **P-10** — `docs/design/m15_minimum_research_gate.md` §8.13's approval line
+  carries PR #451's approved head `2cdb687` and merge commit `4f45515`, and
+  `THE_TWO_TRACK_SECTIONS_ARE_RULED_AND_CITABLE_AS_AUTHORITY_FROM_MERGE_4F45515`
+  supersedes the pending token wherever it stood;
+* **P-13** — `docs/design/m15_first_cost_hurdle_aware_design_audit_fable5.md`
+  §1a carries an approval identifier (PR #455) and now **rules** the scope
+  reading, with `P_13_DISCHARGED_AT_PR_455`. Its T-3 row is corrected in the
+  same edit, because D-3 found that row's classification inverted prereg §6's
+  timing;
+* **P-5** — the playbook's §1 gate table, rebuilt in this PR.
+
+`grep` for the pending tokens in the MRG now returns only the three lines that
+record them as *superseded*.
 
 §8.12.13 C-10 makes completeness "a predicate on named files, not a
 self-assessment", holding **only on a named master SHA**. When this section was

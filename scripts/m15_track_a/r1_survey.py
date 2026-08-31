@@ -34,18 +34,23 @@ Where each number comes from
   output, because a survey that hides which of two admissible choices it made is
   not a survey.
 
-What T-3 does here
-------------------
+What T-3 does **not** do here
+-----------------------------
 
-`T_3_IS_A_TRACK_A_R1_MEASUREMENT_OBLIGATION_ITS_CONSEQUENCE_BINDS_LATER_GATES`
-— see `docs/governance/m15_track_a_t3_stage_ruling.md`. R1 **measures and
-reports** the ratio distribution; R1 does not decide anything with it. The
-numerator is the ruled one: the **pre-floor** barrier ``1.5 × ATR14_M15``,
-because the post-floor barrier is defined as ``max(…, 3.0 × cost)`` and its
-ratio to cost is therefore ``≥ 3.0`` identically — a test that cannot fail is
-not the test the contract describes as "M15 must demonstrably escape the M1 cost
-regime". Both alternatives are reported alongside it, so the ruling can be
-re-read against the numbers rather than argued about in the abstract.
+`T_3_IS_A_LATER_STAGE_DUTY_UNDER_THE_DECLARED_CANDIDATES_FROZEN_COST_TABLE` —
+see `docs/governance/m15_track_a_t3_stage_ruling.md`. §7's stage table lists the
+T-3 median under R1, and **D-3 corrects that classification**: prereg §6 says
+"**before implementation**", §8.11.12 A-3 records that Track A *is* where the
+cost table gets written for the first time, so calling the T-3 measurement a
+Track A surface **inverts** prereg §6's timing — "until it is amended … prereg
+§6 governs". D-4 then fixes where it does belong:
+`THE_T_3_RATIO_MEASUREMENT_IS_A_DUTY_UNDER_THE_DECLARED_CANDIDATES_COST_TABLE_NOT_A_PERMISSION`.
+
+So this module computes **no T-3 status, applies no 3.0 threshold and reaches no
+verdict**. It reports the barrier/cost ratio distribution as an ordinary
+descriptive statistic, under all three candidate numerators, precisely so that
+the later stage — and the numerator ruling that stage still needs — has the
+numbers without R1 having pre-empted either.
 """
 
 from __future__ import annotations
@@ -56,15 +61,17 @@ from datetime import datetime
 from typing import Any, Final
 
 from scripts.m15_gate3a.aggregation import to_pips
-from scripts.m15_gate3a.calendar_build import (
-    is_event_eligible,
-    session_of,
-    validate_calendar_b,
-)
 from scripts.m15_gate3a.cost_schema import (
     EXECUTION_PADDING_PIP,
     FLAT_SLIPPAGE_CELL_PIP,
     SESSIONS_UTC,
+)
+from scripts.m15_gate3a.session_windows import (
+    COVERAGE_STATUS,
+    HOLIDAY_CONSEQUENCE,
+    HOLIDAY_STATUS,
+    is_event_eligible_window,
+    session_of,
 )
 from scripts.m15_track_a.derivation import DerivedM15
 
@@ -78,16 +85,13 @@ ELIGIBILITY_COST_MULTIPLE: Final[float] = 2.0
 #: Ruling 6, FROZEN.
 ATR_PERIOD: Final[int] = 14
 
-#: T-3's threshold, and it is a **reporting** threshold here, not a decision.
-T3_MEDIAN_RATIO_THRESHOLD: Final[float] = 3.0
-
 #: S-20a: which price series ATR is computed on is unregistered. Named, not hidden.
 ATR_PRICE_SERIES: Final[str] = "bid"
 ATR_SERIES_STATUS: Final[str] = "ATR_PRICE_SERIES_IS_AN_UNREGISTERED_RESEARCH_CHOICE_S_20A"
 
-#: The ruled numerator, and the two it was ruled against.
-T3_NUMERATOR: Final[str] = "pre_floor_tp"
-T3_NUMERATOR_VARIANTS: Final[tuple[str, ...]] = ("pre_floor_tp", "post_floor_tp", "post_floor_sl")
+#: The three readings of "barrier", reported side by side and **unranked**. Which
+#: one T-3 divides is not ruled, and R1 is not the stage that needs it ruled.
+BARRIER_VARIANTS: Final[tuple[str, ...]] = ("pre_floor_tp", "post_floor_tp", "post_floor_sl")
 
 OUTPUT_CLASSIFICATION: Final[str] = "NON_DECISION_BEARING_EXPLORATORY_ONLY"
 OUTPUT_CLASSIFICATION_SECONDARY: Final[str] = "RESEARCH_SCRATCH_NON_AUTHORITATIVE"
@@ -176,7 +180,7 @@ class R1Survey:
             "pair_coverage",
             "missingness",
             "descriptive_statistics",
-            "barrier_cost_ratio_distribution_and_median_t3",
+            "barrier_cost_ratio_distribution_descriptive_only",
             "eligible_bar_rate_per_pair_and_session",
             "per_pair_session_spread_distribution",
         )
@@ -206,9 +210,7 @@ class R1Survey:
         }
 
 
-def _session_spreads(
-    bars: list[dict[str, Any]], *, pair: str, calendar_b: dict[str, Any]
-) -> dict[str, list[float]]:
+def _session_spreads(bars: list[dict[str, Any]], *, pair: str) -> dict[str, list[float]]:
     by_session: dict[str, list[float]] = {name: [] for name in SESSIONS_UTC}
     for bar in bars:
         moment: datetime = bar["ts"]
@@ -220,7 +222,7 @@ def _session_spreads(
             # incomplete buckets entered the eligible population, the spread
             # median and the T-3 ratio. Measured by a review role.
             continue
-        if not is_event_eligible(moment, calendar_b):
+        if not is_event_eligible_window(moment):
             continue
         by_session[session_of(moment)].append(to_pips(bar["ask_c"] - bar["bid_c"], pair))
     return by_session
@@ -229,8 +231,6 @@ def _session_spreads(
 def survey(
     derived: DerivedM15,
     *,
-    calendar_b: dict[str, Any],
-    calendar_a_authority: str | None = None,
     containment_status: str | None = None,
     breadth_k: int | None = None,
 ) -> R1Survey:
@@ -246,14 +246,13 @@ def survey(
             f"route, got {type(derived).__name__}."
         )
 
-    calendar_b = validate_calendar_b(calendar_b, expected_epoch=derived.epoch)
     pairs = tuple(sorted(derived.bars_by_pair))
     schema: dict[str, Any] = {}
     coverage: dict[str, Any] = {}
     spread_distribution: dict[str, Any] = {}
     cost_table: dict[str, Any] = {}
     eligibility: dict[str, Any] = {}
-    ratios_by_variant: dict[str, list[float]] = {name: [] for name in T3_NUMERATOR_VARIANTS}
+    ratios_by_variant: dict[str, list[float]] = {name: [] for name in BARRIER_VARIANTS}
     per_pair_ratio_median: dict[str, float | None] = {}
 
     for pair in pairs:
@@ -272,7 +271,7 @@ def survey(
             "gap_report": report,
         }
 
-        session_spreads = _session_spreads(bars, pair=pair, calendar_b=calendar_b)
+        session_spreads = _session_spreads(bars, pair=pair)
         spread_distribution[pair] = {
             session: {
                 "n": len(values),
@@ -303,7 +302,7 @@ def survey(
             # ``wilder_atr``.
             if not bar.get("complete_bucket"):
                 continue
-            if not is_event_eligible(moment, calendar_b):
+            if not is_event_eligible_window(moment):
                 continue
             session = session_of(moment)
             seen[session] += 1
@@ -321,7 +320,7 @@ def survey(
             }
             for name, numerator in variants.items():
                 ratios_by_variant[name].append(numerator / cost)
-            pair_ratios.append(variants[T3_NUMERATOR] / cost)
+            pair_ratios.append(variants["pre_floor_tp"] / cost)
 
         eligibility[pair] = {
             session: {
@@ -333,25 +332,23 @@ def survey(
         }
         per_pair_ratio_median[pair] = statistics.median(pair_ratios) if pair_ratios else None
 
-    ruled = ratios_by_variant[T3_NUMERATOR]
+    # Reported, unranked, with no threshold and no verdict. Which reading T-3
+    # divides is unruled, and R1 is not the stage that needs it ruled (D-3/D-4).
     barrier_cost_ratio = {
-        "numerator": T3_NUMERATOR,
-        "numerator_basis": "docs/governance/m15_track_a_t3_stage_ruling.md",
-        "threshold": T3_MEDIAN_RATIO_THRESHOLD,
-        "n_eligible": len(ruled),
-        "median": statistics.median(ruled) if ruled else None,
-        "mean": statistics.fmean(ruled) if ruled else None,
-        "p10": _quantile(ruled, 0.10),
-        "p90": _quantile(ruled, 0.90),
-        "median_by_pair": per_pair_ratio_median,
-        "variants_reported_for_the_ruling": {
+        "status": "REPORTED_AS_A_DESCRIPTIVE_STATISTIC_NO_T3_VERDICT_IS_REACHED_HERE",
+        "t3_stage": "T_3_IS_A_LATER_STAGE_DUTY_UNDER_THE_DECLARED_CANDIDATES_FROZEN_COST_TABLE",
+        "numerator_ruling": "UNRULED_ALL_THREE_READINGS_REPORTED",
+        "median_by_pair_pre_floor_tp": per_pair_ratio_median,
+        "variants": {
             name: {
                 "n": len(values),
                 "median": statistics.median(values) if values else None,
+                "mean": statistics.fmean(values) if values else None,
+                "p10": _quantile(values, 0.10),
+                "p90": _quantile(values, 0.90),
             }
             for name, values in ratios_by_variant.items()
         },
-        "t3_status": _t3_status(ruled),
     }
 
     return R1Survey(
@@ -369,38 +366,29 @@ def survey(
         barrier_cost_ratio=barrier_cost_ratio,
         accounting={
             "breadth_k": breadth_k,
-            "calendar_a_authority": calendar_a_authority or derived.calendar_authority,
-            "calendar_a_content_digest": derived.calendar_content_digest,
-            "calendar_b_holiday_status": calendar_b.get("holiday_list_status"),
+            "coverage_status": COVERAGE_STATUS,
+            "holiday_status": HOLIDAY_STATUS,
+            "holiday_consequence": HOLIDAY_CONSEQUENCE,
             "atr_price_series": ATR_PRICE_SERIES,
             "atr_price_series_status": ATR_SERIES_STATUS,
         },
         containment={"status": containment_status},
         notes=(
-            "R1 measures; R1 decides nothing. The T-3 consequence binds a later gate.",
-            "Calendar B's holiday list is empty, so the eligible-bar rate is OVERSTATED.",
+            "R1 measures; R1 decides nothing.",
+            "T-3 is not measured here: it is a later-stage duty under the declared "
+            "candidate's frozen cost table (D-3/D-4).",
+            COVERAGE_STATUS,
+            HOLIDAY_STATUS + " -- " + HOLIDAY_CONSEQUENCE,
             ATR_SERIES_STATUS,
         ),
     )
-
-
-def _t3_status(ratios: list[float]) -> str:
-    """A **reported** status, never a verdict this stage is entitled to reach."""
-    if not ratios:
-        return "T3_NOT_MEASURABLE_NO_ELIGIBLE_BARS"
-    median = statistics.median(ratios)
-    if median < T3_MEDIAN_RATIO_THRESHOLD:
-        return "T3_MEDIAN_ELIGIBLE_BARRIER_COST_RATIO_BELOW_3_0_REPORTED_TO_THE_LATER_GATE"
-    return "T3_MEDIAN_ELIGIBLE_BARRIER_COST_RATIO_AT_OR_ABOVE_3_0_REPORTED_TO_THE_LATER_GATE"
 
 
 __all__ = [
     "ATR_PERIOD",
     "ATR_PRICE_SERIES",
     "ATR_SERIES_STATUS",
-    "T3_MEDIAN_RATIO_THRESHOLD",
-    "T3_NUMERATOR",
-    "T3_NUMERATOR_VARIANTS",
+    "BARRIER_VARIANTS",
     "R1Survey",
     "R1SurveyError",
     "survey",

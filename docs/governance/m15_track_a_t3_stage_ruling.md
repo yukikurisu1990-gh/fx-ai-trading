@@ -1,7 +1,7 @@
-# T-3 — which stage owns it, and what its numerator is
+# T-3 — which stage owns it
 
-**Status:** `T_3_IS_A_TRACK_A_R1_MEASUREMENT_OBLIGATION_ITS_CONSEQUENCE_BINDS_LATER_GATES`
-· `T_3_NUMERATOR_RULED_PRE_FLOOR_ATR_BARRIER`
+**Status:** `T_3_IS_A_LATER_STAGE_DUTY_UNDER_THE_DECLARED_CANDIDATES_FROZEN_COST_TABLE`
+· `T_3_NUMERATOR_NOT_RULED_HERE_BECAUSE_R1_IS_NOT_THE_STAGE_THAT_NEEDS_IT`
 
 **Approval identifier: PR #455.** Recorded 2026-08-31 as an explicit human +
 ChatGPT ruling. Before that PR merges this record is not citable authority; the
@@ -12,117 +12,117 @@ merge is what confers it.
 
 ---
 
-## 1. Why a ruling was needed at all
+## 1. What this ruling replaces
 
-The first Track A R1 execution command had to be refused, and one of the reasons
-was that **T-3 could not be computed as specified**. Two questions were open and
-neither had a committed answer.
+An earlier revision of this document put T-3's **measurement** in R1 and ruled a
+numerator. A review role showed the reconstruction was not honest: it quoted
+playbook §6 up to the clause before the one that contradicted it, cited §8.12.13
+for a passage that is in §8.12.10, and presented a conflict that the committed
+text had already resolved the other way. That revision is **withdrawn in full**
+and replaced by what the authorities actually say.
 
-**Which stage owns the measurement.** §7's stage table puts it in R1 —
-"the distribution of `barrier_distance / cost` on eligible bars and its median
-(T-3)" — and §5.1 agrees: it "is measured **on design data**, needs **no model**,
-and is the direct test of the stated reason for preferring M15 to M1 — so it
-belongs in R1, not after a model exists". But **D-3** observes that prereg §6
-says *before implementation*, adds prereg §6 to the propagation list as **P-15**,
-and holds that "until it is amended … prereg §6 governs"; and **D-4** places the
-measurement under "the **declared candidate's frozen cost table**", before
-candidate pre-registration completes. The playbook agrees with D-4: "from the §4
-derivation artifact under the declared candidate's frozen cost table".
+The question was also being answered on the wrong basis. The instruction for
+this round is explicit — decide **by T-3's intent and its authority, not by
+which reading is stricter** — and on that basis the authorities are not in
+conflict at all.
 
-**What the numerator is.** No committed source says. The design audit states
-both readings in one sentence — eligible TP distances are "**≥ 2×cost
-pre-floor** and **≥ 3×cost post-floor**" — and never says which one T-3 divides.
+## 2. Step 1 — the stage. **Not R1.**
 
-## 2. Step 1 — the stage. **R1 measures. A later gate decides.**
+§7's stage table lists "the distribution of `barrier_distance / cost` on eligible
+bars and its median (T-3)" under R1, and §2 says it "belongs in R1, not after a
+model exists". **§8.13.10's D-3 corrects that classification by name**, and D-4
+then fixes where the duty does sit.
 
-The two authorities are not actually in conflict once the *measurement* and the
-*consequence* are separated, and separating them is what §8.12.13's own
-classification already does:
+**D-3(1), verbatim:**
 
-> T-3's **measurement** is a Track A strategy surface, its **consequence** binds
-> gates 5→7, and a Track A measurement **fires** T-3's block while **not**
-> discharging playbook §6's checkbox.
+> **prereg §6 was quoted with "before implementation" removed.** Its text is:
+> "**before implementation**, the actual distribution of `barrier_distance /
+> cost` on design data must be derived and recorded". Since §8.11.12 A-3 records
+> that Track A is where the features, calibration, EV gate and cost table "**get
+> written for the first time**", Track A *is* implementation, and classifying the
+> measurement as a Track A surface **inverts** prereg §6's timing. prereg §6 is
+> added to propagation as **P-15**, and until it is amended
+> `WHERE_THIS_PACKET_AND_A_GOVERNANCE_DOCUMENT_DISAGREE_THE_GOVERNANCE_DOCUMENT_GOVERNS_UNTIL_PROPAGATED`
+> means **prereg §6 governs**.
 
-So:
+**D-4, verbatim:**
 
-* **R1 measures and reports** the `barrier_distance / cost` distribution on
-  eligible bars, and its median, over the authorised development corpus. It
-  reaches no verdict, blocks nothing, and discharges nothing. Its output is
-  `NON_DECISION_BEARING_EXPLORATORY_ONLY`, like every Track A output.
-* **The consequence — gate-7 execution authorisation BLOCKED pending a new human
-  + ChatGPT ruling — is not R1's to apply.** It binds gates 5→7, under the
-  declared candidate's frozen cost table, from the §4 derivation artifact. D-4
-  and the playbook describe *that* measurement, and this ruling does not move it.
-* **The two are different measurements of the same quantity**, taken at
-  different times under different cost tables, and the later one is the one with
-  consequences. A Track A number is not a substitute for it and may never be
-  cited as one.
+> **The measurement is therefore a duty, not a permission**: the ratio is
+> computed on the design span under the **declared candidate's frozen cost
+> table**, before candidate pre-registration completes, and the value is
+> committed. Whether that value may **discharge** playbook §6's checkbox stays
+> with P-14.
+> **`THE_T_3_RATIO_MEASUREMENT_IS_A_DUTY_UNDER_THE_DECLARED_CANDIDATES_COST_TABLE_NOT_A_PERMISSION`.**
 
-**What R1's number is for**, then: it is the early warning the §7 table wants —
-"M15 must demonstrably escape the M1 cost regime" is worth knowing *before* the
-programme spends R2–R4 on it. §7's own R5 rule uses it that way, as an
-**exploratory stop**, and calls it "T-3's own number, adopted here as an
-exploratory stop".
+The playbook agrees: its §6 item is satisfied "from the §4 derivation artifact
+under the declared candidate's frozen cost table".
 
-**Why this does not permanently block R1.** The brief is explicit — "T-3未解決を
-理由にR1全体を永久blockしない。stage ownershipを先に決める" — and the ownership
-question is now decided. R1 runs, measures and reports.
+**So T-3 is option B: a later-stage duty.** R1 has no frozen cost table — it is
+the stage that *measures the spreads the cost table will be built from* — so a
+T-3 value computed in R1 would be computed under a cost table that does not yet
+exist, which is exactly the timing inversion D-3 names.
 
-## 3. Step 2 — the numerator. **Pre-floor: `1.5 × ATR14_M15`.**
+**This is decided on intent, and the intent is served by it.** T-3 asks whether
+M15 "demonstrably escapes the M1 cost regime" for the thing that will actually
+be traded — a declared candidate under a frozen cost table. A number computed
+before either exists answers a different question, and would either fire a block
+on a figure the candidate does not use or fail to fire one it should.
 
-Ruling 6 FROZEN gives three candidate numerators:
+## 3. Step 2 — the numerator. **Not ruled, and R1 does not need it.**
+
+Under option B the numerator ruling belongs with the stage that owns the
+measurement. It is **not taken here**, and the reasons are worth recording so it
+is not re-litigated from scratch:
 
 | Reading | Numerator | Ratio on eligible bars |
 | --- | --- | --- |
-| **pre-floor TP** | `1.5 × ATR14_M15` | `≥ 2.0`, and free to be below 3.0 |
-| post-floor TP | `max(1.5 × ATR14_M15, 3.0 × cost)` | **`≥ 3.0` identically** |
-| post-floor SL | `max(1.0 × ATR14_M15, 2.0 × cost)` | `≥ 2.0` |
+| pre-floor TP | `1.5 × ATR14_M15` | `≥ 2.0`; fires below `ATR/cost = 2.0` |
+| post-floor TP | `max(1.5 × ATR14_M15, 3.0 × cost)` | **`≥ 3.0` identically — cannot fire** |
+| post-floor SL | `max(1.0 × ATR14_M15, 2.0 × cost)` | `≥ 2.0`; fires below `ATR/cost = 3.0` |
 
-**The post-floor TP reading is refused because it makes T-3 unfirable.** Its
-numerator is defined *in terms of cost*, so its ratio to cost cannot fall below
-`3.0` — the threshold T-3 tests against. A test whose result is fixed by its own
-definition is not the test the contract describes as "M15 must demonstrably
-escape the M1 cost regime, **not just claim to**". Circularity is the objection,
-not inconvenience.
+Two facts a later ruling should start from, both measured rather than argued:
 
-**The pre-floor TP reading is selected**, for three reasons that are all in the
-committed text:
+- **the post-floor TP reading cannot fire.** Its numerator is defined in terms of
+  cost, so its ratio to cost is `≥ 3.0` by construction and the `3.0` threshold
+  is unreachable. Any ruling that selects it is selecting a test with one
+  possible outcome;
+- **post-floor SL is the strictest reading that *can* fire**, and Ruling 6 names
+  `TP_dist` and `SL_dist` — the post-floor quantities — as "the spread-floored
+  barriers", while `1.5 × ATR14_M15` is not called a barrier anywhere in the
+  committed text. A review role raised both points and they stand unanswered.
 
-1. it is the quantity the **eligibility condition itself** uses —
-   `1.5 × ATR14_M15 ≥ 2.0 × cost` — so "eligible bars" and "the ratio on eligible
-   bars" are about the same number, and eligibility sets a floor of `2.0` that
-   T-3's `3.0` then tests against. The two rulings compose;
-2. it is the **attainable move**, which is the thing that either escapes the cost
-   regime or does not. A floor does not escape cost; it is made of cost;
-3. the design audit's own phrasing — "≥ 2×cost **pre-floor**" — is the reading
-   under which its sentence carries information.
+`T_3_NUMERATOR_REFERRED_TO_THE_STAGE_THAT_OWNS_THE_MEASUREMENT`.
 
-**The post-floor SL reading is not selected**, but it is not absurd, so R1
-reports it too.
+## 4. What R1 does instead
 
-**All three are reported.** `r1_survey` computes the ruled numerator *and* both
-alternatives, and puts all three medians in the survey record. A ruling that can
-be re-read against the numbers is one a later gate can revisit cheaply; one that
-discards the alternatives is not.
+R1 reports the `barrier_distance / cost` distribution **as an ordinary
+descriptive statistic**, under all three readings, with:
 
-## 4. What this ruling does not do
+- **no `3.0` threshold**,
+- **no T-3 status token**,
+- **no verdict**, and
+- an explicit `numerator_ruling: UNRULED_ALL_THREE_READINGS_REPORTED`.
 
-- it does **not** move D-4's or the playbook's later measurement, or weaken it;
-- it does **not** let a Track A number discharge playbook §6's checkbox, fire
-  the gate-5→7 block, or appear in a formal decision;
-- it does **not** freeze the numerator for that later measurement. If the
-  candidate's frozen cost table makes a different reading correct there, this
-  ruling is silent on it — the three medians are reported precisely so the
-  question can be reopened on evidence;
-- it does **not** resolve **S-20a**, which records that *which price series*
-  `ATR14_M15` is computed on is an `UNREGISTERED_RESEARCH_CHOICE`. R1 uses the
-  **bid** series and says so in its output
+A test asserts the survey record contains no `T3_MEDIAN…` token at all, so R1
+cannot quietly re-acquire the duty. Reporting the distribution is not the T-3
+measurement; it is the descriptive statistic §7 also asks R1 for, and it gives
+the later stage its numbers without pre-empting either ruling.
+
+## 5. What this ruling does not do
+
+- it does **not** weaken T-3. The block still fires, at the stage that owns it,
+  under the cost table the contract names;
+- it does **not** decide P-14 (which derivation discharges playbook §6's
+  checkbox) or the numerator;
+- it does **not** resolve **S-20a** — which price series `ATR14_M15` uses is an
+  `UNREGISTERED_RESEARCH_CHOICE`. R1 uses **bid** and says so in its output
   (`ATR_PRICE_SERIES_IS_AN_UNREGISTERED_RESEARCH_CHOICE_S_20A`). Naming an
-  unregistered choice is not registering it.
+  unregistered choice is not registering it;
+- it does **not** touch
+  `C_MAP_PREDICTED_DATE_COUNT_VS_OOS_SLICE_QUARANTINE_UNRESOLVED_REFERRED`.
 
-## 5. Non-authorisation statement
+## 6. Non-authorisation statement
 
-This document rules on stage ownership and a numerator. It authorises no read,
-no derivation, no training, no evaluation and no execution.
-`NO_REAL_DATA_READ_PERFORMED`; `NO_EXECUTION_PERFORMED`;
-`PRODUCTION_READINESS_NOT_CLAIMED`.
+This document rules on stage ownership. It authorises no read, no derivation, no
+training, no evaluation and no execution. `NO_REAL_DATA_READ_PERFORMED`;
+`NO_EXECUTION_PERFORMED`; `PRODUCTION_READINESS_NOT_CLAIMED`.

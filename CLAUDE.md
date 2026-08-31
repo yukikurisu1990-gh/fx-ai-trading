@@ -49,7 +49,7 @@ otherwise.
 - **Track B — Formal Confirmation.** One declared candidate, frozen in every
   respect, run **once** on unseen forward data. Not a place to redesign.
 
-**Track A R1's machinery exists; its prerequisites do not all hold.** Do not read this as a
+**Track A R1 is implementation-ready; only the two grants are missing.** Do not read this as a
 snapshot — evaluate it:
 
 0. **PR #451 approved and merged** — done, `4f45515` (2026-08-30). §8.11–§8.13
@@ -58,9 +58,9 @@ snapshot — evaluate it:
    are discharged.
 1. `TRACK_A_EXECUTION_REQUIRES_GOVERNANCE_PROPAGATION_COMPLETE` — the
    **P-1 … P-15** predicate, true **on a named master SHA** (§8.12.13 C-10).
-   **Still open.** PR #455 earned P-5; **P-10 and P-13 are not done** — the
-   named files still carry `APPROVAL_IDENTIFIER_PENDING_UNTIL_MERGE` and
-   "(recorded, provisional)". The per-item table is
+   **Discharged at PR #455, in the named files** — P-5 in the playbook's §1
+   gate table, **P-10** in the MRG's §8.13 approval line (`4f45515`), **P-13**
+   in the gate-4 design audit's §1a. The per-item table is
    `docs/design/m15_track_a_execution_gate.md` §12. It is a predicate on named
    files, never a self-assessment — **and on 2026-08-31 an execution command
    arrived while it was false and nobody had evaluated it, then a remediation PR

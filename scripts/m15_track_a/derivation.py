@@ -68,7 +68,6 @@ convention:
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import datetime, timedelta
 from typing import Any, Final
 
 from scripts.m15_gate3a.aggregation import (
@@ -76,13 +75,9 @@ from scripts.m15_gate3a.aggregation import (
     FULL_BUCKET_SOURCE_BARS,
     aggregate_m15,
 )
-from scripts.m15_gate3a.calendar_build import (
-    calendar_error_type,
-    is_validated_calendar,
-    validated_calendar_a,
-)
 from scripts.m15_gate3a.derivation_containment import authorised_derivation_window
 from scripts.m15_gate3a.pair_authority import PairAuthorityError, canonical_pair
+from scripts.m15_gate3a.session_windows import COVERAGE_STATUS
 from scripts.m15_track_a import authorization, isolation, seen_ledger
 from scripts.m15_track_a.identity import RunIdentity
 from scripts.m15_track_a.read_route import (
@@ -140,7 +135,6 @@ class DerivationRequest:
 
     read_request: ReadRequest
     read: HistoricalRead
-    calendar_a: Any
 
     @property
     def bucket_minutes(self) -> int:
@@ -167,8 +161,7 @@ class DerivedM15:
     epoch: str
     span_start_utc: str
     span_end_utc: str
-    calendar_authority: str
-    calendar_content_digest: str
+    coverage_status: str
     bars_by_pair: dict[str, list[dict[str, Any]]]
     gap_reports: dict[str, dict[str, Any]]
 
@@ -188,8 +181,7 @@ class DerivedM15:
             "epoch": self.epoch,
             "span_start_utc": self.span_start_utc,
             "span_end_utc": self.span_end_utc,
-            "calendar_authority": self.calendar_authority,
-            "calendar_content_digest": self.calendar_content_digest,
+            "coverage_status": self.coverage_status,
             "bars_by_pair": {pair: len(bars) for pair, bars in self.bars_by_pair.items()},
             "classification": self.classification,
             "classification_secondary": self.classification_secondary,
@@ -226,60 +218,6 @@ def _pairs_to_derive(*, granted: tuple[str, ...], requested: tuple[str, ...]) ->
     if not chosen:
         raise DerivationRouteError("Track A derivation refused: no pair to derive.")
     return tuple(chosen)
-
-
-def expected_minutes_for(calendar: Any, pair: str) -> frozenset[datetime]:
-    """Calendar A's expected **M15 slots**, as the expected **M1 minutes** they contain.
-
-    Two granularities meet here and they are not the same authority spelled
-    differently. D-6's artifact declares ``expected_m15_slots`` — bucket starts —
-    because slot membership is what a market calendar decides. ``aggregate_m15``
-    wants ``expected_minutes``: the minute-level source authority its accounting
-    identity is checked against (``expected == usable + absent + rejected``).
-
-    The expansion is total and deterministic — each expected slot contributes
-    exactly ``BUCKET_MINUTES`` consecutive minutes — so it introduces no
-    judgement and no boundary. It is written here, in the authorised route,
-    rather than in the calendar module, because it is a statement about what the
-    *aggregator* consumes, not about what the market calendar declares.
-    """
-    minutes: set[datetime] = set()
-    for slot in calendar.expected_slots(pair):
-        for offset in range(BUCKET_MINUTES):
-            minutes.add(slot + timedelta(minutes=offset))
-    return frozenset(minutes)
-
-
-def _validated_calendar(calendar_a: Any, *, epoch: str) -> Any:
-    """Calendar A, validated for this epoch, or refuse.
-
-    An already-validated record is accepted so a caller that validated once does
-    not validate twice; anything else goes through ``validate_calendar``, which
-    is the only thing that mints one.
-    """
-    if calendar_a is None:
-        raise DerivationRouteError(
-            "Track A derivation refused: no Calendar A supplied. The expected-slot set is "
-            "the coverage authority and is never inferred from the data (PR #444 D-6), so a "
-            "derivation without it would produce coverage accounting with no authority."
-        )
-    if is_validated_calendar(calendar_a):
-        validated = calendar_a
-    else:
-        try:
-            validated = validated_calendar_a(calendar_a, expected_epoch=epoch)
-        except calendar_error_type() as exc:
-            raise DerivationRouteError(
-                f"Track A derivation refused: Calendar A did not validate for epoch "
-                f"{epoch!r}: {exc}"
-            ) from exc
-    if validated.target_epoch != epoch:
-        raise DerivationRouteError(
-            f"Track A derivation refused: Calendar A targets {validated.target_epoch!r} and "
-            f"the read is {epoch!r}. The expected slot set of one epoch is not evidence "
-            "about another."
-        )
-    return validated
 
 
 def derive_m15(
@@ -364,8 +302,6 @@ def derive_m15(
             f"{read_request.span_end_utc}."
         )
 
-    calendar = _validated_calendar(request.calendar_a, epoch=request.read.epoch)
-
     bars_by_pair: dict[str, list[dict[str, Any]]] = {}
     gap_reports: dict[str, dict[str, Any]] = {}
     with authorised_derivation_window():
@@ -377,11 +313,16 @@ def derive_m15(
                     "the grant names. A partial derivation reported as a whole one is how a "
                     "coverage figure stops meaning anything."
                 )
-            bars, report = DELEGATE(
-                rows,
-                pair=pair,
-                expected_minutes=expected_minutes_for(calendar, pair),
-            )
+            # ``expected_minutes=None`` **deliberately**, and the consequence
+            # is recorded rather than hidden. D-6's coverage authority is an
+            # approved calendar artifact;
+            # `PRE_CONTINUATION_CALENDAR_ARTIFACT_APPROVAL_REQUIRED` is open,
+            # D-6 forbids an implementer authoring one, and omega-12 forbids
+            # Track A authoring market hours. So the aggregator's
+            # calendar-derived accounting comes back ``None`` -- which is what
+            # it is -- and R1 reports observed structure as a declared-label
+            # diagnostic rather than a coverage figure with no authority.
+            bars, report = DELEGATE(rows, pair=pair, expected_minutes=None)
             bars_by_pair[pair] = bars
             gap_reports[pair] = report
 
@@ -391,8 +332,7 @@ def derive_m15(
         epoch=request.read.epoch,
         span_start_utc=request.read.span_start_utc,
         span_end_utc=request.read.span_end_utc,
-        calendar_authority=calendar.authority,
-        calendar_content_digest=calendar.content_digest,
+        coverage_status=COVERAGE_STATUS,
         bars_by_pair=bars_by_pair,
         gap_reports=gap_reports,
     )
@@ -410,5 +350,4 @@ __all__ = [
     "DerivationRouteError",
     "DerivedM15",
     "derive_m15",
-    "expected_minutes_for",
 ]

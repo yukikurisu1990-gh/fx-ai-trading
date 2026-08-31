@@ -1,157 +1,163 @@
-# R1 enablement — what this work could not decide
+# R1 enablement — the five referrals, closed
 
-**Status:** `R1_ENABLEMENT_REFERRALS_OPEN_NOT_RULED`
+**Status:** `R1_ENABLEMENT_REFERRALS_CLOSED_BY_AUTHORITY`
 
-**Approval identifier: PR #455.** This document **rules nothing**. It records
-questions the enablement work ran into, each of which needs a human + ChatGPT
-decision, and it exists because an earlier revision of that work answered two of
-them on its own authority and had to be reverted.
+**Approval identifier: PR #455.** Recorded 2026-08-31 as an explicit human +
+ChatGPT decision round. Before that PR merges this record is not citable
+authority; the merge is what confers it.
 
 **Always-binding:** `NO_REAL_DATA_READ_PERFORMED` · `NO_EXECUTION_PERFORMED` ·
 `PRODUCTION_READINESS_NOT_CLAIMED`
 
 ---
 
-## 1. Why this document exists
+## 0. How these were decided
 
-Three independent review roles returned **BLOCKED** on the first revision of
-PR #455. Two of their findings were the same shape, and it is a shape worth
-naming: **a session had resolved a conflict between two committed rules by
-picking one, and recorded the resolution as though it were settled.**
+Four of the five turned out **not to be open questions at all** — the committed
+authorities answer them, and the earlier revision of this work had answered them
+differently because it had not read far enough. That is the finding worth
+recording: three review roles blocked a PR whose defects were, in the main,
+**already ruled against in text that was merged months earlier**.
 
-- the reader-freedom pin's `calendar_authority` prohibition was deleted, citing
-  `docs/governance/m15_track_a_r1_enablement_ruling.md` §3 — **a file that did
-  not exist**;
-- `calendar_build` authored a market-hours boundary and called it "the committed
-  FX week", when no committed source states one and ω-12 forbids Track A from
-  authoring market hours at all.
+The instruction for this round was to decide by **authority and intent, not by
+which reading is stricter**. On that basis every one of these is settled by
+quotation.
 
-Both are reverted. What is left is the questions, written down as questions.
+## 1. Calendar A — **Route B.** No calendar is authored.
 
-## 2. `MARKET_HOURS_BOUNDARY_FOR_CALENDAR_A_REFERRED_TO_HUMAN_AND_CHATGPT`
+**Decision: `CALENDAR_A_NOT_AUTHORED_R1_USES_THE_DECLARED_LABEL_ROUTE`.**
 
-**The conflict.** Stage R1 must measure missingness and coverage (§7). PR #444's
-D-6 makes a committed calendar artifact the coverage authority and forbids
-inferring expected slots from data. But `m15_track_a_execution_gate.md` §8,
-merged at `37edbb0`, says the opposite about Track A specifically:
+Two merged authorities settle it, and they agree.
 
-> requiring it of Track A would **block exploration on an artefact that does not
-> exist, for no leakage reason**. The calendar reading is a **declared label**
-> from a closed set — **Track A may not author market hours (ω-12)**
+**PR #444's D-6**, which created the calendar contract in the first place:
 
-and `identity.py` has said the same in this package's own words throughout: "no
-approved calendar artifact exists and Track A may not invent one".
+> **This document deliberately invents no broker market-hours times.** No
+> open/close instants, no DST transition dates, no holiday list appear here **or
+> may be added by an implementer**.
 
-**What the first revision did, and why it was wrong.** It authored one:
-Sunday 22:00 UTC open, Friday 22:00 UTC close, labelled "committed". No
-committed source says that. Worse, a review role measured that it is **factually
-wrong** — OANDA's week opens at New York 17:00, which is `21:00Z` under EDT, and
-roughly 27 of the development corpus's 35 weeks are EDT. This repository's own
+An implementer may not add them. That is not a preference about strictness; it
+is a prohibition on the act, and the earlier revision performed exactly that act.
+
+**Execution gate §8**, merged at `37edbb0`:
+
+> The `ValidatedCalendar` artefact contract is unchanged for Track B; requiring
+> it of Track A would **block exploration on an artefact that does not exist,
+> for no leakage reason**. The calendar reading is a **declared label** from a
+> closed set — **Track A may not author market hours (ω-12)**
+
+So Track A does not need a `ValidatedCalendar`, and may not write one. The
+premise the earlier revision used to narrow the reader-freedom pin — that D-6
+*forces* Track A to reach the validator — is refuted by the sentence above.
+
+**What R1 does instead.** `derive_m15` passes `expected_minutes=None`, the
+aggregator's calendar-derived accounting comes back `None`, and R1 reports
+observed structure as
+`COVERAGE_AUTHORITY_ABSENT_R1_REPORTS_A_DECLARED_LABEL_DIAGNOSTIC`. The absent
+fields are reported **as absent** rather than filled in, and a test asserts that.
+
+**What was deleted.** `scripts/m15_gate3a/calendar_build.py` and both
+`artifacts/m15_calendar/*.json`. `scripts/m15_gate3a/session_windows.py`
+replaces it and carries only content that **is** committed — Ruling 4's frozen
+session partition and its frozen rollover window, both fixed UTC clock windows.
+
+**Not discharged:** `PRE_CONTINUATION_CALENDAR_ARTIFACT_APPROVAL_REQUIRED`. It
+is a real approval item and it stays open. R1 does not need it, because R1 does
+not claim the coverage authority.
+
+**Recorded for whoever eventually approves one.** The invented boundary was not
+only unauthorised, it was **wrong**: OANDA's week opens at New York 17:00, which
+is `21:00Z` under EDT, and roughly 27 of the development corpus's weeks are EDT.
+A review role measured a real read aborting on the first Sunday. Whoever writes
+the real calendar has to handle DST, and this repository's own
 `scripts/stage22_0a_scalp_label_design.py:247` counts `hour_utc == 21` as
-week-open on the same data. Under a real read, a Calendar A built from those
-constants **aborts the first Sunday**:
+week-open on the same data.
 
-```
-AggregationError: … 60 source minute(s) lie outside the expected-slot
-authority, earliest 2025-05-04T21:00:00+00:00
-```
+## 2. Calendar B / the holiday list — **not adopted; sent to the later stage.**
 
-The synthetic dry run could not catch it, because the fixture imported the same
-`in_fx_week` the calendar used. A calendar and its test agreeing with each other
-is not evidence about the market.
+**Decision: `RULING_4_HOLIDAY_LIST_IS_NOT_R1S_TO_SUPPLY_AND_NONE_IS_APPLIED`.**
 
-**The question, and it is genuinely open:**
+Ruling 4 makes the holiday / thin-liquidity exclusion calendar `[FIXED-AT design
+audit]`, before implementation. No design audit has fixed one, and D-6's
+sentence above forbids an implementer adding one. So there is no Calendar B
+object, no holiday list, and no illiquidity exclusion in R1.
 
-> Does Track A's R1 measure coverage against an **approved calendar artifact**
-> (which requires someone to approve a market-hours boundary, which ω-12 says
-> Track A may not author), or against the **declared label** §8 provides for
-> (in which case R1 reports an *observed-structure diagnostic* and says plainly
-> that the D-6 coverage authority does not exist)?
+**The rollover window is different and is kept.** `21:55–22:15 UTC` is stated
+numerically in Ruling 4, is a fixed UTC clock window, requires no market-hours
+inference and no DST logic. It is applied on **bucket overlap**, not bucket
+start — a start test excludes only the 22:00 bucket and leaves 21:45 covering
+21:55–21:59, which *narrows* a minimum Ruling 4 says may only widen.
 
-**What the code does until it is answered.** `calendar_build` still contains the
-arithmetic, and its output is labelled
-`CALENDAR_A_PROPOSED_NOT_APPROVED_MARKET_HOURS_REFERRED_TO_HUMAN_AND_CHATGPT`.
-The committed artifacts carry that status in a field a reader cannot miss.
-`validate_calendar`'s `approval` marker is stamped because the validator's
-vocabulary requires it, and that module's own docstring is the answer to what it
-means: it "neither performs nor evidences the approval".
+**Source authority:** prereg §5, Ruling 4 FROZEN.
+**Role:** event eligibility only, never slot membership.
+**Where used:** `session_windows.is_event_eligible_window`, called by
+`r1_survey` for the spread population and the eligible-bar rate.
+**Outcome-independent:** it is a function of the UTC clock alone; no price, no
+observation and no metric reaches it.
 
-**`PRE_CONTINUATION_CALENDAR_ARTIFACT_APPROVAL_REQUIRED` is not discharged by
-this work**, and nothing here claims it is.
+**The consequence of the empty holiday list, stated rather than implied:** no
+date is excluded for illiquidity, so the **eligible-bar rate is overstated** and
+thin sessions remain in the barrier/cost population, which pushes that ratio's
+median **down**. Carried in the survey output as `HOLIDAY_STATUS` and
+`HOLIDAY_CONSEQUENCE`.
 
-## 3. `TRACK_A_COST_SCHEMA_IMPORT_NARROWING_PROPOSED_NOT_RULED`
+## 3. T-3 — **option B.** A later-stage duty.
 
-`scripts.m15_gate3a.cost_schema` was removed from `TRACK_A_FORBIDDEN_MODULES`
-and replaced by a three-symbol entry: `EXECUTION_PADDING_PIP`,
-`FLAT_SLIPPAGE_CELL_PIP`, `SESSIONS_UTC` — Ruling 5's two frozen cost pads and
-Ruling 4's frozen session partition. `validate_cost_table` and the rest of the
-module stay unreachable.
+**Decision:
+`T_3_IS_A_LATER_STAGE_DUTY_UNDER_THE_DECLARED_CANDIDATES_FROZEN_COST_TABLE`**,
+ruled in full in `docs/governance/m15_track_a_t3_stage_ruling.md`.
 
-**Why it looks defensible.** R1 must report a per-pair × session spread
-distribution and the cost that follows from it. The alternative is restating
-`0.3`, `0.5` and the three session windows inside Track A, which creates a
-second authority for numbers the contract froze — the "pip authority 100×"
-defect in a new place.
+D-3 records that classifying the measurement as a Track A surface **inverts**
+prereg §6's "before implementation" timing, because Track A *is* implementation;
+D-4 fixes the duty under the declared candidate's frozen cost table. R1 has no
+frozen cost table — it is the stage that measures the spreads one will be built
+from — so a T-3 value computed there answers a different question.
 
-**Why it is a referral and not a ruling.** Deleting an entry from a committed
-prohibition is a change to a frozen contract, and CLAUDE.md's stop list names
-that explicitly. A session may propose it; a session may not take it.
+**The numerator is therefore not ruled**, and does not need to be for R1 to run:
+`T_3_NUMERATOR_REFERRED_TO_THE_STAGE_THAT_OWNS_THE_MEASUREMENT`. R1 reports all
+three readings as descriptive statistics with no threshold and no verdict, and a
+test asserts the survey record contains no T-3 token.
 
-`calendar_authority`'s prohibition is **restored** and needs no ruling: the
-validation moved to `calendar_build.validated_calendar_a`, on the gate-3a side
-of the boundary, so Track A receives a record it cannot mint and never imports
-the module.
+This closes both challenges the review roles raised — the numerator choice and
+the measurement/consequence separation — by removing the stage that made either
+question R1's.
 
-## 4. `RULING_4_HOLIDAY_THIN_LIQUIDITY_LIST_IS_EMPTY_BECAUSE_NO_DESIGN_AUDIT_HAS_FIXED_ONE`
+## 4. `cost_schema` import narrowing — **permitted. Implementation-only.**
 
-Ruling 4 makes the holiday / abnormal-thin-liquidity exclusion calendar
-`[FIXED-AT design audit]`, before implementation. No design audit has fixed one.
-Calendar B therefore carries an **empty** list.
+**Decision: `TRACK_A_COST_SCHEMA_IMPORT_NARROWING_IS_IMPLEMENTATION_ONLY_PERMITTED`.**
 
-The consequence, stated in the artifact and repeated here so it is not only in a
-JSON field: no date is excluded for illiquidity, so the **eligible-bar rate is
-overstated**, and thin sessions stay in the population the barrier/cost ratio is
-computed over — which pushes the median **down**, and is therefore conservative
-for T-3 and anti-conservative for the rate. Someone has to fix the list.
+The question asked was whether narrowing the *import surface* narrows or changes
+decision-bearing cost semantics or authority. It does not:
 
-## 5. `T_3_NUMERATOR_SELECTION_IS_CHALLENGED_AND_THE_CHALLENGE_IS_RECORDED`
+| | before | after |
+| --- | --- | --- |
+| what Track A may import | nothing | `EXECUTION_PADDING_PIP`, `FLAT_SLIPPAGE_CELL_PIP`, `SESSIONS_UTC` |
+| what the constants mean | Ruling 5 / Ruling 4 FROZEN | unchanged |
+| who may change them | a human + ChatGPT ruling | unchanged |
+| `validate_cost_table` | unreachable | unreachable |
+| any cost **decision** Track A can now take | none | none |
 
-`docs/governance/m15_track_a_t3_stage_ruling.md` selects the **pre-floor**
-numerator. A review role argued the selection is wrong in a specific, checkable
-way, and the objection is recorded rather than absorbed:
+The three symbols are frozen constants. The alternative — restating `0.3`, `0.5`
+and the three session windows inside Track A — creates a *second* authority for
+numbers the contract froze, which is the "pip authority 100×" defect in a new
+place. Narrowing the import surface is the conservative option, not the
+permissive one.
 
-- of the three readings, `post_floor_tp` is unfirable (ratio `≥ 3.0`
-  identically), `pre_floor_tp` fires below `ATR/cost = 2.0`, and
-  `post_floor_sl` fires below `ATR/cost = 3.0`. So **`post_floor_sl` is the
-  strictest firable reading, and the ruling chose the middle one**;
-- Ruling 6 names `TP_dist` and `SL_dist` — the **post-floor** quantities — as
-  the "spread-floored barriers". `1.5 × ATR14_M15` is not called a barrier
-  anywhere in the committed text;
-- CLAUDE.md: "the stricter reading of a research restriction wins".
+**`calendar_authority`'s prohibition is restored** and needed no ruling: nothing
+in Track A imports it any more, because Calendar A is gone.
 
-The counter-argument is in the ruling: a numerator defined in terms of cost
-cannot test whether the move escapes cost, and the eligibility condition uses
-`1.5 × ATR14_M15` directly. **The survey reports all three medians**, so whoever
-resolves this can read the numbers rather than the arguments.
+## 5. What is still open
 
-## 6. `T_3_CONSEQUENCE_SEPARATION_IS_CHALLENGED`
+- **`PRE_CONTINUATION_CALENDAR_ARTIFACT_APPROVAL_REQUIRED`** — §1. Not R1's.
+- **`T_3_NUMERATOR_REFERRED_TO_THE_STAGE_THAT_OWNS_THE_MEASUREMENT`** — §3.
+- **`RULING_4_HOLIDAY_LIST_IS_NOT_R1S_TO_SUPPLY_AND_NONE_IS_APPLIED`** — §2, for
+  the design audit that will fix the list.
+- **P-14** — which derivation discharges playbook §6's checkbox. Untouched.
+- **`C_MAP_PREDICTED_DATE_COUNT_VS_OOS_SLICE_QUARANTINE_UNRESOLVED_REFERRED`** —
+  out of R1 scope, untouched, and R1's implementation does not reach the c-map.
 
-The same review role read the T-3 stage ruling's separation of *measurement*
-from *consequence* as a loosening, citing six committed statements that a Track
-A measurement **fires** T-3's block — including prereg §13a, which is IN FORCE.
+## 6. Non-authorisation statement
 
-The ruling's position is that firing the block and *applying* it are different
-acts, and that R1 reports a status the later gate consumes. That reading may be
-right and it may be a distinction without a difference. **It is not a session's
-call**, the objection is concrete, and it is referred.
-
-Until it is resolved, `r1_survey` emits
-`T3_MEDIAN_ELIGIBLE_BARRIER_COST_RATIO_{BELOW,AT_OR_ABOVE}_3_0_REPORTED_TO_THE_LATER_GATE`
-and reaches no verdict, which is the conservative reading under either.
-
-## 7. Non-authorisation statement
-
-This document authorises nothing and rules nothing. It records five open
-questions and one restored prohibition.
-`NO_REAL_DATA_READ_PERFORMED`; `NO_EXECUTION_PERFORMED`;
+This document closes four referrals by quotation and records what remains open.
+It authorises no read, no derivation, no training, no evaluation and no
+execution. `NO_REAL_DATA_READ_PERFORMED`; `NO_EXECUTION_PERFORMED`;
 `PRODUCTION_READINESS_NOT_CLAIMED`.
