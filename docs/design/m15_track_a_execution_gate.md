@@ -538,11 +538,13 @@ consumer can tell which half carries the verdict.
 It is an **execution-containment** check, not a hostile-input audit, and it does
 not replace the gate-6 source-contamination audit Track B still needs.
 
-## 12. Governance propagation — done, and not done
+## 12. Governance propagation — complete at `fc3e0f8`
 
-**`GOVERNANCE_PROPAGATION_COMPLETE` — on this PR's merge, not before**, and
-`GOVERNANCE_PROPAGATION_IMPLEMENTATION_PENDING` governs until then, exactly as
-C-10 says.
+**`GOVERNANCE_PROPAGATION_COMPLETE`** — held from PR #455's merge as
+**`fc3e0f8`** on master, 2026-08-31. C-10 requires the predicate true "on a named
+master SHA"; that SHA is `fc3e0f8`, and this line records it rather than
+promising it. `GOVERNANCE_PROPAGATION_IMPLEMENTATION_PENDING` governed until
+that merge and no longer does.
 
 This is the third spelling PR #455 has tried, and the first two were both wrong
 in the way C-10 anticipates. The first wrote the discharges into a *different*
@@ -610,8 +612,10 @@ only works if someone evaluates it. The table below is now the evaluation.
 | P-14 | playbook §3 + §6 ratio checkbox | done |
 | P-15 | prereg §6 | done — same dependency on §13a being in force, and same correction |
 
-**The Two-Track authority is citable; the propagation is not complete.** Those
-are different claims and an earlier revision of this section ran them together.
+**The Two-Track authority is citable, and the propagation is now complete.**
+Those are different claims and an earlier revision of this section ran them
+together; a later one fixed the opening line and left this paragraph asserting
+the opposite, which an adversarial review role found at PR #456.
 §8.12.13 C-9 and the packet's own approval line carried
 `THE_TWO_TRACK_SECTIONS_ARE_RULED_AS_RECORDED_AND_NOT_YET_CITABLE_AS_AUTHORITY`
 and `APPROVAL_IDENTIFIER_PENDING_UNTIL_MERGE` with §8.11, §8.12 and §8.13 until
@@ -619,13 +623,16 @@ PR #451 was approved and merged. It was, as `4f45515` on 2026-08-30. Every
 propagated statement in this document rests on authority that is cited by a
 merge commit rather than by a promise.
 
-**What completeness would buy, when it is reached.** It discharges CLAUDE.md's
-Track A precondition 1 and nothing else. Precondition 2 (the execution gate passed on a
-named head) and precondition 3 (the derivation route decided in a diff) are
-separate, and **none of the three is a read authorisation**. Two explicit human +
-ChatGPT grants — one to read, one to derive — remain, and this document has said
-from its first draft that a contract permission is not an execution
-authorisation.
+**What completeness buys, now that it is reached.** It discharges CLAUDE.md's
+Track A precondition 1 and nothing else. Precondition 2 (the execution gate
+passed on a named head) and precondition 3 (the derivation route decided in a
+diff) are separate, and **none of the three is a read authorisation**. The two
+grants — one to read, one to derive — were recorded at PR #456
+(`docs/governance/m15_track_a_r1_dual_grants.md`) against `fc3e0f8` and
+fingerprint `e43583e0…`. This document has said from its first draft that a
+contract permission is not an execution authorisation, and that still holds: no
+read has been performed, and the instruction that produced those grants directed
+that nothing be executed.
 
 ## 13. Independent review of this head
 

@@ -49,8 +49,8 @@ otherwise.
 - **Track B — Formal Confirmation.** One declared candidate, frozen in every
   respect, run **once** on unseen forward data. Not a place to redesign.
 
-**Track A R1 is implementation-ready; only the two grants are missing.** Do not read this as a
-snapshot — evaluate it:
+**Track A R1 is implementation-ready and both grants are now recorded; no read has
+been performed.** Do not read this as a snapshot — evaluate it:
 
 0. **PR #451 approved and merged** — done, `4f45515` (2026-08-30). §8.11–§8.13
    are citable authority; `APPROVAL_IDENTIFIER_PENDING_UNTIL_MERGE` and
@@ -58,9 +58,12 @@ snapshot — evaluate it:
    are discharged.
 1. `TRACK_A_EXECUTION_REQUIRES_GOVERNANCE_PROPAGATION_COMPLETE` — the
    **P-1 … P-15** predicate, true **on a named master SHA** (§8.12.13 C-10).
-   **Discharged at PR #455, in the named files** — P-5 in the playbook's §1
-   gate table, **P-10** in the MRG's §8.13 approval line (`4f45515`), **P-13**
-   in the gate-4 design audit's §1a. The per-item table is
+   **Discharged at PR #455, in the named files, and true on master `fc3e0f8`** —
+   P-5 in the playbook's §1 gate table, **P-10** on all eight uppercase-`RULED`
+   MRG sections (§8.9's heading spells it lowercase and carries no identifier;
+   if C-9 is read case-insensitively that is a ninth section and the predicate
+   is not yet true), **P-13** in the gate-4 design audit's §1a. The per-item
+   table is
    `docs/design/m15_track_a_execution_gate.md` §12. It is a predicate on named
    files, never a self-assessment — **and on 2026-08-31 an execution command
    arrived while it was false and nobody had evaluated it, then a remediation PR
@@ -70,11 +73,30 @@ snapshot — evaluate it:
 3. The derivation route decided **in a diff** — done, and it now has a **body**
    (PR #455). `aggregate_m15` refuses real rows outside it.
 
-**What is actually left is two grants, and neither is a session's to issue:** an
-explicit human + ChatGPT `track_a_historical_read` grant, and a separate
-`track_a_m15_research_derivation` grant, both against the implementation
-fingerprint of a merged head. The grant recorded in PR #454 is **invalid** — the
-enablement work moved the fingerprint, by design.
+**Both grants were recorded at PR #456** —
+`docs/governance/m15_track_a_r1_dual_grants.md`: a `track_a_historical_read`
+grant and a separate `track_a_m15_research_derivation` grant, over
+`2025-04-25 … 2025-12-28`, `PAIRS_20`, `M1`, against approved head `fc3e0f8` and
+measured fingerprint `e43583e0…`. The grant recorded in PR #454 is **invalid**
+— the enablement work moved the fingerprint, by design — and is left that way.
+
+**What is left is the run itself, and it is not a session's to start.** A
+real-data read is **Red**: it needs explicit human + ChatGPT approval *before it
+is run*, naming the operation, span, pairs, timeframe and approved head SHA.
+That is an act, not a document state, and no recorded grant, passed gate or
+fully-ticked checklist supplies it. The instruction that authorised these two
+grants directed in the same breath that nothing be executed, so R1 stands
+**authorised in scope and expressly withheld in execution**. Read
+`docs/governance/m15_audit_playbook.md` §5a before treating 15 of 15 as
+permission.
+
+**Two disclosed weaknesses in the grant binding**, found by review at PR #456 and
+not yet fixed, because fixing them moves the fingerprint and voids the grants:
+`containment` resolves *relative* imports against `scripts.m15_track_a` whatever
+package the file is in, so `scripts/m15_gate3a`'s own relative imports are
+dropped and the declared surface (26 files) is **not** the transitive closure
+(28); and `derive_m15` gates the declaration but not the rows, and does not pin
+the request type the way `read_historical` does.
 
 The apparatus for 1–3 is `scripts/m15_track_a/` and
 `docs/design/m15_track_a_execution_gate.md`; **building it is not passing the
