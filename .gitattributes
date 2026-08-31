@@ -1,0 +1,3 @@
+
+# Track A governance ledgers are hashed and compared byte-for-byte.
+artifacts/track_a_scratch/ledger/** -text

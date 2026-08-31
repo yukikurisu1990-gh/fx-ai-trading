@@ -4,10 +4,14 @@
 M15 bars for Track A, each with a cost:
 
   (i)   run the **committed** ``scripts.m15_gate3a.aggregation.aggregate_m15`` on
-        real rows — no code change and no refusal trips, because it is a pure
-        function over row dicts and ``assert_synthetic_only`` has no caller
-        outside its own test.  What has contained it is the absence of a reader
-        and its BLOCKED source audit;
+        real rows.  When this was written it added: "no code change and no
+        refusal trips … **what has contained it is the absence of a reader**".
+        **That sentence is now historical.** PR #453 supplied the reader, and a
+        review role showed the bypass was live: real rows could be read under a
+        valid *read* grant and aggregated without entering this route at all.
+        :mod:`scripts.m15_gate3a.derivation_containment` closes it — the
+        aggregator itself now refuses real rows outside the window this route
+        opens — so what contains arm (i) is a mechanism rather than an absence;
   (ii)  write a **second**, fenced research aggregator — the two-implementation
         structure that produced one identical weekend-gap defect twice;
   (iii) complete the source audit first — the cost the split exists to avoid.
@@ -36,11 +40,35 @@ authorisation, which names the operation and the head it is granted against, and
 by the output being `NON_DECISION_BEARING_EXPLORATORY_ONLY` — a Track A
 derivation is **not** the §4 artifact and may never be recorded as one.
 
-Like the read route, the body is absent
----------------------------------------
+What the body does
+------------------
 
-The gates are written and tested; the derivation itself raises.  A future
-implementing PR supplies the body and inherits every gate.
+Per pair, in the intersection of grant and request: hand the authorised M1 rows
+to the committed aggregator and keep the ``(bars, gap_report)`` pair it returns.
+Nothing else — no labels, no features, no ATR, no cost model, no eligibility.
+Those are R1's survey, and the survey is a separate module so that this route
+stays the one thing it is: the authorised way to turn M1 rows into M15 bars.
+
+**``expected_minutes`` is passed as ``None``, and that is a decision rather than
+an omission.** An earlier revision of this module required a Calendar A and
+refused without one. PR #444's D-6 forbids an implementer authoring market-hours
+times, DST transitions or a holiday list; the execution gate §8 says requiring a
+`ValidatedCalendar` of Track A "would block exploration on an artefact that does
+not exist, for no leakage reason"; and
+`PRE_CONTINUATION_CALENDAR_ARTIFACT_APPROVAL_REQUIRED` is open. So there is no
+approved calendar to pass, the aggregator's calendar-derived accounting comes
+back ``None``, and this route records
+``COVERAGE_AUTHORITY_ABSENT_R1_REPORTS_A_DECLARED_LABEL_DIAGNOSTIC`` so that the
+absence is reported rather than filled in.
+
+Two properties are worth naming because each is a refusal rather than a
+convention:
+
+* the pair list is the **intersection** of grant and request — narrowest wins,
+  as on the read route, which learned it twice;
+* the window around the delegate call is opened **after** every gate has passed.
+  Opening it is not an authorisation, and it is closed on the way out whether
+  the aggregation raised or returned.
 """
 
 from __future__ import annotations
@@ -53,9 +81,13 @@ from scripts.m15_gate3a.aggregation import (
     FULL_BUCKET_SOURCE_BARS,
     aggregate_m15,
 )
+from scripts.m15_gate3a.derivation_containment import authorised_derivation_window
+from scripts.m15_gate3a.pair_authority import PairAuthorityError, canonical_pair
+from scripts.m15_gate3a.session_windows import COVERAGE_STATUS
 from scripts.m15_track_a import authorization, isolation, seen_ledger
 from scripts.m15_track_a.identity import RunIdentity
 from scripts.m15_track_a.read_route import (
+    HistoricalRead,
     ReadRequest,
     assert_development_only,
     assert_span_admissible,
@@ -87,7 +119,9 @@ DELEGATE_AUDIT_STATUS: Final[str] = (
     "M15_AGGREGATION_DATASET_MACHINERY_SOURCE_AUDIT_BLOCKED_PENDING_TARGETED_FIXES"
 )
 
-NOT_IMPLEMENTED_TOKEN: Final[str] = "TRACK_A_M15_DERIVATION_NOT_IMPLEMENTED_NO_DATA_IS_DERIVED"
+#: Both Track A classifications, carried on every derivation result.
+OUTPUT_CLASSIFICATION: Final[str] = "NON_DECISION_BEARING_EXPLORATORY_ONLY"
+OUTPUT_CLASSIFICATION_SECONDARY: Final[str] = "RESEARCH_SCRATCH_NON_AUTHORITATIVE"
 
 
 class DerivationRouteError(RuntimeError):
@@ -96,9 +130,17 @@ class DerivationRouteError(RuntimeError):
 
 @dataclass(frozen=True)
 class DerivationRequest:
-    """One M1→M15 research derivation over a declared interval."""
+    """One M1→M15 research derivation over a declared interval.
+
+    Carries the :class:`HistoricalRead` rather than re-reading: a derivation
+    that read for itself would be a second read of the same interval under a
+    grant that authorises a derivation, which is the operation confusion this
+    whole split exists to prevent. The rows come from the authorised read; this
+    route only aggregates them.
+    """
 
     read_request: ReadRequest
+    read: HistoricalRead
 
     @property
     def bucket_minutes(self) -> int:
@@ -111,13 +153,86 @@ class DerivationRequest:
         return FULL_BUCKET_SOURCE_BARS
 
 
+@dataclass(frozen=True)
+class DerivedM15:
+    """What one authorised Track A derivation returns, and its classification.
+
+    Deliberately not a bare dict, for the reason :class:`HistoricalRead` is not:
+    the classification travels with the bars, so a downstream stage cannot pick
+    them up without it.
+    """
+
+    run_id: str
+    operation: str
+    epoch: str
+    span_start_utc: str
+    span_end_utc: str
+    coverage_status: str
+    bars_by_pair: dict[str, list[dict[str, Any]]]
+    gap_reports: dict[str, dict[str, Any]]
+
+    classification: str = OUTPUT_CLASSIFICATION
+    classification_secondary: str = OUTPUT_CLASSIFICATION_SECONDARY
+    not_the_section_4_artifact: str = NOT_THE_SECTION_4_ARTIFACT
+
+    @property
+    def bar_count(self) -> int:
+        return sum(len(bars) for bars in self.bars_by_pair.values())
+
+    def as_record(self) -> dict[str, Any]:
+        """Counts and identities only — never a bar, never a price."""
+        return {
+            "run_id": self.run_id,
+            "operation": self.operation,
+            "epoch": self.epoch,
+            "span_start_utc": self.span_start_utc,
+            "span_end_utc": self.span_end_utc,
+            "coverage_status": self.coverage_status,
+            "bars_by_pair": {pair: len(bars) for pair, bars in self.bars_by_pair.items()},
+            "classification": self.classification,
+            "classification_secondary": self.classification_secondary,
+            "not_the_section_4_artifact": self.not_the_section_4_artifact,
+        }
+
+
+def _pairs_to_derive(*, granted: tuple[str, ...], requested: tuple[str, ...]) -> tuple[str, ...]:
+    """The intersection of grant and request. Narrowest wins.
+
+    The read route learned this twice — coverage is *containment*, so a grant
+    may be wider than the request, and looping the **grant**'s pair list derives
+    pairs the declaration never covered. This route inherited the original
+    defect rather than the fix: a review role passed a one-pair request with a
+    two-pair grant and got two pairs back.
+    """
+    try:
+        granted_canonical = frozenset(canonical_pair(pair) for pair in granted)
+        requested_canonical = tuple(canonical_pair(pair) for pair in requested)
+    except PairAuthorityError as exc:
+        raise DerivationRouteError(f"Track A derivation refused: {exc}") from exc
+    chosen: list[str] = []
+    for pair in requested_canonical:
+        if pair in chosen:
+            raise DerivationRouteError(
+                f"Track A derivation refused: {pair} is named twice in the request."
+            )
+        if pair not in granted_canonical:
+            raise DerivationRouteError(
+                f"Track A derivation refused: {pair} is not in the grant, although the "
+                "coverage check passed. The request changed after it was checked."
+            )
+        chosen.append(pair)
+    if not chosen:
+        raise DerivationRouteError("Track A derivation refused: no pair to derive.")
+    return tuple(chosen)
+
+
 def derive_m15(
     request: DerivationRequest,
     identity: RunIdentity,
     *,
     grant: Any = None,
 ) -> object:
-    """The single Track A derivation route.  Gates, then raises NotImplementedError.
+    """The single Track A derivation route.
 
     The gates are the read route's, with the operation changed: a derivation is
     a distinct authorisation from a read, so a grant for one does not cover the
@@ -156,12 +271,76 @@ def derive_m15(
 
     seen_ledger.record_grant(checked, identity, route=SELECTED_ROUTE)
 
-    raise NotImplementedError(
-        f"{NOT_IMPLEMENTED_TOKEN}: every gate passed and nothing was derived. The selected "
-        f"route is {SELECTED_ROUTE!r}, delegating to {DELEGATE_QUALNAME} — whose audit status "
-        f"is {DELEGATE_AUDIT_STATUS}. Its output is "
-        f"NON_DECISION_BEARING_EXPLORATORY_ONLY and {NOT_THE_SECTION_4_ARTIFACT}. "
-        f"Run {identity.run_id!r}."
+    if type(request.read) is not HistoricalRead:
+        # Pinned exactly, and checked before anything is read off it. A missing
+        # read used to reach ``request.read.operation`` and escape as a bare
+        # AttributeError -- fail-closed by accident is not fail-closed, and an
+        # AttributeError walks straight past ``except DerivationRouteError``.
+        raise DerivationRouteError(
+            "Track A derivation refused: `read` must be exactly a HistoricalRead from the "
+            f"authorised read route, not a {type(request.read).__name__}. The derivation "
+            "aggregates rows that came through the gates; it does not fetch its own."
+        )
+    if request.read.operation != authorization.OPERATION_HISTORICAL_READ:
+        raise DerivationRouteError(
+            "Track A derivation refused: the supplied rows did not come from "
+            f"{authorization.OPERATION_HISTORICAL_READ}."
+        )
+    if request.read.timeframe != read_request.timeframe:
+        raise DerivationRouteError(
+            f"Track A derivation refused: the read is {request.read.timeframe} and the "
+            f"request names {read_request.timeframe}."
+        )
+    # The read's own span is **checked**, not inherited. ``HistoricalRead`` is a
+    # public frozen dataclass, so a hand-built one passed every gate and put its
+    # own span straight into the record: a review role recorded
+    # `1970-01-01 .. 2099-12-31` that way, and separately derived five days of
+    # bars under a one-day grant. Nothing new was read either time -- the defect
+    # is that the derivation's record disagreed with its own authorisation.
+    if not (
+        read_request.touched_start_utc <= request.read.span_start_utc
+        and request.read.span_end_utc <= read_request.span_end_utc
+    ):
+        raise DerivationRouteError(
+            f"Track A derivation refused: the read covers "
+            f"{request.read.span_start_utc}..{request.read.span_end_utc}, which is not "
+            f"inside the gated interval {read_request.touched_start_utc}.."
+            f"{read_request.span_end_utc}."
+        )
+
+    bars_by_pair: dict[str, list[dict[str, Any]]] = {}
+    gap_reports: dict[str, dict[str, Any]] = {}
+    with authorised_derivation_window():
+        for pair in _pairs_to_derive(granted=checked.pairs, requested=read_request.pairs):
+            rows = request.read.rows_by_pair.get(pair)
+            if rows is None:
+                raise DerivationRouteError(
+                    f"Track A derivation refused: the read carries no rows for {pair}, which "
+                    "the grant names. A partial derivation reported as a whole one is how a "
+                    "coverage figure stops meaning anything."
+                )
+            # ``expected_minutes=None`` **deliberately**, and the consequence
+            # is recorded rather than hidden. D-6's coverage authority is an
+            # approved calendar artifact;
+            # `PRE_CONTINUATION_CALENDAR_ARTIFACT_APPROVAL_REQUIRED` is open,
+            # D-6 forbids an implementer authoring one, and omega-12 forbids
+            # Track A authoring market hours. So the aggregator's
+            # calendar-derived accounting comes back ``None`` -- which is what
+            # it is -- and R1 reports observed structure as a declared-label
+            # diagnostic rather than a coverage figure with no authority.
+            bars, report = DELEGATE(rows, pair=pair, expected_minutes=None)
+            bars_by_pair[pair] = bars
+            gap_reports[pair] = report
+
+    return DerivedM15(
+        run_id=identity.run_id,
+        operation=authorization.OPERATION_M15_DERIVATION,
+        epoch=request.read.epoch,
+        span_start_utc=request.read.span_start_utc,
+        span_end_utc=request.read.span_end_utc,
+        coverage_status=COVERAGE_STATUS,
+        bars_by_pair=bars_by_pair,
+        gap_reports=gap_reports,
     )
 
 
@@ -169,10 +348,12 @@ __all__ = [
     "DELEGATE",
     "DELEGATE_AUDIT_STATUS",
     "DELEGATE_QUALNAME",
-    "NOT_IMPLEMENTED_TOKEN",
     "NOT_THE_SECTION_4_ARTIFACT",
+    "OUTPUT_CLASSIFICATION",
+    "OUTPUT_CLASSIFICATION_SECONDARY",
     "SELECTED_ROUTE",
     "DerivationRequest",
     "DerivationRouteError",
+    "DerivedM15",
     "derive_m15",
 ]

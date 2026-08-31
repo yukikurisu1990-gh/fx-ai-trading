@@ -145,8 +145,13 @@ class SeenDeclaration:
 
 
 def ledger_path() -> Path:
-    """The ledger's location beneath the Track A scratch root."""
-    return scratch.scratch_root() / LEDGER_FILENAME
+    """The seen-data ledger's location beneath the **committed** ledger root.
+
+    Moved out of the scratch root, which is gitignored: §8.13.5 item 5 requires
+    this file to be committed, and a review role showed the two requirements
+    were in direct contradiction. See ``scratch.LEDGER_ROOT_RELATIVE``.
+    """
+    return scratch.ledger_root() / LEDGER_FILENAME
 
 
 def declare(declaration: SeenDeclaration, identity: RunIdentity) -> Path:
@@ -175,7 +180,7 @@ def declare(declaration: SeenDeclaration, identity: RunIdentity) -> Path:
 
 def grant_ledger_path() -> Path:
     """Where the scope an approval was exercised at is recorded."""
-    return scratch.scratch_root() / GRANT_LEDGER_FILENAME
+    return scratch.ledger_root() / GRANT_LEDGER_FILENAME
 
 
 def record_grant(grant: Any, identity: RunIdentity, *, route: str) -> Path:

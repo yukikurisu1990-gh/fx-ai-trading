@@ -74,6 +74,10 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any, Final
 
+from scripts.m15_gate3a.derivation_containment import (
+    mark_real_rows_handed_out,
+    stamp_real_provenance,
+)
 from scripts.m15_gate3a.no_overlap import (
     DESIGN_END,
     DESIGN_START,
@@ -83,6 +87,7 @@ from scripts.m15_gate3a.no_overlap import (
     is_dead_window_instant,
 )
 from scripts.m15_gate3a.pair_authority import PairAuthorityError, canonical_pair
+from scripts.m15_gate3a.path_authority import PathAuthorityError, is_within
 from scripts.m15_track_a import (
     OUTPUT_CLASSIFICATION,
     OUTPUT_CLASSIFICATION_SECONDARY,
@@ -317,6 +322,24 @@ def source_path_for(pair: str) -> Path:
     )
 
 
+def is_committed_source(path: Path) -> bool:
+    """Whether a resolved source path sits under the committed data root.
+
+    The one place "is this real historical data?" is decided. It is a **path**
+    question rather than a caller-supplied flag, because a flag is something the
+    caller sets and the whole point of the containment is not to depend on the
+    caller. ``path_authority.is_within`` is the committed answer to Windows path
+    aliasing — UNC spellings, junctions and 8.3 short names — so a source
+    reached by an alias of ``data/`` is still real.
+    """
+    try:
+        return is_within(path, scratch.repo_root() / SOURCE_DIRECTORY_RELATIVE)
+    except PathAuthorityError:
+        # Unresolvable is treated as **real**. Fail-closed: the consequence of
+        # guessing "synthetic" is an unlatched process holding real rows.
+        return True
+
+
 def _parse_source_timestamp(text: Any) -> datetime:
     """One OANDA timestamp, as a tz-aware UTC datetime, or refuse.
 
@@ -542,6 +565,24 @@ def read_historical(
                     f"{SOURCE_DIRECTORY_RELATIVE}/. This route has one source and no "
                     "fallback; a missing file is not a reason to read a different one."
                 )
+            # Provenance is decided from **where the file is**, not from a
+            # caller's word for it: a source under the committed data root is
+            # real historical data, a source in a temporary tree is not. That is
+            # why every existing synthetic test keeps working unchanged while a
+            # genuine read latches the process.
+            real = is_committed_source(path)
+            if real:
+                # **Before the file is opened**, and that ordering is a fix. The
+                # first drafting latched after the row loop and the docstring
+                # claimed "a caller cannot receive real rows without the latch
+                # being set" -- the reverse of what the code did. A review role
+                # measured it: a malformed row 501 lines in refuses the read
+                # *after* 500 real rows exist, the latch never fires, and the
+                # rows are reachable from ``exc.__traceback__`` with the marker
+                # strippable by a plain dict copy. Both mechanisms failed at
+                # once. Latching early can only over-refuse, which is the side
+                # to be wrong on.
+                mark_real_rows_handed_out()
             collected: list[dict[str, Any]] = []
             previous = None
             with path.open(encoding="utf-8") as handle:
@@ -604,9 +645,10 @@ def read_historical(
                             f"{FORWARD_FLOOR.date()}. That span is Track B's confirmation "
                             "dataset and no Track A operation may touch it."
                         )
-                    collected.append(
-                        _row_from_source(raw, timestamp, pair=pair, line_number=line_number)
-                    )
+                    built = _row_from_source(raw, timestamp, pair=pair, line_number=line_number)
+                    if real:
+                        stamp_real_provenance(built)
+                    collected.append(built)
             rows[pair] = collected
 
     return HistoricalRead(

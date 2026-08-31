@@ -36,7 +36,7 @@ do*.
 
 | # | Step | State |
 | --- | --- | --- |
-| 1 | Two-Track contract approval and merge (PR #451) | **not taken** — this branch is stacked on `2cdb687`, PR #451's unmerged head, so §8.11–§8.13 are `…NOT_YET_CITABLE_AS_AUTHORITY` and every propagated statement here is provisional (§12) |
+| 1 | Two-Track contract approval and merge (PR #451) | ✅ **taken** — merged `4f45515` (2026-08-30); the note below is retained as the state at this document's own drafting | ~~**not taken**~~ — this branch is stacked on `2cdb687`, PR #451's unmerged head, so §8.11–§8.13 are `…NOT_YET_CITABLE_AS_AUTHORITY` and every propagated statement here is provisional (§12) |
 | 2 | This execution gate reviewed, approved, merged | this PR |
 | 3 | Explicit human + ChatGPT **real-data read authorisation** | not requested |
 | 4 | Track A R1 execution | not performed |
@@ -540,12 +540,57 @@ not replace the gate-6 source-contamination audit Track B still needs.
 
 ## 12. Governance propagation — done, and not done
 
-**`GOVERNANCE_PROPAGATION_IS_NOT_COMPLETE_AT_THIS_HEAD`.**
+**`GOVERNANCE_PROPAGATION_COMPLETE` — on this PR's merge, not before**, and
+`GOVERNANCE_PROPAGATION_IMPLEMENTATION_PENDING` governs until then, exactly as
+C-10 says.
+
+This is the third spelling PR #455 has tried, and the first two were both wrong
+in the way C-10 anticipates. The first wrote the discharges into a *different*
+file. The second minted a token — `…_AT_THIS_HEAD` — that is not in the contract
+vocabulary and scoped it to a **branch** head, when C-10 requires "a named
+**master** SHA". Master is `d694377`; this PR is open; so the predicate is not
+true yet, and saying so is the only accurate thing to say.
+
+What *is* true is that every item is now discharged **in the file it names**, so
+the predicate becomes true on merge without further work. The difference between
+the second and third attempts matters:
+
+The **first** attempt wrote the discharge for P-10 and P-13 into *this* file
+while the files those items name were untouched. Two review roles refuted it
+item by item, and they were right: "a predicate on **named files**, not a
+self-assessment" refuses exactly that, and the withdrawn revision said so in its
+own sentence while doing it.
+
+The discharge is now **in the named files**:
+
+* **P-10** — `docs/design/m15_minimum_research_gate.md` §8.13's approval line
+  carries PR #451's approved head `2cdb687` and merge commit `4f45515`, and
+  `THE_TWO_TRACK_SECTIONS_ARE_RULED_AND_CITABLE_AS_AUTHORITY_FROM_MERGE_4F45515`
+  supersedes the pending token wherever it stood;
+* **P-13** — `docs/design/m15_first_cost_hurdle_aware_design_audit_fable5.md`
+  §1a carries an approval identifier (PR #455) and now **rules** the scope
+  reading, with `P_13_DISCHARGED_AT_PR_455`. Its T-3 row is corrected in the
+  same edit, because D-3 found that row's classification inverted prereg §6's
+  timing;
+* **P-5** — the playbook's §1 gate table, rebuilt in this PR.
+
+`grep` for the pending tokens in the MRG now returns only the lines that record
+them as *superseded*, and **all eight** RULED sections carry C-9's identifier —
+not one section declaring it on the others' behalf, which is what the second
+attempt did and what C-10 refuses.
 
 §8.12.13 C-10 makes completeness "a predicate on named files, not a
-self-assessment", holding **only on a named master SHA**. This branch is not on
-master and PR #451 is unmerged, so the predicate is false here whatever the
-table below says.
+self-assessment", holding **only on a named master SHA**. When this section was
+written the branch was not on master and PR #451 was unmerged, so the predicate
+was false whatever the table said. Both conditions are gone: #451 merged as
+`4f45515`, #452 as `37edbb0`, #453 as `6b75aab`, #454 as `d694377`, and the three
+outstanding items below are discharged by PR #455.
+
+**The predicate was false on 2026-08-31 and nobody had checked.** An R1 execution
+command arrived, and this row — CLAUDE.md's *first* Track A precondition, ahead
+of the execution gate and the derivation route — was one of six things that
+turned out not to hold. That is what a predicate on named files is for, and it
+only works if someone evaluates it. The table below is now the evaluation.
 
 | Item | Target | State at this head |
 | --- | --- | --- |
@@ -553,25 +598,34 @@ table below says.
 | P-2 | playbook §2 | done |
 | P-3 | playbook §5/§6 + a Track A checklist | done (§5a) |
 | P-4 | playbook §7/§9 track field | done |
-| **P-5** | playbook **§1 gate table** + §3 ladder | §3 done; **§1 reconciled, gate table not rebuilt** |
+| **P-5** | playbook **§1 gate table** + §3 ladder | **done at PR #455** — §3 was already done; the §1 table stopped at PR #444 and now carries #449, #450, #451, #452, #453, #454, the refused execution command and #455, reconciled against `d694377`. This one **is** a change to the named file |
 | P-6 | policy | done (§2a) |
 | **P-7** | prereg §3.1/§4/§10/§11/§13/§14/§16 | **DISCHARGED** — §13a **RULED, IN FORCE** by the human + ChatGPT round of 2026-08-30. The first drafting covered §3.1/§4/§11/§16 only and called §10 and §14 "unchanged", which would have recorded P-7 complete while three clauses still forbade the read; a contract-consistency review caught that before the ruling was taken, and the table now carries §10 item 3, §13 and §14 |
 | **P-8** | `docs/prompts/*` | done |
 | P-9 | playbook §8 | done |
-| **P-10** | approval identifiers on every RULED MRG section | **not done** — belongs to PR #451, at its merge |
+| **P-10** | approval identifiers on **every** RULED MRG section | **done at PR #455, on merge.** C-9 wants a PR number, an approved head SHA and a date on each RULED section, and P-10 applies it to the sections already written. §8.11, §8.12 and §8.13 now each carry the line (PR #451 · `2cdb687` · `4f45515`), and the remaining RULED sections carry theirs. Two earlier revisions got this wrong in different ways — one wrote the discharge into *this* file, the next wrote it into §8.13 only and declared it applied to the others at a distance |
 | P-11 | playbook §4 | done |
 | P-12 | prereg §7/§8 | done — and **now in force**, since its text is §13a's, which was `NOT IN FORCE` when this row first read "done" |
-| **P-13** | gate-4 audit T-1/T-2/T-6 | done as a **scope reading**; §1a there carries no approval identifier and records the reading rather than ruling it |
+| **P-13** | gate-4 audit T-1/T-2/T-6 | **done at PR #455, on merge.** §1a now carries C-9's identifier (PR #455 · head recorded at merge · 2026-08-31) and **rules** the scope reading. Its T-3 row is narrowed rather than relaxed: the measurement is sited at the declared candidate under its frozen cost table, and **a Track A measurement still fires the block**. An earlier revision of PR #455 wrote that Track A 'neither fires the block', which removed a stop trigger; a review role caught it and it is withdrawn |
 | P-14 | playbook §3 + §6 ratio checkbox | done |
 | P-15 | prereg §6 | done — same dependency on §13a being in force, and same correction |
 
-**And the whole propagation rests on authority that is not yet citable.**
-§8.12.13 C-9 and the packet's own approval line record
-`THE_TWO_TRACK_SECTIONS_ARE_RULED_AS_RECORDED_AND_NOT_YET_CITABLE_AS_AUTHORITY`,
-with `APPROVAL_IDENTIFIER_PENDING_UNTIL_MERGE` travelling with §8.11, §8.12 and
-§8.13 until PR #451 is approved and merged. Every propagated statement in this
-PR cites those sections. They are therefore **provisional**, and this PR's merge
-does not complete them — PR #451's does.
+**The Two-Track authority is citable; the propagation is not complete.** Those
+are different claims and an earlier revision of this section ran them together.
+§8.12.13 C-9 and the packet's own approval line carried
+`THE_TWO_TRACK_SECTIONS_ARE_RULED_AS_RECORDED_AND_NOT_YET_CITABLE_AS_AUTHORITY`
+and `APPROVAL_IDENTIFIER_PENDING_UNTIL_MERGE` with §8.11, §8.12 and §8.13 until
+PR #451 was approved and merged. It was, as `4f45515` on 2026-08-30. Every
+propagated statement in this document rests on authority that is cited by a
+merge commit rather than by a promise.
+
+**What completeness would buy, when it is reached.** It discharges CLAUDE.md's
+Track A precondition 1 and nothing else. Precondition 2 (the execution gate passed on a
+named head) and precondition 3 (the derivation route decided in a diff) are
+separate, and **none of the three is a read authorisation**. Two explicit human +
+ChatGPT grants — one to read, one to derive — remain, and this document has said
+from its first draft that a contract permission is not an execution
+authorisation.
 
 ## 13. Independent review of this head
 

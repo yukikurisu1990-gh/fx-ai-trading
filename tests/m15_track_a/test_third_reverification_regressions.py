@@ -42,7 +42,11 @@ def scratch_at(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
 
 
 def _ledger(root: Path) -> Path:
-    path = root / seen_ledger.LEDGER_FILENAME
+    # ``root / "ledger" / …``, not ``root / …``: the governance ledgers moved
+    # into a committed subdirectory of the scratch root, and isolation
+    # recognises them by identity at that location.
+    path = root / scratch.LEDGER_SUBDIRECTORY / seen_ledger.LEDGER_FILENAME
+    path.parent.mkdir(parents=True, exist_ok=True)
     scratch.append_line(path, '{"probe": 1}')
     return path
 

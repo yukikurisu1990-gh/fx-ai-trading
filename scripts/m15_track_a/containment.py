@@ -588,6 +588,14 @@ _PERMITTED_READ_ROUTE_CALLS: Final[frozenset[str]] = frozenset(
         "assert_clear_of_slice",
         "type",
         "str",
+        # The derivation-bypass containment, added when read_historical became
+        # the reader whose absence had been holding that bypass shut. The route
+        # decides provenance from the source path and latches the process before
+        # it returns; all three names are declared so the addition is a diff a
+        # reviewer sees rather than a quiet widening.
+        "is_committed_source",
+        "stamp_real_provenance",
+        "mark_real_rows_handed_out",
         "assert_declared",
         "record_grant",
         "gated_read_window",

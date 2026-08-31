@@ -35,7 +35,12 @@ in prohibition lists (§10) and in template status vocabularies.
 
 ## 1. Current gate state
 
-Last reconciled against master at `0e3b001` (2026-08-21); master CI green.
+Last reconciled against master at `d694377` (2026-08-31); master CI green.
+**P-5 is discharged at this reconciliation**: the table below now carries the
+Two-Track gates, the execution gate, the R1 read body, the recorded ReadGrant
+and the R1 enablement PR. It previously stopped at PR #444, which is why the
+execution gate document recorded P-5 as "§1 reconciled, **gate table not
+rebuilt**".
 
 | Gate | State |
 | --- | --- |
@@ -58,7 +63,15 @@ Last reconciled against master at `0e3b001` (2026-08-21); master CI green.
 | Test-safety Work PR (PR #446) | ✅ **merged** as `0e3b001` (2026-08-20) — `tests/optin.py` + `tests/conftest.py` guards; the presence of a resource no longer authorises using it. Two residual routes recorded by the fourth re-check (§FR-19 there): the `.env` matcher is route-dependent, and the socket guard misses UDP/DNS |
 | **Fourth independent source-audit re-check** | **executed — verdict `M15_AGGREGATION_DATASET_MACHINERY_SOURCE_AUDIT_BLOCKED_PENDING_TARGETED_FIXES`** (`docs/design/m15_fourth_independent_source_audit_recheck.md`). Run in a session separate from every fix author, ten independent roles. **Nine blockers FB-1…FB-9 + nineteen required fixes FR-1…FR-19.** B-2, B-3, B-4 and B-7 re-derive **CLOSED** by re-running the original exploits; B-1 and B-5 CLOSED_BUT_NARROW; 27 of 29 RF items CLOSED. The blocking shape is *absent* guards, not broken ones: no `__init_subclass__` seals the token-bearing records, the writer validates one read and publishes another, reader-freedom is pinned by no test, and forbidden content reaches disk through three plain-JSON encodings. **D-5.8 classified `MUST_RESOLVE_BEFORE_GATE3A_CONTINUATION`** |
 | Contract Gate-decision on referrals 2 / 3 / 4 (+ NR-A, NR-C, NR-D, NR-J, NR-K) and the byte-level T-7 proof (PR #444) | ✅ **RULED by human + ChatGPT and merged** as `ea40d2f` (2026-08-08) — `docs/design/m15_contract_design_gate_decision.md`, status `M15_GATE3A_CONTRACT_AND_PROOF_DESIGN_DECISION_RULED`. Crossed quotes **hard fail-closed** (merged R-2 is authority; no drop-and-count); rejection tolerance **zero and structural**, not an empirical threshold; the missing-minute schema replaced by **six separately measured quantities**; **hashing is a byte read** (no raw-source re-hash without explicit read authorisation; proof subject = derived M15 bytes); T-7 coverage is **set equality** per pair against an approved calendar, not min/max containment; NR-A / NR-C / NR-D / NR-J decided; byte-level proof = **BI ∧ TC ∧ CV ∧ DB**, declaration-only tokens may never be promoted. Adds the negative-control rule and a twenty-term pinned-definition requirement. **Only open item:** `PRE_CONTINUATION_CALENDAR_ARTIFACT_APPROVAL_REQUIRED` |
-| Gate-3a continuation (real design-span derivation) | **NOT authorised.** Referrals 2/3/4 are RULED (PR #444), but no independent re-check has accepted the machinery, **D-5.8** is unresolved, and `PRE_CONTINUATION_CALENDAR_ARTIFACT_APPROVAL_REQUIRED` is open |
+| Gate-3a continuation (real design-span derivation) | **NOT authorised.** Referrals 2/3/4 are RULED (PR #444), but no independent re-check has accepted the machinery, **D-5.8** is unresolved, and `PRE_CONTINUATION_CALENDAR_ARTIFACT_APPROVAL_REQUIRED` is open. Note this is **Track B's** continuation and is untouched by the Track A rows below |
+| Targeted-fix Work PR FB-1…FB-10 / FR-1…FR-21 (PR #449) | ✅ **merged** as `70bf38b` (2026-08-23) |
+| Continuation output-surface Contract Gate-decision (PR #450) | ✅ **RULED and merged** — five questions closed; the routing hole in `ml_step4.evidence.write_report` recorded; the artifact roster is **nine**, not eight |
+| **Two-Track model** — §8.11 / §8.12 / §8.13 of the minimum research gate (PR #451) | ✅ **RULED and merged** as `4f45515` (2026-08-30). Track A = exploratory, Track B = formal confirmation. `APPROVAL_IDENTIFIER_PENDING_UNTIL_MERGE` is **discharged** by that merge |
+| **Minimum Research Execution Gate** — Track A R1 enablement apparatus (PR #452) | ✅ **merged** as `37edbb0` (2026-08-30). Building the gate is not passing it; the merge authorised no read |
+| Track A R1 read body + `EXPLORATORY_OOS_SLICE` ruling + grant binding (PR #453) | ✅ **merged** as `6b75aab` (2026-08-30). Slice = final 20% of the committed DESIGN UTC dates = `2025-12-29 … 2026-02-28`; development corpus = `2025-04-25 … 2025-12-28` (248 dates). A grant binds to a **measured implementation fingerprint** |
+| Recorded Track A R1 development `ReadGrant` (PR #454) | ✅ **merged** as `d694377` (2026-08-31), authorization-only. `track_a_historical_read` / `2025-04-25 … 2025-12-28` / `PAIRS_20` / `M1`, bound to fingerprint `497e187b…`. ⚠ **Invalidated by PR #455**, by design |
+| **Track A R1 execution command of 2026-08-31** | **REFUSED before any read.** R1 could not complete: `derive_m15` had no body, no derivation grant existed, neither calendar artifact existed, T-3's numerator was undefined, no survey runner existed, and the P-1…P-15 predicate was not recorded true on a named master SHA. No byte of market data was read; the corpus remains **UNSEEN** |
+| **R1 Enablement Remediation Work PR (PR #455)** | in review — closes all six, plus the `aggregate_m15` bypass and the gitignored ledger. `TRACK_A_R1_END_TO_END_SYNTHETIC_DRY_RUN_PASSED`. **Invalidates the PR #454 grant by design**; a new read grant and a new derivation grant are the only remaining steps |
 
 **Official gate status:** `M15_AGGREGATION_DATASET_MACHINERY_SOURCE_AUDIT_BLOCKED_PENDING_TARGETED_FIXES`
 — reaffirmed by the **fourth** independent re-check at `0e3b001`. PR #440, #442
@@ -374,41 +387,102 @@ does not reopen them:* the turnover axes (prereg **§9a**), prereg **§13a**
 `GENERAL_ADVERSARIAL_AUDIT_COMPLETE_FOR_TRACK_A_R1_BOUNDED_SCOPE`
 (gate document §15). **None of them authorises a read.**
 
-- [ ] **PR #451 approved and merged.** Until it is, §8.11–§8.13 carry
+**How to read the boxes.** A ticked box means the item was verified **on the
+head named beside it**, with the citation given. An unticked box is not a
+formality: the R1 execution command of 2026-08-31 was refused because six items
+that nobody had tried to verify turned out to be false, so the boxes are ticked
+only where something was run or read, never where something was believed.
+
+- [x] **PR #451 approved and merged** — `4f45515`, 2026-08-30, so
       `APPROVAL_IDENTIFIER_PENDING_UNTIL_MERGE` and
       `THE_TWO_TRACK_SECTIONS_ARE_RULED_AS_RECORDED_AND_NOT_YET_CITABLE_AS_AUTHORITY`
-      — so every item below rests on authority that is not yet citable.
-- [ ] **Governance propagation complete**, evaluated as §8.12.13 C-10 defines
-      it: the **P-1 … P-15** predicate, true **on a named master SHA**.
+      are **discharged**. §8.11–§8.13 are citable authority.
+- [x] **Governance propagation complete**, as §8.12.13 C-10 defines it: the
+      **P-1 … P-15** predicate on named files, discharged **in those files** at
+      PR #455 — P-5 in the §1 gate table above, **P-10** in the MRG's §8.13
+      approval line (`4f45515`), **P-13** in the gate-4 design audit's §1a. An
+      earlier revision of PR #455 ticked this box on discharges written into a
+      *different* file; two review roles refuted it, and
       `PROPAGATION_COMPLETENESS_IS_A_PREDICATE_ON_NAMED_FILES_NOT_A_SELF_ASSESSMENT`
-      — the existence of this section is not evidence for it, and the residual
-      list lives at `docs/design/m15_track_a_execution_gate.md` §12.
-- [ ] **Q8** — the research-scratch write root is a module constant with no
-      caller-supplied component (`scripts/m15_track_a/scratch.py`), and writes
-      outside it refuse.
-- [ ] **FR-19** — a default `pytest` reaches no real DB, no `.env`, no external
+      is why. The per-item table is
+      `docs/design/m15_track_a_execution_gate.md` §12.
+- [x] **Q8** — `scratch.SCRATCH_ROOT_RELATIVE` is a module constant with no
+      caller-supplied component, and `assert_writable` refuses outside it.
+      Tested: `test_a_write_outside_the_permitted_roots_is_refused`.
+- [x] **FR-19** — a default `pytest` reaches no real DB, no `.env`, no external
       network, no broker, no real historical read, no production storage.
-- [ ] **One** historical read route, gated
-      (`scripts/m15_track_a/read_route.py`), and **one** derivation route,
-      selected in a diff (`scripts/m15_track_a/derivation.py`).
-- [ ] **Isolation** — network, external DB, broker, live, demo and order
-      submission all refuse, demonstrated by the containment audit
-      (`scripts/m15_track_a/containment.py`), not asserted.
-- [ ] **Seen-data ledger** — write-ahead, append-only, and the interval declared
-      *before* it is touched, warm-up included.
-- [ ] **Breadth (`K`) record** — in R-7's unit, recorded as it accrues.
-- [ ] **Run and calendar identity** — research-grade, not evidence-grade
-      provenance; the calendar reading is a declared label, and Track A may not
-      author market hours.
-- [ ] **Q7's `N = 1`** on the `EXPLORATORY_OOS_SLICE` is enforced at run time,
-      and `K` is not a substitute for `N`.
-- [ ] **No consumed-window leakage** — 2026-03-01 → 2026-04-24 dead at all
-      timeframes for all roles, **including feature warm-up** — and the
-      `DESIGN_END` trailing purge, which the declaration guard cannot detect.
-- [ ] **No legacy-evidence dependency** (C-8 declaration held).
-- [ ] Track A output is **both** `NON_DECISION_BEARING_EXPLORATORY_ONLY` and
-      `RESEARCH_SCRATCH_NON_AUTHORITATIVE`, and lands nowhere near the evidence
-      tree.
+      `tests/optin.py` + `tests/conftest.py`; the two residual routes the fourth
+      re-check recorded (route-dependent `.env` matcher, UDP/DNS) are unchanged
+      and still disclosed.
+- [x] **One** historical read route, gated
+      (`scripts/m15_track_a/read_route.py`), and **one** derivation route
+      (`scripts/m15_track_a/derivation.py`) — now with a body, and with the
+      `aggregate_m15` bypass **closed** at the aggregator itself
+      (`scripts/m15_gate3a/derivation_containment.py`). Tested:
+      `test_a_direct_aggregate_m15_bypass_is_refused`.
+- [x] **Isolation** — network, external DB, broker, live, demo and order
+      submission all refuse, demonstrated by `containment.audit()` returning
+      `TRACK_A_EXECUTION_CONTAINMENT_PROBES_PASSED_BOUNDED_ASSURANCE`, and by
+      `test_network_db_and_broker_stay_refused`. Bounded assurance, as the
+      status says: `AUDIT_BOUNDS` names what it does not establish.
+- [x] **Seen-data ledger** — write-ahead, append-only, declared before the
+      interval is touched, warm-up included, **and committed**: it moved to
+      `artifacts/track_a_scratch/ledger/`, which `.gitignore` un-ignores while
+      the research output around it stays ignored. §8.13.5 item 5 required
+      "committed" and the file had been in a gitignored tree. Tested:
+      `test_the_ledgers_are_written_under_the_committed_root`,
+      `test_the_declaration_precedes_the_read`.
+- [x] **Breadth (`K`) record** — in R-7's unit, recorded as it accrues, and
+      committed beside the seen ledger. R1 records an entry with
+      `result_observed=False`, so `K` is explicitly **0** rather than absent:
+      R1 measures and scores nothing.
+- [x] **Run and calendar identity** — `RunIdentity` carries
+      `CALENDAR_UTC_DATES_NO_MARKET_HOURS` as a declared label, and **Track A
+      authors no market hours**. PR #455's first revision did author some; the
+      calendar and its artifacts are **deleted**, because D-6 says no market
+      open/close instant, DST transition or holiday list "may be added by an
+      implementer". What remains is `scripts/m15_gate3a/session_windows.py`,
+      carrying only Ruling 4's frozen session partition and its frozen rollover
+      window — both fixed UTC clock windows, neither a market-hours claim — each
+      pinned against a **hand-written oracle** in
+      `tests/m15_gate3a/test_session_windows_independent_oracle.py`. R1 reports
+      coverage as `COVERAGE_AUTHORITY_ABSENT_R1_REPORTS_A_DECLARED_LABEL_DIAGNOSTIC`,
+      which is the route execution gate §8 provides for.
+      `PRE_CONTINUATION_CALENDAR_ARTIFACT_APPROVAL_REQUIRED` stays open and is
+      not discharged here.
+- [x] **Q7's `N = 1`** on the `EXPLORATORY_OOS_SLICE` is enforced at run time
+      (`oos_budget`), and `K` is not a substitute for `N`. The slice is
+      `2025-12-29 … 2026-02-28` and a `track_a_historical_read` grant **cannot be
+      constructed** over it.
+- [x] **No consumed-window leakage** — the dead window and the forward epoch are
+      refused at the grant, at the declared interval, at the computed window and
+      at the row. Warm-up is included in the touched interval, and is refused
+      rather than trimmed. The `DESIGN_END` trailing purge remains a
+      **downstream** obligation the declaration guard cannot detect, carried as
+      `A_TRAILING_PURGE_APPLIES_AT_THE_SLICE_BOUNDARY_AND_IS_NOT_DISCHARGED_BY_THIS_READ`.
+- [x] **No legacy-evidence dependency** (C-8 held). R1 reads the committed
+      `365d_BA` M1 source and nothing else — the calendars an earlier revision
+      of PR #455 authored are deleted — and nothing under
+      `artifacts/ml_step4/**`; the isolation hook refuses that tree by name.
+- [x] Track A output is **both** `NON_DECISION_BEARING_EXPLORATORY_ONLY` and
+      `RESEARCH_SCRATCH_NON_AUTHORITATIVE`, on `HistoricalRead`, `DerivedM15` and
+      `R1Survey` alike, and lands nowhere near the evidence tree.
+
+**The two items no tick can reach, and they are the whole of what is left.**
+
+- [ ] **An explicit human + ChatGPT `track_a_historical_read` grant** against the
+      implementation fingerprint of a *merged* head carrying PR #455. The
+      PR #454 grant is bound to `497e187b…` and this work moved the
+      fingerprint, so it is **invalid by design** — §13 of the enablement brief
+      said it would be, and told the session not to narrow the surface to
+      preserve it.
+- [ ] **An explicit human + ChatGPT `track_a_m15_research_derivation` grant.**
+      A read grant does not authorise a derivation (§2.5), and the route
+      refuses without one.
+
+`IMPLEMENTATION_READY_AUTHORIZATION_PENDING` — every mechanical prerequisite is
+in place and demonstrated on synthetic data end to end; both remaining items are
+human decisions, and neither is a session's to take.
 
 **The read grant is deliberately NOT an item of this checklist.** It is the
 **next** step, taken after the gate passes:

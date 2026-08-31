@@ -53,7 +53,15 @@ Forbidden-label note: this document does not assert `PASS`, `Tier 1`,
   program budget. The multiplicity surface is as small as a real experiment
   can be.
 
-## 1a. Two-Track scope of this audit's tightenings (recorded, provisional)
+## 1a. Two-Track scope of this audit's tightenings — RULED
+
+**Approval identifier** (§8.12.13 C-9): **PR #455** · approved head SHA
+**`APPROVAL_IDENTIFIER_HEAD_SHA_RECORDED_AT_MERGE`** · date **2026-08-31**, as an
+explicit human + ChatGPT ruling. C-9 wants all three, and the head SHA does not
+exist until the PR is approved and merged — recorded honestly rather than
+omitted, exactly as §8.13 did for PR #451. This section was `(recorded, provisional)` and
+carried no identifier, which is what left **P-13** open; that is the gap this
+ruling closes, and it is written **here**, in the file P-13 names.
 
 This audit predates the Two-Track split
 (`docs/design/m15_minimum_research_gate.md` §8.11–§8.13) and reads throughout as
@@ -65,14 +73,21 @@ changes **when**, not **whether**:
 | **T-1** — the R-2a/R-2b loophole closed | binds. It is a leakage boundary, and Track A's exemptions are from *freezes*, never from leakage controls | binds unchanged |
 | **T-2** — `W̄` / `L̄` estimated once on design data, frozen, recorded in evidence | the **conditioning set** binds; the **freeze** binds at Track B candidate pre-registration, not during exploration | binds unchanged |
 | **T-6** — the cost-model tightening | binds as a **method**; Track A may vary cost *values* under §8.13.4 and may not vary the method | binds unchanged, values included |
-| **T-3** — the barrier/cost ratio block | **fires** on a Track A measurement, and a Track A measurement does **not** discharge playbook §6's checkbox (§8.13.6) | binds unchanged |
+| **T-3** — the barrier/cost ratio block | **fires** on a Track A measurement, and a Track A measurement does **not** discharge playbook §6's checkbox (§8.13.6). ⚠ **Narrowed, not relaxed, at PR #455:** the measurement §13a names is the one taken **at the declared candidate under its frozen cost table** — so stage **R1**, which has neither, reports the ratio distribution as a descriptive statistic and fires nothing. The block, and Track A's firing of it, are unchanged. `docs/governance/m15_track_a_t3_stage_ruling.md` | binds unchanged |
 | T-4, T-5, T-7 | unchanged — none is a freeze Track A is exempt from | unchanged |
 
 The general rule this table applies: **a tightening that prevents leakage binds
 on both tracks; a tightening that freezes a value binds where the freeze
-does** — at Track B candidate pre-registration. Nothing here relaxes a
-tightening, and this section carries no approval identifier, so it records the
-scope reading rather than ruling it.
+does** — at Track B candidate pre-registration. **Nothing here relaxes a
+tightening**: the T-3 correction moves *when* the measurement is taken and by
+*whom*, and the block itself is unchanged and still fires at the stage that owns
+it, under the cost table the contract names.
+
+This section now carries an approval identifier, so it **rules** the scope
+reading rather than recording it — **on PR #455's merge**, which is what
+completes the identifier above. Until then it is RULED-as-recorded, on the model
+§8.13 used for `APPROVAL_IDENTIFIER_PENDING_UNTIL_MERGE`.
+**`P_13_DISCHARGED_AT_PR_455_ON_MERGE`.**
 
 ## 2. Audit scope
 

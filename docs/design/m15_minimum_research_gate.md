@@ -394,7 +394,8 @@ had no upper bound** — `N_eff` is computable before any confirmation observati
 **`THE_CANDIDATE_FREEZE_IS_ONCE_PER_PROGRAMME_AND_A_SECOND_FREEZE_IS_A_SECOND_CANDIDATE`**,
 an abandoned freeze is committed and counts toward `K`, and recomputing `N_eff` after an
 unfavourable one is a **reselection**. Seventeen further limbs and ten wrong claims at
-§8.13.13. **`THE_TWO_TRACK_SECTIONS_ARE_RULED_AS_RECORDED_AND_NOT_YET_CITABLE_AS_AUTHORITY`**
+§8.13.13. **`THE_TWO_TRACK_SECTIONS_ARE_RULED_AND_CITABLE_AS_AUTHORITY_FROM_MERGE_4F45515`**
+(superseding `…_NOT_YET_CITABLE_AS_AUTHORITY` at PR #451's merge; see §8.13's approval line)
 until the approving head SHA exists.
 
 **Two blocking conditions are removed and the removal is the point.** §8.12.10's condition 4
@@ -2173,6 +2174,13 @@ contract-compliant span yields an ordinary pass/fail. What is referred is `D`, t
 
 ### 8.1 Q11 + §0 — RULED. Holdout-duration freeze semantics
 
+**Approval identifier** (§8.12.13 C-9): **PR #451** · approved head SHA **`2cdb687`** ·
+merge commit **`4f45515`** · date **2026-08-29**, merged **2026-08-30**. Applied here by
+**P-10** at PR #455 — C-9 requires the identifier on *every* RULED section, and
+recording it on one section and declaring it to cover the others at a distance is
+the self-assessment C-10 refuses.
+
+
 **`Q11_AND_SECTION0_RULED_FREEZE_D_AT_GATE3A_CONTINUATION_BEFORE_DATA`** ·
 `Q11_AND_SECTION0_ARE_ONE_REFERRAL`
 
@@ -2806,6 +2814,13 @@ the ruling.
 ---
 
 ### 8.2 Q10-A / Q10(ii) / Q10-B — RULED. Duration unit, day identity, window declaration
+
+**Approval identifier** (§8.12.13 C-9): **PR #451** · approved head SHA **`2cdb687`** ·
+merge commit **`4f45515`** · date **2026-08-29**, merged **2026-08-30**. Applied here by
+**P-10** at PR #455 — C-9 requires the identifier on *every* RULED section, and
+recording it on one section and declaring it to cover the others at a distance is
+the self-assessment C-10 refuses.
+
 
 **`Q10_A_RULED_ELAPSED_UTC_CALENDAR_SPAN`** ·
 **`Q10_II_DAY_IDENTITY_RULED_UTC_CALENDAR_DATE_EXPECTED_SLOTS_FROM_APPROVED_CALENDAR_AUTHORITY`** ·
@@ -3522,6 +3537,13 @@ declaration must precede accrual (Q10-B), and it does not relax step 8.
 
 ### 8.3 NR-K — RULED. `P` and the pair-universe authority
 
+**Approval identifier** (§8.12.13 C-9): **PR #451** · approved head SHA **`2cdb687`** ·
+merge commit **`4f45515`** · date **2026-08-29**, merged **2026-08-30**. Applied here by
+**P-10** at PR #455 — C-9 requires the identifier on *every* RULED section, and
+recording it on one section and declaring it to cover the others at a distance is
+the self-assessment C-10 refuses.
+
+
 **`NR_K_RULED_P_EQUALS_FROZEN_REGISTERED_FAMILY_A_UNIVERSE`**
 
 **Status change.** `NR_K_PENDING_HUMAN_CHATGPT_RULING` and
@@ -4131,6 +4153,13 @@ the recorded order; it is restated at §13 and it is not a suggestion about
 convenience.
 
 ### 8.4 Mean overlap fraction — RULED. Clock, formula, aggregation, freeze
+
+**Approval identifier** (§8.12.13 C-9): **PR #451** · approved head SHA **`2cdb687`** ·
+merge commit **`4f45515`** · date **2026-08-29**, merged **2026-08-30**. Applied here by
+**P-10** at PR #455 — C-9 requires the identifier on *every* RULED section, and
+recording it on one section and declaring it to cover the others at a distance is
+the self-assessment C-10 refuses.
+
 
 **`MEAN_OVERLAP_RULED_EVENT_LEVEL_SAME_HORIZON_CLOCK_EQUAL_WEIGHT_ROLE_LOCAL`** ·
 **`MEAN_OVERLAP_CLOCK_SUBSTRATE_RULED_APPROVED_CALENDAR_ELIGIBLE_SLOTS`** ·
@@ -6592,6 +6621,13 @@ to it at §8.3.0 and both **closed** by Ruling c-1. Nothing in §8.4 may be cite
 recorded here as an *asymmetry*, never as a rule for either.
 
 ### 8.5 NR-L — RULED. The cross-pair correlation `c`, bundled with Q10(i)
+
+**Approval identifier** (§8.12.13 C-9): **PR #451** · approved head SHA **`2cdb687`** ·
+merge commit **`4f45515`** · date **2026-08-29**, merged **2026-08-30**. Applied here by
+**P-10** at PR #455 — C-9 requires the identifier on *every* RULED section, and
+recording it on one section and declaring it to cover the others at a distance is
+the self-assessment C-10 refuses.
+
 
 **`NR_L_MINIMUM_RESEARCH_CONTRACT_RULED_PENDING_IMPLEMENTATION_AND_DESIGN_MEASUREMENT`**
 · **`Q10_I_RULED_REALIZED_PNL_ATTRIBUTED_TO_EXIT_UTC_DATE`** ·
@@ -10944,6 +10980,13 @@ human + ChatGPT decision, and §14's one-objective-one-PR rule bears on it.
 
 ### 8.11 The two-track amendment — RULED. Exploratory Research and Formal Confirmation
 
+**Approval identifier** (§8.12.13 C-9): **PR #451** · approved head SHA **`2cdb687`** ·
+merge commit **`4f45515`** · date **2026-08-29**, merged **2026-08-30**. Applied here by
+**P-10** at PR #455 — C-9 requires the identifier on *every* RULED section, and
+recording it on one section and declaring it to cover the others at a distance is
+the self-assessment C-10 refuses.
+
+
 A human + ChatGPT ruling received and recorded here as **authority**. It is a
 **contract amendment**, not a reading, and it says so: it changes the structure this
 packet has been operating under, in which no M15 research could begin until every
@@ -11801,6 +11844,13 @@ is that round.
 ---
 
 ### 8.12 The Governance Consistency Amendment — RULED
+
+**Approval identifier** (§8.12.13 C-9): **PR #451** · approved head SHA **`2cdb687`** ·
+merge commit **`4f45515`** · date **2026-08-29**, merged **2026-08-30**. Applied here by
+**P-10** at PR #455 — C-9 requires the identifier on *every* RULED section, and
+recording it on one section and declaring it to cover the others at a distance is
+the self-assessment C-10 refuses.
+
 
 A human + ChatGPT ruling, recorded here as **authority**. §8.11 split the research
 programme into two tracks; this amendment makes that split hold **against the governance
@@ -12690,16 +12740,22 @@ The digest is **one** anchor; that record is the other, and it is the more infor
 ### 8.13 The Two-Track Semantic Cleanup — RULED
 
 **Approval identifier** (required by §8.12.13 C-9): **PR #451** · approved head SHA
-**`APPROVAL_IDENTIFIER_PENDING_UNTIL_MERGE`** · date **2026-08-29**.
+**`2cdb687`** · merge commit **`4f45515`** · date **2026-08-29**, merged **2026-08-30**.
 
-**⚠ And C-9's consequence is accepted rather than evaded.** C-9 says "a RULED section
-without one may not be cited as authority", and the approving head SHA does not exist until
-this PR is approved and merged. So **§8.11, §8.12 and §8.13 are RULED-as-recorded and may
-not yet be cited as authority outside this packet** — which is the correct state, because
-the PR is not merged and the approval is not on the record. The identifier is completed at
-merge; until then `APPROVAL_IDENTIFIER_PENDING_UNTIL_MERGE` travels with each of them, and
-**P-10** applies it to the earlier sections.
-**`THE_TWO_TRACK_SECTIONS_ARE_RULED_AS_RECORDED_AND_NOT_YET_CITABLE_AS_AUTHORITY`.**
+**C-9's consequence was accepted rather than evaded, and it is now discharged.** C-9 says
+"a RULED section without one may not be cited as authority", and the approving head SHA did
+not exist until the PR was approved and merged. It has been:
+**`APPROVAL_IDENTIFIER_COMPLETED_AT_MERGE_4F45515`**, and the identifier above applies to
+**§8.11, §8.12 and §8.13 alike** — which is what **P-10** required. They are citable
+authority.
+
+**`THE_TWO_TRACK_SECTIONS_ARE_RULED_AND_CITABLE_AS_AUTHORITY_FROM_MERGE_4F45515`**,
+superseding `THE_TWO_TRACK_SECTIONS_ARE_RULED_AS_RECORDED_AND_NOT_YET_CITABLE_AS_AUTHORITY`.
+
+⚠ **This paragraph was written in PR #455 and is the discharge itself, not a report of
+one.** An earlier revision of that PR recorded P-10 as done in a *different* file, which is
+exactly what "a predicate on **named files**, not a self-assessment" refuses; two review
+roles caught it. P-10 names this file, so the discharge is written here.
 
 A human + ChatGPT ruling, recorded here as **authority once the identifier above is
 completed**. §8.11 split the programme, §8.12
@@ -13579,7 +13635,8 @@ above is **superseded** by §9a.
    longer exists"** (D-10).
 8. **§8.13 carried no approval identifier** while §8.12.13 C-9 requires one — corrected at
    the section head, and the consequence accepted:
-   `THE_TWO_TRACK_SECTIONS_ARE_RULED_AS_RECORDED_AND_NOT_YET_CITABLE_AS_AUTHORITY`.
+   `THE_TWO_TRACK_SECTIONS_ARE_RULED_AND_CITABLE_AS_AUTHORITY_FROM_MERGE_4F45515`
+   (this line read `…_NOT_YET_CITABLE_AS_AUTHORITY` until PR #451 merged as `4f45515`).
 
 #### 8.13.12 Maintained, and still not authorised
 
@@ -15151,7 +15208,7 @@ seen" against §8.11.4 rule 3.
 **One structural defect closed and one accepted.** §8.13 carried **no approval identifier**,
 which §8.12.13 C-9 requires — corrected at the section head, and the consequence accepted
 rather than evaded:
-**`THE_TWO_TRACK_SECTIONS_ARE_RULED_AS_RECORDED_AND_NOT_YET_CITABLE_AS_AUTHORITY`** until the
+**`THE_TWO_TRACK_SECTIONS_ARE_RULED_AND_CITABLE_AS_AUTHORITY_FROM_MERGE_4F45515`** — the
 approving head SHA exists, which is the correct state while the PR is unmerged. And §8.13
 had **no §12 review round** when written — the third consecutive repetition of a defect
 §8.12.13 C-12 recorded; this is that round.

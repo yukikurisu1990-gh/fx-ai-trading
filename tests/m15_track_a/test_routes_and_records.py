@@ -213,11 +213,16 @@ def test_derivation_needs_its_own_grant(
         ),
         identity,
     )
-    request = derivation.DerivationRequest(read_request=_request())
+    request = derivation.DerivationRequest(read_request=_request(), read=None)
     with pytest.raises(authorization.AuthorizationError):
         derivation.derive_m15(request, identity, grant=_grant())
 
-    with pytest.raises(NotImplementedError, match=derivation.NOT_IMPLEMENTED_TOKEN):
+    # With the right grant the authorisation gate passes and the route reaches
+    # its body -- which now exists. It refuses here for the next reason down:
+    # no Calendar A. That is the correct refusal, and it is the one this test
+    # asserts, because "raises NotImplementedError" stopped being true when the
+    # derivation was implemented.
+    with pytest.raises(derivation.DerivationRouteError, match="must be exactly a HistoricalRead"):
         derivation.derive_m15(
             request,
             identity,
@@ -315,7 +320,12 @@ def test_a_declaration_must_attribute_to_its_own_run(sandbox: Path, identity: Ru
 
 
 def test_the_ledger_cannot_be_written_outside_the_scratch_root(sandbox: Path) -> None:
-    assert seen_ledger.ledger_path().parent == scratch.scratch_root()
+    # The governance ledgers live in a committed subdirectory of the scratch
+    # root now: §8.13.5 item 5 requires them committed, and `.gitignore`
+    # excludes the scratch root's other contents. Still inside it, which is what
+    # keeps isolation's classification unchanged.
+    assert seen_ledger.ledger_path().parent == scratch.ledger_root()
+    assert seen_ledger.ledger_path().parent.parent == scratch.scratch_root()
 
 
 # --------------------------------------------------------------------------

@@ -577,10 +577,16 @@ PERMITTED_CALLER_ROOTS: tuple[str, ...] = (
 #: What ``scripts/m15_track_a/`` may import from this package.  Every entry is
 #: reader-free: a pure path predicate, a frozen span constant, a declaration
 #: check that opens no file, or an integer.  ``proof``, ``artifacts``,
-#: ``coverage``, ``calendar_authority`` and ``sealing`` are deliberately absent —
-#: they carry evidence semantics Track A must not reach, and a Track A run is a
-#: future real-data reader, so its import surface into this package is the one
-#: place a reader could be introduced by the back door.
+#: ``coverage`` and ``sealing`` are deliberately absent — they carry evidence
+#: semantics Track A must not reach, and a Track A run is a future real-data
+#: reader, so its import surface into this package is the one place a reader
+#: could be introduced by the back door.
+#:
+#: ``calendar_authority`` is **not** here, and an earlier revision of the R1
+#: enablement work that put it here has been reverted — see the note on
+#: ``TRACK_A_FORBIDDEN_MODULES`` below for why that was wrong and what replaced
+#: it. ``cost_schema``'s three frozen constants are a **proposed** narrowing,
+#: recorded as a referral rather than as a ruling.
 TRACK_A_PERMITTED_IMPORTS: dict[str, frozenset[str]] = {
     "scripts.m15_gate3a.path_authority": frozenset(
         {"PathAuthorityError", "is_within", "resolve_candidate"}
@@ -615,13 +621,60 @@ TRACK_A_PERMITTED_IMPORTS: dict[str, frozenset[str]] = {
     "scripts.m15_gate3a.pair_authority": frozenset(
         {"PAIRS_20", "PairAuthorityError", "canonical_pair"}
     ),
+    # The derivation-bypass containment. It exists precisely so that Track A's
+    # aggregation cannot escape its authorised route, so Track A importing it is
+    # the intended direction. stdlib-only by construction, and
+    # ``test_derivation_containment_imports_nothing_first_party`` pins that —
+    # an earlier revision claimed such a test existed when it did not.
+    "scripts.m15_gate3a.derivation_containment": frozenset(
+        {
+            "DerivationContainmentError",
+            "authorised_derivation_window",
+            "is_real_row",
+            "mark_real_rows_handed_out",
+            "real_rows_handed_out",
+            "stamp_real_provenance",
+        }
+    ),
+    # Calendar A/B authoring and the two frozen predicates R1 needs to place a
+    # bar in a session and to apply Ruling 4's rollover exclusion. Pure calendar
+    # arithmetic; it reads no file and no price.
+    # The two session predicates whose content is committed: Ruling 4's frozen
+    # session partition and its frozen rollover window. The module that authored
+    # a market calendar is deleted; this one adds no
+    # market-hours claim, and a hand-written oracle test pins that it has not
+    # grown one back.
+    "scripts.m15_gate3a.session_windows": frozenset(
+        {
+            "COVERAGE_STATUS",
+            "HOLIDAY_CONSEQUENCE",
+            "HOLIDAY_STATUS",
+            "ROLLOVER_CONSEQUENCE",
+            "bucket_overlaps_rollover",
+            "is_event_eligible_window",
+            "session_of",
+        }
+    ),
+    # Ruling 5's frozen cost constants and Ruling 4's frozen session partition.
+    # Named symbols, not the module: ``validate_cost_table`` stays out of reach.
+    "scripts.m15_gate3a.cost_schema": frozenset(
+        {"EXECUTION_PADDING_PIP", "FLAT_SLIPPAGE_CELL_PIP", "SESSIONS_UTC"}
+    ),
     # ``aggregate_m15`` is the derivation route's delegate, bound in the diff
     # because §8.12.10 condition 3 requires "an explicit committed caller"
     # rather than a decision a session reports having taken.  It is reader-free:
     # a pure function over row dicts, and ``scripts/m15_gate3a/aggregation.py``
     # opens no file anywhere.
     "scripts.m15_gate3a.aggregation": frozenset(
-        {"BUCKET_MINUTES", "FULL_BUCKET_SOURCE_BARS", "aggregate_m15"}
+        {
+            "BUCKET_MINUTES",
+            "FULL_BUCKET_SOURCE_BARS",
+            "aggregate_m15",
+            # The committed pip-size conversion. R1 reports spreads in pips, and
+            # the alternative is a second conversion authority -- the "pip
+            # authority 100x JPY" defect this programme has already had once.
+            "to_pips",
+        }
     ),
 }
 
@@ -642,6 +695,28 @@ TRACK_A_TEST_PERMITTED_MODULES: frozenset[str] = frozenset(
 
 #: Modules Track A may not import from this package at all, named so the failure
 #: message says why rather than only that.
+#:
+#: ⚠ **``calendar_authority`` was briefly removed from this set and has been put
+#: back.** An earlier revision of the R1 enablement work took it out, citing
+#: ``docs/governance/m15_track_a_r1_enablement_ruling.md`` §3 — **a file that did
+#: not exist**. Two review roles found the dangling citation independently, and
+#: a third pointed at the merged authority the justification contradicted:
+#: ``m15_track_a_execution_gate.md`` §8 (`37edbb0`) says "requiring it of Track A
+#: would **block exploration on an artefact that does not exist, for no leakage
+#: reason**". The reasoning offered — that D-6 forces Track A to reach the
+#: validator — was a rationalisation. The calendar itself is now **deleted**
+#: (D-6: no market-hours time "may be added by an implementer"), so Track A
+#: neither validates a calendar nor needs to: it passes ``expected_minutes=None``
+#: and reports the coverage authority as absent.
+#:
+#: ``cost_schema`` stays out of this set. That narrowing **is** a change to a
+#: committed restriction, and it is ruled — not assumed — in
+#: ``docs/governance/m15_track_a_r1_enablement_referrals.md`` §4:
+#: ``TRACK_A_COST_SCHEMA_IMPORT_NARROWING_IS_IMPLEMENTATION_ONLY_PERMITTED``.
+#: What is permitted is three frozen constants — Ruling 5's two cost pads and
+#: Ruling 4's session partition. ``validate_cost_table`` and everything else stay
+#: unreachable, and no cost **decision** becomes available to Track A that was
+#: not before.
 TRACK_A_FORBIDDEN_MODULES: frozenset[str] = frozenset(
     {
         "scripts.m15_gate3a.proof",
@@ -650,7 +725,6 @@ TRACK_A_FORBIDDEN_MODULES: frozenset[str] = frozenset(
         "scripts.m15_gate3a.calendar_authority",
         "scripts.m15_gate3a.sealing",
         "scripts.m15_gate3a.effective_n",
-        "scripts.m15_gate3a.cost_schema",
     }
 )
 

@@ -192,4 +192,19 @@ artifacts/stage29_0a/sanity_probe.json
 
 # Track A research scratch — NON_DECISION_BEARING_EXPLORATORY_ONLY output.
 # Never evidence, and never swept into a commit by an over-broad "git add".
-artifacts/track_a_scratch/
+artifacts/track_a_scratch/*
+
+# Track A governance ledgers are the opposite case and are NOT ignored.
+# §8.13.5 item 5 requires the EXPLORATORY_SEEN_DATA ledger to be "write-ahead,
+# append-only, **committed** — it is what makes the one-way transition
+# auditable", and item 6 says the same of the breadth (K) record because it
+# "cannot be reconstructed afterwards". They used to live under the scratch root
+# above, so the irreversible record survived only in an untracked, deletable
+# file. Listed here explicitly, rather than merely being absent, so that a later
+# broad ignore rule cannot quietly re-capture them.
+!artifacts/track_a_scratch/ledger/
+!artifacts/track_a_scratch/ledger/**
+# ...but not the lock files: a committed lock has a fresh mtime on checkout,
+# so `_break_lock_if_abandoned` will not break it for 120 s and every
+# write-ahead declaration refuses in the meantime.
+artifacts/track_a_scratch/ledger/*.lock

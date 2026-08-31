@@ -4,13 +4,23 @@
 `.py` sources — which is what the fingerprint is taken over — or a synthetic copy
 of them in a temporary tree.
 
-**If `test_the_recorded_fingerprint_still_matches_the_implementation` fails, the
-fix is not to update the number.** It means the read implementation changed
-after the grant was approved, so the grant no longer covers what would run. The
-grant needs re-approval by a human + ChatGPT decision, and the recorded value
-follows from that decision — not the other way round. That is the whole point of
-`READ_GRANT_BINDS_TO_APPROVED_IMPLEMENTATION_ANCESTRY_NOT_SELF_REFERENTIAL_EXECUTION_HEAD`:
-the failure is the mechanism working.
+**The recorded grant is now INVALID, and this file asserts that rather than
+hiding it.** The R1 enablement work changed the read implementation — a
+derivation body, the bypass containment, the calendars, the ledger move — so
+`implementation_fingerprint()` moved from `497e187b…` to a new value and the
+grant recorded at `d694377` no longer covers what would run.
+
+That is the mechanism working, exactly as
+`READ_GRANT_BINDS_TO_APPROVED_IMPLEMENTATION_ANCESTRY_NOT_SELF_REFERENTIAL_EXECUTION_HEAD`
+intends: **any** change on the declared surface voids the grant with no human in
+the loop. It was expected before the work started, and §13 of the enablement
+brief says so in as many words: "既存ReadGrantは失効する。これはexpected。
+旧grantを延命するためにfingerprint surfaceを狭めない."
+
+So the assertion is inverted rather than updated. The recorded number is left
+untouched — editing it would be forging an approval nobody gave — and a new
+grant is issued in a separate authorization-only step once this head is merged
+and approved.
 """
 
 from __future__ import annotations
@@ -24,7 +34,7 @@ from pathlib import Path
 import pytest
 
 from scripts.m15_gate3a.pair_authority import PAIRS_20
-from scripts.m15_track_a import authorization, containment, oos_slice
+from scripts.m15_track_a import authorization, containment, identity, oos_slice
 
 GRANT_DOCUMENT = (
     Path(containment.__file__).resolve().parents[2]
@@ -74,16 +84,55 @@ def _recorded() -> dict[str, str]:
     return rows
 
 
-def test_the_recorded_fingerprint_still_matches_the_implementation() -> None:
-    """Read the module docstring above before changing this number."""
+def test_the_recorded_grant_is_invalidated_by_the_r1_enablement_change() -> None:
+    """The grant recorded at `d694377` no longer covers this implementation.
+
+    Asserted as a **fact about this head**, not as a failure. Read the module
+    docstring: the enablement work was always going to move the fingerprint, and
+    the correct response is a new grant, never an edited number.
+    """
     recorded = _recorded()["approved_implementation_fingerprint"]
     measured = containment.implementation_fingerprint()
-    assert recorded == measured, (
-        "the recorded ReadGrant is bound to implementation "
-        f"{recorded} and this tree hashes to {measured}. The read implementation "
-        "changed after the grant was approved, so the grant no longer covers what "
-        "would run. Do not edit the recorded value: the grant needs re-approval."
+    assert recorded != measured, (
+        "the recorded grant still matches this implementation. Either the "
+        "enablement change did not reach the declared surface — which would mean "
+        "the derivation body, the containment and the calendars are outside it — "
+        "or the recorded value was edited. Both are defects."
     )
+    assert recorded == "497e187bb9fcfbc51a348d59c486bccf8d0e7c27c6fbf52cc28908a8073a7018", (
+        "the recorded value changed. It is the number a human approved; a later "
+        "session may not rewrite it."
+    )
+
+
+def test_the_invalidated_grant_is_actually_refused_at_the_gate() -> None:
+    """Not just unequal — refused, by the gate, on this tree."""
+    recorded = _recorded()
+    grant = authorization.ReadGrant(
+        operation=recorded["operation"],
+        span_start_utc=recorded["span_start_utc"],
+        span_end_utc=recorded["span_end_utc"],
+        pairs=tuple(sorted(PAIRS_20)),
+        timeframe=recorded["timeframe"],
+        approved_head_sha=recorded["approved_head_sha"],
+        approved_implementation_fingerprint=recorded["approved_implementation_fingerprint"],
+        approver_record=GRANT_DOCUMENT.name,
+    )
+    with pytest.raises(authorization.AuthorizationError, match="implementation"):
+        authorization.require_authorization(
+            grant,
+            operation=authorization.OPERATION_HISTORICAL_READ,
+            span_start_utc=recorded["span_start_utc"],
+            span_end_utc=recorded["span_end_utc"],
+            pairs=tuple(sorted(PAIRS_20)),
+            timeframe="M1",
+            identity=identity.RunIdentity(
+                run_id="grant-invalidation-check",
+                code_sha=recorded["approved_head_sha"],
+                calendar_semantics=identity.CALENDAR_UTC_DATES_NO_MARKET_HOURS,
+                started_at_utc="2026-08-31T00:00:00Z",
+            ),
+        )
 
 
 def test_the_documents_pair_list_is_the_frozen_universe() -> None:
