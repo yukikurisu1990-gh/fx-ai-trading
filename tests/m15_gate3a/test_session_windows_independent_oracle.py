@@ -142,7 +142,17 @@ def test_the_rollover_window_is_the_committed_minimum_and_is_not_narrowed() -> N
 def test_eligibility_is_the_rollover_window_and_nothing_else() -> None:
     """No holiday list exists, so none is applied — and the module says so."""
     assert "FIXED_AT_DESIGN_AUDIT" in session_windows.HOLIDAY_STATUS
-    assert "OVERSTATED" in session_windows.HOLIDAY_CONSEQUENCE
+    # The stated directions, checked as the *derivation* rather than as strings.
+    # An earlier revision asserted "OVERSTATED" for the rate, which a review role
+    # showed was self-contradictory: not excluding thin sessions raises modelled
+    # cost, which makes the hurdle harder, while leaving those bars in the rate's
+    # denominator too. Indeterminate is the honest answer.
+    assert "INDETERMINATE" in session_windows.HOLIDAY_CONSEQUENCE
+    assert "OVERSTATED" not in session_windows.HOLIDAY_CONSEQUENCE
+    assert "DOWN" in session_windows.HOLIDAY_CONSEQUENCE
+    # Rollover moves the other way and says so, which is why both are stated.
+    assert "LOWERS" in session_windows.ROLLOVER_CONSEQUENCE
+    assert "RAISES" in session_windows.ROLLOVER_CONSEQUENCE
     for hour, minute in ((21, 45), (22, 0)):
         assert not session_windows.is_event_eligible_window(
             datetime(2025, 6, 11, hour, minute, tzinfo=UTC)
@@ -178,31 +188,84 @@ def test_the_windows_do_not_move_across_a_dst_transition(day: object) -> None:
         ) is session_windows.bucket_overlaps_rollover(control)
 
 
-def test_no_market_hours_claim_is_made_anywhere_in_the_module() -> None:
-    """The module must not have grown a week boundary back.
+def test_the_module_reads_no_date_component_at_all() -> None:
+    """A market-hours claim needs a **date**; this module may only read a clock.
 
-    Judged on the AST and on named constants rather than on prose, because the
-    docstring legitimately *discusses* market hours in order to refuse them.
+    The first version of this test was a **name denylist** — it looked for
+    `FX_WEEK_OPEN_WEEKDAY`, `in_fx_week` and two others. A review role wrote the
+    same Sunday-22:00-to-Friday-22:00 claim back under different names and it
+    **passed**. That is the "denylist wearing a structural label" shape this
+    repository keeps retiring.
+
+    This is the structural version. Any weekly boundary, any DST rule and any
+    holiday list must consult the **date**: a weekday, a calendar date, an
+    ordinal or a month. A module that reads only the hour and minute cannot
+    express one, whatever it names its constants. So the property asserted is
+    the absence of every date accessor, on the AST.
     """
     import ast
     import inspect
 
     tree = ast.parse(inspect.getsource(session_windows))
-    names = {
-        target.id
-        for node in ast.walk(tree)
-        if isinstance(node, ast.Assign)
-        for target in node.targets
-        if isinstance(target, ast.Name)
-    } | {
-        node.target.id
-        for node in ast.walk(tree)
-        if isinstance(node, ast.AnnAssign) and isinstance(node.target, ast.Name)
+    date_accessors = {
+        "weekday",
+        "isoweekday",
+        "date",
+        "toordinal",
+        "timetuple",
+        "tm_wday",
+        "tm_yday",
+        "tm_mday",
+        "tm_mon",
+        "tm_year",
+        "day",
+        "month",
+        "year",
+        "dst",
+        "astimezone",
     }
-    for forbidden in ("FX_WEEK_OPEN_WEEKDAY", "FX_WEEK_CLOSE_WEEKDAY", "MARKET_OPEN_CLOSE_RULE"):
-        assert forbidden not in names, f"{forbidden} is a market-hours claim"
-    functions = {node.name for node in ast.walk(tree) if isinstance(node, ast.FunctionDef)}
-    assert "in_fx_week" not in functions
+    reached: set[str] = set()
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Attribute) and node.attr in date_accessors:
+            reached.add(node.attr)
+        elif isinstance(node, ast.Call):
+            name = getattr(node.func, "id", None) or getattr(node.func, "attr", None)
+            if name in date_accessors:
+                reached.add(name)
+    assert not reached, (
+        f"the module reads date component(s) {sorted(reached)}. Only the hour and "
+        "minute may be read: anything that distinguishes one date from another can "
+        "express a market-hours boundary, which D-6 forbids an implementer adding."
+    )
+
+
+def test_the_predicates_are_blind_to_the_date() -> None:
+    """The same property, measured rather than read off the AST.
+
+    Every UTC clock time must answer identically on every date it is asked
+    about — including a Sunday, a Saturday, a weekday, a leap day and both DST
+    transition directions. If any weekly or holiday boundary were present, one
+    of these would differ.
+    """
+    dates = (
+        datetime(2025, 5, 4, tzinfo=UTC),  # Sunday
+        datetime(2025, 5, 9, tzinfo=UTC),  # Friday
+        datetime(2025, 5, 10, tzinfo=UTC),  # Saturday
+        datetime(2025, 12, 25, tzinfo=UTC),  # a holiday, if one existed
+        datetime(2024, 2, 29, tzinfo=UTC),  # leap day
+        datetime(2025, 3, 9, tzinfo=UTC),  # US DST forward
+        datetime(2025, 11, 2, tzinfo=UTC),  # US DST back
+    )
+    for index in range(0, 24 * 60, 5):
+        hour, minute = divmod(index, 60)
+        answers = {
+            (
+                session_windows.session_of(day.replace(hour=hour, minute=minute)),
+                session_windows.bucket_overlaps_rollover(day.replace(hour=hour, minute=minute)),
+            )
+            for day in dates
+        }
+        assert len(answers) == 1, f"{hour:02d}:{minute:02d} answers differently by date"
 
 
 def test_derivation_containment_imports_nothing_first_party() -> None:

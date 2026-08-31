@@ -69,10 +69,26 @@ COVERAGE_STATUS: Final[str] = "COVERAGE_AUTHORITY_ABSENT_R1_REPORTS_A_DECLARED_L
 HOLIDAY_STATUS: Final[str] = (
     "RULING_4_HOLIDAY_THIN_LIQUIDITY_LIST_IS_FIXED_AT_DESIGN_AUDIT_AND_NONE_EXISTS"
 )
+#: ⚠ **Corrected.** This said the eligible-bar rate is "OVERSTATED", and a review
+#: role showed the two halves of that sentence contradicted each other. Derived
+#: rather than asserted this time, from `1.5 x ATR >= 2.0 x cost`:
+#:
+#: * thin sessions stay in the spread population -> median spread HIGHER ->
+#:   modelled cost HIGHER -> the hurdle is HARDER -> for a given bar,
+#:   eligibility is *less* likely, not more;
+#: * but those same bars also stay in the rate's **denominator**, where
+#:   excluding them would have removed them from both parts of the fraction.
+#:
+#: So the rate moves in **no determinate direction** — which is the honest
+#: answer, and the opposite of what "OVERSTATED" claimed. The ratio's median is
+#: determinate and conservative: higher cost divides the same barrier, so the
+#: median goes DOWN, which makes T-3's hurdle harder rather than easier.
 HOLIDAY_CONSEQUENCE: Final[str] = (
-    "no date is excluded for illiquidity, so the eligible-bar rate is OVERSTATED "
-    "and thin sessions remain in the barrier/cost population, which pushes that "
-    "ratio's median DOWN"
+    "no date is excluded for illiquidity. Thin sessions stay in the spread "
+    "population, which RAISES modelled cost; they also stay in the eligible-bar "
+    "rate's denominator, so the rate's direction is INDETERMINATE. The "
+    "barrier/cost median is determinate and moves DOWN, i.e. conservative for "
+    "the hurdle"
 )
 
 #: The rollover exclusion's direction, stated for the same reason the holiday
