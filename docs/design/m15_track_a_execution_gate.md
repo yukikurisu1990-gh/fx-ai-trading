@@ -540,9 +540,11 @@ not replace the gate-6 source-contamination audit Track B still needs.
 
 ## 12. Governance propagation — done, and not done
 
-**`GOVERNANCE_PROPAGATION_COMPLETE` — on this PR's merge, not before**, and
-`GOVERNANCE_PROPAGATION_IMPLEMENTATION_PENDING` governs until then, exactly as
-C-10 says.
+**`GOVERNANCE_PROPAGATION_COMPLETE`** — held from PR #455's merge as
+**`fc3e0f8`** on master, 2026-08-31. C-10 requires the predicate true "on a named
+master SHA"; that SHA is `fc3e0f8`, and this line records it rather than
+promising it. `GOVERNANCE_PROPAGATION_IMPLEMENTATION_PENDING` governed until
+that merge and no longer does.
 
 This is the third spelling PR #455 has tried, and the first two were both wrong
 in the way C-10 anticipates. The first wrote the discharges into a *different*

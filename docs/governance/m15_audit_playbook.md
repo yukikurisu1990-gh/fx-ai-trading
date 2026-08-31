@@ -399,10 +399,15 @@ only where something was run or read, never where something was believed.
       are **discharged**. §8.11–§8.13 are citable authority.
 - [x] **Governance propagation complete**, as §8.12.13 C-10 defines it: the
       **P-1 … P-15** predicate on named files, discharged **in those files** at
-      PR #455 — P-5 in the §1 gate table above, **P-10** in the MRG's §8.13
-      approval line (`4f45515`), **P-13** in the gate-4 design audit's §1a. An
-      earlier revision of PR #455 ticked this box on discharges written into a
-      *different* file; two review roles refuted it, and
+      PR #455 — P-5 in the §1 gate table above, **P-10** on **all eight**
+      RULED MRG sections rather than on §8.13 alone (verified 8 of 8 at
+      PR #456; C-9 wants the identifier on *every* RULED section, and one
+      section declaring it for the others at a distance is the self-assessment
+      C-10 refuses), **P-13** in the gate-4 design audit's §1a. C-10 requires
+      the predicate true on a named *master* SHA and it now is: PR #455 merged
+      as **`fc3e0f8`**. An earlier revision of PR #455 ticked this box on
+      discharges written into a *different* file; two review roles refuted it,
+      and
       `PROPAGATION_COMPLETENESS_IS_A_PREDICATE_ON_NAMED_FILES_NOT_A_SELF_ASSESSMENT`
       is why. The per-item table is
       `docs/design/m15_track_a_execution_gate.md` §12.
@@ -468,32 +473,61 @@ only where something was run or read, never where something was believed.
       `RESEARCH_SCRATCH_NON_AUTHORITATIVE`, on `HistoricalRead`, `DerivedM15` and
       `R1Survey` alike, and lands nowhere near the evidence tree.
 
-**The two items no tick can reach, and they are the whole of what is left.**
+**The two items no session could tick, taken as human decisions at PR #456.**
 
-- [ ] **An explicit human + ChatGPT `track_a_historical_read` grant** against the
-      implementation fingerprint of a *merged* head carrying PR #455. The
-      PR #454 grant is bound to `497e187b…` and this work moved the
-      fingerprint, so it is **invalid by design** — §13 of the enablement brief
-      said it would be, and told the session not to narrow the surface to
-      preserve it.
-- [ ] **An explicit human + ChatGPT `track_a_m15_research_derivation` grant.**
-      A read grant does not authorise a derivation (§2.5), and the route
-      refuses without one.
+- [x] **An explicit `track_a_historical_read` grant** against the implementation
+      fingerprint of a *merged* head carrying PR #455 — recorded at
+      `docs/governance/m15_track_a_r1_dual_grants.md` §2, on the human
+      instruction of 2026-08-31, bound to approved head **`fc3e0f8`** and
+      fingerprint **`e43583e0…`**, **measured on the merged tree** and
+      cross-checked against the git blobs at that head rather than transcribed
+      from a report. The PR #454 grant is bound to `497e187b…` and this work
+      moved the fingerprint, so it is **invalid by design** — §13 of the
+      enablement brief said it would be, and told the session not to narrow the
+      surface to preserve it. It is left invalid and its recorded number is not
+      edited. Tested:
+      `test_the_recorded_fingerprint_is_this_implementation` and
+      `test_the_recorded_grant_is_accepted_by_the_gate`, against
+      `test_the_recorded_grant_is_invalidated_by_the_r1_enablement_change` for
+      the old one.
+- [x] **An explicit `track_a_m15_research_derivation` grant** — §3 of the same
+      record, same head, same fingerprint, arm (i) route only. A read grant does
+      not authorise a derivation (§2.5) and the route refuses without one, which
+      is why there are two rather than one widened. Tested:
+      `test_neither_grant_covers_the_other_operation`.
 
-`IMPLEMENTATION_READY_AUTHORIZATION_PENDING` — every mechanical prerequisite is
-in place and demonstrated on synthetic data end to end; both remaining items are
-human decisions, and neither is a session's to take.
+`TRACK_A_R1_PREFLIGHT_COMPLETE_15_OF_15` ·
+`AUTHORIZED_NOT_EXECUTED_AWAITING_AN_EXPLICIT_EXECUTION_COMMAND` — every
+mechanical prerequisite is in place and demonstrated on synthetic data end to
+end, and both grants are recorded. **Nothing has been read.**
 
-**The read grant is deliberately NOT an item of this checklist.** It is the
-**next** step, taken after the gate passes:
+**The execution command is deliberately NOT an item of this checklist, and
+never becomes one.**
 
-> **Step 3 (separate).** An explicit human + ChatGPT **read grant** naming the
-> operation, span, pairs, timeframe and approved head SHA
-> (`scripts/m15_track_a/authorization.py`). A contract permission is not an
-> execution authorisation, and neither is a passed gate. If the grant were an
-> item here, a fully-ticked §5a would *be* the authorisation — which is exactly
-> the collapse §8.12.1 says "every prior confusion in this packet's history has
-> run through".
+PR #455 added the two grant rows above to a checklist whose closing paragraph
+still read "the read grant is deliberately NOT an item of this checklist" — a
+contradiction inside one section. PR #456 resolves it by naming the object the
+safeguard is actually about, not by deleting the safeguard.
+
+The collapse §8.12.1 warns of is **a checklist state that constitutes permission
+to run**. A recorded grant does not create that state, because a grant is a
+statement of *scope*: which operation, over which span, over which pairs, at
+which timeframe, against which implementation. It answers "if this runs, how far
+may it reach" and never "run it". The step that answers the second question is a
+human act taken after this checklist, against a specific head:
+
+> **Step 3 (separate).** An explicit human + ChatGPT **execution command**
+> naming the operation, span, pairs, timeframe and approved head SHA. A
+> contract permission is not an execution authorisation; neither is a passed
+> gate; and neither is a recorded grant. Constructing a `ReadGrant`
+> (`scripts/m15_track_a/authorization.py`) is not the act of granting one, and
+> a fully-ticked §5a is not the act of commanding one.
+
+So **15 of 15 is not an authorisation to read.** It says the apparatus is built,
+the scope is recorded, and what is outstanding is the one thing a checklist
+structurally cannot supply. The R1 execution command of 2026-08-31 was refused
+at a §5a that looked complete to whoever issued it, which is the evidence that
+this distinction does real work.
 
 **On "the gate authorises R1 only":** that phrase states the **scope** a gate
 pass can reach — R1, never R3 or R4 — not that a pass is **sufficient** for R1.
