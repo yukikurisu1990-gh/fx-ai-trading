@@ -1,7 +1,8 @@
 # T-3 — which stage owns it
 
-**Status:** `T_3_IS_A_LATER_STAGE_DUTY_UNDER_THE_DECLARED_CANDIDATES_FROZEN_COST_TABLE`
-· `T_3_NUMERATOR_NOT_RULED_HERE_BECAUSE_R1_IS_NOT_THE_STAGE_THAT_NEEDS_IT`
+**Status:** `T_3_IS_A_TRACK_A_DUTY_AT_THE_DECLARED_CANDIDATE_UNDER_ITS_FROZEN_COST_TABLE_NOT_AT_R1`
+· `A_TRACK_A_MEASUREMENT_FIRES_T_3_S_BLOCK_UNCHANGED`
+· `T_3_NUMERATOR_NOT_RULED_HERE_BECAUSE_R1_IS_NOT_THE_STAGE_THAT_TAKES_IT`
 
 **Approval identifier: PR #455.** Recorded 2026-08-31 as an explicit human +
 ChatGPT ruling. Before that PR merges this record is not citable authority; the
@@ -11,6 +12,35 @@ merge is what confers it.
 `PRODUCTION_READINESS_NOT_CLAIMED`
 
 ---
+
+## 0. Correction — the second revision of this document was also wrong
+
+The **first** revision put the measurement in R1 and ruled a numerator; a review
+role showed the reconstruction was not honest. The **second** moved the duty out
+of Track A entirely and said "Track A neither fires the block". A review role
+showed that was worse: it **removed a stop trigger**, and reasoned from a clause
+that had already been superseded.
+
+`docs/design/m15_first_cost_hurdle_aware_preregistration_design.md` **§13a is
+RULED and IN FORCE**, and it is the amendment D-3 was waiting for. Its §6 row,
+verbatim:
+
+> | **§6** barrier/spread ratio "**before implementation** … derived and
+> recorded" | The derivation is a **Track A duty**, performed under the declared
+> candidate's frozen cost table. Its "before implementation" timing is
+> **re-sited into Track A**, before Track B candidate pre-registration
+> completes. A Track A measurement **fires** T-3's block; it does **not**
+> discharge playbook §6's checkbox (§8.13.6) |
+
+So D-3's "until it is amended … prereg §6 governs" no longer bites: prereg §6
+**has** been amended, and the amendment sites the duty **inside Track A** and
+**keeps the firing**. The second revision cited D-3's conditional without
+checking whether its condition still held — and, having just recorded the first
+revision's truncated quotation of playbook §6 as a fault, truncated the same
+sentence again, stopping before "a Track A measurement **fires** T-3's block".
+
+Both errors are corrected below.
+`A_TRACK_A_MEASUREMENT_FIRES_T_3_S_BLOCK_UNCHANGED`.
 
 ## 1. What this ruling replaces
 
@@ -26,26 +56,16 @@ this round is explicit — decide **by T-3's intent and its authority, not by
 which reading is stricter** — and on that basis the authorities are not in
 conflict at all.
 
-## 2. Step 1 — the stage. **Not R1.**
+## 2. Step 1 — the stage. **A Track A duty, and not at R1.**
 
-§7's stage table lists "the distribution of `barrier_distance / cost` on eligible
-bars and its median (T-3)" under R1, and §2 says it "belongs in R1, not after a
-model exists". **§8.13.10's D-3 corrects that classification by name**, and D-4
-then fixes where the duty does sit.
+Three authorities, read together rather than one at a time.
 
-**D-3(1), verbatim:**
+**prereg §13a (RULED, IN FORCE)** — quoted in §0 — makes the derivation a **Track
+A duty** "performed under the declared candidate's frozen cost table", re-sites
+the "before implementation" timing **into** Track A, and states that a Track A
+measurement **fires** T-3's block.
 
-> **prereg §6 was quoted with "before implementation" removed.** Its text is:
-> "**before implementation**, the actual distribution of `barrier_distance /
-> cost` on design data must be derived and recorded". Since §8.11.12 A-3 records
-> that Track A is where the features, calibration, EV gate and cost table "**get
-> written for the first time**", Track A *is* implementation, and classifying the
-> measurement as a Track A surface **inverts** prereg §6's timing. prereg §6 is
-> added to propagation as **P-15**, and until it is amended
-> `WHERE_THIS_PACKET_AND_A_GOVERNANCE_DOCUMENT_DISAGREE_THE_GOVERNANCE_DOCUMENT_GOVERNS_UNTIL_PROPAGATED`
-> means **prereg §6 governs**.
-
-**D-4, verbatim:**
+**D-4**, in the same direction:
 
 > **The measurement is therefore a duty, not a permission**: the ratio is
 > computed on the design span under the **declared candidate's frozen cost
@@ -54,24 +74,35 @@ then fixes where the duty does sit.
 > with P-14.
 > **`THE_T_3_RATIO_MEASUREMENT_IS_A_DUTY_UNDER_THE_DECLARED_CANDIDATES_COST_TABLE_NOT_A_PERMISSION`.**
 
-The playbook agrees: its §6 item is satisfied "from the §4 derivation artifact
-under the declared candidate's frozen cost table".
+**playbook §6**, quoted through to the end of the sentence this time:
 
-**So T-3 is option B: a later-stage duty.** R1 has no frozen cost table — it is
-the stage that *measures the spreads the cost table will be built from* — so a
-T-3 value computed in R1 would be computed under a cost table that does not yet
-exist, which is exactly the timing inversion D-3 names.
+> ratio rule computed **from the §4 derivation artifact under the declared
+> candidate's frozen cost table** — **a Track A measurement fires T-3's block**
+> but does not discharge this checkbox
 
-**This is decided on intent, and the intent is served by it.** T-3 asks whether
-M15 "demonstrably escapes the M1 cost regime" for the thing that will actually
-be traded — a declared candidate under a frozen cost table. A number computed
-before either exists answers a different question, and would either fire a block
-on a figure the candidate does not use or fail to fire one it should.
+All three name the same trigger: **a declared candidate with a frozen cost
+table**. That is inside Track A — §8.11.12 A-3 records Track A as where the cost
+table "gets written for the first time" — and it is **not R1**.
+
+**Why not R1, decided on intent rather than on strictness.** R1 is the stage
+that *measures the spreads a cost table will be built from*. It has no declared
+candidate and no frozen cost table, so a T-3 value taken there would be taken
+under a cost table that does not exist yet. T-3 asks whether M15 "demonstrably
+escapes the M1 cost regime" **for the thing that will actually be traded**; a
+number computed before that thing exists answers a different question, and would
+either fire the block on a figure no candidate uses or fail to fire one it
+should.
+
+**What R1's number is, then.** A descriptive statistic — one of the things §7
+also asks R1 for — and *not* the measurement §13a names. It fires nothing,
+because it is not that measurement. **The block is untouched: when the Track A
+measurement is taken under the declared candidate's frozen cost table, it fires
+exactly as §13a, D-4 and playbook §6 say.**
 
 ## 3. Step 2 — the numerator. **Not ruled, and R1 does not need it.**
 
-Under option B the numerator ruling belongs with the stage that owns the
-measurement. It is **not taken here**, and the reasons are worth recording so it
+The numerator ruling belongs with the stage that **takes** the measurement —
+Track A at the declared candidate, under its frozen cost table. It is **not taken here**, and the reasons are worth recording so it
 is not re-litigated from scratch:
 
 | Reading | Numerator | Ratio on eligible bars |
@@ -91,7 +122,7 @@ Two facts a later ruling should start from, both measured rather than argued:
   barriers", while `1.5 × ATR14_M15` is not called a barrier anywhere in the
   committed text. A review role raised both points and they stand unanswered.
 
-`T_3_NUMERATOR_REFERRED_TO_THE_STAGE_THAT_OWNS_THE_MEASUREMENT`.
+`T_3_NUMERATOR_REFERRED_TO_THE_STAGE_THAT_TAKES_THE_MEASUREMENT`.
 
 ## 4. What R1 does instead
 
@@ -110,8 +141,11 @@ the later stage its numbers without pre-empting either ruling.
 
 ## 5. What this ruling does not do
 
-- it does **not** weaken T-3. The block still fires, at the stage that owns it,
-  under the cost table the contract names;
+- it does **not** weaken T-3. **A Track A measurement fires the block**, exactly
+  as §13a, D-4 and playbook §6 say — at the declared candidate, under its
+  frozen cost table. The second revision of this document said Track A
+  "neither fires the block", which removed a stop trigger; that sentence is
+  **withdrawn**;
 - it does **not** decide P-14 (which derivation discharges playbook §6's
   checkbox) or the numerator;
 - it does **not** resolve **S-20a** — which price series `ATR14_M15` uses is an

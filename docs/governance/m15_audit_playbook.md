@@ -461,7 +461,8 @@ only where something was run or read, never where something was believed.
       **downstream** obligation the declaration guard cannot detect, carried as
       `A_TRAILING_PURGE_APPLIES_AT_THE_SLICE_BOUNDARY_AND_IS_NOT_DISCHARGED_BY_THIS_READ`.
 - [x] **No legacy-evidence dependency** (C-8 held). R1 reads the committed
-      `365d_BA` M1 source and the two calendars, and nothing under
+      `365d_BA` M1 source and nothing else — the calendars an earlier revision
+      of PR #455 authored are deleted — and nothing under
       `artifacts/ml_step4/**`; the isolation hook refuses that tree by name.
 - [x] Track A output is **both** `NON_DECISION_BEARING_EXPLORATORY_ONLY` and
       `RESEARCH_SCRATCH_NON_AUTHORITATIVE`, on `HistoricalRead`, `DerivedM15` and

@@ -43,23 +43,29 @@ derivation is **not** the §4 artifact and may never be recorded as one.
 What the body does
 ------------------
 
-Per pair, in the order the grant names them: hand the authorised M1 rows to the
-committed aggregator together with the expected-slot set **Calendar A** declares
-for that pair, and keep the ``(bars, gap_report)`` pair it returns.  Nothing
-else — no labels, no features, no ATR, no cost model, no eligibility.  Those are
-R1's survey, and the survey is a separate module so that this route stays the
-one thing it is: the authorised way to turn M1 rows into M15 bars.
+Per pair, in the intersection of grant and request: hand the authorised M1 rows
+to the committed aggregator and keep the ``(bars, gap_report)`` pair it returns.
+Nothing else — no labels, no features, no ATR, no cost model, no eligibility.
+Those are R1's survey, and the survey is a separate module so that this route
+stays the one thing it is: the authorised way to turn M1 rows into M15 bars.
 
-Three properties are worth naming because each is a refusal rather than a
+**``expected_minutes`` is passed as ``None``, and that is a decision rather than
+an omission.** An earlier revision of this module required a Calendar A and
+refused without one. PR #444's D-6 forbids an implementer authoring market-hours
+times, DST transitions or a holiday list; the execution gate §8 says requiring a
+`ValidatedCalendar` of Track A "would block exploration on an artefact that does
+not exist, for no leakage reason"; and
+`PRE_CONTINUATION_CALENDAR_ARTIFACT_APPROVAL_REQUIRED` is open. So there is no
+approved calendar to pass, the aggregator's calendar-derived accounting comes
+back ``None``, and this route records
+``COVERAGE_AUTHORITY_ABSENT_R1_REPORTS_A_DECLARED_LABEL_DIAGNOSTIC`` so that the
+absence is reported rather than filled in.
+
+Two properties are worth naming because each is a refusal rather than a
 convention:
 
-* the expected-slot set is **required**, not optional.  ``aggregate_m15`` accepts
-  ``expected_minutes=None`` and then reports its calendar-derived accounting as
-  ``None``; a derivation that silently produced no coverage accounting is
-  exactly the "measurement with no authority" R1 was blocked on, so this route
-  refuses instead;
-* the calendar is validated **through** ``validate_calendar`` and its epoch is
-  checked, so a calendar for another epoch cannot be substituted;
+* the pair list is the **intersection** of grant and request — narrowest wins,
+  as on the read route, which learned it twice;
 * the window around the delegate call is opened **after** every gate has passed.
   Opening it is not an authorisation, and it is closed on the way out whether
   the aggregation raised or returned.

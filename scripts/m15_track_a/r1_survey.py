@@ -26,8 +26,12 @@ Where each number comes from
 * **eligibility** — ``1.5 × ATR14_M15 ≥ 2.0 × cost(pair, session)``, Ruling 6
   FROZEN, **and** Calendar B's event-eligibility exclusions (rollover, and the
   holiday list, which is empty and says so);
-* **coverage / missingness** — set-difference against **Calendar A**'s expected
-  slots. Never inferred from the data (PR #444 D-6);
+* **coverage / missingness** — a **declared-label observed-structure
+  diagnostic**, not D-6's coverage authority. No approved calendar artifact
+  exists, an implementer may not author one, and D-6's rule that expected slots
+  are "never inferred from observed data" is honoured by **not producing a
+  coverage figure at all**: the calendar-derived fields are reported as absent
+  (`COVERAGE_AUTHORITY_ABSENT_R1_REPORTS_A_DECLARED_LABEL_DIAGNOSTIC`);
 * **ATR14_M15** — Wilder's 14-period ATR over the M15 true range. S-20a records
   that *which price series* ATR is computed on is an
   `UNREGISTERED_RESEARCH_CHOICE`; this uses the **bid** series and says so in the
@@ -37,20 +41,23 @@ Where each number comes from
 What T-3 does **not** do here
 -----------------------------
 
-`T_3_IS_A_LATER_STAGE_DUTY_UNDER_THE_DECLARED_CANDIDATES_FROZEN_COST_TABLE` —
-see `docs/governance/m15_track_a_t3_stage_ruling.md`. §7's stage table lists the
-T-3 median under R1, and **D-3 corrects that classification**: prereg §6 says
-"**before implementation**", §8.11.12 A-3 records that Track A *is* where the
-cost table gets written for the first time, so calling the T-3 measurement a
-Track A surface **inverts** prereg §6's timing — "until it is amended … prereg
-§6 governs". D-4 then fixes where it does belong:
-`THE_T_3_RATIO_MEASUREMENT_IS_A_DUTY_UNDER_THE_DECLARED_CANDIDATES_COST_TABLE_NOT_A_PERMISSION`.
+`T_3_IS_A_TRACK_A_DUTY_AT_THE_DECLARED_CANDIDATE_UNDER_ITS_FROZEN_COST_TABLE_NOT_AT_R1`
+— see `docs/governance/m15_track_a_t3_stage_ruling.md`. prereg §13a (RULED, IN
+FORCE), D-4 and playbook §6 all site the measurement at **a declared candidate
+under its frozen cost table**. R1 has neither: it is the stage that measures the
+spreads a cost table will be built from.
 
 So this module computes **no T-3 status, applies no 3.0 threshold and reaches no
 verdict**. It reports the barrier/cost ratio distribution as an ordinary
-descriptive statistic, under all three candidate numerators, precisely so that
-the later stage — and the numerator ruling that stage still needs — has the
-numbers without R1 having pre-empted either.
+descriptive statistic, under all three candidate numerators, so the stage that
+does take the measurement — and the numerator ruling it still needs — has the
+numbers without R1 pre-empting either.
+
+**The block is untouched.** `A_TRACK_A_MEASUREMENT_FIRES_T_3_S_BLOCK_UNCHANGED`:
+when the Track A measurement is taken under the declared candidate's frozen cost
+table, it fires exactly as §13a says. An earlier revision of this module carried
+a token saying the duty had left Track A altogether, which removed a stop
+trigger; that is withdrawn.
 """
 
 from __future__ import annotations
@@ -70,6 +77,7 @@ from scripts.m15_gate3a.session_windows import (
     COVERAGE_STATUS,
     HOLIDAY_CONSEQUENCE,
     HOLIDAY_STATUS,
+    ROLLOVER_CONSEQUENCE,
     is_event_eligible_window,
     session_of,
 )
@@ -253,7 +261,7 @@ def survey(
     cost_table: dict[str, Any] = {}
     eligibility: dict[str, Any] = {}
     ratios_by_variant: dict[str, list[float]] = {name: [] for name in BARRIER_VARIANTS}
-    per_pair_ratio_median: dict[str, float | None] = {}
+    per_pair_ratio_median: dict[str, dict[str, float | None]] = {}
 
     for pair in pairs:
         bars = derived.bars_by_pair[pair]
@@ -293,7 +301,7 @@ def survey(
         atr = wilder_atr(bars, pair=pair)
         seen = {name: 0 for name in SESSIONS_UTC}
         eligible = {name: 0 for name in SESSIONS_UTC}
-        pair_ratios: list[float] = []
+        pair_ratios: dict[str, list[float]] = {name: [] for name in BARRIER_VARIANTS}
         for bar, atr_pips in zip(bars, atr, strict=True):
             moment: datetime = bar["ts"]
             # Ruling 3 FROZEN, as above. ATR still sees the bar -- the committed
@@ -320,7 +328,8 @@ def survey(
             }
             for name, numerator in variants.items():
                 ratios_by_variant[name].append(numerator / cost)
-            pair_ratios.append(variants["pre_floor_tp"] / cost)
+            for name, numerator in variants.items():
+                pair_ratios[name].append(numerator / cost)
 
         eligibility[pair] = {
             session: {
@@ -330,15 +339,24 @@ def survey(
             }
             for session in SESSIONS_UTC
         }
-        per_pair_ratio_median[pair] = statistics.median(pair_ratios) if pair_ratios else None
+        # All three readings per pair, not just one. "Unranked" has to mean
+        # unranked: an earlier revision exposed only the pre-floor median,
+        # which is the looser of the two readings that can fire.
+        per_pair_ratio_median[pair] = {
+            name: (statistics.median(values) if values else None)
+            for name, values in pair_ratios.items()
+        }
 
     # Reported, unranked, with no threshold and no verdict. Which reading T-3
     # divides is unruled, and R1 is not the stage that needs it ruled (D-3/D-4).
     barrier_cost_ratio = {
         "status": "REPORTED_AS_A_DESCRIPTIVE_STATISTIC_NO_T3_VERDICT_IS_REACHED_HERE",
-        "t3_stage": "T_3_IS_A_LATER_STAGE_DUTY_UNDER_THE_DECLARED_CANDIDATES_FROZEN_COST_TABLE",
+        "t3_stage": (
+            "T_3_IS_A_TRACK_A_DUTY_AT_THE_DECLARED_CANDIDATE_UNDER_ITS_FROZEN_COST_TABLE_NOT_AT_R1"
+        ),
+        "t3_firing": "A_TRACK_A_MEASUREMENT_FIRES_T_3_S_BLOCK_UNCHANGED",
         "numerator_ruling": "UNRULED_ALL_THREE_READINGS_REPORTED",
-        "median_by_pair_pre_floor_tp": per_pair_ratio_median,
+        "median_by_pair": per_pair_ratio_median,
         "variants": {
             name: {
                 "n": len(values),
@@ -369,6 +387,7 @@ def survey(
             "coverage_status": COVERAGE_STATUS,
             "holiday_status": HOLIDAY_STATUS,
             "holiday_consequence": HOLIDAY_CONSEQUENCE,
+            "rollover_consequence": ROLLOVER_CONSEQUENCE,
             "atr_price_series": ATR_PRICE_SERIES,
             "atr_price_series_status": ATR_SERIES_STATUS,
         },
@@ -379,6 +398,7 @@ def survey(
             "candidate's frozen cost table (D-3/D-4).",
             COVERAGE_STATUS,
             HOLIDAY_STATUS + " -- " + HOLIDAY_CONSEQUENCE,
+            ROLLOVER_CONSEQUENCE,
             ATR_SERIES_STATUS,
         ),
     )

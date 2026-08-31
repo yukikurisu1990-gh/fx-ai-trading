@@ -36,7 +36,7 @@ do*.
 
 | # | Step | State |
 | --- | --- | --- |
-| 1 | Two-Track contract approval and merge (PR #451) | **not taken** — this branch is stacked on `2cdb687`, PR #451's unmerged head, so §8.11–§8.13 are `…NOT_YET_CITABLE_AS_AUTHORITY` and every propagated statement here is provisional (§12) |
+| 1 | Two-Track contract approval and merge (PR #451) | ✅ **taken** — merged `4f45515` (2026-08-30); the note below is retained as the state at this document's own drafting | ~~**not taken**~~ — this branch is stacked on `2cdb687`, PR #451's unmerged head, so §8.11–§8.13 are `…NOT_YET_CITABLE_AS_AUTHORITY` and every propagated statement here is provisional (§12) |
 | 2 | This execution gate reviewed, approved, merged | this PR |
 | 3 | Explicit human + ChatGPT **real-data read authorisation** | not requested |
 | 4 | Track A R1 execution | not performed |
@@ -540,8 +540,20 @@ not replace the gate-6 source-contamination audit Track B still needs.
 
 ## 12. Governance propagation — done, and not done
 
-**`GOVERNANCE_PROPAGATION_COMPLETE_AT_THIS_HEAD`** — and this is the second
-time PR #455 has made that claim, so the difference matters.
+**`GOVERNANCE_PROPAGATION_COMPLETE` — on this PR's merge, not before**, and
+`GOVERNANCE_PROPAGATION_IMPLEMENTATION_PENDING` governs until then, exactly as
+C-10 says.
+
+This is the third spelling PR #455 has tried, and the first two were both wrong
+in the way C-10 anticipates. The first wrote the discharges into a *different*
+file. The second minted a token — `…_AT_THIS_HEAD` — that is not in the contract
+vocabulary and scoped it to a **branch** head, when C-10 requires "a named
+**master** SHA". Master is `d694377`; this PR is open; so the predicate is not
+true yet, and saying so is the only accurate thing to say.
+
+What *is* true is that every item is now discharged **in the file it names**, so
+the predicate becomes true on merge without further work. The difference between
+the second and third attempts matters:
 
 The **first** attempt wrote the discharge for P-10 and P-13 into *this* file
 while the files those items name were untouched. Two review roles refuted it
@@ -562,8 +574,10 @@ The discharge is now **in the named files**:
   timing;
 * **P-5** — the playbook's §1 gate table, rebuilt in this PR.
 
-`grep` for the pending tokens in the MRG now returns only the three lines that
-record them as *superseded*.
+`grep` for the pending tokens in the MRG now returns only the lines that record
+them as *superseded*, and **all eight** RULED sections carry C-9's identifier —
+not one section declaring it on the others' behalf, which is what the second
+attempt did and what C-10 refuses.
 
 §8.12.13 C-10 makes completeness "a predicate on named files, not a
 self-assessment", holding **only on a named master SHA**. When this section was
@@ -589,10 +603,10 @@ only works if someone evaluates it. The table below is now the evaluation.
 | **P-7** | prereg §3.1/§4/§10/§11/§13/§14/§16 | **DISCHARGED** — §13a **RULED, IN FORCE** by the human + ChatGPT round of 2026-08-30. The first drafting covered §3.1/§4/§11/§16 only and called §10 and §14 "unchanged", which would have recorded P-7 complete while three clauses still forbade the read; a contract-consistency review caught that before the ruling was taken, and the table now carries §10 item 3, §13 and §14 |
 | **P-8** | `docs/prompts/*` | done |
 | P-9 | playbook §8 | done |
-| **P-10** | approval identifiers on every RULED MRG section | **NOT DONE.** PR #451 merged as `4f45515`, so the identifier now *exists* — but the named file, `m15_minimum_research_gate.md`, still carries `APPROVAL_IDENTIFIER_PENDING_UNTIL_MERGE` and `…NOT_YET_CITABLE_AS_AUTHORITY` and records no merge SHA. An earlier revision of PR #455 marked this done by writing the discharge into *this* file instead, which a review role correctly called out |
+| **P-10** | approval identifiers on **every** RULED MRG section | **done at PR #455, on merge.** C-9 wants a PR number, an approved head SHA and a date on each RULED section, and P-10 applies it to the sections already written. §8.11, §8.12 and §8.13 now each carry the line (PR #451 · `2cdb687` · `4f45515`), and the remaining RULED sections carry theirs. Two earlier revisions got this wrong in different ways — one wrote the discharge into *this* file, the next wrote it into §8.13 only and declared it applied to the others at a distance |
 | P-11 | playbook §4 | done |
 | P-12 | prereg §7/§8 | done — and **now in force**, since its text is §13a's, which was `NOT IN FORCE` when this row first read "done" |
-| **P-13** | gate-4 audit T-1/T-2/T-6 | **NOT DONE.** The named file's §1a still reads "(recorded, **provisional**)" and "carries no approval identifier, so it records the scope reading rather than ruling it", and PR #455 does not touch it. The T-3 stage ruling is a *new* document, and two review roles have challenged its two limbs (`m15_track_a_r1_enablement_referrals.md` §5–§6), so it is not a discharge either |
+| **P-13** | gate-4 audit T-1/T-2/T-6 | **done at PR #455, on merge.** §1a now carries C-9's identifier (PR #455 · head recorded at merge · 2026-08-31) and **rules** the scope reading. Its T-3 row is narrowed rather than relaxed: the measurement is sited at the declared candidate under its frozen cost table, and **a Track A measurement still fires the block**. An earlier revision of PR #455 wrote that Track A 'neither fires the block', which removed a stop trigger; a review role caught it and it is withdrawn |
 | P-14 | playbook §3 + §6 ratio checkbox | done |
 | P-15 | prereg §6 | done — same dependency on §13a being in force, and same correction |
 

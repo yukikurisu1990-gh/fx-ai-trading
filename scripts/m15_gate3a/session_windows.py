@@ -75,6 +75,21 @@ HOLIDAY_CONSEQUENCE: Final[str] = (
     "ratio's median DOWN"
 )
 
+#: The rollover exclusion's direction, stated for the same reason the holiday
+#: one is. Ruling 4 makes rollover bars event-ineligible because "cost there is
+#: unmodelled", so excluding them is what the ruling asks for -- but it also
+#: removes the widest quotes of the day from the spread population, which lowers
+#: the median cost, which makes the eligibility hurdle easier to clear and the
+#: barrier/cost ratio larger. That is the **favourable** direction, and a review
+#: role was right that stating only the holiday direction was asymmetric.
+ROLLOVER_CONSEQUENCE: Final[str] = (
+    "rollover bars are excluded from the spread population as Ruling 4 requires "
+    "(cost there is unmodelled); this removes the day's widest quotes, which "
+    "LOWERS the modelled cost and therefore RAISES both the eligible-bar rate "
+    "and the barrier/cost ratio -- the favourable direction, stated rather than "
+    "left implicit"
+)
+
 
 class SessionWindowError(ValueError):
     """A timestamp no frozen session contains."""
@@ -139,6 +154,7 @@ __all__ = [
     "COVERAGE_STATUS",
     "HOLIDAY_CONSEQUENCE",
     "HOLIDAY_STATUS",
+    "ROLLOVER_CONSEQUENCE",
     "ROLLOVER_END_MINUTE_OF_DAY",
     "ROLLOVER_START_MINUTE_OF_DAY",
     "SessionWindowError",

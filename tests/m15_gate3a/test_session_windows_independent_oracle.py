@@ -23,6 +23,7 @@ The production module is imported only as the **subject** of the assertions.
 from __future__ import annotations
 
 from datetime import UTC, datetime, timedelta
+from pathlib import Path
 
 import pytest
 
@@ -202,3 +203,28 @@ def test_no_market_hours_claim_is_made_anywhere_in_the_module() -> None:
         assert forbidden not in names, f"{forbidden} is a market-hours claim"
     functions = {node.name for node in ast.walk(tree) if isinstance(node, ast.FunctionDef)}
     assert "in_fx_week" not in functions
+
+
+def test_derivation_containment_imports_nothing_first_party() -> None:
+    """The bypass containment must stay stdlib-only, and this is the pin.
+
+    The reader-freedom allowlist calls it "stdlib-only by construction" and an
+    earlier revision said "a test below pins that" when no such test existed.
+    It exists now. The property matters because `aggregation` imports this
+    module, and `aggregation` is reader-free: a first-party import here would
+    put whatever it reaches into the aggregator's closure.
+    """
+    import ast
+
+    from scripts.m15_gate3a import derivation_containment
+
+    tree = ast.parse(Path(derivation_containment.__file__).read_text(encoding="utf-8"))
+    modules: set[str] = set()
+    for node in ast.walk(tree):
+        if isinstance(node, ast.ImportFrom) and node.module:
+            modules.add(node.module.split(".")[0])
+        elif isinstance(node, ast.Import):
+            for alias in node.names:
+                modules.add(alias.name.split(".")[0])
+    assert "scripts" not in modules, f"first-party import in the containment module: {modules}"
+    assert "tests" not in modules

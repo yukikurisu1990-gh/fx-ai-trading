@@ -623,8 +623,9 @@ TRACK_A_PERMITTED_IMPORTS: dict[str, frozenset[str]] = {
     ),
     # The derivation-bypass containment. It exists precisely so that Track A's
     # aggregation cannot escape its authorised route, so Track A importing it is
-    # the intended direction. stdlib-only by construction: a test below pins
-    # that it imports nothing at all from this repository.
+    # the intended direction. stdlib-only by construction, and
+    # ``test_derivation_containment_imports_nothing_first_party`` pins that —
+    # an earlier revision claimed such a test existed when it did not.
     "scripts.m15_gate3a.derivation_containment": frozenset(
         {
             "DerivationContainmentError",
@@ -639,8 +640,8 @@ TRACK_A_PERMITTED_IMPORTS: dict[str, frozenset[str]] = {
     # bar in a session and to apply Ruling 4's rollover exclusion. Pure calendar
     # arithmetic; it reads no file and no price.
     # The two session predicates whose content is committed: Ruling 4's frozen
-    # session partition and its frozen rollover window. ``calendar_build`` --
-    # which authored a market calendar -- is deleted; this module adds no
+    # session partition and its frozen rollover window. The module that authored
+    # a market calendar is deleted; this one adds no
     # market-hours claim, and a hand-written oracle test pins that it has not
     # grown one back.
     "scripts.m15_gate3a.session_windows": frozenset(
@@ -648,6 +649,7 @@ TRACK_A_PERMITTED_IMPORTS: dict[str, frozenset[str]] = {
             "COVERAGE_STATUS",
             "HOLIDAY_CONSEQUENCE",
             "HOLIDAY_STATUS",
+            "ROLLOVER_CONSEQUENCE",
             "bucket_overlaps_rollover",
             "is_event_eligible_window",
             "session_of",
@@ -702,17 +704,19 @@ TRACK_A_TEST_PERMITTED_MODULES: frozenset[str] = frozenset(
 #: ``m15_track_a_execution_gate.md`` §8 (`37edbb0`) says "requiring it of Track A
 #: would **block exploration on an artefact that does not exist, for no leakage
 #: reason**". The reasoning offered — that D-6 forces Track A to reach the
-#: validator — was a rationalisation, and the alternative was always available:
-#: the validation now happens in ``calendar_build.validated_calendar_a``, on
-#: this side of the boundary, and Track A receives a record it cannot mint.
+#: validator — was a rationalisation. The calendar itself is now **deleted**
+#: (D-6: no market-hours time "may be added by an implementer"), so Track A
+#: neither validates a calendar nor needs to: it passes ``expected_minutes=None``
+#: and reports the coverage authority as absent.
 #:
-#: ``cost_schema`` stays out of this set, and that narrowing is **still a change
-#: to a committed restriction**. What is permitted is three frozen constants —
-#: Ruling 5's two cost pads and Ruling 4's session partition —
-#: ``validate_cost_table`` and everything else stay unreachable. It is recorded
-#: as a **proposed** narrowing in
-#: ``docs/governance/m15_track_a_r1_enablement_referrals.md``, not as a ruling a
-#: session took.
+#: ``cost_schema`` stays out of this set. That narrowing **is** a change to a
+#: committed restriction, and it is ruled — not assumed — in
+#: ``docs/governance/m15_track_a_r1_enablement_referrals.md`` §4:
+#: ``TRACK_A_COST_SCHEMA_IMPORT_NARROWING_IS_IMPLEMENTATION_ONLY_PERMITTED``.
+#: What is permitted is three frozen constants — Ruling 5's two cost pads and
+#: Ruling 4's session partition. ``validate_cost_table`` and everything else stay
+#: unreachable, and no cost **decision** becomes available to Track A that was
+#: not before.
 TRACK_A_FORBIDDEN_MODULES: frozenset[str] = frozenset(
     {
         "scripts.m15_gate3a.proof",

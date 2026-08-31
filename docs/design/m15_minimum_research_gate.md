@@ -2174,6 +2174,13 @@ contract-compliant span yields an ordinary pass/fail. What is referred is `D`, t
 
 ### 8.1 Q11 + §0 — RULED. Holdout-duration freeze semantics
 
+**Approval identifier** (§8.12.13 C-9): **PR #451** · approved head SHA **`2cdb687`** ·
+merge commit **`4f45515`** · date **2026-08-29**, merged **2026-08-30**. Applied here by
+**P-10** at PR #455 — C-9 requires the identifier on *every* RULED section, and
+recording it on one section and declaring it to cover the others at a distance is
+the self-assessment C-10 refuses.
+
+
 **`Q11_AND_SECTION0_RULED_FREEZE_D_AT_GATE3A_CONTINUATION_BEFORE_DATA`** ·
 `Q11_AND_SECTION0_ARE_ONE_REFERRAL`
 
@@ -2807,6 +2814,13 @@ the ruling.
 ---
 
 ### 8.2 Q10-A / Q10(ii) / Q10-B — RULED. Duration unit, day identity, window declaration
+
+**Approval identifier** (§8.12.13 C-9): **PR #451** · approved head SHA **`2cdb687`** ·
+merge commit **`4f45515`** · date **2026-08-29**, merged **2026-08-30**. Applied here by
+**P-10** at PR #455 — C-9 requires the identifier on *every* RULED section, and
+recording it on one section and declaring it to cover the others at a distance is
+the self-assessment C-10 refuses.
+
 
 **`Q10_A_RULED_ELAPSED_UTC_CALENDAR_SPAN`** ·
 **`Q10_II_DAY_IDENTITY_RULED_UTC_CALENDAR_DATE_EXPECTED_SLOTS_FROM_APPROVED_CALENDAR_AUTHORITY`** ·
@@ -3523,6 +3537,13 @@ declaration must precede accrual (Q10-B), and it does not relax step 8.
 
 ### 8.3 NR-K — RULED. `P` and the pair-universe authority
 
+**Approval identifier** (§8.12.13 C-9): **PR #451** · approved head SHA **`2cdb687`** ·
+merge commit **`4f45515`** · date **2026-08-29**, merged **2026-08-30**. Applied here by
+**P-10** at PR #455 — C-9 requires the identifier on *every* RULED section, and
+recording it on one section and declaring it to cover the others at a distance is
+the self-assessment C-10 refuses.
+
+
 **`NR_K_RULED_P_EQUALS_FROZEN_REGISTERED_FAMILY_A_UNIVERSE`**
 
 **Status change.** `NR_K_PENDING_HUMAN_CHATGPT_RULING` and
@@ -4132,6 +4153,13 @@ the recorded order; it is restated at §13 and it is not a suggestion about
 convenience.
 
 ### 8.4 Mean overlap fraction — RULED. Clock, formula, aggregation, freeze
+
+**Approval identifier** (§8.12.13 C-9): **PR #451** · approved head SHA **`2cdb687`** ·
+merge commit **`4f45515`** · date **2026-08-29**, merged **2026-08-30**. Applied here by
+**P-10** at PR #455 — C-9 requires the identifier on *every* RULED section, and
+recording it on one section and declaring it to cover the others at a distance is
+the self-assessment C-10 refuses.
+
 
 **`MEAN_OVERLAP_RULED_EVENT_LEVEL_SAME_HORIZON_CLOCK_EQUAL_WEIGHT_ROLE_LOCAL`** ·
 **`MEAN_OVERLAP_CLOCK_SUBSTRATE_RULED_APPROVED_CALENDAR_ELIGIBLE_SLOTS`** ·
@@ -6593,6 +6621,13 @@ to it at §8.3.0 and both **closed** by Ruling c-1. Nothing in §8.4 may be cite
 recorded here as an *asymmetry*, never as a rule for either.
 
 ### 8.5 NR-L — RULED. The cross-pair correlation `c`, bundled with Q10(i)
+
+**Approval identifier** (§8.12.13 C-9): **PR #451** · approved head SHA **`2cdb687`** ·
+merge commit **`4f45515`** · date **2026-08-29**, merged **2026-08-30**. Applied here by
+**P-10** at PR #455 — C-9 requires the identifier on *every* RULED section, and
+recording it on one section and declaring it to cover the others at a distance is
+the self-assessment C-10 refuses.
+
 
 **`NR_L_MINIMUM_RESEARCH_CONTRACT_RULED_PENDING_IMPLEMENTATION_AND_DESIGN_MEASUREMENT`**
 · **`Q10_I_RULED_REALIZED_PNL_ATTRIBUTED_TO_EXIT_UTC_DATE`** ·
@@ -10945,6 +10980,13 @@ human + ChatGPT decision, and §14's one-objective-one-PR rule bears on it.
 
 ### 8.11 The two-track amendment — RULED. Exploratory Research and Formal Confirmation
 
+**Approval identifier** (§8.12.13 C-9): **PR #451** · approved head SHA **`2cdb687`** ·
+merge commit **`4f45515`** · date **2026-08-29**, merged **2026-08-30**. Applied here by
+**P-10** at PR #455 — C-9 requires the identifier on *every* RULED section, and
+recording it on one section and declaring it to cover the others at a distance is
+the self-assessment C-10 refuses.
+
+
 A human + ChatGPT ruling received and recorded here as **authority**. It is a
 **contract amendment**, not a reading, and it says so: it changes the structure this
 packet has been operating under, in which no M15 research could begin until every
@@ -11802,6 +11844,13 @@ is that round.
 ---
 
 ### 8.12 The Governance Consistency Amendment — RULED
+
+**Approval identifier** (§8.12.13 C-9): **PR #451** · approved head SHA **`2cdb687`** ·
+merge commit **`4f45515`** · date **2026-08-29**, merged **2026-08-30**. Applied here by
+**P-10** at PR #455 — C-9 requires the identifier on *every* RULED section, and
+recording it on one section and declaring it to cover the others at a distance is
+the self-assessment C-10 refuses.
+
 
 A human + ChatGPT ruling, recorded here as **authority**. §8.11 split the research
 programme into two tracks; this amendment makes that split hold **against the governance
