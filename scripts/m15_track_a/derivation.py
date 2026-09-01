@@ -89,8 +89,16 @@ from scripts.m15_track_a.identity import RunIdentity
 from scripts.m15_track_a.read_route import (
     HistoricalRead,
     ReadRequest,
+    _as_instant,
     assert_development_only,
     assert_span_admissible,
+)
+from scripts.m15_track_a.row_scope import (
+    ROW_SCOPE_STATUS,
+    RowScope,
+    RowScopeError,
+    assert_batch_pairs_in_scope,
+    rows_in_scope,
 )
 
 #: The selected arm, named so the choice is greppable.
@@ -171,6 +179,7 @@ class DerivedM15:
     bars_by_pair: dict[str, list[dict[str, Any]]]
     gap_reports: dict[str, dict[str, Any]]
 
+    input_scope_status: str = ROW_SCOPE_STATUS
     classification: str = OUTPUT_CLASSIFICATION
     classification_secondary: str = OUTPUT_CLASSIFICATION_SECONDARY
     not_the_section_4_artifact: str = NOT_THE_SECTION_4_ARTIFACT
@@ -188,6 +197,7 @@ class DerivedM15:
             "span_start_utc": self.span_start_utc,
             "span_end_utc": self.span_end_utc,
             "coverage_status": self.coverage_status,
+            "input_scope_status": self.input_scope_status,
             "bars_by_pair": {pair: len(bars) for pair, bars in self.bars_by_pair.items()},
             "classification": self.classification,
             "classification_secondary": self.classification_secondary,
@@ -244,7 +254,38 @@ def derive_m15(
             "Track A derivation refused: isolation guards are not installed."
         )
 
-    read_request = request.read_request
+    if type(request) is not DerivationRequest:
+        # Pinned before a single field is read off it. ``DerivationRequest`` is
+        # a public frozen dataclass, so a subclass could answer ``read_request``
+        # honestly at the gate and differently at the delegate call — the exact
+        # shape ``read_historical`` pins ``ReadRequest`` against, and which this
+        # route did not pin at all.
+        raise DerivationRouteError(
+            "Track A derivation refused: `request` must be exactly a DerivationRequest, not a "
+            f"{type(request).__name__}."
+        )
+    if type(request.read_request) is not ReadRequest:
+        raise DerivationRouteError(
+            "Track A derivation refused: `read_request` must be exactly a ReadRequest, not a "
+            f"{type(request.read_request).__name__}. A subclass can answer a field differently "
+            "each time it is read, so the gates and the delegate would see different scopes."
+        )
+
+    # **The normalised snapshot.** Every field is read exactly once, here, and
+    # every later line uses this object rather than the caller's. ``frozen=True``
+    # yields to ``object.__setattr__``, so a caller keeping a reference could
+    # otherwise widen the request between the coverage check and the aggregation
+    # — this route re-reads the span to build its record, which is where that
+    # would land. Rebuilding through ``ReadRequest.__post_init__`` also re-runs
+    # its validation on the values actually captured.
+    read_request = ReadRequest(
+        span_start_utc=request.read_request.span_start_utc,
+        span_end_utc=request.read_request.span_end_utc,
+        pairs=tuple(request.read_request.pairs),
+        timeframe=request.read_request.timeframe,
+        warmup_extension_start_utc=request.read_request.warmup_extension_start_utc,
+    )
+
     checked = authorization.require_authorization(
         grant,
         operation=authorization.OPERATION_M15_DERIVATION,
@@ -271,7 +312,7 @@ def derive_m15(
 
     seen_ledger.record_grant(checked, identity, route=SELECTED_ROUTE)
 
-    if type(request.read) is not HistoricalRead:
+    if type(request.read) is not HistoricalRead:  # noqa: E721
         # Pinned exactly, and checked before anything is read off it. A missing
         # read used to reach ``request.read.operation`` and escape as a bare
         # AttributeError -- fail-closed by accident is not fail-closed, and an
@@ -281,14 +322,45 @@ def derive_m15(
             f"authorised read route, not a {type(request.read).__name__}. The derivation "
             "aggregates rows that came through the gates; it does not fetch its own."
         )
-    if request.read.operation != authorization.OPERATION_HISTORICAL_READ:
+    if type(request.read.rows_by_pair) is not dict:  # noqa: E721
+        raise DerivationRouteError(
+            "Track A derivation refused: `rows_by_pair` must be a plain dict, not a "
+            f"{type(request.read.rows_by_pair).__name__}."
+        )
+
+    # **The read is snapshotted too, and this was a real defect.**
+    #
+    # The first revision of this fix snapshotted ``read_request`` and left
+    # ``request.read`` live, then built the returned record from
+    # ``request.read.epoch`` and its two span fields *after* every gate. An
+    # audit widened those from a **plain sibling thread** — no monkeypatch, no
+    # subclass — and got a `DerivedM15` labelled `1970-01-01..2099-12-31` that
+    # `r1_survey` copied verbatim into the R1 evidence record. The rows were
+    # never wrong; the derivation's account of them was. ``derivation_containment``
+    # makes the same argument about per-pair parallelism: "an obvious
+    # optimisation, so that is a bypass reachable by accident, not only by
+    # intent".
+    #
+    # Every field is read exactly once, here, and nothing below touches
+    # ``request.read`` again.
+    read = HistoricalRead(
+        run_id=request.read.run_id,
+        operation=request.read.operation,
+        timeframe=request.read.timeframe,
+        epoch=request.read.epoch,
+        span_start_utc=request.read.span_start_utc,
+        span_end_utc=request.read.span_end_utc,
+        rows_by_pair=dict(request.read.rows_by_pair),
+    )
+
+    if read.operation != authorization.OPERATION_HISTORICAL_READ:
         raise DerivationRouteError(
             "Track A derivation refused: the supplied rows did not come from "
             f"{authorization.OPERATION_HISTORICAL_READ}."
         )
-    if request.read.timeframe != read_request.timeframe:
+    if read.timeframe != read_request.timeframe:
         raise DerivationRouteError(
-            f"Track A derivation refused: the read is {request.read.timeframe} and the "
+            f"Track A derivation refused: the read is {read.timeframe} and the "
             f"request names {read_request.timeframe}."
         )
     # The read's own span is **checked**, not inherited. ``HistoricalRead`` is a
@@ -298,27 +370,69 @@ def derive_m15(
     # bars under a one-day grant. Nothing new was read either time -- the defect
     # is that the derivation's record disagreed with its own authorisation.
     if not (
-        read_request.touched_start_utc <= request.read.span_start_utc
-        and request.read.span_end_utc <= read_request.span_end_utc
+        read_request.touched_start_utc <= read.span_start_utc
+        and read.span_end_utc <= read_request.span_end_utc
     ):
         raise DerivationRouteError(
             f"Track A derivation refused: the read covers "
-            f"{request.read.span_start_utc}..{request.read.span_end_utc}, which is not "
+            f"{read.span_start_utc}..{read.span_end_utc}, which is not "
             f"inside the gated interval {read_request.touched_start_utc}.."
             f"{read_request.span_end_utc}."
         )
 
+    derived_pairs = _pairs_to_derive(granted=checked.pairs, requested=read_request.pairs)
+
+    # **The second layer: the rows, not the declaration.**
+    #
+    # Everything above this point establishes that what the caller *declared* is
+    # inside the authorisation. None of it looks at what the caller actually
+    # handed over, and two review roles at PR #456 measured the consequence:
+    # slice, dead-window and forward rows aggregated under a valid derivation
+    # grant, because ``no_overlap`` "checks metadata and cannot see bytes" — the
+    # read route's own words about why it needs row-level guards too.
+    #
+    # The window is the **intersection** of grant and request, computed the same
+    # way ``read_historical`` computes its own: narrowest wins on both ends. A
+    # derivation validated against the request alone would accept everything a
+    # wider request declared, and against the grant alone everything a wider
+    # grant allowed.
+    try:
+        # Inside the translation: ``RowScopeError`` is not a
+        # ``DerivationRouteError``, so an empty-window refusal raised while the
+        # scope is being built would escape as a type this route's contract does
+        # not name. Unreachable today — coverage forces request within grant —
+        # and fail-closed either way, but "unreachable" is a property of the
+        # callers.
+        scope = RowScope(
+            lo=max(
+                _as_instant(checked.span_start_utc, end_of_day=False),
+                _as_instant(read_request.touched_start_utc, end_of_day=False),
+            ),
+            hi=min(
+                _as_instant(checked.span_end_utc, end_of_day=True),
+                _as_instant(read_request.span_end_utc, end_of_day=True),
+            ),
+            pairs=derived_pairs,
+        )
+        assert_batch_pairs_in_scope(read.rows_by_pair, scope)
+        in_scope_rows = {
+            pair: rows_in_scope(read.rows_by_pair.get(pair), pair=pair, scope=scope)
+            for pair in derived_pairs
+        }
+    except RowScopeError as exc:
+        # Re-raised as this route's own error so an existing
+        # ``except DerivationRouteError`` still fails closed, with the cause kept.
+        raise DerivationRouteError(f"Track A derivation refused: {exc}") from exc
+
     bars_by_pair: dict[str, list[dict[str, Any]]] = {}
     gap_reports: dict[str, dict[str, Any]] = {}
     with authorised_derivation_window():
-        for pair in _pairs_to_derive(granted=checked.pairs, requested=read_request.pairs):
-            rows = request.read.rows_by_pair.get(pair)
-            if rows is None:
-                raise DerivationRouteError(
-                    f"Track A derivation refused: the read carries no rows for {pair}, which "
-                    "the grant names. A partial derivation reported as a whole one is how a "
-                    "coverage figure stops meaning anything."
-                )
+        for pair in derived_pairs:
+            # The **validated snapshot**, never the caller's rows.
+            # A mapping that answers one way when it is checked and another when
+            # it is read defeats any amount of checking; the rows that were
+            # validated are the rows that are aggregated.
+            rows = in_scope_rows[pair]
             # ``expected_minutes=None`` **deliberately**, and the consequence
             # is recorded rather than hidden. D-6's coverage authority is an
             # approved calendar artifact;
@@ -335,9 +449,9 @@ def derive_m15(
     return DerivedM15(
         run_id=identity.run_id,
         operation=authorization.OPERATION_M15_DERIVATION,
-        epoch=request.read.epoch,
-        span_start_utc=request.read.span_start_utc,
-        span_end_utc=request.read.span_end_utc,
+        epoch=read.epoch,
+        span_start_utc=read.span_start_utc,
+        span_end_utc=read.span_end_utc,
         coverage_status=COVERAGE_STATUS,
         bars_by_pair=bars_by_pair,
         gap_reports=gap_reports,

@@ -869,18 +869,64 @@ def _check_read_body_is_declared() -> CheckResult:
     )
 
 
-def _first_party_imports(tree: ast.AST) -> set[str]:
-    """Every ``scripts.*`` module name one source file imports."""
+def _module_package(path: Path) -> str:
+    """The dotted package a source file's **own** relative imports resolve against.
+
+    ``scripts/m15_gate3a/aggregation.py`` -> ``scripts.m15_gate3a``, and an
+    ``__init__.py`` resolves against its own directory, which is what Python's
+    import system does with ``__package__``.
+
+    Fail-closed when the anchor is missing: a path this cannot place is a path
+    whose relative imports cannot be resolved, and silently returning something
+    plausible is precisely the defect this function was added to fix.
+    """
+    relative = _surface_name(path)
+    if relative == path.name and IMPLEMENTATION_SURFACE_ROOT_PACKAGE not in path.resolve().parts:
+        raise RuntimeError(
+            f"the implementation surface includes {path}, which is not under a "
+            f"{IMPLEMENTATION_SURFACE_ROOT_PACKAGE!r} package, so its relative imports cannot "
+            "be resolved. A fingerprint over a surface whose imports cannot be followed is not "
+            "the closure it claims to be."
+        )
+    return ".".join((IMPLEMENTATION_SURFACE_ROOT_PACKAGE, *relative.split("/")[:-1]))
+
+
+def _first_party_imports(tree: ast.AST, *, package: str) -> set[str]:
+    """Every ``scripts.*`` module name one source file imports.
+
+    ``package`` is the importing file's own package, and passing it is the fix
+    for a defect an adversarial review measured at PR #456. Every relative
+    import used to be resolved against the fixed literal
+    ``IMPLEMENTATION_SURFACE_PACKAGE`` regardless of where the file lived, so
+    ``scripts/m15_gate3a/aggregation.py``'s four relative imports resolved to
+    ``scripts.m15_track_a.derivation_containment`` and three siblings — modules
+    that do not exist. ``_module_source`` returned ``None`` for each and they
+    were dropped. Four survived only because *other* modules imported them
+    absolutely; ``scripts/ml_step4/contract.py`` and
+    ``scripts/ml_step4/inventory.py`` did not, and sat outside a surface the
+    grant record called "the transitive first-party import closure".
+
+    Relative imports are now resolved the way Python resolves them: level 1
+    against the file's package, each further level one package up.
+    """
     prefix = f"{IMPLEMENTATION_SURFACE_ROOT_PACKAGE}."
     names: set[str] = set()
     for node in ast.walk(tree):
         if isinstance(node, ast.ImportFrom):
             module = node.module or ""
             if node.level:
-                # A relative import inside the package. Resolved against the
+                # A relative import. Resolved against the importing file's own
                 # package rather than skipped, because "we only follow absolute
                 # imports" is a rule a later diff can step around with one dot.
-                module = f"{IMPLEMENTATION_SURFACE_PACKAGE}.{module}".rstrip(".")
+                parts = package.split(".")
+                if node.level > len(parts):
+                    raise RuntimeError(
+                        f"a relative import in package {package!r} reaches {node.level} levels "
+                        "up, past the root. It cannot be resolved, and a dependency this "
+                        "function cannot resolve is one the fingerprint would silently drop."
+                    )
+                base = ".".join(parts[: len(parts) - (node.level - 1)])
+                module = f"{base}.{module}".rstrip(".") if module else base
             if module == IMPLEMENTATION_SURFACE_ROOT_PACKAGE or module.startswith(prefix):
                 names.add(module)
                 for alias in node.names:
@@ -924,6 +970,11 @@ def _module_source(name: str) -> Path | None:
     return Path(spec.origin).resolve()
 
 
+def _repository_root() -> Path:
+    """The checkout this module lives in: ``<root>/scripts/m15_track_a/containment.py``."""
+    return Path(__file__).resolve().parents[2]
+
+
 def _surface_name(path: Path) -> str:
     """``m15_track_a/read_route.py`` — the package and the file, nothing above it.
 
@@ -931,10 +982,34 @@ def _surface_name(path: Path) -> str:
     is checked out, which would be a different value on the reviewer's machine
     than on the approver's and would make the field uncheckable. A file below a
     subdirectory keeps its subdirectory, so moving one is a change.
+
+    **Anchored on this checkout first, and on the closest ancestor second.** An
+    earlier revision scanned for the *first* ``scripts`` component in the
+    absolute path, which an audit broke by checking the repository out under a
+    directory called ``scripts``: every file was named
+    ``repo/scripts/m15_gate3a/...``, ``_module_package`` produced the
+    plausible-looking ``scripts.repo.scripts.m15_gate3a``, nothing resolved
+    under it, and the surface silently fell back to 27 files with
+    ``ml_step4/{contract,inventory}.py`` outside it again — the exact shape of
+    the defect this anchoring exists to fix. The closest-ancestor fallback keeps
+    a ``PYTHONPATH`` shadow outside this checkout nameable, which is the case
+    ``_module_source`` resolves on purpose.
     """
-    parts = path.resolve().parts
-    for index, part in enumerate(parts):
-        if part == IMPLEMENTATION_SURFACE_ROOT_PACKAGE and index + 1 < len(parts):
+    resolved = path.resolve()
+    try:
+        relative = resolved.relative_to(_repository_root())
+    except ValueError:
+        relative = None
+    if (
+        relative is not None
+        and relative.parts
+        and relative.parts[0] == IMPLEMENTATION_SURFACE_ROOT_PACKAGE
+        and len(relative.parts) > 1
+    ):
+        return "/".join(relative.parts[1:])
+    parts = resolved.parts
+    for index in range(len(parts) - 1, -1, -1):
+        if parts[index] == IMPLEMENTATION_SURFACE_ROOT_PACKAGE and index + 1 < len(parts):
             return "/".join(parts[index + 1 :])
     return path.name
 
@@ -966,7 +1041,7 @@ def implementation_surface() -> tuple[Path, ...]:
                 f"the implementation surface includes {source}, which cannot be parsed: {exc}. "
                 "A fingerprint over a surface that cannot be read is not a fingerprint."
             ) from exc
-        for name in _first_party_imports(tree):
+        for name in _first_party_imports(tree, package=_module_package(source)):
             # Every ancestor package too: importing
             # ``scripts.m15_gate3a.no_overlap`` executes
             # ``scripts/m15_gate3a/__init__.py`` on the way, so that file is

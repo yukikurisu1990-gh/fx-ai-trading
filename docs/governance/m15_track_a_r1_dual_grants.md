@@ -1,6 +1,22 @@
 # M15 Track A R1 — the two recorded grants
 
-**Status:** `TRACK_A_R1_HISTORICAL_DEVELOPMENT_READ_REAUTHORIZED_ON_CURRENT_IMPLEMENTATION`
+**Status: `BOTH_GRANTS_INVALIDATED_BY_PR_457_REISSUE_REQUIRED_ON_THE_NEW_FINGERPRINT`.**
+
+They were valid at `fc3e0f8`. PR #457 closed the two authorization-integrity
+defects §5a and §7 disclosed, both fixes edit the declared surface, and the
+fingerprint moved off `e43583e0…` — so `require_authorization` refuses both, with
+no human in the loop. That is the binding working as designed and it was expected
+before that work started.
+
+**This document is kept as a historical governance record and is not edited to
+match.** The numbers below are the ones a human approved; re-issuing is a
+separate act from rewriting. What still holds is everything here about *scope* —
+span, pairs, timeframe, operations, and what neither grant reaches — because that
+is a ruling and did not change. What no longer holds is the binding, and §7a says
+exactly which claims PR #457 falsified.
+
+Superseded status, retained for the record:
+`TRACK_A_R1_HISTORICAL_DEVELOPMENT_READ_REAUTHORIZED_ON_CURRENT_IMPLEMENTATION`
 · `TRACK_A_R1_M15_RESEARCH_DERIVATION_AUTHORIZED_ON_CURRENT_IMPLEMENTATION`
 
 **Approval identifier: PR #456**, merged at the head that carries this file.
@@ -310,6 +326,30 @@ tree at check time
   git merge-base --is-ancestor fc3e0f881d424844ca6823ae2708b76839c313dc HEAD
   git diff --stat fc3e0f881d424844ca6823ae2708b76839c313dc..HEAD
   ```
+
+## 7a. What PR #457 changed about this record
+
+Two claims in §5a and §7 were disclosures of defects. Both defects are closed, so
+both disclosures are now **historical**:
+
+| §5a said | now |
+| --- | --- |
+| `derive_m15` carries none of the read route's four row-level guards | it validates **every input row** against the grant-request intersection — slice, dead window, forward floor, window bounds, ordering, pair scope, canonical spelling and row shape — pins `DerivationRequest`, `ReadRequest` and `HistoricalRead` to their exact types, and snapshots all three so a post-gate `object.__setattr__` cannot widen the scope or forge the record (`scripts/m15_track_a/row_scope.py`) |
+| Grant B constrains the declaration, not the bytes | it constrains the bytes: the rows that are validated are the rows that are aggregated, because a normalised snapshot is what reaches the delegate |
+
+| §7 said | now |
+| --- | --- |
+| the surface is **not** the transitive closure — 26 files against a closure of 28 | relative imports resolve against the importing file's own package, and the surface (**29**) **is** the closure, measured against two independently computed ones; the fingerprint is `56a22b46…` → **`64fbace9…`** after the review fixes |
+| `scripts/ml_step4/{contract,inventory}.py` sit outside it | both are covered |
+| a new module in `scripts/m15_gate3a/`, imported relatively, escapes | it does not; rewriting one moves the fingerprint |
+
+`DERIVATION_ROUTE_ROW_LEVEL_GUARDS_AND_REQUEST_TYPE_PIN_ABSENT_REFERRED` and
+`FINGERPRINT_SURFACE_IS_NOT_THE_TRANSITIVE_CLOSURE_RELATIVE_IMPORTS_MISRESOLVED_REFERRED`
+are **discharged at PR #457**.
+
+The surface went from **26 files to 29** — wider, not narrower. §5 of the
+remediation brief forbade preserving these grants by shrinking it, and nothing
+was shrunk or excepted.
 
 ## 8. The previous grant stays invalid
 
