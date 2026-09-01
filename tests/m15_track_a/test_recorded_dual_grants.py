@@ -428,37 +428,43 @@ def test_a_pair_outside_the_grant_is_refused_after_the_coverage_check() -> None:
         _pairs_to_derive(granted=granted, requested=())
 
 
-def test_the_derivation_route_has_no_row_level_guards() -> None:
-    """Section 5a's third layer, pinned as ABSENT rather than assumed present.
+def test_the_derivation_route_now_has_row_level_guards() -> None:
+    """Section 5a's third layer, and the tripwire that failed to trip.
 
-    This asserts a **weakness**, which is unusual and deliberate. `read_historical`
-    carries four defences that `derive_m15` does not, and the grant document said
-    so only after two review roles measured it. Pinning the absence means the
-    disclosure cannot quietly go stale: when the referred fix lands, this test
-    fails and whoever lands it must update §5a in the same change.
+    At PR #456 this asserted the guards were **absent** from `derive_m15`, and
+    its docstring promised that "when the referred fix lands, this test fails
+    and whoever lands it must update §5a in the same change". PR #457 landed the
+    fix and this test **stayed green** — because the guards live in
+    `row_scope.py` and the names never appear textually in `derive_m15`. A
+    tripwire that measures the wrong file is not a tripwire; it was left
+    asserting a falsehood that the suite enforced.
+
+    Rewritten to check the property rather than a spelling: the derivation route
+    *composed with what it calls* now carries the same four defences as the read
+    route.
     """
     import inspect
 
-    from scripts.m15_track_a import derivation, read_route
+    from scripts.m15_track_a import derivation, read_route, row_scope
 
     read_source = inspect.getsource(read_route.read_historical)
-    derive_source = inspect.getsource(derivation.derive_m15)
-    for guard in (
-        "is_dead_window_instant",
-        "FORWARD_FLOOR",
-        "assert_clear_of_slice",
-        "type(request) is not ReadRequest",
-    ):
+    #: the route as it actually executes — the entry point plus the module it
+    #: delegates its row checking to, which is where a textual search on
+    #: `derive_m15` alone went wrong.
+    derive_source = inspect.getsource(derivation.derive_m15) + inspect.getsource(row_scope)
+    for guard in ("is_dead_window_instant", "FORWARD_FLOOR", "assert_clear_of_slice"):
         assert guard in read_source, f"the read route lost {guard}"
-        assert guard not in derive_source, (
-            f"{guard} is now present in derive_m15. That is the referred fix landing, "
-            "which is good news — but section 5a of "
-            "docs/governance/m15_track_a_r1_dual_grants.md still says it is absent, and a "
-            "grant record that understates its own protection is as wrong as one that "
-            "overstates it. Update the document with the fix."
+        assert guard in derive_source, (
+            f"{guard} is no longer reachable from the derivation route. PR #457 added it; a "
+            "later change removed it, and section 5a of "
+            "docs/governance/m15_track_a_r1_dual_grants.md now overstates the protection."
         )
-    #: the layer the derivation route DOES have
-    assert "assert_development_only" in derive_source
+    assert "type(request) is not ReadRequest" in read_source
+    #: the derivation pins both of its own request types, not `ReadRequest` alone
+    entry = inspect.getsource(derivation.derive_m15)
+    assert "type(request) is not DerivationRequest" in entry
+    assert "type(request.read_request) is not ReadRequest" in entry
+    assert "assert_development_only" in entry
 
 
 def test_the_closure_gap_disclosed_at_pr_456_is_closed() -> None:

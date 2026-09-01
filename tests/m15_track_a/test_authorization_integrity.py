@@ -418,7 +418,7 @@ def test_a_non_utc_offset_is_refused(authorised_read: dict[str, Any]) -> None:
     )
     batch[0] = _moved(batch[0], shifted.replace(tzinfo=_plus_nine()))
     rows["EUR_USD"] = batch
-    with pytest.raises(derivation.DerivationRouteError, match="UTC offset"):
+    with pytest.raises(derivation.DerivationRouteError, match="does not carry datetime.UTC"):
         _derive(_with_rows(read, rows), authorised_read["run"])
 
 
@@ -558,6 +558,193 @@ def test_a_derivation_request_subclass_is_refused(authorised_read: dict[str, Any
             authorised_read["run"],
             request=Sneaky(read_request=_request(), read=read),
         )
+
+
+def test_mutating_the_read_from_inside_the_delegate_does_not_forge_the_record(
+    authorised_read: dict[str, Any], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The record, not just the rows. This was a BLOCKER an audit found.
+
+    The first revision of this fix snapshotted `read_request` and left
+    `request.read` live, then built the returned `DerivedM15` from
+    `request.read.epoch` and its two span fields *after* every gate. An audit
+    widened those from a plain sibling thread — no monkeypatch, no subclass —
+    and got a record labelled `1970-01-01..2099-12-31` that `r1_survey` copied
+    verbatim into the R1 evidence artifact. The rows were never wrong; the
+    derivation's account of them was.
+
+    Driven from inside the delegate rather than from a racing thread: the
+    property is "the record is built from a snapshot", and a timing race would
+    test the scheduler instead. The thread version is the same write.
+    """
+    read = authorised_read["read"]
+    request = derivation.DerivationRequest(read_request=_request(), read=read)
+    real_delegate = derivation.DELEGATE
+
+    def forge_then_delegate(rows: Any, **kw: Any) -> Any:
+        object.__setattr__(request.read, "epoch", "FORGED_BY_A_SIBLING_THREAD")
+        object.__setattr__(request.read, "span_start_utc", "1970-01-01")
+        object.__setattr__(request.read, "span_end_utc", "2099-12-31")
+        return real_delegate(rows, **kw)
+
+    monkeypatch.setattr(derivation, "DELEGATE", forge_then_delegate)
+    derived = _derive(read, authorised_read["run"], request=request)
+    assert derived.epoch == EPOCH
+    assert derived.span_start_utc == SPAN_START
+    assert derived.span_end_utc == SPAN_END
+    record = derived.as_record()
+    assert record["epoch"] == EPOCH
+    assert record["span_start_utc"] == SPAN_START
+    assert record["span_end_utc"] == SPAN_END
+
+
+def test_the_read_request_snapshot_is_taken_before_the_gates(
+    authorised_read: dict[str, Any], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Widening the caller's request between the gate and the row scope.
+
+    `seen_ledger.record_grant` runs after `require_authorization` and before the
+    scope is derived, so it is a real in-process hook at exactly the point a
+    caller could widen. Without the re-snapshot the derivation would accept rows
+    the request never declared — an audit measured a row at `2025-12-20`
+    getting through that way.
+    """
+    read = authorised_read["read"]
+    request = derivation.DerivationRequest(read_request=_request(), read=read)
+    real_record = seen_ledger.record_grant
+
+    def widen_then_record(*a: Any, **kw: Any) -> Any:
+        object.__setattr__(request.read_request, "span_end_utc", "2025-12-28")
+        object.__setattr__(request.read_request, "pairs", (*PAIRS, "GBP_USD"))
+        return real_record(*a, **kw)
+
+    monkeypatch.setattr(seen_ledger, "record_grant", widen_then_record)
+    derived = _derive(read, authorised_read["run"], request=request)
+    assert derived.span_end_utc == SPAN_END
+    assert set(derived.bars_by_pair) == set(PAIRS)
+
+
+def test_a_grant_wider_on_the_low_end_does_not_widen_the_window(
+    authorised_read: dict[str, Any],
+) -> None:
+    """`max` on the low end, not `min` — the mutant that survived the first suite.
+
+    The grant reaches further back than the request. The intersection must take
+    the **later** start, so a row before the request's own span is still
+    refused.
+    """
+    read = authorised_read["read"]
+    wide = _grant(authorization.OPERATION_M15_DERIVATION, span_start_utc="2025-04-25")
+    rows = dict(read.rows_by_pair)
+    batch = list(rows["EUR_USD"])
+    #: prepended, so the ordering check cannot be what refuses it
+    batch.insert(0, _moved(batch[0], _day(SPAN_START) - timedelta(days=2)))
+    rows["EUR_USD"] = batch
+    with pytest.raises(derivation.DerivationRouteError, match="outside the authorised window"):
+        _derive(_with_rows(read, rows), authorised_read["run"], grant=wide)
+
+
+def test_a_row_before_the_window_is_refused_by_the_window_not_by_the_ordering(
+    authorised_read: dict[str, Any],
+) -> None:
+    """Isolates the lower bound.
+
+    The first drafting put every out-of-scope row at `len // 2`, so the
+    before-span case was refused by the strict-ordering check and the lower
+    bound was never exercised. A mutant that deleted the lower bound survived.
+    """
+    read = authorised_read["read"]
+    rows = dict(read.rows_by_pair)
+    batch = list(rows["EUR_USD"])
+    batch.insert(0, _moved(batch[0], _day(SPAN_START) - timedelta(days=1)))
+    rows["EUR_USD"] = batch
+    with pytest.raises(derivation.DerivationRouteError, match="outside the authorised window"):
+        _derive(_with_rows(read, rows), authorised_read["run"])
+
+
+def test_an_empty_row_list_is_refused(authorised_read: dict[str, Any]) -> None:
+    """A pair the authorisation names, carrying nothing, is not a derivation of it."""
+    read = authorised_read["read"]
+    rows = dict(read.rows_by_pair)
+    rows["EUR_USD"] = []
+    with pytest.raises(derivation.DerivationRouteError, match="carries no rows"):
+        _derive(_with_rows(read, rows), authorised_read["run"])
+
+
+def test_a_datetime_subclass_timestamp_is_refused(authorised_read: dict[str, Any]) -> None:
+    """`isinstance` is not the pin. `pandas.Timestamp` is a `datetime` subclass.
+
+    This package has had a boundary check broken by exactly that: nanoseconds
+    survived a `.replace()` meant to normalise the instant away.
+    """
+
+    class Sneaky(datetime):
+        pass
+
+    read = authorised_read["read"]
+    rows = dict(read.rows_by_pair)
+    batch = list(rows["EUR_USD"])
+    original = batch[0][read_route.ROW_TIMESTAMP_KEY]
+    batch[0] = _moved(
+        batch[0],
+        Sneaky(
+            original.year,
+            original.month,
+            original.day,
+            original.hour,
+            original.minute,
+            tzinfo=UTC,
+        ),
+    )
+    rows["EUR_USD"] = batch
+    with pytest.raises(derivation.DerivationRouteError, match="plain tz-aware datetime"):
+        _derive(_with_rows(read, rows), authorised_read["run"])
+
+
+def test_a_float_subclass_side_key_is_refused(authorised_read: dict[str, Any]) -> None:
+    """`float(value)` is not a pin: a subclass decides what `__float__` returns."""
+
+    class Sneaky(float):
+        def __float__(self) -> float:
+            return 1.0
+
+    read = authorised_read["read"]
+    rows = dict(read.rows_by_pair)
+    batch = list(rows["EUR_USD"])
+    batch[0] = {**batch[0], "bid_o": Sneaky(9e9)}
+    rows["EUR_USD"] = batch
+    with pytest.raises(derivation.DerivationRouteError, match="not a plain float"):
+        _derive(_with_rows(read, rows), authorised_read["run"])
+
+
+@pytest.mark.parametrize("alias", ["EURUSD", "eur/usd", "eur_usd"])
+def test_an_alias_spelling_in_the_batch_is_refused(
+    authorised_read: dict[str, Any], alias: str
+) -> None:
+    """An alias key carried rows nothing validated.
+
+    `assert_batch_pairs_in_scope` canonicalised the key for the membership test
+    while the derivation loop reads only the canonical key, so `EURUSD` sat in
+    the batch with unvalidated rows in it. `read_route._pairs_to_read` refuses
+    two spellings of one pair for exactly this reason.
+    """
+    read = authorised_read["read"]
+    rows = dict(read.rows_by_pair)
+    rows[alias] = [_moved(rows["EUR_USD"][0], _day(oos_slice.SLICE_START_UTC))]
+    #: "alias of", not "alias|more than once": with the alias guard removed the
+    #: duplicate-key guard catches the same case with a different message, so the
+    #: looser pattern could not tell the two apart and the mutant survived.
+    with pytest.raises(derivation.DerivationRouteError, match="an alias of"):
+        _derive(_with_rows(read, rows), authorised_read["run"])
+
+
+def test_a_pair_the_authorisation_names_but_the_batch_omits_is_refused(
+    authorised_read: dict[str, Any],
+) -> None:
+    read = authorised_read["read"]
+    rows = {"EUR_USD": list(read.rows_by_pair["EUR_USD"])}
+    with pytest.raises(derivation.DerivationRouteError, match="carries no rows for"):
+        _derive(_with_rows(read, rows), authorised_read["run"])
 
 
 def test_mutating_the_request_after_the_gates_does_not_widen_the_derivation(
@@ -704,6 +891,97 @@ def test_relative_imports_resolve_against_the_importing_files_own_package() -> N
     for sibling in ("derivation_containment", "numeric_authority", "pair_authority", "timeutil"):
         assert f"scripts.m15_gate3a.{sibling}" in names
         assert f"scripts.m15_track_a.{sibling}" not in names
+
+
+def test_module_package_refuses_a_path_it_cannot_place() -> None:
+    """The fail-closed raise, which no test covered and a mutant walked past.
+
+    This refusal is load-bearing: the whole "voids a grant with no human in the
+    loop" property rests on the surface **refusing** rather than guessing. An
+    audit deleted the raise and the entire suite stayed green.
+    """
+    with pytest.raises(RuntimeError, match="not under a"):
+        containment._module_package(Path("C:/somewhere/else/data_adapter.py"))
+    with pytest.raises(RuntimeError, match="not under a"):
+        containment._module_package(Path("/tmp/loose_module.py"))
+
+
+def test_a_relative_import_past_the_root_is_refused(tmp_path: Path) -> None:
+    """CPython raises `ImportError: attempted relative import beyond top-level`.
+
+    The resolver's guard is the same predicate. Without it the negative slice
+    `parts[: len(parts) - (level - 1)]` yields a *plausible* wrong anchor, which
+    is the shape of the defect this whole change exists to fix — and the mutant
+    that removed it survived the suite.
+    """
+    root = Path(containment.__file__).resolve().parents[2]
+    tree = tmp_path / "repo"
+    shutil.copytree(
+        root / "scripts", tree / "scripts", ignore=shutil.ignore_patterns("__pycache__")
+    )
+    #: A module nothing imports. `rglob` puts it in the surface and
+    #: `implementation_surface` parses it, but Python never executes it — so the
+    #: refusal under test is the resolver's, not a SyntaxError or ImportError
+    #: raised while `containment` itself was being imported.
+    victim = tree / "scripts" / "m15_track_a" / "unimported_probe.py"
+    victim.write_text("from .... import nothing  # noqa: F401\n", encoding="utf-8")
+    out = subprocess.run(
+        [
+            sys.executable,
+            "-B",
+            "-c",
+            f"import sys; sys.path.insert(0, r'{tree}');"
+            "from scripts.m15_track_a import containment;"
+            "containment.implementation_surface()",
+        ],
+        capture_output=True,
+        text=True,
+        cwd=str(tree),
+    )
+    assert out.returncode != 0, "a relative import past the root was accepted"
+    assert "past the root" in out.stderr, out.stderr[-500:]
+
+
+def test_a_checkout_under_a_scripts_ancestor_is_placed_correctly(tmp_path: Path) -> None:
+    """The anchor an audit broke: a repository checked out below a `scripts/` directory.
+
+    Scanning for the *first* `scripts` component produced the plausible-looking
+    package `scripts.repo.scripts.m15_gate3a`, nothing resolved under it, and the
+    surface silently fell back to 27 files with the two previously-escaped
+    modules outside it again — the exact defect being fixed, in a new place.
+    """
+    root = Path(containment.__file__).resolve().parents[2]
+    tree = tmp_path / "scripts" / "repo"
+    tree.mkdir(parents=True)
+    shutil.copytree(
+        root / "scripts", tree / "scripts", ignore=shutil.ignore_patterns("__pycache__")
+    )
+    out = subprocess.run(
+        [
+            sys.executable,
+            "-B",
+            "-c",
+            f"import sys; sys.path.insert(0, r'{tree}');"
+            "from scripts.m15_track_a import containment as C;"
+            "s = C.implementation_surface();"
+            "names = sorted(C._surface_name(p) for p in s);"
+            "print(len(s));"
+            "print('ml_step4/contract.py' in names);"
+            "print('ml_step4/inventory.py' in names);"
+            "print(C.implementation_fingerprint())",
+        ],
+        capture_output=True,
+        text=True,
+        cwd=str(tree),
+    )
+    assert out.returncode == 0, out.stderr[-800:]
+    count, contract, inventory, fingerprint = out.stdout.split()
+    assert int(count) == len(containment.implementation_surface())
+    assert contract == "True" and inventory == "True"
+    assert fingerprint == containment.implementation_fingerprint(), (
+        "the fingerprint depends on where the repository is checked out, which makes the "
+        "recorded field uncheckable on another machine"
+    )
 
 
 def test_the_package_of_an_init_file_is_its_own_directory() -> None:

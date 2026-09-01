@@ -59,7 +59,7 @@ a "fix" that quietly removes a control is worse than the gap it closes.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, datetime
 from typing import Any, Final
 
 from scripts.m15_gate3a.derivation_containment import is_real_row, stamp_real_provenance
@@ -134,6 +134,7 @@ def assert_batch_pairs_in_scope(rows_by_pair: Any, scope: RowScope) -> None:
             "checked and another when it is read."
         )
     authorised = frozenset(scope.pairs)
+    seen: set[str] = set()
     for pair in rows_by_pair:
         if type(pair) is not str:  # noqa: E721
             raise RowScopeError(f"{ROW_SCOPE_TOKEN}: malformed pair key {pair!r} in the batch.")
@@ -141,12 +142,35 @@ def assert_batch_pairs_in_scope(rows_by_pair: Any, scope: RowScope) -> None:
             canonical = canonical_pair(pair)
         except PairAuthorityError as exc:
             raise RowScopeError(f"{ROW_SCOPE_TOKEN}: {exc}") from exc
+        if pair != canonical:
+            # An **alias spelling**, and the first revision of this function let
+            # it through: it canonicalised the key for the membership test while
+            # the derivation loop reads only the canonical key, so ``EURUSD``
+            # and ``eur/usd`` sat in the batch carrying rows that were never
+            # validated. ``read_route._pairs_to_read`` refuses two spellings of
+            # one pair for exactly this reason; an audit measured that this did
+            # not.
+            raise RowScopeError(
+                f"{ROW_SCOPE_TOKEN}: the batch names {pair!r}, an alias of {canonical}. The "
+                "derivation reads the canonical key, so an alias would carry rows nothing "
+                "validates. Canonical spellings only."
+            )
+        if canonical in seen:
+            raise RowScopeError(f"{ROW_SCOPE_TOKEN}: the batch names {canonical} more than once.")
+        seen.add(canonical)
         if canonical not in authorised:
             raise RowScopeError(
                 f"{ROW_SCOPE_TOKEN}: the batch carries rows for {canonical}, which is not in "
                 f"the authorised pair set {', '.join(scope.pairs)}. A derivation does not "
                 "quietly work on the subset of a batch that happens to be in scope."
             )
+    missing = authorised - seen
+    if missing:
+        raise RowScopeError(
+            f"{ROW_SCOPE_TOKEN}: the batch carries no rows for {', '.join(sorted(missing))}, "
+            "which the authorisation names. A partial derivation reported as a whole one is "
+            "how a coverage figure stops meaning anything."
+        )
 
 
 def rows_in_scope(rows: Any, *, pair: str, scope: RowScope) -> list[dict[str, Any]]:
@@ -192,18 +216,24 @@ def rows_in_scope(rows: Any, *, pair: str, scope: RowScope) -> list[dict[str, An
                 f"timestamp; a plain tz-aware datetime is required. A datetime subclass can "
                 "carry precision that survives normalisation."
             )
-        offset = timestamp.utcoffset()
-        if offset is None:
+        # ``tzinfo is UTC`` rather than ``utcoffset() == 0``: an offset read
+        # twice is an offset a two-faced tzinfo can answer differently, and the
+        # first revision read it once to gate and once inside ``astimezone``.
+        # The authorised read stamps ``datetime.UTC`` itself, so identity is the
+        # exact test and it cannot be computed.
+        if timestamp.tzinfo is not UTC:
+            if timestamp.utcoffset() is None:
+                raise RowScopeError(
+                    f"{ROW_SCOPE_TOKEN}: {pair} row {index} is timezone-naive. A naive instant "
+                    "is re-interpreted in the host's zone, which moves the boundary with the "
+                    "host."
+                )
             raise RowScopeError(
-                f"{ROW_SCOPE_TOKEN}: {pair} row {index} is timezone-naive. A naive instant is "
-                "re-interpreted in the host's zone, which moves the boundary with the host."
+                f"{ROW_SCOPE_TOKEN}: {pair} row {index} does not carry datetime.UTC. The "
+                "authorised read produces UTC instants; anything else was assembled elsewhere, "
+                "and a tzinfo that computes its offset can compute a different one next time."
             )
-        if offset != timedelta(0):
-            raise RowScopeError(
-                f"{ROW_SCOPE_TOKEN}: {pair} row {index} is at UTC offset {offset}. The "
-                "authorised read produces UTC instants; anything else was assembled elsewhere."
-            )
-        instant = timestamp.astimezone(UTC)
+        instant = timestamp
 
         if previous is not None and instant <= previous:
             raise RowScopeError(

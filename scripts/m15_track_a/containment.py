@@ -970,6 +970,11 @@ def _module_source(name: str) -> Path | None:
     return Path(spec.origin).resolve()
 
 
+def _repository_root() -> Path:
+    """The checkout this module lives in: ``<root>/scripts/m15_track_a/containment.py``."""
+    return Path(__file__).resolve().parents[2]
+
+
 def _surface_name(path: Path) -> str:
     """``m15_track_a/read_route.py`` — the package and the file, nothing above it.
 
@@ -977,10 +982,34 @@ def _surface_name(path: Path) -> str:
     is checked out, which would be a different value on the reviewer's machine
     than on the approver's and would make the field uncheckable. A file below a
     subdirectory keeps its subdirectory, so moving one is a change.
+
+    **Anchored on this checkout first, and on the closest ancestor second.** An
+    earlier revision scanned for the *first* ``scripts`` component in the
+    absolute path, which an audit broke by checking the repository out under a
+    directory called ``scripts``: every file was named
+    ``repo/scripts/m15_gate3a/...``, ``_module_package`` produced the
+    plausible-looking ``scripts.repo.scripts.m15_gate3a``, nothing resolved
+    under it, and the surface silently fell back to 27 files with
+    ``ml_step4/{contract,inventory}.py`` outside it again — the exact shape of
+    the defect this anchoring exists to fix. The closest-ancestor fallback keeps
+    a ``PYTHONPATH`` shadow outside this checkout nameable, which is the case
+    ``_module_source`` resolves on purpose.
     """
-    parts = path.resolve().parts
-    for index, part in enumerate(parts):
-        if part == IMPLEMENTATION_SURFACE_ROOT_PACKAGE and index + 1 < len(parts):
+    resolved = path.resolve()
+    try:
+        relative = resolved.relative_to(_repository_root())
+    except ValueError:
+        relative = None
+    if (
+        relative is not None
+        and relative.parts
+        and relative.parts[0] == IMPLEMENTATION_SURFACE_ROOT_PACKAGE
+        and len(relative.parts) > 1
+    ):
+        return "/".join(relative.parts[1:])
+    parts = resolved.parts
+    for index in range(len(parts) - 1, -1, -1):
+        if parts[index] == IMPLEMENTATION_SURFACE_ROOT_PACKAGE and index + 1 < len(parts):
             return "/".join(parts[index + 1 :])
     return path.name
 

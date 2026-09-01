@@ -312,7 +312,7 @@ def derive_m15(
 
     seen_ledger.record_grant(checked, identity, route=SELECTED_ROUTE)
 
-    if type(request.read) is not HistoricalRead:
+    if type(request.read) is not HistoricalRead:  # noqa: E721
         # Pinned exactly, and checked before anything is read off it. A missing
         # read used to reach ``request.read.operation`` and escape as a bare
         # AttributeError -- fail-closed by accident is not fail-closed, and an
@@ -322,14 +322,45 @@ def derive_m15(
             f"authorised read route, not a {type(request.read).__name__}. The derivation "
             "aggregates rows that came through the gates; it does not fetch its own."
         )
-    if request.read.operation != authorization.OPERATION_HISTORICAL_READ:
+    if type(request.read.rows_by_pair) is not dict:  # noqa: E721
+        raise DerivationRouteError(
+            "Track A derivation refused: `rows_by_pair` must be a plain dict, not a "
+            f"{type(request.read.rows_by_pair).__name__}."
+        )
+
+    # **The read is snapshotted too, and this was a real defect.**
+    #
+    # The first revision of this fix snapshotted ``read_request`` and left
+    # ``request.read`` live, then built the returned record from
+    # ``request.read.epoch`` and its two span fields *after* every gate. An
+    # audit widened those from a **plain sibling thread** — no monkeypatch, no
+    # subclass — and got a `DerivedM15` labelled `1970-01-01..2099-12-31` that
+    # `r1_survey` copied verbatim into the R1 evidence record. The rows were
+    # never wrong; the derivation's account of them was. ``derivation_containment``
+    # makes the same argument about per-pair parallelism: "an obvious
+    # optimisation, so that is a bypass reachable by accident, not only by
+    # intent".
+    #
+    # Every field is read exactly once, here, and nothing below touches
+    # ``request.read`` again.
+    read = HistoricalRead(
+        run_id=request.read.run_id,
+        operation=request.read.operation,
+        timeframe=request.read.timeframe,
+        epoch=request.read.epoch,
+        span_start_utc=request.read.span_start_utc,
+        span_end_utc=request.read.span_end_utc,
+        rows_by_pair=dict(request.read.rows_by_pair),
+    )
+
+    if read.operation != authorization.OPERATION_HISTORICAL_READ:
         raise DerivationRouteError(
             "Track A derivation refused: the supplied rows did not come from "
             f"{authorization.OPERATION_HISTORICAL_READ}."
         )
-    if request.read.timeframe != read_request.timeframe:
+    if read.timeframe != read_request.timeframe:
         raise DerivationRouteError(
-            f"Track A derivation refused: the read is {request.read.timeframe} and the "
+            f"Track A derivation refused: the read is {read.timeframe} and the "
             f"request names {read_request.timeframe}."
         )
     # The read's own span is **checked**, not inherited. ``HistoricalRead`` is a
@@ -339,12 +370,12 @@ def derive_m15(
     # bars under a one-day grant. Nothing new was read either time -- the defect
     # is that the derivation's record disagreed with its own authorisation.
     if not (
-        read_request.touched_start_utc <= request.read.span_start_utc
-        and request.read.span_end_utc <= read_request.span_end_utc
+        read_request.touched_start_utc <= read.span_start_utc
+        and read.span_end_utc <= read_request.span_end_utc
     ):
         raise DerivationRouteError(
             f"Track A derivation refused: the read covers "
-            f"{request.read.span_start_utc}..{request.read.span_end_utc}, which is not "
+            f"{read.span_start_utc}..{read.span_end_utc}, which is not "
             f"inside the gated interval {read_request.touched_start_utc}.."
             f"{read_request.span_end_utc}."
         )
@@ -365,21 +396,27 @@ def derive_m15(
     # derivation validated against the request alone would accept everything a
     # wider request declared, and against the grant alone everything a wider
     # grant allowed.
-    scope = RowScope(
-        lo=max(
-            _as_instant(checked.span_start_utc, end_of_day=False),
-            _as_instant(read_request.touched_start_utc, end_of_day=False),
-        ),
-        hi=min(
-            _as_instant(checked.span_end_utc, end_of_day=True),
-            _as_instant(read_request.span_end_utc, end_of_day=True),
-        ),
-        pairs=derived_pairs,
-    )
     try:
-        assert_batch_pairs_in_scope(request.read.rows_by_pair, scope)
+        # Inside the translation: ``RowScopeError`` is not a
+        # ``DerivationRouteError``, so an empty-window refusal raised while the
+        # scope is being built would escape as a type this route's contract does
+        # not name. Unreachable today — coverage forces request within grant —
+        # and fail-closed either way, but "unreachable" is a property of the
+        # callers.
+        scope = RowScope(
+            lo=max(
+                _as_instant(checked.span_start_utc, end_of_day=False),
+                _as_instant(read_request.touched_start_utc, end_of_day=False),
+            ),
+            hi=min(
+                _as_instant(checked.span_end_utc, end_of_day=True),
+                _as_instant(read_request.span_end_utc, end_of_day=True),
+            ),
+            pairs=derived_pairs,
+        )
+        assert_batch_pairs_in_scope(read.rows_by_pair, scope)
         in_scope_rows = {
-            pair: rows_in_scope(request.read.rows_by_pair.get(pair), pair=pair, scope=scope)
+            pair: rows_in_scope(read.rows_by_pair.get(pair), pair=pair, scope=scope)
             for pair in derived_pairs
         }
     except RowScopeError as exc:
@@ -391,7 +428,7 @@ def derive_m15(
     gap_reports: dict[str, dict[str, Any]] = {}
     with authorised_derivation_window():
         for pair in derived_pairs:
-            # The **validated snapshot**, never ``request.read.rows_by_pair``.
+            # The **validated snapshot**, never the caller's rows.
             # A mapping that answers one way when it is checked and another when
             # it is read defeats any amount of checking; the rows that were
             # validated are the rows that are aggregated.
@@ -412,9 +449,9 @@ def derive_m15(
     return DerivedM15(
         run_id=identity.run_id,
         operation=authorization.OPERATION_M15_DERIVATION,
-        epoch=request.read.epoch,
-        span_start_utc=request.read.span_start_utc,
-        span_end_utc=request.read.span_end_utc,
+        epoch=read.epoch,
+        span_start_utc=read.span_start_utc,
+        span_end_utc=read.span_end_utc,
         coverage_status=COVERAGE_STATUS,
         bars_by_pair=bars_by_pair,
         gap_reports=gap_reports,

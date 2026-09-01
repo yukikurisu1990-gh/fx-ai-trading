@@ -334,12 +334,12 @@ both disclosures are now **historical**:
 
 | §5a said | now |
 | --- | --- |
-| `derive_m15` carries none of the read route's four row-level guards | it validates **every input row** against the grant-request intersection — slice, dead window, forward floor, window bounds, ordering, pair scope and row shape — and pins `DerivationRequest` and `ReadRequest` to their exact types (`scripts/m15_track_a/row_scope.py`) |
+| `derive_m15` carries none of the read route's four row-level guards | it validates **every input row** against the grant-request intersection — slice, dead window, forward floor, window bounds, ordering, pair scope, canonical spelling and row shape — pins `DerivationRequest`, `ReadRequest` and `HistoricalRead` to their exact types, and snapshots all three so a post-gate `object.__setattr__` cannot widen the scope or forge the record (`scripts/m15_track_a/row_scope.py`) |
 | Grant B constrains the declaration, not the bytes | it constrains the bytes: the rows that are validated are the rows that are aggregated, because a normalised snapshot is what reaches the delegate |
 
 | §7 said | now |
 | --- | --- |
-| the surface is **not** the transitive closure — 26 files against a closure of 28 | relative imports resolve against the importing file's own package, and the surface **is** the closure, measured against an independently computed one |
+| the surface is **not** the transitive closure — 26 files against a closure of 28 | relative imports resolve against the importing file's own package, and the surface (**29**) **is** the closure, measured against two independently computed ones; the fingerprint is `56a22b46…` → **`64fbace9…`** after the review fixes |
 | `scripts/ml_step4/{contract,inventory}.py` sit outside it | both are covered |
 | a new module in `scripts/m15_gate3a/`, imported relatively, escapes | it does not; rewriting one moves the fingerprint |
 

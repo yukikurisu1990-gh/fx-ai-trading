@@ -17,6 +17,9 @@ import pytest
 from scripts.m15_gate3a.no_overlap import DEAD_START, DESIGN_END, DESIGN_START, FORWARD_FLOOR
 from scripts.m15_track_a import authorization, containment, identity, oos_slice, read_route
 
+#: This checkout, derived here rather than imported from the module under test.
+REPO_ROOT = Path(containment.__file__).resolve().parents[2]
+
 APPROVED_FINGERPRINT = containment.implementation_fingerprint()
 
 
@@ -251,7 +254,15 @@ def test_the_surface_is_the_whole_transitive_first_party_closure() -> None:
         # a surface that had dropped every relative dependency of
         # ``scripts/m15_gate3a/``, and two files sat outside the closure with
         # this test green.
-        package = containment._module_package(source)
+        #
+        # Derived **here**, not by calling ``containment._module_package``. A
+        # review role demonstrated the difference on a checkout under a
+        # ``scripts/`` ancestor: importing the predicate under test made this
+        # walk agree with a 27-file surface while two independent walks failed.
+        # This package has paid for that shape before — a fixture that imports
+        # the same predicate as the code cannot falsify it, which is how an
+        # invented and factually wrong calendar passed twenty-seven tests.
+        package = ".".join(source.relative_to(REPO_ROOT).with_suffix("").parts[:-1])
         for node in ast.walk(ast.parse(source.read_text(encoding="utf-8"))):
             modules: list[str] = []
             if isinstance(node, ast.ImportFrom):
