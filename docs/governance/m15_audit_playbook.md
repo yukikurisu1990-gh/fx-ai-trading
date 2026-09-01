@@ -514,7 +514,12 @@ re-issued at PR #458.**
 `TRACK_A_R1_PREFLIGHT_COMPLETE_15_OF_15` ·
 `TRACK_A_R1_DUAL_GRANTS_REISSUED_AND_READY_FOR_EXPLICIT_EXECUTION_COMMAND`.
 
-**15 of 15, and this time the two grant rows are true rather than annotated.**
+**15 of 15, and this time the two grant rows are true rather than ticked with a
+correction attached.** One *other* box still carries a caveat and this paragraph
+does not erase it: item 2 records that P-10's population is the headings spelling
+`RULED` in capitals, and that on a case-insensitive reading of C-9 §8.9 is a
+ninth section without an identifier, making the count 8 of 9. That caveat is
+unchanged and unresolved here — deciding which reading governs is a ruling.
 PR #457 closed the two authorization-integrity defects the review of PR #456
 disclosed; both fixes edit the declared surface, so the fingerprint moved off
 `e43583e0…` and both PR #456 grants were refused. PR #458 re-issued them against
@@ -569,13 +574,25 @@ nothing be executed, so R1 is authorised in scope and withheld in execution. A
 session that finds this section at 15 of 15 has found a complete authority and
 **no command**, and must still stop.
 
-**Two disclosed defects sit between here and a first read**, both found by
-review at PR #456 and neither fixable in an authorization-only PR, because both
-edit the fingerprint surface and would void the grants the moment they merged:
+**The two defects that sat here are discharged.**
 `DERIVATION_ROUTE_ROW_LEVEL_GUARDS_AND_REQUEST_TYPE_PIN_ABSENT_REFERRED` and
 `FINGERPRINT_SURFACE_IS_NOT_THE_TRANSITIVE_CLOSURE_RELATIVE_IMPORTS_MISRESOLVED_REFERRED`
-(`docs/governance/m15_track_a_r1_dual_grants.md` §5a and §7). There is also **no
-R1 orchestrator** in the repository — writing it is Amber code work.
+were closed at **PR #457**, and the grants they would have voided were re-issued
+at PR #458 against the resulting fingerprint. This paragraph previously said both
+still blocked a first read; a review role found it standing ninety lines below the
+paragraph that said they were fixed, which is the sort of self-contradiction §5a
+exists to prevent.
+
+**What is genuinely still outstanding is engineering, not a defect: there is no
+R1 orchestrator** in the repository. `DerivationRequest(` appears in no committed
+script and no module in `scripts/m15_track_a/` has a `__main__`; the only
+read → derive → survey composition is a pytest fixture. Writing that runner is
+Amber code work, it moves the fingerprint, and it must pass **one** `ReadRequest`
+object to both calls rather than building it twice. One disclosure is carried
+forward rather than closed:
+`DERIVATION_ROUTE_DOES_NOT_PIN_ITS_TIMEFRAME_TO_THE_COMMITTED_SOURCE_CONSTANT_REFERRED`
+(`m15_track_a_r1_dual_grants_reissued.md` §3) — no data scope widens, and the fix
+is a separate Work PR because it too would void the grants.
 
 **On "the gate authorises R1 only":** that phrase states the **scope** a gate
 pass can reach — R1, never R3 or R4 — not that a pass is **sufficient** for R1.

@@ -106,7 +106,24 @@ objects rather than one widened.
 **`timeframe` is `M1`, and that is not a typo.** The grant names the timeframe of
 the **input** the derivation consumes, which is what `grant_covers` compares
 against `read_request.timeframe`. M15 is the output; it does not exist until this
-operation runs. A grant naming `M15` is refused.
+operation runs.
+
+**And that comparison is between two caller-supplied strings**, which is worth
+saying plainly rather than implying a check that is not there. `read_historical`
+pins its grant against the committed constant — `checked.timeframe !=
+SOURCE_TIMEFRAME` raises — and **`derive_m15` has no equivalent**: a review role
+measured a self-consistent non-`M1` derivation grant (grant, request and read all
+naming `M15`) running to completion. Nothing widens as a result, because
+`row_scope` validates every row against the grant∩request window whatever the
+label says, and the rows can only have come from a read the read route already
+pinned to `M1`. But the value in this grant is `M1` because that is what the
+operation consumes, **not** because a wrong value would be caught, and a future
+re-issue writing `M15` here — the natural mistake, given the operation's name —
+would be honoured and recorded.
+
+`DERIVATION_ROUTE_DOES_NOT_PIN_ITS_TIMEFRAME_TO_THE_COMMITTED_SOURCE_CONSTANT_REFERRED`
+— adding the pin edits `derivation.py`, which is on the fingerprint surface and
+would void these grants the moment it merged, so it is a separate Work PR.
 
 ```python
 from scripts.m15_gate3a.pair_authority import PAIRS_20
@@ -181,13 +198,14 @@ machine.
 
 | Not authorized | Refused by |
 | --- | --- |
-| **`EXPLORATORY_OOS_SLICE`** `2025-12-29 … 2026-02-28` | `ReadGrant.__post_init__` for a read grant; `assert_development_only` on the declared interval on **both** routes; and, since PR #457, `assert_clear_of_slice` on **every input row** of a derivation |
+| **`EXPLORATORY_OOS_SLICE`** `2025-12-29 … 2026-02-28` | `ReadGrant.__post_init__` refuses a **read** grant naming a slice date — and only a read grant: `_assert_operation_span` leaves the derivation operation unconstrained on purpose, so a slice-spanning derivation grant *constructs*. What stops it is `assert_development_only` on the declared interval, on **both** routes, and — since PR #457 — `assert_clear_of_slice` on **every input row** of a derivation. Both measured firing |
 | the **dead window** `2026-03-01 … 2026-04-24` | `assert_span_admissible` via `no_overlap` on both routes; a row-level refusal on the read route and, since PR #457, on the derivation route too |
 | the **forward epoch**, `2026-04-25` onward | `assert_span_admissible`; a row-level `FORWARD_FLOOR` refusal on both routes |
 | **pre-DESIGN** data, before `2025-04-25` | `assert_span_admissible` on the warm-up-widened interval; the row-level window bound |
 | any date outside `2025-04-25 … 2025-12-28`, **warm-up included** | `grant_covers` inside `require_authorization`, then the row-level **grant∩request** window — narrowest wins on both ends |
-| any pair outside `PAIRS_20`, and any alias spelling of one | `pair_authority` before a path is built; `assert_batch_pairs_in_scope` on the batch |
-| any timeframe but `M1` | the route refuses a grant naming another |
+| any pair outside `PAIRS_20` | `pair_authority` refuses it before a path is built |
+| an **alias spelling** of a registered pair (`EURUSD`, `eur/usd`) | `grant_covers` at the request level and `assert_batch_pairs_in_scope` on the batch. Not `pair_authority`, which *canonicalises* aliases rather than refusing them — recorded because the mechanism, not only the outcome, is what a reviewer checks |
+| any timeframe but `M1` | **the read route** refuses a grant naming another (`checked.timeframe != SOURCE_TIMEFRAME`); the derivation route compares the grant only against the request, so §3's referral applies — no data scope widens either way |
 | a **direct `aggregate_m15`** call | `derivation_containment` — a process latch scoped to the opening thread and task, plus a per-row provenance marker |
 | a request that widens **after** the gates | the exact-type pins and the three snapshots |
 | **training, fitting, evaluation, calibration** | R3 and R4 are separate Red gates with separate approvals |
@@ -207,7 +225,10 @@ return a result that looks correct and is not.
 ## 6. Seen-data — what this costs, and when
 
 **Authorising is not reading. Nothing is seen yet**, and the development corpus
-is `UNSEEN` at this head; the committed seen-data ledger is empty.
+is `UNSEEN` at this head. No seen-data ledger file exists yet — `git ls-files
+artifacts/track_a_scratch/` is empty and so is the directory on disk — which is
+stronger than an empty ledger and weaker than the sentence an earlier drafting
+used.
 
 **At the read**, and not before, the interval becomes `EXPLORATORY_SEEN_DATA`:
 

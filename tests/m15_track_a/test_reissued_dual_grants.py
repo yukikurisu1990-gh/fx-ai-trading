@@ -221,6 +221,20 @@ def test_the_code_block_matches_the_table(name: str) -> None:
     assert "tuple(sorted(PAIRS_20))" in code
 
 
+@pytest.mark.parametrize("name", sorted(SECTIONS))
+def test_the_pairs_cell_names_the_registered_universe(name: str) -> None:
+    """The table row a human reads, not only the block below it.
+
+    `_recorded()` required the `pairs` field to be present and then asserted
+    nothing about its value, so a mutant that rewrote the cell to a single pair
+    survived the whole file: the row a reviewer reads could contradict §3a and
+    the code block while the suite stayed green.
+    """
+    cell = _recorded(name)["pairs"]
+    assert "PAIRS_20" in cell, cell
+    assert "twenty" in cell.lower() or "20" in cell, cell
+
+
 def test_the_documents_pair_list_is_the_frozen_universe() -> None:
     """The twenty spellings a human reads, against the authority."""
     text = GRANT_DOCUMENT.read_text(encoding="utf-8")
@@ -269,12 +283,27 @@ def test_neither_grant_covers_what_section_5_excludes(name: str, start: str, end
 
 
 @pytest.mark.parametrize("name", sorted(SECTIONS))
-def test_neither_grant_covers_an_unregistered_pair(name: str) -> None:
+@pytest.mark.parametrize(
+    "requested",
+    [
+        ("USD_TRY",),
+        #: **Mixed**: nineteen granted pairs and one that is not. A single
+        #: ungranted pair is refused by `all()` and by `any()` alike, so the
+        #: one-pair case alone let an `all`→`any` mutant survive the file.
+        (*sorted(PAIRS_20)[:19], "USD_TRY"),
+        ("EUR_USD", "USD_SGD"),
+    ],
+    ids=["only-unregistered", "nineteen-granted-plus-one", "one-granted-one-not"],
+)
+def test_neither_grant_covers_a_request_containing_an_unregistered_pair(
+    name: str, requested: tuple[str, ...]
+) -> None:
+    """Coverage is over **every** requested pair, not any of them."""
     assert not _grant(name).covers(
         operation=_recorded(name)["operation"],
         span_start_utc=oos_slice.DEVELOPMENT_START_UTC,
         span_end_utc=oos_slice.DEVELOPMENT_END_UTC,
-        pairs=("USD_TRY",),
+        pairs=requested,
         timeframe="M1",
     )
 
@@ -501,6 +530,94 @@ def test_the_surface_is_the_transitive_closure_the_record_claims(tmp_path: Path)
     assert not (surface - seen), sorted(str(p) for p in surface - seen)
 
 
+def test_only_the_read_route_pins_the_timeframe_to_the_source_constant() -> None:
+    """Section 3's referral, pinned in both directions.
+
+    The first drafting of the grant record said "a grant naming `M15` is
+    refused". A review role measured a self-consistent non-`M1` derivation grant
+    running to completion: `read_historical` compares its grant against the
+    committed `SOURCE_TIMEFRAME`, and `derive_m15` compares it only against the
+    request — two caller-supplied strings.
+
+    Asserted as an **asymmetry**, not as a weakness to be tolerated quietly: the
+    pin that exists must stay, and the one that does not must stay disclosed. If
+    the referred fix lands, this fails and whoever lands it must update §3 in the
+    same change — and re-issue the grants, because it moves the fingerprint.
+    """
+    import inspect
+
+    from scripts.m15_track_a import derivation, read_route
+
+    read_source = inspect.getsource(read_route.read_historical)
+    assert "checked.timeframe != SOURCE_TIMEFRAME" in read_source
+
+    derive_source = inspect.getsource(derivation)
+    assert "SOURCE_TIMEFRAME" not in derive_source, (
+        "derive_m15 now pins its timeframe to the committed source constant. That is the "
+        "referred fix landing, which is good news — but section 3 of "
+        "docs/governance/m15_track_a_r1_dual_grants_reissued.md still says the pin is absent, "
+        "and the fingerprint moved, so both grants need re-issuing."
+    )
+    #: and the document says so, rather than claiming the refusal
+    document = GRANT_DOCUMENT.read_text(encoding="utf-8")
+    assert "DERIVATION_ROUTE_DOES_NOT_PIN_ITS_TIMEFRAME" in document
+
+
+def test_a_slice_spanning_derivation_grant_constructs_but_the_route_refuses_it() -> None:
+    """Section 5's first row, in both halves.
+
+    `_assert_operation_span` bounds the read operation and deliberately not the
+    derivation, so the construction-level ceiling is the read grant's alone. The
+    record says so; this stops the claim drifting to "refused at the grant".
+    """
+    from scripts.m15_track_a import read_route
+
+    over_the_slice = authorization.ReadGrant(
+        operation=authorization.OPERATION_M15_DERIVATION,
+        span_start_utc=oos_slice.SLICE_START_UTC,
+        span_end_utc=oos_slice.SLICE_END_UTC,
+        pairs=tuple(sorted(PAIRS_20)),
+        timeframe="M1",
+        approved_head_sha=APPROVED_HEAD,
+        approved_implementation_fingerprint=containment.implementation_fingerprint(),
+        approver_record="synthetic probe, not a recorded grant",
+    )
+    assert over_the_slice.span_start_utc == oos_slice.SLICE_START_UTC
+
+    request = read_route.ReadRequest(
+        span_start_utc=oos_slice.SLICE_START_UTC,
+        span_end_utc=oos_slice.SLICE_END_UTC,
+        pairs=tuple(sorted(PAIRS_20)),
+        timeframe="M1",
+        warmup_extension_start_utc=oos_slice.SLICE_START_UTC,
+    )
+    with pytest.raises(read_route.ReadRouteError, match="EXPLORATORY_OOS_SLICE"):
+        read_route.assert_development_only(request)
+
+
+def test_pair_authority_canonicalises_aliases_rather_than_refusing_them() -> None:
+    """Section 5's alias row names the mechanism, not only the outcome.
+
+    An earlier drafting attributed the refusal to `pair_authority`. It
+    canonicalises `EURUSD` instead; what refuses an alias is `grant_covers` at
+    the request level and `assert_batch_pairs_in_scope` at the batch level.
+    """
+    from scripts.m15_gate3a.pair_authority import PairAuthorityError, canonical_pair
+
+    assert canonical_pair("EURUSD") == "EUR_USD"
+    assert canonical_pair("eur/usd") == "EUR_USD"
+    with pytest.raises(PairAuthorityError):
+        canonical_pair("USD_SGD")
+    for name in SECTIONS:
+        assert not _grant(name).covers(
+            operation=_recorded(name)["operation"],
+            span_start_utc=oos_slice.DEVELOPMENT_START_UTC,
+            span_end_utc=oos_slice.DEVELOPMENT_END_UTC,
+            pairs=("EURUSD",),
+            timeframe="M1",
+        )
+
+
 def test_no_first_party_dynamic_import_escapes_the_surface() -> None:
     """§7a, asserted rather than described.
 
@@ -520,7 +637,17 @@ def test_no_first_party_dynamic_import_escapes_the_surface() -> None:
             if not isinstance(node, ast.Call):
                 continue
             name = getattr(node.func, "attr", None) or getattr(node.func, "id", None)
-            if name in {"import_module", "__import__", "exec_module", "module_from_spec"}:
+            #: All six names §7a claims were scanned. The first drafting
+            #: checked four, so a later `eval`/`exec` would not have tripped the
+            #: "if a third appears, a human looks" guard the document relies on.
+            if name in {
+                "import_module",
+                "__import__",
+                "exec_module",
+                "module_from_spec",
+                "eval",
+                "exec",
+            }:
                 dynamic.append(f"{containment._surface_name(path)}:{node.lineno}")
     #: Two known sites; if a third appears, a human looks before a grant is issued.
     assert sorted(dynamic) == [
