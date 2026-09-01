@@ -479,50 +479,52 @@ only where something was run or read, never where something was believed.
       `RESEARCH_SCRATCH_NON_AUTHORITATIVE`, on `HistoricalRead`, `DerivedM15` and
       `R1Survey` alike, and lands nowhere near the evidence tree.
 
-**The two items no session could tick, taken as human decisions at PR #456.**
+**The two items no session could tick, taken as human decisions at PR #456 and
+re-issued at PR #458.**
 
 - [x] **An explicit human + ChatGPT `track_a_historical_read` grant** against
       the implementation fingerprint of a *merged* head carrying PR #455 —
-      recorded at
-      `docs/governance/m15_track_a_r1_dual_grants.md` §2, on the human
-      instruction of 2026-08-31, bound to approved head **`fc3e0f8`** and
-      fingerprint **`e43583e0…`**, **measured on the merged tree** and
-      cross-checked against the git blobs at that head rather than transcribed
-      from a report. The PR #454 grant is bound to `497e187b…` and this work
-      moved the fingerprint, so it is **invalid by design** — §13 of the
-      enablement brief said it would be, and told the session not to narrow the
-      surface to preserve it. It is left invalid and its recorded number is not
-      edited. Tested:
-      `test_the_recorded_fingerprint_is_this_implementation` and
-      `test_the_recorded_grant_is_accepted_by_the_gate`, against
-      `test_the_recorded_grant_is_invalidated_by_the_r1_enablement_change` for
-      the old one.
+      **currently in force at
+      `docs/governance/m15_track_a_r1_dual_grants_reissued.md` §2** (PR #458, on
+      the human instruction of 2026-09-02), bound to approved head
+      **`c2cdea0`** — the merge of PR #457 — and fingerprint **`64fbace9…`**,
+      **measured on that merged tree** and cross-checked against its git blobs
+      rather than transcribed from a report.
+
+      Two earlier records are superseded and stay **invalid and unedited**: the
+      PR #454 grant at `497e187b…`, and the PR #456 pair at `e43583e0…`, which
+      PR #457's integrity fixes voided by design. Each recorded number is the
+      one a human approved, and re-issuing is a separate act from rewriting.
+      Tested: `test_the_recorded_fingerprint_is_this_implementation` and
+      `test_the_recorded_grant_is_accepted_by_the_gate` in
+      `test_reissued_dual_grants.py`, against
+      `test_the_two_superseded_records_are_still_refused` and the two older
+      files for the invalidated ones.
 - [x] **An explicit human + ChatGPT `track_a_m15_research_derivation` grant** —
-      §3 of the same
-      record, same head, same fingerprint, arm (i) route only. A read grant does
-      not authorise a derivation (§2.5), which is why there are two rather than
-      one widened. Tested: `test_neither_grant_covers_the_other_operation` for
-      the coverage half, and `test_a_direct_aggregate_m15_bypass_is_refused`
-      plus `test_the_derivation_route_has_no_row_level_guards` for what the
-      route does and does not enforce.
+      §3 of the same re-issued record, same head, same fingerprint, arm (i)
+      route only, R1 only. A read grant does not authorise a derivation (§2.5),
+      which is why there are two rather than one widened. Tested:
+      `test_neither_grant_covers_the_other_operation` for the coverage half;
+      `test_a_direct_aggregate_m15_bypass_is_refused` for the bypass; and, since
+      PR #457, `tests/m15_track_a/test_authorization_integrity.py` for the
+      derivation's **actual input** — every row checked against the
+      grant∩request window, with the validated snapshot being what is
+      aggregated.
 
-`TRACK_A_R1_DUAL_GRANT_INTEGRITY_REMEDIATED` ·
-`TRACK_A_R1_IMPLEMENTATION_READY_PENDING_REISSUED_DUAL_GRANTS` — **and the two
-boxes above are ticked on grants that PR #457 has since invalidated.**
+`TRACK_A_R1_PREFLIGHT_COMPLETE_15_OF_15` ·
+`TRACK_A_R1_DUAL_GRANTS_REISSUED_AND_READY_FOR_EXPLICIT_EXECUTION_COMMAND`.
 
+**15 of 15, and this time the two grant rows are true rather than annotated.**
 PR #457 closed the two authorization-integrity defects the review of PR #456
-disclosed. Both fixes edit the declared surface, so the fingerprint moved off
-`e43583e0…` and `require_authorization` now refuses both recorded grants. The
-record at `docs/governance/m15_track_a_r1_dual_grants.md` is kept unedited as a
-historical governance record; re-issuing is a separate act from rewriting.
+disclosed; both fixes edit the declared surface, so the fingerprint moved off
+`e43583e0…` and both PR #456 grants were refused. PR #458 re-issued them against
+`64fbace9…` at head `c2cdea0`, measured on the merged tree. The superseded
+records are kept unedited.
 
-So §5a is **13 of 15 in substance**: every mechanical prerequisite is in place
-and demonstrated on synthetic data end to end, and the two grant rows need
-re-issuing against the new fingerprint before they are true again. The rows are
-left ticked with this paragraph attached rather than silently un-ticked, because
-what happened is not that the grants were never given — it is that giving them
-and then improving the implementation are both correct, and the binding is what
-notices. **Nothing has been read.**
+Every mechanical prerequisite is in place, demonstrated on synthetic data end to
+end, and both grants are recorded and accepted by `require_authorization` on this
+tree. **Nothing has been read**; the committed seen-data ledger is empty and the
+development corpus is `UNSEEN`.
 
 **Read this before treating 15 of 15 as permission.**
 
