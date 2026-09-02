@@ -195,6 +195,12 @@ class R1Plan:
                 raise R1OrchestratorError(f"{name} must be a non-empty plain str")
         if type(self.pairs) is not tuple or not self.pairs:  # noqa: E721
             raise R1OrchestratorError("pairs must be a non-empty tuple")
+        for pair in self.pairs:
+            # ``type(...) is not str`` like every other boundary in this package:
+            # a ``str`` subclass can lie through ``__hash__``/``__eq__`` while
+            # holding different content, and the pair scope is set membership.
+            if type(pair) is not str or not pair.strip():  # noqa: E721
+                raise R1OrchestratorError(f"malformed pair in plan: {pair!r}")
 
 
 @dataclass(frozen=True)
@@ -205,11 +211,19 @@ class PreflightReport:
     checks: tuple[tuple[str, str], ...]
     fingerprint: str
     request: read_route.ReadRequest
+    #: The snapshots the whole run uses. Carried on the report rather than
+    #: re-read from the caller, so a live object cannot change under the run.
+    identity: RunIdentity
+    #: What `containment.audit()` actually returned, so the survey records a
+    #: measurement rather than a constant. A review role deleted the constant
+    #: and replaced it with an arbitrary string; nothing failed.
+    containment_status: str
 
     def as_record(self) -> dict[str, Any]:
         return {
             "status": self.status,
             "fingerprint": self.fingerprint,
+            "containment_status": self.containment_status,
             "checks": [{"check": name, "detail": detail} for name, detail in self.checks],
         }
 
@@ -292,6 +306,25 @@ def preflight(
         _refuse(f"plan must be exactly an R1Plan, not a {type(plan).__name__}")
     if type(identity) is not RunIdentity:  # noqa: E721
         _refuse(f"identity must be exactly a RunIdentity, not a {type(identity).__name__}")
+
+    # **The identity is snapshotted, and this was a real defect.** An earlier
+    # revision read ``identity.run_id`` at eight points and never captured it. A
+    # review role started a plain caller-side thread — no monkeypatch, no
+    # subclass — that flipped ``run_id`` once the ledger file appeared, and the
+    # run completed: the irreversible seen-data entry said ``run-alpha`` while
+    # the breadth entry, both grant-ledger rows, the survey and the result all
+    # said ``run-beta``. The post-stage checks did not catch it because they
+    # compared against the *mutated* identity. ``derivation.py`` snapshots its
+    # own inputs for exactly this reason and says so.
+    #
+    # Rebuilding through ``RunIdentity.__post_init__`` also re-runs its
+    # validation on the values actually captured.
+    identity = RunIdentity(
+        run_id=identity.run_id,
+        code_sha=identity.code_sha,
+        calendar_semantics=identity.calendar_semantics,
+        started_at_utc=identity.started_at_utc,
+    )
 
     # --- isolation and containment, before anything else ------------------
     if not isolation.is_installed():
@@ -434,6 +467,8 @@ def preflight(
         checks=tuple(checks),
         fingerprint=fingerprint,
         request=request,
+        identity=identity,
+        containment_status=str(status),
     )
 
 
@@ -457,6 +492,8 @@ def run_r1(
     """
     report = preflight(plan, identity, read_grant=read_grant, derivation_grant=derivation_grant)
     request = report.request
+    # From here on, the snapshots. Nothing below reads the caller's objects.
+    identity = report.identity
 
     # 1. Write-ahead. The interval is declared **before** it is touched, so a
     #    run that dies mid-read still leaves the record that it was going to be
@@ -518,7 +555,7 @@ def run_r1(
     #    diagnostic are exactly what the survey already does.
     survey = r1_survey.survey(
         derived,
-        containment_status=containment.STATUS_CONTAINED,
+        containment_status=report.containment_status,
         breadth_k=breadth_k,
     )
     if survey.run_id != identity.run_id:

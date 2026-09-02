@@ -759,6 +759,188 @@ def test_the_read_and_the_derivation_receive_the_same_request_object(
     assert id(result.preflight.request) == seen[-1]
 
 
+def test_a_caller_thread_cannot_split_one_run_across_two_identities(
+    source_tree: Path, guards_installed: object
+) -> None:
+    """R-1, and it needed no monkeypatch to find.
+
+    A review role started a plain caller-side thread that flipped `run_id` once
+    the ledger file appeared. The run completed and the **irreversible**
+    seen-data entry said one run while the breadth entry, both grant-ledger rows,
+    the survey and the result said another. The post-stage checks did not catch
+    it because they compared against the mutated identity.
+
+    Driven deterministically here — the mutation happens inside the delegate,
+    the one point a caller regains control — because a timing race would test
+    the scheduler instead of the snapshot.
+    """
+    run = _run()
+    real_derive = derivation.derive_m15
+
+    def rename_then_derive(*a: Any, **kw: Any) -> Any:
+        #: after the seen declaration and the read, before the breadth record —
+        #: the window in which the audit's repro split the run in two.
+        object.__setattr__(run, "run_id", "a-different-run")
+        return real_derive(*a, **kw)
+
+    with pytest.MonkeyPatch.context() as patch:
+        patch.setattr(derivation, "derive_m15", rename_then_derive)
+        result = _invoke(identity=run)
+
+    assert result.run_id == "r1-orchestrator-synthetic"
+    assert result.survey.run_id == "r1-orchestrator-synthetic"
+    recorded = (
+        {entry.run_id for entry in seen_ledger.read_declarations()}
+        | {entry.run_id for entry in breadth.read_entries()}
+        | {result.run_id, result.survey.run_id}
+    )
+    assert recorded == {"r1-orchestrator-synthetic"}, recorded
+
+
+def test_the_survey_records_the_containment_status_that_was_measured(
+    source_tree: Path, guards_installed: object, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Not a constant. A mutant replaced it with an arbitrary string and survived.
+
+    `run_r1` passed `containment.STATUS_CONTAINED` rather than what
+    `containment.audit()` returned, so the survey's containment field was a
+    literal the run could not contradict.
+    """
+    measured = f"{containment.STATUS_CONTAINED}_MEASURED_HERE"
+    monkeypatch.setattr(containment, "STATUS_CONTAINED", measured)
+    monkeypatch.setattr(containment, "audit", lambda: {"status": measured})
+    result = _invoke()
+    assert result.preflight.containment_status == measured
+    assert result.survey.containment == measured or measured in str(result.survey.containment)
+
+
+@pytest.mark.parametrize(
+    "field,value,match",
+    [
+        ("run_id", "a-different-run", "read records run"),
+        ("timeframe", "M15", "not M1"),
+        ("operation", "track_a_m15_research_derivation", "read records operation"),
+    ],
+)
+def test_a_read_that_disagrees_with_the_authorisation_stops_the_run(
+    source_tree: Path,
+    guards_installed: object,
+    monkeypatch: pytest.MonkeyPatch,
+    field: str,
+    value: str,
+    match: str,
+) -> None:
+    """The post-read verifications. Four of them survived a mutation audit.
+
+    `containment.audit` is stubbed only so the swapped read route reaches these
+    guards; swapping it is otherwise refused in preflight, which is asserted
+    separately.
+    """
+    real = read_route.read_historical
+
+    def relabelled(*a: Any, **kw: Any) -> Any:
+        read = real(*a, **kw)
+        fields = {
+            "run_id": read.run_id,
+            "operation": read.operation,
+            "timeframe": read.timeframe,
+            "epoch": read.epoch,
+            "span_start_utc": read.span_start_utc,
+            "span_end_utc": read.span_end_utc,
+            "rows_by_pair": read.rows_by_pair,
+        }
+        fields[field] = value
+        return read_route.HistoricalRead(**fields)
+
+    monkeypatch.setattr(containment, "audit", lambda: {"status": containment.STATUS_CONTAINED})
+    monkeypatch.setattr(read_route, "read_historical", relabelled)
+    with pytest.raises(r1_orchestrator.R1OrchestratorError, match=match):
+        _invoke()
+
+
+def test_a_derivation_covering_other_pairs_stops_the_run(
+    source_tree: Path, guards_installed: object, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The post-derivation scope check, which a mutation audit found unverified."""
+    real = derivation.derive_m15
+
+    def narrowed(*a: Any, **kw: Any) -> Any:
+        result = real(*a, **kw)
+        bars = dict(result.bars_by_pair)
+        bars.pop(PAIRS[0])
+        return derivation.DerivedM15(
+            run_id=result.run_id,
+            operation=result.operation,
+            epoch=result.epoch,
+            span_start_utc=result.span_start_utc,
+            span_end_utc=result.span_end_utc,
+            coverage_status=result.coverage_status,
+            bars_by_pair=bars,
+            gap_reports=result.gap_reports,
+        )
+
+    monkeypatch.setattr(derivation, "derive_m15", narrowed)
+    with pytest.raises(r1_orchestrator.R1OrchestratorError, match="different pair set"):
+        _invoke()
+
+
+def test_a_survey_recording_another_run_stops_the_run(
+    source_tree: Path, guards_installed: object, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    real = r1_survey.survey
+
+    def relabelled(*a: Any, **kw: Any) -> Any:
+        result = real(*a, **kw)
+        object.__setattr__(result, "run_id", "a-different-run")
+        return result
+
+    monkeypatch.setattr(r1_survey, "survey", relabelled)
+    with pytest.raises(r1_orchestrator.R1OrchestratorError, match="survey records run"):
+        _invoke()
+
+
+def test_a_refused_derivation_leaves_no_breadth_entry(
+    source_tree: Path, guards_installed: object, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The breadth record's *position* in the sequence, which was unpinned.
+
+    A mutant moved it above the derivation and survived: nothing observed that a
+    refused derivation must leave `K` untouched.
+    """
+    monkeypatch.setattr(
+        derivation,
+        "derive_m15",
+        lambda *a, **kw: (_ for _ in ()).throw(derivation.DerivationRouteError("refused")),
+    )
+    with pytest.raises(derivation.DerivationRouteError):
+        _invoke()
+    assert not breadth.read_entries(), "a refused derivation recorded breadth K"
+
+
+def test_a_plan_subclass_is_refused(source_tree: Path, guards_installed: object) -> None:
+    """The plan type pin, which a mutation audit found untested."""
+
+    class Sneaky(r1_orchestrator.R1Plan):
+        pass
+
+    with pytest.raises(r1_orchestrator.R1OrchestratorError, match="exactly an R1Plan"):
+        _invoke(plan=Sneaky(span_start_utc=SPAN_START, span_end_utc=SPAN_END, pairs=PAIRS))
+
+
+def test_a_str_subclass_pair_is_refused_at_the_plan_boundary() -> None:
+    """Every other boundary in this package pins `type(x) is str`; this one did not."""
+
+    class Sneaky(str):
+        pass
+
+    with pytest.raises(r1_orchestrator.R1OrchestratorError, match="malformed pair"):
+        r1_orchestrator.R1Plan(
+            span_start_utc=SPAN_START,
+            span_end_utc=SPAN_END,
+            pairs=(Sneaky("EUR_USD"), *PAIRS[1:]),
+        )
+
+
 def test_the_orchestrator_never_calls_the_aggregator_directly() -> None:
     """The bypass `derivation_containment` exists to close is not reopened here.
 
@@ -837,6 +1019,7 @@ def test_the_declared_call_surface_is_exactly_the_committed_stages() -> None:
         "preflight",
         "note",
         "ReadRequest",
+        "RunIdentity",
         "SeenDeclaration",
         "ConfigurationEntry",
         "DerivationRequest",
