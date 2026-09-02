@@ -91,6 +91,14 @@ grants directed in the same breath that nothing be executed, so R1 stands
 `docs/governance/m15_audit_playbook.md` §5a before treating 15 of 15 as
 permission.
 
+**The R1 orchestrator exists** (`scripts/m15_track_a/r1_orchestrator.py`, PR
+#459): the formal entry point binding preflight → write-ahead seen declaration →
+gated M1 read → authorised M15 derivation on the **same** `ReadRequest` → breadth
+`K` → the committed survey → stop. It reaches no next stage by construction.
+Adding it moved the fingerprint again, so the PR #458 grants are invalid and
+re-issuing them on the new value is what is left. Calling the stages by hand is
+not the formal route.
+
 **Both weaknesses are fixed at PR #457, and fixing them invalidated both
 grants** — which is the binding working, and was expected. `containment` now
 resolves relative imports against the importing file's own package, so the

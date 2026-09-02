@@ -1,6 +1,20 @@
 # M15 Track A R1 — the two grants, re-issued on the remediated implementation
 
-**Status:** `TRACK_A_R1_DUAL_GRANTS_REISSUED_AND_READY_FOR_EXPLICIT_EXECUTION_COMMAND`
+**Status: `BOTH_GRANTS_INVALIDATED_BY_THE_R1_ORCHESTRATOR_REISSUE_REQUIRED_ON_THE_NEW_FINGERPRINT`.**
+
+They were valid at `c2cdea0`. The R1 orchestrator
+(`scripts/m15_track_a/r1_orchestrator.py`) joined the declared surface — 29 files
+to 30 — so the fingerprint moved off `64fbace9…` and `require_authorization`
+refuses both, with no human in the loop. Expected: §11 of the orchestrator brief
+required it and forbade narrowing the surface to avoid it. The surface got wider.
+
+**This document is kept as a historical governance record and is not edited to
+match.** Everything below about *scope* still holds — span, pairs, timeframe,
+operations, and what neither grant reaches — because that is a ruling and did not
+change. What no longer holds is the binding.
+
+Superseded status, retained for the record:
+`TRACK_A_R1_DUAL_GRANTS_REISSUED_AND_READY_FOR_EXPLICIT_EXECUTION_COMMAND`
 
 **Approval identifier: PR #458**, merged at the head that carries this file.
 Before that merge this record is not citable authority; the merge is what

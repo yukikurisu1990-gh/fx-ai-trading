@@ -583,16 +583,43 @@ still blocked a first read; a review role found it standing ninety lines below t
 paragraph that said they were fixed, which is the sort of self-contradiction §5a
 exists to prevent.
 
-**What is genuinely still outstanding is engineering, not a defect: there is no
-R1 orchestrator** in the repository. `DerivationRequest(` appears in no committed
-script and no module in `scripts/m15_track_a/` has a `__main__`; the only
-read → derive → survey composition is a pytest fixture. Writing that runner is
-Amber code work, it moves the fingerprint, and it must pass **one** `ReadRequest`
-object to both calls rather than building it twice. One disclosure is carried
-forward rather than closed:
+**The R1 orchestrator now exists**, and it was the last piece of engineering this
+section recorded as outstanding. `scripts/m15_track_a/r1_orchestrator.py` is the
+formal entry point: `preflight` → write-ahead seen declaration → gated M1 read →
+authorised M15 derivation on the **same** `ReadRequest` object → breadth `K` →
+the committed survey → stop. It adds no research logic, re-implements no read,
+derivation or survey semantics, contains no `try`/`except` around a stage, and
+reaches no next stage by construction — `oos_budget` is not imported and a test
+pins its whole call surface. A synthetic end-to-end drives that entry point
+rather than a second composition, because a route that is only exercised through
+a fixture is a route nobody has reviewed as the thing that will run.
+
+**Writing it moved the fingerprint from `64fbace9…`, as it had to**, so the two
+grants recorded at PR #458 are invalidated and the two grant rows above need
+re-issuing again before a read. The record is kept unedited; re-issuing is a
+separate act from rewriting.
+
+One disclosure is carried forward rather than closed:
 `DERIVATION_ROUTE_DOES_NOT_PIN_ITS_TIMEFRAME_TO_THE_COMMITTED_SOURCE_CONSTANT_REFERRED`
 (`m15_track_a_r1_dual_grants_reissued.md` §3) — no data scope widens, and the fix
-is a separate Work PR because it too would void the grants.
+is a separate Work PR because it too would void the grants. The orchestrator
+supplies the pin at the route level: `PLAN_TIMEFRAME` **is**
+`read_route.SOURCE_TIMEFRAME` and `preflight` refuses a plan naming anything
+else, so a non-M1 derivation is unreachable through the formal entry point. The
+referral stays open for direct callers, and the orchestrator is why there should
+not be any.
+
+**One preflight item is a gate-time obligation rather than an in-process check**,
+and the reason is worth recording. The first drafting had `preflight` read this
+playbook and count these boxes; `containment.audit()` immediately reported
+`TRACK_A_EXECUTION_CONTAINMENT_PROBE_FAILED`, because `_check_single_read_route`
+sweeps every module in the package for a file-opening call and `read_text()` is
+one. Silencing that would have meant adding the orchestrator to
+`_PERMITTED_FILE_OPENERS` — widening the declared read surface in order to check
+a document. So §5a's completeness is verified in CI by
+`test_the_playbook_checklist_is_complete_at_this_head`, outside the gated
+surface, in the same category as the ancestry check the grant record already
+handles that way. `PLAYBOOK_5A_COMPLETENESS_IS_A_GATE_TIME_OBLIGATION_VERIFIED_IN_CI_NOT_FROM_INSIDE_THE_GATED_SURFACE`.
 
 **On "the gate authorises R1 only":** that phrase states the **scope** a gate
 pass can reach — R1, never R3 or R4 — not that a pass is **sufficient** for R1.
