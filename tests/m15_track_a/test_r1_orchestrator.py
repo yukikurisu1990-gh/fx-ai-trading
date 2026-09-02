@@ -44,6 +44,7 @@ from scripts.m15_track_a import (
     read_route,
     scratch,
     seen_ledger,
+    streaming,
 )
 
 EPOCH = read_route.SOURCE_EPOCH
@@ -78,6 +79,26 @@ def sandbox(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
         ),
     )
     return tmp_path
+
+
+@pytest.fixture
+def fast_fingerprint(monkeypatch: pytest.MonkeyPatch) -> str:
+    """The **real** measured fingerprint, computed once instead of per check.
+
+    `require_authorization` measures the tree on every check — deliberately, so
+    a mid-run source change is caught — and the bounded-memory route checks once
+    per window. A full-corpus run measures it 181 times, each parsing thirty
+    source files: about 48 seconds a case, and this file has fifty-odd.
+
+    This memoises the value, not the check. The comparison, every refusal and
+    every negative case below are untouched, and
+    `test_r1_streaming.py::test_the_fingerprint_is_measured_at_every_check_not_cached`
+    runs unmemoised and asserts the per-check property this would otherwise
+    hide.
+    """
+    measured = containment.implementation_fingerprint()
+    monkeypatch.setattr(containment, "implementation_fingerprint", lambda: measured)
+    return measured
 
 
 @pytest.fixture
@@ -123,7 +144,7 @@ def _write_minutes(sandbox: Path, pair: str, *, start: str, end: str) -> None:
 
 
 @pytest.fixture
-def source_tree(sandbox: Path) -> Path:
+def source_tree(sandbox: Path, fast_fingerprint: str) -> Path:
     for pair in PAIRS:
         _write_minutes(sandbox, pair, start=FIXTURE_START, end=FIXTURE_END)
     return sandbox
@@ -680,27 +701,10 @@ def test_a_failed_breadth_record_does_not_reach_the_survey(
     assert not reached
 
 
-def test_a_read_that_returns_the_wrong_shape_stops_the_run(
-    source_tree: Path, guards_installed: object, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    """A read that succeeded is not the same as a read that returned what was gated.
-
-    The containment audit is stubbed here **on purpose and only here**: swapping
-    the read route is normally refused in preflight (asserted separately), so
-    without the stub this post-read guard is unreachable and therefore untested.
-    The stub isolates one guard; it does not stand in for the control it steps
-    past.
-    """
-    monkeypatch.setattr(containment, "audit", lambda: {"status": containment.STATUS_CONTAINED})
-    monkeypatch.setattr(read_route, "read_historical", lambda *a, **kw: {"rows": []})
-    with pytest.raises(r1_orchestrator.R1OrchestratorError, match="not a HistoricalRead"):
-        _invoke()
-
-
 def test_a_derivation_recording_another_run_stops_the_run(
     source_tree: Path, guards_installed: object, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    real = derivation.derive_m15
+    real = streaming.derive_streaming
 
     def relabelled(*a: Any, **kw: Any) -> Any:
         result = real(*a, **kw)
@@ -715,7 +719,7 @@ def test_a_derivation_recording_another_run_stops_the_run(
             gap_reports=result.gap_reports,
         )
 
-    monkeypatch.setattr(derivation, "derive_m15", relabelled)
+    monkeypatch.setattr(streaming, "derive_streaming", relabelled)
     with pytest.raises(r1_orchestrator.R1OrchestratorError, match="derivation records run"):
         _invoke()
 
@@ -725,24 +729,27 @@ def test_a_derivation_recording_another_run_stops_the_run(
 # ---------------------------------------------------------------------------
 
 
-def test_the_read_and_the_derivation_receive_the_same_request_object(
+def test_each_window_hands_one_request_object_to_both_gated_routes(
     source_tree: Path, guards_installed: object, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """Building it twice is the failure mode playbook §5a names for a runner.
 
-    Asserted by **identity**, not by equality: two equal objects are exactly what
-    a later divergence starts from.
+    Since the bounded-memory route the orchestrator now calls cuts the plan's
+    request into windows, the property moved down one level and got stricter:
+    **every window** builds one `ReadRequest` and gives that object to both its
+    read and its derivation. Asserted by identity, not equality — two equal
+    objects are exactly what a later divergence starts from.
     """
     seen: list[int] = []
     real_read = read_route.read_historical
     real_derive = derivation.derive_m15
 
     def spy_read(request: Any, *a: Any, **kw: Any) -> Any:
-        seen.append(id(request))
+        seen.append(("read", id(request)))
         return real_read(request, *a, **kw)
 
     def spy_derive(request: Any, *a: Any, **kw: Any) -> Any:
-        seen.append(id(request.read_request))
+        seen.append(("derive", id(request.read_request)))
         return real_derive(request, *a, **kw)
 
     monkeypatch.setattr(read_route, "read_historical", spy_read)
@@ -753,10 +760,17 @@ def test_the_read_and_the_derivation_receive_the_same_request_object(
     #: isolate the property under test: the orchestrator's own two calls are the
     #: last two, and they must be the same object.
     monkeypatch.setattr(containment, "audit", lambda: {"status": containment.STATUS_CONTAINED})
-    result = _invoke()
-    assert len(seen) >= 2
-    assert seen[-2] == seen[-1], "the derivation was handed a different ReadRequest from the read"
-    assert id(result.preflight.request) == seen[-1]
+    _invoke()
+    #: A window with no rows reads and does not derive, so the two streams are
+    #: not one-to-one. Every derivation must be handed the object the read
+    #: immediately before it was handed.
+    derivations = [index for index, (kind, _) in enumerate(seen) if kind == "derive"]
+    assert derivations, "no window derived anything"
+    for index in derivations:
+        assert seen[index - 1][0] == "read", seen[index - 2 : index + 1]
+        assert seen[index][1] == seen[index - 1][1], (
+            "a window handed its derivation a different ReadRequest from its read"
+        )
 
 
 def test_a_caller_thread_cannot_split_one_run_across_two_identities(
@@ -814,55 +828,11 @@ def test_the_survey_records_the_containment_status_that_was_measured(
     assert result.survey.containment == measured or measured in str(result.survey.containment)
 
 
-@pytest.mark.parametrize(
-    "field,value,match",
-    [
-        ("run_id", "a-different-run", "read records run"),
-        ("timeframe", "M15", "not M1"),
-        ("operation", "track_a_m15_research_derivation", "read records operation"),
-    ],
-)
-def test_a_read_that_disagrees_with_the_authorisation_stops_the_run(
-    source_tree: Path,
-    guards_installed: object,
-    monkeypatch: pytest.MonkeyPatch,
-    field: str,
-    value: str,
-    match: str,
-) -> None:
-    """The post-read verifications. Four of them survived a mutation audit.
-
-    `containment.audit` is stubbed only so the swapped read route reaches these
-    guards; swapping it is otherwise refused in preflight, which is asserted
-    separately.
-    """
-    real = read_route.read_historical
-
-    def relabelled(*a: Any, **kw: Any) -> Any:
-        read = real(*a, **kw)
-        fields = {
-            "run_id": read.run_id,
-            "operation": read.operation,
-            "timeframe": read.timeframe,
-            "epoch": read.epoch,
-            "span_start_utc": read.span_start_utc,
-            "span_end_utc": read.span_end_utc,
-            "rows_by_pair": read.rows_by_pair,
-        }
-        fields[field] = value
-        return read_route.HistoricalRead(**fields)
-
-    monkeypatch.setattr(containment, "audit", lambda: {"status": containment.STATUS_CONTAINED})
-    monkeypatch.setattr(read_route, "read_historical", relabelled)
-    with pytest.raises(r1_orchestrator.R1OrchestratorError, match=match):
-        _invoke()
-
-
 def test_a_derivation_covering_other_pairs_stops_the_run(
     source_tree: Path, guards_installed: object, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """The post-derivation scope check, which a mutation audit found unverified."""
-    real = derivation.derive_m15
+    real = streaming.derive_streaming
 
     def narrowed(*a: Any, **kw: Any) -> Any:
         result = real(*a, **kw)
@@ -879,7 +849,7 @@ def test_a_derivation_covering_other_pairs_stops_the_run(
             gap_reports=result.gap_reports,
         )
 
-    monkeypatch.setattr(derivation, "derive_m15", narrowed)
+    monkeypatch.setattr(streaming, "derive_streaming", narrowed)
     with pytest.raises(r1_orchestrator.R1OrchestratorError, match="different pair set"):
         _invoke()
 
@@ -996,8 +966,7 @@ def test_the_declared_call_surface_is_exactly_the_committed_stages() -> None:
     tree = ast.parse(Path(r1_orchestrator.__file__).read_text(encoding="utf-8"))
     permitted = {
         # the committed stages
-        "read_historical",
-        "derive_m15",
+        "derive_streaming",
         "survey",
         "declare",
         "record",
@@ -1022,7 +991,6 @@ def test_the_declared_call_surface_is_exactly_the_committed_stages() -> None:
         "RunIdentity",
         "SeenDeclaration",
         "ConfigurationEntry",
-        "DerivationRequest",
         "PreflightReport",
         "R1Result",
         "R1OrchestratorError",

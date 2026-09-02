@@ -43,9 +43,10 @@ The sequence, and why it is this one
 
     preflight                      no MARKET-DATA file is opened; refusals cost 0 data bytes
       -> declare the seen interval write-ahead, BEFORE the read
-      -> read_historical           Grant A; the gated M1 read
-      -> verify the read is what was authorised
-      -> derive_m15                Grant B; the SAME ReadRequest object
+      -> derive_streaming          Grants A and B, window by window: the gated
+                                   read and the authorised derivation, with the
+                                   raw M1 rows of each window released before
+                                   the next one is read
       -> verify the derivation is what was authorised
       -> record breadth K          result_observed=False: R1 scores nothing
       -> r1_survey.survey          the committed survey, unmodified
@@ -57,8 +58,11 @@ convention:
 * **One `RunIdentity` reaches every stage.** It is taken once and passed down;
   nothing here constructs a second one. A run whose ledger entry, breadth entry
   and survey disagree about who ran is not one run.
-* **One `ReadRequest` object** is built in `preflight` and handed to both the
-  read and the derivation. Building it twice is what §5a told a runner not to do.
+* **One `ReadRequest` object** is built in `preflight` and is the authorisation
+  every window is cut from — `streaming.derive_streaming` derives each window's
+  request from it and hands *that one object* to both the window's read and the
+  window's derivation. Building the pair separately is what §5a told a runner
+  not to do.
 * **No stage runs after a failed stage.** Neither `preflight` nor `run_r1`
   contains a `try`/`except`, so a refusal from any committed guard propagates
   and the run ends where it failed. Nothing is retried, nothing is degraded, and
@@ -103,6 +107,7 @@ from scripts.m15_track_a import (
     read_route,
     scratch,
     seen_ledger,
+    streaming,
 )
 from scripts.m15_track_a.identity import RunIdentity
 from scripts.m15_track_a.oos_slice import DEVELOPMENT_END_UTC, DEVELOPMENT_START_UTC
@@ -509,24 +514,23 @@ def run_r1(
     )
     declared_at = seen_ledger.declare(declaration, identity)
 
-    # 2. The gated M1 read, under Grant A.
-    read = read_route.read_historical(request, identity, grant=read_grant)
-    if type(read) is not read_route.HistoricalRead:  # noqa: E721
-        _refuse(f"the read route returned a {type(read).__name__}, not a HistoricalRead")
-    if read.run_id != identity.run_id:
-        _refuse(f"the read records run {read.run_id!r} and this run is {identity.run_id!r}")
-    if read.timeframe != PLAN_TIMEFRAME:
-        _refuse(f"the read returned {read.timeframe} bars, not {PLAN_TIMEFRAME}")
-    if read.operation != authorization.OPERATION_HISTORICAL_READ:
-        _refuse(f"the read records operation {read.operation!r}")
-
-    # 3. The authorised derivation, under Grant B, on the **same** request
-    #    object the read was gated with. Building a second one here is the
-    #    failure mode playbook §5a names for a runner.
-    derived = derivation.derive_m15(
-        derivation.DerivationRequest(read_request=request, read=read),
+    # 2. + 3. The gated read and the authorised derivation, **window by
+    #    window**, under Grants A and B. The full-buffer pair — one
+    #    `read_historical` over the whole corpus, then one `derive_m15` over
+    #    everything it returned — held every M1 row of every pair alive at once:
+    #    a review role measured that at roughly 4.5–6 GB for the authorised
+    #    span, with an `OutOfMemoryError` landing *after* the irreversible
+    #    seen-data declaration above. `derive_streaming` runs the same two
+    #    committed routes with the same two grants and releases each window's
+    #    raw rows before reading the next, so the retained raw-row count is a
+    #    property of the window rather than of the corpus.
+    #
+    #    There is no fallback to the full-buffer path: this is the route.
+    derived = streaming.derive_streaming(
+        request,
         identity,
-        grant=derivation_grant,
+        read_grant=read_grant,
+        derivation_grant=derivation_grant,
     )
     if type(derived) is not derivation.DerivedM15:  # noqa: E721
         _refuse(f"the derivation route returned a {type(derived).__name__}, not a DerivedM15")
