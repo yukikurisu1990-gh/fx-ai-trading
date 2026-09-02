@@ -9,11 +9,19 @@ each, deliberately:
 
 * `test_recorded_read_grant.py` — PR #454's grant, bound to `497e187b…`, **invalid**
 * `test_recorded_dual_grants.py` — PR #456's pair, bound to `e43583e0…`, **invalid**
-* this file — PR #458's pair, bound to the current fingerprint, **valid**
+* this file — PR #458's pair, bound to `64fbace9…`, **now invalid too**
 
-Any change to the declared surface has to flip exactly this file and leave the
-other two as they are. If a change ever leaves all three green, the fingerprint
-stopped covering something.
+**The R1 orchestrator invalidated these.** Adding
+`scripts/m15_track_a/r1_orchestrator.py` moved the declared surface from 29
+files to 30, so the fingerprint moved and neither grant covers what would run —
+expected, and required by §11 of the orchestrator brief, which forbids narrowing
+the surface to preserve them. As with the two records before it, the numbers are
+left exactly as a human approved them and the assertions are inverted instead.
+
+What still holds, and is still tested here, is everything these grants said about
+**scope**: the span, the pairs, the timeframe, the operations, and what neither
+of them reaches. Those are facts about a ruling and did not change; only the
+implementation they were bound to did.
 
 **Nothing here authorises a read.** These are assertions about a record. The
 execution command is a separate human act, and no test can stand in for it.
@@ -121,29 +129,53 @@ def _identity(name: str) -> identity.RunIdentity:
 
 
 @pytest.mark.parametrize("name", sorted(SECTIONS))
-def test_the_recorded_fingerprint_is_this_implementation(name: str) -> None:
-    """Measured, not transcribed.
+def test_the_recorded_grant_is_invalidated_by_the_orchestrator(name: str) -> None:
+    """**Both re-issued grants are now INVALID, and this asserts it.**
 
-    A number copied out of a previous session's report is not an authority, and
-    this is the assertion that makes the difference observable.
+    They were valid at `c2cdea0`. The R1 orchestrator added
+    `scripts/m15_track_a/r1_orchestrator.py` to the declared surface — 29 files
+    to 30 — so the fingerprint moved off `64fbace9…` and neither grant covers
+    what would run.
+
+    Expected before that work started, and required: §11 of the orchestrator
+    brief says "orchestrator追加によってimplementation fingerprintが変わることを
+    前提とする" and forbids narrowing the surface to preserve the grants. The
+    surface got **wider**.
+
+    Inverted rather than updated, and the recorded numbers left untouched:
+    editing one would forge an approval nobody gave. This is the third time the
+    binding has done this, and each time the record is kept and a new one issued.
     """
     recorded = _recorded(name)["approved_implementation_fingerprint"]
     assert re.fullmatch(r"[0-9a-f]{64}", recorded), recorded
-    assert recorded == containment.implementation_fingerprint()
+    assert recorded == "64fbace9aa8e08d835ec36b8b7fca1562af6826341d3821987d2831aa7e15cc2", (
+        "the recorded value changed. It is the number a human approved; a later session may "
+        "not rewrite it, and re-issuing is not the same act as editing."
+    )
+    assert recorded != containment.implementation_fingerprint(), (
+        "the recorded grant still matches this implementation. Either the orchestrator is "
+        "outside the declared surface — which would mean the formal R1 route could be swapped "
+        "under a valid grant — or the recorded value was edited. Both are defects."
+    )
 
 
 @pytest.mark.parametrize("name", sorted(SECTIONS))
-def test_the_recorded_grant_is_accepted_by_the_gate(name: str) -> None:
-    """Not merely equal — accepted, by `require_authorization`, on this tree."""
-    authorization.require_authorization(
-        _grant(name),
-        operation=_recorded(name)["operation"],
-        span_start_utc=oos_slice.DEVELOPMENT_START_UTC,
-        span_end_utc=oos_slice.DEVELOPMENT_END_UTC,
-        pairs=tuple(sorted(PAIRS_20)),
-        timeframe="M1",
-        identity=_identity(name),
-    )
+def test_the_invalidated_grant_is_actually_refused_at_the_gate(name: str) -> None:
+    """Not merely unequal — refused, by `require_authorization`, on this tree.
+
+    An inequality between two strings would also hold if the fingerprint check
+    had been removed from the gate. This runs the gate.
+    """
+    with pytest.raises(authorization.AuthorizationError, match="implementation"):
+        authorization.require_authorization(
+            _grant(name),
+            operation=_recorded(name)["operation"],
+            span_start_utc=oos_slice.DEVELOPMENT_START_UTC,
+            span_end_utc=oos_slice.DEVELOPMENT_END_UTC,
+            pairs=tuple(sorted(PAIRS_20)),
+            timeframe="M1",
+            identity=_identity(name),
+        )
 
 
 @pytest.mark.parametrize("name", sorted(SECTIONS))
@@ -418,19 +450,19 @@ def replica(tmp_path_factory: pytest.TempPathFactory) -> Path:
     return tree
 
 
-def test_recording_a_governance_document_keeps_both_grants_valid(replica: Path) -> None:
+def test_recording_a_governance_document_does_not_move_the_fingerprint(replica: Path) -> None:
     """The property that lets an authorization record itself.
 
-    Measured on a copy rather than argued, and checked against the **recorded**
-    value rather than against itself.
+    Still load-bearing for the grants that will be re-issued against the
+    orchestrator's fingerprint. Asserted on the value alone: the grants recorded
+    in this document no longer match it, which is what
+    `test_the_recorded_grant_is_invalidated_by_the_orchestrator` says.
     """
     before = _fingerprint_in(replica)
     (replica / "docs").mkdir(exist_ok=True)
     (replica / "docs" / "another_grant_record.md").write_text("recorded\n", encoding="utf-8")
     (replica / "README.md").write_text("unrelated\n", encoding="utf-8")
     assert _fingerprint_in(replica) == before
-    for name in SECTIONS:
-        assert _recorded(name)["approved_implementation_fingerprint"] == before
 
 
 @pytest.mark.parametrize(

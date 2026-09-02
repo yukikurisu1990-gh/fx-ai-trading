@@ -1,6 +1,25 @@
 # M15 Track A R1 — the two grants, re-issued on the remediated implementation
 
-**Status:** `TRACK_A_R1_DUAL_GRANTS_REISSUED_AND_READY_FOR_EXPLICIT_EXECUTION_COMMAND`
+**Status: `BOTH_GRANTS_INVALIDATED_BY_THE_R1_ORCHESTRATOR_REISSUE_REQUIRED_ON_THE_NEW_FINGERPRINT`.**
+
+They were valid at `c2cdea0`. The R1 orchestrator
+(`scripts/m15_track_a/r1_orchestrator.py`) joined the declared surface — 29 files
+to 30 — so the fingerprint moved off `64fbace9…` and `require_authorization`
+refuses both, with no human in the loop. Expected: §11 of the orchestrator brief
+required it and forbade narrowing the surface to avoid it. The surface got wider.
+
+The value to re-issue against, measured on this head and recorded here so a
+human does not have to rediscover it:
+**`1f1f0ed54e91d0d65538709802b2097a717983f9b314483ec9ed201db15f71ae`** (surface
+30 files). Recording it is not issuing a grant against it.
+
+**This document is kept as a historical governance record and is not edited to
+match.** Everything below about *scope* still holds — span, pairs, timeframe,
+operations, and what neither grant reaches — because that is a ruling and did not
+change. What no longer holds is the binding.
+
+Superseded status, retained for the record:
+`TRACK_A_R1_DUAL_GRANTS_REISSUED_AND_READY_FOR_EXPLICIT_EXECUTION_COMMAND`
 
 **Approval identifier: PR #458**, merged at the head that carries this file.
 Before that merge this record is not citable authority; the merge is what
@@ -323,11 +342,13 @@ the act of granting one, and reading a ticked checklist is not the act of being
 commanded.
 
 The engineering, stated because "one thing" would be false without it: **there is
-no R1 orchestrator in this repository.** `DerivationRequest(` appears in no
-committed script, no module in `scripts/m15_track_a/` has a `__main__`, and the
-only read → derive → survey composition that exists is a pytest fixture. Writing
-that runner is Amber code work, and it must pass **one** `ReadRequest` object to
-both calls rather than building it twice.
+the R1 orchestrator is done.** PR #459 added
+`scripts/m15_track_a/r1_orchestrator.py`, the formal entry point, and it passes
+**one** `ReadRequest` object to both calls. `DerivationRequest(` now appears in
+exactly one committed script — that one. Writing it moved the fingerprint, which
+is why the grants above are invalid and why the next step is re-issuing them
+rather than running anything. There is still no CLI or `__main__`, deliberately:
+an execution affordance is not what an unauthorised head should gain.
 
 ## 10. Referrals these grants do not touch
 
