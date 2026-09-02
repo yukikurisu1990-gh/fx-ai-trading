@@ -8,6 +8,11 @@ to 30 — so the fingerprint moved off `64fbace9…` and `require_authorization`
 refuses both, with no human in the loop. Expected: §11 of the orchestrator brief
 required it and forbade narrowing the surface to avoid it. The surface got wider.
 
+The value to re-issue against, measured on this head and recorded here so a
+human does not have to rediscover it:
+**`c070b045a58422e936ca6e57965b4c70e8921b03aa1affb25291c813c0dd5d76`** (surface
+30 files). Recording it is not issuing a grant against it.
+
 **This document is kept as a historical governance record and is not edited to
 match.** Everything below about *scope* still holds — span, pairs, timeframe,
 operations, and what neither grant reaches — because that is a ruling and did not
@@ -337,11 +342,13 @@ the act of granting one, and reading a ticked checklist is not the act of being
 commanded.
 
 The engineering, stated because "one thing" would be false without it: **there is
-no R1 orchestrator in this repository.** `DerivationRequest(` appears in no
-committed script, no module in `scripts/m15_track_a/` has a `__main__`, and the
-only read → derive → survey composition that exists is a pytest fixture. Writing
-that runner is Amber code work, and it must pass **one** `ReadRequest` object to
-both calls rather than building it twice.
+the R1 orchestrator is done.** PR #459 added
+`scripts/m15_track_a/r1_orchestrator.py`, the formal entry point, and it passes
+**one** `ReadRequest` object to both calls. `DerivationRequest(` now appears in
+exactly one committed script — that one. Writing it moved the fingerprint, which
+is why the grants above are invalid and why the next step is re-issuing them
+rather than running anything. There is still no CLI or `__main__`, deliberately:
+an execution affordance is not what an unauthorised head should gain.
 
 ## 10. Referrals these grants do not touch
 

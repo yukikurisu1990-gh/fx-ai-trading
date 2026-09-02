@@ -23,6 +23,7 @@ from __future__ import annotations
 
 import ast
 import json
+import re
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
@@ -260,17 +261,36 @@ def test_the_result_names_no_next_stage(completed: Any) -> None:
 # ---------------------------------------------------------------------------
 
 
-def _source_files(sandbox: Path) -> list[Path]:
-    return sorted((sandbox / "data").glob("*.jsonl"))
+@pytest.fixture
+def opened_paths(monkeypatch: pytest.MonkeyPatch) -> list[Path]:
+    """Every path opened through `Path.open` while a case runs.
+
+    The first drafting's `_assert_nothing_read` looped over the source files and
+    asserted `path.stat().st_atime is not None` — which is true of any file that
+    exists. A review role pointed out that the helper on which every
+    `..._stops_before_any_read` case rested asserted nothing about reading. This
+    records the opens instead, so "no source file was touched" is measured.
+    """
+    recorded: list[Path] = []
+    real_open = Path.open
+
+    def spy(self: Path, *args: Any, **kwargs: Any) -> Any:
+        recorded.append(Path(self))
+        return real_open(self, *args, **kwargs)
+
+    monkeypatch.setattr(Path, "open", spy)
+    return recorded
 
 
-def _assert_nothing_read(sandbox: Path) -> None:
+def _assert_nothing_read(sandbox: Path, opened: list[Path] | None = None) -> None:
     """No source file was opened, and no seen interval was declared."""
-    for path in _source_files(sandbox):
-        assert path.stat().st_atime is not None  # the file exists; nothing asserts on atime
+    if opened is not None:
+        source_root = (sandbox / "data").resolve()
+        touched = [path for path in opened if path.resolve().is_relative_to(source_root)]
+        assert not touched, f"a source file was opened before the refusal: {touched}"
     assert not seen_ledger.read_declarations(), (
         "a seen-data interval was declared even though preflight refused — the refusal did not "
-        "cost zero bytes"
+        "cost zero data bytes"
     )
     assert not breadth.read_entries()
 
@@ -288,16 +308,20 @@ def _assert_nothing_read(sandbox: Path) -> None:
     ids=["no-grant-a", "no-grant-b", "grant-a-not-a-grant"],
 )
 def test_a_missing_or_malformed_grant_stops_before_any_read(
-    source_tree: Path, guards_installed: object, overrides: dict[str, Any], match: str
+    source_tree: Path,
+    guards_installed: object,
+    opened_paths: list[Path],
+    overrides: dict[str, Any],
+    match: str,
 ) -> None:
     with pytest.raises(r1_orchestrator.R1OrchestratorError, match=match):
         _invoke(**overrides)
-    _assert_nothing_read(source_tree)
+    _assert_nothing_read(source_tree, opened_paths)
 
 
 @pytest.mark.parametrize("which", ["read_grant", "derivation_grant"])
 def test_a_fingerprint_mismatch_stops_before_any_read(
-    source_tree: Path, guards_installed: object, which: str
+    source_tree: Path, guards_installed: object, opened_paths: list[Path], which: str
 ) -> None:
     operation = (
         authorization.OPERATION_HISTORICAL_READ
@@ -307,7 +331,7 @@ def test_a_fingerprint_mismatch_stops_before_any_read(
     stale = _grant(operation, approved_implementation_fingerprint="0" * 64)
     with pytest.raises(r1_orchestrator.R1OrchestratorError, match="does not describe what"):
         _invoke(**{which: stale})
-    _assert_nothing_read(source_tree)
+    _assert_nothing_read(source_tree, opened_paths)
 
 
 def test_the_two_grants_must_name_the_same_approved_head(
@@ -349,12 +373,17 @@ def test_a_plan_naming_another_timeframe_stops_before_any_read(
     ],
 )
 def test_a_plan_outside_the_authorised_corpus_stops_before_any_read(
-    source_tree: Path, guards_installed: object, span: tuple[str, str], label: str
+    source_tree: Path,
+    guards_installed: object,
+    opened_paths: list[Path],
+    span: tuple[str, str],
+    label: str,
 ) -> None:
+    """The slice, the dead window and the forward epoch, measured to 0 data bytes."""
     start, end = span
     with pytest.raises(r1_orchestrator.R1OrchestratorError):
         _invoke(plan=_plan(span_start_utc=start, span_end_utc=end))
-    _assert_nothing_read(source_tree)
+    _assert_nothing_read(source_tree, opened_paths)
 
 
 @pytest.mark.parametrize(
@@ -416,19 +445,118 @@ def test_the_playbook_checklist_is_complete_at_this_head() -> None:
     "a gate-time reviewer obligation, not an in-process check — git is
     unreachable from inside a gated read".
     """
+    ticked, unticked = _checklist_counts()
+    assert ticked + unticked == r1_orchestrator.PREFLIGHT_CHECKLIST_ITEMS, (ticked, unticked)
+
+
+def _checklist_counts() -> tuple[int, int]:
     playbook = scratch.repo_root() / r1_orchestrator.PLAYBOOK_RELATIVE
     text = playbook.read_text(encoding="utf-8")
     assert text.count(r1_orchestrator.PREFLIGHT_CHECKLIST_HEADING) == 1
     after = text.split(r1_orchestrator.PREFLIGHT_CHECKLIST_HEADING, 1)[1]
     section = after.split("\n## ", 1)[0]
-    ticked = section.count("\n- [x] ")
-    unticked = section.count("\n- [ ] ")
-    assert unticked == 0, f"playbook §5a has {unticked} outstanding item(s)"
-    assert ticked == r1_orchestrator.PREFLIGHT_CHECKLIST_ITEMS, ticked
+    return section.count("\n- [x] "), section.count("\n- [ ] ")
 
 
-def test_preflight_opens_no_file_at_all() -> None:
-    """The property that made the checklist an obligation rather than a check."""
+def test_the_two_grant_rows_are_ticked_only_when_the_grants_actually_validate() -> None:
+    """The tick may not run ahead of the fact. This is the fix for a real defect.
+
+    An earlier revision of this PR left §5a's two grant rows ticked and saying
+    the grants were "currently in force" and "accepted by `require_authorization`
+    on this tree", with the correction eighty lines below — while a review role
+    measured a refusal. Worse, the CI check added alongside it counted tick marks
+    and therefore *required* the false state: un-ticking to tell the truth broke
+    the build.
+
+    Counting ticks cannot detect that, so this ties the two rows to the thing
+    they claim. **15 of 15 is permitted only when the recorded grants are
+    actually accepted at this head**; while either is refused, exactly two rows
+    must be outstanding. Whichever way the head moves, the record and the
+    measurement have to agree before the build is green.
+    """
+    from scripts.m15_gate3a.pair_authority import PAIRS_20 as UNIVERSE
+    from scripts.m15_track_a import oos_slice
+
+    document = (
+        scratch.repo_root() / "docs" / "governance" / "m15_track_a_r1_dual_grants_reissued.md"
+    )
+    pattern = r"^\| \*\*approved_implementation_fingerprint\*\* \| `([0-9a-f]{64})` \|$"
+    recorded = re.findall(pattern, document.read_text(encoding="utf-8"), re.MULTILINE)
+    assert len(recorded) == 2, recorded
+
+    head = "c2cdea03186f2a6e0f7ee394a0a039a24ef1a903"
+    operations = (
+        authorization.OPERATION_HISTORICAL_READ,
+        authorization.OPERATION_M15_DERIVATION,
+    )
+    accepted = 0
+    for fingerprint, operation in zip(recorded, operations, strict=True):
+        grant = authorization.ReadGrant(
+            operation=operation,
+            span_start_utc=oos_slice.DEVELOPMENT_START_UTC,
+            span_end_utc=oos_slice.DEVELOPMENT_END_UTC,
+            pairs=tuple(sorted(UNIVERSE)),
+            timeframe="M1",
+            approved_head_sha=head,
+            approved_implementation_fingerprint=fingerprint,
+            approver_record="checklist correspondence check",
+        )
+        try:
+            authorization.require_authorization(
+                grant,
+                operation=operation,
+                span_start_utc=oos_slice.DEVELOPMENT_START_UTC,
+                span_end_utc=oos_slice.DEVELOPMENT_END_UTC,
+                pairs=tuple(sorted(UNIVERSE)),
+                timeframe="M1",
+                identity=_run(code_sha=head),
+            )
+        except authorization.AuthorizationError:
+            continue
+        accepted += 1
+
+    _, unticked = _checklist_counts()
+    if accepted == 2:
+        assert unticked == 0, (
+            "both recorded grants validate at this head, so §5a's two grant rows should be "
+            f"ticked, and {unticked} row(s) are outstanding."
+        )
+    else:
+        assert unticked == 2, (
+            f"{2 - accepted} recorded grant(s) are refused at this head, so §5a's two grant "
+            f"rows must be outstanding — {unticked} are. A ticked row naming a grant that "
+            "`require_authorization` refuses is the record running ahead of the fact."
+        )
+
+
+def test_the_recorded_reissue_fingerprint_is_the_measured_one() -> None:
+    """The value a human is told to re-issue against must be the value that runs.
+
+    Recorded in `m15_track_a_r1_dual_grants_reissued.md` so nobody has to
+    rediscover it — and pinned here because a docstring edit to any surface file
+    moves the fingerprint, which is exactly how the first attempt at recording it
+    went stale within the same session.
+    """
+    document = (
+        scratch.repo_root() / "docs" / "governance" / "m15_track_a_r1_dual_grants_reissued.md"
+    )
+    text = document.read_text(encoding="utf-8")
+    match = re.search(r"The value to re-issue against.{0,200}?\*\*`([0-9a-f]{64})`\*\*", text, re.S)
+    assert match, "the re-issue fingerprint is not where the parser expects it"
+    assert match.group(1) == containment.implementation_fingerprint()
+
+
+def test_the_orchestrator_module_opens_no_file() -> None:
+    """The property that made the checklist an obligation rather than a check.
+
+    Scoped to **this module's own AST**, and named that way after a review role
+    pointed out that the earlier name — "preflight opens no file at all" —
+    claimed more than the check establishes: `preflight` calls
+    `containment.audit()` and `implementation_fingerprint()`, which parse and
+    hash every file on the declared surface. No *market-data* file is opened,
+    which is the property that matters and which `containment.audit()` enforces
+    for the whole package.
+    """
     tree = ast.parse(Path(r1_orchestrator.__file__).read_text(encoding="utf-8"))
     readers = {"open", "read_text", "read_bytes", "load", "loads", "iterdir", "glob", "rglob"}
     called = {
@@ -701,14 +829,13 @@ def test_the_declared_call_surface_is_exactly_the_committed_stages() -> None:
         "is_installed",
         "is_writable",
         "canonical_pair",
-        "covers",
+        #: the module-level function, never the overridable ``grant.covers`` method
+        "grant_covers",
         # this module's own helpers and constructors
         "_refuse",
-        "_checklist_state",
         "_canonical_pairs",
         "preflight",
         "note",
-        "R1Plan",
         "ReadRequest",
         "SeenDeclaration",
         "ConfigurationEntry",
@@ -724,17 +851,12 @@ def test_the_declared_call_surface_is_exactly_the_committed_stages() -> None:
         "sorted",
         "tuple",
         "get",
-        "is_file",
-        "read_text",
-        "count",
-        "split",
         "strip",
         "ledger_path",
         "grant_ledger_path",
         "breadth_path",
         "scratch_root",
         "ledger_root",
-        "repo_root",
         # dataclass machinery and plain builtins
         "dataclass",
         "field",
@@ -749,6 +871,12 @@ def test_the_declared_call_surface_is_exactly_the_committed_stages() -> None:
     } - {None}
     unexpected = called - permitted
     assert not unexpected, f"the orchestrator calls something undeclared: {sorted(unexpected)}"
+    #: And the allowlist must not out-live what it permits. A review role found
+    #: it still authorising `read_text`, `is_file`, `repo_root` and a helper that
+    #: no longer exists — leftovers from the draft that read the playbook — so an
+    #: injected file read using only permitted names kept this test green.
+    stale = permitted - called
+    assert not stale, f"the allowlist permits names the module never calls: {sorted(stale)}"
 
 
 def test_the_orchestrator_has_no_try_except_in_the_sequence() -> None:

@@ -41,7 +41,7 @@ The sequence, and why it is this one
 
 ::
 
-    preflight                      no file is opened; every refusal costs 0 bytes
+    preflight                      no MARKET-DATA file is opened; refusals cost 0 data bytes
       -> declare the seen interval write-ahead, BEFORE the read
       -> read_historical           Grant A; the gated M1 read
       -> verify the read is what was authorised
@@ -59,10 +59,14 @@ convention:
   and survey disagree about who ran is not one run.
 * **One `ReadRequest` object** is built in `preflight` and handed to both the
   read and the derivation. Building it twice is what §5a told a runner not to do.
-* **No stage runs after a failed stage.** There is no `try`/`except` anywhere in
-  the sequence: a refusal from any committed guard propagates and the run ends
-  where it failed. Nothing is retried, nothing is degraded, and no partial
-  result is returned.
+* **No stage runs after a failed stage.** Neither `preflight` nor `run_r1`
+  contains a `try`/`except`, so a refusal from any committed guard propagates
+  and the run ends where it failed. Nothing is retried, nothing is degraded, and
+  no partial result is returned. The module has exactly one `try`, in
+  `_canonical_pairs`, and it re-raises: it converts a `PairAuthorityError` into
+  this route's own refusal rather than swallowing it. An earlier draft claimed
+  "no `try`/`except` anywhere", which was false, and the test that was supposed
+  to catch that walked only the two functions.
 
 The timeframe pin, and the minimal diff
 ---------------------------------------
@@ -140,14 +144,19 @@ SEEN_PURPOSE: Final[str] = "Track A stage R1 survey of the authorised developmen
 #: So the checklist is a **gate-time obligation**, in the same category as the
 #: ancestry check the grant record already handles that way: "git is unreachable
 #: from inside a gated read". It is verified outside the gated surface — by CI, in
-#: `tests/m15_track_a/test_r1_orchestrator.py::
-#: test_the_playbook_checklist_is_complete_at_this_head`, which runs on every
-#: push and fails the build if a box is outstanding — rather than by a module that
-#: would have to open a file to do it.
+#: `tests/m15_track_a/test_r1_orchestrator.py`, which CI runs on every pull
+#: request and on every push to `master` — not on an unopened feature branch, so
+#: the obligation is a gate-time one in the literal sense.
 #:
-#: This is not a weakening: a run-time count read from inside the process could
-#: only ever check the *record*, and a document cannot verify itself. §5a says in
-#: the same section that 15 of 15 is not permission to read.
+#: The relocation costs something and it is worth naming: a run-time count could
+#: only ever check the *record* anyway (a document cannot verify itself, and §5a
+#: says in the same section that 15 of 15 is not permission to read), but CI
+#: checks the branch while a run checks nothing, and `docs/` is outside the
+#: fingerprint, so the record can drift after CI is green. What closes that is
+#: `test_the_two_grant_rows_are_ticked_only_when_the_grants_actually_validate`,
+#: which ties the two grant ticks to whether `require_authorization` actually
+#: accepts the recorded grants — so the record cannot run ahead of the fact in
+#: the direction that matters.
 PLAYBOOK_RELATIVE: Final[str] = "docs/governance/m15_audit_playbook.md"
 PREFLIGHT_CHECKLIST_HEADING: Final[str] = "## 5a."
 PREFLIGHT_CHECKLIST_ITEMS: Final[int] = 15
@@ -252,12 +261,21 @@ def preflight(
     read_grant: Any,
     derivation_grant: Any,
 ) -> PreflightReport:
-    """Establish that an R1 run may start. **Opens no file and reads no data.**
+    """Establish that an R1 run may start. **Reads no market data.**
 
-    Every refusal below costs zero bytes, which is the point: the R1 execution
-    command of 2026-08-31 was refused because six things nobody had checked
-    turned out to be false, and the only reason that was cheap is that nobody
-    had read anything yet.
+    Every refusal below costs zero *data* bytes, which is the point: the R1
+    execution command of 2026-08-31 was refused because six things nobody had
+    checked turned out to be false, and the only reason that was cheap is that
+    nobody had read anything yet.
+
+    "Opens no file" would be the wrong claim and an earlier draft made it. This
+    function does not open one itself — a test pins that on its AST, and
+    ``containment.audit()`` would refuse the module if it did — but it calls
+    ``containment.audit()`` and ``implementation_fingerprint()``, which between
+    them parse and hash every file on the declared surface and attempt two
+    deliberately non-existent probe paths. A review role counted the opens. What
+    is true, and what matters, is that no file under the committed data root is
+    touched and no seen-data interval is declared.
 
     What this does **not** establish: that the grants it is handed were actually
     approved by a human. `ReadGrant` records an approval and enforces its scope;
@@ -360,7 +378,16 @@ def preflight(
             )
         # Re-checked here as well as inside each route, on purpose: this is the
         # last point at which a refusal costs nothing.
-        if not grant.covers(
+        # ``authorization.grant_covers``, never ``grant.covers``. The method is
+        # a convenience wrapper and its own docstring says why the gate avoids
+        # it: "an overridable method is a thing a subclass can make answer
+        # True". The exact-type pin above stops a subclass, but not
+        # ``object.__setattr__(grant, "covers", lambda **kw: True)`` on a frozen
+        # dataclass — a review role walked a one-pair grant past this check that
+        # way. The committed gate refused it downstream; this one should not have
+        # needed the rescue.
+        if not authorization.grant_covers(
+            grant,
             operation=operation,
             span_start_utc=request.touched_start_utc,
             span_end_utc=request.span_end_utc,
@@ -387,6 +414,10 @@ def preflight(
     note("fingerprint", fingerprint)
 
     # --- the records this run will write ----------------------------------
+    # Not side-effect free, and worth naming: ``scratch.ledger_root()`` creates
+    # the directory if it is absent. That is a scratch directory, not a record —
+    # nothing is written into it here — but "preflight changes nothing" would be
+    # a slightly stronger claim than the truth.
     for name, path in (
         ("scratch_root", scratch.scratch_root()),
         ("ledger_root", scratch.ledger_root()),

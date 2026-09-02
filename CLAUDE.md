@@ -102,7 +102,8 @@ not the formal route.
 **Both weaknesses are fixed at PR #457, and fixing them invalidated both
 grants** — which is the binding working, and was expected. `containment` now
 resolves relative imports against the importing file's own package, so the
-surface (29 files) **is** the transitive closure; and `derive_m15` validates
+surface **is** the transitive closure (29 files then, 30 since the R1
+orchestrator); and `derive_m15` validates
 every input row against the grant-request intersection and pins both request
 types. The PR #456 record is kept unedited as history.
 
