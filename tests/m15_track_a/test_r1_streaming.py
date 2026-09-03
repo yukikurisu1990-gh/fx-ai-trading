@@ -23,9 +23,15 @@ A note on the fingerprint, and on what is not stubbed
 
 `require_authorization` measures `implementation_fingerprint()` on **every**
 check — deliberately, so a mid-run source change is caught — and the streaming
-route checks once per window. A full-corpus run therefore measures it 181 times,
-each parsing thirty source files, which costs about 48 seconds a run and would
-put the suite past forty minutes.
+route checks once per read and once per derivation, per window.
+
+The figures, measured rather than estimated, because a human authorises a run on
+them. One `implementation_fingerprint()` is **412 ms** over **32** files. The
+two-day fixture below measures it **181** times (most windows are empty and read
+without deriving) — about 75 s. A **full corpus**, where every 31-day window of
+every pair carries rows, measures it **321** times: about **132 s**. An earlier
+drafting said "181 times … about 48 seconds", which was the fixture's number
+presented as the corpus's.
 
 `fast_fingerprint` memoises **the real measured value** for the duration of a
 case: same number, computed once. It does not stub the check, the comparison, or
@@ -626,6 +632,202 @@ def test_a_window_derivation_returning_the_wrong_shape_is_refused(
     _declare(run, request)
     with pytest.raises(streaming.StreamingError, match="derivation route returned"):
         _streamed(request, run, window_days=3)
+
+
+def test_live_raw_rows_are_bounded_by_the_window(
+    sandbox: Path, guards_installed: object, fast_fingerprint: str, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The bound, measured on the **heap** rather than on a counter.
+
+    `peak_retained_raw_rows()` is bookkeeping, and a mutation audit walked three
+    defects straight past it: a module-level list that retained every window's
+    read still reported one window; a balanced no-op instrument reported nothing
+    at all; and deleting `del read` doubled true retention without moving the
+    number.
+
+    So this attaches a weak-referenced sentinel to every row the read route
+    builds and counts the ones still alive at the deepest point of the run —
+    inside the aggregator, with the window's rows in hand. That is a fact about
+    the heap; no amount of bookkeeping satisfies it.
+    """
+    import weakref
+
+    class _Sentinel:
+        __slots__ = ("__weakref__",)
+
+    alive: list[weakref.ref[Any]] = []
+    real_row = read_route._row_from_source
+
+    def sentinelled(*a: Any, **kw: Any) -> Any:
+        row = real_row(*a, **kw)
+        marker = _Sentinel()
+        #: an extra key the row-scope snapshot does not copy, so this tracks the
+        #: read's own row objects and nothing downstream
+        row["_audit_sentinel"] = marker
+        alive.append(weakref.ref(marker))
+        return row
+
+    def live() -> int:
+        return sum(1 for ref in alive if ref() is not None)
+
+    deep: list[int] = []
+    between: list[int] = []
+    real_delegate = derivation.DELEGATE
+    real_read = read_route.read_historical
+
+    def measuring_delegate(rows: Any, **kw: Any) -> Any:
+        #: the deepest point: this window's rows are in hand
+        deep.append(live())
+        return real_delegate(rows, **kw)
+
+    def measuring_read(*a: Any, **kw: Any) -> Any:
+        #: **between** windows, before the next read allocates anything. A
+        #: previous window still held here is the `del read` mutant: the peak
+        #: inside the delegate looks identical either way, so measuring only
+        #: there let it survive.
+        between.append(live())
+        return real_read(*a, **kw)
+
+    monkeypatch.setattr(read_route, "_row_from_source", sentinelled)
+    monkeypatch.setattr(derivation, "DELEGATE", measuring_delegate)
+    monkeypatch.setattr(read_route, "read_historical", measuring_read)
+
+    window_days = 2
+    peaks: dict[int, tuple[int, int]] = {}
+    for days in (4, 8, 16):
+        for pair in PAIRS:
+            _write_minutes(
+                sandbox,
+                pair,
+                start=SPAN_START,
+                end=(datetime.fromisoformat(SPAN_START) + timedelta(days=days - 1))
+                .date()
+                .isoformat(),
+                skip_weekends=False,
+            )
+        request = _request(
+            span_end_utc=(datetime.fromisoformat(SPAN_START) + timedelta(days=days - 1))
+            .date()
+            .isoformat()
+        )
+        run = _run(run_id=f"live-rows-{days}")
+        _declare(run, request)
+        alive.clear()
+        deep.clear()
+        between.clear()
+        streaming.reset_retention_instrument()
+        _streamed(request, run, window_days=window_days)
+        corpus = days * 1440 * len(PAIRS)
+        peaks[days] = (max(deep), corpus)
+        #: nothing from a finished window survives into the next one
+        assert max(between) == 0, (
+            f"{max(between)} raw rows from an earlier window were still alive when the next "
+            "one started"
+        )
+        #: and the counter agrees with the heap, so a no-op instrument that
+        #: reports nothing cannot pass while the heap measurement does
+        assert streaming.peak_retained_raw_rows() == max(deep), (
+            streaming.peak_retained_raw_rows(),
+            max(deep),
+        )
+        assert live() == 0, f"{live()} raw rows still alive after the run"
+
+    #: the corpus quadruples; the live peak does not move
+    observed = {days: peak for days, (peak, _) in peaks.items()}
+    assert len(set(observed.values())) == 1, observed
+    peak = next(iter(observed.values()))
+    #: and it is exactly one window of one pair — `<=` would also be satisfied
+    #: by an instrument that counts nothing
+    assert peak == window_days * 1440, (peak, window_days)
+    for days, (_, corpus) in peaks.items():
+        assert peak * 4 <= corpus, (days, peak, corpus)
+
+
+def test_the_streaming_route_swallows_nothing(
+    corpus: dict[str, int], guards_installed: object, fast_fingerprint: str
+) -> None:
+    """A `try` around a stage is how "it failed but we carried on" gets written.
+
+    `test_r1_orchestrator.py` pins that for `run_r1` and `preflight`. The
+    read → derive loop moved down here, and the pin did not move with it: a
+    mutant wrapped `accumulator.absorb(...)` in `except Exception: pass` and
+    survived the whole suite, returning a silently 25 %-short derivation reported
+    as a complete one.
+
+    Structural half: `derive_streaming` may hold a `try`/`finally` — it needs one
+    to balance the retention instrument — and no `except` at all.
+    """
+    import ast
+    import inspect
+
+    tree = ast.parse(inspect.getsource(streaming.derive_streaming))
+    handlers = [node for node in ast.walk(tree) if isinstance(node, ast.ExceptHandler)]
+    assert not handlers, (
+        f"derive_streaming catches something at line(s) {[h.lineno for h in handlers]}"
+    )
+    tries = [node for node in ast.walk(tree) if isinstance(node, ast.Try)]
+    assert all(node.finalbody and not node.handlers for node in tries), tries
+
+
+def test_an_accumulation_failure_aborts_the_run(
+    corpus: dict[str, int],
+    guards_installed: object,
+    fast_fingerprint: str,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The behavioural half of the same property.
+
+    A structural pin says the code has no `except`; this says a failure actually
+    propagates, so a short derivation can never be returned as a whole one.
+    """
+    from scripts.m15_gate3a import incremental_m15
+
+    real_absorb = incremental_m15.IncrementalM15.absorb
+    calls = {"n": 0}
+
+    def failing(self: Any, *a: Any, **kw: Any) -> Any:
+        calls["n"] += 1
+        if calls["n"] == 2:
+            raise incremental_m15.IncrementalM15Error("injected accumulation failure")
+        return real_absorb(self, *a, **kw)
+
+    monkeypatch.setattr(incremental_m15.IncrementalM15, "absorb", failing)
+    request = _request()
+    run = _run()
+    _declare(run, request)
+    with pytest.raises(incremental_m15.IncrementalM15Error, match="injected"):
+        _streamed(request, run, window_days=2)
+
+
+def test_a_request_mutated_mid_run_cannot_fabricate_the_recorded_span(
+    corpus: dict[str, int],
+    guards_installed: object,
+    fast_fingerprint: str,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The defect `derivation.py` was fixed for, reopened here and closed again.
+
+    A role widened the caller's `ReadRequest` from a plain sibling thread and got
+    a `DerivedM15` labelled `1970-01-01..2099-12-31`, which `r1_survey` copies
+    verbatim into the R1 evidence record. Driven from inside the delegate here
+    rather than from a racing thread: the property is "the span comes from a
+    snapshot", and a race would test the scheduler.
+    """
+    request = _request()
+    run = _run()
+    _declare(run, request)
+    real_delegate = derivation.DELEGATE
+
+    def widen_then_delegate(rows: Any, **kw: Any) -> Any:
+        object.__setattr__(request, "span_start_utc", "1970-01-01")
+        object.__setattr__(request, "span_end_utc", "2099-12-31")
+        object.__setattr__(request, "warmup_extension_start_utc", "1970-01-01")
+        return real_delegate(rows, **kw)
+
+    monkeypatch.setattr(derivation, "DELEGATE", widen_then_delegate)
+    derived = _streamed(request, run, window_days=3)
+    assert derived.span_start_utc == SPAN_START
+    assert derived.span_end_utc == SPAN_END
 
 
 def test_there_is_no_fallback_to_a_full_buffer_route() -> None:

@@ -204,6 +204,20 @@ def derive_streaming(
         raise StreamingError(
             f"identity must be exactly a RunIdentity, not a {type(identity).__name__}"
         )
+    # **The request is snapshotted, and leaving it live was a reopened defect.**
+    # `derive_m15` rebuilds its own inputs because an audit widened them "from a
+    # plain sibling thread — no monkeypatch, no subclass" and got a `DerivedM15`
+    # labelled `1970-01-01..2099-12-31` that `r1_survey` copied verbatim into the
+    # R1 evidence record. This function read the span at `iter_windows` and again
+    # at the `return`, so a role reproduced exactly that here. Every field is read
+    # once, now, and nothing below touches the caller's object.
+    request = read_route.ReadRequest(
+        span_start_utc=request.span_start_utc,
+        span_end_utc=request.span_end_utc,
+        pairs=tuple(request.pairs),
+        timeframe=request.timeframe,
+        warmup_extension_start_utc=request.warmup_extension_start_utc,
+    )
     windows = iter_windows(request.touched_start_utc, request.span_end_utc, window_days=window_days)
 
     bars_by_pair: dict[str, list[dict[str, Any]]] = {}

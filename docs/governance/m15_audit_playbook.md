@@ -617,7 +617,7 @@ prohibition to make a memory optimisation possible is not a trade this programme
 makes.
 
 **Both changes moved the fingerprint, as they had to** — `64fbace9…` →
-`1f1f0ed5…` → `51fdc2ad…`, surface 30 → 32 — so the two grants recorded at
+`1f1f0ed5…` → `2be46927…`, surface 30 → 32 — so the two grants recorded at
 PR #458 are invalidated and the two grant rows above need re-issuing before a
 read. The record is kept unedited each time; re-issuing is a separate act from
 rewriting.

@@ -540,6 +540,19 @@ def run_r1(
         _refuse(f"the derivation records operation {derived.operation!r}")
     if tuple(sorted(derived.bars_by_pair)) != request.pairs:
         _refuse("the derivation covered a different pair set from the one that was gated")
+    # The span too, and not because the route is untrusted: a role fabricated a
+    # `1970-01-01..2099-12-31` label from a sibling thread when the span was read
+    # off a live request, and `r1_survey` copies these two fields verbatim into
+    # the evidence record. The route now snapshots, and this is the check that
+    # would have caught it either way.
+    if (derived.span_start_utc, derived.span_end_utc) != (
+        request.touched_start_utc,
+        request.span_end_utc,
+    ):
+        _refuse(
+            f"the derivation records {derived.span_start_utc}..{derived.span_end_utc} and the "
+            f"gated interval is {request.touched_start_utc}..{request.span_end_utc}"
+        )
 
     # 4. Breadth. `result_observed=False` because R1 scores nothing, so `K` is
     #    explicitly 0 rather than absent.
