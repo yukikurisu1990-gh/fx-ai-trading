@@ -675,7 +675,10 @@ TRACK_A_PERMITTED_IMPORTS: dict[str, frozenset[str]] = {
     # private helpers crossing the boundary, and it keeps the aggregator's
     # internals inside the package that owns them. Reader-free: the module opens
     # nothing and its only file-touching import is the aggregator's own.
-    "scripts.m15_gate3a.incremental_m15": frozenset({"IncrementalM15", "IncrementalM15Error"}),
+    # One name, because Track A imports one name. `IncrementalM15Error` was in
+    # this set for a draft and never imported; an allowlist wider than the
+    # surface it describes is how the last one came to authorise `read_text`.
+    "scripts.m15_gate3a.incremental_m15": frozenset({"IncrementalM15"}),
     "scripts.m15_gate3a.aggregation": frozenset(
         {
             "BUCKET_MINUTES",

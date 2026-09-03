@@ -71,7 +71,11 @@ EPOCH = read_route.SOURCE_EPOCH
 #: The orchestrator-level case below runs the full authorised corpus.
 PAIRS = ("EUR_USD", "USD_JPY", "GBP_USD")
 SPAN_START = "2025-05-05"  # a Monday
-SPAN_END = "2025-05-11"  # the Sunday, so the window includes a weekend gap
+#: A Tuesday, so the weekend gap falls in the **middle** of the span and the
+#: last date carries rows. It ended on the Sunday for a draft, and a role showed
+#: what that hid: an enumerator that dropped the span's final date changed no bar,
+#: because that date had none. One assertion caught it; no equivalence case did.
+SPAN_END = "2025-05-13"
 APPROVED_SHA = "a" * 40
 
 
@@ -113,13 +117,25 @@ def guards_installed() -> object:
 
 
 def _write_minutes(
-    sandbox: Path, pair: str, *, start: str, end: str, skip_weekends: bool = True
+    sandbox: Path,
+    pair: str,
+    *,
+    start: str,
+    end: str,
+    skip_weekends: bool = True,
+    hole_every: int = 0,
 ) -> int:
     """One M1 row per minute, in the committed shape. Returns the row count.
 
     Weekends are omitted by default so the corpus has a real gap: a window that
     lands wholly inside one is the case the streaming route has to skip rather
     than refuse, and the reference has to agree about.
+
+    `hole_every` drops one minute in every N, which leaves **incomplete buckets**.
+    A role found that without it every bucket was complete, `total_missing` was 0
+    in every window, and a mutant replacing the accumulator's `+=` with `=`
+    survived the entire suite — the fixture could not see an accumulation bug
+    because it never accumulated anything but zero.
     """
     path = sandbox / "data" / read_route.SOURCE_FILENAME_TEMPLATE.format(pair=pair, epoch=EPOCH)
     jpy = pair.endswith("_JPY")
@@ -133,6 +149,10 @@ def _write_minutes(
         while moment < stop:
             if skip_weekends and moment.weekday() >= 5:
                 moment += timedelta(minutes=1)
+                continue
+            if hole_every and index % hole_every == hole_every - 1:
+                moment += timedelta(minutes=1)
+                index += 1
                 continue
             mid = base + ((index % 40) - 20) * tick
             half = tick
@@ -160,7 +180,11 @@ def _write_minutes(
 
 @pytest.fixture
 def corpus(sandbox: Path) -> dict[str, int]:
-    return {pair: _write_minutes(sandbox, pair, start=SPAN_START, end=SPAN_END) for pair in PAIRS}
+    """Weekend gap in the middle, holes inside buckets, rows on the last date."""
+    return {
+        pair: _write_minutes(sandbox, pair, start=SPAN_START, end=SPAN_END, hole_every=23)
+        for pair in PAIRS
+    }
 
 
 def _run(**overrides: Any) -> identity.RunIdentity:
@@ -319,6 +343,96 @@ def test_the_r1_survey_is_identical_on_both_routes(
     assert right.required_outputs == left.required_outputs
 
 
+def test_the_equivalence_corpus_actually_exercises_the_accumulators(
+    corpus: dict[str, int], guards_installed: object, fast_fingerprint: str
+) -> None:
+    """A fixture that never accumulates anything but zero proves nothing.
+
+    A role replaced `total_missing +=` with `=` in the accumulator and it
+    survived the whole suite, because every bucket in the old fixture was
+    complete. This asserts the corpus has incomplete buckets, that
+    `total_missing` is non-zero, and that it differs between a one-window and a
+    many-window run only by being *equal* — i.e. the sum is really being taken.
+    """
+    reference, streamed = _both(_request(), window_days=2)
+    for pair in reference.gap_reports:
+        missing = reference.gap_reports[pair]["total_missing_source_minutes_within_emitted_buckets"]
+        assert missing > 0, f"{pair}: the corpus has no incomplete bucket to accumulate"
+        assert (
+            streamed.gap_reports[pair]["total_missing_source_minutes_within_emitted_buckets"]
+            == missing
+        ), pair
+        assert reference.gap_reports[pair]["incomplete_bucket_count"] > 0, pair
+        assert reference.gap_reports[pair]["rows_ingested"] > 0, pair
+        assert (
+            streamed.gap_reports[pair]["rows_ingested"]
+            == (reference.gap_reports[pair]["rows_ingested"])
+        ), pair
+
+
+def test_an_empty_window_still_checks_the_batch_it_was_handed(
+    corpus: dict[str, int],
+    guards_installed: object,
+    fast_fingerprint: str,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The gate a first drafting skipped past when a window had no rows.
+
+    `if not rows: continue` meant an empty window ran **no** derivation gate, so
+    a read whose batch carried an unauthorised pair was accepted where the
+    non-streaming reference refuses it. Unreachable through the committed read
+    route — which is exactly what `row_scope`'s own commentary says is not a
+    reason to leave it.
+    """
+    real = read_route.read_historical
+
+    def smuggling(*a: Any, **kw: Any) -> Any:
+        read = real(*a, **kw)
+        if any(read.rows_by_pair.values()):
+            return read
+        return read_route.HistoricalRead(
+            run_id=read.run_id,
+            operation=read.operation,
+            timeframe=read.timeframe,
+            epoch=read.epoch,
+            span_start_utc=read.span_start_utc,
+            span_end_utc=read.span_end_utc,
+            rows_by_pair={**read.rows_by_pair, "USD_CHF": []},
+        )
+
+    monkeypatch.setattr(read_route, "read_historical", smuggling)
+    request = _request()
+    run = _run()
+    _declare(run, request)
+    with pytest.raises(streaming.StreamingError, match="authorises"):
+        _streamed(request, run, window_days=1)
+
+
+def test_a_gap_in_the_window_enumeration_is_refused(
+    corpus: dict[str, int],
+    guards_installed: object,
+    fast_fingerprint: str,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The accumulator refuses an overlap; a dropped window is the quieter failure.
+
+    A role patched `iter_windows` to skip one day and got a silently shorter
+    derivation with no refusal at all.
+    """
+    real = streaming.iter_windows
+
+    def with_a_gap(*a: Any, **kw: Any) -> Any:
+        windows = real(*a, **kw)
+        return windows[:1] + windows[2:]
+
+    monkeypatch.setattr(streaming, "iter_windows", with_a_gap)
+    request = _request()
+    run = _run()
+    _declare(run, request)
+    with pytest.raises(streaming.StreamingError, match="gap between"):
+        _streamed(request, run, window_days=1)
+
+
 def test_eligibility_and_partial_buckets_survive_chunking(
     corpus: dict[str, int], guards_installed: object, fast_fingerprint: str
 ) -> None:
@@ -443,6 +557,45 @@ def test_a_corpus_with_no_row_at_all_is_refused(
     _declare(run, request)
     with pytest.raises(IncrementalM15Error, match="nothing to report"):
         _streamed(request, run, window_days=1)
+
+
+def test_the_accumulator_sorts_and_pins_the_pair_it_was_built_for() -> None:
+    """Two defence-in-depth guards, exercised directly.
+
+    A mutation audit classified both as *equivalent* under the committed
+    enumerator — windows arrive in order, and `derive_m15` canonicalises the pair
+    before the report is built — so nothing reached them. Equivalent today is a
+    property of the caller, and these are the guards that hold if that changes.
+    """
+    from scripts.m15_gate3a.incremental_m15 import IncrementalM15, IncrementalM15Error
+
+    def report(**over: Any) -> dict[str, Any]:
+        base = {
+            "pair": "EUR_USD",
+            "total_missing_source_minutes_within_emitted_buckets": 0,
+            "rows_ingested": 1,
+        }
+        base.update(over)
+        return base
+
+    #: batches out of order still produce an ordered series
+    accumulator = IncrementalM15(pair="EUR_USD")
+    later = datetime(2025, 5, 5, 12, 0, tzinfo=UTC)
+    earlier = datetime(2025, 5, 5, 11, 45, tzinfo=UTC)
+
+    def bar(ts: datetime) -> dict[str, Any]:
+        #: the two fields `_build_gap_report` reads off a bar
+        return {"ts": ts, "complete_bucket": True, "n_source_bars": 15}
+
+    accumulator.absorb([bar(later)], report(), [{"ts": later}])
+    accumulator.absorb([bar(earlier)], report(), [{"ts": earlier}])
+    bars, _ = accumulator.result()
+    assert [bar["ts"] for bar in bars] == [earlier, later]
+
+    #: and a report for another pair is refused rather than folded in
+    other = IncrementalM15(pair="EUR_USD")
+    with pytest.raises(IncrementalM15Error, match="is for"):
+        other.absorb([bar(later)], report(pair="USD_JPY"), [{"ts": later}])
 
 
 def test_an_accumulator_with_no_batch_refuses_to_report() -> None:

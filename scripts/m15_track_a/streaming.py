@@ -219,6 +219,20 @@ def derive_streaming(
         warmup_extension_start_utc=request.warmup_extension_start_utc,
     )
     windows = iter_windows(request.touched_start_utc, request.span_end_utc, window_days=window_days)
+    # `iter_windows` is proven exact by test, and this checks it anyway. The
+    # accumulator refuses an *overlap*; a role pointed out that a **gap** — a
+    # window silently dropped — would just derive less and say nothing, which is
+    # the quieter of the two failures and the one worth a backstop.
+    if not windows or windows[0][0] != request.touched_start_utc:
+        raise StreamingError(f"the windows do not start at {request.touched_start_utc}")
+    if windows[-1][1] != request.span_end_utc:
+        raise StreamingError(f"the windows do not reach {request.span_end_utc}")
+    for (_, end), (start, _) in zip(windows, windows[1:], strict=False):
+        if (date.fromisoformat(end) + timedelta(days=1)).isoformat() != start:
+            raise StreamingError(
+                f"the windows leave a gap between {end} and {start}: every authorised date must "
+                "be covered exactly once"
+            )
 
     bars_by_pair: dict[str, list[dict[str, Any]]] = {}
     gap_reports: dict[str, dict[str, Any]] = {}
@@ -260,6 +274,19 @@ def derive_streaming(
             if read.operation != derivation.authorization.OPERATION_HISTORICAL_READ:
                 raise StreamingError(
                     f"{pair} window {lo}..{hi}: the read records operation {read.operation!r}"
+                )
+            # The window request names exactly one pair, so the read must carry
+            # exactly that one. Checked **before** the empty-window skip below,
+            # because a first drafting skipped straight past every derivation
+            # gate when a window had no rows — and a role measured a read whose
+            # batch carried an unauthorised pair being accepted there, where the
+            # non-streaming reference refuses it. `row_scope`'s own commentary
+            # is the rule: "unreachable today is a property of the callers, not
+            # of the route."
+            if set(read.rows_by_pair) != {pair}:
+                raise StreamingError(
+                    f"{pair} window {lo}..{hi}: the read carries "
+                    f"{sorted(read.rows_by_pair)}, and this window authorises {pair} alone"
                 )
             rows = read.rows_by_pair.get(pair, [])
             _hold(len(rows))
