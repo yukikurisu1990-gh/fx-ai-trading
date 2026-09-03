@@ -512,7 +512,7 @@ while measuring a refusal, with the correction eighty lines below — the exact
 self-contradiction this section elsewhere says it exists to prevent. A box is
 ticked where something was verified, and these two are not verifiable at this
 head. They become true again when the grants are re-issued against
-**`18124a7d6f05b5bcf69e8efe18cc4febdcb025d2251c7904693dcd8e41f36fd0`**, and
+**`0b032e5c10197ce297503e6598fbc608951528763c4560bf9532bf4ca6452cb6`**, and
 `test_the_two_grant_rows_are_ticked_only_when_the_grants_actually_validate`
 enforces exactly that correspondence, so the tick can no longer run ahead of the
 fact.
@@ -617,7 +617,7 @@ prohibition to make a memory optimisation possible is not a trade this programme
 makes.
 
 **Both changes moved the fingerprint, as they had to** — `64fbace9…` →
-`1f1f0ed5…` → `c1e71fd3…`, surface 30 → 32 — so the two grants recorded at
+`1f1f0ed5…` → `0b032e5c…`, surface 30 → 32 — so the two grants recorded at
 PR #458 are invalidated and the two grant rows above need re-issuing before a
 read. The record is kept unedited each time; re-issuing is a separate act from
 rewriting.

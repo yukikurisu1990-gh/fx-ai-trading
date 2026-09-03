@@ -46,7 +46,7 @@ the merge ceremony, not by this file.
 from __future__ import annotations
 
 import re
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from typing import Any, Final
 
@@ -262,6 +262,151 @@ class ReadGrant:
         }
 
 
+@dataclass(frozen=True)
+class VerifiedRunContext:
+    """One R1 run's implementation binding, verified once and then reused.
+
+    Why this exists
+    ---------------
+
+    `require_authorization` measures `implementation_fingerprint()` on **every**
+    call — deliberately, because a grant checked against a tree the run is no
+    longer executing is not a check. Once the read and the derivation ran per
+    window, that became about **321** measurements a run, each parsing and
+    hashing thirty-two source files: roughly two minutes, and most of it
+    happening *after* the irreversible seen-data declaration, where a refusal
+    costs the corpus rather than nothing.
+
+    So the measurement moves to preflight and the result is frozen here. What is
+    reused is the **implementation identity**. What is emphatically not reused is
+    the data-scope validation, which still runs per window and per row exactly as
+    before. Those are different checks, and this class separates them rather than
+    collapsing them.
+
+    Why constructing one is not a way around the gate
+    -------------------------------------------------
+
+    `__post_init__` performs the whole verification itself: it measures the
+    fingerprint from the tree, pins both grants to the exact `ReadGrant` type,
+    re-runs their construction checks, requires each to name its own operation
+    and to carry the measured fingerprint, requires the two to name the same
+    approved head, and requires the run identity to agree with it. A context
+    holding a fabricated fingerprint cannot be built; one holding real grants is
+    exactly what a verified preflight produces.
+
+    It is frozen, and `require_authorization` accepts it only alongside a grant
+    that is **the same object** this context verified — identity, not equality,
+    because two equal grants are what a later divergence starts from.
+    """
+
+    read_grant: ReadGrant
+    derivation_grant: ReadGrant
+    identity: Any
+    #: The scope the grants were verified against — the plan's, normalised.
+    span_start_utc: str
+    span_end_utc: str
+    pairs: tuple[str, ...]
+    timeframe: str
+
+    #: **Measured here, never supplied.** A first drafting took the fingerprint
+    #: as a constructor argument and re-measured it to check the claim, which
+    #: cost the run two full measurements and gave a caller something to assert.
+    #: There is nothing to assert now: the tree hash and the surface stamp are
+    #: taken inside `__post_init__` and written to these fields, so building a
+    #: context *is* the measurement and the run pays for exactly one.
+    fingerprint: str = field(init=False)
+    approved_head_sha: str = field(init=False)
+    #: `(surface name, absolute path, size, mtime_ns)` for every covered file,
+    #: captured at the same moment. Cheap to re-check; see
+    #: `containment.assert_surface_unchanged` for what it does and does not
+    #: establish.
+    surface_stamp: tuple[tuple[str, str, int, int], ...] = field(init=False)
+
+    def __post_init__(self) -> None:
+        from scripts.m15_track_a.containment import implementation_fingerprint
+        from scripts.m15_track_a.identity import RunIdentity
+
+        if type(self.identity) is not RunIdentity:
+            raise AuthorizationMalformedError(
+                f"identity must be exactly a RunIdentity, not a {type(self.identity).__name__}"
+            )
+        for label, grant, operation in (
+            ("read", self.read_grant, OPERATION_HISTORICAL_READ),
+            ("derivation", self.derivation_grant, OPERATION_M15_DERIVATION),
+        ):
+            if type(grant) is not ReadGrant:
+                raise AuthorizationMalformedError(
+                    f"the {label} grant must be exactly a ReadGrant, not a {type(grant).__name__}"
+                )
+            _revalidate(grant)
+            if grant.operation != operation:
+                raise AuthorizationMalformedError(
+                    f"the {label} grant names {grant.operation!r}, not {operation!r}"
+                )
+        if self.read_grant is self.derivation_grant:
+            raise AuthorizationMalformedError(
+                "one grant object cannot be both the read and the derivation authorisation"
+            )
+        if self.read_grant.approved_head_sha != self.derivation_grant.approved_head_sha:
+            raise AuthorizationMalformedError(
+                "the two grants name different approved heads; one run, one approved implementation"
+            )
+        if self.identity.code_sha != self.read_grant.approved_head_sha:
+            raise AuthorizationMalformedError(
+                "the run identity names a different head from the grants"
+            )
+        if type(self.pairs) is not tuple or not self.pairs:
+            raise AuthorizationMalformedError("pairs must be a non-empty tuple")
+
+        # **The one measurement.** Taken here rather than accepted here, which
+        # is the whole difference between a record of a verification and a
+        # claim about one.
+        from scripts.m15_track_a.containment import surface_stamp
+
+        try:
+            measured = implementation_fingerprint()
+            stamp = surface_stamp()
+        except Exception as exc:  # noqa: BLE001 - re-raised as this module's type
+            raise AuthorizationMalformedError(
+                f"the implementation surface could not be measured: {exc}"
+            ) from exc
+        for label, grant in (("read", self.read_grant), ("derivation", self.derivation_grant)):
+            if grant.approved_implementation_fingerprint != measured:
+                raise AuthorizationMalformedError(
+                    f"the {label} grant was approved against implementation "
+                    f"{grant.approved_implementation_fingerprint!r} and the tree hashes to "
+                    f"{measured!r}. The read implementation changed after the approval."
+                )
+        object.__setattr__(self, "fingerprint", measured)
+        object.__setattr__(self, "approved_head_sha", self.read_grant.approved_head_sha)
+        object.__setattr__(self, "surface_stamp", stamp)
+
+    def grant_for(self, operation: str) -> ReadGrant:
+        """The verified grant for one operation, by exact operation name."""
+        if operation == OPERATION_HISTORICAL_READ:
+            return self.read_grant
+        if operation == OPERATION_M15_DERIVATION:
+            return self.derivation_grant
+        raise AuthorizationError(
+            f"{TOKEN}: this context verifies {OPERATION_HISTORICAL_READ} and "
+            f"{OPERATION_M15_DERIVATION}, not {operation!r}"
+        )
+
+    def as_record(self) -> dict[str, Any]:
+        """Identities and scope only — never a grant object, never a row."""
+        return {
+            "fingerprint": self.fingerprint,
+            "approved_head_sha": self.approved_head_sha,
+            "span_start_utc": self.span_start_utc,
+            "span_end_utc": self.span_end_utc,
+            "pairs": list(self.pairs),
+            "timeframe": self.timeframe,
+            "surface_files": len(self.surface_stamp),
+            "read_grant": self.read_grant.operation,
+            "derivation_grant": self.derivation_grant.operation,
+        }
+
+
 def _revalidate(grant: ReadGrant) -> None:
     """Re-run every construction check on an existing grant.
 
@@ -330,6 +475,7 @@ def require_authorization(
     pairs: tuple[str, ...],
     timeframe: str,
     identity: Any,
+    context: Any = None,
 ) -> ReadGrant:
     """Return the grant if it covers the requested scope; otherwise raise.
 
@@ -413,19 +559,50 @@ def require_authorization(
         raise AuthorizationError(
             f"{TOKEN}: identity must be exactly a RunIdentity, not a {type(identity).__name__}."
         )
-    from scripts.m15_track_a.containment import implementation_fingerprint
+    if context is not None:
+        # **The verified binding, reused rather than re-measured.**
+        #
+        # This is an implementation-*identity* check, and it was being repeated
+        # about 321 times a run — most of them after the irreversible seen-data
+        # declaration, where a refusal costs the corpus instead of nothing. The
+        # measurement now happens once, in `VerifiedRunContext.__post_init__`,
+        # which cannot be constructed without it.
+        #
+        # The data-*scope* validation below is untouched and still runs on every
+        # call: `grant_covers`, the span, the pairs, the timeframe. Reusing an
+        # identity is not reusing a scope check, and conflating the two is the
+        # mistake this branch is written to avoid.
+        if type(context) is not VerifiedRunContext:
+            raise AuthorizationError(
+                f"{TOKEN}: context must be exactly a VerifiedRunContext, not a "
+                f"{type(context).__name__}."
+            )
+        if grant is not context.grant_for(operation):
+            # Identity, not equality: an equal-looking grant is what a later
+            # divergence starts from, and the context verified one object.
+            raise AuthorizationError(
+                f"{TOKEN}: the grant supplied for {operation} is not the object this run's "
+                "context verified."
+            )
+        if identity is not context.identity:
+            raise AuthorizationError(
+                f"{TOKEN}: the run identity is not the one this context was verified against."
+            )
+        measured = context.fingerprint
+    else:
+        from scripts.m15_track_a.containment import implementation_fingerprint
 
-    try:
-        measured = implementation_fingerprint()
-    except Exception as exc:
-        # Wrapped, so a caller's ``except AuthorizationError`` cannot be walked
-        # straight past by a bare RuntimeError from the surface walk. The
-        # polarity is unchanged — an unmeasurable surface refuses the read —
-        # but it now refuses as the type this module documents.
-        raise AuthorizationError(
-            f"{TOKEN}: the implementation surface could not be measured, so the grant "
-            f"cannot be checked against it: {exc}"
-        ) from exc
+        try:
+            measured = implementation_fingerprint()
+        except Exception as exc:
+            # Wrapped, so a caller's ``except AuthorizationError`` cannot be
+            # walked straight past by a bare RuntimeError from the surface walk.
+            # The polarity is unchanged — an unmeasurable surface refuses the
+            # read — but it now refuses as the type this module documents.
+            raise AuthorizationError(
+                f"{TOKEN}: the implementation surface could not be measured, so the grant "
+                f"cannot be checked against it: {exc}"
+            ) from exc
     if measured != grant.approved_implementation_fingerprint:
         raise AuthorizationError(
             f"{TOKEN}: the grant was approved against implementation "
@@ -456,6 +633,7 @@ def require_authorization(
 
 
 __all__ = [
+    "VerifiedRunContext",
     "KNOWN_OPERATIONS",
     "grant_covers",
     "OPERATION_HISTORICAL_READ",

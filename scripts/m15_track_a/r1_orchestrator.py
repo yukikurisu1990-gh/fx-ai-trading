@@ -42,6 +42,8 @@ The sequence, and why it is this one
 ::
 
     preflight                      no MARKET-DATA file is opened; refusals cost 0 data bytes
+      -> freeze the verified binding   the fingerprint and both grants, checked
+                                       once; still 0 data bytes
       -> declare the seen interval write-ahead, BEFORE the read
       -> derive_streaming          Grants A and B, window by window: the gated
                                    read and the authorised derivation, with the
@@ -223,12 +225,18 @@ class PreflightReport:
     #: measurement rather than a constant. A review role deleted the constant
     #: and replaced it with an arbitrary string; nothing failed.
     containment_status: str
+    #: The frozen implementation binding every stage of this run reuses. It is
+    #: why the fingerprint is measured **once** rather than about 321 times —
+    #: and why roughly 320 of those measurements no longer sit *after* the
+    #: irreversible seen-data declaration, where a refusal costs the corpus.
+    context: authorization.VerifiedRunContext
 
     def as_record(self) -> dict[str, Any]:
         return {
             "status": self.status,
             "fingerprint": self.fingerprint,
             "containment_status": self.containment_status,
+            "verified_binding": self.context.as_record(),
             "checks": [{"check": name, "detail": detail} for name, detail in self.checks],
         }
 
@@ -390,8 +398,7 @@ def preflight(
         "design bounds, dead window and EXPLORATORY_OOS_SLICE refused on the touched interval",
     )
 
-    # --- the two grants ---------------------------------------------------
-    fingerprint = containment.implementation_fingerprint()
+    # --- the two grants, and the one measurement --------------------------
     for label, grant, operation in (
         ("read", read_grant, authorization.OPERATION_HISTORICAL_READ),
         ("derivation", derivation_grant, authorization.OPERATION_M15_DERIVATION),
@@ -408,12 +415,46 @@ def preflight(
                 f"the {label} grant names {grant.operation!r}, not {operation!r}. A read grant "
                 "does not authorise a derivation (policy §2.5), and neither covers the other."
             )
-        if grant.approved_implementation_fingerprint != fingerprint:
-            _refuse(
-                f"the {label} grant was approved against implementation "
-                f"{grant.approved_implementation_fingerprint[:8]}… and this tree hashes to "
-                f"{fingerprint[:8]}…. The approval does not describe what would run."
-            )
+
+    # **The only full fingerprint computation this run performs.**
+    #
+    # Building the context is what makes it: `VerifiedRunContext.__post_init__`
+    # measures the tree itself, pins both grants to the exact type, re-runs
+    # their construction checks, requires each to carry the measured value,
+    # requires the two to name one approved head, and requires the run identity
+    # to agree. A context cannot exist without that having happened, which is
+    # why the rest of the run may reuse it rather than repeat it about 320
+    # times — every one of those repetitions sitting *after* the irreversible
+    # seen-data declaration, where a refusal costs the corpus rather than
+    # nothing.
+    #
+    # A caller may construct a context directly. That is fine: doing so runs the
+    # same verification. What it cannot do is assert a fingerprint the tree does
+    # not have.
+    # No `try` around this. `preflight` is pinned against `try`/`except` —
+    # "a `try` around a stage is how 'the read failed but we carried on' gets
+    # written" — and wrapping a refusal to relabel its type is not worth
+    # spending that pin on. `AuthorizationMalformedError` propagates, naming
+    # its own cause, exactly as `ReadRouteError` already does from the
+    # quarantine checks above.
+    verified = authorization.VerifiedRunContext(
+        read_grant=read_grant,
+        derivation_grant=derivation_grant,
+        identity=identity,
+        span_start_utc=request.touched_start_utc,
+        span_end_utc=request.span_end_utc,
+        pairs=request.pairs,
+        timeframe=request.timeframe,
+    )
+    fingerprint = verified.fingerprint
+    note("verified_binding", f"{fingerprint[:8]}… over {len(verified.surface_stamp)} files")
+
+    for label, grant, operation in (
+        ("read", read_grant, authorization.OPERATION_HISTORICAL_READ),
+        ("derivation", derivation_grant, authorization.OPERATION_M15_DERIVATION),
+    ):
+        # The fingerprint, the operation and the head are the context's checks
+        # above. What is left here is the **scope**, which no context caches.
         # Re-checked here as well as inside each route, on purpose: this is the
         # last point at which a refusal costs nothing.
         # ``authorization.grant_covers``, never ``grant.covers``. The method is
@@ -474,6 +515,7 @@ def preflight(
         request=request,
         identity=identity,
         containment_status=str(status),
+        context=verified,
     )
 
 
@@ -531,6 +573,7 @@ def run_r1(
         identity,
         read_grant=read_grant,
         derivation_grant=derivation_grant,
+        context=report.context,
     )
     if type(derived) is not derivation.DerivedM15:  # noqa: E721
         _refuse(f"the derivation route returned a {type(derived).__name__}, not a DerivedM15")

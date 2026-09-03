@@ -106,12 +106,20 @@ Track A, because the WP5 reader-freedom pin lists Track A's permitted imports by
 name and the alternative was four of that package's privates crossing the
 boundary.
 
-**One operational consequence a human should see before authorising a run:** the
-committed grant ledger now takes about **320** rows per full-corpus run instead
-of two — `read_historical` and `derive_m15` each append one per window — and
-`implementation_fingerprint()` is measured about **321** times, roughly two
-minutes. Neither is a semantic change; both are 160× more chances for an
-append-lock failure or a slow run *after* the irreversible seen declaration.
+**The fingerprint is measured once per run** (`VerifiedRunContext`, PR #461),
+in preflight, before anything is read — down from about 321 measurements, of
+which roughly 320 sat *after* the irreversible seen declaration where a refusal
+costs the corpus. It caches an implementation **identity**, never a data scope:
+`grant_covers`, the span, the pairs, the timeframe and every row's timestamp are
+still checked on every call. A per-window `stat` of the covered files replaces
+the per-window rehash at 1/379th of the cost.
+
+**One operational consequence a human should still see before authorising a
+run:** the committed grant ledger takes about **320** rows per full-corpus run
+instead of two — `read_historical` and `derive_m15` each append one per window.
+That one is kept on purpose: the ledger records the authorisation a route ran
+under *before it runs*, and the route really does run 320 times, so a run-level
+summary would say less than the file does now.
 
 Both moved the fingerprint, so the PR #458 grants are invalid and re-issuing
 them on the current value is what is left.

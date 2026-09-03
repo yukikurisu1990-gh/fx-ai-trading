@@ -1061,6 +1061,85 @@ def implementation_surface() -> tuple[Path, ...]:
     return tuple(sorted(found, key=_surface_name))
 
 
+class SurfaceDriftError(RuntimeError):
+    """Raised when the declared surface changed after it was measured."""
+
+
+def surface_stamp() -> tuple[tuple[str, str, int, int], ...]:
+    """`(surface name, absolute path, size, mtime_ns)` for every covered file.
+
+    A **cheap** companion to the fingerprint, and the cheapness is the point:
+    re-walking `implementation_surface()` costs about as much as hashing it
+    (~205 ms of the ~207 ms is the walk — `find_spec` and thirty-two AST
+    parses), so a drift check that re-walked would buy nothing. This captures
+    the resolved paths once, and :func:`assert_surface_unchanged` re-`stat`s
+    exactly those.
+
+    **What a re-check establishes, and what it does not.**
+
+    * It detects a covered file being edited, replaced, truncated or removed
+      after the stamp was taken — the accidental and casual cases a
+      single-process run on a clean checkout is actually exposed to.
+    * It does **not** detect an edit that preserves both size and mtime. It is
+      tamper-*evident*, not tamper-proof, and the name should not be read as
+      more than that.
+    * It does not notice a **new** file appearing in the package. That matters
+      less than it looks: by the time a window runs, every module this process
+      will execute is already in `sys.modules`, so a file appearing on disk
+      changes nothing about what runs.
+
+    The last point is the honest frame for the whole check. Once preflight has
+    imported and measured, **disk drift cannot change this process's behaviour**
+    — Python does not re-read an imported module. What per-window rehashing
+    bought was evidence that the tree still matched the approval, not protection
+    against different code executing. This gives that evidence at a `stat` per
+    file instead of a hash per file, and the cryptographic statement about what
+    runs remains the one fingerprint measured before anything was read.
+    """
+    stamped: list[tuple[str, str, int, int]] = []
+    for path in implementation_surface():
+        try:
+            info = path.stat()
+        except OSError as exc:
+            raise SurfaceDriftError(
+                f"{_surface_name(path)} could not be stat-ed while stamping the surface: {exc}"
+            ) from exc
+        stamped.append((_surface_name(path), str(path), info.st_size, info.st_mtime_ns))
+    return tuple(stamped)
+
+
+def assert_surface_unchanged(stamp: tuple[tuple[str, str, int, int], ...]) -> None:
+    """Refuse if any stamped file has drifted since the stamp was taken.
+
+    Stats the captured paths; does not re-walk the surface, which is what makes
+    it affordable per window. The invariant the R1 run model already asserts —
+    clean checkout, one process, no source mutation while it runs — expressed as
+    a check rather than left as an assumption.
+    """
+    if type(stamp) is not tuple or not stamp:  # noqa: E721
+        raise SurfaceDriftError("the surface stamp is missing or malformed")
+    drifted: list[str] = []
+    for entry in stamp:
+        if type(entry) is not tuple or len(entry) != 4:  # noqa: E721
+            raise SurfaceDriftError(f"malformed surface stamp entry: {entry!r}")
+        name, path_text, size, mtime_ns = entry
+        try:
+            info = Path(path_text).stat()
+        except OSError as exc:
+            drifted.append(f"{name} (unreadable: {exc})")
+            continue
+        if info.st_size != size:
+            drifted.append(f"{name} (size {size} -> {info.st_size})")
+        elif info.st_mtime_ns != mtime_ns:
+            drifted.append(f"{name} (mtime changed)")
+    if drifted:
+        raise SurfaceDriftError(
+            "the declared implementation surface changed after it was verified: "
+            f"{sorted(drifted)}. The run was authorised against the tree measured at "
+            "preflight; this is no longer that tree."
+        )
+
+
 def implementation_fingerprint() -> str:
     """A sha256 over the declared implementation surface, path and bytes.
 

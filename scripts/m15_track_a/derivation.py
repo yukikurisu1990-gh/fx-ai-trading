@@ -241,6 +241,7 @@ def derive_m15(
     identity: RunIdentity,
     *,
     grant: Any = None,
+    context: Any = None,
 ) -> object:
     """The single Track A derivation route.
 
@@ -294,6 +295,7 @@ def derive_m15(
         pairs=read_request.pairs,
         timeframe=read_request.timeframe,
         identity=identity,
+        context=context,
     )
 
     assert_span_admissible(read_request)

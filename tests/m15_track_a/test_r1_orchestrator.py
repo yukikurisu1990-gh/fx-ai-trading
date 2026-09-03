@@ -350,7 +350,12 @@ def test_a_fingerprint_mismatch_stops_before_any_read(
         else authorization.OPERATION_M15_DERIVATION
     )
     stale = _grant(operation, approved_implementation_fingerprint="0" * 64)
-    with pytest.raises(r1_orchestrator.R1OrchestratorError, match="does not describe what"):
+    #: `VerifiedRunContext.__post_init__` is what refuses now, and it refuses in
+    #: its own type rather than being wrapped — `preflight` is pinned against
+    #: `try`/`except`, and relabelling a refusal is not worth spending that on.
+    with pytest.raises(
+        authorization.AuthorizationMalformedError, match="changed after the approval"
+    ):
         _invoke(**{which: stale})
     _assert_nothing_read(source_tree, opened_paths)
 
@@ -359,7 +364,7 @@ def test_the_two_grants_must_name_the_same_approved_head(
     source_tree: Path, guards_installed: object
 ) -> None:
     other = _grant(authorization.OPERATION_M15_DERIVATION, approved_head_sha="b" * 40)
-    with pytest.raises(r1_orchestrator.R1OrchestratorError, match="different approved heads"):
+    with pytest.raises(authorization.AuthorizationMalformedError, match="different approved heads"):
         _invoke(derivation_grant=other)
     _assert_nothing_read(source_tree)
 
@@ -367,7 +372,9 @@ def test_the_two_grants_must_name_the_same_approved_head(
 def test_a_run_identity_naming_another_head_stops_before_any_read(
     source_tree: Path, guards_installed: object
 ) -> None:
-    with pytest.raises(r1_orchestrator.R1OrchestratorError, match="run identity names code_sha"):
+    with pytest.raises(
+        authorization.AuthorizationMalformedError, match="different head from the grants"
+    ):
         _invoke(identity=_run(code_sha="c" * 40))
     _assert_nothing_read(source_tree)
 
@@ -972,7 +979,6 @@ def test_the_declared_call_surface_is_exactly_the_committed_stages() -> None:
         "record",
         "current_k",
         "audit",
-        "implementation_fingerprint",
         # scope and guards
         "assert_span_admissible",
         "assert_development_only",
@@ -991,6 +997,7 @@ def test_the_declared_call_surface_is_exactly_the_committed_stages() -> None:
         "RunIdentity",
         "SeenDeclaration",
         "ConfigurationEntry",
+        "VerifiedRunContext",
         "PreflightReport",
         "R1Result",
         "R1OrchestratorError",

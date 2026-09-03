@@ -681,11 +681,15 @@ def test_no_first_party_dynamic_import_escapes_the_surface() -> None:
                 "exec",
             }:
                 dynamic.append(f"{containment._surface_name(path)}:{node.lineno}")
-    #: Two known sites; if a third appears, a human looks before a grant is issued.
-    assert sorted(dynamic) == [
-        "m15_track_a/containment.py:1189",
-        "m15_track_a/isolation.py:1148",
+    #: Two known sites; if a third appears, a human looks before a grant is
+    #: issued. Pinned by **file**, not by line: the line numbers moved the first
+    #: time anything was inserted above them, and a pin that breaks on an
+    #: unrelated edit trains people to update it without reading it.
+    assert sorted({site.split(":")[0] for site in dynamic}) == [
+        "m15_track_a/containment.py",
+        "m15_track_a/isolation.py",
     ], dynamic
+    assert len(dynamic) == 2, dynamic
     #: and the first-party one reaches nothing outside the surface
     for module_name in containment.package_modules():
         source = containment._module_source(module_name)
