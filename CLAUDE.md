@@ -95,9 +95,26 @@ permission.
 #459): the formal entry point binding preflight → write-ahead seen declaration →
 gated M1 read → authorised M15 derivation on the **same** `ReadRequest` → breadth
 `K` → the committed survey → stop. It reaches no next stage by construction.
-Adding it moved the fingerprint again, so the PR #458 grants are invalid and
-re-issuing them on the new value is what is left. Calling the stages by hand is
-not the formal route.
+Calling the stages by hand is not the formal route.
+
+**The read and the derivation run window by window** (`streaming.py`, PR #460),
+so the retained raw M1 rows are a property of the window rather than of the
+corpus — the old shape held every row of every pair at once, about 4.5–6 GB, and
+an OOM would have landed after the irreversible seen declaration. The batched
+accumulation lives in `scripts/m15_gate3a/incremental_m15.py` rather than in
+Track A, because the WP5 reader-freedom pin lists Track A's permitted imports by
+name and the alternative was four of that package's privates crossing the
+boundary.
+
+**One operational consequence a human should see before authorising a run:** the
+committed grant ledger now takes about **320** rows per full-corpus run instead
+of two — `read_historical` and `derive_m15` each append one per window — and
+`implementation_fingerprint()` is measured about **321** times, roughly two
+minutes. Neither is a semantic change; both are 160× more chances for an
+append-lock failure or a slow run *after* the irreversible seen declaration.
+
+Both moved the fingerprint, so the PR #458 grants are invalid and re-issuing
+them on the current value is what is left.
 
 **Both weaknesses are fixed at PR #457, and fixing them invalidated both
 grants** — which is the binding working, and was expected. `containment` now

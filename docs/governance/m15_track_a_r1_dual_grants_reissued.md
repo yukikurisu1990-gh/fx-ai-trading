@@ -10,8 +10,12 @@ required it and forbade narrowing the surface to avoid it. The surface got wider
 
 The value to re-issue against, measured on this head and recorded here so a
 human does not have to rediscover it:
-**`1f1f0ed54e91d0d65538709802b2097a717983f9b314483ec9ed201db15f71ae`** (surface
-30 files). Recording it is not issuing a grant against it.
+**`c1e71fd384f871c543007b85dad53349b7dfeddccf531b8a583a84fa27c861a4`** (surface
+32 files). Recording it is not issuing a grant against it.
+
+That value has moved three times since these grants were recorded — the R1
+orchestrator, then the bounded-memory route — and each move invalidated them
+again. That is the binding working; the record is kept unedited each time.
 
 **This document is kept as a historical governance record and is not edited to
 match.** Everything below about *scope* still holds — span, pairs, timeframe,

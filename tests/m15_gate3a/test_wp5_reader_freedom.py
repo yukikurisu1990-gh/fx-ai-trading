@@ -665,6 +665,20 @@ TRACK_A_PERMITTED_IMPORTS: dict[str, frozenset[str]] = {
     # rather than a decision a session reports having taken.  It is reader-free:
     # a pure function over row dicts, and ``scripts/m15_gate3a/aggregation.py``
     # opens no file anywhere.
+    # The incremental accumulator. `aggregate_m15` computes its gap report over
+    # a whole call, so a bounded-memory run that aggregates a pair in batches
+    # has to combine the *inputs* — `_bucket_start`, `_plain_utc_minute`,
+    # `_build_gap_report`, `_build_minute_accounting`. Those are this package's
+    # privates and this list is named symbols, not modules, so the accumulation
+    # was put in `scripts/m15_gate3a/incremental_m15.py` beside them and Track A
+    # imports the one public class. That is one added name rather than four
+    # private helpers crossing the boundary, and it keeps the aggregator's
+    # internals inside the package that owns them. Reader-free: the module opens
+    # nothing and its only file-touching import is the aggregator's own.
+    # One name, because Track A imports one name. `IncrementalM15Error` was in
+    # this set for a draft and never imported; an allowlist wider than the
+    # surface it describes is how the last one came to authorise `read_text`.
+    "scripts.m15_gate3a.incremental_m15": frozenset({"IncrementalM15"}),
     "scripts.m15_gate3a.aggregation": frozenset(
         {
             "BUCKET_MINUTES",

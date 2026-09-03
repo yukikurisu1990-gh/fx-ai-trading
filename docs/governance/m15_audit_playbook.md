@@ -599,10 +599,28 @@ pins its whole call surface. A synthetic end-to-end drives that entry point
 rather than a second composition, because a route that is only exercised through
 a fixture is a route nobody has reviewed as the thing that will run.
 
-**Writing it moved the fingerprint from `64fbace9…`, as it had to**, so the two
-grants recorded at PR #458 are invalidated and the two grant rows above need
-re-issuing again before a read. The record is kept unedited; re-issuing is a
-separate act from rewriting.
+**The bounded-memory route follows it.** `scripts/m15_track_a/streaming.py`
+replaces the full-buffer pair — one read of the whole corpus, then one derivation
+over everything it returned — with a per-(pair, window) loop that releases each
+window's raw M1 rows before reading the next. A review role had measured the old
+shape at roughly 4.5–6 GB for the authorised corpus, with an `OutOfMemoryError`
+landing *after* the irreversible seen-data declaration; that was the last
+substantive blocker in front of a first read.
+
+The accumulation that lets a batched pair still produce **one** gap report lives
+in `scripts/m15_gate3a/incremental_m15.py`, beside the aggregator whose
+intermediate quantities it combines. Doing it in Track A would have needed four
+of that package's private helpers, and the WP5 reader-freedom pin lists what
+Track A may import from it **by name**: one public class was added to that list
+with the reason recorded, and four privates were not. Loosening a committed
+prohibition to make a memory optimisation possible is not a trade this programme
+makes.
+
+**Both changes moved the fingerprint, as they had to** — `64fbace9…` →
+`1f1f0ed5…` → `c1e71fd3…`, surface 30 → 32 — so the two grants recorded at
+PR #458 are invalidated and the two grant rows above need re-issuing before a
+read. The record is kept unedited each time; re-issuing is a separate act from
+rewriting.
 
 One disclosure is carried forward rather than closed:
 `DERIVATION_ROUTE_DOES_NOT_PIN_ITS_TIMEFRAME_TO_THE_COMMITTED_SOURCE_CONSTANT_REFERRED`
