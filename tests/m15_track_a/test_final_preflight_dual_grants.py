@@ -452,22 +452,103 @@ def test_the_repository_instructions_name_the_grants_in_force() -> None:
     """`CLAUDE.md` is read first by every session, so a stale claim there costs most.
 
     A review role rewrote it to say the superseded `64fbace9…` pair was in force
-    and the whole suite stayed green. The fingerprint and the head it names are
-    checked here against the record and the measurement.
+    and the whole suite stayed green. The first fix checked that every value was
+    still **present** — and a second role swapped the two roles while leaving all
+    six hex strings in place, which is the same defect and survived again.
+    Presence is not the claim; **which side of the sentence a value sits on** is.
+    So the file is split at the invalidity marker and each region is checked for
+    what it must and must not name.
     """
     instructions = (Path(containment.__file__).resolve().parents[2] / "CLAUDE.md").read_text(
         encoding="utf-8"
     )
     current = containment.implementation_fingerprint()
-    assert current[:8] in instructions, (
-        "CLAUDE.md does not name the fingerprint the grants in force are bound to"
+    superseded = ("497e187b", "e43583e0", "64fbace9", "1f1f0ed5", "c1e71fd3")
+    assert current[:8] not in superseded, "the measured value is recorded as superseded"
+
+    marker = "earlier grant records are **invalid**"
+    assert instructions.count(marker) == 1, "CLAUDE.md's invalidity paragraph moved or multiplied"
+    in_force, invalid = instructions.split(marker, 1)
+    in_force = in_force.split("The two grants in force", 1)[-1]
+
+    assert f"`{current[:8]}…`" in in_force, (
+        "CLAUDE.md's in-force paragraph does not name the measured fingerprint"
     )
-    assert APPROVED_HEAD[:8] in instructions, "CLAUDE.md does not name the approved head"
-    assert GRANT_DOCUMENT.name in instructions, "CLAUDE.md does not point at the record in force"
-    for superseded in ("497e187b", "e43583e0", "64fbace9", "1f1f0ed5", "c1e71fd3"):
-        assert f"`{superseded}…`" in instructions, (
-            f"CLAUDE.md stopped recording {superseded}… as superseded"
+    assert APPROVED_HEAD[:8] in in_force, "the in-force paragraph does not name the approved head"
+    assert GRANT_DOCUMENT.name in in_force, "the in-force paragraph does not point at the record"
+    for value in superseded:
+        assert f"`{value}…`" not in in_force, (
+            f"CLAUDE.md presents the superseded {value}… as the pair in force"
         )
+        assert f"`{value}…`" in invalid, f"CLAUDE.md stopped recording {value}… as superseded"
+    assert f"`{current[:8]}…`" not in invalid, (
+        "CLAUDE.md lists the fingerprint in force among the invalid ones"
+    )
+
+
+def test_the_prose_an_approver_reads_is_pinned_to_the_committed_constants() -> None:
+    """§5's exclusion table, §7's surface count and §2's date count.
+
+    Every machine-readable **grant field** is pinned — a review role killed each
+    of those mutants. It then found the asymmetry: the prose beside them was
+    pinned by nothing. Moving the OOS slice start by a day, the dead window by a
+    month, the forward floor by two months, the surface from 32 to 30 and the
+    span from 248 days to 300 all survived the full suite.
+
+    That prose is what a human reads when deciding whether to approve. It is the
+    part of the record that carries the decision, so it is checked against the
+    same committed constants the grant fields are.
+    """
+    from scripts.m15_gate3a import no_overlap
+
+    #: the dead-window and forward constants are `datetime`s; the record states
+    #: UTC dates, so they are compared as the dates they name
+    dead_start = no_overlap.DEAD_START.date().isoformat()
+    dead_end = no_overlap.DEAD_END.date().isoformat()
+    forward_floor = no_overlap.FORWARD_FLOOR.date().isoformat()
+
+    text = GRANT_DOCUMENT.read_text(encoding="utf-8")
+    excluded = re.split(
+        r"^## ",
+        text.split("## 5. What neither grant reaches", 1)[1],
+        maxsplit=1,
+        flags=re.MULTILINE,
+    )[0]
+    for label, value in (
+        ("EXPLORATORY_OOS_SLICE start", oos_slice.SLICE_START_UTC),
+        ("EXPLORATORY_OOS_SLICE end", oos_slice.SLICE_END_UTC),
+        ("dead window start", dead_start),
+        ("dead window end", dead_end),
+        ("forward floor", forward_floor),
+        ("development start", oos_slice.DEVELOPMENT_START_UTC),
+    ):
+        assert value in excluded, f"§5 does not name the committed {label} ({value})"
+
+    #: and no *other* date, so a changed one is caught rather than merely joined
+    dates = set(re.findall(r"\b(\d{4}-\d{2}-\d{2})\b", excluded))
+    assert dates == {
+        oos_slice.SLICE_START_UTC,
+        oos_slice.SLICE_END_UTC,
+        dead_start,
+        dead_end,
+        forward_floor,
+        oos_slice.DEVELOPMENT_START_UTC,
+    }, f"§5 names a date that is not a committed boundary: {sorted(dates)}"
+
+    binding = text.split("## 7. Binding", 1)[1]
+    surface = len(containment.implementation_surface())
+    assert f"**{surface}** files" in binding, (
+        f"§7 does not record the measured surface size ({surface})"
+    )
+
+    from datetime import date
+
+    start = date.fromisoformat(oos_slice.DEVELOPMENT_START_UTC)
+    end = date.fromisoformat(oos_slice.DEVELOPMENT_END_UTC)
+    days = (end - start).days + 1
+    assert f"{days} inclusive UTC calendar dates" in text, (
+        f"the record does not state the committed span length ({days})"
+    )
 
 
 def test_the_grant_document_is_outside_the_fingerprint_surface() -> None:

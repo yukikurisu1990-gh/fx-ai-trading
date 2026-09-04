@@ -16,9 +16,11 @@ the seen-data ledger is empty.
 
 **Risk tier:** Amber. Authorization-only: no implementation, contract, strategy,
 model, feature, calendar, reader, derivation, streaming, orchestrator,
-fingerprint or survey code changes here. The diff touches `docs/` and `tests/`
-only, and `tests/` is outside the fingerprint surface — which a test in this PR
-asserts rather than assumes.
+fingerprint or survey code changes here. The diff touches `docs/`, `tests/` and
+`CLAUDE.md` — a review role caught "`docs/` and `tests/` only" being false in
+three places at once. None of the three is on the fingerprint surface, which is
+the property that matters and which a test in this PR **measures** rather than
+assumes.
 
 **What "final preflight" means, and what it does not.** It means §5a's checklist
 reaches 15 of 15: the last two outstanding items were these two grants, and they

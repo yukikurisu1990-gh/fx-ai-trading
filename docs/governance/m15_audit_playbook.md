@@ -71,7 +71,14 @@ rebuilt**".
 | Track A R1 read body + `EXPLORATORY_OOS_SLICE` ruling + grant binding (PR #453) | ✅ **merged** as `6b75aab` (2026-08-30). Slice = final 20% of the committed DESIGN UTC dates = `2025-12-29 … 2026-02-28`; development corpus = `2025-04-25 … 2025-12-28` (248 dates). A grant binds to a **measured implementation fingerprint** |
 | Recorded Track A R1 development `ReadGrant` (PR #454) | ✅ **merged** as `d694377` (2026-08-31), authorization-only. `track_a_historical_read` / `2025-04-25 … 2025-12-28` / `PAIRS_20` / `M1`, bound to fingerprint `497e187b…`. ⚠ **Invalidated by PR #455**, by design |
 | **Track A R1 execution command of 2026-08-31** | **REFUSED before any read.** R1 could not complete: `derive_m15` had no body, no derivation grant existed, neither calendar artifact existed, T-3's numerator was undefined, no survey runner existed, and the P-1…P-15 predicate was not recorded true on a named master SHA. No byte of market data was read; the corpus remains **UNSEEN** |
-| **R1 Enablement Remediation Work PR (PR #455)** | in review — closes all six, plus the `aggregate_m15` bypass and the gitignored ledger. `TRACK_A_R1_END_TO_END_SYNTHETIC_DRY_RUN_PASSED`. **Invalidates the PR #454 grant by design**; a new read grant and a new derivation grant are the only remaining steps |
+| **R1 Enablement Remediation Work PR (PR #455)** | ✅ **merged** as `fc3e0f8`. Closes all six, plus the `aggregate_m15` bypass and the gitignored ledger. `TRACK_A_R1_END_TO_END_SYNTHETIC_DRY_RUN_PASSED`. **Invalidates the PR #454 grant by design** |
+| Track A R1 dual grants, first pair (PR #456) | ✅ **merged** as `6ea4e15`, authorization-only, bound to `e43583e0…`. ⚠ **Invalidated by PR #457**, by design |
+| Authorization integrity — derivation input rows + fingerprint closure (PR #457) | ✅ **merged** as `c2cdea0`. The derivation validates every **input row** against the grant∩request intersection; the surface is the transitive closure it claimed to be (26 → 29 files) |
+| Track A R1 dual grants, re-issued (PR #458) | ✅ **merged** as `2b15301`, authorization-only, bound to `64fbace9…`. ⚠ **Invalidated by PR #459**, by design |
+| **R1 orchestrator** (PR #459) | ✅ **merged** as `99bfe69`. The formal entry point: preflight → write-ahead declaration → gated read → authorised derivation on the **same** `ReadRequest` → `K` → survey → stop. Surface 30, `1f1f0ed5…` |
+| **Bounded-memory route** (PR #460) | ✅ **merged** as `52e849d`. Read and derivation run window by window, so retained raw M1 rows are a property of the window, not the corpus. Surface 32, `c1e71fd3…` |
+| **Preflight binding** (PR #461) | ✅ **merged** as `0bb987e`. The fingerprint is measured **once before the read** and once after the last window, not ~321 times with ~320 of them after the irreversible declaration. Surface 32, `e147542a…` |
+| **Track A R1 dual grants, in force** (PR #462) | authorization-only, bound to `e147542a…` at head `0bb987e`. §5a reaches **15 of 15**. **Not an execution command**: a read still needs an explicit human + ChatGPT instruction given as an act |
 
 **Official gate status:** `M15_AGGREGATION_DATASET_MACHINERY_SOURCE_AUDIT_BLOCKED_PENDING_TARGETED_FIXES`
 — reaffirmed by the **fourth** independent re-check at `0e3b001`. PR #440, #442
@@ -641,7 +648,8 @@ silently absorbed a value:
 | PR #462 | **the grants in force**, on that value | `e147542a…` | 32 |
 
 Each of the first four invalidated the grants that preceded it. PR #462 is
-authorization-only — `docs/` and `tests/` — so it moved nothing, which is why
+authorization-only — `docs/`, `tests/` and `CLAUDE.md`, none of them on the
+surface — so it moved nothing, which is why
 its row repeats the value above it rather than adding one.
 
 **Each grant *table* is left exactly as a human approved it; the documents around

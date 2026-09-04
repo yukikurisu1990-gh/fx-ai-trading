@@ -145,13 +145,13 @@ summary would say less than the file does now.
 **Both weaknesses are fixed at PR #457, and fixing them invalidated both
 grants** — which is the binding working, and was expected. `containment` now
 resolves relative imports against the importing file's own package, so the
-surface **is** the transitive closure (29 files then, 30 since the R1
+surface **is** the transitive closure (29 files then, **32** since the R1
 orchestrator); and `derive_m15` validates
 every input row against the grant-request intersection and pins both request
 types. The PR #456 record is kept unedited as history.
 
 **Both grants were re-issued against the merged value at PR #462**, an
-authorization-only change that touched `docs/` and `tests/` only — so writing
+authorization-only change that touched `docs/`, `tests/` and this file — so writing
 the authorisation could not invalidate it, which a test measures rather than
 asserts. §5a is **15 of 15**:
 `TRACK_A_R1_PREFLIGHT_COMPLETE_15_OF_15` and
