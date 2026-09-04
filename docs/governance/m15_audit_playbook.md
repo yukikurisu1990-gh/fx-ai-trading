@@ -512,7 +512,7 @@ while measuring a refusal, with the correction eighty lines below — the exact
 self-contradiction this section elsewhere says it exists to prevent. A box is
 ticked where something was verified, and these two are not verifiable at this
 head. They become true again when the grants are re-issued against
-**`0b032e5c10197ce297503e6598fbc608951528763c4560bf9532bf4ca6452cb6`**, and
+**`e147542aec04f2cf781c5ecd062d8a08b1d058007634c54357f00756736b5e50`**, and
 `test_the_two_grant_rows_are_ticked_only_when_the_grants_actually_validate`
 enforces exactly that correspondence, so the tick can no longer run ahead of the
 fact.
@@ -616,11 +616,20 @@ with the reason recorded, and four privates were not. Loosening a committed
 prohibition to make a memory optimisation possible is not a trade this programme
 makes.
 
-**Both changes moved the fingerprint, as they had to** — `64fbace9…` →
-`1f1f0ed5…` → `0b032e5c…`, surface 30 → 32 — so the two grants recorded at
-PR #458 are invalidated and the two grant rows above need re-issuing before a
-read. The record is kept unedited each time; re-issuing is a separate act from
-rewriting.
+**Every one of these changes moved the fingerprint, as each had to.** One arrow
+per merged change, spelled out because a review role found the chain had
+silently absorbed a value:
+
+| | change | fingerprint | surface |
+|---|---|---|---|
+| PR #458 | the grants as re-issued | `64fbace9…` | 29 |
+| PR #459 | the R1 orchestrator | `1f1f0ed5…` | 30 |
+| PR #460 | the bounded-memory route | `c1e71fd3…` | 32 |
+| PR #461 | the preflight binding | `e147542a…` | 32 |
+
+So the two grants recorded at PR #458 are invalidated and the two grant rows
+above need re-issuing before a read. The record is kept unedited each time;
+re-issuing is a separate act from rewriting.
 
 One disclosure is carried forward rather than closed:
 `DERIVATION_ROUTE_DOES_NOT_PIN_ITS_TIMEFRAME_TO_THE_COMMITTED_SOURCE_CONSTANT_REFERRED`

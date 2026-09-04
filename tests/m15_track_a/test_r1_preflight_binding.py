@@ -124,6 +124,50 @@ def source_tree(sandbox: Path) -> Path:
     return sandbox
 
 
+@pytest.fixture
+def full_shape_tree(sandbox: Path) -> Path:
+    """A corpus whose **every** window carries rows, for all twenty pairs.
+
+    `source_tree` puts two days in one of the eight windows, so a run over it
+    makes 180 authorization calls. The number this work set out to reduce is the
+    one a full corpus produces — 160 reads, 160 derivations and 321 calls — and a
+    headline pinned on the sparse shape is not pinned. One hour per window keeps
+    the fixture small while giving the run its real shape.
+    """
+    windows = streaming.iter_windows(SPAN_START, SPAN_END, window_days=31)
+    for pair in PAIRS:
+        path = sandbox / "data" / read_route.SOURCE_FILENAME_TEMPLATE.format(pair=pair, epoch=EPOCH)
+        jpy = pair.endswith("_JPY")
+        base = 150.0 if jpy else 1.1000
+        tick = 0.01 if jpy else 0.0001
+        with path.open("w", encoding="utf-8") as handle:
+            index = 0
+            for lo, _hi in windows:
+                moment = datetime.fromisoformat(lo).replace(tzinfo=UTC)
+                for _ in range(60):
+                    mid = base + ((index % 40) - 20) * tick
+                    half = tick
+                    handle.write(
+                        json.dumps(
+                            {
+                                "time": moment.isoformat().replace("+00:00", "Z"),
+                                "bid_o": mid - half,
+                                "bid_h": mid - half + 3 * tick,
+                                "bid_l": mid - half - 3 * tick,
+                                "bid_c": mid - half + tick,
+                                "ask_o": mid + half,
+                                "ask_h": mid + half + 3 * tick,
+                                "ask_l": mid + half - 3 * tick,
+                                "ask_c": mid + half + tick,
+                            }
+                        )
+                        + "\n"
+                    )
+                    moment += timedelta(minutes=1)
+                    index += 1
+    return sandbox
+
+
 def _run(**overrides: Any) -> identity.RunIdentity:
     fields: dict[str, Any] = {
         "run_id": "r1-preflight-binding",
@@ -165,10 +209,6 @@ def _context(**overrides: Any) -> authorization.VerifiedRunContext:
         "read_grant": _grant(authorization.OPERATION_HISTORICAL_READ),
         "derivation_grant": _grant(authorization.OPERATION_M15_DERIVATION),
         "identity": _run(),
-        "span_start_utc": SPAN_START,
-        "span_end_utc": SPAN_END,
-        "pairs": PAIRS,
-        "timeframe": "M1",
     }
     fields.update(overrides)
     return authorization.VerifiedRunContext(**fields)
@@ -184,14 +224,16 @@ def test_the_context_measures_the_tree_rather_than_accepting_a_number() -> None:
 
     A first drafting took `fingerprint` as a constructor argument and
     re-measured it to check the claim — two measurements, and a field a caller
-    could try to fill in. The measured fields are `init=False` now, so building
-    a context **is** the measurement.
+    could try to fill in. The measured values are not fields at all now: they are
+    read-only views onto a record this module seals when the verification runs,
+    so building a context **is** the measurement.
     """
     import dataclasses
 
-    fields = {f.name: f for f in dataclasses.fields(authorization.VerifiedRunContext)}
+    fields = {f.name for f in dataclasses.fields(authorization.VerifiedRunContext)}
+    assert fields == {"read_grant", "derivation_grant", "identity"}, fields
     for name in ("fingerprint", "approved_head_sha", "surface_stamp"):
-        assert not fields[name].init, f"{name} is caller-supplied"
+        assert isinstance(getattr(authorization.VerifiedRunContext, name), property), name
     context = _context()
     assert context.fingerprint == containment.implementation_fingerprint()
     assert context.approved_head_sha == APPROVED_SHA
@@ -201,21 +243,135 @@ def test_the_context_measures_the_tree_rather_than_accepting_a_number() -> None:
             read_grant=_grant(authorization.OPERATION_HISTORICAL_READ),
             derivation_grant=_grant(authorization.OPERATION_M15_DERIVATION),
             identity=_run(),
-            span_start_utc=SPAN_START,
-            span_end_utc=SPAN_END,
-            pairs=PAIRS,
-            timeframe="M1",
             fingerprint="0" * 64,
         )
+
+
+def test_the_context_records_no_scope_at_all() -> None:
+    """A span, a pair list and a timeframe are not this object's business.
+
+    An earlier drafting kept the plan's scope here "for the record" and nothing
+    read it, so a mutation writing `1970-01-01..2099-12-31 / ("XXX_YYY",) /
+    NOT_A_TIMEFRAME` into it survived the whole suite and reached the R1 evidence
+    record — the second fabricated span to travel into this programme's evidence
+    that way. There is no field to fabricate now.
+    """
+    import dataclasses
+
+    names = {f.name for f in dataclasses.fields(authorization.VerifiedRunContext)}
+    for scope in ("span_start_utc", "span_end_utc", "pairs", "timeframe"):
+        assert scope not in names, f"{scope} is back on the context"
+        assert not hasattr(authorization.VerifiedRunContext, scope), scope
+    record = _context().as_record()
+    assert set(record) == {
+        "fingerprint",
+        "approved_head_sha",
+        "surface_files",
+        "read_grant",
+        "derivation_grant",
+    }, record
 
 
 def test_the_context_is_frozen() -> None:
     import dataclasses
 
     context = _context()
-    for name, value in (("fingerprint", "0" * 64), ("span_end_utc", "2099-12-31")):
+    for name, value in (("fingerprint", "0" * 64), ("read_grant", None)):
         with pytest.raises(dataclasses.FrozenInstanceError):
             setattr(context, name, value)
+
+
+# ---------------------------------------------------------------------------
+# The three routes that skip `__post_init__`
+# ---------------------------------------------------------------------------
+
+
+def test_a_context_that_never_ran_its_verification_is_refused() -> None:
+    """`object.__new__` is the route `_revalidate` exists to close on a grant.
+
+    A review role assembled a context this way around a grant approved against
+    `"0" * 64` — an approval naming a tree that does not exist — and got sixty
+    rows out of the gated read. The per-call measurement refused the same grant.
+    The measurement is off the object now, so an object that never performed it
+    reaches no record.
+    """
+    stale = _grant(
+        authorization.OPERATION_HISTORICAL_READ, approved_implementation_fingerprint="0" * 64
+    )
+    forged = object.__new__(authorization.VerifiedRunContext)
+    object.__setattr__(forged, "read_grant", stale)
+    object.__setattr__(forged, "derivation_grant", _grant(authorization.OPERATION_M15_DERIVATION))
+    object.__setattr__(forged, "identity", _run())
+    assert type(forged) is authorization.VerifiedRunContext
+    with pytest.raises(authorization.AuthorizationError, match="never ran its own verification"):
+        authorization.require_authorization(
+            stale,
+            operation=authorization.OPERATION_HISTORICAL_READ,
+            span_start_utc=SPAN_START,
+            span_end_utc=SPAN_END,
+            pairs=PAIRS,
+            timeframe="M1",
+            identity=forged.identity,
+            context=forged,
+        )
+    #: and it cannot even describe itself
+    for reader in (lambda: forged.fingerprint, lambda: forged.surface_stamp, forged.as_record):
+        with pytest.raises(authorization.AuthorizationError):
+            reader()
+
+
+@pytest.mark.parametrize("clone", ["pickle", "deepcopy"])
+def test_a_cloned_context_is_refused(clone: str) -> None:
+    """Both routes rebuild the object without running `__init__`."""
+    import copy
+    import pickle
+
+    context = _context()
+    copied = pickle.loads(pickle.dumps(context)) if clone == "pickle" else copy.deepcopy(context)
+    assert type(copied) is authorization.VerifiedRunContext
+    assert copied == context, "the clone is equal, which is exactly the danger"
+    with pytest.raises(authorization.AuthorizationError, match="never ran its own verification"):
+        authorization.require_authorization(
+            copied.read_grant,
+            operation=authorization.OPERATION_HISTORICAL_READ,
+            span_start_utc=SPAN_START,
+            span_end_utc=SPAN_END,
+            pairs=PAIRS,
+            timeframe="M1",
+            identity=copied.identity,
+            context=copied,
+        )
+
+
+def test_setattr_after_construction_cannot_change_what_was_verified() -> None:
+    """The third route: mutate a frozen field on a genuinely verified object."""
+    context = _context()
+    original = context.read_grant
+    swapped = _grant(
+        authorization.OPERATION_HISTORICAL_READ, approved_implementation_fingerprint="0" * 64
+    )
+    object.__setattr__(context, "read_grant", swapped)
+    #: the measured values cannot be written by **any** route: a property is a
+    #: data descriptor, so `object.__setattr__` does not reach them either
+    for name in ("fingerprint", "approved_head_sha", "surface_stamp"):
+        with pytest.raises(AttributeError, match="no setter"):
+            object.__setattr__(context, name, "0" * 64)
+    #: the object now says one thing and the sealed record says another
+    assert context.read_grant is swapped
+    assert context.grant_for(authorization.OPERATION_HISTORICAL_READ) is original
+    assert context.fingerprint == containment.implementation_fingerprint()
+    assert context.surface_stamp
+    with pytest.raises(authorization.AuthorizationError, match="not the object this run"):
+        authorization.require_authorization(
+            swapped,
+            operation=authorization.OPERATION_HISTORICAL_READ,
+            span_start_utc=SPAN_START,
+            span_end_utc=SPAN_END,
+            pairs=PAIRS,
+            timeframe="M1",
+            identity=context.identity,
+            context=context,
+        )
 
 
 @pytest.mark.parametrize(
@@ -224,7 +380,6 @@ def test_the_context_is_frozen() -> None:
         ("read_grant", None, "must be exactly a ReadGrant"),
         ("derivation_grant", "not a grant", "must be exactly a ReadGrant"),
         ("identity", "not an identity", "must be exactly a RunIdentity"),
-        ("pairs", (), "non-empty tuple"),
     ],
 )
 def test_a_malformed_context_cannot_be_built(field: str, value: Any, match: str) -> None:
@@ -385,10 +540,6 @@ def test_a_context_subclass_is_refused() -> None:
         read_grant=context.read_grant,
         derivation_grant=context.derivation_grant,
         identity=context.identity,
-        span_start_utc=SPAN_START,
-        span_end_utc=SPAN_END,
-        pairs=PAIRS,
-        timeframe="M1",
     )
     with pytest.raises(authorization.AuthorizationError, match="exactly a VerifiedRunContext"):
         authorization.require_authorization(
@@ -504,10 +655,20 @@ def test_a_window_refuses_when_the_surface_drifts_mid_run(
         ),
         context.identity,
     )
-    drifted = tuple(
-        (name, path, size + 1, mtime) for name, path, size, mtime in context.surface_stamp
+    #: A tamper is **ineffective**, which is half the point: the window reads the
+    #: sealed record, so a drift check the drifter supplies is not the one that
+    #: runs — and the stamp is not writable on the object at all.
+    with pytest.raises(AttributeError, match="no setter"):
+        object.__setattr__(context, "surface_stamp", ())
+    assert context.surface_stamp, "the object's claim beat the sealed record"
+
+    #: The guards refuse an `os.utime` on a covered file, so the disk cannot be
+    #: moved from inside a guarded test. Moving the sealed record instead
+    #: exercises the same comparison against the same real files.
+    record = authorization.sealed_binding(context)
+    record["surface_stamp"] = tuple(
+        (name, path, size + 1, mtime) for name, path, size, mtime in record["surface_stamp"]
     )
-    object.__setattr__(context, "surface_stamp", drifted)
     with pytest.raises(containment.SurfaceDriftError, match="no longer that tree"):
         streaming.derive_streaming(
             request,
@@ -519,30 +680,147 @@ def test_a_window_refuses_when_the_surface_drifts_mid_run(
         )
 
 
-# ---------------------------------------------------------------------------
-# The run: one measurement, all of it before the declaration
-# ---------------------------------------------------------------------------
+def test_an_equal_but_distinct_run_identity_is_refused() -> None:
+    """`is`, not `==`, for the identity as well as the grant.
 
-
-def test_the_run_measures_the_fingerprint_exactly_once_and_before_the_declaration(
-    source_tree: Path, guards_installed: object, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    """The headline, measured. 321 → 1, and the one is before anything is read.
-
-    Ordering matters as much as the count: a measurement after the write-ahead
-    declaration is a refusal that costs the corpus.
+    The grant half was pinned with an equal twin; the identity half was pinned
+    only with a *different* `run_id`, so `==` diverged too and a mutation from
+    `is not` to `!=` survived the whole suite. A review role found it.
     """
-    #: the grants are built first, for the same reason: `_grant` measures.
+    context = _context()
+    twin = _run()
+    assert twin == context.identity and twin is not context.identity
+    with pytest.raises(authorization.AuthorizationError, match="not the one this context"):
+        authorization.require_authorization(
+            context.read_grant,
+            operation=authorization.OPERATION_HISTORICAL_READ,
+            span_start_utc=SPAN_START,
+            span_end_utc=SPAN_END,
+            pairs=PAIRS,
+            timeframe="M1",
+            identity=twin,
+            context=context,
+        )
+
+
+def test_a_grant_mutated_before_the_context_is_built_is_refused() -> None:
+    """`_revalidate` inside `__post_init__`, which nothing reached before.
+
+    A grant whose frozen fields were rewritten after construction used to be
+    caught only inside the read — after the irreversible declaration. The context
+    re-runs the construction checks, so it is caught in preflight instead; a
+    review role showed the guard was untested and a mutation deleting it
+    survived.
+    """
+    tampered = _grant(authorization.OPERATION_HISTORICAL_READ)
+    object.__setattr__(tampered, "span_end_utc", "not-a-date")
+    with pytest.raises(authorization.AuthorizationMalformedError):
+        _context(read_grant=tampered)
+
+
+def test_the_reused_fingerprint_is_the_measured_one_not_the_grant_s_claim() -> None:
+    """The comparison must not become a tautology.
+
+    Rewriting `measured = record["fingerprint"]` to
+    `measured = grant.approved_implementation_fingerprint` compares a value with
+    itself and every equivalence test still passes. What catches it is a grant
+    whose recorded fingerprint is changed *after* the context verified it: the
+    format checks `_revalidate` runs cannot see the change, and only the
+    comparison against the measured value can.
+    """
+    context = _context()
+    grant = context.read_grant
+    object.__setattr__(grant, "approved_implementation_fingerprint", "e" * 64)
+    with pytest.raises(authorization.AuthorizationError, match="changed after the approval"):
+        authorization.require_authorization(
+            grant,
+            operation=authorization.OPERATION_HISTORICAL_READ,
+            span_start_utc=SPAN_START,
+            span_end_utc=SPAN_END,
+            pairs=PAIRS,
+            timeframe="M1",
+            identity=context.identity,
+            context=context,
+        )
+
+
+@pytest.mark.parametrize("bogus", ["not a context", 0, object()])
+def test_the_streaming_route_type_pins_its_context(
+    source_tree: Path, guards_installed: object, bogus: Any
+) -> None:
+    """A refusal with a name, not an `AttributeError` from a missing field."""
+    request = read_route.ReadRequest(
+        span_start_utc=SPAN_START,
+        span_end_utc=SPAN_END,
+        pairs=PAIRS,
+        timeframe="M1",
+        warmup_extension_start_utc=SPAN_START,
+    )
+    context = _context()
+    with pytest.raises(authorization.AuthorizationError, match="exactly a VerifiedRunContext"):
+        streaming.derive_streaming(
+            request,
+            context.identity,
+            read_grant=context.read_grant,
+            derivation_grant=context.derivation_grant,
+            context=bogus,
+            window_days=31,
+        )
+
+
+def test_measure_surface_is_the_two_functions_it_replaces() -> None:
+    """One walk instead of two, and provably the same two values."""
+    fingerprint, stamp = containment.measure_surface()
+    assert fingerprint == containment.implementation_fingerprint()
+    assert stamp == containment.surface_stamp()
+    assert len(stamp) == len(containment.implementation_surface())
+
+
+def test_the_fingerprint_algorithm_is_unchanged_by_the_split() -> None:
+    """Recomputed independently, so a refactor of the shared helper cannot drift.
+
+    `implementation_fingerprint` and `measure_surface` now share `_hash_over`.
+    A test comparing them to each other would pass with both wrong; this one
+    spells the algorithm out again — count, then per file the surface name, a NUL,
+    the sha256 of the LF-normalised bytes, a newline.
+    """
+    import hashlib
+
+    files = containment.implementation_surface()
+    digest = hashlib.sha256()
+    digest.update(f"{len(files)}\n".encode())
+    for path in files:
+        digest.update(containment._surface_name(path).encode())
+        digest.update(b"\0")
+        body = path.read_bytes().replace(b"\r\n", b"\n")
+        digest.update(hashlib.sha256(body).hexdigest().encode())
+        digest.update(b"\n")
+    assert digest.hexdigest() == containment.implementation_fingerprint()
+
+
+# ---------------------------------------------------------------------------
+# The run: one measurement before the read, one after, none in between
+# ---------------------------------------------------------------------------
+
+
+def _trace_run(monkeypatch: pytest.MonkeyPatch, plan: Any) -> list[str]:
+    """Run R1 and return the ordered event trace of the things that matter."""
     read_grant = _grant(authorization.OPERATION_HISTORICAL_READ)
     derivation_grant = _grant(authorization.OPERATION_M15_DERIVATION)
     order: list[str] = []
     real_fp = containment.implementation_fingerprint
+    real_measure = containment.measure_surface
     real_declare = seen_ledger.declare
     real_auth = authorization.require_authorization
+    real_read = read_route.read_historical
 
     def counting_fp() -> str:
         order.append("fingerprint")
         return real_fp()
+
+    def counting_measure() -> Any:
+        order.append("fingerprint")
+        return real_measure()
 
     def noting_declare(*a: Any, **kw: Any) -> Any:
         order.append("declare")
@@ -552,20 +830,100 @@ def test_the_run_measures_the_fingerprint_exactly_once_and_before_the_declaratio
         order.append("authorization")
         return real_auth(*a, **kw)
 
+    def noting_read(*a: Any, **kw: Any) -> Any:
+        order.append("read")
+        return real_read(*a, **kw)
+
     monkeypatch.setattr(containment, "implementation_fingerprint", counting_fp)
+    monkeypatch.setattr(containment, "measure_surface", counting_measure)
     monkeypatch.setattr(seen_ledger, "declare", noting_declare)
     monkeypatch.setattr(authorization, "require_authorization", noting_auth)
+    monkeypatch.setattr(read_route, "read_historical", noting_read)
+    r1_orchestrator.run_r1(plan, _run(), read_grant=read_grant, derivation_grant=derivation_grant)
+    return order
 
-    r1_orchestrator.run_r1(
-        _plan(), _run(), read_grant=read_grant, derivation_grant=derivation_grant
-    )
+
+def test_the_run_measures_the_fingerprint_twice_and_never_inside_the_read(
+    source_tree: Path, guards_installed: object, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The headline, measured. 321 → 2, and neither of the two is a window's gate.
+
+    Ordering matters as much as the count. The first measurement is before the
+    write-ahead declaration, where a refusal costs nothing. The second is after
+    the last window, closing the interval the per-window `stat` samples rather
+    than proves — a completion check, not a gate a read can trip over. What is
+    gone is the ~320 measurements that used to sit *between* the two, each one a
+    refusal that would have cost the corpus.
+    """
+    order = _trace_run(monkeypatch, _plan())
 
     fingerprints = [i for i, name in enumerate(order) if name == "fingerprint"]
     declaration = order.index("declare")
-    assert len(fingerprints) == 1, f"{len(fingerprints)} full measurements in one run"
-    assert fingerprints[0] < declaration, "the measurement happened after the declaration"
+    #: `containment.audit()` makes its own no-grant probe read before preflight
+    #: measures anything; the corpus reads are the ones after the declaration
+    windows = [i for i, name in enumerate(order) if name == "read" and i > declaration]
+    assert len(fingerprints) == 2, f"{len(fingerprints)} full measurements in one run"
+    assert fingerprints[0] < declaration, "the first measurement is after the declaration"
+    assert fingerprints[1] > windows[-1], "the second measurement is not after the last read"
+    assert not [i for i in fingerprints if windows[0] < i < windows[-1]], (
+        "a measurement gates a window"
+    )
     #: the scope check still runs on every call, which is the point of the split
     assert order.count("authorization") > 100, order.count("authorization")
+
+
+def test_the_count_is_two_at_full_corpus_shape(
+    full_shape_tree: Path, guards_installed: object, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The same claim where every window carries rows, not just one of eight.
+
+    The sparse fixture above makes 180 authorization calls; a corpus whose every
+    window has data makes 321, which is the number this work set out to reduce.
+    A review role pointed out that pinning the claim on the sparse shape leaves
+    the headline unpinned.
+    """
+    order = _trace_run(monkeypatch, _plan())
+
+    declaration = order.index("declare")
+    windows = [i for i, name in enumerate(order) if name == "read" and i > declaration]
+    #: 20 pairs x 8 windows
+    assert len(windows) == len(PAIRS) * 8 == 160, len(windows)
+    #: one read + one derivation per window, plus `containment.audit`'s own
+    #: no-grant probe: the 321 measurements this work set out to reduce
+    assert order.count("authorization") == 321, order.count("authorization")
+    assert order.count("fingerprint") == 2, order.count("fingerprint")
+
+
+def test_a_tree_that_moves_during_the_run_cannot_certify_its_output(
+    source_tree: Path, guards_installed: object, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The closing measurement, and why it is worth a second walk.
+
+    A `stat` per window catches an edit, a replacement, a truncation or a
+    removal, and misses one case: an edit preserving both size and mtime. A
+    review role reproduced exactly that with an external editor — the per-call
+    measurement refused the run and the stamp alone completed it. One
+    cryptographic measurement at the far end covers every byte of the interval.
+    """
+    read_grant = _grant(authorization.OPERATION_HISTORICAL_READ)
+    derivation_grant = _grant(authorization.OPERATION_M15_DERIVATION)
+    real_fp = containment.implementation_fingerprint
+    calls: list[int] = []
+
+    def drifting_fp() -> str:
+        calls.append(1)
+        #: the first call is the closing one; before it, the run behaved
+        return "f" * 64 if calls else real_fp()
+
+    monkeypatch.setattr(containment, "implementation_fingerprint", drifting_fp)
+    with pytest.raises(authorization.AuthorizationError, match="while the run was in progress"):
+        r1_orchestrator.run_r1(
+            _plan(), _run(), read_grant=read_grant, derivation_grant=derivation_grant
+        )
+    #: it fails at the far end, so the declaration and the read already happened:
+    #: this protects the record's claim, it does not protect the corpus, and the
+    #: docstring on `assert_implementation_unchanged` says so.
+    assert seen_ledger.read_declarations()
 
 
 def test_the_preflight_report_records_the_binding(
@@ -616,7 +974,9 @@ def test_preflight_still_refuses_before_the_declaration(
                     authorization.OPERATION_M15_DERIVATION, approved_head_sha="b" * 40
                 )
             },
-            authorization.AuthorizationMalformedError,
+            #: the head checks run in `preflight`, above the context, so this is
+            #: the orchestrator's refusal and it names both SHAs
+            r1_orchestrator.R1OrchestratorError,
         ),
         ({"read_grant": None}, r1_orchestrator.R1OrchestratorError),
         ({"derivation_grant": None}, r1_orchestrator.R1OrchestratorError),
@@ -630,7 +990,7 @@ def test_preflight_still_refuses_before_the_declaration(
         with pytest.raises(expected):
             r1_orchestrator.run_r1(_plan(), _run(), **fields)
         assert not seen_ledger.read_declarations(), overrides
-    with pytest.raises(authorization.AuthorizationMalformedError):
+    with pytest.raises(r1_orchestrator.R1OrchestratorError, match="names code_sha"):
         r1_orchestrator.run_r1(
             _plan(),
             _run(code_sha="c" * 40),

@@ -46,7 +46,8 @@ the merge ceremony, not by this file.
 from __future__ import annotations
 
 import re
-from dataclasses import dataclass, field
+import weakref
+from dataclasses import dataclass
 from datetime import UTC, datetime
 from typing import Any, Final
 
@@ -262,6 +263,71 @@ class ReadGrant:
         }
 
 
+#: Contexts that actually ran their own verification, keyed by object identity.
+#:
+#: A frozen dataclass hashes and compares **by value**, so a `set` keyed on the
+#: object would accept an equal forgery as a member; and `id()` alone is reusable
+#: once an object dies. Each entry therefore holds a weak reference checked with
+#: `is`, and a callback removes the row when the object is collected.
+_SEALED_BINDINGS: dict[int, tuple[weakref.ref, dict[str, Any]]] = {}
+
+
+def _seal(context: VerifiedRunContext, record: dict[str, Any]) -> None:
+    """Record that this exact object completed the verification, and what it saw."""
+    key = id(context)
+
+    def _forget(_ref: weakref.ref, key: int = key) -> None:
+        _SEALED_BINDINGS.pop(key, None)
+
+    _SEALED_BINDINGS[key] = (weakref.ref(context, _forget), record)
+
+
+def sealed_binding(context: Any) -> dict[str, Any]:
+    """The record written when **this** object ran ``__post_init__``, or refuse.
+
+    Why the measurement does not live on the object
+    -----------------------------------------------
+
+    ``__post_init__`` runs from ``__init__``. It does not run for
+    ``object.__new__``, for an unpickled instance, or after an
+    ``object.__setattr__`` on a frozen field — which is exactly what
+    :func:`_revalidate` was written for on :class:`ReadGrant`, and the same three
+    routes apply here. A review role walked all three: an ``object.__new__``
+    context carrying a grant approved against ``"0" * 64`` authorised a read that
+    the per-call measurement refused.
+
+    :class:`ReadGrant` closes that by re-running its own checks, which is
+    affordable because they are pure. A context cannot: re-running its checks
+    means re-measuring the tree, and not re-measuring is the entire point. So the
+    measurement is kept **off** the object, in a side record this module writes
+    and nothing can ``setattr`` into, and every security decision reads it from
+    here. A forged or tampered context reaches no record and is refused.
+
+    The limit is the one this module already states: code in the same process can
+    reach this dict, just as it could bypass :func:`require_authorization`
+    altogether. The controls for that are the isolation audit hook and the
+    recorded grant, not this function.
+    """
+    if type(context) is not VerifiedRunContext:
+        raise AuthorizationError(
+            f"{TOKEN}: context must be exactly a VerifiedRunContext, not a "
+            f"{type(context).__name__}."
+        )
+    entry = _SEALED_BINDINGS.get(id(context))
+    if entry is None:
+        raise AuthorizationError(
+            f"{TOKEN}: this context never ran its own verification. A context is the record "
+            "of a measurement; one assembled without performing it is not one."
+        )
+    ref, record = entry
+    if ref() is not context:
+        raise AuthorizationError(
+            f"{TOKEN}: this context does not match the verification recorded under its "
+            "identity (fail closed)."
+        )
+    return record
+
+
 @dataclass(frozen=True)
 class VerifiedRunContext:
     """One R1 run's implementation binding, verified once and then reused.
@@ -297,33 +363,56 @@ class VerifiedRunContext:
     It is frozen, and `require_authorization` accepts it only alongside a grant
     that is **the same object** this context verified — identity, not equality,
     because two equal grants are what a later divergence starts from.
+
+    What it deliberately does **not** hold
+    -------------------------------------
+
+    A span, a pair list and a timeframe. An earlier drafting recorded the plan's
+    scope here "for the record" and nothing ever read it, so a mutation that
+    wrote `1970-01-01..2099-12-31 / ("XXX_YYY",) / NOT_A_TIMEFRAME` into it
+    survived the whole suite and reached the R1 evidence record — the second time
+    a fabricated span has travelled into this programme's evidence that way. The
+    fields are gone rather than checked: a context is an **implementation
+    identity**, the request is the scope, and the run record already carries the
+    scope from the request. Conflating the two is what the reuse of this object
+    is written to avoid.
+
+    Nor does it hold the measurement itself; see :func:`sealed_binding`.
     """
 
     read_grant: ReadGrant
     derivation_grant: ReadGrant
     identity: Any
-    #: The scope the grants were verified against — the plan's, normalised.
-    span_start_utc: str
-    span_end_utc: str
-    pairs: tuple[str, ...]
-    timeframe: str
 
-    #: **Measured here, never supplied.** A first drafting took the fingerprint
-    #: as a constructor argument and re-measured it to check the claim, which
-    #: cost the run two full measurements and gave a caller something to assert.
-    #: There is nothing to assert now: the tree hash and the surface stamp are
-    #: taken inside `__post_init__` and written to these fields, so building a
-    #: context *is* the measurement and the run pays for exactly one.
-    fingerprint: str = field(init=False)
-    approved_head_sha: str = field(init=False)
-    #: `(surface name, absolute path, size, mtime_ns)` for every covered file,
-    #: captured at the same moment. Cheap to re-check; see
-    #: `containment.assert_surface_unchanged` for what it does and does not
-    #: establish.
-    surface_stamp: tuple[tuple[str, str, int, int], ...] = field(init=False)
+    #: **Measured, never supplied, and not stored on the object.** A first
+    #: drafting took the fingerprint as a constructor argument and re-measured it
+    #: to check the claim, which cost two full measurements and gave a caller
+    #: something to assert. These read the sealed record instead, so there is
+    #: nothing to assert and nothing to `object.__setattr__`: building a context
+    #: *is* the measurement, and the run pays for exactly one.
+    @property
+    def fingerprint(self) -> str:
+        """The tree hash measured while this context was built."""
+        return str(sealed_binding(self)["fingerprint"])
+
+    @property
+    def approved_head_sha(self) -> str:
+        """The head both grants name, kept so a reader need not open them."""
+        return str(sealed_binding(self)["approved_head_sha"])
+
+    @property
+    def surface_stamp(self) -> tuple[tuple[str, str, int, int], ...]:
+        """`(surface name, absolute path, size, mtime_ns)` per covered file.
+
+        Captured at the same moment as the fingerprint. Cheap to re-check; see
+        `containment.assert_surface_unchanged` for what it does and does not
+        establish.
+        """
+        stamp: tuple[tuple[str, str, int, int], ...] = sealed_binding(self)["surface_stamp"]
+        return stamp
 
     def __post_init__(self) -> None:
-        from scripts.m15_track_a.containment import implementation_fingerprint
+        from scripts.m15_track_a.containment import measure_surface
         from scripts.m15_track_a.identity import RunIdentity
 
         if type(self.identity) is not RunIdentity:
@@ -355,17 +444,14 @@ class VerifiedRunContext:
             raise AuthorizationMalformedError(
                 "the run identity names a different head from the grants"
             )
-        if type(self.pairs) is not tuple or not self.pairs:
-            raise AuthorizationMalformedError("pairs must be a non-empty tuple")
 
         # **The one measurement.** Taken here rather than accepted here, which
         # is the whole difference between a record of a verification and a
-        # claim about one.
-        from scripts.m15_track_a.containment import surface_stamp
-
+        # claim about one. `measure_surface` walks the surface once and returns
+        # the hash and the stamp together: hashing and stamping separately meant
+        # two walks, and the walk is ~205 ms of the ~207 ms.
         try:
-            measured = implementation_fingerprint()
-            stamp = surface_stamp()
+            measured, stamp = measure_surface()
         except Exception as exc:  # noqa: BLE001 - re-raised as this module's type
             raise AuthorizationMalformedError(
                 f"the implementation surface could not be measured: {exc}"
@@ -377,33 +463,55 @@ class VerifiedRunContext:
                     f"{grant.approved_implementation_fingerprint!r} and the tree hashes to "
                     f"{measured!r}. The read implementation changed after the approval."
                 )
-        object.__setattr__(self, "fingerprint", measured)
-        object.__setattr__(self, "approved_head_sha", self.read_grant.approved_head_sha)
-        object.__setattr__(self, "surface_stamp", stamp)
-
-    def grant_for(self, operation: str) -> ReadGrant:
-        """The verified grant for one operation, by exact operation name."""
-        if operation == OPERATION_HISTORICAL_READ:
-            return self.read_grant
-        if operation == OPERATION_M15_DERIVATION:
-            return self.derivation_grant
-        raise AuthorizationError(
-            f"{TOKEN}: this context verifies {OPERATION_HISTORICAL_READ} and "
-            f"{OPERATION_M15_DERIVATION}, not {operation!r}"
+        # Sealed off the object, and holding its **own** references to the two
+        # grants and the identity: a later `object.__setattr__` on a frozen field
+        # changes what the object says and cannot change what was verified.
+        _seal(
+            self,
+            {
+                "fingerprint": measured,
+                "approved_head_sha": self.read_grant.approved_head_sha,
+                "surface_stamp": stamp,
+                "identity": self.identity,
+                OPERATION_HISTORICAL_READ: self.read_grant,
+                OPERATION_M15_DERIVATION: self.derivation_grant,
+            },
         )
 
+    def grant_for(self, operation: str) -> ReadGrant:
+        """The grant this context **verified** for one operation.
+
+        From the sealed record, not from `self`: the point of the lookup is to
+        answer "which object did the verification cover", and reading it off a
+        field an `object.__setattr__` can rewrite would answer "which object does
+        this one claim now".
+        """
+        if operation not in (OPERATION_HISTORICAL_READ, OPERATION_M15_DERIVATION):
+            raise AuthorizationError(
+                f"{TOKEN}: this context verifies {OPERATION_HISTORICAL_READ} and "
+                f"{OPERATION_M15_DERIVATION}, not {operation!r}"
+            )
+        grant: ReadGrant = sealed_binding(self)[operation]
+        return grant
+
+    def verified_identity(self) -> Any:
+        """The run identity this context was verified against, from the record."""
+        return sealed_binding(self)["identity"]
+
     def as_record(self) -> dict[str, Any]:
-        """Identities and scope only — never a grant object, never a row."""
+        """Implementation identity only — never a scope, never a grant, never a row.
+
+        The scope the run is authorised for belongs to the request and to the two
+        grants, and the R1 record carries it from there. It is deliberately not
+        restated here; see the class docstring.
+        """
+        record = sealed_binding(self)
         return {
-            "fingerprint": self.fingerprint,
-            "approved_head_sha": self.approved_head_sha,
-            "span_start_utc": self.span_start_utc,
-            "span_end_utc": self.span_end_utc,
-            "pairs": list(self.pairs),
-            "timeframe": self.timeframe,
-            "surface_files": len(self.surface_stamp),
-            "read_grant": self.read_grant.operation,
-            "derivation_grant": self.derivation_grant.operation,
+            "fingerprint": record["fingerprint"],
+            "approved_head_sha": record["approved_head_sha"],
+            "surface_files": len(record["surface_stamp"]),
+            "read_grant": record[OPERATION_HISTORICAL_READ].operation,
+            "derivation_grant": record[OPERATION_M15_DERIVATION].operation,
         }
 
 
@@ -572,23 +680,24 @@ def require_authorization(
         # call: `grant_covers`, the span, the pairs, the timeframe. Reusing an
         # identity is not reusing a scope check, and conflating the two is the
         # mistake this branch is written to avoid.
-        if type(context) is not VerifiedRunContext:
-            raise AuthorizationError(
-                f"{TOKEN}: context must be exactly a VerifiedRunContext, not a "
-                f"{type(context).__name__}."
-            )
-        if grant is not context.grant_for(operation):
+        # Everything below comes from the **sealed record**, which only a context
+        # that ran its own verification has. An `object.__new__` instance, an
+        # unpickled one, and one whose frozen fields were `object.__setattr__`
+        # after the fact all reach no record and are refused here — the same
+        # three routes `_revalidate` closes for `ReadGrant`.
+        record = sealed_binding(context)
+        if grant is not record.get(operation):
             # Identity, not equality: an equal-looking grant is what a later
             # divergence starts from, and the context verified one object.
             raise AuthorizationError(
                 f"{TOKEN}: the grant supplied for {operation} is not the object this run's "
                 "context verified."
             )
-        if identity is not context.identity:
+        if identity is not record["identity"]:
             raise AuthorizationError(
                 f"{TOKEN}: the run identity is not the one this context was verified against."
             )
-        measured = context.fingerprint
+        measured = record["fingerprint"]
     else:
         from scripts.m15_track_a.containment import implementation_fingerprint
 
@@ -632,10 +741,58 @@ def require_authorization(
     return grant
 
 
+def assert_implementation_unchanged(context: Any) -> None:
+    """Re-measure the tree **once**, at the end of a run, against the binding.
+
+    Why one more measurement, when removing them was the point
+    ----------------------------------------------------------
+
+    Per-window rehashing bought evidence, not protection: by the time a window
+    runs, every module the process will execute is already in ``sys.modules``, so
+    disk drift changes what a reader would find on disk and not what the run
+    does. Dropping it to a per-window ``stat`` keeps that evidence for every case
+    a single-process run on a clean checkout is exposed to — an edit, a
+    replacement, a truncation, a removal — and loses exactly one: an edit that
+    preserves both size and mtime. A review role reproduced that case with an
+    external editor: the previous code refused the run, and the stamp alone
+    completes it.
+
+    So the span is closed at the far end instead of sampled 320 times inside it.
+    One measurement here covers every byte of every covered file for the whole
+    interval between preflight and the survey, and a run whose implementation
+    moved under it refuses to certify its own output. Two full measurements a
+    run, both cryptographic, one before the first read and one after the last —
+    against 321 before, of which 320 sat after the irreversible declaration.
+
+    It is a **completion** check, not a gate on a read: by the time it runs the
+    corpus is already seen either way, and what it protects is the record's claim
+    to describe the approved implementation.
+    """
+    from scripts.m15_track_a.containment import implementation_fingerprint
+
+    record = sealed_binding(context)
+    try:
+        measured = implementation_fingerprint()
+    except Exception as exc:  # noqa: BLE001 - re-raised as this module's type
+        raise AuthorizationError(
+            f"{TOKEN}: the implementation surface could not be re-measured at the end of the "
+            f"run, so the run cannot attest to the tree it executed: {exc}"
+        ) from exc
+    if measured != record["fingerprint"]:
+        raise AuthorizationError(
+            f"{TOKEN}: the implementation was verified as {record['fingerprint']!r} before the "
+            f"read and hashes to {measured!r} after it. The tree changed while the run was in "
+            "progress, so this run's output cannot be recorded against the approved "
+            "implementation."
+        )
+
+
 __all__ = [
     "VerifiedRunContext",
     "KNOWN_OPERATIONS",
+    "assert_implementation_unchanged",
     "grant_covers",
+    "sealed_binding",
     "OPERATION_HISTORICAL_READ",
     "OPERATION_M15_DERIVATION",
     "OPERATION_OOS_SLICE_READ",

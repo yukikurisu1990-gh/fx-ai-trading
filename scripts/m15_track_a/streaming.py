@@ -106,7 +106,7 @@ from typing import Any, Final
 
 from scripts.m15_gate3a.aggregation import BUCKET_MINUTES
 from scripts.m15_gate3a.incremental_m15 import IncrementalM15
-from scripts.m15_track_a import containment, derivation, read_route
+from scripts.m15_track_a import authorization, containment, derivation, read_route
 from scripts.m15_track_a.identity import RunIdentity
 
 #: The default window, in whole UTC days. Chosen for the memory/rescan
@@ -281,13 +281,22 @@ def derive_streaming(
                 warmup_extension_start_utc=lo,
             )
             # The **implementation identity** is re-checked here, and it is a
-            # `stat` per covered file rather than a rehash: 0.53 ms against
-            # 203 ms. What that buys is set out where it is defined — once
-            # preflight has imported and measured, disk drift cannot change what
-            # this process executes, so the per-window rehash was evidence, not
-            # protection. This is the same evidence at 1/379th of the cost.
+            # `stat` per covered file rather than a rehash: 1.07 ms against
+            # 459 ms on the authoring host. It is **weaker** than the rehash it
+            # replaces, not equal to it — an earlier comment here claimed "the
+            # same evidence at 1/379th of the cost" and a review role measured
+            # three cases it misses. `containment.surface_stamp` lists them. What
+            # covers the span is the one full measurement `run_r1` takes after
+            # the last window; this is the cheap sample in between, and cheap
+            # enough to run every window is the reason it exists.
+            #
+            # The stamp comes from the **sealed record**, not from the context
+            # object: a stamp read off a frozen field an `object.__setattr__`
+            # can rewrite is a drift check the drifter supplies.
             if context is not None:
-                containment.assert_surface_unchanged(context.surface_stamp)
+                containment.assert_surface_unchanged(
+                    authorization.sealed_binding(context)["surface_stamp"]
+                )
             read = read_route.read_historical(
                 window_request, identity, grant=read_grant, context=context
             )

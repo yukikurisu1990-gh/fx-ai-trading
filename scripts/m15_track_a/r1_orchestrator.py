@@ -416,7 +416,28 @@ def preflight(
                 "does not authorise a derivation (policy §2.5), and neither covers the other."
             )
 
-    # **The only full fingerprint computation this run performs.**
+    # The two head checks run **before** the context, not after it. They are
+    # `VerifiedRunContext.__post_init__`'s checks too, and when they sat below it
+    # they were unreachable: the context raised first, with a shorter message,
+    # and two review roles found the duplicates surviving mutation because
+    # nothing could reach them. Here they are reachable, they are tested, and the
+    # message a human sees is the one that names both SHAs. The context keeps its
+    # own copies for a caller that builds one directly.
+    if read_grant.approved_head_sha != derivation_grant.approved_head_sha:
+        _refuse(
+            f"the two grants name different approved heads "
+            f"({read_grant.approved_head_sha[:8]}… and "
+            f"{derivation_grant.approved_head_sha[:8]}…). One run, one approved implementation."
+        )
+    if identity.code_sha != read_grant.approved_head_sha:
+        _refuse(
+            f"the run identity names code_sha {identity.code_sha[:8]}… and the grants were "
+            f"approved against {read_grant.approved_head_sha[:8]}…. Both are caller-asserted "
+            "strings — the fingerprint below is what is measured — but they must at least agree "
+            "about which head this run believes it is."
+        )
+
+    # **The only full fingerprint computation this run performs before the read.**
     #
     # Building the context is what makes it: `VerifiedRunContext.__post_init__`
     # measures the tree itself, pins both grants to the exact type, re-runs
@@ -441,10 +462,6 @@ def preflight(
         read_grant=read_grant,
         derivation_grant=derivation_grant,
         identity=identity,
-        span_start_utc=request.touched_start_utc,
-        span_end_utc=request.span_end_utc,
-        pairs=request.pairs,
-        timeframe=request.timeframe,
     )
     fingerprint = verified.fingerprint
     note("verified_binding", f"{fingerprint[:8]}… over {len(verified.surface_stamp)} files")
@@ -476,19 +493,6 @@ def preflight(
             _refuse(f"the {label} grant does not cover the planned scope")
         note(f"grant_{label}", f"{grant.operation} {grant.span_start_utc}..{grant.span_end_utc}")
 
-    if read_grant.approved_head_sha != derivation_grant.approved_head_sha:
-        _refuse(
-            f"the two grants name different approved heads "
-            f"({read_grant.approved_head_sha[:8]}… and "
-            f"{derivation_grant.approved_head_sha[:8]}…). One run, one approved implementation."
-        )
-    if identity.code_sha != read_grant.approved_head_sha:
-        _refuse(
-            f"the run identity names code_sha {identity.code_sha[:8]}… and the grants were "
-            f"approved against {read_grant.approved_head_sha[:8]}…. Both are caller-asserted "
-            "strings — the fingerprint above is what is measured — but they must at least agree "
-            "about which head this run believes it is."
-        )
     note("approved_head", read_grant.approved_head_sha)
     note("fingerprint", fingerprint)
 
@@ -596,6 +600,20 @@ def run_r1(
             f"the derivation records {derived.span_start_utc}..{derived.span_end_utc} and the "
             f"gated interval is {request.touched_start_utc}..{request.span_end_utc}"
         )
+
+    # 3b. Close the interval the single preflight measurement opened.
+    #
+    #     The fingerprint is measured once, before the read, and each window
+    #     re-`stat`s the covered files instead of rehashing them. That keeps the
+    #     evidence for every drift a single-process run on a clean checkout is
+    #     exposed to and loses one case — an edit preserving both size and mtime,
+    #     which a review role reproduced with an external editor and which the
+    #     per-call measurement used to refuse. One cryptographic measurement here
+    #     covers every byte of the whole interval instead of sampling it 320
+    #     times, and a run whose implementation moved refuses to certify its own
+    #     output. Two measurements a run, not 321, and neither of them a gate a
+    #     window can trip over.
+    authorization.assert_implementation_unchanged(report.context)
 
     # 4. Breadth. `result_observed=False` because R1 scores nothing, so `K` is
     #    explicitly 0 rather than absent.
