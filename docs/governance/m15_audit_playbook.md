@@ -479,43 +479,51 @@ only where something was run or read, never where something was believed.
       `RESEARCH_SCRATCH_NON_AUTHORITATIVE`, on `HistoricalRead`, `DerivedM15` and
       `R1Survey` alike, and lands nowhere near the evidence tree.
 
-**The two items no session could tick. Both are OUTSTANDING at this head.**
+**The two items no session could tick. Both are DISCHARGED at this head, and
+the tick is tied to a measurement rather than to this paragraph.**
 
-- [ ] **An explicit human + ChatGPT `track_a_historical_read` grant** against the
-      implementation fingerprint of the head being run. Three have been issued
-      and all three are **invalid**, each voided by the change that came after
-      it: PR #454's at `497e187b…`, PR #456's pair at `e43583e0…`, and PR #458's
-      pair at `64fbace9…`, which the R1 orchestrator voided by widening the
-      declared surface from 29 files to 30. Every recorded number is left
-      exactly as a human approved it; re-issuing is a separate act from
-      rewriting. Tested:
-      `test_the_recorded_grant_is_invalidated_by_the_orchestrator` and
-      `test_the_invalidated_grant_is_actually_refused_at_the_gate` in
-      `test_reissued_dual_grants.py`, and
-      `test_the_two_superseded_records_are_still_refused` for the older two.
-- [ ] **An explicit human + ChatGPT `track_a_m15_research_derivation` grant** —
+- [x] **An explicit human + ChatGPT `track_a_historical_read` grant** against the
+      implementation fingerprint of the head being run — PR #462,
+      `docs/governance/m15_track_a_r1_dual_grants_final_preflight.md` §2, bound
+      to `e147542a…` at head `0bb987e7…` (the PR #461 merge), measured on the
+      merged tree and again on a clean `git archive` of it. Tested:
+      `test_the_recorded_grant_names_the_measured_implementation` and
+      `test_the_recorded_grant_is_accepted_at_this_head` in
+      `test_final_preflight_dual_grants.py` — the first record whose assertions
+      run in the positive direction.
+      Three earlier grants are **invalid** and stay recorded as issued: PR #454's
+      at `497e187b…`, PR #456's pair at `e43583e0…`, and PR #458's pair at
+      `64fbace9…`. Every recorded number is left exactly as a human approved it;
+      re-issuing is a separate act from rewriting, and
+      `test_the_three_superseded_records_are_still_refused` checks that a kept
+      record does not quietly start working again.
+- [x] **An explicit human + ChatGPT `track_a_m15_research_derivation` grant** —
       §3 of the same record, same head, same fingerprint, arm (i) route only, R1
       only. A read grant does not authorise a derivation (§2.5), which is why
-      there are two rather than one widened. Its *scope* is settled and tested:
-      `test_neither_grant_covers_the_other_operation` for the coverage half,
-      `test_a_direct_aggregate_m15_bypass_is_refused` for the bypass, and
+      there are two rather than one widened. Both the *scope* and the *binding*
+      now hold: `test_neither_grant_covers_the_other_operation` for the coverage
+      half, `test_a_direct_aggregate_m15_bypass_is_refused` for the bypass,
       `tests/m15_track_a/test_authorization_integrity.py` for the derivation's
-      **actual input**. Only the binding is stale.
+      **actual input**, and
+      `test_the_two_grants_are_accepted_through_a_verified_run_context` for the
+      binding on the route that would actually run them.
 
-`TRACK_A_R1_PREFLIGHT_13_OF_15_BOTH_GRANTS_AWAIT_REISSUE_ON_THE_CURRENT_FINGERPRINT`.
+`TRACK_A_R1_PREFLIGHT_COMPLETE_15_OF_15`.
 
-**13 of 15, and the two grant rows are un-ticked rather than ticked with a
-correction attached.** PR #457 and PR #459 each left them ticked and wrote the
-correction underneath; a review role found the second one asserting the grants
-were "currently in force" and "accepted by `require_authorization` on this tree"
-while measuring a refusal, with the correction eighty lines below — the exact
-self-contradiction this section elsewhere says it exists to prevent. A box is
-ticked where something was verified, and these two are not verifiable at this
-head. They become true again when the grants are re-issued against
-**`e147542aec04f2cf781c5ecd062d8a08b1d058007634c54357f00756736b5e50`**, and
-`test_the_two_grant_rows_are_ticked_only_when_the_grants_actually_validate`
-enforces exactly that correspondence, so the tick can no longer run ahead of the
-fact.
+`TRACK_A_R1_DUAL_GRANTS_REISSUED_FINAL_PREFLIGHT_COMPLETE_READY_FOR_EXPLICIT_EXECUTION_COMMAND`.
+
+**15 of 15, and the two ticks are enforced against a measurement.** PR #457 and
+PR #459 each left these rows ticked while `require_authorization` refused the
+grants, writing the correction eighty lines below — the exact self-contradiction
+this section elsewhere says it exists to prevent — and the CI check added
+alongside counted tick marks, so telling the truth broke the build. Counting
+ticks cannot detect that.
+`test_the_two_grant_rows_are_ticked_only_when_the_grants_actually_validate` ties
+these two rows to the thing they claim: while either recorded grant is refused at
+this head, exactly two rows must be outstanding, and 15 of 15 is permitted only
+while both are accepted. **The next change to the declared surface will move the
+fingerprint, refuse both grants and make this section fail CI until they are
+re-issued.** That is the mechanism, not a defect.
 
 One *other* box still carries a caveat and this paragraph does not erase it: item
 2 records that P-10's population is the headings spelling `RULED` in capitals,

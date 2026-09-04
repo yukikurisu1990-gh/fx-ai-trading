@@ -4,12 +4,15 @@
 own `.py` sources — which is what the fingerprint is taken over — the grant
 document, or synthetic bytes in a temporary tree.
 
-Three grant records now exist and the suite asserts a different thing about
+Four grant records now exist and the suite asserts a different thing about
 each, deliberately:
 
 * `test_recorded_read_grant.py` — PR #454's grant, bound to `497e187b…`, **invalid**
 * `test_recorded_dual_grants.py` — PR #456's pair, bound to `e43583e0…`, **invalid**
 * this file — PR #458's pair, bound to `64fbace9…`, **now invalid too**
+* `test_final_preflight_dual_grants.py` — PR #462's pair, bound to `e147542a…`,
+  **valid at this head**, and the only one whose assertions run in the positive
+  direction
 
 **The R1 orchestrator invalidated these.** Adding
 `scripts/m15_track_a/r1_orchestrator.py` moved the declared surface from 29

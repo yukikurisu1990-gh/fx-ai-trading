@@ -509,14 +509,21 @@ def test_the_two_grant_rows_are_ticked_only_when_the_grants_actually_validate() 
     from scripts.m15_gate3a.pair_authority import PAIRS_20 as UNIVERSE
     from scripts.m15_track_a import oos_slice
 
+    #: The **current** record, not a superseded one. Each re-issue writes a new
+    #: document and leaves the previous ones exactly as a human approved them, so
+    #: a pointer left behind on an old file would tie the ticks to a grant that
+    #: is invalid by design and can never be accepted again.
     document = (
-        scratch.repo_root() / "docs" / "governance" / "m15_track_a_r1_dual_grants_reissued.md"
+        scratch.repo_root()
+        / "docs"
+        / "governance"
+        / "m15_track_a_r1_dual_grants_final_preflight.md"
     )
     pattern = r"^\| \*\*approved_implementation_fingerprint\*\* \| `([0-9a-f]{64})` \|$"
     recorded = re.findall(pattern, document.read_text(encoding="utf-8"), re.MULTILINE)
     assert len(recorded) == 2, recorded
 
-    head = "c2cdea03186f2a6e0f7ee394a0a039a24ef1a903"
+    head = "0bb987e775658db3532affdc3992cad94382faa3"
     operations = (
         authorization.OPERATION_HISTORICAL_READ,
         authorization.OPERATION_M15_DERIVATION,
