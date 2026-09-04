@@ -71,7 +71,14 @@ rebuilt**".
 | Track A R1 read body + `EXPLORATORY_OOS_SLICE` ruling + grant binding (PR #453) | ✅ **merged** as `6b75aab` (2026-08-30). Slice = final 20% of the committed DESIGN UTC dates = `2025-12-29 … 2026-02-28`; development corpus = `2025-04-25 … 2025-12-28` (248 dates). A grant binds to a **measured implementation fingerprint** |
 | Recorded Track A R1 development `ReadGrant` (PR #454) | ✅ **merged** as `d694377` (2026-08-31), authorization-only. `track_a_historical_read` / `2025-04-25 … 2025-12-28` / `PAIRS_20` / `M1`, bound to fingerprint `497e187b…`. ⚠ **Invalidated by PR #455**, by design |
 | **Track A R1 execution command of 2026-08-31** | **REFUSED before any read.** R1 could not complete: `derive_m15` had no body, no derivation grant existed, neither calendar artifact existed, T-3's numerator was undefined, no survey runner existed, and the P-1…P-15 predicate was not recorded true on a named master SHA. No byte of market data was read; the corpus remains **UNSEEN** |
-| **R1 Enablement Remediation Work PR (PR #455)** | in review — closes all six, plus the `aggregate_m15` bypass and the gitignored ledger. `TRACK_A_R1_END_TO_END_SYNTHETIC_DRY_RUN_PASSED`. **Invalidates the PR #454 grant by design**; a new read grant and a new derivation grant are the only remaining steps |
+| **R1 Enablement Remediation Work PR (PR #455)** | ✅ **merged** as `fc3e0f8`. Closes all six, plus the `aggregate_m15` bypass and the gitignored ledger. `TRACK_A_R1_END_TO_END_SYNTHETIC_DRY_RUN_PASSED`. **Invalidates the PR #454 grant by design** |
+| Track A R1 dual grants, first pair (PR #456) | ✅ **merged** as `6ea4e15`, authorization-only, bound to `e43583e0…`. ⚠ **Invalidated by PR #457**, by design |
+| Authorization integrity — derivation input rows + fingerprint closure (PR #457) | ✅ **merged** as `c2cdea0`. The derivation validates every **input row** against the grant∩request intersection; the surface is the transitive closure it claimed to be (26 → 29 files) |
+| Track A R1 dual grants, re-issued (PR #458) | ✅ **merged** as `2b15301`, authorization-only, bound to `64fbace9…`. ⚠ **Invalidated by PR #459**, by design |
+| **R1 orchestrator** (PR #459) | ✅ **merged** as `99bfe69`. The formal entry point: preflight → write-ahead declaration → gated read → authorised derivation on the **same** `ReadRequest` → `K` → survey → stop. Surface 30, `1f1f0ed5…` |
+| **Bounded-memory route** (PR #460) | ✅ **merged** as `52e849d`. Read and derivation run window by window, so retained raw M1 rows are a property of the window, not the corpus. Surface 32, `c1e71fd3…` |
+| **Preflight binding** (PR #461) | ✅ **merged** as `0bb987e`. The fingerprint is measured **once before the read** and once after the last window, not ~321 times with ~320 of them after the irreversible declaration. Surface 32, `e147542a…` |
+| **Track A R1 dual grants, in force** (PR #462) | authorization-only, bound to `e147542a…` at head `0bb987e`. §5a reaches **15 of 15**. **Not an execution command**: a read still needs an explicit human + ChatGPT instruction given as an act |
 
 **Official gate status:** `M15_AGGREGATION_DATASET_MACHINERY_SOURCE_AUDIT_BLOCKED_PENDING_TARGETED_FIXES`
 — reaffirmed by the **fourth** independent re-check at `0e3b001`. PR #440, #442
@@ -479,60 +486,67 @@ only where something was run or read, never where something was believed.
       `RESEARCH_SCRATCH_NON_AUTHORITATIVE`, on `HistoricalRead`, `DerivedM15` and
       `R1Survey` alike, and lands nowhere near the evidence tree.
 
-**The two items no session could tick. Both are OUTSTANDING at this head.**
+**The two items no session could tick. Both are DISCHARGED at this head, and
+the tick is tied to a measurement rather than to this paragraph.**
 
-- [ ] **An explicit human + ChatGPT `track_a_historical_read` grant** against the
-      implementation fingerprint of the head being run. Three have been issued
-      and all three are **invalid**, each voided by the change that came after
-      it: PR #454's at `497e187b…`, PR #456's pair at `e43583e0…`, and PR #458's
-      pair at `64fbace9…`, which the R1 orchestrator voided by widening the
-      declared surface from 29 files to 30. Every recorded number is left
-      exactly as a human approved it; re-issuing is a separate act from
-      rewriting. Tested:
-      `test_the_recorded_grant_is_invalidated_by_the_orchestrator` and
-      `test_the_invalidated_grant_is_actually_refused_at_the_gate` in
-      `test_reissued_dual_grants.py`, and
-      `test_the_two_superseded_records_are_still_refused` for the older two.
-- [ ] **An explicit human + ChatGPT `track_a_m15_research_derivation` grant** —
+- [x] **An explicit human + ChatGPT `track_a_historical_read` grant** against the
+      implementation fingerprint of the head being run — PR #462,
+      `docs/governance/m15_track_a_r1_dual_grants_final_preflight.md` §2, bound
+      to `e147542a…` at head `0bb987e7…` (the PR #461 merge), measured on the
+      merged tree and again on a clean `git archive` of it. Tested:
+      `test_the_recorded_grant_names_the_measured_implementation` and
+      `test_the_recorded_grant_is_accepted_at_this_head` in
+      `test_final_preflight_dual_grants.py` — the first record whose assertions
+      run in the positive direction.
+      Three earlier grants are **invalid** and stay recorded as issued: PR #454's
+      at `497e187b…`, PR #456's pair at `e43583e0…`, and PR #458's pair at
+      `64fbace9…`. Every recorded number is left exactly as a human approved it;
+      re-issuing is a separate act from rewriting, and
+      `test_the_three_superseded_records_are_still_refused` checks that a kept
+      record does not quietly start working again.
+- [x] **An explicit human + ChatGPT `track_a_m15_research_derivation` grant** —
       §3 of the same record, same head, same fingerprint, arm (i) route only, R1
       only. A read grant does not authorise a derivation (§2.5), which is why
-      there are two rather than one widened. Its *scope* is settled and tested:
-      `test_neither_grant_covers_the_other_operation` for the coverage half,
-      `test_a_direct_aggregate_m15_bypass_is_refused` for the bypass, and
+      there are two rather than one widened. Both the *scope* and the *binding*
+      now hold: `test_neither_grant_covers_the_other_operation` for the coverage
+      half, `test_a_direct_aggregate_m15_bypass_is_refused` for the bypass,
       `tests/m15_track_a/test_authorization_integrity.py` for the derivation's
-      **actual input**. Only the binding is stale.
+      **actual input**, and
+      `test_the_two_grants_are_accepted_through_a_verified_run_context` for the
+      binding on the route that would actually run them.
 
-`TRACK_A_R1_PREFLIGHT_13_OF_15_BOTH_GRANTS_AWAIT_REISSUE_ON_THE_CURRENT_FINGERPRINT`.
+`TRACK_A_R1_PREFLIGHT_COMPLETE_15_OF_15`.
 
-**13 of 15, and the two grant rows are un-ticked rather than ticked with a
-correction attached.** PR #457 and PR #459 each left them ticked and wrote the
-correction underneath; a review role found the second one asserting the grants
-were "currently in force" and "accepted by `require_authorization` on this tree"
-while measuring a refusal, with the correction eighty lines below — the exact
-self-contradiction this section elsewhere says it exists to prevent. A box is
-ticked where something was verified, and these two are not verifiable at this
-head. They become true again when the grants are re-issued against
-**`e147542aec04f2cf781c5ecd062d8a08b1d058007634c54357f00756736b5e50`**, and
-`test_the_two_grant_rows_are_ticked_only_when_the_grants_actually_validate`
-enforces exactly that correspondence, so the tick can no longer run ahead of the
-fact.
+`TRACK_A_R1_DUAL_GRANTS_REISSUED_FINAL_PREFLIGHT_COMPLETE_READY_FOR_EXPLICIT_EXECUTION_COMMAND`.
+
+**15 of 15, and the two ticks are enforced against a measurement.** PR #457 and
+PR #459 each left these rows ticked while `require_authorization` refused the
+grants, writing the correction eighty lines below — the exact self-contradiction
+this section elsewhere says it exists to prevent — and the CI check added
+alongside counted tick marks, so telling the truth broke the build. Counting
+ticks cannot detect that.
+`test_the_two_grant_rows_are_ticked_only_when_the_grants_actually_validate` ties
+these two rows to the thing they claim: while either recorded grant is refused at
+this head, exactly two rows must be outstanding, and 15 of 15 is permitted only
+while both are accepted. **The next change to the declared surface will move the
+fingerprint, refuse both grants and make this section fail CI until they are
+re-issued.** That is the mechanism, not a defect.
 
 One *other* box still carries a caveat and this paragraph does not erase it: item
 2 records that P-10's population is the headings spelling `RULED` in capitals,
 and that on a case-insensitive reading of C-9 §8.9 is a ninth section without an
 identifier, making the count 8 of 9. That caveat is unchanged and unresolved here
 — deciding which reading governs is a ruling.
-PR #457 closed the two authorization-integrity defects the review of PR #456
-disclosed; both fixes edit the declared surface, so the fingerprint moved off
-`e43583e0…` and both PR #456 grants were refused. PR #458 re-issued them against
-`64fbace9…` at head `c2cdea0`, measured on the merged tree. The superseded
-records are kept unedited.
+Each re-issue binds to the fingerprint of the tree that would run, and each
+change to that tree has voided the pair before it. The chain is in full below;
+the pair in force is PR #462's, at `e147542a…`.
 
 Every mechanical prerequisite is in place, demonstrated on synthetic data end to
-end. The grants are **not** currently accepted by `require_authorization` on this
-tree — the orchestrator moved the fingerprint — so what is left is re-issuing
-them. **Nothing has been read**; the seen-data ledger is empty and the
-development corpus is `UNSEEN`.
+end, and the two grants **are** currently accepted by `require_authorization` on
+this tree — measured, not asserted, by
+`test_the_recorded_grant_is_accepted_at_this_head`. What is left is the
+**command**, which no file supplies. **Nothing has been read**; the seen-data
+ledger is empty and the development corpus is `UNSEEN`.
 
 **Read this before treating 15 of 15 as permission.**
 
@@ -571,13 +585,18 @@ otherwise would be the false comfort this section exists to prevent.
 > (`scripts/m15_track_a/authorization.py`) is not the act of granting one, and
 > reading a ticked checklist is not the act of being commanded.
 
-`TRACK_A_R1_AUTHORITY_INCOMPLETE_BOTH_GRANTS_AWAIT_REISSUE_EXECUTION_STILL_EXPRESSLY_WITHHELD`.
-The authority is **not** complete at this head: both grants are invalid, and the
-human instruction that produced them directed in the same breath that nothing be
-executed. So R1 is withheld twice over — no valid grant, and no command. A
-session that later finds this section at 15 of 15 has found a complete authority
-and **still no command**, and must stop anyway; that is what the paragraph above
-is for.
+`TRACK_A_R1_AUTHORITY_COMPLETE_EXECUTION_STILL_EXPRESSLY_WITHHELD`.
+The authority **is** complete at this head — both grants are valid, measured —
+and the human instruction that produced them directed in the same breath that
+nothing be executed. R1 was withheld twice over and is now withheld once: there
+is a valid grant, and there is no command. **This section is the case the
+paragraph above was written for.** A session reading 15 of 15 has found a
+complete authority and **still no command**, and must stop anyway.
+
+The predecessor of this line said the opposite —
+`TRACK_A_R1_AUTHORITY_INCOMPLETE_BOTH_GRANTS_AWAIT_REISSUE_EXECUTION_STILL_EXPRESSLY_WITHHELD`
+— and it is recorded here rather than quietly replaced, because the *reason* the
+polarity flipped is a human act at PR #462 and not a session's judgement.
 
 **The two defects that sat here are discharged.**
 `DERIVATION_ROUTE_ROW_LEVEL_GUARDS_AND_REQUEST_TYPE_PIN_ABSENT_REFERRED` and
@@ -626,14 +645,26 @@ silently absorbed a value:
 | PR #459 | the R1 orchestrator | `1f1f0ed5…` | 30 |
 | PR #460 | the bounded-memory route | `c1e71fd3…` | 32 |
 | PR #461 | the preflight binding | `e147542a…` | 32 |
+| PR #462 | **the grants in force**, on that value | `e147542a…` | 32 |
 
-So the two grants recorded at PR #458 are invalidated and the two grant rows
-above need re-issuing before a read. The record is kept unedited each time;
-re-issuing is a separate act from rewriting.
+Each of the first four invalidated the grants that preceded it. PR #462 is
+authorization-only — `docs/`, `tests/` and `CLAUDE.md`, none of them on the
+surface — so it moved nothing, which is why
+its row repeats the value above it rather than adding one.
+
+**Each grant *table* is left exactly as a human approved it; the documents around
+them are not always left untouched.** A review role checked the git history
+rather than the claim and found `m15_track_a_r1_dual_grants_reissued.md` edited
+three times after its own merge — each time to update the "value to re-issue
+against" pointer, never a grant field. Saying "the record is kept unedited" was
+therefore too strong. What is actually guaranteed, and what the tests enforce, is
+that **no recorded grant field is rewritten** and that a superseded record stays
+refused.
 
 One disclosure is carried forward rather than closed:
 `DERIVATION_ROUTE_DOES_NOT_PIN_ITS_TIMEFRAME_TO_THE_COMMITTED_SOURCE_CONSTANT_REFERRED`
-(`m15_track_a_r1_dual_grants_reissued.md` §3) — no data scope widens, and the fix
+(`m15_track_a_r1_dual_grants_final_preflight.md` §3, carried forward from the
+PR #458 record) — no data scope widens, and the fix
 is a separate Work PR because it too would void the grants. The orchestrator
 supplies the pin at the route level: `PLAN_TIMEFRAME` **is**
 `read_route.SOURCE_TIMEFRAME` and `preflight` refuses a plan naming anything

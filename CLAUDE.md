@@ -49,9 +49,10 @@ otherwise.
 - **Track B — Formal Confirmation.** One declared candidate, frozen in every
   respect, run **once** on unseen forward data. Not a place to redesign.
 
-**Track A R1 is implementation-ready; the two recorded grants were invalidated by
-the PR #457 integrity fix and need re-issuing. No read has been performed.** Do
-not read this as a snapshot — evaluate it:
+**Track A R1 is implementation-ready and both grants are valid — recorded at
+PR #462, bound to approved head `0bb987e7…` and measured fingerprint
+`e147542a…`. No read has been performed, and a valid grant is still not an
+execution command.** Do not read this as a snapshot — evaluate it:
 
 0. **PR #451 approved and merged** — done, `4f45515` (2026-08-30). §8.11–§8.13
    are citable authority; `APPROVAL_IDENTIFIER_PENDING_UNTIL_MERGE` and
@@ -74,12 +75,28 @@ not read this as a snapshot — evaluate it:
 3. The derivation route decided **in a diff** — done, and it now has a **body**
    (PR #455). `aggregate_m15` refuses real rows outside it.
 
-**Both grants were recorded at PR #456** —
-`docs/governance/m15_track_a_r1_dual_grants.md`: a `track_a_historical_read`
-grant and a separate `track_a_m15_research_derivation` grant, over
-`2025-04-25 … 2025-12-28`, `PAIRS_20`, `M1`, against approved head `fc3e0f8` and
-measured fingerprint `e43583e0…`. The grant recorded in PR #454 is **invalid**
-— the enablement work moved the fingerprint, by design — and is left that way.
+**The two grants in force were recorded at PR #462** —
+`docs/governance/m15_track_a_r1_dual_grants_final_preflight.md`: a
+`track_a_historical_read` grant and a separate
+`track_a_m15_research_derivation` grant, over `2025-04-25 … 2025-12-28`,
+`PAIRS_20`, `M1`, against approved head `0bb987e7…` and measured fingerprint
+`e147542a…` (surface 32). They are the first pair the gate **accepts**, which
+`test_the_recorded_grant_is_accepted_at_this_head` asserts rather than the
+document claiming it.
+
+**Three** earlier grant records are **invalid** — PR #454's at `497e187b…`,
+PR #456's pair at `e43583e0…` and PR #458's pair at `64fbace9…` — and the
+fingerprint has moved **five** times, the two extra values being `1f1f0ed5…`
+(PR #459) and `c1e71fd3…` (PR #460), which no document records as a grant. Those
+are different counts; a review role found an earlier draft giving one number for
+both.
+
+Every recorded grant **field** is left exactly as a human approved it, and
+re-issuing is a separate act from rewriting. That is narrower than "the documents
+are never edited", which is not true: the PR #458 record has been edited three
+times to update the re-issue pointer it carries. **The next change on the
+declared surface voids the current pair too, with no human in the loop**, and
+§5a will fail CI until they are issued again.
 
 **What is left is the run itself, and it is not a session's to start.** A
 real-data read is **Red**: it needs explicit human + ChatGPT approval *before it
@@ -112,7 +129,11 @@ which roughly 320 sat *after* the irreversible seen declaration where a refusal
 costs the corpus. It caches an implementation **identity**, never a data scope:
 `grant_covers`, the span, the pairs, the timeframe and every row's timestamp are
 still checked on every call. A per-window `stat` of the covered files replaces
-the per-window rehash at 1/379th of the cost.
+the per-window rehash — **weaker, not equivalent**: it misses a
+size-and-mtime-preserving edit, a new file in the package, and anything after the
+final window. One closing measurement after the last window covers the interval,
+so a run pays **two** cryptographic measurements rather than 321, and neither is
+a gate a window can trip over.
 
 **One operational consequence a human should still see before authorising a
 run:** the committed grant ledger takes about **320** rows per full-corpus run
@@ -121,21 +142,23 @@ That one is kept on purpose: the ledger records the authorisation a route ran
 under *before it runs*, and the route really does run 320 times, so a run-level
 summary would say less than the file does now.
 
-Both moved the fingerprint, so the PR #458 grants are invalid and re-issuing
-them on the current value is what is left.
-
 **Both weaknesses are fixed at PR #457, and fixing them invalidated both
 grants** — which is the binding working, and was expected. `containment` now
 resolves relative imports against the importing file's own package, so the
-surface **is** the transitive closure (29 files then, 30 since the R1
+surface **is** the transitive closure (29 files then, **32** since the R1
 orchestrator); and `derive_m15` validates
 every input row against the grant-request intersection and pins both request
 types. The PR #456 record is kept unedited as history.
 
-**What is left is re-issuing the two grants against the new fingerprint**, which
-is a human act and not a session's. Until then Track A R1 has an implementation
-that is ready and no valid authorisation:
-`TRACK_A_R1_IMPLEMENTATION_READY_PENDING_REISSUED_DUAL_GRANTS`.
+**Both grants were re-issued against the merged value at PR #462**, an
+authorization-only change that touched `docs/`, `tests/` and this file — so writing
+the authorisation could not invalidate it, which a test measures rather than
+asserts. §5a is **15 of 15**:
+`TRACK_A_R1_PREFLIGHT_COMPLETE_15_OF_15` and
+`TRACK_A_R1_DUAL_GRANTS_REISSUED_FINAL_PREFLIGHT_COMPLETE_READY_FOR_EXPLICIT_EXECUTION_COMMAND`.
+
+**What is left is the run, and it is not a session's to start.** 15 of 15 is not
+permission; see the paragraph above on why a recorded grant is not an act.
 
 The apparatus for 1–3 is `scripts/m15_track_a/` and
 `docs/design/m15_track_a_execution_gate.md`; **building it is not passing the
