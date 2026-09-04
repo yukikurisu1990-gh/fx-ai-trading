@@ -530,17 +530,16 @@ One *other* box still carries a caveat and this paragraph does not erase it: ite
 and that on a case-insensitive reading of C-9 §8.9 is a ninth section without an
 identifier, making the count 8 of 9. That caveat is unchanged and unresolved here
 — deciding which reading governs is a ruling.
-PR #457 closed the two authorization-integrity defects the review of PR #456
-disclosed; both fixes edit the declared surface, so the fingerprint moved off
-`e43583e0…` and both PR #456 grants were refused. PR #458 re-issued them against
-`64fbace9…` at head `c2cdea0`, measured on the merged tree. The superseded
-records are kept unedited.
+Each re-issue binds to the fingerprint of the tree that would run, and each
+change to that tree has voided the pair before it. The chain is in full below;
+the pair in force is PR #462's, at `e147542a…`.
 
 Every mechanical prerequisite is in place, demonstrated on synthetic data end to
-end. The grants are **not** currently accepted by `require_authorization` on this
-tree — the orchestrator moved the fingerprint — so what is left is re-issuing
-them. **Nothing has been read**; the seen-data ledger is empty and the
-development corpus is `UNSEEN`.
+end, and the two grants **are** currently accepted by `require_authorization` on
+this tree — measured, not asserted, by
+`test_the_recorded_grant_is_accepted_at_this_head`. What is left is the
+**command**, which no file supplies. **Nothing has been read**; the seen-data
+ledger is empty and the development corpus is `UNSEEN`.
 
 **Read this before treating 15 of 15 as permission.**
 
@@ -579,13 +578,18 @@ otherwise would be the false comfort this section exists to prevent.
 > (`scripts/m15_track_a/authorization.py`) is not the act of granting one, and
 > reading a ticked checklist is not the act of being commanded.
 
-`TRACK_A_R1_AUTHORITY_INCOMPLETE_BOTH_GRANTS_AWAIT_REISSUE_EXECUTION_STILL_EXPRESSLY_WITHHELD`.
-The authority is **not** complete at this head: both grants are invalid, and the
-human instruction that produced them directed in the same breath that nothing be
-executed. So R1 is withheld twice over — no valid grant, and no command. A
-session that later finds this section at 15 of 15 has found a complete authority
-and **still no command**, and must stop anyway; that is what the paragraph above
-is for.
+`TRACK_A_R1_AUTHORITY_COMPLETE_EXECUTION_STILL_EXPRESSLY_WITHHELD`.
+The authority **is** complete at this head — both grants are valid, measured —
+and the human instruction that produced them directed in the same breath that
+nothing be executed. R1 was withheld twice over and is now withheld once: there
+is a valid grant, and there is no command. **This section is the case the
+paragraph above was written for.** A session reading 15 of 15 has found a
+complete authority and **still no command**, and must stop anyway.
+
+The predecessor of this line said the opposite —
+`TRACK_A_R1_AUTHORITY_INCOMPLETE_BOTH_GRANTS_AWAIT_REISSUE_EXECUTION_STILL_EXPRESSLY_WITHHELD`
+— and it is recorded here rather than quietly replaced, because the *reason* the
+polarity flipped is a human act at PR #462 and not a session's judgement.
 
 **The two defects that sat here are discharged.**
 `DERIVATION_ROUTE_ROW_LEVEL_GUARDS_AND_REQUEST_TYPE_PIN_ABSENT_REFERRED` and
@@ -634,14 +638,25 @@ silently absorbed a value:
 | PR #459 | the R1 orchestrator | `1f1f0ed5…` | 30 |
 | PR #460 | the bounded-memory route | `c1e71fd3…` | 32 |
 | PR #461 | the preflight binding | `e147542a…` | 32 |
+| PR #462 | **the grants in force**, on that value | `e147542a…` | 32 |
 
-So the two grants recorded at PR #458 are invalidated and the two grant rows
-above need re-issuing before a read. The record is kept unedited each time;
-re-issuing is a separate act from rewriting.
+Each of the first four invalidated the grants that preceded it. PR #462 is
+authorization-only — `docs/` and `tests/` — so it moved nothing, which is why
+its row repeats the value above it rather than adding one.
+
+**Each grant *table* is left exactly as a human approved it; the documents around
+them are not always left untouched.** A review role checked the git history
+rather than the claim and found `m15_track_a_r1_dual_grants_reissued.md` edited
+three times after its own merge — each time to update the "value to re-issue
+against" pointer, never a grant field. Saying "the record is kept unedited" was
+therefore too strong. What is actually guaranteed, and what the tests enforce, is
+that **no recorded grant field is rewritten** and that a superseded record stays
+refused.
 
 One disclosure is carried forward rather than closed:
 `DERIVATION_ROUTE_DOES_NOT_PIN_ITS_TIMEFRAME_TO_THE_COMMITTED_SOURCE_CONSTANT_REFERRED`
-(`m15_track_a_r1_dual_grants_reissued.md` §3) — no data scope widens, and the fix
+(`m15_track_a_r1_dual_grants_final_preflight.md` §3, carried forward from the
+PR #458 record) — no data scope widens, and the fix
 is a separate Work PR because it too would void the grants. The orchestrator
 supplies the pin at the route level: `PLAN_TIMEFRAME` **is**
 `read_route.SOURCE_TIMEFRAME` and `preflight` refuses a plan naming anything

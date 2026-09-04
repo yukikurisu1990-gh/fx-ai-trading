@@ -49,9 +49,10 @@ otherwise.
 - **Track B — Formal Confirmation.** One declared candidate, frozen in every
   respect, run **once** on unseen forward data. Not a place to redesign.
 
-**Track A R1 is implementation-ready and both grants are valid at master
-`0bb987e7…` (PR #462). No read has been performed, and a valid grant is still
-not an execution command.** Do not read this as a snapshot — evaluate it:
+**Track A R1 is implementation-ready and both grants are valid — recorded at
+PR #462, bound to approved head `0bb987e7…` and measured fingerprint
+`e147542a…`. No read has been performed, and a valid grant is still not an
+execution command.** Do not read this as a snapshot — evaluate it:
 
 0. **PR #451 approved and merged** — done, `4f45515` (2026-08-30). §8.11–§8.13
    are citable authority; `APPROVAL_IDENTIFIER_PENDING_UNTIL_MERGE` and
@@ -83,10 +84,17 @@ not an execution command.** Do not read this as a snapshot — evaluate it:
 `test_the_recorded_grant_is_accepted_at_this_head` asserts rather than the
 document claiming it.
 
-Four earlier records are **invalid** and each is left exactly as a human approved
-it — PR #454's at `497e187b…`, PR #456's pair at `e43583e0…`, PR #458's pair at
-`64fbace9…`, and the intermediate values `1f1f0ed5…` (PR #459) and `c1e71fd3…`
-(PR #460). Re-issuing is a separate act from rewriting. **The next change on the
+**Three** earlier grant records are **invalid** — PR #454's at `497e187b…`,
+PR #456's pair at `e43583e0…` and PR #458's pair at `64fbace9…` — and the
+fingerprint has moved **five** times, the two extra values being `1f1f0ed5…`
+(PR #459) and `c1e71fd3…` (PR #460), which no document records as a grant. Those
+are different counts; a review role found an earlier draft giving one number for
+both.
+
+Every recorded grant **field** is left exactly as a human approved it, and
+re-issuing is a separate act from rewriting. That is narrower than "the documents
+are never edited", which is not true: the PR #458 record has been edited three
+times to update the re-issue pointer it carries. **The next change on the
 declared surface voids the current pair too, with no human in the loop**, and
 §5a will fail CI until they are issued again.
 

@@ -25,15 +25,17 @@ reaches 15 of 15: the last two outstanding items were these two grants, and they
 are now issued against the implementation that would actually run. It does
 **not** mean these grants are immune to what comes next. Any change on the
 declared surface moves the fingerprint and voids them both, with no human in the
-loop — that has happened four times and the mechanism is the point, not a
+loop — that has happened five times and the mechanism is the point, not a
 nuisance.
 
 ---
 
 ## 1. Why these are being issued again
 
-The four records before this one are each bound to an implementation that no
-longer exists:
+**Three** grant records exist before this one, and the fingerprint has moved
+**five** times. Those are different counts and the table separates them: the
+first three rows are documents a human approved, the next two are values no
+document records as a grant.
 
 | Record | PR | Fingerprint | Surface | What voided it |
 | --- | --- | --- | --- | --- |
@@ -44,9 +46,20 @@ longer exists:
 | — | #460 | `c1e71fd3…` | 32 | the preflight binding |
 | **this record** | **#462** | **`e147542a…`** | **32** | — |
 
-Every recorded number is left exactly as a human approved it. **Re-issuing is a
-separate act from rewriting**, and none of the earlier documents is edited to
-match.
+**Every recorded grant *field* is left exactly as a human approved it, and
+re-issuing is a separate act from rewriting.** That is the guarantee, and
+`test_the_three_superseded_records_are_still_refused` enforces it by reading the
+superseded fingerprints out of the documents and requiring the gate to refuse
+each one.
+
+It is a narrower guarantee than "the earlier documents are never edited", which
+an earlier draft of this paragraph claimed. A review role checked `git log`
+rather than the claim: `m15_track_a_r1_dual_grants_reissued.md` has been edited
+three times since its own merge, each time to update the "value to re-issue
+against" pointer it carries. No grant field was touched, but the document was.
+`test_the_recorded_reissue_fingerprint_is_the_measured_one` is repointed at
+**this** record in the same change, so that pointer no longer lives on a
+superseded one and a future move does not require editing history again.
 
 **What changed in the implementation these two grants bind to**, since the pair
 at `64fbace9…`:
@@ -78,6 +91,7 @@ profile and where its identity checks happen.
 | **span_start_utc** | `2025-04-25` |
 | **span_end_utc** | `2025-12-28` |
 | **pairs** | the registered `PAIRS_20`, all twenty (§3a) |
+| **pairs_explicit** | AUD_CAD AUD_JPY AUD_NZD AUD_USD CHF_JPY EUR_AUD EUR_CAD EUR_CHF EUR_GBP EUR_JPY EUR_USD GBP_AUD GBP_CHF GBP_JPY GBP_USD NZD_JPY NZD_USD USD_CAD USD_CHF USD_JPY |
 | **timeframe** | `M1` |
 | **approved_head_sha** | `0bb987e775658db3532affdc3992cad94382faa3` |
 | **approved_implementation_fingerprint** | `e147542aec04f2cf781c5ecd062d8a08b1d058007634c54357f00756736b5e50` |
@@ -119,6 +133,7 @@ READ_GRANT = ReadGrant(
 | **span_start_utc** | `2025-04-25` |
 | **span_end_utc** | `2025-12-28` |
 | **pairs** | the registered `PAIRS_20`, all twenty (§3a) |
+| **pairs_explicit** | AUD_CAD AUD_JPY AUD_NZD AUD_USD CHF_JPY EUR_AUD EUR_CAD EUR_CHF EUR_GBP EUR_JPY EUR_USD GBP_AUD GBP_CHF GBP_JPY GBP_USD NZD_JPY NZD_USD USD_CAD USD_CHF USD_JPY |
 | **timeframe** | `M1` |
 | **approved_head_sha** | `0bb987e775658db3532affdc3992cad94382faa3` |
 | **approved_implementation_fingerprint** | `e147542aec04f2cf781c5ecd062d8a08b1d058007634c54357f00756736b5e50` |

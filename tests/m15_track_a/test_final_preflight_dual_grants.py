@@ -52,6 +52,7 @@ REQUIRED_FIELDS = frozenset(
         "span_start_utc",
         "span_end_utc",
         "pairs",
+        "pairs_explicit",
         "timeframe",
         "approved_head_sha",
         "approved_implementation_fingerprint",
@@ -101,13 +102,29 @@ def _recorded(name: str) -> dict[str, str]:
     return rows
 
 
+def _recorded_pairs(name: str) -> tuple[str, ...]:
+    """The pairs from the document, spelled out.
+
+    The prose cell (``the registered `PAIRS_20`, all twenty``) is not machine
+    readable, so an earlier draft built the grant from the **constant** and only
+    checked the cell for the words "PAIRS_20" and "twenty". A review role
+    narrowed the cell to "… except USD_JPY" and every test stayed green: the
+    grant a reader would construct and the grant the tests exercised were
+    different objects. The `pairs_explicit` row is what is parsed now.
+    """
+    cell = _recorded(name)["pairs_explicit"]
+    pairs = tuple(cell.replace("`", "").split())
+    assert pairs == tuple(sorted(pairs)), "the recorded pairs are not in canonical order"
+    return pairs
+
+
 def _grant(name: str) -> authorization.ReadGrant:
     recorded = _recorded(name)
     return authorization.ReadGrant(
         operation=recorded["operation"],
         span_start_utc=recorded["span_start_utc"],
         span_end_utc=recorded["span_end_utc"],
-        pairs=tuple(sorted(PAIRS_20)),
+        pairs=_recorded_pairs(name),
         timeframe=recorded["timeframe"],
         approved_head_sha=recorded["approved_head_sha"],
         approved_implementation_fingerprint=recorded["approved_implementation_fingerprint"],
@@ -241,9 +258,47 @@ def test_the_recorded_timeframe_is_the_source_timeframe(name: str) -> None:
 
 @pytest.mark.parametrize("name", sorted(SECTIONS))
 def test_the_pairs_cell_names_the_registered_universe(name: str) -> None:
+    #: **Exact**, not "contains". A review role narrowed the prose to
+    #: "… all twenty (§3a) except USD_JPY" and everything stayed green: the
+    #: machine-readable row below was still complete, so the document said one
+    #: thing to a parser and another to the human who has to approve it. A
+    #: substring check cannot catch a qualifier appended to the end.
     cell = _recorded(name)["pairs"]
-    assert "PAIRS_20" in cell and "twenty" in cell, cell
+    assert cell == "the registered `PAIRS_20`, all twenty (§3a)", cell
     assert len(PAIRS_20) == 20
+    #: and the machine-readable row is the universe itself, exactly — set
+    #: equality, so a dropped pair and an added one both fail
+    assert set(_recorded_pairs(name)) == set(PAIRS_20)
+    assert len(_recorded_pairs(name)) == 20
+
+
+@pytest.mark.parametrize("name", sorted(SECTIONS))
+def test_a_narrowed_pairs_row_would_not_cover_the_planned_universe(name: str) -> None:
+    """The grant the document describes has to be the grant that gets checked.
+
+    Dropping one pair from the record must stop the recorded grant covering the
+    planned twenty — otherwise the record and the authorisation have come apart.
+    """
+    narrowed = tuple(pair for pair in _recorded_pairs(name) if pair != "USD_JPY")
+    assert len(narrowed) == 19
+    grant = _grant(name)
+    assert not authorization.grant_covers(
+        authorization.ReadGrant(
+            operation=grant.operation,
+            span_start_utc=grant.span_start_utc,
+            span_end_utc=grant.span_end_utc,
+            pairs=narrowed,
+            timeframe=grant.timeframe,
+            approved_head_sha=grant.approved_head_sha,
+            approved_implementation_fingerprint=grant.approved_implementation_fingerprint,
+            approver_record=grant.approver_record,
+        ),
+        operation=grant.operation,
+        span_start_utc=oos_slice.DEVELOPMENT_START_UTC,
+        span_end_utc=oos_slice.DEVELOPMENT_END_UTC,
+        pairs=tuple(sorted(PAIRS_20)),
+        timeframe="M1",
+    )
 
 
 @pytest.mark.parametrize("name", sorted(SECTIONS))
@@ -391,6 +446,28 @@ def test_the_three_superseded_records_are_still_refused() -> None:
 # --------------------------------------------------------------------------
 # recording a grant does not change what the grant records
 # --------------------------------------------------------------------------
+
+
+def test_the_repository_instructions_name_the_grants_in_force() -> None:
+    """`CLAUDE.md` is read first by every session, so a stale claim there costs most.
+
+    A review role rewrote it to say the superseded `64fbace9…` pair was in force
+    and the whole suite stayed green. The fingerprint and the head it names are
+    checked here against the record and the measurement.
+    """
+    instructions = (Path(containment.__file__).resolve().parents[2] / "CLAUDE.md").read_text(
+        encoding="utf-8"
+    )
+    current = containment.implementation_fingerprint()
+    assert current[:8] in instructions, (
+        "CLAUDE.md does not name the fingerprint the grants in force are bound to"
+    )
+    assert APPROVED_HEAD[:8] in instructions, "CLAUDE.md does not name the approved head"
+    assert GRANT_DOCUMENT.name in instructions, "CLAUDE.md does not point at the record in force"
+    for superseded in ("497e187b", "e43583e0", "64fbace9", "1f1f0ed5", "c1e71fd3"):
+        assert f"`{superseded}…`" in instructions, (
+            f"CLAUDE.md stopped recording {superseded}… as superseded"
+        )
 
 
 def test_the_grant_document_is_outside_the_fingerprint_surface() -> None:

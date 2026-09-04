@@ -490,6 +490,64 @@ def _checklist_counts() -> tuple[int, int]:
     return section.count("\n- [x] "), section.count("\n- [ ] ")
 
 
+def test_the_checklist_status_token_matches_the_tick_count() -> None:
+    """§5a's headline token is prose, and prose is what has gone wrong here.
+
+    A review role mutated `TRACK_A_R1_PREFLIGHT_COMPLETE_15_OF_15` to
+    `..._14_OF_15` and the whole suite stayed green: nothing tied the number in
+    the token to the number of ticked boxes. The same gap is why three stale
+    paragraphs asserting the opposite polarity survived inside the section.
+    """
+    playbook = scratch.repo_root() / r1_orchestrator.PLAYBOOK_RELATIVE
+    text = playbook.read_text(encoding="utf-8")
+    section = text.split(r1_orchestrator.PREFLIGHT_CHECKLIST_HEADING, 1)[1].split("\n## ", 1)[0]
+    ticked, unticked = _checklist_counts()
+    total = ticked + unticked
+    tokens = set(re.findall(r"`?(TRACK_A_R1_PREFLIGHT_[A-Z0-9_]*\d+_OF_\d+)`?", section))
+    assert tokens, "§5a records no TRACK_A_R1_PREFLIGHT_..._OF_... token"
+    for token in tokens:
+        claimed, of = (int(part) for part in re.findall(r"(\d+)_OF_(\d+)", token)[0])
+        assert (claimed, of) == (ticked, total), (
+            f"{token} disagrees with the boxes: {ticked} of {total} are ticked."
+        )
+
+
+def test_the_checklist_section_does_not_contradict_itself_about_the_grants() -> None:
+    """The recurring defect, made a test rather than a resolution.
+
+    PR #457 and PR #459 left the grant rows ticked while the gate refused them,
+    with the correction eighty lines below. PR #462 flipped the polarity and left
+    **three** paragraphs in the same section still saying the grants were invalid
+    and awaited re-issue — the same failure, mirrored. A review role found each
+    of them by reading, because nothing checked.
+
+    So the superseded polarity statements are named here. If §5a says the grants
+    are outstanding while they validate, or ticks them while they do not, this
+    fails.
+    """
+    playbook = scratch.repo_root() / r1_orchestrator.PLAYBOOK_RELATIVE
+    text = playbook.read_text(encoding="utf-8")
+    section = text.split(r1_orchestrator.PREFLIGHT_CHECKLIST_HEADING, 1)[1].split("\n## ", 1)[0]
+    _, unticked = _checklist_counts()
+    outstanding_claims = (
+        "The grants are **not** currently accepted",
+        "both grants are invalid",
+        "await re-issue",
+        "need re-issuing before a read",
+    )
+    found = [claim for claim in outstanding_claims if claim in section]
+    if unticked == 0:
+        assert not found, (
+            f"§5a ticks every box and still asserts {found}. A correction further down the "
+            "section is the exact self-contradiction this checklist exists to prevent."
+        )
+    else:
+        assert found, (
+            "§5a leaves rows outstanding without saying anywhere why, which reads as an "
+            "oversight rather than a state."
+        )
+
+
 def test_the_two_grant_rows_are_ticked_only_when_the_grants_actually_validate() -> None:
     """The tick may not run ahead of the fact. This is the fix for a real defect.
 
@@ -523,7 +581,19 @@ def test_the_two_grant_rows_are_ticked_only_when_the_grants_actually_validate() 
     recorded = re.findall(pattern, document.read_text(encoding="utf-8"), re.MULTILINE)
     assert len(recorded) == 2, recorded
 
-    head = "0bb987e775658db3532affdc3992cad94382faa3"
+    #: Read out of the same document, not restated. A hand-written constant here
+    #: is decorative: `require_authorization` measures the fingerprint and takes
+    #: the head on trust, so a wrong literal stays green. Parsing it means a head
+    #: that disagrees with the record fails.
+    heads = set(
+        re.findall(
+            r"^\| \*\*approved_head_sha\*\* \| `([0-9a-f]{40})` \|$",
+            document.read_text(encoding="utf-8"),
+            re.MULTILINE,
+        )
+    )
+    assert len(heads) == 1, f"the two grants name different heads: {heads}"
+    head = heads.pop()
     operations = (
         authorization.OPERATION_HISTORICAL_READ,
         authorization.OPERATION_M15_DERIVATION,
@@ -585,13 +655,28 @@ def test_the_recorded_reissue_fingerprint_is_the_measured_one() -> None:
         pytest tests/m15_track_a tests/m15_gate3a --deselect \\
           tests/m15_track_a/test_r1_orchestrator.py::test_the_recorded_reissue_fingerprint_is_the_measured_one
     """
+    #: **The current record.** This pointer used to live on the PR #458 document,
+    #: which is superseded and kept as history — so every fingerprint move
+    #: required editing a historical record to keep CI green, which is exactly
+    #: how that document came to be edited three times after its own merge. A
+    #: review role found the contradiction between doing that and claiming the
+    #: records are never edited. The pointer belongs on the record in force.
     document = (
-        scratch.repo_root() / "docs" / "governance" / "m15_track_a_r1_dual_grants_reissued.md"
+        scratch.repo_root()
+        / "docs"
+        / "governance"
+        / "m15_track_a_r1_dual_grants_final_preflight.md"
     )
     text = document.read_text(encoding="utf-8")
-    match = re.search(r"The value to re-issue against.{0,200}?\*\*`([0-9a-f]{64})`\*\*", text, re.S)
-    assert match, "the re-issue fingerprint is not where the parser expects it"
-    assert match.group(1) == containment.implementation_fingerprint()
+    recorded = set(
+        re.findall(
+            r"^\| \*\*approved_implementation_fingerprint\*\* \| `([0-9a-f]{64})` \|$",
+            text,
+            re.MULTILINE,
+        )
+    )
+    assert len(recorded) == 1, f"the two grants record different fingerprints: {recorded}"
+    assert recorded.pop() == containment.implementation_fingerprint()
 
 
 def test_the_orchestrator_module_opens_no_file() -> None:
