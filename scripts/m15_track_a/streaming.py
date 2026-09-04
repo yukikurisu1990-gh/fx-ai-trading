@@ -78,10 +78,25 @@ For the default 31-day window that is about 4.5× the single-pass decode work,
 and it buys the memory bound without touching the audited read body or adding a
 second reader. Production-grade performance is explicitly out of scope here.
 
-Each window also appends its own grant-ledger row, so that ledger records the
-authorisation once per window rather than once per run. The **seen-data**
-declaration is untouched: it is still written once, write-ahead, by the
-orchestrator, before anything is read.
+**The grant ledger grows, and it is kept that way deliberately.**
+`read_historical` and `derive_m15` each append a row per call, so a window that
+carries rows writes **two**, and a full-corpus run at the default window writes
+about **320** where the full-buffer shape wrote two. That is 320 cross-process
+append-lock acquisitions after the irreversible declaration rather than two, and
+no single row states the scope the approval was exercised at.
+
+It was examined when the fingerprint measurement was consolidated to one, and
+the two repetitions are not the same kind. The fingerprint was **one question
+asked 321 times** — is this the approved implementation — and one answer is the
+whole of it. `record_grant`'s contract is different: "record the authorisation a
+route ran under, **before it runs** … the record that makes the claimed scope
+checkable after the fact". The route genuinely runs 320 times over 320 different
+windows, and one row cannot say which windows were entered. Collapsing it would
+replace per-window provenance with a summary — a change to what the ledger
+*means*, to save a file append. So it stays.
+
+The **seen-data** declaration is untouched: still written once, write-ahead, by
+the orchestrator, before anything is read.
 """
 
 from __future__ import annotations
@@ -91,7 +106,7 @@ from typing import Any, Final
 
 from scripts.m15_gate3a.aggregation import BUCKET_MINUTES
 from scripts.m15_gate3a.incremental_m15 import IncrementalM15
-from scripts.m15_track_a import derivation, read_route
+from scripts.m15_track_a import authorization, containment, derivation, read_route
 from scripts.m15_track_a.identity import RunIdentity
 
 #: The default window, in whole UTC days. Chosen for the memory/rescan
@@ -110,8 +125,21 @@ class StreamingError(RuntimeError):
     """Raised when the bounded-memory route refuses."""
 
 
-#: The high-water mark, process-wide, so a test can bound what the shape of the
-#: code cannot prove. Reset by :func:`reset_retention_instrument`.
+#: The high-water mark, process-wide.
+#:
+#: **This counter is bookkeeping, and bookkeeping can agree with itself.** A
+#: mutation audit walked three defects straight past it: a module-level list
+#: retaining every window's read reported one window; a balanced no-op
+#: (`_hold(0)` / `_release(0)`) reported nothing at all; and deleting `del read`
+#: doubled true retention without moving it. It is also process-global and
+#: unlocked, so concurrent runs sum, and `reset_retention_instrument()` can zero
+#: a live run's high-water mark.
+#:
+#: So it is a convenience, not the evidence.
+#: `tests/m15_track_a/test_r1_streaming.py::test_live_raw_rows_are_bounded_by_the_window`
+#: is the evidence: it attaches a weak-referenced sentinel to every row the read
+#: route builds and counts the ones still alive, which is a fact about the heap
+#: rather than about this integer. Reset by :func:`reset_retention_instrument`.
 _retained_raw_rows: int = 0
 _peak_retained_raw_rows: int = 0
 
@@ -184,6 +212,7 @@ def derive_streaming(
     *,
     read_grant: Any,
     derivation_grant: Any,
+    context: Any = None,
     window_days: int = DEFAULT_WINDOW_DAYS,
 ) -> derivation.DerivedM15:
     """Read and derive the authorised span with bounded raw-row retention.
@@ -251,7 +280,26 @@ def derive_streaming(
                 # may not reach outside the interval the grant covers.
                 warmup_extension_start_utc=lo,
             )
-            read = read_route.read_historical(window_request, identity, grant=read_grant)
+            # The **implementation identity** is re-checked here, and it is a
+            # `stat` per covered file rather than a rehash: 1.07 ms against
+            # 459 ms on the authoring host. It is **weaker** than the rehash it
+            # replaces, not equal to it — an earlier comment here claimed "the
+            # same evidence at 1/379th of the cost" and a review role measured
+            # three cases it misses. `containment.surface_stamp` lists them. What
+            # covers the span is the one full measurement `run_r1` takes after
+            # the last window; this is the cheap sample in between, and cheap
+            # enough to run every window is the reason it exists.
+            #
+            # The stamp comes from the **sealed record**, not from the context
+            # object: a stamp read off a frozen field an `object.__setattr__`
+            # can rewrite is a drift check the drifter supplies.
+            if context is not None:
+                containment.assert_surface_unchanged(
+                    authorization.sealed_binding(context)["surface_stamp"]
+                )
+            read = read_route.read_historical(
+                window_request, identity, grant=read_grant, context=context
+            )
             # The post-read verifications the orchestrator used to run on one
             # whole read, now run on **every window**. A mutation audit found
             # three of them unverified when they lived upstream; moving them
@@ -308,6 +356,7 @@ def derive_streaming(
                     derivation.DerivationRequest(read_request=window_request, read=read),
                     identity,
                     grant=derivation_grant,
+                    context=context,
                 )
                 if type(derived) is not derivation.DerivedM15:  # noqa: E721
                     raise StreamingError(
@@ -321,9 +370,15 @@ def derive_streaming(
                 # memory optimisation possible is not a trade this makes.
                 accumulator.absorb(derived.bars_by_pair[pair], derived.gap_reports[pair], rows)
             finally:
-                # The raw rows go out of scope here whether the window derived or
-                # raised. `finally`, not a happy-path release: a refused window
-                # must not leave the instrument — or the memory — inflated.
+                # The raw rows go out of scope here whether the window derived
+                # or raised, and the counter is balanced either way. What this
+                # does **not** do is free the memory on the failing path: a role
+                # measured 2 880 rows still live after a refused window, held by
+                # the exception's own traceback through `derive_m15`'s frames.
+                # They die when the exception does, and it is one window's worth,
+                # so this is a bounded transient rather than a leak — but an
+                # earlier comment here claimed the memory was released, and it is
+                # not.
                 _release(len(rows))
                 del rows
                 del read
@@ -338,7 +393,13 @@ def derive_streaming(
     # `row_scope.rows_in_scope` in the non-streaming reference, which refuses an
     # empty batch for the same reason. A guard here would be unreachable, and
     # unreachable guards are how a route acquires a branch nobody exercises.
-    assert epoch is not None  # noqa: S101 - every pair produced a result above
+    if epoch is None:  # pragma: no cover - IncrementalM15.result() refuses first
+        # A `raise`, not an `assert`: `python -O` deletes an assert, and a guard
+        # that disappears under a flag is not a guard. Unreachable today because
+        # a pair carrying no minute is refused one level down.
+        raise StreamingError(
+            "no window of any pair carried a source minute, so there is nothing to derive"
+        )
 
     return derivation.DerivedM15(
         run_id=identity.run_id,

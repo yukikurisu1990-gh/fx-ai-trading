@@ -350,7 +350,12 @@ def test_a_fingerprint_mismatch_stops_before_any_read(
         else authorization.OPERATION_M15_DERIVATION
     )
     stale = _grant(operation, approved_implementation_fingerprint="0" * 64)
-    with pytest.raises(r1_orchestrator.R1OrchestratorError, match="does not describe what"):
+    #: `VerifiedRunContext.__post_init__` is what refuses now, and it refuses in
+    #: its own type rather than being wrapped — `preflight` is pinned against
+    #: `try`/`except`, and relabelling a refusal is not worth spending that on.
+    with pytest.raises(
+        authorization.AuthorizationMalformedError, match="changed after the approval"
+    ):
         _invoke(**{which: stale})
     _assert_nothing_read(source_tree, opened_paths)
 
@@ -358,6 +363,12 @@ def test_a_fingerprint_mismatch_stops_before_any_read(
 def test_the_two_grants_must_name_the_same_approved_head(
     source_tree: Path, guards_installed: object
 ) -> None:
+    """Refused by `preflight`, which is why the message names both SHAs.
+
+    These two checks briefly sat *below* the context construction, where the
+    context raised first and they became unreachable — two review roles found
+    them surviving mutation for that reason. They run before it now.
+    """
     other = _grant(authorization.OPERATION_M15_DERIVATION, approved_head_sha="b" * 40)
     with pytest.raises(r1_orchestrator.R1OrchestratorError, match="different approved heads"):
         _invoke(derivation_grant=other)
@@ -367,7 +378,7 @@ def test_the_two_grants_must_name_the_same_approved_head(
 def test_a_run_identity_naming_another_head_stops_before_any_read(
     source_tree: Path, guards_installed: object
 ) -> None:
-    with pytest.raises(r1_orchestrator.R1OrchestratorError, match="run identity names code_sha"):
+    with pytest.raises(r1_orchestrator.R1OrchestratorError, match="names code_sha"):
         _invoke(identity=_run(code_sha="c" * 40))
     _assert_nothing_read(source_tree)
 
@@ -557,6 +568,15 @@ def test_the_recorded_reissue_fingerprint_is_the_measured_one() -> None:
     rediscover it — and pinned here because a docstring edit to any surface file
     moves the fingerprint, which is exactly how the first attempt at recording it
     went stale within the same session.
+
+    **If you are running a mutation audit of `scripts/m15_track_a/**`, deselect
+    this test.** Two independent review roles hit the same trap: any edit to any
+    of the thirty-two surface files fails it, so it "kills" every mutant and the
+    audit measures nothing. It is a tripwire on the *documented value*, not a
+    guard on behaviour, and the two are not interchangeable::
+
+        pytest tests/m15_track_a tests/m15_gate3a --deselect \\
+          tests/m15_track_a/test_r1_orchestrator.py::test_the_recorded_reissue_fingerprint_is_the_measured_one
     """
     document = (
         scratch.repo_root() / "docs" / "governance" / "m15_track_a_r1_dual_grants_reissued.md"
@@ -972,7 +992,6 @@ def test_the_declared_call_surface_is_exactly_the_committed_stages() -> None:
         "record",
         "current_k",
         "audit",
-        "implementation_fingerprint",
         # scope and guards
         "assert_span_admissible",
         "assert_development_only",
@@ -991,9 +1010,12 @@ def test_the_declared_call_surface_is_exactly_the_committed_stages() -> None:
         "RunIdentity",
         "SeenDeclaration",
         "ConfigurationEntry",
+        "VerifiedRunContext",
         "PreflightReport",
         "R1Result",
         "R1OrchestratorError",
+        #: the closing implementation attestation, after the last window
+        "assert_implementation_unchanged",
         # plain builtins and stdlib
         "str",
         "type",

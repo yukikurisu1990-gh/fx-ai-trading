@@ -1061,6 +1061,101 @@ def implementation_surface() -> tuple[Path, ...]:
     return tuple(sorted(found, key=_surface_name))
 
 
+class SurfaceDriftError(RuntimeError):
+    """Raised when the declared surface changed after it was measured."""
+
+
+def surface_stamp() -> tuple[tuple[str, str, int, int], ...]:
+    """`(surface name, absolute path, size, mtime_ns)` for every covered file.
+
+    A **cheap** companion to the fingerprint, and the cheapness is the point:
+    re-walking `implementation_surface()` costs about as much as hashing it
+    (~205 ms of the ~207 ms is the walk — `find_spec` and thirty-two AST
+    parses), so a drift check that re-walked would buy nothing. This captures
+    the resolved paths once, and :func:`assert_surface_unchanged` re-`stat`s
+    exactly those.
+
+    **What a re-check establishes, and what it does not.**
+
+    * It detects a covered file being edited, replaced, truncated or removed
+      after the stamp was taken — the accidental and casual cases a
+      single-process run on a clean checkout is actually exposed to.
+    * It does **not** detect an edit that preserves both size and mtime. It is
+      tamper-*evident*, not tamper-proof, and the name should not be read as
+      more than that.
+    * It does not notice a **new** file appearing in the package, because it
+      re-`stat`s the files it captured rather than re-walking the surface.
+    * It is sampled, not continuous: `derive_streaming` calls it once per window
+      before that window's read, so it covers neither the interval between a
+      window's read and its derivation nor anything after the final window's
+      call.
+
+    A review role measured all three gaps against the previous per-call
+    rehashing, which caught all three, and this is **weaker** in each. Calling
+    it "the same evidence more cheaply" was wrong and the comment that said so
+    is gone. What restores the span is
+    :func:`~scripts.m15_track_a.authorization.assert_implementation_unchanged`,
+    one full measurement after the last window: two cryptographic measurements
+    bracketing the run, rather than 321 samples inside it.
+
+    The honest frame for the whole check is what it is *for*. Once preflight has
+    imported and measured, **disk drift cannot change this process's behaviour**
+    — Python does not re-read an imported module. What per-call rehashing bought
+    was evidence that the tree still matched the approval, not protection
+    against different code executing. This gives most of that evidence at a
+    `stat` per file, cheaply enough to run every window, and the cryptographic
+    statement is made twice: once before anything is read and once after
+    everything is.
+    """
+    return _stamp_over(implementation_surface())
+
+
+def _stamp_over(files: tuple[Path, ...]) -> tuple[tuple[str, str, int, int], ...]:
+    """The stamp for an already-resolved surface. See :func:`measure_surface`."""
+    stamped: list[tuple[str, str, int, int]] = []
+    for path in files:
+        try:
+            info = path.stat()
+        except OSError as exc:
+            raise SurfaceDriftError(
+                f"{_surface_name(path)} could not be stat-ed while stamping the surface: {exc}"
+            ) from exc
+        stamped.append((_surface_name(path), str(path), info.st_size, info.st_mtime_ns))
+    return tuple(stamped)
+
+
+def assert_surface_unchanged(stamp: tuple[tuple[str, str, int, int], ...]) -> None:
+    """Refuse if any stamped file has drifted since the stamp was taken.
+
+    Stats the captured paths; does not re-walk the surface, which is what makes
+    it affordable per window. The invariant the R1 run model already asserts —
+    clean checkout, one process, no source mutation while it runs — expressed as
+    a check rather than left as an assumption.
+    """
+    if type(stamp) is not tuple or not stamp:  # noqa: E721
+        raise SurfaceDriftError("the surface stamp is missing or malformed")
+    drifted: list[str] = []
+    for entry in stamp:
+        if type(entry) is not tuple or len(entry) != 4:  # noqa: E721
+            raise SurfaceDriftError(f"malformed surface stamp entry: {entry!r}")
+        name, path_text, size, mtime_ns = entry
+        try:
+            info = Path(path_text).stat()
+        except OSError as exc:
+            drifted.append(f"{name} (unreadable: {exc})")
+            continue
+        if info.st_size != size:
+            drifted.append(f"{name} (size {size} -> {info.st_size})")
+        elif info.st_mtime_ns != mtime_ns:
+            drifted.append(f"{name} (mtime changed)")
+    if drifted:
+        raise SurfaceDriftError(
+            "the declared implementation surface changed after it was verified: "
+            f"{sorted(drifted)}. The run was authorised against the tree measured at "
+            "preflight; this is no longer that tree."
+        )
+
+
 def implementation_fingerprint() -> str:
     """A sha256 over the declared implementation surface, path and bytes.
 
@@ -1077,8 +1172,18 @@ def implementation_fingerprint() -> str:
     deleting one file while adding another with identical bytes does not cancel
     out.
     """
+    return _hash_over(implementation_surface())
+
+
+def _hash_over(files: tuple[Path, ...]) -> str:
+    """The fingerprint algorithm itself, over an already-resolved surface.
+
+    Split out from :func:`implementation_fingerprint` so :func:`measure_surface`
+    can produce the fingerprint and the stamp from **one** walk. The algorithm
+    keeps exactly one definition: two copies of a hash are how two values start
+    to disagree.
+    """
     digest = hashlib.sha256()
-    files = implementation_surface()
     digest.update(f"{len(files)}\n".encode())
     for path in files:
         digest.update(_surface_name(path).encode())
@@ -1094,6 +1199,21 @@ def implementation_fingerprint() -> str:
         digest.update(hashlib.sha256(body).hexdigest().encode())
         digest.update(b"\n")
     return digest.hexdigest()
+
+
+def measure_surface() -> tuple[str, tuple[tuple[str, str, int, int], ...]]:
+    """The fingerprint **and** the stamp, from a single walk of the surface.
+
+    :func:`implementation_surface` is the expensive half — thirty-two
+    ``find_spec`` resolutions and thirty-two AST parses, about 205 ms of the
+    ~207 ms a fingerprint costs. Calling :func:`implementation_fingerprint` and
+    then :func:`surface_stamp` walks it twice for one preflight, which is what a
+    first drafting of the preflight binding did; this walks it once and returns
+    both. The values are identical to calling the two functions separately, and
+    a test pins that they are.
+    """
+    files = implementation_surface()
+    return _hash_over(files), _stamp_over(files)
 
 
 def _indirection_findings(module_name: str, tree: ast.AST) -> list[str]:

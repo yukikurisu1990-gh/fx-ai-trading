@@ -442,6 +442,7 @@ def read_historical(
     identity: RunIdentity,
     *,
     grant: Any = None,
+    context: Any = None,
 ) -> object:
     """The single Track A historical read route.
 
@@ -485,6 +486,7 @@ def read_historical(
         pairs=request.pairs,
         timeframe=request.timeframe,
         identity=identity,
+        context=context,
     )
 
     assert_span_admissible(request)
