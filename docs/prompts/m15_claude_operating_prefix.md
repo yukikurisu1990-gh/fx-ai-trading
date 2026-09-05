@@ -74,9 +74,12 @@ Notes:
 - If the prompt and the repository documents conflict, the documents win and
   the stricter reading of a research restriction wins; report the conflict.
 - Statuses in force apply without being quoted: always-binding
-  `PRODUCTION_READINESS_NOT_CLAIMED` and `NO_EXECUTION_PERFORMED`, plus the
-  forward-epoch `..._BLOCKED_INSUFFICIENT_SAMPLE_ADOPTION_WAITS` sub-status
-  until a recorded ruling changes it.
+  `PRODUCTION_READINESS_NOT_CLAIMED`, plus the forward-epoch
+  `..._BLOCKED_INSUFFICIENT_SAMPLE_ADOPTION_WAITS` sub-status until a recorded
+  ruling changes it. `NO_EXECUTION_PERFORMED` and `NO_REAL_DATA_READ_PERFORMED`
+  were discharged **for Track A R1's authorised scope only** on 2026-09-05
+  (`docs/governance/m15_track_a_r1_execution_record.md`) and bind for every other
+  read, stage and span.
 - Never claim `PASS`, `MEETS`, `BYTE_ADMISSIBLE`, `NEW_EPOCH_ADOPTED`,
   `READY_FOR_LIVE`, production readiness or a near-synonym outside a
   registered status vocabulary.

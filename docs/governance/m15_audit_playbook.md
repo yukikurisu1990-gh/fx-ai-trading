@@ -9,7 +9,7 @@
   · `M15_GATE3A_DATASET_EPOCH_ADOPTION_PROPOSED`
   · `FORWARD_EPOCH_ADOPTION_BLOCKED_INSUFFICIENT_SAMPLE_ADOPTION_WAITS`
   · `M15_FIRST_COST_HURDLE_AWARE_PREREGISTRATION_ACCEPTABLE_FOR_GATE3A_DATASET_EPOCH_ADOPTION`
-- Always binding: **`PRODUCTION_READINESS_NOT_CLAIMED`** · **`NO_EXECUTION_PERFORMED`**
+- Always binding: **`PRODUCTION_READINESS_NOT_CLAIMED`**. **`NO_EXECUTION_PERFORMED` was discharged for Track A R1's authorised scope only** by the human + ChatGPT execution command of 2026-09-05 — R1 ran, and §1 records it — and binds for every other read, stage and span (`m15_track_a_r1_execution_record.md`)
 - Companion files: `docs/governance/autonomous_development_policy.md`
   (**process authority**: risk tiers, autonomy, stop rules, head-SHA rule),
   `docs/prompts/m15_future_audit_templates.md` (optional prompt templates),
@@ -70,7 +70,7 @@ rebuilt**".
 | **Minimum Research Execution Gate** — Track A R1 enablement apparatus (PR #452) | ✅ **merged** as `37edbb0` (2026-08-30). Building the gate is not passing it; the merge authorised no read |
 | Track A R1 read body + `EXPLORATORY_OOS_SLICE` ruling + grant binding (PR #453) | ✅ **merged** as `6b75aab` (2026-08-30). Slice = final 20% of the committed DESIGN UTC dates = `2025-12-29 … 2026-02-28`; development corpus = `2025-04-25 … 2025-12-28` (248 dates). A grant binds to a **measured implementation fingerprint** |
 | Recorded Track A R1 development `ReadGrant` (PR #454) | ✅ **merged** as `d694377` (2026-08-31), authorization-only. `track_a_historical_read` / `2025-04-25 … 2025-12-28` / `PAIRS_20` / `M1`, bound to fingerprint `497e187b…`. ⚠ **Invalidated by PR #455**, by design |
-| **Track A R1 execution command of 2026-08-31** | **REFUSED before any read.** R1 could not complete: `derive_m15` had no body, no derivation grant existed, neither calendar artifact existed, T-3's numerator was undefined, no survey runner existed, and the P-1…P-15 predicate was not recorded true on a named master SHA. No byte of market data was read; the corpus remains **UNSEEN** |
+| **Track A R1 execution command of 2026-08-31** | **REFUSED before any read.** R1 could not complete: `derive_m15` had no body, no derivation grant existed, neither calendar artifact existed, T-3's numerator was undefined, no survey runner existed, and the P-1…P-15 predicate was not recorded true on a named master SHA. No byte of market data was read; the corpus was **UNSEEN** at that date (it is `EXPLORATORY_SEEN_DATA` since 2026-09-05 — see below) |
 | **R1 Enablement Remediation Work PR (PR #455)** | ✅ **merged** as `fc3e0f8`. Closes all six, plus the `aggregate_m15` bypass and the gitignored ledger. `TRACK_A_R1_END_TO_END_SYNTHETIC_DRY_RUN_PASSED`. **Invalidates the PR #454 grant by design** |
 | Track A R1 dual grants, first pair (PR #456) | ✅ **merged** as `6ea4e15`, authorization-only, bound to `e43583e0…`. ⚠ **Invalidated by PR #457**, by design |
 | Authorization integrity — derivation input rows + fingerprint closure (PR #457) | ✅ **merged** as `c2cdea0`. The derivation validates every **input row** against the grant∩request intersection; the surface is the transitive closure it claimed to be (26 → 29 files) |
@@ -78,7 +78,10 @@ rebuilt**".
 | **R1 orchestrator** (PR #459) | ✅ **merged** as `99bfe69`. The formal entry point: preflight → write-ahead declaration → gated read → authorised derivation on the **same** `ReadRequest` → `K` → survey → stop. Surface 30, `1f1f0ed5…` |
 | **Bounded-memory route** (PR #460) | ✅ **merged** as `52e849d`. Read and derivation run window by window, so retained raw M1 rows are a property of the window, not the corpus. Surface 32, `c1e71fd3…` |
 | **Preflight binding** (PR #461) | ✅ **merged** as `0bb987e`. The fingerprint is measured **once before the read** and once after the last window, not ~321 times with ~320 of them after the irreversible declaration. Surface 32, `e147542a…` |
-| **Track A R1 dual grants, in force** (PR #462) | authorization-only, bound to `e147542a…` at head `0bb987e`. §5a reaches **15 of 15**. **Not an execution command**: a read still needs an explicit human + ChatGPT instruction given as an act |
+| **Track A R1 dual grants, in force** (PR #462) | ✅ **merged** as `ca2bf29`, authorization-only, bound to `e147542a…` at head `0bb987e`. §5a reaches **15 of 15**. **Not an execution command** |
+| **Track A R1 executed on real historical data** (2026-09-05) | ✅ **run once** under an explicit human + ChatGPT execution command, via `r1_orchestrator.run_r1` on the two grants above. `2025-04-25 … 2025-12-28` × `PAIRS_20` × `M1` → 4,979,585 M1 rows → 335,200 M15 bars; `K = 0`; survey complete, no next stage reached. **The development corpus is now `EXPLORATORY_SEEN_DATA`.** Record: `m15_track_a_r1_execution_record.md` |
+| **Post-execution adjudication** (2026-09-05) | ✅ **RULED** by human + ChatGPT after the run. `TRACK_A_R1_CORE_EXECUTION_ACCEPTED_WITH_POST_EXECUTION_EXCLUSIONS` — the read, the derivation, coverage, the declared-label and spread/session diagnostics, the data-quality findings, `K`/`RunIdentity`/the grant ledger, and the fingerprint/containment results are accepted. **Excluded:** the unauthorised `cost_table` decision-bearing output (`R1_UNAUTHORISED_COST_TABLE_OUTPUT_EXCLUDED_FROM_DECISION_BEARING_RESULT`), and any claim that the historical OOS is untouched — the one-row-past-the-window decode **is a read**, so `HISTORICAL_EXPLORATORY_OOS_PRISTINE_CLAIM_WITHDRAWN`. `TRACK_A_R1_EXECUTED_ON_AUTHORIZED_HISTORICAL_DEVELOPMENT_CORPUS` stays unrecorded rather than being weakened. R1 is **not** re-run |
+| **Next stage** | `TRACK_A_READY_TO_BEGIN_EXPLORATORY_STRATEGY_RESEARCH`. Feature / model / label / calibration / threshold exploration may begin over the seen historical development data. Every output is `NON_DECISION_BEARING_EXPLORATORY_ONLY`. **Not** authority for R2, an OOS read, or Formal Confirmation |
 
 **Official gate status:** `M15_AGGREGATION_DATASET_MACHINERY_SOURCE_AUDIT_BLOCKED_PENDING_TARGETED_FIXES`
 — reaffirmed by the **fourth** independent re-check at `0e3b001`. PR #440, #442
@@ -541,12 +544,28 @@ Each re-issue binds to the fingerprint of the tree that would run, and each
 change to that tree has voided the pair before it. The chain is in full below;
 the pair in force is PR #462's, at `e147542a…`.
 
-Every mechanical prerequisite is in place, demonstrated on synthetic data end to
-end, and the two grants **are** currently accepted by `require_authorization` on
-this tree — measured, not asserted, by
-`test_the_recorded_grant_is_accepted_at_this_head`. What is left is the
-**command**, which no file supplies. **Nothing has been read**; the seen-data
-ledger is empty and the development corpus is `UNSEEN`.
+Every mechanical prerequisite is in place and the two grants **are** accepted by
+`require_authorization` on this tree — measured, not asserted, by
+`test_the_recorded_grant_is_accepted_at_this_head`.
+
+**The command arrived on 2026-09-05 and R1 ran.** The development corpus is
+**`EXPLORATORY_SEEN_DATA`** and cannot be `UNSEEN` again; the seen-data ledger
+holds one write-ahead declaration over `2025-04-25 … 2025-12-28` × `PAIRS_20`
+× `M1`, and the authorization ledger holds 320 rows. See
+`docs/governance/m15_track_a_r1_execution_record.md`. The sentence this replaces
+said "**Nothing has been read**" and was still saying it after the read — which
+is why the record is committed alongside the ledgers rather than left to a
+paragraph.
+
+**The historical `EXPLORATORY_OOS_SLICE` is touched.** The read decoded one row
+past each window, and for the final window that row is on or after `2025-12-29`
+— twenty rows, one per pair, read and discarded. A human + ChatGPT ruling of
+2026-09-05 holds that this **is a read**:
+`HISTORICAL_EXPLORATORY_OOS_PRISTINE_CLAIM_WITHDRAWN`. "OOS 完全未読",
+"pristine historical OOS" and "untouched historical OOS" may not be claimed
+anywhere. No OOS value reached an R1 output, the `N = 1` budget is unspent, and
+Formal Confirmation still uses a **future untouched epoch** — this historical
+slice is not formal evidence.
 
 **Read this before treating 15 of 15 as permission.**
 
@@ -585,13 +604,16 @@ otherwise would be the false comfort this section exists to prevent.
 > (`scripts/m15_track_a/authorization.py`) is not the act of granting one, and
 > reading a ticked checklist is not the act of being commanded.
 
-`TRACK_A_R1_AUTHORITY_COMPLETE_EXECUTION_STILL_EXPRESSLY_WITHHELD`.
-The authority **is** complete at this head — both grants are valid, measured —
-and the human instruction that produced them directed in the same breath that
-nothing be executed. R1 was withheld twice over and is now withheld once: there
-is a valid grant, and there is no command. **This section is the case the
-paragraph above was written for.** A session reading 15 of 15 has found a
-complete authority and **still no command**, and must stop anyway.
+`TRACK_A_R1_AUTHORITY_COMPLETE_AND_EXERCISED_ONCE_ON_2026_09_05`.
+The authority is complete at this head — both grants are valid, measured — and
+the command that had been withheld was given on **2026-09-05**. R1 ran once, over
+the authorised development corpus, and stopped at the survey.
+
+**The paragraph above still governs everything that comes next.** The grants
+that were exercised do not authorise R2, an OOS read, a training run or a
+strategy search; each of those needs its own explicit human + ChatGPT act. A
+session reading 15 of 15 and a completed R1 has found **no command for anything
+further**, and must stop anyway.
 
 The predecessor of this line said the opposite —
 `TRACK_A_R1_AUTHORITY_INCOMPLETE_BOTH_GRANTS_AWAIT_REISSUE_EXECUTION_STILL_EXPRESSLY_WITHHELD`

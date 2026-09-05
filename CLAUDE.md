@@ -43,16 +43,56 @@ otherwise.
   containing M1-derived features; the vary-freely list overlaps prereg Rulings
   5–9 almost exactly, and each row of §8.13.4 carries a "what still binds"
   column that this summary does not reproduce. Read it before varying anything,
-  and read §8.12.10 first — two of the surfaces (the calibration split and the
-  feature list) are **not** Track A free-vary items until their upstream
-  blockers are ruled.
+  and note that §8.12.10's condition 4 — which held the calibration inner split
+  and the feature list back until §8.9.6's blockers 1 and 2 were ruled — was
+  **WITHDRAWN at §8.13.4**:
+  `BLOCKERS_1_AND_2_BIND_AT_TRACK_B_CANDIDATE_PREREGISTRATION_NOT_AT_TRACK_A_START`.
+  Both are Track A free-vary surfaces. An earlier version of this line said the
+  opposite, which would have forbidden exactly the two surfaces
+  `TRACK_A_READY_TO_BEGIN_EXPLORATORY_STRATEGY_RESEARCH` names.
 - **Track B — Formal Confirmation.** One declared candidate, frozen in every
   respect, run **once** on unseen forward data. Not a place to redesign.
 
-**Track A R1 is implementation-ready and both grants are valid — recorded at
-PR #462, bound to approved head `0bb987e7…` and measured fingerprint
-`e147542a…`. No read has been performed, and a valid grant is still not an
-execution command.** Do not read this as a snapshot — evaluate it:
+**Track A R1 has been executed.** On **2026-09-05** an explicit human + ChatGPT
+execution command authorised it, and `r1_orchestrator.run_r1` ran once on the
+PR #462 grants over `2025-04-25 … 2025-12-28` × `PAIRS_20` × `M1`. **The
+development corpus is `EXPLORATORY_SEEN_DATA` and cannot be `UNSEEN` again.**
+The record, the two review roles' findings and four open referrals are in
+`docs/governance/m15_track_a_r1_execution_record.md`.
+
+`NO_REAL_DATA_READ_PERFORMED` and `NO_EXECUTION_PERFORMED` **no longer hold for
+Track A R1's authorised scope** and continue to bind everywhere else.
+`PRODUCTION_READINESS_NOT_CLAIMED` is unchanged.
+
+**Adjudicated after the run** (human + ChatGPT, 2026-09-05):
+`TRACK_A_R1_CORE_EXECUTION_ACCEPTED_WITH_POST_EXECUTION_EXCLUSIONS`. Two things
+are excluded from that acceptance and both are binding here:
+
+* **`HISTORICAL_EXPLORATORY_OOS_PRISTINE_CLAIM_WITHDRAWN`.** The read decoded one
+  row past each window; for the final window that row is inside the
+  `EXPLORATORY_OOS_SLICE`. Twenty rows, one per pair. The ruling is that this
+  **is a read** — so "OOS 完全未読", "pristine historical OOS" and "untouched
+  historical OOS" may not be claimed. No OOS value reached an R1 output, the
+  `N = 1` budget is unspent, and Formal Confirmation still uses a **future
+  untouched epoch**; this historical slice is not formal evidence.
+* **`R1_UNAUTHORISED_COST_TABLE_OUTPUT_EXCLUDED_FROM_DECISION_BEARING_RESULT`.**
+  The approval did not name cost tables and `r1_survey` produces them
+  unconditionally. The values stay in the artefact as a record of what ran; they
+  are not results, and they are not retroactively approved.
+
+`TRACK_A_R1_EXECUTED_ON_AUTHORIZED_HISTORICAL_DEVELOPMENT_CORPUS` is **not**
+recorded — its wording collides with the first exclusion, and the ruling uses an
+accurate token rather than weakening that one.
+
+**The next stage is `TRACK_A_READY_TO_BEGIN_EXPLORATORY_STRATEGY_RESEARCH`.**
+Feature, model, label, calibration and threshold exploration may begin over the
+seen historical development data; every output is
+`NON_DECISION_BEARING_EXPLORATORY_ONLY` and none of it is formal evidence. It is
+**not** authority to run R2, to read the OOS slice, or to begin Formal
+Confirmation — each is its own Red gate — and it is not an instruction to build
+another production-grade gate first.
+
+Do not read the rest of this section as a snapshot — evaluate it:
 
 0. **PR #451 approved and merged** — done, `4f45515` (2026-08-30). §8.11–§8.13
    are citable authority; `APPROVAL_IDENTIFIER_PENDING_UNTIL_MERGE` and
@@ -98,15 +138,15 @@ times to update the re-issue pointer it carries. **The next change on the
 declared surface voids the current pair too, with no human in the loop**, and
 §5a will fail CI until they are issued again.
 
-**What is left is the run itself, and it is not a session's to start.** A
-real-data read is **Red**: it needs explicit human + ChatGPT approval *before it
-is run*, naming the operation, span, pairs, timeframe and approved head SHA.
-That is an act, not a document state, and no recorded grant, passed gate or
-fully-ticked checklist supplies it. The instruction that authorised these two
-grants directed in the same breath that nothing be executed, so R1 stands
-**authorised in scope and expressly withheld in execution**. Read
-`docs/governance/m15_audit_playbook.md` §5a before treating 15 of 15 as
-permission.
+**The run happened on 2026-09-05, and the rule that governed it still governs
+everything after it.** A real-data read is **Red**: it needs explicit human +
+ChatGPT approval *before it is run*, naming the operation, span, pairs,
+timeframe and approved head SHA. That is an act, not a document state, and no
+recorded grant, passed gate or fully-ticked checklist supplies it. R1 received
+exactly such an act and was run once. **R2, an OOS read, training and evaluation
+have received no such act**, and a completed R1 supplies none. Read
+`docs/governance/m15_audit_playbook.md` §5a before treating 15 of 15, or a
+finished R1, as permission for anything.
 
 **The R1 orchestrator exists** (`scripts/m15_track_a/r1_orchestrator.py`, PR
 #459): the formal entry point binding preflight → write-ahead seen declaration →
@@ -135,12 +175,22 @@ final window. One closing measurement after the last window covers the interval,
 so a run pays **two** cryptographic measurements rather than 321, and neither is
 a gate a window can trip over.
 
-**One operational consequence a human should still see before authorising a
-run:** the committed grant ledger takes about **320** rows per full-corpus run
-instead of two — `read_historical` and `derive_m15` each append one per window.
-That one is kept on purpose: the ledger records the authorisation a route ran
-under *before it runs*, and the route really does run 320 times, so a run-level
-summary would say less than the file does now.
+**One operational consequence a human should see before authorising a run:**
+the committed grant ledger takes **320** rows per full-corpus run instead of two
+— `read_historical` and `derive_m15` each append one per window, before that
+window runs.
+
+**What those rows are, stated accurately.** Each row records *the authorisation
+a route ran under*: operation, span, pairs, timeframe, approved head, approved
+fingerprint, approver record, route id and run identity. It does **not** record
+which window — no row carries a window, a pair, an index or a timestamp — so
+the 2026-09-05 run's file has 320 lines and **two distinct lines**. An earlier
+wording here called this "per-window provenance" and said "a run-level summary
+would say less than the file does now"; a review role measured the file and that
+was not true. The rows are kept because the write is **write-ahead per route
+invocation**, which is a real property — the record exists before the read it
+authorises — and not because the file distinguishes the windows. Correcting the
+reason is not a reason to change the count.
 
 **Both weaknesses are fixed at PR #457, and fixing them invalidated both
 grants** — which is the binding working, and was expected. `containment` now
@@ -157,8 +207,11 @@ asserts. §5a is **15 of 15**:
 `TRACK_A_R1_PREFLIGHT_COMPLETE_15_OF_15` and
 `TRACK_A_R1_DUAL_GRANTS_REISSUED_FINAL_PREFLIGHT_COMPLETE_READY_FOR_EXPLICIT_EXECUTION_COMMAND`.
 
-**What is left is the run, and it is not a session's to start.** 15 of 15 is not
-permission; see the paragraph above on why a recorded grant is not an act.
+**The run is done and the next stage is not a session's to start.** 15 of 15 was
+not permission and a completed R1 is not permission either; see the paragraph
+above on why a recorded state is not an act. What is left is
+`TRACK_A_READY_TO_BEGIN_EXPLORATORY_STRATEGY_RESEARCH` — exploratory work whose
+every output is `NON_DECISION_BEARING_EXPLORATORY_ONLY` — and nothing beyond it.
 
 The apparatus for 1–3 is `scripts/m15_track_a/` and
 `docs/design/m15_track_a_execution_gate.md`; **building it is not passing the
@@ -314,7 +367,11 @@ operations with separate grants, and `derive_m15` refuses without its own.
 - **If instructions conflict**, the repository documents win over the prompt,
   and the stricter reading of a research restriction wins. Say so in the
   report.
-- **Always-binding statuses:** `PRODUCTION_READINESS_NOT_CLAIMED`,
-  `NO_EXECUTION_PERFORMED`. The forward epoch stays
+- **Always-binding statuses:** `PRODUCTION_READINESS_NOT_CLAIMED`.
+  `NO_EXECUTION_PERFORMED` and `NO_REAL_DATA_READ_PERFORMED` were discharged for
+  **Track A R1's authorised scope only** by the human + ChatGPT execution command
+  of 2026-09-05 (`docs/governance/m15_track_a_r1_execution_record.md`); they bind
+  for every other read, stage and span, and a session may not discharge them by
+  reading them. The forward epoch stays
   `FORWARD_EPOCH_ADOPTION_BLOCKED_INSUFFICIENT_SAMPLE_ADOPTION_WAITS` until a
   recorded ruling changes it.

@@ -1,3 +1,11 @@
 
 # Track A governance ledgers are hashed and compared byte-for-byte.
 artifacts/track_a_scratch/ledger/** -text
+
+# Archived execution evidence: the bytes that ran, not a normalised copy of them.
+# `docs/governance/m15_track_a_r1_execution_record.md` records a sha256 for the
+# R1 driver and calls it "the bytes that executed"; without this line git stores
+# an LF-normalised blob on a CRLF host, so the recorded hash is unreproducible in
+# a fresh clone and the only record of how an irreversible run was driven cannot
+# be checked. A review role measured exactly that.
+docs/governance/evidence/** -text

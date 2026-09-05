@@ -10,9 +10,20 @@ confers it.
 `PRODUCTION_READINESS_NOT_CLAIMED` ·
 `FORWARD_EPOCH_ADOPTION_BLOCKED_INSUFFICIENT_SAMPLE_ADOPTION_WAITS`
 
+> **The first two of those four were discharged for this scope on 2026-09-05**,
+> when these grants were exercised. The line above is left as recorded; it is not
+> a current claim.
+
 **These are authorizations. Neither is an execution command**, and recording
 them runs nothing. Nothing has been read; the development corpus is `UNSEEN` and
 the seen-data ledger is empty.
+
+> **Exercised on 2026-09-05.** The paragraph above describes the state when these
+> grants were recorded and is left as written; it is no longer the current state.
+> An explicit human + ChatGPT execution command authorised Track A R1, both
+> grants were spent once through `r1_orchestrator.run_r1`, and the development
+> corpus is now **`EXPLORATORY_SEEN_DATA`**. No grant field below is altered.
+> See `m15_track_a_r1_execution_record.md`.
 
 **Risk tier:** Amber. Authorization-only: no implementation, contract, strategy,
 model, feature, calendar, reader, derivation, streaming, orchestrator,

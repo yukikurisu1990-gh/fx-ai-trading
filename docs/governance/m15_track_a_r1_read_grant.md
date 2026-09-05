@@ -1,6 +1,17 @@
 # M15 Track A R1 — the recorded historical development `ReadGrant`
 
 **Status:** `TRACK_A_R1_HISTORICAL_DEVELOPMENT_READ_EXPLICITLY_AUTHORIZED`
+— **this grant is INVALID** (voided by PR #455, by design) and this document is
+kept unedited as a historical governance record.
+
+> **Two sentences below read as current claims and are not.** "the development
+> corpus … remains untouched until an execution command runs the read" and "The
+> `EXPLORATORY_OOS_SLICE` stays unread and unauthorised" were true when written.
+> Since **2026-09-05** the development corpus is `EXPLORATORY_SEEN_DATA`, and the
+> historical OOS slice is **touched** —
+> `HISTORICAL_EXPLORATORY_OOS_PRISTINE_CLAIM_WITHDRAWN`. It remains unauthorised
+> and its `N = 1` budget is unspent. See
+> `docs/governance/m15_track_a_r1_execution_record.md`.
 
 **Approval identifier: PR #454**, merged at the head that carries this file.
 §8.12.13 **C-9** refuses a ruling "recorded here as authority — with no PR
