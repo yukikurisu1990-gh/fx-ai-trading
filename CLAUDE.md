@@ -43,9 +43,13 @@ otherwise.
   containing M1-derived features; the vary-freely list overlaps prereg Rulings
   5–9 almost exactly, and each row of §8.13.4 carries a "what still binds"
   column that this summary does not reproduce. Read it before varying anything,
-  and read §8.12.10 first — two of the surfaces (the calibration split and the
-  feature list) are **not** Track A free-vary items until their upstream
-  blockers are ruled.
+  and note that §8.12.10's condition 4 — which held the calibration inner split
+  and the feature list back until §8.9.6's blockers 1 and 2 were ruled — was
+  **WITHDRAWN at §8.13.4**:
+  `BLOCKERS_1_AND_2_BIND_AT_TRACK_B_CANDIDATE_PREREGISTRATION_NOT_AT_TRACK_A_START`.
+  Both are Track A free-vary surfaces. An earlier version of this line said the
+  opposite, which would have forbidden exactly the two surfaces
+  `TRACK_A_READY_TO_BEGIN_EXPLORATORY_STRATEGY_RESEARCH` names.
 - **Track B — Formal Confirmation.** One declared candidate, frozen in every
   respect, run **once** on unseen forward data. Not a place to redesign.
 
@@ -134,15 +138,15 @@ times to update the re-issue pointer it carries. **The next change on the
 declared surface voids the current pair too, with no human in the loop**, and
 §5a will fail CI until they are issued again.
 
-**What is left is the run itself, and it is not a session's to start.** A
-real-data read is **Red**: it needs explicit human + ChatGPT approval *before it
-is run*, naming the operation, span, pairs, timeframe and approved head SHA.
-That is an act, not a document state, and no recorded grant, passed gate or
-fully-ticked checklist supplies it. The instruction that authorised these two
-grants directed in the same breath that nothing be executed, so R1 stands
-**authorised in scope and expressly withheld in execution**. Read
-`docs/governance/m15_audit_playbook.md` §5a before treating 15 of 15 as
-permission.
+**The run happened on 2026-09-05, and the rule that governed it still governs
+everything after it.** A real-data read is **Red**: it needs explicit human +
+ChatGPT approval *before it is run*, naming the operation, span, pairs,
+timeframe and approved head SHA. That is an act, not a document state, and no
+recorded grant, passed gate or fully-ticked checklist supplies it. R1 received
+exactly such an act and was run once. **R2, an OOS read, training and evaluation
+have received no such act**, and a completed R1 supplies none. Read
+`docs/governance/m15_audit_playbook.md` §5a before treating 15 of 15, or a
+finished R1, as permission for anything.
 
 **The R1 orchestrator exists** (`scripts/m15_track_a/r1_orchestrator.py`, PR
 #459): the formal entry point binding preflight → write-ahead seen declaration →
@@ -203,8 +207,11 @@ asserts. §5a is **15 of 15**:
 `TRACK_A_R1_PREFLIGHT_COMPLETE_15_OF_15` and
 `TRACK_A_R1_DUAL_GRANTS_REISSUED_FINAL_PREFLIGHT_COMPLETE_READY_FOR_EXPLICIT_EXECUTION_COMMAND`.
 
-**What is left is the run, and it is not a session's to start.** 15 of 15 is not
-permission; see the paragraph above on why a recorded grant is not an act.
+**The run is done and the next stage is not a session's to start.** 15 of 15 was
+not permission and a completed R1 is not permission either; see the paragraph
+above on why a recorded state is not an act. What is left is
+`TRACK_A_READY_TO_BEGIN_EXPLORATORY_STRATEGY_RESEARCH` — exploratory work whose
+every output is `NON_DECISION_BEARING_EXPLORATORY_ONLY` — and nothing beyond it.
 
 The apparatus for 1–3 is `scripts/m15_track_a/` and
 `docs/design/m15_track_a_execution_gate.md`; **building it is not passing the

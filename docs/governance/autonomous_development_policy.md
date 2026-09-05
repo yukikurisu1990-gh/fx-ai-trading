@@ -4,8 +4,9 @@
   that works in this repository. Executes nothing; authorises no research gate
   by itself.
 - **Status:** `AUTONOMOUS_DEVELOPMENT_POLICY_RECORDED`
-- Always binding: **`PRODUCTION_READINESS_NOT_CLAIMED`** ·
-  **`NO_EXECUTION_PERFORMED`**
+- Always binding: **`PRODUCTION_READINESS_NOT_CLAIMED`**.
+  **`NO_EXECUTION_PERFORMED` is discharged for Track A R1's authorised scope
+  only** (2026-09-05); see §17.
 - Companion files: `docs/governance/m15_audit_playbook.md` (research gate
   state and audit checklists), `docs/prompts/m15_claude_operating_prefix.md`
   (the short task contract), root `CLAUDE.md` (mandatory pointer).
@@ -636,8 +637,16 @@ fact, with no prior approval needed:
 
 ## 17. Always-binding statuses
 
-`PRODUCTION_READINESS_NOT_CLAIMED` and `NO_EXECUTION_PERFORMED` hold in every
-task and every report. The forward epoch remains
+`PRODUCTION_READINESS_NOT_CLAIMED` holds in every task and every report.
+
+`NO_EXECUTION_PERFORMED` held in every task and every report until **2026-09-05**,
+when an explicit human + ChatGPT execution command ran Track A stage R1 on real
+historical data. It is discharged **for that scope only** —
+`2025-04-25 … 2025-12-28` × `PAIRS_20` × `M1` — and binds for every other read,
+stage and span. A session may not discharge it by reading this paragraph; only a
+recorded human + ChatGPT act does that, and
+`docs/governance/m15_track_a_r1_execution_record.md` is where that one is
+recorded. The forward epoch remains
 `FORWARD_EPOCH_ADOPTION_BLOCKED_INSUFFICIENT_SAMPLE_ADOPTION_WAITS` until a
 recorded human + ChatGPT ruling changes it. No session grants itself any of
 these.

@@ -9,7 +9,7 @@
   · `M15_GATE3A_DATASET_EPOCH_ADOPTION_PROPOSED`
   · `FORWARD_EPOCH_ADOPTION_BLOCKED_INSUFFICIENT_SAMPLE_ADOPTION_WAITS`
   · `M15_FIRST_COST_HURDLE_AWARE_PREREGISTRATION_ACCEPTABLE_FOR_GATE3A_DATASET_EPOCH_ADOPTION`
-- Always binding: **`PRODUCTION_READINESS_NOT_CLAIMED`** · **`NO_EXECUTION_PERFORMED`**
+- Always binding: **`PRODUCTION_READINESS_NOT_CLAIMED`**. **`NO_EXECUTION_PERFORMED` was discharged for Track A R1's authorised scope only** by the human + ChatGPT execution command of 2026-09-05 — R1 ran, and §1 records it — and binds for every other read, stage and span (`m15_track_a_r1_execution_record.md`)
 - Companion files: `docs/governance/autonomous_development_policy.md`
   (**process authority**: risk tiers, autonomy, stop rules, head-SHA rule),
   `docs/prompts/m15_future_audit_templates.md` (optional prompt templates),
@@ -70,7 +70,7 @@ rebuilt**".
 | **Minimum Research Execution Gate** — Track A R1 enablement apparatus (PR #452) | ✅ **merged** as `37edbb0` (2026-08-30). Building the gate is not passing it; the merge authorised no read |
 | Track A R1 read body + `EXPLORATORY_OOS_SLICE` ruling + grant binding (PR #453) | ✅ **merged** as `6b75aab` (2026-08-30). Slice = final 20% of the committed DESIGN UTC dates = `2025-12-29 … 2026-02-28`; development corpus = `2025-04-25 … 2025-12-28` (248 dates). A grant binds to a **measured implementation fingerprint** |
 | Recorded Track A R1 development `ReadGrant` (PR #454) | ✅ **merged** as `d694377` (2026-08-31), authorization-only. `track_a_historical_read` / `2025-04-25 … 2025-12-28` / `PAIRS_20` / `M1`, bound to fingerprint `497e187b…`. ⚠ **Invalidated by PR #455**, by design |
-| **Track A R1 execution command of 2026-08-31** | **REFUSED before any read.** R1 could not complete: `derive_m15` had no body, no derivation grant existed, neither calendar artifact existed, T-3's numerator was undefined, no survey runner existed, and the P-1…P-15 predicate was not recorded true on a named master SHA. No byte of market data was read; the corpus remains **UNSEEN** |
+| **Track A R1 execution command of 2026-08-31** | **REFUSED before any read.** R1 could not complete: `derive_m15` had no body, no derivation grant existed, neither calendar artifact existed, T-3's numerator was undefined, no survey runner existed, and the P-1…P-15 predicate was not recorded true on a named master SHA. No byte of market data was read; the corpus was **UNSEEN** at that date (it is `EXPLORATORY_SEEN_DATA` since 2026-09-05 — see below) |
 | **R1 Enablement Remediation Work PR (PR #455)** | ✅ **merged** as `fc3e0f8`. Closes all six, plus the `aggregate_m15` bypass and the gitignored ledger. `TRACK_A_R1_END_TO_END_SYNTHETIC_DRY_RUN_PASSED`. **Invalidates the PR #454 grant by design** |
 | Track A R1 dual grants, first pair (PR #456) | ✅ **merged** as `6ea4e15`, authorization-only, bound to `e43583e0…`. ⚠ **Invalidated by PR #457**, by design |
 | Authorization integrity — derivation input rows + fingerprint closure (PR #457) | ✅ **merged** as `c2cdea0`. The derivation validates every **input row** against the grant∩request intersection; the surface is the transitive closure it claimed to be (26 → 29 files) |

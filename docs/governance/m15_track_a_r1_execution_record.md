@@ -3,9 +3,27 @@
 **Track: `TRACK_A`.**
 
 **The development corpus is `EXPLORATORY_SEEN_DATA`.** It was `UNSEEN` until
-2026-09-05T03:26:09Z and it cannot be again. Every governance sentence in this
-repository that still said "nothing has been read" is corrected in the same
-change that records this.
+2026-09-05T03:26:09Z and it cannot be again.
+
+An earlier draft of this line claimed that **every** governance sentence still
+saying "nothing has been read" was corrected in the same change. A review role
+checked and it was not: `CLAUDE.md` still said "What is left is the run itself"
+in two places, and `m15_audit_playbook.md`, `autonomous_development_policy.md`,
+`m15_track_a_execution_gate.md` and `m15_claude_operating_prefix.md` all
+still carried `NO_EXECUTION_PERFORMED` as always-binding — one of them in the
+same file whose §1 records the run. All of those are corrected here, and the
+claim is stated as what was actually done rather than as a sweep.
+
+**What is deliberately left alone**, so that a later reader does not re-flag it:
+
+* the **grant records** — kept as approved, each carrying a dated note instead;
+* the **non-authorisation statements** that close
+  `m15_track_a_r1_dual_grants.md`, `..._reissued.md`, `..._read_grant.md`,
+  `m15_track_a_r1_enablement_referrals.md` and `m15_track_a_t3_stage_ruling.md`.
+  Those say `NO_REAL_DATA_READ_PERFORMED` **of the document itself** — "no real
+  data was read in producing it", "this document authorises no read" — and each
+  is still true. They are not claims about the programme's state and are not
+  edited.
 
 **`PRODUCTION_READINESS_NOT_CLAIMED`** · **`NON_DECISION_BEARING_EXPLORATORY_ONLY`**
 · **`RESEARCH_SCRATCH_NON_AUTHORITATIVE`**
@@ -153,7 +171,7 @@ twenty pairs. R1 stayed inside R1: no threshold, no candidate, no `ev_min`, no
 **recounted the corpus independently** and reproduced 4,979,585 rows, 335,200
 bars and the 32,988 peak exactly, per pair and per window. All 320 grant-ledger
 rows verified individually. One `RunIdentity` across all 322 ledger rows. The run
-wrote four files, all under the Track A scratch root; no protected path, no
+wrote four files, all under the Track A scratch root — which is itself under `artifacts/**`, a protected path, so the precise claim is that **no tracked artefact and no evidence tree was modified**; no
 tracked file, no network, no database, no broker. The `.pyc` escape hatch that
 `containment.AUDIT_BOUNDS` discloses was checked and not used: all 51 cached
 files are timestamp-invalidated and valid against the current sources.
@@ -163,14 +181,16 @@ files are timestamp-invalidated and valid against the current sources.
 Every coverage finding is a property of the market or of the archive, checked
 against the source rather than assumed:
 
-* **`AUD_CAD` 15.6% incomplete buckets** against 1.5–7% elsewhere: it is the
+* **`AUD_CAD` 15.6% incomplete buckets** against 1.49–7.17% elsewhere: it is the
   thinnest pair in the universe (median M1 volume 16, next-thinnest 31), the
   missing minutes are singletons spread across all 24 hours, and the
   `n_source_bars` histogram decays smoothly. Not a truncated read.
 * **`AUD_NZD`'s low eligible rate in all three sessions**: the hurdle is
   `1.5×ATR ≥ 2.0×cost`, i.e. `ATR ≥ (4/3)×cost`. Its median ATR is 4.480 pip
   against 4.489 required — the median sits fractionally *below* the threshold, so
-  a 35–60% rate is arithmetic, not a defect.
+  a 35–60% rate is arithmetic, not a defect. **Both ATR figures are the review
+  role's own computation from the source**: the survey publishes no ATR
+  statistics, which is the gap §6.4's referral names.
 * **`max_gap_minutes = 2944`, identical for all twenty pairs**: 2025-11-02, the
   end of US daylight saving. The Friday close is 21:00Z under EDT and the Sunday
   open 22:00Z under EST, so that weekend is 49 hours once a year. Every other
@@ -197,14 +217,22 @@ included — and then discarded by the `break`. For the last of the eight window
 `hi` is `2025-12-28T23:59:59` and the next row in each archive is on or after
 `2025-12-29`, i.e. inside the quarantined slice. Twenty rows, one per pair.
 
-Three committed statements say this cannot happen:
+**Five** committed statements say this cannot happen. An earlier draft of this
+section counted three and a review role found two more — including the one
+directly above the defect:
 
-* `SCAN_DISCLOSURE = "SCAN_DECODES_TIMESTAMPS_OF_EARLIER_ROWS_IN_THE_SAME_FILE"`
+* `read_route.py:52-53`, module docstring: "price fields are materialised
+  **only** for rows inside the window";
+* `read_route.py:59`, module docstring: "the consumed dead window and the forward
+  epoch … are never reached";
+* `read_route.py:133`: "prices are not materialised, and **nothing after the
+  window is reached at all**";
+* `read_route.py:134`,
+  `SCAN_DISCLOSURE = "SCAN_DECODES_TIMESTAMPS_OF_EARLIER_ROWS_IN_THE_SAME_FILE"`
   — **earlier** only;
-* module docstring, "the consumed dead window and the forward epoch … are never
-  reached";
-* line 133, "prices are not materialised, and **nothing after the window is
-  reached at all**".
+* `read_route.py:600-601`, the comment immediately above the `break`: "The prices
+  of a row outside the window **are never materialised**". `json.loads(line)` at
+  line 595 has already materialised them.
 
 **What is established:** no slice value reached any output. The derived extremes,
 the row counts and the per-window counts were reproduced independently and are
@@ -289,6 +317,13 @@ R1's decision-bearing result by §8.2.** They remain in the file unaltered,
 because the file is the record of what ran and editing it would make it a record
 of something else. They are not results and they are not retroactively approved.
 
+**The artefact itself carries no exclusion marker** — `EXCLUDED`, `UNAUTHORISED`
+and `WITHDRAWN` appear in it zero times — and neither does `r1_survey.py`'s
+`cost_table` field. A reader who opens the JSON without this record sees
+unmarked numbers. Marking them would mean editing either the run's own output or
+a file on the fingerprint surface; the second is the referral in §9, and the
+first is refused for the reason above. Stating the gap is what is left.
+
 **`required_outputs` is checked rather than trusted.** The field is a static
 dataclass default; a test added with this record
 (`test_required_outputs_names_things_the_survey_actually_produced`) ties seven of
@@ -324,7 +359,7 @@ A human + ChatGPT ruling, given after the run and after both review roles
 reported. It is recorded here in the terms it was given; nothing below is a
 session's inference.
 
-### 9.1 The OOS boundary decode **is a read**
+### 8.1 The OOS boundary decode **is a read**
 
 `HISTORICAL_EXPLORATORY_OOS_PRISTINE_CLAIM_WITHDRAWN`
 
@@ -357,7 +392,7 @@ The decode is not redefined as "not a read" to make the record consistent. The
 claim is withdrawn instead. That direction is the ruling's, and it is the only
 one that leaves the record true.
 
-### 9.2 The unauthorised `cost_table` output is excluded
+### 8.2 The unauthorised `cost_table` output is excluded
 
 `R1_UNAUTHORISED_COST_TABLE_OUTPUT_EXCLUDED_FROM_DECISION_BEARING_RESULT`
 
@@ -374,7 +409,17 @@ would authorise a later run, not this output.
 This does not invalidate: R1 as a whole, the spread diagnostic, the M15
 derivation, or the data-quality survey.
 
-### 9.3 R1 core execution is accepted, with those exclusions
+**One dependency the exclusion's wording does not reach, disclosed rather than
+resolved.** `r1_survey.py:317` computes the eligible-bar rate against
+`cost_table[pair][session]` — the eligibility threshold *is* the cost value. So
+three outputs derive from the unauthorised table, not two: `cost_table`,
+`barrier_cost_ratio` and `eligibility`. The ruling names the first two. A session
+may not widen a ruling, so the eligible-bar rate is reported in §4 as the ruling
+leaves it — inside the accepted set — **with this dependency stated**, and the
+scope question goes back to the human as a fifth referral (§9). The same
+dependency is why §5's `AUD_NZD` explanation is expressed in cost terms.
+
+### 8.3 R1 core execution is accepted, with those exclusions
 
 `TRACK_A_R1_CORE_EXECUTION_ACCEPTED_WITH_POST_EXECUTION_EXCLUSIONS`
 
@@ -391,14 +436,14 @@ so a second run would read data that is already seen and could not restore
 anything. Re-running to "do the one-row decode properly" would spend more of the
 same seen corpus for no statistical gain.
 
-### 9.4 `TRACK_A_R1_EXECUTED_ON_AUTHORIZED_HISTORICAL_DEVELOPMENT_CORPUS` stays unrecorded
+### 8.4 `TRACK_A_R1_EXECUTED_ON_AUTHORIZED_HISTORICAL_DEVELOPMENT_CORPUS` stays unrecorded
 
 Its wording collides with §8.1: twenty rows outside the authorised corpus were
 read. Rather than weaken the token's meaning after the fact, the ruling uses the
 accurate one — `TRACK_A_R1_CORE_EXECUTION_ACCEPTED_WITH_POST_EXECUTION_EXCLUSIONS`
 — and leaves the original token meaning exactly what it always meant, unclaimed.
 
-### 9.5 The next stage
+### 8.5 The next stage
 
 `TRACK_A_READY_TO_BEGIN_EXPLORATORY_STRATEGY_RESEARCH`
 
@@ -413,6 +458,23 @@ each of those remains its own Red gate needing its own explicit act.
 
 And it is not an instruction to build another production-grade gate first.
 
+**R-2 and the free-vary permission, checked rather than assumed.** MRG §8.11.12
+A-9 records
+`SECTION_4_R_1_TO_R_10_BIND_TRACK_A_AND_THE_FREE_VARY_PERMISSION_ENDS_AT_THE_SLICE_READ`
+— "Track A's free-vary permission runs **up to** the `EXPLORATORY_OOS_SLICE` read
+and **never after it**". §8.1 has just ruled that the boundary decode **is a
+read**, so the two look as though they collide, and a review role raised it.
+
+They do not, on the contract's own wording: the same amendment says "**the slice
+is consumed at its first decision-bearing observation**". No slice value was
+observed — none reached a metric, a selection or any output — and the ruling
+states in terms that this is not the formal OOS `N = 1` execution and that the
+budget is unspent. The trigger R-2 names has not fired.
+
+This is recorded because an unrecorded assumption of exactly this shape is the
+expensive kind. If the human reads the interaction the other way, the next-stage
+declaration is what changes, not this record.
+
 ## 9. Referrals carried forward as ordinary Work PRs
 
 **None of these blocks the start of exploratory strategy research**, by the same
@@ -424,6 +486,7 @@ ruling.
 | `R1_SURVEY_PRODUCES_COST_TABLES_WITHOUT_THE_APPROVAL_NAMING_THEM_REFERRED` | Gate `cost_table` production on an approval that names it; record NR-F and NR-I as engaged |
 | `GRANT_LEDGER_PER_WINDOW_PROVENANCE_JUSTIFICATION_IS_NOT_TRUE_REFERRED` | Correct the same wording in `streaming.py` that `CLAUDE.md` is corrected for here |
 | `R1_SURVEY_REQUIRED_OUTPUTS_IS_A_HARD_CODED_SELF_ATTESTATION_REFERRED` | Tie `required_outputs` to the artefacts actually produced |
+| `ELIGIBLE_BAR_RATE_DERIVES_FROM_THE_EXCLUDED_COST_TABLE_SCOPE_OF_EXCLUSION_REFERRED` | §8.2's exclusion names `cost_table` and `barrier_cost_ratio`; `eligibility` is computed from the same values (`r1_survey.py:317`). Whether the exclusion reaches it is the human's to say — a session may not widen a ruling |
 
 **Why none of the four is fixed in this PR, stated plainly.** Every one of them
 lives in `read_route.py`, `r1_survey.py` or `streaming.py` — all on the

@@ -2,10 +2,15 @@
 
 **Status:**
 `TRACK_A_R1_EXECUTION_INFRASTRUCTURE_READY_PENDING_EXPLICIT_DATA_READ_AUTHORISATION`
+— **superseded on 2026-09-05**: the authorisation arrived, R1 ran once, and
+`TRACK_A_R1_CORE_EXECUTION_ACCEPTED_WITH_POST_EXECUTION_EXCLUSIONS` is what holds
+(`docs/governance/m15_track_a_r1_execution_record.md`). This document describes
+the gate that was built and passed; it is not edited to match the run.
 
 **Always-binding:** `PRODUCTION_READINESS_NOT_CLAIMED` ·
-`NO_EXECUTION_PERFORMED` · `NO_REAL_DATA_READ_PERFORMED` ·
-`FORWARD_EPOCH_ADOPTION_BLOCKED_INSUFFICIENT_SAMPLE_ADOPTION_WAITS`
+`FORWARD_EPOCH_ADOPTION_BLOCKED_INSUFFICIENT_SAMPLE_ADOPTION_WAITS`.
+`NO_EXECUTION_PERFORMED` and `NO_REAL_DATA_READ_PERFORMED` were **discharged for
+Track A R1's authorised scope only** on 2026-09-05 and bind everywhere else.
 
 **Risk tier:** Amber. This document and the code it describes build the
 apparatus for a Red operation; they do not perform it and do not authorise it.
@@ -1256,4 +1261,6 @@ Nothing in this document or in `scripts/m15_track_a/` authorises a real-data
 read, a derivation, training, evaluation, a run, a broker connection, or a
 deployment. No real data was read in producing it. No training, evaluation or
 fitting was performed. `PRODUCTION_READINESS_NOT_CLAIMED`;
-`NO_EXECUTION_PERFORMED`.
+`NO_EXECUTION_PERFORMED` **as of this document** — R1 was subsequently run on
+2026-09-05 under its own explicit authorisation, which this document did not and
+could not supply.
