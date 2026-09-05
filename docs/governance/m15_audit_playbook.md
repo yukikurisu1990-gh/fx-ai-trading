@@ -79,7 +79,9 @@ rebuilt**".
 | **Bounded-memory route** (PR #460) | ✅ **merged** as `52e849d`. Read and derivation run window by window, so retained raw M1 rows are a property of the window, not the corpus. Surface 32, `c1e71fd3…` |
 | **Preflight binding** (PR #461) | ✅ **merged** as `0bb987e`. The fingerprint is measured **once before the read** and once after the last window, not ~321 times with ~320 of them after the irreversible declaration. Surface 32, `e147542a…` |
 | **Track A R1 dual grants, in force** (PR #462) | ✅ **merged** as `ca2bf29`, authorization-only, bound to `e147542a…` at head `0bb987e`. §5a reaches **15 of 15**. **Not an execution command** |
-| **Track A R1 executed on real historical data** (2026-09-05) | ✅ **run once** under an explicit human + ChatGPT execution command, via `r1_orchestrator.run_r1` on the two grants above. `2025-04-25 … 2025-12-28` × `PAIRS_20` × `M1` → 4,979,585 M1 rows → 335,200 M15 bars; `K = 0`; survey complete, no next stage reached. **The development corpus is now `EXPLORATORY_SEEN_DATA`.** Record: `m15_track_a_r1_execution_record.md`. Two review roles: no defect in the run; four findings referred, of which §6.1 (a slice row decoded past the window) and §6.3 (cost tables produced without the approval naming them) need a ruling, so `TRACK_A_R1_EXECUTED_ON_AUTHORIZED_HISTORICAL_DEVELOPMENT_CORPUS` is **not** recorded |
+| **Track A R1 executed on real historical data** (2026-09-05) | ✅ **run once** under an explicit human + ChatGPT execution command, via `r1_orchestrator.run_r1` on the two grants above. `2025-04-25 … 2025-12-28` × `PAIRS_20` × `M1` → 4,979,585 M1 rows → 335,200 M15 bars; `K = 0`; survey complete, no next stage reached. **The development corpus is now `EXPLORATORY_SEEN_DATA`.** Record: `m15_track_a_r1_execution_record.md` |
+| **Post-execution adjudication** (2026-09-05) | ✅ **RULED** by human + ChatGPT after the run. `TRACK_A_R1_CORE_EXECUTION_ACCEPTED_WITH_POST_EXECUTION_EXCLUSIONS` — the read, the derivation, coverage, the declared-label and spread/session diagnostics, the data-quality findings, `K`/`RunIdentity`/the grant ledger, and the fingerprint/containment results are accepted. **Excluded:** the unauthorised `cost_table` decision-bearing output (`R1_UNAUTHORISED_COST_TABLE_OUTPUT_EXCLUDED_FROM_DECISION_BEARING_RESULT`), and any claim that the historical OOS is untouched — the one-row-past-the-window decode **is a read**, so `HISTORICAL_EXPLORATORY_OOS_PRISTINE_CLAIM_WITHDRAWN`. `TRACK_A_R1_EXECUTED_ON_AUTHORIZED_HISTORICAL_DEVELOPMENT_CORPUS` stays unrecorded rather than being weakened. R1 is **not** re-run |
+| **Next stage** | `TRACK_A_READY_TO_BEGIN_EXPLORATORY_STRATEGY_RESEARCH`. Feature / model / label / calibration / threshold exploration may begin over the seen historical development data. Every output is `NON_DECISION_BEARING_EXPLORATORY_ONLY`. **Not** authority for R2, an OOS read, or Formal Confirmation |
 
 **Official gate status:** `M15_AGGREGATION_DATASET_MACHINERY_SOURCE_AUDIT_BLOCKED_PENDING_TARGETED_FIXES`
 — reaffirmed by the **fourth** independent re-check at `0e3b001`. PR #440, #442
@@ -554,6 +556,16 @@ holds one write-ahead declaration over `2025-04-25 … 2025-12-28` × `PAIRS_20`
 said "**Nothing has been read**" and was still saying it after the read — which
 is why the record is committed alongside the ledgers rather than left to a
 paragraph.
+
+**The historical `EXPLORATORY_OOS_SLICE` is touched.** The read decoded one row
+past each window, and for the final window that row is on or after `2025-12-29`
+— twenty rows, one per pair, read and discarded. A human + ChatGPT ruling of
+2026-09-05 holds that this **is a read**:
+`HISTORICAL_EXPLORATORY_OOS_PRISTINE_CLAIM_WITHDRAWN`. "OOS 完全未読",
+"pristine historical OOS" and "untouched historical OOS" may not be claimed
+anywhere. No OOS value reached an R1 output, the `N = 1` budget is unspent, and
+Formal Confirmation still uses a **future untouched epoch** — this historical
+slice is not formal evidence.
 
 **Read this before treating 15 of 15 as permission.**
 

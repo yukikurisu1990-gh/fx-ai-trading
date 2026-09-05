@@ -58,10 +58,35 @@ The record, the two review roles' findings and four open referrals are in
 
 `NO_REAL_DATA_READ_PERFORMED` and `NO_EXECUTION_PERFORMED` **no longer hold for
 Track A R1's authorised scope** and continue to bind everywhere else.
-`PRODUCTION_READINESS_NOT_CLAIMED` is unchanged. R1 completing authorises
-**nothing** further: R2, an OOS read, training and evaluation are separate Red
-gates, and `TRACK_A_R1_EXECUTED_ON_AUTHORIZED_HISTORICAL_DEVELOPMENT_CORPUS` is
-**not** recorded, because two referred findings need a ruling first.
+`PRODUCTION_READINESS_NOT_CLAIMED` is unchanged.
+
+**Adjudicated after the run** (human + ChatGPT, 2026-09-05):
+`TRACK_A_R1_CORE_EXECUTION_ACCEPTED_WITH_POST_EXECUTION_EXCLUSIONS`. Two things
+are excluded from that acceptance and both are binding here:
+
+* **`HISTORICAL_EXPLORATORY_OOS_PRISTINE_CLAIM_WITHDRAWN`.** The read decoded one
+  row past each window; for the final window that row is inside the
+  `EXPLORATORY_OOS_SLICE`. Twenty rows, one per pair. The ruling is that this
+  **is a read** — so "OOS 完全未読", "pristine historical OOS" and "untouched
+  historical OOS" may not be claimed. No OOS value reached an R1 output, the
+  `N = 1` budget is unspent, and Formal Confirmation still uses a **future
+  untouched epoch**; this historical slice is not formal evidence.
+* **`R1_UNAUTHORISED_COST_TABLE_OUTPUT_EXCLUDED_FROM_DECISION_BEARING_RESULT`.**
+  The approval did not name cost tables and `r1_survey` produces them
+  unconditionally. The values stay in the artefact as a record of what ran; they
+  are not results, and they are not retroactively approved.
+
+`TRACK_A_R1_EXECUTED_ON_AUTHORIZED_HISTORICAL_DEVELOPMENT_CORPUS` is **not**
+recorded — its wording collides with the first exclusion, and the ruling uses an
+accurate token rather than weakening that one.
+
+**The next stage is `TRACK_A_READY_TO_BEGIN_EXPLORATORY_STRATEGY_RESEARCH`.**
+Feature, model, label, calibration and threshold exploration may begin over the
+seen historical development data; every output is
+`NON_DECISION_BEARING_EXPLORATORY_ONLY` and none of it is formal evidence. It is
+**not** authority to run R2, to read the OOS slice, or to begin Formal
+Confirmation — each is its own Red gate — and it is not an instruction to build
+another production-grade gate first.
 
 Do not read the rest of this section as a snapshot — evaluate it:
 
@@ -146,12 +171,22 @@ final window. One closing measurement after the last window covers the interval,
 so a run pays **two** cryptographic measurements rather than 321, and neither is
 a gate a window can trip over.
 
-**One operational consequence a human should still see before authorising a
-run:** the committed grant ledger takes about **320** rows per full-corpus run
-instead of two — `read_historical` and `derive_m15` each append one per window.
-That one is kept on purpose: the ledger records the authorisation a route ran
-under *before it runs*, and the route really does run 320 times, so a run-level
-summary would say less than the file does now.
+**One operational consequence a human should see before authorising a run:**
+the committed grant ledger takes **320** rows per full-corpus run instead of two
+— `read_historical` and `derive_m15` each append one per window, before that
+window runs.
+
+**What those rows are, stated accurately.** Each row records *the authorisation
+a route ran under*: operation, span, pairs, timeframe, approved head, approved
+fingerprint, approver record, route id and run identity. It does **not** record
+which window — no row carries a window, a pair, an index or a timestamp — so
+the 2026-09-05 run's file has 320 lines and **two distinct lines**. An earlier
+wording here called this "per-window provenance" and said "a run-level summary
+would say less than the file does now"; a review role measured the file and that
+was not true. The rows are kept because the write is **write-ahead per route
+invocation**, which is a real property — the record exists before the read it
+authorises — and not because the file distinguishes the windows. Correcting the
+reason is not a reason to change the count.
 
 **Both weaknesses are fixed at PR #457, and fixing them invalidated both
 grants** — which is the binding working, and was expected. `containment` now

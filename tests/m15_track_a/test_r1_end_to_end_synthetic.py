@@ -485,3 +485,46 @@ def test_network_db_and_broker_stay_refused(guards_installed: object) -> None:
 
     with pytest.raises(isolation.IsolationError):
         socket.socket().connect(("93.184.216.34", 80))
+
+
+def test_required_outputs_names_things_the_survey_actually_produced(dry_run: dict) -> None:
+    """The eight-item tuple is a dataclass default. This is what checks it.
+
+    `required_outputs` is a static self-attestation: it reports the same eight
+    strings whatever the run produced, which is the shape `aggregation.py`'s own
+    R-1 deleted, on the ground that "none could ever take the other value, so
+    none was evidence". A post-run review role found it unpinned by any test.
+
+    Fixing the field means editing `r1_survey.py`, which is on the fingerprint
+    surface, so that is a referred Work PR
+    (`R1_SURVEY_REQUIRED_OUTPUTS_IS_A_HARD_CODED_SELF_ATTESTATION_REFERRED`).
+    Tests are outside the surface, so the claim can be **checked** here without
+    moving the fingerprint: each name is tied to a produced, non-empty field, and
+    the one name that has no distinct field is recorded as having none rather
+    than being quietly mapped onto a neighbour.
+    """
+    record = dry_run["survey"].as_record()
+    produced = {
+        "schema": lambda: record["schema"],
+        "span": lambda: record["span_start_utc"] and record["span_end_utc"],
+        "pair_coverage": lambda: record["pairs"] and record["coverage"],
+        "missingness": lambda: [entry["gap_report"] for entry in record["coverage"].values()],
+        "barrier_cost_ratio_distribution_descriptive_only": lambda: record["barrier_cost_ratio"][
+            "variants"
+        ],
+        "eligible_bar_rate_per_pair_and_session": lambda: record["eligibility"],
+        "per_pair_session_spread_distribution": lambda: record["spread_distribution"],
+    }
+    #: The open half of the referral, stated rather than papered over: §7 lists
+    #: `descriptive statistics` beside the three items after it, and the record
+    #: carries no price-series statistics (OHLC, returns, range, ATR
+    #: distribution) distinct from them. Whether the three satisfy it is the
+    #: question the Work PR has to answer, so it is not mapped here.
+    unmapped = {"descriptive_statistics"}
+
+    claimed = set(dry_run["survey"].required_outputs)
+    assert claimed == set(produced) | unmapped, claimed
+
+    for name, get in produced.items():
+        value = get()
+        assert value, f"required_outputs claims {name!r} and the record has nothing for it"

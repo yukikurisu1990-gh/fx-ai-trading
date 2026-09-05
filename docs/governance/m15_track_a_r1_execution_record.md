@@ -16,6 +16,15 @@ ChatGPT execution command of 2026-09-05, not by a session's reading of them, and
 they continue to bind everywhere else: no other read, no other stage, no other
 span.
 
+**Adjudicated by a human + ChatGPT ruling of 2026-09-05, after the run:**
+
+* `TRACK_A_R1_CORE_EXECUTION_ACCEPTED_WITH_POST_EXECUTION_EXCLUSIONS`
+* `HISTORICAL_EXPLORATORY_OOS_PRISTINE_CLAIM_WITHDRAWN`
+* `R1_UNAUTHORISED_COST_TABLE_OUTPUT_EXCLUDED_FROM_DECISION_BEARING_RESULT`
+* `TRACK_A_READY_TO_BEGIN_EXPLORATORY_STRATEGY_RESEARCH`
+
+§6 records what was referred; **§8 records how each was ruled.**
+
 **Risk tier: Red, already exercised.** This document is the evidence of an
 irreversible operation that has happened. Recording it authorises nothing
 further.
@@ -169,10 +178,14 @@ against the source rather than assumed:
 * **`missing_whole_buckets` clustered at 7012–7030**: weekend closures — 192
   buckets a week over ~35.4 weeks ≈ 6,800 — plus per-pair isolated gaps.
 
-## 6. Findings that need a human + ChatGPT ruling
+## 6. Findings that needed a human + ChatGPT ruling
 
 **None of these is a defect in the run.** Each is a property of committed code or
 of the record, found by reading the source after the fact.
+
+**All five were ruled on 2026-09-05 — see §8.** This section is left as it was
+written, before the ruling, so that what was put to the human is legible
+alongside what the human decided. Nothing here is edited to match the outcome.
 
 ### 6.1 The read decodes one row past the window, and for the final window that row is inside the `EXPLORATORY_OOS_SLICE`
 
@@ -271,6 +284,20 @@ not rediscovered.
 | `docs/governance/evidence/m15_track_a_r1_driver_2026_09_05.py.txt` | `3a799236bdb38e3558e2131152de9881dd376acae9277c1a22f375fd9357a11d` | 9,276 |
 | `artifacts/track_a_scratch/r1_execution_2026_09_05/r1_execution_summary.json` *(not committed)* | `bb52c045b01ad6b214ea736afea27f722d8bb2e86e5bd79288dd769d92e0bb5c` | 127,284 |
 
+**The summary's `cost_table` and `barrier_cost_ratio` values are excluded from
+R1's decision-bearing result by §8.2.** They remain in the file unaltered,
+because the file is the record of what ran and editing it would make it a record
+of something else. They are not results and they are not retroactively approved.
+
+**`required_outputs` is checked rather than trusted.** The field is a static
+dataclass default; a test added with this record
+(`test_required_outputs_names_things_the_survey_actually_produced`) ties seven of
+the eight names to a produced, non-empty field and records the eighth,
+`descriptive_statistics`, as having no distinct field — which is the open half of
+the referral, left open rather than mapped onto a neighbour. Tests are outside
+the fingerprint surface, so checking the claim costs nothing; fixing the field
+itself is the Work PR.
+
 **The three ledgers are committed here, and that closes a defect both review
 roles found independently.** MRG §8.13.5 items 5 and 6 require the
 `EXPLORATORY_SEEN_DATA` ledger and the breadth record to be "write-ahead,
@@ -291,16 +318,140 @@ the bytes that executed.
 scratch output is `NON_DECISION_BEARING_EXPLORATORY_ONLY` and is not evidence.
 Its hash is recorded here so the local file can be checked against this record.
 
-## 8. What this is not
+## 8. The post-execution adjudication of 2026-09-05
+
+A human + ChatGPT ruling, given after the run and after both review roles
+reported. It is recorded here in the terms it was given; nothing below is a
+session's inference.
+
+### 9.1 The OOS boundary decode **is a read**
+
+`HISTORICAL_EXPLORATORY_OOS_PRISTINE_CLAIM_WITHDRAWN`
+
+> 実行時、各20ペアについて最終development windowの直後の1行が file から取得され、
+> `json.loads` で decode され、timestamp > hi と判定後に破棄された。…
+> **これは read に該当する。**
+
+So, from here, **these three claims are prohibited** anywhere in this repository
+and in any report:
+
+* "OOS 完全未読" — the historical OOS slice was not completely unread;
+* "pristine historical OOS";
+* "untouched historical OOS".
+
+The historical `EXPLORATORY_OOS_SLICE` (`2025-12-29 … 2026-02-28`) is **touched**.
+Twenty rows, one per pair, were read from disk and decoded.
+
+What the ruling equally establishes, and what may therefore still be said:
+
+* no OOS row reached any R1 output;
+* no OOS value was used in a metric, a selection or any R1 result;
+* the development R1 core result is **not** invalidated by it;
+* this is **not** to be treated as having performed the formal OOS `N = 1`
+  execution. That budget is unspent.
+
+**The Two-Track policy is unchanged**: Formal Confirmation uses a **future
+untouched epoch**. This historical OOS slice may not be used as formal evidence.
+
+The decode is not redefined as "not a read" to make the record consistent. The
+claim is withdrawn instead. That direction is the ruling's, and it is the only
+one that leaves the record true.
+
+### 9.2 The unauthorised `cost_table` output is excluded
+
+`R1_UNAUTHORISED_COST_TABLE_OUTPUT_EXCLUDED_FROM_DECISION_BEARING_RESULT`
+
+The R1 approval did not explicitly authorise cost-table output, and the MRG
+permits design-span cost tables "if and only if explicitly authorised in the
+approval". The values this run produced — `cost_table` and the
+`barrier_cost_ratio` figures derived from it — are **excluded from R1's formal
+decision-bearing output**. They remain in the artefact, unaltered, as a record of
+what ran; they are not results.
+
+They are **not retroactively approved**. A later approval naming cost tables
+would authorise a later run, not this output.
+
+This does not invalidate: R1 as a whole, the spread diagnostic, the M15
+derivation, or the data-quality survey.
+
+### 9.3 R1 core execution is accepted, with those exclusions
+
+`TRACK_A_R1_CORE_EXECUTION_ACCEPTED_WITH_POST_EXECUTION_EXCLUSIONS`
+
+**Accepted:** the authorised development-corpus read; the M1→M15 derivation; the
+declared-label diagnostic; coverage and missingness; the spread and session
+diagnostics; the data-quality findings; `K`, `RunIdentity` and the grant ledger;
+the fingerprint and containment results.
+
+**Excluded:** the unauthorised `cost_table` decision-bearing output (§8.2), and
+any claim that the historical OOS is pristine (§8.1).
+
+**R1 is not re-run.** The development corpus is already `EXPLORATORY_SEEN_DATA`,
+so a second run would read data that is already seen and could not restore
+anything. Re-running to "do the one-row decode properly" would spend more of the
+same seen corpus for no statistical gain.
+
+### 9.4 `TRACK_A_R1_EXECUTED_ON_AUTHORIZED_HISTORICAL_DEVELOPMENT_CORPUS` stays unrecorded
+
+Its wording collides with §8.1: twenty rows outside the authorised corpus were
+read. Rather than weaken the token's meaning after the fact, the ruling uses the
+accurate one — `TRACK_A_R1_CORE_EXECUTION_ACCEPTED_WITH_POST_EXECUTION_EXCLUSIONS`
+— and leaves the original token meaning exactly what it always meant, unclaimed.
+
+### 9.5 The next stage
+
+`TRACK_A_READY_TO_BEGIN_EXPLORATORY_STRATEGY_RESEARCH`
+
+Feature, model, label, calibration and threshold exploration may begin over the
+historical development data, which is free to use for exploration now that it is
+seen.
+
+Every output of that work is `NON_DECISION_BEARING_EXPLORATORY_ONLY` and
+`RESEARCH_SCRATCH_NON_AUTHORITATIVE`. None of it is formal evidence. It is **not**
+authority to run R2, to read the OOS slice, or to begin Formal Confirmation —
+each of those remains its own Red gate needing its own explicit act.
+
+And it is not an instruction to build another production-grade gate first.
+
+## 9. Referrals carried forward as ordinary Work PRs
+
+**None of these blocks the start of exploratory strategy research**, by the same
+ruling.
+
+| Referral | What it is |
+| --- | --- |
+| `READ_ROUTE_DECODES_ONE_ROW_PAST_THE_WINDOW_DISCLOSURE_IS_WRONG_REFERRED` | Reorder the loop so the timestamp is read before the row is decoded, **and** correct the three false statements in `read_route.py` (§6.1) |
+| `R1_SURVEY_PRODUCES_COST_TABLES_WITHOUT_THE_APPROVAL_NAMING_THEM_REFERRED` | Gate `cost_table` production on an approval that names it; record NR-F and NR-I as engaged |
+| `GRANT_LEDGER_PER_WINDOW_PROVENANCE_JUSTIFICATION_IS_NOT_TRUE_REFERRED` | Correct the same wording in `streaming.py` that `CLAUDE.md` is corrected for here |
+| `R1_SURVEY_REQUIRED_OUTPUTS_IS_A_HARD_CODED_SELF_ATTESTATION_REFERRED` | Tie `required_outputs` to the artefacts actually produced |
+
+**Why none of the four is fixed in this PR, stated plainly.** Every one of them
+lives in `read_route.py`, `r1_survey.py` or `streaming.py` — all on the
+fingerprint surface. Editing any of them, **including a docstring**, moves
+`e147542a…` and invalidates both grants, which would require this evidence PR to
+also un-tick §5a and record the grants as refused — in the same change that
+records R1 having run under them. That is a confusing state to create for a
+comment fix, and the execution command asked for a governance/evidence PR without
+a large reader source change mixed in.
+
+So the false statements in `read_route.py` are **still there and still false** as
+this merges. They are quoted verbatim in §6.1 so no reader has to find them, and
+the first of the four Work PRs corrects them. Recording that they remain is the
+point: this document does not claim they are fixed.
+
+## 10. What this is not
 
 `TRACK_A_R1_EXECUTED_ON_AUTHORIZED_HISTORICAL_DEVELOPMENT_CORPUS` **is not
-recorded.** The execution command makes that token conditional on the review
-finding no material blocker, and both roles found one. The record-keeping half is
-closed by this change; §6.1 and §6.3 need a human + ChatGPT ruling first.
+recorded**, and §8.4 says why: its wording is no longer true.
+`TRACK_A_R1_CORE_EXECUTION_ACCEPTED_WITH_POST_EXECUTION_EXCLUSIONS` is what
+holds.
 
 This run does **not** mean: an M15 edge is confirmed; a strategy candidate has
-been selected; OOS has been passed or read; Gate-3a has been passed; Formal
-Confirmation has been passed; anything is production ready.
+been selected; OOS has been passed, or read as a dataset; Gate-3a has been
+passed; Formal Confirmation has been passed; anything is production ready.
+
+It also does **not** mean the historical OOS slice is untouched — §8.1 — nor
+that the cost figures it produced are results — §8.2.
 
 R1 (first read), R3 (training) and R4 (evaluation) remain **separate Red gates**.
 Nothing here authorises R2, an OOS read, a strategy search, a candidate
