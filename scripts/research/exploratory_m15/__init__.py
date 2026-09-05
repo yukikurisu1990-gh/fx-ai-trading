@@ -40,6 +40,8 @@ place to stop an accident is where the dates are parsed.
 
 from __future__ import annotations
 
+import re
+from datetime import date
 from typing import Final
 
 CLASSIFICATION: Final[str] = "NON_DECISION_BEARING_EXPLORATORY_ONLY"
@@ -88,6 +90,41 @@ def pip_size(pair: str) -> float:
     return 0.01 if pair.endswith("_JPY") else 0.0001
 
 
+_UTC_DATE: Final[re.Pattern[str]] = re.compile(r"\d{4}-\d{2}-\d{2}")
+
+
+class MalformedUtcDateError(ValueError):
+    """Raised when a span bound is not an exact `YYYY-MM-DD` UTC date.
+
+    Both span guards compare bounds as **strings**, which is sound only for
+    fixed-width dates. A truncated bound silently defeats them: `"2025"` sorts
+    below `"2025-04-25"`, so it passes a `start < DEVELOPMENT_START_UTC` test,
+    and a row stamp `"2025-12-29T…"` sorts below a `"2025T99"` sentinel because
+    `-` (0x2D) precedes `T` (0x54) — so the row is decoded, and under
+    `HISTORICAL_EXPLORATORY_OOS_PRISTINE_CLAIM_WITHDRAWN` a decode is a read. An
+    independent audit found this reachable through the public `end` keyword of
+    both readers.
+
+    The fix is to refuse the shape rather than to patch each comparison. Once a
+    bound is known to be exactly `YYYY-MM-DD`, string order and date order
+    coincide and every comparison downstream of it is sound again.
+    """
+
+
+def utc_date(value: str, *, field: str) -> date:
+    """Parse an exact `YYYY-MM-DD` UTC date, refusing every other shape."""
+    if not isinstance(value, str) or not _UTC_DATE.fullmatch(value):
+        raise MalformedUtcDateError(
+            f"{field}={value!r} is not an exact YYYY-MM-DD UTC date. Span bounds are "
+            "compared as strings, and a bound of any other shape makes those "
+            "comparisons unsound rather than merely wrong."
+        )
+    try:
+        return date.fromisoformat(value)
+    except ValueError as error:  # pragma: no cover - unreachable past the regex
+        raise MalformedUtcDateError(f"{field}={value!r} is not a real date") from error
+
+
 #: The span this package may touch, and the first date it may not.
 DEVELOPMENT_START_UTC: Final[str] = "2025-04-25"
 DEVELOPMENT_END_UTC: Final[str] = "2025-12-28"
@@ -100,5 +137,7 @@ __all__ = [
     "DEVELOPMENT_END_UTC",
     "DEVELOPMENT_START_UTC",
     "FIRST_FORBIDDEN_UTC",
+    "MalformedUtcDateError",
     "pip_size",
+    "utc_date",
 ]

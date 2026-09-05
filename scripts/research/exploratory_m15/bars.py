@@ -28,6 +28,7 @@ from scripts.research.exploratory_m15 import (
     FIRST_FORBIDDEN_UTC,
     PAIRS,
     pip_size,
+    utc_date,
 )
 
 REPO_ROOT: Final[Path] = Path(__file__).resolve().parents[3]
@@ -62,6 +63,15 @@ class ExploratorySpanError(RuntimeError):
 
 
 def _assert_span(start: str, end: str) -> None:
+    #: Refuse a malformed bound before comparing it. This guard's comparisons are
+    #: string comparisons, which are sound only for fixed-width dates: an
+    #: independent audit showed `end="2025-12-2"` passes `end >=
+    #: FIRST_FORBIDDEN_UTC` and then, through the `end + "T99"` sentinel below,
+    #: lets OOS rows reach `json.loads`. The check strictly *narrows* what this
+    #: guard accepts -- every well-formed span it admitted before, it still
+    #: admits, and every span it refused, it still refuses.
+    if utc_date(end, field="end") < utc_date(start, field="start"):
+        raise ExploratorySpanError(f"{start}..{end} is empty")
     if start < DEVELOPMENT_START_UTC:
         raise ExploratorySpanError(
             f"{start} is before the development corpus starts ({DEVELOPMENT_START_UTC})"
@@ -72,8 +82,6 @@ def _assert_span(start: str, end: str) -> None:
             "EXPLORATORY_OOS_SLICE, and neither it nor the dead window nor the forward "
             "epoch is authorised for exploration."
         )
-    if end < start:
-        raise ExploratorySpanError(f"{start}..{end} is empty")
 
 
 def source_path(pair: str) -> Path:
@@ -90,7 +98,6 @@ def read_m1(pair: str, *, start: str = DEVELOPMENT_START_UTC, end: str = DEVELOP
     path = source_path(pair)
     if not path.is_file():
         raise FileNotFoundError(f"{path.name} is not present under data/")
-    stop = end + "T99"  # any timestamp on a later date sorts above this
     times: list[str] = []
     columns: dict[str, list[float]] = {key: [] for key in PRICE_KEYS}
     with path.open(encoding="utf-8") as handle:
@@ -104,9 +111,16 @@ def read_m1(pair: str, *, start: str = DEVELOPMENT_START_UTC, end: str = DEVELOP
             colon = head.index(":", quote)
             first = head.index('"', colon) + 1
             stamp = head[first : head.index('"', first)]
-            if stamp[:10] < start:
+            #: Both bounds compare the row's **date prefix** against a bound
+            #: already known to be exactly ten characters, so the two strings are
+            #: the same width and string order is date order. The previous upper
+            #: bound compared the full stamp against an `end + "T99"` sentinel,
+            #: which is only correct when `end` is well formed -- and the guard
+            #: did not require that.
+            day = stamp[:10]
+            if day < start:
                 continue
-            if stamp > stop:
+            if day > end:
                 break
             row = json.loads(line)
             times.append(stamp)

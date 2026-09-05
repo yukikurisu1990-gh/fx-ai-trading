@@ -35,8 +35,11 @@ from scripts.research.exploratory_m15 import familywise, round2_sensitivity
 
 SEED: Final[int] = 20260905
 DRAWS: Final[int] = 20_000
-#: the pre-registered centre, frozen at `c076988` and not moved this round
-CENTRE: Final[dict[str, Any]] = {"lookback": 480, "hold": 480, "entry_z": 1.0}
+#: The candidate is **not** restated here. An audit found a `CENTRE` literal in
+#: this module that no code read and no test pinned, while the driver built the
+#: real one from `round2.CENTRE` -- two copies of a frozen parameter, one of them
+#: free to drift. The single definition lives in
+#: `supplemental_replication.FROZEN`, which reads `round2.CENTRE`.
 
 
 def _daily(series: pd.Series) -> np.ndarray:
@@ -91,7 +94,13 @@ def rate_comparison(
             round(float(np.percentile(difference, 97.5)), 4),
         ],
         "se": round(float(difference.std()), 4),
-        "p_two_sided_no_difference": round(
+        #: A percentile-bootstrap (CI-inversion) p, not a null-distribution p:
+        #: the resampling distribution is centred on the observed difference,
+        #: so this reports how far zero sits in its tail. It also treats the
+        #: original period's rate as a fixed comparator, and that period is
+        #: where the candidate's neighbourhood was chosen -- which biases the
+        #: difference away from zero.
+        "p_two_sided_no_difference_ci_inversion": round(
             float(2 * min((difference >= 0).mean(), (difference <= 0).mean())), 4
         ),
     }
@@ -101,7 +110,12 @@ def rate_comparison(
         "shortfall_pips_per_pair": round(float(_daily(supplemental_daily).sum() - projected), 1),
     }
 
-    pooled = np.concatenate([_daily(original_daily), _daily(supplemental_daily)])
+    #: Chronological. Concatenating the later period first and then taking
+    #: contiguous blocks bootstraps a series whose "adjacent" days include one
+    #: pair 20 months apart; an audit measured the resulting SE at 0.3563 against
+    #: 0.3862 for the correctly ordered series, i.e. a CI about 8% too tight.
+    pooled_series = pd.concat([supplemental_daily, original_daily]).sort_index()
+    pooled = _daily(pooled_series)
     pooled_boot = _block_bootstrap(pooled, rng, draws)
     out["combined"] = {
         "days": int(len(pooled)),
@@ -117,8 +131,23 @@ def rate_comparison(
     return out
 
 
-def two_sided_power(daily: pd.Series, *, draws: int = DRAWS) -> dict[str, Any]:
-    """Power on `|effect|`, so a negative effect is not silently read as no effect."""
+def two_sided_power(
+    daily: pd.Series, *, alternative: float | None = None, draws: int = DRAWS
+) -> dict[str, Any]:
+    """Power against a **pre-specified** alternative, plus the observed-effect one.
+
+    `alternative` is the effect the study was designed to detect — here, the
+    total the period would have produced had the development rate held. That is
+    the decision-relevant number and it is reported first.
+
+    `power_at_observed_absolute_effect` is kept because the plan asks for it, but
+    it is *observed power*: a monotone restatement of the p-value, and near
+    useless for reading a null result. An audit pointed out that leading with it
+    understated this study by a factor of about 1.4 — in the direction of the
+    conclusion, which is not a reason to leave it uncorrected.
+
+    Power on `|effect|`, so a negative effect is not silently read as no effect.
+    """
     rng = np.random.default_rng(SEED)
     values = _daily(daily)
     boot = _block_bootstrap(values, rng, draws) * len(values)
@@ -128,17 +157,36 @@ def two_sided_power(daily: pd.Series, *, draws: int = DRAWS) -> dict[str, Any]:
     mde = (z_alpha + z_power) * sd
     power = float(1 - stats.norm.cdf(z_alpha - abs(observed) / sd)) if sd > 0 else 0.0
     multiple = (mde / abs(observed)) ** 2 if observed else float("inf")
-    return {
+    #: Trading days and calendar days are different units, and `round2_power`
+    #: reports the calendar one. Reporting only the first made this round's "+190
+    #: days" look like a correction of Round 2's "+220" for the same quantity.
+    trading_days = int(len(values))
+    index = values_index(daily)
+    calendar_days = int((index.max() - index.min()).days) + 1
+    out = {
         "observed_net_pips_per_pair": round(observed, 1),
         "sign": "positive" if observed > 0 else "negative",
         "effect_sd": round(sd, 1),
         "minimum_detectable_effect_two_sided_80pct": round(mde, 1),
         "abs_observed_over_mde": round(abs(observed) / mde, 2) if mde else None,
         "power_at_observed_absolute_effect": round(power, 2),
-        "span_days": int(len(values)),
+        "trading_days": trading_days,
+        "calendar_span_days": calendar_days,
         "span_multiple_for_80pct": round(float(multiple), 2),
-        "additional_days_needed": int(max(0.0, multiple * len(values) - len(values))),
+        "additional_trading_days_needed": int(max(0.0, multiple * trading_days - trading_days)),
+        "additional_calendar_days_needed": int(max(0.0, multiple * calendar_days - calendar_days)),
     }
+    if alternative is not None:
+        out["pre_specified_alternative"] = round(float(alternative), 1)
+        out["power_against_pre_specified_alternative"] = round(
+            float(1 - stats.norm.cdf(z_alpha - abs(alternative) / sd)) if sd > 0 else 0.0, 3
+        )
+    return out
+
+
+def values_index(daily: pd.Series) -> pd.DatetimeIndex:
+    grouped = daily.groupby(daily.index.floor("D")).sum()
+    return pd.DatetimeIndex(grouped.index)
 
 
 def family_of_nine(loaded: dict[str, pd.DataFrame]) -> dict[str, pd.Series]:
@@ -153,18 +201,24 @@ def family_of_nine(loaded: dict[str, pd.DataFrame]) -> dict[str, pd.Series]:
 
 
 def family_max(loaded: dict[str, pd.DataFrame], *, reference: float, draws: int = DRAWS):
-    """Round 2's decision rule, applied unchanged to the supplemental family."""
+    """Round 2's decision rule, applied unchanged to the supplemental family.
+
+    `reference` is the **pre-specified alternative** — the total this period
+    would have produced had the development rate held — not the development
+    period's own total. The two differ because the spans differ, and using the
+    latter reports power against an effect nobody hypothesised for this window.
+    """
     return round2_sensitivity.power_under_the_family_max_rule(
         family_of_nine(loaded), effects=(reference,), draws=draws
     )
 
 
 __all__ = [
-    "CENTRE",
     "DRAWS",
     "SEED",
     "family_max",
     "family_of_nine",
     "rate_comparison",
     "two_sided_power",
+    "values_index",
 ]
