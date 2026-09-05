@@ -92,6 +92,39 @@ seen historical development data; every output is
 Confirmation — each is its own Red gate — and it is not an instruction to build
 another production-grade gate first.
 
+**Three exploratory rounds have run, and they closed the only candidate they
+raised.** Round 1 found no edge at the M15 decision scale and left a 4-to-6 day
+reversal standing; Round 2 pre-registered a 39-configuration family and returned
+`MULTI_DAY_REVERSAL_UNRESOLVED_INSUFFICIENT_DETECTION_POWER`; the **Supplemental
+Historical Replication** of 2026-09-05 applied that candidate frozen to
+`2023-04-26 … 2025-04-24` and returned
+`MULTI_DAY_REVERSAL_FAILED_SUPPLEMENTAL_HISTORY_REPLICATION` — −577.3 pips/pair
+net and **−426.5 gross**, 1 of 20 pairs positive, mean IC `+2.35%` where the
+development window gave `−25.07%`. Records in `docs/research/`.
+
+Two consequences bind later sessions.
+
+* **`2023-04-26 … 2025-04-24` is now `EXPLORATORY_SEEN_DATA`** alongside the
+  development corpus, and cannot be `UNSEEN` again. Neither span is available as
+  a future holdout. It was read through `scripts/research/exploratory_m15/`,
+  which is **off** the R1 fingerprint surface, so the grants in force are
+  unaffected; `bars._assert_span` was not weakened, and the supplemental route
+  carries its own narrower guard whose upper bound is `DEVELOPMENT_START_UTC`
+  itself. The OOS slice, the dead window and the forward epoch were not read —
+  which two audits verified against the caches rather than against the claim.
+  Both also found that a **malformed** bound defeated both guards on paper, so
+  "the guard refuses it" now means "refuses it, and refuses anything that is not
+  an exact `YYYY-MM-DD`". The authorisation for the read is recorded at §0 of
+  `docs/research/m15_track_a_supplemental_replication_results.md`: an act
+  recorded in a document, not a `ReadGrant`, because this route is outside the
+  gated one.
+* **A failed rule is not an inverted rule.** The supplemental IC is positive, so
+  a momentum version of the same signal would have paid over those 730 days.
+  That was not pre-registered, was not run, and is `POST_HOC_EXPLORATORY`.
+  Inverting a rule on the data that refuted it is the search these rounds exist
+  to avoid, and no round licenses the next one: a further round is a new
+  instruction, not a continuation.
+
 Do not read the rest of this section as a snapshot — evaluate it:
 
 0. **PR #451 approved and merged** — done, `4f45515` (2026-08-30). §8.11–§8.13
