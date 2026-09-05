@@ -32,7 +32,9 @@ import numpy as np
 import pandas as pd
 
 from scripts.research.exploratory_m15 import PAIRS, engine, momentum, round2, runner
-from scripts.research.exploratory_m15 import supplemental_power as power
+from scripts.research.exploratory_m15 import bars as bars_module
+from scripts.research.exploratory_m15 import momentum_inference as inference
+from scripts.research.exploratory_m15 import supplemental as supp
 
 FROZEN: Final[dict[str, Any]] = {
     "lookback": momentum.FROZEN_LOOKBACK,
@@ -366,19 +368,100 @@ def integrity(loaded: dict[str, pd.DataFrame]) -> dict[str, Any]:
     }
 
 
+def three_span_contrast(fresh: dict[str, pd.DataFrame]) -> dict[str, Any]:
+    """The fresh span beside the two seen ones, and the rate difference between them.
+
+    Only the fresh row is evidence. The other two are `EXPLORATORY_SEEN_DATA` and
+    are labelled so in every row. An audit found this table's artifact had been
+    produced by a throwaway command with no committed code behind it — the Round 2
+    failure mode recurring, and on the very claim the first draft called the round's
+    most important finding. It is computed here now.
+    """
+    spans = (
+        ("momentum_B_2021-04-26..2023-04-25", fresh, "FRESH"),
+        ("supplemental_2023-04-26..2025-04-24", {p: supp.load(p) for p in PAIRS}, "SEEN"),
+        ("development_2025-04-25..2025-12-28", {p: bars_module.load(p) for p in PAIRS}, "SEEN"),
+    )
+    rows = []
+    daily: dict[str, pd.Series] = {}
+    for label, loaded, state in spans:
+        forward = evaluate_config(loaded, momentum.signal, **FROZEN)
+        reverse = round2.evaluate_config(loaded, **FROZEN)
+        ic, breadth, counted = mean_ic(loaded, lookback=FROZEN["lookback"], horizon=FROZEN["hold"])
+        days = int(len(forward["daily_net"]))
+        daily[label] = forward["daily_net"]
+        rows.append(
+            {
+                "span": label,
+                "state": state,
+                "days": days,
+                "momentum_net": forward["net_pips_per_pair"],
+                "momentum_gross": forward["gross_pips_per_pair"],
+                "reversal_net": reverse["net_pips_per_pair"],
+                "reversal_gross": reverse["gross_pips_per_pair"],
+                "cost": forward["cost_pips_per_pair"],
+                "mean_ic": round(ic, 4),
+                "pairs_with_positive_ic": f"{breadth}/{counted}",
+                "momentum_rate_per_day": round(forward["net_pips_per_pair"] / days, 4),
+                "reversal_rate_per_day": round(reverse["net_pips_per_pair"] / days, 4),
+                "momentum_interval": inference.interval(forward["daily_net"]),
+                "reversal_interval": inference.interval(reverse["daily_net"]),
+            }
+        )
+    names = [row["span"] for row in rows]
+    return {
+        "note": "only the FRESH row is replication evidence; the SEEN rows are contrast",
+        "identity": "net_momentum + net_reversal == -2 * cost on every span, so the two "
+        "columns are not two independent measurements",
+        "rows": rows,
+        "differences": {
+            f"{a}__vs__{b}": inference.difference(daily[a], daily[b])
+            for a, b in ((names[0], names[1]), (names[1], names[2]), (names[0], names[2]))
+        },
+    }
+
+
 def main() -> dict[str, Any]:
     loaded = momentum.load_all()
+    runner.write(
+        "momentum_b_data_summary",
+        {
+            "span": [momentum.MOMENTUM_START_UTC, momentum.MOMENTUM_END_UTC],
+            "span_label": momentum.SPAN_LABEL,
+            "scope": momentum.SCOPE,
+            "per_pair": momentum.build_cache(),
+        },
+    )
     replication = primary(loaded)
     result = replication.pop("_result")
     runner.write("momentum_b_primary", replication)
     runner.write("momentum_b_diagnostics", diagnostics(loaded, result))
     runner.write("momentum_b_integrity", integrity(loaded))
+    runner.write("momentum_b_three_span_contrast", three_span_contrast(loaded))
+
+    #: The alternatives are named rather than left implicit. Neither was
+    #: pre-registered -- the plan named none, which is itself a defect an audit
+    #: raised -- so both are labelled post-hoc where they are reported.
+    supplemental_rate = 275.7 / 624
+    development_rate = 262.1 / 212
+    days = len(result["daily_net"])
     runner.write(
-        "momentum_b_power",
+        "momentum_b_inference",
         {
-            "two_sided": power.two_sided_power(result["daily_net"]),
-            "note": "the pre-specified alternative is zero: this is a first look at an "
-            "unread span, not a replication of a measured rate",
+            "primary": inference.interval(result["daily_net"]),
+            "power": inference.power_against(
+                result["daily_net"],
+                {
+                    "motivating_alternative_supplemental_momentum_rate": supplemental_rate * days,
+                    "development_window_reversal_magnitude": development_rate * days,
+                },
+            ),
+            "ic_null": inference.ic_null(
+                loaded, lookback=FROZEN["lookback"], horizon=FROZEN["hold"]
+            ),
+            "reversal_on_the_fresh_span": inference.interval(
+                round2.evaluate_config(loaded, **FROZEN)["daily_net"]
+            ),
         },
     )
     return replication

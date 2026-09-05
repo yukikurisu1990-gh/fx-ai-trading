@@ -100,16 +100,28 @@ class MomentumSpanError(RuntimeError):
 
 
 def assert_momentum_span(start: str, end: str) -> None:
-    """The guard for this route only. It relaxes no other guard."""
-    if utc_date(end, field="end") < utc_date(start, field="start"):
+    """The guard for this route only. It relaxes no other guard.
+
+    Comparisons are on the **parsed dates**, never on the caller's objects. An
+    audit built a `str` subclass overriding `__lt__`/`__ge__` and walked all
+    three guards, after which the reader decoded the whole ten-year archive —
+    the OOS slice, the dead window and the forward epoch included. `utc_date`
+    returns a real `datetime.date`, which no caller can poison, so the check is
+    on a value this module derived rather than on one it was handed. For genuine
+    strings the behaviour is unchanged: at fixed width, string order and date
+    order coincide.
+    """
+    lo = utc_date(start, field="start")
+    hi = utc_date(end, field="end")
+    if hi < lo:
         raise MomentumSpanError(f"{start}..{end} is empty")
-    if start < MOMENTUM_START_UTC:
+    if lo < utc_date(MOMENTUM_START_UTC, field="momentum start"):
         raise MomentumSpanError(
             f"{start} is before the resolved momentum span ({MOMENTUM_START_UTC}); "
             "the span was fixed from the archive manifest before any content was read "
             "and is not an argument"
         )
-    if end >= FIRST_FORBIDDEN_FOR_THIS_ROUTE_UTC:
+    if hi >= utc_date(FIRST_FORBIDDEN_FOR_THIS_ROUTE_UTC, field="supplemental start"):
         raise MomentumSpanError(
             f"{end} reaches {FIRST_FORBIDDEN_FOR_THIS_ROUTE_UTC} or later. That is the "
             "already-seen supplemental span, and beyond it the development corpus, the "
