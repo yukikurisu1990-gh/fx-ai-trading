@@ -2,8 +2,15 @@
 
 **Track: `TRACK_A`.**
 
-**The development corpus is `EXPLORATORY_SEEN_DATA`.** It was `UNSEEN` until
-2026-09-05T03:26:09Z and it cannot be again.
+**The development corpus is `EXPLORATORY_SEEN_DATA`.** It was `UNSEEN` until the
+write-ahead declaration was written on **2026-09-05**, and it cannot be again.
+
+An earlier draft gave that moment as `03:26:09Z`, to the second, and a review
+role could not find the value in any committed artefact — because
+`seen_ledger.declare` records **no write time**. The only committed timestamp is
+the run identity's `started_at_utc`, `2026-09-05T03:26:07Z`; `03:26:09Z` was a
+file mtime, which a clone does not preserve. The moment of the transition is not
+recorded anywhere, and saying so is better than sourcing it from a filesystem.
 
 An earlier draft of this line claimed that **every** governance sentence still
 saying "nothing has been read" was corrected in the same change. A review role
@@ -140,8 +147,9 @@ Selected results, descriptive only and decision-bearing on nothing:
 
 * **Median spread** ranges from 1.3 pip (`AUD_USD`, all sessions) to 5.5 pip
   (`GBP_AUD`). Europe is the tightest session for nearly every pair.
-* **Eligible-bar rate** medians: asia 0.950, europe 0.997, us 0.978. The floor is
-  `AUD_NZD` (0.359–0.603 across sessions) and `EUR_GBP` in asia (0.311).
+* **Eligible-bar rate** medians: asia 0.950, europe 0.997, us 0.978. The lowest
+  single cell is `EUR_GBP` in asia (0.311); the pair lowest across all three
+  sessions is `AUD_NZD` (0.359–0.603).
 * **Barrier/cost ratio**, post-floor TP: median 3.323 across pairs, from 3.000
   (`AUD_NZD`) to 6.556 (`USD_JPY`). Pooled n = 283,073.
 * **T-3 is not evaluated.** `numerator_ruling = UNRULED_ALL_THREE_READINGS_REPORTED`,
@@ -333,6 +341,25 @@ the referral, left open rather than mapped onto a neighbour. Tests are outside
 the fingerprint surface, so checking the claim costs nothing; fixing the field
 itself is the Work PR.
 
+**Committing the seen ledger makes it a live input to the write-ahead gate, in
+every clone.** `seen_ledger.assert_declared` asks only whether *some prior
+declaration* covers the requested interval; it does not compare run ids. So from
+this merge, a fresh clone starts with `2025-04-25 … 2025-12-28` × `PAIRS_20`
+× `M1` **already declared** — that gate is pre-satisfied for the whole
+development corpus and any sub-interval of it, for any run id, without writing a
+new declaration. Before the commit the same call was refused, because the clone's
+ledger was empty.
+
+That is the correct consequence of an irreversible transition having happened:
+the corpus **is** seen, and a gate that pretended otherwise would be the lie.
+What it is not is invisible, which is why it is written here. The guard that
+still binds is the **grant**, unchanged, and the slice is still refused. A review
+role measured both, and measured that nothing tested it — eighteen mutations of
+the committed evidence, fourteen of them green, including widening this
+declaration into the slice. `tests/m15_track_a/test_r1_execution_evidence.py`
+pins it now: the declaration, the 320 rows, the breadth flag, the single run
+identity, the four hashes and the adjudication's polarity.
+
 **The three ledgers are committed here, and that closes a defect both review
 roles found independently.** MRG §8.13.5 items 5 and 6 require the
 `EXPLORATORY_SEEN_DATA` ledger and the breadth record to be "write-ahead,
@@ -341,7 +368,14 @@ append-only, **committed** — it is what makes the one-way transition auditable
 this change the only record of an irreversible transition was three untracked,
 deletable files.
 
-**The driver is committed verbatim, with a `.py.txt` suffix.** `r1_orchestrator`
+**The driver is committed verbatim, with a `.py.txt` suffix and a
+`.gitattributes` `-text` entry.** The suffix keeps the formatter off it; the
+`-text` keeps **git** off it. Without the second, a CRLF host stores an
+LF-normalised blob — measured at `0d245922…`/9,049 against the `3a799236…`/9,276
+this record states — so the hash of "the bytes that executed" would not
+reproduce in a fresh clone, and the only record of how an irreversible run was
+driven could not be checked. The ledgers already had that protection; the
+evidence directory did not. `r1_orchestrator`
 has no CLI by design, so a driver had to be written, and it was written outside
 the repository — which meant the run was not reproducible and "unpatched" was a
 claim rather than a check. The suffix keeps the archived bytes out of the

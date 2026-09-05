@@ -39,6 +39,12 @@ confers it.
 **These are authorizations. Neither is an execution command**, and recording
 them runs nothing. Nothing has been read; the development corpus is `UNSEEN`.
 
+> **No longer true, and not rewritten.** On **2026-09-05** Track A R1 ran on the
+> authorised development corpus under a later pair of grants, so the corpus is
+> `EXPLORATORY_SEEN_DATA`. The paragraph above records the state when *these*
+> grants were written, and these grants were never exercised — they were already
+> invalid. See `m15_track_a_r1_execution_record.md`.
+
 **Risk tier:** Amber. Authorization-only: no implementation, contract, strategy,
 model, feature, calendar, reader, derivation, fingerprint or survey code changes
 here.
