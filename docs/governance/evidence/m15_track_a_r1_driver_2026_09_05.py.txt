@@ -1,0 +1,227 @@
+"""Track A R1 — the authorised real historical execution.
+
+`TRACK_A_R1_REAL_HISTORICAL_EXECUTION_EXPLICITLY_AUTHORIZED`, human + ChatGPT,
+2026-09-05, on approved head `0bb987e7…` / fingerprint `e147542a…`, over
+`2025-04-25 … 2025-12-28` x PAIRS_20 x M1.
+
+**The committed route is not patched.** No wrapper, no counter, no monkeypatch
+sits inside `run_r1`: what runs is exactly what the fingerprint covers. Every
+number below is read from committed instruments (`streaming`'s retention
+counter, the ledgers, the returned `R1Result`) or measured outside the process's
+authorised path (wall clock, RSS).
+"""
+
+import json
+import platform
+import sys
+import time
+import traceback
+from datetime import UTC, datetime
+from pathlib import Path
+
+sys.path.insert(0, "C:/Users/yukik/fx-ai-trading")
+
+from scripts.m15_gate3a.pair_authority import PAIRS_20  # noqa: E402
+from scripts.m15_track_a import (  # noqa: E402
+    authorization,
+    breadth,
+    containment,
+    identity,
+    isolation,
+    oos_slice,
+    r1_orchestrator,
+    read_route,
+    scratch,
+    seen_ledger,
+    streaming,
+)
+
+APPROVED_FINGERPRINT = "e147542aec04f2cf781c5ecd062d8a08b1d058007634c54357f00756736b5e50"
+APPROVED_HEAD = "0bb987e775658db3532affdc3992cad94382faa3"
+EXECUTION_HEAD = "ca2bf2992382c021c259709aed38b90a481f5bc4"
+RECORD = (
+    scratch.repo_root() / "docs" / "governance" / "m15_track_a_r1_dual_grants_final_preflight.md"
+)
+OUT = scratch.scratch_root() / "r1_execution_2026_09_05"
+
+
+def rss_bytes() -> int:
+    if platform.system() == "Windows":
+        import ctypes
+        from ctypes import wintypes
+
+        class Counters(ctypes.Structure):
+            _fields_ = [
+                ("cb", wintypes.DWORD),
+                ("PageFaultCount", wintypes.DWORD),
+                ("PeakWorkingSetSize", ctypes.c_size_t),
+                ("WorkingSetSize", ctypes.c_size_t),
+                ("QuotaPeakPagedPoolUsage", ctypes.c_size_t),
+                ("QuotaPagedPoolUsage", ctypes.c_size_t),
+                ("QuotaPeakNonPagedPoolUsage", ctypes.c_size_t),
+                ("QuotaNonPagedPoolUsage", ctypes.c_size_t),
+                ("PagefileUsage", ctypes.c_size_t),
+                ("PeakPagefileUsage", ctypes.c_size_t),
+            ]
+
+        counters = Counters()
+        counters.cb = ctypes.sizeof(Counters)
+        ctypes.windll.psapi.GetProcessMemoryInfo(
+            ctypes.windll.kernel32.GetCurrentProcess(), ctypes.byref(counters), counters.cb
+        )
+        return int(counters.PeakWorkingSetSize)
+    import resource
+
+    return resource.getrusage(resource.RUSAGE_SELF).ru_maxrss * 1024
+
+
+def grant_from_record(heading: str) -> authorization.ReadGrant:
+    import re
+
+    text = RECORD.read_text(encoding="utf-8")
+    section = re.split(
+        r"^## ", text.split(heading, 1)[1], maxsplit=1, flags=re.MULTILINE
+    )[0]
+    row = {
+        f: v.strip().strip("`")
+        for f, v in re.findall(r"^\| \*\*(\w+)\*\* \| (.+?) \|$", section, re.MULTILINE)
+    }
+    return authorization.ReadGrant(
+        operation=row["operation"],
+        span_start_utc=row["span_start_utc"],
+        span_end_utc=row["span_end_utc"],
+        pairs=tuple(row["pairs_explicit"].split()),
+        timeframe=row["timeframe"],
+        approved_head_sha=row["approved_head_sha"],
+        approved_implementation_fingerprint=row["approved_implementation_fingerprint"],
+        approver_record=row["approver_record"],
+    )
+
+
+def log(message: str) -> None:
+    stamp = datetime.now(UTC).strftime("%H:%M:%S")
+    print(f"[{stamp}] {message}", flush=True)
+
+
+# --------------------------------------------------------------------------
+# Last checks before the guards go on. Still 0 bytes of market data.
+# --------------------------------------------------------------------------
+measured = containment.implementation_fingerprint()
+if measured != APPROVED_FINGERPRINT:
+    raise SystemExit(f"REFUSED: fingerprint {measured} != approved {APPROVED_FINGERPRINT}")
+log(f"fingerprint {measured[:12]}... surface {len(containment.implementation_surface())}")
+
+read_grant = grant_from_record("## 2. Grant A")
+derivation_grant = grant_from_record("## 3. Grant B")
+run = identity.RunIdentity(
+    run_id="track-a-r1-authorized-historical-execution-2026-09-05",
+    code_sha=APPROVED_HEAD,
+    calendar_semantics=identity.CALENDAR_UTC_DATES_NO_MARKET_HOURS,
+    started_at_utc=datetime.now(UTC).isoformat(timespec="seconds").replace("+00:00", "Z"),
+)
+plan = r1_orchestrator.R1Plan(
+    span_start_utc=oos_slice.DEVELOPMENT_START_UTC,
+    span_end_utc=oos_slice.DEVELOPMENT_END_UTC,
+    pairs=tuple(sorted(PAIRS_20)),
+)
+log(f"plan {plan.span_start_utc}..{plan.span_end_utc} x {len(plan.pairs)} pairs x {plan.timeframe}")
+
+source_bytes = {p: read_route.source_path_for(p).stat().st_size for p in sorted(PAIRS_20)}
+log(f"source on disk: {sum(source_bytes.values()):,} bytes across {len(source_bytes)} files")
+
+if seen_ledger.read_declarations():
+    raise SystemExit("REFUSED: the seen-data ledger is not empty")
+log("seen ledger empty; corpus UNSEEN")
+
+streaming.reset_retention_instrument()
+
+# --------------------------------------------------------------------------
+# The run. One call to the formal entry point, and nothing else.
+# --------------------------------------------------------------------------
+isolation.install_all()
+started = time.perf_counter()
+failure = None
+result = None
+try:
+    log("run_r1: starting -- from here the corpus becomes EXPLORATORY_SEEN_DATA")
+    result = r1_orchestrator.run_r1(
+        plan,
+        run,
+        read_grant=read_grant,
+        derivation_grant=derivation_grant,
+    )
+    log(f"run_r1: returned {result.status}")
+except BaseException as exc:  # noqa: BLE001 - recorded, re-raised after the report
+    failure = exc
+    log(f"run_r1: RAISED {type(exc).__name__}: {exc}")
+finally:
+    elapsed = time.perf_counter() - started
+    isolation.uninstall_all()
+
+# --------------------------------------------------------------------------
+# What the run left behind, from committed instruments only.
+# --------------------------------------------------------------------------
+def safely(what, thunk, default=None):
+    """A reporting bug must not lose the outcome of an irreversible run."""
+    try:
+        return thunk()
+    except Exception as exc:  # noqa: BLE001 - reporting only
+        log(f"post-run report: {what} unavailable ({type(exc).__name__}: {exc})")
+        return default
+
+
+declarations = safely("seen declarations", seen_ledger.read_declarations, [])
+grant_ledger = seen_ledger.grant_ledger_path()
+grant_rows = safely(
+    "grant ledger",
+    lambda: sum(1 for line in grant_ledger.open(encoding="utf-8") if line.strip()),
+    0,
+)
+summary = {
+    "authorization": "TRACK_A_R1_REAL_HISTORICAL_EXECUTION_EXPLICITLY_AUTHORIZED",
+    "execution_head": EXECUTION_HEAD,
+    "approved_head": APPROVED_HEAD,
+    "implementation_fingerprint": measured,
+    "surface_files": len(containment.implementation_surface()),
+    "run_id": run.run_id,
+    "started_at_utc": run.started_at_utc,
+    "wall_clock_seconds": round(elapsed, 1),
+    "peak_rss_bytes": safely("peak RSS", rss_bytes, 0),
+    "source_bytes_on_disk": sum(source_bytes.values()),
+    "source_bytes_by_pair": source_bytes,
+    "retained_raw_rows_peak": safely("retention peak", streaming.peak_retained_raw_rows, None),
+    "retained_raw_rows_live_after": safely("retention live", streaming.retained_raw_rows, None),
+    "seen_declarations": safely(
+        "declaration records", lambda: [d.as_record() for d in declarations], [str(d) for d in declarations]
+    ),
+    "grant_ledger_rows": grant_rows,
+    "breadth_k": None if result is None else result.breadth_k,
+    "status": None if result is None else result.status,
+    "next_stage": None if result is None else result.next_stage,
+    "failure": None
+    if failure is None
+    else {"type": type(failure).__name__, "message": str(failure)},
+}
+if result is not None:
+    summary["r1_result"] = safely("R1Result record", result.as_record)
+    summary["survey_record"] = safely("survey record", result.survey.as_record)
+    summary["seen_declaration_id"] = str(result.seen_declaration)
+
+OUT.mkdir(parents=True, exist_ok=True)
+(OUT / "r1_execution_summary.json").write_text(
+    json.dumps(summary, indent=2, sort_keys=True, default=str), encoding="utf-8"
+)
+log(f"summary written to {OUT / 'r1_execution_summary.json'}")
+
+print("\n=== Track A R1 execution ===")
+print(f"status            : {summary['status']}")
+print(f"wall clock        : {summary['wall_clock_seconds']}s")
+print(f"peak RSS          : {summary['peak_rss_bytes']:,} bytes")
+print(f"retained raw rows : peak {summary['retained_raw_rows_peak']:,}, live {summary['retained_raw_rows_live_after']}")
+print(f"seen declarations : {len(summary['seen_declarations'])}")
+print(f"grant ledger rows : {summary['grant_ledger_rows']}")
+print(f"breadth K         : {summary['breadth_k']}")
+if failure is not None:
+    print("\n--- traceback ---")
+    traceback.print_exception(type(failure), failure, failure.__traceback__)
+    raise SystemExit(1)

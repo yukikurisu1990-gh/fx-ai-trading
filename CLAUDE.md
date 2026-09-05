@@ -49,10 +49,21 @@ otherwise.
 - **Track B — Formal Confirmation.** One declared candidate, frozen in every
   respect, run **once** on unseen forward data. Not a place to redesign.
 
-**Track A R1 is implementation-ready and both grants are valid — recorded at
-PR #462, bound to approved head `0bb987e7…` and measured fingerprint
-`e147542a…`. No read has been performed, and a valid grant is still not an
-execution command.** Do not read this as a snapshot — evaluate it:
+**Track A R1 has been executed.** On **2026-09-05** an explicit human + ChatGPT
+execution command authorised it, and `r1_orchestrator.run_r1` ran once on the
+PR #462 grants over `2025-04-25 … 2025-12-28` × `PAIRS_20` × `M1`. **The
+development corpus is `EXPLORATORY_SEEN_DATA` and cannot be `UNSEEN` again.**
+The record, the two review roles' findings and four open referrals are in
+`docs/governance/m15_track_a_r1_execution_record.md`.
+
+`NO_REAL_DATA_READ_PERFORMED` and `NO_EXECUTION_PERFORMED` **no longer hold for
+Track A R1's authorised scope** and continue to bind everywhere else.
+`PRODUCTION_READINESS_NOT_CLAIMED` is unchanged. R1 completing authorises
+**nothing** further: R2, an OOS read, training and evaluation are separate Red
+gates, and `TRACK_A_R1_EXECUTED_ON_AUTHORIZED_HISTORICAL_DEVELOPMENT_CORPUS` is
+**not** recorded, because two referred findings need a ruling first.
+
+Do not read the rest of this section as a snapshot — evaluate it:
 
 0. **PR #451 approved and merged** — done, `4f45515` (2026-08-30). §8.11–§8.13
    are citable authority; `APPROVAL_IDENTIFIER_PENDING_UNTIL_MERGE` and
@@ -314,7 +325,11 @@ operations with separate grants, and `derive_m15` refuses without its own.
 - **If instructions conflict**, the repository documents win over the prompt,
   and the stricter reading of a research restriction wins. Say so in the
   report.
-- **Always-binding statuses:** `PRODUCTION_READINESS_NOT_CLAIMED`,
-  `NO_EXECUTION_PERFORMED`. The forward epoch stays
+- **Always-binding statuses:** `PRODUCTION_READINESS_NOT_CLAIMED`.
+  `NO_EXECUTION_PERFORMED` and `NO_REAL_DATA_READ_PERFORMED` were discharged for
+  **Track A R1's authorised scope only** by the human + ChatGPT execution command
+  of 2026-09-05 (`docs/governance/m15_track_a_r1_execution_record.md`); they bind
+  for every other read, stage and span, and a session may not discharge them by
+  reading them. The forward epoch stays
   `FORWARD_EPOCH_ADOPTION_BLOCKED_INSUFFICIENT_SAMPLE_ADOPTION_WAITS` until a
   recorded ruling changes it.
