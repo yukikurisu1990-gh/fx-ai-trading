@@ -118,7 +118,7 @@ LEDGER: Final[list[dict[str, Any]]] = [
         "configurations": "105 descriptive cells per panel, none selected",
         "prespecified": True,
         "result": "see m15_round_a_results.md",
-        "status": "OPEN — Round A",
+        "status": "CLOSED — Round A",
     },
     {
         "id": "H-009",
@@ -130,7 +130,75 @@ LEDGER: Final[list[dict[str, Any]]] = [
         "configurations": "39 pre-registered cells",
         "prespecified": True,
         "result": "see m15_round_a_results.md",
-        "status": "OPEN — Round A",
+        "status": "CLOSED — Round A",
+    },
+    {
+        "id": "H-010",
+        "round": "Round B'/B'-1",
+        "population": "all three seen panels, 1-bar sigma-normalised returns",
+        "target": "variance ratio VR(q) against three matched nulls",
+        "condition_family": "none (aggregate second moment)",
+        "horizon_family": "q in {2,4,12,48,96,192,480}",
+        "configurations": "7 horizons x 3 nulls, pre-registered",
+        "prespecified": True,
+        "result": (
+            "VR < 1 at every horizon and panel, stable at q<=192 on both deciding "
+            "panels (z -2.1 to -14.7), family-max p = 0.005 on all three. Carried "
+            "by non-JPY at short horizons: the JPY bloc reaches |z|>=2 at 2 of 12 "
+            "cells and crosses it with the OPPOSITE sign at q=192 on 2021-23. "
+            "POST HOC: not a one-bar effect -- 20 and 17 of 100 lags sit outside a "
+            "3sd null band against 0.27 expected -- and the best linear predictor "
+            "over 96 bars of memory reaches 6-16% of break-even in-sample, at every "
+            "horizon from 1 bar to 12 hours"
+        ),
+        "status": "CLOSED - real but unharvestable microstructure",
+    },
+    {
+        "id": "H-011",
+        "round": "Round B'/B'-2",
+        "population": "excursion anchors on all three seen panels",
+        "target": "retrace geometry against a matched sign-flip null",
+        "condition_family": "2 HTF contexts x 2 states, plus unconditioned",
+        "horizon_family": "k in {1.5, 2.0, 3.0} sigma",
+        "configurations": "15 pre-registered cells",
+        "prespecified": True,
+        "result": (
+            "k=2.0 and k=3.0 survive all five clauses on both deciding panels "
+            "(+0.066/+0.093 and +0.147/+0.157, z 2.97 to 5.70) -- but ONLY after "
+            "the primary null was corrected. The null had re-attached each real "
+            "bar's high/low offsets to a sign-flipped return, and those offsets "
+            "correlate -0.57 with the bar's own sign, so the null carried "
+            "incoherent bars into the two columns the detector reads. The sign "
+            "REVERSED on correction. POST HOC: the same statistic in sigma units, "
+            "with no excursion in its denominator, is positive in all 9 cells and "
+            "significant in none (z +0.18 to +1.96), and real anchors are smaller "
+            "than null anchors (z -2.94), so the fraction is mostly a denominator "
+            "effect. Against the secondary IID null the differences are 2-3x "
+            "larger, so about two-thirds of the effect is volatility clustering"
+        ),
+        "status": (
+            "OPEN - direction-consistent with H-010, not independently established; "
+            "second look at the same data, and its family-wise p is pinned at the "
+            "1/41 floor by 40 draws"
+        ),
+    },
+    {
+        "id": "H-012",
+        "round": "Round B'/B'-4",
+        "population": "all three seen panels",
+        "target": "monthly TSMOM net PnL, cost-inclusive",
+        "condition_family": "none",
+        "horizon_family": "lookback {1,2,3} x hold {1,3} months",
+        "configurations": "6 pre-registered cells",
+        "prespecified": True,
+        "result": (
+            "MONTHLY_TSMOM_NOT_SUPPORTED_IN_EXISTING_PRICE_HISTORY; gross negative in "
+            "11 of 12 cells across both deciding panels, the twelfth disagreeing in "
+            "sign, family-max p = 0.32 / 0.31, every per-cell t in [-1.571, +0.104]. "
+            "An underpowered null result -- about 7 non-overlapping observations per "
+            "pair against 3.5-4.8 effective independent pairs -- not a refutation"
+        ),
+        "status": "CLOSED",
     },
 ]
 
