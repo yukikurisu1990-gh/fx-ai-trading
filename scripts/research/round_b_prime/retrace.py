@@ -250,11 +250,20 @@ def summarise(anchors: pd.DataFrame) -> dict[str, Any]:
     #: `real − null`, which is the quantity the kill condition reads.
     day = pd.to_datetime(anchors["ts"], utc=True).dt.floor("D")
     load = anchors.groupby(day)["max_retrace_fraction"].sum().abs().sort_values()
+    load_sigma = anchors.assign(_a=absolute).groupby(day)["_a"].sum().abs().sort_values()
     for n in (10, 20):
         if len(load) > n:
             kept = anchors[~day.isin(load.index[-n:])]
             out[f"median_retrace_fraction_excluding_top_{n}_days"] = (
                 round(float(kept["max_retrace_fraction"].median()), 5) if len(kept) else None
+            )
+        #: the same trim on the sigma-level statistic. The monetizability
+        #: package reads its kill condition off that one, and a trim computed on
+        #: the fraction would be trimming a different set of days.
+        if len(load_sigma) > n:
+            kept_sigma = absolute[(~day.isin(load_sigma.index[-n:])).to_numpy()]
+            out[f"median_retrace_sigma_excluding_top_{n}_days"] = (
+                round(float(np.median(kept_sigma)), 5) if len(kept_sigma) else None
             )
     out["anchor_days"] = int(load.size)
     return out
@@ -350,6 +359,7 @@ def against_null(
     keys = [
         "median_retrace_fraction",
         "median_retrace_sigma",
+        "median_retrace_sigma_excluding_top_10_days",
         "median_retrace_fraction_excluding_top_10_days",
         "median_retrace_fraction_excluding_top_20_days",
         "mean_retrace_fraction",

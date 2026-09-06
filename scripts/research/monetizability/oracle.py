@@ -15,7 +15,11 @@ The four bounds
   bound; the thing the bounds are measured against.
 * **B-1 perfect take / skip** — the side is fixed by the structure and an oracle
   chooses only *whether* to trade, with perfect foresight.
-* **B-2 perfect side** — an oracle chooses long or short with perfect foresight.
+* **B-2 perfect side** — an oracle chooses long or short with perfect foresight,
+  and is still obliged to trade. It therefore does **not** dominate B-1: every
+  event whose move is smaller than the spread costs it money, while B-1 may skip.
+  Measured on a random walk at a 2.5 pip cost, B-2 comes out *below* B-1, and
+  neither is the overall ceiling.
 * **B-3 achievable selection** — the best **linear** selector on past-only
   features, fitted and scored on the same data. Optimistic, and unlike B-1 and
   B-2 it is limited to information a rule could actually have.
@@ -58,32 +62,44 @@ FEATURE_NAMES: tuple[str, ...] = (
 )
 
 
-def _features(frame: pd.DataFrame, index: np.ndarray, move_sigma: np.ndarray) -> np.ndarray:
-    """The B-3 design matrix at the decision bars, from information at those bars."""
-    sigma = np.asarray(retrace.trailing_sigma(frame), dtype=float)
-    pip = float(frame["pip_size"].iloc[0])
-    spread = frame["spread_close_pips"].to_numpy(dtype=float)
-    atr = np.asarray(engine.atr_pips(frame), dtype=float)
-    context = retrace.htf_context(frame)
-    aligned = (np.asarray(context["htf_trend"], dtype=object) == "aligned").astype(float)
-    outer = (np.asarray(context["htf_location"], dtype=object) == "outer").astype(float)
-    hour = frame["ts"].dt.hour.to_numpy(dtype=float)
+def basis(frame: pd.DataFrame) -> dict[str, np.ndarray]:
+    """Everything B-3's design matrix needs, computed **once per frame**.
 
-    columns = [
-        move_sigma,
-        np.log(np.maximum(sigma[index] / pip, 1e-6)),
-        np.log(np.maximum(spread[index], 1e-6)),
-        np.log(np.maximum(atr[index], 1e-6)),
-        aligned[index],
-        outer[index],
-        np.sin(2 * np.pi * hour[index] / 24.0),
-        np.cos(2 * np.pi * hour[index] / 24.0),
-    ]
+    The rolling windows here cost more than every event evaluation put together,
+    and a panel is scored at four horizons, four phases and three thresholds
+    against the same frame — so recomputing them per population made one null
+    draw take 26 seconds and the whole run infeasible.
+    """
+    pip = float(frame["pip_size"].iloc[0])
+    context = retrace.htf_context(frame)
+    hour = frame["ts"].dt.hour.to_numpy(dtype=float)
+    return {
+        "close": frame["mid_c"].to_numpy(dtype=float),
+        "pip": pip,
+        "sigma": np.asarray(retrace.trailing_sigma(frame), dtype=float),
+        "roundtrip_cost": frame["roundtrip_cost"].to_numpy(dtype=float),
+        "log_sigma": np.log(
+            np.maximum(np.asarray(retrace.trailing_sigma(frame), dtype=float) / pip, 1e-6)
+        ),
+        "log_spread": np.log(np.maximum(frame["spread_close_pips"].to_numpy(dtype=float), 1e-6)),
+        "log_atr": np.log(np.maximum(np.asarray(engine.atr_pips(frame), dtype=float), 1e-6)),
+        "htf_aligned": (np.asarray(context["htf_trend"], dtype=object) == "aligned").astype(float),
+        "htf_outer": (np.asarray(context["htf_location"], dtype=object) == "outer").astype(float),
+        "hour_sin": np.sin(2 * np.pi * hour / 24.0),
+        "hour_cos": np.cos(2 * np.pi * hour / 24.0),
+        "ts": frame["ts"].to_numpy(),
+        "n": len(frame),
+    }
+
+
+def _features(built: dict[str, np.ndarray], index: np.ndarray, move_sigma: np.ndarray):
+    """The B-3 design matrix at the decision bars, from information at those bars."""
+    columns = [move_sigma] + [built[name][index] for name in FEATURE_NAMES[1:]]
     return np.column_stack([np.nan_to_num(c, nan=0.0, posinf=0.0, neginf=0.0) for c in columns])
 
 
 def horizon_events(
-    frame: pd.DataFrame, *, horizon: int, phase: int, cost_multiplier: float = 1.0
+    built: dict[str, np.ndarray], *, horizon: int, phase: int
 ) -> dict[str, np.ndarray] | None:
     """The detector-free population: fade the last `horizon`-bar move, hold it.
 
@@ -92,11 +108,8 @@ def horizon_events(
     `t + 1` to `t + 1 + horizon`, which is `engine.evaluate`'s own convention and
     one full bar of latency.
     """
-    close = frame["mid_c"].to_numpy(dtype=float)
-    pip = float(frame["pip_size"].iloc[0])
-    sigma = np.asarray(retrace.trailing_sigma(frame), dtype=float)
-    cost = frame["roundtrip_cost"].to_numpy(dtype=float) * cost_multiplier
-    n = len(frame)
+    close, pip = built["close"], built["pip"]
+    sigma, cost, n = built["sigma"], built["roundtrip_cost"], built["n"]
 
     start = max(horizon, retrace.RV_WINDOW) + phase
     stop = n - horizon - 2
@@ -122,29 +135,28 @@ def horizon_events(
     if index.size < 8:
         return None
 
-    gross = side * forward
     return {
         "index": index,
-        "gross": gross,
-        "cost": cost[index + 1],
-        "net": gross - cost[index + 1],
+        "gross": side * forward,
+        "unit_cost": cost[index + 1],
         "abs_gross": np.abs(forward),
         "move_sigma": past / (scale * np.sqrt(horizon)),
-        "ts": frame["ts"].to_numpy()[index],
+        "ts": built["ts"][index],
     }
 
 
 def anchor_events(
-    frame: pd.DataFrame, k: float, *, cost_multiplier: float = 1.0
+    built: dict[str, np.ndarray], found: pd.DataFrame
 ) -> dict[str, np.ndarray] | None:
-    """The detector population: fade each `k · σ` excursion, hold the window."""
-    found = retrace.find_anchors(frame, k)
+    """The detector population: fade each `k · σ` excursion, hold the window.
+
+    Takes the anchor frame the geometry stage already computed, so the detector
+    runs once per draw rather than once per consumer.
+    """
     if found.empty:
         return None
-    close = frame["mid_c"].to_numpy(dtype=float)
-    pip = float(frame["pip_size"].iloc[0])
-    cost = frame["roundtrip_cost"].to_numpy(dtype=float) * cost_multiplier
-    n = len(frame)
+    close, pip = built["close"], built["pip"]
+    cost, n = built["roundtrip_cost"], built["n"]
 
     anchor = found["anchor"].to_numpy(dtype=int)
     span = found["observation_bars"].to_numpy(dtype=int)
@@ -156,12 +168,10 @@ def anchor_events(
 
     forward = (close[exit_bar] - close[anchor + 1]) / pip
     side = -found["direction"].to_numpy(dtype=float)[keep]
-    gross = side * forward
     return {
         "index": anchor,
-        "gross": gross,
-        "cost": cost[anchor + 1],
-        "net": gross - cost[anchor + 1],
+        "gross": side * forward,
+        "unit_cost": cost[anchor + 1],
         "abs_gross": np.abs(forward),
         "move_sigma": found["excursion_sigma"].to_numpy(dtype=float)[keep]
         * found["direction"].to_numpy(dtype=float)[keep],
@@ -169,7 +179,9 @@ def anchor_events(
     }
 
 
-def _linear_selection(frame: pd.DataFrame, events: dict[str, np.ndarray]) -> dict[str, float]:
+def _linear_selection(
+    built: dict[str, np.ndarray], events: dict[str, np.ndarray], net: np.ndarray
+) -> dict[str, float]:
     """B-3: the best in-sample linear predictor of the per-event net, then take it.
 
     Ridge-regularised least squares on standardised features, with the ridge
@@ -177,10 +189,9 @@ def _linear_selection(frame: pd.DataFrame, events: dict[str, np.ndarray]) -> dic
     on any linear selector rather than an achievable result — and the same
     computation on the matched null says how much of it is fitting noise.
     """
-    design = _features(frame, events["index"], events["move_sigma"])
-    target = events["net"]
-    if len(target) <= design.shape[1] + 2:
-        return {"selected": 0, "net": 0.0, "net_per_event": 0.0}
+    design = _features(built, events["index"], events["move_sigma"])
+    if len(net) <= design.shape[1] + 2:
+        return {"selected": 0, "net": 0.0, "net_per_event": 0.0, "taken": None}
     centre = design.mean(axis=0)
     scale = design.std(axis=0)
     scale[scale == 0] = 1.0
@@ -188,14 +199,15 @@ def _linear_selection(frame: pd.DataFrame, events: dict[str, np.ndarray]) -> dic
     ridge = np.eye(standard.shape[1]) * 1e-3
     ridge[0, 0] = 0.0
     try:
-        beta = np.linalg.solve(standard.T @ standard + ridge, standard.T @ target)
+        beta = np.linalg.solve(standard.T @ standard + ridge, standard.T @ net)
     except np.linalg.LinAlgError:  # pragma: no cover - singular design
-        return {"selected": 0, "net": 0.0, "net_per_event": 0.0}
+        return {"selected": 0, "net": 0.0, "net_per_event": 0.0, "taken": None}
     taken = (standard @ beta) > 0
     return {
         "selected": int(taken.sum()),
-        "net": float(target[taken].sum()),
-        "net_per_event": float(target[taken].sum() / len(target)),
+        "net": float(net[taken].sum()),
+        "net_per_event": float(net[taken].sum() / len(net)),
+        "taken": taken,
     }
 
 
@@ -210,22 +222,28 @@ def _tail_share(ts: np.ndarray, value: np.ndarray, *, days: int = 10) -> float:
 
 
 def bounds(
-    frame: pd.DataFrame, events: dict[str, np.ndarray] | None, *, trading_days: int
+    built: dict[str, np.ndarray],
+    events: dict[str, np.ndarray] | None,
+    *,
+    trading_days: int,
+    cost_multiplier: float,
 ) -> dict[str, Any] | None:
-    """B-0, B-1, B-2 and B-3 for one pair's event population."""
-    if events is None or events["net"].size < 8:
+    """B-0, B-1, B-2 and B-3 for one pair's event population at one cost level."""
+    if events is None or events["gross"].size < 8:
         return None
-    net, gross, cost = events["net"], events["gross"], events["cost"]
+    gross = events["gross"]
+    cost = events["unit_cost"] * cost_multiplier
+    net = gross - cost
     count = len(net)
-    per_year = count / max(trading_days, 1) * 252.0
     take_skip = np.maximum(net, 0.0)
     perfect_side = events["abs_gross"] - cost
     equity = np.cumsum(net)
-    selection = _linear_selection(frame, events)
+    selection = _linear_selection(built, events, net)
+    taken = selection["taken"]
 
     return {
         "events": count,
-        "events_per_year": round(per_year, 2),
+        "events_per_year": round(count / max(trading_days, 1) * 252.0, 2),
         "median_cost": round(float(np.median(cost)), 4),
         "b0_take_all_gross": round(float(gross.sum()), 1),
         "b0_take_all_net": round(float(net.sum()), 1),
@@ -240,8 +258,25 @@ def bounds(
         "b3_selected": selection["selected"],
         "max_drawdown": round(float((equity - np.maximum.accumulate(equity)).min()), 1),
         "b1_tail_share_top10_days": round(_tail_share(events["ts"], take_skip), 4),
-        "b3_top10_day_share": round(_tail_share(events["ts"], np.where(net > 0, net, 0.0)), 4),
+        "b3_top10_day_share": round(
+            _tail_share(
+                events["ts"],
+                np.where(taken, np.maximum(net, 0.0), 0.0) if taken is not None else take_skip * 0,
+            ),
+            4,
+        ),
     }
+
+
+def _average(rows: list[dict[str, Any]]) -> dict[str, Any]:
+    """Mean over the phases, skipping the cells a phase could not produce."""
+    out: dict[str, Any] = {}
+    for key in rows[0]:
+        if not isinstance(rows[0][key], int | float):
+            continue
+        values = [r[key] for r in rows if np.isfinite(r[key])]
+        out[key] = float(np.mean(values)) if values else float("nan")
+    return out
 
 
 def _pool(rows: list[dict[str, Any]]) -> dict[str, Any]:
@@ -249,7 +284,10 @@ def _pool(rows: list[dict[str, Any]]) -> dict[str, Any]:
     if not rows:
         return {"pairs": 0}
     keys = [k for k in rows[0] if isinstance(rows[0][k], int | float)]
-    pooled = {k: round(float(np.mean([r[k] for r in rows])), 4) for k in keys}
+    pooled: dict[str, Any] = {}
+    for key in keys:
+        values = [r[key] for r in rows if np.isfinite(r[key])]
+        pooled[key] = round(float(np.mean(values)), 4) if values else None
     pooled["pairs"] = len(rows)
     pooled["pairs_b0_positive"] = int(sum(1 for r in rows if r["b0_take_all_net"] > 0))
     pooled["pairs_b3_positive"] = int(sum(1 for r in rows if r["b3_selection_net"] > 0))
@@ -262,52 +300,56 @@ def panel_bounds(
     trading_days: int,
     horizons: tuple[int, ...],
     thresholds: tuple[float, ...],
-    cost_multiplier: float = 1.0,
+    cost_multipliers: tuple[float, ...] = (1.0,),
     phases: int = 4,
-) -> dict[str, Any]:
-    """Every event population on one panel, per pair and pooled."""
-    out: dict[str, Any] = {}
-    for horizon in horizons:
-        rows: list[dict[str, Any]] = []
-        for frame in panel.values():
+) -> dict[str, dict[str, Any]]:
+    """Every event population on one panel, at every cost level, in one pass.
+
+    The feature basis is built once per pair and the events once per population;
+    a cost multiplier only shifts `net` by a constant, so both levels come out of
+    the same arrays.
+    """
+    per_pair: dict[str, dict[str, list[dict[str, Any]]]] = {f"x{m}": {} for m in cost_multipliers}
+
+    def record(population: str, multiplier: float, row: dict[str, Any] | None) -> None:
+        if row is not None:
+            per_pair[f"x{multiplier}"].setdefault(population, []).append(row)
+
+    for frame in panel.values():
+        built = basis(frame)
+        for horizon in horizons:
+            collected: dict[float, list[dict[str, Any]]] = {m: [] for m in cost_multipliers}
+            for phase in range(phases):
+                events = horizon_events(
+                    built, horizon=horizon, phase=phase * max(1, horizon // phases)
+                )
+                for multiplier in cost_multipliers:
+                    row = bounds(
+                        built, events, trading_days=trading_days, cost_multiplier=multiplier
+                    )
+                    if row:
+                        collected[multiplier].append(row)
             #: phase-averaged, so the non-overlapping grid is not one UTC hour
-            per_phase = [
-                bounds(
-                    frame,
-                    horizon_events(
-                        frame,
-                        horizon=horizon,
-                        phase=phase * max(1, horizon // phases),
-                        cost_multiplier=cost_multiplier,
-                    ),
-                    trading_days=trading_days,
+            for multiplier, rows in collected.items():
+                if rows:
+                    record(
+                        f"horizon_{horizon}",
+                        multiplier,
+                        _average(rows),
+                    )
+        for k in thresholds:
+            events = anchor_events(built, retrace.find_anchors(frame, k))
+            for multiplier in cost_multipliers:
+                record(
+                    f"anchor_{k}",
+                    multiplier,
+                    bounds(built, events, trading_days=trading_days, cost_multiplier=multiplier),
                 )
-                for phase in range(phases)
-            ]
-            present = [row for row in per_phase if row]
-            if present:
-                rows.append(
-                    {
-                        key: float(np.mean([r[key] for r in present]))
-                        for key in present[0]
-                        if isinstance(present[0][key], int | float)
-                    }
-                )
-        out[f"horizon_{horizon}"] = _pool(rows)
-    for k in thresholds:
-        rows = [
-            row
-            for frame in panel.values()
-            if (
-                row := bounds(
-                    frame,
-                    anchor_events(frame, k, cost_multiplier=cost_multiplier),
-                    trading_days=trading_days,
-                )
-            )
-        ]
-        out[f"anchor_{k}"] = _pool(rows)
-    return out
+
+    return {
+        level: {population: _pool(rows) for population, rows in populations.items()}
+        for level, populations in per_pair.items()
+    }
 
 
 def noise_reference(
@@ -327,7 +369,7 @@ def noise_reference(
         "bars_per_pair": length,
         "bounds": panel_bounds(
             panel, trading_days=length // 96, horizons=horizons, thresholds=(), phases=2
-        ),
+        )["x1.0"],
         "note": (
             "B-1 and B-2 are large here because max(net, 0) over a symmetric "
             "distribution is about 0.4 sigma_q whatever produced it. A gate read "
@@ -375,12 +417,20 @@ def signal_reference(
         "bars_per_pair": length,
         "bounds": panel_bounds(
             panel, trading_days=length // 96, horizons=horizons, thresholds=(), phases=2
-        ),
+        )["x1.0"],
         "note": (
             "a fade rule pays here by construction, so B-3 returning zero would "
             "mean the selector is inert rather than that the panels are empty"
         ),
     }
+
+
+BOUND_KEYS: tuple[str, ...] = (
+    "b0_net_per_event",
+    "b1_net_per_event",
+    "b2_net_per_event",
+    "b3_net_per_event",
+)
 
 
 def null_referenced(
@@ -391,23 +441,24 @@ def null_referenced(
     thresholds: tuple[float, ...],
     draws: int,
     seed: int,
-    cost_multiplier: float = 1.0,
+    cost_multipliers: tuple[float, ...] = (1.0,),
 ) -> dict[str, Any]:
-    """Every bound beside the same bound on the matched null.
+    """Every bound beside the same bound on the matched null, at every cost level.
 
     The decisive quantity is `b3_net_per_event` minus its null value: the part of
     an in-sample linear selector's take that is attributable to structure rather
-    than to fitting a design matrix to noise.
+    than to fitting a design matrix to noise. B-1 and B-2 are `DESCRIPTIVE_ONLY`
+    and are reported beside it.
     """
     real = panel_bounds(
         panel,
         trading_days=trading_days,
         horizons=horizons,
         thresholds=thresholds,
-        cost_multiplier=cost_multiplier,
+        cost_multipliers=cost_multipliers,
     )
     rng = np.random.default_rng(seed)
-    samples: list[dict[str, Any]] = []
+    samples: list[dict[str, dict[str, Any]]] = []
     for _ in range(draws):
         shuffled = {p: nulls.n2_sign_flip(f, rng) for p, f in panel.items()}
         samples.append(
@@ -416,30 +467,36 @@ def null_referenced(
                 trading_days=trading_days,
                 horizons=horizons,
                 thresholds=thresholds,
-                cost_multiplier=cost_multiplier,
+                cost_multipliers=cost_multipliers,
             )
         )
 
     out: dict[str, Any] = {}
-    for population, row in real.items():
-        drawn = [s[population] for s in samples if population in s and s[population].get("pairs")]
-        if not drawn or not row.get("pairs"):
-            out[population] = {"real": row, "null": None}
-            continue
-        stats: dict[str, Any] = {}
-        for key in ("b0_net_per_event", "b1_net_per_event", "b2_net_per_event", "b3_net_per_event"):
-            values = [d[key] for d in drawn if key in d]
-            if not values:
+    for level, populations in real.items():
+        out[level] = {}
+        for population, row in populations.items():
+            drawn = [
+                s[level][population]
+                for s in samples
+                if population in s.get(level, {}) and s[level][population].get("pairs")
+            ]
+            if not drawn or not row.get("pairs"):
+                out[level][population] = {"real": row, "null": None}
                 continue
-            mean, sd = float(np.mean(values)), float(np.std(values))
-            stats[key] = {
-                "real": row[key],
-                "null_mean": round(mean, 5),
-                "null_sd": round(sd, 5),
-                "real_minus_null": round(row[key] - mean, 5),
-                "studentized": round((row[key] - mean) / sd, 3) if sd > 0 else None,
-            }
-        out[population] = {"real": row, "null": stats, "draws": len(drawn)}
+            stats: dict[str, Any] = {}
+            for key in BOUND_KEYS:
+                values = [d[key] for d in drawn if key in d]
+                if not values:
+                    continue
+                mean, sd = float(np.mean(values)), float(np.std(values))
+                stats[key] = {
+                    "real": row[key],
+                    "null_mean": round(mean, 5),
+                    "null_sd": round(sd, 5),
+                    "real_minus_null": round(row[key] - mean, 5),
+                    "studentized": round((row[key] - mean) / sd, 3) if sd > 0 else None,
+                }
+            out[level][population] = {"real": row, "null": stats, "draws": len(drawn)}
     return out
 
 
