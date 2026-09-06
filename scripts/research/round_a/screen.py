@@ -175,7 +175,14 @@ def screen_cell(
     n_bars = sum(len(f) for f in panel.values())
     cell_bars = int(sum((f[column] == level).sum() for f in panel.values()))
     #: entries per phase, so windows within a phase do not overlap
+    #: Pooled across the twenty pairs, and **per pair**. The plan quantifies its
+    #: only "30" as "the non-overlapping count per pair" (§5.2), so the per-pair
+    #: figure is the registered one; a first version applied the threshold to the
+    #: pooled count, under which the condition passed in all 39 cells and could
+    #: never have failed.
     effective_observations = int(len(stacked) / max(1, stacked["phase"].nunique()))
+    n_pairs = max(1, stacked["pair"].nunique())
+    effective_observations_per_pair = round(effective_observations / n_pairs, 2)
 
     rate = mean_per_entry * panels.BARS_PER_DAY / horizon
     share = cell_bars / n_bars if n_bars else 0.0
@@ -191,6 +198,7 @@ def screen_cell(
         "direction_rule": rule,
         "entries": int(len(stacked)),
         "effective_observations": effective_observations,
+        "effective_observations_per_pair": effective_observations_per_pair,
         "cell_share": round(share, 4),
         "mean_pips_per_entry": round(mean_per_entry, 3),
         "median_roundtrip_cost": round(median_cost, 3),

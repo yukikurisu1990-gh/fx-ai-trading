@@ -3,9 +3,18 @@
 `NON_DECISION_BEARING_EXPLORATORY_ONLY` · `RESEARCH_SCRATCH_NON_AUTHORITATIVE`.
 
 Everything here is loaded from parquet caches that already exist. There is no
-reader, no archive path and no span bound in this file, so no future edit to it
-can widen a data scope — the three `load` functions it calls each carry their own
-guard and each refuses everything outside its own window.
+reader and no archive path in this file, so it cannot open a market-data file at
+all; what keeps the fresh pool out of reach is the span guard inside each of the
+three routes, not this module's boundary.
+
+Two claims an earlier version of this docstring made were false and an audit
+reproduced both. It said there was "no span bound" while `LOADERS` carried two
+literals; those now come from the route's own constants. And it said all three
+`load` functions validate the rows they serve — `momentum.load` and
+`supplemental.load` do, through `assert_rows_in_span`, but **`bars.load` does
+not**, so the development panel's declared span is an assertion until something
+measures it. The driver therefore reports a `measured_span` beside the declared
+one rather than transcribing the constant.
 
 Derived columns are computed once per pair per panel and shared by T1 and T2, so
 the two answer their questions about the same bars with the same state
@@ -40,7 +49,15 @@ LOADERS: Final[dict[str, Any]] = {
         supplemental_panel.SUPPLEMENTAL_START_UTC,
         supplemental_panel.SUPPLEMENTAL_END_UTC,
     ),
-    "development_2025": (development.load, "2025-04-25", "2025-12-28"),
+    #: The development entry restated its bounds as literals while the other two
+    #: read theirs from the route. An audit found the docstring above claiming
+    #: otherwise, and a mutant then widened these literals to cover the fresh
+    #: pool with every test still green.
+    "development_2025": (
+        development.load,
+        development.DEVELOPMENT_START_UTC,
+        development.DEVELOPMENT_END_UTC,
+    ),
 }
 
 BARS_PER_DAY: Final[int] = 96

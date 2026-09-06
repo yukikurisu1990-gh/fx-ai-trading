@@ -103,6 +103,97 @@ def test_the_state_definitions_reuse_round2s_constants():
     assert panels.EXTREME_Z == 2.0
 
 
+def test_each_direction_rule_produces_the_direction_it_names():
+    """Pinned by output. Pinning the rule-name string lets the rule invert.
+
+    An audit flipped `fade_past_move` to `+sign(past)` and
+    `fade_range_position` to follow the extreme, and every test passed because
+    only the strings were checked.
+    """
+    frame = panels.derived(_frame(n=1200))
+    horizon = 48
+    past = frame["mid_c"] - frame["mid_c"].shift(horizon)
+    fade = screen.context_direction(frame, "fade_past_move", horizon)
+    live = past.notna() & (past != 0)
+    assert (fade[live] == -np.sign(past[live])).all(), "fade_past_move must oppose the move"
+
+    d1 = screen.context_direction(frame, "follow_d1", horizon)
+    up = frame["d1_state"] == "up"
+    assert (d1[up] == 1.0).all() and (d1[frame["d1_state"] == "down"] == -1.0).all()
+
+    ranged = screen.context_direction(frame, "fade_range_position", horizon)
+    high = frame["range_position"] > 0.5
+    low = frame["range_position"] < 0.5
+    assert (ranged[high] == -1.0).all(), "must short the top of the range"
+    assert (ranged[low] == 1.0).all(), "must buy the bottom of the range"
+
+
+def test_the_state_bin_edges_are_the_registered_ones():
+    """Bin edges are literals inside `derived` and an audit widened one freely."""
+    source = inspect.getsource(panels.derived)
+    for edge in (
+        '("Q1", -0.01, 0.25)',
+        '("Q2", 0.25, 0.50)',
+        '("Q3", 0.50, 0.75)',
+        '("Q4", 0.75, 1.01)',
+    ):
+        assert edge in source, edge
+    assert "rank <= 1 / 3" in source and "rank > 2 / 3" in source
+    assert "ratio <= 1.0" in source
+    #: and the extreme threshold at its use site, not only as a constant
+    assert "extreme_z.abs() > EXTREME_Z" in source
+
+    frame = panels.derived(_frame(n=1500))
+    position = frame["range_position"]
+    inside = position.between(0, 1) & position.notna()
+    assert (frame.loc[inside & (position <= 0.25), "range_state"] == "Q1").all()
+    assert (frame.loc[inside & (position > 0.75), "range_state"] == "Q4").all()
+
+
+def test_the_adverse_leg_is_the_one_opposite_the_favourable_leg():
+    """An audit swapped `mae_at_mfe` for the favourable leg and nothing noticed."""
+    frame = panels.derived(_frame(n=900))
+    rows = atlas.excursions(frame, 48)
+    up, down = rows["up_excursion"], rows["down_excursion"]
+    expected = np.where(up >= down, down, up)
+    assert np.allclose(rows["mae_at_mfe"], expected)
+    assert np.allclose(rows["mfe"], np.maximum(up, down))
+    assert (rows["mfe"] >= rows["mae_at_mfe"] - 1e-9).all()
+
+
+def test_the_panel_loaders_are_the_three_seen_routes():
+    """`LOADERS` is a mutable module dict; an audit repointed it freely."""
+    from scripts.research.exploratory_m15 import bars, momentum, supplemental
+
+    assert set(panels.LOADERS) == set(PANELS)
+    assert panels.LOADERS["momentum_2021_2023"][0] is momentum.load
+    assert panels.LOADERS["supplemental_2023_2025"][0] is supplemental.load
+    assert panels.LOADERS["development_2025"][0] is bars.load
+    assert panels.panel_span("development_2025") == (
+        bars.DEVELOPMENT_START_UTC,
+        bars.DEVELOPMENT_END_UTC,
+    )
+
+
+def test_the_unconditioned_atlas_table_is_labelled_unregistered():
+    """It is not one of the plan's 105 cells, and condition 4 consumes it.
+
+    Renaming it once left the driver's lookup on the old name, the dict came out
+    empty, and condition 4 silently failed for all 30 non-F1 cells because a
+    missing key defaults to `insufficient_data`. The driver now raises instead,
+    and this pins the name on both sides.
+    """
+    frame = panels.derived(_frame(n=1200))
+    rows = atlas.atlas_for_panel(dict.fromkeys(panels.BLOCS["ALL"], frame), "test")
+    tables = {row["table"] for row in rows}
+    assert "overall_unregistered" in tables
+    assert "overall" not in tables
+    assert 'row["table"] == "overall_unregistered"' in inspect.getsource(driver)
+    registered = sum(1 for row in rows if row["table"] in ("atr", "session"))
+    #: 5 horizons x (3 ATR + 4 session states) x 3 blocs = the plan's 105
+    assert registered == len(panels.ATLAS_HORIZONS) * (3 + 4) * len(panels.BLOCS) == 105
+
+
 def test_2025_is_not_a_deciding_panel():
     """Roughly 1,200 configurations have been searched on it."""
     assert PANELS == ("momentum_2021_2023", "supplemental_2023_2025", "development_2025")
@@ -147,20 +238,109 @@ def test_truncated_windows_are_dropped_rather_than_filled(horizon):
     assert len(frame) - len(rows) == horizon + 1
 
 
-def test_the_screen_contribution_equals_what_the_engine_would_earn():
-    """`d x (mid_c[t+H+1] - mid_c[t+1])` is exactly a held position's gross."""
-    frame = panels.derived(_frame())
-    horizon = 48
-    always = pd.Series(1.0, index=frame.index)
-    earned = engine.evaluate(
-        frame, always, name="w", pair="USD_JPY", cost_multiplier=0.0
-    ).net.to_numpy()
+def _expected_phase_totals(frame, horizon: int, rule: str) -> dict[int, float]:
+    """What `_entries` must produce per phase, computed from the definition."""
+    direction = screen.context_direction(frame, rule, horizon).to_numpy()
     close = frame["mid_c"].to_numpy()
     pip = frame["pip_size"].to_numpy()
-    for t in (120, 300):
-        assert earned[t + 1 : t + horizon + 1].sum() == pytest.approx(
-            (close[t + horizon + 1] - close[t + 1]) / pip[t], abs=1e-9
-        )
+    last = len(frame) - horizon - 2
+    out: dict[int, float] = {}
+    for phase in range(0, horizon, max(1, horizon // screen.N_PHASES))[: screen.N_PHASES]:
+        total = 0.0
+        for t in range(phase, last + 1, horizon):
+            if direction[t] == 0 or not np.isfinite(direction[t]):
+                continue
+            total += direction[t] * (close[t + horizon + 1] - close[t + 1]) / pip[t]
+        out[phase] = total
+    return out
+
+
+def test_the_screen_contribution_is_the_engines_gross_for_a_held_position():
+    """Calls `screen._entries`. The previous version did not.
+
+    An audit moved the entry to `mid_c[t]` — the same bar whose close sets
+    `fade_past_move`'s direction, i.e. textbook same-bar leakage — and all 24
+    tests passed, because this test retyped the formula inside itself instead of
+    exercising the module it names.
+    """
+    frame = panels.derived(_frame(n=2000))
+    horizon = 48
+    entries = screen._entries(frame, horizon, pd.Series(True, index=frame.index), "fade_past_move")
+    assert len(entries) > 0
+
+    produced = entries.groupby("phase")["pips"].sum().to_dict()
+    expected = _expected_phase_totals(frame, horizon, "fade_past_move")
+    assert set(produced) == set(expected)
+    for phase, value in expected.items():
+        assert produced[phase] == pytest.approx(value, abs=1e-9), phase
+
+    #: and one entry reconciles against the engine holding that same position
+    direction = screen.context_direction(frame, "fade_past_move", horizon)
+    close, pip = frame["mid_c"].to_numpy(), frame["pip_size"].to_numpy()
+    #: `np.nan` is truthy, so a bare `if direction.iloc[t]` selects a NaN
+    #: direction and the engine then earns nothing — which is how a first version
+    #: of this assertion compared 0.0 against a real number.
+    t = next(
+        t
+        for t in range(0, len(frame) - horizon - 2, horizon)
+        if np.isfinite(direction.iloc[t])
+        and direction.iloc[t] != 0
+        #: in pips, not price units -- the fixture trades near 100.0, so a
+        #: threshold on the raw difference is a threshold on 100 pips
+        and abs(close[t + horizon + 1] - close[t + 1]) / pip[t] > 1.0
+    )
+    held = pd.Series(0.0, index=frame.index)
+    held.iloc[t : t + horizon] = float(direction.iloc[t])
+    earned = engine.evaluate(
+        frame, held, name="cell", pair="USD_JPY", cost_multiplier=0.0
+    ).net.to_numpy()
+    assert earned[t + 1 : t + horizon + 1].sum() == pytest.approx(
+        float(direction.iloc[t]) * (close[t + horizon + 1] - close[t + 1]) / pip[t], abs=1e-9
+    )
+
+
+def test_an_entry_never_uses_the_bar_that_set_its_own_direction():
+    """The leakage the previous test could not see.
+
+    `fade_past_move` reads `mid_c[t]`, so an entry priced at `mid_c[t]` would be
+    trading on a bar it has already observed. Checked on the **single entry**
+    where the two definitions differ most: summing a phase lets the difference
+    cancel, which is how a first version of this test failed to distinguish them
+    at all.
+    """
+    frame = panels.derived(_frame(n=3000))
+    horizon = 48
+    entries = screen._entries(frame, horizon, pd.Series(True, index=frame.index), "fade_past_move")
+    direction = screen.context_direction(frame, "fade_past_move", horizon).to_numpy()
+    close, pip = frame["mid_c"].to_numpy(), frame["pip_size"].to_numpy()
+    day = frame["day"].to_numpy()
+    last = len(frame) - horizon - 2
+
+    best = None
+    for phase in sorted(entries["phase"].unique()):
+        rows = entries[entries["phase"] == phase]
+        counts = rows["day"].value_counts()
+        for t in range(int(phase), last + 1, horizon):
+            if not np.isfinite(direction[t]) or direction[t] == 0:
+                continue
+            if counts.get(day[t], 0) != 1:
+                continue
+            correct = direction[t] * (close[t + horizon + 1] - close[t + 1]) / pip[t]
+            same_bar = direction[t] * (close[t + horizon] - close[t]) / pip[t]
+            gap = abs(correct - same_bar)
+            if best is None or gap > best[0]:
+                best = (gap, phase, t, correct, same_bar)
+    assert best is not None, "no isolable entry in the fixture"
+    gap, phase, t, correct, same_bar = best
+    assert gap > 1.0, "the fixture cannot distinguish the two entry points"
+
+    produced = float(
+        entries[(entries["phase"] == phase) & (entries["day"] == day[t])]["pips"].iloc[0]
+    )
+    assert produced == pytest.approx(correct, abs=1e-9)
+    assert produced != pytest.approx(same_bar, abs=1e-6), (
+        "the entry is priced on the bar that set its direction"
+    )
 
 
 def test_every_state_column_is_backward_looking():
@@ -287,7 +467,7 @@ def test_a_cell_rich_in_one_period_only_is_not_promoted():
             "state": "all",
             "panel": panel,
             "observations": 1000,
-            "median_mfe_over_cost": ratio,
+            "median_mfe_over_median_cost": ratio,
             "p_mfe_gt_2x_cost": reach,
             "median_mfe": 10.0,
         }
@@ -301,18 +481,73 @@ def test_a_cell_rich_in_one_period_only_is_not_promoted():
 
 
 def test_sign_agreement_alone_does_not_qualify_a_cell():
-    """With 39 cells and two periods about ten agree by chance."""
+    """Behaviour, not a grep. An audit forced condition 3 true and nothing saw it.
+
+    Two cells: one agrees in sign but has a tiny effect, one clears every
+    condition. Only the second may qualify.
+    """
+    verdicts = [
+        {
+            "table": "overall_unregistered",
+            "horizon": 192,
+            "bloc": "ALL",
+            "state": "all",
+            "verdict": "opportunity_rich",
+        }
+    ]
+
+    def cell(name, effect, per_pair=50.0):
+        rows = []
+        for panel, sign in zip(PANELS, (1.0, 1.0, 1.0), strict=True):
+            daily = pd.Series(
+                [effect * sign] * 40,
+                index=pd.date_range("2022-01-01", periods=40, freq="D", tz="UTC"),
+            )
+            rows.append(
+                {
+                    "panel": panel,
+                    "family": "F2_vol",
+                    "level": name,
+                    "horizon": 192,
+                    "entries": 500,
+                    "mean_pips_per_entry": effect,
+                    "effect_over_cost": effect,
+                    "effective_observations": 400,
+                    "effective_observations_per_pair": per_pair,
+                    "effective_independent_pairs": 5.0,
+                    "tails": panels.tail_contributions(daily),
+                    "_daily": daily,
+                }
+            )
+        return rows
+
+    weak = cell("compression", 0.5)
+    strong = cell("expansion", 4.0)
+    out = {c["cell"]: c for c in driver.structural_candidates(weak + strong, verdicts)}
+    assert out["F2_vol:compression:h192"]["checks"]["1_two_periods_agree_in_sign"]
+    assert not out["F2_vol:compression:h192"]["qualifies"], "a 0.5x-cost effect must not qualify"
+    assert out["F2_vol:expansion:h192"]["qualifies"]
+
+    #: and the per-pair sample condition must be able to fail
+    thin = driver.structural_candidates(cell("expansion", 4.0, per_pair=5.0), verdicts)
+    assert not thin[0]["checks"]["5_sample_adequate"]
+    assert thin[0]["checks"]["5_sample_adequate_pooled_reading"], "the pooled reading is inert"
+
+
+def test_condition_five_uses_the_per_pair_count_the_plan_quantifies():
+    """§5.2's only "30" is "the non-overlapping count per pair"."""
     source = inspect.getsource(driver.structural_candidates)
-    for check in (
-        "1_two_periods_agree_in_sign",
-        "2_development_not_strong_counter_evidence",
-        "3_effect_at_least_2x_cost",
-        "4_t1_tradable",
-        "5_sample_adequate",
-        "6_survives_top10_day_removal",
-    ):
-        assert check in source
-    assert "all(checks.values())" in source
+    assert 'row["effective_observations_per_pair"] >= screen.MIN_EFFECTIVE_OBSERVATIONS' in source
+    frame = panels.derived(_frame(n=4000))
+    cell = screen.screen_cell({"USD_JPY": frame}, family="F1_atr", level="high", horizon=48)
+    assert cell["effective_observations_per_pair"] <= cell["effective_observations"]
+
+
+def test_condition_six_is_the_plans_literal_rule_with_the_stricter_one_beside_it():
+    source = inspect.getsource(driver.structural_candidates)
+    assert "survives_registered_tail" in source and "survives_both_tails" in source
+    registered = source.index('checks["6_survives_top10_day_removal"]')
+    assert "survives_registered_tail" in source[registered : registered + 120]
 
 
 def test_the_ledger_records_every_closed_family():

@@ -128,8 +128,18 @@ def _cell_metrics(rows: pd.DataFrame) -> dict[str, Any]:
         "median_abs_move": round(float(np.median(abs_move)), 2),
         "mean_abs_move": round(float(abs_move.mean()), 2),
         "median_realized_range": round(float(np.median(rows["realized_range"])), 2),
-        "median_mfe_over_cost": round(float(np.median(mfe / cost)), 3),
-        "median_abs_move_over_cost": round(float(np.median(abs_move / cost)), 3),
+        #: The plan says "median MFE >= 3 x median cost", which is the ratio of
+        #: the medians. A first version thresholded the median of the ratio
+        #: instead; the two differ systematically (34.57 against 36.92 at h192)
+        #: and the substitution moved one published verdict. Both are reported,
+        #: and `classify` uses the registered one.
+        "median_mfe_over_median_cost": round(float(np.median(mfe) / median_cost), 3),
+        "median_of_mfe_over_cost": round(float(np.median(mfe / cost)), 3),
+        "median_abs_move_over_median_cost": round(float(np.median(abs_move) / median_cost), 3),
+        "sd_terminal_move": round(float(rows["terminal_move"].std()), 2),
+        "break_even_ic": round(median_cost / float(rows["terminal_move"].std()), 5)
+        if float(rows["terminal_move"].std()) > 0
+        else None,
     }
     for q in QUANTILES:
         tag = f"q{int(q * 100):02d}"
@@ -192,10 +202,14 @@ def atlas_for_panel(panel: dict[str, pd.DataFrame], panel_id: str) -> list[dict[
                     **_cell_metrics(subset),
                 }
             )
+            #: NOT one of the plan's 105 registered cells. It is an auxiliary
+            #: aggregate the screen's condition 4 consumes for the four families
+            #: that are not ATR-partitioned, and it is labelled so the registered
+            #: count stays 105.
             rows.append(
                 {
                     "panel": panel_id,
-                    "table": "overall",
+                    "table": "overall_unregistered",
                     "horizon": horizon,
                     "bloc": bloc,
                     "state": "all",
@@ -221,7 +235,7 @@ def classify(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
         if len(group) != len(panels.LOADERS) or (group["observations"] == 0).any():
             verdict = "insufficient_data"
         else:
-            ratio = group["median_mfe_over_cost"]
+            ratio = group["median_mfe_over_median_cost"]
             reach = group["p_mfe_gt_2x_cost"]
             if (ratio >= RICH_MFE_OVER_COST).all() and (reach >= RICH_P_TWO_COST).all():
                 verdict = "opportunity_rich"
@@ -232,11 +246,70 @@ def classify(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
         record = dict(zip(keys, key, strict=True))
         record["verdict"] = verdict
         for _, row in group.iterrows():
-            record[f"{row['panel']}__median_mfe_over_cost"] = row["median_mfe_over_cost"]
+            record[f"{row['panel']}__median_mfe_over_median_cost"] = row[
+                "median_mfe_over_median_cost"
+            ]
             record[f"{row['panel']}__p_mfe_gt_2x_cost"] = row["p_mfe_gt_2x_cost"]
             record[f"{row['panel']}__median_mfe"] = row["median_mfe"]
         out.append(record)
     return out
+
+
+def adverse_before_peak(
+    frame: pd.DataFrame, horizon: int, *, stride: int = 20, threshold: float = 2.0
+) -> dict[str, Any]:
+    """The drawdown paid **to reach** the favourable extreme, on a subsample.
+
+    `mae_at_mfe` above is the opposite-side maximum over the *whole* window,
+    which can occur after the favourable peak. The plan's §4.5 wording is "the
+    drawdown paid to reach it", and an audit measured the two apart on about 20%
+    of entries — 18.9 against a true 14.75 at h192 — which changes the
+    label-design recommendation from roughly 8x cost to roughly 5x.
+
+    Computing it exactly needs the path up to a per-bar stopping index, which
+    does not vectorise. It is a median for a design note rather than a cell
+    statistic, so it is computed on every `stride`-th bar; at stride 20 that is
+    tens of thousands of entries per panel, far more than the median needs.
+    """
+    pip = frame["pip_size"].to_numpy()
+    close = frame["mid_c"].to_numpy()
+    high = frame["mid_h"].to_numpy()
+    low = frame["mid_l"].to_numpy()
+    cost = frame["roundtrip_cost"].to_numpy()
+    n = len(frame)
+    last = n - horizon - 2
+    if last < 0:
+        return {"entries": 0}
+
+    paid: list[float] = []
+    whole_window: list[float] = []
+    for t in range(0, last + 1, stride):
+        reference = close[t + 1]
+        window_high = high[t + 2 : t + horizon + 2]
+        window_low = low[t + 2 : t + horizon + 2]
+        up = (window_high.max() - reference) / pip[t]
+        down = (reference - window_low.min()) / pip[t]
+        if max(up, down) <= threshold * cost[t]:
+            continue
+        if up >= down:
+            stop = int(np.argmax(window_high)) + 1
+            paid.append(float((reference - window_low[:stop].min()) / pip[t]))
+            whole_window.append(down)
+        else:
+            stop = int(np.argmin(window_low)) + 1
+            paid.append(float((window_high[:stop].max() - reference) / pip[t]))
+            whole_window.append(up)
+    if not paid:
+        return {"entries": 0}
+    return {
+        "entries": len(paid),
+        "stride": stride,
+        "median_adverse_paid_to_reach": round(float(np.median(paid)), 2),
+        "mean_adverse_paid_to_reach": round(float(np.mean(paid)), 2),
+        "median_adverse_whole_window": round(float(np.median(whole_window)), 2),
+        "median_cost": round(float(np.median(cost)), 3),
+        "paid_over_cost": round(float(np.median(paid)) / float(np.median(cost)), 2),
+    }
 
 
 __all__ = [
@@ -244,6 +317,7 @@ __all__ = [
     "MARGINAL_MFE_OVER_COST",
     "RICH_MFE_OVER_COST",
     "RICH_P_TWO_COST",
+    "adverse_before_peak",
     "atlas_for_panel",
     "classify",
     "excursions",
