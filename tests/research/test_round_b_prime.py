@@ -325,8 +325,12 @@ def test_round_b_prime_contains_no_reader(module):
 
 def test_the_volume_inventory_performs_no_content_read():
     """It reads source files and the manifest. It may never open an archive."""
-    source = inspect.getsource(volume_inventory)
-    assert ".jsonl" not in source.replace("SOURCE_TEMPLATE", "")
+    #: The source-text half of this test was withdrawn. It asserted that the
+    #: string ".jsonl" does not appear in the module, which stopped being a
+    #: statement about behaviour the moment the module had to *name* the
+    #: content suffixes in order to detect a read of one. The behavioural
+    #: version, including a tripwire that opens a real archive file and checks
+    #: the flag flips, is in `test_round_b_prime_hardening.py`.
     result = volume_inventory.inventory()
     assert result["content_read_performed"] is False
     assert result["reader"]["volume_in_price_keys"] is False

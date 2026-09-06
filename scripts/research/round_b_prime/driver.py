@@ -92,8 +92,22 @@ def _vr_verdict(per_panel: dict[str, Any]) -> dict[str, Any]:
     }
 
 
-def _retrace_verdict(per_panel: dict[str, Any]) -> dict[str, Any]:
-    """B′-2's kill condition, all five clauses of it."""
+def _retrace_verdict(
+    per_panel: dict[str, Any], blocs: dict[str, Any] | None = None
+) -> dict[str, Any]:
+    """B′-2's kill condition, all five clauses of plan §5.6.
+
+    Clauses 1, 2 and 5 (same sign, both studentized, above the economic floor)
+    are read for every threshold. Clauses 3 and 4 — day concentration and
+    bloc confinement — are kill conditions *for a cell that got that far*, so
+    they are evaluated only where the first three pass, which is also why the
+    driver measures the bloc split only for those cells.
+
+    An earlier version of this docstring said "all five clauses of it" while the
+    body implemented three: the day trim was applied to the real median alone
+    and never to `real − null`, and no JPY/non-JPY split existed for B′-2 at
+    all.
+    """
     out: dict[str, Any] = {}
     surviving: list[float] = []
     for k in EXCURSION_SIGMAS:
@@ -113,7 +127,41 @@ def _retrace_verdict(per_panel: dict[str, Any]) -> dict[str, Any]:
         both_strong = all(abs(z) >= 2 for z in zs)
         economically_material = all(abs(d) >= RETRACE_DIFFERENCE_FLOOR for d in diffs)
         anchors = [rows[name]["real"]["anchors"] for name in DECIDING_PANELS]
-        survives = same_sign and both_strong and economically_material
+        first_three = same_sign and both_strong and economically_material
+
+        #: clause 3 -- does the difference survive removing the 10 largest
+        #: contributing anchor *days*, on both sides of `real − null`?
+        trimmed = {
+            name: rows[name]["null"].get("median_retrace_fraction_excluding_top_10_days")
+            for name in DECIDING_PANELS
+        }
+        if first_three and all(trimmed.values()):
+            trimmed_diffs = [trimmed[name]["real_minus_null"] for name in DECIDING_PANELS]
+            day_robust = all((d > 0) == (diffs[0] > 0) for d in trimmed_diffs)
+        else:
+            trimmed_diffs = None
+            day_robust = None
+
+        #: clause 4 -- is it confined to one bloc, or to the weekend-gap subset?
+        bloc = (blocs or {}).get(str(k)) if first_three else None
+        if bloc:
+            bloc_diffs = {
+                name: [
+                    bloc[name][b]["median_retrace_fraction"]["real_minus_null"]
+                    for b in ("JPY", "non_JPY")
+                    if bloc.get(name, {}).get(b, {}).get("median_retrace_fraction")
+                ]
+                for name in DECIDING_PANELS
+            }
+            both_blocs = all(
+                len(v) == 2 and (v[0] > 0) == (v[1] > 0) == (diffs[0] > 0)
+                for v in bloc_diffs.values()
+            )
+        else:
+            bloc_diffs = None
+            both_blocs = None
+
+        survives = bool(first_three and day_robust is not False and both_blocs is not False)
         if survives:
             surviving.append(k)
         out[k] = {
@@ -125,6 +173,11 @@ def _retrace_verdict(per_panel: dict[str, Any]) -> dict[str, Any]:
             "both_studentized_ge_2": both_strong,
             "above_economic_floor": economically_material,
             "floor": RETRACE_DIFFERENCE_FLOOR,
+            "clause_3_day_trim_holds": day_robust,
+            "clause_3_trimmed_real_minus_null": trimmed_diffs,
+            "clause_4_both_blocs_same_sign": both_blocs,
+            "clause_4_bloc_real_minus_null": bloc_diffs,
+            "clauses_evaluated": 5 if first_three else 3,
             "survives": survives,
         }
     return {
@@ -224,9 +277,89 @@ def _monthly_verdict(per_panel: dict[str, list[dict[str, Any]]]) -> dict[str, An
     }
 
 
+def _retrace_familywise(per_k: dict[str, Any]) -> dict[str, Any]:
+    """One family-max over B′-2's whole 15-cell family, not one per threshold."""
+    observed: list[float] = []
+    draws: list[list[float]] = []
+    for k in EXCURSION_SIGMAS:
+        row = (per_k.get(str(k)) or {}).get("null") or {}
+        family = row.get("family_max")
+        if not family:
+            continue
+        observed.append(float(family["observed_max_abs_z"]))
+        draws.append([float(v) for v in family["per_draw_max_abs_z"]])
+    if not observed:
+        return {"decidable": False, "reason": "no threshold produced a family-max"}
+    width = min(len(row) for row in draws)
+    pooled = np.max(np.array([row[:width] for row in draws]), axis=0)
+    peak = max(observed)
+    return {
+        "thresholds": len(observed),
+        "cells": sum(
+            (per_k[str(k)]["null"]["family_max"]["cells"])
+            for k in EXCURSION_SIGMAS
+            if (per_k.get(str(k)) or {}).get("null", {}).get("family_max")
+        ),
+        "observed_max_abs_z": round(peak, 3),
+        "family_wise_p": round(float((np.sum(pooled >= peak) + 1) / (len(pooled) + 1)), 5),
+        "draws": int(width),
+    }
+
+
+def _classification(verdicts: dict[str, Any]) -> dict[str, Any]:
+    """Plan §11, applied to the four machine verdicts. Prose does not enter here.
+
+    The first version of this round had no such function: the four verdicts were
+    written out and the case was chosen in the results document, which is how a
+    round whose B′-1 and B′-2 kill conditions were both *unmet* came to be
+    recorded as `PRICE_ONLY_PATH_STRUCTURE_SCREEN_NEGATIVE` — the case whose
+    pre-registered condition is that all three are empty. Two independent review
+    roles found it. The rule now runs on the artifacts.
+
+    Economic materiality is deliberately **not** an input. The plan attached an
+    economic floor to B′-2 and none to B′-1, and supplying one after the fact is
+    the move pre-registration exists to prevent. It is reported beside the case
+    as a disclosed post-hoc annotation, and it governs the *consequence*, never
+    the case.
+    """
+    b1_empty = bool(verdicts["b1"]["kill_condition_met"])
+    b2_empty = bool(verdicts["b2"]["kill_condition_met"])
+    b4_stable = not verdicts["b4"]["kill_condition_met"]
+
+    if not b1_empty or not b2_empty:
+        case, token = "A", "PRICE_PATH_STRUCTURE_SURVIVES_NULL_CONTROL"
+    elif b4_stable:
+        case, token = "B", "MONTHLY_ONLY_STRUCTURE_SURVIVES"
+    else:
+        case, token = "C", "PRICE_ONLY_PATH_STRUCTURE_SCREEN_NEGATIVE"
+
+    return {
+        "case": case,
+        "token": token,
+        "inputs": {
+            "b1_empty": b1_empty,
+            "b2_empty": b2_empty,
+            "b4_stable": b4_stable,
+            "b1_stable_horizons": verdicts["b1"].get("stable_horizons"),
+            "b2_surviving_thresholds": verdicts["b2"].get("surviving_thresholds"),
+        },
+        "rule": (
+            "plan §11: A if B′-1 or B′-2 is non-empty on both deciding panels; "
+            "B if both are empty and B′-4 is stable; C if all three are empty; "
+            "D if a concrete implementation, sample or null-design reason "
+            "prevents a verdict"
+        ),
+        "economic_materiality_is_not_an_input": True,
+    }
+
+
 def main() -> dict[str, Any]:
-    #: the null sanity check comes first, before any real comparison is computed
+    #: the null sanity checks come first, before any real comparison is
+    #: computed — one per study. B′-2 had none in the first version of this
+    #: round, and the bias its null carried is exactly what one would have
+    #: caught.
     write("b1_null_sanity", variance_ratio.null_sanity(draws=40))
+    write("b2_null_sanity", retrace.null_sanity())
 
     loaded = {panel_id: panels.load_panel(panel_id) for panel_id in PANELS}
     write(
@@ -278,7 +411,63 @@ def main() -> dict[str, Any]:
         geometry[panel_id] = per_k
         anchor_frames[panel_id] = per_k_frames
     write("b2_retrace_geometry", geometry)
-    write("b2_verdict", _retrace_verdict(geometry))
+
+    #: plan §5.4 registers a **secondary** null for B′-2 -- the IID shuffle --
+    #: whose difference from the primary says how much of any effect needs
+    #: volatility clustering. It was registered and, in the first version of this
+    #: round, never run.
+    write(
+        "b2_secondary_null",
+        {
+            panel_id: {
+                str(k): retrace.against_null(
+                    frames, k, draws=RETRACE_DRAWS, seed=SEED, null_name="N1_iid"
+                )
+                for k in EXCURSION_SIGMAS
+            }
+            for panel_id, frames in loaded.items()
+            if panel_id in DECIDING_PANELS
+        },
+    )
+
+    #: clause 4 needs a bloc split, and a bloc split costs two more null passes
+    #: per cell. Only cells that already passed clauses 1, 2 and 5 can be killed
+    #: by it, so only those are measured.
+    provisional = _retrace_verdict(geometry)
+    candidates = [
+        k
+        for k, row in provisional["per_threshold"].items()
+        if row.get("same_sign")
+        and row.get("both_studentized_ge_2")
+        and row.get("above_economic_floor")
+    ]
+    blocs: dict[str, Any] = {}
+    for k in candidates:
+        blocs[str(k)] = {}
+        for panel_id in DECIDING_PANELS:
+            frames = loaded[panel_id]
+            split = {
+                "JPY": {p: f for p, f in frames.items() if p in panels.JPY_PAIRS},
+                "non_JPY": {p: f for p, f in frames.items() if p not in panels.JPY_PAIRS},
+            }
+            blocs[str(k)][panel_id] = {
+                name: retrace.against_null(sub, float(k), draws=RETRACE_DRAWS, seed=SEED)["null"]
+                or {}
+                for name, sub in split.items()
+            }
+    write("b2_bloc_split", {"candidates": candidates, "per_threshold": blocs})
+
+    #: the family-max across all three thresholds together, which is the family
+    #: the plan registers -- 3 thresholds x 5 statistics = 15 cells
+    write(
+        "b2_familywise",
+        {
+            panel_id: _retrace_familywise(geometry[panel_id])
+            for panel_id in DECIDING_PANELS
+            if panel_id in geometry
+        },
+    )
+    write("b2_verdict", _retrace_verdict(geometry, blocs))
     write(
         "b2_subsets",
         {
@@ -325,6 +514,13 @@ def main() -> dict[str, Any]:
                     "microstructure": diagnostics.microstructure_split(frames),
                     "anchor_population": diagnostics.all_anchor_populations(frames, draws=20),
                     "harvestability": diagnostics.harvestability(frames),
+                    #: the two numbers `harvestability` reports are a hundredfold
+                    #: apart -- a floor assuming one suboptimal rule and a ceiling
+                    #: crediting the whole variance deficit to one component. The
+                    #: ACF measures directly what the coarse-base test only
+                    #: infers, and the linear bound fills the gap between them.
+                    "acf": diagnostics.autocorrelation_function(frames),
+                    "optimal_linear_predictor": diagnostics.optimal_linear_predictor(frames),
                 }
                 for panel_id, frames in loaded.items()
             },
@@ -334,11 +530,19 @@ def main() -> dict[str, Any]:
     # ---------------------------------------------------------------- B′-VOL
     write("bvol_inventory", volume_inventory.inventory())
 
+    verdicts = {
+        name: json.loads((CACHE / f"{name}_verdict.json").read_text())["payload"]
+        for name in ("b1", "b2", "b4")
+    }
+    classification = _classification(verdicts)
+    write("classification", classification)
     summary = {
-        "b1": json.loads((CACHE / "b1_verdict.json").read_text())["payload"]["status"],
-        "b2": json.loads((CACHE / "b2_verdict.json").read_text())["payload"]["status"],
+        "b1": verdicts["b1"]["status"],
+        "b2": verdicts["b2"]["status"],
         "b2_htf": json.loads((CACHE / "b2_htf_context.json").read_text())["payload"]["status"],
-        "b4": json.loads((CACHE / "b4_verdict.json").read_text())["payload"]["status"],
+        "b4": verdicts["b4"]["status"],
+        "classification": classification["case"],
+        "classification_token": classification["token"],
     }
     write("round_b_prime_summary", summary)
     return summary

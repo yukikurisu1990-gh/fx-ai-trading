@@ -42,6 +42,7 @@ import pandas as pd
 
 from scripts.research.round_b_prime import (
     ANCHOR_TIMEOUT,
+    EXCURSION_SIGMAS,
     HTF_FAST,
     HTF_RANGE_WINDOW,
     HTF_SLOW,
@@ -76,14 +77,27 @@ def htf_context(frame: pd.DataFrame) -> dict[str, np.ndarray]:
         "aligned",
         "mixed",
     )
-    high = close.rolling(HTF_RANGE_WINDOW, min_periods=HTF_RANGE_WINDOW // 2).max().shift(1)
-    low = close.rolling(HTF_RANGE_WINDOW, min_periods=HTF_RANGE_WINDOW // 2).min().shift(1)
-    span = (high - low).replace(0.0, np.nan)
-    position = (close - low) / span
+    position = htf_range_position(frame)
     location = np.where(
         np.isfinite(position) & ((position <= 1 / 3) | (position >= 2 / 3)), "outer", "middle"
     )
     return {"htf_trend": aligned, "htf_location": location}
+
+
+def htf_range_position(frame: pd.DataFrame) -> np.ndarray:
+    """Where the close sits in the trailing range, before it is bucketed.
+
+    Split out of `htf_context` so the causality of the rolling extremes can be
+    tested. It cannot be tested through the label: a bar that moves a rolling
+    extreme is *itself* at that extreme, so both the shifted and the unshifted
+    range put it outside the `1/3 … 2/3` band and the two bucket identically.
+    The numeric position separates them; the label cannot.
+    """
+    close = frame["mid_c"]
+    high = close.rolling(HTF_RANGE_WINDOW, min_periods=HTF_RANGE_WINDOW // 2).max().shift(1)
+    low = close.rolling(HTF_RANGE_WINDOW, min_periods=HTF_RANGE_WINDOW // 2).min().shift(1)
+    span = (high - low).replace(0.0, np.nan)
+    return ((close - low) / span).to_numpy()
 
 
 def find_anchors(frame: pd.DataFrame, k: float) -> pd.DataFrame:
@@ -195,9 +209,17 @@ def summarise(anchors: pd.DataFrame) -> dict[str, Any]:
     if anchors.empty:
         return {"anchors": 0}
     fraction = anchors["max_retrace_fraction"].to_numpy()
+    #: The retrace in sigma units, which has no excursion in its denominator.
+    #: The fraction divides by the realised excursion, and the detector does not
+    #: select the same excursions on the real series and on the null -- real
+    #: anchors form faster and are smaller in sigma -- so a difference in the
+    #: fraction can be a difference in denominators. This says the same thing
+    #: without one.
+    absolute = fraction * anchors["excursion_sigma"].to_numpy()
     out: dict[str, Any] = {
         "anchors": int(len(anchors)),
         "median_retrace_fraction": round(float(np.median(fraction)), 5),
+        "median_retrace_sigma": round(float(np.median(absolute)), 5),
         "mean_retrace_fraction": round(float(np.mean(fraction)), 5),
         "median_excursion_sigma": round(float(anchors["excursion_sigma"].median()), 4),
         "median_adverse_extension_sigma": round(
@@ -221,6 +243,20 @@ def summarise(anchors: pd.DataFrame) -> dict[str, Any]:
     out["timeout_rate"] = round(
         float(1 - anchors[f"reached_{int(RETRACE_LEVELS[0] * 100)}"].mean()), 5
     )
+    #: Plan §5.6 clause 3 asks whether the effect is carried by a handful of
+    #: **days**. Computed here rather than in a subset report, so that it flows
+    #: through `against_null` and the trim applies to the real *and* the null
+    #: side -- a trim applied to the real median alone says nothing about
+    #: `real − null`, which is the quantity the kill condition reads.
+    day = pd.to_datetime(anchors["ts"], utc=True).dt.floor("D")
+    load = anchors.groupby(day)["max_retrace_fraction"].sum().abs().sort_values()
+    for n in (10, 20):
+        if len(load) > n:
+            kept = anchors[~day.isin(load.index[-n:])]
+            out[f"median_retrace_fraction_excluding_top_{n}_days"] = (
+                round(float(kept["max_retrace_fraction"].median()), 5) if len(kept) else None
+            )
+    out["anchor_days"] = int(load.size)
     return out
 
 
@@ -239,6 +275,49 @@ def panel_geometry(panel: dict[str, pd.DataFrame], k: float) -> tuple[dict[str, 
     stacked = pd.concat(blocks, ignore_index=True)
     stacked.attrs["ambiguous_bars"] = ambiguous
     return summarise(stacked), stacked
+
+
+def null_sanity(
+    *,
+    pairs: int = 20,
+    length: int = 50_000,
+    draws: int = 20,
+    seed: int = SEED,
+) -> dict[str, Any]:
+    """B′-2's own sanity check: the detector on a generated random walk.
+
+    B′-1 had one from the start and B′-2 did not, which mattered: the first
+    version of this round used a null that re-attached each real bar's high and
+    low offsets to a **sign-flipped** return, building bars that closed down
+    with the close pinned to the high. `find_anchors` reads exactly those two
+    columns, so the null's retrace was inflated and the real series appeared to
+    retrace *less*. A sanity check on a walk with sign-coupled bar shapes would
+    have shown the bias before any panel was read.
+
+    The walk is panel-shaped — twenty series, not one — because `k = 3.0` yields
+    single-digit anchor counts on one series and cannot say anything there.
+    """
+    rng = np.random.default_rng(seed)
+    panel = {f"W{index:02d}": nulls.random_walk_frame(length, rng) for index in range(pairs)}
+    out: dict[str, Any] = {"pairs": pairs, "bars_per_pair": length, "draws": draws}
+    for k in EXCURSION_SIGMAS:
+        result = against_null(panel, k, draws=draws, seed=seed)
+        null = result.get("null")
+        out[str(k)] = (
+            {
+                "anchors": result["real"]["anchors"],
+                "median_retrace_fraction": null["median_retrace_fraction"],
+                "median_adverse_extension_sigma": null["median_adverse_extension_sigma"],
+            }
+            if null
+            else {"anchors": result["real"].get("anchors", 0), "decidable": False}
+        )
+    out["note"] = (
+        "a generated walk has no reversion and no continuation, so every "
+        "difference here must sit inside its null band; a threshold that does "
+        "not is measuring the detector or the null rather than the data"
+    )
+    return out
 
 
 def against_null(
@@ -270,6 +349,9 @@ def against_null(
         return {"k": k, "real": real, "null": None}
     keys = [
         "median_retrace_fraction",
+        "median_retrace_sigma",
+        "median_retrace_fraction_excluding_top_10_days",
+        "median_retrace_fraction_excluding_top_20_days",
         "mean_retrace_fraction",
         "median_adverse_extension_sigma",
         "reached_50_rate",
@@ -291,10 +373,42 @@ def against_null(
             "studentized": round((float(real[key]) - mean) / sd, 3) if sd > 0 else None,
         }
     null_stats["null_median_anchors"] = int(np.median([s["anchors"] for s in samples]))
+
+    #: Westfall--Young family-max over this threshold's statistics. The plan
+    #: registers 5 statistics at each of 3 thresholds and asks (§9) for a
+    #: family-max correction; the first version of this round computed one for
+    #: B′-4 only. `per_draw_max_abs_z` is exported so the driver can take the
+    #: max across thresholds without re-drawing.
+    registered = [key for key in keys if key in null_stats and null_stats[key]["studentized"]]
+    if registered:
+        matrix = np.array(
+            [
+                [float(sample[key]) for sample in samples if sample.get(key) is not None]
+                for key in registered
+            ]
+        )
+        if matrix.ndim == 2 and matrix.shape[1] == len(samples):
+            mean = matrix.mean(axis=1, keepdims=True)
+            sd = matrix.std(axis=1, keepdims=True)
+            sd[sd == 0] = np.inf
+            observed = np.abs(
+                (np.array([real[key] for key in registered]).reshape(-1, 1) - mean) / sd
+            ).max()
+            per_draw = np.abs((matrix - mean) / sd).max(axis=0)
+            null_stats["family_max"] = {
+                "cells": len(registered),
+                "observed_max_abs_z": round(float(observed), 3),
+                "family_wise_p": round(
+                    float((np.sum(per_draw >= observed) + 1) / (len(per_draw) + 1)), 5
+                ),
+                "per_draw_max_abs_z": [round(float(v), 4) for v in per_draw],
+            }
     return {"k": k, "real": real, "null": null_stats}
 
 
 __all__ = [
+    "htf_range_position",
+    "null_sanity",
     "BAR_SECONDS",
     "RETRACE_LEVELS",
     "WINDOW_MULTIPLE",

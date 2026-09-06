@@ -45,19 +45,63 @@ def _returns(frame: pd.DataFrame) -> np.ndarray:
     return (frame["mid_c"].diff() / frame["pip_size"]).to_numpy()[1:]
 
 
-def _rebuild(frame: pd.DataFrame, steps: np.ndarray) -> pd.DataFrame:
-    """A frame whose `mid_c` is the given step sequence, everything else intact.
+def _bar_shape(frame: pd.DataFrame) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """Each bar's intrabar shape, as offsets from its own close, in price units.
 
-    High and low keep their own offsets from the close, so bar shapes survive and
-    the excursion detector sees the same kind of object it sees on real bars.
+    Returned as `(up, down, open_offset)` where `up = h − c ≥ 0` and
+    `down = c − l ≥ 0`.
+    """
+    up = (frame["mid_h"] - frame["mid_c"]).to_numpy()[1:]
+    down = (frame["mid_c"] - frame["mid_l"]).to_numpy()[1:]
+    open_offset = (frame["mid_o"] - frame["mid_c"]).to_numpy()[1:]
+    return up, down, open_offset
+
+
+def _rebuild(
+    frame: pd.DataFrame,
+    steps: np.ndarray,
+    *,
+    order: np.ndarray | None = None,
+    flipped: np.ndarray | None = None,
+) -> pd.DataFrame:
+    """A frame whose `mid_c` is the given step sequence, with **coherent bars**.
+
+    The intrabar shape may not be re-attached as it was found. A bar's high and
+    low are strongly coupled to the sign of its own return — measured on real
+    M15 data, `corr(sign r_t, (h−c) − (c−l)) = −0.57`, because an up bar closes
+    near its high — so carrying the real offsets onto a null path whose signs
+    have been re-drawn builds bars that close down with the close pinned to the
+    high. `retrace.find_anchors` reads `mid_h`/`mid_l` for both the retrace
+    depth and the continuation, so such bars are not a cosmetic defect: they
+    inflate the null's retrace directly.
+
+    Two rules keep the shape coherent, and both preserve each bar's **total
+    range** exactly:
+
+    * `order` — the permutation applied to the returns. The shape travels with
+      its own return, so a shuffled path also loses the serial dependence of the
+      bar range, which is what N1 and N3 claim to destroy.
+    * `flipped` — a boolean per bar. Where a return's sign was reversed, `up`
+      and `down` swap and the open reflects to the other side of the close.
+
+    An earlier version of this function did neither, and the B′-2 result it
+    produced reversed sign once it did.
     """
     out = frame.copy()
     pip = frame["pip_size"].to_numpy()
     close = frame["mid_c"].to_numpy()
+    up, down, open_offset = _bar_shape(frame)
+    if order is not None:
+        up, down, open_offset = up[order], down[order], open_offset[order]
+    if flipped is not None:
+        up, down = np.where(flipped, down, up), np.where(flipped, up, down)
+        open_offset = np.where(flipped, -open_offset, open_offset)
+
     walk = np.concatenate([[close[0]], close[0] + np.cumsum(steps * pip[1:])])
-    for column in ("mid_h", "mid_l", "mid_o"):
-        offset = (frame[column] - frame["mid_c"]).to_numpy()
-        out[column] = walk + offset
+    first = np.array([0.0])
+    out["mid_h"] = walk + np.concatenate([first, up])
+    out["mid_l"] = walk - np.concatenate([first, down])
+    out["mid_o"] = walk + np.concatenate([first, open_offset])
     out["mid_c"] = walk
     return out
 
@@ -69,7 +113,8 @@ def n1_iid(frame: pd.DataFrame, rng: np.random.Generator) -> pd.DataFrame:
     are gone. Use it only to bound "is there any serial structure at all".
     """
     steps = _returns(frame)
-    return _rebuild(frame, rng.permutation(steps))
+    order = rng.permutation(len(steps))
+    return _rebuild(frame, steps[order], order=order)
 
 
 def n2_sign_flip(frame: pd.DataFrame, rng: np.random.Generator) -> pd.DataFrame:
@@ -88,7 +133,8 @@ def n2_sign_flip(frame: pd.DataFrame, rng: np.random.Generator) -> pd.DataFrame:
     series. `docs/research/m15_round_b_prime_plan.md` §13 carries the table.
     """
     steps = _returns(frame)
-    return _rebuild(frame, steps * rng.choice((-1.0, 1.0), size=len(steps)))
+    signs = rng.choice((-1.0, 1.0), size=len(steps))
+    return _rebuild(frame, steps * signs, flipped=signs < 0)
 
 
 def n3_weekday(frame: pd.DataFrame, rng: np.random.Generator) -> pd.DataFrame:
@@ -100,11 +146,11 @@ def n3_weekday(frame: pd.DataFrame, rng: np.random.Generator) -> pd.DataFrame:
     steps = _returns(frame)
     stamps = frame["ts"].iloc[1:]
     key = (stamps.dt.dayofweek * 24 + stamps.dt.hour).to_numpy()
-    shuffled = steps.copy()
+    order = np.arange(len(steps))
     for slot in np.unique(key):
         index = np.flatnonzero(key == slot)
-        shuffled[index] = steps[rng.permutation(index)]
-    return _rebuild(frame, shuffled)
+        order[index] = rng.permutation(index)
+    return _rebuild(frame, steps[order], order=order)
 
 
 NULLS: Final[dict[str, Any]] = {
@@ -115,17 +161,27 @@ NULLS: Final[dict[str, Any]] = {
 
 CONTRACTS: Final[dict[str, dict[str, str]]] = {
     "N1_iid": {
-        "preserves": "the marginal distribution of 1-bar returns",
-        "destroys": "all serial dependence, including volatility clustering",
+        "preserves": "the marginal distribution of 1-bar returns, and each bar's own shape",
+        "destroys": (
+            "all serial dependence of the return and of the bar range, since each "
+            "bar's shape is permuted together with its own return"
+        ),
         "detects": "any serial structure; cannot separate clustering from direction",
     },
     "N2_sign_flip": {
-        "preserves": "|r_t| at every bar, so clustering, the calendar and the gaps are intact",
-        "destroys": "the sign of every return, drawn independently per bar",
+        "preserves": (
+            "|r_t| and each bar's total range at every bar, so clustering, the "
+            "calendar and the gaps are intact"
+        ),
+        "destroys": (
+            "the sign of every return, drawn independently per bar; where a sign "
+            "flips, the bar's high and low offsets swap and the open reflects, so "
+            "the bar stays coherent with the direction it now has"
+        ),
         "detects": "directional serial dependence with clustering held fixed (primary)",
     },
     "N3_weekday": {
-        "preserves": "each return's weekday and hour-of-day slot",
+        "preserves": "each return's weekday and hour-of-day slot, and its own bar shape",
         "destroys": "serial dependence within a slot, but not calendar placement",
         "detects": "whether an N1 result is a calendar artefact rather than serial dependence",
     },
@@ -137,20 +193,44 @@ def random_walk_frame(n: int, rng: np.random.Generator, *, pip: float = 0.01) ->
 
     The known answer: `VR(q) = 1` for every `q`, and no retrace structure beyond
     what the anchor selection itself produces.
+
+    Two properties are here so that `sanity_check` can actually exercise them.
+    An earlier version gave every bar a **constant** `±0.5` pip shape and a
+    gapless calendar, which made the nulls' "bar shapes survive" and
+    "the calendar and the gaps are intact" clauses unfalsifiable in the one
+    place the nulls are validated — and a real defect in exactly that clause
+    went undetected. So:
+
+    * **the bar shape is coupled to the bar's own sign**, as it is in real data:
+      an up bar closes near its high. The coupling here is stronger than the
+      measured `−0.57` so that a null which ignores it cannot pass by luck;
+    * **the calendar has weekend gaps**, five trading days a week.
     """
     steps = rng.normal(0.0, 1.0, n - 1)
     close = np.concatenate([[100.0], 100.0 + np.cumsum(steps * pip)])
-    ts = pd.date_range("2022-01-03", periods=n, freq="15min", tz="UTC")
-    spread = np.full(n, 0.02)
+
+    #: five trading days a week, so a weekend gap exists to be preserved
+    stamps = pd.date_range("2022-01-03", periods=n * 2, freq="15min", tz="UTC")
+    ts = stamps[stamps.dayofweek < 5][:n]
+
+    #: an up bar closes near its high; a down bar near its low
+    reach = np.abs(rng.normal(0.0, 1.0, n))
+    direction = np.concatenate([[0.0], np.sign(steps)])
+    near = reach * 0.2
+    far = reach * 1.0
+    up = np.where(direction >= 0, near, far) * pip
+    down = np.where(direction >= 0, far, near) * pip
+
     return pd.DataFrame(
         {
             "ts": ts,
-            "mid_o": close,
-            "mid_h": close + pip * 0.5,
-            "mid_l": close - pip * 0.5,
+            "mid_o": close - direction * near * pip,
+            "mid_h": close + up,
+            "mid_l": close - down,
             "mid_c": close,
-            "spread_close_pips": spread / pip,
+            "spread_close_pips": np.full(n, 2.0),
             "pip_size": pip,
+            "roundtrip_cost": np.full(n, 2.5),
             "rollover": False,
             "n_source_bars": 15,
             "complete_bucket": True,

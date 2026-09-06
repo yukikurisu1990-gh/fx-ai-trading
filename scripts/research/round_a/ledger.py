@@ -143,9 +143,13 @@ LEDGER: Final[list[dict[str, Any]]] = [
         "prespecified": True,
         "result": (
             "VR < 1 at every horizon and panel, stable at q<=192 on both deciding "
-            "panels (z -2.1 to -14.7); POST HOC: the deficit vanishes when the base "
-            "return is 12 bars, MA(1) explains 60-149%, and the implied block "
-            "autocorrelation is 11-120x below break-even"
+            "panels (z -2.1 to -14.7), family-max p = 0.005 on all three. Carried "
+            "by non-JPY at short horizons: the JPY bloc reaches |z|>=2 at 2 of 12 "
+            "cells and crosses it with the OPPOSITE sign at q=192 on 2021-23. "
+            "POST HOC: not a one-bar effect -- 20 and 17 of 100 lags sit outside a "
+            "3sd null band against 0.27 expected -- and the best linear predictor "
+            "over 96 bars of memory reaches 6-16% of break-even in-sample, at every "
+            "horizon from 1 bar to 12 hours"
         ),
         "status": "CLOSED - real but unharvestable microstructure",
     },
@@ -159,11 +163,24 @@ LEDGER: Final[list[dict[str, Any]]] = [
         "configurations": "15 pre-registered cells",
         "prespecified": True,
         "result": (
-            "only k=1.5 survives; POST HOC: its anchors form in a median of 3 bars "
-            "with a 12-bar window, and the real and null anchor populations differ "
-            "on every measured axis (z -5.9 to -15.5), so the comparison is confounded"
+            "k=2.0 and k=3.0 survive all five clauses on both deciding panels "
+            "(+0.066/+0.093 and +0.147/+0.157, z 2.97 to 5.70) -- but ONLY after "
+            "the primary null was corrected. The null had re-attached each real "
+            "bar's high/low offsets to a sign-flipped return, and those offsets "
+            "correlate -0.57 with the bar's own sign, so the null carried "
+            "incoherent bars into the two columns the detector reads. The sign "
+            "REVERSED on correction. POST HOC: the same statistic in sigma units, "
+            "with no excursion in its denominator, is positive in all 9 cells and "
+            "significant in none (z +0.18 to +1.96), and real anchors are smaller "
+            "than null anchors (z -2.94), so the fraction is mostly a denominator "
+            "effect. Against the secondary IID null the differences are 2-3x "
+            "larger, so about two-thirds of the effect is volatility clustering"
         ),
-        "status": "CLOSED - confounded, same sub-hourly zone as H-010",
+        "status": (
+            "OPEN - direction-consistent with H-010, not independently established; "
+            "second look at the same data, and its family-wise p is pinned at the "
+            "1/41 floor by 40 draws"
+        ),
     },
     {
         "id": "H-012",
@@ -176,7 +193,10 @@ LEDGER: Final[list[dict[str, Any]]] = [
         "prespecified": True,
         "result": (
             "MONTHLY_TSMOM_NOT_SUPPORTED_IN_EXISTING_PRICE_HISTORY; gross negative in "
-            "5 of 6 cells on both deciding panels, family-max p = 0.32 / 0.31"
+            "11 of 12 cells across both deciding panels, the twelfth disagreeing in "
+            "sign, family-max p = 0.32 / 0.31, every per-cell t in [-1.571, +0.104]. "
+            "An underpowered null result -- about 7 non-overlapping observations per "
+            "pair against 3.5-4.8 effective independent pairs -- not a refutation"
         ),
         "status": "CLOSED",
     },

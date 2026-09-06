@@ -21,8 +21,12 @@ separately authorised round, and this module does not touch it.
 
 from __future__ import annotations
 
+import builtins
 import inspect
 import json
+from collections.abc import Iterator
+from contextlib import contextmanager
+from pathlib import Path
 from typing import Any, Final
 
 from scripts.research.exploratory_m15 import bars as bars_module
@@ -37,6 +41,59 @@ FETCH_SOURCES: Final[tuple[str, ...]] = (
 )
 
 
+#: A market-data **content** file, as opposed to the manifest that describes
+#: them. Matched on the suffix rather than on a directory prefix, because the
+#: manifest lives in the same directory as the files it indexes and a prefix
+#: test on that directory classified the manifest itself as content.
+CONTENT_SUFFIXES: Final[tuple[str, ...]] = (".jsonl", ".jsonl.gz", ".parquet", ".csv")
+CONTENT_ROOTS: Final[tuple[str, ...]] = ("data/", "artifacts/oanda_archive_2026-05-31/")
+
+
+@contextmanager
+def _recording_opens() -> Iterator[list[str]]:
+    """Every path opened inside the block, so the boundary claim is measured.
+
+    `content_read_performed` used to be a hard-coded `False`. A literal cannot
+    be wrong about the code that runs beside it: a review role mutated this
+    module to open an archive `.jsonl` and read a line from it, and every test
+    still passed. This wraps `builtins.open` and `Path.open` for the duration of
+    `inventory()` and records what was actually opened, so the claim is a
+    measurement of this call.
+    """
+    seen: list[str] = []
+    real_open, real_path_open = builtins.open, Path.open
+
+    def record(target: Any) -> None:
+        try:
+            seen.append(str(Path(target).resolve()))
+        except (TypeError, ValueError, OSError):  # pragma: no cover - exotic targets
+            seen.append(repr(target))
+
+    def patched_open(file, *args, **kwargs):  # type: ignore[no-untyped-def]
+        record(file)
+        return real_open(file, *args, **kwargs)
+
+    def patched_path_open(self, *args, **kwargs):  # type: ignore[no-untyped-def]
+        record(self)
+        return real_path_open(self, *args, **kwargs)
+
+    builtins.open = patched_open  # type: ignore[assignment]
+    Path.open = patched_path_open  # type: ignore[assignment,method-assign]
+    try:
+        yield seen
+    finally:
+        builtins.open = real_open  # type: ignore[assignment]
+        Path.open = real_path_open  # type: ignore[method-assign]
+
+
+def _is_market_content(path: str) -> bool:
+    resolved = Path(path).resolve().as_posix().lower()
+    root = bars_module.REPO_ROOT.resolve().as_posix().lower()
+    relative = resolved[len(root) :].lstrip("/") if resolved.startswith(root) else resolved
+    under_a_data_root = any(relative.startswith(prefix) for prefix in CONTENT_ROOTS)
+    return under_a_data_root and relative.endswith(CONTENT_SUFFIXES)
+
+
 def _source(path: str) -> str:
     target = bars_module.REPO_ROOT / path
     return target.read_text(encoding="utf-8") if target.is_file() else ""
@@ -44,6 +101,16 @@ def _source(path: str) -> str:
 
 def inventory() -> dict[str, Any]:
     """Everything Round B′ is allowed to establish about tick volume."""
+    with _recording_opens() as opened:
+        result = _inventory()
+    content = sorted({p for p in opened if _is_market_content(p)})
+    result["opened_paths"] = sorted({Path(p).name for p in opened})
+    result["content_read_performed"] = bool(content)
+    result["market_content_paths_opened"] = content
+    return result
+
+
+def _inventory() -> dict[str, Any]:
     writers = {
         path: {
             "exists": bool(_source(path)),
@@ -110,7 +177,6 @@ def inventory() -> dict[str, Any]:
         "route_templates": routes,
         "coverage_from_metadata": coverage,
         "recovery": recovery,
-        "content_read_performed": False,
         "referral": (
             "TICK_VOLUME_INFORMATION_INVENTORY_CONFIRMED_PENDING_SEPARATE_AUTHORISED_RESEARCH"
         ),
@@ -122,4 +188,4 @@ def inventory() -> dict[str, Any]:
     }
 
 
-__all__ = ["FETCH_SOURCES", "MANIFEST", "inventory"]
+__all__ = ["CONTENT_ROOTS", "CONTENT_SUFFIXES", "FETCH_SOURCES", "MANIFEST", "inventory"]

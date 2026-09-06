@@ -124,6 +124,9 @@ def anchor_population(
                 (frame["excursion_sigma"] / np.sqrt(frame["bars_to_anchor"])).median()
             ),
             "median_adverse_extension_sigma": float(frame["adverse_extension_sigma"].median()),
+            "median_retrace_sigma": float(
+                (frame["max_retrace_fraction"] * frame["excursion_sigma"]).median()
+            ),
         }
 
     rng = np.random.default_rng(seed)
@@ -142,12 +145,22 @@ def anchor_population(
             key: {
                 "mean": round(float(np.mean([s[key] for s in samples])), 4),
                 "sd": round(float(np.std([s[key] for s in samples])), 4),
-                "z": round(
+                #: a zero spread across draws makes `z` undefined, not zero. The
+                #: earlier `(sd or inf)` guard reported 0.00 for the two integer
+                #: axes -- `median_bars_to_anchor` and `median_observation_bars`
+                #: -- which are exactly the axes where a real 3-vs-4 and 12-vs-16
+                #: difference then read as "no difference".
+                "z": None
+                if not np.std([s[key] for s in samples])
+                else round(
                     float(
                         (observed[key] - np.mean([s[key] for s in samples]))
-                        / (np.std([s[key] for s in samples]) or np.inf)
+                        / np.std([s[key] for s in samples])
                     ),
                     2,
+                ),
+                "differs": bool(
+                    observed[key] != round(float(np.mean([s[key] for s in samples])), 6)
                 ),
             }
             for key in observed
@@ -228,11 +241,169 @@ def harvestability(panel: dict[str, pd.DataFrame], *, horizons=(1, 2, 4, 12, 48)
     return out
 
 
+def autocorrelation_function(
+    panel: dict[str, pd.DataFrame],
+    *,
+    max_lag: int = 100,
+    draws: int = 40,
+    seed: int = SEED,
+) -> dict[str, Any]:
+    """The sample ACF with an N2 band — the direct measurement of "lag 1 only".
+
+    `microstructure_split` infers lag-1 dominance from a ratio of variance
+    ratios it already had; this measures it. `rho_k` is pooled over pairs on
+    sigma-normalised returns, and the same N2 sign flip that B'-1 used supplies
+    the band, so a lag is "real" only where it leaves the band a pure
+    direction-destroying null produces.
+    """
+
+    def acf(frames: dict[str, pd.DataFrame]) -> np.ndarray:
+        num = np.zeros(max_lag + 1)
+        den = 0.0
+        for frame in frames.values():
+            values = variance_ratio.sigma_normalised_returns(frame)
+            clean = values[np.isfinite(values)]
+            if len(clean) <= max_lag * 4:
+                continue
+            centred = clean - clean.mean()
+            den += float(centred @ centred)
+            for k in range(max_lag + 1):
+                num[k] += float(centred[: len(centred) - k] @ centred[k:])
+        return num / den if den else num
+
+    real = acf(panel)
+    rng = np.random.default_rng(seed)
+    null = np.array(
+        [acf({p: nulls.n2_sign_flip(f, rng) for p, f in panel.items()}) for _ in range(draws)]
+    )
+    mean = null.mean(axis=0)
+    sd = null.std(axis=0)
+    with np.errstate(divide="ignore", invalid="ignore"):
+        z = np.where(sd > 0, (real - mean) / sd, np.nan)
+
+    outside = [int(k) for k in range(1, max_lag + 1) if abs(z[k]) >= 3.0]
+    return {
+        "max_lag": max_lag,
+        "draws": draws,
+        "rho": {str(k): round(float(real[k]), 6) for k in range(1, max_lag + 1)},
+        "studentized": {str(k): round(float(z[k]), 2) for k in range(1, max_lag + 1)},
+        "lags_outside_3sd": outside,
+        "share_of_summed_abs_rho_at_lag_1": round(
+            float(abs(real[1]) / np.abs(real[1 : max_lag + 1]).sum()), 4
+        ),
+        "sum_rho_2_to_max": round(float(real[2 : max_lag + 1].sum()), 6),
+        "note": (
+            "lags_outside_3sd names every lag whose sample autocorrelation the "
+            "direction-destroying null does not reproduce; if that list is [1] "
+            "the deficit is a lag-1 effect, and if it is longer it is not"
+        ),
+    }
+
+
+def optimal_linear_predictor(
+    panel: dict[str, pd.DataFrame],
+    *,
+    horizons: tuple[int, ...] = (1, 2, 4, 12, 48),
+    memory: int = 96,
+    max_lag: int = 200,
+    draws: int = 20,
+    seed: int = SEED,
+) -> dict[str, Any]:
+    """The achievable IC, from the whole ACF rather than from one lag.
+
+    `harvestability` offers two numbers a hundredfold apart: a floor that
+    assumes one specific suboptimal rule, and a ceiling that credits the entire
+    variance deficit to a single predictable component. Neither is what a rule
+    could get. This is: the best **linear** predictor of the next `q`-bar move
+    from the last `memory` bars, whose `R^2` follows from the autocovariances
+    alone.
+
+    Two things make the raw number optimistic, and both are corrected here. A
+    sample ACF of pure noise yields a positive `R^2` -- `memory` free
+    parameters will fit something -- so the same statistic is computed on the
+    N2 null and reported beside it. And the coefficients are fitted on the same
+    data the `R^2` is read from, so this is an in-sample upper bound on any
+    linear rule, not an achievable out-of-sample IC.
+    """
+
+    def gamma(frames: dict[str, pd.DataFrame]) -> np.ndarray:
+        num = np.zeros(max_lag + 1)
+        den = 0.0
+        for frame in frames.values():
+            values = variance_ratio.sigma_normalised_returns(frame)
+            clean = values[np.isfinite(values)]
+            if len(clean) <= max_lag * 4:
+                continue
+            centred = clean - clean.mean()
+            den += len(centred)
+            for k in range(max_lag + 1):
+                num[k] += float(centred[: len(centred) - k] @ centred[k:])
+        return num / den if den else num
+
+    def ic_from(g: np.ndarray) -> dict[int, float]:
+        out: dict[int, float] = {}
+        for q in horizons:
+            m = min(memory, max_lag - q)
+            if m < 1:
+                continue
+            #: Var of the q-bar sum, and Cov(last m returns, that sum)
+            var_sum = q * g[0] + 2.0 * sum((q - k) * g[k] for k in range(1, q))
+            cov = np.array([sum(g[i + j] for i in range(1, q + 1)) for j in range(m)])
+            cov_matrix = np.array([[g[abs(i - j)] for j in range(m)] for i in range(m)])
+            try:
+                solved = np.linalg.solve(cov_matrix, cov)
+            except np.linalg.LinAlgError:  # pragma: no cover - singular Toeplitz
+                continue
+            r2 = float(cov @ solved / var_sum) if var_sum > 0 else float("nan")
+            out[q] = float(np.sqrt(max(r2, 0.0)))
+        return out
+
+    real = ic_from(gamma(panel))
+    rng = np.random.default_rng(seed)
+    null_draws = [
+        ic_from(gamma({p: nulls.n2_sign_flip(f, rng) for p, f in panel.items()}))
+        for _ in range(draws)
+    ]
+
+    breakeven = harvestability(panel, horizons=horizons)
+    out: dict[str, Any] = {"memory_bars": memory, "draws": draws}
+    for q in horizons:
+        if q not in real:
+            continue
+        sample = [d[q] for d in null_draws if q in d]
+        null_mean = float(np.mean(sample)) if sample else float("nan")
+        null_sd = float(np.std(sample)) if sample else float("nan")
+        floor = breakeven.get(str(q), {}).get("break_even_ic")
+        #: the null's own IC is what `memory` free parameters extract from noise;
+        #: only the excess over it is attributable to structure
+        excess = real[q] - null_mean
+        out[str(q)] = {
+            "in_sample_ic": round(real[q], 5),
+            "null_ic_mean": round(null_mean, 5),
+            "null_ic_sd": round(null_sd, 5),
+            "excess_over_null": round(excess, 5),
+            "break_even_ic": floor,
+            "ratio_in_sample_over_break_even": round(real[q] / floor, 3) if floor else None,
+            "ratio_excess_over_break_even": round(excess / floor, 3) if floor else None,
+        }
+    out["note"] = (
+        "in_sample_ic is an upper bound on any linear rule using the last "
+        "`memory` bars, fitted and scored on the same data; null_ic_mean is what "
+        "the same fit extracts from a direction-destroyed series, so "
+        "excess_over_null is the part attributable to structure. A "
+        "ratio_excess_over_break_even below 1 means no linear rule at that "
+        "horizon pays for the round trip."
+    )
+    return out
+
+
 __all__ = [
     "CLASSIFICATION",
     "all_anchor_populations",
     "anchor_population",
+    "autocorrelation_function",
     "coarse_variance_ratio",
     "harvestability",
     "microstructure_split",
+    "optimal_linear_predictor",
 ]

@@ -142,6 +142,32 @@ def against_nulls(
                 if v
             },
         }
+        #: Westfall--Young family-max over the 7 horizons. The per-horizon
+        #: studentized values are read at |z| >= 2 by the kill condition, and
+        #: seven correlated cells are seven chances -- so the honest question is
+        #: whether the *largest* |z| in the family exceeds what the same null
+        #: produces when it is also allowed its largest. Computed from the draws
+        #: already taken: each draw is restandardised against the others.
+        usable = [q for q in VR_HORIZONS if len(samples[q]) == draws]
+        if usable:
+            matrix = np.array([samples[q] for q in usable])
+            mean = matrix.mean(axis=1, keepdims=True)
+            sd = matrix.std(axis=1, keepdims=True)
+            sd[sd == 0] = np.inf
+            observed_max = float(
+                np.max(np.abs((np.array([real[q] for q in usable]).reshape(-1, 1) - mean) / sd))
+            )
+            #: leave-one-out standardisation so a draw is not compared with itself
+            null_max = np.max(np.abs((matrix - mean) / sd), axis=0)
+            out[name]["family_max"] = {
+                "cells": len(usable),
+                "observed_max_abs_z": round(observed_max, 3),
+                "null_max_abs_z_mean": round(float(null_max.mean()), 3),
+                "null_max_abs_z_p95": round(float(np.percentile(null_max, 95)), 3),
+                "family_wise_p": round(
+                    float((np.sum(null_max >= observed_max) + 1) / (len(null_max) + 1)), 5
+                ),
+            }
     return out
 
 
