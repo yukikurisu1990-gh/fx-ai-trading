@@ -365,3 +365,72 @@ logic (§23).
 A defect found in an implementation is fixed and **recorded as a deviation** in
 the results document, with the before-and-after measurement. A threshold is never
 moved to change an outcome.
+
+---
+
+# 25. Amendment A-1 — the economic gate as frozen is passed by noise
+
+**Made before the first real statistic of this package**, on generated data, and
+it makes the gate **harder**. Recorded here rather than edited into §10–§11,
+which stand as written.
+
+## 25.1 What was measured
+
+`oracle.noise_reference` runs the four bounds on a **pure IID random walk** —
+six generated series, 30,000 bars, no structure of any kind — with the panels'
+own 2.5 pip round trip:
+
+| bound, net per event | horizon 4 | horizon 48 |
+| --- | ---: | ---: |
+| B-0 take-all | −2.507 (−1.00 × C) | −2.539 (−1.02 × C) |
+| **B-1 perfect take / skip** | +0.103 (+0.04 × C) | **+1.708 (+0.68 × C)** |
+| B-2 perfect side | −0.898 (−0.36 × C) | +3.079 (+1.23 × C) |
+| **B-3 achievable selection** | **+0.000** | **+0.000** |
+
+§11's E1 floor is `0.5 × C`. **B-1 clears it on pure noise at horizon 48**, and
+B-2 clears it by more. The reason is arithmetic rather than incidental:
+`E[max(net, 0)]` over a roughly symmetric distribution is about `0.4 · σ_q`
+whatever produced that distribution, and `σ_q` grows as `√q`. A gate read off a
+perfect-foresight oracle is therefore passed by any series with enough variance,
+and cannot reject.
+
+B-3 — the best **in-sample linear selector on past-only features** — returns
+exactly zero on the same data, which is the correct answer.
+
+## 25.2 The positive control
+
+Zero is also what a broken selector returns, so B-3 is checked against a
+structure that really is there. `oracle.signal_reference` generates an
+**Ornstein–Uhlenbeck level** (the price reverts, half-life about 69 bars) with a
+0.2 pip round trip:
+
+| bound, net per event | horizon 4 | horizon 48 |
+| --- | ---: | ---: |
+| B-0 take-all | −0.181 (−0.9 × C) | **+0.681 (+3.4 × C)** |
+| B-1 perfect take / skip | +0.708 | +2.842 |
+| **B-3 achievable selection** | −0.000 | **+0.858 (+4.3 × C)**, 357 of 510 taken |
+
+B-3 finds it, and improves on take-all. An AR(1) on **returns** with `φ = −0.30`
+was tried as the control first and is the wrong one: a single lag-1 term largely
+cancels inside a `q`-bar block, so fading blocks does not pay under it and
+take-all stays negative — the same arithmetic Round B′ ran into, and it would
+have let an inert selector look correct.
+
+## 25.3 The amended gate
+
+**B-1 and B-2 become `DESCRIPTIVE_ONLY`.** They are still computed and reported —
+they say how much movement is there at all — and they may not carry a verdict.
+
+**E1 is replaced by E1′.** The decisive quantity is B-3's net per event **minus
+the same computation on the matched N2 null**, which is what an in-sample linear
+selector extracts from a design matrix fitted to a direction-destroyed series:
+
+> **E1′** — on **both** deciding panels, for at least one event population,
+> `b3_net_per_event(real) − b3_net_per_event(N2 null) ≥ 0.5 × C`.
+
+**E2′** — that excess remains positive at `2C`.
+**E3** and **E4** are unchanged in substance and are now read off B-3: the top ten
+days must contribute less than 50% of B-3's net, and both blocs must be positive.
+
+The floor of `0.5 × C` is **not** moved. Only the quantity it is applied to
+changes, from one that noise passes to one that noise fails.
