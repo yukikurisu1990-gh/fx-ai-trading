@@ -160,7 +160,9 @@ computed at the anchor's reference bar and never re-estimated inside the window.
 
 ### 5.3 What is measured after each anchor
 
-The observation window is `W = 480` bars (5 days) after the anchor bar, fixed.
+The observation window is `W = min(4 × bars_to_anchor, 480)` — **scale-matched
+to the time the excursion took**, capped at 5 days. §14 records why this was
+amended from a flat 480 before any real statistic ran.
 Let `E` be the realised signed excursion at the anchor, in σ units.
 
 * **retrace fraction** — `max` over the window of the move back toward the
@@ -381,3 +383,51 @@ correct where the earlier rounds use it (`familywise`, on daily P&L series, wher
 preserving within-block P&L autocorrelation is the point); it is wrong here.
 
 Nothing else in this plan changes.
+
+---
+
+## 14. Second amendment, still before any real statistic
+
+**The observation window is amended from a flat 480 bars to
+`min(4 × bars_to_anchor, 480)`.** Measured on the generated random walk of §13 —
+again, no market data was read and none had been:
+
+* a `1.5σ` anchor takes a **median of 13 bars** to form, so a flat 480-bar window
+  is **37×** the span of the move it is supposed to measure the retrace of;
+* the window's own random-walk spread, `√480 ≈ 21.9σ`, then dwarfs the excursion
+  it is divided by, `1.5·√13 ≈ 5.4σ`;
+* so the statistic measures the window, not the retrace. On the random walk the
+  flat window gives a median retrace fraction of **2.33** and saturates the level
+  rates at `reached_50 = 0.86`, `reached_100 = 0.75` — leaving almost no room for
+  a real series to differ.
+
+Multiples of the excursion's own duration, on the same walk:
+
+| window | median retrace fraction | `reached_50` | `reached_100` |
+| --- | ---: | ---: | ---: |
+| 480 flat *(as registered)* | 2.327 | 0.860 | 0.753 |
+| 2 × | 0.530 | 0.523 | 0.221 |
+| **4 ×** | **0.756** | **0.664** | **0.374** |
+| 8 × | 1.052 | 0.736 | 0.528 |
+
+`4×` keeps every statistic away from its ceiling and keeps the retrace fraction
+near 1, which is the scale the §5.6 economic floor of **0.05** was written for —
+against a flat window that floor would have been mis-calibrated by a factor of
+about 2.3. The 480-bar cap is retained.
+
+**This makes the test harder, not easier**: a shorter window gives a real series
+less room to accumulate a retrace, so the amendment cannot manufacture a
+positive. As with §13, it is derived from arithmetic on generated data, before
+any panel was touched.
+
+**Two properties of the detector are recorded here rather than changed**, because
+changing them after seeing counts would be closer to tuning:
+
+* The `√elapsed` threshold makes an anchor an *unusually large move for the time
+  it took*. About **16%** of searches reach the 960-bar timeout and advance
+  without recording, which consumes roughly 70% of the series. This applies
+  identically to the real and null sides, so it costs sample rather than
+  fairness.
+* `k = 3.0` is consequently very thin — about **6 anchors per 60,000 bars**, so
+  roughly 100 per panel across twenty pairs. That cell is expected to be
+  undecidable and will be reported as such rather than quietly dropped.
