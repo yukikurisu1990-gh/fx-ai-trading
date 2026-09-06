@@ -118,7 +118,7 @@ LEDGER: Final[list[dict[str, Any]]] = [
         "configurations": "105 descriptive cells per panel, none selected",
         "prespecified": True,
         "result": "see m15_round_a_results.md",
-        "status": "OPEN — Round A",
+        "status": "CLOSED — Round A",
     },
     {
         "id": "H-009",
@@ -130,7 +130,55 @@ LEDGER: Final[list[dict[str, Any]]] = [
         "configurations": "39 pre-registered cells",
         "prespecified": True,
         "result": "see m15_round_a_results.md",
-        "status": "OPEN — Round A",
+        "status": "CLOSED — Round A",
+    },
+    {
+        "id": "H-010",
+        "round": "Round B'/B'-1",
+        "population": "all three seen panels, 1-bar sigma-normalised returns",
+        "target": "variance ratio VR(q) against three matched nulls",
+        "condition_family": "none (aggregate second moment)",
+        "horizon_family": "q in {2,4,12,48,96,192,480}",
+        "configurations": "7 horizons x 3 nulls, pre-registered",
+        "prespecified": True,
+        "result": (
+            "VR < 1 at every horizon and panel, stable at q<=192 on both deciding "
+            "panels (z -2.1 to -14.7); POST HOC: the deficit vanishes when the base "
+            "return is 12 bars, MA(1) explains 60-149%, and the implied block "
+            "autocorrelation is 11-120x below break-even"
+        ),
+        "status": "CLOSED - real but unharvestable microstructure",
+    },
+    {
+        "id": "H-011",
+        "round": "Round B'/B'-2",
+        "population": "excursion anchors on all three seen panels",
+        "target": "retrace geometry against a matched sign-flip null",
+        "condition_family": "2 HTF contexts x 2 states, plus unconditioned",
+        "horizon_family": "k in {1.5, 2.0, 3.0} sigma",
+        "configurations": "15 pre-registered cells",
+        "prespecified": True,
+        "result": (
+            "only k=1.5 survives; POST HOC: its anchors form in a median of 3 bars "
+            "with a 12-bar window, and the real and null anchor populations differ "
+            "on every measured axis (z -5.9 to -15.5), so the comparison is confounded"
+        ),
+        "status": "CLOSED - confounded, same sub-hourly zone as H-010",
+    },
+    {
+        "id": "H-012",
+        "round": "Round B'/B'-4",
+        "population": "all three seen panels",
+        "target": "monthly TSMOM net PnL, cost-inclusive",
+        "condition_family": "none",
+        "horizon_family": "lookback {1,2,3} x hold {1,3} months",
+        "configurations": "6 pre-registered cells",
+        "prespecified": True,
+        "result": (
+            "MONTHLY_TSMOM_NOT_SUPPORTED_IN_EXISTING_PRICE_HISTORY; gross negative in "
+            "5 of 6 cells on both deciding panels, family-max p = 0.32 / 0.31"
+        ),
+        "status": "CLOSED",
     },
 ]
 
