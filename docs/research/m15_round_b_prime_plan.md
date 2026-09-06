@@ -101,7 +101,7 @@ about the sample mean, so a drift estimate cannot leak into it.
 | null | preserves | destroys | detects |
 | --- | --- | --- | --- |
 | **N1 IID shuffle** | the marginal distribution of 1-bar returns; the bar count | **all** serial dependence, including volatility clustering | any serial structure at all — but cannot separate clustering from directional dependence |
-| **N2 block-preserving sign flip** | the magnitude sequence exactly, so volatility clustering is intact; the calendar | the **sign** ordering, in 5-day blocks with one shared draw | **directional** serial dependence, with clustering held fixed. This is the null that matters |
+| **N2 per-bar sign flip** | the magnitude sequence exactly, `\|r_t\|` at every bar, so volatility clustering, the calendar and the weekend gaps are intact | the **sign** of every return, drawn independently per bar | **directional** serial dependence, with clustering held fixed. This is the null that matters |
 | **N3 weekday-preserving shuffle** | volatility clustering is not preserved, but each return stays in a slot with the same weekday and the same hour-of-day | serial dependence, but **not** calendar placement | whether the N1 result is an artefact of weekend gaps and session structure rather than of serial dependence |
 
 N2 is the primary null. N1 and N3 exist to say what N2's result is *not*.
@@ -188,8 +188,8 @@ geometry**".
 **Null M1 (primary): volatility-preserving sign shuffle.** Take each pair's
 1-bar returns, keep their magnitudes in place — so volatility clustering,
 calendar placement and the whole magnitude sequence are exact — and randomise
-only their signs in 5-day blocks. Then **run the identical anchor detector and
-the identical retrace measurement on the result.** The anchor-selection geometry
+each return's sign **independently per bar**. Then **run the identical anchor
+detector and the identical retrace measurement on the result.** The anchor-selection geometry
 is therefore reproduced, not assumed away.
 
 **Null M2 (secondary): IID shuffle**, same detector. Destroys clustering as well,
@@ -340,3 +340,44 @@ monthly parameter grid, no volume strategy, no external data acquisition. No
 Formal Confirmation, no broker, no production claim, no new governance framework,
 no general adversarial audit. The Windows `sys.addaudithook` crash remains a
 separate open referral and is not mixed into this objective.
+
+---
+
+## 13. Amendment, before any real statistic was computed
+
+**N2 and M1 were pre-registered as 5-day *block* sign flips and are amended to
+per-bar independent sign flips.** The reason is a property of the construction,
+not a result: a block sign flip leaves every path inside a block untouched, so
+the variance of any `q`-bar sum with `q` well below the block length is
+unchanged, and the null reproduces the real statistic exactly.
+
+Measured on a **synthetic** AR(1) series with `φ = −0.10` plus volatility
+clustering — no market data was read, and none had been read when this was
+written:
+
+| `q` | real `VR` | N2 as registered (480-bar blocks) | N2 amended (per bar) |
+| ---: | ---: | ---: | ---: |
+| 2 | 0.8959 | **0.8959** | 1.0005 |
+| 12 | 0.8149 | **0.8149** | 0.9979 |
+| 96 | 0.8477 | **0.8477** | 1.0014 |
+| 480 | 0.7912 | **0.7912** | 1.0016 |
+
+The registered null returns the real value to four decimal places at every
+horizon; it cannot reject anything. The amended null recovers 1.0 as a null
+should, and still preserves `|r_t|` at every bar — so volatility clustering,
+calendar placement and weekend gaps are exactly as they were and a real-minus-N2
+difference is still attributable to directional dependence alone.
+
+The same defect applies to B′-2's M1: a 480-bar block flip would leave the path
+inside an observation window intact and reproduce the retrace geometry by
+construction. It is amended the same way.
+
+**Why this is a legitimate amendment and would not have been one an hour later:**
+it is derived from arithmetic on generated data, it was made before any statistic
+was computed on any panel, and it makes the null *stricter* rather than easier to
+beat — a degenerate null passes everything, and replacing it removes a way for
+this round to report a false positive. The block-flip construction remains
+correct where the earlier rounds use it (`familywise`, on daily P&L series, where
+preserving within-block P&L autocorrelation is the point); it is wrong here.
+
+Nothing else in this plan changes.
