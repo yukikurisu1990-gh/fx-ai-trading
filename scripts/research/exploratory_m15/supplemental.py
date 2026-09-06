@@ -101,16 +101,27 @@ def assert_supplemental_span(start: str, end: str) -> None:
     `end + "T99"` scan sentinel then sorted *above* `"2025-12-29T…"` because
     `-` precedes `T` — so OOS rows reached `json.loads`. Under
     `HISTORICAL_EXPLORATORY_OOS_PRISTINE_CLAIM_WITHDRAWN` that is a read.
+
+    Comparisons are on the **parsed dates**, never on the caller's objects. An
+    audit built a `str` subclass overriding `__lt__`/`__ge__` and walked all
+    three guards, after which the reader decoded the whole ten-year archive —
+    the OOS slice, the dead window and the forward epoch included. `utc_date`
+    returns a real `datetime.date`, which no caller can poison, so the check is
+    on a value this module derived rather than on one it was handed. For genuine
+    strings the behaviour is unchanged: at fixed width, string order and date
+    order coincide.
     """
-    if utc_date(end, field="end") < utc_date(start, field="start"):
+    lo = utc_date(start, field="start")
+    hi = utc_date(end, field="end")
+    if hi < lo:
         raise SupplementalSpanError(f"{start}..{end} is empty")
-    if start < SUPPLEMENTAL_START_UTC:
+    if lo < utc_date(SUPPLEMENTAL_START_UTC, field="supplemental start"):
         raise SupplementalSpanError(
             f"{start} is before the resolved supplemental span "
             f"({SUPPLEMENTAL_START_UTC}); the span was fixed from the archive manifest "
             "before any content was read and is not an argument"
         )
-    if end >= FIRST_FORBIDDEN_FOR_THIS_ROUTE_UTC:
+    if hi >= utc_date(FIRST_FORBIDDEN_FOR_THIS_ROUTE_UTC, field="development start"):
         raise SupplementalSpanError(
             f"{end} reaches {FIRST_FORBIDDEN_FOR_THIS_ROUTE_UTC} or later. That is the "
             "development corpus "

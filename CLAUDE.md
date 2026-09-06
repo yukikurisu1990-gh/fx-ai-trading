@@ -92,8 +92,8 @@ seen historical development data; every output is
 Confirmation — each is its own Red gate — and it is not an instruction to build
 another production-grade gate first.
 
-**Three exploratory rounds have run, and they closed the only candidate they
-raised.** Round 1 found no edge at the M15 decision scale and left a 4-to-6 day
+**Four exploratory rounds have run, and they closed both directions of the only
+family they raised.** Round 1 found no edge at the M15 decision scale and left a 4-to-6 day
 reversal standing; Round 2 pre-registered a 39-configuration family and returned
 `MULTI_DAY_REVERSAL_UNRESOLVED_INSUFFICIENT_DETECTION_POWER`; the **Supplemental
 Historical Replication** of 2026-09-05 applied that candidate frozen to
@@ -124,6 +124,50 @@ Two consequences bind later sessions.
   Inverting a rule on the data that refuted it is the search these rounds exist
   to avoid, and no round licenses the next one: a further round is a new
   instruction, not a continuation.
+
+**That inversion was then authorised, pre-registered and tested — and the span
+could not answer it.** On 2026-09-06 an explicit human + ChatGPT authorisation
+covered a fresh read of `2021-04-26 … 2023-04-25`, a span no round had touched,
+resolved from the archive manifest and frozen at `c0ba1cd` before any byte was
+read. The mirror candidate returned −451.4 net and −299.0 gross, mean IC −5.85%
+— and **none of it is separable from zero**: `p = 0.187` on net, the IC inside
+its own permutation band at `p = 0.233`, and the **reversal direction on the same
+730 days at `p = 0.667`**. Power against the effect the hypothesis predicted was
+**0.124**. So `MULTI_DAY_MOMENTUM_UNRESOLVED_IN_FRESH_EXPLORATORY_HISTORY`, with
+`MULTI_DAY_REVERSAL_FAMILY_DROPPED_FROM_ACTIVE_EXPLORATORY_RESEARCH` alongside.
+
+A first draft of that round recorded FAILED, and two review roles showed its
+evidence was three statistics that carry no information — a block-IC count equal
+to its own null expectation, three robustness sweeps forced arithmetically by the
+pooled estimate, and a cross-period claim resting on one already-known contrast.
+**A uniformly negative point estimate with an interval spanning zero is an
+underpowered null result, not a refutation.**
+
+Three things bind from it.
+
+* **`2021-04-26 … 2023-04-25` is now `EXPLORATORY_SEEN_DATA` too.** Three of the
+  archive's windows are seen and none is available as a holdout. The read went
+  through a **third** route, `scripts/research/exploratory_m15/momentum.py`,
+  whose upper bound is `supplemental.SUPPLEMENTAL_START_UTC` itself; a test
+  asserts the three windows are admitted by exactly one guard each and the
+  forbidden ones by none, and an audit probed all 3,649 archive dates. **A
+  bypass present since base master was found and closed in all three routes**:
+  they validated their bounds' *shape* and then compared the caller's object, so
+  a `str` subclass overriding `__lt__`/`__ge__` read the whole ten-year archive.
+  They now compare the parsed `date`. No forbidden row was in fact read.
+* **Both directions are null on the same span**, which is the round's real
+  finding and a statement about the *family* rather than one rule. The
+  "alternating sign" reading of the three spans' ICs (`−5.85%`, `+2.35%`,
+  `−25.07%`) was withdrawn: the only contrast that round contributed is
+  `p = 0.104`, two of the three ICs sit inside their null bands, and
+  `net_momentum + net_reversal ≡ −2 × cost` makes the two columns one
+  measurement, not two. **B is not licence to continue** — three consecutive
+  spans have produced nothing separable from noise in either direction.
+* **Cost is not the explanation and never could have been.** The two directions
+  hold opposite positions at the same times, so they turn over identically and
+  pay the same spread; only gross negates. Reversal being `+146.7` on the fresh
+  span does not reopen it — `+0.235` pips/pair/day against `−0.925` and `+1.236`
+  elsewhere is the alternating sign, not a rehabilitation.
 
 Do not read the rest of this section as a snapshot — evaluate it:
 

@@ -70,13 +70,15 @@ def _assert_span(start: str, end: str) -> None:
     #: lets OOS rows reach `json.loads`. The check strictly *narrows* what this
     #: guard accepts -- every well-formed span it admitted before, it still
     #: admits, and every span it refused, it still refuses.
-    if utc_date(end, field="end") < utc_date(start, field="start"):
+    lo = utc_date(start, field="start")
+    hi = utc_date(end, field="end")
+    if hi < lo:
         raise ExploratorySpanError(f"{start}..{end} is empty")
-    if start < DEVELOPMENT_START_UTC:
+    if lo < utc_date(DEVELOPMENT_START_UTC, field="development start"):
         raise ExploratorySpanError(
             f"{start} is before the development corpus starts ({DEVELOPMENT_START_UTC})"
         )
-    if end >= FIRST_FORBIDDEN_UTC:
+    if hi >= utc_date(FIRST_FORBIDDEN_UTC, field="first forbidden"):
         raise ExploratorySpanError(
             f"{end} reaches {FIRST_FORBIDDEN_UTC} or later. That is the "
             "EXPLORATORY_OOS_SLICE, and neither it nor the dead window nor the forward "
