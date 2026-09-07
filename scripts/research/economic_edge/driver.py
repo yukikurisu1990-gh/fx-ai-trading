@@ -103,7 +103,10 @@ def _carry_verdict(cells: dict[str, Any]) -> dict[str, Any]:
         same_sign = (net[0] > 0) == (net[1] > 0)
         net_positive = all(v > 0 for v in net)
         survives_2c = all(v > 0 for v in net_2c)
-        tail_ok = all(v is None or (v == v and v < TAIL_SHARE_CEILING) for v in tails)
+        #: an unmeasurable tail share is **not** a pass. The first version read
+        #: `v is None or ...`, so a cell whose daily total was non-positive --
+        #: which is exactly when the share is undefined -- cleared the clause.
+        tail_ok = all(v is not None and v == v and v < TAIL_SHARE_CEILING for v in tails)
         breadth = all(
             j is not None and n is not None and (j > 0) == (n > 0)
             for j, n in zip(jpy, non_jpy, strict=True)
@@ -144,6 +147,25 @@ def _carry_verdict(cells: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+def _improves(per_panel: dict[str, Any], deciding: tuple[str, ...]) -> dict[str, bool]:
+    """Does M3 beat M1 on **every** deciding panel? Fails closed.
+
+    `all(...)` over an empty list is `True`, so a missing panel would have
+    turned every representation into an improvement on no data at all. Its own
+    function so that property can be tested.
+    """
+    rows = [per_panel[panel] for panel in deciding if panel in per_panel]
+    complete = len(rows) == len(deciding) and bool(rows)
+    return {
+        representation: complete
+        and all(
+            row["M3_combined"].get(representation, float("-inf")) > row["M1_expected_return_only"]
+            for row in rows
+        )
+        for representation in VOLUME_REPRESENTATIONS
+    }
+
+
 def _integration(
     with_volume: dict[str, dict[str, Any]],
     rate_panel: Any,
@@ -160,10 +182,18 @@ def _integration(
         targets = carry.cross_sectional_positions(rate_panel, tuple(frames), k=k)
         states = {pair: opportunity.daily_state(frame) for pair, frame in frames.items()}
         m1_daily: dict[str, Any] = {}
+        m1_carry: dict[str, Any] = {}
+        m1_spot: dict[str, Any] = {}
         m2_daily: dict[str, Any] = {}
         for pair, frame in frames.items():
             expected = carry.signal_cross_sectional(frame, targets[pair], stride=stride, phase=0)
-            m1_daily[pair] = carry.evaluate(frame, expected, pair=pair)["_daily"]
+            evaluated = carry.evaluate(frame, expected, pair=pair)
+            m1_daily[pair] = evaluated["_daily"]
+            #: the two lines separately, so the filter's damage can be attributed
+            #: rather than asserted -- a review role measured removed SPOT
+            #: dominating removed carry in 8 of 10 deciding cells
+            m1_carry[pair] = evaluated["_daily_carry"]
+            m1_spot[pair] = evaluated["_daily_spot"]
             #: M2 -- timing with no expected-return view. A constant long is the
             #: direction-free control: if opportunity timing alone earned
             #: anything, it would show here.
@@ -176,9 +206,13 @@ def _integration(
             "M1_expected_return_only": round(
                 float(np.mean([s.sum() for s in m1_daily.values()])), 2
             ),
+            "M1_spot_pips": round(float(np.mean([v.sum() for v in m1_spot.values()])), 2),
+            "M1_carry_pips": round(float(np.mean([v.sum() for v in m1_carry.values()])), 2),
             "M2_timing_only": {},
             "M3_combined": {},
             "trades_removed_share": {},
+            "removed_carry": {},
+            "removed_spot": {},
         }
         for representation in VOLUME_REPRESENTATIONS:
             usable = {p: states[p] for p in m1_daily if not states[p].empty}
@@ -201,19 +235,28 @@ def _integration(
                 )
                 for p in usable
             ]
+            removed_carry = [
+                float(
+                    m1_carry[p].sum()
+                    - opportunity.gated_daily(m1_carry[p], usable[p], representation).sum()
+                )
+                for p in usable
+            ]
+            removed_spot = [
+                float(
+                    m1_spot[p].sum()
+                    - opportunity.gated_daily(m1_spot[p], usable[p], representation).sum()
+                )
+                for p in usable
+            ]
             row["M3_combined"][representation] = round(float(np.mean(m3)), 2)
             row["M2_timing_only"][representation] = round(float(np.mean(m2)), 2)
             row["trades_removed_share"][representation] = round(1.0 - float(np.mean(kept)), 4)
+            row["removed_carry"][representation] = round(float(np.mean(removed_carry)), 2)
+            row["removed_spot"][representation] = round(float(np.mean(removed_spot)), 2)
         out[panel_id] = row
 
-    deciding = [out[p] for p in DECIDING_PANELS if p in out]
-    improves = {
-        representation: all(
-            row["M3_combined"].get(representation, float("-inf")) > row["M1_expected_return_only"]
-            for row in deciding
-        )
-        for representation in VOLUME_REPRESENTATIONS
-    }
+    improves = _improves(out, DECIDING_PANELS)
     out["m3_beats_m1_on_both_deciding_panels"] = improves
     out["any_representation_improves"] = any(improves.values())
     out["stage_3_status"] = "VOLUME_INFORMATION_MEASURED_AT_THE_CARRY_HORIZON"
@@ -228,8 +271,11 @@ def _integration(
 def main() -> dict[str, Any]:
     # --------------------------------------------------------------- Stage 1
     frame, provenance = rates.acquire()
-    write("s1_rate_provenance", provenance)
     rate_panel = rates.daily_panel(frame, *RATE_SPAN)
+    #: written **after** the panel is built, so the EUR override's own source,
+    #: digest and coverage are in the record rather than only BIS's
+    provenance["override"] = dict(rates.OVERRIDE_PROVENANCE)
+    write("s1_rate_provenance", provenance)
     stage(
         "s1_fallback_crosscheck",
         lambda: rates.fallback_crosscheck(rate_panel, start=RATE_SPAN[0], end=RATE_SPAN[1]),
@@ -330,7 +376,14 @@ def main() -> dict[str, Any]:
             for panel_id, frames in with_volume.items()
         },
     )
-    calendar_verdict = calendar_events.verdict(events, DECIDING_PANELS)
+    permutations = stage(
+        "s5_calendar_permutation",
+        lambda: {
+            panel_id: calendar_events.permutation_test(frames, rate_panel)
+            for panel_id, frames in with_volume.items()
+        },
+    )
+    calendar_verdict = calendar_events.verdict(events, DECIDING_PANELS, permutations)
     write("s5_calendar_verdict", calendar_verdict)
 
     summary = {
@@ -340,6 +393,7 @@ def main() -> dict[str, Any]:
         "stage_3": integration["stage_3_status"],
         "stage_4": integration["status"],
         "route_c_calendar": calendar_verdict.get("status", "NOT_DECIDABLE"),
+        "route_c_cost_advantage": calendar_verdict.get("cost_advantage_status", "NOT_DECIDABLE"),
     }
     write("stage_summary", summary)
     return summary

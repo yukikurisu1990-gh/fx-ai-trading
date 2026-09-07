@@ -98,15 +98,18 @@ def _download(url: str = BIS_CBPOL_URL) -> tuple[bytes, dict[str, Any]]:
     fetched_at = datetime.now(UTC).isoformat()
     with urllib.request.urlopen(request, timeout=300) as response:  # noqa: S310 - fixed https URL
         payload = response.read()
-        headers = dict(response.headers)
+        #: `dict(HTTPMessage)` loses the case-insensitive lookup, so
+        #: `.get("Last-Modified")` missed a header the server does send. The
+        #: file-vintage field the plan asks for came out null for that reason.
+        headers = {key.lower(): value for key, value in response.headers.items()}
     return payload, {
         "url": url,
         "landing_page": BIS_LANDING,
         "fetched_at_utc": fetched_at,
         "bytes": len(payload),
         "sha256": hashlib.sha256(payload).hexdigest(),
-        "last_modified": headers.get("Last-Modified"),
-        "content_type": headers.get("Content-Type"),
+        "last_modified": headers.get("last-modified"),
+        "content_type": headers.get("content-type"),
         "requires_key": False,
         "requires_account": False,
         "metered": False,
@@ -263,6 +266,12 @@ def acquire(*, force: bool = False) -> tuple[pd.DataFrame, dict[str, Any]]:
     return frame, provenance
 
 
+#: filled by `daily_panel` so the override's provenance reaches the artifact.
+#: The first version computed the digest and discarded it, which left the input
+#: that determines EUR in 6 of 20 pairs with no recorded source at all.
+OVERRIDE_PROVENANCE: dict[str, Any] = {}
+
+
 def _fred_daily(series: str, index: pd.DatetimeIndex) -> tuple[pd.Series, str]:
     """One FRED series, forward-filled onto a dense calendar, with its digest."""
     url = FRED_CSV.format(series=series)
@@ -299,8 +308,34 @@ def daily_panel(frame: pd.DataFrame, start: str, end: str) -> pd.DataFrame:
     #: amendment A-1: EUR comes from the ECB deposit facility, not from BIS's
     #: mid-sample-broken euro-area series
     for currency, series in POLICY_RATE_OVERRIDE.items():
-        replacement, _digest = _fred_daily(series, index)
+        replacement, digest = _fred_daily(series, index)
         wide[currency] = replacement
+        OVERRIDE_PROVENANCE[currency] = {
+            "series": series,
+            "source": "FRED, public CSV, no key",
+            "url": FRED_CSV.format(series=series),
+            "sha256": digest,
+            "fetched_at_utc": datetime.now(UTC).isoformat(),
+            "observations": int(replacement.notna().sum()),
+            "first": str(replacement.dropna().index.min().date())
+            if replacement.notna().any()
+            else None,
+            "last": str(replacement.dropna().index.max().date())
+            if replacement.notna().any()
+            else None,
+            "min_pct": round(float(replacement.min()), 4) if replacement.notna().any() else None,
+            "max_pct": round(float(replacement.max()), 4) if replacement.notna().any() else None,
+            "revision_behaviour": (
+                "the ECB deposit facility rate is a decision, not a statistic: it "
+                "is announced with an effective date and is not revised. FRED "
+                "republishes it unchanged"
+            ),
+            "replaces": (
+                "the BIS euro-area series, which is the main refinancing rate "
+                "before 2024-09-18 and the deposit facility after -- a definition "
+                "break inside the sample (amendment A-1)"
+            ),
+        }
 
     missing = [c for c in CURRENCIES if c not in wide.columns or wide[c].isna().all()]
     if missing:
@@ -407,6 +442,7 @@ __all__ = [
     "RATES_PARQUET",
     "RateAcquisitionError",
     "OVERNIGHT_SERIES",
+    "OVERRIDE_PROVENANCE",
     "POLICY_RATE_OVERRIDE",
     "acquire",
     "fallback_crosscheck",

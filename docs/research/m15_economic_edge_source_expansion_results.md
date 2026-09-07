@@ -9,48 +9,42 @@ Plan: `docs/research/m15_economic_edge_source_expansion_plan.md`, frozen at
 `cfe2f9499e7dac9d799fc1580be403830903d356` (the PR #470 merge).
 
 **Final status:
-`ECONOMIC_EDGE_SOURCE_NOT_FOUND_EXOGENOUS_OPPORTUNITY_STRUCTURE_ESTABLISHED`.**
+`ECONOMIC_EDGE_SOURCE_NOT_FOUND_EXOGENOUS_MOVEMENT_STRUCTURE_ESTABLISHED`.**
 
-The expected-return layer is still empty. The opportunity layer, for the first
-time in this programme, is not.
+No expected-return source was found. An exogenous anchor picks out days that
+**move more** — and, contrary to the first version of this document, **not days
+that cost less**.
 
 ---
 
 ## 1. The answer
 
-**Four findings, in the order the evidence supports them.**
-
-* **A public, eight-currency carry source exists and was acquired** — BIS central
-  bank policy rates, one anonymous HTTPS GET of a static public file, verified
-  against ten known central-bank facts before anything was built on it. The
-  plan's fallback cross-check then caught a **definition break inside the
-  sample** in EUR, which appears in 6 of the 20 pairs, and it was corrected on
-  fidelity grounds before any economics ran.
-* **Carry has the shape it should have and fails anyway, for a specific reason.**
-  The cross-sectional `k = 3` basket earns `+82 / +118` pips per pair with carry
-  income `+49 / +121` and spot `+33 / −2` — the interest *is* the return and spot
-  did not take it away, at 0.18–0.28 turnover a year. But JPY pairs return
-  `+262 / +384` against non-JPY `+4.2 / +4.0`, so it is **a short-yen trade
-  wearing a diversified label**, and the fourth sub-period of *both* deciding
-  panels is a large loss. `CARRY_EDGE_NOT_SUPPORTED`.
+* **A public, eight-currency carry source exists and was acquired**, and the
+  plan's own fallback cross-check earned its keep immediately by finding a
+  **definition break inside the sample** in EUR — a currency in 6 of 20 pairs.
+  Corrected before any economics ran (amendment A-1).
+* **`CARRY_EDGE_NOT_SUPPORTED`, and the decomposition says why twice over.**
+  `cross_sectional_k3` earns `+82 / +118` pips per pair at 0.18–0.28 turnover a
+  year. Split by bloc: JPY pairs `+262 / +384`, non-JPY `+4.2 / +4.0` — and the
+  **non-yen leg gave its entire interest back on spot** (carry `+41.5 / +64.5`
+  against spot `−36.8 / −59.5`). That is the classic carry error the plan's
+  mandatory decomposition exists to catch, occurring one level below where the
+  pooled row shows it. The fourth sub-period of both panels is a large loss.
 * **Tick volume predicts movement and not cost-clearing movement.** At the carry
   horizon it forecasts next-week realised volatility strongly (`ρ +0.14 / +0.16`,
-  `z +9.2 / +10.9`, **20 of 20 pairs** on both deciding panels) and whether the
-  move will exceed the round trip **not at all** (`ρ −0.027 … +0.019`, 9–13 pairs
-  of 20). Used as a filter it makes carry **worse in 15 of 15 cells**, because a
-  carry position earns by the day and removing half the days removes half the
-  income.
-* **Scheduled policy decisions do define an exogenous opportunity population,
-  and it is the first one whose cost works *for* it.** On rate-change days ±1 the
-  absolute move is `1.55× / 1.31×` larger **and the spread is narrower**
-  (`0.92× / 0.94×`), giving a move-net-of-cost ratio of `1.60 / 1.35` with
-  **19 of 19 and 18 of 20 pairs agreeing**. Every previous opportunity variable
-  in this programme had its own cost rising with it.
+  `z +9.2 / +10.9`, 20 of 20 pairs on two of five representations) and whether
+  the move will exceed the round trip **not at all** (9–13 pairs of 20). Used as
+  a filter it is worse in 15 of 15 cells — and the reason is **not** the one the
+  first version gave: removed carry income is 20–66% of the damage, and the
+  dominant channel is that the filter **keeps the losing spot days**.
+* **Policy-rate change days move more, at a slightly wider spread.** Day-of-week
+  matched: absolute move `1.33× / 1.13×`, 17 of 19 and 17 of 20 pairs, permutation
+  `p = 0.012 / 0.015`. Spread `1.05× / 1.02×` — **wider, not narrower**. The
+  cost-clearing rate barely moves (`1.001 / 1.008`), because 91% of ordinary days
+  already clear the round trip.
 
-**What this does not establish.** An opportunity population is not an edge. The
-event days clear cost only `1.04×` more often than ordinary days — because
-**91% of ordinary days already move more than the round trip.** Magnitude was
-never the binding constraint. Direction is, and nothing here addresses it.
+**The first version of this document led with the opposite of that last line**,
+and it was wrong. §7.4 records what happened.
 
 ## 2. Identity
 
@@ -65,118 +59,98 @@ never the binding constraint. Direction is, and nothing here addresses it.
 | **new FX market-data spans read** | **none** |
 | fresh pool `2016-06-02…2021-04-25` | **untouched** |
 
-## 3. The new data source
+## 3. The new data sources
 
-### 3.1 What was acquired
+### 3.1 BIS policy rates — the primary
 
 | | |
 | --- | --- |
 | **source** | BIS — *Central bank policy rates* (`WS_CBPOL`), public bulk flat file |
 | **URL** | `https://data.bis.org/static/bulk/WS_CBPOL_csv_flat.zip` |
 | **access** | one anonymous HTTPS GET. **No key, no account, no metered call, no payment** |
-| **bytes / digest** | 4,102,141 · `sha256 = 24278555f8078eac…` (recorded in full in the artifact) |
-| **field** | `OBS_VALUE`, per cent per year — the single unit across all eight |
+| **bytes / digest** | 4,102,141 · `sha256 = 24278555f8078eac…` |
+| **field** | `OBS_VALUE`, per cent per year — one unit across all eight |
 | **frequency** | daily, as published: a step function between decisions |
 | **rows** | 732,269 source rows streamed; **148,045** daily observations kept |
 | **licensing** | BIS publishes this publicly for non-commercial use with attribution |
 
-**Coverage**, all eight present, all reaching the present day:
+Coverage, all eight present: AUD 1976-04-07…2026-08-27 (12,771 obs), CAD
+1960-07-27…2026-08-31 (17,181), CHF 1946-01-01…2026-09-01 (20,986), EUR
+1999-01-01…2026-09-01 (10,074), GBP 1946-01-01…2026-08-28 (23,427), JPY
+1946-01-01…2026-09-01 (24,874), NZD 1985-01-04…2026-08-28 (12,372), USD
+1954-07-01…2026-09-01 (26,360).
 
-| currency | first | last | observations |
-| --- | --- | --- | ---: |
-| AUD | 1976-04-07 | 2026-08-27 | 12,771 |
-| CAD | 1960-07-27 | 2026-08-31 | 17,181 |
-| CHF | 1946-01-01 | 2026-09-01 | 20,986 |
-| EUR | 1999-01-01 | 2026-09-01 | 10,074 |
-| GBP | 1946-01-01 | 2026-08-28 | 23,427 |
-| JPY | 1946-01-01 | 2026-09-01 | 24,874 |
-| NZD | 1985-01-04 | 2026-08-28 | 12,372 |
-| USD | 1954-07-01 | 2026-09-01 | 26,360 |
+Verified against ten known central-bank facts before anything was built on it:
+USD `0.125` at the ZIRP floor and `5.125` at the peak; JPY `−0.10` under NIRP and
+`0.50` after normalisation; CHF `−0.75` and `1.50`; AUD `0.10`; NZD `5.50`.
 
-**Verified against known history before anything was built on it** — ten checks,
-all passing: USD `0.125` at the ZIRP floor and `5.125` at the peak; JPY `−0.10`
-under NIRP and `0.50` after normalisation; CHF `−0.75` and `1.50`; EUR `0.00` and
-`4.50`; AUD `0.10`; NZD `5.50`.
+### 3.2 The EUR series actually used — FRED `ECBDFR`
 
-### 3.2 Date semantics, timezone, revision
+Recorded separately because **it is not the BIS series**, and the coverage table
+above describes the series it replaced. Its own record is in the artifact:
+
+| | |
+| --- | --- |
+| **series** | `ECBDFR`, the ECB deposit facility rate |
+| **URL** | `https://fred.stlouisfed.org/graph/fredgraph.csv?id=ECBDFR` |
+| **digest** | `sha256 = 4d8d607fca79…`, recorded per run |
+| **coverage over the rate span** | 2,045 observations, 2020-06-01…2026-01-05, range `−0.50 … 4.00` |
+| **revision** | a decision, not a statistic: announced with an effective date, not revised |
+
+The first version of this package computed that digest and discarded it, leaving
+the input that determines EUR in 6 of 20 pairs with no recorded source at all. A
+review role found it; it is fixed and pinned by a test.
+
+### 3.3 Date semantics, timezone, revision
 
 `TIME_PERIOD` is the date the rate is **effective**, not a publication date. A
-policy rate is announced and effective; it is not a statistic that gets revised,
-which is why the plan ranks it above macro data. The bulk file is regenerated, so
-a later download could extend the series — the `sha256` identifies the exact
-bytes this analysis used.
+policy rate is announced and effective; it is not revised, which is why the plan
+ranks it above macro data. Plain dates with no time, treated as **UTC calendar
+dates** and joined to the M15 grid's UTC date. **Every rate is used with a
+one-trading-day lag**, so no decision can be taken on the bar that announced the
+change.
 
-The source carries a plain date with no time. It is treated as a **UTC calendar
-date** and joined to the M15 grid's UTC date, the convention every panel in this
-repository uses. **Every rate is used with a one-trading-day lag**, so no decision
-can be taken on the bar that announced the change.
+### 3.4 Why the policy rate, and what that costs
 
-### 3.3 Why the policy rate, and what that costs
+The plan's hierarchy (§5), fixed before anything was fetched: broker financing
+actuals (no public archive — the implementation gap, §9.4); swap points (no
+public eight-currency history without a paid contract); short-term money-market
+rates (economically closest, but the eight would have to be assembled from
+different series with different definitions and mixed frequency); policy rates
+(coarsest, and the only one available for all eight from one source, one
+definition, one frequency).
 
-The plan's hierarchy (§5) was fixed **before** anything was fetched, ranked on
-fidelity to what a position actually earns:
+What the coarseness costs, measured over the rate span `2020-06-01 … 2026-01-05`
+against overnight money-market rates (FRED, public CSV, no key):
 
-1. **broker financing actuals** — what a retail account genuinely receives. No
-   public archive exists. This is the implementation gap, referred in §9;
-2. **swap / forward points** — the market price of carry. No public,
-   reproducible, eight-currency history without a paid contract;
-3. **short-term money-market rates** — economically closest to (2), but the eight
-   would have to be assembled from different series with different definitions
-   and mixed frequency, and a cross-sectional ranking across inconsistent
-   definitions is not a ranking;
-4. **policy rates** — coarsest, and the only one available for all eight from
-   **one source, one definition, one frequency**.
-
-What the coarseness costs was measured, not argued. Against overnight
-money-market rates over the **rate span** `2020-06-01 … 2026-01-05`, which is the
-window the artifact records (FRED, public CSV, no key):
-
-| currency | overnight series | mean gap | sd | corr |
+| currency | series | mean gap | sd | corr |
 | --- | --- | ---: | ---: | ---: |
-| USD | `DFF` | −0.0408 | 0.0434 | 0.99981 |
+| USD | `DFF` | −0.0406 | 0.0434 | 0.99981 |
 | EUR | `ECBESTRVOLWGTTRMDMNRT` | −0.0797 | 0.0397 | 0.99978 |
 | GBP | `IUDSOIA` | −0.0513 | 0.0366 | 0.99985 |
 
-Only three currencies are cross-checked, because only three have a genuinely
-daily public overnight series without a key; assembling the other five from
-monthly series would measure the frequency mismatch rather than the rate gap.
+Only three currencies have a genuinely daily public overnight series without a
+key; assembling the other five from monthly series would measure the frequency
+mismatch rather than the rate gap. **This bound is narrower than it looks** — see
+§9.7.
 
-Four to eight basis points, against differentials that run to several percentage
-points.
-
-### 3.4 Amendment A-1 — EUR's definition break
-
-**The fallback cross-check found it, which is what it was for.**
+### 3.5 Amendment A-1 — EUR's definition break
 
 BIS's euro-area series is **not one definition**. Its own `COMPILATION` field
 says the steering rate became the deposit facility on 2024-09-18 and was the main
-refinancing rate before. Measured against the ECB's own two series, it is
-*exactly* the MRO before that date and *exactly* the deposit facility after:
-
-| period | BIS EUR − deposit facility |
-| --- | ---: |
-| before 2024-09-18 | **+0.500** |
-| from 2024-09-18 | **+0.001** |
-
-A definition break inside the sample, in a currency appearing in 6 of 20 pairs.
-It also measures the wrong thing: under excess liquidity €STR anchors to the
-deposit facility, not the MRO. Against €STR, BIS as-is sits `−0.4477` away
-(sd 0.227) where the deposit facility sits `−0.0797` (sd 0.040) — in line with
-USD's `−0.0408` and GBP's `−0.0513`.
-
-**EUR uses the ECB deposit facility rate throughout** (FRED `ECBDFR`). Still a
-policy rate, same central bank, same frequency — the correction picks the right
-one of the ECB's three. The other seven have no definition break inside the
-panels: every transition they carry predates 2021.
+refinancing rate before. Measured, the series is *exactly* the MRO before that
+date (gap to the deposit facility `+0.500`) and *exactly* the deposit facility
+after (`+0.001`). Under excess liquidity €STR anchors to the deposit facility,
+not the MRO. So **EUR uses the ECB deposit facility throughout** — still a policy
+rate, same central bank, same frequency; the correction picks the right one of
+the ECB's three.
 
 ## 4. Stage 2 — carry economics
 
-Twelve cells: three families × three rebalances, the fourth family being the two
-cross-sectional `k` values. **This is the entire carry search.**
+Twelve cells: three families × three rebalances. Three lines that add up — spot,
+carry income, cost — never one "gross". Both deciding panels, at cost `C`:
 
-Three lines that add up, never one "gross". Both deciding panels, at cost `C`:
-
-| cell | spot | carry income | net | gross+ | same sign | net+ | tail | breadth |
+| cell | spot | carry income | net | gross+ | same sign | net+ | tail | bloc sign |
 | --- | ---: | ---: | ---: | :---: | :---: | :---: | :---: | :---: |
 | `pair_level` weekly | −243 / +270 | +219 / +523 | −29 / +789 | ✗ | ✗ | ✗ | ✗ | ✗ |
 | `pair_level` fortnightly | −205 / +250 | +218 / +522 | +7 / +767 | ✓ | ✓ | ✓ | ✗ | ✗ |
@@ -184,65 +158,92 @@ Three lines that add up, never one "gross". Both deciding panels, at cost `C`:
 | `cross_sectional_k2` weekly | −63 / +32 | +55 / +157 | −11 / +188 | ✗ | ✗ | ✗ | ✗ | ✗ |
 | `cross_sectional_k2` fortnightly | −66 / +33 | +55 / +157 | −13 / +188 | ✗ | ✗ | ✗ | ✗ | ✗ |
 | `cross_sectional_k2` monthly | −81 / +13 | +54 / +155 | −28 / +167 | ✗ | ✗ | ✗ | ✗ | ✓ |
-| **`cross_sectional_k3` weekly** | **+33 / −2** | **+49 / +121** | **+82 / +118** | **✓** | **✓** | **✓** | ✗ | ✓ |
+| **`cross_sectional_k3` weekly** | **+33 / −2** | **+49 / +121** | **+82 / +118** | **✓** | **✓** | **✓** | **✗** | ✓ |
 | `cross_sectional_k3` fortnightly | +23 / −4 | +49 / +121 | +72 / +116 | ✓ | ✓ | ✓ | ✗ | ✗ |
 | `cross_sectional_k3` monthly | +9 / −10 | +48 / +119 | +57 / +108 | ✓ | ✓ | ✓ | ✗ | ✗ |
 | `carry_change` weekly | +236 / −105 | +57 / −11 | +258 / −148 | ✗ | ✗ | ✗ | ✗ | ✗ |
 | `carry_change` fortnightly | +266 / −79 | +101 / −27 | +348 / −123 | ✗ | ✗ | ✗ | ✗ | ✗ |
-| `carry_change` monthly | +216 / −634 | +138 / −47 | +347 / −691 | ✗ | ✗ | ✗ | ✓ | ✓ |
+| `carry_change` monthly | +216 / −634 | +138 / −47 | +347 / −691 | ✗ | ✗ | ✗ | **✗** | ✓ |
 
-### 4.1 The one family with a coherent story, and why it still fails
+The "bloc sign" column is the **coded** clause — it asks only whether the two
+blocs share a sign. `cross_sectional_k3` weekly passes it. The clause that fired
+mechanically is **tail**, and the concentration below is a judgment applied on
+top of it, not a coded test.
 
-`cross_sectional_k3` is the textbook good shape: the interest is the return and
-spot did not take it away, at a turnover of **0.18–0.28 a year** and a cost of
-**0.5–0.9 pips** over two years. Carry is exactly the low-turnover object the
-plan predicted.
+### 4.1 The one family with a coherent story, and why it fails twice
 
-It fails on the two clauses that matter.
+The pooled row is the textbook good shape: net `+82 / +118`, carry income
+`+49 / +121`, spot `+33 / −2`, turnover **0.18–0.28 a year**, cost 0.5–0.9 pips
+over two years.
 
-| | 2021–23 | 2023–25 |
-| --- | ---: | ---: |
-| JPY pairs, mean net | **+261.9** | **+383.6** |
-| non-JPY pairs, mean net | **+4.2** | **+4.0** |
-| ratio | **63×** | **95×** |
-| top-ten-day share of net | 1.51 | 1.42 |
-| largest single pair's share | 0.39 | 0.45 |
-| effective independent pairs | 4.55 | 3.21 |
-| sub-period net, four blocks | +49.7, +65.4, +61.9, **−95.6** | +84.6, +87.5, +18.6, **−72.8** |
+**Split by bloc, the pooled row is misleading:**
 
-**It is a short-yen trade.** Non-JPY contributes four pips per pair over two
-years — nothing. And the **fourth sub-period of both deciding panels is a large
-loss** against solid gains in the first three: the carry unwind, not noise. The
-top ten days contribute more than the total, the rest being negative in
-aggregate.
+| 2021–23 | spot | carry | net | pairs net + | four sub-periods |
+| --- | ---: | ---: | ---: | :---: | --- |
+| JPY (6 pairs) | +196.5 | +65.8 | **+261.9** | 4/6 | +62.8, +128.4, +151.4, **−80.6** |
+| non-JPY (14) | **−36.8** | +41.5 | **+4.2** | 5/14 | +44.1, +38.5, +23.6, **−102.0** |
 
-`pair_level` shows the other failure mode cleanly — carry income `+218 / +522`
-against spot `−205 / +250`, so it earned the interest and gave it back on one
-panel and not the other, with net flipping sign across rebalance frequencies.
+| 2023–25 | spot | carry | net | pairs net + | four sub-periods |
+| --- | ---: | ---: | ---: | :---: | --- |
+| JPY (6) | +131.3 | +253.1 | **+383.6** | 4/6 | +214.2, +217.1, +48.6, **−96.2** |
+| non-JPY (14) | **−59.5** | +64.5 | **+4.0** | 7/14 | +29.1, +31.9, +5.7, **−62.7** |
+
+Two failures, not one.
+
+1. **It is a short-yen trade.** JPY pairs return 63× and 95× what the non-yen
+   pairs do, on 3.2–4.6 effective independent pairs rather than 20.
+2. **The non-yen leg — which *is* the diversified G10 carry premium hypothesis —
+   gave its entire interest back on spot.** Carry `+41.5 / +64.5` against spot
+   `−36.8 / −59.5`, leaving `+4.2 / +4.0` pips per pair over two years, with 5 of
+   14 and 7 of 14 pairs positive. §1's "the interest *is* the return and spot did
+   not take it away" is true of the pooled row **only because the yen leg's spot
+   gain masks it**, and that is the exact error plan §10's decomposition exists
+   to prevent — occurring one level below where the plan looks.
+
+Both blocs lose their fourth sub-period on both panels. The top ten days
+contribute 1.51 and 1.42 times the total, the rest being negative in aggregate.
+
+`pair_level` shows the other failure mode: carry income `+218 / +522` against
+spot `−205 / +250`, net flipping sign across rebalance frequencies.
 `carry_change` reverses sign between the deciding panels at every frequency.
 
-**`CARRY_EDGE_NOT_SUPPORTED`.** The branch is dropped rather than optimised.
-What it establishes is narrower and more useful than "carry does not work": over
-these two panels the G10 carry premium *is* the short-yen trade, it does earn its
-interest, and it pays for it in the last quarter of each window.
+**`CARRY_EDGE_NOT_SUPPORTED`.**
 
-### 4.2 The implementation gap, stated and not claimed away
+### 4.2 Two properties of the construction that the table does not show
 
-Everything above is **research carry** built from public policy rates. What a
-retail account receives is the broker's financing, which embeds a markup and a
-tom-next spread and is not publicly archived. The two are separate objects. No
-production profitability is claimed from public rates, and the difference is
-referred in §9.
+**The signal never moved.** Over 2021–23 the bottom three by rate is CHF / EUR /
+JPY on **100% of days**; over 2023–25 the same three, and USD is top-three on
+100%. `cross_sectional_k3` on these panels is a **static long CAD/NZD/USD, short
+CHF/EUR/JPY book**. The 0.18–0.28 turnover is therefore not the virtue §4.1's
+shape suggests — it is the statement that the ranking never crossed. Each panel
+is closer to **one** bet than to 624 days, and "the same sign on both deciding
+panels" is close to vacuous for a static position across adjacent windows.
+
+**The basket is not equal-weighted where it matters.** `PAIRS_20` is an
+incomplete graph — NZD and CAD appear in 3 pairs, USD in 7 — so a currency target
+of `±1/k` expressed through pair positions is amplified by degree. Realised
+exposure, 2021–23:
+
+| USD | JPY | EUR | GBP | NZD | CHF | CAD | AUD |
+| ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| +1.117 | **−1.073** | −1.027 | +0.759 | +0.384 | −0.561 | +0.245 | +0.157 |
+
+The short-JPY leg this section diagnoses as an economic fact is **mechanically
+amplified about 4×** relative to CAD and 7× relative to AUD. And the mean
+absolute pair weight is **0.168** against `pair_level`'s `±1`, so the §4 table
+compares families at roughly 6× different notional with no scale column.
+
+### 4.3 The implementation gap
+
+Everything above is **research carry** from public policy rates. What a retail
+account receives is the broker's financing, which embeds a markup and a tom-next
+spread and is not publicly archived. The two are separate objects. No production
+profitability is claimed, and the gap is referred (§9.4).
 
 ## 5. Stage 3 — tick volume as an opportunity source
 
-Measured at the horizon it would have to work at: a **daily** state, looking one
-carry rebalance (**5 trading days**) ahead. Measuring a one-bar relationship and
-asserting it survives to a week is the mistake that would have made this stage
-meaningless.
-
-Fifteen pre-registered cells, against a circular-block-shift null that keeps each
-series' own serial dependence:
+A **daily** state, looking one carry rebalance (5 trading days) ahead. Fifteen
+pre-registered cells, against a circular-block-shift null:
 
 | representation | future realised volatility | future absolute return | **movement exceeds cost** |
 | --- | --- | --- | --- |
@@ -252,158 +253,214 @@ series' own serial dependence:
 | `shock` | +0.057 / +0.086 | +0.024 / +0.031 | +0.019 / −0.004 |
 | `change` | +0.057 / +0.052 | +0.043 / +0.040 | −0.004 / −0.027 |
 
-Pairs agreeing in sign, on both deciding panels: **20 of 20** for volatility on
-three of the five representations; **9 to 13 of 20** — a coin flip — for
-cost-exceeding movement, on every one.
+Pairs agreeing in sign on **both** deciding panels, for the volatility column:
+`persistence` and `rolling_percentile` **20 of 20**; `normalised_level` 19 and 20;
+`shock` 18 and 20; `change` 18 and 18. For the cost column: **9 to 13 of 20** on
+every representation — a coin flip.
 
-**That third column is the finding.** Volume predicts *how much* the price will
-move and not *whether the move will clear the spread*, because the spread widens
-with volume too. The only target that pays for a trade is the one volume cannot
-see.
+Volume predicts *how much* the price will move and not *whether the move will
+clear the spread*, because the spread widens with volume too.
 
-## 6. Stage 4 — integration
+## 6. Stage 4 — integration, and what the filter actually removed
 
-Base: `cross_sectional_k3` weekly, the one carry cell with gross economics on
-both deciding panels. Its failure is a **tail** failure, which is a timing
-failure — so the integration question is whether opportunity information
-addresses the specific way it breaks.
+Base: `cross_sectional_k3` weekly. **M3 is worse than M1 in 15 of 15 cells.**
 
-It does not. **M3 is worse than M1 in 15 of 15 cells across all three panels:**
+| panel | M1 | of which spot / carry | M3 range | days removed |
+| --- | ---: | --- | --- | ---: |
+| 2021–23 | **+89.1** | +40.3 / +48.8 | −38.8 … +47.7 | 53.0–57.8% |
+| 2023–25 | **+120.3** | **−1.1** / +121.4 | −155.6 … −49.3 | 51.1–55.5% |
 
-| panel | M1 (carry alone) | M3 range (carry × volume filter) | days removed |
-| --- | ---: | --- | ---: |
-| 2021–23 | **+89.1** | −38.8 … +47.7 | 53–55% |
-| 2023–25 | **+120.3** | −155.6 … −49.3 | 51–56% |
-| 2025 | +108.8 | +26.2 … +71.7 | 59–66% |
+**The mechanism is not the one the first version of this document gave.** It
+claimed the filter removes carry income. Decomposed:
 
-The mechanism is not subtle and it is specific to what carry is: **a carry
-position accrues its interest every day it is held.** Removing half the days
-removes half the income while leaving the spot risk of the days that remain. Time
-in the market *is* the return. An opportunity filter is the wrong instrument for
-an expected-return source that pays by the day, whatever the filter knows.
+| representation | 2021–23 gap | removed carry | removed spot | 2023–25 gap | removed carry | removed spot |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| `normalised_level` | 47.4 | 27.1 (57%) | 20.4 | 256.4 | 64.2 (25%) | **192.2** |
+| `rolling_percentile` | 41.4 | 27.3 (66%) | 14.1 | 247.1 | 59.2 (24%) | **187.9** |
+| `persistence` | 55.5 | 21.9 (39%) | 33.6 | 169.6 | 54.5 (32%) | **115.1** |
+| `change` | 48.0 | 21.3 (44%) | 26.7 | 275.9 | 54.6 (20%) | **221.3** |
+| `shock` | 127.9 | 25.7 (20%) | **102.2** | 235.4 | 63.8 (27%) | **171.7** |
 
-M2 — timing with no expected-return view, the direction-free control — is noise:
-`+314, −45, −144, −321, −198` on the first panel alone. As the plan predicted.
+Removed carry is 20–66% of the damage and **removed spot dominates in 8 of the
+10 deciding cells**. On 2023–25 the panel's total spot is ≈0 (`−1.1`) and the
+filter splits it into roughly `−193` kept against `+192` removed: the
+high-volume days are the yen-carry-unwind days, which is exactly when this
+position loses. That is **adverse selection on spot**, not lost interest.
+
+The corrected reading is more interesting than the original and points the other
+way: the volume state *is* informative about this position's spot outcome — with
+the wrong sign for a filter. It was not tested as a direction signal and must not
+be, on either this evidence or the prior package's.
+
+M2 — timing with no expected-return view — is noise: `+314, −45, −144, −321,
+−198` on the first panel.
 
 `OPPORTUNITY_TIMING_ADDS_NO_INCREMENTAL_VALUE`.
 
-## 7. Route C — the calendar branch
-
-Carry weak and volume timing nothing, so the next source has to be **exogenous**
-rather than another transform of the same prices.
+## 7. Route C — the calendar
 
 ### 7.1 The event population, and what it is not
 
-Policy-rate decisions are one of the four event classes the plan names, and the
-dates on which a G10 policy rate **changed** are already in the acquired series —
-no new acquisition, no new provenance risk. Inside the panels: 4 (JPY) to 21
-(NZD) changes per currency, 108 in total.
+Days within ±1 of a G10 policy-rate **change**, from the acquired series. Inside
+the deciding panels: **59** changes on 2021–23 and **50** on 2023–25; 126 across
+all three panels. Per currency across the three: NZD 21, GBP 20, CAD 19, EUR 18,
+USD 17, AUD 16, CHF 11, JPY 4.
 
-Stated plainly, this population **is not** a central-bank calendar:
+Stated plainly, this **is not** a central-bank calendar:
 
-* it contains only meetings that **changed** a rate. A scheduled meeting that
-  held is invisible, and those are the majority — so this is biased toward the
+* only meetings that **changed** a rate. A scheduled meeting that held is
+  invisible, and those are the majority — so the sample is biased toward
   surprises, and a full calendar would show smaller effects;
-* it carries **no CPI, employment or GDP** releases. Those need their own source
-  and are referred;
-* the BIS date is the **effective** date, which for most of these central banks
-  is the announcement day or the day after.
+* **whether a meeting will change a rate is not knowable in advance**, so this
+  population cannot be used as a forward-looking anchor at all. It bounds what an
+  event anchor could offer; it is not one;
+* no CPI, employment or GDP releases — referred (§9.5);
+* the BIS date is the **effective** date and the panel is lagged a further day,
+  so the window is `[D, D+2]` relative to the effective date and **never contains
+  the announcement day**. For the ECB the deposit facility takes effect about six
+  days after the decision, so for EUR — 6 of 20 pairs — the window sits 6 to 9
+  days after the decision and contains no ECB information event.
 
-### 7.2 What it shows
+### 7.2 What it shows, day-of-week matched
 
-Days within ±1 of a rate change in either leg, against every other day:
+**Every ratio the verdict reads is matched on day of week.** §7.4 says why.
 
-| | 2021–23 | 2023–25 | 2025 |
+| | 2021–23 | 2023–25 | 2025 *(may not decide)* |
 | --- | ---: | ---: | ---: |
-| event days / other days | 32 / 592 | 27 / 597 | 12 / 200 |
-| absolute move, ratio | **1.548** | **1.315** | 1.198 |
-| realised volatility, ratio | 1.312 | 1.179 | 1.080 |
-| tick volume, ratio | 1.641 | 1.292 | 1.222 |
-| **spread, ratio** | **0.921** | **0.941** | **0.871** |
-| **move net of cost, ratio** | **1.599** | **1.347** | 1.240 |
-| pairs with net ratio > 1 | **19 / 19** | **18 / 20** | 9 / 10 |
-| standardised difference, net | 0.429 | 0.298 | 0.204 |
+| event days / other days | 31 / 490 | 26 / 492 | 12 / 163 |
+| **absolute move, matched** | **1.3345** | **1.1273** | 1.0288 |
+| **spread, matched** | **1.0509** | **1.0222** | 0.9834 |
+| move net of cost, matched | 1.3513 | 1.1342 | 1.0305 |
+| exceeds cost, matched | 1.0014 | 1.0083 | 0.9978 |
+| tick volume, matched | 1.4118 | 1.1325 | 0.9793 |
+| pairs with net ratio > 1 | **17 / 19** | **17 / 20** | 4 / 9 |
+| permutation `p`, two-sided | **0.0117** | **0.0153** | 0.560 |
 
-**The spread narrows while the movement grows.** That is the opposite of every
-opportunity variable this programme has tried: volume-selected busy days come
-with wider spreads, because volume rises in thin and stressed conditions too.
-Scheduled decisions happen in the most liquid hours with the deepest
-participation, so the anchor selects *good* liquidity rather than merely high
-activity.
+Event days **move about 33% and 13% more**, with 17 of 19 and 17 of 20 pairs
+agreeing, and a permutation test that re-draws event days **within day of week**
+and standardises each pair before pooling gives `p = 0.012 / 0.015`. That is
+real.
 
-### 7.3 What it does not show
+**The spread is `1.05×` and `1.02×` — wider.** 17 of 19 and 14 of 20 pairs show a
+wider spread on event days. There is no cost advantage.
 
-**`exceeds_cost` ratio is only 1.04 / 1.03.** The baseline is already `0.911` —
-**91% of ordinary days already move more than the round trip.** Magnitude was
-never the binding constraint in this programme, and an anchor that raises the
-cost-clearing rate by four percentage points is economically trivial on its own.
+`CALENDAR_EVENT_MOVEMENT_STRUCTURE_SUPPORTED` ·
+`EVENT_DAY_COST_ADVANTAGE_NOT_ESTABLISHED`.
 
-And the standardised differences are `0.30–0.43`: real, modest, and about
-**5% of days**.
+### 7.3 And it is still not an edge
 
-Above all: **nothing here says anything about direction.** A bigger move at a
-tighter spread is worth something only if one knows which way, and five packages
-have now established that this programme does not.
+The cost-clearing rate rises by `1.0014` and `1.0083` — because **91% of ordinary
+days already move more than the round trip**. Magnitude was never the binding
+constraint in this programme. Direction is, and nothing here addresses it. A
+bigger move at a slightly wider spread is worth something only if one knows which
+way.
 
-`CALENDAR_EVENT_OPPORTUNITY_STRUCTURE_SUPPORTED`, read strictly as a statement
-about the **opportunity layer**.
+### 7.4 What the first version of this document got wrong
+
+It led with: *"the spread narrows while the movement grows… the first
+opportunity variable in this programme whose cost works for it."* **That was a
+day-of-week composition artefact, and both review roles found it independently.**
+
+The M15 panels carry a **Sunday pseudo-session** — the 21:00–24:00 UTC open. On
+`EUR_USD` over 2021–23 it is **10.45 bars** against ~95 on a weekday, with a
+median spread of **2.51 pips** against 1.49 and a daily move of **7.97 pips**
+against 36–48. Policy rates take effect on weekdays, so the unmatched comparison
+put **17.5%** Sunday in the control group and **0%** in the event group. That
+alone produced the "narrower spread".
+
+| spread ratio | as first published | Sundays dropped |
+| --- | ---: | ---: |
+| 2021–23 | **0.921** (3 of 19 pairs wider) | **1.041** (**17 of 19** wider) |
+| 2023–25 | **0.941** (4 of 20) | **0.998** (7 of 20) |
+
+Two fixes, both in committed code and both pinned by tests: days with fewer than
+48 bars are **dropped** from the daily table, and every ratio the verdict reads
+is computed **within day of week** and then pooled. The unmatched ratio is still
+reported beside it and is never read.
+
+The movement effect survives both controls and now carries a null it did not have
+before. The cost claim does not survive, and is withdrawn.
 
 ## 8. Stage 5 — ML not run
 
-The plan's four prerequisites (§15):
-
-1. the expected-return source has gross economics on its own — **partly**:
-   `cross_sectional_k3` does, but fails its own pass condition;
-2. something survives realistic cost — **yes**, `+82 / +118` net;
-3. the opportunity source has incremental information — **no**. Stage 4: 15 of 15
-   cells worse;
-4. a simple interaction leaves visible selection room — **no**.
+The plan's four prerequisites: (1) the expected-return source has gross economics
+— *partly*, but it fails its own pass condition; (2) something survives realistic
+cost — *yes*; (3) the opportunity source has incremental information — **no**,
+15 of 15 cells worse; (4) a simple interaction leaves selection room — **no**.
 
 Condition 3 fails outright, so **no model was fitted**. A meta-label model is a
-selector over an opportunity signal, and the opportunity signal has just been
-measured to destroy the base rather than improve it. `ML_NOT_JUSTIFIED`.
+selector over an opportunity signal, and that signal has been measured destroying
+the base. `ML_NOT_JUSTIFIED`.
 
 ## 9. Deviations, limitations and referrals
 
-1. **Amendment A-1** (§3.4) — before any carry economics, on fidelity grounds.
+1. **Amendment A-1** (§3.5) — before any carry economics, on fidelity grounds.
 2. **The calendar verdict rule was not in the frozen plan.** §16 named the
-   question but no numeric criterion, so the rule used — net-of-cost ratio above
-   1 on both deciding panels, with three quarters of pairs agreeing — was written
-   at implementation time. It is disclosed here rather than presented as
-   pre-registered, and §7.3 is why the verdict is read narrowly whatever the rule.
-3. **The event population is rate *changes*, not scheduled meetings** (§7.1).
-4. **Research carry is not broker carry** (§4.2). No production profitability is
-   claimed from public rates. **Referral**: whether a broker's historical
-   financing can be obtained at all, and how far it sits from the policy-rate
-   differential, is the question that decides whether any carry work is
-   implementable. It cannot be answered from public data.
-5. **CPI, employment and GDP releases were not acquired.** A full calendar needs
-   a source with its own provenance and revision behaviour — and, unlike policy
-   rates, macro statistics **are** revised, so a real-time vintage would be
-   required. **Referral.**
-6. **Swap points were not obtained**, so the second rank of the hierarchy is
-   untested. **Referral.**
+   question and no numeric criterion, so the rule — matched net-of-cost ratio
+   above 1 on both deciding panels, three quarters of pairs agreeing, and a
+   permutation `p ≤ 0.05` — was written at implementation time. The permutation
+   clause and the day-of-week matching were **added after the first result**, in
+   response to review, and both make the test harder.
+3. **Day-of-week matching and the Sunday filter are post-result fixes** (§7.4).
+   They correct a defect rather than move a threshold, and they turn a positive
+   claim into a negative one — but they were not pre-registered.
+4. **Broker financing history** — decides whether any carry result is
+   implementable. `cross_sectional_k3` earns `+82 / +118` over **624 trading
+   days** = **0.13 / 0.19** pips per pair per day. A financing markup of a few
+   tenths of a basis point per day would consume it. **Referral.**
+5. **CPI, employment and GDP releases were not acquired.** Unlike policy rates,
+   macro statistics **are** revised, so a real-time vintage would be required.
+   **Referral.**
+6. **Swap points were not obtained**, so the second rank of the source hierarchy
+   is untested. **Referral.**
+7. **The 4–8 bp cross-check does not bound the carry error.** It covers 3 of 8
+   currencies, and the result is a *ranking of levels* whose closest pair on
+   2021–23 is CAD 1.749 against USD 1.634 — an 11.5 bp gap, within about 1.5× the
+   measured dispersion, straddling the top-three boundary. More fundamentally,
+   what an FX position earns differs from the interest differential by the
+   **cross-currency basis**, a distinct and sign-persistent term of order tens of
+   basis points that is historically negative for JPY and CHF funding — against
+   precisely the leg that generates the entire result. It is not measured here
+   and is not covered by the 4–8 bp figure. It is estimable from public forward
+   points for the majors and is a separate research question from §9.4's markup.
+8. **JPY has a definition break inside `supplemental_2023_2025`.** The same
+   `COMPILATION` field that caught EUR says the BOJ's series moves from the
+   YCC-era short-term policy rate to the uncollateralised overnight call-rate
+   target on **2024-03-21**. It is ~5 bp economically, the same order as the
+   measured gaps, so it does not move the verdict — but §3.5's "the other seven
+   have no definition break inside the panels" was **false as first written**, and
+   it was false for the currency that carries the whole result.
+9. **Plan §18's family-wise correction was not applied.** `FAMILYWISE_ALPHA` and
+   `STUDENTIZED_FLOOR` are defined and unused. Stage 3's `z` of +5 to +11 would
+   survive any correction over 15 cells, but the carry layer carries **no
+   uncertainty measure at all** — `+82 / +118` and the bloc splits are point
+   estimates with no null. Route C now has one; carry does not.
+10. **`largest_pair_share` is computed where plan §10 asks for the largest single
+    *currency*'s share**, and `TAIL_SHARE_CEILING = 0.50` is an
+    implementation-time numeric criterion not in the plan. Immaterial here — the
+    measured share is 1.51 — but disclosed for symmetry with item 2.
 
 ## 10. Verification
 
-* `tests/research` — **257 tests**, of which 25 are this package's.
-* **Mutation testing**, 27 mutations of the properties that matter, **all
-  killed**: the rate lag removed; the forward fill moved after the shift so the
-  lag becomes one *observation* rather than one day; the accrual divided by 365
-  turned into 252; the accrual made per-bar instead of per-calendar-day; the
-  differential's sign inverted; carry made not to follow the position; the
-  position traded on its own decision bar; the EUR override removed so the
-  definition break returns; EUR mapped to a member state; the dead band removed;
-  the basket made non-neutral; each of the four carry kill clauses disabled in
-  turn; 2025 made a deciding panel; each opportunity state made to read the day
-  it labels; the forward target turned backward; the filter threshold moved off
-  the median and made a fixed level; the event population made to include
-  no-change days; and a thirteenth carry cell added.
-* **Two test defects of my own were found by that battery and fixed**: a monotone
-  volume fixture made every rolling percentile `1.0`, silently disabling the
-  filter tests; and a 40-day fixture skipped three Stage 3 tests entirely.
+* `tests/research` — **273 tests**, of which 41 are this package's.
+* **Mutation testing.** A review role mutated the package 30 ways and **nine
+  survived**, including a one-day look-ahead in the rate join that changed 959 of
+  50,019 bars by up to 0.50 percentage points and still passed 25 of 25 tests —
+  because every carry test built a **constant** rate panel, so the join date was
+  invisible to all of them. After the hardening pass, **21 of 21 re-tested
+  mutations killed**, including: the rate join reading tomorrow; `_fred_daily`
+  skipping its forward fill; the override provenance discarded; the header lookup
+  back to case-sensitive; a non-zero-sum basket; the dead band removed; the
+  forward-volatility target losing its final shift; the calendar window made
+  one-sided; the Sunday sessions put back; the matched ratio replaced by the raw
+  one; `_matched_ratio` ignoring its weekday grouping; the verdict reading `x2.0`
+  where it means `x1.0`; `_improves` failing open; and an unmeasurable tail share
+  treated as a pass.
+* Four tests that did not test what they were named for were replaced, and two
+  fixture defects of my own were found by that battery and fixed.
 * `ruff format --check`, `ruff check`, `tools/lint/run_custom_checks.py` — clean.
-* Every number in this document was verified against the artifacts.
+* Every number in this document was verified against the artifacts
+  programmatically.
 
 Known, unrelated and pre-existing: the full `pytest tests/` suite crashes on
 Windows from `sys.addaudithook` accumulation in `isolation.py`. A separate
@@ -412,77 +469,85 @@ referral.
 ## 11. Research interpretation
 
 **1. Was a new expected-return source found?** No. Carry is the strongest
-candidate the public data can express and, over these two panels, it is one
-currency and one crash. It is not nothing — it earns its interest, at negligible
-turnover — but it is not a diversified premium and it is not separable from being
-short the yen through a specific historical episode.
+candidate public data can express, and over these panels it is one currency, one
+static position and one crash — with its non-yen half returning four pips per
+pair over two years after giving back all its interest on spot.
 
-**2. Is tick volume useful for monetisation?** Not as a filter, and now for a
-reason rather than a measurement. It knows about magnitude and not about
-cost-clearing magnitude, and the thing it would filter earns by the day.
+**2. Is tick volume useful for monetisation?** Not as a filter. It knows about
+magnitude and not about cost-clearing magnitude, and applied to a carry position
+it removes the wrong days — the ones it keeps are the losing ones.
 
-**3. What is price-derived information now limited to?** Describing volatility.
-Across six packages it has produced: a variance-ratio structure 6–18× below
-break-even, a retrace geometry that dissolves into a selection artefact, and a
-volume signal that forecasts realised volatility at `z ≈ +10` and forecasts
-nothing about whether a move pays. Every one is a statement about **magnitude**.
-None is about direction, and cost is charged on direction.
+**3. What is price-derived information limited to?** Describing volatility.
+Across six packages: a variance-ratio structure 6–18× below break-even, a retrace
+geometry that dissolves into a selection artefact, and a volume signal that
+forecasts realised volatility at `z ≈ +10` and forecasts nothing about whether a
+move pays. Every one is about **magnitude**. Cost is charged on **direction**.
 
-**4. Is carry implementable?** Unknown, and unknowable from here. The gap between
-a policy-rate differential and a broker's financing is the whole question and no
-public archive answers it.
+**4. Is carry implementable?** Unknown from here — but less unknowable than the
+first version said. The broker markup (§9.4) is not obtainable from public data;
+the **cross-currency basis** (§9.7) is, from public forward points for the
+majors, and it is the larger and more measurable of the two unmeasured terms.
 
-**5. How much does the broker financing difference matter?** Decisively. The
-`cross_sectional_k3` net is `+82 / +118` pips per pair over two years — roughly
-`0.4` pips per pair per day. A financing markup of a few tenths of a basis point
-per day would consume it. This is not a strategy that survives an unfavourable
-financing assumption, and no favourable one has been demonstrated.
+**5. How much does the financing difference matter?** Decisively. `+0.13 / +0.19`
+pips per pair per day is consumed by a markup of a few tenths of a basis point.
+No favourable financing assumption has been demonstrated.
 
-**6. Is it worth going on to COT or implied volatility?** On this evidence, the
-question to ask first is different. Both are **positioning and risk-premium**
-sources, and the thing this programme is missing is not another opportunity
-variable — it now has a good one — but a **direction-bearing expected return**.
-COT is the better of the two on that axis: it is a positioning measure with a
-reversal hypothesis at horizons far longer than anything tried here, it is free
-and public from the CFTC, and it is weekly, which suits the turnover profile that
-carry showed is affordable. Implied volatility is a **volatility** premium, which
-is the layer that already works.
+**6. Is it worth going on to COT or implied volatility?** The programme's gap is
+a **direction-bearing expected return**, and on that axis COT is the better
+candidate: free and public from the CFTC, weekly, with a reversal hypothesis at a
+horizon carry showed is affordable. Three constraints belong in the case up
+front: the report is published Friday for the prior Tuesday, so a **≥3-day
+publication lag** must be honoured — this is the plan's own vintage rule, and
+unlike policy rates it binds here; legacy and disaggregated formats are different
+objects with a 2006 break; and **IMM futures give USD-cross series only**, so COT
+can express a USD-versus-one-currency view but **cannot rank eight currencies**,
+which is the construction the carry work just used.
 
-**7. Is there a fresh-replication candidate?** **No.** The plan's criteria (§21)
+Implied volatility should **not** be ranked last for the reason the first version
+gave. "It prices the layer that already works" conflates realised-volatility
+forecasting with two distinct objects: the **variance risk premium**, which is
+return-bearing, and **risk reversals / option skew**, which are direction-bearing
+— the thing the programme is missing. The honest reason to rank it last is
+acquisition: FX option surfaces are not freely and reproducibly public
+historically, which is the criterion the plan actually sets.
+
+**7. Is there a fresh-replication candidate?** **No.** The plan's criteria
 require gross edge, positive after cost, breadth, non-catastrophic tail and a
-working simple baseline. `cross_sectional_k3` fails breadth and tail. Nothing is
+working simple baseline. `cross_sectional_k3` fails breadth and tail, and §4.2
+shows it is not even a cross-sectional strategy on these panels. Nothing is
 forwarded, and the `N = 1` forward budget stays unspent.
 
 ## 12. Final decision
 
-**No fresh-replication candidate. The next source has a reasoned case.**
+**No fresh-replication candidate. The expected-return layer is empty and the
+opportunity layer is thinner than the first version of this document claimed.**
 
-The programme has, for the first time, a **working opportunity layer** — an
-exogenous anchor that raises movement while *lowering* cost — and a demonstrably
-empty **expected-return layer**. That asymmetry is the finding, and it says what
-to do next: stop looking for opportunity variables and look for a direction-
-bearing return.
+What is established: an exogenous anchor picks out days that **move about 13–33%
+more**, replicating across pairs and panels at `p ≈ 0.01`. What is **not**
+established, and was wrongly claimed: that those days are cheaper to trade. They
+are marginally more expensive.
 
-Recommended, in order, each needing its own authorisation:
+That changes what to do next only in emphasis. The programme still lacks a
+direction-bearing expected return, and no amount of opportunity structure
+substitutes for one. Recommended, each needing its own authorisation:
 
-1. **COT positioning** — free and public (CFTC), weekly, a genuine reversal
-   hypothesis at a horizon carry showed is affordable, and it is about
-   *direction*. It is US-futures positioning used as a proxy for spot FX, which
-   is its main weakness and should be stated up front.
-2. **A real economic calendar with real-time vintages** — to widen §7's anchor
-   from rate *changes* to all scheduled events, which would also remove the
-   surprise bias.
-3. **Broker financing history** — not a research source but the question that
+1. **COT positioning** — with the three constraints in §11.6 stated in the
+   research case before any acquisition;
+2. **A real economic calendar with real-time vintages** — which would widen §7's
+   anchor from rate *changes* to all scheduled events and remove the surprise
+   bias and the forward-knowability problem;
+3. **The cross-currency basis from public forward points** — cheaper than either,
+   and it bounds the largest unmeasured term in the carry work;
+4. **Broker financing history** — not a research source, but the question that
    decides whether any carry result could ever be implemented.
-
-Implied volatility ranks last: it prices the layer that already works.
 
 ## 13. Final status
 
-* **`ECONOMIC_EDGE_SOURCE_NOT_FOUND_EXOGENOUS_OPPORTUNITY_STRUCTURE_ESTABLISHED`**
+* **`ECONOMIC_EDGE_SOURCE_NOT_FOUND_EXOGENOUS_MOVEMENT_STRUCTURE_ESTABLISHED`**
 * `CARRY_EDGE_NOT_SUPPORTED`
 * `OPPORTUNITY_TIMING_ADDS_NO_INCREMENTAL_VALUE`
-* `CALENDAR_EVENT_OPPORTUNITY_STRUCTURE_SUPPORTED` — the opportunity layer only
+* `CALENDAR_EVENT_MOVEMENT_STRUCTURE_SUPPORTED`
+* `EVENT_DAY_COST_ADVANTAGE_NOT_ESTABLISHED`
 * `ML_NOT_JUSTIFIED` — prerequisite 3 fails
 * `NON_DECISION_BEARING_EXPLORATORY_ONLY` ·
   `RESEARCH_SCRATCH_NON_AUTHORITATIVE`
@@ -490,9 +555,10 @@ Implied volatility ranks last: it prices the layer that already works.
   untouched. The dead window and the future untouched epoch untouched.
 * **Formal Confirmation not performed.** No broker, demo or live contact. No
   order of any kind. No production deployment.
-* External data acquired: BIS policy rates and three FRED overnight-rate series,
-  all public, all keyless, all recorded with provenance. **No paid contract, no
-  metered API, no account, no secret.**
+* External data acquired: BIS policy rates and **four** FRED series — three
+  overnight rates used as a cross-check and `ECBDFR` used as a **primary input**
+  for EUR. All public, all keyless, all recorded with provenance. **No paid
+  contract, no metered API, no account, no secret.**
 * `PRODUCTION_READINESS_NOT_CLAIMED`.
 
 Fresh historical replication, further external acquisition and Formal

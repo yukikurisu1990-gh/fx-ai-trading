@@ -324,28 +324,38 @@ LEDGER: Final[list[dict[str, Any]]] = [
     {
         "id": "H-018",
         "round": "EconomicEdge/Route C",
-        "population": "days within +/-1 of a G10 policy-rate CHANGE, 108 changes",
+        "population": (
+            "days within +/-1 of a G10 policy-rate CHANGE: 59 changes on the "
+            "first deciding panel, 50 on the second, 126 across all three"
+        ),
         "target": "do scheduled events define an exogenous opportunity population",
         "condition_family": "none",
         "horizon_family": "one day",
         "configurations": "one comparison, event days against all others",
         "prespecified": False,
         "result": (
-            "CALENDAR_EVENT_OPPORTUNITY_STRUCTURE_SUPPORTED, for the OPPORTUNITY "
-            "layer only. Absolute move 1.55x and 1.31x larger AND the spread "
-            "0.92x and 0.94x NARROWER, so move-net-of-cost is 1.60x and 1.35x "
-            "with 19 of 19 and 18 of 20 pairs agreeing. That is the first "
-            "opportunity variable in this programme whose cost works FOR it -- "
-            "volume-selected busy days come with wider spreads because volume "
-            "rises in thin conditions too, while scheduled decisions happen in "
-            "the deepest liquidity. But the cost-clearing RATE rises only 1.04x, "
+            "CALENDAR_EVENT_MOVEMENT_STRUCTURE_SUPPORTED, for the OPPORTUNITY "
+            "layer only, and every ratio DAY-OF-WEEK MATCHED. Absolute move "
+            "1.33x and 1.13x larger, 17 of 19 and 17 of 20 pairs agreeing, "
+            "permutation p = 0.012 and 0.015 against event days re-drawn within "
+            "the same weekday. The spread is 1.05x and 1.02x WIDER, so "
+            "EVENT_DAY_COST_ADVANTAGE_NOT_ESTABLISHED. An earlier version of "
+            "this row claimed the spread was 0.92x and 0.94x NARROWER; that was "
+            "a Sunday-session composition artefact -- Sundays are 17.5% of the "
+            "control population and 0% of the event population, and a Sunday "
+            "carries about 10 bars at a 2.5 pip spread against a weekday's 95 "
+            "bars at 1.5. The claim is WITHDRAWN. Move net of cost is 1.35x and "
+            "1.13x, but the cost-clearing RATE rises only 1.001x and 1.008x, "
             "because 91% of ordinary days already move more than the round trip: "
             "magnitude was never the binding constraint, direction is, and "
             "nothing here addresses it. The population is rate CHANGES, not "
-            "scheduled meetings, so it is biased toward surprises"
+            "scheduled meetings, so it is biased toward surprises -- and whether "
+            "a meeting will change a rate is not knowable in advance, so this "
+            "population bounds what an event anchor could offer without being one"
         ),
         "status": (
-            "OPEN - a working opportunity anchor with no expected-return source to apply it to"
+            "OPEN - exogenous movement structure with no cost advantage and no "
+            "expected-return source to apply it to"
         ),
     },
 ]

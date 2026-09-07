@@ -112,7 +112,10 @@ def evaluate(
     total = result.net.to_numpy() + carry
 
     stamps = frame["ts"]
-    daily = pd.Series(total, index=stamps).groupby(stamps.dt.floor("D").to_numpy()).sum()
+    day = stamps.dt.floor("D").to_numpy()
+    daily = pd.Series(total, index=stamps).groupby(day).sum()
+    daily_carry = pd.Series(carry, index=stamps).groupby(day).sum()
+    daily_spot = pd.Series(result.net.to_numpy(), index=stamps).groupby(day).sum()
     equity = np.cumsum(total)
     turnover = float(np.abs(np.diff(np.concatenate([[0.0], held]))).sum())
 
@@ -128,6 +131,10 @@ def evaluate(
         "days_held": round(float((np.abs(held) * elapsed).sum()), 1),
         "mean_carry_rate_pct": round(float(np.nanmean(frame["carry_rate_pct"].to_numpy())), 4),
         "_daily": daily,
+        #: kept apart so a filter's damage can be attributed to the line it
+        #: actually removed rather than asserted
+        "_daily_carry": daily_carry,
+        "_daily_spot": daily_spot,
     }
 
 
@@ -282,7 +289,61 @@ def run_family(
     pooled["family"] = family
     pooled["rebalance"] = rebalance
     pooled["cost_multiplier"] = cost_multiplier
+    pooled["bloc_decomposition"] = bloc_decomposition(per_pair)
+    if daily_positions is not None:
+        pooled["realised_currency_exposure"] = realised_currency_exposure(daily_positions, pairs)
+        pooled["mean_absolute_pair_weight"] = round(
+            float(np.mean([abs(series).mean() for series in daily_positions.values()])), 4
+        )
     return pooled
+
+
+def bloc_decomposition(per_pair: dict[str, dict]) -> dict:
+    """The JPY and non-JPY sub-portfolios, each with its own three lines.
+
+    A pooled "spot did not take the carry away" can be true of the whole and
+    false of every part. Measured here it is: the yen leg's spot gain masks the
+    non-yen leg giving its entire interest back, which is the classic carry
+    error one level below where the plan's §10 decomposition catches it.
+    """
+    out: dict = {}
+    for label, chosen in (
+        ("JPY", {k: v for k, v in per_pair.items() if k in panel_loader.JPY_PAIRS}),
+        ("non_JPY", {k: v for k, v in per_pair.items() if k not in panel_loader.JPY_PAIRS}),
+    ):
+        if not chosen:
+            continue
+        rows = list(chosen.values())
+        daily = pd.concat([r["_daily"] for r in rows], axis=1).fillna(0.0).mean(axis=1)
+        out[label] = {
+            "pairs": len(rows),
+            "pairs_net_positive": int(sum(1 for r in rows if r["net_pips"] > 0)),
+            "spot_pips": round(float(np.mean([r["spot_pips"] for r in rows])), 2),
+            "carry_pips": round(float(np.mean([r["carry_pips"] for r in rows])), 2),
+            "net_pips": round(float(np.mean([r["net_pips"] for r in rows])), 2),
+            "sub_period_net": [
+                round(float(block.sum()), 1) for block in np.array_split(daily.to_numpy(), 4)
+            ],
+        }
+    return out
+
+
+def realised_currency_exposure(positions: dict[str, pd.Series], pairs: tuple[str, ...]) -> dict:
+    """What each currency's exposure actually is, given the pairs available.
+
+    `PAIRS_20` is an incomplete graph — NZD and CAD appear in 3 pairs, USD in 7
+    — so a currency-level target of `±1/k` expressed through pair positions is
+    amplified by degree. A basket that is equal-weighted at the currency level
+    is not one at the exposure level, and the amplification is largest on the
+    leg this study found carries the result.
+    """
+    exposure = dict.fromkeys(CURRENCIES, 0.0)
+    for pair in pairs:
+        base, quote = pair.split("_")
+        mean = float(positions[pair].mean())
+        exposure[base] += mean
+        exposure[quote] -= mean
+    return {currency: round(value, 4) for currency, value in exposure.items()}
 
 
 FAMILIES: tuple[str, ...] = (
@@ -294,6 +355,8 @@ FAMILIES: tuple[str, ...] = (
 
 __all__ = [
     "BARS_PER_DAY",
+    "bloc_decomposition",
+    "realised_currency_exposure",
     "FAMILIES",
     "attach_rates",
     "cross_sectional_positions",
