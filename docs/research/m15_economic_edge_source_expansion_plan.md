@@ -356,3 +356,66 @@ multiplicity boundary (§18), and the progression logic (§19).
 A defect found in an implementation is fixed and **recorded as a deviation** in
 the results document, with the before-and-after measurement. A threshold is never
 moved to change an outcome.
+
+---
+
+# 23. Amendment A-1 — EUR's source, corrected on fidelity grounds
+
+**Made before any carry economics was computed**, from an institutional fact and
+a measurement, not from a result. It makes the data more faithful; it does not
+make any outcome better or worse in a direction known at the time.
+
+## 23.1 What was found
+
+BIS's euro-area policy rate is **not one definition across the sample**. Its own
+`COMPILATION` field says: *"From 18 Sep 2024 onwards: official central bank
+steering rate is the deposit facility rate, fixed rate; from 15 Oct 2008 to
+17 Sep 2024: official central bank steering rate"* — the main refinancing rate.
+
+Measured against the ECB's own two series, the BIS euro-area series is **exactly**
+the MRO before that date and **exactly** the deposit facility after it:
+
+| period | BIS EUR − deposit facility |
+| --- | ---: |
+| before 2024-09-18 | **+0.500** |
+| from 2024-09-18 | **+0.001** |
+
+That is a definition break inside the sample, in a currency that appears in **6
+of the 20 pairs**.
+
+It also measures the wrong thing. Under excess liquidity €STR anchors to the
+**deposit facility**, not to the MRO — which is why the ECB redesignated it in
+2024. Plan §5.1's fallback cross-check against overnight money-market rates,
+over the panel span:
+
+| EUR series | mean gap to €STR | sd | corr |
+| --- | ---: | ---: | ---: |
+| BIS as-is | **−0.4477** | 0.227 | 0.99127 |
+| ECB MRO | −0.4886 | 0.162 | 0.99558 |
+| **ECB deposit facility** | **−0.0842** | **0.042** | **0.99972** |
+
+For comparison, the same gap is `−0.0408` for USD and `−0.0523` for GBP. The
+deposit facility puts EUR in line with them; the BIS series is an order of
+magnitude further away.
+
+## 23.2 The correction
+
+**EUR uses the ECB deposit facility rate throughout** (FRED `ECBDFR`, daily,
+public, no key). It is still a policy rate, set by the same central bank at the
+same frequency — the correction picks the right one of the ECB's three rates. It
+does not change the kind of object, and §5's hierarchy is untouched.
+
+The other seven currencies have no definition break inside the panel spans: every
+`COMPILATION` transition they carry predates 2021 (AUD 1990, CAD 1994, CHF 2019,
+GBP 2006, NZD 1999, USD 1985), and JPY's series is the uncollateralised overnight
+call-rate target throughout.
+
+## 23.3 What this says about the source hierarchy
+
+§5 ranks money-market rates **above** policy rates on fidelity and below them on
+availability, and §5.1's cross-check is what tests whether the trade-off cost
+anything. It cost something in exactly one currency, for an identifiable
+institutional reason, and the fix was available from the same class of object.
+The remaining gaps — 4 to 8 basis points, `corr ≥ 0.9997` — are what the coarser
+source costs, and they are small against the differentials the carry signal
+trades, which run to several percentage points.
