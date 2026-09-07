@@ -94,8 +94,12 @@ COT_SIGNS: Final[dict[str, int]] = {
 COT_PERCENTILE_WEEKS: Final[int] = 104
 COT_EXTREME_UPPER: Final[float] = 0.90
 COT_EXTREME_LOWER: Final[float] = 0.10
-#: In M15 bars: one week and four weeks of calendar days.
-COT_HORIZON_BARS: Final[dict[str, int]] = {"1w": 7 * 96, "4w": 28 * 96}
+#: Calendar days, not bars — plan amendment A-1. The FX week has no weekend
+#: bars, so `7 * 96` bars is about nine and a half calendar days and `28 * 96`
+#: is about five and a half weeks. A horizon named "1 week" that holds for nine
+#: days is a misspecification, so the position is closed at the first bar at or
+#: after `entry + N days`.
+COT_HORIZON_DAYS: Final[dict[str, int]] = {"1w": 7, "4w": 28}
 
 # ------------------------------------------------------ multiplicity (§12)
 SCHEDULED_EVENT_CELLS: Final[int] = 6
@@ -127,7 +131,7 @@ __all__ = [
     "COT_CELLS",
     "COT_EXTREME_LOWER",
     "COT_EXTREME_UPPER",
-    "COT_HORIZON_BARS",
+    "COT_HORIZON_DAYS",
     "COT_PERCENTILE_WEEKS",
     "COT_PUBLICATION_UTC_HOUR",
     "COT_PUBLICATION_UTC_MINUTE",

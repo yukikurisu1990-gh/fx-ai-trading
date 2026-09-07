@@ -525,5 +525,32 @@ and re-verified.
 
 ## 23. Amendments
 
-None yet. Each amendment appends here with the commit that made it, what forced
-it, and the statistic it precedes.
+Each amendment appends here with the commit that made it, what forced it, and
+the statistic it precedes.
+
+### A-1 — the COT horizon is measured in calendar time, not in bars
+
+**Made before any COT return was computed.** §17 fixed two horizons, "1 week"
+and "4 weeks", and the frozen constant expressed them as `7 * 96` and `28 * 96`
+M15 bars. Those are not the same thing. The FX week has no weekend bars, so 672
+bars is about seven **trading** days — roughly nine and a half calendar days —
+and 2,688 bars is about five and a half calendar weeks, not four. A horizon
+labelled "1 week" that holds for nine days is a misspecification, and it would
+have been reported under the wrong name.
+
+The horizons are therefore defined in **calendar time**: the position is closed
+at the first bar at or after `entry + 7 days` and `entry + 28 days`. The names
+in §17 are unchanged and now mean what they say. Nothing about the signals,
+signs, pair mapping, cost or kill rules changes, and no COT statistic had been
+computed when this was written.
+
+### A-2 — COT currency coverage, recorded rather than assumed
+
+**Made before any COT return was computed.** §17 assumed each of the seven
+non-USD currencies has its own futures contract in the CFTC *Traders in
+Financial Futures* report. Six of them — AUD, GBP, CAD, EUR, JPY, CHF — sit in
+the `CURRENCY` subgroup; **NZD sits in `CURRENCY(NON-MAJOR)`** under the contract
+name `NZ DOLLAR`, with history from 2006. All seven are therefore available and
+§17's USD construction — the negative of the equally-weighted mean of the other
+seven — stands unchanged. This is recorded because the coverage was checked, not
+assumed, and a later session should not have to re-establish it.

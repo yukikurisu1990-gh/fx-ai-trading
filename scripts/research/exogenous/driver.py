@@ -129,9 +129,98 @@ def stage_events() -> None:
     write("s4_event_verdict", decision)
 
 
+#: Plan §8's surprise scale needs 24 prior releases, so the real-time table
+#: starts well before the first panel. 2019-01 gives every event inside the
+#: earliest panel a full backward window without ever reading forward.
+MACRO_FIRST_RELEASE_FROM = "2019-01-01"
+MACRO_FIRST_RELEASE_TO = "2026-01-31"
+
+
+def stage_macro() -> None:
+    """Stage B — acquire the real-time CPI releases: actual, expectation, timing."""
+    from scripts.research.exogenous import macro
+
+    print("stage B: real-time macro releases")
+    releases, provenance = macro.build_releases(
+        first_release_from=MACRO_FIRST_RELEASE_FROM,
+        first_release_to=MACRO_FIRST_RELEASE_TO,
+    )
+    agree = sum(1 for row in releases if row.get("archive_agrees_with_alfred"))
+    complete = [
+        row for row in releases if row.get("cpi") and row["cpi"].get("surprise_pct") is not None
+    ]
+    print(f"  releases={len(releases)} usable={len(complete)}")
+    print(f"  ALFRED release date agrees with the nowcast archive on {agree}/{len(releases)}")
+    write(
+        "s2_macro_releases",
+        {
+            "releases": releases,
+            "provenance": provenance,
+            "expectation_kind": "MODEL_NOWCAST_SURPRISE_NOT_SURVEY_SURPRISE",
+            "consensus_status": (
+                "REAL_TIME_MACRO_SURVEY_CONSENSUS_NOT_AVAILABLE_WITHOUT_A_PAID_CONTRACT"
+            ),
+            "release_date_agreement": {"agree": agree, "total": len(releases)},
+        },
+    )
+
+
+def stage_surprise() -> None:
+    """Stage C — the pre-registered directional test on the real-time surprise."""
+    from scripts.research.exogenous import MACRO_HORIZON_BARS, MIN_EVENTS_PER_DECIDING_PANEL, macro
+    from scripts.research.exogenous import surprise as surprise_module
+    from scripts.research.round_a import panels as panel_module
+
+    print("stage C: macro surprise direction")
+    releases = read("s2_macro_releases")["releases"]
+    scaled = {
+        indicator: macro.scale_surprises(releases, indicator) for indicator in macro.INDICATORS
+    }
+
+    cells: dict[str, dict[str, dict[str, Any]]] = {}
+    for panel_id in PANELS:
+        frames = panel_module.load_panel(panel_id)
+        cells[panel_id] = {}
+        for indicator, rows in scaled.items():
+            for horizon in MACRO_HORIZON_BARS:
+                events = surprise_module.event_returns(frames, rows, horizon=horizon)
+                summary = surprise_module.summarise(events)
+                cells[panel_id][f"{indicator}_{horizon}"] = summary
+                if summary.get("events"):
+                    print(
+                        f"  {panel_id} {indicator}_{horizon}: n={summary['events']} "
+                        f"gross={summary['gross_mean_pips']:+.3f} "
+                        f"net={summary['net_mean_pips']:+.3f} "
+                        f"ic={summary['directional_ic']:+.4f} "
+                        f"p={summary['permutation_p']:.3f}"
+                    )
+    write("s5_macro_surprise", cells)
+    decision = surprise_module.verdict(
+        cells, DECIDING_PANELS, min_events=MIN_EVENTS_PER_DECIDING_PANEL
+    )
+    print(f"  {decision['status']}  reasons={decision['drop_reasons']}")
+    write("s5_macro_verdict", decision)
+
+
+def stage_financing() -> None:
+    """Stage D — probe for public broker financing, and never log in."""
+    from scripts.research.exogenous import financing
+
+    print("stage D: broker financing feasibility")
+    record = financing.probe()
+    for row in record["candidates"]:
+        print(f"  {row['name']:30s} status={row.get('status')} error={row.get('error', '')}")
+    print(f"  {record['status']}")
+    print(f"  {record['carry_family']}")
+    write("s3_financing_feasibility", record)
+
+
 STAGES = {
     "calendar": stage_calendar,
+    "financing": stage_financing,
     "events": stage_events,
+    "macro": stage_macro,
+    "surprise": stage_surprise,
 }
 
 
