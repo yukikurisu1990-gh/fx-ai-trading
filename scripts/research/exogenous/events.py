@@ -68,10 +68,11 @@ MEASURED: tuple[str, ...] = (
 def daily_table(frame: pd.DataFrame) -> pd.DataFrame:
     """One row per trading day, with the two matching keys attached.
 
-    `vol_tercile` is built from a trailing window that is **shifted by one day**,
-    so the label on a day never contains that day. A version that forgot the
-    shift would rank a meeting day by its own volatility, which is exactly the
-    quantity being compared.
+    `trailing_vol` is a window that is **shifted by one day**, so the value on a
+    day never contains that day. A version that forgot the shift would rank a
+    meeting day by its own volatility, which is exactly the quantity being
+    compared. The tercile cut itself is a stratification over the panel — see
+    the comment where it is built.
     """
     day = frame["ts"].dt.floor("D")
     pip = float(frame["pip_size"].iloc[0])
@@ -99,6 +100,12 @@ def daily_table(frame: pd.DataFrame) -> pd.DataFrame:
         .rolling(VOLATILITY_CONTEXT_DAYS, min_periods=VOLATILITY_CONTEXT_DAYS // 2)
         .mean()
     )
+    table["trailing_vol"] = trailing
+    #: The tercile boundaries are cut on the panel's whole distribution. That is
+    #: a **stratification**, not a signal: it decides which days are compared
+    #: with which, the null permutes inside the same strata, and no position is
+    #: taken from it anywhere. The quantity being stratified on — `trailing_vol`
+    #: — is strictly backward-looking, which is the property the tests pin.
     ranked = trailing.rank(pct=True)
     tercile = pd.Series(np.nan, index=table.index)
     for index in range(VOLATILITY_TERCILES):

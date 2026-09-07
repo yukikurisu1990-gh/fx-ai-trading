@@ -544,6 +544,34 @@ in §17 are unchanged and now mean what they say. Nothing about the signals,
 signs, pair mapping, cost or kill rules changes, and no COT statistic had been
 computed when this was written.
 
+### A-3 — the COT entry waits until Monday, because Friday can be a look-ahead
+
+**Made after the Friday-entry numbers were computed and before the Monday-entry
+numbers were, and it is a tightening, not a loosening.**
+
+§5 fixed the COT entry at the first bar after **Friday 20:30 UTC**, on the
+premise that a report as of Tuesday is published the following Friday at 15:30
+America/New_York. The acquired data shows that premise is not always true. Of
+369 report dates, 366 are Tuesdays and **three are Mondays** — holiday weeks, in
+which the CFTC moves the as-of date. Those three are handled correctly by the
+existing rule. The case it does **not** handle is the mirror one: a federal
+holiday later in the report week delays the *release* by one business day while
+the as-of date stays Tuesday, and then a Friday entry is a look-ahead of up to
+three days on that week.
+
+The report itself carries no release timestamp, and no public holiday calendar
+was acquired, so the delay cannot be detected per week from the data in hand.
+The rule is therefore made unconditionally conservative: entry is the first M15
+bar starting after **Monday 20:30 UTC**, three calendar days after the nominal
+Friday. One business day is the largest delay the CFTC applies, so Monday 20:30
+UTC is at or after every possible publication — under standard time it equals
+15:30 America/New_York exactly, and under daylight time it is an hour later.
+
+**The Monday rule governs every COT verdict.** The Friday numbers already
+computed are kept and reported as a timing-sensitivity diagnostic, so the cost
+of the correction is visible; they are not an alternative result and no verdict
+reads them. This ordering is committed here, before the Monday numbers exist.
+
 ### A-2 — COT currency coverage, recorded rather than assumed
 
 **Made before any COT return was computed.** §17 assumed each of the seven

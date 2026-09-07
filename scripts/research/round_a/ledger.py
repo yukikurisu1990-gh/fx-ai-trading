@@ -358,6 +358,100 @@ LEDGER: Final[list[dict[str, Any]]] = [
             "expected-return source to apply it to"
         ),
     },
+    {
+        "id": "H-019",
+        "round": "Exogenous/Stage A",
+        "population": (
+            "days on which a SCHEDULED central-bank decision was announced by the "
+            "Fed, ECB, BoJ or RBA: 40, 40, 40 and 49 dates inside 2021-2025"
+        ),
+        "target": "does a forward-known event population move differently",
+        "condition_family": "matched on day of week AND trailing-volatility tercile",
+        "horizon_family": "one UTC day",
+        "configurations": "one population, six measured quantities",
+        "prespecified": True,
+        "result": (
+            "FORWARD_KNOWN_EVENT_OPPORTUNITY_STRUCTURE_SUPPORTED. Matched "
+            "absolute move 1.5827 and 1.6333, 19 of 19 and 18 of 19 pairs, "
+            "permutation p = 0.005 -- the floor at 200 draws -- on all three "
+            "panels, with the null re-drawing event days inside the same "
+            "weekday and the same volatility tercile. Range 1.46/1.42, realised "
+            "vol 1.47/1.32, tick volume 1.17/1.12. Larger than H-018's 1.33/1.13 "
+            "for a mechanical reason: the BIS effective date sits 2 to 7 days "
+            "after the decision, so H-018's window around it often missed the "
+            "announcement day. STILL NOT AN EDGE and for the same reason: spread "
+            "1.0105 and 1.0165 (wider) and the share of days clearing the round "
+            "trip 1.0042 and 0.9958 -- unity. Movement rises three fifths and "
+            "cost-clearing does not move, because ordinary days already clear. "
+            "Four of eight central banks could not be acquired without a login, "
+            "so GBP, CAD, NZD and CHF have no anchor and GBP_CHF is excluded by "
+            "construction"
+        ),
+        "status": "OPEN - a forward-known opportunity anchor with nothing to point it at",
+    },
+    {
+        "id": "H-020",
+        "round": "Exogenous/Stage C",
+        "population": "84 US CPI releases rebuilt from ALFRED vintages, 24 per deciding panel",
+        "target": "does a real-time inflation surprise carry direction for the USD",
+        "condition_family": "standardised surprise against the Cleveland Fed daily nowcast",
+        "horizon_family": "1h, 4h, 1d from the first bar after 08:30 America/New_York",
+        "configurations": "2 indicators x 3 horizons",
+        "prespecified": True,
+        "result": (
+            "MACRO_SURPRISE_DIRECTIONAL_EDGE_NOT_SUPPORTED. The pre-registered "
+            "sign -- a hot print appreciates the USD -- is positive on the second "
+            "deciding panel (+9.1 and +17.3 gross pips at 1h and 4h, p = 0.050 "
+            "and 0.025) and NEGATIVE on the first, so the family is dropped on a "
+            "panel sign reversal rather than inverted. Also dropped for 24 events "
+            "against a floor of 30 and for being one currency, both of which the "
+            "plan stated before anything was measured. The expectation is a MODEL "
+            "NOWCAST, not a survey consensus: no free source carries consensus "
+            "history, so REAL_TIME_MACRO_SURVEY_CONSENSUS_NOT_AVAILABLE_WITHOUT_A_"
+            "PAID_CONTRACT and none was synthesised. A null here does not refute a "
+            "consensus-surprise hypothesis"
+        ),
+        "status": "CLOSED - not testable at useful breadth on free data",
+    },
+    {
+        "id": "H-021",
+        "round": "Exogenous/Route D",
+        "population": (
+            "369 weekly CFTC Traders in Financial Futures reports, leveraged-money "
+            "net position over open interest, all seven non-USD currencies"
+        ),
+        "target": "is speculative positioning an expected-return source",
+        "condition_family": "contrarian on level/percentile/extreme, momentum on change",
+        "horizon_family": "1 and 4 calendar weeks from the first bar after Monday 20:30 UTC",
+        "configurations": "4 signals x 2 horizons",
+        "prespecified": True,
+        "result": (
+            "COT_EDGE_NOT_SUPPORTED, and it is the closest this programme has "
+            "come. Six of eight cells fail on gross sign, breadth or cost. "
+            "net_extreme_4w -- fade a currency above the 90th percentile of its "
+            "own trailing 104 weeks, hold four weeks -- passes NINE of the ten "
+            "candidate criteria: +24.39 and +24.03 gross, +19.48 and +20.67 net, "
+            "still positive at double cost, same sign on all three panels, 12/20 "
+            "and 14/20 pairs, tail share 0.086 and 0.107, seven currencies, no "
+            "tuned parameter. It fails the tenth. The naive t of 2.62 and 2.94 "
+            "counts 926 and 1217 pair-events from 77 and 94 weeks as independent "
+            "when the pairs share legs and the four-week holds overlap; the "
+            "permutation null that preserves that structure gives p = 0.199 and "
+            "0.149, and the family-max correction over the eight declared cells "
+            "gives 0.701 and 0.498. The design could detect 26.1 and 22.9 pips at "
+            "80% power against an observed 24.4 and 24.0, so this is an "
+            "UNDERPOWERED NULL, not a refutation. Nothing was moved to rescue it. "
+            "Amendment A-3 tightened entry from Friday to Monday 20:30 UTC because "
+            "a holiday later in the report week delays the release while the as-of "
+            "date does not move -- and the conservative entry turned out cheaper, "
+            "8.6 to 4.9 pips round trip on the weekly cells"
+        ),
+        "status": (
+            "OPEN - the only cell in this programme that a bounded pre-registered "
+            "replication could still settle; that is a fresh-data read and needs "
+            "an explicit human act"
+        ),
+    },
 ]
 
 #: Rough cumulative count of configurations evaluated against the 2025

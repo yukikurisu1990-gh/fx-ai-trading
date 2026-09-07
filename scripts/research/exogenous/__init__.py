@@ -63,6 +63,13 @@ BLS_RELEASE_TIMEZONE: Final[str] = "America/New_York"
 #: the conversion can never be optimistic.
 COT_PUBLICATION_UTC_HOUR: Final[int] = 20
 COT_PUBLICATION_UTC_MINUTE: Final[int] = 30
+#: Plan amendment A-3. A federal holiday later in the report week delays the
+#: release by one business day while the as-of date stays Tuesday, and the
+#: report carries no release timestamp to detect that from. Waiting three
+#: calendar days past the nominal Friday puts entry at or after every possible
+#: publication. The Monday rule governs every COT verdict; the Friday numbers
+#: are kept only as a timing-sensitivity diagnostic.
+COT_PUBLICATION_SAFETY_DAYS: Final[int] = 3
 
 # ------------------------------------------------------- macro (plan §7, §8)
 #: The expanding, strictly backward-looking window used to scale a surprise.
@@ -133,6 +140,7 @@ __all__ = [
     "COT_EXTREME_UPPER",
     "COT_HORIZON_DAYS",
     "COT_PERCENTILE_WEEKS",
+    "COT_PUBLICATION_SAFETY_DAYS",
     "COT_PUBLICATION_UTC_HOUR",
     "COT_PUBLICATION_UTC_MINUTE",
     "COT_SIGNALS",

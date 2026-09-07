@@ -215,8 +215,151 @@ def stage_financing() -> None:
     write("s3_financing_feasibility", record)
 
 
+#: The percentile signal needs 104 weeks before the first panel bar.
+COT_FROM = "2019-01-01"
+COT_TO = "2026-01-31"
+
+
+def stage_cot() -> None:
+    """Route D — speculative positioning, the first multi-currency direction test."""
+    from scripts.research.exogenous import (
+        COT_HORIZON_DAYS,
+        COT_SIGNALS,
+        MIN_EVENTS_PER_DECIDING_PANEL,
+        cot,
+    )
+    from scripts.research.round_a import panels as panel_module
+
+    print("route D: COT speculative positioning")
+    levels, provenance = cot.acquire(start=COT_FROM, end=COT_TO)
+    print(
+        f"  weeks={provenance['weeks']} currencies={provenance['currencies']} "
+        f"tuesday_only={provenance['report_is_always_tuesday']}"
+    )
+    scores = cot.currency_scores(levels)
+    write("s6_cot_positioning", {"provenance": provenance, "weeks": list(levels.index)})
+
+    report_dates = list(levels.index)
+    per_panel: dict[str, dict[str, dict[str, Any]]] = {}
+    corrected: dict[str, dict[str, float]] = {}
+    for panel_id in PANELS:
+        frames = panel_module.load_panel(panel_id)
+        per_panel[panel_id] = {}
+        for horizon in COT_HORIZON_DAYS:
+            moves = cot.week_moves(frames, report_dates, horizon=horizon)
+            #: The pre-amendment Friday entry, kept as a timing-sensitivity
+            #: diagnostic. No verdict reads it (plan amendment A-3).
+            friday = cot.week_moves(frames, report_dates, horizon=horizon, safety_days=0)
+            for signal in COT_SIGNALS:
+                summary = cot.summarise(moves, scores[signal], signal=signal)
+                summary["friday_entry_diagnostic"] = {
+                    key: value
+                    for key, value in cot.summarise(
+                        friday, scores[signal], signal=signal, draws=0
+                    ).items()
+                    if key in ("events", "gross_mean_pips", "net_mean_pips", "pairs_gross_positive")
+                }
+                per_panel[panel_id][f"{signal}_{horizon}"] = summary
+                if summary.get("events"):
+                    print(
+                        f"  {panel_id} {signal}_{horizon}: n={summary['events']} "
+                        f"gross={summary['gross_mean_pips']:+.3f} "
+                        f"net={summary['net_mean_pips']:+.3f} "
+                        f"breadth={summary['pairs_gross_positive']}/{summary['pairs']} "
+                        f"p={summary['permutation_p']}"
+                    )
+        corrected[panel_id] = cot.family_max_p(per_panel[panel_id])
+        for cell in per_panel[panel_id].values():
+            cell.pop("null_statistics", None)
+    write("s6_cot_cells", {"cells": per_panel, "family_max_p": corrected})
+    decision = cot.verdict(
+        per_panel, DECIDING_PANELS, min_events=MIN_EVENTS_PER_DECIDING_PANEL, corrected=corrected
+    )
+    print(f"  {decision['status']} surviving={decision['surviving']}")
+    write("s6_cot_verdict", decision)
+
+
+def stage_adjudicate() -> None:
+    """Stage 8 — collect the verdicts, and record what was not run and why."""
+    from scripts.research.exogenous import ML_MIN_EVENTS_PER_DECIDING_PANEL
+
+    print("stage 8: adjudication")
+    events = read("s4_event_verdict")
+    macro = read("s5_macro_verdict")
+    financing = read("s3_financing_feasibility")
+    cot_verdict = read("s6_cot_verdict")
+    cot_cells = read("s6_cot_cells")
+
+    #: Plan §10 gates integration on a directional source that survives §13.
+    #: None did, so M0-M3 is not run -- reporting an integration of nothing
+    #: would be a table with no question behind it.
+    integration_prerequisite = (
+        bool(cot_verdict["surviving"])
+        or macro["status"]
+        == "MACRO_SURPRISE_SIGNAL_PRESENT_BUT_SINGLE_CURRENCY_INSUFFICIENT_BREADTH"
+    )
+
+    #: Plan §11's five prerequisites, evaluated rather than asserted.
+    deciding_cells = [
+        cot_cells["cells"][panel][name]
+        for panel in DECIDING_PANELS
+        for name in cot_cells["cells"][panel]
+    ]
+    ml_prerequisites = {
+        "gross_edge_survives_section_13": bool(cot_verdict["surviving"]),
+        "positive_after_realistic_cost": bool(cot_verdict["surviving"]),
+        "enough_events": all(
+            cell.get("events", 0) >= ML_MIN_EVENTS_PER_DECIDING_PANEL
+            for cell in deciding_cells
+            if cell.get("events")
+        ),
+        "simple_rule_same_sign_on_both_panels": bool(cot_verdict["surviving"]),
+        "measured_heterogeneity_to_exploit": False,
+    }
+
+    statuses = [
+        events["status"],
+        events["cost_advantage_status"],
+        "REAL_TIME_MACRO_SURVEY_CONSENSUS_NOT_AVAILABLE_WITHOUT_A_PAID_CONTRACT",
+        macro["status"],
+        financing["status"],
+        cot_verdict["status"],
+        "ML_NOT_RUN_PREREQUISITES_NOT_MET",
+        "EXOGENOUS_EXPECTED_RETURN_SOURCE_NOT_FOUND",
+    ]
+    record = {
+        "statuses": statuses,
+        "integration_stage_run": integration_prerequisite,
+        "integration_not_run_reason": (
+            None
+            if integration_prerequisite
+            else (
+                "Plan §10 runs the M0-M3 comparison only when a directional "
+                "source survives §13. None did."
+            )
+        ),
+        "ml_prerequisites": ml_prerequisites,
+        "ml_run": all(ml_prerequisites.values()),
+        "always_binding": [
+            "NON_DECISION_BEARING_EXPLORATORY_ONLY",
+            "RESEARCH_SCRATCH_NON_AUTHORITATIVE",
+            "PRODUCTION_READINESS_NOT_CLAIMED",
+            "FRESH_POOL_2016_06_02_TO_2021_04_25_UNTOUCHED",
+            "HISTORICAL_OOS_SLICE_UNTOUCHED",
+            "FUTURE_UNTOUCHED_EPOCH_UNTOUCHED",
+            "FORMAL_CONFIRMATION_NOT_PERFORMED",
+            "NO_BROKER_DEMO_OR_LIVE_CONTACT",
+        ],
+    }
+    for line in statuses:
+        print(f"  {line}")
+    write("s8_adjudication", record)
+
+
 STAGES = {
     "calendar": stage_calendar,
+    "adjudicate": stage_adjudicate,
+    "cot": stage_cot,
     "financing": stage_financing,
     "events": stage_events,
     "macro": stage_macro,
