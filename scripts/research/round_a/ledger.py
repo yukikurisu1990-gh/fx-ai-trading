@@ -200,6 +200,79 @@ LEDGER: Final[list[dict[str, Any]]] = [
         ),
         "status": "CLOSED",
     },
+    {
+        "id": "H-013",
+        "round": "Monetizability/Stage 1A",
+        "population": "excursion anchors on all three seen panels",
+        "target": "sigma-level ABSOLUTE retrace against a matched sign-flip null",
+        "condition_family": "none",
+        "horizon_family": "k in {1.5, 2.0, 3.0} sigma",
+        "configurations": "3 thresholds, pre-registered, 200 null draws",
+        "prespecified": True,
+        "result": (
+            "RETRACE_GEOMETRY_FAMILY_DROPPED_AFTER_CLEAN_RETEST. No threshold "
+            "reaches |z| >= 2 on any panel; the largest is +1.50 and a generated "
+            "random walk reaches +1.74. The SELECTION was measured this time "
+            "rather than inherited: real anchors form faster (z -14.11 at k=1.5), "
+            "so their windows are shorter, and their excursions are smaller "
+            "(z -4.88). Every statistic that reaches significance moves the way "
+            "that mismatch predicts -- the fraction rises as its denominator "
+            "shrinks (z +3.25..+5.05), the adverse extension falls as the window "
+            "shortens (z -3.3..-3.9) -- and the sigma-level retrace, whose "
+            "direction neither predicts, is the one that never does"
+        ),
+        "status": "CLOSED - the fraction's positive is a selection difference",
+    },
+    {
+        "id": "H-014",
+        "round": "Monetizability/Stage 1B",
+        "population": "4 detector-free horizons and 3 anchor thresholds, both deciding panels",
+        "target": "economic headroom: an in-sample linear selector's excess over a matched null",
+        "condition_family": "8 past-only features, fixed",
+        "horizon_family": "q in {1,4,12,48} bars and k in {1.5,2.0,3.0} sigma",
+        "configurations": "7 populations x 2 cost levels, pre-registered",
+        "prespecified": True,
+        "result": (
+            "PATH_STRUCTURE_STATISTICALLY_REAL_BUT_ECONOMICALLY_TOO_SMALL. The "
+            "excess ranges -0.68 to +2.39 round trips per opportunity against a "
+            "0.50 floor: the four horizon populations are 2-4 orders of magnitude "
+            "short, the two lower anchor thresholds are short by 2-8x AND reverse "
+            "sign between the deciding panels. The only population clearing the "
+            "floor has 6-9 events per pair per year, z ~ 0.9, a top-ten-day share "
+            "above 1, a take-all bloc reversal (JPY +17.30 vs non-JPY -3.96 on "
+            "the second panel) and ONE PAIR AT 105% of that panel's net. A "
+            "perfect-foresight oracle clears the round trip by 6-23x and earns "
+            "+1.672 on a pure random walk, which is why the gate does not read it"
+        ),
+        "status": (
+            "CLOSED for fixed-horizon entries held to window end under a linear "
+            "selector on these features; barrier EXITS and non-linear selectors "
+            "are not bounded by it"
+        ),
+    },
+    {
+        "id": "H-015",
+        "round": "Monetizability/Stage 1C",
+        "population": "tick volume over the three seen spans, 34,316,488 M1 rows",
+        "target": "is volume a proxy for volatility, spread and session, or new information",
+        "condition_family": "none",
+        "horizon_family": "next bar",
+        "configurations": "one regression and two forward targets, pre-registered",
+        "prespecified": True,
+        "result": (
+            "TICK_VOLUME_INFORMATION_INCREMENTALLY_DISTINCT. Median R^2 against "
+            "realised volatility, spread, the current move and the session is "
+            "0.52 and 0.46 against a 0.80 redundancy threshold. The residual's "
+            "Spearman with the next bar's ABSOLUTE return is +0.124 and +0.148, "
+            "the same sign on 20 of 20 pairs on both deciding panels, z +10.1 and "
+            "+17.0 against a block-shift null that keeps each series' own serial "
+            "dependence. Against the next bar's SIGNED return it is -0.0014 and "
+            "+0.0013, z -1.3 and +1.3, 12 and 13 pairs of 20"
+        ),
+        "status": (
+            "OPEN - kept as a VOLATILITY feature candidate; it says nothing about direction"
+        ),
+    },
 ]
 
 #: Rough cumulative count of configurations evaluated against the 2025

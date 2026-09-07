@@ -222,6 +222,13 @@ def summarise(anchors: pd.DataFrame) -> dict[str, Any]:
         "median_retrace_sigma": round(float(np.median(absolute)), 5),
         "mean_retrace_fraction": round(float(np.mean(fraction)), 5),
         "median_excursion_sigma": round(float(anchors["excursion_sigma"].median()), 4),
+        #: the two axes on which the detector selects differently on the real
+        #: and null sides. Round B′ measured them post hoc at 20 draws and this
+        #: package's first pass did not measure them at all, so the claim that a
+        #: retrace difference is a *selection* difference was inherited rather
+        #: than tested.
+        "median_bars_to_anchor": round(float(anchors["bars_to_anchor"].median()), 4),
+        "median_observation_bars": round(float(anchors["observation_bars"].median()), 4),
         "median_adverse_extension_sigma": round(
             float(anchors["adverse_extension_sigma"].median()), 4
         ),
@@ -250,11 +257,20 @@ def summarise(anchors: pd.DataFrame) -> dict[str, Any]:
     #: `real − null`, which is the quantity the kill condition reads.
     day = pd.to_datetime(anchors["ts"], utc=True).dt.floor("D")
     load = anchors.groupby(day)["max_retrace_fraction"].sum().abs().sort_values()
+    load_sigma = anchors.assign(_a=absolute).groupby(day)["_a"].sum().abs().sort_values()
     for n in (10, 20):
         if len(load) > n:
             kept = anchors[~day.isin(load.index[-n:])]
             out[f"median_retrace_fraction_excluding_top_{n}_days"] = (
                 round(float(kept["max_retrace_fraction"].median()), 5) if len(kept) else None
+            )
+        #: the same trim on the sigma-level statistic. The monetizability
+        #: package reads its kill condition off that one, and a trim computed on
+        #: the fraction would be trimming a different set of days.
+        if len(load_sigma) > n:
+            kept_sigma = absolute[(~day.isin(load_sigma.index[-n:])).to_numpy()]
+            out[f"median_retrace_sigma_excluding_top_{n}_days"] = (
+                round(float(np.median(kept_sigma)), 5) if len(kept_sigma) else None
             )
     out["anchor_days"] = int(load.size)
     return out
@@ -303,11 +319,24 @@ def null_sanity(
     for k in EXCURSION_SIGMAS:
         result = against_null(panel, k, draws=draws, seed=seed)
         null = result.get("null")
+        #: every statistic a verdict is read off has to appear here. The first
+        #: version reported the fraction and the adverse extension and omitted
+        #: `median_retrace_sigma` -- which is the monetizability package's
+        #: **primary**, so its primary had no sanity check at all. That is the
+        #: same gap B′-2 shipped with.
         out[str(k)] = (
             {
                 "anchors": result["real"]["anchors"],
-                "median_retrace_fraction": null["median_retrace_fraction"],
-                "median_adverse_extension_sigma": null["median_adverse_extension_sigma"],
+                **{
+                    key: null[key]
+                    for key in (
+                        "median_retrace_sigma",
+                        "median_retrace_sigma_excluding_top_10_days",
+                        "median_retrace_fraction",
+                        "median_adverse_extension_sigma",
+                    )
+                    if key in null
+                },
             }
             if null
             else {"anchors": result["real"].get("anchors", 0), "decidable": False}
@@ -350,10 +379,14 @@ def against_null(
     keys = [
         "median_retrace_fraction",
         "median_retrace_sigma",
+        "median_retrace_sigma_excluding_top_10_days",
         "median_retrace_fraction_excluding_top_10_days",
         "median_retrace_fraction_excluding_top_20_days",
         "mean_retrace_fraction",
         "median_adverse_extension_sigma",
+        "median_excursion_sigma",
+        "median_bars_to_anchor",
+        "median_observation_bars",
         "reached_50_rate",
         "reached_100_rate",
         "median_bars_to_50",
@@ -379,14 +412,20 @@ def against_null(
     #: family-max correction; the first version of this round computed one for
     #: B′-4 only. `per_draw_max_abs_z` is exported so the driver can take the
     #: max across thresholds without re-drawing.
-    registered = [key for key in keys if key in null_stats and null_stats[key]["studentized"]]
+    #: A key enters the family only if **every** draw produced it. Filtering per
+    #: key instead gave the rows different lengths, and `np.array` then raised on
+    #: an inhomogeneous shape rather than falling through to the guard below --
+    #: which is what happened the first time a statistic was registered that a
+    #: thin threshold cannot always compute.
+    registered = [
+        key
+        for key in keys
+        if key in null_stats
+        and null_stats[key]["studentized"]
+        and all(sample.get(key) is not None for sample in samples)
+    ]
     if registered:
-        matrix = np.array(
-            [
-                [float(sample[key]) for sample in samples if sample.get(key) is not None]
-                for key in registered
-            ]
-        )
+        matrix = np.array([[float(sample[key]) for sample in samples] for key in registered])
         if matrix.ndim == 2 and matrix.shape[1] == len(samples):
             mean = matrix.mean(axis=1, keepdims=True)
             sd = matrix.std(axis=1, keepdims=True)

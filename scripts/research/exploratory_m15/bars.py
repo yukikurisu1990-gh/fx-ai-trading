@@ -97,6 +97,15 @@ def read_m1(pair: str, *, start: str = DEVELOPMENT_START_UTC, end: str = DEVELOP
     into the slice, and there is no reason for a research loop to walk into it.
     """
     _assert_span(start, end)
+    #: The scan below compares `day` against these two, so they must be the
+    #: **parsed** bounds re-rendered as plain `str`, never the caller's object.
+    #: `utc_date` validates a `str` subclass and returns a `date`; discarding
+    #: that result and comparing the original left a bypass the guards
+    #: themselves do not have — a subclass whose value is the declared span
+    #: passes every guard and then answers `False` to `day < lo` and `day > hi`,
+    #: which reads the whole archive. Measured on all four readers.
+    start = utc_date(start, field="start").isoformat()
+    end = utc_date(end, field="end").isoformat()
     path = source_path(pair)
     if not path.is_file():
         raise FileNotFoundError(f"{path.name} is not present under data/")
