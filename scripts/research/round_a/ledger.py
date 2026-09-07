@@ -273,6 +273,81 @@ LEDGER: Final[list[dict[str, Any]]] = [
             "OPEN - kept as a VOLATILITY feature candidate; it says nothing about direction"
         ),
     },
+    {
+        "id": "H-016",
+        "round": "EconomicEdge/Stage 2",
+        "population": "PAIRS_20 over the three seen panels, weekly to monthly rebalancing",
+        "target": "carry economics from BIS policy rates, spot and interest kept apart",
+        "condition_family": "3 families (pair level, cross-sectional k in {2,3}, carry change)",
+        "horizon_family": "weekly, fortnightly, monthly",
+        "configurations": "12 pre-registered cells -- the entire carry search",
+        "prespecified": True,
+        "result": (
+            "CARRY_EDGE_NOT_SUPPORTED. Only cross_sectional_k3 clears gross, "
+            "same-sign and net on both deciding panels, and in the textbook good "
+            "shape: net +82 / +118 pips per pair with carry income +49 / +121 and "
+            "spot +33 / -2, at 0.18-0.28 turnover a year and 0.5-0.9 pips of cost. "
+            "It fails anyway: JPY pairs return +262 / +384 against non-JPY "
+            "+4.2 / +4.0, a ratio of 63x and 95x, so it is a SHORT-YEN trade "
+            "wearing a diversified label with 3.2-4.6 effective independent "
+            "pairs; and the fourth sub-period of BOTH deciding panels is a large "
+            "loss (-95.6 and -72.8 against +50 to +88 in the first three), which "
+            "is the carry unwind. pair_level earned +218 / +522 of interest and "
+            "gave it back on spot on one panel and not the other; carry_change "
+            "reverses sign between panels at every frequency"
+        ),
+        "status": "CLOSED - over these panels the G10 carry premium IS the short-yen trade",
+    },
+    {
+        "id": "H-017",
+        "round": "EconomicEdge/Stage 3-4",
+        "population": "daily tick-volume state, one carry rebalance ahead",
+        "target": "does volume say WHEN a slow signal is worth holding",
+        "condition_family": "5 representations",
+        "horizon_family": "3 targets, none of them direction",
+        "configurations": "15 pre-registered cells, plus 4 integration models",
+        "prespecified": True,
+        "result": (
+            "Volume forecasts next-week realised volatility strongly -- rho +0.14 "
+            "and +0.16, z +9.2 and +10.9, 20 of 20 pairs on both deciding panels "
+            "-- and forecasts whether the move will exceed the round trip not at "
+            "all: rho -0.027 to +0.019 with 9 to 13 pairs of 20, a coin flip. The "
+            "spread widens with volume too, so the only target that pays for a "
+            "trade is the one volume cannot see. As a filter it is WORSE than the "
+            "unfiltered carry base in 15 of 15 cells across all three panels, "
+            "turning +120.3 into -49.3 to -155.6 on the second deciding panel, "
+            "because it removes 51-66% of the days and a carry position accrues "
+            "its interest every day it is held. Time in the market is the return"
+        ),
+        "status": "CLOSED - volume is a volatility variable, not a timing one",
+    },
+    {
+        "id": "H-018",
+        "round": "EconomicEdge/Route C",
+        "population": "days within +/-1 of a G10 policy-rate CHANGE, 108 changes",
+        "target": "do scheduled events define an exogenous opportunity population",
+        "condition_family": "none",
+        "horizon_family": "one day",
+        "configurations": "one comparison, event days against all others",
+        "prespecified": False,
+        "result": (
+            "CALENDAR_EVENT_OPPORTUNITY_STRUCTURE_SUPPORTED, for the OPPORTUNITY "
+            "layer only. Absolute move 1.55x and 1.31x larger AND the spread "
+            "0.92x and 0.94x NARROWER, so move-net-of-cost is 1.60x and 1.35x "
+            "with 19 of 19 and 18 of 20 pairs agreeing. That is the first "
+            "opportunity variable in this programme whose cost works FOR it -- "
+            "volume-selected busy days come with wider spreads because volume "
+            "rises in thin conditions too, while scheduled decisions happen in "
+            "the deepest liquidity. But the cost-clearing RATE rises only 1.04x, "
+            "because 91% of ordinary days already move more than the round trip: "
+            "magnitude was never the binding constraint, direction is, and "
+            "nothing here addresses it. The population is rate CHANGES, not "
+            "scheduled meetings, so it is biased toward surprises"
+        ),
+        "status": (
+            "OPEN - a working opportunity anchor with no expected-return source to apply it to"
+        ),
+    },
 ]
 
 #: Rough cumulative count of configurations evaluated against the 2025

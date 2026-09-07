@@ -24,6 +24,7 @@ from scripts.research.economic_edge import (
     REBALANCE_BARS,
     TAIL_SHARE_CEILING,
     VOLUME_REPRESENTATIONS,
+    calendar_events,
     carry,
     opportunity,
     rates,
@@ -319,12 +320,26 @@ def main() -> dict[str, Any]:
         lambda: _integration(with_volume, rate_panel, days, base_cell, base_rebalance),
     )
 
+    # ------------------------------------------------------ Route C: calendar
+    #: carry is weak and volume times nothing, so the next source has to be
+    #: exogenous rather than another transform of the same prices
+    events = stage(
+        "s5_calendar_population",
+        lambda: {
+            panel_id: calendar_events.event_population(frames, rate_panel)
+            for panel_id, frames in with_volume.items()
+        },
+    )
+    calendar_verdict = calendar_events.verdict(events, DECIDING_PANELS)
+    write("s5_calendar_verdict", calendar_verdict)
+
     summary = {
         "stage_1": "POLICY_RATE_SOURCE_ACQUIRED_ALL_EIGHT_CURRENCIES",
         "stage_2": verdict["status"],
         "stage_2_surviving_cells": verdict["surviving"],
         "stage_3": integration["stage_3_status"],
         "stage_4": integration["status"],
+        "route_c_calendar": calendar_verdict.get("status", "NOT_DECIDABLE"),
     }
     write("stage_summary", summary)
     return summary
