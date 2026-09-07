@@ -112,9 +112,15 @@ def read_m1_volume(panel: str, pair: str, *, start: str | None = None, end: str 
     hi = route.end if end is None else end
     #: the route's own guard, not a copy of its bounds
     route.guard(lo, hi)
-    #: and the parsed dates, so the scan below compares equal-width prefixes
-    utc_date(lo, field="volume read start")
-    utc_date(hi, field="volume read end")
+    #: The scan below compares `day` against these two, so they must be the
+    #: **parsed** bounds re-rendered as plain `str`, never the caller's object.
+    #: `utc_date` validates a `str` subclass and returns a `date`; discarding
+    #: that result and comparing the original left a bypass the guards
+    #: themselves do not have — a subclass whose value is the declared span
+    #: passes every guard and then answers `False` to `day < lo` and `day > hi`,
+    #: which reads the whole archive. Measured on all four readers.
+    lo = utc_date(lo, field="volume read start").isoformat()
+    hi = utc_date(hi, field="volume read end").isoformat()
 
     path = route.source(pair)
     if not path.is_file():
@@ -196,16 +202,25 @@ def build_cache(panel: str, pairs: tuple[str, ...] = bars_module.PAIRS) -> dict[
     }
     for pair in pairs:
         target = CACHE_DIR / f"volume_{panel}_{pair}.parquet"
+        rows_read = None
         if target.is_file():
             frame = pd.read_parquet(target)
         else:
             m1 = read_m1_volume(panel, pair)
             assert_rows_in_span(m1, panel)
+            rows_read = int(len(m1))
             frame = to_m15_volume(m1)
-            assert_rows_in_span(frame, panel)
             frame.to_parquet(target, index=False)
+        #: validated on **both** branches. A cached parquet is a file on disk
+        #: like any other, and validating only the branch that just produced it
+        #: means a stale or mislabelled cache is served unchecked -- which
+        #: reported the OOS slice and the forward epoch as this panel's data
+        #: when a review role probed it.
+        assert_rows_in_span(frame, panel)
         record["pairs"][pair] = {
             "m15_bars": int(len(frame)),
+            "m1_rows_read": rows_read,
+            "served_from_cache": rows_read is None,
             "measured_span": [
                 str(frame["ts"].min().date()),
                 str(frame["ts"].max().date()),

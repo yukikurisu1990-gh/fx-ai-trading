@@ -125,9 +125,11 @@ def verdict(
             else None
         )
 
-        survives = bool(
-            clause_1 and clause_2 and clause_3 and clause_4 is not False and clause_5 is not False
-        )
+        #: every clause must be **True**, not merely "not False". Treating an
+        #: unavailable clause as a pass let all three thresholds survive on
+        #: clauses that were never evaluated -- and that is exactly the state
+        #: Stage 1A was in before the trimmed statistic existed at all.
+        survives = clause_1 and clause_2 and clause_3 and clause_4 is True and clause_5 is True
         if survives:
             surviving.append(k)
         out[k] = {

@@ -48,6 +48,10 @@ from scripts.research.round_b_prime import nulls, retrace
 
 CLASSIFICATION = "UPPER_BOUND_DIAGNOSTIC_ONLY"
 
+#: measured from the panels themselves: 624 trading days over two calendar
+#: years. FX trades five days a week, not the 252 of an equity calendar.
+TRADING_DAYS_PER_YEAR: float = 312.0
+
 #: B-3's features. Past-only, small, and fixed here rather than searched. Each is
 #: measurable at the decision bar; none uses the bar the position opens on.
 FEATURE_NAMES: tuple[str, ...] = (
@@ -243,7 +247,10 @@ def bounds(
 
     return {
         "events": count,
-        "events_per_year": round(count / max(trading_days, 1) * 252.0, 2),
+        #: the panels carry 624 trading days over two calendar years, so their
+        #: own rate is about 312 a year. Scaling by the 252-day equity
+        #: convention understated every frequency in this package by 24%.
+        "events_per_year": round(count / max(trading_days, 1) * TRADING_DAYS_PER_YEAR, 2),
         "median_cost": round(float(np.median(cost)), 4),
         "b0_take_all_gross": round(float(gross.sum()), 1),
         "b0_take_all_net": round(float(net.sum()), 1),
@@ -258,10 +265,13 @@ def bounds(
         "b3_selected": selection["selected"],
         "max_drawdown": round(float((equity - np.maximum.accumulate(equity)).min()), 1),
         "b1_tail_share_top10_days": round(_tail_share(events["ts"], take_skip), 4),
+        #: E3 is defined on **B-3's net**. The first version took the positive
+        #: parts of the taken events, which is a different and always larger
+        #: base -- and meaningless where B-3's net is negative, as it is on
+        #: `horizon_4`, where it still reported a share of 0.96.
         "b3_top10_day_share": round(
             _tail_share(
-                events["ts"],
-                np.where(taken, np.maximum(net, 0.0), 0.0) if taken is not None else take_skip * 0,
+                events["ts"], np.where(taken, net, 0.0) if taken is not None else net * 0.0
             ),
             4,
         ),
@@ -279,8 +289,15 @@ def _average(rows: list[dict[str, Any]]) -> dict[str, Any]:
     return out
 
 
-def _pool(rows: list[dict[str, Any]]) -> dict[str, Any]:
-    """Per-pair rows pooled to the per-pair mean the programme reports in."""
+def _pool(rows: list[dict[str, Any]], names: list[str] | None = None) -> dict[str, Any]:
+    """Per-pair rows pooled to the per-pair mean the programme reports in.
+
+    A mean over pairs hides concentration completely: on one panel a single
+    pair contributed more than the whole population's net, and the pooled row
+    showed a positive mean and a positive-pair count with no sign of it. So the
+    largest single pair's share and the JPY / non-JPY split are carried here,
+    and the split is what E4 reads.
+    """
     if not rows:
         return {"pairs": 0}
     keys = [k for k in rows[0] if isinstance(rows[0][k], int | float)]
@@ -291,6 +308,24 @@ def _pool(rows: list[dict[str, Any]]) -> dict[str, Any]:
     pooled["pairs"] = len(rows)
     pooled["pairs_b0_positive"] = int(sum(1 for r in rows if r["b0_take_all_net"] > 0))
     pooled["pairs_b3_positive"] = int(sum(1 for r in rows if r["b3_selection_net"] > 0))
+
+    for label, key in (("b0", "b0_take_all_net"), ("b3", "b3_selection_net")):
+        totals = np.array([r[key] for r in rows if np.isfinite(r[key])])
+        total = float(totals.sum())
+        pooled[f"{label}_largest_pair_share"] = (
+            round(float(totals.max() / total), 4) if total > 0 and totals.size else None
+        )
+    if names and len(names) == len(rows):
+        for label, key in (("b0", "b0_net_per_event"), ("b3", "b3_net_per_event")):
+            for bloc, chosen in (
+                ("JPY", [r for r, n in zip(rows, names, strict=True) if "JPY" in n]),
+                ("non_JPY", [r for r, n in zip(rows, names, strict=True) if "JPY" not in n]),
+            ):
+                values = [r[key] for r in chosen if np.isfinite(r[key])]
+                pooled[f"{label}_{bloc}_net_per_event"] = (
+                    round(float(np.mean(values)), 4) if values else None
+                )
+                pooled[f"{label}_{bloc}_pairs"] = len(values)
     return pooled
 
 
@@ -310,12 +345,18 @@ def panel_bounds(
     the same arrays.
     """
     per_pair: dict[str, dict[str, list[dict[str, Any]]]] = {f"x{m}": {} for m in cost_multipliers}
+    #: which pair each row came from, so the bloc split E4 reads is available
+    #: without re-running anything
+    who: dict[str, dict[str, list[str]]] = {f"x{m}": {} for m in cost_multipliers}
+    current = {"pair": ""}
 
     def record(population: str, multiplier: float, row: dict[str, Any] | None) -> None:
         if row is not None:
             per_pair[f"x{multiplier}"].setdefault(population, []).append(row)
+            who[f"x{multiplier}"].setdefault(population, []).append(current["pair"])
 
-    for frame in panel.values():
+    for pair, frame in panel.items():
+        current["pair"] = pair
         built = basis(frame)
         for horizon in horizons:
             collected: dict[float, list[dict[str, Any]]] = {m: [] for m in cost_multipliers}
@@ -347,7 +388,10 @@ def panel_bounds(
                 )
 
     return {
-        level: {population: _pool(rows) for population, rows in populations.items()}
+        level: {
+            population: _pool(rows, who[level].get(population))
+            for population, rows in populations.items()
+        }
         for level, populations in per_pair.items()
     }
 

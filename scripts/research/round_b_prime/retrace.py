@@ -222,6 +222,13 @@ def summarise(anchors: pd.DataFrame) -> dict[str, Any]:
         "median_retrace_sigma": round(float(np.median(absolute)), 5),
         "mean_retrace_fraction": round(float(np.mean(fraction)), 5),
         "median_excursion_sigma": round(float(anchors["excursion_sigma"].median()), 4),
+        #: the two axes on which the detector selects differently on the real
+        #: and null sides. Round B′ measured them post hoc at 20 draws and this
+        #: package's first pass did not measure them at all, so the claim that a
+        #: retrace difference is a *selection* difference was inherited rather
+        #: than tested.
+        "median_bars_to_anchor": round(float(anchors["bars_to_anchor"].median()), 4),
+        "median_observation_bars": round(float(anchors["observation_bars"].median()), 4),
         "median_adverse_extension_sigma": round(
             float(anchors["adverse_extension_sigma"].median()), 4
         ),
@@ -377,6 +384,9 @@ def against_null(
         "median_retrace_fraction_excluding_top_20_days",
         "mean_retrace_fraction",
         "median_adverse_extension_sigma",
+        "median_excursion_sigma",
+        "median_bars_to_anchor",
+        "median_observation_bars",
         "reached_50_rate",
         "reached_100_rate",
         "median_bars_to_50",

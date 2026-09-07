@@ -82,7 +82,12 @@ def write(name: str, payload: Any) -> None:
 
 
 def _economic_gate(referenced: dict[str, dict[str, Any]]) -> dict[str, Any]:
-    """Plan §11 as amended by A-1: E1′, E2′, E3 and E4, all on B-3.
+    """Plan §11 as amended by A-1: E1′, E3 and **E4**, all on B-3.
+
+    E4 — both blocs positive — was in the frozen plan and in §15's entry
+    condition C, and the first version of this function did not compute it.
+    That was the clause that killed the one population which cleared E1′ on a
+    point estimate, and it was reported as evaluated when it was not.
 
     Economic materiality decides the **consequence** here rather than a
     classification, so unlike Round B′ there is no risk of it choosing a case.
@@ -109,20 +114,61 @@ def _economic_gate(referenced: dict[str, dict[str, Any]]) -> dict[str, Any]:
         )
         tail = {panel: rows[panel]["real"].get("b3_top10_day_share") for panel in DECIDING_PANELS}
         e3 = all(v is not None and v == v and v < TAIL_SHARE_CEILING for v in tail.values())
+
+        blocs = {
+            panel: {
+                bloc: rows[panel]["real"].get(f"b3_{bloc}_net_per_event")
+                for bloc in ("JPY", "non_JPY")
+            }
+            for panel in DECIDING_PANELS
+        }
+        values = [v for row in blocs.values() for v in row.values()]
+        e4 = (
+            all(v is not None and v > 0 for v in values)
+            if all(v is not None for v in values)
+            else None
+        )
+        #: the largest single pair's share, reported beside E4 because a bloc
+        #: mean can be positive while one pair carries more than the total
+        concentration = {
+            panel: rows[panel]["real"].get("b3_largest_pair_share") for panel in DECIDING_PANELS
+        }
+
         populations[population] = {
             "decidable": True,
             "b3_excess_over_null": excess,
             "b3_excess_in_costs": {k: round(v, 4) for k, v in in_costs.items() if v is not None},
             "E1_excess_at_least_half_a_cost": e1,
             "E3_tail_share_below_ceiling": e3,
+            "E4_both_blocs_positive": e4,
             "b3_top10_day_share": tail,
+            "b3_bloc_net_per_event": blocs,
+            "b3_largest_pair_share": concentration,
         }
     return populations
 
 
+def _passing(gate: dict[str, dict[str, Any]]) -> list[str]:
+    """The populations that clear **every** clause, at both cost levels.
+
+    Extracted from `main` so it can be tested: E4 was missing from the gate
+    entirely at first, and a conjunct inlined in a driver is a conjunct nothing
+    can measure.
+    """
+    return [
+        population
+        for population, row in gate["x1.0"].items()
+        if row.get("decidable")
+        and row.get("E1_excess_at_least_half_a_cost")
+        and row.get("E3_tail_share_below_ceiling")
+        and row.get("E4_both_blocs_positive")
+        and gate["x2.0"].get(population, {}).get("E1_excess_at_least_half_a_cost")
+    ]
+
+
 def main() -> dict[str, Any]:
     # ------------------------------------------------- sanity, before anything
-    stage("s1a_null_sanity", lambda: retrace.null_sanity(draws=40))
+    stage("s1a_null_sanity", lambda: retrace.null_sanity(draws=NULL_DRAWS))
     stage("s1b_noise_reference", lambda: oracle.noise_reference(horizons=BOUND_HORIZONS, seed=SEED))
     stage(
         "s1b_signal_reference", lambda: oracle.signal_reference(horizons=BOUND_HORIZONS, seed=SEED)
@@ -199,14 +245,7 @@ def main() -> dict[str, Any]:
         f"x{multiplier}": _economic_gate(referenced[f"x{multiplier}"])
         for multiplier in COST_MULTIPLIERS
     }
-    passing = [
-        population
-        for population, row in gate["x1.0"].items()
-        if row.get("decidable")
-        and row.get("E1_excess_at_least_half_a_cost")
-        and row.get("E3_tail_share_below_ceiling")
-        and gate["x2.0"].get(population, {}).get("E1_excess_at_least_half_a_cost")
-    ]
+    passing = _passing(gate)
     stage_1b_verdict = {
         "gate": gate,
         "populations_passing": passing,
@@ -219,6 +258,10 @@ def main() -> dict[str, Any]:
     write("s1b_verdict", stage_1b_verdict)
 
     # --------------------------------------------------------------- Stage 1C
+    stage(
+        "s1c_read_record",
+        lambda: {panel_id: volume_reader.build_cache(panel_id) for panel_id in PANELS},
+    )
     with_volume = {
         panel_id: {
             pair: volume_info.attach(frame, volume_reader.load(panel_id, pair))

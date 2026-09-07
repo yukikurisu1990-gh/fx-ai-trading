@@ -144,15 +144,34 @@ def _residuals(panel: dict[str, pd.DataFrame]) -> dict[str, tuple[np.ndarray, di
     return out
 
 
+def _circular_block_shift(values: np.ndarray, rng: np.random.Generator) -> np.ndarray:
+    """Rotate the series. Destroys the pairing, keeps its own autocorrelation.
+
+    An i.i.d. permutation destroys the residual's serial dependence as well as
+    its pairing with the target, and the residual is strongly dependent — its
+    lag-1 autocorrelation is 0.89 and 0.84 on the two deciding panels. So the
+    permutation null's spread is far narrower than the sampling distribution of
+    the statistic, and the studentized value comes out too large. Measured on
+    five pairs: `null_sd` 0.00207 under permutation against 0.02348 under this,
+    an eleven-fold understatement.
+    """
+    offset = int(rng.integers(1, len(values)))
+    return np.concatenate([values[offset:], values[:offset]])
+
+
 def incremental(
     panel: dict[str, pd.DataFrame], *, draws: int = NULL_DRAWS, seed: int = SEED
 ) -> dict[str, Any]:
     """Does what volume knows *beyond* those variables relate to the next bar?
 
-    The residual is fitted once per pair and then permuted, because a shuffle
-    destroys the pairing while keeping both marginals exactly — which is the
-    right reference for a rank statistic, and cheap enough to run at the full
-    draw count.
+    Two nulls, and the conservative one decides. Plan §14 specified the N2 sign
+    flip, which cannot be used here: N2 preserves `|r_t|`, the trailing σ, the
+    spread and the session **exactly**, so both the volume residual and
+    `abs_next_return` are identical under it and the test has no variance at
+    all. The frozen gate was ill-posed on that point. The substitute reported
+    first is an i.i.d. rank permutation; a circular block shift is reported
+    beside it and is the one the verdict reads, because it keeps each series'
+    own serial dependence.
     """
     residuals = _residuals(panel)
     out: dict[str, Any] = {}
@@ -171,29 +190,45 @@ def incremental(
         if not observed:
             continue
         real = float(np.mean(observed))
-        #: rank once, then permute the ranks: Spearman on permuted ranks is a
-        #: Pearson correlation, so the null costs one dot product per draw
+        #: rank once, then resample the ranks: Spearman on ranks is a Pearson
+        #: correlation, so each draw costs one dot product
         ranked = [
             (scipy_stats.rankdata(left), scipy_stats.rankdata(right)) for left, right in usable
         ]
-        samples: list[float] = []
-        for _ in range(draws):
-            drawn = []
-            for left_rank, right_rank in ranked:
-                shuffled = rng.permutation(left_rank)
-                drawn.append(float(np.corrcoef(shuffled, right_rank)[0, 1]))
-            samples.append(float(np.mean(drawn)))
-        mean, sd = float(np.mean(samples)), float(np.std(samples))
-        out[target_name] = {
+
+        def sample(resample, pairs: list[tuple[np.ndarray, np.ndarray]] = ranked) -> list[float]:
+            drawn: list[float] = []
+            for _ in range(draws):
+                per_pair = [
+                    float(np.corrcoef(resample(left_rank, rng), right_rank)[0, 1])
+                    for left_rank, right_rank in pairs
+                ]
+                drawn.append(float(np.mean(per_pair)))
+            return drawn
+
+        row: dict[str, Any] = {
             "real": round(real, 6),
             "per_pair": [round(v, 5) for v in observed],
             "pairs_same_sign": int(sum(1 for v in observed if (v > 0) == (real > 0))),
             "pairs": len(observed),
-            "null_mean": round(mean, 6),
-            "null_sd": round(sd, 6),
-            "studentized": round((real - mean) / sd, 3) if sd > 0 else None,
-            "draws": len(samples),
+            "draws": draws,
         }
+        for label, resample in (
+            ("permutation", lambda values, generator: generator.permutation(values)),
+            ("block_shift", _circular_block_shift),
+        ):
+            samples = sample(resample)
+            mean, sd = float(np.mean(samples)), float(np.std(samples))
+            row[label] = {
+                "null_mean": round(mean, 6),
+                "null_sd": round(sd, 6),
+                "studentized": round((real - mean) / sd, 3) if sd > 0 else None,
+            }
+        #: the conservative one is what any verdict reads
+        row["studentized"] = row["block_shift"]["studentized"]
+        row["null_sd"] = row["block_shift"]["null_sd"]
+        row["null_mean"] = row["block_shift"]["null_mean"]
+        out[target_name] = row
     return out
 
 
