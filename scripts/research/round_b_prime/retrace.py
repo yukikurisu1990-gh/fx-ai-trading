@@ -312,11 +312,24 @@ def null_sanity(
     for k in EXCURSION_SIGMAS:
         result = against_null(panel, k, draws=draws, seed=seed)
         null = result.get("null")
+        #: every statistic a verdict is read off has to appear here. The first
+        #: version reported the fraction and the adverse extension and omitted
+        #: `median_retrace_sigma` -- which is the monetizability package's
+        #: **primary**, so its primary had no sanity check at all. That is the
+        #: same gap B′-2 shipped with.
         out[str(k)] = (
             {
                 "anchors": result["real"]["anchors"],
-                "median_retrace_fraction": null["median_retrace_fraction"],
-                "median_adverse_extension_sigma": null["median_adverse_extension_sigma"],
+                **{
+                    key: null[key]
+                    for key in (
+                        "median_retrace_sigma",
+                        "median_retrace_sigma_excluding_top_10_days",
+                        "median_retrace_fraction",
+                        "median_adverse_extension_sigma",
+                    )
+                    if key in null
+                },
             }
             if null
             else {"anchors": result["real"].get("anchors", 0), "decidable": False}
@@ -389,14 +402,20 @@ def against_null(
     #: family-max correction; the first version of this round computed one for
     #: B′-4 only. `per_draw_max_abs_z` is exported so the driver can take the
     #: max across thresholds without re-drawing.
-    registered = [key for key in keys if key in null_stats and null_stats[key]["studentized"]]
+    #: A key enters the family only if **every** draw produced it. Filtering per
+    #: key instead gave the rows different lengths, and `np.array` then raised on
+    #: an inhomogeneous shape rather than falling through to the guard below --
+    #: which is what happened the first time a statistic was registered that a
+    #: thin threshold cannot always compute.
+    registered = [
+        key
+        for key in keys
+        if key in null_stats
+        and null_stats[key]["studentized"]
+        and all(sample.get(key) is not None for sample in samples)
+    ]
     if registered:
-        matrix = np.array(
-            [
-                [float(sample[key]) for sample in samples if sample.get(key) is not None]
-                for key in registered
-            ]
-        )
+        matrix = np.array([[float(sample[key]) for sample in samples] for key in registered])
         if matrix.ndim == 2 and matrix.shape[1] == len(samples):
             mean = matrix.mean(axis=1, keepdims=True)
             sd = matrix.std(axis=1, keepdims=True)
