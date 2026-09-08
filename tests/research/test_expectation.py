@@ -417,3 +417,28 @@ def test_the_family_max_uses_the_shared_draws() -> None:
 def test_the_power_multiplier_is_the_two_sided_eighty_percent_constant() -> None:
     assert pytest.approx(2.802, abs=0.002) == POWER_MULTIPLIER
     assert SURPRISE_SCALE_RELEASES == 24
+
+
+def test_the_flagged_families_are_recorded_and_are_real_families() -> None:
+    """The robustness check that drops them has to be reproducible, not ad hoc."""
+    from scripts.research.expectation import FLAGGED_FAMILIES
+
+    assert set(FLAGGED_FAMILIES) == {"gdp", "pce"}
+    assert set(FLAGGED_FAMILIES) <= set(RELEASE_FAMILIES)
+
+
+def test_the_forecast_audit_can_fail_and_says_so() -> None:
+    """A rule that cannot fire is not a rule; this one fired on the real archive."""
+    contaminated = pd.DataFrame(
+        {
+            "Currency": ["USD"] * 40,
+            "Event": ["CPI m/m"] * 40,
+            #: the forecast IS the actual: the failure mode the rule exists for
+            "Actual": [f"{0.1 * (index % 5):.1f}%" for index in range(40)],
+            "Forecast": [f"{0.1 * (index % 5):.1f}%" for index in range(40)],
+            "Previous": [f"{0.1 * ((index + 2) % 5):.1f}%" for index in range(40)],
+        }
+    )
+    audit = consensus.audit_forecasts(contaminated)
+    assert audit["verdict"] == "FORECAST_BEHAVIOUR_INCONSISTENT_WITH_A_PRE_RELEASE_SURVEY"
+    assert audit["per_event"]["CPI m/m"]["exact_equal_share"] == pytest.approx(1.0)

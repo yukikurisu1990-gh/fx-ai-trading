@@ -120,6 +120,14 @@ RELEASE_FAMILIES: Final[dict[str, dict[str, object]]] = {
     "gdp": {"series": "GDPC1", "events": ("Advance GDP q/q", "Prelim GDP q/q")},
 }
 
+#: The two families the pre-registered forecast audit flags, recorded so the
+#: robustness check that drops them is reproducible rather than ad hoc.
+#: `gdp` trips the naive-benchmark ratio because the previous quarter is a
+#: useless benchmark for quarterly growth, not because the forecast is
+#: contaminated; `pce` has the highest exact-match share because core PCE is
+#: largely computable from CPI and PPI, both already public when it prints.
+FLAGGED_FAMILIES: Final[tuple[str, ...]] = ("gdp", "pce")
+
 #: The archive's own impact label, used only to define the high-impact subset
 #: reported beside the pooled cell. Not a weight and not a filter on the
 #: primary.
@@ -195,6 +203,7 @@ __all__ = [
     "FAMILYWISE_ALPHA",
     "MACRO_CELLS",
     "MACRO_HORIZONS_EXCLUDED_FOR_POWER",
+    "FLAGGED_FAMILIES",
     "HIGH_IMPACT_FAMILIES",
     "MACRO_HORIZON_BARS",
     "MACRO_PRIMARY_CELLS",

@@ -114,6 +114,7 @@ def stage_consensus() -> None:
 def stage_macro() -> None:
     """Family 1 — power first, then the pre-registered directional test."""
     from scripts.research.expectation import (
+        FLAGGED_FAMILIES,
         HIGH_IMPACT_FAMILIES,
         MACRO_HORIZON_BARS,
         MIN_RELEASES_PER_DECIDING_PANEL,
@@ -154,7 +155,18 @@ def stage_macro() -> None:
                     lambda names: any(name in HIGH_IMPACT_FAMILIES for name in names)
                 )
             ]
-            plans = [("pooled", pooled), ("high_impact", high)] + [
+            #: A robustness check forced by the integrity flag, not by a result.
+            #: The pre-registered forecast audit fired on two families whose
+            #: naive benchmark is meaningless (quarterly GDP) or whose inputs
+            #: are already public before the print (core PCE). Contamination of
+            #: a forecast ATTENUATES a surprise rather than manufacturing one,
+            #: so it makes a null more likely; dropping the flagged families is
+            #: therefore the conservative direction and is reported beside the
+            #: primary rather than instead of it.
+            clean = pooled[
+                pooled["families"].apply(lambda names: not set(names) <= set(FLAGGED_FAMILIES))
+            ]
+            plans = [("pooled", pooled), ("pooled_ex_flagged", clean), ("high_impact", high)] + [
                 (family, pooled[pooled["families"].apply(lambda names, f=family: f in names)])
                 for family in families
             ]
