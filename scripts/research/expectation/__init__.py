@@ -20,9 +20,15 @@ question into an ambiguous null that invites another purchase. Every threshold
 below was set from a **design power curve** measured on the unconditional
 dispersion of event-time returns, before any expectation data existed:
 
-* at `N ≈ 96` release-times the design detects a break-even effect at **1h** and
-  **4h**, marginally at 12h, and **not at all at 1d**;
-* so 12h and 1d are excluded a priori, and no 1d number is reported as evidence.
+* the first version of that curve was built on **raw pair returns** and
+  understated every entry by about three times. Amendment A-1 replaced it with
+  USD-oriented returns, which is the quantity the test trades;
+* measured correctly, at 89 release-times the 1h MDE is **6.16 / 6.04 pips**
+  against a **4.27 / 4.09** break-even, so 89 events cannot decide and about
+  **190** are needed;
+* 4h needs 482-583 events, which no US release population reaches, so **4h, 12h
+  and 1d are excluded a priori** and no number from them is reported as
+  evidence.
 
 A single-currency test can **kill** but never **promote**: killing needs power,
 promotion needs breadth, and promotion spends the fresh pool.
@@ -40,9 +46,13 @@ BASE_MASTER: Final[str] = "941fd0eca21fda6436b5f33a6a71bb3f02ea98eb"
 SEED: Final[int] = 20260909
 
 # ------------------------------------------------- decision-grade thresholds
-#: Plan §4.1. Below this the macro test is not run at all — an underpowered null
-#: is the outcome this package exists to avoid.
+#: Plan §4.1, superseded as a sufficiency test by the measured figure below:
+#: it remains the floor under which the test is not run at all.
 MIN_RELEASES_PER_DECIDING_PANEL: Final[int] = 90
+#: Amendment A-1, measured rather than assumed: at 89 events the 1h MDE is
+#: 6.16/6.04 pips against a 4.27/4.09 break-even, so the design needs about
+#: this many release-times before it can decide anything.
+RELEASES_NEEDED_FOR_1H_POWER: Final[int] = 190
 #: Plan §4.2. The free rates test needs this many usable days per panel.
 MIN_DAYS_PER_DECIDING_PANEL: Final[int] = 400
 #: Plan §2. One currency kills; four promote.
@@ -50,22 +60,27 @@ MIN_CURRENCIES_TO_KILL: Final[int] = 1
 MIN_CURRENCIES_TO_PROMOTE: Final[int] = 4
 
 # --------------------------------------------------------- horizons (plan §3)
-#: In M15 bars. 12h and 1d are absent by design, not by omission: at the
-#: available event count their minimum detectable effect (3.9-15.4 pips) sits
-#: at or above the x2-cost break-even (about 4.1-4.4 pips), so they could not
-#: have decided anything.
-MACRO_HORIZON_BARS: Final[dict[str, int]] = {"1h": 4, "4h": 16}
+#: In M15 bars. One horizon, by amendment A-1: everything longer needs an event
+#: count no US release population reaches, and the economics agrees -- a
+#: tradeable announcement effect lives in the hour after the print.
+MACRO_HORIZON_BARS: Final[dict[str, int]] = {"1h": 4}
 #: Excluded a priori, recorded so the omission is legible as a decision.
 MACRO_HORIZONS_EXCLUDED_FOR_POWER: Final[dict[str, str]] = {
-    "12h": "MDE 2.9-5.5 pips against a 4.1-4.4 pip break-even at N~96 - marginal",
-    "1d": "MDE 4.2-7.5 pips against the same break-even at N~96 - underpowered",
+    "4h": (
+        "amendment A-1: measured MDE 9.93/10.58 pips against a 4.1-4.3 break-even; "
+        "needs 482-583 release-times per deciding panel, which no US population reaches"
+    ),
+    "12h": "wider still than 4h at the same event count",
+    "1d": "wider still than 12h at the same event count",
 }
 #: The free rates lead test holds one day.
 RATES_HORIZON_BARS: Final[int] = 96
 
 # ----------------------------------------------------- release-time semantics
-#: Plan §6. CPI, the Employment Situation, Retail Sales and PPI all print at
-#: 08:30 America/New_York, a time fixed by rule and published a year ahead.
+#: Plan §6 and amendment A-1. Every release family here prints at 08:30
+#: America/New_York, a time fixed by rule and published a year ahead; that is
+#: the mechanical criterion that admits them, together with ALFRED vintages and
+#: an archive forecast.
 RELEASE_LOCAL_TIME: Final[str] = "08:30"
 RELEASE_TIMEZONE: Final[str] = "America/New_York"
 
@@ -85,7 +100,30 @@ RELEASE_FAMILIES: Final[dict[str, dict[str, object]]] = {
     },
     "retail": {"series": "RSAFS", "events": ("Retail Sales m/m", "Core Retail Sales m/m")},
     "ppi": {"series": "PPIFIS", "events": ("PPI m/m",)},
+    #: Amendment A-1. Admitted by the mechanical rule -- a US federal statistical
+    #: agency release at 08:30 America/New_York, carried by ALFRED with vintages,
+    #: with both an actual and a forecast across the span -- and admitted to
+    #: reach power, before any result existed. Regional Reserve Bank surveys are
+    #: excluded by the same rule: they are not federal statistical agency
+    #: releases.
+    "claims": {"series": "ICSA", "events": ("Unemployment Claims",)},
+    "durable_goods": {
+        "series": "DGORDER",
+        "events": ("Durable Goods Orders m/m", "Core Durable Goods Orders m/m"),
+    },
+    "housing": {"series": "HOUST", "events": ("Housing Starts", "Building Permits")},
+    "trade": {"series": "BOPGSTB", "events": ("Trade Balance",)},
+    "pce": {
+        "series": "PCEPILFE",
+        "events": ("Core PCE Price Index m/m", "Personal Spending m/m"),
+    },
+    "gdp": {"series": "GDPC1", "events": ("Advance GDP q/q", "Prelim GDP q/q")},
 }
+
+#: The archive's own impact label, used only to define the high-impact subset
+#: reported beside the pooled cell. Not a weight and not a filter on the
+#: primary.
+HIGH_IMPACT_FAMILIES: Final[tuple[str, ...]] = ("cpi", "employment", "pce", "gdp")
 
 #: Plan §6, fixed before any return was computed. Every one is the same
 #: economics: a stronger or more inflationary print is hawkish for the Fed and
@@ -93,6 +131,20 @@ RELEASE_FAMILIES: Final[dict[str, dict[str, object]]] = {
 #: family; it is never inverted.
 SIGNAL_SIGNS: Final[dict[str, int]] = {
     "CPI m/m": +1,
+    #: amendment A-1 additions, the same economics throughout: a stronger or
+    #: more inflationary print is hawkish and appreciates the USD. Jobless
+    #: claims and the trade deficit are the two that carry a minus, because a
+    #: larger number is a weaker economy in both.
+    "Unemployment Claims": -1,
+    "Durable Goods Orders m/m": +1,
+    "Core Durable Goods Orders m/m": +1,
+    "Housing Starts": +1,
+    "Building Permits": +1,
+    "Trade Balance": +1,
+    "Core PCE Price Index m/m": +1,
+    "Personal Spending m/m": +1,
+    "Advance GDP q/q": +1,
+    "Prelim GDP q/q": +1,
     "Core CPI m/m": +1,
     "Non-Farm Employment Change": +1,
     "Unemployment Rate": -1,
@@ -108,8 +160,11 @@ RATES_SIGN: Final[int] = +1
 SURPRISE_SCALE_RELEASES: Final[int] = 24
 
 # ------------------------------------------------------ multiplicity (plan §6)
-MACRO_PRIMARY_CELLS: Final[int] = 2
-MACRO_SECONDARY_CELLS: Final[int] = 8
+#: Amendment A-1: one horizon, so one primary. Secondaries are the ten families
+#: plus the high-impact subset, each reported only if its own power clears its
+#: own break-even.
+MACRO_PRIMARY_CELLS: Final[int] = 1
+MACRO_SECONDARY_CELLS: Final[int] = 11
 MACRO_CELLS: Final[int] = MACRO_PRIMARY_CELLS + MACRO_SECONDARY_CELLS
 RATES_CELLS: Final[int] = 2
 
@@ -140,6 +195,7 @@ __all__ = [
     "FAMILYWISE_ALPHA",
     "MACRO_CELLS",
     "MACRO_HORIZONS_EXCLUDED_FOR_POWER",
+    "HIGH_IMPACT_FAMILIES",
     "MACRO_HORIZON_BARS",
     "MACRO_PRIMARY_CELLS",
     "MACRO_SECONDARY_CELLS",
@@ -152,6 +208,7 @@ __all__ = [
     "RATES_CELLS",
     "RATES_HORIZON_BARS",
     "RATES_SIGN",
+    "RELEASES_NEEDED_FOR_1H_POWER",
     "RELEASE_FAMILIES",
     "RELEASE_LOCAL_TIME",
     "RELEASE_TIMEZONE",

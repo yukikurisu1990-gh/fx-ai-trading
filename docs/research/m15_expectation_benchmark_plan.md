@@ -83,6 +83,12 @@ mean), in pips per pair-event, scaled as `√(24/N)`:
 
 (first value `momentum_2021_2023`, second `supplemental_2023_2025`)
 
+> **This table is wrong and is kept for the record.** It was built from **raw
+> pair returns** instead of USD-oriented ones, so it understates every entry by
+> about a factor of three. Amendment A-1 (§15) replaces it with measured values
+> and changes both the horizons and the release population because of it. The
+> two paragraphs below it are superseded for the same reason.
+
 The mean round trip at an event-time entry is **2.20 / 2.04 pips** on USD pairs,
 so the **×2-cost break-even is about 4.1–4.4 pips gross**.
 
@@ -371,5 +377,76 @@ provenance, temporal integrity, leakage and implementation.
 
 ## 15. Amendments
 
-None yet. Each appends here with the commit that made it, what forced it, and the
-statistic it precedes.
+Each appends here with the commit that made it, what forced it, and the statistic
+it precedes.
+
+### A-1 — the power table in §3.1 was wrong, and the design changes because of it
+
+**Made before any relationship between a surprise and an FX return was
+computed.** Nothing in this amendment is a response to a result; the only things
+looked at were power and data integrity.
+
+*The error.* §3.1's power curve was built from **raw pair returns**. It should
+have been built from **USD-oriented** returns — the quantity the test actually
+trades. The seven USD pairs move *together* under a dollar move once oriented,
+and partially cancel when they are not, so the null dispersion was understated
+and the minimum detectable effect with it. Measured correctly, on the same
+event set and the same panels:
+
+| horizon | N | MDE, pips | ×2-cost break-even | N needed |
+| --- | ---: | ---: | ---: | ---: |
+| 1h, `momentum_2021_2023` | 89 | **6.16** | 4.27 | **186** |
+| 1h, `supplemental_2023_2025` | 87 | **6.04** | 4.09 | **190** |
+| 4h, `momentum_2021_2023` | 89 | **9.93** | 4.27 | **482** |
+| 4h, `supplemental_2023_2025` | 87 | **10.58** | 4.09 | **583** |
+
+§3.1 claimed 2.15 / 1.83 pips at N=100 for 1h. The truth is about three times
+that. The table is left in place, marked wrong, rather than quietly rewritten.
+
+*Consequence 1 — the horizon.* **4h joins 12h and 1d as excluded for power.**
+No US release population reaches 480–580 events per deciding panel, so a 4h test
+could not decide and is not run. **Family 1 runs at 1h only.** This is also the
+horizon the economics points at: an announcement effect that is tradeable lives
+in the minutes to the hour after the print, not four hours later.
+
+*Consequence 2 — the population.* At 89 events the 1h test is underpowered by a
+factor of two. The release population is therefore widened by a **mechanical
+rule fixed here**, not by selection:
+
+> every release of a **US federal statistical agency** (BLS, Census, BEA, DOL)
+> that prints at **08:30 America/New_York**, is carried by **ALFRED with
+> vintages** so its date is authoritative, and carries **both an actual and a
+> forecast** in the archive across the whole span.
+
+That admits five families beyond the original four — weekly jobless claims
+(DOL), durable goods, housing starts and building permits, the trade balance
+(Census), personal income and outlays including core PCE, and GDP (BEA) — and
+excludes regional Reserve Bank surveys, which are not federal statistical agency
+releases. Expected count: about **265 distinct release-times per deciding
+panel**, giving an MDE near **3.6 pips** against a 4.27 break-even.
+
+*Consequence 3 — two moments cannot be two trades.* When two families print at
+the same 08:30, that is **one** tradeable moment. Events are therefore grouped
+by timestamp and the composite is the mean of every standardised signal printing
+at that moment.
+
+*Consequence 4 — what a pooled null will and will not rule out, stated before
+the result.* The pooled population mixes high-impact releases with low-impact
+ones, so it tests an **average** effect. If an effect lived only in a subset of
+events forming a fraction `f` of the population, the pooled mean would carry
+`f × E`, and the smallest concentrated effect this design can see is
+`3.6 / f` pips. For the CPI and Employment families together (`f ≈ 0.18`) that
+is about **20 pips per event** — so **a pooled null rules out a large
+concentrated effect and does not rule out a moderate one.**
+
+The high-impact subset on its own is about **93 releases per deciding panel**,
+which needs ~190 and therefore **cannot be powered from US data at all**. It is
+reported as `UNDERPOWERED_NOT_REPORTED_AS_EVIDENCE`, never as a null. Reaching
+power on that subset needs roughly **four times the high-impact events**, which
+is what multi-currency consensus buys — and §10 prices exactly that, sized from
+this number rather than from a wish.
+
+*Cells.* `pooled_1h` is the single primary. Each family at 1h is a secondary and
+is reported only if its own MDE clears its own break-even; otherwise it is
+skipped and named. The multiplicity correction runs over whatever cells are
+actually reported.
