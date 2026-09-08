@@ -34,6 +34,7 @@ import pandas as pd
 from scipy import stats as scipy_stats
 
 from scripts.research.expectation import (
+    FAMILYWISE_ALPHA,
     NULL_DRAWS,
     POWER_MULTIPLIER,
     SEED,
@@ -182,7 +183,14 @@ def evaluate(table: pd.DataFrame, *, draws: int = NULL_DRAWS, seed: int = SEED) 
         }
         for pair, block in table.groupby("pair")
     }
-    statistic = float(np.mean(gross) / (np.std(gross, ddof=1) / np.sqrt(len(gross))))
+    #: NOT a t-statistic. It divides by an i.i.d. standard error over
+    #: pair-events, which treats seven correlated pairs as seven independent
+    #: observations. It is used only as a reference scale: the observed value
+    #: and every null draw are divided by the SAME quantity, so the permutation
+    #: p is exact. Reporting it as "t" would invite a precision it does not
+    #: have, which an earlier version of the results document did.
+    scale = float(np.std(gross, ddof=1) / np.sqrt(len(gross)))
+    statistic = float(np.mean(gross) / scale)
     nulls = _null_means(table, draws=draws, seed=seed)
     null_stats = []
     for value in nulls:
@@ -198,6 +206,29 @@ def evaluate(table: pd.DataFrame, *, draws: int = NULL_DRAWS, seed: int = SEED) 
 
     signal = table["signal"].to_numpy(dtype=float)
     realised = table["usd_move_pips"].to_numpy(dtype=float)
+    observed_ic = float(scipy_stats.spearmanr(signal, realised).statistic)
+    #: The IC gets its own null band. Every other statistic here has one, and a
+    #: bare IC invites "real in sign" claims that its own dispersion does not
+    #: support. The draw is the same one: a random sign per event, applied to
+    #: the signal, leaving the returns untouched.
+    ic_rng = np.random.default_rng(seed + 1)
+    events_index = table["event"].to_numpy()
+    order = {value: index for index, value in enumerate(sorted(set(events_index)))}
+    position = np.array([order[value] for value in events_index])
+    ic_nulls = [
+        float(
+            scipy_stats.spearmanr(
+                ic_rng.choice([-1.0, 1.0], size=len(order))[position] * signal, realised
+            ).statistic
+        )
+        for _ in range(draws)
+    ]
+    ic_sd = float(np.std(ic_nulls, ddof=1)) if len(ic_nulls) > 1 else None
+    ic_p = (
+        (sum(1 for value in ic_nulls if abs(value) >= abs(observed_ic)) + 1) / (len(ic_nulls) + 1)
+        if ic_nulls
+        else None
+    )
     return {
         "events": int(table["event"].nunique()),
         "pair_events": int(len(table)),
@@ -207,6 +238,7 @@ def evaluate(table: pd.DataFrame, *, draws: int = NULL_DRAWS, seed: int = SEED) 
         "net_mean_pips": float(np.mean(net)),
         "net_mean_pips_double_cost": float(np.mean(gross - 2.0 * cost)),
         "expectancy_per_event_pips": float(np.mean(net) * len(table) / table["event"].nunique()),
+        "reference_statistic_not_a_t": statistic,
         "gross_t": statistic,
         "permutation_p": p_value,
         "null_statistics": null_stats,
@@ -216,7 +248,9 @@ def evaluate(table: pd.DataFrame, *, draws: int = NULL_DRAWS, seed: int = SEED) 
             float(np.mean(gross) + 1.96 * sd_null),
         ],
         "mde_80pct_power_pips": float(POWER_MULTIPLIER * sd_null),
-        "directional_ic": float(scipy_stats.spearmanr(signal, realised).statistic),
+        "directional_ic": observed_ic,
+        "directional_ic_null_sd": ic_sd,
+        "directional_ic_permutation_p": ic_p,
         "hit_rate": float((gross > 0).mean()),
         "pairs_gross_positive": sum(1 for cell in per_pair.values() if cell["gross_mean"] > 0),
         "tail_share_of_net": tail,
@@ -293,7 +327,7 @@ def verdict(
             adjusted = [
                 corrected.get(panel, {}).get(name) for panel in deciding if panel in per_panel
             ]
-            if any(value is None or value >= 0.05 for value in adjusted):
+            if any(value is None or value >= FAMILYWISE_ALPHA for value in adjusted):
                 reasons.append(f"FAMILYWISE_NULL_{name}")
 
     survives = complete and not reasons

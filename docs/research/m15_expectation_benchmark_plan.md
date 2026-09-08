@@ -446,6 +446,25 @@ power on that subset needs roughly **four times the high-impact events**, which
 is what multi-currency consensus buys — and §10 prices exactly that, sized from
 this number rather than from a wish.
 
+*The eleven signs A-1 admits.* Recorded here rather than only in code, because
+a pre-registered sign that lives in one place is not pre-registered. Every one is
+the same economics — a stronger or more inflationary print is hawkish and
+appreciates the USD — so only the two series where a **bigger number is worse**
+carry a minus:
+
+| signal | sign | | signal | sign |
+| --- | ---: | --- | --- | ---: |
+| Unemployment Claims | **−1** | | Housing Starts | +1 |
+| Durable Goods Orders m/m | +1 | | Building Permits | +1 |
+| Core Durable Goods Orders m/m | +1 | | Trade Balance | **+1** |
+| Core PCE Price Index m/m | +1 | | Advance GDP q/q | +1 |
+| Personal Spending m/m | +1 | | Prelim GDP q/q | +1 |
+
+The trade balance is **+1**: a less negative balance is the stronger economy. An
+earlier comment in the code said "the trade deficit" carries a minus, which is
+the wrong way to read the same series; the value was always right and the
+comment was not.
+
 *Cells.* `pooled_1h` is the single primary. Each family at 1h is a secondary and
 is reported only if its own MDE clears its own break-even; otherwise it is
 skipped and named. The multiplicity correction runs over whatever cells are

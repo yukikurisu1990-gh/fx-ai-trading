@@ -81,6 +81,11 @@ RATES_HORIZON_BARS: Final[int] = 96
 #: America/New_York, a time fixed by rule and published a year ahead; that is
 #: the mechanical criterion that admits them, together with ALFRED vintages and
 #: an archive forecast.
+#: These are not duplicated constants left to drift. The conversion is
+#: performed by `exogenous.macro.release_timestamp_utc`, and
+#: `consensus.release_time_rule` asserts that this package's frozen pair still
+#: equals the one that function reads -- so a change there cannot silently move
+#: every release timestamp here.
 RELEASE_LOCAL_TIME: Final[str] = "08:30"
 RELEASE_TIMEZONE: Final[str] = "America/New_York"
 
@@ -140,9 +145,11 @@ HIGH_IMPACT_FAMILIES: Final[tuple[str, ...]] = ("cpi", "employment", "pce", "gdp
 SIGNAL_SIGNS: Final[dict[str, int]] = {
     "CPI m/m": +1,
     #: amendment A-1 additions, the same economics throughout: a stronger or
-    #: more inflationary print is hawkish and appreciates the USD. Jobless
-    #: claims and the trade deficit are the two that carry a minus, because a
-    #: larger number is a weaker economy in both.
+    #: more inflationary print is hawkish and appreciates the USD. Only the two
+    #: "bad news is a bigger number" series carry a minus -- the unemployment
+    #: rate and initial claims. The trade balance carries a PLUS, because a less
+    #: negative balance is the stronger economy; an earlier comment here said
+    #: "the trade deficit" and was wrong about which way that reads.
     "Unemployment Claims": -1,
     "Durable Goods Orders m/m": +1,
     "Core Durable Goods Orders m/m": +1,
@@ -172,7 +179,8 @@ SURPRISE_SCALE_RELEASES: Final[int] = 24
 #: plus the high-impact subset, each reported only if its own power clears its
 #: own break-even.
 MACRO_PRIMARY_CELLS: Final[int] = 1
-MACRO_SECONDARY_CELLS: Final[int] = 11
+#: ten families, the high-impact subset, and the flagged-signal robustness cell
+MACRO_SECONDARY_CELLS: Final[int] = 12
 MACRO_CELLS: Final[int] = MACRO_PRIMARY_CELLS + MACRO_SECONDARY_CELLS
 RATES_CELLS: Final[int] = 2
 

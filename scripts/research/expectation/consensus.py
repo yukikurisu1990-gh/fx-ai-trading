@@ -57,6 +57,8 @@ from scripts.research.expectation import (
     ARCHIVE_SHA256_PREFIX,
     ARCHIVE_URL,
     RELEASE_FAMILIES,
+    RELEASE_LOCAL_TIME,
+    RELEASE_TIMEZONE,
     SIGNAL_SIGNS,
     SURPRISE_SCALE_RELEASES,
 )
@@ -68,6 +70,9 @@ _HEADERS: Final[dict[str, str]] = {"User-Agent": "fx-ai-trading-research/1.0"}
 #: looked for on the release day and the day before it. Anything wider would
 #: start pairing a release with its neighbour.
 JOIN_TOLERANCE_DAYS: Final[int] = 1
+
+#: The eight currencies `PAIRS_20` spans, for the non-USD survey in §7.
+G10: Final[tuple[str, ...]] = ("USD", "EUR", "JPY", "GBP", "AUD", "CAD", "CHF", "NZD")
 
 
 def _get(url: str, *, attempts: int = 4) -> tuple[bytes, dict[str, Any]]:
@@ -135,7 +140,40 @@ def acquire_archive() -> tuple[pd.DataFrame, dict[str, Any]]:
             ),
         }
     )
+    #: recorded AND enforced. A first version measured both flags and printed
+    #: them, so a substituted or updated archive would have been used silently
+    #: while the document claimed the digest had been checked.
+    if not provenance["digest_matches_frozen_prefix"]:
+        raise RuntimeError(
+            f"archive digest {provenance['sha256'][:16]} does not match the frozen "
+            f"{ARCHIVE_SHA256_PREFIX}: the pre-registration describes a different file"
+        )
+    if not provenance["rows_match_frozen_count"]:
+        raise RuntimeError(
+            f"archive has {provenance['rows']} rows against the frozen {ARCHIVE_ROWS}"
+        )
     return frame, provenance
+
+
+def release_time_rule() -> dict[str, Any]:
+    """Assert the conversion in use is still the one this package froze.
+
+    Timestamps come from `exogenous.macro.release_timestamp_utc`, which reads
+    that package's constants. This package freezes its own pair for the record.
+    If the two ever diverged every release time would move silently, so the
+    equality is checked rather than assumed.
+    """
+    from scripts.research.exogenous import BLS_RELEASE_LOCAL_TIME, BLS_RELEASE_TIMEZONE
+
+    if (BLS_RELEASE_LOCAL_TIME, BLS_RELEASE_TIMEZONE) != (
+        RELEASE_LOCAL_TIME,
+        RELEASE_TIMEZONE,
+    ):
+        raise RuntimeError(
+            f"the conversion in use is {BLS_RELEASE_LOCAL_TIME} {BLS_RELEASE_TIMEZONE}, "
+            f"but this package froze {RELEASE_LOCAL_TIME} {RELEASE_TIMEZONE}"
+        )
+    return {"local_time": RELEASE_LOCAL_TIME, "timezone": RELEASE_TIMEZONE}
 
 
 def audit_actuals(archive: pd.DataFrame, alfred_releases: list[dict[str, Any]]) -> dict[str, Any]:
@@ -274,7 +312,19 @@ def build_events(
     usd["prior"] = to_number(usd["Previous"])
 
     events: list[dict[str, Any]] = []
-    diagnostics = {"matched": 0, "unmatched": 0, "ambiguous": 0, "same_day": 0, "day_before": 0}
+    diagnostics: dict[str, Any] = {
+        "matched": 0,
+        "unmatched": 0,
+        "ambiguous": 0,
+        "same_day": 0,
+        "day_before": 0,
+    }
+    #: per signal, because an aggregate count hides a signal that never matches
+    #: at all. `Prelim GDP q/q` is exactly that: ALFRED dates only the vintage
+    #: that first introduces a quarter, which is the advance estimate, so the
+    #: second estimate has no release date to join to and contributes nothing.
+    unmatched_by_event: dict[str, int] = {}
+    matched_by_event: dict[str, int] = {}
     for family_name, family in RELEASE_FAMILIES.items():
         wanted = list(family["events"])  # type: ignore[arg-type]
         for value in dates[family_name]["dates"]:
@@ -289,15 +339,19 @@ def build_events(
                 ]
                 if window.empty:
                     diagnostics["unmatched"] += 1
+                    unmatched_by_event[event] = unmatched_by_event.get(event, 0) + 1
                     continue
                 if len(window) > 1:
                     diagnostics["ambiguous"] += 1
+                    unmatched_by_event[event] = unmatched_by_event.get(event, 0) + 1
                     continue
                 row = window.iloc[0]
                 if not np.isfinite(row["actual"]) or not np.isfinite(row["forecast"]):
                     diagnostics["unmatched"] += 1
+                    unmatched_by_event[event] = unmatched_by_event.get(event, 0) + 1
                     continue
                 diagnostics["matched"] += 1
+                matched_by_event[event] = matched_by_event.get(event, 0) + 1
                 diagnostics["same_day" if row["date"] == release_date else "day_before"] += 1
                 signals[event] = {
                     "actual": float(row["actual"]),
@@ -338,6 +392,14 @@ def build_events(
         event["families"] = sorted(set(event["families"]))
     diagnostics["release_times"] = len(events)
     diagnostics["collisions_merged"] = sum(1 for event in events if len(event["families"]) > 1)
+    diagnostics["matched_by_event"] = matched_by_event
+    diagnostics["unmatched_by_event"] = unmatched_by_event
+    diagnostics["signals_that_never_matched"] = sorted(
+        name
+        for family in RELEASE_FAMILIES.values()
+        for name in family["events"]  # type: ignore[union-attr]
+        if not matched_by_event.get(name)
+    )
     diagnostics["match_rate"] = (
         round(diagnostics["matched"] / (diagnostics["matched"] + diagnostics["unmatched"]), 4)
         if diagnostics["matched"] + diagnostics["unmatched"]
@@ -381,13 +443,99 @@ def attach_surprises(events: list[dict[str, Any]]) -> list[dict[str, Any]]:
     return out
 
 
+#: The four central banks whose scheduled meeting dates the previous package
+#: acquired and validated against BIS rate changes with zero orphans. They are
+#: the only ground truth available for testing whether the archive's dates can
+#: be repaired outside the US.
+CENTRAL_BANK_EVENTS: Final[dict[str, tuple[str, ...]]] = {
+    "USD": ("Federal Funds Rate",),
+    "EUR": ("Main Refinancing Rate", "Monetary Policy Statement"),
+    "JPY": ("BOJ Policy Rate",),
+    "AUD": ("Cash Rate",),
+}
+
+
+def non_usd_survey(
+    archive: pd.DataFrame,
+    calendar: dict[str, list[str]],
+    *,
+    panels: tuple[tuple[str, str], ...],
+) -> dict[str, Any]:
+    """What a paid provider would actually be selling, measured rather than argued.
+
+    Two questions, and the second is the one that decides the purchase.
+
+    **How much non-USD consensus is already free?** Every high-impact G10 row in
+    the deciding panels carrying both an actual and a forecast, and the number
+    of distinct release moments they form.
+
+    **Can the archive's dates be repaired outside the US?** The previous package
+    acquired scheduled central-bank meeting dates for four currencies and
+    validated them against BIS rate changes with zero orphans. If a single
+    offset repaired the archive, every central-bank row would land on a meeting
+    date under one rule. Measuring both rules per event answers it.
+    """
+    rows = archive[archive["Impact"].astype(str).str.contains("High", na=False)].copy()
+    rows["actual"] = to_number(rows["Actual"])
+    rows["forecast"] = to_number(rows["Forecast"])
+    usable = rows[rows["actual"].notna() & rows["forecast"].notna()]
+
+    inside = pd.concat(
+        [usable[(usable["ts"] >= low) & (usable["ts"] <= high)] for low, high in panels]
+    )
+    non_usd = inside[inside["Currency"].isin([c for c in G10 if c != "USD"])]
+    by_currency = {
+        str(key): int(value) for key, value in non_usd["Currency"].value_counts().items()
+    }
+    moments = len(non_usd.groupby([non_usd["Currency"], non_usd["ts"].dt.date]))
+
+    offsets: dict[str, dict[str, Any]] = {}
+    for currency, events in CENTRAL_BANK_EVENTS.items():
+        meetings = {dt.date.fromisoformat(value) for value in calendar.get(currency, ())}
+        for event in events:
+            block = archive[
+                (archive["Currency"] == currency)
+                & (archive["Event"] == event)
+                & (archive["ts"] >= "2021-01-01")
+                & (archive["ts"] <= "2025-04-07")
+            ]
+            if block.empty:
+                continue
+            same = sum(1 for stamp in block["ts"] if stamp.date() in meetings)
+            next_day = sum(
+                1 for stamp in block["ts"] if (stamp.date() + dt.timedelta(days=1)) in meetings
+            )
+            offsets[f"{currency} - {event}"] = {
+                "rows": int(len(block)),
+                "archive_date_equals_meeting": same,
+                "archive_date_plus_one_equals_meeting": next_day,
+                "dominant_rule": "+0" if same > next_day else "+1",
+            }
+    dominant = {cell["dominant_rule"] for cell in offsets.values()}
+    return {
+        "non_usd_high_impact_rows_with_actual_and_forecast": int(len(non_usd)),
+        "by_currency": by_currency,
+        "distinct_currency_date_moments": moments,
+        "central_bank_date_offsets": offsets,
+        "a_single_offset_would_repair_the_archive": len(dominant) == 1,
+        "verdict": (
+            "FREE_CONSENSUS_EXISTS_FOR_EVERY_G10_CURRENCY_THE_RELEASE_TIMESTAMP_IS_WHAT_IS_MISSING"
+            if len(dominant) > 1
+            else "ARCHIVE_DATES_MAY_BE_REPAIRABLE_BY_A_SINGLE_OFFSET"
+        ),
+    }
+
+
 __all__ = [
+    "CENTRAL_BANK_EVENTS",
     "JOIN_TOLERANCE_DAYS",
     "acquire_archive",
     "attach_surprises",
     "audit_actuals",
     "audit_forecasts",
     "build_events",
+    "non_usd_survey",
     "release_dates",
+    "release_time_rule",
     "to_number",
 ]

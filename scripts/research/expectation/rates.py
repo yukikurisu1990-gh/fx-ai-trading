@@ -65,9 +65,18 @@ _HEADERS: Final[dict[str, str]] = {"User-Agent": "fx-ai-trading-research/1.0"}
 FRED_URL: Final[str] = "https://fred.stlouisfed.org/graph/fredgraph.csv?id={series}"
 SERIES: Final[str] = "DGS2"
 
-#: The US session has closed and the yield print is public by this hour, so a
-#: position opened after it cannot be using a number it did not have. 22:00 UTC
-#: is after the 17:00 America/New_York close under both daylight rules.
+#: The H.15 release that carries this yield posts around 16:15
+#: America/New_York, so a position opened at 22:00 UTC cannot be using a number
+#: it did not have: that is 18:00 New York under daylight time and 17:00 under
+#: standard time. An earlier comment here said "after the 17:00 close under
+#: both rules", which is wrong by an hour under standard time -- it is *at* the
+#: close, and still comfortably after the print.
+#:
+#: This is a deviation from the plan, which said "the first M15 bar of day
+#: t+1". It is disclosed in the results rather than absorbed: it costs about a
+#: fifth of the days, because a Friday 22:00 UTC has no bar inside the entry
+#: tolerance, and it lands entry in the rollover window where the round trip is
+#: 4.5 pips against 2.1 intraday.
 DECISION_HOUR_UTC: Final[int] = 22
 
 
@@ -120,8 +129,15 @@ def build_events(yields: pd.Series, *, same_day: bool) -> list[dict[str, Any]]:
     """
     change = yields.diff()
     events: list[dict[str, Any]] = []
+    dropped_zero = 0
     for day, value in change.items():
-        if not np.isfinite(value) or value == 0.0:
+        if not np.isfinite(value):
+            continue
+        if value == 0.0:
+            #: no repricing, so no position. Disclosed because the
+            #: pre-registered day floor was set against the unfiltered
+            #: population and this filter is part of why the floor is missed.
+            dropped_zero += 1
             continue
         date = dt.date.fromisoformat(day)
         moment = dt.datetime(
@@ -139,6 +155,8 @@ def build_events(yields: pd.Series, *, same_day: bool) -> list[dict[str, Any]]:
                 "composite_z": float(RATES_SIGN * value),
             }
         )
+    if events:
+        events[0]["days_dropped_for_zero_change"] = dropped_zero
     return events
 
 

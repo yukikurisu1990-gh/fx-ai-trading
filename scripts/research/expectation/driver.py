@@ -81,6 +81,29 @@ def stage_consensus() -> None:
                 f"corr={cell['correlation']:+.3f} ratio={cell['ratio_to_naive_benchmark']}"
             )
 
+    rule = consensus.release_time_rule()
+    print(f"  conversion in use: {rule['local_time']} {rule['timezone']}")
+
+    #: What a paid provider would actually sell. Committed as a stage and
+    #: written to an artifact, because a purchase specification that lives only
+    #: in a prose document is not reproducible -- and this repository has
+    #: shipped that failure before.
+    calendar_path = Path("artifacts/track_a_scratch/exogenous/s1_calendar.json")
+    survey = None
+    if calendar_path.is_file():
+        calendar = json.loads(calendar_path.read_text(encoding="utf-8"))["payload"]["dates"]
+        survey = consensus.non_usd_survey(
+            archive,
+            calendar,
+            panels=(("2021-04-26", "2023-04-25"), ("2023-04-26", "2025-04-24")),
+        )
+        print(
+            f"  non-USD high-impact rows with actual+forecast: "
+            f"{survey['non_usd_high_impact_rows_with_actual_and_forecast']} "
+            f"in {survey['distinct_currency_date_moments']} moments"
+        )
+        print(f"  {survey['verdict']}")
+
     dates = consensus.release_dates(
         first_release_from=FIRST_RELEASE_FROM, first_release_to=FIRST_RELEASE_TO
     )
@@ -104,6 +127,8 @@ def stage_consensus() -> None:
             },
             "join_diagnostics": diagnostics,
             "events": events,
+            "release_time_rule": rule,
+            "non_usd_survey": survey,
             "decision_grade": (
                 "FREE_CONSENSUS_DECISION_GRADE_FOR_A_USD_KILL_NOT_FOR_A_MULTI_CURRENCY_CANDIDATE"
             ),
@@ -118,6 +143,8 @@ def stage_macro() -> None:
         HIGH_IMPACT_FAMILIES,
         MACRO_HORIZON_BARS,
         MIN_RELEASES_PER_DECIDING_PANEL,
+        RELEASE_FAMILIES,
+        consensus,
         test_engine,
     )
     from scripts.research.round_a import panels as panel_module
@@ -125,6 +152,30 @@ def stage_macro() -> None:
     print("Family 1: survey consensus macro surprise")
     events = read("s1_consensus")["events"]
     families = sorted({name for event in events for name in event["families"]})
+    #: The robustness cell drops the flagged families at SIGNAL level and
+    #: recomposes, which is what the results document describes. A first version
+    #: dropped only release-times composed ENTIRELY of flagged families, leaving
+    #: their signals inside every mixed moment's composite -- roughly a half
+    #: exclusion presented as a whole one.
+    flagged_signals = {
+        name
+        for family in FLAGGED_FAMILIES
+        for name in RELEASE_FAMILIES[family]["events"]  # type: ignore[union-attr]
+    }
+    clean_events = consensus.attach_surprises(
+        [
+            {
+                **event,
+                "signals": {
+                    name: cell
+                    for name, cell in event["signals"].items()
+                    if name not in flagged_signals
+                },
+            }
+            for event in events
+            if any(name not in flagged_signals for name in event["signals"])
+        ]
+    )
 
     power: dict[str, dict[str, Any]] = {}
     cells: dict[str, dict[str, Any]] = {}
@@ -162,11 +213,15 @@ def stage_macro() -> None:
             #: a forecast ATTENUATES a surprise rather than manufacturing one,
             #: so it makes a null more likely; dropping the flagged families is
             #: therefore the conservative direction and is reported beside the
-            #: primary rather than instead of it.
-            clean = pooled[
-                pooled["families"].apply(lambda names: not set(names) <= set(FLAGGED_FAMILIES))
-            ]
-            plans = [("pooled", pooled), ("pooled_ex_flagged", clean), ("high_impact", high)] + [
+            #: primary rather than instead of it. The drop is at SIGNAL level
+            #: and the composite is rebuilt, so a mixed moment loses its flagged
+            #: signals rather than surviving intact.
+            clean = test_engine.event_returns(frames, clean_events, horizon_bars=bars)
+            plans = [
+                ("pooled", pooled),
+                ("pooled_ex_flagged_signals", clean),
+                ("high_impact", high),
+            ] + [
                 (family, pooled[pooled["families"].apply(lambda names, f=family: f in names)])
                 for family in families
             ]
@@ -205,7 +260,31 @@ def stage_macro() -> None:
         ),
     )
     print(f"  {decision['status']}  reasons={decision['drop_reasons']}")
-    write("s2_macro", {"power": power, "cells": cells, "family_max_p": corrected})
+    composition = {}
+    for panel_id in PANELS:
+        block = cells[panel_id].get("pooled_1h", {})
+        if not block.get("events"):
+            continue
+        composition[panel_id] = {
+            family: sum(
+                1 for event in events if family in event["families"] and event.get("composite_z")
+            )
+            for family in families
+        }
+    write(
+        "s2_macro",
+        {
+            "power": power,
+            "cells": cells,
+            "family_max_p": corrected,
+            #: a reader cannot judge a pooled null without knowing what it
+            #: pools; weekly claims are the largest single contributor
+            "pooled_family_composition_over_the_whole_table": composition,
+            "events_with_zero_composite_dropped": sum(
+                1 for event in events if event.get("composite_z") == 0.0
+            ),
+        },
+    )
     write("s2_macro_verdict", decision)
 
 
