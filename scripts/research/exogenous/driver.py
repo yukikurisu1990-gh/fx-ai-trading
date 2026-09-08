@@ -1,0 +1,426 @@
+"""Exogenous Directional Information — the runner.
+
+`NON_DECISION_BEARING_EXPLORATORY_ONLY` · `RESEARCH_SCRATCH_NON_AUTHORITATIVE`
+· `PRODUCTION_READINESS_NOT_CLAIMED`.
+
+Stages are selected on the command line so a long acquisition does not have to
+be repeated to re-run a cheap statistic:
+
+    python -m scripts.research.exogenous.driver calendar events
+
+Every stage writes one artifact and every artifact carries the classification.
+No stage writes a verdict that a later stage's data could change.
+"""
+
+from __future__ import annotations
+
+import json
+import sys
+from pathlib import Path
+from typing import Any
+
+import numpy as np
+
+from scripts.research.exogenous import (
+    CLASSIFICATION,
+    CLASSIFICATION_SECONDARY,
+)
+from scripts.research.round_a import DECIDING_PANELS, PANELS
+
+ARTIFACTS = Path("artifacts/track_a_scratch/exogenous")
+
+
+def write(name: str, payload: Any) -> None:
+    ARTIFACTS.mkdir(parents=True, exist_ok=True)
+    body = {
+        "classification": CLASSIFICATION,
+        "classification_secondary": CLASSIFICATION_SECONDARY,
+        "payload": payload,
+    }
+    (ARTIFACTS / f"{name}.json").write_text(
+        json.dumps(body, indent=1, sort_keys=True, default=str), encoding="utf-8"
+    )
+    print(f"  wrote {name}.json")
+
+
+def read(name: str) -> Any:
+    return json.loads((ARTIFACTS / f"{name}.json").read_text(encoding="utf-8"))["payload"]
+
+
+def _panels() -> dict[str, dict[str, Any]]:
+    """The three panels with tick volume attached, loaded once."""
+    from scripts.research.exploratory_m15 import volume as volume_reader
+    from scripts.research.monetizability import volume_info
+    from scripts.research.round_a import panels as panel_module
+
+    loaded: dict[str, dict[str, Any]] = {}
+    for panel_id in PANELS:
+        volume_reader.build_cache(panel_id)
+        frames = panel_module.load_panel(panel_id)
+        loaded[panel_id] = {
+            pair: volume_info.attach(frame, volume_reader.load(panel_id, pair))
+            for pair, frame in frames.items()
+        }
+        print(f"  {panel_id}: {len(loaded[panel_id])} pairs")
+    return loaded
+
+
+def stage_calendar() -> None:
+    """Stage 1 — acquire the scheduled meeting dates and check them against BIS."""
+    import datetime as dt
+
+    from scripts.research.economic_edge import rates
+    from scripts.research.exogenous import calendars
+
+    print("stage 1: central-bank scheduled meeting calendars")
+    record = calendars.acquire()
+    for currency, info in record["cadence"].items():
+        print(f"  {currency}: {info['per_year']} cadence_ok={info['matches']}")
+
+    #: An independent check the calendar cannot pass by accident: every policy
+    #: rate change the BIS series records must be explained by a scheduled
+    #: meeting shortly before it. A hallucinated or missing meeting date shows up
+    #: here as an orphaned change.
+    frame, _ = rates.acquire()
+    panel = rates.daily_panel(frame, start="2021-01-01", end="2025-12-31")
+    containment: dict[str, Any] = {}
+    for currency, dates in record["dates"].items():
+        series = panel[currency]
+        moved = series[series.diff().fillna(0.0) != 0.0]
+        meetings = sorted(dt.date.fromisoformat(value) for value in dates)
+        lags, orphans = [], []
+        for stamp in moved.index:
+            day = stamp.date()
+            prior = [m for m in meetings if 0 <= (day - m).days <= 14]
+            if prior:
+                lags.append((day - max(prior)).days)
+            else:
+                orphans.append(day.isoformat())
+        containment[currency] = {
+            "rate_changes": int(len(moved)),
+            "explained_by_a_scheduled_meeting": len(lags),
+            "effective_date_lag_days": sorted({int(v) for v in lags}),
+            "orphan_changes": orphans,
+        }
+        print(f"  {currency}: {len(lags)}/{len(moved)} changes explained, orphans={len(orphans)}")
+    record["bis_containment"] = containment
+    write("s1_calendar", record)
+
+
+def stage_events() -> None:
+    """Stage A — the scheduled-event structure, matched and permutation-tested."""
+    from scripts.research.exogenous import events
+
+    print("stage A: forward-known scheduled-event structure")
+    calendar = read("s1_calendar")["dates"]
+    loaded = _panels()
+    per_panel = {
+        panel_id: events.population(frames, calendar) for panel_id, frames in loaded.items()
+    }
+    for panel_id, result in per_panel.items():
+        pooled = result["pooled"]["abs_move"]
+        print(
+            f"  {panel_id}: pairs={result['pairs']} "
+            f"matched={pooled['matched_ratio']:.4f} "
+            f"breadth={pooled['pairs_matched_above_one']}/{result['pairs']} "
+            f"p={result['abs_move_permutation_p']}"
+        )
+    write("s4_event_population", per_panel)
+    decision = events.verdict(per_panel, DECIDING_PANELS)
+    print(f"  {decision['status']} / {decision['cost_advantage_status']}")
+    write("s4_event_verdict", decision)
+
+
+#: Plan §8's surprise scale needs 24 prior releases, so the real-time table
+#: starts well before the first panel. 2019-01 gives every event inside the
+#: earliest panel a full backward window without ever reading forward.
+MACRO_FIRST_RELEASE_FROM = "2019-01-01"
+MACRO_FIRST_RELEASE_TO = "2026-01-31"
+
+
+def stage_macro() -> None:
+    """Stage B — acquire the real-time CPI releases: actual, expectation, timing."""
+    from scripts.research.exogenous import macro
+
+    print("stage B: real-time macro releases")
+    releases, provenance = macro.build_releases(
+        first_release_from=MACRO_FIRST_RELEASE_FROM,
+        first_release_to=MACRO_FIRST_RELEASE_TO,
+    )
+    agree = sum(1 for row in releases if row.get("archive_agrees_with_alfred"))
+    complete = [
+        row for row in releases if row.get("cpi") and row["cpi"].get("surprise_pct") is not None
+    ]
+    print(f"  releases={len(releases)} usable={len(complete)}")
+    print(f"  ALFRED release date agrees with the nowcast archive on {agree}/{len(releases)}")
+    write(
+        "s2_macro_releases",
+        {
+            "releases": releases,
+            "provenance": provenance,
+            "expectation_kind": "MODEL_NOWCAST_SURPRISE_NOT_SURVEY_SURPRISE",
+            "consensus_status": (
+                "REAL_TIME_MACRO_SURVEY_CONSENSUS_NOT_AVAILABLE_WITHOUT_A_PAID_CONTRACT"
+            ),
+            "release_date_agreement": {"agree": agree, "total": len(releases)},
+        },
+    )
+
+
+def stage_surprise() -> None:
+    """Stage C — the pre-registered directional test on the real-time surprise."""
+    from scripts.research.exogenous import MACRO_HORIZON_BARS, MIN_EVENTS_PER_DECIDING_PANEL, macro
+    from scripts.research.exogenous import surprise as surprise_module
+    from scripts.research.round_a import panels as panel_module
+
+    print("stage C: macro surprise direction")
+    releases = read("s2_macro_releases")["releases"]
+    scaled = {
+        indicator: macro.scale_surprises(releases, indicator) for indicator in macro.INDICATORS
+    }
+
+    cells: dict[str, dict[str, dict[str, Any]]] = {}
+    for panel_id in PANELS:
+        frames = panel_module.load_panel(panel_id)
+        cells[panel_id] = {}
+        for indicator, rows in scaled.items():
+            for horizon in MACRO_HORIZON_BARS:
+                events = surprise_module.event_returns(frames, rows, horizon=horizon)
+                summary = surprise_module.summarise(events)
+                cells[panel_id][f"{indicator}_{horizon}"] = summary
+                if summary.get("events"):
+                    print(
+                        f"  {panel_id} {indicator}_{horizon}: n={summary['events']} "
+                        f"gross={summary['gross_mean_pips']:+.3f} "
+                        f"net={summary['net_mean_pips']:+.3f} "
+                        f"ic={summary['directional_ic']:+.4f} "
+                        f"p={summary['permutation_p']:.3f}"
+                    )
+    #: Plan §12 declares six macro cells corrected within themselves. A first
+    #: version reported each cell's own permutation `p` and skipped the
+    #: correction entirely, which is how "p = 0.025 on its own null" got into
+    #: the write-up without the reader being told it was uncorrected.
+    from scripts.research.exogenous import cot as cot_module
+
+    corrected = {panel: cot_module.family_max_p(cells[panel]) for panel in cells}
+    for panel in cells:
+        for name, cell in cells[panel].items():
+            cell.pop("null_statistics", None)
+            cell["family_max_p"] = corrected[panel].get(name)
+    write("s5_macro_surprise", {"cells": cells, "family_max_p": corrected})
+    decision = surprise_module.verdict(
+        cells, DECIDING_PANELS, min_events=MIN_EVENTS_PER_DECIDING_PANEL
+    )
+    print(f"  {decision['status']}  reasons={decision['drop_reasons']}")
+    write("s5_macro_verdict", decision)
+
+
+def stage_financing() -> None:
+    """Stage D — probe for public broker financing, and never log in."""
+    from scripts.research.exogenous import financing
+
+    print("stage D: broker financing feasibility")
+    record = financing.probe()
+    for row in record["candidates"]:
+        print(f"  {row['name']:30s} status={row.get('status')} error={row.get('error', '')}")
+    print(f"  {record['status']}")
+    print(f"  {record['carry_family']}")
+    write("s3_financing_feasibility", record)
+
+
+#: The percentile signal needs 104 weeks before the first panel bar.
+COT_FROM = "2019-01-01"
+COT_TO = "2026-01-31"
+
+
+def stage_cot() -> None:
+    """Route D — speculative positioning, the first multi-currency direction test."""
+    from scripts.research.exogenous import (
+        COT_HORIZON_DAYS,
+        COT_SIGNALS,
+        MIN_EVENTS_PER_DECIDING_PANEL,
+        cot,
+    )
+    from scripts.research.round_a import panels as panel_module
+
+    print("route D: COT speculative positioning")
+    levels, provenance = cot.acquire(start=COT_FROM, end=COT_TO)
+    print(
+        f"  weeks={provenance['weeks']} currencies={provenance['currencies']} "
+        f"tuesday_only={provenance['report_is_always_tuesday']}"
+    )
+    scores = cot.currency_scores(levels)
+    write("s6_cot_positioning", {"provenance": provenance, "weeks": list(levels.index)})
+
+    report_dates = list(levels.index)
+    per_panel: dict[str, dict[str, dict[str, Any]]] = {}
+    corrected: dict[str, dict[str, float]] = {}
+    for panel_id in PANELS:
+        frames = panel_module.load_panel(panel_id)
+        per_panel[panel_id] = {}
+        for horizon in COT_HORIZON_DAYS:
+            moves = cot.week_moves(frames, report_dates, horizon=horizon)
+            #: The pre-amendment Friday entry, kept as a timing-sensitivity
+            #: diagnostic. No verdict reads it (plan amendment A-3).
+            friday = cot.week_moves(frames, report_dates, horizon=horizon, safety_days=0)
+            for signal in COT_SIGNALS:
+                summary = cot.summarise(moves, scores[signal], signal=signal)
+                summary["friday_entry_diagnostic"] = {
+                    key: value
+                    for key, value in cot.summarise(
+                        friday, scores[signal], signal=signal, draws=0
+                    ).items()
+                    if key in ("events", "gross_mean_pips", "net_mean_pips", "pairs_gross_positive")
+                }
+                per_panel[panel_id][f"{signal}_{horizon}"] = summary
+                if summary.get("events"):
+                    print(
+                        f"  {panel_id} {signal}_{horizon}: n={summary['events']} "
+                        f"gross={summary['gross_mean_pips']:+.3f} "
+                        f"net={summary['net_mean_pips']:+.3f} "
+                        f"breadth={summary['pairs_gross_positive']}/{summary['pairs']} "
+                        f"p={summary['permutation_p']}"
+                    )
+        corrected[panel_id] = cot.family_max_p(per_panel[panel_id])
+        for cell in per_panel[panel_id].values():
+            cell.pop("null_statistics", None)
+    #: The single most diagnostic statistic about a cell that agrees on the
+    #: pooled mean: do the same PAIRS carry it on both deciding panels? A
+    #: pooled agreement built from disjoint pair sets is a coincidence, not a
+    #: reproduction, and nothing else in this package would show it.
+    from scipy import stats as scipy_stats
+
+    agreement: dict[str, Any] = {}
+    first, second = DECIDING_PANELS
+    for name in sorted(per_panel[first]):
+        left = per_panel[first][name].get("per_pair") or {}
+        right = per_panel[second][name].get("per_pair") or {}
+        shared = sorted(set(left) & set(right))
+        if len(shared) < 3:
+            continue
+        x = [left[pair]["gross_mean"] for pair in shared]
+        y = [right[pair]["gross_mean"] for pair in shared]
+        agreement[name] = {
+            "pairs": len(shared),
+            "spearman": float(scipy_stats.spearmanr(x, y).statistic),
+            "pearson": float(np.corrcoef(x, y)[0, 1]),
+            "same_sign_pairs": sum(1 for a, b in zip(x, y, strict=True) if a * b > 0),
+        }
+        print(
+            f"  cross-panel {name}: spearman={agreement[name]['spearman']:+.3f} "
+            f"same-sign={agreement[name]['same_sign_pairs']}/{len(shared)}"
+        )
+    write(
+        "s6_cot_cells",
+        {"cells": per_panel, "family_max_p": corrected, "cross_panel_agreement": agreement},
+    )
+    decision = cot.verdict(
+        per_panel, DECIDING_PANELS, min_events=MIN_EVENTS_PER_DECIDING_PANEL, corrected=corrected
+    )
+    print(f"  {decision['status']} surviving={decision['surviving']}")
+    write("s6_cot_verdict", decision)
+
+
+def stage_adjudicate() -> None:
+    """Stage 8 — collect the verdicts, and record what was not run and why."""
+    from scripts.research.exogenous import ML_MIN_EVENTS_PER_DECIDING_PANEL
+
+    print("stage 8: adjudication")
+    events = read("s4_event_verdict")
+    macro = read("s5_macro_verdict")
+    financing = read("s3_financing_feasibility")
+    cot_verdict = read("s6_cot_verdict")
+    cot_cells = read("s6_cot_cells")
+
+    #: Plan §10 gates integration on a directional source that survives §13.
+    #: None did, so M0-M3 is not run -- reporting an integration of nothing
+    #: would be a table with no question behind it.
+    integration_prerequisite = (
+        bool(cot_verdict["surviving"])
+        or macro["status"]
+        == "MACRO_SURPRISE_SIGNAL_PRESENT_BUT_SINGLE_CURRENCY_INSUFFICIENT_BREADTH"
+    )
+
+    #: Plan §11's five prerequisites, evaluated rather than asserted.
+    deciding_cells = [
+        cot_cells["cells"][panel][name]
+        for panel in DECIDING_PANELS
+        for name in cot_cells["cells"][panel]
+    ]
+    populated = [cell for cell in deciding_cells if cell.get("events")]
+    ml_prerequisites = {
+        "gross_edge_survives_section_13": bool(cot_verdict["surviving"]),
+        "positive_after_realistic_cost": bool(cot_verdict["surviving"]),
+        #: `bool(populated)` first: `all()` over a generator that filters to
+        #: empty is True, so a run in which every deciding cell recorded zero
+        #: events would report "enough events". That is the same fail-open
+        #: shape the previous package shipped twice.
+        "enough_events": bool(populated)
+        and all(cell["events"] >= ML_MIN_EVENTS_PER_DECIDING_PANEL for cell in populated),
+        "simple_rule_same_sign_on_both_panels": bool(cot_verdict["surviving"]),
+        "measured_heterogeneity_to_exploit": False,
+    }
+
+    statuses = [
+        events["status"],
+        events["cost_advantage_status"],
+        "REAL_TIME_MACRO_SURVEY_CONSENSUS_NOT_AVAILABLE_WITHOUT_A_PAID_CONTRACT",
+        macro["status"],
+        financing["status"],
+        cot_verdict["status"],
+        "ML_NOT_RUN_PREREQUISITES_NOT_MET",
+        "EXOGENOUS_EXPECTED_RETURN_SOURCE_NOT_FOUND",
+    ]
+    record = {
+        "statuses": statuses,
+        "integration_stage_run": integration_prerequisite,
+        "integration_not_run_reason": (
+            None
+            if integration_prerequisite
+            else (
+                "Plan §10 runs the M0-M3 comparison only when a directional "
+                "source survives §13. None did."
+            )
+        ),
+        "ml_prerequisites": ml_prerequisites,
+        "ml_run": all(ml_prerequisites.values()),
+        "always_binding": [
+            "NON_DECISION_BEARING_EXPLORATORY_ONLY",
+            "RESEARCH_SCRATCH_NON_AUTHORITATIVE",
+            "PRODUCTION_READINESS_NOT_CLAIMED",
+            "FRESH_POOL_2016_06_02_TO_2021_04_25_UNTOUCHED",
+            "HISTORICAL_OOS_SLICE_UNTOUCHED",
+            "FUTURE_UNTOUCHED_EPOCH_UNTOUCHED",
+            "FORMAL_CONFIRMATION_NOT_PERFORMED",
+            "NO_BROKER_DEMO_OR_LIVE_CONTACT",
+        ],
+    }
+    for line in statuses:
+        print(f"  {line}")
+    write("s8_adjudication", record)
+
+
+STAGES = {
+    "calendar": stage_calendar,
+    "adjudicate": stage_adjudicate,
+    "cot": stage_cot,
+    "financing": stage_financing,
+    "events": stage_events,
+    "macro": stage_macro,
+    "surprise": stage_surprise,
+}
+
+
+def main(argv: list[str]) -> int:
+    wanted = argv[1:] or list(STAGES)
+    unknown = [name for name in wanted if name not in STAGES]
+    if unknown:
+        print(f"unknown stage(s): {unknown}; known: {list(STAGES)}")
+        return 2
+    for name in wanted:
+        STAGES[name]()
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main(sys.argv))

@@ -358,6 +358,104 @@ LEDGER: Final[list[dict[str, Any]]] = [
             "expected-return source to apply it to"
         ),
     },
+    {
+        "id": "H-019",
+        "round": "Exogenous/Stage A",
+        "population": (
+            "days on which a SCHEDULED central-bank decision was announced by the "
+            "Fed, ECB, BoJ or RBA: 40, 40, 40 and 49 dates inside 2021-2025"
+        ),
+        "target": "does a forward-known event population move differently",
+        "condition_family": "matched on day of week AND trailing-volatility tercile",
+        "horizon_family": "one UTC day",
+        "configurations": "one population, six measured quantities",
+        "prespecified": True,
+        "result": (
+            "FORWARD_KNOWN_EVENT_OPPORTUNITY_STRUCTURE_SUPPORTED. Matched "
+            "absolute move 1.5827 and 1.6333, 19 of 19 and 18 of 19 pairs, "
+            "family-max corrected p = 0.005 over the six declared quantities -- "
+            "the floor at 200 draws -- on all three panels, with the null "
+            "re-drawing event days inside the same weekday and the same "
+            "volatility tercile. The observed ratio is 11.3 and 10.9 null "
+            "standard deviations out. Range 1.46/1.42, realised vol 1.47/1.32, "
+            "tick volume 1.17/1.12. Larger than H-018's 1.33/1.13 "
+            "for a mechanical reason: the BIS effective date sits 2 to 7 days "
+            "after the decision, so H-018's window around it often missed the "
+            "announcement day. STILL NOT AN EDGE and for the same reason: spread "
+            "1.0105 and 1.0165 (wider) and the share of days clearing the round "
+            "trip 1.0042 and 0.9958 -- unity. Movement rises three fifths and "
+            "cost-clearing does not move, because ordinary days already clear. "
+            "Four of eight central banks could not be acquired without a login, "
+            "so GBP, CAD, NZD and CHF have no anchor and GBP_CHF is excluded by "
+            "construction"
+        ),
+        "status": "OPEN - a forward-known opportunity anchor with nothing to point it at",
+    },
+    {
+        "id": "H-020",
+        "round": "Exogenous/Stage C",
+        "population": "84 US CPI releases rebuilt from ALFRED vintages, 24 per deciding panel",
+        "target": "does a real-time inflation surprise carry direction for the USD",
+        "condition_family": "standardised surprise against the Cleveland Fed daily nowcast",
+        "horizon_family": "1h, 4h, 1d from the first bar after 08:30 America/New_York",
+        "configurations": "2 indicators x 3 horizons",
+        "prespecified": True,
+        "result": (
+            "MACRO_SURPRISE_DIRECTIONAL_EDGE_NOT_SUPPORTED. The pre-registered "
+            "sign -- a hot print appreciates the USD -- is positive on the second "
+            "deciding panel (+9.1 and +17.3 gross pips at 1h and 4h, p = 0.050 "
+            "and 0.025) and NEGATIVE on the first, so the family is dropped on a "
+            "panel sign reversal rather than inverted. Also dropped for 24 events "
+            "against a floor of 30 and for being one currency, both of which the "
+            "plan stated before anything was measured. The expectation is a MODEL "
+            "NOWCAST, not a survey consensus: no free source carries consensus "
+            "history, so REAL_TIME_MACRO_SURVEY_CONSENSUS_NOT_AVAILABLE_WITHOUT_A_"
+            "PAID_CONTRACT and none was synthesised. A null here does not refute a "
+            "consensus-surprise hypothesis"
+        ),
+        "status": "CLOSED - not testable at useful breadth on free data",
+    },
+    {
+        "id": "H-021",
+        "round": "Exogenous/Route D",
+        "population": (
+            "369 weekly CFTC Traders in Financial Futures reports, leveraged-money "
+            "net position over open interest, all seven non-USD currencies"
+        ),
+        "target": "is speculative positioning an expected-return source",
+        "condition_family": "contrarian on level/percentile/extreme, momentum on change",
+        "horizon_family": "1 and 4 calendar weeks from the first bar after Monday 20:30 UTC",
+        "configurations": "4 signals x 2 horizons",
+        "prespecified": True,
+        "result": (
+            "COT_EDGE_NOT_SUPPORTED. All eight cells dropped; six on gross sign, "
+            "breadth or cost, and the two four-week positioning-level cells on the "
+            "family-wise null AND the tail ceiling. net_extreme_4w -- fade a "
+            "currency above the 90th percentile of its own trailing 104 weeks, "
+            "hold four weeks -- earns +24.39 and +24.03 gross, +19.48 and +20.67 "
+            "net, positive on all three panels and still positive at double cost. "
+            "THREE pre-registered checks say that is a coincidence. (1) The ten "
+            "largest events are 52.3% and 57.3% of net, above the 50% ceiling. "
+            "(2) The same PAIRS do not carry it: Spearman -0.308 across the two "
+            "deciding panels, 10 of 20 signs agreeing, which is chance. (3) The "
+            "effect comes from OPPOSITE HALVES of the universe -- USD-leg pairs "
+            "-7.78 then +49.65, non-USD +60.39 then -0.15. The naive t of 2.62 "
+            "and 2.94 counts 926 and 1217 pair-events from 77 and 94 weeks as "
+            "independent when the pairs share legs and the four-week holds "
+            "overlap; a circular-shift null that preserves the runs of "
+            "consecutive extreme weeks gives p = 0.413 and 0.164, family-max "
+            "0.746 and 0.493. The 95% interval spans zero on both panels and the "
+            "80% power threshold is 71.0 and 65.7 pips against an observed 24. "
+            "An unconditional-long baseline over the same events returns +19.6 "
+            "against the rule's +24.0 on the second panel and beats it outright "
+            "on 2025. Nothing was moved to rescue it"
+        ),
+        "status": (
+            "CLOSED - a replication of the same design on a window of the same "
+            "length would have the same power and settle nothing; spending an "
+            "archive window on it is not recommended"
+        ),
+    },
 ]
 
 #: Rough cumulative count of configurations evaluated against the 2025
