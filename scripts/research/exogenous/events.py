@@ -202,7 +202,7 @@ def population(
     rng = np.random.default_rng(seed)
     rows: list[dict[str, Any]] = []
     excluded: list[str] = []
-    null_ratios: list[list[float]] = []
+    null_ratios: list[dict[str, list[float]]] = []
 
     for pair, frame in sorted(panel.items()):
         dates = event_dates_for_pair(pair, calendar)
@@ -232,11 +232,12 @@ def population(
             }
         rows.append(row)
 
-        pair_null = []
+        pair_null: dict[str, list[float]] = {column: [] for column in MEASURED}
         for _ in range(draws):
-            value = matched_ratio(table, _permute(table, event, rng), "abs_move")
-            if value is not None:
-                pair_null.append(value)
+            drawn = _permute(table, event, rng)
+            for column in MEASURED:
+                value = matched_ratio(table, drawn, column)
+                pair_null[column].append(float("nan") if value is None else value)
         null_ratios.append(pair_null)
 
     def _pool(column: str, key: str) -> float | None:
@@ -254,26 +255,74 @@ def population(
         for column in MEASURED
     }
 
-    observed = pooled["abs_move"]["matched_ratio"]
-    null_draw_means: list[float] = []
-    if null_ratios and all(null_ratios):
-        width = min(len(values) for values in null_ratios)
-        null_draw_means = [
-            float(np.mean([values[index] for values in null_ratios])) for index in range(width)
+    #: Plan §12 declares this family as six cells and asks for a Westfall-Young
+    #: family-max correction over them. A first version computed a permutation
+    #: `p` for `abs_move` alone and left `SCHEDULED_EVENT_CELLS` a dead constant.
+    per_draw: dict[str, list[float]] = {}
+    for column in MEASURED:
+        if not null_ratios:
+            continue
+        width = min(len(pair_null[column]) for pair_null in null_ratios)
+        per_draw[column] = [
+            float(np.nanmean([pair_null[column][index] for pair_null in null_ratios]))
+            for index in range(width)
         ]
-    p_value = None
-    if null_draw_means and observed is not None:
-        extreme = sum(1 for value in null_draw_means if abs(value - 1.0) >= abs(observed - 1.0))
-        p_value = (extreme + 1) / (len(null_draw_means) + 1)
+
+    p_values: dict[str, float | None] = {}
+    null_summary: dict[str, dict[str, float | None]] = {}
+    for column in MEASURED:
+        draws_here = [value for value in per_draw.get(column, []) if value == value]
+        observed = pooled[column]["matched_ratio"]
+        if not draws_here or observed is None:
+            p_values[column] = None
+            null_summary[column] = {"mean": None, "sd": None}
+            continue
+        extreme = sum(1 for value in draws_here if abs(value - 1.0) >= abs(observed - 1.0))
+        p_values[column] = (extreme + 1) / (len(draws_here) + 1)
+        null_summary[column] = {
+            "mean": float(np.mean(draws_here)),
+            "sd": float(np.std(draws_here, ddof=1)) if len(draws_here) > 1 else None,
+        }
+
+    #: the family maximum, on the shared draws, over the six declared cells
+    usable = {column: values for column, values in per_draw.items() if values}
+    corrected: dict[str, float | None] = dict.fromkeys(MEASURED)
+    widths = {len(values) for values in usable.values()}
+    if usable and len(widths) == 1:
+        width = widths.pop()
+        maxima = [
+            max(
+                abs(values[index] - 1.0)
+                for values in usable.values()
+                if values[index] == values[index]
+            )
+            for index in range(width)
+        ]
+        for column in usable:
+            observed = pooled[column]["matched_ratio"]
+            if observed is None:
+                continue
+            extreme = sum(1 for value in maxima if value >= abs(observed - 1.0))
+            corrected[column] = (extreme + 1) / (len(maxima) + 1)
 
     return {
         "pairs": len(rows),
         "excluded_pairs": excluded,
         "per_pair": rows,
         "pooled": pooled,
-        "null_draws": len(null_draw_means),
-        "abs_move_permutation_p": p_value,
-        "null_mean": float(np.mean(null_draw_means)) if null_draw_means else None,
+        "null_draws": len(per_draw.get("abs_move", [])),
+        "abs_move_permutation_p": p_values.get("abs_move"),
+        "permutation_p": p_values,
+        "family_max_p": corrected,
+        "null_summary": null_summary,
+        "null_mean": (null_summary.get("abs_move") or {}).get("mean"),
+        #: Disclosed rather than corrected: each pair's event days are re-drawn
+        #: with its own draw, so the pooled null does not carry the dependence
+        #: that comes from all pairs sharing the same meeting dates. The pooled
+        #: null is therefore tighter than the truth and this `p` is a lower
+        #: bound. The margin is reported beside it so a reader can judge how much
+        #: that matters.
+        "null_is_drawn_per_pair": True,
     }
 
 
@@ -297,7 +346,8 @@ def verdict(per_panel: dict[str, dict[str, Any]], deciding: tuple[str, ...]) -> 
         for row in rows
     )
     p_values = [row["abs_move_permutation_p"] for row in rows]
-    significant = complete and all(value is not None and value < 0.05 for value in p_values)
+    corrected = [(row.get("family_max_p") or {}).get("abs_move") for row in rows]
+    significant = complete and all(value is not None and value < 0.05 for value in corrected)
 
     supported = bool(above_one and breadth_ok and significant)
     spreads = [row["pooled"]["spread"]["matched_ratio"] for row in rows]
@@ -314,6 +364,7 @@ def verdict(per_panel: dict[str, dict[str, Any]], deciding: tuple[str, ...]) -> 
             (row["pooled"]["abs_move"]["pairs_matched_above_one"], row["pairs"]) for row in rows
         ],
         "permutation_p": p_values,
+        "family_max_p": corrected,
         "spread_matched": spreads,
         "exceeds_cost_matched": [row["pooled"]["exceeds_cost"]["matched_ratio"] for row in rows],
         "cost_advantage_status": (

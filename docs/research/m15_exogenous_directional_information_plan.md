@@ -544,6 +544,44 @@ in §17 are unchanged and now mean what they say. Nothing about the signals,
 signs, pair mapping, cost or kill rules changes, and no COT statistic had been
 computed when this was written.
 
+### A-4 — the COT null is a circular shift, and the tail clause is the plan's
+
+**Made after an independent review, before the corrected numbers existed, and
+both parts are tightenings.**
+
+*The null.* §17's null permuted whole week labels of the score table. That
+preserves the within-week cross-section and the price side, but **not** the
+serial persistence of the signal: a currency sits above its 90th percentile for
+runs of consecutive weeks, and four-week holds on consecutive weeks are the same
+trend counted four times. A free permutation scatters those runs, so in the null
+the overlapping windows carry near-independent signs and partly cancel while in
+the data they add coherently — which makes the null **anti-conservative**. It is
+replaced by a **circular shift** of the whole score table, which preserves the
+serial structure and the cross-section exactly and moves only the alignment with
+the price side.
+
+*The tail clause.* §13 says "the top 10 events contribute more than 50% of
+**net**", which is what the previous package's implementation computes. This
+package computed the top ten over the sum of the **positive** gross only. At
+this sample size that statistic returns roughly the value pure noise would give,
+so it could not fail; it is not the pre-registered clause. The verdict now reads
+the plan's definition, and the substituted one is kept beside it as a diagnostic
+so the size of the error is visible.
+
+*Criterion 9.* §16 requires a candidate to be "no worse than a simple baseline"
+and nothing measured one. The baseline is now **unconditional long over exactly
+the same event set** — the simplest rule taking the same trades at the same
+times — and it is reported per cell.
+
+*Criterion 7.* §17's USD score is a continuous mean of the other seven and is
+essentially never zero, so a USD pair takes a position in almost every week in
+which anything is extreme, whether or not its own non-USD leg is. The USD-leg
+and non-USD-leg halves are therefore reported separately; a breadth claim read
+off the pooled number would be reading one common dollar factor as seven
+currencies.
+
+None of this changes a signal, a sign, a horizon, a cell count or a cost model.
+
 ### A-3 — the COT entry waits until Monday, because Friday can be a look-ahead
 
 **Made after the Friday-entry numbers were computed and before the Monday-entry

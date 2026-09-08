@@ -25,8 +25,9 @@ archives the whole daily path per target month, keyless. It is used, and it is
 labelled `MODEL_NOWCAST_SURPRISE_NOT_SURVEY_SURPRISE` everywhere it appears: a
 null measured against it does **not** refute a consensus-surprise hypothesis.
 
-The archive's CPI path stops on the release date rather than running to the end
-of the window, which is what a real-time record looks like and what a re-run
+The archive's CPI path stops on the business day **before** the release, and
+the actual is placed on the release date, rather than running to the end of the
+window, which is what a real-time record looks like and what a re-run
 would not. That is evidence, not proof; the residual risk that the published
 archive was recomputed with revised inputs cannot be settled from the file and
 is disclosed rather than assumed away.
@@ -170,8 +171,15 @@ def first_release_table(
         return [], provenance
     #: one vintage before the window, so the first release inside it has a
     #: predecessor to read the prior-known value from
-    start_index = max(0, vintages.index(inside[0]) - 1)
+    first_index = vintages.index(inside[0])
+    start_index = max(0, first_index - 1)
     walk = vintages[start_index : vintages.index(inside[-1]) + 1]
+    #: When the window opens on ALFRED's own first vintage there is no
+    #: predecessor to read the prior-known value from, so that vintage becomes
+    #: the seed and the months it introduced are never recorded. Inert here —
+    #: the window opens 90-odd vintages into an archive of hundreds — but a
+    #: silent drop is not the same as a recorded one.
+    boundary_release_skipped = first_index == 0
 
     seen: set[str] = set()
     previous: dict[str, float] = {}
@@ -202,6 +210,7 @@ def first_release_table(
         previous = current
     provenance["vintages_walked"] = len(walk)
     provenance["releases_recorded"] = len(rows)
+    provenance["boundary_release_skipped"] = boundary_release_skipped
     return rows, provenance
 
 
@@ -219,7 +228,18 @@ def _label_to_date(label: str, target_year: int, target_month: int) -> dt.date |
     if match is None:
         return None
     month, day = int(match.group(1)), int(match.group(2))
-    year = target_year + 1 if month < target_month else target_year
+    #: The window spans the target month and the one after it, so the only wrap
+    #: is December -> January. A rule of "month < target_month means next year"
+    #: is wrong for a January target: a December label would map to the December
+    #: of the same year, eleven months late. Inert on the acquired archive,
+    #: because no such label appears, and wrong all the same.
+    following = target_month % 12 + 1
+    if month == target_month:
+        year = target_year
+    elif month == following:
+        year = target_year + 1 if target_month == 12 else target_year
+    else:
+        return None
     try:
         return dt.date(year, month, day)
     except ValueError:
@@ -258,10 +278,18 @@ def cleveland_nowcast() -> tuple[dict[str, dict[str, Any]], dict[str, Any]]:
         for dataset in chart["dataset"]:
             name = dataset["seriesname"]
             values = [point.get("value") for point in dataset["data"]]
+            #: The datasets are aligned to the date labels only. If the archive
+            #: ever ships one point per *category* instead, the lengths stop
+            #: matching and silently truncating would shift every release. Fail
+            #: closed rather than serve a mis-dated path.
+            if len(values) > len(dates):
+                raise ValueError(
+                    f"{subcaption}: {len(values)} points against {len(dates)} date labels"
+                )
             paired = {
                 dates[index]: float(value)
                 for index, value in enumerate(values)
-                if value not in (None, "") and index < len(dates)
+                if value not in (None, "")
             }
             if name.startswith("Actual "):
                 if paired:
@@ -303,6 +331,7 @@ def build_releases(
 
     months = sorted(set().union(*(set(rows) for rows in per_indicator.values())))
     releases: list[dict[str, Any]] = []
+    disagreements: list[dict[str, Any]] = []
     for month in months:
         target = month[:7]
         archive = nowcast.get(target)
@@ -313,7 +342,9 @@ def build_releases(
             if month in per_indicator[key]
         }
         if len(set(release_dates.values())) != 1:
-            row["release_date_disagreement"] = release_dates
+            #: recorded, not dropped: a first version wrote the diagnostic into
+            #: a row and then `continue`d past the append, so both vanished
+            disagreements.append({"observation_month": month, "release_dates": release_dates})
             continue
         release_date = next(iter(release_dates.values()))
         row["release_date"] = release_date
@@ -342,6 +373,7 @@ def build_releases(
                 ),
             }
         releases.append(row)
+    provenance["release_date_disagreements"] = disagreements
     return releases, provenance
 
 

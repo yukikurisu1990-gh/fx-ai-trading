@@ -140,12 +140,17 @@ def event_returns(
     return rows
 
 
-def _tail_share(values: list[float]) -> float | None:
-    total = float(sum(values))
+def _tail_share(gross: np.ndarray, net: np.ndarray) -> float | None:
+    """Plan §13: the ten largest events over the **net** total, negatives included.
+
+    A first version divided the top ten by the sum of the positive gross only,
+    which at these sample sizes returns roughly the value pure noise gives and
+    therefore cannot fail. That is not the pre-registered clause.
+    """
+    total = float(net.sum())
     if not total:
         return None
-    top = sorted(values, reverse=True)[:10]
-    return float(sum(top) / total)
+    return float(np.sort(gross)[-10:].sum() / total)
 
 
 def summarise(
@@ -198,6 +203,7 @@ def summarise(
         frame["direction"].to_numpy(dtype=float) == 0, 1.0, frame["direction"].to_numpy(dtype=float)
     )
     null_statistics: list[float] = []
+    null_means: list[float] = []
     for _ in range(draws):
         shuffled = rng.permutation(per_release_z)
         drawn_direction = np.sign(shuffled[release_index]) * MACRO_DIRECTION_SIGN * sides
@@ -205,6 +211,7 @@ def summarise(
         null_statistics.append(
             float(np.mean(drawn) / (np.std(drawn, ddof=1) / np.sqrt(len(drawn))))
         )
+        null_means.append(float(np.mean(drawn)))
     extreme = sum(1 for value in null_statistics if abs(value) >= abs(statistic))
     p_value = (extreme + 1) / (len(null_statistics) + 1)
 
@@ -218,12 +225,20 @@ def summarise(
         "net_mean_pips_double_cost": float(np.mean(gross - 2.0 * frame["cost_pips"].to_numpy())),
         "gross_t": statistic,
         "permutation_p": p_value,
+        "null_statistics": null_statistics,
+        #: Plan §13 asks for power whenever a family is dropped for absence of
+        #: effect. The dispersion is the null distribution of the mean, not an
+        #: i.i.d. standard error: the USD pairs share a leg, so an i.i.d. figure
+        #: would flatter the design. 2.802 is z(0.975) + z(0.80).
+        "detectable_at_80pct_power_pips": (
+            float(2.802 * np.std(null_means, ddof=1)) if len(null_means) > 1 else None
+        ),
         "directional_ic": ic,
         "hit_rate": float((gross > 0).mean()),
         "pairs_gross_positive": sum(1 for v in per_pair.values() if v["gross_mean"] > 0),
         "pairs_net_positive": sum(1 for v in per_pair.values() if v["net_mean"] > 0),
         "per_pair": per_pair,
-        "tail_share_of_gross": _tail_share([float(v) for v in gross if v > 0]),
+        "tail_share_of_net": _tail_share(gross, net),
         "positive_surprise": {
             "events": int(positive["release_date"].nunique()),
             "gross_mean": float(positive["gross_pips"].mean()) if len(positive) else None,
@@ -268,9 +283,12 @@ def verdict(
             if all(value <= 0 for value in gross):
                 reasons.append(f"NO_GROSS_EFFECT_{name}")
             nets = [cell["net_mean_pips"] for cell in per_panel]
-            if all(value <= 0 for value in nets):
+            #: `any`, not `all`: a family that loses money on either deciding
+            #: panel is not a candidate. The COT verdict already reads it this
+            #: way and the two were inconsistent.
+            if any(value <= 0 for value in nets):
                 reasons.append(f"NEGATIVE_AFTER_COST_{name}")
-            tails = [cell.get("tail_share_of_gross") for cell in per_panel]
+            tails = [cell.get("tail_share_of_net") for cell in per_panel]
             if any(value is not None and value > TAIL_SHARE_CEILING for value in tails):
                 reasons.append(f"TAIL_ABOVE_CEILING_{name}")
 

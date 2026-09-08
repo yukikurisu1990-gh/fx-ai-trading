@@ -57,6 +57,7 @@ import numpy as np
 import pandas as pd
 
 from scripts.research.exogenous import (
+    BREADTH_SHARE,
     COT_EXTREME_LOWER,
     COT_EXTREME_UPPER,
     COT_HORIZON_DAYS,
@@ -223,9 +224,14 @@ def publication_timestamp(
     report week delays the release by one business day while the as-of date
     stays Tuesday, and the report carries no release timestamp to detect that.
     `safety_days` (plan amendment A-3) waits three calendar days past the
-    nominal Friday, which is at or after every possible publication. Passing
-    `safety_days=0` reproduces the pre-amendment Friday entry and exists only
-    for the timing-sensitivity diagnostic.
+    nominal Friday. That is at or after every **one-business-day** holiday
+    delay, which is the delay the CFTC applies for a federal holiday in the
+    report week — and under standard time the margin is exactly fifteen
+    minutes, because entry is the first bar *strictly after* 20:30 UTC. It does
+    **not** cover a multi-day suspension, and the report carries no release
+    timestamp from which one could be detected. Passing `safety_days=0`
+    reproduces the pre-amendment Friday entry and exists only for the
+    timing-sensitivity diagnostic.
     """
     day = dt.date.fromisoformat(report_date)
     friday = day + dt.timedelta(days=(4 - day.weekday()) % 7)
@@ -350,11 +356,23 @@ def summarise(
 
     rng = np.random.default_rng(seed)
     null_statistics: list[float] = []
-    index = list(scores.index)
-    for _ in range(draws):
-        shuffled = scores.copy()
-        shuffled.index = pd.Index(rng.permutation(index), name=scores.index.name)
-        shuffled = shuffled.sort_index()
+    null_means: list[float] = []
+    #: A **circular shift** of the whole score table, not a free permutation of
+    #: week labels. A currency sits above its 90th percentile for runs of
+    #: consecutive weeks and the four-week holds overlap, so a free permutation
+    #: scatters those runs: in the null the overlapping windows carry
+    #: near-independent signs and partly cancel, while in the data they add
+    #: coherently. That makes a free permutation anti-conservative. A circular
+    #: shift preserves the serial persistence exactly and the within-week cross
+    #: section exactly, and moves only the alignment with the price side.
+    values_matrix = scores.to_numpy()
+    offsets = rng.permutation(np.arange(1, len(scores)))[:draws]
+    for offset in offsets:
+        shuffled = pd.DataFrame(
+            np.roll(values_matrix, int(offset), axis=0),
+            index=scores.index,
+            columns=scores.columns,
+        )
         drawn = evaluate(moves, shuffled, signal=signal)
         if not drawn:
             continue
@@ -362,17 +380,59 @@ def summarise(
         null_statistics.append(
             float(np.mean(values) / (np.std(values, ddof=1) / np.sqrt(len(values))))
         )
+        null_means.append(float(np.mean(values)))
     extreme = sum(1 for value in null_statistics if abs(value) >= abs(statistic))
     p_value = (extreme + 1) / (len(null_statistics) + 1) if null_statistics else None
 
+    #: Plan §13's clause, as the plan defines it and as the previous package
+    #: implemented it: the ten largest events over the **net** total, negatives
+    #: included. A first version divided the top ten by the sum of the POSITIVE
+    #: gross only, which at this sample size returns roughly the value pure
+    #: noise would give and therefore cannot fail. Both are recorded so the size
+    #: of that substitution is visible.
+    net_total = float(frame["net_pips"].sum())
+    top_ten = float(np.sort(gross)[-10:].sum())
+    tail = float(top_ten / net_total) if net_total else None
     positive = [float(value) for value in gross if value > 0]
-    tail = None
-    if positive and sum(positive):
-        tail = float(sum(sorted(positive, reverse=True)[:10]) / sum(positive))
+    tail_positive_only = (
+        float(sum(sorted(positive, reverse=True)[:10]) / sum(positive))
+        if positive and sum(positive)
+        else None
+    )
 
+    #: Plan §16 criterion 9 — "no worse than a simple baseline". The baseline is
+    #: unconditional long over exactly the same event set, which is the
+    #: simplest rule that takes the same trades at the same times. A first
+    #: version of this package claimed the criterion was met without measuring
+    #: it.
+    baseline = [entry["move_pips"] for entries in moves.values() for entry in entries]
+    #: Plan §16 criterion 7 — "more than one currency". The USD score is a
+    #: continuous mean of the other seven and is essentially never zero, so a
+    #: USD pair takes a position in almost every week in which anything is
+    #: extreme, whether or not its own non-USD leg is. Reporting the two halves
+    #: separately is the only way that criterion can be read honestly.
+    has_usd = frame["pair"].str.contains("USD")
+    interval = (
+        [
+            float(np.mean(gross) - 1.96 * np.std(null_means, ddof=1)),
+            float(np.mean(gross) + 1.96 * np.std(null_means, ddof=1)),
+        ]
+        if len(null_means) > 1
+        else None
+    )
     return {
         "signal": signal,
         "sign": COT_SIGNS[signal],
+        "baseline_unconditional_long_pips": float(np.mean(baseline)) if baseline else None,
+        "usd_leg_events": int(has_usd.sum()),
+        "usd_leg_gross_mean_pips": (
+            float(frame.loc[has_usd, "gross_pips"].mean()) if bool(has_usd.any()) else None
+        ),
+        "non_usd_leg_events": int((~has_usd).sum()),
+        "non_usd_leg_gross_mean_pips": (
+            float(frame.loc[~has_usd, "gross_pips"].mean()) if bool((~has_usd).any()) else None
+        ),
+        "gross_mean_ci95_pips": interval,
         "events": int(frame["report_date"].nunique()),
         "pair_events": int(len(frame)),
         "pairs": len(per_pair),
@@ -389,11 +449,24 @@ def summarise(
         "pairs_gross_positive": sum(1 for value in per_pair.values() if value["gross_mean"] > 0),
         "pairs_net_positive": sum(1 for value in per_pair.values() if value["net_mean"] > 0),
         "mean_held_days": float(frame["held_days"].mean()),
-        "tail_share_of_gross": tail,
+        "tail_share_of_net": tail,
+        "tail_share_of_positive_gross_diagnostic": tail_positive_only,
         #: Plan §13: when a family is dropped for absence of effect, say what the
-        #: design could have detected. This is the two-sided 5% / 80% power
-        #: threshold, 2.8 standard errors of the mean gross pip.
-        "detectable_at_80pct_power_pips": float(2.8 * np.std(gross, ddof=1) / np.sqrt(len(gross))),
+        #: design could have detected. The dispersion comes from the **null
+        #: distribution of the mean**, not from an i.i.d. standard error: the
+        #: pairs share currency legs and the four-week holds overlap, so an
+        #: i.i.d. standard error understates the spread by the same factor that
+        #: makes the naive `t` misleading, and a power figure built on it would
+        #: flatter the design in exactly the place this package criticises the
+        #: `t`. 2.802 is z(0.975) + z(0.80). The i.i.d. figure is kept beside it
+        #: so the size of that mistake is visible rather than asserted.
+        "detectable_at_80pct_power_pips": (
+            float(2.802 * np.std(null_means, ddof=1)) if len(null_means) > 1 else None
+        ),
+        "detectable_at_80pct_power_pips_iid": float(
+            2.802 * np.std(gross, ddof=1) / np.sqrt(len(gross))
+        ),
+        "null_mean_sd_pips": (float(np.std(null_means, ddof=1)) if len(null_means) > 1 else None),
         "per_pair": per_pair,
     }
 
@@ -409,7 +482,14 @@ def family_max_p(cells: dict[str, dict[str, Any]]) -> dict[str, Any]:
     usable = {name: cell for name, cell in cells.items() if cell.get("null_statistics")}
     if not usable:
         return {}
-    width = min(len(cell["null_statistics"]) for cell in usable.values())
+    widths = {len(cell["null_statistics"]) for cell in usable.values()}
+    #: Westfall-Young needs draw b to be the SAME draw in every cell. A cell
+    #: that skipped a draw would shorten and shift its list, and positional
+    #: indexing would then silently pair draw b of one cell with draw b+1 of
+    #: another. Fail closed rather than truncate.
+    if len(widths) != 1:
+        return {}
+    width = widths.pop()
     maxima = [
         max(abs(cell["null_statistics"][index]) for cell in usable.values())
         for index in range(width)
@@ -451,9 +531,9 @@ def verdict(
                 reasons.append("NO_GROSS_EFFECT")
             if any(cell["net_mean_pips"] <= 0 for cell in cells):
                 reasons.append("NEGATIVE_AFTER_COST")
-            if any(cell["pairs_gross_positive"] < 0.6 * cell["pairs"] for cell in cells):
+            if any(cell["pairs_gross_positive"] < BREADTH_SHARE * cell["pairs"] for cell in cells):
                 reasons.append("INSUFFICIENT_BREADTH")
-            tails = [cell.get("tail_share_of_gross") for cell in cells]
+            tails = [cell.get("tail_share_of_net") for cell in cells]
             if any(value is not None and value > TAIL_SHARE_CEILING for value in tails):
                 reasons.append("TAIL_ABOVE_CEILING")
             adjusted = [

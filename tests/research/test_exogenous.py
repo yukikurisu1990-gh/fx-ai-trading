@@ -282,6 +282,9 @@ def test_the_event_verdict_fails_closed_on_a_missing_panel() -> None:
         },
         "pairs": 19,
         "abs_move_permutation_p": 0.005,
+        #: the verdict reads the FAMILY-corrected value, not the raw one --
+        #: plan §12 declares six cells and a Westfall-Young maximum over them
+        "family_max_p": {"abs_move": 0.005},
     }
     both = events.verdict({"a": good, "b": good}, ("a", "b"))
     assert both["status"] == "FORWARD_KNOWN_EVENT_OPPORTUNITY_STRUCTURE_SUPPORTED"
@@ -289,6 +292,32 @@ def test_the_event_verdict_fails_closed_on_a_missing_panel() -> None:
     one = events.verdict({"a": good}, ("a", "b"))
     assert one["status"] == "SCHEDULED_EVENT_OPPORTUNITY_STRUCTURE_NOT_SUPPORTED"
     assert one["complete"] is False
+
+
+def test_the_event_verdict_reads_the_family_corrected_p() -> None:
+    """An uncorrected `p` at the floor must not pass the declared six-cell family."""
+    row = {
+        "pooled": {
+            "abs_move": {"matched_ratio": 1.5, "pooled_ratio": 1.5, "pairs_matched_above_one": 19},
+            "spread": {"matched_ratio": 1.01, "pooled_ratio": 1.01, "pairs_matched_above_one": 10},
+            "exceeds_cost": {
+                "matched_ratio": 1.0,
+                "pooled_ratio": 1.0,
+                "pairs_matched_above_one": 10,
+            },
+        },
+        "pairs": 19,
+        "abs_move_permutation_p": 0.005,
+        "family_max_p": {"abs_move": 0.30},
+    }
+    decision = events.verdict({"a": row, "b": row}, ("a", "b"))
+    assert decision["status"] == "SCHEDULED_EVENT_OPPORTUNITY_STRUCTURE_NOT_SUPPORTED"
+    #: and a missing correction fails closed rather than falling back to the raw p
+    bare = {key: value for key, value in row.items() if key != "family_max_p"}
+    assert (
+        events.verdict({"a": bare, "b": bare}, ("a", "b"))["status"]
+        == "SCHEDULED_EVENT_OPPORTUNITY_STRUCTURE_NOT_SUPPORTED"
+    )
 
 
 def test_the_event_verdict_needs_the_declared_breadth() -> None:
@@ -312,6 +341,7 @@ def test_the_event_verdict_needs_the_declared_breadth() -> None:
         },
         "pairs": 19,
         "abs_move_permutation_p": 0.005,
+        "family_max_p": {"abs_move": 0.005},
     }
     assert (
         events.verdict({"a": thin, "b": thin}, ("a", "b"))["status"]

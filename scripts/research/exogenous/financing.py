@@ -92,16 +92,24 @@ def probe() -> dict[str, Any]:
             with urllib.request.urlopen(request, timeout=90, context=_CONTEXT) as response:  # noqa: S310
                 body = response.read(400_000)
                 text = body.decode("utf-8", "replace").lower()
+                record["status"] = int(response.status)
+                record["bytes"] = len(body)
+                record["content_type"] = response.headers.get("Content-Type")
                 record.update(
                     {
-                        "status": int(response.status),
-                        "bytes": len(body),
-                        "content_type": response.headers.get("Content-Type"),
                         "mentions_login": any(
                             token in text for token in ("sign in", "log in", "login")
                         ),
                         "mentions_api_token": "token" in text or "api key" in text,
-                        "history_offered": "historical" in text or "history" in text,
+                        "mentions_history": "historical" in text or "history" in text,
+                        #: A *word* is not a data archive. The positive branch
+                        #: requires a machine-readable payload as well, so a
+                        #: marketing page that happens to say "historical"
+                        #: cannot flip the verdict to "publicly available".
+                        "is_data_payload": any(
+                            token in (record.get("content_type") or "").lower()
+                            for token in ("csv", "json", "zip", "excel", "spreadsheet")
+                        ),
                     }
                 )
         except urllib.error.HTTPError as exc:
@@ -113,7 +121,11 @@ def probe() -> dict[str, Any]:
     reachable_history = [
         row
         for row in results
-        if row.get("status") == 200 and row.get("history_offered") and not row.get("mentions_login")
+        if row.get("status") == 200
+        and row.get("mentions_history")
+        and row.get("is_data_payload")
+        and not row.get("mentions_login")
+        and not row.get("mentions_api_token")
     ]
     return {
         "probed_utc": dt.datetime.now(dt.UTC).isoformat(timespec="seconds"),

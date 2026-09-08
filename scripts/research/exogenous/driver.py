@@ -19,6 +19,8 @@ import sys
 from pathlib import Path
 from typing import Any
 
+import numpy as np
+
 from scripts.research.exogenous import (
     CLASSIFICATION,
     CLASSIFICATION_SECONDARY,
@@ -194,7 +196,18 @@ def stage_surprise() -> None:
                         f"ic={summary['directional_ic']:+.4f} "
                         f"p={summary['permutation_p']:.3f}"
                     )
-    write("s5_macro_surprise", cells)
+    #: Plan §12 declares six macro cells corrected within themselves. A first
+    #: version reported each cell's own permutation `p` and skipped the
+    #: correction entirely, which is how "p = 0.025 on its own null" got into
+    #: the write-up without the reader being told it was uncorrected.
+    from scripts.research.exogenous import cot as cot_module
+
+    corrected = {panel: cot_module.family_max_p(cells[panel]) for panel in cells}
+    for panel in cells:
+        for name, cell in cells[panel].items():
+            cell.pop("null_statistics", None)
+            cell["family_max_p"] = corrected[panel].get(name)
+    write("s5_macro_surprise", {"cells": cells, "family_max_p": corrected})
     decision = surprise_module.verdict(
         cells, DECIDING_PANELS, min_events=MIN_EVENTS_PER_DECIDING_PANEL
     )
@@ -271,7 +284,36 @@ def stage_cot() -> None:
         corrected[panel_id] = cot.family_max_p(per_panel[panel_id])
         for cell in per_panel[panel_id].values():
             cell.pop("null_statistics", None)
-    write("s6_cot_cells", {"cells": per_panel, "family_max_p": corrected})
+    #: The single most diagnostic statistic about a cell that agrees on the
+    #: pooled mean: do the same PAIRS carry it on both deciding panels? A
+    #: pooled agreement built from disjoint pair sets is a coincidence, not a
+    #: reproduction, and nothing else in this package would show it.
+    from scipy import stats as scipy_stats
+
+    agreement: dict[str, Any] = {}
+    first, second = DECIDING_PANELS
+    for name in sorted(per_panel[first]):
+        left = per_panel[first][name].get("per_pair") or {}
+        right = per_panel[second][name].get("per_pair") or {}
+        shared = sorted(set(left) & set(right))
+        if len(shared) < 3:
+            continue
+        x = [left[pair]["gross_mean"] for pair in shared]
+        y = [right[pair]["gross_mean"] for pair in shared]
+        agreement[name] = {
+            "pairs": len(shared),
+            "spearman": float(scipy_stats.spearmanr(x, y).statistic),
+            "pearson": float(np.corrcoef(x, y)[0, 1]),
+            "same_sign_pairs": sum(1 for a, b in zip(x, y, strict=True) if a * b > 0),
+        }
+        print(
+            f"  cross-panel {name}: spearman={agreement[name]['spearman']:+.3f} "
+            f"same-sign={agreement[name]['same_sign_pairs']}/{len(shared)}"
+        )
+    write(
+        "s6_cot_cells",
+        {"cells": per_panel, "family_max_p": corrected, "cross_panel_agreement": agreement},
+    )
     decision = cot.verdict(
         per_panel, DECIDING_PANELS, min_events=MIN_EVENTS_PER_DECIDING_PANEL, corrected=corrected
     )
@@ -305,14 +347,16 @@ def stage_adjudicate() -> None:
         for panel in DECIDING_PANELS
         for name in cot_cells["cells"][panel]
     ]
+    populated = [cell for cell in deciding_cells if cell.get("events")]
     ml_prerequisites = {
         "gross_edge_survives_section_13": bool(cot_verdict["surviving"]),
         "positive_after_realistic_cost": bool(cot_verdict["surviving"]),
-        "enough_events": all(
-            cell.get("events", 0) >= ML_MIN_EVENTS_PER_DECIDING_PANEL
-            for cell in deciding_cells
-            if cell.get("events")
-        ),
+        #: `bool(populated)` first: `all()` over a generator that filters to
+        #: empty is True, so a run in which every deciding cell recorded zero
+        #: events would report "enough events". That is the same fail-open
+        #: shape the previous package shipped twice.
+        "enough_events": bool(populated)
+        and all(cell["events"] >= ML_MIN_EVENTS_PER_DECIDING_PANEL for cell in populated),
         "simple_rule_same_sign_on_both_panels": bool(cot_verdict["surviving"]),
         "measured_heterogeneity_to_exploit": False,
     }

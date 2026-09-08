@@ -84,6 +84,14 @@ RBA_URL_TEMPLATE: Final[str] = "https://www.rba.gov.au/media-releases/{year}/"
 #: a source. A year whose extracted count differs is reported, not silently
 #: accepted -- the RBA moved from eleven meetings a year to eight in 2024 and a
 #: single hard-coded number would have hidden either the change or a parse bug.
+#:
+#: It is necessary and **not sufficient**: one extra unscheduled decision plus
+#: one missed scheduled meeting would net to the right count. Plan §6 asks for
+#: unscheduled decisions to be flagged and excluded, and this package does not
+#: implement that flag -- no source it acquires carries one. What it has instead
+#: is the BIS containment check in the driver, which explains every rate change
+#: in the span from a scheduled meeting at a constant per-bank lag; an
+#: unscheduled decision would appear there as an orphan, and none did.
 EXPECTED_MEETINGS: Final[dict[str, dict[int, int]]] = {
     "USD": dict.fromkeys(range(2021, 2027), 8),
     "EUR": dict.fromkeys(range(2021, 2027), 8),
@@ -293,8 +301,12 @@ def acquire(years: tuple[int, ...] = (2021, 2022, 2023, 2024, 2025)) -> dict[str
             "per_year": per_year,
             "expected": expected,
             "matches": all(per_year[y] == expected[y] for y in years),
-            "weekday_only": all(dt.date.fromisoformat(d).weekday() < 5 for d in dates),
-            "strictly_increasing": dates == sorted(set(dates)),
+            #: `all()` over an empty list is True, so a bank whose extraction
+            #: returned nothing would report "weekday only" and "strictly
+            #: increasing". Both now require dates to exist.
+            "weekday_only": bool(dates)
+            and all(dt.date.fromisoformat(d).weekday() < 5 for d in dates),
+            "strictly_increasing": bool(dates) and dates == sorted(set(dates)),
         }
 
     return {
