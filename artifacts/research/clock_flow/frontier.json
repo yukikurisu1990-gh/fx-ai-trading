@@ -1,0 +1,2041 @@
+{
+  "classification": [
+    "NON_DECISION_BEARING_EXPLORATORY_ONLY",
+    "RESEARCH_SCRATCH_NON_AUTHORITATIVE"
+  ],
+  "cost_multiple": 2.0,
+  "measured_spans": {
+    "momentum_2021_2023": [
+      "2021-04-26 00:00:00+00:00",
+      "2023-04-25 23:45:00+00:00"
+    ],
+    "supplemental_2023_2025": [
+      "2023-04-26 00:00:00+00:00",
+      "2025-04-24 23:45:00+00:00"
+    ]
+  },
+  "panel_spans": {
+    "momentum_2021_2023": [
+      "2021-04-26",
+      "2023-04-25"
+    ],
+    "supplemental_2023_2025": [
+      "2023-04-26",
+      "2025-04-24"
+    ]
+  },
+  "panels": {
+    "momentum_2021_2023": {
+      "calendar": {
+        "1d": {
+          "decidable": true,
+          "dispersion_bp": 34.22,
+          "economics": {
+            "break_even_gross_ir": 2.08,
+            "dispersion_over_median_cost": 10.011,
+            "events_per_year": 260.0,
+            "feasible_events_per_year_ceiling": {
+              "1.0": 60.31,
+              "1.5": 135.69,
+              "2.0": 241.23,
+              "_unit": "count"
+            },
+            "feasible_events_per_year_floor": 98.57
+          },
+          "headroom_bp": 1.56,
+          "hold_hours_median": 23.75,
+          "hurdle_bp": 6.835,
+          "mde_bp": 5.275,
+          "mde_optimistic_bp": 4.218,
+          "mde_persistent_median_bp": 4.042,
+          "mean_roundtrip_cost_bp": 4.406,
+          "median_roundtrip_cost_bp": 3.418,
+          "n_events": 519
+        },
+        "1m": {
+          "decidable": false,
+          "dispersion_bp": 160.26,
+          "economics": {
+            "break_even_gross_ir": 0.09,
+            "dispersion_over_median_cost": 47.066,
+            "events_per_year": 11.5,
+            "feasible_events_per_year_ceiling": {
+              "1.0": 1290.05,
+              "1.5": 2902.6,
+              "2.0": 5160.19,
+              "_unit": "count"
+            },
+            "feasible_events_per_year_floor": 2178.44
+          },
+          "headroom_bp": -114.226,
+          "hold_hours_median": 695.75,
+          "hurdle_bp": 6.81,
+          "mde_bp": 121.036,
+          "mde_optimistic_bp": 92.693,
+          "mde_persistent_median_bp": 85.845,
+          "mean_roundtrip_cost_bp": 4.462,
+          "median_roundtrip_cost_bp": 3.405,
+          "n_events": 23
+        },
+        "1w": {
+          "decidable": false,
+          "dispersion_bp": 73.7,
+          "economics": {
+            "break_even_gross_ir": 0.77,
+            "dispersion_over_median_cost": 9.133,
+            "events_per_year": 51.1,
+            "feasible_events_per_year_ceiling": {
+              "1.0": 85.23,
+              "1.5": 191.76,
+              "2.0": 340.9,
+              "_unit": "count"
+            },
+            "feasible_events_per_year_floor": 82.02
+          },
+          "headroom_bp": -9.56,
+          "hold_hours_median": 116.75,
+          "hurdle_bp": 16.14,
+          "mde_bp": 25.701,
+          "mde_optimistic_bp": 20.266,
+          "mde_persistent_median_bp": 18.718,
+          "mean_roundtrip_cost_bp": 7.984,
+          "median_roundtrip_cost_bp": 8.07,
+          "n_events": 102
+        },
+        "2w": {
+          "decidable": false,
+          "dispersion_bp": 103.41,
+          "economics": {
+            "break_even_gross_ir": 0.38,
+            "dispersion_over_median_cost": 13.078,
+            "events_per_year": 25.1,
+            "feasible_events_per_year_ceiling": {
+              "1.0": 173.17,
+              "1.5": 389.64,
+              "2.0": 692.69,
+              "_unit": "count"
+            },
+            "feasible_events_per_year_floor": 168.19
+          },
+          "headroom_bp": -39.749,
+          "hold_hours_median": 284.75,
+          "hurdle_bp": 15.815,
+          "mde_bp": 55.564,
+          "mde_optimistic_bp": 40.926,
+          "mde_persistent_median_bp": 39.658,
+          "mean_roundtrip_cost_bp": 7.858,
+          "median_roundtrip_cost_bp": 7.907,
+          "n_events": 50
+        }
+      },
+      "clock": {
+        "london_fix_post": {
+          "decidable": true,
+          "dispersion_bp": 8.26,
+          "economics": {
+            "break_even_gross_ir": 5.88,
+            "dispersion_over_median_cost": 2.802,
+            "events_per_year": 261.0,
+            "feasible_events_per_year_ceiling": {
+              "1.0": 7.54,
+              "1.5": 16.97,
+              "2.0": 30.16,
+              "_unit": "count"
+            },
+            "feasible_events_per_year_floor": 7.72
+          },
+          "headroom_bp": 4.633,
+          "hurdle_bp": 5.894,
+          "mde_bp": 1.262,
+          "mde_optimistic_bp": 1.004,
+          "mde_persistent_median_bp": 0.943,
+          "mean_roundtrip_cost_bp": 3.007,
+          "median_roundtrip_cost_bp": 2.947,
+          "n_events": 521,
+          "pair_windows_dropped_as_far_from_the_moment": 1
+        },
+        "london_fix_post__month_end": {
+          "decidable": false,
+          "dispersion_bp": 8.38,
+          "economics": {
+            "break_even_gross_ir": 1.25,
+            "dispersion_over_median_cost": 2.838,
+            "events_per_year": 12.5,
+            "feasible_events_per_year_ceiling": {
+              "1.0": 8.02,
+              "1.5": 18.04,
+              "2.0": 32.07,
+              "_unit": "count"
+            },
+            "feasible_events_per_year_floor": 7.92
+          },
+          "headroom_bp": -1.258,
+          "hurdle_bp": 5.909,
+          "mde_bp": 7.167,
+          "mde_optimistic_bp": 4.72,
+          "mde_persistent_median_bp": 5.131,
+          "mean_roundtrip_cost_bp": 2.961,
+          "median_roundtrip_cost_bp": 2.955,
+          "n_events": 25,
+          "pair_windows_dropped_as_far_from_the_moment": 0
+        },
+        "london_fix_post__quarter_end": {
+          "decidable": false,
+          "dispersion_bp": 9.56,
+          "economics": {
+            "break_even_gross_ir": 0.64,
+            "dispersion_over_median_cost": 3.148,
+            "events_per_year": 4.0,
+            "feasible_events_per_year_ceiling": {
+              "1.0": 9.77,
+              "1.5": 21.99,
+              "2.0": 39.1,
+              "_unit": "count"
+            },
+            "feasible_events_per_year_floor": 9.75
+          },
+          "headroom_bp": -7.196,
+          "hurdle_bp": 6.075,
+          "mde_bp": 13.271,
+          "mde_optimistic_bp": 9.453,
+          "mde_persistent_median_bp": 9.603,
+          "mean_roundtrip_cost_bp": 3.059,
+          "median_roundtrip_cost_bp": 3.037,
+          "n_events": 8,
+          "pair_windows_dropped_as_far_from_the_moment": 0
+        },
+        "london_fix_pre": {
+          "decidable": true,
+          "dispersion_bp": 11.64,
+          "economics": {
+            "break_even_gross_ir": 4.12,
+            "dispersion_over_median_cost": 3.96,
+            "events_per_year": 261.0,
+            "feasible_events_per_year_ceiling": {
+              "1.0": 15.37,
+              "1.5": 34.58,
+              "2.0": 61.48,
+              "_unit": "count"
+            },
+            "feasible_events_per_year_floor": 15.42
+          },
+          "headroom_bp": 3.878,
+          "hurdle_bp": 5.877,
+          "mde_bp": 1.999,
+          "mde_optimistic_bp": 1.427,
+          "mde_persistent_median_bp": 1.387,
+          "mean_roundtrip_cost_bp": 2.968,
+          "median_roundtrip_cost_bp": 2.938,
+          "n_events": 521,
+          "pair_windows_dropped_as_far_from_the_moment": 1
+        },
+        "london_fix_pre__month_end": {
+          "decidable": false,
+          "dispersion_bp": 17.4,
+          "economics": {
+            "break_even_gross_ir": 0.59,
+            "dispersion_over_median_cost": 5.948,
+            "events_per_year": 12.5,
+            "feasible_events_per_year_ceiling": {
+              "1.0": 35.4,
+              "1.5": 79.66,
+              "2.0": 141.61,
+              "_unit": "count"
+            },
+            "feasible_events_per_year_floor": 34.8
+          },
+          "headroom_bp": -8.895,
+          "hurdle_bp": 5.85,
+          "mde_bp": 14.745,
+          "mde_optimistic_bp": 9.732,
+          "mde_persistent_median_bp": 10.467,
+          "mean_roundtrip_cost_bp": 2.924,
+          "median_roundtrip_cost_bp": 2.925,
+          "n_events": 25,
+          "pair_windows_dropped_as_far_from_the_moment": 0
+        },
+        "london_fix_pre__quarter_end": {
+          "decidable": false,
+          "dispersion_bp": 17.47,
+          "economics": {
+            "break_even_gross_ir": 0.34,
+            "dispersion_over_median_cost": 5.862,
+            "events_per_year": 4.0,
+            "feasible_events_per_year_ceiling": {
+              "1.0": 34.12,
+              "1.5": 76.77,
+              "2.0": 136.49,
+              "_unit": "count"
+            },
+            "feasible_events_per_year_floor": 33.79
+          },
+          "headroom_bp": -34.894,
+          "hurdle_bp": 5.959,
+          "mde_bp": 40.853,
+          "mde_optimistic_bp": 15.974,
+          "mde_persistent_median_bp": 18.834,
+          "mean_roundtrip_cost_bp": 2.99,
+          "median_roundtrip_cost_bp": 2.98,
+          "n_events": 8,
+          "pair_windows_dropped_as_far_from_the_moment": 0
+        },
+        "london_open_post": {
+          "decidable": true,
+          "dispersion_bp": 9.77,
+          "economics": {
+            "break_even_gross_ir": 5.16,
+            "dispersion_over_median_cost": 3.168,
+            "events_per_year": 260.5,
+            "feasible_events_per_year_ceiling": {
+              "1.0": 9.77,
+              "1.5": 21.98,
+              "2.0": 39.07,
+              "_unit": "count"
+            },
+            "feasible_events_per_year_floor": 9.87
+          },
+          "headroom_bp": 4.645,
+          "hurdle_bp": 6.167,
+          "mde_bp": 1.522,
+          "mde_optimistic_bp": 1.192,
+          "mde_persistent_median_bp": 1.151,
+          "mean_roundtrip_cost_bp": 3.126,
+          "median_roundtrip_cost_bp": 3.083,
+          "n_events": 520,
+          "pair_windows_dropped_as_far_from_the_moment": 20
+        },
+        "london_open_post__month_end": {
+          "decidable": false,
+          "dispersion_bp": 8.11,
+          "economics": {
+            "break_even_gross_ir": 1.33,
+            "dispersion_over_median_cost": 2.666,
+            "events_per_year": 12.5,
+            "feasible_events_per_year_ceiling": {
+              "1.0": 7.1,
+              "1.5": 15.98,
+              "2.0": 28.41,
+              "_unit": "count"
+            },
+            "feasible_events_per_year_floor": 6.99
+          },
+          "headroom_bp": -0.098,
+          "hurdle_bp": 6.086,
+          "mde_bp": 6.184,
+          "mde_optimistic_bp": 4.518,
+          "mde_persistent_median_bp": 4.435,
+          "mean_roundtrip_cost_bp": 3.045,
+          "median_roundtrip_cost_bp": 3.043,
+          "n_events": 25,
+          "pair_windows_dropped_as_far_from_the_moment": 0
+        },
+        "london_open_post__quarter_end": {
+          "decidable": false,
+          "dispersion_bp": 8.48,
+          "economics": {
+            "break_even_gross_ir": 0.72,
+            "dispersion_over_median_cost": 2.759,
+            "events_per_year": 4.0,
+            "feasible_events_per_year_ceiling": {
+              "1.0": 7.69,
+              "1.5": 17.31,
+              "2.0": 30.78,
+              "_unit": "count"
+            },
+            "feasible_events_per_year_floor": 7.48
+          },
+          "headroom_bp": -6.477,
+          "hurdle_bp": 6.146,
+          "mde_bp": 12.623,
+          "mde_optimistic_bp": 8.156,
+          "mde_persistent_median_bp": 8.227,
+          "mean_roundtrip_cost_bp": 3.056,
+          "median_roundtrip_cost_bp": 3.073,
+          "n_events": 8,
+          "pair_windows_dropped_as_far_from_the_moment": 0
+        },
+        "london_open_pre": {
+          "decidable": true,
+          "dispersion_bp": 7.71,
+          "economics": {
+            "break_even_gross_ir": 6.58,
+            "dispersion_over_median_cost": 2.492,
+            "events_per_year": 260.5,
+            "feasible_events_per_year_ceiling": {
+              "1.0": 6.02,
+              "1.5": 13.55,
+              "2.0": 24.09,
+              "_unit": "count"
+            },
+            "feasible_events_per_year_floor": 6.11
+          },
+          "headroom_bp": 4.902,
+          "hurdle_bp": 6.189,
+          "mde_bp": 1.286,
+          "mde_optimistic_bp": 0.945,
+          "mde_persistent_median_bp": 0.908,
+          "mean_roundtrip_cost_bp": 3.142,
+          "median_roundtrip_cost_bp": 3.094,
+          "n_events": 520,
+          "pair_windows_dropped_as_far_from_the_moment": 20
+        },
+        "london_open_pre__month_end": {
+          "decidable": true,
+          "dispersion_bp": 7.75,
+          "economics": {
+            "break_even_gross_ir": 1.42,
+            "dispersion_over_median_cost": 2.489,
+            "events_per_year": 12.5,
+            "feasible_events_per_year_ceiling": {
+              "1.0": 6.19,
+              "1.5": 13.93,
+              "2.0": 24.77,
+              "_unit": "count"
+            },
+            "feasible_events_per_year_floor": 6.09
+          },
+          "headroom_bp": 0.196,
+          "hurdle_bp": 6.227,
+          "mde_bp": 6.031,
+          "mde_optimistic_bp": 4.361,
+          "mde_persistent_median_bp": 4.485,
+          "mean_roundtrip_cost_bp": 3.115,
+          "median_roundtrip_cost_bp": 3.113,
+          "n_events": 25,
+          "pair_windows_dropped_as_far_from_the_moment": 0
+        },
+        "london_open_pre__quarter_end": {
+          "decidable": false,
+          "dispersion_bp": 9.35,
+          "economics": {
+            "break_even_gross_ir": 0.68,
+            "dispersion_over_median_cost": 2.964,
+            "events_per_year": 4.0,
+            "feasible_events_per_year_ceiling": {
+              "1.0": 8.76,
+              "1.5": 19.7,
+              "2.0": 35.02,
+              "_unit": "count"
+            },
+            "feasible_events_per_year_floor": 8.64
+          },
+          "headroom_bp": -8.98,
+          "hurdle_bp": 6.308,
+          "mde_bp": 15.288,
+          "mde_optimistic_bp": 9.263,
+          "mde_persistent_median_bp": 9.582,
+          "mean_roundtrip_cost_bp": 3.159,
+          "median_roundtrip_cost_bp": 3.154,
+          "n_events": 8,
+          "pair_windows_dropped_as_far_from_the_moment": 0
+        },
+        "ny_option_cut_post": {
+          "decidable": true,
+          "dispersion_bp": 11.7,
+          "economics": {
+            "break_even_gross_ir": 4.1,
+            "dispersion_over_median_cost": 3.979,
+            "events_per_year": 261.0,
+            "feasible_events_per_year_ceiling": {
+              "1.0": 15.53,
+              "1.5": 34.94,
+              "2.0": 62.11,
+              "_unit": "count"
+            },
+            "feasible_events_per_year_floor": 15.57
+          },
+          "headroom_bp": 3.901,
+          "hurdle_bp": 5.883,
+          "mde_bp": 1.982,
+          "mde_optimistic_bp": 1.435,
+          "mde_persistent_median_bp": 1.481,
+          "mean_roundtrip_cost_bp": 2.97,
+          "median_roundtrip_cost_bp": 2.942,
+          "n_events": 521,
+          "pair_windows_dropped_as_far_from_the_moment": 1
+        },
+        "ny_option_cut_post__month_end": {
+          "decidable": false,
+          "dispersion_bp": 17.17,
+          "economics": {
+            "break_even_gross_ir": 0.6,
+            "dispersion_over_median_cost": 5.874,
+            "events_per_year": 12.5,
+            "feasible_events_per_year_ceiling": {
+              "1.0": 34.38,
+              "1.5": 77.35,
+              "2.0": 137.52,
+              "_unit": "count"
+            },
+            "feasible_events_per_year_floor": 33.93
+          },
+          "headroom_bp": -8.01,
+          "hurdle_bp": 5.847,
+          "mde_bp": 13.857,
+          "mde_optimistic_bp": 9.581,
+          "mde_persistent_median_bp": 10.202,
+          "mean_roundtrip_cost_bp": 2.929,
+          "median_roundtrip_cost_bp": 2.924,
+          "n_events": 25,
+          "pair_windows_dropped_as_far_from_the_moment": 0
+        },
+        "ny_option_cut_post__quarter_end": {
+          "decidable": false,
+          "dispersion_bp": 17.48,
+          "economics": {
+            "break_even_gross_ir": 0.34,
+            "dispersion_over_median_cost": 5.855,
+            "events_per_year": 4.0,
+            "feasible_events_per_year_ceiling": {
+              "1.0": 34.36,
+              "1.5": 77.3,
+              "2.0": 137.43,
+              "_unit": "count"
+            },
+            "feasible_events_per_year_floor": 33.71
+          },
+          "headroom_bp": -34.909,
+          "hurdle_bp": 5.971,
+          "mde_bp": 40.88,
+          "mde_optimistic_bp": 16.558,
+          "mde_persistent_median_bp": 18.879,
+          "mean_roundtrip_cost_bp": 2.982,
+          "median_roundtrip_cost_bp": 2.985,
+          "n_events": 8,
+          "pair_windows_dropped_as_far_from_the_moment": 0
+        },
+        "ny_option_cut_pre": {
+          "decidable": true,
+          "dispersion_bp": 9.85,
+          "economics": {
+            "break_even_gross_ir": 5.47,
+            "dispersion_over_median_cost": 3.12,
+            "events_per_year": 261.0,
+            "feasible_events_per_year_ceiling": {
+              "1.0": 8.72,
+              "1.5": 19.62,
+              "2.0": 34.88,
+              "_unit": "count"
+            },
+            "feasible_events_per_year_floor": 9.57
+          },
+          "headroom_bp": 4.676,
+          "hurdle_bp": 6.313,
+          "mde_bp": 1.637,
+          "mde_optimistic_bp": 1.203,
+          "mde_persistent_median_bp": 1.159,
+          "mean_roundtrip_cost_bp": 3.335,
+          "median_roundtrip_cost_bp": 3.157,
+          "n_events": 521,
+          "pair_windows_dropped_as_far_from_the_moment": 1
+        },
+        "ny_option_cut_pre__month_end": {
+          "decidable": true,
+          "dispersion_bp": 8.17,
+          "economics": {
+            "break_even_gross_ir": 1.4,
+            "dispersion_over_median_cost": 2.58,
+            "events_per_year": 12.5,
+            "feasible_events_per_year_ceiling": {
+              "1.0": 6.35,
+              "1.5": 14.29,
+              "2.0": 25.41,
+              "_unit": "count"
+            },
+            "feasible_events_per_year_floor": 6.55
+          },
+          "headroom_bp": 0.013,
+          "hurdle_bp": 6.331,
+          "mde_bp": 6.319,
+          "mde_optimistic_bp": 4.488,
+          "mde_persistent_median_bp": 4.414,
+          "mean_roundtrip_cost_bp": 3.241,
+          "median_roundtrip_cost_bp": 3.166,
+          "n_events": 25,
+          "pair_windows_dropped_as_far_from_the_moment": 0
+        },
+        "ny_option_cut_pre__quarter_end": {
+          "decidable": false,
+          "dispersion_bp": 9.52,
+          "economics": {
+            "break_even_gross_ir": 0.69,
+            "dispersion_over_median_cost": 3.042,
+            "events_per_year": 4.0,
+            "feasible_events_per_year_ceiling": {
+              "1.0": 8.45,
+              "1.5": 19.02,
+              "2.0": 33.81,
+              "_unit": "count"
+            },
+            "feasible_events_per_year_floor": 9.1
+          },
+          "headroom_bp": -11.177,
+          "hurdle_bp": 6.261,
+          "mde_bp": 17.438,
+          "mde_optimistic_bp": 9.32,
+          "mde_persistent_median_bp": 9.597,
+          "mean_roundtrip_cost_bp": 3.276,
+          "median_roundtrip_cost_bp": 3.131,
+          "n_events": 8,
+          "pair_windows_dropped_as_far_from_the_moment": 0
+        },
+        "rollover_post": {
+          "decidable": true,
+          "dispersion_bp": 3.24,
+          "economics": {
+            "break_even_gross_ir": 58.71,
+            "dispersion_over_median_cost": 0.253,
+            "events_per_year": 208.9,
+            "feasible_events_per_year_ceiling": {
+              "1.0": 0.06,
+              "1.5": 0.14,
+              "2.0": 0.24,
+              "_unit": "count"
+            },
+            "feasible_events_per_year_floor": 0.06
+          },
+          "headroom_bp": 25.042,
+          "hurdle_bp": 25.613,
+          "mde_bp": 0.571,
+          "mde_optimistic_bp": 0.442,
+          "mde_persistent_median_bp": 0.433,
+          "mean_roundtrip_cost_bp": 13.143,
+          "median_roundtrip_cost_bp": 12.806,
+          "n_events": 417,
+          "pair_windows_dropped_as_far_from_the_moment": 2086
+        },
+        "rollover_post__month_end": {
+          "decidable": true,
+          "dispersion_bp": 2.93,
+          "economics": {
+            "break_even_gross_ir": 12.18,
+            "dispersion_over_median_cost": 0.239,
+            "events_per_year": 8.0,
+            "feasible_events_per_year_ceiling": {
+              "1.0": 0.05,
+              "1.5": 0.12,
+              "2.0": 0.22,
+              "_unit": "count"
+            },
+            "feasible_events_per_year_floor": 0.06
+          },
+          "headroom_bp": 21.819,
+          "hurdle_bp": 24.527,
+          "mde_bp": 2.708,
+          "mde_optimistic_bp": 2.024,
+          "mde_persistent_median_bp": 2.143,
+          "mean_roundtrip_cost_bp": 12.601,
+          "median_roundtrip_cost_bp": 12.263,
+          "n_events": 16,
+          "pair_windows_dropped_as_far_from_the_moment": 180
+        },
+        "rollover_post__quarter_end": {
+          "decidable": true,
+          "dispersion_bp": 1.1,
+          "economics": {
+            "break_even_gross_ir": 16.73,
+            "dispersion_over_median_cost": 0.086,
+            "events_per_year": 2.0,
+            "feasible_events_per_year_ceiling": {
+              "1.0": 0.01,
+              "1.5": 0.02,
+              "2.0": 0.03,
+              "_unit": "count"
+            },
+            "feasible_events_per_year_floor": 0.01
+          },
+          "headroom_bp": 23.023,
+          "hurdle_bp": 25.602,
+          "mde_bp": 2.579,
+          "mde_optimistic_bp": 1.633,
+          "mde_persistent_median_bp": 1.676,
+          "mean_roundtrip_cost_bp": 13.002,
+          "median_roundtrip_cost_bp": 12.801,
+          "n_events": 4,
+          "pair_windows_dropped_as_far_from_the_moment": 80
+        },
+        "rollover_pre": {
+          "decidable": true,
+          "dispersion_bp": 3.64,
+          "economics": {
+            "break_even_gross_ir": 24.04,
+            "dispersion_over_median_cost": 0.836,
+            "events_per_year": 261.0,
+            "feasible_events_per_year_ceiling": {
+              "1.0": 0.45,
+              "1.5": 1.02,
+              "2.0": 1.81,
+              "_unit": "count"
+            },
+            "feasible_events_per_year_floor": 0.69
+          },
+          "headroom_bp": 8.131,
+          "hurdle_bp": 8.693,
+          "mde_bp": 0.562,
+          "mde_optimistic_bp": 0.446,
+          "mde_persistent_median_bp": 0.431,
+          "mean_roundtrip_cost_bp": 5.409,
+          "median_roundtrip_cost_bp": 4.347,
+          "n_events": 521,
+          "pair_windows_dropped_as_far_from_the_moment": 0
+        },
+        "rollover_pre__month_end": {
+          "decidable": true,
+          "dispersion_bp": 4.46,
+          "economics": {
+            "break_even_gross_ir": 4.94,
+            "dispersion_over_median_cost": 0.911,
+            "events_per_year": 12.5,
+            "feasible_events_per_year_ceiling": {
+              "1.0": 0.51,
+              "1.5": 1.15,
+              "2.0": 2.05,
+              "_unit": "count"
+            },
+            "feasible_events_per_year_floor": 0.82
+          },
+          "headroom_bp": 6.234,
+          "hurdle_bp": 9.799,
+          "mde_bp": 3.565,
+          "mde_optimistic_bp": 2.436,
+          "mde_persistent_median_bp": 2.409,
+          "mean_roundtrip_cost_bp": 6.228,
+          "median_roundtrip_cost_bp": 4.9,
+          "n_events": 25,
+          "pair_windows_dropped_as_far_from_the_moment": 0
+        },
+        "rollover_pre__quarter_end": {
+          "decidable": true,
+          "dispersion_bp": 3.89,
+          "economics": {
+            "break_even_gross_ir": 3.63,
+            "dispersion_over_median_cost": 0.614,
+            "events_per_year": 4.0,
+            "feasible_events_per_year_ceiling": {
+              "1.0": 0.3,
+              "1.5": 0.68,
+              "2.0": 1.21,
+              "_unit": "count"
+            },
+            "feasible_events_per_year_floor": 0.37
+          },
+          "headroom_bp": 5.852,
+          "hurdle_bp": 12.688,
+          "mde_bp": 6.836,
+          "mde_optimistic_bp": 3.864,
+          "mde_persistent_median_bp": 3.991,
+          "mean_roundtrip_cost_bp": 7.066,
+          "median_roundtrip_cost_bp": 6.344,
+          "n_events": 8,
+          "pair_windows_dropped_as_far_from_the_moment": 0
+        },
+        "tokyo_fix_post": {
+          "decidable": true,
+          "dispersion_bp": 6.97,
+          "economics": {
+            "break_even_gross_ir": 7.66,
+            "dispersion_over_median_cost": 2.145,
+            "events_per_year": 261.0,
+            "feasible_events_per_year_ceiling": {
+              "1.0": 4.45,
+              "1.5": 10.01,
+              "2.0": 17.8,
+              "_unit": "count"
+            },
+            "feasible_events_per_year_floor": 4.52
+          },
+          "headroom_bp": 5.289,
+          "hurdle_bp": 6.501,
+          "mde_bp": 1.212,
+          "mde_optimistic_bp": 0.846,
+          "mde_persistent_median_bp": 0.793,
+          "mean_roundtrip_cost_bp": 3.304,
+          "median_roundtrip_cost_bp": 3.25,
+          "n_events": 521,
+          "pair_windows_dropped_as_far_from_the_moment": 6
+        },
+        "tokyo_fix_post__month_end": {
+          "decidable": true,
+          "dispersion_bp": 4.62,
+          "economics": {
+            "break_even_gross_ir": 2.47,
+            "dispersion_over_median_cost": 1.43,
+            "events_per_year": 12.5,
+            "feasible_events_per_year_ceiling": {
+              "1.0": 2.06,
+              "1.5": 4.63,
+              "2.0": 8.24,
+              "_unit": "count"
+            },
+            "feasible_events_per_year_floor": 2.01
+          },
+          "headroom_bp": 3.146,
+          "hurdle_bp": 6.465,
+          "mde_bp": 3.319,
+          "mde_optimistic_bp": 2.572,
+          "mde_persistent_median_bp": 2.524,
+          "mean_roundtrip_cost_bp": 3.22,
+          "median_roundtrip_cost_bp": 3.232,
+          "n_events": 25,
+          "pair_windows_dropped_as_far_from_the_moment": 0
+        },
+        "tokyo_fix_post__quarter_end": {
+          "decidable": true,
+          "dispersion_bp": 4.24,
+          "economics": {
+            "break_even_gross_ir": 1.53,
+            "dispersion_over_median_cost": 1.3,
+            "events_per_year": 4.0,
+            "feasible_events_per_year_ceiling": {
+              "1.0": 1.71,
+              "1.5": 3.85,
+              "2.0": 6.84,
+              "_unit": "count"
+            },
+            "feasible_events_per_year_floor": 1.66
+          },
+          "headroom_bp": 0.109,
+          "hurdle_bp": 6.518,
+          "mde_bp": 6.409,
+          "mde_optimistic_bp": 4.213,
+          "mde_persistent_median_bp": 4.425,
+          "mean_roundtrip_cost_bp": 3.24,
+          "median_roundtrip_cost_bp": 3.259,
+          "n_events": 8,
+          "pair_windows_dropped_as_far_from_the_moment": 0
+        },
+        "tokyo_fix_pre": {
+          "decidable": true,
+          "dispersion_bp": 6.39,
+          "economics": {
+            "break_even_gross_ir": 8.48,
+            "dispersion_over_median_cost": 1.946,
+            "events_per_year": 260.0,
+            "feasible_events_per_year_ceiling": {
+              "1.0": 3.62,
+              "1.5": 8.14,
+              "2.0": 14.47,
+              "_unit": "count"
+            },
+            "feasible_events_per_year_floor": 3.72
+          },
+          "headroom_bp": 5.529,
+          "hurdle_bp": 6.571,
+          "mde_bp": 1.041,
+          "mde_optimistic_bp": 0.779,
+          "mde_persistent_median_bp": 0.709,
+          "mean_roundtrip_cost_bp": 3.361,
+          "median_roundtrip_cost_bp": 3.285,
+          "n_events": 519,
+          "pair_windows_dropped_as_far_from_the_moment": 6
+        },
+        "tokyo_fix_pre__month_end": {
+          "decidable": true,
+          "dispersion_bp": 6.39,
+          "economics": {
+            "break_even_gross_ir": 1.83,
+            "dispersion_over_median_cost": 1.953,
+            "events_per_year": 12.5,
+            "feasible_events_per_year_ceiling": {
+              "1.0": 3.72,
+              "1.5": 8.38,
+              "2.0": 14.89,
+              "_unit": "count"
+            },
+            "feasible_events_per_year_floor": 3.75
+          },
+          "headroom_bp": 1.843,
+          "hurdle_bp": 6.542,
+          "mde_bp": 4.699,
+          "mde_optimistic_bp": 3.582,
+          "mde_persistent_median_bp": 3.445,
+          "mean_roundtrip_cost_bp": 3.31,
+          "median_roundtrip_cost_bp": 3.271,
+          "n_events": 25,
+          "pair_windows_dropped_as_far_from_the_moment": 0
+        },
+        "tokyo_fix_pre__quarter_end": {
+          "decidable": false,
+          "dispersion_bp": 7.38,
+          "economics": {
+            "break_even_gross_ir": 0.92,
+            "dispersion_over_median_cost": 2.243,
+            "events_per_year": 4.0,
+            "feasible_events_per_year_ceiling": {
+              "1.0": 4.77,
+              "1.5": 10.73,
+              "2.0": 19.07,
+              "_unit": "count"
+            },
+            "feasible_events_per_year_floor": 4.95
+          },
+          "headroom_bp": -4.846,
+          "hurdle_bp": 6.583,
+          "mde_bp": 11.43,
+          "mde_optimistic_bp": 7.325,
+          "mde_persistent_median_bp": 7.122,
+          "mean_roundtrip_cost_bp": 3.382,
+          "median_roundtrip_cost_bp": 3.292,
+          "n_events": 8,
+          "pair_windows_dropped_as_far_from_the_moment": 0
+        }
+      },
+      "clock_resolution": {
+        "_unit": "count",
+        "london_fix": {
+          "n_days": 521,
+          "utc_times_observed": {
+            "15:00": 312,
+            "16:00": 209
+          }
+        },
+        "london_open": {
+          "n_days": 521,
+          "utc_times_observed": {
+            "07:00": 312,
+            "08:00": 209
+          }
+        },
+        "month_end_days": 25,
+        "ny_option_cut": {
+          "n_days": 521,
+          "utc_times_observed": {
+            "14:00": 342,
+            "15:00": 179
+          }
+        },
+        "quarter_end_days": 8,
+        "rollover": {
+          "n_days": 521,
+          "utc_times_observed": {
+            "21:00": 342,
+            "22:00": 179
+          }
+        },
+        "tokyo_fix": {
+          "n_days": 521,
+          "utc_times_observed": {
+            "00:55": 521
+          }
+        }
+      },
+      "cost_at_week_boundaries": {
+        "last_bar_before_the_weekend": {
+          "roundtrip_cost_bp": 8.693
+        },
+        "ordinary_2345_utc_close": {
+          "roundtrip_cost_bp": 2.439
+        }
+      },
+      "cost_by_utc_hour": {
+        "00": {
+          "roundtrip_cost_bp": 2.325
+        },
+        "01": {
+          "roundtrip_cost_bp": 2.332
+        },
+        "02": {
+          "roundtrip_cost_bp": 2.279
+        },
+        "03": {
+          "roundtrip_cost_bp": 2.275
+        },
+        "04": {
+          "roundtrip_cost_bp": 2.275
+        },
+        "05": {
+          "roundtrip_cost_bp": 2.282
+        },
+        "06": {
+          "roundtrip_cost_bp": 2.23
+        },
+        "07": {
+          "roundtrip_cost_bp": 2.196
+        },
+        "08": {
+          "roundtrip_cost_bp": 2.17
+        },
+        "09": {
+          "roundtrip_cost_bp": 2.141
+        },
+        "10": {
+          "roundtrip_cost_bp": 2.118
+        },
+        "11": {
+          "roundtrip_cost_bp": 2.109
+        },
+        "12": {
+          "roundtrip_cost_bp": 2.176
+        },
+        "13": {
+          "roundtrip_cost_bp": 2.193
+        },
+        "14": {
+          "roundtrip_cost_bp": 2.123
+        },
+        "15": {
+          "roundtrip_cost_bp": 2.074
+        },
+        "16": {
+          "roundtrip_cost_bp": 2.097
+        },
+        "17": {
+          "roundtrip_cost_bp": 2.125
+        },
+        "18": {
+          "roundtrip_cost_bp": 2.136
+        },
+        "19": {
+          "roundtrip_cost_bp": 2.157
+        },
+        "20": {
+          "roundtrip_cost_bp": 2.39
+        },
+        "21": {
+          "roundtrip_cost_bp": 6.429
+        },
+        "22": {
+          "roundtrip_cost_bp": 3.369
+        },
+        "23": {
+          "roundtrip_cost_bp": 2.493
+        }
+      },
+      "n_days": 521,
+      "n_pairs": 20,
+      "n_partial_days_excluded": 103,
+      "spread_at_moments": {
+        "all_bars_baseline": {
+          "roundtrip_cost_bp": 2.258
+        },
+        "london_fix": {
+          "roundtrip_cost_bp": 2.075
+        },
+        "london_open": {
+          "roundtrip_cost_bp": 2.191
+        },
+        "ny_option_cut": {
+          "roundtrip_cost_bp": 2.099
+        },
+        "rollover": {
+          "roundtrip_cost_bp": 9.885
+        },
+        "tokyo_fix": {
+          "roundtrip_cost_bp": 2.347
+        }
+      },
+      "years": 1.996
+    },
+    "supplemental_2023_2025": {
+      "calendar": {
+        "1d": {
+          "decidable": true,
+          "dispersion_bp": 30.04,
+          "economics": {
+            "break_even_gross_ir": 2.04,
+            "dispersion_over_median_cost": 9.458,
+            "events_per_year": 259.0,
+            "feasible_events_per_year_ceiling": {
+              "1.0": 62.52,
+              "1.5": 140.67,
+              "2.0": 250.08,
+              "_unit": "count"
+            },
+            "feasible_events_per_year_floor": 87.97
+          },
+          "headroom_bp": 1.816,
+          "hold_hours_median": 23.75,
+          "hurdle_bp": 6.352,
+          "mde_bp": 4.536,
+          "mde_optimistic_bp": 3.7,
+          "mde_persistent_median_bp": 3.515,
+          "mean_roundtrip_cost_bp": 3.799,
+          "median_roundtrip_cost_bp": 3.176,
+          "n_events": 517
+        },
+        "1m": {
+          "decidable": false,
+          "dispersion_bp": 129.0,
+          "economics": {
+            "break_even_gross_ir": 0.1,
+            "dispersion_over_median_cost": 40.554,
+            "events_per_year": 11.5,
+            "feasible_events_per_year_ceiling": {
+              "1.0": 1164.35,
+              "1.5": 2619.78,
+              "2.0": 4657.38,
+              "_unit": "count"
+            },
+            "feasible_events_per_year_floor": 1617.36
+          },
+          "headroom_bp": -89.925,
+          "hold_hours_median": 695.75,
+          "hurdle_bp": 6.362,
+          "mde_bp": 96.287,
+          "mde_optimistic_bp": 74.583,
+          "mde_persistent_median_bp": 67.813,
+          "mean_roundtrip_cost_bp": 3.781,
+          "median_roundtrip_cost_bp": 3.181,
+          "n_events": 23
+        },
+        "1w": {
+          "decidable": false,
+          "dispersion_bp": 63.69,
+          "economics": {
+            "break_even_gross_ir": 0.35,
+            "dispersion_over_median_cost": 20.654,
+            "events_per_year": 51.1,
+            "feasible_events_per_year_ceiling": {
+              "1.0": 413.56,
+              "1.5": 930.51,
+              "2.0": 1654.24,
+              "_unit": "count"
+            },
+            "feasible_events_per_year_floor": 419.51
+          },
+          "headroom_bp": -16.682,
+          "hold_hours_median": 167.75,
+          "hurdle_bp": 6.167,
+          "mde_bp": 22.849,
+          "mde_optimistic_bp": 17.583,
+          "mde_persistent_median_bp": 17.759,
+          "mean_roundtrip_cost_bp": 3.132,
+          "median_roundtrip_cost_bp": 3.084,
+          "n_events": 102
+        },
+        "2w": {
+          "decidable": false,
+          "dispersion_bp": 90.69,
+          "economics": {
+            "break_even_gross_ir": 0.17,
+            "dispersion_over_median_cost": 29.449,
+            "events_per_year": 25.1,
+            "feasible_events_per_year_ceiling": {
+              "1.0": 867.27,
+              "1.5": 1951.36,
+              "2.0": 3469.09,
+              "_unit": "count"
+            },
+            "feasible_events_per_year_floor": 852.84
+          },
+          "headroom_bp": -39.339,
+          "hold_hours_median": 335.75,
+          "hurdle_bp": 6.159,
+          "mde_bp": 45.498,
+          "mde_optimistic_bp": 35.643,
+          "mde_persistent_median_bp": 34.791,
+          "mean_roundtrip_cost_bp": 3.079,
+          "median_roundtrip_cost_bp": 3.08,
+          "n_events": 50
+        }
+      },
+      "clock": {
+        "london_fix_post": {
+          "decidable": true,
+          "dispersion_bp": 6.83,
+          "economics": {
+            "break_even_gross_ir": 6.73,
+            "dispersion_over_median_cost": 2.392,
+            "events_per_year": 259.0,
+            "feasible_events_per_year_ceiling": {
+              "1.0": 5.73,
+              "1.5": 12.88,
+              "2.0": 22.9,
+              "_unit": "count"
+            },
+            "feasible_events_per_year_floor": 5.63
+          },
+          "headroom_bp": 4.663,
+          "hurdle_bp": 5.713,
+          "mde_bp": 1.051,
+          "mde_optimistic_bp": 0.837,
+          "mde_persistent_median_bp": 0.77,
+          "mean_roundtrip_cost_bp": 2.855,
+          "median_roundtrip_cost_bp": 2.857,
+          "n_events": 517,
+          "pair_windows_dropped_as_far_from_the_moment": 20
+        },
+        "london_fix_post__month_end": {
+          "decidable": true,
+          "dispersion_bp": 6.42,
+          "economics": {
+            "break_even_gross_ir": 1.61,
+            "dispersion_over_median_cost": 2.219,
+            "events_per_year": 12.5,
+            "feasible_events_per_year_ceiling": {
+              "1.0": 4.82,
+              "1.5": 10.85,
+              "2.0": 19.3,
+              "_unit": "count"
+            },
+            "feasible_events_per_year_floor": 4.84
+          },
+          "headroom_bp": 1.358,
+          "hurdle_bp": 5.782,
+          "mde_bp": 4.424,
+          "mde_optimistic_bp": 3.586,
+          "mde_persistent_median_bp": 3.409,
+          "mean_roundtrip_cost_bp": 2.921,
+          "median_roundtrip_cost_bp": 2.891,
+          "n_events": 25,
+          "pair_windows_dropped_as_far_from_the_moment": 0
+        },
+        "london_fix_post__quarter_end": {
+          "decidable": false,
+          "dispersion_bp": 5.81,
+          "economics": {
+            "break_even_gross_ir": 1.06,
+            "dispersion_over_median_cost": 1.946,
+            "events_per_year": 4.0,
+            "feasible_events_per_year_ceiling": {
+              "1.0": 3.56,
+              "1.5": 8.0,
+              "2.0": 14.22,
+              "_unit": "count"
+            },
+            "feasible_events_per_year_floor": 3.73
+          },
+          "headroom_bp": -1.949,
+          "hurdle_bp": 5.972,
+          "mde_bp": 7.921,
+          "mde_optimistic_bp": 5.918,
+          "mde_persistent_median_bp": 5.914,
+          "mean_roundtrip_cost_bp": 3.082,
+          "median_roundtrip_cost_bp": 2.986,
+          "n_events": 8,
+          "pair_windows_dropped_as_far_from_the_moment": 0
+        },
+        "london_fix_pre": {
+          "decidable": true,
+          "dispersion_bp": 9.12,
+          "economics": {
+            "break_even_gross_ir": 5.0,
+            "dispersion_over_median_cost": 3.211,
+            "events_per_year": 259.0,
+            "feasible_events_per_year_ceiling": {
+              "1.0": 10.35,
+              "1.5": 23.28,
+              "2.0": 41.38,
+              "_unit": "count"
+            },
+            "feasible_events_per_year_floor": 10.14
+          },
+          "headroom_bp": 4.141,
+          "hurdle_bp": 5.678,
+          "mde_bp": 1.537,
+          "mde_optimistic_bp": 1.121,
+          "mde_persistent_median_bp": 1.098,
+          "mean_roundtrip_cost_bp": 2.834,
+          "median_roundtrip_cost_bp": 2.839,
+          "n_events": 517,
+          "pair_windows_dropped_as_far_from_the_moment": 20
+        },
+        "london_fix_pre__month_end": {
+          "decidable": false,
+          "dispersion_bp": 12.59,
+          "economics": {
+            "break_even_gross_ir": 0.82,
+            "dispersion_over_median_cost": 4.364,
+            "events_per_year": 12.5,
+            "feasible_events_per_year_ceiling": {
+              "1.0": 18.78,
+              "1.5": 42.26,
+              "2.0": 75.12,
+              "_unit": "count"
+            },
+            "feasible_events_per_year_floor": 18.73
+          },
+          "headroom_bp": -4.713,
+          "hurdle_bp": 5.772,
+          "mde_bp": 10.484,
+          "mde_optimistic_bp": 7.119,
+          "mde_persistent_median_bp": 7.494,
+          "mean_roundtrip_cost_bp": 2.906,
+          "median_roundtrip_cost_bp": 2.886,
+          "n_events": 25,
+          "pair_windows_dropped_as_far_from_the_moment": 0
+        },
+        "london_fix_pre__quarter_end": {
+          "decidable": false,
+          "dispersion_bp": 11.05,
+          "economics": {
+            "break_even_gross_ir": 0.55,
+            "dispersion_over_median_cost": 3.746,
+            "events_per_year": 4.0,
+            "feasible_events_per_year_ceiling": {
+              "1.0": 13.08,
+              "1.5": 29.43,
+              "2.0": 52.32,
+              "_unit": "count"
+            },
+            "feasible_events_per_year_floor": 13.8
+          },
+          "headroom_bp": -12.111,
+          "hurdle_bp": 5.902,
+          "mde_bp": 18.013,
+          "mde_optimistic_bp": 10.606,
+          "mde_persistent_median_bp": 11.164,
+          "mean_roundtrip_cost_bp": 3.057,
+          "median_roundtrip_cost_bp": 2.951,
+          "n_events": 8,
+          "pair_windows_dropped_as_far_from_the_moment": 0
+        },
+        "london_open_post": {
+          "decidable": true,
+          "dispersion_bp": 8.37,
+          "economics": {
+            "break_even_gross_ir": 5.67,
+            "dispersion_over_median_cost": 2.837,
+            "events_per_year": 259.5,
+            "feasible_events_per_year_ceiling": {
+              "1.0": 8.08,
+              "1.5": 18.17,
+              "2.0": 32.3,
+              "_unit": "count"
+            },
+            "feasible_events_per_year_floor": 7.91
+          },
+          "headroom_bp": 4.598,
+          "hurdle_bp": 5.901,
+          "mde_bp": 1.303,
+          "mde_optimistic_bp": 1.024,
+          "mde_persistent_median_bp": 0.974,
+          "mean_roundtrip_cost_bp": 2.945,
+          "median_roundtrip_cost_bp": 2.95,
+          "n_events": 518,
+          "pair_windows_dropped_as_far_from_the_moment": 0
+        },
+        "london_open_post__month_end": {
+          "decidable": true,
+          "dispersion_bp": 8.4,
+          "economics": {
+            "break_even_gross_ir": 1.27,
+            "dispersion_over_median_cost": 2.809,
+            "events_per_year": 12.5,
+            "feasible_events_per_year_ceiling": {
+              "1.0": 7.77,
+              "1.5": 17.49,
+              "2.0": 31.09,
+              "_unit": "count"
+            },
+            "feasible_events_per_year_floor": 7.76
+          },
+          "headroom_bp": 0.102,
+          "hurdle_bp": 5.982,
+          "mde_bp": 5.88,
+          "mde_optimistic_bp": 4.561,
+          "mde_persistent_median_bp": 4.667,
+          "mean_roundtrip_cost_bp": 3.014,
+          "median_roundtrip_cost_bp": 2.991,
+          "n_events": 25,
+          "pair_windows_dropped_as_far_from_the_moment": 0
+        },
+        "london_open_post__quarter_end": {
+          "decidable": false,
+          "dispersion_bp": 6.58,
+          "economics": {
+            "break_even_gross_ir": 0.96,
+            "dispersion_over_median_cost": 2.159,
+            "events_per_year": 4.0,
+            "feasible_events_per_year_ceiling": {
+              "1.0": 4.35,
+              "1.5": 9.8,
+              "2.0": 17.41,
+              "_unit": "count"
+            },
+            "feasible_events_per_year_floor": 4.59
+          },
+          "headroom_bp": -3.391,
+          "hurdle_bp": 6.095,
+          "mde_bp": 9.486,
+          "mde_optimistic_bp": 6.775,
+          "mde_persistent_median_bp": 6.514,
+          "mean_roundtrip_cost_bp": 3.154,
+          "median_roundtrip_cost_bp": 3.047,
+          "n_events": 8,
+          "pair_windows_dropped_as_far_from_the_moment": 0
+        },
+        "london_open_pre": {
+          "decidable": true,
+          "dispersion_bp": 7.63,
+          "economics": {
+            "break_even_gross_ir": 6.2,
+            "dispersion_over_median_cost": 2.593,
+            "events_per_year": 259.5,
+            "feasible_events_per_year_ceiling": {
+              "1.0": 6.76,
+              "1.5": 15.22,
+              "2.0": 27.05,
+              "_unit": "count"
+            },
+            "feasible_events_per_year_floor": 6.61
+          },
+          "headroom_bp": 4.628,
+          "hurdle_bp": 5.884,
+          "mde_bp": 1.256,
+          "mde_optimistic_bp": 0.929,
+          "mde_persistent_median_bp": 0.884,
+          "mean_roundtrip_cost_bp": 2.934,
+          "median_roundtrip_cost_bp": 2.942,
+          "n_events": 518,
+          "pair_windows_dropped_as_far_from_the_moment": 0
+        },
+        "london_open_pre__month_end": {
+          "decidable": true,
+          "dispersion_bp": 7.87,
+          "economics": {
+            "break_even_gross_ir": 1.36,
+            "dispersion_over_median_cost": 2.642,
+            "events_per_year": 12.5,
+            "feasible_events_per_year_ceiling": {
+              "1.0": 6.81,
+              "1.5": 15.31,
+              "2.0": 27.23,
+              "_unit": "count"
+            },
+            "feasible_events_per_year_floor": 6.86
+          },
+          "headroom_bp": 0.086,
+          "hurdle_bp": 5.96,
+          "mde_bp": 5.874,
+          "mde_optimistic_bp": 4.368,
+          "mde_persistent_median_bp": 4.433,
+          "mean_roundtrip_cost_bp": 3.017,
+          "median_roundtrip_cost_bp": 2.98,
+          "n_events": 25,
+          "pair_windows_dropped_as_far_from_the_moment": 0
+        },
+        "london_open_pre__quarter_end": {
+          "decidable": false,
+          "dispersion_bp": 6.96,
+          "economics": {
+            "break_even_gross_ir": 0.92,
+            "dispersion_over_median_cost": 2.26,
+            "events_per_year": 4.0,
+            "feasible_events_per_year_ceiling": {
+              "1.0": 4.75,
+              "1.5": 10.68,
+              "2.0": 18.98,
+              "_unit": "count"
+            },
+            "feasible_events_per_year_floor": 5.02
+          },
+          "headroom_bp": -5.276,
+          "hurdle_bp": 6.156,
+          "mde_bp": 11.432,
+          "mde_optimistic_bp": 6.767,
+          "mde_persistent_median_bp": 7.844,
+          "mean_roundtrip_cost_bp": 3.194,
+          "median_roundtrip_cost_bp": 3.078,
+          "n_events": 8,
+          "pair_windows_dropped_as_far_from_the_moment": 0
+        },
+        "ny_option_cut_post": {
+          "decidable": true,
+          "dispersion_bp": 9.26,
+          "economics": {
+            "break_even_gross_ir": 4.93,
+            "dispersion_over_median_cost": 3.255,
+            "events_per_year": 259.0,
+            "feasible_events_per_year_ceiling": {
+              "1.0": 10.64,
+              "1.5": 23.93,
+              "2.0": 42.55,
+              "_unit": "count"
+            },
+            "feasible_events_per_year_floor": 10.42
+          },
+          "headroom_bp": 4.181,
+          "hurdle_bp": 5.688,
+          "mde_bp": 1.507,
+          "mde_optimistic_bp": 1.136,
+          "mde_persistent_median_bp": 1.091,
+          "mean_roundtrip_cost_bp": 2.839,
+          "median_roundtrip_cost_bp": 2.844,
+          "n_events": 517,
+          "pair_windows_dropped_as_far_from_the_moment": 0
+        },
+        "ny_option_cut_post__month_end": {
+          "decidable": false,
+          "dispersion_bp": 12.61,
+          "economics": {
+            "break_even_gross_ir": 0.82,
+            "dispersion_over_median_cost": 4.374,
+            "events_per_year": 12.5,
+            "feasible_events_per_year_ceiling": {
+              "1.0": 18.69,
+              "1.5": 42.05,
+              "2.0": 74.75,
+              "_unit": "count"
+            },
+            "feasible_events_per_year_floor": 18.82
+          },
+          "headroom_bp": -4.32,
+          "hurdle_bp": 5.766,
+          "mde_bp": 10.086,
+          "mde_optimistic_bp": 6.996,
+          "mde_persistent_median_bp": 7.115,
+          "mean_roundtrip_cost_bp": 2.917,
+          "median_roundtrip_cost_bp": 2.883,
+          "n_events": 25,
+          "pair_windows_dropped_as_far_from_the_moment": 0
+        },
+        "ny_option_cut_post__quarter_end": {
+          "decidable": false,
+          "dispersion_bp": 11.33,
+          "economics": {
+            "break_even_gross_ir": 0.55,
+            "dispersion_over_median_cost": 3.84,
+            "events_per_year": 4.0,
+            "feasible_events_per_year_ceiling": {
+              "1.0": 13.38,
+              "1.5": 30.1,
+              "2.0": 53.5,
+              "_unit": "count"
+            },
+            "feasible_events_per_year_floor": 14.5
+          },
+          "headroom_bp": -11.679,
+          "hurdle_bp": 5.901,
+          "mde_bp": 17.581,
+          "mde_optimistic_bp": 11.19,
+          "mde_persistent_median_bp": 11.05,
+          "mean_roundtrip_cost_bp": 3.098,
+          "median_roundtrip_cost_bp": 2.951,
+          "n_events": 8,
+          "pair_windows_dropped_as_far_from_the_moment": 0
+        },
+        "ny_option_cut_pre": {
+          "decidable": true,
+          "dispersion_bp": 8.15,
+          "economics": {
+            "break_even_gross_ir": 6.63,
+            "dispersion_over_median_cost": 2.632,
+            "events_per_year": 259.5,
+            "feasible_events_per_year_ceiling": {
+              "1.0": 5.9,
+              "1.5": 13.27,
+              "2.0": 23.6,
+              "_unit": "count"
+            },
+            "feasible_events_per_year_floor": 6.81
+          },
+          "headroom_bp": 4.877,
+          "hurdle_bp": 6.194,
+          "mde_bp": 1.318,
+          "mde_optimistic_bp": 1.003,
+          "mde_persistent_median_bp": 0.979,
+          "mean_roundtrip_cost_bp": 3.356,
+          "median_roundtrip_cost_bp": 3.097,
+          "n_events": 518,
+          "pair_windows_dropped_as_far_from_the_moment": 0
+        },
+        "ny_option_cut_pre__month_end": {
+          "decidable": false,
+          "dispersion_bp": 9.48,
+          "economics": {
+            "break_even_gross_ir": 1.22,
+            "dispersion_over_median_cost": 2.966,
+            "events_per_year": 12.5,
+            "feasible_events_per_year_ceiling": {
+              "1.0": 8.43,
+              "1.5": 18.97,
+              "2.0": 33.72,
+              "_unit": "count"
+            },
+            "feasible_events_per_year_floor": 8.65
+          },
+          "headroom_bp": -1.566,
+          "hurdle_bp": 6.39,
+          "mde_bp": 7.956,
+          "mde_optimistic_bp": 5.266,
+          "mde_persistent_median_bp": 5.962,
+          "mean_roundtrip_cost_bp": 3.264,
+          "median_roundtrip_cost_bp": 3.195,
+          "n_events": 25,
+          "pair_windows_dropped_as_far_from_the_moment": 0
+        },
+        "ny_option_cut_pre__quarter_end": {
+          "decidable": false,
+          "dispersion_bp": 8.54,
+          "economics": {
+            "break_even_gross_ir": 0.8,
+            "dispersion_over_median_cost": 2.514,
+            "events_per_year": 4.0,
+            "feasible_events_per_year_ceiling": {
+              "1.0": 6.2,
+              "1.5": 13.95,
+              "2.0": 24.8,
+              "_unit": "count"
+            },
+            "feasible_events_per_year_floor": 6.22
+          },
+          "headroom_bp": -5.221,
+          "hurdle_bp": 6.79,
+          "mde_bp": 12.012,
+          "mde_optimistic_bp": 8.356,
+          "mde_persistent_median_bp": 8.316,
+          "mean_roundtrip_cost_bp": 3.429,
+          "median_roundtrip_cost_bp": 3.395,
+          "n_events": 8,
+          "pair_windows_dropped_as_far_from_the_moment": 0
+        },
+        "rollover_post": {
+          "decidable": true,
+          "dispersion_bp": 3.11,
+          "economics": {
+            "break_even_gross_ir": 49.06,
+            "dispersion_over_median_cost": 0.299,
+            "events_per_year": 205.9,
+            "feasible_events_per_year_ceiling": {
+              "1.0": 0.09,
+              "1.5": 0.19,
+              "2.0": 0.34,
+              "_unit": "count"
+            },
+            "feasible_events_per_year_floor": 0.09
+          },
+          "headroom_bp": 20.287,
+          "hurdle_bp": 20.826,
+          "mde_bp": 0.539,
+          "mde_optimistic_bp": 0.422,
+          "mde_persistent_median_bp": 0.414,
+          "mean_roundtrip_cost_bp": 10.628,
+          "median_roundtrip_cost_bp": 10.413,
+          "n_events": 411,
+          "pair_windows_dropped_as_far_from_the_moment": 2136
+        },
+        "rollover_post__month_end": {
+          "decidable": true,
+          "dispersion_bp": 3.55,
+          "economics": {
+            "break_even_gross_ir": 8.2,
+            "dispersion_over_median_cost": 0.314,
+            "events_per_year": 6.5,
+            "feasible_events_per_year_ceiling": {
+              "1.0": 0.1,
+              "1.5": 0.22,
+              "2.0": 0.39,
+              "_unit": "count"
+            },
+            "feasible_events_per_year_floor": 0.1
+          },
+          "headroom_bp": 18.837,
+          "hurdle_bp": 22.63,
+          "mde_bp": 3.793,
+          "mde_optimistic_bp": 2.74,
+          "mde_persistent_median_bp": 2.824,
+          "mean_roundtrip_cost_bp": 11.423,
+          "median_roundtrip_cost_bp": 11.315,
+          "n_events": 13,
+          "pair_windows_dropped_as_far_from_the_moment": 241
+        },
+        "rollover_post__quarter_end": {
+          "decidable": true,
+          "dispersion_bp": 1.18,
+          "economics": {
+            "break_even_gross_ir": 9.85,
+            "dispersion_over_median_cost": 0.102,
+            "events_per_year": 1.0,
+            "feasible_events_per_year_ceiling": {
+              "1.0": 0.01,
+              "1.5": 0.02,
+              "2.0": 0.04,
+              "_unit": "count"
+            },
+            "feasible_events_per_year_floor": 0.01
+          },
+          "headroom_bp": 18.97,
+          "hurdle_bp": 23.138,
+          "mde_bp": 4.167,
+          "mde_optimistic_bp": 2.419,
+          "mde_persistent_median_bp": 2.625,
+          "mean_roundtrip_cost_bp": 11.569,
+          "median_roundtrip_cost_bp": 11.569,
+          "n_events": 2,
+          "pair_windows_dropped_as_far_from_the_moment": 120
+        },
+        "rollover_pre": {
+          "decidable": true,
+          "dispersion_bp": 4.56,
+          "economics": {
+            "break_even_gross_ir": 14.88,
+            "dispersion_over_median_cost": 1.261,
+            "events_per_year": 259.0,
+            "feasible_events_per_year_ceiling": {
+              "1.0": 1.17,
+              "1.5": 2.63,
+              "2.0": 4.68,
+              "_unit": "count"
+            },
+            "feasible_events_per_year_floor": 1.56
+          },
+          "headroom_bp": 6.518,
+          "hurdle_bp": 7.237,
+          "mde_bp": 0.718,
+          "mde_optimistic_bp": 0.544,
+          "mde_persistent_median_bp": 0.525,
+          "mean_roundtrip_cost_bp": 4.219,
+          "median_roundtrip_cost_bp": 3.618,
+          "n_events": 517,
+          "pair_windows_dropped_as_far_from_the_moment": 11
+        },
+        "rollover_pre__month_end": {
+          "decidable": true,
+          "dispersion_bp": 3.14,
+          "economics": {
+            "break_even_gross_ir": 6.6,
+            "dispersion_over_median_cost": 0.723,
+            "events_per_year": 12.5,
+            "feasible_events_per_year_ceiling": {
+              "1.0": 0.29,
+              "1.5": 0.65,
+              "2.0": 1.15,
+              "_unit": "count"
+            },
+            "feasible_events_per_year_floor": 0.51
+          },
+          "headroom_bp": 6.428,
+          "hurdle_bp": 8.681,
+          "mde_bp": 2.253,
+          "mde_optimistic_bp": 1.755,
+          "mde_persistent_median_bp": 1.776,
+          "mean_roundtrip_cost_bp": 5.853,
+          "median_roundtrip_cost_bp": 4.34,
+          "n_events": 25,
+          "pair_windows_dropped_as_far_from_the_moment": 0
+        },
+        "rollover_pre__quarter_end": {
+          "decidable": true,
+          "dispersion_bp": 2.76,
+          "economics": {
+            "break_even_gross_ir": 5.78,
+            "dispersion_over_median_cost": 0.396,
+            "events_per_year": 4.0,
+            "feasible_events_per_year_ceiling": {
+              "1.0": 0.12,
+              "1.5": 0.27,
+              "2.0": 0.48,
+              "_unit": "count"
+            },
+            "feasible_events_per_year_floor": 0.15
+          },
+          "headroom_bp": 10.032,
+          "hurdle_bp": 13.933,
+          "mde_bp": 3.901,
+          "mde_optimistic_bp": 2.729,
+          "mde_persistent_median_bp": 2.696,
+          "mean_roundtrip_cost_bp": 7.96,
+          "median_roundtrip_cost_bp": 6.966,
+          "n_events": 8,
+          "pair_windows_dropped_as_far_from_the_moment": 0
+        },
+        "tokyo_fix_post": {
+          "decidable": true,
+          "dispersion_bp": 6.83,
+          "economics": {
+            "break_even_gross_ir": 7.2,
+            "dispersion_over_median_cost": 2.24,
+            "events_per_year": 259.5,
+            "feasible_events_per_year_ceiling": {
+              "1.0": 5.0,
+              "1.5": 11.25,
+              "2.0": 20.0,
+              "_unit": "count"
+            },
+            "feasible_events_per_year_floor": 4.94
+          },
+          "headroom_bp": 4.969,
+          "hurdle_bp": 6.095,
+          "mde_bp": 1.126,
+          "mde_optimistic_bp": 0.83,
+          "mde_persistent_median_bp": 0.767,
+          "mean_roundtrip_cost_bp": 3.053,
+          "median_roundtrip_cost_bp": 3.047,
+          "n_events": 518,
+          "pair_windows_dropped_as_far_from_the_moment": 0
+        },
+        "tokyo_fix_post__month_end": {
+          "decidable": false,
+          "dispersion_bp": 8.24,
+          "economics": {
+            "break_even_gross_ir": 1.36,
+            "dispersion_over_median_cost": 2.667,
+            "events_per_year": 12.5,
+            "feasible_events_per_year_ceiling": {
+              "1.0": 6.75,
+              "1.5": 15.19,
+              "2.0": 27.01,
+              "_unit": "count"
+            },
+            "feasible_events_per_year_floor": 7.0
+          },
+          "headroom_bp": -0.236,
+          "hurdle_bp": 6.177,
+          "mde_bp": 6.413,
+          "mde_optimistic_bp": 4.6,
+          "mde_persistent_median_bp": 4.668,
+          "mean_roundtrip_cost_bp": 3.171,
+          "median_roundtrip_cost_bp": 3.089,
+          "n_events": 25,
+          "pair_windows_dropped_as_far_from_the_moment": 0
+        },
+        "tokyo_fix_post__quarter_end": {
+          "decidable": false,
+          "dispersion_bp": 6.1,
+          "economics": {
+            "break_even_gross_ir": 1.12,
+            "dispersion_over_median_cost": 1.902,
+            "events_per_year": 4.0,
+            "feasible_events_per_year_ceiling": {
+              "1.0": 3.18,
+              "1.5": 7.15,
+              "2.0": 12.71,
+              "_unit": "count"
+            },
+            "feasible_events_per_year_floor": 3.56
+          },
+          "headroom_bp": -6.018,
+          "hurdle_bp": 6.413,
+          "mde_bp": 12.431,
+          "mde_optimistic_bp": 6.056,
+          "mde_persistent_median_bp": 6.546,
+          "mean_roundtrip_cost_bp": 3.421,
+          "median_roundtrip_cost_bp": 3.207,
+          "n_events": 8,
+          "pair_windows_dropped_as_far_from_the_moment": 0
+        },
+        "tokyo_fix_pre": {
+          "decidable": true,
+          "dispersion_bp": 5.57,
+          "economics": {
+            "break_even_gross_ir": 8.88,
+            "dispersion_over_median_cost": 1.816,
+            "events_per_year": 259.0,
+            "feasible_events_per_year_ceiling": {
+              "1.0": 3.29,
+              "1.5": 7.4,
+              "2.0": 13.15,
+              "_unit": "count"
+            },
+            "feasible_events_per_year_floor": 3.24
+          },
+          "headroom_bp": 5.199,
+          "hurdle_bp": 6.135,
+          "mde_bp": 0.935,
+          "mde_optimistic_bp": 0.682,
+          "mde_persistent_median_bp": 0.683,
+          "mean_roundtrip_cost_bp": 3.073,
+          "median_roundtrip_cost_bp": 3.067,
+          "n_events": 517,
+          "pair_windows_dropped_as_far_from_the_moment": 0
+        },
+        "tokyo_fix_pre__month_end": {
+          "decidable": true,
+          "dispersion_bp": 4.83,
+          "economics": {
+            "break_even_gross_ir": 2.3,
+            "dispersion_over_median_cost": 1.551,
+            "events_per_year": 12.5,
+            "feasible_events_per_year_ceiling": {
+              "1.0": 2.36,
+              "1.5": 5.3,
+              "2.0": 9.43,
+              "_unit": "count"
+            },
+            "feasible_events_per_year_floor": 2.37
+          },
+          "headroom_bp": 1.381,
+          "hurdle_bp": 6.228,
+          "mde_bp": 4.847,
+          "mde_optimistic_bp": 2.663,
+          "mde_persistent_median_bp": 2.803,
+          "mean_roundtrip_cost_bp": 3.146,
+          "median_roundtrip_cost_bp": 3.114,
+          "n_events": 25,
+          "pair_windows_dropped_as_far_from_the_moment": 0
+        },
+        "tokyo_fix_pre__quarter_end": {
+          "decidable": false,
+          "dispersion_bp": 4.89,
+          "economics": {
+            "break_even_gross_ir": 1.35,
+            "dispersion_over_median_cost": 1.527,
+            "events_per_year": 4.0,
+            "feasible_events_per_year_ceiling": {
+              "1.0": 2.2,
+              "1.5": 4.96,
+              "2.0": 8.81,
+              "_unit": "count"
+            },
+            "feasible_events_per_year_floor": 2.29
+          },
+          "headroom_bp": -1.271,
+          "hurdle_bp": 6.403,
+          "mde_bp": 7.674,
+          "mde_optimistic_bp": 4.912,
+          "mde_persistent_median_bp": 5.56,
+          "mean_roundtrip_cost_bp": 3.295,
+          "median_roundtrip_cost_bp": 3.202,
+          "n_events": 8,
+          "pair_windows_dropped_as_far_from_the_moment": 0
+        }
+      },
+      "clock_resolution": {
+        "_unit": "count",
+        "london_fix": {
+          "n_days": 518,
+          "utc_times_observed": {
+            "15:00": 302,
+            "16:00": 216
+          }
+        },
+        "london_open": {
+          "n_days": 518,
+          "utc_times_observed": {
+            "07:00": 302,
+            "08:00": 216
+          }
+        },
+        "month_end_days": 25,
+        "ny_option_cut": {
+          "n_days": 518,
+          "utc_times_observed": {
+            "14:00": 342,
+            "15:00": 176
+          }
+        },
+        "quarter_end_days": 8,
+        "rollover": {
+          "n_days": 518,
+          "utc_times_observed": {
+            "21:00": 342,
+            "22:00": 176
+          }
+        },
+        "tokyo_fix": {
+          "n_days": 518,
+          "utc_times_observed": {
+            "00:55": 518
+          }
+        }
+      },
+      "cost_at_week_boundaries": {
+        "last_bar_before_the_weekend": {
+          "roundtrip_cost_bp": 6.335
+        },
+        "ordinary_2345_utc_close": {
+          "roundtrip_cost_bp": 2.193
+        }
+      },
+      "cost_by_utc_hour": {
+        "00": {
+          "roundtrip_cost_bp": 2.165
+        },
+        "01": {
+          "roundtrip_cost_bp": 2.151
+        },
+        "02": {
+          "roundtrip_cost_bp": 2.119
+        },
+        "03": {
+          "roundtrip_cost_bp": 2.112
+        },
+        "04": {
+          "roundtrip_cost_bp": 2.108
+        },
+        "05": {
+          "roundtrip_cost_bp": 2.114
+        },
+        "06": {
+          "roundtrip_cost_bp": 2.091
+        },
+        "07": {
+          "roundtrip_cost_bp": 2.061
+        },
+        "08": {
+          "roundtrip_cost_bp": 2.06
+        },
+        "09": {
+          "roundtrip_cost_bp": 2.035
+        },
+        "10": {
+          "roundtrip_cost_bp": 2.023
+        },
+        "11": {
+          "roundtrip_cost_bp": 2.019
+        },
+        "12": {
+          "roundtrip_cost_bp": 2.101
+        },
+        "13": {
+          "roundtrip_cost_bp": 2.126
+        },
+        "14": {
+          "roundtrip_cost_bp": 2.024
+        },
+        "15": {
+          "roundtrip_cost_bp": 1.991
+        },
+        "16": {
+          "roundtrip_cost_bp": 2.004
+        },
+        "17": {
+          "roundtrip_cost_bp": 2.022
+        },
+        "18": {
+          "roundtrip_cost_bp": 2.023
+        },
+        "19": {
+          "roundtrip_cost_bp": 2.026
+        },
+        "20": {
+          "roundtrip_cost_bp": 2.164
+        },
+        "21": {
+          "roundtrip_cost_bp": 4.937
+        },
+        "22": {
+          "roundtrip_cost_bp": 2.92
+        },
+        "23": {
+          "roundtrip_cost_bp": 2.26
+        }
+      },
+      "n_days": 518,
+      "n_pairs": 20,
+      "n_partial_days_excluded": 106,
+      "spread_at_moments": {
+        "all_bars_baseline": {
+          "roundtrip_cost_bp": 2.13
+        },
+        "london_fix": {
+          "roundtrip_cost_bp": 1.997
+        },
+        "london_open": {
+          "roundtrip_cost_bp": 2.064
+        },
+        "ny_option_cut": {
+          "roundtrip_cost_bp": 2.015
+        },
+        "rollover": {
+          "roundtrip_cost_bp": 8.112
+        },
+        "tokyo_fix": {
+          "roundtrip_cost_bp": 2.162
+        }
+      },
+      "years": 1.996
+    }
+  },
+  "power_multiplier": 2.802,
+  "signal_draws": 200,
+  "signal_free": true,
+  "unit": "bp_of_mid",
+  "unit_audit": {
+    "convention": "every return, cost, hurdle, MDE and interval is basis points of the mid price at the moment of the trade, converted per observation",
+    "numeric_fields_not_in_bp": [],
+    "status": "UNIT_CONSISTENCY_VERIFIED",
+    "unit": "bp_of_mid"
+  }
+}
