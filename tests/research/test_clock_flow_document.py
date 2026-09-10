@@ -209,3 +209,61 @@ def test_the_panels_are_the_two_seen_deciding_spans(artifact: dict[str, Any]) ->
     assert measured["supplemental_2023_2025"][0].startswith("2023-04-26")
     assert measured["supplemental_2023_2025"][1].startswith("2025-04-24")
     assert set(artifact["panels"]) == set(PANELS)
+
+
+def _survivors(artifact: dict[str, Any], ir_max: float) -> list[str]:
+    """Cells powered on **both** deciding panels and payable at `ir_max`."""
+    keep: list[str] = []
+    for group in ("calendar", "clock"):
+        for name, first in artifact["panels"][PANELS[0]][group].items():
+            second = artifact["panels"][PANELS[1]][group].get(name)
+            if second is None or min(first.get("n_events", 0), second.get("n_events", 0)) < 2:
+                continue
+            if not (first["decidable"] and second["decidable"]):
+                continue
+            worst = max(
+                first["economics"]["break_even_gross_ir"],
+                second["economics"]["break_even_gross_ir"],
+            )
+            if worst <= ir_max:
+                keep.append(name)
+    return sorted(keep)
+
+
+def test_how_much_survives_both_gates(artifact: dict[str, Any]) -> None:
+    """The document's headline, pinned — because it was wrong once.
+
+    A first draft said five cells survive at `IR_max = 2.0`. One does. Raising
+    the ceiling admits no second cell, because the next candidates fail the
+    *power* gate on one panel rather than the economic one, and a claim that
+    loosening `IR_max` opens the space would have pointed a re-decision the wrong
+    way.
+    """
+    assert _survivors(artifact, 1.0) == []
+    assert _survivors(artifact, 1.5) == ["london_open_pre__month_end"]
+    assert _survivors(artifact, 2.0) == ["london_open_pre__month_end"]
+
+
+def test_the_survivor_passes_by_the_margin_the_document_states(
+    artifact: dict[str, Any],
+) -> None:
+    margins = [
+        artifact["panels"][panel]["clock"]["london_open_pre__month_end"]["headroom_bp"]
+        for panel in PANELS
+    ]
+    assert margins == pytest.approx([0.196, 0.086], abs=0.0006)
+    #: Three per cent and one and a half of the hurdle it clears.
+    for margin, panel in zip(margins, PANELS, strict=True):
+        hurdle = artifact["panels"][panel]["clock"]["london_open_pre__month_end"]["hurdle_bp"]
+        assert 0.01 < margin / hurdle < 0.04
+
+
+def test_the_measured_cell_count_the_document_cites(artifact: dict[str, Any]) -> None:
+    measured = sum(
+        1
+        for group in ("calendar", "clock")
+        for value in artifact["panels"][PANELS[0]][group].values()
+        if value.get("n_events", 0) >= 2
+    )
+    assert measured == 34
+    assert "thirty-four measured" in DOCUMENT.read_text(encoding="utf-8")

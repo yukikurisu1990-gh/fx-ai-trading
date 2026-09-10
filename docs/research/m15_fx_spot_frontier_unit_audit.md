@@ -209,8 +209,8 @@ also exactly what destroys the power to measure its mean.
 
 **Exactly one cell is powered on both deciding panels and payable at
 `IR_max = 1.5`: the London *open* pre-window at month-end**, and it passes the
-power gate by 0.20 and 0.09 bp. That is one cell, on a margin of three per cent,
-out of thirty measured.
+power gate by 0.196 and 0.086 bp. That is one cell out of thirty-four measured,
+on a margin of three per cent and one and a half.
 
 ### 4.4 The cost surface, now the highest-leverage variable
 
@@ -282,9 +282,13 @@ adjudicated, no pre-registration frozen, in any of the three tracks.
 
 **Q1. What is `IR_max`?** The band's ceiling is the largest gross information
 ratio worth believing in advance. This document reports every band at 1.0, 1.5
-and 2.0 rather than choosing. At 1.0, `london_open pre · month-end` (1.42 / 1.36)
-falls outside and **nothing in the grid survives both gates**; at 2.0 five
-month-end cells do. The choice decides whether Track 1 exists.
+and 2.0 rather than choosing. At **1.0**, `london_open pre · month-end`
+(1.42 / 1.36) falls outside and **nothing in the grid survives both gates at
+all**. At **1.5** and at **2.0** it is that same single cell — raising the
+ceiling does not admit a second, because the next candidates fail the *power*
+gate on one panel (`london_fix post`, `london_open post`, both no / yes) rather
+than the economic one. So the choice is between one marginal cell and none, and
+loosening `IR_max` is not a way out of that.
 
 **Q2. May a month-end cell pool the two deciding panels?** At 25 events per panel
 the cells sit on the power margin, and one of them passes on one panel and fails
