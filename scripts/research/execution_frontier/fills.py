@@ -288,12 +288,24 @@ def leg_costs(frame: pd.DataFrame, *, at: str, rule: FillRule | None = None) -> 
 
 
 def summarise(costs: LegCosts, selector: np.ndarray) -> dict[str, Any]:
-    """Pool both directions over the selected bars and report the cost facts.
+    """The one-pair form of `summarise_many`."""
+    return summarise_many([(costs, selector)])
+
+
+def summarise_many(items: list[tuple[LegCosts, np.ndarray]]) -> dict[str, Any]:
+    """Pool both directions, and every pair given, over the selected bars.
 
     Both directions are pooled because the direction a design will take is drawn
     from a generator, so the population being described is "a trade at these
     bars", not "a buy" or "a sell". Keeping them apart would report the drift of
     a market that happened to fall over the panel as an execution property.
+
+    Pairs are pooled per observation rather than by averaging per-pair means, so
+    a pair that is tradable on fewer bars carries proportionally less weight —
+    which is what a book actually experiences. The per-pair breakdown is reported
+    separately for the same reason it exists elsewhere in this programme: a
+    pooled number that is really one pair is a composition artifact, and this
+    corpus has produced two of them.
     """
     rows: dict[str, list[np.ndarray]] = {
         "baseline": [],
@@ -304,16 +316,19 @@ def summarise(costs: LegCosts, selector: np.ndarray) -> dict[str, Any]:
         "drift_passive": [],
         "drift_baseline": [],
     }
-    for direction in (LONG, SHORT):
-        side = costs.for_direction(direction)
-        keep = selector & costs.measurable
-        rows["baseline"].append(side.baseline_bp[keep])
-        rows["passive"].append(side.passive_bp[keep])
-        rows["conditional"].append(side.conditional_bp[keep])
-        rows["filled"].append(side.filled[keep])
-        rows["offset"].append(side.fill_offset[keep])
-        rows["drift_passive"].append(side.drift_passive_bp[keep])
-        rows["drift_baseline"].append(side.drift_baseline_bp[keep])
+    for costs, selector in items:
+        for direction in (LONG, SHORT):
+            side = costs.for_direction(direction)
+            keep = selector & costs.measurable
+            rows["baseline"].append(side.baseline_bp[keep])
+            rows["passive"].append(side.passive_bp[keep])
+            rows["conditional"].append(side.conditional_bp[keep])
+            rows["filled"].append(side.filled[keep])
+            rows["offset"].append(side.fill_offset[keep])
+            rows["drift_passive"].append(side.drift_passive_bp[keep])
+            rows["drift_baseline"].append(side.drift_baseline_bp[keep])
+    if not rows["baseline"]:
+        return {"n": 0}
     pooled = {key: np.concatenate(value) for key, value in rows.items()}
 
     n = int(len(pooled["baseline"]))
@@ -376,4 +391,5 @@ __all__ = [
     "LegCosts",
     "leg_costs",
     "summarise",
+    "summarise_many",
 ]

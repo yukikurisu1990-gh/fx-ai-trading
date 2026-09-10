@@ -285,7 +285,7 @@ class TestPanelArrays:
         frame = _frame("2023-01-02 14:00", 8, spread=1.0)
         frame.loc[5, "spread_close_pips"] = 21.0
         arrays = frontier.PanelArrays({"EUR_USD": frame})
-        _, cost = arrays.window("EUR_USD", 2, 5)
+        _, cost, _ = arrays.window("EUR_USD", 2, 5)
         cheap_only = float(
             pips_to_bp(1.0 + HALF_SPREAD_ADDITION_PIPS, 0.0001, frame["mid_o"].iat[2])
         )
@@ -296,7 +296,11 @@ class TestPanelArrays:
         frame = _frame("2023-01-02 14:00", 8, spread=0.0)
         frame["mid_c"] = frame["mid_o"] + 0.0001  # exactly one pip
         arrays = frontier.PanelArrays({"EUR_USD": frame})
-        ret_bp, cost_bp = arrays.window("EUR_USD", 2, 2)
+        ret_bp, cost_bp, short_bp = arrays.window("EUR_USD", 2, 2)
+        #: The quoted model does not know which way the trade went, and must not
+        #: start to: a difference here would mean the substitution Track 3 makes
+        #: had leaked into the baseline the whole programme is measured against.
+        assert short_bp == cost_bp
         #: The cost model adds half a pip on top of a zero spread, so the round
         #: trip is half the size of the one-pip move. Not to the last digit: the
         #: two halves are converted at the entry mid and the exit mid, which
@@ -305,6 +309,97 @@ class TestPanelArrays:
         #: assertion exact while being wrong about `USD_JPY`.
         assert cost_bp == pytest.approx(ret_bp / 2.0, rel=1e-3)
         assert cost_bp != ret_bp / 2.0
+
+
+class TestTheCostSourceIsInjectable:
+    """The seam Track 3 substitutes a measured execution cost through.
+
+    The point of these is that swapping the source may not silently change the
+    baseline. `QuotedCosts` is the committed model; anything else is a different
+    experiment and has to say so by being passed in.
+    """
+
+    def test_the_exit_leg_is_priced_at_the_exit_bar_close(self) -> None:
+        """Mutation testing found this open: pricing the exit leg at the exit
+        bar's *open* left all sixty-four tests green.
+
+        The test that should have caught it asserted `cost_bp != ret_bp / 2.0`,
+        which under that mutation still held — by a floating-point residual
+        rather than by the per-observation conversion it was written to prove. So
+        the leg is pinned directly, against a bar whose open and close are far
+        enough apart that the two conversions cannot be confused.
+        """
+        frame = _frame("2023-01-02 14:00", 8, spread=1.0)
+        #: A bar that opens at 1.10 and closes 500 pips higher. Nothing realistic
+        #: about it; the point is that the two possible denominators differ by 5%
+        #: and a residual cannot hide the difference.
+        frame.loc[5, "mid_c"] = 1.15
+        arrays = frontier.PanelArrays({"EUR_USD": frame})
+        at_close = float(
+            pips_to_bp(1.0 + HALF_SPREAD_ADDITION_PIPS, 0.0001, frame["mid_c"].iat[5]) / 2.0
+        )
+        at_open = float(
+            pips_to_bp(1.0 + HALF_SPREAD_ADDITION_PIPS, 0.0001, frame["mid_o"].iat[5]) / 2.0
+        )
+        assert at_close != pytest.approx(at_open, rel=1e-3)
+        assert arrays.costs.exit("EUR_USD", 5, -1) == pytest.approx(at_close, rel=1e-12)
+        assert arrays.costs.entry("EUR_USD", 5, 1) == pytest.approx(at_open, rel=1e-12)
+
+    def test_the_default_source_is_the_quoted_round_trip(self) -> None:
+        frame = _frame("2023-01-02 14:00", 8, spread=1.0)
+        arrays = frontier.PanelArrays({"EUR_USD": frame})
+        assert isinstance(arrays.costs, frontier.QuotedCosts)
+        _, long_bp, short_bp = arrays.window("EUR_USD", 2, 5)
+        assert long_bp == short_bp
+
+    def test_an_injected_source_is_used_for_both_legs_and_both_directions(self) -> None:
+        class Recording:
+            def __init__(self) -> None:
+                self.calls: list[tuple[str, int, int]] = []
+
+            def entry(self, pair: str, index: int, direction: int) -> float:
+                self.calls.append(("entry", index, direction))
+                return 1.0 if direction > 0 else 3.0
+
+            def exit(self, pair: str, index: int, direction: int) -> float:
+                self.calls.append(("exit", index, direction))
+                return 0.5 if direction > 0 else 0.25
+
+        source = Recording()
+        frame = _frame("2023-01-02 14:00", 8, spread=1.0)
+        arrays = frontier.PanelArrays({"EUR_USD": frame}, costs=source)
+        _, long_bp, short_bp = arrays.window("EUR_USD", 2, 5)
+        #: A long position buys at entry and sells at exit, so it pays the long
+        #: entry leg and the *short* exit leg. Getting that backwards would price
+        #: every round trip at one side of the book.
+        assert long_bp == 1.0 + 0.25
+        assert short_bp == 3.0 + 0.5
+        assert ("entry", 2, 1) in source.calls
+        assert ("exit", 5, -1) in source.calls
+
+    def test_a_leg_the_source_cannot_price_drops_the_window(self) -> None:
+        class Refuses:
+            def entry(self, pair: str, index: int, direction: int) -> float | None:
+                return None
+
+            def exit(self, pair: str, index: int, direction: int) -> float:
+                return 1.0
+
+        frame = _frame("2023-01-02 14:00", 8, spread=1.0)
+        arrays = frontier.PanelArrays({"EUR_USD": frame}, costs=Refuses())
+        assert arrays.window("EUR_USD", 2, 5) is None
+
+    def test_a_non_finite_leg_is_refused_rather_than_propagated(self) -> None:
+        class NotFinite:
+            def entry(self, pair: str, index: int, direction: int) -> float:
+                return float("nan")
+
+            def exit(self, pair: str, index: int, direction: int) -> float:
+                return 1.0
+
+        frame = _frame("2023-01-02 14:00", 8, spread=1.0)
+        arrays = frontier.PanelArrays({"EUR_USD": frame}, costs=NotFinite())
+        assert arrays.window("EUR_USD", 2, 5) is None
 
 
 class TestHurdleScale:

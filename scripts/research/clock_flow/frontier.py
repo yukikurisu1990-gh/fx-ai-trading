@@ -172,6 +172,40 @@ def _naive_utc(moment: dt.datetime) -> np.datetime64:
     return np.datetime64(stamp)
 
 
+class QuotedCosts:
+    """The programme's original cost model: half a quoted round trip per leg.
+
+    Direction-independent, because crossing the spread costs a buyer and a seller
+    the same. It is written as an injectable object rather than inlined so that
+    Track 3 can substitute a *measured* execution cost into the same design
+    enumeration — one enumeration, one cost model, the source swapped. The
+    alternative was a second enumeration, and this package has already shipped
+    two contradictory cost models once.
+    """
+
+    def __init__(self, arrays: PanelArrays) -> None:
+        self._arrays = arrays
+
+    def _half(self, pair: str, index: int, price: float) -> float:
+        arrays = self._arrays
+        return (
+            float(
+                pips_to_bp(
+                    arrays.spread[pair][index] + HALF_SPREAD_ADDITION_PIPS,
+                    arrays.pip[pair][index],
+                    price,
+                )
+            )
+            / 2.0
+        )
+
+    def entry(self, pair: str, index: int, direction: int) -> float:
+        return self._half(pair, index, self._arrays.open_[pair][index])
+
+    def exit(self, pair: str, index: int, direction: int) -> float:
+        return self._half(pair, index, self._arrays.close[pair][index])
+
+
 class PanelArrays:
     """Per-pair numpy views of a panel, keyed for timestamp lookup.
 
@@ -179,7 +213,7 @@ class PanelArrays:
     thousands of times and the frame overhead dominated a first version.
     """
 
-    def __init__(self, frames: dict[str, pd.DataFrame]) -> None:
+    def __init__(self, frames: dict[str, pd.DataFrame], costs: Any = None) -> None:
         self.ts: dict[str, np.ndarray] = {}
         self.open_: dict[str, np.ndarray] = {}
         self.close: dict[str, np.ndarray] = {}
@@ -205,6 +239,8 @@ class PanelArrays:
         ]
         self.partial_days: int = len(self.all_days) - len(self.days)
         self.years: float = (self.all_days[-1] - self.all_days[0]).days / DAYS_PER_YEAR
+        #: Built last, because the default source reads the arrays above.
+        self.costs: Any = costs if costs is not None else QuotedCosts(self)
 
     def bar_at_or_after(self, pair: str, moment: pd.Timestamp) -> int | None:
         position = int(np.searchsorted(self.ts[pair], _naive_utc(moment), side="left"))
@@ -233,14 +269,18 @@ class PanelArrays:
             return False
         return bool(np.all(np.diff(ts[first : last + 1]) == np.timedelta64(BAR)))
 
-    def window(self, pair: str, entry: int, exit_: int) -> tuple[float, float] | None:
-        """`(return_bp, roundtrip_cost_bp)`, or `None` if the bars are unusable.
+    def window(self, pair: str, entry: int, exit_: int) -> tuple[float, float, float] | None:
+        """`(return_bp, long_cost_bp, short_cost_bp)`, or `None` if unusable.
 
-        Cost is split across the two bars actually transacted on — half the round
-        trip at the entry bar's spread and mid, half at the exit bar's — because a
-        window ending inside a liquidity hole pays for that hole. The exit spread
-        is not a signal: it enters only as a subtraction, and the direction was
-        chosen at entry.
+        Cost is split across the two bars actually transacted on — one leg at the
+        entry bar, one at the exit bar — because a window ending inside a
+        liquidity hole pays for that hole. The exit spread is not a signal: it
+        enters only as a subtraction, and the direction was chosen at entry.
+
+        Two costs rather than one, because a *passive* leg is not symmetric: at a
+        given bar a resting buy and a resting sell face opposite sides of the same
+        move. Under the default `QuotedCosts` the two are identical and nothing
+        downstream changes, which is what makes the substitution safe.
         """
         ts = self.ts[pair]
         if entry < 0 or exit_ >= len(ts) or exit_ < entry:
@@ -250,27 +290,15 @@ class PanelArrays:
         if not (np.isfinite(entry_open) and np.isfinite(exit_close)) or entry_open <= 0:
             return None
         ret_bp = float((exit_close - entry_open) / entry_open * 1e4)
-        half_in = (
-            float(
-                pips_to_bp(
-                    self.spread[pair][entry] + HALF_SPREAD_ADDITION_PIPS,
-                    self.pip[pair][entry],
-                    entry_open,
-                )
-            )
-            / 2.0
+        legs = (
+            self.costs.entry(pair, entry, 1),
+            self.costs.exit(pair, exit_, -1),
+            self.costs.entry(pair, entry, -1),
+            self.costs.exit(pair, exit_, 1),
         )
-        half_out = (
-            float(
-                pips_to_bp(
-                    self.spread[pair][exit_] + HALF_SPREAD_ADDITION_PIPS,
-                    self.pip[pair][exit_],
-                    exit_close,
-                )
-            )
-            / 2.0
-        )
-        return ret_bp, half_in + half_out
+        if any(leg is None or not np.isfinite(leg) for leg in legs):
+            return None
+        return ret_bp, legs[0] + legs[1], legs[2] + legs[3]
 
 
 def economics(
@@ -373,7 +401,8 @@ def _design_statistics(
         return {"n_events": 0, "decidable": False}
 
     returns = np.stack([event["returns"] for event in events])
-    costs = np.stack([event["costs"] for event in events])
+    costs_long = np.stack([event["costs_long"] for event in events])
+    costs_short = np.stack([event["costs_short"] for event in events])
     mask = np.stack([event["present"] for event in events]).astype(float)
     n = len(events)
 
@@ -401,7 +430,11 @@ def _design_statistics(
             sink = conservative if persistent else optimistic
             sink.append(mde_from_gross(gross, adjust_for_autocorrelation=persistent))
             if not persistent:
-                cost = (np.abs(weights) * costs).sum(axis=1)
+                #: A pair the draw is long pays the long leg's cost and a pair it
+                #: is short pays the short leg's. Under the quoted model the two
+                #: are equal and this reduces to the original expression.
+                per_pair = np.where(weights > 0, costs_long, costs_short)
+                cost = (np.abs(weights) * per_pair).sum(axis=1)
                 dispersions.append(float(np.std(gross, ddof=1)))
                 mean_costs.append(float(cost.mean()))
                 median_costs.append(float(np.median(cost)))
@@ -436,7 +469,8 @@ def _event(arrays: PanelArrays, spans: dict[str, tuple[int, int]]) -> dict[str, 
     not move" or "the pair was free to trade".
     """
     returns = np.zeros(len(PAIRS))
-    costs = np.zeros(len(PAIRS))
+    costs_long = np.zeros(len(PAIRS))
+    costs_short = np.zeros(len(PAIRS))
     present = np.zeros(len(PAIRS), dtype=bool)
     for index, pair in enumerate(PAIRS):
         span = spans.get(pair)
@@ -445,11 +479,16 @@ def _event(arrays: PanelArrays, spans: dict[str, tuple[int, int]]) -> dict[str, 
         measured = arrays.window(pair, *span)
         if measured is None:
             continue
-        returns[index], costs[index] = measured
+        returns[index], costs_long[index], costs_short[index] = measured
         present[index] = True
     if int(present.sum()) < MIN_PAIRS_PER_EVENT:
         return None
-    return {"returns": returns, "costs": costs, "present": present}
+    return {
+        "returns": returns,
+        "costs_long": costs_long,
+        "costs_short": costs_short,
+        "present": present,
+    }
 
 
 def calendar_designs(arrays: PanelArrays) -> dict[str, Any]:
@@ -498,6 +537,47 @@ def calendar_designs(arrays: PanelArrays) -> dict[str, Any]:
     return out
 
 
+def clock_spans(
+    arrays: PanelArrays, moment_name: str, side: str, day: dt.date
+) -> tuple[dict[str, tuple[int, int]], int]:
+    """The `(entry, exit)` bars each pair would trade for one clock cell on one day.
+
+    Extracted from `clock_designs` so that Track 3 measures execution on the bars
+    the design actually transacts at, rather than on a second enumeration that
+    could drift from this one. Returns the spans and the count of pair-windows
+    dropped for landing too far from the moment.
+    """
+    #: Naive, because `arrays.ts` is naive UTC and the two are subtracted below.
+    #: A test caught this as a `TypeError`; had the two sides been silently
+    #: comparable it would have been a shifted window instead.
+    moment = pd.Timestamp(_naive_utc(pd.Timestamp(clock.moment_utc(day, moment_name))))
+    spans: dict[str, tuple[int, int]] = {}
+    dropped_far = 0
+    for pair in PAIRS:
+        if side == "pre":
+            found = arrays.last_bar_ending_by(pair, moment)
+            if found is None:
+                continue
+            entry, exit_ = found - (WINDOW_BARS - 1), found
+            #: The window must actually reach the moment. Without this, the
+            #: contiguity check alone let a Sunday "pre-fix" window be Friday's
+            #: last hour, forty-three hours early.
+            gap = moment - (pd.Timestamp(arrays.ts[pair][exit_]) + BAR)
+        else:
+            found = arrays.bar_at_or_after(pair, moment)
+            if found is None or found + (WINDOW_BARS - 1) >= len(arrays.ts[pair]):
+                continue
+            entry, exit_ = found, found + (WINDOW_BARS - 1)
+            gap = pd.Timestamp(arrays.ts[pair][entry]) - moment
+        if not pd.Timedelta(0) <= gap < BAR:
+            dropped_far += 1
+            continue
+        if not arrays.contiguous(pair, entry - 1, exit_):
+            continue
+        spans[pair] = (entry, exit_)
+    return spans, dropped_far
+
+
 def clock_designs(arrays: PanelArrays) -> dict[str, Any]:
     """What a one-hour window at each institutional moment could decide.
 
@@ -520,33 +600,8 @@ def clock_designs(arrays: PanelArrays) -> dict[str, Any]:
         events: list[dict[str, Any]] = []
         dropped_far = 0
         for day in subset_days:
-            #: Naive, because `arrays.ts` is naive UTC and the two are subtracted
-            #: below. A test caught this as a `TypeError`; had the two sides been
-            #: silently comparable it would have been a shifted window instead.
-            moment = pd.Timestamp(_naive_utc(pd.Timestamp(clock.moment_utc(day, moment_name))))
-            spans: dict[str, tuple[int, int]] = {}
-            for pair in PAIRS:
-                if side == "pre":
-                    found = arrays.last_bar_ending_by(pair, moment)
-                    if found is None:
-                        continue
-                    entry, exit_ = found - (WINDOW_BARS - 1), found
-                    #: The window must actually reach the moment. Without this,
-                    #: the contiguity check alone let a Sunday "pre-fix" window
-                    #: be Friday's last hour, forty-three hours early.
-                    gap = moment - (pd.Timestamp(arrays.ts[pair][exit_]) + BAR)
-                else:
-                    found = arrays.bar_at_or_after(pair, moment)
-                    if found is None or found + (WINDOW_BARS - 1) >= len(arrays.ts[pair]):
-                        continue
-                    entry, exit_ = found, found + (WINDOW_BARS - 1)
-                    gap = pd.Timestamp(arrays.ts[pair][entry]) - moment
-                if not pd.Timedelta(0) <= gap < BAR:
-                    dropped_far += 1
-                    continue
-                if not arrays.contiguous(pair, entry - 1, exit_):
-                    continue
-                spans[pair] = (entry, exit_)
+            spans, dropped = clock_spans(arrays, moment_name, side, day)
+            dropped_far += dropped
             event = _event(arrays, spans)
             if event is not None:
                 events.append(event)
@@ -708,8 +763,10 @@ __all__ = [
     "SIGNAL_DRAWS",
     "SIGNAL_TO_PAIR",
     "PanelArrays",
+    "QuotedCosts",
     "build",
     "calendar_designs",
+    "clock_spans",
     "clock_designs",
     "cost_at_week_boundaries",
     "cost_by_utc_hour",
