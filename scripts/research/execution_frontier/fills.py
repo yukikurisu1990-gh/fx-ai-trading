@@ -188,7 +188,7 @@ def leg_costs(frame: pd.DataFrame, *, at: str, rule: FillRule | None = None) -> 
     #: The last bar a decision at `k` can need for a cost is `k + wait`: the
     #: crossing bar, which for `at="close"` is also the resting window's last bar.
     #: The drift diagnostic reaches `drift - 1` bars past the latest fill.
-    horizon = wait + drift - 2 + offset
+    horizon = wait + drift - 1 + offset
     if n <= max(wait, horizon):
         empty = np.full(n, np.nan)
         false = np.zeros(n, dtype=bool)
@@ -257,22 +257,25 @@ def leg_costs(frame: pd.DataFrame, *, at: str, rule: FillRule | None = None) -> 
         passive_bp = np.where(measurable, np.where(filled, at_limit, crossed), np.nan)
         conditional_bp = np.where(filled, at_limit, np.nan)
 
-        #: The bar the trade actually happened in — the fill bar for a passive
-        #: fill, and the first live bar for a market order — so both drifts are
-        #: measured over the same number of bars of exposure.
-        exposure = index + offset + np.where(filled, fill_offset, 0)
-        passive_at = np.clip(exposure + drift - 1, 0, n - 1)
-        baseline_at = np.clip(index + offset + drift - 1, 0, n - 1)
-        drift_passive = np.where(
-            drift_ok & filled,
-            direction * (mid_close[passive_at] - limit) / limit * 1e4,
-            np.nan,
-        )
-        drift_baseline = np.where(
-            drift_ok,
-            direction * (mid_close[baseline_at] - baseline_price) / baseline_price * 1e4,
-            np.nan,
-        )
+        #: Both ends of this measurement sit **strictly after** the resting
+        #: window, and that is a correction made twice.
+        #:
+        #: The first version anchored it at `index + offset + drift - 1`, which
+        #: for the primary rule is the resting window's own last bar — the same
+        #: window whose extremum decides the fill. A review reproduced the entire
+        #: reported "adverse selection" on a driftless random walk, which is what
+        #: conditioning on a low and then measuring to it produces.
+        #:
+        #: Moving only the far end was not enough: for a decision whose window
+        #: *ends* on the bar that dipped, the reference price is the dip, and the
+        #: artifact reappears with its sign flipped. So the reference is the first
+        #: bar the fill decision could not see, and the horizon runs from there.
+        first_after = index + offset + wait
+        reference = np.clip(first_after, 0, n - 1)
+        after = np.clip(first_after + drift - 1, 0, n - 1)
+        move = direction * (mid_close[after] - mid_close[reference]) / mid_close[reference] * 1e4
+        drift_passive = np.where(drift_ok & filled, move, np.nan)
+        drift_baseline = np.where(drift_ok, move, np.nan)
         return DirectionCosts(
             baseline_bp=baseline_bp,
             passive_bp=passive_bp,
@@ -360,23 +363,34 @@ def summarise_many(items: list[tuple[LegCosts, np.ndarray]]) -> dict[str, Any]:
         finite = values[np.isfinite(values)]
         return round(float(np.mean(finite)), 4) if finite.size else None
 
-    #: Three drifts, because two of them answer different questions and mixing
-    #: them was this file's first error. `drift_passive` is measured from the
-    #: fill price and shows what the *position* then did. `drift_baseline` is
-    #: measured from a market order over every decision. The third restricts the
-    #: baseline to the decisions whose passive order filled, which holds the
-    #: execution model fixed and varies only the population.
-    out["drift_passive_bp"] = mean_of(pooled["drift_passive"])
-    out["drift_baseline_bp"] = mean_of(pooled["drift_baseline"])
-    out["drift_baseline_on_filled_bp"] = mean_of(np.where(filled, pooled["drift_baseline"], np.nan))
-    if out["drift_baseline_bp"] is not None and out["drift_baseline_on_filled_bp"] is not None:
-        #: Positive means the market behaved worse after the decisions a passive
-        #: order actually filled on — the selection, isolated from the price
-        #: advantage the fill itself carries. A model reporting only the price
-        #: advantage would call a systematically bad entry a cheap one.
+    #: One move, three populations. The quantity is the market's own move over
+    #: the bars *after* the resting window closes, signed by the trade's
+    #: direction, so nothing in it was visible to the fill decision. Reading it
+    #: over every decision and then over the decisions a passive order filled on
+    #: holds the execution model fixed and varies only the population, which is
+    #: what "selection" means. An earlier version compared two *prices* instead
+    #: and called the difference selection; it was not.
+    out["drift_after_the_window_bp"] = mean_of(pooled["drift_baseline"])
+    out["drift_after_the_window_on_filled_bp"] = mean_of(pooled["drift_passive"])
+    if (
+        out["drift_after_the_window_bp"] is not None
+        and out["drift_after_the_window_on_filled_bp"] is not None
+    ):
+        #: Positive means the market kept moving against the position after the
+        #: decisions a passive order actually filled on, relative to what it did
+        #: after all decisions. That is the selection, and it is measured on bars
+        #: outside the fill window so it cannot be manufactured by conditioning.
         out["adverse_selection_bp"] = round(
-            float(out["drift_baseline_bp"] - out["drift_baseline_on_filled_bp"]), 4
+            float(out["drift_after_the_window_bp"] - out["drift_after_the_window_on_filled_bp"]),
+            4,
         )
+    #: The two halves of `C' - C`, so a reader can see which one dominates
+    #: rather than inferring it: what the filled orders saved, and what the
+    #: unfilled ones paid to chase.
+    if filled.any():
+        out["saved_when_filled_bp"] = round(float(np.mean((baseline - passive)[filled])), 4)
+    if (~filled).any():
+        out["paid_when_chasing_bp"] = round(float(np.mean((passive - baseline)[~filled])), 4)
     return {key: value for key, value in out.items() if value is not None}
 
 

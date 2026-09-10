@@ -29,7 +29,7 @@ from scripts.research.clock_flow import MIN_EVENTS_PER_DECIDING_PANEL, frontier
 from scripts.research.execution_frontier import band_for
 from scripts.research.execution_frontier import refrontier as rf
 from scripts.research.execution_frontier import replay as rp
-from scripts.research.execution_frontier.fills import FillRule
+from scripts.research.execution_frontier.fills import FillRule, leg_costs
 from scripts.research.exploratory_m15 import PAIRS
 
 
@@ -199,6 +199,41 @@ class TestMeasuredExecutionCosts:
         assert differ
 
 
+class TestTheUnitAuditScope:
+    """The audit must walk the whole record, not the `panels` subtree.
+
+    Mutation testing found the narrowed scope indistinguishable on today's
+    artifact, because every field outside `panels` happens to be unit-free. That
+    is a property of the current record and not of the check, so the scope is
+    pinned against a record that would expose the difference.
+    """
+
+    @staticmethod
+    def finished(record: dict[str, object], tmp_path) -> dict[str, object]:
+        from scripts.research.execution_frontier import driver
+
+        original = driver.ARTIFACTS
+        driver.ARTIFACTS = tmp_path
+        try:
+            return driver._finish("probe.json", dict(record), {})
+        finally:
+            driver.ARTIFACTS = original
+
+    def test_a_monetary_field_outside_the_panels_subtree_is_caught(self, tmp_path) -> None:
+        record = {
+            "panels": {"a": {"net_bp": 1.0}},
+            "feasibility": {"cell": {"gross_pips": 3.0}},
+        }
+        audit = self.finished(record, tmp_path)["unit_audit"]
+        assert audit["status"] == "UNIT_CONSISTENCY_FAILED"
+        assert audit["numeric_fields_not_in_bp"] == ["root.feasibility.cell.gross_pips"]
+
+    def test_a_clean_record_still_passes(self, tmp_path) -> None:
+        record = {"panels": {"a": {"net_bp": 1.0}}, "feasibility": {"cell": {"cost_ratio": 0.4}}}
+        audit = self.finished(record, tmp_path)["unit_audit"]
+        assert audit["status"] == "UNIT_CONSISTENCY_VERIFIED"
+
+
 class TestPopulations:
     def test_rollover_is_out_of_the_primary_and_reported_on_its_own(
         self, replayed: rp.PanelReplay
@@ -229,6 +264,13 @@ class TestPopulations:
         non_event = pops["non_event"][0][pair]
         assert not (non_event & event).any()
         assert ((non_event | event) >= tradable).all()
+        #: And it is a complement *within the tradable set*. Mutation testing
+        #: found the intersection removable with every test still green, which
+        #: would have let the one population the design deliberately excludes —
+        #: the rollover window — into a headline row through the back door.
+        rollover = replayed.frames[pair]["rollover"].to_numpy(dtype=bool)
+        assert not (non_event & rollover).any()
+        assert (non_event <= tradable).all()
 
     def test_the_clock_populations_come_from_the_frontiers_own_spans(
         self, replayed: rp.PanelReplay
@@ -252,6 +294,132 @@ class TestPopulations:
             broad = pops["london_fix_pre"][0][pair]
             narrow = pops["london_fix_pre__month_end"][0][pair]
             assert not (narrow & ~broad).any()
+
+
+class TestTheLegConvention:
+    """Entry at a bar's open, exit at a bar's close — the frontier's own split.
+
+    Mutation testing found all three of these removable with the suite green:
+    swapping `ENTRY_AT`, swapping `EXIT_AT`, and having the measured source read
+    its entry table for the exit leg. They are the join that lets a Track 3 cost
+    substitute into `frontier.window`, whose return is `entry_open` to
+    `exit_close`; priced at the wrong end of a bar the two are different trades.
+    """
+
+    def test_the_entry_leg_is_the_open_leg_and_the_exit_leg_is_the_close_leg(
+        self, panel: dict[str, pd.DataFrame]
+    ) -> None:
+        pair = PAIRS[0]
+        frame = panel[pair]
+        rule = FillRule()
+        at_open = leg_costs(frame, at="open", rule=rule)
+        at_close = leg_costs(frame, at="close", rule=rule)
+        replayed = rp.PanelReplay(panel, rule)
+        assert np.array_equal(
+            replayed.entry[pair].long.baseline_bp, at_open.long.baseline_bp, equal_nan=True
+        )
+        assert np.array_equal(
+            replayed.exit[pair].long.baseline_bp, at_close.long.baseline_bp, equal_nan=True
+        )
+        #: ...and the two are genuinely different, so the assertions above are
+        #: not satisfied by a frame whose opens equal its closes.
+        finite = np.isfinite(at_open.long.baseline_bp) & np.isfinite(at_close.long.baseline_bp)
+        assert not np.allclose(at_open.long.baseline_bp[finite], at_close.long.baseline_bp[finite])
+
+    def test_the_measured_source_reads_a_different_table_for_each_leg(
+        self, panel: dict[str, pd.DataFrame]
+    ) -> None:
+        source = rf.MeasuredExecutionCosts(panel, FillRule())
+        pair = PAIRS[0]
+        differ = [
+            i
+            for i in range(200, 400)
+            if source.entry(pair, i, 1) is not None
+            and source.exit(pair, i, 1) is not None
+            and source.entry(pair, i, 1) != source.exit(pair, i, 1)
+        ]
+        assert differ
+
+
+class TestTheMarketVariant:
+    """The baseline that differs from the passive policy in policy alone.
+
+    `QuotedCosts` prices an entry leg from the bar's *closing* spread applied at
+    its opening mid, and it can price any bar. The measured source uses the bar's
+    own opening quotes and refuses the bars the fill model cannot reach. So part
+    of any quoted-to-passive difference is the source, not the policy — a review
+    measured it at 0.11 to 0.24 pips of round trip. This variant removes that
+    term by holding everything except the policy fixed.
+    """
+
+    def test_market_and_passive_refuse_exactly_the_same_bars(
+        self, panel: dict[str, pd.DataFrame]
+    ) -> None:
+        rule = FillRule(wait_bars=2)
+        market = rf.MeasuredExecutionCosts(panel, rule, policy=rf.MARKET)
+        passive = rf.MeasuredExecutionCosts(panel, rule, policy=rf.PASSIVE)
+        a, _ = rf.variant(panel, market)
+        b, _ = rf.variant(panel, passive)
+        for key, cell in a["clock"].items():
+            assert cell.get("n_events") == b["clock"][key].get("n_events")
+        assert market.dropped == passive.dropped
+
+    def test_market_is_the_market_order_and_passive_is_not(
+        self, panel: dict[str, pd.DataFrame]
+    ) -> None:
+        rule = FillRule()
+        pair = PAIRS[0]
+        market = rf.MeasuredExecutionCosts(panel, rule, policy=rf.MARKET)
+        passive = rf.MeasuredExecutionCosts(panel, rule, policy=rf.PASSIVE)
+        costs = leg_costs(panel[pair], at=rp.ENTRY_AT, rule=rule)
+        index = int(np.flatnonzero(costs.measurable)[100])
+        assert market.entry(pair, index, 1) == pytest.approx(costs.long.baseline_bp[index])
+        assert passive.entry(pair, index, 1) == pytest.approx(costs.long.passive_bp[index])
+
+    def test_an_unknown_policy_is_refused(self, panel: dict[str, pd.DataFrame]) -> None:
+        with pytest.raises(ValueError, match="policy must be"):
+            rf.MeasuredExecutionCosts(panel, FillRule(), policy="aggressive")
+
+    def test_a_refusal_is_counted_once_per_pair_window_not_once_per_leg(
+        self, panel: dict[str, pd.DataFrame]
+    ) -> None:
+        """`window` asks for four legs, so a lookup counter reports 2x to 4x."""
+        source = rf.MeasuredExecutionCosts(panel, FillRule())
+        pair = PAIRS[0]
+        last = len(panel[pair]) - 1
+        for direction in (1, -1):
+            source.entry(pair, last, direction)
+            source.exit(pair, last, direction)
+        assert source.dropped == 2  # one entry window, one exit window
+
+
+class TestPooling:
+    def test_a_pair_outside_the_canonical_twenty_is_still_pooled(self) -> None:
+        """The bug that made the no-information benchmark report no numbers.
+
+        Iterating `PAIRS` alone meant a frame dict keyed by anything else pooled
+        nothing and returned `n = 0`, and `_roundtrip` then produced an empty row
+        rather than a wrong one — which is the good failure mode, but only
+        because a `KeyError` surfaced it downstream.
+        """
+        frames = {f"SYNTH_{i}": synthetic_pair("EUR_USD", 6, 90 + i) for i in range(3)}
+        replayed = rp.PanelReplay(frames, FillRule())
+        masks = {pair: np.ones(len(frame), dtype=bool) for pair, frame in frames.items()}
+        record = rp.measure_population(replayed, masks, masks)
+        assert record["entry_leg"]["n"] > 0
+        assert "cost_ratio" in record["roundtrip"]
+
+    def test_the_pooled_result_does_not_depend_on_the_pair_order(
+        self, panel: dict[str, pd.DataFrame]
+    ) -> None:
+        """Which is why widening the order changed no measured value."""
+        replayed = rp.PanelReplay(panel, FillRule())
+        masks = {pair: np.ones(len(frame), dtype=bool) for pair, frame in panel.items()}
+        forward = rp.measure_population(replayed, masks, masks)
+        reversed_replay = rp.PanelReplay(dict(reversed(list(panel.items()))), FillRule())
+        backward = rp.measure_population(reversed_replay, masks, masks)
+        assert forward["roundtrip"] == backward["roundtrip"]
+        assert forward["entry_leg"] == backward["entry_leg"]
 
 
 class TestRoundTrip:

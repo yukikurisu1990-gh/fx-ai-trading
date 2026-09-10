@@ -53,8 +53,10 @@ DRIFT_ROWS = {
     "passive leg cost bp (`P2`)": "passive_leg_bp",
     "conditional leg cost bp (`P1`, 約定分のみ)": "conditional_leg_bp",
     "capture bp（`P2` の対クロス節約）": "capture_bp",
-    "drift after a market order bp": "drift_baseline_bp",
-    "drift after a market order, **約定した判断のみ** bp": "drift_baseline_on_filled_bp",
+    "約定したときに節約した bp": "saved_when_filled_bp",
+    "未約定で追いかけて払った bp": "paid_when_chasing_bp",
+    "窓の後の drift、全判断 bp": "drift_after_the_window_bp",
+    "窓の後の drift、約定した判断のみ bp": "drift_after_the_window_on_filled_bp",
     "adverse selection bp": "adverse_selection_bp",
 }
 
@@ -189,6 +191,21 @@ def test_every_table_row_is_traceable_to_the_artifacts(
                     continue
                 check(f"{heading} {cells[0]}", rest, _values(block))
 
+            elif "符号" in heading and panel:
+                block = replay["panels"][panel]["post_hoc_penetration_sweep"].get(label)
+                if block is None:
+                    failures.append(f"{heading}: no post-hoc cell {label!r}")
+                    continue
+                check(f"{heading} {cells[0]}", rest, _values(block))
+
+            elif "ベンチマーク" in heading and label.startswith("benchmark "):
+                key = label.split(" ", 1)[1]
+                block = replay["no_information_benchmark"].get(key)
+                if block is None:
+                    failures.append(f"{heading}: no benchmark cell {key!r}")
+                    continue
+                check(f"{heading} {cells[0]}", rest, _values(block))
+
             elif "ペア別分布" in heading and label in PANEL_OF:
                 block = replay["panels"][PANEL_OF[label]]
                 check(f"{heading} {cells[0]}", rest, _pair_stats(block))
@@ -202,7 +219,17 @@ def test_every_table_row_is_traceable_to_the_artifacts(
                     check(f"{heading} {cells[0]} [{name}]", [column], [float(entry[field])])
 
             elif "design-feasible" in heading and label in frontier["feasibility"]:
-                check(f"{heading} {label}", rest, _values(frontier["feasibility"][label]))
+                #: Column by column against the exact field, not against every
+                #: number the block happens to contain. Mutation testing showed
+                #: the flattened form accepted 26 of the 41 integers from 0 to 40
+                #: — on the one table the Case C adjudication rests on.
+                block = frontier["feasibility"][label]
+                expected = [
+                    float(block["n_cells"]),
+                    *(float(block["n_feasible"][ir]) for ir in ("1.0", "1.5", "2.0")),
+                ]
+                for column, value in zip(rest[: len(expected)], expected, strict=True):
+                    check(f"{heading} {label}", [column], [value])
 
             elif "主要 cell" in heading and label in CELL_OF:
                 variant, cell_panel = _split(rest[0])
@@ -233,6 +260,78 @@ def test_the_identity_table_matches_the_measured_panels(
         assert str(frontier["panels"]["quoted"][panel]["n_days"]) in text
 
 
+def test_the_post_hoc_material_is_labelled_as_post_hoc(
+    replay: dict[str, Any], frontier: dict[str, Any], text: str
+) -> None:
+    """Anything added after the primary was seen has to say so, in both places.
+
+    The penetration sweep and the no-information benchmark exist because a review
+    showed the pre-registered axis could not answer a question about the primary.
+    That is a legitimate reason to add them and no reason at all to let them read
+    as though they had been registered.
+    """
+    for panel in PANEL_OF.values():
+        block = replay["panels"][panel]["post_hoc_penetration_sweep"]
+        assert block["_classification"] == "POST_HOC_EXPLORATORY"
+    assert replay["no_information_benchmark"]["_classification"] == "POST_HOC_EXPLORATORY"
+    assert frontier["post_hoc_variants"], "the touch-fill variants are missing"
+    for label in frontier["post_hoc_variants"]:
+        assert label.startswith("post_hoc_")
+        assert label in frontier["feasibility"]
+    assert text.count("POST_HOC_EXPLORATORY") >= 2
+
+
+def test_the_market_control_shares_a_population_with_the_passive_variant(
+    frontier: dict[str, Any],
+) -> None:
+    """The control that makes `market -> passive` a policy comparison.
+
+    If the two ever stop dropping the same pair-windows, the difference between
+    them stops being the policy and the document's §7.1 comparison is void.
+    """
+    dropped = frontier["pair_windows_the_fill_model_could_not_price"]
+    for wait in (1, 2, 4, 8):
+        assert dropped[f"market_w{wait}_p1"] == dropped[f"passive_w{wait}_p1"]
+        market = frontier["feasibility"][f"market_w{wait}_p1"]["cells"]
+        passive = frontier["feasibility"][f"passive_w{wait}_p1"]["cells"]
+        assert set(market) == set(passive)
+        for key, cell in market.items():
+            assert cell["n_events_min"] == passive[key]["n_events_min"]
+
+
+def test_lowering_the_cost_removes_cells_rather_than_adding_them(
+    frontier: dict[str, Any],
+) -> None:
+    """§7.4's structural finding, pinned.
+
+    The touch-fill variant is the only one whose cost is genuinely lower than the
+    baseline's, and it is the one with no feasible cells at any ceiling. That is
+    the composed gate's behaviour, not a measurement error, and it is the reason
+    Case C does not depend on how good execution turns out to be.
+    """
+    touch = frontier["feasibility"]["post_hoc_touch_w1_p0.05"]
+    market = frontier["feasibility"]["market_w1_p1"]
+    for ceiling in ("1.0", "1.5", "2.0"):
+        assert touch["n_feasible"][ceiling] == 0
+    assert market["n_feasible"]["1.5"] > 0
+    cell = "clock:london_open_pre__month_end"
+    for panel in PANEL_OF.values():
+        cheaper = touch["cells"][cell]["per_panel"][panel]
+        dearer = market["cells"][cell]["per_panel"][panel]
+        assert cheaper["median_roundtrip_cost_bp"] < dearer["median_roundtrip_cost_bp"]
+        assert cheaper["headroom_bp"] < dearer["headroom_bp"]
+
+
+def test_no_feasible_clock_cell_ever_clears_the_event_floor(
+    frontier: dict[str, Any],
+) -> None:
+    """§7.5. The only cell that clears sixty events is a calendar cell."""
+    for label, block in frontier["feasibility"].items():
+        for ceiling in ("1.0", "1.5", "2.0"):
+            clearing = block["feasible_cells_clearing_the_event_floor"][ceiling]
+            assert all(key.startswith("calendar:") for key in clearing), (label, clearing)
+
+
 def test_the_document_carries_the_statuses_the_stage_may_reach(text: str) -> None:
     for status in (
         "SIMULATED_EXECUTION_COST_BOUND_ESTABLISHED",
@@ -256,6 +355,32 @@ def test_the_prohibited_claim_appears_only_as_a_prohibition(text: str) -> None:
         for line in body.splitlines():
             if prohibited in line:
                 assert ("しない" in line) or ("prohibited" in line.lower())
+
+
+def test_the_recomputed_quoted_frontier_is_the_committed_unit_audit_frontier(
+    frontier: dict[str, Any],
+) -> None:
+    """The claim the whole comparison rests on, pinned against both artifacts.
+
+    A review pointed out that the document said this was held by a test while the
+    only test compared a *synthetic* panel against a live call. Both artifacts
+    are committed, so the real comparison costs nothing and is the one worth
+    making: if the quoted variant ever stops reproducing the unit audit, every
+    difference this stage attributes to execution is contaminated.
+    """
+    committed = ROOT / "artifacts/research/clock_flow/frontier.json"
+    if not committed.exists():
+        pytest.skip("the unit-audit artifact is not present")
+    unit_audit = json.loads(committed.read_text(encoding="utf-8"))
+    quoted = frontier["panels"]["quoted"]
+    compared = 0
+    for panel, block in unit_audit["panels"].items():
+        for family in ("calendar", "clock"):
+            assert set(block[family]) == set(quoted[panel][family])
+            for key, cell in block[family].items():
+                assert quoted[panel][family][key] == cell, f"{panel}/{family}/{key}"
+                compared += 1
+    assert compared == 68, compared
 
 
 def test_the_unit_audit_passed_on_both_artifacts(

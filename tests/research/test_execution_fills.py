@@ -202,6 +202,37 @@ class TestNoRestingAcrossAGap:
         assert costs.measurable[0]
 
 
+class TestTheEdgesOfMeasurability:
+    """Two fail-safes that mutation testing found unpinned.
+
+    Neither could produce a *wrong* headline on this data — one would produce a
+    `nan` and the other moves a diagnostic by a hundredth of a basis point. They
+    are pinned because the reason they are harmless today is the data, and a
+    guard nothing tests is a guard that will be removed by someone reading it as
+    dead code.
+    """
+
+    def test_a_non_finite_crossing_quote_makes_the_decision_unmeasurable(self) -> None:
+        bars = frame(flat(30))
+        bars.loc[3 + WAIT_BARS, "ask_o"] = float("nan")
+        costs = leg_costs(bars, at="open")
+        assert not costs.measurable[3]
+        #: A decision whose crossing bar is elsewhere is unaffected.
+        assert costs.measurable[10]
+
+    def test_the_drift_horizon_may_not_span_a_session_gap(self) -> None:
+        """The gap sits past the crossing bar but inside the drift window."""
+        k = 3
+        bars = frame(flat(40), gap_after=k + WAIT_BARS + 2)
+        costs = leg_costs(bars, at="open")
+        #: The cost is still measurable — the resting window and the crossing bar
+        #: are all before the gap...
+        assert costs.measurable[k]
+        assert np.isfinite(costs.long.passive_bp[k])
+        #: ...but the drift would have to read across it, so it is not reported.
+        assert np.isnan(costs.long.drift_baseline_bp[k])
+
+
 class TestCrossingWhenUnfilled:
     def test_p2_crosses_and_so_costs_the_spread_when_nothing_fills(self) -> None:
         bars = frame(flat(20), spread_pips=1.2)
@@ -225,36 +256,113 @@ class TestCrossingWhenUnfilled:
         assert np.isnan(costs.long.conditional_bp[3])
 
 
+class TestTheCrossingBar:
+    """Which bar `P2` crosses at, pinned to the bar and not to an inequality.
+
+    Mutation testing found this open. `index + wait - 1` — crossing at the last
+    bar the order was still resting in — survived every test and moved the
+    headline ratio by nine per cent, which is exactly the off-by-one this file's
+    docstring claims to close. `TestCrossingWhenUnfilled` only asserted that an
+    unfilled policy costs more than crossing at once.
+    """
+
+    @staticmethod
+    def stepped(n: int, cross_at: int) -> pd.DataFrame:
+        """Flat, except three adjacent bars at distinct levels around the cross."""
+        mids = flat(n)
+        for offset, level in ((-1, 1.1010), (0, 1.1020), (1, 1.1030)):
+            mids[cross_at + offset] = level
+        return frame(mids)
+
+    def test_an_open_decision_crosses_at_the_open_of_bar_k_plus_wait(self) -> None:
+        k = 5
+        bars = self.stepped(30, k + WAIT_BARS)
+        costs = leg_costs(bars, at="open")
+        assert not costs.long.filled[k]
+        mid, pip = bars["mid_o"].iat[k], PIP
+        expected = (1.1020 + 0.5 * PIP + PAD_PIPS_PER_LEG * pip - mid) / mid * 1e4
+        assert costs.long.passive_bp[k] == pytest.approx(expected, rel=1e-9)
+
+    def test_a_close_decision_crosses_at_the_close_of_bar_k_plus_wait(self) -> None:
+        k = 5
+        bars = self.stepped(30, k + WAIT_BARS)
+        costs = leg_costs(bars, at="close")
+        assert not costs.long.filled[k]
+        mid, pip = bars["mid_c"].iat[k], PIP
+        expected = (1.1020 + 0.5 * PIP + PAD_PIPS_PER_LEG * pip - mid) / mid * 1e4
+        assert costs.long.passive_bp[k] == pytest.approx(expected, rel=1e-9)
+
+    def test_the_neighbouring_bars_would_give_different_answers(self) -> None:
+        """So the two tests above are pinning the bar, not a coincidence."""
+        k = 5
+        bars = self.stepped(30, k + WAIT_BARS)
+        one_early = bars["mid_o"].iat[k + WAIT_BARS - 1]
+        one_late = bars["mid_o"].iat[k + WAIT_BARS + 1]
+        assert one_early != 1.1020 and one_late != 1.1020
+
+
 class TestAdverseSelection:
-    def test_a_fill_buys_cheaper_and_still_holds_a_position_moving_against_it(self) -> None:
-        """Both halves are true at once, and a summary must not report only one."""
-        mids = [1.1000 - i * 2 * PIP for i in range(30)]
+    def test_a_one_way_market_fills_one_side_only_and_that_is_real_selection(self) -> None:
+        """In a market that only falls, the resting buys fill and the sells never do.
+
+        So the filled population *is* the buy population, and it is under water
+        by construction. Reporting selection here is right. The thing that must
+        not be reported is the fill's price advantage, which is what the
+        confined-move case above pins.
+        """
+        mids = [1.1000 - i * 2 * PIP for i in range(40)]
         bars = frame(mids, ask_low=[m - 2 * PIP for m in mids])
         costs = leg_costs(bars, at="open")
         assert costs.long.filled[3]
-        #: The position is under water an hour later...
-        assert costs.long.drift_passive_bp[3] < 0
-        #: ...and yet the entry was better than crossing would have been, because
-        #: in a market that falls on every bar there is no selection at all: every
-        #: passive order fills. Reading this gap as adverse selection is what an
-        #: earlier version of this test did, and it was wrong.
-        assert costs.long.drift_passive_bp[3] > costs.long.drift_baseline_bp[3]
+        assert not costs.short.filled[3]
+        record = summarise(costs, np.ones(40, dtype=bool))
+        assert record["fill_rate"] == pytest.approx(0.5, abs=0.05)
+        assert record["adverse_selection_bp"] > 0
 
     def test_selection_is_measured_between_populations_not_between_prices(self) -> None:
-        """Fills happen on the dips, and the dips are the bars that keep falling."""
-        n = 60
+        """Fills happen on the dips, and the dips keep falling *afterwards*.
+
+        The move that makes this adverse is placed entirely **after** the resting
+        window closes. That placement is the test: an estimator anchored inside
+        the fill window would report selection here even if the later bars were
+        flat, because conditioning on a low is conditioning on the window.
+        """
+        n = 100
         mids = flat(n)
         ask_low = [1.1000 + 0.5 * PIP] * n  # nothing reaches a resting bid...
-        for shock in (10, 25, 40):
+        for shock in (10, 35, 60):
             ask_low[shock] = 1.1000 - 5 * PIP  # ...except on three bars
-            for step in range(1, 8):  # after which the market keeps going down
+            #: A decision at `shock` rests through `shock + 3` and its reference
+            #: bar is `shock + 4`. The fall starts after that, so it is a move the
+            #: measurement window sees and the fill decision could not.
+            for step in range(WAIT_BARS + 1, WAIT_BARS + 17):
                 mids[shock + step] = 1.1000 - 4 * PIP
         bars = frame(mids, ask_low=ask_low)
         record = summarise(leg_costs(bars, at="open"), np.ones(n, dtype=bool))
         assert 0.0 < record["fill_rate"] < 1.0
         #: Same execution model on both sides; only the population differs.
-        assert record["drift_baseline_on_filled_bp"] < record["drift_baseline_bp"]
+        assert record["drift_after_the_window_on_filled_bp"] < record["drift_after_the_window_bp"]
         assert record["adverse_selection_bp"] > 0
+
+    def test_a_move_confined_to_the_fill_window_is_not_reported_as_selection(self) -> None:
+        """The defect the estimator was corrected for, as a test.
+
+        The market dips inside the resting window and returns to where it was by
+        the time the window closes. Orders fill on the dip, so the *fill* is
+        selected — but nothing happens afterwards, so there is no adverse
+        selection to report, and an estimator anchored on the window's own last
+        bar would report some anyway.
+        """
+        n = 80
+        mids = flat(n)
+        ask_low = [1.1000 + 0.5 * PIP] * n
+        for shock in (10, 30, 50):
+            ask_low[shock] = 1.1000 - 5 * PIP
+            mids[shock] = 1.1000 - 4 * PIP  # inside the window, and only there
+        bars = frame(mids, ask_low=ask_low)
+        record = summarise(leg_costs(bars, at="open"), np.ones(n, dtype=bool))
+        assert 0.0 < record["fill_rate"] < 1.0
+        assert record["adverse_selection_bp"] == pytest.approx(0.0, abs=1e-9)
 
     def test_a_market_with_no_selection_reports_none(self) -> None:
         limit_buy = 1.1000 - 0.5 * PIP
@@ -267,6 +375,10 @@ class TestAdverseSelection:
         record = summarise(leg_costs(bars, at="open"), np.ones(40, dtype=bool))
         assert record["fill_rate"] == 1.0
         assert record["adverse_selection_bp"] == 0.0
+        #: Everything filled, so nothing was chased and the whole gap to the
+        #: baseline is what the fills saved.
+        assert "paid_when_chasing_bp" not in record
+        assert record["saved_when_filled_bp"] > 0
 
 
 class TestSummary:

@@ -63,6 +63,27 @@ from scripts.research.execution_frontier.replay import ENTRY_AT, EXIT_AT
 
 QUOTED: Final[str] = "quoted"
 
+#: `POST_HOC_EXPLORATORY`. The pre-registered penetration requirement is one
+#: pip, and a review showed the *sign* of the cost comparison is set by that
+#: constant rather than by the panels. So the frontier is also computed at a
+#: near-touch calibration — a fill granted for a twentieth of a pip through the
+#: limit, which is what full queue priority would buy and which no retail account
+#: can rely on. It is the **best case** for passive execution that this data can
+#: support, and it is here so that the claim "no cost level reached by any of
+#: these policies makes a cell decision-grade" is a property of the artifact
+#: rather than of a reviewer's scratch file.
+TOUCH_PENETRATION_PIPS: Final[float] = 0.05
+TOUCH_WAITS: Final[tuple[int, ...]] = (1, 2)
+
+#: Which leg cost the measured source serves. `MARKET` is the same market order
+#: the quoted source prices, but measured through the fill model — same bars,
+#: same refusals, same open/close quotes. It exists so that `passive` can be
+#: compared against a baseline that differs from it in **policy only**: the
+#: quoted source prices the entry leg from the bar's *closing* spread applied at
+#: its opening mid, which is a source difference, not an execution one.
+PASSIVE: Final[str] = "passive"
+MARKET: Final[str] = "market"
+
 
 class MeasuredExecutionCosts:
     """Costs from the replay's `P2` policy, addressed by bar and direction.
@@ -74,26 +95,43 @@ class MeasuredExecutionCosts:
     reported as dropped pair-windows rather than absorbed silently.
     """
 
-    def __init__(self, frames: dict[str, pd.DataFrame], rule: FillRule) -> None:
+    def __init__(
+        self, frames: dict[str, pd.DataFrame], rule: FillRule, *, policy: str = PASSIVE
+    ) -> None:
+        if policy not in (PASSIVE, MARKET):
+            raise ValueError(f"policy must be {PASSIVE!r} or {MARKET!r}, not {policy!r}")
         self.rule = rule
+        self.policy = policy
         self._entry = {p: leg_costs(f, at=ENTRY_AT, rule=rule) for p, f in frames.items()}
         self._exit = {p: leg_costs(f, at=EXIT_AT, rule=rule) for p, f in frames.items()}
-        self.dropped = 0
+        #: Refusals are recorded as the *pair-windows* they are, not as the two
+        #: to four leg lookups `window` makes for each one. A first version
+        #: counted lookups and reported them under a name that said windows,
+        #: which overstated the disclosure by two to four times.
+        self.refused: set[tuple[str, str, int]] = set()
 
-    def _lookup(self, table: dict[str, Any], pair: str, index: int, direction: int) -> float | None:
+    @property
+    def dropped(self) -> int:
+        return len(self.refused)
+
+    def _lookup(
+        self, table: dict[str, Any], side: str, pair: str, index: int, direction: int
+    ) -> float | None:
         costs = table.get(pair)
         if costs is None or index < 0 or index >= len(costs.measurable):
             return None
         if not costs.measurable[index]:
-            self.dropped += 1
+            self.refused.add((side, pair, index))
             return None
-        return float(costs.for_direction(direction).passive_bp[index])
+        leg = costs.for_direction(direction)
+        source = leg.passive_bp if self.policy == PASSIVE else leg.baseline_bp
+        return float(source[index])
 
     def entry(self, pair: str, index: int, direction: int) -> float | None:
-        return self._lookup(self._entry, pair, index, direction)
+        return self._lookup(self._entry, ENTRY_AT, pair, index, direction)
 
     def exit(self, pair: str, index: int, direction: int) -> float | None:
-        return self._lookup(self._exit, pair, index, direction)
+        return self._lookup(self._exit, EXIT_AT, pair, index, direction)
 
 
 def _cells(record: dict[str, Any]) -> dict[str, dict[str, Any]]:
@@ -211,15 +249,33 @@ def build(panels: dict[str, dict[str, pd.DataFrame]]) -> dict[str, Any]:
         variants.setdefault(QUOTED, {})[panel] = quoted
         for wait in WAIT_BARS_SENSITIVITY:
             rule = FillRule(wait_bars=wait, penetration_pips=PENETRATION_PIPS)
-            label = f"passive_{rule.label}"
-            source = MeasuredExecutionCosts(frames, rule)
+            for policy in (MARKET, PASSIVE):
+                label = f"{policy}_{rule.label}"
+                source = MeasuredExecutionCosts(frames, rule, policy=policy)
+                measured, drops = variant(frames, source)
+                variants.setdefault(label, {})[panel] = measured
+                dropped.setdefault(label, {})[panel] = drops
+        for wait in TOUCH_WAITS:
+            rule = FillRule(wait_bars=wait, penetration_pips=TOUCH_PENETRATION_PIPS)
+            source = MeasuredExecutionCosts(frames, rule, policy=PASSIVE)
             measured, drops = variant(frames, source)
+            label = f"post_hoc_touch_{rule.label}"
             variants.setdefault(label, {})[panel] = measured
             dropped.setdefault(label, {})[panel] = drops
     record["variants_measured"] = sorted(variants)
+    record["post_hoc_variants"] = sorted(
+        label for label in variants if label.startswith("post_hoc_")
+    )
     record["fits_inside_a_four_bar_clock_window"] = {
-        f"passive_w{wait}_p{PENETRATION_PIPS:g}": wait <= frontier.WINDOW_BARS - 1
-        for wait in WAIT_BARS_SENSITIVITY
+        **{
+            f"{policy}_w{wait}_p{PENETRATION_PIPS:g}": wait <= frontier.WINDOW_BARS - 1
+            for wait in WAIT_BARS_SENSITIVITY
+            for policy in (MARKET, PASSIVE)
+        },
+        **{
+            f"post_hoc_touch_w{wait}_p{TOUCH_PENETRATION_PIPS:g}": wait <= frontier.WINDOW_BARS - 1
+            for wait in TOUCH_WAITS
+        },
     }
     record["pair_windows_the_fill_model_could_not_price"] = {
         "_unit": "count",
@@ -231,6 +287,10 @@ def build(panels: dict[str, dict[str, pd.DataFrame]]) -> dict[str, Any]:
 
 
 __all__ = [
+    "MARKET",
+    "TOUCH_PENETRATION_PIPS",
+    "TOUCH_WAITS",
+    "PASSIVE",
     "QUOTED",
     "MeasuredExecutionCosts",
     "build",

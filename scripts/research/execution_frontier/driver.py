@@ -68,7 +68,14 @@ def _spans(loaded: dict[str, dict[str, pd.DataFrame]]) -> dict[str, Any]:
 
 def _finish(name: str, record: dict[str, Any], loaded: dict[str, Any]) -> dict[str, Any]:
     record["panel_spans"] = _spans(loaded)
-    record["unit_audit"] = verify_unit_consistency(record["panels"])
+    #: The **whole** record, not `record["panels"]`. A review found that auditing
+    #: the panels subtree alone left the frontier's `feasibility` sibling — three
+    #: hundred and forty numbers, including every hurdle and MDE the adjudication
+    #: reads — outside the check while the artifact still said
+    #: `UNIT_CONSISTENCY_VERIFIED`.
+    record["unit_audit"] = verify_unit_consistency(
+        {key: value for key, value in record.items() if key != "unit_audit"}
+    )
     path = _write(name, record)
     print(f"wrote {path}")
     print(json.dumps(record["unit_audit"], indent=2))
