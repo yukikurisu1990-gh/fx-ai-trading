@@ -24,6 +24,17 @@ CACHE = Path("artifacts/track_a_scratch/track2/forex_factory_cache.csv")
 
 
 def _write(name: str, record: dict[str, Any]) -> Path:
+    """Write the artifact, and put it through the unit audit first.
+
+    Every other recent Track does this and Track 2's first version did not, so
+    two artifacts carried a hundred and forty-nine numbers nothing had checked
+    the units of.
+    """
+    from scripts.research.fxunits import verify_unit_consistency
+
+    record["unit_audit"] = verify_unit_consistency(
+        {key: value for key, value in record.items() if key != "unit_audit"}
+    )
     ARTIFACTS.mkdir(parents=True, exist_ok=True)
     path = ARTIFACTS / name
     path.write_text(json.dumps(record, indent=2, sort_keys=True, default=str), encoding="utf-8")
@@ -54,9 +65,13 @@ def run_stage1() -> dict[str, Any]:
             "Stage 0 did not pass, and the pre-registration forbids running Stage 1: "
             f"{audit['verdict']['status']}"
         )
+    #: The correction comes from the artifact Stage 0 validated, so the two
+    #: stages cannot use different constants. Restating it here is how they
+    #: diverged the first time.
+    offset_hours = int(audit["date_fidelity"]["offset_hours_applied"])
     archive, _ = stage0.acquire_archive(CACHE)
     loaded = {panel: panels.load_panel(panel) for panel in DECIDING_PANELS}
-    record = stage1.build(stage0.in_panels(archive), loaded)
+    record = stage1.build(stage0.in_panels(archive), loaded, offset_hours=offset_hours)
     record["stage0_verdict"] = audit["verdict"]
     path = _write("stage1.json", record)
     print(f"wrote {path}")

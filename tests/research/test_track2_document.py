@@ -158,10 +158,49 @@ def test_stage_0_passed_and_stage_1_did_not_claim_support(
 
 
 def test_the_offset_is_reported_as_unidentified(stage0: dict[str, Any], text: str) -> None:
-    """The flat profile is the finding; a document that hid it would read as a
-    precise correction rather than a one-day shift."""
+    """The flat profile is the finding, and the document has to carry it.
+
+    Within the unidentified band the score moves from 1.0 to 0.369, so a reader
+    who takes the argmax for a measurement has been misled.
+    """
     assert stage0["offset_estimation"]["separated_from_runner_up"] is False
     assert "separated_from_runner_up" in text or "平坦" in text
+
+
+def test_stage_1_uses_the_offset_stage_0_validated(
+    stage0: dict[str, Any], stage1: dict[str, Any]
+) -> None:
+    """The two constants that drifted apart in the first version.
+
+    Stage 0 estimated hours and Stage 1 applied a calendar day; scoring the day
+    through Stage 0's own scorer gives 0.369 against its 0.95 floor.
+    """
+    assert stage1["offset_hours_from_stage_0"] == stage0["date_fidelity"]["offset_hours_applied"]
+    assert stage1["offset_hours_from_stage_0"] == stage0["offset_estimation"]["best_offset_hours"]
+
+
+def test_the_partial_sessions_are_excluded_and_counted(stage1: dict[str, Any]) -> None:
+    """Two thirds of a family used to enter into a three-hour Sunday session."""
+    excluded = stage1["partial_days_excluded_per_panel"]
+    for panel in PANEL_OF.values():
+        assert excluded[panel] > 90
+
+
+def test_the_impact_label_is_not_the_admission_rule(stage1: dict[str, Any]) -> None:
+    """The pre-registration names it once, as a diagnostic."""
+    for panel in PANEL_OF.values():
+        for family in FAMILIES:
+            cell = stage1["panels"][panel]["families"][family]
+            if cell.get("n_events"):
+                assert cell["n_high_impact"] <= cell["n_events"]
+                assert "high_impact_diagnostic" in cell
+
+
+def test_no_family_claims_the_hypothesised_sign(stage1: dict[str, Any]) -> None:
+    """A family that moved the wrong way is dropped, never inverted."""
+    for block in stage1["verdict"]["families"].values():
+        assert block["checks"]["sign_is_the_hypothesised_one"] is False
+        assert block["supported"] is False
 
 
 def test_the_economic_gate_failed_on_every_cell(stage1: dict[str, Any]) -> None:

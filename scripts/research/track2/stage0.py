@@ -326,10 +326,27 @@ def forecast_audit(frame: pd.DataFrame) -> dict[str, Any]:
         better += int(forecast_error < naive_error)
         worse += int(forecast_error >= naive_error)
     total = better + worse
+    #: The same falsification on the rows Stage 1 actually trades, because a
+    #: test evaluated on a population the study does not use answers a different
+    #: question. Reported beside the pre-registered figure, never instead of it.
+    from scripts.research.track2.stage1 import family_of
+
+    traded = rows["Event"].astype(str).map(family_of).notna().to_numpy()
+    traded_usable = usable & traded
+    on_traded = (
+        round(float(np.mean(forecast_all[traded_usable] == actual_all[traded_usable])), 4)
+        if traded_usable.any()
+        else None
+    )
     return {
         "n_usable": int(usable.sum()),
         "n_non_usd_rows": int(len(rows)),
         "n_series_compared": total,
+        "n_usable_on_the_traded_families": int(traded_usable.sum()),
+        "exact_match_share_on_the_traded_families": on_traded,
+        "traded_families_below_ceiling": bool(
+            on_traded is not None and on_traded < MAX_FORECAST_EXACT_MATCH_SHARE
+        ),
         "exact_match_share": round(exact, 4),
         "exact_match_below_ceiling": bool(exact < MAX_FORECAST_EXACT_MATCH_SHARE),
         "share_of_series_beating_the_naive_benchmark": round(better / total, 4) if total else None,

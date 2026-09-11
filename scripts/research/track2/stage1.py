@@ -41,9 +41,16 @@ from typing import Any, Final
 import numpy as np
 import pandas as pd
 
-from scripts.research.clock_flow.frontier import SIGNAL_TO_PAIR
+from scripts.research.clock_flow.frontier import MIN_BARS_FOR_A_TRADING_DAY, SIGNAL_TO_PAIR
 from scripts.research.exploratory_m15 import PAIRS
-from scripts.research.feasibility.gate_v2 import Costs, Design, adjudicate
+from scripts.research.feasibility.gate_v2 import (
+    Costs,
+    Design,
+    adjudicate,
+    economic_gate,
+    robustness_gate,
+    statistical_gate,
+)
 from scripts.research.fxunits import (
     HALF_SPREAD_ADDITION_PIPS,
     POWER_MULTIPLIER,
@@ -59,13 +66,29 @@ from scripts.research.track2 import (
     STATUS_SUPPORTED,
 )
 
-#: The correction Stage 0 identified: the archive's date is one calendar day
-#: early. The hour is not identified and is never used.
-ARCHIVE_DATE_SHIFT_DAYS: Final[int] = 1
+#: **The correction is read from Stage 0's artifact, never restated here.**
+#:
+#: A first version hard-coded "one calendar day" and was wrong twice over. Stage 0
+#: estimated and validated an offset in **hours** (five), and scoring a one-day
+#: shift through Stage 0's own scorer gives 0.369 against its 0.95 floor — the
+#: audit would have failed under the correction the measurement was using. The
+#: premise was wrong too: 65 of the 103 checkable policy rows already carry the
+#: right date with no correction at all, so the defect is a time-of-day defect
+#: confined to the evening-UTC rows and not a uniform day shift.
+#:
+#: Two constants that must agree cannot be written down twice, so this one is
+#: not written down at all: `offset_hours` comes from the artifact Stage 0 wrote.
+DEFAULT_OFFSET_HOURS: Final[int] = 0
 
 #: Pre-registration §7: three primary cells, selected by a mechanical rule over
-#: the archive's own event vocabulary and its own impact label. Not a list of
-#: events chosen one by one, which is how an event zoo starts.
+#: the archive's own event vocabulary. Not a list of events chosen one by one,
+#: which is how an event zoo starts.
+#:
+#: The archive's **impact label is not an admission rule**. A first version used
+#: it as one and dropped 61% of the admissible rows; the pre-registration names
+#: the high-impact subset exactly once, as a *diagnostic* to be kept out of the
+#: family-wise judgment. It is now reported beside the primary rather than
+#: deciding it.
 FAMILY_PATTERNS: Final[dict[str, tuple[str, ...]]] = {
     "inflation": ("CPI", "Inflation Rate", "HICP"),
     "employment": (
@@ -130,20 +153,29 @@ def sign_of(event: str) -> int:
     return -1 if any(fragment in event for fragment in NEGATIVE_SIGN_FRAGMENTS) else 1
 
 
-def events(archive: pd.DataFrame) -> pd.DataFrame:
+def events(archive: pd.DataFrame, offset_hours: int = DEFAULT_OFFSET_HOURS) -> pd.DataFrame:
     """Every admissible non-USD release, with its corrected date and its direction.
 
     One row per release. The surprise is `actual - forecast`; a row missing
     either, or where they are equal, carries no direction and is dropped — a zero
     surprise is not a signal and must not be traded as one.
     """
-    rows = archive[
-        archive["Currency"].isin(NON_USD) & (archive["Impact"].astype(str) == HIGH_IMPACT)
-    ].copy()
+    rows = archive[archive["Currency"].isin(NON_USD)].copy()
+    rows["high_impact"] = rows["Impact"].astype(str) == HIGH_IMPACT
     rows["family"] = rows["Event"].astype(str).map(family_of)
     rows = rows[rows["family"].notna()]
     actual, forecast = _numeric(rows["Actual"]), _numeric(rows["Forecast"])
     usable = np.isfinite(actual) & np.isfinite(forecast) & (actual != forecast)
+    dropped = {
+        "_unit": "count",
+        "non_usd_rows": int(len(archive[archive["Currency"].isin(NON_USD)])),
+        "matching_a_family": int(len(rows)),
+        "missing_actual_or_forecast": int(np.sum(~(np.isfinite(actual) & np.isfinite(forecast)))),
+        "zero_surprise": int(
+            np.sum(np.isfinite(actual) & np.isfinite(forecast) & (actual == forecast))
+        ),
+        "admissible": int(usable.sum()),
+    }
     rows = rows[usable].copy()
     columns = [
         "Currency",
@@ -153,28 +185,40 @@ def events(archive: pd.DataFrame) -> pd.DataFrame:
         "mechanism_sign",
         "direction",
         "release_date",
+        "high_impact",
     ]
     if rows.empty:
         #: An empty admissible set is a legitimate outcome — a family with no
         #: high-impact rows, or a panel span with none — and it used to raise
         #: from a string dtype being multiplied by another string dtype.
-        return pd.DataFrame({name: pd.Series(dtype="object") for name in columns})
+        empty = pd.DataFrame({name: pd.Series(dtype="object") for name in columns})
+        empty.attrs["dropped"] = dropped
+        return empty
     rows["surprise"] = actual[usable] - forecast[usable]
     rows["mechanism_sign"] = rows["Event"].astype(str).map(sign_of).astype(int)
     rows["direction"] = np.sign(
         rows["surprise"].to_numpy(dtype=float) * rows["mechanism_sign"].to_numpy(dtype=int)
     ).astype(int)
-    corrected = rows["utc"] + pd.Timedelta(days=ARCHIVE_DATE_SHIFT_DAYS)
+    corrected = rows["utc"] + pd.Timedelta(hours=offset_hours)
     rows["release_date"] = [stamp.date() for stamp in corrected]
-    return rows[columns]
+    result = rows[columns]
+    result.attrs["dropped"] = dropped
+    return result
 
 
 class PanelDays:
     """Per-pair daily open-to-close returns and round-trip costs, in bp.
 
-    A "day" is a UTC calendar day that the panel actually carries bars for, so a
-    weekend or a holiday is absent rather than zero, and the first trading day
-    after a Friday release is the following Monday by construction.
+    A "day" is a UTC calendar day carrying at least `MIN_BARS_FOR_A_TRADING_DAY`
+    bars — the constant the unit audit added to `clock_flow`, reused rather than
+    restated.
+
+    A first version counted any date with bars. Sunday carries about twelve, from
+    the weekly reopen to midnight, so **every Friday and Saturday release landed
+    in a three-hour Sunday session** — 68% and 61% of the best-populated family —
+    while the docstring claimed the following Monday. That is the same partial-day
+    defect the clock family found and fixed, repeated here by not reusing its
+    constant.
     """
 
     def __init__(self, frames: dict[str, pd.DataFrame]) -> None:
@@ -210,7 +254,11 @@ class PanelDays:
             index = list(first.index)
             self.returns[pair] = dict(zip(index, ret, strict=True))
             self.costs[pair] = dict(zip(index, half_in + half_out, strict=True))
-            days.update(index)
+            sizes = grouped.size()
+            days.update(day for day in index if int(sizes.loc[day]) >= MIN_BARS_FOR_A_TRADING_DAY)
+            self.partial_days = int(
+                sum(1 for day in index if int(sizes.loc[day]) < MIN_BARS_FOR_A_TRADING_DAY)
+            )
         self.days: list[dt.date] = sorted(days)
         self._position = {day: rank for rank, day in enumerate(self.days)}
 
@@ -245,35 +293,52 @@ def measure(days: PanelDays, table: pd.DataFrame, family: str) -> dict[str, Any]
     """Every event in one family, one observation per currency and release date."""
     rows = table[table["family"] == family]
     grouped = rows.groupby(["Currency", "release_date"], sort=True)["direction"].sum()
+    impact = rows.groupby(["Currency", "release_date"], sort=True)["high_impact"].any()
     gross: list[float] = []
     cost: list[float] = []
     exposure: list[float] = []
+    high_impact: list[bool] = []
     currencies: list[str] = []
     dates: list[dt.date] = []
+    zero_net_direction = no_following_day = thin_cross_section = 0
     for (currency, release_date), net_direction in grouped.items():
         direction = int(np.sign(net_direction))
         if direction == 0:
+            zero_net_direction += 1
             continue
         day = days.first_day_after(release_date)
         if day is None:
+            no_following_day += 1
             continue
         weights = WEIGHTS[currency]
-        returns = np.array([days.returns[pair].get(day, np.nan) for pair in PAIRS])
-        costs = np.array([days.costs[pair].get(day, np.nan) for pair in PAIRS])
+        #: `.get` on the pair as well as on the day: a panel that is missing a
+        #: pair entirely is a thin cross-section, not a crash.
+        returns = np.array([days.returns.get(pair, {}).get(day, np.nan) for pair in PAIRS])
+        costs = np.array([days.costs.get(pair, {}).get(day, np.nan) for pair in PAIRS])
         present = np.isfinite(returns) & np.isfinite(costs)
         if int(present.sum()) < len(PAIRS) - 2:
+            thin_cross_section += 1
             continue
         gross.append(float(direction * np.nansum(weights[present] * returns[present])))
         cost.append(float(np.nansum(np.abs(weights[present]) * costs[present])))
         exposure.append(float(np.nansum(np.abs(weights[present]))))
+        high_impact.append(bool(impact.loc[(currency, release_date)]))
         currencies.append(currency)
         dates.append(day)
     return {
         "gross": np.array(gross),
         "cost": np.array(cost),
         "exposure": np.array(exposure),
+        "high_impact": np.array(high_impact, dtype=bool),
         "currencies": np.array(currencies),
         "dates": np.array(dates, dtype=object),
+        "dropped": {
+            "_unit": "count",
+            "groups": int(len(grouped)),
+            "zero_net_direction": zero_net_direction,
+            "no_following_trading_day": no_following_day,
+            "thin_cross_section": thin_cross_section,
+        },
     }
 
 
@@ -335,9 +400,18 @@ def statistics(cell: dict[str, Any], years: float, rng: np.random.Generator) -> 
         pick = cell["currencies"] == currency
         by_currency[currency] = {
             "n": int(pick.sum()),
+            "gross_bp": round(float(np.mean(gross[pick])), 4),
             "net_bp": round(float(np.mean(net[pick])), 4),
         }
-    positive = sum(1 for block in by_currency.values() if block["net_bp"] > 0)
+    #: Currencies whose **gross** agrees with the family's own sign, which is what
+    #: breadth means. A first version counted positive *net*, which for a family
+    #: whose sign is negative asks the opposite question of the one registered.
+    family_sign = int(np.sign(np.mean(gross)))
+    agreeing = sum(
+        1
+        for block in by_currency.values()
+        if family_sign != 0 and np.sign(block["gross_bp"]) == family_sign
+    )
     return {
         "n_events": n,
         "effective_n": round(effective, 2),
@@ -348,16 +422,44 @@ def statistics(cell: dict[str, Any], years: float, rng: np.random.Generator) -> 
         "net_total_bp": round(total, 4),
         "dispersion_bp": round(dispersion, 4),
         "mde_bp": round(float(POWER_MULTIPLIER * dispersion / np.sqrt(effective)), 4),
-        "confidence_interval_bp": [
+        #: On **gross**, because that is the quantity the permutation test and the
+        #: hypothesis are both about. A first version put the interval on net and
+        #: the p-value on gross, so one cell carried an interval excluding zero
+        #: beside a p-value of 0.859.
+        "gross_confidence_interval_bp": [
+            round(float(np.mean(gross) - 1.96 * dispersion / np.sqrt(effective)), 4),
+            round(float(np.mean(gross) + 1.96 * dispersion / np.sqrt(effective)), 4),
+        ],
+        "net_confidence_interval_bp": [
             round(float(np.mean(net) - 1.96 * dispersion / np.sqrt(effective)), 4),
             round(float(np.mean(net) + 1.96 * dispersion / np.sqrt(effective)), 4),
         ],
-        "p_value": round(_permutation_p(gross, cell["dates"], rng), 4),
-        "currency_breadth": positive,
+        #: A block sign-flip test on **gross**, named so. The hypothesis is about
+        #: the effect; cost is subtracted from every draw alike and would only
+        #: shift the statistic, not the null.
+        "p_value_on_gross": round(_permutation_p(gross, cell["dates"], rng), 4),
+        "currency_breadth": agreeing,
         "n_currencies": len(by_currency),
         "by_currency": by_currency,
         "tail_share": round(concentration, 4) if concentration is not None else None,
-        "sign": int(np.sign(np.mean(net))),
+        #: On **gross**. The hypothesis is about the effect, not about whether the
+        #: effect survives a cost that is subtracted from every cell alike — net
+        #: is negative in every cell by construction, so a sign taken on it says
+        #: nothing about direction.
+        "sign": int(np.sign(np.mean(gross))),
+        "n_high_impact": int(np.sum(cell["high_impact"])),
+        "dropped": cell.get("dropped", {}),
+        #: The archive's own impact label, as the pre-registration intends it: a
+        #: diagnostic reported beside the primary, never the rule that admits it.
+        "high_impact_diagnostic": {
+            "n": int(np.sum(cell["high_impact"])),
+            "gross_bp": round(float(np.mean(gross[cell["high_impact"]])), 4)
+            if bool(cell["high_impact"].any())
+            else None,
+            "net_bp": round(float(np.mean(net[cell["high_impact"]])), 4)
+            if bool(cell["high_impact"].any())
+            else None,
+        },
         #: Where the cost comes from. A currency held against a basket is traded
         #: as twenty pairs, so the book turns over more than one unit of notional
         #: and pays for all of it — the composition term the unit audit measured.
@@ -368,9 +470,13 @@ def statistics(cell: dict[str, Any], years: float, rng: np.random.Generator) -> 
     }
 
 
-def build(archive: pd.DataFrame, loaded: dict[str, dict[str, pd.DataFrame]]) -> dict[str, Any]:
+def build(
+    archive: pd.DataFrame,
+    loaded: dict[str, dict[str, pd.DataFrame]],
+    offset_hours: int = DEFAULT_OFFSET_HOURS,
+) -> dict[str, Any]:
     """Every family, on both deciding panels, adjudicated by Gate v2."""
-    table = events(archive)
+    table = events(archive, offset_hours)
     rng = np.random.default_rng(SEED)
     per_panel: dict[str, Any] = {}
     for panel, frames in loaded.items():
@@ -384,6 +490,7 @@ def build(archive: pd.DataFrame, loaded: dict[str, dict[str, pd.DataFrame]]) -> 
         per_panel[panel] = {
             "years": round(years, 3),
             "n_admissible_events": int(len(inside)),
+            "n_partial_days": days.partial_days,
             "families": {
                 family: statistics(measure(days, inside, family), years, rng)
                 for family in FAMILY_PATTERNS
@@ -394,8 +501,13 @@ def build(archive: pd.DataFrame, loaded: dict[str, dict[str, pd.DataFrame]]) -> 
             "NON_DECISION_BEARING_EXPLORATORY_ONLY",
             "RESEARCH_SCRATCH_NON_AUTHORITATIVE",
         ],
-        "archive_date_shift_days": ARCHIVE_DATE_SHIFT_DAYS,
+        "offset_hours_from_stage_0": offset_hours,
+        "partial_days_excluded_per_panel": {
+            "_unit": "count",
+            **{panel: block["n_partial_days"] for panel, block in per_panel.items()},
+        },
         "n_admissible_events_total": int(len(table)),
+        "rows_dropped_on_the_way_in": table.attrs.get("dropped", {}),
         "panels": per_panel,
     }
     record["gate_v2"] = _gate(per_panel)
@@ -404,10 +516,16 @@ def build(archive: pd.DataFrame, loaded: dict[str, dict[str, pd.DataFrame]]) -> 
 
 
 def _gate(per_panel: dict[str, Any]) -> dict[str, Any]:
+    """Gate v2, per family, with **each panel judged at its own cost**.
+
+    A first version averaged the two panels' costs and adjudicated both at the
+    mean, so a panel whose execution was more expensive was judged at a cost it
+    never paid. The economic gate exists to use a design's own cost.
+    """
     out: dict[str, Any] = {}
     for family in FAMILY_PATTERNS:
         designs: dict[str, Design] = {}
-        costs: list[float] = []
+        costs: dict[str, Costs] = {}
         for panel, block in per_panel.items():
             cell = block["families"][family]
             if not cell.get("n_events"):
@@ -419,13 +537,33 @@ def _gate(per_panel: dict[str, Any]) -> dict[str, Any]:
                 dispersion_bp=cell["dispersion_bp"],
                 events_per_year=cell["events_per_year"],
             )
-            costs.append(cell["cost_bp"])
+            costs[panel] = Costs(roundtrip_bp=float(cell["cost_bp"]))
         if len(designs) < 2:
             out[family] = {"adjudicated": False, "reason": "fewer than two deciding panels"}
             continue
-        out[family] = adjudicate(
-            "non_usd_surprise_relative", designs, Costs(roundtrip_bp=float(np.mean(costs)))
-        )
+        statistical = {name: statistical_gate(design) for name, design in designs.items()}
+        economic = {name: economic_gate(designs[name], costs[name]) for name in designs}
+        robustness = robustness_gate(designs)
+        #: `adjudicate` is still called, on the worse cost, so the retroactivity
+        #: guard runs and the composition is the gate's own rather than restated
+        #: here; its per-panel economic block is then replaced by the per-panel
+        #: one above, which is strictly more faithful.
+        worst = max(costs.values(), key=lambda item: item.roundtrip_bp)
+        record = adjudicate("non_usd_surprise_relative", designs, worst)
+        record["economic"] = economic
+        record["statistical"] = statistical
+        record["gates_passed"] = {
+            "statistical": all(block["pass"] for block in statistical.values()),
+            "economic": all(block["pass"] for block in economic.values()),
+            "robustness": robustness["pass"],
+        }
+        record["research_feasible"] = all(record["gates_passed"].values())
+        #: Nested so the numeric key is a unit-bearing name and not a panel name,
+        #: which the unit audit reads as a quantity that escaped conversion.
+        record["cost_per_panel"] = {
+            name: {"roundtrip_cost_bp": item.roundtrip_bp} for name, item in costs.items()
+        }
+        out[family] = record
     return out
 
 
@@ -436,7 +574,7 @@ def _verdict(per_panel: dict[str, Any], gate: dict[str, Any]) -> dict[str, Any]:
         cells = [block["families"][family] for block in per_panel.values()]
         gate_block = gate.get(family, {})
         signs = {cell.get("sign") for cell in cells if cell.get("n_events")}
-        p_values = [cell.get("p_value", 1.0) for cell in cells if cell.get("n_events")]
+        p_values = [cell.get("p_value_on_gross", 1.0) for cell in cells if cell.get("n_events")]
         tails = [cell.get("tail_share") for cell in cells if cell.get("tail_share") is not None]
         breadth = [cell.get("currency_breadth", 0) for cell in cells if cell.get("n_events")]
         checks = {
@@ -444,6 +582,12 @@ def _verdict(per_panel: dict[str, Any], gate: dict[str, Any]) -> dict[str, Any]:
             "gate_v2_economic": bool(gate_block.get("gates_passed", {}).get("economic")),
             "gate_v2_robustness": bool(gate_block.get("gates_passed", {}).get("robustness")),
             "panels_agree_on_sign": bool(len(signs) == 1 and 0 not in signs),
+            #: ...and the sign they agree on has to be the one the mechanism
+            #: predicted. A first version required only agreement, so a family
+            #: negative on both panels could have been recorded as supported —
+            #: which is the inversion the pre-registration forbids, arriving
+            #: through the success rule instead of through a decision.
+            "sign_is_the_hypothesised_one": bool(signs == {1}),
             "currency_breadth": bool(breadth and min(breadth) >= MIN_CURRENCY_BREADTH),
             "family_wise_evidence": bool(p_values and max(p_values) < FAMILYWISE_ALPHA),
             "tail_not_dominant": bool(tails and max(tails) < TAIL_SHARE_CEILING),
@@ -455,7 +599,7 @@ def _verdict(per_panel: dict[str, Any], gate: dict[str, Any]) -> dict[str, Any]:
             #: the families did not all fail for the same reason.
             "decision_grade": bool(checks["gate_v2_statistical"] and checks["gate_v2_robustness"]),
             "net_bp_per_panel": [cell.get("net_bp") for cell in cells],
-            "p_value_per_panel": [cell.get("p_value") for cell in cells],
+            "p_value_on_gross_per_panel": [cell.get("p_value_on_gross") for cell in cells],
         }
     any_supported = any(block["supported"] for block in families.values())
     decidable = all(
@@ -477,7 +621,7 @@ def _verdict(per_panel: dict[str, Any], gate: dict[str, Any]) -> dict[str, Any]:
 
 
 __all__ = [
-    "ARCHIVE_DATE_SHIFT_DAYS",
+    "DEFAULT_OFFSET_HOURS",
     "FAMILY_PATTERNS",
     "PanelDays",
     "build",

@@ -42,7 +42,7 @@
       "AUD": {
         "pages": [
           {
-            "acquired_utc": "2026-09-11T12:46:23+00:00",
+            "acquired_utc": "2026-09-11T13:19:39+00:00",
             "attempts": 1,
             "bytes": 39412,
             "content_type": "text/html; charset=UTF-8",
@@ -54,7 +54,7 @@
             "year": 2021
           },
           {
-            "acquired_utc": "2026-09-11T12:46:23+00:00",
+            "acquired_utc": "2026-09-11T13:19:39+00:00",
             "attempts": 1,
             "bytes": 45767,
             "content_type": "text/html; charset=UTF-8",
@@ -66,7 +66,7 @@
             "year": 2022
           },
           {
-            "acquired_utc": "2026-09-11T12:46:23+00:00",
+            "acquired_utc": "2026-09-11T13:19:39+00:00",
             "attempts": 1,
             "bytes": 42359,
             "content_type": "text/html; charset=UTF-8",
@@ -78,7 +78,7 @@
             "year": 2023
           },
           {
-            "acquired_utc": "2026-09-11T12:46:23+00:00",
+            "acquired_utc": "2026-09-11T13:19:39+00:00",
             "attempts": 1,
             "bytes": 37919,
             "content_type": "text/html; charset=UTF-8",
@@ -90,7 +90,7 @@
             "year": 2024
           },
           {
-            "acquired_utc": "2026-09-11T12:46:23+00:00",
+            "acquired_utc": "2026-09-11T13:19:40+00:00",
             "attempts": 1,
             "bytes": 40257,
             "content_type": "text/html; charset=UTF-8",
@@ -107,7 +107,7 @@
       "EUR": {
         "pages": [
           {
-            "acquired_utc": "2026-09-11T12:46:16+00:00",
+            "acquired_utc": "2026-09-11T13:19:34+00:00",
             "attempts": 1,
             "bytes": 44181,
             "content_type": "text/html; charset=UTF-8",
@@ -119,7 +119,7 @@
             "year": 2021
           },
           {
-            "acquired_utc": "2026-09-11T12:46:18+00:00",
+            "acquired_utc": "2026-09-11T13:19:35+00:00",
             "attempts": 1,
             "bytes": 52544,
             "content_type": "text/html; charset=UTF-8",
@@ -131,7 +131,7 @@
             "year": 2022
           },
           {
-            "acquired_utc": "2026-09-11T12:46:18+00:00",
+            "acquired_utc": "2026-09-11T13:19:36+00:00",
             "attempts": 1,
             "bytes": 64726,
             "content_type": "text/html; charset=UTF-8",
@@ -143,7 +143,7 @@
             "year": 2023
           },
           {
-            "acquired_utc": "2026-09-11T12:46:20+00:00",
+            "acquired_utc": "2026-09-11T13:19:37+00:00",
             "attempts": 1,
             "bytes": 81361,
             "content_type": "text/html; charset=UTF-8",
@@ -155,7 +155,7 @@
             "year": 2024
           },
           {
-            "acquired_utc": "2026-09-11T12:46:21+00:00",
+            "acquired_utc": "2026-09-11T13:19:38+00:00",
             "attempts": 1,
             "bytes": 62909,
             "content_type": "text/html; charset=UTF-8",
@@ -170,7 +170,7 @@
         "rule": "statement identifier ecb.isYYMMDD on the monetary-policy-statement index. The ecb.mp identifier is not used: it appears on only three of the five years and would have given 0, 0, 3, 7, 3 meetings"
       },
       "JPY": {
-        "acquired_utc": "2026-09-11T12:46:22+00:00",
+        "acquired_utc": "2026-09-11T13:19:38+00:00",
         "attempts": 1,
         "bytes": 113716,
         "content_type": "text/html;charset=UTF-8",
@@ -293,11 +293,14 @@
     "beats_the_naive_benchmark": true,
     "exact_match_below_ceiling": true,
     "exact_match_share": 0.1428,
+    "exact_match_share_on_the_traded_families": 0.3621,
     "median_forecast_error_over_naive_error": 0.7277,
     "n_non_usd_rows": 12605,
     "n_series_compared": 208,
     "n_usable": 8047,
-    "share_of_series_beating_the_naive_benchmark": 0.8365
+    "n_usable_on_the_traded_families": 1798,
+    "share_of_series_beating_the_naive_benchmark": 0.8365,
+    "traded_families_below_ceiling": false
   },
   "n_rows_in_panel_spans": 18882,
   "offset_estimation": {
@@ -330,7 +333,7 @@
       "_unit": "count"
     },
     "alfred_provenance": {
-      "acquired_utc": "2026-09-11T12:46:14+00:00",
+      "acquired_utc": "2026-09-11T13:19:33+00:00",
       "attempts": 1,
       "bytes": 84794,
       "content_type": "text/html; charset=UTF-8",
@@ -365,6 +368,12 @@
     "share": 0.5215
   },
   "signal_free": true,
+  "unit_audit": {
+    "convention": "every return, cost, hurdle, MDE and interval is basis points of the mid price at the moment of the trade, converted per observation",
+    "numeric_fields_not_in_bp": [],
+    "status": "UNIT_CONSISTENCY_VERIFIED",
+    "unit": "bp_of_mid"
+  },
   "verdict": {
     "checks": {
       "all_currency_codes_recognised": true,
