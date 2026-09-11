@@ -135,11 +135,43 @@ def verify_unit_consistency(record: dict[str, Any]) -> dict[str, Any]:
         "signal_draws",
         "events_per_year",
         "break_even_gross_ir",
+        #: The worst of the two panels' break-even ratios, and the smaller of
+        #: their event counts. Both surfaced the first time the audit was widened
+        #: past the `panels` subtree, which is the widening working.
+        "break_even_gross_ir_worst",
+        "n_events_min",
         "dispersion_over_median_cost",
         "feasible_events_per_year_floor",
         "n_partial_days_excluded",
         "pair_windows_dropped_as_far_from_the_moment",
         "hold_hours_median",
+        #: Track 3's unit-free execution quantities. Rates and shares, a count of
+        #: bars, and the ratio the success bands are read from.
+        "fill_rate",
+        "missed_rate",
+        "capture_share_of_quoted",
+        "fill_bars_median",
+        "cost_ratio",
+        "cost_ratio_spread",
+        "wait_bars",
+        "drift_bars",
+        "n_bars",
+        "n_measurable",
+        "n_cells",
+        "n_feasible",
+        "sub_steps_per_bar",
+        "seed",
+        #: The one place a pips figure is legitimate: a fill rule is written in
+        #: the broker's own tick, and this is a *rule parameter*, not a measured
+        #: quantity. Named rather than hidden behind a `_unit` marker, because a
+        #: marker on the enclosing dict once carried four monetary siblings with
+        #: it.
+        "penetration_pips",
+        #: Two more of the same kind: the parameters of the no-information
+        #: generator, which is a *specification* of a synthetic market rather
+        #: than a measurement taken from one.
+        "benchmark_spread_pips",
+        "benchmark_sigma_pips_per_bar",
     }
     offenders: list[str] = []
 
