@@ -33,9 +33,25 @@ from scripts.research.model_learning import (
 ROOT = Path(__file__).resolve().parents[2]
 ARTIFACT = ROOT / "artifacts/research/model_learning/development.json"
 
+#: The three M15 caches live under `artifacts/track_a_scratch/`, which `.gitignore`
+#: excludes, so CI has the code and not the bytes. Every test that has to touch a
+#: bar skips there rather than failing — and says so, because a silently skipped
+#: causality test is worse than an absent one.
+_CACHES = [ROOT / block["cache"] / "m15_AUD_CAD.parquet" for block in SEEN_SPANS.values()]
+CACHES_PRESENT = all(path.is_file() for path in _CACHES)
+needs_bars = pytest.mark.skipif(
+    not CACHES_PRESENT,
+    reason=(
+        "the M15 caches are untracked local artefacts; run the three routes' "
+        "build_cache to populate artifacts/track_a_scratch/"
+    ),
+)
+
 
 @pytest.fixture(scope="module")
 def panel() -> dict[str, pd.DataFrame]:
+    if not CACHES_PRESENT:
+        pytest.skip("the M15 caches are untracked local artefacts")
     return corpus.currency_panel()
 
 
@@ -51,6 +67,20 @@ def record() -> dict[str, Any]:
     return json.loads(ARTIFACT.read_text(encoding="utf-8"))
 
 
+def test_the_loader_reaches_data_only_through_the_three_guarded_routes() -> None:
+    """⭐ The loader constructs no path, no bound and no file name of its own.
+
+    Module level on purpose: it is a source scan, it needs no bars, and CI has no
+    bars. Leaving it inside a class that skips without the caches would have
+    retired the check on the only machine that runs it unattended.
+    """
+    source = (ROOT / "scripts/research/model_learning/corpus.py").read_text(encoding="utf-8")
+    for forbidden in ("read_parquet", "read_csv", "Path(", "open(", "glob", "urlopen"):
+        assert forbidden not in source, forbidden
+    assert set(corpus.ROUTES) == set(SEEN_SPANS)
+
+
+@needs_bars
 class TestTheCorpus:
     def test_it_is_the_union_of_the_three_declared_spans_and_nothing_else(self) -> None:
         frame = corpus.load_pair("EUR_USD")
@@ -60,13 +90,6 @@ class TestTheCorpus:
         assert frame["ts"].max() < last
         assert not frame["ts"].duplicated().any()
         assert frame["ts"].is_monotonic_increasing
-
-    def test_it_reaches_data_only_through_the_three_guarded_routes(self) -> None:
-        """⭐ The loader constructs no path, no bound and no file name of its own."""
-        source = (ROOT / "scripts/research/model_learning/corpus.py").read_text(encoding="utf-8")
-        for forbidden in ("read_parquet", "read_csv", "Path(", "open(", "glob", "urlopen"):
-            assert forbidden not in source, forbidden
-        assert set(corpus.ROUTES) == set(SEEN_SPANS)
 
     def test_a_row_outside_its_own_span_is_refused(self, monkeypatch: pytest.MonkeyPatch) -> None:
         """⭐ The check no real cache can trip, so nothing was exercising it.
@@ -110,6 +133,7 @@ class TestTheCorpus:
         )
 
 
+@needs_bars
 class TestFeaturesAreCausal:
     def test_truncating_the_future_does_not_move_a_single_past_value(
         self, built: dict[str, pd.DataFrame]
