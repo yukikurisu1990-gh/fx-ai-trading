@@ -3,62 +3,46 @@
     "bars_per_effective_observation": 772.2,
     "capacity_budget_uses_years_not_this": true,
     "effective_observations": 3015.29,
-    "m15_rows_in_the_corpus": 2328360,
+    "m15_rows_in_the_corpus": 2328316,
     "nominal_daily_rows": 23557.0
   },
   "by_verdict": {
-    "CAPACITY_EXCEEDED": [
-      "M07_event_proximity_conditional_return",
-      "M08_cross_asset_context_conditional_return",
-      "M09_dispersion_and_correlation_state_representation",
-      "M10_hidden_markov_per_regime_mapping",
-      "M11_factor_representation_of_the_cross_section",
-      "M15_structural_break_state",
-      "M18_boosted_tree_cross_sectional_ranking"
-    ],
-    "DEVELOPMENT_ADMISSIBLE": [
+    "ECONOMICALLY_UNREACHABLE": [
       "M01_currency_cross_sectional_ranking",
       "M02_residual_factor_adjusted_return",
       "M03_regime_conditioned_level_multi_timeframe",
       "M04_cross_sectional_trade_skip",
       "M05_holding_period_selection",
       "M06_volatility_scaled_portfolio_allocation",
-      "M12_excursion_conditional_exit_design",
+      "M09_dispersion_and_correlation_state_representation",
+      "M10_hidden_markov_per_regime_mapping",
+      "M11_factor_representation_of_the_cross_section",
       "M13_hurdle_clearing_probability_with_learned_threshold",
-      "M16_activity_state_opportunity_gate"
-    ],
-    "ECONOMICALLY_UNREACHABLE": [
-      "M14_intraday_session_state_return"
+      "M14_intraday_session_state_return",
+      "M15_structural_break_state",
+      "M16_activity_state_opportunity_gate",
+      "M18_boosted_tree_cross_sectional_ranking"
     ],
     "PRIOR_FAMILY_CLOSED": [
       "M17_rate_differential_conditional_residual"
+    ],
+    "SEARCH_BUDGET_EXCEEDED": [
+      "M07_event_proximity_conditional_return",
+      "M08_cross_asset_context_conditional_return",
+      "M12_excursion_conditional_exit_design"
     ]
   },
   "candidates": [
     {
-      "budgets": {
-        "binding": null,
-        "capacity": {
-          "admissible_effective_parameters": 4.899,
-          "declared_effective_parameters": 4.2,
-          "expected_signal_retention": 0.5714,
-          "ok": true
-        },
-        "ok": true,
-        "search": {
-          "admissible_configurations": 8,
-          "declared_configurations": 1,
-          "ok": true,
-          "selection_inflation_annual_ir": 0.0
-        }
-      },
       "candidate_id": "M01_currency_cross_sectional_ranking",
       "economics": {
         "annual_cost_bp": 858.3,
-        "annual_vol_bp": 800.0,
-        "ok": true,
-        "plausibility_ceiling": 1.5,
-        "required_gross_annual_ir": 1.448
+        "annual_vol_per_gross_bp": 377.7,
+        "assumed_achievable_annual_ir": 0.5,
+        "break_even_annual_ir": 2.272,
+        "leverage_for_the_minimum_net_return": Infinity,
+        "ok": false,
+        "plausibility_ceiling": 1.5
       },
       "effective_sample": {
         "effective_observations_per_year": 806.4,
@@ -80,37 +64,24 @@
       "horizon": "1 day",
       "model_class": "ranking_linear",
       "prior_research_overlap": "H-003 closed simple currency-strength relative value; this shares its cross-section and nothing else",
+      "reason": "paying 858.3 bp of cost a year against 377.7 bp of volatility per unit of gross needs a gross annual information ratio of 2.27 before a single basis point is earned, against an assumed achievable 0.5",
       "role": "cross_sectional_ranking",
       "roundtrip_cost_bp": 3.406,
       "target": "cost-adjusted next-day relative return of a currency against the basket",
       "turnover_per_year": 252.0,
-      "verdict": "DEVELOPMENT_ADMISSIBLE",
+      "verdict": "ECONOMICALLY_UNREACHABLE",
       "why_different_from_round_1": "Round 1 predicted a pair's own direction from its own price. This predicts a currency's return relative to a basket, with shared coefficients across currencies, so the dollar factor H-003 found carrying 96% of the gross is removed by construction rather than hoped away"
     },
     {
-      "budgets": {
-        "binding": null,
-        "capacity": {
-          "admissible_effective_parameters": 3.297,
-          "declared_effective_parameters": 3.0,
-          "expected_signal_retention": 0.545,
-          "ok": true
-        },
-        "ok": true,
-        "search": {
-          "admissible_configurations": 8,
-          "declared_configurations": 1,
-          "ok": true,
-          "selection_inflation_annual_ir": 0.0
-        }
-      },
       "candidate_id": "M02_residual_factor_adjusted_return",
       "economics": {
         "annual_cost_bp": 650.2,
-        "annual_vol_bp": 800.0,
-        "ok": true,
-        "plausibility_ceiling": 1.5,
-        "required_gross_annual_ir": 1.188
+        "annual_vol_per_gross_bp": 377.7,
+        "assumed_achievable_annual_ir": 0.5,
+        "break_even_annual_ir": 1.721,
+        "leverage_for_the_minimum_net_return": Infinity,
+        "ok": false,
+        "plausibility_ceiling": 1.5
       },
       "effective_sample": {
         "effective_observations_per_year": 1008.0,
@@ -132,37 +103,24 @@
       "horizon": "1 day",
       "model_class": "linear",
       "prior_research_overlap": "no closed family predicts a factor residual",
+      "reason": "paying 650.2 bp of cost a year against 377.7 bp of volatility per unit of gross needs a gross annual information ratio of 1.72 before a single basis point is earned, against an assumed achievable 0.5",
       "role": "direction_or_return_generator",
       "roundtrip_cost_bp": 2.58,
       "target": "cost-adjusted residual return of a pair after a three-factor projection",
       "turnover_per_year": 252.0,
-      "verdict": "DEVELOPMENT_ADMISSIBLE",
+      "verdict": "ECONOMICALLY_UNREACHABLE",
       "why_different_from_round_1": "the target is the residual, not the raw return, so the quantity being predicted is the one a factor-neutral book would actually earn"
     },
     {
-      "budgets": {
-        "binding": null,
-        "capacity": {
-          "admissible_effective_parameters": 4.899,
-          "declared_effective_parameters": 4.4,
-          "expected_signal_retention": 0.551,
-          "ok": true
-        },
-        "ok": true,
-        "search": {
-          "admissible_configurations": 8,
-          "declared_configurations": 1,
-          "ok": true,
-          "selection_inflation_annual_ir": 0.0
-        }
-      },
       "candidate_id": "M03_regime_conditioned_level_multi_timeframe",
       "economics": {
         "annual_cost_bp": 858.3,
-        "annual_vol_bp": 800.0,
-        "ok": true,
-        "plausibility_ceiling": 1.5,
-        "required_gross_annual_ir": 1.448
+        "annual_vol_per_gross_bp": 377.7,
+        "assumed_achievable_annual_ir": 0.5,
+        "break_even_annual_ir": 2.272,
+        "leverage_for_the_minimum_net_return": Infinity,
+        "ok": false,
+        "plausibility_ceiling": 1.5
       },
       "effective_sample": {
         "effective_observations_per_year": 806.4,
@@ -183,39 +141,26 @@
         "currency_factor_state"
       ],
       "horizon": "1 day",
-      "model_class": "regime_intercept_linear",
+      "model_class": "regime_scale_linear",
       "prior_research_overlap": "the decision forbids simple higher-timeframe sign conditioning, which this is not: the state enters the level, not the direction",
+      "reason": "paying 858.3 bp of cost a year against 377.7 bp of volatility per unit of gross needs a gross annual information ratio of 2.27 before a single basis point is earned, against an assumed achievable 0.5",
       "role": "direction_or_return_generator",
       "roundtrip_cost_bp": 3.406,
       "target": "cost-adjusted next-day relative return, regime-conditioned intercept",
       "turnover_per_year": 252.0,
-      "verdict": "DEVELOPMENT_ADMISSIBLE",
+      "verdict": "ECONOMICALLY_UNREACHABLE",
       "why_different_from_round_1": "Round 1's conditional work gated an existing rule on a state and lowered its net every time. Here the state is a fitted level inside one model rather than a filter applied outside it"
     },
     {
-      "budgets": {
-        "binding": null,
-        "capacity": {
-          "admissible_effective_parameters": 4.899,
-          "declared_effective_parameters": 2.4,
-          "expected_signal_retention": 0.7551,
-          "ok": true
-        },
-        "ok": true,
-        "search": {
-          "admissible_configurations": 8,
-          "declared_configurations": 1,
-          "ok": true,
-          "selection_inflation_annual_ir": 0.0
-        }
-      },
       "candidate_id": "M04_cross_sectional_trade_skip",
       "economics": {
         "annual_cost_bp": 858.3,
-        "annual_vol_bp": 800.0,
-        "ok": true,
-        "plausibility_ceiling": 1.5,
-        "required_gross_annual_ir": 1.448
+        "annual_vol_per_gross_bp": 377.7,
+        "assumed_achievable_annual_ir": 0.5,
+        "break_even_annual_ir": 2.272,
+        "leverage_for_the_minimum_net_return": Infinity,
+        "ok": false,
+        "plausibility_ceiling": 1.5
       },
       "effective_sample": {
         "effective_observations_per_year": 806.4,
@@ -237,37 +182,24 @@
       "horizon": "1 day",
       "model_class": "linear",
       "prior_research_overlap": "H-002 closed conditional gates over an existing rule; this gates the unconditional base population instead",
+      "reason": "paying 858.3 bp of cost a year against 377.7 bp of volatility per unit of gross needs a gross annual information ratio of 2.27 before a single basis point is earned, against an assumed achievable 0.5",
       "role": "trade_or_skip",
       "roundtrip_cost_bp": 3.406,
       "target": "whether a ranked leg clears its own round trip",
       "turnover_per_year": 252.0,
-      "verdict": "DEVELOPMENT_ADMISSIBLE",
+      "verdict": "ECONOMICALLY_UNREACHABLE",
       "why_different_from_round_1": "the base population is declared and its expectancy is a kill rule, so a filter cannot manufacture a curve by selecting inside a negative base"
     },
     {
-      "budgets": {
-        "binding": null,
-        "capacity": {
-          "admissible_effective_parameters": 1.563,
-          "declared_effective_parameters": 1.5,
-          "expected_signal_retention": 0.5201,
-          "ok": true
-        },
-        "ok": true,
-        "search": {
-          "admissible_configurations": 8,
-          "declared_configurations": 1,
-          "ok": true,
-          "selection_inflation_annual_ir": 0.0
-        }
-      },
       "candidate_id": "M05_holding_period_selection",
       "economics": {
         "annual_cost_bp": 354.2,
-        "annual_vol_bp": 800.0,
-        "ok": true,
-        "plausibility_ceiling": 1.5,
-        "required_gross_annual_ir": 0.818
+        "annual_vol_per_gross_bp": 377.7,
+        "assumed_achievable_annual_ir": 0.5,
+        "break_even_annual_ir": 0.938,
+        "leverage_for_the_minimum_net_return": Infinity,
+        "ok": false,
+        "plausibility_ceiling": 1.5
       },
       "effective_sample": {
         "effective_observations_per_year": 389.6,
@@ -289,37 +221,24 @@
       "horizon": "selected from {1d, 3d, 1w}",
       "model_class": "linear",
       "prior_research_overlap": "the decision forbids re-testing the 4-6 day reversal family; this selects a horizon for a different signal rather than re-running that one",
+      "reason": "paying 354.2 bp of cost a year against 377.7 bp of volatility per unit of gross needs a gross annual information ratio of 0.94 before a single basis point is earned, against an assumed achievable 0.5",
       "role": "holding_period_selection",
       "roundtrip_cost_bp": 3.406,
       "target": "which of three horizons maximises cost-adjusted expected return",
       "turnover_per_year": 104.0,
-      "verdict": "DEVELOPMENT_ADMISSIBLE",
+      "verdict": "ECONOMICALLY_UNREACHABLE",
       "why_different_from_round_1": "Round 1 swept horizons and reported the best. This learns the choice inside the fold and pays for it in the same budget as everything else"
     },
     {
-      "budgets": {
-        "binding": null,
-        "capacity": {
-          "admissible_effective_parameters": 4.899,
-          "declared_effective_parameters": 1.0,
-          "expected_signal_retention": 0.8979,
-          "ok": true
-        },
-        "ok": true,
-        "search": {
-          "admissible_configurations": 8,
-          "declared_configurations": 1,
-          "ok": true,
-          "selection_inflation_annual_ir": 0.0
-        }
-      },
       "candidate_id": "M06_volatility_scaled_portfolio_allocation",
       "economics": {
         "annual_cost_bp": 858.3,
-        "annual_vol_bp": 800.0,
-        "ok": true,
-        "plausibility_ceiling": 1.5,
-        "required_gross_annual_ir": 1.448
+        "annual_vol_per_gross_bp": 377.7,
+        "assumed_achievable_annual_ir": 0.5,
+        "break_even_annual_ir": 2.272,
+        "leverage_for_the_minimum_net_return": Infinity,
+        "ok": false,
+        "plausibility_ceiling": 1.5
       },
       "effective_sample": {
         "effective_observations_per_year": 806.4,
@@ -341,37 +260,40 @@
       "horizon": "1 day",
       "model_class": "linear",
       "prior_research_overlap": "no closed family; allocation was never separated before",
+      "reason": "paying 858.3 bp of cost a year against 377.7 bp of volatility per unit of gross needs a gross annual information ratio of 2.27 before a single basis point is earned, against an assumed achievable 0.5",
       "role": "portfolio_allocation",
       "roundtrip_cost_bp": 3.406,
       "target": "portfolio-level expected utility at a volatility target",
       "turnover_per_year": 252.0,
-      "verdict": "DEVELOPMENT_ADMISSIBLE",
+      "verdict": "ECONOMICALLY_UNREACHABLE",
       "why_different_from_round_1": "Round 1 had no portfolio layer at all; every result was a per-pair sum"
     },
     {
       "budgets": {
-        "binding": "capacity",
+        "binding": "search",
         "capacity": {
-          "admissible_effective_parameters": 0.831,
+          "admissible_effective_parameters": 0.188,
           "declared_effective_parameters": 1.8,
           "expected_signal_retention": 0.0,
           "ok": false
         },
         "ok": false,
         "search": {
-          "admissible_configurations": 8,
+          "admissible_configurations": 0,
           "declared_configurations": 1,
-          "ok": true,
+          "ok": false,
           "selection_inflation_annual_ir": 0.0
         }
       },
       "candidate_id": "M07_event_proximity_conditional_return",
       "economics": {
         "annual_cost_bp": 177.1,
-        "annual_vol_bp": 800.0,
+        "annual_vol_per_gross_bp": 377.7,
+        "assumed_achievable_annual_ir": 0.5,
+        "break_even_annual_ir": 0.469,
+        "leverage_for_the_minimum_net_return": 25.558,
         "ok": true,
-        "plausibility_ceiling": 1.5,
-        "required_gross_annual_ir": 0.596
+        "plausibility_ceiling": 1.5
       },
       "effective_sample": {
         "effective_observations_per_year": 453.6,
@@ -393,38 +315,40 @@
       "horizon": "1 day",
       "model_class": "linear",
       "prior_research_overlap": "H-019 is OPEN: a forward-known opportunity anchor with nothing to point it at. This points a model at it",
-      "reason": "capacity budget: 1.80 effective parameters against 0.83 admissible, and 1 configurations against 8 admissible",
+      "reason": "search budget: 1.80 effective parameters against 0.19 admissible, and 1 configurations against 0 admissible",
       "role": "direction_or_return_generator",
       "roundtrip_cost_bp": 3.406,
       "target": "cost-adjusted relative return conditioned on event proximity",
       "turnover_per_year": 52.0,
-      "verdict": "CAPACITY_EXCEEDED",
+      "verdict": "SEARCH_BUDGET_EXCEEDED",
       "why_different_from_round_1": "Round 1 had no exogenous calendar at all"
     },
     {
       "budgets": {
-        "binding": "capacity",
+        "binding": "search",
         "capacity": {
-          "admissible_effective_parameters": 0.831,
+          "admissible_effective_parameters": 0.188,
           "declared_effective_parameters": 3.0,
           "expected_signal_retention": 0.0,
           "ok": false
         },
         "ok": false,
         "search": {
-          "admissible_configurations": 8,
+          "admissible_configurations": 0,
           "declared_configurations": 1,
-          "ok": true,
+          "ok": false,
           "selection_inflation_annual_ir": 0.0
         }
       },
       "candidate_id": "M08_cross_asset_context_conditional_return",
       "economics": {
         "annual_cost_bp": 177.1,
-        "annual_vol_bp": 800.0,
+        "annual_vol_per_gross_bp": 377.7,
+        "assumed_achievable_annual_ir": 0.5,
+        "break_even_annual_ir": 0.469,
+        "leverage_for_the_minimum_net_return": 25.558,
         "ok": true,
-        "plausibility_ceiling": 1.5,
-        "required_gross_annual_ir": 0.596
+        "plausibility_ceiling": 1.5
       },
       "effective_sample": {
         "effective_observations_per_year": 166.97,
@@ -446,38 +370,24 @@
       "horizon": "1 week",
       "model_class": "linear",
       "prior_research_overlap": "no closed family uses cross-asset state",
-      "reason": "capacity budget: 3.00 effective parameters against 0.83 admissible, and 1 configurations against 8 admissible",
+      "reason": "search budget: 3.00 effective parameters against 0.19 admissible, and 1 configurations against 0 admissible",
       "role": "direction_or_return_generator",
       "roundtrip_cost_bp": 3.406,
       "target": "cost-adjusted weekly relative return under cross-asset state",
       "turnover_per_year": 52.0,
-      "verdict": "CAPACITY_EXCEEDED",
+      "verdict": "SEARCH_BUDGET_EXCEEDED",
       "why_different_from_round_1": "an information source Round 1 never had"
     },
     {
-      "budgets": {
-        "binding": "capacity",
-        "capacity": {
-          "admissible_effective_parameters": 4.9,
-          "declared_effective_parameters": 5.4,
-          "expected_signal_retention": 0.449,
-          "ok": false
-        },
-        "ok": false,
-        "search": {
-          "admissible_configurations": 8,
-          "declared_configurations": 1,
-          "ok": true,
-          "selection_inflation_annual_ir": 0.0
-        }
-      },
       "candidate_id": "M09_dispersion_and_correlation_state_representation",
       "economics": {
         "annual_cost_bp": 858.3,
-        "annual_vol_bp": 800.0,
-        "ok": true,
-        "plausibility_ceiling": 1.5,
-        "required_gross_annual_ir": 1.448
+        "annual_vol_per_gross_bp": 377.7,
+        "assumed_achievable_annual_ir": 1.448,
+        "break_even_annual_ir": 2.272,
+        "leverage_for_the_minimum_net_return": Infinity,
+        "ok": false,
+        "plausibility_ceiling": 1.5
       },
       "effective_sample": {
         "effective_observations_per_year": 806.4,
@@ -499,38 +409,24 @@
       "horizon": "1 day",
       "model_class": "linear",
       "prior_research_overlap": "no closed family; H-015 keeps volume as a volatility feature",
-      "reason": "capacity budget: 5.40 effective parameters against 4.90 admissible, and 1 configurations against 8 admissible",
+      "reason": "paying 858.3 bp of cost a year against 377.7 bp of volatility per unit of gross needs a gross annual information ratio of 2.27 before a single basis point is earned, against an assumed achievable 1.448",
       "role": "regime_representation",
       "roundtrip_cost_bp": 3.406,
       "target": "a low-dimensional state, judged only by what it does downstream",
       "turnover_per_year": 252.0,
-      "verdict": "CAPACITY_EXCEEDED",
+      "verdict": "ECONOMICALLY_UNREACHABLE",
       "why_different_from_round_1": "Round 1 fitted no representation"
     },
     {
-      "budgets": {
-        "binding": "capacity",
-        "capacity": {
-          "admissible_effective_parameters": 4.9,
-          "declared_effective_parameters": 16.2,
-          "expected_signal_retention": 0.0,
-          "ok": false
-        },
-        "ok": false,
-        "search": {
-          "admissible_configurations": 8,
-          "declared_configurations": 1,
-          "ok": true,
-          "selection_inflation_annual_ir": 0.0
-        }
-      },
       "candidate_id": "M10_hidden_markov_per_regime_mapping",
       "economics": {
         "annual_cost_bp": 858.3,
-        "annual_vol_bp": 800.0,
-        "ok": true,
-        "plausibility_ceiling": 1.5,
-        "required_gross_annual_ir": 1.448
+        "annual_vol_per_gross_bp": 377.7,
+        "assumed_achievable_annual_ir": 1.448,
+        "break_even_annual_ir": 2.272,
+        "leverage_for_the_minimum_net_return": Infinity,
+        "ok": false,
+        "plausibility_ceiling": 1.5
       },
       "effective_sample": {
         "effective_observations_per_year": 806.4,
@@ -552,38 +448,24 @@
       "horizon": "1 day",
       "model_class": "regime_linear",
       "prior_research_overlap": "no closed family fitted a latent state",
-      "reason": "capacity budget: 16.20 effective parameters against 4.90 admissible, and 1 configurations against 8 admissible",
+      "reason": "paying 858.3 bp of cost a year against 377.7 bp of volatility per unit of gross needs a gross annual information ratio of 2.27 before a single basis point is earned, against an assumed achievable 1.448",
       "role": "regime_representation",
       "roundtrip_cost_bp": 3.406,
       "target": "a latent state plus a separate coefficient vector per state",
       "turnover_per_year": 252.0,
-      "verdict": "CAPACITY_EXCEEDED",
+      "verdict": "ECONOMICALLY_UNREACHABLE",
       "why_different_from_round_1": "a latent-state architecture Round 1 never tried"
     },
     {
-      "budgets": {
-        "binding": "capacity",
-        "capacity": {
-          "admissible_effective_parameters": 3.298,
-          "declared_effective_parameters": 4.5,
-          "expected_signal_retention": 0.3178,
-          "ok": false
-        },
-        "ok": false,
-        "search": {
-          "admissible_configurations": 8,
-          "declared_configurations": 1,
-          "ok": true,
-          "selection_inflation_annual_ir": 0.0
-        }
-      },
       "candidate_id": "M11_factor_representation_of_the_cross_section",
       "economics": {
         "annual_cost_bp": 650.2,
-        "annual_vol_bp": 800.0,
-        "ok": true,
-        "plausibility_ceiling": 1.5,
-        "required_gross_annual_ir": 1.188
+        "annual_vol_per_gross_bp": 377.7,
+        "assumed_achievable_annual_ir": 1.188,
+        "break_even_annual_ir": 1.721,
+        "leverage_for_the_minimum_net_return": Infinity,
+        "ok": false,
+        "plausibility_ceiling": 1.5
       },
       "effective_sample": {
         "effective_observations_per_year": 1008.0,
@@ -604,38 +486,40 @@
       "horizon": "1 day",
       "model_class": "linear",
       "prior_research_overlap": "no closed family learned a factor basis",
-      "reason": "capacity budget: 4.50 effective parameters against 3.30 admissible, and 1 configurations against 8 admissible",
+      "reason": "paying 650.2 bp of cost a year against 377.7 bp of volatility per unit of gross needs a gross annual information ratio of 1.72 before a single basis point is earned, against an assumed achievable 1.188",
       "role": "regime_representation",
       "roundtrip_cost_bp": 2.58,
       "target": "a factor basis, judged by what the residual model does with it",
       "turnover_per_year": 252.0,
-      "verdict": "CAPACITY_EXCEEDED",
+      "verdict": "ECONOMICALLY_UNREACHABLE",
       "why_different_from_round_1": "Round 1 used raw pairs and no factor structure"
     },
     {
       "budgets": {
-        "binding": null,
+        "binding": "search",
         "capacity": {
-          "admissible_effective_parameters": 5.258,
+          "admissible_effective_parameters": 0.188,
           "declared_effective_parameters": 2.4,
-          "expected_signal_retention": 0.7718,
-          "ok": true
+          "expected_signal_retention": 0.0,
+          "ok": false
         },
-        "ok": true,
+        "ok": false,
         "search": {
-          "admissible_configurations": 8,
+          "admissible_configurations": 0,
           "declared_configurations": 1,
-          "ok": true,
+          "ok": false,
           "selection_inflation_annual_ir": 0.0
         }
       },
       "candidate_id": "M12_excursion_conditional_exit_design",
       "economics": {
         "annual_cost_bp": 650.2,
-        "annual_vol_bp": 800.0,
+        "annual_vol_per_gross_bp": 377.7,
+        "assumed_achievable_annual_ir": 0.5,
+        "break_even_annual_ir": 0.0,
+        "leverage_for_the_minimum_net_return": Infinity,
         "ok": true,
-        "plausibility_ceiling": 1.5,
-        "required_gross_annual_ir": 0.0
+        "plausibility_ceiling": 1.5
       },
       "effective_sample": {
         "effective_observations_per_year": 1008.0,
@@ -657,37 +541,24 @@
       "horizon": "1 day",
       "model_class": "linear",
       "prior_research_overlap": "H-013 and H-014 closed retrace geometry as an edge; this measures the cost of holding rather than claiming a direction, and H-014 explicitly does not bound barrier exits",
+      "reason": "search budget: 2.40 effective parameters against 0.19 admissible, and 1 configurations against 0 admissible",
       "role": "execution_management",
       "roundtrip_cost_bp": 2.58,
       "target": "conditional expectation of maximum favourable and adverse excursion",
       "turnover_per_year": 252.0,
-      "verdict": "DEVELOPMENT_ADMISSIBLE",
+      "verdict": "SEARCH_BUDGET_EXCEEDED",
       "why_different_from_round_1": "Round 1 had no exit model; every trade ran to window end"
     },
     {
-      "budgets": {
-        "binding": null,
-        "capacity": {
-          "admissible_effective_parameters": 4.899,
-          "declared_effective_parameters": 3.6,
-          "expected_signal_retention": 0.6326,
-          "ok": true
-        },
-        "ok": true,
-        "search": {
-          "admissible_configurations": 8,
-          "declared_configurations": 1,
-          "ok": true,
-          "selection_inflation_annual_ir": 0.0
-        }
-      },
       "candidate_id": "M13_hurdle_clearing_probability_with_learned_threshold",
       "economics": {
         "annual_cost_bp": 858.3,
-        "annual_vol_bp": 800.0,
-        "ok": true,
-        "plausibility_ceiling": 1.5,
-        "required_gross_annual_ir": 1.448
+        "annual_vol_per_gross_bp": 377.7,
+        "assumed_achievable_annual_ir": 0.5,
+        "break_even_annual_ir": 2.272,
+        "leverage_for_the_minimum_net_return": Infinity,
+        "ok": false,
+        "plausibility_ceiling": 1.5
       },
       "effective_sample": {
         "effective_observations_per_year": 604.8,
@@ -710,21 +581,24 @@
       "horizon": "1 day",
       "model_class": "linear",
       "prior_research_overlap": "H-018 and H-019 both found that ordinary days already clear the round trip 91% of the time, so magnitude was never the binding constraint",
+      "reason": "paying 858.3 bp of cost a year against 377.7 bp of volatility per unit of gross needs a gross annual information ratio of 2.27 before a single basis point is earned, against an assumed achievable 0.5",
       "role": "trade_or_skip",
       "roundtrip_cost_bp": 3.406,
       "target": "P(|return| > round trip) per currency leg, with an in-fold threshold",
       "turnover_per_year": 252.0,
-      "verdict": "DEVELOPMENT_ADMISSIBLE",
+      "verdict": "ECONOMICALLY_UNREACHABLE",
       "why_different_from_round_1": "Round 1's classifier predicted direction. This predicts whether the move is large enough to pay for itself, which H-018 showed is a different and much better-behaved quantity \u2014 and says so about its own limits"
     },
     {
       "candidate_id": "M14_intraday_session_state_return",
       "economics": {
         "annual_cost_bp": 2574.9,
-        "annual_vol_bp": 800.0,
+        "annual_vol_per_gross_bp": 377.7,
+        "assumed_achievable_annual_ir": 0.5,
+        "break_even_annual_ir": 6.817,
+        "leverage_for_the_minimum_net_return": Infinity,
         "ok": false,
-        "plausibility_ceiling": 1.5,
-        "required_gross_annual_ir": 3.594
+        "plausibility_ceiling": 1.5
       },
       "effective_sample": {
         "effective_observations_per_year": 2419.2,
@@ -746,7 +620,7 @@
       "horizon": "8 hours",
       "model_class": "linear",
       "prior_research_overlap": "H-002 found the session edge was first-half only",
-      "reason": "clearing 300 bp a year net of 2574.9 bp of cost needs a gross annual information ratio of 3.59, above the frozen ceiling 1.5",
+      "reason": "paying 2574.9 bp of cost a year against 377.7 bp of volatility per unit of gross needs a gross annual information ratio of 6.82 before a single basis point is earned, against an assumed achievable 0.5",
       "role": "direction_or_return_generator",
       "roundtrip_cost_bp": 3.406,
       "target": "cost-adjusted return over the next session",
@@ -755,29 +629,15 @@
       "why_different_from_round_1": "a shorter horizon and a portfolio target"
     },
     {
-      "budgets": {
-        "binding": "capacity",
-        "capacity": {
-          "admissible_effective_parameters": 4.9,
-          "declared_effective_parameters": 5.4,
-          "expected_signal_retention": 0.449,
-          "ok": false
-        },
-        "ok": false,
-        "search": {
-          "admissible_configurations": 8,
-          "declared_configurations": 1,
-          "ok": true,
-          "selection_inflation_annual_ir": 0.0
-        }
-      },
       "candidate_id": "M15_structural_break_state",
       "economics": {
         "annual_cost_bp": 858.3,
-        "annual_vol_bp": 800.0,
-        "ok": true,
-        "plausibility_ceiling": 1.5,
-        "required_gross_annual_ir": 1.448
+        "annual_vol_per_gross_bp": 377.7,
+        "assumed_achievable_annual_ir": 1.448,
+        "break_even_annual_ir": 2.272,
+        "leverage_for_the_minimum_net_return": Infinity,
+        "ok": false,
+        "plausibility_ceiling": 1.5
       },
       "effective_sample": {
         "effective_observations_per_year": 806.4,
@@ -799,38 +659,24 @@
       "horizon": "1 day",
       "model_class": "linear",
       "prior_research_overlap": "no closed family detected breaks",
-      "reason": "capacity budget: 5.40 effective parameters against 4.90 admissible, and 1 configurations against 8 admissible",
+      "reason": "paying 858.3 bp of cost a year against 377.7 bp of volatility per unit of gross needs a gross annual information ratio of 2.27 before a single basis point is earned, against an assumed achievable 1.448",
       "role": "regime_representation",
       "roundtrip_cost_bp": 3.406,
       "target": "a break indicator, judged by what it does to the consumer",
       "turnover_per_year": 252.0,
-      "verdict": "CAPACITY_EXCEEDED",
+      "verdict": "ECONOMICALLY_UNREACHABLE",
       "why_different_from_round_1": "Round 1 assumed one stationary mapping throughout"
     },
     {
-      "budgets": {
-        "binding": null,
-        "capacity": {
-          "admissible_effective_parameters": 4.899,
-          "declared_effective_parameters": 1.8,
-          "expected_signal_retention": 0.8163,
-          "ok": true
-        },
-        "ok": true,
-        "search": {
-          "admissible_configurations": 8,
-          "declared_configurations": 1,
-          "ok": true,
-          "selection_inflation_annual_ir": 0.0
-        }
-      },
       "candidate_id": "M16_activity_state_opportunity_gate",
       "economics": {
         "annual_cost_bp": 858.3,
-        "annual_vol_bp": 800.0,
-        "ok": true,
-        "plausibility_ceiling": 1.5,
-        "required_gross_annual_ir": 1.448
+        "annual_vol_per_gross_bp": 377.7,
+        "assumed_achievable_annual_ir": 0.5,
+        "break_even_annual_ir": 2.272,
+        "leverage_for_the_minimum_net_return": Infinity,
+        "ok": false,
+        "plausibility_ceiling": 1.5
       },
       "effective_sample": {
         "effective_observations_per_year": 806.4,
@@ -852,11 +698,12 @@
       "horizon": "1 day",
       "model_class": "linear",
       "prior_research_overlap": "H-015 is OPEN and keeps tick volume as a VOLATILITY feature: its correlation with the next bar's signed return is -0.0014 and +0.0013. H-017 found volume filtering made a carry base worse in 15 of 15 cells",
+      "reason": "paying 858.3 bp of cost a year against 377.7 bp of volatility per unit of gross needs a gross annual information ratio of 2.27 before a single basis point is earned, against an assumed achievable 0.5",
       "role": "trade_or_skip",
       "roundtrip_cost_bp": 3.406,
       "target": "whether the activity state raises the cost-adjusted expectancy of a leg",
       "turnover_per_year": 252.0,
-      "verdict": "DEVELOPMENT_ADMISSIBLE",
+      "verdict": "ECONOMICALLY_UNREACHABLE",
       "why_different_from_round_1": "Round 1 had no volume data"
     },
     {
@@ -891,29 +738,15 @@
       "why_different_from_round_1": "not the issue \u2014 the issue is that the family is closed"
     },
     {
-      "budgets": {
-        "binding": "capacity",
-        "capacity": {
-          "admissible_effective_parameters": 4.899,
-          "declared_effective_parameters": 72.0,
-          "expected_signal_retention": 0.0,
-          "ok": false
-        },
-        "ok": false,
-        "search": {
-          "admissible_configurations": 8,
-          "declared_configurations": 1,
-          "ok": true,
-          "selection_inflation_annual_ir": 0.0
-        }
-      },
       "candidate_id": "M18_boosted_tree_cross_sectional_ranking",
       "economics": {
         "annual_cost_bp": 858.3,
-        "annual_vol_bp": 800.0,
-        "ok": true,
-        "plausibility_ceiling": 1.5,
-        "required_gross_annual_ir": 1.448
+        "annual_vol_per_gross_bp": 377.7,
+        "assumed_achievable_annual_ir": 0.5,
+        "break_even_annual_ir": 2.272,
+        "leverage_for_the_minimum_net_return": Infinity,
+        "ok": false,
+        "plausibility_ceiling": 1.5
       },
       "effective_sample": {
         "effective_observations_per_year": 806.4,
@@ -935,12 +768,12 @@
       "horizon": "1 day",
       "model_class": "boosted_trees",
       "prior_research_overlap": "H-004 closed a boosted direction model on ~50 features",
-      "reason": "capacity budget: 72.00 effective parameters against 4.90 admissible, and 1 configurations against 8 admissible",
+      "reason": "paying 858.3 bp of cost a year against 377.7 bp of volatility per unit of gross needs a gross annual information ratio of 2.27 before a single basis point is earned, against an assumed achievable 0.5",
       "role": "cross_sectional_ranking",
       "roundtrip_cost_bp": 3.406,
       "target": "cost-adjusted next-day relative return of a currency against the basket",
       "turnover_per_year": 252.0,
-      "verdict": "CAPACITY_EXCEEDED",
+      "verdict": "ECONOMICALLY_UNREACHABLE",
       "why_different_from_round_1": "a different target and cross-section \u2014 which is not enough, and the capacity budget is why"
     }
   ],
@@ -965,475 +798,530 @@
     "train_years": 4.674
   },
   "hurdle_table_basket": {
-    "annual_vol_bp": 800.0,
+    "achievable_annual_ir": 1.5,
+    "annual_vol_per_gross_bp": 377.7,
     "frequencies": {
       "daily": {
-        "admissible_effective_parameters": 4.899,
+        "admissible_effective_parameters": 0.0,
         "annual_cost_bp": 858.3,
-        "reachable": true,
-        "required_gross_annual_ir": 1.448,
+        "break_even_annual_ir": 2.272,
+        "reachable": false,
         "turnover_per_year": 252.0
       },
       "fortnightly": {
-        "admissible_effective_parameters": 0.551,
+        "admissible_effective_parameters": 1.688,
         "annual_cost_bp": 88.6,
+        "break_even_annual_ir": 0.234,
         "reachable": true,
-        "required_gross_annual_ir": 0.486,
         "turnover_per_year": 26.0
       },
       "monthly": {
-        "admissible_effective_parameters": 0.424,
+        "admissible_effective_parameters": 1.688,
         "annual_cost_bp": 40.9,
+        "break_even_annual_ir": 0.108,
         "reachable": true,
-        "required_gross_annual_ir": 0.426,
         "turnover_per_year": 12.0
       },
       "twice_weekly": {
-        "admissible_effective_parameters": 1.563,
+        "admissible_effective_parameters": 1.688,
         "annual_cost_bp": 354.2,
+        "break_even_annual_ir": 0.938,
         "reachable": true,
-        "required_gross_annual_ir": 0.818,
         "turnover_per_year": 104.0
       },
       "weekly": {
-        "admissible_effective_parameters": 0.831,
+        "admissible_effective_parameters": 1.688,
         "annual_cost_bp": 177.1,
+        "break_even_annual_ir": 0.469,
         "reachable": true,
-        "required_gross_annual_ir": 0.596,
         "turnover_per_year": 52.0
       }
     },
-    "minimum_annual_net_bp": 300.0,
-    "roundtrip_cost_bp": 3.406
+    "minimum_annual_net_bp_is_a_leverage_statement": 300.0,
+    "roundtrip_cost_bp": 3.406,
+    "shortest_fold_train_years": 1.5
   },
   "hurdle_table_pair": {
-    "annual_vol_bp": 800.0,
+    "achievable_annual_ir": 1.5,
+    "annual_vol_per_gross_bp": 377.7,
     "frequencies": {
       "daily": {
-        "admissible_effective_parameters": 3.297,
+        "admissible_effective_parameters": 0.0,
         "annual_cost_bp": 650.2,
-        "reachable": true,
-        "required_gross_annual_ir": 1.188,
+        "break_even_annual_ir": 1.721,
+        "reachable": false,
         "turnover_per_year": 252.0
       },
       "fortnightly": {
-        "admissible_effective_parameters": 0.492,
+        "admissible_effective_parameters": 1.688,
         "annual_cost_bp": 67.1,
+        "break_even_annual_ir": 0.178,
         "reachable": true,
-        "required_gross_annual_ir": 0.459,
         "turnover_per_year": 26.0
       },
       "monthly": {
-        "admissible_effective_parameters": 0.4,
+        "admissible_effective_parameters": 1.688,
         "annual_cost_bp": 31.0,
+        "break_even_annual_ir": 0.082,
         "reachable": true,
-        "required_gross_annual_ir": 0.414,
         "turnover_per_year": 12.0
       },
       "twice_weekly": {
-        "admissible_effective_parameters": 1.179,
+        "admissible_effective_parameters": 1.688,
         "annual_cost_bp": 268.3,
+        "break_even_annual_ir": 0.71,
         "reachable": true,
-        "required_gross_annual_ir": 0.71,
         "turnover_per_year": 104.0
       },
       "weekly": {
-        "admissible_effective_parameters": 0.688,
+        "admissible_effective_parameters": 1.688,
         "annual_cost_bp": 134.2,
+        "break_even_annual_ir": 0.355,
         "reachable": true,
-        "required_gross_annual_ir": 0.543,
         "turnover_per_year": 52.0
       }
     },
-    "minimum_annual_net_bp": 300.0,
-    "roundtrip_cost_bp": 2.58
+    "minimum_annual_net_bp_is_a_leverage_statement": 300.0,
+    "roundtrip_cost_bp": 2.58,
+    "shortest_fold_train_years": 1.5
   },
   "initial_train_years": 1.5,
   "n_candidates": 18,
-  "n_development_admissible": 9,
+  "n_development_admissible": 0,
   "phase_budget": {
-    "affordable_shapes": [
-      {
-        "affordable": true,
-        "configurations_per_track": 1,
-        "phase_effective_configurations": 1.0,
-        "selection_inflation_annual_ir": 0.0,
-        "tracks": 1
-      },
-      {
-        "affordable": true,
-        "configurations_per_track": 2,
-        "phase_effective_configurations": 1.3,
-        "selection_inflation_annual_ir": 0.1375,
-        "tracks": 1
-      },
-      {
-        "affordable": true,
-        "configurations_per_track": 3,
-        "phase_effective_configurations": 1.6,
-        "selection_inflation_annual_ir": 0.2348,
-        "tracks": 1
-      },
-      {
-        "affordable": true,
-        "configurations_per_track": 4,
-        "phase_effective_configurations": 1.9,
-        "selection_inflation_annual_ir": 0.3095,
-        "tracks": 1
-      },
-      {
-        "affordable": true,
-        "configurations_per_track": 5,
-        "phase_effective_configurations": 2.2,
-        "selection_inflation_annual_ir": 0.3696,
-        "tracks": 1
-      },
-      {
-        "affordable": true,
-        "configurations_per_track": 6,
-        "phase_effective_configurations": 2.5,
-        "selection_inflation_annual_ir": 0.4198,
-        "tracks": 1
-      },
-      {
-        "affordable": true,
-        "configurations_per_track": 7,
-        "phase_effective_configurations": 2.8,
-        "selection_inflation_annual_ir": 0.4626,
-        "tracks": 1
-      },
-      {
-        "affordable": true,
-        "configurations_per_track": 8,
-        "phase_effective_configurations": 3.1,
-        "selection_inflation_annual_ir": 0.4999,
-        "tracks": 1
-      },
-      {
-        "affordable": true,
-        "configurations_per_track": 1,
-        "phase_effective_configurations": 2.0,
-        "selection_inflation_annual_ir": 0.3309,
-        "tracks": 2
-      },
-      {
-        "affordable": true,
-        "configurations_per_track": 2,
-        "phase_effective_configurations": 2.6,
-        "selection_inflation_annual_ir": 0.4348,
-        "tracks": 2
-      },
-      {
-        "affordable": true,
-        "configurations_per_track": 1,
-        "phase_effective_configurations": 3.0,
-        "selection_inflation_annual_ir": 0.488,
-        "tracks": 3
-      }
-    ],
+    "affordable_shapes": [],
+    "alpha": 0.05,
+    "condition": "P(best clears MRIE | all worthless) <= alpha",
     "level_2_is_ruled_out_on_capacity_not_on_search": true,
     "minimum_relevant_incremental_ir": 0.5,
-    "most_tracks_affordable": 3,
+    "most_tracks_affordable": 0,
     "shapes": [
       {
-        "affordable": true,
+        "affordable": false,
         "configurations_per_track": 1,
+        "null_pass_probability": 0.1865,
         "phase_effective_configurations": 1.0,
         "selection_inflation_annual_ir": 0.0,
-        "tracks": 1
+        "tracks": 1,
+        "validation_years_needed": 10.82
       },
       {
-        "affordable": true,
+        "affordable": false,
         "configurations_per_track": 2,
+        "null_pass_probability": 0.2354,
         "phase_effective_configurations": 1.3,
         "selection_inflation_annual_ir": 0.1375,
-        "tracks": 1
+        "tracks": 1,
+        "validation_years_needed": 12.48
       },
       {
-        "affordable": true,
+        "affordable": false,
         "configurations_per_track": 3,
+        "null_pass_probability": 0.2813,
         "phase_effective_configurations": 1.6,
         "selection_inflation_annual_ir": 0.2348,
-        "tracks": 1
+        "tracks": 1,
+        "validation_years_needed": 13.82
       },
       {
-        "affordable": true,
+        "affordable": false,
         "configurations_per_track": 4,
+        "null_pass_probability": 0.3245,
         "phase_effective_configurations": 1.9,
         "selection_inflation_annual_ir": 0.3095,
-        "tracks": 1
+        "tracks": 1,
+        "validation_years_needed": 14.94
       },
       {
-        "affordable": true,
+        "affordable": false,
         "configurations_per_track": 5,
+        "null_pass_probability": 0.365,
         "phase_effective_configurations": 2.2,
         "selection_inflation_annual_ir": 0.3696,
-        "tracks": 1
+        "tracks": 1,
+        "validation_years_needed": 15.91
       },
       {
-        "affordable": true,
+        "affordable": false,
         "configurations_per_track": 6,
+        "null_pass_probability": 0.4032,
         "phase_effective_configurations": 2.5,
         "selection_inflation_annual_ir": 0.4198,
-        "tracks": 1
+        "tracks": 1,
+        "validation_years_needed": 16.77
       },
       {
-        "affordable": true,
+        "affordable": false,
         "configurations_per_track": 7,
+        "null_pass_probability": 0.439,
         "phase_effective_configurations": 2.8,
         "selection_inflation_annual_ir": 0.4626,
-        "tracks": 1
+        "tracks": 1,
+        "validation_years_needed": 17.53
       },
       {
-        "affordable": true,
+        "affordable": false,
         "configurations_per_track": 8,
+        "null_pass_probability": 0.4727,
         "phase_effective_configurations": 3.1,
         "selection_inflation_annual_ir": 0.4999,
-        "tracks": 1
+        "tracks": 1,
+        "validation_years_needed": 18.22
       },
       {
         "affordable": false,
         "configurations_per_track": 10,
+        "null_pass_probability": 0.5341,
         "phase_effective_configurations": 3.7,
         "selection_inflation_annual_ir": 0.5623,
-        "tracks": 1
+        "tracks": 1,
+        "validation_years_needed": 19.43
       },
       {
         "affordable": false,
         "configurations_per_track": 12,
+        "null_pass_probability": 0.5884,
         "phase_effective_configurations": 4.3,
         "selection_inflation_annual_ir": 0.6131,
-        "tracks": 1
+        "tracks": 1,
+        "validation_years_needed": 20.46
       },
       {
-        "affordable": true,
+        "affordable": false,
         "configurations_per_track": 1,
+        "null_pass_probability": 0.3383,
         "phase_effective_configurations": 2.0,
         "selection_inflation_annual_ir": 0.3309,
-        "tracks": 2
+        "tracks": 2,
+        "validation_years_needed": 15.28
       },
       {
-        "affordable": true,
+        "affordable": false,
         "configurations_per_track": 2,
+        "null_pass_probability": 0.4153,
         "phase_effective_configurations": 2.6,
         "selection_inflation_annual_ir": 0.4348,
-        "tracks": 2
+        "tracks": 2,
+        "validation_years_needed": 17.03
       },
       {
         "affordable": false,
         "configurations_per_track": 3,
+        "null_pass_probability": 0.4835,
         "phase_effective_configurations": 3.2,
         "selection_inflation_annual_ir": 0.5113,
-        "tracks": 2
+        "tracks": 2,
+        "validation_years_needed": 18.44
       },
       {
         "affordable": false,
         "configurations_per_track": 4,
+        "null_pass_probability": 0.5436,
         "phase_effective_configurations": 3.8,
         "selection_inflation_annual_ir": 0.5714,
-        "tracks": 2
+        "tracks": 2,
+        "validation_years_needed": 19.61
       },
       {
         "affordable": false,
         "configurations_per_track": 5,
+        "null_pass_probability": 0.5968,
         "phase_effective_configurations": 4.4,
         "selection_inflation_annual_ir": 0.6207,
-        "tracks": 2
+        "tracks": 2,
+        "validation_years_needed": 20.62
       },
       {
         "affordable": false,
         "configurations_per_track": 6,
+        "null_pass_probability": 0.6438,
         "phase_effective_configurations": 5.0,
         "selection_inflation_annual_ir": 0.6622,
-        "tracks": 2
+        "tracks": 2,
+        "validation_years_needed": 21.51
       },
       {
         "affordable": false,
         "configurations_per_track": 7,
+        "null_pass_probability": 0.6853,
         "phase_effective_configurations": 5.6,
         "selection_inflation_annual_ir": 0.698,
-        "tracks": 2
+        "tracks": 2,
+        "validation_years_needed": 22.29
       },
       {
         "affordable": false,
         "configurations_per_track": 8,
+        "null_pass_probability": 0.7219,
         "phase_effective_configurations": 6.2,
         "selection_inflation_annual_ir": 0.7294,
-        "tracks": 2
+        "tracks": 2,
+        "validation_years_needed": 23.0
       },
       {
         "affordable": false,
         "configurations_per_track": 10,
+        "null_pass_probability": 0.783,
         "phase_effective_configurations": 7.4,
         "selection_inflation_annual_ir": 0.7823,
-        "tracks": 2
+        "tracks": 2,
+        "validation_years_needed": 24.25
       },
       {
         "affordable": false,
         "configurations_per_track": 12,
+        "null_pass_probability": 0.8306,
         "phase_effective_configurations": 8.6,
         "selection_inflation_annual_ir": 0.8258,
-        "tracks": 2
+        "tracks": 2,
+        "validation_years_needed": 25.31
       },
       {
-        "affordable": true,
+        "affordable": false,
         "configurations_per_track": 1,
+        "null_pass_probability": 0.4617,
         "phase_effective_configurations": 3.0,
         "selection_inflation_annual_ir": 0.488,
-        "tracks": 3
+        "tracks": 3,
+        "validation_years_needed": 18.0
       },
       {
         "affordable": false,
         "configurations_per_track": 2,
+        "null_pass_probability": 0.553,
         "phase_effective_configurations": 3.9,
         "selection_inflation_annual_ir": 0.5803,
-        "tracks": 3
+        "tracks": 3,
+        "validation_years_needed": 19.79
       },
       {
         "affordable": false,
         "configurations_per_track": 3,
+        "null_pass_probability": 0.6288,
         "phase_effective_configurations": 4.8,
         "selection_inflation_annual_ir": 0.6491,
-        "tracks": 3
+        "tracks": 3,
+        "validation_years_needed": 21.22
       },
       {
         "affordable": false,
         "configurations_per_track": 4,
+        "null_pass_probability": 0.6917,
         "phase_effective_configurations": 5.7,
         "selection_inflation_annual_ir": 0.7035,
-        "tracks": 3
+        "tracks": 3,
+        "validation_years_needed": 22.42
       },
       {
         "affordable": false,
         "configurations_per_track": 5,
+        "null_pass_probability": 0.744,
         "phase_effective_configurations": 6.6,
         "selection_inflation_annual_ir": 0.7483,
-        "tracks": 3
+        "tracks": 3,
+        "validation_years_needed": 23.44
       },
       {
         "affordable": false,
         "configurations_per_track": 6,
+        "null_pass_probability": 0.7874,
         "phase_effective_configurations": 7.5,
         "selection_inflation_annual_ir": 0.7862,
-        "tracks": 3
+        "tracks": 3,
+        "validation_years_needed": 24.34
       },
       {
         "affordable": false,
         "configurations_per_track": 7,
+        "null_pass_probability": 0.8234,
         "phase_effective_configurations": 8.4,
         "selection_inflation_annual_ir": 0.8191,
-        "tracks": 3
+        "tracks": 3,
+        "validation_years_needed": 25.14
       },
       {
         "affordable": false,
         "configurations_per_track": 8,
+        "null_pass_probability": 0.8534,
         "phase_effective_configurations": 9.3,
         "selection_inflation_annual_ir": 0.8479,
-        "tracks": 3
+        "tracks": 3,
+        "validation_years_needed": 25.86
       },
       {
         "affordable": false,
         "configurations_per_track": 10,
+        "null_pass_probability": 0.8989,
         "phase_effective_configurations": 11.1,
         "selection_inflation_annual_ir": 0.8967,
-        "tracks": 3
+        "tracks": 3,
+        "validation_years_needed": 27.12
       },
       {
         "affordable": false,
         "configurations_per_track": 12,
+        "null_pass_probability": 0.9303,
         "phase_effective_configurations": 12.9,
         "selection_inflation_annual_ir": 0.937,
-        "tracks": 3
+        "tracks": 3,
+        "validation_years_needed": 28.19
       },
       {
         "affordable": false,
         "configurations_per_track": 1,
+        "null_pass_probability": 0.5621,
         "phase_effective_configurations": 4.0,
         "selection_inflation_annual_ir": 0.5889,
-        "tracks": 4
+        "tracks": 4,
+        "validation_years_needed": 19.96
       },
       {
         "affordable": false,
         "configurations_per_track": 2,
+        "null_pass_probability": 0.6582,
         "phase_effective_configurations": 5.2,
         "selection_inflation_annual_ir": 0.6747,
-        "tracks": 4
+        "tracks": 4,
+        "validation_years_needed": 21.78
       },
       {
         "affordable": false,
         "configurations_per_track": 3,
+        "null_pass_probability": 0.7332,
         "phase_effective_configurations": 6.4,
         "selection_inflation_annual_ir": 0.739,
-        "tracks": 4
+        "tracks": 4,
+        "validation_years_needed": 23.23
       },
       {
         "affordable": false,
         "configurations_per_track": 4,
+        "null_pass_probability": 0.7917,
         "phase_effective_configurations": 7.6,
         "selection_inflation_annual_ir": 0.7901,
-        "tracks": 4
+        "tracks": 4,
+        "validation_years_needed": 24.43
       },
       {
         "affordable": false,
         "configurations_per_track": 5,
+        "null_pass_probability": 0.8374,
         "phase_effective_configurations": 8.8,
         "selection_inflation_annual_ir": 0.8323,
-        "tracks": 4
+        "tracks": 4,
+        "validation_years_needed": 25.47
       },
       {
         "affordable": false,
         "configurations_per_track": 6,
+        "null_pass_probability": 0.8731,
         "phase_effective_configurations": 10.0,
         "selection_inflation_annual_ir": 0.8681,
-        "tracks": 4
+        "tracks": 4,
+        "validation_years_needed": 26.38
       },
       {
         "affordable": false,
         "configurations_per_track": 7,
+        "null_pass_probability": 0.9009,
         "phase_effective_configurations": 11.2,
         "selection_inflation_annual_ir": 0.8992,
-        "tracks": 4
+        "tracks": 4,
+        "validation_years_needed": 27.18
       },
       {
         "affordable": false,
         "configurations_per_track": 8,
+        "null_pass_probability": 0.9227,
         "phase_effective_configurations": 12.4,
         "selection_inflation_annual_ir": 0.9265,
-        "tracks": 4
+        "tracks": 4,
+        "validation_years_needed": 27.91
       },
       {
         "affordable": false,
         "configurations_per_track": 10,
+        "null_pass_probability": 0.9529,
         "phase_effective_configurations": 14.8,
         "selection_inflation_annual_ir": 0.9729,
-        "tracks": 4
+        "tracks": 4,
+        "validation_years_needed": 29.17
       },
       {
         "affordable": false,
         "configurations_per_track": 12,
+        "null_pass_probability": 0.9713,
         "phase_effective_configurations": 17.2,
         "selection_inflation_annual_ir": 1.0112,
-        "tracks": 4
+        "tracks": 4,
+        "validation_years_needed": 30.25
       }
     ],
     "validation_years": 3.174,
-    "widest_affordable_shape": {
-      "affordable": true,
-      "configurations_per_track": 1,
-      "phase_effective_configurations": 3.0,
-      "selection_inflation_annual_ir": 0.488,
-      "tracks": 3
-    },
+    "widest_affordable_shape": null,
     "z_ceiling": 0.8908
   },
   "preregistration": {
     "corpus": {
-      "protected_spans_read": false,
-      "spans": [
-        "momentum_2021_2023",
-        "supplemental_2023_2025",
-        "development_2025"
+      "pairs": [
+        "AUD_CAD",
+        "AUD_JPY",
+        "AUD_NZD",
+        "AUD_USD",
+        "CHF_JPY",
+        "EUR_AUD",
+        "EUR_CAD",
+        "EUR_CHF",
+        "EUR_GBP",
+        "EUR_JPY",
+        "EUR_USD",
+        "GBP_AUD",
+        "GBP_CHF",
+        "GBP_JPY",
+        "GBP_USD",
+        "NZD_JPY",
+        "NZD_USD",
+        "USD_CAD",
+        "USD_CHF",
+        "USD_JPY"
       ],
+      "protected_spans": {
+        "dead_window": [
+          "(after the OOS slice)",
+          "-",
+          "never read"
+        ],
+        "forward_epoch": [
+          "(future)",
+          "-",
+          "never read"
+        ],
+        "fresh_pool": [
+          "2016-06-02",
+          "2021-04-25",
+          "never read"
+        ],
+        "historical_oos": [
+          "2025-12-29",
+          "(end of slice)",
+          "one decoded row per pair; no value reached an output"
+        ]
+      },
+      "protected_spans_read": false,
+      "spans": {
+        "development_2025": [
+          "2025-04-25",
+          "2025-12-28"
+        ],
+        "momentum_2021_2023": [
+          "2021-04-26",
+          "2023-04-25"
+        ],
+        "supplemental_2023_2025": [
+          "2023-04-26",
+          "2025-04-24"
+        ]
+      },
       "train_years_total": 4.674
     },
     "cost_model": {
@@ -1455,6 +1343,12 @@
       "validation_never_returns_to_training": true,
       "window": "expanding"
     },
+    "economics": {
+      "measured_annual_vol_per_gross_bp": 377.7,
+      "minimum_annual_net_bp": 300.0,
+      "plausibility_ceiling": 1.5
+    },
+    "feature_module_sha256": "6f3952a8338bff0d42740d67d829ee5bc6f6849bc97a7b4e847629478f10a5a6",
     "forbidden_rescues": [
       "adding a feature after seeing a fold",
       "changing the horizon after seeing a fold",
@@ -1473,6 +1367,12 @@
       "the ten largest days are more than half of the net",
       "the effect is confined to one volatility regime",
       "any leakage control is found to have been violated"
+    ],
+    "leakage_controls": [
+      "features use closed bars only, evaluated at the bar after the decision",
+      "forward windows are purged and embargoed across every fold boundary",
+      "any normalisation is fitted inside the training fold and applied forward",
+      "the cross-sectional neutralisation uses only same-bar information"
     ],
     "maximum_research_budget": {
       "ceiling": 0.5,
@@ -1510,6 +1410,38 @@
       "the roughly 1,200 configurations already run against these spans are disclosed and are NOT corrected for \u2014 nothing in a seen-data phase can correct for them"
     ],
     "phase": "model_learning_development",
+    "pre_execution_corrections": [
+      {
+        "now": "currency_dispersion_share_20d_z",
+        "was": "cross_sectional_dispersion_20d_z (Track A)",
+        "why": "a day-constant feature has exactly zero covariance with a cross-sectionally demeaned target, so its coefficient is unidentified by construction; the replacement is per currency and in the same family"
+      },
+      {
+        "now": "currency_beta_to_common_factor_60d, computed leave-one-out",
+        "was": "currency_beta_to_usd_factor_60d (Track A)",
+        "why": "regressing a currency on an average that contains it biases the beta upward by arithmetic alone, since one eighth of the factor is the regressand"
+      },
+      {
+        "now": "a regime-dependent gain on a shared slope vector",
+        "was": "a regime-dependent intercept (Track B)",
+        "why": "the same identification problem: an intercept is identical across currencies on a day. The capacity cost is unchanged, the quantity estimated is not"
+      },
+      {
+        "now": "currency_range_state_20d_z",
+        "was": "tick_activity_state_20d_z (Track C)",
+        "why": "the M15 caches these three routes produced carry no volume column"
+      },
+      {
+        "now": "distance to the nearest decision of the four acquirable banks",
+        "was": "central-bank proximity per currency (Track C)",
+        "why": "only AUD, EUR, JPY and USD publish an acquirable calendar, so a per-currency anchor is a dummy for those four currencies, which a model would learn and the breadth requirement would then fail"
+      },
+      {
+        "now": "a forward-excess-return target with cost charged at construction",
+        "was": "a per-leg cost-adjusted regression target",
+        "why": "a leg cost depends on how much its position changes, which depends on the prediction, so a per-leg adjustment is not identified before the position exists. Every clause of the success rule is stated in net terms"
+      }
+    ],
     "success_rule": {
       "beats_its_declared_baseline_by_at_least_ir": 0.5,
       "fitted_effective_parameters_within_budget": true,
@@ -1531,8 +1463,8 @@
           "currency_excess_return_20d_z",
           "currency_excess_return_60d_z",
           "currency_realised_vol_20d_z",
-          "cross_sectional_dispersion_20d_z",
-          "currency_beta_to_usd_factor_60d",
+          "currency_dispersion_share_20d_z",
+          "currency_beta_to_common_factor_60d",
           "currency_beta_to_risk_factor_60d"
         ],
         "horizon_days": 1.0,
@@ -1549,10 +1481,10 @@
         "turnover_per_year": 252.0
       },
       {
-        "baseline": "Level 0: the same four features with a single fitted intercept and no regime split, which isolates what the state itself is worth",
+        "baseline": "Level 0: the same four features with a single shared gain and no regime split, which isolates what the state itself is worth",
         "candidate_id": "M03_regime_conditioned_level_multi_timeframe",
         "configurations": 1,
-        "cross_section": "8 G10 currencies, shared slopes, per-state intercept",
+        "cross_section": "8 G10 currencies, shared slopes, per-state gain",
         "declared_effective_parameters": 4.4,
         "features": [
           "currency_excess_return_20d_z",
@@ -1561,7 +1493,7 @@
           "trend_age_d1_normalised"
         ],
         "horizon_days": 1.0,
-        "model_class": "regime_intercept_linear",
+        "model_class": "regime_scale_linear",
         "model_settings": {
           "coefficients": 4,
           "effective_fraction": 0.6,
@@ -1571,7 +1503,7 @@
         "role": "direction_or_return_generator",
         "roundtrip_cost_bp": 3.406,
         "state_variable": "a two-state split on the 60-day realised volatility of the currency basket, thresholded at its expanding-window median inside the training fold only",
-        "target": "the same cost-adjusted next-day currency-against-basket return, with the level \u2014 not the slopes \u2014 allowed to differ between two states",
+        "target": "the same cost-adjusted next-day currency-against-basket return, with the GAIN on a shared slope vector \u2014 not the slopes themselves \u2014 allowed to differ between two states. A regime-dependent intercept is identical across currencies on a day and the target sums to zero across them, so an intercept is unidentified here by construction",
         "track": "B",
         "turnover_per_year": 252.0
       },
@@ -1585,10 +1517,10 @@
         "features": [
           "currency_realised_vol_20d_z",
           "currency_realised_vol_5d_over_20d",
-          "days_to_next_scheduled_central_bank_decision",
-          "days_since_last_scheduled_central_bank_decision",
-          "spread_state_20d_z",
-          "tick_activity_state_20d_z"
+          "days_to_next_scheduled_g4_decision",
+          "days_since_last_scheduled_g4_decision",
+          "currency_spread_state_20d_z",
+          "currency_range_state_20d_z"
         ],
         "horizon_days": 1.0,
         "model_class": "linear",
@@ -1605,7 +1537,7 @@
       }
     ]
   },
-  "preregistration_frozen_hash": "6e912e38f07e524d3c6861c0755492b2c014df0754033b5fa33b0a02345eeb4b",
+  "preregistration_frozen_hash": "aed67a74b8cccd33a0cb697272a419e7773ce78635be32d0e281b0b7a08c3ece",
   "prior_screening_configurations_approx": 1200,
   "protected_data_read": false,
   "protected_spans": {
@@ -1629,196 +1561,18 @@
     },
     "historical_oos": {
       "end": "(end of slice)",
-      "reserved_for": "not this phase",
+      "reserved_for": "not this phase, and not readable from here",
       "start": "2025-12-29",
-      "status": "never read"
+      "status": "one decoded row per pair; no value reached an output"
     }
   },
   "ranking_and_selection": {
-    "affordable_tracks": 3,
-    "configurations_per_track": 1,
+    "affordable_tracks": 0,
+    "configurations_per_track": 0,
     "model_hierarchy_stops_at": "Level 1",
-    "ranked": [
-      {
-        "candidate_id": "M03_regime_conditioned_level_multi_timeframe",
-        "capacity_utilisation": 0.8981,
-        "distinct_feature_families": 4,
-        "feature_families": [
-          "currency_factor_state",
-          "multi_horizon_structure",
-          "regime_state",
-          "volatility"
-        ],
-        "rank": 1,
-        "role": "direction_or_return_generator",
-        "self_contained": true,
-        "utilisation_in_band": true
-      },
-      {
-        "candidate_id": "M13_hurdle_clearing_probability_with_learned_threshold",
-        "capacity_utilisation": 0.7348,
-        "distinct_feature_families": 4,
-        "feature_families": [
-          "activity_state",
-          "event_context",
-          "execution_cost_state",
-          "volatility"
-        ],
-        "rank": 2,
-        "role": "trade_or_skip",
-        "self_contained": true,
-        "utilisation_in_band": true
-      },
-      {
-        "candidate_id": "M01_currency_cross_sectional_ranking",
-        "capacity_utilisation": 0.8573,
-        "distinct_feature_families": 3,
-        "feature_families": [
-          "currency_factor_state",
-          "dispersion",
-          "multi_horizon_structure"
-        ],
-        "rank": 3,
-        "role": "cross_sectional_ranking",
-        "self_contained": true,
-        "utilisation_in_band": true
-      },
-      {
-        "candidate_id": "M02_residual_factor_adjusted_return",
-        "capacity_utilisation": 0.9099,
-        "distinct_feature_families": 3,
-        "feature_families": [
-          "correlation",
-          "currency_factor_state",
-          "volatility"
-        ],
-        "rank": 4,
-        "role": "direction_or_return_generator",
-        "self_contained": true,
-        "utilisation_in_band": true
-      },
-      {
-        "candidate_id": "M04_cross_sectional_trade_skip",
-        "capacity_utilisation": 0.4899,
-        "distinct_feature_families": 3,
-        "feature_families": [
-          "dispersion",
-          "execution_cost_state",
-          "volatility"
-        ],
-        "rank": 5,
-        "role": "trade_or_skip",
-        "self_contained": true,
-        "utilisation_in_band": false
-      },
-      {
-        "candidate_id": "M05_holding_period_selection",
-        "capacity_utilisation": 0.9597,
-        "distinct_feature_families": 3,
-        "feature_families": [
-          "execution_cost_state",
-          "multi_horizon_structure",
-          "volatility"
-        ],
-        "rank": 6,
-        "role": "holding_period_selection",
-        "self_contained": true,
-        "utilisation_in_band": false
-      },
-      {
-        "candidate_id": "M12_excursion_conditional_exit_design",
-        "capacity_utilisation": 0.4564,
-        "distinct_feature_families": 3,
-        "feature_families": [
-          "execution_cost_state",
-          "price_state",
-          "volatility"
-        ],
-        "rank": 7,
-        "role": "execution_management",
-        "self_contained": true,
-        "utilisation_in_band": false
-      },
-      {
-        "candidate_id": "M16_activity_state_opportunity_gate",
-        "capacity_utilisation": 0.3674,
-        "distinct_feature_families": 3,
-        "feature_families": [
-          "activity_state",
-          "execution_cost_state",
-          "volatility"
-        ],
-        "rank": 8,
-        "role": "trade_or_skip",
-        "self_contained": true,
-        "utilisation_in_band": false
-      },
-      {
-        "candidate_id": "M06_volatility_scaled_portfolio_allocation",
-        "capacity_utilisation": 0.2041,
-        "distinct_feature_families": 3,
-        "feature_families": [
-          "correlation",
-          "dispersion",
-          "volatility"
-        ],
-        "rank": 9,
-        "role": "portfolio_allocation",
-        "self_contained": false,
-        "utilisation_in_band": false
-      }
-    ],
-    "roles": [
-      "cross_sectional_ranking",
-      "direction_or_return_generator",
-      "trade_or_skip"
-    ],
-    "selected": [
-      {
-        "candidate_id": "M03_regime_conditioned_level_multi_timeframe",
-        "capacity_utilisation": 0.8981,
-        "distinct_feature_families": 4,
-        "feature_families": [
-          "currency_factor_state",
-          "multi_horizon_structure",
-          "regime_state",
-          "volatility"
-        ],
-        "rank": 1,
-        "role": "direction_or_return_generator",
-        "self_contained": true,
-        "utilisation_in_band": true
-      },
-      {
-        "candidate_id": "M13_hurdle_clearing_probability_with_learned_threshold",
-        "capacity_utilisation": 0.7348,
-        "distinct_feature_families": 4,
-        "feature_families": [
-          "activity_state",
-          "event_context",
-          "execution_cost_state",
-          "volatility"
-        ],
-        "rank": 2,
-        "role": "trade_or_skip",
-        "self_contained": true,
-        "utilisation_in_band": true
-      },
-      {
-        "candidate_id": "M01_currency_cross_sectional_ranking",
-        "capacity_utilisation": 0.8573,
-        "distinct_feature_families": 3,
-        "feature_families": [
-          "currency_factor_state",
-          "dispersion",
-          "multi_horizon_structure"
-        ],
-        "rank": 3,
-        "role": "cross_sectional_ranking",
-        "self_contained": true,
-        "utilisation_in_band": true
-      }
-    ],
+    "ranked": [],
+    "roles": [],
+    "selected": [],
     "why_level_2_is_not_run": "the capacity budget, not the search budget: a usable gradient-boosted ensemble carries about 72 effective parameters against 4.9 admissible, so no validation result could justify adopting one"
   },
   "seen_spans": {
@@ -1837,7 +1591,6 @@
         "H-011",
         "H-012",
         "H-013",
-        "H-014",
         "H-015",
         "H-016",
         "H-017",
@@ -1909,7 +1662,15 @@
     }
   },
   "signal_free": true,
-  "status": "MODEL_LEARNING_DESIGN_ASSESSED",
+  "status": "MODEL_LEARNING_NOT_DECISION_GRADE_WITH_AVAILABLE_SEEN_DATA",
   "train_years": 4.674,
-  "validation_years": 3.174
+  "validation_years": 3.174,
+  "why_not_decision_grade": {
+    "admissible_parameters_at_the_assumed_ratio": 0.188,
+    "admissible_parameters_at_the_ceiling_on_the_shortest_fold": 1.688,
+    "break_even_annual_ir_at_daily_turnover": 2.272,
+    "plausibility_ceiling": 1.5,
+    "validation_years_available": 3.174,
+    "validation_years_needed_for_one_selection": 10.82
+  }
 }

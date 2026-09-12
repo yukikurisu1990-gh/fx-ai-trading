@@ -8,21 +8,36 @@ model, a trade/skip filter, a regime representation and a portfolio allocator
 fail in different ways, so they are gated on different prerequisites — with two
 budgets and one economic condition shared by all of them.
 
-The economic condition closes a loophole in the capacity budget
----------------------------------------------------------------
+The economic condition, after two reviews took it apart
+-------------------------------------------------------
 
-`budgets.admissible_parameters` scales with `IR^2`, so a design that simply
-*declares* a high target ratio buys itself a larger model. It does not get to.
-The target ratio is **computed from the design's own economics**:
+An earlier version computed the target ratio from the design's own hurdle:
 
     required_gross_IR = (min_annual_net_bp + turnover * roundtrip_bp) / annual_vol_bp
 
-and the design is refused outright if that exceeds the frozen plausibility
-ceiling. ⭐ The consequence is worth stating plainly: daily rebalancing of a
-currency basket at the measured round trip needs a gross annual IR near the
-ceiling, and weekly rebalancing needs about a third of it — so **trading more
-often buys capacity only by demanding an edge nobody here has ever seen**. The
-capacity budget is then evaluated at that required ratio, never at a wish.
+and fed it straight into the capacity budget. Three things were wrong with that,
+and two independent reviews found them from opposite directions.
+
+* **The units did not match.** `roundtrip_bp` is bp of gross leg notional;
+  `annual_vol_bp` was a *declared* 800 bp of levered capital. The measured
+  volatility of the book this phase actually trades — four currencies long, four
+  short, one unit of gross, no optimisation — is **377.7 bp**, so the ratio
+  flattered every design by about 2.1×. Levering to 800 levers the cost by the
+  same factor, which is why the corrected hurdle carries no leverage term at all.
+* **Capacity grew with transaction cost.** `admissible_parameters` scales with
+  `IR^2`, so a design that got *cheaper* needed a smaller ratio and was allowed a
+  *smaller* model. That is the Gate v1 inversion this programme built Gate v2 to
+  remove, reintroduced here and frozen by a passing test.
+* **The 300 bp minimum net return is not a statement about a ratio.** At a given
+  information ratio it is a statement about **leverage**, and it is reported as
+  one.
+
+So the hurdle is now `turnover * roundtrip_bp / vol_per_gross` — what the design
+must clear to pay for its own trading — and capacity is charged at the ratio the
+design declares it can **achieve**, on the **shortest fold's** training window
+rather than the whole corpus. ⭐ At the measured volatility a daily currency book
+needs a gross annual ratio of **2.27** before it earns a basis point, against a
+frozen ceiling of 1.5.
 
 What the gate refuses on sight
 ------------------------------
@@ -48,13 +63,21 @@ from scripts.research.feasibility import (
 from scripts.research.model_learning import ModelRole
 from scripts.research.model_learning import budgets as budget_module
 
-#: A **declared volatility target** for the traded book, not a measurement of
-#: anything: volatility scaling is a design choice, and this is the scale at
-#: which the hurdle is expressed. Capped so that the economic condition cannot be
-#: passed by leverage — a design that needs 40% annualised volatility to clear a
-#: 3% net hurdle has not cleared it.
-DEFAULT_ANNUAL_VOL_BP: Final[float] = 800.0
-MAX_ANNUAL_VOL_BP: Final[float] = 1000.0
+#: ⭐ **Measured**, per unit of gross notional, on the seen corpus: the annualised
+#: volatility of a fixed long-short currency book — four currencies at +0.25 and
+#: four at −0.25, assigned alphabetically, no optimisation and no signal — is
+#: 377.7 bp. Per span it runs 370 to 430.
+#:
+#: An earlier version of this file **declared** 800 bp and called it a design
+#: choice. Two independent reviews arrived at the same defect from opposite
+#: directions: the cost term is denominated in bp of gross leg notional and the
+#: volatility term was denominated in bp of levered capital, so the ratio compared
+#: unlike quantities and flattered every design by roughly 2.1×. Levering the book
+#: to 800 bp levers its cost by the same factor, so leverage cancels and cannot
+#: rescue anything — which is why the hurdle below is expressed per unit of gross
+#: and carries no leverage term at all.
+MEASURED_ANNUAL_VOL_PER_GROSS_BP: Final[float] = 377.7
+MEASURED_VOL_RANGE_BY_SPAN_BP: Final[tuple[float, float]] = (370.0, 430.0)
 
 #: Effective parameters above which a model is "high capacity" for the purpose of
 #: recognising the Round 1 shape. Two orders of magnitude above anything 4.674
@@ -104,7 +127,15 @@ class ModelDesign:
     prior_research_overlap: str
     why_different_from_round_1: str
     expected_information_gain: str
-    annual_vol_bp: float = DEFAULT_ANNUAL_VOL_BP
+    annual_vol_per_gross_bp: float = MEASURED_ANNUAL_VOL_PER_GROSS_BP
+    #: ⭐ The annual information ratio this design claims it could **achieve**,
+    #: declared and defended rather than derived from what it needs. Bounded by the
+    #: frozen plausibility ceiling. Deriving it from the cost hurdle — which an
+    #: earlier version did — makes the capacity budget grow with transaction cost.
+    assumed_achievable_annual_ir: float = 0.5
+    #: The shortest training window any fold will have. The capacity budget is
+    #: charged against this rather than against the corpus.
+    shortest_fold_train_years: float = 1.5
     #: Role prerequisites, each required by exactly one role.
     base_opportunity: str | None = None
     base_expectancy_is_a_kill_rule: bool = False
@@ -127,17 +158,35 @@ class ModelDesign:
     notes: tuple[str, ...] = field(default_factory=tuple)
 
 
-def required_gross_annual_ir(design: ModelDesign) -> float:
-    """The ratio the design has to reach to be worth running, from its own costs."""
-    if design.annual_vol_bp <= 0:
+def break_even_annual_ir(design: ModelDesign) -> float:
+    """⭐ The gross ratio that pays for the trading and nothing else.
+
+    `turnover * roundtrip_bp / vol_per_gross`, both terms per unit of **gross
+    notional**, so leverage cancels exactly — as it must, because an information
+    ratio is scale-free. The previous formula added a 300 bp minimum net return to
+    the numerator and divided by a levered volatility, which is neither scale-free
+    nor dimensionally consistent.
+
+    The 300 bp minimum has not been dropped; it has been moved to where it belongs.
+    At a given ratio it is a statement about **leverage** — how much gross notional
+    a unit of capital must carry to earn 3% net — not about the ratio, and
+    `leverage_needed_for_the_minimum_return` reports it separately.
+    """
+    if design.annual_vol_per_gross_bp <= 0:
         raise ValueError("a book with no volatility has no information ratio")
-    if design.annual_vol_bp > MAX_ANNUAL_VOL_BP:
-        raise ValueError(
-            f"{design.annual_vol_bp} bp of annualised volatility exceeds the cap "
-            f"{MAX_ANNUAL_VOL_BP}; clearing a net hurdle by leverage is not clearing it"
-        )
     annual_cost_bp = design.turnover_per_year * design.roundtrip_cost_bp
-    return (MIN_ANNUAL_NET_RETURN_BP + annual_cost_bp) / design.annual_vol_bp
+    return annual_cost_bp / design.annual_vol_per_gross_bp
+
+
+def leverage_needed_for_the_minimum_return(design: ModelDesign, achieved_ir: float) -> float:
+    """Gross notional per unit of capital to turn `achieved_ir` into 300 bp a year."""
+    net_per_gross = (
+        achieved_ir * design.annual_vol_per_gross_bp
+        - design.turnover_per_year * design.roundtrip_cost_bp
+    )
+    if net_per_gross <= 0:
+        return float("inf")
+    return MIN_ANNUAL_NET_RETURN_BP / net_per_gross
 
 
 def _forbidden_repeat(design: ModelDesign) -> str | None:
@@ -266,26 +315,35 @@ def assess(design: ModelDesign) -> dict[str, Any]:
     if missing is not None:
         return {**record, "verdict": Verdict.ROLE_PREREQUISITE_MISSING.value, "reason": missing}
 
-    #: A representation's capacity is charged against the ratio of the thing that
-    #: will consume it, and an execution study is not required to clear a return
-    #: hurdle it never claimed.
+    #: Capacity is charged at the ratio the design claims it can **achieve**; a
+    #: representation borrows its consumer's, and an execution study is charged
+    #: against the parent whose cost it is trying to reduce rather than being
+    #: handed the ceiling for free.
+    achievable = float(design.assumed_achievable_annual_ir)
     if design.role is ModelRole.REGIME_REPRESENTATION:
-        target_ir = float(design.consumer_annual_ir or 0.0)
-        required = target_ir
-        economic_ok = 0.0 < target_ir <= MAX_PLAUSIBLE_GROSS_IR
-    elif design.role is ModelRole.EXECUTION_MANAGEMENT:
-        target_ir = MAX_PLAUSIBLE_GROSS_IR
-        required = 0.0
-        economic_ok = True
-    else:
-        required = required_gross_annual_ir(design)
-        target_ir = min(required, MAX_PLAUSIBLE_GROSS_IR)
-        economic_ok = required <= MAX_PLAUSIBLE_GROSS_IR
+        achievable = float(design.consumer_annual_ir or 0.0)
+    if achievable <= 0.0 or achievable > MAX_PLAUSIBLE_GROSS_IR:
+        return {
+            **record,
+            "verdict": Verdict.ECONOMICALLY_UNREACHABLE.value,
+            "reason": (
+                f"an assumed achievable annual information ratio of {achievable} is "
+                f"outside (0, {MAX_PLAUSIBLE_GROSS_IR}]"
+            ),
+        }
 
+    break_even = (
+        0.0 if design.role is ModelRole.EXECUTION_MANAGEMENT else (break_even_annual_ir(design))
+    )
+    economic_ok = break_even <= achievable
     record["economics"] = {
         "annual_cost_bp": round(design.turnover_per_year * design.roundtrip_cost_bp, 1),
-        "annual_vol_bp": design.annual_vol_bp,
-        "required_gross_annual_ir": round(required, 3),
+        "annual_vol_per_gross_bp": design.annual_vol_per_gross_bp,
+        "break_even_annual_ir": round(break_even, 3),
+        "assumed_achievable_annual_ir": achievable,
+        "leverage_for_the_minimum_net_return": round(
+            leverage_needed_for_the_minimum_return(design, achievable), 3
+        ),
         "plausibility_ceiling": MAX_PLAUSIBLE_GROSS_IR,
         "ok": economic_ok,
     }
@@ -294,20 +352,24 @@ def assess(design: ModelDesign) -> dict[str, Any]:
             **record,
             "verdict": Verdict.ECONOMICALLY_UNREACHABLE.value,
             "reason": (
-                f"clearing {MIN_ANNUAL_NET_RETURN_BP:.0f} bp a year net of "
-                f"{record['economics']['annual_cost_bp']} bp of cost needs a gross annual "
-                f"information ratio of {required:.2f}, above the frozen ceiling "
-                f"{MAX_PLAUSIBLE_GROSS_IR}"
+                f"paying {record['economics']['annual_cost_bp']} bp of cost a year against "
+                f"{design.annual_vol_per_gross_bp} bp of volatility per unit of gross needs a "
+                f"gross annual information ratio of {break_even:.2f} before a single basis "
+                f"point is earned, against an assumed achievable {achievable}"
             ),
         }
 
     parameters = budget_module.effective_parameters(design.model_class, **design.model_settings)
     if design.role is ModelRole.REGIME_REPRESENTATION:
         parameters += design.consumer_effective_parameters
+    #: ⭐ The shortest fold's training window, not the corpus. An expanding
+    #: walk-forward fits its first model on `initial_train_years`, and charging
+    #: optimism against 4.674 years spends years that fold does not have.
     verdict = budget_module.assess(
-        target_annual_ir=target_ir,
+        target_annual_ir=achievable,
         declared_effective_parameters=parameters,
         declared_configurations=design.nominal_configurations,
+        train_years=design.shortest_fold_train_years,
         validation_years=design.validation_years,
     )
     record["budgets"] = verdict.as_dict()
@@ -330,16 +392,22 @@ def assess(design: ModelDesign) -> dict[str, Any]:
 
 
 def hurdle_table(
-    roundtrip_cost_bp: float, annual_vol_bp: float = DEFAULT_ANNUAL_VOL_BP
+    roundtrip_cost_bp: float,
+    annual_vol_per_gross_bp: float = MEASURED_ANNUAL_VOL_PER_GROSS_BP,
+    *,
+    achievable_annual_ir: float = MAX_PLAUSIBLE_GROSS_IR,
+    shortest_fold_train_years: float = 1.5,
 ) -> dict[str, Any]:
-    """⭐ What each rebalancing frequency demands, and what capacity it buys.
+    """⭐ What each rebalancing frequency costs before it earns anything.
 
-    Signal-free arithmetic over the frozen constants. It is the clearest statement
-    of the trade this phase is working inside: a faster design needs a larger
-    information ratio, and the larger ratio is the only thing that enlarges its
-    parameter budget.
+    Signal-free arithmetic over the measured volatility and the frozen cost. The
+    break-even ratio is what the design must clear to pay for its own trading; the
+    parameter budget is charged at the **achievable** ratio and does not move with
+    it, which is the property an earlier version of this table did not have —
+    there, making a design cheaper made it inadmissible.
     """
     rows: dict[str, Any] = {}
+    capacity = budget_module.admissible_parameters(achievable_annual_ir, shortest_fold_train_years)
     for name, turnover in (
         ("monthly", 12.0),
         ("fortnightly", 26.0),
@@ -348,35 +416,34 @@ def hurdle_table(
         ("daily", 252.0),
     ):
         cost = turnover * roundtrip_cost_bp
-        required = (MIN_ANNUAL_NET_RETURN_BP + cost) / annual_vol_bp
-        reachable = required <= MAX_PLAUSIBLE_GROSS_IR
+        break_even = cost / annual_vol_per_gross_bp
+        reachable = break_even <= achievable_annual_ir
         rows[name] = {
             "turnover_per_year": turnover,
             "annual_cost_bp": round(cost, 1),
-            "required_gross_annual_ir": round(required, 3),
+            "break_even_annual_ir": round(break_even, 3),
             "reachable": reachable,
-            "admissible_effective_parameters": (
-                round(budget_module.admissible_parameters(min(required, MAX_PLAUSIBLE_GROSS_IR)), 3)
-                if reachable
-                else 0.0
-            ),
+            "admissible_effective_parameters": round(capacity, 3) if reachable else 0.0,
         }
     return {
         "roundtrip_cost_bp": roundtrip_cost_bp,
-        "annual_vol_bp": annual_vol_bp,
-        "minimum_annual_net_bp": MIN_ANNUAL_NET_RETURN_BP,
+        "annual_vol_per_gross_bp": annual_vol_per_gross_bp,
+        "achievable_annual_ir": achievable_annual_ir,
+        "shortest_fold_train_years": shortest_fold_train_years,
+        "minimum_annual_net_bp_is_a_leverage_statement": MIN_ANNUAL_NET_RETURN_BP,
         "frequencies": rows,
     }
 
 
 __all__ = [
-    "DEFAULT_ANNUAL_VOL_BP",
+    "MEASURED_ANNUAL_VOL_PER_GROSS_BP",
+    "MEASURED_VOL_RANGE_BY_SPAN_BP",
     "HIGH_CAPACITY_PARAMETERS",
-    "MAX_ANNUAL_VOL_BP",
     "TEMPORAL_ARCHITECTURES",
     "ModelDesign",
     "Verdict",
     "assess",
     "hurdle_table",
-    "required_gross_annual_ir",
+    "break_even_annual_ir",
+    "leverage_needed_for_the_minimum_return",
 ]

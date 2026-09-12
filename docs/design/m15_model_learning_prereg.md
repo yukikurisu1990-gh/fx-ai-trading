@@ -3,7 +3,14 @@
 `NON_DECISION_BEARING_EXPLORATORY_ONLY` · `RESEARCH_SCRATCH_NON_AUTHORITATIVE`
 · `PRODUCTION_READINESS_NOT_CLAIMED`
 
-Frozen hash: **`6e912e38f07e524d3c6861c0755492b2c014df0754033b5fa33b0a02345eeb4b`**
+Frozen hash（実行時）: **`6d0809fdb3e3e47ce20babb3d2ed2171f32479956a219db1dba5e157c7680475`**
+Frozen hash（レビュー後に coverage を拡張した現行値）: **`aed67a74b8cccd33a0cb697272a419e7773ce78635be32d0e281b0b7a08c3ece`**
+
+> ⭐ **実行された run が承認されていたハッシュは前者であり、動かさない。**
+> レビューが「ハッシュが覆う範囲は主張より遥かに狭い」ことを 9 定数の改変で
+> 実演したため、spec は span の実日付・`PAIRS_20`・実測ボラティリティ・妥当性
+> 天井・leakage controls・feature モジュールの SHA-256 を覆うようになった。
+> それがハッシュを動かす。**記録はそれと一緒に動いてはならない。**
 
 正本は `scripts/research/model_learning/prereg.py`。本文書はその写しであり、
 両者が一致することをテストが測る。**凍結は文章ではなく content hash で行う** —
@@ -11,6 +18,17 @@ Frozen hash: **`6e912e38f07e524d3c6861c0755492b2c014df0754033b5fa33b0a02345eeb4b
 動かすのは規律の問題ではなく、**実行が止まる**。
 
 ---
+
+## 0. ⭐ レビュー後の状態
+
+この事前登録は**実行された run の記録**として保持する。訂正後のゲートの下では:
+
+* **登録された shape は買えない** — 3 track × 1 config の null pass 確率は 0.46、
+  α = 0.05 に対して。1 選択でも 0.19 で、3.174 年では 0 通り。
+* **3 トラックとも admissible ではない** — 実測 377.7 bp のボラティリティに対し
+  日次バスケットは break-even gross IR 2.27 を要求し、天井は 1.5。
+* **それでも run は起きた**（レビューが返る前）。3 本とも自分の合格規則に落ちた。
+* **訂正後に再実行はしていない。**
 
 ## 1. 探索予算（裁定 §30 / §31）
 
@@ -53,7 +71,7 @@ Frozen hash: **`6e912e38f07e524d3c6861c0755492b2c014df0754033b5fa33b0a02345eeb4b
 * **cross-section**: 8 通貨、**係数ベクトルは共有 1 本**
 * **features（7 個、凍結）**: `currency_excess_return_5d_z` /
   `_20d_z` / `_60d_z` / `currency_realised_vol_20d_z` /
-  `cross_sectional_dispersion_20d_z` / `currency_beta_to_usd_factor_60d` /
+  `currency_dispersion_share_20d_z` / `currency_beta_to_common_factor_60d` /
   `currency_beta_to_risk_factor_60d`
 * **model**: ridge、学習 fold 内で**実効自由度 4.2 を目標**に penalty を決める
   （目標であってチューニング対象ではない）
@@ -62,14 +80,15 @@ Frozen hash: **`6e912e38f07e524d3c6861c0755492b2c014df0754033b5fa33b0a02345eeb4b
 
 ### Track B — `M03_regime_conditioned_level_multi_timeframe`
 
-* **target**: 同じ cost-adjusted 翌日相対リターン。**傾きではなく水準**だけが
-  2 状態で異なることを許す
+* **target**: 同じ cost-adjusted 翌日相対リターン。共有された傾きに対する
+  **gain** だけが 2 状態で異なることを許す（切片は断面で一定になり、target は
+  断面で 0 和なので、切片は構造上同定されない）
 * **features（4 個、凍結）**: `currency_excess_return_20d_z` /
   `multi_timeframe_alignment_h1_h4_d1` / `currency_realised_vol_20d_z` /
   `trend_age_d1_normalised`
 * **state**: バスケットの 60 日実現ボラティリティの 2 分割。閾値は**学習 fold 内の
   expanding-window 中央値のみ**
-* **baseline (Level 0)**: 同じ 4 特徴量に**単一の切片**、regime 分割なし —
+* **baseline (Level 0)**: 同じ 4 特徴量に**単一の gain**、regime 分割なし —
   これが「状態そのものの価値」を切り出す
 
 ### Track C — `M13_hurdle_clearing_probability_with_learned_threshold`
@@ -78,13 +97,24 @@ Frozen hash: **`6e912e38f07e524d3c6861c0755492b2c014df0754033b5fa33b0a02345eeb4b
   受容閾値は**学習 fold 内で**当てはめる
 * **features（6 個、凍結）**: `currency_realised_vol_20d_z` /
   `currency_realised_vol_5d_over_20d` /
-  `days_to_next_scheduled_central_bank_decision` /
-  `days_since_last_scheduled_central_bank_decision` / `spread_state_20d_z` /
-  `tick_activity_state_20d_z`
+  `days_to_next_scheduled_g4_decision` /
+  `days_since_last_scheduled_g4_decision` / `currency_spread_state_20d_z` /
+  `currency_range_state_20d_z`
 * **base opportunity**: Track A の baseline がポジションを取る全ての日次通貨脚。
   ⭐ **その無条件 cost-adjusted 期待値を先に測り、それが kill rule である** —
   base が負なら、その中でのフィルタは証拠にならない
 * **baseline (Level 0)**: base opportunity を全部取る（フィルタなし）
+
+## 4a. ⭐ 実行前に訂正した 6 点（当てはめる前、結果は存在しない）
+
+| was | now | なぜ |
+| --- | --- | --- |
+| `cross_sectional_dispersion_20d_z` | `currency_dispersion_share_20d_z` | 日ごとに一定の特徴量は、断面で 0 和の target と共分散が厳密に 0 — 係数が同定されない |
+| `currency_beta_to_usd_factor_60d` | `currency_beta_to_common_factor_60d`（leave-one-out） | 自分を含む平均に回帰すると、算術だけで beta が上振れする |
+| regime 依存の**切片** | regime 依存の **gain** | 同じ同定問題。容量コストは同じ |
+| `tick_activity_state_20d_z` | `currency_range_state_20d_z` | 3 route が作った M15 キャッシュに volume 列が無い（※ volume は `monetizability/volume_cache/` に存在する。substitution の理由付けは後に訂正した） |
+| 通貨別の中銀近接 | 4 行の最も近い決定までの距離（global） | AUD/EUR/JPY/USD しか取得できない。通貨別にするとその 4 通貨のダミーになる |
+| 脚ごとに cost-adjusted な回帰 target | forward excess return + 建てる時点でコスト課金 | 脚のコストはポジション変化に依存し、ポジションは予測に依存する（同定不能） |
 
 ## 5. 指標（裁定 §32）
 

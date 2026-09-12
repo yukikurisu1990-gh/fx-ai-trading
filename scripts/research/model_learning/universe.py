@@ -15,13 +15,26 @@ The verdicts are properties of the designs.
 -------------------
 
 `phase_budget` applies the search budget to the **whole phase** rather than to
-one track. It has to: three tracks selected on the same 3.17 out-of-fold years
+one track. It has to: three tracks selected on the same 3.174 out-of-fold years
 are three selections on one sample, and charging each of them separately is how a
-research programme spends a budget three times. The affordable shapes turn out to
-be narrow — three tracks with one fitted configuration each, two tracks with two,
-or one track with seven — and the capacity budget independently rules out the
-third level of the model hierarchy, so the ladder stops at Level 1 whatever the
-validation would have said.
+research programme spends a budget three times.
+
+An earlier version of this module reported three narrow shapes as affordable and
+a first draft of the results document called that the phase's answer. It was
+wrong twice over, and two independent reviews found both:
+
+* the condition bounded the **expected** maximum of the selection noise rather
+  than a false-positive rate, which admitted a three-selection phase whose null
+  pass probability is 0.28 and a single selection at 0.19;
+* the economic condition divided a cost denominated in bp of **gross leg
+  notional** by a volatility denominated in bp of **levered capital**, an
+  unmeasured 800 against a measured 377.7 — so every design was flattered by
+  about 2.1×, and leverage cannot fix it because it scales both sides.
+
+Corrected, **no shape is affordable and no candidate is admissible**: one
+selection would need 10.8 out-of-fold years, and a daily currency book pays a
+break-even gross information ratio of 2.27 before it earns anything against a
+frozen ceiling of 1.5.
 """
 
 from __future__ import annotations
@@ -29,6 +42,9 @@ from __future__ import annotations
 import math
 from typing import Any, Final
 
+from scipy import stats as scipy_stats
+
+from scripts.research.feasibility import ALPHA
 from scripts.research.feasibility.inventory import (
     BASKET_ROUNDTRIP_BP,
     PAIR_ROUNDTRIP_BP,
@@ -36,6 +52,7 @@ from scripts.research.feasibility.inventory import (
 from scripts.research.model_learning import (
     CURRENCIES_G10,
     PAIRS_20,
+    STATUS_NOT_DECISION_GRADE,
     TRAIN_YEARS_TOTAL,
     ModelRole,
     role_gate,
@@ -63,10 +80,21 @@ _LEAKAGE_CONTROLS: Final[tuple[str, ...]] = (
 )
 
 
+#: ⭐ The annual information ratio a candidate claims it could **achieve**, set to
+#: the smallest improvement worth adopting. It is a declaration, and the honest
+#: one: twenty-one recorded hypotheses in this repository are uniformly null or
+#: negative, and the frozen ceiling of 1.5 is a bound on what could be *believed*,
+#: not an estimate of what is *there*. Both values are reported, because the
+#: difference between them is the whole feasible region.
+ASSUMED_ACHIEVABLE_ANNUAL_IR: Final[float] = 0.5
+
+
 def _design(**kwargs: Any) -> role_gate.ModelDesign:
     kwargs.setdefault("leakage_controls", _LEAKAGE_CONTROLS)
     kwargs.setdefault("training_architecture", "walk_forward")
     kwargs.setdefault("validation_years", VALIDATION_YEARS)
+    kwargs.setdefault("assumed_achievable_annual_ir", ASSUMED_ACHIEVABLE_ANNUAL_IR)
+    kwargs.setdefault("shortest_fold_train_years", INITIAL_TRAIN_YEARS)
     return role_gate.ModelDesign(**kwargs)
 
 
@@ -155,7 +183,7 @@ def catalogue() -> list[role_gate.ModelDesign]:
                 "volatility",
                 "currency_factor_state",
             ),
-            model_class="regime_intercept_linear",
+            model_class="regime_scale_linear",
             model_settings={"states": 2, "coefficients": 4, "effective_fraction": 0.6},
             nominal_configurations=1,
             turnover_per_year=252.0,
@@ -450,7 +478,14 @@ def catalogue() -> list[role_gate.ModelDesign]:
             roundtrip_cost_bp=BASKET_ROUNDTRIP_BP,
             cross_sectional_units=len(CURRENCIES_G10),
             effective_units=EFFECTIVE_CURRENCIES,
-            base_opportunity="every daily currency leg whose parent signal is non-zero",
+            base_opportunity=(
+                "every daily currency leg on which Track A's **unfitted** Level-0 "
+                "baseline takes a position. Stated the same way the "
+                'pre-registration states it: an earlier wording here said "whose '
+                "parent signal is non-zero\", which reads as Track A's FITTED model "
+                "and would put a quantity fitted on the same folds into this "
+                "track's population"
+            ),
             base_expectancy_is_a_kill_rule=True,
             prior_research_overlap=(
                 "H-018 and H-019 both found that ordinary days already clear the round "
@@ -656,13 +691,23 @@ def phase_budget(
             inflation = budget_module.expected_max_of_standard_normals(total) / math.sqrt(
                 validation_years
             )
+            rate = float(1.0 - scipy_stats.norm.cdf(ceiling) ** total)
             shapes.append(
                 {
                     "tracks": tracks,
                     "configurations_per_track": configs,
                     "phase_effective_configurations": round(total, 3),
                     "selection_inflation_annual_ir": round(inflation, 4),
-                    "affordable": bool(inflation <= minimum_relevant_incremental_ir),
+                    "null_pass_probability": round(rate, 4),
+                    "validation_years_needed": round(
+                        (
+                            float(scipy_stats.norm.ppf((1.0 - ALPHA) ** (1.0 / total)))
+                            / minimum_relevant_incremental_ir
+                        )
+                        ** 2,
+                        2,
+                    ),
+                    "affordable": bool(rate <= ALPHA),
                 }
             )
     affordable = [s for s in shapes if s["affordable"]]
@@ -674,7 +719,12 @@ def phase_budget(
     return {
         "validation_years": validation_years,
         "minimum_relevant_incremental_ir": minimum_relevant_incremental_ir,
+        "alpha": ALPHA,
         "z_ceiling": round(ceiling, 4),
+        #: ⭐ The condition is a false-positive rate, not an expectation. Bounding
+        #: the EXPECTED maximum admitted a three-selection phase whose null pass
+        #: probability is 0.46, and admitted a single selection at 0.19.
+        "condition": "P(best clears MRIE | all worthless) <= alpha",
         "shapes": shapes,
         "affordable_shapes": affordable,
         "most_tracks_affordable": max((s["tracks"] for s in affordable), default=0),
@@ -791,8 +841,42 @@ def build() -> dict[str, Any]:
     for record in assessed:
         by_verdict.setdefault(record["verdict"], []).append(record["candidate_id"])
     admissible = by_verdict.get(role_gate.Verdict.DEVELOPMENT_ADMISSIBLE.value, [])
+    phase = phase_budget()
     return {
-        "status": "MODEL_LEARNING_DESIGN_ASSESSED",
+        "status": (
+            STATUS_NOT_DECISION_GRADE
+            if not admissible or phase["most_tracks_affordable"] == 0
+            else "MODEL_LEARNING_DESIGN_ADMITS_TRACKS"
+        ),
+        #: ⭐ Why, in one block. Two independent reviews reached the same defect
+        #: from opposite directions — the economic condition divided a cost
+        #: denominated in gross leg notional by a volatility denominated in levered
+        #: capital — and a third finding showed the search budget bounded an
+        #: expectation rather than an error rate. Corrected, nothing is admissible:
+        #: a daily design cannot pay for its own trading at any believable ratio,
+        #: and the out-of-fold span cannot support even one selection.
+        "why_not_decision_grade": {
+            "break_even_annual_ir_at_daily_turnover": round(
+                252.0 * BASKET_ROUNDTRIP_BP / role_gate.MEASURED_ANNUAL_VOL_PER_GROSS_BP, 3
+            ),
+            "plausibility_ceiling": role_gate.MAX_PLAUSIBLE_GROSS_IR,
+            "validation_years_available": VALIDATION_YEARS,
+            "validation_years_needed_for_one_selection": round(
+                budget_module.validation_years_needed(1), 2
+            ),
+            "admissible_parameters_at_the_ceiling_on_the_shortest_fold": round(
+                budget_module.admissible_parameters(
+                    role_gate.MAX_PLAUSIBLE_GROSS_IR, INITIAL_TRAIN_YEARS
+                ),
+                3,
+            ),
+            "admissible_parameters_at_the_assumed_ratio": round(
+                budget_module.admissible_parameters(
+                    ASSUMED_ACHIEVABLE_ANNUAL_IR, INITIAL_TRAIN_YEARS
+                ),
+                3,
+            ),
+        },
         "train_years": TRAIN_YEARS_TOTAL,
         "initial_train_years": INITIAL_TRAIN_YEARS,
         "validation_years": VALIDATION_YEARS,
@@ -804,7 +888,7 @@ def build() -> dict[str, Any]:
         "hurdle_table_basket": role_gate.hurdle_table(BASKET_ROUNDTRIP_BP),
         "hurdle_table_pair": role_gate.hurdle_table(PAIR_ROUNDTRIP_BP),
         "bars_are_not_a_sample": sample_module.bars_are_not_a_sample(),
-        "phase_budget": phase_budget(),
+        "phase_budget": phase,
         "ranking_and_selection": selected_tracks(),
         "prior_screening_configurations_approx": (
             budget_module.PRIOR_SCREENING_CONFIGURATIONS_APPROX
@@ -818,6 +902,7 @@ __all__ = [
     "EFFECTIVE_PAIRS",
     "INITIAL_TRAIN_YEARS",
     "VALIDATION_YEARS",
+    "ASSUMED_ACHIEVABLE_ANNUAL_IR",
     "CAPACITY_UTILISATION_BAND",
     "MAX_TRACKS",
     "assess_all",

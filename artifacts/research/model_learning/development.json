@@ -1,0 +1,842 @@
+{
+  "corpus": {
+    "currencies": [
+      "AUD",
+      "CAD",
+      "CHF",
+      "EUR",
+      "GBP",
+      "JPY",
+      "NZD",
+      "USD"
+    ],
+    "declared_span": {
+      "end": "2025-12-28",
+      "start": "2021-04-26"
+    },
+    "min_bars_for_a_trading_day": 48,
+    "observed_first_day": "2021-04-27",
+    "observed_last_day": "2025-12-26",
+    "pairs_per_currency": {
+      "AUD": 6,
+      "CAD": 3,
+      "CHF": 4,
+      "EUR": 6,
+      "GBP": 5,
+      "JPY": 6,
+      "NZD": 3,
+      "USD": 7
+    },
+    "protected_spans_read": false,
+    "routes": {
+      "development_2025": "scripts.research.exploratory_m15.bars",
+      "momentum_2021_2023": "scripts.research.exploratory_m15.momentum",
+      "supplemental_2023_2025": "scripts.research.exploratory_m15.supplemental"
+    },
+    "trading_days": 1213
+  },
+  "feature_provenance": {
+    "anchored_currencies": [
+      "AUD",
+      "EUR",
+      "JPY",
+      "USD"
+    ],
+    "beta_factor_is_leave_one_out": true,
+    "beta_window_days": 60,
+    "risk_factor_weights": {
+      "AUD": 0.5,
+      "CHF": -0.5,
+      "JPY": -0.5,
+      "NZD": 0.5
+    },
+    "substitutions": {
+      "cross_sectional_dispersion_20d_z": "replaced by currency_dispersion_share_20d_z \u2014 a day-constant feature has zero covariance with a cross-sectionally demeaned target",
+      "currency_beta_to_usd_factor_60d": "renamed currency_beta_to_common_factor_60d and computed leave-one-out",
+      "days_to_next_scheduled_central_bank_decision": "made global (days_to_next_scheduled_g4_decision) \u2014 four of eight banks publish no acquirable calendar, so a per-currency anchor is a dummy for those four currencies",
+      "tick_activity_state_20d_z": "replaced by currency_range_state_20d_z \u2014 the M15 caches carry no volume column"
+    },
+    "unacquirable_currencies": [
+      "CAD",
+      "CHF",
+      "GBP",
+      "NZD"
+    ]
+  },
+  "folds": [
+    {
+      "index": 0,
+      "test_days": 130,
+      "test_end": "2023-07-18",
+      "test_start": "2023-01-18",
+      "train_days": 388,
+      "train_end": "2023-01-13"
+    },
+    {
+      "index": 1,
+      "test_days": 130,
+      "test_end": "2024-01-18",
+      "test_start": "2023-07-19",
+      "train_days": 518,
+      "train_end": "2023-07-14"
+    },
+    {
+      "index": 2,
+      "test_days": 130,
+      "test_end": "2024-07-18",
+      "test_start": "2024-01-19",
+      "train_days": 648,
+      "train_end": "2024-01-16"
+    },
+    {
+      "index": 3,
+      "test_days": 130,
+      "test_end": "2025-01-20",
+      "test_start": "2024-07-19",
+      "train_days": 778,
+      "train_end": "2024-07-16"
+    },
+    {
+      "index": 4,
+      "test_days": 130,
+      "test_end": "2025-07-21",
+      "test_start": "2025-01-21",
+      "train_days": 908,
+      "train_end": "2025-01-16"
+    },
+    {
+      "index": 5,
+      "test_days": 112,
+      "test_end": "2025-12-24",
+      "test_start": "2025-07-22",
+      "train_days": 1038,
+      "train_end": "2025-07-17"
+    }
+  ],
+  "preregistration_frozen_hash": "6d0809fdb3e3e47ce20babb3d2ed2171f32479956a219db1dba5e157c7680475",
+  "protected_spans_read": false,
+  "strongest_status_reachable": "DEVELOPMENT_MODEL_CANDIDATE",
+  "tracks": {
+    "M01_currency_cross_sectional_ranking": {
+      "baseline": "unfitted top-2/bottom-2 rank of the 20-day excess return",
+      "baseline_fold_diagnostics": [],
+      "baseline_metrics": {
+        "annualised_turnover": 49.36,
+        "cost_annualised_bp": 168.11,
+        "days": 762,
+        "gross_annualised_bp": -194.96,
+        "gross_annualised_ir": -0.5274,
+        "maximum_drawdown_bp": -1255.51,
+        "net_annualised_bp": -363.07,
+        "net_annualised_ir": -0.9828,
+        "per_currency_net_bp": {
+          "AUD": -56.91,
+          "CAD": -227.81,
+          "CHF": 154.26,
+          "EUR": -149.16,
+          "GBP": -137.39,
+          "JPY": 9.31,
+          "NZD": -317.99,
+          "USD": 136.19
+        },
+        "per_fold_net_ir": {
+          "0": -2.3513,
+          "1": -2.0544,
+          "2": -0.1834,
+          "3": -0.8806,
+          "4": 0.0671,
+          "5": -0.4184
+        },
+        "positive_currencies": 3,
+        "share_of_folds_positive": 0.1667,
+        "top_ten_day_share_of_net": null
+      },
+      "fold_diagnostics": [
+        {
+          "coefficients": {
+            "currency_beta_to_common_factor_60d": 1.1e-05,
+            "currency_beta_to_risk_factor_60d": 5.8e-05,
+            "currency_dispersion_share_20d_z": -2.7e-05,
+            "currency_excess_return_20d_z": -2.1e-05,
+            "currency_excess_return_5d_z": 7e-06,
+            "currency_excess_return_60d_z": 6e-06,
+            "currency_realised_vol_20d_z": 7.4e-05
+          },
+          "effective_df": 4.2,
+          "fold": 0,
+          "penalty": 1288.822031,
+          "test_days": 130,
+          "train_days": 388
+        },
+        {
+          "coefficients": {
+            "currency_beta_to_common_factor_60d": 6e-06,
+            "currency_beta_to_risk_factor_60d": 6.8e-05,
+            "currency_dispersion_share_20d_z": -8.2e-05,
+            "currency_excess_return_20d_z": -5.6e-05,
+            "currency_excess_return_5d_z": -2.3e-05,
+            "currency_excess_return_60d_z": 6e-06,
+            "currency_realised_vol_20d_z": 4.5e-05
+          },
+          "effective_df": 4.2,
+          "fold": 1,
+          "penalty": 1689.954657,
+          "test_days": 130,
+          "train_days": 518
+        },
+        {
+          "coefficients": {
+            "currency_beta_to_common_factor_60d": 3e-06,
+            "currency_beta_to_risk_factor_60d": 6.3e-05,
+            "currency_dispersion_share_20d_z": -8.5e-05,
+            "currency_excess_return_20d_z": -4.3e-05,
+            "currency_excess_return_5d_z": -4.1e-05,
+            "currency_excess_return_60d_z": -2.3e-05,
+            "currency_realised_vol_20d_z": 2.4e-05
+          },
+          "effective_df": 4.2,
+          "fold": 2,
+          "penalty": 2097.7849,
+          "test_days": 130,
+          "train_days": 648
+        },
+        {
+          "coefficients": {
+            "currency_beta_to_common_factor_60d": 3e-06,
+            "currency_beta_to_risk_factor_60d": 7.2e-05,
+            "currency_dispersion_share_20d_z": -7.8e-05,
+            "currency_excess_return_20d_z": -4e-05,
+            "currency_excess_return_5d_z": -3.3e-05,
+            "currency_excess_return_60d_z": -2.8e-05,
+            "currency_realised_vol_20d_z": 2.6e-05
+          },
+          "effective_df": 4.2,
+          "fold": 3,
+          "penalty": 2512.755406,
+          "test_days": 130,
+          "train_days": 778
+        },
+        {
+          "coefficients": {
+            "currency_beta_to_common_factor_60d": 1e-05,
+            "currency_beta_to_risk_factor_60d": 3.8e-05,
+            "currency_dispersion_share_20d_z": -6.9e-05,
+            "currency_excess_return_20d_z": -3.2e-05,
+            "currency_excess_return_5d_z": -2e-05,
+            "currency_excess_return_60d_z": -3.2e-05,
+            "currency_realised_vol_20d_z": 3.9e-05
+          },
+          "effective_df": 4.2,
+          "fold": 4,
+          "penalty": 2940.967831,
+          "test_days": 130,
+          "train_days": 908
+        },
+        {
+          "coefficients": {
+            "currency_beta_to_common_factor_60d": -1e-06,
+            "currency_beta_to_risk_factor_60d": 3.8e-05,
+            "currency_dispersion_share_20d_z": -7.3e-05,
+            "currency_excess_return_20d_z": -3.8e-05,
+            "currency_excess_return_5d_z": -3.8e-05,
+            "currency_excess_return_60d_z": -1.4e-05,
+            "currency_realised_vol_20d_z": 3.7e-05
+          },
+          "effective_df": 4.2,
+          "fold": 5,
+          "penalty": 3367.224639,
+          "test_days": 112,
+          "train_days": 1038
+        }
+      ],
+      "model": {
+        "annualised_turnover": 36.74,
+        "cost_annualised_bp": 125.14,
+        "days": 762,
+        "gross_annualised_bp": 217.06,
+        "gross_annualised_ir": 0.5528,
+        "maximum_drawdown_bp": -593.04,
+        "net_annualised_bp": 91.92,
+        "net_annualised_ir": 0.2342,
+        "per_currency_net_bp": {
+          "AUD": 41.15,
+          "CAD": 44.68,
+          "CHF": -31.57,
+          "EUR": -28.44,
+          "GBP": 144.06,
+          "JPY": 493.09,
+          "NZD": 21.77,
+          "USD": -28.4
+        },
+        "per_fold_net_ir": {
+          "0": -0.1637,
+          "1": 0.8996,
+          "2": 0.7783,
+          "3": -0.8385,
+          "4": 0.2121,
+          "5": 1.6821
+        },
+        "per_regime_net_bp": {
+          "0.0": 252.66,
+          "1.0": 25.27
+        },
+        "positive_currencies": 5,
+        "share_of_folds_positive": 0.6667,
+        "top_ten_day_share_of_net": 3.0543
+      },
+      "model_at_stressed_cost": {
+        "annualised_turnover": 36.74,
+        "cost_annualised_bp": 250.28,
+        "days": 762,
+        "gross_annualised_bp": 217.06,
+        "gross_annualised_ir": 0.5528,
+        "maximum_drawdown_bp": -671.77,
+        "net_annualised_bp": -33.23,
+        "net_annualised_ir": -0.0847,
+        "per_currency_net_bp": {
+          "AUD": 41.15,
+          "CAD": 44.68,
+          "CHF": -31.57,
+          "EUR": -28.44,
+          "GBP": 144.06,
+          "JPY": 493.09,
+          "NZD": 21.77,
+          "USD": -28.4
+        },
+        "per_fold_net_ir": {
+          "0": -0.3633,
+          "1": 0.598,
+          "2": 0.2036,
+          "3": -1.0259,
+          "4": -0.0768,
+          "5": 0.9765
+        },
+        "positive_currencies": 5,
+        "share_of_folds_positive": 0.5,
+        "top_ten_day_share_of_net": null
+      },
+      "track": "A",
+      "verdict": {
+        "clauses": {
+          "beats_baseline_by_mrie": true,
+          "enough_currencies_positive": true,
+          "enough_folds_positive": false,
+          "net_annualised_ir_positive": true,
+          "survives_stressed_cost": false,
+          "top_ten_days_not_dominant": false
+        },
+        "failed_clauses": [
+          "enough_folds_positive",
+          "survives_stressed_cost",
+          "top_ten_days_not_dominant"
+        ],
+        "incremental_net_annualised_ir": 1.217,
+        "survives": false
+      }
+    },
+    "M03_regime_conditioned_level_multi_timeframe": {
+      "baseline": "the same features with no regime split",
+      "baseline_fold_diagnostics": [
+        {
+          "coefficients": {
+            "currency_excess_return_20d_z": -3.4e-05,
+            "currency_realised_vol_20d_z": 7.1e-05,
+            "multi_timeframe_alignment_h1_h4_d1": 2.2e-05,
+            "trend_age_d1_normalised": 0.000143
+          },
+          "effective_df": 4.0,
+          "fold": 0,
+          "penalty": 0.0,
+          "test_days": 130,
+          "train_days": 388
+        },
+        {
+          "coefficients": {
+            "currency_excess_return_20d_z": -8.2e-05,
+            "currency_realised_vol_20d_z": -2.8e-05,
+            "multi_timeframe_alignment_h1_h4_d1": -1.9e-05,
+            "trend_age_d1_normalised": 9.6e-05
+          },
+          "effective_df": 4.0,
+          "fold": 1,
+          "penalty": 0.0,
+          "test_days": 130,
+          "train_days": 518
+        },
+        {
+          "coefficients": {
+            "currency_excess_return_20d_z": -8.2e-05,
+            "currency_realised_vol_20d_z": -5.2e-05,
+            "multi_timeframe_alignment_h1_h4_d1": -4.8e-05,
+            "trend_age_d1_normalised": 7.5e-05
+          },
+          "effective_df": 4.0,
+          "fold": 2,
+          "penalty": 0.0,
+          "test_days": 130,
+          "train_days": 648
+        },
+        {
+          "coefficients": {
+            "currency_excess_return_20d_z": -7e-05,
+            "currency_realised_vol_20d_z": -4.9e-05,
+            "multi_timeframe_alignment_h1_h4_d1": -5.5e-05,
+            "trend_age_d1_normalised": 4.2e-05
+          },
+          "effective_df": 4.0,
+          "fold": 3,
+          "penalty": 0.0,
+          "test_days": 130,
+          "train_days": 778
+        },
+        {
+          "coefficients": {
+            "currency_excess_return_20d_z": -5.8e-05,
+            "currency_realised_vol_20d_z": -2.2e-05,
+            "multi_timeframe_alignment_h1_h4_d1": -7.7e-05,
+            "trend_age_d1_normalised": 5.1e-05
+          },
+          "effective_df": 4.0,
+          "fold": 4,
+          "penalty": 0.0,
+          "test_days": 130,
+          "train_days": 908
+        },
+        {
+          "coefficients": {
+            "currency_excess_return_20d_z": -5.9e-05,
+            "currency_realised_vol_20d_z": -2.4e-05,
+            "multi_timeframe_alignment_h1_h4_d1": -0.00014,
+            "trend_age_d1_normalised": 4.5e-05
+          },
+          "effective_df": 4.0,
+          "fold": 5,
+          "penalty": 0.0,
+          "test_days": 112,
+          "train_days": 1038
+        }
+      ],
+      "baseline_metrics": {
+        "annualised_turnover": 89.89,
+        "cost_annualised_bp": 306.15,
+        "days": 762,
+        "gross_annualised_bp": 307.65,
+        "gross_annualised_ir": 0.9431,
+        "maximum_drawdown_bp": -877.77,
+        "net_annualised_bp": 1.5,
+        "net_annualised_ir": 0.0046,
+        "per_currency_net_bp": {
+          "AUD": 325.68,
+          "CAD": 207.78,
+          "CHF": -31.3,
+          "EUR": -72.6,
+          "GBP": 131.9,
+          "JPY": 0.87,
+          "NZD": 164.98,
+          "USD": 202.98
+        },
+        "per_fold_net_ir": {
+          "0": -1.7715,
+          "1": 0.3979,
+          "2": -1.1304,
+          "3": -0.264,
+          "4": 2.4769,
+          "5": -0.5212
+        },
+        "positive_currencies": 6,
+        "share_of_folds_positive": 0.3333,
+        "top_ten_day_share_of_net": 175.6543
+      },
+      "fold_diagnostics": [
+        {
+          "coefficients": {
+            "currency_excess_return_20d_z": -3.4e-05,
+            "currency_realised_vol_20d_z": 7.1e-05,
+            "multi_timeframe_alignment_h1_h4_d1": 2.2e-05,
+            "trend_age_d1_normalised": 0.000143
+          },
+          "effective_df": 4.0,
+          "fold": 0,
+          "penalty": 0.0,
+          "regime_gains": {
+            "0": 0.746185,
+            "1": 1.425593
+          }
+        },
+        {
+          "coefficients": {
+            "currency_excess_return_20d_z": -8.2e-05,
+            "currency_realised_vol_20d_z": -2.8e-05,
+            "multi_timeframe_alignment_h1_h4_d1": -1.9e-05,
+            "trend_age_d1_normalised": 9.6e-05
+          },
+          "effective_df": 4.0,
+          "fold": 1,
+          "penalty": 0.0,
+          "regime_gains": {
+            "0": 0.948641,
+            "1": 1.065039
+          }
+        },
+        {
+          "coefficients": {
+            "currency_excess_return_20d_z": -8.2e-05,
+            "currency_realised_vol_20d_z": -5.2e-05,
+            "multi_timeframe_alignment_h1_h4_d1": -4.8e-05,
+            "trend_age_d1_normalised": 7.5e-05
+          },
+          "effective_df": 4.0,
+          "fold": 2,
+          "penalty": 0.0,
+          "regime_gains": {
+            "0": 0.910769,
+            "1": 1.169497
+          }
+        },
+        {
+          "coefficients": {
+            "currency_excess_return_20d_z": -7e-05,
+            "currency_realised_vol_20d_z": -4.9e-05,
+            "multi_timeframe_alignment_h1_h4_d1": -5.5e-05,
+            "trend_age_d1_normalised": 4.2e-05
+          },
+          "effective_df": 4.0,
+          "fold": 3,
+          "penalty": 0.0,
+          "regime_gains": {
+            "0": 0.903115,
+            "1": 1.242332
+          }
+        },
+        {
+          "coefficients": {
+            "currency_excess_return_20d_z": -5.8e-05,
+            "currency_realised_vol_20d_z": -2.2e-05,
+            "multi_timeframe_alignment_h1_h4_d1": -7.7e-05,
+            "trend_age_d1_normalised": 5.1e-05
+          },
+          "effective_df": 4.0,
+          "fold": 4,
+          "penalty": 0.0,
+          "regime_gains": {
+            "0": 0.924844,
+            "1": 1.230589
+          }
+        },
+        {
+          "coefficients": {
+            "currency_excess_return_20d_z": -5.9e-05,
+            "currency_realised_vol_20d_z": -2.4e-05,
+            "multi_timeframe_alignment_h1_h4_d1": -0.00014,
+            "trend_age_d1_normalised": 4.5e-05
+          },
+          "effective_df": 4.0,
+          "fold": 5,
+          "penalty": 0.0,
+          "regime_gains": {
+            "0": 0.664332,
+            "1": 1.748877
+          }
+        }
+      ],
+      "model": {
+        "annualised_turnover": 89.89,
+        "cost_annualised_bp": 306.15,
+        "days": 762,
+        "gross_annualised_bp": 307.65,
+        "gross_annualised_ir": 0.9431,
+        "maximum_drawdown_bp": -877.77,
+        "net_annualised_bp": 1.5,
+        "net_annualised_ir": 0.0046,
+        "per_currency_net_bp": {
+          "AUD": 325.68,
+          "CAD": 207.78,
+          "CHF": -31.3,
+          "EUR": -72.6,
+          "GBP": 131.9,
+          "JPY": 0.87,
+          "NZD": 164.98,
+          "USD": 202.98
+        },
+        "per_fold_net_ir": {
+          "0": -1.7715,
+          "1": 0.3979,
+          "2": -1.1304,
+          "3": -0.264,
+          "4": 2.4769,
+          "5": -0.5212
+        },
+        "per_regime_net_bp": {
+          "0.0": -422.06,
+          "1.0": 426.59
+        },
+        "positive_currencies": 6,
+        "share_of_folds_positive": 0.3333,
+        "top_ten_day_share_of_net": 175.6543
+      },
+      "model_at_stressed_cost": {
+        "annualised_turnover": 89.89,
+        "cost_annualised_bp": 612.31,
+        "days": 762,
+        "gross_annualised_bp": 307.65,
+        "gross_annualised_ir": 0.9431,
+        "maximum_drawdown_bp": -1159.13,
+        "net_annualised_bp": -304.65,
+        "net_annualised_ir": -0.9375,
+        "per_currency_net_bp": {
+          "AUD": 325.68,
+          "CAD": 207.78,
+          "CHF": -31.3,
+          "EUR": -72.6,
+          "GBP": 131.9,
+          "JPY": 0.87,
+          "NZD": 164.98,
+          "USD": 202.98
+        },
+        "per_fold_net_ir": {
+          "0": -2.2064,
+          "1": -0.2001,
+          "2": -2.0604,
+          "3": -1.0576,
+          "4": 1.251,
+          "5": -2.6978
+        },
+        "positive_currencies": 6,
+        "share_of_folds_positive": 0.1667,
+        "top_ten_day_share_of_net": null
+      },
+      "track": "B",
+      "verdict": {
+        "clauses": {
+          "beats_baseline_by_mrie": false,
+          "enough_currencies_positive": true,
+          "enough_folds_positive": false,
+          "net_annualised_ir_positive": true,
+          "survives_stressed_cost": false,
+          "top_ten_days_not_dominant": false
+        },
+        "failed_clauses": [
+          "beats_baseline_by_mrie",
+          "enough_folds_positive",
+          "survives_stressed_cost",
+          "top_ten_days_not_dominant"
+        ],
+        "incremental_net_annualised_ir": 0.0,
+        "survives": false
+      }
+    },
+    "M13_hurdle_clearing_probability_with_learned_threshold": {
+      "baseline": "the base opportunity taken in full",
+      "baseline_fold_diagnostics": [],
+      "baseline_metrics": {
+        "annualised_turnover": 49.47,
+        "cost_annualised_bp": 168.5,
+        "days": 759,
+        "gross_annualised_bp": -204.41,
+        "gross_annualised_ir": -0.5524,
+        "maximum_drawdown_bp": -1255.51,
+        "net_annualised_bp": -372.9,
+        "net_annualised_ir": -1.0083,
+        "per_currency_net_bp": {
+          "AUD": -65.01,
+          "CAD": -227.81,
+          "CHF": 154.26,
+          "EUR": -149.16,
+          "GBP": -134.76,
+          "JPY": 4.81,
+          "NZD": -322.98,
+          "USD": 125.0
+        },
+        "per_fold_net_ir": {
+          "0": -2.3513,
+          "1": -2.0544,
+          "2": -0.1834,
+          "3": -0.8806,
+          "4": 0.0671,
+          "5": -0.6432
+        },
+        "positive_currencies": 3,
+        "share_of_folds_positive": 0.1667,
+        "top_ten_day_share_of_net": null
+      },
+      "fold_diagnostics": [
+        {
+          "coefficients": {
+            "currency_range_state_20d_z": 7.1e-05,
+            "currency_realised_vol_20d_z": 4e-05,
+            "currency_realised_vol_5d_over_20d": -9e-06,
+            "currency_spread_state_20d_z": -4e-06,
+            "days_since_last_scheduled_g4_decision": -0.0,
+            "days_to_next_scheduled_g4_decision": -0.0
+          },
+          "effective_df": 3.6,
+          "fold": 0,
+          "penalty": 2037.906747,
+          "test_days": 130,
+          "train_days": 388
+        },
+        {
+          "coefficients": {
+            "currency_range_state_20d_z": 2.2e-05,
+            "currency_realised_vol_20d_z": -1.4e-05,
+            "currency_realised_vol_5d_over_20d": 4e-06,
+            "currency_spread_state_20d_z": 1.9e-05,
+            "days_since_last_scheduled_g4_decision": 0.0,
+            "days_to_next_scheduled_g4_decision": -0.0
+          },
+          "effective_df": 3.6,
+          "fold": 1,
+          "penalty": 2718.962463,
+          "test_days": 130,
+          "train_days": 518
+        },
+        {
+          "coefficients": {
+            "currency_range_state_20d_z": 2e-05,
+            "currency_realised_vol_20d_z": -2.9e-05,
+            "currency_realised_vol_5d_over_20d": -2e-06,
+            "currency_spread_state_20d_z": 1.8e-05,
+            "days_since_last_scheduled_g4_decision": -0.0,
+            "days_to_next_scheduled_g4_decision": 0.0
+          },
+          "effective_df": 3.6,
+          "fold": 2,
+          "penalty": 3405.654474,
+          "test_days": 130,
+          "train_days": 648
+        },
+        {
+          "coefficients": {
+            "currency_range_state_20d_z": 2.5e-05,
+            "currency_realised_vol_20d_z": -2.5e-05,
+            "currency_realised_vol_5d_over_20d": 2e-05,
+            "currency_spread_state_20d_z": 2e-05,
+            "days_since_last_scheduled_g4_decision": -0.0,
+            "days_to_next_scheduled_g4_decision": -0.0
+          },
+          "effective_df": 3.6,
+          "fold": 3,
+          "penalty": 4086.216905,
+          "test_days": 130,
+          "train_days": 778
+        },
+        {
+          "coefficients": {
+            "currency_range_state_20d_z": 2.4e-05,
+            "currency_realised_vol_20d_z": -9e-06,
+            "currency_realised_vol_5d_over_20d": 2.1e-05,
+            "currency_spread_state_20d_z": 3.3e-05,
+            "days_since_last_scheduled_g4_decision": -0.0,
+            "days_to_next_scheduled_g4_decision": 0.0
+          },
+          "effective_df": 3.6,
+          "fold": 4,
+          "penalty": 4767.867461,
+          "test_days": 130,
+          "train_days": 908
+        },
+        {
+          "coefficients": {
+            "currency_range_state_20d_z": 3.2e-05,
+            "currency_realised_vol_20d_z": -1e-05,
+            "currency_realised_vol_5d_over_20d": 6e-06,
+            "currency_spread_state_20d_z": 3.3e-05,
+            "days_since_last_scheduled_g4_decision": -0.0,
+            "days_to_next_scheduled_g4_decision": -0.0
+          },
+          "effective_df": 3.6,
+          "fold": 5,
+          "penalty": 5450.91383,
+          "test_days": 112,
+          "train_days": 1038
+        }
+      ],
+      "model": {
+        "annualised_turnover": 142.49,
+        "cost_annualised_bp": 485.32,
+        "days": 759,
+        "gross_annualised_bp": -229.76,
+        "gross_annualised_ir": -0.4776,
+        "maximum_drawdown_bp": -2371.18,
+        "net_annualised_bp": -715.08,
+        "net_annualised_ir": -1.4849,
+        "per_currency_net_bp": {
+          "AUD": -51.88,
+          "CAD": -228.56,
+          "CHF": 17.34,
+          "EUR": -88.56,
+          "GBP": 51.25,
+          "JPY": -99.61,
+          "NZD": -187.28,
+          "USD": -104.71
+        },
+        "per_fold_net_ir": {
+          "0": -2.5239,
+          "1": -1.3401,
+          "2": -1.7715,
+          "3": -1.6711,
+          "4": -1.004,
+          "5": -0.3317
+        },
+        "per_regime_net_bp": {
+          "0.0": -1539.07,
+          "1.0": -614.68
+        },
+        "positive_currencies": 2,
+        "share_of_folds_positive": 0.0,
+        "top_ten_day_share_of_net": null
+      },
+      "model_at_stressed_cost": {
+        "annualised_turnover": 142.49,
+        "cost_annualised_bp": 970.64,
+        "days": 759,
+        "gross_annualised_bp": -229.76,
+        "gross_annualised_ir": -0.4776,
+        "maximum_drawdown_bp": -3721.85,
+        "net_annualised_bp": -1200.4,
+        "net_annualised_ir": -2.4874,
+        "per_currency_net_bp": {
+          "AUD": -51.88,
+          "CAD": -228.56,
+          "CHF": 17.34,
+          "EUR": -88.56,
+          "GBP": 51.25,
+          "JPY": -99.61,
+          "NZD": -187.28,
+          "USD": -104.71
+        },
+        "per_fold_net_ir": {
+          "0": -3.4229,
+          "1": -2.4096,
+          "2": -2.9899,
+          "3": -2.6117,
+          "4": -1.7983,
+          "5": -1.7095
+        },
+        "positive_currencies": 2,
+        "share_of_folds_positive": 0.0,
+        "top_ten_day_share_of_net": null
+      },
+      "track": "C",
+      "verdict": {
+        "clauses": {
+          "beats_baseline_by_mrie": false,
+          "enough_currencies_positive": false,
+          "enough_folds_positive": false,
+          "net_annualised_ir_positive": false,
+          "survives_stressed_cost": false,
+          "top_ten_days_not_dominant": true
+        },
+        "failed_clauses": [
+          "beats_baseline_by_mrie",
+          "enough_currencies_positive",
+          "enough_folds_positive",
+          "net_annualised_ir_positive",
+          "survives_stressed_cost"
+        ],
+        "incremental_net_annualised_ir": -0.4766,
+        "survives": false
+      }
+    }
+  }
+}

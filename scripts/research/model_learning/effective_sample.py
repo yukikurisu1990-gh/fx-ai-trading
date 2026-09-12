@@ -29,6 +29,7 @@ from typing import Any, Final
 
 from scripts.research.model_learning import (
     EFFECTIVE_INDEPENDENT_PAIRS,
+    M15_ROWS_IN_THE_CORPUS,
     TRAIN_YEARS_TOTAL,
 )
 
@@ -182,7 +183,7 @@ def bars_are_not_a_sample() -> dict[str, Any]:
         effective_units=min(EFFECTIVE_INDEPENDENT_PAIRS),
     )
     chain = decompose(design)
-    m15_rows = 116_418 * 20
+    m15_rows = M15_ROWS_IN_THE_CORPUS
     return {
         "m15_rows_in_the_corpus": m15_rows,
         "nominal_daily_rows": round(chain["nominal_rows_per_year"] * TRAIN_YEARS_TOTAL, 1),

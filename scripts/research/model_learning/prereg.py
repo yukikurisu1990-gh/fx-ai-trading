@@ -32,14 +32,23 @@ from __future__ import annotations
 
 import hashlib
 import json
+from pathlib import Path
 from typing import Any, Final
 
-from scripts.research.feasibility import COST_STRESS_MULTIPLE
+from scripts.research.feasibility import (
+    COST_STRESS_MULTIPLE,
+    MAX_PLAUSIBLE_GROSS_IR,
+    MIN_ANNUAL_NET_RETURN_BP,
+)
 from scripts.research.feasibility.inventory import BASKET_ROUNDTRIP_BP, PAIR_ROUNDTRIP_BP
-from scripts.research.model_learning import TRAIN_YEARS_TOTAL
+from scripts.research.model_learning import PAIRS_20, PROTECTED_SPANS, SEEN_SPANS, TRAIN_YEARS_TOTAL
 from scripts.research.model_learning.budgets import (
     MINIMUM_RELEVANT_INCREMENTAL_IR,
     REQUIRED_SIGNAL_RETENTION,
+)
+from scripts.research.model_learning.role_gate import MEASURED_ANNUAL_VOL_PER_GROSS_BP
+from scripts.research.model_learning.universe import (
+    _LEAKAGE_CONTROLS as LEAKAGE_CONTROLS,
 )
 from scripts.research.model_learning.universe import (
     INITIAL_TRAIN_YEARS,
@@ -151,8 +160,8 @@ TRACKS: Final[tuple[dict[str, Any], ...]] = (
             "currency_excess_return_20d_z",
             "currency_excess_return_60d_z",
             "currency_realised_vol_20d_z",
-            "cross_sectional_dispersion_20d_z",
-            "currency_beta_to_usd_factor_60d",
+            "currency_dispersion_share_20d_z",
+            "currency_beta_to_common_factor_60d",
             "currency_beta_to_risk_factor_60d",
         ),
         "model_class": "ranking_linear",
@@ -177,10 +186,13 @@ TRACKS: Final[tuple[dict[str, Any], ...]] = (
         "role": "direction_or_return_generator",
         "target": (
             "the same cost-adjusted next-day currency-against-basket return, with the "
-            "level — not the slopes — allowed to differ between two states"
+            "GAIN on a shared slope vector — not the slopes themselves — allowed to "
+            "differ between two states. A regime-dependent intercept is identical "
+            "across currencies on a day and the target sums to zero across them, so "
+            "an intercept is unidentified here by construction"
         ),
         "horizon_days": 1.0,
-        "cross_section": "8 G10 currencies, shared slopes, per-state intercept",
+        "cross_section": "8 G10 currencies, shared slopes, per-state gain",
         "features": (
             "currency_excess_return_20d_z",
             "multi_timeframe_alignment_h1_h4_d1",
@@ -192,11 +204,11 @@ TRACKS: Final[tuple[dict[str, Any], ...]] = (
             "basket, thresholded at its expanding-window median inside the training "
             "fold only"
         ),
-        "model_class": "regime_intercept_linear",
+        "model_class": "regime_scale_linear",
         "model_settings": {"states": 2, "coefficients": 4, "effective_fraction": 0.6},
         "regularisation": "ridge to an effective-degrees-of-freedom target of 2.4 on the slopes",
         "baseline": (
-            "Level 0: the same four features with a single fitted intercept and no "
+            "Level 0: the same four features with a single shared gain and no "
             "regime split, which isolates what the state itself is worth"
         ),
         "configurations": 1,
@@ -217,10 +229,10 @@ TRACKS: Final[tuple[dict[str, Any], ...]] = (
         "features": (
             "currency_realised_vol_20d_z",
             "currency_realised_vol_5d_over_20d",
-            "days_to_next_scheduled_central_bank_decision",
-            "days_since_last_scheduled_central_bank_decision",
-            "spread_state_20d_z",
-            "tick_activity_state_20d_z",
+            "days_to_next_scheduled_g4_decision",
+            "days_since_last_scheduled_g4_decision",
+            "currency_spread_state_20d_z",
+            "currency_range_state_20d_z",
         ),
         "model_class": "linear",
         "model_settings": {"coefficients": 6, "effective_fraction": 0.6},
@@ -235,6 +247,64 @@ TRACKS: Final[tuple[dict[str, Any], ...]] = (
         "turnover_per_year": 252.0,
         "roundtrip_cost_bp": BASKET_ROUNDTRIP_BP,
         "declared_effective_parameters": 3.6,
+    },
+)
+
+#: Corrections made **after the first draft was frozen and before any model was
+#: fitted**, each because the corpus or the algebra could not support what the
+#: draft asked for. Re-freezing is a deliberate act; it happened here with no
+#: result in existence to be influenced by, and the record is kept so a reader can
+#: see the original request beside what replaced it.
+PRE_EXECUTION_CORRECTIONS: Final[tuple[dict[str, str], ...]] = (
+    {
+        "was": "cross_sectional_dispersion_20d_z (Track A)",
+        "now": "currency_dispersion_share_20d_z",
+        "why": (
+            "a day-constant feature has exactly zero covariance with a "
+            "cross-sectionally demeaned target, so its coefficient is unidentified by "
+            "construction; the replacement is per currency and in the same family"
+        ),
+    },
+    {
+        "was": "currency_beta_to_usd_factor_60d (Track A)",
+        "now": "currency_beta_to_common_factor_60d, computed leave-one-out",
+        "why": (
+            "regressing a currency on an average that contains it biases the beta "
+            "upward by arithmetic alone, since one eighth of the factor is the "
+            "regressand"
+        ),
+    },
+    {
+        "was": "a regime-dependent intercept (Track B)",
+        "now": "a regime-dependent gain on a shared slope vector",
+        "why": (
+            "the same identification problem: an intercept is identical across "
+            "currencies on a day. The capacity cost is unchanged, the quantity "
+            "estimated is not"
+        ),
+    },
+    {
+        "was": "tick_activity_state_20d_z (Track C)",
+        "now": "currency_range_state_20d_z",
+        "why": "the M15 caches these three routes produced carry no volume column",
+    },
+    {
+        "was": "central-bank proximity per currency (Track C)",
+        "now": "distance to the nearest decision of the four acquirable banks",
+        "why": (
+            "only AUD, EUR, JPY and USD publish an acquirable calendar, so a "
+            "per-currency anchor is a dummy for those four currencies, which a model "
+            "would learn and the breadth requirement would then fail"
+        ),
+    },
+    {
+        "was": "a per-leg cost-adjusted regression target",
+        "now": "a forward-excess-return target with cost charged at construction",
+        "why": (
+            "a leg cost depends on how much its position changes, which depends on the "
+            "prediction, so a per-leg adjustment is not identified before the position "
+            "exists. Every clause of the success rule is stated in net terms"
+        ),
     },
 )
 
@@ -260,15 +330,75 @@ MULTIPLE_TESTING_CONTROLS: Final[tuple[str, ...]] = (
 )
 
 
+#: The state of this pre-registration after the independent review round, kept
+#: beside it rather than in a document that could drift from it.
+POST_REVIEW_STATUS: Final[dict[str, Any]] = {
+    "registered_shape_is_affordable": False,
+    "why": (
+        "the search budget this shape was registered under bounded the EXPECTED "
+        "maximum of the selection noise. Corrected to a false-positive rate, three "
+        "tracks at one configuration each carry a 0.28 null pass probability against "
+        "an alpha of 0.05, and a single configuration carries 0.19. No shape is "
+        "affordable on 3.174 out-of-fold years; one selection would need 10.8"
+    ),
+    "tracks_are_admissible_under_the_corrected_gate": False,
+    "why_not": (
+        "at the measured 377.7 bp of annualised volatility per unit of gross notional, "
+        "a daily currency book pays 858.3 bp of cost a year — a break-even gross "
+        "information ratio of 2.27 before it earns anything, against a frozen "
+        "plausibility ceiling of 1.5"
+    ),
+    "the_run_happened_anyway": (
+        "the three tracks were executed once under the flawed gate, before the review "
+        "returned. The record is kept; it is not evidence, and every track failed its "
+        "own pre-registered success rule in any case"
+    ),
+    "nothing_was_re_run_after_the_correction": True,
+}
+
+
+def feature_module_digest() -> str:
+    """SHA-256 of the module that defines what every registered feature *is*.
+
+    Deliberately over-broad: the digest covers the whole module, so a comment
+    change moves the specification. A digest that tried to hash only the
+    behaviour would need a parser and a definition of what counts, and both are
+    places for a disagreement to hide.
+
+    A review pointed out that the pre-registration froze feature **names** and
+    left their definitions — window, basis, how the basket is formed, what "the
+    risk factor" is — as post-freeze discretion. Hashing the module closes that:
+    a changed definition changes the specification.
+    """
+    source = (Path(__file__).parent / "features.py").read_bytes()
+    return hashlib.sha256(source).hexdigest()
+
+
 def specification() -> dict[str, Any]:
     """The whole frozen object, in the order a reader needs it."""
     return {
         "phase": "model_learning_development",
         "corpus": {
             "train_years_total": TRAIN_YEARS_TOTAL,
-            "spans": ("momentum_2021_2023", "supplemental_2023_2025", "development_2025"),
+            #: ⭐ The literal dates and the literal instrument list, not their
+            #: names and not their length. A review moved the corpus start onto a
+            #: fresh-pool day while preserving the span length and the hash did not
+            #: notice; it does now.
+            "spans": {name: (block["start"], block["end"]) for name, block in SEEN_SPANS.items()},
+            "pairs": list(PAIRS_20),
+            "protected_spans": {
+                name: (block["start"], block["end"], block["status"])
+                for name, block in PROTECTED_SPANS.items()
+            },
             "protected_spans_read": False,
         },
+        "economics": {
+            "measured_annual_vol_per_gross_bp": MEASURED_ANNUAL_VOL_PER_GROSS_BP,
+            "plausibility_ceiling": MAX_PLAUSIBLE_GROSS_IR,
+            "minimum_annual_net_bp": MIN_ANNUAL_NET_RETURN_BP,
+        },
+        "leakage_controls": list(LEAKAGE_CONTROLS),
+        "feature_module_sha256": feature_module_digest(),
         "cv_architecture": CV_ARCHITECTURE,
         "cost_model": COST_MODEL,
         "metrics": list(METRICS),
@@ -278,6 +408,7 @@ def specification() -> dict[str, Any]:
         "tracks": [dict(track) for track in TRACKS],
         "maximum_research_budget": MAXIMUM_RESEARCH_BUDGET,
         "multiple_testing_controls": list(MULTIPLE_TESTING_CONTROLS),
+        "pre_execution_corrections": [dict(item) for item in PRE_EXECUTION_CORRECTIONS],
     }
 
 
@@ -287,9 +418,18 @@ def freeze_hash() -> str:
     return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
 
 
-#: Recorded after the specification above was written and before anything was
-#: fitted. A development run checks it and refuses to proceed on a mismatch.
-FROZEN_HASH: Final[str] = "6e912e38f07e524d3c6861c0755492b2c014df0754033b5fa33b0a02345eeb4b"
+#: ⭐ The hash **the executed run was authorised under**, kept verbatim. The
+#: specification's coverage was widened after the review — it now carries the
+#: literal span dates, the instrument list, the measured volatility, the frozen
+#: ceiling, the leakage controls and a digest of the feature module — which moves
+#: the current hash. The record of what actually ran must not move with it.
+FROZEN_HASH_AT_EXECUTION: Final[str] = (
+    "6d0809fdb3e3e47ce20babb3d2ed2171f32479956a219db1dba5e157c7680475"
+)
+
+#: Recorded after the specification above was written. A development run checks it
+#: and refuses to proceed on a mismatch.
+FROZEN_HASH: Final[str] = "aed67a74b8cccd33a0cb697272a419e7773ce78635be32d0e281b0b7a08c3ece"
 
 
 def assert_frozen() -> str:
@@ -310,14 +450,18 @@ __all__ = [
     "CV_ARCHITECTURE",
     "FORBIDDEN_RESCUES",
     "FROZEN_HASH",
+    "FROZEN_HASH_AT_EXECUTION",
     "KILL_RULE",
     "MAXIMUM_RESEARCH_BUDGET",
     "METRICS",
     "MULTIPLE_TESTING_CONTROLS",
+    "POST_REVIEW_STATUS",
+    "PRE_EXECUTION_CORRECTIONS",
     "SUCCESS_RULE",
     "TRACKS",
     "PreregistrationError",
     "assert_frozen",
+    "feature_module_digest",
     "freeze_hash",
     "specification",
 ]

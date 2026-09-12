@@ -50,27 +50,44 @@ Where this can fail, stated rather than hidden
   estimated here with a documented approximation that errs high.
 * It assumes the model form can represent the signal. Misspecification only
   makes the left-hand side worse.
-* `IR` is the **net** annual ratio the design is aiming at. A large gross `R2`
-  that cost destroys would permit more parameters and earn nothing, so the net
-  normalisation is the economically meaningful one.
+* `IR` is the **gross** annual ratio, because `rho` is the correlation with the
+  forward return the model is fitted against and the optimism is charged on the
+  same rows. An earlier version of this list said "net", which contradicted the
+  code beside it by a factor of 14.9; the net side is handled where it belongs,
+  in `role_gate`'s economic condition.
+* `IR` must be a ratio the design could **achieve**, not the one it needs. An
+  earlier version fed in the hurdle `(min_net + turnover * cost) / vol`, which
+  made the parameter budget **rise with transaction cost** — precisely the Gate v1
+  pathology this programme built Gate v2 to remove, reintroduced and then frozen
+  by a passing test. Achievability is now declared and bounded by the frozen
+  plausibility ceiling, and the hurdle is a separate upper filter.
 * For a representation whose value is downstream — a regime state, a volatility
   forecast — the `IR` that belongs in the budget is the **consumer's**, not the
   representation's. `role_gate` enforces that distinction.
+* `years` is the **shortest fold's** training length, not the corpus. An
+  expanding walk-forward starting at 1.5 years fits its first model on 1.5 years,
+  and a budget spending 4.674 on it is spending years that fold does not have.
 
 The search budget
 -----------------
 
 A candidate's walk-forward annualised IR measured over `Y` out-of-fold years has
-a standard error of about `1 / sqrt(Y)`. Choosing the best of `M_eff` effectively
-independent candidates that are in truth equally worthless inflates the winner's
-estimate by `E[max of M_eff standard normals] / sqrt(Y)`. For that inflation not
-to swamp the smallest improvement worth adopting, `MRIE`:
+a standard error of about `1 / sqrt(Y)`, so selecting the best of `M_eff`
+effectively independent candidates is a maximum over `M_eff` noisy estimates. The
+condition is a **false-positive rate**:
 
-       z_max(M_eff)  <=  MRIE * sqrt(Y)                             (search)
+       P(best clears MRIE | all worthless)  =  1 - Phi(MRIE*sqrt(Y))^M_eff  <=  alpha
 
-⭐ Years again, not bars. And `M_eff = 1 + (M_nominal - 1) * (1 - rho_config)`,
-so neighbouring hyperparameters are cheap and genuinely different architectures
-are expensive — which is the opposite of how a grid search spends its budget.
+⭐ An earlier version bounded the **expected** maximum instead, and an
+expectation is not an error rate: `E[max] <= MRIE` admits a three-selection phase
+whose null pass probability is 0.46, and admits a single selection at 0.19. On
+this corpus the corrected condition needs **10.8 out-of-fold years for one
+configuration** and 3.174 exist, so the admissible count is **zero** — the same
+shape of wall the preceding phase hit on a different axis.
+
+`M_eff = 1 + (M_nominal - 1) * (1 - rho_config)`, so neighbouring hyperparameters
+are cheap and genuinely different architectures are expensive — the opposite of
+how a grid search spends its budget.
 
 What neither budget covers
 --------------------------
@@ -90,6 +107,7 @@ from typing import Any, Final
 
 from scipy import stats as scipy_stats
 
+from scripts.research.feasibility import ALPHA
 from scripts.research.model_learning import MAX_PLAUSIBLE_GROSS_IR, TRAIN_YEARS_TOTAL
 
 #: The smallest incremental annual information ratio worth adopting over the
@@ -168,9 +186,10 @@ def effective_parameters(model_class: str, **settings: float) -> float:
       never to argue that a particular ensemble just fits.
     * `regime_linear` — `states * (coefficients + 1)`, the per-state coefficients
       plus the state boundary each one costs.
-    * `regime_intercept_linear` — `coefficients * shrinkage + states`. Shared
-      slopes with a regime-dependent level, which is what the capacity budget can
-      afford where a full per-regime mapping is not.
+    * `regime_intercept_linear` / `regime_scale_linear` — `coefficients *
+      shrinkage + states`. Shared slopes with a regime-dependent level or gain,
+      which is what the capacity budget can afford where a full per-regime
+      mapping is not.
     * `ranking_linear` — the shared coefficient vector. A cross-sectional model
       with shared coefficients does **not** pay per asset, which is the one
       architectural choice the capacity budget rewards.
@@ -188,11 +207,19 @@ def effective_parameters(model_class: str, **settings: float) -> float:
         states = float(settings.get("states", 1.0))
         coefficients = float(settings.get("coefficients", 0.0))
         return states * (coefficients + 1.0)
-    if name == "regime_intercept_linear":
-        #: Shared slopes, a regime-dependent intercept (or scale). ⭐ The only
+    if name in {"regime_intercept_linear", "regime_scale_linear"}:
+        #: Shared slopes with a regime-dependent level or gain. ⭐ The only
         #: affordable form of regime conditioning on 4.674 years: a separate
         #: mapping per state multiplies the coefficient count by the state count,
-        #: while a state-dependent level adds to it.
+        #: while a state-dependent scalar adds to it.
+        #:
+        #: The two spellings cost the same and are not interchangeable in use. A
+        #: regime-dependent **intercept** is unidentified against a
+        #: cross-sectionally demeaned target — a quantity identical across
+        #: currencies on a day has exactly zero covariance with one that sums to
+        #: zero across them — so a cross-sectional design has to condition the
+        #: **gain** instead. Both are priced here; choosing the wrong one is a
+        #: modelling error, not a budgeting one.
         states = float(settings.get("states", 1.0))
         coefficients = float(settings.get("coefficients", 0.0))
         shrinkage = float(settings.get("effective_fraction", 1.0))
@@ -203,7 +230,15 @@ def effective_parameters(model_class: str, **settings: float) -> float:
         trees = float(settings.get("trees", 0.0))
         leaves = float(settings.get("leaves", 0.0))
         rate = float(settings.get("learning_rate", 1.0))
-        return trees * leaves * rate
+        #: ⭐ Floored at the leaf count of a single tree. Without the floor the
+        #: estimate is `trees * leaves * rate` and a reviewer drove a
+        #: 1000-tree, 31-leaf ensemble to 3.10 admissible parameters by setting
+        #: the learning rate to 1e-4 — which would have falsified this phase's
+        #: headline that no usable ensemble fits. Shrinking the step does reduce
+        #: effective degrees of freedom, but never below the capacity of the last
+        #: tree fitted, and the documented "errs high" property was false in that
+        #: corner.
+        return max(trees * leaves * rate, leaves)
     raise BudgetError(f"no effective-parameter estimate is defined for {model_class!r}")
 
 
@@ -251,25 +286,69 @@ def selection_inflation_ir(
     return expected_max_of_standard_normals(m_eff) / math.sqrt(validation_years)
 
 
+def null_pass_probability(
+    nominal_configurations: int,
+    validation_years: float,
+    *,
+    minimum_relevant_incremental_ir: float = MINIMUM_RELEVANT_INCREMENTAL_IR,
+    correlation: float = WITHIN_FAMILY_CONFIG_CORRELATION,
+) -> float:
+    """⭐ `P(best candidate clears MRIE | every candidate is worthless)`.
+
+    The quantity the search budget should have been controlling all along. An
+    earlier version required the **expected** maximum to sit below `MRIE`, and a
+    review pointed out that an expectation is not an error rate: at three
+    effectively independent selections over 3.174 out-of-fold years that condition
+    admits a phase whose null pass probability is **0.46**. Even a single
+    configuration passes 0.19 of the time, because `MRIE * sqrt(Y) = 0.891` is only
+    0.89 standard errors.
+    """
+    if validation_years <= 0.0:
+        raise BudgetError("selection on no validation years is selection on nothing")
+    m_eff = effective_configurations(nominal_configurations, correlation=correlation)
+    threshold = minimum_relevant_incremental_ir * math.sqrt(validation_years)
+    return float(1.0 - scipy_stats.norm.cdf(threshold) ** m_eff)
+
+
+def validation_years_needed(
+    nominal_configurations: int,
+    *,
+    minimum_relevant_incremental_ir: float = MINIMUM_RELEVANT_INCREMENTAL_IR,
+    correlation: float = WITHIN_FAMILY_CONFIG_CORRELATION,
+    alpha: float = ALPHA,
+) -> float:
+    """Out-of-fold years at which that search reaches a false-positive rate of `alpha`."""
+    m_eff = effective_configurations(nominal_configurations, correlation=correlation)
+    quantile = float(scipy_stats.norm.ppf((1.0 - alpha) ** (1.0 / m_eff)))
+    return (quantile / minimum_relevant_incremental_ir) ** 2
+
+
 def admissible_configurations(
     validation_years: float,
     *,
     minimum_relevant_incremental_ir: float = MINIMUM_RELEVANT_INCREMENTAL_IR,
     correlation: float = WITHIN_FAMILY_CONFIG_CORRELATION,
+    alpha: float = ALPHA,
     ceiling: int = 4096,
 ) -> int:
-    """The largest nominal configuration count whose selection inflation is bearable.
+    """The largest configuration count whose **null pass rate** stays at or below `alpha`.
 
-    Searched upward rather than inverted in closed form: Blom's approximation has
-    no clean inverse, the answer is small, and a loop that stops at the first
-    failure cannot accidentally report a count it never checked.
+    Searched upward rather than inverted in closed form: the answer is small, and
+    a loop that stops at the first failure cannot report a count it never checked.
+    Returns zero when even one configuration is unaffordable, which is the honest
+    answer on a short sample and was unreachable under the previous condition.
     """
     if validation_years <= 0.0:
         raise BudgetError("no validation years, no admissible search")
     allowed = 0
     for nominal in range(1, ceiling + 1):
-        inflation = selection_inflation_ir(nominal, validation_years, correlation=correlation)
-        if inflation > minimum_relevant_incremental_ir:
+        rate = null_pass_probability(
+            nominal,
+            validation_years,
+            minimum_relevant_incremental_ir=minimum_relevant_incremental_ir,
+            correlation=correlation,
+        )
+        if rate > alpha:
             break
         allowed = nominal
     return allowed
@@ -392,6 +471,7 @@ __all__ = [
     "WITHIN_FAMILY_CONFIG_CORRELATION",
     "BudgetError",
     "BudgetVerdict",
+    "ALPHA",
     "admissible_configurations",
     "admissible_parameters",
     "assess",
@@ -400,5 +480,7 @@ __all__ = [
     "effective_parameters",
     "expected_max_of_standard_normals",
     "expected_out_of_sample_retention",
+    "null_pass_probability",
     "selection_inflation_ir",
+    "validation_years_needed",
 ]

@@ -48,6 +48,7 @@ import datetime as dt
 from enum import StrEnum
 from typing import Any, Final
 
+from scripts.research.exploratory_m15 import PAIRS as ARCHIVE_PAIRS
 from scripts.research.feasibility import MAX_PLAUSIBLE_GROSS_IR
 
 STATUS_SIMPLE_TESTING_EXHAUSTED: Final[str] = (
@@ -158,7 +159,11 @@ SEEN_SPANS: Final[dict[str, dict[str, Any]]] = {
             "H-011",
             "H-012",
             "H-013",
-            "H-014",
+            #: H-014 is deliberately absent. The ledger records its population as
+            #: "both deciding panels", and this span is explicitly not one of them.
+            #: An earlier version listed it here, and the test meant to catch that
+            #: only checked the id existed somewhere in the ledger rather than
+            #: against the span it names.
             "H-015",
             "H-016",
             "H-017",
@@ -192,11 +197,19 @@ PROTECTED_SPANS: Final[dict[str, dict[str, str]]] = {
         "status": "never read",
         "reserved_for": "one-shot independent evaluation of a fully frozen candidate",
     },
+    #: ⭐ NOT "never read", and the difference is a ruling rather than a nuance.
+    #: `HISTORICAL_EXPLORATORY_OOS_PRISTINE_CLAIM_WITHDRAWN` (2026-09-05): the R1
+    #: read decoded one row past each window, and for the final window those twenty
+    #: rows are inside this slice. The adjudication is that this **is** a read, so
+    #: "pristine", "untouched" and "never read" may not be claimed of it. The
+    #: wording below is copied from `scripts.research.feasibility.inventory` rather
+    #: than re-invented, because a second phrasing is how a withdrawn claim
+    #: reappears.
     "historical_oos": {
         "start": "2025-12-29",
         "end": "(end of slice)",
-        "status": "never read",
-        "reserved_for": "not this phase",
+        "status": "one decoded row per pair; no value reached an output",
+        "reserved_for": "not this phase, and not readable from here",
     },
     "dead_window": {
         "start": "(after the OOS slice)",
@@ -212,28 +225,11 @@ PROTECTED_SPANS: Final[dict[str, dict[str, str]]] = {
     },
 }
 
-PAIRS_20: Final[tuple[str, ...]] = (
-    "AUD_CAD",
-    "AUD_JPY",
-    "AUD_NZD",
-    "AUD_USD",
-    "CAD_JPY",
-    "EUR_AUD",
-    "EUR_CHF",
-    "EUR_GBP",
-    "EUR_JPY",
-    "EUR_USD",
-    "GBP_CHF",
-    "GBP_JPY",
-    "GBP_USD",
-    "NZD_USD",
-    "USD_CAD",
-    "USD_CHF",
-    "USD_JPY",
-    "CHF_JPY",
-    "NZD_JPY",
-    "NZD_CAD",
-)
+#: **Imported, not restated.** A first version of this file typed the twenty
+#: pairs out by hand and got four of them wrong — CAD_JPY, NZD_CAD, and two
+#: omissions — which the corpus loader caught only because the caches refused to
+#: open. The archive's own tuple is the authority.
+PAIRS_20: Final[tuple[str, ...]] = ARCHIVE_PAIRS
 CURRENCIES_G10: Final[tuple[str, ...]] = (
     "AUD",
     "CAD",
@@ -272,9 +268,13 @@ TRAIN_YEARS_TOTAL: Final[float] = round(
 #: worse.
 EFFECTIVE_INDEPENDENT_PAIRS: Final[tuple[float, float]] = (3.2, 6.5)
 
-#: A bar count, kept because a reader will ask for it, and immediately qualified:
-#: neither feasibility budget in this package depends on it.
-M15_BARS_PER_PAIR_APPROX: Final[int] = 116_418
+#: The corpus's **counted** M15 rows across all twenty pairs, kept because a
+#: reader will ask and immediately qualified: neither feasibility budget in this
+#: package depends on it. An earlier constant gave one pair's total (116,418, which
+#: is AUD_CAD's) and a document multiplied it by twenty; per-pair counts actually
+#: run 116,215 to 116,491, so the product was 44 rows wrong and, more to the point,
+#: was labelled as something it had not counted.
+M15_ROWS_IN_THE_CORPUS: Final[int] = 2_328_316
 
 
 class ModelRole(StrEnum):
@@ -292,18 +292,28 @@ class ModelRole(StrEnum):
 def assert_not_protected(start: str, end: str) -> None:
     """Refuse a span that touches protected data, before anything is opened.
 
-    The parse comes first. An audit of the three reader routes found that a
-    malformed bound — `2025-12-2` — defeated guards that compared strings, so a
-    bound that is not an exact `YYYY-MM-DD` is refused outright rather than
-    compared.
+    The parse comes first, so the comparison is on `date` objects rather than on
+    the caller's string — which is what closes the `str`-subclass bypass an audit
+    found in the three reader routes. An earlier docstring here claimed the guard
+    "refuses anything that is not an exact `YYYY-MM-DD`", and that is **false**:
+    `date.fromisoformat` also accepts ISO basic (`20210426`) and week (`2025-W52-7`)
+    forms. Those parse to the right day, so the bound semantics hold and no
+    protected row becomes reachable — but the claim was wider than the code and is
+    corrected rather than defended.
+
+    ⭐ The boundaries come from `PROTECTED_SPANS`, not from `SEEN_SPANS`. Taking
+    them from the dictionary being protected let one edit relax the guard and
+    preserve the pre-registration hash in a single move, which a review
+    demonstrated by moving the corpus start onto a fresh-pool day while keeping
+    the span length — and therefore the hash — unchanged.
     """
     try:
         lo = dt.date.fromisoformat(start)
         hi = dt.date.fromisoformat(end)
-    except ValueError as error:
-        raise ProtectedDataError(f"{start!r}..{end!r} is not an exact YYYY-MM-DD span") from error
-    first = dt.date.fromisoformat(SEEN_SPANS["momentum_2021_2023"]["start"])
-    last = dt.date.fromisoformat(SEEN_SPANS["development_2025"]["end"])
+    except (TypeError, ValueError) as error:
+        raise ProtectedDataError(f"{start!r}..{end!r} is not a parsable ISO date span") from error
+    first = dt.date.fromisoformat(PROTECTED_SPANS["fresh_pool"]["end"]) + dt.timedelta(days=1)
+    last = dt.date.fromisoformat(PROTECTED_SPANS["historical_oos"]["start"]) - dt.timedelta(days=1)
     if lo < first:
         raise ProtectedDataError(
             f"{start} is before {first}. The fresh pool is reserved for a single "
@@ -323,7 +333,7 @@ __all__ = [
     "CURRENCIES_G10",
     "DEVELOPMENT_CANDIDATE",
     "EFFECTIVE_INDEPENDENT_PAIRS",
-    "M15_BARS_PER_PAIR_APPROX",
+    "M15_ROWS_IN_THE_CORPUS",
     "MAX_PLAUSIBLE_GROSS_IR",
     "PAIRS_20",
     "PROTECTED_SPANS",

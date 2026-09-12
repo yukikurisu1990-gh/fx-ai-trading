@@ -89,6 +89,19 @@ class TestEffectiveParameters:
         assert parameters == pytest.approx(72.0)
         assert parameters > 10 * budgets.admissible_parameters(1.5)
 
+    def test_a_tiny_learning_rate_cannot_buy_admissibility(self) -> None:
+        """⭐ A review drove a 1000-tree ensemble to 3.10 parameters with lr = 1e-4.
+
+        `trees * leaves * rate` goes to zero as the step shrinks, which would have
+        falsified this phase's headline that no usable ensemble fits. The estimate
+        is floored at one tree's leaf count.
+        """
+        gamed = budgets.effective_parameters(
+            "boosted_trees", trees=1000, leaves=31, learning_rate=0.0001
+        )
+        assert gamed == 31.0
+        assert gamed > budgets.admissible_parameters(1.5)
+
     def test_an_unknown_class_is_refused_rather_than_guessed(self) -> None:
         with pytest.raises(budgets.BudgetError):
             budgets.effective_parameters("transformer", layers=6)
@@ -134,14 +147,44 @@ class TestTheSearchBudget:
         with pytest.raises(budgets.BudgetError):
             budgets.effective_configurations(10, correlation=1.0)
 
+    def test_the_condition_is_a_false_positive_rate_not_an_expectation(self) -> None:
+        """⭐ The blocker a review raised, pinned as the corrected behaviour.
+
+        Bounding `E[max]` by `MRIE` admits a three-selection phase whose null pass
+        probability is 0.46, and admits even a single selection at 0.19. The
+        condition is now `P(best clears MRIE | all worthless) <= alpha`, and on
+        this corpus it admits **nothing**.
+        """
+        assert budgets.null_pass_probability(1, 3.174) == pytest.approx(0.1865, abs=1e-3)
+        assert budgets.null_pass_probability(3, 3.174) == pytest.approx(0.2813, abs=1e-3)
+        assert budgets.admissible_configurations(3.174) == 0
+
     def test_the_admissible_count_is_the_largest_that_actually_passes(self) -> None:
-        allowed = budgets.admissible_configurations(3.174)
-        assert budgets.selection_inflation_ir(allowed, 3.174) <= (
-            budgets.MINIMUM_RELEVANT_INCREMENTAL_IR
-        )
-        assert budgets.selection_inflation_ir(allowed + 1, 3.174) > (
-            budgets.MINIMUM_RELEVANT_INCREMENTAL_IR
-        )
+        allowed = budgets.admissible_configurations(12.5)
+        assert allowed >= 1
+        assert budgets.null_pass_probability(allowed, 12.5) <= budgets.ALPHA
+        assert budgets.null_pass_probability(allowed + 1, 12.5) > budgets.ALPHA
+
+    def test_more_selections_need_more_years(self) -> None:
+        """⭐ A mutation dropped the multiplicity and survived.
+
+        At one selection `(1 - alpha) ** (1 / m_eff)` is exactly `1 - alpha`, so a
+        test that only checks `M = 1` cannot see the term at all. The whole point
+        of the quantity is that it grows with the size of the search.
+        """
+        needed = [budgets.validation_years_needed(m) for m in (1, 2, 3, 8)]
+        assert needed == sorted(needed)
+        assert needed[0] < needed[-1]
+        #: Three nominal configurations inside one family are 1.6 effectively
+        #: independent ones at the frozen correlation, so they need 13.8 years.
+        #: Three genuinely different tracks are three, and need 18.0.
+        assert budgets.validation_years_needed(3) == pytest.approx(13.82, abs=0.05)
+        assert budgets.validation_years_needed(3, correlation=0.0) == pytest.approx(18.0, abs=0.1)
+
+    def test_the_years_a_single_selection_would_need(self) -> None:
+        assert budgets.validation_years_needed(1) == pytest.approx(10.82, abs=0.05)
+        needed = budgets.validation_years_needed(1)
+        assert budgets.null_pass_probability(1, needed) == pytest.approx(budgets.ALPHA, abs=1e-6)
 
     def test_selection_noise_falls_with_the_square_root_of_the_years(self) -> None:
         """⭐ A mutation that divided by the years instead of their root survived.
@@ -158,8 +201,8 @@ class TestTheSearchBudget:
             assert fast == pytest.approx(2.0 * slow)
 
     def test_a_lower_relevance_threshold_buys_a_smaller_search(self) -> None:
-        strict = budgets.admissible_configurations(3.0, minimum_relevant_incremental_ir=0.25)
-        loose = budgets.admissible_configurations(3.0, minimum_relevant_incremental_ir=1.0)
+        strict = budgets.admissible_configurations(20.0, minimum_relevant_incremental_ir=0.25)
+        loose = budgets.admissible_configurations(20.0, minimum_relevant_incremental_ir=1.0)
         assert strict < loose
 
 
@@ -168,8 +211,8 @@ class TestAssess:
         base = {
             "target_annual_ir": 1.0,
             "declared_effective_parameters": 2.0,
-            "declared_configurations": 2,
-            "validation_years": 3.174,
+            "declared_configurations": 1,
+            "validation_years": 12.5,
         }
         base.update(overrides)
         return base

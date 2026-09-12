@@ -18,6 +18,7 @@ from pathlib import Path
 from typing import Any, Final
 
 from scripts.research.model_learning import PROTECTED_SPANS, SEEN_SPANS
+from scripts.research.model_learning import development as development_module
 from scripts.research.model_learning import prereg as prereg_module
 from scripts.research.model_learning import universe as universe_module
 
@@ -45,13 +46,17 @@ def design() -> Path:
     return _write("design.json", payload)
 
 
+def develop() -> Path:
+    """Run the three pre-registered tracks once. Seen data only."""
+    return _write("development.json", development_module.run())
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("stage", choices=("design",))
+    parser.add_argument("stage", choices=("design", "develop"))
     args = parser.parse_args(argv)
-    if args.stage == "design":
-        path = design()
-        print(f"wrote {path}")
+    path = design() if args.stage == "design" else develop()
+    print(f"wrote {path}")
     return 0
 
 

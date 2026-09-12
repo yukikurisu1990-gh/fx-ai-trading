@@ -1,163 +1,131 @@
-# Model-Learning Feasibility — 二つの予算と role 別ゲート（凍結）
+# Model-Learning Feasibility — 二つの予算と role 別ゲート（レビュー修正後）
 
 `NON_DECISION_BEARING_EXPLORATORY_ONLY` · `RESEARCH_SCRATCH_NON_AUTHORITATIVE`
 · `PRODUCTION_READINESS_NOT_CLAIMED`
 
-Status: **`CURRENT_SEEN_DATA_FX_RESEARCH_SPACE_EXHAUSTED_FOR_SIMPLE_HYPOTHESIS_TESTING`**
+Status: **`MODEL_LEARNING_NOT_DECISION_GRADE_WITH_AVAILABLE_SEEN_DATA`**
 
 実装は `scripts/research/model_learning/`、契約テストは
-`tests/research/test_model_learning_budgets.py` と
-`tests/research/test_model_learning_design.py`。
+`tests/research/test_model_learning_{budgets,design,development}.py`。
 
 ---
 
 ## 1. なぜ別問題なのか（裁定 §3）
 
-4.674 年の seen history を
-
-* **alpha の存在証明のために pool する** — 今回は行わない
-* **conditional structure の推定に使う** — 今回の対象
-
-は、**別の feasibility 条件を持つ**。前者の条件は前フェーズが出した
-`effN ≥ (z/IR_max)²·f` で、`effective_years = panel_years × share ≤ panel_years`
-により 1.996 年のパネルでは満たせない。**その裁定は再検討しない。**
+4.674 年の seen history を **alpha の存在証明のために pool する**ことと、
+**conditional structure の推定に使う**ことは別の feasibility 条件を持つ。
+前者の条件は前フェーズの `effN ≥ (z/IR_max)²·f` で、1.996 年のパネルでは満たせない。
+**その裁定は再検討しない。**
 
 後者の条件は「p 値を出せるか」ではなく「**推定できるか**」であり、以下の 2 つに
-分解される。どちらも **signal-blind**（price を 1 バイトも読まずに計算できる）。
+分解される。どちらも **signal-blind**。
 
 ---
 
 ## 2. Capacity budget — 何個のパラメータを載せてよいか
 
-年 `T` 日・1 日あたり `D_eff` 本の独立ベットを持つ設計、パラメータ `p` 個、
-目標年次 IR を `IR` とする。
+年 `T` 日・1 日あたり `D_eff` 本の独立ベット、パラメータ `p` 個、目標年次 IR を
+`IR` とする。
 
-1. `D_eff` 本を束ねた portfolio は `IR = ρ·√(D_eff·T)` に達する。よって
-   `R²_true = ρ² = IR²/(D_eff·T)`。
-2. `N_eff = D_eff·T·years` 行に `p` 個を当てはめる最小二乗の optimism は
-   `p/N_eff`。
-3. 定数より良い out-of-sample を得る条件は `R²_true > p/N_eff`、すなわち
-
-```
-IR² / (D_eff·T)  >  p / (D_eff·T·years)
-```
-
-**`D_eff` も `T` も消える。**
+1. `IR = ρ·√(D_eff·T)` なので `R²_true = IR²/(D_eff·T)`。
+2. `N_eff = D_eff·T·years` 行に `p` 個を当てはめる最小二乗の optimism は `p/N_eff`。
+3. 定数より良い out-of-sample の条件は `R²_true > p/N_eff` — **`D_eff` も `T` も消える**。
 
 > ### `p  ≤  (1 − retention) × IR_annual² × train_years`
 
-⭐ **サンプリング頻度も断面の広さもこの予算を緩めない。** M15 を M1 にすれば行は
-15 倍になるが 1 行あたりの signal は 1/15 になる。通貨を増やせば行は増えるが
-1 ベットあたりの signal は同じだけ減る（目標 IR は既に束ねた後の量だから）。
-**「1 ペアあたり 116,418 本ある」は「何個のパラメータを当てはめてよいか」の答えに
-ならない** — このプログラムは過去にそれを答えとして扱った。
+⭐ **サンプリング頻度も断面の広さもこの予算を緩めない。**
+**「1 ペアあたり 116,418 本ある」は「何個のパラメータを載せてよいか」の答えにならない。**
 
-### 4.674 年が許す量
+### レビューが直した 3 点
 
-| 目標年次 IR | break-even | retention 0.5 |
+* ⭐ **`IR` は gross であって net ではない。** `ρ` はモデルが当てはめる forward
+  return との相関であり、optimism も同じ行に課される。初稿の注記は「net」と書いて
+  隣のコードと **14.9 倍**矛盾していた。net 側は economic 条件が扱う。
+* ⭐ **`IR` は「必要な」比ではなく「到達しうる」比でなければならない。** 初稿は
+  hurdle `(min_net + turnover×cost)/vol` を capacity に直接入れていたため、
+  **コストが下がるとパラメータ予算も下がる** — Gate v2 が排除したはずの
+  **Gate v1 の逆転**を再導入し、しかもテストで固定していた。
+* ⭐ **`years` はコーパスではなく「最短 fold の学習年数」。** expanding
+  walk-forward の第 1 fold は 1.5 年で当てはめる。4.674 年を使うのは、その fold が
+  持っていない年数を使うことである。
+
+### 4.674 年／1.5 年が許す量
+
+| 到達すると宣言する年次 IR | 全コーパス 4.674 年 | **最短 fold 1.5 年** |
 | --- | --- | --- |
-| 0.25 | 0.292 | 0.146 |
-| 0.50 | 1.169 | 0.584 |
-| 0.75 | 2.629 | 1.315 |
-| 1.00 | 4.674 | 2.337 |
-| 1.25 | 7.303 | 3.652 |
-| **1.50（凍結された妥当性天井）** | **10.517** | **5.258** |
+| 0.50（本フェーズの宣言値） | 0.584 | **0.188** |
+| 1.00 | 2.337 | 0.750 |
+| 1.50（凍結された妥当性天井） | 5.258 | **1.688** |
 
-⭐ **あらゆる頻度・あらゆる許容ボラティリティを通じた有効パラメータ数の絶対上限は
-5.258**、そしてそこに届くには IR がちょうど天井の 1.5 でなければならない。
-
-### 成り立たない場合（隠さず書く）
-
-* 最小二乗の結果である。木のアンサンブルの `p` は **実効自由度**で、素朴な
-  パラメータ数よりはるかに大きい。本実装の近似は**高めに外す**（予算を甘く見積もる
-  近似は overfitting を許可する近似だから）。
-* モデル形が signal を表現できることを仮定している。誤特定は左辺を悪くするだけ。
-* `IR` は **net** の年次比。cost が壊す gross の大きな `R²` は、パラメータを多く
-  許してお金を生まない。
-* **downstream で価値が出る表現**（regime state、volatility forecast）は、
-  予算を **consumer の IR** に対して課す。`role_gate` がそれを強制する。
-* shrinkage 付きモデルにはバイアス項もあるので、この式は**保持率の上界**であって
-  約束ではない。
-
----
+⭐ **天井いっぱいの IR を宣言しても、最短 fold で許されるのは 1.688 個。**
+実際の宣言値 0.5 では **0.188 個** — つまり係数 1 本も載らない。
 
 ## 3. Search budget — 何通り試してよいか
 
-`Y` 年分の out-of-fold で測った年次 IR の標準誤差は約 `1/√Y`。真には等しく無価値な
-`M_eff` 個から最良を選ぶと、勝者の推定値は
-`E[max of M_eff standard normals]/√Y` だけ膨らむ。採用に値する最小の改善
-`MRIE` をそれが飲み込まないためには
+`Y` 年の out-of-fold で測った年次 IR の標準誤差は約 `1/√Y`。`M_eff` 個から最良を
+選ぶのは `M_eff` 個の雑音推定値の最大値を取ることである。
 
-> ### `z_max(M_eff)  ≤  MRIE × √validation_years`
+> ### `P(best clears MRIE | all worthless) = 1 − Φ(MRIE·√Y)^M_eff  ≤  α`
 
-⭐ **ここでも年であってバーではない。** そして
-`M_eff = 1 + (M_nominal − 1)(1 − ρ_config)` なので、**隣接するハイパーパラメータは
-安く、本当に異なるアーキテクチャは高い** — grid search の予算の使い方とは逆である。
+⭐ **初稿は「期待値」を抑えていた。期待値は誤り率ではない。**
+`E[max] ≤ MRIE` は、3 選択で **null pass 確率 0.46**、1 選択ですら **0.19** の
+フェーズを許可する。
 
-`z_max` は Blom 近似 `Φ⁻¹((m−0.375)/(m+0.25))`。小さい `m` で真値を **0.02 ほど
-上回る**（m=2 で 0.589 対 0.564）。予算にとっては**安全な向き**：探索の代金を
-わずかに高く請求するので、通った設計は厳密値でも通る。
+### 訂正後に必要な年数（α = 0.05、MRIE = 0.5）
 
-### phase 予算 — トラックごとではなく phase 全体に課す
+| 選択の規模 | null pass（3.174 年） | 必要 out-of-fold 年数 |
+| --- | --- | --- |
+| 1 track × 1 config | 0.1865 | **10.82** |
+| 1 track × 2 config | 0.2354 | 12.48 |
+| 2 track × 1 config | 0.3383 | 15.28 |
+| 3 track × 1 config | 0.4617 | **18.00** |
 
-同じ 3.174 年の out-of-fold で 3 トラックを選ぶのは、**1 つの標本に対する 3 回の
-選択**である。トラックごとに課すのは予算を 3 回使うことになる。
+**利用可能なのは 3.174 年。** ⭐ **買えるのは 0 通り** — 前フェーズが別の軸で
+当たったのと同じ形の壁である。
 
-| tracks × configs | M_eff | inflation | 可否 |
-| --- | --- | --- | --- |
-| 1 × 7 | 2.80 | 0.463 | ✓ |
-| 1 × 8 | 3.10 | 0.500 | ✓（境界） |
-| 2 × 2 | 2.60 | 0.435 | ✓ |
-| **3 × 1** | **3.00** | **0.488** | **✓** |
-| 3 × 2 | 3.90 | 0.590 | ✗ |
-| 4 × 1 | 4.00 | 0.600 | ✗ |
+## 4. Economic condition — 両レビューが独立に見つけた欠陥
 
-⭐ **買えるのは「3 トラック × 1 構成」「2 × 2」「1 × 7」だけ。** 本フェーズは
-3 × 1 を採る — **ハイパーパラメータ探索はどこにも存在しない。**
-
-### この予算がカバーしないもの
-
-3 つの seen span には既に 21 本の記録された仮説・約 **1,200 構成**が当たっている。
-その multiplicity は実在し、本フェーズのものではなく、**本フェーズの当てはめだけを
-数える予算では補正できない**。開示はするが補正はしない。それを本当に守るのは
-誰も見ていないデータでの評価であり、それは今回ではない。
-
----
-
-## 4. Economic condition — capacity の抜け穴を塞ぐ
-
-capacity は `IR²` に比例するので、**高い目標 IR を宣言するだけで大きなモデルが
-買える**。買わせない。目標比は**設計自身の経済から計算**する。
+初稿:
 
 ```
 required_gross_IR = (min_annual_net_bp + turnover × roundtrip_bp) / annual_vol_bp
 ```
 
-これが凍結天井 1.5 を超える設計は即座に拒否。capacity はこの **required** 比で
-評価し、希望値では評価しない。`annual_vol_bp` は**宣言されたボラティリティ目標**
-（設計上の選択）で、レバレッジで hurdle を越えられないよう 1000 bp で上限を置く。
+3 つ間違っていた。
 
-### バスケット往復 3.406 bp・vol 800 bp での帯
+* ⭐ **単位が合っていない。** `roundtrip_bp` は **gross leg notional** の bp、
+  `annual_vol_bp` は宣言値 800 bp の **レバレッジ後資本**。本フェーズが実際に持つ
+  book（4 通貨ロング・4 通貨ショート、gross 1、最適化なし）の実測年次ボラティリティは
+  **377.7 bp**（span 別 370〜430）。比は約 **2.1 倍**設計を有利に見せていた。
+  800 までレバレッジを掛ければコストも同じ倍率で増えるので、**レバレッジでは救えない。**
+* ⭐ **capacity がコストとともに増えていた**（Gate v1 の逆転）。
+* ⭐ **300 bp の最低純収益は「比」の話ではない。** 与えられた IR のもとでは
+  **レバレッジ**の話であり、そう報告する。
 
-| 頻度 | 年間コスト | 必要 gross IR | 許される有効パラメータ |
-| --- | --- | --- | --- |
-| monthly (12) | 40.9 bp | 0.426 | 0.424 |
-| fortnightly (26) | 88.6 bp | 0.486 | 0.551 |
-| weekly (52) | 177.1 bp | 0.596 | 0.831 |
-| twice weekly (104) | 354.2 bp | 0.818 | 1.563 |
-| **daily (252)** | **858.3 bp** | **1.448** | **4.899** |
+### 訂正後
 
-⭐ **速く回すほど capacity は増えるが、それは「誰も見たことのない edge を要求する」
-ことと引き換えでしかない。** 週次リバランスで許されるのは **1 個未満**、つまり
-定数（＝手作りルール）しか載らない。日次だけが 4.9 個という使える予算を持ち、
-その代償に必要 IR は天井の 1.448 になる。
+```
+break_even_annual_ir = turnover × roundtrip_bp / vol_per_gross      （レバレッジは相殺）
+capacity は「到達すると宣言した IR」×「最短 fold の年数」で課金（コストに依存しない）
+```
 
----
+### バスケット往復 3.406 bp・実測 vol 377.7 bp
+
+| 頻度 | 年間コスト | **break-even gross IR** | 到達可能 | 許されるパラメータ |
+| --- | --- | --- | --- | --- |
+| monthly (12) | 40.9 bp | 0.108 | ✓ | 1.688 |
+| fortnightly (26) | 88.6 bp | 0.234 | ✓ | 1.688 |
+| weekly (52) | 177.1 bp | 0.469 | ✓ | 1.688 |
+| twice weekly (104) | 354.2 bp | 0.938 | ✓ | 1.688 |
+| **daily (252)** | **858.3 bp** | **2.272** | **✗** | **0** |
+
+ペア単位（往復 2.58 bp）の daily も **1.721** で天井超え。
+
+⭐ **日次リバランスは、1 bp も稼ぐ前に gross 年次 IR 2.27 を要求する。**
+そして許されるパラメータ数は頻度によらず一定になった — **安くすることが不利に
+ならない**、という Gate v2 の性質がようやく満たされている。
 
 ## 5. Role 別ゲート（裁定 §28）
-
-direction generator 用の 5 条件を機械的に全用途へ当てない。共通の 2 予算 +
-economic 条件に加えて、role ごとの前提を要求する。
 
 | role | 追加要求 |
 | --- | --- |
@@ -167,31 +135,34 @@ economic 条件に加えて、role ごとの前提を要求する。
 | **holding-period selection** | 選択肢の horizon が 2 つ以上 |
 | **regime representation** | downstream consumer と ablation を宣言し、**consumer のパラメータを合算して**課金 |
 | **portfolio allocation** | 既に生き残った parent candidate が必要 |
-| **execution management** | 「edge ではなくコストを測る」と宣言（return hurdle は課さない） |
+| **execution management** | 「edge ではなくコストを測る」と宣言 |
 
-共通: leakage controls の宣言が空でないこと。
+共通: leakage controls の宣言が空でないこと、宣言する achievable IR が
+`(0, 1.5]` にあること。
 
 ## 6. 見た瞬間に拒否する形（裁定 §38）
 
-約束ではなくコードで拒否する。
+random split / 20 ペアを独立 20 資産として扱う / Round 1 の形（高容量 × direction ×
+生の価格特徴量）/ 閉じた family（Gate v2 と同じ `assert_prospective`）。
 
-* **random split** — `TEMPORAL_ARCHITECTURES` 以外は予算計算の前に拒否。
-* **20 ペアを 20 個の独立資産として扱う** — `effective_units ≥ units` は拒否
-  （H-003 が 96% と測った誤り）。
-* **Round 1 の形** — 高容量モデル × direction target × 生の価格特徴量。
-* **閉じた family** — Gate v2 と同じ `assert_prospective` を通す。ゲートを
-  乗り換えて family を再開する動きを塞ぐ。
+木のアンサンブルの実効自由度は `trees × leaves × rate` を **葉数で下限クリップ**する。
+レビューが学習率 1e-4 で 1000 本 31 葉を「3.10 パラメータ」に落として見せたため
+（本フェーズの headline を反証する挙動だった）。
 
 ## 7. 凍結された定数
 
-| 定数 | 値 | 根拠 |
-| --- | --- | --- |
-| `MINIMUM_RELEVANT_INCREMENTAL_IR` | 0.5 | 採用に値する最小の年次 IR 改善 |
-| `REQUIRED_SIGNAL_RETENTION` | 0.5 | 自分の signal の半分も残らない当てはめは選択がほぼ雑音 |
-| `WITHIN_FAMILY_CONFIG_CORRELATION` | 0.70 | 同一アーキテクチャの隣接設定 |
-| `MAX_PLAUSIBLE_GROSS_IR` | 1.5 | Gate v2 から import（restate しない） |
-| `MIN_ANNUAL_NET_RETURN_BP` | 300 | 同上 |
-| `DEFAULT_ANNUAL_VOL_BP` / cap | 800 / 1000 | 宣言されたボラティリティ目標とレバレッジ上限 |
-| `HIGH_CAPACITY_PARAMETERS` | 50 | Round 1 形の認識用。許容量の 10 倍上 |
+| 定数 | 値 |
+| --- | --- |
+| `MINIMUM_RELEVANT_INCREMENTAL_IR` | 0.5 |
+| `REQUIRED_SIGNAL_RETENTION` | 0.5 |
+| `WITHIN_FAMILY_CONFIG_CORRELATION` | 0.70 |
+| `ALPHA` | 0.05（Gate v2 から import） |
+| `MAX_PLAUSIBLE_GROSS_IR` | 1.5（同上） |
+| `MIN_ANNUAL_NET_RETURN_BP` | 300（同上、レバレッジ条件として使用） |
+| `MEASURED_ANNUAL_VOL_PER_GROSS_BP` | **377.7（実測）** |
+| `HIGH_CAPACITY_PARAMETERS` | 50 |
 
-いずれも本フェーズ中に変更しない。変更は `prereg.FROZEN_HASH` を壊す。
+これらのうち **span の実日付・PAIRS_20・実測 vol・天井・leakage controls・
+feature モジュールの SHA-256** は `prereg.specification()` に入り、凍結ハッシュが
+覆う。初稿では 7 定数中 5 つがハッシュの外にあり、レビューが 9 つの定数を動かして
+ハッシュが変わらないことを実演した。

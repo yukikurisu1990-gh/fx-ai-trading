@@ -96,9 +96,36 @@ class TestTheSpansAndTheirProvenance:
             with pytest.raises(ProtectedDataError):
                 assert_not_protected("2021-04-26", bad)
 
-    def test_the_fresh_pool_is_recorded_as_never_read(self) -> None:
-        for name, block in PROTECTED_SPANS.items():
-            assert block["status"] == "never read", name
+    def test_the_fresh_pool_is_never_read_and_the_oos_claim_is_not_overstated(self) -> None:
+        """⭐ A withdrawn claim must not reappear because a new file restated it.
+
+        `HISTORICAL_EXPLORATORY_OOS_PRISTINE_CLAIM_WITHDRAWN`: the R1 read decoded
+        one row past each window and twenty of those rows are inside the OOS slice.
+        A first version of this package wrote "never read" over that ruling and a
+        test enforced it. The wording now matches the sibling inventory exactly.
+        """
+        from scripts.research.feasibility.inventory import PROTECTED_SPANS as INVENTORY
+
+        assert PROTECTED_SPANS["fresh_pool"]["status"] == "never read"
+        assert PROTECTED_SPANS["historical_oos"]["status"] != "never read"
+        assert (
+            PROTECTED_SPANS["historical_oos"]["status"]
+            == INVENTORY["historical_oos_slice"]["status"]
+        )
+
+    def test_the_guard_takes_its_bounds_from_the_spans_it_protects(self) -> None:
+        """⭐ One edit must not both relax the guard and preserve the frozen hash.
+
+        The boundaries used to come from `SEEN_SPANS`, so moving the corpus start
+        onto a fresh-pool day while keeping the span length left the hash untouched
+        and the guard widened. They now come from `PROTECTED_SPANS`.
+        """
+        import scripts.research.model_learning as package
+
+        source = Path(package.__file__).read_text(encoding="utf-8")
+        guard = source.split("def assert_not_protected")[1]
+        assert "PROTECTED_SPANS[" in guard
+        assert "SEEN_SPANS[" not in guard
 
 
 class TestTheRoleGateRefusesWhatItsRoleNeeds:
@@ -138,10 +165,19 @@ class TestTheRoleGateRefusesWhatItsRoleNeeds:
     def test_a_representation_is_charged_its_consumers_parameters_too(self) -> None:
         """⭐ Splitting a model in two must not buy it two capacity budgets."""
         design = _catalogue_by_id()["M09_dispersion_and_correlation_state_representation"]
-        joint = role_gate.assess(design)
-        alone = role_gate.assess(dataclasses.replace(design, consumer_effective_parameters=0.0))
+        cheap = dataclasses.replace(
+            design, turnover_per_year=12.0, consumer_annual_ir=1.5, validation_years=20.0
+        )
+        joint = role_gate.assess(cheap)
         assert joint["verdict"] == role_gate.Verdict.CAPACITY_EXCEEDED.value
-        assert alone["verdict"] == role_gate.Verdict.ROLE_PREREQUISITE_MISSING.value
+        #: 1.2 of its own plus 4.2 of the consumer it is judged by.
+        assert joint["budgets"]["capacity"]["declared_effective_parameters"] == pytest.approx(5.4)
+        #: Declaring the consumer weightless is refused outright rather than
+        #: quietly halving the charge.
+        split = role_gate.assess(dataclasses.replace(cheap, consumer_effective_parameters=0.0))
+        assert split["verdict"] == role_gate.Verdict.ROLE_PREREQUISITE_MISSING.value
+        missing = role_gate.assess(dataclasses.replace(design, downstream_consumer=None))
+        assert missing["verdict"] == role_gate.Verdict.ROLE_PREREQUISITE_MISSING.value
 
     def test_an_allocator_without_a_parent_is_refused(self) -> None:
         design = _catalogue_by_id()["M06_volatility_scaled_portfolio_allocation"]
@@ -205,35 +241,129 @@ class TestTheGateRefusesForbiddenShapes:
 
 
 class TestTheEconomicCondition:
-    def test_the_required_ratio_rises_with_turnover(self) -> None:
+    """The defect two independent reviews found from opposite directions."""
+
+    def test_the_break_even_ratio_rises_with_turnover(self) -> None:
         table = role_gate.hurdle_table(3.406)["frequencies"]
-        ratios = [block["required_gross_annual_ir"] for block in table.values()]
+        ratios = [block["break_even_annual_ir"] for block in table.values()]
         assert ratios == sorted(ratios)
 
-    def test_trading_faster_buys_capacity_only_by_demanding_a_bigger_edge(self) -> None:
-        """⭐ The trade the whole phase operates inside."""
-        table = role_gate.hurdle_table(3.406)["frequencies"]
-        weekly = table["weekly"]
-        daily = table["daily"]
-        assert daily["required_gross_annual_ir"] > weekly["required_gross_annual_ir"]
-        assert daily["admissible_effective_parameters"] > weekly["admissible_effective_parameters"]
-        assert weekly["admissible_effective_parameters"] < 1.0
+    def test_making_a_design_cheaper_no_longer_shrinks_its_parameter_budget(self) -> None:
+        """⭐ The Gate v1 pathology, reintroduced here and now removed.
 
-    def test_turnover_that_puts_the_hurdle_out_of_reach_is_refused(self) -> None:
-        verdict = role_gate.assess(_catalogue_by_id()["M14_intraday_session_state_return"])
+        The previous version computed the capacity budget from the ratio a design
+        **needed**, so halving its cost halved its admissible parameters — the
+        exact inversion `scripts/research/feasibility` says Gate v2 exists to
+        prevent, and a test in this very file used to assert it as a feature.
+        Capacity now comes from the ratio the design claims it can **achieve** and
+        does not move with cost at all.
+        """
+        table = role_gate.hurdle_table(3.406)["frequencies"]
+        budgets_by_frequency = {
+            name: block["admissible_effective_parameters"]
+            for name, block in table.items()
+            if block["reachable"]
+        }
+        assert len(set(budgets_by_frequency.values())) == 1, budgets_by_frequency
+
+    def test_the_volatility_is_measured_rather_than_declared(self) -> None:
+        """⭐ 800 bp was a declaration; the book measures 377.7 per unit of gross."""
+        low, high = role_gate.MEASURED_VOL_RANGE_BY_SPAN_BP
+        assert low <= role_gate.MEASURED_ANNUAL_VOL_PER_GROSS_BP <= high
+        assert role_gate.MEASURED_ANNUAL_VOL_PER_GROSS_BP < 500.0
+
+    def test_leverage_cancels_out_of_the_break_even_ratio(self) -> None:
+        """An information ratio is scale-free, so the hurdle must be too."""
+        design = _catalogue_by_id()["M01_currency_cross_sectional_ranking"]
+        plain = role_gate.break_even_annual_ir(design)
+        levered = role_gate.break_even_annual_ir(
+            dataclasses.replace(
+                design,
+                turnover_per_year=design.turnover_per_year,
+                annual_vol_per_gross_bp=design.annual_vol_per_gross_bp,
+            )
+        )
+        assert plain == levered
+        #: Doubling both the notional and the volatility leaves the ratio alone.
+        doubled = role_gate.break_even_annual_ir(
+            dataclasses.replace(
+                design,
+                roundtrip_cost_bp=design.roundtrip_cost_bp * 2,
+                annual_vol_per_gross_bp=design.annual_vol_per_gross_bp * 2,
+            )
+        )
+        assert doubled == pytest.approx(plain)
+
+    def test_the_minimum_net_return_is_reported_as_a_leverage_statement(self) -> None:
+        design = _catalogue_by_id()["M01_currency_cross_sectional_ranking"]
+        record = role_gate.assess(dataclasses.replace(design, turnover_per_year=12.0))
+        assert "leverage_for_the_minimum_net_return" in record["economics"]
+
+    def test_daily_rebalancing_cannot_pay_for_itself(self) -> None:
+        """⭐ The finding: at the measured volatility the daily hurdle is 2.27."""
+        daily = role_gate.hurdle_table(3.406)["frequencies"]["daily"]
+        assert daily["break_even_annual_ir"] == pytest.approx(2.272, abs=1e-3)
+        assert daily["reachable"] is False
+        verdict = role_gate.assess(_catalogue_by_id()["M01_currency_cross_sectional_ranking"])
         assert verdict["verdict"] == role_gate.Verdict.ECONOMICALLY_UNREACHABLE.value
 
-    def test_leverage_cannot_clear_the_hurdle(self) -> None:
-        design = _catalogue_by_id()["M14_intraday_session_state_return"]
-        with pytest.raises(ValueError, match="leverage"):
-            role_gate.required_gross_annual_ir(
-                dataclasses.replace(design, annual_vol_bp=role_gate.MAX_ANNUAL_VOL_BP + 1)
-            )
+    def test_capacity_is_charged_at_the_achievable_ratio_not_the_hurdle(self) -> None:
+        """⭐ The Gate v1 inversion, pinned at the point where it would return.
 
-    def test_an_execution_study_is_not_asked_to_clear_a_return_hurdle(self) -> None:
-        verdict = role_gate.assess(_catalogue_by_id()["M12_excursion_conditional_exit_design"])
-        assert verdict["economics"]["required_gross_annual_ir"] == 0.0
-        assert verdict["verdict"] == role_gate.Verdict.DEVELOPMENT_ADMISSIBLE.value
+        Every daily candidate now fails economics before capacity is computed, so
+        a mutation that restored the hurdle as the capacity input survived: no
+        catalogued design reached the line. This one does — it rebalances monthly,
+        clears its hurdle easily, and its budget must not move when the hurdle does.
+        """
+        design = dataclasses.replace(
+            _catalogue_by_id()["M01_currency_cross_sectional_ranking"],
+            turnover_per_year=12.0,
+            validation_years=20.0,
+        )
+        cheap = role_gate.assess(design)
+        dearer = role_gate.assess(dataclasses.replace(design, turnover_per_year=40.0))
+        assert (
+            cheap["economics"]["break_even_annual_ir"]
+            < (dearer["economics"]["break_even_annual_ir"])
+        )
+        assert (
+            cheap["budgets"]["capacity"]["admissible_effective_parameters"]
+            == dearer["budgets"]["capacity"]["admissible_effective_parameters"]
+        )
+        assert cheap["budgets"]["capacity"]["admissible_effective_parameters"] == pytest.approx(
+            0.188, abs=1e-3
+        )
+
+    def test_an_achievable_ratio_above_the_ceiling_is_refused(self) -> None:
+        """⭐ Declaring a ratio nobody has seen is how a capacity budget is talked up."""
+        design = dataclasses.replace(
+            _catalogue_by_id()["M01_currency_cross_sectional_ranking"],
+            turnover_per_year=12.0,
+            assumed_achievable_annual_ir=3.0,
+        )
+        verdict = role_gate.assess(design)
+        assert verdict["verdict"] == role_gate.Verdict.ECONOMICALLY_UNREACHABLE.value
+        assert "outside" in verdict["reason"]
+        for bad in (0.0, -1.0):
+            refused = role_gate.assess(
+                dataclasses.replace(design, assumed_achievable_annual_ir=bad)
+            )
+            assert refused["verdict"] == role_gate.Verdict.ECONOMICALLY_UNREACHABLE.value
+
+    def test_the_capacity_budget_is_charged_on_the_shortest_fold(self) -> None:
+        """⭐ An expanding walk-forward fits its first model on 1.5 years."""
+        design = dataclasses.replace(
+            _catalogue_by_id()["M09_dispersion_and_correlation_state_representation"],
+            turnover_per_year=12.0,
+            consumer_annual_ir=1.5,
+            validation_years=20.0,
+        )
+        short = role_gate.assess(design)
+        long = role_gate.assess(dataclasses.replace(design, shortest_fold_train_years=4.674))
+        assert (
+            short["budgets"]["capacity"]["admissible_effective_parameters"]
+            < long["budgets"]["capacity"]["admissible_effective_parameters"]
+        )
 
 
 class TestTheUniverse:
@@ -258,27 +388,31 @@ class TestTheUniverse:
             assert design.prior_research_overlap.strip()
             assert design.expected_information_gain.strip()
 
-    def test_the_verdict_counts(self, record: dict[str, Any]) -> None:
+    def test_nothing_is_admissible_under_the_corrected_gate(self, record: dict[str, Any]) -> None:
         counts = {name: len(ids) for name, ids in record["by_verdict"].items()}
-        assert counts[role_gate.Verdict.DEVELOPMENT_ADMISSIBLE.value] == 9
-        assert counts[role_gate.Verdict.CAPACITY_EXCEEDED.value] == 7
-        assert counts[role_gate.Verdict.ECONOMICALLY_UNREACHABLE.value] == 1
+        assert role_gate.Verdict.DEVELOPMENT_ADMISSIBLE.value not in counts
+        assert counts[role_gate.Verdict.ECONOMICALLY_UNREACHABLE.value] == 14
+        assert counts[role_gate.Verdict.SEARCH_BUDGET_EXCEEDED.value] == 3
         assert counts[role_gate.Verdict.PRIOR_FAMILY_CLOSED.value] == 1
         assert sum(counts.values()) == record["n_candidates"] == 18
+        assert record["status"] == ("MODEL_LEARNING_NOT_DECISION_GRADE_WITH_AVAILABLE_SEEN_DATA")
 
-    def test_the_default_architecture_is_the_one_that_fails(self, record: dict[str, Any]) -> None:
-        """⭐ The control case: the model this phase would have reached for."""
-        boosted = next(
-            row
-            for row in record["candidates"]
-            if row["candidate_id"] == "M18_boosted_tree_cross_sectional_ranking"
+    def test_the_default_architecture_never_reaches_its_capacity_budget(self) -> None:
+        """⭐ The control case, and why it now fails one condition earlier.
+
+        The boosted ranker is refused on economics before capacity is computed: at
+        daily turnover it cannot pay for its own trading. Its capacity figure is
+        measured directly so the headline survives the reordering.
+        """
+        from scripts.research.model_learning import budgets as budget_module
+
+        design = _catalogue_by_id()["M18_boosted_tree_cross_sectional_ranking"]
+        assert role_gate.assess(design)["verdict"] == (
+            role_gate.Verdict.ECONOMICALLY_UNREACHABLE.value
         )
-        assert boosted["verdict"] == role_gate.Verdict.CAPACITY_EXCEEDED.value
-        capacity = boosted["budgets"]["capacity"]
-        assert (
-            capacity["declared_effective_parameters"]
-            > 10 * (capacity["admissible_effective_parameters"])
-        )
+        parameters = budget_module.effective_parameters(design.model_class, **design.model_settings)
+        assert parameters == pytest.approx(72.0)
+        assert parameters > 40 * budget_module.admissible_parameters(1.5, 1.5)
 
     def test_no_candidate_carries_a_realised_quantity(self, record: dict[str, Any]) -> None:
         blob = json.dumps(record, default=str).lower()
@@ -305,27 +439,30 @@ class TestThePhaseBudget:
         assert three["phase_effective_configurations"] == pytest.approx(
             3 * one["phase_effective_configurations"]
         )
-        assert one["affordable"] and not three["affordable"]
+        assert three["null_pass_probability"] > one["null_pass_probability"]
 
-    def test_the_affordable_shapes_are_the_narrow_ones(self) -> None:
+    def test_no_shape_is_affordable_on_this_corpus(self) -> None:
+        """⭐ The decisive result, once the condition became an error rate."""
         budget = universe.phase_budget()
-        affordable = {
-            (s["tracks"], s["configurations_per_track"]) for s in budget["affordable_shapes"]
-        }
-        assert (3, 1) in affordable
-        assert (2, 2) in affordable
-        assert (3, 2) not in affordable
-        assert (4, 1) not in affordable
-        assert budget["most_tracks_affordable"] == 3
+        assert budget["affordable_shapes"] == []
+        assert budget["most_tracks_affordable"] == 0
+        smallest = next(
+            s for s in budget["shapes"] if s["tracks"] == 1 and s["configurations_per_track"] == 1
+        )
+        assert smallest["null_pass_probability"] == pytest.approx(0.1865, abs=1e-3)
+        assert smallest["validation_years_needed"] == pytest.approx(10.82, abs=0.05)
+
+    def test_a_long_enough_sample_would_afford_something(self) -> None:
+        """The condition is a wall, not an impossibility — it names its own price."""
+        budget = universe.phase_budget(validation_years=12.0)
+        assert budget["most_tracks_affordable"] >= 1
 
     def test_every_shape_marked_affordable_really_is(self) -> None:
-        budget = universe.phase_budget()
-        for shape in budget["shapes"]:
-            expected = (
-                shape["selection_inflation_annual_ir"]
-                <= (budget["minimum_relevant_incremental_ir"])
-            )
-            assert shape["affordable"] is expected
+        for years in (3.174, 12.0, 25.0):
+            budget = universe.phase_budget(validation_years=years)
+            for shape in budget["shapes"]:
+                expected = shape["null_pass_probability"] <= budget["alpha"]
+                assert shape["affordable"] is expected
 
 
 class TestTheRankingUsesNoResult:
@@ -352,43 +489,22 @@ class TestTheRankingUsesNoResult:
         }
         assert ranked == admissible
 
-    def test_every_self_contained_candidate_outranks_every_dependent_one(self) -> None:
-        """⭐ The first key in the sort, which a mutation removed without effect.
-
-        With the current catalogue the dependent candidate also happens to fall
-        out of the utilisation band, so dropping the criterion changed no verdict
-        — and the ordering still moved. A candidate whose result depends on
-        another candidate succeeding is a worse use of a one-shot budget whatever
-        else is true of it, so the property is asserted directly.
-        """
-        ranked = universe.rank()
-        positions = [row["rank"] for row in ranked if row["self_contained"]]
-        dependent = [row["rank"] for row in ranked if not row["self_contained"]]
-        assert dependent, "the catalogue has no dependent candidate to order against"
-        assert max(positions) < min(dependent)
-
-    def test_the_band_excludes_both_ends_and_not_only_one(self) -> None:
-        """⭐ Too little capacity used is as disqualifying as too much."""
-        band = universe.CAPACITY_UTILISATION_BAND
-        rows = {row["candidate_id"]: row for row in universe.rank()}
-        below = [r for r in rows.values() if r["capacity_utilisation"] < band[0]]
-        above = [r for r in rows.values() if r["capacity_utilisation"] > band[1]]
-        assert below, "no candidate sits below the band, so the lower edge is untested"
-        assert above, "no candidate sits above the band, so the upper edge is untested"
-        for row in below + above:
-            assert row["utilisation_in_band"] is False, row["candidate_id"]
-        for row in rows.values():
-            if band[0] <= row["capacity_utilisation"] <= band[1]:
-                assert row["utilisation_in_band"] is True, row["candidate_id"]
+    def test_nothing_is_ranked_and_nothing_is_selected(self) -> None:
+        """⭐ The corrected gate admits no candidate, so there is nothing to order."""
+        assert universe.rank() == []
+        selection = universe.selected_tracks()
+        assert selection["selected"] == []
+        assert selection["affordable_tracks"] == 0
+        assert selection["configurations_per_track"] == 0
 
     def test_the_role_constraint_bites_when_the_ranking_would_repeat_a_role(
         self, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        """⭐ The constraint that makes the three tracks orthogonal.
+        """⭐ The constraint that would have made three tracks orthogonal.
 
-        The real ranking happens to lead with three distinct roles, so removing
-        the check changes nothing and a test of the outcome cannot see it. Feed
-        it a ranking whose top three share a role and the mechanism has to show.
+        Nothing is selected now, so the mechanism has to be exercised directly:
+        feed it a ranking whose top entries share a role, and a phase budget that
+        can afford three.
         """
         repeated = [
             {"candidate_id": "X1", "role": "cross_sectional_ranking", "rank": 1},
@@ -397,39 +513,42 @@ class TestTheRankingUsesNoResult:
             {"candidate_id": "X4", "role": "direction_or_return_generator", "rank": 4},
         ]
         monkeypatch.setattr(universe, "rank", lambda: repeated)
+        monkeypatch.setattr(
+            universe,
+            "phase_budget",
+            lambda **_: {
+                "most_tracks_affordable": 3,
+                "affordable_shapes": [
+                    {"tracks": 3, "configurations_per_track": 1, "affordable": True}
+                ],
+            },
+        )
         chosen = [row["candidate_id"] for row in universe.selected_tracks()["selected"]]
         assert chosen == ["X1", "X3", "X4"], "a repeated role was selected"
 
-    def test_the_selection_is_deterministic(self) -> None:
-        first = [row["candidate_id"] for row in universe.selected_tracks()["selected"]]
-        second = [row["candidate_id"] for row in universe.selected_tracks()["selected"]]
-        assert first == second
-
-    def test_the_selected_tracks_have_distinct_roles(self) -> None:
-        selection = universe.selected_tracks()
-        roles = [row["role"] for row in selection["selected"]]
-        assert len(roles) == len(set(roles))
-        assert len(roles) == selection["affordable_tracks"] == 3
-
-    def test_the_selection_matches_the_three_directions_the_decision_named(self) -> None:
-        """A/B/C had to be compared; that they were also chosen is the algorithm's answer."""
-        chosen = {row["candidate_id"] for row in universe.selected_tracks()["selected"]}
-        assert chosen == {
-            "M01_currency_cross_sectional_ranking",
-            "M03_regime_conditioned_level_multi_timeframe",
-            "M13_hurdle_clearing_probability_with_learned_threshold",
-        }
-
-    def test_the_configuration_allowance_comes_from_the_phase_budget(self) -> None:
-        selection = universe.selected_tracks()
-        assert selection["configurations_per_track"] == 1
-        budget = universe.phase_budget()
-        shape = next(
-            s
-            for s in budget["affordable_shapes"]
-            if s["tracks"] == 3 and s["configurations_per_track"] == 1
+    def test_the_selection_stops_at_what_the_phase_can_afford(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """⭐ The cap that nothing currently exercises, because nothing is selected."""
+        ranked = [
+            {"candidate_id": "X1", "role": "cross_sectional_ranking", "rank": 1},
+            {"candidate_id": "X2", "role": "trade_or_skip", "rank": 2},
+            {"candidate_id": "X3", "role": "direction_or_return_generator", "rank": 3},
+        ]
+        monkeypatch.setattr(universe, "rank", lambda: ranked)
+        monkeypatch.setattr(
+            universe,
+            "phase_budget",
+            lambda **_: {
+                "most_tracks_affordable": 2,
+                "affordable_shapes": [
+                    {"tracks": 2, "configurations_per_track": 2, "affordable": True}
+                ],
+            },
         )
-        assert shape["affordable"] is True
+        selection = universe.selected_tracks()
+        assert [row["candidate_id"] for row in selection["selected"]] == ["X1", "X2"]
+        assert selection["configurations_per_track"] == 2
 
 
 class TestTheFrozenPreregistration:
@@ -477,28 +596,35 @@ class TestTheFrozenPreregistration:
             ):
                 assert track[key] is not None, f"{track['candidate_id']} has no {key}"
 
-    def test_the_registered_budget_matches_the_computed_one(self) -> None:
-        """A prereg that quotes a budget it did not compute is a prereg with a typo."""
+    def test_the_registered_budget_is_no_longer_affordable(self) -> None:
+        """⭐ The prereg is kept as the record of what ran, and it is marked.
+
+        Three tracks at one configuration each were registered and executed under a
+        search budget that bounded an expectation. Under the corrected
+        false-positive condition that shape carries a 0.28 null pass rate against
+        an alpha of 0.05, so the run it authorised is a record and not evidence.
+        """
         budget = universe.phase_budget()
         shape = next(
-            s
-            for s in budget["affordable_shapes"]
-            if s["tracks"] == 3 and s["configurations_per_track"] == 1
+            s for s in budget["shapes"] if s["tracks"] == 3 and s["configurations_per_track"] == 1
         )
-        registered = prereg.MAXIMUM_RESEARCH_BUDGET
-        assert registered["tracks"] == 3
-        assert registered["configurations_per_track"] == 1
-        assert registered["phase_effective_configurations"] == pytest.approx(
-            shape["phase_effective_configurations"]
-        )
-        assert registered["selection_inflation_annual_ir"] == pytest.approx(
-            shape["selection_inflation_annual_ir"], abs=1e-3
-        )
+        assert shape["affordable"] is False
+        assert shape["null_pass_probability"] > budget["alpha"]
+        assert prereg.MAXIMUM_RESEARCH_BUDGET["tracks"] == 3
+        assert prereg.POST_REVIEW_STATUS["registered_shape_is_affordable"] is False
 
-    def test_every_registered_track_is_a_selected_one(self) -> None:
-        selected = {row["candidate_id"] for row in universe.selected_tracks()["selected"]}
-        registered = {track["candidate_id"] for track in prereg.TRACKS}
-        assert registered == selected
+    def test_no_registered_track_survives_the_corrected_gate(self) -> None:
+        """⭐ What the correction did to the three tracks that had been selected."""
+        verdicts = {
+            row["candidate_id"]: row["verdict"]
+            for row in universe.assess_all()
+            if row["candidate_id"] in {track["candidate_id"] for track in prereg.TRACKS}
+        }
+        assert len(verdicts) == 3
+        assert all(
+            verdict == role_gate.Verdict.ECONOMICALLY_UNREACHABLE.value
+            for verdict in verdicts.values()
+        ), verdicts
 
     def test_each_registered_feature_count_matches_its_declared_capacity(self) -> None:
         catalogue = _catalogue_by_id()
