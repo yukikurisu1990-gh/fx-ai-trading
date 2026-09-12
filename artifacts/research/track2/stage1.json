@@ -1,0 +1,820 @@
+{
+  "classification": [
+    "NON_DECISION_BEARING_EXPLORATORY_ONLY",
+    "RESEARCH_SCRATCH_NON_AUTHORITATIVE"
+  ],
+  "gate_v2": {
+    "employment": {
+      "cost_per_panel": {
+        "momentum_2021_2023": {
+          "roundtrip_cost_bp": 4.7684
+        },
+        "supplemental_2023_2025": {
+          "roundtrip_cost_bp": 4.1971
+        }
+      },
+      "economic": {
+        "momentum_2021_2023": {
+          "checks": {
+            "implied_effect_is_believable": true,
+            "net_margin": true,
+            "stressed_net_margin": false
+          },
+          "implied_gross_annual_ir": 1.3665,
+          "minimum_relevant_effect_bp": 6.8706,
+          "net_bp": 2.1022,
+          "pass": false,
+          "roundtrip_cost_bp": 4.7684,
+          "stressed_cost_bp": 9.5368,
+          "stressed_net_bp": -2.6662
+        },
+        "supplemental_2023_2025": {
+          "checks": {
+            "implied_effect_is_believable": true,
+            "net_margin": true,
+            "stressed_net_margin": false
+          },
+          "implied_gross_annual_ir": 1.3014,
+          "minimum_relevant_effect_bp": 7.49,
+          "net_bp": 3.2929,
+          "pass": false,
+          "roundtrip_cost_bp": 4.1971,
+          "stressed_cost_bp": 8.3942,
+          "stressed_net_bp": -0.9042
+        }
+      },
+      "family": "non_usd_surprise_relative",
+      "gates_passed": {
+        "economic": false,
+        "robustness": true,
+        "statistical": false
+      },
+      "reference_roundtrip_cost_bp": 2.5,
+      "research_feasible": false,
+      "robustness": {
+        "min_events_required": 60,
+        "n_events_per_panel": {
+          "_unit": "count",
+          "momentum_2021_2023": 137,
+          "supplemental_2023_2025": 120
+        },
+        "n_panels": 2,
+        "pass": true
+      },
+      "statistical": {
+        "momentum_2021_2023": {
+          "dispersion_bp": 41.6565,
+          "effective_n": 117.23,
+          "events_per_year": 68.64,
+          "headroom_bp": -3.9097,
+          "mde_bp": 10.7803,
+          "minimum_relevant_effect_bp": 6.8706,
+          "n_events": 137,
+          "pass": false
+        },
+        "supplemental_2023_2025": {
+          "dispersion_bp": 44.6251,
+          "effective_n": 90.0,
+          "events_per_year": 60.12,
+          "headroom_bp": -5.6903,
+          "mde_bp": 13.1803,
+          "minimum_relevant_effect_bp": 7.49,
+          "n_events": 120,
+          "pass": false
+        }
+      },
+      "status": "FEASIBILITY_GATE_V2_PROSPECTIVE_ONLY",
+      "unit": "bp_of_mid"
+    },
+    "inflation": {
+      "cost_per_panel": {
+        "momentum_2021_2023": {
+          "roundtrip_cost_bp": 3.9868
+        },
+        "supplemental_2023_2025": {
+          "roundtrip_cost_bp": 3.3022
+        }
+      },
+      "economic": {
+        "momentum_2021_2023": {
+          "checks": {
+            "implied_effect_is_believable": true,
+            "net_margin": true,
+            "stressed_net_margin": false
+          },
+          "implied_gross_annual_ir": 1.2768,
+          "minimum_relevant_effect_bp": 5.4789,
+          "net_bp": 1.4921,
+          "pass": false,
+          "roundtrip_cost_bp": 3.9868,
+          "stressed_cost_bp": 7.9736,
+          "stressed_net_bp": -2.4947
+        },
+        "supplemental_2023_2025": {
+          "checks": {
+            "implied_effect_is_believable": true,
+            "net_margin": true,
+            "stressed_net_margin": false
+          },
+          "implied_gross_annual_ir": 1.4868,
+          "minimum_relevant_effect_bp": 5.5706,
+          "net_bp": 2.2684,
+          "pass": false,
+          "roundtrip_cost_bp": 3.3022,
+          "stressed_cost_bp": 6.6044,
+          "stressed_net_bp": -1.0338
+        }
+      },
+      "family": "non_usd_surprise_relative",
+      "gates_passed": {
+        "economic": false,
+        "robustness": true,
+        "statistical": false
+      },
+      "reference_roundtrip_cost_bp": 2.5,
+      "research_feasible": false,
+      "robustness": {
+        "min_events_required": 60,
+        "n_events_per_panel": {
+          "_unit": "count",
+          "momentum_2021_2023": 201,
+          "supplemental_2023_2025": 195
+        },
+        "n_panels": 2,
+        "pass": true
+      },
+      "statistical": {
+        "momentum_2021_2023": {
+          "dispersion_bp": 43.0624,
+          "effective_n": 161.09,
+          "events_per_year": 100.71,
+          "headroom_bp": -4.0279,
+          "mde_bp": 9.5067,
+          "minimum_relevant_effect_bp": 5.4789,
+          "n_events": 201,
+          "pass": false
+        },
+        "supplemental_2023_2025": {
+          "dispersion_bp": 37.0327,
+          "effective_n": 150.15,
+          "events_per_year": 97.7,
+          "headroom_bp": -2.8976,
+          "mde_bp": 8.4682,
+          "minimum_relevant_effect_bp": 5.5706,
+          "n_events": 195,
+          "pass": false
+        }
+      },
+      "status": "FEASIBILITY_GATE_V2_PROSPECTIVE_ONLY",
+      "unit": "bp_of_mid"
+    },
+    "policy_rate": {
+      "cost_per_panel": {
+        "momentum_2021_2023": {
+          "roundtrip_cost_bp": 5.3151
+        },
+        "supplemental_2023_2025": {
+          "roundtrip_cost_bp": 4.7852
+        }
+      },
+      "economic": {
+        "momentum_2021_2023": {
+          "checks": {
+            "implied_effect_is_believable": false,
+            "net_margin": true,
+            "stressed_net_margin": true
+          },
+          "implied_gross_annual_ir": 2.0661,
+          "minimum_relevant_effect_bp": 56.9465,
+          "net_bp": 51.6314,
+          "pass": false,
+          "roundtrip_cost_bp": 5.3151,
+          "stressed_cost_bp": 10.6302,
+          "stressed_net_bp": 46.3163
+        },
+        "supplemental_2023_2025": {
+          "checks": {
+            "implied_effect_is_believable": false,
+            "net_margin": true,
+            "stressed_net_margin": true
+          },
+          "implied_gross_annual_ir": 2.8052,
+          "minimum_relevant_effect_bp": 52.4168,
+          "net_bp": 47.6316,
+          "pass": false,
+          "roundtrip_cost_bp": 4.7852,
+          "stressed_cost_bp": 9.5704,
+          "stressed_net_bp": 42.8464
+        }
+      },
+      "family": "non_usd_surprise_relative",
+      "gates_passed": {
+        "economic": false,
+        "robustness": false,
+        "statistical": false
+      },
+      "reference_roundtrip_cost_bp": 2.5,
+      "research_feasible": false,
+      "robustness": {
+        "min_events_required": 60,
+        "n_events_per_panel": {
+          "_unit": "count",
+          "momentum_2021_2023": 11,
+          "supplemental_2023_2025": 12
+        },
+        "n_panels": 2,
+        "pass": false
+      },
+      "statistical": {
+        "momentum_2021_2023": {
+          "dispersion_bp": 64.6978,
+          "effective_n": 7.7,
+          "events_per_year": 5.51,
+          "headroom_bp": -8.3835,
+          "mde_bp": 65.3299,
+          "minimum_relevant_effect_bp": 56.9465,
+          "n_events": 11,
+          "pass": false
+        },
+        "supplemental_2023_2025": {
+          "dispersion_bp": 45.8089,
+          "effective_n": 7.86,
+          "events_per_year": 6.01,
+          "headroom_bp": 6.6335,
+          "mde_bp": 45.7833,
+          "minimum_relevant_effect_bp": 52.4168,
+          "n_events": 12,
+          "pass": true
+        }
+      },
+      "status": "FEASIBILITY_GATE_V2_PROSPECTIVE_ONLY",
+      "unit": "bp_of_mid"
+    }
+  },
+  "n_admissible_events_total": 1147,
+  "offset_hours_from_stage_0": 5,
+  "panels": {
+    "momentum_2021_2023": {
+      "families": {
+        "employment": {
+          "by_currency": {
+            "AUD": {
+              "gross_bp": -20.8199,
+              "n": 19,
+              "net_bp": -30.7915
+            },
+            "CAD": {
+              "gross_bp": -3.9425,
+              "n": 19,
+              "net_bp": -7.1017
+            },
+            "CHF": {
+              "gross_bp": 1.7964,
+              "n": 10,
+              "net_bp": -2.3562
+            },
+            "EUR": {
+              "gross_bp": -2.2366,
+              "n": 46,
+              "net_bp": -6.9552
+            },
+            "GBP": {
+              "gross_bp": -7.5814,
+              "n": 18,
+              "net_bp": -10.76
+            },
+            "JPY": {
+              "gross_bp": 3.2273,
+              "n": 20,
+              "net_bp": -0.2598
+            },
+            "NZD": {
+              "gross_bp": -12.9312,
+              "n": 5,
+              "net_bp": -16.5804
+            }
+          },
+          "cost_bp": 4.7684,
+          "currency_breadth": 5,
+          "dispersion_bp": 41.6565,
+          "dropped": {
+            "_unit": "count",
+            "groups": 157,
+            "no_following_trading_day": 0,
+            "thin_cross_section": 0,
+            "zero_net_direction": 20
+          },
+          "effective_n": 117.23,
+          "events_per_year": 68.64,
+          "gross_bp": -5.051,
+          "gross_confidence_interval_bp": [
+            -12.5917,
+            2.4898
+          ],
+          "gross_exposure": 1.3283,
+          "high_impact_diagnostic": {
+            "gross_bp": -11.6218,
+            "n": 47,
+            "net_bp": -17.5512
+          },
+          "mde_bp": 10.7802,
+          "n_currencies": 7,
+          "n_events": 137,
+          "n_high_impact": 47,
+          "net_bp": -9.8193,
+          "net_confidence_interval_bp": [
+            -17.3601,
+            -2.2786
+          ],
+          "net_total_bp": -1345.2508,
+          "p_value_on_gross": 0.1659,
+          "per_pair_roundtrip_bp": 3.5897,
+          "sign": -1,
+          "tail_share": 0.2294
+        },
+        "inflation": {
+          "by_currency": {
+            "AUD": {
+              "gross_bp": 10.4962,
+              "n": 12,
+              "net_bp": 7.0043
+            },
+            "CAD": {
+              "gross_bp": -6.1325,
+              "n": 22,
+              "net_bp": -8.871
+            },
+            "CHF": {
+              "gross_bp": -4.5223,
+              "n": 19,
+              "net_bp": -9.8121
+            },
+            "EUR": {
+              "gross_bp": -11.5288,
+              "n": 71,
+              "net_bp": -15.781
+            },
+            "GBP": {
+              "gross_bp": 9.4944,
+              "n": 22,
+              "net_bp": 6.1179
+            },
+            "JPY": {
+              "gross_bp": -3.7332,
+              "n": 47,
+              "net_bp": -7.1629
+            },
+            "NZD": {
+              "gross_bp": 19.8137,
+              "n": 8,
+              "net_bp": 12.1487
+            }
+          },
+          "cost_bp": 3.9868,
+          "currency_breadth": 4,
+          "dispersion_bp": 43.0624,
+          "dropped": {
+            "_unit": "count",
+            "groups": 213,
+            "no_following_trading_day": 1,
+            "thin_cross_section": 0,
+            "zero_net_direction": 11
+          },
+          "effective_n": 161.09,
+          "events_per_year": 100.71,
+          "gross_bp": -3.5896,
+          "gross_confidence_interval_bp": [
+            -10.2396,
+            3.0605
+          ],
+          "gross_exposure": 1.331,
+          "high_impact_diagnostic": {
+            "gross_bp": 0.7595,
+            "n": 65,
+            "net_bp": -3.1953
+          },
+          "mde_bp": 9.5068,
+          "n_currencies": 7,
+          "n_events": 201,
+          "n_high_impact": 65,
+          "net_bp": -7.5764,
+          "net_confidence_interval_bp": [
+            -14.2265,
+            -0.9264
+          ],
+          "net_total_bp": -1522.8605,
+          "p_value_on_gross": 0.2389,
+          "per_pair_roundtrip_bp": 2.9953,
+          "sign": -1,
+          "tail_share": 0.159
+        },
+        "policy_rate": {
+          "by_currency": {
+            "AUD": {
+              "gross_bp": 24.6567,
+              "n": 3,
+              "net_bp": 20.9898
+            },
+            "CAD": {
+              "gross_bp": -81.8483,
+              "n": 2,
+              "net_bp": -84.6346
+            },
+            "CHF": {
+              "gross_bp": 62.6039,
+              "n": 1,
+              "net_bp": 53.3599
+            },
+            "EUR": {
+              "gross_bp": -25.854,
+              "n": 1,
+              "net_bp": -32.1657
+            },
+            "GBP": {
+              "gross_bp": -14.45,
+              "n": 1,
+              "net_bp": -20.3037
+            },
+            "NZD": {
+              "gross_bp": -9.5763,
+              "n": 3,
+              "net_bp": -16.4041
+            }
+          },
+          "cost_bp": 5.3151,
+          "currency_breadth": 4,
+          "dispersion_bp": 64.6978,
+          "dropped": {
+            "_unit": "count",
+            "groups": 11,
+            "no_following_trading_day": 0,
+            "thin_cross_section": 0,
+            "zero_net_direction": 0
+          },
+          "effective_n": 7.7,
+          "events_per_year": 5.51,
+          "gross_bp": -8.7414,
+          "gross_confidence_interval_bp": [
+            -54.4397,
+            36.9569
+          ],
+          "gross_exposure": 1.2884,
+          "high_impact_diagnostic": {
+            "gross_bp": -8.7414,
+            "n": 11,
+            "net_bp": -14.0565
+          },
+          "mde_bp": 65.3299,
+          "n_currencies": 6,
+          "n_events": 11,
+          "n_high_impact": 11,
+          "net_bp": -14.0565,
+          "net_confidence_interval_bp": [
+            -59.7548,
+            31.6418
+          ],
+          "net_total_bp": -154.6215,
+          "p_value_on_gross": 0.6632,
+          "per_pair_roundtrip_bp": 4.1252,
+          "sign": -1,
+          "tail_share": 0.9951
+        }
+      },
+      "n_admissible_events": 597,
+      "n_partial_days": 103,
+      "years": 1.996
+    },
+    "supplemental_2023_2025": {
+      "families": {
+        "employment": {
+          "by_currency": {
+            "AUD": {
+              "gross_bp": -4.3093,
+              "n": 18,
+              "net_bp": -12.5541
+            },
+            "CAD": {
+              "gross_bp": 1.4949,
+              "n": 18,
+              "net_bp": -1.1457
+            },
+            "CHF": {
+              "gross_bp": -8.702,
+              "n": 7,
+              "net_bp": -12.3703
+            },
+            "EUR": {
+              "gross_bp": 3.5378,
+              "n": 40,
+              "net_bp": -0.4668
+            },
+            "GBP": {
+              "gross_bp": 3.4938,
+              "n": 15,
+              "net_bp": 0.301
+            },
+            "JPY": {
+              "gross_bp": 5.4085,
+              "n": 16,
+              "net_bp": 2.2224
+            },
+            "NZD": {
+              "gross_bp": 18.677,
+              "n": 6,
+              "net_bp": 14.8471
+            }
+          },
+          "cost_bp": 4.1971,
+          "currency_breadth": 5,
+          "dispersion_bp": 44.6251,
+          "dropped": {
+            "_unit": "count",
+            "groups": 142,
+            "no_following_trading_day": 0,
+            "thin_cross_section": 0,
+            "zero_net_direction": 22
+          },
+          "effective_n": 90.0,
+          "events_per_year": 60.12,
+          "gross_bp": 2.3412,
+          "gross_confidence_interval_bp": [
+            -6.8784,
+            11.5609
+          ],
+          "gross_exposure": 1.3263,
+          "high_impact_diagnostic": {
+            "gross_bp": 1.9967,
+            "n": 57,
+            "net_bp": -2.6842
+          },
+          "mde_bp": 13.1803,
+          "n_currencies": 7,
+          "n_events": 120,
+          "n_high_impact": 57,
+          "net_bp": -1.8559,
+          "net_confidence_interval_bp": [
+            -11.0755,
+            7.3638
+          ],
+          "net_total_bp": -222.7044,
+          "p_value_on_gross": 0.5717,
+          "per_pair_roundtrip_bp": 3.1645,
+          "sign": 1,
+          "tail_share": 0.3135
+        },
+        "inflation": {
+          "by_currency": {
+            "AUD": {
+              "gross_bp": 11.8531,
+              "n": 22,
+              "net_bp": 8.476
+            },
+            "CAD": {
+              "gross_bp": -3.3462,
+              "n": 21,
+              "net_bp": -5.9702
+            },
+            "CHF": {
+              "gross_bp": -3.6942,
+              "n": 15,
+              "net_bp": -7.4821
+            },
+            "EUR": {
+              "gross_bp": -0.0826,
+              "n": 64,
+              "net_bp": -3.6806
+            },
+            "GBP": {
+              "gross_bp": -1.3576,
+              "n": 21,
+              "net_bp": -4.1877
+            },
+            "JPY": {
+              "gross_bp": -13.8335,
+              "n": 48,
+              "net_bp": -17.013
+            },
+            "NZD": {
+              "gross_bp": 6.1582,
+              "n": 4,
+              "net_bp": 2.3107
+            }
+          },
+          "cost_bp": 3.3022,
+          "currency_breadth": 5,
+          "dispersion_bp": 37.0327,
+          "dropped": {
+            "_unit": "count",
+            "groups": 201,
+            "no_following_trading_day": 0,
+            "thin_cross_section": 0,
+            "zero_net_direction": 6
+          },
+          "effective_n": 150.15,
+          "events_per_year": 97.7,
+          "gross_bp": -2.7594,
+          "gross_confidence_interval_bp": [
+            -8.6829,
+            3.1641
+          ],
+          "gross_exposure": 1.3356,
+          "high_impact_diagnostic": {
+            "gross_bp": 1.1542,
+            "n": 103,
+            "net_bp": -2.0288
+          },
+          "mde_bp": 8.4682,
+          "n_currencies": 7,
+          "n_events": 195,
+          "n_high_impact": 103,
+          "net_bp": -6.0616,
+          "net_confidence_interval_bp": [
+            -11.9851,
+            -0.1381
+          ],
+          "net_total_bp": -1182.0144,
+          "p_value_on_gross": 0.2984,
+          "per_pair_roundtrip_bp": 2.4724,
+          "sign": -1,
+          "tail_share": 0.1672
+        },
+        "policy_rate": {
+          "by_currency": {
+            "AUD": {
+              "gross_bp": -15.809,
+              "n": 3,
+              "net_bp": -19.117
+            },
+            "CAD": {
+              "gross_bp": -54.2586,
+              "n": 1,
+              "net_bp": -56.8241
+            },
+            "CHF": {
+              "gross_bp": -9.4279,
+              "n": 4,
+              "net_bp": -14.8023
+            },
+            "EUR": {
+              "gross_bp": 40.8046,
+              "n": 1,
+              "net_bp": 33.8351
+            },
+            "GBP": {
+              "gross_bp": 34.1733,
+              "n": 2,
+              "net_bp": 27.8884
+            },
+            "NZD": {
+              "gross_bp": -8.6513,
+              "n": 1,
+              "net_bp": -12.5472
+            }
+          },
+          "cost_bp": 4.7852,
+          "currency_breadth": 4,
+          "dispersion_bp": 45.8089,
+          "dropped": {
+            "_unit": "count",
+            "groups": 12,
+            "no_following_trading_day": 0,
+            "thin_cross_section": 0,
+            "zero_net_direction": 0
+          },
+          "effective_n": 7.86,
+          "events_per_year": 6.01,
+          "gross_bp": -3.2414,
+          "gross_confidence_interval_bp": [
+            -35.2668,
+            28.7839
+          ],
+          "gross_exposure": 1.3059,
+          "high_impact_diagnostic": {
+            "gross_bp": -3.2414,
+            "n": 12,
+            "net_bp": -8.0266
+          },
+          "mde_bp": 45.7832,
+          "n_currencies": 6,
+          "n_events": 12,
+          "n_high_impact": 12,
+          "net_bp": -8.0266,
+          "net_confidence_interval_bp": [
+            -40.052,
+            23.9987
+          ],
+          "net_total_bp": -96.3196,
+          "p_value_on_gross": 0.8041,
+          "per_pair_roundtrip_bp": 3.6643,
+          "sign": -1,
+          "tail_share": 0.9693
+        }
+      },
+      "n_admissible_events": 550,
+      "n_partial_days": 106,
+      "years": 1.996
+    }
+  },
+  "partial_days_excluded_per_panel": {
+    "_unit": "count",
+    "momentum_2021_2023": 103,
+    "supplemental_2023_2025": 106
+  },
+  "rows_dropped_on_the_way_in": {
+    "_unit": "count",
+    "admissible": 1147,
+    "matching_a_family": 1895,
+    "missing_actual_or_forecast": 97,
+    "non_usd_rows": 12605,
+    "zero_surprise": 651
+  },
+  "stage0_verdict": {
+    "checks": {
+      "all_currency_codes_recognised": true,
+      "date_agreement_at_least_95_percent": true,
+      "forecast_not_falsified": true
+    },
+    "min_date_agreement_required": 0.95,
+    "no_repair_clause": "the pre-registration allows exactly one declared correction, a single constant offset estimated on USD rows. Nothing here is hand-repaired, back-filled or corrected per currency to reach the threshold.",
+    "pass": true,
+    "status": null
+  },
+  "unit_audit": {
+    "convention": "every return, cost, hurdle, MDE and interval is basis points of the mid price at the moment of the trade, converted per observation",
+    "numeric_fields_not_in_bp": [],
+    "status": "UNIT_CONSISTENCY_VERIFIED",
+    "unit": "bp_of_mid"
+  },
+  "verdict": {
+    "every_family_is_decidable": false,
+    "families": {
+      "employment": {
+        "checks": {
+          "currency_breadth": true,
+          "family_wise_evidence": false,
+          "gate_v2_economic": false,
+          "gate_v2_robustness": true,
+          "gate_v2_statistical": false,
+          "panels_agree_on_sign": false,
+          "sign_is_the_hypothesised_one": false,
+          "tail_not_dominant": true
+        },
+        "decision_grade": false,
+        "net_bp_per_panel": [
+          -9.8193,
+          -1.8559
+        ],
+        "p_value_on_gross_per_panel": [
+          0.1659,
+          0.5717
+        ],
+        "supported": false
+      },
+      "inflation": {
+        "checks": {
+          "currency_breadth": true,
+          "family_wise_evidence": false,
+          "gate_v2_economic": false,
+          "gate_v2_robustness": true,
+          "gate_v2_statistical": false,
+          "panels_agree_on_sign": true,
+          "sign_is_the_hypothesised_one": false,
+          "tail_not_dominant": true
+        },
+        "decision_grade": false,
+        "net_bp_per_panel": [
+          -7.5764,
+          -6.0616
+        ],
+        "p_value_on_gross_per_panel": [
+          0.2389,
+          0.2984
+        ],
+        "supported": false
+      },
+      "policy_rate": {
+        "checks": {
+          "currency_breadth": true,
+          "family_wise_evidence": false,
+          "gate_v2_economic": false,
+          "gate_v2_robustness": false,
+          "gate_v2_statistical": false,
+          "panels_agree_on_sign": true,
+          "sign_is_the_hypothesised_one": false,
+          "tail_not_dominant": false
+        },
+        "decision_grade": false,
+        "net_bp_per_panel": [
+          -14.0565,
+          -8.0266
+        ],
+        "p_value_on_gross_per_panel": [
+          0.6632,
+          0.8041
+        ],
+        "supported": false
+      }
+    },
+    "status": "NON_USD_SURPRISE_DATA_NOT_DECISION_GRADE_SKIP"
+  }
+}

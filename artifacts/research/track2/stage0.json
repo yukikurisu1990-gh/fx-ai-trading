@@ -1,0 +1,388 @@
+{
+  "classification": [
+    "NON_DECISION_BEARING_EXPLORATORY_ONLY",
+    "RESEARCH_SCRATCH_NON_AUTHORITATIVE"
+  ],
+  "currency_mapping": {
+    "all_codes_recognised": true,
+    "codes_seen": [
+      "AUD",
+      "All",
+      "CAD",
+      "CHF",
+      "CNY",
+      "EUR",
+      "GBP",
+      "JPY",
+      "NZD",
+      "USD"
+    ],
+    "n_non_usd_rows": 12605,
+    "rows_per_currency": {
+      "AUD": 1369,
+      "CAD": 1365,
+      "CHF": 665,
+      "EUR": 4000,
+      "GBP": 2566,
+      "JPY": 1689,
+      "NZD": 951,
+      "USD": 5087,
+      "_unit": "count"
+    },
+    "unrecognised_codes": []
+  },
+  "date_fidelity": {
+    "banks_without_an_acquirable_calendar": {
+      "CAD": "Bank of Canada: /press/press-releases/{year}/ renders client-side and carries no dates in the served HTML; the key-interest-rate page lists recent decisions only; sitemap_index.xml 404",
+      "CHF": "Swiss National Bank: every monetary-policy-assessment and press-release path tried returns 404; no machine-readable index found",
+      "GBP": "Bank of England: /monetary-policy/upcoming-mpc-dates serves 2026-2027 only; /monetary-policy-summary-and-minutes/{year} 404; sitemap.xml 500; the publications RSS carries the latest 50 items",
+      "NZD": "Reserve Bank of New Zealand: HTTP 403 to every client tried, including a complete browser header set, and to the sitemap and RSS paths"
+    },
+    "calendar_provenance": {
+      "AUD": {
+        "pages": [
+          {
+            "acquired_utc": "2026-09-11T13:19:39+00:00",
+            "attempts": 1,
+            "bytes": 39412,
+            "content_type": "text/html; charset=UTF-8",
+            "extracted": 11,
+            "last_modified": null,
+            "sha256": "d577b88d6e431d79c739b9aef5121415e5678fc2ffa1739761f5138735476caa",
+            "status": 200,
+            "url": "https://www.rba.gov.au/media-releases/2021/",
+            "year": 2021
+          },
+          {
+            "acquired_utc": "2026-09-11T13:19:39+00:00",
+            "attempts": 1,
+            "bytes": 45767,
+            "content_type": "text/html; charset=UTF-8",
+            "extracted": 11,
+            "last_modified": null,
+            "sha256": "62881df015b27a54ad42eca3941073b9aced5b3c869e52865ca9dfe13d38b817",
+            "status": 200,
+            "url": "https://www.rba.gov.au/media-releases/2022/",
+            "year": 2022
+          },
+          {
+            "acquired_utc": "2026-09-11T13:19:39+00:00",
+            "attempts": 1,
+            "bytes": 42359,
+            "content_type": "text/html; charset=UTF-8",
+            "extracted": 11,
+            "last_modified": null,
+            "sha256": "0dd2c0829950e9b681affb310271aecebe07ab7c74751c3f2751536c86827716",
+            "status": 200,
+            "url": "https://www.rba.gov.au/media-releases/2023/",
+            "year": 2023
+          },
+          {
+            "acquired_utc": "2026-09-11T13:19:39+00:00",
+            "attempts": 1,
+            "bytes": 37919,
+            "content_type": "text/html; charset=UTF-8",
+            "extracted": 8,
+            "last_modified": null,
+            "sha256": "5a0a4db7d2bf41840bc4295fc37c05c7c932ed6df1a56f8c2676d422287b67ca",
+            "status": 200,
+            "url": "https://www.rba.gov.au/media-releases/2024/",
+            "year": 2024
+          },
+          {
+            "acquired_utc": "2026-09-11T13:19:40+00:00",
+            "attempts": 1,
+            "bytes": 40257,
+            "content_type": "text/html; charset=UTF-8",
+            "extracted": 8,
+            "last_modified": null,
+            "sha256": "2beb9788eca9492a4bc821c8128216515625778f452b17729ca56aba3fa44d78",
+            "status": 200,
+            "url": "https://www.rba.gov.au/media-releases/2025/",
+            "year": 2025
+          }
+        ],
+        "rule": "media releases whose headline contains \"Monetary Policy Decision\""
+      },
+      "EUR": {
+        "pages": [
+          {
+            "acquired_utc": "2026-09-11T13:19:34+00:00",
+            "attempts": 1,
+            "bytes": 44181,
+            "content_type": "text/html; charset=UTF-8",
+            "extracted": 8,
+            "last_modified": null,
+            "sha256": "706094d6b17ca77fce295eb04f1137d73130e689ba61a25ff285bfb6aa1c6fd2",
+            "status": 200,
+            "url": "https://www.ecb.europa.eu/press/press_conference/monetary-policy-statement/2021/html/index_include.en.html",
+            "year": 2021
+          },
+          {
+            "acquired_utc": "2026-09-11T13:19:35+00:00",
+            "attempts": 1,
+            "bytes": 52544,
+            "content_type": "text/html; charset=UTF-8",
+            "extracted": 8,
+            "last_modified": null,
+            "sha256": "bdee38497fc38d7a6df0ee567d3c5707266378d1bb0c03700d248cae657dca1e",
+            "status": 200,
+            "url": "https://www.ecb.europa.eu/press/press_conference/monetary-policy-statement/2022/html/index_include.en.html",
+            "year": 2022
+          },
+          {
+            "acquired_utc": "2026-09-11T13:19:36+00:00",
+            "attempts": 1,
+            "bytes": 64726,
+            "content_type": "text/html; charset=UTF-8",
+            "extracted": 8,
+            "last_modified": null,
+            "sha256": "edb017c1cff7aaf77b59bf5e65a4dcfbead23e94161af702c33a3870644cf8ee",
+            "status": 200,
+            "url": "https://www.ecb.europa.eu/press/press_conference/monetary-policy-statement/2023/html/index_include.en.html",
+            "year": 2023
+          },
+          {
+            "acquired_utc": "2026-09-11T13:19:37+00:00",
+            "attempts": 1,
+            "bytes": 81361,
+            "content_type": "text/html; charset=UTF-8",
+            "extracted": 8,
+            "last_modified": null,
+            "sha256": "180391034e263317585b191bdf8bf8e7b0cc91f557f66e271d896e64971c49a8",
+            "status": 200,
+            "url": "https://www.ecb.europa.eu/press/press_conference/monetary-policy-statement/2024/html/index_include.en.html",
+            "year": 2024
+          },
+          {
+            "acquired_utc": "2026-09-11T13:19:38+00:00",
+            "attempts": 1,
+            "bytes": 62909,
+            "content_type": "text/html; charset=UTF-8",
+            "extracted": 8,
+            "last_modified": null,
+            "sha256": "97f8ae1aea0389d0ae717a5cf3e9805949ff2c5e688975e26498e308cd3ff23b",
+            "status": 200,
+            "url": "https://www.ecb.europa.eu/press/press_conference/monetary-policy-statement/2025/html/index_include.en.html",
+            "year": 2025
+          }
+        ],
+        "rule": "statement identifier ecb.isYYMMDD on the monetary-policy-statement index. The ecb.mp identifier is not used: it appears on only three of the five years and would have given 0, 0, 3, 7, 3 meetings"
+      },
+      "JPY": {
+        "acquired_utc": "2026-09-11T13:19:38+00:00",
+        "attempts": 1,
+        "bytes": 113716,
+        "content_type": "text/html;charset=UTF-8",
+        "extracted": 168,
+        "last_modified": null,
+        "rule": "statement filename kYYMMDD.pdf on the MPM schedule-and-minutes page",
+        "sha256": "495f791ad6cfec64bb1ed606fcb161794c5ab597133bc82a3407962df88b77a8",
+        "status": 200,
+        "url": "https://www.boj.or.jp/en/mopo/mpmsche_minu/past.htm"
+      }
+    },
+    "n_archive_rows_total": 103,
+    "n_matched_total": 103,
+    "n_official_total": 103,
+    "n_rows_on_an_official_date_total": 103,
+    "offset_hours_applied": 5,
+    "per_currency": {
+      "AUD": {
+        "as_is": {
+          "agreement": 0.85,
+          "days_from_official": {
+            "-1": 6,
+            "0": 34,
+            "_unit": "count"
+          },
+          "n_archive_dates": 40,
+          "n_archive_rows": 40,
+          "n_matched": 34,
+          "n_official": 40,
+          "n_rows_on_an_official_date": 34,
+          "precision": 0.85,
+          "recall": 0.85
+        },
+        "corrected": {
+          "agreement": 1.0,
+          "days_from_official": {
+            "0": 40,
+            "_unit": "count"
+          },
+          "n_archive_dates": 40,
+          "n_archive_rows": 40,
+          "n_matched": 40,
+          "n_official": 40,
+          "n_rows_on_an_official_date": 40,
+          "precision": 1.0,
+          "recall": 1.0
+        },
+        "event": "Cash Rate"
+      },
+      "EUR": {
+        "as_is": {
+          "agreement": 0.8387,
+          "days_from_official": {
+            "-1": 5,
+            "0": 26,
+            "_unit": "count"
+          },
+          "n_archive_dates": 31,
+          "n_archive_rows": 31,
+          "n_matched": 26,
+          "n_official": 31,
+          "n_rows_on_an_official_date": 26,
+          "precision": 0.8387,
+          "recall": 0.8387
+        },
+        "corrected": {
+          "agreement": 1.0,
+          "days_from_official": {
+            "0": 31,
+            "_unit": "count"
+          },
+          "n_archive_dates": 31,
+          "n_archive_rows": 31,
+          "n_matched": 31,
+          "n_official": 31,
+          "n_rows_on_an_official_date": 31,
+          "precision": 1.0,
+          "recall": 1.0
+        },
+        "event": "Main Refinancing Rate"
+      },
+      "JPY": {
+        "as_is": {
+          "agreement": 0.1562,
+          "days_from_official": {
+            "-1": 27,
+            "0": 5,
+            "_unit": "count"
+          },
+          "n_archive_dates": 32,
+          "n_archive_rows": 32,
+          "n_matched": 5,
+          "n_official": 32,
+          "n_rows_on_an_official_date": 5,
+          "precision": 0.1562,
+          "recall": 0.1562
+        },
+        "corrected": {
+          "agreement": 1.0,
+          "days_from_official": {
+            "0": 32,
+            "_unit": "count"
+          },
+          "n_archive_dates": 32,
+          "n_archive_rows": 32,
+          "n_matched": 32,
+          "n_official": 32,
+          "n_rows_on_an_official_date": 32,
+          "precision": 1.0,
+          "recall": 1.0
+        },
+        "event": "BOJ Policy Rate"
+      }
+    },
+    "pooled_agreement": 1.0,
+    "pooled_precision": 1.0,
+    "pooled_recall": 1.0
+  },
+  "forecast_audit": {
+    "beats_the_naive_benchmark": true,
+    "exact_match_below_ceiling": true,
+    "exact_match_share": 0.1428,
+    "exact_match_share_on_the_traded_families": 0.3621,
+    "median_forecast_error_over_naive_error": 0.7277,
+    "n_non_usd_rows": 12605,
+    "n_series_compared": 208,
+    "n_usable": 8047,
+    "n_usable_on_the_traded_families": 1798,
+    "share_of_series_beating_the_naive_benchmark": 0.8365,
+    "traded_families_below_ceiling": false
+  },
+  "n_rows_in_panel_spans": 18882,
+  "offset_estimation": {
+    "agreement_by_offset_hours": {
+      "0": 0.0,
+      "1": 0.0,
+      "10": 0.94,
+      "11": 0.94,
+      "12": 0.94,
+      "13": 0.94,
+      "14": 0.94,
+      "15": 0.94,
+      "16": 0.94,
+      "17": 0.94,
+      "18": 0.94,
+      "19": 0.94,
+      "2": 0.0,
+      "20": 0.94,
+      "21": 0.94,
+      "22": 0.94,
+      "23": 0.94,
+      "24": 0.94,
+      "3": 0.0,
+      "4": 0.48,
+      "5": 0.94,
+      "6": 0.94,
+      "7": 0.94,
+      "8": 0.94,
+      "9": 0.94,
+      "_unit": "count"
+    },
+    "alfred_provenance": {
+      "acquired_utc": "2026-09-11T13:19:33+00:00",
+      "attempts": 1,
+      "bytes": 84794,
+      "content_type": "text/html; charset=UTF-8",
+      "last_modified": null,
+      "series": "CPIAUCSL",
+      "sha256": "f24a8f3c9f6806bc7cd664ec5f636e815b58fdeb28483dd2c33b644ad6befb41",
+      "status": 200,
+      "url": "https://alfred.stlouisfed.org/series/downloaddata?seid=CPIAUCSL",
+      "vintages": 670
+    },
+    "best_agreement": 0.94,
+    "best_offset_hours": 5,
+    "n_official_vintages": 51,
+    "runner_up_agreement": 0.94,
+    "separated_from_runner_up": false,
+    "training_currency": "USD",
+    "training_event": "CPI m/m",
+    "training_series": "CPIAUCSL"
+  },
+  "provenance": {
+    "bytes": 68231084,
+    "n_rows": 83427,
+    "n_rows_matches_expected": true,
+    "sha256_matches_expected": true,
+    "sha256_prefix": "f4e92bca4168cfe6",
+    "source": "cache"
+  },
+  "revision_consistency": {
+    "limitation": "no vintage archive exists for these agencies, so a first-release check of the kind ALFRED supports for US series cannot be performed here",
+    "n_comparable_pairs": 9408,
+    "n_previous_equals_prior_actual": 4906,
+    "share": 0.5215
+  },
+  "signal_free": true,
+  "unit_audit": {
+    "convention": "every return, cost, hurdle, MDE and interval is basis points of the mid price at the moment of the trade, converted per observation",
+    "numeric_fields_not_in_bp": [],
+    "status": "UNIT_CONSISTENCY_VERIFIED",
+    "unit": "bp_of_mid"
+  },
+  "verdict": {
+    "checks": {
+      "all_currency_codes_recognised": true,
+      "date_agreement_at_least_95_percent": true,
+      "forecast_not_falsified": true
+    },
+    "min_date_agreement_required": 0.95,
+    "no_repair_clause": "the pre-registration allows exactly one declared correction, a single constant offset estimated on USD rows. Nothing here is hand-repaired, back-filled or corrected per currency to reach the threshold.",
+    "pass": true,
+    "status": null
+  }
+}

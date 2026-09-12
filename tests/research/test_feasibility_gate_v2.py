@@ -202,6 +202,81 @@ class TestTheV1Inversion:
         assert pytest.approx(2.802, abs=5e-4) == POWER_MULTIPLIER
 
 
+class TestTheCompositeRequiresYears:
+    """A property of the frozen formulas, derived after the first application.
+
+    `statistical` needs `2.802·σ/√effN ≤ MRE`; the plausibility clause needs
+    `MRE·√f/σ ≤ 1.5`. Together they need `effN ≥ (2.802/1.5)²·f = 3.489·f`, and
+    since `f = N/years` and `effN ≤ N`, at least three and a half years of
+    dependence-adjusted observation. Nothing about MRE, dispersion, cost or the
+    signal enters it.
+
+    The programme's deciding panels are 1.996 years, so no design measured on
+    them can pass the composite. That is a fact about the panels, and a result
+    reported as "this design is not economically feasible" has to say so.
+    """
+
+    REQUIRED_RATIO = (POWER_MULTIPLIER / MAX_PLAUSIBLE_GROSS_IR) ** 2
+
+    def test_the_ratio_is_what_the_algebra_says(self) -> None:
+        assert pytest.approx(3.489, abs=5e-3) == self.REQUIRED_RATIO
+
+    def test_below_the_ratio_the_two_gates_cannot_both_pass(self) -> None:
+        """Swept over dispersion, which is the only free axis left."""
+        per_year = 60.0
+        subject_n = 200
+        for ratio in (1.0, 2.0, 3.0, 3.4):
+            effective = ratio * per_year
+            passes = 0
+            for dispersion in [1.0 * step for step in range(1, 400)]:
+                subject = Design(
+                    label="probe",
+                    n_events=subject_n,
+                    effective_n=min(effective, subject_n),
+                    dispersion_bp=dispersion,
+                    events_per_year=per_year,
+                )
+                if (
+                    statistical_gate(subject)["pass"]
+                    and economic_gate(subject, Costs(roundtrip_bp=0.0))["pass"]
+                ):
+                    passes += 1
+            assert passes == 0, (ratio, passes)
+
+    def test_above_the_ratio_they_can(self) -> None:
+        per_year = 60.0
+        effective = 5.0 * per_year
+        found = [
+            dispersion
+            for dispersion in [1.0 * step for step in range(1, 400)]
+            if statistical_gate(
+                Design(
+                    label="probe",
+                    n_events=int(effective) + 50,
+                    effective_n=effective,
+                    dispersion_bp=dispersion,
+                    events_per_year=per_year,
+                )
+            )["pass"]
+            and economic_gate(
+                Design(
+                    label="probe",
+                    n_events=int(effective) + 50,
+                    effective_n=effective,
+                    dispersion_bp=dispersion,
+                    events_per_year=per_year,
+                ),
+                Costs(roundtrip_bp=0.0),
+            )["pass"]
+        ]
+        assert found, "the composite must be satisfiable somewhere, or it is not a gate"
+
+    def test_the_documented_illustrations_are_all_below_it(self) -> None:
+        """So §12's three rows fail the composite for this reason as well."""
+        for n, effective, per_year in ((519, 415.0, 252.0), (200, 160.0, 100.0), (25, 25.0, 12.5)):
+            assert effective / per_year < self.REQUIRED_RATIO, (n, effective, per_year)
+
+
 class TestProspectiveOnly:
     def test_every_excluded_family_is_refused(self) -> None:
         for family in sorted(EXCLUDED_FROM_GATE_V2):
