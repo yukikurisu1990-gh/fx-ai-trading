@@ -1,0 +1,799 @@
+{
+  "additional_history_would_open_a_pass_region": true,
+  "by_verdict": {
+    "DATA_INTEGRITY_BLOCKED": [
+      "C02_macro_surprise_intraday",
+      "C20_broker_order_flow"
+    ],
+    "NO_DECISION_GRADE_PASS_REGION": [
+      "C01_central_bank_decision_response",
+      "C03_session_handover_relative",
+      "C06_factor_neutral_residual_value",
+      "C07_cross_sectional_dispersion_state",
+      "C09_yield_differential_change",
+      "C10_equity_risk_regime_conditioning",
+      "C11_commodity_link_response",
+      "C12_volatility_regime_transition",
+      "C14_latent_regime_state",
+      "C15_movement_magnitude_forecast",
+      "C16_horizon_selection",
+      "C17_intraday_execution_timing",
+      "C18_ml_currency_ranking",
+      "C19_ml_take_skip_gate"
+    ],
+    "PRIOR_FAMILY_CLOSED": [
+      "C04_benchmark_fix_flow",
+      "C05_month_end_rebalancing_flow",
+      "C08_currency_rank_persistence",
+      "C13_timeframe_disagreement_state",
+      "C21_futures_positioning",
+      "C22_carry_level"
+    ]
+  },
+  "candidates": [
+    {
+      "admissible_events_per_year": [
+        30.06,
+        64.43
+      ],
+      "binding_constraint": "horizon",
+      "candidate_id": "C01_central_bank_decision_response",
+      "conditions": {
+        "breadth": true,
+        "dispersion_window_is_non_empty": false,
+        "economic_net_under_stress": true,
+        "event_floor": false,
+        "horizon": false,
+        "two_panels": true
+      },
+      "dispersion_window_bp": [
+        48.9898,
+        33.145
+      ],
+      "effective_n": 38.3,
+      "effective_n_basis": "measured effective independent directions in PAIRS_20",
+      "effective_years": 1.597,
+      "margins": {
+        "economic_net_under_stress": 1.0961,
+        "event_floor": -0.2016,
+        "horizon": -0.5423
+      },
+      "minimum_relevant_effect_bp": 15.0,
+      "n_events_per_panel": 47.9,
+      "power_multiplier": 2.8016,
+      "required_effective_years": 3.488,
+      "variance_source": "not_estimated",
+      "verdict": "NO_DECISION_GRADE_PASS_REGION",
+      "years_short": 1.892
+    },
+    {
+      "candidate_id": "C02_macro_surprise_intraday",
+      "reason": "the only free archive's time of day is unusable \u2014 Stage 0 identified the correction only to within a nineteen-hour band, and no free official release-time calendar exists for the non-USD agencies",
+      "verdict": "DATA_INTEGRITY_BLOCKED"
+    },
+    {
+      "admissible_events_per_year": [
+        30.06,
+        64.43
+      ],
+      "binding_constraint": "economic_net_under_stress",
+      "candidate_id": "C03_session_handover_relative",
+      "conditions": {
+        "breadth": true,
+        "dispersion_window_is_non_empty": false,
+        "economic_net_under_stress": false,
+        "event_floor": true,
+        "horizon": false,
+        "two_panels": true
+      },
+      "dispersion_window_bp": [
+        53.0997,
+        35.9257
+      ],
+      "effective_n": 1207.2,
+      "effective_n_basis": "measured effective independent directions in PAIRS_20",
+      "effective_years": 1.597,
+      "margins": {
+        "economic_net_under_stress": -0.5952,
+        "event_floor": 24.1496,
+        "horizon": -0.5423
+      },
+      "minimum_relevant_effect_bp": 2.8968,
+      "n_events_per_panel": 1509.0,
+      "power_multiplier": 2.8016,
+      "required_effective_years": 3.488,
+      "variance_source": "not_estimated",
+      "verdict": "NO_DECISION_GRADE_PASS_REGION",
+      "years_short": 1.892
+    },
+    {
+      "candidate_id": "C04_benchmark_fix_flow",
+      "reason": "a prior research verdict closed this hypothesis class",
+      "verdict": "PRIOR_FAMILY_CLOSED"
+    },
+    {
+      "candidate_id": "C05_month_end_rebalancing_flow",
+      "reason": "a prior research verdict closed this hypothesis class",
+      "verdict": "PRIOR_FAMILY_CLOSED"
+    },
+    {
+      "admissible_events_per_year": [
+        30.06,
+        64.43
+      ],
+      "binding_constraint": "horizon",
+      "candidate_id": "C06_factor_neutral_residual_value",
+      "conditions": {
+        "breadth": true,
+        "dispersion_window_is_non_empty": false,
+        "economic_net_under_stress": false,
+        "event_floor": true,
+        "horizon": false,
+        "two_panels": true
+      },
+      "dispersion_window_bp": [
+        74.7619,
+        30.9748
+      ],
+      "effective_n": 1056.3,
+      "effective_n_basis": "measured effective independent directions in PAIRS_20",
+      "effective_years": 0.599,
+      "margins": {
+        "economic_net_under_stress": -0.6269,
+        "event_floor": 57.6824,
+        "horizon": -0.8283
+      },
+      "minimum_relevant_effect_bp": 2.6701,
+      "n_events_per_panel": 3520.9,
+      "power_multiplier": 2.8016,
+      "required_effective_years": 3.488,
+      "variance_source": "unconditional_return_variance",
+      "verdict": "NO_DECISION_GRADE_PASS_REGION",
+      "years_short": 2.89
+    },
+    {
+      "admissible_events_per_year": [
+        30.06,
+        64.43
+      ],
+      "binding_constraint": "horizon",
+      "candidate_id": "C07_cross_sectional_dispersion_state",
+      "conditions": {
+        "breadth": true,
+        "dispersion_window_is_non_empty": false,
+        "economic_net_under_stress": false,
+        "event_floor": true,
+        "horizon": false,
+        "two_panels": true
+      },
+      "dispersion_window_bp": [
+        74.7619,
+        28.1472
+      ],
+      "effective_n": 1056.3,
+      "effective_n_basis": "measured effective independent directions in PAIRS_20",
+      "effective_years": 0.599,
+      "margins": {
+        "economic_net_under_stress": -0.6269,
+        "event_floor": 57.6824,
+        "horizon": -0.8583
+      },
+      "minimum_relevant_effect_bp": 2.6701,
+      "n_events_per_panel": 3520.9,
+      "power_multiplier": 3.083,
+      "required_effective_years": 4.224,
+      "variance_source": "unconditional_return_variance",
+      "verdict": "NO_DECISION_GRADE_PASS_REGION",
+      "years_short": 3.626
+    },
+    {
+      "candidate_id": "C08_currency_rank_persistence",
+      "reason": "a prior research verdict closed this hypothesis class",
+      "verdict": "PRIOR_FAMILY_CLOSED"
+    },
+    {
+      "admissible_events_per_year": [
+        30.06,
+        64.43
+      ],
+      "binding_constraint": "horizon",
+      "candidate_id": "C09_yield_differential_change",
+      "conditions": {
+        "breadth": true,
+        "dispersion_window_is_non_empty": false,
+        "economic_net_under_stress": false,
+        "event_floor": true,
+        "horizon": false,
+        "two_panels": true
+      },
+      "dispersion_window_bp": [
+        74.7619,
+        30.9748
+      ],
+      "effective_n": 1056.3,
+      "effective_n_basis": "measured effective independent directions in PAIRS_20",
+      "effective_years": 0.599,
+      "margins": {
+        "economic_net_under_stress": -0.6269,
+        "event_floor": 57.6824,
+        "horizon": -0.8283
+      },
+      "minimum_relevant_effect_bp": 2.6701,
+      "n_events_per_panel": 3520.9,
+      "power_multiplier": 2.8016,
+      "required_effective_years": 3.488,
+      "variance_source": "unconditional_return_variance",
+      "verdict": "NO_DECISION_GRADE_PASS_REGION",
+      "years_short": 2.89
+    },
+    {
+      "admissible_events_per_year": [
+        30.06,
+        64.43
+      ],
+      "binding_constraint": "horizon",
+      "candidate_id": "C10_equity_risk_regime_conditioning",
+      "conditions": {
+        "breadth": true,
+        "dispersion_window_is_non_empty": false,
+        "economic_net_under_stress": false,
+        "event_floor": true,
+        "horizon": false,
+        "two_panels": true
+      },
+      "dispersion_window_bp": [
+        74.7619,
+        28.1472
+      ],
+      "effective_n": 1056.3,
+      "effective_n_basis": "measured effective independent directions in PAIRS_20",
+      "effective_years": 0.599,
+      "margins": {
+        "economic_net_under_stress": -0.6269,
+        "event_floor": 57.6824,
+        "horizon": -0.8583
+      },
+      "minimum_relevant_effect_bp": 2.6701,
+      "n_events_per_panel": 3520.9,
+      "power_multiplier": 3.083,
+      "required_effective_years": 4.224,
+      "variance_source": "not_estimated",
+      "verdict": "NO_DECISION_GRADE_PASS_REGION",
+      "years_short": 3.626
+    },
+    {
+      "admissible_events_per_year": [
+        30.06,
+        64.43
+      ],
+      "binding_constraint": "horizon",
+      "candidate_id": "C11_commodity_link_response",
+      "conditions": {
+        "breadth": true,
+        "dispersion_window_is_non_empty": false,
+        "economic_net_under_stress": false,
+        "event_floor": true,
+        "horizon": false,
+        "two_panels": true
+      },
+      "dispersion_window_bp": [
+        53.0997,
+        21.9999
+      ],
+      "effective_n": 452.7,
+      "effective_n_basis": "measured effective independent directions in PAIRS_20",
+      "effective_years": 0.599,
+      "margins": {
+        "economic_net_under_stress": -0.5952,
+        "event_floor": 24.1496,
+        "horizon": -0.8283
+      },
+      "minimum_relevant_effect_bp": 2.8968,
+      "n_events_per_panel": 1509.0,
+      "power_multiplier": 2.8016,
+      "required_effective_years": 3.488,
+      "variance_source": "not_estimated",
+      "verdict": "NO_DECISION_GRADE_PASS_REGION",
+      "years_short": 2.89
+    },
+    {
+      "admissible_events_per_year": [
+        30.06,
+        64.43
+      ],
+      "binding_constraint": "horizon",
+      "candidate_id": "C12_volatility_regime_transition",
+      "conditions": {
+        "breadth": true,
+        "dispersion_window_is_non_empty": false,
+        "economic_net_under_stress": false,
+        "event_floor": true,
+        "horizon": false,
+        "two_panels": true
+      },
+      "dispersion_window_bp": [
+        74.7619,
+        28.1472
+      ],
+      "effective_n": 1056.3,
+      "effective_n_basis": "measured effective independent directions in PAIRS_20",
+      "effective_years": 0.599,
+      "margins": {
+        "economic_net_under_stress": -0.6269,
+        "event_floor": 57.6824,
+        "horizon": -0.8583
+      },
+      "minimum_relevant_effect_bp": 2.6701,
+      "n_events_per_panel": 3520.9,
+      "power_multiplier": 3.083,
+      "required_effective_years": 4.224,
+      "variance_source": "not_estimated",
+      "verdict": "NO_DECISION_GRADE_PASS_REGION",
+      "years_short": 3.626
+    },
+    {
+      "candidate_id": "C13_timeframe_disagreement_state",
+      "reason": "a prior research verdict closed this hypothesis class",
+      "verdict": "PRIOR_FAMILY_CLOSED"
+    },
+    {
+      "admissible_events_per_year": [
+        30.06,
+        64.43
+      ],
+      "binding_constraint": "horizon",
+      "candidate_id": "C14_latent_regime_state",
+      "conditions": {
+        "breadth": true,
+        "dispersion_window_is_non_empty": false,
+        "economic_net_under_stress": false,
+        "event_floor": true,
+        "horizon": false,
+        "two_panels": true
+      },
+      "dispersion_window_bp": [
+        74.7619,
+        26.8199
+      ],
+      "effective_n": 1056.3,
+      "effective_n_basis": "measured effective independent directions in PAIRS_20",
+      "effective_years": 0.599,
+      "margins": {
+        "economic_net_under_stress": -0.6269,
+        "event_floor": 57.6824,
+        "horizon": -0.8713
+      },
+      "minimum_relevant_effect_bp": 2.6701,
+      "n_events_per_panel": 3520.9,
+      "power_multiplier": 3.2356,
+      "required_effective_years": 4.653,
+      "variance_source": "not_estimated",
+      "verdict": "NO_DECISION_GRADE_PASS_REGION",
+      "years_short": 4.054
+    },
+    {
+      "admissible_events_per_year": [
+        30.06,
+        64.43
+      ],
+      "binding_constraint": "horizon",
+      "candidate_id": "C15_movement_magnitude_forecast",
+      "conditions": {
+        "breadth": true,
+        "dispersion_window_is_non_empty": false,
+        "economic_net_under_stress": false,
+        "event_floor": true,
+        "horizon": false,
+        "two_panels": true
+      },
+      "dispersion_window_bp": [
+        74.7619,
+        30.9748
+      ],
+      "effective_n": 1056.3,
+      "effective_n_basis": "measured effective independent directions in PAIRS_20",
+      "effective_years": 0.599,
+      "margins": {
+        "economic_net_under_stress": -0.6269,
+        "event_floor": 57.6824,
+        "horizon": -0.8283
+      },
+      "minimum_relevant_effect_bp": 2.6701,
+      "n_events_per_panel": 3520.9,
+      "power_multiplier": 2.8016,
+      "required_effective_years": 3.488,
+      "variance_source": "unconditional_return_variance",
+      "verdict": "NO_DECISION_GRADE_PASS_REGION",
+      "years_short": 2.89
+    },
+    {
+      "admissible_events_per_year": [
+        30.06,
+        64.43
+      ],
+      "binding_constraint": "horizon",
+      "candidate_id": "C16_horizon_selection",
+      "conditions": {
+        "breadth": true,
+        "dispersion_window_is_non_empty": false,
+        "economic_net_under_stress": false,
+        "event_floor": true,
+        "horizon": false,
+        "two_panels": true
+      },
+      "dispersion_window_bp": [
+        74.7619,
+        26.8199
+      ],
+      "effective_n": 1056.3,
+      "effective_n_basis": "measured effective independent directions in PAIRS_20",
+      "effective_years": 0.599,
+      "margins": {
+        "economic_net_under_stress": -0.6269,
+        "event_floor": 57.6824,
+        "horizon": -0.8713
+      },
+      "minimum_relevant_effect_bp": 2.6701,
+      "n_events_per_panel": 3520.9,
+      "power_multiplier": 3.2356,
+      "required_effective_years": 4.653,
+      "variance_source": "not_estimated",
+      "verdict": "NO_DECISION_GRADE_PASS_REGION",
+      "years_short": 4.054
+    },
+    {
+      "admissible_events_per_year": [
+        30.06,
+        94.94
+      ],
+      "binding_constraint": "horizon",
+      "candidate_id": "C17_intraday_execution_timing",
+      "conditions": {
+        "breadth": true,
+        "dispersion_window_is_non_empty": false,
+        "economic_net_under_stress": false,
+        "event_floor": true,
+        "horizon": false,
+        "two_panels": true
+      },
+      "dispersion_window_bp": [
+        121.1388,
+        50.1893
+      ],
+      "effective_n": 3018.0,
+      "effective_n_basis": "measured effective independent directions in PAIRS_20",
+      "effective_years": 0.599,
+      "margins": {
+        "economic_net_under_stress": -0.5478,
+        "event_floor": 166.664,
+        "horizon": -0.8283
+      },
+      "minimum_relevant_effect_bp": 2.5595,
+      "n_events_per_panel": 10059.8,
+      "power_multiplier": 2.8016,
+      "required_effective_years": 3.488,
+      "variance_source": "previously_frozen_design_statistic",
+      "verdict": "NO_DECISION_GRADE_PASS_REGION",
+      "years_short": 2.89
+    },
+    {
+      "admissible_events_per_year": [
+        30.06,
+        64.43
+      ],
+      "binding_constraint": "horizon",
+      "candidate_id": "C18_ml_currency_ranking",
+      "conditions": {
+        "breadth": true,
+        "dispersion_window_is_non_empty": false,
+        "economic_net_under_stress": false,
+        "event_floor": true,
+        "horizon": false,
+        "two_panels": true
+      },
+      "dispersion_window_bp": [
+        74.7619,
+        26.8199
+      ],
+      "effective_n": 1056.3,
+      "effective_n_basis": "measured effective independent directions in PAIRS_20",
+      "effective_years": 0.599,
+      "margins": {
+        "economic_net_under_stress": -0.6269,
+        "event_floor": 57.6824,
+        "horizon": -0.8713
+      },
+      "minimum_relevant_effect_bp": 2.6701,
+      "n_events_per_panel": 3520.9,
+      "power_multiplier": 3.2356,
+      "required_effective_years": 4.653,
+      "variance_source": "not_estimated",
+      "verdict": "NO_DECISION_GRADE_PASS_REGION",
+      "years_short": 4.054
+    },
+    {
+      "admissible_events_per_year": [
+        30.06,
+        64.43
+      ],
+      "binding_constraint": "horizon",
+      "candidate_id": "C19_ml_take_skip_gate",
+      "conditions": {
+        "breadth": true,
+        "dispersion_window_is_non_empty": false,
+        "economic_net_under_stress": false,
+        "event_floor": true,
+        "horizon": false,
+        "two_panels": true
+      },
+      "dispersion_window_bp": [
+        74.7619,
+        28.1472
+      ],
+      "effective_n": 1056.3,
+      "effective_n_basis": "measured effective independent directions in PAIRS_20",
+      "effective_years": 0.599,
+      "margins": {
+        "economic_net_under_stress": -0.6269,
+        "event_floor": 57.6824,
+        "horizon": -0.8583
+      },
+      "minimum_relevant_effect_bp": 2.6701,
+      "n_events_per_panel": 3520.9,
+      "power_multiplier": 3.083,
+      "required_effective_years": 4.224,
+      "variance_source": "not_estimated",
+      "verdict": "NO_DECISION_GRADE_PASS_REGION",
+      "years_short": 3.626
+    },
+    {
+      "candidate_id": "C20_broker_order_flow",
+      "reason": "needs an authenticated broker endpoint, which is not approved",
+      "verdict": "DATA_INTEGRITY_BLOCKED"
+    },
+    {
+      "candidate_id": "C21_futures_positioning",
+      "reason": "a prior research verdict closed this hypothesis class",
+      "verdict": "PRIOR_FAMILY_CLOSED"
+    },
+    {
+      "candidate_id": "C22_carry_level",
+      "reason": "a prior research verdict closed this hypothesis class",
+      "verdict": "PRIOR_FAMILY_CLOSED"
+    }
+  ],
+  "classification": [
+    "NON_DECISION_BEARING_EXPLORATORY_ONLY",
+    "RESEARCH_SCRATCH_NON_AUTHORITATIVE"
+  ],
+  "cost_basis": {
+    "basket_roundtrip_bp": 3.328,
+    "pair_roundtrip_bp": 2.58,
+    "source": "Track 3's measured market-order round trip, scaled by gross exposure"
+  },
+  "horizon_counterfactuals": {
+    "all_seen_history_split_in_two": {
+      "description": "both panels plus the development corpus, split into two",
+      "horizon_condition_can_be_met": false,
+      "panel_years": 2.337,
+      "total_years": 4.674
+    },
+    "current": {
+      "description": "the two deciding panels as they stand",
+      "horizon_condition_can_be_met": false,
+      "panel_years": 1.996,
+      "total_years": 3.992
+    },
+    "required_effective_years_at_one_primary_cell": 3.488,
+    "seen_years_needed_for_two_panels": 6.977,
+    "seen_years_short": 2.303,
+    "with_the_fresh_pool_split_in_two": {
+      "description": "counterfactual only \u2014 the fresh pool is NOT read",
+      "horizon_condition_can_be_met": true,
+      "panel_years": 4.786,
+      "total_years": 9.572
+    }
+  },
+  "horizon_is_assumption_free": {
+    "any_assumption_reaches_the_requirement": false,
+    "effective_years_by_assumption": {
+      "_unit": "count",
+      "share_0.1_f_12": 0.1996,
+      "share_0.1_f_1764": 0.1996,
+      "share_0.1_f_252": 0.1996,
+      "share_0.1_f_60": 0.1996,
+      "share_0.3_f_12": 0.5988,
+      "share_0.3_f_1764": 0.5988,
+      "share_0.3_f_252": 0.5988,
+      "share_0.3_f_60": 0.5988,
+      "share_0.5_f_12": 0.998,
+      "share_0.5_f_1764": 0.998,
+      "share_0.5_f_252": 0.998,
+      "share_0.5_f_60": 0.998,
+      "share_0.8_f_12": 1.5968,
+      "share_0.8_f_1764": 1.5968,
+      "share_0.8_f_252": 1.5968,
+      "share_0.8_f_60": 1.5968,
+      "share_1.0_f_12": 1.996,
+      "share_1.0_f_1764": 1.996,
+      "share_1.0_f_252": 1.996,
+      "share_1.0_f_60": 1.996
+    },
+    "identity": "effective_years = panel_years x effective_n_share, so it is bounded by the panel",
+    "max_effective_years_over_every_assumption": 1.996,
+    "required_effective_years": 3.488
+  },
+  "n_candidates": 22,
+  "protected_spans": {
+    "dead_window": {
+      "end": "-",
+      "start": "(after the OOS slice)",
+      "status": "never read"
+    },
+    "forward_epoch": {
+      "end": "-",
+      "start": "(future)",
+      "status": "never read"
+    },
+    "fresh_pool": {
+      "end": "2021-04-25",
+      "start": "2016-06-02",
+      "status": "never read"
+    },
+    "historical_oos_slice": {
+      "end": "(tail 20% of the committed design dates)",
+      "start": "2025-12-29",
+      "status": "one decoded row per pair; no value reached an output"
+    }
+  },
+  "seen_spans": {
+    "development_2025": {
+      "end": "2025-12-28",
+      "read_by": "Track A R1, the authorised first real-data read",
+      "role": "seen, **not** in either deciding panel",
+      "start": "2025-04-25"
+    },
+    "momentum_2021_2023": {
+      "end": "2023-04-25",
+      "read_by": "exploratory momentum round",
+      "role": "deciding panel",
+      "start": "2021-04-26"
+    },
+    "supplemental_2023_2025": {
+      "end": "2025-04-24",
+      "read_by": "supplemental historical replication",
+      "role": "deciding panel",
+      "start": "2023-04-26"
+    }
+  },
+  "signal_free": true,
+  "status": "CURRENT_SEEN_DATA_FX_RESEARCH_SPACE_EXHAUSTED",
+  "years_to_decision": [
+    {
+      "additional_effective_years": 1.892,
+      "candidate_id": "C01_central_bank_decision_response",
+      "current_effective_years": 1.597,
+      "events_needed_per_panel": 104.7,
+      "panel_years_needed_per_panel": 4.36,
+      "required_effective_years": 3.488,
+      "total_seen_years_needed": 8.721
+    },
+    {
+      "additional_effective_years": 1.892,
+      "candidate_id": "C03_session_handover_relative",
+      "current_effective_years": 1.597,
+      "events_needed_per_panel": 3296.5,
+      "panel_years_needed_per_panel": 4.36,
+      "required_effective_years": 3.488,
+      "total_seen_years_needed": 8.721
+    },
+    {
+      "additional_effective_years": 2.89,
+      "candidate_id": "C06_factor_neutral_residual_value",
+      "current_effective_years": 0.599,
+      "events_needed_per_panel": 20511.7,
+      "panel_years_needed_per_panel": 11.628,
+      "required_effective_years": 3.488,
+      "total_seen_years_needed": 23.256
+    },
+    {
+      "additional_effective_years": 3.626,
+      "candidate_id": "C07_cross_sectional_dispersion_state",
+      "current_effective_years": 0.599,
+      "events_needed_per_panel": 24839.8,
+      "panel_years_needed_per_panel": 14.082,
+      "required_effective_years": 4.224,
+      "total_seen_years_needed": 28.163
+    },
+    {
+      "additional_effective_years": 2.89,
+      "candidate_id": "C09_yield_differential_change",
+      "current_effective_years": 0.599,
+      "events_needed_per_panel": 20511.7,
+      "panel_years_needed_per_panel": 11.628,
+      "required_effective_years": 3.488,
+      "total_seen_years_needed": 23.256
+    },
+    {
+      "additional_effective_years": 3.626,
+      "candidate_id": "C10_equity_risk_regime_conditioning",
+      "current_effective_years": 0.599,
+      "events_needed_per_panel": 24839.8,
+      "panel_years_needed_per_panel": 14.082,
+      "required_effective_years": 4.224,
+      "total_seen_years_needed": 28.163
+    },
+    {
+      "additional_effective_years": 2.89,
+      "candidate_id": "C11_commodity_link_response",
+      "current_effective_years": 0.599,
+      "events_needed_per_panel": 8790.7,
+      "panel_years_needed_per_panel": 11.628,
+      "required_effective_years": 3.488,
+      "total_seen_years_needed": 23.256
+    },
+    {
+      "additional_effective_years": 3.626,
+      "candidate_id": "C12_volatility_regime_transition",
+      "current_effective_years": 0.599,
+      "events_needed_per_panel": 24839.8,
+      "panel_years_needed_per_panel": 14.082,
+      "required_effective_years": 4.224,
+      "total_seen_years_needed": 28.163
+    },
+    {
+      "additional_effective_years": 4.054,
+      "candidate_id": "C14_latent_regime_state",
+      "current_effective_years": 0.599,
+      "events_needed_per_panel": 27359.3,
+      "panel_years_needed_per_panel": 15.51,
+      "required_effective_years": 4.653,
+      "total_seen_years_needed": 31.02
+    },
+    {
+      "additional_effective_years": 2.89,
+      "candidate_id": "C15_movement_magnitude_forecast",
+      "current_effective_years": 0.599,
+      "events_needed_per_panel": 20511.7,
+      "panel_years_needed_per_panel": 11.628,
+      "required_effective_years": 3.488,
+      "total_seen_years_needed": 23.256
+    },
+    {
+      "additional_effective_years": 4.054,
+      "candidate_id": "C16_horizon_selection",
+      "current_effective_years": 0.599,
+      "events_needed_per_panel": 27359.3,
+      "panel_years_needed_per_panel": 15.51,
+      "required_effective_years": 4.653,
+      "total_seen_years_needed": 31.02
+    },
+    {
+      "additional_effective_years": 2.89,
+      "candidate_id": "C17_intraday_execution_timing",
+      "current_effective_years": 0.599,
+      "events_needed_per_panel": 58605.0,
+      "panel_years_needed_per_panel": 11.628,
+      "required_effective_years": 3.488,
+      "total_seen_years_needed": 23.256
+    },
+    {
+      "additional_effective_years": 4.054,
+      "candidate_id": "C18_ml_currency_ranking",
+      "current_effective_years": 0.599,
+      "events_needed_per_panel": 27359.3,
+      "panel_years_needed_per_panel": 15.51,
+      "required_effective_years": 4.653,
+      "total_seen_years_needed": 31.02
+    },
+    {
+      "additional_effective_years": 3.626,
+      "candidate_id": "C19_ml_take_skip_gate",
+      "current_effective_years": 0.599,
+      "events_needed_per_panel": 24839.8,
+      "panel_years_needed_per_panel": 14.082,
+      "required_effective_years": 4.224,
+      "total_seen_years_needed": 28.163
+    }
+  ]
+}
