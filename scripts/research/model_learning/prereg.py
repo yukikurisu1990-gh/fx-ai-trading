@@ -370,8 +370,13 @@ def feature_module_digest() -> str:
     risk factor" is — as post-freeze discretion. Hashing the module closes that:
     a changed definition changes the specification.
     """
-    source = (Path(__file__).parent / "features.py").read_bytes()
-    return hashlib.sha256(source).hexdigest()
+    #: ⭐ Line endings are normalised before hashing. Without that the digest is a
+    #: property of the checkout rather than of the content: this repository's files
+    #: carry CRLF on Windows and LF on the Linux runner, and the first version of
+    #: this function froze on one machine and refused on the other.
+    source = (Path(__file__).parent / "features.py").read_text(encoding="utf-8")
+    normalised = "".join(line + chr(10) for line in source.splitlines())
+    return hashlib.sha256(normalised.encode("utf-8")).hexdigest()
 
 
 def specification() -> dict[str, Any]:
@@ -429,7 +434,7 @@ FROZEN_HASH_AT_EXECUTION: Final[str] = (
 
 #: Recorded after the specification above was written. A development run checks it
 #: and refuses to proceed on a mismatch.
-FROZEN_HASH: Final[str] = "aed67a74b8cccd33a0cb697272a419e7773ce78635be32d0e281b0b7a08c3ece"
+FROZEN_HASH: Final[str] = "049b084ac6185fb5fa29f9dbd095500408004100524e59e2dd4aa2462ee21dde"
 
 
 def assert_frozen() -> str:

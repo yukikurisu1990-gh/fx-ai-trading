@@ -1348,7 +1348,7 @@
       "minimum_annual_net_bp": 300.0,
       "plausibility_ceiling": 1.5
     },
-    "feature_module_sha256": "6f3952a8338bff0d42740d67d829ee5bc6f6849bc97a7b4e847629478f10a5a6",
+    "feature_module_sha256": "5a10cddacac2a313ee444ed1873ee26dcf4a4816c9505485f2c58683f8cc7685",
     "forbidden_rescues": [
       "adding a feature after seeing a fold",
       "changing the horizon after seeing a fold",
@@ -1537,7 +1537,7 @@
       }
     ]
   },
-  "preregistration_frozen_hash": "aed67a74b8cccd33a0cb697272a419e7773ce78635be32d0e281b0b7a08c3ece",
+  "preregistration_frozen_hash": "049b084ac6185fb5fa29f9dbd095500408004100524e59e2dd4aa2462ee21dde",
   "prior_screening_configurations_approx": 1200,
   "protected_data_read": false,
   "protected_spans": {

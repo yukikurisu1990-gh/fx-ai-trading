@@ -4,7 +4,7 @@
 · `PRODUCTION_READINESS_NOT_CLAIMED`
 
 Frozen hash（実行時）: **`6d0809fdb3e3e47ce20babb3d2ed2171f32479956a219db1dba5e157c7680475`**
-Frozen hash（レビュー後に coverage を拡張した現行値）: **`aed67a74b8cccd33a0cb697272a419e7773ce78635be32d0e281b0b7a08c3ece`**
+Frozen hash（レビュー後に coverage を拡張した現行値）: **``**
 
 > ⭐ **実行された run が承認されていたハッシュは前者であり、動かさない。**
 > レビューが「ハッシュが覆う範囲は主張より遥かに狭い」ことを 9 定数の改変で
