@@ -31,9 +31,11 @@ what it would take to change it.
 
 from __future__ import annotations
 
+import dataclasses
 import datetime as dt
 from typing import Any, Final
 
+from scripts.research.feasibility import RetroactiveApplicationError
 from scripts.research.feasibility.preflight import (
     MIN_DECIDING_PANELS,
     ResearchPlan,
@@ -86,20 +88,32 @@ PROTECTED_SPANS: Final[dict[str, dict[str, Any]]] = {
 #: The deciding panels, as they stand.
 PANEL_YEARS: Final[float] = 1.996
 
-#: Round trips this programme has **measured**, used as frozen design statistics
-#: rather than re-estimated. Track 3's market-order figure on all bars, and the
-#: same figure scaled by the gross exposure a currency-against-a-basket position
-#: turns over when it is implemented in twenty pairs.
+#: The **midpoint of** Track 3's two measured all-bars market-order round trips,
+#: 2.6902 and 2.4660 bp. It is a midpoint and is labelled as one: a review found
+#: an earlier comment calling it "the measured figure", and the sibling constant
+#: `REFERENCE_ROUNDTRIP_COST_BP` is the same midpoint rounded differently.
 PAIR_ROUNDTRIP_BP: Final[float] = 2.58
-BASKET_EXPOSURE: Final[float] = 1.29
+
+#: Gross pair notional turned over by **one currency held against the other
+#: seven**, measured across the six Track 2 cells: 1.2884 to 1.3356, mean 1.3193.
+#:
+#: An earlier value of 1.29 was the *minimum* of that range, and its minimum cell
+#: is the eleven-event one the same document calls unusable. The unit audit's
+#: better-known **1.549** describes a different position — a random ±1 neutralised
+#: book across eight currencies — and is not this one.
+BASKET_EXPOSURE: Final[float] = 1.32
 BASKET_ROUNDTRIP_BP: Final[float] = round(PAIR_ROUNDTRIP_BP * BASKET_EXPOSURE, 3)
 
-#: `effN / N`. The corpus has measured 4.6 to 6.5 effectively independent
-#: directions in twenty pairs, so a cross-sectional design gets far less than its
-#: nominal count; a single time series with a one-day horizon keeps most of it.
+#: `effN / N`, and both values are **assumptions**, not measurements.
+#:
+#: The corpus has measured 4.38 to 6.45 effectively independent *pairs* in twenty,
+#: which is a different denominator from the seven-currency cross-section these
+#: designs trade. A review was right that the number is therefore a judgement; it
+#: is set conservatively and, crucially, **no verdict in this inventory depends on
+#: it** — `effective_years = panel_years × share ≤ panel_years` fails the horizon
+#: condition at `share = 1.0`, which `horizon_is_assumption_free` computes.
 SHARE_CROSS_SECTIONAL: Final[float] = 0.30
 SHARE_CURRENCY_LEVEL: Final[float] = 0.80
-SHARE_SINGLE_SERIES: Final[float] = 0.90
 
 _CLOSED = Verdict.PRIOR_FAMILY_CLOSED.value
 
@@ -119,7 +133,7 @@ def _plan(**kwargs: Any) -> ResearchPlan:
 
 
 def catalogue() -> list[ResearchPlan]:
-    """Twenty research directions, none of them a timeframe variant of another."""
+    """Twenty-two research directions, none a timeframe variant of another."""
     return [
         _plan(
             candidate_id="C01_central_bank_decision_response",
@@ -128,10 +142,17 @@ def catalogue() -> list[ResearchPlan]:
             target="currency against the other seven",
             horizon="1d",
             unit_of_observation="currency-decision",
-            events_per_year=24.0,
+            #: 169 decisions across the four acquirable banks over 2021-01-21 to
+            #: 2025-12-19 in `s1_calendar.json` — 34.4 a year. An earlier 24.0 was
+            #: a guess, and it made this candidate appear to fail the event floor
+            #: when it does not.
+            events_per_year=34.4,
             effective_n_share=SHARE_CURRENCY_LEVEL,
             roundtrip_cost_bp=BASKET_ROUNDTRIP_BP,
             primary_cells=1,
+            #: Only four central banks publish a machine-readable calendar; the
+            #: other four refuse every automated route.
+            available_breadth=4,
         ),
         _plan(
             candidate_id="C02_macro_surprise_intraday",
@@ -158,8 +179,11 @@ def catalogue() -> list[ResearchPlan]:
             target="currency against the other seven",
             horizon="8h",
             unit_of_observation="currency-session",
-            events_per_year=756.0,
-            effective_n_share=SHARE_CURRENCY_LEVEL,
+            #: Three sessions a day across seven currencies, counted in the same
+            #: unit as the observation. An earlier 756 counted session-days only,
+            #: which is a different unit from the one the row declares.
+            events_per_year=252.0 * 3 * 7,
+            effective_n_share=SHARE_CROSS_SECTIONAL,
             roundtrip_cost_bp=BASKET_ROUNDTRIP_BP,
             primary_cells=1,
         ),
@@ -174,7 +198,13 @@ def catalogue() -> list[ResearchPlan]:
             effective_n_share=SHARE_CURRENCY_LEVEL,
             roundtrip_cost_bp=BASKET_ROUNDTRIP_BP,
             primary_cells=1,
-            prior_verdict=_CLOSED,
+            #: **Not closed.** Track 1's status is
+            #: `CLOCK_STRUCTURE_NOT_DECISION_GRADE_AT_CURRENT_EXECUTION_FRONTIER`,
+            #: which is underpowered rather than falsified, and recording an
+            #: underpowered family as refuted is the failure this programme keeps
+            #: correcting. It is suspended by decision and may not be proposed,
+            #: which is a different statement and is carried separately.
+            suspended_by_decision=True,
         ),
         _plan(
             candidate_id="C05_month_end_rebalancing_flow",
@@ -187,7 +217,7 @@ def catalogue() -> list[ResearchPlan]:
             effective_n_share=SHARE_CURRENCY_LEVEL,
             roundtrip_cost_bp=BASKET_ROUNDTRIP_BP,
             primary_cells=1,
-            prior_verdict=_CLOSED,
+            suspended_by_decision=True,
         ),
         _plan(
             candidate_id="C06_factor_neutral_residual_value",
@@ -227,6 +257,11 @@ def catalogue() -> list[ResearchPlan]:
             roundtrip_cost_bp=BASKET_ROUNDTRIP_BP,
             primary_cells=1,
             prior_verdict=_CLOSED,
+            prior_verdict_citation=(
+                "the sequencing decision names 'H-003 same-shape relative strength' "
+                "among the strongly falsified families; H-003 is CLOSED in "
+                "artifacts/track_a_scratch/round_a/hypothesis_ledger.json"
+            ),
         ),
         _plan(
             candidate_id="C09_yield_differential_change",
@@ -290,7 +325,12 @@ def catalogue() -> list[ResearchPlan]:
             effective_n_share=SHARE_CROSS_SECTIONAL,
             roundtrip_cost_bp=BASKET_ROUNDTRIP_BP,
             primary_cells=1,
-            prior_verdict=_CLOSED,
+            #: **Not closed.** The only HTF verdict in the repository calls itself
+            #: "a diagnostic with no null and no error bars"
+            #: (m15_round_b_prime_results.md), which is weaker evidence than a
+            #: closure needs. What the decision closes is *simple HTF sign
+            #: conditioning*; a disagreement state has to be materially more than
+            #: that to count, and it is recorded as underpowered, not refuted.
         ),
         _plan(
             candidate_id="C14_latent_regime_state",
@@ -317,6 +357,9 @@ def catalogue() -> list[ResearchPlan]:
             roundtrip_cost_bp=BASKET_ROUNDTRIP_BP,
             primary_cells=1,
             variance_source=VarianceSource.UNCONDITIONAL_RETURN_VARIANCE,
+            #: A magnitude forecast, not a signed effect. Gate v2's minimum
+            #: relevant effect and plausibility ceiling are undefined for it.
+            gate_applies_to_the_target=False,
         ),
         _plan(
             candidate_id="C16_horizon_selection",
@@ -339,9 +382,12 @@ def catalogue() -> list[ResearchPlan]:
             unit_of_observation="pair-bar",
             events_per_year=252.0 * 20,
             effective_n_share=SHARE_CROSS_SECTIONAL,
-            roundtrip_cost_bp=PAIR_ROUNDTRIP_BP,
+            #: Measuring a spread surface places no trades, so a round trip is not
+            #: a cost this study pays. Carried at zero and out of the gate's scope.
+            roundtrip_cost_bp=0.0,
             primary_cells=1,
             variance_source=VarianceSource.PREVIOUSLY_FROZEN_DESIGN_STATISTIC,
+            gate_applies_to_the_target=False,
         ),
         _plan(
             candidate_id="C18_ml_currency_ranking",
@@ -395,6 +441,10 @@ def catalogue() -> list[ResearchPlan]:
             roundtrip_cost_bp=BASKET_ROUNDTRIP_BP,
             primary_cells=1,
             prior_verdict=_CLOSED,
+            prior_verdict_citation=(
+                "the sequencing decision names 'COT tested cells' among the closed families"
+            ),
+            gate_v2_family="cot_positioning",
         ),
         _plan(
             candidate_id="C22_carry_level",
@@ -408,6 +458,10 @@ def catalogue() -> list[ResearchPlan]:
             roundtrip_cost_bp=BASKET_ROUNDTRIP_BP,
             primary_cells=1,
             prior_verdict=_CLOSED,
+            prior_verdict_citation=(
+                "the sequencing decision names 'policy-rate proxy carry' among the closed families"
+            ),
+            gate_v2_family="carry",
         ),
     ]
 
@@ -450,8 +504,17 @@ def horizon_counterfactuals() -> dict[str, Any]:
             "panel_years": round(with_fresh / MIN_DECIDING_PANELS, 3),
             "horizon_condition_can_be_met": (with_fresh / MIN_DECIDING_PANELS) >= needed,
         },
-        "seen_years_needed_for_two_panels": round(needed * MIN_DECIDING_PANELS, 3),
-        "seen_years_short": round(max(0.0, needed * MIN_DECIDING_PANELS - seen_total), 3),
+        #: At `share = 1.0` — the most optimistic assumption available, and one no
+        #: catalogued candidate uses. A review found this figure quoted as *the*
+        #: gap; the per-candidate figures in `years_to_decision` are the real
+        #: ones, and they are two to five times larger.
+        "seen_years_needed_for_two_panels_at_perfect_independence": round(
+            needed * MIN_DECIDING_PANELS, 3
+        ),
+        "seen_years_short_at_perfect_independence": round(
+            max(0.0, needed * MIN_DECIDING_PANELS - seen_total), 3
+        ),
+        "seen_years_available": round(seen_total, 3),
     }
 
 
@@ -495,10 +558,93 @@ def horizon_is_assumption_free() -> dict[str, Any]:
     }
 
 
+FORBIDDEN_KEYS: Final[tuple[str, ...]] = (
+    "return",
+    "sign",
+    "sharpe",
+    "p_value",
+    "information_coefficient",
+    "pnl",
+    "alpha",
+    "gross_bp",
+    "net_bp",
+)
+
+
+def _no_realised_quantity_present(assessed: list[dict[str, Any]]) -> bool:
+    """No key anywhere in the assessed records could hold a realised quantity."""
+    seen: set[str] = set()
+
+    def walk(node: Any) -> None:
+        if isinstance(node, dict):
+            for key, value in node.items():
+                seen.add(str(key).lower())
+                walk(value)
+        elif isinstance(node, list):
+            for value in node:
+                walk(value)
+
+    walk(assessed)
+    return not [key for key in seen for bad in FORBIDDEN_KEYS if bad in key]
+
+
+def _assess(plan: ResearchPlan) -> dict[str, Any]:
+    """`assess`, with the retroactivity refusal **caught and recorded**.
+
+    `assert_prospective` raising is the enforcement, and it has to stay an
+    exception — a function that returned a verdict could be ignored. The inventory
+    still has to list the family, so it catches the refusal and records it with the
+    guard's own message as the evidence. A closure that reaches the artifact this
+    way was refused by code, not by a hand-typed field.
+    """
+    try:
+        return assess(plan)
+    except RetroactiveApplicationError as refusal:
+        return {
+            "candidate_id": plan.candidate_id,
+            "verdict": Verdict.PRIOR_FAMILY_CLOSED.value,
+            "reason": plan.prior_verdict_citation or str(refusal),
+            "refused_by": "assert_prospective",
+            "gate_v2_family": plan.gate_v2_family,
+        }
+
+
+def counterfactual_verdicts() -> dict[str, Any]:
+    """⭐ Re-run **every candidate** at each panel length, not just the flag.
+
+    A review found the share-free horizon flag saying a longer history "would open
+    a pass region" while no candidate actually reached one: the flag is computed at
+    `share = 1.0`, and every catalogued design uses 0.30 or 0.80. What a reader
+    needs is the count of candidates that would pass, so that is what is reported.
+    """
+    out: dict[str, Any] = {}
+    for name, block in horizon_counterfactuals().items():
+        if not isinstance(block, dict) or "panel_years" not in block:
+            continue
+        counts: dict[str, int] = {}
+        reaching: list[str] = []
+        for plan in catalogue():
+            record = _assess(dataclasses.replace(plan, panel_years=block["panel_years"]))
+            counts[record["verdict"]] = counts.get(record["verdict"], 0) + 1
+            if record["verdict"] in (
+                Verdict.PASS_REGION_EXISTS.value,
+                Verdict.MARGINAL_PASS_REGION.value,
+            ):
+                reaching.append(f"{plan.candidate_id}:{record['verdict']}")
+        out[name] = {
+            "panel_years": block["panel_years"],
+            "verdicts": {"_unit": "count", **counts},
+            "candidates_reaching_a_pass_region": sorted(reaching),
+            "n_pass_region_exists": counts.get(Verdict.PASS_REGION_EXISTS.value, 0),
+            "n_marginal": counts.get(Verdict.MARGINAL_PASS_REGION.value, 0),
+        }
+    return out
+
+
 def build() -> dict[str, Any]:
     """The whole inventory. Computes no return, reads no price."""
     plans = catalogue()
-    assessed = [assess(plan) for plan in plans]
+    assessed = [_assess(plan) for plan in plans]
     by_verdict: dict[str, list[str]] = {}
     for record in assessed:
         by_verdict.setdefault(record["verdict"], []).append(record["candidate_id"])
@@ -509,12 +655,15 @@ def build() -> dict[str, Any]:
         if record["verdict"] == Verdict.NO_DECISION_GRADE_PASS_REGION.value
     ]
     counterfactual = horizon_counterfactuals()
+    per_candidate = counterfactual_verdicts()
+    with_history = per_candidate["with_the_fresh_pool_split_in_two"]
     return {
         "classification": [
             "NON_DECISION_BEARING_EXPLORATORY_ONLY",
             "RESEARCH_SCRATCH_NON_AUTHORITATIVE",
         ],
-        "signal_free": True,
+        #: Computed, not declared. A flag that is always `True` certifies nothing.
+        "signal_free": _no_realised_quantity_present(assessed),
         "seen_spans": SEEN_SPANS,
         "protected_spans": PROTECTED_SPANS,
         "cost_basis": {
@@ -527,11 +676,21 @@ def build() -> dict[str, Any]:
         "by_verdict": {name: sorted(ids) for name, ids in sorted(by_verdict.items())},
         "years_to_decision": gaps,
         "horizon_counterfactuals": counterfactual,
+        "counterfactual_verdicts_per_candidate": per_candidate,
         "horizon_is_assumption_free": horizon_is_assumption_free(),
         "status": STATUS_REMAIN if green else STATUS_EXHAUSTED,
+        #: Measured per candidate rather than from the share-free flag. At the
+        #: counterfactual panel length **no** candidate reaches
+        #: `PASS_REGION_EXISTS`; the honest claim is therefore about marginal
+        #: candidates, and the specification says a marginal design is not a
+        #: primary research candidate.
         "additional_history_would_open_a_pass_region": bool(
+            not green and with_history["n_pass_region_exists"] > 0
+        ),
+        "additional_history_would_reach_only_marginal": bool(
             not green
-            and counterfactual["with_the_fresh_pool_split_in_two"]["horizon_condition_can_be_met"]
+            and with_history["n_pass_region_exists"] == 0
+            and with_history["n_marginal"] > 0
         ),
     }
 
@@ -548,5 +707,6 @@ __all__ = [
     "build",
     "catalogue",
     "horizon_counterfactuals",
+    "counterfactual_verdicts",
     "horizon_is_assumption_free",
 ]

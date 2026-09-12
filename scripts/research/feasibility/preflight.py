@@ -8,6 +8,33 @@ pre-registration's success arm required the economic gate, and that arm was
 unreachable the day it was frozen. This module asks that question first, from the
 plan alone.
 
+⭐ The unit convention, which is what makes the horizon a wall
+---------------------------------------------------------------
+
+A plan declares `events_per_year` and `panel_years`, and `n_events` follows from
+them. That is **not** Gate v2's convention — `Design` takes the two separately,
+deliberately — so it has to be justified rather than assumed, because the whole
+horizon result rests on it.
+
+The justification is that a design has **one** unit of observation, and every
+quantity must use it:
+
+* if the unit is a currency-day, then a seven-currency book takes seven positions
+  a day, pays seven positions' turnover, and `f` counts currency-days;
+* if the unit is the netted portfolio-day, then `N` counts days, the dispersion is
+  the book's rather than a single currency's, and `f` counts days.
+
+Either way `N = f × panel_years` **for that unit**, and `effN ≤ N`, so
+`effN/f ≤ panel_years`. A review offered a counterexample that passes Gate v2 on
+today's panels — and it counts `N` in currency-days while counting `f` in
+portfolio-days, claiming sevenfold precision while paying for one book's
+turnover. Re-specified consistently in *either* unit, it fails at every dispersion
+and at zero cost. `TestTheUnitConventionIsForced` holds exactly that.
+
+There is no third option in which the estimate is sharper than the trading: a book
+that averages seven currency positions has a dispersion smaller by the same
+factor its count is larger by, and the two cancel in the MDE.
+
 The closed form
 ---------------
 
@@ -61,8 +88,10 @@ from scripts.research.feasibility import (
     MIN_EVENTS_PER_PANEL,
     MIN_NET_MARGIN_BP,
     POWER,
+    assert_prospective,
 )
 from scripts.research.feasibility.gate_v2 import Design, minimum_relevant_effect_bp
+from scripts.research.fxunits import POWER_MULTIPLIER as GATE_V2_MULTIPLIER
 
 STATUS: Final[str] = "PASS_REGION_PREFLIGHT_SPECIFIED"
 
@@ -78,6 +107,10 @@ MIN_DECIDING_PANELS: Final[int] = 2
 
 class Verdict(StrEnum):
     PASS_REGION_EXISTS = "PASS_REGION_EXISTS"
+    #: A study whose target is not a signed per-event return. Not a refusal and
+    #: not an approval: this gate is about tradable edges and does not adjudicate
+    #: measurements that feed one.
+    OUT_OF_GATE_SCOPE = "OUT_OF_GATE_SCOPE"
     MARGINAL_PASS_REGION = "MARGINAL_PASS_REGION"
     NO_DECISION_GRADE_PASS_REGION = "NO_DECISION_GRADE_PASS_REGION"
     DATA_INTEGRITY_BLOCKED = "DATA_INTEGRITY_BLOCKED"
@@ -122,6 +155,20 @@ class ResearchPlan:
     variance_source: VarianceSource = VarianceSource.NOT_ESTIMATED
     dispersion_bp: float | None = None
     prior_verdict: str | None = None
+    #: Where the closing verdict is recorded, so a reader can check it from the
+    #: artifact rather than from a markdown table.
+    prior_verdict_citation: str | None = None
+    #: The family name Gate v2's retroactivity registry knows this plan by, when
+    #: there is one. Naming an excluded family here makes `assess` raise.
+    gate_v2_family: str | None = None
+    #: Not every research target is a signed per-event return. A cost measurement
+    #: or a magnitude forecast is a real study that this gate's MRE and IR ceiling
+    #: are simply not defined for, and saying so is better than returning a
+    #: verdict computed from the wrong thing.
+    gate_applies_to_the_target: bool = True
+    #: Suspended by a Human + ChatGPT decision. Not a falsification, and not a
+    #: verdict — a plan can be suspended and underpowered at once.
+    suspended_by_decision: bool = False
     ml_role: str = "none"
 
     def __post_init__(self) -> None:
@@ -149,17 +196,48 @@ class ResearchPlan:
 
 
 def power_multiplier(primary_cells: int) -> float:
-    """`z(1 - α/2k) + z(power)`: the multiple-testing burden, in the multiplier."""
+    """`z(1 - α/2k) + z(power)`: the multiple-testing burden, in the multiplier.
+
+    At `k = 1` this is Gate v2's own multiplier, and `test_the_multiplier_is_gate_v2s`
+    holds the two to each other — a review found the preflight recomputing from
+    `ALPHA`/`POWER` while Gate v2 used a rounded literal, so the two could have
+    drifted apart without anything noticing.
+    """
     return float(
         scipy_stats.norm.ppf(1.0 - ALPHA / (2.0 * primary_cells)) + scipy_stats.norm.ppf(POWER)
     )
 
 
-def required_effective_years(primary_cells: int) -> float:
-    """`(z(k) / IR_max)²` — the horizon any design of this shape needs.
+def required_effective_years_gate_v2() -> float:
+    """**Gate v2's own necessary condition**, with no correction added.
 
-    MRE, dispersion and cost all cancel out of this, which is why it is the first
-    thing to compute and the last thing a better signal could change.
+    `(z / IR_max)²` at one primary cell. Nothing here is stricter than the frozen
+    gate; this is the horizon below which the gate's two conditions cannot both
+    hold, derived from the gate and from nothing else.
+    """
+    return (GATE_V2_MULTIPLIER / MAX_PLAUSIBLE_GROSS_IR) ** 2
+
+
+def required_effective_years(primary_cells: int) -> float:
+    """The preflight's admissibility bar, which at `k > 1` is **stricter** than
+    Gate v2.
+
+    Gate v2 carries no multiple-testing correction. The sequencing decision lists
+    the multiple-testing burden as a preflight input, so it is applied here — but
+    it is an **additional** requirement the preflight imposes, not a necessary
+    condition of the gate, and a review was right that calling it the latter was
+    wrong. `required_effective_years_gate_v2()` is the gate's own figure.
+
+    Two caveats a reader should have, neither of them resolved here:
+
+    * the two-panel rule already demands the same effect on both panels, which is
+      a stronger control than `α` on its own, so a Bonferroni term on top of it
+      over-corrects;
+    * the power side is left per-panel at 80%, so the conjunction's power is
+      lower than 80% and this under-corrects.
+
+    The two run in opposite directions. They are disclosed rather than netted,
+    because netting them would be a threshold choice and thresholds are frozen.
     """
     return (power_multiplier(primary_cells) / MAX_PLAUSIBLE_GROSS_IR) ** 2
 
@@ -207,17 +285,42 @@ def admissible_frequency_bp(plan: ResearchPlan) -> tuple[float, float | None]:
 
 def assess(plan: ResearchPlan) -> dict[str, Any]:
     """Every condition, the margins, and the verdict. Reads no return."""
+    #: The machine-enforced ban, on this path as well. A review found it reachable
+    #: only through a hand-typed `prior_verdict` string, which is the "prose
+    #: promise" the frozen gate says it is not. A plan naming an excluded family
+    #: now raises from `assert_prospective` before anything is computed.
+    if plan.gate_v2_family:
+        assert_prospective(plan.gate_v2_family)
     if plan.prior_verdict == Verdict.PRIOR_FAMILY_CLOSED.value:
         return {
             "candidate_id": plan.candidate_id,
             "verdict": Verdict.PRIOR_FAMILY_CLOSED.value,
-            "reason": "a prior research verdict closed this hypothesis class",
+            "reason": plan.prior_verdict_citation
+            or "a prior research verdict closed this hypothesis class",
+            "prior_verdict_citation": plan.prior_verdict_citation,
         }
     if not plan.data_ready:
         return {
             "candidate_id": plan.candidate_id,
             "verdict": Verdict.DATA_INTEGRITY_BLOCKED.value,
             "reason": plan.data_note or "provenance, timestamp, coverage or access",
+        }
+
+    if not plan.gate_applies_to_the_target:
+        #: The MRE is a net-return threshold and the plausibility ceiling is a
+        #: directional information ratio. Neither is defined for a cost surface or
+        #: a magnitude forecast, so the honest output is the horizon arithmetic
+        #: and an explicit statement that the economic gate does not apply.
+        return {
+            "candidate_id": plan.candidate_id,
+            "verdict": Verdict.OUT_OF_GATE_SCOPE.value,
+            "reason": (
+                "the target is not a signed per-event return, so Gate v2's minimum "
+                "relevant effect and plausibility ceiling are not defined for it"
+            ),
+            "n_events_per_panel": round(plan.n_events, 1),
+            "effective_n": round(plan.effective_n, 1),
+            "gate_applies_to_the_target": False,
         }
 
     needed = required_effective_years(plan.primary_cells)
@@ -246,8 +349,16 @@ def assess(plan: ResearchPlan) -> dict[str, Any]:
         / (COST_STRESS_MULTIPLE * plan.roundtrip_cost_bp + MIN_NET_MARGIN_BP)
         - 1.0,
     }
-    binding = sorted(margins, key=lambda name: margins[name])[0]
+    #: The binding constraint is the first **failing** condition when there is
+    #: one, and only otherwise the thinnest margin. A review found a plan failing
+    #: `breadth` or `two_panels` reporting a binding constraint it passed.
+    failing = [name for name, ok in conditions.items() if not ok]
     tightest = min(margins.values())
+    binding = failing[0] if failing else sorted(margins, key=lambda name: margins[name])[0]
+    if failing and failing[0] in margins:
+        binding = sorted(
+            (name for name in failing if name in margins), key=lambda name: margins[name]
+        )[0]
 
     if not all(conditions.values()):
         verdict = Verdict.NO_DECISION_GRADE_PASS_REGION
@@ -313,5 +424,6 @@ __all__ = [
     "dispersion_window_bp",
     "power_multiplier",
     "required_effective_years",
+    "required_effective_years_gate_v2",
     "years_to_decision",
 ]

@@ -24,7 +24,12 @@ from scripts.research.feasibility import (
     MIN_EVENTS_PER_PANEL,
     MIN_NET_MARGIN_BP,
 )
+from scripts.research.feasibility.gate_v2 import Costs as GateCosts
+from scripts.research.feasibility.gate_v2 import Design
+from scripts.research.feasibility.gate_v2 import economic_gate as gate_economic
+from scripts.research.feasibility.gate_v2 import statistical_gate as gate_statistical
 from scripts.research.feasibility.preflight import (
+    GATE_V2_MULTIPLIER,
     MARGIN_FLOOR,
     MIN_DECIDING_PANELS,
     ResearchPlan,
@@ -35,6 +40,7 @@ from scripts.research.feasibility.preflight import (
     dispersion_window_bp,
     power_multiplier,
     required_effective_years,
+    required_effective_years_gate_v2,
     years_to_decision,
 )
 
@@ -187,6 +193,67 @@ class TestVerdicts:
     def test_insufficient_breadth_fails(self) -> None:
         record = assess(plan(panel_years=8.0, available_breadth=2, required_breadth=4))
         assert record["conditions"]["breadth"] is False
+
+
+class TestTheUnitConventionIsForced:
+    """⭐ The horizon wall is not an artefact of how a plan is described.
+
+    A review offered a design that passes Gate v2 on today's panels by counting
+    `n_events` in currency-days and `events_per_year` in portfolio-days — seven
+    times the precision for one book's turnover. Re-specified consistently in
+    *either* unit it fails, at every dispersion and at zero cost, which is what
+    these tests measure rather than assert.
+    """
+
+    @staticmethod
+    def passes(n: int, effective: float, dispersion: float, per_year: float) -> bool:
+        subject = Design(
+            label="probe",
+            n_events=n,
+            effective_n=min(effective, n),
+            dispersion_bp=dispersion,
+            events_per_year=per_year,
+        )
+        return bool(
+            gate_statistical(subject)["pass"]
+            and gate_economic(subject, GateCosts(roundtrip_bp=0.0))["pass"]
+        )
+
+    def test_the_mixed_unit_design_passes_gate_v2(self) -> None:
+        """Stated, because the correction is not that the reviewer miscomputed."""
+        assert self.passes(3521, 1057, 41.0, 252.0) is True
+
+    def test_counting_everything_in_currency_days_fails(self) -> None:
+        """Seven positions a day pay seven positions' turnover, so `f` is 1764."""
+        assert not any(self.passes(3521, 1057, step / 10.0, 252.0 * 7) for step in range(1, 4000))
+
+    def test_counting_everything_in_portfolio_days_fails(self) -> None:
+        """One netted book: `N` counts days, and the dispersion is the book's."""
+        assert not any(self.passes(503, 503, step / 10.0, 252.0) for step in range(1, 4000))
+
+    def test_a_plan_cannot_express_the_mixed_design(self) -> None:
+        """`ResearchPlan` derives `n_events` from the frequency, so the two agree."""
+        subject = plan(events_per_year=252.0, panel_years=1.996, effective_n_share=1.0)
+        assert subject.n_events == pytest.approx(252.0 * 1.996)
+        assert subject.effective_years == pytest.approx(1.996)
+
+
+class TestTheMultiplierIsGateV2s:
+    def test_at_one_primary_cell_it_is_the_gates_own(self) -> None:
+        """A review found the two computed separately and free to drift."""
+        assert power_multiplier(1) == pytest.approx(GATE_V2_MULTIPLIER, abs=1e-3)
+
+    def test_the_gate_v2_requirement_uses_the_gates_constant(self) -> None:
+        assert required_effective_years_gate_v2() == pytest.approx(
+            (GATE_V2_MULTIPLIER / MAX_PLAUSIBLE_GROSS_IR) ** 2
+        )
+
+    def test_the_multiplicity_bar_is_stricter_and_says_so(self) -> None:
+        """Gate v2 carries no multiple-testing term; the preflight adds one."""
+        assert required_effective_years(1) == pytest.approx(
+            required_effective_years_gate_v2(), abs=5e-3
+        )
+        assert required_effective_years(3) > required_effective_years_gate_v2()
 
 
 class TestTrack2Retrospective:
