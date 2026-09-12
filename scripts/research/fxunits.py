@@ -159,6 +159,13 @@ def verify_unit_consistency(record: dict[str, Any]) -> dict[str, Any]:
         "n_measurable",
         "n_cells",
         "n_feasible",
+        #: Feasibility Gate v2's unit-free quantities: a dependence-adjusted
+        #: sample size, a risk ratio, a count of panels and the event floor the
+        #: robustness gate reads.
+        "effective_n",
+        "implied_gross_annual_ir",
+        "min_events_required",
+        "n_panels",
         "sub_steps_per_bar",
         "seed",
         #: The one place a pips figure is legitimate: a fill rule is written in
