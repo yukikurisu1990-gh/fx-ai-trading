@@ -96,6 +96,7 @@ SEEN_SPANS: Final[dict[str, dict[str, Any]]] = {
             "H-019",
             "H-020",
             "H-021",
+            "H-022",
         ),
         "prior_strategy_exposure": (
             "the mirrored multi-day momentum candidate, ten pre-registered cells; "
@@ -131,6 +132,7 @@ SEEN_SPANS: Final[dict[str, dict[str, Any]]] = {
             "H-019",
             "H-020",
             "H-021",
+            "H-022",
         ),
         "prior_strategy_exposure": (
             "the frozen multi-day reversal candidate, eleven cells; the same Round A, "
@@ -171,6 +173,7 @@ SEEN_SPANS: Final[dict[str, dict[str, Any]]] = {
             "H-019",
             "H-020",
             "H-021",
+            "H-022",
         ),
         "prior_strategy_exposure": (
             "Exploratory Round 1's 26 strategies and 1,078 conditional fits, Round 2's "

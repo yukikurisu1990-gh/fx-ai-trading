@@ -1,0 +1,1326 @@
+{
+  "candidates": [
+    {
+      "candidate_id": "A01_continuous_currency_portfolio",
+      "capacity_class": "5_to_10pct_in_reach",
+      "capital_utilization": "~100% invested, gross ~ vol target / 3.78%",
+      "complexity_burden": 1,
+      "economics": {
+        "annual_cost_bp": 117.5,
+        "ir_drag": 0.311,
+        "net_10pct_at_10vol": {
+          "required_daily_ic": 0.0413,
+          "required_gross_ir": 1.311,
+          "required_net_sharpe": 1.0
+        },
+        "net_5pct_at_10vol": {
+          "required_daily_ic": 0.0255,
+          "required_gross_ir": 0.811,
+          "required_net_sharpe": 0.5
+        }
+      },
+      "edge_plausibility": 2,
+      "edge_source": "small persistent cross-sectional predictability, harvested wide",
+      "effective_breadth_per_day": 4.0,
+      "engineering_burden": 1,
+      "evidence_against": "no decision-grade evidence FOR it either: every prior test that could have seen a gross IR of 0.6-0.8 lacked the power to. The one development observation is contaminated, uncounted \u2014 and failed its own pre-registered rule: top-ten-day share 3.05, JPY +493 bp of a +92 bp book, 2 of 6 folds negative, net -0.08 at the 2x cost stress. The concentration shape is the H-016 short-yen recurrence, and it already trips the kill rule this track declares",
+      "expected_annual_turnover": 34.5,
+      "expected_information_gain": "whether the only unexcluded regime \u2014 small edge x full utilization x currency breadth x low realised turnover \u2014 exists at all",
+      "gate_family": null,
+      "horizon": "1-10 days of target persistence, daily updates",
+      "mechanism": "estimate a continuous expected relative return per G10 currency, map to factor-neutral target weights, rebalance only the daily difference",
+      "notes": [],
+      "overfit_risk": 2,
+      "position_update_frequency_per_year": 252.0,
+      "prediction_frequency_per_year": 252.0,
+      "prior_overlap": "the decision-grade inventory closed C08 \u2014 CURRENCY-level rank persistence \u2014 under the H-003 same-shape family, enforced by assert_prospective; a first draft called the closure pair-level only. What survives is multi-feature conditional estimation in which currency strength is one input the model may weight to zero, not the hypothesis that strength persists; any prereg for this track has to draw that line against C08 explicitly. The model-learning Track A ran one non-evidence development pass of a special case",
+      "robustness": 2,
+      "role": "core",
+      "score": 9,
+      "target": "8-currency expected-return vector",
+      "turnover_basis": "mechanics: 20d-half-life targets, daily update, no band"
+    },
+    {
+      "candidate_id": "A02_no_trade_band_rebalancing",
+      "capacity_class": "enabler_not_a_return_source",
+      "capital_utilization": "unchanged from the core",
+      "complexity_burden": 0,
+      "economics": {
+        "ir_drag": 0.13,
+        "note": "an enabler is judged by what it saves or protects, not by a return"
+      },
+      "edge_plausibility": 3,
+      "edge_source": "none \u2014 it deletes cost rather than adding return",
+      "effective_breadth_per_day": 4.0,
+      "engineering_burden": 0,
+      "evidence_against": "a band leaves a mean tracking gap of 0.29 gross, and the gap is not free: the measured alpha capture of the banded book is 0.958 against a 20d target \u2014 about 4.2% of gross IR forfeited. A first draft said the gap costs nothing and called that measured; the capture ratio is now actually computed, and it is what the required-IC figures charge",
+      "expected_annual_turnover": 14.4,
+      "expected_information_gain": "IR drag 0.331 -> 0.130 at band 0.10; net of the 4.2% capture cost the saving is ~0.16 of gross IR, with no forecast required",
+      "gate_family": null,
+      "horizon": "same as the core",
+      "mechanism": "hold the core's target but trade only when |target - held| exceeds a band; hysteresis converts prediction churn into zero trades",
+      "notes": [],
+      "overfit_risk": 0,
+      "position_update_frequency_per_year": 252.0,
+      "prediction_frequency_per_year": 252.0,
+      "prior_overlap": "NOT Track 3: that closed near-touch passive fills, which try to earn the spread. This avoids paying it by not trading, which Track 3's closure explicitly does not cover",
+      "robustness": 3,
+      "role": "efficiency",
+      "score": 18,
+      "target": "the core's own targets, executed lazily",
+      "turnover_basis": "mechanics: band 0.10 on 20d-half-life targets (34.5 -> 14.4)"
+    },
+    {
+      "candidate_id": "A03_multi_horizon_blend",
+      "capacity_class": "5_to_10pct_in_reach",
+      "capital_utilization": "~100% invested",
+      "complexity_burden": 2,
+      "economics": {
+        "annual_cost_bp": 94.3,
+        "ir_drag": 0.25,
+        "net_10pct_at_10vol": {
+          "required_daily_ic": 0.0321,
+          "required_gross_ir": 1.25,
+          "required_net_sharpe": 1.0
+        },
+        "net_5pct_at_10vol": {
+          "required_daily_ic": 0.0193,
+          "required_gross_ir": 0.75,
+          "required_net_sharpe": 0.5
+        }
+      },
+      "edge_plausibility": 2,
+      "edge_source": "partially independent predictability at separated horizons",
+      "effective_breadth_per_day": 6.0,
+      "engineering_burden": 2,
+      "evidence_against": "horizon components may be too correlated to add breadth; the 1.5x breadth factor is an assumption and is flagged as one",
+      "expected_annual_turnover": 27.7,
+      "expected_information_gain": "whether horizon is a real breadth dimension",
+      "gate_family": null,
+      "horizon": "three, blended",
+      "mechanism": "slow (D1+, half-life ~60d) plus medium (H4-D1) plus small fast components emit weight vectors; the position is their sum, so a fast disagreement trims the core instead of reversing it",
+      "notes": [],
+      "overfit_risk": 2,
+      "position_update_frequency_per_year": 252.0,
+      "prediction_frequency_per_year": 756.0,
+      "prior_overlap": "simple HTF sign conditioning is closed; this never gates on a sign \u2014 horizons contribute additively",
+      "robustness": 2,
+      "role": "core",
+      "score": 6,
+      "target": "per-horizon currency weight vectors, blended",
+      "turnover_basis": "mechanics: 60d core + 20% fast share (19.9 -> 27.7)"
+    },
+    {
+      "candidate_id": "A04_core_plus_event_overlay",
+      "capacity_class": "2_to_5pct_in_reach",
+      "capital_utilization": "modulates the core's, does not idle it",
+      "complexity_burden": 1,
+      "economics": {
+        "annual_cost_bp": 17.0,
+        "ir_drag": 0.045,
+        "net_10pct_at_10vol": {
+          "required_daily_ic": 0.1646,
+          "required_gross_ir": 1.045,
+          "required_net_sharpe": 1.0
+        },
+        "net_5pct_at_10vol": {
+          "required_daily_ic": 0.0858,
+          "required_gross_ir": 0.545,
+          "required_net_sharpe": 0.5
+        }
+      },
+      "edge_plausibility": 2,
+      "edge_source": "the measured event structure: matched movement 1.58-1.63x on forward-known days with no cost disadvantage",
+      "effective_breadth_per_day": 0.16,
+      "engineering_burden": 1,
+      "evidence_against": "vol-scaling a mean-zero book earns nothing; the overlay only monetises if the core has edge, so it inherits the core's uncertainty",
+      "expected_annual_turnover": 5.0,
+      "expected_information_gain": "whether the one robust event finding is worth money",
+      "gate_family": null,
+      "horizon": "event windows over a continuous core",
+      "mechanism": "a persistent core book; scheduled central-bank events and volatility states scale exposure, concentration and rebalance timing \u2014 never direction",
+      "notes": [],
+      "overfit_risk": 1,
+      "position_update_frequency_per_year": 252.0,
+      "prediction_frequency_per_year": 40.0,
+      "prior_overlap": "H-018/H-019 are OPEN: 'an anchor with nothing to point it at'. This points it at exposure, which needs no direction",
+      "robustness": 2,
+      "role": "overlay",
+      "score": 8,
+      "target": "exposure multiplier and rebalance schedule",
+      "turnover_basis": "declared judgment: incremental gross scaling, not repositioning"
+    },
+    {
+      "candidate_id": "A05_residual_factor_neutral_book",
+      "capacity_class": "2_to_5pct_in_reach",
+      "capital_utilization": "~100%",
+      "complexity_burden": 2,
+      "economics": {
+        "annual_cost_bp": 136.2,
+        "ir_drag": 0.361,
+        "net_10pct_at_10vol": {
+          "required_daily_ic": 0.0495,
+          "required_gross_ir": 1.361,
+          "required_net_sharpe": 1.0
+        },
+        "net_5pct_at_10vol": {
+          "required_daily_ic": 0.0313,
+          "required_gross_ir": 0.861,
+          "required_net_sharpe": 0.5
+        }
+      },
+      "edge_plausibility": 1,
+      "edge_source": "mean reversion / structure in the residual cross-section",
+      "effective_breadth_per_day": 3.0,
+      "engineering_burden": 1,
+      "evidence_against": "the residual is the 4% H-003 left; its dispersion is small, so the same IC buys less gross return per unit of gross exposure",
+      "expected_annual_turnover": 40.0,
+      "expected_information_gain": "whether the non-factor cross-section is priced at all",
+      "gate_family": null,
+      "horizon": "days",
+      "mechanism": "project out dollar/risk/commodity factors and trade only the residual currency vector, so the book carries no common-factor exposure",
+      "notes": [],
+      "overfit_risk": 2,
+      "position_update_frequency_per_year": 252.0,
+      "prediction_frequency_per_year": 252.0,
+      "prior_overlap": "H-003 closed the PAIR-level version that was 96% common factor",
+      "robustness": 2,
+      "role": "core",
+      "score": 1,
+      "target": "residual expected-return vector",
+      "turnover_basis": "declared judgment between the mechanics 10d row (48.0) and the 20d row (34.5): residual targets persist less than raw ones"
+    },
+    {
+      "candidate_id": "A06_cross_asset_repricing",
+      "capacity_class": "5_to_10pct_in_reach",
+      "capital_utilization": "~100%",
+      "complexity_burden": 2,
+      "economics": {
+        "annual_cost_bp": 163.5,
+        "ir_drag": 0.433,
+        "net_10pct_at_10vol": {
+          "required_daily_ic": 0.0451,
+          "required_gross_ir": 1.433,
+          "required_net_sharpe": 1.0
+        },
+        "net_5pct_at_10vol": {
+          "required_daily_ic": 0.0294,
+          "required_gross_ir": 0.933,
+          "required_net_sharpe": 0.5
+        }
+      },
+      "edge_plausibility": 2,
+      "edge_source": "cross-asset lead-lag into FX",
+      "effective_breadth_per_day": 4.0,
+      "engineering_burden": 2,
+      "evidence_against": "free daily cross-asset data is end-of-day and partially stale; the lead may live inside the day and be gone by the close",
+      "expected_annual_turnover": 48.0,
+      "expected_information_gain": "the only major information family never opened",
+      "gate_family": null,
+      "horizon": "1-5 days",
+      "mechanism": "map same-day changes in yields, curves, equities and commodities to next-days currency expected returns \u2014 FX as the lagging repricer",
+      "notes": [],
+      "overfit_risk": 2,
+      "position_update_frequency_per_year": 252.0,
+      "prediction_frequency_per_year": 252.0,
+      "prior_overlap": "the closed carry search (H-016) tested BIS policy rates at LEVEL and CHANGE \u2014 carry_change reversed sign between panels at every frequency, which is adjacent adverse evidence for any rates input here. What was never acquired or tested is MARKET-traded yields and curve slopes; the boundary is the instrument, not level-versus-change",
+      "robustness": 1,
+      "role": "core",
+      "score": 4,
+      "target": "currency expected-return vector from external state",
+      "turnover_basis": "mechanics: 10d-half-life targets"
+    },
+    {
+      "candidate_id": "A07_regime_adaptive_exposure",
+      "capacity_class": "2_to_5pct_in_reach",
+      "capital_utilization": "modulates the core's",
+      "complexity_burden": 1,
+      "economics": {
+        "annual_cost_bp": 13.6,
+        "ir_drag": 0.036,
+        "net_10pct_at_10vol": {
+          "required_daily_ic": 0.1192,
+          "required_gross_ir": 1.036,
+          "required_net_sharpe": 1.0
+        },
+        "net_5pct_at_10vol": {
+          "required_daily_ic": 0.0617,
+          "required_gross_ir": 0.536,
+          "required_net_sharpe": 0.5
+        }
+      },
+      "edge_plausibility": 1,
+      "edge_source": "conditional Sharpe differences across volatility regimes",
+      "effective_breadth_per_day": 0.3,
+      "engineering_burden": 1,
+      "evidence_against": "H-002: every conditional gate lowered net; regime edges have not replicated anywhere in this programme",
+      "expected_annual_turnover": 4.0,
+      "expected_information_gain": "whether regime information prices exposure",
+      "gate_family": null,
+      "horizon": "weeks",
+      "mechanism": "a regime state scales gross exposure, horizon mix and turnover budget \u2014 strategy selector, never a direction source",
+      "notes": [],
+      "overfit_risk": 2,
+      "position_update_frequency_per_year": 52.0,
+      "prediction_frequency_per_year": 52.0,
+      "prior_overlap": "simple HTF sign conditioning closed; the model-learning run showed a pure gain on a normalised book is a no-op, so this must act on GROSS exposure, which that run never tested",
+      "robustness": 1,
+      "role": "overlay",
+      "score": 1,
+      "target": "exposure and blend multipliers",
+      "turnover_basis": "incremental: scaling, not repositioning"
+    },
+    {
+      "candidate_id": "A08_execution_vehicle_optimization",
+      "capacity_class": "enabler_not_a_return_source",
+      "capital_utilization": "unchanged",
+      "complexity_burden": 1,
+      "economics": {
+        "ir_drag": 0.0,
+        "note": "an enabler is judged by what it saves or protects, not by a return"
+      },
+      "edge_plausibility": 3,
+      "edge_source": "none \u2014 routing, not forecasting",
+      "effective_breadth_per_day": 0.0,
+      "engineering_burden": 1,
+      "evidence_against": "the measured rows price every pair at the average 2.58 bp round trip; minimum-notional routing leans on wider-spread crosses, so the realisable saving sits below the notional floor",
+      "expected_annual_turnover": 0.0,
+      "expected_information_gain": "measured, not guessed: the corpus's own equal-split netting already pays 1.99 bp per turnover unit against the 3.406 charged (factor 1.71), and the minimum-notional floor is 1.43 (factor 2.38) \u2014 a first draft said 'perhaps 10-20%', understating its own audit",
+      "gate_family": null,
+      "horizon": "per rebalance",
+      "mechanism": "given a currency delta, choose WHICH pairs implement it at minimum spread \u2014 the 1.32 basket factor is an average, not a floor",
+      "notes": [],
+      "overfit_risk": 0,
+      "position_update_frequency_per_year": 252.0,
+      "prediction_frequency_per_year": 0.0,
+      "prior_overlap": "none \u2014 no phase optimised the vehicle",
+      "robustness": 3,
+      "role": "efficiency",
+      "score": 15,
+      "target": "pair decomposition of the net currency delta",
+      "turnover_basis": "changes cost per unit turnover, not turnover"
+    },
+    {
+      "candidate_id": "A09_sparse_high_confidence_overlay",
+      "capacity_class": "2_to_5pct_in_reach",
+      "capital_utilization": "core solves the idle-capital problem; overlay adds tilt",
+      "complexity_burden": 1,
+      "economics": {
+        "annual_cost_bp": 27.2,
+        "ir_drag": 0.072,
+        "net_10pct_at_10vol": {
+          "required_daily_ic": 0.0955,
+          "required_gross_ir": 1.072,
+          "required_net_sharpe": 1.0
+        },
+        "net_5pct_at_10vol": {
+          "required_daily_ic": 0.051,
+          "required_gross_ir": 0.572,
+          "required_net_sharpe": 0.5
+        }
+      },
+      "edge_plausibility": 1,
+      "edge_source": "convexity of edge in signal strength, if it exists",
+      "effective_breadth_per_day": 0.5,
+      "engineering_burden": 1,
+      "evidence_against": "H-014's tail concentration and bloc reversal are exactly what a sparse concentrated book maximises exposure to",
+      "expected_annual_turnover": 8.0,
+      "expected_information_gain": "whether edge is convex in signal strength",
+      "gate_family": null,
+      "horizon": "days, sparse",
+      "mechanism": "on top of a persistent book, take concentrated positions only at extreme signal states; the base book keeps capital utilised between",
+      "notes": [],
+      "overfit_risk": 3,
+      "position_update_frequency_per_year": 20.0,
+      "prediction_frequency_per_year": 252.0,
+      "prior_overlap": "H-014's only surviving population was ~6-9 events/pair/year",
+      "robustness": 1,
+      "role": "overlay",
+      "score": -1,
+      "target": "occasional concentrated tilts",
+      "turnover_basis": "sparse tilts on top of the core"
+    },
+    {
+      "candidate_id": "A10_turnover_penalized_optimizer",
+      "capacity_class": "enabler_not_a_return_source",
+      "capital_utilization": "unchanged",
+      "complexity_burden": 2,
+      "economics": {
+        "ir_drag": 0.18,
+        "note": "an enabler is judged by what it saves or protects, not by a return"
+      },
+      "edge_plausibility": 2,
+      "edge_source": "none \u2014 spends the cost budget where the forecast is strongest",
+      "effective_breadth_per_day": 4.0,
+      "engineering_burden": 2,
+      "evidence_against": "optimizers manufacture apparent edge from covariance estimation error; must be compared against the plain band, which is nearly free",
+      "expected_annual_turnover": 20.0,
+      "expected_information_gain": "a principled band; marginal over A02",
+      "gate_family": null,
+      "horizon": "same as core",
+      "mechanism": "portfolio construction with an explicit transaction-cost term: maximise mu'w - lambda w'Sigma w - c|dw| instead of tracking targets",
+      "notes": [],
+      "overfit_risk": 2,
+      "position_update_frequency_per_year": 252.0,
+      "prediction_frequency_per_year": 252.0,
+      "prior_overlap": "none",
+      "robustness": 2,
+      "role": "efficiency",
+      "score": 3,
+      "target": "cost-aware weights",
+      "turnover_basis": "between band-0.05 and band-0.10 mechanics, forecast-aware"
+    },
+    {
+      "candidate_id": "A11_yield_change_slow_component",
+      "capacity_class": "2_to_5pct_in_reach",
+      "capital_utilization": "~100%",
+      "complexity_burden": 1,
+      "economics": {
+        "annual_cost_bp": 40.9,
+        "ir_drag": 0.108,
+        "net_10pct_at_10vol": {
+          "required_daily_ic": 0.0494,
+          "required_gross_ir": 1.108,
+          "required_net_sharpe": 1.0
+        },
+        "net_5pct_at_10vol": {
+          "required_daily_ic": 0.0271,
+          "required_gross_ir": 0.608,
+          "required_net_sharpe": 0.5
+        }
+      },
+      "edge_plausibility": 2,
+      "edge_source": "delayed FX response to rate repricing",
+      "effective_breadth_per_day": 2.0,
+      "engineering_burden": 1,
+      "evidence_against": "H-016's carry was a short-yen trade in disguise; any rates-based tilt must prove it is not the same concentration again",
+      "expected_annual_turnover": 12.0,
+      "expected_information_gain": "whether rate REPRICING, not level, prices FX",
+      "gate_family": null,
+      "horizon": "weeks",
+      "mechanism": "a slow currency tilt from yield CHANGES and curve repricing \u2014 the information carry-level tests never used \u2014 held for weeks",
+      "notes": [],
+      "overfit_risk": 1,
+      "position_update_frequency_per_year": 52.0,
+      "prediction_frequency_per_year": 52.0,
+      "prior_overlap": "the closed family (H-016) tested BIS policy rates at LEVEL and CHANGE both \u2014 a first draft claimed changes were untested, which the ledger contradicts, and carry_change reversed sign between panels at every frequency. The untested instrument is MARKET yields and curve repricing, and that is the only axis this candidate may claim",
+      "robustness": 2,
+      "role": "core",
+      "score": 8,
+      "target": "slow currency tilt vector",
+      "turnover_basis": "declared judgment below the mechanics 60d daily row (20.2): weekly updates of a slow target trade less than daily ones, but no run in the mechanics module updates weekly and this figure is not from one"
+    },
+    {
+      "candidate_id": "A12_dispersion_relative_value",
+      "capacity_class": "structurally_under_2pct",
+      "capital_utilization": "~100%",
+      "complexity_burden": 2,
+      "economics": {
+        "annual_cost_bp": 102.2,
+        "ir_drag": 0.271,
+        "net_10pct_at_10vol": {
+          "required_daily_ic": 0.08,
+          "required_gross_ir": 1.271,
+          "required_net_sharpe": 1.0
+        },
+        "net_5pct_at_10vol": {
+          "required_daily_ic": 0.0485,
+          "required_gross_ir": 0.771,
+          "required_net_sharpe": 0.5
+        }
+      },
+      "edge_plausibility": 1,
+      "edge_source": "mean reversion of cross-sectional dispersion",
+      "effective_breadth_per_day": 1.0,
+      "engineering_burden": 1,
+      "evidence_against": "H-013 showed the retrace family's positives were selection artefacts; dispersion reversion needs a null that hard to beat",
+      "expected_annual_turnover": 30.0,
+      "expected_information_gain": "a second-moment edge with first-moment payoff",
+      "gate_family": null,
+      "horizon": "days-weeks",
+      "mechanism": "trade the cross-sectional dispersion state itself: widen the book when dispersion is stretched, compress when it is tight",
+      "notes": [],
+      "overfit_risk": 2,
+      "position_update_frequency_per_year": 252.0,
+      "prediction_frequency_per_year": 252.0,
+      "prior_overlap": "none directly; adjacent to closed retrace geometry",
+      "robustness": 1,
+      "role": "core",
+      "score": -4,
+      "target": "book width, plus which currencies stretched it",
+      "turnover_basis": "declared judgment near the mechanics 20d row (34.5); not itself a simulated point"
+    },
+    {
+      "candidate_id": "A13_event_portfolio_tilt",
+      "capacity_class": "structurally_under_2pct",
+      "capital_utilization": "modulates the core's",
+      "complexity_burden": 1,
+      "economics": {
+        "annual_cost_bp": 20.4,
+        "ir_drag": 0.054,
+        "net_10pct_at_10vol": {
+          "required_daily_ic": 0.1212,
+          "required_gross_ir": 1.054,
+          "required_net_sharpe": 1.0
+        },
+        "net_5pct_at_10vol": {
+          "required_daily_ic": 0.0637,
+          "required_gross_ir": 0.554,
+          "required_net_sharpe": 0.5
+        }
+      },
+      "edge_plausibility": 1,
+      "edge_source": "event-window risk premia, if any",
+      "effective_breadth_per_day": 0.3,
+      "engineering_burden": 1,
+      "evidence_against": "H-020 dropped the only directional event test on a sign reversal; a tilt without direction is exposure timing, already in A04",
+      "expected_annual_turnover": 6.0,
+      "expected_information_gain": "mostly duplicated by A04",
+      "gate_family": null,
+      "horizon": "1-3 days around ~40 events/year",
+      "mechanism": "around scheduled decisions, tilt the book's composition toward or away from the announcing currency \u2014 concentration timing, not direction prediction",
+      "notes": [],
+      "overfit_risk": 2,
+      "position_update_frequency_per_year": 40.0,
+      "prediction_frequency_per_year": 40.0,
+      "prior_overlap": "H-019 open; USD-pooled consensus surprise closed",
+      "robustness": 1,
+      "role": "overlay",
+      "score": -2,
+      "target": "temporary concentration changes",
+      "turnover_basis": "small tilts, few events"
+    },
+    {
+      "candidate_id": "A14_volatility_conditioned_leverage",
+      "capacity_class": "enabler_not_a_return_source",
+      "capital_utilization": "stabilised at target",
+      "complexity_burden": 0,
+      "economics": {
+        "ir_drag": 0.054,
+        "note": "an enabler is judged by what it saves or protects, not by a return"
+      },
+      "edge_plausibility": 3,
+      "edge_source": "none directly; improves the Sharpe->return translation",
+      "effective_breadth_per_day": 0.0,
+      "engineering_burden": 0,
+      "evidence_against": "vol targeting adds no expected return to a mean-zero book; it is risk plumbing, and is costed as such",
+      "expected_annual_turnover": 6.0,
+      "expected_information_gain": "required plumbing for any leverage claim",
+      "gate_family": null,
+      "horizon": "continuous",
+      "mechanism": "vol targeting as a dynamic: scale gross down when realised vol rises, up when it falls \u2014 stabilises realised Sharpe and drawdown",
+      "notes": [],
+      "overfit_risk": 0,
+      "position_update_frequency_per_year": 252.0,
+      "prediction_frequency_per_year": 252.0,
+      "prior_overlap": "H-015/H-017: volume and vol forecast realised vol well",
+      "robustness": 3,
+      "role": "efficiency",
+      "score": 18,
+      "target": "gross exposure path",
+      "turnover_basis": "scaling turnover only"
+    },
+    {
+      "candidate_id": "A15_horizon_ensemble_ml",
+      "capacity_class": "5_to_10pct_in_reach",
+      "capital_utilization": "~100%",
+      "complexity_burden": 3,
+      "economics": {
+        "annual_cost_bp": 119.2,
+        "ir_drag": 0.316,
+        "net_10pct_at_10vol": {
+          "required_daily_ic": 0.0338,
+          "required_gross_ir": 1.316,
+          "required_net_sharpe": 1.0
+        },
+        "net_5pct_at_10vol": {
+          "required_daily_ic": 0.021,
+          "required_gross_ir": 0.816,
+          "required_net_sharpe": 0.5
+        }
+      },
+      "edge_plausibility": 1,
+      "edge_source": "time-varying relative value of horizons",
+      "effective_breadth_per_day": 6.0,
+      "engineering_burden": 2,
+      "evidence_against": "a meta-layer on 4.7 seen years is exactly where the capacity budget said overfitting lives; needs A03 to work first",
+      "expected_annual_turnover": 35.0,
+      "expected_information_gain": "only meaningful after A03 exists",
+      "gate_family": null,
+      "horizon": "ensemble",
+      "mechanism": "small models per horizon; a meta-layer sets blend weights by state \u2014 ML allocates across horizons rather than predicting direction",
+      "notes": [],
+      "overfit_risk": 3,
+      "position_update_frequency_per_year": 252.0,
+      "prediction_frequency_per_year": 252.0,
+      "prior_overlap": "capacity budgets bound the meta-layer like everything else",
+      "robustness": 1,
+      "role": "core",
+      "score": -3,
+      "target": "blend weights over horizon components",
+      "turnover_basis": "close to A03 plus blend churn"
+    },
+    {
+      "candidate_id": "A16_mr_timed_rebalancing",
+      "capacity_class": "enabler_not_a_return_source",
+      "capital_utilization": "unchanged",
+      "complexity_burden": 1,
+      "economics": {
+        "ir_drag": 0.0,
+        "note": "an enabler is judged by what it saves or protects, not by a return"
+      },
+      "edge_plausibility": 2,
+      "edge_source": "H-010's VR<1 is real; the 6-16%-of-break-even figure attached to it is the ledger's POST HOC, IN-SAMPLE best linear predictor \u2014 an optimistic bound, not a harvest. A rebalance pays no incremental cost, so whatever fraction survives out of sample would be saving rather than strategy; that transfer is an assumption until measured",
+      "effective_breadth_per_day": 0.0,
+      "engineering_burden": 1,
+      "evidence_against": "the harvestable fraction of 6-16% of one round trip per retimed trade is small in absolute bp; worth having, not worth building first",
+      "expected_annual_turnover": 0.0,
+      "expected_information_gain": "turns a 'real but unharvestable' finding into bp",
+      "gate_family": null,
+      "horizon": "hours",
+      "mechanism": "the book's rebalance trades execute WITH the measured short-horizon mean reversion: buy the currency that just underperformed intraday when the target already says buy \u2014 timing trades that happen anyway",
+      "notes": [],
+      "overfit_risk": 1,
+      "position_update_frequency_per_year": 252.0,
+      "prediction_frequency_per_year": 252.0,
+      "prior_overlap": "<=12h linear path harvesting is closed AS A STANDALONE \u2014 it could not pay full costs. Costless retiming of forced trades is outside that closure and is the one use H-010's magnitude supports",
+      "robustness": 2,
+      "role": "efficiency",
+      "score": 8,
+      "target": "execution timing of required deltas",
+      "turnover_basis": "retimes existing turnover; adds none"
+    },
+    {
+      "candidate_id": "A17_session_aware_scheduling",
+      "capacity_class": "enabler_not_a_return_source",
+      "capital_utilization": "unchanged",
+      "complexity_burden": 0,
+      "economics": {
+        "ir_drag": 0.0,
+        "note": "an enabler is judged by what it saves or protects, not by a return"
+      },
+      "edge_plausibility": 3,
+      "edge_source": "none \u2014 cost surface navigation",
+      "effective_breadth_per_day": 0.0,
+      "engineering_burden": 0,
+      "evidence_against": "the saving is bounded by intra-day spread dispersion; modest",
+      "expected_annual_turnover": 0.0,
+      "expected_information_gain": "a few percent off realised cost, nearly free",
+      "gate_family": null,
+      "horizon": "intraday scheduling",
+      "mechanism": "schedule rebalances into the cheapest liquidity windows; the measured spread surface varies by session (Sunday ~2.5 pips vs weekday ~1.5)",
+      "notes": [],
+      "overfit_risk": 0,
+      "position_update_frequency_per_year": 252.0,
+      "prediction_frequency_per_year": 0.0,
+      "prior_overlap": "the session spread structure is measured in H-018's correction",
+      "robustness": 3,
+      "role": "efficiency",
+      "score": 18,
+      "target": "when in the day the deltas trade",
+      "turnover_basis": "retimes turnover"
+    },
+    {
+      "candidate_id": "A18_weekly_currency_trend",
+      "capacity_class": "2_to_5pct_in_reach",
+      "capital_utilization": "~100%",
+      "complexity_burden": 1,
+      "economics": {
+        "annual_cost_bp": 68.1,
+        "ir_drag": 0.18,
+        "net_10pct_at_10vol": {
+          "required_daily_ic": 0.0429,
+          "required_gross_ir": 1.18,
+          "required_net_sharpe": 1.0
+        },
+        "net_5pct_at_10vol": {
+          "required_daily_ic": 0.0247,
+          "required_gross_ir": 0.68,
+          "required_net_sharpe": 0.5
+        }
+      },
+      "edge_plausibility": 1,
+      "edge_source": "medium-term currency trend, if any survives demeaning",
+      "effective_breadth_per_day": 3.0,
+      "engineering_burden": 1,
+      "evidence_against": "three spans of the multi-day family produced nothing separable from noise in either direction; adjacency is real even if the design is not identical",
+      "expected_annual_turnover": 20.0,
+      "expected_information_gain": "low \u2014 the neighbourhood is heavily surveyed",
+      "gate_family": null,
+      "horizon": "1-4 weeks",
+      "mechanism": "continuous cross-sectionally-demeaned currency momentum at 1-4 week horizons \u2014 between the closed multi-day family and closed monthly TSMOM, at the currency level with continuous weights",
+      "notes": [],
+      "overfit_risk": 2,
+      "position_update_frequency_per_year": 252.0,
+      "prediction_frequency_per_year": 52.0,
+      "prior_overlap": "the 4-6d reversal/momentum family is closed; C08 closed currency-level rank persistence; H-012 closed monthly TSMOM as underpowered. The weekly continuous version sits between three closures, carries that adjacency as its main risk, and per the working rules a run of it would need a new instruction \u2014 no round licenses the next one",
+      "robustness": 1,
+      "role": "core",
+      "score": 1,
+      "target": "slow tilt vector",
+      "turnover_basis": "mechanics: 60d-half-life-equivalent persistence"
+    },
+    {
+      "candidate_id": "A19_drawdown_governed_meta_risk",
+      "capacity_class": "enabler_not_a_return_source",
+      "capital_utilization": "reduced only in drawdown",
+      "complexity_burden": 0,
+      "economics": {
+        "ir_drag": 0.027,
+        "note": "an enabler is judged by what it saves or protects, not by a return"
+      },
+      "edge_plausibility": 3,
+      "edge_source": "none; protects the translation from Sharpe to return",
+      "effective_breadth_per_day": 0.0,
+      "engineering_burden": 0,
+      "evidence_against": "drawdown control lowers realised Sharpe slightly in exchange for tail control; it is insurance, priced as such",
+      "expected_annual_turnover": 3.0,
+      "expected_information_gain": "required for any deployment conversation",
+      "gate_family": null,
+      "horizon": "continuous",
+      "mechanism": "a meta-layer that de-risks on drawdown and re-risks on recovery, with declared thresholds \u2014 bounds the left tail the leverage tables assume",
+      "notes": [],
+      "overfit_risk": 1,
+      "position_update_frequency_per_year": 252.0,
+      "prediction_frequency_per_year": 252.0,
+      "prior_overlap": "none",
+      "robustness": 3,
+      "role": "efficiency",
+      "score": 16,
+      "target": "risk multiplier path",
+      "turnover_basis": "rare scaling events"
+    },
+    {
+      "candidate_id": "A20_paper_forward_evaluation",
+      "capacity_class": "enabler_not_a_return_source",
+      "capital_utilization": "none \u2014 no capital at risk",
+      "complexity_burden": 1,
+      "economics": {
+        "ir_drag": 0.0,
+        "note": "an enabler is judged by what it saves or protects, not by a return"
+      },
+      "edge_plausibility": 3,
+      "edge_source": "none \u2014 it buys evidence, which is the scarcest input",
+      "effective_breadth_per_day": 0.0,
+      "engineering_burden": 1,
+      "evidence_against": "slow by construction: at true net IR 0.5, even fresh pool + 3 paper years reaches only 40% one-shot power \u2014 it narrows uncertainty, it does not deliver proof on any near horizon",
+      "expected_annual_turnover": 0.0,
+      "expected_information_gain": "the only route to uncontaminated evidence that does not spend the fresh pool",
+      "gate_family": null,
+      "horizon": "years, accumulating",
+      "mechanism": "freeze candidates and run them on the live OANDA paper stack the programme already built \u2014 every forward month is uncontaminated evaluation data that no seen-data reuse can produce",
+      "notes": [],
+      "overfit_risk": 0,
+      "position_update_frequency_per_year": 0.0,
+      "prediction_frequency_per_year": 0.0,
+      "prior_overlap": "the M9/M10 paper infrastructure exists and is idle",
+      "robustness": 3,
+      "role": "evaluation",
+      "score": 15,
+      "target": "frozen candidates, evaluated forward",
+      "turnover_basis": "paper"
+    }
+  ],
+  "capacity": {
+    "by_turnover": {
+      "turnover_12": {
+        "annual_cost_bp": 40.9,
+        "ir_drag": 0.108,
+        "required_daily_ic_for_net_sharpe": {
+          "0.3": 0.0129,
+          "0.5": 0.0192,
+          "0.8": 0.0286,
+          "1": 0.0349
+        },
+        "required_gross_ir_for_net_sharpe": {
+          "0.3": 0.408,
+          "0.5": 0.608,
+          "0.8": 0.908,
+          "1": 1.108
+        }
+      },
+      "turnover_25": {
+        "annual_cost_bp": 85.2,
+        "ir_drag": 0.225,
+        "required_daily_ic_for_net_sharpe": {
+          "0.3": 0.0165,
+          "0.5": 0.0228,
+          "0.8": 0.0323,
+          "1": 0.0386
+        },
+        "required_gross_ir_for_net_sharpe": {
+          "0.3": 0.525,
+          "0.5": 0.725,
+          "0.8": 1.025,
+          "1": 1.225
+        }
+      },
+      "turnover_252": {
+        "annual_cost_bp": 858.3,
+        "ir_drag": 2.272,
+        "required_daily_ic_for_net_sharpe": {
+          "0.3": 0.081,
+          "0.5": 0.0873,
+          "0.8": 0.0968,
+          "1": 0.1031
+        },
+        "required_gross_ir_for_net_sharpe": {
+          "0.3": 2.572,
+          "0.5": 2.772,
+          "0.8": 3.072,
+          "1": 3.272
+        }
+      },
+      "turnover_36.7": {
+        "annual_cost_bp": 125.0,
+        "ir_drag": 0.331,
+        "required_daily_ic_for_net_sharpe": {
+          "0.3": 0.0199,
+          "0.5": 0.0262,
+          "0.8": 0.0356,
+          "1": 0.0419
+        },
+        "required_gross_ir_for_net_sharpe": {
+          "0.3": 0.631,
+          "0.5": 0.831,
+          "0.8": 1.131,
+          "1": 1.331
+        }
+      },
+      "turnover_50": {
+        "annual_cost_bp": 170.3,
+        "ir_drag": 0.451,
+        "required_daily_ic_for_net_sharpe": {
+          "0.3": 0.0237,
+          "0.5": 0.03,
+          "0.8": 0.0394,
+          "1": 0.0457
+        },
+        "required_gross_ir_for_net_sharpe": {
+          "0.3": 0.751,
+          "0.5": 0.951,
+          "0.8": 1.251,
+          "1": 1.451
+        }
+      },
+      "turnover_6": {
+        "annual_cost_bp": 20.4,
+        "ir_drag": 0.054,
+        "required_daily_ic_for_net_sharpe": {
+          "0.3": 0.0112,
+          "0.5": 0.0175,
+          "0.8": 0.0269,
+          "1": 0.0332
+        },
+        "required_gross_ir_for_net_sharpe": {
+          "0.3": 0.354,
+          "0.5": 0.554,
+          "0.8": 0.854,
+          "1": 1.054
+        }
+      },
+      "turnover_90": {
+        "annual_cost_bp": 306.5,
+        "ir_drag": 0.812,
+        "required_daily_ic_for_net_sharpe": {
+          "0.3": 0.035,
+          "0.5": 0.0413,
+          "0.8": 0.0508,
+          "1": 0.0571
+        },
+        "required_gross_ir_for_net_sharpe": {
+          "0.3": 1.112,
+          "0.5": 1.312,
+          "0.8": 1.612,
+          "1": 1.812
+        }
+      }
+    },
+    "by_vol_target": {
+      "vol_0.08": {
+        "annual_net_return_at_net_sharpe": {
+          "0.3": "2.4%",
+          "0.5": "4.0%",
+          "0.8": "6.4%",
+          "1": "8.0%"
+        },
+        "expected_max_drawdown_5y_at_net_sharpe": {
+          "0.3": "17.6%",
+          "0.5": "15.4%",
+          "0.8": "13.0%",
+          "1": "11.8%"
+        },
+        "leverage_gross_over_capital": 2.12
+      },
+      "vol_0.1": {
+        "annual_net_return_at_net_sharpe": {
+          "0.3": "3.0%",
+          "0.5": "5.0%",
+          "0.8": "8.0%",
+          "1": "10.0%"
+        },
+        "expected_max_drawdown_5y_at_net_sharpe": {
+          "0.3": "22.0%",
+          "0.5": "19.3%",
+          "0.8": "16.3%",
+          "1": "14.8%"
+        },
+        "leverage_gross_over_capital": 2.65
+      },
+      "vol_0.12": {
+        "annual_net_return_at_net_sharpe": {
+          "0.3": "3.6%",
+          "0.5": "6.0%",
+          "0.8": "9.6%",
+          "1": "12.0%"
+        },
+        "expected_max_drawdown_5y_at_net_sharpe": {
+          "0.3": "26.4%",
+          "0.5": "23.2%",
+          "0.8": "19.6%",
+          "1": "17.7%"
+        },
+        "leverage_gross_over_capital": 3.18
+      }
+    },
+    "effective_breadth_per_day": 4.0,
+    "identities": [
+      "net_sharpe = gross_ir - turnover x roundtrip / vol_per_gross",
+      "annual_net_return = net_sharpe x vol_target",
+      "leverage = vol_target / vol_per_gross; cancels out of every ratio",
+      "required_daily_ic = gross_ir / sqrt(breadth_per_day x 252)"
+    ],
+    "vol_per_gross_bp": 377.7
+  },
+  "classification": "NON_DECISION_BEARING_EXPLORATORY_ONLY",
+  "classification_secondary": "RESEARCH_SCRATCH_NON_AUTHORITATIVE",
+  "confirmation_power": {
+    "alpha_one_sided": 0.05,
+    "rows": {
+      "fresh_pool_one_shot": {
+        "power_at_true_net_ir": {
+          "0.3": 0.163,
+          "0.5": 0.295,
+          "0.8": 0.55,
+          "1.2": 0.844
+        },
+        "years": 4.9
+      },
+      "fresh_pool_plus_3y_paper_forward": {
+        "power_at_true_net_ir": {
+          "0.3": 0.211,
+          "0.5": 0.405,
+          "0.8": 0.727,
+          "1.2": 0.958
+        },
+        "years": 7.9
+      },
+      "ten_years": {
+        "power_at_true_net_ir": {
+          "0.3": 0.243,
+          "0.5": 0.475,
+          "0.8": 0.812,
+          "1.2": 0.984
+        },
+        "years": 10.0
+      },
+      "twenty_five_years": {
+        "power_at_true_net_ir": {
+          "0.3": 0.442,
+          "0.5": 0.804,
+          "0.8": 0.991,
+          "1.2": 1.0
+        },
+        "years": 25.0
+      }
+    },
+    "years_for_80_percent_power": {
+      "0.3": 68.7,
+      "0.5": 24.7,
+      "0.8": 9.7,
+      "1.2": 4.3
+    }
+  },
+  "cost_decomposition": {
+    "basket_roundtrip_bp": 3.406,
+    "factors": {
+      "basket_exposure": {
+        "meaning": "gross pair notional turned over per unit of currency-vs-basket exposure",
+        "provenance": "measured mean of the six Track 2 cells, 1.2884 to 1.3356",
+        "value": 1.3202
+      },
+      "pair_roundtrip_bp": {
+        "meaning": "full round trip (both legs) of one pair, bp of pair notional",
+        "provenance": "midpoint of Track 3's two measured all-bars market-order round trips, 2.6902 and 2.4660 bp",
+        "value": 2.58
+      }
+    },
+    "per_unit_traded": {
+      "full_round_trip_basket_bp": 3.406,
+      "one_way_basket_bp": 1.703,
+      "one_way_pair_bp": 1.29
+    },
+    "what_it_is_not": "a cost per prediction, per signal, per day, or per position update \u2014 it is a cost per unit of notional actually traded"
+  },
+  "gate_audit": {
+    "gate_v1": {
+      "already_corrected_by": "Gate v2 (frozen)",
+      "controlled_well": "nothing \u2014 `MDE <= 2x cost` rewarded expensive designs"
+    },
+    "gate_v2_and_pass_region_preflight": {
+      "controlled_well": "decision-grade hypothesis claims: alpha=0.05, 80% power, two independent panels, no pooling \u2014 the right standard for CLOSING or CONFIRMING a family",
+      "structurally_could_not_see": "any development activity on <=2-year panels: the composite needs 3.488 effective years per panel, so applied to development it forbids discovery as such rather than distinguishing good from bad discovery. Appropriate as a confirmation gate; not an architecture-evaluation instrument"
+    },
+    "model_learning_feasibility_gate": {
+      "controlled_well": "capacity accounting (parameters vs years, breadth and frequency cancel), leakage shapes, closed-family reopening, and the corrected unit discipline (cost and volatility per unit of gross)",
+      "structurally_could_not_see": [
+        {
+          "consequence": "daily designs were charged 858 bp/yr against a measured 125 bp/yr for the smooth book \u2014 break-even gross IR 2.27 against an actual 0.33 \u2014 and ECONOMICALLY_UNREACHABLE verdicts inherited that factor of 6.9",
+          "finding": "prediction frequency charged as turnover"
+        },
+        {
+          "consequence": "one selection was priced at 10.8 out-of-fold years, which no development corpus will ever have; the standard belongs at the one-shot confirmation layer, where the fresh pool and forward data pay for it",
+          "finding": "confirmation-level family-wise error (alpha=0.05) charged to development selection"
+        },
+        {
+          "consequence": "per-event MRE and per-trade expectancy cannot represent an architecture whose profit is edge x breadth x utilization - turnover x cost at the portfolio level",
+          "finding": "single-trade economics as the unit of account"
+        }
+      ]
+    },
+    "verdicts_reopened_by_this_audit": []
+  },
+  "market_data_read": false,
+  "multi_horizon_turnover": {
+    "fast_share_0": {
+      "annual_turnover": 19.9
+    },
+    "fast_share_0.2": {
+      "annual_turnover": 27.71
+    },
+    "fast_share_0.3": {
+      "annual_turnover": 37.26
+    },
+    "fast_share_0.5": {
+      "annual_turnover": 61.72
+    },
+    "fast_share_1": {
+      "annual_turnover": 81.19
+    }
+  },
+  "n_candidates": 20,
+  "no_trade_band": {
+    "rows": {
+      "band_0": {
+        "alpha_capture": 1.0,
+        "annual_cost_bp": 117.5,
+        "annual_turnover": 34.5,
+        "mean_tracking_gap_gross": 0.0,
+        "required_daily_ic_for_net_0_5": 0.0255,
+        "required_target_gross_ir_for_net_0_5": 0.811
+      },
+      "band_0.02": {
+        "alpha_capture": 0.9989,
+        "annual_cost_bp": 106.4,
+        "annual_turnover": 31.25,
+        "mean_tracking_gap_gross": 0.0295,
+        "required_daily_ic_for_net_0_5": 0.0247,
+        "required_target_gross_ir_for_net_0_5": 0.783
+      },
+      "band_0.05": {
+        "alpha_capture": 0.9885,
+        "annual_cost_bp": 78.5,
+        "annual_turnover": 23.06,
+        "mean_tracking_gap_gross": 0.1277,
+        "required_daily_ic_for_net_0_5": 0.0226,
+        "required_target_gross_ir_for_net_0_5": 0.716
+      },
+      "band_0.1": {
+        "alpha_capture": 0.958,
+        "annual_cost_bp": 49.0,
+        "annual_turnover": 14.39,
+        "mean_tracking_gap_gross": 0.2888,
+        "required_daily_ic_for_net_0_5": 0.0207,
+        "required_target_gross_ir_for_net_0_5": 0.657
+      },
+      "band_0.15": {
+        "alpha_capture": 0.9073,
+        "annual_cost_bp": 34.1,
+        "annual_turnover": 10.01,
+        "mean_tracking_gap_gross": 0.4361,
+        "required_daily_ic_for_net_0_5": 0.0205,
+        "required_target_gross_ir_for_net_0_5": 0.651
+      }
+    },
+    "target_half_life_days": 20.0
+  },
+  "pair_routing": {
+    "charged_isolated_position": {
+      "conservatism_factor_vs_convention": 1.0,
+      "cost_per_turnover_unit_bp": 3.406,
+      "ir_drag_at_measured_turnover_36_7": 0.331,
+      "pair_one_way_per_currency_one_way": 1.3202
+    },
+    "identity": "cost per turnover unit = R x pair round trip (2.58 bp)",
+    "implementation_equal_split_netting": {
+      "conservatism_factor_vs_convention": 1.71,
+      "cost_per_turnover_unit_bp": 1.987,
+      "ir_drag_at_measured_turnover_36_7": 0.193,
+      "pair_one_way_per_currency_one_way": 0.7701
+    },
+    "minimal_notional_floor": {
+      "conservatism_factor_vs_convention": 2.38,
+      "cost_per_turnover_unit_bp": 1.429,
+      "ir_drag_at_measured_turnover_36_7": 0.139,
+      "pair_one_way_per_currency_one_way": 0.5538
+    },
+    "note": "headline requirements keep the conservative 3.406 charge; this is the measured room, and A08 execution-vehicle optimization is the candidate that would claim it",
+    "pair_topology": "20 archive pairs over 8 currencies",
+    "uniform_cost_caveat": "both measured rows price every pair at the average 2.58 bp; a cost-weighted router would land between them and the charge"
+  },
+  "prediction_vs_turnover": {
+    "annual_cost_at_measured_turnover_bp": {
+      "ranking_model": 125.0,
+      "top2_bottom2": 168.3
+    },
+    "declared_by_the_old_convention": {
+      "annual_cost_bp": 858.3,
+      "daily_design_turnover_per_year": 252.0,
+      "meaning": "the whole book closes and reopens every day"
+    },
+    "measured_by_the_development_run": {
+      "_unit": "full-book round trips per year, from realised |dw|",
+      "filtered_renormalising_book": 142.5,
+      "ranking_model_smooth_scores": 36.7,
+      "regime_gain_model": 89.9,
+      "top2_bottom2_rank_baseline": 49.4
+    },
+    "overstatement_factor_for_the_smooth_book": 6.87,
+    "rule_going_forward": "annual cost = measured portfolio turnover x cost per unit turnover; prediction frequency, position-update frequency and traded turnover are three different quantities and are reported separately"
+  },
+  "protected_spans_read": false,
+  "ranking": [
+    {
+      "candidate_id": "A02_no_trade_band_rebalancing",
+      "capacity_class": "enabler_not_a_return_source",
+      "rank": 1,
+      "role": "efficiency",
+      "score": 18
+    },
+    {
+      "candidate_id": "A14_volatility_conditioned_leverage",
+      "capacity_class": "enabler_not_a_return_source",
+      "rank": 2,
+      "role": "efficiency",
+      "score": 18
+    },
+    {
+      "candidate_id": "A17_session_aware_scheduling",
+      "capacity_class": "enabler_not_a_return_source",
+      "rank": 3,
+      "role": "efficiency",
+      "score": 18
+    },
+    {
+      "candidate_id": "A19_drawdown_governed_meta_risk",
+      "capacity_class": "enabler_not_a_return_source",
+      "rank": 4,
+      "role": "efficiency",
+      "score": 16
+    },
+    {
+      "candidate_id": "A08_execution_vehicle_optimization",
+      "capacity_class": "enabler_not_a_return_source",
+      "rank": 5,
+      "role": "efficiency",
+      "score": 15
+    },
+    {
+      "candidate_id": "A20_paper_forward_evaluation",
+      "capacity_class": "enabler_not_a_return_source",
+      "rank": 6,
+      "role": "evaluation",
+      "score": 15
+    },
+    {
+      "candidate_id": "A01_continuous_currency_portfolio",
+      "capacity_class": "5_to_10pct_in_reach",
+      "rank": 7,
+      "role": "core",
+      "score": 9
+    },
+    {
+      "candidate_id": "A04_core_plus_event_overlay",
+      "capacity_class": "2_to_5pct_in_reach",
+      "rank": 8,
+      "role": "overlay",
+      "score": 8
+    },
+    {
+      "candidate_id": "A11_yield_change_slow_component",
+      "capacity_class": "2_to_5pct_in_reach",
+      "rank": 9,
+      "role": "core",
+      "score": 8
+    },
+    {
+      "candidate_id": "A16_mr_timed_rebalancing",
+      "capacity_class": "enabler_not_a_return_source",
+      "rank": 10,
+      "role": "efficiency",
+      "score": 8
+    },
+    {
+      "candidate_id": "A03_multi_horizon_blend",
+      "capacity_class": "5_to_10pct_in_reach",
+      "rank": 11,
+      "role": "core",
+      "score": 6
+    },
+    {
+      "candidate_id": "A06_cross_asset_repricing",
+      "capacity_class": "5_to_10pct_in_reach",
+      "rank": 12,
+      "role": "core",
+      "score": 4
+    },
+    {
+      "candidate_id": "A10_turnover_penalized_optimizer",
+      "capacity_class": "enabler_not_a_return_source",
+      "rank": 13,
+      "role": "efficiency",
+      "score": 3
+    },
+    {
+      "candidate_id": "A05_residual_factor_neutral_book",
+      "capacity_class": "2_to_5pct_in_reach",
+      "rank": 14,
+      "role": "core",
+      "score": 1
+    },
+    {
+      "candidate_id": "A07_regime_adaptive_exposure",
+      "capacity_class": "2_to_5pct_in_reach",
+      "rank": 15,
+      "role": "overlay",
+      "score": 1
+    },
+    {
+      "candidate_id": "A18_weekly_currency_trend",
+      "capacity_class": "2_to_5pct_in_reach",
+      "rank": 16,
+      "role": "core",
+      "score": 1
+    },
+    {
+      "candidate_id": "A09_sparse_high_confidence_overlay",
+      "capacity_class": "2_to_5pct_in_reach",
+      "rank": 17,
+      "role": "overlay",
+      "score": -1
+    },
+    {
+      "candidate_id": "A13_event_portfolio_tilt",
+      "capacity_class": "structurally_under_2pct",
+      "rank": 18,
+      "role": "overlay",
+      "score": -2
+    },
+    {
+      "candidate_id": "A15_horizon_ensemble_ml",
+      "capacity_class": "5_to_10pct_in_reach",
+      "rank": 19,
+      "role": "core",
+      "score": -3
+    },
+    {
+      "candidate_id": "A12_dispersion_relative_value",
+      "capacity_class": "structurally_under_2pct",
+      "rank": 20,
+      "role": "core",
+      "score": -4
+    }
+  ],
+  "score_weights": {
+    "capacity": 3,
+    "complexity_burden": -2,
+    "edge_plausibility": 3,
+    "engineering_burden": -1,
+    "overfit_risk": -2,
+    "robustness": 2
+  },
+  "selected_tracks": {
+    "core_extension_when_track_1_stands": "A03_multi_horizon_blend",
+    "paper_forward_recommended_for_all": true,
+    "track_1_core": {
+      "candidate_id": "A01_continuous_currency_portfolio",
+      "capacity_class": "5_to_10pct_in_reach",
+      "rank": 7,
+      "role": "core",
+      "score": 9
+    },
+    "track_2_efficiency_bundle": {
+      "deferred_members": [
+        "A16_mr_timed_rebalancing",
+        "A10_turnover_penalized_optimizer"
+      ],
+      "members": [
+        "A02_no_trade_band_rebalancing",
+        "A14_volatility_conditioned_leverage",
+        "A17_session_aware_scheduling",
+        "A19_drawdown_governed_meta_risk",
+        "A08_execution_vehicle_optimization"
+      ],
+      "score_floor": 15,
+      "why_a_bundle": "the members compose, are signal-free, and are testable without any alpha existing; ranking them against a core is a category error"
+    },
+    "track_3_overlay": {
+      "candidate_id": "A04_core_plus_event_overlay",
+      "capacity_class": "2_to_5pct_in_reach",
+      "rank": 8,
+      "role": "overlay",
+      "score": 8
+    }
+  },
+  "signal_free": true,
+  "status": "PROFIT_ARCHITECTURE_REDESIGN_ASSESSED",
+  "turnover_law": {
+    "close_reopen_convention_would_charge": 252.0,
+    "fresh_targets_every_day": 175.16,
+    "rows": {
+      "half_life_10d": {
+        "annual_cost_bp": 163.5,
+        "annual_turnover": 48.0,
+        "daily_autocorrelation": 0.933,
+        "ir_drag": 0.433
+      },
+      "half_life_1d": {
+        "annual_cost_bp": 427.0,
+        "annual_turnover": 125.36,
+        "daily_autocorrelation": 0.5,
+        "ir_drag": 1.13
+      },
+      "half_life_20d": {
+        "annual_cost_bp": 117.5,
+        "annual_turnover": 34.5,
+        "daily_autocorrelation": 0.9659,
+        "ir_drag": 0.311
+      },
+      "half_life_5d": {
+        "annual_cost_bp": 224.4,
+        "annual_turnover": 65.87,
+        "daily_autocorrelation": 0.8706,
+        "ir_drag": 0.594
+      },
+      "half_life_60d": {
+        "annual_cost_bp": 68.7,
+        "annual_turnover": 20.16,
+        "daily_autocorrelation": 0.9885,
+        "ir_drag": 0.182
+      }
+    },
+    "scaling": "turnover ~ sqrt(1 - rho): persistence, not update frequency",
+    "update_frequency": "daily, every row"
+  },
+  "vol_per_gross_bp": 377.7
+}

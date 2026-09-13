@@ -456,6 +456,43 @@ LEDGER: Final[list[dict[str, Any]]] = [
             "archive window on it is not recommended"
         ),
     },
+    {
+        "id": "H-022",
+        "round": "Model-learning development (PR #479)",
+        "population": (
+            "the contiguous seen corpus 2021-04-27..2025-12-26, 1,213 trading days, "
+            "daily 8-currency cross-section built from all three seen panels"
+        ),
+        "target": (
+            "cost-adjusted next-day currency-vs-basket return (Tracks A/B) and "
+            "P(|move| > round trip) (Track C), expanding walk-forward, 6 folds"
+        ),
+        "condition_family": (
+            "three pre-registered tracks x one configuration each: ridge ranking, "
+            "regime-gain, hurdle-clearing filter"
+        ),
+        "horizon_family": "1 day",
+        "configurations": "3 fitted configurations, 6 folds each",
+        "prespecified": True,
+        "result": (
+            "all three failed their pre-registered success rules. Track A net IR "
+            "+0.23 but top-ten-day share 3.05, JPY +493 bp of a +92 bp book, dead at "
+            "2x cost stress; Track B's regime gain was EXACTLY zero incremental — a "
+            "per-day positive scalar does not survive a constant-gross book, so the "
+            "hypothesis was not measured; Track C was killed by its own negative "
+            "base-expectancy rule (-372.9 bp/yr). Two reviews then voided the gate "
+            "that authorised the run (unit-mismatched economics, expectation-bounded "
+            "search budget), so the run is a record, not evidence. Measured "
+            "turnovers 36.7/49.4/89.9/142.5 round trips a year for daily-updated "
+            "books are the durable output"
+        ),
+        "status": (
+            "CLOSED - MODEL_LEARNING_NOT_DECISION_GRADE_WITH_AVAILABLE_SEEN_DATA; "
+            "an earlier session omitted this entry and a review caught the gap: "
+            "the ledger's own discipline is that entries are appended when a round "
+            "completes, and this one completed on 2026-09-12"
+        ),
+    },
 ]
 
 #: Rough cumulative count of configurations evaluated against the 2025
