@@ -277,6 +277,15 @@ class TestTheBook:
             neutral["daily"]["factor_abs_cosine"].mean()
             < 0.5 * plain["daily"]["factor_abs_cosine"].mean()
         )
+        for pnl_day, row in neutral["daily"].iloc[::97].iterrows():
+            held = row[[f"x_{c}" for c in C]].to_numpy(dtype=float)
+            window = excess.loc[: row["decision_day"]].to_numpy()[-120:]
+            factor = construction.leading_factor(window)
+            loading = held @ factor
+            assert row["factor_abs_cosine"] == pytest.approx(abs(loading) / np.linalg.norm(held))
+            assert row["factor_pnl"] == pytest.approx(
+                loading * (factor @ excess.loc[pnl_day].to_numpy())
+            )
 
     def test_cost_stress_changes_cost_and_nothing_else(self) -> None:
         excess = _synthetic_excess()
@@ -627,18 +636,20 @@ class TestPreregistration:
     def test_the_digest_ignores_line_endings(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        """`source_digests` itself, over a CRLF copy of every hashed source."""
-        before = prereg.source_digests()
+        """`source_digests` itself, over an LF and a CRLF copy of every hashed source."""
         for relative in prereg.HASHED_SOURCES:
             text = (ROOT / relative).read_bytes().replace(b"\r\n", b"\n")
-            target = tmp_path / relative
-            target.parent.mkdir(parents=True, exist_ok=True)
-            target.write_bytes(text.replace(b"\n", b"\r\n"))
-        monkeypatch.setattr(prereg, "_ROOT", tmp_path)
-        assert prereg.source_digests() == before
-        edited = tmp_path / prereg.HASHED_SOURCES[1]
+            for flavour, content in (("lf", text), ("crlf", text.replace(b"\n", b"\r\n"))):
+                target = tmp_path / flavour / relative
+                target.parent.mkdir(parents=True, exist_ok=True)
+                target.write_bytes(content)
+        monkeypatch.setattr(prereg, "_ROOT", tmp_path / "lf")
+        lf = prereg.source_digests()
+        monkeypatch.setattr(prereg, "_ROOT", tmp_path / "crlf")
+        assert prereg.source_digests() == lf
+        edited = tmp_path / "crlf" / prereg.HASHED_SOURCES[1]
         edited.write_bytes(edited.read_bytes() + b"# edit\r\n")
-        assert prereg.source_digests() != before
+        assert prereg.source_digests() != lf
 
     def test_the_recorded_hash_is_the_measured_one(self) -> None:
         if prereg.FROZEN_HASH == "UNFROZEN":

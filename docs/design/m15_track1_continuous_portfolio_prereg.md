@@ -31,12 +31,15 @@ G10 FX spot において **cost 後に意味のある年間収益 / Sharpe** を
 ```
 features (currency state)  →  ridge expected relative return μ (8,)
   →  vol-normalized scores μ/σ  →  trailing leading-factor neutralization
-  →  capped sum-zero weights (gross 1, |w_c| ≤ 0.25)
-  →  no-trade band 0.10（sum-zero 保持、単独 breach には counter-leg）
+  →  capped sum-zero target weights (gross 1, |w_c| ≤ 0.25)
+  →  no-trade band 0.10（sum-zero 保持、同符号 breach のみなら counter-leg）
   →  ex-ante vol target 10%（leverage ≤ 5×、hysteresis 10%）
   →  traded delta x_t − x_{t−1} のみ  →  cost = Σ|Δ| × 1.703 bp
   →  P&L = x_t · r_{t+1}（翌日のリターンのみ）
 ```
+
+⭐ **cap 0.25 と gross 1 は target にかかる**。保有 book は band の分だけ両方を超えうる
+（合成 AR(1) μ で `max|x_c| > 0.25` が約 4 割の日）。実現した最大 weight・gross>1 の日比率を報告する。
 
 ## 3. ⭐ H-003 / C08 novelty boundary（実行前に明示）
 
@@ -52,17 +55,42 @@ Track 1 の差異（すべてコードの性質）:
    score から射影除去する。H-003 の失敗は「知らなかった exposure」だったが、本 book は
    事前に除去し、事後に残差を測る。
 3. **仮説は条件付き推定であって persistence ではない**: 3 horizon の強さは 7 入力中の 3 つで、
-   ridge は 0 や負の重みも付けられる。**C08 形の unfitted persistence は Baseline 1 として
-   走らせ、primary が明確に上回らなければ kill**（`does_not_beat_the_unfitted_benchmark`）—
-   閉鎖 family を再現するだけの primary は閉鎖 family そのものだから。
+   ridge は 0 や負の重みも付けられる。**C08 形の unfitted rule は Baseline 1 として
+   persistence と reversal の両符号で走らせ、primary が良い方を明確に上回らなければ kill**
+   （`does_not_beat_the_unfitted_benchmark`）— 閉鎖 family も、その符号反転も、再現するだけの
+   primary はその family そのものだから。
 4. **連続重み + 部分 rebalance** が binary top/bottom 選択を置き換え、book は entry/exit では
    なく target の差分を売買する。
+
+⭐ レビュー（Role 1 BLOCKER）: 初稿の Baseline 1 は正符号だけで、60 日 z に負の係数を学習した
+合成 reversal book が、符号反転 B1（Sharpe 2.32）に負けたまま Case A（1.46 vs 正符号 B1 −2.87）
+になった。ridge が内部で「符号反転」をやれてしまい、結果後禁止の「sign flip」を素通りする。
+
+## 3a. ⭐ この corpus への先行曝露（実行前の開示）
+
+設計はこの corpus に対して盲目ではない。**#479 Track A** は同じ seen corpus で pooled ridge を
+7 特徴で学習し（うち 6 つが本 book と同じ: excess return 5/20/60d z、realised vol 20d z、
+dispersion share 20d z、beta to common factor 60d。残り 1 つは beta to risk factor 60d）、
+宣言 df 4.2・**1 日** target で fold ごとの係数を出力した。Track B は trend age を使った。
+#479 の 3 track はすべて development gate で不合格。その結果が見えた**後で**、本設計は
+risk-factor beta を外し、trend age を加え、target を 5 日に、df を 3.0 にした。各変更には
+architecture 上の理由があり、どれも out-of-fold 経済量の比較で選んでいないが、選んだのは
+#479 の出力を見たセッションである。したがって本 run は**データの意味でも特徴選択の意味でも**
+`EXPLORATORY_SEEN_DATA`。
 
 ## 4. Data
 
 seen 連続 corpus `2021-04-26 … 2025-12-28`（`EXPLORATORY_SEEN_DATA`、3 つの guarded route
 経由のみ）。daily 通貨 excess return（PAIRS_20 の signed pair return の通貨平均を断面 demean）。
-診断用に公開 BIS 政策金利を corpus span に**フィルタして**読む（carry accrual 診断のみ）。
+usable days `2021-07-19 … 2025-12-26`（1,154 日、欠損なし・連続。日付のみ確認、リターン・fit なし）。
+
+その他の読み取り（すべて宣言）:
+
+* `features.build` は本 book が使わない H1 特徴のために 20 ペアの H1 を同じ guarded route で
+  読み、`artifacts/track_a_scratch/exogenous/s1_calendar.json`（中銀会合カレンダー）も読む。
+* carry 診断用に公開 BIS 政策金利 parquet を読む。FX データではない。1 row group なので
+  span 外の行も decode されてから捨てられる。**EUR は amendment A-1 に従い deposit facility**
+  （2024-09-18 以前は BIS 値 − 0.50、`economic_edge/rates.py` の実測差 +0.500）。
 
 ## 5. Protected data
 
@@ -90,6 +118,10 @@ horizon 5 日は sweep ではなく architecture から: band で保持される
 expanding window、初期学習 1.5 年、step 0.5 年、**purge 5 日 + embargo 1 日**、random split なし。
 各 test 日はそれより前に学習した 1 つの fold のモデルだけで予測される。
 
+実 corpus の fold 幾何（日付のみ）: 6 fold、test 日数 130 / 130 / 130 / 130 / 130 / 114、
+最初の test 日 `2023-01-17`。**test 60 日未満の fold は報告するが正の fold 比率には数えない**
+（宣言。現在の幾何では該当なし）。
+
 ## 8. Portfolio mapping（primary 固定 + 診断 2）
 
 | | mapping |
@@ -100,15 +132,18 @@ expanding window、初期学習 1.5 年、step 0.5 年、**purge 5 日 + embargo
 ## 9. Factor neutralization
 
 trailing 120 日の通貨 excess return 共分散の第 1 主成分（demean・単位長）を score から
-射影除去。重み cap `|w_c| ≤ 0.25`（USD・JPY を含む単一通貨集中の上限）、sum-zero、gross ≤ 1。
+射影除去。**target** 重み cap `|w_c| ≤ 0.25`、sum-zero、gross ≤ 1（保有 book は band 分超えうる）。
 **情報損失の診断**: raw score と neutralized score の日次相関、両者の rank IC、
 neutralization を外した book（`diag_no_factor_neutralisation`）。
+**残差の事後測定**（保有 exposure で毎日）: 第 1 主成分との |cos|、factor loading × factor
+return の P&L とその gross 占有率。cap と band を通ると直交性は崩れるので、除去したことではなく
+残ったものを測る。
 
 ## 10. Efficiency bundle
 
 | 要素 | 固定値 | 根拠 |
 | --- | --- | --- |
-| **no-trade band** | **0.10**（per-currency、sum-zero 保持、単独 breach に counter-leg） | 下表の signal-free 較正 |
+| **no-trade band** | **0.10**（per-currency、sum-zero 保持、同符号 breach のみなら counter-leg） | 下表の signal-free 較正 |
 | band 診断 | none、0.15（**最大 3**） | |
 | vol target | ex-ante 10%、trailing 60 日共分散（past-only） | risk normalization であって alpha ではない |
 | leverage | 上限 5×、hysteresis 10%（変化が 10% を超えた時だけ更新） | |
@@ -116,16 +151,18 @@ neutralization を外した book（`diag_no_factor_neutralisation`）。
 
 ### Signal-free band 較正（20 日半減期 AR(1) 合成 target、`construction.band_calibration`）
 
-| band | 年間 turnover | alpha capture |
-| --- | --- | --- |
-| 0 | 34.17 | 1.0000 |
-| 0.05 | 23.15 | 0.9888 |
-| 0.08 | 18.08 | 0.9708 |
-| **0.10** | **15.69** | **0.9576** |
-| 0.15 | 11.27 | 0.9131 |
+| band | turnover（正規化 target） | capture（正規化 target） | turnover（cap 0.25 target） | capture（cap 0.25 target） |
+| --- | --- | --- | --- | --- |
+| 0 | 34.17 | 1.0000 | 32.91 | 1.0000 |
+| 0.05 | 23.31 | 0.9898 | 22.96 | 0.9792 |
+| 0.08 | 18.33 | 0.9734 | 18.08 | 0.9575 |
+| **0.10** | **15.85** | **0.9610** | **15.70** | **0.9377** |
+| 0.15 | 11.47 | 0.9177 | 11.29 | 0.8858 |
 
-sum-zero 制約と counter-leg 規則を入れた実装可能版の band 0.10 が、#480 の動作点
-（capture 0.958）を再現する。**市場データも signal も一切入っていない**。
+band 0.10 は #480 の動作点（capture 0.958、cap なし）を正規化 target で再現する。primary の
+cap 付き写像では capture は **0.938** に下がる（Role 1 観察 O-2 — band の選択根拠は cap なし較正
+だったことを開示）。vol target の leverage 変動による売買は較正に入らない。
+**市場データも signal も一切入っていない**。
 
 ## 11. ⭐ Cost model — 差分にのみ課金
 
@@ -134,6 +171,12 @@ sum-zero 制約と counter-leg 規則を入れた実装可能版の band 0.10 �
 課金 = Σ_c |x_t − x_{t−1}| × 1.703 bp（= turnover 1 単位 Σ|Δ|/2 あたり 3.406 bp）
 ```
 
+* ⭐ **課金の大きさの正確な記述**（Role 1 R-3）: 1.32 は Track 2 の「1 通貨 対 残り 7 通貨」の
+  孤立 position で、**片側 1 単位あたり**の pair notional。課金はそれを**両側**の Σ|Δ| に掛けるので、
+  孤立 position に対しては Track 2 の実測 routing の**約 2 倍**（開くだけで 3.406 bp、pair book の
+  実費は 1.703 bp）、ランダムな sum-zero trade では faithful cost の**約 1.7 倍**。#480 から継承した
+  規約で、保守側にしか働かない（book を良く見せることはできない）。判定はこの課金で行い、
+  faithful cost での net Sharpe を並べて報告する。
 * **課金しないもの**: prediction ごと、signal ごと、pair ごとの独立 round trip、変化のない
   position の close/reopen。
 * **faithful cost**（equal-split pair book の片道 notional × pair 往復の半分）を横に報告し、
@@ -149,7 +192,7 @@ annual cost drag、stressed cost、cost per unit capital、cost per unit gross e
 | | 定義 |
 | --- | --- |
 | **B0** | cash（net ≡ 0） |
-| **B1** | unfitted persistence: 60 日 excess return z をそのまま μ として **primary と同じ構成 + bundle** に通す（C08 形） |
+| **B1** | unfitted persistence: 60 日 excess return z をそのまま μ として **primary と同じ構成 + bundle** に通す（C08 形）。**符号反転版（reversal）も同じ構成で走らせ、判定は良い方を読む** |
 | **B2** | primary の fitted μ を linear 重み・neutralization なし・cap なし・毎日 full rebalance・vol target なし |
 | **Primary** | §2 |
 
@@ -161,7 +204,11 @@ gross・cost・faithful cost・net 年率 / 実現 vol / gross・net Sharpe（**
 max DD / fold 別 net Sharpe と正の fold 比率 / 通貨別 gross P&L、最大通貨の正 P&L 占有率、
 最大通貨を除いた gross P&L、USD・JPY 占有率 / **top 1・5・10 日の net 占有率**、上位 5 日を
 除いた net / 分散 regime 別 net / raw→neutralized score 相関 / rank IC（1d・5d、診断のみ）/
-vol scenario 8・10・12%（return・vol・DD・leverage を比例、Sharpe 不変）/ carry accrual。
+vol scenario 8・10・12%（**実際にその vol target で走らせた book** — 10% book の比例拡大ではない。
+比例拡大は leverage 上限 5× を無視し、「12%」行の実現 vol が 9.8%・平均 leverage 6.0 になった）/
+leverage 上限に張り付いた日比率・上限なしで必要な leverage・実現 vol / target / 保有 book の最大
+weight と gross>1 の日比率 / factor 残差（|cos|、factor P&L 占有率）/ 上位 2 通貨を除いた gross、
+USD leg を除いた gross / carry accrual（EUR は deposit facility）/ 5 日 IC の t は重複しない 5 日おき。
 
 ## 14. Adjudication（primary の base cost のみを読む）
 
@@ -171,20 +218,26 @@ vol scenario 8・10・12%（return・vol・DD・leverage を比例、Sharpe 不�
 2. net Sharpe < 0.20（年率収益が経済的に無視できる）
 3. 上位 5 日を除くと net ≤ 0（極端な tail 依存）
 4. 最大通貨を除くと gross ≤ 0（単一通貨支配）
-5. 正の fold が半数未満
-6. **primary net Sharpe ≤ B1 net Sharpe**（unfitted の閉鎖 family 形を超えない）
+5. 正の fold が半数未満（test 60 日未満の fold は数えない）
+6. **primary net Sharpe ≤ max(B1 persistence, B1 reversal) の net Sharpe**（unfitted の閉鎖 family 形を、どちらの符号でも超えない）
 7. turnover > 50 RT/年（単位 gross あたり）
-8. 平均 leverage > 5×（10% vol target で）
+8. **10% vol target で leverage 上限 5× に張り付く日が半数超**（初稿の「平均 leverage > 5×」は
+   上限 = 閾値なので構造上発火しなかった — Role 1 R-2）
 
 ### Case A — `CONTINUOUS_CURRENCY_PORTFOLIO_DEVELOPMENT_CANDIDATE`
 
 kill なし、かつ net Sharpe ≥ 0.5、正の fold が過半、どの通貨も正 P&L の半分以下、
-top 10 日 ≤ net の半分、×1.5 コストで net Sharpe > 0。
+top 10 日 ≤ net の半分、×1.5 コストで net Sharpe > 0、**上位 2 通貨を除いた gross > 0**、
+**USD leg を除いた gross > 0**。
 
 ### Case B — `MARGINAL_CONTINUOUS_PORTFOLIO_CANDIDATE`
 
 kill なし、かつ net Sharpe ≥ 0.3、正の fold が過半、どの通貨も正 P&L の半分以下、
-top 10 日 ≤ net の半分。
+top 10 日 ≤ net の半分、**上位 2 通貨を除いた gross > 0**、**USD leg を除いた gross > 0**。
+
+⭐ 追加 2 条件の理由（Role 1 R-4）: sum-zero book では 1 通貨を除いても同じペアの反対 leg の
+P&L が残る。USD/JPY だけの賭けは最大通貨占有率が**ちょうど 0.5** で「≤ 0.5」を通り、
+「最大通貨を除いた gross」も正のまま — 単一通貨条項は 1 ペア賭けに構造的に盲目だった。
 
 ### Case C — `CONTINUOUS_CURRENCY_PORTFOLIO_ARCHITECTURE_NOT_SUPPORTED_IN_SEEN_DEVELOPMENT`
 
@@ -197,7 +250,8 @@ top 10 日 ≤ net の半分。
 ## 15. Search budget（事前凍結）
 
 feature set 1（7 features）/ model class 1 / horizon 1 / primary mapping 1 + 診断 2 /
-primary band 1 + 診断 2 / fitted model 1 / baseline 3 / 診断 book 9 /
+primary band 1 + 診断 2 / fitted model 1 / baseline 3（B1 は 2 符号）/ 診断 book 11
+（unlevered、vol target 8%・12%、mapping 2、band 2、neutralization なし、cost ×1.5・×2、DD governor）/
 **ハイパーパラメータ探索なし**（penalty は宣言 df に解く）/ **診断からの選択は禁止**
 （判定は primary のみ）/ AutoML なし。
 
@@ -205,6 +259,15 @@ primary band 1 + 診断 2 / fitted model 1 / baseline 3 / 診断 book 9 /
 
 feature 追加 / horizon 変更 / 符号反転 / 通貨除外 / band 最適化 / leverage・vol target 最適化 /
 regime filter 追加 / 非線形モデル追加 / 保護 span の目的を問わない読み取り。
+
+## 16a. 凍結と実行の束縛
+
+凍結 hash が見るもの: specification 全体（本文書の数値すべて）+ `continuous_portfolio` の計算
+モジュール 5 つ + `model_learning` の features / corpus / walkforward / `__init__`（保護 span 境界）+
+`exploratory_m15` の 3 route + `feasibility/inventory.py`（コスト定数）の正規化済みソース。
+`driver develop` は実行した commit を記録し、hash 対象・prereg・driver に HEAD との差分があれば、
+また `development.json` が既にあれば（**実行は 1 回**）、1 バイトも読まずに止まる。
+hash が見ないもの（観察として開示）: ライブラリのバージョン、キャッシュの中身。
 
 ## 17. 停止規則
 
