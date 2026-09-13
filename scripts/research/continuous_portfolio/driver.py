@@ -4,18 +4,34 @@
 
     python -m scripts.research.continuous_portfolio.driver prereg
     python -m scripts.research.continuous_portfolio.driver develop
+
+`develop` is the pre-registered run and happens once. Before it reads a byte it
+compares every hashed source, the pre-registration and this driver with their
+content at `HEAD` (so neither a dirty file nor a git index flag can hide an
+edit), and writes a start marker. A marker or a finished record already present
+refuses the run: a run that failed after the marker is a recorded event, not a
+free retry.
 """
 
 from __future__ import annotations
 
 import argparse
+import datetime as dt
 import json
 import subprocess
 import sys
 from pathlib import Path
 from typing import Any, Final
 
-ARTIFACTS: Final[Path] = Path("artifacts/research/continuous_portfolio")
+ROOT: Final[Path] = Path(__file__).resolve().parents[3]
+ARTIFACTS: Final[Path] = ROOT / "artifacts/research/continuous_portfolio"
+STARTED: Final[str] = "development.started.json"
+FINISHED: Final[str] = "development.json"
+
+RUN_BOUND_SOURCES: Final[tuple[str, ...]] = (
+    "scripts/research/continuous_portfolio/prereg.py",
+    "scripts/research/continuous_portfolio/driver.py",
+)
 
 
 def _write(name: str, payload: dict[str, Any]) -> Path:
@@ -25,6 +41,60 @@ def _write(name: str, payload: dict[str, Any]) -> Path:
         json.dumps(payload, indent=2, sort_keys=True, default=str) + "\n", encoding="utf-8"
     )
     return path
+
+
+def _normalised(text: str) -> str:
+    return "".join(line + chr(10) for line in text.splitlines())
+
+
+def _git(*args: str) -> str:
+    return subprocess.run(
+        ["git", "-C", str(ROOT), *args], capture_output=True, text=True, check=True
+    ).stdout
+
+
+def checkout(paths: tuple[str, ...]) -> dict[str, Any]:
+    """The commit the run executes, and every path whose content differs from it."""
+    head = _git("rev-parse", "HEAD").strip()
+    modified = []
+    for relative in paths:
+        committed = subprocess.run(
+            ["git", "-C", str(ROOT), "show", f"HEAD:{relative}"],
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+        )
+        on_disk = ROOT / relative
+        if committed.returncode != 0 or not on_disk.is_file():
+            modified.append(relative)
+            continue
+        if _normalised(committed.stdout) != _normalised(on_disk.read_text(encoding="utf-8")):
+            modified.append(relative)
+    return {"head": head, "sources_differing_from_head": modified}
+
+
+def develop() -> Path:
+    from scripts.research.continuous_portfolio import development
+    from scripts.research.continuous_portfolio import prereg as prereg_module
+
+    for name in (STARTED, FINISHED):
+        if (ARTIFACTS / name).exists():
+            raise SystemExit(f"{name} exists: the pre-registered run happens once")
+    bound = checkout((*prereg_module.HASHED_SOURCES, *RUN_BOUND_SOURCES))
+    if bound["sources_differing_from_head"]:
+        raise SystemExit(f"sources differ from HEAD: {bound}")
+    frozen = prereg_module.assert_frozen()
+    _write(
+        STARTED,
+        {
+            "started_utc": dt.datetime.now(dt.UTC).isoformat(),
+            "checkout": bound,
+            "preregistration_frozen_hash": frozen,
+        },
+    )
+    record = development.run()
+    record["checkout"] = bound
+    return _write(FINISHED, record)
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -46,36 +116,9 @@ def main(argv: list[str] | None = None) -> int:
         }
         path = _write("prereg.json", payload)
     else:
-        from scripts.research.continuous_portfolio import development
-        from scripts.research.continuous_portfolio import prereg as prereg_module
-
-        if (ARTIFACTS / "development.json").exists():
-            raise SystemExit("development.json exists: the pre-registered run happens once")
-        checkout = _checkout(
-            (
-                *prereg_module.HASHED_SOURCES,
-                "scripts/research/continuous_portfolio/prereg.py",
-                "scripts/research/continuous_portfolio/driver.py",
-            )
-        )
-        if checkout["hashed_sources_modified"]:
-            raise SystemExit(f"hashed sources differ from HEAD: {checkout}")
-        record = development.run()
-        record["checkout"] = checkout
-        path = _write("development.json", record)
+        path = develop()
     print(f"wrote {path}")
     return 0
-
-
-def _checkout(paths: tuple[str, ...]) -> dict[str, Any]:
-    """The commit the run executed, and whether any hashed source differs from it."""
-    head = subprocess.run(
-        ["git", "rev-parse", "HEAD"], capture_output=True, text=True, check=True
-    ).stdout.strip()
-    status = subprocess.run(
-        ["git", "status", "--porcelain", "--", *paths], capture_output=True, text=True, check=True
-    ).stdout
-    return {"head": head, "hashed_sources_modified": [line for line in status.splitlines()]}
 
 
 if __name__ == "__main__":

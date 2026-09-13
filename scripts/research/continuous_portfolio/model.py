@@ -143,9 +143,19 @@ def walk_forward(
     return {"mu": mu, "folds": folds, "fold_diagnostics": diagnostics, "usable_days": days}
 
 
-def unfitted_momentum(frames: dict[str, pd.DataFrame], days: pd.DatetimeIndex) -> pd.DataFrame:
-    """Baseline 1's expected-return proxy: the 60-day excess-return z-score itself."""
-    return frames["currency_excess_return_60d_z"].reindex(days)
+#: The horizons of the unfitted rules, each run in both signs.
+UNFITTED_HORIZONS: Final[tuple[int, ...]] = (5, 20, 60)
+
+
+def unfitted_momentum(
+    frames: dict[str, pd.DataFrame], days: pd.DatetimeIndex, horizon: int = 60
+) -> pd.DataFrame:
+    """An unfitted expected-return proxy: one excess-return z-score, as is.
+
+    The 60-day one is Baseline 1 (C08-shaped); 5 and 20 days are the same rule at
+    the model's other two return horizons.
+    """
+    return frames[f"currency_excess_return_{horizon}d_z"].reindex(days)
 
 
 def fold_of(days: pd.DatetimeIndex, folds: list[wf.Fold]) -> pd.Series:
@@ -160,6 +170,7 @@ __all__ = [
     "FEATURES",
     "HORIZON_DAYS",
     "TARGET_EFFECTIVE_DF",
+    "UNFITTED_HORIZONS",
     "feature_rows",
     "fold_of",
     "forward_target",

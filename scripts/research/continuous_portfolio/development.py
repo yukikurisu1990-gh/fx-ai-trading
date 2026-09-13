@@ -129,6 +129,10 @@ def run() -> dict[str, Any]:
     panel = corpus_module.currency_panel()
     excess = panel["currency_excess_return"][list(construction.CURRENCIES)]
     frames = feature_module.build(panel)
+    usable = model.usable_days(frames, excess)
+    first_usable = excess.index.get_loc(usable[0])
+    if not usable.equals(excess.index[first_usable : first_usable + len(usable)]):
+        raise ValueError("usable days are not contiguous; refusing before any model is fitted")
 
     fitted = model.walk_forward(
         frames,
@@ -157,21 +161,29 @@ def run() -> dict[str, Any]:
         }
 
     primary = book(prereg_module.PRIMARY, mu)
-    momentum = model.unfitted_momentum(frames, oos_days)[list(construction.CURRENCIES)]
-    baseline_1 = book(
-        replace(prereg_module.PRIMARY, name="baseline_1_unfitted_persistence"), momentum
-    )
-    baseline_1_reversal = book(
-        replace(prereg_module.PRIMARY, name="baseline_1_unfitted_reversal"), -momentum
-    )
+    unfitted = {}
+    for horizon in model.UNFITTED_HORIZONS:
+        proxy = model.unfitted_momentum(frames, oos_days, horizon)[list(construction.CURRENCIES)]
+        for sign, label in ((1.0, "persistence"), (-1.0, "reversal")):
+            name = f"{label}_{horizon}d"
+            unfitted[name] = book(
+                replace(prereg_module.PRIMARY, name=f"unfitted_{name}"), sign * proxy
+            )
     baseline_2 = book(prereg_module.BASELINE_2, mu)
     diagnostics = {config.name: book(config, mu) for config in prereg_module.DIAGNOSTICS}
 
     verdict = evaluation.adjudicate(
         primary["summary"],
         stressed_1_5=diagnostics["diag_cost_1_5x"]["summary"],
-        baseline_persistence=baseline_1["summary"],
-        baseline_reversal=baseline_1_reversal["summary"],
+        unfitted_rules={
+            name: {
+                "net_sharpe": entry["summary"]["net_sharpe"],
+                "pnl_correlation": evaluation.pnl_correlation(
+                    primary["daily"]["net"], entry["daily"]["net"]
+                ),
+            }
+            for name, entry in unfitted.items()
+        },
         rules=prereg_module.ADJUDICATION_RULES,
     )
     scenario_books = {
@@ -214,8 +226,9 @@ def run() -> dict[str, Any]:
         "folds": fitted["fold_diagnostics"],
         "primary": strip(primary),
         "baseline_0_cash": {"summary": {"net_sharpe": 0.0, "net_annual_return": 0.0}},
-        "baseline_1_unfitted_persistence": strip(baseline_1),
-        "baseline_1_unfitted_reversal": strip(baseline_1_reversal),
+        "baseline_1_unfitted_persistence": strip(unfitted["persistence_60d"]),
+        "baseline_1_unfitted_reversal": strip(unfitted["reversal_60d"]),
+        "unfitted_rules": {name: strip(entry) for name, entry in unfitted.items()},
         "baseline_2_linear_no_bundle": strip(baseline_2),
         "diagnostics": {name: strip(entry) for name, entry in diagnostics.items()},
         "vol_scenarios": evaluation.vol_scenarios(scenario_books),

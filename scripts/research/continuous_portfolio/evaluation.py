@@ -47,6 +47,14 @@ def _max_drawdown(daily: pd.Series) -> float:
     return float((equity - equity.cummax()).min())
 
 
+def pnl_correlation(first: pd.Series, second: pd.Series) -> float | None:
+    """Correlation of two books' daily net P&L on the days both exist."""
+    joined = pd.concat([first, second], axis=1, join="inner").dropna()
+    if len(joined) < 3 or joined.iloc[:, 0].std() == 0 or joined.iloc[:, 1].std() == 0:
+        return None
+    return round(float(joined.iloc[:, 0].corr(joined.iloc[:, 1])), 4)
+
+
 def _finite_round(value: float, digits: int = 4) -> float | None:
     return round(float(value), digits) if math.isfinite(float(value)) else None
 
@@ -126,8 +134,9 @@ def summarise(
         ),
         #: --- residual exposure to the dominant factor, measured on the held book
         "mean_factor_abs_cosine": _finite_round(daily["factor_abs_cosine"].mean()),
+        "factor_pnl_total": round(float(daily["factor_pnl"].sum()), 6),
         "factor_pnl_share_of_gross": round(float(daily["factor_pnl"].sum()) / total_gross, 4)
-        if total_gross
+        if total_gross > 0
         else None,
         #: --- economics, fractions of capital
         "gross_annual_return": round(float(gross.mean()) * days_per_year, 6),
@@ -225,19 +234,44 @@ def adjudicate(
     primary: dict[str, Any],
     *,
     stressed_1_5: dict[str, Any],
-    baseline_persistence: dict[str, Any],
-    baseline_reversal: dict[str, Any],
+    unfitted_rules: dict[str, dict[str, Any]],
     rules: dict[str, Any],
 ) -> dict[str, Any]:
     """The pre-registered verdict, every clause evaluated and reported.
 
-    The unfitted benchmark is read in **both** signs. A ridge fit may put a
-    negative weight on persistence, and a primary that is the closed family
-    inverted must not survive because the positive-signed rule lost money.
+    `unfitted_rules` maps `{persistence,reversal}_{5,20,60}d` to that rule's
+    `net_sharpe` and the correlation of its daily net P&L with the primary's.
+
+    Two benchmark kills. The C08-shaped 60-day rule is read in **both** signs
+    and the primary must beat the better one outright: a ridge may put a
+    negative weight on persistence, and the closed family inverted must not
+    survive because the positive rule lost money. And at every horizon, a rule
+    whose P&L moves with the primary's (correlation at or above the declared
+    threshold) that earns at least the primary's Sharpe kills it: the fit added
+    nothing to a single unfitted rule it resembles.
+
+    The top-day shares are reported and do not gate: over ~850 days ten
+    ordinary days already hold about 26 daily deviations against a total of
+    about 52.5 x Sharpe, so a "top ten at most half" clause demands a realised
+    Sharpe near 1.0 whatever the tails look like.
     """
     sharpe = primary["net_sharpe"]
+    correlations = [
+        rule["pnl_correlation"]
+        for rule in unfitted_rules.values()
+        if rule["pnl_correlation"] is not None
+    ]
     turnover_per_gross = primary["turnover_round_trips_per_year_per_unit_gross"] or float("inf")
-    unfitted_best = max(baseline_persistence["net_sharpe"], baseline_reversal["net_sharpe"])
+    unfitted_best = max(
+        unfitted_rules["persistence_60d"]["net_sharpe"],
+        unfitted_rules["reversal_60d"]["net_sharpe"],
+    )
+    threshold = rules["unfitted_rule_correlation_kill"]
+    resembling = {
+        name: rule
+        for name, rule in unfitted_rules.items()
+        if rule["pnl_correlation"] is not None and rule["pnl_correlation"] >= threshold
+    }
     kills = {
         "net_sharpe_not_positive": sharpe <= 0.0,
         "net_return_economically_negligible": sharpe < rules["negligible_net_sharpe"],
@@ -248,6 +282,9 @@ def adjudicate(
         ),
         "majority_of_folds_negative": primary["share_of_folds_positive"] < 0.5,
         "does_not_beat_the_unfitted_benchmark": sharpe <= unfitted_best,
+        "a_resembling_unfitted_rule_does_as_well": any(
+            rule["net_sharpe"] >= sharpe for rule in resembling.values()
+        ),
         "turnover_unexpectedly_high": turnover_per_gross > rules["max_turnover_per_unit_gross"],
         "leverage_cap_binds_most_days": (
             primary["share_days_at_leverage_cap"] > rules["max_share_days_at_leverage_cap"]
@@ -267,10 +304,6 @@ def adjudicate(
             primary["best_currency_share_of_positive_pnl"] is not None
             and primary["best_currency_share_of_positive_pnl"] <= 0.5
         ),
-        "top_10_days_at_most_half_of_net": (
-            primary["top_10_day_share_of_net"] is not None
-            and primary["top_10_day_share_of_net"] <= 0.5
-        ),
         "survives_1_5x_cost": stressed_1_5["net_sharpe"] > 0.0,
         **breadth,
     }
@@ -280,7 +313,6 @@ def adjudicate(
         "no_currency_above_half_of_positive_pnl": candidate_conditions[
             "no_currency_above_half_of_positive_pnl"
         ],
-        "top_10_days_at_most_half_of_net": candidate_conditions["top_10_days_at_most_half_of_net"],
         **breadth,
     }
     if any(kills.values()):
@@ -294,9 +326,15 @@ def adjudicate(
     return {
         "case": case,
         "economic_band": primary["economic_band"],
-        "unfitted_benchmark_net_sharpe_both_signs": {
-            "persistence": baseline_persistence["net_sharpe"],
-            "reversal": baseline_reversal["net_sharpe"],
+        "unfitted_rules": unfitted_rules,
+        "max_pnl_correlation_with_an_unfitted_rule": max(correlations, default=None),
+        "resembles_an_unfitted_rule": any(
+            value >= rules["unfitted_rule_resemblance_flag"] for value in correlations
+        ),
+        "top_day_shares_reported_not_gated": {
+            "top_1": primary.get("top_1_day_share_of_net"),
+            "top_5": primary.get("top_5_day_share_of_net"),
+            "top_10": primary.get("top_10_day_share_of_net"),
         },
         "kill_clauses": kills,
         "kills_fired": sorted(name for name, fired in kills.items() if fired),
@@ -310,6 +348,7 @@ __all__ = [
     "VOL_SCENARIOS",
     "adjudicate",
     "measured_days_per_year",
+    "pnl_correlation",
     "summarise",
     "vol_scenarios",
 ]

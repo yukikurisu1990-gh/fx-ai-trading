@@ -255,6 +255,24 @@ class TestTheBook:
         later = full["decision_day"] > t
         assert not np.allclose(full.loc[later, "x_USD"], replaced.loc[later, "x_USD"])
 
+    def test_the_held_book_is_reported_not_the_target(self) -> None:
+        """The cap binds the target; the held book drifts past it and must show that."""
+        excess = _synthetic_excess()
+        rng = np.random.default_rng(13)
+        days = excess.index[150:-1]
+        state = rng.normal(size=len(C))
+        rows = []
+        for _ in days:
+            state = 0.95 * state + np.sqrt(1 - 0.95**2) * rng.normal(size=len(C))
+            rows.append(state.copy())
+        mu = pd.DataFrame(rows, index=days, columns=C)
+        config = construction.BookConfig(name="t", vol_target=None)
+        daily = construction.run_book(config, mu, excess, 252.0)["daily"]
+        held = daily[[f"x_{c}" for c in C]].abs()
+        assert (daily["held_max_weight"] - held.max(axis=1)).abs().max() < 1e-15
+        assert (daily["held_gross"] - held.sum(axis=1)).abs().max() < 1e-15
+        assert daily["held_max_weight"].max() > config.weight_cap
+
     def test_a_gap_in_the_decision_days_is_refused(self) -> None:
         excess = _synthetic_excess(days=400)
         mu = self._mu(excess)
@@ -428,19 +446,44 @@ def _summary(**overrides: Any) -> dict[str, Any]:
     return base
 
 
+def _rules(
+    momentum: float = 0.1, reversal: float = -0.3, **others: tuple[float, float | None]
+) -> dict[str, dict[str, Any]]:
+    rules: dict[str, dict[str, Any]] = {
+        f"{sign}_{h}d": {"net_sharpe": -0.2, "pnl_correlation": 0.1}
+        for h in model.UNFITTED_HORIZONS
+        for sign in ("persistence", "reversal")
+    }
+    rules["persistence_60d"] = {"net_sharpe": momentum, "pnl_correlation": 0.2}
+    rules["reversal_60d"] = {"net_sharpe": reversal, "pnl_correlation": -0.2}
+    for name, (sharpe, corr) in others.items():
+        rules[name] = {"net_sharpe": sharpe, "pnl_correlation": corr}
+    return rules
+
+
+def _verdict(
+    primary: dict[str, Any],
+    stressed: float = 0.4,
+    momentum: float = 0.1,
+    reversal: float = -0.3,
+    **others: tuple[float, float | None],
+) -> dict[str, Any]:
+    return evaluation.adjudicate(
+        primary,
+        stressed_1_5={"net_sharpe": stressed},
+        unfitted_rules=_rules(momentum, reversal, **others),
+        rules=prereg.ADJUDICATION_RULES,
+    )
+
+
 def _adjudicate(
     primary: dict[str, Any],
     stressed: float = 0.4,
     momentum: float = 0.1,
     reversal: float = -0.3,
+    **others: tuple[float, float | None],
 ) -> str:
-    return evaluation.adjudicate(
-        primary,
-        stressed_1_5={"net_sharpe": stressed},
-        baseline_persistence={"net_sharpe": momentum},
-        baseline_reversal={"net_sharpe": reversal},
-        rules=prereg.ADJUDICATION_RULES,
-    )["case"]
+    return _verdict(primary, stressed, momentum, reversal, **others)["case"]
 
 
 class TestAdjudication:
@@ -482,6 +525,42 @@ class TestAdjudication:
     def test_a_one_pair_or_usd_only_book_is_not_a_candidate(self, field: str) -> None:
         assert _adjudicate(_summary(**{field: -0.001})) == CASE_C
         assert _adjudicate(_summary(net_sharpe=0.4, **{field: 0.0})) == CASE_C
+
+    def test_a_resembling_unfitted_rule_at_another_horizon_kills(self) -> None:
+        """⭐ A fitted 5-day reversal book is not saved by the 60-day benchmark."""
+        primary = _summary(net_sharpe=1.48)
+        assert _adjudicate(primary, momentum=-0.16, reversal=-0.29) == CASE_A
+        assert _adjudicate(primary, reversal_5d=(1.48, 0.9)) == CASE_C
+        assert _adjudicate(primary, reversal_5d=(1.47, 0.9)) == CASE_A
+        assert _adjudicate(primary, persistence_20d=(2.0, 0.49)) == CASE_A
+        assert _adjudicate(primary, persistence_20d=(2.0, 0.5)) == CASE_C
+        assert _adjudicate(primary, persistence_20d=(2.0, None)) == CASE_A
+
+    def test_resemblance_is_flagged_whatever_the_case(self) -> None:
+        verdict = _verdict(_summary(net_sharpe=1.48), reversal_5d=(0.4, 0.71))
+        assert verdict["case"] == CASE_A
+        assert verdict["resembles_an_unfitted_rule"]
+        assert verdict["max_pnl_correlation_with_an_unfitted_rule"] == 0.71
+        assert not _verdict(_summary(), reversal_5d=(0.4, 0.69))["resembles_an_unfitted_rule"]
+        assert _verdict(_summary(), reversal_5d=(0.4, 0.7))["resembles_an_unfitted_rule"]
+
+    def test_top_day_shares_do_not_gate(self) -> None:
+        """⭐ ~850 days: ten ordinary days hold ~26 deviations; the clause demanded Sharpe ~1."""
+        assert _adjudicate(_summary(net_sharpe=0.6, top_10_day_share_of_net=0.9)) == CASE_A
+        verdict = _verdict(_summary(net_sharpe=0.4, top_10_day_share_of_net=0.9))
+        assert verdict["case"] == CASE_B
+        assert verdict["top_day_shares_reported_not_gated"]["top_10"] == 0.9
+
+    def test_measured_days_per_year(self) -> None:
+        days = pd.bdate_range("2023-01-02", periods=522)
+        assert evaluation.measured_days_per_year(days) == pytest.approx(261, abs=1.5)
+
+    def test_pnl_correlation(self) -> None:
+        index = pd.bdate_range("2023-01-02", periods=50)
+        a = pd.Series(np.random.default_rng(1).normal(size=50), index=index)
+        assert evaluation.pnl_correlation(a, 2 * a) == pytest.approx(1.0)
+        assert evaluation.pnl_correlation(a, -a.iloc[10:]) == pytest.approx(-1.0)
+        assert evaluation.pnl_correlation(a, a * 0) is None
 
     def test_an_increment_over_a_negative_baseline_is_not_survival(self) -> None:
         """⭐ −0.983 → +0.234 is not an edge: the primary's own Sharpe decides."""
@@ -547,6 +626,22 @@ class TestAdjudication:
         assert summary["mean_uncapped_leverage"] > 5.0
         assert summary["realized_vol_over_target"] < 0.5
 
+    def test_the_cap_counts_demand_so_hysteresis_cannot_hide_it(self) -> None:
+        """⭐ Held leverage can sit at 4.55 for months while the target asks for 25."""
+        rng = np.random.default_rng(5)
+        n = 1200
+        scale = np.concatenate([np.full(300, 0.0040), np.geomspace(0.0040, 0.0006, 900)])
+        raw = rng.normal(size=(n, len(C))) * scale[:, None]
+        excess = pd.DataFrame(raw, index=pd.bdate_range("2020-01-06", periods=n), columns=C)
+        excess = excess.sub(excess.mean(axis=1), axis=0)
+        mu = TestTheBook()._mu(excess)
+        daily = construction.run_book(construction.BookConfig(name="t"), mu, excess, 252.0)["daily"]
+        demand = daily["uncapped_leverage"] >= 5.0
+        assert (daily["at_leverage_cap"] == demand).all()
+        hidden = demand & (daily["leverage"] < 5.0 - 1e-12)
+        assert hidden.sum() >= 10
+        assert daily.loc[hidden, "at_leverage_cap"].all()
+
 
 def _daily_frame(
     days: pd.DatetimeIndex, net: np.ndarray, pnl: dict[str, np.ndarray] | None = None
@@ -573,10 +668,6 @@ def _daily_frame(
     for c in C:
         columns[f"pnl_{c}"] = (pnl or {}).get(c, np.zeros(len(days)))
     return pd.DataFrame(columns, index=days + pd.Timedelta(days=1))
-
-    def test_measured_days_per_year(self) -> None:
-        days = pd.bdate_range("2023-01-02", periods=522)
-        assert evaluation.measured_days_per_year(days) == pytest.approx(261, abs=1.5)
 
 
 # ----------------------------------------------------------------- prereg
@@ -676,17 +767,19 @@ class TestDevelopmentHelpers:
     def test_eur_is_on_the_deposit_facility_throughout(self) -> None:
         from scripts.research.continuous_portfolio import development
 
-        dates = pd.to_datetime(["2023-01-02", "2024-09-17", "2024-09-18"], utc=True)
+        dates = pd.to_datetime(
+            ["2021-04-26", "2022-01-03", "2023-01-02", "2024-09-17", "2024-09-18"], utc=True
+        )
         frame = pd.DataFrame(
             {
                 "date": list(dates) * 2,
-                "currency": ["EUR"] * 3 + ["USD"] * 3,
-                "rate_pct": [2.50, 4.25, 3.50, 4.5, 5.5, 5.0],
+                "currency": ["EUR"] * 5 + ["USD"] * 5,
+                "rate_pct": [0.0, 0.0, 2.50, 4.25, 3.50, 0.25, 0.25, 4.5, 5.5, 5.0],
             }
         )
         rates = development._policy_rates(frame)
-        assert rates["EUR"].tolist() == pytest.approx([2.00, 3.75, 3.50])
-        assert rates["USD"].tolist() == pytest.approx([4.5, 5.5, 5.0])
+        assert rates["EUR"].tolist() == pytest.approx([-0.5, -0.5, 2.00, 3.75, 3.50])
+        assert rates["USD"].tolist() == pytest.approx([0.25, 0.25, 4.5, 5.5, 5.0])
 
     def test_the_non_overlapping_ic_t_uses_every_horizon_th_day(self) -> None:
         from scripts.research.continuous_portfolio import development
@@ -698,6 +791,101 @@ class TestDevelopmentHelpers:
         five = development._rank_ic(scores, excess.shift(-1), 5)
         assert one["mean"] == five["mean"]
         assert five["t_non_overlapping"] < one["t_non_overlapping"]
+
+
+# ------------------------------------------------------------------ driver
+class TestDriver:
+    def _no_run(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        from scripts.research.continuous_portfolio import development
+
+        def refuse() -> None:
+            raise AssertionError("development.run must not be reached")
+
+        monkeypatch.setattr(development, "run", refuse)
+
+    @pytest.mark.parametrize("existing", ["development.started.json", "development.json"])
+    def test_the_run_happens_once(
+        self, existing: str, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        from scripts.research.continuous_portfolio import driver
+
+        self._no_run(monkeypatch)
+        monkeypatch.setattr(driver, "ARTIFACTS", tmp_path)
+        (tmp_path / existing).write_text("{}", encoding="utf-8")
+        with pytest.raises(SystemExit, match="happens once"):
+            driver.develop()
+
+    def test_a_source_differing_from_head_refuses_before_the_marker(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        from scripts.research.continuous_portfolio import driver
+
+        self._no_run(monkeypatch)
+        monkeypatch.setattr(driver, "ARTIFACTS", tmp_path)
+        monkeypatch.setattr(
+            driver, "checkout", lambda paths: {"head": "x", "sources_differing_from_head": ["a"]}
+        )
+        with pytest.raises(SystemExit, match="differ from HEAD"):
+            driver.develop()
+        assert not (tmp_path / driver.STARTED).exists()
+
+    def test_the_start_marker_is_written_before_anything_is_read(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        from scripts.research.continuous_portfolio import development, driver
+
+        monkeypatch.setattr(driver, "ARTIFACTS", tmp_path)
+        monkeypatch.setattr(
+            driver, "checkout", lambda paths: {"head": "abc", "sources_differing_from_head": []}
+        )
+        monkeypatch.setattr(prereg, "assert_frozen", lambda: "frozen")
+
+        def run() -> None:
+            marker = json.loads((tmp_path / driver.STARTED).read_text(encoding="utf-8"))
+            assert marker["checkout"]["head"] == "abc"
+            assert marker["preregistration_frozen_hash"] == "frozen"
+            raise RuntimeError("stop after the marker check")
+
+        monkeypatch.setattr(development, "run", run)
+        with pytest.raises(RuntimeError, match="stop after the marker check"):
+            driver.develop()
+        with pytest.raises(SystemExit, match="happens once"):
+            driver.develop()
+
+    def test_checkout_compares_content_not_the_index(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """An `assume-unchanged` flag hides an edit from `git status`, not from this."""
+        import subprocess
+
+        from scripts.research.continuous_portfolio import driver
+
+        def git(*args: str) -> None:
+            subprocess.run(["git", "-C", str(tmp_path), *args], check=True, capture_output=True)
+
+        git("init", "-q")
+        git("config", "user.email", "t@example.invalid")
+        git("config", "user.name", "t")
+        (tmp_path / "a.py").write_text("x = 1\n", encoding="utf-8")
+        (tmp_path / "b.py").write_text("y = 1\n", encoding="utf-8")
+        git("add", "a.py", "b.py")
+        git("commit", "-q", "-m", "c")
+        monkeypatch.setattr(driver, "ROOT", tmp_path)
+        assert driver.checkout(("a.py", "b.py"))["sources_differing_from_head"] == []
+        (tmp_path / "a.py").write_bytes(b"x = 1\r\n")
+        assert driver.checkout(("a.py",))["sources_differing_from_head"] == []
+        (tmp_path / "b.py").write_text("y = 2\n", encoding="utf-8")
+        git("update-index", "--assume-unchanged", "b.py")
+        assert driver.checkout(("a.py", "b.py", "c.py"))["sources_differing_from_head"] == [
+            "b.py",
+            "c.py",
+        ]
+
+    def test_paths_are_anchored_at_the_repository_root(self) -> None:
+        from scripts.research.continuous_portfolio import driver
+
+        assert driver.ROOT == ROOT
+        assert driver.ARTIFACTS.is_absolute()
 
 
 # --------------------------------------------------------------- boundary

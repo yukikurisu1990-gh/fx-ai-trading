@@ -38,8 +38,10 @@ features (currency state)  →  ridge expected relative return μ (8,)
   →  P&L = x_t · r_{t+1}（翌日のリターンのみ）
 ```
 
-⭐ **cap 0.25 と gross 1 は target にかかる**。保有 book は band の分だけ両方を超えうる
-（合成 AR(1) μ で `max|x_c| > 0.25` が約 4 割の日）。実現した最大 weight・gross>1 の日比率を報告する。
+⭐ **cap 0.25 と gross 1 は target にかかる**。保有 book は両方を超えうる — **band の分とは限らない**
+（sum-zero 復元で counter-leg が自分の target を行き過ぎ、gross の超過は通貨をまたいで累積する。
+Role 2 再監査の反例: |w| = 0.45 > cap + band 0.35。合成 40 年で gross 最大 1.35）。
+上限は主張せず、実現した最大 weight・gross>1 の日比率を報告する。
 
 ## 3. ⭐ H-003 / C08 novelty boundary（実行前に明示）
 
@@ -132,7 +134,7 @@ expanding window、初期学習 1.5 年、step 0.5 年、**purge 5 日 + embargo
 ## 9. Factor neutralization
 
 trailing 120 日の通貨 excess return 共分散の第 1 主成分（demean・単位長）を score から
-射影除去。**target** 重み cap `|w_c| ≤ 0.25`、sum-zero、gross ≤ 1（保有 book は band 分超えうる）。
+射影除去。**target** 重み cap `|w_c| ≤ 0.25`、sum-zero、gross ≤ 1（保有 book は超えうる、上限は主張しない）。
 **情報損失の診断**: raw score と neutralized score の日次相関、両者の rank IC、
 neutralization を外した book（`diag_no_factor_neutralisation`）。
 **残差の事後測定**（保有 exposure で毎日）: 第 1 主成分との |cos|、factor loading × factor
@@ -193,6 +195,7 @@ annual cost drag、stressed cost、cost per unit capital、cost per unit gross e
 | --- | --- |
 | **B0** | cash（net ≡ 0） |
 | **B1** | unfitted persistence: 60 日 excess return z をそのまま μ として **primary と同じ構成 + bundle** に通す（C08 形）。**符号反転版（reversal）も同じ構成で走らせ、判定は良い方を読む** |
+| unfitted rules | 同じ rule を 5 日・20 日 z でも両符号で走らせる（計 6 book、60 日の 2 つが B1）。primary と日次 net P&L の相関を測る |
 | **B2** | primary の fitted μ を linear 重み・neutralization なし・cap なし・毎日 full rebalance・vol target なし |
 | **Primary** | §2 |
 
@@ -206,8 +209,9 @@ max DD / fold 別 net Sharpe と正の fold 比率 / 通貨別 gross P&L、最�
 除いた net / 分散 regime 別 net / raw→neutralized score 相関 / rank IC（1d・5d、診断のみ）/
 vol scenario 8・10・12%（**実際にその vol target で走らせた book** — 10% book の比例拡大ではない。
 比例拡大は leverage 上限 5× を無視し、「12%」行の実現 vol が 9.8%・平均 leverage 6.0 になった）/
-leverage 上限に張り付いた日比率・上限なしで必要な leverage・実現 vol / target / 保有 book の最大
-weight と gross>1 の日比率 / factor 残差（|cos|、factor P&L 占有率）/ 上位 2 通貨を除いた gross、
+target が leverage 上限以上を要求した日比率・上限なしで必要な leverage・実現 vol / target / 保有 book の最大
+weight と gross>1 の日比率 / factor 残差（|cos|、factor P&L 合計と gross>0 のときの占有率）/
+unfitted rule 6 本の net Sharpe と primary との日次 P&L 相関 / 上位 2 通貨を除いた gross、
 USD leg を除いた gross / carry accrual（EUR は deposit facility）/ 5 日 IC の t は重複しない 5 日おき。
 
 ## 14. Adjudication（primary の base cost のみを読む）
@@ -220,20 +224,39 @@ USD leg を除いた gross / carry accrual（EUR は deposit facility）/ 5 日 
 4. 最大通貨を除くと gross ≤ 0（単一通貨支配）
 5. 正の fold が半数未満（test 60 日未満の fold は数えない）
 6. **primary net Sharpe ≤ max(B1 persistence, B1 reversal) の net Sharpe**（unfitted の閉鎖 family 形を、どちらの符号でも超えない）
-7. turnover > 50 RT/年（単位 gross あたり）
-8. **10% vol target で leverage 上限 5× に張り付く日が半数超**（初稿の「平均 leverage > 5×」は
-   上限 = 閾値なので構造上発火しなかった — Role 1 R-2）
+7. **どの horizon・符号でも、primary と日次 net P&L の相関 ≥ 0.5 の unfitted rule が primary 以上の
+   net Sharpe**（fit が、似ている単一の unfitted rule に何も足していない）
+8. turnover > 50 RT/年（単位 gross あたり）
+9. **10% vol target で target が leverage 5× 以上を要求する日が半数超**（上限なしの要求で数える）
+
+⭐ 7 の理由（Role 1 再監査 N-4）: 60 日 B1 だけでは、持続的な逆張り信号を 5 日 z に埋め込んだ
+合成 book が B1（−0.16 / −0.29）を相手に Case A（1.48）になった — CLAUDE.md で dropped の
+multi-day reversal family に近い形。**報告義務**: 相関 0.7 以上の unfitted rule があれば、case に
+かかわらず最終報告で「primary はその rule に似ている」と明記する。
+
+⭐ 9 の理由: 初稿の「平均 leverage > 5×」は上限 = 閾値で発火せず（Role 1 R-2）、次の「保有 leverage が
+上限にある日」は hysteresis で回避できた（Role 1 N-2: 保有 4.545 のまま要求 25、張り付き 0/405 日）。
 
 ### Case A — `CONTINUOUS_CURRENCY_PORTFOLIO_DEVELOPMENT_CANDIDATE`
 
 kill なし、かつ net Sharpe ≥ 0.5、正の fold が過半、どの通貨も正 P&L の半分以下、
-top 10 日 ≤ net の半分、×1.5 コストで net Sharpe > 0、**上位 2 通貨を除いた gross > 0**、
-**USD leg を除いた gross > 0**。
+×1.5 コストで net Sharpe > 0、**上位 2 通貨を除いた gross > 0**、**USD leg を除いた gross > 0**。
 
 ### Case B — `MARGINAL_CONTINUOUS_PORTFOLIO_CANDIDATE`
 
 kill なし、かつ net Sharpe ≥ 0.3、正の fold が過半、どの通貨も正 P&L の半分以下、
-top 10 日 ≤ net の半分、**上位 2 通貨を除いた gross > 0**、**USD leg を除いた gross > 0**。
+**上位 2 通貨を除いた gross > 0**、**USD leg を除いた gross > 0**。
+
+⭐ **top 1/5/10 日占有率は報告のみで判定に入れない**（Role 1 再監査 N-1 BLOCKER）。初稿は
+「top 10 日 ≤ net の半分」を A/B 両方に置いていたが、約 850 日では普通の 10 日だけで約 26 日次
+標準偏差、net 合計は約 52.5 × Sharpe 日次標準偏差なので、**tail の形にかかわらず実現 Sharpe ≈ 1.0 を
+要求**していた（合成 MC で Case B 到達 0/150）。裁定の経済 band（0.30–0.50 marginal）を判定規則が
+黙って 1.0 に引き上げていたことになる。tail 依存の kill は「上位 5 日を除くと net ≤ 0」（kill 3）が担う。
+
+**判定規則の到達可能性（合成 MC、修正後、signal-free ではなく全通貨に等しい持続情報を持つ book、
+各 100 seed）**: 実現 Sharpe 0.3〜1.0 の run で kill 発火 0、Case B 到達 8/100（両強度）。
+**「上位 2 通貨を除いた gross > 0」は、他の B 条件をすべて満たす分散 book の 4/29・3/32（約 11〜14%）を
+落とす**（USD 条件は 0）。1 ペア集中を検出するための代金として事前に受け入れ、ここに開示する。
 
 ⭐ 追加 2 条件の理由（Role 1 R-4）: sum-zero book では 1 通貨を除いても同じペアの反対 leg の
 P&L が残る。USD/JPY だけの賭けは最大通貨占有率が**ちょうど 0.5** で「≤ 0.5」を通り、
@@ -250,7 +273,7 @@ P&L が残る。USD/JPY だけの賭けは最大通貨占有率が**ちょうど
 ## 15. Search budget（事前凍結）
 
 feature set 1（7 features）/ model class 1 / horizon 1 / primary mapping 1 + 診断 2 /
-primary band 1 + 診断 2 / fitted model 1 / baseline 3（B1 は 2 符号）/ 診断 book 11
+primary band 1 + 診断 2 / fitted model 1 / baseline 3（B1 は 2 符号）/ unfitted rule book 6（B1 を含む）/ 診断 book 11
 （unlevered、vol target 8%・12%、mapping 2、band 2、neutralization なし、cost ×1.5・×2、DD governor）/
 **ハイパーパラメータ探索なし**（penalty は宣言 df に解く）/ **診断からの選択は禁止**
 （判定は primary のみ）/ AutoML なし。
@@ -264,10 +287,19 @@ regime filter 追加 / 非線形モデル追加 / 保護 span の目的を問わ
 
 凍結 hash が見るもの: specification 全体（本文書の数値すべて）+ `continuous_portfolio` の計算
 モジュール 5 つ + `model_learning` の features / corpus / walkforward / `__init__`（保護 span 境界）+
-`exploratory_m15` の 3 route + `feasibility/inventory.py`（コスト定数）の正規化済みソース。
-`driver develop` は実行した commit を記録し、hash 対象・prereg・driver に HEAD との差分があれば、
-また `development.json` が既にあれば（**実行は 1 回**）、1 バイトも読まずに止まる。
-hash が見ないもの（観察として開示）: ライブラリのバージョン、キャッシュの中身。
+`exploratory_m15` の `__init__` と 3 route + `feasibility` の inventory / preflight（コスト定数）の正規化済みソース。
+
+`driver develop`（正式な実行経路）:
+
+1. `development.started.json` か `development.json` が既にあれば止まる（**実行は 1 回**。marker 後に
+   失敗した run は記録された事象であって、無料の再試行ではない）。
+2. hash 対象・prereg・driver の**内容**を `git show HEAD:` と比較し、差があれば止まる
+   （`git status` ではないので `assume-unchanged` でも隠せない。パスは repo root 基準で cwd に依存しない）。
+3. `assert_frozen()` の後、**読む前に** start marker（時刻・commit・凍結 hash）を書く。
+4. `development.run()` は fit の前に usable days の連続性を確認する。
+
+hash が見ないもの（開示）: ライブラリのバージョン、キャッシュの中身。`development.run()` を driver
+を経ずに直接呼べば 1〜3 は働かない（`assert_frozen` は働く）。
 
 ## 17. 停止規則
 

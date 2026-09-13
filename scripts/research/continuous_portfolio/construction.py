@@ -168,8 +168,10 @@ def band_rebalance(target: np.ndarray, held: np.ndarray, band: float) -> np.ndar
     opposite gap is traded as their counter-leg — otherwise the restoration
     would cancel the trade and the book could never move.
 
-    The weight cap and gross bound apply to the **target**; the held book can
-    drift past them by up to the band.
+    The weight cap and gross bound apply to the **target**. The held book can
+    drift past both, and not only by the band: the sum-zero restoration can move
+    a counter-leg beyond its own target, and the gross excess accumulates across
+    currencies. No bound is claimed; the realised values are reported.
     """
     gap = target - held
     if band <= 0:
@@ -309,7 +311,9 @@ def run_book(
             ex_ante = float(np.sqrt(max(held @ cov @ held, 0.0) * days_per_year))
             leverage = targeter.update(ex_ante)
             uncapped = targeter.uncapped
-            at_cap = bool(leverage >= config.max_leverage - 1e-12)
+            #: the cap binds when the target *asks* for it: the held leverage
+            #: can sit just below the cap for months under hysteresis
+            at_cap = bool(np.isfinite(uncapped) and uncapped >= config.max_leverage)
         scale = config.governor_scale if (config.drawdown_governor and governor_on) else 1.0
         exposure = held * leverage * scale
 

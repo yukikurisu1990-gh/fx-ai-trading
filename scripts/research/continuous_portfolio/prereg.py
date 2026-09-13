@@ -48,7 +48,11 @@ persistence or reversal book in disguise, the kill clause
 `does_not_beat_the_unfitted_benchmark` is the pre-registered stop. The ridge is
 free to put a negative weight on persistence; the fold coefficients are
 reported, and a sign-inverted closed family cannot survive on the positive
-rule having lost money.
+rule having lost money. The same unfitted rule is also run at 5 and 20 days in
+both signs; one whose daily P&L moves with the primary's (correlation >= 0.5)
+and earns at least as much kills it, and a correlation >= 0.7 is stated in the
+report whatever the case — so a fitted 5-day reversal book, close to the
+dropped multi-day reversal family, is not saved by the 60-day benchmark.
 
 Prior exposure of this corpus to these features — disclosed before the run
 --------------------------------------------------------------------------
@@ -71,8 +75,10 @@ What the constraints bind
 -------------------------
 
 The weight cap and the gross-1 bound apply to the **target** weights. The held
-book is the band-rebalanced book and can drift past both by up to the band; its
-realised maximum weight and gross are reported. Factor neutralisation is applied
+book is the band-rebalanced book and can drift past both — by more than the band
+(a counter-leg can overshoot its own target, and gross excess accumulates across
+currencies). No bound is claimed; its realised maximum weight and gross are
+reported. Factor neutralisation is applied
 to scores before weights exist; the held exposure's residual loading on the
 trailing leading factor and the P&L it earns are measured every day.
 """
@@ -101,6 +107,7 @@ from scripts.research.continuous_portfolio.model import (
     FEATURES,
     HORIZON_DAYS,
     TARGET_EFFECTIVE_DF,
+    UNFITTED_HORIZONS,
 )
 from scripts.research.model_learning import PAIRS_20, PROTECTED_SPANS, SEEN_SPANS
 
@@ -130,6 +137,11 @@ BASELINES: Final[dict[str, Any]] = {
     "baseline_1_unfitted_reversal": (
         "the same z-score negated, through the same construction — the C08-shaped "
         "rule inverted. The primary must beat the better of the two signs outright"
+    ),
+    "unfitted_rules_other_horizons": (
+        "the 5-day and 20-day excess-return z-scores, both signs, through the same "
+        "construction. A rule whose daily net P&L correlates >= 0.5 with the primary's "
+        "and earns at least the primary's Sharpe kills it"
     ),
     "baseline_2_linear_no_bundle": (
         "the primary's fitted expected returns through linear score weights, no "
@@ -199,6 +211,10 @@ ADJUDICATION_RULES: Final[dict[str, Any]] = {
     "max_share_days_at_leverage_cap": 0.5,
     "leverage_cap": PRIMARY.max_leverage,
     "min_fold_test_days_counted": MIN_FOLD_TEST_DAYS,
+    "unfitted_rule_horizons": list(UNFITTED_HORIZONS),
+    "unfitted_rule_correlation_kill": 0.5,
+    "unfitted_rule_resemblance_flag": 0.7,
+    "top_day_shares": "reported, not gated",
     "economic_bands": [[ceiling, label] for ceiling, label in ECONOMIC_BANDS],
     "case_a": CASE_A,
     "case_b": CASE_B,
@@ -208,7 +224,6 @@ ADJUDICATION_RULES: Final[dict[str, Any]] = {
         "net Sharpe >= 0.5",
         "more than half of counted folds positive",
         "no currency above half of positive gross P&L",
-        "top 10 days at most half of net",
         "net Sharpe positive at 1.5x cost",
         "gross P&L > 0 once the best two currencies are removed",
         "gross P&L > 0 once the USD leg is removed",
@@ -218,7 +233,6 @@ ADJUDICATION_RULES: Final[dict[str, Any]] = {
         "net Sharpe >= 0.3",
         "more than half of counted folds positive",
         "no currency above half of positive gross P&L",
-        "top 10 days at most half of net",
         "gross P&L > 0 once the best two currencies are removed",
         "gross P&L > 0 once the USD leg is removed",
     ],
@@ -228,10 +242,17 @@ ADJUDICATION_RULES: Final[dict[str, Any]] = {
         "net P&L <= 0 once the five best days are removed",
         "gross P&L <= 0 once the best currency is removed",
         "fewer than half of counted folds positive (folds under 60 test days not counted)",
-        "primary net Sharpe <= the better of Baseline 1 persistence and Baseline 1 reversal",
+        "primary net Sharpe <= the better of the 60-day unfitted rule in either sign",
+        "an unfitted rule at any horizon, either sign, with daily net P&L correlation >= 0.5 "
+        "to the primary, has net Sharpe >= the primary's",
         "turnover above 50 round trips a year per unit of gross",
-        "the 5x leverage cap binds on more than half of days at the 10% volatility target",
+        "the target asks for the 5x leverage cap or more on more than half of days at the "
+        "10% volatility target (uncapped demand, so hysteresis cannot hide it)",
     ],
+    "reporting_obligation": (
+        "if the primary's daily net P&L correlates >= 0.7 with any unfitted rule, the "
+        "final report states that the primary resembles that rule, whatever the case"
+    ),
     "an_increment_over_a_negative_baseline_is_never_a_survival_reason": True,
 }
 
@@ -247,6 +268,7 @@ SEARCH_BUDGET: Final[dict[str, Any]] = {
     "fitted_models": 1,
     "baselines": 3,
     "baseline_1_signs": 2,
+    "unfitted_rule_books": 2 * len(UNFITTED_HORIZONS),
     "diagnostic_books": 11,
     "hyperparameter_search": "none — the ridge penalty is solved to a declared df",
     "selection_among_diagnostics": "forbidden — the verdict reads the primary only",
@@ -292,10 +314,12 @@ HASHED_SOURCES: Final[tuple[str, ...]] = (
     "scripts/research/model_learning/corpus.py",
     "scripts/research/model_learning/walkforward.py",
     "scripts/research/model_learning/__init__.py",
+    "scripts/research/exploratory_m15/__init__.py",
     "scripts/research/exploratory_m15/bars.py",
     "scripts/research/exploratory_m15/supplemental.py",
     "scripts/research/exploratory_m15/momentum.py",
     "scripts/research/feasibility/inventory.py",
+    "scripts/research/feasibility/preflight.py",
 )
 
 _ROOT: Final[Path] = Path(__file__).resolve().parents[3]
