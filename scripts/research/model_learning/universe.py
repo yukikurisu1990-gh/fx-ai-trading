@@ -53,6 +53,7 @@ from scripts.research.model_learning import (
     CURRENCIES_G10,
     PAIRS_20,
     STATUS_NOT_DECISION_GRADE,
+    STATUS_NOT_DECISION_GRADE_WITHDRAWN_WORDING,
     TRAIN_YEARS_TOTAL,
     ModelRole,
     role_gate,
@@ -852,9 +853,17 @@ def build() -> dict[str, Any]:
         #: from opposite directions — the economic condition divided a cost
         #: denominated in gross leg notional by a volatility denominated in levered
         #: capital — and a third finding showed the search budget bounded an
-        #: expectation rather than an error rate. Corrected, nothing is admissible:
-        #: a daily design cannot pay for its own trading at any believable ratio,
-        #: and the out-of-fold span cannot support even one selection.
+        #: expectation rather than an error rate. Corrected, nothing is admissible
+        #: UNDER THIS GATE: a daily design cannot pay for its own trading at the
+        #: turnover the gate assumes, and the out-of-fold span cannot support one
+        #: selection at the false-positive rate the gate requires. Both premises
+        #: were later audited (profit-architecture redesign) and the status is
+        #: scoped to the gate accordingly.
+        "status_scope": (
+            "inadmissible under the development gate in force at the time; not a "
+            "claim that model learning is impossible on the seen corpus"
+        ),
+        "status_wording_withdrawn": STATUS_NOT_DECISION_GRADE_WITHDRAWN_WORDING,
         "why_not_decision_grade": {
             "break_even_annual_ir_at_daily_turnover": round(
                 252.0 * BASKET_ROUNDTRIP_BP / role_gate.MEASURED_ANNUAL_VOL_PER_GROSS_BP, 3

@@ -56,7 +56,22 @@ STATUS_SIMPLE_TESTING_EXHAUSTED: Final[str] = (
 )
 STATUS_SURVIVES: Final[str] = "MODEL_LEARNING_CANDIDATE_SURVIVES_SEEN_DEVELOPMENT"
 STATUS_NO_EDGE: Final[str] = "MODEL_LEARNING_RESEARCH_FAILED_TO_FIND_INCREMENTAL_EDGE"
-STATUS_NOT_DECISION_GRADE: Final[str] = "MODEL_LEARNING_NOT_DECISION_GRADE_WITH_AVAILABLE_SEEN_DATA"
+#: ⭐ Scoped to the gate, by human + ChatGPT ruling at #479's conditional merge.
+#: The token first recorded here was
+#: `MODEL_LEARNING_NOT_DECISION_GRADE_WITH_AVAILABLE_SEEN_DATA`, which generalised a
+#: gate verdict into a claim about the data. The profit-architecture redesign
+#: then showed that gate conflated prediction frequency with turnover,
+#: overstated portfolio cost, charged confirmation-level false-positive
+#: control to development selection, and hard-blocked on capacity and search
+#: budgets. What stands is the history — the candidates were inadmissible
+#: under the gate in force — not a statement that model learning is impossible
+#: on the seen corpus. No measurement changed with the wording.
+STATUS_NOT_DECISION_GRADE: Final[str] = (
+    "MODEL_LEARNING_NOT_DECISION_GRADE_UNDER_CURRENT_DEVELOPMENT_GATE"
+)
+STATUS_NOT_DECISION_GRADE_WITHDRAWN_WORDING: Final[str] = (
+    "MODEL_LEARNING_NOT_DECISION_GRADE_WITH_AVAILABLE_SEEN_DATA"
+)
 
 #: The strongest thing a seen-data run may conclude. Not an edge, not a
 #: confirmation, and explicitly not production readiness.
@@ -339,6 +354,7 @@ __all__ = [
     "PROTECTED_SPANS",
     "SEEN_SPANS",
     "STATUS_NOT_DECISION_GRADE",
+    "STATUS_NOT_DECISION_GRADE_WITHDRAWN_WORDING",
     "STATUS_NO_EDGE",
     "STATUS_SIMPLE_TESTING_EXHAUSTED",
     "STATUS_SURVIVES",

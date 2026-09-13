@@ -20,6 +20,7 @@ import pytest
 from scripts.research.model_learning import (
     PROTECTED_SPANS,
     SEEN_SPANS,
+    STATUS_NOT_DECISION_GRADE,
     TRAIN_YEARS_TOTAL,
     ModelRole,
     ProtectedDataError,
@@ -395,7 +396,12 @@ class TestTheUniverse:
         assert counts[role_gate.Verdict.SEARCH_BUDGET_EXCEEDED.value] == 3
         assert counts[role_gate.Verdict.PRIOR_FAMILY_CLOSED.value] == 1
         assert sum(counts.values()) == record["n_candidates"] == 18
-        assert record["status"] == ("MODEL_LEARNING_NOT_DECISION_GRADE_WITH_AVAILABLE_SEEN_DATA")
+        assert record["status"] == STATUS_NOT_DECISION_GRADE
+        assert STATUS_NOT_DECISION_GRADE.endswith("_UNDER_CURRENT_DEVELOPMENT_GATE")
+        assert record["status_wording_withdrawn"] == (
+            "MODEL_LEARNING_NOT_DECISION_GRADE_WITH_AVAILABLE_SEEN_DATA"
+        )
+        assert "not a claim" in record["status_scope"]
 
     def test_the_default_architecture_never_reaches_its_capacity_budget(self) -> None:
         """⭐ The control case, and why it now fails one condition earlier.
