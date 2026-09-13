@@ -1662,7 +1662,9 @@
     }
   },
   "signal_free": true,
-  "status": "MODEL_LEARNING_NOT_DECISION_GRADE_WITH_AVAILABLE_SEEN_DATA",
+  "status": "MODEL_LEARNING_NOT_DECISION_GRADE_UNDER_CURRENT_DEVELOPMENT_GATE",
+  "status_scope": "inadmissible under the development gate in force at the time; not a claim that model learning is impossible on the seen corpus",
+  "status_wording_withdrawn": "MODEL_LEARNING_NOT_DECISION_GRADE_WITH_AVAILABLE_SEEN_DATA",
   "train_years": 4.674,
   "validation_years": 3.174,
   "why_not_decision_grade": {

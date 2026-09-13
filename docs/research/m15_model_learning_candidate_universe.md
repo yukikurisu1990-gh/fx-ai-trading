@@ -3,7 +3,9 @@
 `NON_DECISION_BEARING_EXPLORATORY_ONLY` · `RESEARCH_SCRATCH_NON_AUTHORITATIVE`
 · `PRODUCTION_READINESS_NOT_CLAIMED`
 
-Status: **`MODEL_LEARNING_NOT_DECISION_GRADE_WITH_AVAILABLE_SEEN_DATA`**（裁定 §46 Case C）
+Status: **`MODEL_LEARNING_NOT_DECISION_GRADE_UNDER_CURRENT_DEVELOPMENT_GATE`**（裁定 §46 Case C）
+
+> ⭐ **status 表記の訂正（#479 conditional merge の裁定、2026-09-14）。** 初出の `MODEL_LEARNING_NOT_DECISION_GRADE_WITH_AVAILABLE_SEEN_DATA` は gate の判定を**データの性質**へ一般化していた。後続の profit architecture redesign（#480）が、この gate が予測頻度と turnover を混同し、portfolio コストを過大評価し、confirmation 級の偽陽性制御を development 選択に課し、capacity/search 予算で hard block していたことを示した。残るのは「**当時の gate の下では inadmissible だった**」という研究履歴であって、「seen data では model learning 自体が不可能」ではない。**測定値・artifact の数値は一切変更していない**（`design.json` は status 表記とその範囲注記の 3 フィールドだけが変わる）。
 
 成果物は `artifacts/research/model_learning/design.json` と
 `artifacts/research/model_learning/development.json`。
