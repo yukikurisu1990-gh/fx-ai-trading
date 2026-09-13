@@ -36,16 +36,45 @@ sentence:
    three horizons is three of seven inputs to a ridge model that may weight any
    of them at zero or negative, alongside volatility, dispersion, trend age and
    factor beta. The C08 hypothesis — raw persistence, unfitted — is run as
-   **Baseline 1**, and the primary must beat it outright or it is killed: a
-   primary that only reproduces the closed family is the closed family.
+   **Baseline 1 in both signs** (persistence and its reversal), and the primary
+   must beat the better of the two outright or it is killed: a primary that only
+   reproduces the closed family, or the closed family inverted, is that family.
 4. **Continuous weights and partial rebalancing** replace binary top/bottom
    selection, so the book trades target differences rather than entries and
    exits.
 
 If the primary's per-currency P&L or its fitted coefficients show it to be a
-persistence book in disguise — the momentum coefficients carrying the fit and
-the primary indistinguishable from Baseline 1 — the kill clause
-`does_not_beat_the_unfitted_benchmark` is the pre-registered stop.
+persistence or reversal book in disguise, the kill clause
+`does_not_beat_the_unfitted_benchmark` is the pre-registered stop. The ridge is
+free to put a negative weight on persistence; the fold coefficients are
+reported, and a sign-inverted closed family cannot survive on the positive
+rule having lost money.
+
+Prior exposure of this corpus to these features — disclosed before the run
+--------------------------------------------------------------------------
+
+The design was not chosen blind to the corpus. #479's Track A fitted a pooled
+ridge on the **same** seen corpus with seven features, six of which are this
+book's (`currency_excess_return_{5,20,60}d_z`, `currency_realised_vol_20d_z`,
+`currency_dispersion_share_20d_z`, `currency_beta_to_common_factor_60d`, plus
+`currency_beta_to_risk_factor_60d`), at a declared df of 4.2 and a **1-day**
+target, and reported per-fold coefficients; its Track B used
+`trend_age_d1_normalised`. All three #479 tracks failed their development gate.
+After those results were visible this design dropped the risk-factor beta, added
+trend age, moved the target to 5 days and set df to 3.0. Each change has a
+stated architectural reason, and none was chosen by comparing out-of-fold
+economics — but the choices were made by a session that had seen #479's
+outputs, so this run is `EXPLORATORY_SEEN_DATA` in the feature-selection sense
+as well as the data sense.
+
+What the constraints bind
+-------------------------
+
+The weight cap and the gross-1 bound apply to the **target** weights. The held
+book is the band-rebalanced book and can drift past both by up to the band; its
+realised maximum weight and gross are reported. Factor neutralisation is applied
+to scores before weights exist; the held exposure's residual loading on the
+trailing leading factor and the P&L it earns are measured every day.
 """
 
 from __future__ import annotations
@@ -66,7 +95,7 @@ from scripts.research.continuous_portfolio import (
     PAIR_ROUNDTRIP_BP,
 )
 from scripts.research.continuous_portfolio.construction import BookConfig
-from scripts.research.continuous_portfolio.evaluation import VOL_SCENARIOS
+from scripts.research.continuous_portfolio.evaluation import MIN_FOLD_TEST_DAYS, VOL_SCENARIOS
 from scripts.research.continuous_portfolio.model import (
     EMBARGO_DAYS,
     FEATURES,
@@ -96,7 +125,11 @@ BASELINES: Final[dict[str, Any]] = {
     "baseline_1_unfitted_persistence": (
         "the 60-day currency excess-return z-score, unfitted and positive-signed, "
         "through the primary book's own construction and efficiency bundle — the "
-        "C08-shaped rule the primary must beat outright"
+        "C08-shaped rule"
+    ),
+    "baseline_1_unfitted_reversal": (
+        "the same z-score negated, through the same construction — the C08-shaped "
+        "rule inverted. The primary must beat the better of the two signs outright"
     ),
     "baseline_2_linear_no_bundle": (
         "the primary's fitted expected returns through linear score weights, no "
@@ -114,9 +147,12 @@ BASELINE_2: Final[BookConfig] = BookConfig(
 )
 
 #: Diagnostics are reported and never replace the primary. Each changes exactly
-#: one declared choice.
+#: one declared choice. The two volatility-target books exist only to report the
+#: 8% and 12% scenarios as run; they are not candidates.
 DIAGNOSTICS: Final[tuple[BookConfig, ...]] = (
-    BookConfig(name="diag_unlevered_gross_1", vol_target=None),
+    BookConfig(name="diag_unlevered", vol_target=None),
+    BookConfig(name="diag_vol_target_0_08", vol_target=0.08),
+    BookConfig(name="diag_vol_target_0_12", vol_target=0.12),
     BookConfig(name="diag_mapping_linear", mapping="linear"),
     BookConfig(name="diag_mapping_rank", mapping="rank"),
     BookConfig(name="diag_band_none", band=0.0),
@@ -132,6 +168,14 @@ COST_MODEL: Final[dict[str, Any]] = {
     "charged_routing_ratio": CHARGED_ROUTING_RATIO,
     "charged_one_way_bp_per_unit_currency_notional": CHARGED_ONE_WAY_BP,
     "charged_on": "sum|x_t - x_(t-1)| only — the realised delta of the held exposure",
+    "charge_relative_to_measurements": (
+        "3.406 bp per turnover unit sum|delta|/2, inherited from #480. 1.32 is Track 2's "
+        "pair notional per unit of ONE side of an isolated one-against-seven position, "
+        "and the charge applies it to both sides: about 2x Track 2's routing for an "
+        "isolated position and about 1.7x the faithful equal-split cost of a random "
+        "sum-zero trade. Conservative by construction; the verdict uses it, and the "
+        "net Sharpe at the faithful cost is reported beside it"
+    ),
     "not_charged": [
         "per prediction",
         "per signal",
@@ -152,7 +196,9 @@ COST_MODEL: Final[dict[str, Any]] = {
 ADJUDICATION_RULES: Final[dict[str, Any]] = {
     "negligible_net_sharpe": 0.20,
     "max_turnover_per_unit_gross": 50.0,
-    "max_mean_leverage": 5.0,
+    "max_share_days_at_leverage_cap": 0.5,
+    "leverage_cap": PRIMARY.max_leverage,
+    "min_fold_test_days_counted": MIN_FOLD_TEST_DAYS,
     "economic_bands": [[ceiling, label] for ceiling, label in ECONOMIC_BANDS],
     "case_a": CASE_A,
     "case_b": CASE_B,
@@ -160,27 +206,31 @@ ADJUDICATION_RULES: Final[dict[str, Any]] = {
     "case_a_requires": [
         "no kill clause",
         "net Sharpe >= 0.5",
-        "more than half of folds positive",
+        "more than half of counted folds positive",
         "no currency above half of positive gross P&L",
         "top 10 days at most half of net",
         "net Sharpe positive at 1.5x cost",
+        "gross P&L > 0 once the best two currencies are removed",
+        "gross P&L > 0 once the USD leg is removed",
     ],
     "case_b_requires": [
         "no kill clause",
         "net Sharpe >= 0.3",
-        "more than half of folds positive",
+        "more than half of counted folds positive",
         "no currency above half of positive gross P&L",
         "top 10 days at most half of net",
+        "gross P&L > 0 once the best two currencies are removed",
+        "gross P&L > 0 once the USD leg is removed",
     ],
     "kill_clauses": [
         "net Sharpe <= 0",
         "net Sharpe < 0.20 (net return economically negligible)",
         "net P&L <= 0 once the five best days are removed",
         "gross P&L <= 0 once the best currency is removed",
-        "fewer than half of folds positive",
-        "primary net Sharpe <= Baseline 1 net Sharpe",
+        "fewer than half of counted folds positive (folds under 60 test days not counted)",
+        "primary net Sharpe <= the better of Baseline 1 persistence and Baseline 1 reversal",
         "turnover above 50 round trips a year per unit of gross",
-        "mean leverage above 5x at the 10% volatility target",
+        "the 5x leverage cap binds on more than half of days at the 10% volatility target",
     ],
     "an_increment_over_a_negative_baseline_is_never_a_survival_reason": True,
 }
@@ -196,7 +246,8 @@ SEARCH_BUDGET: Final[dict[str, Any]] = {
     "diagnostic_bands": 2,
     "fitted_models": 1,
     "baselines": 3,
-    "diagnostic_books": 9,
+    "baseline_1_signs": 2,
+    "diagnostic_books": 11,
     "hyperparameter_search": "none — the ridge penalty is solved to a declared df",
     "selection_among_diagnostics": "forbidden — the verdict reads the primary only",
     "automl": False,
@@ -240,6 +291,11 @@ HASHED_SOURCES: Final[tuple[str, ...]] = (
     "scripts/research/model_learning/features.py",
     "scripts/research/model_learning/corpus.py",
     "scripts/research/model_learning/walkforward.py",
+    "scripts/research/model_learning/__init__.py",
+    "scripts/research/exploratory_m15/bars.py",
+    "scripts/research/exploratory_m15/supplemental.py",
+    "scripts/research/exploratory_m15/momentum.py",
+    "scripts/research/feasibility/inventory.py",
 )
 
 _ROOT: Final[Path] = Path(__file__).resolve().parents[3]

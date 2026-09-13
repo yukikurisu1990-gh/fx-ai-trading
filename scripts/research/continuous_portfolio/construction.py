@@ -163,10 +163,13 @@ def capped_weights(scores: np.ndarray, cap: float) -> np.ndarray:
 def band_rebalance(target: np.ndarray, held: np.ndarray, band: float) -> np.ndarray:
     """Trade only currencies whose gap exceeds `band`, keeping the book sum-zero.
 
-    The traded set's net is spread back over the traded set. When exactly one
-    currency breaches the band, the currency with the largest opposite gap is
-    traded as its counter-leg — otherwise the restoration would cancel the only
-    trade and the book could never move.
+    The traded set's net is spread back over the traded set. When every
+    breaching currency's gap has the same sign, the currency with the largest
+    opposite gap is traded as their counter-leg — otherwise the restoration
+    would cancel the trade and the book could never move.
+
+    The weight cap and gross bound apply to the **target**; the held book can
+    drift past them by up to the band.
     """
     gap = target - held
     if band <= 0:
@@ -174,10 +177,10 @@ def band_rebalance(target: np.ndarray, held: np.ndarray, band: float) -> np.ndar
     mask = np.abs(gap) > band
     if not mask.any():
         return held.copy()
-    if mask.sum() == 1:
-        main = int(np.flatnonzero(mask)[0])
-        opposite = -np.sign(gap[main]) * gap
-        opposite[main] = -np.inf
+    signs = np.sign(gap[mask])
+    if np.all(signs == signs[0]):
+        opposite = -signs[0] * gap
+        opposite[mask] = -np.inf
         mask[int(np.argmax(opposite))] = True
     trade = np.where(mask, gap, 0.0)
     trade[mask] -= trade.sum() / mask.sum()
@@ -193,12 +196,16 @@ class VolTargeter:
     max_leverage: float
     hysteresis: float
     held: float | None = None
+    #: The leverage the target would ask for without the cap, for reporting.
+    uncapped: float = float("nan")
 
     def update(self, ex_ante_vol: float) -> float:
         if not np.isfinite(ex_ante_vol) or ex_ante_vol <= 0:
             wanted = self.held if self.held is not None else 0.0
+            self.uncapped = float("nan")
         else:
-            wanted = min(self.target_vol / ex_ante_vol, self.max_leverage)
+            self.uncapped = self.target_vol / ex_ante_vol
+            wanted = min(self.uncapped, self.max_leverage)
         if self.held is None or self.held == 0.0 or abs(wanted / self.held - 1.0) > self.hysteresis:
             self.held = wanted
         return float(self.held)
@@ -257,6 +264,14 @@ def run_book(
     returns = excess[currencies]
     index = returns.index
     positions = {day: index.get_loc(day) for day in mu.index}
+    locations = np.array(list(positions.values()), dtype=int)
+    if len(locations) and not np.array_equal(
+        locations, np.arange(locations[0], locations[0] + len(locations))
+    ):
+        raise ValueError(
+            "mu must cover a contiguous run of the return calendar: a missing decision "
+            "day would silently drop the held book's P&L"
+        )
     pair_map = split_map()
     mapping = MAPPINGS[config.mapping]
 
@@ -279,20 +294,22 @@ def run_book(
         history = returns.iloc[: loc + 1].to_numpy()
         sigma = np.nanstd(history[-config.sigma_window :], axis=0, ddof=0)
         raw = mapping(mu.loc[day].to_numpy(dtype=float), sigma)
-        scores = raw
-        if config.neutralize_leading_factor:
-            factor = leading_factor(history[-config.factor_window :])
-            scores = neutralize(raw, factor)
+        factor = leading_factor(history[-config.factor_window :])
+        scores = neutralize(raw, factor) if config.neutralize_leading_factor else raw
         target = capped_weights(scores, config.weight_cap)
         held = band_rebalance(target, held, config.band)
 
         leverage = 1.0
+        uncapped = float("nan")
+        at_cap = False
         ex_ante = float("nan")
         if targeter is not None:
             window = history[-config.vol_window :]
             cov = np.cov(window, rowvar=False)
             ex_ante = float(np.sqrt(max(held @ cov @ held, 0.0) * days_per_year))
             leverage = targeter.update(ex_ante)
+            uncapped = targeter.uncapped
+            at_cap = bool(leverage >= config.max_leverage - 1e-12)
         scale = config.governor_scale if (config.drawdown_governor and governor_on) else 1.0
         exposure = held * leverage * scale
 
@@ -304,6 +321,8 @@ def run_book(
         contributions = exposure * realised
         gross = float(contributions.sum())
         net = gross - cost
+        exposure_norm = float(np.linalg.norm(exposure))
+        factor_loading = float(exposure @ factor)
 
         equity += net
         peak = max(peak, equity)
@@ -326,6 +345,14 @@ def run_book(
                 "pair_gross": float(np.abs(pair_map @ exposure).sum()),
                 "one_way_traded": float(np.abs(delta).sum()),
                 "leverage": leverage * scale,
+                "uncapped_leverage": uncapped,
+                "at_leverage_cap": at_cap,
+                "held_max_weight": float(np.abs(held).max()),
+                "held_gross": float(np.abs(held).sum()),
+                "factor_abs_cosine": abs(factor_loading) / exposure_norm
+                if exposure_norm > 0
+                else float("nan"),
+                "factor_pnl": factor_loading * float(factor @ realised),
                 "ex_ante_vol": ex_ante,
                 "traded": bool(np.abs(delta).sum() > 0),
                 "raw_target_corr": _corr(raw, scores),
@@ -352,14 +379,16 @@ def band_calibration(
     half_life_days: float = 20.0,
     days: int = 252 * 60,
     seed: int = 20260914,
+    weight_cap: float | None = None,
 ) -> dict[str, Any]:
     """Turnover and alpha capture of `band_rebalance` on synthetic AR(1) targets.
 
     The pre-registration chose its band here, before any model existed: the
     #480 mechanics measured capture 0.958 for an unconstrained per-currency band
-    of 0.10; the implementable sum-zero version, with a counter-leg when only one
-    currency breaches, reaches 0.958 at the same band. No price, return or signal
-    enters.
+    of 0.10; the implementable sum-zero version, with a counter-leg for
+    same-signed breaches, is measured at the same band. `weight_cap` repeats the
+    measurement through the primary's capped weights, which lowers capture. No
+    price, return or signal enters.
     """
     rho = 0.5 ** (1.0 / half_life_days)
     innovation = np.sqrt(1.0 - rho * rho)
@@ -373,8 +402,11 @@ def band_calibration(
         dot_tt = 0.0
         for _ in range(days):
             state = rho * state + innovation * rng.standard_normal(len(CURRENCIES))
-            target = state - state.mean()
-            target = target / np.abs(target).sum()
+            if weight_cap is None:
+                target = state - state.mean()
+                target = target / np.abs(target).sum()
+            else:
+                target = capped_weights(state, weight_cap)
             if held is None:
                 held = target.copy()
                 continue
@@ -387,7 +419,7 @@ def band_calibration(
             "annual_turnover": round(one_way / 2.0 / days * 252.0, 2),
             "alpha_capture": round(dot_ht / dot_tt, 4),
         }
-    return {"half_life_days": half_life_days, "rows": rows}
+    return {"half_life_days": half_life_days, "weight_cap": weight_cap, "rows": rows}
 
 
 __all__ = [

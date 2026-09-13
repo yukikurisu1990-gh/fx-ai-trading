@@ -158,6 +158,15 @@ class TestConstruction:
         assert moved[0] > 0
         assert np.count_nonzero(moved) == 2
 
+    def test_same_signed_breaches_trade_with_a_counter_leg(self) -> None:
+        """Two positive breaches and no negative one must still move the book."""
+        held = np.zeros(len(C))
+        target = np.array([0.15, 0.15, -0.075, -0.075, -0.075, -0.075, 0, 0])
+        moved = construction.band_rebalance(target, held, 0.10)
+        assert moved.sum() == pytest.approx(0, abs=1e-12)
+        assert moved[0] > 0 and moved[1] > 0
+        assert np.count_nonzero(moved) == 3
+
     def test_band_zero_is_full_rebalance(self) -> None:
         target = np.array([0.2, 0.1, -0.2, -0.1, 0, 0, 0, 0])
         assert np.array_equal(construction.band_rebalance(target, np.zeros(8), 0.0), target)
@@ -172,12 +181,19 @@ class TestConstruction:
             < 0.6 * table["rows"]["band_0"]["annual_turnover"]
         )
 
+    def test_the_capped_calibration_is_measured_through_the_primary_weights(self) -> None:
+        free = construction.band_calibration(bands=(0.10,), days=252 * 10)
+        capped = construction.band_calibration(bands=(0.10,), days=252 * 10, weight_cap=0.25)
+        assert capped["weight_cap"] == 0.25
+        assert capped["rows"]["band_0.1"] != free["rows"]["band_0.1"]
+
     def test_vol_targeter_caps_and_holds_within_hysteresis(self) -> None:
         targeter = construction.VolTargeter(0.10, 5.0, 0.10)
         assert targeter.update(0.04) == pytest.approx(2.5)
         assert targeter.update(0.042) == pytest.approx(2.5)
         assert targeter.update(0.05) == pytest.approx(2.0)
         assert targeter.update(0.001) == pytest.approx(5.0)
+        assert targeter.uncapped == pytest.approx(100.0)
 
 
 # ---------------------------------------------------------------- the book
@@ -214,20 +230,53 @@ class TestTheBook:
             assert row["gross"] == pytest.approx(exposure @ excess.loc[pnl_day].to_numpy())
             assert pnl_day > row["decision_day"]
 
-    def test_the_book_never_sees_the_future(self) -> None:
-        """⭐ Truncating returns after day k leaves every earlier decision unchanged."""
-        excess = _synthetic_excess()
+    @pytest.mark.parametrize("governor", [False, True])
+    @pytest.mark.parametrize("cut", [300, 520, 777])
+    def test_the_book_never_sees_the_future(self, governor: bool, cut: int) -> None:
+        """⭐ Replacing every return after decision day t leaves every decision <= t unchanged.
+
+        Truncation cannot show a one-day look-ahead — the last decision's P&L day
+        survives in both runs — so the future is replaced rather than cut.
+        """
+        excess = _synthetic_excess(scale=0.02)
         mu = self._mu(excess)
-        config = construction.BookConfig(name="t")
+        config = construction.BookConfig(name="t", drawdown_governor=governor)
         full = construction.run_book(config, mu, excess, 252.0)["daily"]
-        cut = excess.index[500]
-        truncated = construction.run_book(
-            config, mu[mu.index < cut], excess[excess.index <= cut], 252.0
-        )["daily"]
-        columns = [f"x_{c}" for c in C] + ["leverage", "cost"]
-        shared = truncated.index
-        assert len(shared) > 300
-        pd.testing.assert_frame_equal(full.loc[shared, columns], truncated[columns])
+        t = excess.index[cut]
+        altered = excess.copy()
+        rng = np.random.default_rng(99)
+        after = altered.index > t
+        altered.loc[after] = rng.normal(0.0, 0.05, size=(int(after.sum()), len(C)))
+        replaced = construction.run_book(config, mu, altered, 252.0)["daily"]
+        columns = [f"x_{c}" for c in C] + ["leverage", "cost", "held_max_weight"]
+        mask = full["decision_day"] <= t
+        assert mask.sum() > 100
+        pd.testing.assert_frame_equal(full.loc[mask, columns], replaced.loc[mask, columns])
+        later = full["decision_day"] > t
+        assert not np.allclose(full.loc[later, "x_USD"], replaced.loc[later, "x_USD"])
+
+    def test_a_gap_in_the_decision_days_is_refused(self) -> None:
+        excess = _synthetic_excess(days=400)
+        mu = self._mu(excess)
+        holed = mu.drop(mu.index[100:130])
+        with pytest.raises(ValueError, match="contiguous"):
+            construction.run_book(construction.BookConfig(name="t"), holed, excess, 252.0)
+
+    def test_neutralisation_lowers_the_held_book_factor_loading(self) -> None:
+        rng = np.random.default_rng(12)
+        common = rng.normal(0, 0.01, size=(900, 1)) * np.linspace(-1, 1, len(C))
+        raw = common + rng.normal(0, 0.002, size=(900, len(C)))
+        excess = pd.DataFrame(raw, index=pd.bdate_range("2021-05-03", periods=900), columns=C)
+        excess = excess.sub(excess.mean(axis=1), axis=0)
+        mu = excess.rolling(20).sum().iloc[150:-1]
+        neutral = construction.run_book(construction.BookConfig(name="n"), mu, excess, 252.0)
+        plain = construction.run_book(
+            construction.BookConfig(name="p", neutralize_leading_factor=False), mu, excess, 252.0
+        )
+        assert (
+            neutral["daily"]["factor_abs_cosine"].mean()
+            < 0.5 * plain["daily"]["factor_abs_cosine"].mean()
+        )
 
     def test_cost_stress_changes_cost_and_nothing_else(self) -> None:
         excess = _synthetic_excess()
@@ -293,26 +342,41 @@ class TestTheModel:
         assert target.iloc[10].to_numpy() == pytest.approx(expected.to_numpy())
         assert target.iloc[-5:].isna().all().all()
 
-    def test_training_rows_never_reach_the_test_window(
-        self, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
-        """⭐ The label purge, measured on the rows the fit actually receives."""
-        excess = _synthetic_excess(days=900)
-        frames = _synthetic_frames(excess, 0.0)
-        seen: list[int] = []
-        real_fit = model.wf.fit_ridge
+    @pytest.mark.parametrize("fold_number", [1, 2])
+    def test_no_return_from_the_embargo_day_onward_reaches_a_fold(self, fold_number: int) -> None:
+        """⭐ The label purge, by replacement: returns from the day before the test
+        window onward are rewritten, and that fold's predictions do not move."""
+        excess = _synthetic_excess(days=1100)
+        frames = _synthetic_frames(excess, 0.5)
+        kwargs = {"initial_train_years": 1.5, "step_years": 0.5}
+        base = model.walk_forward(frames, excess, **kwargs)
+        fold = base["folds"][fold_number]
+        start = excess.index.get_loc(fold.test_start) - model.EMBARGO_DAYS
+        altered = excess.copy()
+        rng = np.random.default_rng(5)
+        altered.iloc[start:] = rng.normal(0.0, 0.05, size=(len(excess) - start, len(C)))
+        moved = model.walk_forward(frames, altered, **kwargs)
+        window = (base["mu"].index >= fold.test_start) & (base["mu"].index <= fold.test_end)
+        pd.testing.assert_frame_equal(base["mu"].loc[window], moved["mu"].loc[window])
+        later = base["folds"][fold_number + 1]
+        later_window = base["mu"].index >= later.test_start
+        assert not np.allclose(base["mu"].loc[later_window], moved["mu"].loc[later_window])
 
-        def recording(design: np.ndarray, target: np.ndarray, df: float) -> Any:
-            seen.append(len(target))
-            return real_fit(design, target, df)
-
-        monkeypatch.setattr(model.wf, "fit_ridge", recording)
-        result = model.walk_forward(frames, excess, initial_train_years=1.5, step_years=0.5)
-        days = result["usable_days"]
-        for fold in result["folds"]:
-            last_label_day = days[days.get_loc(fold.train_end) + model.HORIZON_DAYS]
-            assert last_label_day < fold.test_start
-        assert len(seen) == len(result["folds"])
+    def test_the_standardisation_never_sees_the_test_window(self) -> None:
+        """Rewriting a fold's features after its first test day leaves that day unchanged."""
+        excess = _synthetic_excess(days=1100)
+        frames = _synthetic_frames(excess, 0.5)
+        kwargs = {"initial_train_years": 1.5, "step_years": 0.5}
+        base = model.walk_forward(frames, excess, **kwargs)
+        fold = base["folds"][1]
+        altered = {name: frame.copy() for name, frame in frames.items()}
+        for frame in altered.values():
+            later = (frame.index > fold.test_start) & (frame.index <= fold.test_end)
+            frame.loc[later] = frame.loc[later] * 25.0 + 3.0
+        moved = model.walk_forward(altered, excess, **kwargs)
+        assert base["mu"].loc[fold.test_start].to_numpy() == pytest.approx(
+            moved["mu"].loc[fold.test_start].to_numpy(), abs=1e-15
+        )
 
     def test_each_test_day_is_predicted_exactly_once(self) -> None:
         excess = _synthetic_excess(days=900)
@@ -342,9 +406,11 @@ def _summary(**overrides: Any) -> dict[str, Any]:
         "net_sharpe": 0.6,
         "net_without_top_5_days": 0.05,
         "gross_pnl_without_best_currency": 0.05,
+        "gross_pnl_without_best_two_currencies": 0.03,
+        "gross_pnl_without_usd": 0.04,
         "share_of_folds_positive": 0.7,
         "turnover_round_trips_per_year_per_unit_gross": 20.0,
-        "mean_leverage": 2.7,
+        "share_days_at_leverage_cap": 0.1,
         "best_currency_share_of_positive_pnl": 0.3,
         "top_10_day_share_of_net": 0.3,
     }
@@ -353,11 +419,17 @@ def _summary(**overrides: Any) -> dict[str, Any]:
     return base
 
 
-def _adjudicate(primary: dict[str, Any], stressed: float = 0.4, momentum: float = 0.1) -> str:
+def _adjudicate(
+    primary: dict[str, Any],
+    stressed: float = 0.4,
+    momentum: float = 0.1,
+    reversal: float = -0.3,
+) -> str:
     return evaluation.adjudicate(
         primary,
         stressed_1_5={"net_sharpe": stressed},
-        baseline_momentum={"net_sharpe": momentum},
+        baseline_persistence={"net_sharpe": momentum},
+        baseline_reversal={"net_sharpe": reversal},
         rules=prereg.ADJUDICATION_RULES,
     )["case"]
 
@@ -381,7 +453,7 @@ class TestAdjudication:
             ("gross_pnl_without_best_currency", -0.01),
             ("share_of_folds_positive", 0.4),
             ("turnover_round_trips_per_year_per_unit_gross", 60.0),
-            ("mean_leverage", 6.0),
+            ("share_days_at_leverage_cap", 0.6),
         ],
     )
     def test_every_kill_clause_fires_on_its_own(self, field: str, value: float) -> None:
@@ -391,23 +463,107 @@ class TestAdjudication:
         """⭐ The C08 boundary as an executable clause."""
         assert _adjudicate(_summary(net_sharpe=0.6), momentum=0.6) == CASE_C
 
+    def test_a_primary_that_does_not_beat_the_inverted_rule_is_killed(self) -> None:
+        """⭐ A fitted reversal book cannot survive on the persistence rule having lost."""
+        assert _adjudicate(_summary(net_sharpe=1.46), momentum=-2.87, reversal=2.32) == CASE_C
+
+    @pytest.mark.parametrize(
+        "field", ["gross_pnl_without_best_two_currencies", "gross_pnl_without_usd"]
+    )
+    def test_a_one_pair_or_usd_only_book_is_not_a_candidate(self, field: str) -> None:
+        assert _adjudicate(_summary(**{field: -0.001})) == CASE_C
+        assert _adjudicate(_summary(net_sharpe=0.4, **{field: 0.0})) == CASE_C
+
     def test_an_increment_over_a_negative_baseline_is_not_survival(self) -> None:
         """⭐ −0.983 → +0.234 is not an edge: the primary's own Sharpe decides."""
         assert _adjudicate(_summary(net_sharpe=0.234), momentum=-0.983) == CASE_C
 
-    def test_vol_scenarios_scale_everything_but_sharpe(self) -> None:
-        summary = {
-            "net_annual_return": 0.05,
-            "realized_annual_vol": 0.1,
-            "max_drawdown": -0.12,
-            "mean_leverage": 2.6,
-            "p95_leverage": 3.1,
-            "net_sharpe": 0.5,
-        }
-        rows = evaluation.vol_scenarios(summary, 0.10)
-        assert rows["vol_0.08"]["annual_net_return"] == pytest.approx(0.04)
-        assert rows["vol_0.12"]["mean_leverage"] == pytest.approx(3.12)
-        assert {row["net_sharpe"] for row in rows.values()} == {0.5}
+    def test_vol_scenarios_report_the_books_that_were_run(self) -> None:
+        def run(target: float, ret: float, lev: float, cap: float) -> dict[str, Any]:
+            return {
+                "net_annual_return": ret,
+                "realized_annual_vol": target * 0.8,
+                "realized_vol_over_target": 0.8,
+                "max_drawdown": -0.1,
+                "mean_leverage": lev,
+                "p95_leverage": lev,
+                "share_days_at_leverage_cap": cap,
+                "cost_annual_drag": 0.01,
+                "net_sharpe": 0.4,
+            }
+
+        books = {0.08: run(0.08, 0.03, 4.0, 0.2), 0.10: run(0.10, 0.04, 4.8, 0.6)}
+        books[0.12] = run(0.12, 0.041, 5.0, 0.97)
+        rows = evaluation.vol_scenarios(books)
+        assert rows["vol_0.12"]["mean_leverage"] == 5.0
+        assert rows["vol_0.12"]["annual_net_return"] == 0.041
+        assert rows["vol_0.12"]["share_days_at_leverage_cap"] == 0.97
+
+    def test_a_short_tail_fold_does_not_count_toward_the_fold_share(self) -> None:
+        days = pd.bdate_range("2023-01-02", periods=205)
+        rng = np.random.default_rng(3)
+        net = rng.normal(0.001, 0.001, size=len(days))
+        net[200:] = [-0.01, -0.02, -0.01, -0.03, -0.01]
+        daily = _daily_frame(days, net)
+        labels = pd.Series([0] * 100 + [1] * 100 + [2] * 5, index=days, dtype=float)
+        summary = evaluation.summarise(daily, days_per_year=252.0, fold_labels=labels)
+        assert summary["per_fold_days"] == {"0": 100, "1": 100, "2": 5}
+        assert summary["per_fold_net_sharpe"]["2"] < 0
+        assert summary["share_of_folds_positive"] == 1.0
+
+    def test_a_usd_jpy_bet_has_no_breadth(self) -> None:
+        """⭐ Sum-zero one-pair book: dropping one currency leaves the other leg's P&L."""
+        days = pd.bdate_range("2023-01-02", periods=120)
+        rng = np.random.default_rng(4)
+        usd = rng.normal(0.0006, 0.001, size=len(days))
+        jpy = rng.normal(0.0005, 0.001, size=len(days))
+        daily = _daily_frame(days, usd + jpy, pnl={"USD": usd, "JPY": jpy})
+        labels = pd.Series(0.0, index=days)
+        summary = evaluation.summarise(daily, days_per_year=252.0, fold_labels=labels)
+        assert summary["gross_pnl_without_best_currency"] > 0
+        assert summary["gross_pnl_without_best_two_currencies"] == pytest.approx(0.0, abs=1e-9)
+        assert summary["gross_pnl_without_usd"] == pytest.approx(float(jpy.sum()), abs=1e-6)
+
+    def test_the_leverage_cap_share_is_measured(self) -> None:
+        excess = _synthetic_excess(days=500, scale=0.0002)
+        mu = TestTheBook()._mu(excess)
+        daily = construction.run_book(construction.BookConfig(name="t"), mu, excess, 252.0)["daily"]
+        summary = evaluation.summarise(
+            daily,
+            days_per_year=252.0,
+            fold_labels=pd.Series(0.0, index=excess.index),
+            vol_target=0.10,
+        )
+        assert summary["share_days_at_leverage_cap"] > 0.9
+        assert summary["mean_uncapped_leverage"] > 5.0
+        assert summary["realized_vol_over_target"] < 0.5
+
+
+def _daily_frame(
+    days: pd.DatetimeIndex, net: np.ndarray, pnl: dict[str, np.ndarray] | None = None
+) -> pd.DataFrame:
+    columns: dict[str, Any] = {
+        "decision_day": days,
+        "net": net,
+        "gross": net,
+        "cost": 0.0,
+        "implementation_cost": 0.0,
+        "currency_gross": 1.0,
+        "pair_gross": 1.0,
+        "one_way_traded": 0.1,
+        "traded": True,
+        "leverage": 1.0,
+        "uncapped_leverage": np.nan,
+        "at_leverage_cap": False,
+        "held_max_weight": 0.25,
+        "held_gross": 1.0,
+        "factor_abs_cosine": 0.1,
+        "factor_pnl": 0.0,
+        "raw_target_corr": 1.0,
+    }
+    for c in C:
+        columns[f"pnl_{c}"] = (pnl or {}).get(c, np.zeros(len(days)))
+    return pd.DataFrame(columns, index=days + pd.Timedelta(days=1))
 
     def test_measured_days_per_year(self) -> None:
         days = pd.bdate_range("2023-01-02", periods=522)
@@ -452,7 +608,7 @@ class TestPreregistration:
     def test_the_hash_moves_when_a_threshold_moves(self, monkeypatch: pytest.MonkeyPatch) -> None:
         before = prereg.freeze_hash()
         moved = dict(prereg.ADJUDICATION_RULES)
-        moved["max_mean_leverage"] = 50.0
+        moved["max_share_days_at_leverage_cap"] = 0.99
         monkeypatch.setattr(prereg, "ADJUDICATION_RULES", moved)
         assert prereg.freeze_hash() != before
 
@@ -468,18 +624,69 @@ class TestPreregistration:
         monkeypatch.setattr(prereg, "source_digests", edited)
         assert prereg.freeze_hash() != before
 
-    def test_the_digest_ignores_line_endings(self, tmp_path: Path) -> None:
-        text = "a\nb\n"
-        normalised_lf = "".join(line + chr(10) for line in text.splitlines())
-        normalised_crlf = "".join(
-            line + chr(10) for line in text.replace("\n", "\r\n").splitlines()
-        )
-        assert normalised_lf == normalised_crlf
+    def test_the_digest_ignores_line_endings(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """`source_digests` itself, over a CRLF copy of every hashed source."""
+        before = prereg.source_digests()
+        for relative in prereg.HASHED_SOURCES:
+            text = (ROOT / relative).read_bytes().replace(b"\r\n", b"\n")
+            target = tmp_path / relative
+            target.parent.mkdir(parents=True, exist_ok=True)
+            target.write_bytes(text.replace(b"\n", b"\r\n"))
+        monkeypatch.setattr(prereg, "_ROOT", tmp_path)
+        assert prereg.source_digests() == before
+        edited = tmp_path / prereg.HASHED_SOURCES[1]
+        edited.write_bytes(edited.read_bytes() + b"# edit\r\n")
+        assert prereg.source_digests() != before
 
     def test_the_recorded_hash_is_the_measured_one(self) -> None:
         if prereg.FROZEN_HASH == "UNFROZEN":
             pytest.skip("frozen immediately before execution")
         assert prereg.assert_frozen() == prereg.FROZEN_HASH
+
+
+# ------------------------------------------------------ development helpers
+class TestDevelopmentHelpers:
+    def test_the_regime_threshold_is_past_only(self) -> None:
+        from scripts.research.continuous_portfolio import development
+
+        excess = _synthetic_excess(days=600)
+        t = excess.index[400]
+        altered = excess.copy()
+        after = altered.index > t
+        altered.loc[after] = altered.loc[after] * 40.0
+        base_dispersion, base_threshold = development._dispersion_and_threshold(excess)
+        new_dispersion, new_threshold = development._dispersion_and_threshold(altered)
+        upto = excess.index <= t
+        pd.testing.assert_series_equal(base_threshold[upto], new_threshold[upto])
+        pd.testing.assert_series_equal(base_dispersion[upto], new_dispersion[upto])
+
+    def test_eur_is_on_the_deposit_facility_throughout(self) -> None:
+        from scripts.research.continuous_portfolio import development
+
+        dates = pd.to_datetime(["2023-01-02", "2024-09-17", "2024-09-18"], utc=True)
+        frame = pd.DataFrame(
+            {
+                "date": list(dates) * 2,
+                "currency": ["EUR"] * 3 + ["USD"] * 3,
+                "rate_pct": [2.50, 4.25, 3.50, 4.5, 5.5, 5.0],
+            }
+        )
+        rates = development._policy_rates(frame)
+        assert rates["EUR"].tolist() == pytest.approx([2.00, 3.75, 3.50])
+        assert rates["USD"].tolist() == pytest.approx([4.5, 5.5, 5.0])
+
+    def test_the_non_overlapping_ic_t_uses_every_horizon_th_day(self) -> None:
+        from scripts.research.continuous_portfolio import development
+
+        excess = _synthetic_excess(days=300)
+        noise = _synthetic_excess(days=300, seed=8)
+        scores = (excess.shift(-1) + noise).iloc[:-5]
+        one = development._rank_ic(scores, excess.shift(-1), 1)
+        five = development._rank_ic(scores, excess.shift(-1), 5)
+        assert one["mean"] == five["mean"]
+        assert five["t_non_overlapping"] < one["t_non_overlapping"]
 
 
 # --------------------------------------------------------------- boundary

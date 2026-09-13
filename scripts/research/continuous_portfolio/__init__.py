@@ -42,14 +42,18 @@ CASE_A: Final[str] = "CONTINUOUS_CURRENCY_PORTFOLIO_DEVELOPMENT_CANDIDATE"
 CASE_B: Final[str] = "MARGINAL_CONTINUOUS_PORTFOLIO_CANDIDATE"
 CASE_C: Final[str] = "CONTINUOUS_CURRENCY_PORTFOLIO_ARCHITECTURE_NOT_SUPPORTED_IN_SEEN_DEVELOPMENT"
 
-#: The ratio of pair one-way notional to currency one-way notional the cost
-#: convention charges: Track 2's measured routing of an isolated
-#: one-currency-against-basket position. `2.58 x 1.32 = 3.406`.
+#: Track 2's measured routing: pair notional per unit of **one side** of an
+#: isolated one-currency-against-the-other-seven position (`x_c = 1`, the rest
+#: `-1/7`, so `sum|x| = 2`). `2.58 x 1.32 = 3.406`.
 CHARGED_ROUTING_RATIO: Final[float] = round(BASKET_ROUNDTRIP_BP / PAIR_ROUNDTRIP_BP, 4)
 
-#: One unit of currency-space one-way notional, traded under the charged routing,
-#: costs half a basket round trip. Every realised trade in this package is charged
-#: `sum|delta_currency| x CHARGED_ONE_WAY_BP`, and nothing else is charged.
+#: The charge per unit of `sum|delta_currency|`, inherited from #480: 3.406 bp per
+#: turnover unit `sum|delta| / 2`. It applies a one-side routing ratio to a
+#: both-sides notional, so it is **about 2x** Track 2's measured routing for an
+#: isolated position (opening it is charged 3.406 bp, the pair book pays 1.703)
+#: and about **1.7x** the faithful equal-split cost of a random sum-zero trade.
+#: The direction is conservative: it can only make a book look worse. The
+#: faithful cost is reported beside it and never used for the verdict.
 CHARGED_ONE_WAY_BP: Final[float] = round(BASKET_ROUNDTRIP_BP / 2.0, 4)
 
 #: Business interpretation of primary net Sharpe (human + ChatGPT ruling §20).
