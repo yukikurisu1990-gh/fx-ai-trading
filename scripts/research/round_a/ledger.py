@@ -487,7 +487,10 @@ LEDGER: Final[list[dict[str, Any]]] = [
             "books are the durable output"
         ),
         "status": (
-            "CLOSED - MODEL_LEARNING_NOT_DECISION_GRADE_WITH_AVAILABLE_SEEN_DATA; "
+            "CLOSED - MODEL_LEARNING_NOT_DECISION_GRADE_UNDER_CURRENT_DEVELOPMENT_GATE "
+            "(scoped to the gate at #479's conditional merge; the first wording, "
+            "..._WITH_AVAILABLE_SEEN_DATA, generalised the gate verdict into a claim "
+            "about the data and was withdrawn); "
             "an earlier session omitted this entry and a review caught the gap: "
             "the ledger's own discipline is that entries are appended when a round "
             "completes, and this one completed on 2026-09-12"
