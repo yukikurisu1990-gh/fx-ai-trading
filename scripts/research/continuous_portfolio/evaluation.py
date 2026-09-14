@@ -189,6 +189,12 @@ def summarise(
         "top_1_day_share_of_net": _top_share(net, 1),
         "top_5_day_share_of_net": _top_share(net, 5),
         "top_10_day_share_of_net": _top_share(net, 10),
+        #: the tail-dependence kill: the mean daily net with both 1% tails clipped.
+        #: Symmetric fat tails leave it near the mean; profit that lives in a few
+        #: outsized up-days does not survive it
+        "net_winsorised_1pct_annual": round(
+            float(net.clip(net.quantile(0.01), net.quantile(0.99)).mean()) * days_per_year, 6
+        ),
         "net_without_top_5_days": round(
             float(net.sum() - net.sort_values(ascending=False).head(5).sum()), 6
         ),
@@ -253,7 +259,10 @@ def adjudicate(
     The top-day shares are reported and do not gate: over ~850 days ten
     ordinary days already hold about 26 daily deviations against a total of
     about 52.5 x Sharpe, so a "top ten at most half" clause demands a realised
-    Sharpe near 1.0 whatever the tails look like.
+    Sharpe near 1.0 whatever the tails look like, and "net without the top five
+    days" kills about half of fat-tailed books at Sharpe 0.3-0.4. Tail dependence
+    is read from the 1%-winsorised mean instead, which symmetric fat tails leave
+    alone and a book living on a few outsized up-days does not survive.
     """
     sharpe = primary["net_sharpe"]
     correlations = [
@@ -275,7 +284,7 @@ def adjudicate(
     kills = {
         "net_sharpe_not_positive": sharpe <= 0.0,
         "net_return_economically_negligible": sharpe < rules["negligible_net_sharpe"],
-        "profit_vanishes_without_top_5_days": primary["net_without_top_5_days"] <= 0.0,
+        "profit_lives_in_the_extreme_days": primary["net_winsorised_1pct_annual"] <= 0.0,
         "single_currency_carries_the_book": (
             primary["gross_pnl_without_best_currency"] is None
             or primary["gross_pnl_without_best_currency"] <= 0.0

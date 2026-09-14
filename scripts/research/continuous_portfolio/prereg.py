@@ -214,7 +214,8 @@ ADJUDICATION_RULES: Final[dict[str, Any]] = {
     "unfitted_rule_horizons": list(UNFITTED_HORIZONS),
     "unfitted_rule_correlation_kill": 0.5,
     "unfitted_rule_resemblance_flag": 0.7,
-    "top_day_shares": "reported, not gated",
+    "top_day_shares": "reported, not gated (top 1/5/10 shares and net without the top 5 days)",
+    "tail_dependence_winsorisation_quantile": 0.01,
     "economic_bands": [[ceiling, label] for ceiling, label in ECONOMIC_BANDS],
     "case_a": CASE_A,
     "case_b": CASE_B,
@@ -239,7 +240,7 @@ ADJUDICATION_RULES: Final[dict[str, Any]] = {
     "kill_clauses": [
         "net Sharpe <= 0",
         "net Sharpe < 0.20 (net return economically negligible)",
-        "net P&L <= 0 once the five best days are removed",
+        "mean daily net <= 0 once both 1% tails are clipped (profit lives in the extreme days)",
         "gross P&L <= 0 once the best currency is removed",
         "fewer than half of counted folds positive (folds under 60 test days not counted)",
         "primary net Sharpe <= the better of the 60-day unfitted rule in either sign",

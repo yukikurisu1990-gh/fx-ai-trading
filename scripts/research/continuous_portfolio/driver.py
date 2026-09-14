@@ -84,14 +84,17 @@ def develop() -> Path:
     if bound["sources_differing_from_head"]:
         raise SystemExit(f"sources differ from HEAD: {bound}")
     frozen = prereg_module.assert_frozen()
-    _write(
-        STARTED,
-        {
-            "started_utc": dt.datetime.now(dt.UTC).isoformat(),
-            "checkout": bound,
-            "preregistration_frozen_hash": frozen,
-        },
-    )
+    ARTIFACTS.mkdir(parents=True, exist_ok=True)
+    marker = {
+        "started_utc": dt.datetime.now(dt.UTC).isoformat(),
+        "checkout": bound,
+        "preregistration_frozen_hash": frozen,
+    }
+    try:
+        with (ARTIFACTS / STARTED).open("x", encoding="utf-8") as handle:
+            handle.write(json.dumps(marker, indent=2, sort_keys=True) + "\n")
+    except FileExistsError as exc:
+        raise SystemExit(f"{STARTED} exists: the pre-registered run happens once") from exc
     record = development.run()
     record["checkout"] = bound
     return _write(FINISHED, record)

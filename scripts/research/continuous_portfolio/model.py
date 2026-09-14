@@ -158,6 +158,22 @@ def unfitted_momentum(
     return frames[f"currency_excess_return_{horizon}d_z"].reindex(days)
 
 
+def unfitted_rules(
+    frames: dict[str, pd.DataFrame], days: pd.DatetimeIndex, currencies: list[str]
+) -> dict[str, pd.DataFrame]:
+    """Every unfitted rule's expected-return proxy: `{persistence,reversal}_{h}d`.
+
+    Reversal is exactly the negated persistence proxy at the same horizon, so the
+    two books hold mirror positions.
+    """
+    rules = {}
+    for horizon in UNFITTED_HORIZONS:
+        proxy = unfitted_momentum(frames, days, horizon)[currencies]
+        rules[f"persistence_{horizon}d"] = proxy
+        rules[f"reversal_{horizon}d"] = -proxy
+    return rules
+
+
 def fold_of(days: pd.DatetimeIndex, folds: list[wf.Fold]) -> pd.Series:
     labels = pd.Series(np.nan, index=days)
     for fold in folds:
@@ -175,6 +191,7 @@ __all__ = [
     "fold_of",
     "forward_target",
     "unfitted_momentum",
+    "unfitted_rules",
     "usable_days",
     "walk_forward",
 ]

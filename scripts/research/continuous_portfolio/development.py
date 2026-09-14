@@ -161,14 +161,12 @@ def run() -> dict[str, Any]:
         }
 
     primary = book(prereg_module.PRIMARY, mu)
-    unfitted = {}
-    for horizon in model.UNFITTED_HORIZONS:
-        proxy = model.unfitted_momentum(frames, oos_days, horizon)[list(construction.CURRENCIES)]
-        for sign, label in ((1.0, "persistence"), (-1.0, "reversal")):
-            name = f"{label}_{horizon}d"
-            unfitted[name] = book(
-                replace(prereg_module.PRIMARY, name=f"unfitted_{name}"), sign * proxy
-            )
+    unfitted = {
+        name: book(replace(prereg_module.PRIMARY, name=f"unfitted_{name}"), proxy)
+        for name, proxy in model.unfitted_rules(
+            frames, oos_days, list(construction.CURRENCIES)
+        ).items()
+    }
     baseline_2 = book(prereg_module.BASELINE_2, mu)
     diagnostics = {config.name: book(config, mu) for config in prereg_module.DIAGNOSTICS}
 

@@ -414,6 +414,20 @@ class TestTheModel:
         assert not mu.index.duplicated().any()
         assert mu.index.min() == result["folds"][0].test_start
 
+    def test_the_unfitted_rules_are_each_horizon_in_both_signs(self) -> None:
+        """⭐ Sign, horizon and timing of every benchmark proxy, pinned on the values."""
+        excess = _synthetic_excess(days=400)
+        frames = _synthetic_frames(excess, 0.0)
+        days = excess.index[100:300]
+        rules = model.unfitted_rules(frames, days, C)
+        expected = {f"{s}_{h}d" for h in (5, 20, 60) for s in ("persistence", "reversal")}
+        assert set(rules) == expected
+        for horizon in model.UNFITTED_HORIZONS:
+            source = frames[f"currency_excess_return_{horizon}d_z"].loc[days, C]
+            pd.testing.assert_frame_equal(rules[f"persistence_{horizon}d"], source)
+            pd.testing.assert_frame_equal(rules[f"reversal_{horizon}d"], -source)
+        assert not np.allclose(rules["persistence_5d"], rules["persistence_60d"])
+
     def test_a_planted_signal_is_recovered_with_the_right_sign(self) -> None:
         excess = _synthetic_excess(days=900)
         result = model.walk_forward(
@@ -432,6 +446,7 @@ def _summary(**overrides: Any) -> dict[str, Any]:
     base = {
         "net_sharpe": 0.6,
         "net_without_top_5_days": 0.05,
+        "net_winsorised_1pct_annual": 0.04,
         "gross_pnl_without_best_currency": 0.05,
         "gross_pnl_without_best_two_currencies": 0.03,
         "gross_pnl_without_usd": 0.04,
@@ -501,7 +516,7 @@ class TestAdjudication:
         [
             ("net_sharpe", 0.0),
             ("net_sharpe", 0.15),
-            ("net_without_top_5_days", -0.01),
+            ("net_winsorised_1pct_annual", 0.0),
             ("gross_pnl_without_best_currency", -0.01),
             ("share_of_folds_positive", 0.4),
             ("turnover_round_trips_per_year_per_unit_gross", 60.0),
@@ -550,6 +565,34 @@ class TestAdjudication:
         verdict = _verdict(_summary(net_sharpe=0.4, top_10_day_share_of_net=0.9))
         assert verdict["case"] == CASE_B
         assert verdict["top_day_shares_reported_not_gated"]["top_10"] == 0.9
+
+    def test_the_tail_kill_reads_extreme_days_not_fat_tails(self) -> None:
+        """⭐ Symmetric fat tails survive; a book living on a few up-days does not.
+
+        The previous clause, net without the top five days, killed about half of
+        fat-tailed books at a realised Sharpe of 0.3-0.4.
+        """
+        days = pd.bdate_range("2022-01-03", periods=850)
+        rng = np.random.default_rng(17)
+        fat = rng.standard_t(4, size=850) / np.sqrt(2) * 0.005 + 0.35 / np.sqrt(261) * 0.005
+        fat = fat - fat.mean() + 0.35 / np.sqrt(261) * 0.005
+        lottery = rng.normal(-0.0006, 0.005, size=850)
+        lottery[rng.choice(850, size=6, replace=False)] += 0.12
+        labels = pd.Series(0.0, index=days)
+        fat_summary = evaluation.summarise(
+            _daily_frame(days, fat), days_per_year=261.0, fold_labels=labels
+        )
+        lottery_summary = evaluation.summarise(
+            _daily_frame(days, lottery), days_per_year=261.0, fold_labels=labels
+        )
+        assert fat_summary["net_without_top_5_days"] <= 0
+        assert fat_summary["net_winsorised_1pct_annual"] > 0
+        assert lottery_summary["net_annual_return"] > 0
+        assert lottery_summary["net_winsorised_1pct_annual"] <= 0
+        expected = pd.Series(fat).clip(np.quantile(fat, 0.01), np.quantile(fat, 0.99)).mean()
+        assert fat_summary["net_winsorised_1pct_annual"] == pytest.approx(
+            expected * 261.0, abs=1e-6
+        )
 
     def test_measured_days_per_year(self) -> None:
         days = pd.bdate_range("2023-01-02", periods=522)
