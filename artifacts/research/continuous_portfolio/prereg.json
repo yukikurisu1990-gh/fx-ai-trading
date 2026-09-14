@@ -1,0 +1,543 @@
+{
+  "band_calibration_signal_free": {
+    "half_life_days": 20.0,
+    "rows": {
+      "band_0": {
+        "alpha_capture": 1.0,
+        "annual_turnover": 34.17
+      },
+      "band_0.05": {
+        "alpha_capture": 0.9898,
+        "annual_turnover": 23.31
+      },
+      "band_0.08": {
+        "alpha_capture": 0.9734,
+        "annual_turnover": 18.33
+      },
+      "band_0.1": {
+        "alpha_capture": 0.961,
+        "annual_turnover": 15.85
+      },
+      "band_0.15": {
+        "alpha_capture": 0.9177,
+        "annual_turnover": 11.47
+      }
+    },
+    "weight_cap": null
+  },
+  "band_calibration_signal_free_capped_weights": {
+    "half_life_days": 20.0,
+    "rows": {
+      "band_0": {
+        "alpha_capture": 1.0,
+        "annual_turnover": 32.91
+      },
+      "band_0.05": {
+        "alpha_capture": 0.9792,
+        "annual_turnover": 22.96
+      },
+      "band_0.08": {
+        "alpha_capture": 0.9575,
+        "annual_turnover": 18.08
+      },
+      "band_0.1": {
+        "alpha_capture": 0.9377,
+        "annual_turnover": 15.7
+      },
+      "band_0.15": {
+        "alpha_capture": 0.8858,
+        "annual_turnover": 11.29
+      }
+    },
+    "weight_cap": 0.25
+  },
+  "classification": "NON_DECISION_BEARING_EXPLORATORY_ONLY",
+  "frozen_hash": "aa0888089e4dcf5988bc6b734bb8e036262ed5c2efe4755d59fd9244176c85f1",
+  "specification": {
+    "adjudication": {
+      "an_increment_over_a_negative_baseline_is_never_a_survival_reason": true,
+      "case_a": "CONTINUOUS_CURRENCY_PORTFOLIO_DEVELOPMENT_CANDIDATE",
+      "case_a_requires": [
+        "no kill clause",
+        "net Sharpe >= 0.5",
+        "more than half of counted folds positive",
+        "no currency above half of positive gross P&L",
+        "net Sharpe positive at 1.5x cost",
+        "gross P&L > 0 once the best two currencies are removed",
+        "gross P&L > 0 once the USD leg is removed"
+      ],
+      "case_b": "MARGINAL_CONTINUOUS_PORTFOLIO_CANDIDATE",
+      "case_b_requires": [
+        "no kill clause",
+        "net Sharpe >= 0.3",
+        "more than half of counted folds positive",
+        "no currency above half of positive gross P&L",
+        "gross P&L > 0 once the best two currencies are removed",
+        "gross P&L > 0 once the USD leg is removed"
+      ],
+      "case_c": "CONTINUOUS_CURRENCY_PORTFOLIO_ARCHITECTURE_NOT_SUPPORTED_IN_SEEN_DEVELOPMENT",
+      "economic_bands": [
+        [
+          0.3,
+          "economically_weak"
+        ],
+        [
+          0.5,
+          "marginal"
+        ],
+        [
+          0.8,
+          "potentially_useful"
+        ],
+        [
+          Infinity,
+          "strong_development_candidate"
+        ]
+      ],
+      "kill_clauses": [
+        "net Sharpe <= 0",
+        "net Sharpe < 0.20 (net return economically negligible)",
+        "mean daily net <= 0 (or unmeasurable) once every day is clipped to the median +/- 3 robust sigmas (profit lives in the extreme days)",
+        "gross P&L <= 0 once the best currency is removed",
+        "fewer than half of counted folds positive (folds under 60 test days not counted)",
+        "primary net Sharpe <= the better of the 60-day unfitted rule in either sign",
+        "an unfitted rule at any horizon, either sign, with daily net P&L correlation >= 0.5 to the primary, has net Sharpe >= the primary's",
+        "turnover above 50 round trips a year per unit of gross",
+        "the target asks for the 5x leverage cap or more on more than half of days at the 10% volatility target (uncapped demand, so hysteresis cannot hide it)"
+      ],
+      "leverage_cap": 5.0,
+      "max_share_days_at_leverage_cap": 0.5,
+      "max_turnover_per_unit_gross": 50.0,
+      "min_fold_test_days_counted": 60,
+      "negligible_net_sharpe": 0.2,
+      "reporting_obligation": "if the primary's daily net P&L correlates >= 0.7 with any unfitted rule, the final report states that the primary resembles that rule, whatever the case",
+      "tail_dependence_clip_robust_sigmas": 3.0,
+      "top_day_shares": "reported, not gated (top 1/5/10 shares and net without the top 5 days)",
+      "unfitted_rule_correlation_kill": 0.5,
+      "unfitted_rule_horizons": [
+        5,
+        20,
+        60
+      ],
+      "unfitted_rule_resemblance_flag": 0.7
+    },
+    "baseline_2": {
+      "band": 0.0,
+      "cost_multiple": 1.0,
+      "drawdown_governor": false,
+      "factor_window": 120,
+      "governor_release": 0.05,
+      "governor_scale": 0.5,
+      "governor_trigger": 0.1,
+      "leverage_hysteresis": 0.1,
+      "mapping": "linear",
+      "max_leverage": 5.0,
+      "name": "baseline_2_linear_no_bundle",
+      "neutralize_leading_factor": false,
+      "notes": [],
+      "sigma_window": 60,
+      "vol_target": null,
+      "vol_window": 60,
+      "weight_cap": 1.0
+    },
+    "baselines": {
+      "baseline_0_cash": "zero position; net return identically zero",
+      "baseline_1_unfitted_persistence": "the 60-day currency excess-return z-score, unfitted and positive-signed, through the primary book's own construction and efficiency bundle \u2014 the C08-shaped rule",
+      "baseline_1_unfitted_reversal": "the same z-score negated, through the same construction \u2014 the C08-shaped rule inverted. The primary must beat the better of the two signs outright",
+      "baseline_2_linear_no_bundle": "the primary's fitted expected returns through linear score weights, no factor neutralisation, no cap, full daily rebalance, no volatility target",
+      "unfitted_rules_other_horizons": "the 5-day and 20-day excess-return z-scores, both signs, through the same construction. A rule whose daily net P&L correlates >= 0.5 with the primary's and earns at least the primary's Sharpe kills it"
+    },
+    "corpus": {
+      "not_authorised": [
+        "Track 3 event/volatility overlay",
+        "broker-authenticated access",
+        "paper-forward execution",
+        "demo or live orders",
+        "non-linear models"
+      ],
+      "pairs": [
+        "AUD_CAD",
+        "AUD_JPY",
+        "AUD_NZD",
+        "AUD_USD",
+        "CHF_JPY",
+        "EUR_AUD",
+        "EUR_CAD",
+        "EUR_CHF",
+        "EUR_GBP",
+        "EUR_JPY",
+        "EUR_USD",
+        "GBP_AUD",
+        "GBP_CHF",
+        "GBP_JPY",
+        "GBP_USD",
+        "NZD_JPY",
+        "NZD_USD",
+        "USD_CAD",
+        "USD_CHF",
+        "USD_JPY"
+      ],
+      "protected_spans_never_used": {
+        "dead_window": [
+          "(after the OOS slice)",
+          "-",
+          "never read"
+        ],
+        "forward_epoch": [
+          "(future)",
+          "-",
+          "never read"
+        ],
+        "fresh_pool": [
+          "2016-06-02",
+          "2021-04-25",
+          "never read"
+        ],
+        "historical_oos": [
+          "2025-12-29",
+          "(end of slice)",
+          "one decoded row per pair; no value reached an output"
+        ]
+      },
+      "seen_spans_used": {
+        "development_2025": [
+          "2025-04-25",
+          "2025-12-28"
+        ],
+        "momentum_2021_2023": [
+          "2021-04-26",
+          "2023-04-25"
+        ],
+        "supplemental_2023_2025": [
+          "2023-04-26",
+          "2025-04-24"
+        ]
+      }
+    },
+    "cost_model": {
+      "charge_relative_to_measurements": "3.406 bp per turnover unit sum|delta|/2, inherited from #480. 1.32 is Track 2's pair notional per unit of ONE side of an isolated one-against-seven position, and the charge applies it to both sides: about 2x Track 2's routing for an isolated position and about 1.7x the faithful equal-split cost of a random sum-zero trade. Conservative by construction; the verdict uses it, and the net Sharpe at the faithful cost is reported beside it",
+      "charged_on": "sum|x_t - x_(t-1)| only \u2014 the realised delta of the held exposure",
+      "charged_one_way_bp_per_unit_currency_notional": 1.703,
+      "charged_routing_ratio": 1.3202,
+      "faithful_implementation_cost": "equal-split pair one-way notional x half the pair round trip, reported beside the charge and never used for the verdict",
+      "financing": "excluded from P&L; policy-rate carry accrual on the held exposure is reported as a diagnostic so a book that earns or pays carry systematically is visible",
+      "not_charged": [
+        "per prediction",
+        "per signal",
+        "per pair as an independent round trip",
+        "a close and reopen of an unchanged position"
+      ],
+      "pair_round_trip_bp": 2.58,
+      "stress_multiples": [
+        1.0,
+        1.5,
+        2.0
+      ]
+    },
+    "diagnostics": [
+      {
+        "band": 0.1,
+        "cost_multiple": 1.0,
+        "drawdown_governor": false,
+        "factor_window": 120,
+        "governor_release": 0.05,
+        "governor_scale": 0.5,
+        "governor_trigger": 0.1,
+        "leverage_hysteresis": 0.1,
+        "mapping": "vol_normalized",
+        "max_leverage": 5.0,
+        "name": "diag_unlevered",
+        "neutralize_leading_factor": true,
+        "notes": [],
+        "sigma_window": 60,
+        "vol_target": null,
+        "vol_window": 60,
+        "weight_cap": 0.25
+      },
+      {
+        "band": 0.1,
+        "cost_multiple": 1.0,
+        "drawdown_governor": false,
+        "factor_window": 120,
+        "governor_release": 0.05,
+        "governor_scale": 0.5,
+        "governor_trigger": 0.1,
+        "leverage_hysteresis": 0.1,
+        "mapping": "vol_normalized",
+        "max_leverage": 5.0,
+        "name": "diag_vol_target_0_08",
+        "neutralize_leading_factor": true,
+        "notes": [],
+        "sigma_window": 60,
+        "vol_target": 0.08,
+        "vol_window": 60,
+        "weight_cap": 0.25
+      },
+      {
+        "band": 0.1,
+        "cost_multiple": 1.0,
+        "drawdown_governor": false,
+        "factor_window": 120,
+        "governor_release": 0.05,
+        "governor_scale": 0.5,
+        "governor_trigger": 0.1,
+        "leverage_hysteresis": 0.1,
+        "mapping": "vol_normalized",
+        "max_leverage": 5.0,
+        "name": "diag_vol_target_0_12",
+        "neutralize_leading_factor": true,
+        "notes": [],
+        "sigma_window": 60,
+        "vol_target": 0.12,
+        "vol_window": 60,
+        "weight_cap": 0.25
+      },
+      {
+        "band": 0.1,
+        "cost_multiple": 1.0,
+        "drawdown_governor": false,
+        "factor_window": 120,
+        "governor_release": 0.05,
+        "governor_scale": 0.5,
+        "governor_trigger": 0.1,
+        "leverage_hysteresis": 0.1,
+        "mapping": "linear",
+        "max_leverage": 5.0,
+        "name": "diag_mapping_linear",
+        "neutralize_leading_factor": true,
+        "notes": [],
+        "sigma_window": 60,
+        "vol_target": 0.1,
+        "vol_window": 60,
+        "weight_cap": 0.25
+      },
+      {
+        "band": 0.1,
+        "cost_multiple": 1.0,
+        "drawdown_governor": false,
+        "factor_window": 120,
+        "governor_release": 0.05,
+        "governor_scale": 0.5,
+        "governor_trigger": 0.1,
+        "leverage_hysteresis": 0.1,
+        "mapping": "rank",
+        "max_leverage": 5.0,
+        "name": "diag_mapping_rank",
+        "neutralize_leading_factor": true,
+        "notes": [],
+        "sigma_window": 60,
+        "vol_target": 0.1,
+        "vol_window": 60,
+        "weight_cap": 0.25
+      },
+      {
+        "band": 0.0,
+        "cost_multiple": 1.0,
+        "drawdown_governor": false,
+        "factor_window": 120,
+        "governor_release": 0.05,
+        "governor_scale": 0.5,
+        "governor_trigger": 0.1,
+        "leverage_hysteresis": 0.1,
+        "mapping": "vol_normalized",
+        "max_leverage": 5.0,
+        "name": "diag_band_none",
+        "neutralize_leading_factor": true,
+        "notes": [],
+        "sigma_window": 60,
+        "vol_target": 0.1,
+        "vol_window": 60,
+        "weight_cap": 0.25
+      },
+      {
+        "band": 0.15,
+        "cost_multiple": 1.0,
+        "drawdown_governor": false,
+        "factor_window": 120,
+        "governor_release": 0.05,
+        "governor_scale": 0.5,
+        "governor_trigger": 0.1,
+        "leverage_hysteresis": 0.1,
+        "mapping": "vol_normalized",
+        "max_leverage": 5.0,
+        "name": "diag_band_0_15",
+        "neutralize_leading_factor": true,
+        "notes": [],
+        "sigma_window": 60,
+        "vol_target": 0.1,
+        "vol_window": 60,
+        "weight_cap": 0.25
+      },
+      {
+        "band": 0.1,
+        "cost_multiple": 1.0,
+        "drawdown_governor": false,
+        "factor_window": 120,
+        "governor_release": 0.05,
+        "governor_scale": 0.5,
+        "governor_trigger": 0.1,
+        "leverage_hysteresis": 0.1,
+        "mapping": "vol_normalized",
+        "max_leverage": 5.0,
+        "name": "diag_no_factor_neutralisation",
+        "neutralize_leading_factor": false,
+        "notes": [],
+        "sigma_window": 60,
+        "vol_target": 0.1,
+        "vol_window": 60,
+        "weight_cap": 0.25
+      },
+      {
+        "band": 0.1,
+        "cost_multiple": 1.5,
+        "drawdown_governor": false,
+        "factor_window": 120,
+        "governor_release": 0.05,
+        "governor_scale": 0.5,
+        "governor_trigger": 0.1,
+        "leverage_hysteresis": 0.1,
+        "mapping": "vol_normalized",
+        "max_leverage": 5.0,
+        "name": "diag_cost_1_5x",
+        "neutralize_leading_factor": true,
+        "notes": [],
+        "sigma_window": 60,
+        "vol_target": 0.1,
+        "vol_window": 60,
+        "weight_cap": 0.25
+      },
+      {
+        "band": 0.1,
+        "cost_multiple": 2.0,
+        "drawdown_governor": false,
+        "factor_window": 120,
+        "governor_release": 0.05,
+        "governor_scale": 0.5,
+        "governor_trigger": 0.1,
+        "leverage_hysteresis": 0.1,
+        "mapping": "vol_normalized",
+        "max_leverage": 5.0,
+        "name": "diag_cost_2x",
+        "neutralize_leading_factor": true,
+        "notes": [],
+        "sigma_window": 60,
+        "vol_target": 0.1,
+        "vol_window": 60,
+        "weight_cap": 0.25
+      },
+      {
+        "band": 0.1,
+        "cost_multiple": 1.0,
+        "drawdown_governor": true,
+        "factor_window": 120,
+        "governor_release": 0.05,
+        "governor_scale": 0.5,
+        "governor_trigger": 0.1,
+        "leverage_hysteresis": 0.1,
+        "mapping": "vol_normalized",
+        "max_leverage": 5.0,
+        "name": "diag_drawdown_governor",
+        "neutralize_leading_factor": true,
+        "notes": [],
+        "sigma_window": 60,
+        "vol_target": 0.1,
+        "vol_window": 60,
+        "weight_cap": 0.25
+      }
+    ],
+    "features": [
+      "currency_excess_return_5d_z",
+      "currency_excess_return_20d_z",
+      "currency_excess_return_60d_z",
+      "trend_age_d1_normalised",
+      "currency_realised_vol_20d_z",
+      "currency_dispersion_share_20d_z",
+      "currency_beta_to_common_factor_60d"
+    ],
+    "forbidden_after_results": [
+      "adding a feature",
+      "changing the horizon",
+      "flipping a sign",
+      "excluding a currency",
+      "optimising the band",
+      "optimising leverage or the volatility target",
+      "adding a regime filter",
+      "adding a non-linear model",
+      "reading any protected span for any purpose"
+    ],
+    "model": {
+      "class": "pooled ridge over (day, currency) rows",
+      "standardisation": "training fold only",
+      "target_effective_df": 3.0
+    },
+    "primary": {
+      "band": 0.1,
+      "cost_multiple": 1.0,
+      "drawdown_governor": false,
+      "factor_window": 120,
+      "governor_release": 0.05,
+      "governor_scale": 0.5,
+      "governor_trigger": 0.1,
+      "leverage_hysteresis": 0.1,
+      "mapping": "vol_normalized",
+      "max_leverage": 5.0,
+      "name": "primary",
+      "neutralize_leading_factor": true,
+      "notes": [],
+      "sigma_window": 60,
+      "vol_target": 0.1,
+      "vol_window": 60,
+      "weight_cap": 0.25
+    },
+    "search_budget": {
+      "automl": false,
+      "baseline_1_signs": 2,
+      "baselines": 3,
+      "diagnostic_bands": 2,
+      "diagnostic_books": 11,
+      "diagnostic_mappings": 2,
+      "feature_sets": 1,
+      "features": 7,
+      "fitted_models": 1,
+      "horizons": 1,
+      "hyperparameter_search": "none \u2014 the ridge penalty is solved to a declared df",
+      "model_classes": 1,
+      "primary_bands": 1,
+      "primary_mappings": 1,
+      "selection_among_diagnostics": "forbidden \u2014 the verdict reads the primary only",
+      "unfitted_rule_books": 6
+    },
+    "source_sha256": {
+      "scripts/research/continuous_portfolio/__init__.py": "2e04feef366fd843a217187984cba3a272c227a45936b1df02b04ffbe4b35e83",
+      "scripts/research/continuous_portfolio/construction.py": "43378323f108d1b2658cc582ae7b0d8f6392b06d7524c9a8e2f7379be3a82a6b",
+      "scripts/research/continuous_portfolio/development.py": "f11b8ed827c60eda7f974f62a087af31995c2e8617d77233c520482f2d73da5e",
+      "scripts/research/continuous_portfolio/evaluation.py": "a381b7d23ba9211bc8f28128f83140fd19563c169174852d5bb64309e487c0a3",
+      "scripts/research/continuous_portfolio/model.py": "fa7a6e79dd49a6947c5012b0dc1bb3a81cbb660e75bb6c4a851c68f9a88636c5",
+      "scripts/research/exploratory_m15/__init__.py": "8df16daa9f8a099c42111cf2f7976fc7671baa30534a3b4f3b310f0cf337de96",
+      "scripts/research/exploratory_m15/bars.py": "5b3f5c30a6b541d9472e577268d60d96a6483d9d27493f2dfabd9dad09694e15",
+      "scripts/research/exploratory_m15/momentum.py": "3f0a0dc8dc8054a9a099d0ab2ac8a4bacb2506172934e596c6ad63ad3db3609b",
+      "scripts/research/exploratory_m15/supplemental.py": "209e3105206bd850a3bceae9ba3519a0c2f56a131e0bf31d3bc4162c095040f1",
+      "scripts/research/feasibility/inventory.py": "b84cbf281078acefbebb24ffaecdc82fa0211de7eca1ec37dd91e27187783574",
+      "scripts/research/feasibility/preflight.py": "dfd8ea8b64b019b8dc4ff829da1e64b961cf1e915559c68595c63edfdb77cbd1",
+      "scripts/research/model_learning/__init__.py": "2fa01dbe006b525ad9586b724601c36e75f4840c9b7d02132ef8c09484f7ff0e",
+      "scripts/research/model_learning/corpus.py": "08f97080eb3b7ce9804236951d856b48a53a7fab9f81d66316f0c74b69d0e4af",
+      "scripts/research/model_learning/features.py": "5a10cddacac2a313ee444ed1873ee26dcf4a4816c9505485f2c58683f8cc7685",
+      "scripts/research/model_learning/walkforward.py": "c1c2479a8b1eb16e6895eeaeded10f6c1841169048af408f39e13e5ea0b11ed0"
+    },
+    "target": "forward 5-day cumulative currency excess return",
+    "track": "TRACK_1_CONTINUOUS_CURRENCY_PORTFOLIO",
+    "vol_scenarios": [
+      0.08,
+      0.1,
+      0.12
+    ],
+    "walk_forward": {
+      "embargo_days": 1,
+      "initial_train_years": 1.5,
+      "purge_days": 5,
+      "random_splits": false,
+      "scheme": "expanding_window_walk_forward",
+      "step_years": 0.5
+    }
+  }
+}
