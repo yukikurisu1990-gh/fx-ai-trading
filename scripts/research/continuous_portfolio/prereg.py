@@ -373,7 +373,10 @@ def freeze_hash() -> str:
     return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
 
 
-FROZEN_HASH: Final[str] = "UNFROZEN"
+#: Recorded 2026-09-14 after the review rounds closed, at commit 4a60fbe, before
+#: any development read. Changing anything the specification or the hashed
+#: sources contain moves the measured value and `development.run()` refuses.
+FROZEN_HASH: Final[str] = "aa0888089e4dcf5988bc6b734bb8e036262ed5c2efe4755d59fd9244176c85f1"
 
 
 def assert_frozen() -> str:

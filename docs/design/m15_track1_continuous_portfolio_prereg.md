@@ -9,6 +9,10 @@
 最初の行で `assert_frozen()` を呼び、不一致なら 1 バイトも読まずに止まる。
 凍結値は**レビュー修正が終わった直後・実行の直前**に記録する。
 
+**凍結: `FROZEN_HASH = aa0888089e4dcf5988bc6b734bb8e036262ed5c2efe4755d59fd9244176c85f1`**
+（2026-09-14、commit `4a60fbe` の内容に対して計測、CRLF export でも同値。development の読み取りは未実施。
+artifact: `artifacts/research/continuous_portfolio/prereg.json`）。
+
 権限: Human + ChatGPT 裁定（2026-09-14）— Track 1 core + efficiency bundle の
 prereg・実装・seen-data development 実行。**未承認**: Track 3 overlay、fresh pool、
 historical OOS、dead window、future confirmation epoch、broker 認証アクセス、
