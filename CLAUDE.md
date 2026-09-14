@@ -34,20 +34,27 @@ PRs #481/#482). This is **not** `FX_HAS_NO_EDGE`. The authoritative record is
 copy is `scripts/research/programme_status.py`, and the hypothesis ledger is
 `scripts/research/round_a/ledger.py` (H-001 … H-024).
 
-While paused: no new alpha hypothesis, pre-registration or alpha-seeking run on
-seen data; no Track 3 overlay (`NOT_STARTED_BASE_EDGE_REQUIRED`); no complex ML
-(LightGBM expansion, non-linear models, HMM, neural networks, representation
-learning, complex ensembles); no fresh-pool or forward-epoch read; no rescue of a
-negative base result by event, volatility or regime filters or a horizon change;
-the post-hoc currency reversal observation (H-024,
-`POST_HOC_EXPLORATORY_NON_DECISION_BEARING`) is never re-pre-registered. The
-efficiency bundle is `TURNOVER_REDUCTION_MECHANISM_SUPPORTED`, not
-`ALPHA_SUPPORTED` — **efficiency cannot rescue a negative expected return**.
-Maintenance, tests, CI and non-alpha engineering continue as normal.
+While paused, §11 of the record governs; in short: no new alpha search; no new
+alpha hypothesis or pre-registration on **any** data, seen or new; no
+alpha-seeking run; no Track 3 overlay of #480 (`NOT_STARTED_BASE_EDGE_REQUIRED`);
+no complex ML (LightGBM expansion, non-linear models, HMM, neural networks,
+representation learning, complex ensembles); no fresh-pool or forward-epoch read;
+no paper-forward, demo or live orders; no rescue of a negative base result by
+event, volatility or regime filters, a horizon change, a sign inversion or
+leverage; and the currency-level reversal family seen after Track 1 (H-024,
+`POST_HOC_EXPLORATORY_NON_DECISION_BEARING`, any horizon) is never
+re-pre-registered. "Engineering" is not a way around this: building parts of a
+paused track on seen data, re-measuring costs to re-score a closed verdict, or
+mining committed artefacts for a new alpha claim are all paused. The efficiency
+bundle is `TURNOVER_REDUCTION_MECHANISM_SUPPORTED`, not `ALPHA_SUPPORTED` —
+**efficiency cannot rescue a negative expected return**. Record maintenance,
+tests, CI, and engineering that reads no market data and makes no alpha claim
+continue.
 
-Resuming is an **explicit Human + ChatGPT decision**, never a recorded state; the
-resumption conditions are §12 of the record, and four of them (RC-1, RC-5, RC-6,
-RC-7) are drafted and await confirmation because the decision text was received
+Resuming is an **explicit Human + ChatGPT decision**, never a recorded state —
+already binding here, because resuming means real-data reads and a real-data read
+is Red. The record's §12 lists the conditions with their provenance; several are
+drafted or derived and await confirmation, because the decision text was received
 truncated.
 
 ## The Two-Track model — read this before any M15 research task
@@ -116,7 +123,9 @@ seen historical development data; every output is
 `NON_DECISION_BEARING_EXPLORATORY_ONLY` and none of it is formal evidence. It is
 **not** authority to run R2, to read the OOS slice, or to begin Formal
 Confirmation — each is its own Red gate — and it is not an instruction to build
-another production-grade gate first.
+another production-grade gate first. **Superseded on 2026-09-14:** active-alpha
+research on FX spot is paused (see the section above), so this exploration does
+not continue until an explicit Human + ChatGPT decision resumes it.
 
 **Four exploratory rounds have run, and they closed both directions of the only
 family they raised.** Round 1 found no edge at the M15 decision scale and left a 4-to-6 day
@@ -315,6 +324,8 @@ not permission and a completed R1 is not permission either; see the paragraph
 above on why a recorded state is not an act. What is left is
 `TRACK_A_READY_TO_BEGIN_EXPLORATORY_STRATEGY_RESEARCH` — exploratory work whose
 every output is `NON_DECISION_BEARING_EXPLORATORY_ONLY` — and nothing beyond it.
+Since 2026-09-14 that exploration is itself paused
+(`FX_SPOT_ACTIVE_ALPHA_RESEARCH_PAUSED`, section at the top of this file).
 
 The apparatus for 1–3 is `scripts/m15_track_a/` and
 `docs/design/m15_track_a_execution_gate.md`; **building it is not passing the

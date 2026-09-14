@@ -514,7 +514,10 @@ LEDGER: Final[list[dict[str, Any]]] = [
             "11 one-change diagnostics"
         ),
         "horizon_family": "5-day training target, daily holding and P&L",
-        "configurations": "1 fitted primary, run once",
+        "configurations": (
+            "1 fitted primary, run once; beside it 6 unfitted benchmark books, 1 linear "
+            "no-bundle baseline and 11 one-change diagnostics, none selectable"
+        ),
         "prespecified": True,
         "result": (
             "CONTINUOUS_CURRENCY_PORTFOLIO_ARCHITECTURE_NOT_SUPPORTED_IN_SEEN_DEVELOPMENT. "
@@ -556,7 +559,9 @@ LEDGER: Final[list[dict[str, Any]]] = [
         ),
         "status": (
             "CLOSED - POST_HOC_EXPLORATORY_NON_DECISION_BEARING; not a candidate, and "
-            "re-pre-registering it is prohibited"
+            "re-pre-registering it is prohibited. The scope is the whole currency-level "
+            "reversal family -- any horizon (5, 20, 60 days or another), any sign "
+            "combination -- as the Track 1 results record already stated"
         ),
     },
 ]
