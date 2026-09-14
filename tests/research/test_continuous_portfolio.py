@@ -600,6 +600,24 @@ class TestAdjudication:
         expected = np.clip(fat, median - 3 * scale, median + 3 * scale).mean() * 261.0
         assert fat_summary["net_clipped_3_robust_sigma_annual"] == pytest.approx(expected, abs=1e-6)
 
+    def test_the_ordinary_days_are_reported_beside_the_kill(self) -> None:
+        """A high-Sharpe lottery can pass the clip; the inside-3-sigma return shows it."""
+        days = pd.bdate_range("2022-01-03", periods=850)
+        rng = np.random.default_rng(23)
+        lottery = rng.normal(-0.0005, 0.005, size=850)
+        lottery[rng.choice(850, size=40, replace=False)] += 0.05
+        summary = evaluation.summarise(
+            _daily_frame(days, lottery), days_per_year=261.0, fold_labels=pd.Series(0.0, index=days)
+        )
+        assert summary["net_clipped_3_robust_sigma_annual"] > 0
+        assert summary["net_inside_3_robust_sigma_annual"] < 0
+        median = np.median(lottery)
+        scale = 1.4826 * np.median(np.abs(lottery - median))
+        inside = lottery[np.abs(lottery - median) <= 3 * scale]
+        assert summary["net_inside_3_robust_sigma_annual"] == pytest.approx(
+            inside.mean() * 261.0, abs=1e-6
+        )
+
     def test_an_unmeasurable_tail_counts_as_dependent(self) -> None:
         days = pd.bdate_range("2022-01-03", periods=100)
         constant = pd.Series(0.001, index=days)
@@ -891,6 +909,18 @@ def test_the_development_run_end_to_end_on_a_synthetic_corpus(
         primary["gross_annual_return"] != rules["persistence_60d"]["summary"]["gross_annual_return"]
     )
     assert record["baseline_1_unfitted_persistence"] == rules["persistence_60d"]
+    folds = record["folds"]
+    counted = primary["per_fold_days"]
+    assert [int(k) for k in counted] == [fold["fold"] for fold in folds]
+    for fold in folds[:-1]:
+        assert counted[str(fold["fold"])] == fold["test_days"]
+    assert folds[-1]["test_days"] - 1 <= counted[str(folds[-1]["fold"])] <= folds[-1]["test_days"]
+    for horizon in (5, 20, 60):
+        up = record["adjudication"]["unfitted_rules"][f"persistence_{horizon}d"]["pnl_correlation"]
+        down = record["adjudication"]["unfitted_rules"][f"reversal_{horizon}d"]["pnl_correlation"]
+        assert up is not None and down is not None
+        assert up == pytest.approx(-down, abs=0.1)
+        assert abs(up) < 0.999
     adjudicated = record["adjudication"]["unfitted_rules"]
     assert adjudicated["reversal_5d"]["net_sharpe"] == rules["reversal_5d"]["summary"]["net_sharpe"]
     #: the planted signal sits in the 5-day z-score with a positive sign, so the

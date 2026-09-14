@@ -77,6 +77,18 @@ def clipped_mean(net: pd.Series, sigmas: float = TAIL_CLIP_ROBUST_SIGMAS) -> flo
     return float(values.clip(centre - sigmas * scale, centre + sigmas * scale).mean())
 
 
+def trimmed_mean(net: pd.Series, sigmas: float = TAIL_CLIP_ROBUST_SIGMAS) -> float:
+    """Mean daily net of the days within `median +/- sigmas x 1.4826 x MAD`. Reported only."""
+    values = net.dropna()
+    if values.empty:
+        return float("nan")
+    centre = float(values.median())
+    scale = 1.4826 * float((values - centre).abs().median())
+    if not math.isfinite(scale) or scale <= 0.0:
+        return float("nan")
+    return float(values[(values - centre).abs() <= sigmas * scale].mean())
+
+
 def _finite_round(value: float, digits: int = 4) -> float | None:
     return round(float(value), digits) if math.isfinite(float(value)) else None
 
@@ -215,6 +227,10 @@ def summarise(
         #: median +/- 3 robust sigmas. A count- or quantile-based cut cannot see
         #: a lottery wider than its count; a sigma-based one can
         "net_clipped_3_robust_sigma_annual": _finite_round(clipped_mean(net) * days_per_year, 6),
+        #: reported beside the kill: the clip counts an outlier day as +3 sigma,
+        #: so a high-Sharpe lottery can pass it. The mean of the days inside
+        #: +/- 3 robust sigmas shows whether the ordinary days earn anything
+        "net_inside_3_robust_sigma_annual": _finite_round(trimmed_mean(net) * days_per_year, 6),
         "net_without_top_5_days": round(
             float(net.sum() - net.sort_values(ascending=False).head(5).sum()), 6
         ),
@@ -368,7 +384,14 @@ def adjudicate(
             "top_1": primary.get("top_1_day_share_of_net"),
             "top_5": primary.get("top_5_day_share_of_net"),
             "top_10": primary.get("top_10_day_share_of_net"),
+            "net_without_top_5_days": primary.get("net_without_top_5_days"),
+            "net_inside_3_robust_sigma_annual": primary.get("net_inside_3_robust_sigma_annual"),
         },
+        "tail_disclosure": (
+            "the clip counts an outlier day as +3 robust sigma, so a lottery-shaped book "
+            "with a realised Sharpe near 1 can pass the tail kill; a Case A or B must be "
+            "shown not to be one from the reported shares and the inside-3-sigma return"
+        ),
         "kill_clauses": kills,
         "kills_fired": sorted(name for name, fired in kills.items() if fired),
         "candidate_clauses": candidate_conditions,
@@ -380,6 +403,7 @@ __all__ = [
     "MIN_FOLD_TEST_DAYS",
     "TAIL_CLIP_ROBUST_SIGMAS",
     "clipped_mean",
+    "trimmed_mean",
     "VOL_SCENARIOS",
     "adjudicate",
     "measured_days_per_year",
