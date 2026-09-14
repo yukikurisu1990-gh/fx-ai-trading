@@ -139,7 +139,10 @@ class TestWhatTheRecordMayNotSay:
         tail = next(p for key, _, p in ps.STATUSES if key == "tail_policy_prospective")
         assert tail == "裁定（推奨）"
         assert "降格することを推奨**した" in document
-        assert "tail 条項で閉じた family（H-021 COT、H-022 Track A など）を再び開かない" in document
+        assert (
+            "tail 条項も発火して閉じた family（H-021 COT、H-022 Track A など）を再び開かない**"
+            "（`裁定から導出`、RC-10）"
+        ) in document
 
     def test_the_lottery_gap_stays_an_open_decision(self, document: str) -> None:
         decisions = document.split("## 13.", 1)[1]
@@ -156,17 +159,103 @@ class TestWhatTheRecordMayNotSay:
             text = next(row[1] for row in ps.RESUMPTION_CONDITIONS if row[0] == cid)
             assert text.startswith("再開後の順序: ")
 
-    def test_the_post_hoc_scope_is_the_whole_family(self, document: str) -> None:
-        assert "**対象は通貨レベルの reversal family 全体**" in document
+    def test_the_post_hoc_scope_says_what_was_stated_and_what_is_derived(
+        self, document: str
+    ) -> None:
+        assert "5・20・60 日のどれでも、どの符号の組み合わせでも（Track 1 の結果記録が" in document
+        assert "**それ以外の horizon に及ぶかは `裁定から導出` で、§13 の確認事項**" in document
+        results = (ROOT / "docs/research/m15_track1_continuous_portfolio_results.md").read_text(
+            encoding="utf-8"
+        )
+        assert "5・20・60 日のどれでも、どの符号の組み合わせでも" in results
         entry = next(e for e in LEDGER if e["id"] == "H-024")
-        assert "whole currency-level reversal family" in entry["status"]
-        assert "any horizon" in entry["status"]
+        assert "at 5, 20 or 60 days in any sign combination" in entry["status"]
+        assert "awaits Human + ChatGPT confirmation" in entry["status"]
+        assert "or another" not in entry["status"]
+
+    def test_the_resumption_rules_split_existing_from_derived(self) -> None:
+        by_id = {cid: (text, prov) for cid, text, prov in ps.RESUMPTION_CONDITIONS}
+        assert by_id["RC-1"][1] == "既存規則"
+        assert "実データの読み取りや実行を伴う再開" in by_id["RC-1"][0]
+        assert "仮説" not in by_id["RC-1"][0]
+        assert by_id["RC-9"][1] == "裁定から導出"
+        assert "読み取りを伴わない再開" in by_id["RC-9"][0]
+        assert by_id["RC-8"][1] == "裁定（推奨）"
+        assert "再び開かない" not in by_id["RC-8"][0]
+        assert by_id["RC-10"][1] == "裁定から導出"
+        assert "tail 条項も発火して閉じた family" in by_id["RC-10"][0]
+
+    def test_pending_rows_bind_provisionally_and_never_widen(self, document: str) -> None:
+        assert "確認されるまで**暫定的に拘束する**（厳しい方の読み）" in document
+        assert "確認待ちの「停止しないもの」の行は、許可を**広げない**" in document
+        assert any("市場データを使うかどうかを問わない" in text for text, _ in ps.PAUSED_ACTIVITIES)
+        continuing = " ".join(text for text, _ in ps.CONTINUING_ACTIVITIES)
+        assert "停止中の track の実装でもない" in continuing
 
     def test_engineering_is_not_a_way_around_the_pause(self) -> None:
         paused = " ".join(text for text, _ in ps.PAUSED_ACTIVITIES)
         for loophole in ("volatility 予測器", "閉じた判定の net を再計算", "artefact を再分析"):
             assert loophole in paused
         assert "どちらでも" in paused
+
+
+class TestTheProseKeepsItsPolarity:
+    """The rows are pinned by equality; the sentences around them are pinned here."""
+
+    REQUIRED_SENTENCES: tuple[str, ...] = (
+        "**コストだけが原因ではない。**",
+        "標準誤差 約 0.58",
+        "今回の Case C の判定は**変更しない**",
+        "過去の事前登録・判定も**書き換えない**",
+        "**再事前登録は禁止。**",
+        "OPEN であることは再開の根拠にならない",
+        "**どの条件も、それが記録上満たされたことだけでは再開にならない**",
+        "#482 の base 追随 merge は tree hash が承認時と同一",
+        "**正本として引用しない**",
+        '"never read" / "pristine" は主張しない',
+        "GO・候補・edge の証拠として引用するのではない",
+        "この引用との関係は §13 で Human + ChatGPT の確認事項とする",
+    )
+    FORBIDDEN_PHRASES: tuple[str, ...] = (
+        "再開してよい",
+        "追求してよい",
+        "進めてよい",
+        "条件付きで可",
+        "変更しうる",
+        "merge 済みで正本",
+        "pristine である",
+        "問題ない",
+        "証拠には引用できる",
+        "FX spot には edge が無い",
+        "揃えば再開",
+        "次は Track 3",
+    )
+
+    @pytest.mark.parametrize("sentence", REQUIRED_SENTENCES)
+    def test_a_required_sentence_is_present(self, document: str, sentence: str) -> None:
+        assert sentence in document
+
+    @pytest.mark.parametrize("phrase", FORBIDDEN_PHRASES)
+    def test_a_permissive_phrase_is_absent(self, document: str, phrase: str) -> None:
+        assert phrase not in document
+
+    def test_the_decision_list_is_complete(self, document: str) -> None:
+        decisions = document.split("## 13.", 1)[1]
+        items = re.findall(r"^(\d+)\. ", decisions, flags=re.MULTILINE)
+        assert items == [str(n) for n in range(1, 10)]
+        for needle in (
+            "本 PR の merge 承認",
+            "出典が `起草` と `裁定から導出` の項目の確定",
+            "「temporal co…」の語の確定",
+            "H-024 の範囲が 5・20・60 日以外の horizon に及ぶか",
+            "`記録用` token",
+            "#473",
+            "lottery 型 book",
+            "§8.11.2(1)",
+            "H-011、H-015、H-018、H-019",
+            "RC-7 について",
+        ):
+            assert needle in decisions
 
 
 class TestTheLedger:
@@ -308,6 +397,46 @@ class TestTheSources:
         assert f"band だけを外した診断では {per_gross:.1f}" in document
 
 
+def _claude_section() -> str:
+    text = (ROOT / "CLAUDE.md").read_text(encoding="utf-8")
+    heading = "## FX spot active-alpha research is PAUSED"
+    return " ".join(text.split(heading, 1)[1].split("\n## ", 1)[0].split())
+
+
+class TestTheClaudeSectionPolarity:
+    REQUIRED: tuple[str, ...] = (
+        "This is **not** `FX_HAS_NO_EDGE`",
+        "not `ALPHA_SUPPORTED`",
+        "which bind provisionally, and none of which widens what is permitted",
+        "no new alpha search",
+        "pre-registration on **any** data, seen or new",
+        "no alpha-seeking run",
+        "no Track 3 overlay of #480",
+        "no complex ML",
+        "no fresh-pool or forward-epoch read",
+        "no paper-forward, demo or live orders",
+        "is never re-pre-registered",
+        '"Engineering" is not a way around this',
+        "with or without market data",
+        "never a recorded state",
+    )
+    FORBIDDEN: tuple[str, ...] = (
+        "reads are allowed",
+        "is fine",
+        "may continue",
+        "may resume",
+        "is `FX_HAS_NO_EDGE`",
+    )
+
+    @pytest.mark.parametrize("phrase", REQUIRED)
+    def test_a_prohibition_is_present(self, phrase: str) -> None:
+        assert phrase in _claude_section()
+
+    @pytest.mark.parametrize("phrase", FORBIDDEN)
+    def test_a_permission_is_absent(self, phrase: str) -> None:
+        assert phrase not in _claude_section()
+
+
 class TestTheGovernanceDocuments:
     def test_claude_md_carries_the_pause(self) -> None:
         text = (ROOT / "CLAUDE.md").read_text(encoding="utf-8")
@@ -333,3 +462,12 @@ class TestTheGovernanceDocuments:
         assert "**superseded on 2026-09-14** by the pause row below" in playbook
         assert "| **FX spot active-alpha research paused** (2026-09-14) |" in playbook
         assert "**This overrides the Next stage row above**" in playbook
+        row = next(
+            line for line in playbook.splitlines() if "research paused** (2026-09-14)" in line
+        )
+        assert "exploration does **not** continue" in row
+        assert "until an explicit Human + ChatGPT decision resumes it" in row
+        assert "may continue" not in row and "continues" not in row
+        flat = " ".join(text.split())
+        assert "so this exploration does not continue until an explicit Human + ChatGPT" in flat
+        assert "does continue" not in flat

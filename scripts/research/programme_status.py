@@ -72,7 +72,10 @@ NOT_CLAIMED: Final[tuple[str, ...]] = ("FX_HAS_NO_EDGE", "ALPHA_SUPPORTED")
 
 
 def status(key: str) -> str:
-    return next(token for name, token, _ in STATUSES if name == key)
+    for name, token, _ in STATUSES:
+        if name == key:
+            return token
+    raise KeyError(key)
 
 
 #: `(token, provenance)`.
@@ -89,7 +92,7 @@ PROHIBITED_RESCUES: Final[tuple[tuple[str, str], ...]] = (
     ("regime filter による救済", "裁定"),
     ("horizon 変更による救済", "裁定"),
     ("post-hoc の通貨レベル reversal 観察（H-024）の再事前登録", "裁定"),
-    ("閉鎖・隣接 family の符号反転", "既存規則"),
+    ("閉鎖・隣接 family の符号反転", "裁定から導出"),
     ("leverage・vol target の変更による救済", "既存規則"),
     ("turnover・コスト効率の改善を alpha として扱うこと", "裁定から導出"),
 )
@@ -120,13 +123,20 @@ TAIL_DIAGNOSTICS: Final[tuple[tuple[str, str], ...]] = (
     ("±3 robust σ 内の日の収益", "起草"),
 )
 
-#: `(activity, provenance)` — stopped until an explicit decision to resume.
+#: `(activity, provenance)` — stopped until an explicit decision to resume. Rows
+#: awaiting confirmation (`起草`, `裁定から導出`) bind provisionally until they are
+#: confirmed; the stricter reading applies.
 PAUSED_ACTIVITIES: Final[tuple[tuple[str, str], ...]] = (
     ("新しい alpha 探索（FX spot active-alpha research）", "裁定"),
     ("新しい alpha 仮説の事前登録（seen data・新しい外部データのどちらでも）", "起草"),
-    ("seen data 上の alpha 目的の実行", "裁定から導出"),
+    ("seen data 上の alpha 目的の実行", "既存規則"),
     ("Track 3 overlay（#480 の event / volatility exposure overlay）", "裁定"),
     ("complex ML", "裁定"),
+    (
+        "停止中の track（#480 の Track 3 overlay、complex ML など）の実装や学習 pipeline の作成"
+        "（市場データを使うかどうかを問わない）",
+        "起草",
+    ),
     (
         "停止中の track の部品を「engineering」として作り seen data で検証すること"
         "（方向を持たない volatility 予測器、event anchor、overlay 部品など）",
@@ -134,16 +144,20 @@ PAUSED_ACTIVITIES: Final[tuple[tuple[str, str], ...]] = (
     ),
     ("コスト・band・netting を測り直して閉じた判定の net を再計算すること", "起草"),
     ("commit 済み artefact を再分析して新しい alpha の主張を導くこと", "起草"),
-    ("fresh pool・forward epoch の読み取り", "既存規則"),
+    ("Red 承認なしの fresh pool・forward epoch の読み取り", "既存規則"),
     ("paper-forward、demo / live 注文、broker 認証 API", "既存規則"),
     ("閉鎖・隣接 family の再事前登録や救済", "裁定から導出"),
 )
 
-#: `(activity, provenance)` — continues while paused, and changes no research state.
+#: `(activity, provenance)` — continues while paused and changes no research
+#: state. A row awaiting confirmation never widens what is permitted.
 CONTINUING_ACTIVITIES: Final[tuple[tuple[str, str], ...]] = (
     ("既存記録の保守（誤りの訂正、リンク・SHA の更新）", "起草"),
     ("テスト・lint・CI の保守", "起草"),
-    ("市場データの読み取りも alpha の主張も伴わない engineering", "起草"),
+    (
+        "市場データの読み取りも alpha の主張も伴わず、停止中の track の実装でもない engineering",
+        "起草",
+    ),
 )
 
 #: `(id, condition, provenance)`. RC-2..RC-4 are ordering rules for the work after
@@ -151,8 +165,8 @@ CONTINUING_ACTIVITIES: Final[tuple[tuple[str, str], ...]] = (
 RESUMPTION_CONDITIONS: Final[tuple[tuple[str, str, str], ...]] = (
     (
         "RC-1",
-        "再開は Human + ChatGPT の明示の決定によってのみ行う。"
-        "仮説・データ・操作・承認 head を名指しする。"
+        "実データの読み取りや実行を伴う再開は、operation・span・pairs・timeframe・承認 head を"
+        "名指しした Human + ChatGPT の明示の承認を実行前に要する。"
         "記録された status・gate・文書・この表の条件がすべて揃ったことはそれに代わらない",
         "既存規則",
     ),
@@ -178,7 +192,7 @@ RESUMPTION_CONDITIONS: Final[tuple[tuple[str, str, str], ...]] = (
         "RC-5",
         "仮説は ledger の閉鎖 family と隣接 family の外にあり、"
         "novelty boundary を結果を見る前に書く。post-hoc 観察は昇格しない。"
-        "隣接 = 同じ単位（通貨または pair）で、過去リターンに基づく同じ信号を"
+        "隣接 = 同じ単位（通貨または pair）で、過去リターンに基づく同じ信号を "
         "horizon・符号・閾値だけ変えたもの",
         "起草",
     ),
@@ -197,9 +211,20 @@ RESUMPTION_CONDITIONS: Final[tuple[tuple[str, str, str], ...]] = (
     ),
     (
         "RC-8",
-        "tail concentration は hard kill ではなく adversarial diagnostic として報告する。"
-        "この降格は、tail 条項で閉じた family（H-021、H-022 など）を再び開かない",
+        "tail concentration は hard kill ではなく adversarial diagnostic として報告する",
         "裁定（推奨）",
+    ),
+    (
+        "RC-9",
+        "読み取りを伴わない再開（新しい仮説の事前登録の作成など）を含め、一時停止の解除は"
+        "仮説を名指しした Human + ChatGPT の明示の決定による",
+        "裁定から導出",
+    ),
+    (
+        "RC-10",
+        "tail concentration の降格は、tail 条項も発火して閉じた family（H-021、H-022 など）を"
+        "再び開かない",
+        "裁定から導出",
     ),
 )
 

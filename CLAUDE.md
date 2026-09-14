@@ -34,7 +34,9 @@ PRs #481/#482). This is **not** `FX_HAS_NO_EDGE`. The authoritative record is
 copy is `scripts/research/programme_status.py`, and the hypothesis ledger is
 `scripts/research/round_a/ledger.py` (H-001 … H-024).
 
-While paused, §11 of the record governs; in short: no new alpha search; no new
+While paused, §11 of the record governs — including its rows still awaiting
+confirmation (drafted or derived), which bind provisionally, and none of which
+widens what is permitted. In short: no new alpha search; no new
 alpha hypothesis or pre-registration on **any** data, seen or new; no
 alpha-seeking run; no Track 3 overlay of #480 (`NOT_STARTED_BASE_EDGE_REQUIRED`);
 no complex ML (LightGBM expansion, non-linear models, HMM, neural networks,
@@ -42,20 +44,24 @@ representation learning, complex ensembles); no fresh-pool or forward-epoch read
 no paper-forward, demo or live orders; no rescue of a negative base result by
 event, volatility or regime filters, a horizon change, a sign inversion or
 leverage; and the currency-level reversal family seen after Track 1 (H-024,
-`POST_HOC_EXPLORATORY_NON_DECISION_BEARING`, any horizon) is never
-re-pre-registered. "Engineering" is not a way around this: building parts of a
-paused track on seen data, re-measuring costs to re-score a closed verdict, or
-mining committed artefacts for a new alpha claim are all paused. The efficiency
+`POST_HOC_EXPLORATORY_NON_DECISION_BEARING`, at 5, 20 or 60 days in any sign
+combination; other horizons provisionally too, pending confirmation) is never
+re-pre-registered. "Engineering" is not a way around this: implementing a paused
+track (the #480 Track 3 overlay, complex ML) with or without market data,
+building parts of a paused track on seen data, re-measuring costs to re-score a
+closed verdict, or mining committed artefacts for a new alpha claim are all
+paused. The efficiency
 bundle is `TURNOVER_REDUCTION_MECHANISM_SUPPORTED`, not `ALPHA_SUPPORTED` —
 **efficiency cannot rescue a negative expected return**. Record maintenance,
 tests, CI, and engineering that reads no market data and makes no alpha claim
 continue.
 
-Resuming is an **explicit Human + ChatGPT decision**, never a recorded state —
-already binding here, because resuming means real-data reads and a real-data read
-is Red. The record's §12 lists the conditions with their provenance; several are
-drafted or derived and await confirmation, because the decision text was received
-truncated.
+Resuming is an **explicit Human + ChatGPT decision**, never a recorded state. For
+any real-data read or run that is already binding (a real-data read is Red); for a
+resumption that reads nothing, such as drafting a pre-registration, it is derived
+from the pause decision and binds provisionally. The record's §12 lists the
+conditions with their provenance; several are drafted or derived and await
+confirmation, because the decision text was received truncated.
 
 ## The Two-Track model — read this before any M15 research task
 

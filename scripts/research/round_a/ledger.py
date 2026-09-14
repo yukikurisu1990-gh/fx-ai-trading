@@ -559,9 +559,10 @@ LEDGER: Final[list[dict[str, Any]]] = [
         ),
         "status": (
             "CLOSED - POST_HOC_EXPLORATORY_NON_DECISION_BEARING; not a candidate, and "
-            "re-pre-registering it is prohibited. The scope is the whole currency-level "
-            "reversal family -- any horizon (5, 20, 60 days or another), any sign "
-            "combination -- as the Track 1 results record already stated"
+            "re-pre-registering it is prohibited. Scope: the currency-level reversal "
+            "family at 5, 20 or 60 days in any sign combination, as the Track 1 results "
+            "record stated; whether other horizons are covered is derived by the pause "
+            "record and awaits Human + ChatGPT confirmation"
         ),
     },
 ]
