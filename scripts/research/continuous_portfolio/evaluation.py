@@ -231,6 +231,10 @@ def summarise(
         #: so a high-Sharpe lottery can pass it. The mean of the days inside
         #: +/- 3 robust sigmas shows whether the ordinary days earn anything
         "net_inside_3_robust_sigma_annual": _finite_round(trimmed_mean(net) * days_per_year, 6),
+        #: read with the line above: a healthy right-skewed book also has a
+        #: negative inside-3-sigma return; a lottery has it with extreme skew
+        "daily_net_skewness": _finite_round(net.skew()),
+        "daily_net_excess_kurtosis": _finite_round(net.kurt()),
         "net_without_top_5_days": round(
             float(net.sum() - net.sort_values(ascending=False).head(5).sum()), 6
         ),
@@ -386,6 +390,8 @@ def adjudicate(
             "top_10": primary.get("top_10_day_share_of_net"),
             "net_without_top_5_days": primary.get("net_without_top_5_days"),
             "net_inside_3_robust_sigma_annual": primary.get("net_inside_3_robust_sigma_annual"),
+            "daily_net_skewness": primary.get("daily_net_skewness"),
+            "daily_net_excess_kurtosis": primary.get("daily_net_excess_kurtosis"),
         },
         "tail_disclosure": (
             "the clip counts an outlier day as +3 robust sigma, so a lottery-shaped book "

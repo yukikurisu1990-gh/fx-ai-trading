@@ -611,6 +611,11 @@ class TestAdjudication:
         )
         assert summary["net_clipped_3_robust_sigma_annual"] > 0
         assert summary["net_inside_3_robust_sigma_annual"] < 0
+        assert summary["daily_net_skewness"] == pytest.approx(
+            round(float(pd.Series(lottery).skew()), 4)
+        )
+        assert summary["daily_net_skewness"] > 2
+        assert summary["daily_net_excess_kurtosis"] > 3
         median = np.median(lottery)
         scale = 1.4826 * np.median(np.abs(lottery - median))
         inside = lottery[np.abs(lottery - median) <= 3 * scale]
