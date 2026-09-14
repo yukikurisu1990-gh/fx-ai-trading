@@ -55,6 +55,28 @@ def pnl_correlation(first: pd.Series, second: pd.Series) -> float | None:
     return round(float(joined.iloc[:, 0].corr(joined.iloc[:, 1])), 4)
 
 
+#: Robust sigmas (1.4826 x MAD) from the median beyond which a day is clipped
+#: for the tail-dependence kill.
+TAIL_CLIP_ROBUST_SIGMAS: Final[float] = 3.0
+
+
+def clipped_mean(net: pd.Series, sigmas: float = TAIL_CLIP_ROBUST_SIGMAS) -> float:
+    """Mean daily net after clipping each day to `median +/- sigmas x 1.4826 x MAD`.
+
+    Symmetric fat tails are clipped on both sides and leave the mean close to
+    where it was; profit that comes from days far out on the upside does not
+    survive. NaN when the scale cannot be measured.
+    """
+    values = net.dropna()
+    if values.empty:
+        return float("nan")
+    centre = float(values.median())
+    scale = 1.4826 * float((values - centre).abs().median())
+    if not math.isfinite(scale) or scale <= 0.0:
+        return float("nan")
+    return float(values.clip(centre - sigmas * scale, centre + sigmas * scale).mean())
+
+
 def _finite_round(value: float, digits: int = 4) -> float | None:
     return round(float(value), digits) if math.isfinite(float(value)) else None
 
@@ -189,12 +211,10 @@ def summarise(
         "top_1_day_share_of_net": _top_share(net, 1),
         "top_5_day_share_of_net": _top_share(net, 5),
         "top_10_day_share_of_net": _top_share(net, 10),
-        #: the tail-dependence kill: the mean daily net with both 1% tails clipped.
-        #: Symmetric fat tails leave it near the mean; profit that lives in a few
-        #: outsized up-days does not survive it
-        "net_winsorised_1pct_annual": round(
-            float(net.clip(net.quantile(0.01), net.quantile(0.99)).mean()) * days_per_year, 6
-        ),
+        #: the tail-dependence kill: mean daily net with every day clipped to the
+        #: median +/- 3 robust sigmas. A count- or quantile-based cut cannot see
+        #: a lottery wider than its count; a sigma-based one can
+        "net_clipped_3_robust_sigma_annual": _finite_round(clipped_mean(net) * days_per_year, 6),
         "net_without_top_5_days": round(
             float(net.sum() - net.sort_values(ascending=False).head(5).sum()), 6
         ),
@@ -260,9 +280,10 @@ def adjudicate(
     ordinary days already hold about 26 daily deviations against a total of
     about 52.5 x Sharpe, so a "top ten at most half" clause demands a realised
     Sharpe near 1.0 whatever the tails look like, and "net without the top five
-    days" kills about half of fat-tailed books at Sharpe 0.3-0.4. Tail dependence
-    is read from the 1%-winsorised mean instead, which symmetric fat tails leave
-    alone and a book living on a few outsized up-days does not survive.
+    days" kills about half of fat-tailed books at Sharpe 0.3-0.4. A 1% winsorised
+    mean fixed that and went blind to a lottery wider than 1% of days. Tail
+    dependence is read from the mean clipped at 3 robust sigmas instead, and an
+    unmeasurable value counts as dependent.
     """
     sharpe = primary["net_sharpe"]
     correlations = [
@@ -284,7 +305,10 @@ def adjudicate(
     kills = {
         "net_sharpe_not_positive": sharpe <= 0.0,
         "net_return_economically_negligible": sharpe < rules["negligible_net_sharpe"],
-        "profit_lives_in_the_extreme_days": primary["net_winsorised_1pct_annual"] <= 0.0,
+        "profit_lives_in_the_extreme_days": not (
+            primary["net_clipped_3_robust_sigma_annual"] is not None
+            and primary["net_clipped_3_robust_sigma_annual"] > 0.0
+        ),
         "single_currency_carries_the_book": (
             primary["gross_pnl_without_best_currency"] is None
             or primary["gross_pnl_without_best_currency"] <= 0.0
@@ -354,6 +378,8 @@ def adjudicate(
 
 __all__ = [
     "MIN_FOLD_TEST_DAYS",
+    "TAIL_CLIP_ROBUST_SIGMAS",
+    "clipped_mean",
     "VOL_SCENARIOS",
     "adjudicate",
     "measured_days_per_year",

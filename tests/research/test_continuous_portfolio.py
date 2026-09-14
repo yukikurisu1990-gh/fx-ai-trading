@@ -446,7 +446,7 @@ def _summary(**overrides: Any) -> dict[str, Any]:
     base = {
         "net_sharpe": 0.6,
         "net_without_top_5_days": 0.05,
-        "net_winsorised_1pct_annual": 0.04,
+        "net_clipped_3_robust_sigma_annual": 0.04,
         "gross_pnl_without_best_currency": 0.05,
         "gross_pnl_without_best_two_currencies": 0.03,
         "gross_pnl_without_usd": 0.04,
@@ -516,7 +516,8 @@ class TestAdjudication:
         [
             ("net_sharpe", 0.0),
             ("net_sharpe", 0.15),
-            ("net_winsorised_1pct_annual", 0.0),
+            ("net_clipped_3_robust_sigma_annual", 0.0),
+            ("net_clipped_3_robust_sigma_annual", None),
             ("gross_pnl_without_best_currency", -0.01),
             ("share_of_folds_positive", 0.4),
             ("turnover_round_trips_per_year_per_unit_gross", 60.0),
@@ -567,32 +568,43 @@ class TestAdjudication:
         assert verdict["top_day_shares_reported_not_gated"]["top_10"] == 0.9
 
     def test_the_tail_kill_reads_extreme_days_not_fat_tails(self) -> None:
-        """⭐ Symmetric fat tails survive; a book living on a few up-days does not.
+        """⭐ Symmetric fat tails survive; a book living on outsized up-days does not.
 
-        The previous clause, net without the top five days, killed about half of
-        fat-tailed books at a realised Sharpe of 0.3-0.4.
+        Net-without-the-top-five-days killed about half of fat-tailed books at
+        Sharpe 0.3-0.4; a 1% winsorised mean could not see a lottery of more
+        than about 8 days. Clipping at 3 robust sigmas does neither.
         """
         days = pd.bdate_range("2022-01-03", periods=850)
         rng = np.random.default_rng(17)
-        fat = rng.standard_t(4, size=850) / np.sqrt(2) * 0.005 + 0.35 / np.sqrt(261) * 0.005
-        fat = fat - fat.mean() + 0.35 / np.sqrt(261) * 0.005
-        lottery = rng.normal(-0.0006, 0.005, size=850)
-        lottery[rng.choice(850, size=6, replace=False)] += 0.12
+        drift = 0.35 / np.sqrt(261) * 0.005
+        fat = rng.standard_t(4, size=850) / np.sqrt(2) * 0.005
+        fat = fat - fat.mean() + drift
         labels = pd.Series(0.0, index=days)
-        fat_summary = evaluation.summarise(
-            _daily_frame(days, fat), days_per_year=261.0, fold_labels=labels
-        )
-        lottery_summary = evaluation.summarise(
-            _daily_frame(days, lottery), days_per_year=261.0, fold_labels=labels
-        )
+
+        def summary(series: np.ndarray) -> dict[str, Any]:
+            return evaluation.summarise(
+                _daily_frame(days, series), days_per_year=261.0, fold_labels=labels
+            )
+
+        fat_summary = summary(fat)
         assert fat_summary["net_without_top_5_days"] <= 0
-        assert fat_summary["net_winsorised_1pct_annual"] > 0
-        assert lottery_summary["net_annual_return"] > 0
-        assert lottery_summary["net_winsorised_1pct_annual"] <= 0
-        expected = pd.Series(fat).clip(np.quantile(fat, 0.01), np.quantile(fat, 0.99)).mean()
-        assert fat_summary["net_winsorised_1pct_annual"] == pytest.approx(
-            expected * 261.0, abs=1e-6
-        )
+        assert fat_summary["net_clipped_3_robust_sigma_annual"] > 0
+        for outliers in (6, 13, 25):
+            lottery = rng.normal(-0.001, 0.005, size=850)
+            lottery[rng.choice(850, size=outliers, replace=False)] += 1.2 / outliers
+            lottery_summary = summary(lottery)
+            assert lottery_summary["net_annual_return"] > 0, outliers
+            assert lottery_summary["net_clipped_3_robust_sigma_annual"] <= 0, outliers
+        median = np.median(fat)
+        scale = 1.4826 * np.median(np.abs(fat - median))
+        expected = np.clip(fat, median - 3 * scale, median + 3 * scale).mean() * 261.0
+        assert fat_summary["net_clipped_3_robust_sigma_annual"] == pytest.approx(expected, abs=1e-6)
+
+    def test_an_unmeasurable_tail_counts_as_dependent(self) -> None:
+        days = pd.bdate_range("2022-01-03", periods=100)
+        constant = pd.Series(0.001, index=days)
+        assert np.isnan(evaluation.clipped_mean(constant))
+        assert np.isnan(evaluation.clipped_mean(pd.Series(dtype=float)))
 
     def test_measured_days_per_year(self) -> None:
         days = pd.bdate_range("2023-01-02", periods=522)
@@ -836,6 +848,69 @@ class TestDevelopmentHelpers:
         assert five["t_non_overlapping"] < one["t_non_overlapping"]
 
 
+# --------------------------------------------------- the run, end to end
+def test_the_development_run_end_to_end_on_a_synthetic_corpus(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Every book the run assembles, wired as declared — no market data anywhere.
+
+    The corpus, the features, the freeze check and the carry read are replaced
+    by synthetic stand-ins; everything between them is the real run.
+    """
+    from scripts.research.continuous_portfolio import development
+
+    excess = _synthetic_excess(days=1100, seed=31)
+    frames = _synthetic_frames(excess, 0.5)
+    monkeypatch.setattr(prereg, "assert_frozen", lambda: "synthetic")
+    monkeypatch.setattr(
+        development.corpus_module,
+        "currency_panel",
+        lambda: {"currency_excess_return": excess},
+    )
+    monkeypatch.setattr(development.corpus_module, "provenance", lambda panel: {"synthetic": True})
+    monkeypatch.setattr(development.feature_module, "build", lambda panel: frames)
+    monkeypatch.setattr(development, "_carry_accrual", lambda daily, start, end: {})
+    record = development.run()
+
+    assert record["adjudication"]["case"] in (CASE_A, CASE_B, CASE_C)
+    assert set(record["unfitted_rules"]) == {
+        f"{s}_{h}d" for h in (5, 20, 60) for s in ("persistence", "reversal")
+    }
+    rules = record["unfitted_rules"]
+    for horizon in (5, 20, 60):
+        up = rules[f"persistence_{horizon}d"]["summary"]
+        down = rules[f"reversal_{horizon}d"]["summary"]
+        assert up["gross_annual_return"] == pytest.approx(-down["gross_annual_return"], abs=1e-9)
+        assert up["cost_annual_drag"] == pytest.approx(down["cost_annual_drag"], abs=1e-9)
+    assert (
+        rules["persistence_5d"]["summary"]["gross_annual_return"]
+        != rules["persistence_60d"]["summary"]["gross_annual_return"]
+    )
+    primary = record["primary"]["summary"]
+    assert (
+        primary["gross_annual_return"] != rules["persistence_60d"]["summary"]["gross_annual_return"]
+    )
+    assert record["baseline_1_unfitted_persistence"] == rules["persistence_60d"]
+    adjudicated = record["adjudication"]["unfitted_rules"]
+    assert adjudicated["reversal_5d"]["net_sharpe"] == rules["reversal_5d"]["summary"]["net_sharpe"]
+    #: the planted signal sits in the 5-day z-score with a positive sign, so the
+    #: label "persistence" must be the book that earns it
+    assert rules["persistence_5d"]["summary"]["gross_annual_return"] > 0
+    assert rules["reversal_5d"]["summary"]["gross_annual_return"] < 0
+    targets = [row["vol_target"] for row in record["vol_scenarios"].values()]
+    assert targets == [0.08, 0.10, 0.12]
+    for key, diagnostic in (
+        ("vol_0.08", "diag_vol_target_0_08"),
+        ("vol_0.12", "diag_vol_target_0_12"),
+    ):
+        assert (
+            record["vol_scenarios"][key]["annual_net_return"]
+            == record["diagnostics"][diagnostic]["summary"]["net_annual_return"]
+        )
+    assert record["vol_scenarios"]["vol_0.1"]["net_sharpe"] == primary["net_sharpe"]
+    assert set(record["diagnostics"]) == {config.name for config in prereg.DIAGNOSTICS}
+
+
 # ------------------------------------------------------------------ driver
 class TestDriver:
     def _no_run(self, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -894,6 +969,27 @@ class TestDriver:
             driver.develop()
         with pytest.raises(SystemExit, match="happens once"):
             driver.develop()
+
+    def test_a_marker_created_after_the_check_still_refuses(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """A second launch racing past the existence check loses at the exclusive create."""
+        from scripts.research.continuous_portfolio import driver
+
+        self._no_run(monkeypatch)
+        monkeypatch.setattr(driver, "ARTIFACTS", tmp_path)
+        monkeypatch.setattr(prereg, "assert_frozen", lambda: "frozen")
+
+        def racing_checkout(paths: tuple[str, ...]) -> dict[str, Any]:
+            (tmp_path / driver.STARTED).write_text('{"other": true}', encoding="utf-8")
+            return {"head": "abc", "sources_differing_from_head": []}
+
+        monkeypatch.setattr(driver, "checkout", racing_checkout)
+        with pytest.raises(SystemExit, match="happens once"):
+            driver.develop()
+        assert json.loads((tmp_path / driver.STARTED).read_text(encoding="utf-8")) == {
+            "other": True
+        }
 
     def test_checkout_compares_content_not_the_index(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
