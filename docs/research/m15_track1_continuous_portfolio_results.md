@@ -8,8 +8,9 @@
 **`CONTINUOUS_CURRENCY_PORTFOLIO_ARCHITECTURE_NOT_SUPPORTED_IN_SEEN_DEVELOPMENT`（Case C）。**
 
 事前登録した primary book は、seen development data の out-of-fold 2.94 年で
-**net Sharpe `-0.8425`、net 年率 `-0.084198`（10% vol target）**。**cost 前の gross Sharpe が既に `-0.4688`**
-なので、コストは負けの原因ではない。kill 条項 9 個のうち 7 個が発火した。経済 band は `economically_weak`。
+**net Sharpe `-0.8425`、net 年率 `-0.084198`（10% vol target）**。cost 前の gross Sharpe も `-0.4688` で、
+**cost 前でも正の gross は無い**（0 と区別できない〜負）ので、コスト削減では救えない。ただし損失の約 4 割
+（3.74%/年 ÷ 8.42%/年 = 44%）はコストである。kill 条項 9 個のうち 7 個が発火した。経済 band は `economically_weak`。
 
 これは「この architecture が seen development data 上で支持されなかった」という判定であり、
 `FX_HAS_NO_EDGE` ではない。規則に従い、ここで停止して Human + ChatGPT に返す。
@@ -24,7 +25,7 @@
 | PR A（事前登録 + 実装） | #481、凍結 head `f1939fd`、CI green |
 | PR B（実行 + 結果） | 本 PR（#481 の上に stack） |
 | 凍結 hash | `aa0888089e4dcf5988bc6b734bb8e036262ed5c2efe4755d59fd9244176c85f1` |
-| 実行 | `driver develop` 1 回、start marker `2026-09-14T01:09:01Z`、所要 18 秒、HEAD との差分 0 |
+| 実行 | `driver develop` 1 回、checkout head `f1939fdfe0e9082d4d18637e45df50c85ec4d6bc`、start marker `2026-09-14T01:09:01Z`、HEAD と異なる source 0 件（所要 18 秒はコンソール出力で、記録には無い） |
 | artifact | `artifacts/research/continuous_portfolio/{prereg,development,development.started}.json` |
 
 ## 2. Architecture（凍結どおり）
@@ -45,12 +46,16 @@
   価値を足していない（むしろ引いた）。**
 - 60 日 benchmark の良い方（reversal、`0.5188`）も primary を上回り、`does_not_beat_the_unfitted_benchmark`
   も発火。resemblance flag（相関 ≥ 0.7）は立っていない（最大 `0.6357`）。
+- fit が 20 日 reversal rule より悪いことは偶然の範囲を超える: Sharpe 差 1.16、相関 0.64 から差の標準誤差は
+  約 0.58 × √(2 × 0.36) ≈ 0.50、t ≈ 2.3。
+- ⭐ **通貨レベルの reversal family（unfitted 5 日・20 日・60 日）の数字は、どれも候補ではない**（§14）。
 
 ## 4. Data Used
 
-- seen 連続 corpus `2021-04-26 … 2025-12-28`、3 つの guarded route 経由（観測 `2021-04-27 … 2025-12-26`）。
-- usable days `2021-07-19 … 2025-12-26`、out-of-fold 判断日 `2023-01-17 … 2025-12-26`（764 日、P&L 763 日）、
-  実測 259.824 取引日/年。
+- seen 連続 corpus `2021-04-26 … 2025-12-28`、3 つの guarded route 経由（観測 `2021-04-27 … 2025-12-26`、1,213 取引日）。
+- usable days `2021-07-19 … 2025-12-26`（1,154 日。開始日は実行前の fold 幾何確認によるもので記録には無い。
+  日数は記録の fold 幾何から算術的に一致）、out-of-fold 判断日 `2023-01-17 … 2025-12-26`（764 日、P&L 763 日）、
+  実測 `259.824` 取引日/年。
 - 診断用に公開 BIS 政策金利（EUR は deposit facility に補正）。H1 と中銀カレンダーは `features.build` が読む（宣言済み）。
 
 ## 5. Protected Data Confirmation
@@ -58,7 +63,7 @@
 | span | 状態 |
 | --- | --- |
 | fresh pool `2016-06-02 … 2021-04-25` | **未読**（corpus の最初の観測日は 2021-04-27、`assert_not_protected` 通過） |
-| historical OOS（`2025-12-29` 以降） | **研究利用なし**（route が `2025-12-29` 以降を拒否、最終観測日 2025-12-26） |
+| historical OOS（`2025-12-29` 以降） | **研究利用なし**。development route の `bars.load` 自体は span を検査せず cache を返す。拒否するのは `corpus.load_pair` が **decode 後に**行う行検査で、span 外の行が 1 行でもあれば停止する。実行は停止なく完了した（= cache に該当行が無かった）。独立の証拠: 最終観測日 2025-12-26、1 日先 IC の集計日数 763（最終判断日の翌日が panel に無い） |
 | dead window / forward epoch | **未読** |
 | broker 認証 API / demo / paper / live | **未使用** |
 | Track 3 overlay、非線形モデル | **未実行** |
@@ -77,8 +82,9 @@ position が変わった日は 56.5%（band 内なら売買しない）。
 | round trip / 年 | 109.7 | 22.8 |
 | **round trip / 年 / 単位 gross** | **`25.567`** | 23.3 |
 
-signal-free 較正（cap 付き target、band 0.10）の 15.7 より多い。実際の target は 20 日半減期より持続性が低く、
-leverage の変動（hysteresis 10%）も売買を足す。kill 閾値 50 は下回った。
+signal-free 較正（cap 付き target、band 0.10）の 15.7 より多い。理由は推論で、記録には target の自己相関が
+無い: 実際の target が 20 日半減期より持続性が低いこと、leverage の変動（hysteresis 10%）が売買を足すこと。
+kill 閾値 50 は下回った。pair gross notional は平均 3.27（currency gross 4.29 の 0.76 倍）。
 
 ## 8. Cost Decomposition
 
@@ -134,13 +140,18 @@ expanding window、初期 1.5 年、step 0.5 年、purge 5 日 + embargo 1 日�
 | B0 cash | 0 | 0 | 0 |
 | B1 persistence 60 日 | −0.9306 | −0.7249 | −8.98% |
 | B1 reversal 60 日 | 0.5188 | 0.7249 | +5.00% |
+| unfitted persistence / reversal 20 日 | −1.0657 / 0.3141 | ∓0.6895 | −11.03% / +3.26% |
+| unfitted persistence / reversal 5 日 | −1.0380 / −0.8694 | ∓0.0846 | −10.04% / −8.41% |
 | B2 linear・bundle なし（unlevered） | −0.4447 | −0.0271 | −1.55% |
 | **primary** | **−0.8425** | **−0.4688** | **−8.42%** |
 
-⭐ **B1 reversal の正の数字は候補ではない。** これは C08 の閉鎖 family を符号反転したもので、事前登録で
-「primary が上回るべき benchmark」として置いたもの。結果を見た後に符号を反転して採用することは禁止されており
-（事前登録 §16、CLAUDE.md「A failed rule is not an inverted rule」）、2.94 年の Sharpe 0.52 は標準誤差
-約 0.58 の範囲で 0 と区別できない。**`POST_HOC_EXPLORATORY` として記録するだけ**である。
+⭐ **B1 reversal の正の数字は候補ではない。通貨レベルの reversal family 全体（unfitted 5 日・20 日・60 日）も同じ。**
+これらは C08 の閉鎖 family とその符号反転で、事前登録で「primary が上回るべき benchmark」として置いたもの。
+結果を見た後に符号を反転して採用することは禁止されており（事前登録 §16、CLAUDE.md「A failed rule is not an
+inverted rule」）、2.94 年の Sharpe の標準誤差は約 0.58 なので、60 日の 0.52（t ≈ 0.9）も 20 日の 0.31
+（t ≈ 0.5）も 0 と区別できない。しかも 6 本の unfitted rule の中の最大値である。**`POST_HOC_EXPLORATORY` として
+記録するだけ**であり、CLAUDE.md で `MULTI_DAY_REVERSAL_FAMILY_DROPPED_FROM_ACTIVE_EXPLORATORY_RESEARCH` とされた
+multi-day reversal family を再開する根拠にもならない。
 
 ## 15. Gross Results
 
@@ -156,7 +167,7 @@ net 年率 `-0.084198`、net Sharpe `-0.8425`。faithful cost でも −0.7262�
 
 ## 18. Annual Return
 
-net −8.42%/年（10% vol target）、unlevered −1.81%/年。**net 5%/年は射程外**（符号が負）。
+net −8.42%/年（10% vol target）、unlevered −1.81%/年（net Sharpe −0.7634）。**net 5%/年は射程外**（符号が負）。
 
 ## 19. Realized Volatility
 
@@ -195,11 +206,16 @@ USD −7.3%。最大の正の通貨（GBP）を除くと gross −18.9%、USD le
 
 net 合計が負なので top 1/5/10 日占有率は定義されない。上位 5 日を除いた net −33.7%（累計）、
 3 robust σ clip 後 −6.04%/年、±3σ 内の日 −3.29%/年、日次歪度 −0.84、超過尖度 5.84。
-**利益が少数日に偏っているのではなく、普通の日から負けている。**
+
+**普通の日も負けているが、損失の過半は少数の大きな負け日から来ている。** 年率で net = (1−f)·inside + f·outside
+（f は ±3σ の外の日の比率）なので、inside が −3.29% なら f によらず外れ日の寄与は −8.42 + 3.29 = **−5.13%/年以下**、
+つまり損失の **61% 以上**が ±3 robust σ を超える日にある。負の歪度（−0.84）と整合し、reversal 型の book が
+大きく負ける日を持つ形である。
 
 ## 26. Cost Stress
 
-base −0.8425 / ×1.5 −1.0288 / ×2 −1.2147 / faithful −0.7262。コストを 0 にしても gross −0.4688。
+base −0.8425 / ×1.5 −1.0288 / ×2 −1.2147 / faithful −0.7262。コストを 0 にしても gross −0.4688
+（t ≈ −0.8 で 0 と区別できない）。コストは損失の 44% を占めるが、コストが無くても正の gross は無い。
 
 ## 27. Complexity vs Incremental Value
 
@@ -207,6 +223,8 @@ base −0.8425 / ×1.5 −1.0288 / ×2 −1.2147 / faithful −0.7262。コス�
 - primary（full bundle）: gross −0.47、net −0.84。
 - 1 つずつ変えた診断は、どれも gross を 0 以上に戻さない（band 0.15 の −0.10 が最も近い）。
 - fitted model は、それが似ている unfitted 20 日 reversal rule（net +0.31）より悪い。
+- bundle は本来の目的（turnover 削減）は果たした: 単位 gross あたり RT/年は B2 の 42.8 → primary の 25.6。
+  それでも gross が負なので経済価値にはならない。
 
 **複雑さは増分価値を生まなかった。** B2 と primary の差がどの要素から来るかは、要素を 1 つずつ外す診断では
 特定できていない（B2 は cap も外しており、cap だけを外す診断は事前登録していない）。これを事後に探すことは
@@ -245,4 +263,6 @@ regime filter 追加、非線形モデル追加、保護 span の読み取り、
 
 ## 次に進まないこと
 
-Case C のため停止する。fresh pool・Track 3・複雑 ML・paper-forward・B1 reversal の採用には進まない。
+Case C のため停止する。fresh pool・Track 3・複雑 ML・paper-forward には進まない。**通貨レベルの reversal
+family（5・20・60 日のどれでも、どの符号の組み合わせでも）を候補として採用せず、dropped の multi-day reversal
+family を再開しない。**
