@@ -90,6 +90,7 @@ def test_the_identity_section_is_the_recorded_run(record: dict[str, Any], docume
     head = record["checkout"]["head"]
     assert head.startswith("f1939fd")
     assert f"checkout head `{head}`" in document
+    assert f"| PR A（事前登録 + 実装） | #481、凍結 head `{head[:7]}`、CI green |" in document
     assert f"| 凍結 hash | `{record['preregistration_frozen_hash']}` |" in document
     differing = len(record["checkout"]["sources_differing_from_head"])
     assert f"HEAD と異なる source {differing} 件" in document
@@ -120,6 +121,7 @@ def test_the_protected_section_matches_the_boundaries(
     assert "| fresh pool `2016-06-02 … 2021-04-25` | **未読**" in document
     assert "| historical OOS（`2025-12-29` 以降） | **研究利用なし**" in document
     assert "| dead window / forward epoch | **未読** |" in document
+    assert "拒否するのは `corpus.load_pair` が **decode 後に**行う行検査" in document
     ic_days = record["information_diagnostics"]["raw_mu_rank_ic_1d"]["days"]
     assert ic_days == record["oos"]["decision_days"] - 1
     assert f"1 日先 IC の集計日数 {ic_days}" in document
@@ -163,4 +165,4 @@ def test_the_cost_and_tail_readings_follow_from_the_record(
     assert f"= {share:.0%}" in document
     bound = primary["net_annual_return"] - primary["net_inside_3_robust_sigma_annual"]
     assert f"**{bound * 100:.2f}%/年以下**".replace("-", "−") in document
-    assert f"**{bound / primary['net_annual_return']:.0%} 以上**" in document
+    assert f"**{bound / primary['net_annual_return']:.1%} 以上**" in document
