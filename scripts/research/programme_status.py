@@ -129,7 +129,12 @@ TAIL_DIAGNOSTICS: Final[tuple[tuple[str, str], ...]] = (
 PAUSED_ACTIVITIES: Final[tuple[tuple[str, str], ...]] = (
     ("新しい alpha 探索（FX spot active-alpha research）", "裁定"),
     ("新しい alpha 仮説の事前登録（seen data・新しい外部データのどちらでも）", "起草"),
-    ("seen data 上の alpha 目的の実行", "既存規則"),
+    ("Red 承認なしの seen data 上の alpha 目的の実行", "既存規則"),
+    (
+        "再開決定（RC-9）の前の、Red 承認を得た alpha 目的の実行や"
+        " fresh pool・forward epoch の読み取り",
+        "裁定から導出",
+    ),
     ("Track 3 overlay（#480 の event / volatility exposure overlay）", "裁定"),
     ("complex ML", "裁定"),
     (

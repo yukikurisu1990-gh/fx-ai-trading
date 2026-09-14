@@ -562,7 +562,8 @@ LEDGER: Final[list[dict[str, Any]]] = [
             "re-pre-registering it is prohibited. Scope: the currency-level reversal "
             "family at 5, 20 or 60 days in any sign combination, as the Track 1 results "
             "record stated; whether other horizons are covered is derived by the pause "
-            "record and awaits Human + ChatGPT confirmation"
+            "record and awaits Human + ChatGPT confirmation, and until then they are "
+            "treated as covered"
         ),
     },
 ]

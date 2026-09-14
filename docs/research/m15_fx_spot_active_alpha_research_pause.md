@@ -18,6 +18,8 @@ Status: **`FX_SPOT_ACTIVE_ALPHA_RESEARCH_PAUSED`**（2026-09-14 の Human + Chat
 - **出典区分**: `裁定`（受領した裁定本文にある）、`裁定（推奨）`（裁定本文が推奨として述べた）、`裁定から導出`（裁定から導けるが
   そのものとしては述べられていない。確認待ち）、`既存規則`（CLAUDE.md・自律開発方針・既存の裁定や事前登録で既に拘束的）、
   `起草`（裁定本文の欠落を補う提案。確認待ち）、`記録用`（裁定が名付けなかった状態に本記録が付けた token）。
+- **確認待ちの効力（全節共通）**: `起草` と `裁定から導出` の禁止・停止・条件は、確認されるまで**暫定的に拘束する**（厳しい方の読み）。
+  確認待ちの行が許可を広げることはない。
 
 > ⚠ **裁定本文の欠落。** 受領した裁定は §9「Tail diagnostics」の途中（"temporal co"）で途切れている。
 > 途切れた語は特定できない。§9 以降にあったはずの内容は、本文書では `起草` として区別し、Human + ChatGPT の確認で確定する。
@@ -255,7 +257,8 @@ band の較正、差分課金の portfolio accounting、事前登録の凍結・
 | --- | --- |
 | 新しい alpha 探索（FX spot active-alpha research） | 裁定 |
 | 新しい alpha 仮説の事前登録（seen data・新しい外部データのどちらでも） | 起草 |
-| seen data 上の alpha 目的の実行 | 既存規則 |
+| Red 承認なしの seen data 上の alpha 目的の実行 | 既存規則 |
+| 再開決定（RC-9）の前の、Red 承認を得た alpha 目的の実行や fresh pool・forward epoch の読み取り | 裁定から導出 |
 | Track 3 overlay（#480 の event / volatility exposure overlay） | 裁定 |
 | complex ML | 裁定 |
 | 停止中の track（#480 の Track 3 overlay、complex ML など）の実装や学習 pipeline の作成（市場データを使うかどうかを問わない） | 起草 |

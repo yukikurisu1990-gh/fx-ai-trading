@@ -215,6 +215,10 @@ class TestTheProseKeepsItsPolarity:
         '"never read" / "pristine" は主張しない',
         "GO・候補・edge の証拠として引用するのではない",
         "この引用との関係は §13 で Human + ChatGPT の確認事項とする",
+        "`NOT_STARTED_BASE_EDGE_REQUIRED`**。進まない。",
+        "停止中は追求しない。",
+        "確認されるまで**暫定的に拘束する**（厳しい方の読み）",
+        "確認待ちの行が許可を広げることはない。",
     )
     FORBIDDEN_PHRASES: tuple[str, ...] = (
         "再開してよい",
@@ -229,6 +233,13 @@ class TestTheProseKeepsItsPolarity:
         "FX spot には edge が無い",
         "揃えば再開",
         "次は Track 3",
+        "自動的に再開",
+        "解除される",
+        "救済は認める",
+        "継続して検討できる",
+        "ただし alpha",
+        "untouched",
+        "advisory",
     )
 
     @pytest.mark.parametrize("sentence", REQUIRED_SENTENCES)
@@ -426,6 +437,9 @@ class TestTheClaudeSectionPolarity:
         "may continue",
         "may resume",
         "is `FX_HAS_NO_EDGE`",
+        "are permitted",
+        "advisory",
+        "except",
     )
 
     @pytest.mark.parametrize("phrase", REQUIRED)
@@ -468,6 +482,9 @@ class TestTheGovernanceDocuments:
         assert "exploration does **not** continue" in row
         assert "until an explicit Human + ChatGPT decision resumes it" in row
         assert "may continue" not in row and "continues" not in row
+        assert "except" not in row and "proceeds" not in row
         flat = " ".join(text.split())
         assert "so this exploration does not continue until an explicit Human + ChatGPT" in flat
         assert "does continue" not in flat
+        superseded = flat.split("**Superseded on 2026-09-14:**", 1)[1].split(".", 2)
+        assert "except" not in superseded[0] + superseded[1]
