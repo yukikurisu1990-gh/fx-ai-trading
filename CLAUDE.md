@@ -24,6 +24,32 @@ Before any M15 / ML Step 4 / post-M1 research work, read:
 For ordinary Green engineering (lint, CI, docs, tests, refactors) the
 autonomous development policy alone is enough.
 
+## FX spot active-alpha research is PAUSED — read this before proposing any alpha work
+
+**`FX_SPOT_ACTIVE_ALPHA_RESEARCH_PAUSED`** since the Human + ChatGPT decision of
+**2026-09-14**, which accepted Track 1's Case C
+(`CONTINUOUS_CURRENCY_PORTFOLIO_ARCHITECTURE_NOT_SUPPORTED_IN_SEEN_DEVELOPMENT`,
+PRs #481/#482). This is **not** `FX_HAS_NO_EDGE`. The authoritative record is
+`docs/research/m15_fx_spot_active_alpha_research_pause.md`; its machine-readable
+copy is `scripts/research/programme_status.py`, and the hypothesis ledger is
+`scripts/research/round_a/ledger.py` (H-001 … H-024).
+
+While paused: no new alpha hypothesis, pre-registration or alpha-seeking run on
+seen data; no Track 3 overlay (`NOT_STARTED_BASE_EDGE_REQUIRED`); no complex ML
+(LightGBM expansion, non-linear models, HMM, neural networks, representation
+learning, complex ensembles); no fresh-pool or forward-epoch read; no rescue of a
+negative base result by event, volatility or regime filters or a horizon change;
+the post-hoc currency reversal observation (H-024,
+`POST_HOC_EXPLORATORY_NON_DECISION_BEARING`) is never re-pre-registered. The
+efficiency bundle is `TURNOVER_REDUCTION_MECHANISM_SUPPORTED`, not
+`ALPHA_SUPPORTED` — **efficiency cannot rescue a negative expected return**.
+Maintenance, tests, CI and non-alpha engineering continue as normal.
+
+Resuming is an **explicit Human + ChatGPT decision**, never a recorded state; the
+resumption conditions are §12 of the record, and four of them (RC-1, RC-5, RC-6,
+RC-7) are drafted and await confirmation because the decision text was received
+truncated.
+
 ## The Two-Track model — read this before any M15 research task
 
 M15 Family A research is split. Which track a task belongs to changes what is

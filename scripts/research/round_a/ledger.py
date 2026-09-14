@@ -496,6 +496,69 @@ LEDGER: Final[list[dict[str, Any]]] = [
             "completes, and this one completed on 2026-09-12"
         ),
     },
+    {
+        "id": "H-023",
+        "round": "Track 1 continuous currency portfolio (PR #481 prereg, PR #482 run)",
+        "population": (
+            "the contiguous seen corpus 2021-04-26..2025-12-28 through the three guarded "
+            "routes; out-of-fold decision days 2023-01-17..2025-12-26 (764), 6 folds"
+        ),
+        "target": (
+            "a continuous 8-currency expected relative return vector (pooled ridge, "
+            "effective df 3.0, forward 5-day excess return) held as a factor-neutral, "
+            "band-rebalanced, volatility-targeted book; cost on the traded delta only"
+        ),
+        "condition_family": (
+            "one frozen primary book (FROZEN_HASH aa0888089e4d...), unfitted rules at "
+            "5/20/60 days in both signs as benchmarks, one linear no-bundle baseline, "
+            "11 one-change diagnostics"
+        ),
+        "horizon_family": "5-day training target, daily holding and P&L",
+        "configurations": "1 fitted primary, run once",
+        "prespecified": True,
+        "result": (
+            "CONTINUOUS_CURRENCY_PORTFOLIO_ARCHITECTURE_NOT_SUPPORTED_IN_SEEN_DEVELOPMENT. "
+            "Primary gross Sharpe -0.4688 and net -0.8425 at a 10% volatility target: net "
+            "-8.42%/yr, realised vol 9.99%, cost 3.74%/yr (44% of the loss, so cost is not "
+            "the only cause -- the book is negative before cost), 25.6 round trips a year "
+            "per unit gross, 1 of 6 folds positive, max drawdown -32%, worse at 1.5x and 2x "
+            "cost, weak currency breadth. Seven of nine kill clauses fired. The ridge "
+            "learned 20/60-day reversal with 5-day momentum; its daily P&L correlates 0.64 "
+            "with the unfitted 20-day reversal rule, which it does worse than. The "
+            "efficiency bundle cut turnover per unit gross from 42.8 (no bundle) to 25.6 "
+            "and could not make a negative expected return positive"
+        ),
+        "status": (
+            "CLOSED - CONTINUOUS_CURRENCY_PORTFOLIO_ARCHITECTURE_NOT_SUPPORTED_IN_SEEN_"
+            "DEVELOPMENT, accepted by Human + ChatGPT on 2026-09-14; not FX_HAS_NO_EDGE. "
+            "The efficiency bundle is TURNOVER_REDUCTION_MECHANISM_SUPPORTED, not "
+            "ALPHA_SUPPORTED: efficiency cannot rescue a negative expected return"
+        ),
+    },
+    {
+        "id": "H-024",
+        "round": "Track 1 benchmarks, read after the run (PR #482)",
+        "population": "the same out-of-fold span as H-023",
+        "target": (
+            "the unfitted currency-level reversal rules (negated 20- and 60-day "
+            "excess-return z-scores) through the primary construction"
+        ),
+        "condition_family": "the reversal half of H-023's six unfitted benchmark books",
+        "horizon_family": "20 and 60 days",
+        "configurations": "observed, not selected: the largest of six benchmark Sharpes",
+        "prespecified": False,
+        "result": (
+            "60-day reversal net Sharpe +0.52 and 20-day +0.31 over 2.94 years, standard "
+            "error about 0.58 (t 0.9 and 0.5), the maximum of six unfitted rules, and the "
+            "sign inversion of the closed C08 persistence family -- adjacent to the multi-"
+            "day reversal family already dropped from active research. Recorded so that "
+            "its multiplicity is counted, not as a finding"
+        ),
+        "status": (
+            "CLOSED - POST_HOC_EXPLORATORY_NON_DECISION_BEARING; not a candidate, and "
+            "re-pre-registering it is prohibited"
+        ),
+    },
 ]
 
 #: Rough cumulative count of configurations evaluated against the 2025
