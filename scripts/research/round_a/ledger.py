@@ -566,6 +566,47 @@ LEDGER: Final[list[dict[str, Any]]] = [
             "rescuing it is prohibited"
         ),
     },
+    {
+        "id": "H-025",
+        "round": "Track T-R market yield repricing, development (the PR after #484)",
+        "population": (
+            "the seen corpus 2021-04-27 .. 2025-12-26, 1213 FX trading days, five "
+            "decision-grade currencies (CAD, EUR, GBP, JPY, USD) fixed by the data audit "
+            "before any signal existed"
+        ),
+        "target": (
+            "currency excess return at 5 and 20 days, from the cross-sectional z-score of "
+            "the five-day change in each currency's official two-year sovereign yield, "
+            "lagged one trading day, through the reused Track 1 execution layer"
+        ),
+        "condition_family": (
+            "three books: the yield repricing rule, an FX-momentum control over the same "
+            "lookback, and the yield rule residualised against that momentum"
+        ),
+        "horizon_family": "5 and 20 days, both declared before execution",
+        "configurations": (
+            "one unfitted rule, pre-registered and committed at a25d078 before the run"
+        ),
+        "prespecified": True,
+        "result": (
+            "gross Sharpe +0.144 (yield rule), -0.023 (momentum) and +0.772 (residual), but "
+            "net -0.921, -0.947 and -0.512: the pre-registered five-day measure has a "
+            "1.7-day half-life, so the book turns over 82-98 round trips a year against "
+            "Track 1's 25.6 and cost removes 0.92-1.29 of information ratio. Observed "
+            "five-day IC 1.43% and 2.36% against the 4.44% the design needed for net 0.3 at "
+            "breadth 2.5. One of six blocks positive, every leave-one-currency-out negative. "
+            "The span separates only a net Sharpe of about 1.13 at 80% power, recorded "
+            "before the run, so the residual's positive gross (t about 1.7) settles nothing"
+        ),
+        "status": (
+            "CLOSED - MARKET_YIELD_REPRICING_NOT_SUPPORTED_IN_SEEN_DEVELOPMENT, for the "
+            "pre-registered fast measure only. It is not a finding about whether market "
+            "yield repricing leads G10 FX: an underpowered span cannot settle that, and the "
+            "three excluded currencies were never observed. Changing the lookback, sign, "
+            "horizon or universe after this result is prohibited; a slower measure is a new "
+            "pre-registration and a Human + ChatGPT decision"
+        ),
+    },
 ]
 
 #: Rough cumulative count of configurations evaluated against the 2025

@@ -278,3 +278,116 @@ class TestTheBoundaries:
             assert "2021-04-25" not in source
             for word in ("historical_oos", "dead_window", "forward_epoch"):
                 assert word not in source
+
+
+DOC = ROOT / "docs/research/m15_track_r_market_yield_repricing.md"
+
+
+@pytest.fixture(scope="module")
+def development() -> dict[str, Any]:
+    return json.loads((RECORDS / "development.json").read_text(encoding="utf-8"))
+
+
+@pytest.fixture(scope="module")
+def document() -> str:
+    return DOC.read_text(encoding="utf-8")
+
+
+class TestTheDevelopmentRun:
+    def test_it_ran_what_the_prereg_froze(self, development: dict[str, Any]) -> None:
+        assert development["universe"] == list(prereg.UNIVERSE)
+        assert development["prereg"]["signal"]["lookback_days"] == 5
+        assert set(development["books"]) == {"A_yield_repricing", "B_fx_momentum", "C_residualised"}
+        assert development["span"]["first"] == prereg.DECISION_SPAN["first"]
+        assert development["protected_spans_read"] is False
+
+    def test_the_screen_is_applied_exactly_and_stops(self, development: dict[str, Any]) -> None:
+        screen = development["screen"]
+        books = development["books"]
+        a = books["A_yield_repricing"]["summary"]
+        assert screen["conditions"]["A gross Sharpe > 0"] is (a["gross_sharpe"] > 0)
+        assert screen["conditions"]["A net Sharpe >= 0.3"] is (a["net_sharpe"] >= 0.3)
+        assert screen["decision"] == ("advance" if all(screen["conditions"].values()) else "stop")
+        assert screen["decision"] == "stop"
+        assert screen["verdict"] == "MARKET_YIELD_REPRICING_NOT_SUPPORTED_IN_SEEN_DEVELOPMENT"
+        assert screen["decision_grade"] is False
+
+    def test_cost_is_what_separates_gross_from_net(self, development: dict[str, Any]) -> None:
+        for name, book in development["books"].items():
+            summary = book["summary"]
+            drag = summary["gross_sharpe"] - summary["net_sharpe"]
+            assert drag > 0.9, name
+            assert summary["turnover_round_trips_per_year_per_unit_gross"] > 60.0, name
+            assert summary["annual_cost"] > 0.09, name
+
+    def test_the_observed_ic_is_below_what_the_design_needed(
+        self, development: dict[str, Any]
+    ) -> None:
+        needed = development["feasibility_before_the_run"]["rows"]["half_life_5d"][
+            "required_daily_ic_for_net_0_3"
+        ]
+        for name in ("A_yield_repricing", "C_residualised"):
+            assert development["books"][name]["ic"]["5d"] < needed, name
+
+    def test_the_outside_universe_exposure_is_measured_not_hidden(
+        self, development: dict[str, Any]
+    ) -> None:
+        outside = development["books"]["A_yield_repricing"]["outside_universe_exposure"]
+        assert set(outside["currencies"]) == set(prereg.EXCLUDED)
+        assert outside["share_of_days_with_any_exposure"] > 0
+        assert abs(outside["cumulative_pnl_total"]) < 0.05
+
+    def test_leverage_cannot_rescue_a_negative_net(self, development: dict[str, Any]) -> None:
+        assert development["leverage_and_margin_at_10pct_vol"]["annual_net_return"] < 0
+
+    def test_every_book_is_underpowered_by_the_prereg_s_own_number(
+        self, development: dict[str, Any]
+    ) -> None:
+        power = development["feasibility_before_the_run"]["detectable_net_sharpe_at_80pct_power"]
+        assert power > 1.0
+        for book in development["books"].values():
+            assert abs(book["summary"]["gross_sharpe"]) < power
+
+
+class TestTheResultsDocument:
+    NUMBERS = (
+        ("A_yield_repricing", "gross_sharpe", "+0.144"),
+        ("A_yield_repricing", "net_sharpe", "−0.921"),
+        ("B_fx_momentum", "net_sharpe", "−0.947"),
+        ("C_residualised", "gross_sharpe", "+0.772"),
+        ("C_residualised", "net_sharpe", "−0.512"),
+    )
+
+    @pytest.mark.parametrize(("book", "field", "text"), NUMBERS)
+    def test_each_headline_number_is_in_the_record(
+        self, development: dict[str, Any], document: str, book: str, field: str, text: str
+    ) -> None:
+        value = development["books"][book]["summary"][field]
+        assert f"{value:+.3f}".replace("-", "−") == text
+        assert text in document
+
+    def test_the_document_states_the_verdict_and_its_limits(self, document: str) -> None:
+        assert "MARKET_YIELD_REPRICING_NOT_SUPPORTED_IN_SEEN_DEVELOPMENT" in document
+        assert "決まっていないこと" in document
+        assert "decision-grade ではなく" in document
+        assert "保護 span" in document and "読んでいない" in document
+
+    def test_the_document_forbids_the_post_hoc_rescues(self, document: str) -> None:
+        for phrase in ("符号反転", "lookback の変更", "horizon の追加", "vol target の変更"):
+            assert phrase in document
+
+    def test_the_ledger_entry_matches_the_record(self, development: dict[str, Any]) -> None:
+        from scripts.research.round_a.ledger import LEDGER
+
+        entry = next(e for e in LEDGER if e["id"] == "H-025")
+        assert entry["prespecified"] is True
+        assert entry["status"].startswith("CLOSED - MARKET_YIELD_REPRICING_NOT_SUPPORTED")
+        assert "a25d078" in entry["configurations"]
+        assert "settles nothing" in entry["result"]
+        for book, field in (
+            ("A_yield_repricing", "gross_sharpe"),
+            ("A_yield_repricing", "net_sharpe"),
+            ("C_residualised", "gross_sharpe"),
+        ):
+            value = development["books"][book]["summary"][field]
+            assert f"{value:+.3f}" in entry["result"] or f"{value:.3f}" in entry["result"]

@@ -1,0 +1,491 @@
+{
+  "books": {
+    "A_yield_repricing": {
+      "blocks": [
+        {
+          "block": 1,
+          "days": 201,
+          "end": "2022-02-10",
+          "net_return": -0.09416,
+          "net_sharpe": -1.0378,
+          "start": "2021-05-06"
+        },
+        {
+          "block": 2,
+          "days": 201,
+          "end": "2022-11-18",
+          "net_return": -0.00857,
+          "net_sharpe": -0.0916,
+          "start": "2022-02-11"
+        },
+        {
+          "block": 3,
+          "days": 201,
+          "end": "2023-08-29",
+          "net_return": -0.10354,
+          "net_sharpe": -1.3996,
+          "start": "2022-11-21"
+        },
+        {
+          "block": 4,
+          "days": 201,
+          "end": "2024-06-07",
+          "net_return": -0.16989,
+          "net_sharpe": -2.0079,
+          "start": "2023-08-30"
+        },
+        {
+          "block": 5,
+          "days": 201,
+          "end": "2025-03-19",
+          "net_return": -0.13114,
+          "net_sharpe": -1.4147,
+          "start": "2024-06-10"
+        },
+        {
+          "block": 6,
+          "days": 201,
+          "end": "2025-12-26",
+          "net_return": 0.02961,
+          "net_sharpe": 0.3668,
+          "start": "2025-03-20"
+        }
+      ],
+      "ic": {
+        "20d": -0.0099,
+        "5d": 0.0143
+      },
+      "outside_universe_exposure": {
+        "cumulative_pnl": {
+          "AUD": -0.00451,
+          "CHF": -0.00584,
+          "NZD": 0.00146
+        },
+        "cumulative_pnl_total": -0.00889,
+        "currencies": [
+          "AUD",
+          "CHF",
+          "NZD"
+        ],
+        "mean_share_of_currency_gross": 0.0167,
+        "share_of_days_with_any_exposure": 0.7023
+      },
+      "per_currency_gross_pnl": {
+        "AUD": -0.00451,
+        "CAD": -0.1209,
+        "CHF": -0.00584,
+        "EUR": -0.04466,
+        "GBP": 0.12972,
+        "JPY": 0.04183,
+        "NZD": 0.00146,
+        "USD": 0.07742
+      },
+      "signal_autocorrelation_1d": 0.6614,
+      "summary": {
+        "annual_cost": 0.11538,
+        "days": 1206,
+        "gross_annual_return": 0.01557,
+        "gross_sharpe": 0.1442,
+        "max_drawdown": -0.56384,
+        "mean_currency_gross": 4.1111,
+        "mean_held_max_weight": 0.2637,
+        "mean_leverage": 4.4306,
+        "mean_uncapped_leverage": 4.4265,
+        "net_annual_return": -0.09982,
+        "net_sharpe": -0.9209,
+        "net_without_top_5_days": -0.60019,
+        "p95_uncapped_leverage": 7.292,
+        "realized_annual_vol": 0.10839,
+        "share_days_traded": 0.7935,
+        "top_10_day_share_of_net": -0.4667,
+        "top_1_day_share_of_net": -0.0574,
+        "top_5_day_share_of_net": -0.2564,
+        "turnover_round_trips_per_year_per_unit_gross": 82.404,
+        "worst_day": -0.04039
+      }
+    },
+    "B_fx_momentum": {
+      "blocks": [
+        {
+          "block": 1,
+          "days": 201,
+          "end": "2022-02-08",
+          "net_return": -0.18586,
+          "net_sharpe": -2.1592,
+          "start": "2021-05-04"
+        },
+        {
+          "block": 2,
+          "days": 201,
+          "end": "2022-11-16",
+          "net_return": 0.0405,
+          "net_sharpe": 0.4616,
+          "start": "2022-02-09"
+        },
+        {
+          "block": 3,
+          "days": 202,
+          "end": "2023-08-28",
+          "net_return": -0.04613,
+          "net_sharpe": -0.6245,
+          "start": "2022-11-17"
+        },
+        {
+          "block": 4,
+          "days": 201,
+          "end": "2024-06-06",
+          "net_return": -0.09168,
+          "net_sharpe": -1.1109,
+          "start": "2023-08-29"
+        },
+        {
+          "block": 5,
+          "days": 201,
+          "end": "2025-03-18",
+          "net_return": -0.11026,
+          "net_sharpe": -1.2403,
+          "start": "2024-06-07"
+        },
+        {
+          "block": 6,
+          "days": 202,
+          "end": "2025-12-26",
+          "net_return": -0.07655,
+          "net_sharpe": -1.0148,
+          "start": "2025-03-19"
+        }
+      ],
+      "ic": {
+        "20d": -0.0455,
+        "5d": 0.0073
+      },
+      "outside_universe_exposure": {
+        "cumulative_pnl": {
+          "AUD": -0.00627,
+          "CHF": -0.00496,
+          "NZD": -0.0101
+        },
+        "cumulative_pnl_total": -0.02133,
+        "currencies": [
+          "AUD",
+          "CHF",
+          "NZD"
+        ],
+        "mean_share_of_currency_gross": 0.0365,
+        "share_of_days_with_any_exposure": 0.9189
+      },
+      "per_currency_gross_pnl": {
+        "AUD": -0.00627,
+        "CAD": -0.0567,
+        "CHF": -0.00496,
+        "EUR": -0.07814,
+        "GBP": -0.01568,
+        "JPY": 0.17843,
+        "NZD": -0.0101,
+        "USD": -0.01802
+      },
+      "signal_autocorrelation_1d": 0.7276,
+      "summary": {
+        "annual_cost": 0.09566,
+        "days": 1208,
+        "gross_annual_return": -0.00239,
+        "gross_sharpe": -0.0231,
+        "max_drawdown": -0.51357,
+        "mean_currency_gross": 4.0346,
+        "mean_held_max_weight": 0.2655,
+        "mean_leverage": 4.3468,
+        "mean_uncapped_leverage": 4.3461,
+        "net_annual_return": -0.09805,
+        "net_sharpe": -0.9466,
+        "net_without_top_5_days": -0.58052,
+        "p95_uncapped_leverage": 7.1417,
+        "realized_annual_vol": 0.10358,
+        "share_days_traded": 0.7649,
+        "top_10_day_share_of_net": -0.413,
+        "top_1_day_share_of_net": -0.06,
+        "top_5_day_share_of_net": -0.2352,
+        "turnover_round_trips_per_year_per_unit_gross": 69.611,
+        "worst_day": -0.03742
+      }
+    },
+    "C_residualised": {
+      "blocks": [
+        {
+          "block": 1,
+          "days": 201,
+          "end": "2022-02-10",
+          "net_return": -0.11462,
+          "net_sharpe": -1.317,
+          "start": "2021-05-06"
+        },
+        {
+          "block": 2,
+          "days": 201,
+          "end": "2022-11-18",
+          "net_return": 0.05823,
+          "net_sharpe": 0.6045,
+          "start": "2022-02-11"
+        },
+        {
+          "block": 3,
+          "days": 201,
+          "end": "2023-08-29",
+          "net_return": -0.03485,
+          "net_sharpe": -0.4415,
+          "start": "2022-11-21"
+        },
+        {
+          "block": 4,
+          "days": 201,
+          "end": "2024-06-07",
+          "net_return": -0.1017,
+          "net_sharpe": -1.2231,
+          "start": "2023-08-30"
+        },
+        {
+          "block": 5,
+          "days": 201,
+          "end": "2025-03-19",
+          "net_return": -0.0389,
+          "net_sharpe": -0.4332,
+          "start": "2024-06-10"
+        },
+        {
+          "block": 6,
+          "days": 201,
+          "end": "2025-12-26",
+          "net_return": -0.03344,
+          "net_sharpe": -0.4119,
+          "start": "2025-03-20"
+        }
+      ],
+      "ic": {
+        "20d": 0.0013,
+        "5d": 0.0236
+      },
+      "outside_universe_exposure": {
+        "cumulative_pnl": {
+          "AUD": 0.00936,
+          "CHF": 0.0127,
+          "NZD": 0.0
+        },
+        "cumulative_pnl_total": 0.02206,
+        "currencies": [
+          "AUD",
+          "CHF",
+          "NZD"
+        ],
+        "mean_share_of_currency_gross": 0.0044,
+        "share_of_days_with_any_exposure": 0.204
+      },
+      "per_currency_gross_pnl": {
+        "AUD": 0.00936,
+        "CAD": -0.0622,
+        "CHF": 0.0127,
+        "EUR": 0.00053,
+        "GBP": 0.12889,
+        "JPY": 0.08036,
+        "USD": 0.2286
+      },
+      "signal_autocorrelation_1d": 0.5507,
+      "summary": {
+        "annual_cost": 0.13865,
+        "days": 1206,
+        "gross_annual_return": 0.08321,
+        "gross_sharpe": 0.7724,
+        "max_drawdown": -0.32441,
+        "mean_currency_gross": 4.1497,
+        "mean_held_max_weight": 0.2653,
+        "mean_leverage": 4.535,
+        "mean_uncapped_leverage": 4.5359,
+        "net_annual_return": -0.05543,
+        "net_sharpe": -0.5121,
+        "net_without_top_5_days": -0.38297,
+        "p95_uncapped_leverage": 7.2468,
+        "realized_annual_vol": 0.10825,
+        "share_days_traded": 0.8491,
+        "top_10_day_share_of_net": -0.8116,
+        "top_1_day_share_of_net": -0.0966,
+        "top_5_day_share_of_net": -0.4436,
+        "turnover_round_trips_per_year_per_unit_gross": 98.093,
+        "worst_day": -0.02679
+      }
+    }
+  },
+  "classification": "NON_DECISION_BEARING_EXPLORATORY_ONLY",
+  "decision_days": 1213,
+  "feasibility_before_the_run": {
+    "decision_days": 1213,
+    "decision_years": 4.813,
+    "detectable_net_sharpe_at_80pct_power": 1.133,
+    "effective_breadth_assumed": 2.5,
+    "note": "the span can separate a net Sharpe of about 1.1 from zero at 80% power, so a development result of 0.3-0.5 will not be decision-grade whichever way it comes out",
+    "rows": {
+      "half_life_20d": {
+        "cost_ir_drag": 0.267,
+        "required_daily_ic_for_net_0_3": 0.0271,
+        "required_daily_ic_for_net_0_5": 0.0367,
+        "turnover_per_unit_gross": 18.28
+      },
+      "half_life_5d": {
+        "cost_ir_drag": 0.634,
+        "required_daily_ic_for_net_0_3": 0.0444,
+        "required_daily_ic_for_net_0_5": 0.0539,
+        "turnover_per_unit_gross": 43.36
+      }
+    }
+  },
+  "leave_one_currency_out_net_sharpe": {
+    "without_CAD": -0.4977,
+    "without_EUR": -0.5186,
+    "without_GBP": -0.6359,
+    "without_JPY": -0.8082,
+    "without_USD": -1.0353
+  },
+  "leverage_and_margin_at_10pct_vol": {
+    "annual_net_return": -0.0921,
+    "annual_vol": 0.1,
+    "equity_after_gap": 0.5043,
+    "fixed_notional_equity_after_drawdown_and_gap": -0.2093,
+    "fixed_notional_loss_cut": true,
+    "gap_loss_at_leverage_tail": 0.4957,
+    "largest_currency_gap_before_loss_cut": 0.3038,
+    "loss_cut_on_gap": false,
+    "maintenance_ratio_after_gap": 2.04,
+    "margin_utilisation_at_leverage_tail": 0.2472,
+    "margin_utilisation_mean": 0.138,
+    "median_max_drawdown_10y_at_assumed_sharpe": 0.637,
+    "p95_max_drawdown_10y_at_assumed_sharpe": 0.78,
+    "p95_max_drawdown_10y_at_zero_sharpe": 0.51,
+    "portfolio_gross_leverage_B_mean": 3.3,
+    "risk_leverage_C_mean": 4.29,
+    "risk_leverage_C_tail": 6.79
+  },
+  "prereg": {
+    "authority": "Human + ChatGPT ruling of 2026-09-16 (D-2 approved; T-R first)",
+    "book_configuration": {
+      "architecture": "the Track 1 execution layer, reused unchanged: currency weights capped at 0.25, sum-zero, no-trade band 0.10, partial rebalance, cost charged on the traded delta",
+      "factor_neutralisation": true,
+      "leverage_cap": "none; required leverage, routed margin and the gap stress are reported instead",
+      "mapping": "linear on the declared score, because the score is a standardised rank-like quantity and not a return forecast",
+      "track_1_alpha_model_reused": false,
+      "vol_target": 0.1
+    },
+    "books": {
+      "A": "the yield repricing signal alone",
+      "B": "FX momentum over the same lookback — the closed / underpowered price family, as its own book",
+      "C": "the yield signal cross-sectionally residualised against that FX momentum — the primary test",
+      "no_control_zoo": "exactly these three books; no further conditioning variable enters"
+    },
+    "classification": "NON_DECISION_BEARING_EXPLORATORY_ONLY",
+    "information": {
+      "availability_rule": "publication times are unconfirmed on the source pages, so the conservative rule is uniform: a yield dated d may only inform a position taken one trading day later, and that position earns the next day's return. No same-day use, ever.",
+      "carry_forward": "the last published value, aged at most ten calendar days",
+      "series": "one official two-year sovereign yield per currency (see sources.py)"
+    },
+    "metrics": [
+      "gross Sharpe",
+      "net Sharpe",
+      "annual net return",
+      "turnover",
+      "annual cost",
+      "information coefficient at both horizons",
+      "signal persistence",
+      "fold stability over six contiguous blocks",
+      "per-currency contribution",
+      "top 1 / 5 / 10 day concentration",
+      "net without the top five days",
+      "max drawdown",
+      "required risk leverage for 5% and 10% net",
+      "routed margin utilisation",
+      "gap stress"
+    ],
+    "prohibited_after_the_result": [
+      "changing the signal definition, lookback, sign or horizons",
+      "adding or removing a currency, a control or a book",
+      "re-running at another volatility target to rescue the economics",
+      "reading any protected span",
+      "promoting a stopped track to independent history without a new Human decision"
+    ],
+    "question": "does the repricing of market-priced two-year sovereign yields carry incremental predictive content for G10 FX spot relative returns, beyond the FX price information already available at the same moment?",
+    "screen": {
+      "advance": [
+        "book A gross Sharpe > 0 and net Sharpe >= 0.3",
+        "book C (residualised) keeps a positive net increment over book B",
+        "the sign survives dropping any single currency",
+        "a majority of the six contiguous blocks are positive",
+        "the 10% vol target is reachable inside the declared gap stress"
+      ],
+      "kind": "development screen, symmetric and exhaustive; seen data decides nothing",
+      "no_automatic_progress_to_fresh": true,
+      "returns_to_human": "either way, the result goes back to Human + ChatGPT",
+      "status_if_advance": "MARKET_YIELD_REPRICING_DEVELOPMENT_CANDIDATE",
+      "status_if_data_fails": "MARKET_YIELD_REPRICING_DATA_NOT_DECISION_GRADE",
+      "status_if_stop": "MARKET_YIELD_REPRICING_NOT_SUPPORTED_IN_SEEN_DEVELOPMENT",
+      "stop": "any result that fails even one advance condition; there is no held state"
+    },
+    "signal": {
+      "definition": "cross-sectional z-score, over the five currencies, of the change in the two-year yield over the lookback",
+      "inversion_after_the_result_prohibited": true,
+      "lookback_days": 5,
+      "sign": "+1 — a currency whose yield rose relative to the cross-section is expected to appreciate",
+      "sign_frozen": true
+    },
+    "stage": "Stage 1: one unfitted rule. No fitted model, no ML, no hyperparameter.",
+    "targets": {
+      "both_declared_before_execution": true,
+      "horizons_days": [
+        5,
+        20
+      ],
+      "target": "currency excess return against the equally weighted basket of the corpus"
+    },
+    "track": "T-R — market yield repricing",
+    "universe": {
+      "currencies": [
+        "CAD",
+        "EUR",
+        "GBP",
+        "JPY",
+        "USD"
+      ],
+      "excluded": {
+        "AUD": "the RBA's table F2 refuses every automated request from this environment (HTTP 403)",
+        "CHF": "the SNB's daily cube stops on 2025-07-31, so it cannot cover the decision span",
+        "NZD": "the RBNZ's current daily file is refused (HTTP 403); the older file stops on 2025-08-22"
+      },
+      "fixed_by": "artifacts/research/market_yields/integrity.json, before any signal",
+      "reduced_cross_section_accepted": "five currencies is a reduced universe; the ruling permits it rather than forcing a G10 cross-section, and the reduced breadth is carried into the feasibility below"
+    },
+    "why_new": "H-016 closed the policy rate — the level and change of a step function the central bank sets. The market's two-year yield is a different quantity: it moves daily and prices the path. It has never been acquired or tested here. C09 was never executed, and the inventory records it as failing both the horizon and the economic condition, which this design does not dispute — it only uses a different cost convention (band-driven turnover, not one round trip per day)."
+  },
+  "protected_spans_read": false,
+  "screen": {
+    "conditions": {
+      "10% vol is reachable inside the gap stress": true,
+      "A gross Sharpe > 0": true,
+      "A net Sharpe >= 0.3": false,
+      "C keeps a positive net increment over B": false,
+      "a majority of the six blocks are positive": false,
+      "the sign survives dropping any single currency": false
+    },
+    "decision": "stop",
+    "decision_grade": false,
+    "note": "a development screen, not decision-grade in either direction: the span separates a net Sharpe of about 1.13 at 80% power, so neither a pass nor a fail here settles whether yield repricing leads FX",
+    "positive_blocks": 1,
+    "verdict": "MARKET_YIELD_REPRICING_NOT_SUPPORTED_IN_SEEN_DEVELOPMENT"
+  },
+  "span": {
+    "first": "2021-04-27",
+    "last": "2025-12-26"
+  },
+  "universe": [
+    "CAD",
+    "EUR",
+    "GBP",
+    "JPY",
+    "USD"
+  ],
+  "verdict": "MARKET_YIELD_REPRICING_NOT_SUPPORTED_IN_SEEN_DEVELOPMENT",
+  "workflow_status": "MARKET_YIELD_REPRICING_DEVELOPMENT_IN_PROGRESS"
+}
