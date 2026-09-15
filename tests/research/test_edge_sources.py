@@ -523,6 +523,9 @@ class TestTheBoundaries:
         assert "**horizon だけで落ちたのは\n  C01 だけ**" in document
         assert "約 24.7 年" in document
         assert "**development screen**" in document
+        assert "stop の条件に当たらなくても\n  stop とする" in document
+        assert "Human + ChatGPT の新しい決定なしには行わず" in document
+        assert "閉じた momentum" not in document and "（閉じた family）" not in document
         assert "上側信頼限界が年 5% 目標の net 0.5 を下回るとき" in document
         assert "検出力が足りる場合に限り" not in document
         assert (

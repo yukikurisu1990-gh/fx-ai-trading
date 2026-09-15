@@ -169,7 +169,7 @@ CLOSED 扱いしない。**検出力不足の null として記録されたも�
   というのが本節の主張であり、**それ自体は未検証**。
 - mechanism: 市場が織り込む政策パス（2 年金利）の相対変化に FX が遅れて追随する。同時相関は強いと予想されるが、
   **先行性**（数日〜数週の under-reaction）が問い。
-- **偽装 momentum の危険**: 2 年金利差と FX は同日に強く共動するので、lag 付きの利回り変化は lag 付きの FX return（閉じた・
+- **偽装 momentum の危険**: 2 年金利差と FX は同日に強く共動するので、lag 付きの利回り変化は lag 付きの FX return（不支持・
   検出力不足の momentum family: H-005/H-007/H-012、Track 1 の 5 日 momentum leg）を大きく含む。**同じ lookback の FX momentum を
   control にし、それを超える部分だけを S01 の情報と認める**。under-reaction に最も忠実な形は「利回りが動いたのに FX がまだ
   追随していない」乖離である。
@@ -529,7 +529,7 @@ horizon IC は、半減期 h の AR(1) 予測が h 日先 return に対して示
   S01 は毎日動く**市場の期待**。ただし両者の情報は相関する。carry level の premium が short-yen に集中した H-016 の教訓から、
   S01 も **JPY 依存と breadth** を最初に確認する必要がある。
 - **price momentum の偽装ではないか**: 利回り差と FX の同日共動が強いほど、lag 付き利回り変化は lag 付き FX return に近づく。
-  同じ lookback の FX momentum を control にし、それを超えなければ S01 ではなく閉じた momentum family を再発見しただけになる。
+  同じ lookback の FX momentum を control にし、それを超えなければ S01 ではなく不支持・検出力不足の momentum family を再発見しただけになる。
 - **本当に expected-return source か**: 同時相関は強くても、先行性は効率的市場なら小さい。先行性が無ければ
   S01 は「同時に動く」だけで収益にならない。これが最大の反証リスク。
 - **architecture で負の edge を隠していないか**: Track 1 と同じ執行層を使うので、gross が負なら band・vol target では救えない
@@ -577,10 +577,17 @@ horizon IC は、半減期 h の AR(1) 予測が h 日先 return に対して示
 
 - **2 段の判定（対称）**: seen data だけの結果は **development screen** であり、どちらの方向にも decision-grade にならない
   （seen の out-of-fold 約 2.9 年では net 0.5 を 0 と区別できない、R.3）。screen は同じ点推定規則で **advance**（独立履歴の検定へ
-  進む価値がある）か **stop**（この track を止め、`…_NOT_SUPPORTED_IN_SEEN_DEVELOPMENT` として Track 1 と同じ形で記録する）の
-  どちらかを必ず返し、success も family 閉鎖も主張しない。**T-R・T-E を seen data だけで実行した場合、出せる結論はこの screen まで**。
+  進む価値がある）か **stop**（この track を止め、`…_DEVELOPMENT_SCREEN_STOPPED_NOT_DECISION_GRADE` として記録する。反証ではなく、family も閉じない）の
+  どちらかを必ず返し、success も family 閉鎖も主張しない。**advance の条件をすべて満たさない結果は、stop の条件に当たらなくても
+  stop とする**（中間の「保留」を置かず、結果を見てから advance に寄せる余地を残さない）。**T-R・T-E を seen data だけで実行した
+  場合、出せる結論はこの screen まで**。
+- **stop した track と独立履歴**: D-1 が T-R・T-E の seen 実行**より前**に承認されていれば、seen と独立履歴を同じ凍結設計で一度に
+  評価し、seen の screen は参考に留める。D-1 が seen 実行の**後**に承認された場合、stop した track を独立履歴で検定し直すことは
+  救済にあたるので、Human + ChatGPT の新しい決定なしには行わず、その決定も seen の screen 結果を理由にしない。
 - **decision-grade の判定（独立履歴）**: 片側 5% で net の下側信頼限界 > 0 なら source として支持。**family を閉じるのは、net の
-  上側信頼限界が年 5% 目標の net 0.5 を下回るとき**（真の値が 0 なら約 10.8 年で到達可能で、D-1 の数十年なら届く）。
+  上側信頼限界が年 5% 目標の net 0.5 を下回るとき**（真の値が 0 なら検出力 50% で約 10.8 年、80% で約 24.7 年、D-1 の数十年なら届く）。この閾値は「年 5% 目標に届かない」で
+  あって「edge が無い」ではない（net 0.2〜0.4 の分散源は、30 年の履歴でも一定の確率で不支持になりうる）。分散源として価値を見る
+  T-V の閾値を 0.5 にするか、より低い値にするかは、事前登録時の Human + ChatGPT の選択とする。
   必要年数は結果を見る前に計算し、手元の履歴で閉鎖に届かないならそれを事前に記録する。
 - **Feasibility Gate v2**: seen だけでは horizon 条件で確実に RED（C09 と同じ）。ruling どおり development では hard gate にしないが、
   RED のまま得た結果は decision-grade にならず、decision-grade には D-1 等の独立履歴が要る。
@@ -599,11 +606,11 @@ horizon IC は、半減期 h の AR(1) 予測が h 日先 return に対して示
 | portfolio architecture | Track 1 の執行層（factor-neutral・cap・band 0.10・vol target）を再利用。alpha model は新規 |
 | expected turnover | 18〜43 RT/年/単位 gross |
 | plausible return capacity | prior は出典のない判断で net 0.1〜0.4、10% vol で年 1〜4%。年 5% は prior の上端を超える |
-| baseline / control | **主検定は unfitted な 2 年金利差変化 rule（符号固定、1 本）**。control: 同じ lookback の FX momentum（閉じた family）、B0 cash、Track 1 の price model（負の比較対象） |
+| baseline / control | **主検定は unfitted な 2 年金利差変化 rule（符号固定、1 本）**。control: 同じ lookback の FX momentum（不支持・検出力不足の family）、B0 cash、Track 1 の price model（負の比較対象） |
 | minimum experiment | (1) データ取得と時刻整合の監査（非同期終値を 1 日 lag で処理、揃う通貨数の確定）(2) 検出力と Gate v2・capacity を結果前に計算 (3) unfitted rule、次に線形 1 model（特徴 3 以下）・walk-forward・purge/embargo |
-| development screen（seen、対称） | **advance**: unfitted rule の gross > 0 かつ net Sharpe ≥ 0.3、FX momentum control を超える増分が正、JPY 除外でも符号維持、正の fold が過半。**stop**: gross ≤ 0、または control を超える増分が 0 以下、または JPY 除外で符号反転。どちらも点推定で判定し、decision-grade ではない |
+| development screen（seen、対称） | **advance**: unfitted rule の gross > 0 かつ net Sharpe ≥ 0.3、FX momentum control を超える増分が正、JPY 除外でも符号維持、正の fold が過半。**stop**: advance の条件を 1 つでも満たさないすべての結果（例: gross ≤ 0、control を超える増分が 0 以下、JPY 除外で符号反転、net < 0.3、正の fold が過半に届かない）。点推定で判定し、decision-grade ではない |
 | decision-grade 判定（独立履歴、D-1） | 支持: FX momentum control を超える増分の net 下側信頼限界 > 0。不支持: 上側信頼限界 < net 0.5。**fitted model が unfitted rule に劣後するのは model の kill であって source の kill ではない** |
-| broad family を閉じる結果 | 独立履歴（約 10.8 年以上）で 5〜20 日の先行性の net 上側信頼限界が 0.5 を下回れば「front-end 金利 repricing が G10 FX を先行する」family を閉じる |
+| broad family を閉じる結果 | 独立履歴（検出力 50% で約 10.8 年、80% で約 24.7 年）で 5〜20 日の先行性の net 上側信頼限界が 0.5 を下回れば「front-end 金利 repricing が G10 FX を先行する」family を閉じる |
 | ML は必要か | 不要。S16 の閾値相互作用は gross 正の後の増分検定としてのみ |
 
 ### T-E — event 日の市場 repricing → 事後 drift（S03 主、S04 は発表日カレンダーが揃う場合のみ）
@@ -621,7 +628,7 @@ horizon IC は、半減期 h の AR(1) 予測が h 日先 return に対して示
 | baseline / control | 全日の repricing rule（S01 の日次版）、event 日の無条件 book、**event 日の FX return そのもの（price continuation の control）**、B0 |
 | leakage 規則（結果前に凍結） | 取引開始は event の終了と利回り終値の遅い方より後。保有カレンダーは日付単位なので時刻は保守側（翌営業日）に置く。臨時会合は母集団から除く規則だが、保有データに臨時会合の flag は無く（#472 §3.1、BIS の政策金利変更との包含 check が代替で、必要条件であって十分条件ではない）、除外は不完全と事前に記録する。S04 の「主要指標」は機械的規則で選び、実現した市場インパクトで選ばない |
 | minimum experiment | (1) 事象母集団と規則を **T-R の結果を読む前に凍結**（会合は取得可能な 4 中銀、指標は機械的規則）(2) 検出力計算（事象数×必要 edge）を結果前に (3) repricing 符号の単一 rule |
-| development screen（seen、対称） | **advance**: event 日の repricing rule が全日の repricing rule と event 日 FX return control を上回り、net Sharpe ≥ 0.3、leave-one-bank-out で符号維持。**stop**: event 日の上乗せが 0 以下、または control を超える増分が 0 以下、または leave-one-bank-out で符号が崩れる。中銀ごとの符号不一致は 1 中銀あたり年約 8 事象ではノイズで起きるので stop にしない |
+| development screen（seen、対称） | **advance**: event 日の repricing rule が全日の repricing rule と event 日 FX return control を上回り、net Sharpe ≥ 0.3、leave-one-bank-out で符号維持。**stop**: advance の条件を 1 つでも満たさないすべての結果（例: event 日の上乗せが 0 以下、control を超える増分が 0 以下、leave-one-bank-out で符号が崩れる、net < 0.3）。中銀ごとの符号不一致は 1 中銀あたり年約 8 事象ではノイズで起きるので stop にしない |
 | decision-grade 判定（独立履歴） | 支持: event 日の上乗せの net 下側信頼限界 > 0。不支持: 上側信頼限界 < net 0.5。pre-2016 の会合カレンダーは新たな取得が要る |
 | broad family を閉じる結果 | 独立履歴で drift の net 上側信頼限界が 0.5 を下回れば「G10 FX は event 時の市場 repricing に当日中に反応を完了する」として event-direction family を閉じる |
 | ML は必要か | 不要 |
