@@ -13,6 +13,7 @@ result is development evidence; the screen it feeds is symmetric and exhaustive.
 from __future__ import annotations
 
 import json
+import math
 import sys
 from pathlib import Path
 from typing import Any, Final
@@ -193,6 +194,38 @@ def _per_currency(result: dict[str, Any]) -> dict[str, float]:
     }
 
 
+def _ic_comparison(book: dict[str, Any], lookback: int) -> dict[str, Any]:
+    """Compare like with like: the realised drag, and the IC on one day.
+
+    The pre-run feasibility assumed a five-day half-life, so it used the band law's
+    turnover for that. The book's own signal decayed faster, so the honest comparison
+    uses the realised cost drag. The measured IC is on the five-day horizon, so it is
+    converted to its daily equivalent under the signal's own AR(1) decay.
+    """
+    summary = book["summary"]
+    rho = book["signal_autocorrelation_1d"]
+    half_life = math.log(0.5) / math.log(rho) if 0 < rho < 1 else float("nan")
+    drag = summary["gross_sharpe"] - summary["net_sharpe"]
+    capture = capacity.band_law(round(max(half_life, 1.0)))["capture"]
+    scale = sum(rho**k for k in range(lookback)) / math.sqrt(lookback)
+    required = (0.3 + drag) / (
+        capacity.TRANSFER_COEFFICIENT * capture * math.sqrt(prereg.EFFECTIVE_BREADTH * 252.0)
+    )
+    observed_daily = book["ic"][f"{lookback}d"] / scale
+    return {
+        "implied_half_life_days": round(half_life, 2),
+        "realised_cost_ir_drag": round(drag, 3),
+        "required_daily_ic_for_net_0_3_at_realised_turnover": round(required, 4),
+        "observed_daily_equivalent_ic": round(observed_daily, 4),
+        "shortfall_multiple": round(required / observed_daily, 2) if observed_daily else None,
+        "caveat": (
+            "the measured IC is a Spearman rank correlation while the fundamental law uses a "
+            "Pearson-style IC; the comparison is indicative, and the shortfall is large enough "
+            "that the distinction does not carry it"
+        ),
+    }
+
+
 def _screen(books: dict[str, Any], drops: dict[str, float]) -> dict[str, Any]:
     """The frozen screen, applied exactly: anything not advance is stop."""
     a = books["A_yield_repricing"]["summary"]
@@ -203,8 +236,9 @@ def _screen(books: dict[str, Any], drops: dict[str, float]) -> dict[str, Any]:
     conditions = {
         "A gross Sharpe > 0": a["gross_sharpe"] > 0,
         "A net Sharpe >= 0.3": a["net_sharpe"] >= 0.3,
-        "C keeps a positive net increment over B": c["net_sharpe"] - b["net_sharpe"] > 0
-        and c["net_sharpe"] > 0,
+        #: the frozen text is "keeps a positive net increment over B" and nothing more;
+        #: an extra "and C > 0" clause would be tightening a screen after the result
+        "C keeps a positive net increment over B": c["net_sharpe"] - b["net_sharpe"] > 0,
         "the sign survives dropping any single currency": all(v > 0 for v in drops.values()),
         "a majority of the six blocks are positive": positive_blocks > len(blocks) / 2,
         "10% vol is reachable inside the gap stress": True,
@@ -212,6 +246,8 @@ def _screen(books: dict[str, Any], drops: dict[str, float]) -> dict[str, Any]:
     advance = all(conditions.values())
     return {
         "conditions": conditions,
+        "c_minus_b_net_sharpe": round(c["net_sharpe"] - b["net_sharpe"], 4),
+        "c_net_sharpe_still_negative": c["net_sharpe"] < 0,
         "positive_blocks": positive_blocks,
         "decision": "advance" if advance else "stop",
         "verdict": (
@@ -287,6 +323,8 @@ def run() -> dict[str, Any]:
         result = construction.run_book(config, _expand(score), excess_all, days_per_year=252.0)
         drops[f"without_{dropped}"] = _summary(result)["net_sharpe"]
 
+    for name, book in books.items():
+        books[name]["ic_comparison"] = _ic_comparison(book, lookback)
     screen = _screen(books, drops)
     scale = leverage.scale(
         ROOT,

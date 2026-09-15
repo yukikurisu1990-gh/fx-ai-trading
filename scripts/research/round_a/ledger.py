@@ -593,8 +593,11 @@ LEDGER: Final[list[dict[str, Any]]] = [
             "net -0.921, -0.947 and -0.512: the pre-registered five-day measure has a "
             "1.7-day half-life, so the book turns over 82-98 round trips a year against "
             "Track 1's 25.6 and cost removes 0.92-1.29 of information ratio. Observed "
-            "five-day IC 1.43% and 2.36% against the 4.44% the design needed for net 0.3 at "
-            "breadth 2.5. One of six blocks positive, every leave-one-currency-out negative. "
+            "five-day IC 1.43% and 2.36%, a daily equivalent of 1.24% and 2.50% against the "
+            "6.4% and 7.4% the realised turnover needed for net 0.3 at breadth 2.5 -- a "
+            "shortfall of 5.2x and 3.0x. One of six blocks positive, every "
+            "leave-one-currency-out negative. The momentum control's own gross is "
+            "indistinguishable from zero, so it re-establishes nothing about that family. "
             "The span separates only a net Sharpe of about 1.13 at 80% power, recorded "
             "before the run, so the residual's positive gross (t about 1.7) settles nothing"
         ),

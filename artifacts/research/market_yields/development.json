@@ -55,6 +55,14 @@
         "20d": -0.0099,
         "5d": 0.0143
       },
+      "ic_comparison": {
+        "caveat": "the measured IC is a Spearman rank correlation while the fundamental law uses a Pearson-style IC; the comparison is indicative, and the shortfall is large enough that the distinction does not carry it",
+        "implied_half_life_days": 1.68,
+        "observed_daily_equivalent_ic": 0.0124,
+        "realised_cost_ir_drag": 1.065,
+        "required_daily_ic_for_net_0_3_at_realised_turnover": 0.0642,
+        "shortfall_multiple": 5.18
+      },
       "outside_universe_exposure": {
         "cumulative_pnl": {
           "AUD": -0.00451,
@@ -159,6 +167,14 @@
         "20d": -0.0455,
         "5d": 0.0073
       },
+      "ic_comparison": {
+        "caveat": "the measured IC is a Spearman rank correlation while the fundamental law uses a Pearson-style IC; the comparison is indicative, and the shortfall is large enough that the distinction does not carry it",
+        "implied_half_life_days": 2.18,
+        "observed_daily_equivalent_ic": 0.0056,
+        "realised_cost_ir_drag": 0.923,
+        "required_daily_ic_for_net_0_3_at_realised_turnover": 0.0576,
+        "shortfall_multiple": 10.31
+      },
       "outside_universe_exposure": {
         "cumulative_pnl": {
           "AUD": -0.00627,
@@ -262,6 +278,14 @@
       "ic": {
         "20d": 0.0013,
         "5d": 0.0236
+      },
+      "ic_comparison": {
+        "caveat": "the measured IC is a Spearman rank correlation while the fundamental law uses a Pearson-style IC; the comparison is indicative, and the shortfall is large enough that the distinction does not carry it",
+        "implied_half_life_days": 1.16,
+        "observed_daily_equivalent_ic": 0.025,
+        "realised_cost_ir_drag": 1.284,
+        "required_daily_ic_for_net_0_3_at_realised_turnover": 0.0737,
+        "shortfall_multiple": 2.95
       },
       "outside_universe_exposure": {
         "cumulative_pnl": {
@@ -461,11 +485,13 @@
   },
   "protected_spans_read": false,
   "screen": {
+    "c_minus_b_net_sharpe": 0.4345,
+    "c_net_sharpe_still_negative": true,
     "conditions": {
       "10% vol is reachable inside the gap stress": true,
       "A gross Sharpe > 0": true,
       "A net Sharpe >= 0.3": false,
-      "C keeps a positive net increment over B": false,
+      "C keeps a positive net increment over B": true,
       "a majority of the six blocks are positive": false,
       "the sign survives dropping any single currency": false
     },
