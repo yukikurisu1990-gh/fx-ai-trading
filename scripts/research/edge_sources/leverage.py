@@ -39,16 +39,16 @@ MARGIN_RECORD: Final[str] = "artifacts/research/edge_sources/oanda_margin_rates.
 #: Where the old "5x" came from, traced to the commit that introduced it.
 PREVIOUS_FIVE_X: Final[dict[str, str]] = {
     "value": "5.0",
-    "where": "scripts/research/continuous_portfolio/construction.py BookConfig.max_leverage default",
+    "where": "scripts/research/continuous_portfolio/construction.py BookConfig.max_leverage default; docs/design/m15_track1_continuous_portfolio_prereg.md",
     "introduced_in": "3ed3527 (2026-09-14) research(track-1): continuous currency portfolio — pre-registration and implementation",
+    "leverage_concept_capped": "risk leverage (concept C): the VolTargeter scalar applied to the currency book, exposure = held x leverage; 5 on C is about 3.85 of routed portfolio gross (concept B)",
     "used_as": "the VolTargeter ceiling of every Track 1 book, and Track 1 kill rule 'the target asks for the 5x leverage cap or more on more than half of days'",
-    "category": "B/D: an internal value frozen into the Track 1 pre-registration with no recorded rationale — not an OANDA limit, not derived from margin, drawdown or risk",
+    "provenance_option_in_the_ruling": "option 'prior pre-registration internal risk limit', in substance 'placeholder': frozen into the Track 1 pre-registration with no recorded rationale; not an OANDA limit, not derived from margin, drawdown or risk",
     "status": "WITHDRAWN as a feasibility boundary for new research. Track 1's frozen pre-registration and its Case C are unchanged: Track 1 failed on negative gross Sharpe, which no leverage changes",
 }
 
-#: Declared stress assumptions of the risk-based policy (no market data read).
-STRESS_GAP_ON_CAPPED_CURRENCY: Final[float] = 0.20
-STRESS_PORTFOLIO_SIGMA: Final[float] = 10.0
+#: Declared stress assumption (no market data read): one currency gaps against all others.
+STRESS_CURRENCY_GAP: Final[float] = 0.20
 ROUTING_DAYS: Final[int] = 252 * 20
 ROUTING_SEED: Final[int] = 20260916
 ROUTING_HALF_LIFE_DAYS: Final[float] = 20.0
@@ -59,15 +59,21 @@ RISK_BASED_POLICY: Final[dict[str, Any]] = {
         "1. unit-risk economics first: the unlevered book's gross and net Sharpe decide whether a source exists; leverage never enters that decision",
         "2. choose a target volatility; risk leverage C = target vol / unlevered vol",
         "3. route the scaled currency book to pairs; portfolio gross leverage B and required margin = sum |routed notional_i| x margin_rate_i",
-        "4. stress: equity after the Gaussian p95 ten-year drawdown and the larger of a one-day 20% gap on one capped currency or a 10-sigma one-day portfolio loss, with notional held (conservative)",
-        "5. a scale is broker-infeasible only if stressed equity falls to the p95 required margin (loss-cut at maintenance ratio 100%) — not because it exceeds any fixed multiple",
-        "6. drawdown, margin utilisation and concentration are reported for Human judgement, never optimised",
+        "4. broker test (gap): the book is sized to equity every day, so a slow drawdown does not approach the loss-cut; a gap does. At the leverage tail (Track 1's recorded p95 / mean uncapped leverage) and the p95 single-currency exposure of the routed book, one currency gaps 20% against all others before the book can resize",
+        "5. a scale is broker-infeasible only if equity after that gap is at or below the required margin on the still-open notional (maintenance ratio 100%, loss-cut) — not because it exceeds any fixed multiple",
+        "6. risk appetite (reported, not a broker test): ten-year maximum drawdown with equity-proportional sizing, at net Sharpe 0 (the sizing-relevant case) and at the assumed Sharpe; drawdown, margin utilisation and concentration are for Human judgement, never optimised",
     ],
     "why_these_stresses": {
-        "gap_20pct": "the order of magnitude of the largest G10 one-day repricing on record (the SNB's January 2015 floor removal); applied to one currency at the 0.25 weight cap. A declared assumption, not measured here",
-        "sigma_10": "a portfolio-level tail far beyond Gaussian, so the flag is not driven by the thin-tailed drawdown model alone",
-        "p95_drawdown": "a path a strategy with the assumed Sharpe reaches one decade in twenty",
+        "gap_20pct": "the order of magnitude of the largest G10 one-day repricing on record (the SNB's January 2015 floor removal). A declared assumption, not measured here",
+        "leverage_tail": "vol targeting raises leverage in calm spells, which is when gaps arrive; Track 1 recorded mean uncapped leverage 5.08 and p95 8.04 at a 10% target",
+        "routed_exposure": "a single currency's exposure in the routed pair book exceeds its capped weight after band drift; the p95 of the routed book is used, not the 0.25 cap",
+        "drawdown_at_zero_sharpe": "a sizing rule must not grant more leverage because a higher Sharpe is hoped for",
     },
+    "second_order_effects_ignored": [
+        "a gap also changes the JPY value of the open notional and so its required margin",
+        "loss-cut fills are not guaranteed; the specification says losses can exceed deposited margin",
+        "the account-level position limit (USD 30M market value one-sided) and per-pair maximum order sizes cap account size, not rate-based leverage",
+    ],
     "not_a_recommendation": "the broker maximum (25x on most pairs) is a boundary to measure distance to, never a target; 25x is not an operating scenario",
 }
 
@@ -102,6 +108,12 @@ def _routing(rates_key: tuple[tuple[str, float], ...]) -> dict[str, Any]:
     pair_gross: list[float] = []
     margin: list[float] = []
     top_share: list[float] = []
+    exposure: list[float] = []
+    incidence = np.zeros((len(pairs), len(construction.CURRENCIES)))
+    for row, pair in enumerate(pairs):
+        base, quote = pair.split("_")
+        incidence[row, construction.CURRENCIES.index(base)] = 1.0
+        incidence[row, construction.CURRENCIES.index(quote)] = -1.0
     for _ in range(ROUTING_DAYS):
         state = rho * state + innovation * rng.standard_normal(len(construction.CURRENCIES))
         target = construction.capped_weights(
@@ -118,6 +130,8 @@ def _routing(rates_key: tuple[tuple[str, float], ...]) -> dict[str, Any]:
         pair_gross.append(float(routed.sum()))
         margin.append(float(routed @ rate_vector))
         top_share.append(float(routed.max() / routed.sum()))
+        signed = (pair_map @ held) / currency_gross
+        exposure.append(float(np.abs(incidence.T @ signed).max()))
     mean_notional = abs_notional / ROUTING_DAYS
     return {
         "per_pair_mean_notional_per_unit_currency_gross": {
@@ -130,6 +144,10 @@ def _routing(rates_key: tuple[tuple[str, float], ...]) -> dict[str, Any]:
         "margin_per_unit_currency_gross": {
             "mean": round(float(np.mean(margin)), 5),
             "p95": round(float(np.quantile(margin, 0.95)), 5),
+        },
+        "largest_single_currency_exposure_per_unit_currency_gross": {
+            "mean": round(float(np.mean(exposure)), 4),
+            "p95": round(float(np.quantile(exposure, 0.95)), 4),
         },
         "largest_single_pair_share_of_pair_gross": {
             "mean": round(float(np.mean(top_share)), 4),
@@ -144,46 +162,71 @@ def routing_profile(root: Path) -> dict[str, Any]:
     return _routing(tuple(sorted(rates.items())))
 
 
+def leverage_tail_multiple(root: Path) -> float:
+    summary = json.loads((root / capacity.TRACK_1_RECORD).read_text(encoding="utf-8"))["primary"][
+        "summary"
+    ]
+    return round(summary["p95_uncapped_leverage"] / summary["mean_uncapped_leverage"], 4)
+
+
+def _equity_drawdown(units: float, vol: float) -> float:
+    """Drawdown of equity sized to itself: `1 - exp(-log drawdown)`."""
+    return 1.0 - math.exp(-units * vol)
+
+
 def scale(root: Path, risk_leverage: float, net_sharpe: float) -> dict[str, Any]:
-    """Everything a risk leverage implies, at an assumed net Sharpe of the unlevered book."""
+    """Everything a mean risk leverage implies, at an assumed net Sharpe of the unlevered book."""
     route = routing_profile(root)
+    tail = leverage_tail_multiple(root)
     vol = risk_leverage * capacity.VOL_PER_UNIT_GROSS
-    daily_vol = vol / math.sqrt(capacity.TRADING_DAYS)
+    c_tail = risk_leverage * tail
+    margin_rate_p95 = route["margin_per_unit_currency_gross"]["p95"]
+    exposure_p95 = route["largest_single_currency_exposure_per_unit_currency_gross"]["p95"]
     margin_mean = risk_leverage * route["margin_per_unit_currency_gross"]["mean"]
-    margin_p95 = risk_leverage * route["margin_per_unit_currency_gross"]["p95"]
-    drawdown = capacity.gaussian_drawdown(net_sharpe)
-    dd_median = drawdown["median_max_drawdown_in_vol_units"] * vol
-    dd_p95 = drawdown["p95_max_drawdown_in_vol_units"] * vol
-    shock = max(
-        risk_leverage
-        * construction.BookConfig(name="stress").weight_cap
-        * STRESS_GAP_ON_CAPPED_CURRENCY,
-        STRESS_PORTFOLIO_SIGMA * daily_vol,
-    )
-    stressed_equity = 1.0 - dd_p95 - shock
-    stressed_utilisation = margin_p95 / stressed_equity if stressed_equity > 0 else math.inf
-    loss_cut_distance = 1.0 - margin_p95
+    margin_tail = c_tail * margin_rate_p95
+    gap_loss = c_tail * exposure_p95 * STRESS_CURRENCY_GAP
+    equity_after_gap = 1.0 - gap_loss
+    maintenance_after_gap = equity_after_gap / margin_tail
+    assumed = capacity.gaussian_drawdown(net_sharpe)
+    zero = capacity.gaussian_drawdown(0.0)
     return {
-        "risk_leverage_C": round(risk_leverage, 2),
+        "risk_leverage_C_mean": round(risk_leverage, 2),
+        "risk_leverage_C_tail": round(c_tail, 2),
         "annual_vol": round(vol, 4),
         "annual_net_return": round(net_sharpe * vol, 4),
         "portfolio_gross_leverage_B_mean": round(
             risk_leverage * route["pair_gross_per_unit_currency_gross"]["mean"], 2
         ),
         "margin_utilisation_mean": round(margin_mean, 4),
-        "margin_utilisation_p95": round(margin_p95, 4),
-        "margin_maintenance_ratio_p95": round(1.0 / margin_p95, 2),
-        "loss_cut_distance_equity_share": round(loss_cut_distance, 4),
-        "loss_cut_distance_daily_sigmas": round(loss_cut_distance / daily_vol, 1),
-        "median_max_drawdown_10y": round(dd_median, 3),
-        "p95_max_drawdown_10y": round(dd_p95, 3),
-        "one_day_stress_loss": round(shock, 4),
-        "stressed_equity": round(stressed_equity, 4),
-        "stressed_margin_utilisation": round(stressed_utilisation, 4)
-        if math.isfinite(stressed_utilisation)
-        else None,
-        "loss_cut_in_stress": bool(stressed_equity <= margin_p95),
+        "margin_utilisation_at_leverage_tail": round(margin_tail, 4),
+        "gap_loss_at_leverage_tail": round(gap_loss, 4),
+        "equity_after_gap": round(equity_after_gap, 4),
+        "maintenance_ratio_after_gap": round(maintenance_after_gap, 2),
+        "loss_cut_on_gap": bool(maintenance_after_gap <= 1.0),
+        "largest_currency_gap_before_loss_cut": round(
+            (1.0 - margin_tail) / (c_tail * exposure_p95), 4
+        ),
+        "median_max_drawdown_10y_at_assumed_sharpe": round(
+            _equity_drawdown(assumed["median_max_drawdown_in_vol_units"], vol), 3
+        ),
+        "p95_max_drawdown_10y_at_assumed_sharpe": round(
+            _equity_drawdown(assumed["p95_max_drawdown_in_vol_units"], vol), 3
+        ),
+        "p95_max_drawdown_10y_at_zero_sharpe": round(
+            _equity_drawdown(zero["p95_max_drawdown_in_vol_units"], vol), 3
+        ),
     }
+
+
+def broker_feasible_mean_risk_leverage(root: Path) -> float:
+    """The largest mean C at which the leverage-tail gap leaves equity above margin."""
+    route = routing_profile(root)
+    per_unit = (
+        route["largest_single_currency_exposure_per_unit_currency_gross"]["p95"]
+        * STRESS_CURRENCY_GAP
+        + route["margin_per_unit_currency_gross"]["p95"]
+    )
+    return round(1.0 / (leverage_tail_multiple(root) * per_unit), 2)
 
 
 def pair_margin_table(root: Path, risk_leverage: float) -> list[dict[str, Any]]:
@@ -230,6 +273,13 @@ def build(root: Path) -> dict[str, Any]:
         "broker_capacity_risk_leverage_at_margin_100pct": round(
             1.0 / route["margin_per_unit_currency_gross"]["p95"], 1
         ),
+        "leverage_tail_multiple_from_track_1": leverage_tail_multiple(root),
+        "broker_feasible_mean_risk_leverage_under_gap_stress": broker_feasible_mean_risk_leverage(
+            root
+        ),
+        "broker_feasible_vol_target_under_gap_stress": round(
+            broker_feasible_mean_risk_leverage(root) * capacity.VOL_PER_UNIT_GROSS, 4
+        ),
         "pair_margin_at_10pct_vol": {
             "risk_leverage_C": round(ten_pct, 2),
             "rows": table,
@@ -267,7 +317,9 @@ __all__ = [
     "MARGIN_RECORD",
     "PREVIOUS_FIVE_X",
     "RISK_BASED_POLICY",
+    "broker_feasible_mean_risk_leverage",
     "build",
+    "leverage_tail_multiple",
     "margin_rates",
     "pair_margin_table",
     "routing_profile",

@@ -1,8 +1,9 @@
 {
   "account_assumption": {
     "account": "individual (個人口座)",
-    "corporate_accounts": "not assumed: 2% or more under the JFF currency-pair risk ratio (ty3_account_overview), which varies weekly",
+    "corporate_accounts": "not assumed: 2% or more, the higher of the JFF currency-pair risk ratio and OANDA's own ratio (ty3_account_overview)",
     "entity": "OANDA証券株式会社 (OANDA Japan)",
+    "plan": "standard plan (スタンダードプラン); margin rates are identical on the discretionary plan, position limits differ",
     "server_platform": "TY3 (東京サーバー), MetaTrader 5",
     "why_mt5": "new MT4 sub-accounts on the TY3 standard plan closed on 2026-03-27 (ty3_account_overview); MT4 rates are recorded for completeness"
   },
@@ -200,6 +201,7 @@
       "name_ja": "南アフリカランド/日本円"
     }
   },
+  "position_limits_not_modelled": "account-level and per-pair maximum position sizes exist (per the public pair table and account overview); they cap account size, not rate-based leverage, and are not modelled",
   "purpose": "broker hard leverage (concept A) for the research universe; public official specification only, no login, no API",
   "quoted_rules": {
     "loss_cut": "個人・法人のお客様いずれも、証拠金維持率が100%以下となった場合（有効証拠金額が必要証拠金額以下となった場合）に発動します。 証拠金維持率=証拠金清算価値（有効証拠金）÷必要証拠金",
@@ -295,14 +297,15 @@
   "retrieved_utc": "2026-09-15T22:33:17Z",
   "sources": {
     "pair_table": {
-      "sha256": "8d0e2160ddd7bb4c8fed09bb78a65234124b008f53554d397ee59484ad9fc363",
+      "sha256_of_fetched_bytes": "8d0e2160ddd7bb4c8fed09bb78a65234124b008f53554d397ee59484ad9fc363",
       "title": "TY3 取引通貨ペア一覧（個人のお客様）| OANDA証券株式会社",
       "url": "https://www.oanda.jp/course/currencypair"
     },
     "ty3_account_overview": {
-      "sha256": "3860c7d77bf18bd837834d3c9dcc6b73c922ed51d9c072fecbf158073ec5e2d9",
+      "sha256_of_fetched_bytes": "3860c7d77bf18bd837834d3c9dcc6b73c922ed51d9c072fecbf158073ec5e2d9",
       "title": "TY3（東京サーバー）の取引概要 | OANDA証券株式会社",
       "url": "https://www.oanda.jp/fx/ty3/about"
     }
-  }
+  },
+  "sources_note": "the pages are dynamic, so the hashes identify the bytes fetched at retrieval and cannot be re-verified by a later fetch; the raw pages are not committed. The rates were independently re-read from the live page on 2026-09-16 by a review role and matched"
 }

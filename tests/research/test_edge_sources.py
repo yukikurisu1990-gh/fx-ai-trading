@@ -14,6 +14,7 @@ import re
 from pathlib import Path
 from typing import Any
 
+import numpy as np
 import pytest
 
 from scripts.research.edge_sources import (
@@ -435,9 +436,9 @@ class TestTheBoundaries:
                 if name.startswith("read"):
                     assert name == "read_text", (path.name, name)
                     reads += 1
-        assert reads == 3
+        assert reads == 4
         leverage_source = (PACKAGE / "leverage.py").read_text(encoding="utf-8")
-        assert leverage_source.count("read_text") == 2
+        assert leverage_source.count("read_text") == 3
         assert "MARGIN_RECORD" in leverage_source and "TRACK_1_RECORD" in leverage_source
         capacity_source = (PACKAGE / "capacity.py").read_text(encoding="utf-8")
         assert capacity_source.count("read_text") == 1
@@ -584,6 +585,70 @@ class TestTheLedgerRecordsTrackOneWithoutAPause:
 
 MARGIN_RECORD = ROOT / "artifacts/research/edge_sources/oanda_margin_rates.json"
 
+#: Hand-verified against https://www.oanda.jp/course/currencypair (MT5 column) on
+#: 2026-09-15 by the author and on 2026-09-16 by an independent review role.
+VERIFIED_RATES: dict[str, float] = {
+    **{
+        pair: 0.04
+        for pair in (
+            "AUD_CAD",
+            "AUD_JPY",
+            "AUD_NZD",
+            "AUD_USD",
+            "CHF_JPY",
+            "EUR_AUD",
+            "EUR_CAD",
+            "EUR_CHF",
+            "EUR_JPY",
+            "EUR_USD",
+            "GBP_CHF",
+            "NZD_JPY",
+            "NZD_USD",
+            "USD_CAD",
+            "USD_CHF",
+            "USD_JPY",
+        )
+    },
+    **{pair: 0.05 for pair in ("EUR_GBP", "GBP_AUD", "GBP_JPY", "GBP_USD")},
+}
+
+
+def _independent_routing(rates: dict[str, float]) -> dict[str, float]:
+    """The margin and exposure series recomputed here, not taken from the module."""
+    pairs = leverage.construction.PAIRS_20
+    currencies = leverage.construction.CURRENCIES
+    pair_map = leverage.construction.split_map()
+    incidence = np.zeros((len(pairs), len(currencies)))
+    for row, pair in enumerate(pairs):
+        base, quote = pair.split("_")
+        incidence[row, currencies.index(base)] = 1.0
+        incidence[row, currencies.index(quote)] = -1.0
+    rate_vector = np.array([rates[p] for p in pairs])
+    rho = 0.5 ** (1.0 / leverage.ROUTING_HALF_LIFE_DAYS)
+    rng = np.random.default_rng(leverage.ROUTING_SEED)
+    state = rng.standard_normal(len(currencies))
+    held = None
+    margin, exposure, gross = [], [], []
+    for _ in range(leverage.ROUTING_DAYS):
+        state = rho * state + math.sqrt(1 - rho * rho) * rng.standard_normal(len(currencies))
+        target = leverage.construction.capped_weights(state, 0.25)
+        held = (
+            target.copy()
+            if held is None
+            else leverage.construction.band_rebalance(target, held, 0.10)
+        )
+        scale_ = np.abs(held).sum()
+        signed = pair_map @ held / scale_
+        margin.append(float(np.abs(signed) @ rate_vector))
+        gross.append(float(np.abs(signed).sum()))
+        exposure.append(float(np.abs(incidence.T @ signed).max()))
+    return {
+        "margin_mean": float(np.mean(margin)),
+        "margin_p95": float(np.quantile(margin, 0.95)),
+        "exposure_p95": float(np.quantile(exposure, 0.95)),
+        "gross_mean": float(np.mean(gross)),
+    }
+
 
 class TestLeverageAndMargin:
     def test_the_broker_record_is_public_dated_and_covers_the_universe(self) -> None:
@@ -591,24 +656,41 @@ class TestLeverageAndMargin:
         assert record["retrieved_utc"].startswith("2026-")
         for source in record["sources"].values():
             assert source["url"].startswith("https://www.oanda.jp/")
-            assert len(source["sha256"]) == 64
-        assert set(record["research_universe"]) == set(leverage.construction.PAIRS_20)
         rates = {p: r["margin_rate"] for p, r in record["research_universe"].items()}
-        assert rates["USD_JPY"] == 0.04 and rates["GBP_USD"] == 0.05 and rates["GBP_CHF"] == 0.04
-        assert len(set(rates.values())) > 1, "rates are pair-specific, not a uniform 25x"
+        assert rates == VERIFIED_RATES
+        for pair, row in record["research_universe"].items():
+            assert row["margin_rate"] == record["pairs"][pair]["margin_rate_mt5"]
+            assert row["broker_hard_leverage"] == pytest.approx(1.0 / row["margin_rate"], abs=0.01)
         assert record["loss_cut_margin_maintenance_ratio"] == 1.0
+        assert "証拠金維持率が100%以下" in record["quoted_rules"]["loss_cut"]
+        assert "マージンコール、マージンカットはありません" in record["quoted_rules"]["margin_call"]
         assert "MetaTrader 5" in record["account_assumption"]["server_platform"]
 
-    def test_required_margin_is_routed_notional_times_pair_rate(self) -> None:
-        rates = leverage.margin_rates(ROOT)["rates"]
+    def test_the_margin_and_exposure_series_are_routed_notional_times_rate(self) -> None:
+        route = leverage.routing_profile(ROOT)
+        independent = _independent_routing(VERIFIED_RATES)
+        assert route["margin_per_unit_currency_gross"]["mean"] == pytest.approx(
+            independent["margin_mean"], abs=1e-5
+        )
+        assert route["margin_per_unit_currency_gross"]["p95"] == pytest.approx(
+            independent["margin_p95"], abs=1e-5
+        )
+        assert route["largest_single_currency_exposure_per_unit_currency_gross"][
+            "p95"
+        ] == pytest.approx(independent["exposure_p95"], abs=1e-4)
+        assert route["pair_gross_per_unit_currency_gross"]["mean"] == pytest.approx(
+            independent["gross_mean"], abs=1e-4
+        )
+        assert independent["exposure_p95"] > 0.25, "routed exposure exceeds the weight cap"
+
+    def test_the_pair_table_is_routed_notional_times_pair_rate(self) -> None:
         table = leverage.pair_margin_table(ROOT, 4.0)
         for row in table:
             assert row["required_margin_per_equity"] == pytest.approx(
-                row["routed_notional_per_equity"] * rates[row["pair"]], abs=1e-4
+                row["routed_notional_per_equity"] * VERIFIED_RATES[row["pair"]], abs=1e-4
             )
         total = sum(r["required_margin_per_equity"] for r in table)
         gross = sum(r["routed_notional_per_equity"] for r in table)
-        assert total != pytest.approx(gross / 25.0, rel=1e-3)
         assert gross / 25.0 < total < gross / 20.0
 
     def test_routing_reproduces_track_1_pair_gross(self) -> None:
@@ -617,18 +699,58 @@ class TestLeverageAndMargin:
             check["track_1_pair_gross_per_currency_gross"], rel=0.03
         )
 
+    def test_the_leverage_tail_is_track_1s_recorded_ratio(self) -> None:
+        summary = json.loads((ROOT / capacity.TRACK_1_RECORD).read_text(encoding="utf-8"))[
+            "primary"
+        ]["summary"]
+        assert leverage.leverage_tail_multiple(ROOT) == pytest.approx(
+            summary["p95_uncapped_leverage"] / summary["mean_uncapped_leverage"], abs=1e-4
+        )
+
+    @pytest.mark.parametrize("lev", [1.0, 4.29, 6.44, 10.0])
+    def test_every_stress_component(self, lev: float) -> None:
+        row = leverage.scale(ROOT, lev, 0.5)
+        route = leverage.routing_profile(ROOT)
+        tail = lev * leverage.leverage_tail_multiple(ROOT)
+        margin_tail = tail * route["margin_per_unit_currency_gross"]["p95"]
+        gap = tail * route["largest_single_currency_exposure_per_unit_currency_gross"]["p95"] * 0.20
+        assert leverage.STRESS_CURRENCY_GAP == 0.20
+        assert row["risk_leverage_C_tail"] == pytest.approx(tail, abs=0.01)
+        assert row["margin_utilisation_at_leverage_tail"] == pytest.approx(margin_tail, abs=1e-4)
+        assert row["gap_loss_at_leverage_tail"] == pytest.approx(gap, abs=1e-4)
+        assert row["equity_after_gap"] == pytest.approx(1.0 - gap, abs=1e-4)
+        assert row["maintenance_ratio_after_gap"] == pytest.approx(
+            (1.0 - gap) / margin_tail, abs=0.01
+        )
+        assert row["loss_cut_on_gap"] == ((1.0 - gap) / margin_tail <= 1.0)
+        vol = lev * capacity.VOL_PER_UNIT_GROSS
+        zero = capacity.gaussian_drawdown(0.0)["p95_max_drawdown_in_vol_units"]
+        assert row["p95_max_drawdown_10y_at_zero_sharpe"] == pytest.approx(
+            1.0 - math.exp(-zero * vol), abs=1e-3
+        )
+
+    def test_the_broker_bound_is_where_the_gap_flag_turns(self) -> None:
+        bound = leverage.broker_feasible_mean_risk_leverage(ROOT)
+        assert leverage.scale(ROOT, bound * 0.99, 0.5)["loss_cut_on_gap"] is False
+        assert leverage.scale(ROOT, bound * 1.01, 0.5)["loss_cut_on_gap"] is True
+
     def test_the_three_leverages_are_distinct_quantities(self) -> None:
         row = leverage.scale(ROOT, 4.0, 0.5)
-        assert row["risk_leverage_C"] == 4.0
-        assert row["portfolio_gross_leverage_B_mean"] < row["risk_leverage_C"]
+        assert row["risk_leverage_C_mean"] == 4.0
+        assert (
+            row["portfolio_gross_leverage_B_mean"]
+            < row["risk_leverage_C_mean"]
+            < row["risk_leverage_C_tail"]
+        )
         assert row["annual_vol"] == pytest.approx(4.0 * capacity.VOL_PER_UNIT_GROSS, abs=1e-4)
+        assert "concept C" in leverage.PREVIOUS_FIVE_X["leverage_concept_capped"]
 
-    def test_leverage_scales_return_but_never_the_sharpe(self) -> None:
+    def test_leverage_scales_return_but_never_the_sharpe_or_the_broker_flag(self) -> None:
         for lev in (1.0, 5.0, 10.0):
             row = leverage.scale(ROOT, lev, 0.5)
             assert row["annual_net_return"] == pytest.approx(0.5 * row["annual_vol"], abs=1e-4)
-        negative = leverage.scale(ROOT, 10.0, -0.2)
-        assert negative["annual_net_return"] < 0
+            assert row["loss_cut_on_gap"] == leverage.scale(ROOT, lev, 0.0)["loss_cut_on_gap"]
+        assert leverage.scale(ROOT, 10.0, -0.2)["annual_net_return"] < 0
 
     def test_no_fixed_cap_decides_feasibility(self) -> None:
         assert leverage.RISK_BASED_POLICY["fixed_leverage_cap"] is None
@@ -636,14 +758,7 @@ class TestLeverageAndMargin:
         assert "3ed3527" in leverage.PREVIOUS_FIVE_X["introduced_in"]
         assert not hasattr(capacity, "MAX_LEVERAGE")
         twelve = leverage.build(ROOT)["vol_target_scenarios"]["0.12"]["0.5"]
-        assert twelve["risk_leverage_C"] > 5.0 and twelve["loss_cut_in_stress"] is False
-
-    def test_loss_cut_flag_follows_stressed_equity_against_margin(self) -> None:
-        for lev in leverage.RISK_LEVERAGE_SCENARIOS:
-            row = leverage.scale(ROOT, lev, 0.5)
-            assert row["loss_cut_in_stress"] == (
-                row["stressed_equity"] <= row["margin_utilisation_p95"]
-            )
+        assert twelve["risk_leverage_C_mean"] > 5.0 and twelve["loss_cut_on_gap"] is False
 
     def test_the_document_carries_the_correction(self, document: str) -> None:
         assert "上限 5 倍を超える" not in document
@@ -651,3 +766,5 @@ class TestLeverageAndMargin:
         assert "`gross ÷ 25` では計算しない" in document
         assert "**ranking は変わらない**" in document
         assert "**固定の leverage 上限は適用しない**" in document
+        assert "上限なしで要求した leverage は平均 5.08・p95 8.04" in document
+        assert "この判定は\n   仮定した Sharpe に依存しない" in document

@@ -152,12 +152,15 @@ def return_capacity() -> list[str]:
 
 
 def _flag(row: dict[str, object]) -> str:
-    return "**loss-cut**" if row["loss_cut_in_stress"] else "なし"
+    return "**loss-cut**" if row["loss_cut_on_gap"] else "なし"
 
 
-def _stressed(row: dict[str, object]) -> str:
-    value = row["stressed_margin_utilisation"]
-    return "—（stressed equity ≤ 0）" if value is None else f"{float(value):.0%}"
+def _ratio(row: dict[str, object]) -> str:
+    return (
+        "—（equity 消失）"
+        if float(row["equity_after_gap"]) <= 0
+        else str(row["maintenance_ratio_after_gap"])
+    )
 
 
 def pair_margin() -> list[str]:
@@ -180,17 +183,18 @@ def pair_margin() -> list[str]:
 
 def _scenario_row(label: str, row: dict[str, object]) -> str:
     return (
-        f"| {label} | {row['risk_leverage_C']} | {float(row['annual_vol']):.1%} | "
+        f"| {label} | {row['risk_leverage_C_mean']} / {row['risk_leverage_C_tail']} | {float(row['annual_vol']):.1%} | "
         f"{row['portfolio_gross_leverage_B_mean']} | {float(row['annual_net_return']):.1%} | "
-        f"{float(row['margin_utilisation_p95']):.1%} | {row['loss_cut_distance_daily_sigmas']} | "
-        f"{float(row['median_max_drawdown_10y']):.0%} / {float(row['p95_max_drawdown_10y']):.0%} | "
-        f"{float(row['one_day_stress_loss']):.0%} | {float(row['stressed_equity']):.0%} | {_stressed(row)} | {_flag(row)} |"
+        f"{float(row['margin_utilisation_mean']):.1%} / {float(row['margin_utilisation_at_leverage_tail']):.1%} | "
+        f"{float(row['gap_loss_at_leverage_tail']):.0%} | {_ratio(row)} | {_flag(row)} | "
+        f"{float(row['largest_currency_gap_before_loss_cut']):.0%} | "
+        f"{float(row['p95_max_drawdown_10y_at_zero_sharpe']):.0%} / {float(row['p95_max_drawdown_10y_at_assumed_sharpe']):.0%} |"
     )
 
 
 _SCENARIO_HEADER = [
-    "| scenario | risk leverage C | 年率 vol | portfolio gross B | 年率 net（net 0.5） | margin 利用率 p95 | loss-cut までの距離（日次 σ） | 10 年最大 DD 中央値 / 95%点 | 1 日 stress 損失 | stressed equity | stressed margin 利用率 | stress で loss-cut |",
-    "| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |",
+    "| scenario | risk leverage C（平均 / tail） | 年率 vol | portfolio gross B（平均） | 年率 net（net 0.5） | margin 利用率（平均 / tail） | 20% gap の損失（tail） | gap 後の維持率 | gap で loss-cut | loss-cut までの 1 通貨 gap | 10 年最大 DD 95%点（net 0 / net 0.5） |",
+    "| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |",
 ]
 
 
@@ -211,15 +215,16 @@ def vol_target_scenarios() -> list[str]:
 def return_targets() -> list[str]:
     data = leverage.build(ROOT)["return_targets"]
     rows = [
-        "| 年率 net 目標 | net Sharpe | 必要 vol | risk leverage C | portfolio gross B | margin 利用率 p95 | 10 年最大 DD 95%点 | stressed equity | stress で loss-cut |",
+        "| 年率 net 目標 | net Sharpe | 必要 vol | risk leverage C（平均 / tail） | portfolio gross B | margin 利用率（tail） | gap 後の維持率 | gap で loss-cut | 10 年最大 DD 95%点（net 0 / 仮定 Sharpe） |",
         "| --- | --- | --- | --- | --- | --- | --- | --- | --- |",
     ]
     for target, by_sharpe in data.items():
         for sharpe, row in by_sharpe.items():
             rows.append(
-                f"| {float(target):.0%} | {sharpe} | {float(row['required_vol']):.1%} | {row['risk_leverage_C']} | "
-                f"{row['portfolio_gross_leverage_B_mean']} | {float(row['margin_utilisation_p95']):.1%} | "
-                f"{float(row['p95_max_drawdown_10y']):.0%} | {float(row['stressed_equity']):.0%} | {_flag(row)} |"
+                f"| {float(target):.0%} | {sharpe} | {float(row['required_vol']):.1%} | "
+                f"{row['risk_leverage_C_mean']} / {row['risk_leverage_C_tail']} | {row['portfolio_gross_leverage_B_mean']} | "
+                f"{float(row['margin_utilisation_at_leverage_tail']):.1%} | {_ratio(row)} | {_flag(row)} | "
+                f"{float(row['p95_max_drawdown_10y_at_zero_sharpe']):.0%} / {float(row['p95_max_drawdown_10y_at_assumed_sharpe']):.0%} |"
             )
     return rows
 
