@@ -1357,16 +1357,17 @@
     },
     "return_and_leverage": {
       "drawdown_model": "gaussian iid daily, 2000 paths x 10 years, fat tails not modelled",
-      "max_leverage_of_reused_layer": 5.0,
       "net_sharpe_needed_for_10pct": {
         "vol_0.08": 1.25,
         "vol_0.1": 1.0,
-        "vol_0.12": 0.833
+        "vol_0.12": 0.833,
+        "vol_0.15": 0.667
       },
       "net_sharpe_needed_for_5pct": {
         "vol_0.08": 0.625,
         "vol_0.1": 0.5,
-        "vol_0.12": 0.417
+        "vol_0.12": 0.417,
+        "vol_0.15": 0.333
       },
       "probability_first_five_years_negative": {
         "0.3": 0.251,
@@ -1380,8 +1381,6 @@
             "0.5": 0.04,
             "0.8": 0.064
           },
-          "gross_leverage": 3.44,
-          "mean_leverage_within_reused_cap": true,
           "median_max_drawdown_10y": {
             "0.3": 0.212,
             "0.5": 0.183,
@@ -1391,7 +1390,8 @@
             "0.3": 0.418,
             "0.5": 0.338,
             "0.8": 0.261
-          }
+          },
+          "risk_leverage_C": 3.44
         },
         "vol_0.1": {
           "annual_net_return": {
@@ -1399,8 +1399,6 @@
             "0.5": 0.05,
             "0.8": 0.08
           },
-          "gross_leverage": 4.29,
-          "mean_leverage_within_reused_cap": true,
           "median_max_drawdown_10y": {
             "0.3": 0.265,
             "0.5": 0.228,
@@ -1410,7 +1408,8 @@
             "0.3": 0.522,
             "0.5": 0.423,
             "0.8": 0.327
-          }
+          },
+          "risk_leverage_C": 4.29
         },
         "vol_0.12": {
           "annual_net_return": {
@@ -1418,8 +1417,6 @@
             "0.5": 0.06,
             "0.8": 0.096
           },
-          "gross_leverage": 5.15,
-          "mean_leverage_within_reused_cap": false,
           "median_max_drawdown_10y": {
             "0.3": 0.318,
             "0.5": 0.274,
@@ -1429,7 +1426,26 @@
             "0.3": 0.627,
             "0.5": 0.508,
             "0.8": 0.392
-          }
+          },
+          "risk_leverage_C": 5.15
+        },
+        "vol_0.15": {
+          "annual_net_return": {
+            "0.3": 0.045,
+            "0.5": 0.075,
+            "0.8": 0.12
+          },
+          "median_max_drawdown_10y": {
+            "0.3": 0.398,
+            "0.5": 0.342,
+            "0.8": 0.283
+          },
+          "p95_max_drawdown_10y": {
+            "0.3": 0.784,
+            "0.5": 0.635,
+            "0.8": 0.49
+          },
+          "risk_leverage_C": 6.44
         }
       }
     },
@@ -1808,6 +1824,932 @@
       "what": "event 日の市場 repricing を方向ソースにする構造"
     }
   ],
+  "leverage_and_margin": {
+    "broker": {
+      "account": "TY3 (東京サーバー), MetaTrader 5",
+      "loss_cut_maintenance_ratio": 1.0,
+      "retrieved_utc": "2026-09-15T22:33:17Z",
+      "source": "https://www.oanda.jp/course/currencypair"
+    },
+    "broker_capacity_risk_leverage_at_margin_100pct": 27.5,
+    "pair_margin_at_10pct_vol": {
+      "equity": 1.0,
+      "risk_leverage_C": 4.29,
+      "rows": [
+        {
+          "broker_hard_leverage_A": 25.0,
+          "margin_rate": 0.04,
+          "pair": "AUD_CAD",
+          "required_margin_per_equity": 0.00833,
+          "routed_notional_per_equity": 0.2083
+        },
+        {
+          "broker_hard_leverage_A": 25.0,
+          "margin_rate": 0.04,
+          "pair": "AUD_JPY",
+          "required_margin_per_equity": 0.00503,
+          "routed_notional_per_equity": 0.1258
+        },
+        {
+          "broker_hard_leverage_A": 25.0,
+          "margin_rate": 0.04,
+          "pair": "AUD_NZD",
+          "required_margin_per_equity": 0.00909,
+          "routed_notional_per_equity": 0.2272
+        },
+        {
+          "broker_hard_leverage_A": 25.0,
+          "margin_rate": 0.04,
+          "pair": "AUD_USD",
+          "required_margin_per_equity": 0.00469,
+          "routed_notional_per_equity": 0.1172
+        },
+        {
+          "broker_hard_leverage_A": 25.0,
+          "margin_rate": 0.04,
+          "pair": "CHF_JPY",
+          "required_margin_per_equity": 0.00653,
+          "routed_notional_per_equity": 0.1632
+        },
+        {
+          "broker_hard_leverage_A": 25.0,
+          "margin_rate": 0.04,
+          "pair": "EUR_AUD",
+          "required_margin_per_equity": 0.00515,
+          "routed_notional_per_equity": 0.1288
+        },
+        {
+          "broker_hard_leverage_A": 25.0,
+          "margin_rate": 0.04,
+          "pair": "EUR_CAD",
+          "required_margin_per_equity": 0.00869,
+          "routed_notional_per_equity": 0.2173
+        },
+        {
+          "broker_hard_leverage_A": 25.0,
+          "margin_rate": 0.04,
+          "pair": "EUR_CHF",
+          "required_margin_per_equity": 0.00649,
+          "routed_notional_per_equity": 0.1623
+        },
+        {
+          "broker_hard_leverage_A": 20.0,
+          "margin_rate": 0.05,
+          "pair": "EUR_GBP",
+          "required_margin_per_equity": 0.00745,
+          "routed_notional_per_equity": 0.149
+        },
+        {
+          "broker_hard_leverage_A": 25.0,
+          "margin_rate": 0.04,
+          "pair": "EUR_JPY",
+          "required_margin_per_equity": 0.00512,
+          "routed_notional_per_equity": 0.128
+        },
+        {
+          "broker_hard_leverage_A": 25.0,
+          "margin_rate": 0.04,
+          "pair": "EUR_USD",
+          "required_margin_per_equity": 0.00508,
+          "routed_notional_per_equity": 0.1271
+        },
+        {
+          "broker_hard_leverage_A": 20.0,
+          "margin_rate": 0.05,
+          "pair": "GBP_AUD",
+          "required_margin_per_equity": 0.00713,
+          "routed_notional_per_equity": 0.1426
+        },
+        {
+          "broker_hard_leverage_A": 25.0,
+          "margin_rate": 0.04,
+          "pair": "GBP_CHF",
+          "required_margin_per_equity": 0.00718,
+          "routed_notional_per_equity": 0.1795
+        },
+        {
+          "broker_hard_leverage_A": 20.0,
+          "margin_rate": 0.05,
+          "pair": "GBP_JPY",
+          "required_margin_per_equity": 0.0076,
+          "routed_notional_per_equity": 0.152
+        },
+        {
+          "broker_hard_leverage_A": 20.0,
+          "margin_rate": 0.05,
+          "pair": "GBP_USD",
+          "required_margin_per_equity": 0.00691,
+          "routed_notional_per_equity": 0.1383
+        },
+        {
+          "broker_hard_leverage_A": 25.0,
+          "margin_rate": 0.04,
+          "pair": "NZD_JPY",
+          "required_margin_per_equity": 0.00903,
+          "routed_notional_per_equity": 0.2259
+        },
+        {
+          "broker_hard_leverage_A": 25.0,
+          "margin_rate": 0.04,
+          "pair": "NZD_USD",
+          "required_margin_per_equity": 0.00885,
+          "routed_notional_per_equity": 0.2211
+        },
+        {
+          "broker_hard_leverage_A": 25.0,
+          "margin_rate": 0.04,
+          "pair": "USD_CAD",
+          "required_margin_per_equity": 0.00854,
+          "routed_notional_per_equity": 0.2134
+        },
+        {
+          "broker_hard_leverage_A": 25.0,
+          "margin_rate": 0.04,
+          "pair": "USD_CHF",
+          "required_margin_per_equity": 0.0061,
+          "routed_notional_per_equity": 0.1524
+        },
+        {
+          "broker_hard_leverage_A": 25.0,
+          "margin_rate": 0.04,
+          "pair": "USD_JPY",
+          "required_margin_per_equity": 0.00502,
+          "routed_notional_per_equity": 0.1254
+        }
+      ],
+      "total_required_margin": 0.138,
+      "total_routed_notional_B": 3.305
+    },
+    "previous_five_x": {
+      "category": "B/D: an internal value frozen into the Track 1 pre-registration with no recorded rationale — not an OANDA limit, not derived from margin, drawdown or risk",
+      "introduced_in": "3ed3527 (2026-09-14) research(track-1): continuous currency portfolio — pre-registration and implementation",
+      "status": "WITHDRAWN as a feasibility boundary for new research. Track 1's frozen pre-registration and its Case C are unchanged: Track 1 failed on negative gross Sharpe, which no leverage changes",
+      "used_as": "the VolTargeter ceiling of every Track 1 book, and Track 1 kill rule 'the target asks for the 5x leverage cap or more on more than half of days'",
+      "value": "5.0",
+      "where": "scripts/research/continuous_portfolio/construction.py BookConfig.max_leverage default"
+    },
+    "return_targets": {
+      "0.05": {
+        "0.3": {
+          "annual_net_return": 0.05,
+          "annual_vol": 0.1667,
+          "loss_cut_distance_daily_sigmas": 70.4,
+          "loss_cut_distance_equity_share": 0.7395,
+          "loss_cut_in_stress": true,
+          "margin_maintenance_ratio_p95": 3.84,
+          "margin_utilisation_mean": 0.23,
+          "margin_utilisation_p95": 0.2605,
+          "median_max_drawdown_10y": 0.442,
+          "one_day_stress_loss": 0.3578,
+          "p95_max_drawdown_10y": 0.871,
+          "portfolio_gross_leverage_B_mean": 5.51,
+          "required_vol": 0.1667,
+          "risk_leverage_C": 7.16,
+          "stressed_equity": -0.2285,
+          "stressed_margin_utilisation": null
+        },
+        "0.5": {
+          "annual_net_return": 0.05,
+          "annual_vol": 0.1,
+          "loss_cut_distance_daily_sigmas": 133.9,
+          "loss_cut_distance_equity_share": 0.8437,
+          "loss_cut_in_stress": false,
+          "margin_maintenance_ratio_p95": 6.4,
+          "margin_utilisation_mean": 0.138,
+          "margin_utilisation_p95": 0.1563,
+          "median_max_drawdown_10y": 0.228,
+          "one_day_stress_loss": 0.2147,
+          "p95_max_drawdown_10y": 0.423,
+          "portfolio_gross_leverage_B_mean": 3.3,
+          "required_vol": 0.1,
+          "risk_leverage_C": 4.29,
+          "stressed_equity": 0.3622,
+          "stressed_margin_utilisation": 0.4315
+        },
+        "0.8": {
+          "annual_net_return": 0.05,
+          "annual_vol": 0.0625,
+          "loss_cut_distance_daily_sigmas": 229.2,
+          "loss_cut_distance_equity_share": 0.9023,
+          "loss_cut_in_stress": false,
+          "margin_maintenance_ratio_p95": 10.24,
+          "margin_utilisation_mean": 0.0863,
+          "margin_utilisation_p95": 0.0977,
+          "median_max_drawdown_10y": 0.118,
+          "one_day_stress_loss": 0.1342,
+          "p95_max_drawdown_10y": 0.204,
+          "portfolio_gross_leverage_B_mean": 2.07,
+          "required_vol": 0.0625,
+          "risk_leverage_C": 2.68,
+          "stressed_equity": 0.6616,
+          "stressed_margin_utilisation": 0.1477
+        }
+      },
+      "0.1": {
+        "0.3": {
+          "annual_net_return": 0.1,
+          "annual_vol": 0.3333,
+          "loss_cut_distance_daily_sigmas": 22.8,
+          "loss_cut_distance_equity_share": 0.479,
+          "loss_cut_in_stress": true,
+          "margin_maintenance_ratio_p95": 1.92,
+          "margin_utilisation_mean": 0.46,
+          "margin_utilisation_p95": 0.521,
+          "median_max_drawdown_10y": 0.885,
+          "one_day_stress_loss": 0.7157,
+          "p95_max_drawdown_10y": 1.741,
+          "portfolio_gross_leverage_B_mean": 11.02,
+          "required_vol": 0.3333,
+          "risk_leverage_C": 14.31,
+          "stressed_equity": -1.457,
+          "stressed_margin_utilisation": null
+        },
+        "0.5": {
+          "annual_net_return": 0.1,
+          "annual_vol": 0.2,
+          "loss_cut_distance_daily_sigmas": 54.6,
+          "loss_cut_distance_equity_share": 0.6874,
+          "loss_cut_in_stress": true,
+          "margin_maintenance_ratio_p95": 3.2,
+          "margin_utilisation_mean": 0.276,
+          "margin_utilisation_p95": 0.3126,
+          "median_max_drawdown_10y": 0.456,
+          "one_day_stress_loss": 0.4294,
+          "p95_max_drawdown_10y": 0.846,
+          "portfolio_gross_leverage_B_mean": 6.61,
+          "required_vol": 0.2,
+          "risk_leverage_C": 8.59,
+          "stressed_equity": -0.2756,
+          "stressed_margin_utilisation": null
+        },
+        "0.8": {
+          "annual_net_return": 0.1,
+          "annual_vol": 0.125,
+          "loss_cut_distance_daily_sigmas": 102.2,
+          "loss_cut_distance_equity_share": 0.8046,
+          "loss_cut_in_stress": false,
+          "margin_maintenance_ratio_p95": 5.12,
+          "margin_utilisation_mean": 0.1725,
+          "margin_utilisation_p95": 0.1954,
+          "median_max_drawdown_10y": 0.236,
+          "one_day_stress_loss": 0.2684,
+          "p95_max_drawdown_10y": 0.408,
+          "portfolio_gross_leverage_B_mean": 4.13,
+          "required_vol": 0.125,
+          "risk_leverage_C": 5.37,
+          "stressed_equity": 0.3232,
+          "stressed_margin_utilisation": 0.6044
+        }
+      },
+      "0.15": {
+        "0.3": {
+          "annual_net_return": 0.15,
+          "annual_vol": 0.5,
+          "loss_cut_distance_daily_sigmas": 6.9,
+          "loss_cut_distance_equity_share": 0.2185,
+          "loss_cut_in_stress": true,
+          "margin_maintenance_ratio_p95": 1.28,
+          "margin_utilisation_mean": 0.6901,
+          "margin_utilisation_p95": 0.7815,
+          "median_max_drawdown_10y": 1.327,
+          "one_day_stress_loss": 1.0735,
+          "p95_max_drawdown_10y": 2.612,
+          "portfolio_gross_leverage_B_mean": 16.52,
+          "required_vol": 0.5,
+          "risk_leverage_C": 21.47,
+          "stressed_equity": -2.6855,
+          "stressed_margin_utilisation": null
+        },
+        "0.5": {
+          "annual_net_return": 0.15,
+          "annual_vol": 0.3,
+          "loss_cut_distance_daily_sigmas": 28.1,
+          "loss_cut_distance_equity_share": 0.5311,
+          "loss_cut_in_stress": true,
+          "margin_maintenance_ratio_p95": 2.13,
+          "margin_utilisation_mean": 0.414,
+          "margin_utilisation_p95": 0.4689,
+          "median_max_drawdown_10y": 0.685,
+          "one_day_stress_loss": 0.6441,
+          "p95_max_drawdown_10y": 1.269,
+          "portfolio_gross_leverage_B_mean": 9.91,
+          "required_vol": 0.3,
+          "risk_leverage_C": 12.88,
+          "stressed_equity": -0.9134,
+          "stressed_margin_utilisation": null
+        },
+        "0.8": {
+          "annual_net_return": 0.15,
+          "annual_vol": 0.1875,
+          "loss_cut_distance_daily_sigmas": 59.9,
+          "loss_cut_distance_equity_share": 0.7069,
+          "loss_cut_in_stress": true,
+          "margin_maintenance_ratio_p95": 3.41,
+          "margin_utilisation_mean": 0.2588,
+          "margin_utilisation_p95": 0.2931,
+          "median_max_drawdown_10y": 0.354,
+          "one_day_stress_loss": 0.4026,
+          "p95_max_drawdown_10y": 0.613,
+          "portfolio_gross_leverage_B_mean": 6.2,
+          "required_vol": 0.1875,
+          "risk_leverage_C": 8.05,
+          "stressed_equity": -0.0151,
+          "stressed_margin_utilisation": null
+        }
+      }
+    },
+    "risk_based_policy": {
+      "fixed_leverage_cap": null,
+      "not_a_recommendation": "the broker maximum (25x on most pairs) is a boundary to measure distance to, never a target; 25x is not an operating scenario",
+      "order": [
+        "1. unit-risk economics first: the unlevered book's gross and net Sharpe decide whether a source exists; leverage never enters that decision",
+        "2. choose a target volatility; risk leverage C = target vol / unlevered vol",
+        "3. route the scaled currency book to pairs; portfolio gross leverage B and required margin = sum |routed notional_i| x margin_rate_i",
+        "4. stress: equity after the Gaussian p95 ten-year drawdown and the larger of a one-day 20% gap on one capped currency or a 10-sigma one-day portfolio loss, with notional held (conservative)",
+        "5. a scale is broker-infeasible only if stressed equity falls to the p95 required margin (loss-cut at maintenance ratio 100%) — not because it exceeds any fixed multiple",
+        "6. drawdown, margin utilisation and concentration are reported for Human judgement, never optimised"
+      ],
+      "why_these_stresses": {
+        "gap_20pct": "the order of magnitude of the largest G10 one-day repricing on record (the SNB's January 2015 floor removal); applied to one currency at the 0.25 weight cap. A declared assumption, not measured here",
+        "p95_drawdown": "a path a strategy with the assumed Sharpe reaches one decade in twenty",
+        "sigma_10": "a portfolio-level tail far beyond Gaussian, so the flag is not driven by the thin-tailed drawdown model alone"
+      }
+    },
+    "risk_leverage_scenarios": {
+      "1": {
+        "0.3": {
+          "annual_net_return": 0.007,
+          "annual_vol": 0.0233,
+          "loss_cut_distance_daily_sigmas": 656.8,
+          "loss_cut_distance_equity_share": 0.9636,
+          "loss_cut_in_stress": false,
+          "margin_maintenance_ratio_p95": 27.47,
+          "margin_utilisation_mean": 0.0321,
+          "margin_utilisation_p95": 0.0364,
+          "median_max_drawdown_10y": 0.062,
+          "one_day_stress_loss": 0.05,
+          "p95_max_drawdown_10y": 0.122,
+          "portfolio_gross_leverage_B_mean": 0.77,
+          "risk_leverage_C": 1.0,
+          "stressed_equity": 0.8283,
+          "stressed_margin_utilisation": 0.0439
+        },
+        "0.5": {
+          "annual_net_return": 0.0116,
+          "annual_vol": 0.0233,
+          "loss_cut_distance_daily_sigmas": 656.8,
+          "loss_cut_distance_equity_share": 0.9636,
+          "loss_cut_in_stress": false,
+          "margin_maintenance_ratio_p95": 27.47,
+          "margin_utilisation_mean": 0.0321,
+          "margin_utilisation_p95": 0.0364,
+          "median_max_drawdown_10y": 0.053,
+          "one_day_stress_loss": 0.05,
+          "p95_max_drawdown_10y": 0.099,
+          "portfolio_gross_leverage_B_mean": 0.77,
+          "risk_leverage_C": 1.0,
+          "stressed_equity": 0.8515,
+          "stressed_margin_utilisation": 0.0427
+        },
+        "0.8": {
+          "annual_net_return": 0.0186,
+          "annual_vol": 0.0233,
+          "loss_cut_distance_daily_sigmas": 656.8,
+          "loss_cut_distance_equity_share": 0.9636,
+          "loss_cut_in_stress": false,
+          "margin_maintenance_ratio_p95": 27.47,
+          "margin_utilisation_mean": 0.0321,
+          "margin_utilisation_p95": 0.0364,
+          "median_max_drawdown_10y": 0.044,
+          "one_day_stress_loss": 0.05,
+          "p95_max_drawdown_10y": 0.076,
+          "portfolio_gross_leverage_B_mean": 0.77,
+          "risk_leverage_C": 1.0,
+          "stressed_equity": 0.8739,
+          "stressed_margin_utilisation": 0.0417
+        }
+      },
+      "10": {
+        "0.3": {
+          "annual_net_return": 0.0699,
+          "annual_vol": 0.2329,
+          "loss_cut_distance_daily_sigmas": 43.4,
+          "loss_cut_distance_equity_share": 0.636,
+          "loss_cut_in_stress": true,
+          "margin_maintenance_ratio_p95": 2.75,
+          "margin_utilisation_mean": 0.3214,
+          "margin_utilisation_p95": 0.364,
+          "median_max_drawdown_10y": 0.618,
+          "one_day_stress_loss": 0.5,
+          "p95_max_drawdown_10y": 1.217,
+          "portfolio_gross_leverage_B_mean": 7.7,
+          "risk_leverage_C": 10.0,
+          "stressed_equity": -0.7166,
+          "stressed_margin_utilisation": null
+        },
+        "0.5": {
+          "annual_net_return": 0.1164,
+          "annual_vol": 0.2329,
+          "loss_cut_distance_daily_sigmas": 43.4,
+          "loss_cut_distance_equity_share": 0.636,
+          "loss_cut_in_stress": true,
+          "margin_maintenance_ratio_p95": 2.75,
+          "margin_utilisation_mean": 0.3214,
+          "margin_utilisation_p95": 0.364,
+          "median_max_drawdown_10y": 0.531,
+          "one_day_stress_loss": 0.5,
+          "p95_max_drawdown_10y": 0.985,
+          "portfolio_gross_leverage_B_mean": 7.7,
+          "risk_leverage_C": 10.0,
+          "stressed_equity": -0.4853,
+          "stressed_margin_utilisation": null
+        },
+        "0.8": {
+          "annual_net_return": 0.1863,
+          "annual_vol": 0.2329,
+          "loss_cut_distance_daily_sigmas": 43.4,
+          "loss_cut_distance_equity_share": 0.636,
+          "loss_cut_in_stress": true,
+          "margin_maintenance_ratio_p95": 2.75,
+          "margin_utilisation_mean": 0.3214,
+          "margin_utilisation_p95": 0.364,
+          "median_max_drawdown_10y": 0.44,
+          "one_day_stress_loss": 0.5,
+          "p95_max_drawdown_10y": 0.761,
+          "portfolio_gross_leverage_B_mean": 7.7,
+          "risk_leverage_C": 10.0,
+          "stressed_equity": -0.2608,
+          "stressed_margin_utilisation": null
+        }
+      },
+      "2": {
+        "0.3": {
+          "annual_net_return": 0.014,
+          "annual_vol": 0.0466,
+          "loss_cut_distance_daily_sigmas": 316.0,
+          "loss_cut_distance_equity_share": 0.9272,
+          "loss_cut_in_stress": false,
+          "margin_maintenance_ratio_p95": 13.74,
+          "margin_utilisation_mean": 0.0643,
+          "margin_utilisation_p95": 0.0728,
+          "median_max_drawdown_10y": 0.124,
+          "one_day_stress_loss": 0.1,
+          "p95_max_drawdown_10y": 0.243,
+          "portfolio_gross_leverage_B_mean": 1.54,
+          "risk_leverage_C": 2.0,
+          "stressed_equity": 0.6567,
+          "stressed_margin_utilisation": 0.1109
+        },
+        "0.5": {
+          "annual_net_return": 0.0233,
+          "annual_vol": 0.0466,
+          "loss_cut_distance_daily_sigmas": 316.0,
+          "loss_cut_distance_equity_share": 0.9272,
+          "loss_cut_in_stress": false,
+          "margin_maintenance_ratio_p95": 13.74,
+          "margin_utilisation_mean": 0.0643,
+          "margin_utilisation_p95": 0.0728,
+          "median_max_drawdown_10y": 0.106,
+          "one_day_stress_loss": 0.1,
+          "p95_max_drawdown_10y": 0.197,
+          "portfolio_gross_leverage_B_mean": 1.54,
+          "risk_leverage_C": 2.0,
+          "stressed_equity": 0.7029,
+          "stressed_margin_utilisation": 0.1036
+        },
+        "0.8": {
+          "annual_net_return": 0.0373,
+          "annual_vol": 0.0466,
+          "loss_cut_distance_daily_sigmas": 316.0,
+          "loss_cut_distance_equity_share": 0.9272,
+          "loss_cut_in_stress": false,
+          "margin_maintenance_ratio_p95": 13.74,
+          "margin_utilisation_mean": 0.0643,
+          "margin_utilisation_p95": 0.0728,
+          "median_max_drawdown_10y": 0.088,
+          "one_day_stress_loss": 0.1,
+          "p95_max_drawdown_10y": 0.152,
+          "portfolio_gross_leverage_B_mean": 1.54,
+          "risk_leverage_C": 2.0,
+          "stressed_equity": 0.7478,
+          "stressed_margin_utilisation": 0.0973
+        }
+      },
+      "3": {
+        "0.3": {
+          "annual_net_return": 0.021,
+          "annual_vol": 0.0699,
+          "loss_cut_distance_daily_sigmas": 202.4,
+          "loss_cut_distance_equity_share": 0.8908,
+          "loss_cut_in_stress": false,
+          "margin_maintenance_ratio_p95": 9.16,
+          "margin_utilisation_mean": 0.0964,
+          "margin_utilisation_p95": 0.1092,
+          "median_max_drawdown_10y": 0.185,
+          "one_day_stress_loss": 0.15,
+          "p95_max_drawdown_10y": 0.365,
+          "portfolio_gross_leverage_B_mean": 2.31,
+          "risk_leverage_C": 3.0,
+          "stressed_equity": 0.485,
+          "stressed_margin_utilisation": 0.2251
+        },
+        "0.5": {
+          "annual_net_return": 0.0349,
+          "annual_vol": 0.0699,
+          "loss_cut_distance_daily_sigmas": 202.4,
+          "loss_cut_distance_equity_share": 0.8908,
+          "loss_cut_in_stress": false,
+          "margin_maintenance_ratio_p95": 9.16,
+          "margin_utilisation_mean": 0.0964,
+          "margin_utilisation_p95": 0.1092,
+          "median_max_drawdown_10y": 0.159,
+          "one_day_stress_loss": 0.15,
+          "p95_max_drawdown_10y": 0.296,
+          "portfolio_gross_leverage_B_mean": 2.31,
+          "risk_leverage_C": 3.0,
+          "stressed_equity": 0.5544,
+          "stressed_margin_utilisation": 0.197
+        },
+        "0.8": {
+          "annual_net_return": 0.0559,
+          "annual_vol": 0.0699,
+          "loss_cut_distance_daily_sigmas": 202.4,
+          "loss_cut_distance_equity_share": 0.8908,
+          "loss_cut_in_stress": false,
+          "margin_maintenance_ratio_p95": 9.16,
+          "margin_utilisation_mean": 0.0964,
+          "margin_utilisation_p95": 0.1092,
+          "median_max_drawdown_10y": 0.132,
+          "one_day_stress_loss": 0.15,
+          "p95_max_drawdown_10y": 0.228,
+          "portfolio_gross_leverage_B_mean": 2.31,
+          "risk_leverage_C": 3.0,
+          "stressed_equity": 0.6218,
+          "stressed_margin_utilisation": 0.1756
+        }
+      },
+      "5": {
+        "0.3": {
+          "annual_net_return": 0.0349,
+          "annual_vol": 0.1164,
+          "loss_cut_distance_daily_sigmas": 111.5,
+          "loss_cut_distance_equity_share": 0.818,
+          "loss_cut_in_stress": true,
+          "margin_maintenance_ratio_p95": 5.49,
+          "margin_utilisation_mean": 0.1607,
+          "margin_utilisation_p95": 0.182,
+          "median_max_drawdown_10y": 0.309,
+          "one_day_stress_loss": 0.25,
+          "p95_max_drawdown_10y": 0.608,
+          "portfolio_gross_leverage_B_mean": 3.85,
+          "risk_leverage_C": 5.0,
+          "stressed_equity": 0.1417,
+          "stressed_margin_utilisation": 1.2842
+        },
+        "0.5": {
+          "annual_net_return": 0.0582,
+          "annual_vol": 0.1164,
+          "loss_cut_distance_daily_sigmas": 111.5,
+          "loss_cut_distance_equity_share": 0.818,
+          "loss_cut_in_stress": false,
+          "margin_maintenance_ratio_p95": 5.49,
+          "margin_utilisation_mean": 0.1607,
+          "margin_utilisation_p95": 0.182,
+          "median_max_drawdown_10y": 0.266,
+          "one_day_stress_loss": 0.25,
+          "p95_max_drawdown_10y": 0.493,
+          "portfolio_gross_leverage_B_mean": 3.85,
+          "risk_leverage_C": 5.0,
+          "stressed_equity": 0.2573,
+          "stressed_margin_utilisation": 0.7072
+        },
+        "0.8": {
+          "annual_net_return": 0.0932,
+          "annual_vol": 0.1164,
+          "loss_cut_distance_daily_sigmas": 111.5,
+          "loss_cut_distance_equity_share": 0.818,
+          "loss_cut_in_stress": false,
+          "margin_maintenance_ratio_p95": 5.49,
+          "margin_utilisation_mean": 0.1607,
+          "margin_utilisation_p95": 0.182,
+          "median_max_drawdown_10y": 0.22,
+          "one_day_stress_loss": 0.25,
+          "p95_max_drawdown_10y": 0.38,
+          "portfolio_gross_leverage_B_mean": 3.85,
+          "risk_leverage_C": 5.0,
+          "stressed_equity": 0.3696,
+          "stressed_margin_utilisation": 0.4924
+        }
+      },
+      "8": {
+        "0.3": {
+          "annual_net_return": 0.0559,
+          "annual_vol": 0.1863,
+          "loss_cut_distance_daily_sigmas": 60.4,
+          "loss_cut_distance_equity_share": 0.7088,
+          "loss_cut_in_stress": true,
+          "margin_maintenance_ratio_p95": 3.43,
+          "margin_utilisation_mean": 0.2571,
+          "margin_utilisation_p95": 0.2912,
+          "median_max_drawdown_10y": 0.494,
+          "one_day_stress_loss": 0.4,
+          "p95_max_drawdown_10y": 0.973,
+          "portfolio_gross_leverage_B_mean": 6.16,
+          "risk_leverage_C": 8.0,
+          "stressed_equity": -0.3733,
+          "stressed_margin_utilisation": null
+        },
+        "0.5": {
+          "annual_net_return": 0.0932,
+          "annual_vol": 0.1863,
+          "loss_cut_distance_daily_sigmas": 60.4,
+          "loss_cut_distance_equity_share": 0.7088,
+          "loss_cut_in_stress": true,
+          "margin_maintenance_ratio_p95": 3.43,
+          "margin_utilisation_mean": 0.2571,
+          "margin_utilisation_p95": 0.2912,
+          "median_max_drawdown_10y": 0.425,
+          "one_day_stress_loss": 0.4,
+          "p95_max_drawdown_10y": 0.788,
+          "portfolio_gross_leverage_B_mean": 6.16,
+          "risk_leverage_C": 8.0,
+          "stressed_equity": -0.1883,
+          "stressed_margin_utilisation": null
+        },
+        "0.8": {
+          "annual_net_return": 0.149,
+          "annual_vol": 0.1863,
+          "loss_cut_distance_daily_sigmas": 60.4,
+          "loss_cut_distance_equity_share": 0.7088,
+          "loss_cut_in_stress": true,
+          "margin_maintenance_ratio_p95": 3.43,
+          "margin_utilisation_mean": 0.2571,
+          "margin_utilisation_p95": 0.2912,
+          "median_max_drawdown_10y": 0.352,
+          "one_day_stress_loss": 0.4,
+          "p95_max_drawdown_10y": 0.609,
+          "portfolio_gross_leverage_B_mean": 6.16,
+          "risk_leverage_C": 8.0,
+          "stressed_equity": -0.0087,
+          "stressed_margin_utilisation": null
+        }
+      }
+    },
+    "routing": {
+      "largest_single_pair_share_of_pair_gross": {
+        "mean": 0.1242,
+        "p95": 0.1551
+      },
+      "margin_per_unit_currency_gross": {
+        "mean": 0.03214,
+        "p95": 0.0364
+      },
+      "pair_gross_per_unit_currency_gross": {
+        "mean": 0.7696,
+        "p95": 0.8707
+      },
+      "per_pair_mean_notional_per_unit_currency_gross": {
+        "AUD_CAD": 0.0485,
+        "AUD_JPY": 0.0293,
+        "AUD_NZD": 0.0529,
+        "AUD_USD": 0.0273,
+        "CHF_JPY": 0.038,
+        "EUR_AUD": 0.03,
+        "EUR_CAD": 0.0506,
+        "EUR_CHF": 0.0378,
+        "EUR_GBP": 0.0347,
+        "EUR_JPY": 0.0298,
+        "EUR_USD": 0.0296,
+        "GBP_AUD": 0.0332,
+        "GBP_CHF": 0.0418,
+        "GBP_JPY": 0.0354,
+        "GBP_USD": 0.0322,
+        "NZD_JPY": 0.0526,
+        "NZD_USD": 0.0515,
+        "USD_CAD": 0.0497,
+        "USD_CHF": 0.0355,
+        "USD_JPY": 0.0292
+      }
+    },
+    "routing_check_against_track_1": {
+      "synthetic_mean": 0.7696,
+      "track_1_pair_gross_per_currency_gross": 0.762
+    },
+    "vol_target_scenarios": {
+      "0.08": {
+        "0.3": {
+          "annual_net_return": 0.024,
+          "annual_vol": 0.08,
+          "loss_cut_distance_daily_sigmas": 173.6,
+          "loss_cut_distance_equity_share": 0.875,
+          "loss_cut_in_stress": false,
+          "margin_maintenance_ratio_p95": 8.0,
+          "margin_utilisation_mean": 0.1104,
+          "margin_utilisation_p95": 0.125,
+          "median_max_drawdown_10y": 0.212,
+          "one_day_stress_loss": 0.1718,
+          "p95_max_drawdown_10y": 0.418,
+          "portfolio_gross_leverage_B_mean": 2.64,
+          "risk_leverage_C": 3.44,
+          "stressed_equity": 0.4103,
+          "stressed_margin_utilisation": 0.3047
+        },
+        "0.5": {
+          "annual_net_return": 0.04,
+          "annual_vol": 0.08,
+          "loss_cut_distance_daily_sigmas": 173.6,
+          "loss_cut_distance_equity_share": 0.875,
+          "loss_cut_in_stress": false,
+          "margin_maintenance_ratio_p95": 8.0,
+          "margin_utilisation_mean": 0.1104,
+          "margin_utilisation_p95": 0.125,
+          "median_max_drawdown_10y": 0.183,
+          "one_day_stress_loss": 0.1718,
+          "p95_max_drawdown_10y": 0.338,
+          "portfolio_gross_leverage_B_mean": 2.64,
+          "risk_leverage_C": 3.44,
+          "stressed_equity": 0.4898,
+          "stressed_margin_utilisation": 0.2553
+        },
+        "0.8": {
+          "annual_net_return": 0.064,
+          "annual_vol": 0.08,
+          "loss_cut_distance_daily_sigmas": 173.6,
+          "loss_cut_distance_equity_share": 0.875,
+          "loss_cut_in_stress": false,
+          "margin_maintenance_ratio_p95": 8.0,
+          "margin_utilisation_mean": 0.1104,
+          "margin_utilisation_p95": 0.125,
+          "median_max_drawdown_10y": 0.151,
+          "one_day_stress_loss": 0.1718,
+          "p95_max_drawdown_10y": 0.261,
+          "portfolio_gross_leverage_B_mean": 2.64,
+          "risk_leverage_C": 3.44,
+          "stressed_equity": 0.5669,
+          "stressed_margin_utilisation": 0.2206
+        }
+      },
+      "0.1": {
+        "0.3": {
+          "annual_net_return": 0.03,
+          "annual_vol": 0.1,
+          "loss_cut_distance_daily_sigmas": 133.9,
+          "loss_cut_distance_equity_share": 0.8437,
+          "loss_cut_in_stress": false,
+          "margin_maintenance_ratio_p95": 6.4,
+          "margin_utilisation_mean": 0.138,
+          "margin_utilisation_p95": 0.1563,
+          "median_max_drawdown_10y": 0.265,
+          "one_day_stress_loss": 0.2147,
+          "p95_max_drawdown_10y": 0.522,
+          "portfolio_gross_leverage_B_mean": 3.3,
+          "risk_leverage_C": 4.29,
+          "stressed_equity": 0.2629,
+          "stressed_margin_utilisation": 0.5945
+        },
+        "0.5": {
+          "annual_net_return": 0.05,
+          "annual_vol": 0.1,
+          "loss_cut_distance_daily_sigmas": 133.9,
+          "loss_cut_distance_equity_share": 0.8437,
+          "loss_cut_in_stress": false,
+          "margin_maintenance_ratio_p95": 6.4,
+          "margin_utilisation_mean": 0.138,
+          "margin_utilisation_p95": 0.1563,
+          "median_max_drawdown_10y": 0.228,
+          "one_day_stress_loss": 0.2147,
+          "p95_max_drawdown_10y": 0.423,
+          "portfolio_gross_leverage_B_mean": 3.3,
+          "risk_leverage_C": 4.29,
+          "stressed_equity": 0.3622,
+          "stressed_margin_utilisation": 0.4315
+        },
+        "0.8": {
+          "annual_net_return": 0.08,
+          "annual_vol": 0.1,
+          "loss_cut_distance_daily_sigmas": 133.9,
+          "loss_cut_distance_equity_share": 0.8437,
+          "loss_cut_in_stress": false,
+          "margin_maintenance_ratio_p95": 6.4,
+          "margin_utilisation_mean": 0.138,
+          "margin_utilisation_p95": 0.1563,
+          "median_max_drawdown_10y": 0.189,
+          "one_day_stress_loss": 0.2147,
+          "p95_max_drawdown_10y": 0.327,
+          "portfolio_gross_leverage_B_mean": 3.3,
+          "risk_leverage_C": 4.29,
+          "stressed_equity": 0.4586,
+          "stressed_margin_utilisation": 0.3408
+        }
+      },
+      "0.12": {
+        "0.3": {
+          "annual_net_return": 0.036,
+          "annual_vol": 0.12,
+          "loss_cut_distance_daily_sigmas": 107.5,
+          "loss_cut_distance_equity_share": 0.8124,
+          "loss_cut_in_stress": true,
+          "margin_maintenance_ratio_p95": 5.33,
+          "margin_utilisation_mean": 0.1656,
+          "margin_utilisation_p95": 0.1876,
+          "median_max_drawdown_10y": 0.318,
+          "one_day_stress_loss": 0.2576,
+          "p95_max_drawdown_10y": 0.627,
+          "portfolio_gross_leverage_B_mean": 3.97,
+          "risk_leverage_C": 5.15,
+          "stressed_equity": 0.1155,
+          "stressed_margin_utilisation": 1.6243
+        },
+        "0.5": {
+          "annual_net_return": 0.06,
+          "annual_vol": 0.12,
+          "loss_cut_distance_daily_sigmas": 107.5,
+          "loss_cut_distance_equity_share": 0.8124,
+          "loss_cut_in_stress": false,
+          "margin_maintenance_ratio_p95": 5.33,
+          "margin_utilisation_mean": 0.1656,
+          "margin_utilisation_p95": 0.1876,
+          "median_max_drawdown_10y": 0.274,
+          "one_day_stress_loss": 0.2576,
+          "p95_max_drawdown_10y": 0.508,
+          "portfolio_gross_leverage_B_mean": 3.97,
+          "risk_leverage_C": 5.15,
+          "stressed_equity": 0.2346,
+          "stressed_margin_utilisation": 0.7994
+        },
+        "0.8": {
+          "annual_net_return": 0.096,
+          "annual_vol": 0.12,
+          "loss_cut_distance_daily_sigmas": 107.5,
+          "loss_cut_distance_equity_share": 0.8124,
+          "loss_cut_in_stress": false,
+          "margin_maintenance_ratio_p95": 5.33,
+          "margin_utilisation_mean": 0.1656,
+          "margin_utilisation_p95": 0.1876,
+          "median_max_drawdown_10y": 0.227,
+          "one_day_stress_loss": 0.2576,
+          "p95_max_drawdown_10y": 0.392,
+          "portfolio_gross_leverage_B_mean": 3.97,
+          "risk_leverage_C": 5.15,
+          "stressed_equity": 0.3503,
+          "stressed_margin_utilisation": 0.5354
+        }
+      },
+      "0.15": {
+        "0.3": {
+          "annual_net_return": 0.045,
+          "annual_vol": 0.15,
+          "loss_cut_distance_daily_sigmas": 81.0,
+          "loss_cut_distance_equity_share": 0.7655,
+          "loss_cut_in_stress": true,
+          "margin_maintenance_ratio_p95": 4.27,
+          "margin_utilisation_mean": 0.207,
+          "margin_utilisation_p95": 0.2345,
+          "median_max_drawdown_10y": 0.398,
+          "one_day_stress_loss": 0.3221,
+          "p95_max_drawdown_10y": 0.784,
+          "portfolio_gross_leverage_B_mean": 4.96,
+          "risk_leverage_C": 6.44,
+          "stressed_equity": -0.1057,
+          "stressed_margin_utilisation": null
+        },
+        "0.5": {
+          "annual_net_return": 0.075,
+          "annual_vol": 0.15,
+          "loss_cut_distance_daily_sigmas": 81.0,
+          "loss_cut_distance_equity_share": 0.7655,
+          "loss_cut_in_stress": true,
+          "margin_maintenance_ratio_p95": 4.27,
+          "margin_utilisation_mean": 0.207,
+          "margin_utilisation_p95": 0.2345,
+          "median_max_drawdown_10y": 0.342,
+          "one_day_stress_loss": 0.3221,
+          "p95_max_drawdown_10y": 0.635,
+          "portfolio_gross_leverage_B_mean": 4.96,
+          "risk_leverage_C": 6.44,
+          "stressed_equity": 0.0433,
+          "stressed_margin_utilisation": 5.4152
+        },
+        "0.8": {
+          "annual_net_return": 0.12,
+          "annual_vol": 0.15,
+          "loss_cut_distance_daily_sigmas": 81.0,
+          "loss_cut_distance_equity_share": 0.7655,
+          "loss_cut_in_stress": true,
+          "margin_maintenance_ratio_p95": 4.27,
+          "margin_utilisation_mean": 0.207,
+          "margin_utilisation_p95": 0.2345,
+          "median_max_drawdown_10y": 0.283,
+          "one_day_stress_loss": 0.3221,
+          "p95_max_drawdown_10y": 0.49,
+          "portfolio_gross_leverage_B_mean": 4.96,
+          "risk_leverage_C": 6.44,
+          "stressed_equity": 0.1879,
+          "stressed_margin_utilisation": 1.2478
+        }
+      }
+    }
+  },
   "market": "G10 FX spot",
   "market_data_read": false,
   "proposed_tracks": [

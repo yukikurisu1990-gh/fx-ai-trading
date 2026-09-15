@@ -376,15 +376,17 @@ horizon IC は、半減期 h の AR(1) 予測が h 日先 return に対して示
 
 ### R.2 年率・leverage・drawdown
 
-再利用する執行層の leverage 上限は 5 倍。表の leverage は vol target ÷ 単位 gross vol の計算値で、10% vol で 4.29 倍（Track 1 の実測平均は 4.41 倍）、12% vol では 5.15 倍で上限を超える。Track 1 は 10% vol で
-**46% の日に上限に張り付き**、上限なしの p95 は 8.0 倍だった。
+表の leverage は **risk leverage C**（vol target ÷ unlevered vol、R.6）の計算値で、10% vol で 4.29、12% vol で 5.15、15% vol で 6.44
+（Track 1 の実測平均は 10% vol で 4.41）。**固定の leverage 上限は適用しない**: 以前の「5 倍」は Track 1 の内部値で、broker の上限でも
+risk から導いた値でもなかった（R.6）。実行可能性は margin と stress で判定する。
 
 <!-- table:return_capacity -->
-| vol target | 必要 gross leverage（vol target ÷ 単位 gross vol。上限 5 との比較、日々は上限に張り付きうる） | net 0.3 / 0.5 / 0.8 の年率 | 10 年の最大 DD 中央値（net 0.3 / 0.5 / 0.8） | 10 年の最大 DD 95%点（net 0.3 / 0.5 / 0.8） | 年 5% に必要な net Sharpe | 年 10% に必要な net Sharpe |
+| vol target | risk leverage C（vol target ÷ unlevered vol） | net 0.3 / 0.5 / 0.8 の年率 | 10 年の最大 DD 中央値（net 0.3 / 0.5 / 0.8） | 10 年の最大 DD 95%点（net 0.3 / 0.5 / 0.8） | 年 5% に必要な net Sharpe | 年 10% に必要な net Sharpe |
 | --- | --- | --- | --- | --- | --- | --- |
-| 8% | 3.44（以内） | 2.4% / 4.0% / 6.4% | 21% / 18% / 15% | 42% / 34% / 26% | 0.625 | 1.25 |
-| 10% | 4.29（以内） | 3.0% / 5.0% / 8.0% | 26% / 23% / 19% | 52% / 42% / 33% | 0.5 | 1.0 |
-| 12% | 5.15（超過） | 3.6% / 6.0% / 9.6% | 32% / 27% / 23% | 63% / 51% / 39% | 0.417 | 0.833 |
+| 8% | 3.44 | 2.4% / 4.0% / 6.4% | 21% / 18% / 15% | 42% / 34% / 26% | 0.625 | 1.25 |
+| 10% | 4.29 | 3.0% / 5.0% / 8.0% | 26% / 23% / 19% | 52% / 42% / 33% | 0.5 | 1.0 |
+| 12% | 5.15 | 3.6% / 6.0% / 9.6% | 32% / 27% / 23% | 63% / 51% / 39% | 0.417 | 0.833 |
+| 15% | 6.44 | 4.5% / 7.5% / 12.0% | 40% / 34% / 28% | 78% / 64% / 49% | 0.333 | 0.667 |
 <!-- /table -->
 
 ### R.3 検出に要る年数
@@ -421,11 +423,134 @@ horizon IC は、半減期 h の AR(1) 予測が h 日先 return に対して示
 - **edge per unit turnover × turnover × exposure**: 速い予測（半減期 1〜5 日）は turnover が 43〜101 RT/年/単位 gross で、
   cost だけで IR が 0.6〜1.5 削られる。遅い予測（60〜120 日）は cost が軽い（0.07〜0.12）。**turnover を減らせば解決、でも、
   高頻度は不可能、でもない。** net 0.5 に必要な日次 IC は半減期 20〜120 日で 2.1〜2.9%（breadth 2 なら 3.0〜4.1%）。
-- **年 5〜10% の capacity**: 10% vol で年 5% に net 0.5、年 10% に net 1.0。12% vol なら net 0.42 / 0.83（ただし leverage 5.15 倍で
-  上限 5 倍を超える）。net 0.5・10% vol でも 10 年の最大 DD 中央値は 23%、95%点は 42%。
+- **年 5〜10% の capacity**: 10% vol で年 5% に net 0.5、年 10% に net 1.0。12% vol なら net 0.42 / 0.83（risk leverage 約
+  5.15。以前の内部 5 倍を超えるが、それだけでは OANDA 上の実行可能性を超えない、R.6）。net 0.5・10% vol でも 10 年の最大 DD 中央値は
+  23%、95%点は 42%。
 - **検出の限界**: net 0.5 を片側 5% で検出力 80% で見るには約 24.7 年（検出力 50% でも 10.8 年）、net 0.8 でも 9.7 年の
   out-of-sample が要る。seen の 4.7 年（walk-forward の out-of-fold は約 2.9 年）では net 0.5 の source を決められない。
   **新しい独立履歴が研究可能性そのものを左右する。**
+
+### R.6 leverage と margin（#484 の訂正）
+
+**以前の「5 倍」の出所**: `scripts/research/continuous_portfolio/construction.py` の `BookConfig.max_leverage` の既定値で、Track 1 の
+事前登録 commit `3ed3527`（2026-09-14）で入った。Track 1 の全 book の vol target 上限と、kill 条項「10% vol で上限なし leverage が 5 倍以上を
+要求する日が半分を超える」に使われた。**根拠の記録は source・doc・artifact のどこにも無い**。分類は B（事前登録に凍結された内部値）で、
+実質は D（仮置き）。OANDA の上限ではなく、margin・drawdown・risk から導いた値でもない。4 倍でも 6 倍でもなく 5 倍である理由を独立に
+正当化できないので、**新しい研究の実行可能性の境界としては撤回し、下の risk-based policy に置き換える**。Track 1 の凍結された事前登録と
+Case C は変えない（gross Sharpe 自体が負で、leverage では救えない）。
+
+**OANDA の前提**（public な公式仕様のみ。login・API は使っていない。`artifacts/research/edge_sources/oanda_margin_rates.json` に
+取得時刻 `2026-09-15T22:33:17Z`、URL、page の sha256 を記録）:
+
+- OANDA 証券、個人口座、TY3（東京サーバー）の MetaTrader 5。TY3 標準プランの MT4 sub-account の新規開設は 2026-03-27 に終了している。
+- 研究対象 20 pair の証拠金率: 16 pair が 4%（25 倍）、GBP を含む 4 pair（EUR/GBP・GBP/AUD・GBP/JPY・GBP/USD）が 5%（20 倍）。
+  **一律 25 倍ではない**（GBP/CHF は 4%）。MT4 はすべて 10%。
+- 必要証拠金 = 取引数量 × レート × 証拠金率。loss-cut は証拠金維持率（有効証拠金 ÷ 必要証拠金）が 100% 以下で発動し、margin call・
+  margin cut は無い。急変時は証拠金を上回る損失がありうる、と仕様自身が書いている。
+- 法人口座（2% 以上、金融先物取引業協会のリスク想定比率で週次に変わる）は仮定しない。仕様は変わりうるので、使う前に取り直す。
+
+**3 つの leverage を分ける**:
+
+- **A. broker hard leverage**: pair ごとの `1 ÷ 証拠金率`（25 倍または 20 倍）。
+- **B. portfolio gross leverage**: `Σ |routed pair notional| ÷ equity`。
+- **C. risk leverage**: `target vol ÷ unlevered vol`。unlevered book は通貨 gross 1 なので、C は通貨 gross でもある。
+
+通貨 book を 20 pair に routing すると、pair gross は通貨 gross の 0.770 倍（signal-free 合成、Track 1 の実測 0.762 と一致）。
+必要証拠金は **`Σ routed notional_i × 証拠金率_i`** で集計し、`gross ÷ 25` では計算しない。単位通貨 gross あたりの必要証拠金は平均 3.21%、
+p95 3.64% で、margin だけで見た上限（維持率 100%）は risk leverage 約 27.5。
+
+**10% vol（risk leverage C 4.29）での pair ごとの必要証拠金**（signal-free routing の平均）:
+
+<!-- table:pair_margin -->
+| pair | 証拠金率（TY3 MT5 個人） | broker hard leverage A | routed notional / equity | 必要証拠金 / equity |
+| --- | --- | --- | --- | --- |
+| AUD_CAD | 4% | 25.0x | 0.2083 | 0.0083 |
+| AUD_JPY | 4% | 25.0x | 0.1258 | 0.0050 |
+| AUD_NZD | 4% | 25.0x | 0.2272 | 0.0091 |
+| AUD_USD | 4% | 25.0x | 0.1172 | 0.0047 |
+| CHF_JPY | 4% | 25.0x | 0.1632 | 0.0065 |
+| EUR_AUD | 4% | 25.0x | 0.1288 | 0.0052 |
+| EUR_CAD | 4% | 25.0x | 0.2173 | 0.0087 |
+| EUR_CHF | 4% | 25.0x | 0.1623 | 0.0065 |
+| EUR_GBP | 5% | 20.0x | 0.149 | 0.0075 |
+| EUR_JPY | 4% | 25.0x | 0.128 | 0.0051 |
+| EUR_USD | 4% | 25.0x | 0.1271 | 0.0051 |
+| GBP_AUD | 5% | 20.0x | 0.1426 | 0.0071 |
+| GBP_CHF | 4% | 25.0x | 0.1795 | 0.0072 |
+| GBP_JPY | 5% | 20.0x | 0.152 | 0.0076 |
+| GBP_USD | 5% | 20.0x | 0.1383 | 0.0069 |
+| NZD_JPY | 4% | 25.0x | 0.2259 | 0.0090 |
+| NZD_USD | 4% | 25.0x | 0.2211 | 0.0089 |
+| USD_CAD | 4% | 25.0x | 0.2134 | 0.0085 |
+| USD_CHF | 4% | 25.0x | 0.1524 | 0.0061 |
+| USD_JPY | 4% | 25.0x | 0.1254 | 0.0050 |
+| **合計**（equity 1、risk leverage C 4.29） | — | — | **3.305**（portfolio gross leverage B） | **13.8%**（margin utilisation） |
+<!-- /table -->
+
+**risk-based leverage policy（固定上限の代わり）**:
+
+1. unlevered book の gross / net Sharpe で source の有無を決める。leverage はこの判定に入らない。
+2. target vol を選び、C = target vol ÷ unlevered vol。
+3. pair に routing し、B と必要証拠金（Σ notional × 証拠金率、p95）を出す。
+4. stress: Gaussian の 10 年最大 DD の 95%点に、1 日の損失として「0.25 の上限 weight の 1 通貨が 20% gap」と「portfolio の 10σ」の大きい方を
+   加え、notional は減らさない（保守側）。20% は記録上最大級の G10 の 1 日の repricing（2015 年 1 月の SNB）の桁で、ここでは測っていない仮定。
+5. **stressed equity が p95 の必要証拠金以下になる（維持率 100%、loss-cut）ときだけ broker 上実行不能**とする。固定倍率を超えたことは理由にしない。
+6. drawdown・margin 利用率・集中は報告し、最適化しない。broker 上限（25 倍）は距離を測る境界で、運用 scenario ではない。
+
+**risk leverage scenario**（unlevered net Sharpe 0.5 を仮定。DD は加法近似で、100% 以上は生存できないことを意味する）:
+
+<!-- table:leverage_scenarios -->
+| scenario | risk leverage C | 年率 vol | portfolio gross B | 年率 net（net 0.5） | margin 利用率 p95 | loss-cut までの距離（日次 σ） | 10 年最大 DD 中央値 / 95%点 | 1 日 stress 損失 | stressed equity | stressed margin 利用率 | stress で loss-cut |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| C = 1 | 1.0 | 2.3% | 0.77 | 1.2% | 3.6% | 656.8 | 5% / 10% | 5% | 85% | 4% | なし |
+| C = 2 | 2.0 | 4.7% | 1.54 | 2.3% | 7.3% | 316.0 | 11% / 20% | 10% | 70% | 10% | なし |
+| C = 3 | 3.0 | 7.0% | 2.31 | 3.5% | 10.9% | 202.4 | 16% / 30% | 15% | 55% | 20% | なし |
+| C = 5 | 5.0 | 11.6% | 3.85 | 5.8% | 18.2% | 111.5 | 27% / 49% | 25% | 26% | 71% | なし |
+| C = 8 | 8.0 | 18.6% | 6.16 | 9.3% | 29.1% | 60.4 | 42% / 79% | 40% | -19% | —（stressed equity ≤ 0） | **loss-cut** |
+| C = 10 | 10.0 | 23.3% | 7.7 | 11.6% | 36.4% | 43.4 | 53% / 98% | 50% | -49% | —（stressed equity ≤ 0） | **loss-cut** |
+<!-- /table -->
+
+**vol target scenario**（同じく net 0.5）:
+
+<!-- table:vol_target_scenarios -->
+| scenario | risk leverage C | 年率 vol | portfolio gross B | 年率 net（net 0.5） | margin 利用率 p95 | loss-cut までの距離（日次 σ） | 10 年最大 DD 中央値 / 95%点 | 1 日 stress 損失 | stressed equity | stressed margin 利用率 | stress で loss-cut |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| vol 8% | 3.44 | 8.0% | 2.64 | 4.0% | 12.5% | 173.6 | 18% / 34% | 17% | 49% | 26% | なし |
+| vol 10% | 4.29 | 10.0% | 3.3 | 5.0% | 15.6% | 133.9 | 23% / 42% | 21% | 36% | 43% | なし |
+| vol 12% | 5.15 | 12.0% | 3.97 | 6.0% | 18.8% | 107.5 | 27% / 51% | 26% | 23% | 80% | なし |
+| vol 15% | 6.44 | 15.0% | 4.96 | 7.5% | 23.4% | 81.0 | 34% / 64% | 32% | 4% | 542% | **loss-cut** |
+<!-- /table -->
+
+**年率 5% / 10% / 15% に必要なもの**:
+
+<!-- table:return_targets -->
+| 年率 net 目標 | net Sharpe | 必要 vol | risk leverage C | portfolio gross B | margin 利用率 p95 | 10 年最大 DD 95%点 | stressed equity | stress で loss-cut |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| 5% | 0.3 | 16.7% | 7.16 | 5.51 | 26.1% | 87% | -23% | **loss-cut** |
+| 5% | 0.5 | 10.0% | 4.29 | 3.3 | 15.6% | 42% | 36% | なし |
+| 5% | 0.8 | 6.2% | 2.68 | 2.07 | 9.8% | 20% | 66% | なし |
+| 10% | 0.3 | 33.3% | 14.31 | 11.02 | 52.1% | 174% | -146% | **loss-cut** |
+| 10% | 0.5 | 20.0% | 8.59 | 6.61 | 31.3% | 85% | -28% | **loss-cut** |
+| 10% | 0.8 | 12.5% | 5.37 | 4.13 | 19.5% | 41% | 32% | なし |
+| 15% | 0.3 | 50.0% | 21.47 | 16.52 | 78.1% | 261% | -269% | **loss-cut** |
+| 15% | 0.5 | 30.0% | 12.88 | 9.91 | 46.9% | 127% | -91% | **loss-cut** |
+| 15% | 0.8 | 18.8% | 8.05 | 6.2 | 29.3% | 61% | -2% | **loss-cut** |
+<!-- /table -->
+
+読み方:
+
+- **leverage は Sharpe を変えない**。年率 = net Sharpe × vol で、leverage が変えるのは正の edge を年率に換算する倍率だけ。負の edge は
+  何倍にしても負のまま。
+- **年 5%**: net 0.5 なら 10% vol（C 4.29、margin 利用率 p95 15.6%）で stress でも loss-cut に至らない。net 0.3 だと 16.7% vol が要り、
+  stress で loss-cut に至る。
+- **年 10%**: net 0.8 なら 12.5% vol（C 5.37）で到達し stress を耐える。net 0.5 では 20% vol（C 8.59）が要り、stress で loss-cut に至る。
+- **年 15%**: net 0.8 でも 18.8% vol（C 8.05）が要り、stress で equity がほぼ尽きる。
+- 以前の「12% vol は 5.15 倍で上限超過」は、**以前の内部 5 倍を超えるが、それだけでは OANDA 上で実行不能ではない**、に訂正する。
+  12% vol は net 0.5 の stress で loss-cut に至らないが、stressed equity 23% まで落ちる。
+
+**ranking への影響**: 候補の score（`candidates.py`）は leverage も 5 倍も参照していない（採点は mechanism・prior evidence・data・turnover の
+判断）。**ranking は変わらない**（変更前後の差分なし）。Sharpe・alpha の事前確率も上方修正していない。変わったのは、正の edge が成立した
+場合の年率への換算（R.6 の表）だけ。Track 1・reversal・momentum・旧 ML・閉鎖 family は、この訂正を理由に再開しない。
 
 ## S. Prior-overlap / falsification map
 
@@ -683,7 +808,9 @@ inventory が C09 を economic でも不合格と記録している点を抱え�
 **問い 2: 成立した場合、年 5〜10% の net return に届く経済 capacity はあるか。**
 
 → **算術上の capacity はあるが、どの source にもそこに届く証拠は無い。** 10% vol で年 5% に net 0.5、年 10% に net 1.0 が要る
-（12% vol なら 0.42 / 0.83 だが、必要 leverage 5.15 倍は再利用する執行層の上限 5 倍を超え、Track 1 は 10% vol ですでに 46% の日に上限に張り付いた）。
+（12% vol なら 0.42 / 0.83 で、risk leverage 約 5.15 が要る。これは以前の内部 5 倍を超えるが、OANDA の broker 上限を超えるわけでは
+ない。routed book の必要証拠金は equity の約 19%（p95）で、実行可能性は固定倍率ではなく margin と stress で判定する。R.6 の stress では
+net 0.5 の 12% vol は loss-cut に至らず、15% vol は至る）。
 T-R の prior（出典のない判断で net 0.1〜0.4）の中央（約 0.25）では単独で 10% vol の年 2.5% 程度で、年 5% は上端を超える。
 T-R を 0.1〜0.4、T-V を学術 prior の 0.2〜0.4、T-E を 0.1〜0.4 と置き、3 つが独立に成立すれば合成 net は √ΣS² で 0.24〜0.69
 （10% vol で年 2.4〜6.9%）。**年 10%（10% vol で net 1.0）には、

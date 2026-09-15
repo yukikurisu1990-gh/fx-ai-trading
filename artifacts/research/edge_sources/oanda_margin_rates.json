@@ -1,0 +1,308 @@
+{
+  "account_assumption": {
+    "account": "individual (個人口座)",
+    "corporate_accounts": "not assumed: 2% or more under the JFF currency-pair risk ratio (ty3_account_overview), which varies weekly",
+    "entity": "OANDA証券株式会社 (OANDA Japan)",
+    "server_platform": "TY3 (東京サーバー), MetaTrader 5",
+    "why_mt5": "new MT4 sub-accounts on the TY3 standard plan closed on 2026-03-27 (ty3_account_overview); MT4 rates are recorded for completeness"
+  },
+  "classification": "NON_DECISION_BEARING_EXPLORATORY_ONLY",
+  "loss_cut_margin_maintenance_ratio": 1.0,
+  "pairs": {
+    "AUD_CAD": {
+      "margin_rate_mt4": 0.1,
+      "margin_rate_mt5": 0.04,
+      "name_ja": "豪ドル/加ドル"
+    },
+    "AUD_CHF": {
+      "margin_rate_mt4": 0.1,
+      "margin_rate_mt5": 0.04,
+      "name_ja": "豪ドル/スイスフラン"
+    },
+    "AUD_JPY": {
+      "margin_rate_mt4": 0.1,
+      "margin_rate_mt5": 0.04,
+      "name_ja": "豪ドル/日本円"
+    },
+    "AUD_NZD": {
+      "margin_rate_mt4": 0.1,
+      "margin_rate_mt5": 0.04,
+      "name_ja": "豪ドル/NZドル"
+    },
+    "AUD_USD": {
+      "margin_rate_mt4": 0.1,
+      "margin_rate_mt5": 0.04,
+      "name_ja": "豪ドル/米ドル"
+    },
+    "CAD_CHF": {
+      "margin_rate_mt4": 0.1,
+      "margin_rate_mt5": 0.04,
+      "name_ja": "カナダドル/スイスフラン"
+    },
+    "CAD_JPY": {
+      "margin_rate_mt4": 0.1,
+      "margin_rate_mt5": 0.04,
+      "name_ja": "加ドル/日本円"
+    },
+    "CHF_JPY": {
+      "margin_rate_mt4": 0.1,
+      "margin_rate_mt5": 0.04,
+      "name_ja": "スイスフラン/日本円"
+    },
+    "EUR_AUD": {
+      "margin_rate_mt4": 0.1,
+      "margin_rate_mt5": 0.04,
+      "name_ja": "ユーロ/豪ドル"
+    },
+    "EUR_CAD": {
+      "margin_rate_mt4": 0.1,
+      "margin_rate_mt5": 0.04,
+      "name_ja": "ユーロ/加ドル"
+    },
+    "EUR_CHF": {
+      "margin_rate_mt4": 0.1,
+      "margin_rate_mt5": 0.04,
+      "name_ja": "ユーロ/スイスフラン"
+    },
+    "EUR_GBP": {
+      "margin_rate_mt4": 0.1,
+      "margin_rate_mt5": 0.05,
+      "name_ja": "ユーロ/英ポンド"
+    },
+    "EUR_JPY": {
+      "margin_rate_mt4": 0.1,
+      "margin_rate_mt5": 0.04,
+      "name_ja": "ユーロ/日本円"
+    },
+    "EUR_NZD": {
+      "margin_rate_mt4": 0.1,
+      "margin_rate_mt5": 0.04,
+      "name_ja": "ユーロ/NZドル"
+    },
+    "EUR_USD": {
+      "margin_rate_mt4": 0.1,
+      "margin_rate_mt5": 0.04,
+      "name_ja": "ユーロ/米ドル"
+    },
+    "GBP_AUD": {
+      "margin_rate_mt4": 0.1,
+      "margin_rate_mt5": 0.05,
+      "name_ja": "ポンド/豪ドル"
+    },
+    "GBP_CAD": {
+      "margin_rate_mt4": 0.1,
+      "margin_rate_mt5": 0.05,
+      "name_ja": "ポンド/加ドル"
+    },
+    "GBP_CHF": {
+      "margin_rate_mt4": 0.1,
+      "margin_rate_mt5": 0.04,
+      "name_ja": "ポンド/スイスフラン"
+    },
+    "GBP_JPY": {
+      "margin_rate_mt4": 0.1,
+      "margin_rate_mt5": 0.05,
+      "name_ja": "英ポンド/日本円"
+    },
+    "GBP_NZD": {
+      "margin_rate_mt4": 0.1,
+      "margin_rate_mt5": 0.05,
+      "name_ja": "ポンド/NZドル"
+    },
+    "GBP_USD": {
+      "margin_rate_mt4": 0.1,
+      "margin_rate_mt5": 0.05,
+      "name_ja": "英ポンド/米ドル"
+    },
+    "NZD_CAD": {
+      "margin_rate_mt4": 0.1,
+      "margin_rate_mt5": 0.04,
+      "name_ja": "NZドル/カナダドル"
+    },
+    "NZD_CHF": {
+      "margin_rate_mt4": 0.1,
+      "margin_rate_mt5": 0.04,
+      "name_ja": "NZドル/スイスフラン"
+    },
+    "NZD_JPY": {
+      "margin_rate_mt4": 0.1,
+      "margin_rate_mt5": 0.04,
+      "name_ja": "NZドル/日本円"
+    },
+    "NZD_USD": {
+      "margin_rate_mt4": 0.1,
+      "margin_rate_mt5": 0.04,
+      "name_ja": "NZドル/米ドル"
+    },
+    "TRY_JPY": {
+      "margin_rate_mt4": 0.25,
+      "margin_rate_mt5": 0.25,
+      "name_ja": "トルコリラ/日本円"
+    },
+    "USD_CAD": {
+      "margin_rate_mt4": 0.1,
+      "margin_rate_mt5": 0.04,
+      "name_ja": "米ドル/加ドル"
+    },
+    "USD_CHF": {
+      "margin_rate_mt4": 0.1,
+      "margin_rate_mt5": 0.04,
+      "name_ja": "米ドル/スイスフラン"
+    },
+    "USD_CNH": {
+      "margin_rate_mt4": 0.1,
+      "margin_rate_mt5": 0.05,
+      "name_ja": "米ドル/中国人民元（オフショア）"
+    },
+    "USD_DKK": {
+      "margin_rate_mt4": 0.1,
+      "margin_rate_mt5": 0.04,
+      "name_ja": "米ドル/デンマーククローネ"
+    },
+    "USD_JPY": {
+      "margin_rate_mt4": 0.1,
+      "margin_rate_mt5": 0.04,
+      "name_ja": "米ドル/日本円"
+    },
+    "USD_MXN": {
+      "margin_rate_mt4": 0.1,
+      "margin_rate_mt5": 0.08,
+      "name_ja": "米ドル/メキシコペソ"
+    },
+    "USD_NOK": {
+      "margin_rate_mt4": 0.1,
+      "margin_rate_mt5": 0.04,
+      "name_ja": "米ドル/ノルウェークローネ"
+    },
+    "USD_SEK": {
+      "margin_rate_mt4": 0.1,
+      "margin_rate_mt5": 0.04,
+      "name_ja": "米ドル/スウェーデンクローナ"
+    },
+    "USD_SGD": {
+      "margin_rate_mt4": 0.1,
+      "margin_rate_mt5": 0.05,
+      "name_ja": "米ドル/シンガポールドル"
+    },
+    "USD_TRY": {
+      "margin_rate_mt4": 0.25,
+      "margin_rate_mt5": 0.25,
+      "name_ja": "米ドル/トルコリラ"
+    },
+    "USD_ZAR": {
+      "margin_rate_mt4": 0.1,
+      "margin_rate_mt5": 0.1,
+      "name_ja": "米ドル/南アフリカランド"
+    },
+    "ZAR_JPY": {
+      "margin_rate_mt4": 0.1,
+      "margin_rate_mt5": 0.1,
+      "name_ja": "南アフリカランド/日本円"
+    }
+  },
+  "purpose": "broker hard leverage (concept A) for the research universe; public official specification only, no login, no API",
+  "quoted_rules": {
+    "loss_cut": "個人・法人のお客様いずれも、証拠金維持率が100%以下となった場合（有効証拠金額が必要証拠金額以下となった場合）に発動します。 証拠金維持率=証拠金清算価値（有効証拠金）÷必要証拠金",
+    "loss_cut_execution": "ロスカットが発動すると損失の大きい建玉から順番に強制決済（ロスカット）されます。このロスカットは証拠金維持率が100％を上回るまで続けられます。",
+    "loss_cut_not_guaranteed": "相場が急激に変動した場合には、ロスカットルールがあっても、証拠金の額を上回る損失が生じることがあります。",
+    "margin_call": "個人口座、法人口座を問わず、マージンコール、マージンカットはありません。ロスカットのみ適用されます。",
+    "required_margin_formula": "必要証拠金額の計算式：＜取引数量×価格（レート）× 証拠金率＞",
+    "required_margin_individual": "個人のお客様：約定代金の4%～に相当する日本円（レバレッジ25倍以下）"
+  },
+  "research_universe": {
+    "AUD_CAD": {
+      "broker_hard_leverage": 25.0,
+      "margin_rate": 0.04
+    },
+    "AUD_JPY": {
+      "broker_hard_leverage": 25.0,
+      "margin_rate": 0.04
+    },
+    "AUD_NZD": {
+      "broker_hard_leverage": 25.0,
+      "margin_rate": 0.04
+    },
+    "AUD_USD": {
+      "broker_hard_leverage": 25.0,
+      "margin_rate": 0.04
+    },
+    "CHF_JPY": {
+      "broker_hard_leverage": 25.0,
+      "margin_rate": 0.04
+    },
+    "EUR_AUD": {
+      "broker_hard_leverage": 25.0,
+      "margin_rate": 0.04
+    },
+    "EUR_CAD": {
+      "broker_hard_leverage": 25.0,
+      "margin_rate": 0.04
+    },
+    "EUR_CHF": {
+      "broker_hard_leverage": 25.0,
+      "margin_rate": 0.04
+    },
+    "EUR_GBP": {
+      "broker_hard_leverage": 20.0,
+      "margin_rate": 0.05
+    },
+    "EUR_JPY": {
+      "broker_hard_leverage": 25.0,
+      "margin_rate": 0.04
+    },
+    "EUR_USD": {
+      "broker_hard_leverage": 25.0,
+      "margin_rate": 0.04
+    },
+    "GBP_AUD": {
+      "broker_hard_leverage": 20.0,
+      "margin_rate": 0.05
+    },
+    "GBP_CHF": {
+      "broker_hard_leverage": 25.0,
+      "margin_rate": 0.04
+    },
+    "GBP_JPY": {
+      "broker_hard_leverage": 20.0,
+      "margin_rate": 0.05
+    },
+    "GBP_USD": {
+      "broker_hard_leverage": 20.0,
+      "margin_rate": 0.05
+    },
+    "NZD_JPY": {
+      "broker_hard_leverage": 25.0,
+      "margin_rate": 0.04
+    },
+    "NZD_USD": {
+      "broker_hard_leverage": 25.0,
+      "margin_rate": 0.04
+    },
+    "USD_CAD": {
+      "broker_hard_leverage": 25.0,
+      "margin_rate": 0.04
+    },
+    "USD_CHF": {
+      "broker_hard_leverage": 25.0,
+      "margin_rate": 0.04
+    },
+    "USD_JPY": {
+      "broker_hard_leverage": 25.0,
+      "margin_rate": 0.04
+    }
+  },
+  "retrieval_note": "fetched with curl from the public pages below; the pages carry no revision date, so the rates are valid as of the retrieval time only and must be re-fetched before any later use",
+  "retrieved_utc": "2026-09-15T22:33:17Z",
+  "sources": {
+    "pair_table": {
+      "sha256": "8d0e2160ddd7bb4c8fed09bb78a65234124b008f53554d397ee59484ad9fc363",
+      "title": "TY3 取引通貨ペア一覧（個人のお客様）| OANDA証券株式会社",
+      "url": "https://www.oanda.jp/course/currencypair"
+    },
+    "ty3_account_overview": {
+      "sha256": "3860c7d77bf18bd837834d3c9dcc6b73c922ed51d9c072fecbf158073ec5e2d9",
+      "title": "TY3（東京サーバー）の取引概要 | OANDA証券株式会社",
+      "url": "https://www.oanda.jp/fx/ty3/about"
+    }
+  }
+}

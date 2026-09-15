@@ -16,7 +16,14 @@ from typing import Any
 
 import pytest
 
-from scripts.research.edge_sources import WORKFLOW_STATUS, candidates, capacity, driver, render
+from scripts.research.edge_sources import (
+    WORKFLOW_STATUS,
+    candidates,
+    capacity,
+    driver,
+    leverage,
+    render,
+)
 from scripts.research.feasibility.inventory import catalogue
 from scripts.research.round_a.ledger import LEDGER
 
@@ -73,12 +80,6 @@ class TestTheCapacityArithmetic:
         drag = capacity.cost_ir_drag(measured["turnover_per_unit_gross"])
         assert drag == pytest.approx(measured["gross_sharpe"] - measured["net_sharpe"], abs=0.002)
 
-    def test_the_leverage_cap_is_the_reused_layers(self) -> None:
-        assert capacity.MAX_LEVERAGE == 5.0
-        rows = capacity.return_and_leverage_table()["rows"]
-        assert rows["vol_0.1"]["mean_leverage_within_reused_cap"] is True
-        assert rows["vol_0.12"]["mean_leverage_within_reused_cap"] is False
-
     @pytest.mark.parametrize("breadth", [4.0, 2.0])
     @pytest.mark.parametrize("half_life", capacity.HALF_LIVES_DAYS)
     def test_the_required_daily_ic_solves_back_to_the_net_sharpe(
@@ -114,7 +115,7 @@ class TestTheCapacityArithmetic:
         table = capacity.return_and_leverage_table()
         row = table["rows"]["vol_0.1"]
         assert row["annual_net_return"]["0.5"] == pytest.approx(0.05)
-        assert row["gross_leverage"] == pytest.approx(0.10 / capacity.VOL_PER_UNIT_GROSS, abs=0.01)
+        assert row["risk_leverage_C"] == pytest.approx(0.10 / capacity.VOL_PER_UNIT_GROSS, abs=0.01)
         assert table["net_sharpe_needed_for_5pct"]["vol_0.1"] == 0.5
 
     def test_drawdown_falls_with_sharpe_and_scales_with_vol(self) -> None:
@@ -357,11 +358,21 @@ class TestTheBoundaries:
         "scripts.research.continuous_portfolio": frozenset({"CHARGED_ONE_WAY_BP", "construction"}),
         "scripts.research.feasibility.inventory": frozenset({"PAIR_ROUNDTRIP_BP"}),
         "scripts.research.edge_sources": frozenset(
-            {"TARGET_NET_RETURN", "WORKFLOW_STATUS", "candidates", "capacity"}
+            {"TARGET_NET_RETURN", "WORKFLOW_STATUS", "candidates", "capacity", "leverage"}
         ),
     }
     #: What the package may call on `construction`: signal-free calibration only.
-    CONSTRUCTION_USES = frozenset({"band_calibration", "BookConfig"})
+    CONSTRUCTION_USES = frozenset(
+        {
+            "band_calibration",
+            "BookConfig",
+            "PAIRS_20",
+            "CURRENCIES",
+            "split_map",
+            "capped_weights",
+            "band_rebalance",
+        }
+    )
     FORBIDDEN_CALLS = frozenset(
         {
             "open",
@@ -424,7 +435,10 @@ class TestTheBoundaries:
                 if name.startswith("read"):
                     assert name == "read_text", (path.name, name)
                     reads += 1
-        assert reads == 1
+        assert reads == 3
+        leverage_source = (PACKAGE / "leverage.py").read_text(encoding="utf-8")
+        assert leverage_source.count("read_text") == 2
+        assert "MARGIN_RECORD" in leverage_source and "TRACK_1_RECORD" in leverage_source
         capacity_source = (PACKAGE / "capacity.py").read_text(encoding="utf-8")
         assert capacity_source.count("read_text") == 1
         assert "TRACK_1_RECORD" in capacity_source
@@ -566,3 +580,74 @@ class TestTheLedgerRecordsTrackOneWithoutAPause:
         assert "not generalised to others" in entry["status"]
         assert "not to be revived as a next main research track" in entry["status"]
         assert "PAUSE" not in entry["status"].upper()
+
+
+MARGIN_RECORD = ROOT / "artifacts/research/edge_sources/oanda_margin_rates.json"
+
+
+class TestLeverageAndMargin:
+    def test_the_broker_record_is_public_dated_and_covers_the_universe(self) -> None:
+        record = json.loads(MARGIN_RECORD.read_text(encoding="utf-8"))
+        assert record["retrieved_utc"].startswith("2026-")
+        for source in record["sources"].values():
+            assert source["url"].startswith("https://www.oanda.jp/")
+            assert len(source["sha256"]) == 64
+        assert set(record["research_universe"]) == set(leverage.construction.PAIRS_20)
+        rates = {p: r["margin_rate"] for p, r in record["research_universe"].items()}
+        assert rates["USD_JPY"] == 0.04 and rates["GBP_USD"] == 0.05 and rates["GBP_CHF"] == 0.04
+        assert len(set(rates.values())) > 1, "rates are pair-specific, not a uniform 25x"
+        assert record["loss_cut_margin_maintenance_ratio"] == 1.0
+        assert "MetaTrader 5" in record["account_assumption"]["server_platform"]
+
+    def test_required_margin_is_routed_notional_times_pair_rate(self) -> None:
+        rates = leverage.margin_rates(ROOT)["rates"]
+        table = leverage.pair_margin_table(ROOT, 4.0)
+        for row in table:
+            assert row["required_margin_per_equity"] == pytest.approx(
+                row["routed_notional_per_equity"] * rates[row["pair"]], abs=1e-4
+            )
+        total = sum(r["required_margin_per_equity"] for r in table)
+        gross = sum(r["routed_notional_per_equity"] for r in table)
+        assert total != pytest.approx(gross / 25.0, rel=1e-3)
+        assert gross / 25.0 < total < gross / 20.0
+
+    def test_routing_reproduces_track_1_pair_gross(self) -> None:
+        check = leverage.build(ROOT)["routing_check_against_track_1"]
+        assert check["synthetic_mean"] == pytest.approx(
+            check["track_1_pair_gross_per_currency_gross"], rel=0.03
+        )
+
+    def test_the_three_leverages_are_distinct_quantities(self) -> None:
+        row = leverage.scale(ROOT, 4.0, 0.5)
+        assert row["risk_leverage_C"] == 4.0
+        assert row["portfolio_gross_leverage_B_mean"] < row["risk_leverage_C"]
+        assert row["annual_vol"] == pytest.approx(4.0 * capacity.VOL_PER_UNIT_GROSS, abs=1e-4)
+
+    def test_leverage_scales_return_but_never_the_sharpe(self) -> None:
+        for lev in (1.0, 5.0, 10.0):
+            row = leverage.scale(ROOT, lev, 0.5)
+            assert row["annual_net_return"] == pytest.approx(0.5 * row["annual_vol"], abs=1e-4)
+        negative = leverage.scale(ROOT, 10.0, -0.2)
+        assert negative["annual_net_return"] < 0
+
+    def test_no_fixed_cap_decides_feasibility(self) -> None:
+        assert leverage.RISK_BASED_POLICY["fixed_leverage_cap"] is None
+        assert "WITHDRAWN" in leverage.PREVIOUS_FIVE_X["status"]
+        assert "3ed3527" in leverage.PREVIOUS_FIVE_X["introduced_in"]
+        assert not hasattr(capacity, "MAX_LEVERAGE")
+        twelve = leverage.build(ROOT)["vol_target_scenarios"]["0.12"]["0.5"]
+        assert twelve["risk_leverage_C"] > 5.0 and twelve["loss_cut_in_stress"] is False
+
+    def test_loss_cut_flag_follows_stressed_equity_against_margin(self) -> None:
+        for lev in leverage.RISK_LEVERAGE_SCENARIOS:
+            row = leverage.scale(ROOT, lev, 0.5)
+            assert row["loss_cut_in_stress"] == (
+                row["stressed_equity"] <= row["margin_utilisation_p95"]
+            )
+
+    def test_the_document_carries_the_correction(self, document: str) -> None:
+        assert "上限 5 倍を超える" not in document
+        assert "以前の内部 5 倍を超えるが、それだけでは OANDA 上で実行不能ではない" in document
+        assert "`gross ÷ 25` では計算しない" in document
+        assert "**ranking は変わらない**" in document
+        assert "**固定の leverage 上限は適用しない**" in document

@@ -73,8 +73,6 @@ VOL_PER_UNIT_GROSS: Final[float] = round(0.099943 / 4.2917, 6)
 TRANSFER_COEFFICIENT: Final[float] = 0.90
 BAND: Final[float] = 0.10
 WEIGHT_CAP: Final[float] = 0.25
-#: The reused execution layer's leverage ceiling (`construction.BookConfig`).
-MAX_LEVERAGE: Final[float] = construction.BookConfig(name="capacity").max_leverage
 
 #: Assumptions (see module docstring), each with the sensitivity value reported.
 EFFECTIVE_BREADTH_PER_DAY: Final[float] = 4.0
@@ -85,7 +83,7 @@ COST_PER_TURNOVER_UNIT_BP: Final[float] = 2.0 * CHARGED_ONE_WAY_BP
 
 HALF_LIVES_DAYS: Final[tuple[float, ...]] = (1.0, 5.0, 20.0, 60.0, 120.0)
 NET_SHARPE_SCENARIOS: Final[tuple[float, ...]] = (0.3, 0.5, 0.8)
-VOL_TARGETS: Final[tuple[float, ...]] = (0.08, 0.10, 0.12)
+VOL_TARGETS: Final[tuple[float, ...]] = (0.08, 0.10, 0.12, 0.15)
 
 
 @cache
@@ -201,13 +199,16 @@ def probability_negative(net_sharpe: float, years: float) -> float:
 
 
 def return_and_leverage_table() -> dict[str, Any]:
-    """Annual net return, gross leverage and drawdown at each volatility target and net Sharpe."""
+    """Annual net return, risk leverage and drawdown at each volatility target and net Sharpe.
+
+    Risk leverage (concept C in `leverage.py`) is `target vol / unlevered vol`; margin,
+    routed gross and stress live in `leverage.py`. No fixed leverage cap is applied.
+    """
     rows: dict[str, Any] = {}
     for vol in VOL_TARGETS:
         leverage = vol / VOL_PER_UNIT_GROSS
         rows[f"vol_{vol:g}"] = {
-            "gross_leverage": round(leverage, 2),
-            "mean_leverage_within_reused_cap": leverage <= MAX_LEVERAGE,
+            "risk_leverage_C": round(leverage, 2),
             "annual_net_return": {f"{s:g}": round(s * vol, 4) for s in NET_SHARPE_SCENARIOS},
             "median_max_drawdown_10y": {
                 f"{s:g}": round(gaussian_drawdown(s)["median_max_drawdown_in_vol_units"] * vol, 3)
@@ -219,7 +220,6 @@ def return_and_leverage_table() -> dict[str, Any]:
             },
         }
     return {
-        "max_leverage_of_reused_layer": MAX_LEVERAGE,
         "net_sharpe_needed_for_5pct": {f"vol_{v:g}": round(0.05 / v, 3) for v in VOL_TARGETS},
         "net_sharpe_needed_for_10pct": {f"vol_{v:g}": round(0.10 / v, 3) for v in VOL_TARGETS},
         "probability_first_five_years_negative": {
@@ -350,7 +350,6 @@ __all__ = [
     "EFFECTIVE_BREADTH_PER_DAY",
     "EVENT_SCENARIOS",
     "HALF_LIVES_DAYS",
-    "MAX_LEVERAGE",
     "NET_SHARPE_SCENARIOS",
     "TRANSFER_COEFFICIENT",
     "VOL_PER_UNIT_GROSS",

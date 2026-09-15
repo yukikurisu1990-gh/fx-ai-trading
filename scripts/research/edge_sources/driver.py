@@ -13,7 +13,13 @@ from dataclasses import asdict
 from pathlib import Path
 from typing import Any, Final
 
-from scripts.research.edge_sources import TARGET_NET_RETURN, WORKFLOW_STATUS, candidates, capacity
+from scripts.research.edge_sources import (
+    TARGET_NET_RETURN,
+    WORKFLOW_STATUS,
+    candidates,
+    capacity,
+    leverage,
+)
 
 ROOT: Final[Path] = Path(__file__).resolve().parents[3]
 ARTIFACTS: Final[Path] = ROOT / "artifacts/research/edge_sources"
@@ -39,6 +45,7 @@ def build() -> dict[str, Any]:
                 for p in (0.5, 0.8)
             },
         },
+        "leverage_and_margin": leverage.build(ROOT),
         "evidence_map": [asdict(e) for e in candidates.EVIDENCE_MAP],
         "candidates": [{**asdict(c), "score": candidates.score(c)} for c in candidates.CANDIDATES],
         "ranking": candidates.ranking(),

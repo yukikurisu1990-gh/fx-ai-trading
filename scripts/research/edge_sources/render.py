@@ -9,7 +9,11 @@ cannot say something the catalogue, the evidence map or the arithmetic does not.
 
 from __future__ import annotations
 
-from scripts.research.edge_sources import candidates, capacity
+from pathlib import Path
+
+from scripts.research.edge_sources import candidates, capacity, leverage
+
+ROOT = Path(__file__).resolve().parents[3]
 
 ELIGIBILITY_JA = {
     candidates.ACTIVE: "対象",
@@ -132,7 +136,7 @@ def event_capacity() -> list[str]:
 def return_capacity() -> list[str]:
     table = capacity.return_and_leverage_table()
     rows = [
-        "| vol target | 必要 gross leverage（vol target ÷ 単位 gross vol。上限 5 との比較、日々は上限に張り付きうる） | net 0.3 / 0.5 / 0.8 の年率 | 10 年の最大 DD 中央値（net 0.3 / 0.5 / 0.8） | 10 年の最大 DD 95%点（net 0.3 / 0.5 / 0.8） | 年 5% に必要な net Sharpe | 年 10% に必要な net Sharpe |",
+        "| vol target | risk leverage C（vol target ÷ unlevered vol） | net 0.3 / 0.5 / 0.8 の年率 | 10 年の最大 DD 中央値（net 0.3 / 0.5 / 0.8） | 10 年の最大 DD 95%点（net 0.3 / 0.5 / 0.8） | 年 5% に必要な net Sharpe | 年 10% に必要な net Sharpe |",
         "| --- | --- | --- | --- | --- | --- | --- |",
     ]
     for key, row in table["rows"].items():
@@ -140,11 +144,83 @@ def return_capacity() -> list[str]:
         returns = " / ".join(f"{v:.1%}" for v in row["annual_net_return"].values())
         median = " / ".join(f"{v:.0%}" for v in row["median_max_drawdown_10y"].values())
         p95 = " / ".join(f"{v:.0%}" for v in row["p95_max_drawdown_10y"].values())
-        within = "以内" if row["mean_leverage_within_reused_cap"] else "超過"
         rows.append(
-            f"| {float(vol):.0%} | {row['gross_leverage']}（{within}） | {returns} | {median} | {p95} | "
+            f"| {float(vol):.0%} | {row['risk_leverage_C']} | {returns} | {median} | {p95} | "
             f"{table['net_sharpe_needed_for_5pct'][key]} | {table['net_sharpe_needed_for_10pct'][key]} |"
         )
+    return rows
+
+
+def _flag(row: dict[str, object]) -> str:
+    return "**loss-cut**" if row["loss_cut_in_stress"] else "なし"
+
+
+def _stressed(row: dict[str, object]) -> str:
+    value = row["stressed_margin_utilisation"]
+    return "—（stressed equity ≤ 0）" if value is None else f"{float(value):.0%}"
+
+
+def pair_margin() -> list[str]:
+    data = leverage.build(ROOT)["pair_margin_at_10pct_vol"]
+    rows = [
+        "| pair | 証拠金率（TY3 MT5 個人） | broker hard leverage A | routed notional / equity | 必要証拠金 / equity |",
+        "| --- | --- | --- | --- | --- |",
+    ]
+    for row in data["rows"]:
+        rows.append(
+            f"| {row['pair']} | {row['margin_rate']:.0%} | {row['broker_hard_leverage_A']}x | "
+            f"{row['routed_notional_per_equity']} | {row['required_margin_per_equity']:.4f} |"
+        )
+    rows.append(
+        f"| **合計**（equity 1、risk leverage C {data['risk_leverage_C']}） | — | — | "
+        f"**{data['total_routed_notional_B']}**（portfolio gross leverage B） | **{data['total_required_margin']:.1%}**（margin utilisation） |"
+    )
+    return rows
+
+
+def _scenario_row(label: str, row: dict[str, object]) -> str:
+    return (
+        f"| {label} | {row['risk_leverage_C']} | {float(row['annual_vol']):.1%} | "
+        f"{row['portfolio_gross_leverage_B_mean']} | {float(row['annual_net_return']):.1%} | "
+        f"{float(row['margin_utilisation_p95']):.1%} | {row['loss_cut_distance_daily_sigmas']} | "
+        f"{float(row['median_max_drawdown_10y']):.0%} / {float(row['p95_max_drawdown_10y']):.0%} | "
+        f"{float(row['one_day_stress_loss']):.0%} | {float(row['stressed_equity']):.0%} | {_stressed(row)} | {_flag(row)} |"
+    )
+
+
+_SCENARIO_HEADER = [
+    "| scenario | risk leverage C | 年率 vol | portfolio gross B | 年率 net（net 0.5） | margin 利用率 p95 | loss-cut までの距離（日次 σ） | 10 年最大 DD 中央値 / 95%点 | 1 日 stress 損失 | stressed equity | stressed margin 利用率 | stress で loss-cut |",
+    "| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |",
+]
+
+
+def leverage_scenarios() -> list[str]:
+    data = leverage.build(ROOT)["risk_leverage_scenarios"]
+    return _SCENARIO_HEADER + [
+        _scenario_row(f"C = {lev}", rows["0.5"]) for lev, rows in data.items()
+    ]
+
+
+def vol_target_scenarios() -> list[str]:
+    data = leverage.build(ROOT)["vol_target_scenarios"]
+    return _SCENARIO_HEADER + [
+        _scenario_row(f"vol {float(vol):.0%}", rows["0.5"]) for vol, rows in data.items()
+    ]
+
+
+def return_targets() -> list[str]:
+    data = leverage.build(ROOT)["return_targets"]
+    rows = [
+        "| 年率 net 目標 | net Sharpe | 必要 vol | risk leverage C | portfolio gross B | margin 利用率 p95 | 10 年最大 DD 95%点 | stressed equity | stress で loss-cut |",
+        "| --- | --- | --- | --- | --- | --- | --- | --- | --- |",
+    ]
+    for target, by_sharpe in data.items():
+        for sharpe, row in by_sharpe.items():
+            rows.append(
+                f"| {float(target):.0%} | {sharpe} | {float(row['required_vol']):.1%} | {row['risk_leverage_C']} | "
+                f"{row['portfolio_gross_leverage_B_mean']} | {float(row['margin_utilisation_p95']):.1%} | "
+                f"{float(row['p95_max_drawdown_10y']):.0%} | {float(row['stressed_equity']):.0%} | {_flag(row)} |"
+            )
     return rows
 
 
@@ -172,6 +248,10 @@ TABLES = {
     "event_capacity": event_capacity,
     "return_capacity": return_capacity,
     "detection_capacity": detection_capacity,
+    "pair_margin": pair_margin,
+    "leverage_scenarios": leverage_scenarios,
+    "vol_target_scenarios": vol_target_scenarios,
+    "return_targets": return_targets,
 }
 
 
