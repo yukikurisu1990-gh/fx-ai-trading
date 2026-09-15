@@ -301,10 +301,9 @@ class TestTheCatalogue:
         """
         from scripts.research.round_a.ledger import LEDGER
 
-        latest = LEDGER[-1]
-        assert latest["id"] == "H-022"
-        assert "36.7" in latest["result"]
-        assert latest["status"].startswith("CLOSED")
+        entry = next(e for e in LEDGER if e["id"] == "H-022")
+        assert "36.7" in entry["result"]
+        assert entry["status"].startswith("CLOSED")
 
     def test_core_economics_carry_required_ic(self) -> None:
         by_id = {record["candidate_id"]: record for record in candidates.assess_all()}
