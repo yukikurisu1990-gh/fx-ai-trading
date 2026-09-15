@@ -1,0 +1,192 @@
+{
+  "checked_utc": "2026-09-14T23:46:15.569218+00:00",
+  "fred": {
+    "BAMLH0A0HYM2": {
+      "declared_range": null,
+      "frequency_text": null,
+      "http_status": 200,
+      "label": "ICE BofA US high-yield OAS (daily)",
+      "observation_start_field": null
+    },
+    "DCOILBRENTEU": {
+      "declared_range": [
+        "1987-05-20",
+        "2026-09-09"
+      ],
+      "frequency_text": null,
+      "http_status": 200,
+      "label": "Brent crude oil spot (daily)",
+      "observation_start_field": null
+    },
+    "DCOILWTICO": {
+      "declared_range": null,
+      "frequency_text": null,
+      "http_status": 200,
+      "label": "WTI crude oil spot (daily)",
+      "observation_start_field": null
+    },
+    "DGS10": {
+      "declared_range": null,
+      "frequency_text": null,
+      "http_status": 200,
+      "label": "US Treasury 10y constant maturity (daily)",
+      "observation_start_field": null
+    },
+    "DGS2": {
+      "declared_range": [
+        "1976-06-01",
+        "2026-09-11"
+      ],
+      "frequency_text": null,
+      "http_status": 200,
+      "label": "US Treasury 2y constant maturity (daily)",
+      "observation_start_field": null
+    },
+    "IRLTLT01AUM156N": {
+      "declared_range": null,
+      "frequency_text": null,
+      "http_status": 200,
+      "label": "Australia 10y long-term rate (OECD, monthly)",
+      "observation_start_field": null
+    },
+    "IRLTLT01CAM156N": {
+      "declared_range": null,
+      "frequency_text": null,
+      "http_status": 200,
+      "label": "Canada 10y long-term rate (OECD, monthly)",
+      "observation_start_field": null
+    },
+    "IRLTLT01CHM156N": {
+      "declared_range": null,
+      "frequency_text": null,
+      "http_status": 200,
+      "label": "Switzerland 10y long-term rate (OECD, monthly)",
+      "observation_start_field": null
+    },
+    "IRLTLT01DEM156N": {
+      "declared_range": null,
+      "frequency_text": null,
+      "http_status": 200,
+      "label": "Germany 10y long-term rate (OECD, monthly)",
+      "observation_start_field": null
+    },
+    "IRLTLT01GBM156N": {
+      "declared_range": null,
+      "frequency_text": null,
+      "http_status": 200,
+      "label": "UK 10y long-term rate (OECD, monthly)",
+      "observation_start_field": null
+    },
+    "IRLTLT01JPM156N": {
+      "declared_range": null,
+      "frequency_text": null,
+      "http_status": 200,
+      "label": "Japan 10y long-term rate (OECD, monthly)",
+      "observation_start_field": null
+    },
+    "IRLTLT01NZM156N": {
+      "declared_range": null,
+      "frequency_text": null,
+      "http_status": 200,
+      "label": "New Zealand 10y long-term rate (OECD, monthly)",
+      "observation_start_field": null
+    },
+    "NIKKEI225": {
+      "declared_range": [
+        "1949-05-16",
+        "2026-09-14"
+      ],
+      "frequency_text": null,
+      "http_status": 200,
+      "label": "Nikkei 225 (daily)",
+      "observation_start_field": null
+    },
+    "SOFR": {
+      "declared_range": [
+        "2018-04-03",
+        "2026-09-11"
+      ],
+      "frequency_text": null,
+      "http_status": 200,
+      "label": "SOFR (daily)",
+      "observation_start_field": null
+    },
+    "SP500": {
+      "declared_range": null,
+      "frequency_text": null,
+      "http_status": 200,
+      "label": "S&P 500 index (daily)",
+      "observation_start_field": null
+    },
+    "T10Y2Y": {
+      "declared_range": null,
+      "frequency_text": null,
+      "http_status": 200,
+      "label": "US 10y-2y spread (daily)",
+      "observation_start_field": null
+    },
+    "VIXCLS": {
+      "declared_range": [
+        "1990-01-02",
+        "2026-09-11"
+      ],
+      "frequency_text": null,
+      "http_status": 200,
+      "label": "CBOE VIX (daily)",
+      "observation_start_field": null
+    }
+  },
+  "note": "metadata-only reachability/coverage check of public NON-FX sources; no FX series requested, no observation analysed. SSL/403 failures are unverified-from-this-environment, not unavailable.",
+  "other": {
+    "boc_valet_series_metadata_2y": {
+      "error": null,
+      "http_status": 200,
+      "url": "https://www.bankofcanada.ca/valet/series/BD.CDN.2YR.DQ.YLD/json"
+    },
+    "boe_database": {
+      "error": null,
+      "http_status": 200,
+      "url": "https://www.bankofengland.co.uk/boeapps/database/"
+    },
+    "bundesbank_statistics_api": {
+      "error": "URLError: <urlopen error [SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1010)>",
+      "http_status": null,
+      "url": "https://api.statistiken.bundesbank.de/rest/"
+    },
+    "cftc_cot_historical": {
+      "error": null,
+      "http_status": 200,
+      "url": "https://www.cftc.gov/MarketReports/CommitmentsofTraders/HistoricalCompressed/index.htm"
+    },
+    "ecb_data_portal_yield_curve": {
+      "error": "URLError: <urlopen error [SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1010)>",
+      "http_status": null,
+      "url": "https://data.ecb.europa.eu/data/datasets/YC"
+    },
+    "japan_mof_jgb_interest_rate": {
+      "error": null,
+      "http_status": 200,
+      "url": "https://www.mof.go.jp/english/policy/jgbs/reference/interest_rate/index.htm"
+    },
+    "rba_statistical_tables_f2": {
+      "error": "HTTPError: HTTP Error 403: Forbidden",
+      "http_status": null,
+      "url": "https://www.rba.gov.au/statistics/tables/"
+    },
+    "rbnz_statistics": {
+      "error": "HTTPError: HTTP Error 403: Forbidden",
+      "http_status": null,
+      "url": "https://www.rbnz.govt.nz/statistics"
+    },
+    "snb_data_portal": {
+      "error": "URLError: <urlopen error [SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1010)>",
+      "http_status": null,
+      "url": "https://data.snb.ch/en"
+    },
+    "us_treasury_par_yield": {
+      "error": "HTTPError: HTTP Error 404: Not Found",
+      "http_status": null,
+      "url": "https://home.treasury.gov/resource-center/data-chart-center/interest-rates"
+    }
+  }
+}
