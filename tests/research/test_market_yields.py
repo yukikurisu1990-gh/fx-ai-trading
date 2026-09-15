@@ -12,10 +12,18 @@ import json
 from pathlib import Path
 from typing import Any
 
+import numpy as np
 import pandas as pd
 import pytest
 
-from scripts.research.market_yields import CURRENCIES, OUTCOMES, integrity, prereg, sources
+from scripts.research.market_yields import (
+    CURRENCIES,
+    OUTCOMES,
+    development,
+    integrity,
+    prereg,
+    sources,
+)
 
 ROOT = Path(__file__).resolve().parents[2]
 PACKAGE = ROOT / "scripts/research/market_yields"
@@ -284,7 +292,7 @@ DOC = ROOT / "docs/research/m15_track_r_market_yield_repricing.md"
 
 
 @pytest.fixture(scope="module")
-def development() -> dict[str, Any]:
+def development_record() -> dict[str, Any]:
     return json.loads((RECORDS / "development.json").read_text(encoding="utf-8"))
 
 
@@ -294,16 +302,22 @@ def document() -> str:
 
 
 class TestTheDevelopmentRun:
-    def test_it_ran_what_the_prereg_froze(self, development: dict[str, Any]) -> None:
-        assert development["universe"] == list(prereg.UNIVERSE)
-        assert development["prereg"]["signal"]["lookback_days"] == 5
-        assert set(development["books"]) == {"A_yield_repricing", "B_fx_momentum", "C_residualised"}
-        assert development["span"]["first"] == prereg.DECISION_SPAN["first"]
-        assert development["protected_spans_read"] is False
+    def test_it_ran_what_the_prereg_froze(self, development_record: dict[str, Any]) -> None:
+        assert development_record["universe"] == list(prereg.UNIVERSE)
+        assert development_record["prereg"]["signal"]["lookback_days"] == 5
+        assert set(development_record["books"]) == {
+            "A_yield_repricing",
+            "B_fx_momentum",
+            "C_residualised",
+        }
+        assert development_record["span"]["first"] == prereg.DECISION_SPAN["first"]
+        assert development_record["protected_spans_read"] is False
 
-    def test_the_screen_is_applied_exactly_and_stops(self, development: dict[str, Any]) -> None:
-        screen = development["screen"]
-        books = development["books"]
+    def test_the_screen_is_applied_exactly_and_stops(
+        self, development_record: dict[str, Any]
+    ) -> None:
+        screen = development_record["screen"]
+        books = development_record["books"]
         a = books["A_yield_repricing"]["summary"]
         assert screen["conditions"]["A gross Sharpe > 0"] is (a["gross_sharpe"] > 0)
         assert screen["conditions"]["A net Sharpe >= 0.3"] is (a["net_sharpe"] >= 0.3)
@@ -312,8 +326,10 @@ class TestTheDevelopmentRun:
         assert screen["verdict"] == "MARKET_YIELD_REPRICING_NOT_SUPPORTED_IN_SEEN_DEVELOPMENT"
         assert screen["decision_grade"] is False
 
-    def test_cost_is_what_separates_gross_from_net(self, development: dict[str, Any]) -> None:
-        for name, book in development["books"].items():
+    def test_cost_is_what_separates_gross_from_net(
+        self, development_record: dict[str, Any]
+    ) -> None:
+        for name, book in development_record["books"].items():
             summary = book["summary"]
             drag = summary["gross_sharpe"] - summary["net_sharpe"]
             assert drag > 0.9, name
@@ -321,31 +337,35 @@ class TestTheDevelopmentRun:
             assert summary["annual_cost"] > 0.09, name
 
     def test_the_observed_ic_is_below_what_the_design_needed(
-        self, development: dict[str, Any]
+        self, development_record: dict[str, Any]
     ) -> None:
-        needed = development["feasibility_before_the_run"]["rows"]["half_life_5d"][
+        needed = development_record["feasibility_before_the_run"]["rows"]["half_life_5d"][
             "required_daily_ic_for_net_0_3"
         ]
         for name in ("A_yield_repricing", "C_residualised"):
-            assert development["books"][name]["ic"]["5d"] < needed, name
+            assert development_record["books"][name]["ic"]["5d"] < needed, name
 
     def test_the_outside_universe_exposure_is_measured_not_hidden(
-        self, development: dict[str, Any]
+        self, development_record: dict[str, Any]
     ) -> None:
-        outside = development["books"]["A_yield_repricing"]["outside_universe_exposure"]
+        outside = development_record["books"]["A_yield_repricing"]["outside_universe_exposure"]
         assert set(outside["currencies"]) == set(prereg.EXCLUDED)
         assert outside["share_of_days_with_any_exposure"] > 0
         assert abs(outside["cumulative_pnl_total"]) < 0.05
 
-    def test_leverage_cannot_rescue_a_negative_net(self, development: dict[str, Any]) -> None:
-        assert development["leverage_and_margin_at_10pct_vol"]["annual_net_return"] < 0
+    def test_leverage_cannot_rescue_a_negative_net(
+        self, development_record: dict[str, Any]
+    ) -> None:
+        assert development_record["leverage_and_margin_at_10pct_vol"]["annual_net_return"] < 0
 
     def test_every_book_is_underpowered_by_the_prereg_s_own_number(
-        self, development: dict[str, Any]
+        self, development_record: dict[str, Any]
     ) -> None:
-        power = development["feasibility_before_the_run"]["detectable_net_sharpe_at_80pct_power"]
+        power = development_record["feasibility_before_the_run"][
+            "detectable_net_sharpe_at_80pct_power"
+        ]
         assert power > 1.0
-        for book in development["books"].values():
+        for book in development_record["books"].values():
             assert abs(book["summary"]["gross_sharpe"]) < power
 
 
@@ -360,9 +380,9 @@ class TestTheResultsDocument:
 
     @pytest.mark.parametrize(("book", "field", "text"), NUMBERS)
     def test_each_headline_number_is_in_the_record(
-        self, development: dict[str, Any], document: str, book: str, field: str, text: str
+        self, development_record: dict[str, Any], document: str, book: str, field: str, text: str
     ) -> None:
-        value = development["books"][book]["summary"][field]
+        value = development_record["books"][book]["summary"][field]
         assert f"{value:+.3f}".replace("-", "−") == text
         assert text in document
 
@@ -376,7 +396,7 @@ class TestTheResultsDocument:
         for phrase in ("符号反転", "lookback の変更", "horizon の追加", "vol target の変更"):
             assert phrase in document
 
-    def test_the_ledger_entry_matches_the_record(self, development: dict[str, Any]) -> None:
+    def test_the_ledger_entry_matches_the_record(self, development_record: dict[str, Any]) -> None:
         from scripts.research.round_a.ledger import LEDGER
 
         entry = next(e for e in LEDGER if e["id"] == "H-025")
@@ -389,5 +409,163 @@ class TestTheResultsDocument:
             ("A_yield_repricing", "net_sharpe"),
             ("C_residualised", "gross_sharpe"),
         ):
-            value = development["books"][book]["summary"][field]
+            value = development_record["books"][book]["summary"][field]
             assert f"{value:+.3f}" in entry["result"] or f"{value:.3f}" in entry["result"]
+
+
+class TestTheRunPipeline:
+    """The run module's own functions, on synthetic panels. No market data needed."""
+
+    def _panels(self, days: int = 80) -> tuple[pd.DataFrame, pd.DataFrame, dict[str, pd.DataFrame]]:
+        index = pd.bdate_range("2021-01-04", periods=days)
+        rng = np.random.default_rng(11)
+        columns = list(prereg.UNIVERSE)
+        excess = pd.DataFrame(
+            rng.standard_normal((days, len(columns))) / 100.0, index=index, columns=columns
+        )
+        frames = {
+            c: pd.DataFrame(
+                {"date": index, "yield_percent": np.cumsum(rng.standard_normal(days)) / 10.0 + 2.0}
+            )
+            for c in columns
+        }
+        panel = development.lagged_yield_panel(frames, index)
+        return excess, panel, frames
+
+    def test_a_same_day_yield_cannot_reach_its_own_score(self) -> None:
+        excess, panel, frames = self._panels()
+        scores = development.build_scores(panel, excess)
+        day = panel.index[60]
+        moved = {c: f.copy() for c, f in frames.items()}
+        target = moved["USD"]
+        target.loc[target["date"] == day, "yield_percent"] += 5.0
+        after = development.build_scores(development.lagged_yield_panel(moved, panel.index), excess)
+        for name in scores:
+            pd.testing.assert_series_equal(
+                scores[name].loc[day], after[name].loc[day], check_names=False
+            )
+        #: it must reach the next decision day, or the lag would be hiding the signal
+        assert not np.allclose(
+            scores["A_yield_repricing"].loc[panel.index[61]].to_numpy(dtype=float),
+            after["A_yield_repricing"].loc[panel.index[61]].to_numpy(dtype=float),
+        )
+
+    def test_the_lagged_panel_is_the_availability_rule(self) -> None:
+        excess, panel, frames = self._panels()
+        for currency, frame in frames.items():
+            pd.testing.assert_series_equal(
+                panel[currency].astype(float),
+                integrity.available_from(frame, panel.index).astype(float),
+                check_names=False,
+            )
+
+    def test_the_lookback_and_horizons_come_from_the_prereg(self) -> None:
+        import inspect
+
+        assert prereg.PREREG["signal"]["lookback_days"] == development.LOOKBACK
+        #: the default is the constant itself, not a number that could drift from the prereg
+        assert (
+            inspect.signature(development.build_scores).parameters["lookback"].default
+            == development.LOOKBACK
+        )
+        assert "lookback: int = LOOKBACK" in (PACKAGE / "development.py").read_text(
+            encoding="utf-8"
+        )
+        assert list(development.HORIZONS) == prereg.PREREG["targets"]["horizons_days"]
+        excess, panel, _ = self._panels()
+        wide = development.build_scores(panel, excess, lookback=20)
+        narrow = development.build_scores(panel, excess, lookback=5)
+        assert not wide["A_yield_repricing"].equals(narrow["A_yield_repricing"])
+
+    def test_the_ic_looks_forward_by_exactly_the_horizon(self) -> None:
+        excess, panel, _ = self._panels()
+        forward = excess.rolling(5).sum().shift(-5)
+        assert development._ic(forward.dropna(), excess, 5) == pytest.approx(1.0, abs=1e-9)
+        assert abs(development._ic(excess, excess, 5)) < 0.2
+
+    def test_expand_puts_exactly_zero_outside_the_universe(self) -> None:
+        excess, panel, _ = self._panels()
+        score = development.build_scores(panel, excess)["A_yield_repricing"].dropna()
+        expanded = development._expand(score)
+        outside = [c for c in expanded.columns if c not in prereg.UNIVERSE]
+        assert outside
+        assert float(expanded[outside].abs().to_numpy().max()) == 0.0
+
+    def test_neutralisation_happens_inside_the_universe(self) -> None:
+        excess, panel, _ = self._panels()
+        score = development.build_scores(panel, excess)["A_yield_repricing"]
+        out = development._neutralise_within_universe(score, excess).dropna(how="any")
+        assert list(out.columns) == list(prereg.UNIVERSE)
+        assert float(out.sum(axis=1).abs().max()) < 1e-9
+        assert development.BOOK.neutralize_leading_factor is False
+
+    def test_the_residual_is_orthogonal_to_the_control(self) -> None:
+        excess, panel, _ = self._panels()
+        scores = development.build_scores(panel, excess)
+        day = panel.index[70]
+        residual = scores["C_residualised"].loc[day].to_numpy(dtype=float)
+        control = scores["B_fx_momentum"].loc[day].to_numpy(dtype=float)
+        assert abs(float(residual @ control)) < 1e-9
+
+    def test_the_screen_condition_on_the_gap_stress_is_computed(self) -> None:
+        books = {
+            "A_yield_repricing": {
+                "summary": {"gross_sharpe": 1.0, "net_sharpe": 1.0},
+                "blocks": [],
+            },
+            "B_fx_momentum": {"summary": {"net_sharpe": 0.0}},
+            "C_residualised": {"summary": {"net_sharpe": 0.5}},
+        }
+        passing = development._screen(books, {"x": 1.0}, {"loss_cut_on_gap": False})
+        failing = development._screen(books, {"x": 1.0}, {"loss_cut_on_gap": True})
+        key = "10% vol is reachable inside the gap stress"
+        assert passing["conditions"][key] is True
+        assert failing["conditions"][key] is False
+
+    def test_the_screen_condition_on_c_is_the_frozen_text(self) -> None:
+        books = {
+            "A_yield_repricing": {
+                "summary": {"gross_sharpe": 1.0, "net_sharpe": 1.0},
+                "blocks": [],
+            },
+            "B_fx_momentum": {"summary": {"net_sharpe": -0.9}},
+            "C_residualised": {"summary": {"net_sharpe": -0.5}},
+        }
+        screen = development._screen(books, {"x": 1.0}, {"loss_cut_on_gap": False})
+        #: the frozen text asks for an increment over B, not for C to be positive
+        assert screen["conditions"]["C keeps a positive net increment over B"] is True
+        assert screen["c_net_sharpe_still_negative"] is True
+
+    def test_the_executed_configuration_is_recorded(
+        self, development_record: dict[str, Any]
+    ) -> None:
+        config = development_record["executed_book_config"]
+        assert config["neutralize_leading_factor"] is False
+        assert config["mapping"] == "linear"
+        assert config["vol_target"] == prereg.PREREG["book_configuration"]["vol_target"]
+        assert config["weight_cap"] == 0.25 and config["band"] == 0.10
+        assert config["max_leverage"] >= 1_000_000.0
+        assert (
+            "factor_neutralisation_moved_into_the_universe"
+            in development_record["deviations_from_the_frozen_text"]
+        )
+
+    def test_run_takes_its_horizon_numbers_from_the_constants(self) -> None:
+        """A literal in `run` would be a design number that the prereg no longer governs."""
+        tree = ast.parse((PACKAGE / "development.py").read_text(encoding="utf-8"))
+        run = next(
+            node for node in tree.body if isinstance(node, ast.FunctionDef) and node.name == "run"
+        )
+        names = {node.id for node in ast.walk(run) if isinstance(node, ast.Name)}
+        assert {"LOOKBACK", "HORIZONS"} <= names
+        numbers = {
+            node.value
+            for node in ast.walk(run)
+            if isinstance(node, ast.Constant) and isinstance(node.value, int | float)
+        }
+        assert not ({5, 20} & numbers), numbers
+
+    def test_the_frozen_sign_is_pinned(self) -> None:
+        assert prereg.PREREG["signal"]["sign"].startswith("+1")
+        assert prereg.PREREG["signal"]["sign_frozen"] is True
+        assert prereg.PREREG["signal"]["inversion_after_the_result_prohibited"] is True

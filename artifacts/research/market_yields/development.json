@@ -338,6 +338,24 @@
   },
   "classification": "NON_DECISION_BEARING_EXPLORATORY_ONLY",
   "decision_days": 1213,
+  "deviations_from_the_frozen_text": {
+    "factor_neutralisation_moved_into_the_universe": "the frozen text reuses the layer unchanged with factor neutralisation on. The layer neutralises against the eight-currency factor, which would place deliberate weight on the three currencies this track cannot observe, so neutralisation is applied inside the five-currency universe and the layer's own flag is off. A post-freeze implementation decision that changes the result",
+    "lookback_and_horizons_read_from_the_prereg": true
+  },
+  "executed_book_config": {
+    "band": 0.1,
+    "cost_multiple": 1.0,
+    "factor_window": 120,
+    "leverage_hysteresis": 0.1,
+    "mapping": "linear",
+    "max_leverage": 1000000.0,
+    "name": "t_r",
+    "neutralize_leading_factor": false,
+    "sigma_window": 60,
+    "vol_target": 0.1,
+    "vol_window": 60,
+    "weight_cap": 0.25
+  },
   "feasibility_before_the_run": {
     "decision_days": 1213,
     "decision_years": 4.813,

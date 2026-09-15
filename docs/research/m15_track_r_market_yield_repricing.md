@@ -104,12 +104,26 @@ G10 の断面を無理に作らず、reduced universe として実行した（�
   実測 0.661（1.68 日）はそれより速い。EUR 2 出所の 1 日変化の相関 0.65 と整合し、**signal の一部は短命な測定差**で、
   その分の turnover を払って IC を下げている。
 
-### 執行層の副作用（実測して開示）
+### 凍結した文言からの逸脱（1 件、開示）
 
-再利用した `band_rebalance` は「breach した gap の符号が全部同じとき、反対向きの gap が最大の通貨を counter-leg にする」。
-universe が層の断面（8 通貨）より小さいと、**universe 外の通貨（gap 0）がその比較に勝つことがある**。実測: 日数の **70.2%** で
-universe 外に建玉があり、通貨 gross の **1.67%**、累積 P&L は **−0.89%**（AUD −0.45%、CHF −0.58%、NZD +0.15%）。
-signal の性質ではなく層の性質で、判定（net −0.92 対 閾値 +0.3）を動かす大きさではない。
+事前登録は「執行層をそのまま再利用、factor 中立化あり」と書いた。しかし層の中立化は **8 通貨の factor** に対して行うため、
+観測できない 3 通貨に意図的な weight を置いてしまう。そこで **中立化は 5 通貨 universe の中で行い、層側の flag は off** にした。
+凍結後の実装判断であり、結果を変えうる。実行した `BookConfig` は `artifacts/research/market_yields/development.json` の
+`executed_book_config` に記録し、`deviations_from_the_frozen_text` に理由を残した。
+
+### 執行層の副作用（実測して開示、原因は 2 つ）
+
+実測: 日数の **70.2%** で universe 外に建玉があり、通貨 gross の **1.67%**、累積 P&L は **−0.89%**
+（AUD −0.45%、CHF −0.58%、NZD +0.15%）。原因は 2 つある。
+
+1. `band_rebalance` は「breach した gap の符号が全部同じとき、反対向きの gap が最大の通貨を counter-leg にする」。
+   universe 外の通貨は gap 0 なので、その比較に勝つことがある。
+2. `capped_weights` は **8 通貨で demean** する。universe 側の long / short のどちらかが 1 通貨だけになり cap が binding する日には、
+   埋められなかった分が **signal を持たない通貨に丸ごと流れる**（レビューの実測で全日数の 2.75%、1 通貨あたり最大 0.0833）。
+   向きは中立化が残す 1e-17 級の丸め誤差で決まる。
+
+どちらも signal ではなく層の性質。判定（net −0.92 対 閾値 +0.3）を動かす大きさではないが、**将来 universe を絞って走らせるなら、
+0 和に頼らず明示的に除外する形に変える**のが正しい。
 
 ### leverage と margin（#484 の枠組み）
 

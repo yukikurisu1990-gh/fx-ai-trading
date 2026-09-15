@@ -607,7 +607,10 @@ LEDGER: Final[list[dict[str, Any]]] = [
             "yield repricing leads G10 FX: an underpowered span cannot settle that, and the "
             "three excluded currencies were never observed. Changing the lookback, sign, "
             "horizon or universe after this result is prohibited; a slower measure is a new "
-            "pre-registration and a Human + ChatGPT decision"
+            "pre-registration and a Human + ChatGPT decision. One disclosed deviation from "
+            "the frozen text: factor neutralisation was applied inside the five-currency "
+            "universe with the layer's own flag off, because the layer's eight-currency factor "
+            "would place deliberate weight on unobserved currencies"
         ),
     },
 ]

@@ -28,6 +28,25 @@ from scripts.research.model_learning import assert_not_protected
 
 ROOT: Final[Path] = Path(__file__).resolve().parents[3]
 BLOCKS: Final[int] = 6
+#: Read from the frozen pre-registration, never written as a literal here.
+LOOKBACK: Final[int] = int(prereg.PREREG["signal"]["lookback_days"])
+HORIZONS: Final[tuple[int, ...]] = tuple(prereg.PREREG["targets"]["horizons_days"])
+
+#: The book actually run, recorded in the artefact so the executed configuration can be
+#: compared with the frozen one rather than taken on trust.
+BOOK: Final[construction.BookConfig] = construction.BookConfig(
+    name="t_r",
+    mapping="linear",
+    #: Neutralisation happens inside the five-currency universe (`_neutralise_within_universe`),
+    #: so the layer must not neutralise again over all eight: its factor would place deliberate
+    #: weight on currencies this track cannot observe. This is a deviation from "the layer,
+    #: reused unchanged", and it is disclosed in the results document and in ledger H-025.
+    neutralize_leading_factor=False,
+    weight_cap=0.25,
+    band=0.10,
+    vol_target=0.10,
+    max_leverage=1_000_000.0,
+)
 
 
 def _z(frame: pd.DataFrame) -> pd.DataFrame:
@@ -226,7 +245,9 @@ def _ic_comparison(book: dict[str, Any], lookback: int) -> dict[str, Any]:
     }
 
 
-def _screen(books: dict[str, Any], drops: dict[str, float]) -> dict[str, Any]:
+def _screen(
+    books: dict[str, Any], drops: dict[str, float], gap_stress: dict[str, Any]
+) -> dict[str, Any]:
     """The frozen screen, applied exactly: anything not advance is stop."""
     a = books["A_yield_repricing"]["summary"]
     b = books["B_fx_momentum"]["summary"]
@@ -241,7 +262,8 @@ def _screen(books: dict[str, Any], drops: dict[str, float]) -> dict[str, Any]:
         "C keeps a positive net increment over B": c["net_sharpe"] - b["net_sharpe"] > 0,
         "the sign survives dropping any single currency": all(v > 0 for v in drops.values()),
         "a majority of the six blocks are positive": positive_blocks > len(blocks) / 2,
-        "10% vol is reachable inside the gap stress": True,
+        #: computed from the same gap stress the record carries, never asserted
+        "10% vol is reachable inside the gap stress": not gap_stress["loss_cut_on_gap"],
     }
     advance = all(conditions.values())
     return {
@@ -264,6 +286,31 @@ def _screen(books: dict[str, Any], drops: dict[str, float]) -> dict[str, Any]:
     }
 
 
+def lagged_yield_panel(frames: dict[str, pd.DataFrame], days: pd.DatetimeIndex) -> pd.DataFrame:
+    """Each currency's yield as it could be used, under the frozen availability rule."""
+    return pd.DataFrame(
+        {currency: integrity.available_from(frame, days) for currency, frame in frames.items()},
+        index=days,
+    )
+
+
+def build_scores(
+    yield_panel: pd.DataFrame, excess: pd.DataFrame, lookback: int = LOOKBACK
+) -> dict[str, pd.DataFrame]:
+    """The three pre-registered scores, from an already-lagged yield panel.
+
+    `yield_panel` must come from `lagged_yield_panel`: a yield dated on the decision
+    day cannot be in it, and nothing here reaches forward.
+    """
+    repricing = _z(yield_panel.diff(lookback))
+    momentum = _z(excess.rolling(lookback).sum())
+    return {
+        "A_yield_repricing": repricing,
+        "B_fx_momentum": momentum,
+        "C_residualised": _residualise(repricing, momentum),
+    }
+
+
 def run() -> dict[str, Any]:
     from scripts.research.model_learning import corpus as corpus_module
 
@@ -273,30 +320,15 @@ def run() -> dict[str, Any]:
     days = pd.DatetimeIndex(excess_all.index)
     assert_not_protected(str(days[0].date()), str(days[-1].date()))
 
-    yields = {}
-    for currency in universe:
-        frame = pd.read_parquet(ROOT / DATA_DIR / f"{currency.lower()}_2y.parquet")
-        yields[currency] = integrity.available_from(frame, days)
-    yield_panel = pd.DataFrame(yields, index=days)
+    frames = {
+        currency: pd.read_parquet(ROOT / DATA_DIR / f"{currency.lower()}_2y.parquet")
+        for currency in universe
+    }
+    yield_panel = lagged_yield_panel(frames, days)
 
-    lookback = int(prereg.PREREG["signal"]["lookback_days"])
     excess = excess_all[universe]
-    repricing = _z(yield_panel.diff(lookback))
-    momentum = _z(excess.rolling(lookback).sum())
-    residual = _residualise(repricing, momentum)
-
-    scores = {"A_yield_repricing": repricing, "B_fx_momentum": momentum, "C_residualised": residual}
-    #: neutralisation happens inside the universe (see `_neutralise_within_universe`),
-    #: so the layer must not neutralise again over all eight currencies
-    config = construction.BookConfig(
-        name="t_r",
-        mapping="linear",
-        neutralize_leading_factor=False,
-        weight_cap=0.25,
-        band=0.10,
-        vol_target=0.10,
-        max_leverage=1_000_000.0,
-    )
+    scores = build_scores(yield_panel, excess, LOOKBACK)
+    config = BOOK
     books: dict[str, Any] = {}
     for name, score in scores.items():
         usable = _neutralise_within_universe(score, excess).dropna(how="any")
@@ -306,9 +338,7 @@ def run() -> dict[str, Any]:
             "outside_universe_exposure": _outside_universe(result, universe),
             "blocks": _blocks(result),
             "per_currency_gross_pnl": _per_currency(result),
-            "ic": {
-                f"{h}d": _ic(usable, excess, h) for h in prereg.PREREG["targets"]["horizons_days"]
-            },
+            "ic": {f"{h}d": _ic(usable, excess, h) for h in HORIZONS},
             "signal_autocorrelation_1d": round(
                 float(np.nanmean([usable[c].autocorr(1) for c in universe])), 4
             ),
@@ -318,22 +348,49 @@ def run() -> dict[str, Any]:
     for dropped in universe:
         kept = [c for c in universe if c != dropped]
         score = _neutralise_within_universe(
-            _z(yield_panel[kept].diff(lookback)), excess_all[kept]
+            _z(yield_panel[kept].diff(LOOKBACK)), excess_all[kept]
         ).dropna(how="any")
         result = construction.run_book(config, _expand(score), excess_all, days_per_year=252.0)
         drops[f"without_{dropped}"] = _summary(result)["net_sharpe"]
 
     for name, book in books.items():
-        books[name]["ic_comparison"] = _ic_comparison(book, lookback)
-    screen = _screen(books, drops)
+        books[name]["ic_comparison"] = _ic_comparison(book, LOOKBACK)
     scale = leverage.scale(
         ROOT,
         0.10 / capacity.VOL_PER_UNIT_GROSS,
         books["A_yield_repricing"]["summary"]["net_sharpe"],
     )
+    screen = _screen(books, drops, scale)
     return {
         "classification": "NON_DECISION_BEARING_EXPLORATORY_ONLY",
         "workflow_status": WORKFLOW_STATUS,
+        "executed_book_config": {
+            field: getattr(BOOK, field)
+            for field in (
+                "name",
+                "mapping",
+                "neutralize_leading_factor",
+                "weight_cap",
+                "band",
+                "vol_target",
+                "max_leverage",
+                "leverage_hysteresis",
+                "cost_multiple",
+                "sigma_window",
+                "factor_window",
+                "vol_window",
+            )
+        },
+        "deviations_from_the_frozen_text": {
+            "factor_neutralisation_moved_into_the_universe": (
+                "the frozen text reuses the layer unchanged with factor neutralisation on. The "
+                "layer neutralises against the eight-currency factor, which would place "
+                "deliberate weight on the three currencies this track cannot observe, so "
+                "neutralisation is applied inside the five-currency universe and the layer's own "
+                "flag is off. A post-freeze implementation decision that changes the result"
+            ),
+            "lookback_and_horizons_read_from_the_prereg": True,
+        },
         "prereg": prereg.PREREG,
         "feasibility_before_the_run": prereg.feasibility(),
         "universe": universe,
