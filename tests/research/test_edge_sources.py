@@ -76,8 +76,8 @@ class TestTheCapacityArithmetic:
     def test_the_leverage_cap_is_the_reused_layers(self) -> None:
         assert capacity.MAX_LEVERAGE == 5.0
         rows = capacity.return_and_leverage_table()["rows"]
-        assert rows["vol_0.1"]["within_reused_leverage_cap"] is True
-        assert rows["vol_0.12"]["within_reused_leverage_cap"] is False
+        assert rows["vol_0.1"]["mean_leverage_within_reused_cap"] is True
+        assert rows["vol_0.12"]["mean_leverage_within_reused_cap"] is False
 
     @pytest.mark.parametrize("breadth", [4.0, 2.0])
     @pytest.mark.parametrize("half_life", capacity.HALF_LIVES_DAYS)
@@ -121,8 +121,8 @@ class TestTheCapacityArithmetic:
         low, high = capacity.gaussian_drawdown(0.3), capacity.gaussian_drawdown(0.8)
         assert high["median_max_drawdown_in_vol_units"] < low["median_max_drawdown_in_vol_units"]
         assert (
-            high["probability_first_five_years_negative"]
-            < low["probability_first_five_years_negative"]
+            high["simulated_probability_first_five_years_negative"]
+            < low["simulated_probability_first_five_years_negative"]
         )
         rows = capacity.return_and_leverage_table()["rows"]
         assert (
@@ -141,6 +141,12 @@ class TestTheCapacityArithmetic:
         )
         assert row["gross_leverage_at_10pct_vol_concentrated"] < row["gross_leverage_at_10pct_vol"]
 
+    def test_the_event_sd_uses_the_declared_event_day_multiple(self) -> None:
+        assert capacity.EVENT_DAY_VOL_MULTIPLE == 1.5
+        row = capacity.event_book(150.0, 3.0, 0.5)
+        expected = capacity.DAILY_SD_ONE_SIDE_UNIT_BP * math.sqrt(1.5**2 + 2.0)
+        assert row["sd_per_event_bp"] == pytest.approx(expected, abs=0.01)
+
     def test_share_of_days_is_poisson_not_currency_slots(self) -> None:
         row = capacity.event_book(34.4, 3.0, 0.5)
         concurrent = 34.4 * 3.0 / capacity.TRADING_DAYS
@@ -153,6 +159,13 @@ class TestTheCapacityArithmetic:
         c01 = next(p for p in catalogue() if p.candidate_id.startswith("C01_"))
         assert (c01.events_per_year, 3.0) in capacity.EVENT_SCENARIOS
         assert c01.available_breadth == 4
+
+    def test_the_probability_of_a_losing_window_is_the_closed_form(self) -> None:
+        assert capacity.probability_negative(0.5, 5.0) == pytest.approx(0.132, abs=1e-3)
+        simulated = capacity.gaussian_drawdown(0.5)[
+            "simulated_probability_first_five_years_negative"
+        ]
+        assert simulated == pytest.approx(capacity.probability_negative(0.5, 5.0), abs=0.03)
 
     def test_the_sample_years_follow_t_equals_sharpe_root_years(self) -> None:
         assert capacity.sample_years_needed(0.5) == pytest.approx((1.645 / 0.5) ** 2, abs=0.01)
@@ -229,6 +242,26 @@ class TestTheEvidenceMap:
             if record["conditions"]["economic_net_under_stress"] is False:
                 assert "economic_net_under_stress" in by_ref[ref].what, ref
 
+    #: Merged-PR references carry no machine-readable class, so each is pinned.
+    PR_CLASSES: dict[tuple[str, str], str] = {
+        ("#471", "EVENT_DAY_COST_ADVANTAGE_NOT_ESTABLISHED"): "NOT_SUPPORTED",
+        (
+            "#475",
+            "passive 執行は、この 2 パネルで意味のあるコスト削減を与えられない。",
+        ): "NOT_SUPPORTED",
+        ("#475", "CLOCK_STRUCTURE_NOT_DECISION_GRADE_AT_CURRENT_EXECUTION_FRONTIER"): "SUSPENDED",
+        ("#477", "NON_USD_SURPRISE_DATA_NOT_DECISION_GRADE_SKIP"): "SUSPENDED",
+        ("#478", "CURRENT_SEEN_DATA_FX_RESEARCH_SPACE_EXHAUSTED"): "NOT_DECISION_GRADE",
+        ("#482", "bundle は本来の目的（turnover 削減）は果たした"): "ENGINEERING_RESULT",
+        ("#476", "FEASIBILITY_GATE_V2_PROSPECTIVE_ONLY"): "ENGINEERING_RESULT",
+    }
+
+    def test_the_merged_pr_references_keep_their_classes(self) -> None:
+        found = {
+            (e.ref, e.status): e.klass for e in candidates.EVIDENCE_MAP if e.ref.startswith("#")
+        }
+        assert found == self.PR_CLASSES
+
     def test_suspended_is_never_filed_as_closed(self) -> None:
         for item in candidates.EVIDENCE_MAP:
             if "NOT_DECISION_GRADE" in item.status or "SKIP" in item.status:
@@ -288,7 +321,7 @@ class TestTheCatalogue:
                 assert 1 <= getattr(c, name) <= 5, (c.cid, name)
         assert candidates.GAIN_WEIGHTS["p_real"] == candidates.GAIN_WEIGHTS["information_gain"] == 2
 
-    def test_at_most_three_tracks_all_eligible_and_from_the_top(self) -> None:
+    def test_at_most_three_tracks_all_eligible_and_within_the_top_six(self) -> None:
         assert len(candidates.PROPOSED_TRACKS) <= 3
         ranks = {r["cid"]: r["rank"] for r in candidates.ranking()}
         by_id = {c.cid: c for c in candidates.CANDIDATES}
@@ -310,20 +343,42 @@ class TestTheCatalogue:
 
 
 class TestTheBoundaries:
-    ALLOWED_IMPORTS = frozenset(
+    #: Exact modules, and for project modules the exact names taken from them.
+    ALLOWED_IMPORTS: dict[str, frozenset[str] | None] = {
+        "__future__": None,
+        "dataclasses": None,
+        "functools": None,
+        "json": None,
+        "math": None,
+        "pathlib": None,
+        "sys": None,
+        "typing": None,
+        "numpy": None,
+        "scripts.research.continuous_portfolio": frozenset({"CHARGED_ONE_WAY_BP", "construction"}),
+        "scripts.research.feasibility.inventory": frozenset({"PAIR_ROUNDTRIP_BP"}),
+        "scripts.research.edge_sources": frozenset(
+            {"TARGET_NET_RETURN", "WORKFLOW_STATUS", "candidates", "capacity"}
+        ),
+    }
+    #: What the package may call on `construction`: signal-free calibration only.
+    CONSTRUCTION_USES = frozenset({"band_calibration", "BookConfig"})
+    FORBIDDEN_CALLS = frozenset(
         {
-            "__future__",
-            "dataclasses",
-            "functools",
-            "json",
-            "math",
-            "pathlib",
-            "sys",
-            "typing",
-            "numpy",
-            "scripts.research.continuous_portfolio",
-            "scripts.research.feasibility.inventory",
-            "scripts.research.edge_sources",
+            "open",
+            "urlopen",
+            "build_opener",
+            "read_table",
+            "read_csv",
+            "load",
+            "loadtxt",
+            "genfromtxt",
+            "fromfile",
+            "memmap",
+            "__import__",
+            "import_module",
+            "eval",
+            "exec",
+            "run",
         }
     )
 
@@ -332,27 +387,39 @@ class TestTheBoundaries:
             tree = ast.parse(path.read_text(encoding="utf-8"))
             for node in ast.walk(tree):
                 if isinstance(node, ast.Import):
-                    names = [alias.name for alias in node.names]
+                    for alias in node.names:
+                        assert self.ALLOWED_IMPORTS.get(alias.name, 0) is None, (
+                            path.name,
+                            alias.name,
+                        )
                 elif isinstance(node, ast.ImportFrom):
-                    names = [node.module or ""]
-                else:
-                    continue
-                for name in names:
-                    assert name in self.ALLOWED_IMPORTS, (path.name, name)
+                    module = node.module or ""
+                    assert module in self.ALLOWED_IMPORTS, (path.name, module)
+                    names = self.ALLOWED_IMPORTS[module]
+                    if names is not None:
+                        for alias in node.names:
+                            assert alias.name in names, (path.name, module, alias.name)
 
     def test_the_package_calls_no_reader_but_the_track_1_record(self) -> None:
         reads = 0
         for path in PACKAGE.glob("*.py"):
             tree = ast.parse(path.read_text(encoding="utf-8"))
             for node in ast.walk(tree):
+                if (
+                    isinstance(node, ast.Attribute)
+                    and isinstance(node.value, ast.Name)
+                    and node.value.id == "construction"
+                ):
+                    assert node.attr in self.CONSTRUCTION_USES, (path.name, node.attr)
                 if not isinstance(node, ast.Call):
                     continue
                 func = node.func
                 name = func.attr if isinstance(func, ast.Attribute) else getattr(func, "id", "")
-                assert name not in ("open", "urlopen", "build_opener", "read_table", "read_csv"), (
-                    path.name,
-                    name,
-                )
+                assert name not in self.FORBIDDEN_CALLS, (path.name, name)
+                if name == "getattr":
+                    # a computed attribute name or target is how a denylist is evaded
+                    assert not isinstance(node.args[0], ast.Call), path.name
+                    assert isinstance(node.args[1], ast.Name), path.name
                 assert not name.startswith(("read_parquet", "load_")), (path.name, name)
                 if name.startswith("read"):
                     assert name == "read_text", (path.name, name)
@@ -361,6 +428,27 @@ class TestTheBoundaries:
         capacity_source = (PACKAGE / "capacity.py").read_text(encoding="utf-8")
         assert capacity_source.count("read_text") == 1
         assert "TRACK_1_RECORD" in capacity_source
+
+    def test_importing_the_probe_touches_no_network(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        import importlib.util
+        import urllib.request
+
+        attempts: list[object] = []
+
+        def refuse(*args: object, **_: object) -> None:
+            # recorded, because the probe's fetch swallows every exception it raises
+            attempts.append(args)
+            raise AssertionError("the probe reached the network on import")
+
+        monkeypatch.setattr(urllib.request, "urlopen", refuse)
+        monkeypatch.delenv("EDGE_SOURCES_PROBE_APPROVED", raising=False)
+        spec = importlib.util.spec_from_file_location("availability_probe_under_test", PROBE)
+        assert spec is not None and spec.loader is not None
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        assert attempts == []
+        assert module.main() == 2
+        assert attempts == []
 
     FX_SERIES_PATTERN = re.compile(r"^(DEX|EX[A-Z]{2}US|EXUS|DTWEX|RBU|RNU|CCUS)", re.I)
     FX_SOURCE_PATTERN = re.compile(r"fx|eurofx|exchange|h10|spot_rate|forex", re.I)
@@ -434,6 +522,9 @@ class TestTheBoundaries:
         assert "`economic_net_under_stress` でも不合格（margin −0.63）" in document
         assert "**horizon だけで落ちたのは\n  C01 だけ**" in document
         assert "約 24.7 年" in document
+        assert "**development screen**" in document
+        assert "上側信頼限界が年 5% 目標の net 0.5 を下回るとき" in document
+        assert "検出力が足りる場合に限り" not in document
         assert (
             "C04（benchmark fix）・C05（month-end\n  rebalancing）が決定により停止・提案不可"
             in document
@@ -446,6 +537,11 @@ class TestTheBoundaries:
         assert "**T-R の結果を読む前に凍結**" in document
         assert "**算術上の capacity はあるが、どの source にもそこに届く証拠は無い。**" in document
         assert "反証済み" not in document
+        assert "取引開始は event の終了と利回り終値の遅い方より後" in document
+        assert "保有データに臨時会合の flag は無く" in document
+        assert "それができない系列は使わない" in document
+        assert "全体を download してから filter" in document
+        assert "decision-grade にならない" in document
 
     def test_the_conditional_track_says_so(self, document: str) -> None:
         assert "### T-V — 実質為替レート valuation（S13）— **D-1 が承認された場合のみ**" in document

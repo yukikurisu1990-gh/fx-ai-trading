@@ -4,7 +4,8 @@
 
 Committed as the audit trail of `artifacts/research/edge_sources/public_data_availability.json`,
 which it printed once on 2026-09-14 (UTC). **Do not re-run without approval**: it
-touches the network, and a changed list of series must still request no FX
+touches the network, so importing it does nothing and running it refuses unless
+`EDGE_SOURCES_PROBE_APPROVED=1` is set, and a changed list of series must still request no FX
 series, because FX series pages carry values inside protected spans and the
 forward epoch.
 
@@ -15,8 +16,10 @@ No observation is analysed. Other sources are checked for reachability only.
 """
 
 import json
+import os
 import re
 import ssl
+import sys
 import urllib.request
 from datetime import UTC, datetime
 
@@ -53,7 +56,8 @@ OTHER_ENDPOINTS = {
     "us_treasury_par_yield": "https://home.treasury.gov/resource-center/data-chart-center/interest-rates",  # noqa: E501
 }
 
-CTX = ssl.create_default_context()
+#: The probe touches the network only when this is set to "1" *and* it is run as a script.
+OPT_IN_ENV = "EDGE_SOURCES_PROBE_APPROVED"
 
 
 def fetch(url: str, limit: int = 400_000) -> tuple[int | None, str]:
@@ -61,29 +65,41 @@ def fetch(url: str, limit: int = 400_000) -> tuple[int | None, str]:
         url, headers={"User-Agent": "Mozilla/5.0 research-availability-check"}
     )
     try:
-        with urllib.request.urlopen(request, timeout=30, context=CTX) as response:
+        context = ssl.create_default_context()
+        with urllib.request.urlopen(request, timeout=30, context=context) as response:
             return response.status, response.read(limit).decode("utf-8", errors="replace")
     except Exception as error:  # noqa: BLE001
         return None, f"{type(error).__name__}: {error}"[:200]
 
 
-out = {"checked_utc": datetime.now(UTC).isoformat(), "fred": {}, "other": {}}
-for series, label in FRED_SERIES.items():
-    status, text = fetch(f"https://fred.stlouisfed.org/series/{series}")
-    record = {"label": label, "http_status": status}
-    if status == 200:
-        freq = re.search(r"Frequency:\s*</span>\s*([^<]+)<", text) or re.search(
-            r'"frequency"\s*:\s*"([^"]+)"', text
-        )
-        rng = re.search(r"(\d{4}-\d{2}-\d{2})\s*(?:to|&nbsp;to&nbsp;)\s*(\d{4}-\d{2}-\d{2})", text)
-        start = re.search(r"observation_start[^0-9]*(\d{4}-\d{2}-\d{2})", text)
-        record["frequency_text"] = freq.group(1).strip() if freq else None
-        record["declared_range"] = [rng.group(1), rng.group(2)] if rng else None
-        record["observation_start_field"] = start.group(1) if start else None
-    else:
-        record["error"] = text
-    out["fred"][series] = record
-for name, url in OTHER_ENDPOINTS.items():
-    status, text = fetch(url, limit=20_000)
-    out["other"][name] = {"url": url, "http_status": status, "error": None if status else text}
-print(json.dumps(out, indent=1, ensure_ascii=False))
+def main() -> int:
+    if os.environ.get(OPT_IN_ENV) != "1":
+        print(f"refused: set {OPT_IN_ENV}=1 only after an approval to re-run this probe")
+        return 2
+    out: dict = {"checked_utc": datetime.now(UTC).isoformat(), "fred": {}, "other": {}}
+    for series, label in FRED_SERIES.items():
+        status, text = fetch(f"https://fred.stlouisfed.org/series/{series}")
+        record = {"label": label, "http_status": status}
+        if status == 200:
+            freq = re.search(r"Frequency:\s*</span>\s*([^<]+)<", text) or re.search(
+                r'"frequency"\s*:\s*"([^"]+)"', text
+            )
+            rng = re.search(
+                r"(\d{4}-\d{2}-\d{2})\s*(?:to|&nbsp;to&nbsp;)\s*(\d{4}-\d{2}-\d{2})", text
+            )
+            start = re.search(r"observation_start[^0-9]*(\d{4}-\d{2}-\d{2})", text)
+            record["frequency_text"] = freq.group(1).strip() if freq else None
+            record["declared_range"] = [rng.group(1), rng.group(2)] if rng else None
+            record["observation_start_field"] = start.group(1) if start else None
+        else:
+            record["error"] = text
+        out["fred"][series] = record
+    for name, url in OTHER_ENDPOINTS.items():
+        status, text = fetch(url, limit=20_000)
+        out["other"][name] = {"url": url, "http_status": status, "error": None if status else text}
+    print(json.dumps(out, indent=1, ensure_ascii=False))
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

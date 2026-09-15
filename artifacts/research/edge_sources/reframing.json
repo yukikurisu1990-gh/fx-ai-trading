@@ -836,7 +836,7 @@
       "turnover_cost": 4,
       "utilisation": "1 日 1〜2 回",
       "utilisation_score": 2,
-      "why_not_falsified": "price のみの session 効果は H-002 で CLOSED、clock は #475 で SUSPENDED。非 FX の intraday 情報は未取得"
+      "why_not_falsified": "price のみの session 効果は H-002 で CLOSED、clock は #475 で SUSPENDED（C04 と同じく決定により停止中の clock family に隣接）。非 FX の intraday 情報は未取得"
     },
     {
       "access": "保有・無料",
@@ -1006,7 +1006,9 @@
       "mechanism": "声明文の hawkish / dovish への変化が、市場の政策パス織り込みより先に通貨需要を動かす",
       "ml_role": "tone の scoring に NLP が要る（方向予測を ML に任せるのではない）。辞書による単純 score を先に置く",
       "name": "中銀 communication の tone 変化（声明・議事要旨・講演）",
-      "notes": [],
+      "notes": [
+        "leakage: テキストは公表時刻で揃え、tone の辞書・score 規則は結果を見る前に固定する。#472 で会合カレンダーの自動取得を拒否した 4 中銀はテキストも取得できない可能性"
+      ],
       "overfit_risk": 4,
       "overlap": [
         "C01",
@@ -1027,7 +1029,7 @@
       "architecture": "continuous currency book",
       "breadth": "実効 1〜2（非 US の breakeven が揃わない）",
       "breadth_score": 1,
-      "capacity": "breadth が狭く、単独での年 5% は困難。S01 の分解（名目 = 実質 + インフレ期待）として増分を見る価値",
+      "capacity": "breadth が狭く、単独での年 5% は困難。S01 と情報が強く相関するので、独立な source として成立するかが最大の不確実性",
       "cid": "S28",
       "complexity": 2,
       "data": "US は FRED（本 task では probe していない）、非 US は物価連動債市場が薄い",
@@ -1367,9 +1369,9 @@
         "vol_0.12": 0.417
       },
       "probability_first_five_years_negative": {
-        "0.3": 0.261,
+        "0.3": 0.251,
         "0.5": 0.132,
-        "0.8": 0.039
+        "0.8": 0.037
       },
       "rows": {
         "vol_0.08": {
@@ -1379,6 +1381,7 @@
             "0.8": 0.064
           },
           "gross_leverage": 3.44,
+          "mean_leverage_within_reused_cap": true,
           "median_max_drawdown_10y": {
             "0.3": 0.212,
             "0.5": 0.183,
@@ -1388,8 +1391,7 @@
             "0.3": 0.418,
             "0.5": 0.338,
             "0.8": 0.261
-          },
-          "within_reused_leverage_cap": true
+          }
         },
         "vol_0.1": {
           "annual_net_return": {
@@ -1398,6 +1400,7 @@
             "0.8": 0.08
           },
           "gross_leverage": 4.29,
+          "mean_leverage_within_reused_cap": true,
           "median_max_drawdown_10y": {
             "0.3": 0.265,
             "0.5": 0.228,
@@ -1407,8 +1410,7 @@
             "0.3": 0.522,
             "0.5": 0.423,
             "0.8": 0.327
-          },
-          "within_reused_leverage_cap": true
+          }
         },
         "vol_0.12": {
           "annual_net_return": {
@@ -1417,6 +1419,7 @@
             "0.8": 0.096
           },
           "gross_leverage": 5.15,
+          "mean_leverage_within_reused_cap": false,
           "median_max_drawdown_10y": {
             "0.3": 0.318,
             "0.5": 0.274,
@@ -1426,8 +1429,7 @@
             "0.3": 0.627,
             "0.5": 0.508,
             "0.8": 0.392
-          },
-          "within_reused_leverage_cap": false
+          }
         }
       }
     },
@@ -1506,10 +1508,10 @@
       "what": "4〜6 日 reversal family"
     },
     {
-      "klass": "CLOSED",
+      "klass": "NOT_DECISION_GRADE",
       "ref": "H-007",
       "status": "MULTI_DAY_MOMENTUM_UNRESOLVED_IN_FRESH_EXPLORATORY_HISTORY",
-      "what": "mirror momentum（反証ではなく検出力不足の null。ledger 上は reversal family の dropped とともに CLOSED）"
+      "what": "mirror momentum（反証ではなく検出力不足の null。ledger の status は CLOSED だが、drop されたのは reversal family で momentum は UNRESOLVED）"
     },
     {
       "klass": "CLOSED",

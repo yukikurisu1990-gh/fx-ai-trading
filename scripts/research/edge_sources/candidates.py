@@ -60,8 +60,8 @@ EVIDENCE_MAP: Final[tuple[Evidence, ...]] = (
     ),
     Evidence(
         "H-007",
-        "mirror momentum（反証ではなく検出力不足の null。ledger 上は reversal family の dropped とともに CLOSED）",
-        "CLOSED",
+        "mirror momentum（反証ではなく検出力不足の null。ledger の status は CLOSED だが、drop されたのは reversal family で momentum は UNRESOLVED）",
+        "NOT_DECISION_GRADE",
         "MULTI_DAY_MOMENTUM_UNRESOLVED_IN_FRESH_EXPLORATORY_HISTORY",
     ),
     Evidence("H-008", "Round A の条件付け family", "CLOSED", "CLOSED — Round A"),
@@ -1052,7 +1052,7 @@ C: Final[tuple[Candidate, ...]] = (
         data="intraday 先物は有料",
         access="有料",
         overlap=("C03", "H-002", "#475"),
-        why_not_falsified="price のみの session 効果は H-002 で CLOSED、clock は #475 で SUSPENDED。非 FX の intraday 情報は未取得",
+        why_not_falsified="price のみの session 効果は H-002 で CLOSED、clock は #475 で SUSPENDED（C04 と同じく決定により停止中の clock family に隣接）。非 FX の intraday 情報は未取得",
         capacity="日 1〜2 回の決定で、半減期は数時間。cost 負けの prior が強い",
         ml_role="不要",
         eligibility=BLOCKED,
@@ -1223,6 +1223,9 @@ C: Final[tuple[Candidate, ...]] = (
         overfit_risk=4,
         data_burden=4,
         engineering_burden=4,
+        notes=(
+            "leakage: テキストは公表時刻で揃え、tone の辞書・score 規則は結果を見る前に固定する。#472 で会合カレンダーの自動取得を拒否した 4 中銀はテキストも取得できない可能性",
+        ),
     ),
     Candidate(
         cid="S28",
@@ -1240,7 +1243,7 @@ C: Final[tuple[Candidate, ...]] = (
         access="US は公開・無料のはず（未確認）",
         overlap=("S01", "H-016"),
         why_not_falsified="政策金利の carry（H-016）とも名目 2 年（S01）とも別の成分だが、S01 と強く相関する",
-        capacity="breadth が狭く、単独での年 5% は困難。S01 の分解（名目 = 実質 + インフレ期待）として増分を見る価値",
+        capacity="breadth が狭く、単独での年 5% は困難。S01 と情報が強く相関するので、独立な source として成立するかが最大の不確実性",
         ml_role="不要",
         eligibility=ACTIVE,
         p_real=2,

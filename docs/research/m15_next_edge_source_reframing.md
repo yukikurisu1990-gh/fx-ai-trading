@@ -107,7 +107,6 @@ CLOSED 扱いしない。**検出力不足の null として記録されたも�
 | H-004 | raw / simple price-feature の方向 ML | CLOSED | `CLOSED` |
 | H-005 | multi-day reversal の 39 config（検出力 0.29 の検出力不足の null。family は後に dropped） | CLOSED | `MULTI_DAY_REVERSAL_UNRESOLVED_INSUFFICIENT_DETECTION_POWER` |
 | H-006 | 4〜6 日 reversal family | CLOSED | `MULTI_DAY_REVERSAL_FAILED_SUPPLEMENTAL_HISTORY_REPLICATION` |
-| H-007 | mirror momentum（反証ではなく検出力不足の null。ledger 上は reversal family の dropped とともに CLOSED） | CLOSED | `MULTI_DAY_MOMENTUM_UNRESOLVED_IN_FRESH_EXPLORATORY_HISTORY` |
 | H-008 | Round A の条件付け family | CLOSED | `CLOSED — Round A` |
 | H-009 | 単純な HTF / D1 trend 条件付け | CLOSED | `CLOSED — Round A` |
 | H-010 | price-path structure（VR<1、収益化不能） | CLOSED | `CLOSED - real but unharvestable microstructure` |
@@ -125,6 +124,7 @@ CLOSED 扱いしない。**検出力不足の null として記録されたも�
 | H-023 | linear continuous currency expected-return architecture | NOT_SUPPORTED | `CONTINUOUS_CURRENCY_PORTFOLIO_ARCHITECTURE_NOT_SUPPORTED_IN_SEEN_DEVELOPMENT` |
 | #471 | event-day の cost 優位 | NOT_SUPPORTED | `EVENT_DAY_COST_ADVANTAGE_NOT_ESTABLISHED` |
 | #475 | near-touch passive 執行 | NOT_SUPPORTED | `passive 執行は、この 2 パネルで意味のあるコスト削減を与えられない。` |
+| H-007 | mirror momentum（反証ではなく検出力不足の null。ledger の status は CLOSED だが、drop されたのは reversal family で momentum は UNRESOLVED） | NOT_DECISION_GRADE | `MULTI_DAY_MOMENTUM_UNRESOLVED_IN_FRESH_EXPLORATORY_HISTORY` |
 | H-022 | model learning（3 track、当時の gate。run は gate 無効化で evidence ではなく record） | NOT_DECISION_GRADE | `MODEL_LEARNING_NOT_DECISION_GRADE_UNDER_CURRENT_DEVELOPMENT_GATE` |
 | #478 | seen data 上の長 horizon 構造（検出力不足） | NOT_DECISION_GRADE | `CURRENT_SEEN_DATA_FX_RESEARCH_SPACE_EXHAUSTED` |
 | C09 | yield differential change（未実行。horizon・economic_net_under_stress・dispersion window で不合格、追加履歴でも pass region は開かない） | NOT_DECISION_GRADE | `NO_DECISION_GRADE_PASS_REGION` |
@@ -342,13 +342,13 @@ CLOSED 扱いしない。**検出力不足の null として記録されたも�
 | S19 | 低い | 常時 | 7 通貨 | 保有 | 保有 | H-021、C21 | —（H-021 で tested cells が NOT_SUPPORTED、C21 は PRIOR_FAMILY_CLOSED） | — | — | 除外（閉鎖 family の改名・救済） |
 | S20 | 中 | 常時 | 主要 pair | 無料の履歴なし（Bloomberg・CME 等の有料） | 有料 | なし | データが無い | —（データなし） | 不要 | データ不可 |
 | S21 | 年 12 回 × 数 pair | 極めて低い | 低い | S&P・Nikkei は無料、他は限定的 | 一部無料 | C05、C04、#475 | —（C04・C05 は inventory で決定により停止・提案不可、#475 の London fix は検出力で SUSPENDED） | 事象が年 12 回しかなく、年 5% には構造的に届かない | 不要 | 除外（決定により停止中の family） |
-| S22 | 高い | 1 日 1〜2 回 | 実効 2〜4 | intraday 先物は有料 | 有料 | C03、H-002、#475 | price のみの session 効果は H-002 で CLOSED、clock は #475 で SUSPENDED。非 FX の intraday 情報は未取得 | 日 1〜2 回の決定で、半減期は数時間。cost 負けの prior が強い | 不要 | データ不可 |
+| S22 | 高い | 1 日 1〜2 回 | 実効 2〜4 | intraday 先物は有料 | 有料 | C03、H-002、#475 | price のみの session 効果は H-002 で CLOSED、clock は #475 で SUSPENDED（C04 と同じく決定により停止中の clock family に隣接）。非 FX の intraday 情報は未取得 | 日 1〜2 回の決定で、半減期は数時間。cost 負けの prior が強い | 不要 | データ不可 |
 | S23 | 低い | 常時 | 実効 4 | 取得済みの政策金利 + CPI | 保有・無料 | H-016、C22 | —（ここでの定義は取得済みの政策金利 + CPI で、H-016 の carry premium が short-yen に集中した NOT_SUPPORTED の組み替え。市場の実質利回りで作る版は S01・S13 の隣接として別に扱う） | — | — | 除外（閉鎖 family の改名・救済） |
 | S24 | 低い | 常時 | 実効 4 | 保有 | 保有 | H-016、C22 | —（NOT_SUPPORTED の carry を vol filter で救済する形） | — | — | 除外（閉鎖 family の改名・救済） |
 | S25 | 低い | 常時 | 主要 4〜5 中銀 | 無料だが月次で観測数が少ない | 無料 | なし | 未検定 | 観測数が少なく、seen の期間では検定不能。単独で年 5% の prior は低い | 不要 | 対象 |
 | S26 | 約 5〜8 RT/年/単位 gross | 常時 | 実効 2〜3（US 視点の flow が中心） | TIC は公開・無料（本 task では probe していない）。公表 lag が長く、seen の期間では月次観測が約 56 | 公開・認証不要のはず（未確認） | H-021、C21 | COT（H-021・C21）は先物の投機 positioning で、現物証券の国際 flow は未取得・未検定 | 観測が月次で少なく、seen では検定不能。単独で年 5% の prior は低い | 不要 | 対象 |
 | S27 | 事象あたり 1 往復〜 18 RT/年/単位 gross | 断続〜常時 | 取得できる中銀数に依存（テキストの時刻付き archive は未確認） | 公開テキストは各中銀 web にあるが、時刻付き・過去分の機械取得は未確認 | 公開（scraping の可否は未確認、承認前は取得しない） | C01、H-019 | 会合日の movement（H-019）と決定そのもの（C01）は扱ったが、テキストの tone は未取得・未検定 | 事象数は S03 と同程度で検出力が律速。S03 の repricing が tone を既に織り込むなら増分は小さい | tone の scoring に NLP が要る（方向予測を ML に任せるのではない）。辞書による単純 score を先に置く | 対象 |
-| S28 | 18〜43 RT/年/単位 gross | 常時 | 実効 1〜2（非 US の breakeven が揃わない） | US は FRED（本 task では probe していない）、非 US は物価連動債市場が薄い | US は公開・無料のはず（未確認） | S01、H-016 | 政策金利の carry（H-016）とも名目 2 年（S01）とも別の成分だが、S01 と強く相関する | breadth が狭く、単独での年 5% は困難。S01 の分解（名目 = 実質 + インフレ期待）として増分を見る価値 | 不要 | 対象 |
+| S28 | 18〜43 RT/年/単位 gross | 常時 | 実効 1〜2（非 US の breakeven が揃わない） | US は FRED（本 task では probe していない）、非 US は物価連動債市場が薄い | US は公開・無料のはず（未確認） | S01、H-016 | 政策金利の carry（H-016）とも名目 2 年（S01）とも別の成分だが、S01 と強く相関する | breadth が狭く、単独での年 5% は困難。S01 と情報が強く相関するので、独立な source として成立するかが最大の不確実性 | 不要 | 対象 |
 <!-- /table -->
 
 ## R. Profit-capacity table
@@ -376,11 +376,11 @@ horizon IC は、半減期 h の AR(1) 予測が h 日先 return に対して示
 
 ### R.2 年率・leverage・drawdown
 
-再利用する執行層の leverage 上限は 5 倍。10% vol で平均 4.29 倍、12% vol では 5.15 倍で上限を超える。Track 1 は 10% vol で
+再利用する執行層の leverage 上限は 5 倍。表の leverage は vol target ÷ 単位 gross vol の計算値で、10% vol で 4.29 倍（Track 1 の実測平均は 4.41 倍）、12% vol では 5.15 倍で上限を超える。Track 1 は 10% vol で
 **46% の日に上限に張り付き**、上限なしの p95 は 8.0 倍だった。
 
 <!-- table:return_capacity -->
-| vol target | gross leverage（上限 5 以内か） | net 0.3 / 0.5 / 0.8 の年率 | 10 年の最大 DD 中央値（net 0.3 / 0.5 / 0.8） | 10 年の最大 DD 95%点（net 0.3 / 0.5 / 0.8） | 年 5% に必要な net Sharpe | 年 10% に必要な net Sharpe |
+| vol target | 必要 gross leverage（vol target ÷ 単位 gross vol。上限 5 との比較、日々は上限に張り付きうる） | net 0.3 / 0.5 / 0.8 の年率 | 10 年の最大 DD 中央値（net 0.3 / 0.5 / 0.8） | 10 年の最大 DD 95%点（net 0.3 / 0.5 / 0.8） | 年 5% に必要な net Sharpe | 年 10% に必要な net Sharpe |
 | --- | --- | --- | --- | --- | --- | --- |
 | 8% | 3.44（以内） | 2.4% / 4.0% / 6.4% | 21% / 18% / 15% | 42% / 34% / 26% | 0.625 | 1.25 |
 | 10% | 4.29（以内） | 3.0% / 5.0% / 8.0% | 26% / 23% / 19% | 52% / 42% / 33% | 0.5 | 1.0 |
@@ -392,7 +392,7 @@ horizon IC は、半減期 h の AR(1) 予測が h 日先 return に対して示
 <!-- table:detection_capacity -->
 | net Sharpe | 片側 5% 検定の必要年数（検出力 50%） | 同（検出力 80%） | 最初の 5 年が負になる確率（Gaussian） |
 | --- | --- | --- | --- |
-| 0.3 | 30.07 | 68.7 | 26% |
+| 0.3 | 30.07 | 68.7 | 25% |
 | 0.5 | 10.82 | 24.73 | 13% |
 | 0.8 | 4.23 | 9.66 | 4% |
 <!-- /table -->
@@ -575,11 +575,15 @@ horizon IC は、半減期 h の AR(1) 予測が h 日先 return に対して示
 
 全 track に共通の規則:
 
-- **検出力の前提条件**: 結果を見る前に、その track の out-of-sample 期間で net 0.3 を検出する力を計算する。不足なら結果は
-  `NOT_DECISION_GRADE` で止め、kill にも family 閉鎖にも使わない（一様に負の点推定でも区間が 0 を跨げば検出力不足の null）。
+- **2 段の判定（対称）**: seen data だけの結果は **development screen** であり、どちらの方向にも decision-grade にならない
+  （seen の out-of-fold 約 2.9 年では net 0.5 を 0 と区別できない、R.3）。screen は同じ点推定規則で **advance**（独立履歴の検定へ
+  進む価値がある）か **stop**（この track を止め、`…_NOT_SUPPORTED_IN_SEEN_DEVELOPMENT` として Track 1 と同じ形で記録する）の
+  どちらかを必ず返し、success も family 閉鎖も主張しない。**T-R・T-E を seen data だけで実行した場合、出せる結論はこの screen まで**。
+- **decision-grade の判定（独立履歴）**: 片側 5% で net の下側信頼限界 > 0 なら source として支持。**family を閉じるのは、net の
+  上側信頼限界が年 5% 目標の net 0.5 を下回るとき**（真の値が 0 なら約 10.8 年で到達可能で、D-1 の数十年なら届く）。
+  必要年数は結果を見る前に計算し、手元の履歴で閉鎖に届かないならそれを事前に記録する。
 - **Feasibility Gate v2**: seen だけでは horizon 条件で確実に RED（C09 と同じ）。ruling どおり development では hard gate にしないが、
   RED のまま得た結果は decision-grade にならず、decision-grade には D-1 等の独立履歴が要る。
-- **family を閉じる条件**: 点推定 ≤ 0 ではなく、**独立履歴を含む推定の上側信頼限界が経済的に意味のある効果（net 0.3）を下回る**こと。
 - **regime 集中**: seen の 2021〜2025 は世界的な利上げ局面で金利が FX を支配した期間、pre-2016 は JPY・CHF・EUR が
   ゼロ金利に近い期間。片方の regime だけで成立・不成立する結果は一般化しない。
 
@@ -597,9 +601,9 @@ horizon IC は、半減期 h の AR(1) 予測が h 日先 return に対して示
 | plausible return capacity | prior は出典のない判断で net 0.1〜0.4、10% vol で年 1〜4%。年 5% は prior の上端を超える |
 | baseline / control | **主検定は unfitted な 2 年金利差変化 rule（符号固定、1 本）**。control: 同じ lookback の FX momentum（閉じた family）、B0 cash、Track 1 の price model（負の比較対象） |
 | minimum experiment | (1) データ取得と時刻整合の監査（非同期終値を 1 日 lag で処理、揃う通貨数の確定）(2) 検出力と Gate v2・capacity を結果前に計算 (3) unfitted rule、次に線形 1 model（特徴 3 以下）・walk-forward・purge/embargo |
-| success criterion | unfitted rule の gross > 0 かつ net Sharpe ≥ 0.3、FX momentum control を超える増分が正、JPY 除外でも符号維持、正の fold が過半、D-1 承認時は独立履歴でも gross > 0 |
-| kill criterion | 検出力が足りる場合に限り: unfitted rule の gross の上側信頼限界 < 0、または FX momentum control を超える増分が無い、または JPY 依存（除外で符号反転）。**fitted model が unfitted rule に劣後するのは model の kill であって source の kill ではない**。検出力不足なら `NOT_DECISION_GRADE` で止める |
-| broad family を閉じる結果 | 独立履歴を含め、5〜20 日の先行性の上側信頼限界が net 0.3 相当を下回れば「front-end 金利 repricing が G10 FX を先行する」family を閉じる |
+| development screen（seen、対称） | **advance**: unfitted rule の gross > 0 かつ net Sharpe ≥ 0.3、FX momentum control を超える増分が正、JPY 除外でも符号維持、正の fold が過半。**stop**: gross ≤ 0、または control を超える増分が 0 以下、または JPY 除外で符号反転。どちらも点推定で判定し、decision-grade ではない |
+| decision-grade 判定（独立履歴、D-1） | 支持: FX momentum control を超える増分の net 下側信頼限界 > 0。不支持: 上側信頼限界 < net 0.5。**fitted model が unfitted rule に劣後するのは model の kill であって source の kill ではない** |
+| broad family を閉じる結果 | 独立履歴（約 10.8 年以上）で 5〜20 日の先行性の net 上側信頼限界が 0.5 を下回れば「front-end 金利 repricing が G10 FX を先行する」family を閉じる |
 | ML は必要か | 不要。S16 の閾値相互作用は gross 正の後の増分検定としてのみ |
 
 ### T-E — event 日の市場 repricing → 事後 drift（S03 主、S04 は発表日カレンダーが揃う場合のみ）
@@ -615,11 +619,11 @@ horizon IC は、半減期 h の AR(1) 予測が h 日先 return に対して示
 | expected turnover | 事象あたり 1 往復、S03 で年 34.4、S04 込みで 150〜300（カレンダー次第） |
 | plausible return capacity | S03 単独は事象あたり 12.0 bp（課金、集中 position なら 14.6 bp）が要り年 5% に届きにくい。S04 込みで 8.3〜10.5 bp |
 | baseline / control | 全日の repricing rule（S01 の日次版）、event 日の無条件 book、**event 日の FX return そのもの（price continuation の control）**、B0 |
-| leakage 規則（結果前に凍結） | 取引開始は event の終了と利回り終値の遅い方より後。保有カレンダーは日付単位なので時刻は保守側（翌営業日）に置く。臨時会合は母集団から除く。S04 の「主要指標」は機械的規則で選び、実現した市場インパクトで選ばない |
+| leakage 規則（結果前に凍結） | 取引開始は event の終了と利回り終値の遅い方より後。保有カレンダーは日付単位なので時刻は保守側（翌営業日）に置く。臨時会合は母集団から除く規則だが、保有データに臨時会合の flag は無く（#472 §3.1、BIS の政策金利変更との包含 check が代替で、必要条件であって十分条件ではない）、除外は不完全と事前に記録する。S04 の「主要指標」は機械的規則で選び、実現した市場インパクトで選ばない |
 | minimum experiment | (1) 事象母集団と規則を **T-R の結果を読む前に凍結**（会合は取得可能な 4 中銀、指標は機械的規則）(2) 検出力計算（事象数×必要 edge）を結果前に (3) repricing 符号の単一 rule |
-| success criterion | event 日の repricing rule が全日の repricing rule と event 日 FX return control を上回り、net Sharpe ≥ 0.3、1 中銀を除いても符号が維持される（leave-one-bank-out） |
-| kill criterion | 検出力が足りる場合に限り: event 日の上乗せの上側信頼限界 < 0（= S01 と同じ）、または control を超える増分が無い、または leave-one-bank-out で符号が崩れる。中銀ごとの符号不一致は 1 中銀あたり年約 8 事象ではノイズで起きるので kill にしない。検出力不足なら `NOT_DECISION_GRADE` で止める |
-| broad family を閉じる結果 | 十分な検出力で drift の上側信頼限界が net 0.3 相当を下回れば「G10 FX は event 時の市場 repricing に当日中に反応を完了する」として event-direction family を閉じる |
+| development screen（seen、対称） | **advance**: event 日の repricing rule が全日の repricing rule と event 日 FX return control を上回り、net Sharpe ≥ 0.3、leave-one-bank-out で符号維持。**stop**: event 日の上乗せが 0 以下、または control を超える増分が 0 以下、または leave-one-bank-out で符号が崩れる。中銀ごとの符号不一致は 1 中銀あたり年約 8 事象ではノイズで起きるので stop にしない |
+| decision-grade 判定（独立履歴） | 支持: event 日の上乗せの net 下側信頼限界 > 0。不支持: 上側信頼限界 < net 0.5。pre-2016 の会合カレンダーは新たな取得が要る |
+| broad family を閉じる結果 | 独立履歴で drift の net 上側信頼限界が 0.5 を下回れば「G10 FX は event 時の市場 repricing に当日中に反応を完了する」として event-direction family を閉じる |
 | ML は必要か | 不要 |
 
 ### T-V — 実質為替レート valuation（S13）— **D-1 が承認された場合のみ**
@@ -637,9 +641,9 @@ horizon IC は、半減期 h の AR(1) 予測が h 日先 return に対して示
 | baseline | 等加重 cash、PPP 乖離の単純 rank rule（1 本） |
 | leakage 規則（結果前に凍結） | CPI は公表日で揃える（初値を使い改定を使わない）。PPP anchor は拡張窓または固定基準で、全期間平均を使わない。warm-up は seen または pre-2016 に閉じ、fresh pool の FX 水準を使わない |
 | minimum experiment | (1) D-1 の履歴の品質監査（fix 時刻、bid/ask の欠如、cost の上乗せ）(2) 長期 walk-forward の検出力計算 (3) 単一 rule |
-| success criterion | 独立履歴の複数 decade で gross > 0 かつ net Sharpe ≥ 0.3、decade 間で符号が安定 |
-| kill criterion | 検出力が足りる場合に限り: gross の上側信頼限界 < 0、または 1 通貨・1 decade 依存 |
-| broad family を閉じる結果 | 数十年で net の上側信頼限界が net 0.3 相当を下回れば G10 valuation family を閉じる |
+| decision-grade 判定（独立履歴のみ） | 支持: 複数 decade で net の下側信頼限界 > 0、decade 間で符号が安定 |
+| 不支持 | net の上側信頼限界 < 0.5、または 1 通貨・1 decade 依存 |
+| broad family を閉じる結果 | 数十年で net の上側信頼限界が 0.5 を下回れば G10 valuation family を閉じる |
 | ML は必要か | 不要 |
 
 **3 つを無理に選んだのではない**: T-R は最上位。T-V は第 2 位だが D-1 の承認に完全に依存する。T-E は S03 が 11 点で S02 と
@@ -651,14 +655,14 @@ horizon IC は、半減期 h の AR(1) 予測が h 日先 return に対して示
 
 | track | 最初の実験 | 結果を見る前に固定するもの | 読むデータ | 承認 |
 | --- | --- | --- | --- | --- |
-| T-R | データ取得・時刻整合監査 → 検出力・signal-blind gate → unfitted rule → 線形 1 model | target 2 本、特徴 3 以下、lag 規則、FX momentum control、benchmark、検出力条件、kill | 非 FX 公開データ（D-2）、seen FX | D-2 の取得、実行は Red |
-| T-E | 事象母集団と規則の凍結（T-R の結果前）→ 検出力計算 → 単一 rule | 事象規則、取引開始時刻の規則、臨時会合の除外、target 2 本、baseline・control、kill | 同上 | 同上 |
-| T-V | D-1 履歴の品質監査 → 長期検出力 → 単一 rule | 系列、span（保護 span 除外と強制方法）、CPI 公表日、anchor の作り方、warm-up 範囲、target、kill | D-1 | D-1（Red） |
+| T-R | データ取得・時刻整合監査 → 検出力・signal-blind gate → unfitted rule → 線形 1 model | target 2 本、特徴 3 以下、lag 規則、FX momentum control、benchmark、screen 規則、判定に要る年数 | 非 FX 公開データ（D-2）、seen FX | D-2 の取得、実行は Red |
+| T-E | 事象母集団と規則の凍結（T-R の結果前）→ 検出力計算 → 単一 rule | 事象規則、取引開始時刻の規則、臨時会合の除外、target 2 本、baseline・control、screen 規則、判定に要る年数 | 同上 | 同上 |
+| T-V | D-1 履歴の品質監査 → 長期検出力 → 単一 rule | 系列、span（保護 span 除外と強制方法）、CPI 公表日、anchor の作り方、warm-up 範囲、target、判定規則 | D-1 | D-1（Red） |
 
 いずれも探索自由度（特徴数、target 本数、model 数、horizon）を事前に宣言し、feature zoo・hyperparameter zoo・timeframe zoo・
 seed mining・通貨 subset mining はしない。development では α=0.05 の証明を hard gate にせず、限定 search budget・時間方向の
-walk-forward・benchmark 比較・経済 stress・安定性・複雑さ penalty・leakage control で判断する。ただし kill と family 閉鎖には
-検出力の前提条件を課す（W 節）。
+walk-forward・benchmark 比較・経済 stress・安定性・複雑さ penalty・leakage control で判断する。seen だけの結果は advance / stop の
+development screen に留め、支持・family 閉鎖は独立履歴の信頼限界で行う（W 節）。
 
 ## Y. 最終推奨
 

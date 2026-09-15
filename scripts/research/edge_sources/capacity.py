@@ -189,8 +189,15 @@ def gaussian_drawdown(net_sharpe: float) -> dict[str, float]:
     return {
         "median_max_drawdown_in_vol_units": round(float(np.median(worst)), 3),
         "p95_max_drawdown_in_vol_units": round(float(np.quantile(worst, 0.95)), 3),
-        "probability_first_five_years_negative": round(float(np.mean(wealth[:, five - 1] < 0)), 3),
+        "simulated_probability_first_five_years_negative": round(
+            float(np.mean(wealth[:, five - 1] < 0)), 3
+        ),
     }
+
+
+def probability_negative(net_sharpe: float, years: float) -> float:
+    """Closed form `Phi(-S sqrt(years))` for Gaussian returns."""
+    return round(0.5 * math.erfc(net_sharpe * math.sqrt(years) / math.sqrt(2.0)), 3)
 
 
 def return_and_leverage_table() -> dict[str, Any]:
@@ -200,7 +207,7 @@ def return_and_leverage_table() -> dict[str, Any]:
         leverage = vol / VOL_PER_UNIT_GROSS
         rows[f"vol_{vol:g}"] = {
             "gross_leverage": round(leverage, 2),
-            "within_reused_leverage_cap": leverage <= MAX_LEVERAGE,
+            "mean_leverage_within_reused_cap": leverage <= MAX_LEVERAGE,
             "annual_net_return": {f"{s:g}": round(s * vol, 4) for s in NET_SHARPE_SCENARIOS},
             "median_max_drawdown_10y": {
                 f"{s:g}": round(gaussian_drawdown(s)["median_max_drawdown_in_vol_units"] * vol, 3)
@@ -216,8 +223,7 @@ def return_and_leverage_table() -> dict[str, Any]:
         "net_sharpe_needed_for_5pct": {f"vol_{v:g}": round(0.05 / v, 3) for v in VOL_TARGETS},
         "net_sharpe_needed_for_10pct": {f"vol_{v:g}": round(0.10 / v, 3) for v in VOL_TARGETS},
         "probability_first_five_years_negative": {
-            f"{s:g}": gaussian_drawdown(s)["probability_first_five_years_negative"]
-            for s in NET_SHARPE_SCENARIOS
+            f"{s:g}": probability_negative(s, 5.0) for s in NET_SHARPE_SCENARIOS
         },
         "drawdown_model": "gaussian iid daily, 2000 paths x 10 years, fat tails not modelled",
         "rows": rows,
@@ -356,6 +362,7 @@ __all__ = [
     "event_book_table",
     "gaussian_drawdown",
     "horizon_ic",
+    "probability_negative",
     "required_daily_ic",
     "required_horizon_ic",
     "return_and_leverage_table",

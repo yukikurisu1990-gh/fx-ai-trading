@@ -132,7 +132,7 @@ def event_capacity() -> list[str]:
 def return_capacity() -> list[str]:
     table = capacity.return_and_leverage_table()
     rows = [
-        "| vol target | gross leverage（上限 5 以内か） | net 0.3 / 0.5 / 0.8 の年率 | 10 年の最大 DD 中央値（net 0.3 / 0.5 / 0.8） | 10 年の最大 DD 95%点（net 0.3 / 0.5 / 0.8） | 年 5% に必要な net Sharpe | 年 10% に必要な net Sharpe |",
+        "| vol target | 必要 gross leverage（vol target ÷ 単位 gross vol。上限 5 との比較、日々は上限に張り付きうる） | net 0.3 / 0.5 / 0.8 の年率 | 10 年の最大 DD 中央値（net 0.3 / 0.5 / 0.8） | 10 年の最大 DD 95%点（net 0.3 / 0.5 / 0.8） | 年 5% に必要な net Sharpe | 年 10% に必要な net Sharpe |",
         "| --- | --- | --- | --- | --- | --- | --- |",
     ]
     for key, row in table["rows"].items():
@@ -140,7 +140,7 @@ def return_capacity() -> list[str]:
         returns = " / ".join(f"{v:.1%}" for v in row["annual_net_return"].values())
         median = " / ".join(f"{v:.0%}" for v in row["median_max_drawdown_10y"].values())
         p95 = " / ".join(f"{v:.0%}" for v in row["p95_max_drawdown_10y"].values())
-        within = "以内" if row["within_reused_leverage_cap"] else "超過"
+        within = "以内" if row["mean_leverage_within_reused_cap"] else "超過"
         rows.append(
             f"| {float(vol):.0%} | {row['gross_leverage']}（{within}） | {returns} | {median} | {p95} | "
             f"{table['net_sharpe_needed_for_5pct'][key]} | {table['net_sharpe_needed_for_10pct'][key]} |"
