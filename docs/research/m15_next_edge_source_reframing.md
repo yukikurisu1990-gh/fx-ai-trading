@@ -462,7 +462,9 @@ risk から導いた値でもなかった（R.6）。実行可能性は margin �
 
 通貨 book を 20 pair に routing すると、pair gross は通貨 gross の 0.770 倍（signal-free 合成、Track 1 の実測 0.762 と一致）。
 必要証拠金は **`Σ routed notional_i × 証拠金率_i`** で集計し、`gross ÷ 25` では計算しない。単位通貨 gross あたりの必要証拠金は平均 3.21%、
-p95 3.64%。routed book の 1 通貨の exposure は、band のずれで cap 0.25 を超え、単位通貨 gross あたり平均 0.29・p95 0.37。
+p95 3.64%。routed book の 1 通貨の exposure は cap 0.25 を超え、単位通貨 gross あたり平均 0.29・p95 0.37。原因は band のずれではなく
+**equal-split routing**: PAIRS_20 は完全グラフではないので、cap 0.25 の weight を pair に割り振ると 1 通貨の実効 exposure は 0.36 程度になりうる。
+**weight cap は gap に対する exposure を抑えていない**。
 
 **10% vol（平均 risk leverage C 4.29）での pair ごとの必要証拠金**（signal-free routing の平均）:
 
@@ -497,10 +499,13 @@ p95 3.64%。routed book の 1 通貨の exposure は、band のずれで cap 0.2
 1. unlevered book の gross / net Sharpe で source の有無を決める。leverage はこの判定に入らない。
 2. target vol を選び、平均 C = target vol ÷ unlevered vol。
 3. pair に routing し、B と必要証拠金（Σ notional × 証拠金率）を出す。
-4. **broker 側の判定（gap stress）**: book は毎日 equity に合わせて建て直すので、ゆっくりした drawdown では loss-cut に近づかない。近づけるのは
-   gap。そこで、leverage の tail（平均 C × 1.58、Track 1 の記録）と routed book の 1 通貨 exposure の p95 で、1 通貨が他のすべてに対して 20%
+4. **broker 側の判定（gap stress）**: equity に比例して建て直すなら、ゆっくりした drawdown では notional も減るので loss-cut に近づかない。
+   近づけるのは gap。そこで、leverage の tail（平均 C × 1.58、Track 1 の記録）と routed book の 1 通貨 exposure の p95 で、1 通貨が他のすべてに対して 20%
    gap し、建て直す前の notional に対する必要証拠金と gap 後の equity を比べる。20% は記録上最大級の G10 の 1 日の repricing（2015 年 1 月の
-   SNB）の桁で、ここでは測っていない宣言した仮定。
+   SNB）の桁で、ここでは測っていない宣言した仮定。leverage tail・exposure p95・margin p95 の 3 つの p95 が同時に起きると置く
+   **joint-tail の仮定**で、保守側に倒している。
+4b. **equity 比例の sizing は「実装への要求」であって、再利用する執行層の性質ではない**。Track 1 の `run_book` は固定資本で建て、leverage は
+   10% の hysteresis、weight は 0.10 の band を超えたときしか動かさない。したがって **固定 notional の場合（drawdown が経路に残る）も併記**する。
 5. **gap 後の証拠金維持率が 100% 以下（loss-cut）になるときだけ broker 上実行不能**とする。固定倍率を超えたことは理由にしない。この判定は
    仮定した Sharpe に依存しない。
 6. **risk appetite（報告のみ、broker の判定ではない）**: equity に比例して建てた場合の 10 年最大 drawdown を、net Sharpe 0（sizing に使う側）と
@@ -508,56 +513,62 @@ p95 3.64%。routed book の 1 通貨の exposure は、band のずれで cap 0.2
    運用 scenario ではない。
 7. 無視した二次効果: gap による open notional の円換算額の変化、loss-cut の約定が保証されないこと。
 
-この stress の下で loss-cut に至らない平均 risk leverage は最大約 **5.78**（vol target 約 **13.5%**）。
+この stress の下で loss-cut に至らない平均 risk leverage は、**equity 比例の sizing なら最大約 5.78（vol target 約 13.5%）**、
+**固定 notional（現在の執行層のまま、net 0 の 10 年 DD 95%点を経路に残す）なら最大約 2.95（vol target 約 6.9%）**。
+つまり **10% vol 以上を使うには、equity 比例の sizing への変更が前提**になる。
 
 **risk leverage scenario**（年率 net は unlevered net Sharpe 0.5 を仮定。drawdown は equity 比例の建て方で `1 − exp(−log drawdown)`）:
 
 <!-- table:leverage_scenarios -->
-| scenario | risk leverage C（平均 / tail） | 年率 vol | portfolio gross B（平均） | 年率 net（net 0.5） | margin 利用率（平均 / tail） | 20% gap の損失（tail） | gap 後の維持率 | gap で loss-cut | loss-cut までの 1 通貨 gap | 10 年最大 DD 95%点（net 0 / net 0.5） |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| C = 1 | 1.0 / 1.58 | 2.3% | 0.77 | 1.2% | 3.2% / 5.8% | 12% | 15.37 | なし | 163% | 15% / 9% |
-| C = 2 | 2.0 / 3.16 | 4.7% | 1.54 | 2.3% | 6.4% / 11.5% | 23% | 6.68 | なし | 77% | 28% / 18% |
-| C = 3 | 3.0 / 4.74 | 7.0% | 2.31 | 3.5% | 9.6% / 17.3% | 35% | 3.79 | なし | 48% | 39% / 26% |
-| C = 5 | 5.0 / 7.91 | 11.6% | 3.85 | 5.8% | 16.1% / 28.8% | 58% | 1.47 | なし | 25% | 56% / 39% |
-| C = 8 | 8.0 / 12.65 | 18.6% | 6.16 | 9.3% | 25.7% / 46.1% | 92% | 0.17 | **loss-cut** | 12% | 74% / 55% |
-| C = 10 | 10.0 / 15.81 | 23.3% | 7.7 | 11.6% | 32.1% / 57.6% | 115% | —（equity 消失） | **loss-cut** | 7% | 81% / 63% |
+| scenario | risk leverage C（平均 / tail） | 年率 vol | portfolio gross B（平均） | 年率 net（net 0.5） | margin 利用率（平均 / tail） | 20% gap の損失（tail） | gap 後の維持率 | gap で loss-cut | loss-cut までの 1 通貨 gap | 10 年最大 DD 95%点（net 0 / net 0.5） | 固定 notional の DD+gap 後 equity | 固定 notional で loss-cut |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| C = 1 | 1.0 / 1.58 | 2.3% | 0.77 | 1.2% | 3.2% / 5.8% | 12% | 15.37 | なし | 163% | 15% / 9% | 72% | なし |
+| C = 2 | 2.0 / 3.16 | 4.7% | 1.54 | 2.3% | 6.4% / 11.5% | 23% | 6.68 | なし | 77% | 28% / 18% | 44% | なし |
+| C = 3 | 3.0 / 4.74 | 7.0% | 2.31 | 3.5% | 9.6% / 17.3% | 35% | 3.79 | なし | 48% | 39% / 26% | 16% | **loss-cut** |
+| C = 5 | 5.0 / 7.91 | 11.6% | 3.85 | 5.8% | 16.1% / 28.8% | 58% | 1.47 | なし | 25% | 56% / 39% | -41% | **loss-cut** |
+| C = 8 | 8.0 / 12.65 | 18.6% | 6.16 | 9.3% | 25.7% / 46.1% | 92% | 0.17 | **loss-cut** | 12% | 74% / 55% | -125% | **loss-cut** |
+| C = 10 | 10.0 / 15.81 | 23.3% | 7.7 | 11.6% | 32.1% / 57.6% | 115% | —（equity 消失） | **loss-cut** | 7% | 81% / 63% | -182% | **loss-cut** |
 <!-- /table -->
 
 **vol target scenario**（同じく net 0.5）:
 
 <!-- table:vol_target_scenarios -->
-| scenario | risk leverage C（平均 / tail） | 年率 vol | portfolio gross B（平均） | 年率 net（net 0.5） | margin 利用率（平均 / tail） | 20% gap の損失（tail） | gap 後の維持率 | gap で loss-cut | loss-cut までの 1 通貨 gap | 10 年最大 DD 95%点（net 0 / net 0.5） |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| vol 8% | 3.44 / 5.43 | 8.0% | 2.64 | 4.0% | 11.0% / 19.8% | 40% | 3.05 | なし | 40% | 44% / 29% |
-| vol 10% | 4.29 / 6.79 | 10.0% | 3.3 | 5.0% | 13.8% / 24.7% | 50% | 2.04 | なし | 30% | 51% / 34% |
-| vol 12% | 5.15 / 8.15 | 12.0% | 3.97 | 6.0% | 16.6% / 29.7% | 59% | 1.37 | なし | 24% | 57% / 40% |
-| vol 15% | 6.44 / 10.19 | 15.0% | 4.96 | 7.5% | 20.7% / 37.1% | 74% | 0.69 | **loss-cut** | 17% | 66% / 47% |
+| scenario | risk leverage C（平均 / tail） | 年率 vol | portfolio gross B（平均） | 年率 net（net 0.5） | margin 利用率（平均 / tail） | 20% gap の損失（tail） | gap 後の維持率 | gap で loss-cut | loss-cut までの 1 通貨 gap | 10 年最大 DD 95%点（net 0 / net 0.5） | 固定 notional の DD+gap 後 equity | 固定 notional で loss-cut |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| vol 8% | 3.44 / 5.43 | 8.0% | 2.64 | 4.0% | 11.0% / 19.8% | 40% | 3.05 | なし | 40% | 44% / 29% | 3% | **loss-cut** |
+| vol 10% | 4.29 / 6.79 | 10.0% | 3.3 | 5.0% | 13.8% / 24.7% | 50% | 2.04 | なし | 30% | 51% / 34% | -21% | **loss-cut** |
+| vol 12% | 5.15 / 8.15 | 12.0% | 3.97 | 6.0% | 16.6% / 29.7% | 59% | 1.37 | なし | 24% | 57% / 40% | -45% | **loss-cut** |
+| vol 15% | 6.44 / 10.19 | 15.0% | 4.96 | 7.5% | 20.7% / 37.1% | 74% | 0.69 | **loss-cut** | 17% | 66% / 47% | -81% | **loss-cut** |
 <!-- /table -->
 
 **年率 5% / 10% / 15% に必要なもの**:
 
 <!-- table:return_targets -->
-| 年率 net 目標 | net Sharpe | 必要 vol | risk leverage C（平均 / tail） | portfolio gross B | margin 利用率（tail） | gap 後の維持率 | gap で loss-cut | 10 年最大 DD 95%点（net 0 / 仮定 Sharpe） |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| 5% | 0.3 | 16.7% | 7.16 / 11.32 | 5.51 | 41.2% | 0.42 | **loss-cut** | 70% / 58% |
-| 5% | 0.5 | 10.0% | 4.29 / 6.79 | 3.3 | 24.7% | 2.04 | なし | 51% / 34% |
-| 5% | 0.8 | 6.2% | 2.68 / 4.24 | 2.07 | 15.4% | 4.47 | なし | 36% / 18% |
-| 10% | 0.3 | 33.3% | 14.31 / 22.63 | 11.02 | 82.4% | —（equity 消失） | **loss-cut** | 91% / 82% |
-| 10% | 0.5 | 20.0% | 8.59 / 13.58 | 6.61 | 49.4% | 0.02 | **loss-cut** | 76% / 57% |
-| 10% | 0.8 | 12.5% | 5.37 / 8.49 | 4.13 | 30.9% | 1.23 | なし | 59% / 34% |
-| 15% | 0.3 | 50.0% | 21.47 / 33.95 | 16.52 | 123.6% | —（equity 消失） | **loss-cut** | 97% / 93% |
-| 15% | 0.5 | 30.0% | 12.88 / 20.37 | 9.91 | 74.2% | —（equity 消失） | **loss-cut** | 88% / 72% |
-| 15% | 0.8 | 18.8% | 8.05 / 12.73 | 6.2 | 46.3% | 0.15 | **loss-cut** | 74% / 46% |
+| 年率 net 目標 | net Sharpe | 必要 vol | risk leverage C（平均 / tail） | portfolio gross B | margin 利用率（tail） | gap 後の維持率 | gap で loss-cut | 10 年最大 DD 95%点（net 0 / 仮定 Sharpe） | 固定 notional で loss-cut |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| 5% | 0.3 | 16.7% | 7.16 / 11.32 | 5.51 | 41.2% | 0.42 | **loss-cut** | 70% / 58% | **loss-cut** |
+| 5% | 0.5 | 10.0% | 4.29 / 6.79 | 3.3 | 24.7% | 2.04 | なし | 51% / 34% | **loss-cut** |
+| 5% | 0.8 | 6.2% | 2.68 / 4.24 | 2.07 | 15.4% | 4.47 | なし | 36% / 18% | なし |
+| 10% | 0.3 | 33.3% | 14.31 / 22.63 | 11.02 | 82.4% | —（equity 消失） | **loss-cut** | 91% / 82% | **loss-cut** |
+| 10% | 0.5 | 20.0% | 8.59 / 13.58 | 6.61 | 49.4% | 0.02 | **loss-cut** | 76% / 57% | **loss-cut** |
+| 10% | 0.8 | 12.5% | 5.37 / 8.49 | 4.13 | 30.9% | 1.23 | なし | 59% / 34% | **loss-cut** |
+| 15% | 0.3 | 50.0% | 21.47 / 33.95 | 16.52 | 123.6% | —（equity 消失） | **loss-cut** | 97% / 93% | **loss-cut** |
+| 15% | 0.5 | 30.0% | 12.88 / 20.37 | 9.91 | 74.2% | —（equity 消失） | **loss-cut** | 88% / 72% | **loss-cut** |
+| 15% | 0.8 | 18.8% | 8.05 / 12.73 | 6.2 | 46.3% | 0.15 | **loss-cut** | 74% / 46% | **loss-cut** |
 <!-- /table -->
 
 読み方:
 
+- **drawdown の近似**: log 空間で `1 − exp(−(vol 単位の DD) × vol)` とし、`−σ²/2` の drift 調整は入れていない（net 0・15% vol で
+  95%点を 66% と出すが、調整を入れると 69% 程度になる。わずかに楽観側）。
 - **leverage は Sharpe を変えない**。年率 = net Sharpe × vol で、leverage が変えるのは正の edge を年率に換算する倍率だけ。負の edge は
   何倍にしても負のまま。
 - **年 5%**: net 0.5 なら 10% vol（平均 C 4.29、tail 6.79、margin 利用率 tail 24.7%）で gap stress 後の維持率 2.04、loss-cut に至らない。
-  ただし net 0 の場合の 10 年最大 DD 95%点は 51%。net 0.3 だと 16.7% vol が要り、gap stress で loss-cut に至る。
-- **年 10%**: net 0.8 なら 12.5% vol（平均 C 5.37）で到達し、gap 後の維持率 1.23 で耐える。net 0.5 では 20% vol が要り、loss-cut に至る。
-- **年 15%**: net 0.8 でも 18.8% vol が要り、loss-cut に至る。
+  ただし net 0 の場合の 10 年最大 DD 95%点は 51%、**固定 notional のままなら DD+gap で loss-cut に至る**。net 0.3 だと 16.7% vol が要り、
+  equity 比例でも gap stress で loss-cut。
+- **年 10%**: net 0.8 なら 12.5% vol（平均 C 5.37）で、equity 比例なら gap 後の維持率 1.23 で耐える。net 0.5 では 20% vol が要り loss-cut。
+- **年 15%**: net 0.8 でも 18.8% vol が要り、equity 比例でも loss-cut に至る。
+- **sizing が効く帯**: 固定 notional のままだと 8% vol でも DD+gap で loss-cut に届くので、年 5% を目指す時点で sizing の変更が要件になる。
 - 以前の「12% vol は 5.15 倍で上限超過」は、**以前の内部 5 倍を超えるが、それだけでは OANDA 上で実行不能ではない**、に訂正する。
   12% vol は gap stress 後の維持率 1.37 で loss-cut に至らないが、1 通貨 24% の gap で loss-cut に届き、net 0 なら 10 年 DD 95%点は 57%。
 
@@ -823,7 +834,9 @@ inventory が C09 を economic でも不合格と記録している点を抱え�
 → **算術上の capacity はあるが、どの source にもそこに届く証拠は無い。** 10% vol で年 5% に net 0.5、年 10% に net 1.0 が要る
 （12% vol なら 0.42 / 0.83 で、平均 risk leverage 約 5.15 が要る。これは以前の内部 5 倍を超えるが、それだけでは OANDA 上で実行不能
 ではない。必要証拠金は平均で equity の約 17%、leverage の tail で約 30%。実行可能性は固定倍率ではなく gap stress と margin で判定し、
-R.6 の宣言した stress では約 13.5% vol までが loss-cut に至らない。これは Sharpe に依存しない broker 側の判定で、drawdown の許容は別に Human が判断する）。
+R.6 の宣言した stress では、equity 比例の sizing を前提に約 13.5% vol までが loss-cut に至らない。現在の執行層のままの固定 notional では
+約 6.9% vol までで、10% vol を使うこと自体が sizing の変更を要件にする。これは Sharpe に依存しない broker 側の判定で、drawdown の許容は別に
+Human が判断する）。
 T-R の prior（出典のない判断で net 0.1〜0.4）の中央（約 0.25）では単独で 10% vol の年 2.5% 程度で、年 5% は上端を超える。
 T-R を 0.1〜0.4、T-V を学術 prior の 0.2〜0.4、T-E を 0.1〜0.4 と置き、3 つが独立に成立すれば合成 net は √ΣS² で 0.24〜0.69
 （10% vol で年 2.4〜6.9%）。**年 10%（10% vol で net 1.0）には、

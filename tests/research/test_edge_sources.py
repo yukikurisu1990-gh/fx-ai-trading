@@ -728,11 +728,40 @@ class TestLeverageAndMargin:
         assert row["p95_max_drawdown_10y_at_zero_sharpe"] == pytest.approx(
             1.0 - math.exp(-zero * vol), abs=1e-3
         )
+        assumed = capacity.gaussian_drawdown(0.5)["p95_max_drawdown_in_vol_units"]
+        assert row["p95_max_drawdown_10y_at_assumed_sharpe"] == pytest.approx(
+            1.0 - math.exp(-assumed * vol), abs=1e-3
+        )
+        assert row["largest_currency_gap_before_loss_cut"] == pytest.approx(
+            (1.0 - margin_tail)
+            / (tail * route["largest_single_currency_exposure_per_unit_currency_gross"]["p95"]),
+            abs=1e-3,
+        )
+        fixed = 1.0 - zero * vol - gap
+        assert row["fixed_notional_equity_after_drawdown_and_gap"] == pytest.approx(fixed, abs=1e-3)
+        assert row["fixed_notional_loss_cut"] == (fixed <= margin_tail)
 
     def test_the_broker_bound_is_where_the_gap_flag_turns(self) -> None:
         bound = leverage.broker_feasible_mean_risk_leverage(ROOT)
         assert leverage.scale(ROOT, bound * 0.99, 0.5)["loss_cut_on_gap"] is False
         assert leverage.scale(ROOT, bound * 1.01, 0.5)["loss_cut_on_gap"] is True
+
+    def test_the_fixed_notional_bound_is_lower_and_turns_its_own_flag(self) -> None:
+        equity_bound = leverage.broker_feasible_mean_risk_leverage(ROOT)
+        fixed_bound = leverage.broker_feasible_mean_risk_leverage(ROOT, equity_proportional=False)
+        assert fixed_bound < equity_bound
+        assert leverage.scale(ROOT, fixed_bound * 0.99, 0.5)["fixed_notional_loss_cut"] is False
+        assert leverage.scale(ROOT, fixed_bound * 1.01, 0.5)["fixed_notional_loss_cut"] is True
+        assert leverage.scale(ROOT, 4.29, 0.5)["fixed_notional_loss_cut"] is True
+
+    def test_equity_proportional_sizing_is_stated_as_a_requirement(self, document: str) -> None:
+        assert (
+            "equity 比例の sizing は「実装への要求」であって、再利用する執行層の性質ではない"
+            in document
+        )
+        assert "固定 notional（現在の執行層のまま" in document
+        assert "run_book" in document
+        assert any("REQUIREMENT" in step for step in leverage.RISK_BASED_POLICY["order"])
 
     def test_the_three_leverages_are_distinct_quantities(self) -> None:
         row = leverage.scale(ROOT, 4.0, 0.5)

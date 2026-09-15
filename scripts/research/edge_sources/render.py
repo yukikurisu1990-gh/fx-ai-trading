@@ -188,13 +188,15 @@ def _scenario_row(label: str, row: dict[str, object]) -> str:
         f"{float(row['margin_utilisation_mean']):.1%} / {float(row['margin_utilisation_at_leverage_tail']):.1%} | "
         f"{float(row['gap_loss_at_leverage_tail']):.0%} | {_ratio(row)} | {_flag(row)} | "
         f"{float(row['largest_currency_gap_before_loss_cut']):.0%} | "
-        f"{float(row['p95_max_drawdown_10y_at_zero_sharpe']):.0%} / {float(row['p95_max_drawdown_10y_at_assumed_sharpe']):.0%} |"
+        f"{float(row['p95_max_drawdown_10y_at_zero_sharpe']):.0%} / {float(row['p95_max_drawdown_10y_at_assumed_sharpe']):.0%} | "
+        f"{float(row['fixed_notional_equity_after_drawdown_and_gap']):.0%} | "
+        f"{'**loss-cut**' if row['fixed_notional_loss_cut'] else 'なし'} |"
     )
 
 
 _SCENARIO_HEADER = [
-    "| scenario | risk leverage C（平均 / tail） | 年率 vol | portfolio gross B（平均） | 年率 net（net 0.5） | margin 利用率（平均 / tail） | 20% gap の損失（tail） | gap 後の維持率 | gap で loss-cut | loss-cut までの 1 通貨 gap | 10 年最大 DD 95%点（net 0 / net 0.5） |",
-    "| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |",
+    "| scenario | risk leverage C（平均 / tail） | 年率 vol | portfolio gross B（平均） | 年率 net（net 0.5） | margin 利用率（平均 / tail） | 20% gap の損失（tail） | gap 後の維持率 | gap で loss-cut | loss-cut までの 1 通貨 gap | 10 年最大 DD 95%点（net 0 / net 0.5） | 固定 notional の DD+gap 後 equity | 固定 notional で loss-cut |",
+    "| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |",
 ]
 
 
@@ -215,8 +217,8 @@ def vol_target_scenarios() -> list[str]:
 def return_targets() -> list[str]:
     data = leverage.build(ROOT)["return_targets"]
     rows = [
-        "| 年率 net 目標 | net Sharpe | 必要 vol | risk leverage C（平均 / tail） | portfolio gross B | margin 利用率（tail） | gap 後の維持率 | gap で loss-cut | 10 年最大 DD 95%点（net 0 / 仮定 Sharpe） |",
-        "| --- | --- | --- | --- | --- | --- | --- | --- | --- |",
+        "| 年率 net 目標 | net Sharpe | 必要 vol | risk leverage C（平均 / tail） | portfolio gross B | margin 利用率（tail） | gap 後の維持率 | gap で loss-cut | 10 年最大 DD 95%点（net 0 / 仮定 Sharpe） | 固定 notional で loss-cut |",
+        "| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |",
     ]
     for target, by_sharpe in data.items():
         for sharpe, row in by_sharpe.items():
@@ -224,7 +226,8 @@ def return_targets() -> list[str]:
                 f"| {float(target):.0%} | {sharpe} | {float(row['required_vol']):.1%} | "
                 f"{row['risk_leverage_C_mean']} / {row['risk_leverage_C_tail']} | {row['portfolio_gross_leverage_B_mean']} | "
                 f"{float(row['margin_utilisation_at_leverage_tail']):.1%} | {_ratio(row)} | {_flag(row)} | "
-                f"{float(row['p95_max_drawdown_10y_at_zero_sharpe']):.0%} / {float(row['p95_max_drawdown_10y_at_assumed_sharpe']):.0%} |"
+                f"{float(row['p95_max_drawdown_10y_at_zero_sharpe']):.0%} / {float(row['p95_max_drawdown_10y_at_assumed_sharpe']):.0%} | "
+                f"{'**loss-cut**' if row['fixed_notional_loss_cut'] else 'なし'} |"
             )
     return rows
 

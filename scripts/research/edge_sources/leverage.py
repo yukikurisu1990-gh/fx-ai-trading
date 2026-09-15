@@ -59,14 +59,16 @@ RISK_BASED_POLICY: Final[dict[str, Any]] = {
         "1. unit-risk economics first: the unlevered book's gross and net Sharpe decide whether a source exists; leverage never enters that decision",
         "2. choose a target volatility; risk leverage C = target vol / unlevered vol",
         "3. route the scaled currency book to pairs; portfolio gross leverage B and required margin = sum |routed notional_i| x margin_rate_i",
-        "4. broker test (gap): the book is sized to equity every day, so a slow drawdown does not approach the loss-cut; a gap does. At the leverage tail (Track 1's recorded p95 / mean uncapped leverage) and the p95 single-currency exposure of the routed book, one currency gaps 20% against all others before the book can resize",
+        "4. broker test (gap): under equity-proportional sizing a slow drawdown does not approach the loss-cut, because notional falls with equity; only a gap does. At the leverage tail (Track 1's recorded p95 / mean uncapped leverage) and the p95 single-currency exposure of the routed book, one currency gaps 20% against all others before the book can resize",
+        "4b. equity-proportional sizing is a REQUIREMENT on any implementation, not a property of the reused layer: Track 1's run_book sizes on fixed capital, moves leverage only outside a 10% hysteresis and weights only outside the 0.10 band. The fixed-notional case is therefore reported alongside, with the drawdown left in",
         "5. a scale is broker-infeasible only if equity after that gap is at or below the required margin on the still-open notional (maintenance ratio 100%, loss-cut) — not because it exceeds any fixed multiple",
         "6. risk appetite (reported, not a broker test): ten-year maximum drawdown with equity-proportional sizing, at net Sharpe 0 (the sizing-relevant case) and at the assumed Sharpe; drawdown, margin utilisation and concentration are for Human judgement, never optimised",
     ],
     "why_these_stresses": {
         "gap_20pct": "the order of magnitude of the largest G10 one-day repricing on record (the SNB's January 2015 floor removal). A declared assumption, not measured here",
         "leverage_tail": "vol targeting raises leverage in calm spells, which is when gaps arrive; Track 1 recorded mean uncapped leverage 5.08 and p95 8.04 at a 10% target",
-        "routed_exposure": "a single currency's exposure in the routed pair book exceeds its capped weight after band drift; the p95 of the routed book is used, not the 0.25 cap",
+        "routed_exposure": "a single currency's exposure in the routed pair book exceeds its capped weight because PAIRS_20 is not a complete graph and routing is an equal split, not because of band drift; the p95 of the routed book is used, not the 0.25 cap",
+        "joint_tail": "the leverage tail, the exposure p95 and the margin p95 are taken together, which is conservative",
         "drawdown_at_zero_sharpe": "a sizing rule must not grant more leverage because a higher Sharpe is hoped for",
     },
     "second_order_effects_ignored": [
@@ -215,18 +217,36 @@ def scale(root: Path, risk_leverage: float, net_sharpe: float) -> dict[str, Any]
         "p95_max_drawdown_10y_at_zero_sharpe": round(
             _equity_drawdown(zero["p95_max_drawdown_in_vol_units"], vol), 3
         ),
+        #: what the reused layer would do: notional fixed, so the drawdown stays in the path
+        "fixed_notional_equity_after_drawdown_and_gap": round(
+            1.0 - zero["p95_max_drawdown_in_vol_units"] * vol - gap_loss, 4
+        ),
+        "fixed_notional_loss_cut": bool(
+            1.0 - zero["p95_max_drawdown_in_vol_units"] * vol - gap_loss <= margin_tail
+        ),
     }
 
 
-def broker_feasible_mean_risk_leverage(root: Path) -> float:
-    """The largest mean C at which the leverage-tail gap leaves equity above margin."""
+def broker_feasible_mean_risk_leverage(root: Path, *, equity_proportional: bool = True) -> float:
+    """The largest mean C whose stress leaves equity above the required margin.
+
+    With equity-proportional sizing only the gap matters. With fixed notional — what
+    Track 1's layer actually does — the ten-year drawdown at net Sharpe 0 is in the
+    path as well, and it enters linearly in C because the drawdown is arithmetic.
+    """
     route = routing_profile(root)
-    per_unit = (
+    tail = leverage_tail_multiple(root)
+    per_unit = tail * (
         route["largest_single_currency_exposure_per_unit_currency_gross"]["p95"]
         * STRESS_CURRENCY_GAP
         + route["margin_per_unit_currency_gross"]["p95"]
     )
-    return round(1.0 / (leverage_tail_multiple(root) * per_unit), 2)
+    if not equity_proportional:
+        per_unit += (
+            capacity.gaussian_drawdown(0.0)["p95_max_drawdown_in_vol_units"]
+            * capacity.VOL_PER_UNIT_GROSS
+        )
+    return round(1.0 / per_unit, 2)
 
 
 def pair_margin_table(root: Path, risk_leverage: float) -> list[dict[str, Any]]:
@@ -279,6 +299,14 @@ def build(root: Path) -> dict[str, Any]:
         ),
         "broker_feasible_vol_target_under_gap_stress": round(
             broker_feasible_mean_risk_leverage(root) * capacity.VOL_PER_UNIT_GROSS, 4
+        ),
+        "broker_feasible_mean_risk_leverage_fixed_notional": broker_feasible_mean_risk_leverage(
+            root, equity_proportional=False
+        ),
+        "broker_feasible_vol_target_fixed_notional": round(
+            broker_feasible_mean_risk_leverage(root, equity_proportional=False)
+            * capacity.VOL_PER_UNIT_GROSS,
+            4,
         ),
         "pair_margin_at_10pct_vol": {
             "risk_leverage_C": round(ten_pct, 2),
