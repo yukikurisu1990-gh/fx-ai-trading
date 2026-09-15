@@ -32,13 +32,18 @@ def build() -> dict[str, Any]:
             "return_and_leverage": capacity.return_and_leverage_table(),
             "event_book": capacity.event_book_table(),
             "sample_years_needed_one_sided_5pct": {
-                f"{s:g}": capacity.sample_years_needed(s) for s in capacity.NET_SHARPE_SCENARIOS
+                f"power_{p:g}": {
+                    f"{s:g}": capacity.sample_years_needed(s, p)
+                    for s in capacity.NET_SHARPE_SCENARIOS
+                }
+                for p in (0.5, 0.8)
             },
         },
         "evidence_map": [asdict(e) for e in candidates.EVIDENCE_MAP],
         "candidates": [{**asdict(c), "score": candidates.score(c)} for c in candidates.CANDIDATES],
         "ranking": candidates.ranking(),
         "weights": {"gains": candidates.GAIN_WEIGHTS, "burdens": candidates.BURDEN_WEIGHTS},
+        "distinct_directions": candidates.distinct_directions(),
         "proposed_tracks": [
             {"track": name, "candidates": list(members)}
             for name, members in candidates.PROPOSED_TRACKS

@@ -136,7 +136,9 @@
       "observation_start_field": null
     }
   },
+  "fred_url_template": "https://fred.stlouisfed.org/series/{series_id}",
   "note": "metadata-only reachability/coverage check of public NON-FX sources; no FX series requested, no observation analysed. SSL/403 failures are unverified-from-this-environment, not unavailable.",
+  "null_fields": "a null frequency_text / declared_range means the page parser did not match; the range and frequency are unverified, not absent",
   "other": {
     "boc_valet_series_metadata_2y": {
       "error": null,
@@ -188,5 +190,6 @@
       "http_status": null,
       "url": "https://home.treasury.gov/resource-center/data-chart-center/interest-rates"
     }
-  }
+  },
+  "probe_script": "scripts/research/public_data_probe/availability_check.py"
 }

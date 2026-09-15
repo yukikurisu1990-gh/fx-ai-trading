@@ -1,26 +1,29 @@
 {
   "candidates": [
     {
-      "access": "無料・認証不要（取得は承認後）",
+      "access": "公開・認証不要のはず（取得可能性は 7 中 3 のみ確認、取得は承認後）",
       "architecture": "continuous currency book（Track 1 の執行層を再利用）",
       "breadth": "8 通貨（実効 4）",
       "breadth_score": 4,
-      "capacity": "net 0.5 に 20 日 IC 12.8%（日次換算 2.9%）。prior は net 0.2〜0.5",
+      "capacity": "net 0.5 に日次 IC 2.9%（breadth 2 なら 4.1%）、20 日 IC 9.5%。prior は出典なしの判断で net 0.1〜0.4",
       "cid": "S01",
       "complexity": 2,
-      "data": "US 2y は FRED 日次 1976〜。非 US 2y は各中銀（BoE・BoC・MOF は到達、ECB・Bundesbank・SNB は本環境で証明書エラー、RBA・RBNZ は 403）",
-      "data_burden": 3,
+      "data": "US 2y は FRED 日次 1976〜。非 US 2y は各中銀で、到達を確認できたのは BoE・BoC・MOF の 3 つだけ（ECB・Bundesbank・SNB は本環境で証明書エラー、RBA・RBNZ は 403、いずれも未確認）。8 通貨揃うかは未確認",
+      "data_burden": 4,
       "direction": "A",
       "eligibility": "eligible",
       "engineering_burden": 2,
       "horizon": "5〜20 日",
+      "increment_of": [],
       "information": "各国 2 年国債利回りの日次変化（通貨ごとに対 G10 平均）",
       "information_gain": 5,
       "magnitude": 3,
       "mechanism": "市場が織り込む政策パス（2 年金利）の相対変化に、FX が数日〜数週遅れて追随する",
       "ml_role": "不要（線形 baseline）。閾値相互作用は S16 で増分のみ",
       "name": "front-end 金利差 repricing → 通貨相対リターン",
-      "notes": [],
+      "notes": [
+        "2 年金利差と FX は同日に強く共動するので、lag 付き利回り変化は lag 付き FX return（閉じた momentum）を大きく含む。同じ lookback の FX momentum を control にし、それを超える情報だけを S01 と認める"
+      ],
       "overfit_risk": 2,
       "overlap": [
         "H-016",
@@ -29,28 +32,29 @@
       ],
       "p_real": 3,
       "robustness": 3,
-      "score": 20,
+      "score": 19,
       "target": "通貨の 5〜20 日先 excess return",
       "turnover": "18〜43 RT/年/単位 gross",
       "turnover_cost": 2,
       "utilisation": "常時",
       "utilisation_score": 5,
-      "why_not_falsified": "H-016 は政策金利（階段関数）の level / change で、市場利回りは未取得。C09 は horizon gate で未実行"
+      "why_not_falsified": "H-016 は政策金利（階段関数）の level / change で、市場利回りは未取得。C09 は未実行だが horizon・dispersion window に加え economic_net_under_stress でも不合格（margin −0.63）で、この不合格は日次 1 往復を仮定したコストに依存する（#480 の band law では 20 日半減期で 18 RT/年）。追加履歴でも pass region は開かないと inventory が記録"
     },
     {
       "access": "無料・認証不要（取得は承認後）",
       "architecture": "continuous currency book",
       "breadth": "8 通貨（実効 4）",
       "breadth_score": 4,
-      "capacity": "net 0.5 に 60 日 IC 17.8%。prior は net 0.1〜0.3",
+      "capacity": "net 0.5 に日次 IC 2.3%、60 日 IC 13.0%。prior は net 0.1〜0.3",
       "cid": "S02",
       "complexity": 2,
-      "data": "非 US 10y の日次は中銀ソース（FRED の OECD 系列は月次のみ）",
+      "data": "非 US 10y の日次は中銀ソース。probe した FRED の非 US 10 年は OECD 月次系列（series id 末尾 M156N）で、FRED 上の非 US 日次系列は probe していない",
       "data_burden": 4,
       "direction": "A",
       "eligibility": "eligible",
       "engineering_burden": 2,
       "horizon": "20〜60 日",
+      "increment_of": [],
       "information": "各国 2s10s・曲率の日次変化",
       "information_gain": 3,
       "magnitude": 2,
@@ -73,26 +77,29 @@
       "why_not_falsified": "曲線形状は一度も取得していない"
     },
     {
-      "access": "無料・認証不要（取得は承認後）",
+      "access": "4 中銀のみ取得可能",
       "architecture": "event book（idle 時は保有なし、Track 1 の執行層で差分売買）",
-      "breadth": "8 中銀",
-      "breadth_score": 3,
-      "capacity": "n=60・3 日保有で net 0.5 に事象あたり 10.9 bp（課金）/ 6.7 bp（pair）。事象数が少なく検出力が律速",
+      "breadth": "4 中銀（Fed・ECB・BoJ・RBA）",
+      "breadth_score": 2,
+      "capacity": "n=34.4・3 日保有で net 0.5 に事象あたり 12.0 bp（課金）/ 7.7 bp（pair）、集中 position の vol 7% なら 14.6 bp。事象数が少なく検出力が律速",
       "cid": "S03",
       "complexity": 2,
-      "data": "会合カレンダーは Fed・ECB・BoJ・RBA を取得済み、BoE・BoC・SNB・RBNZ は追加要。2 年金利は S01 と同じ",
+      "data": "会合カレンダーは Fed・ECB・BoJ・RBA を取得済み。BoE・BoC・SNB・RBNZ は #472 であらゆる自動取得を拒否し、手作業の再構成はしない規則。2 年金利は S01 と同じ（ECB・RBA は到達未確認）",
       "data_burden": 3,
       "direction": "G",
       "eligibility": "eligible",
       "engineering_burden": 2,
       "horizon": "1〜5 日",
+      "increment_of": [],
       "information": "G10 中銀会合カレンダー + 会合日の 2 年金利変化",
       "information_gain": 4,
-      "magnitude": 2,
+      "magnitude": 1,
       "mechanism": "会合日に市場が織り込んだ政策パスの変化（2 年金利の当日変化）に、FX が会合後数日かけて追随する（under-reaction）",
       "ml_role": "不要",
       "name": "中銀会合日の市場 repricing → 会合後 drift",
-      "notes": [],
+      "notes": [
+        "event 日の repricing の符号は event 日の FX return と大きく重なるので、event 日の FX return 自体を control にする（event 後の price continuation と区別する）"
+      ],
       "overfit_risk": 2,
       "overlap": [
         "C01",
@@ -102,28 +109,29 @@
       ],
       "p_real": 3,
       "robustness": 3,
-      "score": 12,
+      "score": 11,
       "target": "会合通貨の 1〜5 日先 excess return（repricing の方向）",
-      "turnover": "事象あたり 1 往復、約 60 事象/年",
+      "turnover": "事象あたり 1 往復、年 34.4 事象（取得可能な 4 中銀の実測）",
       "turnover_cost": 2,
-      "utilisation": "約 9% の日",
-      "utilisation_score": 1,
-      "why_not_falsified": "H-018/H-019 は event の movement のみで方向ソースを持たず、H-016 は決定そのもので市場 repricing ではない。C01 は未実行"
+      "utilisation": "保有のある日 約 34%（通貨 slot の 5%）",
+      "utilisation_score": 2,
+      "why_not_falsified": "H-018/H-019 は event の movement のみで方向ソースを持たず、H-016 は決定そのもので市場 repricing ではない。C01 は未実行（horizon と dispersion window で不合格、economic は通過）"
     },
     {
-      "access": "無料・認証不要（取得は承認後）",
+      "access": "US のみ取得済み、非 US は未確認",
       "architecture": "event book",
-      "breadth": "8 通貨",
+      "breadth": "8 通貨（非 US の発表日カレンダーは未確認）",
       "breadth_score": 4,
-      "capacity": "n=150〜300・2〜5 日保有で net 0.5 に事象あたり 8.4〜9.4 bp（課金）/ 4.2〜5.2 bp（pair）",
+      "capacity": "n=150〜300・2〜5 日保有で net 0.5 に事象あたり 8.3〜9.3 bp（課金）/ 4.1〜5.1 bp（pair）、集中 position の vol 7% なら 9.1〜10.5 bp",
       "cid": "S04",
       "complexity": 3,
-      "data": "US 発表日は ALFRED を取得済み、非 US は発表日カレンダーが要る。2 年金利は S01 と同じ",
+      "data": "US 発表日は ALFRED を取得済み。非 USD 機関の無料・公式な時刻付き発表カレンダーは存在しない（C02）、日付だけのカレンダーの可否は未確認。2 年金利は S01 と同じ",
       "data_burden": 4,
       "direction": "G",
       "eligibility": "eligible",
       "engineering_burden": 3,
       "horizon": "1〜5 日",
+      "increment_of": [],
       "information": "G10 主要指標の発表日 + 当日の 2 年金利変化",
       "information_gain": 4,
       "magnitude": 3,
@@ -146,7 +154,7 @@
       "target": "発表通貨の 1〜5 日先 excess return",
       "turnover": "事象あたり 1 往復、150〜300 事象/年",
       "turnover_cost": 3,
-      "utilisation": "22〜74% の日",
+      "utilisation": "保有のある日 83〜100%（通貨 slot の 22〜74%）",
       "utilisation_score": 3,
       "why_not_falsified": "H-020 は US CPI の nowcast surprise で 1h〜1d・breadth 不足、C02 は時刻データの問題で blocked、#477 は検出力で skip。市場 repricing を surprise とする多日 drift は未検定。未 merge の #473 は survey consensus の USD 1h で検出力ある null"
     },
@@ -158,13 +166,14 @@
       "capacity": "breadth 2 のため必要 IC が約 1.4 倍に上がる。FX は 24h 連続取引で同時に織り込む prior が強い",
       "cid": "S05",
       "complexity": 2,
-      "data": "FRED で無料。FX 側は株式終値と同時刻に揃える必要（M1 archive で可能）",
+      "data": "VIX・Nikkei は FRED で無料、S&P 500 の履歴長は未確認。FX 側は株式終値と同時刻に揃える必要（seen span の M1 archive でのみ可能）",
       "data_burden": 2,
       "direction": "B",
       "eligibility": "eligible",
       "engineering_burden": 2,
       "horizon": "1〜5 日",
-      "information": "VIX（FRED 日次 1990〜）、S&P 500・Nikkei（FRED 日次）",
+      "increment_of": [],
+      "information": "VIX（FRED 日次 1990〜）、Nikkei（FRED 日次 1949〜）、S&P 500（FRED、range は probe で取れず、license で直近約 10 年に限られる可能性）",
       "information_gain": 3,
       "magnitude": 2,
       "mechanism": "risk appetite の変化が funding / carry 通貨へ遅れて波及する",
@@ -200,6 +209,7 @@
       "eligibility": "eligible",
       "engineering_burden": 2,
       "horizon": "5〜20 日",
+      "increment_of": [],
       "information": "WTI・Brent（FRED 日次）。金属の日次は無料では限定的（銅は月次）",
       "information_gain": 2,
       "magnitude": 1,
@@ -222,19 +232,20 @@
       "why_not_falsified": "C11 は未実行"
     },
     {
-      "access": "無料・認証不要",
+      "access": "公開・認証不要（履歴長は未確認）",
       "architecture": "continuous currency book",
       "breadth": "実効 1〜2",
       "breadth_score": 1,
       "capacity": "stress 期に偏るため tail 集中が大きく、年間を通じた収益は小さい prior",
       "cid": "S07",
       "complexity": 2,
-      "data": "FRED で無料",
+      "data": "HY OAS は FRED にあるが range は probe で取れず、ICE の license で履歴が短縮されている可能性（未確認）。SOFR は 2018〜",
       "data_burden": 2,
       "direction": "B",
       "eligibility": "eligible",
       "engineering_burden": 2,
       "horizon": "5〜20 日",
+      "increment_of": [],
       "information": "US HY OAS（FRED 日次）、SOFR（2018〜）",
       "information_gain": 2,
       "magnitude": 1,
@@ -270,6 +281,9 @@
       "eligibility": "eligible",
       "engineering_burden": 2,
       "horizon": "5〜20 日",
+      "increment_of": [
+        "S01"
+      ],
       "information": "利回り変化から推定する rates vol（MOVE は有料）",
       "information_gain": 1,
       "magnitude": 1,
@@ -303,9 +317,10 @@
       "data": "M1 archive はあるが分解能が足りない",
       "data_burden": 4,
       "direction": "C",
-      "eligibility": "excluded_renames_or_rescues_a_closed_family",
+      "eligibility": "excluded_structurally_cannot_clear_cost",
       "engineering_burden": 4,
       "horizon": "秒〜分",
+      "increment_of": [],
       "information": "20 pair の bid/ask",
       "information_gain": 1,
       "magnitude": 1,
@@ -313,7 +328,7 @@
       "ml_role": "—",
       "name": "三角 residual（cross と合成 cross の乖離）",
       "notes": [
-        "H-010 の収益化不能な microstructure と同じ層"
+        "改名ではなく、無裁定条件により構造的に cost を超えないための除外。H-010 の収益化不能な microstructure と同じ層"
       ],
       "overfit_risk": 3,
       "overlap": [
@@ -343,6 +358,7 @@
       "eligibility": "eligible",
       "engineering_burden": 3,
       "horizon": "数十分〜数時間",
+      "increment_of": [],
       "information": "通貨 excess return の intraday 系列",
       "information_gain": 2,
       "magnitude": 2,
@@ -380,6 +396,7 @@
       "eligibility": "excluded_renames_or_rescues_a_closed_family",
       "engineering_burden": 1,
       "horizon": "5〜20 日",
+      "increment_of": [],
       "information": "通貨 excess return の rolling PCA residual",
       "information_gain": 1,
       "magnitude": 2,
@@ -417,6 +434,7 @@
       "eligibility": "eligible",
       "engineering_burden": 2,
       "horizon": "5〜20 日",
+      "increment_of": [],
       "information": "rolling 相関と dispersion",
       "information_gain": 1,
       "magnitude": 1,
@@ -441,27 +459,29 @@
       "why_not_falsified": "C07 は未実行だが、price 由来の収束は H-024 と隣接"
     },
     {
-      "access": "無料（FX 長期履歴の read は保護 span 外に限り承認が要る）",
+      "access": "FX 長期履歴は保護 span を除外した範囲に限り、Red 承認の後に read（D-1）",
       "architecture": "continuous currency book（低 turnover）",
       "breadth": "8 通貨（実効 4）",
       "breadth_score": 4,
-      "capacity": "net 0.5 に 120 日 IC 23%。学術 prior は G10 value 単独で net 0.2〜0.4、低 turnover の分散源",
+      "capacity": "net 0.5 に日次 IC 2.1%、120 日 IC 16.8%。学術 prior は G10 value 単独で net 0.2〜0.4、低 turnover の分散源",
       "cid": "S13",
       "complexity": 1,
-      "data": "CPI は無料。検定には数十年の FX 履歴が要り、seen の 4.7 年では不能",
+      "data": "CPI は無料（公表 lag と改定がある）。検定には数十年の FX 履歴が要り、seen の 4.7 年では不能",
       "data_burden": 4,
       "direction": "D",
       "eligibility": "eligible",
       "engineering_burden": 2,
       "horizon": "3〜12 か月",
-      "information": "各国 CPI（FRED 月次）と長期の FX 水準",
+      "increment_of": [],
+      "information": "各国 CPI（月次、AUD・NZD は四半期）と長期の FX 水準",
       "information_gain": 4,
       "magnitude": 2,
       "mechanism": "実質為替レートの長期均衡からの乖離が数か月〜数年で戻る（学術的な currency value premium）",
       "ml_role": "不要",
       "name": "実質為替レート valuation（PPP・実質金利 anchor）",
       "notes": [
-        "seen data では答えられない。pre-2016-06-02 の公開 FX 履歴の承認が前提"
+        "seen data では答えられない。pre-2016-06-02 の公開 FX 履歴の承認が前提",
+        "leakage: CPI は公表日で揃え、PPP anchor は ex-ante（拡張窓または固定基準）に限る。2021 年以降の日付で数年の lookback を取ると fresh pool の FX 水準が要るので、warm-up は seen または pre-2016 の範囲に閉じる"
       ],
       "overfit_risk": 2,
       "overlap": [
@@ -492,6 +512,7 @@
       "eligibility": "eligible",
       "engineering_burden": 1,
       "horizon": "5〜20 日",
+      "increment_of": [],
       "information": "複数 horizon の price state",
       "information_gain": 1,
       "magnitude": 2,
@@ -529,6 +550,7 @@
       "eligibility": "eligible",
       "engineering_burden": 2,
       "horizon": "5〜20 日",
+      "increment_of": [],
       "information": "price 由来の regime 推定",
       "information_gain": 1,
       "magnitude": 1,
@@ -551,7 +573,7 @@
       "turnover_cost": 2,
       "utilisation": "常時",
       "utilisation_score": 4,
-      "why_not_falsified": "C12・C14 は未実行。H-022 の regime-gain は一定 gross の book で増分が厳密に 0"
+      "why_not_falsified": "C12・C14 は未実行。H-022 の regime-gain は一定 gross の book では日ごとのスカラーが消えるため測定されておらず（反証ではない）、その run も gate 無効化で evidence ではない"
     },
     {
       "access": "無料",
@@ -567,6 +589,9 @@
       "eligibility": "eligible",
       "engineering_burden": 3,
       "horizon": "5〜20 日",
+      "increment_of": [
+        "S01"
+      ],
       "information": "S01 + risk 状態（VIX 等）",
       "information_gain": 2,
       "magnitude": 2,
@@ -603,6 +628,10 @@
       "eligibility": "eligible",
       "engineering_burden": 3,
       "horizon": "1〜5 日",
+      "increment_of": [
+        "S03",
+        "S04"
+      ],
       "information": "event カレンダー + 当日の株式・金利変化",
       "information_gain": 2,
       "magnitude": 2,
@@ -640,6 +669,7 @@
       "eligibility": "blocked_by_data_access",
       "engineering_burden": 4,
       "horizon": "1〜5 日",
+      "increment_of": [],
       "information": "OANDA positionBook（認証要・禁止）、IG client sentiment（口座要）、Myfxbook（web、履歴なし）",
       "information_gain": 3,
       "magnitude": 2,
@@ -675,6 +705,7 @@
       "eligibility": "excluded_renames_or_rescues_a_closed_family",
       "engineering_burden": 1,
       "horizon": "1〜4 週",
+      "increment_of": [],
       "information": "CFTC COT（取得済み）",
       "information_gain": 1,
       "magnitude": 1,
@@ -711,6 +742,7 @@
       "eligibility": "blocked_by_data_access",
       "engineering_burden": 3,
       "horizon": "5〜20 日",
+      "increment_of": [],
       "information": "25 delta risk reversal",
       "information_gain": 3,
       "magnitude": 2,
@@ -741,9 +773,10 @@
       "data": "S&P・Nikkei は無料、他は限定的",
       "data_burden": 3,
       "direction": "I",
-      "eligibility": "eligible",
+      "eligibility": "excluded_family_suspended_by_decision",
       "engineering_burden": 3,
       "horizon": "数時間〜1 日",
+      "increment_of": [],
       "information": "月次の株式指数リターン",
       "information_gain": 2,
       "magnitude": 1,
@@ -765,7 +798,7 @@
       "turnover_cost": 2,
       "utilisation": "極めて低い",
       "utilisation_score": 1,
-      "why_not_falsified": "C05 は未実行、#475 の London fix は検出力で SUSPENDED"
+      "why_not_falsified": "—（C04・C05 は inventory で決定により停止・提案不可、#475 の London fix は検出力で SUSPENDED）"
     },
     {
       "access": "有料",
@@ -781,6 +814,7 @@
       "eligibility": "blocked_by_data_access",
       "engineering_burden": 4,
       "horizon": "数時間",
+      "increment_of": [],
       "information": "intraday の株価指数先物（有料）。price のみにすると C03 と同じ",
       "information_gain": 2,
       "magnitude": 2,
@@ -818,6 +852,7 @@
       "eligibility": "excluded_renames_or_rescues_a_closed_family",
       "engineering_burden": 1,
       "horizon": "1〜3 か月",
+      "increment_of": [],
       "information": "政策金利・利回り − インフレ期待",
       "information_gain": 1,
       "magnitude": 2,
@@ -838,7 +873,7 @@
       "turnover_cost": 1,
       "utilisation": "常時",
       "utilisation_score": 5,
-      "why_not_falsified": "—（H-016 の carry premium は short-yen に集中して NOT_SUPPORTED、level の組み替えは隣接）"
+      "why_not_falsified": "—（ここでの定義は取得済みの政策金利 + CPI で、H-016 の carry premium が short-yen に集中した NOT_SUPPORTED の組み替え。市場の実質利回りで作る版は S01・S13 の隣接として別に扱う）"
     },
     {
       "access": "保有",
@@ -854,6 +889,7 @@
       "eligibility": "excluded_renames_or_rescues_a_closed_family",
       "engineering_burden": 1,
       "horizon": "1 か月",
+      "increment_of": [],
       "information": "carry + VIX",
       "information_gain": 1,
       "magnitude": 2,
@@ -890,6 +926,7 @@
       "eligibility": "eligible",
       "engineering_burden": 2,
       "horizon": "3〜12 か月",
+      "increment_of": [],
       "information": "中銀 balance sheet（FRED 等、週次〜月次）",
       "information_gain": 2,
       "magnitude": 1,
@@ -908,245 +945,417 @@
       "utilisation": "常時",
       "utilisation_score": 5,
       "why_not_falsified": "未検定"
+    },
+    {
+      "access": "公開・認証不要のはず（未確認）",
+      "architecture": "continuous currency book（低 turnover）",
+      "breadth": "実効 2〜3（US 視点の flow が中心）",
+      "breadth_score": 2,
+      "capacity": "観測が月次で少なく、seen では検定不能。単独で年 5% の prior は低い",
+      "cid": "S26",
+      "complexity": 2,
+      "data": "TIC は公開・無料（本 task では probe していない）。公表 lag が長く、seen の期間では月次観測が約 56",
+      "data_burden": 3,
+      "direction": "H",
+      "eligibility": "eligible",
+      "engineering_burden": 2,
+      "horizon": "1〜3 か月",
+      "increment_of": [],
+      "information": "US Treasury TIC（月次、約 6 週の公表 lag）、各国の国際収支（月次〜四半期）",
+      "information_gain": 2,
+      "magnitude": 1,
+      "mechanism": "海外投資家の証券売買 flow の変化が、ヘッジ・決済需要として通貨需要に遅れて表れる",
+      "ml_role": "不要",
+      "name": "国際資本 flow（US TIC・国際収支）の相対変化",
+      "notes": [
+        "公表 lag（TIC は約 6 週）を必ず反映する"
+      ],
+      "overfit_risk": 3,
+      "overlap": [
+        "H-021",
+        "C21"
+      ],
+      "p_real": 2,
+      "robustness": 2,
+      "score": 7,
+      "target": "通貨の 1〜3 か月先 excess return",
+      "turnover": "約 5〜8 RT/年/単位 gross",
+      "turnover_cost": 1,
+      "utilisation": "常時",
+      "utilisation_score": 5,
+      "why_not_falsified": "COT（H-021・C21）は先物の投機 positioning で、現物証券の国際 flow は未取得・未検定"
+    },
+    {
+      "access": "公開（scraping の可否は未確認、承認前は取得しない）",
+      "architecture": "event book または continuous currency book",
+      "breadth": "取得できる中銀数に依存（テキストの時刻付き archive は未確認）",
+      "breadth_score": 3,
+      "capacity": "事象数は S03 と同程度で検出力が律速。S03 の repricing が tone を既に織り込むなら増分は小さい",
+      "cid": "S27",
+      "complexity": 4,
+      "data": "公開テキストは各中銀 web にあるが、時刻付き・過去分の機械取得は未確認",
+      "data_burden": 4,
+      "direction": "A",
+      "eligibility": "eligible",
+      "engineering_burden": 4,
+      "horizon": "1〜20 日",
+      "increment_of": [],
+      "information": "中銀の公開テキスト（声明・議事要旨・講演）の tone score",
+      "information_gain": 3,
+      "magnitude": 2,
+      "mechanism": "声明文の hawkish / dovish への変化が、市場の政策パス織り込みより先に通貨需要を動かす",
+      "ml_role": "tone の scoring に NLP が要る（方向予測を ML に任せるのではない）。辞書による単純 score を先に置く",
+      "name": "中銀 communication の tone 変化（声明・議事要旨・講演）",
+      "notes": [],
+      "overfit_risk": 4,
+      "overlap": [
+        "C01",
+        "H-019"
+      ],
+      "p_real": 2,
+      "robustness": 2,
+      "score": 2,
+      "target": "会合通貨の 1〜20 日先 excess return",
+      "turnover": "事象あたり 1 往復〜 18 RT/年/単位 gross",
+      "turnover_cost": 2,
+      "utilisation": "断続〜常時",
+      "utilisation_score": 3,
+      "why_not_falsified": "会合日の movement（H-019）と決定そのもの（C01）は扱ったが、テキストの tone は未取得・未検定"
+    },
+    {
+      "access": "US は公開・無料のはず（未確認）",
+      "architecture": "continuous currency book",
+      "breadth": "実効 1〜2（非 US の breakeven が揃わない）",
+      "breadth_score": 1,
+      "capacity": "breadth が狭く、単独での年 5% は困難。S01 の分解（名目 = 実質 + インフレ期待）として増分を見る価値",
+      "cid": "S28",
+      "complexity": 2,
+      "data": "US は FRED（本 task では probe していない）、非 US は物価連動債市場が薄い",
+      "data_burden": 4,
+      "direction": "A",
+      "eligibility": "eligible",
+      "engineering_burden": 2,
+      "horizon": "5〜20 日",
+      "increment_of": [],
+      "information": "US 5 年・10 年 breakeven（FRED 日次）、非 US の breakeven は限られる",
+      "information_gain": 2,
+      "magnitude": 1,
+      "mechanism": "名目金利ではなく実質金利側の変化（breakeven の変化）が通貨の実質リターン期待を動かす",
+      "ml_role": "不要",
+      "name": "市場のインフレ期待（breakeven）の repricing",
+      "notes": [],
+      "overfit_risk": 3,
+      "overlap": [
+        "S01",
+        "H-016"
+      ],
+      "p_real": 2,
+      "robustness": 2,
+      "score": 4,
+      "target": "通貨の 5〜20 日先 excess return",
+      "turnover": "18〜43 RT/年/単位 gross",
+      "turnover_cost": 2,
+      "utilisation": "常時",
+      "utilisation_score": 5,
+      "why_not_falsified": "政策金利の carry（H-016）とも名目 2 年（S01）とも別の成分だが、S01 と強く相関する"
     }
   ],
   "capacity": {
     "calibration_from_track_1_record": {
-      "mean_currency_gross": 0.9771,
+      "gross_sharpe": -0.4688,
+      "mean_currency_gross": 4.2917,
+      "net_sharpe": -0.8425,
       "raw_to_neutralised_corr": 0.8985,
-      "realized_annual_vol": 0.023704,
-      "turnover_per_unit_gross": 23.332
+      "realized_annual_vol": 0.099943,
+      "share_days_at_leverage_cap": 0.464,
+      "turnover_per_unit_gross": 25.567
     },
     "continuous_book": {
       "band": 0.1,
+      "breadth_sensitivity": 2.0,
       "cost_per_turnover_unit_bp": 3.406,
-      "effective_breadth_per_day": 4.0,
+      "effective_breadth_per_day_assumed": 4.0,
       "rows": {
         "half_life_120d": {
           "alpha_capture": 0.9498,
-          "cost_ir_drag": 0.071,
-          "daily_equivalent_ic_at_net_0_5": 0.021,
+          "cost_ir_drag": 0.074,
+          "required_daily_ic_at_net_0_5": {
+            "breadth_2": 0.0299,
+            "breadth_4": 0.0212
+          },
           "required_gross_ir": {
-            "0.3": 0.371,
-            "0.5": 0.571,
-            "0.8": 0.871
+            "0.3": 0.374,
+            "0.5": 0.574,
+            "0.8": 0.874
           },
           "required_horizon_ic": {
-            "0.3": 0.1498,
-            "0.5": 0.2305,
-            "0.8": 0.3516
+            "0.3": 0.1093,
+            "0.5": 0.1677,
+            "0.8": 0.2553
           },
           "turnover_per_unit_gross": 5.07
         },
         "half_life_1d": {
           "alpha_capture": 0.9513,
-          "cost_ir_drag": 1.415,
-          "daily_equivalent_ic_at_net_0_5": 0.0704,
+          "cost_ir_drag": 1.474,
+          "required_daily_ic_at_net_0_5": {
+            "breadth_2": 0.1027,
+            "breadth_4": 0.0726
+          },
           "required_gross_ir": {
-            "0.3": 1.715,
-            "0.5": 1.915,
-            "0.8": 2.215
+            "0.3": 1.774,
+            "0.5": 1.974,
+            "0.8": 2.274
           },
           "required_horizon_ic": {
-            "0.3": 0.0631,
-            "0.5": 0.0704,
-            "0.8": 0.0815
+            "0.3": 0.0653,
+            "0.5": 0.0726,
+            "0.8": 0.0837
           },
           "turnover_per_unit_gross": 100.78
         },
         "half_life_20d": {
           "alpha_capture": 0.9264,
-          "cost_ir_drag": 0.257,
-          "daily_equivalent_ic_at_net_0_5": 0.0286,
+          "cost_ir_drag": 0.267,
+          "required_daily_ic_at_net_0_5": {
+            "breadth_2": 0.041,
+            "breadth_4": 0.029
+          },
           "required_gross_ir": {
-            "0.3": 0.557,
-            "0.5": 0.757,
-            "0.8": 1.057
+            "0.3": 0.567,
+            "0.5": 0.767,
+            "0.8": 1.067
           },
           "required_horizon_ic": {
-            "0.3": 0.094,
-            "0.5": 0.1278,
-            "0.8": 0.1785
+            "0.3": 0.0703,
+            "0.5": 0.0951,
+            "0.8": 0.1323
           },
           "turnover_per_unit_gross": 18.28
         },
         "half_life_5d": {
           "alpha_capture": 0.9323,
-          "cost_ir_drag": 0.609,
-          "daily_equivalent_ic_at_net_0_5": 0.0416,
+          "cost_ir_drag": 0.634,
+          "required_daily_ic_at_net_0_5": {
+            "breadth_2": 0.0602,
+            "breadth_4": 0.0426
+          },
           "required_gross_ir": {
-            "0.3": 0.909,
-            "0.5": 1.109,
-            "0.8": 1.409
+            "0.3": 0.934,
+            "0.5": 1.134,
+            "0.8": 1.434
           },
           "required_horizon_ic": {
-            "0.3": 0.0763,
-            "0.5": 0.0931,
-            "0.8": 0.1182
+            "0.3": 0.0606,
+            "0.5": 0.0735,
+            "0.8": 0.093
           },
           "turnover_per_unit_gross": 43.36
         },
         "half_life_60d": {
           "alpha_capture": 0.9395,
-          "cost_ir_drag": 0.118,
-          "daily_equivalent_ic_at_net_0_5": 0.023,
+          "cost_ir_drag": 0.123,
+          "required_daily_ic_at_net_0_5": {
+            "breadth_2": 0.0328,
+            "breadth_4": 0.0232
+          },
           "required_gross_ir": {
-            "0.3": 0.418,
-            "0.5": 0.618,
-            "0.8": 0.918
+            "0.3": 0.423,
+            "0.5": 0.623,
+            "0.8": 0.923
           },
           "required_horizon_ic": {
-            "0.3": 0.1205,
-            "0.5": 0.1783,
-            "0.8": 0.2648
+            "0.3": 0.0885,
+            "0.5": 0.1304,
+            "0.8": 0.1932
           },
           "turnover_per_unit_gross": 8.39
         }
       },
       "transfer_coefficient": 0.9,
-      "vol_per_unit_gross": 0.02426
+      "vol_per_unit_gross": 0.023288
     },
     "event_book": {
-      "daily_sd_one_side_unit_bp": 30.56,
+      "concentrated_position_annual_vol_assumed": 0.07,
+      "daily_sd_concentrated_bp": 44.1,
+      "daily_sd_one_side_unit_bp": 29.34,
       "event_day_vol_multiple": 1.5,
       "round_trip_charged_bp": 6.812,
       "round_trip_pair_bp": 2.58,
       "rows": {
         "n150_h3_s0.3": {
-          "capital_utilisation_share_of_days": 0.223,
           "events_per_year": 150.0,
-          "gross_leverage_at_10pct_vol": 2.31,
+          "gross_leverage_at_10pct_vol": 2.41,
+          "gross_leverage_at_10pct_vol_concentrated": 1.6,
           "hold_days": 3.0,
           "mean_concurrent_positions": 1.79,
-          "required_edge_bp_charged_cost": 8.36,
-          "required_edge_bp_pair_cost": 4.12,
-          "required_edge_in_event_sd_charged": 0.1326,
-          "sd_per_event_bp": 63.0
+          "required_edge_bp_charged_cost": 8.29,
+          "required_edge_bp_charged_cost_concentrated": 9.04,
+          "required_edge_bp_pair_cost": 4.06,
+          "required_edge_in_event_sd_charged": 0.1371,
+          "sd_per_event_bp": 60.49,
+          "share_of_currency_slots": 0.223,
+          "share_of_days_with_a_position": 0.832
         },
         "n150_h3_s0.5": {
-          "capital_utilisation_share_of_days": 0.223,
           "events_per_year": 150.0,
-          "gross_leverage_at_10pct_vol": 2.31,
+          "gross_leverage_at_10pct_vol": 2.41,
+          "gross_leverage_at_10pct_vol_concentrated": 1.6,
           "hold_days": 3.0,
           "mean_concurrent_positions": 1.79,
-          "required_edge_bp_charged_cost": 9.38,
-          "required_edge_bp_pair_cost": 5.15,
-          "required_edge_in_event_sd_charged": 0.149,
-          "sd_per_event_bp": 63.0
+          "required_edge_bp_charged_cost": 9.28,
+          "required_edge_bp_charged_cost_concentrated": 10.52,
+          "required_edge_bp_pair_cost": 5.05,
+          "required_edge_in_event_sd_charged": 0.1534,
+          "sd_per_event_bp": 60.49,
+          "share_of_currency_slots": 0.223,
+          "share_of_days_with_a_position": 0.832
         },
         "n150_h3_s0.8": {
-          "capital_utilisation_share_of_days": 0.223,
           "events_per_year": 150.0,
-          "gross_leverage_at_10pct_vol": 2.31,
+          "gross_leverage_at_10pct_vol": 2.41,
+          "gross_leverage_at_10pct_vol_concentrated": 1.6,
           "hold_days": 3.0,
           "mean_concurrent_positions": 1.79,
-          "required_edge_bp_charged_cost": 10.93,
-          "required_edge_bp_pair_cost": 6.7,
-          "required_edge_in_event_sd_charged": 0.1734,
-          "sd_per_event_bp": 63.0
+          "required_edge_bp_charged_cost": 10.76,
+          "required_edge_bp_charged_cost_concentrated": 12.75,
+          "required_edge_bp_pair_cost": 6.53,
+          "required_edge_in_event_sd_charged": 0.1779,
+          "sd_per_event_bp": 60.49,
+          "share_of_currency_slots": 0.223,
+          "share_of_days_with_a_position": 0.832
         },
         "n300_h2_s0.3": {
-          "capital_utilisation_share_of_days": 0.298,
           "events_per_year": 300.0,
-          "gross_leverage_at_10pct_vol": 2.5,
+          "gross_leverage_at_10pct_vol": 2.6,
+          "gross_leverage_at_10pct_vol_concentrated": 1.73,
           "hold_days": 2.0,
           "mean_concurrent_positions": 2.38,
-          "required_edge_bp_charged_cost": 7.77,
-          "required_edge_bp_pair_cost": 3.53,
-          "required_edge_in_event_sd_charged": 0.141,
-          "sd_per_event_bp": 55.09
+          "required_edge_bp_charged_cost": 7.73,
+          "required_edge_bp_charged_cost_concentrated": 8.19,
+          "required_edge_bp_pair_cost": 3.5,
+          "required_edge_in_event_sd_charged": 0.1461,
+          "sd_per_event_bp": 52.89,
+          "share_of_currency_slots": 0.298,
+          "share_of_days_with_a_position": 0.908
         },
         "n300_h2_s0.5": {
-          "capital_utilisation_share_of_days": 0.298,
           "events_per_year": 300.0,
-          "gross_leverage_at_10pct_vol": 2.5,
+          "gross_leverage_at_10pct_vol": 2.6,
+          "gross_leverage_at_10pct_vol_concentrated": 1.73,
           "hold_days": 2.0,
           "mean_concurrent_positions": 2.38,
-          "required_edge_bp_charged_cost": 8.4,
-          "required_edge_bp_pair_cost": 4.17,
-          "required_edge_in_event_sd_charged": 0.1525,
-          "sd_per_event_bp": 55.09
+          "required_edge_bp_charged_cost": 8.34,
+          "required_edge_bp_charged_cost_concentrated": 9.11,
+          "required_edge_bp_pair_cost": 4.11,
+          "required_edge_in_event_sd_charged": 0.1577,
+          "sd_per_event_bp": 52.89,
+          "share_of_currency_slots": 0.298,
+          "share_of_days_with_a_position": 0.908
         },
         "n300_h2_s0.8": {
-          "capital_utilisation_share_of_days": 0.298,
           "events_per_year": 300.0,
-          "gross_leverage_at_10pct_vol": 2.5,
+          "gross_leverage_at_10pct_vol": 2.6,
+          "gross_leverage_at_10pct_vol_concentrated": 1.73,
           "hold_days": 2.0,
           "mean_concurrent_positions": 2.38,
-          "required_edge_bp_charged_cost": 9.36,
-          "required_edge_bp_pair_cost": 5.12,
-          "required_edge_in_event_sd_charged": 0.1698,
-          "sd_per_event_bp": 55.09
+          "required_edge_bp_charged_cost": 9.26,
+          "required_edge_bp_charged_cost_concentrated": 10.48,
+          "required_edge_bp_pair_cost": 5.02,
+          "required_edge_in_event_sd_charged": 0.175,
+          "sd_per_event_bp": 52.89,
+          "share_of_currency_slots": 0.298,
+          "share_of_days_with_a_position": 0.908
         },
         "n300_h5_s0.3": {
-          "capital_utilisation_share_of_days": 0.744,
           "events_per_year": 300.0,
-          "gross_leverage_at_10pct_vol": 4.5,
+          "gross_leverage_at_10pct_vol": 4.69,
+          "gross_leverage_at_10pct_vol_concentrated": 3.12,
           "hold_days": 5.0,
           "mean_concurrent_positions": 5.95,
-          "required_edge_bp_charged_cost": 8.14,
-          "required_edge_bp_pair_cost": 3.9,
-          "required_edge_in_event_sd_charged": 0.1065,
-          "sd_per_event_bp": 76.4
+          "required_edge_bp_charged_cost": 8.08,
+          "required_edge_bp_charged_cost_concentrated": 8.72,
+          "required_edge_bp_pair_cost": 3.85,
+          "required_edge_in_event_sd_charged": 0.1102,
+          "sd_per_event_bp": 73.35,
+          "share_of_currency_slots": 0.744,
+          "share_of_days_with_a_position": 0.997
         },
         "n300_h5_s0.5": {
-          "capital_utilisation_share_of_days": 0.744,
           "events_per_year": 300.0,
-          "gross_leverage_at_10pct_vol": 4.5,
+          "gross_leverage_at_10pct_vol": 4.69,
+          "gross_leverage_at_10pct_vol_concentrated": 3.12,
           "hold_days": 5.0,
           "mean_concurrent_positions": 5.95,
-          "required_edge_bp_charged_cost": 9.02,
-          "required_edge_bp_pair_cost": 4.79,
-          "required_edge_in_event_sd_charged": 0.118,
-          "sd_per_event_bp": 76.4
+          "required_edge_bp_charged_cost": 8.93,
+          "required_edge_bp_charged_cost_concentrated": 9.99,
+          "required_edge_bp_pair_cost": 4.7,
+          "required_edge_in_event_sd_charged": 0.1217,
+          "sd_per_event_bp": 73.35,
+          "share_of_currency_slots": 0.744,
+          "share_of_days_with_a_position": 0.997
         },
         "n300_h5_s0.8": {
-          "capital_utilisation_share_of_days": 0.744,
           "events_per_year": 300.0,
-          "gross_leverage_at_10pct_vol": 4.5,
+          "gross_leverage_at_10pct_vol": 4.69,
+          "gross_leverage_at_10pct_vol_concentrated": 3.12,
           "hold_days": 5.0,
           "mean_concurrent_positions": 5.95,
-          "required_edge_bp_charged_cost": 10.34,
-          "required_edge_bp_pair_cost": 6.11,
-          "required_edge_in_event_sd_charged": 0.1354,
-          "sd_per_event_bp": 76.4
+          "required_edge_bp_charged_cost": 10.2,
+          "required_edge_bp_charged_cost_concentrated": 11.9,
+          "required_edge_bp_pair_cost": 5.97,
+          "required_edge_in_event_sd_charged": 0.1391,
+          "sd_per_event_bp": 73.35,
+          "share_of_currency_slots": 0.744,
+          "share_of_days_with_a_position": 0.997
         },
-        "n60_h3_s0.3": {
-          "capital_utilisation_share_of_days": 0.089,
-          "events_per_year": 60.0,
-          "gross_leverage_at_10pct_vol": 1.46,
+        "n34.4_h3_s0.3": {
+          "events_per_year": 34.4,
+          "gross_leverage_at_10pct_vol": 1.15,
+          "gross_leverage_at_10pct_vol_concentrated": 0.77,
           "hold_days": 3.0,
-          "mean_concurrent_positions": 0.71,
-          "required_edge_bp_charged_cost": 9.25,
-          "required_edge_bp_pair_cost": 5.02,
-          "required_edge_in_event_sd_charged": 0.1469,
-          "sd_per_event_bp": 63.0
+          "mean_concurrent_positions": 0.41,
+          "required_edge_bp_charged_cost": 9.91,
+          "required_edge_bp_charged_cost_concentrated": 11.46,
+          "required_edge_bp_pair_cost": 5.67,
+          "required_edge_in_event_sd_charged": 0.1638,
+          "sd_per_event_bp": 60.49,
+          "share_of_currency_slots": 0.051,
+          "share_of_days_with_a_position": 0.336
         },
-        "n60_h3_s0.5": {
-          "capital_utilisation_share_of_days": 0.089,
-          "events_per_year": 60.0,
-          "gross_leverage_at_10pct_vol": 1.46,
+        "n34.4_h3_s0.5": {
+          "events_per_year": 34.4,
+          "gross_leverage_at_10pct_vol": 1.15,
+          "gross_leverage_at_10pct_vol_concentrated": 0.77,
           "hold_days": 3.0,
-          "mean_concurrent_positions": 0.71,
-          "required_edge_bp_charged_cost": 10.88,
-          "required_edge_bp_pair_cost": 6.65,
-          "required_edge_in_event_sd_charged": 0.1727,
-          "sd_per_event_bp": 63.0
+          "mean_concurrent_positions": 0.41,
+          "required_edge_bp_charged_cost": 11.97,
+          "required_edge_bp_charged_cost_concentrated": 14.56,
+          "required_edge_bp_pair_cost": 7.74,
+          "required_edge_in_event_sd_charged": 0.1979,
+          "sd_per_event_bp": 60.49,
+          "share_of_currency_slots": 0.051,
+          "share_of_days_with_a_position": 0.336
         },
-        "n60_h3_s0.8": {
-          "capital_utilisation_share_of_days": 0.089,
-          "events_per_year": 60.0,
-          "gross_leverage_at_10pct_vol": 1.46,
+        "n34.4_h3_s0.8": {
+          "events_per_year": 34.4,
+          "gross_leverage_at_10pct_vol": 1.15,
+          "gross_leverage_at_10pct_vol_concentrated": 0.77,
           "hold_days": 3.0,
-          "mean_concurrent_positions": 0.71,
-          "required_edge_bp_charged_cost": 13.32,
-          "required_edge_bp_pair_cost": 9.09,
-          "required_edge_in_event_sd_charged": 0.2114,
-          "sd_per_event_bp": 63.0
+          "mean_concurrent_positions": 0.41,
+          "required_edge_bp_charged_cost": 15.06,
+          "required_edge_bp_charged_cost_concentrated": 19.21,
+          "required_edge_bp_pair_cost": 10.83,
+          "required_edge_in_event_sd_charged": 0.249,
+          "sd_per_event_bp": 60.49,
+          "share_of_currency_slots": 0.051,
+          "share_of_days_with_a_position": 0.336
         }
       }
     },
     "return_and_leverage": {
+      "drawdown_model": "gaussian iid daily, 2000 paths x 10 years, fat tails not modelled",
+      "max_leverage_of_reused_layer": 5.0,
       "net_sharpe_needed_for_10pct": {
         "vol_0.08": 1.25,
         "vol_0.1": 1.0,
@@ -1157,6 +1366,11 @@
         "vol_0.1": 0.5,
         "vol_0.12": 0.417
       },
+      "probability_first_five_years_negative": {
+        "0.3": 0.261,
+        "0.5": 0.132,
+        "0.8": 0.039
+      },
       "rows": {
         "vol_0.08": {
           "annual_net_return": {
@@ -1164,7 +1378,18 @@
             "0.5": 0.04,
             "0.8": 0.064
           },
-          "gross_leverage": 3.3
+          "gross_leverage": 3.44,
+          "median_max_drawdown_10y": {
+            "0.3": 0.212,
+            "0.5": 0.183,
+            "0.8": 0.151
+          },
+          "p95_max_drawdown_10y": {
+            "0.3": 0.418,
+            "0.5": 0.338,
+            "0.8": 0.261
+          },
+          "within_reused_leverage_cap": true
         },
         "vol_0.1": {
           "annual_net_return": {
@@ -1172,7 +1397,18 @@
             "0.5": 0.05,
             "0.8": 0.08
           },
-          "gross_leverage": 4.12
+          "gross_leverage": 4.29,
+          "median_max_drawdown_10y": {
+            "0.3": 0.265,
+            "0.5": 0.228,
+            "0.8": 0.189
+          },
+          "p95_max_drawdown_10y": {
+            "0.3": 0.522,
+            "0.5": 0.423,
+            "0.8": 0.327
+          },
+          "within_reused_leverage_cap": true
         },
         "vol_0.12": {
           "annual_net_return": {
@@ -1180,17 +1416,58 @@
             "0.5": 0.06,
             "0.8": 0.096
           },
-          "gross_leverage": 4.95
+          "gross_leverage": 5.15,
+          "median_max_drawdown_10y": {
+            "0.3": 0.318,
+            "0.5": 0.274,
+            "0.8": 0.227
+          },
+          "p95_max_drawdown_10y": {
+            "0.3": 0.627,
+            "0.5": 0.508,
+            "0.8": 0.392
+          },
+          "within_reused_leverage_cap": false
         }
       }
     },
     "sample_years_needed_one_sided_5pct": {
-      "0.3": 30.07,
-      "0.5": 10.82,
-      "0.8": 4.23
+      "power_0.5": {
+        "0.3": 30.07,
+        "0.5": 10.82,
+        "0.8": 4.23
+      },
+      "power_0.8": {
+        "0.3": 68.7,
+        "0.5": 24.73,
+        "0.8": 9.66
+      }
     }
   },
   "classification": "NON_DECISION_BEARING_EXPLORATORY_ONLY",
+  "distinct_directions": [
+    "S01",
+    "S02",
+    "S03",
+    "S04",
+    "S05",
+    "S06",
+    "S07",
+    "S09",
+    "S10",
+    "S12",
+    "S13",
+    "S14",
+    "S15",
+    "S18",
+    "S20",
+    "S21",
+    "S22",
+    "S25",
+    "S26",
+    "S27",
+    "S28"
+  ],
   "evidence_map": [
     {
       "klass": "CLOSED",
@@ -1218,6 +1495,12 @@
     },
     {
       "klass": "CLOSED",
+      "ref": "H-005",
+      "status": "MULTI_DAY_REVERSAL_UNRESOLVED_INSUFFICIENT_DETECTION_POWER",
+      "what": "multi-day reversal の 39 config（検出力 0.29 の検出力不足の null。family は後に dropped）"
+    },
+    {
+      "klass": "CLOSED",
       "ref": "H-006",
       "status": "MULTI_DAY_REVERSAL_FAILED_SUPPLEMENTAL_HISTORY_REPLICATION",
       "what": "4〜6 日 reversal family"
@@ -1226,7 +1509,13 @@
       "klass": "CLOSED",
       "ref": "H-007",
       "status": "MULTI_DAY_MOMENTUM_UNRESOLVED_IN_FRESH_EXPLORATORY_HISTORY",
-      "what": "mirror momentum（反証ではなく検出力不足）"
+      "what": "mirror momentum（反証ではなく検出力不足の null。ledger 上は reversal family の dropped とともに CLOSED）"
+    },
+    {
+      "klass": "CLOSED",
+      "ref": "H-008",
+      "status": "CLOSED — Round A",
+      "what": "Round A の条件付け family"
     },
     {
       "klass": "CLOSED",
@@ -1250,7 +1539,7 @@
       "klass": "NOT_SUPPORTED",
       "ref": "H-012",
       "status": "MONTHLY_TSMOM_NOT_SUPPORTED_IN_EXISTING_PRICE_HISTORY",
-      "what": "monthly TSMOM"
+      "what": "monthly TSMOM（ledger 自身が「検出力不足の null、反証ではない」と記録）"
     },
     {
       "klass": "CLOSED",
@@ -1298,19 +1587,19 @@
       "klass": "NOT_SUPPORTED",
       "ref": "H-020",
       "status": "MACRO_SURPRISE_DIRECTIONAL_EDGE_NOT_SUPPORTED",
-      "what": "USD CPI の nowcast surprise 方向"
+      "what": "USD CPI の nowcast surprise 方向（ledger: 無料データで有用な breadth では検定不能）"
     },
     {
       "klass": "NOT_SUPPORTED",
       "ref": "H-021",
       "status": "COT_EDGE_NOT_SUPPORTED",
-      "what": "COT の tested cells"
+      "what": "COT の tested cells（同じ長さの再現では検出力が同じで何も決まらない、と ledger が記録）"
     },
     {
       "klass": "NOT_DECISION_GRADE",
       "ref": "H-022",
       "status": "MODEL_LEARNING_NOT_DECISION_GRADE_UNDER_CURRENT_DEVELOPMENT_GATE",
-      "what": "model learning（3 track、当時の gate）"
+      "what": "model learning（3 track、当時の gate。run は gate 無効化で evidence ではなく record）"
     },
     {
       "klass": "NOT_SUPPORTED",
@@ -1358,61 +1647,67 @@
       "klass": "NOT_DECISION_GRADE",
       "ref": "C09",
       "status": "NO_DECISION_GRADE_PASS_REGION",
-      "what": "yield differential change（未実行）"
+      "what": "yield differential change（未実行。horizon・economic_net_under_stress・dispersion window で不合格、追加履歴でも pass region は開かない）"
     },
     {
       "klass": "NOT_DECISION_GRADE",
       "ref": "C10",
       "status": "NO_DECISION_GRADE_PASS_REGION",
-      "what": "equity risk regime conditioning（未実行）"
+      "what": "equity risk regime conditioning（未実行。horizon・economic_net_under_stress・dispersion window で不合格、追加履歴でも pass region は開かない）"
     },
     {
       "klass": "NOT_DECISION_GRADE",
       "ref": "C11",
       "status": "NO_DECISION_GRADE_PASS_REGION",
-      "what": "commodity link response（未実行）"
+      "what": "commodity link response（未実行。horizon・economic_net_under_stress・dispersion window で不合格、追加履歴でも pass region は開かない）"
     },
     {
       "klass": "NOT_DECISION_GRADE",
       "ref": "C01",
       "status": "NO_DECISION_GRADE_PASS_REGION",
-      "what": "central bank decision response（未実行）"
+      "what": "central bank decision response（未実行。horizon と dispersion window で不合格、economic は通過。取得可能な中銀は 4、年 34.4 回）"
     },
     {
       "klass": "NOT_DECISION_GRADE",
       "ref": "C03",
       "status": "NO_DECISION_GRADE_PASS_REGION",
-      "what": "session handover relative（未実行）"
+      "what": "session handover relative（未実行。horizon・economic_net_under_stress・dispersion window で不合格）"
     },
     {
-      "klass": "NOT_DECISION_GRADE",
+      "klass": "SUSPENDED",
       "ref": "C04",
       "status": "NO_DECISION_GRADE_PASS_REGION",
-      "what": "benchmark fix flow（未実行）"
+      "what": "benchmark fix flow（決定により停止、提案不可。horizon・economic_net_under_stress でも不合格）"
     },
     {
-      "klass": "NOT_DECISION_GRADE",
+      "klass": "SUSPENDED",
       "ref": "C05",
       "status": "NO_DECISION_GRADE_PASS_REGION",
-      "what": "month-end rebalancing flow（未実行、事象数が下限未満）"
+      "what": "month-end rebalancing flow（決定により停止、提案不可）"
     },
     {
       "klass": "NOT_DECISION_GRADE",
       "ref": "C06",
       "status": "NO_DECISION_GRADE_PASS_REGION",
-      "what": "factor-neutral residual value（未実行）"
+      "what": "factor-neutral residual value（未実行。horizon・economic_net_under_stress・dispersion window で不合格）"
     },
     {
       "klass": "NOT_DECISION_GRADE",
       "ref": "C07",
       "status": "NO_DECISION_GRADE_PASS_REGION",
-      "what": "cross-sectional dispersion state（未実行）"
+      "what": "cross-sectional dispersion state（未実行。horizon・economic_net_under_stress・dispersion window で不合格）"
     },
     {
       "klass": "NOT_DECISION_GRADE",
       "ref": "C13",
       "status": "NO_DECISION_GRADE_PASS_REGION",
-      "what": "timeframe disagreement state（未実行）"
+      "what": "timeframe disagreement state（未実行。horizon・economic_net_under_stress・dispersion window で不合格）"
+    },
+    {
+      "klass": "CLOSED",
+      "ref": "C08",
+      "status": "PRIOR_FAMILY_CLOSED",
+      "what": "currency rank persistence"
     },
     {
       "klass": "CLOSED",
@@ -1430,13 +1725,43 @@
       "klass": "NOT_DECISION_GRADE",
       "ref": "C12",
       "status": "NO_DECISION_GRADE_PASS_REGION",
-      "what": "volatility regime transition（未実行）"
+      "what": "volatility regime transition（未実行。horizon・economic_net_under_stress・dispersion window で不合格）"
     },
     {
       "klass": "NOT_DECISION_GRADE",
       "ref": "C14",
       "status": "NO_DECISION_GRADE_PASS_REGION",
-      "what": "latent regime state（未実行）"
+      "what": "latent regime state（未実行。horizon・economic_net_under_stress・dispersion window で不合格）"
+    },
+    {
+      "klass": "NOT_DECISION_GRADE",
+      "ref": "C16",
+      "status": "NO_DECISION_GRADE_PASS_REGION",
+      "what": "horizon selection（未実行。horizon・economic_net_under_stress・dispersion window で不合格）"
+    },
+    {
+      "klass": "NOT_DECISION_GRADE",
+      "ref": "C18",
+      "status": "NO_DECISION_GRADE_PASS_REGION",
+      "what": "ML currency ranking（未実行。horizon・economic_net_under_stress・dispersion window で不合格）"
+    },
+    {
+      "klass": "NOT_DECISION_GRADE",
+      "ref": "C19",
+      "status": "NO_DECISION_GRADE_PASS_REGION",
+      "what": "ML take / skip gate（未実行。horizon・economic_net_under_stress・dispersion window で不合格）"
+    },
+    {
+      "klass": "UNTESTED",
+      "ref": "C15",
+      "status": "OUT_OF_GATE_SCOPE",
+      "what": "movement magnitude forecast（gate の対象外）"
+    },
+    {
+      "klass": "UNTESTED",
+      "ref": "C17",
+      "status": "OUT_OF_GATE_SCOPE",
+      "what": "intraday execution timing（gate の対象外）"
     },
     {
       "klass": "SUSPENDED",
@@ -1510,7 +1835,7 @@
       "eligibility": "eligible",
       "name": "front-end 金利差 repricing → 通貨相対リターン",
       "rank": 1,
-      "score": 20
+      "score": 19
     },
     {
       "cid": "S13",
@@ -1520,16 +1845,16 @@
       "score": 18
     },
     {
-      "cid": "S03",
-      "eligibility": "eligible",
-      "name": "中銀会合日の市場 repricing → 会合後 drift",
-      "rank": 3,
-      "score": 12
-    },
-    {
       "cid": "S02",
       "eligibility": "eligible",
       "name": "曲線 slope / curvature 差の変化",
+      "rank": 3,
+      "score": 11
+    },
+    {
+      "cid": "S03",
+      "eligibility": "eligible",
+      "name": "中銀会合日の市場 repricing → 会合後 drift",
       "rank": 4,
       "score": 11
     },
@@ -1555,73 +1880,87 @@
       "score": 7
     },
     {
+      "cid": "S26",
+      "eligibility": "eligible",
+      "name": "国際資本 flow（US TIC・国際収支）の相対変化",
+      "rank": 8,
+      "score": 7
+    },
+    {
       "cid": "S16",
       "eligibility": "eligible",
       "name": "金利 repricing × volatility の閾値効果",
-      "rank": 8,
+      "rank": 9,
       "score": 5
     },
     {
       "cid": "S06",
       "eligibility": "eligible",
       "name": "商品価格 → 資源国通貨（terms of trade lead）",
-      "rank": 9,
+      "rank": 10,
       "score": 4
     },
     {
       "cid": "S14",
       "eligibility": "eligible",
       "name": "fast / medium / slow の price state 不一致",
-      "rank": 10,
+      "rank": 11,
+      "score": 4
+    },
+    {
+      "cid": "S28",
+      "eligibility": "eligible",
+      "name": "市場のインフレ期待（breakeven）の repricing",
+      "rank": 12,
       "score": 4
     },
     {
       "cid": "S07",
       "eligibility": "eligible",
       "name": "信用 spread・funding stress → USD・JPY・CHF",
-      "rank": 11,
+      "rank": 13,
       "score": 3
     },
     {
-      "cid": "S21",
+      "cid": "S27",
       "eligibility": "eligible",
-      "name": "月末の株式相対リターンに条件付けた hedge rebalance flow",
-      "rank": 12,
+      "name": "中銀 communication の tone 変化（声明・議事要旨・講演）",
+      "rank": 14,
       "score": 2
     },
     {
       "cid": "S17",
       "eligibility": "eligible",
       "name": "event 日の cross-asset 共動を方向ソースにする",
-      "rank": 13,
+      "rank": 15,
       "score": 0
     },
     {
       "cid": "S10",
       "eligibility": "eligible",
       "name": "通貨 complex 間の lead-lag 伝播（例: EUR→CHF、AUD→NZD）",
-      "rank": 14,
+      "rank": 16,
       "score": -1
     },
     {
       "cid": "S15",
       "eligibility": "eligible",
       "name": "volatility / trend の状態遷移（latent regime）",
-      "rank": 15,
+      "rank": 17,
       "score": -1
     },
     {
       "cid": "S08",
       "eligibility": "eligible",
       "name": "金利 volatility 状態 × FX",
-      "rank": 16,
+      "rank": 18,
       "score": -2
     },
     {
       "cid": "S12",
       "eligibility": "eligible",
       "name": "相関 breakdown / dispersion 状態の relative value",
-      "rank": 17,
+      "rank": 19,
       "score": -3
     },
     {
@@ -1667,6 +2006,13 @@
       "score": 3
     },
     {
+      "cid": "S21",
+      "eligibility": "excluded_family_suspended_by_decision",
+      "name": "月末の株式相対リターンに条件付けた hedge rebalance flow",
+      "rank": null,
+      "score": 2
+    },
+    {
       "cid": "S22",
       "eligibility": "blocked_by_data_access",
       "name": "session 間の cross-market 情報伝達（Asia→London、London→NY）",
@@ -1675,7 +2021,7 @@
     },
     {
       "cid": "S09",
-      "eligibility": "excluded_renames_or_rescues_a_closed_family",
+      "eligibility": "excluded_structurally_cannot_clear_cost",
       "name": "三角 residual（cross と合成 cross の乖離）",
       "rank": null,
       "score": -8

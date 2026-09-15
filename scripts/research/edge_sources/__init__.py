@@ -4,7 +4,7 @@
 · `PRODUCTION_READINESS_NOT_CLAIMED`
 
 Authority: the Human + ChatGPT ruling of 2026-09-15 withdrew the programme-level
-pause proposed after Track 1 and asked for a zero-based review of expected-return
+stop instruction issued after Track 1 and asked for a zero-based review of expected-return
 sources, a profit-capacity assessment and at most three next research tracks.
 
 Nothing in this package reads market data, fits a model or evaluates a strategy.

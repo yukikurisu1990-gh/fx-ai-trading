@@ -14,6 +14,8 @@ from scripts.research.edge_sources import candidates, capacity
 ELIGIBILITY_JA = {
     candidates.ACTIVE: "対象",
     candidates.EXCLUDED: "除外（閉鎖 family の改名・救済）",
+    candidates.INFEASIBLE: "除外（構造的に cost を超えない）",
+    candidates.SUSPENDED_FAMILY: "除外（決定により停止中の family）",
     candidates.BLOCKED: "データ不可",
 }
 
@@ -95,15 +97,16 @@ def ranking() -> list[str]:
 def continuous_capacity() -> list[str]:
     table = capacity.continuous_book_table()
     rows = [
-        "| 予測の半減期 | turnover / 年 / 単位 gross | alpha capture | cost による IR 低下 | net 0.3 / 0.5 / 0.8 に必要な gross IR | net 0.3 / 0.5 / 0.8 に必要な horizon IC | net 0.5 の日次換算 IC |",
+        "| 予測の半減期 | turnover / 年 / 単位 gross | alpha capture | cost による IR 低下 | net 0.3 / 0.5 / 0.8 に必要な gross IR | net 0.3 / 0.5 / 0.8 に必要な horizon IC（AR(1)、breadth 4） | net 0.5 に必要な日次 IC（breadth 4 / 2） |",
         "| --- | --- | --- | --- | --- | --- | --- |",
     ]
     for key, row in table["rows"].items():
         gross = " / ".join(str(v) for v in row["required_gross_ir"].values())
         ic = " / ".join(f"{v:.1%}" for v in row["required_horizon_ic"].values())
+        daily = " / ".join(f"{v:.1%}" for v in row["required_daily_ic_at_net_0_5"].values())
         rows.append(
             f"| {key.removeprefix('half_life_')} | {row['turnover_per_unit_gross']} | {row['alpha_capture']} | "
-            f"{row['cost_ir_drag']} | {gross} | {ic} | {row['daily_equivalent_ic_at_net_0_5']:.1%} |"
+            f"{row['cost_ir_drag']} | {gross} | {ic} | {daily} |"
         )
     return rows
 
@@ -111,16 +114,17 @@ def continuous_capacity() -> list[str]:
 def event_capacity() -> list[str]:
     table = capacity.event_book_table()
     rows = [
-        "| 事象 / 年 | 保有日数 | net Sharpe | 事象あたり sd（bp） | 必要 edge（課金 cost、bp） | 必要 edge（pair cost、bp） | 必要 edge（事象 sd 比、課金） | 平均同時保有 | 10% vol の片側 notional レバレッジ |",
-        "| --- | --- | --- | --- | --- | --- | --- | --- | --- |",
+        "| 事象 / 年 | 保有日数 | net Sharpe | 事象あたり sd（bp） | 必要 edge（課金 cost、bp） | 必要 edge（pair cost、bp） | 必要 edge（集中 position vol 7%、課金、bp） | 平均同時保有 | 保有のある日 | 10% vol の片側 notional レバレッジ（基準 / 集中） |",
+        "| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |",
     ]
     for key, row in table["rows"].items():
         sharpe = key.split("_s")[-1]
         rows.append(
-            f"| {int(row['events_per_year'])} | {int(row['hold_days'])} | {sharpe} | {row['sd_per_event_bp']} | "
+            f"| {row['events_per_year']:g} | {row['hold_days']:g} | {sharpe} | {row['sd_per_event_bp']} | "
             f"{row['required_edge_bp_charged_cost']} | {row['required_edge_bp_pair_cost']} | "
-            f"{row['required_edge_in_event_sd_charged']:.1%} | {row['mean_concurrent_positions']} | "
-            f"{row['gross_leverage_at_10pct_vol']} |"
+            f"{row['required_edge_bp_charged_cost_concentrated']} | {row['mean_concurrent_positions']} | "
+            f"{row['share_of_days_with_a_position']:.0%} | "
+            f"{row['gross_leverage_at_10pct_vol']} / {row['gross_leverage_at_10pct_vol_concentrated']} |"
         )
     return rows
 
@@ -128,16 +132,32 @@ def event_capacity() -> list[str]:
 def return_capacity() -> list[str]:
     table = capacity.return_and_leverage_table()
     rows = [
-        "| vol target | gross leverage | net 0.3 の年率 | net 0.5 の年率 | net 0.8 の年率 | 年 5% に必要な net Sharpe | 年 10% に必要な net Sharpe |",
+        "| vol target | gross leverage（上限 5 以内か） | net 0.3 / 0.5 / 0.8 の年率 | 10 年の最大 DD 中央値（net 0.3 / 0.5 / 0.8） | 10 年の最大 DD 95%点（net 0.3 / 0.5 / 0.8） | 年 5% に必要な net Sharpe | 年 10% に必要な net Sharpe |",
         "| --- | --- | --- | --- | --- | --- | --- |",
     ]
     for key, row in table["rows"].items():
         vol = key.removeprefix("vol_")
-        returns = row["annual_net_return"]
+        returns = " / ".join(f"{v:.1%}" for v in row["annual_net_return"].values())
+        median = " / ".join(f"{v:.0%}" for v in row["median_max_drawdown_10y"].values())
+        p95 = " / ".join(f"{v:.0%}" for v in row["p95_max_drawdown_10y"].values())
+        within = "以内" if row["within_reused_leverage_cap"] else "超過"
         rows.append(
-            f"| {float(vol):.0%} | {row['gross_leverage']} | {returns['0.3']:.1%} | {returns['0.5']:.1%} | "
-            f"{returns['0.8']:.1%} | {table['net_sharpe_needed_for_5pct'][key]} | "
-            f"{table['net_sharpe_needed_for_10pct'][key]} |"
+            f"| {float(vol):.0%} | {row['gross_leverage']}（{within}） | {returns} | {median} | {p95} | "
+            f"{table['net_sharpe_needed_for_5pct'][key]} | {table['net_sharpe_needed_for_10pct'][key]} |"
+        )
+    return rows
+
+
+def detection_capacity() -> list[str]:
+    rows = [
+        "| net Sharpe | 片側 5% 検定の必要年数（検出力 50%） | 同（検出力 80%） | 最初の 5 年が負になる確率（Gaussian） |",
+        "| --- | --- | --- | --- |",
+    ]
+    negative = capacity.return_and_leverage_table()["probability_first_five_years_negative"]
+    for s in capacity.NET_SHARPE_SCENARIOS:
+        rows.append(
+            f"| {s:g} | {capacity.sample_years_needed(s)} | {capacity.sample_years_needed(s, 0.8)} | "
+            f"{negative[f'{s:g}']:.0%} |"
         )
     return rows
 
@@ -151,6 +171,7 @@ TABLES = {
     "continuous_capacity": continuous_capacity,
     "event_capacity": event_capacity,
     "return_capacity": return_capacity,
+    "detection_capacity": detection_capacity,
 }
 
 
