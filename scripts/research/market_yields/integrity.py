@@ -109,6 +109,16 @@ def verdict(audit: dict[str, Any], fx_trading_days: int, leak: dict[str, Any]) -
     }
 
 
+def _carry(series: pd.Series, trading_days: pd.DatetimeIndex) -> pd.Series:
+    """Carry a series onto the trading days, then lag it. The one place the rule lives."""
+    return (
+        series.reindex(series.index.union(trading_days))
+        .ffill()
+        .reindex(trading_days)
+        .shift(AVAILABILITY_LAG_TRADING_DAYS)
+    )
+
+
 def available_from(frame: pd.DataFrame, trading_days: pd.DatetimeIndex) -> pd.Series:
     """The yield usable on each FX trading day, under the conservative lag.
 
@@ -123,12 +133,16 @@ def available_from(frame: pd.DataFrame, trading_days: pd.DatetimeIndex) -> pd.Se
         .astype(float)
         .sort_index()
     )
-    on_trading_days = series.reindex(series.index.union(trading_days)).ffill().reindex(trading_days)
-    return on_trading_days.shift(AVAILABILITY_LAG_TRADING_DAYS)
+    return _carry(series, trading_days)
 
 
 def leak_check(frame: pd.DataFrame, trading_days: pd.DatetimeIndex) -> dict[str, Any]:
-    """Prove the lag: every value used on day t is dated on or before t-1."""
+    """Prove the lag: every value used on day t is dated on or before t-1.
+
+    The publication dates are carried through `_carry`, the same helper
+    `available_from` uses for the values, so the proof cannot drift from the thing
+    it is proving.
+    """
     series = (
         frame.dropna(subset=["yield_percent"])
         .assign(date=lambda f: pd.to_datetime(f["date"]))
@@ -136,13 +150,7 @@ def leak_check(frame: pd.DataFrame, trading_days: pd.DatetimeIndex) -> dict[str,
         .astype(float)
         .sort_index()
     )
-    stamps = pd.Series(series.index, index=series.index)
-    carried = (
-        stamps.reindex(series.index.union(trading_days))
-        .ffill()
-        .reindex(trading_days)
-        .shift(AVAILABILITY_LAG_TRADING_DAYS)
-    )
+    carried = _carry(pd.Series(series.index, index=series.index), trading_days)
     used = pd.DataFrame({"decision_day": trading_days, "value_dated": carried.to_numpy()}).dropna()
     ages = (used["decision_day"] - used["value_dated"]).dt.days
     return {

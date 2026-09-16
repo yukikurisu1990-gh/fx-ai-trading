@@ -499,6 +499,18 @@ class TestTheRunPipeline:
         assert float(out.sum(axis=1).abs().max()) < 1e-9
         assert development.BOOK.neutralize_leading_factor is False
 
+    def test_the_control_is_the_same_lookback_as_the_signal(self) -> None:
+        excess, panel, _ = self._panels()
+        scores = development.build_scores(panel, excess)
+        day = panel.index[70]
+        window = excess.loc[:day].tail(development.LOOKBACK).sum()
+        expected = (window - window.mean()) / window.std(ddof=0)
+        pd.testing.assert_series_equal(
+            scores["B_fx_momentum"].loc[day].astype(float),
+            expected.astype(float),
+            check_names=False,
+        )
+
     def test_the_residual_is_orthogonal_to_the_control(self) -> None:
         excess, panel, _ = self._panels()
         scores = development.build_scores(panel, excess)
@@ -522,6 +534,10 @@ class TestTheRunPipeline:
         key = "10% vol is reachable inside the gap stress"
         assert passing["conditions"][key] is True
         assert failing["conditions"][key] is False
+        #: both readings travel with the condition, not only the one it uses
+        assert passing["gap_stress_reading"]["equity_proportional_loss_cut"] is False
+        assert passing["gap_stress_reading"]["fixed_notional_loss_cut"] is True
+        assert failing["gap_stress_reading"]["equity_proportional_loss_cut"] is True
 
     def test_the_screen_condition_on_c_is_the_frozen_text(self) -> None:
         books = {
