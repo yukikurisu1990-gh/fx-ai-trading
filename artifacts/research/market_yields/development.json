@@ -515,6 +515,11 @@
     },
     "decision": "stop",
     "decision_grade": false,
+    "gap_stress_reading": {
+      "equity_proportional_loss_cut": false,
+      "fixed_notional_loss_cut": true,
+      "note": "the condition is evaluated on the equity-proportional case; the executed layer sizes on fixed capital, where the loss-cut is reached"
+    },
     "note": "a development screen, not decision-grade in either direction: the span separates a net Sharpe of about 1.13 at 80% power, so neither a pass nor a fail here settles whether yield repricing leads FX",
     "positive_blocks": 1,
     "verdict": "MARKET_YIELD_REPRICING_NOT_SUPPORTED_IN_SEEN_DEVELOPMENT"

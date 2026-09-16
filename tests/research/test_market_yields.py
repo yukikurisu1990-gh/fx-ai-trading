@@ -516,8 +516,9 @@ class TestTheRunPipeline:
             "B_fx_momentum": {"summary": {"net_sharpe": 0.0}},
             "C_residualised": {"summary": {"net_sharpe": 0.5}},
         }
-        passing = development._screen(books, {"x": 1.0}, {"loss_cut_on_gap": False})
-        failing = development._screen(books, {"x": 1.0}, {"loss_cut_on_gap": True})
+        stress = {"loss_cut_on_gap": False, "fixed_notional_loss_cut": True}
+        passing = development._screen(books, {"x": 1.0}, stress)
+        failing = development._screen(books, {"x": 1.0}, {**stress, "loss_cut_on_gap": True})
         key = "10% vol is reachable inside the gap stress"
         assert passing["conditions"][key] is True
         assert failing["conditions"][key] is False
@@ -531,10 +532,70 @@ class TestTheRunPipeline:
             "B_fx_momentum": {"summary": {"net_sharpe": -0.9}},
             "C_residualised": {"summary": {"net_sharpe": -0.5}},
         }
-        screen = development._screen(books, {"x": 1.0}, {"loss_cut_on_gap": False})
+        screen = development._screen(
+            books, {"x": 1.0}, {"loss_cut_on_gap": False, "fixed_notional_loss_cut": True}
+        )
         #: the frozen text asks for an increment over B, not for C to be positive
         assert screen["conditions"]["C keeps a positive net increment over B"] is True
         assert screen["c_net_sharpe_still_negative"] is True
+
+    def test_the_momentum_control_cannot_see_the_future(self) -> None:
+        """B feeds C, so a leak in the control would reach the primary test."""
+        excess, panel, _ = self._panels()
+        day = panel.index[60]
+        moved = excess.copy()
+        moved.loc[moved.index > day] += 0.05
+        before = development.build_scores(panel, excess)
+        after = development.build_scores(panel, moved)
+        for name in ("B_fx_momentum", "A_yield_repricing", "C_residualised"):
+            pd.testing.assert_series_equal(
+                before[name].loc[day], after[name].loc[day], check_names=False
+            )
+        #: and the control must react to the past, or it is not a momentum control
+        past = excess.copy()
+        #: one currency only: a shift common to all of them cancels in the cross-section
+        past.loc[past.index <= day, "USD"] += 0.05
+        shifted = development.build_scores(panel, past)
+        assert not np.allclose(
+            before["B_fx_momentum"].loc[day].to_numpy(dtype=float),
+            shifted["B_fx_momentum"].loc[day].to_numpy(dtype=float),
+        )
+
+    def test_the_executed_configuration_matches_the_frozen_text(
+        self, development_record: dict[str, Any]
+    ) -> None:
+        """Field by field, with the one declared deviation as the only exception."""
+        config = development_record["executed_book_config"]
+        frozen = prereg.PREREG["book_configuration"]
+        assert config["vol_target"] == frozen["vol_target"]
+        assert config["weight_cap"] == 0.25, "the frozen text caps currency weights at 0.25"
+        assert config["band"] == 0.10, "the frozen text sets the no-trade band at 0.10"
+        assert config["mapping"] == "linear"
+        assert config["cost_multiple"] == 1.0
+        assert config["max_leverage"] >= 1_000_000.0, frozen["leverage_cap"]
+        current = development.provenance()
+        assert config == current["executed_book_config"], (
+            "the record must describe the book that ran"
+        )
+        assert (
+            development_record["deviations_from_the_frozen_text"]
+            == current["deviations_from_the_frozen_text"]
+        )
+        #: the single declared exception, and it must stay declared
+        assert config["neutralize_leading_factor"] is False
+        assert frozen["factor_neutralisation"] is True
+        assert (
+            "factor_neutralisation_moved_into_the_universe"
+            in development_record["deviations_from_the_frozen_text"]
+        )
+
+    def test_both_gap_stress_readings_are_recorded(
+        self, development_record: dict[str, Any]
+    ) -> None:
+        reading = development_record["screen"]["gap_stress_reading"]
+        assert reading["equity_proportional_loss_cut"] is False
+        assert reading["fixed_notional_loss_cut"] is True
+        assert "fixed capital" in reading["note"]
 
     def test_the_executed_configuration_is_recorded(
         self, development_record: dict[str, Any]

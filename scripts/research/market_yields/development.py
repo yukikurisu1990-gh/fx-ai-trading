@@ -262,13 +262,25 @@ def _screen(
         "C keeps a positive net increment over B": c["net_sharpe"] - b["net_sharpe"] > 0,
         "the sign survives dropping any single currency": all(v > 0 for v in drops.values()),
         "a majority of the six blocks are positive": positive_blocks > len(blocks) / 2,
-        #: computed from the same gap stress the record carries, never asserted
+        #: computed from the same gap stress the record carries, never asserted. It reads the
+        #: equity-proportional case, which is what #484's policy requires of an implementation;
+        #: the executed layer sizes on fixed capital, where the same record says the loss-cut is
+        #: reached. Both flags are reported below, and the stricter reading would only add a
+        #: sixth failure to a screen that already stops.
         "10% vol is reachable inside the gap stress": not gap_stress["loss_cut_on_gap"],
     }
     advance = all(conditions.values())
     return {
         "conditions": conditions,
         "c_minus_b_net_sharpe": round(c["net_sharpe"] - b["net_sharpe"], 4),
+        "gap_stress_reading": {
+            "equity_proportional_loss_cut": gap_stress["loss_cut_on_gap"],
+            "fixed_notional_loss_cut": gap_stress["fixed_notional_loss_cut"],
+            "note": (
+                "the condition is evaluated on the equity-proportional case; the executed layer "
+                "sizes on fixed capital, where the loss-cut is reached"
+            ),
+        },
         "c_net_sharpe_still_negative": c["net_sharpe"] < 0,
         "positive_blocks": positive_blocks,
         "decision": "advance" if advance else "stop",
@@ -308,6 +320,39 @@ def build_scores(
         "A_yield_repricing": repricing,
         "B_fx_momentum": momentum,
         "C_residualised": _residualise(repricing, momentum),
+    }
+
+
+def provenance() -> dict[str, Any]:
+    """The book that ran and the one declared deviation, as the record carries them."""
+    return {
+        "executed_book_config": {
+            field: getattr(BOOK, field)
+            for field in (
+                "name",
+                "mapping",
+                "neutralize_leading_factor",
+                "weight_cap",
+                "band",
+                "vol_target",
+                "max_leverage",
+                "leverage_hysteresis",
+                "cost_multiple",
+                "sigma_window",
+                "factor_window",
+                "vol_window",
+            )
+        },
+        "deviations_from_the_frozen_text": {
+            "factor_neutralisation_moved_into_the_universe": (
+                "the frozen text reuses the layer unchanged with factor neutralisation on. The "
+                "layer neutralises against the eight-currency factor, which would place "
+                "deliberate weight on the three currencies this track cannot observe, so "
+                "neutralisation is applied inside the five-currency universe and the layer's own "
+                "flag is off. A post-freeze implementation decision that changes the result"
+            ),
+            "lookback_and_horizons_read_from_the_prereg": True,
+        },
     }
 
 
@@ -364,33 +409,7 @@ def run() -> dict[str, Any]:
     return {
         "classification": "NON_DECISION_BEARING_EXPLORATORY_ONLY",
         "workflow_status": WORKFLOW_STATUS,
-        "executed_book_config": {
-            field: getattr(BOOK, field)
-            for field in (
-                "name",
-                "mapping",
-                "neutralize_leading_factor",
-                "weight_cap",
-                "band",
-                "vol_target",
-                "max_leverage",
-                "leverage_hysteresis",
-                "cost_multiple",
-                "sigma_window",
-                "factor_window",
-                "vol_window",
-            )
-        },
-        "deviations_from_the_frozen_text": {
-            "factor_neutralisation_moved_into_the_universe": (
-                "the frozen text reuses the layer unchanged with factor neutralisation on. The "
-                "layer neutralises against the eight-currency factor, which would place "
-                "deliberate weight on the three currencies this track cannot observe, so "
-                "neutralisation is applied inside the five-currency universe and the layer's own "
-                "flag is off. A post-freeze implementation decision that changes the result"
-            ),
-            "lookback_and_horizons_read_from_the_prereg": True,
-        },
+        **provenance(),
         "prereg": prereg.PREREG,
         "feasibility_before_the_run": prereg.feasibility(),
         "universe": universe,
