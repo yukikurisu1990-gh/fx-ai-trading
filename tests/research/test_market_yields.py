@@ -1329,3 +1329,182 @@ class TestTheRepairedRerunBehaviour:
         #: and they are not the originals copied across
         for name, row in repaired_record["against_the_recorded_run"].items():
             assert row["repaired_gross_sharpe"] != row["original_gross_sharpe"], name
+
+
+R2_DOC = ROOT / "docs/research/m15_track_r2_slow_repricing.md"
+
+
+@pytest.fixture(scope="module")
+def r2_record() -> dict[str, Any]:
+    return json.loads((RECORDS / "development_r2.json").read_text(encoding="utf-8"))
+
+
+@pytest.fixture(scope="module")
+def r2_document() -> str:
+    return R2_DOC.read_text(encoding="utf-8")
+
+
+class TestTheSlowRunFollowedItsPrereg:
+    def test_it_ran_the_frozen_design(self, r2_record: dict[str, Any]) -> None:
+        assert r2_record["prereg_digest"] == PREREG_R2_DIGEST
+        assert r2_record["universe"] == list(prereg_r2.UNIVERSE)
+        assert r2_record["prereg"]["signal"]["horizon_days"] == prereg_r2.PRIMARY_HORIZON_DAYS
+        assert set(r2_record["books"]) == {
+            "A_fast_5d_reference",
+            "B_slow_rate_state",
+            "C_fx_price_control",
+            "D_residualised",
+            "E_momentum_leg_of_D",
+        }
+        assert r2_record["protected_spans_read"] is False
+        assert r2_record["identity_check"]["identity_holds"] is True
+
+    def test_the_executed_book_is_the_declared_one(self, r2_record: dict[str, Any]) -> None:
+        from scripts.research.market_yields import development_r2
+
+        config = r2_record["executed_book_config"]
+        assert config == {field: getattr(development_r2.BOOK, field) for field in config}
+        assert config["neutralize_leading_factor"] is True, (
+            "the prereg names the layer's own single pass"
+        )
+        assert config["vol_target"] == prereg_r2.PREREG["book_configuration"]["vol_target"]
+        assert config["max_leverage"] == prereg_r2.PREREG["book_configuration"]["max_leverage"]
+
+    def test_the_screen_is_the_frozen_one_and_stops(self, r2_record: dict[str, Any]) -> None:
+        screen = r2_record["screen"]
+        conditions = screen["shared_conditions"]
+        assert len(conditions) == len(prereg_r2.PREREG["screen"]["shared_conditions"])
+        assert screen["all_shared_conditions_hold"] is all(conditions.values())
+        assert screen["decision"] == "stop"
+        assert screen["verdict"] == "MARKET_YIELD_SLOW_REPRICING_NOT_SUPPORTED_IN_SEEN_DEVELOPMENT"
+        assert screen["verdict"] in OUTCOMES
+        assert screen["decision_grade"] is False
+        #: the three that fail are the ones the document reports
+        failing = {name for name, value in conditions.items() if not value}
+        assert failing == {
+            "net Sharpe stays positive at 1.5x and 2x cost",
+            "the sign survives dropping any single currency",
+            f"turnover at or below {prereg_r2.TURNOVER_BOUND:g}",
+        }
+
+    def test_the_tiers_are_applied_as_frozen(self, r2_record: dict[str, Any]) -> None:
+        from scripts.research.market_yields import development_r2
+
+        net = r2_record["screen"]["primary_net_sharpe"]
+        assert net < prereg_r2.MARGINAL_NET_SHARPE
+        #: and had every condition held, the tier would follow the bands, not a choice
+        books = {
+            "B_slow_rate_state": {"summary": {"gross_sharpe": 1.0}},
+            "C_fx_price_control": {"summary": {"net_sharpe": 0.0}},
+            "D_residualised": {
+                "summary": {
+                    "net_sharpe": 0.25,
+                    "turnover_round_trips_per_year_per_unit_gross": 20.0,
+                    "annual_cost": 0.01,
+                    "gross_annual_return": 0.05,
+                },
+                "blocks": [{"net_sharpe": 1.0}] * 6,
+                "cost_stress": {"x1.5": 0.2, "x2": 0.1},
+            },
+        }
+        screen = development_r2._screen(
+            books,
+            {"x": 1.0},
+            {"rate_leg_share_of_d_gross": 0.9},
+            {"loss_cut_on_gap": False},
+        )
+        assert screen["decision"] == "marginal"
+        books["D_residualised"]["summary"]["net_sharpe"] = 0.35
+        assert (
+            development_r2._screen(
+                books, {"x": 1.0}, {"rate_leg_share_of_d_gross": 0.9}, {"loss_cut_on_gap": False}
+            )["decision"]
+            == "candidate"
+        )
+
+
+class TestTheSlowRunEconomics:
+    def test_the_central_diagnostic_is_answered_from_the_record(
+        self, r2_record: dict[str, Any]
+    ) -> None:
+        fast = r2_record["books"]["A_fast_5d_reference"]["summary"]
+        slow = r2_record["books"]["B_slow_rate_state"]["summary"]
+        #: turnover fell and the gross survived — the informative side of the diagnostic
+        assert (
+            slow["turnover_round_trips_per_year_per_unit_gross"]
+            < fast["turnover_round_trips_per_year_per_unit_gross"]
+        )
+        assert slow["gross_sharpe"] > fast["gross_sharpe"] > 0
+        assert slow["net_sharpe"] > 0 > fast["net_sharpe"]
+
+    def test_the_cost_identity_holds_for_every_book(self, r2_record: dict[str, Any]) -> None:
+        for name, book in r2_record["books"].items():
+            summary = book["summary"]
+            assert summary["net_annual_return"] == pytest.approx(
+                summary["gross_annual_return"] - summary["annual_cost"], abs=2e-4
+            ), name
+
+    def test_the_decomposition_is_reported_with_its_approximation(
+        self, r2_record: dict[str, Any]
+    ) -> None:
+        decomposition = r2_record["decomposition_of_the_primary_test"]
+        assert decomposition["rate_leg_share_of_d_gross"] >= 0.5
+        assert decomposition["reconciliation_gap"] == pytest.approx(
+            decomposition["d_gross_annual_return"]
+            - decomposition["rate_leg_gross_annual_return"]
+            - decomposition["momentum_leg_gross_annual_return"],
+            abs=1e-5,
+        )
+        assert decomposition["beta_sd"] > 0
+        assert len(decomposition["beta_p05_p95"]) == 2
+
+    def test_leverage_cannot_rescue_a_break_even_book(self, r2_record: dict[str, Any]) -> None:
+        assert r2_record["annual_return_capacity"]["0.05"]["reachable"] is False
+        assert r2_record["gap_stress_at_10pct_vol"]["universe"] == list(prereg_r2.UNIVERSE)
+        #: measured on this universe, not on the eight-currency book
+        assert r2_record["gap_stress_at_10pct_vol"]["vol_per_unit_gross"] != pytest.approx(
+            0.023288, abs=1e-6
+        )
+
+    def test_every_book_is_underpowered_against_the_prereg_s_own_bar(
+        self, r2_record: dict[str, Any]
+    ) -> None:
+        bar = r2_record["feasibility_before_the_run"]["detectable_net_sharpe_at_80pct_power"]
+        for book in r2_record["books"].values():
+            assert abs(book["summary"]["gross_sharpe"]) < bar
+
+
+class TestTheSlowDocument:
+    def test_the_headline_numbers_come_from_the_record(
+        self, r2_record: dict[str, Any], r2_document: str
+    ) -> None:
+        for name in ("B_slow_rate_state", "D_residualised"):
+            summary = r2_record["books"][name]["summary"]
+            for field in ("gross_sharpe", "net_sharpe"):
+                text = f"{summary[field]:+.3f}".replace("-", "−")
+                assert text in r2_document, (name, field, text)
+
+    def test_the_document_states_the_verdict_and_its_scope(self, r2_document: str) -> None:
+        assert "MARKET_YIELD_SLOW_REPRICING_NOT_SUPPORTED_IN_SEEN_DEVELOPMENT" in r2_document
+        assert "turnover は落ち、gross は残った" in r2_document
+        assert "decision-grade ではない" in r2_document
+        assert FAMILY_BOUNDARY in r2_document
+        assert "OIS" in r2_document
+        assert "読んでいない" in r2_document
+
+    def test_the_document_forbids_the_rescues(self, r2_document: str) -> None:
+        for phrase in (
+            "horizon・符号・lookback・universe・control の変更",
+            "turnover 上限 45 を結果後に緩める",
+        ):
+            assert phrase in r2_document
+
+    def test_the_ledger_entry_matches_the_record(self, r2_record: dict[str, Any]) -> None:
+        from scripts.research.round_a.ledger import LEDGER
+
+        entry = next(e for e in LEDGER if e["id"] == "H-026")
+        assert entry["prespecified"] is True
+        assert entry["status"].startswith("CLOSED - MARKET_YIELD_SLOW_REPRICING_NOT_SUPPORTED")
+        assert "OIS" in entry["status"]
+        for value in ("39.3", "+0.541", "+0.834", "59.8"):
+            assert value in entry["result"], value

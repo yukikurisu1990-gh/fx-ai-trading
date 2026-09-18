@@ -1,0 +1,789 @@
+{
+  "annual_return_capacity": {
+    "0.05": {
+      "annual_target": 0.05,
+      "equity_after_gap": -5.4977,
+      "gap_loss_at_leverage_tail": 6.4977,
+      "largest_currency_exposure_p95": 0.5481,
+      "largest_currency_gap_before_loss_cut": -0.0396,
+      "leverage_tail_multiple": 1.5813,
+      "loss_cut_on_gap": true,
+      "maintenance_ratio_after_gap": -2.4,
+      "margin_utilisation_at_leverage_tail": 2.2874,
+      "margin_utilisation_mean": 1.2239,
+      "reachable": false,
+      "risk_leverage_C_mean": 37.48,
+      "risk_leverage_C_tail": 59.27,
+      "target_vol": 0.9784735812133073,
+      "universe": [
+        "CAD",
+        "EUR",
+        "GBP",
+        "JPY",
+        "USD"
+      ],
+      "vol_per_unit_gross": 0.026103
+    },
+    "0.1": {
+      "annual_target": 0.1,
+      "equity_after_gap": -11.9954,
+      "gap_loss_at_leverage_tail": 12.9954,
+      "largest_currency_exposure_p95": 0.5481,
+      "largest_currency_gap_before_loss_cut": -0.055,
+      "leverage_tail_multiple": 1.5813,
+      "loss_cut_on_gap": true,
+      "maintenance_ratio_after_gap": -2.62,
+      "margin_utilisation_at_leverage_tail": 4.5748,
+      "margin_utilisation_mean": 2.4478,
+      "reachable": false,
+      "risk_leverage_C_mean": 74.97,
+      "risk_leverage_C_tail": 118.55,
+      "target_vol": 1.9569471624266146,
+      "universe": [
+        "CAD",
+        "EUR",
+        "GBP",
+        "JPY",
+        "USD"
+      ],
+      "vol_per_unit_gross": 0.026103
+    }
+  },
+  "books": {
+    "A_fast_5d_reference": {
+      "blocks": [
+        {
+          "block": 1,
+          "days": 200,
+          "end": "2022-02-09",
+          "net_return": -0.04765,
+          "net_sharpe": -0.5391,
+          "start": "2021-05-06"
+        },
+        {
+          "block": 2,
+          "days": 201,
+          "end": "2022-11-17",
+          "net_return": -0.01352,
+          "net_sharpe": -0.1407,
+          "start": "2022-02-10"
+        },
+        {
+          "block": 3,
+          "days": 201,
+          "end": "2023-08-28",
+          "net_return": -0.03117,
+          "net_sharpe": -0.4067,
+          "start": "2022-11-18"
+        },
+        {
+          "block": 4,
+          "days": 201,
+          "end": "2024-06-06",
+          "net_return": -0.18929,
+          "net_sharpe": -2.4054,
+          "start": "2023-08-29"
+        },
+        {
+          "block": 5,
+          "days": 201,
+          "end": "2025-03-18",
+          "net_return": -0.07175,
+          "net_sharpe": -0.7685,
+          "start": "2024-06-07"
+        },
+        {
+          "block": 6,
+          "days": 201,
+          "end": "2025-12-26",
+          "net_return": -0.02551,
+          "net_sharpe": -0.2977,
+          "start": "2025-03-19"
+        }
+      ],
+      "cost_stress": {
+        "x1.5": -1.227,
+        "x2": -1.7232
+      },
+      "ic": {
+        "20d": -0.0249,
+        "5d": 0.0264
+      },
+      "per_currency_gross_pnl": {
+        "CAD": -0.02314,
+        "EUR": -0.10345,
+        "GBP": 0.13262,
+        "JPY": 0.0326,
+        "USD": 0.10657
+      },
+      "persistence": {
+        "implied_position_half_life_days": 1.24,
+        "mean_held_max_weight": 0.2644,
+        "position_autocorrelation_1d": 0.5705,
+        "share_days_traded": 0.7884
+      },
+      "signal_autocorrelation_1d": 0.6809,
+      "summary": {
+        "annual_cost": 0.1096,
+        "days": 1205,
+        "gross_annual_return": 0.03036,
+        "gross_sharpe": 0.2794,
+        "max_drawdown": -0.46266,
+        "mean_currency_gross": 3.8614,
+        "mean_held_max_weight": 0.2644,
+        "mean_leverage": 4.252,
+        "mean_uncapped_leverage": 4.2428,
+        "net_annual_return": -0.07924,
+        "net_sharpe": -0.7271,
+        "net_without_top_5_days": -0.49457,
+        "p95_uncapped_leverage": 7.105,
+        "realized_annual_vol": 0.10898,
+        "share_days_traded": 0.7884,
+        "top_10_day_share_of_net": -0.5713,
+        "top_1_day_share_of_net": -0.0657,
+        "top_5_day_share_of_net": -0.3053,
+        "turnover_round_trips_per_year_per_unit_gross": 83.336,
+        "worst_day": -0.04225
+      }
+    },
+    "B_slow_rate_state": {
+      "blocks": [
+        {
+          "block": 1,
+          "days": 198,
+          "end": "2022-02-28",
+          "net_return": -0.02372,
+          "net_sharpe": -0.2778,
+          "start": "2021-05-27"
+        },
+        {
+          "block": 2,
+          "days": 198,
+          "end": "2022-12-01",
+          "net_return": 0.1147,
+          "net_sharpe": 1.1801,
+          "start": "2022-03-01"
+        },
+        {
+          "block": 3,
+          "days": 199,
+          "end": "2023-09-07",
+          "net_return": 0.05898,
+          "net_sharpe": 0.8764,
+          "start": "2022-12-02"
+        },
+        {
+          "block": 4,
+          "days": 198,
+          "end": "2024-06-13",
+          "net_return": -0.11685,
+          "net_sharpe": -1.5467,
+          "start": "2023-09-08"
+        },
+        {
+          "block": 5,
+          "days": 198,
+          "end": "2025-03-20",
+          "net_return": -0.08506,
+          "net_sharpe": -0.9768,
+          "start": "2024-06-14"
+        },
+        {
+          "block": 6,
+          "days": 199,
+          "end": "2025-12-26",
+          "net_return": 0.0729,
+          "net_sharpe": 0.9354,
+          "start": "2025-03-21"
+        }
+      ],
+      "cost_stress": {
+        "x1.5": -0.2063,
+        "x2": -0.4542
+      },
+      "ic": {
+        "20d": -0.0401,
+        "5d": -0.0438
+      },
+      "per_currency_gross_pnl": {
+        "CAD": -0.13006,
+        "EUR": -0.07241,
+        "GBP": -0.01229,
+        "JPY": 0.19819,
+        "USD": 0.28386
+      },
+      "persistence": {
+        "implied_position_half_life_days": 4.19,
+        "mean_held_max_weight": 0.2663,
+        "position_autocorrelation_1d": 0.8474,
+        "share_days_traded": 0.5395
+      },
+      "signal_autocorrelation_1d": 0.8981,
+      "summary": {
+        "annual_cost": 0.05217,
+        "days": 1190,
+        "gross_annual_return": 0.0566,
+        "gross_sharpe": 0.5408,
+        "max_drawdown": -0.27141,
+        "mean_currency_gross": 3.9024,
+        "mean_held_max_weight": 0.2663,
+        "mean_leverage": 4.4008,
+        "mean_uncapped_leverage": 4.4056,
+        "net_annual_return": 0.00443,
+        "net_sharpe": 0.0423,
+        "net_without_top_5_days": -0.10419,
+        "p95_uncapped_leverage": 7.2913,
+        "realized_annual_vol": 0.1048,
+        "share_days_traded": 0.5395,
+        "top_10_day_share_of_net": 11.0444,
+        "top_1_day_share_of_net": 1.4251,
+        "top_5_day_share_of_net": 5.9764,
+        "turnover_round_trips_per_year_per_unit_gross": 39.251,
+        "worst_day": -0.03164
+      }
+    },
+    "C_fx_price_control": {
+      "blocks": [
+        {
+          "block": 1,
+          "days": 198,
+          "end": "2022-02-24",
+          "net_return": -0.32244,
+          "net_sharpe": -3.8272,
+          "start": "2021-05-25"
+        },
+        {
+          "block": 2,
+          "days": 199,
+          "end": "2022-11-30",
+          "net_return": 0.10981,
+          "net_sharpe": 1.1659,
+          "start": "2022-02-25"
+        },
+        {
+          "block": 3,
+          "days": 199,
+          "end": "2023-09-06",
+          "net_return": 0.01796,
+          "net_sharpe": 0.2563,
+          "start": "2022-12-01"
+        },
+        {
+          "block": 4,
+          "days": 198,
+          "end": "2024-06-12",
+          "net_return": -0.02125,
+          "net_sharpe": -0.273,
+          "start": "2023-09-07"
+        },
+        {
+          "block": 5,
+          "days": 199,
+          "end": "2025-03-20",
+          "net_return": -0.15728,
+          "net_sharpe": -1.9495,
+          "start": "2024-06-13"
+        },
+        {
+          "block": 6,
+          "days": 199,
+          "end": "2025-12-26",
+          "net_return": 0.01766,
+          "net_sharpe": 0.2169,
+          "start": "2025-03-21"
+        }
+      ],
+      "cost_stress": {
+        "x1.5": -0.9525,
+        "x2": -1.1835
+      },
+      "ic": {
+        "20d": -0.0501,
+        "5d": -0.0516
+      },
+      "per_currency_gross_pnl": {
+        "CAD": -0.14726,
+        "EUR": -0.1045,
+        "GBP": -0.1228,
+        "JPY": 0.10565,
+        "USD": 0.14243
+      },
+      "persistence": {
+        "implied_position_half_life_days": 4.04,
+        "mean_held_max_weight": 0.2634,
+        "position_autocorrelation_1d": 0.8422,
+        "share_days_traded": 0.5117
+      },
+      "signal_autocorrelation_1d": 0.9112,
+      "summary": {
+        "annual_cost": 0.04842,
+        "days": 1192,
+        "gross_annual_return": -0.02674,
+        "gross_sharpe": -0.2564,
+        "max_drawdown": -0.42483,
+        "mean_currency_gross": 3.5378,
+        "mean_held_max_weight": 0.2634,
+        "mean_leverage": 4.0308,
+        "mean_uncapped_leverage": 4.0092,
+        "net_annual_return": -0.07516,
+        "net_sharpe": -0.7207,
+        "net_without_top_5_days": -0.47571,
+        "p95_uncapped_leverage": 6.4361,
+        "realized_annual_vol": 0.10429,
+        "share_days_traded": 0.5117,
+        "top_10_day_share_of_net": -0.6059,
+        "top_1_day_share_of_net": -0.0929,
+        "top_5_day_share_of_net": -0.338,
+        "turnover_round_trips_per_year_per_unit_gross": 40.186,
+        "worst_day": -0.03126
+      }
+    },
+    "D_residualised": {
+      "blocks": [
+        {
+          "block": 1,
+          "days": 198,
+          "end": "2022-02-28",
+          "net_return": 0.04531,
+          "net_sharpe": 0.5327,
+          "start": "2021-05-27"
+        },
+        {
+          "block": 2,
+          "days": 198,
+          "end": "2022-12-01",
+          "net_return": 0.09726,
+          "net_sharpe": 1.0091,
+          "start": "2022-03-01"
+        },
+        {
+          "block": 3,
+          "days": 199,
+          "end": "2023-09-07",
+          "net_return": -0.00967,
+          "net_sharpe": -0.132,
+          "start": "2022-12-02"
+        },
+        {
+          "block": 4,
+          "days": 198,
+          "end": "2024-06-13",
+          "net_return": -0.15459,
+          "net_sharpe": -2.0428,
+          "start": "2023-09-08"
+        },
+        {
+          "block": 5,
+          "days": 198,
+          "end": "2025-03-20",
+          "net_return": 0.01556,
+          "net_sharpe": 0.1951,
+          "start": "2024-06-14"
+        },
+        {
+          "block": 6,
+          "days": 199,
+          "end": "2025-12-26",
+          "net_return": 0.03139,
+          "net_sharpe": 0.3878,
+          "start": "2025-03-21"
+        }
+      ],
+      "cost_stress": {
+        "x1.5": -0.3385,
+        "x2": -0.7263
+      },
+      "ic": {
+        "20d": -0.0157,
+        "5d": -0.0212
+      },
+      "per_currency_gross_pnl": {
+        "CAD": -0.19241,
+        "EUR": 0.1189,
+        "GBP": -0.00973,
+        "JPY": 0.19376,
+        "USD": 0.30051
+      },
+      "persistence": {
+        "implied_position_half_life_days": 2.08,
+        "mean_held_max_weight": 0.2661,
+        "position_autocorrelation_1d": 0.717,
+        "share_days_traded": 0.6941
+      },
+      "signal_autocorrelation_1d": 0.826,
+      "summary": {
+        "annual_cost": 0.08169,
+        "days": 1190,
+        "gross_annual_return": 0.08704,
+        "gross_sharpe": 0.8335,
+        "max_drawdown": -0.36886,
+        "mean_currency_gross": 4.0087,
+        "mean_held_max_weight": 0.2661,
+        "mean_leverage": 4.5197,
+        "mean_uncapped_leverage": 4.5116,
+        "net_annual_return": 0.00535,
+        "net_sharpe": 0.0511,
+        "net_without_top_5_days": -0.09239,
+        "p95_uncapped_leverage": 7.7396,
+        "realized_annual_vol": 0.10464,
+        "share_days_traded": 0.6941,
+        "top_10_day_share_of_net": 8.4639,
+        "top_1_day_share_of_net": 1.0335,
+        "top_5_day_share_of_net": 4.6558,
+        "turnover_round_trips_per_year_per_unit_gross": 59.83,
+        "worst_day": -0.03855
+      }
+    },
+    "E_momentum_leg_of_D": {
+      "blocks": [
+        {
+          "block": 1,
+          "days": 198,
+          "end": "2022-02-28",
+          "net_return": 0.0665,
+          "net_sharpe": 0.7684,
+          "start": "2021-05-27"
+        },
+        {
+          "block": 2,
+          "days": 198,
+          "end": "2022-12-01",
+          "net_return": -0.13151,
+          "net_sharpe": -1.364,
+          "start": "2022-03-01"
+        },
+        {
+          "block": 3,
+          "days": 199,
+          "end": "2023-09-07",
+          "net_return": -0.0763,
+          "net_sharpe": -1.1086,
+          "start": "2022-12-02"
+        },
+        {
+          "block": 4,
+          "days": 198,
+          "end": "2024-06-13",
+          "net_return": -0.09507,
+          "net_sharpe": -1.2263,
+          "start": "2023-09-08"
+        },
+        {
+          "block": 5,
+          "days": 198,
+          "end": "2025-03-20",
+          "net_return": 0.0205,
+          "net_sharpe": 0.2455,
+          "start": "2024-06-14"
+        },
+        {
+          "block": 6,
+          "days": 199,
+          "end": "2025-12-26",
+          "net_return": -0.16606,
+          "net_sharpe": -2.0886,
+          "start": "2025-03-21"
+        }
+      ],
+      "cost_stress": {
+        "x1.5": -1.1395,
+        "x2": -1.505
+      },
+      "ic": {
+        "20d": 0.0397,
+        "5d": 0.0213
+      },
+      "per_currency_gross_pnl": {
+        "CAD": 0.08952,
+        "EUR": 0.11363,
+        "GBP": -0.02498,
+        "JPY": -0.04194,
+        "USD": -0.148
+      },
+      "persistence": {
+        "implied_position_half_life_days": 1.48,
+        "mean_held_max_weight": 0.2596,
+        "position_autocorrelation_1d": 0.6268,
+        "share_days_traded": 0.5655
+      },
+      "signal_autocorrelation_1d": 0.828,
+      "summary": {
+        "annual_cost": 0.07839,
+        "days": 1190,
+        "gross_annual_return": -0.00249,
+        "gross_sharpe": -0.0238,
+        "max_drawdown": -0.47449,
+        "mean_currency_gross": 3.5234,
+        "mean_held_max_weight": 0.2596,
+        "mean_leverage": 3.9766,
+        "mean_uncapped_leverage": 3.9634,
+        "net_annual_return": -0.08088,
+        "net_sharpe": -0.7701,
+        "net_without_top_5_days": -0.48331,
+        "p95_uncapped_leverage": 6.2325,
+        "realized_annual_vol": 0.10503,
+        "share_days_traded": 0.5655,
+        "top_10_day_share_of_net": -0.4827,
+        "top_1_day_share_of_net": -0.0716,
+        "top_5_day_share_of_net": -0.2654,
+        "turnover_round_trips_per_year_per_unit_gross": 65.323,
+        "worst_day": -0.02941
+      }
+    }
+  },
+  "classification": "NON_DECISION_BEARING_EXPLORATORY_ONLY",
+  "decision_days": 1212,
+  "decomposition_of_the_primary_test": {
+    "beta_mean": 0.3822,
+    "beta_p05_p95": [
+      -0.5414,
+      0.9349
+    ],
+    "beta_sd": 0.4712,
+    "d_gross_annual_return": 0.08704,
+    "momentum_leg_gross_annual_return": -0.00249,
+    "note": "the legs are run through the same machinery as D, so capping and the band make the split approximate; the reconciliation gap is the size of that approximation",
+    "rate_leg_gross_annual_return": 0.0566,
+    "rate_leg_share_of_d_gross": 0.6503,
+    "reconciliation_gap": 0.03293
+  },
+  "executed_book_config": {
+    "band": 0.1,
+    "cost_multiple": 1.0,
+    "factor_window": 120,
+    "mapping": "linear",
+    "max_leverage": 1000000.0,
+    "name": "t_r2",
+    "neutralize_leading_factor": true,
+    "sigma_window": 60,
+    "vol_target": 0.1,
+    "vol_window": 60,
+    "weight_cap": 0.25
+  },
+  "feasibility_before_the_run": {
+    "decision_days": 1213,
+    "decision_years": 4.813,
+    "detectable_net_sharpe_at_80pct_power": 1.133,
+    "effective_breadth_assumed": 2.5,
+    "note": "the band law's 18.3 assumes the forecast decays at the lookback. The fast run says it will not: a five-day lookback produced a 1.68-day half-life and 82.4 round trips against the law's 43.4. The expectation carried into the screen is therefore the realised-multiplier one, not the law's. The span still separates only a net Sharpe near 1.13 at 80% power, so neither outcome is decision-grade on its own",
+    "rows": {
+      "half_life_20d": {
+        "alpha_capture": 0.9264,
+        "cost_ir_drag": 0.267,
+        "required_daily_ic_for_net_0_3": 0.0271,
+        "required_daily_ic_for_net_0_5": 0.0367,
+        "turnover_per_unit_gross": 18.28
+      },
+      "half_life_5d": {
+        "alpha_capture": 0.9323,
+        "cost_ir_drag": 0.634,
+        "required_daily_ic_for_net_0_3": 0.0444,
+        "required_daily_ic_for_net_0_5": 0.0539,
+        "turnover_per_unit_gross": 43.36
+      }
+    },
+    "the_fast_run_paid": {
+      "daily_equivalent_ic_it_showed": 0.0124,
+      "realised_cost_ir_drag": 1.065,
+      "realised_turnover": 82.404,
+      "required_daily_ic_at_that_drag": 0.0642
+    },
+    "turnover_expectation": {
+      "band_law_at_twenty_day_half_life": 18.28,
+      "expected_turnover_by_that_multiplier": 34.7,
+      "expected_turnover_under_noise_attenuation": 58.0,
+      "implied_half_life_under_noise_attenuation": 2.86,
+      "realised_over_design_multiplier_from_the_fast_run": 1.9,
+      "screen_bound": 45.0,
+      "why_a_bound": "the hypothesis is that the book holds a state. If turnover does not fall below the bound the state was not held, and the formulation is recorded as not supported rather than left arguable",
+      "why_forty_five": "the twenty-day hypothesis implies about 18 round trips a year and the two extrapolations give 35 and 58. A bound at 45 sits above both the law and the realised-multiplier expectation, so it does not fail a book that behaves as the hypothesis says, and below the noise-attenuation one, so a book that decays like the fast signal does fail it. It is deliberately the looser of the two defensible choices: a tighter 30 would fail on the multiplier expectation alone"
+    }
+  },
+  "gap_stress_at_10pct_vol": {
+    "equity_after_gap": 0.3359,
+    "gap_loss_at_leverage_tail": 0.6641,
+    "largest_currency_exposure_p95": 0.5481,
+    "largest_currency_gap_before_loss_cut": 0.2308,
+    "leverage_tail_multiple": 1.5813,
+    "loss_cut_on_gap": false,
+    "maintenance_ratio_after_gap": 1.44,
+    "margin_utilisation_at_leverage_tail": 0.2338,
+    "margin_utilisation_mean": 0.1251,
+    "risk_leverage_C_mean": 3.83,
+    "risk_leverage_C_tail": 6.06,
+    "target_vol": 0.1,
+    "universe": [
+      "CAD",
+      "EUR",
+      "GBP",
+      "JPY",
+      "USD"
+    ],
+    "vol_per_unit_gross": 0.026103
+  },
+  "identity_check": {
+    "days": 1212,
+    "identity_holds": true,
+    "incomplete_pair_days": 0,
+    "incomplete_pair_days_dropped_from_the_panel": 1,
+    "max_residual_on_complete_days": 8.673617379884035e-19
+  },
+  "leave_one_currency_out_net_sharpe": {
+    "without_CAD": -0.4916,
+    "without_EUR": -0.0865,
+    "without_GBP": -0.1238,
+    "without_JPY": -1.0336,
+    "without_USD": -0.5859
+  },
+  "prereg": {
+    "authority": "Human + ChatGPT ruling of 2026-09-18",
+    "availability_rule": "unchanged from the fast track: publication times are unconfirmed on the source pages, so a yield dated d may inform a position only one trading day later, and that position earns the next day's return. No same-day use",
+    "book_configuration": {
+      "architecture": "the Track 1 execution layer, with every step closed inside the observed universe (scripts/research/market_yields/portfolio.py): capped sum-zero weights at 0.25, no-trade band 0.10, partial rebalance, charged cost on the traded delta, routing over the eight pairs whose both legs are in the universe, volatility target 10%",
+      "cap_behaviour_on_five_names": "the inherited 0.25 cap binds far harder on five currencies than on eight: gross falls below one on about 9.8% of draws against 0.09%, and the largest single-currency share of gross reaches 0.50 at the 95th percentile against 0.25. The parameter is reused unchanged and the consequence is reported, not tuned away",
+      "factor_neutralisation": "exactly one pass: portfolio.run_book's own neutralize_leading_factor=True, whose leading factor is computed over the five universe columns. No separate pre-step, so the fast track's post-freeze deviation does not recur and double neutralisation is excluded",
+      "identical_to_the_fast_run_except": "the signal horizon, and the neutralisation path: the fast re-run neutralised in a pre-step with the layer's flag off, T-R2 uses the layer's own flag over the five columns. The two are mathematically the same projection given the same window, and naming which one runs is what the fast track failed to do. Everything else — cap, band, cost, vol target, routing and the rebuilt returns — is the same book",
+      "leverage_cap": "none; required leverage, routed margin and the gap stress are reported",
+      "mapping": "linear on the declared score",
+      "max_leverage": 1000000.0,
+      "returns": "portfolio.universe_panel: currency returns rebuilt from the eight tradable pairs, so the reported P&L is the routed book's. Slicing the eight-currency panel would leave about 8% of the implied spot exposure on currencies the book does not hold",
+      "track_1_alpha_model_reused": false,
+      "vol_target": 0.1
+    },
+    "books": {
+      "A_fast_5d_reference": "the fast five-day signal, re-run through the repaired layer for comparison only — not re-searched, not re-tuned",
+      "B_slow_rate_state": "the twenty-day repricing state alone",
+      "C_fx_price_control": "FX momentum over the same twenty days — the currency's own price history, as its own book",
+      "D_residualised": "the twenty-day rate state cross-sectionally residualised against that FX price control"
+    },
+    "central_diagnostic": "if turnover falls to the twenties or thirties and the gross expected return survives, the fast result was a cost problem. If turnover falls and the gross goes with it, the rate information was short-lived and never monetisable — which is the more informative outcome of the two",
+    "classification": "NON_DECISION_BEARING_EXPLORATORY_ONLY",
+    "family_boundary_if_stop": "with both the fast shock and the slow state unsupported, the simple directional use of market-yield repricing may be closed as a scope-limited family. That closure would not reach OIS, intraday rate futures, the market-implied policy path or curve non-linearities, none of which has been observed",
+    "marginal_tier_authority": "the ruling of 2026-09-18 allows a marginal tier for a net Sharpe between about 0.2 and 0.5 when turnover is very low and stability high. It is implemented here as the stricter [0.2, 0.3) band with every shared condition required, because above 0.3 the result is a candidate outright. The implemented band is the binding one; this authority note may not be used to widen it. It is a tier for returning to Human, never for advancing",
+    "metrics": [
+      "gross Sharpe",
+      "net Sharpe",
+      "annual gross return",
+      "annual net return",
+      "realised vol",
+      "IC at the primary horizon",
+      "incremental IC beyond the FX control",
+      "turnover",
+      "annual transaction cost",
+      "signal persistence",
+      "position persistence",
+      "positive temporal blocks",
+      "leave-one-currency-out",
+      "currency contribution",
+      "top 1 / 5 / 10 day contribution",
+      "max drawdown",
+      "cost x1.5",
+      "cost x2",
+      "risk leverage for 5% and 10% annual net",
+      "pair-level margin utilisation",
+      "stressed margin utilisation"
+    ],
+    "no_control_zoo": "exactly these four books. The control is the currency's own recent return over the same window, which is available at the decision because the yield is a further day behind. No further conditioning variable may be added after a result",
+    "primary_test": "D",
+    "primary_test_decomposition": "D = B - beta * C is a rate residual carried together with a reversed momentum leg. The fast record already says this makes an unexplained D uninterpretable, so the split is pre-registered here rather than requested afterwards: D's P&L is reported as the rate-residual leg and the -beta*C leg separately, with the mean and dispersion of the daily cross-sectional beta. A positive D whose P&L comes from the momentum leg is not rate information and is recorded as such",
+    "prohibited_after_the_result": [
+      "changing the horizon, the sign, the lookback or the universe",
+      "adding a control, a book or a currency",
+      "re-running at another volatility target, band or cost convention to rescue the economics",
+      "any nonlinear or ML formulation",
+      "reading any protected span"
+    ],
+    "question": "does FX follow, with a lag, the relative monetary-policy repricing state that builds over about a month — carrying expected-return information beyond what the currency's own price history already holds?",
+    "screen": {
+      "candidate": "every shared condition holds and D's net Sharpe is at least 0.3",
+      "kind": "development screen, symmetric and exhaustive; seen data decides nothing",
+      "marginal_candidate": "every shared condition holds and D's net Sharpe is in [0.2, 0.3). The bands do not overlap, so which token is recorded is not a choice made after the result. Returned to Human as marginal, never advanced",
+      "no_automatic_progress_to_fresh": true,
+      "shared_conditions": [
+        "book B gross Sharpe > 0",
+        "D carries a positive net increment over the FX price control C",
+        "a majority of the six contiguous blocks are positive",
+        "no single currency dominates: the sign survives dropping any one of the five",
+        "turnover at or below 45 round trips a year per unit gross, so the book held the state the hypothesis describes",
+        "the annual charged cost does not exceed the annual gross return",
+        "net Sharpe stays positive at 1.5x and 2x cost",
+        "D's rate-residual leg carries at least half of D's gross P&L",
+        "5% annual net is reachable at a target volatility whose gap stress does not force a loss-cut, measured by risk.gap_stress on this universe's own routing and on the book's own volatility per unit of currency gross (realised annual volatility divided by mean currency gross, taken from the run's own record, never Track 1's constant)"
+      ],
+      "status_candidate": "MARKET_YIELD_SLOW_REPRICING_DEVELOPMENT_CANDIDATE",
+      "status_data": "MARKET_YIELD_SLOW_REPRICING_DATA_NOT_DECISION_GRADE",
+      "status_marginal": "MARKET_YIELD_SLOW_REPRICING_MARGINAL_DEVELOPMENT_CANDIDATE",
+      "status_stop": "MARKET_YIELD_SLOW_REPRICING_NOT_SUPPORTED_IN_SEEN_DEVELOPMENT",
+      "stop": "every other outcome, including a net Sharpe below the marginal band and any failure of a shared condition at any Sharpe. There is no held state",
+      "strong_if": "net Sharpe of D is 0.5 or more"
+    },
+    "signal": {
+      "definition": "cross-sectional z-score, over the five currencies, of the change in the two-year market yield over the primary horizon",
+      "horizon_days": 20,
+      "inversion_after_the_result_prohibited": true,
+      "not_chosen_for_fit": "no signal lookback other than five has been scored in this programme. The twenty-day *target* horizon was scored in the fast run and argues against this choice if anything (its ICs there were -0.0099, -0.0455 and +0.0013), so the lookback is not outcome-fitted. 10, 15, 30, 40, 60 and any EWMA half-life are out of scope",
+      "sign": "+1 — a currency whose relative yield has risen over the horizon is expected to appreciate",
+      "sign_frozen": true,
+      "who_named_twenty": "the ruling of 2026-09-18 named twenty trading days as the primary horizon and forbade a grid. The fast track's results document had listed a 20-60 day range among the options it returned to Human; the choice within that range was made by Human, not here",
+      "why_twenty": [
+        "about one month of market repricing, the scale on which a policy-path revision is expressed rather than a day's noise",
+        "an economic interpretation distinct from the fast shock, not a better score",
+        "a state a book can hold, so turnover falls as a consequence of the hypothesis"
+      ]
+    },
+    "stage": "Stage 1: one unfitted rule. No fitted coefficient, no ML, no search.",
+    "track": "T-R2 — slow market-yield repricing state",
+    "universe": {
+      "breadth_expansion": "AUD, NZD and CHF are not acquirable from this environment. Their absence does not stop T-R2, and a negative T-R2 may not be rescued by proposing to add them",
+      "currencies": [
+        "CAD",
+        "EUR",
+        "GBP",
+        "JPY",
+        "USD"
+      ],
+      "excluded": {
+        "AUD": "the RBA's table F2 refuses every automated request from this environment (HTTP 403)",
+        "CHF": "the SNB's daily cube stops on 2025-07-31, so it cannot cover the decision span",
+        "NZD": "the RBNZ's current daily file is refused (HTTP 403); the older file stops on 2025-08-22"
+      },
+      "fixed_by": "the data audit of artifacts/research/market_yields/integrity.json"
+    },
+    "why_this_is_not_the_fast_hypothesis_smoothed": "the fast track tested a shock: whether FX reacts to the day's revision of the policy path. T-R2 tests a state: whether FX adjusts slowly to where the path has moved over a month. The two differ in what they assert about the market, not only in how often they trade — one is about reaction speed, the other about the speed of adjustment. The measurement supports the distinction without carrying it: the two euro-area sources agree 0.65 on one-day changes and 0.93 on five-day changes, so a longer window is a cleaner measurement of the same underlying quantity, which is a reason the state can be measured at all, not a reason it exists"
+  },
+  "prereg_digest": "2f3f8bb37af00b31fcd2242278998847c7262f557d885df36d71a9a4e32bc67a",
+  "protected_spans_read": false,
+  "screen": {
+    "all_shared_conditions_hold": false,
+    "decision": "stop",
+    "decision_grade": false,
+    "note": "a development screen. The span separates only a net Sharpe near 1.13 at 80% power, so neither a pass nor a stop here settles whether the slow state leads FX",
+    "positive_blocks": 4,
+    "primary_net_sharpe": 0.0511,
+    "shared_conditions": {
+      "5% annual net is reachable inside the gap stress": true,
+      "B gross Sharpe > 0": true,
+      "D carries a positive net increment over C": true,
+      "D's rate-residual leg carries at least half of D's gross": true,
+      "a majority of the six blocks are positive": true,
+      "net Sharpe stays positive at 1.5x and 2x cost": false,
+      "the annual cost does not exceed the annual gross": true,
+      "the sign survives dropping any single currency": false,
+      "turnover at or below 45": false
+    },
+    "verdict": "MARKET_YIELD_SLOW_REPRICING_NOT_SUPPORTED_IN_SEEN_DEVELOPMENT"
+  },
+  "span": {
+    "first": "2021-04-27",
+    "last": "2025-12-26"
+  },
+  "track": "T-R2",
+  "universe": [
+    "CAD",
+    "EUR",
+    "GBP",
+    "JPY",
+    "USD"
+  ],
+  "verdict": "MARKET_YIELD_SLOW_REPRICING_NOT_SUPPORTED_IN_SEEN_DEVELOPMENT"
+}

@@ -614,6 +614,57 @@ LEDGER: Final[list[dict[str, Any]]] = [
             "would place deliberate weight on unobserved currencies"
         ),
     },
+    {
+        "id": "H-026",
+        "round": "Track T-R2 slow market-yield repricing state, development",
+        "population": (
+            "the seen corpus 2021-04-27 .. 2025-12-26, 1190 decision days after the twenty-day "
+            "lookback, the same five decision-grade currencies, with the currency returns rebuilt "
+            "from the eight pairs the restricted book can trade"
+        ),
+        "target": (
+            "currency excess return from the cross-sectional z-score of the twenty-day change in "
+            "each currency's official two-year market yield, lagged one trading day, through the "
+            "universe-closed execution layer"
+        ),
+        "condition_family": (
+            "four pre-registered books plus one decomposition book: the fast five-day reference, "
+            "the twenty-day state, an FX price control over the same window, the state "
+            "residualised against that control (the primary test), and the residual's own "
+            "reversed momentum leg"
+        ),
+        "horizon_family": (
+            "one lookback of twenty days, named by the ruling and frozen before the run"
+        ),
+        "configurations": (
+            "one unfitted rule, pre-registered at prereg_r2.py and pinned by content digest "
+            "before execution"
+        ),
+        "prespecified": True,
+        "result": (
+            "the central diagnostic answered on the informative side: turnover fell from 83.3 to "
+            "39.3 round trips a year and the gross expected return survived, rising from +0.279 "
+            "to +0.541 for the state book and +0.834 for the residual, so the fast formulation's "
+            "failure was at least partly a cost problem rather than purely short-lived "
+            "information. It is still not monetisable: net Sharpe +0.042 and +0.051 sit at "
+            "break-even, the residual turns over 59.8 against the pre-registered bound of 45, net "
+            "goes negative at 1.5x cost (-0.34) and 2x (-0.73), and every leave-one-currency-out "
+            "is negative (-0.09 to -1.03) on a five-name cross-section carried by USD and JPY. "
+            "The pre-registered decomposition shows the rate leg carrying 65% of the residual's "
+            "gross, so the result is not a momentum artefact, but beta varies widely (sd 0.47, "
+            "sign changing) and the non-linear reconciliation gap is 3.3 percentage points"
+        ),
+        "status": (
+            "CLOSED - MARKET_YIELD_SLOW_REPRICING_NOT_SUPPORTED_IN_SEEN_DEVELOPMENT, for the "
+            "pre-registered twenty-day formulation only. With the fast shock and the slow state "
+            "both unsupported, the scope-limited family closure token becomes available for a "
+            "Human decision; it would not reach OIS, intraday rate futures, the market-implied "
+            "policy path or curve non-linearities, none of which has been observed. The span "
+            "separates only a net Sharpe near 1.13 at 80% power, so neither book's positive gross "
+            "(t about 1.18 and 1.82) is decision-grade. Changing the horizon, sign, universe, "
+            "control or turnover bound after this result is prohibited"
+        ),
+    },
 ]
 
 #: Rough cumulative count of configurations evaluated against the 2025
