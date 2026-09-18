@@ -614,6 +614,68 @@ LEDGER: Final[list[dict[str, Any]]] = [
             "would place deliberate weight on unobserved currencies"
         ),
     },
+    {
+        "id": "H-027",
+        "document": "docs/research/m15_track_v_real_exchange_rate_valuation.md",
+        "round": "Track T-V real exchange rate valuation, development",
+        "population": (
+            "public pre-2016 history: ECB euro reference rates 1999-01-05 .. 2016-06-01 and BIS "
+            "long consumer prices 1994-01 .. 2016-05, eight G10 currencies, all twenty pairs "
+            "routable, 210 month-end decisions of which 151 carry a position after the "
+            "sixty-month anchor warm-up. The protected fresh pool was excluded at the request, "
+            "not by a local filter, and the span is EXPLORATORY_SEEN_DEVELOPMENT_DATA from now on"
+        ),
+        "target": (
+            "spot currency return over the following months from the cross-sectional z-score of "
+            "minus the deviation of each currency's real value — nominal euro value plus lagged "
+            "relative price level — from its own expanding-window anchor"
+        ),
+        "condition_family": (
+            "three pre-registered books: the real valuation signal alone, the same construction "
+            "with the price-level term removed (nominal mean reversion, the control), and the "
+            "valuation signal residualised against that control each month, which is the "
+            "primary test"
+        ),
+        "horizon_family": (
+            "one primary horizon of three months, with monthly decisions; no horizon grid"
+        ),
+        "configurations": (
+            "one unfitted rule, pre-registered at valuation/prereg.py, digest-pinned and "
+            "committed before the first FX observation was requested"
+        ),
+        "prespecified": True,
+        "result": (
+            "the first book in this programme whose economics cost does not decide: turnover "
+            "1.29 round trips a year against a pre-registered bound of 12, annual cost 0.16%, "
+            "break-even cost multiple 12.9, net Sharpe +0.151 at 2x cost and +0.137 at 3x. But "
+            "the primary test is +0.179 gross and +0.165 net with a net t of 0.59 over 12.62 "
+            "traded years, below the 0.25 marginal band and far below the 0.789 this span "
+            "separates at 80% power. Three of the twelve frozen conditions fail. The most "
+            "informative is the tercile ordering: the predicted monotone cheap-to-dear ordering "
+            "of three-month forward returns holds for the valuation book (+0.337% / -0.195% / "
+            "-0.214%) AND for the nominal control (+0.366% / -0.065% / -0.451%, a wider spread), "
+            "but inverts for the residual (-0.106% / -0.197% / +0.455%), whose three-month IC is "
+            "-9.12%. The ordering the hypothesis predicts lives in the part nominal mean "
+            "reversion already explains, and what survives the control has no pre-registered "
+            "measure of forecasting power behind its positive Sharpe. Also failing: three of "
+            "eight leave-one-out drops go negative, and 5% annual net needs 30.3% volatility, "
+            "over the 15% bound and into a loss-cut under gap stress"
+        ),
+        "status": (
+            "CLOSED - REAL_EXCHANGE_RATE_VALUATION_NOT_SUPPORTED_IN_DEVELOPMENT, for the "
+            "pre-registered spot-only formulation on this span only. Two disclosed shortfalls "
+            "bound what it means: the frozen sources carry no interest rate, so the routed P&L "
+            "is a spot return and the omitted carry most likely understates a valuation book; "
+            "and the CPI series are revised history rather than vintages. It does not show that "
+            "real exchange rate valuation has no content — the span separates only a net Sharpe "
+            "above 0.789, and the valuation book's tercile ordering came out as predicted. What "
+            "it shows is that the ordering is not separable from nominal mean reversion here. "
+            "What is new for the programme is the other side: cost stopped being the binding "
+            "constraint, and the question moved to signal content. Changing the anchor, lag, "
+            "horizon, cadence, sign or universe after this result is prohibited, and adding a "
+            "carry leg counts as adding a book"
+        ),
+    },
 ]
 
 #: Rough cumulative count of configurations evaluated against the 2025
