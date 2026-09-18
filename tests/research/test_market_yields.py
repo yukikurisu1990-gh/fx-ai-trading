@@ -18,9 +18,11 @@ import numpy as np
 import pandas as pd
 import pytest
 
+from scripts.research import model_learning
 from scripts.research.edge_sources import leverage
 from scripts.research.market_yields import (
     CURRENCIES,
+    DATA_DIR,
     FAMILY_BOUNDARY,
     OUTCOMES,
     WORKFLOW_STATUS,
@@ -36,6 +38,26 @@ from scripts.research.market_yields import (
 ROOT = Path(__file__).resolve().parents[2]
 PACKAGE = ROOT / "scripts/research/market_yields"
 RECORDS = ROOT / "artifacts/research/market_yields"
+
+#: The M15 bar cache and the acquired yield series live under `artifacts/track_a_scratch/`,
+#: which `.gitignore` excludes, so CI has the code and not the bytes. The handful of tests
+#: that must touch them skip there rather than failing — and say which route repopulates
+#: them, because a test that fails for want of data teaches a reader to ignore red CI.
+_LOCAL_INPUTS = [
+    *[
+        ROOT / block["cache"] / "m15_AUD_CAD.parquet"
+        for block in model_learning.SEEN_SPANS.values()
+    ],
+    *[ROOT / DATA_DIR / f"{currency.lower()}_2y.parquet" for currency in prereg.UNIVERSE],
+]
+needs_local_caches = pytest.mark.skipif(
+    not all(path.is_file() for path in _LOCAL_INPUTS),
+    reason=(
+        "the M15 bar cache and the acquired yield series are untracked local artefacts; "
+        "run the model_learning build_cache and "
+        "`MARKET_YIELDS_ACQUIRE_APPROVED=1 python -m scripts.research.market_yields.acquire`"
+    ),
+)
 
 
 @pytest.fixture(scope="module")
@@ -1065,6 +1087,7 @@ class TestTheRepairedRerunIsTheFrozenSignal:
         assert check["max_residual_on_complete_days"] < 1e-12
         assert "binding one" in repaired_record["condition_re_verified"]
 
+    @needs_local_caches
     def test_the_panel_drops_the_days_it_cannot_route(self) -> None:
         from scripts.research.model_learning import corpus
 
@@ -1287,6 +1310,7 @@ class TestTheRepairedRerunBehaviour:
             "currency_excess_return": pd.DataFrame(0.0, index=index, columns=list(CURRENCIES)),
         }
 
+    @needs_local_caches
     def test_it_asks_for_the_frozen_lookback(self, monkeypatch: pytest.MonkeyPatch) -> None:
         from scripts.research.market_yields import fast_repair_check
         from scripts.research.model_learning import corpus
