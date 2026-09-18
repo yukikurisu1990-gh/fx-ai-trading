@@ -5,10 +5,12 @@
     python -m scripts.research.market_yields.fast_repair_check
 
 #485's verdict stands as recorded. This re-runs the same frozen fast signal
-through the repaired construction — nothing else changes, no parameter is
-touched — so that the repair is shown not to have been the reason the fast
-formulation failed, and so that T-R2 starts from a layer whose behaviour on a
-restricted universe is known.
+through the repaired construction: no parameter of the book is touched, and the
+yield score is identical. What does change is the measurement — the currency
+returns are rebuilt from the universe's own pairs — so the momentum control, the
+neutralisation factor and the residual all move with it. That is the point: the
+repaired measurement is the correct one, and the question is whether the fast
+formulation still fails under it.
 """
 
 from __future__ import annotations
@@ -29,10 +31,10 @@ def run() -> dict[str, Any]:
 
     universe = list(prereg.UNIVERSE)
     panel = corpus_module.currency_panel()
-    days = pd.DatetimeIndex(panel["currency_excess_return"].index)
-    assert_not_protected(str(days[0].date()), str(days[-1].date()))
     #: returns rebuilt from the universe's own pairs, so the P&L is the routed book's
     excess = portfolio.universe_panel(panel, universe)
+    days = pd.DatetimeIndex(excess.index)
+    assert_not_protected(str(days[0].date()), str(days[-1].date()))
     frames = {
         currency: pd.read_parquet(
             development.ROOT / development.DATA_DIR / f"{currency.lower()}_2y.parquet"
@@ -87,9 +89,7 @@ def run() -> dict[str, Any]:
         "routing_connects_the_universe": routing.connected,
         "books": books,
         "against_the_recorded_run": comparison,
-        "identity_residual_pnl_vs_routed_book": portfolio.identity_residual(
-            panel, universe, weights
-        ),
+        "identity_check": portfolio.identity_check(panel, universe, weights),
         "verdict_unchanged": original["verdict"],
         "condition_re_verified": (
             "the binding one: book A's net Sharpe against the advance bar of 0.3. The other "

@@ -86,7 +86,9 @@ def universe_panel(
     """
     currencies = list(universe)
     pairs = tradable_pairs(currencies)
-    returns = panel["pair_returns"][list(pairs)]
+    #: a day missing any leg cannot be routed as the identity assumes, so it is dropped
+    #: rather than averaged over the legs that happen to be present
+    returns = panel["pair_returns"][list(pairs)].dropna(how="any")
     rebuilt = pd.DataFrame(index=returns.index, columns=currencies, dtype=float)
     for currency in currencies:
         signed = [
@@ -98,17 +100,42 @@ def universe_panel(
     return rebuilt.sub(rebuilt.mean(axis=1), axis=0)
 
 
-def identity_residual(
+def identity_check(
     panel: dict[str, pd.DataFrame], universe: tuple[str, ...] | list[str], weights: np.ndarray
-) -> float:
-    """`|x . r - (M x) . R|` for one sum-zero weight vector: it must be zero."""
+) -> dict[str, Any]:
+    """`|x . r - (M x) . R|` for one sum-zero weight vector, and where it cannot hold.
+
+    `universe_panel` averages the legs it has, while `split_map` divides by the full
+    leg count, so on a day with a missing pair return the two definitions differ —
+    and the pair-side sum is NaN there, which a `nanmax` would quietly drop. The
+    incomplete days are counted rather than skipped.
+    """
     currencies = list(universe)
     pairs = tradable_pairs(currencies)
     excess = universe_panel(panel, currencies)
+    returns = panel["pair_returns"][list(pairs)].reindex(excess.index)
     routed = split_map(currencies) @ weights
     direct = excess.to_numpy() @ weights
-    through_pairs = panel["pair_returns"][list(pairs)].to_numpy() @ routed
-    return float(np.nanmax(np.abs(direct - through_pairs)))
+    through_pairs = returns.to_numpy() @ routed
+    difference = np.abs(direct - through_pairs)
+    complete = np.isfinite(difference)
+    dropped = len(panel["pair_returns"]) - len(excess)
+    return {
+        "days": int(len(difference)),
+        "incomplete_pair_days_dropped_from_the_panel": int(dropped),
+        "incomplete_pair_days": int((~complete).sum()),
+        "max_residual_on_complete_days": float(np.max(difference[complete]))
+        if complete.any()
+        else float("nan"),
+        "identity_holds": bool(complete.all() and np.max(difference[complete]) < 1e-12),
+    }
+
+
+def identity_residual(
+    panel: dict[str, pd.DataFrame], universe: tuple[str, ...] | list[str], weights: np.ndarray
+) -> float:
+    """The residual on complete days. `identity_check` reports the incomplete ones."""
+    return identity_check(panel, universe, weights)["max_residual_on_complete_days"]
 
 
 @dataclass(frozen=True, slots=True)
@@ -231,10 +258,13 @@ def run_book(
         uncapped = float("nan")
         ex_ante = float("nan")
         at_cap = False
-        if targeter is not None and len(history) > 1:
-            window = history[-config.vol_window :]
-            cov = np.cov(window, rowvar=False)
-            ex_ante = float(np.sqrt(max(held @ cov @ held, 0.0) * days_per_year))
+        if targeter is not None:
+            #: one row cannot give a covariance; the layer's own answer for that day is
+            #: an undefined ex-ante volatility, which the targeter turns into no position
+            if len(history) > 1:
+                window = history[-config.vol_window :]
+                cov = np.cov(window, rowvar=False)
+                ex_ante = float(np.sqrt(max(held @ cov @ held, 0.0) * days_per_year))
             leverage = targeter.update(ex_ante)
             uncapped = targeter.uncapped
             at_cap = bool(np.isfinite(uncapped) and uncapped >= config.max_leverage)
@@ -296,6 +326,7 @@ __all__ = [
     "REPAIR",
     "BookConfig",
     "Routing",
+    "identity_check",
     "identity_residual",
     "routing_profile",
     "run_book",

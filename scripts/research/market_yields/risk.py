@@ -13,6 +13,7 @@ they are computed on is.
 
 from __future__ import annotations
 
+import math
 from pathlib import Path
 from typing import Any, Final
 
@@ -25,30 +26,58 @@ from scripts.research.market_yields import portfolio
 STRESS_CURRENCY_GAP: Final[float] = leverage.STRESS_CURRENCY_GAP
 
 
+#: The reference measurement in `edge_sources.leverage` draws an AR(1) target, lets the
+#: band drift the held book past its cap, and measures the exposure the *routed* book
+#: implies. Both are mirrored here, so the two universes are compared like with like.
+ROUTING_HALF_LIFE_DAYS: Final[float] = leverage.ROUTING_HALF_LIFE_DAYS
+BAND: Final[float] = 0.10
+
+
 def margin_per_unit_currency_gross(
-    root: Path, universe: tuple[str, ...] | list[str], samples: int = 4000
+    root: Path,
+    universe: tuple[str, ...] | list[str],
+    weight_cap: float = 0.25,
+    samples: int = 4000,
 ) -> dict[str, float]:
     """`sum |routed notional| x pair margin rate`, over the universe's own pairs."""
     rates = leverage.margin_rates(root)["rates"]
     currencies = tuple(universe)
     pairs = portfolio.tradable_pairs(currencies)
     pair_map = portfolio.split_map(currencies)
+    incidence = np.zeros((len(pairs), len(currencies)))
+    for row_index, pair in enumerate(pairs):
+        base, quote = pair.split("_")
+        incidence[row_index, currencies.index(base)] = 1.0
+        incidence[row_index, currencies.index(quote)] = -1.0
     rate_vector = np.array([rates[p] for p in pairs])
+    rho = 0.5 ** (1.0 / ROUTING_HALF_LIFE_DAYS)
+    innovation = math.sqrt(1.0 - rho * rho)
     rng = np.random.default_rng(20260918)
+    state = rng.standard_normal(len(currencies))
+    held: np.ndarray | None = None
     margins, exposures = [], []
-    for row in rng.standard_normal((samples, len(currencies))):
-        weights = portfolio.construction.capped_weights(row, 0.25)
-        gross = float(np.abs(weights).sum())
+    for _ in range(samples):
+        state = rho * state + innovation * rng.standard_normal(len(currencies))
+        target = portfolio.construction.capped_weights(state, weight_cap)
+        held = (
+            target.copy()
+            if held is None
+            else portfolio.construction.band_rebalance(target, held, BAND)
+        )
+        gross = float(np.abs(held).sum())
         if gross <= 0:
             continue
-        routed = np.abs(pair_map @ weights) / gross
-        margins.append(float(routed @ rate_vector))
-        exposures.append(float(np.abs(weights).max() / gross))
+        signed = (pair_map @ held) / gross
+        margins.append(float(np.abs(signed) @ rate_vector))
+        exposures.append(float(np.abs(incidence.T @ signed).max()))
     return {
         "margin_mean": round(float(np.mean(margins)), 5),
         "margin_p95": round(float(np.quantile(margins, 0.95)), 5),
         "largest_currency_exposure_p95": round(float(np.quantile(exposures, 0.95)), 4),
         "pairs": len(pairs),
+        "measured_as": (
+            "routed-book currency exposure after band drift, as in edge_sources.leverage"
+        ),
     }
 
 
@@ -65,6 +94,8 @@ def gap_stress(
     Sharpe-independent, as the policy requires: only the routed margin, the leverage
     the target asks for, and the declared shock enter.
     """
+    #: the leverage a vol target asks for varies; the tail multiple is Track 1's recorded
+    #: p95/mean unless the caller measures its own book's, which T-R2 does
     tail = (
         leverage.leverage_tail_multiple(root)
         if leverage_tail_multiple is None

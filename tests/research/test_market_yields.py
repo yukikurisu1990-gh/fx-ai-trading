@@ -811,7 +811,7 @@ class TestTheSlowPrereg:
 
 #: The frozen T-R2 pre-registration, by content. Any edit to what it declares changes
 #: this digest, so a silent post-result amendment cannot pass as the frozen design.
-PREREG_R2_DIGEST = "b7e4a4aeb7f89837ab18facb5a67f3df19d80978d0e9efde9cc93f512cd0dc6a"
+PREREG_R2_DIGEST = "2f3f8bb37af00b31fcd2242278998847c7262f557d885df36d71a9a4e32bc67a"
 
 
 def _synthetic(days: int = 90, currencies: tuple[str, ...] = prereg.UNIVERSE, seed: int = 3):
@@ -1057,5 +1057,19 @@ class TestTheRepairedRerunIsTheFrozenSignal:
         assert "assert_not_protected" in source
 
     def test_the_record_shows_the_closed_identity(self, repaired_record: dict[str, Any]) -> None:
-        assert repaired_record["identity_residual_pnl_vs_routed_book"] < 1e-12
+        check = repaired_record["identity_check"]
+        assert check["identity_holds"] is True
+        assert check["incomplete_pair_days"] == 0
+        assert check["max_residual_on_complete_days"] < 1e-12
         assert "binding one" in repaired_record["condition_re_verified"]
+
+    def test_the_panel_drops_the_days_it_cannot_route(self) -> None:
+        from scripts.research.model_learning import corpus
+
+        panel = corpus.currency_panel()
+        rebuilt = portfolio.universe_panel(panel, prereg.UNIVERSE)
+        pairs = list(portfolio.tradable_pairs(prereg.UNIVERSE))
+        complete = panel["pair_returns"][pairs].dropna(how="any")
+        assert len(rebuilt) == len(complete)
+        assert len(rebuilt) < len(panel["pair_returns"]), "at least one day is incomplete"
+        assert float(rebuilt.sum(axis=1).abs().max()) < 1e-12

@@ -90,6 +90,14 @@ def _turnover_expectation() -> dict[str, Any]:
             capacity.band_law(round(implied_half_life))["turnover"], 1
         ),
         "screen_bound": TURNOVER_BOUND,
+        "why_forty_five": (
+            "the twenty-day hypothesis implies about 18 round trips a year and the two "
+            "extrapolations give 35 and 58. A bound at 45 sits above both the law and the "
+            "realised-multiplier expectation, so it does not fail a book that behaves as the "
+            "hypothesis says, and below the noise-attenuation one, so a book that decays like the "
+            "fast signal does fail it. It is deliberately the looser of the two defensible "
+            "choices: a tighter 30 would fail on the multiplier expectation alone"
+        ),
         "why_a_bound": (
             "the hypothesis is that the book holds a state. If turnover does not fall below the "
             "bound the state was not held, and the formulation is recorded as not supported "
@@ -220,9 +228,11 @@ PREREG: Final[dict[str, Any]] = {
         "rate information and is recorded as such"
     ),
     "marginal_tier_authority": (
-        "the ruling of 2026-09-18: a net Sharpe between about 0.2 and 0.5 may be returned as a "
-        "marginal candidate only if turnover is very low, stability high and correlation to what "
-        "the programme already holds low. It is a tier for returning to Human, never for advancing"
+        "the ruling of 2026-09-18 allows a marginal tier for a net Sharpe between about 0.2 and "
+        "0.5 when turnover is very low and stability high. It is implemented here as the stricter "
+        "[0.2, 0.3) band with every shared condition required, because above 0.3 the result is a "
+        "candidate outright. The implemented band is the binding one; this authority note may not "
+        "be used to widen it. It is a tier for returning to Human, never for advancing"
     ),
     "no_control_zoo": (
         "exactly these four books. The control is the currency's own recent return over the same "
@@ -258,7 +268,13 @@ PREREG: Final[dict[str, Any]] = {
             "share of gross reaches 0.50 at the 95th percentile against 0.25. The parameter is "
             "reused unchanged and the consequence is reported, not tuned away"
         ),
-        "identical_to_the_fast_run_except": "the signal horizon. The layer is the repaired one, which the fast books were also re-run through, so the two are compared like with like",
+        "identical_to_the_fast_run_except": (
+            "the signal horizon, and the neutralisation path: the fast re-run neutralised in a "
+            "pre-step with the layer's flag off, T-R2 uses the layer's own flag over the five "
+            "columns. The two are mathematically the same projection given the same window, and "
+            "naming which one runs is what the fast track failed to do. Everything else — cap, "
+            "band, cost, vol target, routing and the rebuilt returns — is the same book"
+        ),
     },
     "metrics": [
         "gross Sharpe",
@@ -294,15 +310,17 @@ PREREG: Final[dict[str, Any]] = {
         "shared_conditions": [
             "book B gross Sharpe > 0",
             "D carries a positive net increment over the FX price control C",
-            "D's rate-residual leg, not the reversed momentum leg, carries its P&L",
             "a majority of the six contiguous blocks are positive",
             "no single currency dominates: the sign survives dropping any one of the five",
             f"turnover at or below {TURNOVER_BOUND:g} round trips a year per unit gross, so the "
             "book held the state the hypothesis describes",
             "the annual charged cost does not exceed the annual gross return",
             "net Sharpe stays positive at 1.5x and 2x cost",
-            "5% annual net is reachable at a target volatility whose gap stress, measured on this "
-            "universe, does not force a loss-cut",
+            "D's rate-residual leg carries at least half of D's gross P&L",
+            "5% annual net is reachable at a target volatility whose gap stress does not force a "
+            "loss-cut, measured by risk.gap_stress on this universe's own routing and on the "
+            "book's own volatility per unit of currency gross (realised annual volatility divided "
+            "by mean currency gross, taken from the run's own record, never Track 1's constant)",
         ],
         "candidate": f"every shared condition holds and D's net Sharpe is at least {CANDIDATE_NET_SHARPE}",
         "strong_if": "net Sharpe of D is 0.5 or more",
