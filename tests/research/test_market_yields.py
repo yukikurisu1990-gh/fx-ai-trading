@@ -18,6 +18,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
+from scripts.research.edge_sources import leverage
 from scripts.research.market_yields import (
     CURRENCIES,
     FAMILY_BOUNDARY,
@@ -28,6 +29,7 @@ from scripts.research.market_yields import (
     portfolio,
     prereg,
     prereg_r2,
+    risk,
     sources,
 )
 
@@ -1073,3 +1075,257 @@ class TestTheRepairedRerunIsTheFrozenSignal:
         assert len(rebuilt) == len(complete)
         assert len(rebuilt) < len(panel["pair_returns"]), "at least one day is incomplete"
         assert float(rebuilt.sum(axis=1).abs().max()) < 1e-12
+
+
+class TestTheLayerMatchesItsReference:
+    def test_on_the_full_cross_section_it_is_the_reference(self) -> None:
+        """With every currency in the universe, this must be construction.run_book."""
+        from scripts.research.continuous_portfolio import construction
+        from scripts.research.model_learning import CURRENCIES_G10
+
+        currencies = tuple(sorted(CURRENCIES_G10))
+        mu, excess = _synthetic(days=120, currencies=currencies, seed=11)
+        config = replace(development.BOOK, neutralize_leading_factor=True)
+        mine = portfolio.run_book(config, mu, excess, universe=currencies)["daily"]
+        reference = construction.run_book(config, mu, excess, days_per_year=252.0)["daily"]
+        shared = [c for c in mine.columns if c in reference.columns and c != "decision_day"]
+        assert {"gross", "cost", "net", "leverage", "x_USD", "pnl_USD"} <= set(shared)
+        pd.testing.assert_frame_equal(
+            mine[shared].astype(float), reference[shared].astype(float), check_names=False
+        )
+
+    def test_the_first_decision_day_takes_no_position_as_the_reference_does(self) -> None:
+        mu, excess = _synthetic(days=30)
+        daily = portfolio.run_book(development.BOOK, mu, excess, universe=prereg.UNIVERSE)["daily"]
+        #: one row cannot give a covariance, so the vol target refuses to size the book
+        assert float(daily["leverage"].iloc[0]) == 0.0
+        assert float(daily["gross"].iloc[0]) == 0.0
+
+    def test_the_factor_window_is_used(self) -> None:
+        mu, excess = _synthetic()
+        columns = [f"x_{c}" for c in prereg.UNIVERSE]
+        narrow = portfolio.run_book(
+            replace(development.BOOK, neutralize_leading_factor=True, factor_window=20),
+            mu,
+            excess,
+            universe=prereg.UNIVERSE,
+        )["daily"]
+        wide = portfolio.run_book(
+            replace(development.BOOK, neutralize_leading_factor=True, factor_window=120),
+            mu,
+            excess,
+            universe=prereg.UNIVERSE,
+        )["daily"]
+        assert not narrow[columns].equals(wide[columns])
+
+
+class TestTheIdentityIsCheckedAgainstTheWholePanel:
+    def _panel(self) -> dict[str, Any]:
+        from scripts.research.model_learning import PAIRS_20
+
+        index = pd.bdate_range("2021-01-04", periods=60)
+        rng = np.random.default_rng(19)
+        return {
+            "pair_returns": pd.DataFrame(
+                rng.standard_normal((len(index), len(PAIRS_20))) / 100.0,
+                index=index,
+                columns=list(PAIRS_20),
+            )
+        }
+
+    def test_the_identity_is_verified_independently_on_a_full_panel(self) -> None:
+        panel = self._panel()
+        weights = np.array([0.25, -0.25, 0.10, -0.05, -0.05])
+        excess = portfolio.universe_panel(panel, prereg.UNIVERSE)
+        pairs = list(portfolio.tradable_pairs(prereg.UNIVERSE))
+        #: recomputed here, not taken from the module under test
+        routed = portfolio.split_map(prereg.UNIVERSE) @ weights
+        through_pairs = panel["pair_returns"][pairs].to_numpy() @ routed
+        direct = excess.to_numpy() @ weights
+        residual = float(np.max(np.abs(direct - through_pairs)))
+        assert residual < 1e-15
+        assert portfolio.identity_check(panel, prereg.UNIVERSE, weights)["identity_holds"] is True
+        #: the module's own number must be the one just computed here
+        assert portfolio.identity_residual(panel, prereg.UNIVERSE, weights) == pytest.approx(
+            residual, abs=1e-18
+        )
+
+    def test_a_pair_outside_the_universe_cannot_enter_the_panel(self) -> None:
+        """The leakage this closure exists to prevent, at its source."""
+        panel = self._panel()
+        untouched = portfolio.universe_panel(panel, prereg.UNIVERSE)
+        for pair in ("AUD_JPY", "CHF_JPY", "AUD_CAD", "NZD_USD"):
+            panel["pair_returns"][pair] *= 50.0
+        moved = portfolio.universe_panel(panel, prereg.UNIVERSE)
+        pd.testing.assert_frame_equal(untouched, moved)
+
+    def test_a_gap_in_a_pair_the_book_never_trades_costs_no_day(self) -> None:
+        panel = self._panel()
+        panel["pair_returns"].loc[panel["pair_returns"].index[5], "AUD_JPY"] = np.nan
+        rebuilt = portfolio.universe_panel(panel, prereg.UNIVERSE)
+        assert len(rebuilt) == len(panel["pair_returns"]), "only the routed pairs decide a day"
+
+    def test_a_panel_built_from_every_pair_would_break_it(self) -> None:
+        """The defect the closure exists to prevent, reproduced from the outside."""
+        from scripts.research.model_learning import PAIRS_20
+
+        panel = self._panel()
+        currencies = list(prereg.UNIVERSE)
+        weights = np.array([0.25, -0.25, 0.10, -0.05, -0.05])
+        wrong = pd.DataFrame(index=panel["pair_returns"].index, columns=currencies, dtype=float)
+        for currency in currencies:
+            signed = [
+                panel["pair_returns"][pair]
+                if currency == pair.split("_")[0]
+                else -panel["pair_returns"][pair]
+                for pair in PAIRS_20
+                if currency in pair.split("_")
+            ]
+            wrong[currency] = pd.concat(signed, axis=1).mean(axis=1)
+        wrong = wrong.sub(wrong.mean(axis=1), axis=0)
+        routed = portfolio.split_map(currencies) @ weights
+        pairs = list(portfolio.tradable_pairs(currencies))
+        gap = np.abs(wrong.to_numpy() @ weights - panel["pair_returns"][pairs].to_numpy() @ routed)
+        assert float(np.max(gap)) > 1e-6, "the eight-currency definition must not satisfy it"
+
+    def test_an_incomplete_day_is_reported_not_skipped(self) -> None:
+        panel = self._panel()
+        pairs = list(portfolio.tradable_pairs(prereg.UNIVERSE))
+        panel["pair_returns"].loc[panel["pair_returns"].index[10], pairs[0]] = np.nan
+        check = portfolio.identity_check(
+            panel, prereg.UNIVERSE, np.array([0.25, -0.25, 0.10, -0.05, -0.05])
+        )
+        assert check["incomplete_pair_days_dropped_from_the_panel"] == 1
+        assert check["incomplete_pair_days"] == 0
+        assert check["identity_holds"] is True
+
+
+class TestTheUniverseAwareRisk:
+    ROOT_ARG = ROOT
+
+    def test_the_margin_is_routed_over_this_universes_pairs_only(self) -> None:
+        profile = risk.margin_per_unit_currency_gross(self.ROOT_ARG, prereg.UNIVERSE)
+        assert profile["pairs"] == len(portfolio.tradable_pairs(prereg.UNIVERSE)) == 8
+        assert profile["margin_p95"] > profile["margin_mean"], "p95, not a central value"
+        assert 0.0 < profile["margin_mean"] < 0.06
+        #: the eight-currency book is a different portfolio and must not be reported here
+        eight = leverage.routing_profile(ROOT)["margin_per_unit_currency_gross"]
+        assert profile["margin_p95"] != eight["p95"]
+
+    def test_the_loss_cut_flag_follows_equity_against_margin(self) -> None:
+        for target in (0.05, 0.10, 0.20, 0.40):
+            row = risk.gap_stress(
+                self.ROOT_ARG, prereg.UNIVERSE, vol_per_unit_gross=0.028, target_vol=target
+            )
+            assert row["loss_cut_on_gap"] == (row["maintenance_ratio_after_gap"] <= 1.0)
+            assert row["equity_after_gap"] == pytest.approx(
+                1.0 - row["gap_loss_at_leverage_tail"], abs=1e-6
+            )
+
+    def test_the_declared_shock_drives_the_gap_loss(self) -> None:
+        assert risk.STRESS_CURRENCY_GAP == 0.20
+        row = risk.gap_stress(
+            self.ROOT_ARG, prereg.UNIVERSE, vol_per_unit_gross=0.028, target_vol=0.10
+        )
+        profile = risk.margin_per_unit_currency_gross(self.ROOT_ARG, prereg.UNIVERSE)
+        expected = (
+            row["risk_leverage_C_tail"]
+            * profile["largest_currency_exposure_p95"]
+            * risk.STRESS_CURRENCY_GAP
+        )
+        assert row["gap_loss_at_leverage_tail"] == pytest.approx(expected, abs=2e-3)
+
+    def test_the_bound_is_where_the_flag_turns(self) -> None:
+        bound = risk.feasible_target_vol(self.ROOT_ARG, prereg.UNIVERSE, 0.028)
+        assert not risk.gap_stress(
+            self.ROOT_ARG, prereg.UNIVERSE, vol_per_unit_gross=0.028, target_vol=bound * 0.98
+        )["loss_cut_on_gap"]
+        assert risk.gap_stress(
+            self.ROOT_ARG, prereg.UNIVERSE, vol_per_unit_gross=0.028, target_vol=bound * 1.02
+        )["loss_cut_on_gap"]
+
+    def test_a_non_positive_sharpe_cannot_be_levered_into_a_return(self) -> None:
+        for sharpe in (0.0, -0.5):
+            row = risk.leverage_for_return(
+                self.ROOT_ARG,
+                prereg.UNIVERSE,
+                vol_per_unit_gross=0.028,
+                net_sharpe=sharpe,
+                annual_target=0.05,
+            )
+            assert row["reachable"] is False
+            assert "non-positive" in row["why"]
+
+    def test_the_universes_own_volatility_is_required(self) -> None:
+        #: no default: a caller cannot silently inherit Track 1's constant
+        import inspect
+
+        parameter = inspect.signature(risk.gap_stress).parameters["vol_per_unit_gross"]
+        assert parameter.default is inspect.Parameter.empty
+        low = risk.gap_stress(ROOT, prereg.UNIVERSE, vol_per_unit_gross=0.023, target_vol=0.10)[
+            "risk_leverage_C_mean"
+        ]
+        high = risk.gap_stress(ROOT, prereg.UNIVERSE, vol_per_unit_gross=0.028, target_vol=0.10)[
+            "risk_leverage_C_mean"
+        ]
+        assert low > high
+
+
+class TestTheRepairedRerunBehaviour:
+    def _stub_panel(self, first: str = "2021-05-03", days: int = 40) -> dict[str, Any]:
+        from scripts.research.model_learning import PAIRS_20
+
+        index = pd.bdate_range(first, periods=days)
+        rng = np.random.default_rng(23)
+        frame = pd.DataFrame(
+            rng.standard_normal((len(index), len(PAIRS_20))) / 100.0,
+            index=index,
+            columns=list(PAIRS_20),
+        )
+        return {
+            "pair_returns": frame,
+            "currency_excess_return": pd.DataFrame(0.0, index=index, columns=list(CURRENCIES)),
+        }
+
+    def test_it_asks_for_the_frozen_lookback(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        from scripts.research.market_yields import fast_repair_check
+        from scripts.research.model_learning import corpus
+
+        seen: dict[str, Any] = {}
+
+        def spy(yield_panel, excess, lookback=development.LOOKBACK):
+            seen["lookback"] = lookback
+            raise RuntimeError("stop here")
+
+        monkeypatch.setattr(corpus, "currency_panel", lambda *a, **k: self._stub_panel())
+        monkeypatch.setattr(development, "build_scores", spy)
+        with pytest.raises(RuntimeError, match="stop here"):
+            fast_repair_check.run()
+        assert seen["lookback"] == development.LOOKBACK == 5
+
+    def test_it_refuses_a_protected_span(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        from scripts.research.market_yields import fast_repair_check
+        from scripts.research.model_learning import corpus
+
+        monkeypatch.setattr(
+            corpus, "currency_panel", lambda *a, **k: self._stub_panel(first="2016-06-06")
+        )
+        from scripts.research.model_learning import ProtectedDataError
+
+        with pytest.raises(ProtectedDataError):
+            fast_repair_check.run()
+
+    def test_the_recorded_numbers_are_internally_consistent(
+        self, repaired_record: dict[str, Any]
+    ) -> None:
+        for name, book in repaired_record["books"].items():
+            summary = book["summary"]
+            assert summary["net_annual_return"] == pytest.approx(
+                summary["gross_annual_return"] - summary["annual_cost"], abs=2e-4
+            ), name
+            assert summary["net_sharpe"] == pytest.approx(
+                summary["net_annual_return"] / summary["realized_annual_vol"], abs=2e-3
+            ), name
+        #: and they are not the originals copied across
+        for name, row in repaired_record["against_the_recorded_run"].items():
+            assert row["repaired_gross_sharpe"] != row["original_gross_sharpe"], name
