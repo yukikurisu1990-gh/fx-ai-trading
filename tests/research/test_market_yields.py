@@ -18,10 +18,13 @@ import pytest
 
 from scripts.research.market_yields import (
     CURRENCIES,
+    FAMILY_BOUNDARY,
     OUTCOMES,
     development,
     integrity,
+    portfolio,
     prereg,
+    prereg_r2,
     sources,
 )
 
@@ -323,7 +326,9 @@ class TestTheDevelopmentRun:
         assert screen["conditions"]["A net Sharpe >= 0.3"] is (a["net_sharpe"] >= 0.3)
         assert screen["decision"] == ("advance" if all(screen["conditions"].values()) else "stop")
         assert screen["decision"] == "stop"
-        assert screen["verdict"] == "MARKET_YIELD_REPRICING_NOT_SUPPORTED_IN_SEEN_DEVELOPMENT"
+        assert screen["verdict"] == (
+            "MARKET_YIELD_REPRICING_FAST_5D_MEASURE_NOT_SUPPORTED_IN_SEEN_DEVELOPMENT"
+        )
         assert screen["decision_grade"] is False
 
     def test_cost_is_what_separates_gross_from_net(
@@ -387,7 +392,9 @@ class TestTheResultsDocument:
         assert text in document
 
     def test_the_document_states_the_verdict_and_its_limits(self, document: str) -> None:
-        assert "MARKET_YIELD_REPRICING_NOT_SUPPORTED_IN_SEEN_DEVELOPMENT" in document
+        assert (
+            "MARKET_YIELD_REPRICING_FAST_5D_MEASURE_NOT_SUPPORTED_IN_SEEN_DEVELOPMENT" in document
+        )
         assert "決まっていないこと" in document
         assert "decision-grade ではなく" in document
         assert "保護 span" in document and "読んでいない" in document
@@ -401,7 +408,9 @@ class TestTheResultsDocument:
 
         entry = next(e for e in LEDGER if e["id"] == "H-025")
         assert entry["prespecified"] is True
-        assert entry["status"].startswith("CLOSED - MARKET_YIELD_REPRICING_NOT_SUPPORTED")
+        assert entry["status"].startswith(
+            "CLOSED - MARKET_YIELD_REPRICING_FAST_5D_MEASURE_NOT_SUPPORTED"
+        )
         assert "a25d078" in entry["configurations"]
         assert "settles nothing" in entry["result"]
         for book, field in (
@@ -646,3 +655,152 @@ class TestTheRunPipeline:
         assert prereg.PREREG["signal"]["sign"].startswith("+1")
         assert prereg.PREREG["signal"]["sign_frozen"] is True
         assert prereg.PREREG["signal"]["inversion_after_the_result_prohibited"] is True
+
+
+@pytest.fixture(scope="module")
+def repaired_record() -> dict[str, Any]:
+    return json.loads((RECORDS / "fast_repaired.json").read_text(encoding="utf-8"))
+
+
+class TestTheUniverseClosedBook:
+    UNIVERSE = prereg.UNIVERSE
+
+    def test_only_pairs_whose_both_legs_are_observed(self) -> None:
+        pairs = portfolio.tradable_pairs(self.UNIVERSE)
+        assert pairs == (
+            "EUR_CAD",
+            "EUR_GBP",
+            "EUR_JPY",
+            "EUR_USD",
+            "GBP_JPY",
+            "GBP_USD",
+            "USD_CAD",
+            "USD_JPY",
+        )
+        for pair in pairs:
+            assert set(pair.split("_")) <= set(self.UNIVERSE)
+
+    def test_the_routing_graph_connects_the_universe(self) -> None:
+        routing = portfolio.routing_profile(self.UNIVERSE)
+        assert routing.connected
+        assert 0.5 < routing.pair_gross_per_unit_currency_gross < 1.0
+
+    def test_the_split_map_is_the_equal_split_of_the_restricted_pairs(self) -> None:
+        matrix = portfolio.split_map(self.UNIVERSE)
+        pairs = portfolio.tradable_pairs(self.UNIVERSE)
+        assert matrix.shape == (len(pairs), len(self.UNIVERSE))
+        #: one unit of a currency is split evenly over the pairs that carry it, signed
+        for column, currency in enumerate(self.UNIVERSE):
+            carried = [p for p in pairs if currency in p.split("_")]
+            assert np.isclose(np.abs(matrix[:, column]).sum(), 1.0)
+            assert int((matrix[:, column] != 0).sum()) == len(carried)
+
+    def test_a_currency_with_no_tradable_pair_is_refused(self) -> None:
+        with pytest.raises(ValueError, match="no tradable pair"):
+            portfolio.split_map(("CAD", "NZD"))
+
+    def _book(self) -> dict[str, Any]:
+        index = pd.bdate_range("2021-01-04", periods=60)
+        rng = np.random.default_rng(5)
+        columns = list(self.UNIVERSE)
+        excess = pd.DataFrame(
+            rng.standard_normal((len(index), len(columns))) / 100.0, index=index, columns=columns
+        )
+        mu = pd.DataFrame(
+            rng.standard_normal((len(index), len(columns))), index=index, columns=columns
+        )
+        return portfolio.run_book(development.BOOK, mu, excess, universe=columns)
+
+    def test_no_weight_can_reach_a_currency_outside_the_universe(self) -> None:
+        daily = self._book()["daily"]
+        exposures = {c.removeprefix("x_") for c in daily.columns if c.startswith("x_")}
+        assert exposures == set(self.UNIVERSE)
+        assert not exposures & set(prereg.EXCLUDED)
+
+    def test_the_book_is_sum_zero_and_capped(self) -> None:
+        daily = self._book()["daily"]
+        weights = daily[[f"x_{c}" for c in self.UNIVERSE]]
+        levered = weights.div(daily["leverage"], axis=0).dropna()
+        assert float(levered.sum(axis=1).abs().max()) < 1e-9
+        assert float(levered.abs().to_numpy().max()) <= 0.25 + 0.10 + 1e-9
+
+    def test_net_is_gross_minus_the_charged_cost(self) -> None:
+        daily = self._book()["daily"]
+        assert np.allclose(daily["net"], daily["gross"] - daily["cost"])
+        expected = daily["one_way_traded"] * 1.703 / 10_000.0
+        assert np.allclose(daily["cost"], expected)
+
+    def test_the_repaired_rerun_keeps_the_recorded_verdict(
+        self, repaired_record: dict[str, Any], development_record: dict[str, Any]
+    ) -> None:
+        assert repaired_record["verdict_unchanged"] == development_record["verdict"]
+        for name, row in repaired_record["against_the_recorded_run"].items():
+            assert row["repaired_net_sharpe"] < 0.3, name
+        assert repaired_record["books"]["A_yield_repricing"]["summary"]["gross_sharpe"] > 0
+        for book in repaired_record["books"].values():
+            assert {c.removeprefix("x_") for c in book["exposure_columns"]} == set(prereg.UNIVERSE)
+
+
+class TestTheSlowPrereg:
+    def test_one_horizon_only(self) -> None:
+        assert prereg_r2.PRIMARY_HORIZON_DAYS == 20
+        signal = prereg_r2.PREREG["signal"]
+        assert isinstance(signal["horizon_days"], int)
+        assert "not_chosen_for_fit" in signal
+        #: a grid would show up as a collection of horizons; the ruling forbids one
+        import ast as _ast
+
+        tree = _ast.parse((PACKAGE / "prereg_r2.py").read_text(encoding="utf-8"))
+        horizon_constants = [
+            node
+            for node in tree.body
+            if isinstance(node, _ast.AnnAssign)
+            and isinstance(node.target, _ast.Name)
+            and "HORIZON" in node.target.id
+        ]
+        assert len(horizon_constants) == 1
+        assert isinstance(horizon_constants[0].value, _ast.Constant)
+        assert "horizons_days" not in prereg_r2.PREREG["signal"]
+
+    def test_the_hypothesis_is_not_the_fast_one_smoothed(self) -> None:
+        assert "why_this_is_not_the_fast_hypothesis_smoothed" in prereg_r2.PREREG
+        assert prereg_r2.PREREG["primary_test"] == "D"
+        assert set(prereg_r2.PREREG["books"]) == {
+            "A_fast_5d_reference",
+            "B_slow_rate_state",
+            "C_fx_price_control",
+            "D_residualised",
+        }
+
+    def test_the_sign_and_universe_are_frozen(self) -> None:
+        assert prereg_r2.PREREG["signal"]["sign_frozen"] is True
+        assert prereg_r2.PREREG["signal"]["inversion_after_the_result_prohibited"] is True
+        assert prereg_r2.UNIVERSE == prereg.UNIVERSE
+        assert set(prereg_r2.EXCLUDED) == set(prereg.EXCLUDED)
+
+    def test_the_layer_is_the_repaired_one_and_not_track_1s_alpha(self) -> None:
+        config = prereg_r2.PREREG["book_configuration"]
+        assert config["track_1_alpha_model_reused"] is False
+        assert "portfolio.py" in config["architecture"]
+        assert config["leverage_cap"].startswith("none")
+
+    def test_every_declared_status_is_an_allowed_outcome(self) -> None:
+        screen = prereg_r2.PREREG["screen"]
+        for key in ("status_candidate", "status_marginal", "status_stop", "status_data"):
+            assert screen[key] in OUTCOMES
+        assert screen["no_automatic_progress_to_fresh"] is True
+        assert "OIS" in prereg_r2.PREREG["family_boundary_if_stop"]
+        assert FAMILY_BOUNDARY.endswith("NOT_SUPPORTED_IN_SEEN_DEVELOPMENT")
+
+    def test_the_feasibility_is_signal_blind(self) -> None:
+        feasibility = prereg_r2.feasibility()
+        assert (
+            feasibility["rows"]["half_life_20d"]["cost_ir_drag"]
+            < feasibility["rows"]["half_life_5d"]["cost_ir_drag"]
+        )
+        assert feasibility["detectable_net_sharpe_at_80pct_power"] > 1.0
+
+    def test_the_module_holds_no_result(self) -> None:
+        source = (PACKAGE / "prereg_r2.py").read_text(encoding="utf-8").lower()
+        for word in ("observed gross", "we found", "the result was", "net sharpe was"):
+            assert word not in source

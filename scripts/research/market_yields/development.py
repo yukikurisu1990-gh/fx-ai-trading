@@ -285,9 +285,9 @@ def _screen(
         "positive_blocks": positive_blocks,
         "decision": "advance" if advance else "stop",
         "verdict": (
-            "MARKET_YIELD_REPRICING_DEVELOPMENT_CANDIDATE"
+            "MARKET_YIELD_REPRICING_FAST_5D_MEASURE_DEVELOPMENT_CANDIDATE"
             if advance
-            else "MARKET_YIELD_REPRICING_NOT_SUPPORTED_IN_SEEN_DEVELOPMENT"
+            else "MARKET_YIELD_REPRICING_FAST_5D_MEASURE_NOT_SUPPORTED_IN_SEEN_DEVELOPMENT"
         ),
         "decision_grade": False,
         "note": (

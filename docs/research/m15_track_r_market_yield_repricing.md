@@ -3,7 +3,11 @@
 `NON_DECISION_BEARING_EXPLORATORY_ONLY` · `RESEARCH_SCRATCH_NON_AUTHORITATIVE`
 · `PRODUCTION_READINESS_NOT_CLAIMED`
 
-判定: **`MARKET_YIELD_REPRICING_NOT_SUPPORTED_IN_SEEN_DEVELOPMENT`**（裁定の Case B）
+判定: **`MARKET_YIELD_REPRICING_FAST_5D_MEASURE_NOT_SUPPORTED_IN_SEEN_DEVELOPMENT`**（裁定の Case B）
+
+> **scope（2026-09-18 の裁定で明確化）**: この判定は **事前登録した fast 5 日 measure** についてのもの。
+> market-yield repricing family 全体が閉じたことを意味しない。slow state 版は T-R2 として別に事前登録・実行した
+> （`docs/research/m15_track_r2_slow_repricing.md`）。
 
 Human + ChatGPT 裁定（2026-09-16）で D-2（非 FX の無料・公開データ取得）が承認され、T-R が最初の track に指定された。
 事前登録は commit `a25d078` で **結果を 1 つも含まない状態** で凍結・push し、そのあとに 1 度だけ実行した。
@@ -125,6 +129,20 @@ G10 の断面を無理に作らず、reduced universe として実行した（�
 どちらも signal ではなく層の性質。判定（net −0.92 対 閾値 +0.3）を動かす大きさではないが、**将来 universe を絞って走らせるなら、
 0 和に頼らず明示的に除外する形に変える**のが正しい。
 
+### universe-closed 層での再実行（#485 merge 後、判定は変えない）
+
+上の副作用を取り除いた層（`scripts/research/market_yields/portfolio.py`: demean・中立化・band・routing をすべて
+5 通貨 universe の中で閉じ、両脚が universe に入る 8 pair だけで routing）で、**同じ凍結 signal を再実行**した。
+
+| book | gross（元 → 修正後） | net（元 → 修正後） | turnover |
+| --- | --- | --- | --- |
+| A 利回り repricing | +0.144 → **+0.125** | −0.921 → **−0.926** | 82.4 → 82.8 |
+| B FX momentum | −0.023 → −0.021 | −0.947 → −0.915 | 69.6 → 70.7 |
+| C 残差 | +0.772 → **+0.630** | −0.512 → **−0.651** | 98.1 → 98.4 |
+
+**判定は動かない。** universe 外の建玉は fast の失敗の原因ではなく、むしろ gross をわずかに押し上げていた側だった。
+記録は `artifacts/research/market_yields/fast_repaired.json`。T-R2 はこの修正後の層で実行する。
+
 ### leverage と margin（#484 の枠組み）
 
 10% vol target なら平均 risk leverage C **4.29**、routed margin は equity の **13.8%**（平均）。gap stress では equity 比例の
@@ -142,7 +160,7 @@ sizing なら loss-cut に至らず、**固定 notional のままなら至る**�
 | 6 block の過半が正 | 満たさない（1 / 6） |
 | 10% vol が gap stress の内側 | 満たす |
 
-→ **stop**。`MARKET_YIELD_REPRICING_NOT_SUPPORTED_IN_SEEN_DEVELOPMENT`。
+→ **stop**。`MARKET_YIELD_REPRICING_FAST_5D_MEASURE_NOT_SUPPORTED_IN_SEEN_DEVELOPMENT`。
 
 ## 8. 何が決まって、何が決まっていないか
 

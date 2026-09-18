@@ -602,7 +602,8 @@ LEDGER: Final[list[dict[str, Any]]] = [
             "before the run, so the residual's positive gross (t about 1.7) settles nothing"
         ),
         "status": (
-            "CLOSED - MARKET_YIELD_REPRICING_NOT_SUPPORTED_IN_SEEN_DEVELOPMENT, for the "
+            "CLOSED - MARKET_YIELD_REPRICING_FAST_5D_MEASURE_NOT_SUPPORTED_IN_SEEN"
+            "_DEVELOPMENT, for the "
             "pre-registered fast measure only. It is not a finding about whether market "
             "yield repricing leads G10 FX: an underpowered span cannot settle that, and the "
             "three excluded currencies were never observed. Changing the lookback, sign, "
