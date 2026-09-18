@@ -2,19 +2,19 @@
   "annual_return_capacity": {
     "0.05": {
       "annual_target": 0.05,
-      "equity_after_gap": -0.0921,
-      "gap_loss_at_leverage_tail": 1.0921,
+      "equity_after_gap": -0.3902,
+      "gap_loss_at_leverage_tail": 1.3902,
       "largest_currency_exposure_p95": 0.3609,
-      "largest_currency_gap_before_loss_cut": 0.0837,
+      "largest_currency_gap_before_loss_cut": 0.0444,
       "leverage_tail_multiple": 1.5813,
       "loss_cut_on_gap": true,
-      "maintenance_ratio_after_gap": -0.17,
-      "margin_utilisation_at_leverage_tail": 0.543,
-      "margin_utilisation_mean": 0.3038,
+      "maintenance_ratio_after_gap": -0.56,
+      "margin_utilisation_at_leverage_tail": 0.6912,
+      "margin_utilisation_mean": 0.3867,
       "reachable": false,
-      "risk_leverage_C_mean": 9.57,
-      "risk_leverage_C_tail": 15.13,
-      "target_vol": 0.30303030303030304,
+      "risk_leverage_C_mean": 12.18,
+      "risk_leverage_C_tail": 19.26,
+      "target_vol": 0.39432176656151424,
       "universe": [
         "AUD",
         "CAD",
@@ -25,23 +25,23 @@
         "NZD",
         "USD"
       ],
-      "vol_per_unit_gross": 0.031671
+      "vol_per_unit_gross": 0.032375
     },
     "0.1": {
       "annual_target": 0.1,
-      "equity_after_gap": -1.1841,
-      "gap_loss_at_leverage_tail": 2.1841,
+      "equity_after_gap": -1.7804,
+      "gap_loss_at_leverage_tail": 2.7804,
       "largest_currency_exposure_p95": 0.3609,
-      "largest_currency_gap_before_loss_cut": -0.0079,
+      "largest_currency_gap_before_loss_cut": -0.0275,
       "leverage_tail_multiple": 1.5813,
       "loss_cut_on_gap": true,
-      "maintenance_ratio_after_gap": -1.09,
-      "margin_utilisation_at_leverage_tail": 1.086,
-      "margin_utilisation_mean": 0.6076,
+      "maintenance_ratio_after_gap": -1.29,
+      "margin_utilisation_at_leverage_tail": 1.3825,
+      "margin_utilisation_mean": 0.7734,
       "reachable": false,
-      "risk_leverage_C_mean": 19.14,
-      "risk_leverage_C_tail": 30.26,
-      "target_vol": 0.6060606060606061,
+      "risk_leverage_C_mean": 24.36,
+      "risk_leverage_C_tail": 38.52,
+      "target_vol": 0.7886435331230285,
       "universe": [
         "AUD",
         "CAD",
@@ -52,86 +52,12 @@
         "NZD",
         "USD"
       ],
-      "vol_per_unit_gross": 0.031671
+      "vol_per_unit_gross": 0.032375
     }
   },
-  "books": {
-    "A_valuation": {
-      "blocks": [
-        {
-          "block": 1,
-          "days": 530,
-          "end": "2006-01-19",
-          "net_return": 0.00372,
-          "net_sharpe": 0.0159,
-          "start": "2004-01-02"
-        },
-        {
-          "block": 2,
-          "days": 530,
-          "end": "2008-02-18",
-          "net_return": -0.06777,
-          "net_sharpe": -0.3085,
-          "start": "2006-01-20"
-        },
-        {
-          "block": 3,
-          "days": 530,
-          "end": "2010-03-16",
-          "net_return": -0.07426,
-          "net_sharpe": -0.3045,
-          "start": "2008-02-19"
-        },
-        {
-          "block": 4,
-          "days": 530,
-          "end": "2012-04-03",
-          "net_return": -0.03977,
-          "net_sharpe": -0.173,
-          "start": "2010-03-17"
-        },
-        {
-          "block": 5,
-          "days": 530,
-          "end": "2014-05-06",
-          "net_return": 0.26159,
-          "net_sharpe": 1.1859,
-          "start": "2012-04-04"
-        },
-        {
-          "block": 6,
-          "days": 531,
-          "end": "2016-06-01",
-          "net_return": 0.15609,
-          "net_sharpe": 0.5876,
-          "start": "2014-05-07"
-        }
-      ],
-      "cost_stress": {
-        "x2": 0.1465,
-        "x3": 0.124
-      },
-      "extra": {
-        "break_even_cost_multiple": 8.515,
-        "days_traded": 222,
-        "faithful_annual_implementation_cost": 0.00157,
-        "gross_t_stat": 0.68,
-        "net_t_stat": 0.6,
-        "trades_per_year": 17.59
-      },
-      "first_decision_day": "2003-12-31",
-      "ic_at_the_primary_horizon": -0.0235,
-      "per_currency_gross_pnl": {
-        "AUD": 0.17767,
-        "CAD": 0.07655,
-        "CHF": -0.01718,
-        "EUR": -0.01779,
-        "GBP": -0.05896,
-        "JPY": 0.03926,
-        "NZD": 0.14918,
-        "USD": -0.07725
-      },
-      "summary": {
+  "as_the_frozen_text_described_the_source": {
+    "summaries": {
+      "A_valuation": {
         "annual_cost": 0.00253,
         "days": 3181,
         "gross_annual_return": 0.02151,
@@ -153,22 +79,187 @@
         "turnover_round_trips_per_year_per_unit_gross": 2.013,
         "worst_day": -0.07295
       },
+      "B_nominal_control": {
+        "annual_cost": 0.00257,
+        "days": 3181,
+        "gross_annual_return": 0.00413,
+        "gross_sharpe": 0.0299,
+        "max_drawdown": -0.59175,
+        "mean_currency_gross": 3.5554,
+        "mean_held_max_weight": 0.2473,
+        "mean_leverage": 3.6486,
+        "mean_uncapped_leverage": 3.6482,
+        "net_annual_return": 0.00156,
+        "net_sharpe": 0.0113,
+        "net_without_top_5_days": -0.13307,
+        "p95_uncapped_leverage": 5.8155,
+        "realized_annual_vol": 0.13818,
+        "share_days_traded": 0.0717,
+        "top_10_day_share_of_net": 14.421,
+        "top_1_day_share_of_net": 1.836,
+        "top_5_day_share_of_net": 7.7458,
+        "turnover_round_trips_per_year_per_unit_gross": 2.124,
+        "worst_day": -0.30101
+      },
+      "C_residualised": {
+        "annual_cost": 0.00155,
+        "days": 3181,
+        "gross_annual_return": 0.02002,
+        "gross_sharpe": 0.1789,
+        "max_drawdown": -0.34955,
+        "mean_currency_gross": 3.5341,
+        "mean_held_max_weight": 0.2277,
+        "mean_leverage": 3.6797,
+        "mean_uncapped_leverage": 3.6714,
+        "net_annual_return": 0.01847,
+        "net_sharpe": 0.165,
+        "net_without_top_5_days": -0.00628,
+        "p95_uncapped_leverage": 5.464,
+        "realized_annual_vol": 0.11193,
+        "share_days_traded": 0.0582,
+        "top_10_day_share_of_net": 1.6463,
+        "top_1_day_share_of_net": 0.3837,
+        "top_5_day_share_of_net": 1.0269,
+        "turnover_round_trips_per_year_per_unit_gross": 1.291,
+        "worst_day": -0.0334
+      }
+    },
+    "why_it_is_not_the_result": "the frozen text says the quarterly publishers carry their quarter's value forward under the same lag. The BIS instead stamps a quarter's single reading onto all three of its months, so counting the lag from the stamped month reaches a reading published weeks later on a third of decisions. This column is that behaviour; the reported books count the lag from the quarter's end instead. The look-ahead flattered the book, so removing it lowers every figure and cannot be a rescue"
+  },
+  "books": {
+    "A_valuation": {
+      "blocks": [
+        {
+          "block": 1,
+          "days": 530,
+          "end": "2006-01-19",
+          "net_return": -0.0211,
+          "net_sharpe": -0.0907,
+          "start": "2004-01-02"
+        },
+        {
+          "block": 2,
+          "days": 530,
+          "end": "2008-02-18",
+          "net_return": -0.08583,
+          "net_sharpe": -0.3746,
+          "start": "2006-01-20"
+        },
+        {
+          "block": 3,
+          "days": 530,
+          "end": "2010-03-16",
+          "net_return": -0.04323,
+          "net_sharpe": -0.1822,
+          "start": "2008-02-19"
+        },
+        {
+          "block": 4,
+          "days": 530,
+          "end": "2012-04-03",
+          "net_return": -0.05798,
+          "net_sharpe": -0.2501,
+          "start": "2010-03-17"
+        },
+        {
+          "block": 5,
+          "days": 530,
+          "end": "2014-05-06",
+          "net_return": 0.22391,
+          "net_sharpe": 1.0096,
+          "start": "2012-04-04"
+        },
+        {
+          "block": 6,
+          "days": 531,
+          "end": "2016-06-01",
+          "net_return": 0.1705,
+          "net_sharpe": 0.6817,
+          "start": "2014-05-07"
+        }
+      ],
+      "concentration": {
+        "calendar_years": 13,
+        "largest_day": "2005-12-15",
+        "largest_day_net": 0.04412,
+        "largest_exposure_on_that_day": {
+          "JPY": 1.0335
+        },
+        "net_without_the_top_5_days": 0.00626,
+        "positive_calendar_years": 8,
+        "top_10_day_share_of_net": 1.6971,
+        "top_1_day_share_of_net": 0.2369,
+        "top_5_day_share_of_net": 0.9664,
+        "total_net": 0.18626
+      },
+      "cost_stress": {
+        "x2": 0.1092,
+        "x3": 0.0858
+      },
+      "extra": {
+        "break_even_cost_multiple": 6.669,
+        "days_traded": 230,
+        "decisions_in_the_book": 150,
+        "decisions_that_did_not_trade": 100,
+        "faithful_annual_implementation_cost": 0.00159,
+        "gross_t_stat": 0.554,
+        "net_t_stat": 0.471,
+        "share_of_turnover_from_the_signal": 0.2864,
+        "trades_per_year": 18.22,
+        "turnover_from_the_signal": 0.598,
+        "turnover_from_the_volatility_targeter": 1.489,
+        "what_that_means": "the no-trade band blocks most monthly decisions outright, so most of what this book pays is the targeter re-levering, not the signal moving. The layer imposes a turnover floor that no slowing of the signal can go below"
+      },
+      "first_decision_day": "2003-12-31",
+      "ic_at_the_primary_horizon": -0.024,
+      "per_currency_gross_pnl": {
+        "AUD": 0.15254,
+        "CAD": 0.10245,
+        "CHF": -0.04399,
+        "EUR": -0.00625,
+        "GBP": -0.04554,
+        "JPY": -0.00255,
+        "NZD": 0.13473,
+        "USD": -0.07227
+      },
+      "summary": {
+        "annual_cost": 0.0026,
+        "days": 3181,
+        "gross_annual_return": 0.01736,
+        "gross_sharpe": 0.156,
+        "max_drawdown": -0.48485,
+        "mean_currency_gross": 3.6616,
+        "mean_held_max_weight": 0.2408,
+        "mean_leverage": 3.7515,
+        "mean_uncapped_leverage": 3.7304,
+        "net_annual_return": 0.01476,
+        "net_sharpe": 0.1326,
+        "net_without_top_5_days": 0.00626,
+        "p95_uncapped_leverage": 6.5477,
+        "realized_annual_vol": 0.11126,
+        "share_days_traded": 0.0723,
+        "top_10_day_share_of_net": 1.6971,
+        "top_1_day_share_of_net": 0.2369,
+        "top_5_day_share_of_net": 0.9664,
+        "turnover_round_trips_per_year_per_unit_gross": 2.087,
+        "worst_day": -0.06492
+      },
       "terciles": {
         "horizon_trading_days": 63,
         "mean_forward_excess_return_cheap_mid_dear": [
           0.00337,
-          -0.00195,
-          -0.00214
+          -0.00187,
+          -0.00226
         ],
         "monotone_cheap_to_dear": true,
         "observations": 1176
       },
       "worst_year": {
-        "best_12m_window_net": 0.32572,
-        "net_without_the_best_12m": -0.08612,
+        "best_12m_window_net": 0.31492,
+        "net_without_the_best_12m": -0.12866,
         "sign_survives_removing_the_best_year": false,
-        "total_net": 0.2396,
-        "worst_12m_window_net": -0.22521
+        "total_net": 0.18626,
+        "worst_12m_window_net": -0.23593
       }
     },
     "B_nominal_control": {
@@ -222,6 +313,20 @@
           "start": "2014-05-07"
         }
       ],
+      "concentration": {
+        "calendar_years": 13,
+        "largest_day": "2005-12-15",
+        "largest_day_net": 0.03622,
+        "largest_exposure_on_that_day": {
+          "CAD": -0.7978
+        },
+        "net_without_the_top_5_days": -0.13307,
+        "positive_calendar_years": 6,
+        "top_10_day_share_of_net": 14.421,
+        "top_1_day_share_of_net": 1.836,
+        "top_5_day_share_of_net": 7.7458,
+        "total_net": 0.01973
+      },
       "cost_stress": {
         "x2": -0.0073,
         "x3": -0.0259
@@ -229,10 +334,16 @@
       "extra": {
         "break_even_cost_multiple": 1.608,
         "days_traded": 228,
+        "decisions_in_the_book": 150,
+        "decisions_that_did_not_trade": 98,
         "faithful_annual_implementation_cost": 0.00164,
         "gross_t_stat": 0.106,
         "net_t_stat": 0.04,
-        "trades_per_year": 18.06
+        "share_of_turnover_from_the_signal": 0.3099,
+        "trades_per_year": 18.06,
+        "turnover_from_the_signal": 0.658,
+        "turnover_from_the_volatility_targeter": 1.466,
+        "what_that_means": "the no-trade band blocks most monthly decisions outright, so most of what this book pays is the targeter re-levering, not the signal moving. The layer imposes a turnover floor that no slowing of the signal can go below"
       },
       "first_decision_day": "2003-12-31",
       "ic_at_the_primary_horizon": 0.0317,
@@ -292,121 +403,158 @@
           "block": 1,
           "days": 530,
           "end": "2006-01-19",
-          "net_return": -0.10285,
-          "net_sharpe": -0.4636,
+          "net_return": -0.10224,
+          "net_sharpe": -0.455,
           "start": "2004-01-02"
         },
         {
           "block": 2,
           "days": 530,
           "end": "2008-02-18",
-          "net_return": 0.03588,
-          "net_sharpe": 0.153,
+          "net_return": 0.02416,
+          "net_sharpe": 0.1032,
           "start": "2006-01-20"
         },
         {
           "block": 3,
           "days": 530,
           "end": "2010-03-16",
-          "net_return": 0.02285,
-          "net_sharpe": 0.0989,
+          "net_return": -0.00749,
+          "net_sharpe": -0.0343,
           "start": "2008-02-19"
         },
         {
           "block": 4,
           "days": 530,
           "end": "2012-04-03",
-          "net_return": 0.22598,
-          "net_sharpe": 0.9808,
+          "net_return": 0.26212,
+          "net_sharpe": 1.1752,
           "start": "2010-03-17"
         },
         {
           "block": 5,
           "days": 530,
           "end": "2014-05-06",
-          "net_return": -0.04017,
-          "net_sharpe": -0.1797,
+          "net_return": -0.0715,
+          "net_sharpe": -0.3154,
           "start": "2012-04-04"
         },
         {
           "block": 6,
           "days": 531,
           "end": "2016-06-01",
-          "net_return": 0.09146,
-          "net_sharpe": 0.3415,
+          "net_return": 0.07048,
+          "net_sharpe": 0.2758,
           "start": "2014-05-07"
         }
       ],
+      "concentration": {
+        "calendar_years": 13,
+        "largest_day": "2015-01-15",
+        "largest_day_net": 0.07213,
+        "largest_exposure_on_that_day": {
+          "JPY": 0.7064
+        },
+        "net_without_the_top_5_days": -0.04371,
+        "positive_calendar_years": 8,
+        "top_10_day_share_of_net": 2.0729,
+        "top_1_day_share_of_net": 0.4109,
+        "top_5_day_share_of_net": 1.249,
+        "total_net": 0.17553
+      },
       "cost_stress": {
-        "x2": 0.1511,
-        "x3": 0.1372
+        "x2": 0.1136,
+        "x3": 0.1005
       },
       "extra": {
-        "break_even_cost_multiple": 12.884,
-        "days_traded": 185,
-        "faithful_annual_implementation_cost": 0.00093,
-        "gross_t_stat": 0.636,
-        "net_t_stat": 0.586,
-        "trades_per_year": 14.66
+        "break_even_cost_multiple": 10.662,
+        "days_traded": 176,
+        "decisions_in_the_book": 150,
+        "decisions_that_did_not_trade": 121,
+        "faithful_annual_implementation_cost": 0.00087,
+        "gross_t_stat": 0.497,
+        "net_t_stat": 0.45,
+        "share_of_turnover_from_the_signal": 0.2276,
+        "trades_per_year": 13.94,
+        "turnover_from_the_signal": 0.284,
+        "turnover_from_the_volatility_targeter": 0.963,
+        "what_that_means": "the no-trade band blocks most monthly decisions outright, so most of what this book pays is the targeter re-levering, not the signal moving. The layer imposes a turnover floor that no slowing of the signal can go below"
       },
       "first_decision_day": "2003-12-31",
-      "ic_at_the_primary_horizon": -0.0912,
+      "ic_at_the_primary_horizon": -0.0939,
       "per_currency_gross_pnl": {
-        "AUD": 0.03023,
-        "CAD": 0.0806,
-        "CHF": 0.28841,
-        "EUR": 0.00562,
-        "GBP": -0.17703,
-        "JPY": -0.18044,
-        "NZD": 0.06411,
-        "USD": 0.14125
+        "AUD": 0.04809,
+        "CAD": 0.066,
+        "CHF": 0.29817,
+        "EUR": 0.05205,
+        "GBP": -0.12662,
+        "JPY": -0.25152,
+        "NZD": 0.00244,
+        "USD": 0.1051
       },
       "summary": {
-        "annual_cost": 0.00155,
+        "annual_cost": 0.00144,
         "days": 3181,
-        "gross_annual_return": 0.02002,
-        "gross_sharpe": 0.1789,
-        "max_drawdown": -0.34955,
-        "mean_currency_gross": 3.5341,
-        "mean_held_max_weight": 0.2277,
-        "mean_leverage": 3.6797,
-        "mean_uncapped_leverage": 3.6714,
-        "net_annual_return": 0.01847,
-        "net_sharpe": 0.165,
-        "net_without_top_5_days": -0.00628,
-        "p95_uncapped_leverage": 5.464,
-        "realized_annual_vol": 0.11193,
-        "share_days_traded": 0.0582,
-        "top_10_day_share_of_net": 1.6463,
-        "top_1_day_share_of_net": 0.3837,
-        "top_5_day_share_of_net": 1.0269,
-        "turnover_round_trips_per_year_per_unit_gross": 1.291,
-        "worst_day": -0.0334
+        "gross_annual_return": 0.01535,
+        "gross_sharpe": 0.1399,
+        "max_drawdown": -0.39394,
+        "mean_currency_gross": 3.3884,
+        "mean_held_max_weight": 0.2352,
+        "mean_leverage": 3.587,
+        "mean_uncapped_leverage": 3.5852,
+        "net_annual_return": 0.01391,
+        "net_sharpe": 0.1268,
+        "net_without_top_5_days": -0.04371,
+        "p95_uncapped_leverage": 5.329,
+        "realized_annual_vol": 0.1097,
+        "share_days_traded": 0.0553,
+        "top_10_day_share_of_net": 2.0729,
+        "top_1_day_share_of_net": 0.4109,
+        "top_5_day_share_of_net": 1.249,
+        "turnover_round_trips_per_year_per_unit_gross": 1.247,
+        "worst_day": -0.04025
       },
       "terciles": {
         "horizon_trading_days": 63,
         "mean_forward_excess_return_cheap_mid_dear": [
-          -0.00106,
-          -0.00197,
-          0.00455
+          -0.00138,
+          -0.00124,
+          0.00393
         ],
         "monotone_cheap_to_dear": false,
         "observations": 1176
       },
       "worst_year": {
-        "best_12m_window_net": 0.22481,
-        "net_without_the_best_12m": 0.00834,
-        "sign_survives_removing_the_best_year": true,
-        "total_net": 0.23315,
-        "worst_12m_window_net": -0.23986
+        "best_12m_window_net": 0.24721,
+        "net_without_the_best_12m": -0.07168,
+        "sign_survives_removing_the_best_year": false,
+        "total_net": 0.17553,
+        "worst_12m_window_net": -0.27725
       }
+    }
+  },
+  "carry_exposure": {
+    "A_valuation": {
+      "decisions": 151,
+      "mean_rank_correlation_with_relative_trailing_inflation": -0.0692,
+      "newey_west_t": -1.24
+    },
+    "B_nominal_control": {
+      "decisions": 151,
+      "mean_rank_correlation_with_relative_trailing_inflation": 0.1556,
+      "newey_west_t": 2.54
+    },
+    "C_residualised": {
+      "decisions": 151,
+      "mean_rank_correlation_with_relative_trailing_inflation": -0.6332,
+      "newey_west_t": -16.36
     }
   },
   "classification": "NON_DECISION_BEARING_EXPLORATORY_ONLY",
   "decision_months": 210,
   "disclosed_shortfalls": [
     {
-      "direction": "a currency cheap in real terms has usually inflated faster and tends to carry a higher rate, so omitting carry most likely understates this book",
+      "direction": "measured, not assumed — see `carry_exposure`. The plausible-sounding chain runs the other way for this book: the primary test is strongly and systematically long the LOW-inflation currencies, because residualising the real signal on the nominal one leaves essentially the relative price level with its sign reversed. If inflation carries into rates, the omitted carry on this book is negative, so omitting it OVERSTATES the result rather than understating it. The first version of this record asserted the opposite from the textbook story without checking it against the frozen CPI panel. Trailing realised inflation is a proxy for the rate, not the rate, so the sign is evidence rather than proof — but it is the only measurable link in the argument and it points the wrong way for a rescue",
       "what": "the routed P&L is a spot return, not a full currency excess return",
       "why": "the frozen sources are the ECB's reference rates and the BIS's consumer prices, and neither carries an interest rate. No rate source was added after the freeze"
     },
@@ -435,18 +583,65 @@
     "vol_window": 60,
     "weight_cap": 0.25
   },
+  "forecasting_power": {
+    "control_minus_valuation_tercile_spread": {
+      "mean_pp": 0.2538,
+      "newey_west_t": 0.96,
+      "reading": "the point estimate favours the control, but this is the statistic that cannot carry the claim on its own; the incremental IC can"
+    },
+    "decisions_scored": 147,
+    "horizon_trading_days": 63,
+    "ic": {
+      "A_valuation": {
+        "mean": -0.024,
+        "newey_west_t": -0.44
+      },
+      "B_nominal_control": {
+        "mean": 0.0317,
+        "newey_west_t": 0.61
+      },
+      "C_residualised": {
+        "mean": -0.0939,
+        "newey_west_t": -2.25
+      }
+    },
+    "incremental_ic_of_valuation_beyond_the_nominal_control": {
+      "mean": -0.0557,
+      "newey_west_t": -3.34,
+      "reading": "negative means the real valuation signal forecasts the three-month cross-section worse than the nominal deviation it is supposed to improve on"
+    },
+    "signal_persistence_month_to_month": {
+      "A_valuation": 0.9377,
+      "B_nominal_control": 0.9534,
+      "C_residualised": 0.9121
+    },
+    "tercile_spread_cheap_minus_dear": {
+      "A_valuation": {
+        "mean_pp": 0.5632,
+        "newey_west_t": 0.9
+      },
+      "B_nominal_control": {
+        "mean_pp": 0.8171,
+        "newey_west_t": 1.33
+      },
+      "C_residualised": {
+        "mean_pp": -0.5309,
+        "newey_west_t": -1.24
+      }
+    }
+  },
   "gap_stress_at_10pct_vol": {
-    "equity_after_gap": 0.6396,
-    "gap_loss_at_leverage_tail": 0.3604,
+    "equity_after_gap": 0.6475,
+    "gap_loss_at_leverage_tail": 0.3525,
     "largest_currency_exposure_p95": 0.3609,
-    "largest_currency_gap_before_loss_cut": 0.4555,
+    "largest_currency_gap_before_loss_cut": 0.4679,
     "leverage_tail_multiple": 1.5813,
     "loss_cut_on_gap": false,
-    "maintenance_ratio_after_gap": 3.57,
-    "margin_utilisation_at_leverage_tail": 0.1792,
-    "margin_utilisation_mean": 0.1002,
-    "risk_leverage_C_mean": 3.16,
-    "risk_leverage_C_tail": 4.99,
+    "maintenance_ratio_after_gap": 3.69,
+    "margin_utilisation_at_leverage_tail": 0.1753,
+    "margin_utilisation_mean": 0.0981,
+    "risk_leverage_C_mean": 3.09,
+    "risk_leverage_C_tail": 4.88,
     "target_vol": 0.1,
     "universe": [
       "AUD",
@@ -458,7 +653,7 @@
       "NZD",
       "USD"
     ],
-    "vol_per_unit_gross": 0.031671
+    "vol_per_unit_gross": 0.032375
   },
   "identity_check": {
     "days": 4458,
@@ -468,15 +663,16 @@
     "max_residual_on_complete_days": 3.469446951953614e-18
   },
   "leave_one_currency_out_net_sharpe": {
-    "without_AUD": -0.105,
-    "without_CAD": 0.0779,
-    "without_CHF": -0.3149,
-    "without_EUR": 0.1643,
-    "without_GBP": 0.2144,
-    "without_JPY": 0.3087,
-    "without_NZD": -0.1429,
-    "without_USD": -0.1981
+    "without_AUD": -0.0702,
+    "without_CAD": 0.0214,
+    "without_CHF": -0.272,
+    "without_EUR": 0.0847,
+    "without_GBP": 0.1881,
+    "without_JPY": 0.3343,
+    "without_NZD": -0.1196,
+    "without_USD": -0.1753
   },
+  "leave_one_out_negative_count": 4,
   "power": {
     "decision_months_with_a_position": 151,
     "detectable_net_sharpe_at_80pct_power": 0.789,
@@ -606,29 +802,33 @@
   },
   "prereg_digest": "bac5babf29cbbc515b95fd68e609ab536c3e499b03c485792104ade7c1fe5178",
   "protected_spans_read": false,
+  "quarterly_publishers": [
+    "AUD",
+    "NZD"
+  ],
   "return_panel_days": 4458,
   "robustness_median_anchor": {
     "A_valuation": {
-      "annual_cost": 0.00245,
+      "annual_cost": 0.00238,
       "days": 3181,
-      "gross_annual_return": 0.02021,
-      "gross_sharpe": 0.1813,
-      "max_drawdown": -0.46641,
-      "mean_currency_gross": 3.6012,
-      "mean_held_max_weight": 0.2502,
-      "mean_leverage": 3.6207,
-      "mean_uncapped_leverage": 3.5942,
-      "net_annual_return": 0.01776,
-      "net_sharpe": 0.1594,
-      "net_without_top_5_days": 0.05666,
-      "p95_uncapped_leverage": 5.9434,
-      "realized_annual_vol": 0.11146,
-      "share_days_traded": 0.0751,
-      "top_10_day_share_of_net": 1.3541,
-      "top_1_day_share_of_net": 0.18,
-      "top_5_day_share_of_net": 0.7473,
-      "turnover_round_trips_per_year_per_unit_gross": 1.998,
-      "worst_day": -0.05892
+      "gross_annual_return": 0.01237,
+      "gross_sharpe": 0.1099,
+      "max_drawdown": -0.52289,
+      "mean_currency_gross": 3.7198,
+      "mean_held_max_weight": 0.2391,
+      "mean_leverage": 3.8741,
+      "mean_uncapped_leverage": 3.856,
+      "net_annual_return": 0.00999,
+      "net_sharpe": 0.0887,
+      "net_without_top_5_days": -0.04723,
+      "p95_uncapped_leverage": 6.3788,
+      "realized_annual_vol": 0.11258,
+      "share_days_traded": 0.0707,
+      "top_10_day_share_of_net": 2.3803,
+      "top_1_day_share_of_net": 0.3527,
+      "top_5_day_share_of_net": 1.3745,
+      "turnover_round_trips_per_year_per_unit_gross": 1.882,
+      "worst_day": -0.0822
     },
     "B_nominal_control": {
       "annual_cost": 0.0022,
@@ -653,26 +853,26 @@
       "worst_day": -0.29536
     },
     "C_residualised": {
-      "annual_cost": 0.00151,
+      "annual_cost": 0.0014,
       "days": 3181,
-      "gross_annual_return": 0.01878,
-      "gross_sharpe": 0.1679,
-      "max_drawdown": -0.30213,
-      "mean_currency_gross": 3.3799,
-      "mean_held_max_weight": 0.2471,
-      "mean_leverage": 3.4676,
-      "mean_uncapped_leverage": 3.4445,
-      "net_annual_return": 0.01727,
-      "net_sharpe": 0.1544,
-      "net_without_top_5_days": -0.02744,
-      "p95_uncapped_leverage": 5.0361,
-      "realized_annual_vol": 0.11184,
-      "share_days_traded": 0.0591,
-      "top_10_day_share_of_net": 1.7695,
-      "top_1_day_share_of_net": 0.3891,
-      "top_5_day_share_of_net": 1.1259,
-      "turnover_round_trips_per_year_per_unit_gross": 1.308,
-      "worst_day": -0.03473
+      "gross_annual_return": 0.01718,
+      "gross_sharpe": 0.1539,
+      "max_drawdown": -0.29104,
+      "mean_currency_gross": 3.4295,
+      "mean_held_max_weight": 0.2561,
+      "mean_leverage": 3.4102,
+      "mean_uncapped_leverage": 3.3887,
+      "net_annual_return": 0.01578,
+      "net_sharpe": 0.1413,
+      "net_without_top_5_days": -0.04575,
+      "p95_uncapped_leverage": 4.9101,
+      "realized_annual_vol": 0.11166,
+      "share_days_traded": 0.0569,
+      "top_10_day_share_of_net": 1.9281,
+      "top_1_day_share_of_net": 0.4942,
+      "top_5_day_share_of_net": 1.2297,
+      "turnover_round_trips_per_year_per_unit_gross": 1.201,
+      "worst_day": -0.03352
     }
   },
   "screen": {
@@ -681,22 +881,25 @@
     "decision_grade": false,
     "failing_conditions": [
       "5% annual net is reachable at a volatility at most 15% whose gap stress survives",
+      "a majority of the temporal blocks are positive",
       "forward return falls monotonically from the cheap tercile to the dear one",
+      "no single currency carries more than half of the gross",
+      "removing the best twelve-month window leaves the sign",
       "the sign survives dropping any one of the eight"
     ],
     "note": "a development screen on seen data. It cannot make this source confirmed, and a marginal result returns to Human rather than advancing",
-    "positive_blocks": 4,
-    "primary_net_sharpe": 0.165,
+    "positive_blocks": 3,
+    "primary_net_sharpe": 0.1268,
     "shared_conditions": {
       "5% annual net is reachable at a volatility at most 15% whose gap stress survives": false,
       "C carries a positive net increment over B": true,
       "C has positive gross and net": true,
-      "a majority of the temporal blocks are positive": true,
+      "a majority of the temporal blocks are positive": false,
       "book A gross Sharpe > 0": true,
       "forward return falls monotonically from the cheap tercile to the dear one": false,
       "net Sharpe stays positive at 2x and 3x cost": true,
-      "no single currency carries more than half of the gross": true,
-      "removing the best twelve-month window leaves the sign": true,
+      "no single currency carries more than half of the gross": false,
+      "removing the best twelve-month window leaves the sign": false,
       "the sign is unchanged under the declared robustness anchor": true,
       "the sign survives dropping any one of the eight": false,
       "turnover at or below 12": true

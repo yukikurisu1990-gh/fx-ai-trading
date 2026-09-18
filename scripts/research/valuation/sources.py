@@ -26,6 +26,7 @@ wrong order, and it is recorded here rather than left out.
 
 from __future__ import annotations
 
+import datetime as dt
 from dataclasses import dataclass
 from typing import Final
 
@@ -85,10 +86,54 @@ CPI: Final[tuple[Series, ...]] = tuple(
 )
 
 
+def _as_day(value: object, *, field: str) -> dt.date:
+    """Parse an exact `YYYY-MM-DD`, or refuse.
+
+    Comparing the caller's object is not a check. A `str` subclass that overrides
+    `__ge__` passes any ordering test, and a shorter string that is a prefix of the
+    bound sorts below it — `"2016-06"` and `"2016"` both compare as earlier than
+    `"2016-06-02"` while SDMX reads them as the end of June and the end of the year,
+    both inside the protected pool. So the bound is parsed and the parsed value is
+    what is compared, and anything that is not an exact day is refused outright.
+    """
+    if type(value) is not str:
+        raise ValueError(f"{field} must be an exact YYYY-MM-DD string, not {type(value).__name__}")
+    if len(value) != 10 or value[4] != "-" or value[7] != "-":
+        raise ValueError(f"{field} must be an exact YYYY-MM-DD, not {value!r}")
+    try:
+        return dt.date.fromisoformat(value)
+    except ValueError as error:
+        raise ValueError(f"{field} must be an exact YYYY-MM-DD, not {value!r}") from error
+
+
+def _as_month(value: object, *, field: str) -> tuple[int, int]:
+    """Parse an exact `YYYY-MM`, or refuse. Same reasoning as `_as_day`."""
+    if type(value) is not str:
+        raise ValueError(f"{field} must be an exact YYYY-MM string, not {type(value).__name__}")
+    if len(value) != 7 or value[4] != "-":
+        raise ValueError(f"{field} must be an exact YYYY-MM, not {value!r}")
+    try:
+        year, month = int(value[:4]), int(value[5:])
+    except ValueError as error:
+        raise ValueError(f"{field} must be an exact YYYY-MM, not {value!r}") from error
+    if not 1 <= month <= 12:
+        raise ValueError(f"{field} must be an exact YYYY-MM, not {value!r}")
+    return year, month
+
+
+#: The protected pool's first day and first month, parsed once.
+_PROTECTED_DAY: Final[dt.date] = dt.date.fromisoformat(PROTECTED_FROM)
+_PROTECTED_MONTH: Final[tuple[int, int]] = (_PROTECTED_DAY.year, _PROTECTED_DAY.month)
+
+
 def fx_url(series: Series, *, start: str = REQUEST_START, end: str = REQUEST_END) -> str:
     """The ECB request, with the period bound in the URL rather than in a later filter."""
-    if end >= PROTECTED_FROM:
+    last = _as_day(end, field="end")
+    first = _as_day(start, field="start")
+    if last >= _PROTECTED_DAY:
         raise ValueError(f"the request must end before {PROTECTED_FROM}, not at {end}")
+    if first > last:
+        raise ValueError(f"the request starts after it ends: {start} .. {end}")
     return (
         f"https://data-api.ecb.europa.eu/service/data/EXR/{series.key}"
         f"?format=csvdata&startPeriod={start}&endPeriod={end}"
@@ -96,8 +141,12 @@ def fx_url(series: Series, *, start: str = REQUEST_START, end: str = REQUEST_END
 
 
 def cpi_url(series: Series, *, start: str = CPI_REQUEST_START, end: str = CPI_REQUEST_END) -> str:
-    if end >= PROTECTED_FROM[:7]:
+    last = _as_month(end, field="end")
+    first = _as_month(start, field="start")
+    if last >= _PROTECTED_MONTH:
         raise ValueError(f"the request must end before {PROTECTED_FROM[:7]}, not at {end}")
+    if first > last:
+        raise ValueError(f"the request starts after it ends: {start} .. {end}")
     return (
         f"https://stats.bis.org/api/v2/data/dataflow/BIS/{series.dataset}/1.0/{series.key}"
         f"?format=csv&startPeriod={start}&endPeriod={end}"
@@ -114,6 +163,13 @@ EXCLUSION: Final[dict[str, str]] = {
     "guard": (
         "after each download the maximum observation date is checked against the protected start "
         "and the file is refused if it reaches it, so a server that ignored the bound cannot pass"
+    ),
+    "bounds_are_parsed_not_compared": (
+        "the URL builders parse the bound and compare the parsed value, and refuse anything that "
+        "is not an exact YYYY-MM-DD (or YYYY-MM for the monthly series). A lexicographic test on "
+        "the caller's object is not a check: a shorter prefix sorts below the bound while the "
+        "server reads it as a wider period, and a str subclass overriding __ge__ passes any "
+        "ordering test. Both were verified to defeat the first version of this guard"
     ),
     "if_a_source_cannot_be_bounded": "it is not used",
 }

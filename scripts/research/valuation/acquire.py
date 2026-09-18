@@ -106,19 +106,35 @@ def _observations(blob: bytes) -> pd.DataFrame:
 
 
 def guard(frame: pd.DataFrame, *, label: str) -> None:
-    """Refuse anything that reaches the protected span, whatever the server did."""
+    """Refuse anything that reaches the protected span, whatever the server did.
+
+    The maximum observation, not the last row: a response that arrived unsorted, or
+    that a future parser stops sorting, must not be able to hide a protected date
+    behind an earlier final row.
+    """
     if frame.empty:
         raise RuntimeError(f"{label}: the response carried no observations")
-    last = str(frame["period"].iloc[-1])
-    bound = sources.PROTECTED_FROM[: len(last)]
-    if last >= bound:
+    periods = frame["period"].astype(str)
+    widths = set(periods.str.len())
+    if len(widths) != 1 or widths.pop() not in (7, 10):
         raise ProtectedDataError(
-            f"{label}: the response reaches {last}, at or past the protected span at {bound}; "
+            f"{label}: the response mixes period formats or uses an unexpected one; "
+            "a bound that cannot be compared is not a bound, so nothing is kept"
+        )
+    furthest = str(periods.max())
+    bound = sources.PROTECTED_FROM[: len(furthest)]
+    if furthest >= bound:
+        raise ProtectedDataError(
+            f"{label}: the response reaches {furthest}, at or past the protected span at {bound}; "
             "nothing is kept"
         )
 
 
 def acquire() -> dict[str, Any]:
+    #: the opt-in is checked here and not only in `main`, so importing this module and
+    #: calling the function is not a way around it
+    if os.environ.get(OPT_IN_ENV) != "1":
+        raise RuntimeError(f"refused: set {OPT_IN_ENV}=1 to acquire")
     root = Path(__file__).resolve().parents[3]
     data = root / DATA_DIR
     data.mkdir(parents=True, exist_ok=True)
@@ -141,6 +157,9 @@ def acquire() -> dict[str, Any]:
         for series in series_list:
             label = f"{kind}:{series.currency}"
             url = url_of(series)
+            #: the write lives in the `else` clause, so it is reachable only when the
+            #: guard raised nothing. A `try/except/continue` shape would let a later
+            #: edit to the handler fall through into `to_parquet` with a refused frame
             try:
                 blob = _fetch(url)
                 frame = _observations(blob)
@@ -154,8 +173,9 @@ def acquire() -> dict[str, Any]:
                     "reason": f"{type(error).__name__}: {error}"[:400],
                 }
                 continue
-            path = data / f"{kind}_{series.currency.lower()}.parquet"
-            frame.to_parquet(path, index=False)
+            else:
+                path = data / f"{kind}_{series.currency.lower()}.parquet"
+                frame.to_parquet(path, index=False)
             record[kind][series.currency] = {
                 "body": series.body,
                 "key": series.key,
@@ -172,6 +192,14 @@ def acquire() -> dict[str, Any]:
                 "note": series.note,
             }
 
+    #: a run that acquired nothing is a failed run, not a provenance record. Writing
+    #: one would overwrite the record of the acquisition that did happen, which is the
+    #: evidence that the freeze preceded the read
+    if not record["fx"] and not record["cpi"]:
+        raise RuntimeError(
+            "no series was acquired; the existing record is left untouched. "
+            f"unreachable: {sorted(record['unreachable'])}"
+        )
     out = root / RECORD_DIR
     out.mkdir(parents=True, exist_ok=True)
     (out / "acquisition.json").write_text(
