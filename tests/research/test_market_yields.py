@@ -1047,7 +1047,13 @@ class TestTheFrozenSlowPrereg:
         assert FAMILY_BOUNDARY == (
             "MARKET_YIELD_REPRICING_SIMPLE_DIRECTIONAL_FAMILY_NOT_SUPPORTED_IN_SEEN_DEVELOPMENT"
         )
-        assert WORKFLOW_STATUS == "MARKET_YIELD_REPRICING_DEVELOPMENT_IN_PROGRESS"
+        #: both formulations have run; the status says so and still does not declare
+        #: the family boundary, which is a Human decision
+        assert WORKFLOW_STATUS == (
+            "MARKET_YIELD_REPRICING_FAST_AND_SLOW_FORMULATIONS_BOTH_NOT_SUPPORTED"
+            "_AWAITING_HUMAN_DECISION"
+        )
+        assert FAMILY_BOUNDARY not in WORKFLOW_STATUS
 
 
 class TestTheRepairedRerunIsTheFrozenSignal:
@@ -1363,7 +1369,14 @@ class TestTheSlowRunFollowedItsPrereg:
         from scripts.research.market_yields import development_r2
 
         config = r2_record["executed_book_config"]
-        assert config == {field: getattr(development_r2.BOOK, field) for field in config}
+        #: JSON has no tuple, so a sequence field comes back as a list
+        live = {
+            field: list(value)
+            if isinstance(value := getattr(development_r2.BOOK, field), tuple)
+            else value
+            for field in config
+        }
+        assert config == live
         assert config["neutralize_leading_factor"] is True, (
             "the prereg names the layer's own single pass"
         )
@@ -1379,13 +1392,37 @@ class TestTheSlowRunFollowedItsPrereg:
         assert screen["verdict"] == "MARKET_YIELD_SLOW_REPRICING_NOT_SUPPORTED_IN_SEEN_DEVELOPMENT"
         assert screen["verdict"] in OUTCOMES
         assert screen["decision_grade"] is False
-        #: the three that fail are the ones the document reports
+        #: the four that fail are the ones the document reports
         failing = {name for name, value in conditions.items() if not value}
+        assert failing == set(screen["failing_conditions"])
         assert failing == {
             "net Sharpe stays positive at 1.5x and 2x cost",
             "the sign survives dropping any single currency",
             f"turnover at or below {prereg_r2.TURNOVER_BOUND:g}",
+            "5% annual net is reachable inside the gap stress",
         }
+
+    def test_the_capacity_condition_is_the_frozen_predicate_not_the_10pct_stress(
+        self, r2_record: dict[str, Any]
+    ) -> None:
+        #: the frozen clause asks whether 5% net is reachable at a vol whose gap stress
+        #: survives — not whether the stress survives at the book's declared 10% target
+        conditions = r2_record["screen"]["shared_conditions"]
+        capacity = r2_record["annual_return_capacity"]["0.05"]
+        assert (
+            conditions["5% annual net is reachable inside the gap stress"] is capacity["reachable"]
+        )
+        assert capacity["reachable"] is False
+        #: and the weaker reading it replaced would have passed, which is why it matters
+        assert r2_record["gap_stress_at_10pct_vol"]["loss_cut_on_gap"] is False
+
+    def test_the_run_discloses_what_the_frozen_text_could_not_deliver(
+        self, r2_record: dict[str, Any]
+    ) -> None:
+        clauses = {row["clause"] for row in r2_record["deviations_from_the_frozen_text"]}
+        assert "D's rate-residual leg carries at least half of D's gross P&L" in clauses
+        for row in r2_record["deviations_from_the_frozen_text"]:
+            assert row["what_was_measured"] and row["why_it_was_not_changed"]
 
     def test_the_tiers_are_applied_as_frozen(self, r2_record: dict[str, Any]) -> None:
         from scripts.research.market_yields import development_r2
@@ -1411,13 +1448,16 @@ class TestTheSlowRunFollowedItsPrereg:
             books,
             {"x": 1.0},
             {"rate_leg_share_of_d_gross": 0.9},
-            {"loss_cut_on_gap": False},
+            {"0.05": {"reachable": True}},
         )
         assert screen["decision"] == "marginal"
         books["D_residualised"]["summary"]["net_sharpe"] = 0.35
         assert (
             development_r2._screen(
-                books, {"x": 1.0}, {"rate_leg_share_of_d_gross": 0.9}, {"loss_cut_on_gap": False}
+                books,
+                {"x": 1.0},
+                {"rate_leg_share_of_d_gross": 0.9},
+                {"0.05": {"reachable": True}},
             )["decision"]
             == "candidate"
         )
@@ -1486,11 +1526,33 @@ class TestTheSlowDocument:
 
     def test_the_document_states_the_verdict_and_its_scope(self, r2_document: str) -> None:
         assert "MARKET_YIELD_SLOW_REPRICING_NOT_SUPPORTED_IN_SEEN_DEVELOPMENT" in r2_document
-        assert "turnover は落ち、gross は残った" in r2_document
+        assert "同じ gross を、4 割少ない売買で取れている" in r2_document
+        #: the comparator the first draft got wrong must be named as corrected
+        assert "主検定では gross は上がっていない" in r2_document
+        assert "訂正する" in r2_document
         assert "decision-grade ではない" in r2_document
         assert FAMILY_BOUNDARY in r2_document
         assert "OIS" in r2_document
         assert "読んでいない" in r2_document
+
+    def test_the_document_reports_the_four_failing_conditions(
+        self, r2_record: dict[str, Any], r2_document: str
+    ) -> None:
+        assert "9 条件のうち **4 つ**が落ちる" in r2_document
+        assert len(r2_record["screen"]["failing_conditions"]) == 4
+        #: the capacity condition, and where the defect actually was
+        assert "実装が凍結文から外れていた" in r2_document
+        assert "97.8%" in r2_document
+
+    def test_the_document_reports_the_cost_margin_and_the_ic(self, r2_document: str) -> None:
+        for phrase in ("break-even cost 倍率", "1.066", "1.085", "無情報"):
+            assert phrase in r2_document, phrase
+
+    def test_the_document_does_not_read_the_leave_one_out_as_concentration(
+        self, r2_document: str
+    ) -> None:
+        assert "「USD と JPY への集中」ではない" in r2_document
+        assert "リターン定義そのものが変わる" in r2_document
 
     def test_the_document_forbids_the_rescues(self, r2_document: str) -> None:
         for phrase in (
@@ -1508,3 +1570,281 @@ class TestTheSlowDocument:
         assert "OIS" in entry["status"]
         for value in ("39.3", "+0.541", "+0.834", "59.8"):
             assert value in entry["result"], value
+
+
+def _r2_panels(days: int = 160, seed: int = 11):
+    """A synthetic yield panel and return panel on the T-R2 universe."""
+    currencies = list(prereg_r2.UNIVERSE)
+    index = pd.bdate_range("2022-01-03", periods=days)
+    rng = np.random.default_rng(seed)
+    excess = pd.DataFrame(
+        rng.standard_normal((days, len(currencies))) / 100.0, index=index, columns=currencies
+    )
+    excess = excess.sub(excess.mean(axis=1), axis=0)
+    yields = pd.DataFrame(
+        np.cumsum(rng.standard_normal((days, len(currencies))) / 20.0, axis=0),
+        index=index,
+        columns=currencies,
+    )
+    return yields, excess
+
+
+class TestTheSlowRunsCodeAndNotOnlyItsRecord:
+    """These exercise `development_r2` itself, so a changed design fails a test.
+
+    The record-reading tests above cannot see a change to the code that produced
+    the record; these can, and each one corresponds to a mutation that survived an
+    earlier review's mutation run.
+    """
+
+    def test_the_lookback_is_read_from_the_prereg_at_call_time(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        from scripts.research.market_yields import development_r2
+
+        yields, excess = _r2_panels()
+        base, _ = development_r2.build_scores(yields, excess)
+        monkeypatch.setattr(prereg_r2, "PRIMARY_HORIZON_DAYS", 30)
+        moved, _ = development_r2.build_scores(yields, excess)
+        #: every book that depends on the slow window must move with the constant
+        for name in ("B_slow_rate_state", "C_fx_price_control", "D_residualised"):
+            assert not base[name].equals(moved[name]), name
+        #: and the fast reference is the fast track's own lookback, untouched by it
+        assert base["A_fast_5d_reference"].equals(moved["A_fast_5d_reference"])
+
+    def test_the_sign_is_the_frozen_one(self) -> None:
+        from scripts.research.market_yields import development, development_r2
+
+        yields, excess = _r2_panels()
+        scores, beta = development_r2.build_scores(yields, excess)
+        slow = prereg_r2.PRIMARY_HORIZON_DAYS
+        #: a rising yield is a positive score: the prereg's sign, not its negation
+        expected = development._z(yields.diff(slow))
+        pd.testing.assert_frame_equal(scores["B_slow_rate_state"], expected)
+        assert prereg_r2.PREREG["signal"]["sign_frozen"] is True
+        #: and the momentum leg is the negated control, scaled by the same beta
+        pd.testing.assert_frame_equal(
+            scores["E_momentum_leg_of_D"],
+            -scores["C_fx_price_control"].mul(beta, axis=0),
+        )
+
+    def test_no_score_row_uses_a_value_dated_after_its_own_day(self) -> None:
+        """The leakage that would matter most: a control reaching forward.
+
+        Truncating the panels after day `t` must leave every score row up to `t`
+        bit-identical. A `shift(-h)` anywhere in the construction breaks this.
+        """
+        from scripts.research.market_yields import development_r2
+
+        yields, excess = _r2_panels()
+        cut = 120
+        full, _ = development_r2.build_scores(yields, excess)
+        early, _ = development_r2.build_scores(yields.iloc[:cut], excess.iloc[:cut])
+        for name, frame in early.items():
+            pd.testing.assert_frame_equal(frame, full[name].iloc[:cut], obj=name)
+
+    def test_perturbing_the_future_cannot_change_the_past(self) -> None:
+        from scripts.research.market_yields import development_r2
+
+        yields, excess = _r2_panels()
+        cut = 120
+        rng = np.random.default_rng(5)
+        moved_excess = excess.copy()
+        moved_yields = yields.copy()
+        moved_excess.iloc[cut:] += rng.standard_normal(moved_excess.iloc[cut:].shape) / 50.0
+        moved_yields.iloc[cut:] += rng.standard_normal(moved_yields.iloc[cut:].shape)
+        base, _ = development_r2.build_scores(yields, excess)
+        moved, _ = development_r2.build_scores(moved_yields, moved_excess)
+        for name, frame in base.items():
+            pd.testing.assert_frame_equal(frame.iloc[:cut], moved[name].iloc[:cut], obj=name)
+
+    def test_every_pre_registered_book_is_built(self) -> None:
+        from scripts.research.market_yields import development_r2
+
+        yields, excess = _r2_panels()
+        scores, _ = development_r2.build_scores(yields, excess)
+        assert set(scores) == {
+            "A_fast_5d_reference",
+            "B_slow_rate_state",
+            "C_fx_price_control",
+            "D_residualised",
+            "E_momentum_leg_of_D",
+        }
+
+    def test_the_residual_is_orthogonal_to_the_control_each_day(self) -> None:
+        from scripts.research.market_yields import development_r2
+
+        yields, excess = _r2_panels()
+        scores, _ = development_r2.build_scores(yields, excess)
+        rows = scores["D_residualised"].dropna(how="any")
+        control = scores["C_fx_price_control"].loc[rows.index]
+        for day in rows.index[:40]:
+            assert float(rows.loc[day] @ control.loc[day]) == pytest.approx(0.0, abs=1e-9)
+
+
+class TestTheSlowScreenIsTiedToItsConstants:
+    def _books(self, *, net: float = 0.35, turnover: float = 20.0, stress: float = 0.2):
+        return {
+            "B_slow_rate_state": {"summary": {"gross_sharpe": 1.0}},
+            "C_fx_price_control": {"summary": {"net_sharpe": 0.0}},
+            "D_residualised": {
+                "summary": {
+                    "net_sharpe": net,
+                    "turnover_round_trips_per_year_per_unit_gross": turnover,
+                    "annual_cost": 0.01,
+                    "gross_annual_return": 0.05,
+                },
+                "blocks": [{"net_sharpe": 1.0}] * 6,
+                "cost_stress": {"x1.5": stress, "x2": stress},
+            },
+        }
+
+    def _screen(self, books, *, share: float = 0.9, reachable: bool = True):
+        from scripts.research.market_yields import development_r2
+
+        return development_r2._screen(
+            books,
+            {"x": 1.0},
+            {"rate_leg_share_of_d_gross": share},
+            {"0.05": {"reachable": reachable}},
+        )
+
+    def test_the_turnover_bound_comes_from_the_prereg(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        books = self._books(turnover=50.0)
+        assert self._screen(books)["decision"] == "stop"
+        monkeypatch.setattr(prereg_r2, "TURNOVER_BOUND", 60.0)
+        loosened = self._screen(books)
+        assert loosened["decision"] == "candidate"
+        #: and the condition is named by the constant, so a record cannot hide the change
+        assert "turnover at or below 60" in loosened["shared_conditions"]
+
+    def test_the_cost_stresses_are_the_frozen_multiples(self) -> None:
+        from scripts.research.market_yields import development_r2
+
+        assert development_r2.COST_STRESSES == (1.5, 2.0)
+        name = "net Sharpe stays positive at 1.5x and 2x cost"
+        assert name in self._screen(self._books())["shared_conditions"]
+
+    def test_the_decomposition_threshold_is_a_half(self) -> None:
+        clause = "D's rate-residual leg carries at least half of D's gross"
+        assert self._screen(self._books(), share=0.5)["shared_conditions"][clause] is True
+        assert self._screen(self._books(), share=0.49)["shared_conditions"][clause] is False
+        assert self._screen(self._books(), share=0.49)["decision"] == "stop"
+
+    def test_the_capacity_condition_follows_the_capacity_row(self) -> None:
+        clause = "5% annual net is reachable inside the gap stress"
+        assert self._screen(self._books(), reachable=False)["shared_conditions"][clause] is False
+        assert self._screen(self._books(), reachable=False)["decision"] == "stop"
+        assert self._screen(self._books(), reachable=True)["shared_conditions"][clause] is True
+
+    def test_the_cost_stress_condition_is_not_hardcoded(self) -> None:
+        clause = "net Sharpe stays positive at 1.5x and 2x cost"
+        assert self._screen(self._books(stress=-0.1))["shared_conditions"][clause] is False
+        assert self._screen(self._books(stress=-0.1))["decision"] == "stop"
+
+
+class TestTheSlowRecordAttributesTheLegsToTheRightBooks:
+    def test_the_rate_leg_is_book_b_and_the_momentum_leg_is_book_e(
+        self, r2_record: dict[str, Any]
+    ) -> None:
+        decomposition = r2_record["decomposition_of_the_primary_test"]
+        books = r2_record["books"]
+        assert (
+            decomposition["rate_leg_gross_annual_return"]
+            == (books["B_slow_rate_state"]["summary"]["gross_annual_return"])
+        )
+        assert (
+            decomposition["momentum_leg_gross_annual_return"]
+            == (books["E_momentum_leg_of_D"]["summary"]["gross_annual_return"])
+        )
+
+    def test_the_ratio_is_reported_with_what_it_is_not(self, r2_record: dict[str, Any]) -> None:
+        decomposition = r2_record["decomposition_of_the_primary_test"]
+        text = decomposition["what_the_ratio_is_not"]
+        assert "rather than a share of one book's P&L" in text
+        assert "invariant to a positive per-day scalar" in text
+        assert decomposition["unattributed_share_of_d_gross"] > 0.3
+        #: the question the ratio was meant to answer, answered by something that can
+        assert decomposition["d_daily_gross_correlation_with_rate_leg"] > 0.5
+        assert abs(decomposition["d_daily_gross_correlation_with_momentum_leg"]) < 0.1
+
+    def test_the_comparator_is_the_repaired_fast_residual(self, r2_record: dict[str, Any]) -> None:
+        row = r2_record["against_the_repaired_fast_run"]["primary_residual"]
+        #: the primary test's gross did not rise; the net improvement is the cost saved
+        assert row["gross_sharpe"]["change"] < 0
+        assert row["net_sharpe"]["change"] > 0
+        assert row["annual_cost"]["change"] < 0
+        assert row["gross_sharpe"]["fast_5d"] == pytest.approx(0.8625, abs=1e-4)
+
+    def test_every_book_reports_its_break_even_cost_and_its_net_t(
+        self, r2_record: dict[str, Any]
+    ) -> None:
+        for name, book in r2_record["books"].items():
+            extra = book["extra"]
+            assert extra["net_t_stat"] is not None, name
+            assert extra["faithful_annual_implementation_cost"] > 0, name
+        #: the two books with a positive gross are within 10% of their break-even cost
+        for name in ("B_slow_rate_state", "D_residualised"):
+            multiple = r2_record["books"][name]["extra"]["break_even_cost_multiple"]
+            assert 1.0 < multiple < 1.1, (name, multiple)
+
+    def test_the_measured_ic_is_reported_against_the_ic_the_costs_demand(
+        self, r2_record: dict[str, Any]
+    ) -> None:
+        for name in ("B_slow_rate_state", "D_residualised"):
+            comparison = r2_record["books"][name]["ic_comparison"]
+            assert comparison["required_daily_ic_for_net_0_3_at_realised_turnover"] > 0
+            #: every rate book's measured IC is negative, which the document must say
+            assert comparison["observed_daily_equivalent_ic"] < 0, name
+
+    def test_the_book_config_records_every_live_field(self, r2_record: dict[str, Any]) -> None:
+        from dataclasses import fields
+
+        from scripts.research.market_yields import development_r2
+
+        live = {f.name for f in fields(development_r2.BOOK)}
+        for recorded in (
+            set(r2_record["executed_book_config"]),
+            set(development_r2.executed_book_config()),
+        ):
+            missing = live - recorded
+            assert not missing, f"these change the book and are not recorded: {sorted(missing)}"
+        #: the one that had been omitted is live inside the vol targeter
+        assert "leverage_hysteresis" in development_r2.executed_book_config()
+
+    def test_the_legs_are_taken_from_the_pre_registered_books(self) -> None:
+        """A leg sourced from the wrong book must change this function's output."""
+        from scripts.research.market_yields import development_r2
+
+        index = pd.bdate_range("2022-01-03", periods=8)
+        books = {
+            name: {"summary": {"gross_annual_return": value}}
+            for name, value in (
+                ("D_residualised", 0.10),
+                ("B_slow_rate_state", 0.06),
+                ("E_momentum_leg_of_D", -0.01),
+            )
+        }
+        results = {
+            name: {
+                "daily": pd.DataFrame(
+                    {"decision_day": index, "gross": np.linspace(-1.0, 1.0, len(index)) * scale}
+                )
+            }
+            for name, scale in (
+                ("D_residualised", 1.0),
+                ("B_slow_rate_state", 1.0),
+                ("E_momentum_leg_of_D", -1.0),
+            )
+        }
+        beta = pd.Series(np.linspace(-0.2, 0.9, len(index)), index=index)
+        out = development_r2.decompose_primary(books, results, beta)
+        assert out["rate_leg_gross_annual_return"] == 0.06
+        assert out["momentum_leg_gross_annual_return"] == -0.01
+        assert out["rate_leg_share_of_d_gross"] == pytest.approx(0.6)
+        assert out["unattributed_share_of_d_gross"] == pytest.approx(0.5)
+        assert out["d_daily_gross_correlation_with_rate_leg"] == pytest.approx(1.0)
+        assert out["d_daily_gross_correlation_with_momentum_leg"] == pytest.approx(-1.0)
+        assert out["share_of_days_beta_negative"] > 0

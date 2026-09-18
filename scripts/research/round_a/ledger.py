@@ -568,6 +568,7 @@ LEDGER: Final[list[dict[str, Any]]] = [
     },
     {
         "id": "H-025",
+        "document": "docs/research/m15_track_r_market_yield_repricing.md",
         "round": "Track T-R market yield repricing, development (the PR after #484)",
         "population": (
             "the seen corpus 2021-04-27 .. 2025-12-26, 1213 FX trading days, five "
@@ -616,6 +617,7 @@ LEDGER: Final[list[dict[str, Any]]] = [
     },
     {
         "id": "H-026",
+        "document": "docs/research/m15_track_r2_slow_repricing.md",
         "round": "Track T-R2 slow market-yield repricing state, development",
         "population": (
             "the seen corpus 2021-04-27 .. 2025-12-26, 1190 decision days after the twenty-day "
@@ -642,27 +644,43 @@ LEDGER: Final[list[dict[str, Any]]] = [
         ),
         "prespecified": True,
         "result": (
-            "the central diagnostic answered on the informative side: turnover fell from 83.3 to "
-            "39.3 round trips a year and the gross expected return survived, rising from +0.279 "
-            "to +0.541 for the state book and +0.834 for the residual, so the fast formulation's "
-            "failure was at least partly a cost problem rather than purely short-lived "
-            "information. It is still not monetisable: net Sharpe +0.042 and +0.051 sit at "
-            "break-even, the residual turns over 59.8 against the pre-registered bound of 45, net "
-            "goes negative at 1.5x cost (-0.34) and 2x (-0.73), and every leave-one-currency-out "
-            "is negative (-0.09 to -1.03) on a five-name cross-section carried by USD and JPY. "
-            "The pre-registered decomposition shows the rate leg carrying 65% of the residual's "
-            "gross, so the result is not a momentum artefact, but beta varies widely (sd 0.47, "
-            "sign changing) and the non-linear reconciliation gap is 3.3 percentage points"
+            "the central diagnostic answered on the informative side, read against the right "
+            "comparator: on the rate-state book turnover fell from 83.3 to 39.3 round trips a "
+            "year and the gross rose from +0.279 to +0.541, which is the A-to-B leg the prereg "
+            "posed. On the primary test — the residual, compared with the fast track's own "
+            "residual re-run through the same repaired layer — the gross did NOT rise: +0.863 to "
+            "+0.834, annual gross 9.28% to 8.70%, while turnover fell 98.8 to 59.8 and annual "
+            "cost fell 13.16% to 8.17%. The whole of the net improvement, -0.359 to +0.051, is "
+            "the cost saved. So the fast formulation's failure was a cost problem rather than "
+            "short-lived information, and the slow state carries the same gross more cheaply, "
+            "not more of it. It is still not monetisable: net Sharpe +0.042 and +0.051 sit at "
+            "break-even with net t near 0.1, the break-even cost multiple is 1.085 and 1.066 so "
+            "a 6.5% error in the cost convention erases it, the residual turns over 59.8 against "
+            "the pre-registered bound of 45, net goes negative at 1.5x cost (-0.34) and 2x "
+            "(-0.73), and every leave-one-currency-out is negative (-0.09 to -1.03) — a uniform "
+            "level shift from rebuilding the routed pair set on four names, not a concentration "
+            "in the currencies removed. D's daily gross correlates +0.61 with the rate leg and "
+            "+0.02 with the momentum leg, so the result is not a momentum artefact; the "
+            "pre-registered 65% leg ratio is reported as frozen but is a ratio of separately "
+            "levered books, not a share of P&L, with 37.8% unattributed. Every rate book's "
+            "measured Spearman IC is negative at both horizons — uninformative at this sample "
+            "size rather than contrary, but the positive gross is not supported by measured "
+            "forecasting power"
         ),
         "status": (
             "CLOSED - MARKET_YIELD_SLOW_REPRICING_NOT_SUPPORTED_IN_SEEN_DEVELOPMENT, for the "
-            "pre-registered twenty-day formulation only. With the fast shock and the slow state "
-            "both unsupported, the scope-limited family closure token becomes available for a "
-            "Human decision; it would not reach OIS, intraday rate futures, the market-implied "
-            "policy path or curve non-linearities, none of which has been observed. The span "
-            "separates only a net Sharpe near 1.13 at 80% power, so neither book's positive gross "
-            "(t about 1.18 and 1.82) is decision-grade. Changing the horizon, sign, universe, "
-            "control or turnover bound after this result is prohibited"
+            "pre-registered twenty-day formulation only. What is shown is non-monetisability at "
+            "the assumed cost on a span where the primary test's gross did not fall — not that "
+            "the rate information degraded. Four of the nine frozen conditions fail: turnover, "
+            "the cost stress, the leave-one-out sign, and 5% annual net being reachable at a "
+            "volatility whose gap stress survives (97.8% required vol, which loss-cuts). With "
+            "the fast shock and the slow state both unsupported, the scope-limited family "
+            "closure token becomes available for a Human decision; it would not reach OIS, "
+            "intraday rate futures, the market-implied policy path or curve non-linearities, "
+            "none of which has been observed. The span separates only a net Sharpe near 1.13 at "
+            "80% power, so neither book's positive gross (t about 1.18 and 1.81) is "
+            "decision-grade. Changing the horizon, sign, universe, control or turnover bound "
+            "after this result is prohibited"
         ),
     },
 ]

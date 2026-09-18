@@ -21,6 +21,17 @@ The order is fixed by the ruling and by this package's modules:
 6. `prereg` — frozen, then committed, before the yield panel meets the FX panel.
 7. `development` — the unfitted rule, its FX-momentum control, and the residual.
 
+The fast formulation returned `NOT_SUPPORTED`, and the ruling of 2026-09-18
+authorised exactly one slow reformulation, which repeats the same order:
+
+8. `portfolio` and `risk` — the execution layer and the margin stress, both closed
+   inside whatever universe is actually tradable rather than inside all twenty pairs.
+9. `fast_repair_check` — the frozen fast signal re-run through the repaired layer,
+   so the slow run has a like-for-like comparator it did not choose after the fact.
+10. `prereg_r2` — frozen and committed, digest-pinned, before the slow run.
+11. `development_r2` — the twenty-day state, its control, the residual and the
+    pre-registered leg decomposition.
+
 Seen data decides nothing on its own: every outcome here is development
 evidence. The fresh pool, the historical OOS slice, the dead window and the
 forward epoch are not read.
@@ -31,7 +42,11 @@ from __future__ import annotations
 from typing import Final
 
 TRACK: Final[str] = "T-R"
-WORKFLOW_STATUS: Final[str] = "MARKET_YIELD_REPRICING_DEVELOPMENT_IN_PROGRESS"
+#: Both pre-registered formulations have run and both returned NOT_SUPPORTED. The
+#: family boundary below is available for a Human decision and is not declared here.
+WORKFLOW_STATUS: Final[str] = (
+    "MARKET_YIELD_REPRICING_FAST_AND_SLOW_FORMULATIONS_BOTH_NOT_SUPPORTED_AWAITING_HUMAN_DECISION"
+)
 
 #: What each track may conclude. The fast statuses name the measure they belong to:
 #: a formulation failing is not the family closing.

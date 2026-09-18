@@ -1,4 +1,89 @@
 {
+  "against_the_repaired_fast_run": {
+    "available": true,
+    "fx_control": {
+      "annual_cost": {
+        "change": -0.03824,
+        "fast_5d": 0.08666,
+        "slow_20d": 0.04842
+      },
+      "gross_annual_return": {
+        "change": -0.03927,
+        "fast_5d": 0.01253,
+        "slow_20d": -0.02674
+      },
+      "gross_sharpe": {
+        "change": -0.3788,
+        "fast_5d": 0.1224,
+        "slow_20d": -0.2564
+      },
+      "net_sharpe": {
+        "change": 0.0009,
+        "fast_5d": -0.7216,
+        "slow_20d": -0.7207
+      },
+      "turnover_round_trips_per_year_per_unit_gross": {
+        "change": -30.602,
+        "fast_5d": 70.788,
+        "slow_20d": 40.186
+      }
+    },
+    "primary_residual": {
+      "annual_cost": {
+        "change": -0.04986,
+        "fast_5d": 0.13155,
+        "slow_20d": 0.08169
+      },
+      "gross_annual_return": {
+        "change": -0.00576,
+        "fast_5d": 0.0928,
+        "slow_20d": 0.08704
+      },
+      "gross_sharpe": {
+        "change": -0.029,
+        "fast_5d": 0.8625,
+        "slow_20d": 0.8335
+      },
+      "net_sharpe": {
+        "change": 0.4101,
+        "fast_5d": -0.359,
+        "slow_20d": 0.0511
+      },
+      "turnover_round_trips_per_year_per_unit_gross": {
+        "change": -38.99,
+        "fast_5d": 98.82,
+        "slow_20d": 59.83
+      }
+    },
+    "rate_state": {
+      "annual_cost": {
+        "change": -0.05743,
+        "fast_5d": 0.1096,
+        "slow_20d": 0.05217
+      },
+      "gross_annual_return": {
+        "change": 0.02624,
+        "fast_5d": 0.03036,
+        "slow_20d": 0.0566
+      },
+      "gross_sharpe": {
+        "change": 0.2614,
+        "fast_5d": 0.2794,
+        "slow_20d": 0.5408
+      },
+      "net_sharpe": {
+        "change": 0.7694,
+        "fast_5d": -0.7271,
+        "slow_20d": 0.0423
+      },
+      "turnover_round_trips_per_year_per_unit_gross": {
+        "change": -44.085,
+        "fast_5d": 83.336,
+        "slow_20d": 39.251
+      }
+    },
+    "reading": "on the primary test the gross did not rise — it fell slightly — and the whole of the net improvement is the cost saved by turning over less. The rate-state book's gross did rise, which is the A-to-B leg of the pre-registered diagnostic and a different claim"
+  },
   "annual_return_capacity": {
     "0.05": {
       "annual_target": 0.05,
@@ -105,9 +190,23 @@
         "x1.5": -1.227,
         "x2": -1.7232
       },
+      "extra": {
+        "break_even_cost_multiple": 0.277,
+        "faithful_annual_implementation_cost": 0.06804,
+        "gross_t_stat": 0.611,
+        "net_t_stat": -1.59
+      },
       "ic": {
         "20d": -0.0249,
         "5d": 0.0264
+      },
+      "ic_comparison": {
+        "caveat": "the measured IC is a Spearman rank correlation while the fundamental law uses a Pearson-style IC; the comparison is indicative, and the shortfall is large enough that the distinction does not carry it",
+        "implied_half_life_days": 1.8,
+        "observed_daily_equivalent_ic": -0.0356,
+        "realised_cost_ir_drag": 1.006,
+        "required_daily_ic_for_net_0_3_at_realised_turnover": 0.0615,
+        "shortfall_multiple": -1.73
       },
       "per_currency_gross_pnl": {
         "CAD": -0.02314,
@@ -201,9 +300,23 @@
         "x1.5": -0.2063,
         "x2": -0.4542
       },
+      "extra": {
+        "break_even_cost_multiple": 1.085,
+        "faithful_annual_implementation_cost": 0.03267,
+        "gross_t_stat": 1.175,
+        "net_t_stat": 0.092
+      },
       "ic": {
         "20d": -0.0401,
         "5d": -0.0438
+      },
+      "ic_comparison": {
+        "caveat": "the measured IC is a Spearman rank correlation while the fundamental law uses a Pearson-style IC; the comparison is indicative, and the shortfall is large enough that the distinction does not carry it",
+        "implied_half_life_days": 6.45,
+        "observed_daily_equivalent_ic": -0.0207,
+        "realised_cost_ir_drag": 0.498,
+        "required_daily_ic_for_net_0_3_at_realised_turnover": 0.0378,
+        "shortfall_multiple": -1.83
       },
       "per_currency_gross_pnl": {
         "CAD": -0.13006,
@@ -297,9 +410,23 @@
         "x1.5": -0.9525,
         "x2": -1.1835
       },
+      "extra": {
+        "break_even_cost_multiple": -0.552,
+        "faithful_annual_implementation_cost": 0.03082,
+        "gross_t_stat": -0.558,
+        "net_t_stat": -1.568
+      },
       "ic": {
         "20d": -0.0501,
         "5d": -0.0516
+      },
+      "ic_comparison": {
+        "caveat": "the measured IC is a Spearman rank correlation while the fundamental law uses a Pearson-style IC; the comparison is indicative, and the shortfall is large enough that the distinction does not carry it",
+        "implied_half_life_days": 7.45,
+        "observed_daily_equivalent_ic": -0.0236,
+        "realised_cost_ir_drag": 0.464,
+        "required_daily_ic_for_net_0_3_at_realised_turnover": 0.036,
+        "shortfall_multiple": -1.53
       },
       "per_currency_gross_pnl": {
         "CAD": -0.14726,
@@ -393,9 +520,23 @@
         "x1.5": -0.3385,
         "x2": -0.7263
       },
+      "extra": {
+        "break_even_cost_multiple": 1.066,
+        "faithful_annual_implementation_cost": 0.05078,
+        "gross_t_stat": 1.811,
+        "net_t_stat": 0.111
+      },
       "ic": {
         "20d": -0.0157,
         "5d": -0.0212
+      },
+      "ic_comparison": {
+        "caveat": "the measured IC is a Spearman rank correlation while the fundamental law uses a Pearson-style IC; the comparison is indicative, and the shortfall is large enough that the distinction does not carry it",
+        "implied_half_life_days": 3.63,
+        "observed_daily_equivalent_ic": -0.0125,
+        "realised_cost_ir_drag": 0.782,
+        "required_daily_ic_for_net_0_3_at_realised_turnover": 0.0513,
+        "shortfall_multiple": -4.11
       },
       "per_currency_gross_pnl": {
         "CAD": -0.19241,
@@ -489,9 +630,23 @@
         "x1.5": -1.1395,
         "x2": -1.505
       },
+      "extra": {
+        "break_even_cost_multiple": -0.032,
+        "faithful_annual_implementation_cost": 0.04769,
+        "gross_t_stat": -0.052,
+        "net_t_stat": -1.673
+      },
       "ic": {
         "20d": 0.0397,
         "5d": 0.0213
+      },
+      "ic_comparison": {
+        "caveat": "the measured IC is a Spearman rank correlation while the fundamental law uses a Pearson-style IC; the comparison is indicative, and the shortfall is large enough that the distinction does not carry it",
+        "implied_half_life_days": 3.67,
+        "observed_daily_equivalent_ic": 0.0313,
+        "realised_cost_ir_drag": 0.746,
+        "required_daily_ic_for_net_0_3_at_realised_turnover": 0.0496,
+        "shortfall_multiple": 1.59
       },
       "per_currency_gross_pnl": {
         "CAD": 0.08952,
@@ -532,7 +687,7 @@
     }
   },
   "classification": "NON_DECISION_BEARING_EXPLORATORY_ONLY",
-  "decision_days": 1212,
+  "decision_days_used_by_the_primary_test": 1190,
   "decomposition_of_the_primary_test": {
     "beta_mean": 0.3822,
     "beta_p05_p95": [
@@ -540,21 +695,44 @@
       0.9349
     ],
     "beta_sd": 0.4712,
+    "d_daily_gross_correlation_with_momentum_leg": 0.0174,
+    "d_daily_gross_correlation_with_rate_leg": 0.6098,
     "d_gross_annual_return": 0.08704,
     "momentum_leg_gross_annual_return": -0.00249,
-    "note": "the legs are run through the same machinery as D, so capping and the band make the split approximate; the reconciliation gap is the size of that approximation",
     "rate_leg_gross_annual_return": 0.0566,
     "rate_leg_share_of_d_gross": 0.6503,
-    "reconciliation_gap": 0.03293
+    "reconciliation_gap": 0.03293,
+    "share_of_days_beta_negative": 0.2267,
+    "unattributed_share_of_d_gross": 0.3783,
+    "what_answers_the_question_instead": "whether D is a momentum artefact is answered by how D's daily P&L moves, which is measured directly below over every decision day rather than inferred from a ratio",
+    "what_the_ratio_is_not": "construction.capped_weights renormalises each side to a fixed total, so it is exactly invariant to a positive per-day scalar. Book E's score is -beta_t * C_t, and that scalar is discarded: E is the sign of -beta_t applied to the control, not the leg at the magnitude it carries inside D. B, E and D are each normalised per day, so their annual returns are not additive and the pre-registered ratio is a comparison of three separately levered books rather than a share of one book's P&L. The reconciliation gap is that non-additivity, not the cap-and-band approximation"
   },
+  "deviations_from_the_frozen_text": [
+    {
+      "clause": "D's rate-residual leg carries at least half of D's gross P&L",
+      "what_was_measured": "the ratio of book B's annual gross return to book D's. Each book is levered to its own volatility target and its weights are renormalised per day, so this is not a share of D's P&L and the three legs do not sum to D",
+      "why_it_was_not_changed": "the condition is digest-pinned; applying something else after seeing the result would be the rescue the ruling forbids. It is applied as frozen, and the quantity that does answer the question — the correlation of D's daily P&L with each leg's — is recorded beside it"
+    },
+    {
+      "clause": "book E is the momentum leg of D",
+      "what_was_measured": "E is -beta_t * C_t run standalone, and capped_weights discards the positive per-day scalar exactly, so E is the sign of -beta_t on the control rather than the leg at the magnitude it carries inside D",
+      "why_it_was_not_changed": "same reason; the fact is recorded rather than corrected"
+    }
+  ],
   "executed_book_config": {
     "band": 0.1,
     "cost_multiple": 1.0,
+    "drawdown_governor": false,
     "factor_window": 120,
+    "governor_release": 0.05,
+    "governor_scale": 0.5,
+    "governor_trigger": 0.1,
+    "leverage_hysteresis": 0.1,
     "mapping": "linear",
     "max_leverage": 1000000.0,
     "name": "t_r2",
     "neutralize_leading_factor": true,
+    "notes": [],
     "sigma_window": 60,
     "vol_target": 0.1,
     "vol_window": 60,
@@ -753,15 +931,22 @@
   },
   "prereg_digest": "2f3f8bb37af00b31fcd2242278998847c7262f557d885df36d71a9a4e32bc67a",
   "protected_spans_read": false,
+  "return_panel_days": 1212,
   "screen": {
     "all_shared_conditions_hold": false,
     "decision": "stop",
     "decision_grade": false,
+    "failing_conditions": [
+      "5% annual net is reachable inside the gap stress",
+      "net Sharpe stays positive at 1.5x and 2x cost",
+      "the sign survives dropping any single currency",
+      "turnover at or below 45"
+    ],
     "note": "a development screen. The span separates only a net Sharpe near 1.13 at 80% power, so neither a pass nor a stop here settles whether the slow state leads FX",
     "positive_blocks": 4,
     "primary_net_sharpe": 0.0511,
     "shared_conditions": {
-      "5% annual net is reachable inside the gap stress": true,
+      "5% annual net is reachable inside the gap stress": false,
       "B gross Sharpe > 0": true,
       "D carries a positive net increment over C": true,
       "D's rate-residual leg carries at least half of D's gross": true,
@@ -771,6 +956,7 @@
       "the sign survives dropping any single currency": false,
       "turnover at or below 45": false
     },
+    "strong": false,
     "verdict": "MARKET_YIELD_SLOW_REPRICING_NOT_SUPPORTED_IN_SEEN_DEVELOPMENT"
   },
   "span": {
@@ -785,5 +971,7 @@
     "JPY",
     "USD"
   ],
-  "verdict": "MARKET_YIELD_SLOW_REPRICING_NOT_SUPPORTED_IN_SEEN_DEVELOPMENT"
+  "verdict": "MARKET_YIELD_SLOW_REPRICING_NOT_SUPPORTED_IN_SEEN_DEVELOPMENT",
+  "what_leave_one_out_changes": "dropping a currency rebuilds the tradable pair set, so every kept currency's return definition changes as well as the cross-section. It is the right test for a routed book — a four-name book is what would actually be traded — but it is not a subset of the five-name result, and a uniform drop across all five is a level shift rather than a concentration in the currencies that were removed",
+  "workflow_status": "RESEARCH_SCRATCH_NON_AUTHORITATIVE"
 }
