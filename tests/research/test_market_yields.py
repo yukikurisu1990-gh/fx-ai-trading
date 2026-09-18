@@ -8,7 +8,9 @@ Reads committed records only. No network, no market data.
 from __future__ import annotations
 
 import ast
+import hashlib
 import json
+from dataclasses import replace
 from pathlib import Path
 from typing import Any
 
@@ -20,6 +22,7 @@ from scripts.research.market_yields import (
     CURRENCIES,
     FAMILY_BOUNDARY,
     OUTCOMES,
+    WORKFLOW_STATUS,
     development,
     integrity,
     portfolio,
@@ -804,3 +807,255 @@ class TestTheSlowPrereg:
         source = (PACKAGE / "prereg_r2.py").read_text(encoding="utf-8").lower()
         for word in ("observed gross", "we found", "the result was", "net sharpe was"):
             assert word not in source
+
+
+#: The frozen T-R2 pre-registration, by content. Any edit to what it declares changes
+#: this digest, so a silent post-result amendment cannot pass as the frozen design.
+PREREG_R2_DIGEST = "b7e4a4aeb7f89837ab18facb5a67f3df19d80978d0e9efde9cc93f512cd0dc6a"
+
+
+def _synthetic(days: int = 90, currencies: tuple[str, ...] = prereg.UNIVERSE, seed: int = 3):
+    index = pd.bdate_range("2021-01-04", periods=days)
+    rng = np.random.default_rng(seed)
+    excess = pd.DataFrame(
+        rng.standard_normal((days, len(currencies))) / 100.0, index=index, columns=list(currencies)
+    )
+    excess = excess.sub(excess.mean(axis=1), axis=0)
+    mu = pd.DataFrame(
+        rng.standard_normal((days, len(currencies))), index=index, columns=list(currencies)
+    )
+    return mu, excess
+
+
+class TestTheLayerIsFaithful:
+    def test_the_pnl_belongs_to_the_day_after_the_decision(self) -> None:
+        mu, excess = _synthetic()
+        day = excess.index[40]
+        moved = excess.copy()
+        moved.loc[moved.index > day] += 0.02
+        base = portfolio.run_book(development.BOOK, mu, excess, universe=prereg.UNIVERSE)["daily"]
+        after = portfolio.run_book(development.BOOK, mu, moved, universe=prereg.UNIVERSE)["daily"]
+        #: the exposure chosen on `day` cannot know the days after it
+        columns = [f"x_{c}" for c in prereg.UNIVERSE]
+        before = base["decision_day"] <= day
+        pd.testing.assert_frame_equal(base.loc[before, columns], after.loc[before, columns])
+        #: and the P&L of that exposure is the next day's return, which did change
+        row = base.index[base["decision_day"] == day][0]
+        assert base.loc[row, "gross"] != after.loc[row, "gross"]
+
+    def test_the_history_window_never_reaches_past_the_decision_day(self) -> None:
+        mu, excess = _synthetic()
+        day = excess.index[50]
+        moved = excess.copy()
+        moved.loc[moved.index > day] *= 8.0
+        base = portfolio.run_book(development.BOOK, mu, excess, universe=prereg.UNIVERSE)["daily"]
+        after = portfolio.run_book(development.BOOK, mu, moved, universe=prereg.UNIVERSE)["daily"]
+        #: every decision up to and including `day` sees only history
+        before = base["decision_day"] <= day
+        assert base.loc[before, "ex_ante_vol"].equals(after.loc[before, "ex_ante_vol"])
+        assert base.loc[before, "leverage"].equals(after.loc[before, "leverage"])
+        columns = [f"x_{c}" for c in prereg.UNIVERSE]
+        pd.testing.assert_frame_equal(base.loc[before, columns], after.loc[before, columns])
+
+    def test_the_volatility_target_is_applied(self) -> None:
+        mu, excess = _synthetic()
+        daily = portfolio.run_book(development.BOOK, mu, excess, universe=prereg.UNIVERSE)["daily"]
+        assert daily["leverage"].nunique() > 5
+        assert float(daily["leverage"].mean()) > 1.0
+        flat = portfolio.run_book(
+            portfolio.BookConfig(name="flat", mapping="linear", vol_target=None),
+            mu,
+            excess,
+            universe=prereg.UNIVERSE,
+        )["daily"]
+        assert set(flat["leverage"].unique()) == {1.0}
+
+    def test_the_no_trade_band_stops_some_days(self) -> None:
+        mu, excess = _synthetic()
+        banded = portfolio.run_book(development.BOOK, mu, excess, universe=prereg.UNIVERSE)["daily"]
+        no_band = portfolio.run_book(
+            portfolio.BookConfig(name="nb", mapping="linear", band=0.0),
+            mu,
+            excess,
+            universe=prereg.UNIVERSE,
+        )["daily"]
+        assert float(banded["traded"].mean()) < 1.0
+        assert float(no_band["one_way_traded"].sum()) > float(banded["one_way_traded"].sum())
+
+    def test_the_declared_mapping_and_windows_are_used(self) -> None:
+        mu, excess = _synthetic()
+        columns = [f"x_{c}" for c in prereg.UNIVERSE]
+        #: only the field under test differs from the book that runs
+        linear = portfolio.run_book(development.BOOK, mu, excess, universe=prereg.UNIVERSE)["daily"]
+        for mapping in ("rank", "vol_normalized"):
+            other = portfolio.run_book(
+                replace(development.BOOK, mapping=mapping), mu, excess, universe=prereg.UNIVERSE
+            )["daily"]
+            assert not linear[columns].equals(other[columns]), mapping
+        narrow = portfolio.run_book(
+            replace(development.BOOK, mapping="vol_normalized", sigma_window=10),
+            mu,
+            excess,
+            universe=prereg.UNIVERSE,
+        )["daily"]
+        wide = portfolio.run_book(
+            replace(development.BOOK, mapping="vol_normalized", sigma_window=60),
+            mu,
+            excess,
+            universe=prereg.UNIVERSE,
+        )["daily"]
+        assert not narrow[columns].equals(wide[columns])
+
+    def test_a_gap_in_the_decision_calendar_is_refused(self) -> None:
+        mu, excess = _synthetic()
+        with pytest.raises(ValueError, match="contiguous"):
+            portfolio.run_book(
+                development.BOOK, mu.drop(mu.index[20]), excess, universe=prereg.UNIVERSE
+            )
+
+    def test_the_cost_multiple_is_honoured(self) -> None:
+        mu, excess = _synthetic()
+        base = portfolio.run_book(development.BOOK, mu, excess, universe=prereg.UNIVERSE)["daily"]
+        doubled = portfolio.run_book(
+            development.BOOK, mu, excess, universe=prereg.UNIVERSE, cost_multiple=2.0
+        )["daily"]
+        assert np.allclose(doubled["cost"], 2.0 * base["cost"])
+        assert np.allclose(doubled["net"], doubled["gross"] - doubled["cost"])
+
+    def test_the_drawdown_governor_is_refused_rather_than_ignored(self) -> None:
+        mu, excess = _synthetic()
+        with pytest.raises(NotImplementedError):
+            portfolio.run_book(
+                portfolio.BookConfig(name="g", mapping="linear", drawdown_governor=True),
+                mu,
+                excess,
+                universe=prereg.UNIVERSE,
+            )
+
+    def test_the_leverage_cap_is_reported_when_it_binds(self) -> None:
+        mu, excess = _synthetic()
+        capped = portfolio.run_book(
+            portfolio.BookConfig(name="c", mapping="linear", max_leverage=1.5),
+            mu,
+            excess,
+            universe=prereg.UNIVERSE,
+        )["daily"]
+        assert bool(capped["at_leverage_cap"].any())
+        assert float(capped["leverage"].max()) <= 1.5 + 1e-9
+        loose = portfolio.run_book(development.BOOK, mu, excess, universe=prereg.UNIVERSE)["daily"]
+        assert not bool(loose["at_leverage_cap"].any())
+
+    def test_a_split_routing_graph_is_reported_as_such(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """PAIRS_20 happens to connect every subset, so the helper is tested directly."""
+        monkeypatch.setattr(portfolio, "tradable_pairs", lambda universe: ("AUD_NZD", "GBP_USD"))
+        assert portfolio._connected(("AUD", "NZD", "GBP", "USD")) is False
+        monkeypatch.setattr(
+            portfolio, "tradable_pairs", lambda universe: ("AUD_NZD", "NZD_USD", "GBP_USD")
+        )
+        assert portfolio._connected(("AUD", "NZD", "GBP", "USD")) is True
+
+    def test_the_real_universe_is_connected(self) -> None:
+        assert portfolio.routing_profile(prereg.UNIVERSE).connected is True
+
+    def test_the_routing_profile_reports_what_the_helper_says(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        monkeypatch.setattr(portfolio, "_connected", lambda universe: False)
+        assert portfolio.routing_profile(prereg.UNIVERSE).connected is False
+
+    def test_the_reported_pnl_is_the_routed_books_pnl(self) -> None:
+        panel = {"pair_returns": None}
+        index = pd.bdate_range("2021-01-04", periods=40)
+        rng = np.random.default_rng(7)
+        pairs = portfolio.tradable_pairs(prereg.UNIVERSE)
+        panel["pair_returns"] = pd.DataFrame(
+            rng.standard_normal((len(index), len(pairs))) / 100.0, index=index, columns=list(pairs)
+        )
+        weights = np.array([0.25, -0.25, 0.10, -0.05, -0.05])
+        assert abs(weights.sum()) < 1e-12
+        assert portfolio.identity_residual(panel, prereg.UNIVERSE, weights) < 1e-15
+
+    def test_the_repair_statement_says_what_was_repaired(self) -> None:
+        assert "returns" in portfolio.REPAIR["fix"]
+        assert "#485" in portfolio.REPAIR["verdicts_unchanged"]
+        assert "robustness" in portfolio.REPAIR["verdicts_unchanged"]
+
+
+class TestTheFrozenSlowPrereg:
+    def test_the_declared_design_is_unchanged(self) -> None:
+        digest = hashlib.sha256(
+            json.dumps(prereg_r2.PREREG, sort_keys=True, ensure_ascii=False).encode("utf-8")
+        ).hexdigest()
+        assert digest == PREREG_R2_DIGEST, "the frozen pre-registration changed"
+
+    def test_the_horizon_constant_and_the_declaration_agree(self) -> None:
+        assert prereg_r2.PREREG["signal"]["horizon_days"] == prereg_r2.PRIMARY_HORIZON_DAYS
+        #: no second horizon may hide anywhere in the declaration
+        flat = json.dumps(prereg_r2.PREREG)
+        for other in (10, 15, 30, 40, 60):
+            assert '"horizon_days": ' + str(other) not in flat
+
+    def test_the_bands_are_disjoint_and_the_bars_are_where_they_were(self) -> None:
+        assert prereg_r2.CANDIDATE_NET_SHARPE == 0.3
+        assert prereg_r2.MARGINAL_NET_SHARPE == 0.2
+        assert prereg_r2.MARGINAL_NET_SHARPE < prereg_r2.CANDIDATE_NET_SHARPE
+        screen = prereg_r2.PREREG["screen"]
+        assert "at least 0.3" in screen["candidate"]
+        assert "[0.2, 0.3)" in screen["marginal_candidate"]
+        assert "every other outcome" in screen["stop"]
+        assert "no held state" in screen["stop"]
+
+    def test_the_turnover_bound_is_a_screen_condition_with_a_number(self) -> None:
+        shared = " ".join(prereg_r2.PREREG["screen"]["shared_conditions"])
+        assert str(int(prereg_r2.TURNOVER_BOUND)) in shared
+        expectation = prereg_r2.feasibility()["turnover_expectation"]
+        assert expectation["screen_bound"] == prereg_r2.TURNOVER_BOUND
+        #: the expectation is built from what the fast run paid, not from the law alone
+        assert (
+            expectation["expected_turnover_by_that_multiplier"]
+            > expectation["band_law_at_twenty_day_half_life"]
+        )
+
+    def test_the_primary_statistic_is_decomposed_in_advance(self) -> None:
+        text = prereg_r2.PREREG["primary_test_decomposition"]
+        assert "beta" in text and "leg" in text
+        assert any(
+            "rate-residual leg" in c for c in prereg_r2.PREREG["screen"]["shared_conditions"]
+        )
+
+    def test_the_layer_and_the_returns_are_named(self) -> None:
+        config = prereg_r2.PREREG["book_configuration"]
+        assert "universe_panel" in config["returns"]
+        assert "exactly one pass" in config["factor_neutralisation"]
+        assert config["max_leverage"] == 1_000_000.0
+
+    def test_the_prereg_forbids_what_the_ruling_forbids(self) -> None:
+        assert "no fitted coefficient" in prereg_r2.PREREG["stage"].lower()
+        prohibited = " ".join(prereg_r2.PREREG["prohibited_after_the_result"]).lower()
+        for phrase in ("horizon", "sign", "universe", "ml", "protected"):
+            assert phrase in prohibited
+        assert "further conditioning variable" in prereg_r2.PREREG["no_control_zoo"].lower()
+        assert "may not be rescued" in prereg_r2.PREREG["universe"]["breadth_expansion"]
+        assert "No same-day use" in prereg_r2.PREREG["availability_rule"]
+
+    def test_the_tokens_stay_what_they_are(self) -> None:
+        assert not any("PRODUCTION" in token for token in OUTCOMES)
+        assert FAMILY_BOUNDARY == (
+            "MARKET_YIELD_REPRICING_SIMPLE_DIRECTIONAL_FAMILY_NOT_SUPPORTED_IN_SEEN_DEVELOPMENT"
+        )
+        assert WORKFLOW_STATUS == "MARKET_YIELD_REPRICING_DEVELOPMENT_IN_PROGRESS"
+
+
+class TestTheRepairedRerunIsTheFrozenSignal:
+    def test_it_uses_the_frozen_lookback_and_book(self) -> None:
+        source = (PACKAGE / "fast_repair_check.py").read_text(encoding="utf-8")
+        assert "development.LOOKBACK" in source
+        assert "development.BOOK" in source
+        assert "portfolio.universe_panel" in source
+        assert "assert_not_protected" in source
+
+    def test_the_record_shows_the_closed_identity(self, repaired_record: dict[str, Any]) -> None:
+        assert repaired_record["identity_residual_pnl_vs_routed_book"] < 1e-12
+        assert "binding one" in repaired_record["condition_re_verified"]

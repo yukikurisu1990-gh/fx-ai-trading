@@ -17,8 +17,17 @@ targeting — and closes all of them inside the universe actually observed:
   a currency the track cannot see;
 * routing uses only the pairs whose **both** legs are in the universe, so the
   implemented book is tradable as it stands;
+* **the returns are rebuilt from those same pairs**, so the reported P&L is the
+  P&L of the routed book. Slicing five columns out of the eight-currency panel
+  would not do it: there, CAD's return still carries `AUD_CAD` and JPY's carries
+  `CHF_JPY`, so a book holding no AUD would still be paid as if it did -- about
+  8% of the implied spot exposure. `universe_panel` closes that;
 * nothing outside the universe can receive weight, by construction rather than
   by an exact zero cancelling.
+
+The identity is exact for a sum-zero book: with `M[p, c] = sign / legs(c)`,
+`x . r = sum_p R_p (M x)_p`, and the demeaning changes nothing because the
+weights already sum to zero.
 
 It is the same engineering layer, not a new one: Track 1's alpha model is not
 here, and no parameter of the layer is tuned.
@@ -66,6 +75,42 @@ def split_map(universe: tuple[str, ...] | list[str]) -> np.ndarray:
     return matrix
 
 
+def universe_panel(
+    panel: dict[str, pd.DataFrame], universe: tuple[str, ...] | list[str]
+) -> pd.DataFrame:
+    """Daily currency excess returns built from the universe's own pairs.
+
+    `panel` is `corpus.currency_panel()`, whose `pair_returns` came through the
+    guarded readers. Nothing is re-read here; the currency definition is rebuilt so
+    that it uses only pairs the restricted book can trade.
+    """
+    currencies = list(universe)
+    pairs = tradable_pairs(currencies)
+    returns = panel["pair_returns"][list(pairs)]
+    rebuilt = pd.DataFrame(index=returns.index, columns=currencies, dtype=float)
+    for currency in currencies:
+        signed = [
+            returns[pair] if currency == pair.split("_")[0] else -returns[pair]
+            for pair in pairs
+            if currency in pair.split("_")
+        ]
+        rebuilt[currency] = pd.concat(signed, axis=1).mean(axis=1)
+    return rebuilt.sub(rebuilt.mean(axis=1), axis=0)
+
+
+def identity_residual(
+    panel: dict[str, pd.DataFrame], universe: tuple[str, ...] | list[str], weights: np.ndarray
+) -> float:
+    """`|x . r - (M x) . R|` for one sum-zero weight vector: it must be zero."""
+    currencies = list(universe)
+    pairs = tradable_pairs(currencies)
+    excess = universe_panel(panel, currencies)
+    routed = split_map(currencies) @ weights
+    direct = excess.to_numpy() @ weights
+    through_pairs = panel["pair_returns"][list(pairs)].to_numpy() @ routed
+    return float(np.nanmax(np.abs(direct - through_pairs)))
+
+
 @dataclass(frozen=True, slots=True)
 class Routing:
     """What the universe implies for routing, reported rather than assumed."""
@@ -74,27 +119,56 @@ class Routing:
     pairs: tuple[str, ...]
     pair_gross_per_unit_currency_gross: float
     connected: bool
+    mean_gross: float = float("nan")
+    share_days_gross_below_one: float = float("nan")
+    largest_currency_share_of_gross_p95: float = float("nan")
 
 
-def routing_profile(universe: tuple[str, ...] | list[str], samples: int = 4000) -> Routing:
-    """Signal-free: how much pair notional one unit of currency gross costs here."""
+def _connected(universe: tuple[str, ...]) -> bool:
+    """Union-find over the tradable pairs: a split graph cannot express every book."""
+    parent = {c: c for c in universe}
+
+    def find(c: str) -> str:
+        while parent[c] != c:
+            parent[c] = parent[parent[c]]
+            c = parent[c]
+        return c
+
+    for pair in tradable_pairs(universe):
+        first, second = (find(x) for x in pair.split("_"))
+        if first != second:
+            parent[first] = second
+    return len({find(c) for c in universe}) == 1
+
+
+def routing_profile(
+    universe: tuple[str, ...] | list[str], weight_cap: float = 0.25, samples: int = 4000
+) -> Routing:
+    """Signal-free: how much pair notional one unit of currency gross costs here.
+
+    Also reports how often the cap binds hard enough to hold gross below one, which
+    on a small cross-section is not the rare event it is on eight names.
+    """
     currencies = tuple(universe)
     pair_map = split_map(currencies)
     rng = np.random.default_rng(20260918)
     draws = rng.standard_normal((samples, len(currencies)))
-    ratios = []
+    ratios, grosses, tops = [], [], []
     for row in draws:
-        weights = construction.capped_weights(row, 0.25)
+        weights = construction.capped_weights(row, weight_cap)
         gross = float(np.abs(weights).sum())
         if gross > 0:
             ratios.append(float(np.abs(pair_map @ weights).sum()) / gross)
-    #: the routing graph must connect the universe, or some sum-zero book is untradable
-    degrees = {c: sum(c in p.split("_") for p in tradable_pairs(currencies)) for c in currencies}
+            grosses.append(gross)
+            tops.append(float(np.abs(weights).max() / gross))
     return Routing(
         universe=currencies,
         pairs=tradable_pairs(currencies),
         pair_gross_per_unit_currency_gross=round(float(np.mean(ratios)), 4),
-        connected=all(degrees.values()) and len(tradable_pairs(currencies)) >= len(currencies) - 1,
+        connected=_connected(currencies),
+        mean_gross=round(float(np.mean(grosses)), 4),
+        share_days_gross_below_one=round(float(np.mean(np.array(grosses) < 0.999)), 4),
+        largest_currency_share_of_gross_p95=round(float(np.quantile(tops, 0.95)), 4),
     )
 
 
@@ -126,6 +200,10 @@ def run_book(
         raise ValueError("mu must cover a contiguous run of the return calendar")
     if cost_multiple is not None:
         config = replace(config, cost_multiple=cost_multiple)
+    if config.drawdown_governor:
+        #: the reused layer applies a governor scale this module does not implement;
+        #: ignoring it would change every number silently, so it is refused instead
+        raise NotImplementedError("the drawdown governor is not implemented here")
     pair_map = split_map(currencies)
     mapping = construction.MAPPINGS[config.mapping]
     targeter = (
@@ -152,12 +230,14 @@ def run_book(
         leverage = 1.0
         uncapped = float("nan")
         ex_ante = float("nan")
-        if targeter is not None:
+        at_cap = False
+        if targeter is not None and len(history) > 1:
             window = history[-config.vol_window :]
             cov = np.cov(window, rowvar=False)
             ex_ante = float(np.sqrt(max(held @ cov @ held, 0.0) * days_per_year))
             leverage = targeter.update(ex_ante)
             uncapped = targeter.uncapped
+            at_cap = bool(np.isfinite(uncapped) and uncapped >= config.max_leverage)
         exposure = held * leverage
         delta = exposure - exposure_prev
         cost = construction.charged_cost(delta, config.cost_multiple)
@@ -178,6 +258,8 @@ def run_book(
                 "one_way_traded": float(np.abs(delta).sum()),
                 "leverage": leverage,
                 "uncapped_leverage": uncapped,
+                "at_leverage_cap": at_cap,
+                "raw_target_corr": construction._corr(raw, scores),
                 "held_max_weight": float(np.abs(held).max()),
                 "held_gross": float(np.abs(held).sum()),
                 "ex_ante_vol": ex_ante,
@@ -198,7 +280,11 @@ REPAIR: Final[dict[str, str]] = {
         "the eight-currency layer demeans, neutralises, bands and routes over currencies a "
         "restricted track cannot observe, so weight appears on them"
     ),
-    "fix": "every step is closed inside the observed universe, and routing uses only its pairs",
+    "fix": (
+        "every step is closed inside the observed universe: weights, neutralisation, the band, "
+        "routing over its pairs, and the currency returns themselves, rebuilt from those same "
+        "pairs so the reported P&L is the routed book's"
+    ),
     "verdicts_unchanged": (
         "#485's fast five-day verdict stands as recorded; the repaired re-run is reported "
         "beside it as a robustness check, not as a replacement"
@@ -210,8 +296,10 @@ __all__ = [
     "REPAIR",
     "BookConfig",
     "Routing",
+    "identity_residual",
     "routing_profile",
     "run_book",
     "split_map",
     "tradable_pairs",
+    "universe_panel",
 ]

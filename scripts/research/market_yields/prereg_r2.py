@@ -21,7 +21,9 @@ cost problem — the information was short-lived and never monetisable.
 
 from __future__ import annotations
 
+import json
 import math
+import pathlib
 from typing import Any, Final
 
 from scripts.research.edge_sources import capacity
@@ -34,8 +36,66 @@ DECISION_SPAN: Final[dict[str, str]] = prereg.DECISION_SPAN
 DECISION_DAYS: Final[int] = prereg.DECISION_DAYS
 EFFECTIVE_BREADTH: Final[float] = prereg.EFFECTIVE_BREADTH
 
-#: The one horizon. Chosen for what it means, not for what it scores.
+#: The one horizon. Chosen for what it means, not for what it scores, and named by
+#: the ruling itself rather than picked here.
 PRIMARY_HORIZON_DAYS: Final[int] = 20
+
+#: Above this the book is not holding a state, whatever else it shows.
+TURNOVER_BOUND: Final[float] = 45.0
+
+#: Bands of the screen, disjoint by construction.
+CANDIDATE_NET_SHARPE: Final[float] = 0.3
+MARGINAL_NET_SHARPE: Final[float] = 0.2
+
+
+def _fast_run_record() -> dict[str, float]:
+    """The adjudicated fast book's own numbers, read from its record rather than typed."""
+    path = (
+        pathlib.Path(__file__).resolve().parents[3]
+        / "artifacts/research/market_yields/development.json"
+    )
+    book = json.loads(path.read_text(encoding="utf-8"))["books"]["A_yield_repricing"]
+    return {
+        "realised_turnover": book["summary"]["turnover_round_trips_per_year_per_unit_gross"],
+        "realised_cost_ir_drag": book["ic_comparison"]["realised_cost_ir_drag"],
+        "required_daily_ic_at_that_drag": book["ic_comparison"][
+            "required_daily_ic_for_net_0_3_at_realised_turnover"
+        ],
+        "daily_equivalent_ic_it_showed": book["ic_comparison"]["observed_daily_equivalent_ic"],
+    }
+
+
+def _turnover_expectation() -> dict[str, Any]:
+    """What turnover to expect, from what the fast run actually paid — not from the law.
+
+    Two extrapolations, both declared before the run: the realised-over-design
+    multiplier the fast book showed, and a noise-attenuation model in which part of
+    the measured change is source noise that does not persist.
+    """
+    fast = _fast_run_record()
+    law_five = capacity.band_law(5.0)["turnover"]
+    law_twenty = capacity.band_law(20.0)["turnover"]
+    multiplier = fast["realised_turnover"] / law_five
+    #: an iid-increment five-day difference has lag-one autocorrelation 0.8; the fast
+    #: signal showed 0.661, so the attenuation is 0.661 / 0.8
+    attenuation = 0.661 / 0.8
+    implied_ac1 = (1.0 - 1.0 / 20.0) * attenuation
+    implied_half_life = math.log(0.5) / math.log(implied_ac1)
+    return {
+        "band_law_at_twenty_day_half_life": law_twenty,
+        "realised_over_design_multiplier_from_the_fast_run": round(multiplier, 2),
+        "expected_turnover_by_that_multiplier": round(law_twenty * multiplier, 1),
+        "implied_half_life_under_noise_attenuation": round(implied_half_life, 2),
+        "expected_turnover_under_noise_attenuation": round(
+            capacity.band_law(round(implied_half_life))["turnover"], 1
+        ),
+        "screen_bound": TURNOVER_BOUND,
+        "why_a_bound": (
+            "the hypothesis is that the book holds a state. If turnover does not fall below the "
+            "bound the state was not held, and the formulation is recorded as not supported "
+            "rather than left arguable"
+        ),
+    }
 
 
 def feasibility() -> dict[str, Any]:
@@ -44,7 +104,11 @@ def feasibility() -> dict[str, Any]:
     The band law gives the turnover a book with a twenty-day forecast half-life
     pays, and the cost convention turns that into an information-ratio drag. The
     required IC follows from the drag, the transfer coefficient and the breadth of
-    a five-currency cross-section. Nothing here has seen a yield or a return.
+    a five-currency cross-section — none of which has seen a yield or a return.
+
+    The one block that has is `the_fast_run_paid`: it is read from the committed
+    record of the fast track, not transcribed, and it describes a run that is
+    already adjudicated. No quantity of the slow book appears anywhere here.
     """
     rows = {}
     for half_life in (5.0, 20.0):
@@ -68,17 +132,14 @@ def feasibility() -> dict[str, Any]:
         "decision_years": round(years, 3),
         "rows": rows,
         "detectable_net_sharpe_at_80pct_power": round((1.645 + 0.8416) / math.sqrt(years), 3),
-        "what_the_fast_run_paid": {
-            "realised_turnover": 82.4,
-            "realised_cost_ir_drag": 1.065,
-            "required_daily_ic_at_that_drag": 0.0642,
-            "observed_daily_equivalent_ic": 0.0124,
-        },
+        "the_fast_run_paid": _fast_run_record(),
+        "turnover_expectation": _turnover_expectation(),
         "note": (
-            "a twenty-day forecast should trade at roughly a fifth of the fast book's turnover, "
-            "which lowers the required daily IC from about 6.4% to about 2.7%. The span still "
-            "separates only a net Sharpe near 1.13 at 80% power, so neither outcome is "
-            "decision-grade on its own"
+            "the band law's 18.3 assumes the forecast decays at the lookback. The fast run says "
+            "it will not: a five-day lookback produced a 1.68-day half-life and 82.4 round trips "
+            "against the law's 43.4. The expectation carried into the screen is therefore the "
+            "realised-multiplier one, not the law's. The span still separates only a net Sharpe "
+            "near 1.13 at 80% power, so neither outcome is decision-grade on its own"
         ),
     }
 
@@ -93,11 +154,14 @@ PREREG: Final[dict[str, Any]] = {
         "price history already holds?"
     ),
     "why_this_is_not_the_fast_hypothesis_smoothed": (
-        "the fast track tested a shock: the day-to-day revision of the policy path, which the "
-        "measurement itself makes noisy (the two euro-area sources agree only 0.65 on one-day "
-        "changes). T-R2 tests a state: a persistent repricing of where policy is heading, which "
-        "is a claim about slow adjustment rather than about reaction speed. The two differ in "
-        "what they assert about the market, not only in how often they trade"
+        "the fast track tested a shock: whether FX reacts to the day's revision of the policy "
+        "path. T-R2 tests a state: whether FX adjusts slowly to where the path has moved over a "
+        "month. The two differ in what they assert about the market, not only in how often they "
+        "trade — one is about reaction speed, the other about the speed of adjustment. The "
+        "measurement supports the distinction without carrying it: the two euro-area sources "
+        "agree 0.65 on one-day changes and 0.93 on five-day changes, so a longer window is a "
+        "cleaner measurement of the same underlying quantity, which is a reason the state can be "
+        "measured at all, not a reason it exists"
     ),
     "stage": "Stage 1: one unfitted rule. No fitted coefficient, no ML, no search.",
     "universe": {
@@ -120,7 +184,17 @@ PREREG: Final[dict[str, Any]] = {
             "an economic interpretation distinct from the fast shock, not a better score",
             "a state a book can hold, so turnover falls as a consequence of the hypothesis",
         ],
-        "not_chosen_for_fit": "no horizon was scored before this was frozen; 10, 15, 30, 40, 60 and any EWMA half-life are out of scope",
+        "not_chosen_for_fit": (
+            "no signal lookback other than five has been scored in this programme. The twenty-day "
+            "*target* horizon was scored in the fast run and argues against this choice if anything "
+            "(its ICs there were -0.0099, -0.0455 and +0.0013), so the lookback is not outcome-fitted. "
+            "10, 15, 30, 40, 60 and any EWMA half-life are out of scope"
+        ),
+        "who_named_twenty": (
+            "the ruling of 2026-09-18 named twenty trading days as the primary horizon and forbade a "
+            "grid. The fast track's results document had listed a 20-60 day range among the options "
+            "it returned to Human; the choice within that range was made by Human, not here"
+        ),
         "sign": "+1 — a currency whose relative yield has risen over the horizon is expected to appreciate",
         "sign_frozen": True,
         "inversion_after_the_result_prohibited": True,
@@ -137,6 +211,19 @@ PREREG: Final[dict[str, Any]] = {
         "D_residualised": "the twenty-day rate state cross-sectionally residualised against that FX price control",
     },
     "primary_test": "D",
+    "primary_test_decomposition": (
+        "D = B - beta * C is a rate residual carried together with a reversed momentum leg. The "
+        "fast record already says this makes an unexplained D uninterpretable, so the split is "
+        "pre-registered here rather than requested afterwards: D's P&L is reported as the "
+        "rate-residual leg and the -beta*C leg separately, with the mean and dispersion of the "
+        "daily cross-sectional beta. A positive D whose P&L comes from the momentum leg is not "
+        "rate information and is recorded as such"
+    ),
+    "marginal_tier_authority": (
+        "the ruling of 2026-09-18: a net Sharpe between about 0.2 and 0.5 may be returned as a "
+        "marginal candidate only if turnover is very low, stability high and correlation to what "
+        "the programme already holds low. It is a tier for returning to Human, never for advancing"
+    ),
     "no_control_zoo": (
         "exactly these four books. The control is the currency's own recent return over the same "
         "window, which is available at the decision because the yield is a further day behind. No "
@@ -151,9 +238,26 @@ PREREG: Final[dict[str, Any]] = {
         ),
         "track_1_alpha_model_reused": False,
         "mapping": "linear on the declared score",
-        "factor_neutralisation": "inside the universe",
+        "factor_neutralisation": (
+            "exactly one pass: portfolio.run_book's own neutralize_leading_factor=True, whose "
+            "leading factor is computed over the five universe columns. No separate pre-step, so "
+            "the fast track's post-freeze deviation does not recur and double neutralisation is "
+            "excluded"
+        ),
+        "returns": (
+            "portfolio.universe_panel: currency returns rebuilt from the eight tradable pairs, so "
+            "the reported P&L is the routed book's. Slicing the eight-currency panel would leave "
+            "about 8% of the implied spot exposure on currencies the book does not hold"
+        ),
         "vol_target": 0.10,
+        "max_leverage": 1_000_000.0,
         "leverage_cap": "none; required leverage, routed margin and the gap stress are reported",
+        "cap_behaviour_on_five_names": (
+            "the inherited 0.25 cap binds far harder on five currencies than on eight: gross "
+            "falls below one on about 9.8% of draws against 0.09%, and the largest single-currency "
+            "share of gross reaches 0.50 at the 95th percentile against 0.25. The parameter is "
+            "reused unchanged and the consequence is reported, not tuned away"
+        ),
         "identical_to_the_fast_run_except": "the signal horizon. The layer is the repaired one, which the fast books were also re-run through, so the two are compared like with like",
     },
     "metrics": [
@@ -187,22 +291,30 @@ PREREG: Final[dict[str, Any]] = {
     ),
     "screen": {
         "kind": "development screen, symmetric and exhaustive; seen data decides nothing",
-        "candidate": [
-            "book B gross Sharpe > 0 and book D net Sharpe > 0",
+        "shared_conditions": [
+            "book B gross Sharpe > 0",
             "D carries a positive net increment over the FX price control C",
+            "D's rate-residual leg, not the reversed momentum leg, carries its P&L",
             "a majority of the six contiguous blocks are positive",
             "no single currency dominates: the sign survives dropping any one of the five",
-            "turnover is realistic for the hypothesis and the annual cost does not exceed the gross",
-            "net Sharpe at 1.5x and 2x cost stays positive",
-            "5% annual net is reachable at a target volatility whose gap stress does not force a loss-cut",
+            f"turnover at or below {TURNOVER_BOUND:g} round trips a year per unit gross, so the "
+            "book held the state the hypothesis describes",
+            "the annual charged cost does not exceed the annual gross return",
+            "net Sharpe stays positive at 1.5x and 2x cost",
+            "5% annual net is reachable at a target volatility whose gap stress, measured on this "
+            "universe, does not force a loss-cut",
         ],
+        "candidate": f"every shared condition holds and D's net Sharpe is at least {CANDIDATE_NET_SHARPE}",
         "strong_if": "net Sharpe of D is 0.5 or more",
         "marginal_candidate": (
-            "net Sharpe between about 0.2 and 0.5 with very low turnover, high stability and a "
-            "low correlation to what the programme already holds — returned to Human as marginal, "
-            "never advanced on its own"
+            f"every shared condition holds and D's net Sharpe is in [{MARGINAL_NET_SHARPE}, "
+            f"{CANDIDATE_NET_SHARPE}). The bands do not overlap, so which token is recorded is "
+            "not a choice made after the result. Returned to Human as marginal, never advanced"
         ),
-        "stop": "any result that fails a candidate condition and does not meet the marginal bar",
+        "stop": (
+            "every other outcome, including a net Sharpe below the marginal band and any failure "
+            "of a shared condition at any Sharpe. There is no held state"
+        ),
         "status_candidate": "MARKET_YIELD_SLOW_REPRICING_DEVELOPMENT_CANDIDATE",
         "status_marginal": "MARKET_YIELD_SLOW_REPRICING_MARGINAL_DEVELOPMENT_CANDIDATE",
         "status_stop": "MARKET_YIELD_SLOW_REPRICING_NOT_SUPPORTED_IN_SEEN_DEVELOPMENT",

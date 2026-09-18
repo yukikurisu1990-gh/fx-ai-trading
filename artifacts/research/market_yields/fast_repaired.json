@@ -4,25 +4,25 @@
       "original_gross_sharpe": 0.1442,
       "original_net_sharpe": -0.9209,
       "original_turnover": 82.404,
-      "repaired_gross_sharpe": 0.1254,
-      "repaired_net_sharpe": -0.9259,
-      "repaired_turnover": 82.821
+      "repaired_gross_sharpe": 0.3351,
+      "repaired_net_sharpe": -0.6735,
+      "repaired_turnover": 83.304
     },
     "B_fx_momentum": {
       "original_gross_sharpe": -0.0231,
       "original_net_sharpe": -0.9466,
       "original_turnover": 69.611,
-      "repaired_gross_sharpe": -0.0214,
-      "repaired_net_sharpe": -0.9151,
-      "repaired_turnover": 70.743
+      "repaired_gross_sharpe": 0.0836,
+      "repaired_net_sharpe": -0.7641,
+      "repaired_turnover": 70.896
     },
     "C_residualised": {
       "original_gross_sharpe": 0.7724,
       "original_net_sharpe": -0.5121,
       "original_turnover": 98.093,
-      "repaired_gross_sharpe": 0.6302,
-      "repaired_net_sharpe": -0.6511,
-      "repaired_turnover": 98.398
+      "repaired_gross_sharpe": 0.9171,
+      "repaired_net_sharpe": -0.303,
+      "repaired_turnover": 98.638
     }
   },
   "books": {
@@ -32,48 +32,48 @@
           "block": 1,
           "days": 201,
           "end": "2022-02-10",
-          "net_return": -0.09557,
-          "net_sharpe": -1.0541,
+          "net_return": -0.03604,
+          "net_sharpe": -0.4038,
           "start": "2021-05-06"
         },
         {
           "block": 2,
           "days": 201,
           "end": "2022-11-18",
-          "net_return": -0.02463,
-          "net_sharpe": -0.2603,
+          "net_return": -0.02642,
+          "net_sharpe": -0.2766,
           "start": "2022-02-11"
         },
         {
           "block": 3,
           "days": 201,
           "end": "2023-08-29",
-          "net_return": -0.09773,
-          "net_sharpe": -1.3162,
+          "net_return": -0.03279,
+          "net_sharpe": -0.4276,
           "start": "2022-11-21"
         },
         {
           "block": 4,
           "days": 201,
           "end": "2024-06-07",
-          "net_return": -0.18266,
-          "net_sharpe": -2.122,
+          "net_return": -0.19668,
+          "net_sharpe": -2.486,
           "start": "2023-08-30"
         },
         {
           "block": 5,
           "days": 201,
           "end": "2025-03-19",
-          "net_return": -0.12968,
-          "net_sharpe": -1.3999,
+          "net_return": -0.06165,
+          "net_sharpe": -0.6634,
           "start": "2024-06-10"
         },
         {
           "block": 6,
           "days": 201,
           "end": "2025-12-26",
-          "net_return": 0.04654,
-          "net_sharpe": 0.569,
+          "net_return": 0.00305,
+          "net_sharpe": 0.036,
           "start": "2025-03-20"
         }
       ],
@@ -85,33 +85,33 @@
         "x_USD"
       ],
       "per_currency_gross_pnl": {
-        "CAD": -0.10219,
-        "EUR": -0.04151,
-        "GBP": 0.11413,
-        "JPY": 0.0214,
-        "USD": 0.07347
+        "CAD": -0.02076,
+        "EUR": -0.09756,
+        "GBP": 0.13247,
+        "JPY": 0.04265,
+        "USD": 0.11709
       },
       "summary": {
-        "annual_cost": 0.11472,
+        "annual_cost": 0.10958,
         "days": 1206,
-        "gross_annual_return": 0.01364,
-        "gross_sharpe": 0.1254,
-        "max_drawdown": -0.5896,
-        "mean_currency_gross": 4.067,
-        "mean_held_max_weight": 0.2641,
-        "mean_leverage": 4.4824,
-        "mean_uncapped_leverage": 4.4811,
-        "net_annual_return": -0.10108,
-        "net_sharpe": -0.9259,
-        "net_without_top_5_days": -0.60477,
-        "p95_uncapped_leverage": 7.4676,
-        "realized_annual_vol": 0.10917,
-        "share_days_traded": 0.7919,
-        "top_10_day_share_of_net": -0.4546,
-        "top_1_day_share_of_net": -0.0578,
-        "top_5_day_share_of_net": -0.2502,
-        "turnover_round_trips_per_year_per_unit_gross": 82.821,
-        "worst_day": -0.04039
+        "gross_annual_return": 0.03633,
+        "gross_sharpe": 0.3351,
+        "max_drawdown": -0.46266,
+        "mean_currency_gross": 3.862,
+        "mean_held_max_weight": 0.2644,
+        "mean_leverage": 4.2545,
+        "mean_uncapped_leverage": 4.2462,
+        "net_annual_return": -0.07324,
+        "net_sharpe": -0.6735,
+        "net_without_top_5_days": -0.466,
+        "p95_uncapped_leverage": 7.1117,
+        "realized_annual_vol": 0.10874,
+        "share_days_traded": 0.7877,
+        "top_10_day_share_of_net": -0.617,
+        "top_1_day_share_of_net": -0.0705,
+        "top_5_day_share_of_net": -0.3295,
+        "turnover_round_trips_per_year_per_unit_gross": 83.304,
+        "worst_day": -0.04225
       }
     },
     "B_fx_momentum": {
@@ -120,48 +120,48 @@
           "block": 1,
           "days": 201,
           "end": "2022-02-08",
-          "net_return": -0.17967,
-          "net_sharpe": -2.1175,
+          "net_return": -0.17746,
+          "net_sharpe": -2.0384,
           "start": "2021-05-04"
         },
         {
           "block": 2,
           "days": 201,
           "end": "2022-11-16",
-          "net_return": 0.05948,
-          "net_sharpe": 0.6628,
+          "net_return": 0.03036,
+          "net_sharpe": 0.3428,
           "start": "2022-02-09"
         },
         {
           "block": 3,
           "days": 202,
           "end": "2023-08-28",
-          "net_return": -0.02031,
-          "net_sharpe": -0.2787,
+          "net_return": 0.02559,
+          "net_sharpe": 0.3469,
           "start": "2022-11-17"
         },
         {
           "block": 4,
           "days": 201,
           "end": "2024-06-06",
-          "net_return": -0.12653,
-          "net_sharpe": -1.5388,
+          "net_return": -0.13431,
+          "net_sharpe": -1.6928,
           "start": "2023-08-29"
         },
         {
           "block": 5,
           "days": 201,
           "end": "2025-03-18",
-          "net_return": -0.1037,
-          "net_sharpe": -1.1288,
+          "net_return": 0.00315,
+          "net_sharpe": 0.0361,
           "start": "2024-06-07"
         },
         {
           "block": 6,
           "days": 202,
           "end": "2025-12-26",
-          "net_return": -0.08836,
-          "net_sharpe": -1.1379,
+          "net_return": -0.12256,
+          "net_sharpe": -1.6899,
           "start": "2025-03-19"
         }
       ],
@@ -173,33 +173,33 @@
         "x_USD"
       ],
       "per_currency_gross_pnl": {
-        "CAD": -0.06018,
-        "EUR": -0.08089,
-        "GBP": -0.00305,
-        "JPY": 0.16124,
-        "USD": -0.02784
+        "CAD": -0.13288,
+        "EUR": -0.0504,
+        "GBP": 0.00423,
+        "JPY": 0.20598,
+        "USD": 0.01401
       },
       "summary": {
-        "annual_cost": 0.09353,
+        "annual_cost": 0.08682,
         "days": 1208,
-        "gross_annual_return": -0.00224,
-        "gross_sharpe": -0.0214,
-        "max_drawdown": -0.49211,
-        "mean_currency_gross": 3.8819,
-        "mean_held_max_weight": 0.2647,
-        "mean_leverage": 4.3622,
-        "mean_uncapped_leverage": 4.3566,
-        "net_annual_return": -0.09577,
-        "net_sharpe": -0.9151,
-        "net_without_top_5_days": -0.56665,
-        "p95_uncapped_leverage": 7.1686,
-        "realized_annual_vol": 0.10466,
-        "share_days_traded": 0.7533,
-        "top_10_day_share_of_net": -0.4246,
-        "top_1_day_share_of_net": -0.0558,
-        "top_5_day_share_of_net": -0.2343,
-        "turnover_round_trips_per_year_per_unit_gross": 70.743,
-        "worst_day": -0.03729
+        "gross_annual_return": 0.00854,
+        "gross_sharpe": 0.0836,
+        "max_drawdown": -0.42719,
+        "mean_currency_gross": 3.5953,
+        "mean_held_max_weight": 0.2656,
+        "mean_leverage": 3.9975,
+        "mean_uncapped_leverage": 3.9956,
+        "net_annual_return": -0.07828,
+        "net_sharpe": -0.7641,
+        "net_without_top_5_days": -0.48517,
+        "p95_uncapped_leverage": 6.5109,
+        "realized_annual_vol": 0.10244,
+        "share_days_traded": 0.7459,
+        "top_10_day_share_of_net": -0.5332,
+        "top_1_day_share_of_net": -0.0676,
+        "top_5_day_share_of_net": -0.293,
+        "turnover_round_trips_per_year_per_unit_gross": 70.896,
+        "worst_day": -0.03186
       }
     },
     "C_residualised": {
@@ -208,48 +208,48 @@
           "block": 1,
           "days": 201,
           "end": "2022-02-10",
-          "net_return": -0.12526,
-          "net_sharpe": -1.4478,
+          "net_return": -0.04587,
+          "net_sharpe": -0.5668,
           "start": "2021-05-06"
         },
         {
           "block": 2,
           "days": 201,
           "end": "2022-11-18",
-          "net_return": 0.05289,
-          "net_sharpe": 0.5479,
+          "net_return": 0.03985,
+          "net_sharpe": 0.4149,
           "start": "2022-02-11"
         },
         {
           "block": 3,
           "days": 201,
           "end": "2023-08-29",
-          "net_return": -0.03376,
-          "net_sharpe": -0.4297,
+          "net_return": -0.02698,
+          "net_sharpe": -0.3383,
           "start": "2022-11-21"
         },
         {
           "block": 4,
           "days": 201,
           "end": "2024-06-07",
-          "net_return": -0.09173,
-          "net_sharpe": -1.1034,
+          "net_return": -0.07393,
+          "net_sharpe": -0.8977,
           "start": "2023-08-30"
         },
         {
           "block": 5,
           "days": 201,
           "end": "2025-03-19",
-          "net_return": -0.08749,
-          "net_sharpe": -0.9676,
+          "net_return": 0.00663,
+          "net_sharpe": 0.0731,
           "start": "2024-06-10"
         },
         {
           "block": 6,
           "days": 201,
           "end": "2025-12-26",
-          "net_return": -0.05241,
-          "net_sharpe": -0.6399,
+          "net_return": -0.05616,
+          "net_sharpe": -0.6581,
           "start": "2025-03-20"
         }
       ],
@@ -261,42 +261,44 @@
         "x_USD"
       ],
       "per_currency_gross_pnl": {
-        "CAD": -0.07144,
-        "EUR": 0.00719,
-        "GBP": 0.11339,
-        "JPY": 0.08183,
-        "USD": 0.19445
+        "CAD": 0.11064,
+        "EUR": -0.05837,
+        "GBP": 0.11716,
+        "JPY": 0.01931,
+        "USD": 0.28336
       },
       "summary": {
-        "annual_cost": 0.13857,
+        "annual_cost": 0.13134,
         "days": 1206,
-        "gross_annual_return": 0.068,
-        "gross_sharpe": 0.6302,
-        "max_drawdown": -0.38483,
-        "mean_currency_gross": 4.1348,
-        "mean_held_max_weight": 0.2639,
-        "mean_leverage": 4.6075,
-        "mean_uncapped_leverage": 4.6068,
-        "net_annual_return": -0.07058,
-        "net_sharpe": -0.6511,
-        "net_without_top_5_days": -0.45667,
-        "p95_uncapped_leverage": 7.6488,
-        "realized_annual_vol": 0.10839,
-        "share_days_traded": 0.8466,
-        "top_10_day_share_of_net": -0.641,
-        "top_1_day_share_of_net": -0.0793,
-        "top_5_day_share_of_net": -0.3521,
-        "turnover_round_trips_per_year_per_unit_gross": 98.398,
-        "worst_day": -0.02734
+        "gross_annual_return": 0.09865,
+        "gross_sharpe": 0.9171,
+        "max_drawdown": -0.26371,
+        "mean_currency_gross": 3.9094,
+        "mean_held_max_weight": 0.264,
+        "mean_leverage": 4.3301,
+        "mean_uncapped_leverage": 4.3333,
+        "net_annual_return": -0.03269,
+        "net_sharpe": -0.303,
+        "net_without_top_5_days": -0.26627,
+        "p95_uncapped_leverage": 7.3583,
+        "realized_annual_vol": 0.10791,
+        "share_days_traded": 0.8441,
+        "top_10_day_share_of_net": -1.3458,
+        "top_1_day_share_of_net": -0.1546,
+        "top_5_day_share_of_net": -0.7018,
+        "turnover_round_trips_per_year_per_unit_gross": 98.638,
+        "worst_day": -0.02881
       }
     }
   },
   "classification": "NON_DECISION_BEARING_EXPLORATORY_ONLY",
+  "condition_re_verified": "the binding one: book A's net Sharpe against the advance bar of 0.3. The other screen conditions were not re-run, and one failing condition is enough for the stop",
+  "identity_residual_pnl_vs_routed_book": 4.336808689942018e-19,
   "pair_gross_per_unit_currency_gross": 0.7441,
   "protected_spans_read": false,
   "purpose": "a robustness re-run of the frozen fast five-day signal through the universe-closed layer. It does not replace #485's verdict and no parameter was changed",
   "repair": {
-    "fix": "every step is closed inside the observed universe, and routing uses only its pairs",
+    "fix": "every step is closed inside the observed universe: weights, neutralisation, the band, routing over its pairs, and the currency returns themselves, rebuilt from those same pairs so the reported P&L is the routed book's",
     "problem": "the eight-currency layer demeans, neutralises, bands and routes over currencies a restricted track cannot observe, so weight appears on them",
     "verdicts_unchanged": "#485's fast five-day verdict stands as recorded; the repaired re-run is reported beside it as a robustness check, not as a replacement"
   },

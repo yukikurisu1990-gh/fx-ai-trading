@@ -17,9 +17,11 @@ import json
 import sys
 from typing import Any
 
+import numpy as np
 import pandas as pd
 
 from scripts.research.market_yields import RECORD_DIR, development, portfolio, prereg
+from scripts.research.model_learning import assert_not_protected
 
 
 def run() -> dict[str, Any]:
@@ -27,8 +29,10 @@ def run() -> dict[str, Any]:
 
     universe = list(prereg.UNIVERSE)
     panel = corpus_module.currency_panel()
-    excess_all = panel["currency_excess_return"]
-    days = pd.DatetimeIndex(excess_all.index)
+    days = pd.DatetimeIndex(panel["currency_excess_return"].index)
+    assert_not_protected(str(days[0].date()), str(days[-1].date()))
+    #: returns rebuilt from the universe's own pairs, so the P&L is the routed book's
+    excess = portfolio.universe_panel(panel, universe)
     frames = {
         currency: pd.read_parquet(
             development.ROOT / development.DATA_DIR / f"{currency.lower()}_2y.parquet"
@@ -36,19 +40,17 @@ def run() -> dict[str, Any]:
         for currency in universe
     }
     yield_panel = development.lagged_yield_panel(frames, days)
-    excess = excess_all[universe]
     scores = development.build_scores(yield_panel, excess, development.LOOKBACK)
 
     books: dict[str, Any] = {}
     for name, score in scores.items():
         usable = development._neutralise_within_universe(score, excess).dropna(how="any")
         result = portfolio.run_book(development.BOOK, usable, excess, universe=universe)
-        outside = [c for c in result["daily"].columns if c.startswith("x_")]
         books[name] = {
             "summary": development._summary(result),
             "blocks": development._blocks(result),
             "per_currency_gross_pnl": development._per_currency(result),
-            "exposure_columns": sorted(outside),
+            "exposure_columns": sorted(c for c in result["daily"].columns if c.startswith("x_")),
         }
 
     original = json.loads(
@@ -70,6 +72,8 @@ def run() -> dict[str, Any]:
         for name in books
     }
     routing = portfolio.routing_profile(prereg.UNIVERSE)
+    weights = np.zeros(len(universe))
+    weights[0], weights[1] = 0.25, -0.25
     return {
         "classification": "NON_DECISION_BEARING_EXPLORATORY_ONLY",
         "purpose": (
@@ -83,7 +87,14 @@ def run() -> dict[str, Any]:
         "routing_connects_the_universe": routing.connected,
         "books": books,
         "against_the_recorded_run": comparison,
+        "identity_residual_pnl_vs_routed_book": portfolio.identity_residual(
+            panel, universe, weights
+        ),
         "verdict_unchanged": original["verdict"],
+        "condition_re_verified": (
+            "the binding one: book A's net Sharpe against the advance bar of 0.3. The other "
+            "screen conditions were not re-run, and one failing condition is enough for the stop"
+        ),
         "protected_spans_read": False,
     }
 

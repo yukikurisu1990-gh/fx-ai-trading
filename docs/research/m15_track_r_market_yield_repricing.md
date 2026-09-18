@@ -6,8 +6,8 @@
 判定: **`MARKET_YIELD_REPRICING_FAST_5D_MEASURE_NOT_SUPPORTED_IN_SEEN_DEVELOPMENT`**（裁定の Case B）
 
 > **scope（2026-09-18 の裁定で明確化）**: この判定は **事前登録した fast 5 日 measure** についてのもの。
-> market-yield repricing family 全体が閉じたことを意味しない。slow state 版は T-R2 として別に事前登録・実行した
-> （`docs/research/m15_track_r2_slow_repricing.md`）。
+> market-yield repricing family 全体が閉じたことを意味しない。slow state 版（T-R2）は別に事前登録した
+> （`scripts/research/market_yields/prereg_r2.py`）。**本 doc の時点では未実行**で、結果は別 PR で記録する。
 
 Human + ChatGPT 裁定（2026-09-16）で D-2（非 FX の無料・公開データ取得）が承認され、T-R が最初の track に指定された。
 事前登録は commit `a25d078` で **結果を 1 つも含まない状態** で凍結・push し、そのあとに 1 度だけ実行した。
@@ -131,17 +131,33 @@ G10 の断面を無理に作らず、reduced universe として実行した（�
 
 ### universe-closed 層での再実行（#485 merge 後、判定は変えない）
 
-上の副作用を取り除いた層（`scripts/research/market_yields/portfolio.py`: demean・中立化・band・routing をすべて
-5 通貨 universe の中で閉じ、両脚が universe に入る 8 pair だけで routing）で、**同じ凍結 signal を再実行**した。
+#485 のレビューが見つけた副作用には、**weight 側と return 側の 2 つ**があった。weight 側（band の counter-leg と
+8 通貨 demean）は前者。後者はより大きい: `currency_excess_return` は各通貨のリターンを **PAIRS_20 全体**から作るので、
+CAD のリターンには `AUD_CAD` が、JPY には `CHF_JPY` が入る。5 通貨だけを列で切り出しても、**報告している P&L は
+AUD・CHF・NZD への約 8% の implied exposure を含んだまま**だった。
+
+修復後（`scripts/research/market_yields/portfolio.py`）は、weight・中立化・band・routing に加えて **リターン自体を
+universe の 8 pair から作り直す**。これで `x·r = (M'x)·R` が厳密に成立する（実測残差 **4.3e-19**）。
+つまり報告する P&L は、実際に建てる pair book の P&L と一致する。
+
+**同じ凍結 signal を、この層で再実行:**
 
 | book | gross（元 → 修正後） | net（元 → 修正後） | turnover |
 | --- | --- | --- | --- |
-| A 利回り repricing | +0.144 → **+0.125** | −0.921 → **−0.926** | 82.4 → 82.8 |
-| B FX momentum | −0.023 → −0.021 | −0.947 → −0.915 | 69.6 → 70.7 |
-| C 残差 | +0.772 → **+0.630** | −0.512 → **−0.651** | 98.1 → 98.4 |
+| A 利回り repricing | +0.144 → **+0.335** | −0.921 → **−0.673** | 82.404 → 83.304 |
+| B FX momentum | −0.023 → +0.084 | −0.947 → −0.764 | 69.611 → 70.896 |
+| C 残差 | +0.772 → **+0.917** | −0.512 → **−0.303** | 98.093 → 98.638 |
 
-**判定は動かない。** universe 外の建玉は fast の失敗の原因ではなく、むしろ gross をわずかに押し上げていた側だった。
-記録は `artifacts/research/market_yields/fast_repaired.json`。T-R2 はこの修正後の層で実行する。
+**動いた向きは当初の記述と逆だった。** 前版の本節は「universe 外の建玉が gross を押し上げていた」と書いたが、実測は
+その逆で、**8 通貨のリターン定義が gross を過小に見せていた**（A +0.144 → +0.335、C +0.772 → +0.917）。
+通貨ごとの外部脚の P&L も符号が揃っておらず（A −0.89%、B −2.13%、C +2.21%）、「押し上げていた」という一般化自体が
+誤りだった。訂正する。
+
+**それでも判定は動かない。** 再検証したのは拘束条件そのもの（A の net Sharpe 対 advance バー +0.3）で、
+修正後も **−0.673** と大きく下回る。1 つでも条件を落とせば stop なので、
+`MARKET_YIELD_REPRICING_FAST_5D_MEASURE_NOT_SUPPORTED_IN_SEEN_DEVELOPMENT` は維持する。
+他の screen 条件（block・leave-one-out・gap stress）は再実行していない。記録は
+`artifacts/research/market_yields/fast_repaired.json`。**T-R2 はこの修正後の層と修正後のリターン定義で実行する。**
 
 ### leverage と margin（#484 の枠組み）
 
