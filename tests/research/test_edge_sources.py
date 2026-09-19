@@ -359,8 +359,19 @@ class TestTheBoundaries:
         "scripts.research.continuous_portfolio": frozenset({"CHARGED_ONE_WAY_BP", "construction"}),
         "scripts.research.feasibility.inventory": frozenset({"PAIR_ROUNDTRIP_BP"}),
         "scripts.research.edge_sources": frozenset(
-            {"TARGET_NET_RETURN", "WORKFLOW_STATUS", "candidates", "capacity", "leverage"}
+            {
+                "TARGET_NET_RETURN",
+                "WORKFLOW_STATUS",
+                "candidates",
+                "capacity",
+                "engineering_backlog",
+                "leverage",
+                "rerank",
+            }
         ),
+        #: the 2026-09-19 rerank reads the power arithmetic from its sibling; both are
+        #: judgement and arithmetic modules that touch no market data
+        "scripts.research.edge_sources.rerank": frozenset({"detectable_sharpe"}),
     }
     #: What the package may call on `construction`: signal-free calibration only.
     CONSTRUCTION_USES = frozenset(

@@ -191,7 +191,28 @@ record には `reachable: false` と条件 `true` が同時に載っていた。
 
 ## 7. 判定と、その scope
 
-**`MARKET_YIELD_SLOW_REPRICING_NOT_SUPPORTED_IN_SEEN_DEVELOPMENT`。**
+**`MARKET_YIELD_SLOW_REPRICING_NOT_SUPPORTED_IN_SEEN_DEVELOPMENT`**（2026-09-19 裁定 §3 で正式採用）。
+
+> **正確な言い方**（裁定 §3 が指定）: roughly same gross information was monetized with
+> materially lower turnover, but the result remained too close to break-even to establish
+> a robust economic edge.
+>
+> 「slow にして information が強くなった」とは**書かない**。gross は上がっていない。
+
+### family closure（2026-09-19 裁定 §4）
+
+fast と slow の両方が不支持となったので、**scope を限定して** CLOSED:
+
+**`MARKET_YIELD_REPRICING_SIMPLE_DIRECTIONAL_FAMILY_NOT_SUPPORTED_IN_SEEN_DEVELOPMENT`**
+
+| | 内容 |
+| --- | --- |
+| **閉じる対象** | public daily sovereign-yield data / simple fast directional repricing / simple slow directional repricing / subsequent G10 FX directional return |
+| **これにより禁止** | 10d・15d・30d・40d・60d・EWMA half-life sweep・arbitrary threshold tuning による同 family の救済 |
+| **閉じない** | OIS / market-implied policy path / rate futures / intraday rate repricing / curve shape / term-premium information / rates options / distributional policy-path information |
+
+閉じないものは**別の information set** であり、いずれも未観測である。
+closure は「金利情報に内容が無い」ことではなく、「**この information set をこの cost 水準で monetize できない**」ことの記録である。
 
 意味するもの: **事前登録した 20 日 state の formulation が、この seen span で経済的に成立しなかった。**
 turnover は下がり、**同じ gross を 4 割少ない売買で取れた**が、net は break-even 近傍（break-even cost 倍率 1.07）で、
