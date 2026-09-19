@@ -683,6 +683,76 @@ LEDGER: Final[list[dict[str, Any]]] = [
             "after this result is prohibited"
         ),
     },
+    {
+        "id": "H-027",
+        "document": "docs/research/m15_track_v_real_exchange_rate_valuation.md",
+        "round": "Track T-V real exchange rate valuation, development",
+        "population": (
+            "public pre-2016 history: ECB euro reference rates 1999-01-04 .. 2016-06-01 and BIS "
+            "long consumer prices 1994-01 .. 2016-05, eight G10 currencies, all twenty pairs "
+            "routable, 210 month-end decisions of which 151 carry a position after the "
+            "sixty-month anchor warm-up, 12.62 traded years. The protected fresh pool was "
+            "excluded at the request, not by a local filter, and the span is "
+            "EXPLORATORY_SEEN_DEVELOPMENT_DATA from now on"
+        ),
+        "target": (
+            "spot currency return over the following months from the cross-sectional z-score of "
+            "minus the deviation of each currency's real value — nominal euro value plus lagged "
+            "relative price level — from its own expanding-window anchor"
+        ),
+        "condition_family": (
+            "three pre-registered books: the real valuation signal alone, the same construction "
+            "with the price-level term removed (nominal mean reversion, the control), and the "
+            "valuation signal residualised against that control each month, which is the "
+            "primary test"
+        ),
+        "horizon_family": (
+            "one primary horizon of three months, with monthly decisions; no horizon grid"
+        ),
+        "configurations": (
+            "one unfitted rule, pre-registered at valuation/prereg.py, digest-pinned and "
+            "committed before the first FX observation was requested"
+        ),
+        "prespecified": True,
+        "result": (
+            "the pre-registered incremental IC is the finding: the real valuation signal's "
+            "three-month rank IC is -5.57 percentage points BELOW the nominal control's, "
+            "Newey-West t = -3.34 over 147 decisions — the largest statistic in the exercise. "
+            "The signal the hypothesis is about forecasts the cross-section significantly worse "
+            "than the price statistic it was supposed to improve on. The primary test returns "
+            "gross +0.140 and net +0.127 with a net t of 0.45, below the 0.25 marginal band and "
+            "far below the 0.789 this span separates at 80% power, and six of the twelve frozen "
+            "conditions fail: the tercile ordering inverts for the residual (-0.138% cheap vs "
+            "+0.393% dear) while holding for BOTH the valuation book and the nominal control, "
+            "four of eight leave-one-out drops go negative, only two of six blocks are positive, "
+            "CHF carries 153.9% of the gross, removing the best twelve months flips the sign, "
+            "and 5% annual net needs 39.4% volatility, over the 15% bound and into a loss-cut. "
+            "Cost, for the first time in this programme, did not decide: turnover 1.25 round "
+            "trips a year against a bound of 12, annual cost 0.14%, break-even cost multiple "
+            "10.7 — but 77% of even that turnover is the volatility targeter re-levering, not "
+            "the monthly signal, so the execution layer's own floor is most of it. The positive "
+            "gross is five days: the top five carry 125% of the net and the largest single day "
+            "is the 2015-01-15 SNB de-peg at 41%"
+        ),
+        "status": (
+            "CLOSED - REAL_EXCHANGE_RATE_VALUATION_NOT_SUPPORTED_IN_DEVELOPMENT, for the "
+            "pre-registered spot-only formulation on this span only. Two independent review "
+            "roles corrected the first reading: a look-ahead in the quarterly AU/NZ CPI (the BIS "
+            "stamps one quarterly reading on all three of its months, so a lag counted from the "
+            "stamped month reached readings published weeks later on 34% of decisions) was "
+            "removed, lowering net from +0.165 to +0.127; and the concentration condition was "
+            "re-read on the frozen denominator, which it fails. Disclosed shortfalls, all "
+            "optimistic: the frozen sources carry no interest rate so the P&L is spot-only, and "
+            "the CPI series are revised history rather than vintages. The spot-only direction "
+            "was MEASURED rather than assumed and runs against a rescue — the primary test is "
+            "systematically long the low-inflation currencies (rank correlation -0.63), so the "
+            "omitted carry is negative and its absence overstates this book. It does not show "
+            "that real exchange rate valuation has no content; it shows that on this span the "
+            "ordering is not separable from nominal mean reversion, significantly so. Changing "
+            "the anchor, lag, horizon, cadence, sign or universe after this result is "
+            "prohibited, and adding a carry leg counts as adding a book"
+        ),
+    },
 ]
 
 #: Rough cumulative count of configurations evaluated against the 2025

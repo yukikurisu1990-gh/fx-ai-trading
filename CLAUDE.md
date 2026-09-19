@@ -169,6 +169,28 @@ Three things bind from it.
   span does not reopen it — `+0.235` pips/pair/day against `−0.925` and `+1.236`
   elsewhere is the alternating sign, not a rehabilitation.
 
+**A fourth span is now seen, and it is not OANDA's.** On 2026-09-18 a human +
+ChatGPT ruling authorised T-V to read **public pre-2016 FX history** with the
+protected pool excluded *at the request*, and it was read: ECB euro reference
+rates `1999-01-04 … 2016-06-01` and BIS consumer prices `1994-01 … 2016-05`,
+eight G10 currencies. **That span is `EXPLORATORY_SEEN_DEVELOPMENT_DATA` and can
+never serve as confirmation.** It is a different corpus from the M15 archive —
+daily official reference rates, not broker bars — so it takes none of the three
+archive windows with it, and the fresh pool, the historical OOS slice, the dead
+window and the forward epoch were not touched.
+
+The exclusion is a property of the **request**, not of a filter: every URL
+carries `endPeriod=2016-06-01` (`2016-05` for the monthly series), the builders
+in `scripts/research/valuation/sources.py` parse the bound and refuse anything
+that is not an exact `YYYY-MM-DD` / `YYYY-MM`, and `acquire.guard` refuses a
+downloaded frame whose **maximum** observation reaches the protected start,
+writing no file. The first version of those builders compared strings, so
+`"2016-06"` and `"2016"` — which the server reads as the end of June and the end
+of the year — sorted *below* the bound and passed, and a `str` subclass
+overriding `__ge__` passed too. **That is the same bypass this file records as
+found and closed in the three `exploratory_m15` routes, reintroduced in a new
+route and closed again.** No protected row was in fact requested or read.
+
 Do not read the rest of this section as a snapshot — evaluate it:
 
 0. **PR #451 approved and merged** — done, `4f45515` (2026-08-30). §8.11–§8.13
