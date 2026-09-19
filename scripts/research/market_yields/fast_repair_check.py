@@ -1,0 +1,120 @@
+"""The fast five-day books re-run through the universe-closed layer.
+
+`NON_DECISION_BEARING_EXPLORATORY_ONLY` · `RESEARCH_SCRATCH_NON_AUTHORITATIVE`.
+
+    python -m scripts.research.market_yields.fast_repair_check
+
+#485's verdict stands as recorded. This re-runs the same frozen fast signal
+through the repaired construction: no parameter of the book is touched, and the
+yield score is identical. What does change is the measurement — the currency
+returns are rebuilt from the universe's own pairs — so the momentum control, the
+neutralisation factor and the residual all move with it. That is the point: the
+repaired measurement is the correct one, and the question is whether the fast
+formulation still fails under it.
+"""
+
+from __future__ import annotations
+
+import json
+import sys
+from typing import Any
+
+import numpy as np
+import pandas as pd
+
+from scripts.research.market_yields import RECORD_DIR, development, portfolio, prereg
+from scripts.research.model_learning import assert_not_protected
+
+
+def run() -> dict[str, Any]:
+    from scripts.research.model_learning import corpus as corpus_module
+
+    universe = list(prereg.UNIVERSE)
+    panel = corpus_module.currency_panel()
+    #: returns rebuilt from the universe's own pairs, so the P&L is the routed book's
+    excess = portfolio.universe_panel(panel, universe)
+    days = pd.DatetimeIndex(excess.index)
+    assert_not_protected(str(days[0].date()), str(days[-1].date()))
+    frames = {
+        currency: pd.read_parquet(
+            development.ROOT / development.DATA_DIR / f"{currency.lower()}_2y.parquet"
+        )
+        for currency in universe
+    }
+    yield_panel = development.lagged_yield_panel(frames, days)
+    scores = development.build_scores(yield_panel, excess, development.LOOKBACK)
+
+    books: dict[str, Any] = {}
+    for name, score in scores.items():
+        usable = development._neutralise_within_universe(score, excess).dropna(how="any")
+        result = portfolio.run_book(development.BOOK, usable, excess, universe=universe)
+        books[name] = {
+            "summary": development._summary(result),
+            "blocks": development._blocks(result),
+            "per_currency_gross_pnl": development._per_currency(result),
+            "exposure_columns": sorted(c for c in result["daily"].columns if c.startswith("x_")),
+        }
+
+    original = json.loads(
+        (development.ROOT / RECORD_DIR / "development.json").read_text(encoding="utf-8")
+    )
+    comparison = {
+        name: {
+            "original_gross_sharpe": original["books"][name]["summary"]["gross_sharpe"],
+            "repaired_gross_sharpe": books[name]["summary"]["gross_sharpe"],
+            "original_net_sharpe": original["books"][name]["summary"]["net_sharpe"],
+            "repaired_net_sharpe": books[name]["summary"]["net_sharpe"],
+            "original_turnover": original["books"][name]["summary"][
+                "turnover_round_trips_per_year_per_unit_gross"
+            ],
+            "repaired_turnover": books[name]["summary"][
+                "turnover_round_trips_per_year_per_unit_gross"
+            ],
+        }
+        for name in books
+    }
+    routing = portfolio.routing_profile(prereg.UNIVERSE)
+    weights = np.zeros(len(universe))
+    weights[0], weights[1] = 0.25, -0.25
+    return {
+        "classification": "NON_DECISION_BEARING_EXPLORATORY_ONLY",
+        "purpose": (
+            "a robustness re-run of the frozen fast five-day signal through the universe-closed "
+            "layer. It does not replace #485's verdict and no parameter was changed"
+        ),
+        "repair": portfolio.REPAIR,
+        "universe": universe,
+        "tradable_pairs": list(routing.pairs),
+        "pair_gross_per_unit_currency_gross": routing.pair_gross_per_unit_currency_gross,
+        "routing_connects_the_universe": routing.connected,
+        "books": books,
+        "against_the_recorded_run": comparison,
+        "identity_check": portfolio.identity_check(panel, universe, weights),
+        "verdict_unchanged": original["verdict"],
+        "condition_re_verified": (
+            "the binding one: book A's net Sharpe against the advance bar of 0.3. The other "
+            "screen conditions were not re-run, and one failing condition is enough for the stop"
+        ),
+        "protected_spans_read": False,
+    }
+
+
+def main() -> int:
+    record = run()
+    path = development.ROOT / RECORD_DIR / "fast_repaired.json"
+    path.write_text(
+        json.dumps(record, indent=2, ensure_ascii=False, sort_keys=True, default=str) + "\n",
+        encoding="utf-8",
+    )
+    for name, row in record["against_the_recorded_run"].items():
+        print(
+            f"{name}: gross {row['original_gross_sharpe']:+.3f}"
+            f" -> {row['repaired_gross_sharpe']:+.3f}"
+            f" | net {row['original_net_sharpe']:+.3f} -> {row['repaired_net_sharpe']:+.3f}"
+            f" | turnover {row['original_turnover']} -> {row['repaired_turnover']}"
+        )
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

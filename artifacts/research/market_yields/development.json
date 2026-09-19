@@ -461,9 +461,9 @@
       "kind": "development screen, symmetric and exhaustive; seen data decides nothing",
       "no_automatic_progress_to_fresh": true,
       "returns_to_human": "either way, the result goes back to Human + ChatGPT",
-      "status_if_advance": "MARKET_YIELD_REPRICING_DEVELOPMENT_CANDIDATE",
-      "status_if_data_fails": "MARKET_YIELD_REPRICING_DATA_NOT_DECISION_GRADE",
-      "status_if_stop": "MARKET_YIELD_REPRICING_NOT_SUPPORTED_IN_SEEN_DEVELOPMENT",
+      "status_if_advance": "MARKET_YIELD_REPRICING_FAST_5D_MEASURE_DEVELOPMENT_CANDIDATE",
+      "status_if_data_fails": "MARKET_YIELD_REPRICING_FAST_5D_MEASURE_DATA_NOT_DECISION_GRADE",
+      "status_if_stop": "MARKET_YIELD_REPRICING_FAST_5D_MEASURE_NOT_SUPPORTED_IN_SEEN_DEVELOPMENT",
       "stop": "any result that fails even one advance condition; there is no held state"
     },
     "signal": {
@@ -522,7 +522,7 @@
     },
     "note": "a development screen, not decision-grade in either direction: the span separates a net Sharpe of about 1.13 at 80% power, so neither a pass nor a fail here settles whether yield repricing leads FX",
     "positive_blocks": 1,
-    "verdict": "MARKET_YIELD_REPRICING_NOT_SUPPORTED_IN_SEEN_DEVELOPMENT"
+    "verdict": "MARKET_YIELD_REPRICING_FAST_5D_MEASURE_NOT_SUPPORTED_IN_SEEN_DEVELOPMENT"
   },
   "span": {
     "first": "2021-04-27",
@@ -535,6 +535,6 @@
     "JPY",
     "USD"
   ],
-  "verdict": "MARKET_YIELD_REPRICING_NOT_SUPPORTED_IN_SEEN_DEVELOPMENT",
+  "verdict": "MARKET_YIELD_REPRICING_FAST_5D_MEASURE_NOT_SUPPORTED_IN_SEEN_DEVELOPMENT",
   "workflow_status": "MARKET_YIELD_REPRICING_DEVELOPMENT_IN_PROGRESS"
 }

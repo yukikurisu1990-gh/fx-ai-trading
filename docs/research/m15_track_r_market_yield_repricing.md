@@ -3,7 +3,11 @@
 `NON_DECISION_BEARING_EXPLORATORY_ONLY` · `RESEARCH_SCRATCH_NON_AUTHORITATIVE`
 · `PRODUCTION_READINESS_NOT_CLAIMED`
 
-判定: **`MARKET_YIELD_REPRICING_NOT_SUPPORTED_IN_SEEN_DEVELOPMENT`**（裁定の Case B）
+判定: **`MARKET_YIELD_REPRICING_FAST_5D_MEASURE_NOT_SUPPORTED_IN_SEEN_DEVELOPMENT`**（裁定の Case B）
+
+> **scope（2026-09-18 の裁定で明確化）**: この判定は **事前登録した fast 5 日 measure** についてのもの。
+> market-yield repricing family 全体が閉じたことを意味しない。slow state 版（T-R2）は別に事前登録した
+> （`scripts/research/market_yields/prereg_r2.py`）。**本 doc の時点では未実行**で、結果は別 PR で記録する。
 
 Human + ChatGPT 裁定（2026-09-16）で D-2（非 FX の無料・公開データ取得）が承認され、T-R が最初の track に指定された。
 事前登録は commit `a25d078` で **結果を 1 つも含まない状態** で凍結・push し、そのあとに 1 度だけ実行した。
@@ -125,6 +129,36 @@ G10 の断面を無理に作らず、reduced universe として実行した（�
 どちらも signal ではなく層の性質。判定（net −0.92 対 閾値 +0.3）を動かす大きさではないが、**将来 universe を絞って走らせるなら、
 0 和に頼らず明示的に除外する形に変える**のが正しい。
 
+### universe-closed 層での再実行（#485 merge 後、判定は変えない）
+
+#485 のレビューが見つけた副作用には、**weight 側と return 側の 2 つ**があった。weight 側（band の counter-leg と
+8 通貨 demean）は前者。後者はより大きい: `currency_excess_return` は各通貨のリターンを **PAIRS_20 全体**から作るので、
+CAD のリターンには `AUD_CAD` が、JPY には `CHF_JPY` が入る。5 通貨だけを列で切り出しても、**報告している P&L は
+AUD・CHF・NZD への約 8% の implied exposure を含んだまま**だった。
+
+修復後（`scripts/research/market_yields/portfolio.py`）は、weight・中立化・band・routing に加えて **リターン自体を
+universe の 8 pair から作り直す**。これで `x·r = (M'x)·R` が厳密に成立する（脚の欠けた 1 日を除外した 1212 日で、実測残差 **4.3e-19**）。
+つまり報告する P&L は、実際に建てる pair book の P&L と一致する。
+
+**同じ凍結 signal を、この層で再実行:**
+
+| book | gross（元 → 修正後） | net（元 → 修正後） | turnover |
+| --- | --- | --- | --- |
+| A 利回り repricing | +0.144 → **+0.279** | −0.921 → **−0.727** | 82.404 → 83.336 |
+| B FX momentum | −0.023 → +0.122 | −0.947 → −0.722 | 69.611 → 70.788 |
+| C 残差 | +0.772 → **+0.863** | −0.512 → **−0.359** | 98.093 → 98.82 |
+
+**動いた向きは当初の記述と逆だった。** 前版の本節は「universe 外の建玉が gross を押し上げていた」と書いたが、実測は
+その逆で、**8 通貨のリターン定義が gross を過小に見せていた**（A +0.144 → +0.279、C +0.772 → +0.863）。
+通貨ごとの外部脚の P&L も符号が揃っておらず（A −0.89%、B −2.13%、C +2.21%）、「押し上げていた」という一般化自体が
+誤りだった。訂正する。
+
+**それでも判定は動かない。** 再検証したのは拘束条件そのもの（A の net Sharpe 対 advance バー +0.3）で、
+修正後も **−0.727** と大きく下回る。1 つでも条件を落とせば stop なので、
+`MARKET_YIELD_REPRICING_FAST_5D_MEASURE_NOT_SUPPORTED_IN_SEEN_DEVELOPMENT` は維持する。
+他の screen 条件（block・leave-one-out・gap stress）は再実行していない。記録は
+`artifacts/research/market_yields/fast_repaired.json`。**T-R2 はこの修正後の層と修正後のリターン定義で実行する。**
+
 ### leverage と margin（#484 の枠組み）
 
 10% vol target なら平均 risk leverage C **4.29**、routed margin は equity の **13.8%**（平均）。gap stress では equity 比例の
@@ -142,23 +176,30 @@ sizing なら loss-cut に至らず、**固定 notional のままなら至る**�
 | 6 block の過半が正 | 満たさない（1 / 6） |
 | 10% vol が gap stress の内側 | 満たす |
 
-→ **stop**。`MARKET_YIELD_REPRICING_NOT_SUPPORTED_IN_SEEN_DEVELOPMENT`。
+→ **stop**。`MARKET_YIELD_REPRICING_FAST_5D_MEASURE_NOT_SUPPORTED_IN_SEEN_DEVELOPMENT`。
 
 ## 8. 何が決まって、何が決まっていないか
 
 **決まったこと（この設計について）**
 
-- **事前登録した設計は、この seen span では経済的に成立しない。** C については理由は cost で、それは推定ではなく実測
-  （turnover × 課金規約）。**A は cost がゼロでも advance 条件に届かない**（gross +0.144、t = 0.32）。
+- **事前登録した設計は、この seen span では経済的に成立しない。** 理由は cost で、それは推定ではなく実測
+  （turnover × 課金規約）。修復後の測定でも A の gross は **+0.279**（t = 0.61）で、**cost がゼロでも
+  advance 条件 net ≥ 0.3 にわずかに届かない**。
 - 速い repricing measure（半減期 1.2〜1.7 日）を band 0.10 の通貨 book で運ぶと、実測 turnover が要求する日次 IC 6.4〜7.4% に対し、
   観測の日次換算は 1.2〜2.5%（不足 3.0〜5.2 倍）。
-- FX momentum 単独（B）の gross は **−0.023（t ≈ −0.05）で 0 と区別できない**。net が負なのは 9.57% の cost によるもので、
-  **momentum family について何かを再確認したことにはならない**（検出力不足の null）。
+- FX momentum 単独（B）の gross は、記録した測定で −0.023（t ≈ −0.05）、修復後の測定で **+0.122**
+  （t = 0.27）。どちらも **0 と区別できない**。net が負なのは cost によるもので、**momentum family について何かを
+  再確認したことにはならない**（検出力不足の null）。
 
 **決まっていないこと**
 
-- **「市場利回りの repricing が G10 FX を先行するか」は決まっていない。** C の gross +0.772 は、4.81 年・SE 約 0.46 で
-  t ≈ 1.7 にすぎない。事前に記録したとおり、この span は net 1.13 未満を分離できない。
+- **「市場利回りの repricing が G10 FX を先行するか」は決まっていない。** C の gross は、記録した測定で +0.772
+  （t ≈ 1.7）、**修復後の正しい測定で +0.863（4.78 年・SE 約 0.46 で t = 1.89）**。
+  t が上がったことを「edge が見つかった」と読んではならない。理由は 4 つあり、いずれも事前に記録済み:
+  (1) この span は 80% の検出力で net 1.13 未満を分離できない、(2) net は −0.359
+  で advance 条件に遠く届かない、(3) C は momentum の逆脚を内包し、その分解を本記録は行っていない、
+  (4) gross の t は 1 本の book の 1 回の測定で、多重性の補正を受けていない。**この数値を根拠に fast formulation を
+  再開しない。**
 - 増分の向きは **示唆的**ではある（C の gross +0.77 > A +0.14 > B −0.02、IC も C が最大）。しかし **これは decision-grade ではなく、
   結果を見たあとで lookback や horizon を変えることは事前登録が禁じている**。
 - さらに C = A − β·B は **momentum の逆向きの脚を内包する**。B の gross はほぼ 0 なのでその寄与は小さいと思われるが、

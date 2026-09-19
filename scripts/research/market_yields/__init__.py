@@ -33,11 +33,22 @@ from typing import Final
 TRACK: Final[str] = "T-R"
 WORKFLOW_STATUS: Final[str] = "MARKET_YIELD_REPRICING_DEVELOPMENT_IN_PROGRESS"
 
-#: The three outcomes the ruling allows this track to reach.
+#: What each track may conclude. The fast statuses name the measure they belong to:
+#: a formulation failing is not the family closing.
 OUTCOMES: Final[tuple[str, ...]] = (
-    "MARKET_YIELD_REPRICING_DEVELOPMENT_CANDIDATE",
-    "MARKET_YIELD_REPRICING_NOT_SUPPORTED_IN_SEEN_DEVELOPMENT",
-    "MARKET_YIELD_REPRICING_DATA_NOT_DECISION_GRADE",
+    "MARKET_YIELD_REPRICING_FAST_5D_MEASURE_DEVELOPMENT_CANDIDATE",
+    "MARKET_YIELD_REPRICING_FAST_5D_MEASURE_NOT_SUPPORTED_IN_SEEN_DEVELOPMENT",
+    "MARKET_YIELD_REPRICING_FAST_5D_MEASURE_DATA_NOT_DECISION_GRADE",
+    "MARKET_YIELD_SLOW_REPRICING_DEVELOPMENT_CANDIDATE",
+    "MARKET_YIELD_SLOW_REPRICING_MARGINAL_DEVELOPMENT_CANDIDATE",
+    "MARKET_YIELD_SLOW_REPRICING_NOT_SUPPORTED_IN_SEEN_DEVELOPMENT",
+    "MARKET_YIELD_SLOW_REPRICING_DATA_NOT_DECISION_GRADE",
+)
+
+#: Only with both the fast shock and the slow state unsupported, and never reaching
+#: OIS, intraday rate futures, the market-implied policy path or curve non-linearities.
+FAMILY_BOUNDARY: Final[str] = (
+    "MARKET_YIELD_REPRICING_SIMPLE_DIRECTIONAL_FAMILY_NOT_SUPPORTED_IN_SEEN_DEVELOPMENT"
 )
 
 #: G10 currencies of the corpus, in the order the execution layer uses.
@@ -48,4 +59,12 @@ CURRENCIES: Final[tuple[str, ...]] = ("AUD", "CAD", "CHF", "EUR", "GBP", "JPY", 
 DATA_DIR: Final[str] = "artifacts/track_a_scratch/market_yields"
 RECORD_DIR: Final[str] = "artifacts/research/market_yields"
 
-__all__ = ["CURRENCIES", "DATA_DIR", "OUTCOMES", "RECORD_DIR", "TRACK", "WORKFLOW_STATUS"]
+__all__ = [
+    "CURRENCIES",
+    "DATA_DIR",
+    "FAMILY_BOUNDARY",
+    "OUTCOMES",
+    "RECORD_DIR",
+    "TRACK",
+    "WORKFLOW_STATUS",
+]
