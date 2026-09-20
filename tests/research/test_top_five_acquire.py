@@ -41,9 +41,40 @@ class TestNetworkNeedsTheOptInEveryTime:
         for escape in ("subprocess", "shutil.which", "os.system", "popen"):
             assert escape not in source.lower(), escape
 
-    def test_a_refusal_is_not_swallowed_into_a_retry(self) -> None:
-        fetch_source = inspect.getsource(acquire._fetch)
-        assert "except" not in fetch_source
+    def test_a_refusal_is_not_swallowed_into_a_retry(self, monkeypatch) -> None:
+        """再試行が入っても、**拒否は 1 回目で抜ける**こと。
+
+        `_fetch` は一過性の切断だけを再試行する。拒否まで再試行すれば、guard は
+        「何度も聞かれて最後に通る」ものに変わってしまう。
+        """
+        monkeypatch.delenv(acquire.OPT_IN_ENV, raising=False)
+        calls = {"n": 0}
+        real = acquire.require_opt_in
+
+        def counted(*args, **kwargs):
+            calls["n"] += 1
+            return real(*args, **kwargs)
+
+        monkeypatch.setattr(acquire, "require_opt_in", counted)
+        with pytest.raises(AcquisitionRefusedError):
+            acquire._fetch("https://example.invalid/never-requested")
+        assert calls["n"] == 1, "拒否が再試行されている"
+
+    def test_the_refusal_type_is_outside_the_retried_set(self) -> None:
+        from scripts.research.acquisition_safety import NETWORK_FAILURES
+
+        assert not issubclass(AcquisitionRefusedError, NETWORK_FAILURES)
+
+    def test_a_provider_status_is_not_retried(self) -> None:
+        """404 は相手の返事である。何度聞いても 404 なので再試行しない。"""
+        source = inspect.getsource(acquire._fetch)
+        assert "except urllib.error.HTTPError" in source
+        assert "raise" in source.split("except urllib.error.HTTPError")[1][:120]
+
+    def test_the_permission_is_checked_inside_the_retry_loop(self) -> None:
+        source = inspect.getsource(acquire._fetch)
+        loop = source.index("for _ in range(ATTEMPTS)")
+        assert source.index("require_opt_in", loop) > loop
 
 
 class TestNothingOutsideTheSeenSpansSurvivesTruncation:
@@ -73,11 +104,15 @@ class TestNothingOutsideTheSeenSpansSurvivesTruncation:
 
 
 class TestTheParsersReturnOnlyTruncatedFrames:
-    def test_every_parser_goes_through_truncate(self) -> None:
+    def test_every_daily_parser_goes_through_truncate(self) -> None:
         """raw frame が外へ出る経路を持たせない。"""
         for key, parser in acquire.PARSERS.items():
-            target = parser if key in {"vix", "wti"} else acquire._parse_generic_daily
-            assert "_truncate" in inspect.getsource(target), key
+            source = inspect.getsource(parser)
+            if key == "tic_s1":
+                #: 月次は vintage 日で切る。観測月で切ると保護 pool の月を抱える
+                assert "is_seen" in source and "months=2" in source, key
+            else:
+                assert "_truncate" in source, key
 
     def test_every_source_with_a_parser_is_a_frozen_source(self) -> None:
         for key in acquire.PARSERS:

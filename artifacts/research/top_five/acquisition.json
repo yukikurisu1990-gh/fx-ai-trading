@@ -1,0 +1,299 @@
+{
+ "authority": "2026-09-21 Human + ChatGPT 裁定 §5",
+ "finished_utc": "2026-09-20T21:59:16.306751+00:00",
+ "scope": "public / free source のみ。protected span は request / truncation の両方で除外",
+ "sources": {
+  "boc_10y": {
+   "bounded_request": true,
+   "content_hash": [
+    "c64ae5de3cd7fbdc9f2371cbd60e6f4275927bf43ee75bd851231fba83ed7e5c",
+    "2115eec6ee0fad947a0bfbdd6143d5efe83130eac6678089a92df1ca80aaadf3"
+   ],
+   "coverage": {
+    "columns": [
+     "boc_10y"
+    ],
+    "first": "2001-01-02",
+    "last": "2025-12-24",
+    "rows": 5024
+   },
+   "frequency": "daily",
+   "http_status": 200,
+   "key": "boc_10y",
+   "provider": "Bank of Canada",
+   "publication_timing": "22:30 CET（両 span で 2 営業日 lag）",
+   "raw_bytes": 106390,
+   "request_parameters": {
+    "method": "GET",
+    "timeout_seconds": 120,
+    "user_agent": "Mozilla/5.0 fx-ai-trading research acquisition"
+   },
+   "result": "OK",
+   "retrieval_timestamp": "2026-09-20T21:59:08.773782+00:00",
+   "stored": "artifacts\\track_a_scratch\\top_five\\boc_10y.parquet",
+   "track": "T3",
+   "truncated_to_seen_spans": true,
+   "url": [
+    "https://www.bankofcanada.ca/valet/observations/BD.CDN.10YR.DQ.YLD/csv?start_date=1999-01-04&end_date=2016-06-01",
+    "https://www.bankofcanada.ca/valet/observations/BD.CDN.10YR.DQ.YLD/csv?start_date=2021-04-27&end_date=2025-12-26"
+   ]
+  },
+  "boe_10y": {
+   "bounded_request": true,
+   "content_hash": [
+    "0a534e3617ee5ea7753faf96f90d6522603c8a5d56a784243571c233fce3f45e",
+    "a2c5f96ab20dfdbc0e3af7ee49dac3f10aaa922ded26c304262a5e8b785fa543"
+   ],
+   "coverage": {
+    "columns": [
+     "boe_10y"
+    ],
+    "first": "1999-01-04",
+    "last": "2025-12-24",
+    "rows": 5578
+   },
+   "frequency": "daily",
+   "http_status": 200,
+   "key": "boe_10y",
+   "provider": "Bank of England",
+   "publication_timing": "夕刻（両 span で 2 営業日 lag）",
+   "raw_bytes": 110973,
+   "request_parameters": {
+    "method": "GET",
+    "timeout_seconds": 120,
+    "user_agent": "Mozilla/5.0 fx-ai-trading research acquisition"
+   },
+   "result": "OK",
+   "retrieval_timestamp": "2026-09-20T21:59:12.203821+00:00",
+   "stored": "artifacts\\track_a_scratch\\top_five\\boe_10y.parquet",
+   "track": "T3",
+   "truncated_to_seen_spans": true,
+   "url": [
+    "https://www.bankofengland.co.uk/boeapps/database/_iadb-fromshowcolumns.asp?csv.x=yes&Datefrom=04/Jan/1999&Dateto=01/Jun/2016&SeriesCodes=IUDMNZC&CSVF=TN&UsingCodes=Y&VPD=Y&VFD=N",
+    "https://www.bankofengland.co.uk/boeapps/database/_iadb-fromshowcolumns.asp?csv.x=yes&Datefrom=27/Apr/2021&Dateto=26/Dec/2025&SeriesCodes=IUDMNZC&CSVF=TN&UsingCodes=Y&VPD=Y&VFD=N"
+   ]
+  },
+  "bund_10y": {
+   "bounded_request": false,
+   "content_hash": "57ed4da71bdafb4cd69d1726838e0bc0a9f45944ebef304b4eb378ceeaa7575e",
+   "coverage": {
+    "columns": [
+     "bund_10y"
+    ],
+    "first": "1999-01-04",
+    "last": "2025-12-23",
+    "rows": 5618
+   },
+   "frequency": "daily",
+   "http_status": 200,
+   "key": "bund_10y",
+   "provider": "Deutsche Bundesbank",
+   "publication_timing": "夕刻（両 span で 2 営業日 lag）",
+   "raw_bytes": 230846,
+   "request_parameters": {
+    "method": "GET",
+    "timeout_seconds": 120,
+    "user_agent": "Mozilla/5.0 fx-ai-trading research acquisition"
+   },
+   "result": "OK",
+   "retrieval_timestamp": "2026-09-20T21:59:06.689468+00:00",
+   "stored": "artifacts\\track_a_scratch\\top_five\\bund_10y.parquet",
+   "track": "T3",
+   "truncated_to_seen_spans": true,
+   "url": "https://api.statistiken.bundesbank.de/rest/data/BBSIS/D.I.ZST.ZI.EUR.S1311.B.A604.R10XX.R.A.A._Z._Z.A?format=csv&lang=en"
+  },
+  "snb_10y": {
+   "bounded_request": false,
+   "content_hash": "35b0a1dd49eff0a66b9eb7983eaaf2d566e8396af0a041be7b08a1e97180f8fe",
+   "coverage": {
+    "columns": [
+     "snb_10y"
+    ],
+    "first": "1999-01-04",
+    "last": "2025-07-31",
+    "rows": 5442
+   },
+   "frequency": "daily",
+   "http_status": 200,
+   "key": "snb_10y",
+   "provider": "Swiss National Bank",
+   "publication_timing": "同等以降（両 span で 2 営業日 lag）",
+   "raw_bytes": 5461632,
+   "request_parameters": {
+    "method": "GET",
+    "timeout_seconds": 120,
+    "user_agent": "Mozilla/5.0 fx-ai-trading research acquisition"
+   },
+   "result": "OK",
+   "retrieval_timestamp": "2026-09-20T21:59:09.201530+00:00",
+   "stored": "artifacts\\track_a_scratch\\top_five\\snb_10y.parquet",
+   "track": "T3",
+   "truncated_to_seen_spans": true,
+   "url": "https://data.snb.ch/api/cube/rendoblid/data/csv/en"
+  },
+  "tic_s1": {
+   "bounded_request": false,
+   "content_hash": "b3339d7078e9e951badcb317b7760e541026df2a1d4f602003f22bb75b0d9d8e",
+   "coverage": {
+    "columns": [
+     "tic_s1"
+    ],
+    "first": "1998-11-01",
+    "last": "2023-01-01",
+    "rows": 233
+   },
+   "frequency": "monthly",
+   "http_status": 200,
+   "key": "tic_s1",
+   "provider": "U.S. Department of the Treasury (TIC)",
+   "publication_timing": "第 m 月の値は m+2 月中旬。使用は m+2 月末以降",
+   "raw_bytes": 3212186,
+   "request_parameters": {
+    "method": "GET",
+    "timeout_seconds": 120,
+    "user_agent": "Mozilla/5.0 fx-ai-trading research acquisition"
+   },
+   "result": "OK",
+   "retrieval_timestamp": "2026-09-20T21:59:15.781536+00:00",
+   "stored": "artifacts\\track_a_scratch\\top_five\\tic_s1.parquet",
+   "track": "T5",
+   "truncated_to_seen_spans": true,
+   "url": "https://ticdata.treasury.gov/Publish/s1_globl.csv"
+  },
+  "ust_10y": {
+   "bounded_request": true,
+   "content_hash": [
+    "36bff57ac81eb582c68e57479c0ad4fbc4ee090e9028886d49b7f1ce434a5aea",
+    "a8cde4c7a757ac74f7b6257d3778db73a215483002317e19ee9e3f3c524a8a24",
+    "bc48181de2b452d19b159bc12354653f64ce3b119d7072dbf4aa92fa6998799c",
+    "33f84b7c6f50bf3ea0ca4703cb51c8d469bbb93dad92f181d42132b7e2359bf7",
+    "0c255188cf596e5bc42a4e00b9a60649df01fb95a58a3382d7586da83e5cc0e0",
+    "0f0561773c7a3220fe1eded9a7ba0645790e9239fd3cf569158171fedf2dc969",
+    "ecf2ab3d1ca1b6ee8e916fee90474028c2d1221b8d236131621ad58020db0552",
+    "cdbdcd8b32735caa453e00280232ff70c7012c055b7daf7b8cf1d9aaa8c66bfe",
+    "297f6be4059a605b1ec0f266eb7b8467c3d40504a0dd53341746223276e6e6d8",
+    "686db01584dd45f67addc243ee0c42339d491171a0e947c8f88ecac78ee0e9ea",
+    "3c9294cfa71136e1d5330b09a00bf996ecf86c865d593d7ee954d11984a5bdb1",
+    "f973bd3988989d3e408655cbc7fed89faefbaa8a1c111ec313241fb47fc75e2d",
+    "224eaf29d6fe7cbccc746c7a8c845f189cf91424bab43f46ca386a74e98d81f7",
+    "9c889b6e3cb87f40f3760bddb69f05f7525800ac480ef5712b2cf318765fa184",
+    "1e1a98426d9274afcc68467962f9238104db775b8765e48f45ac7488b33ff338",
+    "8d560698e03e4c0d8d22ff8be7f5f7c5c0d472b1e33a22b6a75373a57e84aa0f",
+    "b7665d1ce46d6ed6d08fbda34aae1831de38e274e3c7caed81904042aac9b5bc",
+    "b4d0a8d86e2734bc64d84d9a9824434d841737621582daeac58f13c7129f325c",
+    "1be57e49c63a99f6002431a1030c8fbe539b71066c3eaf14f9f58ddc34492cea",
+    "c33cb2758e5e34c2c23b7ab759d18681091860f3f9e5960112859f64f31cd814",
+    "edb7f3904e11dcaa502cdcc03ad9b1b16c893802d166ce9bc5fa1118251249d4",
+    "6775840b76cd7fd41121f61d6f6c60184eca6b2ba49954ec7372c463cbeef34d",
+    "cf2fa3da7f160384b63d2ead698532b1d76cd9f789ce4911e2304db85b14e6d5"
+   ],
+   "coverage": {
+    "columns": [
+     "ust_10y"
+    ],
+    "first": "1999-01-04",
+    "last": "2025-12-26",
+    "rows": 5525
+   },
+   "frequency": "daily",
+   "http_status": 200,
+   "key": "ust_10y",
+   "provider": "U.S. Department of the Treasury",
+   "publication_timing": "US 21:30-24:00 CET（両 span で 2 営業日 lag）",
+   "raw_bytes": 385421,
+   "request_parameters": {
+    "method": "GET",
+    "timeout_seconds": 120,
+    "user_agent": "Mozilla/5.0 fx-ai-trading research acquisition"
+   },
+   "result": "OK",
+   "retrieval_timestamp": "2026-09-20T21:58:51.946497+00:00",
+   "stored": "artifacts\\track_a_scratch\\top_five\\ust_10y.parquet",
+   "track": "T3",
+   "truncated_to_seen_spans": true,
+   "url": [
+    "https://home.treasury.gov/resource-center/data-chart-center/interest-rates/daily-treasury-rates.csv/1999/all?type=daily_treasury_yield_curve&field_tdr_date_value=1999&page&_format=csv",
+    "https://home.treasury.gov/resource-center/data-chart-center/interest-rates/daily-treasury-rates.csv/2000/all?type=daily_treasury_yield_curve&field_tdr_date_value=2000&page&_format=csv",
+    "https://home.treasury.gov/resource-center/data-chart-center/interest-rates/daily-treasury-rates.csv/2001/all?type=daily_treasury_yield_curve&field_tdr_date_value=2001&page&_format=csv",
+    "https://home.treasury.gov/resource-center/data-chart-center/interest-rates/daily-treasury-rates.csv/2002/all?type=daily_treasury_yield_curve&field_tdr_date_value=2002&page&_format=csv",
+    "https://home.treasury.gov/resource-center/data-chart-center/interest-rates/daily-treasury-rates.csv/2003/all?type=daily_treasury_yield_curve&field_tdr_date_value=2003&page&_format=csv",
+    "https://home.treasury.gov/resource-center/data-chart-center/interest-rates/daily-treasury-rates.csv/2004/all?type=daily_treasury_yield_curve&field_tdr_date_value=2004&page&_format=csv",
+    "https://home.treasury.gov/resource-center/data-chart-center/interest-rates/daily-treasury-rates.csv/2005/all?type=daily_treasury_yield_curve&field_tdr_date_value=2005&page&_format=csv",
+    "https://home.treasury.gov/resource-center/data-chart-center/interest-rates/daily-treasury-rates.csv/2006/all?type=daily_treasury_yield_curve&field_tdr_date_value=2006&page&_format=csv",
+    "https://home.treasury.gov/resource-center/data-chart-center/interest-rates/daily-treasury-rates.csv/2007/all?type=daily_treasury_yield_curve&field_tdr_date_value=2007&page&_format=csv",
+    "https://home.treasury.gov/resource-center/data-chart-center/interest-rates/daily-treasury-rates.csv/2008/all?type=daily_treasury_yield_curve&field_tdr_date_value=2008&page&_format=csv",
+    "https://home.treasury.gov/resource-center/data-chart-center/interest-rates/daily-treasury-rates.csv/2009/all?type=daily_treasury_yield_curve&field_tdr_date_value=2009&page&_format=csv",
+    "https://home.treasury.gov/resource-center/data-chart-center/interest-rates/daily-treasury-rates.csv/2010/all?type=daily_treasury_yield_curve&field_tdr_date_value=2010&page&_format=csv",
+    "https://home.treasury.gov/resource-center/data-chart-center/interest-rates/daily-treasury-rates.csv/2011/all?type=daily_treasury_yield_curve&field_tdr_date_value=2011&page&_format=csv",
+    "https://home.treasury.gov/resource-center/data-chart-center/interest-rates/daily-treasury-rates.csv/2012/all?type=daily_treasury_yield_curve&field_tdr_date_value=2012&page&_format=csv",
+    "https://home.treasury.gov/resource-center/data-chart-center/interest-rates/daily-treasury-rates.csv/2013/all?type=daily_treasury_yield_curve&field_tdr_date_value=2013&page&_format=csv",
+    "https://home.treasury.gov/resource-center/data-chart-center/interest-rates/daily-treasury-rates.csv/2014/all?type=daily_treasury_yield_curve&field_tdr_date_value=2014&page&_format=csv",
+    "https://home.treasury.gov/resource-center/data-chart-center/interest-rates/daily-treasury-rates.csv/2015/all?type=daily_treasury_yield_curve&field_tdr_date_value=2015&page&_format=csv",
+    "https://home.treasury.gov/resource-center/data-chart-center/interest-rates/daily-treasury-rates.csv/2016/all?type=daily_treasury_yield_curve&field_tdr_date_value=2016&page&_format=csv",
+    "https://home.treasury.gov/resource-center/data-chart-center/interest-rates/daily-treasury-rates.csv/2021/all?type=daily_treasury_yield_curve&field_tdr_date_value=2021&page&_format=csv",
+    "https://home.treasury.gov/resource-center/data-chart-center/interest-rates/daily-treasury-rates.csv/2022/all?type=daily_treasury_yield_curve&field_tdr_date_value=2022&page&_format=csv",
+    "https://home.treasury.gov/resource-center/data-chart-center/interest-rates/daily-treasury-rates.csv/2023/all?type=daily_treasury_yield_curve&field_tdr_date_value=2023&page&_format=csv",
+    "https://home.treasury.gov/resource-center/data-chart-center/interest-rates/daily-treasury-rates.csv/2024/all?type=daily_treasury_yield_curve&field_tdr_date_value=2024&page&_format=csv",
+    "https://home.treasury.gov/resource-center/data-chart-center/interest-rates/daily-treasury-rates.csv/2025/all?type=daily_treasury_yield_curve&field_tdr_date_value=2025&page&_format=csv"
+   ]
+  },
+  "vix": {
+   "bounded_request": false,
+   "content_hash": "d385cf23df800eb39bba2f68a0f5ee7a1d6cbcb87234b7b3aab48a1b0b8455ad",
+   "coverage": {
+    "columns": [
+     "vix"
+    ],
+    "first": "1999-01-04",
+    "last": "2025-12-26",
+    "rows": 5582
+   },
+   "frequency": "daily",
+   "http_status": 200,
+   "key": "vix",
+   "provider": "CBOE",
+   "publication_timing": "close 22:15 CET（長 span で 2 営業日 lag、近 span で 1 営業日）",
+   "raw_bytes": 472819,
+   "request_parameters": {
+    "method": "GET",
+    "timeout_seconds": 120,
+    "user_agent": "Mozilla/5.0 fx-ai-trading research acquisition"
+   },
+   "result": "OK",
+   "retrieval_timestamp": "2026-09-20T21:58:42.409545+00:00",
+   "stored": "artifacts\\track_a_scratch\\top_five\\vix.parquet",
+   "track": "T1",
+   "truncated_to_seen_spans": true,
+   "url": "https://cdn.cboe.com/api/global/us_indices/daily_prices/VIX_History.csv"
+  },
+  "wti": {
+   "bounded_request": false,
+   "content_hash": "00974b186543d1fa762ddf58d125ab8e2aa347fc80c7ecb12345fdd2f95a56ee",
+   "coverage": {
+    "columns": [
+     "wti"
+    ],
+    "first": "1999-01-04",
+    "last": "2025-12-26",
+    "rows": 5076
+   },
+   "frequency": "daily observations, weekly (Wednesday) publication cycle",
+   "http_status": 200,
+   "key": "wti",
+   "provider": "U.S. Energy Information Administration",
+   "publication_timing": "水曜サイクル。day t の値は 1-7 暦日遅れ（両 span で 7 営業日 lag）",
+   "raw_bytes": 470528,
+   "request_parameters": {
+    "method": "GET",
+    "timeout_seconds": 120,
+    "user_agent": "Mozilla/5.0 fx-ai-trading research acquisition"
+   },
+   "result": "OK",
+   "retrieval_timestamp": "2026-09-20T21:58:43.038233+00:00",
+   "stored": "artifacts\\track_a_scratch\\top_five\\wti.parquet",
+   "track": "T2",
+   "truncated_to_seen_spans": true,
+   "url": "https://www.eia.gov/dnav/pet/hist_xls/RWTCd.xls"
+  }
+ }
+}
