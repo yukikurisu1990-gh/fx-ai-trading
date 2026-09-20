@@ -26,7 +26,10 @@ DOC = ROOT / "docs/research/m15_top_five_freeze_2026_09.md"
 
 #: 凍結時の digest。**この値は書き換えてはならない。**
 #: 変える必要が出たときは、それは編集ではなく新しい事前登録である。
-FROZEN_DIGEST = "29ba80d68a5462fe015a6f2566d3c0b63319d0549de7b9a4d34a890f2339b1ca"
+FROZEN_DIGEST = "28100ebedfea45765371585df5c4308fee261e2496a9798acca79c920158962c"
+
+#: 2026-09-21 裁定で差し替えた旧 freeze。**削除せず履歴として保持する。**
+SUPERSEDED_DIGEST = "29ba80d68a5462fe015a6f2566d3c0b63319d0549de7b9a4d34a890f2339b1ca"
 
 
 @pytest.fixture(scope="module")
@@ -198,6 +201,26 @@ class TestTheRenameGatesCanActuallyFire:
         gate = prereg.TRACKS["T3"]["rename_gate"]
         assert "T-R2" in gate and "0.8" in gate
 
+    def test_t3_prespecifies_both_signs_rather_than_choosing_one(self) -> None:
+        """実行前レビューで economic sign が理論的に曖昧と判明したため。"""
+        direction = prereg.TRACKS["T3"]["direction"]
+        subs = direction["sub_hypotheses"]
+        assert set(subs) == {"T3-H1", "T3-H2"}
+        assert "appreciation" in subs["T3-H1"]
+        assert "depreciation" in subs["T3-H2"]
+
+    def test_t3_forbids_headlining_the_better_sign(self) -> None:
+        rule = prereg.TRACKS["T3"]["direction"]["reporting_rule"]
+        assert "両方報告" in rule
+        assert "primary 扱いしない" in rule
+        assert "sign multiplicity" in rule
+
+    def test_t3_records_that_steepening_is_not_one_mechanism(self) -> None:
+        why = prereg.TRACKS["T3"]["direction"]["why_ambiguous"]
+        for mechanism in ("bull steepening", "bear steepening", "term-premium", "fiscal-risk"):
+            assert mechanism in why, mechanism
+        assert "結果後に分類して最適化しない" in why
+
     def test_t5_has_a_gate_against_lagged_dollar_momentum(self) -> None:
         gate = prereg.TRACKS["T5"]["rename_gate"]
         assert "USD basket return" in gate and "0.8" in gate
@@ -216,7 +239,38 @@ class TestTheExecutionLayerIsFrozenNumerically:
 
     def test_the_forbidden_five_times_cap_is_not_used(self) -> None:
         assert prereg.BOOK_CONFIG["max_leverage"] == 20.0
-        assert "5x hard cap" in prereg.BOOK_CONFIG["why_max_leverage_is_not_5"]
+        assert "hard limit として" in prereg.BOOK_CONFIG["why_max_leverage_is_not_5"]
+
+    def test_the_broker_ceiling_is_not_treated_as_a_risk_budget(self) -> None:
+        """「20x まで可能だから低い Sharpe でも十分」は明示的に禁じられている。"""
+        broker = prereg.LEVERAGE_FRAMEWORK["A_broker_hard"]
+        assert "absolute ceiling" in broker["what_it_is"]
+        assert "安全だという意味ではない" in broker["what_it_is_not"]
+        assert "実用的だという意味でもない" in broker["what_it_is_not"]
+
+    def test_the_cap_does_not_bind_at_the_target_vol(self) -> None:
+        """risk は vol targeting が決める。cap はその上の天井でしかない。"""
+        from scripts.research.edge_sources import capacity
+
+        needed = prereg.BOOK_CONFIG["vol_target"] / capacity.VOL_PER_UNIT_GROSS
+        assert needed < prereg.BOOK_CONFIG["max_leverage"]
+        #: 最も高い scenario でも binding しない
+        highest = max(prereg.LEVERAGE_FRAMEWORK["standard_target_vol_scenarios"])
+        assert highest / capacity.VOL_PER_UNIT_GROSS < prereg.BOOK_CONFIG["max_leverage"]
+
+    def test_the_standard_target_vol_scenarios_are_frozen(self) -> None:
+        assert prereg.LEVERAGE_FRAMEWORK["standard_target_vol_scenarios"] == (
+            0.08,
+            0.10,
+            0.12,
+            0.15,
+        )
+
+    def test_neither_direction_of_the_leverage_fallacy_is_allowed(self) -> None:
+        how = prereg.LEVERAGE_FRAMEWORK["how_to_judge"]
+        assert "5x を超えるから不可" in how
+        assert "20x まで可能だから" in how
+        assert "実測" in how
 
     def test_the_broker_leverage_comes_from_the_public_margin_record(self) -> None:
         record = json.loads(
@@ -330,15 +384,18 @@ class TestTheAuthorityIsCitedHonestly:
     def test_the_record_it_points_at_exists(self) -> None:
         assert (ROOT / prereg.AUTHORITY["record"]).exists()
 
-    def test_the_freeze_is_not_an_acquisition_permission(self) -> None:
-        assert "probe は metadata / availability のみ" in prereg.EXECUTION_REQUIRES
-        assert "explicit な Human + ChatGPT の act" in prereg.EXECUTION_REQUIRES
+    def test_acquisition_is_authorised_and_scoped(self) -> None:
+        """2026-09-21 裁定 §5 で本取得が承認された。scope は public/free のみ。"""
+        assert prereg.ACQUISITION["scope"] == "public / free source のみ"
+        assert "2026-09-21" in prereg.ACQUISITION["authorized"]
 
 
 class TestKnownDefectsAreDisclosedNotHidden:
     def test_the_oil_data_format_problem_is_stated(self) -> None:
         caveat = prereg.TRACKS["T2"]["data_caveat"]
-        assert "OLE2" in caveat and "Amber" in caveat
+        assert "OLE2" in caveat
+        assert "2026-09-21 裁定 §2 が追加を承認" in caveat
+        assert "macro を実行しない" in caveat
 
     def test_the_vix_backfill_is_stated(self) -> None:
         assert "遡及計算" in prereg.TRACKS["T1"]["data_caveat"]
@@ -368,21 +425,30 @@ class TestKnownDefectsAreDisclosedNotHidden:
 
 class TestResultDrivenRescueIsForbiddenUpFront:
     def test_the_forbidden_list_is_complete(self) -> None:
-        assert len(prereg.FORBIDDEN_RESCUES) == 8
         for shape in (
-            "sign reversal after result",
-            "horizon tweak",
-            "threshold optimization",
-            "currency exclusion",
+            "sign flip after result",
+            "horizon optimization",
+            "lag optimization",
+            "threshold tuning",
+            "currency removal",
             "feature addition",
+            "cost-specific smoothing",
             "band optimization",
             "leverage optimization",
-            "nonlinear rescue",
+            "model complexity addition",
         ):
             assert shape in prereg.FORBIDDEN_RESCUES, shape
 
     def test_negative_results_are_classified_not_lumped(self) -> None:
-        assert len(prereg.NEGATIVE_CLASSES) == 4
+        assert set(prereg.NEGATIVE_CLASSES) == {
+            "SIGNAL_FAILURE",
+            "COST_FAILURE",
+            "DATA_FAILURE",
+            "CONCENTRATION_FAILURE",
+            "IMPLEMENTATION_FAILURE",
+        }
+        for name, meaning in prereg.NEGATIVE_CLASSES.items():
+            assert meaning.strip(), name
 
     def test_the_interpretation_is_economic_not_a_p_value_rule(self) -> None:
         assert "p < 0.05" in prereg.INTERPRETATION["not_a_significance_rule"]
@@ -416,3 +482,74 @@ class TestTheDocumentMatchesTheFreeze:
 
     def test_it_is_marked_non_decision_bearing(self, document: str) -> None:
         assert "NON_DECISION_BEARING_EXPLORATORY_ONLY" in document
+
+
+class TestTheRulingOfTwentyFirstIsReflected:
+    """2026-09-21 裁定が凍結へ反映されていること。"""
+
+    def test_the_old_freeze_is_kept_as_superseded_not_deleted(self) -> None:
+        assert prereg.SUPERSEDED_FREEZE["digest"] == SUPERSEDED_DIGEST
+        assert prereg.SUPERSEDED_FREEZE["status"] == "SUPERSEDED_PRE_EXECUTION"
+        #: 差し替えは alpha を見る前に行われた — post-result rescue ではない
+        assert "alpha は 1 本も見られていない" in prereg.SUPERSEDED_FREEZE["why"]
+
+    def test_the_new_digest_differs_from_the_superseded_one(self) -> None:
+        assert prereg.freeze_digest() != SUPERSEDED_DIGEST
+
+    def test_acquisition_is_now_authorised_with_its_recording_duties(self) -> None:
+        acquisition = prereg.ACQUISITION
+        assert "2026-09-21" in acquisition["authorized"]
+        for field in ("url", "content_hash", "retrieval_timestamp", "publication_timing"):
+            assert field in acquisition["must_record"], field
+
+    def test_the_acquisition_forbids_the_protected_spans(self) -> None:
+        forbidden = prereg.ACQUISITION["forbidden"]
+        for span in ("fresh span", "historical OOS", "dead window", "forward epoch"):
+            assert span in forbidden, span
+        assert "paid API" in forbidden
+        assert "authenticated OANDA" in forbidden
+
+    def test_the_protected_span_is_excluded_at_the_request_not_after(self) -> None:
+        rule = prereg.ACQUISITION["request_level_exclusion"]
+        assert "request 自体から除外" in rule
+        assert "download-then-filter は禁止" in rule
+
+    def test_every_track_status_carries_its_track_prefix(self) -> None:
+        """接頭辞が無いと、どの track の verdict か token から読めない。"""
+        token = prereg.track_status("T3", "NOT_SUPPORTED_IN_SEEN_DEVELOPMENT")
+        assert token == "T3_S02_NOT_SUPPORTED_IN_SEEN_DEVELOPMENT"
+        with pytest.raises(ValueError):
+            prereg.track_status("T1", "EDGE_CONFIRMED")
+
+    def test_all_five_status_suffixes_are_available(self) -> None:
+        assert len(prereg.TRACK_STATUS_SUFFIXES) == 5
+        for track in prereg.TRACKS:
+            for suffix in prereg.TRACK_STATUS_SUFFIXES:
+                assert prereg.track_status(track, suffix).startswith(track)
+
+    def test_multi_source_portfolio_is_deferred_not_attempted(self) -> None:
+        assert "NO_WEIGHTS_OPTIMIZATION" in prereg.MULTI_SOURCE_PORTFOLIO
+        assert "PROPOSAL_ONLY" in prereg.MULTI_SOURCE_PORTFOLIO
+
+    def test_the_cross_track_diagnostic_is_declared_but_not_an_optimiser(self) -> None:
+        assert "pairwise_pnl_correlation" in prereg.CROSS_TRACK_DIAGNOSTIC
+        assert "common_risk_factor" in prereg.CROSS_TRACK_DIAGNOSTIC
+
+    def test_the_search_breadth_is_disclosed_including_the_t3_sub_search(self) -> None:
+        """5 本 + T3 の 2 符号 = 実際には 6 通りの探索である。"""
+        assert "FIVE_WAY" in prereg.EXPLORATION_DISCLOSURE
+        assert "TWO_SIGN_SUB_SEARCH" in prereg.EXPLORATION_DISCLOSURE
+
+    def test_the_document_carries_the_dual_sign_prereg(self, document: str) -> None:
+        assert "T3-H1" in document and "T3-H2" in document
+        assert "両方 prespecified sub-hypothesis" in document
+        assert "primary 扱いしない" in document
+
+    def test_the_document_refuses_both_leverage_fallacies(self, document: str) -> None:
+        assert "5x を超えるから不可" in document
+        assert "20x まで可能だから Sharpe 0.107 で十分" in document
+        assert "8% / 10% / 12% / 15%" in document
+
+    def test_the_document_records_the_superseded_freeze(self, document: str) -> None:
+        assert SUPERSEDED_DIGEST in document
+        assert "SUPERSEDED_PRE_EXECUTION" in document

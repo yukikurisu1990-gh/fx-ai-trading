@@ -31,6 +31,19 @@ from scripts.research.top_five import (
 # 権限
 # ---------------------------------------------------------------------------
 
+#: 旧 freeze。**削除せず履歴として保持する**（2026-09-21 裁定 §1）。
+#: alpha を 1 本も見る前に差し替えたので、これは post-result rescue ではない。
+SUPERSEDED_FREEZE: Final[dict[str, str]] = {
+    "digest": "29ba80d68a5462fe015a6f2566d3c0b63319d0549de7b9a4d34a890f2339b1ca",
+    "status": "SUPERSEDED_PRE_EXECUTION",
+    "commit": "0702d97",
+    "why": (
+        "2026-09-21 裁定が T3 の符号を dual-hypothesis へ、leverage の解釈を三概念の"
+        "分離と target-vol scenario へ、acquisition を承認済みへ改めた。"
+        "**この時点で alpha は 1 本も見られていない**"
+    ),
+}
+
 #: 本 cycle の authority。**2026-09-19 裁定の全文は今も repo に無い**ので、
 #: その節番号への引用は検証不能である。その事実ごと持ち回る（#489 が立てた token）。
 AUTHORITY: Final[dict[str, str]] = {
@@ -159,10 +172,13 @@ BOOK_CONFIG: Final[dict[str, Any]] = {
     "drawdown_governor": False,
     "days_per_year": 252.0,
     "why_max_leverage_is_not_5": (
-        "既定の 5.0 は placeholder で、裁定 §27 が **5x hard cap を明示的に禁じている**。"
-        "研究 universe の 28 pair の最悪 margin rate は 0.05 なので broker hard leverage は "
-        "20x。これを A として使う。この違いは結論を動かす: 5.0 なら年 5% net に "
-        "net Sharpe 0.429 が要るが、20x なら 0.107 で足りる"
+        "既定の 5.0 は placeholder で、**5x を economic feasibility の hard limit として"
+        "使うことは禁じられている**。ここに置いた 20.0 は broker の margin ceiling であって "
+        "**運用の risk budget ではない** — vol_target 0.10 なら必要 leverage は 4.29x で、"
+        "この cap は実際には binding しない。**risk は vol targeting が決める**という"
+        "構造を明示するために、cap を ceiling の位置に置いてある。"
+        "「20x まで可能だから低い Sharpe でも十分」という読み方は 2026-09-21 裁定 §27 が"
+        "明示的に禁じている"
     ),
 }
 
@@ -178,21 +194,36 @@ BOOK_CONFIG_DEVIATIONS: Final[dict[str, dict[str, Any]]] = {
     }
 }
 
-#: leverage は 3 概念に分ける（裁定 §27）。**5x hard cap は使わない。**
+#: leverage は 3 概念に分ける（2026-09-21 裁定 §22-§28）。
+#: **5x を economic feasibility の hard limit として使わない。**
+#: **同時に、broker の 20x/25x を通常運用の risk budget として使うことも禁止。**
 LEVERAGE_FRAMEWORK: Final[dict[str, Any]] = {
     "A_broker_hard": {
         "value": "20x",
         "source": "artifacts/research/edge_sources/oanda_margin_rates.json（公開仕様のみ）",
         "detail": "研究 universe 28 pair の margin rate は 0.04-0.05。最悪値 0.05 を採る",
+        "what_it_is": "**margin 上の absolute ceiling** である。それ以上でも以下でもない",
+        "what_it_is_not": (
+            "20x の risk scaling が安全だという意味ではない。Sharpe 0.1 でも 20x 掛ければ"
+            "有望だという意味でもない。年 5% capacity が実用的だという意味でもない"
+        ),
     },
     "B_portfolio_gross": "book が実際に建てた gross。毎日記録する",
-    "C_risk": "vol_target / VOL_PER_UNIT_GROSS。0.10 / 0.023288 = 4.29x が既定",
-    "capacity_arithmetic": {
-        "net_sharpe_0_2": "年5%に vol 25.0% / risk leverage 10.74x / margin 利用率 53.7%",
-        "net_sharpe_0_3": "年5%に vol 16.7% / risk leverage 7.16x / margin 利用率 35.8%",
-        "net_sharpe_0_5": "年5%に vol 10.0% / risk leverage 4.29x / margin 利用率 21.5%",
-    },
-    "never": "net edge <= 0 を leverage で救わない（裁定 §35）",
+    "C_risk": "target vol / VOL_PER_UNIT_GROSS。運用の risk budget はここで決まる",
+    "standard_target_vol_scenarios": (0.08, 0.10, 0.12, 0.15),
+    "how_to_judge": (
+        "**broker ceiling を hurdle にしない。** 「5x を超えるから不可」も"
+        "「20x まで可能だから Sharpe 0.107 で十分」も、どちらも誤りである。"
+        "正しい問いは: candidate の**実測** net Sharpe と volatility から、"
+        "realistic な target risk で年間 return へ変換できるか — である。"
+        "**alpha を見る前に固定倍率だけで否定も肯定もしない**"
+    ),
+    "capacity_reporting": (
+        "net-positive candidate について、年 5% / 年 10% net に必要な "
+        "target vol・risk leverage・portfolio gross・pair 別 margin 利用率・DD・"
+        "gap stress・残 margin buffer を算出する"
+    ),
+    "never": "net edge <= 0 を leverage で救わない",
 }
 
 #: cost 規約。**片方の span でしか測っていない**ことを明示して持ち回る。
@@ -357,8 +388,9 @@ TRACKS: Final[dict[str, dict[str, Any]]] = {
         "data_evidence": "gated probe 2026-09-20: HTTP 200",
         "data_caveat": (
             "**OLE2 バイナリ .xls である。** CSV 代替を探したが存在せず（`?download=csv` も"
-            "同じバイナリ、FRED は timeout）、読むには `xlrd` の追加が要る。"
-            "これは保護パスへの **Amber 変更**であり、承認なしには merge されない"
+            "同じバイナリ、FRED は timeout）、読むには `xlrd` が要る。"
+            "**2026-09-21 裁定 §2 が追加を承認**した（research 用途限定・version 固定・"
+            "parsing のみ・埋め込み macro を実行しない・取得 file の hash を記録）"
         ),
         "signal": "z = 5 日 log(WTI) return を 252 日で標準化（T1 と同形）",
         "direction": {
@@ -423,17 +455,26 @@ TRACKS: Final[dict[str, dict[str, Any]]] = {
         },
         "signal": "各通貨の slope = 10y - 2y。その 20 日変化を 5 通貨 cross-section で rank し中心化",
         "direction": {
-            "rule": "steepening した通貨が上がる",
-            "frozen": "事前に一方向だけ決める。結果を見て反転させない",
-            "why_this_sign": (
-                "bear steepening（成長期待・実質金利上昇）を主経路と置いた。**逆符号にも"
-                "相応の根拠がある**ことは認める: (a) 大きな steepening の多くは利下げ期待に"
-                "よる bull steepening で通貨安、(b) carry は短期金利に載るので"
-                "「steepening→通貨高」は carry と衝突する、(c) term premium 上昇は財政リスク"
-                "premium でもある。**3 経路のうち 2 つは逆符号を支持する。**"
-                "本 cycle は screening で有意性を主張しないので、**両符号の結果を報告し、"
-                "凍結符号が payする方であることを判定条件とする**。これは事前登録であって"
-                "事後の符号選択ではない"
+            "rule": "**符号は 1 つに決めない。両方を事前登録した sub-hypothesis とする**",
+            "frozen": (
+                "2026-09-21 裁定 §3。実行前レビューで economic sign が理論的に曖昧と判明したため、"
+                "旧 freeze の「steepening -> 通貨高」を primary として実行しない"
+            ),
+            "sub_hypotheses": {
+                "T3-H1": "steepening -> subsequent currency appreciation",
+                "T3-H2": "steepening -> subsequent currency depreciation",
+            },
+            "reporting_rule": (
+                "**H1 と H2 を両方報告する。** 結果を見て良かった符号だけを primary 扱いしない。"
+                "「どちらかが positive だったから curve theory が支持された」という主張は禁止。"
+                "**sign multiplicity を明示する** — T3 は 2 通りの探索である"
+            ),
+            "why_ambiguous": (
+                "curve steepening は単一 mechanism ではない: bull steepening / bear steepening / "
+                "policy easing expectations / inflation-growth repricing / term-premium change / "
+                "fiscal-risk premium で符号が異なりうる。"
+                "**今回これらを結果後に分類して最適化しない**（裁定 §4）。"
+                "まず凍結済みの simple curve-shape hypothesis を評価する"
             ),
         },
         "rename_gate": (
@@ -612,31 +653,92 @@ INTERPRETATION: Final[dict[str, str]] = {
     ),
 }
 
-#: 失敗の分け方。「failed」で一括りにしない。
-NEGATIVE_CLASSES: Final[tuple[str, ...]] = (
-    "A_signal_content_failure",
-    "B_cost_or_turnover_failure",
-    "C_data_or_power_failure",
-    "D_concentration_failure",
+#: 失敗の分け方（2026-09-21 裁定 §32）。「failed」で一括りにしない。
+NEGATIVE_CLASSES: Final[dict[str, str]] = {
+    "SIGNAL_FAILURE": "gross から弱い / negative",
+    "COST_FAILURE": "gross はあるが net で消える",
+    "DATA_FAILURE": "coverage / timing / sample 不足",
+    "CONCENTRATION_FAILURE": "one currency / one episode 依存",
+    "IMPLEMENTATION_FAILURE": "research design を正しく評価できていない",
+}
+
+#: 各 track が取りうる最終 status（裁定 §52）。**track 接頭辞を付ける** —
+#: 接頭辞が無いと、記録された verdict がどの track のものか token から読めない。
+TRACK_STATUS_SUFFIXES: Final[tuple[str, ...]] = (
+    "STRONG_DEVELOPMENT_CANDIDATE",
+    "MARGINAL_DEVELOPMENT_CANDIDATE",
+    "NOT_SUPPORTED_IN_SEEN_DEVELOPMENT",
+    "DATA_NOT_DECISION_GRADE",
+    "DATA_UNAVAILABLE_WITH_CURRENT_FREE_SOURCES",
 )
+
+
+def track_status(track: str, suffix: str) -> str:
+    """`T1_S05_STRONG_DEVELOPMENT_CANDIDATE` のような形にする。"""
+    if suffix not in TRACK_STATUS_SUFFIXES:
+        raise ValueError(f"未登録の status: {suffix}")
+    return f"{track}_{TRACKS[track]['candidate']}_{suffix}"
+
 
 #: 結果を見た後の救済は禁止。
 FORBIDDEN_RESCUES: Final[tuple[str, ...]] = (
-    "sign reversal after result",
-    "horizon tweak",
-    "threshold optimization",
-    "currency exclusion",
+    "sign flip after result",
+    "horizon optimization",
+    "lag optimization",
+    "threshold tuning",
+    "currency removal",
     "feature addition",
+    "cost-specific smoothing",
     "band optimization",
     "leverage optimization",
-    "nonlinear rescue",
+    "model complexity addition",
 )
 
-#: 実行の前に要る act。**凍結は取得の許可ではない。**
-EXECUTION_REQUIRES: Final[str] = (
-    "本取得（VIX / WTI / 4 か国カーブ / TIC）と FX panel への結合は、"
-    "承認済み probe の scope の外である。probe は metadata / availability のみを承認された。"
-    "実行には別途 explicit な Human + ChatGPT の act が要る"
+#: **本取得は 2026-09-21 裁定 §5 で承認された。** metadata probe だけでなく、
+#: VIX / WTI / sovereign curve / TIC と、その他 prereg が固定した public/free input を
+#: 取得し、既に許可された seen-development FX panel と結合してよい。
+ACQUISITION: Final[dict[str, Any]] = {
+    "authorized": "2026-09-21 Human + ChatGPT 裁定 §5",
+    "scope": "public / free source のみ",
+    "forbidden": (
+        "protected fresh span / historical OOS / dead window / forward epoch / "
+        "authenticated OANDA / paid API"
+    ),
+    "must_record": (
+        "provider",
+        "url",
+        "request_parameters",
+        "retrieval_timestamp",
+        "http_status",
+        "content_hash",
+        "coverage",
+        "frequency",
+        "publication_timing",
+    ),
+    "request_level_exclusion": (
+        "protected span は **request 自体から除外**する。download-then-filter は禁止。"
+        "期間パラメータを取らない全量配信 endpoint の場合は、**parsed date で切り落とす前の "
+        "frame を signal に一切触れさせない**ことを実装で保証する"
+    ),
+}
+
+
+#: 複数 candidate が positive でも、本 cycle では合成しない（裁定 §39）。
+MULTI_SOURCE_PORTFOLIO: Final[str] = (
+    "NO_WEIGHTS_OPTIMIZATION_NO_BLENDING_NO_SOURCE_SELECTION_THIS_CYCLE_PROPOSAL_ONLY"
+)
+
+#: cross-track の相関診断は exploratory に行うが、そこから portfolio を組まない（§36）。
+CROSS_TRACK_DIAGNOSTIC: Final[tuple[str, ...]] = (
+    "pairwise_pnl_correlation",
+    "currency_exposure_similarity",
+    "event_dependence",
+    "common_risk_factor",
+)
+
+#: 本 cycle は 5 通りの探索である。p 値を formal proof として扱わない（§38）。
+EXPLORATION_DISCLOSURE: Final[str] = (
+    "FIVE_WAY_EXPLORATORY_DEVELOPMENT_SEARCH_PLUS_A_TWO_SIGN_SUB_SEARCH_WITHIN_T3"
 )
 
 
@@ -678,9 +780,14 @@ def _payload() -> dict[str, Any]:
         "not_executed": NOT_EXECUTED,
         "promotion_reasoning": PROMOTION_REASONING,
         "interpretation": INTERPRETATION,
-        "negative_classes": list(NEGATIVE_CLASSES),
+        "negative_classes": NEGATIVE_CLASSES,
         "forbidden_rescues": list(FORBIDDEN_RESCUES),
-        "execution_requires": EXECUTION_REQUIRES,
+        "acquisition": ACQUISITION,
+        "superseded_freeze": SUPERSEDED_FREEZE,
+        "track_status_suffixes": list(TRACK_STATUS_SUFFIXES),
+        "multi_source_portfolio": MULTI_SOURCE_PORTFOLIO,
+        "cross_track_diagnostic": list(CROSS_TRACK_DIAGNOSTIC),
+        "exploration_disclosure": EXPLORATION_DISCLOSURE,
     }
 
 
@@ -696,6 +803,7 @@ def freeze_digest() -> str:
 
 
 __all__ = [
+    "ACQUISITION",
     "AUTHORITY",
     "BENCHMARKS",
     "BOOK_CONFIG",
@@ -704,13 +812,15 @@ __all__ = [
     "COST",
     "CROSS_TRACK_CONTROLS",
     "EXCESS_PANEL",
+    "CROSS_TRACK_DIAGNOSTIC",
     "EXECUTION_LAYER",
     "EXECUTION_ORDER",
-    "EXECUTION_REQUIRES",
+    "EXPLORATION_DISCLOSURE",
     "FORBIDDEN_RESCUES",
     "INTERPRETATION",
     "LEVERAGE_FRAMEWORK",
     "METRICS",
+    "MULTI_SOURCE_PORTFOLIO",
     "NEGATIVE_CLASSES",
     "NONLINEAR_ML",
     "NOT_EXECUTED",
@@ -721,8 +831,11 @@ __all__ = [
     "SPANS",
     "STAGE_1_ONLY",
     "STAGE_2_ELIGIBILITY",
+    "SUPERSEDED_FREEZE",
     "TIMESTAMP_RULE",
     "TRACKS",
+    "TRACK_STATUS_SUFFIXES",
     "TURNOVER_CORRECTION",
     "freeze_digest",
+    "track_status",
 ]

@@ -6,7 +6,12 @@
 Authority: `docs/governance/m15_adjudication_2026_09_19_and_09_20.md`
 （2026-09-20 Human + ChatGPT 裁定 §8–§14、§20–§26、§41–§42）
 
-**freeze digest: `29ba80d68a5462fe015a6f2566d3c0b63319d0549de7b9a4d34a890f2339b1ca`**
+**freeze digest: `28100ebedfea45765371585df5c4308fee261e2496a9798acca79c920158962c`**
+
+> 旧 digest `29ba80d68a5462fe015a6f2566d3c0b63319d0549de7b9a4d34a890f2339b1ca` は
+> **`SUPERSEDED_PRE_EXECUTION`** として保持。2026-09-21 裁定が T3 の符号を dual-hypothesis へ、
+> leverage の解釈を三概念の分離と target-vol scenario へ、acquisition を承認済みへ改めた。
+> **この差し替え時点でも alpha を 1 本も見ていない**ので、post-result rescue ではない。
 
 **本文書を書いた時点で、5 本のうち alpha を 1 本も見ていない。** それが凍結の意味である。
 
@@ -89,7 +94,7 @@ S26(10) は非価格の別情報集合で、data も probe 済みである。だ
 | 近 span | decision `2021-04-27 … 2025-12-24`、return は UTC 日足 `close(t)→close(t+1)`、最終 return 日 `2025-12-26` |
 | **lag** | **外部値は、その公表時刻より後に始まる return 窓にしか入れない。** source ごとに公表時刻を凍結（下表） |
 | 執行層 | `continuous_portfolio.construction.run_book` を**数値ごと凍結**（band 0.10 / vol_target 0.10 / weight_cap 0.25 / sigma 60 / factor 120 / **max_leverage 20.0**） |
-| leverage | **A broker hard = 20x**（OANDA 公開 margin の最悪値 0.05）／ B portfolio gross は毎日記録／ C risk = vol_target ÷ 0.023288 = 4.29x |
+| leverage | **A / B / C を分離**（下記）。broker ceiling を hurdle にしない |
 | cost | `CHARGED_ONE_WAY_BP` = 1.703 bp、stress ×1.5 / ×2。**判定は近 span のみ**（cost 規約が実測された唯一の span） |
 | turnover | band law の値と **×1.90 補正値の両方**を凍結。実測が補正値を超えたら `B_cost_or_turnover_failure` |
 | benchmark | zero signal ／ FX own momentum 20d ／ simple mean reversion 20d |
@@ -138,6 +143,39 @@ VIX / EIA / SNB / TIC は期間パラメータを取らない全量配信 endpoi
 **同じ規則でも track ごとに厳しさが違う** — cost drag が違うので、低 turnover の track は
 ノイズでも通りやすい。Stage 2 へ自動進行した事実を報告するときは、**その track の帰無通過確率を必ず添える**。
 
+### leverage は 3 概念に分ける — どちらの誤りも犯さない
+
+| | 概念 | 値 | 意味 |
+| --- | --- | --- | --- |
+| **A** | broker hard leverage / margin ceiling | **20x**（OANDA 公開 margin の最悪値 0.05） | **margin 上の absolute ceiling**。それ以上でも以下でもない |
+| **B** | portfolio gross leverage | 毎日記録 | book が実際に建てた gross |
+| **C** | risk leverage / target-vol scaling | target vol ÷ 0.023288 | **運用の risk budget はここで決まる** |
+
+**A が意味しないこと**: 20x の risk scaling が安全だということ／Sharpe 0.1 でも 20x 掛ければ
+有望だということ／年 5% capacity が実用的だということ。
+
+**禁じられている読み方は両方向ある:**
+
+- ❌「5x を超えるから不可」
+- ❌「20x まで可能だから Sharpe 0.107 で十分」
+
+**正しい問い**: candidate の**実測** net Sharpe と volatility から、
+realistic な target risk で年間 return へ変換できるか。
+**alpha を見る前に固定倍率だけで否定も肯定もしない。**
+
+`max_leverage = 20.0` を config に置いてあるが、**これは binding しない** —
+vol_target 0.10 なら必要 leverage は 4.29x、最も高い scenario 15% でも 6.44x である。
+cap を ceiling の位置に置いたのは、**risk は vol targeting が決める**という構造を明示するためである。
+
+### 標準 target-vol scenario
+
+positive / marginal candidate は **8% / 10% / 12% / 15%** で評価する。
+それより高い vol は stress scenario としてのみ扱う。
+
+net-positive candidate については、**年 5% / 年 10% net** に必要な
+target vol・risk leverage・portfolio gross・pair 別 margin 利用率・DD・gap stress・
+残 margin buffer を算出する。
+
 ### 長 span の excess panel
 
 `CARRY_LEG_ABSENT_ON_THE_LONG_SPAN` — ECB reference rate から作る spot return には carry leg が無い。
@@ -177,12 +215,30 @@ VIX / EIA / SNB / TIC は期間パラメータを取らない全量配信 endpoi
 - **data**: US Treasury ／ Bundesbank **Zinsstruktur 10 年**（初稿が書いていた Umlaufsrendite は 404 だった）／
   BoC Valet ／ SNB rendoblid ／ BoE。2y は取得済み
 - **signal**: `slope = 10y − 2y` の 20 日変化を 5 通貨 cross-section で rank して中心化
-- **direction**: **steepening した通貨が上がる**（bear steepening を主経路と置く）
-  - **逆符号にも相応の根拠がある**ことは認める: 大きな steepening の多くは利下げ期待による
-    bull steepening で通貨安、carry は短期金利に載るので「steepening→通貨高」は carry と衝突、
-    term premium 上昇は財政リスク premium でもある。**3 経路のうち 2 つは逆符号を支持する**
-  - 本 cycle は screening で有意性を主張しないので、**両符号の結果を報告し、凍結符号が payする方で
-    あることを判定条件とする**。これは事前登録であって事後の符号選択ではない
+
+#### 符号は 1 つに決めない — 両方を事前登録する
+
+実行前レビューで **economic sign が理論的に曖昧**と判明したため、旧 freeze の
+「steepening → 通貨高」を primary として実行**しない**。代わりに次の 2 つを
+**両方 prespecified sub-hypothesis** として凍結する。
+
+| id | 仮説 |
+| --- | --- |
+| **T3-H1** | steepening → subsequent currency **appreciation** |
+| **T3-H2** | steepening → subsequent currency **depreciation** |
+
+**報告規則:**
+
+- **H1 と H2 を両方報告する。** 結果を見て良かった符号だけを primary 扱いしない
+- 「どちらかが positive だったから curve theory が支持された」という主張は**禁止**
+- **sign multiplicity を明示する** — T3 は 2 通りの探索である
+
+**なぜ曖昧なのか。** curve steepening は単一 mechanism ではない:
+bull steepening / bear steepening / policy easing expectations /
+inflation–growth repricing / term-premium change / fiscal-risk premium
+で符号が異なりうる。**これらを結果後に分類して最適化しない。**
+まず凍結済みの simple curve-shape hypothesis を評価する。
+
 - **rename gate**: Δ10y-only book と (−Δ2y)-only book を併走させ、T3 の日次 P&L が後者と
   `|corr| > 0.8` なら「**閉じた T-R2 の反転**」と判定して結果を採らない
 - **turnover**: band law 18.3 ／ 補正 34.8 RT/年（5 本で最小）
