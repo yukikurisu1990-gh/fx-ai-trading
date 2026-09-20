@@ -23,6 +23,7 @@ from __future__ import annotations
 import argparse
 import datetime as dt
 import io
+import os
 import ssl
 import sys
 import time
@@ -45,6 +46,8 @@ from scripts.research.acquisition_safety import (
 from scripts.research.top_five import sources
 
 OPT_IN_ENV: Final[str] = "TOP_FIVE_ACQUIRE_APPROVED"
+#: 既に commit された取得記録を置き換えるのは、取得の許可とは別の act として扱う。
+OVERWRITE_ENV: Final[str] = "TOP_FIVE_PROVENANCE_OVERWRITE_APPROVED"
 USER_AGENT: Final[str] = "Mozilla/5.0 fx-ai-trading research acquisition"
 TIMEOUT_SECONDS: Final[int] = 120
 #: 一過性の切断だけを再試行する回数と間隔。provider の status は再試行しない。
@@ -240,14 +243,26 @@ def _parse_tic(blob: bytes) -> pd.DataFrame:
         raise ValueError("tic_s1: All Countries の行が見つからない")
 
     month = pd.to_datetime(world["month"], format="%Y-%m", errors="coerce")
+
     #: domestic 長期証券 4 列。購入 c1..c4、売却 c7..c10。
-    buys = world[["c1", "c2", "c3", "c4"]].apply(pd.to_numeric, errors="coerce").sum(axis=1)
-    sells = world[["c7", "c8", "c9", "c10"]].apply(pd.to_numeric, errors="coerce").sum(axis=1)
+    #: 値は "2,012,796" というカンマ区切りの文字列で来る。`thousands=","` は
+    #: header=None の読み方では効かず、全列が str のまま残って合計が 0 になる。
+    #: **0 は「データが無い」ではなく「読めていない」**なので、明示的に落とす。
+    def _numeric(columns: list[str]) -> pd.Series:
+        stripped = (
+            world[columns].astype(str).apply(lambda col: col.str.replace(",", "", regex=False))
+        )
+        return stripped.apply(pd.to_numeric, errors="coerce").sum(axis=1, min_count=1)
+
+    buys = _numeric(["c1", "c2", "c3", "c4"])
+    sells = _numeric(["c7", "c8", "c9", "c10"])
     frame = pd.DataFrame(
         {"tic_s1": (buys - sells).to_numpy()}, index=pd.DatetimeIndex(month)
     ).dropna()
     if frame.empty:
         raise ValueError("tic_s1: net purchases が 1 つも計算できなかった")
+    if float(frame["tic_s1"].std()) == 0.0:
+        raise ValueError("tic_s1: 値が全て同じ — 列の取り違えである")
     frame.index.name = "date"
     frame = frame[~frame.index.duplicated(keep="last")].sort_index()
     #: 月次系列の切り落としは **vintage 適用後の使用可能日**で判定する。観測月 m の値は
@@ -376,7 +391,12 @@ def main() -> int:
         "sources": records,
     }
     RECORD.parent.mkdir(parents=True, exist_ok=True)
-    written = write_provenance(RECORD, payload)
+    written = write_provenance(
+        RECORD,
+        payload,
+        overwrite=os.environ.get(OVERWRITE_ENV) == "1",
+        env_name=OVERWRITE_ENV,
+    )
     print(f"written: {RECORD} sha256={written}", file=sys.stderr)
     return 0
 

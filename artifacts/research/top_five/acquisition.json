@@ -1,6 +1,6 @@
 {
  "authority": "2026-09-21 Human + ChatGPT 裁定 §5",
- "finished_utc": "2026-09-20T21:59:16.306751+00:00",
+ "finished_utc": "2026-09-20T22:02:51.339354+00:00",
  "scope": "public / free source のみ。protected span は request / truncation の両方で除外",
  "sources": {
   "boc_10y": {
@@ -29,7 +29,7 @@
     "user_agent": "Mozilla/5.0 fx-ai-trading research acquisition"
    },
    "result": "OK",
-   "retrieval_timestamp": "2026-09-20T21:59:08.773782+00:00",
+   "retrieval_timestamp": "2026-09-20T22:02:43.735470+00:00",
    "stored": "artifacts\\track_a_scratch\\top_five\\boc_10y.parquet",
    "track": "T3",
    "truncated_to_seen_spans": true,
@@ -64,7 +64,7 @@
     "user_agent": "Mozilla/5.0 fx-ai-trading research acquisition"
    },
    "result": "OK",
-   "retrieval_timestamp": "2026-09-20T21:59:12.203821+00:00",
+   "retrieval_timestamp": "2026-09-20T22:02:47.938433+00:00",
    "stored": "artifacts\\track_a_scratch\\top_five\\boe_10y.parquet",
    "track": "T3",
    "truncated_to_seen_spans": true,
@@ -96,7 +96,7 @@
     "user_agent": "Mozilla/5.0 fx-ai-trading research acquisition"
    },
    "result": "OK",
-   "retrieval_timestamp": "2026-09-20T21:59:06.689468+00:00",
+   "retrieval_timestamp": "2026-09-20T22:02:41.631911+00:00",
    "stored": "artifacts\\track_a_scratch\\top_five\\bund_10y.parquet",
    "track": "T3",
    "truncated_to_seen_spans": true,
@@ -125,7 +125,7 @@
     "user_agent": "Mozilla/5.0 fx-ai-trading research acquisition"
    },
    "result": "OK",
-   "retrieval_timestamp": "2026-09-20T21:59:09.201530+00:00",
+   "retrieval_timestamp": "2026-09-20T22:02:44.195600+00:00",
    "stored": "artifacts\\track_a_scratch\\top_five\\snb_10y.parquet",
    "track": "T3",
    "truncated_to_seen_spans": true,
@@ -154,7 +154,7 @@
     "user_agent": "Mozilla/5.0 fx-ai-trading research acquisition"
    },
    "result": "OK",
-   "retrieval_timestamp": "2026-09-20T21:59:15.781536+00:00",
+   "retrieval_timestamp": "2026-09-20T22:02:50.944072+00:00",
    "stored": "artifacts\\track_a_scratch\\top_five\\tic_s1.parquet",
    "track": "T5",
    "truncated_to_seen_spans": true,
@@ -207,7 +207,7 @@
     "user_agent": "Mozilla/5.0 fx-ai-trading research acquisition"
    },
    "result": "OK",
-   "retrieval_timestamp": "2026-09-20T21:58:51.946497+00:00",
+   "retrieval_timestamp": "2026-09-20T22:02:26.388184+00:00",
    "stored": "artifacts\\track_a_scratch\\top_five\\ust_10y.parquet",
    "track": "T3",
    "truncated_to_seen_spans": true,
@@ -260,7 +260,7 @@
     "user_agent": "Mozilla/5.0 fx-ai-trading research acquisition"
    },
    "result": "OK",
-   "retrieval_timestamp": "2026-09-20T21:58:42.409545+00:00",
+   "retrieval_timestamp": "2026-09-20T22:02:15.728166+00:00",
    "stored": "artifacts\\track_a_scratch\\top_five\\vix.parquet",
    "track": "T1",
    "truncated_to_seen_spans": true,
@@ -289,7 +289,7 @@
     "user_agent": "Mozilla/5.0 fx-ai-trading research acquisition"
    },
    "result": "OK",
-   "retrieval_timestamp": "2026-09-20T21:58:43.038233+00:00",
+   "retrieval_timestamp": "2026-09-20T22:02:16.610506+00:00",
    "stored": "artifacts\\track_a_scratch\\top_five\\wti.parquet",
    "track": "T2",
    "truncated_to_seen_spans": true,

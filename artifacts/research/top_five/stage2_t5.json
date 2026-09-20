@@ -1,0 +1,15 @@
+{
+ "observations": 4232,
+ "coefficients": {
+  "const": -6.166506132313569e-20,
+  "signal": 0.0001219544473013951,
+  "control": -0.006030854383011565
+ },
+ "t_stats": {
+  "const": -9.496315621962437e-16,
+  "signal": 0.7187803217614356,
+  "control": -1.6392421267830553
+ },
+ "model": "forward return を、凍結した signal と control の 2 変数へ回帰する single linear model のみ。interaction も feature 追加も無い",
+ "eligibility": "recent span で 3 条件すべて充足（gross>0 / incremental IC>0 / net>0）"
+}

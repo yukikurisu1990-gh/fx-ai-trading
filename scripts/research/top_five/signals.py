@@ -40,6 +40,9 @@ PARTNER_WINDOW: Final[int] = 252
 #: T5 の z 窓。凍結文の「12 か月」。
 TIC_WINDOW_MONTHS: Final[int] = 12
 
+#: 月次値を持ち越してよい上限。次の公表が来るはずの幅（約 2 か月）である。
+MAX_STALENESS_ROWS: Final[int] = 45
+
 
 def _load(key: str) -> pd.Series:
     path = DATA_DIR / f"{key}.parquet"
@@ -232,7 +235,16 @@ def t5_scores(index: pd.DatetimeIndex) -> pd.DataFrame:
     usable_from = (z.index + pd.offsets.MonthEnd(0) + pd.DateOffset(months=2)).normalize()
     shifted = pd.Series(z.to_numpy(), index=usable_from).sort_index()
     shifted = shifted[~shifted.index.duplicated(keep="last")]
-    aligned = shifted.reindex(shifted.index.union(index)).sort_index().ffill().reindex(index)
+    #: **月次の値を無期限に持ち越さない。** TIC は観測月 2023-01 で終わっており、
+    #: 無制限の ffill だと最後の値が 2.75 年そのまま残る。それは「情報」ではなく
+    #: 「固定した建玉」である。次の公表が来るはずの期間（営業日 45 日 ≒ 2 か月）を
+    #: 超えたら NaN にして、book を建てない。**alpha を見る前に決めた規約である。**
+    aligned = (
+        shifted.reindex(shifted.index.union(index))
+        .sort_index()
+        .ffill(limit=MAX_STALENESS_ROWS)
+        .reindex(index)
+    )
     scores = pd.DataFrame(index=index, columns=list(UNIVERSE), dtype=float)
     others = [c for c in UNIVERSE if c != "USD"]
     scores["USD"] = aligned
@@ -247,6 +259,7 @@ __all__ = [
     "PARTNER_WINDOW",
     "SHOCK_LOOKBACK",
     "SLOPE_LOOKBACK",
+    "MAX_STALENESS_ROWS",
     "TIC_WINDOW_MONTHS",
     "Z_WINDOW",
     "t1_scores",

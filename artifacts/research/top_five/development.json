@@ -1,0 +1,1019 @@
+{
+ "cross_track_correlation": {
+  "T1_long|T2_long": 0.025,
+  "T1_long|T4_long": -0.01,
+  "T1_long|T5_long": -0.038,
+  "T1_recent|T2_recent": -0.053,
+  "T1_recent|T3_recent_T3-H1": 0.051,
+  "T1_recent|T3_recent_T3-H2": -0.052,
+  "T1_recent|T4_recent": -0.012,
+  "T1_recent|T5_recent": 0.003,
+  "T2_long|T4_long": -0.049,
+  "T2_long|T5_long": -0.007,
+  "T2_recent|T3_recent_T3-H1": 0.013,
+  "T2_recent|T3_recent_T3-H2": -0.014,
+  "T2_recent|T4_recent": 0.038,
+  "T2_recent|T5_recent": 0.01,
+  "T3_recent_T3-H1|T3_recent_T3-H2": -0.993,
+  "T3_recent_T3-H1|T4_recent": 0.042,
+  "T3_recent_T3-H1|T5_recent": 0.014,
+  "T3_recent_T3-H2|T4_recent": -0.039,
+  "T3_recent_T3-H2|T5_recent": -0.017,
+  "T4_long|T5_long": 0.023,
+  "T4_recent|T5_recent": 0.073
+ },
+ "cycle": "TOP_FIVE_2026_09",
+ "exploration_disclosure": "FIVE_WAY_EXPLORATORY_DEVELOPMENT_SEARCH_PLUS_A_TWO_SIGN_SUB_SEARCH_WITHIN_T3",
+ "freeze_digest": "28100ebedfea45765371585df5c4308fee261e2496a9798acca79c920158962c",
+ "multi_source_portfolio": "NO_WEIGHTS_OPTIMIZATION_NO_BLENDING_NO_SOURCE_SELECTION_THIS_CYCLE_PROPOSAL_ONLY",
+ "panel": {
+  "carry_leg": "CARRY_LEG_ABSENT_ON_BOTH_SPANS_SPOT_ONLY",
+  "construction": "pair 日次 log return -> 符号を揃えた通貨平均 -> cross-section 平均を引く。**両 span で同一**",
+  "long": {
+   "days": 4458,
+   "first": "1999-01-05",
+   "last": "2016-06-01",
+   "pairs": 28,
+   "source": "ECB euro reference rates (already acquired for T-V)"
+  },
+  "recent": {
+   "days": 1213,
+   "first": "2021-04-27",
+   "last": "2025-12-26",
+   "no_archive_read": true,
+   "pairs": 20,
+   "source": "guarded M15 caches: momentum_replication_b, supplemental_replication, exploratory_round_1"
+  }
+ },
+ "results": {
+  "T1_long": {
+   "benchmarks": {
+    "fx_own_mean_reversion_20d": {
+     "ic": 0.00021714941211122482,
+     "net_sharpe": -0.6172772532617193
+    },
+    "fx_own_momentum_20d": {
+     "ic": -0.00021714941211122482,
+     "net_sharpe": 0.09415402324841521
+    },
+    "zero_signal": {
+     "ic": 0.0,
+     "net_sharpe": 0.0
+    }
+   },
+   "candidate": "S05",
+   "capacity": {
+    "reachable": false,
+    "why": "net Sharpe が 0 以下なので leverage で救わない"
+   },
+   "cost_stress": {
+    "cost_x1.5": {
+     "net_annual_return": -0.08200871370901185,
+     "net_sharpe": -0.7194298002594259
+    },
+    "cost_x2.0": {
+     "net_annual_return": -0.11459215055372272,
+     "net_sharpe": -1.0014656485665612
+    }
+   },
+   "hypothesis": null,
+   "margin_utilisation_at_run": 0.17643294965373427,
+   "metrics": {
+    "annual_cost": 0.06516687368942173,
+    "at_leverage_cap_share": 0.0,
+    "currency_contribution": {
+     "AUD": 0.22423555091459763,
+     "CAD": 0.05957710145066565,
+     "CHF": 0.1579369335348883,
+     "EUR": -0.13968353017758778,
+     "GBP": -0.06107266006615031,
+     "JPY": -0.02334701704487585,
+     "NZD": -0.16877707141919898,
+     "USD": 0.22104910503522793
+    },
+    "days": 4321,
+    "downside_tail_p05": -0.01134240568460421,
+    "factor_abs_cosine": 0.07044641182495567,
+    "gross_annual_return": 0.015741596825120757,
+    "gross_sharpe": 0.1386555913383624,
+    "ic": 0.009929146827209192,
+    "incremental_ic": 0.013054412452338716,
+    "leave_one_currency_out_net_sharpe": {
+     "AUD": -0.5982174510393468,
+     "CAD": -0.5054073863878509,
+     "CHF": -0.5695499924663554,
+     "EUR": -0.3646480649030413,
+     "GBP": -0.41769333900826744,
+     "JPY": -0.4405106568692652,
+     "NZD": -0.3672981674710969,
+     "USD": -0.5741054964915455
+    },
+    "max_drawdown": -0.9238080320372626,
+    "net_annual_return": -0.04942527686430099,
+    "net_sharpe": -0.4347097228364903,
+    "portfolio_gross_leverage": 3.5286589930746852,
+    "position_persistence": 0.5718651079728478,
+    "positive_temporal_blocks": "29/68",
+    "raw_to_neutralised_score_corr": 0.692210797729147,
+    "realized_vol": 0.1136971966989834,
+    "risk_leverage": 3.5246336694485074,
+    "signal_persistence": 0.7279001487747491,
+    "temporal_concentration": 0.04284217779611083,
+    "top_10_day_contribution": -0.3481456109224387,
+    "top_1_day_contribution": -0.04267738664104935,
+    "top_5_day_contribution": -0.19493004123385083,
+    "turnover_round_trips_per_year": 191.3296350247262,
+    "years": 17.15
+   },
+   "span": "long",
+   "track": "T1",
+   "turnover_check": {
+    "band_law": 43.4,
+    "corrected_x1_90": 82.5,
+    "exceeds_corrected": true,
+    "measured": 191.3
+   }
+  },
+  "T1_recent": {
+   "benchmarks": {
+    "fx_own_mean_reversion_20d": {
+     "ic": 0.013594287443067888,
+     "net_sharpe": -0.006752519317728625
+    },
+    "fx_own_momentum_20d": {
+     "ic": -0.013594287443067888,
+     "net_sharpe": -0.7937385478765889
+    },
+    "zero_signal": {
+     "ic": 0.0,
+     "net_sharpe": 0.0
+    }
+   },
+   "candidate": "S05",
+   "capacity": {
+    "reachable": false,
+    "why": "net Sharpe が 0 以下なので leverage で救わない"
+   },
+   "cost_stress": {
+    "cost_x1.5": {
+     "net_annual_return": -0.10620171045493773,
+     "net_sharpe": -0.9130919925052559
+    },
+    "cost_x2.0": {
+     "net_annual_return": -0.15452917466694047,
+     "net_sharpe": -1.3180423361196225
+    }
+   },
+   "hypothesis": null,
+   "margin_utilisation_at_run": 0.27095148429955,
+   "metrics": {
+    "annual_cost": 0.09665492842400546,
+    "at_leverage_cap_share": 0.0016515276630883566,
+    "currency_contribution": {
+     "AUD": 0.07711224173931376,
+     "CAD": 0.005448964619793245,
+     "CHF": 0.0863563859834394,
+     "EUR": 0.04774652799665753,
+     "GBP": -0.1189965820001016,
+     "JPY": -0.12379254022667327,
+     "NZD": 0.0780294772079298,
+     "USD": 0.13445824738311865
+    },
+    "days": 1211,
+    "downside_tail_p05": -0.011682990133492596,
+    "factor_abs_cosine": 0.07202714979940275,
+    "gross_annual_return": 0.03878068218107047,
+    "gross_sharpe": 0.33636967333761103,
+    "ic": -6.046550700451508e-05,
+    "incremental_ic": 0.006557609668315507,
+    "leave_one_currency_out_net_sharpe": {
+     "AUD": -0.7090368996767339,
+     "CAD": -0.5516469919165076,
+     "CHF": -0.7405123451771664,
+     "EUR": -0.6047062451029327,
+     "GBP": -0.2897961014045376,
+     "JPY": -0.291817993623958,
+     "NZD": -0.6713207008363093,
+     "USD": -0.7743888328494172
+    },
+    "max_drawdown": -0.5835227585885049,
+    "net_annual_return": -0.057874246242935,
+    "net_sharpe": -0.5003319872914287,
+    "portfolio_gross_leverage": 5.419029685991,
+    "position_persistence": 0.5895010579394944,
+    "positive_temporal_blocks": "9/19",
+    "raw_to_neutralised_score_corr": 0.7955943365687452,
+    "realized_vol": 0.11567168942413623,
+    "risk_leverage": 5.503962463743079,
+    "signal_persistence": 0.756580026587944,
+    "temporal_concentration": 0.13166487642907188,
+    "top_10_day_contribution": -1.0523229367151758,
+    "top_1_day_contribution": -0.14810579710526706,
+    "top_5_day_contribution": -0.6294530268348729,
+    "turnover_round_trips_per_year": 283.7784158074147,
+    "years": 4.81
+   },
+   "span": "recent",
+   "track": "T1",
+   "turnover_check": {
+    "band_law": 43.4,
+    "corrected_x1_90": 82.5,
+    "exceeds_corrected": true,
+    "measured": 283.8
+   }
+  },
+  "T2_long": {
+   "benchmarks": {
+    "fx_own_mean_reversion_20d": {
+     "ic": -0.0014866753656857575,
+     "net_sharpe": -0.5984755187074988
+    },
+    "fx_own_momentum_20d": {
+     "ic": 0.0014866753656857575,
+     "net_sharpe": 0.06662391229180128
+    },
+    "zero_signal": {
+     "ic": 0.0,
+     "net_sharpe": 0.0
+    }
+   },
+   "candidate": "S06",
+   "capacity": {
+    "reachable": false,
+    "why": "net Sharpe が 0 以下なので leverage で救わない"
+   },
+   "cost_stress": {
+    "cost_x1.5": {
+     "net_annual_return": -0.1073620327166606,
+     "net_sharpe": -1.0001250481270576
+    },
+    "cost_x2.0": {
+     "net_annual_return": -0.1305181471077513,
+     "net_sharpe": -1.212342262779582
+    }
+   },
+   "hypothesis": null,
+   "margin_utilisation_at_run": 0.16085587179172173,
+   "metrics": {
+    "annual_cost": 0.046312228782181435,
+    "at_leverage_cap_share": 0.0,
+    "currency_contribution": {
+     "AUD": 0.22337328079544824,
+     "CAD": -0.48188896352328126,
+     "CHF": -0.08802705339325814,
+     "EUR": -0.1342926581273505,
+     "GBP": 0.012482865333580681,
+     "JPY": 0.040175597797296944,
+     "NZD": -0.07594181738943107,
+     "USD": -0.1324050127515894
+    },
+    "days": 4233,
+    "downside_tail_p05": -0.011305639812126764,
+    "factor_abs_cosine": 0.07643866145321644,
+    "gross_annual_return": -0.03789368954338846,
+    "gross_sharpe": -0.3541104939672192,
+    "ic": -0.006616371738826571,
+    "incremental_ic": -0.0026991535061263367,
+    "leave_one_currency_out_net_sharpe": {
+     "AUD": -0.9497233476933821,
+     "CAD": -0.6863667824168185,
+     "CHF": -0.7486370496322203,
+     "EUR": -0.7555248245593407,
+     "GBP": -0.7993155302167324,
+     "JPY": -0.9066128326418295,
+     "NZD": -0.7428355020463477,
+     "USD": -0.7355454434012312
+    },
+    "max_drawdown": -1.6007566531463617,
+    "net_annual_return": -0.08420591832556988,
+    "net_sharpe": -0.7859621502862971,
+    "portfolio_gross_leverage": 3.2171174358344343,
+    "position_persistence": 0.6554006167873785,
+    "positive_temporal_blocks": "21/67",
+    "raw_to_neutralised_score_corr": 0.9285466519095623,
+    "realized_vol": 0.10713737079437828,
+    "risk_leverage": 3.2818844251695056,
+    "signal_persistence": 0.8014611187949247,
+    "temporal_concentration": 0.0393135284826832,
+    "top_10_day_contribution": -0.18370828879000728,
+    "top_1_day_contribution": -0.024865977342415385,
+    "top_5_day_contribution": -0.10135763631504328,
+    "turnover_round_trips_per_year": 135.97248614850685,
+    "years": 16.8
+   },
+   "span": "long",
+   "track": "T2",
+   "turnover_check": {
+    "band_law": 43.4,
+    "corrected_x1_90": 82.5,
+    "exceeds_corrected": true,
+    "measured": 136.0
+   }
+  },
+  "T2_recent": {
+   "benchmarks": {
+    "fx_own_mean_reversion_20d": {
+     "ic": 0.013594287443067888,
+     "net_sharpe": -0.006752519317728625
+    },
+    "fx_own_momentum_20d": {
+     "ic": -0.013594287443067888,
+     "net_sharpe": -0.7937385478765889
+    },
+    "zero_signal": {
+     "ic": 0.0,
+     "net_sharpe": 0.0
+    }
+   },
+   "candidate": "S06",
+   "capacity": {
+    "reachable": false,
+    "why": "net Sharpe が 0 以下なので leverage で救わない"
+   },
+   "cost_stress": {
+    "cost_x1.5": {
+     "net_annual_return": -0.06975326519343163,
+     "net_sharpe": -0.6360029633403571
+    },
+    "cost_x2.0": {
+     "net_annual_return": -0.11191488015980548,
+     "net_sharpe": -1.014227551246665
+    }
+   },
+   "hypothesis": null,
+   "margin_utilisation_at_run": 0.24563581322126504,
+   "metrics": {
+    "annual_cost": 0.08432322993274767,
+    "at_leverage_cap_share": 0.0,
+    "currency_contribution": {
+     "AUD": 0.07164527786936092,
+     "CAD": 0.116808881223156,
+     "CHF": -0.035723519188116816,
+     "EUR": 0.1402158295633813,
+     "GBP": 0.0,
+     "JPY": 0.0708757600314689,
+     "NZD": -0.049653069053941526,
+     "USD": -0.04289315431294256
+    },
+    "days": 1205,
+    "downside_tail_p05": -0.010869306766671558,
+    "factor_abs_cosine": 0.09803034982435309,
+    "gross_annual_return": 0.056731579705689886,
+    "gross_sharpe": 0.5191830405529869,
+    "ic": 0.004100205684424244,
+    "incremental_ic": 0.004731560770510369,
+    "leave_one_currency_out_net_sharpe": {
+     "AUD": -0.4422233201975608,
+     "CAD": -0.5755448497211416,
+     "CHF": -0.18869746650035574,
+     "EUR": -0.5932450734756478,
+     "GBP": -0.2525082938057233,
+     "JPY": -0.42599859771909,
+     "NZD": -0.14902405174619013,
+     "USD": -0.1746977931815456
+    },
+    "max_drawdown": -0.25887760800217663,
+    "net_annual_return": -0.027591650227057785,
+    "net_sharpe": -0.2525082938057233,
+    "portfolio_gross_leverage": 4.912716264425301,
+    "position_persistence": 0.580548894061961,
+    "positive_temporal_blocks": "8/19",
+    "raw_to_neutralised_score_corr": 0.9797354024899694,
+    "realized_vol": 0.10927027311145057,
+    "risk_leverage": 4.969800555529946,
+    "signal_persistence": 0.7928016579083143,
+    "temporal_concentration": 0.15241680332065272,
+    "top_10_day_contribution": -1.7646903201439037,
+    "top_1_day_contribution": -0.24030196372520018,
+    "top_5_day_contribution": -1.0233354662537746,
+    "turnover_round_trips_per_year": 247.57260696637604,
+    "years": 4.78
+   },
+   "span": "recent",
+   "track": "T2",
+   "turnover_check": {
+    "band_law": 43.4,
+    "corrected_x1_90": 82.5,
+    "exceeds_corrected": true,
+    "measured": 247.6
+   }
+  },
+  "T3_long_T3-H1": {
+   "days": 0,
+   "span": "long",
+   "track": "T3",
+   "verdict": "DATA_NOT_DECISION_GRADE"
+  },
+  "T3_long_T3-H2": {
+   "days": 0,
+   "span": "long",
+   "track": "T3",
+   "verdict": "DATA_NOT_DECISION_GRADE"
+  },
+  "T3_recent_T3-H1": {
+   "benchmarks": {
+    "fx_own_mean_reversion_20d": {
+     "ic": 0.013594287443067888,
+     "net_sharpe": -0.006752519317728625
+    },
+    "fx_own_momentum_20d": {
+     "ic": -0.013594287443067888,
+     "net_sharpe": -0.7937385478765889
+    },
+    "zero_signal": {
+     "ic": 0.0,
+     "net_sharpe": 0.0
+    }
+   },
+   "candidate": "S02",
+   "capacity": {
+    "reachable": false,
+    "why": "net Sharpe が 0 以下なので leverage で救わない"
+   },
+   "cost_stress": {
+    "cost_x1.5": {
+     "net_annual_return": -0.20399025926744893,
+     "net_sharpe": -1.9151819724205905
+    },
+    "cost_x2.0": {
+     "net_annual_return": -0.2500262988690581,
+     "net_sharpe": -2.3392197825991334
+    }
+   },
+   "cross_section_width": {
+    "max": 5,
+    "median": 5.0
+   },
+   "hypothesis": "T3-H1",
+   "margin_utilisation_at_run": 0.23470961673791907,
+   "metrics": {
+    "annual_cost": 0.09207207920321829,
+    "at_leverage_cap_share": 0.0,
+    "currency_contribution": {
+     "AUD": -0.024031064415839236,
+     "CAD": 0.07314956417291518,
+     "CHF": -0.18619346167445644,
+     "EUR": -0.10158185919900031,
+     "GBP": 0.026868891550489042,
+     "JPY": -0.09728823761728739,
+     "NZD": 0.055302763747953995,
+     "USD": -0.06256544561148915
+    },
+    "days": 1210,
+    "downside_tail_p05": -0.011356602640084937,
+    "factor_abs_cosine": 0.10144369459206794,
+    "gross_annual_return": -0.0658821404626215,
+    "gross_sharpe": -0.6218828191953301,
+    "ic": -0.01435884985252092,
+    "incremental_ic": -0.013970441337820182,
+    "leave_one_currency_out_net_sharpe": {
+     "AUD": -1.4469568502603853,
+     "CAD": -1.764724814773601,
+     "CHF": -1.2734117903496478,
+     "EUR": -1.4115613876499815,
+     "GBP": -1.7015037618281537,
+     "JPY": -1.3230320624081067,
+     "NZD": -1.6262466743189874,
+     "USD": -1.518196980314294
+    },
+    "max_drawdown": -0.8381138172905036,
+    "net_annual_return": -0.15795421966583978,
+    "net_sharpe": -1.4869046837222402,
+    "portfolio_gross_leverage": 4.694192334758381,
+    "position_persistence": 0.7011925226945165,
+    "positive_temporal_blocks": "3/19",
+    "raw_to_neutralised_score_corr": 0.9788215319125025,
+    "realized_vol": 0.106230225376939,
+    "risk_leverage": 4.844330042236035,
+    "signal_persistence": 0.766620249666552,
+    "temporal_concentration": 0.12826759953593,
+    "top_10_day_contribution": -0.31532169891741935,
+    "top_1_day_contribution": -0.07324712148039587,
+    "top_5_day_contribution": -0.1994700343457989,
+    "turnover_round_trips_per_year": 270.3231920235417,
+    "years": 4.8
+   },
+   "rename_gate": {
+    "abs_corr": 0.4259284794785693,
+    "comparator": "(-Δ2y)-only book（閉じた T-R2 の反転）",
+    "threshold": 0.8,
+    "verdict": "DISTINCT"
+   },
+   "span": "recent",
+   "track": "T3",
+   "turnover_check": {
+    "band_law": 18.3,
+    "corrected_x1_90": 34.8,
+    "exceeds_corrected": true,
+    "measured": 270.3
+   }
+  },
+  "T3_recent_T3-H2": {
+   "benchmarks": {
+    "fx_own_mean_reversion_20d": {
+     "ic": 0.013594287443067888,
+     "net_sharpe": -0.006752519317728625
+    },
+    "fx_own_momentum_20d": {
+     "ic": -0.013594287443067888,
+     "net_sharpe": -0.7937385478765889
+    },
+    "zero_signal": {
+     "ic": 0.0,
+     "net_sharpe": 0.0
+    }
+   },
+   "candidate": "S02",
+   "capacity": {
+    "reachable": false,
+    "why": "net Sharpe が 0 以下なので leverage で救わない"
+   },
+   "cost_stress": {
+    "cost_x1.5": {
+     "net_annual_return": -0.07222597834220595,
+     "net_sharpe": -0.6801461587953679
+    },
+    "cost_x2.0": {
+     "net_annual_return": -0.1182620179438151,
+     "net_sharpe": -1.1108731160048453
+    }
+   },
+   "cross_section_width": {
+    "max": 5,
+    "median": 5.0
+   },
+   "hypothesis": "T3-H2",
+   "margin_utilisation_at_run": 0.23470961673791907,
+   "metrics": {
+    "annual_cost": 0.09207207920321829,
+    "at_leverage_cap_share": 0.0,
+    "currency_contribution": {
+     "AUD": 0.024031064415839236,
+     "CAD": -0.07314956417291518,
+     "CHF": 0.18619346167445644,
+     "EUR": 0.10158185919900031,
+     "GBP": -0.026868891550489042,
+     "JPY": 0.09728823761728739,
+     "NZD": -0.055302763747953995,
+     "USD": 0.06256544561148915
+    },
+    "days": 1210,
+    "downside_tail_p05": -0.011044722650114178,
+    "factor_abs_cosine": 0.10144369459206794,
+    "gross_annual_return": 0.0658821404626215,
+    "gross_sharpe": 0.6218828191953301,
+    "ic": 0.01435884985252092,
+    "incremental_ic": 0.013970441337820182,
+    "leave_one_currency_out_net_sharpe": {
+     "AUD": -0.29562473577065806,
+     "CAD": -0.11166976187499467,
+     "CHF": -0.6937514611319546,
+     "EUR": -0.48988836870637054,
+     "GBP": -0.21449578833602456,
+     "JPY": -0.44727501134957115,
+     "NZD": -0.1413323837805921,
+     "USD": -0.41275360473629047
+    },
+    "max_drawdown": -0.2094934457920851,
+    "net_annual_return": -0.026189938740596806,
+    "net_sharpe": -0.24703715576446336,
+    "portfolio_gross_leverage": 4.694192334758381,
+    "position_persistence": 0.7011925226945165,
+    "positive_temporal_blocks": "8/19",
+    "raw_to_neutralised_score_corr": 0.9788215319125025,
+    "realized_vol": 0.10601619282553394,
+    "risk_leverage": 4.844330042236035,
+    "signal_persistence": 0.766620249666552,
+    "temporal_concentration": 0.16830263512764634,
+    "top_10_day_contribution": -1.6338024384973882,
+    "top_1_day_contribution": -0.24317703924144296,
+    "top_5_day_contribution": -0.9638672645112335,
+    "turnover_round_trips_per_year": 270.3231920235417,
+    "years": 4.8
+   },
+   "rename_gate": {
+    "abs_corr": 0.4259284794785693,
+    "comparator": "(-Δ2y)-only book（閉じた T-R2 の反転）",
+    "threshold": 0.8,
+    "verdict": "DISTINCT"
+   },
+   "span": "recent",
+   "track": "T3",
+   "turnover_check": {
+    "band_law": 18.3,
+    "corrected_x1_90": 34.8,
+    "exceeds_corrected": true,
+    "measured": 270.3
+   }
+  },
+  "T4_long": {
+   "benchmarks": {
+    "fx_own_mean_reversion_20d": {
+     "ic": -0.0017406639256485538,
+     "net_sharpe": -0.6986308991836027
+    },
+    "fx_own_momentum_20d": {
+     "ic": 0.0017406639256485538,
+     "net_sharpe": 0.16672653005378207
+    },
+    "zero_signal": {
+     "ic": 0.0,
+     "net_sharpe": 0.0
+    }
+   },
+   "candidate": "S10",
+   "capacity": {
+    "reachable": false,
+    "why": "net Sharpe が 0 以下なので leverage で救わない"
+   },
+   "cost_stress": {
+    "cost_x1.5": {
+     "net_annual_return": -0.246779614816344,
+     "net_sharpe": -2.2759507898873568
+    },
+    "cost_x2.0": {
+     "net_annual_return": -0.33832321583752045,
+     "net_sharpe": -3.109928303391056
+    }
+   },
+   "hypothesis": null,
+   "margin_utilisation_at_run": 0.17531096347006725,
+   "metrics": {
+    "annual_cost": 0.18308720204235304,
+    "at_leverage_cap_share": 0.0,
+    "currency_contribution": {
+     "AUD": 0.0037889989229529727,
+     "CAD": 0.14844268665786522,
+     "CHF": 0.15697160888051298,
+     "EUR": 0.12866876989368345,
+     "GBP": 0.08318908850347129,
+     "JPY": -0.03318136345198843,
+     "NZD": 0.3613849148184617,
+     "USD": -0.3977881010910183
+    },
+    "days": 4085,
+    "downside_tail_p05": -0.011762411459849962,
+    "factor_abs_cosine": 0.09939226761447996,
+    "gross_annual_return": 0.02785118824718559,
+    "gross_sharpe": 0.2582367852211636,
+    "ic": -0.003507701001186489,
+    "incremental_ic": 0.0012818999903111271,
+    "leave_one_currency_out_net_sharpe": {
+     "AUD": -1.5191945175560988,
+     "CAD": -1.674400318893785,
+     "CHF": -1.6235302536391198,
+     "EUR": -1.6281195234365105,
+     "GBP": -1.5716319968150163,
+     "JPY": -1.460099480488958,
+     "NZD": -1.7383257130322756,
+     "USD": -1.2725626283112337
+    },
+    "max_drawdown": -2.6357927681019397,
+    "net_annual_return": -0.15523601379516747,
+    "net_sharpe": -1.4353357650166623,
+    "portfolio_gross_leverage": 3.506219269401345,
+    "position_persistence": 0.035870560819655506,
+    "positive_temporal_blocks": "20/65",
+    "raw_to_neutralised_score_corr": 0.9460695962595856,
+    "realized_vol": 0.10815310088323854,
+    "risk_leverage": 3.5859656298264024,
+    "signal_persistence": 0.009970870305136263,
+    "temporal_concentration": 0.037572998720688644,
+    "top_10_day_contribution": -0.10933908979127512,
+    "top_1_day_contribution": -0.016521335386830933,
+    "top_5_day_contribution": -0.06480462915873844,
+    "turnover_round_trips_per_year": 537.5431651272844,
+    "years": 16.21
+   },
+   "rename_gate": {
+    "abs_corr": 0.014805200023560075,
+    "comparator": "自通貨 lag-1 残差 res_i(t) と mu_i(t)",
+    "threshold": 0.8,
+    "verdict": "DISTINCT"
+   },
+   "span": "long",
+   "track": "T4",
+   "turnover_check": {
+    "band_law": 100.8,
+    "corrected_x1_90": 191.5,
+    "exceeds_corrected": true,
+    "measured": 537.5
+   }
+  },
+  "T4_recent": {
+   "benchmarks": {
+    "fx_own_mean_reversion_20d": {
+     "ic": 0.007423929605583001,
+     "net_sharpe": 0.2665783995296046
+    },
+    "fx_own_momentum_20d": {
+     "ic": -0.007423929605583001,
+     "net_sharpe": -1.0400769265561025
+    },
+    "zero_signal": {
+     "ic": 0.0,
+     "net_sharpe": 0.0
+    }
+   },
+   "candidate": "S10",
+   "capacity": {
+    "reachable": false,
+    "why": "net Sharpe が 0 以下なので leverage で救わない"
+   },
+   "cost_stress": {
+    "cost_x1.5": {
+     "net_annual_return": -0.43079625002327615,
+     "net_sharpe": -4.118082842675306
+    },
+    "cost_x2.0": {
+     "net_annual_return": -0.5601865395017078,
+     "net_sharpe": -5.330164446107255
+    }
+   },
+   "hypothesis": null,
+   "margin_utilisation_at_run": 0.2475546174426854,
+   "metrics": {
+    "annual_cost": 0.25878057895686324,
+    "at_leverage_cap_share": 0.0,
+    "currency_contribution": {
+     "AUD": -0.10016459373986825,
+     "CAD": -0.045704294069151906,
+     "CHF": 0.01406261209084532,
+     "EUR": 0.0020878759947904543,
+     "GBP": 0.0758141259764413,
+     "JPY": 0.033726595992416286,
+     "NZD": -0.04296917392781554,
+     "USD": -0.07893775361092872
+    },
+    "days": 840,
+    "downside_tail_p05": -0.0115051123459494,
+    "factor_abs_cosine": 0.09218189594436366,
+    "gross_annual_return": -0.042625381587981306,
+    "gross_sharpe": -0.4092736019843297,
+    "ic": -0.024850793053291853,
+    "incremental_ic": -0.02893796195804409,
+    "leave_one_currency_out_net_sharpe": {
+     "AUD": -2.8380928914775034,
+     "CAD": -2.933622493519812,
+     "CHF": -3.1360972468833492,
+     "EUR": -3.1182306084629916,
+     "GBP": -3.3259362600419027,
+     "JPY": -3.1656546623506916,
+     "NZD": -2.8927537530808594,
+     "USD": -2.7142886003087625
+    },
+    "max_drawdown": -1.1571831388695066,
+    "net_annual_return": -0.30140596054484453,
+    "net_sharpe": -2.89008336008635,
+    "portfolio_gross_leverage": 4.951092348853708,
+    "position_persistence": 0.018946605436626608,
+    "positive_temporal_blocks": "3/14",
+    "raw_to_neutralised_score_corr": 0.949324554715437,
+    "realized_vol": 0.1042897117458367,
+    "risk_leverage": 5.069299672240186,
+    "signal_persistence": -0.03611495304538237,
+    "temporal_concentration": 0.17235549780529671,
+    "top_10_day_contribution": -0.19242825228936103,
+    "top_1_day_contribution": -0.02775058403825127,
+    "top_5_day_contribution": -0.11640243694479106,
+    "turnover_round_trips_per_year": 759.7785641716478,
+    "years": 3.33
+   },
+   "rename_gate": {
+    "abs_corr": 0.024300817547491547,
+    "comparator": "自通貨 lag-1 残差 res_i(t) と mu_i(t)",
+    "threshold": 0.8,
+    "verdict": "DISTINCT"
+   },
+   "span": "recent",
+   "track": "T4",
+   "turnover_check": {
+    "band_law": 100.8,
+    "corrected_x1_90": 191.5,
+    "exceeds_corrected": true,
+    "measured": 759.8
+   }
+  },
+  "T5_long": {
+   "benchmarks": {
+    "fx_own_mean_reversion_20d": {
+     "ic": 0.00017118401361594074,
+     "net_sharpe": -0.3256429682701426
+    },
+    "fx_own_momentum_20d": {
+     "ic": -0.00017118401361594074,
+     "net_sharpe": -0.11452152941871718
+    },
+    "zero_signal": {
+     "ic": 0.0,
+     "net_sharpe": 0.0
+    }
+   },
+   "candidate": "S26",
+   "capacity": {
+    "reachable": false,
+    "why": "net Sharpe が 0 以下なので leverage で救わない"
+   },
+   "cost_stress": {
+    "cost_x1.5": {
+     "net_annual_return": -0.004653735448381243,
+     "net_sharpe": -0.04431966185417722
+    },
+    "cost_x2.0": {
+     "net_annual_return": -0.007490539551728769,
+     "net_sharpe": -0.07131782871453342
+    }
+   },
+   "hypothesis": null,
+   "margin_utilisation_at_run": 0.13856839408803495,
+   "metrics": {
+    "annual_cost": 0.005673608206695043,
+    "at_leverage_cap_share": 0.0,
+    "currency_contribution": {
+     "AUD": 0.0,
+     "CAD": -0.2329215946189707,
+     "CHF": 0.0,
+     "EUR": 0.0,
+     "GBP": 0.2444794192105436,
+     "JPY": 0.0,
+     "NZD": 0.0,
+     "USD": 0.054724982899915856
+    },
+    "days": 4331,
+    "downside_tail_p05": -0.010830838410698675,
+    "factor_abs_cosine": 0.20494688227335625,
+    "gross_annual_return": 0.003856676861661318,
+    "gross_sharpe": 0.0367287165202652,
+    "ic": 0.003090400978884152,
+    "incremental_ic": 0.0024469265171328737,
+    "leave_one_currency_out_net_sharpe": {
+     "AUD": -0.017305644516065057,
+     "CAD": 0.10919067255950757,
+     "CHF": -0.017305644516065057,
+     "EUR": -0.017305644516065057,
+     "GBP": -0.1581202186966038,
+     "JPY": -0.017305644516065057,
+     "NZD": -0.017305644516065057,
+     "USD": -0.07826625094252385
+    },
+    "max_drawdown": -0.5945594614951611,
+    "net_annual_return": -0.0018169313450337244,
+    "net_sharpe": -0.017305644516065057,
+    "portfolio_gross_leverage": 2.771367881760699,
+    "position_persistence": 0.9540139761399056,
+    "positive_temporal_blocks": "34/68",
+    "raw_to_neutralised_score_corr": 1.0,
+    "realized_vol": 0.10499067765705249,
+    "risk_leverage": 7.192818611951742,
+    "signal_persistence": 0.9592048207034864,
+    "temporal_concentration": 0.06249874581334128,
+    "top_10_day_contribution": -8.187113123393793,
+    "top_1_day_contribution": -1.0090262159313514,
+    "top_5_day_contribution": -4.483487390426404,
+    "turnover_round_trips_per_year": 16.65768704255738,
+    "years": 17.19
+   },
+   "rename_gate": {
+    "abs_corr": 0.10740206072619249,
+    "comparator": "1/2/3 か月ラグの USD basket return",
+    "threshold": 0.8,
+    "verdict": "DISTINCT"
+   },
+   "span": "long",
+   "track": "T5",
+   "turnover_check": {
+    "band_law": 5.1,
+    "corrected_x1_90": 9.7,
+    "exceeds_corrected": true,
+    "measured": 16.7
+   }
+  },
+  "T5_recent": {
+   "benchmarks": {
+    "fx_own_mean_reversion_20d": {
+     "ic": 0.02720357686419421,
+     "net_sharpe": 0.5500110697550586
+    },
+    "fx_own_momentum_20d": {
+     "ic": -0.02720357686419421,
+     "net_sharpe": -1.2689623927544205
+    },
+    "zero_signal": {
+     "ic": 0.0,
+     "net_sharpe": 0.0
+    }
+   },
+   "candidate": "S26",
+   "capacity": {
+    "for_10%_annual_net": {
+     "margin_utilisation": 0.32,
+     "required_target_vol": 0.1488,
+     "risk_leverage": 6.39,
+     "within_broker_ceiling": true
+    },
+    "for_5%_annual_net": {
+     "margin_utilisation": 0.16,
+     "required_target_vol": 0.0744,
+     "risk_leverage": 3.2,
+     "within_broker_ceiling": true
+    },
+    "reachable": true,
+    "scenarios": {
+     "vol_10%": {
+      "annual_net": 0.0672,
+      "margin_utilisation": 0.215,
+      "risk_leverage": 4.29
+     },
+     "vol_12%": {
+      "annual_net": 0.0806,
+      "margin_utilisation": 0.258,
+      "risk_leverage": 5.15
+     },
+     "vol_15%": {
+      "annual_net": 0.1008,
+      "margin_utilisation": 0.322,
+      "risk_leverage": 6.44
+     },
+     "vol_8%": {
+      "annual_net": 0.0538,
+      "margin_utilisation": 0.172,
+      "risk_leverage": 3.44
+     }
+    }
+   },
+   "cost_stress": {
+    "cost_x1.5": {
+     "net_annual_return": 0.06576055805550583,
+     "net_sharpe": 0.6448651673284516
+    },
+    "cost_x2.0": {
+     "net_annual_return": 0.06301754110174328,
+     "net_sharpe": 0.6177706769004663
+    }
+   },
+   "hypothesis": null,
+   "margin_utilisation_at_run": 0.12537239482853055,
+   "metrics": {
+    "annual_cost": 0.0054860339075251275,
+    "at_leverage_cap_share": 0.0,
+    "currency_contribution": {
+     "AUD": 0.027933453944883925,
+     "CAD": 0.0,
+     "CHF": -0.031033486658237585,
+     "EUR": 0.0,
+     "GBP": 0.0,
+     "JPY": 0.019702168127351954,
+     "NZD": -0.017112659385339568,
+     "USD": 0.1614085624094478
+    },
+    "days": 548,
+    "downside_tail_p05": -0.010600642777874779,
+    "factor_abs_cosine": 0.4931094475159168,
+    "gross_annual_return": 0.07398960891679351,
+    "gross_sharpe": 0.7258668110205443,
+    "ic": 0.02239047137547707,
+    "incremental_ic": 0.022087560073255953,
+    "leave_one_currency_out_net_sharpe": {
+     "AUD": 0.6552422240903006,
+     "CAD": 0.6719175062633506,
+     "CHF": 0.882082997717732,
+     "EUR": 0.6719175062633506,
+     "GBP": 0.6719175062633506,
+     "JPY": 0.5839750758070448,
+     "NZD": 0.7276652772866065,
+     "USD": -0.11830961090946926
+    },
+    "max_drawdown": -0.0980163260274728,
+    "net_annual_return": 0.06850357500926839,
+    "net_sharpe": 0.6719175062633506,
+    "portfolio_gross_leverage": 2.507447896570611,
+    "position_persistence": 0.9508664847477766,
+    "positive_temporal_blocks": "6/9",
+    "raw_to_neutralised_score_corr": 1.0,
+    "realized_vol": 0.10195235928622938,
+    "risk_leverage": 5.276280248619811,
+    "signal_persistence": 0.9461557506586664,
+    "temporal_concentration": 0.2956732342982879,
+    "top_10_day_contribution": 1.0102095642954634,
+    "top_1_day_contribution": 0.10896647848907015,
+    "top_5_day_contribution": 0.5247657574561093,
+    "turnover_round_trips_per_year": 16.106969781342123,
+    "years": 2.17
+   },
+   "rename_gate": {
+    "abs_corr": 0.09592253207823533,
+    "comparator": "1/2/3 か月ラグの USD basket return",
+    "threshold": 0.8,
+    "verdict": "DISTINCT"
+   },
+   "span": "recent",
+   "track": "T5",
+   "turnover_check": {
+    "band_law": 5.1,
+    "corrected_x1_90": 9.7,
+    "exceeds_corrected": true,
+    "measured": 16.1
+   }
+  }
+ }
+}
