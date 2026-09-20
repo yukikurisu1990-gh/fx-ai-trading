@@ -259,6 +259,10 @@ class TestThePrereg:
 class TestTheBoundaries:
     ALLOWED_TOP_LEVEL = {
         "__future__",
+        #: the shared acquisition guard — a module of checks and a provenance writer that
+        #: reads no market data and opens no socket. It is on this list because every
+        #: fetch route has to pass through it, which is the point of it existing.
+        "scripts.research.acquisition_safety",
         "contextlib",
         "dataclasses",
         "typing",

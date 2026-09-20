@@ -1,0 +1,146 @@
+{
+ "authority": "Human + ChatGPT adjudication 2026-09-20 section 2",
+ "finished_utc": "2026-09-20T04:49:00.436908+00:00",
+ "groups": {
+  "slot_five_alt": {
+   "ecb_bsi_total_assets": {
+    "bytes_read": 1916,
+    "failure_classification": null,
+    "first_line": "KEY,FREQ,REF_AREA,ADJUSTMENT,BS_REP_SECTOR,BS_ITEM,MATURITY_ORIG,DATA_TYPE,COUNT_AREA,BS_COUNT_SECTOR,CURRENCY_TRANS,BS_SUFFIX,TIME_PERIOD,OBS_VALUE,OBS_STATUS,OBS_CONF,OBS_PRE_BREAK,OBS_COM,TIME_FORM",
+    "http_status": 200,
+    "parameters": {
+     "method": "GET",
+     "read_limit_bytes": 400000,
+     "timeout_seconds": 30,
+     "tls": "ssl.create_default_context()",
+     "user_agent": "Mozilla/5.0 research-availability-check"
+    },
+    "result": "OK",
+    "retrieved_utc": "2026-09-20T04:48:56.436655+00:00",
+    "sha256_of_read_bytes": "015e15a5c4c8695a20e6bbaf807cb69620ad97620576c0ea792101b98ecc2860",
+    "url": "https://data-api.ecb.europa.eu/service/data/BSI/M.U2.N.C.T00.A.1.Z5.0000.Z01.E?format=csvdata&lastNObservations=3"
+   },
+   "ecb_ilm_total_assets_a": {
+    "bytes_read": 1439,
+    "failure_classification": null,
+    "first_line": "KEY,FREQ,REF_AREA,BS_REP_SECTOR,BS_ITEM,COUNT_AREA,CURRENCY_TRANS,TIME_PERIOD,OBS_VALUE,OBS_STATUS,OBS_CONF,OBS_PRE_BREAK,OBS_COM,TIME_FORMAT,BREAKS,COLLECTION,COMPILING_ORG,DISS_ORG,PUBL_ECB,PUBL_MU,",
+    "http_status": 200,
+    "parameters": {
+     "method": "GET",
+     "read_limit_bytes": 400000,
+     "timeout_seconds": 30,
+     "tls": "ssl.create_default_context()",
+     "user_agent": "Mozilla/5.0 research-availability-check"
+    },
+    "result": "OK",
+    "retrieved_utc": "2026-09-20T04:48:53.058222+00:00",
+    "sha256_of_read_bytes": "57cff506599bbe8b0bbbbf98582de7549829372295f1067200607c863bdc9746",
+    "url": "https://data-api.ecb.europa.eu/service/data/ILM/W.U2.C.A050000.U2.EUR?format=csvdata&lastNObservations=3"
+   },
+   "ecb_ilm_total_assets_b": {
+    "bytes_read": 0,
+    "detail": "HTTPError: HTTP Error 404: Not Found",
+    "failure_classification": "HTTP_STATUS_FROM_PROVIDER",
+    "http_status": 404,
+    "parameters": {
+     "method": "GET",
+     "read_limit_bytes": 400000,
+     "timeout_seconds": 30,
+     "tls": "ssl.create_default_context()",
+     "user_agent": "Mozilla/5.0 research-availability-check"
+    },
+    "result": "HTTP_STATUS_FROM_PROVIDER",
+    "retrieved_utc": "2026-09-20T04:48:55.239469+00:00",
+    "sha256_of_read_bytes": null,
+    "url": "https://data-api.ecb.europa.eu/service/data/ILM/W.U2.C.T000000.U2.EUR?format=csvdata&lastNObservations=3"
+   },
+   "fed_h41_ddp_package": {
+    "bytes_read": 0,
+    "detail": "HTTPError: HTTP Error 400: Bad Request",
+    "failure_classification": "HTTP_STATUS_FROM_PROVIDER",
+    "http_status": 400,
+    "parameters": {
+     "method": "GET",
+     "read_limit_bytes": 400000,
+     "timeout_seconds": 30,
+     "tls": "ssl.create_default_context()",
+     "user_agent": "Mozilla/5.0 research-availability-check"
+    },
+    "result": "HTTP_STATUS_FROM_PROVIDER",
+    "retrieved_utc": "2026-09-20T04:48:57.835282+00:00",
+    "sha256_of_read_bytes": null,
+    "url": "https://www.federalreserve.gov/datadownload/Output.aspx?rel=H41&series=c7b3b0b0e1a1b7b1&lastobs=5&from=&to=&filetype=csv&label=include&layout=seriescolumn"
+   },
+   "fed_h41_txt_current": {
+    "bytes_read": 400000,
+    "failure_classification": null,
+    "first_line": "",
+    "http_status": 200,
+    "parameters": {
+     "method": "GET",
+     "read_limit_bytes": 400000,
+     "timeout_seconds": 30,
+     "tls": "ssl.create_default_context()",
+     "user_agent": "Mozilla/5.0 research-availability-check"
+    },
+    "result": "OK",
+    "retrieved_utc": "2026-09-20T04:48:58.111077+00:00",
+    "sha256_of_read_bytes": "482e118cffd5aeaa99106a722adea8e3ce8bbf1c1014934f73f8a2f913ac8360",
+    "url": "https://www.federalreserve.gov/releases/h41/current/h41.htm"
+   },
+   "tic_s1_publish": {
+    "bytes_read": 400000,
+    "failure_classification": null,
+    "first_line": ",,,\"U.S. Transactions with Foreigners in Long-term Domestic and Foreign Securities, by Type and Country \",,,,,,,,,,,",
+    "http_status": 200,
+    "parameters": {
+     "method": "GET",
+     "read_limit_bytes": 400000,
+     "timeout_seconds": 30,
+     "tls": "ssl.create_default_context()",
+     "user_agent": "Mozilla/5.0 research-availability-check"
+    },
+    "result": "OK",
+    "retrieved_utc": "2026-09-20T04:48:59.606099+00:00",
+    "sha256_of_read_bytes": "f47a63916e7c790ff743507eaac65b62b9ff58782d9c86faf816e7189a456d0d",
+    "url": "https://ticdata.treasury.gov/Publish/s1_globl.csv"
+   },
+   "tic_shla": {
+    "bytes_read": 0,
+    "detail": "HTTPError: HTTP Error 404: Not Found",
+    "failure_classification": "HTTP_STATUS_FROM_PROVIDER",
+    "http_status": 404,
+    "parameters": {
+     "method": "GET",
+     "read_limit_bytes": 400000,
+     "timeout_seconds": 30,
+     "tls": "ssl.create_default_context()",
+     "user_agent": "Mozilla/5.0 research-availability-check"
+    },
+    "result": "HTTP_STATUS_FROM_PROVIDER",
+    "retrieved_utc": "2026-09-20T04:48:59.906818+00:00",
+    "sha256_of_read_bytes": null,
+    "url": "https://ticdata.treasury.gov/Publish/shla2023r.csv"
+   },
+   "tic_slt_publish": {
+    "bytes_read": 0,
+    "detail": "HTTPError: HTTP Error 404: Not Found",
+    "failure_classification": "HTTP_STATUS_FROM_PROVIDER",
+    "http_status": 404,
+    "parameters": {
+     "method": "GET",
+     "read_limit_bytes": 400000,
+     "timeout_seconds": 30,
+     "tls": "ssl.create_default_context()",
+     "user_agent": "Mozilla/5.0 research-availability-check"
+    },
+    "result": "HTTP_STATUS_FROM_PROVIDER",
+    "retrieved_utc": "2026-09-20T04:48:58.411201+00:00",
+    "sha256_of_read_bytes": null,
+    "url": "https://ticdata.treasury.gov/Publish/slt_globl.csv"
+   }
+  }
+ },
+ "scope": "metadata / availability / coverage only — no alpha, no FX return, no protected span",
+ "started_utc": "2026-09-20T04:48:53.057691+00:00"
+}

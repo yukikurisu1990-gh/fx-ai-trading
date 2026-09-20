@@ -77,6 +77,11 @@ UNVERIFIED: Final[str] = "UNVERIFIED_NEITHER_RECORD_ESTABLISHES_AVAILABILITY"
 #: committed probe at all. Absence of contradiction is not corroboration, so this is a
 #: weaker claim than REACHABLE and may not be leaned on.
 THIS_ROUND_ONLY: Final[str] = "REPORTED_REACHABLE_THIS_ROUND_ONLY_NO_ARTEFACT"
+#: 2026-09-20 の承認済み gated probe が artefact を残して決着させたもの。ここまで来て
+#: はじめて「到達可能」と言ってよい — 記録の無い観測は、何度繰り返しても記録ではない。
+SETTLED_REACHABLE: Final[str] = "REACHABLE_SETTLED_BY_GATED_PROBE_2026_09_20"
+#: 同じ probe が、この環境からは取れないと記録したもの。**provider の不在ではない。**
+SETTLED_BLOCKED_HERE: Final[str] = "UNAVAILABLE_FROM_THIS_ENVIRONMENT_NOT_PROVIDER_UNAVAILABLE"
 
 #: `this_round` is what in-session requests reported on 2026-09-19 through an
 #: ungated route that wrote no artefact. `committed_probe` is what
@@ -85,9 +90,12 @@ THIS_ROUND_ONLY: Final[str] = "REPORTED_REACHABLE_THIS_ROUND_ONLY_NO_ARTEFACT"
 #: is CONFLICTED and nothing downstream may be decided on it.
 REACHABILITY: Final[dict[str, dict[str, str]]] = {
     "fred.stlouisfed.org": {
-        "status": CONFLICTED,
+        "status": SETTLED_BLOCKED_HERE,
         "this_round": "UNREACHABLE - three attempts: one connection reset, two 45s timeouts",
         "committed_probe": "all 17 series HTTP 200, including BAMLH0A0HYM2, VIXCLS and DGS2/DGS10",
+        "gated_probe_2026_09_20": (
+            "TIMEOUT on both the BAMLH0A0HYM2 series page and the site root, classified TIMEOUT_NOT_PROVIDER_UNAVAILABLE — this environment cannot reach it, which is not the same as the series being gone. The 2026-09-14 record of HTTP 200 stands as evidence that the series exists and is served"
+        ),
         "consequence": (
             "an earlier draft retired S07 on the unreachable reading. It may not be: the only "
             "recorded measurement of that exact series says 200. S07's data position is "
@@ -95,12 +103,15 @@ REACHABILITY: Final[dict[str, dict[str, str]]] = {
         ),
     },
     "api.statistiken.bundesbank.de": {
-        "status": UNVERIFIED,
+        "status": SETTLED_REACHABLE,
         "this_round": "REACHABLE - 10y daily series, 200",
         "committed_probe": (
             "SSL: CERTIFICATE_VERIFY_FAILED, unable to get local issuer certificate - which "
             "that artefact's own note says is 'unverified-from-this-environment, not "
             "unavailable'. It is a local trust-store failure, not a contradiction"
+        ),
+        "gated_probe_2026_09_20": (
+            "HTTP 200, 230,846 bytes of the daily Umlaufsrendite series (D.I.ZST.ZI.EUR.S1311.B.A604.R10XX.R.A.A._Z._Z.A). The earlier TLS failure was local, exactly as that artefact's own note said it must be read"
         ),
         "consequence": (
             "the EUR long leg S02 needs is not established as obtainable - by one unreproduced "
@@ -108,20 +119,26 @@ REACHABILITY: Final[dict[str, dict[str, str]]] = {
         ),
     },
     "data.snb.ch": {
-        "status": UNVERIFIED,
+        "status": SETTLED_REACHABLE,
         "this_round": "REACHABLE - rendoblid cube, 200",
         "committed_probe": (
             "SSL: CERTIFICATE_VERIFY_FAILED - the same local trust-store failure, which the "
             "artefact's note explicitly declines to read as unavailability"
         ),
+        "gated_probe_2026_09_20": (
+            "HTTP 200 on the rendoblid cube. The committed probe's TLS failure was local"
+        ),
         "consequence": "the CHF long leg is not established as obtainable, for the same reason",
     },
     "home.treasury.gov": {
-        "status": CONFLICTED,
+        "status": SETTLED_REACHABLE,
         "this_round": "REACHABLE - full daily curve, every year probed back to 1995",
         "committed_probe": (
             "HTTP 404 on the interest-rates resource centre page - a real status code, not a "
             "transport failure, so unlike the TLS rows this one is a genuine disagreement"
+        ),
+        "gated_probe_2026_09_20": (
+            "HTTP 200, 16,584 bytes of the 2016 daily yield curve CSV. The committed probe's 404 was a different URL, which is why a 404 had to be recorded as a provider answer rather than as unavailability"
         ),
         "consequence": (
             "plausibly two different URLs rather than a real disagreement, but neither "
@@ -129,9 +146,12 @@ REACHABILITY: Final[dict[str, dict[str, str]]] = {
         ),
     },
     "cdn.cboe.com": {
-        "status": THIS_ROUND_ONLY,
+        "status": SETTLED_REACHABLE,
         "this_round": "REACHABLE - VIX_History.csv, 200",
         "committed_probe": "not in the probe's endpoint list",
+        "gated_probe_2026_09_20": (
+            "HTTP 200 on VIX_History.csv. Corroborated now, so it is no longer this round's word alone"
+        ),
         "consequence": (
             "the volatility series direct from the index provider. The 1990-01-02 start is "
             "independently corroborated by the committed probe's FRED VIXCLS declared range; "
@@ -140,9 +160,10 @@ REACHABILITY: Final[dict[str, dict[str, str]]] = {
         ),
     },
     "www.eia.gov": {
-        "status": THIS_ROUND_ONLY,
+        "status": SETTLED_REACHABLE,
         "this_round": "REACHABLE - RWTCd.xls, 200, the official US crude spot series",
         "committed_probe": "not in the probe's endpoint list",
+        "gated_probe_2026_09_20": ("HTTP 200 on RWTCd.xls"),
         "consequence": (
             "oil direct from the government publisher, on this round's evidence alone. The "
             "series start an earlier draft gave as 1986 is not supported by anything in this "
@@ -165,9 +186,12 @@ REACHABILITY: Final[dict[str, dict[str, str]]] = {
         "consequence": "the FX span itself",
     },
     "stats.bis.org": {
-        "status": THIS_ROUND_ONLY,
+        "status": SETTLED_REACHABLE,
         "this_round": "REACHABLE - policy rates, DSR and REER all 200",
         "committed_probe": "not in the probe's endpoint list; BIS was acquired successfully in T-V",
+        "gated_probe_2026_09_20": (
+            "HTTP 200 on the v1 policy-rate CSV (the v2 path returns 404 — a provider answer, not unavailability)"
+        ),
         "consequence": "slow macro-financial series if wanted later",
     },
     "query1.finance.yahoo.com": {
@@ -295,11 +319,24 @@ VOL_PER_UNIT_GROSS_MEASURED: Final[dict[str, float]] = {
 #: 87.2 years two-sided - 68.7 on the one-sided convention `capacity` uses, and both
 #: several times any span available. So the best available verdict is the one below,
 #: and it is not a pass.
+#: **この verdict は development を禁じない**(2026-09-19/20 裁定、decision record §3)。
+#: 「confirmatory claim には検出力が足りない」と「development screening に値しない」は
+#: 別の主張であり、前者から後者は出ない。confirmation は別工程で、本 cycle では行わない。
+#: development で見るのは sign / effect magnitude / net economics / benchmark increment /
+#: temporal stability / breadth / concentration / cost robustness / annual-profit capacity。
+#: 逆向きの誤用も同じ裁定が禁じている: negative economics を「どうせ検出力不足」で流さない。
+UNDERPOWERED_DOES_NOT_FORBID_DEVELOPMENT: Final[str] = (
+    "UNDERPOWERED_FOR_CONFIRMATORY_CLAIM_DOES_NOT_FORBID_DEVELOPMENT"
+)
+
 BEST_AVAILABLE_BUT_UNDERPOWERED: Final[str] = (
     "BEST_AVAILABLE_SPAN_STILL_UNDERPOWERED_FOR_A_REALISTIC_EDGE"
 )
 NARROW: Final[str] = "AS_ABOVE_AND_BREADTH_LIMITED"
 DATA_UNRESOLVED: Final[str] = "DATA_POSITION_UNRESOLVED_PENDING_AN_APPROVED_PROBE_RE_RUN"
+#: probe は走った。FRED はこの環境から timeout で、代替の無料一次公表者も無い。
+#: **候補が否定されたのではなく、ここからは取れない**という記録である。
+DATA_BLOCKED_HERE: Final[str] = "DATA_UNAVAILABLE_FROM_THIS_ENVIRONMENT_DESIGN_ONLY_NOT_EXECUTED"
 MARGINAL: Final[str] = "MARGINAL_MONTHLY_SAMPLING_CANNOT_CLOSE_A_NEGATIVE"
 
 #: What the committed gate says about the same design space, re-run rather than
@@ -380,14 +417,16 @@ ASSESSMENTS: Final[dict[str, dict[str, Any]]] = {
             "MOF Japan, Bank of Canada, SNB, and the BoE nominal spot curve"
         ),
         "coverage": {
-            "us_treasury": "this round reported the full curve back to 1995; the committed probe recorded 404",
-            "bundesbank": "this round reported the daily 10y series reachable; the committed probe recorded a TLS failure",
-            "boc": "Valet 10y benchmark - the one leg both records agree answers",
-            "snb": "this round reported the curve cube reachable; the committed probe recorded a TLS failure",
+            "us_treasury": "HTTP 200 on the 2016 daily yield-curve CSV, 16,584 bytes (gated probe)",
+            "bundesbank": "HTTP 200 on the daily Umlaufsrendite series, 230,846 bytes (gated probe)",
+            "ecb": "HTTP 200 on the euro-area 10y spot curve, an independent second EUR route",
+            "boc": "HTTP 200 on the Valet 10y benchmark (gated probe)",
+            "snb": "HTTP 200 on the rendoblid cube (gated probe)",
             "note": (
-                "the 2-year leg is already acquired for T-R, so only the long leg is new - and "
-                "three of its four publishers are CONFLICTED between the two records. The long "
-                "leg is NOT established as obtainable"
+                "the 2-year leg is already acquired for T-R, so only the long leg was open. The "
+                "approved probe of 2026-09-20 settled it: **every publisher the long leg needs "
+                "answers**, with an artefact behind each. The earlier TLS failures were local, "
+                "which is what the committed probe's own note said they had to be read as"
             ),
         },
         "timing_quality": (
@@ -400,16 +439,24 @@ ASSESSMENTS: Final[dict[str, dict[str, Any]]] = {
         "decision_capability": BEST_AVAILABLE_BUT_UNDERPOWERED,
         "why": (
             "the ruling's closure explicitly does not reach curve shape, the publishers are "
-            "tier-one official, and the turnover is the lowest of any ranked candidate. Both "
-            "the prior and the data position are weak: the prior because the level of this same "
-            "information set failed twice, the data because the long leg's availability is "
-            "unresolved between two unreproduced observations"
+            "tier-one official, and the turnover is the lowest of any ranked candidate. The "
+            "data position is now settled and good - the gated probe reached every publisher "
+            "the long leg needs. What stays weak is the prior, because the *level* of this same "
+            "information set failed twice; that is a reason to hold expectations low, not a "
+            "reason to skip a candidate whose data is clean and whose family is open"
         ),
     },
     "S06": {
         "name": "commodity terms of trade -> commodity currencies",
         "data": "EIA official US crude spot series, reachable",
-        "coverage": {"note": "daily from 1986; not probed day by day because it is not being run"},
+        "coverage": {
+            "note": (
+                "the EIA series answered 200 in the approved probe. An earlier draft gave the "
+                "start year as 1986; nothing in this repo supports that, and the only "
+                "corroborated crude range is FRED's DCOILBRENTEU from 1987-05-20. The actual "
+                "start is for the track's own Stage 0 to establish from the file"
+            )
+        },
         "timing_quality": "daily official publication, same one-day lag rule",
         "expected_turnover": "18-43 round trips a year",
         "breadth": 1.5,
@@ -425,27 +472,30 @@ ASSESSMENTS: Final[dict[str, dict[str, Any]]] = {
     "S07": {
         "name": "credit spread / funding stress -> USD, JPY, CHF",
         "data": (
-            "ICE BofA high-yield OAS (BAMLH0A0HYM2) is a FRED series. This round reported FRED "
-            "unreachable; the committed probe of 2026-09-14 records that exact series at HTTP 200"
+            "ICE BofA high-yield OAS (BAMLH0A0HYM2) is a FRED series. The approved probe of "
+            "2026-09-20 timed out on both the series page and the FRED root, so this environment "
+            "cannot reach it. The committed 2026-09-14 record of HTTP 200 stands as evidence "
+            "that the series exists and is served - the block is on this side"
         ),
         "coverage": {
             "note": (
                 "no free PRIMARY publisher exists for this index - ICE licenses it - so the "
-                "aggregator is the only free route and its status is CONFLICTED. An earlier "
-                "draft retired the candidate on the unreachable reading alone"
+                "aggregator is the only free route, and that route times out from here. The "
+                "candidate is therefore DESIGN_ONLY / NOT_EXECUTED rather than refuted: nothing "
+                "about the hypothesis was tested"
             )
         },
         "timing_quality": "not assessed",
         "expected_turnover": "18-43 round trips a year",
         "breadth": 1.5,
         "sample": "not assessed",
-        "decision_capability": DATA_UNRESOLVED,
+        "decision_capability": DATA_BLOCKED_HERE,
         "why": (
-            "unlike VIX and oil, this index has no free primary publisher to fall back to if "
-            "the aggregator really is unreachable - which is why its data position turns "
-            "entirely on a conflict this document cannot resolve. It measures the same risk "
-            "axis as S05 in any case, so it is the declared robustness check for S05 rather "
-            "than a direction of its own, and nothing here needs it decided today"
+            "unlike VIX and oil, this index has no free primary publisher to fall back to, and "
+            "the one free route times out from this environment. It measures the same risk axis "
+            "as S05 in any case, so losing it costs the programme a declared robustness check "
+            "for S05 rather than a direction. Under the 2026-09-20 ruling section 9 it keeps its "
+            "rank as DESIGN_ONLY and the next executable candidate is promoted in its place"
         ),
     },
     "S25": {
@@ -604,10 +654,14 @@ def summary() -> dict[str, Any]:
 
 __all__ = [
     "ASSESSMENTS",
+    "UNDERPOWERED_DOES_NOT_FORBID_DEVELOPMENT",
     "BEST_AVAILABLE_BUT_UNDERPOWERED",
     "COMMITTED_GATE_AT_THE_POOLED_PANEL",
     "CONFLICTED",
+    "DATA_BLOCKED_HERE",
     "DATA_UNRESOLVED",
+    "SETTLED_BLOCKED_HERE",
+    "SETTLED_REACHABLE",
     "MARGINAL",
     "NARROW",
     "REACHABLE",

@@ -21,9 +21,12 @@ Human + ChatGPT 裁定 §2–§46」を約 40 箇所で引用し、それを根�
 **裁定本文は独立した record として commit されるべき**である。本セッションは裁定本文を
 保持していないため、これを捏造せずに**未解決として明示**する。
 
-→ **Human への依頼**: 裁定本文を record として本 PR に添付するか、引用が正確であることを
-確認してほしい。それが済むまで、本文書の「§N による」という記述は
-**検証不能な引用**であり、`WORKFLOW_STATUS` の書き換えと guard 削除はその上に乗っている。
+→ **2026-09-20 に解決された。** Human + ChatGPT が PR #489 の最終報告をレビューし、
+その裁定を `docs/governance/m15_adjudication_2026_09_19_and_09_20.md` に decision record として
+記録した。ただし**2026-09-19 裁定の全文は依然として repo に無い**ため、その節番号への引用は
+今も検証不能であり、decision record はその事実自体を
+`PRIOR_ADJUDICATION_TEXT_NOT_IN_REPO_CITATIONS_UNVERIFIABLE` として記録している。
+2026-09-20 裁定が明示的に確認・変更した部分については、同 record が正本である。
 
 ## 0b. 本 round の結論で最も重要なこと
 
@@ -167,12 +170,40 @@ C09 は T-R が既に閉じた利回り差の *level*）。
   → `DATA_POSITION_UNRESOLVED_PENDING_AN_APPROVED_PROBE_RE_RUN`。
 - **S02 の長辺（10y）は「取得可能」と確立していない。** 4 publisher のうち 3 つが CONFLICTED である。
 
-### なぜ今ここで再測定しないか
+### 承認付き probe で決着した（2026-09-20）
 
-`availability_check.py` の docstring は **"Do not re-run without approval"** と明記し、
-`EDGE_SOURCES_PROBE_APPROVED=1` の opt-in gate を持つ。
-**これは approval を要する act であり、session が自分の判断で解決してよいものではない。**
-→ Human の承認の下で probe を再実行し、その artefact を commit するのが唯一の解き方である。
+2026-09-20 裁定 §2 が gated probe を承認したので実行した。記録は
+`artifacts/research/edge_sources/public_data_availability_2026_09_20.json` と
+`..._alternates.json`（**2026-09-14 の記録は上書きしていない**）。
+
+裁定 §2 が要求した 8 項目（source・URL・parameters・retrieval timestamp・HTTP result・
+hash・coverage・failure classification）を記録する新 probe を書いた。
+旧 probe は失敗を 1 本の文字列に潰しており、**TLS 失敗と provider 不在を区別できなかった**
+— PR #489 の誤読はまさにそこから出ていた。
+
+| 対象 | 結果 | 判定 |
+| --- | --- | --- |
+| US Treasury 日次 curve CSV (2016) | **200**、16,584 bytes | `SETTLED_REACHABLE` |
+| Bundesbank Umlaufsrendite 日次 | **200**、230,846 bytes | `SETTLED_REACHABLE` |
+| ECB euro area 10y spot curve | **200** | EUR の独立した第 2 route |
+| BoC Valet 10y | **200** | `SETTLED_REACHABLE` |
+| SNB rendoblid cube | **200** | `SETTLED_REACHABLE` |
+| CBOE `VIX_History.csv` | **200** | `SETTLED_REACHABLE`（裏づけ取得） |
+| EIA `RWTCd.xls` | **200** | `SETTLED_REACHABLE`（裏づけ取得） |
+| BIS policy rates (v1) | **200** | `SETTLED_REACHABLE` |
+| **FRED**（series page と root の両方） | **TIMEOUT** | `UNAVAILABLE_FROM_THIS_ENVIRONMENT_NOT_PROVIDER_UNAVAILABLE` |
+
+**結論は 3 つ。**
+
+1. **S02 の長辺は取得可能である。** 必要な publisher が全て応答した。
+   以前の TLS 失敗は**ローカルの trust store の問題**であり、committed probe 自身の note が
+   そう読めと明記していたとおりだった。S02 の弱点は **data ではなく prior だけ**になった。
+2. **S07 はこの環境から取得できない。** ただし分類は `TIMEOUT_NOT_PROVIDER_UNAVAILABLE` であり、
+   2026-09-14 の記録は当該 series が 200 で配信されていることを示している。
+   → **候補は否定されていない。`DESIGN_ONLY / NOT_EXECUTED`** として順位を保持し、
+   裁定 §9 に従って次順位の実行可能 candidate を繰り上げる。
+3. **404 は「応答」である。** Bundesbank と BIS の初回 404 は host が答えた結果であり、
+   不達ではなかった。だから代替 key を探すのが筋で、探したら両方 200 だった。
 
 ### VIX の本数について
 
@@ -324,9 +355,9 @@ alpha を見る前に算定した。**初稿の数値は 2 箇所で誤ってお
 | ID | verdict | 根拠 |
 | --- | --- | --- |
 | **S05** | `BEST_AVAILABLE_SPAN_STILL_UNDERPOWERED_FOR_A_REALISTIC_EDGE` | 22.5 年で検出可能 0.59、真 0.3 で検出力 0.30。到達できる中で最良だが**決められない** |
-| **S02** | `BEST_AVAILABLE_SPAN_STILL_UNDERPOWERED_FOR_A_REALISTIC_EDGE` | S05 と同じ span。加えて**長辺 data が取得可能と確立していない**（§2） |
+| **S02** | `BEST_AVAILABLE_SPAN_STILL_UNDERPOWERED_FOR_A_REALISTIC_EDGE` | S05 と同じ span。**長辺 data は probe で取得可能と確定**（§2）。弱いのは prior のみ |
 | S06 | `AS_ABOVE_AND_BREADTH_LIMITED` | span は同じ、実効 breadth 1.5 → 必要 IC が S05 比で約 29% 増 |
-| S07 | `DATA_POSITION_UNRESOLVED_PENDING_AN_APPROVED_PROBE_RE_RUN` | §2 の conflict。**「失われた」ではない** |
+| S07 | `DATA_UNAVAILABLE_FROM_THIS_ENVIRONMENT_DESIGN_ONLY_NOT_EXECUTED` | probe は走り、FRED は timeout。**仮説は何も検定されていない** |
 | S25 / S26 | `MARGINAL_MONTHLY_SAMPLING_CANNOT_CLOSE_A_NEGATIVE` | 月次。近 span だけでは 56 観測 |
 | **S03/S04 (T-E)** | `EVENT_REPRICING_DATA_NOT_DECISION_GRADE` | §3 のとおり。backtest しない |
 
@@ -381,7 +412,7 @@ S07 は data position が未解決（§2）。証拠が支えるのは 2 本で�
 ### この選択が**主張していないこと**
 
 - **「決められる」とは言っていない。** 2 本とも `BEST_AVAILABLE_SPAN_STILL_UNDERPOWERED_FOR_A_REALISTIC_EDGE`。
-- **S02 の長辺 data は取得可能と確立していない**（§2 の 3 publisher が CONFLICTED）。
+- S02 の長辺 data は**取得可能と確定した**（§2）。残る弱点は prior である。
 - **committed gate を同じ panel 長で再実行すると、対応する plan は `NO_DECISION_GRADE_PASS_REGION` のまま**で、
   binding constraint は span ではなく `economic_net_under_stress` である（§1a）。
 - したがって**どちらを pre-register しても、`UNRESOLVED` で返る可能性が高い検定を登録することになる**。
@@ -399,9 +430,11 @@ S07 は data position が未解決（§2）。証拠が支えるのは 2 本で�
 
 ### pre-registration の前に片付けるべきこと（本 PR では解けない）
 
-1. **裁定本文の record 化**（§0a）。本文書と code は検証不能な引用の上に乗っている。
-2. **`availability_check.py` の承認付き再実行と artefact の commit**（§2）。
-   S07 の生死と S02 の長辺の取得可能性はこれでしか決まらない。
+1. ~~裁定本文の record 化~~ → **2026-09-20 に実施**
+   （`docs/governance/m15_adjudication_2026_09_19_and_09_20.md`）。
+   ただし 2026-09-19 裁定の全文は今も repo に無く、その引用は検証不能のままである。
+2. ~~承認付き probe の実行~~ → **2026-09-20 に実施**。S02 の長辺は取得可能、
+   S07 はこの環境から不達（`DESIGN_ONLY / NOT_EXECUTED`）。
 3. **committed gate との緊張の解消**（§1a）。span ではなく `economic_net_under_stress` が
    binding であるという読みが正しければ、**次に取り組むべきは候補ではなく cost 構造**である。
 4. **primary statistic を 1 本に決める**（§1）。pooled 有意性と符号一致の両方を
@@ -412,7 +445,7 @@ S07 は data position が未解決（§2）。証拠が支えるのは 2 本で�
 ### この文書が主張していないことの要約
 
 - `DECISION_CAPABLE` な候補は**存在しない**。
-- reachability は**測定済みではない**。
+- reachability は**承認付き probe で決着した**（S02 取得可、S07 は本環境から不達）。
 - S07 は**退場していない**。
 - LEAD / SECOND は **Formal Confirmation ではなく、なり得ない**。
 - **実データの再読取り許可はどこにも発生していない。** 両 span が seen であることは

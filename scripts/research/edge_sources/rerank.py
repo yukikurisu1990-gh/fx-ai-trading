@@ -195,14 +195,12 @@ REASSESSMENT: Final[dict[str, dict[str, Any]]] = {
             "the ruling's closure explicitly does NOT reach curve shape, so this stays open and "
             "may not be excluded by paraphrase. But its prior falls: it is a second hypothesis "
             "on the same information set whose level just failed twice, the rate books' measured "
-            "IC was negative at every horizon tested. Its data position is UNRESOLVED rather "
-            "than good: the committed probe of 2026-09-14 "
-            "(artifacts/research/edge_sources/public_data_availability.json) records the "
-            "Bundesbank and SNB endpoints failing TLS verification and the US Treasury page "
-            "404, while this round's in-session requests reported all three answering. Neither "
-            "observation was reproduced through the gated probe route, so the long leg is not "
-            "established as obtainable. It is cheap to test and it is not the strongest thing "
-            "available"
+            "IC was negative at every horizon tested. Its data position is now SETTLED and "
+            "good: the approved probe of 2026-09-20 reached every publisher the long leg needs "
+            "- US Treasury, Bundesbank, Bank of Canada and the SNB all answered 200, with an "
+            "artefact behind each, and the ECB curve is an independent second EUR route. The "
+            "earlier TLS failures were local, as the committed probe's own note required them "
+            "to be read. So what is weak here is the prior, not the feasibility"
         ),
         "what_would_raise_it": (
             "evidence that curve shape carries information the level does not - which is a claim "
@@ -328,12 +326,11 @@ REASSESSMENT: Final[dict[str, dict[str, Any]]] = {
             "untested, and it measures the same risk-appetite axis as S05 with a narrower "
             "currency map, so running it alongside S05 would be two measurements of one thing: "
             "it is the natural declared robustness check for S05 rather than a track of its "
-            "own. Its data position is UNRESOLVED and an earlier draft of this module got it "
-            "wrong in both directions - first calling the series free and daily from 1996, then "
-            "retiring it as lost. The committed probe of 2026-09-14 records the ICE BofA OAS "
-            "series page (BAMLH0A0HYM2) answering HTTP 200 at the aggregator this round's "
-            "in-session requests reported unreachable. Until that conflict is resolved through "
-            "the gated probe route, this candidate is neither available nor retired"
+            "own. Its data position is settled and it is bad: the approved probe of 2026-09-20 "
+            "timed out on both the BAMLH0A0HYM2 series page and the FRED root, and no free "
+            "primary publisher exists because ICE licenses the index. It keeps this rank as "
+            "DESIGN_ONLY / NOT_EXECUTED - nothing about the hypothesis was tested, and the "
+            "2026-09-14 record of HTTP 200 says the series is served, just not to us"
         ),
     },
     "S16": {

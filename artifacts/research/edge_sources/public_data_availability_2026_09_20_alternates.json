@@ -1,0 +1,95 @@
+{
+ "authority": "Human + ChatGPT adjudication 2026-09-20 section 2",
+ "finished_utc": "2026-09-20T04:39:34.256591+00:00",
+ "groups": {
+  "alternates": {
+   "bis_dataflow_root": {
+    "bytes_read": 20332,
+    "failure_classification": null,
+    "first_line": "{\"meta\":{\"id\":\"IDREFa62ccbdd-d799-4b85-9232-dcc7268805e8\",\"test\":false,\"schema\":\"https://raw.githubusercontent.com/sdmx-twg/sdmx-json/develop/structure-message/tools/schemas/2.0.0/sdmx-json-structure-",
+    "http_status": 200,
+    "parameters": {
+     "method": "GET",
+     "read_limit_bytes": 400000,
+     "timeout_seconds": 30,
+     "tls": "ssl.create_default_context()",
+     "user_agent": "Mozilla/5.0 research-availability-check"
+    },
+    "result": "OK",
+    "retrieved_utc": "2026-09-20T04:39:33.315481+00:00",
+    "sha256_of_read_bytes": "f383dee198987985ccb2cf690c439ce90bee8b1fcd41804661f35a88a9e3c418",
+    "url": "https://stats.bis.org/api/v2/structure/dataflow/BIS/all/latest"
+   },
+   "bis_policy_rates_v1": {
+    "bytes_read": 400000,
+    "failure_classification": null,
+    "first_line": "FREQ,REF_AREA,UNIT_MEASURE,UNIT_MULT,TIME_FORMAT,COMPILATION,DECIMALS,SOURCE_REF,SUPP_INFO_BREAKS,TITLE,TIME_PERIOD,OBS_VALUE,OBS_STATUS,OBS_CONF,OBS_PRE_BREAK",
+    "http_status": 200,
+    "parameters": {
+     "method": "GET",
+     "read_limit_bytes": 400000,
+     "timeout_seconds": 30,
+     "tls": "ssl.create_default_context()",
+     "user_agent": "Mozilla/5.0 research-availability-check"
+    },
+    "result": "OK",
+    "retrieved_utc": "2026-09-20T04:39:31.657796+00:00",
+    "sha256_of_read_bytes": "f12cb1e593ed89a0199a8552403312abd97237932806489d704d17ea817f5989",
+    "url": "https://stats.bis.org/api/v1/data/WS_CBPOL/D../all?format=csv"
+   },
+   "bundesbank_10y_rest_data": {
+    "bytes_read": 0,
+    "detail": "HTTPError: HTTP Error 404: Not Found",
+    "failure_classification": "HTTP_STATUS_FROM_PROVIDER",
+    "http_status": 404,
+    "parameters": {
+     "method": "GET",
+     "read_limit_bytes": 400000,
+     "timeout_seconds": 30,
+     "tls": "ssl.create_default_context()",
+     "user_agent": "Mozilla/5.0 research-availability-check"
+    },
+    "result": "HTTP_STATUS_FROM_PROVIDER",
+    "retrieved_utc": "2026-09-20T04:39:26.407256+00:00",
+    "sha256_of_read_bytes": null,
+    "url": "https://api.statistiken.bundesbank.de/rest/data/BBSIS/D.I.ZAR.ZI.EUR.S1311.B.A604._Z.R.A.A._Z._Z.A?format=csv&lang=en"
+   },
+   "bundesbank_umlaufsrendite": {
+    "bytes_read": 230846,
+    "failure_classification": null,
+    "first_line": "﻿\"\",BBSIS.D.I.ZST.ZI.EUR.S1311.B.A604.R10XX.R.A.A._Z._Z.A,BBSIS.D.I.ZST.ZI.EUR.S1311.B.A604.R10XX.R.A.A._Z._Z.A_FLAGS",
+    "http_status": 200,
+    "parameters": {
+     "method": "GET",
+     "read_limit_bytes": 400000,
+     "timeout_seconds": 30,
+     "tls": "ssl.create_default_context()",
+     "user_agent": "Mozilla/5.0 research-availability-check"
+    },
+    "result": "OK",
+    "retrieved_utc": "2026-09-20T04:39:27.802629+00:00",
+    "sha256_of_read_bytes": "57ed4da71bdafb4cd69d1726838e0bc0a9f45944ebef304b4eb378ceeaa7575e",
+    "url": "https://api.statistiken.bundesbank.de/rest/data/BBSIS/D.I.ZST.ZI.EUR.S1311.B.A604.R10XX.R.A.A._Z._Z.A?format=csv&lang=en"
+   },
+   "ecb_yield_curve_10y": {
+    "bytes_read": 3228,
+    "failure_classification": null,
+    "first_line": "KEY,FREQ,REF_AREA,CURRENCY,PROVIDER_FM,INSTRUMENT_FM,PROVIDER_FM_ID,DATA_TYPE_FM,TIME_PERIOD,OBS_VALUE,OBS_STATUS,OBS_CONF,OBS_PRE_BREAK,OBS_COM,TIME_FORMAT,BREAKS,COLLECTION,COMPILING_ORG,DISS_ORG,DO",
+    "http_status": 200,
+    "parameters": {
+     "method": "GET",
+     "read_limit_bytes": 400000,
+     "timeout_seconds": 30,
+     "tls": "ssl.create_default_context()",
+     "user_agent": "Mozilla/5.0 research-availability-check"
+    },
+    "result": "OK",
+    "retrieved_utc": "2026-09-20T04:39:29.779757+00:00",
+    "sha256_of_read_bytes": "d3ff36d694aa1bad8e71edc83bb378f42fb75b87b5c7652b9b5e055cf93dcb9d",
+    "url": "https://data-api.ecb.europa.eu/service/data/YC/B.U2.EUR.4F.G_N_A.SV_C_YM.SR_10Y?format=csvdata&lastNObservations=5"
+   }
+  }
+ },
+ "scope": "metadata / availability / coverage only — no alpha, no FX return, no protected span",
+ "started_utc": "2026-09-20T04:39:26.406733+00:00"
+}

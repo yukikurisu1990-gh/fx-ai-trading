@@ -27,6 +27,8 @@ from scripts.research.market_yields import (
 
 ROOT = Path(__file__).resolve().parents[2]
 REPO_ROOT = ROOT
+PROBE_DIR = ROOT / "artifacts/research/edge_sources"
+PROBE_ALTERNATES = PROBE_DIR / "public_data_availability_2026_09_20_alternates.json"
 DOC = ROOT / "docs/research/m15_candidate_rerank_2026_09.md"
 
 
@@ -271,6 +273,8 @@ class TestTheFeasibilityIsSignalBlindAndMeasured:
             feasibility.CONFLICTED,
             feasibility.UNVERIFIED,
             feasibility.THIS_ROUND_ONLY,
+            feasibility.SETTLED_REACHABLE,
+            feasibility.SETTLED_BLOCKED_HERE,
             "REACHABLE_BUT_NOT_USED",
         }
         for host, row in feasibility.REACHABILITY.items():
@@ -300,10 +304,13 @@ class TestTheFeasibilityIsSignalBlindAndMeasured:
         #: the VIX start date is the one claim both records agree on
         assert probe["fred"]["VIXCLS"]["declared_range"][0] == "1990-01-02"
 
-    def test_no_candidate_is_retired_on_the_unreproduced_observation(self) -> None:
+    def test_the_blocked_candidate_is_not_refuted_only_unreachable(self) -> None:
+        """probe は走った。取れないのはこちら側で、仮説は何も検定されていない。"""
         s07 = feasibility.ASSESSMENTS["S07"]
-        assert s07["decision_capability"] == feasibility.DATA_UNRESOLVED
-        assert "200" in s07["data"]
+        assert s07["decision_capability"] == feasibility.DATA_BLOCKED_HERE
+        assert "DESIGN_ONLY_NOT_EXECUTED" in s07["decision_capability"]
+        #: 相手が消えたという主張はしない
+        assert "the series exists and is served" in s07["data"]
 
     def test_the_redistributor_is_reachable_and_deliberately_unused(self) -> None:
         yahoo = feasibility.REACHABILITY["query1.finance.yahoo.com"]
@@ -335,6 +342,7 @@ class TestTheFeasibilityIsSignalBlindAndMeasured:
             feasibility.NARROW,
             feasibility.MARGINAL,
             feasibility.DATA_UNRESOLVED,
+            feasibility.DATA_BLOCKED_HERE,
         }
         for cid, row in feasibility.ASSESSMENTS.items():
             assert row["decision_capability"] in allowed, cid
@@ -603,7 +611,7 @@ class TestTheDocumentsNumbersComeFromTheCode:
     def test_the_capability_table_carries_the_module_tokens(self, document: str) -> None:
         rows = _table_rows(document, "| ID | verdict | 根拠 |")
         verdicts = {row[0]: row[1].strip("`") for row in rows}
-        for cid in ("S05", "S02", "S06", "S07"):
+        for cid in ("S05", "S02", "S06"):
             assert verdicts[cid].startswith(
                 feasibility.ASSESSMENTS[cid]["decision_capability"][:20]
             ), cid
@@ -614,7 +622,9 @@ class TestTheDocumentsNumbersComeFromTheCode:
         """Each of these was negatable without a test noticing."""
         assert "### ただし、長い span はこれを解決しない" in document
         assert "## 2. reachability は**未解決**である" in document
-        assert "- reachability は**測定済みではない**。" in document
+        assert "- reachability は**承認付き probe で決着した**" in document
+        #: 「測定済みではない」から「決着した」へ動かせるのは、artefact を伴う probe だけ
+        assert "public_data_availability_2026_09_20.json" in document
         assert "- `DECISION_CAPABLE` な候補は**存在しない**。" in document
 
     def test_the_breadth_penalty_is_the_arithmetic_it_claims(self, document: str) -> None:
@@ -663,36 +673,111 @@ class TestTheSpansAreBoundToTheirCommittedConstants:
         assert feasibility.FX_SPANS["recent"]["span"].endswith("2025-12-26")
 
 
-class TestTheReachabilityEvidenceClassesAreHonest:
-    def test_a_tls_failure_is_not_recorded_as_a_contradiction(self) -> None:
-        """The committed artefact's own note forbids that reading."""
-        probe = json.loads(
+class TestTheGatedProbeSettledTheReachability:
+    """2026-09-20 の承認済み probe が、記録を伴って決着させた。
+
+    それ以前は「片方が言い、片方が言わない」状態で、PR #489 はそれを CONFLICTED と
+    誤記していた。ここで固定するのは probe の artefact そのものに対してであって、
+    module の散文に対してではない。
+    """
+
+    @staticmethod
+    def _probe() -> dict:
+        return json.loads(
+            (
+                REPO_ROOT
+                / "artifacts/research/edge_sources/public_data_availability_2026_09_20.json"
+            ).read_text(encoding="utf-8")
+        )
+
+    def test_the_probe_recorded_what_the_ruling_required(self) -> None:
+        """source・URL・parameters・timestamp・HTTP result・hash・classification。"""
+        probe = self._probe()
+        assert "2026-09-20" in probe["authority"]
+        for rows in probe["groups"].values():
+            for name, row in rows.items():
+                for field in (
+                    "url",
+                    "parameters",
+                    "retrieved_utc",
+                    "http_status",
+                    "result",
+                    "failure_classification",
+                ):
+                    assert field in row, (name, field)
+                if row["bytes_read"]:
+                    assert row["sha256_of_read_bytes"], name
+
+    def test_the_curve_long_leg_is_obtainable(self) -> None:
+        """S02 の可否を決めた観測。module の status はこれに従う。"""
+        rows = self._probe()["groups"]["S02_curve_long_leg"]
+        for name in ("us_treasury_par_yield_2016", "boc_valet_10y", "snb_rendoblid"):
+            assert rows[name]["http_status"] == 200, name
+        #: EUR leg は代替記録の側で 200 を取った
+        alternates = json.loads(PROBE_ALTERNATES.read_text(encoding="utf-8"))["groups"][
+            "alternates"
+        ]
+        assert alternates["bundesbank_umlaufsrendite"]["http_status"] == 200
+        assert alternates["ecb_yield_curve_10y"]["http_status"] == 200
+        for host in (
+            "home.treasury.gov",
+            "api.statistiken.bundesbank.de",
+            "data.snb.ch",
+        ):
+            assert feasibility.REACHABILITY[host]["status"] == feasibility.SETTLED_REACHABLE, host
+
+    def test_the_credit_spread_route_timed_out_and_is_recorded_as_local(self) -> None:
+        rows = self._probe()["groups"]["S07_credit_spread"]
+        for row in rows.values():
+            assert row["http_status"] is None
+            assert row["failure_classification"] == "TIMEOUT_NOT_PROVIDER_UNAVAILABLE"
+        assert (
+            feasibility.REACHABILITY["fred.stlouisfed.org"]["status"]
+            == feasibility.SETTLED_BLOCKED_HERE
+        )
+        #: 「相手がいない」とは言っていない
+        assert "NOT_PROVIDER_UNAVAILABLE" in feasibility.SETTLED_BLOCKED_HERE
+
+    def test_the_three_uncorroborated_hosts_are_corroborated_now(self) -> None:
+        rows = self._probe()["groups"]["uncorroborated_this_round_only"]
+        assert rows["cboe_vix_history"]["http_status"] == 200
+        assert rows["eia_wti_daily"]["http_status"] == 200
+        for host in ("cdn.cboe.com", "www.eia.gov", "stats.bis.org"):
+            assert feasibility.REACHABILITY[host]["status"] == feasibility.SETTLED_REACHABLE, host
+
+    def test_a_404_is_a_provider_answer_not_unavailability(self) -> None:
+        """404 を返した host は「応答している」。だから代替 key を探すのが筋だった。"""
+        rows = self._probe()["groups"]["uncorroborated_this_round_only"]
+        assert rows["bis_policy_rates"]["failure_classification"] == "HTTP_STATUS_FROM_PROVIDER"
+        alternates = json.loads(PROBE_ALTERNATES.read_text(encoding="utf-8"))["groups"][
+            "alternates"
+        ]
+        assert alternates["bis_policy_rates_v1"]["http_status"] == 200
+
+    def test_the_unsupported_series_start_is_not_asserted(self) -> None:
+        """S06 は「1986 年から」で順位を得ていたが、その年は repo の何にも支えられていない。
+
+        この assertion は一度書かれ、クラスを差し替えたときに消えた。mutation harness が
+        「1986 を書き戻す」を通したので、それで気づいた。
+        """
+        blob = json.dumps(feasibility.ASSESSMENTS["S06"], ensure_ascii=False)
+        #: 打ち消しとして言及するのはよい。主張として書くのが駄目である。
+        assert "daily from 1986" not in blob
+        assert "from 1986" not in feasibility.ASSESSMENTS["S06"]["data"]
+        assert "nothing in this repo supports that" in blob
+        assert "1987-05-20" in feasibility.REACHABILITY["www.eia.gov"]["consequence"]
+
+    def test_the_earlier_observations_are_kept_not_rewritten(self) -> None:
+        """committed な 2026-09-14 の記録も、#489 の round の報告も消さない。"""
+        for row in feasibility.REACHABILITY.values():
+            assert row["this_round"].strip()
+            assert row["committed_probe"].strip()
+        old = json.loads(
             (REPO_ROOT / "artifacts/research/edge_sources/public_data_availability.json").read_text(
                 encoding="utf-8"
             )
         )
-        assert "not unavailable" in probe["note"]
-        for host in ("api.statistiken.bundesbank.de", "data.snb.ch"):
-            assert feasibility.REACHABILITY[host]["status"] == feasibility.UNVERIFIED, host
-
-    def test_only_genuine_disagreements_are_conflicted(self) -> None:
-        conflicted = {
-            h for h, r in feasibility.REACHABILITY.items() if r["status"] == feasibility.CONFLICTED
-        }
-        assert conflicted == {"fred.stlouisfed.org", "home.treasury.gov"}
-
-    def test_hosts_the_probe_never_covered_are_not_called_reachable(self) -> None:
-        """Absence of contradiction is not corroboration."""
-        for host in ("cdn.cboe.com", "www.eia.gov", "stats.bis.org"):
-            assert feasibility.REACHABILITY[host]["status"] == feasibility.THIS_ROUND_ONLY, host
-        assert feasibility.summary()["reachable"] == [
-            "data-api.ecb.europa.eu",
-            "www.bankofcanada.ca",
-        ]
-
-    def test_the_unsupported_series_start_is_not_asserted(self) -> None:
-        assert "1986" not in feasibility.ASSESSMENTS["S06"]["data"]
-        assert "1987-05-20" in feasibility.REACHABILITY["www.eia.gov"]["consequence"]
+        assert old["checked_utc"].startswith("2026-09-14")
 
 
 class TestTheTestConventionIsStatedOnce:
