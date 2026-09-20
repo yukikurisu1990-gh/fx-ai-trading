@@ -330,8 +330,17 @@ def _first_token(value: object) -> str:
 
 
 def _program_stem(value: object) -> str:
-    name = Path(_first_token(value)).name.lower()
-    return name[:-4] if name.endswith(".exe") else name
+    r"""Basename under *either* separator, on either platform.
+
+    ``Path(...).name`` is platform-dependent: on POSIX a backslash is an ordinary
+    filename character, so ``C:\Windows\System32\curl.exe`` has no basename
+    there and the guard waves it through. CI found this by running the test on
+    Linux. A guard that only recognises the local spelling is not a guard.
+    """
+    #: 正規表現は使わない。ruff の自動修正が文字クラスの \ を / だけに畳んでしまい、
+    #: backslash が区切りでなくなったことがある。置換なら誤読しようがない。
+    token = _first_token(value).replace(chr(92), "/").rsplit("/", 1)[-1].lower()
+    return token[:-4] if token.endswith(".exe") else token
 
 
 def _refuse_fetching_child(event_args: tuple) -> None:

@@ -107,9 +107,21 @@ class TestAChildProcessCannotFetchWhatThisProcessIsRefused:
         with pytest.raises(RuntimeError, match="may not spawn"):
             subprocess.run(["curl", "--version"], capture_output=True, check=False)  # noqa: S603, S607
 
-    def test_the_guard_looks_at_the_basename_not_the_spelling(self) -> None:
+    @pytest.mark.parametrize(
+        "spelling",
+        [
+            "C:" + chr(92) + "Windows" + chr(92) + "System32" + chr(92) + "curl.exe",
+            "/usr/bin/curl",
+            "curl.exe",
+        ],
+    )
+    def test_the_guard_reads_either_separator_on_either_platform(self, spelling) -> None:
+        """CI がこれを捕まえた: POSIX では Path().name が backslash を区切りと見ない。
+
+        ローカルの綴りしか認識しない guard は guard ではない。
+        """
         with pytest.raises(RuntimeError, match="may not spawn"):
-            subprocess.run([r"C:\\Windows\\System32\\curl.exe", "-V"], check=False)  # noqa: S603
+            subprocess.run([spelling, "-V"], check=False)  # noqa: S603
 
     def test_an_ordinary_child_process_still_runs(self) -> None:
         """遮断が広すぎると、プロセスを起動する既存テストを壊す。"""
