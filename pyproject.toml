@@ -42,6 +42,11 @@ dev = [
     # minute-alignment guard) needs pandas. It previously arrived only
     # transitively, so the whole blocker-regression module could skip silently.
     "pandas>=2.0,<4.0",
+    # T2 (commodity terms of trade) の唯一の無料 route は EIA の OLE2 バイナリ .xls で、
+    # CSV 代替は存在しない（`?download=csv` も同じバイナリ、FRED は timeout）。
+    # pandas.read_excel がそれを読むには xlrd が要る。純 Python で C 拡張を持たない。
+    # **これは保護パスへの Amber 変更であり、承認なしには merge されない。**
+    "xlrd>=2.0,<3.0",
 ]
 
 [tool.setuptools.packages.find]

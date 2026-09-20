@@ -1,0 +1,146 @@
+{
+ "authority": "Human + ChatGPT adjudication 2026-09-20 section 2",
+ "finished_utc": "2026-09-20T05:55:00.499431+00:00",
+ "groups": {
+  "freeze_repair": {
+   "boe_yield_curve_zip": {
+    "bytes_read": 87507,
+    "failure_classification": null,
+    "first_line": "DATE,IUDMNZC",
+    "http_status": 200,
+    "parameters": {
+     "method": "GET",
+     "read_limit_bytes": 400000,
+     "timeout_seconds": 30,
+     "tls": "ssl.create_default_context()",
+     "user_agent": "Mozilla/5.0 research-availability-check"
+    },
+    "result": "OK",
+    "retrieved_utc": "2026-09-20T05:54:57.416897+00:00",
+    "sha256_of_read_bytes": "0a534e3617ee5ea7753faf96f90d6522603c8a5d56a784243571c233fce3f45e",
+    "url": "https://www.bankofengland.co.uk/boeapps/database/_iadb-fromshowcolumns.asp?csv.x=yes&Datefrom=01/Jan/1999&Dateto=01/Jun/2016&SeriesCodes=IUDMNZC&CSVF=TN&UsingCodes=Y&VPD=Y&VFD=N"
+   },
+   "eia_spot_page": {
+    "bytes_read": 18798,
+    "failure_classification": null,
+    "first_line": "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.01 Transitional//EN\">",
+    "http_status": 200,
+    "parameters": {
+     "method": "GET",
+     "read_limit_bytes": 400000,
+     "timeout_seconds": 30,
+     "tls": "ssl.create_default_context()",
+     "user_agent": "Mozilla/5.0 research-availability-check"
+    },
+    "result": "OK",
+    "retrieved_utc": "2026-09-20T05:54:16.929357+00:00",
+    "sha256_of_read_bytes": "fc170000fa895dcca92a1128480a0cf86c42a810b98173e083cbb68aa5239f65",
+    "url": "https://www.eia.gov/dnav/pet/pet_pri_spt_s1_d.htm"
+   },
+   "eia_wti_csv_api": {
+    "bytes_read": 0,
+    "detail": "HTTPError: HTTP Error 404: Not Found",
+    "failure_classification": "HTTP_STATUS_FROM_PROVIDER",
+    "http_status": 404,
+    "parameters": {
+     "method": "GET",
+     "read_limit_bytes": 400000,
+     "timeout_seconds": 30,
+     "tls": "ssl.create_default_context()",
+     "user_agent": "Mozilla/5.0 research-availability-check"
+    },
+    "result": "HTTP_STATUS_FROM_PROVIDER",
+    "retrieved_utc": "2026-09-20T05:53:54.825035+00:00",
+    "sha256_of_read_bytes": null,
+    "url": "https://www.eia.gov/opendata/v1/category.php?category_id=241335"
+   },
+   "eia_wti_dnav_csv": {
+    "bytes_read": 400000,
+    "failure_classification": null,
+    "first_line": "��\u0011ࡱ\u001a�\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000;\u0000\u0003\u0000��\t\u0000\u0006\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\b\u0000\u0000\u0000�\u0003\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0010\u0000\u0000�\u0003\u0000\u0000\u0001\u0000\u0000\u0000����\u0000\u0000\u0000\u0000�\u0003\u0000\u0000�\u0003\u0000\u0000�\u0003\u0000\u0000�\u0003\u0000\u0000�\u0003\u0000\u0000�\u0003\u0000\u0000�\u0003\u0000\u0000�\u0003\u0000\u0000����������������������������������������������������������������������������������������������",
+    "http_status": 200,
+    "parameters": {
+     "method": "GET",
+     "read_limit_bytes": 400000,
+     "timeout_seconds": 30,
+     "tls": "ssl.create_default_context()",
+     "user_agent": "Mozilla/5.0 research-availability-check"
+    },
+    "result": "OK",
+    "retrieved_utc": "2026-09-20T05:54:06.000294+00:00",
+    "sha256_of_read_bytes": "6673ebe5bea4a87ec0fda44daebb9e80ff2ef41164b64efa2609790dbc52b9a6",
+    "url": "https://www.eia.gov/dnav/pet/hist_xls/RWTCd.xls?download=csv"
+   },
+   "jgb_10y_csv": {
+    "bytes_read": 0,
+    "detail": "HTTPError: HTTP Error 404: Not Found",
+    "failure_classification": "HTTP_STATUS_FROM_PROVIDER",
+    "http_status": 404,
+    "parameters": {
+     "method": "GET",
+     "read_limit_bytes": 400000,
+     "timeout_seconds": 30,
+     "tls": "ssl.create_default_context()",
+     "user_agent": "Mozilla/5.0 research-availability-check"
+    },
+    "result": "HTTP_STATUS_FROM_PROVIDER",
+    "retrieved_utc": "2026-09-20T05:54:56.912562+00:00",
+    "sha256_of_read_bytes": null,
+    "url": "https://www.mof.go.jp/jgbs/reference/interest_rate/jgbcme.csv"
+   },
+   "rba_f2_csv": {
+    "bytes_read": 0,
+    "detail": "HTTPError: HTTP Error 403: Forbidden",
+    "failure_classification": "HTTP_STATUS_FROM_PROVIDER",
+    "http_status": 403,
+    "parameters": {
+     "method": "GET",
+     "read_limit_bytes": 400000,
+     "timeout_seconds": 30,
+     "tls": "ssl.create_default_context()",
+     "user_agent": "Mozilla/5.0 research-availability-check"
+    },
+    "result": "HTTP_STATUS_FROM_PROVIDER",
+    "retrieved_utc": "2026-09-20T05:54:59.723367+00:00",
+    "sha256_of_read_bytes": null,
+    "url": "https://www.rba.gov.au/statistics/tables/csv/f2.1-data.csv"
+   },
+   "rbnz_hb2": {
+    "bytes_read": 0,
+    "detail": "HTTPError: HTTP Error 403: Forbidden",
+    "failure_classification": "HTTP_STATUS_FROM_PROVIDER",
+    "http_status": 403,
+    "parameters": {
+     "method": "GET",
+     "read_limit_bytes": 400000,
+     "timeout_seconds": 30,
+     "tls": "ssl.create_default_context()",
+     "user_agent": "Mozilla/5.0 research-availability-check"
+    },
+    "result": "HTTP_STATUS_FROM_PROVIDER",
+    "retrieved_utc": "2026-09-20T05:55:00.186249+00:00",
+    "sha256_of_read_bytes": null,
+    "url": "https://www.rbnz.govt.nz/-/media/project/sites/rbnz/files/statistics/series/b/hb2-daily.xlsx"
+   },
+   "stlouis_dcoilwtico": {
+    "bytes_read": 0,
+    "detail": "TimeoutError: The read operation timed out",
+    "failure_classification": "TIMEOUT_NOT_PROVIDER_UNAVAILABLE",
+    "http_status": null,
+    "parameters": {
+     "method": "GET",
+     "read_limit_bytes": 400000,
+     "timeout_seconds": 30,
+     "tls": "ssl.create_default_context()",
+     "user_agent": "Mozilla/5.0 research-availability-check"
+    },
+    "result": "TIMEOUT_NOT_PROVIDER_UNAVAILABLE",
+    "retrieved_utc": "2026-09-20T05:54:26.594529+00:00",
+    "sha256_of_read_bytes": null,
+    "url": "https://fred.stlouisfed.org/graph/fredgraph.csv?id=DCOILWTICO"
+   }
+  }
+ },
+ "scope": "metadata / availability / coverage only — no alpha, no FX return, no protected span",
+ "started_utc": "2026-09-20T05:53:54.824506+00:00"
+}

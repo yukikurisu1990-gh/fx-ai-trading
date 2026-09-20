@@ -135,6 +135,24 @@ SLOT_FIVE_ALT_TARGETS: Final[dict[str, str]] = {
     "tic_shla": "https://ticdata.treasury.gov/Publish/shla2023r.csv",
 }
 
+#: 凍結レビューが開けた 2 つの穴を塞ぐための probe。
+#: (a) T2 の EIA は OLE2 バイナリ .xls で、xlrd/openpyxl とも未導入（依存追加は Amber）。
+#:     当日確定する CSV 代替があるか。
+#: (b) T3 の 10y は US/DE/CA/CH しか probe されていない。残り 4 通貨が取れれば
+#:     breadth を正直な値に上げられる。2y は market_yields/sources.py に 8 通貨分ある。
+FREEZE_REPAIR_TARGETS: Final[dict[str, str]] = {
+    # (a) EIA の CSV / API 代替
+    "eia_wti_csv_api": "https://www.eia.gov/opendata/v1/category.php?category_id=241335",
+    "eia_wti_dnav_csv": "https://www.eia.gov/dnav/pet/hist_xls/RWTCd.xls?download=csv",
+    "eia_spot_page": "https://www.eia.gov/dnav/pet/pet_pri_spt_s1_d.htm",
+    "stlouis_dcoilwtico": "https://fred.stlouisfed.org/graph/fredgraph.csv?id=DCOILWTICO",
+    # (b) 残り 4 通貨の 10y
+    "jgb_10y_csv": "https://www.mof.go.jp/jgbs/reference/interest_rate/jgbcme.csv",
+    "boe_yield_curve_zip": "https://www.bankofengland.co.uk/boeapps/database/_iadb-fromshowcolumns.asp?csv.x=yes&Datefrom=01/Jan/1999&Dateto=01/Jun/2016&SeriesCodes=IUDMNZC&CSVF=TN&UsingCodes=Y&VPD=Y&VFD=N",
+    "rba_f2_csv": "https://www.rba.gov.au/statistics/tables/csv/f2.1-data.csv",
+    "rbnz_hb2": "https://www.rbnz.govt.nz/-/media/project/sites/rbnz/files/statistics/series/b/hb2-daily.xlsx",
+}
+
 TARGET_GROUPS: Final[dict[str, dict[str, str]]] = {
     "S07_credit_spread": S07_TARGETS,
     "S02_curve_long_leg": S02_TARGETS,
@@ -217,7 +235,9 @@ def main() -> int:
     if os.environ.get(OPT_IN_ENV) != "1":
         print(f"refused: set {OPT_IN_ENV}=1 only under a recorded approval to run this probe")
         return 2
-    if "--slot-five-alt" in sys.argv:
+    if "--freeze-repair" in sys.argv:
+        groups, suffix = {"freeze_repair": FREEZE_REPAIR_TARGETS}, "_freeze_repair"
+    elif "--slot-five-alt" in sys.argv:
         groups, suffix = {"slot_five_alt": SLOT_FIVE_ALT_TARGETS}, "_slot_five_alt"
     elif "--slot-five" in sys.argv:
         groups, suffix = {"slot_five": SLOT_FIVE_TARGETS}, "_slot_five"
