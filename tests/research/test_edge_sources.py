@@ -369,9 +369,19 @@ class TestTheBoundaries:
                 "rerank",
             }
         ),
-        #: the 2026-09-19 rerank reads the power arithmetic from its sibling; both are
-        #: judgement and arithmetic modules that touch no market data
-        "scripts.research.edge_sources.rerank": frozenset({"detectable_sharpe"}),
+        #: the 2026-09-19 rerank reads the power arithmetic and the committed span day
+        #: counts from its sibling; both are judgement and arithmetic modules that touch
+        #: no market data. The day counts live in one module so the two cannot drift —
+        #: an earlier draft duplicated them as literals and they disagreed.
+        "scripts.research.edge_sources.rerank": frozenset(
+            {
+                "LONG_DECISION_DAYS",
+                "RECENT_DECISION_DAYS",
+                "TRADING_DAYS_PER_YEAR",
+                "detectable_sharpe",
+                "power_at",
+            }
+        ),
     }
     #: What the package may call on `construction`: signal-free calibration only.
     CONSTRUCTION_USES = frozenset(

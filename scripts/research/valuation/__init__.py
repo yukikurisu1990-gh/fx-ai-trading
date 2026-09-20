@@ -23,7 +23,12 @@ from __future__ import annotations
 from typing import Final
 
 TRACK: Final[str] = "T-V"
-WORKFLOW_STATUS: Final[str] = "REAL_EXCHANGE_RATE_VALUATION_DEVELOPMENT_IN_PROGRESS"
+#: Adopted by the Human + ChatGPT ruling of 2026-09-19 §5, which took the development
+#: result as the track's authoritative status. The cause is signal content, not cost:
+#: the pre-registered incremental IC over the nominal control was -5.57 percentage
+#: points at Newey-West t -3.34. An earlier state of this line still read
+#: DEVELOPMENT_IN_PROGRESS after the same ruling had finalised the sibling tracks.
+WORKFLOW_STATUS: Final[str] = "REAL_EXCHANGE_RATE_VALUATION_NOT_SUPPORTED_IN_DEVELOPMENT"
 
 OUTCOMES: Final[tuple[str, ...]] = (
     "REAL_EXCHANGE_RATE_VALUATION_DEVELOPMENT_CANDIDATE",

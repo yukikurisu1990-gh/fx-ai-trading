@@ -13,21 +13,41 @@ evidence does to every candidate, and why, rather than re-scoring the same
 weights and hoping the order changes.
 
 **The single most important thing learned is not about any candidate.** It is
-about the span. Two-sided 5%, 80% power on an annual Sharpe needs roughly
-`2.80 / sqrt(years)`:
+about the span, and it cuts deeper than a reordering. Two-sided 5%, 80% power on
+an annual Sharpe needs roughly `2.80 / sqrt(years)` — the same constant the
+committed feasibility gate already carries as `power_multiplier = 2.8016`:
 
-    4.7 years  (the seen M15 corpus)          ->  1.29
-    12.6 years (T-V's traded span)            ->  0.79
-    17.4 years (ECB daily FX, 1999-2016)      ->  0.67
-    26 years   (where a free daily non-FX series reaches back and FX does not)
+    4.81 years  (the seen M15 corpus, 1213 decision days)  ->  1.28
+    17.69 years (ECB daily FX 1999-2016, 4458 days)        ->  0.67
+    22.50 years (both, disjoint, 5671 days)                ->  0.59
 
-A realistic single-source edge is a net Sharpe of 0.2-0.5. **On the 4.7-year seen
-corpus none of that range is separable from zero**, which is exactly what
-happened to T-R and T-R2: both produced positive gross that settled nothing. So a
-candidate's most valuable property is no longer its prior — it is whether its
-information source has a long free history that can be lined up against FX
-history we are allowed to read. That reorders the inventory more than any
-judgement about mechanisms does.
+A realistic single-source edge is a net Sharpe of 0.2-0.5, so on the 4.81-year
+corpus none of that range is separable from zero — which is exactly what happened
+to T-R and T-R2, both of which produced positive gross that settled nothing.
+
+**But the long span does not fix that, and this module does not claim it does.**
+The same criterion applied to 0.59 says the pooled 22.5 years cannot separate a
+0.2-0.5 edge either. Computed directly, two-sided power over the pooled span is
+0.16 at a true Sharpe of 0.2, **0.30** at 0.3 and 0.66 at 0.5. Every span this
+programme may lawfully reach is underpowered against the effect it is looking
+for. The long span is worth reaching because it moves the power at 0.3 from 0.10
+to 0.30, and because two disjoint spans permit a sign-agreement check — not
+because it makes a decisive test available.
+
+**One convention, stated once.** Everything here is **two-sided** 5%, because the
+direction is exactly what is in question. That is not the convention the earlier
+records used: `capacity.sample_years_needed` is one-sided by its own docstring,
+and the committed T-R records give **1.13** for the same 1213-day span where this
+module gives 1.28. Neither is wrong - they answer different questions - but
+quoting one alongside the other flatters whichever is cited. On the two-sided
+convention used throughout this module, detecting a 0.3 Sharpe at 80% power needs
+**87.2 years**; the one-sided figure is 68.7. Both are three to four times longer
+than any span this programme can reach.
+
+
+So the reordering below is by *least underpowered, and outside a closed family*.
+That is a weaker basis than "this candidate can be decided", and no row here may
+be read as the latter.
 """
 
 from __future__ import annotations
@@ -48,34 +68,93 @@ PROMOTED: Final[str] = "eligible_and_relatively_stronger_under_the_new_evidence"
 #: Two-sided 5%, 80% power.
 _Z: Final[float] = 1.959963985 + 0.841621234
 
+#: One year is this many decision days, everywhere in this package.
+TRADING_DAYS_PER_YEAR: Final[float] = 252.0
+
+#: Decision-day counts, each taken from a committed record rather than recomputed
+#: here: the recent span from `market_yields.prereg.DECISION_DAYS`, the long span
+#: from T-V's `return_panel_days` in artifacts/research/valuation/development.json.
+#: Years are days / 252 for both, so the two are on one basis - an earlier version
+#: mixed a derived 252-day year against a counted calendar year.
+RECENT_DECISION_DAYS: Final[int] = 1213
+LONG_DECISION_DAYS: Final[int] = 4458
+
 
 def detectable_sharpe(years: float) -> float:
-    """The smallest annual Sharpe this many years can separate from zero."""
+    """The smallest annual Sharpe this many years can separate from zero.
+
+    Two-sided 5% at 80% power, under the usual `se = 1/sqrt(years)` approximation
+    for an annualised Sharpe. Dropping the `(1 + S^2/2)` term makes this the
+    *best* case, so every span is at least this underpowered and never less.
+    """
     return _Z / math.sqrt(years)
+
+
+def power_at(true_sharpe: float, years: float) -> float:
+    """Two-sided 5% power to reject zero when the true annual Sharpe is this.
+
+    Stated because `detectable_sharpe` alone invites the reading that a span below
+    the threshold is usable. These numbers are what say it is not.
+    """
+    se = 1.0 / math.sqrt(years)
+    crit = 1.959963985 * se
+    upper = 0.5 * math.erfc((crit - true_sharpe) / (se * math.sqrt(2.0)))
+    lower = 0.5 * math.erfc((crit + true_sharpe) / (se * math.sqrt(2.0)))
+    return upper + lower
+
+
+def _span(days: int) -> float:
+    return round(days / TRADING_DAYS_PER_YEAR, 2)
 
 
 SPANS: Final[dict[str, dict[str, Any]]] = {
     "seen_m15_corpus": {
         "span": "2021-04-27 .. 2025-12-26",
-        "years": 4.69,
+        "decision_days": RECENT_DECISION_DAYS,
+        "years": _span(RECENT_DECISION_DAYS),
         "source": "the three guarded OANDA M15 routes, EXPLORATORY_SEEN_DATA",
-        "detectable_net_sharpe_at_80pct_power": round(detectable_sharpe(4.69), 2),
+        "detectable_net_sharpe_at_80pct_power": round(
+            detectable_sharpe(_span(RECENT_DECISION_DAYS)), 2
+        ),
+        "power_at_true_sharpe_0_3": round(power_at(0.3, _span(RECENT_DECISION_DAYS)), 2),
+        "convention": (
+            "two-sided 5%; the committed T-R records are one-sided and give 1.13 for this span"
+        ),
     },
     "ecb_daily_fx": {
         "span": "1999-01-04 .. 2016-06-01",
-        "years": 17.41,
+        "decision_days": LONG_DECISION_DAYS,
+        "years": _span(LONG_DECISION_DAYS),
         "source": "ECB euro reference rates, acquired for T-V, EXPLORATORY_SEEN_DEVELOPMENT_DATA",
-        "detectable_net_sharpe_at_80pct_power": round(detectable_sharpe(17.41), 2),
+        "detectable_net_sharpe_at_80pct_power": round(
+            detectable_sharpe(_span(LONG_DECISION_DAYS)), 2
+        ),
+        "power_at_true_sharpe_0_3": round(power_at(0.3, _span(LONG_DECISION_DAYS)), 2),
     },
     "both_disjoint_spans": {
         "span": "1999-2016 and 2021-2025, separated by the protected fresh pool",
-        "years": 22.10,
+        "decision_days": RECENT_DECISION_DAYS + LONG_DECISION_DAYS,
+        "years": _span(RECENT_DECISION_DAYS + LONG_DECISION_DAYS),
         "source": "the two above; the gap between them is forbidden and stays forbidden",
-        "detectable_net_sharpe_at_80pct_power": round(detectable_sharpe(22.10), 2),
+        "detectable_net_sharpe_at_80pct_power": round(
+            detectable_sharpe(_span(RECENT_DECISION_DAYS + LONG_DECISION_DAYS)), 2
+        ),
+        "power_at_true_sharpe_0_3": round(
+            power_at(0.3, _span(RECENT_DECISION_DAYS + LONG_DECISION_DAYS)), 2
+        ),
         "why_it_matters": (
             "two disjoint seen spans either side of a protected window let a frozen rule be "
-            "required to agree in sign on both. That is far stronger development evidence than "
-            "one span of the same total length, and no track in this programme has had it"
+            "required to agree in sign on both, which is a period-robustness check no track "
+            "in this programme has had"
+        ),
+        "what_it_does_not_buy": (
+            "power. At 0.59 the pooled span still cannot separate a realistic 0.2-0.5 edge from "
+            "zero - power is 0.16, 0.30 and 0.66 at true Sharpes of 0.2, 0.3 and 0.5. Two-"
+            "sided, detecting 0.3 at 80% power needs 87.2 years; one-sided it is 68.7, and "
+            "both are several times any span available. Sign agreement is also not "
+            "free: under the null a pre-specified direction agrees on both spans with "
+            "probability 0.25, so it is a weak screen and not a substitute for a declared "
+            "primary statistic"
         ),
     },
 }
@@ -116,13 +195,26 @@ REASSESSMENT: Final[dict[str, dict[str, Any]]] = {
             "the ruling's closure explicitly does NOT reach curve shape, so this stays open and "
             "may not be excluded by paraphrase. But its prior falls: it is a second hypothesis "
             "on the same information set whose level just failed twice, the rate books' measured "
-            "IC was negative at every horizon tested, and the non-US daily 10-year series it "
-            "needs has still never been probed. It is cheap to test and it is not the strongest "
-            "thing available"
+            "IC was negative at every horizon tested. Its data position is UNRESOLVED rather "
+            "than good: the committed probe of 2026-09-14 "
+            "(artifacts/research/edge_sources/public_data_availability.json) records the "
+            "Bundesbank and SNB endpoints failing TLS verification and the US Treasury page "
+            "404, while this round's in-session requests reported all three answering. Neither "
+            "observation was reproduced through the gated probe route, so the long leg is not "
+            "established as obtainable. It is cheap to test and it is not the strongest thing "
+            "available"
         ),
         "what_would_raise_it": (
             "evidence that curve shape carries information the level does not - which is a claim "
             "about a different quantity, not a different lookback on the same one"
+        ),
+        "why_not_excluded_like_s28": (
+            "both are differences of sovereign yields, so the distinction has to be named rather "
+            "than assumed. The ruling's closure enumerates curve shape among the information "
+            "sets it does NOT reach, and it does not enumerate breakevens; term structure is "
+            "also a different quantity from a level or an inflation compensation, not a "
+            "transformation of one. If a later reviewer judges that distinction too thin, the "
+            "consistent resolution is to take S28 up again - not to close S02 by paraphrase"
         ),
     },
     "S03": {
@@ -141,9 +233,12 @@ REASSESSMENT: Final[dict[str, dict[str, Any]]] = {
             "new is the version we cannot build"
         ),
         "and_the_opportunity_layer_was_already_measured": (
-            "H-018 and H-019 established that event days move 1.33-1.63x more, and in the same "
-            "breath that the spread is 1.01-1.05x WIDER and the share of days clearing the round "
-            "trip is 1.00. The event population is an opportunity anchor with no cost advantage; "
+            "H-018 and H-019 established that event days move 1.13-1.63x more, and in the same "
+            "breath that the spread is 1.01-1.05x WIDER and that the event-to-ordinary RATIO of "
+            "the share of days clearing the round trip is 1.00 - 1.0042 and 0.9958, unity. That "
+            "is not a statement that every day clears; it is that cost-clearing does not move, "
+            "because ordinary days already clear. The event population is an opportunity anchor "
+            "with no cost advantage; "
             "H-019's own status is 'a forward-known opportunity anchor with nothing to point it "
             "at'. Pointing the closed rate signal at it does not change that"
         ),
@@ -151,6 +246,16 @@ REASSESSMENT: Final[dict[str, dict[str, Any]]] = {
             "34.4 events a year from the only four central banks obtainable without a login, so "
             "GBP, CAD, NZD and CHF have no anchor at all. Roughly 160 events over the seen "
             "corpus, needing about 12 bp per event for net 0.5"
+        ),
+        "what_this_exclusion_rests_on": (
+            "A JUDGEMENT, NOT THE CLOSURE. The closure's FORBIDS list names lookback sweeps, "
+            "EWMA half-life sweeps and threshold tuning; event conditioning is not in it, and "
+            "the closure may not be widened by paraphrase - a rule this module states itself. "
+            "So the accurate basis is: the direction source is a closed quantity, the cost "
+            "advantage that would make the event population worth a slot was measured and is "
+            "absent, and the power ceiling is 34.4 events a year across four of eight "
+            "currencies. That is a decision not to spend a scarce test slot, and a later "
+            "session may take it up again on new evidence without needing the closure reversed"
         ),
         "verdict_token": "EVENT_REPRICING_DATA_NOT_DECISION_GRADE",
     },
@@ -175,11 +280,14 @@ REASSESSMENT: Final[dict[str, dict[str, Any]]] = {
             "the information set has never been tested as a directional FX source in this "
             "programme - H-002 tested price-only session and ATR conditioning, not cross-asset "
             "state - and it is the candidate whose data most decisively fixes the power problem. "
-            "VIX is daily and free from 1990, so it lines up against the ECB daily FX span "
-            "1999-2016 that T-V has already made seen, AND against the 2021-2025 corpus, with "
-            "the protected pool untouched between them. That is about 22 traded years across two "
-            "disjoint spans - a detectable Sharpe near 0.6 instead of 1.29, and a frozen rule "
-            "that can be required to agree in sign on both"
+            "VIX is daily and free from 1990-01-02 - a start date the committed probe of "
+            "2026-09-14 corroborates independently - so it lines up against the ECB daily FX "
+            "span 1999-2016 that T-V has already made seen, AND against the 2021-2025 corpus, "
+            "with the protected pool untouched between them. That is 22.5 traded years across "
+            "two disjoint spans: a detectable Sharpe of 0.59 instead of 1.28, and a frozen rule "
+            "that can be required to agree in sign on both. It is the largest power improvement "
+            "available to any candidate here, and it is still not enough to decide a 0.2-0.5 "
+            "edge - see the module docstring"
         ),
         "weakness": (
             "breadth. A single risk axis maps to roughly two to three independent bets across "
@@ -217,11 +325,15 @@ REASSESSMENT: Final[dict[str, dict[str, Any]]] = {
         "disposition": PENALISED,
         "rank": 3,
         "why": (
-            "free and daily from 1996 for the ICE BofA high-yield OAS, so it shares the span "
-            "advantage, and it is untested. But it measures the same risk-appetite axis as S05 "
-            "with a shorter history and a narrower currency map, so running it alongside S05 "
-            "would be two measurements of one thing. It is the natural declared robustness check "
-            "for S05 rather than a track of its own"
+            "untested, and it measures the same risk-appetite axis as S05 with a narrower "
+            "currency map, so running it alongside S05 would be two measurements of one thing: "
+            "it is the natural declared robustness check for S05 rather than a track of its "
+            "own. Its data position is UNRESOLVED and an earlier draft of this module got it "
+            "wrong in both directions - first calling the series free and daily from 1996, then "
+            "retiring it as lost. The committed probe of 2026-09-14 records the ICE BofA OAS "
+            "series page (BAMLH0A0HYM2) answering HTTP 200 at the aggregator this round's "
+            "in-session requests reported unreachable. Until that conflict is resolved through "
+            "the gated probe route, this candidate is neither available nor retired"
         ),
     },
     "S16": {
@@ -261,11 +373,12 @@ REASSESSMENT: Final[dict[str, dict[str, Any]]] = {
         "disposition": CLOSED_BY_FAMILY,
         "rank": None,
         "why": (
-            "a breakeven is a difference of two public sovereign yields, and the rule proposed "
-            "for it is simple directional repricing against subsequent G10 FX return - which is "
-            "what the closure covers, by data and by rule. Its own record already said the "
-            "largest uncertainty was whether it is independent of S01 at all. Independently, the "
-            "breadth is one to two currencies because non-US linker markets are thin"
+            "a breakeven is a difference of a nominal and an index-linked public sovereign "
+            "yield, and the rule proposed for it is simple directional repricing against "
+            "subsequent G10 FX return - which is what the closure covers, by rule. Its own "
+            "record already said the largest uncertainty was whether it is independent of S01 "
+            "at all. Independently, the breadth is one to two currencies because non-US linker "
+            "markets are thin"
         ),
     },
     "S14": {
@@ -419,6 +532,20 @@ REASSESSMENT: Final[dict[str, dict[str, Any]]] = {
     },
 }
 
+#: Where an exclusion rests on the declared closure and where it rests on judgement.
+#: The distinction matters because the closure is scope-limited and this module states
+#: that it may not be widened by paraphrase - so it may not quietly do the ranking's
+#: work either. Only the first two entries below are closure applications.
+EXCLUSION_BASIS: Final[dict[str, str]] = {
+    "S01": "the closure, directly - it is the measure that was closed",
+    "S28": "the closure, by rule - simple directional repricing of a sovereign yield difference",
+    "S16": "its own declared ordering rule, whose precondition can no longer be met",
+    "S08": "its own declared ordering rule, as S16",
+    "S17": "its bases are excluded, and its cross-asset part is S05, which is being tested",
+    "S03": "judgement: closed direction source, measured absence of cost advantage, power ceiling",
+    "S04": "judgement, as S03, plus no free official timestamped calendar outside the US",
+}
+
 #: What the ruling forbids concluding from all of this.
 NOT_GENERALISED: Final[tuple[str, ...]] = (
     "rates as a whole are hopeless - only the simple public daily sovereign-yield directional "
@@ -457,6 +584,10 @@ def removed() -> list[tuple[str, str, str]]:
 
 __all__ = [
     "BLOCKED_BY_DATA",
+    "EXCLUSION_BASIS",
+    "LONG_DECISION_DAYS",
+    "RECENT_DECISION_DAYS",
+    "TRADING_DAYS_PER_YEAR",
     "CLOSED_BY_EXECUTION",
     "CLOSED_BY_FAMILY",
     "DEPENDS_ON_A_CLOSED_BASE",
@@ -469,5 +600,6 @@ __all__ = [
     "STILL_EXCLUDED",
     "detectable_sharpe",
     "eligible",
+    "power_at",
     "removed",
 ]

@@ -668,7 +668,8 @@ LEDGER: Final[list[dict[str, Any]]] = [
             "forecasting power"
         ),
         "status": (
-            "CLOSED - MARKET_YIELD_SLOW_REPRICING_NOT_SUPPORTED_IN_SEEN_DEVELOPMENT, adopted as "
+            "CLOSED - MARKET_YIELD_SLOW_REPRICING_NOT_SUPPORTED_IN_SEEN_DEVELOPMENT, for the "
+            "pre-registered twenty-day formulation only, adopted as "
             "the authoritative status by the Human + ChatGPT ruling of 2026-09-19, which also "
             "declared the scope-limited family boundary "
             "MARKET_YIELD_REPRICING_SIMPLE_DIRECTIONAL_FAMILY_NOT_SUPPORTED_IN_SEEN_DEVELOPMENT "
