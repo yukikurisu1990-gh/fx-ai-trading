@@ -259,6 +259,10 @@ class TestThePrereg:
 class TestTheBoundaries:
     ALLOWED_TOP_LEVEL = {
         "__future__",
+        #: the shared acquisition guard — a module of checks and a provenance writer that
+        #: reads no market data and opens no socket. It is on this list because every
+        #: fetch route has to pass through it, which is the point of it existing.
+        "scripts.research.acquisition_safety",
         "contextlib",
         "dataclasses",
         "typing",
@@ -1069,13 +1073,39 @@ class TestTheFrozenSlowPrereg:
         assert FAMILY_BOUNDARY == (
             "MARKET_YIELD_REPRICING_SIMPLE_DIRECTIONAL_FAMILY_NOT_SUPPORTED_IN_SEEN_DEVELOPMENT"
         )
-        #: both formulations have run; the status says so and still does not declare
-        #: the family boundary, which is a Human decision
-        assert WORKFLOW_STATUS == (
-            "MARKET_YIELD_REPRICING_FAST_AND_SLOW_FORMULATIONS_BOTH_NOT_SUPPORTED"
-            "_AWAITING_HUMAN_DECISION"
+        #: both formulations ran and the Human + ChatGPT ruling of 2026-09-19 then
+        #: declared the boundary, so the track's status IS that boundary now
+        assert WORKFLOW_STATUS == FAMILY_BOUNDARY
+
+    def test_the_closure_scope_is_recorded_and_narrow(self) -> None:
+        from scripts.research.market_yields import (
+            FAMILY_CLOSURE_COVERS,
+            FAMILY_CLOSURE_DOES_NOT_REACH,
+            FAMILY_CLOSURE_FORBIDS,
         )
-        assert FAMILY_BOUNDARY not in WORKFLOW_STATUS
+
+        #: what it closes: the simple public daily sovereign-yield directional family
+        assert "public daily sovereign-yield data" in FAMILY_CLOSURE_COVERS
+        assert "simple fast directional repricing" in FAMILY_CLOSURE_COVERS
+        assert "simple slow directional repricing" in FAMILY_CLOSURE_COVERS
+        #: what it forbids: reviving that same family by searching the lookback
+        forbidden = " ".join(FAMILY_CLOSURE_FORBIDS)
+        for word in ("10", "15", "30", "40", "60", "EWMA", "threshold"):
+            assert word in forbidden, word
+        #: what it must never be read to cover: every unobserved rate information set
+        for other in (
+            "OIS",
+            "market-implied policy path",
+            "rate futures",
+            "intraday rate repricing",
+            "curve shape",
+            "term-premium information",
+            "rates options",
+            "distributional policy-path information",
+        ):
+            assert other in FAMILY_CLOSURE_DOES_NOT_REACH, other
+        #: and the closure is about monetisability, not about content
+        assert not any("NO_CONTENT" in t or "NO_INFORMATION" in t for t in (FAMILY_BOUNDARY,))
 
 
 class TestTheRepairedRerunIsTheFrozenSignal:

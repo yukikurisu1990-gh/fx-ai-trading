@@ -1,0 +1,146 @@
+{
+ "authority": "Human + ChatGPT adjudication 2026-09-20 section 2",
+ "finished_utc": "2026-09-20T04:47:31.937087+00:00",
+ "groups": {
+  "slot_five": {
+   "boj_balance_sheet": {
+    "bytes_read": 58913,
+    "failure_classification": null,
+    "first_line": "<!DOCTYPE html PUBLIC \"-//W3C//DTD HTML 4.01 Transitional//EN\" \"http://www.w3.org/TR/html4/loose.dtd\">",
+    "http_status": 200,
+    "parameters": {
+     "method": "GET",
+     "read_limit_bytes": 400000,
+     "timeout_seconds": 30,
+     "tls": "ssl.create_default_context()",
+     "user_agent": "Mozilla/5.0 research-availability-check"
+    },
+    "result": "OK",
+    "retrieved_utc": "2026-09-20T04:47:27.178113+00:00",
+    "sha256_of_read_bytes": "8704d83db12e25610fb698e996ec2949d17edd6fdf5fc40d8cafe2d1258e364d",
+    "url": "https://www.stat-search.boj.or.jp/index_en.html"
+   },
+   "ecb_weekly_financial_statement": {
+    "bytes_read": 0,
+    "detail": "HTTPError: HTTP Error 404: Not Found",
+    "failure_classification": "HTTP_STATUS_FROM_PROVIDER",
+    "http_status": 404,
+    "parameters": {
+     "method": "GET",
+     "read_limit_bytes": 400000,
+     "timeout_seconds": 30,
+     "tls": "ssl.create_default_context()",
+     "user_agent": "Mozilla/5.0 research-availability-check"
+    },
+    "result": "HTTP_STATUS_FROM_PROVIDER",
+    "retrieved_utc": "2026-09-20T04:47:25.594481+00:00",
+    "sha256_of_read_bytes": null,
+    "url": "https://data-api.ecb.europa.eu/service/data/ILM/W.U2.C.T000000.Z5.EUR?format=csvdata&lastNObservations=5"
+   },
+   "fed_h41_csv": {
+    "bytes_read": 0,
+    "failure_classification": null,
+    "first_line": "",
+    "http_status": 200,
+    "parameters": {
+     "method": "GET",
+     "read_limit_bytes": 400000,
+     "timeout_seconds": 30,
+     "tls": "ssl.create_default_context()",
+     "user_agent": "Mozilla/5.0 research-availability-check"
+    },
+    "result": "OK",
+    "retrieved_utc": "2026-09-20T04:47:24.442178+00:00",
+    "sha256_of_read_bytes": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "url": "https://www.federalreserve.gov/datadownload/Output.aspx?rel=H41&filetype=csv&label=include&layout=seriescolumn&from=01/01/1999&to=12/31/2016"
+   },
+   "fed_h41_page": {
+    "bytes_read": 78180,
+    "failure_classification": null,
+    "first_line": "",
+    "http_status": 200,
+    "parameters": {
+     "method": "GET",
+     "read_limit_bytes": 400000,
+     "timeout_seconds": 30,
+     "tls": "ssl.create_default_context()",
+     "user_agent": "Mozilla/5.0 research-availability-check"
+    },
+    "result": "OK",
+    "retrieved_utc": "2026-09-20T04:47:25.307382+00:00",
+    "sha256_of_read_bytes": "0b6d10e498426f0ad386f319dad5b913adefda2ac49302ef3932165fb9212917",
+    "url": "https://www.federalreserve.gov/releases/h41/"
+   },
+   "snb_balance_sheet": {
+    "bytes_read": 279657,
+    "failure_classification": null,
+    "first_line": "﻿\"CubeId\";\"snbbipo\"",
+    "http_status": 200,
+    "parameters": {
+     "method": "GET",
+     "read_limit_bytes": 400000,
+     "timeout_seconds": 30,
+     "tls": "ssl.create_default_context()",
+     "user_agent": "Mozilla/5.0 research-availability-check"
+    },
+    "result": "OK",
+    "retrieved_utc": "2026-09-20T04:47:27.522949+00:00",
+    "sha256_of_read_bytes": "fa50275724337c085f1741da024890315e8f97cfb27f8983e3d75a446e210de8",
+    "url": "https://data.snb.ch/api/cube/snbbipo/data/csv/en"
+   },
+   "tic_holdings": {
+    "bytes_read": 7486,
+    "failure_classification": null,
+    "first_line": "",
+    "http_status": 200,
+    "parameters": {
+     "method": "GET",
+     "read_limit_bytes": 400000,
+     "timeout_seconds": 30,
+     "tls": "ssl.create_default_context()",
+     "user_agent": "Mozilla/5.0 research-availability-check"
+    },
+    "result": "OK",
+    "retrieved_utc": "2026-09-20T04:47:31.741854+00:00",
+    "sha256_of_read_bytes": "0659fbbfefcbda85ebee582c9f8cacb0a7b6efad4daaeeb24f1a271683c79694",
+    "url": "https://ticdata.treasury.gov/resource-center/data-chart-center/tic/Documents/mfh.txt"
+   },
+   "tic_slt_table": {
+    "bytes_read": 0,
+    "detail": "HTTPError: HTTP Error 404: Not Found",
+    "failure_classification": "HTTP_STATUS_FROM_PROVIDER",
+    "http_status": 404,
+    "parameters": {
+     "method": "GET",
+     "read_limit_bytes": 400000,
+     "timeout_seconds": 30,
+     "tls": "ssl.create_default_context()",
+     "user_agent": "Mozilla/5.0 research-availability-check"
+    },
+    "result": "HTTP_STATUS_FROM_PROVIDER",
+    "retrieved_utc": "2026-09-20T04:47:30.601727+00:00",
+    "sha256_of_read_bytes": null,
+    "url": "https://ticdata.treasury.gov/resource-center/data-chart-center/tic/Documents/slt_globl.csv"
+   },
+   "tic_treasury_landing": {
+    "bytes_read": 78207,
+    "failure_classification": null,
+    "first_line": "<!doctype html><html lang=en-us><head><meta charset=utf-8><meta name=viewport content=\"width=device-width,initial-scale=1\"><meta http-equiv=X-UA-Compatible content=\"IE=edge\"><title>Treasury Internatio",
+    "http_status": 200,
+    "parameters": {
+     "method": "GET",
+     "read_limit_bytes": 400000,
+     "timeout_seconds": 30,
+     "tls": "ssl.create_default_context()",
+     "user_agent": "Mozilla/5.0 research-availability-check"
+    },
+    "result": "OK",
+    "retrieved_utc": "2026-09-20T04:47:30.379411+00:00",
+    "sha256_of_read_bytes": "11d28ec08aa1556976d4ee8063cedc1da15d38cb81e182f2e6160a444287922e",
+    "url": "https://home.treasury.gov/data/treasury-international-capital-tic-system"
+   }
+  }
+ },
+ "scope": "metadata / availability / coverage only — no alpha, no FX return, no protected span",
+ "started_utc": "2026-09-20T04:47:24.441679+00:00"
+}

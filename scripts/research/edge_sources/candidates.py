@@ -1291,11 +1291,18 @@ def distinct_directions() -> list[str]:
 #: score and is not proposed as its own track: it needs the same rates data as
 #: T-R, carries a weaker prior, and is a second rates hypothesis rather than a
 #: second information source — the document says so and leaves the swap to Human.
+#: The tracks this inventory proposed in #484, kept as the historical proposal it
+#: was. All three have since been executed or excluded - T-R and T-V ran and
+#: returned NOT_SUPPORTED, T-E was excluded by the 2026-09-19 reassessment - so this
+#: tuple is no longer a statement about what to do next. `rerank.REASSESSMENT` and
+#: `feasibility_2026_09.SELECTED` carry the current position; this is kept unedited
+#: so the reranking can be read against what it changed.
 PROPOSED_TRACKS: Final[tuple[tuple[str, tuple[str, ...]], ...]] = (
     ("T-R", ("S01",)),
     ("T-E", ("S03", "S04")),
     ("T-V", ("S13",)),
 )
+PROPOSED_TRACKS_SUPERSEDED_BY: Final[str] = "scripts.research.edge_sources.rerank.REASSESSMENT"
 
 
 __all__ = [
@@ -1310,6 +1317,7 @@ __all__ = [
     "INFEASIBLE",
     "SUSPENDED_FAMILY",
     "PROPOSED_TRACKS",
+    "PROPOSED_TRACKS_SUPERSEDED_BY",
     "Candidate",
     "Evidence",
     "distinct_directions",

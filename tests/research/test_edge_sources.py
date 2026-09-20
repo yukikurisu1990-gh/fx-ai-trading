@@ -359,7 +359,28 @@ class TestTheBoundaries:
         "scripts.research.continuous_portfolio": frozenset({"CHARGED_ONE_WAY_BP", "construction"}),
         "scripts.research.feasibility.inventory": frozenset({"PAIR_ROUNDTRIP_BP"}),
         "scripts.research.edge_sources": frozenset(
-            {"TARGET_NET_RETURN", "WORKFLOW_STATUS", "candidates", "capacity", "leverage"}
+            {
+                "TARGET_NET_RETURN",
+                "WORKFLOW_STATUS",
+                "candidates",
+                "capacity",
+                "engineering_backlog",
+                "leverage",
+                "rerank",
+            }
+        ),
+        #: the 2026-09-19 rerank reads the power arithmetic and the committed span day
+        #: counts from its sibling; both are judgement and arithmetic modules that touch
+        #: no market data. The day counts live in one module so the two cannot drift —
+        #: an earlier draft duplicated them as literals and they disagreed.
+        "scripts.research.edge_sources.rerank": frozenset(
+            {
+                "LONG_DECISION_DAYS",
+                "RECENT_DECISION_DAYS",
+                "TRADING_DAYS_PER_YEAR",
+                "detectable_sharpe",
+                "power_at",
+            }
         ),
     }
     #: What the package may call on `construction`: signal-free calibration only.

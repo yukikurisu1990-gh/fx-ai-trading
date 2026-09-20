@@ -42,11 +42,6 @@ from __future__ import annotations
 from typing import Final
 
 TRACK: Final[str] = "T-R"
-#: Both pre-registered formulations have run and both returned NOT_SUPPORTED. The
-#: family boundary below is available for a Human decision and is not declared here.
-WORKFLOW_STATUS: Final[str] = (
-    "MARKET_YIELD_REPRICING_FAST_AND_SLOW_FORMULATIONS_BOTH_NOT_SUPPORTED_AWAITING_HUMAN_DECISION"
-)
 
 #: What each track may conclude. The fast statuses name the measure they belong to:
 #: a formulation failing is not the family closing.
@@ -60,11 +55,42 @@ OUTCOMES: Final[tuple[str, ...]] = (
     "MARKET_YIELD_SLOW_REPRICING_DATA_NOT_DECISION_GRADE",
 )
 
-#: Only with both the fast shock and the slow state unsupported, and never reaching
-#: OIS, intraday rate futures, the market-implied policy path or curve non-linearities.
+#: Declared by the Human + ChatGPT ruling of 2026-09-19 §4, after both pre-registered
+#: formulations returned NOT_SUPPORTED. It is a scope-limited closure, not a statement
+#: that rate information has no content.
 FAMILY_BOUNDARY: Final[str] = (
     "MARKET_YIELD_REPRICING_SIMPLE_DIRECTIONAL_FAMILY_NOT_SUPPORTED_IN_SEEN_DEVELOPMENT"
 )
+
+#: Exactly what the closure covers. A later session may not widen it by paraphrase.
+FAMILY_CLOSURE_COVERS: Final[tuple[str, ...]] = (
+    "public daily sovereign-yield data",
+    "simple fast directional repricing",
+    "simple slow directional repricing",
+    "subsequent G10 FX directional return",
+)
+
+#: What the closure therefore forbids: reviving the same family by search.
+FAMILY_CLOSURE_FORBIDS: Final[tuple[str, ...]] = (
+    "a 10, 15, 30, 40 or 60 day lookback on the same measure",
+    "an EWMA half-life sweep on the same measure",
+    "arbitrary threshold tuning on the same measure",
+)
+
+#: Different information sets. None of these was observed, and none is closed.
+FAMILY_CLOSURE_DOES_NOT_REACH: Final[tuple[str, ...]] = (
+    "OIS",
+    "market-implied policy path",
+    "rate futures",
+    "intraday rate repricing",
+    "curve shape",
+    "term-premium information",
+    "rates options",
+    "distributional policy-path information",
+)
+
+#: The authoritative status of this track, now that the ruling has been made.
+WORKFLOW_STATUS: Final[str] = FAMILY_BOUNDARY
 
 #: G10 currencies of the corpus, in the order the execution layer uses.
 CURRENCIES: Final[tuple[str, ...]] = ("AUD", "CAD", "CHF", "EUR", "GBP", "JPY", "NZD", "USD")
@@ -78,6 +104,9 @@ __all__ = [
     "CURRENCIES",
     "DATA_DIR",
     "FAMILY_BOUNDARY",
+    "FAMILY_CLOSURE_COVERS",
+    "FAMILY_CLOSURE_DOES_NOT_REACH",
+    "FAMILY_CLOSURE_FORBIDS",
     "OUTCOMES",
     "RECORD_DIR",
     "TRACK",

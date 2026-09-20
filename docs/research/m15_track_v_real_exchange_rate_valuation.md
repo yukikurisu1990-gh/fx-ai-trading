@@ -305,7 +305,18 @@ F2・F5 は肯定的な読みを弱め、F7 は否定的な結論を**強めた*
 - 非線形化・ML 化。
 - 保護 span の読み取り、凍結した終端日を超える request。
 
-## 9. Human + ChatGPT に返す論点
+## 9. 2026-09-19 裁定による確定事項
+
+| 項目 | 裁定 |
+| --- | --- |
+| 正式 status | **`REAL_EXCHANGE_RATE_VALUATION_NOT_SUPPORTED_IN_DEVELOPMENT`**（§5） |
+| 主因 | **cost ではなく signal content**。「cost に潰された」とは扱わない（§5） |
+| carry 追加 | **実行しない**。`valuation failed → add carry` という救済論理は**禁止**（§6）。将来 carry を研究するなら valuation の rescue ではなく、actual forward points / financing differential / market-implied rates / realistic rollover economics から設計した**独立の expected-return source** として立てる |
+| low-turnover | 「cost で落ちない turnover 帯を探す」こと自体を research objective に**しない**（§7）。turnover 1.25 回転/年・年間 cost 0.14% でも signal は支持されなかった |
+| 評価順序 | expected-return information → persistence → turnover → cost → leverage/margin → annual profit（§7） |
+| 執行層の turnover 床 | turnover の約 77% が vol-targeter の re-lever 由来という engineering finding を **backlog へ記録**（§8）。**alpha が無いので今は最適化しない**。将来 positive な slow-alpha candidate が出た場合にのみ deadband / hysteresis / less frequent resizing / equity-proportional sizing を検討可 |
+
+## 10. Human + ChatGPT に返す論点
 
 1. **carry を含めた再定式化を新規 pre-registration として認めるか。** 本 run の最大の構造的限界は spot-only であること。
    ただし §5.1 の実測では carry は本 book に**不利**なので、「carry で救える」という期待は支持されない。

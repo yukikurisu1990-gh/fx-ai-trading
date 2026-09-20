@@ -32,6 +32,7 @@ import ipaddress
 import os
 import re
 import socket
+import subprocess
 import sys
 from pathlib import Path
 
@@ -41,8 +42,17 @@ from tests import optin
 
 _REPO_ROOT = Path(__file__).resolve().parents[1]
 
-# Tracked evidence files that test runs must never modify (audit F-9 set
-# plus the two additional at-risk writers found during P1-A).
+# Tracked evidence files that test runs must never modify.
+#
+# This used to be eight hand-listed paths under ``artifacts/stage24_*`` and
+# ``artifacts/stage25_*``. That set did not contain a single research provenance
+# file — not ``artifacts/research/edge_sources/public_data_availability.json``,
+# not ``artifacts/research/valuation/acquisition.json`` — which is exactly the
+# range an acquisition run reached and overwrote under mutation. A hand-listed
+# set only protects what somebody remembered to list, and the thing worth
+# protecting is "evidence this repository has committed", not a remembered
+# subset of it. So the list below is the floor, and ``_tracked_artifacts()``
+# widens it to every tracked file under ``artifacts/`` at session start.
 PROTECTED_TRACKED_ARTIFACTS: tuple[str, ...] = (
     "artifacts/stage24_0b/eval_report.md",
     "artifacts/stage24_0c/eval_report.md",
@@ -61,17 +71,39 @@ def _digest(path: Path) -> str | None:
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
+def _tracked_artifacts() -> tuple[str, ...]:
+    """Every tracked file under ``artifacts/``, or the hand-listed floor if git is away.
+
+    166 files and about 17 MB at the time of writing — one SHA-256 pass over that
+    at session start and one at the end, which is cheap next to the suite. Asking
+    git rather than walking the tree matters: an untracked scratch file under
+    ``artifacts/`` is not committed evidence and tests are free to write it.
+    """
+    try:
+        result = subprocess.run(  # noqa: S603 - fixed argv, no shell
+            ["git", "ls-files", "-z", "artifacts/"],
+            cwd=_REPO_ROOT,
+            capture_output=True,
+            check=True,
+            timeout=30,
+        )
+    except (OSError, subprocess.SubprocessError):
+        return PROTECTED_TRACKED_ARTIFACTS
+    listed = tuple(part for part in result.stdout.decode("utf-8").split("\0") if part)
+    #: never shrink below the hand-listed floor, whatever git reports
+    return tuple(sorted(set(listed) | set(PROTECTED_TRACKED_ARTIFACTS)))
+
+
 @pytest.fixture(scope="session", autouse=True)
 def protect_tracked_artifacts():
-    """Fail the session if any test modifies protected tracked evidence."""
-    before = {rel: _digest(_REPO_ROOT / rel) for rel in PROTECTED_TRACKED_ARTIFACTS}
+    """Fail the session if any test modifies committed evidence."""
+    protected = _tracked_artifacts()
+    before = {rel: _digest(_REPO_ROOT / rel) for rel in protected}
     yield
-    dirtied = [
-        rel for rel in PROTECTED_TRACKED_ARTIFACTS if _digest(_REPO_ROOT / rel) != before[rel]
-    ]
+    dirtied = [rel for rel in protected if _digest(_REPO_ROOT / rel) != before[rel]]
     if dirtied:
         raise AssertionError(
-            "P1-A violation: test run modified tracked evidence artifacts: "
+            "P1-A violation: test run modified committed evidence artifacts: "
             f"{dirtied}. Stage-eval tests must write to tmp_path via --out-dir "
             "(see docs/design/project_wide_logic_audit_fable5_findings.md F-9). "
             "Restore the files with `git restore -- <paths>` and fix the "
@@ -260,6 +292,82 @@ def _install_socket_guard() -> None:
 
 
 # ---------------------------------------------------------------------------
+# Guard 3b — a child process may not fetch what this process is refused
+# ---------------------------------------------------------------------------
+# Guard 3 patches ``socket`` inside *this* interpreter, so it cannot see a
+# network call made by a child. The acquisition modules had a fallback that ran
+# ``curl`` through ``subprocess`` whenever ``urlopen`` raised — and the refusal
+# guard 3 raises is itself an exception, so being refused *triggered* the
+# fallback. Under mutation that route reached the live network and overwrote
+# committed provenance.
+#
+# The acquisition side now checks its own opt-in before either route, which is
+# the structural fix. This is the belt to that pair of braces: a default test
+# run cannot spawn a fetching binary at all. It is a denylist rather than an
+# allowlist because tests legitimately spawn processes (the process-manager
+# integration tests spawn Python, and the fixture above spawns git) — so it is
+# the secondary guard, and it is named as such.
+
+_FETCHING_BINARIES = frozenset(
+    {"curl", "wget", "httpie", "http", "aria2c", "powershell", "pwsh", "iwr"}
+)
+
+
+def _first_token(value: object) -> str:
+    """The program out of an argv list or a Windows command line.
+
+    The ``subprocess.Popen`` audit event carries ``(executable, args, cwd, env)``
+    and on Windows ``executable`` is ``None`` while ``args`` is the joined command
+    line — so a guard that reads only the first field sees ``None`` and waves the
+    call through. This was found by the test below actually running ``curl``.
+    """
+    if isinstance(value, (list, tuple)):
+        return str(value[0]) if value else ""
+    text = str(value).strip()
+    if text.startswith('"'):
+        return text[1 : text.find('"', 1)] if text.find('"', 1) > 0 else text[1:]
+    return text.split(" ", 1)[0]
+
+
+def _program_stem(value: object) -> str:
+    r"""Basename under *either* separator, on either platform.
+
+    ``Path(...).name`` is platform-dependent: on POSIX a backslash is an ordinary
+    filename character, so ``C:\Windows\System32\curl.exe`` has no basename
+    there and the guard waves it through. CI found this by running the test on
+    Linux. A guard that only recognises the local spelling is not a guard.
+    """
+    #: 正規表現は使わない。ruff の自動修正が文字クラスの \ を / だけに畳んでしまい、
+    #: backslash が区切りでなくなったことがある。置換なら誤読しようがない。
+    token = _first_token(value).replace(chr(92), "/").rsplit("/", 1)[-1].lower()
+    return token[:-4] if token.endswith(".exe") else token
+
+
+def _refuse_fetching_child(event_args: tuple) -> None:
+    if _NETWORK_AUTHORIZED:
+        return
+    #: both fields, because either one can be the one carrying the program name
+    for field in event_args[:2]:
+        if field is None:
+            continue
+        stem = _program_stem(field)
+        if stem in _FETCHING_BINARIES:
+            raise RuntimeError(
+                f"a default test run may not spawn {stem!r}, which can fetch over the "
+                f"network outside this interpreter's socket guard. "
+                f"{optin.external_skip_reason()}."
+            )
+
+
+def _install_subprocess_guard() -> None:
+    def hook(event: str, args: tuple) -> None:
+        if event == "subprocess.Popen" and args:
+            _refuse_fetching_child(args)
+
+    sys.addaudithook(hook)
+
+
+# ---------------------------------------------------------------------------
 # Guard 4 — the repository's own .env may not be opened, by any route
 # ---------------------------------------------------------------------------
 # Guards 1-3 all patch a named function, so they only see the routes they know
@@ -299,6 +407,7 @@ def _install_dotenv_read_guard() -> None:
 _disable_dotenv_autoload()
 _install_engine_guard()
 _install_socket_guard()
+_install_subprocess_guard()
 _install_dotenv_read_guard()
 
 

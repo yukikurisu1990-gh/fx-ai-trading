@@ -1,0 +1,167 @@
+{
+ "authority": "Human + ChatGPT adjudication 2026-09-20 section 2",
+ "finished_utc": "2026-09-20T04:38:14.223068+00:00",
+ "groups": {
+  "S02_curve_long_leg": {
+   "boc_valet_10y": {
+    "bytes_read": 1244,
+    "failure_classification": null,
+    "first_line": "{",
+    "http_status": 200,
+    "parameters": {
+     "method": "GET",
+     "read_limit_bytes": 400000,
+     "timeout_seconds": 30,
+     "tls": "ssl.create_default_context()",
+     "user_agent": "Mozilla/5.0 research-availability-check"
+    },
+    "result": "OK",
+    "retrieved_utc": "2026-09-20T04:37:57.748756+00:00",
+    "sha256_of_read_bytes": "84e4c646a93ff27c3ea9b3ce3663fbde73d1fab50620bc5604e594ff69959015",
+    "url": "https://www.bankofcanada.ca/valet/observations/BD.CDN.10YR.DQ.YLD/json?recent=5"
+   },
+   "bundesbank_10y_daily": {
+    "bytes_read": 0,
+    "detail": "HTTPError: HTTP Error 404: Not Found",
+    "failure_classification": "HTTP_STATUS_FROM_PROVIDER",
+    "http_status": 404,
+    "parameters": {
+     "method": "GET",
+     "read_limit_bytes": 400000,
+     "timeout_seconds": 30,
+     "tls": "ssl.create_default_context()",
+     "user_agent": "Mozilla/5.0 research-availability-check"
+    },
+    "result": "HTTP_STATUS_FROM_PROVIDER",
+    "retrieved_utc": "2026-09-20T04:37:56.043638+00:00",
+    "sha256_of_read_bytes": null,
+    "url": "https://api.statistiken.bundesbank.de/rest/download/BBSIS/D.I.ZAR.ZI.EUR.S1311.B.A604._Z.R.A.A._Z._Z.A?format=csv&lang=en"
+   },
+   "snb_rendoblid": {
+    "bytes_read": 400000,
+    "failure_classification": null,
+    "first_line": "﻿\"CubeId\";\"rendoblid\"",
+    "http_status": 200,
+    "parameters": {
+     "method": "GET",
+     "read_limit_bytes": 400000,
+     "timeout_seconds": 30,
+     "tls": "ssl.create_default_context()",
+     "user_agent": "Mozilla/5.0 research-availability-check"
+    },
+    "result": "OK",
+    "retrieved_utc": "2026-09-20T04:37:58.022599+00:00",
+    "sha256_of_read_bytes": "1c5fd048958b49bc00b4ccf335962b50abcf5b26df233c453711deba05288c8e",
+    "url": "https://data.snb.ch/api/cube/rendoblid/data/csv/en"
+   },
+   "us_treasury_par_yield_2016": {
+    "bytes_read": 16584,
+    "failure_classification": null,
+    "first_line": "Date,\"1 Mo\",\"3 Mo\",\"6 Mo\",\"1 Yr\",\"2 Yr\",\"3 Yr\",\"5 Yr\",\"7 Yr\",\"10 Yr\",\"20 Yr\",\"30 Yr\"",
+    "http_status": 200,
+    "parameters": {
+     "method": "GET",
+     "read_limit_bytes": 400000,
+     "timeout_seconds": 30,
+     "tls": "ssl.create_default_context()",
+     "user_agent": "Mozilla/5.0 research-availability-check"
+    },
+    "result": "OK",
+    "retrieved_utc": "2026-09-20T04:37:54.978664+00:00",
+    "sha256_of_read_bytes": "b4d0a8d86e2734bc64d84d9a9824434d841737621582daeac58f13c7129f325c",
+    "url": "https://home.treasury.gov/resource-center/data-chart-center/interest-rates/daily-treasury-rates.csv/2016/all?type=daily_treasury_yield_curve&field_tdr_date_value=2016&page&_format=csv"
+   }
+  },
+  "S07_credit_spread": {
+   "fred_root": {
+    "bytes_read": 0,
+    "detail": "TimeoutError: The read operation timed out",
+    "failure_classification": "TIMEOUT_NOT_PROVIDER_UNAVAILABLE",
+    "http_status": null,
+    "parameters": {
+     "method": "GET",
+     "read_limit_bytes": 400000,
+     "timeout_seconds": 30,
+     "tls": "ssl.create_default_context()",
+     "user_agent": "Mozilla/5.0 research-availability-check"
+    },
+    "result": "TIMEOUT_NOT_PROVIDER_UNAVAILABLE",
+    "retrieved_utc": "2026-09-20T04:37:24.497591+00:00",
+    "sha256_of_read_bytes": null,
+    "url": "https://fred.stlouisfed.org/"
+   },
+   "fred_series_page_BAMLH0A0HYM2": {
+    "bytes_read": 0,
+    "detail": "TimeoutError: The read operation timed out",
+    "failure_classification": "TIMEOUT_NOT_PROVIDER_UNAVAILABLE",
+    "http_status": null,
+    "parameters": {
+     "method": "GET",
+     "read_limit_bytes": 400000,
+     "timeout_seconds": 30,
+     "tls": "ssl.create_default_context()",
+     "user_agent": "Mozilla/5.0 research-availability-check"
+    },
+    "result": "TIMEOUT_NOT_PROVIDER_UNAVAILABLE",
+    "retrieved_utc": "2026-09-20T04:36:54.153920+00:00",
+    "sha256_of_read_bytes": null,
+    "url": "https://fred.stlouisfed.org/series/BAMLH0A0HYM2"
+   }
+  },
+  "uncorroborated_this_round_only": {
+   "bis_policy_rates": {
+    "bytes_read": 0,
+    "detail": "HTTPError: HTTP Error 404: ",
+    "failure_classification": "HTTP_STATUS_FROM_PROVIDER",
+    "http_status": 404,
+    "parameters": {
+     "method": "GET",
+     "read_limit_bytes": 400000,
+     "timeout_seconds": 30,
+     "tls": "ssl.create_default_context()",
+     "user_agent": "Mozilla/5.0 research-availability-check"
+    },
+    "result": "HTTP_STATUS_FROM_PROVIDER",
+    "retrieved_utc": "2026-09-20T04:38:13.240800+00:00",
+    "sha256_of_read_bytes": null,
+    "url": "https://stats.bis.org/api/v2/data/dataflow/BIS/WS_CBPOL/1.0/D..?format=csv"
+   },
+   "cboe_vix_history": {
+    "bytes_read": 400000,
+    "failure_classification": null,
+    "first_line": "DATE,OPEN,HIGH,LOW,CLOSE",
+    "http_status": 200,
+    "parameters": {
+     "method": "GET",
+     "read_limit_bytes": 400000,
+     "timeout_seconds": 30,
+     "tls": "ssl.create_default_context()",
+     "user_agent": "Mozilla/5.0 research-availability-check"
+    },
+    "result": "OK",
+    "retrieved_utc": "2026-09-20T04:38:01.033607+00:00",
+    "sha256_of_read_bytes": "c4507daba8813917575f4415bdc4a5ddf482c02786d6881bb8b85b3f6026d7a6",
+    "url": "https://cdn.cboe.com/api/global/us_indices/daily_prices/VIX_History.csv"
+   },
+   "eia_wti_daily": {
+    "bytes_read": 400000,
+    "failure_classification": null,
+    "first_line": "��\u0011ࡱ\u001a�\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000;\u0000\u0003\u0000��\t\u0000\u0006\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\b\u0000\u0000\u0000�\u0003\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0010\u0000\u0000�\u0003\u0000\u0000\u0001\u0000\u0000\u0000����\u0000\u0000\u0000\u0000�\u0003\u0000\u0000�\u0003\u0000\u0000�\u0003\u0000\u0000�\u0003\u0000\u0000�\u0003\u0000\u0000�\u0003\u0000\u0000�\u0003\u0000\u0000�\u0003\u0000\u0000����������������������������������������������������������������������������������������������",
+    "http_status": 200,
+    "parameters": {
+     "method": "GET",
+     "read_limit_bytes": 400000,
+     "timeout_seconds": 30,
+     "tls": "ssl.create_default_context()",
+     "user_agent": "Mozilla/5.0 research-availability-check"
+    },
+    "result": "OK",
+    "retrieved_utc": "2026-09-20T04:38:01.979230+00:00",
+    "sha256_of_read_bytes": "6673ebe5bea4a87ec0fda44daebb9e80ff2ef41164b64efa2609790dbc52b9a6",
+    "url": "https://www.eia.gov/dnav/pet/hist_xls/RWTCd.xls"
+   }
+  }
+ },
+ "scope": "metadata / availability / coverage only — no alpha, no FX return, no protected span",
+ "started_utc": "2026-09-20T04:36:54.153920+00:00"
+}

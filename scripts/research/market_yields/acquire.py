@@ -35,9 +35,16 @@ from xml.etree import ElementTree as ET
 
 import pandas as pd
 
+from scripts.research.acquisition_safety import (
+    NETWORK_FAILURES,
+    require_opt_in,
+    write_provenance,
+)
 from scripts.research.market_yields import DATA_DIR, RECORD_DIR, sources
 
 OPT_IN_ENV: Final[str] = "MARKET_YIELDS_ACQUIRE_APPROVED"
+#: committed provenance の置き換えは、取得の許可とは別の act として扱う。
+OVERWRITE_ENV: Final[str] = "MARKET_YIELDS_PROVENANCE_OVERWRITE_APPROVED"
 #: Some public statistics sites refuse non-browser agents outright (HTTP 403), so the
 #: request looks like a browser. Nothing here is authenticated and nothing is scraped
 #: around a paywall: every URL is a published statistics file.
@@ -58,12 +65,18 @@ def _fetch(url: str) -> bytes:
             "Accept-Language": "en-US,en;q=0.9",
         },
     )
+    # network に触れる直前ごとに確認する。`acquire()` の入口にも check はあるが、
+    # それを消す mutation 1 つで全 fetch が無防備になったのが事故の起点だった。
+    require_opt_in(OPT_IN_ENV, what="fetch over the network")
     try:
         with urllib.request.urlopen(
             request, timeout=180, context=ssl.create_default_context()
         ) as r:
             return r.read()
-    except Exception as error:
+    except NETWORK_FAILURES as error:
+        # 本物の通信失敗だけが fallback に落ちる。guard が投げた AcquisitionRefusedError は
+        # ここに入らず呼び出し元へ抜ける — 「拒否」が「失敗したので次を試す」に
+        # 化けていたのが事故の 2 つめの穴だった。
         #: Some sites (RBNZ) refuse urllib's TLS handshake while serving the same public
         #: file to curl. The fallback changes the client, never the URL or the headers.
         blob = _fetch_via_curl(url)
@@ -73,6 +86,10 @@ def _fetch(url: str) -> bytes:
 
 
 def _fetch_via_curl(url: str) -> bytes | None:
+    # conftest の socket guard は Python の socket を patch しているだけなので、
+    # **子プロセスの curl は見えない**。事故で網を抜けたのがこの route なので、
+    # ここは自分で許可を確認する。
+    require_opt_in(OPT_IN_ENV, what="fetch over the network via curl")
     binary = shutil.which("curl")
     if binary is None:  # pragma: no cover - environment dependent
         return None
@@ -373,8 +390,14 @@ def acquire() -> dict[str, Any]:
             }
     out = root / RECORD_DIR
     out.mkdir(parents=True, exist_ok=True)
-    (out / "acquisition.json").write_text(
-        json.dumps(record, indent=2, ensure_ascii=False, sort_keys=True) + "\n", encoding="utf-8"
+    #: 既存の committed provenance を黙って置き換えない。同一内容なら no-op、
+    #: 内容が違えば拒否する — 新しい観測は新しいファイルに書くのが本 repo の規約で、
+    #: 事故ではここが無条件の write_text だったために記録が失われた。
+    write_provenance(
+        out / "acquisition.json",
+        json.dumps(record, indent=2, ensure_ascii=False, sort_keys=True) + "\n",
+        overwrite=os.environ.get(OVERWRITE_ENV) == "1",
+        env_name=OVERWRITE_ENV,
     )
     return record
 
