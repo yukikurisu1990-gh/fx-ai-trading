@@ -21,7 +21,9 @@ Authority: 2026-09-21 Human + ChatGPT 裁定 §53 / §54
 | 実行時 freeze digest | `28100ebedfea45765371585df5c4308fee261e2496a9798acca79c920158962c` |
 | 現在の freeze digest | `8279f6b55112ff953cd9bf01b584447bc53b9db5b6745dd1cc9cd8d1501f3a3f` |
 | 旧 freeze（履歴保持） | `29ba80d68a5462fe015a6f2566d3c0b63319d0549de7b9a4d34a890f2339b1ca` — `SUPERSEDED_PRE_EXECUTION` |
-| merge SHA | **無し（未 merge）** — §2 を読むこと |
+| merge SHA | **無し（未 merge）** — 下の「なぜ自動 merge しなかったか」を読むこと |
+| CI | `413b1dd` で **green**（test 10m55s / contract-tests 57s）。本文書の追記コミットは次の head |
+| mutation | **検証 23 件すべて検出**（当初 20 件中 17 件 → 中核契約 3 件を塞いで再検証） |
 | 主な artefact | `artifacts/research/top_five/{acquisition,development,stage2_t5}.json` |
 
 ### なぜ #490 を自動 merge しなかったか — **裁定手順からの逸脱の申告**
@@ -241,7 +243,7 @@ verdict: `T3_S02_NOT_SUPPORTED_IN_SEEN_DEVELOPMENT`（長 span は `DATA_NOT_DEC
 | 項目 | 長 span | 近 span |
 | --- | ---: | ---: |
 | data / timing | TIC 月次、m+2 月末以降にのみ使用、staleness 上限 75 暦日 | 同 |
-| 窓 | 1999-01-05 … 2016-06-01 | **2021-04-28 … 2023-06-14** |
+| 窓（score が使える域） | 1999-06-30 … 2016-06-01 | **2021-04-28 … 2023-06-14** |
 | 日数 / 年 | 4,331 / 17.19 | **555 / 2.20** |
 | **MDE95** | **0.473** | **1.321** |
 | gross SR | +0.037 | **+0.891** |
