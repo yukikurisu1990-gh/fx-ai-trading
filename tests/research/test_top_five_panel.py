@@ -15,6 +15,10 @@ import pytest
 
 from scripts.research.top_five import UNIVERSE, panel, prereg
 
+#: panel は取得済みの FX cache（git-ignore）を読む。既定の run では読まない —
+#: **data が存在することは読んでよいという許可ではない**というのが本 repo の規約である。
+pytestmark = pytest.mark.research_data
+
 
 @pytest.fixture(scope="module")
 def built() -> dict:

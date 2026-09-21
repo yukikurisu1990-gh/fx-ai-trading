@@ -31,6 +31,33 @@ from scripts.research.top_five import (
 # 権限
 # ---------------------------------------------------------------------------
 
+#: **凍結した signal の数値定数。** これが `signals.py` にしか無かったのは穴だった —
+#: TRACKS の散文には「5 日」「252 日」と書いてあるが、`signals.py` の数値だけを変えても
+#: digest は動かない。`prereg` は BookConfig について同じ失敗を自分で見つけて直している
+#: （「関数名の文字列しか凍結しておらず既定値が変われば digest が動かないまま別の実験に
+#: なっていた」）のに、signal 側で同じ穴が残っていた。**実行後のレビューで指摘された。**
+#:
+#: **実行時にこれらが凍結値だったことは確認済み**である（再実行が 548 日 / net 0.672 を
+#: 再現した）。値は 1 つも変えていない — digest が覆う範囲を広げただけである。
+SIGNAL_CONSTANTS: Final[dict[str, int]] = {
+    "z_window": 252,
+    "shock_lookback": 5,
+    "slope_lookback": 20,
+    "factor_window": 120,
+    "partner_window": 252,
+    "tic_window_months": 12,
+    #: **暦日**で数える。初版は「行数」で数えており、union index が 2016-05-31 と
+    #: 2021-04-28 の間に 1 行も持たないため、**1 行で 5 年の空白を跨いで**いた。
+    #: 実測で近 span 初日が 1,792 日前の値を使っていた。宣言した意図（次の公表が
+    #: 来るはずの幅）に実装を合わせた。
+    "max_staleness_days": 75,
+}
+
+#: 実行に使われた digest。**この値は書き換えない。**
+#: SIGNAL_CONSTANTS を payload に足したので現在の `freeze_digest()` はこれと異なる。
+#: 走った設計はこちらであり、差は「覆う範囲」だけである。
+DIGEST_AS_EXECUTED: Final[str] = "28100ebedfea45765371585df5c4308fee261e2496a9798acca79c920158962c"
+
 #: 旧 freeze。**削除せず履歴として保持する**（2026-09-21 裁定 §1）。
 #: alpha を 1 本も見る前に差し替えたので、これは post-result rescue ではない。
 SUPERSEDED_FREEZE: Final[dict[str, str]] = {
@@ -41,6 +68,68 @@ SUPERSEDED_FREEZE: Final[dict[str, str]] = {
         "2026-09-21 裁定が T3 の符号を dual-hypothesis へ、leverage の解釈を三概念の"
         "分離と target-vol scenario へ、acquisition を承認済みへ改めた。"
         "**この時点で alpha は 1 本も見られていない**"
+    ),
+}
+
+#: **実行後に入れた訂正の記録。** 2026-09-21 裁定は「結果を見る前に凍結」を求めており、
+#: ここに並ぶ 3 件はいずれも **結果を見た後**に入った。だから「凍結どおり走った」とは書けない。
+#: 何がどちらの性質かを分けて残す — leakage の閉塞は入れないと結果が無効になるが、
+#: nuisance 定数の値決めは **researcher degrees of freedom** そのものだからである。
+POST_EXECUTION_CORRECTIONS: Final[dict[str, Any]] = {
+    "digest_before": DIGEST_AS_EXECUTED,
+    "status": "CORRECTED_AFTER_RESULTS_WERE_SEEN_NOT_A_CLEAN_PREREGISTERED_RUN",
+    "why_recorded_here": (
+        "digest が動いた事実は test が押さえているが、**何がなぜ動いたか**は digest からは"
+        "読めない。後から読む人が「凍結どおりの 1 回」と誤読しないように、"
+        "訂正の中身を凍結 payload の中へ置く"
+    ),
+    "corrections": (
+        {
+            "id": "C-1",
+            "kind": "LEAKAGE_CLOSURE",
+            "what": (
+                "`signals._two_year` が取得層の `_truncate` を通らず parquet を直読みしており、"
+                "`*_2y.parquet` が持つ保護 pool と forward epoch の行（通貨により 510-2,092 行、"
+                "最大 2026-09-15）が slope 計算へ入っていた"
+            ),
+            "measured_impact": (
+                "近 span の score 3 日（2021-05-11 / 05-26 / 05-27）が保護 pool の値に依存。"
+                "**doc が書いていた『fresh pool 未読』は、この leg については偽だった**"
+            ),
+            "discretion": "無し。塞がなければ結果が無効になる一方向の修正である",
+        },
+        {
+            "id": "C-2",
+            "kind": "UNIT_BUG_FIX_PLUS_A_CHOSEN_CONSTANT",
+            "what": (
+                "staleness 上限を `ffill(limit=45)` の **行数**で数えていた。union index は "
+                "2016-05-31 と 2021-04-28 の間に 1 行も持たないので、**1 行で 1,792 日**を"
+                "跨いでいた。暦日で数えるよう直した"
+            ),
+            "measured_impact": "近 span 初日が vintage 2016-05-31 の値を使っていた",
+            "discretion": (
+                "**ある。** 暦日へ直すこと自体は一方向の修正だが、**75 日という値は新しく"
+                "選んだ数**である（旧値は 45 行で、単位が違うので移せない）。"
+                "感度は `stage2.py` が測って artefact に残す — "
+                "**T5 の net Sharpe は 45-400 日で +0.56 … +0.84 と動き、凍結値 75 は"
+                "試した格子のほぼ上端に当たる。報告値は楽観側である**"
+            ),
+        },
+        {
+            "id": "C-3",
+            "kind": "MISSING_NULL_ADDED",
+            "what": "`constant_long_usd`（signal を見ずに USD を買い持ちする book）を benchmark へ追加",
+            "measured_impact": "T5 の近 span 増分は net +0.838 に対し null +0.260 で **+0.578**",
+            "discretion": (
+                "**唯一の正の結果を弱める方向にしか働かない**追加であり、candidate の設計は"
+                "1 つも変えていない。それでも『結果を見た後に足した benchmark』である事実は残す"
+            ),
+        },
+    ),
+    "what_this_does_not_excuse": (
+        "C-1 と C-2 は **実行前に閉じているべきだった**。5 本を凍結してから走らせる設計の"
+        "目的は、まさにこの種の事後調整を不可能にすることだった。**次の cycle では、"
+        "外部 series を読む経路を 1 本に強制し、そこを通らない読み出しを test で禁じる**"
     ),
 }
 
@@ -752,6 +841,8 @@ def _payload() -> dict[str, Any]:
     return {
         "cycle": CYCLE,
         "workflow_status": WORKFLOW_STATUS,
+        "signal_constants": SIGNAL_CONSTANTS,
+        "digest_as_executed": DIGEST_AS_EXECUTED,
         "outcomes": list(OUTCOMES),
         "forbidden_next_steps": list(FORBIDDEN_NEXT_STEPS),
         "universe": list(UNIVERSE),
@@ -784,6 +875,7 @@ def _payload() -> dict[str, Any]:
         "forbidden_rescues": list(FORBIDDEN_RESCUES),
         "acquisition": ACQUISITION,
         "superseded_freeze": SUPERSEDED_FREEZE,
+        "post_execution_corrections": POST_EXECUTION_CORRECTIONS,
         "track_status_suffixes": list(TRACK_STATUS_SUFFIXES),
         "multi_source_portfolio": MULTI_SOURCE_PORTFOLIO,
         "cross_track_diagnostic": list(CROSS_TRACK_DIAGNOSTIC),
@@ -804,6 +896,7 @@ def freeze_digest() -> str:
 
 __all__ = [
     "ACQUISITION",
+    "DIGEST_AS_EXECUTED",
     "AUTHORITY",
     "BENCHMARKS",
     "BOOK_CONFIG",
@@ -828,9 +921,11 @@ __all__ = [
     "PROTECTED_BOUNDS",
     "PUBLICATION_TIMES",
     "REVISION_CAVEAT",
+    "SIGNAL_CONSTANTS",
     "SPANS",
     "STAGE_1_ONLY",
     "STAGE_2_ELIGIBILITY",
+    "POST_EXECUTION_CORRECTIONS",
     "SUPERSEDED_FREEZE",
     "TIMESTAMP_RULE",
     "TRACKS",

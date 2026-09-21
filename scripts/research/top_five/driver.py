@@ -9,6 +9,7 @@
 
 from __future__ import annotations
 
+import argparse
 import json
 import sys
 import warnings
@@ -77,32 +78,56 @@ def _rename_gate_t3(index: pd.DatetimeIndex, span: str, scores: pd.DataFrame) ->
 def _rename_gate_t5(
     index: pd.DatetimeIndex, scores: pd.DataFrame, excess: pd.DataFrame
 ) -> dict[str, Any]:
-    """2 か月ラグの USD momentum と同じになっていないか。"""
+    """2 か月ラグの USD momentum と同じになっていないか。
+
+    **比較対象の horizon を揃える。** T5 の score は月次値を持ち越すので日次 autocorr が
+    0.946 と level 的である。それを 21 日 return と比べると相関は機械的に小さく出る —
+    prereg は T4 で同じ構造的欠陥を自分で見つけて比較対象を差し替えているのに、
+    T5 には同じ審査が当たっていなかった。**実行後のレビューで指摘された。**
+    閾値 0.8 は変えない（変えれば事後の閾値調整になる）。
+    """
     usd = excess["USD"]
-    worst = 0.0
+    measured: dict[str, float] = {}
     for months in (1, 2, 3):
-        lagged = usd.rolling(21).sum().shift(21 * months)
-        a, b = scores["USD"], lagged.reindex(scores.index)
-        usable = a.notna() & b.notna()
-        if usable.sum() > 100 and a[usable].std() > 0 and b[usable].std() > 0:
-            worst = max(worst, abs(float(np.corrcoef(a[usable], b[usable])[0, 1])))
+        for horizon, label in ((21, "1m"), (126, "6m"), (252, "12m")):
+            lagged = usd.rolling(horizon).sum().shift(21 * months)
+            a, b = scores["USD"], lagged.reindex(scores.index)
+            usable = a.notna() & b.notna()
+            if usable.sum() > 100 and a[usable].std() > 0 and b[usable].std() > 0:
+                key = f"cum_{label}_lag_{months}m"
+                measured[key] = round(abs(float(np.corrcoef(a[usable], b[usable])[0, 1])), 3)
+    worst = max(measured.values()) if measured else 0.0
     return {
-        "comparator": "1/2/3 か月ラグの USD basket return",
-        "abs_corr": worst,
+        "comparator": "1/2/3 か月ラグ x 1/6/12 か月累積の USD basket return",
+        "abs_corr_by_comparator": measured,
+        "abs_corr_worst": worst,
         "threshold": 0.8,
         "verdict": "RENAME" if worst > 0.8 else "DISTINCT",
+        "caveat": (
+            "**閾値は超えないが、horizon を揃えると相関は 0.096 から 0.348 へ上がる。** "
+            "『2 か月遅れの USD momentum ではない』という断定は、選べた比較対象の中で"
+            "最も弱い数字に依拠してはならない"
+        ),
     }
 
 
-def _turnover_verdict(track: str, measured: float) -> dict[str, Any]:
-    """凍結した turnover 上限に照らす（裁定の B / COST_FAILURE 規則）。"""
+def _turnover_verdict(track: str, metrics: dict[str, Any]) -> dict[str, Any]:
+    """凍結した turnover 上限に照らす。
+
+    **比較は単位 gross あたりで行う。** band law は gross 1 単位あたりの turnover を
+    出すのに対し、実行層の `one_way_traded` は leverage 適用後の建玉変化である。
+    生の値をそのまま比べると leverage 倍（この book では約 4.5 倍）過大に見える。
+    """
     frozen = prereg.TRACKS[track]["expected_turnover"]
     corrected = float(frozen["corrected_x1_90"])
+    per_unit = float(metrics["turnover_per_unit_gross"])
     return {
         "band_law": frozen["band_law"],
         "corrected_x1_90": corrected,
-        "measured": round(measured, 1),
-        "exceeds_corrected": bool(measured > corrected),
+        "measured_levered": round(float(metrics["turnover_round_trips_per_year"]), 1),
+        "measured_per_unit_gross": round(per_unit, 1),
+        "mean_portfolio_gross": round(float(metrics["portfolio_gross_leverage"]), 2),
+        "exceeds_corrected": bool(per_unit > corrected),
     }
 
 
@@ -135,9 +160,7 @@ def run() -> dict[str, Any]:
                 series = out.pop("daily_net")
                 pnl[key] = series
                 metrics = out["metrics"]
-                out["turnover_check"] = _turnover_verdict(
-                    track, metrics["turnover_round_trips_per_year"]
-                )
+                out["turnover_check"] = _turnover_verdict(track, metrics)
 
                 excess = built[span]["currency_excess_return"]
                 if track == "T3":
@@ -183,10 +206,24 @@ def run() -> dict[str, Any]:
 
 
 def main() -> int:
+    """再実行は **明示的に**。committed provenance を黙って置き換えさせない。
+
+    `--overwrite` だけでなく env まで要求するのは、「上書きしたいと書けてしまう
+    コード」と「上書きしてよいと人が言った事実」を分けるためである。
+    """
     warnings.filterwarnings("ignore")
+    parser = argparse.ArgumentParser(description="Top-Five 5 本を凍結順に走らせる")
+    parser.add_argument("--overwrite", action="store_true")
+    args = parser.parse_args()
+
     payload = run()
     RECORD.parent.mkdir(parents=True, exist_ok=True)
-    written = write_provenance(RECORD, payload)
+    written = write_provenance(
+        RECORD,
+        payload,
+        overwrite=args.overwrite,
+        env_name="TOP_FIVE_OVERWRITE" if args.overwrite else None,
+    )
     print(json.dumps(payload["results"], indent=1, ensure_ascii=True, default=str)[:400])
     print(f"written: {RECORD} sha256={written}", file=sys.stderr)
     return 0

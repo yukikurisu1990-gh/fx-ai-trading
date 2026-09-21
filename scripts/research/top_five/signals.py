@@ -19,29 +19,20 @@ from typing import Final
 import numpy as np
 import pandas as pd
 
-from scripts.research.top_five import UNIVERSE, panel, prereg
+from scripts.research.top_five import UNIVERSE, panel, prereg, sources
 
 REPO_ROOT: Final[Path] = Path(__file__).resolve().parents[3]
 DATA_DIR: Final[Path] = REPO_ROOT / "artifacts/track_a_scratch/top_five"
 
-#: 標準化の窓。凍結文の「252 日で標準化」。
-Z_WINDOW: Final[int] = 252
-
-#: T1 / T2 の変化幅。凍結文の「5 日」。
-SHOCK_LOOKBACK: Final[int] = 5
-
-#: T3 の slope 変化幅。凍結文の「20 日」。
-SLOPE_LOOKBACK: Final[int] = 20
-
-#: T4 の窓。凍結文の「trailing 120 日 factor」「trailing 252 日 相関」。
-FACTOR_WINDOW: Final[int] = 120
-PARTNER_WINDOW: Final[int] = 252
-
-#: T5 の z 窓。凍結文の「12 か月」。
-TIC_WINDOW_MONTHS: Final[int] = 12
-
-#: 月次値を持ち越してよい上限。次の公表が来るはずの幅（約 2 か月）である。
-MAX_STALENESS_ROWS: Final[int] = 45
+#: **数値は `prereg.SIGNAL_CONSTANTS` が正本である。** ここで再定義しない —
+#: 定義が 2 か所にあると、digest の外側で片方だけ動かせてしまう。
+Z_WINDOW: Final[int] = prereg.SIGNAL_CONSTANTS["z_window"]
+SHOCK_LOOKBACK: Final[int] = prereg.SIGNAL_CONSTANTS["shock_lookback"]
+SLOPE_LOOKBACK: Final[int] = prereg.SIGNAL_CONSTANTS["slope_lookback"]
+FACTOR_WINDOW: Final[int] = prereg.SIGNAL_CONSTANTS["factor_window"]
+PARTNER_WINDOW: Final[int] = prereg.SIGNAL_CONSTANTS["partner_window"]
+TIC_WINDOW_MONTHS: Final[int] = prereg.SIGNAL_CONSTANTS["tic_window_months"]
+MAX_STALENESS_DAYS: Final[int] = prereg.SIGNAL_CONSTANTS["max_staleness_days"]
 
 
 def _load(key: str) -> pd.Series:
@@ -117,13 +108,24 @@ MARKET_YIELDS_DIR: Final[Path] = REPO_ROOT / "artifacts/track_a_scratch/market_y
 
 
 def _two_year(currency: str) -> pd.Series:
+    """T-R が取得済みの 2 年利回り。**必ず seen window へ切り落としてから返す。**
+
+    ここは本 cycle で唯一、取得層の `_truncate` を通らずに parquet を直読みする経路
+    だった。その結果 `*_2y.parquet` が持つ **fresh pool と forward epoch の行**
+    （通貨により 510-2,092 行、最大 2026-09-15 まで）がそのまま slope 計算へ入り、
+    実測で **recent span の score 3 日**（2021-05-11 / 05-26 / 05-27）が保護 pool の
+    値に依存していた。**実行後のレビューで指摘され、ここで塞いだ。**
+    """
     path = MARKET_YIELDS_DIR / f"{currency.lower()}_2y.parquet"
     frame = pd.read_parquet(path)
     column = frame.columns[-1]
     series = frame[column].astype(float)
     if not isinstance(series.index, pd.DatetimeIndex):
         series.index = pd.to_datetime(frame.iloc[:, 0])
-    return series.sort_index()
+    series = series.sort_index()
+    kept = series[[sources.is_seen(ts.date()) for ts in series.index]]
+    sources.assert_no_protected_day([ts.date() for ts in kept.index], label=f"{currency}_2y")
+    return kept
 
 
 def t3_scores(index: pd.DatetimeIndex, span: str, *, hypothesis: str) -> pd.DataFrame:
@@ -239,12 +241,14 @@ def t5_scores(index: pd.DatetimeIndex) -> pd.DataFrame:
     #: 無制限の ffill だと最後の値が 2.75 年そのまま残る。それは「情報」ではなく
     #: 「固定した建玉」である。次の公表が来るはずの期間（営業日 45 日 ≒ 2 か月）を
     #: 超えたら NaN にして、book を建てない。**alpha を見る前に決めた規約である。**
-    aligned = (
-        shifted.reindex(shifted.index.union(index))
-        .sort_index()
-        .ffill(limit=MAX_STALENESS_ROWS)
-        .reindex(index)
-    )
+    #: **暦日で数える。** limit に行数を渡す書き方だと、union index に空白があると
+    #: 1 行で何年でも跨いでしまう（実測で 1,792 日前の値が使われていた）。
+    union = shifted.index.union(index)
+    filled = shifted.reindex(union).sort_index().ffill()
+    vintage = pd.Series(shifted.index, index=shifted.index).reindex(union).sort_index().ffill()
+    age = (pd.Series(union, index=union) - vintage).dt.days
+    filled[age > MAX_STALENESS_DAYS] = np.nan
+    aligned = filled.reindex(index)
     scores = pd.DataFrame(index=index, columns=list(UNIVERSE), dtype=float)
     others = [c for c in UNIVERSE if c != "USD"]
     scores["USD"] = aligned
@@ -259,7 +263,7 @@ __all__ = [
     "PARTNER_WINDOW",
     "SHOCK_LOOKBACK",
     "SLOPE_LOOKBACK",
-    "MAX_STALENESS_ROWS",
+    "MAX_STALENESS_DAYS",
     "TIC_WINDOW_MONTHS",
     "Z_WINDOW",
     "t1_scores",

@@ -4,27 +4,27 @@
   "T1_long|T4_long": -0.01,
   "T1_long|T5_long": -0.038,
   "T1_recent|T2_recent": -0.053,
-  "T1_recent|T3_recent_T3-H1": 0.051,
-  "T1_recent|T3_recent_T3-H2": -0.052,
+  "T1_recent|T3_recent_T3-H1": 0.011,
+  "T1_recent|T3_recent_T3-H2": -0.012,
   "T1_recent|T4_recent": -0.012,
-  "T1_recent|T5_recent": 0.003,
+  "T1_recent|T5_recent": 0.005,
   "T2_long|T4_long": -0.049,
   "T2_long|T5_long": -0.007,
-  "T2_recent|T3_recent_T3-H1": 0.013,
-  "T2_recent|T3_recent_T3-H2": -0.014,
+  "T2_recent|T3_recent_T3-H1": 0.0,
+  "T2_recent|T3_recent_T3-H2": -0.001,
   "T2_recent|T4_recent": 0.038,
-  "T2_recent|T5_recent": 0.01,
+  "T2_recent|T5_recent": 0.007,
   "T3_recent_T3-H1|T3_recent_T3-H2": -0.993,
-  "T3_recent_T3-H1|T4_recent": 0.042,
-  "T3_recent_T3-H1|T5_recent": 0.014,
-  "T3_recent_T3-H2|T4_recent": -0.039,
-  "T3_recent_T3-H2|T5_recent": -0.017,
+  "T3_recent_T3-H1|T4_recent": 0.043,
+  "T3_recent_T3-H1|T5_recent": 0.033,
+  "T3_recent_T3-H2|T4_recent": -0.041,
+  "T3_recent_T3-H2|T5_recent": -0.036,
   "T4_long|T5_long": 0.023,
   "T4_recent|T5_recent": 0.073
  },
  "cycle": "TOP_FIVE_2026_09",
  "exploration_disclosure": "FIVE_WAY_EXPLORATORY_DEVELOPMENT_SEARCH_PLUS_A_TWO_SIGN_SUB_SEARCH_WITHIN_T3",
- "freeze_digest": "28100ebedfea45765371585df5c4308fee261e2496a9798acca79c920158962c",
+ "freeze_digest": "8279f6b55112ff953cd9bf01b584447bc53b9db5b6745dd1cc9cd8d1501f3a3f",
  "multi_source_portfolio": "NO_WEIGHTS_OPTIMIZATION_NO_BLENDING_NO_SOURCE_SELECTION_THIS_CYCLE_PROPOSAL_ONLY",
  "panel": {
   "carry_leg": "CARRY_LEG_ABSENT_ON_BOTH_SPANS_SPOT_ONLY",
@@ -48,13 +48,26 @@
  "results": {
   "T1_long": {
    "benchmarks": {
+    "constant_long_usd": {
+     "annual_cost": 0.003425296617795482,
+     "gross_sharpe": -0.07121767414218831,
+     "ic": -0.010877984958962021,
+     "net_sharpe": -0.10407272423312802,
+     "turnover_per_unit_gross": 3.3714220131266215
+    },
     "fx_own_mean_reversion_20d": {
+     "annual_cost": 0.03045450519409283,
+     "gross_sharpe": -0.3558442622171362,
      "ic": 0.00021714941211122482,
-     "net_sharpe": -0.6172772532617193
+     "net_sharpe": -0.6172772532617193,
+     "turnover_per_unit_gross": 27.64248525802797
     },
     "fx_own_momentum_20d": {
+     "annual_cost": 0.03045450519409283,
+     "gross_sharpe": 0.3558442622171362,
      "ic": -0.00021714941211122482,
-     "net_sharpe": 0.09415402324841521
+     "net_sharpe": 0.09415402324841521,
+     "turnover_per_unit_gross": 27.64248525802797
     },
     "zero_signal": {
      "ic": 0.0,
@@ -122,6 +135,7 @@
     "top_10_day_contribution": -0.3481456109224387,
     "top_1_day_contribution": -0.04267738664104935,
     "top_5_day_contribution": -0.19493004123385083,
+    "turnover_per_unit_gross": 54.22162793294224,
     "turnover_round_trips_per_year": 191.3296350247262,
     "years": 17.15
    },
@@ -130,19 +144,34 @@
    "turnover_check": {
     "band_law": 43.4,
     "corrected_x1_90": 82.5,
-    "exceeds_corrected": true,
-    "measured": 191.3
+    "exceeds_corrected": false,
+    "mean_portfolio_gross": 3.53,
+    "measured_levered": 191.3,
+    "measured_per_unit_gross": 54.2
    }
   },
   "T1_recent": {
    "benchmarks": {
+    "constant_long_usd": {
+     "annual_cost": 0.004591742736671331,
+     "gross_sharpe": 0.4577897731459282,
+     "ic": 0.014508038498731873,
+     "net_sharpe": 0.4146358461178503,
+     "turnover_per_unit_gross": 3.120747136353646
+    },
     "fx_own_mean_reversion_20d": {
+     "annual_cost": 0.04578629342531539,
+     "gross_sharpe": 0.39342525319601535,
      "ic": 0.013594287443067888,
-     "net_sharpe": -0.006752519317728625
+     "net_sharpe": -0.006752519317728625,
+     "turnover_per_unit_gross": 29.845987492749114
     },
     "fx_own_momentum_20d": {
+     "annual_cost": 0.04578629342531539,
+     "gross_sharpe": -0.39342525319601535,
      "ic": -0.013594287443067888,
-     "net_sharpe": -0.7937385478765889
+     "net_sharpe": -0.7937385478765889,
+     "turnover_per_unit_gross": 29.845987492749114
     },
     "zero_signal": {
      "ic": 0.0,
@@ -210,6 +239,7 @@
     "top_10_day_contribution": -1.0523229367151758,
     "top_1_day_contribution": -0.14810579710526706,
     "top_5_day_contribution": -0.6294530268348729,
+    "turnover_per_unit_gross": 52.36701628356535,
     "turnover_round_trips_per_year": 283.7784158074147,
     "years": 4.81
    },
@@ -218,19 +248,34 @@
    "turnover_check": {
     "band_law": 43.4,
     "corrected_x1_90": 82.5,
-    "exceeds_corrected": true,
-    "measured": 283.8
+    "exceeds_corrected": false,
+    "mean_portfolio_gross": 5.42,
+    "measured_levered": 283.8,
+    "measured_per_unit_gross": 52.4
    }
   },
   "T2_long": {
    "benchmarks": {
+    "constant_long_usd": {
+     "annual_cost": 0.003292535791304001,
+     "gross_sharpe": 0.03579047088614072,
+     "ic": -0.010656352515308385,
+     "net_sharpe": 0.004732551268972926,
+     "turnover_per_unit_gross": 3.0925673036707892
+    },
     "fx_own_mean_reversion_20d": {
+     "annual_cost": 0.030863407737087303,
+     "gross_sharpe": -0.332621572649636,
      "ic": -0.0014866753656857575,
-     "net_sharpe": -0.5984755187074988
+     "net_sharpe": -0.5984755187074988,
+     "turnover_per_unit_gross": 27.957349185580185
     },
     "fx_own_momentum_20d": {
+     "annual_cost": 0.030863407737087303,
+     "gross_sharpe": 0.332621572649636,
      "ic": 0.0014866753656857575,
-     "net_sharpe": 0.06662391229180128
+     "net_sharpe": 0.06662391229180128,
+     "turnover_per_unit_gross": 27.957349185580185
     },
     "zero_signal": {
      "ic": 0.0,
@@ -274,6 +319,7 @@
     "gross_sharpe": -0.3541104939672192,
     "ic": -0.006616371738826571,
     "incremental_ic": -0.0026991535061263367,
+    "incremental_ic_over_T1": -0.01148970508797751,
     "leave_one_currency_out_net_sharpe": {
      "AUD": -0.9497233476933821,
      "CAD": -0.6863667824168185,
@@ -298,6 +344,7 @@
     "top_10_day_contribution": -0.18370828879000728,
     "top_1_day_contribution": -0.024865977342415385,
     "top_5_day_contribution": -0.10135763631504328,
+    "turnover_per_unit_gross": 42.26531634622757,
     "turnover_round_trips_per_year": 135.97248614850685,
     "years": 16.8
    },
@@ -306,19 +353,34 @@
    "turnover_check": {
     "band_law": 43.4,
     "corrected_x1_90": 82.5,
-    "exceeds_corrected": true,
-    "measured": 136.0
+    "exceeds_corrected": false,
+    "mean_portfolio_gross": 3.22,
+    "measured_levered": 136.0,
+    "measured_per_unit_gross": 42.3
    }
   },
   "T2_recent": {
    "benchmarks": {
+    "constant_long_usd": {
+     "annual_cost": 0.003145589177663813,
+     "gross_sharpe": 0.6212776745932588,
+     "ic": 0.014673836881517206,
+     "net_sharpe": 0.5914565096993071,
+     "turnover_per_unit_gross": 2.3329104963996135
+    },
     "fx_own_mean_reversion_20d": {
+     "annual_cost": 0.04578629342531539,
+     "gross_sharpe": 0.39342525319601535,
      "ic": 0.013594287443067888,
-     "net_sharpe": -0.006752519317728625
+     "net_sharpe": -0.006752519317728625,
+     "turnover_per_unit_gross": 29.845987492749114
     },
     "fx_own_momentum_20d": {
+     "annual_cost": 0.04578629342531539,
+     "gross_sharpe": -0.39342525319601535,
      "ic": -0.013594287443067888,
-     "net_sharpe": -0.7937385478765889
+     "net_sharpe": -0.7937385478765889,
+     "turnover_per_unit_gross": 29.845987492749114
     },
     "zero_signal": {
      "ic": 0.0,
@@ -362,6 +424,7 @@
     "gross_sharpe": 0.5191830405529869,
     "ic": 0.004100205684424244,
     "incremental_ic": 0.004731560770510369,
+    "incremental_ic_over_T1": -0.0018647930486809963,
     "leave_one_currency_out_net_sharpe": {
      "AUD": -0.4422233201975608,
      "CAD": -0.5755448497211416,
@@ -386,6 +449,7 @@
     "top_10_day_contribution": -1.7646903201439037,
     "top_1_day_contribution": -0.24030196372520018,
     "top_5_day_contribution": -1.0233354662537746,
+    "turnover_per_unit_gross": 50.39424091294179,
     "turnover_round_trips_per_year": 247.57260696637604,
     "years": 4.78
    },
@@ -394,8 +458,10 @@
    "turnover_check": {
     "band_law": 43.4,
     "corrected_x1_90": 82.5,
-    "exceeds_corrected": true,
-    "measured": 247.6
+    "exceeds_corrected": false,
+    "mean_portfolio_gross": 4.91,
+    "measured_levered": 247.6,
+    "measured_per_unit_gross": 50.4
    }
   },
   "T3_long_T3-H1": {
@@ -412,13 +478,26 @@
   },
   "T3_recent_T3-H1": {
    "benchmarks": {
+    "constant_long_usd": {
+     "annual_cost": 0.003266600909557471,
+     "gross_sharpe": 0.3643213599704567,
+     "ic": 0.016210572097610905,
+     "net_sharpe": 0.3338392555141201,
+     "turnover_per_unit_gross": 2.3832514644366154
+    },
     "fx_own_mean_reversion_20d": {
-     "ic": 0.013594287443067888,
-     "net_sharpe": -0.006752519317728625
+     "annual_cost": 0.046303409957698924,
+     "gross_sharpe": 0.6698314580687486,
+     "ic": 0.013943092737008368,
+     "net_sharpe": 0.26135983240761035,
+     "turnover_per_unit_gross": 30.03133567801336
     },
     "fx_own_momentum_20d": {
-     "ic": -0.013594287443067888,
-     "net_sharpe": -0.7937385478765889
+     "annual_cost": 0.046303409957698924,
+     "gross_sharpe": -0.6698314580687486,
+     "ic": -0.013943092737008368,
+     "net_sharpe": -1.0785991093621947,
+     "turnover_per_unit_gross": 30.03133567801336
     },
     "zero_signal": {
      "ic": 0.0,
@@ -432,12 +511,12 @@
    },
    "cost_stress": {
     "cost_x1.5": {
-     "net_annual_return": -0.20399025926744893,
-     "net_sharpe": -1.9151819724205905
+     "net_annual_return": -0.2154127388868745,
+     "net_sharpe": -2.0760537101174203
     },
     "cost_x2.0": {
-     "net_annual_return": -0.2500262988690581,
-     "net_sharpe": -2.3392197825991334
+     "net_annual_return": -0.26153823325114683,
+     "net_sharpe": -2.5092261671026974
     }
    },
    "cross_section_width": {
@@ -445,56 +524,57 @@
     "median": 5.0
    },
    "hypothesis": "T3-H1",
-   "margin_utilisation_at_run": 0.23470961673791907,
+   "margin_utilisation_at_run": 0.23385206338645817,
    "metrics": {
-    "annual_cost": 0.09207207920321829,
+    "annual_cost": 0.09225098872854463,
     "at_leverage_cap_share": 0.0,
     "currency_contribution": {
-     "AUD": -0.024031064415839236,
-     "CAD": 0.07314956417291518,
-     "CHF": -0.18619346167445644,
-     "EUR": -0.10158185919900031,
-     "GBP": 0.026868891550489042,
-     "JPY": -0.09728823761728739,
-     "NZD": 0.055302763747953995,
-     "USD": -0.06256544561148915
+     "AUD": -0.00938904562842206,
+     "CAD": 0.05578987079576034,
+     "CHF": -0.20414108177824564,
+     "EUR": -0.10788552247260758,
+     "GBP": 0.01436783983320284,
+     "JPY": -0.07936795341920297,
+     "NZD": 0.05093467683195066,
+     "USD": -0.08409110318992963
     },
-    "days": 1210,
-    "downside_tail_p05": -0.011356602640084937,
-    "factor_abs_cosine": 0.10144369459206794,
-    "gross_annual_return": -0.0658821404626215,
-    "gross_sharpe": -0.6218828191953301,
-    "ic": -0.01435884985252092,
-    "incremental_ic": -0.013970441337820182,
+    "days": 1190,
+    "downside_tail_p05": -0.011818515256286665,
+    "factor_abs_cosine": 0.10966448826655521,
+    "gross_annual_return": -0.07703625579405758,
+    "gross_sharpe": -0.7487845537435016,
+    "ic": -0.014579979350420338,
+    "incremental_ic": -0.013497719856723475,
     "leave_one_currency_out_net_sharpe": {
-     "AUD": -1.4469568502603853,
-     "CAD": -1.764724814773601,
-     "CHF": -1.2734117903496478,
-     "EUR": -1.4115613876499815,
-     "GBP": -1.7015037618281537,
-     "JPY": -1.3230320624081067,
-     "NZD": -1.6262466743189874,
-     "USD": -1.518196980314294
+     "AUD": -1.6281296900205915,
+     "CAD": -1.8887845119929674,
+     "CHF": -1.3905941704214257,
+     "EUR": -1.549248213325823,
+     "GBP": -1.8251308843875267,
+     "JPY": -1.5080195265182184,
+     "NZD": -1.7490032670581854,
+     "USD": -1.6284013957525163
     },
-    "max_drawdown": -0.8381138172905036,
-    "net_annual_return": -0.15795421966583978,
-    "net_sharpe": -1.4869046837222402,
-    "portfolio_gross_leverage": 4.694192334758381,
-    "position_persistence": 0.7011925226945165,
-    "positive_temporal_blocks": "3/19",
-    "raw_to_neutralised_score_corr": 0.9788215319125025,
-    "realized_vol": 0.106230225376939,
-    "risk_leverage": 4.844330042236035,
-    "signal_persistence": 0.766620249666552,
-    "temporal_concentration": 0.12826759953593,
-    "top_10_day_contribution": -0.31532169891741935,
-    "top_1_day_contribution": -0.07324712148039587,
-    "top_5_day_contribution": -0.1994700343457989,
-    "turnover_round_trips_per_year": 270.3231920235417,
-    "years": 4.8
+    "max_drawdown": -0.8287943667208244,
+    "net_annual_return": -0.16928724452260221,
+    "net_sharpe": -1.6375464029021949,
+    "portfolio_gross_leverage": 4.677041267729163,
+    "position_persistence": 0.7004558096238537,
+    "positive_temporal_blocks": "2/19",
+    "raw_to_neutralised_score_corr": 0.9787951555732235,
+    "realized_vol": 0.10337859386615085,
+    "risk_leverage": 4.833490914408283,
+    "signal_persistence": 0.7627243532647243,
+    "temporal_concentration": 0.13298090358815537,
+    "top_10_day_contribution": -0.24901861613330026,
+    "top_1_day_contribution": -0.03703669550044013,
+    "top_5_day_contribution": -0.14382293216250353,
+    "turnover_per_unit_gross": 57.91021589188593,
+    "turnover_round_trips_per_year": 270.84846954945573,
+    "years": 4.72
    },
    "rename_gate": {
-    "abs_corr": 0.4259284794785693,
+    "abs_corr": 0.42691011242294286,
     "comparator": "(-Δ2y)-only book（閉じた T-R2 の反転）",
     "threshold": 0.8,
     "verdict": "DISTINCT"
@@ -505,18 +585,33 @@
     "band_law": 18.3,
     "corrected_x1_90": 34.8,
     "exceeds_corrected": true,
-    "measured": 270.3
+    "mean_portfolio_gross": 4.68,
+    "measured_levered": 270.8,
+    "measured_per_unit_gross": 57.9
    }
   },
   "T3_recent_T3-H2": {
    "benchmarks": {
+    "constant_long_usd": {
+     "annual_cost": 0.003266600909557471,
+     "gross_sharpe": 0.3643213599704567,
+     "ic": 0.016210572097610905,
+     "net_sharpe": 0.3338392555141201,
+     "turnover_per_unit_gross": 2.3832514644366154
+    },
     "fx_own_mean_reversion_20d": {
-     "ic": 0.013594287443067888,
-     "net_sharpe": -0.006752519317728625
+     "annual_cost": 0.046303409957698924,
+     "gross_sharpe": 0.6698314580687486,
+     "ic": 0.013943092737008368,
+     "net_sharpe": 0.26135983240761035,
+     "turnover_per_unit_gross": 30.03133567801336
     },
     "fx_own_momentum_20d": {
-     "ic": -0.013594287443067888,
-     "net_sharpe": -0.7937385478765889
+     "annual_cost": 0.046303409957698924,
+     "gross_sharpe": -0.6698314580687486,
+     "ic": -0.013943092737008368,
+     "net_sharpe": -1.0785991093621947,
+     "turnover_per_unit_gross": 30.03133567801336
     },
     "zero_signal": {
      "ic": 0.0,
@@ -530,12 +625,12 @@
    },
    "cost_stress": {
     "cost_x1.5": {
-     "net_annual_return": -0.07222597834220595,
-     "net_sharpe": -0.6801461587953679
+     "net_annual_return": -0.06134022729875938,
+     "net_sharpe": -0.5966212302845436
     },
     "cost_x2.0": {
-     "net_annual_return": -0.1182620179438151,
-     "net_sharpe": -1.1108731160048453
+     "net_annual_return": -0.10746572166303171,
+     "net_sharpe": -1.043655776357464
     }
    },
    "cross_section_width": {
@@ -543,56 +638,57 @@
     "median": 5.0
    },
    "hypothesis": "T3-H2",
-   "margin_utilisation_at_run": 0.23470961673791907,
+   "margin_utilisation_at_run": 0.23385206338645817,
    "metrics": {
-    "annual_cost": 0.09207207920321829,
+    "annual_cost": 0.09225098872854463,
     "at_leverage_cap_share": 0.0,
     "currency_contribution": {
-     "AUD": 0.024031064415839236,
-     "CAD": -0.07314956417291518,
-     "CHF": 0.18619346167445644,
-     "EUR": 0.10158185919900031,
-     "GBP": -0.026868891550489042,
-     "JPY": 0.09728823761728739,
-     "NZD": -0.055302763747953995,
-     "USD": 0.06256544561148915
+     "AUD": 0.00938904562842206,
+     "CAD": -0.05578987079576034,
+     "CHF": 0.20414108177824564,
+     "EUR": 0.10788552247260758,
+     "GBP": -0.01436783983320284,
+     "JPY": 0.07936795341920297,
+     "NZD": -0.05093467683195066,
+     "USD": 0.08409110318992963
     },
-    "days": 1210,
-    "downside_tail_p05": -0.011044722650114178,
-    "factor_abs_cosine": 0.10144369459206794,
-    "gross_annual_return": 0.0658821404626215,
-    "gross_sharpe": 0.6218828191953301,
-    "ic": 0.01435884985252092,
-    "incremental_ic": 0.013970441337820182,
+    "days": 1190,
+    "downside_tail_p05": -0.010605463398068896,
+    "factor_abs_cosine": 0.10966448826655521,
+    "gross_annual_return": 0.07703625579405758,
+    "gross_sharpe": 0.7487845537435016,
+    "ic": 0.014579979350420338,
+    "incremental_ic": 0.013497719856723475,
     "leave_one_currency_out_net_sharpe": {
-     "AUD": -0.29562473577065806,
-     "CAD": -0.11166976187499467,
-     "CHF": -0.6937514611319546,
-     "EUR": -0.48988836870637054,
-     "GBP": -0.21449578833602456,
-     "JPY": -0.44727501134957115,
-     "NZD": -0.1413323837805921,
-     "USD": -0.41275360473629047
+     "AUD": -0.16838849898640665,
+     "CAD": -0.03561506859008671,
+     "CHF": -0.6476495923771514,
+     "EUR": -0.40589671178978703,
+     "GBP": -0.12944861269429866,
+     "JPY": -0.3186451381338238,
+     "NZD": -0.043308886481369484,
+     "USD": -0.35824494528317935
     },
-    "max_drawdown": -0.2094934457920851,
-    "net_annual_return": -0.026189938740596806,
-    "net_sharpe": -0.24703715576446336,
-    "portfolio_gross_leverage": 4.694192334758381,
-    "position_persistence": 0.7011925226945165,
+    "max_drawdown": -0.20949344579206491,
+    "net_annual_return": -0.01521473293448707,
+    "net_sharpe": -0.14808215291223478,
+    "portfolio_gross_leverage": 4.677041267729163,
+    "position_persistence": 0.7004558096238537,
     "positive_temporal_blocks": "8/19",
-    "raw_to_neutralised_score_corr": 0.9788215319125025,
-    "realized_vol": 0.10601619282553394,
-    "risk_leverage": 4.844330042236035,
-    "signal_persistence": 0.766620249666552,
-    "temporal_concentration": 0.16830263512764634,
-    "top_10_day_contribution": -1.6338024384973882,
-    "top_1_day_contribution": -0.24317703924144296,
-    "top_5_day_contribution": -0.9638672645112335,
-    "turnover_round_trips_per_year": 270.3231920235417,
-    "years": 4.8
+    "raw_to_neutralised_score_corr": 0.9787951555732235,
+    "realized_vol": 0.10274521699792227,
+    "risk_leverage": 4.833490914408283,
+    "signal_persistence": 0.7627243532647243,
+    "temporal_concentration": 0.1779010406906019,
+    "top_10_day_contribution": -2.871858251749048,
+    "top_1_day_contribution": -0.4256289154550623,
+    "top_5_day_contribution": -1.7372552576898959,
+    "turnover_per_unit_gross": 57.91021589188593,
+    "turnover_round_trips_per_year": 270.84846954945573,
+    "years": 4.72
    },
    "rename_gate": {
-    "abs_corr": 0.4259284794785693,
+    "abs_corr": 0.42691011242294286,
     "comparator": "(-Δ2y)-only book（閉じた T-R2 の反転）",
     "threshold": 0.8,
     "verdict": "DISTINCT"
@@ -603,18 +699,33 @@
     "band_law": 18.3,
     "corrected_x1_90": 34.8,
     "exceeds_corrected": true,
-    "measured": 270.3
+    "mean_portfolio_gross": 4.68,
+    "measured_levered": 270.8,
+    "measured_per_unit_gross": 57.9
    }
   },
   "T4_long": {
    "benchmarks": {
+    "constant_long_usd": {
+     "annual_cost": 0.003429686937175926,
+     "gross_sharpe": -0.08290290562501902,
+     "ic": -0.01186737339430334,
+     "net_sharpe": -0.11513966634686644,
+     "turnover_per_unit_gross": 3.170461544341083
+    },
     "fx_own_mean_reversion_20d": {
+     "annual_cost": 0.03053261380240106,
+     "gross_sharpe": -0.4328553253582145,
      "ic": -0.0017406639256485538,
-     "net_sharpe": -0.6986308991836027
+     "net_sharpe": -0.6986308991836027,
+     "turnover_per_unit_gross": 27.45670202393974
     },
     "fx_own_momentum_20d": {
+     "annual_cost": 0.03053261380240106,
+     "gross_sharpe": 0.4328553253582145,
      "ic": 0.0017406639256485538,
-     "net_sharpe": 0.16672653005378207
+     "net_sharpe": 0.16672653005378207,
+     "turnover_per_unit_gross": 27.45670202393974
     },
     "zero_signal": {
      "ic": 0.0,
@@ -682,6 +793,7 @@
     "top_10_day_contribution": -0.10933908979127512,
     "top_1_day_contribution": -0.016521335386830933,
     "top_5_day_contribution": -0.06480462915873844,
+    "turnover_per_unit_gross": 153.31133731948972,
     "turnover_round_trips_per_year": 537.5431651272844,
     "years": 16.21
    },
@@ -696,19 +808,34 @@
    "turnover_check": {
     "band_law": 100.8,
     "corrected_x1_90": 191.5,
-    "exceeds_corrected": true,
-    "measured": 537.5
+    "exceeds_corrected": false,
+    "mean_portfolio_gross": 3.51,
+    "measured_levered": 537.5,
+    "measured_per_unit_gross": 153.3
    }
   },
   "T4_recent": {
    "benchmarks": {
+    "constant_long_usd": {
+     "annual_cost": 0.003807423141958856,
+     "gross_sharpe": -0.15503540781525743,
+     "ic": 0.0014952037518170382,
+     "net_sharpe": -0.19148110385680564,
+     "turnover_per_unit_gross": 2.8838033012614437
+    },
     "fx_own_mean_reversion_20d": {
+     "annual_cost": 0.04263823163183227,
+     "gross_sharpe": 0.6532407267382947,
      "ic": 0.007423929605583001,
-     "net_sharpe": 0.2665783995296046
+     "net_sharpe": 0.2665783995296046,
+     "turnover_per_unit_gross": 28.87011408369327
     },
     "fx_own_momentum_20d": {
+     "annual_cost": 0.04263823163183227,
+     "gross_sharpe": -0.6532407267382947,
      "ic": -0.007423929605583001,
-     "net_sharpe": -1.0400769265561025
+     "net_sharpe": -1.0400769265561025,
+     "turnover_per_unit_gross": 28.87011408369327
     },
     "zero_signal": {
      "ic": 0.0,
@@ -776,6 +903,7 @@
     "top_10_day_contribution": -0.19242825228936103,
     "top_1_day_contribution": -0.02775058403825127,
     "top_5_day_contribution": -0.11640243694479106,
+    "turnover_per_unit_gross": 153.45675471950227,
     "turnover_round_trips_per_year": 759.7785641716478,
     "years": 3.33
    },
@@ -790,19 +918,34 @@
    "turnover_check": {
     "band_law": 100.8,
     "corrected_x1_90": 191.5,
-    "exceeds_corrected": true,
-    "measured": 759.8
+    "exceeds_corrected": false,
+    "mean_portfolio_gross": 4.95,
+    "measured_levered": 759.8,
+    "measured_per_unit_gross": 153.5
    }
   },
   "T5_long": {
    "benchmarks": {
+    "constant_long_usd": {
+     "annual_cost": 0.0005967881452786246,
+     "gross_sharpe": 0.01955011509183156,
+     "ic": -0.01053856467846784,
+     "net_sharpe": 0.013872311585098428,
+     "turnover_per_unit_gross": 0.6325226448263602
+    },
     "fx_own_mean_reversion_20d": {
+     "annual_cost": 0.02521486845994997,
+     "gross_sharpe": -0.10567297853192344,
      "ic": 0.00017118401361594074,
-     "net_sharpe": -0.3256429682701426
+     "net_sharpe": -0.3256429682701426,
+     "turnover_per_unit_gross": 28.3852019581102
     },
     "fx_own_momentum_20d": {
+     "annual_cost": 0.02521486845994997,
+     "gross_sharpe": 0.10567297853192344,
      "ic": -0.00017118401361594074,
-     "net_sharpe": -0.11452152941871718
+     "net_sharpe": -0.11452152941871718,
+     "turnover_per_unit_gross": 28.3852019581102
     },
     "zero_signal": {
      "ic": 0.0,
@@ -870,12 +1013,25 @@
     "top_10_day_contribution": -8.187113123393793,
     "top_1_day_contribution": -1.0090262159313514,
     "top_5_day_contribution": -4.483487390426404,
+    "turnover_per_unit_gross": 6.010637256853268,
     "turnover_round_trips_per_year": 16.65768704255738,
     "years": 17.19
    },
    "rename_gate": {
-    "abs_corr": 0.10740206072619249,
-    "comparator": "1/2/3 か月ラグの USD basket return",
+    "abs_corr_by_comparator": {
+     "cum_12m_lag_1m": 0.04,
+     "cum_12m_lag_2m": 0.035,
+     "cum_12m_lag_3m": 0.047,
+     "cum_1m_lag_1m": 0.018,
+     "cum_1m_lag_2m": 0.026,
+     "cum_1m_lag_3m": 0.107,
+     "cum_6m_lag_1m": 0.18,
+     "cum_6m_lag_2m": 0.169,
+     "cum_6m_lag_3m": 0.16
+    },
+    "abs_corr_worst": 0.18,
+    "caveat": "**閾値は超えないが、horizon を揃えると相関は 0.096 から 0.348 へ上がる。** 『2 か月遅れの USD momentum ではない』という断定は、選べた比較対象の中で最も弱い数字に依拠してはならない",
+    "comparator": "1/2/3 か月ラグ x 1/6/12 か月累積の USD basket return",
     "threshold": 0.8,
     "verdict": "DISTINCT"
    },
@@ -884,19 +1040,34 @@
    "turnover_check": {
     "band_law": 5.1,
     "corrected_x1_90": 9.7,
-    "exceeds_corrected": true,
-    "measured": 16.7
+    "exceeds_corrected": false,
+    "mean_portfolio_gross": 2.77,
+    "measured_levered": 16.7,
+    "measured_per_unit_gross": 6.0
    }
   },
   "T5_recent": {
    "benchmarks": {
+    "constant_long_usd": {
+     "annual_cost": 0.0010776256963897053,
+     "gross_sharpe": 0.27008090132700163,
+     "ic": 0.022746554038872185,
+     "net_sharpe": 0.2596524618495621,
+     "turnover_per_unit_gross": 1.59276532429937
+    },
     "fx_own_mean_reversion_20d": {
-     "ic": 0.02720357686419421,
-     "net_sharpe": 0.5500110697550586
+     "annual_cost": 0.0376117930631389,
+     "gross_sharpe": 0.8457885039742378,
+     "ic": 0.025150239954696993,
+     "net_sharpe": 0.4868251258053381,
+     "turnover_per_unit_gross": 34.265719351450805
     },
     "fx_own_momentum_20d": {
-     "ic": -0.02720357686419421,
-     "net_sharpe": -1.2689623927544205
+     "annual_cost": 0.0376117930631389,
+     "gross_sharpe": -0.8457885039742378,
+     "ic": -0.025150239954696993,
+     "net_sharpe": -1.2042837909396584,
+     "turnover_per_unit_gross": 34.265719351450805
     },
     "zero_signal": {
      "ic": 0.0,
@@ -906,103 +1077,135 @@
    "candidate": "S26",
    "capacity": {
     "for_10%_annual_net": {
-     "margin_utilisation": 0.32,
-     "required_target_vol": 0.1488,
-     "risk_leverage": 6.39,
-     "within_broker_ceiling": true
+     "annual_net": 0.1,
+     "gap_stress_2pct_adverse": -0.0585,
+     "margin_utilisation": 0.146,
+     "portfolio_gross": 2.92,
+     "remaining_margin_buffer": 0.854,
+     "required_target_vol": 0.1194,
+     "scaled_max_drawdown": -0.1144
     },
     "for_5%_annual_net": {
-     "margin_utilisation": 0.16,
-     "required_target_vol": 0.0744,
-     "risk_leverage": 3.2,
-     "within_broker_ceiling": true
+     "annual_net": 0.05,
+     "gap_stress_2pct_adverse": -0.0292,
+     "margin_utilisation": 0.073,
+     "portfolio_gross": 1.46,
+     "remaining_margin_buffer": 0.927,
+     "required_target_vol": 0.0597,
+     "scaled_max_drawdown": -0.0572
     },
     "reachable": true,
     "scenarios": {
      "vol_10%": {
-      "annual_net": 0.0672,
-      "margin_utilisation": 0.215,
-      "risk_leverage": 4.29
+      "annual_net": 0.0838,
+      "gap_stress_2pct_adverse": -0.049,
+      "margin_utilisation": 0.122,
+      "portfolio_gross": 2.45,
+      "remaining_margin_buffer": 0.878,
+      "scaled_max_drawdown": -0.0958
      },
      "vol_12%": {
-      "annual_net": 0.0806,
-      "margin_utilisation": 0.258,
-      "risk_leverage": 5.15
+      "annual_net": 0.1005,
+      "gap_stress_2pct_adverse": -0.0588,
+      "margin_utilisation": 0.147,
+      "portfolio_gross": 2.94,
+      "remaining_margin_buffer": 0.853,
+      "scaled_max_drawdown": -0.115
      },
      "vol_15%": {
-      "annual_net": 0.1008,
-      "margin_utilisation": 0.322,
-      "risk_leverage": 6.44
+      "annual_net": 0.1256,
+      "gap_stress_2pct_adverse": -0.0735,
+      "margin_utilisation": 0.184,
+      "portfolio_gross": 3.67,
+      "remaining_margin_buffer": 0.816,
+      "scaled_max_drawdown": -0.1437
      },
      "vol_8%": {
-      "annual_net": 0.0538,
-      "margin_utilisation": 0.172,
-      "risk_leverage": 3.44
+      "annual_net": 0.067,
+      "gap_stress_2pct_adverse": -0.0392,
+      "margin_utilisation": 0.098,
+      "portfolio_gross": 1.96,
+      "remaining_margin_buffer": 0.902,
+      "scaled_max_drawdown": -0.0766
      }
-    }
+    },
+    "vol_per_unit_gross_measured": 0.04082
    },
    "cost_stress": {
     "cost_x1.5": {
-     "net_annual_return": 0.06576055805550583,
-     "net_sharpe": 0.6448651673284516
+     "net_annual_return": 0.08298622360431426,
+     "net_sharpe": 0.8108879202272875
     },
     "cost_x2.0": {
-     "net_annual_return": 0.06301754110174328,
-     "net_sharpe": 0.6177706769004663
+     "net_annual_return": 0.08026539688216856,
+     "net_sharpe": 0.784054669515243
     }
    },
    "hypothesis": null,
-   "margin_utilisation_at_run": 0.12537239482853055,
+   "margin_utilisation_at_run": 0.12531116081244167,
    "metrics": {
-    "annual_cost": 0.0054860339075251275,
+    "annual_cost": 0.0054416534442914,
     "at_leverage_cap_share": 0.0,
     "currency_contribution": {
-     "AUD": 0.027933453944883925,
+     "AUD": 0.03710337572734325,
      "CAD": 0.0,
-     "CHF": -0.031033486658237585,
+     "CHF": -0.029514446096802132,
      "EUR": 0.0,
      "GBP": 0.0,
-     "JPY": 0.019702168127351954,
-     "NZD": -0.017112659385339568,
-     "USD": 0.1614085624094478
+     "JPY": 0.02377331473616308,
+     "NZD": -0.013082497851208246,
+     "USD": 0.1824644225034208
     },
-    "days": 548,
-    "downside_tail_p05": -0.010600642777874779,
-    "factor_abs_cosine": 0.4931094475159168,
-    "gross_annual_return": 0.07398960891679351,
-    "gross_sharpe": 0.7258668110205443,
-    "ic": 0.02239047137547707,
-    "incremental_ic": 0.022087560073255953,
+    "days": 555,
+    "downside_tail_p05": -0.010588224646409263,
+    "factor_abs_cosine": 0.4955128715943571,
+    "gross_annual_return": 0.09114870377075138,
+    "gross_sharpe": 0.8910257591814927,
+    "ic": 0.026438523378863044,
+    "incremental_ic": 0.025544534337855744,
     "leave_one_currency_out_net_sharpe": {
-     "AUD": 0.6552422240903006,
-     "CAD": 0.6719175062633506,
-     "CHF": 0.882082997717732,
-     "EUR": 0.6719175062633506,
-     "GBP": 0.6719175062633506,
-     "JPY": 0.5839750758070448,
-     "NZD": 0.7276652772866065,
-     "USD": -0.11830961090946926
+     "AUD": 0.8069326187338199,
+     "CAD": 0.8376655432682151,
+     "CHF": 1.053793997058359,
+     "EUR": 0.8376655432682151,
+     "GBP": 0.8376655432682151,
+     "JPY": 0.734301095635836,
+     "NZD": 0.8718665171650232,
+     "USD": 0.05891654981711078
     },
     "max_drawdown": -0.0980163260274728,
-    "net_annual_return": 0.06850357500926839,
-    "net_sharpe": 0.6719175062633506,
-    "portfolio_gross_leverage": 2.507447896570611,
-    "position_persistence": 0.9508664847477766,
+    "net_annual_return": 0.08570705032645996,
+    "net_sharpe": 0.8376655432682151,
+    "portfolio_gross_leverage": 2.5062232162488334,
+    "position_persistence": 0.951009886145603,
     "positive_temporal_blocks": "6/9",
     "raw_to_neutralised_score_corr": 1.0,
-    "realized_vol": 0.10195235928622938,
-    "risk_leverage": 5.276280248619811,
-    "signal_persistence": 0.9461557506586664,
-    "temporal_concentration": 0.2956732342982879,
-    "top_10_day_contribution": 1.0102095642954634,
-    "top_1_day_contribution": 0.10896647848907015,
-    "top_5_day_contribution": 0.5247657574561093,
-    "turnover_round_trips_per_year": 16.106969781342123,
-    "years": 2.17
+    "realized_vol": 0.10231655225075569,
+    "risk_leverage": 5.276444016945379,
+    "signal_persistence": 0.9493299311860832,
+    "temporal_concentration": 0.2698468941676295,
+    "top_10_day_contribution": 0.7984048942740187,
+    "top_1_day_contribution": 0.08599578775120581,
+    "top_5_day_contribution": 0.4141424530097377,
+    "turnover_per_unit_gross": 6.3747988791206565,
+    "turnover_round_trips_per_year": 15.97666894976923,
+    "years": 2.2
    },
    "rename_gate": {
-    "abs_corr": 0.09592253207823533,
-    "comparator": "1/2/3 か月ラグの USD basket return",
+    "abs_corr_by_comparator": {
+     "cum_12m_lag_1m": 0.398,
+     "cum_12m_lag_2m": 0.341,
+     "cum_12m_lag_3m": 0.214,
+     "cum_1m_lag_1m": 0.065,
+     "cum_1m_lag_2m": 0.116,
+     "cum_1m_lag_3m": 0.035,
+     "cum_6m_lag_1m": 0.324,
+     "cum_6m_lag_2m": 0.383,
+     "cum_6m_lag_3m": 0.341
+    },
+    "abs_corr_worst": 0.398,
+    "caveat": "**閾値は超えないが、horizon を揃えると相関は 0.096 から 0.348 へ上がる。** 『2 か月遅れの USD momentum ではない』という断定は、選べた比較対象の中で最も弱い数字に依拠してはならない",
+    "comparator": "1/2/3 か月ラグ x 1/6/12 か月累積の USD basket return",
     "threshold": 0.8,
     "verdict": "DISTINCT"
    },
@@ -1011,8 +1214,10 @@
    "turnover_check": {
     "band_law": 5.1,
     "corrected_x1_90": 9.7,
-    "exceeds_corrected": true,
-    "measured": 16.1
+    "exceeds_corrected": false,
+    "mean_portfolio_gross": 2.51,
+    "measured_levered": 16.0,
+    "measured_per_unit_gross": 6.4
    }
   }
  }

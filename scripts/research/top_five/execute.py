@@ -40,12 +40,23 @@ def _config(track: str, cost_multiple: float = 1.0) -> construction.BookConfig:
 
 
 def _benchmarks(excess: pd.DataFrame) -> dict[str, pd.DataFrame]:
-    """zero signal / FX own momentum / simple mean reversion。"""
+    """zero signal / FX own momentum / simple mean reversion / **定数 dollar**。
+
+    **`constant_long_usd` は結果を見た後に追加した。** 理由は開示する:
+    T5 は `neutralize_leading_factor=False` で走る唯一の track で、その mu は正規化すれば
+    dollar 方向そのものである。つまり **「signal を一切見ずに USD を買い持ちする」book** が
+    T5 にとっての正しい null なのに、当初の benchmark 3 本にそれが無かった。
+    追加は candidate の設計を 1 つも変えないし、**唯一の正の結果を弱める方向**にしか働かない。
+    """
     momentum = excess.rolling(BENCH_LOOKBACK).sum()
+    others = [c for c in excess.columns if c != "USD"]
+    constant_dollar = pd.DataFrame(-1.0 / len(others), index=excess.index, columns=excess.columns)
+    constant_dollar["USD"] = 1.0
     return {
         "zero_signal": pd.DataFrame(0.0, index=excess.index, columns=excess.columns),
         "fx_own_momentum_20d": momentum,
         "fx_own_mean_reversion_20d": -momentum,
+        "constant_long_usd": constant_dollar,
     }
 
 
@@ -113,7 +124,17 @@ def _metrics(daily: pd.DataFrame, scores: pd.DataFrame, excess: pd.DataFrame) ->
         "net_sharpe": _sharpe(net),
         "realized_vol": float(net.std(ddof=0) * np.sqrt(TRADING_DAYS)),
         "ic": _ic(scores, excess),
+        #: `one_way_traded` は **leverage 適用後**の exposure の変化量である。
+        #: band law の turnover は **gross 1 単位あたり**の定義なので、比較するには
+        #: 平均 portfolio gross で割る必要がある。生の値をそのまま凍結値と比べると、
+        #: leverage 倍だけ過大に見える（実際に一度そう誤読した）。
         "turnover_round_trips_per_year": float(daily["one_way_traded"].sum() / 2.0 / years),
+        "turnover_per_unit_gross": float(
+            daily["one_way_traded"].sum()
+            / 2.0
+            / years
+            / max(float(daily["currency_gross"].mean()), 1e-9)
+        ),
         "annual_cost": float(daily["cost"].sum() / years),
         "signal_persistence": float(
             scores.stack().groupby(level=1).apply(lambda s: s.autocorr()).mean()
@@ -146,32 +167,53 @@ def _margin_utilisation(portfolio_gross: float) -> float:
     return portfolio_gross * worst_margin_rate
 
 
-def _capacity(net_sharpe: float, realized_vol: float) -> dict[str, Any]:
-    """年 5% / 10% net に必要な target vol・risk leverage・margin 利用率。
+def _capacity(metrics: dict[str, Any], daily: pd.DataFrame) -> dict[str, Any]:
+    """年 5% / 10% net に必要な risk と、その代償。
 
-    **broker ceiling を hurdle にしない。** 実測 net Sharpe から、realistic な
-    target risk で年間 return へ変換できるかを見る（裁定 §26-§28）。
+    **book 自身の実測値で解く。** 初版は Track 1 の `vol_per_unit_gross`（0.023288）を
+    定数で使い、margin を **risk leverage(C)** に掛けていた。margin は
+    **portfolio gross(B)** に課されるもので、この 2 つは別概念として凍結されている
+    （この book では C/B が 2 倍違う）。同じ artefact に 10% vol の margin が 2 つ載る
+    という矛盾がそこから出ていた。
     """
+    net_sharpe = metrics["net_sharpe"]
     if not np.isfinite(net_sharpe) or net_sharpe <= 0:
         return {"reachable": False, "why": "net Sharpe が 0 以下なので leverage で救わない"}
-    vol_per_unit = 0.023288  # capacity.VOL_PER_UNIT_GROSS
-    out: dict[str, Any] = {"reachable": True, "scenarios": {}}
-    for target in prereg.LEVERAGE_FRAMEWORK["standard_target_vol_scenarios"]:
-        out["scenarios"][f"vol_{target:.0%}"] = {
-            "annual_net": round(net_sharpe * target, 4),
-            "risk_leverage": round(target / vol_per_unit, 2),
-            "margin_utilisation": round(target / vol_per_unit * 0.05, 3),
+
+    realized_vol = float(metrics["realized_vol"])
+    gross = float(metrics["portfolio_gross_leverage"])
+    #: この book が実際に示した「gross 1 単位あたりの volatility」
+    vol_per_unit = realized_vol / gross if gross > 0 else float("nan")
+    worst_margin_rate = 1.0 / float(prereg.BOOK_CONFIG["max_leverage"])
+
+    #: drawdown は vol に比例するとみなして scale する（Gaussian ではなく実測 DD の相似拡大）
+    observed_dd = float(metrics["max_drawdown"])
+
+    def _at(target_vol: float) -> dict[str, Any]:
+        scale = target_vol / realized_vol if realized_vol > 0 else float("nan")
+        gross_needed = gross * scale
+        return {
+            "annual_net": round(net_sharpe * target_vol, 4),
+            "portfolio_gross": round(gross_needed, 2),
+            "margin_utilisation": round(gross_needed * worst_margin_rate, 3),
+            "remaining_margin_buffer": round(1.0 - gross_needed * worst_margin_rate, 3),
+            "scaled_max_drawdown": round(observed_dd * scale, 4),
+            "gap_stress_2pct_adverse": round(-0.02 * gross_needed, 4),
         }
+
+    out: dict[str, Any] = {
+        "reachable": True,
+        "vol_per_unit_gross_measured": round(vol_per_unit, 5),
+        "scenarios": {
+            f"vol_{target:.0%}": _at(target)
+            for target in prereg.LEVERAGE_FRAMEWORK["standard_target_vol_scenarios"]
+        },
+    }
     for goal in (0.05, 0.10):
         needed_vol = goal / net_sharpe
-        out[f"for_{goal:.0%}_annual_net"] = {
-            "required_target_vol": round(needed_vol, 4),
-            "risk_leverage": round(needed_vol / vol_per_unit, 2),
-            "margin_utilisation": round(needed_vol / vol_per_unit * 0.05, 3),
-            "within_broker_ceiling": bool(
-                needed_vol / vol_per_unit <= prereg.BOOK_CONFIG["max_leverage"]
-            ),
-        }
+        row = _at(needed_vol)
+        row["required_target_vol"] = round(needed_vol, 4)
+        out[f"for_{goal:.0%}_annual_net"] = row
     return out
 
 
@@ -222,15 +264,34 @@ def run_track(
         )
         bench_daily = bench_result["daily"]
         sd = float(bench_daily["net"].std(ddof=0))
+        gross_sd = float(bench_daily["gross"].std(ddof=0))
+        bench_years = len(bench_daily) / TRADING_DAYS
         benches[name] = {
             "net_sharpe": float(bench_daily["net"].mean() / sd * np.sqrt(TRADING_DAYS))
             if sd > 0
             else float("nan"),
+            "gross_sharpe": float(bench_daily["gross"].mean() / gross_sd * np.sqrt(TRADING_DAYS))
+            if gross_sd > 0
+            else float("nan"),
+            #: baseline がいくら払って勝っているのかを読者が検算できるように残す
+            "annual_cost": float(bench_daily["cost"].sum() / bench_years),
+            "turnover_per_unit_gross": float(
+                bench_daily["one_way_traded"].sum()
+                / 2.0
+                / bench_years
+                / max(float(bench_daily["currency_gross"].mean()), 1e-9)
+            ),
             "ic": _ic(bench_usable, excess),
         }
 
     control = _benchmarks(excess)["fx_own_momentum_20d"].reindex(scores.index)
     metrics["incremental_ic"] = _incremental_ic(scores, control, excess)
+
+    #: 凍結が名指しで要求する cross-track control（T2 は T1 に対しても示す）。
+    #: beta 相関 +0.856 なので、FX own price に対する増分だけでは足りない。
+    if track in prereg.CROSS_TRACK_CONTROLS:
+        t1_control = signals.t1_scores(index, span).reindex(scores.index)
+        metrics["incremental_ic_over_T1"] = _incremental_ic(scores, t1_control, excess)
 
     stressed = {}
     for multiple in prereg.COST["stress_multiples"][1:]:
@@ -258,7 +319,7 @@ def run_track(
         "benchmarks": benches,
         "cost_stress": stressed,
         "margin_utilisation_at_run": _margin_utilisation(metrics["portfolio_gross_leverage"]),
-        "capacity": _capacity(metrics["net_sharpe"], metrics["realized_vol"]),
+        "capacity": _capacity(metrics, daily),
         "daily_net": daily["net"],
     }
 

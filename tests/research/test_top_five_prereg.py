@@ -24,9 +24,15 @@ from scripts.research.top_five import prereg
 ROOT = Path(__file__).resolve().parents[2]
 DOC = ROOT / "docs/research/m15_top_five_freeze_2026_09.md"
 
-#: 凍結時の digest。**この値は書き換えてはならない。**
-#: 変える必要が出たときは、それは編集ではなく新しい事前登録である。
-FROZEN_DIGEST = "28100ebedfea45765371585df5c4308fee261e2496a9798acca79c920158962c"
+#: **実行に使われた digest。この値は書き換えてはならない。**
+DIGEST_AS_EXECUTED = "28100ebedfea45765371585df5c4308fee261e2496a9798acca79c920158962c"
+
+#: 現在の digest。**実行後に 2 度動いた**ので、実行値とは別である。
+#: 1 度目は payload の覆う範囲を広げたため、2 度目は `POST_EXECUTION_CORRECTIONS`
+#: の 3 件（C-1 leakage 閉塞 / C-2 単位バグ + 新定数 / C-3 欠けていた null）を入れたため。
+#: **ここを更新するときは、必ず `POST_EXECUTION_CORRECTIONS` に理由を足すこと。**
+#: 理由を書かずに digest を追従させると、凍結が凍結でなくなる。
+CURRENT_DIGEST = "8279f6b55112ff953cd9bf01b584447bc53b9db5b6745dd1cc9cd8d1501f3a3f"
 
 #: 2026-09-21 裁定で差し替えた旧 freeze。**削除せず履歴として保持する。**
 SUPERSEDED_DIGEST = "29ba80d68a5462fe015a6f2566d3c0b63319d0549de7b9a4d34a890f2339b1ca"
@@ -38,8 +44,36 @@ def document() -> str:
 
 
 class TestTheFreezeIsWhatItSaysItIs:
-    def test_the_digest_has_not_moved(self) -> None:
-        assert prereg.freeze_digest() == FROZEN_DIGEST
+    def test_the_current_digest_is_pinned(self) -> None:
+        assert prereg.freeze_digest() == CURRENT_DIGEST
+
+    def test_the_executed_digest_is_kept_and_differs(self) -> None:
+        """**走った設計と、いま repo にある設計は別物である。**両方を残す。"""
+        assert prereg.DIGEST_AS_EXECUTED == DIGEST_AS_EXECUTED
+        assert prereg.freeze_digest() != DIGEST_AS_EXECUTED
+
+    def test_the_post_execution_corrections_are_recorded(self) -> None:
+        """digest が動いた**理由**が凍結 payload の中にあること。"""
+        record = prereg.POST_EXECUTION_CORRECTIONS
+        assert record["digest_before"] == DIGEST_AS_EXECUTED
+        assert record["status"].startswith("CORRECTED_AFTER_RESULTS_WERE_SEEN")
+        ids = {row["id"] for row in record["corrections"]}
+        assert ids == {"C-1", "C-2", "C-3"}
+        #: **裁量のあった訂正は、裁量があったと書いてあること。**
+        by_id = {row["id"]: row for row in record["corrections"]}
+        assert "ある" in by_id["C-2"]["discretion"]
+        assert by_id["C-1"]["kind"] == "LEAKAGE_CLOSURE"
+
+    def test_the_corrections_record_moves_the_digest(self) -> None:
+        """記録を消したり緩めたりしたら digest が動くこと（＝凍結の外に置かない）。"""
+        before = prereg.freeze_digest()
+        original = prereg.POST_EXECUTION_CORRECTIONS["status"]
+        try:
+            prereg.POST_EXECUTION_CORRECTIONS["status"] = "CLEAN_RUN"
+            assert prereg.freeze_digest() != before
+        finally:
+            prereg.POST_EXECUTION_CORRECTIONS["status"] = original
+        assert prereg.freeze_digest() == before
 
     def test_exactly_five_tracks(self) -> None:
         assert len(prereg.TRACKS) == 5
@@ -468,7 +502,8 @@ class TestTheCycleStopsAtFive:
 
 class TestTheDocumentMatchesTheFreeze:
     def test_it_carries_the_digest(self, document: str) -> None:
-        assert FROZEN_DIGEST in document
+        #: freeze doc は**事前登録の記録**なので、実行値を載せているのが正しい。
+        assert DIGEST_AS_EXECUTED in document
 
     def test_it_names_all_five_and_both_skipped(self, document: str) -> None:
         for token in ("S05", "S06", "S02", "S10", "S26", "S07", "S25"):
