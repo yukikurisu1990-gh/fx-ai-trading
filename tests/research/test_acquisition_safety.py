@@ -9,6 +9,7 @@ from __future__ import annotations
 import json
 import subprocess
 import sys
+import urllib.error
 from pathlib import Path
 
 import pytest
@@ -172,3 +173,46 @@ class TestFailureClassificationDoesNotClaimTheProviderIsAbsent:
     def test_an_unrecognised_failure_falls_to_the_local_side(self) -> None:
         """迷うものは相手の不在を主張しない側へ倒す。"""
         assert safety.classify_failure(RuntimeError("something odd")) == safety.LOCAL_ENVIRONMENT
+
+
+class TestTheProviderStatusIsNotBlamedOnUs:
+    """**provider が status を返したのなら、それは迷いではない。**
+
+    初版は `HTTPError` の分岐を持っておらず、404 も 403 も `LOCAL_ENVIRONMENT` へ
+    落ちていた。`HTTP_STATUS` は**どの経路からも到達できない死んだ分類**だった。
+    保守側へ倒したつもりで、「相手が『そこには無い』と答えた」という事実を消していた。
+    """
+
+    @pytest.mark.parametrize("code", [400, 403, 404, 429, 500, 503])
+    def test_every_http_status_is_attributed_to_the_provider(self, code: int) -> None:
+        error = urllib.error.HTTPError("https://example.invalid/x", code, "why", {}, None)
+        assert safety.classify_failure(error) == safety.HTTP_STATUS
+
+    def test_a_plain_url_error_is_still_ours(self) -> None:
+        """HTTPError は URLError の subclass。**順序を間違えると全部 provider のせいになる。**"""
+        assert issubclass(urllib.error.HTTPError, urllib.error.URLError)
+        error = urllib.error.URLError("connection refused")
+        assert safety.classify_failure(error) == safety.LOCAL_ENVIRONMENT
+
+    def test_a_timeout_is_never_called_provider_unavailable(self) -> None:
+        assert safety.classify_failure(TimeoutError("timed out")) == (safety.TIMEOUT)
+        assert "NOT_PROVIDER_UNAVAILABLE" in safety.TIMEOUT
+
+    def test_the_http_status_token_is_reachable_at_all(self) -> None:
+        """**死んだ分類を作らない。** 語彙にあるものは、どれかの入力から出てくること。"""
+        produced = {
+            safety.classify_failure(error)
+            for error in (
+                urllib.error.HTTPError("u", 404, "x", {}, None),
+                urllib.error.URLError("x"),
+                TimeoutError("timed out"),
+                safety.AcquisitionRefusedError("x"),
+            )
+        }
+        for token in (
+            safety.HTTP_STATUS,
+            safety.LOCAL_ENVIRONMENT,
+            safety.TIMEOUT,
+            safety.REFUSED_BY_GUARD,
+        ):
+            assert token in produced, token

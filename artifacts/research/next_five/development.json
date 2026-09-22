@@ -1,0 +1,165 @@
+{
+ "authority": {
+  "inventory": "scripts/research/next_five/inventory.py",
+  "record": "docs/governance/m15_adjudication_2026_09_19_and_09_20.md §7",
+  "ruling": "2026-09-22 Human + ChatGPT 裁定",
+  "selection": "scripts/research/next_five/ranking.py（signal-blind）"
+ },
+ "cross_track_correlation": {},
+ "cycle": "NEXT_FIVE_2026_09",
+ "exploration_disclosure": "FIVE_WAY_EXPLORATORY_DEVELOPMENT_SEARCH_NO_CONFIRMATION_CLAIM",
+ "freeze_digest": "2e805781d31c6025c9e8c372cd11686ec969d22568a136a91b8c787364f2ba8f",
+ "interpretation": "**最良 candidate を単に winner とは呼ばない**（裁定 §M）。formal confirmation の主張はしない。fresh へ自動進行しない。**帰無が routinely 生む数字は edge ではない**（CORE PRINCIPLE）",
+ "multiplicity": "5 本を同じ gate に通すので、**いずれか 1 本が 5% を切る確率は帰無でも約 23%** である。これを報告に必ず添える。**1 本通ったことを『edge が見つかった』とは書かない**",
+ "panel": {
+  "carry_leg": "CARRY_LEG_ABSENT_ON_BOTH_SPANS_SPOT_ONLY",
+  "construction": "pair 日次 log return -> 符号を揃えた通貨平均 -> cross-section 平均を引く。**両 span で同一**",
+  "long": {
+   "days": 4458,
+   "first": "1999-01-05",
+   "last": "2016-06-01",
+   "pairs": 28,
+   "source": "ECB euro reference rates (already acquired for T-V)"
+  },
+  "recent": {
+   "days": 1213,
+   "first": "2021-04-27",
+   "last": "2025-12-26",
+   "no_archive_read": true,
+   "pairs": 20,
+   "source": "guarded M15 caches: momentum_replication_b, supplemental_replication, exploratory_round_1"
+  }
+ },
+ "results": {
+  "U1_long": {
+   "candidate": "S29",
+   "span": "long",
+   "stage_0": {
+    "needed": 3,
+    "status": "DATA_NOT_RETRIEVABLE_FROM_THIS_ENVIRONMENT_PROVIDER_UNAFFECTED",
+    "verified_currencies": 0,
+    "why": "月次貿易収支は FRED 経由が実務上の唯一の集約点で、8 URL すべて timeout。各国統計局の直接経路は 4 試行すべて 404"
+   },
+   "track": "U1",
+   "verdict": "U1_S29_DATA_NOT_RETRIEVABLE_FROM_THIS_ENVIRONMENT_PROVIDER_UNAFFECTED",
+   "why": "U1 貿易収支: cross-section が 3 通貨に満たない（欠け: AUD, CAD, CHF, EUR, GBP, JPY, NZD, USD）"
+  },
+  "U1_recent": {
+   "candidate": "S29",
+   "span": "recent",
+   "stage_0": {
+    "needed": 3,
+    "status": "DATA_NOT_RETRIEVABLE_FROM_THIS_ENVIRONMENT_PROVIDER_UNAFFECTED",
+    "verified_currencies": 0,
+    "why": "月次貿易収支は FRED 経由が実務上の唯一の集約点で、8 URL すべて timeout。各国統計局の直接経路は 4 試行すべて 404"
+   },
+   "track": "U1",
+   "verdict": "U1_S29_DATA_NOT_RETRIEVABLE_FROM_THIS_ENVIRONMENT_PROVIDER_UNAFFECTED",
+   "why": "U1 貿易収支: cross-section が 3 通貨に満たない（欠け: AUD, CAD, CHF, EUR, GBP, JPY, NZD, USD）"
+  },
+  "U2_long": {
+   "candidate": "S25",
+   "span": "long",
+   "stage_0": {
+    "needed": 3,
+    "status": "DATA_NOT_RETRIEVABLE_FROM_THIS_ENVIRONMENT_PROVIDER_UNAFFECTED",
+    "verified_currencies": 2,
+    "why": "CHF と CAD の総資産は provider カタログで確認できたが、**3 通貨目が取れない**。Fed は FRED 経由、ECB の ILM には総資産の系列が無い"
+   },
+   "track": "U2",
+   "verdict": "U2_S25_DATA_NOT_RETRIEVABLE_FROM_THIS_ENVIRONMENT_PROVIDER_UNAFFECTED",
+   "why": "U2 balance sheet: cross-section が 3 通貨に満たない（欠け: AUD, CAD, CHF, EUR, GBP, JPY, NZD, USD）"
+  },
+  "U2_recent": {
+   "candidate": "S25",
+   "span": "recent",
+   "stage_0": {
+    "needed": 3,
+    "status": "DATA_NOT_RETRIEVABLE_FROM_THIS_ENVIRONMENT_PROVIDER_UNAFFECTED",
+    "verified_currencies": 2,
+    "why": "CHF と CAD の総資産は provider カタログで確認できたが、**3 通貨目が取れない**。Fed は FRED 経由、ECB の ILM には総資産の系列が無い"
+   },
+   "track": "U2",
+   "verdict": "U2_S25_DATA_NOT_RETRIEVABLE_FROM_THIS_ENVIRONMENT_PROVIDER_UNAFFECTED",
+   "why": "U2 balance sheet: cross-section が 3 通貨に満たない（欠け: AUD, CAD, CHF, EUR, GBP, JPY, NZD, USD）"
+  },
+  "U3_long": {
+   "candidate": "S27",
+   "span": "long",
+   "stage_0": {
+    "needed": 3,
+    "status": "DATA_NOT_RETRIEVABLE_FROM_THIS_ENVIRONMENT_PROVIDER_UNAFFECTED",
+    "verified_currencies": 2,
+    "why": "Fed と ECB の声明 index は到達したが BoE は不可。**2 通貨の cross-section は demean 後に互いの鏡像**になり breadth 1 になる"
+   },
+   "track": "U3",
+   "verdict": "U3_S27_DATA_NOT_RETRIEVABLE_FROM_THIS_ENVIRONMENT_PROVIDER_UNAFFECTED",
+   "why": "U3 tone: cross-section が 3 通貨に満たない（欠け: AUD, CAD, CHF, EUR, GBP, JPY, NZD, USD）"
+  },
+  "U3_recent": {
+   "candidate": "S27",
+   "span": "recent",
+   "stage_0": {
+    "needed": 3,
+    "status": "DATA_NOT_RETRIEVABLE_FROM_THIS_ENVIRONMENT_PROVIDER_UNAFFECTED",
+    "verified_currencies": 2,
+    "why": "Fed と ECB の声明 index は到達したが BoE は不可。**2 通貨の cross-section は demean 後に互いの鏡像**になり breadth 1 になる"
+   },
+   "track": "U3",
+   "verdict": "U3_S27_DATA_NOT_RETRIEVABLE_FROM_THIS_ENVIRONMENT_PROVIDER_UNAFFECTED",
+   "why": "U3 tone: cross-section が 3 通貨に満たない（欠け: AUD, CAD, CHF, EUR, GBP, JPY, NZD, USD）"
+  },
+  "U4_long": {
+   "candidate": "S31",
+   "span": "long",
+   "stage_0": {
+    "needed": 3,
+    "status": "DATA_NOT_RETRIEVABLE_FROM_THIS_ENVIRONMENT_PROVIDER_UNAFFECTED",
+    "verified_currencies": 1,
+    "why": "SNB の外貨投資のみ確認。他は FRED 経由か、推定した series code が 404 / HTML"
+   },
+   "track": "U4",
+   "verdict": "U4_S31_DATA_NOT_RETRIEVABLE_FROM_THIS_ENVIRONMENT_PROVIDER_UNAFFECTED",
+   "why": "U4 外貨準備: cross-section が 3 通貨に満たない（欠け: AUD, CAD, CHF, EUR, GBP, JPY, NZD, USD）"
+  },
+  "U4_recent": {
+   "candidate": "S31",
+   "span": "recent",
+   "stage_0": {
+    "needed": 3,
+    "status": "DATA_NOT_RETRIEVABLE_FROM_THIS_ENVIRONMENT_PROVIDER_UNAFFECTED",
+    "verified_currencies": 1,
+    "why": "SNB の外貨投資のみ確認。他は FRED 経由か、推定した series code が 404 / HTML"
+   },
+   "track": "U4",
+   "verdict": "U4_S31_DATA_NOT_RETRIEVABLE_FROM_THIS_ENVIRONMENT_PROVIDER_UNAFFECTED",
+   "why": "U4 外貨準備: cross-section が 3 通貨に満たない（欠け: AUD, CAD, CHF, EUR, GBP, JPY, NZD, USD）"
+  },
+  "U5_long": {
+   "candidate": "S07",
+   "span": "long",
+   "stage_0": {
+    "needed": 1,
+    "status": "DATA_NOT_RETRIEVABLE_FROM_THIS_ENVIRONMENT_PROVIDER_UNAFFECTED",
+    "verified_currencies": 0,
+    "why": "HY OAS の無料配信は実質 FRED 経由のみ。**代替の無料経路が存在しない**"
+   },
+   "track": "U5",
+   "verdict": "U5_S07_DATA_NOT_RETRIEVABLE_FROM_THIS_ENVIRONMENT_PROVIDER_UNAFFECTED",
+   "why": "credit_hy_oas が取得されていない（credit_hy_oas.parquet が無い）"
+  },
+  "U5_recent": {
+   "candidate": "S07",
+   "span": "recent",
+   "stage_0": {
+    "needed": 1,
+    "status": "DATA_NOT_RETRIEVABLE_FROM_THIS_ENVIRONMENT_PROVIDER_UNAFFECTED",
+    "verified_currencies": 0,
+    "why": "HY OAS の無料配信は実質 FRED 経由のみ。**代替の無料経路が存在しない**"
+   },
+   "track": "U5",
+   "verdict": "U5_S07_DATA_NOT_RETRIEVABLE_FROM_THIS_ENVIRONMENT_PROVIDER_UNAFFECTED",
+   "why": "credit_hy_oas が取得されていない（credit_hy_oas.parquet が無い）"
+  }
+ }
+}

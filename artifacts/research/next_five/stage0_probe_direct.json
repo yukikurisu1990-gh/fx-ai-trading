@@ -1,0 +1,167 @@
+{
+ "authority": "2026-09-22 Human + ChatGPT 裁定 §K（Stage 0）",
+ "blocked_tracks": [
+  "S29",
+  "S31"
+ ],
+ "cycle": "NEXT_FIVE_2026_09",
+ "finished_utc": "2026-09-22T11:57:41.257975+00:00",
+ "note": "**到達しなかったものを『データが無い』と書かない。** TLS / timeout / 名前解決の失敗はこちら側の環境の話であり、provider の可用性ではない。前 cycle で S07 をこの取り違えで退場させかけた",
+ "results": {
+  "S07": {
+   "extra_risk": "**HY OAS の無料配信は実質 FRED 経由しかない。** ここで測れるのは代替が無いという事実だけである",
+   "minimum_for_viability": 1,
+   "reachable": [
+    "ust_yield_curve_proxy"
+   ],
+   "reachable_count": 1,
+   "series": {
+    "ust_yield_curve_proxy": {
+     "bytes": 19098,
+     "content_hash": "6775840b76cd7fd41121f61d6f6c60184eca6b2ba49954ec7372c463cbeef34d",
+     "http_status": 200,
+     "outcome": "OK",
+     "retrieved_utc": "2026-09-22T11:57:40.580386+00:00",
+     "url": "https://home.treasury.gov/resource-center/data-chart-center/interest-rates/daily-treasury-rates.csv/2024/all?type=daily_treasury_yield_curve&field_tdr_date_value=2024&page&_format=csv"
+    }
+   },
+   "viable": true,
+   "what": "信用 spread（直接経路の有無を確かめる）"
+  },
+  "S25": {
+   "minimum_for_viability": 3,
+   "reachable": [
+    "boc_balance_sheet",
+    "boe_balance_sheet",
+    "snb_balance_sheet"
+   ],
+   "reachable_count": 3,
+   "series": {
+    "boc_balance_sheet": {
+     "bytes": 51481,
+     "content_hash": "0e5f1a9ada8dab70707c67e1dded763a3d6a123f61680da149c1a93998c6d98f",
+     "http_status": 200,
+     "outcome": "OK",
+     "retrieved_utc": "2026-09-22T11:57:29.932018+00:00",
+     "url": "https://www.bankofcanada.ca/valet/observations/V36612/csv"
+    },
+    "boe_balance_sheet": {
+     "bytes": 26842,
+     "content_hash": "803dea9108128328a6b2214aa24d50a8db37a319b1d33161c0603f9cfb59a976",
+     "http_status": 200,
+     "outcome": "OK",
+     "retrieved_utc": "2026-09-22T11:57:28.152310+00:00",
+     "url": "https://www.bankofengland.co.uk/boeapps/database/_iadb-fromshowcolumns.asp?csv.x=yes&Datefrom=04/Jan/1999&Dateto=26/Dec/2025&SeriesCodes=RPWB55A&CSVF=TN&UsingCodes=Y&VPD=Y&VFD=N"
+    },
+    "ecb_balance_sheet": {
+     "error": "HTTPError: HTTP Error 404: Not Found",
+     "http_status": 404,
+     "outcome": "LOCAL_ENVIRONMENT_FAILURE_NOT_PROVIDER_UNAVAILABLE",
+     "reading": "**これは『provider にデータが無い』ではない。**",
+     "retrieved_utc": "2026-09-22T11:57:26.705389+00:00",
+     "url": "https://data-api.ecb.europa.eu/service/data/ILM/W.U2.C.T000000.Z5.EUR?format=csvdata"
+    },
+    "snb_balance_sheet": {
+     "bytes": 279657,
+     "content_hash": "fa50275724337c085f1741da024890315e8f97cfb27f8983e3d75a446e210de8",
+     "http_status": 200,
+     "outcome": "OK",
+     "retrieved_utc": "2026-09-22T11:57:19.289982+00:00",
+     "url": "https://data.snb.ch/api/cube/snbbipo/data/csv/en"
+    }
+   },
+   "viable": true,
+   "what": "中銀 balance sheet（直接経路）"
+  },
+  "S29": {
+   "minimum_for_viability": 3,
+   "reachable": [],
+   "reachable_count": 0,
+   "series": {
+    "bundesbank_current_account": {
+     "error": "HTTPError: HTTP Error 404: Not Found",
+     "http_status": 404,
+     "outcome": "LOCAL_ENVIRONMENT_FAILURE_NOT_PROVIDER_UNAVAILABLE",
+     "reading": "**これは『provider にデータが無い』ではない。**",
+     "retrieved_utc": "2026-09-22T11:57:34.691822+00:00",
+     "url": "https://api.statistiken.bundesbank.de/rest/data/BBDP1/M.DE.N.I8.S1.S1.T.B.CA._Z._Z._Z.EUR._T._X.N?format=csv"
+    },
+    "census_us_trade": {
+     "error": "HTTPError: HTTP Error 404: Not Found",
+     "http_status": 404,
+     "outcome": "LOCAL_ENVIRONMENT_FAILURE_NOT_PROVIDER_UNAVAILABLE",
+     "reading": "**これは『provider にデータが無い』ではない。**",
+     "retrieved_utc": "2026-09-22T11:57:39.224444+00:00",
+     "url": "https://www.census.gov/foreign-trade/balance/c0004.csv"
+    },
+    "ecb_current_account": {
+     "error": "HTTPError: HTTP Error 404: Not Found",
+     "http_status": 404,
+     "outcome": "LOCAL_ENVIRONMENT_FAILURE_NOT_PROVIDER_UNAVAILABLE",
+     "reading": "**これは『provider にデータが無い』ではない。**",
+     "retrieved_utc": "2026-09-22T11:57:35.978220+00:00",
+     "url": "https://data-api.ecb.europa.eu/service/data/BP6/M.N.I9.W1.S1.S1.T.B.CA._Z._Z._Z.EUR._T._X.N?format=csvdata"
+    },
+    "snb_current_account": {
+     "error": "HTTPError: HTTP Error 404: Not Found",
+     "http_status": 404,
+     "outcome": "LOCAL_ENVIRONMENT_FAILURE_NOT_PROVIDER_UNAVAILABLE",
+     "reading": "**これは『provider にデータが無い』ではない。**",
+     "retrieved_utc": "2026-09-22T11:57:37.292897+00:00",
+     "url": "https://data.snb.ch/api/cube/aubesilm/data/csv/en"
+    }
+   },
+   "viable": false,
+   "what": "実体貿易 flow（直接経路）"
+  },
+  "S31": {
+   "minimum_for_viability": 3,
+   "reachable": [
+    "boe_reserves"
+   ],
+   "reachable_count": 1,
+   "series": {
+    "boc_reserves": {
+     "error": "HTTPError: HTTP Error 404: Not Found",
+     "http_status": 404,
+     "outcome": "LOCAL_ENVIRONMENT_FAILURE_NOT_PROVIDER_UNAVAILABLE",
+     "reading": "**これは『provider にデータが無い』ではない。**",
+     "retrieved_utc": "2026-09-22T11:57:34.031227+00:00",
+     "url": "https://www.bankofcanada.ca/valet/observations/V122161/csv"
+    },
+    "boe_reserves": {
+     "bytes": 18633,
+     "content_hash": "7d628210907f64edaca654b83425e90f084a12615d86fe3ac181be8d3d2cf6a5",
+     "http_status": 200,
+     "outcome": "OK",
+     "retrieved_utc": "2026-09-22T11:57:32.371843+00:00",
+     "url": "https://www.bankofengland.co.uk/boeapps/database/_iadb-fromshowcolumns.asp?csv.x=yes&Datefrom=04/Jan/1999&Dateto=26/Dec/2025&SeriesCodes=LPMB8LU&CSVF=TN&UsingCodes=Y&VPD=Y&VFD=N"
+    },
+    "mof_jp_reserves": {
+     "error": "HTTPError: HTTP Error 404: Not Found",
+     "http_status": 404,
+     "outcome": "LOCAL_ENVIRONMENT_FAILURE_NOT_PROVIDER_UNAVAILABLE",
+     "reading": "**これは『provider にデータが無い』ではない。**",
+     "retrieved_utc": "2026-09-22T11:57:34.443774+00:00",
+     "url": "https://www.mof.go.jp/english/policy/international_policy/reference/official_reserve_assets/data.csv"
+    },
+    "snb_reserves": {
+     "error": "HTTPError: HTTP Error 404: Not Found",
+     "http_status": 404,
+     "outcome": "LOCAL_ENVIRONMENT_FAILURE_NOT_PROVIDER_UNAVAILABLE",
+     "reading": "**これは『provider にデータが無い』ではない。**",
+     "retrieved_utc": "2026-09-22T11:57:30.777647+00:00",
+     "url": "https://data.snb.ch/api/cube/snbdevbil/data/csv/en"
+    }
+   },
+   "viable": false,
+   "what": "公的外貨準備（直接経路）"
+  }
+ },
+ "route": "direct",
+ "stage": "STAGE_0_AVAILABILITY_ONLY_NO_SIGNAL_CONSTRUCTED",
+ "viable_tracks": [
+  "S07",
+  "S25"
+ ]
+}
