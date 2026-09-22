@@ -1,0 +1,167 @@
+{
+ "benchmarks": {
+  "constant_long_usd": {
+   "annual_cost": 0.0010776256963897053,
+   "gross_sharpe": 0.27008090132700163,
+   "ic": 0.022746554038872185,
+   "net_sharpe": 0.2596524618495621,
+   "turnover_per_unit_gross": 1.59276532429937
+  },
+  "fx_own_mean_reversion_20d": {
+   "annual_cost": 0.0376117930631389,
+   "gross_sharpe": 0.8457885039742378,
+   "ic": 0.025150239954696993,
+   "net_sharpe": 0.4868251258053381,
+   "turnover_per_unit_gross": 34.265719351450805
+  },
+  "fx_own_momentum_20d": {
+   "annual_cost": 0.0376117930631389,
+   "gross_sharpe": -0.8457885039742378,
+   "ic": -0.025150239954696993,
+   "net_sharpe": -1.2042837909396584,
+   "turnover_per_unit_gross": 34.265719351450805
+  },
+  "zero_signal": {
+   "ic": 0.0,
+   "net_sharpe": 0.0
+  }
+ },
+ "conclusion": "**Stage 2 は T5 を確認していない。** 3 条件は通ったが、その gate は帰無のもとでも高い確率で通る（`null_calibration` 参照）。回帰の signal 係数は t=+0.94 で、しかもこの t は前方補完による重複を補正していないぶん過大である。**UNDERPOWERED_FOR_CONFIRMATORY_CLAIM** であって、NOT_WORTH_DEVELOPING ではない",
+ "cycle": "TOP_FIVE_2026_09",
+ "digest_as_executed": "28100ebedfea45765371585df5c4308fee261e2496a9798acca79c920158962c",
+ "eligibility": {
+  "checks": {
+   "condition_1_gross_sharpe_positive": true,
+   "condition_2_incremental_ic_positive": true,
+   "condition_3_net_annual_return_positive": true
+  },
+  "eligible": true,
+  "measured": {
+   "gross_sharpe": 0.891,
+   "incremental_ic": 0.02554,
+   "net_annual_return": 0.08571
+  },
+  "rule": {
+   "condition_1": "gross_sharpe > 0",
+   "condition_2": "incremental_ic over fx_own_momentum_20d > 0",
+   "condition_3": "net_annual_return > 0 at the charged cost convention",
+   "if_not_eligible": "STOP。Stage 2 へは進まない",
+   "judged_on": "recent span のみ（cost 規約が実測された唯一の span）",
+   "model_if_eligible": "forward return を、凍結した signal と control の 2 変数へ回帰する single linear model のみ。interaction も feature 追加も無い",
+   "multiplicity_note": "同じ規則でも track ごとに帰無通過確率が違う（cost drag が違うため）。低 turnover の track はノイズでも通りやすい。**Stage 2 へ自動進行した事実を報告するときは、その track の帰無通過確率を必ず添える**"
+  }
+ },
+ "freeze_digest": "0d1f3b118fc86f87c5e87d7623b76df1e8e9d1e99ab82e4f87dc85ff2654e24f",
+ "null_calibration": {
+  "draws": 500,
+  "joint_pass_and_t_rate": 0.244,
+  "method": "CIRCULAR_SHIFT_PRESERVING_THE_SIGNAL_AUTOCORRELATION",
+  "null_net_sharpe_mean": -0.0213,
+  "null_net_sharpe_p95": 1.1294,
+  "p_value_on_signal_t": 0.314,
+  "reading": "**gate の通過率が高いほど、通過した事実の情報量は小さい。** 裁定が `multiplicity_note` で要求しているのはこの数字であり、T5 は 5 本で最も turnover が低いので、最も通りやすい track である",
+  "seed": 20260921,
+  "stage_2_gate_pass_rate_under_null": 0.42
+ },
+ "post_execution_corrections": "CORRECTED_AFTER_RESULTS_WERE_SEEN_NOT_A_CLEAN_PREREGISTERED_RUN",
+ "span": "recent",
+ "stage_2": {
+  "caveat": "**観測は通貨 x 日で数えた 4 千件あるが、独立な signal の状態はその数ではない。** T5 の score は月次 series の前方補完なので、同じ値が数十日続く。t はこの重複を補正していない — **過大である**",
+  "control_beta": -0.005703192807503419,
+  "control_t": -1.55944671366345,
+  "observations": 4296,
+  "r_squared": 0.0007866364847556317,
+  "signal_beta": 0.00015782851974128765,
+  "signal_t": 0.937438705487894,
+  "status": "RAN"
+ },
+ "staleness_sensitivity": {
+  "beats_price_only_baseline_at_every_grid_point": true,
+  "finding": "**凍結値 75 は、試した 9 点の中で net Sharpe が 1 位になる点である。** この定数に経済的な内容は無い（いつ値が古すぎるとみなすかの事務上の上限）のに、net Sharpe は +0.56 … +0.84 と動く。**報告した値は楽観側**であり、null 超過分も +0.12 … +0.60 と同じ桁だけ動く。符号はどの点でも正で、価格のみの mean-reversion book もどの点でも上回るので、**向きは頑健だが、大きさは信用してはならない**",
+  "frozen_value": 75,
+  "frozen_value_rank_among_net_sharpes": 1,
+  "grid": {
+   "120": {
+    "constant_long_usd_net_sharpe": 0.218,
+    "days": 587,
+    "fx_own_mean_reversion_20d_net_sharpe": 0.6907,
+    "increment_over_null": 0.5954,
+    "net_sharpe": 0.8134
+   },
+   "400": {
+    "constant_long_usd_net_sharpe": 0.2213,
+    "days": 785,
+    "fx_own_mean_reversion_20d_net_sharpe": 0.4419,
+    "increment_over_null": 0.3358,
+    "net_sharpe": 0.5571
+   },
+   "45": {
+    "constant_long_usd_net_sharpe": 0.4078,
+    "days": 533,
+    "fx_own_mean_reversion_20d_net_sharpe": 0.5989,
+    "increment_over_null": 0.3307,
+    "net_sharpe": 0.7385
+   },
+   "60": {
+    "constant_long_usd_net_sharpe": 0.5046,
+    "days": 544,
+    "fx_own_mean_reversion_20d_net_sharpe": 0.5391,
+    "increment_over_null": 0.1158,
+    "net_sharpe": 0.6204
+   },
+   "62": {
+    "constant_long_usd_net_sharpe": 0.4521,
+    "days": 546,
+    "fx_own_mean_reversion_20d_net_sharpe": 0.5256,
+    "increment_over_null": 0.2142,
+    "net_sharpe": 0.6663
+   },
+   "70": {
+    "constant_long_usd_net_sharpe": 0.386,
+    "days": 552,
+    "fx_own_mean_reversion_20d_net_sharpe": 0.5639,
+    "increment_over_null": 0.3351,
+    "net_sharpe": 0.7211
+   },
+   "75": {
+    "constant_long_usd_net_sharpe": 0.2597,
+    "days": 555,
+    "fx_own_mean_reversion_20d_net_sharpe": 0.4868,
+    "increment_over_null": 0.578,
+    "net_sharpe": 0.8377
+   },
+   "80": {
+    "constant_long_usd_net_sharpe": 0.3123,
+    "days": 558,
+    "fx_own_mean_reversion_20d_net_sharpe": 0.5023,
+    "increment_over_null": 0.468,
+    "net_sharpe": 0.7803
+   },
+   "90": {
+    "constant_long_usd_net_sharpe": 0.3262,
+    "days": 566,
+    "fx_own_mean_reversion_20d_net_sharpe": 0.4965,
+    "increment_over_null": 0.4256,
+    "net_sharpe": 0.7518
+   }
+  },
+  "grid_size": 9,
+  "increment_range": [
+   0.1158,
+   0.5954
+  ],
+  "net_sharpe_range": [
+   0.5571,
+   0.8377
+  ],
+  "sign_is_positive_at_every_grid_point": true
+ },
+ "track": "T5",
+ "window": {
+  "days": 555,
+  "distinct_signal_states": 24,
+  "first": "2021-04-28",
+  "last": "2023-06-14",
+  "years": 2.202
+ }
+}

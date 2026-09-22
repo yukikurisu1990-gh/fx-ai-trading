@@ -1,0 +1,461 @@
+# Top-Five development 結果（2026-09-21）
+
+`NON_DECISION_BEARING_EXPLORATORY_ONLY` · `RESEARCH_SCRATCH_NON_AUTHORITATIVE`
+· `PRODUCTION_READINESS_NOT_CLAIMED`
+
+Authority: 2026-09-21 Human + ChatGPT 裁定
+実行時 freeze digest（`DIGEST_AS_EXECUTED`）:
+**`28100ebedfea45765371585df5c4308fee261e2496a9798acca79c920158962c`**
+現在の freeze digest: **`0d1f3b118fc86f87c5e87d7623b76df1e8e9d1e99ab82e4f87dc85ff2654e24f`**
+（旧 `29ba80d6…` は `SUPERSEDED_PRE_EXECUTION`）
+
+> **digest は実行後に 2 度動いている。** 1 度目は payload の覆う範囲を広げたため、
+> 2 度目は下の 3 件の訂正（C-1 / C-2 / C-3）を入れたためである。
+> **「digest が動いた = 別の事前登録」**という凍結の規約どおり、
+> 本文書の結果は `DIGEST_AS_EXECUTED` そのままの走りではない。
+
+本文書が引く数値は `artifacts/research/top_five/development.json` と
+`artifacts/research/top_five/stage2_t5.json` の実測値である。
+
+> ## ⚠ 実行後に 3 件の訂正が入っている
+>
+> **「5 本を凍結して 1 度走らせた」だけではない。** 結果を見た後に、レビューが挙げた
+> 3 件を直している。詳細は `prereg.POST_EXECUTION_CORRECTIONS`
+> （status: `CORRECTED_AFTER_RESULTS_WERE_SEEN_NOT_A_CLEAN_PREREGISTERED_RUN`）。
+>
+> | | 種類 | 内容 | 裁量の有無 |
+> | --- | --- | --- | --- |
+> | **C-1** | leakage 閉塞 | `signals._two_year` が取得層を迂回して parquet を直読みし、保護 pool と forward epoch の行（通貨により 510–2,092 行、最大 2026-09-15）が slope 計算へ入っていた。近 span の score **3 日**（2021-05-11 / 2021-05-26 / 2021-05-27）が保護 pool の値に依存していた | **無し**（塞がなければ結果が無効） |
+> | **C-2** | 単位バグ + **新しい定数** | staleness 上限を行数で数えており、union index の空白を **1 行で 1,792 日**跨いでいた。暦日へ直した。ただし **75 日という値は新しく選んだ数**である | **有り** — §2.5 で感度を開示 |
+> | **C-3** | 欠けていた null の追加 | `constant_long_usd`（signal を見ずに USD を買い持ちする book）を benchmark へ追加 | 唯一の正の結果を**弱める方向にのみ**働く |
+>
+> **C-1 と C-2 は実行前に閉じているべきだった。** 5 本を凍結してから走らせる設計の目的は、
+> まさにこの種の事後調整を不可能にすることだった。
+> 初稿は「fresh pool 未読」と書いていたが、**C-1 の leg についてはそれが偽だった**。
+> 現在は塞がっており、§6 の表はその修正後の状態である。
+
+
+> ## 2026-09-22 裁定による更新
+>
+> **cycle 全体に `CORRECTED_AFTER_RESULTS_WERE_SEEN_NOT_A_CLEAN_PREREGISTERED_RUN` が
+> authoritative qualifier としてかかる。** track 単位の status ではなく、
+> **この cycle が生んだあらゆる数値**にかかる。C-1 / C-2 / C-3 は削除も弱化もしない。
+>
+> **凍結は 3 段階ある**（`prereg.FREEZE_PROVENANCE`）:
+>
+> | stage | digest | 状態 |
+> | --- | --- | --- |
+> | INITIAL_FREEZE | `29ba80d6…` | `SUPERSEDED_PRE_EXECUTION`（alpha を 1 本も見る前） |
+> | EXECUTION_FREEZE | `28100ebe…` | `DIGEST_AS_EXECUTED`（5 本を走らせた設計） |
+> | CORRECTED_FREEZE | 現 digest | `CORRECTED_AFTER_RESULTS_WERE_SEEN…`（報告の数値はこれ） |
+>
+> **T5 は降格された。** 旧 `MARGINAL_DEVELOPMENT_CANDIDATE` →
+> **`T5_S26_POSITIVE_EXPLORATORY_SIGNAL_NOT_DECISION_GRADE`**。
+> 意味は 4 つに限られる — **observed net positive は記録する / edge confirmed とはしない /
+> development candidate へ昇格しない / fresh confirmation へ進めない。**
+>
+> 本報告は「凍結語彙に『正だが確認できない』を表す token が無い」ことを欠落として記録し、
+> 事後に語彙を足すのは post-hoc だとして `MARGINAL` を当てていた。
+> **裁定はその判断を受け取ったうえで、語彙の方を直すことを指示した。**
+> これは私が事後に選んだ緩和ではなく、Human + ChatGPT が下した降格である。
+>
+> **T1〜T4 の低 turnover redesign / horizon smoothing による救済は禁止された**（§B）。
+> 「gross positive but cost-dominated」は**今後の candidate prior には使えるが、
+> 同じ signal の救済実験には使わない**。
+>
+> **T5 も追加実行しない**（§C）。ただし **TIC / capital-flow の方向そのものは
+> family closure にしない** — genuine historical vintage data、独立した flow source、
+> 実質的に異なる positioning / flow 情報が得られたときは**新しい hypothesis** になり得る。
+
+---
+
+## 0. 結論を先に
+
+**5 本のうち net が正だったのは 1 本だけで、それも零情報 null と区別がついていない。**
+
+| | 候補 | 情報 | 最終 status |
+| --- | --- | --- | --- |
+| T1 | S05 | 株式 volatility | `T1_S05_NOT_SUPPORTED_IN_SEEN_DEVELOPMENT` |
+| T2 | S06 | 原油 | `T2_S06_NOT_SUPPORTED_IN_SEEN_DEVELOPMENT` |
+| T3 | S02 | 金利 curve 形状 | `T3_S02_NOT_SUPPORTED_IN_SEEN_DEVELOPMENT`（長 span は `DATA_NOT_DECISION_GRADE`） |
+| T4 | S10 | 通貨間伝播 | `T4_S10_NOT_SUPPORTED_IN_SEEN_DEVELOPMENT` |
+| **T5** | **S26** | **越境証券 flow** | **`T5_S26_POSITIVE_EXPLORATORY_SIGNAL_NOT_DECISION_GRADE`（旧 `T5_S26_MARGINAL_DEVELOPMENT_CANDIDATE`、2026-09-22 裁定 §4 で降格）** |
+
+**T5 の status を「証拠がある」と読んではならない。** 凍結した `TRACK_STATUS_SUFFIXES` には
+**「正だが、この検出力では確認できない」**を表す token が無く、結果を見た後に語彙を足すのは
+post-hoc なのでしていない。T5 の実態は
+`UNDERPOWERED_FOR_CONFIRMATORY_CLAIM`（§2.5）であって、`NOT_WORTH_DEVELOPING` でもない。
+
+**本 cycle は 5 通りの探索 + T3 内の 2 符号探索**である
+（`FIVE_WAY_..._PLUS_A_TWO_SIGN_SUB_SEARCH_WITHIN_T3`）。p 値を formal proof として扱わない。
+
+---
+
+## 1. 共通基準での比較（裁定 §35）
+
+| key | 日数 | gross SR | net SR | incremental IC | turnover<br>/単位 gross | 正の block | rename gate |
+| --- | ---: | ---: | ---: | ---: | ---: | :---: | :---: |
+| T1 長 | 4,321 | +0.139 | −0.435 | +0.0131 | 54.2 | 29/68 | — |
+| T1 近 | 1,211 | +0.336 | −0.500 | +0.0066 | 52.4 | 9/19 | — |
+| T2 長 | 4,233 | −0.354 | −0.786 | −0.0027 | 42.3 | 21/67 | — |
+| T2 近 | 1,205 | +0.519 | −0.253 | +0.0047 | 50.4 | 8/19 | — |
+| T3 長 H1/H2 | — | — | — | — | — | — | `DATA_NOT_DECISION_GRADE` |
+| T3 近 **H1** | 1,190 | −0.749 | −1.638 | −0.0135 | **57.9** | 2/19 | DISTINCT |
+| T3 近 **H2** | 1,190 | +0.749 | −0.148 | +0.0135 | **57.9** | 8/19 | DISTINCT |
+| T4 長 | 4,085 | +0.258 | −1.435 | +0.0013 | 153.3 | 20/65 | DISTINCT |
+| T4 近 | 840 | −0.409 | −2.890 | −0.0289 | 153.5 | 3/14 | DISTINCT |
+| T5 長 | 4,331 | +0.037 | −0.017 | +0.0024 | 6.0 | 34/68 | DISTINCT |
+| **T5 近** | **555** | **+0.891** | **+0.838** | **+0.0255** | **6.4** | **6/9** | **DISTINCT** |
+
+> turnover 列は **単位 gross あたり**である（§5 の E-002）。
+> `top_N_day_contribution` は net が負の track では符号が反転するため意味を持たず、
+> net が正の T5 近 span についてのみ解釈する。
+
+### benchmark（同じ窓・同じ執行層・net SR）
+
+| key | FX own momentum 20d | mean reversion 20d | **定数 long-USD（情報ゼロ）** |
+| --- | ---: | ---: | ---: |
+| T1 近 / T2 近 | −0.794 | −0.007 | **+0.415 / +0.591** |
+| T3 近 | −1.079 | +0.261 | **+0.334** |
+| T4 近 | −1.040 | +0.267 | **−0.191** |
+| **T5 近** | −1.204 | **+0.487** | **+0.260** |
+| T1 長 / T2 長 | +0.094 / +0.067 | −0.617 / −0.598 | −0.104 / +0.005 |
+| T5 長 | −0.115 | −0.326 | +0.014 |
+
+> **近 span では、signal を一切見ない定数 long-USD book が T1 / T2 / T3 / T4 の
+> すべてを上回っている。** 定数 book 自身の値は窓によって **−0.191（T4 の窓）から
+> +0.591（T2 の窓）まで**動き、2021–2025 のドル高をどれだけ含む窓かで決まるだけなので、
+> **これ自体は edge の証拠ではない**。だが **4 本が「何も見ない book」に負けた**という
+> 事実は、それらの gross がいかに小さかったかを示す。
+> （T4 近は定数 book も負の窓だが、それでも −0.191 対 −2.890 で T4 が負けている。）
+
+---
+
+## 2. 失敗の分類（裁定 §32）— 「failed」で一括りにしない
+
+### 全 track に等しくかかる留保
+
+**panel は両 span とも spot only で、carry leg を持たない。**
+凍結文の開示は長 span と T3 / T5 だけを名指ししていたが、実際に組まれた panel の
+provenance は `CARRY_LEG_ABSENT_ON_BOTH_SPANS_SPOT_ONLY` である。
+**凍結時の開示が実物より狭かった**ので、ここで広げて記録する。
+効き方は track で違う — **T1（金利差を経由する risk repricing）と T3（sovereign curve）が最も強く**、
+T2 / T4 は間接的、T5 は最も薄い。carry を後から足すことは（凍結の外なので）しない。
+
+### T1（株式 volatility）— `COST_FAILURE`
+
+gross は両 span で正（長 +0.139 / 近 +0.336）、incremental IC も正（+0.0131 / +0.0066）。
+
+turnover は単位 gross あたり **54.2 / 52.4 RT/年**で凍結補正値 82.5 の**範囲内**であり、
+想定外に売買しすぎたのではない。凍結した cost 規約から予想される drag は
+約 **0.77 Sharpe 単位**で、**gross の +0.34 はそれを賄えない**。
+
+→ 「費用が想定を超えた」のではなく、**「情報の大きさが、想定どおりの費用に届かない」**。
+
+> **ただし「情報は確かにある」とまでは書かない。** incremental IC +0.0066 は日次
+> cross-section 相関の平均が 0.7% ということで、**この panel の日次 IC のばらつきに対して
+> 別個に有意だとは検定していない**。言えるのは「符号が 2 span で一致して正だった」まで、
+> すなわち 2 回の観測である。
+
+### T2（原油）— 長 span `SIGNAL_FAILURE` / 近 span `COST_FAILURE`
+
+**2 つの span で失敗の種類が違う。** 長 span は gross からして負（−0.354、incremental IC −0.0027）で、
+交易条件という機構が 17 年の panel では支持されない。近 span は gross +0.519 と正だが net −0.253。
+turnover は 42.3 / 50.4 RT/年で凍結範囲内なので、ここでも**費用は想定どおり**である。
+
+**凍結が名指しで要求した cross-track control の結果:**
+T2 の beta は T1 の beta と **+0.856** 相関しているので、「FX 自身の価格を超える増分」では足りず、
+**T1 を超える増分**を測る必要があった。実測は
+
+| | incremental IC over FX own price | **over T1** |
+| --- | ---: | ---: |
+| T2 長 | −0.0027 | **−0.0115** |
+| T2 近 | +0.0047 | **−0.0019** |
+
+**どちらも負**である。すなわち **T2 は T1 が既に持っている情報に何も足していない。**
+近 span の gross が正だったことは、T2 固有の機構の証拠ではない。
+
+### T3（金利 curve 形状）— 長 span `DATA_FAILURE` / 近 span `COST_FAILURE`
+
+**長 span は data が足りなかった。** 10y は 5 通貨とも揃ったが、**2y leg が揃わない** —
+USD 2y は 2020 年開始、GBP 2y は 2016 年開始で、1999–2016 に組めるのは
+**EUR / CHF / CAD の 3 通貨だけ**（cross-section 幅の中央値 3）。
+連続する decision day が 60 日に満たず `DATA_NOT_DECISION_GRADE` とした。
+
+#### 符号の多重性 — 凍結が効いた場所
+
+近 span では H1 と H2 の両方を走らせた。**両者は定義上の鏡像**である（PnL 相関 **−0.993**）:
+
+| | gross SR | net SR | incremental IC | 正の block |
+| --- | ---: | ---: | ---: | :---: |
+| T3-H1（steepening → 通貨高） | −0.749 | **−1.638** | −0.0135 | 2/19 |
+| T3-H2（steepening → 通貨安） | +0.749 | **−0.148** | +0.0135 | 8/19 |
+
+**「H2 の gross が正だったので curve theory が支持された」とは言えない。**
+H2 の gross が正であることと H1 の gross が負であることは同じ 1 つの事実であり、
+2 通りの探索のうち片方を選んで見出しにすることを凍結が禁じている。
+そして **net はどちらも負**なので、そもそも選ぶ対象が無い。
+
+もし旧 freeze のまま H1 だけを primary として走らせていれば
+「curve shape は明確に負」という結論になっていた。両符号を事前登録したことで、
+**実際には「どちらの向きにも net は無い」**と言えるようになった。
+
+**5 本で唯一、凍結した turnover 想定を超えた track**でもある（57.9 対 34.8、1.66 倍）。
+
+carry 欠落が**最も強く効く** track でもある — 金利の形を signal にしながら、
+金利 carry を落とした panel の上で測っている。この留保は net が両符号とも負であることを
+救わないが、**次に carry leg を入れて組み直す価値がある唯一の track**ではある。
+
+### T4（通貨間伝播）— `SIGNAL_FAILURE` + `COST_FAILURE`
+
+近 span は **gross も負**（−0.409、incremental IC −0.0289）。
+net は −1.435 / −2.890 と **5 本で最悪**。turnover は単位 gross あたり 153.3 / 153.5 RT/年で
+凍結補正値 191.5 の範囲内ではあるが、**絶対水準が桁違いに高い** — 1 日 signal なので当然である。
+これは実行前に予想されていた — 凍結文が「gate を通っても cost で落ちる公算が高い」と書いている。
+
+**rename gate は通った。** 自通貨 lag-1 残差との相関は閾値 0.8 未満で、
+H-003 / Track 1 の言い換えではない。ただし**別物であることは役に立たなかった**。
+
+### 2.5 T5（越境証券 flow）— net 正。ただし零情報 null と区別がつかない
+
+`T5_S26_POSITIVE_EXPLORATORY_SIGNAL_NOT_DECISION_GRADE`（旧 `T5_S26_MARGINAL_DEVELOPMENT_CANDIDATE`、2026-09-22 裁定 §4 で降格）。窓は **2021-04-28 … 2023-06-14、555 日 = 2.20 年**。
+
+**支持する側の事実:**
+
+- gross +0.891 / net **+0.838** / 年 net **+8.57%**、maxDD −9.8%
+- turnover は単位 gross あたり **6.4 RT/年**で **5 本中最小**（次点 T2 の 1/7）、年 cost 0.5% 程度
+- **cost を 2 倍にしても net Sharpe +0.784**（×1.5 で +0.811）とほぼ動かない
+- incremental IC **+0.0255** は 5 本で最大
+- rename gate 通過 — **horizon を揃えた** 1/6/12 か月累積 × 1/2/3 か月ラグの USD basket return
+  との相関は最悪でも **0.398**（閾値 0.8）。**遅れた USD momentum の言い換えではない**
+
+#### なぜ `MARGINAL` が「証拠」ではないのか
+
+**この +0.838 は、同じ形をした零情報 signal が出す値と区別がつかない。**
+`stage2_t5.json` の permutation は、T5 の score を **circular shift** して
+（自己相関と turnover を保ったまま return との対応だけを壊す）500 回引いたものである。
+
+| 測ったもの | 値 | 読み方 |
+| --- | ---: | --- |
+| 凍結 Stage 2 の 3 条件が**帰無のもとで**通る率 | **42%** | 裁定の `multiplicity_note` が添えろと言っていた数字。**gate を通った事実に情報は薄い** |
+| 回帰の signal 係数 | t = **+0.94** | しかも前方補完による重複を補正しておらず**過大** |
+| その t の permutation p 値 | **0.314** | 帰無の 31% が実測以上の t を出す |
+| 零情報 null の net Sharpe 95 パーセンタイル | **+1.13** | 実測 +0.838 は**その内側**。null の平均は −0.02 |
+
+T5 が最も通りやすいのは偶然ではない。**net > 0 という条件は cost drag を超えることを要求するが、
+T5 の drag は年 0.5% しかない**ので、gross がわずかでも正なら通ってしまう。
+同じ条件を T4（drag が桁違い）に当てればほぼ通らない。
+
+#### 8 つの留保（数字で）
+
+1. **検出力の高い方の span が平坦。** 長 span は 4,331 日（17.2 年、近 span の **7.8 倍**）で
+   gross +0.037 / net **−0.017**。
+2. **breadth が 1。** USD を抜くと net Sharpe が +0.838 → **+0.059**。
+   通貨別寄与でも USD が gross PnL の **91%**。事実上 1 通貨の結果である。
+3. **独立な状態が 24 個しかない。** score は月次 TIC の前方補完なので、555 日は独立標本数ではない。
+   SR の t 値は √2.20 を掛けて **1.24**。
+4. **集中が重い。** 上位 5 日が net の **41%**、上位 10 日で **80%**。block は 9 分割中 6 が正。
+5. **価格のみの baseline との差が小さい。** 同じ 555 日で 20 日 mean reversion book が
+   net **+0.487**（gross **+0.846** は T5 の +0.891 とほぼ同じ）。
+   **T5 の優位は turnover が 1/5 で cost を払わないところから来ており、gross の情報量の差ではない。**
+6. **零情報 null との差。** 定数 long-USD book が net +0.260 なので増分は **+0.578**。ただし 7 を見ること。
+7. **nuisance 定数に敏感（C-2）。** `max_staleness_days` は経済的内容を持たない事務上の上限だが:
+
+   | 日 | 日数 | T5 net | null net | 増分 | MR20 net |
+   | ---: | ---: | ---: | ---: | ---: | ---: |
+   | 45 | 533 | +0.738 | +0.408 | +0.331 | +0.599 |
+   | 60 | 544 | +0.620 | +0.505 | +0.116 | +0.539 |
+   | 62 | 546 | +0.666 | +0.452 | +0.214 | +0.526 |
+   | 70 | 552 | +0.721 | +0.386 | +0.335 | +0.564 |
+   | **75（凍結）** | **555** | **+0.838** | **+0.260** | **+0.578** | +0.487 |
+   | 80 | 558 | +0.780 | +0.312 | +0.468 | +0.502 |
+   | 90 | 566 | +0.752 | +0.326 | +0.426 | +0.496 |
+   | 120 | 587 | +0.813 | +0.218 | +0.595 | +0.691 |
+   | 400 | 785 | +0.557 | +0.221 | +0.336 | +0.442 |
+
+   **凍結値 75 は試した 9 点で net Sharpe 第 1 位**、すなわち**報告値は楽観側の端**である。
+   net は +0.56 … +0.84、増分は +0.12 … +0.60 と動く。
+   一方で **符号はどの点でも正**、**価格のみの baseline も全点で上回る** —
+   **向きは頑健だが、大きさは信用してはならない。**
+8. **data が 2023-01 で終わる。** vintage 2 か月を足すと使用可能域は 2023-06 まで。
+
+> ### ⚠ 改訂（revision）— 公表 lag 規約では解決しない残存 look-ahead
+>
+> `REVISION_CAVEAT` = `TIC_PUBLISHED_FILE_CARRIES_CURRENT_REVISIONS_NOT_THE_VINTAGE_AVAILABLE_AT_DECISION_TIME`
+>
+> **取得した TIC ファイルは「いま公開されている値」であり、決定時点で入手できた値ではない。**
+> 第 m 月の値は m+2 月中旬に速報が出た後も改訂され続けるので、
+> 本 cycle が m+2 月末に使っている数字には、**その時点では存在しなかった改訂が含まれている。**
+>
+> **公表タイミングの lag 規約はこれを直さない。** lag 規約が保証するのは
+> 「その日までに**公表されていた**か」であって、「その日に**その値だった**か」ではない。
+> 両者は別の要件である。
+>
+> 直すには vintage（ALFRED 形式の as-of-date 付き系列）が要るが、
+> TIC の public 配信は vintage を持たない。**無料の範囲では塞げない。**
+>
+> **影響の向きは不明だが、楽観側に働く可能性が高い。** 改訂は一般に
+> 「後から見て正しかった値」へ寄るので、それを事前に使えば実力以上に見える。
+> **T5 の +0.838 はこの分も含んでいる。** paid-data proposal P-1は、
+> 標本を伸ばすだけでなく**この問題も同時に解く**点で価値がある。
+
+#### それでも候補に残す理由
+
+裁定の `UNDERPOWERED_FOR_CONFIRMATORY_CLAIM != NOT_WORTH_DEVELOPING` による。
+残す根拠は**測れた Sharpe ではなく、Sharpe と独立に成り立つ構造**である:
+
+1. turnover が 5 本で最小、cost 2 倍でも崩れない。
+   **他の 4 本を殺したのは cost であり、T5 はその失敗様式に対して構造的に強い**
+2. incremental IC が 5 本で最大
+3. 情報源が価格に対して外生（他 track との PnL 相関 |r| ≤ 0.073）
+4. nuisance 定数をどこへ動かしても符号は正で、価格のみ baseline を全点で上回る
+
+確認できないのは、この span に**検出力が無い**からであって、効果が無いと示されたからではない。
+
+#### 何があれば決着するのか（本 cycle では**やらない**）
+
+TIC は 2023-01 で止まっているので、まず **data の延長**が要る。そのうえで
+555 日・24 状態という標本を増やすには、**保護 pool か forward epoch のどちらか**を
+開けるしかない。**どちらも Red gate であり、本 cycle の権限の外である。**
+
+---
+
+## 3. leverage と年間利益（裁定 §22–§28）
+
+**三概念を分ける。** `max_leverage=5` は feasibility の hard limit **ではない**。
+broker の 20x/25x は margin ceiling であって **運用の risk budget ではない**。
+risk を決めるのは **vol targeting** である。
+
+T5 近 span の実測 vol-per-unit-gross は **4.08%**、実行時の margin 利用率 12.5%。
+
+| target vol | 年 net | portfolio gross | margin 利用率 | **scaled maxDD** | **2% 逆行 gap** | margin 残 |
+| ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| 8% | 6.70% | 1.96x | 9.8% | −7.66% | −3.92% | 90.2% |
+| 10% | 8.38% | 2.45x | 12.2% | −9.58% | −4.90% | 87.8% |
+| 12% | 10.05% | 2.94x | 14.7% | −11.50% | −5.88% | 85.3% |
+| 15% | 12.56% | 3.67x | 18.4% | −14.37% | −7.35% | 81.6% |
+
+| 目標 | 必要 target vol | portfolio gross | margin 利用率 | scaled maxDD | 2% 逆行 gap |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| **年 5% net** | 5.97% | 1.46x | 7.3% | −5.72% | −2.92% |
+| **年 10% net** | 11.94% | 2.92x | 14.6% | −11.44% | −5.85% |
+
+**margin は binding していない**（年 10% でも利用率 15% 弱）。制約は margin ではなく
+**drawdown と検出力**である。
+
+**そしてこの表全体が「net Sharpe 0.838 が本物なら」という条件つきである。**
+§2.5 のとおり、その前提は permutation で p = 0.314 であり、**成り立っていない可能性が高い**。
+§2.5-7 の幅（net +0.56 … +0.84）をそのまま当てれば、年 10% に必要な target vol は
+**11.9% から 17.9% まで**動く。
+
+他の 4 本は net Sharpe ≤ 0 なので、**leverage で救わない**（凍結が明示的に禁じている）。
+
+---
+
+## 4. cross-track correlation（裁定 §36 — 診断のみ）
+
+PnL 相関は **すべて |r| ≤ 0.073**（T3 の H1/H2 は定義上の鏡像 −0.993 を除く）。
+最大は T4 近 × T5 近 の +0.073。
+
+**5 本は互いに独立な情報を見ていた**と言える。
+しかし **net 正は T5 の 1 本だけ**で、それも零情報 null と区別がついていないので、
+**合成する対象が無い**。portfolio 化は本 cycle では行わない
+（post-hoc multi-source portfolio optimization は未承認）。
+
+---
+
+## 5. engineering の発見（裁定 §40）— **最初の版は誤っていた**
+
+**`E-002` — turnover は単位 gross あたりで比べなければならない。**
+
+本文書の初稿は「実測 turnover が band law を全 track で 1.7〜7.8 倍上回った」と書いていた。
+**それは単位の取り違えだった。**
+
+実行層の `one_way_traded` は **leverage 適用後**の建玉変化であり、band law の turnover は
+**gross 1 単位あたり**の定義である。この book の平均 portfolio gross は 2.5〜5.4 なので、
+生の値をそのまま凍結値と比べると **leverage 倍だけ過大に見える**。
+
+### 気づいた経緯
+
+band law が 18.3 とする **20 日 momentum book** を同じ実行層に通したところ **134.4 RT/年**
+と出た。7.3 倍という比は score の作り方に依らない構造を疑わせる値で、
+そこで平均 gross が 4.5 であることに行き当たった。
+
+### 単位を揃えた後
+
+| track | 単位 gross あたり | 凍結補正値 | |
+| --- | ---: | ---: | :---: |
+| T1 長 / 近 | 54.2 / 52.4 | 82.5 | 範囲内 |
+| T2 長 / 近 | 42.3 / 50.4 | 82.5 | 範囲内 |
+| **T3 近** | **57.9** | **34.8** | **超過 1.66x** |
+| T4 長 / 近 | 153.3 / 153.5 | 191.5 | 範囲内 |
+| T5 長 / 近 | 6.0 / 6.4 | 9.7 | 範囲内 |
+
+**超過は T3 の 1 本だけ**である。
+
+### なぜ verdict は変わらないのか
+
+**cost 自体は正しく課金されている。** `charged_cost` は実際の建玉変化に課すので、
+net Sharpe も判定も影響を受けない。誤っていたのは**比較の単位**だけである。
+
+ただし turnover を凍結値と突き合わせることは本 cycle の判定規則の 1 つなので、
+誤ったまま放置すれば **4 本を誤った理由で COST_FAILURE と呼ぶ**ところだった。
+訂正で変わったのは「費用が想定を超えた」から
+**「情報が想定どおりの費用に届かない」**への**理由の書き換え**であり、
+後者の方が次に何を変えるべきかを正しく示す。
+
+## 5b. 方法についての発見
+
+**`M-001` — 帰無通過率を添えない事前登録 gate は、検定ではない。**
+
+凍結した Stage 2 の 3 条件（gross > 0 / incremental IC > 0 / net > 0）は、
+**帰無のもとで 42% 通る**（§2.5）。T5 がこれを通って Stage 2 へ自動進行したことは
+設計上「何かを示した」ように読めるが、実際にはコイン投げ 1.25 回分の情報しかない。
+
+**通過率は track ごとに違い、turnover が低いほど高くなる。**
+同じ規則が track によって全く違う厳しさで効いていた。
+
+→ 次の cycle では、gate を凍結する時点で**各 track の帰無通過率も計算して一緒に凍結する**。
+通過率が 20% を超える gate は、gate ではなく足切りとして扱う。
+
+---
+
+## 6. 保護データの状態
+
+| 対象 | 状態 |
+| --- | --- |
+| fresh pool `2016-06-02 … 2021-04-25` | **未読**（C-1 の修正後。修正前は 2y leg が読んでいた — 下記） |
+| historical OOS | **未読** |
+| dead window | **未読** |
+| forward Formal Confirmation epoch | **未読**（C-1 の修正後） |
+
+> **C-1 の訂正前は、この表の 1 行目と 4 行目が偽だった。**
+> `signals._two_year` が取得層の truncation を迂回しており、`*_2y.parquet` が持つ
+> 保護 pool と forward epoch の行が slope 計算へ入っていた。
+> 実測で**近 span の score 3 日**（2021-05-11 / 2021-05-26 / 2021-05-27）が保護 pool の値に依存していた。
+> **新たな read を行ったのではなく、既に取得済みの file を切り落とさずに使っていた**という性質の事故である。
+> 現在は `sources.is_seen` を通し、`assert_no_protected_day` で二重に押さえている。
+
+取得した 8 source はすべて seen window 内に切り落とされている（TIC は vintage 適用後の日で判定）。
+近 span の FX panel は既存の guarded cache 3 本が連続被覆しており、**archive の新規読み取りはゼロ**。
+
+broker: public margin 仕様のみ使用。authenticated API / demo / paper / live には触れていない。
+paid data: 購入していない。
+
+---
+
+## 7. この結果が主張していないこと
+
+- **「cross-asset が無理」とは言っていない。** T1 は gross と incremental IC が正で、cost で落ちた
+- **「原油が無理」とは言っていない。** ただし T2 は **T1 を超える増分が両 span で負**であり、
+  独立な情報源としては支持されなかった
+- **「curve shape が無理」とは言っていない。** 長 span は data 不足で検定できておらず、
+  近 span はどちらの符号も net 負だった、というだけである。carry leg 込みで組み直す価値は残る
+- **「flow が有望」とは言っていない。** T5 は 5 本で唯一の net 正だが、
+  **零情報 null と区別がついておらず**（permutation p = 0.314）、
+  検出力の高い span は平坦である
+- **「flow が無望」とも言っていない。** 上は**検出力が無い**という意味であって、
+  効果が無いと示されたのではない
+- **Sharpe が最大だから winner、とは扱っていない**（裁定 §37）。absolute economics を優先し、
+  その absolute economics が確認できていない
+- **どれも formal confirmation ではない。** fresh / OOS / dead / forward には進んでいない
