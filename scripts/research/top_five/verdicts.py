@@ -37,11 +37,19 @@ SHARED_CAVEATS: Final[dict[str, str]] = {
         "confirmation ではない。** fresh pool / historical OOS / dead window / "
         "forward epoch は本 cycle で一度も読んでいない"
     ),
-    "vocabulary_gap": (
+    "vocabulary_gap_closed_by_ruling": (
         "凍結した `TRACK_STATUS_SUFFIXES` には **『正だが、この検出力では確認できない』**を"
-        "表す token が無い。結果を見た後に語彙を足すのは post-hoc なのでしない。"
-        "そのため T5 には `MARGINAL_DEVELOPMENT_CANDIDATE` を当てるが、"
-        "**これは「証拠がある」という意味ではない** — 下の `why_marginal_is_not_evidence` を読むこと"
+        "表す token が無かった。報告時点の私はそれを欠落として記録したうえで、"
+        "結果を見た後に語彙を足すのは post-hoc だとして T5 に "
+        "`MARGINAL_DEVELOPMENT_CANDIDATE` を当てていた。"
+        "**2026-09-22 裁定 §4 はその判断を受け取ったうえで、語彙の方を直すことを指示した** — "
+        "`POSITIVE_EXPLORATORY_SIGNAL_NOT_DECISION_GRADE` を追加し、T5 をそこへ降格する。"
+        "**これは私が事後に選んだ緩和ではなく、Human + ChatGPT が下した降格である**"
+    ),
+    "cycle_qualifier": (
+        f"**この cycle が生んだあらゆる数値に `{prereg.CYCLE_QUALIFIER}` がかかる。** "
+        "track 単位の status ではなく cycle 全体の性質であり、"
+        "`prereg.FREEZE_PROVENANCE` が凍結 → 実行 → 訂正の 3 状態を持つ"
     ),
 }
 
@@ -131,7 +139,16 @@ VERDICTS: Final[dict[str, dict[str, Any]]] = {
         ),
     },
     "T5": {
-        "status": prereg.track_status("T5", "MARGINAL_DEVELOPMENT_CANDIDATE"),
+        "status": prereg.track_status("T5", "POSITIVE_EXPLORATORY_SIGNAL_NOT_DECISION_GRADE"),
+        "superseded_status": prereg.track_status("T5", "MARGINAL_DEVELOPMENT_CANDIDATE"),
+        "downgraded_by": (
+            "2026-09-22 Human + ChatGPT 裁定 §4 — "
+            "**`MARGINAL_DEVELOPMENT_CANDIDATE` としては扱わない。** "
+            "私が報告した検出力の測定（permutation p = 0.314、null 95%tile +1.13、"
+            "検出下限 1.321 > 実測 +0.838）を受けた降格である。"
+            "旧 status は削除せず、何がどう変わったかが読めるように残す"
+        ),
+        "scope": prereg.POSITIVE_EXPLORATORY_SCOPE,
         "failure_class": "UNDERPOWERED_FOR_CONFIRMATORY_CLAIM_NOT_A_NEGATIVE_CLASS",
         "why": (
             "**5 本で唯一 net が正。** 近 span（2021-04-28 … 2023-06-14、555 日 = 2.20 年）で "
@@ -155,7 +172,17 @@ VERDICTS: Final[dict[str, dict[str, Any]]] = {
             "**(c) 零情報 null の net Sharpe は 95 パーセンタイルで +1.13** に達し、"
             "実測 +0.838 はその内側に収まる"
         ),
-        "why_it_is_still_a_candidate": (
+        "why_it_is_not_promoted": (
+            "**裁定 §C は T5 について追加実行を禁じた。** 理由として挙がったのは "
+            "permutation p ≈ 0.314 / null 95 パーセンタイル内 / 長 span 平坦 / "
+            "USD 集中 / top-day 集中 / **結果を見た後の nuisance 定数選択** / "
+            "現行 vintage の TIC 改訂留保 — いずれも本報告が自分で測って出した事実である。"
+            "**ただし TIC / capital-flow の方向そのものを family closure にはしない。** "
+            "genuine historical vintage data、独立した flow source、"
+            "または実質的に異なる positioning / flow 情報が得られたときは、"
+            "**それは新しい hypothesis であって、この track の救済ではない**"
+        ),
+        "why_the_structure_was_still_worth_recording": (
             "**それでも『開発に値しない』ではない**（裁定の "
             "`UNDERPOWERED_FOR_CONFIRMATORY_CLAIM != NOT_WORTH_DEVELOPING`）。"
             "残す理由は測れた Sharpe ではなく、**Sharpe と独立に成り立つ構造**である — "
@@ -267,10 +294,28 @@ MULTI_SOURCE: Final[str] = (
 
 
 def summary() -> dict[str, Any]:
+    """**3 つを別々に数える。** 混ぜると「正だった」が「候補だ」に化ける。
+
+    `observed_net_positive` は測定の記録、`development_candidates` は昇格、
+    `confirmed` は確認である。本 cycle では 1 / 0 / 0 になる。
+    """
     return {
+        "cycle_qualifier": prereg.CYCLE_QUALIFIER,
         "verdicts": {track: row["status"] for track, row in VERDICTS.items()},
-        "net_positive": [
-            t for t, r in VERDICTS.items() if "MARGINAL" in r["status"] or "STRONG" in r["status"]
+        #: 観測として net が正だった track（**昇格ではない**）
+        "observed_net_positive": [
+            track
+            for track, row in VERDICTS.items()
+            if "POSITIVE_EXPLORATORY_SIGNAL" in row["status"]
+            or "MARGINAL_DEVELOPMENT_CANDIDATE" in row["status"]
+            or "STRONG_DEVELOPMENT_CANDIDATE" in row["status"]
+        ],
+        #: development candidate へ昇格した track（裁定 §4 で T5 は外れた）
+        "development_candidates": [
+            track
+            for track, row in VERDICTS.items()
+            if "MARGINAL_DEVELOPMENT_CANDIDATE" in row["status"]
+            or "STRONG_DEVELOPMENT_CANDIDATE" in row["status"]
         ],
         "confirmed": [],
         "engineering": ENGINEERING_FINDING["status"],

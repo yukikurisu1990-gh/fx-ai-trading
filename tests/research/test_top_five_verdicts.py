@@ -65,8 +65,13 @@ class TestEveryVerdictUsesTheFrozenVocabulary:
             if "NOT_SUPPORTED" in row["status"]:
                 assert any(name in row["failure_class"] for name in prereg.NEGATIVE_CLASSES), track
 
-    def test_exactly_one_track_is_net_positive(self) -> None:
-        assert verdicts.summary()["net_positive"] == ["T5"]
+    def test_exactly_one_track_was_observed_net_positive(self) -> None:
+        assert verdicts.summary()["observed_net_positive"] == ["T5"]
+
+    def test_no_track_was_promoted_to_a_development_candidate(self) -> None:
+        """**観測と昇格を混ぜない。** 裁定 §4 で T5 は昇格から外れた。"""
+        assert verdicts.summary()["development_candidates"] == []
+        assert verdicts.summary()["confirmed"] == []
 
 
 class TestTheVerdictsMatchTheMeasurements:
@@ -224,14 +229,36 @@ class TestTheDocumentMatchesTheArtefact:
 class TestTheVerdictsDoNotOverclaim:
     def test_t5_is_not_presented_as_evidence(self) -> None:
         row = verdicts.VERDICTS["T5"]
-        assert "MARGINAL_DEVELOPMENT_CANDIDATE" in row["status"]
+        assert "POSITIVE_EXPLORATORY_SIGNAL_NOT_DECISION_GRADE" in row["status"]
         assert row["failure_class"].startswith("UNDERPOWERED_FOR_CONFIRMATORY_CLAIM")
         assert "区別がつかない" in row["why_marginal_is_not_evidence"]
         assert "0.314" in row["why_marginal_is_not_evidence"]
 
-    def test_t5_keeps_the_reason_it_is_still_a_candidate_separate(self) -> None:
+    def test_t5_is_not_a_development_candidate_any_more(self) -> None:
+        """2026-09-22 裁定 §4 の降格。**旧 status は消さずに残す。**"""
+        row = verdicts.VERDICTS["T5"]
+        assert "MARGINAL_DEVELOPMENT_CANDIDATE" not in row["status"]
+        assert "MARGINAL_DEVELOPMENT_CANDIDATE" in row["superseded_status"]
+        assert "裁定" in row["downgraded_by"]
+
+    def test_the_positive_exploratory_scope_says_all_four_things(self) -> None:
+        """記録する / confirmed としない / 昇格しない / fresh へ進めない。"""
+        scope = verdicts.VERDICTS["T5"]["scope"]
+        assert scope is prereg.POSITIVE_EXPLORATORY_SCOPE
+        assert set(scope) == {"records", "does_not_claim", "does_not_promote", "does_not_advance"}
+        assert "edge confirmed とはしない" in scope["does_not_claim"]
+        assert "fresh confirmation へ進めない" in scope["does_not_advance"]
+
+    def test_t5_records_why_it_is_not_promoted(self) -> None:
+        text = verdicts.VERDICTS["T5"]["why_it_is_not_promoted"]
+        assert "追加実行を禁じた" in text
+        #: **family closure にはしない** — 将来の新 hypothesis を閉じない。
+        assert "family closure にはしない" in text
+        assert "救済ではない" in text
+
+    def test_t5_keeps_the_structural_observation_separate(self) -> None:
         """**残す理由は Sharpe ではない**と書いてあること（裁定 §37）。"""
-        text = verdicts.VERDICTS["T5"]["why_it_is_still_a_candidate"]
+        text = verdicts.VERDICTS["T5"]["why_the_structure_was_still_worth_recording"]
         assert "Sharpe ではなく" in text
         assert "検出力が無い" in text
 
@@ -251,8 +278,31 @@ class TestTheVerdictsDoNotOverclaim:
 
     def test_the_shared_caveats_are_not_hidden_inside_one_track(self) -> None:
         assert "carry_leg_absent_on_both_spans" in verdicts.SHARED_CAVEATS
-        assert "vocabulary_gap" in verdicts.SHARED_CAVEATS
+        assert "vocabulary_gap_closed_by_ruling" in verdicts.SHARED_CAVEATS
         assert "seen_development_only" in verdicts.SHARED_CAVEATS
+
+    def test_the_cycle_qualifier_applies_to_every_number(self) -> None:
+        """**track 単位ではなく cycle 全体にかかる**（裁定 §2 / §A）。"""
+        assert prereg.CYCLE_QUALIFIER in verdicts.SHARED_CAVEATS["cycle_qualifier"]
+        assert prereg.CYCLE_QUALIFIER.startswith("CORRECTED_AFTER_RESULTS_WERE_SEEN")
+
+    def test_the_three_freezes_are_all_recorded(self) -> None:
+        """凍結 → 実行 → 訂正。**1 つだけ載せると「1 回凍結して 1 回走らせた」と読まれる。**"""
+        stages = [row["stage"] for row in prereg.FREEZE_PROVENANCE]
+        assert stages == ["INITIAL_FREEZE", "EXECUTION_FREEZE", "CORRECTED_FREEZE"]
+        by_stage = {row["stage"]: row for row in prereg.FREEZE_PROVENANCE}
+        assert by_stage["INITIAL_FREEZE"]["digest"] == prereg.SUPERSEDED_FREEZE["digest"]
+        assert by_stage["EXECUTION_FREEZE"]["digest"] == prereg.DIGEST_AS_EXECUTED
+        assert by_stage["CORRECTED_FREEZE"]["status"] == prereg.CYCLE_QUALIFIER
+
+    def test_no_correction_was_deleted_or_weakened(self) -> None:
+        """裁定 §A — C-1 / C-2 / C-3 を削除・弱化しない。"""
+        record = prereg.POST_EXECUTION_CORRECTIONS
+        by_id = {row["id"]: row for row in record["corrections"]}
+        assert set(by_id) == {"C-1", "C-2", "C-3"}
+        assert by_id["C-1"]["kind"] == "LEAKAGE_CLOSURE"
+        assert "ある" in by_id["C-2"]["discretion"]
+        assert "実行前に閉じているべきだった" in record["what_this_does_not_excuse"]
 
     def test_the_method_finding_is_recorded_separately_from_the_alpha_verdicts(self) -> None:
         """**alpha を救うための発見ではない**ので、分けて持つ。"""

@@ -51,7 +51,7 @@
    "multiplicity_note": "同じ規則でも track ごとに帰無通過確率が違う（cost drag が違うため）。低 turnover の track はノイズでも通りやすい。**Stage 2 へ自動進行した事実を報告するときは、その track の帰無通過確率を必ず添える**"
   }
  },
- "freeze_digest": "8279f6b55112ff953cd9bf01b584447bc53b9db5b6745dd1cc9cd8d1501f3a3f",
+ "freeze_digest": "0d1f3b118fc86f87c5e87d7623b76df1e8e9d1e99ab82e4f87dc85ff2654e24f",
  "null_calibration": {
   "draws": 500,
   "joint_pass_and_t_rate": 0.244,

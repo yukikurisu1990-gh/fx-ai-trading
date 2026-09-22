@@ -11,6 +11,39 @@ Authority: 2026-09-21 Human + ChatGPT 裁定 §53 / §54
 > すなわち本 cycle は「どの情報源に edge があるか」を決着させていない。
 > **決着しなかったこと自体が、この窓では決着できないという測定結果である。**
 
+
+> ## 2026-09-22 裁定による更新
+>
+> **cycle 全体に `CORRECTED_AFTER_RESULTS_WERE_SEEN_NOT_A_CLEAN_PREREGISTERED_RUN` が
+> authoritative qualifier としてかかる。** track 単位の status ではなく、
+> **この cycle が生んだあらゆる数値**にかかる。C-1 / C-2 / C-3 は削除も弱化もしない。
+>
+> **凍結は 3 段階ある**（`prereg.FREEZE_PROVENANCE`）:
+>
+> | stage | digest | 状態 |
+> | --- | --- | --- |
+> | INITIAL_FREEZE | `29ba80d6…` | `SUPERSEDED_PRE_EXECUTION`（alpha を 1 本も見る前） |
+> | EXECUTION_FREEZE | `28100ebe…` | `DIGEST_AS_EXECUTED`（5 本を走らせた設計） |
+> | CORRECTED_FREEZE | 現 digest | `CORRECTED_AFTER_RESULTS_WERE_SEEN…`（報告の数値はこれ） |
+>
+> **T5 は降格された。** 旧 `MARGINAL_DEVELOPMENT_CANDIDATE` →
+> **`T5_S26_POSITIVE_EXPLORATORY_SIGNAL_NOT_DECISION_GRADE`**。
+> 意味は 4 つに限られる — **observed net positive は記録する / edge confirmed とはしない /
+> development candidate へ昇格しない / fresh confirmation へ進めない。**
+>
+> 本報告は「凍結語彙に『正だが確認できない』を表す token が無い」ことを欠落として記録し、
+> 事後に語彙を足すのは post-hoc だとして `MARGINAL` を当てていた。
+> **裁定はその判断を受け取ったうえで、語彙の方を直すことを指示した。**
+> これは私が事後に選んだ緩和ではなく、Human + ChatGPT が下した降格である。
+>
+> **T1〜T4 の低 turnover redesign / horizon smoothing による救済は禁止された**（§B）。
+> 「gross positive but cost-dominated」は**今後の candidate prior には使えるが、
+> 同じ signal の救済実験には使わない**。
+>
+> **T5 も追加実行しない**（§C）。ただし **TIC / capital-flow の方向そのものは
+> family closure にしない** — genuine historical vintage data、独立した flow source、
+> 実質的に異なる positioning / flow 情報が得られたときは**新しい hypothesis** になり得る。
+
 ---
 
 ## 1. Identity
@@ -19,7 +52,7 @@ Authority: 2026-09-21 Human + ChatGPT 裁定 §53 / §54
 | --- | --- |
 | PR | **#490**（branch `research/m15-top-five-freeze`） |
 | 実行時 freeze digest | `28100ebedfea45765371585df5c4308fee261e2496a9798acca79c920158962c` |
-| 現在の freeze digest | `8279f6b55112ff953cd9bf01b584447bc53b9db5b6745dd1cc9cd8d1501f3a3f` |
+| 現在の freeze digest | `0d1f3b118fc86f87c5e87d7623b76df1e8e9d1e99ab82e4f87dc85ff2654e24f` |
 | 旧 freeze（履歴保持） | `29ba80d68a5462fe015a6f2566d3c0b63319d0549de7b9a4d34a890f2339b1ca` — `SUPERSEDED_PRE_EXECUTION` |
 | merge SHA | **無し（未 merge）** — 下の「なぜ自動 merge しなかったか」を読むこと |
 | CI | `413b1dd` で **green**（test 10m55s / contract-tests 57s）。本文書の追記コミットは次の head |
@@ -259,7 +292,7 @@ verdict: `T3_S02_NOT_SUPPORTED_IN_SEEN_DEVELOPMENT`（長 span は `DATA_NOT_DEC
 | maxDD | −0.595 | **−0.098** |
 | leverage / margin（実行時） | 2.77x / 13.9% | **2.51x / 12.5%** |
 | rename gate | DISTINCT（最悪 0.180） | **DISTINCT**（horizon 整合で最悪 0.398、閾値 0.8） |
-| **verdict** | `T5_S26_MARGINAL_DEVELOPMENT_CANDIDATE` | |
+| **verdict** | `T5_S26_POSITIVE_EXPLORATORY_SIGNAL_NOT_DECISION_GRADE`（旧 `T5_S26_MARGINAL_DEVELOPMENT_CANDIDATE`、2026-09-22 裁定 §4 で降格） | |
 
 **`MARGINAL` を「証拠がある」と読んではならない。** §7 を読むこと。
 
@@ -395,7 +428,8 @@ PnL 相関はすべて **|r| ≤ 0.073**（T3 の H1/H2 は定義上の鏡像 �
 ## 11. 候補の分類
 
 - **Positive candidates:** **無し**（検出下限を超えた正の測定が存在しない）
-- **Marginal candidates:** **T5 · S26** — `MARGINAL_DEVELOPMENT_CANDIDATE`。
+- **Marginal candidates:** **無し**（2026-09-22 裁定 §4 で T5 は昇格から外れた）
+- **Positive exploratory, not decision grade:** **T5 · S26** — `POSITIVE_EXPLORATORY_SIGNAL_NOT_DECISION_GRADE`。**昇格ではなく観測の記録**である。
   残す根拠は測れた Sharpe ではなく、**Sharpe と独立に成り立つ構造**である:
   (1) turnover が 5 本で最小、cost 2 倍でも崩れない（**4 本を殺した失敗様式に構造的に強い**）、
   (2) incremental IC が 5 本で最大、(3) 情報源が価格に対して外生、
@@ -504,7 +538,7 @@ verdict は 1 つも変わらない。変わったのは理由の書き方
 | S06 commodity terms of trade | 未検証 | `NOT_SUPPORTED_IN_SEEN_DEVELOPMENT`（T1 超で負） |
 | S02 sovereign curve shape | 未検証 | 近 `NOT_SUPPORTED` / 長 `DATA_NOT_DECISION_GRADE` |
 | S10 currency-network propagation | 未検証 | `NOT_SUPPORTED_IN_SEEN_DEVELOPMENT`（最悪 net） |
-| S26 international capital flow | 未検証 | `MARGINAL_DEVELOPMENT_CANDIDATE`（未確認） |
+| S26 international capital flow | 未検証 | `POSITIVE_EXPLORATORY_NOT_DECISION_GRADE` |
 | S07 / S25 | 本 cycle 対象外 | 変更なし |
 
 ## 18. Remaining Expected-Return Sources

@@ -71,6 +71,45 @@ SUPERSEDED_FREEZE: Final[dict[str, str]] = {
     ),
 }
 
+#: **凍結は 3 段階ある。** 裁定 §A は 3 つすべての provenance を残すことを求めている。
+#: digest を 1 つだけ載せると、後から読む人が「1 回凍結して 1 回走らせた」と読む。
+#: 実際には **凍結 → 実行 → 訂正** の 3 状態があり、報告の数値は 3 つ目のものである。
+FREEZE_PROVENANCE: Final[tuple[dict[str, str], ...]] = (
+    {
+        "stage": "INITIAL_FREEZE",
+        "digest": "29ba80d68a5462fe015a6f2566d3c0b63319d0549de7b9a4d34a890f2339b1ca",
+        "status": "SUPERSEDED_PRE_EXECUTION",
+        "commit": "0702d97",
+        "when": "2026-09-21 裁定を反映する前",
+        "what_changed_next": (
+            "T3 の符号が単一仮説から dual-hypothesis へ、leverage の解釈が三概念の分離と "
+            "target-vol scenario へ、acquisition が未承認から承認済みへ変わった。"
+            "**この時点で alpha は 1 本も見られていない**ので post-result rescue ではない"
+        ),
+    },
+    {
+        "stage": "EXECUTION_FREEZE",
+        "digest": "28100ebedfea45765371585df5c4308fee261e2496a9798acca79c920158962c",
+        "status": "DIGEST_AS_EXECUTED",
+        "when": "5 本を走らせたときの設計",
+        "what_changed_next": (
+            "payload の覆う範囲を広げ（`SIGNAL_CONSTANTS` を追加）、"
+            "そののち `POST_EXECUTION_CORRECTIONS` の C-1 / C-2 / C-3 が入った"
+        ),
+    },
+    {
+        "stage": "CORRECTED_FREEZE",
+        "digest": "COMPUTED_BY_freeze_digest_AT_HEAD",
+        "status": "CORRECTED_AFTER_RESULTS_WERE_SEEN_NOT_A_CLEAN_PREREGISTERED_RUN",
+        "when": "レビュー指摘を反映した後（報告の数値はこれ）",
+        "what_changed_next": "本 cycle はここで終了。次の cycle は別の凍結である",
+    },
+)
+
+#: **cycle 全体にかかる authoritative qualifier**（裁定 §2 / §A）。
+#: track 単位の status ではなく、**この cycle が生んだあらゆる数値**にかかる。
+CYCLE_QUALIFIER: Final[str] = "CORRECTED_AFTER_RESULTS_WERE_SEEN_NOT_A_CLEAN_PREREGISTERED_RUN"
+
 #: **実行後に入れた訂正の記録。** 2026-09-21 裁定は「結果を見る前に凍結」を求めており、
 #: ここに並ぶ 3 件はいずれも **結果を見た後**に入った。だから「凍結どおり走った」とは書けない。
 #: 何がどちらの性質かを分けて残す — leakage の閉塞は入れないと結果が無効になるが、
@@ -759,7 +798,22 @@ TRACK_STATUS_SUFFIXES: Final[tuple[str, ...]] = (
     "NOT_SUPPORTED_IN_SEEN_DEVELOPMENT",
     "DATA_NOT_DECISION_GRADE",
     "DATA_UNAVAILABLE_WITH_CURRENT_FREE_SOURCES",
+    #: **2026-09-22 裁定 §4 / §A で追加。** 本 cycle の報告は「凍結語彙に
+    #: 『正だが確認できない』を表す token が無い」ことを欠落として記録し、
+    #: 結果を見た後に語彙を足すのは post-hoc だとして `MARGINAL` を当てていた。
+    #: **裁定はその判断を受け取ったうえで、語彙の方を直すことを指示した。**
+    #: これは私が事後に選んだ緩和ではなく、Human + ChatGPT が下した降格である。
+    "POSITIVE_EXPLORATORY_SIGNAL_NOT_DECISION_GRADE",
 )
+
+#: `POSITIVE_EXPLORATORY_SIGNAL_NOT_DECISION_GRADE` が意味すること / しないこと。
+#: **この 4 行は裁定 §A の逐語要件である。**
+POSITIVE_EXPLORATORY_SCOPE: Final[dict[str, str]] = {
+    "records": "observed net positive は記録する",
+    "does_not_claim": "edge confirmed とはしない",
+    "does_not_promote": "development candidate への昇格もしない",
+    "does_not_advance": "fresh confirmation へ進めない",
+}
 
 
 def track_status(track: str, suffix: str) -> str:
@@ -876,6 +930,9 @@ def _payload() -> dict[str, Any]:
         "acquisition": ACQUISITION,
         "superseded_freeze": SUPERSEDED_FREEZE,
         "post_execution_corrections": POST_EXECUTION_CORRECTIONS,
+        "freeze_provenance": [dict(row) for row in FREEZE_PROVENANCE],
+        "cycle_qualifier": CYCLE_QUALIFIER,
+        "positive_exploratory_scope": POSITIVE_EXPLORATORY_SCOPE,
         "track_status_suffixes": list(TRACK_STATUS_SUFFIXES),
         "multi_source_portfolio": MULTI_SOURCE_PORTFOLIO,
         "cross_track_diagnostic": list(CROSS_TRACK_DIAGNOSTIC),
@@ -925,6 +982,9 @@ __all__ = [
     "SPANS",
     "STAGE_1_ONLY",
     "STAGE_2_ELIGIBILITY",
+    "CYCLE_QUALIFIER",
+    "FREEZE_PROVENANCE",
+    "POSITIVE_EXPLORATORY_SCOPE",
     "POST_EXECUTION_CORRECTIONS",
     "SUPERSEDED_FREEZE",
     "TIMESTAMP_RULE",

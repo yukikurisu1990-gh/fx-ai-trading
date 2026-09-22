@@ -32,7 +32,7 @@ DIGEST_AS_EXECUTED = "28100ebedfea45765371585df5c4308fee261e2496a9798acca79c9201
 #: の 3 件（C-1 leakage 閉塞 / C-2 単位バグ + 新定数 / C-3 欠けていた null）を入れたため。
 #: **ここを更新するときは、必ず `POST_EXECUTION_CORRECTIONS` に理由を足すこと。**
 #: 理由を書かずに digest を追従させると、凍結が凍結でなくなる。
-CURRENT_DIGEST = "8279f6b55112ff953cd9bf01b584447bc53b9db5b6745dd1cc9cd8d1501f3a3f"
+CURRENT_DIGEST = "0d1f3b118fc86f87c5e87d7623b76df1e8e9d1e99ab82e4f87dc85ff2654e24f"
 
 #: 2026-09-21 裁定で差し替えた旧 freeze。**削除せず履歴として保持する。**
 SUPERSEDED_DIGEST = "29ba80d68a5462fe015a6f2566d3c0b63319d0549de7b9a4d34a890f2339b1ca"
@@ -557,7 +557,8 @@ class TestTheRulingOfTwentyFirstIsReflected:
             prereg.track_status("T1", "EDGE_CONFIRMED")
 
     def test_all_five_status_suffixes_are_available(self) -> None:
-        assert len(prereg.TRACK_STATUS_SUFFIXES) == 5
+        #: 2026-09-22 裁定 §4 で POSITIVE_EXPLORATORY_SIGNAL_NOT_DECISION_GRADE が加わって 6。
+        assert len(prereg.TRACK_STATUS_SUFFIXES) == 6
         for track in prereg.TRACKS:
             for suffix in prereg.TRACK_STATUS_SUFFIXES:
                 assert prereg.track_status(track, suffix).startswith(track)

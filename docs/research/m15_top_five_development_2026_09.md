@@ -6,7 +6,7 @@
 Authority: 2026-09-21 Human + ChatGPT 裁定
 実行時 freeze digest（`DIGEST_AS_EXECUTED`）:
 **`28100ebedfea45765371585df5c4308fee261e2496a9798acca79c920158962c`**
-現在の freeze digest: **`8279f6b55112ff953cd9bf01b584447bc53b9db5b6745dd1cc9cd8d1501f3a3f`**
+現在の freeze digest: **`0d1f3b118fc86f87c5e87d7623b76df1e8e9d1e99ab82e4f87dc85ff2654e24f`**
 （旧 `29ba80d6…` は `SUPERSEDED_PRE_EXECUTION`）
 
 > **digest は実行後に 2 度動いている。** 1 度目は payload の覆う範囲を広げたため、
@@ -34,6 +34,39 @@ Authority: 2026-09-21 Human + ChatGPT 裁定
 > 初稿は「fresh pool 未読」と書いていたが、**C-1 の leg についてはそれが偽だった**。
 > 現在は塞がっており、§6 の表はその修正後の状態である。
 
+
+> ## 2026-09-22 裁定による更新
+>
+> **cycle 全体に `CORRECTED_AFTER_RESULTS_WERE_SEEN_NOT_A_CLEAN_PREREGISTERED_RUN` が
+> authoritative qualifier としてかかる。** track 単位の status ではなく、
+> **この cycle が生んだあらゆる数値**にかかる。C-1 / C-2 / C-3 は削除も弱化もしない。
+>
+> **凍結は 3 段階ある**（`prereg.FREEZE_PROVENANCE`）:
+>
+> | stage | digest | 状態 |
+> | --- | --- | --- |
+> | INITIAL_FREEZE | `29ba80d6…` | `SUPERSEDED_PRE_EXECUTION`（alpha を 1 本も見る前） |
+> | EXECUTION_FREEZE | `28100ebe…` | `DIGEST_AS_EXECUTED`（5 本を走らせた設計） |
+> | CORRECTED_FREEZE | 現 digest | `CORRECTED_AFTER_RESULTS_WERE_SEEN…`（報告の数値はこれ） |
+>
+> **T5 は降格された。** 旧 `MARGINAL_DEVELOPMENT_CANDIDATE` →
+> **`T5_S26_POSITIVE_EXPLORATORY_SIGNAL_NOT_DECISION_GRADE`**。
+> 意味は 4 つに限られる — **observed net positive は記録する / edge confirmed とはしない /
+> development candidate へ昇格しない / fresh confirmation へ進めない。**
+>
+> 本報告は「凍結語彙に『正だが確認できない』を表す token が無い」ことを欠落として記録し、
+> 事後に語彙を足すのは post-hoc だとして `MARGINAL` を当てていた。
+> **裁定はその判断を受け取ったうえで、語彙の方を直すことを指示した。**
+> これは私が事後に選んだ緩和ではなく、Human + ChatGPT が下した降格である。
+>
+> **T1〜T4 の低 turnover redesign / horizon smoothing による救済は禁止された**（§B）。
+> 「gross positive but cost-dominated」は**今後の candidate prior には使えるが、
+> 同じ signal の救済実験には使わない**。
+>
+> **T5 も追加実行しない**（§C）。ただし **TIC / capital-flow の方向そのものは
+> family closure にしない** — genuine historical vintage data、独立した flow source、
+> 実質的に異なる positioning / flow 情報が得られたときは**新しい hypothesis** になり得る。
+
 ---
 
 ## 0. 結論を先に
@@ -46,7 +79,7 @@ Authority: 2026-09-21 Human + ChatGPT 裁定
 | T2 | S06 | 原油 | `T2_S06_NOT_SUPPORTED_IN_SEEN_DEVELOPMENT` |
 | T3 | S02 | 金利 curve 形状 | `T3_S02_NOT_SUPPORTED_IN_SEEN_DEVELOPMENT`（長 span は `DATA_NOT_DECISION_GRADE`） |
 | T4 | S10 | 通貨間伝播 | `T4_S10_NOT_SUPPORTED_IN_SEEN_DEVELOPMENT` |
-| **T5** | **S26** | **越境証券 flow** | **`T5_S26_MARGINAL_DEVELOPMENT_CANDIDATE`** |
+| **T5** | **S26** | **越境証券 flow** | **`T5_S26_POSITIVE_EXPLORATORY_SIGNAL_NOT_DECISION_GRADE`（旧 `T5_S26_MARGINAL_DEVELOPMENT_CANDIDATE`、2026-09-22 裁定 §4 で降格）** |
 
 **T5 の status を「証拠がある」と読んではならない。** 凍結した `TRACK_STATUS_SUFFIXES` には
 **「正だが、この検出力では確認できない」**を表す token が無く、結果を見た後に語彙を足すのは
@@ -185,7 +218,7 @@ H-003 / Track 1 の言い換えではない。ただし**別物であること�
 
 ### 2.5 T5（越境証券 flow）— net 正。ただし零情報 null と区別がつかない
 
-`T5_S26_MARGINAL_DEVELOPMENT_CANDIDATE`。窓は **2021-04-28 … 2023-06-14、555 日 = 2.20 年**。
+`T5_S26_POSITIVE_EXPLORATORY_SIGNAL_NOT_DECISION_GRADE`（旧 `T5_S26_MARGINAL_DEVELOPMENT_CANDIDATE`、2026-09-22 裁定 §4 で降格）。窓は **2021-04-28 … 2023-06-14、555 日 = 2.20 年**。
 
 **支持する側の事実:**
 
