@@ -22,13 +22,16 @@ from typing import Any, Final
 import numpy as np
 import pandas as pd
 
-from scripts.research.next_five import prereg
+from scripts.research.next_five import prereg, series_map
 
 REPO_ROOT: Final[Path] = Path(__file__).resolve().parents[3]
 DATA_DIR: Final[Path] = REPO_ROOT / "artifacts/track_a_scratch/next_five"
 
 #: 通貨 → その通貨の series に使う接頭辞。
 CURRENCIES: Final[tuple[str, ...]] = prereg.UNIVERSE
+
+#: 1 日に必要な通貨数（凍結済みの breadth 規則）。**data 不足を理由に緩めない。**
+MIN_CURRENCIES: Final[int] = 3
 
 
 class SignalUnavailableError(RuntimeError):
@@ -132,9 +135,28 @@ def _panel_from_currency_series(getter, index: pd.DatetimeIndex, *, label: str) 
 
 
 def _change(series: pd.Series, months: int, *, log: bool = False) -> pd.Series:
-    """低頻度 series の変化。月次 index 前提で `months` 期前との差を取る。"""
-    base = np.log(series.where(series > 0)) if log else series
-    return base - base.shift(months)
+    """**n か月前の時点で観測されていた値**との差（FREEZE_AMENDMENT_PLUMBING の P-3）。
+
+    初版は `shift(months)`、つまり「n 期前」を取っていた。週次 series では 12 期前が
+    12 週前になり、凍結文の「12 か月変化」と一致しなかった。月次 series では結果は同じ。
+    """
+    base = np.log(series.where(series > 0)) if log else series.astype(float)
+    base = base.dropna().sort_index()
+    if base.empty:
+        return base
+    targets = base.index - pd.DateOffset(months=months)
+    past = base.reindex(base.index.union(targets)).sort_index().ffill().reindex(targets)
+    #: 最初の観測より前を指したら欠損（外挿しない）
+    past[targets < base.index[0]] = np.nan
+    return pd.Series(base.to_numpy() - past.to_numpy(), index=base.index)
+
+
+def _lag_kwargs(track: str, currency: str) -> dict[str, int]:
+    """series ごとの公表 lag（series_map に凍結）。**月次は m+k 月末、週次・日次は n 営業日。**"""
+    lag = series_map.SERIES_MAP[track][currency]["lag"]
+    if lag["kind"] == "month_end_offset":
+        return {"vintage_offset_months": int(lag["months"])}
+    return {"lag_business_days": int(lag["n"])}
 
 
 # ----------------------------------------------------------------------
@@ -148,7 +170,7 @@ def u1_scores(index: pd.DatetimeIndex, overrides: dict[str, Any] | None = None) 
     def getter(currency: str) -> pd.Series:
         raw = _load(f"trade_{currency.lower()}")
         changed = _change(raw, months)
-        aligned = _align(changed, index, vintage_offset_months=2, staleness_days=staleness)
+        aligned = _align(changed, index, staleness_days=staleness, **_lag_kwargs("U1", currency))
         return _z(aligned, window)
 
     #: 貿易収支が改善した通貨は上昇（凍結した向き）。
@@ -166,7 +188,7 @@ def u2_scores(index: pd.DatetimeIndex, overrides: dict[str, Any] | None = None) 
     def getter(currency: str) -> pd.Series:
         raw = _load(f"balance_sheet_{currency.lower()}")
         changed = _change(raw, months, log=True)
-        aligned = _align(changed, index, lag_business_days=2, staleness_days=staleness)
+        aligned = _align(changed, index, staleness_days=staleness, **_lag_kwargs("U2", currency))
         return _z(aligned, window)
 
     #: 相対的に速く拡大した通貨は下落 → 符号を反転する（凍結した向き）。
@@ -201,7 +223,7 @@ def u4_scores(index: pd.DatetimeIndex, overrides: dict[str, Any] | None = None) 
         raw = _load(f"reserves_{currency.lower()}")
         #: 凍結どおり **3 か月変化**（`change_window_months` とは別の、機構側の定数）
         changed = _change(raw, 3, log=True)
-        aligned = _align(changed, index, vintage_offset_months=1, staleness_days=staleness)
+        aligned = _align(changed, index, staleness_days=staleness, **_lag_kwargs("U4", currency))
         return _z(aligned, window)
 
     #: 準備を積み増した通貨は下落（自国通貨を売っている）→ 符号を反転する。
@@ -244,16 +266,30 @@ def scores_for(
     *,
     overrides: dict[str, Any] | None = None,
 ) -> pd.DataFrame:
-    """driver と感度測定が使う唯一の入口。**連続化規則もここで 1 つに固定する。**"""
+    """driver と感度測定が使う唯一の入口。**連続化規則もここで 1 つに固定する。**
+
+    FREEZE_AMENDMENT_PLUMBING の P-6: 初版は `dropna(how="any")` で、**1 通貨でも欠けた日を
+    落としていた**。mapping できない通貨（例: U2 の GBP）の列は全期間が欠けるので、
+    全日が消えていた。ここでは
+
+    1. その span で観測が 1 つも無い通貨の列を外し、
+    2. **1 日に 3 通貨以上**の score がある日だけを残し（凍結済みの breadth 規則）、
+    3. その日に欠けている通貨は **0（建玉を持たない）** とする。
+    """
     index = built[span]["currency_excess_return"].index
     raw = SCORERS[track](index, overrides)
-    seeded = raw.dropna(how="any")
-    if seeded.empty:
-        return seeded
-    first = index.get_loc(seeded.index[0])
-    last = index.get_loc(seeded.index[-1])
+    raw = raw.loc[:, raw.notna().any()]
+    if raw.empty:
+        return raw
+    enough = raw.notna().sum(axis=1) >= MIN_CURRENCIES
+    if not enough.any():
+        return raw.iloc[0:0]
+    first = index.get_loc(enough[enough].index[0])
+    last = index.get_loc(enough[enough].index[-1])
     contiguous = index[first : last + 1]
-    return raw.reindex(contiguous).ffill().dropna(how="any")
+    window = raw.reindex(contiguous).ffill()
+    window = window[window.notna().sum(axis=1) >= MIN_CURRENCIES]
+    return window.fillna(0.0).reindex(columns=list(CURRENCIES), fill_value=0.0)
 
 
 __all__ = [

@@ -1,0 +1,267 @@
+{
+ "authority": "2026-09-22 第 2 裁定 §28 / §29",
+ "blocked": {},
+ "cycle": "NEXT_FIVE_2026_09",
+ "freeze_digest": "0bc7b198d1564fd1d2da8d4433762d3c0fb7c60bac7ae0526e26dbdae3e9715c",
+ "hard_stop_vocabulary": [
+  "SEMANTIC_MISMATCH",
+  "INSUFFICIENT_BREADTH",
+  "UNRESOLVED_LOOK_AHEAD",
+  "UNRECOVERABLE_TIMING_AMBIGUITY",
+  "PROTECTED_DATA_REQUIREMENT",
+  "NO_REPRODUCIBLE_PUBLIC_SOURCE"
+ ],
+ "passed": [
+  "U1",
+  "U2",
+  "U3",
+  "U4",
+  "U5"
+ ],
+ "returns_used": false,
+ "tracks": {
+  "U1": {
+   "candidate": "S29",
+   "hard_stops": [],
+   "inputs_failed": {},
+   "inputs_ok": [
+    "AUD",
+    "CAD",
+    "CHF",
+    "EUR",
+    "GBP",
+    "JPY",
+    "NZD",
+    "USD"
+   ],
+   "not_mapped": {},
+   "primary_span": "long",
+   "revision_behavior": [
+    "CURRENT_VINTAGE_ONLY_REVISION_CAVEAT"
+   ],
+   "revision_caveat": true,
+   "spans": {
+    "long": {
+     "can_detect_sr_0_5_for_5pct_at_10pct_vol": true,
+     "can_detect_sr_1_0_for_10pct_at_10pct_vol": true,
+     "currencies_with_signal_median": 8,
+     "currencies_with_signal_min": 8,
+     "days": 4333,
+     "detection_floor_mde95": 0.473,
+     "distinct_signal_states": 34517,
+     "expected_turnover_per_unit_gross": 6.5,
+     "first": "1999-06-29",
+     "last": "2016-06-01",
+     "signal_persistence_lag1": 0.9734,
+     "usable": true,
+     "years": 17.19
+    },
+    "recent": {
+     "can_detect_sr_0_5_for_5pct_at_10pct_vol": false,
+     "can_detect_sr_1_0_for_10pct_at_10pct_vol": true,
+     "currencies_with_signal_median": 8,
+     "currencies_with_signal_min": 8,
+     "days": 1019,
+     "detection_floor_mde95": 0.975,
+     "distinct_signal_states": 7467,
+     "expected_turnover_per_unit_gross": 5.89,
+     "first": "2022-01-24",
+     "last": "2025-12-26",
+     "signal_persistence_lag1": 0.9726,
+     "usable": true,
+     "years": 4.04
+    }
+   },
+   "stage_0_passed": true,
+   "track": "U1"
+  },
+  "U2": {
+   "candidate": "S25",
+   "hard_stops": [],
+   "inputs_failed": {},
+   "inputs_ok": [
+    "CAD",
+    "CHF",
+    "EUR",
+    "JPY",
+    "USD"
+   ],
+   "not_mapped": {
+    "AUD": "RBA の統計表が HTTP 403（provider が拒否）",
+    "GBP": "BoE の総資産系列を provider metadata から特定できなかった（IADB はカタログ API を持たない）。推測した code は使わない",
+    "NZD": "RBNZ の統計表が HTTP 403（前 cycle で確認）"
+   },
+   "primary_span": "long",
+   "revision_behavior": [
+    "BALANCE_SHEET_STOCK_REVISIONS_RARE_CURRENT_VINTAGE"
+   ],
+   "revision_caveat": false,
+   "spans": {
+    "long": {
+     "can_detect_sr_0_5_for_5pct_at_10pct_vol": true,
+     "can_detect_sr_1_0_for_10pct_at_10pct_vol": true,
+     "currencies_with_signal_median": 5,
+     "currencies_with_signal_min": 3,
+     "days": 4207,
+     "detection_floor_mde95": 0.48,
+     "distinct_signal_states": 19703,
+     "expected_turnover_per_unit_gross": 9.86,
+     "first": "1999-12-22",
+     "last": "2016-06-01",
+     "signal_persistence_lag1": 0.9772,
+     "usable": true,
+     "years": 16.69
+    },
+    "recent": {
+     "can_detect_sr_0_5_for_5pct_at_10pct_vol": false,
+     "can_detect_sr_1_0_for_10pct_at_10pct_vol": true,
+     "currencies_with_signal_median": 5,
+     "currencies_with_signal_min": 5,
+     "days": 1019,
+     "detection_floor_mde95": 0.975,
+     "distinct_signal_states": 5096,
+     "expected_turnover_per_unit_gross": 4.91,
+     "first": "2022-01-24",
+     "last": "2025-12-26",
+     "signal_persistence_lag1": 0.9563,
+     "usable": true,
+     "years": 4.04
+    }
+   },
+   "stage_0_passed": true,
+   "track": "U2"
+  },
+  "U3": {
+   "candidate": "S27",
+   "hard_stops": [],
+   "inputs_failed": {},
+   "inputs_ok": [
+    "EUR",
+    "JPY",
+    "USD"
+   ],
+   "not_mapped": {},
+   "primary_span": "recent",
+   "revision_behavior": [
+    "STATEMENT_TEXT_NOT_REVISED"
+   ],
+   "revision_caveat": false,
+   "spans": {
+    "long": {
+     "usable": false,
+     "why": "連続した score が無い"
+    },
+    "recent": {
+     "can_detect_sr_0_5_for_5pct_at_10pct_vol": false,
+     "can_detect_sr_1_0_for_10pct_at_10pct_vol": true,
+     "currencies_with_signal_median": 3,
+     "currencies_with_signal_min": 3,
+     "days": 1025,
+     "detection_floor_mde95": 0.972,
+     "distinct_signal_states": 3074,
+     "expected_turnover_per_unit_gross": 10.02,
+     "first": "2022-01-14",
+     "last": "2025-12-26",
+     "signal_persistence_lag1": 0.9562,
+     "usable": true,
+     "years": 4.07
+    }
+   },
+   "stage_0_passed": true,
+   "track": "U3"
+  },
+  "U4": {
+   "candidate": "S31",
+   "hard_stops": [],
+   "inputs_failed": {},
+   "inputs_ok": [
+    "AUD",
+    "CAD",
+    "EUR",
+    "GBP",
+    "JPY",
+    "USD"
+   ],
+   "not_mapped": {
+    "CHF": "ALFRED に TRESEGCHM052N が無い（404）。SNB の balance sheet には外貨投資 / IMF reserve position / SDR が別項目で載っているが、**それらを足して『準備』を自作するのは semantic substitution にあたる**ので使わない。U4 が事前に想定していた能動的な準備運用国の 1 つを失う",
+    "NZD": "ALFRED に TRESEGNZM052N が無い（404）"
+   },
+   "primary_span": "long",
+   "revision_behavior": [
+    "CURRENT_VINTAGE_ONLY_REVISION_CAVEAT"
+   ],
+   "revision_caveat": true,
+   "spans": {
+    "long": {
+     "can_detect_sr_0_5_for_5pct_at_10pct_vol": true,
+     "can_detect_sr_1_0_for_10pct_at_10pct_vol": true,
+     "currencies_with_signal_median": 6,
+     "currencies_with_signal_min": 5,
+     "days": 4333,
+     "detection_floor_mde95": 0.473,
+     "distinct_signal_states": 25791,
+     "expected_turnover_per_unit_gross": 5.86,
+     "first": "1999-06-29",
+     "last": "2016-06-01",
+     "signal_persistence_lag1": 0.9773,
+     "usable": true,
+     "years": 17.19
+    },
+    "recent": {
+     "can_detect_sr_0_5_for_5pct_at_10pct_vol": false,
+     "can_detect_sr_1_0_for_10pct_at_10pct_vol": true,
+     "currencies_with_signal_median": 5,
+     "currencies_with_signal_min": 5,
+     "days": 1042,
+     "detection_floor_mde95": 0.964,
+     "distinct_signal_states": 5200,
+     "expected_turnover_per_unit_gross": 5.4,
+     "first": "2021-12-22",
+     "last": "2025-12-26",
+     "signal_persistence_lag1": 0.9816,
+     "usable": true,
+     "years": 4.13
+    }
+   },
+   "stage_0_passed": true,
+   "track": "U4"
+  },
+  "U5": {
+   "candidate": "S07",
+   "hard_stops": [],
+   "inputs_failed": {},
+   "inputs_ok": [
+    "SPREAD"
+   ],
+   "not_mapped": {},
+   "primary_span": "recent",
+   "revision_behavior": [
+    "MARKET_DATA_NOT_REVISED"
+   ],
+   "revision_caveat": false,
+   "spans": {
+    "long": {
+     "usable": false,
+     "why": "連続した score が無い"
+    },
+    "recent": {
+     "can_detect_sr_0_5_for_5pct_at_10pct_vol": false,
+     "can_detect_sr_1_0_for_10pct_at_10pct_vol": false,
+     "currencies_with_signal_median": 8,
+     "currencies_with_signal_min": 8,
+     "days": 454,
+     "detection_floor_mde95": 1.46,
+     "distinct_signal_states": 2260,
+     "expected_turnover_per_unit_gross": 44.96,
+     "first": "2024-03-28",
+     "last": "2025-12-26",
+     "signal_persistence_lag1": 0.8393,
+     "usable": true,
+     "years": 1.8
+    }
+   },
+   "stage_0_passed": true,
+   "track": "U5"
+  }
+ }
+}

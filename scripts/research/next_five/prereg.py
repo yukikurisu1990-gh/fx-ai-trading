@@ -25,6 +25,8 @@ import hashlib
 import json
 from typing import Any, Final
 
+from scripts.research.next_five import series_map as _series_map
+
 CYCLE: Final[str] = "NEXT_FIVE_2026_09"
 
 AUTHORITY: Final[dict[str, str]] = {
@@ -34,7 +36,7 @@ AUTHORITY: Final[dict[str, str]] = {
     "inventory": "scripts/research/next_five/inventory.py",
 }
 
-WORKFLOW_STATUS: Final[str] = "NEXT_FIVE_FROZEN_AWAITING_EXECUTION"
+WORKFLOW_STATUS: Final[str] = "NEXT_FIVE_FINAL_SET_FROZEN_AWAITING_ALPHA_EXECUTION"
 
 #: 5 本が終わったら **STOP**（裁定 §O）。
 FORBIDDEN_NEXT_STEPS: Final[tuple[str, ...]] = (
@@ -695,6 +697,179 @@ FREEZE_AMENDMENT_GATE_SPLIT: Final[dict[str, str]] = {
 }
 
 
+#: ------------------------------------------------------------------
+#: U3 の語彙表（凍結文「凍結した語彙表による hawkish 語数 − dovish 語数を文書長で割り、
+#: 前回会合からの変化を取る」が参照していながら、中身を列挙していなかったもの）。
+#: **声明の本文を 1 語も数える前に固定した。** 別の語彙は試さない。感度集合も置かない
+#: （語彙の選び直しは threshold tuning と同じ性質の探索になるから）。
+#: 語は政策スタンスの向きが語自体で決まるものに限った（"lower" や "increase" のように
+#: 何が上下するかで向きが変わる語は入れていない）。
+#: ------------------------------------------------------------------
+TONE_LEXICON: Final[dict[str, tuple[str, ...]]] = {
+    "hawkish": (
+        "tighten",
+        "tightening",
+        "tightened",
+        "tighter",
+        "hike",
+        "hikes",
+        "hiked",
+        "hiking",
+        "restrictive",
+        "inflationary",
+        "overheating",
+        "elevated",
+        "persistent",
+        "vigilant",
+        "firming",
+        "upside",
+    ),
+    "dovish": (
+        "ease",
+        "easing",
+        "eased",
+        "cut",
+        "cuts",
+        "cutting",
+        "accommodative",
+        "accommodation",
+        "stimulus",
+        "stimulative",
+        "supportive",
+        "downside",
+        "weak",
+        "weaker",
+        "weakness",
+        "weakening",
+        "subdued",
+        "slack",
+        "patient",
+    ),
+}
+
+#: ------------------------------------------------------------------
+#: **alpha を見る前の 3 度目の凍結修正** — data plumbing と timing（第 2 裁定 §16 / §29）
+#: ------------------------------------------------------------------
+FREEZE_AMENDMENT_PLUMBING: Final[dict[str, Any]] = {
+    "status": "AMENDED_PRE_ALPHA_NO_SIGNAL_HAD_RUN",
+    "authority": "2026-09-22 第 2 裁定 §2–§4 / §16（provider / series / parser の変更）/ §29（未解決の look-ahead は hard stop）",
+    "economic_variables_unchanged": True,
+    "what_changed": (
+        {
+            "id": "P-1",
+            "kind": "SOURCE_MAPPING",
+            "old": "FRED 経由の series（fred.stlouisfed.org。本環境から 19 URL すべて timeout）と、推測した series code",
+            "new": "series_map.SERIES_MAP（provider metadata で定義を確認した exact mapping）",
+            "equivalence_evidence": "各 series を取得のたびに data_access.mapping.check_semantics で検証する",
+        },
+        {
+            "id": "P-2",
+            "kind": "TIMING_LOOK_AHEAD_FIX",
+            "old": "U2 は全通貨に『観測日の 2 営業日後から使う』を当てていた",
+            "new": "週次（Fed / ECB）は 2 営業日後、月次（BoJ / SNB / BoC）は m+2 月末以降",
+            "why": (
+                "月次 series は月初の日付で記録される。そこへ営業日の lag を当てると、"
+                "5 月の値を 5 月初旬に使うことになり、**公表前の値を使う look-ahead** になる。"
+                "凍結時は週次の Fed / ECB だけを想定していた"
+            ),
+        },
+        {
+            "id": "P-3",
+            "kind": "CHANGE_WINDOW_UNIT_FIX",
+            "old": "`_change` は『n 期前』との差を取っていた",
+            "new": "『n か月前の時点で観測されていた値』との差（時刻基準の asof）",
+            "why": (
+                "週次 series（Fed / ECB の総資産）では『12 期前』が 12 週前になり、"
+                "凍結文の『12 か月変化』と一致しなかった。月次 series では結果は変わらない"
+            ),
+        },
+        {
+            "id": "P-4",
+            "kind": "LEXICON_ENUMERATED",
+            "old": "『凍結した語彙表』と書かれていたが、語彙の中身が列挙されていなかった",
+            "new": "TONE_LEXICON（hawkish 16 語 / dovish 19 語）。**声明の本文を 1 語も数える前に固定**",
+        },
+        {
+            "id": "P-6",
+            "kind": "MISSING_CURRENCY_HANDLING",
+            "old": 'scores_for は dropna(how="any") で、1 通貨でも欠けた日を落としていた',
+            "new": "観測の無い通貨の列を外し、1 日 3 通貨以上の日だけ残し、欠けた通貨は 0（建玉なし）",
+            "why": (
+                "mapping できない通貨の列は全期間が欠けるので、初版の規則では全日が消えていた。"
+                "**最低 3 通貨の要件は緩めていない**（2 通貨の demean は 1 方向の賭けになる）"
+            ),
+        },
+        {
+            "id": "P-7",
+            "kind": "SOURCE_ROUTE",
+            "old": "ECB の年別 press 一覧（2024 年に形式変更、2025 年は 404）",
+            "new": "ECB の金融政策決定 archive（press/govcdec/mopo/{year}）の英語版。**同じ公式の声明**",
+        },
+        {
+            "id": "P-5",
+            "kind": "BREADTH_BY_AVAILABILITY",
+            "old": "U4 は G10 全通貨を想定",
+            "new": "同じ定義（IMF の Reserves Excluding Gold）で取れる 6 通貨。CHF と NZD は同一定義の系列が無い",
+            "why": "SNB の項目を足して『準備』を自作するのは semantic substitution にあたるので行わない",
+        },
+    ),
+    "not_changed": (
+        "signal の符号",
+        "horizon",
+        "benchmark",
+        "universe の最低 3 通貨要件",
+        "portfolio construction",
+        "feature definition",
+        "target",
+        "閾値",
+        "cost の扱い",
+    ),
+}
+
+
+#: ------------------------------------------------------------------
+#: **最終 execution set**（第 2 裁定 §24–§27）。**alpha を 1 本も見る前に固定した。**
+#: ------------------------------------------------------------------
+FINAL_EXECUTION_SET: Final[dict[str, Any]] = {
+    "tracks": ("U1", "U2", "U3", "U4", "U5"),
+    "replacements_used": (),
+    "why_no_replacement": (
+        "Stage 0 の再実行（artifacts/research/next_five/stage0_rerun.json、return 不使用）で "
+        "5 本すべてが hard stop に当たらなかった。第 2 裁定 §24 の代替は『Stage 0 不能 track が "
+        "残る場合』に限られるので、使っていない"
+    ),
+    "maximum_alpha_tracks": 5,
+    "known_power_limits": {
+        "U5": (
+            "ICE の license で HY OAS は 2023-09-25 以降しか無く、primary span（recent）で使える日は "
+            "454 日、検出下限 MDE95 は 1.46。**検出力不足は §29 の hard stop ではない**ので実行するが、"
+            "net が正でも零情報 null と区別できない公算が高いことを、結果を見る前に書いておく"
+        ),
+        "U3": "recent span のみ（声明 archive の取得範囲）。MDE95 0.972",
+    },
+    "frozen_components": (
+        "track IDs",
+        "mechanism",
+        "sources",
+        "series",
+        "universe",
+        "dates",
+        "lag",
+        "signal",
+        "direction",
+        "horizon",
+        "benchmark",
+        "control",
+        "portfolio",
+        "costs",
+        "Stage 2 condition",
+        "null diagnostic",
+        "nuisance sensitivities",
+        "verdict logic",
+    ),
+}
+
+
 def track_status(track: str, suffix: str) -> str:
     if suffix not in TRACK_STATUS_SUFFIXES:
         raise ValueError(f"未登録の status: {suffix}")
@@ -736,6 +911,11 @@ def _payload() -> dict[str, Any]:
         "track_status_suffixes": list(TRACK_STATUS_SUFFIXES),
         "freeze_amendment_pre_alpha": FREEZE_AMENDMENT_PRE_ALPHA,
         "freeze_amendment_gate_split": FREEZE_AMENDMENT_GATE_SPLIT,
+        "freeze_amendment_plumbing": FREEZE_AMENDMENT_PLUMBING,
+        "tone_lexicon": {k: list(v) for k, v in TONE_LEXICON.items()},
+        "series_map": _series_map.SERIES_MAP,
+        "final_execution_set": FINAL_EXECUTION_SET,
+        "series_not_mapped": _series_map.NOT_MAPPED,
         "negative_classes": list(NEGATIVE_CLASSES),
         "exploration_disclosure": EXPLORATION_DISCLOSURE,
         "shared_blockers": list(SHARED_BLOCKERS),
@@ -768,8 +948,10 @@ __all__ = [
     "EXECUTION_LAYER",
     "EXECUTION_ORDER",
     "EXPLORATION_DISCLOSURE",
+    "FINAL_EXECUTION_SET",
     "FORBIDDEN_NEXT_STEPS",
     "FREEZE_AMENDMENT_GATE_SPLIT",
+    "FREEZE_AMENDMENT_PLUMBING",
     "FREEZE_AMENDMENT_PRE_ALPHA",
     "FORBIDDEN_RESCUES",
     "INTERPRETATION",
@@ -785,6 +967,7 @@ __all__ = [
     "STAGE_0_OUTCOME",
     "SPANS",
     "STAGE_2_ELIGIBILITY",
+    "TONE_LEXICON",
     "TRACKS",
     "TRACK_STATUS_SUFFIXES",
     "UNIVERSE",
