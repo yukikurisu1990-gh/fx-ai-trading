@@ -318,39 +318,44 @@ def verdict(primary: dict[str, Any], rename_gates: dict[str, Any]) -> dict[str, 
     totals = [v["annual"] for v in decomp["total_economic"].values()]
     spot = decomp["annual_spot_gross"]
     ex_net = decomp["net_ex_financing"]["annual"]
-    enough = n_eff >= prereg.POWER_RULE["min_effective_observations"]
-    failure = None
-    if any(g.get("verdict") == "RENAME" for g in rename_gates.values()):
-        suffix = "RENAME_OF_A_PRIOR_TRACK"
-    elif not decomp["total_sign_consistent_across_all_cells"]:
-        suffix = "FINANCING_NOT_DECISION_GRADE"
-    elif all(t <= 0 for t in totals):
-        suffix = "NOT_SUPPORTED_IN_SEEN_DEVELOPMENT"
-        failure = (
-            "SIGNAL_FAILURE"
-            if spot <= 0
-            else "COST_FAILURE"
-            if ex_net <= 0
-            else "FINANCING_FAILURE"
-        )
-    elif (
-        economics["label"] == "DEVELOPMENT_ECONOMICS_SUPPORTED"
-        and adverse["core_satisfied"]
-        and null["p_value"] <= 0.05
-        and enough
-    ):
-        suffix = "STRONG_EXPLORATORY_CANDIDATE"
-    elif (
-        economics["core_satisfied"]
-        and adverse["core_satisfied"]
-        and null["observed_percentile"] >= 0.80
-        and enough
-    ):
-        suffix = "MARGINAL_EXPLORATORY_CANDIDATE"
-    else:
-        suffix = "POSITIVE_EXPLORATORY_NOT_DECISION_GRADE"
+    enough = bool(np.isfinite(n_eff) and n_eff >= prereg.POWER_RULE["min_effective_observations"])
+
+    def _suffix(power_ok: bool) -> tuple[str, str | None]:
+        if any(g.get("verdict") == "RENAME" for g in rename_gates.values()):
+            return "RENAME_OF_A_PRIOR_TRACK", None
+        if not decomp["total_sign_consistent_across_all_cells"]:
+            return "FINANCING_NOT_DECISION_GRADE", None
+        if all(t <= 0 for t in totals):
+            failure = (
+                "SIGNAL_FAILURE"
+                if spot <= 0
+                else "COST_FAILURE"
+                if ex_net <= 0
+                else "FINANCING_FAILURE"
+            )
+            return "NOT_SUPPORTED_IN_SEEN_DEVELOPMENT", failure
+        if (
+            economics["label"] == "DEVELOPMENT_ECONOMICS_SUPPORTED"
+            and adverse["core_satisfied"]
+            and null["p_value"] <= 0.05
+            and power_ok
+        ):
+            return "STRONG_EXPLORATORY_CANDIDATE", None
+        if (
+            economics["core_satisfied"]
+            and adverse["core_satisfied"]
+            and null["observed_percentile"] >= 0.80
+            and power_ok
+        ):
+            return "MARGINAL_EXPLORATORY_CANDIDATE", None
+        return "POSITIVE_EXPLORATORY_NOT_DECISION_GRADE", None
+
+    suffix, failure = _suffix(enough)
+    uncapped, _ = _suffix(True)
     return {
         "status": f"{primary['track']}_CORRECTED_{suffix}",
+        "status_before_power_cap": f"{primary['track']}_CORRECTED_{uncapped}",
+        "underpowered": not enough,
         "qualifier": prereg.QUALIFIER,
         "failure_class": failure,
         "pnl_source": decomp["pnl_source"]["label"],
@@ -396,7 +401,7 @@ def run_track(track: str, span: str, built: dict[str, Any], *, workers: int = 1)
     config = _config()
     daily = economic_book(config, scores, numeraire, rates)
     central = total(daily, PRIMARY_BASIS, CENTRAL)
-    adverse = total(daily, PRIMARY_BASIS, ADVERSE)
+    adverse = {basis: total(daily, basis, ADVERSE) for basis in BASES}
     control = _benchmarks(excess)["fx_own_momentum_20d"].reindex(scores.index)
     metrics_total = _metrics(central, scores, excess)
     metrics_total["incremental_ic"] = _incremental_ic(scores, control, excess)
@@ -420,9 +425,10 @@ def run_track(track: str, span: str, built: dict[str, Any], *, workers: int = 1)
             "net_sharpe": round(_sharpe(total(stressed_daily, PRIMARY_BASIS, CENTRAL)["net"]), 4),
             "net_ex_financing_sharpe": round(_sharpe(ex_financing(stressed_daily)["net"]), 4),
         }
-        stressed_adverse[f"cost_x{multiple}"] = {
-            "net_sharpe": round(_sharpe(total(stressed_daily, PRIMARY_BASIS, ADVERSE)["net"]), 4)
-        }
+        for basis in BASES:
+            stressed_adverse.setdefault(basis, {})[f"cost_x{multiple}"] = {
+                "net_sharpe": round(_sharpe(total(stressed_daily, basis, ADVERSE)["net"]), 4)
+            }
 
     benches = {}
     usable = _benchmarks(excess)["constant_long_usd"].reindex(scores.index).dropna(how="any")
@@ -453,9 +459,15 @@ def run_track(track: str, span: str, built: dict[str, Any], *, workers: int = 1)
     if span == prereg.PRIMARY_SPAN:
         out["null_diagnostic"] = null_diagnostic(scores, numeraire, rates, workers=workers)
         out["development_economics"] = _mx.development_economics(track, metrics_total, stressed)
-        out["development_economics_adverse_endpoint"] = _economics_at(
-            track, adverse, scores, excess, stressed_adverse
-        )
+        #: 不利な端点は金利基準 2 つの両方（markup 最大）。core は両方で真であること（re-audit O-1）
+        by_basis = {
+            basis: _economics_at(track, adverse[basis], scores, excess, stressed_adverse[basis])
+            for basis in BASES
+        }
+        out["development_economics_adverse_endpoint"] = {
+            "by_basis": by_basis,
+            "core_satisfied": all(row["core_satisfied"] for row in by_basis.values()),
+        }
         eligible = _nf.stage2_eligible(
             out["development_economics"],
             {"observed_percentile": out["null_diagnostic"]["total_central"]["observed_percentile"]},

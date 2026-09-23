@@ -25,9 +25,8 @@ from typing import Any, Final
 from scripts.research.acquisition_safety import write_provenance
 
 REPO_ROOT: Final[Path] = Path(__file__).resolve().parents[3]
-RECORD: Final[Path] = (
-    REPO_ROOT / "artifacts/research/usd_factor_financing/financing_audit_v2.json"
-)  # v1 は review 前（判定式の向きの誤り R-1、M11 / M01 の欠落 R-2）
+#: v1 は判定式の向きの誤り・M11 / M01 の欠落、v2 は method の文言が古い式のまま（re-audit R-2）。
+RECORD: Final[Path] = REPO_ROOT / "artifacts/research/usd_factor_financing/financing_audit_v3.json"
 
 # ----------------------------------------------------------------------
 # 1. 既存の net の定義（数値は書き換えない。名前を正確にする。§6）
@@ -249,8 +248,10 @@ def run() -> dict[str, Any]:
         "impact_audit": {
             "method": (
                 "signal-blind: 記録済みの年率 net（financing 抜き）と平均通貨 gross だけを使う。position の向きは記録に無いので、"
-                "carry は『向きが金利と無関係なときの典型値 0.38 × gross × 金利の cross-section sd』、markup は 0.25〜1%/年 × gross。"
-                "|net| がその和より小さければ符号が変わりうる。Track 1 は測った carry accrual を使う。**再実行はしない**"
+                "carry は『向きが金利と無関係なときの典型値 c = 0.38 × gross × 金利の cross-section sd』。"
+                "net > 0 なら net < c + 1%·gross（不利な carry と最大 markup で負になりうる）、net ≤ 0 なら |net| < c"
+                "（有利な carry と markup 0 で正になりうる）で flag。測った carry がある track（Track 1・mechanism redesign の "
+                "M11 / M01）は、それに markup 0〜1%·gross を足し引きして符号を見る。**再実行はしない**"
             ),
             "rows": rows,
             "flagged": [

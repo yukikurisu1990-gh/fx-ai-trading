@@ -269,3 +269,43 @@ def test_driver_refuses_on_a_digest_mismatch(tmp_path, monkeypatch) -> None:
     monkeypatch.setattr(driver, "FROZEN_DIGEST", "0" * 64)
     with pytest.raises(SystemExit):
         driver.preflight()
+
+
+def _primary(totals: list[float], *, core=True, adverse_core=True, pct=0.9, p=0.2, n_eff=20.0):
+    cells = {f"cell{i}": {"annual": t} for i, t in enumerate(totals)}
+    return {
+        "track": "M16",
+        "pnl_decomposition": {
+            "total_economic": cells,
+            "total_sign_consistent_across_all_cells": len({t > 0 for t in totals}) == 1,
+            "annual_spot_gross": 0.01,
+            "net_ex_financing": {"annual": 0.005},
+            "pnl_source": {"label": "SPOT_DRIVEN_FINANCING_NEGATIVE"},
+        },
+        "development_economics": {"label": "X", "core_satisfied": core},
+        "development_economics_adverse_endpoint": {"core_satisfied": adverse_core},
+        "null_diagnostic": {"total_central": {"p_value": p, "observed_percentile": pct}},
+        "metrics_total_central": {"effective_independent_observations": n_eff},
+    }
+
+
+def test_verdict_branches() -> None:
+    from scripts.research.usd_factor_financing import execute
+
+    assert execute.verdict(_primary([0.01] * 7 + [-0.01]), {})["status"].endswith(
+        "FINANCING_NOT_DECISION_GRADE"
+    )
+    negative = execute.verdict(_primary([-0.01] * 8), {})
+    assert negative["status"].endswith("NOT_SUPPORTED_IN_SEEN_DEVELOPMENT")
+    assert negative["failure_class"] == "FINANCING_FAILURE"
+    assert execute.verdict(_primary([0.01] * 8), {})["status"].endswith(
+        "MARGINAL_EXPLORATORY_CANDIDATE"
+    )
+    no_adverse = execute.verdict(_primary([0.01] * 8, adverse_core=False), {})
+    assert no_adverse["status"].endswith("POSITIVE_EXPLORATORY_NOT_DECISION_GRADE")
+    capped = execute.verdict(_primary([0.01] * 8, n_eff=5.0), {})
+    assert capped["status"].endswith("POSITIVE_EXPLORATORY_NOT_DECISION_GRADE")
+    assert capped["status_before_power_cap"].endswith("MARGINAL_EXPLORATORY_CANDIDATE")
+    assert capped["underpowered"]
+    renamed = execute.verdict(_primary([0.01] * 8), {"g": {"verdict": "RENAME"}})
+    assert renamed["status"].endswith("RENAME_OF_A_PRIOR_TRACK")

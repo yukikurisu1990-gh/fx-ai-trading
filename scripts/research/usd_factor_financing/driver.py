@@ -33,7 +33,7 @@ STARTED: Final[Path] = (
     REPO_ROOT / "artifacts/research/usd_factor_financing/development_started.json"
 )
 
-FROZEN_DIGEST: Final[str] = "3ceb6ca52c82f4693efee5c2a936d7346df97d87d4dae99112fd7b52f4ad0865"
+FROZEN_DIGEST: Final[str] = "bccb1ceed4c620874149c5e282e98e3b4942e6b9ae8433f32de3e890bcf9d2e1"
 
 
 def _rename_gates(

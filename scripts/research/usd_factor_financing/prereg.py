@@ -23,9 +23,12 @@ nuisance は mechanism redesign の凍結（`a4413d63…`）と同じである�
 - **判定の頑健性（R-4）**: 符号は 金利基準 2 × markup 4 の 8 セル全点、STRONG / MARGINAL の core 条件は
   不利な端点（政策金利・markup 最大）でも満たすこと。
 - **既に見ている値（Role 1 R-5 / Role 2 RF-1）**: 修正版の book の position は、旧実装の band 0.05 感度行と
-  完全に同じ（M15 と M16 の**両方**、band 0.05 / 0.10 / 0.20 でも同じ）。旧記録の M16 net 0.279・M15 net 0.102 は
+  leverage を掛ける前の held weight が完全に同じ（M15 と M16 の**両方**、band 0.05 / 0.10 / 0.20 でも同じ。leverage は
+  今回 USD numeraire の上で測り直す）。旧記録の band 0.05 行の **net Sharpe** M16 0.279・M15 0.102 は
   equal-split の座標・lag 付き 3 か月金利の carry での値なので、routing と carry 基準を直した今回の値とは
-  完全には一致しないが、**long の central の大きさと符号はほぼ既知**である。新しい情報は routing 修正後の値・
+  完全には一致しないが、**long の central の大きさと符号はほぼ既知**である。さらに旧 book（USD 対 AUD / CAD / CHF）の
+  **recent の net Sharpe（M15 0.213 / M16 −0.150）と long の null percentile（M16 0.869 / M15 0.543）も既に見ている**。
+  新しい情報は routing 修正後の値・
   spot / carry / markup の分解・8 セル・null・recent である。
 - **band の感度は構造的に情報を持たない（O-1）**: factor book の target は符号でしか変わらないので、band が
   0.5 未満ならどの値でも同じ book になる。`implementation_tolerance_band` の感度行は報告するが、
@@ -40,7 +43,6 @@ from pathlib import Path
 from typing import Any, Final
 
 from scripts.research.mechanism_redesign import prereg as _mr
-from scripts.research.usd_factor_financing import financing_audit
 
 CYCLE: Final[str] = "USD_FACTOR_CORRECTED_AND_FINANCING_2026_09"
 QUALIFIER: Final[str] = "POST_RESULT_IMPLEMENTATION_CORRECTED_EXPLORATORY_ONLY"
@@ -72,7 +74,7 @@ SIGNALS: Final[dict[str, str]] = {
 
 FINANCING: Final[dict[str, Any]] = {
     "name": "APPROXIMATE_RESEARCH_FINANCING（actual OANDA financing ではない）",
-    "carry": financing_audit.APPROXIMATION["interest_differential"],
+    "carry": "下の rate_bases と carry_formula のとおり（USD numeraire、primary は当時の政策金利）。financing_audit.APPROXIMATION の『3 か月金利 × pair book 演算子』は mechanism redesign の近似で、今回の定義ではない",
     "rate_bases": {
         "policy_contemporaneous": "PRIMARY。BIS 政策金利の月末値を、その月末から（翌月の各日に）使う。signal の series ではない",
         "three_month_lagged": "SENSITIVITY。signal と同じ lag 付き 3 か月銀行間金利（mechanism redesign の carry 近似）",
@@ -91,7 +93,8 @@ FINANCING: Final[dict[str, Any]] = {
     "markup_band": (0.0, 0.005, 0.01, 0.02),
     "central_markup": 0.005,
     "markup_band_equivalence": "通貨 gross 1 単位あたりでは {0, 0.25, 0.5, 1.0}%/年（mechanism redesign の band と同じ経済量）。端点 2%/年の根拠となる公開の値は無い（仮定）",
-    "adverse_endpoint": "policy_contemporaneous × markup 0.02",
+    "adverse_endpoint": "markup 0.02 で金利基準 2 つの両方（policy_contemporaneous・three_month_lagged）。core は両方で真であること",
+    "cost_stress_scales_markup": "cost ×1.5 / ×2 は spread cost と markup の両方に掛かる（×2 の不利な端点では markup 4%/年、保守側）",
     "lines_reported": (
         "spot（signal の方向の寄与）",
         "spread cost",
