@@ -10,10 +10,12 @@ Authority: 2026-09-22 第 2 裁定 §2–§4（取得・mapping・Stage 0 再実
 1. `NEXT_FIVE_ACQUIRE_APPROVED=1`（`data_access.fetch` が試行のたびに確認）
 2. この module を **script として実行**していること
 
-**保護期間は request から外す。** 期間 parameter を受け付ける endpoint（ALFRED / BoC /
-BoJ）には seen window の 2 区間だけを request する。受け付けない endpoint（Fed H.4.1 の
-一括 zip / SNB の cube）は、parse 直後・保存前に `_truncate` で落とし、保護期間の行が
-残っていたら **例外で止まる**。切り落とす前の series は外へ返らない。
+**保護期間を request から外せたのは ALFRED と BoC だけである。** この 2 つには seen window の
+2 区間だけを request する。Fed H.4.1 の一括 zip、SNB の cube、BoJ の全系列、Fed の
+ne-press.json は期間を request に入れておらず、**保護期間の行を含む応答をメモリに読み込んで
+parse し**、保存前に `_truncate` で落とす（残っていたら例外で止まる）。初版の docstring は
+BoJ も期間指定と書いていたが誤りだった（`corrections.DISCLOSURES['D-5_...']`）。
+また seen の判定は **stamp の日付**で行っており、月次の参照期間は見ていない（C-4 が読む側で補う）。
 
 mapping は `series_map.SERIES_MAP` に凍結してあり、取得のたびに provider の metadata で
 **意味を検証し直す**（`data_access.mapping.check_semantics`）。合わなければ保存しない。

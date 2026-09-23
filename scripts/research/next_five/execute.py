@@ -118,7 +118,15 @@ def _capacity(metrics: dict[str, Any]) -> dict[str, Any]:
         needed_vol = goal / net_sharpe
         row = _at(needed_vol)
         row["required_target_vol"] = round(needed_vol, 4)
+        #: 必要な gross が book の上限を超えるなら、その目標には届かない（Role 1 O-4）
+        row["within_max_leverage"] = bool(
+            row["portfolio_gross"] <= float(prereg.BOOK_CONFIG["max_leverage"])
+        )
         out[f"for_{goal:.0%}_annual_net"] = row
+    out["reachable"] = any(
+        out[f"for_{goal:.0%}_annual_net"]["within_max_leverage"]
+        for goal in prereg.CAPACITY_REPORTING["annual_return_targets"]
+    )
     return out
 
 
@@ -143,12 +151,37 @@ def _lag_one_autocorrelation(frame: pd.DataFrame) -> float:
     return float(np.corrcoef(current[usable], following[usable])[0, 1])
 
 
+def _draw_chunk(job: tuple[str, pd.DataFrame, pd.DataFrame, list[int], float]) -> list[float]:
+    """1 つの worker が受け持つ shift 群。**module の top level に置く**（process 並列で pickle するため）。"""
+    track, scores, excess, shifts, persistence = job
+    config = _config(track)
+    out: list[float] = []
+    for shift in shifts:
+        shifted = _circular_shift(scores, shift)
+        drawn_persistence = _lag_one_autocorrelation(shifted)
+        if np.isfinite(persistence) and abs(drawn_persistence - persistence) >= 0.05:
+            raise AssertionError(
+                f"帰無が signal の自己相関を壊した（{persistence:.3f} -> {drawn_persistence:.3f}）。"
+                "circular shift ではなく shuffle になっていないか"
+            )
+        out.append(
+            _sharpe(construction.run_book(config, shifted, excess, TRADING_DAYS)["daily"]["net"])
+        )
+    return out
+
+
 def null_diagnostic(
-    track: str, scores: pd.DataFrame, excess: pd.DataFrame, *, draws: int | None = None
+    track: str,
+    scores: pd.DataFrame,
+    excess: pd.DataFrame,
+    *,
+    draws: int | None = None,
+    workers: int = 1,
 ) -> dict[str, Any]:
     """**null 診断**（第 2 裁定 §1 / §32）。判定の材料の 1 つであって、唯一の gate ではない。
 
     零情報の circular shift を引いて、実測の net Sharpe がその分布のどこにいるかを測る。
+    **shift の列は並列化の前に 1 本の乱数列から決める**ので、worker 数を変えても結果は同じ。
     """
     spec = prereg.NULL_DIAGNOSTIC["permutation"]
     count = draws if draws is not None else int(spec["draws"])
@@ -160,20 +193,20 @@ def null_diagnostic(
     observed_annual = float(observed["net"].sum() / (len(observed["net"]) / TRADING_DAYS))
     persistence = _lag_one_autocorrelation(scores)
 
-    drawn: list[float] = []
     length = len(scores)
-    for _ in range(count):
-        shift = int(rng.integers(1, max(length, 2)))
-        shifted = _circular_shift(scores, shift)
-        drawn_persistence = _lag_one_autocorrelation(shifted)
-        if np.isfinite(persistence) and abs(drawn_persistence - persistence) >= 0.05:
-            raise AssertionError(
-                f"帰無が signal の自己相関を壊した（{persistence:.3f} -> {drawn_persistence:.3f}）。"
-                "circular shift ではなく shuffle になっていないか"
-            )
-        drawn.append(
-            _sharpe(construction.run_book(config, shifted, excess, TRADING_DAYS)["daily"]["net"])
-        )
+    shifts = [int(rng.integers(1, max(length, 2))) for _ in range(count)]
+    if workers <= 1:
+        drawn = _draw_chunk((track, scores, excess, shifts, persistence))
+    else:
+        from concurrent.futures import ProcessPoolExecutor
+
+        size = max(1, -(-len(shifts) // workers))
+        jobs = [
+            (track, scores, excess, shifts[i : i + size], persistence)
+            for i in range(0, len(shifts), size)
+        ]
+        with ProcessPoolExecutor(max_workers=workers) as pool:
+            drawn = [value for chunk in pool.map(_draw_chunk, jobs) for value in chunk]
 
     array = np.array([value for value in drawn if np.isfinite(value)])
     exceed = int((array >= observed_sharpe).sum())
@@ -365,7 +398,12 @@ def _nuisance_sensitivity(
 
 
 def run_track(
-    track: str, span: str, built: dict[str, Any], *, permutation_draws: int | None = None
+    track: str,
+    span: str,
+    built: dict[str, Any],
+    *,
+    permutation_draws: int | None = None,
+    workers: int = 1,
 ) -> dict[str, Any]:
     """1 本を 1 つの span で走らせる。**gate は判定するが、救済はしない。**"""
     spec = prereg.TRACKS[track]
@@ -393,7 +431,7 @@ def run_track(
             "candidate": spec["candidate"],
             "span": span,
             "verdict": prereg.track_status(track, "DATA_NOT_DECISION_GRADE"),
-            "why": f"連続 decision day が {len(scores)} 日しかない",
+            "why": f"3 通貨以上の score がある decision day が {len(scores)} 日しかない",
         }
 
     config = _config(track)
@@ -446,7 +484,9 @@ def run_track(
     if not is_primary and span == "long":
         out["cost_caveat"] = prereg.PRIMARY_SPAN_RULE["cost_caveat"]
     if is_primary:
-        out["null_diagnostic"] = null_diagnostic(track, scores, excess, draws=permutation_draws)
+        out["null_diagnostic"] = null_diagnostic(
+            track, scores, excess, draws=permutation_draws, workers=workers
+        )
         out["development_economics"] = development_economics(metrics, stressed)
         eligible = stage2_eligible(out["development_economics"], out["null_diagnostic"])
         out["stage_2"] = (
