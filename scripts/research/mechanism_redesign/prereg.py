@@ -126,8 +126,10 @@ FREEZE_AMENDMENT_PRE_ALPHA_2: Final[dict[str, Any]] = {
         "long の JPY 871 日・CHF 170 日で carry が pair book から外れていた）",
         "GBP 失業率の窓を前 2・後 2 か月にした（stamp 慣行に依存しない）",
         "**判断**: BoJ のゼロ金利・量的緩和期間で 3 か月金利も政策金利も無い日は JPY の carry 金利を 0% と置く"
-        "（signals.ZERO_RATE_PERIODS）。2000-09 の 21 日だけは JPY の金利が残って欠ける（ゼロ金利解除後の 0.25% が m+1 lag で"
-        "9 月末から使われるため）。0 で埋めると実際の 0.25% と違うので埋めず、その日は JPY の pair を carry の平均から外す",
+        "（signals.ZERO_RATE_PERIODS）。第 1 期間は m+1 lag に合わせて 2000-09-29 まで（9 月の日に使うのは 7 月の値）",
+        "M01 の rename gate CARRY_LEVEL_XS の比較対象は凍結どおり 3 か月銀行間金利だけ（carry 用の埋めを入れない。3 回目の re-audit RF-1）",
+        "recent span の 2021-04-27 … 06-29（46 日）は m+1 lag のため全通貨の金利が無く、carry は 0。"
+        "score のある track はこの期間に掛からないが、recent の benchmark は掛かりうる",
     ),
     "disclosure_gbp": (
         "GBP 失業率の stamp 2016-04・2016-05（開始月・中心月の慣行なら 2016 年 6 月を含む）、2021-05・2021-06"
@@ -143,7 +145,7 @@ FINANCING: Final[dict[str, Any]] = {
     "carry_accrual": (
         "決定日の exposure × （pair ごとの短期金利の差 base − quote に、spot の currency excess return と"
         "同じ pair book 演算子を掛けた値）× 暦日 / 365。金利は 3 か月銀行間金利、それが無い日は同じ通貨の BIS 政策金利"
-        "（signal と同じ lag・staleness）。それでも片方の金利が無い pair はその日の平均から外れ、全 pair が無い通貨は 0"
+        "（signal と同じ lag・staleness）、BoJ のゼロ金利・量的緩和期間で両方無い日は JPY を 0%（判断）。それでも片方の金利が無い pair はその日の平均から外れ、全 pair が無い通貨は 0"
     ),
     "markup_annual_per_unit_currency_gross": 0.0025,
     "markup_is_assumed_not_measured": (

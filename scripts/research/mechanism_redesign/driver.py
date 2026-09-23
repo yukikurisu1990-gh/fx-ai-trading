@@ -33,7 +33,7 @@ STARTED: Final[Path] = REPO_ROOT / "artifacts/research/mechanism_redesign/develo
 SPANS: Final[tuple[str, ...]] = ("long", "recent")
 
 #: **alpha の前に commit した凍結値。** これと一致しない凍結では走らせない。
-FROZEN_DIGEST: Final[str] = "4f89edc99bb4e7bdd001d398333438e2e104d971e0e4f715ccde60ed3a722fe8"
+FROZEN_DIGEST: Final[str] = "a4413d63fb141b2d217ba11cd69ce6fbd37a4312357294360f91b16de7831a80"
 
 
 def _usd_corr(left: pd.DataFrame, right: pd.DataFrame) -> tuple[float, int]:
@@ -81,7 +81,13 @@ def _rename_gates(
             elif gate == "M11_WITHIN_CYCLE":
                 measured, overlap = _xs_corr(scores, signals.scores_for("M11", built, span))
             elif gate == "CARRY_LEVEL_XS":
-                rates = signals.carry_rate_panel(scores.index)
+                #: 凍結どおり 3 か月銀行間金利だけ（carry 用の埋めは入れない）
+                rates = signals._monthly_panel(
+                    "short_rate_3m",
+                    scores.index,
+                    change_months=None,
+                    staleness=signals.NUISANCE["max_staleness_days_monthly"]["primary"],
+                )
                 measured, overlap = _xs_corr(scores, signals._xs_z(rates))
             elif gate == "VOL_RATIO_STATE":
                 excess = built[span]["currency_excess_return"]
