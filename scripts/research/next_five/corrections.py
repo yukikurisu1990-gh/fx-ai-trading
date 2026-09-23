@@ -43,7 +43,7 @@ POST_ALPHA_CORRECTIONS: Final[dict[str, dict[str, Any]]] = {
         "where": "signals.scores_for",
         "was": "decision day の窓へ reindex した後、上限なく ffill していた",
         "frozen_text_restored": "`max_staleness_days` の staleness 規則、P-6『欠けた通貨は 0』",
-        "effect_seen": "U1 recent の EUR（系列は 2022-12 終了）の最終 score を 685 日持ち越していた。"
+        "effect_seen": "U1 recent の EUR（系列は 2022-12 終了）の最終 score を 685 営業日（暦日 959 日、2023-05-12 … 2025-12-26）持ち越していた。"
         "U3 の感度（staleness 45）では 3 通貨未満の日が 165 日 book に入っていた",
         "tracks": ("U1", "U2", "U3", "U4", "U5"),
     },
@@ -56,7 +56,8 @@ POST_ALPHA_CORRECTIONS: Final[dict[str, dict[str, Any]]] = {
         "balance_sheet_usd の 2021-04-28 の値は 0.556、平時の |変化| は 0.091",
         "addendum": "初版の修正は `_change` が欠損行を返し、`_align` がその欠損行を観測日として "
         "staleness を通しつつ 2016 年の値を ffill で運んだ（U1 USD の z が −15.8）。"
-        "`_align` の入口で欠損行を落とす。recent span の U1 / U2 / U4 は標本が約半年短くなる",
+        "`_align` の入口で欠損行を落とす。1 回目の実行と比べ、recent span の開始は U1 / U2 で約 1 年（2022-01-24 → 2023-01-23）、U4 で約 3 か月（2021-12-22 → 2022-03-24）遅くなる",
+        "discretion": "**判断である。** 基準値の鮮度を `max_staleness_days` と同じ定数で測るのは凍結文に無い選択で、『n か月前の観測が存在すること』を要求する案もありえた。実データでは月次の age はほぼ 0、週次は 7 日以下で、効くのは保護期間の空白を跨ぐ箇所だけである",
         "side_effect": "`max_staleness_days` の感度点は、基準値と整列の 2 箇所に同時に効く",
         "tracks": ("U1", "U2", "U4"),
     },
@@ -94,7 +95,7 @@ POST_ALPHA_CORRECTIONS: Final[dict[str, dict[str, Any]]] = {
         "found_by": "独立再監査 BLOCKER-3",
         "where": "signals.scores_for / execute.run_track / execute._nuisance_sensitivity",
         "was": "C-1 で ffill を外すと、3 通貨未満の日が span の途中から削られ、run_book が連続性違反で "
-        "ValueError を出して track 全体が error になった（U3 の感度点 45 / 60 で起きる）",
+        "ValueError を出して track 全体が error になった（U3 の感度点 staleness 45（165 日）/ 60（2 日）と z_window 126（5 日）で起きる。z_window 126 は staleness ではなく、USD の tone が 2024-01-31 … 07-31 に本物の 0.0（h = d）で変化 0 が続き、126 日窓の sd が 0 → z が欠損になる経路で、旧版は ffill が古い z で埋めていた）",
         "fix": "途中で途切れたら `NonContiguousScoresError` で止め、primary なら DATA_NOT_DECISION_GRADE、"
         "感度点なら NOT_COMPUTABLE_NONCONTIGUOUS として記録する",
         "discretion": "**判断である。** 途切れた日を flat で残す・区間を分けるのどちらも凍結文に無いので、"
@@ -160,7 +161,9 @@ DISCLOSURES: Final[dict[str, str]] = {
     "D-7_REVISION_AND_VALUATION": (
         "U1 と U4 は ALFRED の現行 vintage のみで、当時の公表値ではない（vintage 列・日付も未記録）。"
         "U4 の『Reserves Excluding Gold』は USD 建てで、為替の評価変動を含む。"
-        "凍結した機構『積み増し = 自国通貨売り』と一致するとは限らない"
+        "凍結した機構『積み増し = 自国通貨売り』と一致するとは限らない。"
+        "U1 は季節調整済み（…M664S）の現行 vintage なので、季節調整の係数は保護期間を含む全標本から推定されている"
+        "（暗黙の情報流入。大きさは測っていない）"
     ),
     "D-8_BREADTH_OVERSTATED": (
         "U1 の EUR は別定義（euro area 19 か国の goods net trade）で 2022-12 に終了。U4 の EUR は recent span "
@@ -174,6 +177,10 @@ DISCLOSURES: Final[dict[str, str]] = {
         "recent span の最初の return（2021-04-27）は 2021-04-26 の close を使う。コードの is_seen は 04-26 を"
         "未見扱いにしているが、CLAUDE.md 上 2021-04-26 は seen（2021-04-26 … 2023-04-25）。保守側の不一致で、"
         "保護期間の読みではない"
+    ),
+    "D-11_U5_FIVE_OBSERVATIONS": (
+        "U5 の『5 日変化』は `shift(5)`、つまり 5 観測である。日曜の観測 2025-11-30 が 1 つあり、2 営業日の lag を"
+        "足すと 11-28 の値と同じ日に衝突する（後の値が残る）。影響は小さく、直していない"
     ),
 }
 
