@@ -12,6 +12,24 @@ signal・符号・horizon・universe・basket の構成と重み・band 幅・re
 nuisance は mechanism redesign の凍結（`a4413d63…`）と同じである。
 新しく決めたのは **financing の扱い**で、実際の OANDA financing の履歴が公開されていないので
 `APPROXIMATE_RESEARCH_FINANCING` の markup band で符号の頑健性を見る。
+
+**pre-alpha amendment（独立 review 2 役の後、alpha 前）**:
+
+- **routing（Role 2 RF-2）**: equal-split の pair book は recent の 20 pair で外国脚の実際の exposure が最大
+  2.08 倍ずれる。book を **USD numeraire**（7 本の USD pair だけに振る）で測り、実際の通貨 exposure を
+  USD 対 7 通貨等ウェイトにする。P&L・vol targeting・carry をすべてこの座標で測る。
+- **carry の金利基準（Role 1 B-1）**: signal と同じ lag 付き 3 か月金利で carry を測ると会計が feature の関数に
+  なる。primary は**当時の政策金利**（BIS 月末値を翌月に使う）、lag 付き 3 か月金利は感度。
+- **判定の頑健性（R-4）**: 符号は 金利基準 2 × markup 4 の 8 セル全点、STRONG / MARGINAL の core 条件は
+  不利な端点（政策金利・markup 最大）でも満たすこと。
+- **既に見ている値（Role 1 R-5 / Role 2 RF-1）**: 修正版の book の position は、旧実装の band 0.05 感度行と
+  完全に同じ（M15 と M16 の**両方**、band 0.05 / 0.10 / 0.20 でも同じ）。旧記録の M16 net 0.279・M15 net 0.102 は
+  equal-split の座標・lag 付き 3 か月金利の carry での値なので、routing と carry 基準を直した今回の値とは
+  完全には一致しないが、**long の central の大きさと符号はほぼ既知**である。新しい情報は routing 修正後の値・
+  spot / carry / markup の分解・8 セル・null・recent である。
+- **band の感度は構造的に情報を持たない（O-1）**: factor book の target は符号でしか変わらないので、band が
+  0.5 未満ならどの値でも同じ book になる。`implementation_tolerance_band` の感度行は報告するが、
+  「band に頑健」とは書かない。
 """
 
 from __future__ import annotations
@@ -37,6 +55,7 @@ BOOK_CONFIG: Final[dict[str, Any]] = {
 }
 BOOK_REPAIR: Final[dict[str, str]] = {
     "rebalance": "factor_rebalance（basket 全体を 1 単位。どれかの脚の gap が band を超えたら全脚を target へ、超えなければ全脚を据え置く）",
+    "routing": "USD numeraire: 外国 7 通貨それぞれを USD pair 1 本で持つ。P&L = x · R（R_c は c の対 USD log return、R_USD = 0）。実際の通貨 exposure が x と一致する",
     "band": "0.10（変えない）",
     "basket": "USD 対 EUR / JPY / GBP / AUD / CAD / CHF / NZD の等ウェイト（linear mapping、weight_cap 0.5。元の凍結どおり）",
     "why_this_is_the_natural_repair": (
@@ -54,16 +73,34 @@ SIGNALS: Final[dict[str, str]] = {
 FINANCING: Final[dict[str, Any]] = {
     "name": "APPROXIMATE_RESEARCH_FINANCING（actual OANDA financing ではない）",
     "carry": financing_audit.APPROXIMATION["interest_differential"],
-    "markup_band": financing_audit.APPROXIMATION["markup_band_annual_per_unit_currency_gross"],
-    "central_markup": financing_audit.APPROXIMATION["central_markup"],
+    "rate_bases": {
+        "policy_contemporaneous": "PRIMARY。BIS 政策金利の月末値を、その月末から（翌月の各日に）使う。signal の series ではない",
+        "three_month_lagged": "SENSITIVITY。signal と同じ lag 付き 3 か月銀行間金利（mechanism redesign の carry 近似）",
+    },
+    "carry_formula": "Σ_c x_c × (r_c − r_USD) × 暦日 / 365（和がゼロの exposure なので numeraire に依らない）。金利が無い通貨は 0",
+    "jpy_policy_zero_periods": (
+        ("1999-02-12", "2000-09-29"),
+        ("2001-03-19", "2006-07-31"),
+        ("2013-04-04", "2016-06-01"),
+    ),
+    "jpy_policy_zero_periods_why": (
+        "**判断**。BIS は BoJ のゼロ金利政策・量的緩和・量的質的緩和の期間に数値の政策金利を持たない。"
+        "この間の無担保コール翌日物は 0〜0.1% 程度で、その期間に BIS の値が欠けている日だけ 0% と置く"
+    ),
+    "markup_unit": "pair notional 1 単位あたりの年率（USD pair 7 本の |notional| の和）。OANDA の financing は position の notional に課される",
+    "markup_band": (0.0, 0.005, 0.01, 0.02),
+    "central_markup": 0.005,
+    "markup_band_equivalence": "通貨 gross 1 単位あたりでは {0, 0.25, 0.5, 1.0}%/年（mechanism redesign の band と同じ経済量）。端点 2%/年の根拠となる公開の値は無い（仮定）",
+    "adverse_endpoint": "policy_contemporaneous × markup 0.02",
     "lines_reported": (
         "spot（signal の方向の寄与）",
         "spread cost",
         "carry（金利差の受け払い）",
         "markup（仮定）",
         "NET_EX_TRANSACTION_COSTS_EXCLUDING_FINANCING = spot − spread",
-        "TOTAL_ECONOMIC(m) = spot + carry − spread − m × |exposure|、m は markup band の 4 点",
+        "TOTAL_ECONOMIC(basis, m) = spot + carry(basis) − spread − m × pair notional、basis 2 × m 4 の 8 セル",
     ),
+    "pnl_source_label": "SPOT_AND_FINANCING_BOTH_POSITIVE / SPOT_DRIVEN_FINANCING_NEGATIVE / FINANCING_DRIVEN_SPOT_NOT_POSITIVE / NEITHER_POSITIVE（central で機械的に付ける）",
     "signal_vs_financing": "financing で総合が良くなっても『signal alpha が強い』とは書かない。spot と carry を必ず分ける（§32–§34）",
 }
 
@@ -92,16 +129,16 @@ VERDICT_LOGIC: Final[tuple[dict[str, str], ...]] = (
         "then": "RENAME_OF_A_PRIOR_TRACK",
     },
     {
-        "if": "markup band の 4 点で TOTAL_ECONOMIC の符号が揃わない",
+        "if": "金利基準 2 × markup 4 の 8 セルで TOTAL_ECONOMIC の符号が揃わない",
         "then": "FINANCING_NOT_DECISION_GRADE",
     },
-    {"if": "TOTAL_ECONOMIC が markup band 全点で ≤ 0", "then": "NOT_SUPPORTED_IN_SEEN_DEVELOPMENT"},
+    {"if": "TOTAL_ECONOMIC が 8 セル全点で ≤ 0", "then": "NOT_SUPPORTED_IN_SEEN_DEVELOPMENT"},
     {
-        "if": "全点で正、E1〜E8 すべて真、null p ≤ 0.05、有効標本数 ≥ 10",
+        "if": "8 セル全点で正、central で E1〜E8 すべて真、不利な端点でも core 真、null p ≤ 0.05、有効標本数 ≥ 10",
         "then": "STRONG_EXPLORATORY_CANDIDATE",
     },
     {
-        "if": "全点で正、core（E1 / E3 / E4 / E7）真、null percentile ≥ 0.80、有効標本数 ≥ 10",
+        "if": "8 セル全点で正、central と不利な端点の両方で core（E1 / E3 / E4 / E7）真、null percentile ≥ 0.80、有効標本数 ≥ 10",
         "then": "MARGINAL_EXPLORATORY_CANDIDATE",
     },
     {"if": "全点で正だがそれ以外", "then": "POSITIVE_EXPLORATORY_NOT_DECISION_GRADE"},
@@ -126,7 +163,7 @@ RENAME_GATES: Final[dict[str, dict[str, Any]]] = {
 
 CAPACITY: Final[dict[str, Any]] = {
     **_mr.CAPACITY_REPORTING,
-    "only_if": "TOTAL_ECONOMIC(central) > 0",
+    "only_if": "TOTAL_ECONOMIC が 8 セル全点で正",
     "also_report": (
         *_mr.CAPACITY_REPORTING["also_report"],
         "financing_burden_or_benefit_at_scenario",

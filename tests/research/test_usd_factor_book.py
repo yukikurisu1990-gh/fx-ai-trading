@@ -148,27 +148,72 @@ def test_total_economic_identity() -> None:
     from scripts.research.usd_factor_financing import execute
 
     returns = _returns()
+    returns["USD"] = 0.0  # USD numeraire
     mu = _dollar_mu(returns.index).iloc[80:]
     rates = pd.DataFrame(0.0, index=returns.index, columns=CURRENCIES)
     rates["USD"] = 3.0
-    daily = execute.economic_book(execute._config(), mu, returns, rates)
-    for markup in (0.0, 0.0025, 0.01):
-        total = execute.with_markup(daily, markup)
-        expected = (
-            daily["spot_gross"]
-            + daily["carry"]
-            - daily["spread_cost"]
-            - markup * daily["gross_notional_years"]
-        )
-        assert np.allclose(total["net"], expected)
-        pnl_sum = total[[f"pnl_{c}" for c in CURRENCIES]].sum(axis=1)
-        assert np.allclose(pnl_sum, total["net"] + daily["spread_cost"])
+    panels = {"policy_contemporaneous": rates, "three_month_lagged": rates * 0.5}
+    daily = execute.economic_book(execute._config(), mu, returns, panels)
+    for basis in panels:
+        for markup in (0.0, 0.005, 0.02):
+            frame = execute.total(daily, basis, markup)
+            expected = (
+                daily["spot_gross"]
+                + daily[f"carry_{basis}"]
+                - daily["spread_cost"]
+                - markup * daily["pair_notional_years"]
+            )
+            assert np.allclose(frame["net"], expected)
+            pnl_sum = frame[[f"pnl_{c}" for c in CURRENCIES]].sum(axis=1)
+            assert np.allclose(pnl_sum, frame["net"] + daily["spread_cost"])
     #: USD を持つ日は USD の金利 3% を受け取り、売る日は払う
     long_usd = daily["x_USD"] > 0
-    assert (daily.loc[long_usd, "carry"] > 0).all()
-    assert (daily.loc[~long_usd, "carry"] < 0).all()
-    ex = execute.ex_financing(daily)
-    assert np.allclose(ex["net"], daily["spot_gross"] - daily["spread_cost"])
+    assert (daily.loc[long_usd, "carry_policy_contemporaneous"] > 0).all()
+    assert (daily.loc[~long_usd & (daily["x_USD"] < 0), "carry_policy_contemporaneous"] < 0).all()
+    #: pair notional は外国脚の |x| の和 = |x_USD|
+    days = (daily.index - pd.DatetimeIndex(daily["decision_day"])).days.to_numpy()
+    assert np.allclose(daily["pair_notional_years"], daily["x_USD"].abs() * days / 365.0)
+
+
+def test_usd_numeraire_returns_use_the_usd_pairs() -> None:
+    from scripts.research.usd_factor_financing import execute
+
+    index = pd.bdate_range("2020-01-06", periods=2)
+    pairs = pd.DataFrame(
+        {
+            "EUR_USD": 0.01,
+            "USD_JPY": 0.02,
+            "GBP_USD": 0.0,
+            "AUD_USD": 0.0,
+            "NZD_USD": 0.0,
+            "USD_CAD": 0.0,
+            "USD_CHF": 0.0,
+            "EUR_JPY": 9.9,
+        },
+        index=index,
+    )
+    out = execute.usd_numeraire_returns(pairs)
+    assert out["EUR"].iloc[0] == pytest.approx(0.01)
+    assert out["JPY"].iloc[0] == pytest.approx(-0.02)
+    assert (out["USD"] == 0.0).all()
+
+
+def test_policy_rate_is_used_only_after_its_month_ends(tmp_path, monkeypatch) -> None:
+    from scripts.research.mechanism_redesign import signals
+    from scripts.research.usd_factor_financing import execute
+
+    stamps = pd.date_range("2005-01-01", "2005-06-01", freq="MS")
+    for currency in CURRENCIES:
+        values = np.where(stamps >= "2005-03-01", 5.0, 1.0)
+        pd.DataFrame({"v": values}, index=stamps).to_parquet(
+            tmp_path / f"policy_rate_bis_{currency.lower()}.parquet"
+        )
+    monkeypatch.setattr(signals, "DATA_DIR", tmp_path)
+    monkeypatch.setattr(signals, "VERIFY_INPUT_HASHES", False)
+    rates = execute.policy_rates_contemporaneous(pd.bdate_range("2005-02-01", "2005-04-29"))
+    #: 3 月の月末値 5% は 3 月末から。3 月中は 2 月末の 1%
+    assert (rates.loc["2005-03-01":"2005-03-30", "USD"] == 1.0).all()
+    assert (rates.loc["2005-03-31":, "USD"] == 5.0).all()
 
 
 def test_freeze_digest_matches_the_driver() -> None:
@@ -203,3 +248,24 @@ def test_both_tracks_are_executed_together() -> None:
     assert prereg.BOOK_CONFIG["mapping"] == "linear"
     assert prereg.BOOK_CONFIG["weight_cap"] == 0.5
     assert prereg.BOOK_CONFIG["neutralize_leading_factor"] is False
+
+
+def test_driver_refuses_when_the_started_marker_exists(tmp_path, monkeypatch) -> None:
+    from scripts.research.usd_factor_financing import driver
+
+    started = tmp_path / "started.json"
+    started.write_text("{}", encoding="utf-8")
+    monkeypatch.setattr(driver, "RECORD", tmp_path / "absent.json")
+    monkeypatch.setattr(driver, "STARTED", started)
+    with pytest.raises(SystemExit):
+        driver.preflight()
+
+
+def test_driver_refuses_on_a_digest_mismatch(tmp_path, monkeypatch) -> None:
+    from scripts.research.usd_factor_financing import driver
+
+    monkeypatch.setattr(driver, "RECORD", tmp_path / "a.json")
+    monkeypatch.setattr(driver, "STARTED", tmp_path / "b.json")
+    monkeypatch.setattr(driver, "FROZEN_DIGEST", "0" * 64)
+    with pytest.raises(SystemExit):
+        driver.preflight()

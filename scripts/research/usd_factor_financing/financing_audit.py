@@ -25,7 +25,9 @@ from typing import Any, Final
 from scripts.research.acquisition_safety import write_provenance
 
 REPO_ROOT: Final[Path] = Path(__file__).resolve().parents[3]
-RECORD: Final[Path] = REPO_ROOT / "artifacts/research/usd_factor_financing/financing_audit.json"
+RECORD: Final[Path] = (
+    REPO_ROOT / "artifacts/research/usd_factor_financing/financing_audit_v2.json"
+)  # v1 は review 前（判定式の向きの誤り R-1、M11 / M01 の欠落 R-2）
 
 # ----------------------------------------------------------------------
 # 1. 既存の net の定義（数値は書き換えない。名前を正確にする。§6）
@@ -68,6 +70,10 @@ NET_DEFINITIONS: Final[dict[str, dict[str, str]]] = {
         "note": "panel は spot only（carry_leg_absent_on_both_spans）",
     },
     "next-five U1〜U5（PR #493）": {"net": NET_EX_FINANCING, "note": "Top-Five と同じ panel"},
+    "carry の基準は cycle ごとに違う（review O-8）": {
+        "net": "—",
+        "note": "Track 1 は当日の政策金利 × x·r（診断のみ）、#471 は政策金利の research carry、mechanism redesign は lag 付き 3 か月金利 × pair operator、今回の修正版は当時の政策金利（primary）と lag 付き 3 か月金利（感度）",
+    },
     "mechanism redesign M11 / M01 / M10（PR #494）": {
         "net": NET_APPROX,
         "note": "3 か月銀行間金利差の carry 近似 − 仮定 markup 0.25%/年。実際の OANDA financing ではない",
@@ -79,6 +85,10 @@ NET_DEFINITIONS: Final[dict[str, dict[str, str]]] = {
 # ----------------------------------------------------------------------
 FINANCING_SOURCE_AUDIT: Final[dict[str, Any]] = {
     "status": "PUBLIC_FINANCING_HISTORY_NOT_AVAILABLE_WITHOUT_AUTHENTICATED_BROKER_ACCESS",
+    "evidence_strength": (
+        "PUBLIC_FINANCING_HISTORY_NOT_FOUND_IN_LIMITED_ANONYMOUS_PROBE。404 は推測した URL が外れただけで、"
+        "公開の過去履歴が存在しないことの証明ではない（review R-3）。現在値の公開ページは存在する（今回は読まない）"
+    ),
     "evidence": (
         "#472 Stage D（exogenous/financing.py）の anonymous probe 6 件: OANDA の financing-rates ページ（US / 非 US）は 404、"
         "historical rates ページは 404、v20 developer 文書は 200 だが実現 financing を持つ account endpoint は token 必須、"
@@ -135,12 +145,16 @@ def _row(
     typical_carry = CARRY_SCALE_COEF * gross * RATE_DISPERSION_SD[span] / 100.0
     markup_range = (0.0025 * gross, MARKUP_HIGH * gross)
     if measured_carry is not None:
-        #: 測った carry があれば、それに markup を足し引きして符号を見る
+        #: 測った carry があれば、それに markup 0〜1% を足し引きして符号を見る
         worst = net + measured_carry - markup_range[1]
         best = net + measured_carry
         could_flip = (worst > 0) != (net > 0) or (best > 0) != (net > 0)
+    elif net > 0:
+        #: 正の net は、不利な carry と最大の markup で負になりうるか（review R-1: 向きを見る）
+        could_flip = net < typical_carry + markup_range[1]
     else:
-        could_flip = abs(net) < typical_carry + markup_range[0]
+        #: 負の net は、有利な carry と markup 0 で正になりうるか（markup は負を深めるだけ）
+        could_flip = abs(net) < typical_carry
     return {
         "track": name,
         "span": span,
@@ -194,6 +208,22 @@ def impact_audit() -> list[dict[str, Any]]:
         summary = load(path)["books"][book]["summary"]
         span = "long" if name.startswith("T-V") else "recent"
         rows.append(_row(name, span, summary["net_annual_return"], summary["mean_currency_gross"]))
+    #: 直前 cycle の正の判定（review R-2）。記録にある carry 近似と markup 0.25% を使って、
+    #: markup を 0〜1% に動かしたときの符号を見る（carry は lag 付き 3 か月金利の近似）
+    mr = load("artifacts/research/mechanism_redesign/development.json")["results"]
+    for key in ("M11_long", "M01_long"):
+        result = mr[key]
+        decomposition = result["pnl_decomposition"]
+        net_ex = decomposition["annual_spot_gross"] - decomposition["annual_spread_cost"]
+        rows.append(
+            _row(
+                f"mechanism redesign {key}（net は spot − spread）",
+                "long",
+                net_ex,
+                result["metrics"]["portfolio_gross_leverage"],
+                measured_carry=decomposition["annual_carry"],
+            )
+        )
     track1 = load("artifacts/research/continuous_portfolio/development.json")
     summary = track1["primary"]["summary"]
     rows.append(

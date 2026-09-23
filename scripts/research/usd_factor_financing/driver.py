@@ -33,7 +33,7 @@ STARTED: Final[Path] = (
     REPO_ROOT / "artifacts/research/usd_factor_financing/development_started.json"
 )
 
-FROZEN_DIGEST: Final[str] = "6f0616ff21237a9bd2a0e67eaa77e2461b03ee127b006190c5eca1ade5605919"
+FROZEN_DIGEST: Final[str] = "3ceb6ca52c82f4693efee5c2a936d7346df97d87d4dae99112fd7b52f4ad0865"
 
 
 def _rename_gates(
@@ -109,19 +109,9 @@ def run(*, workers: int = 1) -> dict[str, Any]:
         for span in prereg.SPANS:
             key = f"{track}_{span}"
             print(f"[{time.strftime('%H:%M:%S')}] {key} 開始", file=sys.stderr, flush=True)
-            try:
-                out = execute.run_track(track, span, built, workers=workers)
-            except Exception as error:  # noqa: BLE001
-                results[key] = {
-                    "track": track,
-                    "span": span,
-                    "error": f"{type(error).__name__}: {error}"[:300],
-                }
-                print(f"{key} ERROR {error}", file=sys.stderr, flush=True)
-                continue
-            if "metrics_total_central" not in out:
-                results[key] = out
-                continue
+            #: 例外は捕まえない（Role 2 O-5）: 片方だけの結果で 1 回きりの実行を消費しない。
+            #: 落ちたら記録は書かれず、開始記録が残るので再実行は Human + ChatGPT の判断になる
+            out = execute.run_track(track, span, built, workers=workers)
             scores = out.pop("scores")
             pnl[key] = out.pop("daily_net_total_central")
             out["rename_gates"] = _rename_gates(track, scores, built, span)
