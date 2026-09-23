@@ -1,0 +1,1960 @@
+{
+ "authority": {
+  "inventory": "scripts/research/next_five/inventory.py",
+  "record": "docs/governance/m15_adjudication_2026_09_19_and_09_20.md §7",
+  "ruling": "2026-09-22 Human + ChatGPT 裁定",
+  "selection": "scripts/research/next_five/ranking.py（signal-blind）"
+ },
+ "code_identity": {
+  "argv": [
+   "C:\\Users\\yukik\\fx-ai-trading\\scripts\\research\\next_five\\driver.py",
+   "--workers",
+   "14",
+   "--out",
+   "artifacts/research/next_five/development_run4.json"
+  ],
+  "dirty_paths": [],
+  "head": "d8e89becd4de97fc4994280d7d9adb87c6126b16",
+  "started_utc": "2026-09-23T17:06:02Z"
+ },
+ "corrections_digest": "54251bb0d1d2e41d5d4a4335d49620a76db644c9143cee9f03b9e779e2fed479",
+ "cross_track_correlation": {
+  "U1_long|U2_long": 0.1,
+  "U1_long|U4_long": 0.001,
+  "U1_recent|U2_recent": -0.105,
+  "U1_recent|U3_recent": 0.059,
+  "U1_recent|U4_recent": -0.082,
+  "U1_recent|U5_recent": -0.07,
+  "U2_long|U4_long": 0.053,
+  "U2_recent|U3_recent": -0.134,
+  "U2_recent|U4_recent": -0.078,
+  "U2_recent|U5_recent": -0.157,
+  "U3_recent|U4_recent": -0.147,
+  "U3_recent|U5_recent": -0.143,
+  "U4_recent|U5_recent": 0.023
+ },
+ "cycle": "NEXT_FIVE_2026_09",
+ "disclosures": {
+  "D-10_RECENT_BOUNDARY": "recent span の最初の return（2021-04-27）は 2021-04-26 の close を使う。コードの is_seen は 04-26 を未見扱いにしているが、CLAUDE.md 上 2021-04-26 は seen（2021-04-26 … 2023-04-25）。保守側の不一致で、保護期間の読みではない",
+  "D-11_U5_FIVE_OBSERVATIONS": "U5 の『5 日変化』は `shift(5)`、つまり 5 観測である。日曜の観測 2025-11-30 が 1 つあり、2 営業日の lag を足すと 11-28 の値と同じ日に衝突する（後の値が残る）。影響は小さく、直していない",
+  "D-1_ACQUISITION_CODE_MTIME": "取得（parquet 00:01–00:06）と Stage 0（00:07）の後に、acquire / fetch / mapping / statements / series_map / signals を編集してから 84d7832 に commit した。artefact は commit 版のコードで作られていない。parquet 23 本の content hash は acquisition.json と一致する（Role 2 が確認）",
+  "D-2_ACQUISITION_DIGEST": "acquisition.json の freeze_digest f939b0… は最終凍結 0bc7b198… と違い、どの payload から出たか再構成できない。取得時点の凍結内容はこの digest からは立証できない",
+  "D-3_LEXICON_ORDER": "TONE_LEXICON が初めて commit されたのは 84d7832 で、tone parquet の作成より後である。『1 語も数える前に固定した』は git 履歴では立証できない（会話記録上は固定後に数えた）",
+  "D-4_NO_SIGNAL_HAD_RUN_IS_FALSE": "FINAL_EXECUTION_SET の MDE 値は実データで scores_for を回さないと出ない。`NO_SIGNAL_HAD_RUN` は誤りで、正しくは『return は使っていない（score の日数だけを数えた）』。return を使った証拠は無い",
+  "D-5_FULL_SERIES_PARSED_IN_MEMORY": "H.4.1 の zip、SNB cube、BoJ の全系列、Fed の ne-press.json は期間を request に入れられず、**fresh pool と 2026 年の行を含む応答をメモリに読み込んで parse し、保存前に切り落とした**。acquire.py の docstring は BoJ を期間指定と書いていたが誤りだった。保存物に保護期間の stamp は無い（Role 2 が 23 本で確認）が、C-4 の月次 stamp は残っていた。T-V の先例は『除外は request の性質』であり、これに届いていない — Human + ChatGPT 判断事項",
+  "D-6_U3_JPY_WHOLE_PAGE": "U3 の JPY は本文を抽出できず、38 文書すべてページ全体（navigation 等を含む、205–1714 語）で採点した。tone は (h−d)/語数なので定型文の分は差分で消えない。生 HTML を保存していないので再抽出には再取得が要り、行わない。U3 の JPY 成分は欠陥を持つ",
+  "D-7_REVISION_AND_VALUATION": "U1 と U4 は ALFRED の現行 vintage のみで、当時の公表値ではない（vintage 列・日付も未記録）。U4 の『Reserves Excluding Gold』は USD 建てで、為替の評価変動を含む。凍結した機構『積み増し = 自国通貨売り』と一致するとは限らない。U1 は季節調整済み（…M664S）の現行 vintage なので、季節調整の係数は保護期間を含む全標本から推定されている（暗黙の情報流入。大きさは測っていない）",
+  "D-8_BREADTH_OVERSTATED": "U1 の EUR は別定義（euro area 19 か国の goods net trade）で 2022-12 に終了。U4 の EUR は recent span の行が 0。U2 の EUR は構成国の変化で段差がある。U5 は 1 系列を beta で配っているので 3 通貨規則は形式上",
+  "D-9_STAGE0_COVERAGE": "Stage 0 は PROTECTED_DATA_REQUIREMENT / UNRECOVERABLE_TIMING_AMBIGUITY / NO_REPRODUCIBLE_PUBLIC_SOURCE を評価しておらず、C-2 も C-5 も検出しなかった。`returns_used: False` だが panel.build() は return を読む"
+ },
+ "exploration_disclosure": "FIVE_WAY_EXPLORATORY_DEVELOPMENT_SEARCH_NO_CONFIRMATION_CLAIM",
+ "freeze_digest": "0bc7b198d1564fd1d2da8d4433762d3c0fb7c60bac7ae0526e26dbdae3e9715c",
+ "interpretation": "**最良 candidate を単に winner とは呼ばない**（裁定 §M）。formal confirmation の主張はしない。fresh へ自動進行しない。**帰無が routinely 生む数字は edge ではない**（CORE PRINCIPLE）",
+ "invalidated_records": {
+  "artifacts/research/next_five/development_run2.json": "INVALID_ALL_TRACKS_SUPERSEDED_BY_POST_ALPHA_CORRECTIONS_C1_C5 — 数値は何を実行したかの記録として残すが、結果ではない。U1/U2/U4 の recent span と `other_span_gross_sign` は保護期間の内容を含む"
+ },
+ "multiplicity": "最大 5 本を同じ null に当てるので、**いずれか 1 本が 5% を切る確率は帰無でも約 23%** である。これを報告に必ず添える。**1 本通ったことを『edge が見つかった』とは書かない**",
+ "non_result_changes": {
+  "N-1_PARALLEL_NULL": "null 診断の circular shift を ProcessPool で並列に引く。shift の列は並列化の前に 1 本の乱数列から決めるので、worker 数によらず同じ draw になる",
+  "N-2_CAPACITY_LABEL": "`capacity.reachable` は『net Sharpe が正なので leverage 計算を出した』という意味だけで、実現可能性ではない。max_leverage で到達可否を判定する案は CAPACITY_REPORTING.forbidden に触れるので採らなかった",
+  "N-3_PROVENANCE": "driver が HEAD・dirty path・argv・開始時刻を出力へ記録する",
+  "N-4_MESSAGES": "『連続 decision day が N 日しかない』を『3 通貨以上の score がある decision day が N 日』へ直し、0 列のときは 0 行を返す"
+ },
+ "panel": {
+  "carry_leg": "CARRY_LEG_ABSENT_ON_BOTH_SPANS_SPOT_ONLY",
+  "construction": "pair 日次 log return -> 符号を揃えた通貨平均 -> cross-section 平均を引く。**両 span で同一**",
+  "long": {
+   "days": 4458,
+   "first": "1999-01-05",
+   "last": "2016-06-01",
+   "pairs": 28,
+   "source": "ECB euro reference rates (already acquired for T-V)"
+  },
+  "recent": {
+   "days": 1213,
+   "first": "2021-04-27",
+   "last": "2025-12-26",
+   "no_archive_read": true,
+   "pairs": 20,
+   "source": "guarded M15 caches: momentum_replication_b, supplemental_replication, exploratory_round_1"
+  }
+ },
+ "post_alpha_corrections": {
+  "C-1": {
+   "effect_seen": "U1 recent の EUR（系列は 2022-12 終了）の最終 score を 685 営業日（暦日 959 日、2023-05-12 … 2025-12-26）持ち越していた。U3 の感度（staleness 45）では 3 通貨未満の日が 165 日 book に入っていた",
+   "found_by": "Role 1（経済）R-1 / Role 2（来歴）R-1 — 独立に同じ指摘",
+   "frozen_text_restored": "`max_staleness_days` の staleness 規則、P-6『欠けた通貨は 0』",
+   "tracks": [
+    "U1",
+    "U2",
+    "U3",
+    "U4",
+    "U5"
+   ],
+   "was": "decision day の窓へ reindex した後、上限なく ffill していた",
+   "where": "signals.scores_for"
+  },
+  "C-2": {
+   "addendum": "初版の修正は `_change` が欠損行を返し、`_align` がその欠損行を観測日として staleness を通しつつ 2016 年の値を ffill で運んだ（U1 USD の z が −15.8）。`_align` の入口で欠損行を落とす。1 回目の実行と比べ、recent span の開始は U1 / U2 で約 1 年（2022-01-24 → 2023-01-23）、U4 で約 3 か月（2021-12-22 → 2022-03-24）遅くなる",
+   "discretion": "**判断である。** 基準値の鮮度を `max_staleness_days` と同じ定数で測るのは凍結文に無い選択で、『n か月前の観測が存在すること』を要求する案もありえた。実データでは月次の age はほぼ 0、週次は 7 日以下で、効くのは保護期間の空白を跨ぐ箇所だけである",
+   "effect_seen": "recent span の最初の 12 か月、基準値が 2016-06 の観測だった（約 5 年変化）。balance_sheet_usd の 2021-04-28 の値は 0.556、平時の |変化| は 0.091",
+   "found_by": "Role 1 R-2 / Role 2 B-1 — 独立に同じ指摘",
+   "frozen_text_restored": "『12 か月変化』『3 か月変化』。基準値にも staleness 規則を当てる",
+   "side_effect": "`max_staleness_days` の感度点は、基準値と整列の 2 箇所に同時に効く",
+   "tracks": [
+    "U1",
+    "U2",
+    "U4"
+   ],
+   "was": "n か月前の基準値を上限なく ffill で拾っていた",
+   "where": "signals._change"
+  },
+  "C-3": {
+   "found_by": "Role 1 R-3 / Role 2 R-3 — 独立に同じ指摘",
+   "frozen_text_restored": "『第 m 月の値は m+k 月末以降にのみ使用する』",
+   "tracks": [
+    "U1",
+    "U2",
+    "U4"
+   ],
+   "was": "月末に `DateOffset(months=k)` を足しており、2 月末 + 2 か月 = 4 月 28 日など 1〜3 日早く着地",
+   "where": "signals._align（month_end_offset）"
+  },
+  "C-4": {
+   "found_by": "Role 2 B-1（保護データ）",
+   "frozen_text_restored": "fresh pool と forward epoch は schema 確認にも使わない（第 2 裁定 §2–§4）",
+   "note": "parquet は書き換えない（committed provenance の暗黙 overwrite 禁止）。読む経路で落とす",
+   "tracks": [
+    "U1",
+    "U2",
+    "U4"
+   ],
+   "was": "取得層は stamp の日付で seen を判定しており、2016-06-01 stamp（参照期間 2016 年 6 月 = fresh pool）と 2025-12-01 stamp（参照期間が forward epoch に掛かる）が保存され、前者が C-2 経由で計算に入っていた",
+   "where": "signals._load（monthly=True）"
+  },
+  "C-5": {
+   "discretion": "**凍結文の内部矛盾を、厳しい側の読みで解いた。** series_map（観測日 +2）と FREEZE_AMENDMENT_PLUMBING P-2（『週次は 2 営業日後』）は観測日基準と読め、TRACKS は公表日基準である。CLAUDE.md『研究制限は厳しい読みが勝つ』に従い TRACKS を採った。凍結 digest の中の series_map の値は書き換えず、ここから読む側で上書きしている",
+   "effect_seen": "ECB は公表日当日の 14:15 CET fix から return を取っており、公表（15:00 CET）より約 45 分先の情報",
+   "found_by": "Role 2 R-2",
+   "frozen_text_restored": "TRACKS['U2']['publication_lag'] = 『公表日の 2 営業日後から使用』",
+   "residual": "`BDay` は祝日を知らない。Thanksgiving・イースター・年末で公表が遅れた週は、公表日 + 2 営業日より早く使う可能性が残る（数は少ない）",
+   "tracks": [
+    "U2"
+   ],
+   "was": "週次 series を『観測日の 2 営業日後』から使っていた",
+   "where": "signals._lag_kwargs（U2 USD / EUR）"
+  },
+  "C-6": {
+   "discretion": "**判断である。** 途切れた日を flat で残す・区間を分けるのどちらも凍結文に無いので、どちらも選ばず fail-closed にした。結果を作る選択肢を増やさない側",
+   "fix": "途中で途切れたら `NonContiguousScoresError` で止め、primary なら DATA_NOT_DECISION_GRADE、感度点なら NOT_COMPUTABLE_NONCONTIGUOUS として記録する",
+   "found_by": "独立再監査 BLOCKER-3",
+   "tracks": [
+    "U1",
+    "U2",
+    "U3",
+    "U4",
+    "U5"
+   ],
+   "was": "C-1 で ffill を外すと、3 通貨未満の日が span の途中から削られ、run_book が連続性違反で ValueError を出して track 全体が error になった（U3 の感度点 staleness 45（165 日）/ 60（2 日）と z_window 126（5 日）で起きる。z_window 126 は staleness ではなく、USD の tone が 2024-01-31 … 07-31 に本物の 0.0（h = d）で変化 0 が続き、126 日窓の sd が 0 → z が欠損になる経路で、旧版は ffill が古い z で埋めていた）",
+   "where": "signals.scores_for / execute.run_track / execute._nuisance_sensitivity"
+  }
+ },
+ "results": {
+  "U1_long": {
+   "benchmarks": {
+    "constant_long_usd": {
+     "gross_sharpe": -0.022036638056148323,
+     "ic": -0.010513859717800477,
+     "net_sharpe": -0.05211284531849105
+    },
+    "fx_own_mean_reversion_20d": {
+     "gross_sharpe": -0.37171704840853537,
+     "ic": -4.0741737444512636e-05,
+     "net_sharpe": -0.6332870853980387
+    },
+    "fx_own_momentum_20d": {
+     "gross_sharpe": 0.37171704840853537,
+     "ic": 4.0741737444512636e-05,
+     "net_sharpe": 0.1098583294220552
+    },
+    "zero_signal": {
+     "gross_sharpe": NaN,
+     "ic": NaN,
+     "net_sharpe": NaN
+    }
+   },
+   "candidate": "S29",
+   "capacity": {
+    "reachable": false,
+    "why": "net Sharpe が 0 以下なので leverage で救わない"
+   },
+   "cost_stress": {
+    "cost_x1.5": {
+     "net_annual_return": -0.025941505970576786,
+     "net_sharpe": -0.2425
+    },
+    "cost_x2.0": {
+     "net_annual_return": -0.03024321452865489,
+     "net_sharpe": -0.2826
+    }
+   },
+   "development_economics": {
+    "checks": {
+     "E1_net_positive": false,
+     "E2_gross_positive": false,
+     "E3_incremental_information": true,
+     "E4_temporal_stability": false,
+     "E5_breadth": false,
+     "E6_concentration": false,
+     "E7_cost_robustness": false,
+     "E8_economic_magnitude": false
+    },
+    "core_satisfied": false,
+    "evidence": {
+     "cost_x2_net_sharpe": -0.2826,
+     "positive_temporal_blocks": "33/69",
+     "top_10_day_contribution": -0.7633,
+     "worst_leave_one_currency_out_net_sharpe": -0.3555
+    },
+    "label": "DEVELOPMENT_ECONOMICS_NOT_SUPPORTED"
+   },
+   "diagnostic_gate": {
+    "all_three": false,
+    "checks": {
+     "gross_sharpe_positive": false,
+     "incremental_ic_positive": true,
+     "net_annual_return_positive": false
+    },
+    "id": "THREE_SIGN_TRIPLE",
+    "null_pass_rate_measured_at_freeze": 0.42,
+    "reading": "**通ったこと自体は情報が薄い。** 判定は VERDICT_LOGIC が決める",
+    "status": "DEMOTED_TO_DIAGNOSTIC_NOT_A_SELECTION_GATE"
+   },
+   "distinct_signal_states": 34529,
+   "is_primary_span": true,
+   "margin_utilisation_at_run": 0.1985007963207729,
+   "metrics": {
+    "annual_cost": 0.008603417116156215,
+    "at_leverage_cap_share": 0.0,
+    "currency_contribution": {
+     "AUD": -0.2051333540967844,
+     "CAD": 0.22773902098844945,
+     "CHF": 0.20081387503733647,
+     "EUR": -0.240589852922394,
+     "GBP": -0.21332710150879297,
+     "JPY": 0.009374339609864262,
+     "NZD": 0.20660134233422703,
+     "USD": -0.20957985453617395
+    },
+    "days": 4332,
+    "detection_floor_mde95": 0.4727,
+    "downside_tail_p05": -0.010802687787853076,
+    "factor_abs_cosine": 0.09595470402430388,
+    "gross_annual_return": -0.013036380296342463,
+    "gross_sharpe": -0.12189230468409748,
+    "ic": -0.0029105725927675973,
+    "incremental_ic": 0.0016406057081016195,
+    "leave_one_currency_out_net_sharpe": {
+     "AUD": -0.0947024896384322,
+     "CAD": -0.35551475729839044,
+     "CHF": -0.31941120511328885,
+     "EUR": -0.07152124560780379,
+     "GBP": -0.09399552545875772,
+     "JPY": -0.22074845976668103,
+     "NZD": -0.32170561437125006,
+     "USD": -0.09063676393658879
+    },
+    "max_drawdown": -0.8408074024376544,
+    "net_annual_return": -0.021639797412498683,
+    "net_sharpe": -0.2023249584694323,
+    "portfolio_gross_leverage": 3.9700159264154578,
+    "position_persistence": 0.9727325291387845,
+    "positive_temporal_blocks": "33/69",
+    "raw_to_neutralised_score_corr": 0.9300007256977457,
+    "realized_vol": 0.10695564984271613,
+    "risk_leverage": 4.028343957786956,
+    "signal_persistence": 0.9722488607756453,
+    "signal_persistence_lag1": 0.9734,
+    "temporal_concentration": 0.057806460362001724,
+    "top_10_day_contribution": -0.7632705015288511,
+    "top_1_day_contribution": -0.14172637852963488,
+    "top_5_day_contribution": -0.4487890210424822,
+    "turnover_per_unit_gross": 6.362592167355371,
+    "turnover_round_trips_per_year": 25.259592237687066,
+    "years": 17.19
+   },
+   "nuisance_sensitivity": {
+    "change_window_months": {
+     "constant": "change_window_months",
+     "grid": {
+      "12": {
+       "days": 4333,
+       "gross_sharpe": -0.1219,
+       "net_sharpe": -0.2023
+      },
+      "24": {
+       "days": 4333,
+       "gross_sharpe": 0.1746,
+       "net_sharpe": 0.0998
+      },
+      "6": {
+       "days": 4333,
+       "gross_sharpe": -0.3166,
+       "net_sharpe": -0.3881
+      }
+     },
+     "net_sharpe_range": [
+      -0.3881,
+      0.0998
+     ],
+     "primary": 12,
+     "rule": "**primary 値で判定し、感度集合の全点を報告する。** 感度集合の中から良い点を選び直すことは、結果を見た後であれば post-hoc であり禁止。前 cycle では `max_staleness_days` を結果を見た後に決め、**その値が試した 9 点の最大**だった"
+    },
+    "implementation_tolerance_band": {
+     "constant": "implementation_tolerance_band",
+     "grid": {
+      "0.05": {
+       "days": 4333,
+       "gross_sharpe": -0.1067,
+       "net_sharpe": -0.1961
+      },
+      "0.1": {
+       "days": 4333,
+       "gross_sharpe": -0.1219,
+       "net_sharpe": -0.2023
+      },
+      "0.2": {
+       "days": 4333,
+       "gross_sharpe": -0.3596,
+       "net_sharpe": -0.4147
+      }
+     },
+     "net_sharpe_range": [
+      -0.4147,
+      -0.1961
+     ],
+     "primary": 0.1,
+     "rule": "**primary 値で判定し、感度集合の全点を報告する。** 感度集合の中から良い点を選び直すことは、結果を見た後であれば post-hoc であり禁止。前 cycle では `max_staleness_days` を結果を見た後に決め、**その値が試した 9 点の最大**だった"
+    },
+    "max_staleness_days": {
+     "constant": "max_staleness_days",
+     "grid": {
+      "120": {
+       "days": 4333,
+       "gross_sharpe": -0.1219,
+       "net_sharpe": -0.2023
+      },
+      "45": {
+       "days": 4333,
+       "gross_sharpe": -0.1219,
+       "net_sharpe": -0.2023
+      },
+      "60": {
+       "days": 4333,
+       "gross_sharpe": -0.1219,
+       "net_sharpe": -0.2023
+      },
+      "75": {
+       "days": 4333,
+       "gross_sharpe": -0.1219,
+       "net_sharpe": -0.2023
+      },
+      "90": {
+       "days": 4333,
+       "gross_sharpe": -0.1219,
+       "net_sharpe": -0.2023
+      }
+     },
+     "net_sharpe_range": [
+      -0.2023,
+      -0.2023
+     ],
+     "primary": 75,
+     "rule": "**primary 値で判定し、感度集合の全点を報告する。** 感度集合の中から良い点を選び直すことは、結果を見た後であれば post-hoc であり禁止。前 cycle では `max_staleness_days` を結果を見た後に決め、**その値が試した 9 点の最大**だった"
+    },
+    "z_window": {
+     "constant": "z_window",
+     "grid": {
+      "126": {
+       "days": 4396,
+       "gross_sharpe": -0.1035,
+       "net_sharpe": -0.2008
+      },
+      "252": {
+       "days": 4333,
+       "gross_sharpe": -0.1219,
+       "net_sharpe": -0.2023
+      },
+      "504": {
+       "days": 4207,
+       "gross_sharpe": -0.1737,
+       "net_sharpe": -0.2419
+      }
+     },
+     "net_sharpe_range": [
+      -0.2419,
+      -0.2008
+     ],
+     "primary": 252,
+     "rule": "**primary 値で判定し、感度集合の全点を報告する。** 感度集合の中から良い点を選び直すことは、結果を見た後であれば post-hoc であり禁止。前 cycle では `max_staleness_days` を結果を見た後に決め、**その値が試した 9 点の最大**だった"
+    }
+   },
+   "null_diagnostic": {
+    "diagnostic": "PERMUTATION_NULL_DIAGNOSTIC",
+    "draws": 1000,
+    "is_the_only_gate": false,
+    "label": "NULL_REJECTION_NOT_SUPPORTED",
+    "multiplicity_note": "最大 5 本を同じ null に当てるので、**いずれか 1 本が 5% を切る確率は帰無でも約 23%** である。これを報告に必ず添える。**1 本通ったことを『edge が見つかった』とは書かない**",
+    "null_net_sharpe_mean": -0.0748,
+    "null_net_sharpe_p05": -0.4591,
+    "null_net_sharpe_p50": -0.0754,
+    "null_net_sharpe_p95": 0.304,
+    "null_positive_share": 0.389,
+    "observed_net_annual_return": -0.02164,
+    "observed_net_sharpe": -0.2023,
+    "observed_percentile": 0.306,
+    "p_value": 0.6943,
+    "seed": 20260922,
+    "signal_persistence_lag1": 0.9734
+   },
+   "rename_gate": {},
+   "span": "long",
+   "stage_2": {
+    "eligible": false,
+    "reason": "Stage 2 へは進まない。**Stage 1 の結果は記録する**"
+   },
+   "track": "U1"
+  },
+  "U1_recent": {
+   "benchmarks": {
+    "constant_long_usd": {
+     "gross_sharpe": -0.07304431109980486,
+     "ic": 0.006621478794153843,
+     "net_sharpe": -0.10795783398778425
+    },
+    "fx_own_mean_reversion_20d": {
+     "gross_sharpe": 0.5901579925358555,
+     "ic": 0.011653378015671319,
+     "net_sharpe": 0.18914759778804893
+    },
+    "fx_own_momentum_20d": {
+     "gross_sharpe": -0.5901579925358555,
+     "ic": -0.011653378015671319,
+     "net_sharpe": -0.9925157064271928
+    },
+    "zero_signal": {
+     "gross_sharpe": NaN,
+     "ic": NaN,
+     "net_sharpe": NaN
+    }
+   },
+   "candidate": "S29",
+   "capacity": {
+    "reachable": false,
+    "why": "net Sharpe が 0 以下なので leverage で救わない"
+   },
+   "cost_stress": {
+    "cost_x1.5": {
+     "net_annual_return": -0.03357179858778729,
+     "net_sharpe": -0.3014
+    },
+    "cost_x2.0": {
+     "net_annual_return": -0.03879346381094718,
+     "net_sharpe": -0.3479
+    }
+   },
+   "diagnostic_gate": {
+    "all_three": false,
+    "checks": {
+     "gross_sharpe_positive": false,
+     "incremental_ic_positive": true,
+     "net_annual_return_positive": false
+    },
+    "id": "THREE_SIGN_TRIPLE",
+    "null_pass_rate_measured_at_freeze": 0.42,
+    "reading": "**通ったこと自体は情報が薄い。** 判定は VERDICT_LOGIC が決める",
+    "status": "DEMOTED_TO_DIAGNOSTIC_NOT_A_SELECTION_GATE"
+   },
+   "distinct_signal_states": 5391,
+   "is_primary_span": false,
+   "margin_utilisation_at_run": 0.2566081507805419,
+   "metrics": {
+    "annual_cost": 0.010443330446319747,
+    "at_leverage_cap_share": 0.0,
+    "currency_contribution": {
+     "AUD": -0.07373106883145311,
+     "CAD": 0.006354973827113784,
+     "CHF": 0.07395650152228629,
+     "EUR": -0.015740023245339015,
+     "GBP": -0.026719691281871318,
+     "JPY": -0.13893715001546358,
+     "NZD": -0.003173589044658534,
+     "USD": 0.12412752083098379
+    },
+    "days": 758,
+    "detection_floor_mde95": 1.1294,
+    "downside_tail_p05": -0.011347117340777963,
+    "factor_abs_cosine": 0.12192360572325399,
+    "gross_annual_return": -0.01790680291830765,
+    "gross_sharpe": -0.16112997092518086,
+    "ic": 0.009490623311142166,
+    "incremental_ic": 0.015153014774767881,
+    "leave_one_currency_out_net_sharpe": {
+     "AUD": -0.035739209566127576,
+     "CAD": -0.28511289829985187,
+     "CHF": -0.5356359381363947,
+     "EUR": -0.21099294767541474,
+     "GBP": -0.19426358934182575,
+     "JPY": 0.16377760562670432,
+     "NZD": -0.2460170935145536,
+     "USD": -0.7033961554684505
+    },
+    "max_drawdown": -0.2678080043662645,
+    "net_annual_return": -0.028350133364627425,
+    "net_sharpe": -0.2547639799303815,
+    "portfolio_gross_leverage": 5.132163015610837,
+    "position_persistence": 0.9724849186052911,
+    "positive_temporal_blocks": "5/12",
+    "raw_to_neutralised_score_corr": 0.9636777633257484,
+    "realized_vol": 0.11127999088558194,
+    "risk_leverage": 5.219393285007392,
+    "signal_persistence": 0.9704382335302681,
+    "signal_persistence_lag1": 0.9711,
+    "temporal_concentration": 0.16347242341778423,
+    "top_10_day_contribution": -2.613312750822534,
+    "top_1_day_contribution": -0.44702776843414077,
+    "top_5_day_contribution": -1.6190478127724102,
+    "turnover_per_unit_gross": 5.974395014074741,
+    "turnover_round_trips_per_year": 30.661569131884175,
+    "years": 3.01
+   },
+   "rename_gate": {},
+   "span": "recent",
+   "track": "U1"
+  },
+  "U2_long": {
+   "benchmarks": {
+    "constant_long_usd": {
+     "gross_sharpe": 0.13999822263668027,
+     "ic": -0.01094844067640939,
+     "net_sharpe": 0.1082049432917605
+    },
+    "fx_own_mean_reversion_20d": {
+     "gross_sharpe": -0.3395562037657212,
+     "ic": -0.0011363145683019494,
+     "net_sharpe": -0.6029673714728195
+    },
+    "fx_own_momentum_20d": {
+     "gross_sharpe": 0.3395562037657212,
+     "ic": 0.0011363145683019494,
+     "net_sharpe": 0.07592030293670504
+    },
+    "zero_signal": {
+     "gross_sharpe": NaN,
+     "ic": NaN,
+     "net_sharpe": NaN
+    }
+   },
+   "candidate": "S25",
+   "capacity": {
+    "reachable": false,
+    "why": "net Sharpe が 0 以下なので leverage で救わない"
+   },
+   "cost_stress": {
+    "cost_x1.5": {
+     "net_annual_return": -0.012486505535260858,
+     "net_sharpe": -0.1143
+    },
+    "cost_x2.0": {
+     "net_annual_return": -0.017735305568312737,
+     "net_sharpe": -0.1624
+    }
+   },
+   "development_economics": {
+    "checks": {
+     "E1_net_positive": false,
+     "E2_gross_positive": true,
+     "E3_incremental_information": false,
+     "E4_temporal_stability": false,
+     "E5_breadth": false,
+     "E6_concentration": false,
+     "E7_cost_robustness": false,
+     "E8_economic_magnitude": false
+    },
+    "core_satisfied": false,
+    "evidence": {
+     "cost_x2_net_sharpe": -0.1624,
+     "positive_temporal_blocks": "32/67",
+     "top_10_day_contribution": -2.5146,
+     "worst_leave_one_currency_out_net_sharpe": -0.3011
+    },
+    "label": "DEVELOPMENT_ECONOMICS_NOT_SUPPORTED"
+   },
+   "diagnostic_gate": {
+    "all_three": false,
+    "checks": {
+     "gross_sharpe_positive": true,
+     "incremental_ic_positive": false,
+     "net_annual_return_positive": false
+    },
+    "id": "THREE_SIGN_TRIPLE",
+    "null_pass_rate_measured_at_freeze": 0.42,
+    "reading": "**通ったこと自体は情報が薄い。** 判定は VERDICT_LOGIC が決める",
+    "status": "DEMOTED_TO_DIAGNOSTIC_NOT_A_SELECTION_GATE"
+   },
+   "distinct_signal_states": 19704,
+   "is_primary_span": true,
+   "margin_utilisation_at_run": 0.17787253848621826,
+   "metrics": {
+    "annual_cost": 0.010497600066103755,
+    "at_leverage_cap_share": 0.0,
+    "currency_contribution": {
+     "AUD": 0.07803344657667818,
+     "CAD": -0.2590178917693441,
+     "CHF": -0.3444872076239368,
+     "EUR": 0.4101766319829847,
+     "GBP": -0.07657964256041641,
+     "JPY": 0.0690369894450859,
+     "NZD": 0.06701952270491887,
+     "USD": 0.11022734384617798
+    },
+    "days": 4206,
+    "detection_floor_mde95": 0.4797,
+    "downside_tail_p05": -0.010783184041330756,
+    "factor_abs_cosine": 0.13460223468954907,
+    "gross_annual_return": 0.003259894563894776,
+    "gross_sharpe": 0.02985323896579644,
+    "ic": 0.0027433920217557737,
+    "incremental_ic": -0.0003503445811956728,
+    "leave_one_currency_out_net_sharpe": {
+     "AUD": -0.11292235102668373,
+     "CAD": 0.08511196663967208,
+     "CHF": 0.1280480534004979,
+     "EUR": -0.3011223193417362,
+     "GBP": -0.024292410488374005,
+     "JPY": -0.11213895009318314,
+     "NZD": -0.1078246624581192,
+     "USD": -0.13579344635721433
+    },
+    "max_drawdown": -0.5507365938897277,
+    "net_annual_return": -0.007237705502208978,
+    "net_sharpe": -0.06628223406886119,
+    "portfolio_gross_leverage": 3.5574507697243654,
+    "position_persistence": 0.9698335464696496,
+    "positive_temporal_blocks": "32/67",
+    "raw_to_neutralised_score_corr": 0.9513566664265326,
+    "realized_vol": 0.10919525577079467,
+    "risk_leverage": 3.788128698522986,
+    "signal_persistence": 0.9757374821311393,
+    "signal_persistence_lag1": 0.9772,
+    "temporal_concentration": 0.054755773774062266,
+    "top_10_day_contribution": -2.5145771750468198,
+    "top_1_day_contribution": -0.3611344629234337,
+    "top_5_day_contribution": -1.4551714724164104,
+    "turnover_per_unit_gross": 8.663761349260072,
+    "turnover_round_trips_per_year": 30.820904480633452,
+    "years": 16.69
+   },
+   "nuisance_sensitivity": {
+    "change_window_months": {
+     "constant": "change_window_months",
+     "grid": {
+      "12": {
+       "days": 4207,
+       "gross_sharpe": 0.0299,
+       "net_sharpe": -0.0663
+      },
+      "24": {
+       "days": 3949,
+       "gross_sharpe": 0.1803,
+       "net_sharpe": 0.0879
+      },
+      "6": {
+       "days": 4333,
+       "gross_sharpe": 0.2942,
+       "net_sharpe": 0.1808
+      }
+     },
+     "net_sharpe_range": [
+      -0.0663,
+      0.1808
+     ],
+     "primary": 12,
+     "rule": "**primary 値で判定し、感度集合の全点を報告する。** 感度集合の中から良い点を選び直すことは、結果を見た後であれば post-hoc であり禁止。前 cycle では `max_staleness_days` を結果を見た後に決め、**その値が試した 9 点の最大**だった"
+    },
+    "implementation_tolerance_band": {
+     "constant": "implementation_tolerance_band",
+     "grid": {
+      "0.05": {
+       "days": 4207,
+       "gross_sharpe": 0.0304,
+       "net_sharpe": -0.0814
+      },
+      "0.1": {
+       "days": 4207,
+       "gross_sharpe": 0.0299,
+       "net_sharpe": -0.0663
+      },
+      "0.2": {
+       "days": 4207,
+       "gross_sharpe": 0.204,
+       "net_sharpe": 0.1385
+      }
+     },
+     "net_sharpe_range": [
+      -0.0814,
+      0.1385
+     ],
+     "primary": 0.1,
+     "rule": "**primary 値で判定し、感度集合の全点を報告する。** 感度集合の中から良い点を選び直すことは、結果を見た後であれば post-hoc であり禁止。前 cycle では `max_staleness_days` を結果を見た後に決め、**その値が試した 9 点の最大**だった"
+    },
+    "max_staleness_days": {
+     "constant": "max_staleness_days",
+     "grid": {
+      "120": {
+       "days": 4207,
+       "gross_sharpe": 0.0299,
+       "net_sharpe": -0.0663
+      },
+      "45": {
+       "days": 4207,
+       "gross_sharpe": 0.0299,
+       "net_sharpe": -0.0663
+      },
+      "60": {
+       "days": 4207,
+       "gross_sharpe": 0.0299,
+       "net_sharpe": -0.0663
+      },
+      "75": {
+       "days": 4207,
+       "gross_sharpe": 0.0299,
+       "net_sharpe": -0.0663
+      },
+      "90": {
+       "days": 4207,
+       "gross_sharpe": 0.0299,
+       "net_sharpe": -0.0663
+      }
+     },
+     "net_sharpe_range": [
+      -0.0663,
+      -0.0663
+     ],
+     "primary": 75,
+     "rule": "**primary 値で判定し、感度集合の全点を報告する。** 感度集合の中から良い点を選び直すことは、結果を見た後であれば post-hoc であり禁止。前 cycle では `max_staleness_days` を結果を見た後に決め、**その値が試した 9 点の最大**だった"
+    },
+    "z_window": {
+     "constant": "z_window",
+     "grid": {
+      "126": {
+       "days": 4270,
+       "gross_sharpe": 0.0727,
+       "net_sharpe": -0.0608
+      },
+      "252": {
+       "days": 4207,
+       "gross_sharpe": 0.0299,
+       "net_sharpe": -0.0663
+      },
+      "504": {
+       "days": 4081,
+       "gross_sharpe": 0.0545,
+       "net_sharpe": -0.0269
+      }
+     },
+     "net_sharpe_range": [
+      -0.0663,
+      -0.0269
+     ],
+     "primary": 252,
+     "rule": "**primary 値で判定し、感度集合の全点を報告する。** 感度集合の中から良い点を選び直すことは、結果を見た後であれば post-hoc であり禁止。前 cycle では `max_staleness_days` を結果を見た後に決め、**その値が試した 9 点の最大**だった"
+    }
+   },
+   "null_diagnostic": {
+    "diagnostic": "PERMUTATION_NULL_DIAGNOSTIC",
+    "draws": 1000,
+    "is_the_only_gate": false,
+    "label": "NULL_REJECTION_NOT_SUPPORTED",
+    "multiplicity_note": "最大 5 本を同じ null に当てるので、**いずれか 1 本が 5% を切る確率は帰無でも約 23%** である。これを報告に必ず添える。**1 本通ったことを『edge が見つかった』とは書かない**",
+    "null_net_sharpe_mean": -0.1006,
+    "null_net_sharpe_p05": -0.5159,
+    "null_net_sharpe_p50": -0.0967,
+    "null_net_sharpe_p95": 0.2935,
+    "null_positive_share": 0.325,
+    "observed_net_annual_return": -0.00724,
+    "observed_net_sharpe": -0.0663,
+    "observed_percentile": 0.552,
+    "p_value": 0.4486,
+    "seed": 20260922,
+    "signal_persistence_lag1": 0.9772
+   },
+   "rename_gate": {
+    "comparator": "S31 の reserves score",
+    "if_exceeded": "RENAME_WITHIN_THIS_CYCLE",
+    "measured_abs_correlation": 0.0046,
+    "overlap_days": 4207,
+    "statistic": "同上",
+    "threshold": 0.8,
+    "verdict": "DISTINCT",
+    "why": "同じ中銀の balance sheet と外貨準備が同じ数字になっていないかを測る"
+   },
+   "span": "long",
+   "stage_2": {
+    "eligible": false,
+    "reason": "Stage 2 へは進まない。**Stage 1 の結果は記録する**"
+   },
+   "track": "U2"
+  },
+  "U2_recent": {
+   "benchmarks": {
+    "constant_long_usd": {
+     "gross_sharpe": -0.07304431109980486,
+     "ic": 0.006621478794153843,
+     "net_sharpe": -0.10795783398778425
+    },
+    "fx_own_mean_reversion_20d": {
+     "gross_sharpe": 0.5901579925358555,
+     "ic": 0.011653378015671319,
+     "net_sharpe": 0.18914759778804893
+    },
+    "fx_own_momentum_20d": {
+     "gross_sharpe": -0.5901579925358555,
+     "ic": -0.011653378015671319,
+     "net_sharpe": -0.9925157064271928
+    },
+    "zero_signal": {
+     "gross_sharpe": NaN,
+     "ic": NaN,
+     "net_sharpe": NaN
+    }
+   },
+   "candidate": "S25",
+   "capacity": {
+    "for_10%_annual_net": {
+     "annual_net": 0.1,
+     "gap_stress_2pct_adverse": -0.2096,
+     "pair_specific_margin": 0.524,
+     "portfolio_gross": 10.48,
+     "remaining_margin_buffer": 0.476,
+     "required_target_vol": 0.24,
+     "risk_leverage": 10.48,
+     "scaled_max_drawdown": -0.3152
+    },
+    "for_5%_annual_net": {
+     "annual_net": 0.05,
+     "gap_stress_2pct_adverse": -0.1048,
+     "pair_specific_margin": 0.262,
+     "portfolio_gross": 5.24,
+     "remaining_margin_buffer": 0.738,
+     "required_target_vol": 0.12,
+     "risk_leverage": 5.24,
+     "scaled_max_drawdown": -0.1576
+    },
+    "forbidden": [
+     "5x を feasibility の hard cap として使うこと",
+     "broker の 20x / 25x を risk target として使うこと"
+    ],
+    "reachable": true,
+    "scenarios": {
+     "vol_10%": {
+      "annual_net": 0.0417,
+      "gap_stress_2pct_adverse": -0.0873,
+      "pair_specific_margin": 0.218,
+      "portfolio_gross": 4.37,
+      "remaining_margin_buffer": 0.782,
+      "risk_leverage": 4.37,
+      "scaled_max_drawdown": -0.1313
+     },
+     "vol_12%": {
+      "annual_net": 0.05,
+      "gap_stress_2pct_adverse": -0.1048,
+      "pair_specific_margin": 0.262,
+      "portfolio_gross": 5.24,
+      "remaining_margin_buffer": 0.738,
+      "risk_leverage": 5.24,
+      "scaled_max_drawdown": -0.1576
+     },
+     "vol_15%": {
+      "annual_net": 0.0625,
+      "gap_stress_2pct_adverse": -0.131,
+      "pair_specific_margin": 0.327,
+      "portfolio_gross": 6.55,
+      "remaining_margin_buffer": 0.673,
+      "risk_leverage": 6.55,
+      "scaled_max_drawdown": -0.197
+     },
+     "vol_8%": {
+      "annual_net": 0.0333,
+      "gap_stress_2pct_adverse": -0.0699,
+      "pair_specific_margin": 0.175,
+      "portfolio_gross": 3.49,
+      "remaining_margin_buffer": 0.825,
+      "risk_leverage": 3.49,
+      "scaled_max_drawdown": -0.1051
+     }
+    },
+    "vol_per_unit_gross_measured": 0.0229
+   },
+   "cost_stress": {
+    "cost_x1.5": {
+     "net_annual_return": 0.04243492528672481,
+     "net_sharpe": 0.3872
+    },
+    "cost_x2.0": {
+     "net_annual_return": 0.039209384351997056,
+     "net_sharpe": 0.3578
+    }
+   },
+   "diagnostic_gate": {
+    "all_three": true,
+    "checks": {
+     "gross_sharpe_positive": true,
+     "incremental_ic_positive": true,
+     "net_annual_return_positive": true
+    },
+    "id": "THREE_SIGN_TRIPLE",
+    "null_pass_rate_measured_at_freeze": 0.42,
+    "reading": "**通ったこと自体は情報が薄い。** 判定は VERDICT_LOGIC が決める",
+    "status": "DEMOTED_TO_DIAGNOSTIC_NOT_A_SELECTION_GATE"
+   },
+   "distinct_signal_states": 3795,
+   "is_primary_span": false,
+   "margin_utilisation_at_run": 0.23923472684380073,
+   "metrics": {
+    "annual_cost": 0.0064510818694555015,
+    "at_leverage_cap_share": 0.0,
+    "currency_contribution": {
+     "AUD": 0.015677251523342466,
+     "CAD": 0.06020363757177036,
+     "CHF": -0.10009987907699172,
+     "EUR": 0.010424775464989641,
+     "GBP": -0.002798035562854584,
+     "JPY": 0.08699806292730955,
+     "NZD": -0.02761358348415524,
+     "USD": 0.11395599862432093
+    },
+    "days": 758,
+    "detection_floor_mde95": 1.1294,
+    "downside_tail_p05": -0.010656319833262349,
+    "factor_abs_cosine": 0.10125387982408342,
+    "gross_annual_return": 0.05211154809090806,
+    "gross_sharpe": 0.47553076983171816,
+    "ic": 0.006469628226966008,
+    "incremental_ic": 0.006417044463413335,
+    "leave_one_currency_out_net_sharpe": {
+     "AUD": 0.3880179613141764,
+     "CAD": 0.24861361306831317,
+     "CHF": 0.8087819032483364,
+     "EUR": 0.41107379659508636,
+     "GBP": 0.4241134791728095,
+     "JPY": 0.16955620277160383,
+     "NZD": 0.5116120882000046,
+     "USD": 0.07937583927803817
+    },
+    "max_drawdown": -0.14391694418179396,
+    "net_annual_return": 0.04566046622145256,
+    "net_sharpe": 0.4166964196727437,
+    "portfolio_gross_leverage": 4.784694536876015,
+    "position_persistence": 0.9861254751849616,
+    "positive_temporal_blocks": "8/12",
+    "raw_to_neutralised_score_corr": 0.9551182064409826,
+    "realized_vol": 0.10957729432211687,
+    "risk_leverage": 4.870203544118231,
+    "signal_persistence": 0.9854814017069412,
+    "signal_persistence_lag1": 0.9926,
+    "temporal_concentration": 0.21835366779842605,
+    "top_10_day_contribution": 1.491062173322399,
+    "top_1_day_contribution": 0.18918525069539097,
+    "top_5_day_contribution": 0.857012443441568,
+    "turnover_per_unit_gross": 3.9585277426161527,
+    "turnover_round_trips_per_year": 18.94034606416765,
+    "years": 3.01
+   },
+   "rename_gate": {
+    "comparator": "S31 の reserves score",
+    "if_exceeded": "RENAME_WITHIN_THIS_CYCLE",
+    "measured_abs_correlation": 0.0615,
+    "overlap_days": 759,
+    "statistic": "同上",
+    "threshold": 0.8,
+    "verdict": "DISTINCT",
+    "why": "同じ中銀の balance sheet と外貨準備が同じ数字になっていないかを測る"
+   },
+   "span": "recent",
+   "track": "U2"
+  },
+  "U3_long": {
+   "candidate": "S27",
+   "span": "long",
+   "track": "U3",
+   "verdict": "U3_S27_DATA_NOT_DECISION_GRADE",
+   "why": "3 通貨以上の score がある decision day が 0 日しかない"
+  },
+  "U3_recent": {
+   "benchmarks": {
+    "constant_long_usd": {
+     "gross_sharpe": 0.47119813552908985,
+     "ic": 0.013749515575195466,
+     "net_sharpe": 0.4385320609362941
+    },
+    "fx_own_mean_reversion_20d": {
+     "gross_sharpe": 0.2134517464173023,
+     "ic": 0.004397128111653005,
+     "net_sharpe": -0.1474464076773374
+    },
+    "fx_own_momentum_20d": {
+     "gross_sharpe": -0.2134517464173023,
+     "ic": -0.004397128111653005,
+     "net_sharpe": -0.5751885769351028
+    },
+    "zero_signal": {
+     "gross_sharpe": NaN,
+     "ic": NaN,
+     "net_sharpe": NaN
+    }
+   },
+   "candidate": "S27",
+   "capacity": {
+    "reachable": false,
+    "why": "net Sharpe が 0 以下なので leverage で救わない"
+   },
+   "cost_stress": {
+    "cost_x1.5": {
+     "net_annual_return": -0.031018810583120688,
+     "net_sharpe": -0.2922
+    },
+    "cost_x2.0": {
+     "net_annual_return": -0.03762471970443649,
+     "net_sharpe": -0.3544
+    }
+   },
+   "development_economics": {
+    "checks": {
+     "E1_net_positive": false,
+     "E2_gross_positive": false,
+     "E3_incremental_information": false,
+     "E4_temporal_stability": false,
+     "E5_breadth": false,
+     "E6_concentration": false,
+     "E7_cost_robustness": false,
+     "E8_economic_magnitude": false
+    },
+    "core_satisfied": false,
+    "evidence": {
+     "cost_x2_net_sharpe": -0.3544,
+     "positive_temporal_blocks": "7/16",
+     "top_10_day_contribution": -2.3691,
+     "worst_leave_one_currency_out_net_sharpe": -0.3698
+    },
+    "label": "DEVELOPMENT_ECONOMICS_NOT_SUPPORTED"
+   },
+   "diagnostic_gate": {
+    "all_three": false,
+    "checks": {
+     "gross_sharpe_positive": false,
+     "incremental_ic_positive": false,
+     "net_annual_return_positive": false
+    },
+    "id": "THREE_SIGN_TRIPLE",
+    "null_pass_rate_measured_at_freeze": 0.42,
+    "reading": "**通ったこと自体は情報が薄い。** 判定は VERDICT_LOGIC が決める",
+    "status": "DEMOTED_TO_DIAGNOSTIC_NOT_A_SELECTION_GATE"
+   },
+   "distinct_signal_states": 3074,
+   "is_primary_span": true,
+   "margin_utilisation_at_run": 0.16464032199163925,
+   "metrics": {
+    "annual_cost": 0.013211818242631571,
+    "at_leverage_cap_share": 0.0,
+    "currency_contribution": {
+     "AUD": 0.016079292524121037,
+     "CAD": -0.028470805027488846,
+     "CHF": 0.017933807247674915,
+     "EUR": -0.10993888550174961,
+     "GBP": 0.0520094245314259,
+     "JPY": -0.04986524179422545,
+     "NZD": 0.017563106601194464,
+     "USD": 0.03917378865542264
+    },
+    "days": 1024,
+    "detection_floor_mde95": 0.9718,
+    "downside_tail_p05": -0.01073485345136072,
+    "factor_abs_cosine": 0.2054585682579747,
+    "gross_annual_return": -0.011201083219173347,
+    "gross_sharpe": -0.10540351208622693,
+    "ic": -0.016481101172399246,
+    "incremental_ic": -0.01154419565590837,
+    "leave_one_currency_out_net_sharpe": {
+     "AUD": -0.2818158391396295,
+     "CAD": -0.16472800486218445,
+     "CHF": -0.26806084837809896,
+     "EUR": 0.02720295826390831,
+     "GBP": -0.354671944794827,
+     "JPY": -0.14918745207883768,
+     "NZD": -0.2861256277167368,
+     "USD": -0.36975275528742807
+    },
+    "max_drawdown": -0.21420954532031392,
+    "net_annual_return": -0.02441290146180491,
+    "net_sharpe": -0.22993983720727632,
+    "portfolio_gross_leverage": 3.292806439832785,
+    "position_persistence": 0.9293090600292576,
+    "positive_temporal_blocks": "7/16",
+    "raw_to_neutralised_score_corr": 0.9516316035676179,
+    "realized_vol": 0.10617082171715296,
+    "risk_leverage": 4.137954875285345,
+    "signal_persistence": 0.9552842132188957,
+    "signal_persistence_lag1": 0.9562,
+    "temporal_concentration": 0.1327751765526945,
+    "top_10_day_contribution": -2.369091943025919,
+    "top_1_day_contribution": -0.2682011251211368,
+    "top_5_day_contribution": -1.2935238649839165,
+    "turnover_per_unit_gross": 11.780175058998623,
+    "turnover_round_trips_per_year": 38.78983629662822,
+    "years": 4.06
+   },
+   "nuisance_sensitivity": {
+    "implementation_tolerance_band": {
+     "constant": "implementation_tolerance_band",
+     "grid": {
+      "0.05": {
+       "days": 1025,
+       "gross_sharpe": -0.3278,
+       "net_sharpe": -0.4733
+      },
+      "0.1": {
+       "days": 1025,
+       "gross_sharpe": -0.1054,
+       "net_sharpe": -0.2299
+      },
+      "0.2": {
+       "days": 1025,
+       "gross_sharpe": -0.1954,
+       "net_sharpe": -0.2912
+      }
+     },
+     "net_sharpe_range": [
+      -0.4733,
+      -0.2299
+     ],
+     "primary": 0.1,
+     "rule": "**primary 値で判定し、感度集合の全点を報告する。** 感度集合の中から良い点を選び直すことは、結果を見た後であれば post-hoc であり禁止。前 cycle では `max_staleness_days` を結果を見た後に決め、**その値が試した 9 点の最大**だった"
+    },
+    "max_staleness_days": {
+     "constant": "max_staleness_days",
+     "grid": {
+      "120": {
+       "days": 1025,
+       "gross_sharpe": -0.1054,
+       "net_sharpe": -0.2299
+      },
+      "45": {
+       "status": "NOT_COMPUTABLE_NONCONTIGUOUS: U3/recent: 3 通貨未満の日が span の途中に 165 日ある（C-6）"
+      },
+      "60": {
+       "status": "NOT_COMPUTABLE_NONCONTIGUOUS: U3/recent: 3 通貨未満の日が span の途中に 2 日ある（C-6）"
+      },
+      "75": {
+       "days": 1025,
+       "gross_sharpe": -0.1054,
+       "net_sharpe": -0.2299
+      },
+      "90": {
+       "days": 1025,
+       "gross_sharpe": -0.1054,
+       "net_sharpe": -0.2299
+      }
+     },
+     "net_sharpe_range": [
+      -0.2299,
+      -0.2299
+     ],
+     "primary": 75,
+     "rule": "**primary 値で判定し、感度集合の全点を報告する。** 感度集合の中から良い点を選び直すことは、結果を見た後であれば post-hoc であり禁止。前 cycle では `max_staleness_days` を結果を見た後に決め、**その値が試した 9 点の最大**だった"
+    },
+    "z_window": {
+     "constant": "z_window",
+     "grid": {
+      "126": {
+       "status": "NOT_COMPUTABLE_NONCONTIGUOUS: U3/recent: 3 通貨未満の日が span の途中に 5 日ある（C-6）"
+      },
+      "252": {
+       "days": 1025,
+       "gross_sharpe": -0.1054,
+       "net_sharpe": -0.2299
+      },
+      "504": {
+       "days": 899,
+       "gross_sharpe": -0.1599,
+       "net_sharpe": -0.2838
+      }
+     },
+     "net_sharpe_range": [
+      -0.2838,
+      -0.2299
+     ],
+     "primary": 252,
+     "rule": "**primary 値で判定し、感度集合の全点を報告する。** 感度集合の中から良い点を選び直すことは、結果を見た後であれば post-hoc であり禁止。前 cycle では `max_staleness_days` を結果を見た後に決め、**その値が試した 9 点の最大**だった"
+    }
+   },
+   "null_diagnostic": {
+    "diagnostic": "PERMUTATION_NULL_DIAGNOSTIC",
+    "draws": 1000,
+    "is_the_only_gate": false,
+    "label": "NULL_REJECTION_NOT_SUPPORTED",
+    "multiplicity_note": "最大 5 本を同じ null に当てるので、**いずれか 1 本が 5% を切る確率は帰無でも約 23%** である。これを報告に必ず添える。**1 本通ったことを『edge が見つかった』とは書かない**",
+    "null_net_sharpe_mean": -0.2107,
+    "null_net_sharpe_p05": -1.141,
+    "null_net_sharpe_p50": -0.1696,
+    "null_net_sharpe_p95": 0.5937,
+    "null_positive_share": 0.344,
+    "observed_net_annual_return": -0.02441,
+    "observed_net_sharpe": -0.2299,
+    "observed_percentile": 0.443,
+    "p_value": 0.5574,
+    "seed": 20260922,
+    "signal_persistence_lag1": 0.9562
+   },
+   "rename_gate": {},
+   "span": "recent",
+   "stage_2": {
+    "eligible": false,
+    "reason": "Stage 2 へは進まない。**Stage 1 の結果は記録する**"
+   },
+   "track": "U3"
+  },
+  "U4_long": {
+   "benchmarks": {
+    "constant_long_usd": {
+     "gross_sharpe": -0.022036638056148323,
+     "ic": -0.010513859717800477,
+     "net_sharpe": -0.05211284531849105
+    },
+    "fx_own_mean_reversion_20d": {
+     "gross_sharpe": -0.37171704840853537,
+     "ic": -4.0741737444512636e-05,
+     "net_sharpe": -0.6332870853980387
+    },
+    "fx_own_momentum_20d": {
+     "gross_sharpe": 0.37171704840853537,
+     "ic": 4.0741737444512636e-05,
+     "net_sharpe": 0.1098583294220552
+    },
+    "zero_signal": {
+     "gross_sharpe": NaN,
+     "ic": NaN,
+     "net_sharpe": NaN
+    }
+   },
+   "candidate": "S31",
+   "capacity": {
+    "reachable": false,
+    "why": "net Sharpe が 0 以下なので leverage で救わない"
+   },
+   "cost_stress": {
+    "cost_x1.5": {
+     "net_annual_return": -0.04490442847431064,
+     "net_sharpe": -0.4099
+    },
+    "cost_x2.0": {
+     "net_annual_return": -0.04838057273442689,
+     "net_sharpe": -0.4416
+    }
+   },
+   "development_economics": {
+    "checks": {
+     "E1_net_positive": false,
+     "E2_gross_positive": false,
+     "E3_incremental_information": true,
+     "E4_temporal_stability": false,
+     "E5_breadth": false,
+     "E6_concentration": false,
+     "E7_cost_robustness": false,
+     "E8_economic_magnitude": false
+    },
+    "core_satisfied": false,
+    "evidence": {
+     "cost_x2_net_sharpe": -0.4416,
+     "positive_temporal_blocks": "26/69",
+     "top_10_day_contribution": -0.3321,
+     "worst_leave_one_currency_out_net_sharpe": -0.4971
+    },
+    "label": "DEVELOPMENT_ECONOMICS_NOT_SUPPORTED"
+   },
+   "diagnostic_gate": {
+    "all_three": false,
+    "checks": {
+     "gross_sharpe_positive": false,
+     "incremental_ic_positive": true,
+     "net_annual_return_positive": false
+    },
+    "id": "THREE_SIGN_TRIPLE",
+    "null_pass_rate_measured_at_freeze": 0.42,
+    "reading": "**通ったこと自体は情報が薄い。** 判定は VERDICT_LOGIC が決める",
+    "status": "DEMOTED_TO_DIAGNOSTIC_NOT_A_SELECTION_GATE"
+   },
+   "distinct_signal_states": 25797,
+   "is_primary_span": true,
+   "margin_utilisation_at_run": 0.18603651188490733,
+   "metrics": {
+    "annual_cost": 0.006952288520232501,
+    "at_leverage_cap_share": 0.0,
+    "currency_contribution": {
+     "AUD": 0.18389111958819304,
+     "CAD": -0.12440109990879053,
+     "CHF": -0.11263146417228598,
+     "EUR": -0.03496118371750563,
+     "GBP": -0.19586788012641898,
+     "JPY": -0.14736021429093837,
+     "NZD": -0.31530561109153926,
+     "USD": 0.153977550599274
+    },
+    "days": 4332,
+    "detection_floor_mde95": 0.4727,
+    "downside_tail_p05": -0.011026586504588896,
+    "factor_abs_cosine": 0.12005202940952052,
+    "gross_annual_return": -0.0344759956939619,
+    "gross_sharpe": -0.3146525788429857,
+    "ic": 0.003206427232878598,
+    "incremental_ic": 0.005717469895829485,
+    "leave_one_currency_out_net_sharpe": {
+     "AUD": -0.49706035573795315,
+     "CAD": -0.33518756990497844,
+     "CHF": -0.32509049704844917,
+     "EUR": -0.3901594211732398,
+     "GBP": -0.2852995197033525,
+     "JPY": -0.31993560569940904,
+     "NZD": -0.21280030468510402,
+     "USD": -0.4859370923043954
+    },
+    "max_drawdown": -0.8052068222732062,
+    "net_annual_return": -0.041428284214194394,
+    "net_sharpe": -0.3781993947159105,
+    "portfolio_gross_leverage": 3.7207302376981466,
+    "position_persistence": 0.9766530004951669,
+    "positive_temporal_blocks": "26/69",
+    "raw_to_neutralised_score_corr": 0.9451526556809292,
+    "realized_vol": 0.10954085276977718,
+    "risk_leverage": 3.804136756574405,
+    "signal_persistence": 0.9771534140396362,
+    "signal_persistence_lag1": 0.9773,
+    "temporal_concentration": 0.049249448403498035,
+    "top_10_day_contribution": -0.3320534933965298,
+    "top_1_day_contribution": -0.0385203070281083,
+    "top_5_day_contribution": -0.17744013873299985,
+    "turnover_per_unit_gross": 5.485989344127315,
+    "turnover_round_trips_per_year": 20.411886436384325,
+    "years": 17.19
+   },
+   "nuisance_sensitivity": {
+    "implementation_tolerance_band": {
+     "constant": "implementation_tolerance_band",
+     "grid": {
+      "0.05": {
+       "days": 4333,
+       "gross_sharpe": -0.1698,
+       "net_sharpe": -0.2421
+      },
+      "0.1": {
+       "days": 4333,
+       "gross_sharpe": -0.3147,
+       "net_sharpe": -0.3782
+      },
+      "0.2": {
+       "days": 4333,
+       "gross_sharpe": -0.2227,
+       "net_sharpe": -0.271
+      }
+     },
+     "net_sharpe_range": [
+      -0.3782,
+      -0.2421
+     ],
+     "primary": 0.1,
+     "rule": "**primary 値で判定し、感度集合の全点を報告する。** 感度集合の中から良い点を選び直すことは、結果を見た後であれば post-hoc であり禁止。前 cycle では `max_staleness_days` を結果を見た後に決め、**その値が試した 9 点の最大**だった"
+    },
+    "max_staleness_days": {
+     "constant": "max_staleness_days",
+     "grid": {
+      "120": {
+       "days": 4333,
+       "gross_sharpe": -0.3147,
+       "net_sharpe": -0.3782
+      },
+      "45": {
+       "days": 4333,
+       "gross_sharpe": -0.3147,
+       "net_sharpe": -0.3782
+      },
+      "60": {
+       "days": 4333,
+       "gross_sharpe": -0.3147,
+       "net_sharpe": -0.3782
+      },
+      "75": {
+       "days": 4333,
+       "gross_sharpe": -0.3147,
+       "net_sharpe": -0.3782
+      },
+      "90": {
+       "days": 4333,
+       "gross_sharpe": -0.3147,
+       "net_sharpe": -0.3782
+      }
+     },
+     "net_sharpe_range": [
+      -0.3782,
+      -0.3782
+     ],
+     "primary": 75,
+     "rule": "**primary 値で判定し、感度集合の全点を報告する。** 感度集合の中から良い点を選び直すことは、結果を見た後であれば post-hoc であり禁止。前 cycle では `max_staleness_days` を結果を見た後に決め、**その値が試した 9 点の最大**だった"
+    },
+    "z_window": {
+     "constant": "z_window",
+     "grid": {
+      "126": {
+       "days": 4396,
+       "gross_sharpe": 0.0434,
+       "net_sharpe": -0.0322
+      },
+      "252": {
+       "days": 4333,
+       "gross_sharpe": -0.3147,
+       "net_sharpe": -0.3782
+      },
+      "504": {
+       "days": 4207,
+       "gross_sharpe": -0.079,
+       "net_sharpe": -0.1413
+      }
+     },
+     "net_sharpe_range": [
+      -0.3782,
+      -0.0322
+     ],
+     "primary": 252,
+     "rule": "**primary 値で判定し、感度集合の全点を報告する。** 感度集合の中から良い点を選び直すことは、結果を見た後であれば post-hoc であり禁止。前 cycle では `max_staleness_days` を結果を見た後に決め、**その値が試した 9 点の最大**だった"
+    }
+   },
+   "null_diagnostic": {
+    "diagnostic": "PERMUTATION_NULL_DIAGNOSTIC",
+    "draws": 1000,
+    "is_the_only_gate": false,
+    "label": "NULL_REJECTION_NOT_SUPPORTED",
+    "multiplicity_note": "最大 5 本を同じ null に当てるので、**いずれか 1 本が 5% を切る確率は帰無でも約 23%** である。これを報告に必ず添える。**1 本通ったことを『edge が見つかった』とは書かない**",
+    "null_net_sharpe_mean": -0.0646,
+    "null_net_sharpe_p05": -0.4399,
+    "null_net_sharpe_p50": -0.0589,
+    "null_net_sharpe_p95": 0.2888,
+    "null_positive_share": 0.386,
+    "observed_net_annual_return": -0.04143,
+    "observed_net_sharpe": -0.3782,
+    "observed_percentile": 0.092,
+    "p_value": 0.9081,
+    "seed": 20260922,
+    "signal_persistence_lag1": 0.9773
+   },
+   "rename_gate": {
+    "comparator": "S26（T5）の TIC flow score",
+    "if_exceeded": "RENAME_OF_A_PRIOR_TRACK",
+    "measured_abs_correlation": 0.0259,
+    "overlap_days": 4333,
+    "statistic": "同上",
+    "threshold": 0.8,
+    "verdict": "DISTINCT",
+    "why": "どちらも『flow』だが主体も通貨も違う。**違うと主張する以上、測って示す**"
+   },
+   "span": "long",
+   "stage_2": {
+    "eligible": false,
+    "reason": "Stage 2 へは進まない。**Stage 1 の結果は記録する**"
+   },
+   "track": "U4"
+  },
+  "U4_recent": {
+   "benchmarks": {
+    "constant_long_usd": {
+     "gross_sharpe": 0.045000413969213365,
+     "ic": 0.01208825504969365,
+     "net_sharpe": 0.01669346688520264
+    },
+    "fx_own_mean_reversion_20d": {
+     "gross_sharpe": 0.5260642356403509,
+     "ic": 0.005234788498937226,
+     "net_sharpe": 0.1618465252719113
+    },
+    "fx_own_momentum_20d": {
+     "gross_sharpe": -0.5260642356403509,
+     "ic": -0.005234788498937226,
+     "net_sharpe": -0.890402192699527
+    },
+    "zero_signal": {
+     "gross_sharpe": NaN,
+     "ic": NaN,
+     "net_sharpe": NaN
+    }
+   },
+   "candidate": "S31",
+   "capacity": {
+    "for_10%_annual_net": {
+     "annual_net": 0.1,
+     "gap_stress_2pct_adverse": -7.307,
+     "pair_specific_margin": 18.268,
+     "portfolio_gross": 365.35,
+     "remaining_margin_buffer": -17.268,
+     "required_target_vol": 9.2133,
+     "risk_leverage": 365.35,
+     "scaled_max_drawdown": -19.5604
+    },
+    "for_5%_annual_net": {
+     "annual_net": 0.05,
+     "gap_stress_2pct_adverse": -3.6535,
+     "pair_specific_margin": 9.134,
+     "portfolio_gross": 182.68,
+     "remaining_margin_buffer": -8.134,
+     "required_target_vol": 4.6067,
+     "risk_leverage": 182.68,
+     "scaled_max_drawdown": -9.7802
+    },
+    "forbidden": [
+     "5x を feasibility の hard cap として使うこと",
+     "broker の 20x / 25x を risk target として使うこと"
+    ],
+    "reachable": true,
+    "scenarios": {
+     "vol_10%": {
+      "annual_net": 0.0011,
+      "gap_stress_2pct_adverse": -0.0793,
+      "pair_specific_margin": 0.198,
+      "portfolio_gross": 3.97,
+      "remaining_margin_buffer": 0.802,
+      "risk_leverage": 3.97,
+      "scaled_max_drawdown": -0.2123
+     },
+     "vol_12%": {
+      "annual_net": 0.0013,
+      "gap_stress_2pct_adverse": -0.0952,
+      "pair_specific_margin": 0.238,
+      "portfolio_gross": 4.76,
+      "remaining_margin_buffer": 0.762,
+      "risk_leverage": 4.76,
+      "scaled_max_drawdown": -0.2548
+     },
+     "vol_15%": {
+      "annual_net": 0.0016,
+      "gap_stress_2pct_adverse": -0.119,
+      "pair_specific_margin": 0.297,
+      "portfolio_gross": 5.95,
+      "remaining_margin_buffer": 0.703,
+      "risk_leverage": 5.95,
+      "scaled_max_drawdown": -0.3185
+     },
+     "vol_8%": {
+      "annual_net": 0.0009,
+      "gap_stress_2pct_adverse": -0.0634,
+      "pair_specific_margin": 0.159,
+      "portfolio_gross": 3.17,
+      "remaining_margin_buffer": 0.841,
+      "risk_leverage": 3.17,
+      "scaled_max_drawdown": -0.1698
+     }
+    },
+    "vol_per_unit_gross_measured": 0.02522
+   },
+   "cost_stress": {
+    "cost_x1.5": {
+     "net_annual_return": -0.003086066559510299,
+     "net_sharpe": -0.0288
+    },
+    "cost_x2.0": {
+     "net_annual_return": -0.007333608675399164,
+     "net_sharpe": -0.0685
+    }
+   },
+   "diagnostic_gate": {
+    "all_three": false,
+    "checks": {
+     "gross_sharpe_positive": true,
+     "incremental_ic_positive": false,
+     "net_annual_return_positive": true
+    },
+    "id": "THREE_SIGN_TRIPLE",
+    "null_pass_rate_measured_at_freeze": 0.42,
+    "reading": "**通ったこと自体は情報が薄い。** 判定は VERDICT_LOGIC が決める",
+    "status": "DEMOTED_TO_DIAGNOSTIC_NOT_A_SELECTION_GATE"
+   },
+   "distinct_signal_states": 4875,
+   "is_primary_span": false,
+   "margin_utilisation_at_run": 0.2121730158328329,
+   "metrics": {
+    "annual_cost": 0.008495084231777755,
+    "at_leverage_cap_share": 0.0,
+    "currency_contribution": {
+     "AUD": 0.09787650540395917,
+     "CAD": -0.03284188986892501,
+     "CHF": 0.005382759514362893,
+     "EUR": -0.03849328773218064,
+     "GBP": 0.014766979785904393,
+     "JPY": 0.04930355366531845,
+     "NZD": 0.04905656238207655,
+     "USD": -0.10768949349395848
+    },
+    "days": 975,
+    "detection_floor_mde95": 0.9959,
+    "downside_tail_p05": -0.010455230444986604,
+    "factor_abs_cosine": 0.139856453384709,
+    "gross_annual_return": 0.00965655978815633,
+    "gross_sharpe": 0.09025206764397029,
+    "ic": 0.002250035477088973,
+    "incremental_ic": -0.0011513878627733376,
+    "leave_one_currency_out_net_sharpe": {
+     "AUD": -0.23921869087095882,
+     "CAD": 0.09654680399121071,
+     "CHF": -0.002156757712620342,
+     "EUR": 0.10415272028383947,
+     "GBP": -0.02717072081656452,
+     "JPY": -0.11869019739183412,
+     "NZD": -0.10998114602905677,
+     "USD": 0.31758564864208877
+    },
+    "max_drawdown": -0.2271896199580264,
+    "net_annual_return": 0.0011614755563785725,
+    "net_sharpe": 0.010853815841933836,
+    "portfolio_gross_leverage": 4.243460316656658,
+    "position_persistence": 0.976611795657994,
+    "positive_temporal_blocks": "8/16",
+    "raw_to_neutralised_score_corr": 0.916949244278819,
+    "realized_vol": 0.10701080369276204,
+    "risk_leverage": 4.478414941281454,
+    "signal_persistence": 0.9800135402496153,
+    "signal_persistence_lag1": 0.9818,
+    "temporal_concentration": 0.17926448819893087,
+    "top_10_day_contribution": 51.76056745898428,
+    "top_1_day_contribution": 8.976363958650333,
+    "top_5_day_contribution": 30.83684943059139,
+    "turnover_per_unit_gross": 5.877638892993493,
+    "turnover_round_trips_per_year": 24.941527398055655,
+    "years": 3.87
+   },
+   "rename_gate": {
+    "comparator": "S26（T5）の TIC flow score",
+    "if_exceeded": "RENAME_OF_A_PRIOR_TRACK",
+    "measured_abs_correlation": 0.117,
+    "overlap_days": 976,
+    "statistic": "同上",
+    "threshold": 0.8,
+    "verdict": "DISTINCT",
+    "why": "どちらも『flow』だが主体も通貨も違う。**違うと主張する以上、測って示す**"
+   },
+   "span": "recent",
+   "track": "U4"
+  },
+  "U5_long": {
+   "candidate": "S07",
+   "span": "long",
+   "track": "U5",
+   "verdict": "U5_S07_DATA_NOT_DECISION_GRADE",
+   "why": "3 通貨以上の score がある decision day が 0 日しかない"
+  },
+  "U5_recent": {
+   "benchmarks": {
+    "constant_long_usd": {
+     "gross_sharpe": -0.7811248598657423,
+     "ic": 0.0007102657576877686,
+     "net_sharpe": -0.8295572644284237
+    },
+    "fx_own_mean_reversion_20d": {
+     "gross_sharpe": 0.193371478291526,
+     "ic": -1.5522485672348887e-05,
+     "net_sharpe": -0.22937691487950063
+    },
+    "fx_own_momentum_20d": {
+     "gross_sharpe": -0.193371478291526,
+     "ic": 1.5522485672348887e-05,
+     "net_sharpe": -0.618502327830169
+    },
+    "zero_signal": {
+     "gross_sharpe": NaN,
+     "ic": NaN,
+     "net_sharpe": NaN
+    }
+   },
+   "candidate": "S07",
+   "capacity": {
+    "reachable": false,
+    "why": "net Sharpe が 0 以下なので leverage で救わない"
+   },
+   "cost_stress": {
+    "cost_x1.5": {
+     "net_annual_return": -0.13990566787739495,
+     "net_sharpe": -1.2187
+    },
+    "cost_x2.0": {
+     "net_annual_return": -0.1759702532037679,
+     "net_sharpe": -1.5205
+    }
+   },
+   "development_economics": {
+    "checks": {
+     "E1_net_positive": false,
+     "E2_gross_positive": false,
+     "E3_incremental_information": false,
+     "E4_temporal_stability": false,
+     "E5_breadth": false,
+     "E6_concentration": false,
+     "E7_cost_robustness": false,
+     "E8_economic_magnitude": false
+    },
+    "core_satisfied": false,
+    "evidence": {
+     "cost_x2_net_sharpe": -1.5205,
+     "positive_temporal_blocks": "2/8",
+     "top_10_day_contribution": -1.2297,
+     "worst_leave_one_currency_out_net_sharpe": -1.2049
+    },
+    "label": "DEVELOPMENT_ECONOMICS_NOT_SUPPORTED"
+   },
+   "diagnostic_gate": {
+    "all_three": false,
+    "checks": {
+     "gross_sharpe_positive": false,
+     "incremental_ic_positive": false,
+     "net_annual_return_positive": false
+    },
+    "id": "THREE_SIGN_TRIPLE",
+    "null_pass_rate_measured_at_freeze": 0.42,
+    "reading": "**通ったこと自体は情報が薄い。** 判定は VERDICT_LOGIC が決める",
+    "status": "DEMOTED_TO_DIAGNOSTIC_NOT_A_SELECTION_GATE"
+   },
+   "distinct_signal_states": 2260,
+   "is_primary_span": true,
+   "margin_utilisation_at_run": 0.23874714288782709,
+   "metrics": {
+    "annual_cost": 0.07212917065274595,
+    "at_leverage_cap_share": 0.0,
+    "currency_contribution": {
+     "AUD": 0.0142824319674444,
+     "CAD": 0.05209133231834793,
+     "CHF": 0.0001857035371029339,
+     "EUR": 0.02164002548708016,
+     "GBP": -0.03916191505944436,
+     "JPY": -0.050285665766660305,
+     "NZD": -0.020375225705502802,
+     "USD": -0.035382623643126054
+    },
+    "days": 453,
+    "detection_floor_mde95": 1.4603,
+    "downside_tail_p05": -0.01101334420905402,
+    "factor_abs_cosine": 0.08308800784646117,
+    "gross_annual_return": -0.03171191189827599,
+    "gross_sharpe": -0.28023042541938326,
+    "ic": -0.035758597070000175,
+    "incremental_ic": -0.024512042454348664,
+    "leave_one_currency_out_net_sharpe": {
+     "AUD": -1.092628330264449,
+     "CAD": -1.204940131536784,
+     "CHF": -1.1278785667437274,
+     "EUR": -1.0760736025562843,
+     "GBP": -0.7598409127757458,
+     "JPY": -0.6780479799331272,
+     "NZD": -0.8692924162529917,
+     "USD": -0.8020443205583406
+    },
+    "max_drawdown": -0.21623821857114622,
+    "net_annual_return": -0.10384108255102195,
+    "net_sharpe": -0.9103746965970911,
+    "portfolio_gross_leverage": 4.774942857756542,
+    "position_persistence": 0.6671479009259008,
+    "positive_temporal_blocks": "2/8",
+    "raw_to_neutralised_score_corr": 0.7666652148166152,
+    "realized_vol": 0.11406411331419002,
+    "risk_leverage": 4.92174139853504,
+    "signal_persistence": 0.838195586184472,
+    "signal_persistence_lag1": 0.8393,
+    "temporal_concentration": 0.21671182760164803,
+    "top_10_day_contribution": -1.2296980598795033,
+    "top_1_day_contribution": -0.22460991568720284,
+    "top_5_day_contribution": -0.7722536913187867,
+    "turnover_per_unit_gross": 44.350458740884406,
+    "turnover_round_trips_per_year": 211.77090620301217,
+    "years": 1.8
+   },
+   "nuisance_sensitivity": {
+    "implementation_tolerance_band": {
+     "constant": "implementation_tolerance_band",
+     "grid": {
+      "0.05": {
+       "days": 454,
+       "gross_sharpe": -0.3801,
+       "net_sharpe": -1.0372
+      },
+      "0.1": {
+       "days": 454,
+       "gross_sharpe": -0.2802,
+       "net_sharpe": -0.9104
+      },
+      "0.2": {
+       "days": 454,
+       "gross_sharpe": 0.3662,
+       "net_sharpe": -0.1076
+      }
+     },
+     "net_sharpe_range": [
+      -1.0372,
+      -0.1076
+     ],
+     "primary": 0.1,
+     "rule": "**primary 値で判定し、感度集合の全点を報告する。** 感度集合の中から良い点を選び直すことは、結果を見た後であれば post-hoc であり禁止。前 cycle では `max_staleness_days` を結果を見た後に決め、**その値が試した 9 点の最大**だった"
+    },
+    "max_staleness_days": {
+     "constant": "max_staleness_days",
+     "grid": {
+      "120": {
+       "days": 454,
+       "gross_sharpe": -0.2802,
+       "net_sharpe": -0.9104
+      },
+      "45": {
+       "days": 454,
+       "gross_sharpe": -0.2802,
+       "net_sharpe": -0.9104
+      },
+      "60": {
+       "days": 454,
+       "gross_sharpe": -0.2802,
+       "net_sharpe": -0.9104
+      },
+      "75": {
+       "days": 454,
+       "gross_sharpe": -0.2802,
+       "net_sharpe": -0.9104
+      },
+      "90": {
+       "days": 454,
+       "gross_sharpe": -0.2802,
+       "net_sharpe": -0.9104
+      }
+     },
+     "net_sharpe_range": [
+      -0.9104,
+      -0.9104
+     ],
+     "primary": 75,
+     "rule": "**primary 値で判定し、感度集合の全点を報告する。** 感度集合の中から良い点を選び直すことは、結果を見た後であれば post-hoc であり禁止。前 cycle では `max_staleness_days` を結果を見た後に決め、**その値が試した 9 点の最大**だった"
+    },
+    "z_window": {
+     "constant": "z_window",
+     "grid": {
+      "126": {
+       "days": 517,
+       "gross_sharpe": -0.2631,
+       "net_sharpe": -0.9183
+      },
+      "252": {
+       "days": 454,
+       "gross_sharpe": -0.2802,
+       "net_sharpe": -0.9104
+      },
+      "504": {
+       "days": 328,
+       "gross_sharpe": 0.4157,
+       "net_sharpe": -0.1827
+      }
+     },
+     "net_sharpe_range": [
+      -0.9183,
+      -0.1827
+     ],
+     "primary": 252,
+     "rule": "**primary 値で判定し、感度集合の全点を報告する。** 感度集合の中から良い点を選び直すことは、結果を見た後であれば post-hoc であり禁止。前 cycle では `max_staleness_days` を結果を見た後に決め、**その値が試した 9 点の最大**だった"
+    }
+   },
+   "null_diagnostic": {
+    "diagnostic": "PERMUTATION_NULL_DIAGNOSTIC",
+    "draws": 1000,
+    "is_the_only_gate": false,
+    "label": "NULL_REJECTION_NOT_SUPPORTED",
+    "multiplicity_note": "最大 5 本を同じ null に当てるので、**いずれか 1 本が 5% を切る確率は帰無でも約 23%** である。これを報告に必ず添える。**1 本通ったことを『edge が見つかった』とは書かない**",
+    "null_net_sharpe_mean": -0.6479,
+    "null_net_sharpe_p05": -1.947,
+    "null_net_sharpe_p50": -0.6332,
+    "null_net_sharpe_p95": 0.6118,
+    "null_positive_share": 0.19,
+    "observed_net_annual_return": -0.10384,
+    "observed_net_sharpe": -0.9104,
+    "observed_percentile": 0.339,
+    "p_value": 0.6613,
+    "seed": 20260922,
+    "signal_persistence_lag1": 0.8393
+   },
+   "rename_gate": {
+    "comparator": "S05（T1）の VIX shock score",
+    "if_exceeded": "RENAME_OF_A_CLOSED_TRACK — 結果にかかわらず NOT_SUPPORTED とする",
+    "measured_abs_correlation": 0.3212,
+    "overlap_days": 454,
+    "statistic": "日次 score の cross-section 相関の時系列平均の絶対値",
+    "threshold": 0.8,
+    "verdict": "DISTINCT",
+    "why": "向きが同じで情報源が違うとき、実質的に同じ signal を別名で呼んでいないかを測る"
+   },
+   "span": "recent",
+   "stage_2": {
+    "eligible": false,
+    "reason": "Stage 2 へは進まない。**Stage 1 の結果は記録する**"
+   },
+   "track": "U5"
+  }
+ },
+ "revision_caveats": {
+  "U1": [
+   "CURRENT_VINTAGE_ONLY_REVISION_CAVEAT"
+  ],
+  "U2": [
+   "BALANCE_SHEET_STOCK_REVISIONS_RARE_CURRENT_VINTAGE"
+  ],
+  "U4": [
+   "CURRENT_VINTAGE_ONLY_REVISION_CAVEAT"
+  ],
+  "U5": [
+   "MARKET_DATA_NOT_REVISED"
+  ]
+ },
+ "verdicts": {
+  "U1": {
+   "economics_label": "DEVELOPMENT_ECONOMICS_NOT_SUPPORTED",
+   "failure_class": "SIGNAL_FAILURE",
+   "null_label": "NULL_REJECTION_NOT_SUPPORTED",
+   "other_span_gross_sign": "non_positive",
+   "status": "U1_S29_NOT_SUPPORTED_IN_SEEN_DEVELOPMENT"
+  },
+  "U2": {
+   "economics_label": "DEVELOPMENT_ECONOMICS_NOT_SUPPORTED",
+   "failure_class": "COST_FAILURE",
+   "null_label": "NULL_REJECTION_NOT_SUPPORTED",
+   "other_span_gross_sign": "positive",
+   "status": "U2_S25_NOT_SUPPORTED_IN_SEEN_DEVELOPMENT"
+  },
+  "U3": {
+   "economics_label": "DEVELOPMENT_ECONOMICS_NOT_SUPPORTED",
+   "failure_class": "SIGNAL_FAILURE",
+   "null_label": "NULL_REJECTION_NOT_SUPPORTED",
+   "other_span_gross_sign": null,
+   "status": "U3_S27_NOT_SUPPORTED_IN_SEEN_DEVELOPMENT"
+  },
+  "U4": {
+   "economics_label": "DEVELOPMENT_ECONOMICS_NOT_SUPPORTED",
+   "failure_class": "SIGNAL_FAILURE",
+   "null_label": "NULL_REJECTION_NOT_SUPPORTED",
+   "other_span_gross_sign": "positive",
+   "status": "U4_S31_NOT_SUPPORTED_IN_SEEN_DEVELOPMENT"
+  },
+  "U5": {
+   "economics_label": "DEVELOPMENT_ECONOMICS_NOT_SUPPORTED",
+   "failure_class": "SIGNAL_FAILURE",
+   "null_label": "NULL_REJECTION_NOT_SUPPORTED",
+   "other_span_gross_sign": null,
+   "status": "U5_S07_NOT_SUPPORTED_IN_SEEN_DEVELOPMENT"
+  }
+ }
+}
