@@ -21,7 +21,7 @@ nuisance は mechanism redesign の凍結（`a4413d63…`）と同じである�
 - **carry の金利基準（Role 1 B-1）**: signal と同じ lag 付き 3 か月金利で carry を測ると会計が feature の関数に
   なる。primary は**当時の政策金利**（BIS 月末値を翌月に使う）、lag 付き 3 か月金利は感度。
 - **判定の頑健性（R-4）**: 符号は 金利基準 2 × markup 4 の 8 セル全点、STRONG / MARGINAL の core 条件は
-  不利な端点（政策金利・markup 最大）でも満たすこと。
+  不利な端点（markup 最大で金利基準 2 つの両方）でも満たすこと。
 - **既に見ている値（Role 1 R-5 / Role 2 RF-1）**: 修正版の book の position は、旧実装の band 0.05 感度行と
   leverage を掛ける前の held weight が完全に同じ（M15 と M16 の**両方**、band 0.05 / 0.10 / 0.20 でも同じ。leverage は
   今回 USD numeraire の上で測り直す）。旧記録の band 0.05 行の **net Sharpe** M16 0.279・M15 0.102 は
