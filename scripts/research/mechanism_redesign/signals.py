@@ -87,6 +87,12 @@ LAG_MONTHS: Final[dict[str, int]] = {
 #: 通貨ごとの lag の上書き。**GBP の失業率は LFS の 3 か月平均**で、中心月に stamp されると
 #: 入手は参照期間の最後の月から約 75 日後になる。保守側に 1 か月長く取る。
 LAG_OVERRIDES: Final[dict[tuple[str, str], int]] = {("unemployment", "GBP"): 3}
+#: 1 つの stamp が複数月の集計を表す series の参照期間（stamp の月から前へ何か月・後ろへ何か月）。
+#: **GBP の失業率は 3 か月平均**で、中心月 stamp でも末尾月 stamp でも覆えるよう前 2・後 1 を取る
+#: （re-audit B-2: 1 か月分しか保護判定しておらず、stamp 2021-05 が 2021-04 を含んでいた）。
+REFERENCE_WINDOW_MONTHS: Final[dict[tuple[str, str], tuple[int, int]]] = {
+    ("unemployment", "GBP"): (2, 1),
+}
 #: lag の根拠。**provider の metadata ではなく各統計局の公表慣行**である（review で指摘された限界）。
 LAG_JUSTIFICATION: Final[dict[str, str]] = {
     "cpi": "米・加・英・スイス・日本・euro area は翌月 2〜4 週で公表、豪・NZ の四半期は四半期末から 3〜4 週",
@@ -196,7 +202,22 @@ def _load_slot(slot: str, currency: str, *, staleness: int = 75) -> tuple[pd.Ser
             return (np.exp(log_change) - 1.0) * 100.0, kind
         keep = np.array([_yoy_base_is_clean(stamp, kind) for stamp in series.index], dtype=bool)
         return series[keep], kind
-    return _load(f"{slot}_{currency.lower()}")
+    series, kind = _load(f"{slot}_{currency.lower()}")
+    window = REFERENCE_WINDOW_MONTHS.get((slot, currency))
+    if window is not None:
+        back, forward = window
+        keep = np.array(
+            [
+                not request_policy.touches_protected(
+                    (stamp - pd.DateOffset(months=back)).date(),
+                    pd.Period(stamp + pd.DateOffset(months=forward), freq="M").end_time.date(),
+                )
+                for stamp in series.index
+            ],
+            dtype=bool,
+        )
+        series = series[keep]
+    return series, kind
 
 
 def _xs_z(frame: pd.DataFrame) -> pd.DataFrame:

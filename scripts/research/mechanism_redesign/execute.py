@@ -62,8 +62,9 @@ def book(
 ) -> pd.DataFrame:
     """run_book の日次に carry と financing を足す。**判定はこの net で行う。**
 
-    carry: 決定日の保有 exposure × その日に使える 3 か月金利（%、年率）× 暦日 / 365。
-    exposure は和が 0 なので、これは book の金利差の受け払いである。金利の無い通貨は 0。
+    carry: 決定日の保有 exposure × `rates`（**spot と同じ pair book 演算子を通した金利差**、%、年率）
+    × 暦日 / 365。spot の P&L は x·e（e は pair return に `_currency_excess` を掛けたもの）なので、
+    同じ pair book の carry は pair の金利差に同じ演算子を掛けた値との内積になる（re-audit B-1）。
     financing: |exposure| の和 × 年率の仮定 markup × 暦日 / 365 × cost_multiple。
     """
     daily = construction.run_book(config, scores, excess, TRADING_DAYS)["daily"].copy()
@@ -89,6 +90,20 @@ def book(
     daily["cost"] = daily["spread_cost"] + daily["financing"]
     daily["net"] = daily["gross"] - daily["cost"]
     return daily
+
+
+def carry_operator(rates: pd.DataFrame, pairs: list[str]) -> pd.DataFrame:
+    """pair ごとの金利差（base − quote）に、spot の currency excess return と同じ演算子を掛ける。
+
+    片方の金利が無い pair はその日の平均から外れる。全 pair が無い通貨は book() で 0 になる。
+    """
+    from scripts.research.top_five import panel
+
+    diff = pd.DataFrame(
+        {pair: rates[pair.split("_")[0]] - rates[pair.split("_")[1]] for pair in pairs},
+        index=rates.index,
+    )
+    return panel._currency_excess(diff)["currency_excess_return"]
 
 
 def effective_observations(scores: pd.DataFrame) -> float:
@@ -227,8 +242,9 @@ def verdict(
         if not (checks["E5_breadth"] and checks["E6_concentration"]):
             failure = "CONCENTRATION_FAILURE"
     uncapped = suffix
+    #: 有効標本数が測れないときも上限を掛ける（re-audit OBS）
     underpowered = bool(
-        np.isfinite(n_eff) and n_eff < prereg.POWER_RULE["min_effective_observations"]
+        not np.isfinite(n_eff) or n_eff < prereg.POWER_RULE["min_effective_observations"]
     )
     if underpowered and suffix in POSITIVE_SUFFIXES:
         suffix = "POSITIVE_EXPLORATORY_SIGNAL_NOT_DECISION_GRADE"
@@ -324,7 +340,9 @@ def run_track(
             "why": f"3 通貨以上の score がある decision day が {len(scores)} 日",
         }
 
-    rates = signals.carry_rate_panel(excess.index)
+    rates = carry_operator(
+        signals.carry_rate_panel(excess.index), list(built[span]["pair_returns"].columns)
+    )
     config = _config(track)
     daily = book(config, scores, excess, rates)
     metrics = _metrics(daily, scores, excess)

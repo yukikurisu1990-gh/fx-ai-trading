@@ -28,10 +28,12 @@ from scripts.research.top_five import panel
 
 REPO_ROOT: Final[Path] = Path(__file__).resolve().parents[3]
 RECORD: Final[Path] = REPO_ROOT / "artifacts/research/mechanism_redesign/development.json"
+#: **計算の前に書く**開始記録（re-audit RF-A）。途中で落ちても「alpha を見たのに記録が無い」にしない。
+STARTED: Final[Path] = REPO_ROOT / "artifacts/research/mechanism_redesign/development_started.json"
 SPANS: Final[tuple[str, ...]] = ("long", "recent")
 
 #: **alpha の前に commit した凍結値。** これと一致しない凍結では走らせない。
-FROZEN_DIGEST: Final[str] = "e13998514cbf2c49189ac15d4d7397bb6288c90b22c750e5610e84e9fc029132"
+FROZEN_DIGEST: Final[str] = "21f7c0fbe6203dea40b796760b41b61fc3ae424d63cc6ad198b03a053746dcb5"
 
 
 def _usd_corr(left: pd.DataFrame, right: pd.DataFrame) -> tuple[float, int]:
@@ -130,10 +132,11 @@ def _code_identity() -> dict[str, Any]:
 
 def preflight() -> tuple[str, dict[str, Any]]:
     """**何も計算しないうちに**止めるべき条件を全部確かめる（Role 2 RF-5 / RF-6）。"""
-    if RECORD.exists():
-        raise SystemExit(
-            f"{RECORD} は既にある。再実行は記録されない alpha を見ることになるので走らせない"
-        )
+    for path in (RECORD, STARTED):
+        if path.exists():
+            raise SystemExit(
+                f"{path} は既にある。再実行は記録されない alpha を見ることになるので走らせない"
+            )
     digest = prereg.freeze_digest()
     if digest != FROZEN_DIGEST:
         raise SystemExit(
@@ -148,6 +151,10 @@ def preflight() -> tuple[str, dict[str, Any]]:
 
 def run(*, workers: int = 1) -> dict[str, Any]:
     digest, identity = preflight()
+    STARTED.parent.mkdir(parents=True, exist_ok=True)
+    write_provenance(
+        STARTED, {"freeze_digest": digest, "code_identity": identity, "status": "STARTED"}
+    )
     built = panel.build()
     results: dict[str, Any] = {}
     pnl: dict[str, pd.Series] = {}

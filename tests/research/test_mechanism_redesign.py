@@ -130,7 +130,17 @@ def test_execution_set_has_five_tracks_including_m01() -> None:
 
 def test_freeze_covers_the_code_closure_and_inputs() -> None:
     payload = prereg._payload()
-    assert set(payload["code_closure_sha256"]) == set(prereg.CODE_CLOSURE)
+    closure = set(payload["code_closure_sha256"])
+    for required in (
+        "scripts/research/mechanism_redesign/driver.py",
+        "scripts/research/mechanism_redesign/signals.py",
+        "scripts/research/mechanism_redesign/prereg.py",
+        "scripts/research/continuous_portfolio/construction.py",
+        "scripts/research/top_five/prereg.py",
+        "scripts/research/top_five/signals.py",
+        "scripts/research/next_five/signals.py",
+    ):
+        assert required in closure, required
     assert len(payload["input_manifest_sha256"]) == 64
 
 
@@ -231,3 +241,54 @@ def test_draw_count_cannot_be_overridden() -> None:
 
     assert "draws" not in inspect.signature(execute.null_diagnostic).parameters
     assert "permutation_draws" not in inspect.signature(execute.run_track).parameters
+
+
+def test_gbp_three_month_average_touching_the_pool_is_dropped(tmp_path, monkeypatch) -> None:
+    stamps = pd.date_range("2016-01-01", "2016-05-01", freq="MS").append(
+        pd.date_range("2021-05-01", "2021-09-01", freq="MS")
+    )
+    pd.DataFrame({"v": 1.0}, index=stamps).to_parquet(tmp_path / "unemployment_gbp.parquet")
+    pd.DataFrame({"v": 1.0}, index=stamps).to_parquet(tmp_path / "unemployment_cad.parquet")
+    monkeypatch.setattr(signals, "DATA_DIR", tmp_path)
+    monkeypatch.setattr(signals, "VERIFY_INPUT_HASHES", False)
+    gbp, _ = signals._load_slot("unemployment", "GBP")
+    #: 2016-05 は後ろ 1 か月で 2016-06 に、2021-05 / 06 は前 2 か月で 2021-04 に掛かる
+    assert list(gbp.index.strftime("%Y-%m")) == [
+        "2016-01",
+        "2016-02",
+        "2016-03",
+        "2016-04",
+        "2021-07",
+        "2021-08",
+        "2021-09",
+    ]
+    cad, _ = signals._load_slot("unemployment", "CAD")
+    assert len(cad) == 10
+
+
+def test_carry_uses_the_same_pair_operator_as_spot() -> None:
+    from scripts.research.top_five import panel
+
+    index = pd.bdate_range("2020-01-06", periods=2)
+    rates = pd.DataFrame(0.0, index=index, columns=list(signals.CURRENCIES))
+    rates["USD"] = 4.0
+    pairs = ["EUR_USD", "USD_JPY", "GBP_USD"]
+    operated = execute.carry_operator(rates, pairs)
+    diff = pd.DataFrame({"EUR_USD": -4.0, "USD_JPY": 4.0, "GBP_USD": -4.0}, index=index)
+    expected = panel._currency_excess(diff)["currency_excess_return"]
+    pd.testing.assert_frame_equal(operated, expected)
+
+
+def test_nan_effective_observations_is_underpowered() -> None:
+    out = execute.verdict("M15", _fake_primary(0.5, float("nan")), None, {})
+    assert out["underpowered"]
+    assert out["status"].endswith("POSITIVE_EXPLORATORY_SIGNAL_NOT_DECISION_GRADE")
+
+
+def test_driver_refuses_when_a_started_marker_exists(tmp_path, monkeypatch) -> None:
+    started = tmp_path / "started.json"
+    started.write_text("{}", encoding="utf-8")
+    monkeypatch.setattr(driver, "RECORD", tmp_path / "absent.json")
+    monkeypatch.setattr(driver, "STARTED", started)
+    with pytest.raises(SystemExit):
+        driver.preflight()

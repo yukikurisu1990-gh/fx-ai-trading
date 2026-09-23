@@ -112,17 +112,44 @@ DOLLAR_TRACK_BREADTH_RULE: Final[str] = (
     "E5 は USD 以外の 7 通貨の leave-one-currency-out の最悪値 > 0"
 )
 
+#: **2 回目の pre-alpha amendment**（fresh context の re-audit: BLOCKER 2、REQUIRED 2）。alpha はまだ見ていない。
+FREEZE_AMENDMENT_PRE_ALPHA_2: Final[dict[str, Any]] = {
+    "digest_before": "e13998514cbf2c49189ac15d4d7397bb6288c90b22c750e5610e84e9fc029132",
+    "status": "AMENDED_PRE_ALPHA_NO_RETURN_HAD_BEEN_MEASURED",
+    "changes": (
+        "carry を spot と同じ pair book 演算子で作る（B-1: x·r は long で carry を 12.5% 過小、recent では通貨ごとに歪んでいた）",
+        "GBP 失業率（3 か月平均）の参照期間を stamp の前 2・後 1 か月とし、保護暦日に掛かる stamp を読まない（B-2）",
+        "driver は計算の前に development_started.json を書き、それがあれば再実行しない（RF-A）",
+        "コードの閉包を driver.py からの静的 import 走査で数える。入力 manifest を v2 にし、rename の比較対象の入力を含める（RF-B）",
+        "有効標本数が測れない（NaN）ときも検出力の上限を掛ける",
+    ),
+    "disclosure_gbp": (
+        "GBP 失業率の stamp 2016-05（中心月なら 2016 年 6 月を含む）と 2021-05（2021 年 4 月を含む）は "
+        "acquisition.json の parquet に保存されている。月次 1 か月の判定では通っていた。読む側で落とす。"
+        "取得の request は月次の窓で行っており、3 か月平均の参照期間を request で外すことはできていなかった"
+    ),
+}
+
 #: **判定する P&L**（B-1）。spot だけでは dollar carry が名乗る premium を測らない。
 FINANCING: Final[dict[str, Any]] = {
     "judged_pnl": "spot + carry accrual − spread cost − 仮定 financing markup",
-    "carry_accrual": "決定日の exposure × 3 か月銀行間金利（signal と同じ lag・staleness）× 暦日 / 365。金利の無い通貨は 0",
+    "carry_accrual": (
+        "決定日の exposure × （pair ごとの 3 か月銀行間金利の差 base − quote に、spot の currency excess return と"
+        "同じ pair book 演算子を掛けた値）× 暦日 / 365。金利は signal と同じ lag・staleness。"
+        "片方の金利が無い pair はその日の平均から外れ、全 pair が無い通貨は 0"
+    ),
     "markup_annual_per_unit_currency_gross": 0.0025,
     "markup_is_assumed_not_measured": (
         "retail の swap に含まれる markup の公開記録は無い（economic_edge/carry.py）。"
-        "年 0.25%（通貨 gross 1 単位あたり、pair で見ると約 0.5%）を仮定し、cost stress の倍率を spread cost と同じく掛ける"
+        "年 0.25%（通貨 gross 1 単位あたり。long の dollar book の pair notional で見ると約 0.44%）を仮定し、"
+        "cost stress の倍率を spread cost と同じく掛ける"
     ),
     "spot_only_is_reported": "前 cycle との比較のため、spot だけの gross / net Sharpe を pnl_decomposition に並べる（判定には使わない）",
-    "applies_to": "全 5 track（M15 だけに入れると track 間で P&L の定義が変わるため）",
+    "applies_to": (
+        "全 5 track の book の P&L（observed・null draw・cost stress・nuisance・benchmark・LOO・capacity）。"
+        "M15 だけに入れると track 間で P&L の定義が変わるため。**IC・incremental IC（E3）・Stage 2 回帰は"
+        "signal の情報量を測る量なので spot return のまま**"
+    ),
 }
 
 #: **検出力の上限と、負の結果の範囲**（R-4）。
@@ -368,24 +395,58 @@ INTERPRETATION: Final[str] = (
 _SIGNALS_SOURCE: Final[Path] = Path(__file__).with_name("signals.py")
 _REPO: Final[Path] = Path(__file__).resolve().parents[3]
 
-#: **結果を変えうるコード**の閉包（R-1 / RF-5）。source の sha256 を payload に入れる。
+#: **結果を変えうるコード**の閉包（R-1 / RF-5、re-audit RF-B）。driver.py から `scripts.*` の import を
+#: **静的に辿って**集める（手書きの列挙は抜けていた: cost 定数・PAIRS_20・top_five.prereg など）。
 #: driver.py は凍結値そのものを持つので、`FROZEN_DIGEST` の行を除いて hash する。
-CODE_CLOSURE: Final[tuple[str, ...]] = (
-    "scripts/research/mechanism_redesign/signals.py",
-    "scripts/research/mechanism_redesign/execute.py",
-    "scripts/research/mechanism_redesign/driver.py",
-    "scripts/research/mechanism_redesign/inputs.py",
-    "scripts/research/next_five/signals.py",
-    "scripts/research/next_five/execute.py",
-    "scripts/research/top_five/execute.py",
-    "scripts/research/top_five/stage2.py",
-    "scripts/research/top_five/panel.py",
-    "scripts/research/top_five/sources.py",
-    "scripts/research/continuous_portfolio/construction.py",
-    "scripts/research/data_access/request_policy.py",
-    "scripts/research/acquisition_safety.py",
-)
-INPUT_MANIFEST: Final[str] = "artifacts/research/mechanism_redesign/inputs_manifest.json"
+CLOSURE_ROOT: Final[str] = "scripts/research/mechanism_redesign/driver.py"
+
+
+def _module_file(module: str) -> Path | None:
+    base = _REPO / Path(*module.split("."))
+    if base.with_suffix(".py").exists():
+        return base.with_suffix(".py")
+    if (base / "__init__.py").exists():
+        return base / "__init__.py"
+    return None
+
+
+def _package_inits(path: Path) -> list[Path]:
+    out = []
+    parent = path.parent
+    while parent != _REPO and (parent / "__init__.py").exists():
+        out.append(parent / "__init__.py")
+        parent = parent.parent
+    return out
+
+
+def code_closure() -> tuple[str, ...]:
+    import ast
+
+    seen: set[Path] = set()
+    stack = [_REPO / CLOSURE_ROOT]
+    while stack:
+        path = stack.pop()
+        if path in seen:
+            continue
+        seen.add(path)
+        stack.extend(p for p in _package_inits(path) if p not in seen)
+        tree = ast.parse(path.read_text(encoding="utf-8"))
+        for node in ast.walk(tree):
+            names: list[str] = []
+            if isinstance(node, ast.Import):
+                names = [alias.name for alias in node.names]
+            elif isinstance(node, ast.ImportFrom) and node.module and node.level == 0:
+                names = [node.module] + [f"{node.module}.{alias.name}" for alias in node.names]
+            for name in names:
+                if not name.startswith("scripts"):
+                    continue
+                target = _module_file(name)
+                if target is not None and target not in seen:
+                    stack.append(target)
+    return tuple(sorted(str(path.relative_to(_REPO)).replace("\\", "/") for path in seen))
+
+
+INPUT_MANIFEST: Final[str] = "artifacts/research/mechanism_redesign/inputs_manifest_v2.json"
 
 
 def _source_sha(relative: str) -> str:
@@ -468,7 +529,8 @@ def _payload() -> dict[str, Any]:
             "trend_window": signals.UNEMPLOYMENT_TREND_WINDOW,
             "trend_min_obs": signals.UNEMPLOYMENT_TREND_MIN_OBS,
         },
-        "code_closure_sha256": {path: _source_sha(path) for path in CODE_CLOSURE},
+        "code_closure_sha256": {path: _source_sha(path) for path in code_closure()},
+        "freeze_amendment_pre_alpha_2": FREEZE_AMENDMENT_PRE_ALPHA_2,
         "input_manifest_sha256": hashlib.sha256(
             (_REPO / INPUT_MANIFEST).read_bytes().replace(b"\r\n", b"\n")
         ).hexdigest(),

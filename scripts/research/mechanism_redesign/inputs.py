@@ -19,13 +19,17 @@ import pandas as pd
 from scripts.research.acquisition_safety import digest, write_provenance
 
 REPO_ROOT: Final[Path] = Path(__file__).resolve().parents[3]
-MANIFEST: Final[Path] = REPO_ROOT / "artifacts/research/mechanism_redesign/inputs_manifest.json"
+#: v1（inputs_manifest.json）は rename の比較対象の入力を含んでいなかった（re-audit RF-B）。
+MANIFEST: Final[Path] = REPO_ROOT / "artifacts/research/mechanism_redesign/inputs_manifest_v2.json"
 EXTERNAL_DIR: Final[Path] = REPO_ROOT / "artifacts/track_a_scratch/mechanism_redesign"
 FILE_GLOBS: Final[tuple[tuple[str, str], ...]] = (
     ("artifacts/track_a_scratch/momentum_replication_b", "m15_*.parquet"),
     ("artifacts/track_a_scratch/supplemental_replication", "m15_*.parquet"),
     ("artifacts/track_a_scratch/exploratory_round_1", "m15_*.parquet"),
     ("artifacts/track_a_scratch/valuation", "fx_*.parquet"),
+    #: rename gate の比較対象（T5 の TIC、U1 の貿易収支）
+    ("artifacts/track_a_scratch/top_five", "*.parquet"),
+    ("artifacts/track_a_scratch/next_five", "*.parquet"),
 )
 RECORDS: Final[tuple[str, ...]] = (
     "artifacts/research/mechanism_redesign/acquisition.json",
