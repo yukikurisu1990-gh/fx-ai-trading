@@ -106,6 +106,8 @@ def _capacity(metrics: dict[str, Any]) -> dict[str, Any]:
         }
 
     out: dict[str, Any] = {
+        #: 「net Sharpe が正なので leverage 計算を出した」という意味だけで、実現可能性ではない。
+        #: max_leverage を到達可否の cap にはしない（CAPACITY_REPORTING.forbidden）
         "reachable": True,
         "vol_per_unit_gross_measured": round(vol_per_unit, 5),
         "scenarios": {
@@ -118,15 +120,7 @@ def _capacity(metrics: dict[str, Any]) -> dict[str, Any]:
         needed_vol = goal / net_sharpe
         row = _at(needed_vol)
         row["required_target_vol"] = round(needed_vol, 4)
-        #: 必要な gross が book の上限を超えるなら、その目標には届かない（Role 1 O-4）
-        row["within_max_leverage"] = bool(
-            row["portfolio_gross"] <= float(prereg.BOOK_CONFIG["max_leverage"])
-        )
         out[f"for_{goal:.0%}_annual_net"] = row
-    out["reachable"] = any(
-        out[f"for_{goal:.0%}_annual_net"]["within_max_leverage"]
-        for goal in prereg.CAPACITY_REPORTING["annual_return_targets"]
-    )
     return out
 
 
@@ -378,6 +372,9 @@ def _nuisance_sensitivity(
         except signals.SignalUnavailableError as error:
             grid[str(value)] = {"status": f"UNAVAILABLE: {error}"[:120]}
             continue
+        except signals.NonContiguousScoresError as error:
+            grid[str(value)] = {"status": f"NOT_COMPUTABLE_NONCONTIGUOUS: {error}"[:160]}
+            continue
         if scores.empty:
             grid[str(value)] = {"status": "NO_USABLE_DAYS"}
             continue
@@ -411,6 +408,14 @@ def run_track(
 
     try:
         scores = signals.scores_for(track, built, span)
+    except signals.NonContiguousScoresError as error:
+        return {
+            "track": track,
+            "candidate": spec["candidate"],
+            "span": span,
+            "verdict": prereg.track_status(track, "DATA_NOT_DECISION_GRADE"),
+            "why": str(error)[:300],
+        }
     except signals.SignalUnavailableError as error:
         #: **Stage 0 が既に原因を分類している。** 「到達できない」と「存在しない」を
         #: 混ぜないために、token は凍結記録から取る。

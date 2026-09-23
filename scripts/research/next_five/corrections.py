@@ -4,9 +4,15 @@
 `NON_DECISION_BEARING_EXPLORATORY_ONLY` · `RESEARCH_SCRATCH_NON_AUTHORITATIVE`.
 
 凍結（`prereg.freeze_digest()` = `0bc7b198…`、freeze commit `84d7832`）は **書き換えない**。
-ここにあるのは、実装が凍結文と食い違っていた箇所を **凍結文へ戻す** 修正だけである。
+ここにあるのは、実装が凍結文と食い違っていた箇所を **凍結文へ戻す** 修正である。
 どれも signal の符号・horizon・benchmark・universe・portfolio・feature・target・threshold・
-cost を動かさない。**裁量の入る選択肢が無い**ものだけをここへ置く。
+cost を動かさない。**裁量が入ったもの（C-5 の読み、C-6 の fail-closed）は、その旨と根拠を
+各項に書いてある。** 裁量の無い修正だとは主張しない。
+
+修正の初版（commit 1e9d34e）は、独立の再監査で BLOCKER 3 件を出した（U2 / U4 が KeyError で
+落ちる、C-2 が `_align` の ffill と組んで 2016 年の変化値を約 1 年運ぶ、C-1 と run_book の
+連続性要件の衝突）。その版で始めた実行は **どの track も終わる前に止め、途中の出力は
+見ていない**。
 
 **これは 2 回目の alpha 測定である。** 裁定 §40 は共通基盤の date / leakage / acquisition bug を
 「止めて直し、実行済みの track を監査し、都合よく結果を保持しない」と定めている。
@@ -48,6 +54,10 @@ POST_ALPHA_CORRECTIONS: Final[dict[str, dict[str, Any]]] = {
         "frozen_text_restored": "『12 か月変化』『3 か月変化』。基準値にも staleness 規則を当てる",
         "effect_seen": "recent span の最初の 12 か月、基準値が 2016-06 の観測だった（約 5 年変化）。"
         "balance_sheet_usd の 2021-04-28 の値は 0.556、平時の |変化| は 0.091",
+        "addendum": "初版の修正は `_change` が欠損行を返し、`_align` がその欠損行を観測日として "
+        "staleness を通しつつ 2016 年の値を ffill で運んだ（U1 USD の z が −15.8）。"
+        "`_align` の入口で欠損行を落とす。recent span の U1 / U2 / U4 は標本が約半年短くなる",
+        "side_effect": "`max_staleness_days` の感度点は、基準値と整列の 2 箇所に同時に効く",
         "tracks": ("U1", "U2", "U4"),
     },
     "C-3": {
@@ -71,9 +81,40 @@ POST_ALPHA_CORRECTIONS: Final[dict[str, dict[str, Any]]] = {
         "where": "signals._lag_kwargs（U2 USD / EUR）",
         "was": "週次 series を『観測日の 2 営業日後』から使っていた",
         "frozen_text_restored": "TRACKS['U2']['publication_lag'] = 『公表日の 2 営業日後から使用』",
+        "discretion": "**凍結文の内部矛盾を、厳しい側の読みで解いた。** series_map（観測日 +2）と "
+        "FREEZE_AMENDMENT_PLUMBING P-2（『週次は 2 営業日後』）は観測日基準と読め、TRACKS は公表日基準である。"
+        "CLAUDE.md『研究制限は厳しい読みが勝つ』に従い TRACKS を採った。凍結 digest の中の series_map の値は"
+        "書き換えず、ここから読む側で上書きしている",
+        "residual": "`BDay` は祝日を知らない。Thanksgiving・イースター・年末で公表が遅れた週は、"
+        "公表日 + 2 営業日より早く使う可能性が残る（数は少ない）",
         "effect_seen": "ECB は公表日当日の 14:15 CET fix から return を取っており、公表（15:00 CET）より約 45 分先の情報",
         "tracks": ("U2",),
     },
+    "C-6": {
+        "found_by": "独立再監査 BLOCKER-3",
+        "where": "signals.scores_for / execute.run_track / execute._nuisance_sensitivity",
+        "was": "C-1 で ffill を外すと、3 通貨未満の日が span の途中から削られ、run_book が連続性違反で "
+        "ValueError を出して track 全体が error になった（U3 の感度点 45 / 60 で起きる）",
+        "fix": "途中で途切れたら `NonContiguousScoresError` で止め、primary なら DATA_NOT_DECISION_GRADE、"
+        "感度点なら NOT_COMPUTABLE_NONCONTIGUOUS として記録する",
+        "discretion": "**判断である。** 途切れた日を flat で残す・区間を分けるのどちらも凍結文に無いので、"
+        "どちらも選ばず fail-closed にした。結果を作る選択肢を増やさない側",
+        "tracks": ("U1", "U2", "U3", "U4", "U5"),
+    },
+}
+
+#: 修正ではないが、1 回目の実行と 2 回目の実行の間でコードに入った変更。
+NON_RESULT_CHANGES: Final[dict[str, str]] = {
+    "N-1_PARALLEL_NULL": (
+        "null 診断の circular shift を ProcessPool で並列に引く。shift の列は並列化の前に 1 本の乱数列から"
+        "決めるので、worker 数によらず同じ draw になる"
+    ),
+    "N-2_CAPACITY_LABEL": (
+        "`capacity.reachable` は『net Sharpe が正なので leverage 計算を出した』という意味だけで、"
+        "実現可能性ではない。max_leverage で到達可否を判定する案は CAPACITY_REPORTING.forbidden に触れるので採らなかった"
+    ),
+    "N-3_PROVENANCE": "driver が HEAD・dirty path・argv・開始時刻を出力へ記録する",
+    "N-4_MESSAGES": "『連続 decision day が N 日しかない』を『3 通貨以上の score がある decision day が N 日』へ直し、0 列のときは 0 行を返す",
 }
 
 #: 1 回目の実行記録の扱い。**消さない・上書きしない。**
@@ -141,6 +182,7 @@ def corrections_digest() -> str:
     payload = {
         "lag_corrections": {f"{t}/{c}": v for (t, c), v in LAG_CORRECTIONS.items()},
         "post_alpha_corrections": POST_ALPHA_CORRECTIONS,
+        "non_result_changes": NON_RESULT_CHANGES,
         "invalidated_records": INVALIDATED_RECORDS,
         "disclosures": DISCLOSURES,
     }
@@ -153,6 +195,7 @@ __all__ = [
     "DISCLOSURES",
     "INVALIDATED_RECORDS",
     "LAG_CORRECTIONS",
+    "NON_RESULT_CHANGES",
     "POST_ALPHA_CORRECTIONS",
     "corrections_digest",
 ]

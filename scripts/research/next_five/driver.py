@@ -186,6 +186,7 @@ def run(*, permutation_draws: int | None = None, workers: int = 1) -> dict[str, 
         "corrections_digest": corrections.corrections_digest(),
         "post_alpha_corrections": corrections.POST_ALPHA_CORRECTIONS,
         "invalidated_records": corrections.INVALIDATED_RECORDS,
+        "non_result_changes": corrections.NON_RESULT_CHANGES,
         "disclosures": corrections.DISCLOSURES,
         "revision_caveats": {
             track: sorted({row["revision"] for row in series_map.SERIES_MAP[track].values()})

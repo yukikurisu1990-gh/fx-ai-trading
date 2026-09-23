@@ -119,3 +119,62 @@ def test_run2_is_recorded_invalid_and_every_track_is_covered() -> None:
     touched = {t for c in corrections.POST_ALPHA_CORRECTIONS.values() for t in c["tracks"]}
     assert touched == set(prereg.EXECUTION_ORDER)
     assert len(corrections.corrections_digest()) == 64
+
+
+# ----------------------------------------------------------------------
+# 再監査の BLOCKER 1..3
+# ----------------------------------------------------------------------
+def test_b1_unmapped_currency_is_unavailable_not_keyerror() -> None:
+    with pytest.raises(signals.SignalUnavailableError):
+        signals._is_monthly("U2", "AUD")
+    with pytest.raises(signals.SignalUnavailableError):
+        signals._lag_kwargs("U4", "CHF")
+
+
+def test_b1_scorer_with_unmapped_currencies_runs(tmp_path, monkeypatch) -> None:
+    stamps = pd.date_range("2021-05-01", "2025-11-01", freq="MS")
+    rng = np.random.default_rng(0)
+    for currency in ("usd", "jpy", "gbp"):
+        values = np.exp(np.cumsum(rng.normal(0, 0.02, len(stamps)))) * 1000
+        pd.DataFrame({"value": values}, index=stamps).to_parquet(
+            tmp_path / f"reserves_{currency}.parquet"
+        )
+    monkeypatch.setattr(signals, "DATA_DIR", tmp_path)
+    frame = signals.u4_scores(pd.bdate_range("2021-04-27", "2025-12-26"))
+    assert frame[["USD", "JPY", "GBP"]].notna().any().all()
+
+
+def test_b2_align_does_not_carry_values_across_the_gap() -> None:
+    before = pd.date_range("2014-01-01", "2016-05-01", freq="MS")
+    after = pd.date_range("2021-05-01", "2023-12-01", freq="MS")
+    series = pd.Series(np.arange(len(before) + len(after), dtype=float), index=before.append(after))
+    changed = signals._change(series, 12, staleness_days=75)
+    days = pd.bdate_range("2021-04-27", "2024-03-01")
+    aligned = signals._align(changed, days, vintage_offset_months=2, staleness_days=75)
+    #: 空白後の最初の有効な変化は 2022-05 分で、2022-07 末から使える。それより前は欠損
+    assert aligned[:"2022-07-28"].isna().all()
+    assert aligned.dropna().index[0] >= pd.Timestamp("2022-07-29")
+
+
+def test_b2_nan_rows_do_not_reset_staleness() -> None:
+    series = pd.Series(
+        [1.0, np.nan, np.nan],
+        index=pd.to_datetime(["2016-01-04", "2021-06-01", "2021-07-01"]),
+    )
+    aligned = signals._align(series, pd.bdate_range("2021-06-01", "2021-08-01"), staleness_days=75)
+    assert aligned.isna().all()
+
+
+def _gappy_scorer(index, overrides=None):
+    frame = pd.DataFrame(np.nan, index=index, columns=list(signals.CURRENCIES))
+    frame.iloc[:, :3] = 1.0
+    frame.iloc[15:18, 2] = np.nan
+    return frame
+
+
+def test_b3_mid_span_gap_is_fail_closed(monkeypatch) -> None:
+    index = pd.bdate_range("2022-01-03", periods=40)
+    built = {"recent": {"currency_excess_return": pd.DataFrame(index=index)}}
+    monkeypatch.setitem(signals.SCORERS, "U1", _gappy_scorer)
+    with pytest.raises(signals.NonContiguousScoresError):
+        signals.scores_for("U1", built, "recent")

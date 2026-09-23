@@ -34,6 +34,15 @@ CURRENCIES: Final[tuple[str, ...]] = prereg.UNIVERSE
 MIN_CURRENCIES: Final[int] = 3
 
 
+class NonContiguousScoresError(RuntimeError):
+    """3 通貨以上の日が span の途中で途切れた（C-6）。
+
+    `construction.run_book` は連続した decision day しか受け付けない。途切れた日を
+    flat として残すか区間を分けるかは凍結文に無い判断なので、**どちらも選ばず fail-closed**
+    で止め、その点を『計算不能』として記録する。
+    """
+
+
 class SignalUnavailableError(RuntimeError):
     """その track の signal を作るだけの data が揃っていない。
 
@@ -61,7 +70,8 @@ def _nuisance(name: str, overrides: dict[str, Any] | None) -> Any:
 PROTECTED_REFERENCE_SPANS: Final[tuple[tuple[pd.Timestamp, pd.Timestamp], ...]] = (
     #: fresh pool
     (pd.Timestamp("2016-06-02"), pd.Timestamp("2021-04-26")),
-    #: forward epoch（最後の seen 日の翌日以降）
+    #: 最後の seen 日の翌日以降（development 末尾 2 日・historical OOS slice・forward epoch を含む。
+    #: 保守側に広く取っている）
     (pd.Timestamp("2025-12-27"), pd.Timestamp.max.normalize()),
 )
 
@@ -117,7 +127,10 @@ def _align(
     `vintage_offset_months` は「第 m 月の値は m+k 月末以降にのみ使う」という規約。
     `lag_business_days` は日次 series 用（公表の n 営業日後から使う）。
     """
-    shifted = series.copy()
+    #: 欠損の行を観測として扱わない（C-2 の追補）。残すと `vintage` は欠損行の日付を
+    #: 観測日として拾い、`filled` は欠損を飛ばして古い値を運ぶので、staleness 検査が
+    #: 何年も前の値を通してしまう
+    shifted = series.dropna().copy()
     if vintage_offset_months:
         #: 第 m 月の値を **m+k 月の月末**に置く（C-3）。初版は月末に `DateOffset(months=k)` を
         #: 足しており、2 月末 + 2 か月が 4 月 28 日になるなど 1〜3 日早く着地していた
@@ -195,8 +208,16 @@ def _change(
     return pd.Series(base.to_numpy() - past.to_numpy(), index=base.index)
 
 
+def _mapping(track: str, currency: str) -> dict[str, Any]:
+    """対応表に無い通貨は **取得できなかった** のであって、機構の否定ではない。"""
+    row = series_map.SERIES_MAP.get(track, {}).get(currency)
+    if row is None:
+        raise SignalUnavailableError(f"{track} の {currency} は対応表に無い（NOT_MAPPED）")
+    return row
+
+
 def _is_monthly(track: str, currency: str) -> bool:
-    return series_map.SERIES_MAP[track][currency]["lag"]["kind"] == "month_end_offset"
+    return _mapping(track, currency)["lag"]["kind"] == "month_end_offset"
 
 
 def _lag_kwargs(track: str, currency: str) -> dict[str, int]:
@@ -205,9 +226,7 @@ def _lag_kwargs(track: str, currency: str) -> dict[str, int]:
     `corrections.LAG_CORRECTIONS` にある series は、凍結文（「公表日の 2 営業日後」）どおりの
     lag へ直したものを使う（C-5）。凍結済みの series_map 自体は書き換えない。
     """
-    lag = corrections.LAG_CORRECTIONS.get(
-        (track, currency), series_map.SERIES_MAP[track][currency]["lag"]
-    )
+    lag = corrections.LAG_CORRECTIONS.get((track, currency), _mapping(track, currency)["lag"])
     if lag["kind"] == "month_end_offset":
         return {"vintage_offset_months": int(lag["months"])}
     return {"lag_business_days": int(lag["n"])}
@@ -345,7 +364,12 @@ def scores_for(
     #: **ffill しない**（C-1）。初版はここで上限なく前方補完し、`_align` の staleness 規則と
     #: P-6（欠けた通貨は 0）を無効にしていた — U1 の EUR は系列終了後 685 日持ち越されていた
     window = raw.reindex(contiguous)
-    window = window[window.notna().sum(axis=1) >= MIN_CURRENCIES]
+    kept = window.notna().sum(axis=1) >= MIN_CURRENCIES
+    if not kept.all():
+        gaps = int((~kept).sum())
+        raise NonContiguousScoresError(
+            f"{track}/{span}: 3 通貨未満の日が span の途中に {gaps} 日ある（C-6）"
+        )
     return window.fillna(0.0).reindex(columns=list(CURRENCIES), fill_value=0.0)
 
 
