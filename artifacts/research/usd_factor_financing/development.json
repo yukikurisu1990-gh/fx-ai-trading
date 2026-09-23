@@ -1,0 +1,1358 @@
+{
+ "code_identity": {
+  "argv": [
+   "C:\\Users\\yukik\\fx-ai-trading\\scripts\\research\\usd_factor_financing\\driver.py",
+   "--workers",
+   "14"
+  ],
+  "dirty_paths": [],
+  "head": "69a18a0cfeb71eff792271825d6d3bcccb1da2dc",
+  "started_utc": "2026-09-23T23:33:42Z"
+ },
+ "cross_track_correlation": {
+  "M15_long|M16_long": -0.153,
+  "M15_recent|M16_recent": 0.469
+ },
+ "cycle": "USD_FACTOR_CORRECTED_AND_FINANCING_2026_09",
+ "freeze_digest": "d3dcfbba075e56934cbf0ec7f7c0a5d37101f54f1904aca7cb21352dbc60b4d3",
+ "panel": {
+  "carry_leg": "CARRY_LEG_ABSENT_ON_BOTH_SPANS_SPOT_ONLY",
+  "construction": "pair 日次 log return -> 符号を揃えた通貨平均 -> cross-section 平均を引く。**両 span で同一**",
+  "long": {
+   "days": 4458,
+   "first": "1999-01-05",
+   "last": "2016-06-01",
+   "pairs": 28,
+   "source": "ECB euro reference rates (already acquired for T-V)"
+  },
+  "recent": {
+   "days": 1213,
+   "first": "2021-04-27",
+   "last": "2025-12-26",
+   "no_archive_read": true,
+   "pairs": 20,
+   "source": "guarded M15 caches: momentum_replication_b, supplemental_replication, exploratory_round_1"
+  }
+ },
+ "qualifier": "POST_RESULT_IMPLEMENTATION_CORRECTED_EXPLORATORY_ONLY",
+ "results": {
+  "M15_long": {
+   "benchmarks": {
+    "constant_long_usd": {
+     "ex_financing_sharpe": -0.0392,
+     "ic": -0.009218998885373116,
+     "total_central_sharpe": -0.1624
+    }
+   },
+   "capacity_total_central": {
+    "reachable": false,
+    "why": "TOTAL_ECONOMIC が 8 セル全点で正ではないので capacity を出さない"
+   },
+   "cost_stress": {
+    "cost_x1.5": {
+     "net_annual_return": 0.006115233004082876,
+     "net_ex_financing_sharpe": 0.0036,
+     "net_sharpe": 0.0585
+    },
+    "cost_x2.0": {
+     "net_annual_return": 0.002151980449656834,
+     "net_ex_financing_sharpe": -0.0002,
+     "net_sharpe": 0.0206
+    }
+   },
+   "development_economics": {
+    "checks": {
+     "E1_net_positive": true,
+     "E2_gross_positive": true,
+     "E3_incremental_information": true,
+     "E4_temporal_stability": true,
+     "E5_breadth": true,
+     "E6_concentration": false,
+     "E7_cost_robustness": true,
+     "E8_economic_magnitude": false
+    },
+    "core_satisfied": true,
+    "evidence": {
+     "cost_x2_net_sharpe": 0.0206,
+     "positive_temporal_blocks": "36/70",
+     "top_10_day_contribution": 1.5523,
+     "worst_leave_one_currency_out_net_sharpe": 0.027
+    },
+    "label": "DEVELOPMENT_ECONOMICS_NOT_SUPPORTED"
+   },
+   "development_economics_adverse_endpoint": {
+    "by_basis": {
+     "policy_contemporaneous": {
+      "checks": {
+       "E1_net_positive": false,
+       "E2_gross_positive": true,
+       "E3_incremental_information": true,
+       "E4_temporal_stability": false,
+       "E5_breadth": false,
+       "E6_concentration": false,
+       "E7_cost_robustness": false,
+       "E8_economic_magnitude": false
+      },
+      "core_satisfied": false,
+      "evidence": {
+       "cost_x2_net_sharpe": -0.3897,
+       "positive_temporal_blocks": "33/70",
+       "top_10_day_contribution": -1.3733,
+       "worst_leave_one_currency_out_net_sharpe": -0.1888
+      },
+      "label": "DEVELOPMENT_ECONOMICS_NOT_SUPPORTED"
+     },
+     "three_month_lagged": {
+      "checks": {
+       "E1_net_positive": false,
+       "E2_gross_positive": true,
+       "E3_incremental_information": true,
+       "E4_temporal_stability": false,
+       "E5_breadth": false,
+       "E6_concentration": false,
+       "E7_cost_robustness": false,
+       "E8_economic_magnitude": false
+      },
+      "core_satisfied": false,
+      "evidence": {
+       "cost_x2_net_sharpe": -0.3933,
+       "positive_temporal_blocks": "33/70",
+       "top_10_day_contribution": -1.3301,
+       "worst_leave_one_currency_out_net_sharpe": -0.1937
+      },
+      "label": "DEVELOPMENT_ECONOMICS_NOT_SUPPORTED"
+     }
+    },
+    "core_satisfied": false
+   },
+   "is_primary_span": true,
+   "metrics_ex_financing": {
+    "annual_cost": 0.0007787734607343891,
+    "at_leverage_cap_share": 0.0,
+    "currency_contribution": {
+     "AUD": -0.0065649375785791775,
+     "CAD": -0.07925335890661107,
+     "CHF": 0.06918019891795193,
+     "EUR": 0.010201775782803513,
+     "GBP": -0.008768024664721194,
+     "JPY": -0.04918504379305859,
+     "NZD": 0.09162922385339364,
+     "USD": 0.0
+    },
+    "days": 4457,
+    "downside_tail_p05": -0.010597645348381599,
+    "factor_abs_cosine": 0.6346379934029558,
+    "gross_annual_return": 0.0015401476486464286,
+    "gross_sharpe": 0.014743840963014702,
+    "ic": 0.008126196113995758,
+    "leave_one_currency_out_net_sharpe": {
+     "AUD": 0.01305995606050953,
+     "CAD": 0.05523805212997426,
+     "CHF": -0.035419837085739196,
+     "EUR": 0.0020709045847762033,
+     "GBP": 0.013548426462139537,
+     "JPY": 0.036322030538196014,
+     "NZD": -0.05192324326745575,
+     "USD": 0.007288666156826304
+    },
+    "max_drawdown": -0.9317625346625074,
+    "net_annual_return": 0.0007613741879120447,
+    "net_sharpe": 0.007288666156826304,
+    "portfolio_gross_leverage": 2.9012061562196942,
+    "position_persistence": 0.9982527020071021,
+    "positive_temporal_blocks": "34/70",
+    "raw_to_neutralised_score_corr": 1.0,
+    "realized_vol": 0.10446001662443671,
+    "risk_leverage": 2.9012061562196942,
+    "signal_persistence": 0.9972543419993021,
+    "temporal_concentration": 0.07081818222669,
+    "top_10_day_contribution": 20.539994116929925,
+    "top_1_day_contribution": 3.143589769949259,
+    "top_5_day_contribution": 12.156730519053625,
+    "turnover_per_unit_gross": 0.7881119435287269,
+    "turnover_round_trips_per_year": 2.2864752223558105,
+    "years": 17.69
+   },
+   "metrics_total_central": {
+    "annual_cost": 0.007926505108852074,
+    "at_leverage_cap_share": 0.0,
+    "currency_contribution": {
+     "AUD": 0.046737773640370114,
+     "CAD": -0.07112830254074154,
+     "CHF": 0.08117434954904491,
+     "EUR": 0.02954204267208893,
+     "GBP": -4.811736306305908e-05,
+     "JPY": -0.031808167002448914,
+     "NZD": 0.13755741885731865,
+     "USD": 0.0
+    },
+    "days": 4457,
+    "detection_floor_mde95": 0.466,
+    "downside_tail_p05": -0.010540329986475163,
+    "effective_independent_observations": 5.01,
+    "factor_abs_cosine": 0.6346379934029558,
+    "gross_annual_return": 0.01800499066736098,
+    "gross_sharpe": 0.1723212277964012,
+    "ic": 0.008126196113995758,
+    "incremental_ic": 0.010806141446566348,
+    "leave_one_currency_out_net_sharpe": {
+     "AUD": 0.08572641414318215,
+     "CAD": 0.14853047708906883,
+     "CHF": 0.0617009548888455,
+     "EUR": 0.09432518643104522,
+     "GBP": 0.10862418159311692,
+     "JPY": 0.12174921401801954,
+     "NZD": 0.027027814411155045,
+     "USD": 0.09645824161974811
+    },
+    "max_drawdown": -0.8500227314778278,
+    "net_annual_return": 0.010078485558508918,
+    "net_sharpe": 0.09645824161974811,
+    "portfolio_gross_leverage": 2.9012061562196942,
+    "position_persistence": 0.9982527020071021,
+    "positive_temporal_blocks": "36/70",
+    "raw_to_neutralised_score_corr": 1.0,
+    "realized_vol": 0.10448547878614375,
+    "risk_leverage": 2.9012061562196942,
+    "signal_persistence": 0.9972543419993021,
+    "signal_persistence_lag1": 0.9978,
+    "temporal_concentration": 0.06896265456268366,
+    "top_10_day_contribution": 1.5522662207571516,
+    "top_1_day_contribution": 0.23757725315742756,
+    "top_5_day_contribution": 0.9186794869198488,
+    "turnover_per_unit_gross": 0.7881119435287269,
+    "turnover_round_trips_per_year": 2.2864752223558105,
+    "years": 17.69
+   },
+   "nuisance_sensitivity": {
+    "implementation_tolerance_band": {
+     "constant": "implementation_tolerance_band",
+     "grid": {
+      "0.05": {
+       "ex_financing_sharpe": 0.0073,
+       "total_central_sharpe": 0.0965
+      },
+      "0.1": {
+       "ex_financing_sharpe": 0.0073,
+       "total_central_sharpe": 0.0965
+      },
+      "0.2": {
+       "ex_financing_sharpe": 0.0073,
+       "total_central_sharpe": 0.0965
+      }
+     },
+     "primary": 0.1
+    },
+    "max_staleness_days_monthly": {
+     "constant": "max_staleness_days_monthly",
+     "grid": {
+      "120": {
+       "ex_financing_sharpe": 0.0073,
+       "total_central_sharpe": 0.0965
+      },
+      "45": {
+       "ex_financing_sharpe": 0.0073,
+       "total_central_sharpe": 0.0965
+      },
+      "60": {
+       "ex_financing_sharpe": 0.0073,
+       "total_central_sharpe": 0.0965
+      },
+      "75": {
+       "ex_financing_sharpe": 0.0073,
+       "total_central_sharpe": 0.0965
+      },
+      "90": {
+       "ex_financing_sharpe": 0.0073,
+       "total_central_sharpe": 0.0965
+      }
+     },
+     "primary": 75
+    }
+   },
+   "null_diagnostic": {
+    "draws": 1000,
+    "ex_financing": {
+     "distinct_null_values": 877,
+     "null_p05": -0.5038,
+     "null_p50": 0.0456,
+     "null_p95": 0.3872,
+     "null_positive_share": 0.591,
+     "observed_percentile": 0.427,
+     "observed_sharpe": 0.0073,
+     "p_value": 0.5734
+    },
+    "seed": 20260925,
+    "total_central": {
+     "distinct_null_values": 875,
+     "null_p05": -0.6097,
+     "null_p50": 0.0216,
+     "null_p95": 0.3383,
+     "null_positive_share": 0.549,
+     "observed_percentile": 0.601,
+     "observed_sharpe": 0.0965,
+     "p_value": 0.3996
+    }
+   },
+   "pnl_decomposition": {
+    "annual_carry": {
+     "policy_contemporaneous": 0.01646,
+     "three_month_lagged": 0.01609
+    },
+    "annual_pair_notional_years": 1.4295,
+    "annual_spot_gross": 0.00154,
+    "annual_spread_cost": 0.00078,
+    "breakeven_markup_per_pair_notional": {
+     "policy_contemporaneous": 0.01205,
+     "three_month_lagged": 0.01179
+    },
+    "net_ex_financing": {
+     "annual": 0.00076,
+     "gross_sharpe": 0.0147,
+     "name": "NET_EX_TRANSACTION_COSTS_EXCLUDING_FINANCING",
+     "sharpe": 0.0073
+    },
+    "pnl_source": {
+     "financing_contribution_positive": true,
+     "label": "SPOT_AND_FINANCING_BOTH_POSITIVE",
+     "net_ex_financing_positive": true
+    },
+    "total_economic": {
+     "policy_contemporaneous|0.0000": {
+      "annual": 0.01723,
+      "annual_financing_contribution": 0.01646,
+      "sharpe": 0.1649
+     },
+     "policy_contemporaneous|0.0050": {
+      "annual": 0.01008,
+      "annual_financing_contribution": 0.00932,
+      "sharpe": 0.0965
+     },
+     "policy_contemporaneous|0.0100": {
+      "annual": 0.00293,
+      "annual_financing_contribution": 0.00217,
+      "sharpe": 0.028
+     },
+     "policy_contemporaneous|0.0200": {
+      "annual": -0.01136,
+      "annual_financing_contribution": -0.01213,
+      "sharpe": -0.1088
+     },
+     "three_month_lagged|0.0000": {
+      "annual": 0.01686,
+      "annual_financing_contribution": 0.01609,
+      "sharpe": 0.1613
+     },
+     "three_month_lagged|0.0050": {
+      "annual": 0.00971,
+      "annual_financing_contribution": 0.00895,
+      "sharpe": 0.0929
+     },
+     "three_month_lagged|0.0100": {
+      "annual": 0.00256,
+      "annual_financing_contribution": 0.0018,
+      "sharpe": 0.0245
+     },
+     "three_month_lagged|0.0200": {
+      "annual": -0.01174,
+      "annual_financing_contribution": -0.0125,
+      "sharpe": -0.1123
+     }
+    },
+    "total_sign_consistent_across_all_cells": false
+   },
+   "rename_gates": {
+    "M16_WITHIN_CYCLE": {
+     "measured_abs_correlation": 0.0932,
+     "overlap_days": 4458,
+     "threshold": 0.8,
+     "verdict": "DISTINCT"
+    },
+    "T5_TIC_FLOW": {
+     "measured_abs_correlation": 0.0643,
+     "overlap_days": 4332,
+     "threshold": 0.8,
+     "verdict": "DISTINCT"
+    }
+   },
+   "span": "long",
+   "stage_2": {
+    "eligible": false
+   },
+   "track": "M15",
+   "usd_factor_exposure": {
+    "currencies_ever_zero_when_invested": [],
+    "days_with_zero_leverage_excluded": 1,
+    "foreign_legs_equal": true,
+    "mean_usd_share_of_currency_gross": 0.5,
+    "min_abs_foreign_leg_share": 0.07143,
+    "share_of_days_long_usd": 0.2861
+   }
+  },
+  "M15_recent": {
+   "benchmarks": {
+    "constant_long_usd": {
+     "ex_financing_sharpe": 0.3753,
+     "ic": 0.014344914882369128,
+     "total_central_sharpe": 0.4857
+    }
+   },
+   "capacity_total_central": {
+    "for_10%_annual_net": {
+     "annual_net": 0.1,
+     "financing_burden_or_benefit": 0.0227,
+     "gap_stress_2pct_adverse": -0.1239,
+     "pair_specific_margin": 0.31,
+     "portfolio_gross": 6.19,
+     "remaining_margin_buffer": 0.69,
+     "required_target_vol": 0.2059,
+     "risk_leverage": 6.19,
+     "scaled_max_drawdown": -0.2575
+    },
+    "for_5%_annual_net": {
+     "annual_net": 0.05,
+     "financing_burden_or_benefit": 0.01134,
+     "gap_stress_2pct_adverse": -0.0619,
+     "pair_specific_margin": 0.155,
+     "portfolio_gross": 3.1,
+     "remaining_margin_buffer": 0.845,
+     "required_target_vol": 0.1029,
+     "risk_leverage": 3.1,
+     "scaled_max_drawdown": -0.1288
+    },
+    "forbidden": [
+     "5x を feasibility の hard cap として使うこと",
+     "broker の 20x / 25x を risk target として使うこと"
+    ],
+    "meaning_of_reachable": "net > 0 なので leverage 計算を出した、という意味だけ",
+    "reachable": true,
+    "scenarios": {
+     "vol_10%": {
+      "annual_net": 0.0486,
+      "financing_burden_or_benefit": 0.01102,
+      "gap_stress_2pct_adverse": -0.0602,
+      "pair_specific_margin": 0.15,
+      "portfolio_gross": 3.01,
+      "remaining_margin_buffer": 0.85,
+      "risk_leverage": 3.01,
+      "scaled_max_drawdown": -0.1251
+     },
+     "vol_12%": {
+      "annual_net": 0.0583,
+      "financing_burden_or_benefit": 0.01323,
+      "gap_stress_2pct_adverse": -0.0722,
+      "pair_specific_margin": 0.18,
+      "portfolio_gross": 3.61,
+      "remaining_margin_buffer": 0.82,
+      "risk_leverage": 3.61,
+      "scaled_max_drawdown": -0.1501
+     },
+     "vol_15%": {
+      "annual_net": 0.0729,
+      "financing_burden_or_benefit": 0.01654,
+      "gap_stress_2pct_adverse": -0.0902,
+      "pair_specific_margin": 0.226,
+      "portfolio_gross": 4.51,
+      "remaining_margin_buffer": 0.774,
+      "risk_leverage": 4.51,
+      "scaled_max_drawdown": -0.1876
+     },
+     "vol_8%": {
+      "annual_net": 0.0389,
+      "financing_burden_or_benefit": 0.00882,
+      "gap_stress_2pct_adverse": -0.0481,
+      "pair_specific_margin": 0.12,
+      "portfolio_gross": 2.41,
+      "remaining_margin_buffer": 0.88,
+      "risk_leverage": 2.41,
+      "scaled_max_drawdown": -0.1001
+     }
+    },
+    "vol_per_unit_gross_measured": 0.03324
+   },
+   "cost_stress": {
+    "cost_x1.5": {
+     "net_annual_return": 0.04593625616486456,
+     "net_ex_financing_sharpe": 0.3722,
+     "net_sharpe": 0.4462
+    },
+    "cost_x2.0": {
+     "net_annual_return": 0.04186317372018024,
+     "net_ex_financing_sharpe": 0.3692,
+     "net_sharpe": 0.4066
+    }
+   },
+   "is_primary_span": false,
+   "metrics_ex_financing": {
+    "annual_cost": 0.0006303740236336589,
+    "at_leverage_cap_share": 0.0,
+    "currency_contribution": {
+     "AUD": 0.024628625390689187,
+     "CAD": 0.02052723113516347,
+     "CHF": -0.025337022185855672,
+     "EUR": 0.013301543013909428,
+     "GBP": 0.014073565827871958,
+     "JPY": 0.08634802244613198,
+     "NZD": 0.04824795162162519,
+     "USD": 0.0
+    },
+    "days": 1166,
+    "downside_tail_p05": -0.01042686083249617,
+    "factor_abs_cosine": 0.7759644932246736,
+    "gross_annual_return": 0.03928907302477098,
+    "gross_sharpe": 0.3814022443946415,
+    "ic": 0.014344914882369128,
+    "leave_one_currency_out_net_sharpe": {
+     "AUD": 0.392192633018137,
+     "CAD": 0.367208496574294,
+     "CHF": 0.4885588742913491,
+     "EUR": 0.39754140260643417,
+     "GBP": 0.4007264345575761,
+     "JPY": 0.2188221170349643,
+     "NZD": 0.33529962335311536,
+     "USD": 0.3752989231556455
+    },
+    "max_drawdown": -0.14178758303146274,
+    "net_annual_return": 0.03865869900113731,
+    "net_sharpe": 0.3752989231556455,
+    "portfolio_gross_leverage": 3.097176537911892,
+    "position_persistence": 0.9991754332866521,
+    "positive_temporal_blocks": "12/18",
+    "raw_to_neutralised_score_corr": 1.0,
+    "realized_vol": 0.1030077535956708,
+    "risk_leverage": 3.097176537911892,
+    "signal_persistence": 0.9999999999999998,
+    "temporal_concentration": 0.13870066997073335,
+    "top_10_day_contribution": 1.1454632710687904,
+    "top_1_day_contribution": 0.15175303047808997,
+    "top_5_day_contribution": 0.6251279521048969,
+    "turnover_per_unit_gross": 0.5975685110271224,
+    "turnover_round_trips_per_year": 1.8507751721481474,
+    "years": 4.63
+   },
+   "metrics_total_central": {
+    "annual_cost": 0.008146164889368658,
+    "at_leverage_cap_share": 0.0,
+    "currency_contribution": {
+     "AUD": 0.02592662045019186,
+     "CAD": 0.020493023442107933,
+     "CHF": -0.0006290283897521995,
+     "EUR": 0.019598873993130463,
+     "GBP": 0.010314185606596672,
+     "JPY": 0.11533931508098728,
+     "NZD": 0.04326615636551119,
+     "USD": 0.0
+    },
+    "days": 1166,
+    "detection_floor_mde95": 0.9108,
+    "downside_tail_p05": -0.010420905490907973,
+    "effective_independent_observations": 1.0,
+    "factor_abs_cosine": 0.7759644932246736,
+    "gross_annual_return": 0.05815550349891754,
+    "gross_sharpe": 0.5647914992917792,
+    "ic": 0.014344914882369128,
+    "incremental_ic": 0.00866494610266269,
+    "leave_one_currency_out_net_sharpe": {
+     "AUD": 0.5226789830325204,
+     "CAD": 0.4892951891098367,
+     "CHF": 0.5553236197344896,
+     "EUR": 0.5087517393484313,
+     "GBP": 0.5378178563179141,
+     "JPY": 0.27456333234186914,
+     "NZD": 0.4831331178317259,
+     "USD": 0.48571081888989054
+    },
+    "max_drawdown": -0.12878426828176767,
+    "net_annual_return": 0.05000933860954887,
+    "net_sharpe": 0.48571081888989054,
+    "portfolio_gross_leverage": 3.097176537911892,
+    "position_persistence": 0.9991754332866521,
+    "positive_temporal_blocks": "12/18",
+    "raw_to_neutralised_score_corr": 1.0,
+    "realized_vol": 0.10296113791298085,
+    "risk_leverage": 3.097176537911892,
+    "signal_persistence": 0.9999999999999998,
+    "signal_persistence_lag1": 1.0,
+    "temporal_concentration": 0.1431571909354457,
+    "top_10_day_contribution": 0.8872262358913305,
+    "top_1_day_contribution": 0.11754556086561727,
+    "top_5_day_contribution": 0.4844031669993484,
+    "turnover_per_unit_gross": 0.5975685110271224,
+    "turnover_round_trips_per_year": 1.8507751721481474,
+    "years": 4.63
+   },
+   "pnl_decomposition": {
+    "annual_carry": {
+     "policy_contemporaneous": 0.01887,
+     "three_month_lagged": 0.0192
+    },
+    "annual_pair_notional_years": 1.5032,
+    "annual_spot_gross": 0.03929,
+    "annual_spread_cost": 0.00063,
+    "breakeven_markup_per_pair_notional": {
+     "policy_contemporaneous": 0.03827,
+     "three_month_lagged": 0.03849
+    },
+    "net_ex_financing": {
+     "annual": 0.03866,
+     "gross_sharpe": 0.3814,
+     "name": "NET_EX_TRANSACTION_COSTS_EXCLUDING_FINANCING",
+     "sharpe": 0.3753
+    },
+    "pnl_source": {
+     "financing_contribution_positive": true,
+     "label": "SPOT_AND_FINANCING_BOTH_POSITIVE",
+     "net_ex_financing_positive": true
+    },
+    "total_economic": {
+     "policy_contemporaneous|0.0000": {
+      "annual": 0.05753,
+      "annual_financing_contribution": 0.01887,
+      "sharpe": 0.5587
+     },
+     "policy_contemporaneous|0.0050": {
+      "annual": 0.05001,
+      "annual_financing_contribution": 0.01135,
+      "sharpe": 0.4857
+     },
+     "policy_contemporaneous|0.0100": {
+      "annual": 0.04249,
+      "annual_financing_contribution": 0.00383,
+      "sharpe": 0.4127
+     },
+     "policy_contemporaneous|0.0200": {
+      "annual": 0.02746,
+      "annual_financing_contribution": -0.0112,
+      "sharpe": 0.2667
+     },
+     "three_month_lagged|0.0000": {
+      "annual": 0.05786,
+      "annual_financing_contribution": 0.0192,
+      "sharpe": 0.5619
+     },
+     "three_month_lagged|0.0050": {
+      "annual": 0.05034,
+      "annual_financing_contribution": 0.01168,
+      "sharpe": 0.4889
+     },
+     "three_month_lagged|0.0100": {
+      "annual": 0.04283,
+      "annual_financing_contribution": 0.00417,
+      "sharpe": 0.4159
+     },
+     "three_month_lagged|0.0200": {
+      "annual": 0.02779,
+      "annual_financing_contribution": -0.01087,
+      "sharpe": 0.2699
+     }
+    },
+    "total_sign_consistent_across_all_cells": true
+   },
+   "rename_gates": {
+    "M16_WITHIN_CYCLE": {
+     "overlap_days": 530,
+     "verdict": "NOT_EVALUABLE"
+    },
+    "T5_TIC_FLOW": {
+     "overlap_days": 510,
+     "verdict": "NOT_EVALUABLE"
+    }
+   },
+   "span": "recent",
+   "track": "M15",
+   "usd_factor_exposure": {
+    "currencies_ever_zero_when_invested": [],
+    "days_with_zero_leverage_excluded": 0,
+    "foreign_legs_equal": true,
+    "mean_usd_share_of_currency_gross": 0.5,
+    "min_abs_foreign_leg_share": 0.07143,
+    "share_of_days_long_usd": 1.0
+   }
+  },
+  "M16_long": {
+   "benchmarks": {
+    "constant_long_usd": {
+     "ex_financing_sharpe": -0.0392,
+     "ic": -0.009218998885373116,
+     "total_central_sharpe": -0.1624
+    }
+   },
+   "capacity_total_central": {
+    "for_10%_annual_net": {
+     "annual_net": 0.1,
+     "financing_burden_or_benefit": -0.02632,
+     "gap_stress_2pct_adverse": -0.2017,
+     "pair_specific_margin": 0.504,
+     "portfolio_gross": 10.08,
+     "remaining_margin_buffer": 0.496,
+     "required_target_vol": 0.3629,
+     "risk_leverage": 10.08,
+     "scaled_max_drawdown": -1.3992
+    },
+    "for_5%_annual_net": {
+     "annual_net": 0.05,
+     "financing_burden_or_benefit": -0.01316,
+     "gap_stress_2pct_adverse": -0.1008,
+     "pair_specific_margin": 0.252,
+     "portfolio_gross": 5.04,
+     "remaining_margin_buffer": 0.748,
+     "required_target_vol": 0.1815,
+     "risk_leverage": 5.04,
+     "scaled_max_drawdown": -0.6996
+    },
+    "forbidden": [
+     "5x を feasibility の hard cap として使うこと",
+     "broker の 20x / 25x を risk target として使うこと"
+    ],
+    "meaning_of_reachable": "net > 0 なので leverage 計算を出した、という意味だけ",
+    "reachable": true,
+    "scenarios": {
+     "vol_10%": {
+      "annual_net": 0.0276,
+      "financing_burden_or_benefit": -0.00725,
+      "gap_stress_2pct_adverse": -0.0556,
+      "pair_specific_margin": 0.139,
+      "portfolio_gross": 2.78,
+      "remaining_margin_buffer": 0.861,
+      "risk_leverage": 2.78,
+      "scaled_max_drawdown": -0.3856
+     },
+     "vol_12%": {
+      "annual_net": 0.0331,
+      "financing_burden_or_benefit": -0.0087,
+      "gap_stress_2pct_adverse": -0.0667,
+      "pair_specific_margin": 0.167,
+      "portfolio_gross": 3.33,
+      "remaining_margin_buffer": 0.833,
+      "risk_leverage": 3.33,
+      "scaled_max_drawdown": -0.4627
+     },
+     "vol_15%": {
+      "annual_net": 0.0413,
+      "financing_burden_or_benefit": -0.01088,
+      "gap_stress_2pct_adverse": -0.0833,
+      "pair_specific_margin": 0.208,
+      "portfolio_gross": 4.17,
+      "remaining_margin_buffer": 0.792,
+      "risk_leverage": 4.17,
+      "scaled_max_drawdown": -0.5783
+     },
+     "vol_8%": {
+      "annual_net": 0.022,
+      "financing_burden_or_benefit": -0.0058,
+      "gap_stress_2pct_adverse": -0.0445,
+      "pair_specific_margin": 0.111,
+      "portfolio_gross": 2.22,
+      "remaining_margin_buffer": 0.889,
+      "risk_leverage": 2.22,
+      "scaled_max_drawdown": -0.3084
+     }
+    },
+    "vol_per_unit_gross_measured": 0.03599
+   },
+   "cost_stress": {
+    "cost_x1.5": {
+     "net_annual_return": 0.024297644599901132,
+     "net_ex_financing_sharpe": 0.3395,
+     "net_sharpe": 0.2327
+    },
+    "cost_x2.0": {
+     "net_annual_return": 0.01982155087901999,
+     "net_ex_financing_sharpe": 0.3309,
+     "net_sharpe": 0.1899
+    }
+   },
+   "development_economics": {
+    "checks": {
+     "E1_net_positive": true,
+     "E2_gross_positive": true,
+     "E3_incremental_information": true,
+     "E4_temporal_stability": true,
+     "E5_breadth": true,
+     "E6_concentration": false,
+     "E7_cost_robustness": true,
+     "E8_economic_magnitude": false
+    },
+    "core_satisfied": true,
+    "evidence": {
+     "cost_x2_net_sharpe": 0.1899,
+     "positive_temporal_blocks": "40/70",
+     "top_10_day_contribution": 0.5361,
+     "worst_leave_one_currency_out_net_sharpe": 0.2176
+    },
+    "label": "DEVELOPMENT_ECONOMICS_NOT_SUPPORTED"
+   },
+   "development_economics_adverse_endpoint": {
+    "by_basis": {
+     "policy_contemporaneous": {
+      "checks": {
+       "E1_net_positive": true,
+       "E2_gross_positive": true,
+       "E3_incremental_information": true,
+       "E4_temporal_stability": true,
+       "E5_breadth": true,
+       "E6_concentration": false,
+       "E7_cost_robustness": false,
+       "E8_economic_magnitude": false
+      },
+      "core_satisfied": false,
+      "evidence": {
+       "cost_x2_net_sharpe": -0.221,
+       "positive_temporal_blocks": "39/70",
+       "top_10_day_contribution": 2.0983,
+       "worst_leave_one_currency_out_net_sharpe": 0.0113
+      },
+      "label": "DEVELOPMENT_ECONOMICS_NOT_SUPPORTED"
+     },
+     "three_month_lagged": {
+      "checks": {
+       "E1_net_positive": true,
+       "E2_gross_positive": true,
+       "E3_incremental_information": true,
+       "E4_temporal_stability": true,
+       "E5_breadth": true,
+       "E6_concentration": false,
+       "E7_cost_robustness": false,
+       "E8_economic_magnitude": false
+      },
+      "core_satisfied": false,
+      "evidence": {
+       "cost_x2_net_sharpe": -0.2287,
+       "positive_temporal_blocks": "39/70",
+       "top_10_day_contribution": 2.3557,
+       "worst_leave_one_currency_out_net_sharpe": 0.0019
+      },
+      "label": "DEVELOPMENT_ECONOMICS_NOT_SUPPORTED"
+     }
+    },
+    "core_satisfied": false
+   },
+   "is_primary_span": true,
+   "metrics_ex_financing": {
+    "annual_cost": 0.0018044557936446007,
+    "at_leverage_cap_share": 0.0,
+    "currency_contribution": {
+     "AUD": 0.10834720556775151,
+     "CAD": 0.07472397105708968,
+     "CHF": 0.13084263097216792,
+     "EUR": 0.17299939494483307,
+     "GBP": 0.04483579831573491,
+     "JPY": 0.028525354121925035,
+     "NZD": 0.11448036433288547,
+     "USD": 0.0
+    },
+    "days": 4457,
+    "downside_tail_p05": -0.010408722307894773,
+    "factor_abs_cosine": 0.6346379934029558,
+    "gross_annual_return": 0.03815081652831987,
+    "gross_sharpe": 0.3653144890364261,
+    "ic": 0.007750930341472638,
+    "leave_one_currency_out_net_sharpe": {
+     "AUD": 0.3486882383286755,
+     "CAD": 0.33865407925684093,
+     "CHF": 0.32568484881837995,
+     "EUR": 0.29823156113113614,
+     "GBP": 0.3646010076222611,
+     "JPY": 0.3563461092585149,
+     "NZD": 0.3511896618125791,
+     "USD": 0.3481350210840625
+    },
+    "max_drawdown": -0.38385480559964147,
+    "net_annual_return": 0.03634636073467527,
+    "net_sharpe": 0.3481350210840625,
+    "portfolio_gross_leverage": 2.9012061562196942,
+    "position_persistence": 0.9901615126494591,
+    "positive_temporal_blocks": "40/70",
+    "raw_to_neutralised_score_corr": 1.0,
+    "realized_vol": 0.10440305781790017,
+    "risk_leverage": 2.9012061562196942,
+    "signal_persistence": 0.9894151740571839,
+    "temporal_concentration": 0.06951467449761975,
+    "top_10_day_contribution": 0.4254727440913929,
+    "top_1_day_contribution": 0.05434123516206458,
+    "top_5_day_contribution": 0.23481784117039486,
+    "turnover_per_unit_gross": 1.826093510171564,
+    "turnover_round_trips_per_year": 5.2978737335425725,
+    "years": 17.69
+   },
+   "metrics_total_central": {
+    "annual_cost": 0.008952187441762285,
+    "at_leverage_cap_share": 0.0,
+    "currency_contribution": {
+     "AUD": 0.07350033468845582,
+     "CAD": 0.05301715953382219,
+     "CHF": 0.12392738342239504,
+     "EUR": 0.16596133842583893,
+     "GBP": 0.031202242324534692,
+     "JPY": 0.006793119733645631,
+     "NZD": 0.0864198947601991,
+     "USD": 0.0
+    },
+    "days": 4457,
+    "detection_floor_mde95": 0.466,
+    "downside_tail_p05": -0.010422906073375576,
+    "effective_independent_observations": 23.12,
+    "factor_abs_cosine": 0.6346379934029558,
+    "gross_annual_return": 0.03772592576254457,
+    "gross_sharpe": 0.361137471338369,
+    "ic": 0.007750930341472638,
+    "incremental_ic": 0.004642157889777314,
+    "leave_one_currency_out_net_sharpe": {
+     "AUD": 0.2839975469086266,
+     "CAD": 0.2716811210789633,
+     "CHF": 0.244835820028408,
+     "EUR": 0.21764597221284201,
+     "GBP": 0.29119108239106983,
+     "JPY": 0.29118047049037526,
+     "NZD": 0.28078266934197316,
+     "USD": 0.27554433829791114
+    },
+    "max_drawdown": -0.40261456726574174,
+    "net_annual_return": 0.028773738320782276,
+    "net_sharpe": 0.27554433829791114,
+    "portfolio_gross_leverage": 2.9012061562196942,
+    "position_persistence": 0.9901615126494591,
+    "positive_temporal_blocks": "40/70",
+    "raw_to_neutralised_score_corr": 1.0,
+    "realized_vol": 0.10442507546525191,
+    "risk_leverage": 2.9012061562196942,
+    "signal_persistence": 0.9894151740571839,
+    "signal_persistence_lag1": 0.9897,
+    "temporal_concentration": 0.06614166281889829,
+    "top_10_day_contribution": 0.5360562085569925,
+    "top_1_day_contribution": 0.06847679357506606,
+    "top_5_day_contribution": 0.29624642924439687,
+    "turnover_per_unit_gross": 1.826093510171564,
+    "turnover_round_trips_per_year": 5.2978737335425725,
+    "years": 17.69
+   },
+   "nuisance_sensitivity": {
+    "change_window_months": {
+     "constant": "change_window_months",
+     "grid": {
+      "12": {
+       "ex_financing_sharpe": 0.3481,
+       "total_central_sharpe": 0.2755
+      },
+      "24": {
+       "ex_financing_sharpe": 0.4668,
+       "total_central_sharpe": 0.4189
+      },
+      "6": {
+       "ex_financing_sharpe": 0.1839,
+       "total_central_sharpe": 0.0953
+      }
+     },
+     "primary": 12
+    },
+    "implementation_tolerance_band": {
+     "constant": "implementation_tolerance_band",
+     "grid": {
+      "0.05": {
+       "ex_financing_sharpe": 0.3481,
+       "total_central_sharpe": 0.2755
+      },
+      "0.1": {
+       "ex_financing_sharpe": 0.3481,
+       "total_central_sharpe": 0.2755
+      },
+      "0.2": {
+       "ex_financing_sharpe": 0.3481,
+       "total_central_sharpe": 0.2755
+      }
+     },
+     "primary": 0.1
+    },
+    "max_staleness_days_monthly": {
+     "constant": "max_staleness_days_monthly",
+     "grid": {
+      "120": {
+       "ex_financing_sharpe": 0.3481,
+       "total_central_sharpe": 0.2755
+      },
+      "45": {
+       "ex_financing_sharpe": 0.3481,
+       "total_central_sharpe": 0.2755
+      },
+      "60": {
+       "ex_financing_sharpe": 0.3481,
+       "total_central_sharpe": 0.2755
+      },
+      "75": {
+       "ex_financing_sharpe": 0.3481,
+       "total_central_sharpe": 0.2755
+      },
+      "90": {
+       "ex_financing_sharpe": 0.3481,
+       "total_central_sharpe": 0.2755
+      }
+     },
+     "primary": 75
+    }
+   },
+   "null_diagnostic": {
+    "draws": 1000,
+    "ex_financing": {
+     "distinct_null_values": 875,
+     "null_p05": -0.4285,
+     "null_p50": -0.0473,
+     "null_p95": 0.5267,
+     "null_positive_share": 0.446,
+     "observed_percentile": 0.839,
+     "observed_sharpe": 0.3481,
+     "p_value": 0.1618
+    },
+    "seed": 20260925,
+    "total_central": {
+     "distinct_null_values": 877,
+     "null_p05": -0.5197,
+     "null_p50": -0.1403,
+     "null_p95": 0.5036,
+     "null_positive_share": 0.367,
+     "observed_percentile": 0.809,
+     "observed_sharpe": 0.2755,
+     "p_value": 0.1918
+    }
+   },
+   "pnl_decomposition": {
+    "annual_carry": {
+     "policy_contemporaneous": -0.00042,
+     "three_month_lagged": -0.00123
+    },
+    "annual_pair_notional_years": 1.4295,
+    "annual_spot_gross": 0.03815,
+    "annual_spread_cost": 0.0018,
+    "breakeven_markup_per_pair_notional": {
+     "policy_contemporaneous": 0.02513,
+     "three_month_lagged": 0.02457
+    },
+    "net_ex_financing": {
+     "annual": 0.03635,
+     "gross_sharpe": 0.3653,
+     "name": "NET_EX_TRANSACTION_COSTS_EXCLUDING_FINANCING",
+     "sharpe": 0.3481
+    },
+    "pnl_source": {
+     "financing_contribution_positive": false,
+     "label": "SPOT_DRIVEN_FINANCING_NEGATIVE",
+     "net_ex_financing_positive": true
+    },
+    "total_economic": {
+     "policy_contemporaneous|0.0000": {
+      "annual": 0.03592,
+      "annual_financing_contribution": -0.00042,
+      "sharpe": 0.344
+     },
+     "policy_contemporaneous|0.0050": {
+      "annual": 0.02877,
+      "annual_financing_contribution": -0.00757,
+      "sharpe": 0.2755
+     },
+     "policy_contemporaneous|0.0100": {
+      "annual": 0.02163,
+      "annual_financing_contribution": -0.01472,
+      "sharpe": 0.2071
+     },
+     "policy_contemporaneous|0.0200": {
+      "annual": 0.00733,
+      "annual_financing_contribution": -0.02902,
+      "sharpe": 0.0702
+     },
+     "three_month_lagged|0.0000": {
+      "annual": 0.03512,
+      "annual_financing_contribution": -0.00123,
+      "sharpe": 0.3363
+     },
+     "three_month_lagged|0.0050": {
+      "annual": 0.02797,
+      "annual_financing_contribution": -0.00837,
+      "sharpe": 0.2679
+     },
+     "three_month_lagged|0.0100": {
+      "annual": 0.02082,
+      "annual_financing_contribution": -0.01552,
+      "sharpe": 0.1994
+     },
+     "three_month_lagged|0.0200": {
+      "annual": 0.00653,
+      "annual_financing_contribution": -0.02982,
+      "sharpe": 0.0625
+     }
+    },
+    "total_sign_consistent_across_all_cells": true
+   },
+   "rename_gates": {
+    "M15_WITHIN_CYCLE": {
+     "measured_abs_correlation": 0.0932,
+     "overlap_days": 4458,
+     "threshold": 0.8,
+     "verdict": "DISTINCT"
+    },
+    "T5_TIC_FLOW": {
+     "measured_abs_correlation": 0.0005,
+     "overlap_days": 4332,
+     "threshold": 0.8,
+     "verdict": "DISTINCT"
+    }
+   },
+   "span": "long",
+   "stage_2": {
+    "eligible": true,
+    "regression": {
+     "caveat": "**観測は通貨 x 日で数えた 4 千件あるが、独立な signal の状態はその数ではない。** T5 の score は月次 series の前方補完なので、同じ値が数十日続く。t はこの重複を補正していない — **過大である**",
+     "control_beta": -0.003967596808417527,
+     "control_t": -3.173708078373829,
+     "observations": 35504,
+     "r_squared": 0.0003030504172071291,
+     "signal_beta": 7.184823994253804e-05,
+     "signal_t": 0.9233229123981633,
+     "status": "RAN"
+    }
+   },
+   "track": "M16",
+   "usd_factor_exposure": {
+    "currencies_ever_zero_when_invested": [],
+    "days_with_zero_leverage_excluded": 1,
+    "foreign_legs_equal": true,
+    "mean_usd_share_of_currency_gross": 0.5,
+    "min_abs_foreign_leg_share": 0.07143,
+    "share_of_days_long_usd": 0.579
+   }
+  },
+  "M16_recent": {
+   "benchmarks": {
+    "constant_long_usd": {
+     "ex_financing_sharpe": -0.0713,
+     "ic": 0.00977008192595611,
+     "total_central_sharpe": 0.1028
+    }
+   },
+   "capacity_total_central": {
+    "reachable": false,
+    "why": "TOTAL_ECONOMIC が 8 セル全点で正ではないので capacity を出さない"
+   },
+   "cost_stress": {
+    "cost_x1.5": {
+     "net_annual_return": -0.0564373569415581,
+     "net_ex_financing_sharpe": -0.5245,
+     "net_sharpe": -0.5448
+    },
+    "cost_x2.0": {
+     "net_annual_return": -0.061296982395905864,
+     "net_ex_financing_sharpe": -0.5343,
+     "net_sharpe": -0.5913
+    }
+   },
+   "is_primary_span": false,
+   "metrics_ex_financing": {
+    "annual_cost": 0.002111507878860507,
+    "at_leverage_cap_share": 0.0,
+    "currency_contribution": {
+     "AUD": -0.006263851618409484,
+     "CAD": -0.0014888745878426906,
+     "CHF": -0.012615356359659886,
+     "EUR": -0.022561710950563602,
+     "GBP": -0.027473779666458677,
+     "JPY": -0.03215771476354538,
+     "NZD": -0.005070975879134283,
+     "USD": 0.0
+    },
+    "days": 530,
+    "downside_tail_p05": -0.010589299464247998,
+    "factor_abs_cosine": 0.7955232542993141,
+    "gross_annual_return": -0.05117609525293346,
+    "gross_sharpe": -0.49486788117645836,
+    "ic": -0.011094740317097541,
+    "leave_one_currency_out_net_sharpe": {
+     "AUD": -0.5859245182953778,
+     "CAD": -0.5550675312329221,
+     "CHF": -0.523134429498024,
+     "EUR": -0.4717820843140405,
+     "GBP": -0.4430489908026591,
+     "JPY": -0.42473306661946914,
+     "NZD": -0.6016528742473078,
+     "USD": -0.514654077395857
+    },
+    "max_drawdown": -0.17910349638085574,
+    "net_annual_return": -0.05328760313179394,
+    "net_sharpe": -0.514654077395857,
+    "portfolio_gross_leverage": 3.1338353200237017,
+    "position_persistence": 0.990945776920859,
+    "positive_temporal_blocks": "3/9",
+    "raw_to_neutralised_score_corr": 1.0,
+    "realized_vol": 0.1035406216957,
+    "risk_leverage": 3.1338353200237017,
+    "signal_persistence": 0.9871059569758425,
+    "temporal_concentration": 0.23532121194974528,
+    "top_10_day_contribution": -1.806509184224509,
+    "top_1_day_contribution": -0.2422038831275141,
+    "top_5_day_contribution": -1.0424872297382173,
+    "turnover_per_unit_gross": 1.9782077168254069,
+    "turnover_round_trips_per_year": 6.199377213330905,
+    "years": 2.1
+   },
+   "metrics_total_central": {
+    "annual_cost": 0.009719250908695505,
+    "at_leverage_cap_share": 0.0,
+    "currency_contribution": {
+     "AUD": -0.007880966627938591,
+     "CAD": -0.0019533182315633005,
+     "CHF": -0.007830076550082948,
+     "EUR": -0.02259134012147327,
+     "GBP": -0.02996738287438793,
+     "JPY": -0.026608823004679046,
+     "NZD": -0.007204197797912337,
+     "USD": 0.0
+    },
+    "days": 530,
+    "detection_floor_mde95": 1.3515,
+    "downside_tail_p05": -0.010594552850268661,
+    "effective_independent_observations": 3.02,
+    "factor_abs_cosine": 0.7955232542993141,
+    "gross_annual_return": -0.04185848057851485,
+    "gross_sharpe": -0.40478453228449396,
+    "ic": -0.011094740317097541,
+    "incremental_ic": -0.018655469971060483,
+    "leave_one_currency_out_net_sharpe": {
+     "AUD": -0.5570588191260403,
+     "CAD": -0.5347090493290749,
+     "CHF": -0.5294195682896123,
+     "EUR": -0.45268314157788947,
+     "GBP": -0.4111428673142745,
+     "JPY": -0.43519773729743455,
+     "NZD": -0.5694841873027833,
+     "USD": -0.4981732731131047
+    },
+    "max_drawdown": -0.17702278229305268,
+    "net_annual_return": -0.051577731487210336,
+    "net_sharpe": -0.4981732731131047,
+    "portfolio_gross_leverage": 3.1338353200237017,
+    "position_persistence": 0.990945776920859,
+    "positive_temporal_blocks": "3/9",
+    "raw_to_neutralised_score_corr": 1.0,
+    "realized_vol": 0.10353371862946205,
+    "risk_leverage": 3.1338353200237017,
+    "signal_persistence": 0.9871059569758425,
+    "signal_persistence_lag1": 0.9887,
+    "temporal_concentration": 0.244087273254889,
+    "top_10_day_contribution": -1.8684322658600654,
+    "top_1_day_contribution": -0.25073663166125126,
+    "top_5_day_contribution": -1.0766206087366317,
+    "turnover_per_unit_gross": 1.9782077168254069,
+    "turnover_round_trips_per_year": 6.199377213330905,
+    "years": 2.1
+   },
+   "pnl_decomposition": {
+    "annual_carry": {
+     "policy_contemporaneous": 0.00932,
+     "three_month_lagged": 0.00894
+    },
+    "annual_pair_notional_years": 1.5215,
+    "annual_spot_gross": -0.05118,
+    "annual_spread_cost": 0.00211,
+    "breakeven_markup_per_pair_notional": {
+     "policy_contemporaneous": -0.0289,
+     "three_month_lagged": -0.02914
+    },
+    "net_ex_financing": {
+     "annual": -0.05329,
+     "gross_sharpe": -0.4949,
+     "name": "NET_EX_TRANSACTION_COSTS_EXCLUDING_FINANCING",
+     "sharpe": -0.5147
+    },
+    "pnl_source": {
+     "financing_contribution_positive": true,
+     "label": "FINANCING_DRIVEN_SPOT_NOT_POSITIVE",
+     "net_ex_financing_positive": false
+    },
+    "total_economic": {
+     "policy_contemporaneous|0.0000": {
+      "annual": -0.04397,
+      "annual_financing_contribution": 0.00932,
+      "sharpe": -0.4247
+     },
+     "policy_contemporaneous|0.0050": {
+      "annual": -0.05158,
+      "annual_financing_contribution": 0.00171,
+      "sharpe": -0.4982
+     },
+     "policy_contemporaneous|0.0100": {
+      "annual": -0.05919,
+      "annual_financing_contribution": -0.0059,
+      "sharpe": -0.5717
+     },
+     "policy_contemporaneous|0.0200": {
+      "annual": -0.0744,
+      "annual_financing_contribution": -0.02111,
+      "sharpe": -0.7186
+     },
+     "three_month_lagged|0.0000": {
+      "annual": -0.04434,
+      "annual_financing_contribution": 0.00894,
+      "sharpe": -0.4283
+     },
+     "three_month_lagged|0.0050": {
+      "annual": -0.05195,
+      "annual_financing_contribution": 0.00134,
+      "sharpe": -0.5018
+     },
+     "three_month_lagged|0.0100": {
+      "annual": -0.05956,
+      "annual_financing_contribution": -0.00627,
+      "sharpe": -0.5753
+     },
+     "three_month_lagged|0.0200": {
+      "annual": -0.07478,
+      "annual_financing_contribution": -0.02149,
+      "sharpe": -0.7222
+     }
+    },
+    "total_sign_consistent_across_all_cells": true
+   },
+   "rename_gates": {
+    "M15_WITHIN_CYCLE": {
+     "overlap_days": 530,
+     "verdict": "NOT_EVALUABLE"
+    },
+    "T5_TIC_FLOW": {
+     "overlap_days": 0,
+     "verdict": "NOT_EVALUABLE"
+    }
+   },
+   "span": "recent",
+   "track": "M16",
+   "usd_factor_exposure": {
+    "currencies_ever_zero_when_invested": [],
+    "days_with_zero_leverage_excluded": 0,
+    "foreign_legs_equal": true,
+    "mean_usd_share_of_currency_gross": 0.5,
+    "min_abs_foreign_leg_share": 0.07143,
+    "share_of_days_long_usd": 0.6736
+   }
+  }
+ },
+ "verdicts": {
+  "M15": {
+   "effective_independent_observations": 5.0,
+   "failure_class": null,
+   "never": "CONFIRMED とは呼ばない。forward / fresh へ進まない（§30）",
+   "pnl_source": "SPOT_AND_FINANCING_BOTH_POSITIVE",
+   "qualifier": "POST_RESULT_IMPLEMENTATION_CORRECTED_EXPLORATORY_ONLY",
+   "rename_gates_not_evaluable": [],
+   "status": "M15_CORRECTED_FINANCING_NOT_DECISION_GRADE",
+   "status_before_power_cap": "M15_CORRECTED_FINANCING_NOT_DECISION_GRADE",
+   "underpowered": true
+  },
+  "M16": {
+   "effective_independent_observations": 23.1,
+   "failure_class": null,
+   "never": "CONFIRMED とは呼ばない。forward / fresh へ進まない（§30）",
+   "pnl_source": "SPOT_DRIVEN_FINANCING_NEGATIVE",
+   "qualifier": "POST_RESULT_IMPLEMENTATION_CORRECTED_EXPLORATORY_ONLY",
+   "rename_gates_not_evaluable": [],
+   "status": "M16_CORRECTED_POSITIVE_EXPLORATORY_NOT_DECISION_GRADE",
+   "status_before_power_cap": "M16_CORRECTED_POSITIVE_EXPLORATORY_NOT_DECISION_GRADE",
+   "underpowered": false
+  }
+ }
+}
