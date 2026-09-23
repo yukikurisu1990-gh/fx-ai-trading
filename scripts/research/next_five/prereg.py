@@ -195,16 +195,41 @@ DEMOTED_GATE: Final[dict[str, Any]] = {
         "同じ規則が track によって全く違う厳しさで効いていた"
     ),
     "still_reported": "YES — 診断として残す。ただし『通った』を根拠に進まない",
+    "calibrated_at_freeze": {
+        "record": "artifacts/research/next_five/gate_calibration.json",
+        "null_pass_rate_range": "9.3%（U5）〜 28.7%（U2）",
+        "status": "RESEARCH_METHOD_FINDING",
+        "interpretation": (
+            "**通過率が低い track ほど良い、とは解釈しない**（第 2 裁定 §3）。"
+            "gross>0 と incremental IC>0 の帰無通過率はどの track も 0.4〜0.6 で、"
+            "割れるのは net>0 だけである。**gate の厳しさを決めているのは cost 構造**であって、"
+            "signal の質ではない"
+        ),
+    },
 }
 
-#: **今回の hard gate。** 帰無通過率が構成上低いものを選ぶ。
-ADVANCE_GATE: Final[dict[str, Any]] = {
-    "id": "PERMUTATION_SEPARATION",
+#: ------------------------------------------------------------------
+#: 2026-09-22 第 2 裁定 §1–§2 — **null の棄却と development economics を分ける**
+#: ------------------------------------------------------------------
+#:
+#: 初版は `permutation p ≤ 0.05` を進行の唯一の hard gate にしていた。裁定はこれを退けた:
+#:
+#:     p > 0.05 -> automatically NOT_SUPPORTED   は禁止
+#:     p ≤ 0.05 だから candidate 成立            とも扱わない
+#:
+#: `UNDERPOWERED_FOR_CONFIRMATION != NOT_WORTH_DEVELOPING`。development は sign / 大きさ /
+#: net economics / benchmark 増分 / 安定性 / breadth / 集中 / monetizability を screen する工程で、
+#: formal confirmation は別工程である。
+
+#: **null 診断。** 判定の材料の 1 つであって、唯一の gate ではない。
+NULL_DIAGNOSTIC: Final[dict[str, Any]] = {
+    "id": "PERMUTATION_NULL_DIAGNOSTIC",
     "judged_on": "primary span（PRIMARY_SPAN_RULE で決まる）",
-    "conditions": (
-        "net_annual_return > 0",
-        "circular-shift permutation p ≤ 0.05（net Sharpe について）",
-    ),
+    "statistic": "net Sharpe",
+    "labels": {
+        "NULL_REJECTION_SUPPORTED": "net > 0 かつ circular-shift permutation p ≤ 0.05",
+        "NULL_REJECTION_NOT_SUPPORTED": "それ以外",
+    },
     "permutation": {
         "method": "CIRCULAR_SHIFT_PRESERVING_THE_SIGNAL_AUTOCORRELATION",
         "draws": 1000,
@@ -214,17 +239,73 @@ ADVANCE_GATE: Final[dict[str, Any]] = {
             "性質まで壊れる。それでは gate の通りやすさを測ったことにならない"
         ),
     },
-    "expected_null_pass_rate": 0.05,
-    "must_be_measured_at_freeze": True,
-    "if_not_passed": "STOP。Stage 2 へは進まない。**結果は記録する**",
-    "model_if_passed": (
+    "reported": ("null distribution", "null pass probability", "observed percentile", "p-value"),
+    "is_the_only_gate": False,
+    "multiplicity": (
+        "最大 5 本を同じ null に当てるので、**いずれか 1 本が 5% を切る確率は帰無でも約 23%** である。"
+        "これを報告に必ず添える。**1 本通ったことを『edge が見つかった』とは書かない**"
+    ),
+}
+
+#: **development economics。** すべて primary span で判定する。結果を見る前に凍結する。
+DEVELOPMENT_ECONOMICS: Final[dict[str, Any]] = {
+    "id": "DEVELOPMENT_ECONOMICS",
+    "criteria": {
+        "E1_net_positive": "net Sharpe > 0",
+        "E2_gross_positive": "gross Sharpe > 0",
+        "E3_incremental_information": "incremental IC（FX own momentum 20d を除いた残差）> 0",
+        "E4_temporal_stability": "正の temporal block の割合 ≥ 0.5",
+        "E5_breadth": "leave-one-currency-out の最悪 net Sharpe > 0（1 通貨で持っていない）",
+        "E6_concentration": "上位 10 日の寄与 ≤ net 合計の 0.5",
+        "E7_cost_robustness": "cost ×2 でも net Sharpe > 0",
+        "E8_economic_magnitude": "net Sharpe ≥ 0.30（vol 10% で年 3% 相当）",
+    },
+    "core": (
+        "E1_net_positive",
+        "E3_incremental_information",
+        "E4_temporal_stability",
+        "E7_cost_robustness",
+    ),
+    "supported_when": "E1–E8 すべて真 → DEVELOPMENT_ECONOMICS_SUPPORTED",
+    "reported_not_required": {
+        "E9_other_span_sign": "もう一方の span の gross Sharpe の符号（replication の診断）",
+    },
+}
+
+#: **Stage 2 の適格条件。** p ≤ 0.05 を唯一条件にしない（第 2 裁定 §34）。
+STAGE_2_ELIGIBILITY: Final[dict[str, Any]] = {
+    "conditions": (
+        "DEVELOPMENT_ECONOMICS の core（E1 / E3 / E4 / E7）がすべて真",
+        "null における observed percentile ≥ 0.80（p ≤ 0.20）",
+    ),
+    "model_if_eligible": (
         "forward return を、凍結した signal と control の 2 変数へ回帰する single linear model のみ。"
         "interaction も feature 追加も無い。**非線形 ML は禁止**"
     ),
-    "multiplicity": (
-        "5 本を同じ gate に通すので、**いずれか 1 本が 5% を切る確率は帰無でも約 23%** である。"
-        "これを報告に必ず添える。**1 本通ったことを『edge が見つかった』とは書かない**"
-    ),
+    "is_confirmation": False,
+    "if_not_eligible": "Stage 2 へは進まない。**Stage 1 の結果は記録する**",
+}
+
+#: **判定規則。** 上から順に最初に当てはまるものを採る。結果を見た後に変えない。
+VERDICT_LOGIC: Final[tuple[dict[str, str], ...]] = (
+    {"if": "rename gate が閾値を超えた", "then": "RENAME_OF_A_CLOSED_TRACK"},
+    {"if": "E1 が偽（net ≤ 0）", "then": "NOT_SUPPORTED_IN_SEEN_DEVELOPMENT"},
+    {
+        "if": "DEVELOPMENT_ECONOMICS_SUPPORTED かつ NULL_REJECTION_SUPPORTED",
+        "then": "STRONG_DEVELOPMENT_CANDIDATE",
+    },
+    {
+        "if": "core がすべて真 かつ null percentile ≥ 0.80",
+        "then": "MARGINAL_DEVELOPMENT_CANDIDATE",
+    },
+    {"if": "E1 は真だがそれ以外", "then": "POSITIVE_EXPLORATORY_SIGNAL_NOT_DECISION_GRADE"},
+)
+
+#: negative のときの失敗分類。
+FAILURE_CLASS_RULE: Final[dict[str, str]] = {
+    "gross ≤ 0": "SIGNAL_FAILURE",
+    "gross > 0 かつ net ≤ 0": "COST_FAILURE",
+    "net > 0 だが E5 または E6 が偽": "CONCENTRATION_FAILURE（exploratory の留保として付す）",
 }
 
 #: ------------------------------------------------------------------
@@ -596,6 +677,24 @@ INTERPRETATION: Final[str] = (
 )
 
 
+#: **alpha を見る前の 2 度目の凍結修正**（第 2 裁定 §1 の必須修正）。
+#: まだ signal は 1 本も走っていない（前 run は全 track が Stage 0 で止まった）。
+FREEZE_AMENDMENT_GATE_SPLIT: Final[dict[str, str]] = {
+    "digest_before": "2e805781d31c6025c9e8c372cd11686ec969d22568a136a91b8c787364f2ba8f",
+    "status": "AMENDED_PRE_ALPHA_NO_SIGNAL_HAD_RUN",
+    "authority": "2026-09-22 第 2 裁定 §1（PR #491 CONDITIONAL MERGE APPROVED の条件）",
+    "what_changed": (
+        "ADVANCE_GATE（permutation p ≤ 0.05 を唯一の hard gate とする）を廃し、"
+        "NULL_DIAGNOSTIC / DEVELOPMENT_ECONOMICS / STAGE_2_ELIGIBILITY / VERDICT_LOGIC に分けた"
+    ),
+    "why": (
+        "p > 0.05 を自動的に NOT_SUPPORTED にすると、development を confirmation の基準で"
+        "裁くことになる（UNDERPOWERED_FOR_CONFIRMATION != NOT_WORTH_DEVELOPING）。"
+        "逆に p ≤ 0.05 だけで candidate 成立ともしない"
+    ),
+}
+
+
 def track_status(track: str, suffix: str) -> str:
     if suffix not in TRACK_STATUS_SUFFIXES:
         raise ValueError(f"未登録の status: {suffix}")
@@ -622,7 +721,11 @@ def _payload() -> dict[str, Any]:
         "control": CONTROL,
         "rename_gates": RENAME_GATES,
         "demoted_gate": DEMOTED_GATE,
-        "advance_gate": ADVANCE_GATE,
+        "null_diagnostic": NULL_DIAGNOSTIC,
+        "development_economics": DEVELOPMENT_ECONOMICS,
+        "stage_2_eligibility": STAGE_2_ELIGIBILITY,
+        "verdict_logic": [dict(row) for row in VERDICT_LOGIC],
+        "failure_class_rule": FAILURE_CLASS_RULE,
         "nuisance_constants": NUISANCE_CONSTANTS,
         "nuisance_rule": NUISANCE_RULE,
         "tracks": TRACKS,
@@ -632,6 +735,7 @@ def _payload() -> dict[str, Any]:
         "capacity_reporting": CAPACITY_REPORTING,
         "track_status_suffixes": list(TRACK_STATUS_SUFFIXES),
         "freeze_amendment_pre_alpha": FREEZE_AMENDMENT_PRE_ALPHA,
+        "freeze_amendment_gate_split": FREEZE_AMENDMENT_GATE_SPLIT,
         "negative_classes": list(NEGATIVE_CLASSES),
         "exploration_disclosure": EXPLORATION_DISCLOSURE,
         "shared_blockers": list(SHARED_BLOCKERS),
@@ -650,7 +754,6 @@ def freeze_digest() -> str:
 
 
 __all__ = [
-    "ADVANCE_GATE",
     "AUTHORITY",
     "BENCHMARKS",
     "BOOK_CONFIG",
@@ -660,15 +763,19 @@ __all__ = [
     "COST",
     "CYCLE",
     "DEMOTED_GATE",
+    "DEVELOPMENT_ECONOMICS",
+    "FAILURE_CLASS_RULE",
     "EXECUTION_LAYER",
     "EXECUTION_ORDER",
     "EXPLORATION_DISCLOSURE",
     "FORBIDDEN_NEXT_STEPS",
+    "FREEZE_AMENDMENT_GATE_SPLIT",
     "FREEZE_AMENDMENT_PRE_ALPHA",
     "FORBIDDEN_RESCUES",
     "INTERPRETATION",
     "METRICS",
     "NEGATIVE_CLASSES",
+    "NULL_DIAGNOSTIC",
     "NUISANCE_CONSTANTS",
     "NUISANCE_RULE",
     "PRIMARY_SPAN_RULE",
@@ -677,9 +784,11 @@ __all__ = [
     "SHARED_BLOCKERS",
     "STAGE_0_OUTCOME",
     "SPANS",
+    "STAGE_2_ELIGIBILITY",
     "TRACKS",
     "TRACK_STATUS_SUFFIXES",
     "UNIVERSE",
+    "VERDICT_LOGIC",
     "WORKFLOW_STATUS",
     "freeze_digest",
     "track_status",

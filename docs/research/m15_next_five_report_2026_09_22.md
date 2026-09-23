@@ -191,13 +191,30 @@ S07 は **向きが S05 と同じ**（risk-off → 安全通貨）で情報源�
 
 → `DEMOTED_TO_DIAGNOSTIC_NOT_A_SELECTION_GATE`。**報告はするが、通ったことを根拠に進まない。**
 
-### 新しい hard gate
+### 判定は 2 軸で行う（第 2 裁定 §1 による修正）
 
-`PERMUTATION_SEPARATION` — primary span で **net > 0 かつ circular-shift permutation
-p ≤ 0.05**。circular shift を使うのは、行を混ぜると turnover が跳ね上がり
+> **初版は `permutation p ≤ 0.05` を唯一の hard gate にしていた。第 2 裁定はこれを退けた。**
+> `p > 0.05 → 自動的に NOT_SUPPORTED` は禁止、`p ≤ 0.05 だから candidate 成立` とも扱わない。
+> alpha を 1 本も見る前に修正した（`FREEZE_AMENDMENT_GATE_SPLIT`）。
+
+| 軸 | 中身 | ラベル |
+| --- | --- | --- |
+| **null 診断** | circular-shift permutation（1000 回）での p 値と observed percentile | `NULL_REJECTION_SUPPORTED` / `…_NOT_SUPPORTED` |
+| **development economics** | E1 net>0 / E2 gross>0 / E3 増分 IC>0 / E4 正 block ≥ 50% / E5 1 通貨抜きでも net>0 / E6 上位 10 日 ≤ 50% / E7 cost×2 でも net>0 / E8 net SR ≥ 0.30 | `DEVELOPMENT_ECONOMICS_SUPPORTED` / `…_NOT_SUPPORTED` |
+
+判定規則（上から最初に当てはまるもの）:
+
+1. rename gate 超過 → `RENAME_OF_A_CLOSED_TRACK`
+2. **net ≤ 0 → `NOT_SUPPORTED_IN_SEEN_DEVELOPMENT`**（`NOT_SUPPORTED` になる道はこれだけ）
+3. economics SUPPORTED **かつ** null 棄却 → `STRONG_DEVELOPMENT_CANDIDATE`
+4. core（E1/E3/E4/E7）すべて真 **かつ** null percentile ≥ 0.80 → `MARGINAL_DEVELOPMENT_CANDIDATE`
+5. それ以外で net > 0 → `POSITIVE_EXPLORATORY_SIGNAL_NOT_DECISION_GRADE`
+
+**Stage 2 の適格条件** も p ≤ 0.05 を要求しない — core がすべて真かつ null percentile ≥ 0.80。
+
+circular shift を使うのは、行を混ぜると turnover が跳ね上がり
 「回転が少ないから cost を払わない」という性質まで壊れるからである。
-
-**多重性を事前に書いてある** — 5 本を同じ gate に通すので、**帰無でもいずれか 1 本が
+**多重性を事前に書いてある** — 最大 5 本を同じ null に当てるので、**帰無でもいずれか 1 本が
 5% を切る確率は約 23%**。1 本通ったことを「edge が見つかった」とは書かない。
 
 ### 凍結時点で測った帰無通過率

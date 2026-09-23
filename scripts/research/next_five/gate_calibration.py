@@ -187,9 +187,9 @@ def run(draws: int = DEFAULT_DRAWS) -> dict[str, Any]:
         "tracks": tracks,
         "gate_strictness_across_tracks": strictness,
         "demoted_gate": prereg.DEMOTED_GATE,
-        "advance_gate": {
-            **{k: v for k, v in prereg.ADVANCE_GATE.items() if k != "permutation"},
-            "permutation": prereg.ADVANCE_GATE["permutation"],
+        "null_diagnostic": {
+            **{k: v for k, v in prereg.NULL_DIAGNOSTIC.items() if k != "permutation"},
+            "permutation": prereg.NULL_DIAGNOSTIC["permutation"],
             "null_pass_rate_basis": (
                 "**構成上 5%。** permutation は同じ circular-shift 分布から引くので、"
                 "p 値は帰無のもとで一様になる。**実行時に null 分布の形を報告して確かめる** — "
@@ -199,7 +199,7 @@ def run(draws: int = DEFAULT_DRAWS) -> dict[str, Any]:
         },
         "consequence": (
             "裁定 §G に従い、**帰無通過率の高い gate は hard selection gate として使わない**。"
-            "3 条件 triple は diagnostic として報告し、進行は permutation gate が決める"
+            "3 条件 triple は diagnostic として報告し、判定は VERDICT_LOGIC（null 診断 + development economics）が決める"
         ),
     }
 

@@ -120,7 +120,7 @@ def run(*, permutation_draws: int | None = None) -> dict[str, Any]:
             results[key] = out
 
             metrics = out["metrics"]
-            gate = out.get("advance_gate") or {}
+            gate = out.get("null_diagnostic") or {}
             print(
                 f"{key:16s} gross={metrics['gross_sharpe']:+.3f} net={metrics['net_sharpe']:+.3f} "
                 f"turnover={metrics['turnover_per_unit_gross']:6.1f} "
@@ -128,6 +128,22 @@ def run(*, permutation_draws: int | None = None) -> dict[str, Any]:
                 f"p={gate.get('p_value', float('nan'))}",
                 file=sys.stderr,
             )
+
+    #: **判定は 2 つの span が揃ってから当てる**（E9 の replication 診断のため）。
+    verdicts: dict[str, Any] = {}
+    for track in prereg.EXECUTION_ORDER:
+        primary_span = prereg.TRACKS[track]["primary_span"]
+        other_span = "recent" if primary_span == "long" else "long"
+        primary = results.get(f"{track}_{primary_span}", {})
+        other = results.get(f"{track}_{other_span}")
+        if "null_diagnostic" in primary:
+            verdicts[track] = execute.verdict(track, primary, other, primary.get("rename_gate"))
+        else:
+            verdicts[track] = {
+                "status": primary.get("verdict", "NOT_RUN"),
+                "failure_class": "DATA_FAILURE" if "verdict" in primary else None,
+                "why": primary.get("why") or primary.get("error"),
+            }
 
     correlation = {}
     keys = sorted(pnl)
@@ -143,10 +159,11 @@ def run(*, permutation_draws: int | None = None) -> dict[str, Any]:
         "authority": prereg.AUTHORITY,
         "panel": built["provenance"],
         "results": results,
+        "verdicts": verdicts,
         "cross_track_correlation": correlation,
         "exploration_disclosure": prereg.EXPLORATION_DISCLOSURE,
         "interpretation": prereg.INTERPRETATION,
-        "multiplicity": prereg.ADVANCE_GATE["multiplicity"],
+        "multiplicity": prereg.NULL_DIAGNOSTIC["multiplicity"],
     }
 
 

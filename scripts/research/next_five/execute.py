@@ -35,10 +35,34 @@ from scripts.research.top_five.execute import (
 
 __all__ = [
     "BENCH_LOOKBACK",
+    "NUISANCE_APPLIES",
     "TRADING_DAYS",
-    "permutation_gate",
+    "development_economics",
+    "null_diagnostic",
     "run_track",
+    "stage2_eligible",
+    "verdict",
 ]
+
+#: 各 track の signal 定義が実際に使う nuisance 定数。**signal の式から機械的に決まる**
+#: （U4 の 3 か月変化と U5 の 5 日変化は機構側の定数で、nuisance ではない）。
+NUISANCE_APPLIES: dict[str, tuple[str, ...]] = {
+    "U1": (
+        "max_staleness_days",
+        "z_window",
+        "change_window_months",
+        "implementation_tolerance_band",
+    ),
+    "U2": (
+        "max_staleness_days",
+        "z_window",
+        "change_window_months",
+        "implementation_tolerance_band",
+    ),
+    "U3": ("max_staleness_days", "z_window", "implementation_tolerance_band"),
+    "U4": ("max_staleness_days", "z_window", "implementation_tolerance_band"),
+    "U5": ("max_staleness_days", "z_window", "implementation_tolerance_band"),
+}
 
 
 def _config(track: str, cost_multiple: float = 1.0) -> construction.BookConfig:
@@ -119,15 +143,14 @@ def _lag_one_autocorrelation(frame: pd.DataFrame) -> float:
     return float(np.corrcoef(current[usable], following[usable])[0, 1])
 
 
-def permutation_gate(
+def null_diagnostic(
     track: str, scores: pd.DataFrame, excess: pd.DataFrame, *, draws: int | None = None
 ) -> dict[str, Any]:
-    """**進行を決める hard gate**（裁定 §G）。
+    """**null 診断**（第 2 裁定 §1 / §32）。判定の材料の 1 つであって、唯一の gate ではない。
 
     零情報の circular shift を引いて、実測の net Sharpe がその分布のどこにいるかを測る。
-    3 条件 triple と違い、**この gate は帰無で 5% しか通らない**（構成上）。
     """
-    spec = prereg.ADVANCE_GATE["permutation"]
+    spec = prereg.NULL_DIAGNOSTIC["permutation"]
     count = draws if draws is not None else int(spec["draws"])
     rng = np.random.default_rng(int(spec["seed"]))
     config = _config(track)
@@ -153,20 +176,134 @@ def permutation_gate(
         )
 
     array = np.array([value for value in drawn if np.isfinite(value)])
-    p_value = float((array >= observed_sharpe).sum() + 1) / float(len(array) + 1)
-    passed = bool(observed_annual > 0 and p_value <= 0.05)
+    exceed = int((array >= observed_sharpe).sum())
+    p_value = float(exceed + 1) / float(len(array) + 1)
+    percentile = float((array < observed_sharpe).mean()) if len(array) else float("nan")
+    rejected = bool(observed_annual > 0 and p_value <= 0.05)
     return {
-        "gate": prereg.ADVANCE_GATE["id"],
+        "diagnostic": prereg.NULL_DIAGNOSTIC["id"],
+        "is_the_only_gate": False,
         "draws": count,
         "seed": int(spec["seed"]),
         "observed_net_sharpe": round(observed_sharpe, 4),
         "observed_net_annual_return": round(observed_annual, 5),
         "p_value": round(p_value, 4),
+        "observed_percentile": round(percentile, 4),
         "null_net_sharpe_mean": round(float(array.mean()), 4),
+        "null_net_sharpe_p05": round(float(np.percentile(array, 5)), 4),
+        "null_net_sharpe_p50": round(float(np.percentile(array, 50)), 4),
         "null_net_sharpe_p95": round(float(np.percentile(array, 95)), 4),
+        "null_positive_share": round(float((array > 0).mean()), 4),
         "signal_persistence_lag1": None if not np.isfinite(persistence) else round(persistence, 4),
-        "passed": passed,
-        "multiplicity_note": prereg.ADVANCE_GATE["multiplicity"],
+        "label": "NULL_REJECTION_SUPPORTED" if rejected else "NULL_REJECTION_NOT_SUPPORTED",
+        "multiplicity_note": prereg.NULL_DIAGNOSTIC["multiplicity"],
+    }
+
+
+def _blocks_share(text: Any) -> float:
+    try:
+        good, total = (int(part) for part in str(text).split("/"))
+        return good / total if total else float("nan")
+    except (ValueError, TypeError):
+        return float("nan")
+
+
+def development_economics(metrics: dict[str, Any], stressed: dict[str, Any]) -> dict[str, Any]:
+    """**凍結した development economics**（第 2 裁定 §1）。primary span の値で判定する。"""
+    loo = metrics.get("leave_one_currency_out_net_sharpe") or {}
+    worst_loo = min(loo.values()) if loo else float("nan")
+    top10 = metrics.get("top_10_day_contribution", float("nan"))
+    cost_x2 = (stressed.get("cost_x2.0") or {}).get("net_sharpe", float("nan"))
+    net = float(metrics["net_sharpe"])
+    checks = {
+        "E1_net_positive": bool(net > 0),
+        "E2_gross_positive": bool(float(metrics["gross_sharpe"]) > 0),
+        "E3_incremental_information": bool(float(metrics["incremental_ic"]) > 0),
+        "E4_temporal_stability": bool(
+            _blocks_share(metrics.get("positive_temporal_blocks")) >= 0.5
+        ),
+        "E5_breadth": bool(np.isfinite(worst_loo) and worst_loo > 0),
+        #: net が負のときは寄与の符号が反転して意味を持たないので偽とする
+        "E6_concentration": bool(net > 0 and np.isfinite(top10) and top10 <= 0.5),
+        "E7_cost_robustness": bool(np.isfinite(cost_x2) and cost_x2 > 0),
+        "E8_economic_magnitude": bool(net >= 0.30),
+    }
+    core = all(checks[name] for name in prereg.DEVELOPMENT_ECONOMICS["core"])
+    return {
+        "checks": checks,
+        "evidence": {
+            "worst_leave_one_currency_out_net_sharpe": (
+                None if not np.isfinite(worst_loo) else round(worst_loo, 4)
+            ),
+            "top_10_day_contribution": None if not np.isfinite(top10) else round(float(top10), 4),
+            "cost_x2_net_sharpe": None if not np.isfinite(cost_x2) else round(float(cost_x2), 4),
+            "positive_temporal_blocks": metrics.get("positive_temporal_blocks"),
+        },
+        "core_satisfied": core,
+        "label": (
+            "DEVELOPMENT_ECONOMICS_SUPPORTED"
+            if all(checks.values())
+            else "DEVELOPMENT_ECONOMICS_NOT_SUPPORTED"
+        ),
+    }
+
+
+def stage2_eligible(economics: dict[str, Any], null: dict[str, Any]) -> bool:
+    """凍結した Stage 2 適格条件。**p ≤ 0.05 を唯一条件にしない。**"""
+    return bool(economics["core_satisfied"] and float(null["observed_percentile"]) >= 0.80)
+
+
+def stage2_regression(scores: pd.DataFrame, excess: pd.DataFrame) -> dict[str, Any]:
+    """凍結が許す唯一の model: forward ~ 1 + signal + control（前 cycle と同じ実装）。"""
+    from scripts.research.top_five.stage2 import _regression
+
+    control = _benchmarks(excess)["fx_own_momentum_20d"].reindex(scores.index)
+    return _regression(scores, control, excess)
+
+
+def verdict(
+    track: str,
+    primary: dict[str, Any],
+    other: dict[str, Any] | None,
+    rename_gate: dict[str, Any] | None,
+) -> dict[str, Any]:
+    """**凍結した VERDICT_LOGIC を上から順に当てる。** 結果を見た後に変えない。
+
+    p > 0.05 は NOT_SUPPORTED の理由にならない（NOT_SUPPORTED は net ≤ 0 のときだけ）。
+    """
+    metrics = primary["metrics"]
+    economics = primary["development_economics"]
+    null = primary["null_diagnostic"]
+    gross = float(metrics["gross_sharpe"])
+    net = float(metrics["net_sharpe"])
+    other_sign = None
+    if other and "metrics" in other:
+        other_sign = "positive" if float(other["metrics"]["gross_sharpe"]) > 0 else "non_positive"
+
+    failure: str | None = None
+    if rename_gate and rename_gate.get("verdict") == "RENAME":
+        suffix = "RENAME_OF_A_CLOSED_TRACK"
+    elif net <= 0:
+        suffix = "NOT_SUPPORTED_IN_SEEN_DEVELOPMENT"
+        failure = "SIGNAL_FAILURE" if gross <= 0 else "COST_FAILURE"
+    elif (
+        economics["label"] == "DEVELOPMENT_ECONOMICS_SUPPORTED"
+        and null["label"] == "NULL_REJECTION_SUPPORTED"
+    ):
+        suffix = "STRONG_DEVELOPMENT_CANDIDATE"
+    elif economics["core_satisfied"] and float(null["observed_percentile"]) >= 0.80:
+        suffix = "MARGINAL_DEVELOPMENT_CANDIDATE"
+    else:
+        suffix = "POSITIVE_EXPLORATORY_SIGNAL_NOT_DECISION_GRADE"
+        checks = economics["checks"]
+        if not (checks["E5_breadth"] and checks["E6_concentration"]):
+            failure = "CONCENTRATION_FAILURE"
+    return {
+        "status": prereg.track_status(track, suffix),
+        "failure_class": failure,
+        "null_label": null["label"],
+        "economics_label": economics["label"],
+        "other_span_gross_sign": other_sign,
     }
 
 
@@ -183,7 +320,7 @@ def _diagnostic_triple(metrics: dict[str, Any]) -> dict[str, Any]:
         "checks": checks,
         "all_three": all(checks.values()),
         "null_pass_rate_measured_at_freeze": prereg.DEMOTED_GATE["measured_null_pass_rate"],
-        "reading": "**通ったこと自体は情報が薄い。** 進行は permutation gate が決める",
+        "reading": "**通ったこと自体は情報が薄い。** 判定は VERDICT_LOGIC が決める",
     }
 
 
@@ -197,15 +334,21 @@ def _nuisance_sensitivity(
     original = spec["primary"]
     grid: dict[str, Any] = {}
     for value in spec["sensitivity_set"]:
+        run_config = config
+        overrides: dict[str, Any] | None = {name: value}
+        if name == "implementation_tolerance_band":
+            #: 執行側の定数。signal ではなく book の band を動かす
+            run_config = dataclasses.replace(config, band=float(value))
+            overrides = None
         try:
-            scores = signals.scores_for(track, built, span, overrides={name: value})
+            scores = signals.scores_for(track, built, span, overrides=overrides)
         except signals.SignalUnavailableError as error:
             grid[str(value)] = {"status": f"UNAVAILABLE: {error}"[:120]}
             continue
         if scores.empty:
             grid[str(value)] = {"status": "NO_USABLE_DAYS"}
             continue
-        daily = construction.run_book(config, scores, excess, TRADING_DAYS)["daily"]
+        daily = construction.run_book(run_config, scores, excess, TRADING_DAYS)["daily"]
         grid[str(value)] = {
             "days": int(len(scores)),
             "net_sharpe": round(_sharpe(daily["net"]), 4),
@@ -303,5 +446,17 @@ def run_track(
     if not is_primary and span == "long":
         out["cost_caveat"] = prereg.PRIMARY_SPAN_RULE["cost_caveat"]
     if is_primary:
-        out["advance_gate"] = permutation_gate(track, scores, excess, draws=permutation_draws)
+        out["null_diagnostic"] = null_diagnostic(track, scores, excess, draws=permutation_draws)
+        out["development_economics"] = development_economics(metrics, stressed)
+        eligible = stage2_eligible(out["development_economics"], out["null_diagnostic"])
+        out["stage_2"] = (
+            {"eligible": True, "regression": stage2_regression(scores, excess)}
+            if eligible
+            else {"eligible": False, "reason": prereg.STAGE_2_ELIGIBILITY["if_not_eligible"]}
+        )
+        out["nuisance_sensitivity"] = {
+            name: _nuisance_sensitivity(track, span, built, name)
+            for name in prereg.NUISANCE_CONSTANTS
+            if name in NUISANCE_APPLIES.get(track, ())
+        }
     return out

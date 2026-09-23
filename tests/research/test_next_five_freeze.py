@@ -148,7 +148,8 @@ class TestTheFreezeIsWhatItSaysItIs:
         """**事後に緩めたくなるものほど digest の内側へ入れる。**"""
         before = prereg.freeze_digest()
         for container, key, replacement in (
-            (prereg.ADVANCE_GATE, "expected_null_pass_rate", 0.5),
+            (prereg.STAGE_2_ELIGIBILITY, "is_confirmation", True),
+            (prereg.DEVELOPMENT_ECONOMICS, "core", ("E1_net_positive",)),
             (prereg.NUISANCE_CONSTANTS["max_staleness_days"], "primary", 999),
             (prereg.DEMOTED_GATE, "status", "A_HARD_GATE"),
         ):
@@ -174,25 +175,70 @@ class TestTheGateWasRedesignedTheWayTheRulingAsked:
         assert prereg.DEMOTED_GATE["measured_null_pass_rate"] == 0.42
         assert prereg.DEMOTED_GATE["still_reported"].startswith("YES")
 
-    def test_the_advance_gate_is_a_separation_test_not_a_sign_triple(self) -> None:
-        gate = prereg.ADVANCE_GATE
-        assert gate["id"] == "PERMUTATION_SEPARATION"
-        joined = " ".join(gate["conditions"])
-        assert "permutation p ≤ 0.05" in joined
-        assert gate["expected_null_pass_rate"] <= 0.05
-        assert gate["must_be_measured_at_freeze"] is True
+    def test_the_null_test_is_a_diagnostic_not_the_only_gate(self) -> None:
+        """第 2 裁定 §1 — p ≤ 0.05 を唯一の hard gate にしない。"""
+        null = prereg.NULL_DIAGNOSTIC
+        assert null["is_the_only_gate"] is False
+        assert set(null["labels"]) == {"NULL_REJECTION_SUPPORTED", "NULL_REJECTION_NOT_SUPPORTED"}
+        assert "p ≤ 0.05" in null["labels"]["NULL_REJECTION_SUPPORTED"]
+
+    def test_development_economics_is_a_separate_axis(self) -> None:
+        economics = prereg.DEVELOPMENT_ECONOMICS
+        assert len(economics["criteria"]) == 8
+        for name in economics["core"]:
+            assert name in economics["criteria"], name
+        blob = " ".join(economics["criteria"].values())
+        for token in (
+            "net Sharpe",
+            "incremental IC",
+            "temporal block",
+            "leave-one-currency-out",
+            "上位 10 日",
+            "cost ×2",
+        ):
+            assert token in blob, token
+
+    def test_a_high_p_value_cannot_make_a_track_not_supported(self) -> None:
+        """**p > 0.05 -> NOT_SUPPORTED は禁止。** NOT_SUPPORTED の条件は net ≤ 0 だけ。"""
+        rows = {row["then"]: row["if"] for row in prereg.VERDICT_LOGIC}
+        assert rows["NOT_SUPPORTED_IN_SEEN_DEVELOPMENT"] == "E1 が偽（net ≤ 0）"
+        assert "p" not in rows["NOT_SUPPORTED_IN_SEEN_DEVELOPMENT"].replace("E1", "")
+
+    def test_a_low_p_value_alone_does_not_make_a_candidate(self) -> None:
+        """p ≤ 0.05 だけで STRONG にはならない — economics も要る。"""
+        rows = {row["then"]: row["if"] for row in prereg.VERDICT_LOGIC}
+        strong = rows["STRONG_DEVELOPMENT_CANDIDATE"]
+        assert "DEVELOPMENT_ECONOMICS_SUPPORTED" in strong
+        assert "NULL_REJECTION_SUPPORTED" in strong
+
+    def test_stage_two_does_not_require_p_below_five_percent(self) -> None:
+        conditions = " ".join(prereg.STAGE_2_ELIGIBILITY["conditions"])
+        assert "0.80" in conditions and "p ≤ 0.20" in conditions
+        assert prereg.STAGE_2_ELIGIBILITY["is_confirmation"] is False
 
     def test_the_null_is_a_circular_shift_not_a_shuffle(self) -> None:
-        permutation = prereg.ADVANCE_GATE["permutation"]
+        permutation = prereg.NULL_DIAGNOSTIC["permutation"]
         assert permutation["method"].startswith("CIRCULAR_SHIFT")
         assert "turnover" in permutation["why_not_shuffle"]
 
     def test_the_five_way_multiplicity_is_stated_before_results(self) -> None:
         """**1 本通ったことを『edge が見つかった』と書かない**ための事前宣言。"""
-        assert "23%" in prereg.ADVANCE_GATE["multiplicity"]
+        assert "23%" in prereg.NULL_DIAGNOSTIC["multiplicity"]
 
     def test_nonlinear_ml_is_excluded_from_stage_two(self) -> None:
-        assert "非線形 ML は禁止" in prereg.ADVANCE_GATE["model_if_passed"]
+        assert "非線形 ML は禁止" in prereg.STAGE_2_ELIGIBILITY["model_if_eligible"]
+
+    def test_the_calibration_is_kept_as_a_method_finding_not_a_ranking(self) -> None:
+        """第 2 裁定 §3 — 通過率が低い track ほど良い、とは解釈しない。"""
+        record = prereg.DEMOTED_GATE["calibrated_at_freeze"]
+        assert record["status"] == "RESEARCH_METHOD_FINDING"
+        assert "良い、とは解釈しない" in record["interpretation"]
+        assert "cost 構造" in record["interpretation"]
+
+    def test_the_gate_split_is_recorded_as_a_pre_alpha_amendment(self) -> None:
+        amendment = prereg.FREEZE_AMENDMENT_GATE_SPLIT
+        assert amendment["status"] == "AMENDED_PRE_ALPHA_NO_SIGNAL_HAD_RUN"
+        assert amendment["digest_before"] != prereg.freeze_digest()
 
 
 class TestNuisanceConstantsAreFrozenWithTheirSensitivity:
