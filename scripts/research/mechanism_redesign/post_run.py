@@ -17,13 +17,16 @@ from __future__ import annotations
 from typing import Any, Final
 
 #: Role 1 BLOCKER-1。**M15 / M16 の結果は、凍結した mechanism の検定として無効。**
+#: **authoritative status**（2026-09-24 第 2 裁定 §1）。
 INVALIDATED: Final[dict[str, dict[str, Any]]] = {
     "M15": {
-        "status": "INVALID_AS_A_TEST_OF_THE_FROZEN_MECHANISM_BOOK_CONSTRUCTION_DEFECT",
+        "status": "INVALID_IMPLEMENTATION_BOOK_MISMATCH",
+        "reason": "凍結した設計は USD versus 7-currency basket。実際の book は band / rebalance の相互作用で USD versus AUD/CAD/CHF に縮退していた。既存の alpha 数値は設計した hypothesis の判定に使わない",
         "recorded_verdict_kept_as_history": "M15_M15_POSITIVE_EXPLORATORY_SIGNAL_NOT_DECISION_GRADE",
     },
     "M16": {
-        "status": "INVALID_AS_A_TEST_OF_THE_FROZEN_MECHANISM_BOOK_CONSTRUCTION_DEFECT",
+        "status": "INVALID_IMPLEMENTATION_BOOK_MISMATCH",
+        "reason": "M15 と同じ",
         "recorded_verdict_kept_as_history": "M16_M16_MARGINAL_DEVELOPMENT_CANDIDATE",
     },
 }
@@ -107,14 +110,78 @@ DISCLOSURES: Final[dict[str, str]] = {
 }
 
 
+#: 有効な 3 本の status（裁定 §2）。**M11 / M01 は fresh へ進めず、今回再実行もしない。**
+VALID_TRACK_STATUS: Final[dict[str, str]] = {
+    "M11": "POSITIVE_EXPLORATORY_NOT_DECISION_GRADE",
+    "M01": "POSITIVE_EXPLORATORY_NOT_DECISION_GRADE",
+    "M10": "NOT_SUPPORTED_IN_SEEN_DEVELOPMENT",
+}
+
+#: 裁定 §3 / §20 / §21。
+CORRECTED_RUN_POLICY: Final[dict[str, str]] = {
+    "qualifier": "POST_RESULT_IMPLEMENTATION_CORRECTED_EXPLORATORY_ONLY",
+    "not": "clean preregistered evidence でも confirmation evidence でもない",
+    "contamination": "M16 の既存結果（book 欠陥下の値と、設計どおりの book に当たる band 0.05 の感度行）を見た後の実行である",
+    "scope": "M15 と M16 を同一の修正で 1 回だけ。片方だけの実行は禁止。結果の後の basket / band / signal / threshold / horizon の変更は禁止",
+    "data": "既存の seen development data のみ（fresh / OOS / dead / forward は禁止）",
+}
+
+#: **この cycle の『net』の定義**（裁定 §6 の caveat）。数値は書き換えず、定義を正確にする。
+FINANCING_DEFINITION_CAVEAT: Final[str] = (
+    "mechanism redesign cycle の net は NET_INCLUDING_APPROXIMATE_INTEREST_DIFFERENTIAL_AND_ASSUMED_MARKUP"
+    "（spot + 3 か月銀行間金利差による carry 近似 − spread − 仮定 markup 0.25%/年）。**実際の OANDA financing ではない**。"
+    "前 cycle 以前（Top-Five・next-five・Track 1 など）の net は financing を含まない"
+    "（NET_EX_TRANSACTION_COSTS_EXCLUDING_FINANCING）"
+)
+
+#: 保護情報の定義の拡張（裁定 §24–§29）。
+PROTECTED_INFORMATION_POLICY: Final[dict[str, Any]] = {
+    "protected_information_includes": (
+        "observation values",
+        "metadata",
+        "attributes",
+        "release text",
+        "embedded latest observations",
+        "revision metadata",
+        "policy-decision text",
+        "endpoint metadata that reveals future information",
+    ),
+    "request_level_exclusion": "date-bounded request が可能なら必須。取得後の filter では不十分",
+    "bulk_only_sources": (
+        "Development 用途では必要なら利用可だが EXPLORATORY_SEEN_EXTERNAL_DATA として taint を明示。"
+        "Formal Confirmation 用途では、保護期間の将来情報を含む full response を parse する source は原則禁止"
+    ),
+    "d_m3_token": "JPY_RATE_RELATED_FORWARD_CONFIRMATION_CONTAMINATED_BY_EXTERNAL_INFORMATION_EXPOSURE",
+    "d_m3_scope": "JPY の金利に関わる mechanism の forward confirmation に限る。全通貨・全 mechanism・forward epoch 全体を汚染扱いしない",
+    "future_jpy_rate_confirmation_options": (
+        "A: JPY を confirmation universe から除外",
+        "B（推奨）: 今回の露出より後に始まる新しい untouched forward epoch を使う。決定は今回不要",
+    ),
+}
+
+
 def record() -> dict[str, Any]:
     return {
         "invalidated": INVALIDATED,
         "book_defect": BOOK_DEFECT,
         "report_qualifications": REPORT_QUALIFICATIONS,
         "disclosures": DISCLOSURES,
-        "rerun": "NONE — 修正は新しい事前登録として Human + ChatGPT の判断に回す",
+        "rerun": "NONE（この cycle では）。第 2 裁定で M15 / M16 の修正版 1 回の実行が認められた（CORRECTED_RUN_POLICY）",
+        "valid_track_status": VALID_TRACK_STATUS,
+        "corrected_run_policy": CORRECTED_RUN_POLICY,
+        "financing_definition_caveat": FINANCING_DEFINITION_CAVEAT,
+        "protected_information_policy": PROTECTED_INFORMATION_POLICY,
     }
 
 
-__all__ = ["BOOK_DEFECT", "DISCLOSURES", "INVALIDATED", "REPORT_QUALIFICATIONS", "record"]
+__all__ = [
+    "BOOK_DEFECT",
+    "CORRECTED_RUN_POLICY",
+    "DISCLOSURES",
+    "FINANCING_DEFINITION_CAVEAT",
+    "INVALIDATED",
+    "PROTECTED_INFORMATION_POLICY",
+    "REPORT_QUALIFICATIONS",
+    "VALID_TRACK_STATUS",
+    "record",
+]

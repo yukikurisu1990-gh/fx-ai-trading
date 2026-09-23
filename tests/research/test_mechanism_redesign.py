@@ -299,3 +299,20 @@ def test_driver_refuses_when_a_started_marker_exists(tmp_path, monkeypatch) -> N
     monkeypatch.setattr(driver, "STARTED", started)
     with pytest.raises(SystemExit):
         driver.preflight()
+
+
+def test_post_run_statuses_are_authoritative() -> None:
+    from scripts.research.mechanism_redesign import post_run
+
+    for track in ("M15", "M16"):
+        assert post_run.INVALIDATED[track]["status"] == "INVALID_IMPLEMENTATION_BOOK_MISMATCH"
+    assert post_run.VALID_TRACK_STATUS == {
+        "M11": "POSITIVE_EXPLORATORY_NOT_DECISION_GRADE",
+        "M01": "POSITIVE_EXPLORATORY_NOT_DECISION_GRADE",
+        "M10": "NOT_SUPPORTED_IN_SEEN_DEVELOPMENT",
+    }
+    assert (
+        post_run.CORRECTED_RUN_POLICY["qualifier"]
+        == "POST_RESULT_IMPLEMENTATION_CORRECTED_EXPLORATORY_ONLY"
+    )
+    assert post_run.PROTECTED_INFORMATION_POLICY["d_m3_token"].startswith("JPY_RATE_RELATED")

@@ -4,6 +4,17 @@
 `PRODUCTION_READINESS_NOT_CLAIMED`
 
 2026-09-24 Human + ChatGPT 裁定（「candidate の調整から mechanism の発見へ」）への最終報告。
+
+> **merge 時の確定（第 2 裁定 §1–§4）**:
+> M15 = `INVALID_IMPLEMENTATION_BOOK_MISMATCH`、M16 = `INVALID_IMPLEMENTATION_BOOK_MISMATCH`
+> （凍結は USD versus 7-currency basket、実際は USD versus AUD/CAD/CHF。既存の数値は hypothesis の判定に使わない）。
+> M11 / M01 = `POSITIVE_EXPLORATORY_NOT_DECISION_GRADE`、M10 = `NOT_SUPPORTED_IN_SEEN_DEVELOPMENT`（fresh へ進めない）。
+> 本報告の「net」は `NET_INCLUDING_APPROXIMATE_INTEREST_DIFFERENTIAL_AND_ASSUMED_MARKUP` で、**実際の OANDA financing ではない**。
+> M15 / M16 の修正版の実行は `POST_RESULT_IMPLEMENTATION_CORRECTED_EXPLORATORY_ONLY`（M16 の結果を見た後）。
+> 保護情報の定義を metadata・属性・公表文・政策決定文まで拡張し、D-M3 は
+> `JPY_RATE_RELATED_FORWARD_CONFIRMATION_CONTAMINATED_BY_EXTERNAL_INFORMATION_EXPOSURE`（JPY 金利の mechanism に限る）。
+> 詳細は `scripts/research/mechanism_redesign/post_run.py`。
+
 数値の出典: `artifacts/research/mechanism_redesign/development.json`（1 回の実行、HEAD `0ee7160`、
 dirty 0）。記録の読み方は `scripts/research/mechanism_redesign/post_run.py`。
 
