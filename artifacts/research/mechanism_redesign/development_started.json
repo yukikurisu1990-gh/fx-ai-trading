@@ -1,0 +1,14 @@
+{
+ "code_identity": {
+  "argv": [
+   "C:\\Users\\yukik\\fx-ai-trading\\scripts\\research\\mechanism_redesign\\driver.py",
+   "--workers",
+   "14"
+  ],
+  "dirty_paths": [],
+  "head": "0ee716051b482e21a045295141215546be829ee9",
+  "started_utc": "2026-09-23T21:25:29Z"
+ },
+ "freeze_digest": "a4413d63fb141b2d217ba11cd69ce6fbd37a4312357294360f91b16de7831a80",
+ "status": "STARTED"
+}

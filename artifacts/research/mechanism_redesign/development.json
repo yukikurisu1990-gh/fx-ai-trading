@@ -1,0 +1,2230 @@
+{
+ "code_identity": {
+  "argv": [
+   "C:\\Users\\yukik\\fx-ai-trading\\scripts\\research\\mechanism_redesign\\driver.py",
+   "--workers",
+   "14"
+  ],
+  "dirty_paths": [],
+  "head": "0ee716051b482e21a045295141215546be829ee9",
+  "started_utc": "2026-09-23T21:25:29Z"
+ },
+ "cross_track_correlation": {
+  "M01_long|M11_long": 0.295,
+  "M01_long|M15_long": -0.112,
+  "M01_long|M16_long": 0.201,
+  "M01_recent|M10_recent": 0.135,
+  "M01_recent|M11_recent": 0.324,
+  "M01_recent|M15_recent": -0.239,
+  "M01_recent|M16_recent": -0.057,
+  "M10_recent|M11_recent": 0.068,
+  "M10_recent|M15_recent": -0.146,
+  "M10_recent|M16_recent": -0.246,
+  "M11_long|M15_long": -0.026,
+  "M11_long|M16_long": 0.29,
+  "M11_recent|M15_recent": 0.216,
+  "M11_recent|M16_recent": 0.286,
+  "M15_long|M16_long": -0.184,
+  "M15_recent|M16_recent": 0.483
+ },
+ "cycle": "MECHANISM_REDESIGN_2026_09",
+ "exploration_disclosure": "FIVE_WAY_EXPLORATORY_DEVELOPMENT_SEARCH_NO_CONFIRMATION_CLAIM",
+ "freeze_digest": "a4413d63fb141b2d217ba11cd69ce6fbd37a4312357294360f91b16de7831a80",
+ "interpretation": "development の結果は sign・大きさ・net economics・incremental information・null percentile・安定性・breadth・集中・turnover・cost 耐性を示すだけで、confirmation ではない。**単一 candidate に Sharpe 0.3 の証明を求めない**（#489: 必要年数が非現実的）",
+ "multiplicity": "5 本を同じ null に当てるので、**いずれか 1 本が 5% を切る確率は帰無でも約 23%**（1 − 0.95⁵）。**1 本通ったことを『edge が見つかった』とは書かない**",
+ "panel": {
+  "carry_leg": "CARRY_LEG_ABSENT_ON_BOTH_SPANS_SPOT_ONLY",
+  "construction": "pair 日次 log return -> 符号を揃えた通貨平均 -> cross-section 平均を引く。**両 span で同一**",
+  "long": {
+   "days": 4458,
+   "first": "1999-01-05",
+   "last": "2016-06-01",
+   "pairs": 28,
+   "source": "ECB euro reference rates (already acquired for T-V)"
+  },
+  "recent": {
+   "days": 1213,
+   "first": "2021-04-27",
+   "last": "2025-12-26",
+   "no_archive_read": true,
+   "pairs": 20,
+   "source": "guarded M15 caches: momentum_replication_b, supplemental_replication, exploratory_round_1"
+  }
+ },
+ "results": {
+  "M01_long": {
+   "benchmarks": {
+    "constant_long_usd": {
+     "gross_sharpe": 0.20430074542389004,
+     "ic": -0.009218998885373116,
+     "net_sharpe": 0.10385659732054149
+    },
+    "fx_own_mean_reversion_20d": {
+     "gross_sharpe": -0.3093338359582222,
+     "ic": 0.0009203787263541447,
+     "net_sharpe": -0.6423360021665862
+    },
+    "fx_own_momentum_20d": {
+     "gross_sharpe": 0.3093338359582222,
+     "ic": -0.0009203787263541447,
+     "net_sharpe": -0.02398420999307415
+    },
+    "zero_signal": {
+     "gross_sharpe": NaN,
+     "ic": NaN,
+     "net_sharpe": NaN
+    }
+   },
+   "book": "XS",
+   "capacity": {
+    "for_10%_annual_net": {
+     "annual_net": 0.1,
+     "gap_stress_2pct_adverse": -0.7985,
+     "pair_specific_margin": 1.996,
+     "portfolio_gross": 39.93,
+     "remaining_margin_buffer": -0.996,
+     "required_target_vol": 1.2434,
+     "risk_leverage": 39.93,
+     "scaled_max_drawdown": -5.6405
+    },
+    "for_5%_annual_net": {
+     "annual_net": 0.05,
+     "gap_stress_2pct_adverse": -0.3993,
+     "pair_specific_margin": 0.998,
+     "portfolio_gross": 19.96,
+     "remaining_margin_buffer": 0.002,
+     "required_target_vol": 0.6217,
+     "risk_leverage": 19.96,
+     "scaled_max_drawdown": -2.8203
+    },
+    "forbidden": [
+     "5x を feasibility の hard cap として使うこと",
+     "broker の 20x / 25x を risk target として使うこと"
+    ],
+    "reachable": true,
+    "scenarios": {
+     "vol_10%": {
+      "annual_net": 0.008,
+      "gap_stress_2pct_adverse": -0.0642,
+      "pair_specific_margin": 0.161,
+      "portfolio_gross": 3.21,
+      "remaining_margin_buffer": 0.839,
+      "risk_leverage": 3.21,
+      "scaled_max_drawdown": -0.4536
+     },
+     "vol_12%": {
+      "annual_net": 0.0097,
+      "gap_stress_2pct_adverse": -0.0771,
+      "pair_specific_margin": 0.193,
+      "portfolio_gross": 3.85,
+      "remaining_margin_buffer": 0.807,
+      "risk_leverage": 3.85,
+      "scaled_max_drawdown": -0.5443
+     },
+     "vol_15%": {
+      "annual_net": 0.0121,
+      "gap_stress_2pct_adverse": -0.0963,
+      "pair_specific_margin": 0.241,
+      "portfolio_gross": 4.82,
+      "remaining_margin_buffer": 0.759,
+      "risk_leverage": 4.82,
+      "scaled_max_drawdown": -0.6804
+     },
+     "vol_8%": {
+      "annual_net": 0.0064,
+      "gap_stress_2pct_adverse": -0.0514,
+      "pair_specific_margin": 0.128,
+      "portfolio_gross": 2.57,
+      "remaining_margin_buffer": 0.872,
+      "risk_leverage": 2.57,
+      "scaled_max_drawdown": -0.3629
+     }
+    },
+    "vol_per_unit_gross_measured": 0.03114
+   },
+   "cost_stress": {
+    "cost_x1.5": {
+     "net_annual_return": 0.0030515670532296098,
+     "net_sharpe": 0.0281
+    },
+    "cost_x2.0": {
+     "net_annual_return": -0.002636167072973179,
+     "net_sharpe": -0.0243
+    }
+   },
+   "development_economics": {
+    "checks": {
+     "E1_net_positive": true,
+     "E2_gross_positive": true,
+     "E3_incremental_information": true,
+     "E4_temporal_stability": false,
+     "E5_breadth": false,
+     "E6_concentration": false,
+     "E7_cost_robustness": false,
+     "E8_economic_magnitude": false
+    },
+    "core_satisfied": false,
+    "evidence": {
+     "cost_x2_net_sharpe": -0.0243,
+     "positive_temporal_blocks": "30/70",
+     "top_10_day_contribution": 1.7289,
+     "worst_leave_one_currency_out_net_sharpe": -0.1487
+    },
+    "label": "DEVELOPMENT_ECONOMICS_NOT_SUPPORTED"
+   },
+   "diagnostic_gate": {
+    "all_three": true,
+    "checks": {
+     "gross_sharpe_positive": true,
+     "incremental_ic_positive": true,
+     "net_annual_return_positive": true
+    },
+    "id": "THREE_SIGN_TRIPLE",
+    "null_pass_rate_measured_at_freeze": 0.42,
+    "reading": "**通ったこと自体は情報が薄い。** 判定は VERDICT_LOGIC が決める",
+    "status": "DEMOTED_TO_DIAGNOSTIC_NOT_A_SELECTION_GATE"
+   },
+   "is_primary_span": true,
+   "metrics": {
+    "annual_cost": 0.011375468252405605,
+    "at_leverage_cap_share": 0.0,
+    "currency_contribution": {
+     "AUD": -0.1377363457055502,
+     "CAD": 0.0661856687645291,
+     "CHF": -0.17513537003225393,
+     "EUR": 0.15888852617439753,
+     "GBP": 0.017399268074923924,
+     "JPY": -0.10394952214066391,
+     "NZD": -0.0334302289682617,
+     "USD": 0.4116138718795012
+    },
+    "days": 4457,
+    "detection_floor_mde95": 0.466,
+    "downside_tail_p05": -0.01045190489979445,
+    "effective_independent_observations": 6.22,
+    "factor_abs_cosine": 0.1185005353785283,
+    "gross_annual_return": 0.02011476943183804,
+    "gross_sharpe": 0.1851238667652501,
+    "ic": 0.003859059045231971,
+    "incremental_ic": 0.0030735080222255807,
+    "leave_one_currency_out_net_sharpe": {
+     "AUD": 0.15476828586371294,
+     "CAD": 0.0506018429585124,
+     "CHF": 0.18069258687904918,
+     "EUR": -0.0022696727483483394,
+     "GBP": 0.07930642428260502,
+     "JPY": 0.13929781649907633,
+     "NZD": 0.10450926815245838,
+     "USD": -0.148725821014026
+    },
+    "max_drawdown": -0.4929440332525541,
+    "net_annual_return": 0.008739301179432423,
+    "net_sharpe": 0.08042160384631192,
+    "portfolio_gross_leverage": 3.4892444593805774,
+    "position_persistence": 0.9912552632120089,
+    "positive_temporal_blocks": "30/70",
+    "raw_to_neutralised_score_corr": 0.9225492607699652,
+    "realized_vol": 0.10866857612207648,
+    "risk_leverage": 3.506016538839386,
+    "signal_persistence": 0.995663929194003,
+    "signal_persistence_lag1": 0.9972,
+    "temporal_concentration": 0.06103089136076651,
+    "top_10_day_contribution": 1.728893509583473,
+    "top_1_day_contribution": 0.2164930269925387,
+    "top_5_day_contribution": 0.9134124751507562,
+    "turnover_per_unit_gross": 2.3439487204409324,
+    "turnover_round_trips_per_year": 8.178610085870718,
+    "years": 17.69
+   },
+   "nuisance_sensitivity": {
+    "implementation_tolerance_band": {
+     "constant": "implementation_tolerance_band",
+     "grid": {
+      "0.05": {
+       "days": 4458,
+       "gross_sharpe": 0.1399,
+       "net_sharpe": 0.0326
+      },
+      "0.1": {
+       "days": 4458,
+       "gross_sharpe": 0.1851,
+       "net_sharpe": 0.0804
+      },
+      "0.2": {
+       "days": 4458,
+       "gross_sharpe": 0.2841,
+       "net_sharpe": 0.1908
+      }
+     },
+     "net_sharpe_range": [
+      0.0326,
+      0.1908
+     ],
+     "primary": 0.1,
+     "rule": "primary で判定し、事前登録した感度集合の**全点**を報告する。結果の後に best point を選ばない。`implementation_tolerance_band` は book の band を動かす（signal は動かさない）"
+    },
+    "max_staleness_days_monthly": {
+     "constant": "max_staleness_days_monthly",
+     "grid": {
+      "120": {
+       "days": 4458,
+       "gross_sharpe": 0.1832,
+       "net_sharpe": 0.0782
+      },
+      "45": {
+       "days": 4458,
+       "gross_sharpe": 0.1426,
+       "net_sharpe": 0.0379
+      },
+      "60": {
+       "days": 4458,
+       "gross_sharpe": 0.1744,
+       "net_sharpe": 0.0675
+      },
+      "75": {
+       "days": 4458,
+       "gross_sharpe": 0.1851,
+       "net_sharpe": 0.0804
+      },
+      "90": {
+       "days": 4458,
+       "gross_sharpe": 0.1773,
+       "net_sharpe": 0.0725
+      }
+     },
+     "net_sharpe_range": [
+      0.0379,
+      0.0804
+     ],
+     "primary": 75,
+     "rule": "primary で判定し、事前登録した感度集合の**全点**を報告する。結果の後に best point を選ばない。`implementation_tolerance_band` は book の band を動かす（signal は動かさない）"
+    }
+   },
+   "null_diagnostic": {
+    "diagnostic": "PERMUTATION_NULL_DIAGNOSTIC",
+    "distinct_null_values": 897,
+    "draws": 1000,
+    "is_the_only_gate": false,
+    "judged_pnl": "spot + carry accrual − spread cost − 仮定 financing markup",
+    "label": "NULL_REJECTION_NOT_SUPPORTED",
+    "multiplicity_note": "5 本を同じ null に当てるので、**いずれか 1 本が 5% を切る確率は帰無でも約 23%**（1 − 0.95⁵）。**1 本通ったことを『edge が見つかった』とは書かない**",
+    "null_net_sharpe_mean": -0.201,
+    "null_net_sharpe_p05": -0.7481,
+    "null_net_sharpe_p50": -0.1757,
+    "null_net_sharpe_p95": 0.2236,
+    "null_positive_share": 0.273,
+    "observed_net_annual_return": 0.00874,
+    "observed_net_sharpe": 0.0804,
+    "observed_percentile": 0.803,
+    "p_value": 0.1978,
+    "seed": 20260924,
+    "signal_persistence_lag1": 0.9972
+   },
+   "pnl_decomposition": {
+    "annual_carry": -0.01482,
+    "annual_financing": 0.00859,
+    "annual_spot_gross": 0.03494,
+    "annual_spread_cost": 0.00279,
+    "carry_sharpe_alone": -7.6554,
+    "spot_only_gross_sharpe": 0.3218,
+    "spot_only_net_sharpe": 0.2961
+   },
+   "rename_gates": {
+    "CARRY_LEVEL_XS": {
+     "comparator": "3 か月銀行間金利の cross-section z（閉じた carry の signal）",
+     "if_exceeded": "RENAME_OF_A_PRIOR_TRACK（carry、符号によらない）",
+     "measured_abs_correlation": 0.3207,
+     "overlap_days": 4458,
+     "statistic": "日次 score の cross-section 相関の平均の絶対値",
+     "threshold": 0.8,
+     "verdict": "DISTINCT"
+    },
+    "M11_WITHIN_CYCLE": {
+     "comparator": "M11 の score",
+     "if_exceeded": "RENAME_WITHIN_THIS_CYCLE",
+     "measured_abs_correlation": 0.3516,
+     "overlap_days": 4458,
+     "statistic": "日次 score の cross-section 相関の平均の絶対値",
+     "threshold": 0.8,
+     "verdict": "DISTINCT"
+    }
+   },
+   "span": "long",
+   "stage_2": {
+    "eligible": false,
+    "reason": "Stage 2 へは進まない。**Stage 1 の結果は記録する**"
+   },
+   "track": "M01"
+  },
+  "M01_recent": {
+   "benchmarks": {
+    "constant_long_usd": {
+     "gross_sharpe": 0.794618224998118,
+     "ic": 0.003957296029667882,
+     "net_sharpe": 0.676082836183332
+    },
+    "fx_own_mean_reversion_20d": {
+     "gross_sharpe": 0.36052555189041324,
+     "ic": 0.00656033480366209,
+     "net_sharpe": -0.13718950927136284
+    },
+    "fx_own_momentum_20d": {
+     "gross_sharpe": -0.36052555189041324,
+     "ic": -0.00656033480366209,
+     "net_sharpe": -0.8608723649981262
+    },
+    "zero_signal": {
+     "gross_sharpe": NaN,
+     "ic": NaN,
+     "net_sharpe": NaN
+    }
+   },
+   "book": "XS",
+   "capacity": {
+    "reachable": false,
+    "why": "net Sharpe が 0 以下なので leverage で救わない"
+   },
+   "cost_stress": {
+    "cost_x1.5": {
+     "net_annual_return": -0.011976316244573482,
+     "net_sharpe": -0.1132
+    },
+    "cost_x2.0": {
+     "net_annual_return": -0.02052567192073418,
+     "net_sharpe": -0.194
+    }
+   },
+   "diagnostic_gate": {
+    "all_three": false,
+    "checks": {
+     "gross_sharpe_positive": true,
+     "incremental_ic_positive": false,
+     "net_annual_return_positive": false
+    },
+    "id": "THREE_SIGN_TRIPLE",
+    "null_pass_rate_measured_at_freeze": 0.42,
+    "reading": "**通ったこと自体は情報が薄い。** 判定は VERDICT_LOGIC が決める",
+    "status": "DEMOTED_TO_DIAGNOSTIC_NOT_A_SELECTION_GATE"
+   },
+   "is_primary_span": false,
+   "metrics": {
+    "annual_cost": 0.017098711352321338,
+    "at_leverage_cap_share": 0.0,
+    "currency_contribution": {
+     "AUD": 0.008957282161511251,
+     "CAD": 0.0387978451575641,
+     "CHF": -0.004547368149407212,
+     "EUR": 0.0,
+     "GBP": 0.009898141619532019,
+     "JPY": -0.055559850513734785,
+     "NZD": 0.05110634848701778,
+     "USD": -0.042880499433790034
+    },
+    "days": 572,
+    "detection_floor_mde95": 1.3009,
+    "downside_tail_p05": -0.01024304966955472,
+    "effective_independent_observations": 1.82,
+    "factor_abs_cosine": 0.11489422687412279,
+    "gross_annual_return": 0.013671750783908492,
+    "gross_sharpe": 0.12907376071879428,
+    "ic": 0.004440876278938807,
+    "incremental_ic": -0.0008058725042772252,
+    "leave_one_currency_out_net_sharpe": {
+     "AUD": -0.07605522019286429,
+     "CAD": -0.21460140292184787,
+     "CHF": -0.014747572971055091,
+     "EUR": -0.03237733069644642,
+     "GBP": -0.07796694769196906,
+     "JPY": 0.21762387293900187,
+     "NZD": -0.24640414537231903,
+     "USD": 0.16061707081689647
+    },
+    "max_drawdown": -0.1394651419769795,
+    "net_annual_return": -0.0034269605684128157,
+    "net_sharpe": -0.03237733069644642,
+    "portfolio_gross_leverage": 4.565283834937762,
+    "position_persistence": 0.9865720701361863,
+    "positive_temporal_blocks": "4/9",
+    "raw_to_neutralised_score_corr": 0.9339897940353941,
+    "realized_vol": 0.10584444408164083,
+    "risk_leverage": 4.725148636323522,
+    "signal_persistence": 0.9863540827482055,
+    "signal_persistence_lag1": 0.9937,
+    "temporal_concentration": 0.2721561083965989,
+    "top_10_day_contribution": -24.008408360299715,
+    "top_1_day_contribution": -4.103977029756101,
+    "top_5_day_contribution": -14.29275892289082,
+    "turnover_per_unit_gross": 3.8392747730714105,
+    "turnover_round_trips_per_year": 17.527379059387254,
+    "years": 2.27
+   },
+   "pnl_decomposition": {
+    "annual_carry": -0.03113,
+    "annual_financing": 0.01113,
+    "annual_spot_gross": 0.0448,
+    "annual_spread_cost": 0.00597,
+    "carry_sharpe_alone": -16.8111,
+    "spot_only_gross_sharpe": 0.4227,
+    "spot_only_net_sharpe": 0.3666
+   },
+   "rename_gates": {
+    "CARRY_LEVEL_XS": {
+     "comparator": "3 か月銀行間金利の cross-section z（閉じた carry の signal）",
+     "if_exceeded": "RENAME_OF_A_PRIOR_TRACK（carry、符号によらない）",
+     "measured_abs_correlation": 0.1177,
+     "overlap_days": 572,
+     "statistic": "日次 score の cross-section 相関の平均の絶対値",
+     "threshold": 0.8,
+     "verdict": "DISTINCT"
+    },
+    "M11_WITHIN_CYCLE": {
+     "comparator": "M11 の score",
+     "if_exceeded": "RENAME_WITHIN_THIS_CYCLE",
+     "measured_abs_correlation": 0.3005,
+     "overlap_days": 551,
+     "statistic": "日次 score の cross-section 相関の平均の絶対値",
+     "threshold": 0.8,
+     "verdict": "DISTINCT"
+    }
+   },
+   "span": "recent",
+   "track": "M01"
+  },
+  "M10_long": {
+   "span": "long",
+   "track": "M10",
+   "verdict": "M10_M10_DATA_NOT_DECISION_GRADE",
+   "why": "M10: 長 span には bid / ask の quote が無い（ECB 参照レートのみ）"
+  },
+  "M10_recent": {
+   "benchmarks": {
+    "constant_long_usd": {
+     "gross_sharpe": 0.4521749496106621,
+     "ic": 0.010471841953798598,
+     "net_sharpe": 0.3254042910360319
+    },
+    "fx_own_mean_reversion_20d": {
+     "gross_sharpe": 0.5882595940117721,
+     "ic": 0.006207294228129038,
+     "net_sharpe": 0.1175906094475548
+    },
+    "fx_own_momentum_20d": {
+     "gross_sharpe": -0.5882595940117721,
+     "ic": -0.006207294228129038,
+     "net_sharpe": -1.0594407765643392
+    },
+    "zero_signal": {
+     "gross_sharpe": NaN,
+     "ic": NaN,
+     "net_sharpe": NaN
+    }
+   },
+   "book": "XS",
+   "capacity": {
+    "reachable": false,
+    "why": "net Sharpe が 0 以下なので leverage で救わない"
+   },
+   "cost_stress": {
+    "cost_x1.5": {
+     "net_annual_return": -0.057899865502523844,
+     "net_sharpe": -0.5468
+    },
+    "cost_x2.0": {
+     "net_annual_return": -0.06811475689957876,
+     "net_sharpe": -0.6434
+    }
+   },
+   "development_economics": {
+    "checks": {
+     "E1_net_positive": false,
+     "E2_gross_positive": false,
+     "E3_incremental_information": false,
+     "E4_temporal_stability": true,
+     "E5_breadth": false,
+     "E6_concentration": false,
+     "E7_cost_robustness": false,
+     "E8_economic_magnitude": false
+    },
+    "core_satisfied": false,
+    "evidence": {
+     "cost_x2_net_sharpe": -0.6434,
+     "positive_temporal_blocks": "8/15",
+     "top_10_day_contribution": -1.181,
+     "worst_leave_one_currency_out_net_sharpe": -0.8555
+    },
+    "label": "DEVELOPMENT_ECONOMICS_NOT_SUPPORTED"
+   },
+   "diagnostic_gate": {
+    "all_three": false,
+    "checks": {
+     "gross_sharpe_positive": false,
+     "incremental_ic_positive": false,
+     "net_annual_return_positive": false
+    },
+    "id": "THREE_SIGN_TRIPLE",
+    "null_pass_rate_measured_at_freeze": 0.42,
+    "reading": "**通ったこと自体は情報が薄い。** 判定は VERDICT_LOGIC が決める",
+    "status": "DEMOTED_TO_DIAGNOSTIC_NOT_A_SELECTION_GATE"
+   },
+   "is_primary_span": true,
+   "metrics": {
+    "annual_cost": 0.020429782794109806,
+    "at_leverage_cap_share": 0.0,
+    "currency_contribution": {
+     "AUD": 0.02382218713176764,
+     "CAD": -0.009664257649071924,
+     "CHF": -0.09740293300565978,
+     "EUR": -0.019622402399547774,
+     "GBP": -0.11534922741992364,
+     "JPY": -0.05584383360846153,
+     "NZD": 0.2007622618319275,
+     "USD": -0.07970793771688306
+    },
+    "days": 962,
+    "detection_floor_mde95": 1.0026,
+    "downside_tail_p05": -0.010976792384482783,
+    "effective_independent_observations": 0.52,
+    "factor_abs_cosine": 0.09104860717115094,
+    "gross_annual_return": -0.02725519131135914,
+    "gross_sharpe": -0.25709615673054864,
+    "ic": -0.002926361489324332,
+    "incremental_ic": -0.0086509383364764,
+    "leave_one_currency_out_net_sharpe": {
+     "AUD": -0.5403923928431394,
+     "CAD": -0.44938670780035833,
+     "CHF": -0.22571020608005138,
+     "EUR": -0.42282969839434115,
+     "GBP": -0.1753175141826809,
+     "JPY": -0.3430673717384548,
+     "NZD": -0.8554607769001981,
+     "USD": -0.2592485428794066
+    },
+    "max_drawdown": -0.4440200616624036,
+    "net_annual_return": -0.04768497410546894,
+    "net_sharpe": -0.45017609376757445,
+    "portfolio_gross_leverage": 5.277006754117303,
+    "position_persistence": 0.9916743970330604,
+    "positive_temporal_blocks": "8/15",
+    "raw_to_neutralised_score_corr": 0.9684453025335783,
+    "realized_vol": 0.105925158544933,
+    "risk_leverage": 5.532773702627764,
+    "signal_persistence": 0.9984302067748008,
+    "signal_persistence_lag1": 0.9989,
+    "temporal_concentration": 0.1973067337943524,
+    "top_10_day_contribution": -1.1809964250996265,
+    "top_1_day_contribution": -0.16053724434178593,
+    "top_5_day_contribution": -0.710704795769293,
+    "turnover_per_unit_gross": 4.230878364725,
+    "turnover_round_trips_per_year": 22.326373706502597,
+    "years": 3.82
+   },
+   "nuisance_sensitivity": {
+    "implementation_tolerance_band": {
+     "constant": "implementation_tolerance_band",
+     "grid": {
+      "0.05": {
+       "days": 963,
+       "gross_sharpe": 0.0064,
+       "net_sharpe": -0.2029
+      },
+      "0.1": {
+       "days": 963,
+       "gross_sharpe": -0.2571,
+       "net_sharpe": -0.4502
+      },
+      "0.2": {
+       "days": 963,
+       "gross_sharpe": 0.4966,
+       "net_sharpe": 0.339
+      }
+     },
+     "net_sharpe_range": [
+      -0.4502,
+      0.339
+     ],
+     "primary": 0.1,
+     "rule": "primary で判定し、事前登録した感度集合の**全点**を報告する。結果の後に best point を選ばない。`implementation_tolerance_band` は book の band を動かす（signal は動かさない）"
+    },
+    "liquidity_long_window": {
+     "constant": "liquidity_long_window",
+     "grid": {
+      "126": {
+       "days": 1087,
+       "gross_sharpe": -0.1359,
+       "net_sharpe": -0.3444
+      },
+      "250": {
+       "days": 963,
+       "gross_sharpe": -0.2571,
+       "net_sharpe": -0.4502
+      },
+      "500": {
+       "days": 713,
+       "gross_sharpe": -0.1051,
+       "net_sharpe": -0.2999
+      }
+     },
+     "net_sharpe_range": [
+      -0.4502,
+      -0.2999
+     ],
+     "primary": 250,
+     "rule": "primary で判定し、事前登録した感度集合の**全点**を報告する。結果の後に best point を選ばない。`implementation_tolerance_band` は book の band を動かす（signal は動かさない）"
+    },
+    "liquidity_short_window": {
+     "constant": "liquidity_short_window",
+     "grid": {
+      "10": {
+       "days": 963,
+       "gross_sharpe": 0.0203,
+       "net_sharpe": -0.2143
+      },
+      "20": {
+       "days": 963,
+       "gross_sharpe": -0.2571,
+       "net_sharpe": -0.4502
+      },
+      "40": {
+       "days": 963,
+       "gross_sharpe": 0.0403,
+       "net_sharpe": -0.1314
+      }
+     },
+     "net_sharpe_range": [
+      -0.4502,
+      -0.1314
+     ],
+     "primary": 20,
+     "rule": "primary で判定し、事前登録した感度集合の**全点**を報告する。結果の後に best point を選ばない。`implementation_tolerance_band` は book の band を動かす（signal は動かさない）"
+    }
+   },
+   "null_diagnostic": {
+    "diagnostic": "PERMUTATION_NULL_DIAGNOSTIC",
+    "distinct_null_values": 624,
+    "draws": 1000,
+    "is_the_only_gate": false,
+    "judged_pnl": "spot + carry accrual − spread cost − 仮定 financing markup",
+    "label": "NULL_REJECTION_NOT_SUPPORTED",
+    "multiplicity_note": "5 本を同じ null に当てるので、**いずれか 1 本が 5% を切る確率は帰無でも約 23%**（1 − 0.95⁵）。**1 本通ったことを『edge が見つかった』とは書かない**",
+    "null_net_sharpe_mean": -0.1001,
+    "null_net_sharpe_p05": -1.1053,
+    "null_net_sharpe_p50": -0.0416,
+    "null_net_sharpe_p95": 0.6168,
+    "null_positive_share": 0.453,
+    "observed_net_annual_return": -0.04768,
+    "observed_net_sharpe": -0.4502,
+    "observed_percentile": 0.185,
+    "p_value": 0.8152,
+    "seed": 20260924,
+    "signal_persistence_lag1": 0.9989
+   },
+   "pnl_decomposition": {
+    "annual_carry": -0.00247,
+    "annual_financing": 0.01283,
+    "annual_spot_gross": -0.02478,
+    "annual_spread_cost": 0.0076,
+    "carry_sharpe_alone": -1.0838,
+    "spot_only_gross_sharpe": -0.2339,
+    "spot_only_net_sharpe": -0.3059
+   },
+   "rename_gates": {
+    "VOL_RATIO_STATE": {
+     "comparator": "通貨別 realised vol の 20 日 / 250 日比（log）の cross-section 偏差（currency excess return から作る）",
+     "if_exceeded": "RENAME_OF_A_PRIOR_TRACK（vol 状態）",
+     "measured_abs_correlation": 0.1092,
+     "overlap_days": 963,
+     "statistic": "日次 score の cross-section 相関の平均の絶対値",
+     "threshold": 0.8,
+     "verdict": "DISTINCT"
+    }
+   },
+   "span": "recent",
+   "stage_2": {
+    "eligible": false,
+    "reason": "Stage 2 へは進まない。**Stage 1 の結果は記録する**"
+   },
+   "track": "M10"
+  },
+  "M11_long": {
+   "benchmarks": {
+    "constant_long_usd": {
+     "gross_sharpe": 0.20430074542389004,
+     "ic": -0.009218998885373116,
+     "net_sharpe": 0.10385659732054149
+    },
+    "fx_own_mean_reversion_20d": {
+     "gross_sharpe": -0.3093338359582222,
+     "ic": 0.0009203787263541447,
+     "net_sharpe": -0.6423360021665862
+    },
+    "fx_own_momentum_20d": {
+     "gross_sharpe": 0.3093338359582222,
+     "ic": -0.0009203787263541447,
+     "net_sharpe": -0.02398420999307415
+    },
+    "zero_signal": {
+     "gross_sharpe": NaN,
+     "ic": NaN,
+     "net_sharpe": NaN
+    }
+   },
+   "book": "XS",
+   "capacity": {
+    "for_10%_annual_net": {
+     "annual_net": 0.1,
+     "gap_stress_2pct_adverse": -0.3936,
+     "pair_specific_margin": 0.984,
+     "portfolio_gross": 19.68,
+     "remaining_margin_buffer": 0.016,
+     "required_target_vol": 0.6276,
+     "risk_leverage": 19.68,
+     "scaled_max_drawdown": -1.6304
+    },
+    "for_5%_annual_net": {
+     "annual_net": 0.05,
+     "gap_stress_2pct_adverse": -0.1968,
+     "pair_specific_margin": 0.492,
+     "portfolio_gross": 9.84,
+     "remaining_margin_buffer": 0.508,
+     "required_target_vol": 0.3138,
+     "risk_leverage": 9.84,
+     "scaled_max_drawdown": -0.8152
+    },
+    "forbidden": [
+     "5x を feasibility の hard cap として使うこと",
+     "broker の 20x / 25x を risk target として使うこと"
+    ],
+    "reachable": true,
+    "scenarios": {
+     "vol_10%": {
+      "annual_net": 0.0159,
+      "gap_stress_2pct_adverse": -0.0627,
+      "pair_specific_margin": 0.157,
+      "portfolio_gross": 3.14,
+      "remaining_margin_buffer": 0.843,
+      "risk_leverage": 3.14,
+      "scaled_max_drawdown": -0.2598
+     },
+     "vol_12%": {
+      "annual_net": 0.0191,
+      "gap_stress_2pct_adverse": -0.0752,
+      "pair_specific_margin": 0.188,
+      "portfolio_gross": 3.76,
+      "remaining_margin_buffer": 0.812,
+      "risk_leverage": 3.76,
+      "scaled_max_drawdown": -0.3117
+     },
+     "vol_15%": {
+      "annual_net": 0.0239,
+      "gap_stress_2pct_adverse": -0.0941,
+      "pair_specific_margin": 0.235,
+      "portfolio_gross": 4.7,
+      "remaining_margin_buffer": 0.765,
+      "risk_leverage": 4.7,
+      "scaled_max_drawdown": -0.3897
+     },
+     "vol_8%": {
+      "annual_net": 0.0127,
+      "gap_stress_2pct_adverse": -0.0502,
+      "pair_specific_margin": 0.125,
+      "portfolio_gross": 2.51,
+      "remaining_margin_buffer": 0.875,
+      "risk_leverage": 2.51,
+      "scaled_max_drawdown": -0.2078
+     }
+    },
+    "vol_per_unit_gross_measured": 0.03189
+   },
+   "cost_stress": {
+    "cost_x1.5": {
+     "net_annual_return": 0.011280638547471179,
+     "net_sharpe": 0.1016
+    },
+    "cost_x2.0": {
+     "net_annual_return": 0.004869333639707055,
+     "net_sharpe": 0.0439
+    }
+   },
+   "development_economics": {
+    "checks": {
+     "E1_net_positive": true,
+     "E2_gross_positive": true,
+     "E3_incremental_information": true,
+     "E4_temporal_stability": true,
+     "E5_breadth": false,
+     "E6_concentration": false,
+     "E7_cost_robustness": true,
+     "E8_economic_magnitude": false
+    },
+    "core_satisfied": true,
+    "evidence": {
+     "cost_x2_net_sharpe": 0.0439,
+     "positive_temporal_blocks": "40/70",
+     "top_10_day_contribution": 0.8543,
+     "worst_leave_one_currency_out_net_sharpe": -0.0397
+    },
+    "label": "DEVELOPMENT_ECONOMICS_NOT_SUPPORTED"
+   },
+   "diagnostic_gate": {
+    "all_three": true,
+    "checks": {
+     "gross_sharpe_positive": true,
+     "incremental_ic_positive": true,
+     "net_annual_return_positive": true
+    },
+    "id": "THREE_SIGN_TRIPLE",
+    "null_pass_rate_measured_at_freeze": 0.42,
+    "reading": "**通ったこと自体は情報が薄い。** 判定は VERDICT_LOGIC が決める",
+    "status": "DEMOTED_TO_DIAGNOSTIC_NOT_A_SELECTION_GATE"
+   },
+   "is_primary_span": true,
+   "metrics": {
+    "annual_cost": 0.012822609815528253,
+    "at_leverage_cap_share": 0.0,
+    "currency_contribution": {
+     "AUD": 0.08288958885685921,
+     "CAD": 0.18092472389062084,
+     "CHF": -0.12971339798038342,
+     "EUR": 0.17780989186989693,
+     "GBP": -0.08293527218725238,
+     "JPY": -0.38397564985545907,
+     "NZD": 0.15857529619398175,
+     "USD": 0.38466490733210024
+    },
+    "days": 4457,
+    "detection_floor_mde95": 0.466,
+    "downside_tail_p05": -0.01079486632801514,
+    "effective_independent_observations": 13.19,
+    "factor_abs_cosine": 0.10554291296427487,
+    "gross_annual_return": 0.03051455327076356,
+    "gross_sharpe": 0.274727707706788,
+    "ic": 0.008984500381939422,
+    "incremental_ic": 0.008459873151954608,
+    "leave_one_currency_out_net_sharpe": {
+     "AUD": 0.12059934793941297,
+     "CAD": 0.07294309954235925,
+     "CHF": 0.23754571596469992,
+     "EUR": 0.07116994657683476,
+     "GBP": 0.2099280922473872,
+     "JPY": 0.39331932523193486,
+     "NZD": 0.0827836514778184,
+     "USD": -0.03974248846766468
+    },
+    "max_drawdown": -0.2884469810394849,
+    "net_annual_return": 0.017691943455235302,
+    "net_sharpe": 0.1593297934788434,
+    "portfolio_gross_leverage": 3.481463693051518,
+    "position_persistence": 0.9882982764441812,
+    "positive_temporal_blocks": "40/70",
+    "raw_to_neutralised_score_corr": 0.9120180773959622,
+    "realized_vol": 0.11103976895309618,
+    "risk_leverage": 3.5789178325537887,
+    "signal_persistence": 0.9933266728699123,
+    "signal_persistence_lag1": 0.9941,
+    "temporal_concentration": 0.060394586880775716,
+    "top_10_day_contribution": 0.8543307726258805,
+    "top_1_day_contribution": 0.10414822688893167,
+    "top_5_day_contribution": 0.4765017822210749,
+    "turnover_per_unit_gross": 3.591925930323917,
+    "turnover_round_trips_per_year": 12.505159714553013,
+    "years": 17.69
+   },
+   "nuisance_sensitivity": {
+    "change_window_months": {
+     "constant": "change_window_months",
+     "grid": {
+      "12": {
+       "days": 4458,
+       "gross_sharpe": 0.2747,
+       "net_sharpe": 0.1593
+      },
+      "24": {
+       "days": 4458,
+       "gross_sharpe": 0.6619,
+       "net_sharpe": 0.5525
+      },
+      "6": {
+       "days": 4458,
+       "gross_sharpe": -0.1102,
+       "net_sharpe": -0.234
+      }
+     },
+     "net_sharpe_range": [
+      -0.234,
+      0.5525
+     ],
+     "primary": 12,
+     "rule": "primary で判定し、事前登録した感度集合の**全点**を報告する。結果の後に best point を選ばない。`implementation_tolerance_band` は book の band を動かす（signal は動かさない）"
+    },
+    "implementation_tolerance_band": {
+     "constant": "implementation_tolerance_band",
+     "grid": {
+      "0.05": {
+       "days": 4458,
+       "gross_sharpe": 0.2556,
+       "net_sharpe": 0.134
+      },
+      "0.1": {
+       "days": 4458,
+       "gross_sharpe": 0.2747,
+       "net_sharpe": 0.1593
+      },
+      "0.2": {
+       "days": 4458,
+       "gross_sharpe": 0.1243,
+       "net_sharpe": 0.0191
+      }
+     },
+     "net_sharpe_range": [
+      0.0191,
+      0.1593
+     ],
+     "primary": 0.1,
+     "rule": "primary で判定し、事前登録した感度集合の**全点**を報告する。結果の後に best point を選ばない。`implementation_tolerance_band` は book の band を動かす（signal は動かさない）"
+    },
+    "max_staleness_days_monthly": {
+     "constant": "max_staleness_days_monthly",
+     "grid": {
+      "120": {
+       "days": 4458,
+       "gross_sharpe": 0.2747,
+       "net_sharpe": 0.1593
+      },
+      "45": {
+       "days": 4458,
+       "gross_sharpe": 0.2747,
+       "net_sharpe": 0.1593
+      },
+      "60": {
+       "days": 4458,
+       "gross_sharpe": 0.2747,
+       "net_sharpe": 0.1593
+      },
+      "75": {
+       "days": 4458,
+       "gross_sharpe": 0.2747,
+       "net_sharpe": 0.1593
+      },
+      "90": {
+       "days": 4458,
+       "gross_sharpe": 0.2747,
+       "net_sharpe": 0.1593
+      }
+     },
+     "net_sharpe_range": [
+      0.1593,
+      0.1593
+     ],
+     "primary": 75,
+     "rule": "primary で判定し、事前登録した感度集合の**全点**を報告する。結果の後に best point を選ばない。`implementation_tolerance_band` は book の band を動かす（signal は動かさない）"
+    }
+   },
+   "null_diagnostic": {
+    "diagnostic": "PERMUTATION_NULL_DIAGNOSTIC",
+    "distinct_null_values": 898,
+    "draws": 1000,
+    "is_the_only_gate": false,
+    "judged_pnl": "spot + carry accrual − spread cost − 仮定 financing markup",
+    "label": "NULL_REJECTION_NOT_SUPPORTED",
+    "multiplicity_note": "5 本を同じ null に当てるので、**いずれか 1 本が 5% を切る確率は帰無でも約 23%**（1 − 0.95⁵）。**1 本通ったことを『edge が見つかった』とは書かない**",
+    "null_net_sharpe_mean": -0.1326,
+    "null_net_sharpe_p05": -0.7057,
+    "null_net_sharpe_p50": -0.1427,
+    "null_net_sharpe_p95": 0.3848,
+    "null_positive_share": 0.346,
+    "observed_net_annual_return": 0.01769,
+    "observed_net_sharpe": 0.1593,
+    "observed_percentile": 0.781,
+    "p_value": 0.2198,
+    "seed": 20260924,
+    "signal_persistence_lag1": 0.9941
+   },
+   "pnl_decomposition": {
+    "annual_carry": 0.00559,
+    "annual_financing": 0.00856,
+    "annual_spot_gross": 0.02493,
+    "annual_spread_cost": 0.00426,
+    "carry_sharpe_alone": 2.9984,
+    "spot_only_gross_sharpe": 0.2245,
+    "spot_only_net_sharpe": 0.1862
+   },
+   "rename_gates": {
+    "U1_TRADE_BALANCE": {
+     "comparator": "next-five U1（貿易収支）の score",
+     "if_exceeded": "RENAME_OF_A_PRIOR_TRACK（U1 の救済になる）",
+     "measured_abs_correlation": 0.0994,
+     "overlap_days": 4333,
+     "statistic": "日次 score の cross-section 相関の平均の絶対値",
+     "threshold": 0.8,
+     "verdict": "DISTINCT"
+    }
+   },
+   "span": "long",
+   "stage_2": {
+    "eligible": false,
+    "reason": "Stage 2 へは進まない。**Stage 1 の結果は記録する**"
+   },
+   "track": "M11"
+  },
+  "M11_recent": {
+   "benchmarks": {
+    "constant_long_usd": {
+     "gross_sharpe": 0.8574275939939645,
+     "ic": 0.0054842893236884665,
+     "net_sharpe": 0.7364825107694118
+    },
+    "fx_own_mean_reversion_20d": {
+     "gross_sharpe": 0.1452479299924066,
+     "ic": 0.001999587821868918,
+     "net_sharpe": -0.35254497899991427
+    },
+    "fx_own_momentum_20d": {
+     "gross_sharpe": -0.1452479299924066,
+     "ic": -0.001999587821868918,
+     "net_sharpe": -0.6450335710889243
+    },
+    "zero_signal": {
+     "gross_sharpe": NaN,
+     "ic": NaN,
+     "net_sharpe": NaN
+    }
+   },
+   "book": "XS",
+   "capacity": {
+    "reachable": false,
+    "why": "net Sharpe が 0 以下なので leverage で救わない"
+   },
+   "cost_stress": {
+    "cost_x1.5": {
+     "net_annual_return": -0.09357613718883635,
+     "net_sharpe": -0.9036
+    },
+    "cost_x2.0": {
+     "net_annual_return": -0.10147846349411908,
+     "net_sharpe": -0.9796
+    }
+   },
+   "diagnostic_gate": {
+    "all_three": false,
+    "checks": {
+     "gross_sharpe_positive": false,
+     "incremental_ic_positive": false,
+     "net_annual_return_positive": false
+    },
+    "id": "THREE_SIGN_TRIPLE",
+    "null_pass_rate_measured_at_freeze": 0.42,
+    "reading": "**通ったこと自体は情報が薄い。** 判定は VERDICT_LOGIC が決める",
+    "status": "DEMOTED_TO_DIAGNOSTIC_NOT_A_SELECTION_GATE"
+   },
+   "is_primary_span": false,
+   "metrics": {
+    "annual_cost": 0.01580465261056546,
+    "at_leverage_cap_share": 0.0,
+    "currency_contribution": {
+     "AUD": -0.022185213726613123,
+     "CAD": 0.05085509487969996,
+     "CHF": -0.02816451823986689,
+     "EUR": 0.0,
+     "GBP": -0.06267010327524274,
+     "JPY": -0.08125433186956348,
+     "NZD": -0.010046761804199889,
+     "USD": -0.023687248223595803
+    },
+    "days": 551,
+    "detection_floor_mde95": 1.3255,
+    "downside_tail_p05": -0.011045009017695801,
+    "effective_independent_observations": 1.91,
+    "factor_abs_cosine": 0.13640187502156287,
+    "gross_annual_return": -0.06986915827298817,
+    "gross_sharpe": -0.6751788222981052,
+    "ic": -0.014544773628228811,
+    "incremental_ic": -0.016481115042142166,
+    "leave_one_currency_out_net_sharpe": {
+     "AUD": -0.7629855812927975,
+     "CAD": -1.078622610734924,
+     "CHF": -0.8422686501616423,
+     "EUR": -0.8275509242283616,
+     "GBP": -0.6656466790383524,
+     "JPY": -0.5119479772802142,
+     "NZD": -0.77076644875094,
+     "USD": -0.7627608387441348
+    },
+    "max_drawdown": -0.21409485380211393,
+    "net_annual_return": -0.08567381088355361,
+    "net_sharpe": -0.8275509242283616,
+    "portfolio_gross_leverage": 4.582256079361869,
+    "position_persistence": 0.9924569900232243,
+    "positive_temporal_blocks": "3/9",
+    "raw_to_neutralised_score_corr": 0.9805300502392414,
+    "realized_vol": 0.10352693517131767,
+    "risk_leverage": 5.152763852519534,
+    "signal_persistence": 0.9821331010308386,
+    "signal_persistence_lag1": 0.9931,
+    "temporal_concentration": 0.34082350205207024,
+    "top_10_day_contribution": -0.9525962132060728,
+    "top_1_day_contribution": -0.14813419745134387,
+    "top_5_day_contribution": -0.5566766288541619,
+    "turnover_per_unit_gross": 2.9811953176947448,
+    "turnover_round_trips_per_year": 13.660600368271883,
+    "years": 2.19
+   },
+   "pnl_decomposition": {
+    "annual_carry": -0.0224,
+    "annual_financing": 0.01115,
+    "annual_spot_gross": -0.04746,
+    "annual_spread_cost": 0.00465,
+    "carry_sharpe_alone": -6.0081,
+    "spot_only_gross_sharpe": -0.4595,
+    "spot_only_net_sharpe": -0.5043
+   },
+   "rename_gates": {
+    "U1_TRADE_BALANCE": {
+     "comparator": "next-five U1（貿易収支）の score",
+     "if_exceeded": "RENAME_OF_A_PRIOR_TRACK（U1 の救済になる）",
+     "measured_abs_correlation": 0.1271,
+     "overlap_days": 551,
+     "statistic": "日次 score の cross-section 相関の平均の絶対値",
+     "threshold": 0.8,
+     "verdict": "DISTINCT"
+    }
+   },
+   "span": "recent",
+   "track": "M11"
+  },
+  "M15_long": {
+   "benchmarks": {
+    "constant_long_usd": {
+     "gross_sharpe": -0.19213567032263532,
+     "ic": -0.009218998885373116,
+     "net_sharpe": -0.25397599458225373
+    },
+    "fx_own_mean_reversion_20d": {
+     "gross_sharpe": -0.09804813429758456,
+     "ic": 0.0009203787263541447,
+     "net_sharpe": -0.3519098215687249
+    },
+    "fx_own_momentum_20d": {
+     "gross_sharpe": 0.09804813429758456,
+     "ic": -0.0009203787263541447,
+     "net_sharpe": -0.15596782794904573
+    },
+    "zero_signal": {
+     "gross_sharpe": NaN,
+     "ic": NaN,
+     "net_sharpe": NaN
+    }
+   },
+   "book": "DOLLAR",
+   "capacity": {
+    "for_10%_annual_net": {
+     "annual_net": 0.1,
+     "gap_stress_2pct_adverse": -0.5576,
+     "pair_specific_margin": 1.394,
+     "portfolio_gross": 27.88,
+     "remaining_margin_buffer": -0.394,
+     "required_target_vol": 1.2485,
+     "risk_leverage": 27.88,
+     "scaled_max_drawdown": -9.5382
+    },
+    "for_5%_annual_net": {
+     "annual_net": 0.05,
+     "gap_stress_2pct_adverse": -0.2788,
+     "pair_specific_margin": 0.697,
+     "portfolio_gross": 13.94,
+     "remaining_margin_buffer": 0.303,
+     "required_target_vol": 0.6243,
+     "risk_leverage": 13.94,
+     "scaled_max_drawdown": -4.7691
+    },
+    "forbidden": [
+     "5x を feasibility の hard cap として使うこと",
+     "broker の 20x / 25x を risk target として使うこと"
+    ],
+    "reachable": true,
+    "scenarios": {
+     "vol_10%": {
+      "annual_net": 0.008,
+      "gap_stress_2pct_adverse": -0.0447,
+      "pair_specific_margin": 0.112,
+      "portfolio_gross": 2.23,
+      "remaining_margin_buffer": 0.888,
+      "risk_leverage": 2.23,
+      "scaled_max_drawdown": -0.764
+     },
+     "vol_12%": {
+      "annual_net": 0.0096,
+      "gap_stress_2pct_adverse": -0.0536,
+      "pair_specific_margin": 0.134,
+      "portfolio_gross": 2.68,
+      "remaining_margin_buffer": 0.866,
+      "risk_leverage": 2.68,
+      "scaled_max_drawdown": -0.9167
+     },
+     "vol_15%": {
+      "annual_net": 0.012,
+      "gap_stress_2pct_adverse": -0.067,
+      "pair_specific_margin": 0.167,
+      "portfolio_gross": 3.35,
+      "remaining_margin_buffer": 0.833,
+      "risk_leverage": 3.35,
+      "scaled_max_drawdown": -1.1459
+     },
+     "vol_8%": {
+      "annual_net": 0.0064,
+      "gap_stress_2pct_adverse": -0.0357,
+      "pair_specific_margin": 0.089,
+      "portfolio_gross": 1.79,
+      "remaining_margin_buffer": 0.911,
+      "risk_leverage": 1.79,
+      "scaled_max_drawdown": -0.6112
+     }
+    },
+    "vol_per_unit_gross_measured": 0.04478
+   },
+   "cost_stress": {
+    "cost_x1.5": {
+     "net_annual_return": 0.0051470924151453094,
+     "net_sharpe": 0.0484
+    },
+    "cost_x2.0": {
+     "net_annual_return": 0.0017722780658140668,
+     "net_sharpe": 0.0166
+    }
+   },
+   "development_economics": {
+    "checks": {
+     "E1_net_positive": true,
+     "E2_gross_positive": true,
+     "E3_incremental_information": true,
+     "E4_temporal_stability": true,
+     "E5_breadth": true,
+     "E6_concentration": false,
+     "E7_cost_robustness": true,
+     "E8_economic_magnitude": false
+    },
+    "core_satisfied": true,
+    "evidence": {
+     "cost_x2_net_sharpe": 0.0166,
+     "positive_temporal_blocks": "36/70",
+     "top_10_day_contribution": 2.1577,
+     "worst_leave_one_currency_out_net_sharpe": 0.0149
+    },
+    "label": "DEVELOPMENT_ECONOMICS_NOT_SUPPORTED"
+   },
+   "diagnostic_gate": {
+    "all_three": true,
+    "checks": {
+     "gross_sharpe_positive": true,
+     "incremental_ic_positive": true,
+     "net_annual_return_positive": true
+    },
+    "id": "THREE_SIGN_TRIPLE",
+    "null_pass_rate_measured_at_freeze": 0.42,
+    "reading": "**通ったこと自体は情報が薄い。** 判定は VERDICT_LOGIC が決める",
+    "status": "DEMOTED_TO_DIAGNOSTIC_NOT_A_SELECTION_GATE"
+   },
+   "is_primary_span": true,
+   "metrics": {
+    "annual_cost": 0.006749628698662475,
+    "at_leverage_cap_share": 0.0,
+    "currency_contribution": {
+     "AUD": -0.007830587280418376,
+     "CAD": -0.22707988065505946,
+     "CHF": 0.12379877976013867,
+     "EUR": 0.0,
+     "GBP": 0.0,
+     "JPY": 0.0,
+     "NZD": 0.0,
+     "USD": 0.27773427623803065
+    },
+    "days": 4457,
+    "detection_floor_mde95": 0.466,
+    "downside_tail_p05": -0.0106633219609839,
+    "effective_independent_observations": 5.01,
+    "factor_abs_cosine": 0.28980123700830873,
+    "gross_annual_return": 0.015271535463139018,
+    "gross_sharpe": 0.14358259381373228,
+    "ic": 0.008126196113995758,
+    "incremental_ic": 0.010806141446566348,
+    "leave_one_currency_out_net_sharpe": {
+     "AUD": 0.0948291912777324,
+     "CAD": 0.19278144456786256,
+     "CHF": 0.014905002842162089,
+     "EUR": 0.0800938590919418,
+     "GBP": 0.0800938590919418,
+     "JPY": 0.0800938590919418,
+     "NZD": 0.0800938590919418,
+     "USD": -0.17882408694496887
+    },
+    "max_drawdown": -0.8128375446539489,
+    "net_annual_return": 0.008521906764476549,
+    "net_sharpe": 0.0800938590919418,
+    "portfolio_gross_leverage": 2.376075003275541,
+    "position_persistence": 0.9921869699797436,
+    "positive_temporal_blocks": "36/70",
+    "raw_to_neutralised_score_corr": 1.0,
+    "realized_vol": 0.10639900313323687,
+    "risk_leverage": 2.772535250086309,
+    "signal_persistence": 0.9972543419993021,
+    "signal_persistence_lag1": 0.9978,
+    "temporal_concentration": 0.052873877706203116,
+    "top_10_day_contribution": 2.1577255005138865,
+    "top_1_day_contribution": 0.6044869454998766,
+    "top_5_day_contribution": 1.3812667060288548,
+    "turnover_per_unit_gross": 1.1108239327190261,
+    "turnover_round_trips_per_year": 2.6394009795739093,
+    "years": 17.69
+   },
+   "nuisance_sensitivity": {
+    "implementation_tolerance_band": {
+     "constant": "implementation_tolerance_band",
+     "grid": {
+      "0.05": {
+       "days": 4458,
+       "gross_sharpe": 0.1688,
+       "net_sharpe": 0.1024
+      },
+      "0.1": {
+       "days": 4458,
+       "gross_sharpe": 0.1436,
+       "net_sharpe": 0.0801
+      },
+      "0.2": {
+       "days": 4458,
+       "gross_sharpe": 0.0191,
+       "net_sharpe": -0.0399
+      }
+     },
+     "net_sharpe_range": [
+      -0.0399,
+      0.1024
+     ],
+     "primary": 0.1,
+     "rule": "primary で判定し、事前登録した感度集合の**全点**を報告する。結果の後に best point を選ばない。`implementation_tolerance_band` は book の band を動かす（signal は動かさない）"
+    },
+    "max_staleness_days_monthly": {
+     "constant": "max_staleness_days_monthly",
+     "grid": {
+      "120": {
+       "days": 4458,
+       "gross_sharpe": 0.1436,
+       "net_sharpe": 0.0801
+      },
+      "45": {
+       "days": 4458,
+       "gross_sharpe": 0.1436,
+       "net_sharpe": 0.0801
+      },
+      "60": {
+       "days": 4458,
+       "gross_sharpe": 0.1436,
+       "net_sharpe": 0.0801
+      },
+      "75": {
+       "days": 4458,
+       "gross_sharpe": 0.1436,
+       "net_sharpe": 0.0801
+      },
+      "90": {
+       "days": 4458,
+       "gross_sharpe": 0.1436,
+       "net_sharpe": 0.0801
+      }
+     },
+     "net_sharpe_range": [
+      0.0801,
+      0.0801
+     ],
+     "primary": 75,
+     "rule": "primary で判定し、事前登録した感度集合の**全点**を報告する。結果の後に best point を選ばない。`implementation_tolerance_band` は book の band を動かす（signal は動かさない）"
+    }
+   },
+   "null_diagnostic": {
+    "diagnostic": "PERMUTATION_NULL_DIAGNOSTIC",
+    "distinct_null_values": 898,
+    "draws": 1000,
+    "is_the_only_gate": false,
+    "judged_pnl": "spot + carry accrual − spread cost − 仮定 financing markup",
+    "label": "NULL_REJECTION_NOT_SUPPORTED",
+    "multiplicity_note": "5 本を同じ null に当てるので、**いずれか 1 本が 5% を切る確率は帰無でも約 23%**（1 − 0.95⁵）。**1 本通ったことを『edge が見つかった』とは書かない**",
+    "null_net_sharpe_mean": 0.0137,
+    "null_net_sharpe_p05": -0.5328,
+    "null_net_sharpe_p50": 0.0572,
+    "null_net_sharpe_p95": 0.3797,
+    "null_positive_share": 0.606,
+    "observed_net_annual_return": 0.00852,
+    "observed_net_sharpe": 0.0801,
+    "observed_percentile": 0.543,
+    "p_value": 0.4575,
+    "seed": 20260924,
+    "signal_persistence_lag1": 0.9978
+   },
+   "pnl_decomposition": {
+    "annual_carry": 0.01492,
+    "annual_financing": 0.00585,
+    "annual_spot_gross": 0.00035,
+    "annual_spread_cost": 0.0009,
+    "carry_sharpe_alone": 18.095,
+    "spot_only_gross_sharpe": 0.0033,
+    "spot_only_net_sharpe": -0.0051
+   },
+   "rename_gates": {
+    "M16_WITHIN_CYCLE": {
+     "comparator": "M16 の USD 列",
+     "if_exceeded": "RENAME_WITHIN_THIS_CYCLE（2 本を 1 本として読む）",
+     "measured_abs_correlation": 0.0932,
+     "overlap_days": 4458,
+     "statistic": "重なる日の USD 列の相関の絶対値",
+     "threshold": 0.8,
+     "verdict": "DISTINCT"
+    },
+    "T5_TIC_FLOW": {
+     "comparator": "Top-Five T5（TIC flow）の score の USD 列",
+     "if_exceeded": "RENAME_OF_A_PRIOR_TRACK",
+     "measured_abs_correlation": 0.0643,
+     "overlap_days": 4332,
+     "statistic": "重なる日の USD 列の相関の絶対値",
+     "threshold": 0.8,
+     "verdict": "DISTINCT"
+    }
+   },
+   "span": "long",
+   "stage_2": {
+    "eligible": false,
+    "reason": "Stage 2 へは進まない。**Stage 1 の結果は記録する**"
+   },
+   "track": "M15"
+  },
+  "M15_recent": {
+   "benchmarks": {
+    "constant_long_usd": {
+     "gross_sharpe": 0.2752103136553878,
+     "ic": 0.014344914882369128,
+     "net_sharpe": 0.21280488510454917
+    },
+    "fx_own_mean_reversion_20d": {
+     "gross_sharpe": 0.3772772458714483,
+     "ic": 0.012405993460648659,
+     "net_sharpe": -0.02272500527318483
+    },
+    "fx_own_momentum_20d": {
+     "gross_sharpe": -0.3772772458714483,
+     "ic": -0.012405993460648659,
+     "net_sharpe": -0.7775974393962061
+    },
+    "zero_signal": {
+     "gross_sharpe": NaN,
+     "ic": NaN,
+     "net_sharpe": NaN
+    }
+   },
+   "book": "DOLLAR",
+   "capacity": {
+    "for_10%_annual_net": {
+     "annual_net": 0.1,
+     "gap_stress_2pct_adverse": -0.2207,
+     "pair_specific_margin": 0.552,
+     "portfolio_gross": 11.04,
+     "remaining_margin_buffer": 0.448,
+     "required_target_vol": 0.4699,
+     "risk_leverage": 11.04,
+     "scaled_max_drawdown": -0.5208
+    },
+    "for_5%_annual_net": {
+     "annual_net": 0.05,
+     "gap_stress_2pct_adverse": -0.1104,
+     "pair_specific_margin": 0.276,
+     "portfolio_gross": 5.52,
+     "remaining_margin_buffer": 0.724,
+     "required_target_vol": 0.235,
+     "risk_leverage": 5.52,
+     "scaled_max_drawdown": -0.2604
+    },
+    "forbidden": [
+     "5x を feasibility の hard cap として使うこと",
+     "broker の 20x / 25x を risk target として使うこと"
+    ],
+    "reachable": true,
+    "scenarios": {
+     "vol_10%": {
+      "annual_net": 0.0213,
+      "gap_stress_2pct_adverse": -0.047,
+      "pair_specific_margin": 0.117,
+      "portfolio_gross": 2.35,
+      "remaining_margin_buffer": 0.883,
+      "risk_leverage": 2.35,
+      "scaled_max_drawdown": -0.1108
+     },
+     "vol_12%": {
+      "annual_net": 0.0255,
+      "gap_stress_2pct_adverse": -0.0564,
+      "pair_specific_margin": 0.141,
+      "portfolio_gross": 2.82,
+      "remaining_margin_buffer": 0.859,
+      "risk_leverage": 2.82,
+      "scaled_max_drawdown": -0.133
+     },
+     "vol_15%": {
+      "annual_net": 0.0319,
+      "gap_stress_2pct_adverse": -0.0705,
+      "pair_specific_margin": 0.176,
+      "portfolio_gross": 3.52,
+      "remaining_margin_buffer": 0.824,
+      "risk_leverage": 3.52,
+      "scaled_max_drawdown": -0.1663
+     },
+     "vol_8%": {
+      "annual_net": 0.017,
+      "gap_stress_2pct_adverse": -0.0376,
+      "pair_specific_margin": 0.094,
+      "portfolio_gross": 1.88,
+      "remaining_margin_buffer": 0.906,
+      "risk_leverage": 1.88,
+      "scaled_max_drawdown": -0.0887
+     }
+    },
+    "vol_per_unit_gross_measured": 0.04258
+   },
+   "cost_stress": {
+    "cost_x1.5": {
+     "net_annual_return": 0.01845941051823339,
+     "net_sharpe": 0.1816
+    },
+    "cost_x2.0": {
+     "net_annual_return": 0.015288601299740794,
+     "net_sharpe": 0.1504
+    }
+   },
+   "diagnostic_gate": {
+    "all_three": true,
+    "checks": {
+     "gross_sharpe_positive": true,
+     "incremental_ic_positive": true,
+     "net_annual_return_positive": true
+    },
+    "id": "THREE_SIGN_TRIPLE",
+    "null_pass_rate_measured_at_freeze": 0.42,
+    "reading": "**通ったこと自体は情報が薄い。** 判定は VERDICT_LOGIC が決める",
+    "status": "DEMOTED_TO_DIAGNOSTIC_NOT_A_SELECTION_GATE"
+   },
+   "is_primary_span": false,
+   "metrics": {
+    "annual_cost": 0.0063416184369852295,
+    "at_leverage_cap_share": 0.0,
+    "currency_contribution": {
+     "AUD": -0.016066598390437246,
+     "CAD": 0.010569898378594504,
+     "CHF": -0.06793152515578567,
+     "EUR": 0.0,
+     "GBP": 0.0,
+     "JPY": 0.0,
+     "NZD": 0.0,
+     "USD": 0.17605195778270274
+    },
+    "days": 1166,
+    "detection_floor_mde95": 0.9108,
+    "downside_tail_p05": -0.010643431239200082,
+    "effective_independent_observations": 1.0,
+    "factor_abs_cosine": 0.4303058490343893,
+    "gross_annual_return": 0.027971838173711235,
+    "gross_sharpe": 0.2752103136553878,
+    "ic": 0.014344914882369128,
+    "incremental_ic": 0.00866494610266269,
+    "leave_one_currency_out_net_sharpe": {
+     "AUD": 0.27911164126300825,
+     "CAD": 0.18668151788771722,
+     "CHF": 0.37420807480874246,
+     "EUR": 0.21280488510454917,
+     "GBP": 0.21280488510454917,
+     "JPY": 0.21280488510454917,
+     "NZD": 0.21280488510454917,
+     "USD": -0.5337706553281789
+    },
+    "max_drawdown": -0.11265961338456809,
+    "net_annual_return": 0.021630219736725995,
+    "net_sharpe": 0.21280488510454917,
+    "portfolio_gross_leverage": 2.387316846185663,
+    "position_persistence": 0.9990872286947925,
+    "positive_temporal_blocks": "8/18",
+    "raw_to_neutralised_score_corr": 1.0,
+    "realized_vol": 0.10164343608042296,
+    "risk_leverage": 2.786519011921005,
+    "signal_persistence": 0.9999999999999998,
+    "signal_persistence_lag1": 1.0,
+    "temporal_concentration": 0.16746094873956738,
+    "top_10_day_contribution": 2.0357519525435097,
+    "top_1_day_contribution": 0.2994564259402162,
+    "top_5_day_contribution": 1.1418723976002942,
+    "turnover_per_unit_gross": 0.6753989220843073,
+    "turnover_round_trips_per_year": 1.612391224587505,
+    "years": 4.63
+   },
+   "pnl_decomposition": {
+    "annual_carry": 0.02064,
+    "annual_financing": 0.00579,
+    "annual_spot_gross": 0.00733,
+    "annual_spread_cost": 0.00055,
+    "carry_sharpe_alone": 18.1273,
+    "spot_only_gross_sharpe": 0.0721,
+    "spot_only_net_sharpe": 0.0667
+   },
+   "rename_gates": {
+    "M16_WITHIN_CYCLE": {
+     "comparator": "M16 の USD 列",
+     "if_exceeded": "RENAME_WITHIN_THIS_CYCLE（2 本を 1 本として読む）",
+     "overlap_days": 530,
+     "statistic": "重なる日の USD 列の相関の絶対値",
+     "threshold": 0.8,
+     "verdict": "NOT_EVALUABLE",
+     "why": "比較対象が定数か、重なりが 60 日未満"
+    },
+    "T5_TIC_FLOW": {
+     "comparator": "Top-Five T5（TIC flow）の score の USD 列",
+     "if_exceeded": "RENAME_OF_A_PRIOR_TRACK",
+     "overlap_days": 510,
+     "statistic": "重なる日の USD 列の相関の絶対値",
+     "threshold": 0.8,
+     "verdict": "NOT_EVALUABLE",
+     "why": "比較対象が定数か、重なりが 60 日未満"
+    }
+   },
+   "span": "recent",
+   "track": "M15"
+  },
+  "M16_long": {
+   "benchmarks": {
+    "constant_long_usd": {
+     "gross_sharpe": -0.19213567032263532,
+     "ic": -0.009218998885373116,
+     "net_sharpe": -0.25397599458225373
+    },
+    "fx_own_mean_reversion_20d": {
+     "gross_sharpe": -0.09804813429758456,
+     "ic": 0.0009203787263541447,
+     "net_sharpe": -0.3519098215687249
+    },
+    "fx_own_momentum_20d": {
+     "gross_sharpe": 0.09804813429758456,
+     "ic": -0.0009203787263541447,
+     "net_sharpe": -0.15596782794904573
+    },
+    "zero_signal": {
+     "gross_sharpe": NaN,
+     "ic": NaN,
+     "net_sharpe": NaN
+    }
+   },
+   "book": "DOLLAR",
+   "capacity": {
+    "for_10%_annual_net": {
+     "annual_net": 0.1,
+     "gap_stress_2pct_adverse": -0.1524,
+     "pair_specific_margin": 0.381,
+     "portfolio_gross": 7.62,
+     "remaining_margin_buffer": 0.619,
+     "required_target_vol": 0.3409,
+     "risk_leverage": 7.62,
+     "scaled_max_drawdown": -1.3833
+    },
+    "for_5%_annual_net": {
+     "annual_net": 0.05,
+     "gap_stress_2pct_adverse": -0.0762,
+     "pair_specific_margin": 0.191,
+     "portfolio_gross": 3.81,
+     "remaining_margin_buffer": 0.809,
+     "required_target_vol": 0.1704,
+     "risk_leverage": 3.81,
+     "scaled_max_drawdown": -0.6916
+    },
+    "forbidden": [
+     "5x を feasibility の hard cap として使うこと",
+     "broker の 20x / 25x を risk target として使うこと"
+    ],
+    "reachable": true,
+    "scenarios": {
+     "vol_10%": {
+      "annual_net": 0.0293,
+      "gap_stress_2pct_adverse": -0.0447,
+      "pair_specific_margin": 0.112,
+      "portfolio_gross": 2.24,
+      "remaining_margin_buffer": 0.888,
+      "risk_leverage": 2.24,
+      "scaled_max_drawdown": -0.4058
+     },
+     "vol_12%": {
+      "annual_net": 0.0352,
+      "gap_stress_2pct_adverse": -0.0537,
+      "pair_specific_margin": 0.134,
+      "portfolio_gross": 2.68,
+      "remaining_margin_buffer": 0.866,
+      "risk_leverage": 2.68,
+      "scaled_max_drawdown": -0.4869
+     },
+     "vol_15%": {
+      "annual_net": 0.044,
+      "gap_stress_2pct_adverse": -0.0671,
+      "pair_specific_margin": 0.168,
+      "portfolio_gross": 3.35,
+      "remaining_margin_buffer": 0.832,
+      "risk_leverage": 3.35,
+      "scaled_max_drawdown": -0.6087
+     },
+     "vol_8%": {
+      "annual_net": 0.0235,
+      "gap_stress_2pct_adverse": -0.0358,
+      "pair_specific_margin": 0.089,
+      "portfolio_gross": 1.79,
+      "remaining_margin_buffer": 0.911,
+      "risk_leverage": 1.79,
+      "scaled_max_drawdown": -0.3246
+     }
+    },
+    "vol_per_unit_gross_measured": 0.04473
+   },
+   "cost_stress": {
+    "cost_x1.5": {
+     "net_annual_return": 0.027388957021615267,
+     "net_sharpe": 0.2578
+    },
+    "cost_x2.0": {
+     "net_annual_return": 0.023600797710548578,
+     "net_sharpe": 0.2221
+    }
+   },
+   "development_economics": {
+    "checks": {
+     "E1_net_positive": true,
+     "E2_gross_positive": true,
+     "E3_incremental_information": true,
+     "E4_temporal_stability": true,
+     "E5_breadth": true,
+     "E6_concentration": true,
+     "E7_cost_robustness": true,
+     "E8_economic_magnitude": false
+    },
+    "core_satisfied": true,
+    "evidence": {
+     "cost_x2_net_sharpe": 0.2221,
+     "positive_temporal_blocks": "40/70",
+     "top_10_day_contribution": 0.4973,
+     "worst_leave_one_currency_out_net_sharpe": 0.2457
+    },
+    "label": "DEVELOPMENT_ECONOMICS_NOT_SUPPORTED"
+   },
+   "diagnostic_gate": {
+    "all_three": true,
+    "checks": {
+     "gross_sharpe_positive": true,
+     "incremental_ic_positive": true,
+     "net_annual_return_positive": true
+    },
+    "id": "THREE_SIGN_TRIPLE",
+    "null_pass_rate_measured_at_freeze": 0.42,
+    "reading": "**通ったこと自体は情報が薄い。** 判定は VERDICT_LOGIC が決める",
+    "status": "DEMOTED_TO_DIAGNOSTIC_NOT_A_SELECTION_GATE"
+   },
+   "is_primary_span": true,
+   "metrics": {
+    "annual_cost": 0.007576318622133378,
+    "at_leverage_cap_share": 0.0,
+    "currency_contribution": {
+     "AUD": 0.043280981121552486,
+     "CAD": -0.06675539850506498,
+     "CHF": 0.10810734829755338,
+     "EUR": 0.0,
+     "GBP": 0.0,
+     "JPY": 0.0,
+     "NZD": 0.0,
+     "USD": 0.49730245887246527
+    },
+    "days": 4457,
+    "detection_floor_mde95": 0.466,
+    "downside_tail_p05": -0.010527888281852105,
+    "effective_independent_observations": 23.12,
+    "factor_abs_cosine": 0.28980123700830873,
+    "gross_annual_return": 0.03875343495481533,
+    "gross_sharpe": 0.36443992243495066,
+    "ic": 0.007750930341472638,
+    "incremental_ic": 0.004642157889777314,
+    "leave_one_currency_out_net_sharpe": {
+     "AUD": 0.30389594707969864,
+     "CAD": 0.3158027886913192,
+     "CHF": 0.24568049094955463,
+     "EUR": 0.29334251323301047,
+     "GBP": 0.29334251323301047,
+     "JPY": 0.29334251323301047,
+     "NZD": 0.29334251323301047,
+     "USD": 0.07663765211615059
+    },
+    "max_drawdown": -0.43126251101071306,
+    "net_annual_return": 0.03117711633268195,
+    "net_sharpe": 0.29334251323301047,
+    "portfolio_gross_leverage": 2.376075003275541,
+    "position_persistence": 0.9845404330274363,
+    "positive_temporal_blocks": "40/70",
+    "raw_to_neutralised_score_corr": 1.0,
+    "realized_vol": 0.10628229774494727,
+    "risk_leverage": 2.772535250086309,
+    "signal_persistence": 0.9894151740571839,
+    "signal_persistence_lag1": 0.9897,
+    "temporal_concentration": 0.050972960959336226,
+    "top_10_day_contribution": 0.49726732422884934,
+    "top_1_day_contribution": 0.05909832248126623,
+    "top_5_day_contribution": 0.28070205165540657,
+    "turnover_per_unit_gross": 2.1323227189577776,
+    "turnover_round_trips_per_year": 5.066558711432112,
+    "years": 17.69
+   },
+   "nuisance_sensitivity": {
+    "change_window_months": {
+     "constant": "change_window_months",
+     "grid": {
+      "12": {
+       "days": 4458,
+       "gross_sharpe": 0.3644,
+       "net_sharpe": 0.2933
+      },
+      "24": {
+       "days": 4458,
+       "gross_sharpe": 0.4845,
+       "net_sharpe": 0.4189
+      },
+      "6": {
+       "days": 4458,
+       "gross_sharpe": 0.1711,
+       "net_sharpe": 0.0918
+      }
+     },
+     "net_sharpe_range": [
+      0.0918,
+      0.4189
+     ],
+     "primary": 12,
+     "rule": "primary で判定し、事前登録した感度集合の**全点**を報告する。結果の後に best point を選ばない。`implementation_tolerance_band` は book の band を動かす（signal は動かさない）"
+    },
+    "implementation_tolerance_band": {
+     "constant": "implementation_tolerance_band",
+     "grid": {
+      "0.05": {
+       "days": 4458,
+       "gross_sharpe": 0.3535,
+       "net_sharpe": 0.2786
+      },
+      "0.1": {
+       "days": 4458,
+       "gross_sharpe": 0.3644,
+       "net_sharpe": 0.2933
+      },
+      "0.2": {
+       "days": 4458,
+       "gross_sharpe": 0.2628,
+       "net_sharpe": 0.1963
+      }
+     },
+     "net_sharpe_range": [
+      0.1963,
+      0.2933
+     ],
+     "primary": 0.1,
+     "rule": "primary で判定し、事前登録した感度集合の**全点**を報告する。結果の後に best point を選ばない。`implementation_tolerance_band` は book の band を動かす（signal は動かさない）"
+    },
+    "max_staleness_days_monthly": {
+     "constant": "max_staleness_days_monthly",
+     "grid": {
+      "120": {
+       "days": 4458,
+       "gross_sharpe": 0.3644,
+       "net_sharpe": 0.2933
+      },
+      "45": {
+       "days": 4458,
+       "gross_sharpe": 0.3644,
+       "net_sharpe": 0.2933
+      },
+      "60": {
+       "days": 4458,
+       "gross_sharpe": 0.3644,
+       "net_sharpe": 0.2933
+      },
+      "75": {
+       "days": 4458,
+       "gross_sharpe": 0.3644,
+       "net_sharpe": 0.2933
+      },
+      "90": {
+       "days": 4458,
+       "gross_sharpe": 0.3644,
+       "net_sharpe": 0.2933
+      }
+     },
+     "net_sharpe_range": [
+      0.2933,
+      0.2933
+     ],
+     "primary": 75,
+     "rule": "primary で判定し、事前登録した感度集合の**全点**を報告する。結果の後に best point を選ばない。`implementation_tolerance_band` は book の band を動かす（signal は動かさない）"
+    }
+   },
+   "null_diagnostic": {
+    "diagnostic": "PERMUTATION_NULL_DIAGNOSTIC",
+    "distinct_null_values": 897,
+    "draws": 1000,
+    "is_the_only_gate": false,
+    "judged_pnl": "spot + carry accrual − spread cost − 仮定 financing markup",
+    "label": "NULL_REJECTION_NOT_SUPPORTED",
+    "multiplicity_note": "5 本を同じ null に当てるので、**いずれか 1 本が 5% を切る確率は帰無でも約 23%**（1 − 0.95⁵）。**1 本通ったことを『edge が見つかった』とは書かない**",
+    "null_net_sharpe_mean": -0.0973,
+    "null_net_sharpe_p05": -0.5,
+    "null_net_sharpe_p50": -0.1459,
+    "null_net_sharpe_p95": 0.419,
+    "null_positive_share": 0.328,
+    "observed_net_annual_return": 0.03118,
+    "observed_net_sharpe": 0.2933,
+    "observed_percentile": 0.869,
+    "p_value": 0.1319,
+    "seed": 20260924,
+    "signal_persistence_lag1": 0.9897
+   },
+   "pnl_decomposition": {
+    "annual_carry": -0.00185,
+    "annual_financing": 0.00585,
+    "annual_spot_gross": 0.0406,
+    "annual_spread_cost": 0.00173,
+    "carry_sharpe_alone": -1.487,
+    "spot_only_gross_sharpe": 0.3819,
+    "spot_only_net_sharpe": 0.3659
+   },
+   "rename_gates": {
+    "M15_WITHIN_CYCLE": {
+     "comparator": "M15 の USD 列",
+     "if_exceeded": "RENAME_WITHIN_THIS_CYCLE",
+     "measured_abs_correlation": 0.0932,
+     "overlap_days": 4458,
+     "statistic": "重なる日の USD 列の相関の絶対値",
+     "threshold": 0.8,
+     "verdict": "DISTINCT"
+    },
+    "T5_TIC_FLOW": {
+     "comparator": "Top-Five T5（TIC flow）の score の USD 列",
+     "if_exceeded": "RENAME_OF_A_PRIOR_TRACK",
+     "measured_abs_correlation": 0.0005,
+     "overlap_days": 4332,
+     "statistic": "重なる日の USD 列の相関の絶対値",
+     "threshold": 0.8,
+     "verdict": "DISTINCT"
+    }
+   },
+   "span": "long",
+   "stage_2": {
+    "eligible": true,
+    "regression": {
+     "caveat": "**観測は通貨 x 日で数えた 4 千件あるが、独立な signal の状態はその数ではない。** T5 の score は月次 series の前方補完なので、同じ値が数十日続く。t はこの重複を補正していない — **過大である**",
+     "control_beta": -0.003967596808417527,
+     "control_t": -3.173708078373829,
+     "observations": 35504,
+     "r_squared": 0.0003030504172071291,
+     "signal_beta": 7.184823994253804e-05,
+     "signal_t": 0.9233229123981633,
+     "status": "RAN"
+    }
+   },
+   "track": "M16"
+  },
+  "M16_recent": {
+   "benchmarks": {
+    "constant_long_usd": {
+     "gross_sharpe": 0.347414874185245,
+     "ic": 0.00977008192595611,
+     "net_sharpe": 0.28115558892698167
+    },
+    "fx_own_mean_reversion_20d": {
+     "gross_sharpe": 0.18716471225317663,
+     "ic": -0.00015757945952101236,
+     "net_sharpe": -0.2093678621367139
+    },
+    "fx_own_momentum_20d": {
+     "gross_sharpe": -0.18716471225317663,
+     "ic": 0.00015757945952101236,
+     "net_sharpe": -0.5846511215198243
+    },
+    "zero_signal": {
+     "gross_sharpe": NaN,
+     "ic": NaN,
+     "net_sharpe": NaN
+    }
+   },
+   "book": "DOLLAR",
+   "capacity": {
+    "reachable": false,
+    "why": "net Sharpe が 0 以下なので leverage で救わない"
+   },
+   "cost_stress": {
+    "cost_x1.5": {
+     "net_annual_return": -0.019238389964239315,
+     "net_sharpe": -0.1881
+    },
+    "cost_x2.0": {
+     "net_annual_return": -0.023177253195532356,
+     "net_sharpe": -0.2265
+    }
+   },
+   "diagnostic_gate": {
+    "all_three": false,
+    "checks": {
+     "gross_sharpe_positive": false,
+     "incremental_ic_positive": false,
+     "net_annual_return_positive": false
+    },
+    "id": "THREE_SIGN_TRIPLE",
+    "null_pass_rate_measured_at_freeze": 0.42,
+    "reading": "**通ったこと自体は情報が薄い。** 判定は VERDICT_LOGIC が決める",
+    "status": "DEMOTED_TO_DIAGNOSTIC_NOT_A_SELECTION_GATE"
+   },
+   "is_primary_span": false,
+   "metrics": {
+    "annual_cost": 0.007877726462586086,
+    "at_leverage_cap_share": 0.0,
+    "currency_contribution": {
+     "AUD": 0.0050121941677255515,
+     "CAD": 0.01331238891152264,
+     "CHF": 0.019488282141818216,
+     "EUR": 0.0,
+     "GBP": 0.0,
+     "JPY": 0.0,
+     "NZD": 0.0,
+     "USD": -0.06615042019480333
+    },
+    "days": 530,
+    "detection_floor_mde95": 1.3515,
+    "downside_tail_p05": -0.010524764024593616,
+    "effective_independent_observations": 3.02,
+    "factor_abs_cosine": 0.36292658671413924,
+    "gross_annual_return": -0.007421800270360182,
+    "gross_sharpe": -0.07268594153606153,
+    "ic": -0.011094740317097541,
+    "incremental_ic": -0.018655469971060483,
+    "leave_one_currency_out_net_sharpe": {
+     "AUD": -0.1939819606757344,
+     "CAD": -0.20380133961262636,
+     "CHF": -0.2526663701024285,
+     "EUR": -0.14968572605997532,
+     "GBP": -0.14968572605997532,
+     "JPY": -0.14968572605997532,
+     "NZD": -0.14968572605997532,
+     "USD": 0.5601373050380809
+    },
+    "max_drawdown": -0.13311243130809686,
+    "net_annual_return": -0.015299526732946286,
+    "net_sharpe": -0.14968572605997532,
+    "portfolio_gross_leverage": 2.4933234349934525,
+    "position_persistence": 0.989391515190814,
+    "positive_temporal_blocks": "3/9",
+    "raw_to_neutralised_score_corr": 1.0,
+    "realized_vol": 0.10221099323001681,
+    "risk_leverage": 2.911277370396464,
+    "signal_persistence": 0.9871059569758425,
+    "signal_persistence_lag1": 0.9887,
+    "temporal_concentration": 0.2973709257444007,
+    "top_10_day_contribution": -6.350713710821035,
+    "top_1_day_contribution": -0.931406474003467,
+    "top_5_day_contribution": -3.6447106988914526,
+    "turnover_per_unit_gross": 2.149982962126917,
+    "turnover_round_trips_per_year": 5.360602904307682,
+    "years": 2.1
+   },
+   "pnl_decomposition": {
+    "annual_carry": 0.01038,
+    "annual_financing": 0.00605,
+    "annual_spot_gross": -0.0178,
+    "annual_spread_cost": 0.00183,
+    "carry_sharpe_alone": 5.498,
+    "spot_only_gross_sharpe": -0.1743,
+    "spot_only_net_sharpe": -0.192
+   },
+   "rename_gates": {
+    "M15_WITHIN_CYCLE": {
+     "comparator": "M15 の USD 列",
+     "if_exceeded": "RENAME_WITHIN_THIS_CYCLE",
+     "overlap_days": 530,
+     "statistic": "重なる日の USD 列の相関の絶対値",
+     "threshold": 0.8,
+     "verdict": "NOT_EVALUABLE",
+     "why": "比較対象が定数か、重なりが 60 日未満"
+    },
+    "T5_TIC_FLOW": {
+     "comparator": "Top-Five T5（TIC flow）の score の USD 列",
+     "if_exceeded": "RENAME_OF_A_PRIOR_TRACK",
+     "overlap_days": 0,
+     "statistic": "重なる日の USD 列の相関の絶対値",
+     "threshold": 0.8,
+     "verdict": "NOT_EVALUABLE",
+     "why": "比較対象が定数か、重なりが 60 日未満"
+    }
+   },
+   "span": "recent",
+   "track": "M16"
+  }
+ },
+ "verdicts": {
+  "M01": {
+   "closure_scope": "NOT_SUPPORTED は凍結した formulation と span についての記録であり、mechanism family を閉じない。有効標本数 10 未満の負の結果は検出力の無い null であって refutation ではない",
+   "economics_label": "DEVELOPMENT_ECONOMICS_NOT_SUPPORTED",
+   "effective_independent_observations": 6.2,
+   "failure_class": "CONCENTRATION_FAILURE",
+   "null_label": "NULL_REJECTION_NOT_SUPPORTED",
+   "other_span_gross_sign": "positive",
+   "rename_gates_not_evaluable": [],
+   "status": "M01_M01_POSITIVE_EXPLORATORY_SIGNAL_NOT_DECISION_GRADE",
+   "status_before_power_cap": "M01_M01_POSITIVE_EXPLORATORY_SIGNAL_NOT_DECISION_GRADE",
+   "underpowered": true
+  },
+  "M10": {
+   "closure_scope": "NOT_SUPPORTED は凍結した formulation と span についての記録であり、mechanism family を閉じない。有効標本数 10 未満の負の結果は検出力の無い null であって refutation ではない",
+   "economics_label": "DEVELOPMENT_ECONOMICS_NOT_SUPPORTED",
+   "effective_independent_observations": 0.5,
+   "failure_class": "SIGNAL_FAILURE",
+   "null_label": "NULL_REJECTION_NOT_SUPPORTED",
+   "other_span_gross_sign": null,
+   "rename_gates_not_evaluable": [],
+   "status": "M10_M10_NOT_SUPPORTED_IN_SEEN_DEVELOPMENT",
+   "status_before_power_cap": "M10_M10_NOT_SUPPORTED_IN_SEEN_DEVELOPMENT",
+   "underpowered": true
+  },
+  "M11": {
+   "closure_scope": "NOT_SUPPORTED は凍結した formulation と span についての記録であり、mechanism family を閉じない。有効標本数 10 未満の負の結果は検出力の無い null であって refutation ではない",
+   "economics_label": "DEVELOPMENT_ECONOMICS_NOT_SUPPORTED",
+   "effective_independent_observations": 13.2,
+   "failure_class": "CONCENTRATION_FAILURE",
+   "null_label": "NULL_REJECTION_NOT_SUPPORTED",
+   "other_span_gross_sign": "non_positive",
+   "rename_gates_not_evaluable": [],
+   "status": "M11_M11_POSITIVE_EXPLORATORY_SIGNAL_NOT_DECISION_GRADE",
+   "status_before_power_cap": "M11_M11_POSITIVE_EXPLORATORY_SIGNAL_NOT_DECISION_GRADE",
+   "underpowered": false
+  },
+  "M15": {
+   "closure_scope": "NOT_SUPPORTED は凍結した formulation と span についての記録であり、mechanism family を閉じない。有効標本数 10 未満の負の結果は検出力の無い null であって refutation ではない",
+   "economics_label": "DEVELOPMENT_ECONOMICS_NOT_SUPPORTED",
+   "effective_independent_observations": 5.0,
+   "failure_class": "CONCENTRATION_FAILURE",
+   "null_label": "NULL_REJECTION_NOT_SUPPORTED",
+   "other_span_gross_sign": "positive",
+   "rename_gates_not_evaluable": [],
+   "status": "M15_M15_POSITIVE_EXPLORATORY_SIGNAL_NOT_DECISION_GRADE",
+   "status_before_power_cap": "M15_M15_POSITIVE_EXPLORATORY_SIGNAL_NOT_DECISION_GRADE",
+   "underpowered": true
+  },
+  "M16": {
+   "closure_scope": "NOT_SUPPORTED は凍結した formulation と span についての記録であり、mechanism family を閉じない。有効標本数 10 未満の負の結果は検出力の無い null であって refutation ではない",
+   "economics_label": "DEVELOPMENT_ECONOMICS_NOT_SUPPORTED",
+   "effective_independent_observations": 23.1,
+   "failure_class": null,
+   "null_label": "NULL_REJECTION_NOT_SUPPORTED",
+   "other_span_gross_sign": "non_positive",
+   "rename_gates_not_evaluable": [],
+   "status": "M16_M16_MARGINAL_DEVELOPMENT_CANDIDATE",
+   "status_before_power_cap": "M16_M16_MARGINAL_DEVELOPMENT_CANDIDATE",
+   "underpowered": false
+  }
+ }
+}
