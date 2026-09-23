@@ -88,10 +88,10 @@ LAG_MONTHS: Final[dict[str, int]] = {
 #: 入手は参照期間の最後の月から約 75 日後になる。保守側に 1 か月長く取る。
 LAG_OVERRIDES: Final[dict[tuple[str, str], int]] = {("unemployment", "GBP"): 3}
 #: 1 つの stamp が複数月の集計を表す series の参照期間（stamp の月から前へ何か月・後ろへ何か月）。
-#: **GBP の失業率は 3 か月平均**で、中心月 stamp でも末尾月 stamp でも覆えるよう前 2・後 1 を取る
+#: **GBP の失業率は 3 か月平均**で、開始月・中心月・末尾月のどの stamp 慣行でも覆えるよう前 2・後 2 を取る
 #: （re-audit B-2: 1 か月分しか保護判定しておらず、stamp 2021-05 が 2021-04 を含んでいた）。
 REFERENCE_WINDOW_MONTHS: Final[dict[tuple[str, str], tuple[int, int]]] = {
-    ("unemployment", "GBP"): (2, 1),
+    ("unemployment", "GBP"): (2, 2),
 }
 #: lag の根拠。**provider の metadata ではなく各統計局の公表慣行**である（review で指摘された限界）。
 LAG_JUSTIFICATION: Final[dict[str, str]] = {
@@ -320,13 +320,31 @@ def taylor_gap(index: pd.DatetimeIndex, overrides: dict[str, Any] | None = None)
 
 
 def carry_rate_panel(index: pd.DatetimeIndex) -> pd.DataFrame:
-    """carry accrual に使う 3 か月金利（%、年率）。signal と同じ lag・staleness（primary）で揃える。"""
-    return _monthly_panel(
-        "short_rate_3m",
-        index,
-        change_months=None,
-        staleness=NUISANCE["max_staleness_days_monthly"]["primary"],
-    )
+    """carry accrual に使う短期金利（%、年率）。signal と同じ lag・staleness（primary）で揃える。
+
+    **3 か月銀行間金利が無い日は、同じ通貨の BIS 政策金利で埋める**（re-audit BL-1）。
+    long span では JPY の 3 か月金利が 1999-01 … 2002-05、CHF が 1999-08 まで無く、欠けた通貨の pair を
+    平均から外すと carry が pair book の carry から大きく外れる（JPY は典型的な funding 通貨だった）。
+    政策金利は 3 か月金利の代理で、差（term premium・credit）は carry の誤差として残る。
+    """
+    staleness = NUISANCE["max_staleness_days_monthly"]["primary"]
+    three_month = _monthly_panel("short_rate_3m", index, change_months=None, staleness=staleness)
+    policy = _monthly_panel("policy_rate_bis", index, change_months=None, staleness=staleness)
+    rates = three_month.combine_first(policy)
+    for currency, periods in ZERO_RATE_PERIODS.items():
+        for first, last in periods:
+            window = (rates.index >= first) & (rates.index <= last)
+            rates.loc[window, currency] = rates.loc[window, currency].fillna(0.0)
+    return rates
+
+
+#: **判断である**（2 回目の re-audit BL-1 の残り）。BIS は BoJ のゼロ金利政策（1999-02 … 2000-08）と
+#: 量的緩和（2001-03 … 2006-03）の期間に数値の政策金利を持たず、同じ期間の JPY 3 か月銀行間金利も
+#: OECD の収録が 2002-04 からしか無い。BoJ はこの間、無担保コール翌日物を「ゼロ近傍」に誘導していた。
+#: その 2 つが両方無い日だけ JPY の金利を 0% と置く（carry の誤差は 0.0x% 程度）。
+ZERO_RATE_PERIODS: Final[dict[str, tuple[tuple[str, str], ...]]] = {
+    "JPY": (("1999-02-12", "2000-08-31"), ("2001-03-19", "2006-03-31")),
+}
 
 
 # ----------------------------------------------------------------------

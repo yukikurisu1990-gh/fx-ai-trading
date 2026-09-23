@@ -252,12 +252,11 @@ def test_gbp_three_month_average_touching_the_pool_is_dropped(tmp_path, monkeypa
     monkeypatch.setattr(signals, "DATA_DIR", tmp_path)
     monkeypatch.setattr(signals, "VERIFY_INPUT_HASHES", False)
     gbp, _ = signals._load_slot("unemployment", "GBP")
-    #: 2016-05 は後ろ 1 か月で 2016-06 に、2021-05 / 06 は前 2 か月で 2021-04 に掛かる
+    #: 2016-04 / 05 は後ろ 2 か月で 2016-06 に、2021-05 / 06 は前 2 か月で 2021-04 に掛かる
     assert list(gbp.index.strftime("%Y-%m")) == [
         "2016-01",
         "2016-02",
         "2016-03",
-        "2016-04",
         "2021-07",
         "2021-08",
         "2021-09",
@@ -266,17 +265,25 @@ def test_gbp_three_month_average_touching_the_pool_is_dropped(tmp_path, monkeypa
     assert len(cad) == 10
 
 
-def test_carry_uses_the_same_pair_operator_as_spot() -> None:
-    from scripts.research.top_five import panel
+@pytest.mark.parametrize("pair_set", ["all_28", "pairs_20"])
+def test_carry_equals_the_pair_book_carry(pair_set) -> None:
+    """x · operator(r) == (split_map @ x) · (r_base − r_quote)（spot と同じ pair book）。"""
+    from scripts.research.continuous_portfolio import construction
 
-    index = pd.bdate_range("2020-01-06", periods=2)
-    rates = pd.DataFrame(0.0, index=index, columns=list(signals.CURRENCIES))
-    rates["USD"] = 4.0
-    pairs = ["EUR_USD", "USD_JPY", "GBP_USD"]
-    operated = execute.carry_operator(rates, pairs)
-    diff = pd.DataFrame({"EUR_USD": -4.0, "USD_JPY": 4.0, "GBP_USD": -4.0}, index=index)
-    expected = panel._currency_excess(diff)["currency_excess_return"]
-    pd.testing.assert_frame_equal(operated, expected)
+    currencies = list(signals.CURRENCIES)
+    if pair_set == "all_28":
+        pairs = [f"{a}_{b}" for i, a in enumerate(currencies) for b in currencies[i + 1 :]]
+    else:
+        pairs = list(construction.PAIRS_20)
+    rng = np.random.default_rng(0)
+    index = pd.bdate_range("2020-01-06", periods=1)
+    rates = pd.DataFrame([rng.uniform(0, 6, len(currencies))], index=index, columns=currencies)
+    x = rng.normal(size=len(currencies))
+    x -= x.mean()
+    operated = execute.carry_operator(rates, pairs).iloc[0][currencies].to_numpy()
+    d = np.array([rates.iloc[0][p.split("_")[0]] - rates.iloc[0][p.split("_")[1]] for p in pairs])
+    notional = construction.split_map(tuple(pairs), tuple(currencies)) @ x
+    assert float(x @ operated) == pytest.approx(float(notional @ d), abs=1e-12)
 
 
 def test_nan_effective_observations_is_underpowered() -> None:

@@ -33,7 +33,7 @@ STARTED: Final[Path] = REPO_ROOT / "artifacts/research/mechanism_redesign/develo
 SPANS: Final[tuple[str, ...]] = ("long", "recent")
 
 #: **alpha の前に commit した凍結値。** これと一致しない凍結では走らせない。
-FROZEN_DIGEST: Final[str] = "21f7c0fbe6203dea40b796760b41b61fc3ae424d63cc6ad198b03a053746dcb5"
+FROZEN_DIGEST: Final[str] = "4f89edc99bb4e7bdd001d398333438e2e104d971e0e4f715ccde60ed3a722fe8"
 
 
 def _usd_corr(left: pd.DataFrame, right: pd.DataFrame) -> tuple[float, int]:
