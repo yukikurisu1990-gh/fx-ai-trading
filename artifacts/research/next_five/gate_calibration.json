@@ -1,0 +1,140 @@
+{
+ "advance_gate": {
+  "conditions": [
+   "net_annual_return > 0",
+   "circular-shift permutation p ≤ 0.05（net Sharpe について）"
+  ],
+  "expected_null_pass_rate": 0.05,
+  "id": "PERMUTATION_SEPARATION",
+  "if_not_passed": "STOP。Stage 2 へは進まない。**結果は記録する**",
+  "judged_on": "primary span（PRIMARY_SPAN_RULE で決まる）",
+  "model_if_passed": "forward return を、凍結した signal と control の 2 変数へ回帰する single linear model のみ。interaction も feature 追加も無い。**非線形 ML は禁止**",
+  "multiplicity": "5 本を同じ gate に通すので、**いずれか 1 本が 5% を切る確率は帰無でも約 23%** である。これを報告に必ず添える。**1 本通ったことを『edge が見つかった』とは書かない**",
+  "must_be_measured_at_freeze": true,
+  "null_pass_rate_basis": "**構成上 5%。** permutation は同じ circular-shift 分布から引くので、p 値は帰無のもとで一様になる。**実行時に null 分布の形を報告して確かめる** — ここで nested simulation を回すと 5 本 x 1000 draw x 外側 draw で現実的な時間に収まらないため、その検証は執行段へ回す",
+  "permutation": {
+   "draws": 1000,
+   "method": "CIRCULAR_SHIFT_PRESERVING_THE_SIGNAL_AUTOCORRELATION",
+   "seed": 20260922,
+   "why_not_shuffle": "行を混ぜると turnover が跳ね上がり、『回転が少ないので cost を払わない』という性質まで壊れる。それでは gate の通りやすさを測ったことにならない"
+  }
+ },
+ "authority": "2026-09-22 Human + ChatGPT 裁定 §G",
+ "consequence": "裁定 §G に従い、**帰無通過率の高い gate は hard selection gate として使わない**。3 条件 triple は diagnostic として報告し、進行は permutation gate が決める",
+ "cycle": "NEXT_FIVE_2026_09",
+ "demoted_gate": {
+  "conditions": [
+   "gross_sharpe > 0",
+   "incremental_ic > 0",
+   "net_annual_return > 0"
+  ],
+  "id": "THREE_SIGN_TRIPLE",
+  "measured_null_pass_rate": 0.42,
+  "measured_on": "前 cycle T5 / circular shift 500 回",
+  "status": "DEMOTED_TO_DIAGNOSTIC_NOT_A_SELECTION_GATE",
+  "still_reported": "YES — 診断として残す。ただし『通った』を根拠に進まない",
+  "why": "**通過率が高い gate は、通っても情報にならない。** しかも通過率は track ごとに違い、turnover が低いほど高くなる（net > 0 が cost drag 超えを要求するため）。同じ規則が track によって全く違う厳しさで効いていた"
+ },
+ "freeze_digest": "e647629fcddc68751ca91906c98089cd6efc529a47d84f8c57070a6921f324f3",
+ "gate_strictness_across_tracks": {
+  "max": 0.2867,
+  "min": 0.0933,
+  "reading": "**同じ規則が track によって違う厳しさで効いている**かどうかがここで見える。幅が大きいほど、『gate を通った』という事実の意味が track ごとに違う",
+  "spread": 0.1934
+ },
+ "method": "各 track が宣言した周期と同じ持続性を持つ零情報 signal を引き、凍結した執行層に通し、凍結した gate に当てる",
+ "seed": 20260922,
+ "signal_blind": "NO_CANDIDATE_DATA_USED_ONLY_THE_SEEN_FX_PANEL_AND_DECLARED_PERIODICITY",
+ "tracks": {
+  "U1": {
+   "candidate": "S29",
+   "component_null_pass_rates": {
+    "gross_sharpe_positive": 0.3867,
+    "incremental_ic_positive": 0.5133,
+    "net_annual_return_positive": 0.3133
+   },
+   "declared_frequency": "monthly",
+   "demoted_gate_null_pass_rate": 0.2533,
+   "detection_floor_mde95": 0.466,
+   "draws": 150,
+   "null_net_sharpe_mean": -0.1251,
+   "null_net_sharpe_p95": 0.2726,
+   "null_net_sharpe_sd": 0.2434,
+   "primary_span": "long",
+   "synthetic_hold_days": 21,
+   "track": "U1"
+  },
+  "U2": {
+   "candidate": "S25",
+   "component_null_pass_rates": {
+    "gross_sharpe_positive": 0.5333,
+    "incremental_ic_positive": 0.6133,
+    "net_annual_return_positive": 0.34
+   },
+   "declared_frequency": "weekly_to_monthly",
+   "demoted_gate_null_pass_rate": 0.2867,
+   "detection_floor_mde95": 0.466,
+   "draws": 150,
+   "null_net_sharpe_mean": -0.0789,
+   "null_net_sharpe_p95": 0.3085,
+   "null_net_sharpe_sd": 0.2323,
+   "primary_span": "long",
+   "synthetic_hold_days": 21,
+   "track": "U2"
+  },
+  "U3": {
+   "candidate": "S27",
+   "component_null_pass_rates": {
+    "gross_sharpe_positive": 0.4467,
+    "incremental_ic_positive": 0.4133,
+    "net_annual_return_positive": 0.34
+   },
+   "declared_frequency": "event_paced",
+   "demoted_gate_null_pass_rate": 0.2067,
+   "detection_floor_mde95": 0.8934,
+   "draws": 150,
+   "null_net_sharpe_mean": -0.1684,
+   "null_net_sharpe_p95": 0.5034,
+   "null_net_sharpe_sd": 0.4208,
+   "primary_span": "recent",
+   "synthetic_hold_days": 30,
+   "track": "U3"
+  },
+  "U4": {
+   "candidate": "S31",
+   "component_null_pass_rates": {
+    "gross_sharpe_positive": 0.48,
+    "incremental_ic_positive": 0.4867,
+    "net_annual_return_positive": 0.36
+   },
+   "declared_frequency": "monthly",
+   "demoted_gate_null_pass_rate": 0.2733,
+   "detection_floor_mde95": 0.466,
+   "draws": 150,
+   "null_net_sharpe_mean": -0.1133,
+   "null_net_sharpe_p95": 0.2365,
+   "null_net_sharpe_sd": 0.236,
+   "primary_span": "long",
+   "synthetic_hold_days": 21,
+   "track": "U4"
+  },
+  "U5": {
+   "candidate": "S07",
+   "component_null_pass_rates": {
+    "gross_sharpe_positive": 0.54,
+    "incremental_ic_positive": 0.42,
+    "net_annual_return_positive": 0.1067
+   },
+   "declared_frequency": "daily",
+   "demoted_gate_null_pass_rate": 0.0933,
+   "detection_floor_mde95": 0.8934,
+   "draws": 150,
+   "null_net_sharpe_mean": -0.5012,
+   "null_net_sharpe_p95": 0.2263,
+   "null_net_sharpe_sd": 0.4358,
+   "primary_span": "recent",
+   "synthetic_hold_days": 5,
+   "track": "U5"
+  }
+ }
+}

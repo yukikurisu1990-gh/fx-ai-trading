@@ -27,6 +27,7 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+import urllib.error
 from pathlib import Path
 from typing import Any, Final
 
@@ -117,11 +118,21 @@ OK: Final[str] = "OK"
 
 
 def classify_failure(error: BaseException) -> str:
-    """例外を上の語彙に落とす。**判定に迷うものは local 側へ倒す** — 相手の不在を主張しない。"""
+    """例外を上の語彙に落とす。**判定に迷うものは local 側へ倒す** — 相手の不在を主張しない。
+
+    ただし **provider が status を返したのなら、それは迷いではない。**
+    初版はこの分岐を持っておらず、404 も 403 も `LOCAL_ENVIRONMENT` に落ちていた。
+    つまり `HTTP_STATUS` は**どの経路からも到達できない死んだ分類**だった。
+    その結果「相手が『そこには無い』と答えた」ことまで自分の環境のせいにしてしまい、
+    保守側へ倒したつもりが**事実を 1 つ消していた**。
+    """
     name = type(error).__name__
     text = str(error)
     if isinstance(error, AcquisitionRefusedError):
         return REFUSED_BY_GUARD
+    if isinstance(error, urllib.error.HTTPError):
+        #: HTTPError は URLError の subclass なので、**URLError より先に見る**。
+        return HTTP_STATUS
     if "CERTIFICATE_VERIFY_FAILED" in text or "SSL" in name or "SSL" in text:
         return LOCAL_ENVIRONMENT
     if "getaddrinfo" in text or "Name or service not known" in text or "NameError" in name:

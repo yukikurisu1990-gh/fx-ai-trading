@@ -1,0 +1,243 @@
+{
+ "authority": "2026-09-22 Human + ChatGPT 裁定 §K（Stage 0）",
+ "blocked_tracks": [
+  "S07",
+  "S25",
+  "S29",
+  "S31"
+ ],
+ "cycle": "NEXT_FIVE_2026_09",
+ "finished_utc": "2026-09-22T11:55:36.733084+00:00",
+ "note": "**到達しなかったものを『データが無い』と書かない。** TLS / timeout / 名前解決の失敗はこちら側の環境の話であり、provider の可用性ではない。前 cycle で S07 をこの取り違えで退場させかけた",
+ "results": {
+  "S07": {
+   "minimum_for_viability": 1,
+   "reachable": [],
+   "reachable_count": 0,
+   "series": {
+    "ted_or_sofr": {
+     "error": "TimeoutError: The read operation timed out",
+     "http_status": null,
+     "outcome": "TIMEOUT_NOT_PROVIDER_UNAVAILABLE",
+     "reading": "**これは『provider にデータが無い』ではない。**",
+     "retrieved_utc": "2026-09-22T11:53:26.673198+00:00",
+     "url": "https://fred.stlouisfed.org/graph/fredgraph.csv?id=SOFR"
+    },
+    "us_hy_oas": {
+     "error": "TimeoutError: The read operation timed out",
+     "http_status": null,
+     "outcome": "TIMEOUT_NOT_PROVIDER_UNAVAILABLE",
+     "reading": "**これは『provider にデータが無い』ではない。**",
+     "retrieved_utc": "2026-09-22T11:49:57.769343+00:00",
+     "url": "https://fred.stlouisfed.org/graph/fredgraph.csv?id=BAMLH0A0HYM2"
+    },
+    "us_ig_oas": {
+     "error": "TimeoutError: The read operation timed out",
+     "http_status": null,
+     "outcome": "TIMEOUT_NOT_PROVIDER_UNAVAILABLE",
+     "reading": "**これは『provider にデータが無い』ではない。**",
+     "retrieved_utc": "2026-09-22T11:51:21.668279+00:00",
+     "url": "https://fred.stlouisfed.org/graph/fredgraph.csv?id=BAMLC0A0CM"
+    }
+   },
+   "viable": false,
+   "what": "信用 spread / funding stress（日次）"
+  },
+  "S25": {
+   "minimum_for_viability": 3,
+   "reachable": [],
+   "reachable_count": 0,
+   "series": {
+    "boj_total_assets": {
+     "error": "TimeoutError: The read operation timed out",
+     "http_status": null,
+     "outcome": "TIMEOUT_NOT_PROVIDER_UNAVAILABLE",
+     "reading": "**これは『provider にデータが無い』ではない。**",
+     "retrieved_utc": "2026-09-22T11:38:49.686727+00:00",
+     "url": "https://fred.stlouisfed.org/graph/fredgraph.csv?id=JPNASSETS"
+    },
+    "ecb_total_assets": {
+     "error": "TimeoutError: The read operation timed out",
+     "http_status": null,
+     "outcome": "TIMEOUT_NOT_PROVIDER_UNAVAILABLE",
+     "reading": "**これは『provider にデータが無い』ではない。**",
+     "retrieved_utc": "2026-09-22T11:36:44.778457+00:00",
+     "url": "https://fred.stlouisfed.org/graph/fredgraph.csv?id=ECBASSETSW"
+    },
+    "fed_total_assets": {
+     "error": "TimeoutError: The read operation timed out",
+     "http_status": null,
+     "outcome": "TIMEOUT_NOT_PROVIDER_UNAVAILABLE",
+     "reading": "**これは『provider にデータが無い』ではない。**",
+     "retrieved_utc": "2026-09-22T11:34:39.690374+00:00",
+     "url": "https://fred.stlouisfed.org/graph/fredgraph.csv?id=WALCL"
+    }
+   },
+   "viable": false,
+   "what": "中銀 balance sheet（週次〜月次）"
+  },
+  "S27": {
+   "extra_risk": "**時刻付きの過去分が機械取得できるか**が本質で、index が取れるだけでは足りない",
+   "minimum_for_viability": 2,
+   "reachable": [
+    "ecb_statements_index",
+    "fed_statements_index"
+   ],
+   "reachable_count": 2,
+   "series": {
+    "boe_statements_index": {
+     "error": "HTTPError: HTTP Error 404: Not Found",
+     "http_status": 404,
+     "outcome": "LOCAL_ENVIRONMENT_FAILURE_NOT_PROVIDER_UNAVAILABLE",
+     "reading": "**これは『provider にデータが無い』ではない。**",
+     "retrieved_utc": "2026-09-22T11:55:35.328874+00:00",
+     "url": "https://www.bankofengland.co.uk/news/statements"
+    },
+    "ecb_statements_index": {
+     "bytes": 100896,
+     "content_hash": "9ca201f999bedea524c3d3e5a3ad56a16f6f9c6aa75367025b4bf6abfe8756a2",
+     "http_status": 200,
+     "outcome": "OK",
+     "retrieved_utc": "2026-09-22T11:55:32.347759+00:00",
+     "url": "https://www.ecb.europa.eu/press/pressconf/html/index.en.html"
+    },
+    "fed_statements_index": {
+     "bytes": 996537,
+     "content_hash": "52499def80b6b5d33aef259a317b5ed7cae29546a5db9b17cdb07c15b2e8796a",
+     "http_status": 200,
+     "outcome": "OK",
+     "retrieved_utc": "2026-09-22T11:55:31.674883+00:00",
+     "url": "https://www.federalreserve.gov/json/ne-press.json"
+    }
+   },
+   "viable": true,
+   "what": "中銀 communication テキスト archive"
+  },
+  "S29": {
+   "minimum_for_viability": 5,
+   "reachable": [],
+   "reachable_count": 0,
+   "series": {
+    "au_trade_balance": {
+     "error": "TimeoutError: The read operation timed out",
+     "http_status": null,
+     "outcome": "TIMEOUT_NOT_PROVIDER_UNAVAILABLE",
+     "reading": "**これは『provider にデータが無い』ではない。**",
+     "retrieved_utc": "2026-09-22T11:27:00.716217+00:00",
+     "url": "https://fred.stlouisfed.org/graph/fredgraph.csv?id=XTNTVA01AUM664S"
+    },
+    "ca_trade_balance": {
+     "error": "TimeoutError: The read operation timed out",
+     "http_status": null,
+     "outcome": "TIMEOUT_NOT_PROVIDER_UNAVAILABLE",
+     "reading": "**これは『provider にデータが無い』ではない。**",
+     "retrieved_utc": "2026-09-22T11:24:55.728118+00:00",
+     "url": "https://fred.stlouisfed.org/graph/fredgraph.csv?id=XTNTVA01CAM664S"
+    },
+    "ch_trade_balance": {
+     "error": "TimeoutError: The read operation timed out",
+     "http_status": null,
+     "outcome": "TIMEOUT_NOT_PROVIDER_UNAVAILABLE",
+     "reading": "**これは『provider にデータが無い』ではない。**",
+     "retrieved_utc": "2026-09-22T11:31:10.689202+00:00",
+     "url": "https://fred.stlouisfed.org/graph/fredgraph.csv?id=XTNTVA01CHM664S"
+    },
+    "ez_trade_balance": {
+     "error": "TimeoutError: The read operation timed out",
+     "http_status": null,
+     "outcome": "TIMEOUT_NOT_PROVIDER_UNAVAILABLE",
+     "reading": "**これは『provider にデータが無い』ではない。**",
+     "retrieved_utc": "2026-09-22T11:32:34.707074+00:00",
+     "url": "https://fred.stlouisfed.org/graph/fredgraph.csv?id=XTNTVA01EZM664S"
+    },
+    "gb_trade_balance": {
+     "error": "TimeoutError: The read operation timed out",
+     "http_status": null,
+     "outcome": "TIMEOUT_NOT_PROVIDER_UNAVAILABLE",
+     "reading": "**これは『provider にデータが無い』ではない。**",
+     "retrieved_utc": "2026-09-22T11:22:50.740733+00:00",
+     "url": "https://fred.stlouisfed.org/graph/fredgraph.csv?id=XTNTVA01GBM664S"
+    },
+    "jp_trade_balance": {
+     "error": "TimeoutError: The read operation timed out",
+     "http_status": null,
+     "outcome": "TIMEOUT_NOT_PROVIDER_UNAVAILABLE",
+     "reading": "**これは『provider にデータが無い』ではない。**",
+     "retrieved_utc": "2026-09-22T11:21:24.202992+00:00",
+     "url": "https://fred.stlouisfed.org/graph/fredgraph.csv?id=XTNTVA01JPM664S"
+    },
+    "nz_trade_balance": {
+     "error": "TimeoutError: The read operation timed out",
+     "http_status": null,
+     "outcome": "TIMEOUT_NOT_PROVIDER_UNAVAILABLE",
+     "reading": "**これは『provider にデータが無い』ではない。**",
+     "retrieved_utc": "2026-09-22T11:29:05.679429+00:00",
+     "url": "https://fred.stlouisfed.org/graph/fredgraph.csv?id=XTNTVA01NZM664S"
+    },
+    "us_trade_balance": {
+     "error": "TimeoutError: The read operation timed out",
+     "http_status": null,
+     "outcome": "TIMEOUT_NOT_PROVIDER_UNAVAILABLE",
+     "reading": "**これは『provider にデータが無い』ではない。**",
+     "retrieved_utc": "2026-09-22T11:19:19.359191+00:00",
+     "url": "https://fred.stlouisfed.org/graph/fredgraph.csv?id=BOPGSTB"
+    }
+   },
+   "viable": false,
+   "what": "実体貿易 flow（月次 貿易/経常収支）"
+  },
+  "S31": {
+   "minimum_for_viability": 4,
+   "reachable": [],
+   "reachable_count": 0,
+   "series": {
+    "au_reserves": {
+     "error": "TimeoutError: The read operation timed out",
+     "http_status": null,
+     "outcome": "TIMEOUT_NOT_PROVIDER_UNAVAILABLE",
+     "reading": "**これは『provider にデータが無い』ではない。**",
+     "retrieved_utc": "2026-09-22T11:47:52.663493+00:00",
+     "url": "https://fred.stlouisfed.org/graph/fredgraph.csv?id=TRESEGAUM052N"
+    },
+    "ca_reserves": {
+     "error": "TimeoutError: The read operation timed out",
+     "http_status": null,
+     "outcome": "TIMEOUT_NOT_PROVIDER_UNAVAILABLE",
+     "reading": "**これは『provider にデータが無い』ではない。**",
+     "retrieved_utc": "2026-09-22T11:46:28.659983+00:00",
+     "url": "https://fred.stlouisfed.org/graph/fredgraph.csv?id=TRESEGCAM052N"
+    },
+    "ch_reserves": {
+     "error": "TimeoutError: The read operation timed out",
+     "http_status": null,
+     "outcome": "TIMEOUT_NOT_PROVIDER_UNAVAILABLE",
+     "reading": "**これは『provider にデータが無い』ではない。**",
+     "retrieved_utc": "2026-09-22T11:42:59.666827+00:00",
+     "url": "https://fred.stlouisfed.org/graph/fredgraph.csv?id=TRESEGCHM052N"
+    },
+    "gb_reserves": {
+     "error": "TimeoutError: The read operation timed out",
+     "http_status": null,
+     "outcome": "TIMEOUT_NOT_PROVIDER_UNAVAILABLE",
+     "reading": "**これは『provider にデータが無い』ではない。**",
+     "retrieved_utc": "2026-09-22T11:44:23.711918+00:00",
+     "url": "https://fred.stlouisfed.org/graph/fredgraph.csv?id=TRESEGGBM052N"
+    },
+    "jp_reserves": {
+     "error": "TimeoutError: The read operation timed out",
+     "http_status": null,
+     "outcome": "TIMEOUT_NOT_PROVIDER_UNAVAILABLE",
+     "reading": "**これは『provider にデータが無い』ではない。**",
+     "retrieved_utc": "2026-09-22T11:40:54.680406+00:00",
+     "url": "https://fred.stlouisfed.org/graph/fredgraph.csv?id=TRESEGJPM052N"
+    }
+   },
+   "viable": false,
+   "what": "公的外貨準備（月次）"
+  }
+ },
+ "stage": "STAGE_0_AVAILABILITY_ONLY_NO_SIGNAL_CONSTRUCTED",
+ "viable_tracks": [
+  "S27"
+ ]
+}
