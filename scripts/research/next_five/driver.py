@@ -14,7 +14,9 @@ from __future__ import annotations
 
 import argparse
 import json
+import subprocess
 import sys
+import time
 import warnings
 from pathlib import Path
 from typing import Any, Final
@@ -23,7 +25,7 @@ import numpy as np
 import pandas as pd
 
 from scripts.research.acquisition_safety import write_provenance
-from scripts.research.next_five import execute, prereg, signals
+from scripts.research.next_five import corrections, execute, prereg, series_map, signals
 from scripts.research.top_five import panel
 
 REPO_ROOT: Final[Path] = Path(__file__).resolve().parents[3]
@@ -89,7 +91,23 @@ def _rename_gate(
     }
 
 
-def run(*, permutation_draws: int | None = None) -> dict[str, Any]:
+def _code_identity() -> dict[str, Any]:
+    """**どのコードで走ったか**（Role 2 R-4）。dirty tree から走らせたら、それも記録する。"""
+
+    def _git(*args: str) -> str:
+        return subprocess.run(
+            ["git", *args], cwd=REPO_ROOT, capture_output=True, text=True, check=False
+        ).stdout.strip()
+
+    return {
+        "head": _git("rev-parse", "HEAD"),
+        "dirty_paths": _git("status", "--porcelain", "--", "scripts", "tests").splitlines(),
+        "started_utc": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+        "argv": list(sys.argv),
+    }
+
+
+def run(*, permutation_draws: int | None = None, workers: int = 1) -> dict[str, Any]:
     built = panel.build()
     results: dict[str, Any] = {}
     pnl: dict[str, pd.Series] = {}
@@ -98,7 +116,16 @@ def run(*, permutation_draws: int | None = None) -> dict[str, Any]:
         for span in SPANS:
             key = f"{track}_{span}"
             try:
-                out = execute.run_track(track, span, built, permutation_draws=permutation_draws)
+                started = time.monotonic()
+                print(f"[{time.strftime('%H:%M:%S')}] {key} 開始", file=sys.stderr, flush=True)
+                out = execute.run_track(
+                    track, span, built, permutation_draws=permutation_draws, workers=workers
+                )
+                print(
+                    f"[{time.strftime('%H:%M:%S')}] {key} 終了 {time.monotonic() - started:.0f}s",
+                    file=sys.stderr,
+                    flush=True,
+                )
             except Exception as error:  # noqa: BLE001 - 失敗も記録する
                 results[key] = {
                     "track": track,
@@ -156,6 +183,16 @@ def run(*, permutation_draws: int | None = None) -> dict[str, Any]:
     return {
         "cycle": prereg.CYCLE,
         "freeze_digest": prereg.freeze_digest(),
+        "corrections_digest": corrections.corrections_digest(),
+        "post_alpha_corrections": corrections.POST_ALPHA_CORRECTIONS,
+        "invalidated_records": corrections.INVALIDATED_RECORDS,
+        "non_result_changes": corrections.NON_RESULT_CHANGES,
+        "disclosures": corrections.DISCLOSURES,
+        "revision_caveats": {
+            track: sorted({row["revision"] for row in series_map.SERIES_MAP[track].values()})
+            for track in series_map.SERIES_MAP
+        },
+        "code_identity": _code_identity(),
         "authority": prereg.AUTHORITY,
         "panel": built["provenance"],
         "results": results,
@@ -172,12 +209,19 @@ def main() -> int:
     parser = argparse.ArgumentParser(description="次の 5 本を凍結順に走らせる")
     parser.add_argument("--draws", type=int, default=None)
     parser.add_argument("--overwrite", action="store_true")
+    parser.add_argument("--workers", type=int, default=1)
+    parser.add_argument(
+        "--out",
+        default=None,
+        help="出力先。**コミット済みの前回記録を上書きしないために** 別ファイルへ書ける",
+    )
     args = parser.parse_args()
 
-    payload = run(permutation_draws=args.draws)
-    RECORD.parent.mkdir(parents=True, exist_ok=True)
+    payload = run(permutation_draws=args.draws, workers=args.workers)
+    record = Path(args.out) if args.out else RECORD
+    record.parent.mkdir(parents=True, exist_ok=True)
     written = write_provenance(
-        RECORD,
+        record,
         payload,
         overwrite=args.overwrite,
         env_name=OVERWRITE_ENV if args.overwrite else None,
@@ -187,7 +231,7 @@ def main() -> int:
             {k: v.get("verdict", "RAN") for k, v in payload["results"].items()}, ensure_ascii=False
         )
     )
-    print(f"written: {RECORD} sha256={written}", file=sys.stderr)
+    print(f"written: {record} sha256={written}", file=sys.stderr)
     return 0
 
 
