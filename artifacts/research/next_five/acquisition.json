@@ -1,0 +1,1741 @@
+{
+ "authority": "2026-09-22 第 2 裁定 §2–§4",
+ "cycle": "NEXT_FIVE_2026_09",
+ "finished_utc": "2026-09-23T15:06:29.510585+00:00",
+ "freeze_digest": "f939b091c188c01e74b9f1eb55df49c33a174a7083c3141407f7b5bfaaf48992",
+ "not_mapped": {
+  "U1": {},
+  "U2": {
+   "AUD": "RBA の統計表が HTTP 403（provider が拒否）",
+   "GBP": "BoE の総資産系列を provider metadata から特定できなかった（IADB はカタログ API を持たない）。推測した code は使わない",
+   "NZD": "RBNZ の統計表が HTTP 403（前 cycle で確認）"
+  },
+  "U4": {
+   "CHF": "ALFRED に TRESEGCHM052N が無い（404）。SNB の balance sheet には外貨投資 / IMF reserve position / SDR が別項目で載っているが、**それらを足して『準備』を自作するのは semantic substitution にあたる**ので使わない。U4 が事前に想定していた能動的な準備運用国の 1 つを失う",
+   "NZD": "ALFRED に TRESEGNZM052N が無い（404）"
+  }
+ },
+ "protected_span_handling": "期間 parameter を受け付ける endpoint には seen window の 2 区間だけを request した。受け付けない endpoint は parse 直後・保存前に切り落とし、保護 pool / forward 側の行が残れば例外で止まる",
+ "scope": "public / free source のみ。paid / authenticated には触れていない",
+ "series": {
+  "U1/AUD": {
+   "content_hash": "6bbf1ca38e95aec6112d6aea8a7fe8abac924f99221710dbf712749d7b0985cd",
+   "coverage_first": "1990-01-01",
+   "coverage_last": "2025-12-01",
+   "currency": "AUD",
+   "file": "trade_aud",
+   "frequency": "Monthly（観測間隔から導出）",
+   "metadata_url": "https://alfred.stlouisfed.org/series?seid=XTNTVA01AUM664S",
+   "official_title": "International Merchandise Trade Statistics: Trade Balance: Commodities for Australia",
+   "outcome": "OK",
+   "provider": "Federal Reserve Bank of St. Louis (ALFRED) / OECD MEI",
+   "publication_lag": "{'kind': 'month_end_offset', 'months': 2}",
+   "request_windows": [
+    [
+     "1990-01-01",
+     "2016-06-01"
+    ],
+    [
+     "2021-04-27",
+     "2025-12-26"
+    ]
+   ],
+   "retrieval_timestamp_utc": "2026-09-23T15:01:45.997432+00:00",
+   "revision_behavior": "CURRENT_VINTAGE_ONLY_REVISION_CAVEAT",
+   "rows_long_span": 318,
+   "rows_recent_span": 56,
+   "rows_saved": 374,
+   "seasonal_adjustment": "Seasonally Adjusted",
+   "semantic_check": {
+    "evidence": "International Merchandise Trade Statistics: Trade Balance: Commodities for Australia ",
+    "matched": [
+     [
+      "trade balance"
+     ]
+    ],
+    "variable": "GOODS_TRADE_BALANCE"
+   },
+   "series_id": "XTNTVA01AUM664S",
+   "source_url": "https://alfred.stlouisfed.org/graph/alfredgraph.csv?id=XTNTVA01AUM664S&cosd=1990-01-01&coed=2016-06-01 | https://alfred.stlouisfed.org/graph/alfredgraph.csv?id=XTNTVA01AUM664S&cosd=2021-04-27&coed=2025-12-26",
+   "tier": 2,
+   "track": "U1",
+   "units": "Australian Dollar , Seasonally Adjusted",
+   "variable": "GOODS_TRADE_BALANCE",
+   "why_this_route": "OECD MEI の『International Merchandise Trade Statistics: Trade Balance: Commodities』を ALFRED（St. Louis Fed の公式配信）から取る。各国統計局を直接たどると通関 / BoP の定義が国ごとに混ざるので、**8 通貨を 1 つの定義で揃えられる経路**を選んだ。fred.stlouisfed.org は本環境からtimeout するが、同じ St. Louis Fed の alfred.stlouisfed.org は届く"
+  },
+  "U1/CAD": {
+   "content_hash": "fd034b962d8cdce22fc80a8b88c306bcf54aca089c556216b26e953a3cea9184",
+   "coverage_first": "1990-01-01",
+   "coverage_last": "2025-12-01",
+   "currency": "CAD",
+   "file": "trade_cad",
+   "frequency": "Monthly（観測間隔から導出）",
+   "metadata_url": "https://alfred.stlouisfed.org/series?seid=XTNTVA01CAM664S",
+   "official_title": "International Merchandise Trade Statistics: Trade Balance: Commodities for Canada",
+   "outcome": "OK",
+   "provider": "Federal Reserve Bank of St. Louis (ALFRED) / OECD MEI",
+   "publication_lag": "{'kind': 'month_end_offset', 'months': 2}",
+   "request_windows": [
+    [
+     "1990-01-01",
+     "2016-06-01"
+    ],
+    [
+     "2021-04-27",
+     "2025-12-26"
+    ]
+   ],
+   "retrieval_timestamp_utc": "2026-09-23T15:01:45.599994+00:00",
+   "revision_behavior": "CURRENT_VINTAGE_ONLY_REVISION_CAVEAT",
+   "rows_long_span": 318,
+   "rows_recent_span": 56,
+   "rows_saved": 374,
+   "seasonal_adjustment": "Seasonally Adjusted",
+   "semantic_check": {
+    "evidence": "International Merchandise Trade Statistics: Trade Balance: Commodities for Canada ",
+    "matched": [
+     [
+      "trade balance"
+     ]
+    ],
+    "variable": "GOODS_TRADE_BALANCE"
+   },
+   "series_id": "XTNTVA01CAM664S",
+   "source_url": "https://alfred.stlouisfed.org/graph/alfredgraph.csv?id=XTNTVA01CAM664S&cosd=1990-01-01&coed=2016-06-01 | https://alfred.stlouisfed.org/graph/alfredgraph.csv?id=XTNTVA01CAM664S&cosd=2021-04-27&coed=2025-12-26",
+   "tier": 2,
+   "track": "U1",
+   "units": "Canadian Dollar , Seasonally Adjusted",
+   "variable": "GOODS_TRADE_BALANCE",
+   "why_this_route": "OECD MEI の『International Merchandise Trade Statistics: Trade Balance: Commodities』を ALFRED（St. Louis Fed の公式配信）から取る。各国統計局を直接たどると通関 / BoP の定義が国ごとに混ざるので、**8 通貨を 1 つの定義で揃えられる経路**を選んだ。fred.stlouisfed.org は本環境からtimeout するが、同じ St. Louis Fed の alfred.stlouisfed.org は届く"
+  },
+  "U1/CHF": {
+   "content_hash": "c6b93b8ba1e2f6a83c121e27d0ac21992664ff335f811fb7cb0ccfabcc8d63ff",
+   "coverage_first": "1990-01-01",
+   "coverage_last": "2025-12-01",
+   "currency": "CHF",
+   "file": "trade_chf",
+   "frequency": "Monthly（観測間隔から導出）",
+   "metadata_url": "https://alfred.stlouisfed.org/series?seid=XTNTVA01CHM664S",
+   "official_title": "International Merchandise Trade Statistics: Trade Balance: Commodities for Switzerland",
+   "outcome": "OK",
+   "provider": "Federal Reserve Bank of St. Louis (ALFRED) / OECD MEI",
+   "publication_lag": "{'kind': 'month_end_offset', 'months': 2}",
+   "request_windows": [
+    [
+     "1990-01-01",
+     "2016-06-01"
+    ],
+    [
+     "2021-04-27",
+     "2025-12-26"
+    ]
+   ],
+   "retrieval_timestamp_utc": "2026-09-23T15:01:46.692941+00:00",
+   "revision_behavior": "CURRENT_VINTAGE_ONLY_REVISION_CAVEAT",
+   "rows_long_span": 318,
+   "rows_recent_span": 56,
+   "rows_saved": 374,
+   "seasonal_adjustment": "Seasonally Adjusted",
+   "semantic_check": {
+    "evidence": "International Merchandise Trade Statistics: Trade Balance: Commodities for Switzerland ",
+    "matched": [
+     [
+      "trade balance"
+     ]
+    ],
+    "variable": "GOODS_TRADE_BALANCE"
+   },
+   "series_id": "XTNTVA01CHM664S",
+   "source_url": "https://alfred.stlouisfed.org/graph/alfredgraph.csv?id=XTNTVA01CHM664S&cosd=1990-01-01&coed=2016-06-01 | https://alfred.stlouisfed.org/graph/alfredgraph.csv?id=XTNTVA01CHM664S&cosd=2021-04-27&coed=2025-12-26",
+   "tier": 2,
+   "track": "U1",
+   "units": "Swiss Franc , Seasonally Adjusted",
+   "variable": "GOODS_TRADE_BALANCE",
+   "why_this_route": "OECD MEI の『International Merchandise Trade Statistics: Trade Balance: Commodities』を ALFRED（St. Louis Fed の公式配信）から取る。各国統計局を直接たどると通関 / BoP の定義が国ごとに混ざるので、**8 通貨を 1 つの定義で揃えられる経路**を選んだ。fred.stlouisfed.org は本環境からtimeout するが、同じ St. Louis Fed の alfred.stlouisfed.org は届く"
+  },
+  "U1/EUR": {
+   "content_hash": "8dab92fc6dba34acf46284490b5cfd6324318834ae903f7434f86c8772b6e93c",
+   "coverage_first": "1990-01-01",
+   "coverage_last": "2022-12-01",
+   "currency": "EUR",
+   "file": "trade_eur",
+   "frequency": "Monthly（観測間隔から導出）",
+   "metadata_url": "https://alfred.stlouisfed.org/series?seid=XTNTVA01EZM664S",
+   "official_title": "International Trade: Net Trade: Value (Goods): Total for the Euro Area (19 Countries)",
+   "outcome": "OK",
+   "provider": "Federal Reserve Bank of St. Louis (ALFRED) / OECD MEI",
+   "publication_lag": "{'kind': 'month_end_offset', 'months': 2}",
+   "request_windows": [
+    [
+     "1990-01-01",
+     "2016-06-01"
+    ],
+    [
+     "2021-04-27",
+     "2025-12-26"
+    ]
+   ],
+   "retrieval_timestamp_utc": "2026-09-23T15:01:47.050259+00:00",
+   "revision_behavior": "CURRENT_VINTAGE_ONLY_REVISION_CAVEAT",
+   "rows_long_span": 318,
+   "rows_recent_span": 20,
+   "rows_saved": 338,
+   "seasonal_adjustment": "Seasonally Adjusted",
+   "semantic_check": {
+    "evidence": "International Trade: Net Trade: Value (Goods): Total for the Euro Area (19 Countries) ",
+    "matched": [
+     [
+      "net trade"
+     ]
+    ],
+    "variable": "GOODS_TRADE_BALANCE"
+   },
+   "series_id": "XTNTVA01EZM664S",
+   "source_url": "https://alfred.stlouisfed.org/graph/alfredgraph.csv?id=XTNTVA01EZM664S&cosd=1990-01-01&coed=2016-06-01 | https://alfred.stlouisfed.org/graph/alfredgraph.csv?id=XTNTVA01EZM664S&cosd=2021-04-27&coed=2025-12-26",
+   "tier": 2,
+   "track": "U1",
+   "units": "Euro, monthly level , Seasonally Adjusted",
+   "variable": "GOODS_TRADE_BALANCE",
+   "why_this_route": "OECD MEI の『International Merchandise Trade Statistics: Trade Balance: Commodities』を ALFRED（St. Louis Fed の公式配信）から取る。各国統計局を直接たどると通関 / BoP の定義が国ごとに混ざるので、**8 通貨を 1 つの定義で揃えられる経路**を選んだ。fred.stlouisfed.org は本環境からtimeout するが、同じ St. Louis Fed の alfred.stlouisfed.org は届く"
+  },
+  "U1/GBP": {
+   "content_hash": "375872c0b98561cac6f198c17f0a4d47aa09701daa157b5848c3684b4f50ee77",
+   "coverage_first": "1990-01-01",
+   "coverage_last": "2025-12-01",
+   "currency": "GBP",
+   "file": "trade_gbp",
+   "frequency": "Monthly（観測間隔から導出）",
+   "metadata_url": "https://alfred.stlouisfed.org/series?seid=XTNTVA01GBM664S",
+   "official_title": "International Merchandise Trade Statistics: Trade Balance: Commodities for United Kingdom",
+   "outcome": "OK",
+   "provider": "Federal Reserve Bank of St. Louis (ALFRED) / OECD MEI",
+   "publication_lag": "{'kind': 'month_end_offset', 'months': 2}",
+   "request_windows": [
+    [
+     "1990-01-01",
+     "2016-06-01"
+    ],
+    [
+     "2021-04-27",
+     "2025-12-26"
+    ]
+   ],
+   "retrieval_timestamp_utc": "2026-09-23T15:01:45.252366+00:00",
+   "revision_behavior": "CURRENT_VINTAGE_ONLY_REVISION_CAVEAT",
+   "rows_long_span": 318,
+   "rows_recent_span": 56,
+   "rows_saved": 374,
+   "seasonal_adjustment": "Seasonally Adjusted",
+   "semantic_check": {
+    "evidence": "International Merchandise Trade Statistics: Trade Balance: Commodities for United Kingdom ",
+    "matched": [
+     [
+      "trade balance"
+     ]
+    ],
+    "variable": "GOODS_TRADE_BALANCE"
+   },
+   "series_id": "XTNTVA01GBM664S",
+   "source_url": "https://alfred.stlouisfed.org/graph/alfredgraph.csv?id=XTNTVA01GBM664S&cosd=1990-01-01&coed=2016-06-01 | https://alfred.stlouisfed.org/graph/alfredgraph.csv?id=XTNTVA01GBM664S&cosd=2021-04-27&coed=2025-12-26",
+   "tier": 2,
+   "track": "U1",
+   "units": "Pound Sterling , Seasonally Adjusted",
+   "variable": "GOODS_TRADE_BALANCE",
+   "why_this_route": "OECD MEI の『International Merchandise Trade Statistics: Trade Balance: Commodities』を ALFRED（St. Louis Fed の公式配信）から取る。各国統計局を直接たどると通関 / BoP の定義が国ごとに混ざるので、**8 通貨を 1 つの定義で揃えられる経路**を選んだ。fred.stlouisfed.org は本環境からtimeout するが、同じ St. Louis Fed の alfred.stlouisfed.org は届く"
+  },
+  "U1/JPY": {
+   "content_hash": "4437ca3f1f34f1f07073e1dfa67da80cdef5f2c3f54e13f957cdf24a09ff66b2",
+   "coverage_first": "1990-01-01",
+   "coverage_last": "2025-12-01",
+   "currency": "JPY",
+   "file": "trade_jpy",
+   "frequency": "Monthly（観測間隔から導出）",
+   "metadata_url": "https://alfred.stlouisfed.org/series?seid=XTNTVA01JPM664S",
+   "official_title": "International Merchandise Trade Statistics: Trade Balance: Commodities for Japan",
+   "outcome": "OK",
+   "provider": "Federal Reserve Bank of St. Louis (ALFRED) / OECD MEI",
+   "publication_lag": "{'kind': 'month_end_offset', 'months': 2}",
+   "request_windows": [
+    [
+     "1990-01-01",
+     "2016-06-01"
+    ],
+    [
+     "2021-04-27",
+     "2025-12-26"
+    ]
+   ],
+   "retrieval_timestamp_utc": "2026-09-23T15:01:44.867411+00:00",
+   "revision_behavior": "CURRENT_VINTAGE_ONLY_REVISION_CAVEAT",
+   "rows_long_span": 318,
+   "rows_recent_span": 56,
+   "rows_saved": 374,
+   "seasonal_adjustment": "Seasonally Adjusted",
+   "semantic_check": {
+    "evidence": "International Merchandise Trade Statistics: Trade Balance: Commodities for Japan ",
+    "matched": [
+     [
+      "trade balance"
+     ]
+    ],
+    "variable": "GOODS_TRADE_BALANCE"
+   },
+   "series_id": "XTNTVA01JPM664S",
+   "source_url": "https://alfred.stlouisfed.org/graph/alfredgraph.csv?id=XTNTVA01JPM664S&cosd=1990-01-01&coed=2016-06-01 | https://alfred.stlouisfed.org/graph/alfredgraph.csv?id=XTNTVA01JPM664S&cosd=2021-04-27&coed=2025-12-26",
+   "tier": 2,
+   "track": "U1",
+   "units": "Yen , Seasonally Adjusted",
+   "variable": "GOODS_TRADE_BALANCE",
+   "why_this_route": "OECD MEI の『International Merchandise Trade Statistics: Trade Balance: Commodities』を ALFRED（St. Louis Fed の公式配信）から取る。各国統計局を直接たどると通関 / BoP の定義が国ごとに混ざるので、**8 通貨を 1 つの定義で揃えられる経路**を選んだ。fred.stlouisfed.org は本環境からtimeout するが、同じ St. Louis Fed の alfred.stlouisfed.org は届く"
+  },
+  "U1/NZD": {
+   "content_hash": "e7d2f0d21ea0fcc11a361acd476c7459898780387929e6b16377c6921daa4f72",
+   "coverage_first": "1990-01-01",
+   "coverage_last": "2025-12-01",
+   "currency": "NZD",
+   "file": "trade_nzd",
+   "frequency": "Monthly（観測間隔から導出）",
+   "metadata_url": "https://alfred.stlouisfed.org/series?seid=XTNTVA01NZM664S",
+   "official_title": "International Merchandise Trade Statistics: Trade Balance: Commodities for New Zealand",
+   "outcome": "OK",
+   "provider": "Federal Reserve Bank of St. Louis (ALFRED) / OECD MEI",
+   "publication_lag": "{'kind': 'month_end_offset', 'months': 2}",
+   "request_windows": [
+    [
+     "1990-01-01",
+     "2016-06-01"
+    ],
+    [
+     "2021-04-27",
+     "2025-12-26"
+    ]
+   ],
+   "retrieval_timestamp_utc": "2026-09-23T15:01:46.367293+00:00",
+   "revision_behavior": "CURRENT_VINTAGE_ONLY_REVISION_CAVEAT",
+   "rows_long_span": 318,
+   "rows_recent_span": 56,
+   "rows_saved": 374,
+   "seasonal_adjustment": "Seasonally Adjusted",
+   "semantic_check": {
+    "evidence": "International Merchandise Trade Statistics: Trade Balance: Commodities for New Zealand ",
+    "matched": [
+     [
+      "trade balance"
+     ]
+    ],
+    "variable": "GOODS_TRADE_BALANCE"
+   },
+   "series_id": "XTNTVA01NZM664S",
+   "source_url": "https://alfred.stlouisfed.org/graph/alfredgraph.csv?id=XTNTVA01NZM664S&cosd=1990-01-01&coed=2016-06-01 | https://alfred.stlouisfed.org/graph/alfredgraph.csv?id=XTNTVA01NZM664S&cosd=2021-04-27&coed=2025-12-26",
+   "tier": 2,
+   "track": "U1",
+   "units": "New Zealand Dollar , Seasonally Adjusted",
+   "variable": "GOODS_TRADE_BALANCE",
+   "why_this_route": "OECD MEI の『International Merchandise Trade Statistics: Trade Balance: Commodities』を ALFRED（St. Louis Fed の公式配信）から取る。各国統計局を直接たどると通関 / BoP の定義が国ごとに混ざるので、**8 通貨を 1 つの定義で揃えられる経路**を選んだ。fred.stlouisfed.org は本環境からtimeout するが、同じ St. Louis Fed の alfred.stlouisfed.org は届く"
+  },
+  "U1/USD": {
+   "content_hash": "3a9d647e4b071a2f1285f30c2b99fdccc5271155e6ab630585d13ae02752b3db",
+   "coverage_first": "1990-01-01",
+   "coverage_last": "2025-12-01",
+   "currency": "USD",
+   "file": "trade_usd",
+   "frequency": "Monthly（観測間隔から導出）",
+   "metadata_url": "https://alfred.stlouisfed.org/series?seid=XTNTVA01USM664S",
+   "official_title": "International Merchandise Trade Statistics: Trade Balance: Commodities for United States",
+   "outcome": "OK",
+   "provider": "Federal Reserve Bank of St. Louis (ALFRED) / OECD MEI",
+   "publication_lag": "{'kind': 'month_end_offset', 'months': 2}",
+   "request_windows": [
+    [
+     "1990-01-01",
+     "2016-06-01"
+    ],
+    [
+     "2021-04-27",
+     "2025-12-26"
+    ]
+   ],
+   "retrieval_timestamp_utc": "2026-09-23T15:01:44.003396+00:00",
+   "revision_behavior": "CURRENT_VINTAGE_ONLY_REVISION_CAVEAT",
+   "rows_long_span": 318,
+   "rows_recent_span": 56,
+   "rows_saved": 374,
+   "seasonal_adjustment": "Seasonally Adjusted",
+   "semantic_check": {
+    "evidence": "International Merchandise Trade Statistics: Trade Balance: Commodities for United States ",
+    "matched": [
+     [
+      "trade balance"
+     ]
+    ],
+    "variable": "GOODS_TRADE_BALANCE"
+   },
+   "series_id": "XTNTVA01USM664S",
+   "source_url": "https://alfred.stlouisfed.org/graph/alfredgraph.csv?id=XTNTVA01USM664S&cosd=1990-01-01&coed=2016-06-01 | https://alfred.stlouisfed.org/graph/alfredgraph.csv?id=XTNTVA01USM664S&cosd=2021-04-27&coed=2025-12-26",
+   "tier": 2,
+   "track": "U1",
+   "units": "US Dollar , Seasonally Adjusted",
+   "variable": "GOODS_TRADE_BALANCE",
+   "why_this_route": "OECD MEI の『International Merchandise Trade Statistics: Trade Balance: Commodities』を ALFRED（St. Louis Fed の公式配信）から取る。各国統計局を直接たどると通関 / BoP の定義が国ごとに混ざるので、**8 通貨を 1 つの定義で揃えられる経路**を選んだ。fred.stlouisfed.org は本環境からtimeout するが、同じ St. Louis Fed の alfred.stlouisfed.org は届く"
+  },
+  "U2/CAD": {
+   "content_hash": "e63487bae535cd787440950a1518da9ac3b436007693846fc0264933d77d5181",
+   "coverage_first": "1990-01-01",
+   "coverage_last": "2025-12-01",
+   "currency": "CAD",
+   "file": "balance_sheet_cad",
+   "frequency": "MONTHLY（group B1_MONTHLY: month-end）",
+   "metadata_url": "https://www.bankofcanada.ca/valet/series/V36651/json",
+   "official_title": "Total assets — Assets",
+   "outcome": "OK",
+   "provider": "Bank of Canada",
+   "publication_lag": "{'kind': 'month_end_offset', 'months': 2}",
+   "request_windows": [
+    [
+     "1990-01-01",
+     "2016-06-01"
+    ],
+    [
+     "2021-04-27",
+     "2025-12-26"
+    ]
+   ],
+   "retrieval_timestamp_utc": "2026-09-23T15:01:54.548653+00:00",
+   "revision_behavior": "BALANCE_SHEET_STOCK_REVISIONS_RARE_CURRENT_VINTAGE",
+   "rows_long_span": 318,
+   "rows_recent_span": 56,
+   "rows_saved": 374,
+   "seasonal_adjustment": "Not Seasonally Adjusted（残高）",
+   "semantic_check": {
+    "evidence": "Total assets — Assets ",
+    "matched": [
+     [
+      "total",
+      "asset"
+     ]
+    ],
+    "variable": "CB_TOTAL_ASSETS"
+   },
+   "series_id": "V36651",
+   "source_url": "https://www.bankofcanada.ca/valet/observations/V36651/json?start_date=1990-01-01&end_date=2016-06-01 | https://www.bankofcanada.ca/valet/observations/V36651/json?start_date=2021-04-27&end_date=2025-12-26",
+   "tier": 1,
+   "track": "U2",
+   "units": "NOT_PROVIDED_BY_ENDPOINT（signal は log 変化なので単位に依存しない）",
+   "variable": "CB_TOTAL_ASSETS",
+   "why_this_route": "BoC の一次配信。group B1_MONTHLY の label『Total assets』で確認。**前 cycle の推定 V36612 は Treasury Bills で、意味検証が弾く**"
+  },
+  "U2/CHF": {
+   "content_hash": "a872c7bc3f4d8784c32964929b2b5cd6d1f5b7785386fb9fc39ffae24a847b0c",
+   "coverage_first": "1996-12-01",
+   "coverage_last": "2025-12-01",
+   "currency": "CHF",
+   "file": "balance_sheet_chf",
+   "frequency": "MONTHLY",
+   "metadata_url": "https://data.snb.ch/api/cube/snbbipo/dimensions/en",
+   "official_title": "Assets / Total",
+   "outcome": "OK",
+   "provider": "Swiss National Bank",
+   "publication_lag": "{'kind': 'month_end_offset', 'months': 2}",
+   "request_windows": "FULL_SERIES_REQUESTED_TRUNCATED_BEFORE_SAVE",
+   "retrieval_timestamp_utc": "2026-09-23T15:01:50.379955+00:00",
+   "revision_behavior": "BALANCE_SHEET_STOCK_REVISIONS_RARE_CURRENT_VINTAGE",
+   "rows_long_span": 235,
+   "rows_recent_span": 56,
+   "rows_saved": 291,
+   "seasonal_adjustment": "Not Seasonally Adjusted（残高）",
+   "semantic_check": {
+    "evidence": "Assets / Total ",
+    "matched": [
+     [
+      "total",
+      "asset"
+     ]
+    ],
+    "variable": "CB_TOTAL_ASSETS"
+   },
+   "series_id": "snbbipo/D0=T0",
+   "source_url": "https://data.snb.ch/api/cube/snbbipo/data/csv/en",
+   "tier": 1,
+   "track": "U2",
+   "units": "CHF millions",
+   "variable": "CB_TOTAL_ASSETS",
+   "why_this_route": "SNB の一次配信。cube snbbipo の dimension 一覧で D0=T0 が『Assets / Total』であることを確認"
+  },
+  "U2/EUR": {
+   "content_hash": "28d2cae7eb4f97de5de731e6495870149ada4f8035d304797f09dd39ce89b0c1",
+   "coverage_first": "1999-01-01",
+   "coverage_last": "2025-12-26",
+   "currency": "EUR",
+   "file": "balance_sheet_eur",
+   "frequency": "Weekly（観測間隔から導出）",
+   "metadata_url": "https://alfred.stlouisfed.org/series?seid=ECBASSETSW",
+   "official_title": "Central Bank Assets for Euro Area (11-19 Countries)",
+   "outcome": "OK",
+   "provider": "Federal Reserve Bank of St. Louis (ALFRED) / ECB",
+   "publication_lag": "{'kind': 'business_days', 'n': 2}",
+   "request_windows": [
+    [
+     "1990-01-01",
+     "2016-06-01"
+    ],
+    [
+     "2021-04-27",
+     "2025-12-26"
+    ]
+   ],
+   "retrieval_timestamp_utc": "2026-09-23T15:01:55.265654+00:00",
+   "revision_behavior": "BALANCE_SHEET_STOCK_REVISIONS_RARE_CURRENT_VINTAGE",
+   "rows_long_span": 909,
+   "rows_recent_span": 244,
+   "rows_saved": 1153,
+   "seasonal_adjustment": "Not Seasonally Adjusted",
+   "semantic_check": {
+    "evidence": "Central Bank Assets for Euro Area (11-19 Countries) ",
+    "matched": [
+     [
+      "central bank assets"
+     ]
+    ],
+    "variable": "CB_TOTAL_ASSETS"
+   },
+   "series_id": "ECBASSETSW",
+   "source_url": "https://alfred.stlouisfed.org/graph/alfredgraph.csv?id=ECBASSETSW&cosd=1990-01-01&coed=2016-06-01 | https://alfred.stlouisfed.org/graph/alfredgraph.csv?id=ECBASSETSW&cosd=2021-04-27&coed=2025-12-26",
+   "tier": 2,
+   "track": "U2",
+   "units": "Millions of Euros , Not Seasonally Adjusted",
+   "variable": "CB_TOTAL_ASSETS",
+   "why_this_route": "ECB の一次配信（ILM dataflow）には**総資産の系列が無く**、個別項目しか公開されていない。項目を自分で足した合計は『公式の総資産』ではないので作らず、ECB の総資産を配信している ALFRED の ECBASSETSW（Central Bank Assets for Euro Area）を使う"
+  },
+  "U2/JPY": {
+   "content_hash": "3f2af0af43bce6bc40484a8366cddb5811003a841e3b2f6017aedbec6efb3768",
+   "coverage_first": "1998-04-01",
+   "coverage_last": "2025-12-01",
+   "currency": "JPY",
+   "file": "balance_sheet_jpy",
+   "frequency": "MONTHLY",
+   "metadata_url": "https://www.stat-search.boj.or.jp/api/v1/getMetadata?format=json&lang=en&db=BS01",
+   "official_title": "Bank of Japan Accounts/Assets/Total (Assets, or Liabilities and Net Assets) (s)",
+   "outcome": "OK",
+   "provider": "Bank of Japan",
+   "publication_lag": "{'kind': 'month_end_offset', 'months': 2}",
+   "request_windows": "FULL_SERIES_REQUESTED_TRUNCATED_BEFORE_SAVE",
+   "retrieval_timestamp_utc": "2026-09-23T15:01:49.102722+00:00",
+   "revision_behavior": "BALANCE_SHEET_STOCK_REVISIONS_RARE_CURRENT_VINTAGE",
+   "rows_long_span": 219,
+   "rows_recent_span": 56,
+   "rows_saved": 275,
+   "seasonal_adjustment": "Not Seasonally Adjusted（残高）",
+   "semantic_check": {
+    "evidence": "Bank of Japan Accounts/Assets/Total (Assets, or Liabilities and Net Assets) (s) See note(s).",
+    "matched": [
+     [
+      "total",
+      "asset"
+     ]
+    ],
+    "variable": "CB_TOTAL_ASSETS"
+   },
+   "series_id": "BS01/MABJMTA",
+   "source_url": "https://www.stat-search.boj.or.jp/api/v1/getDataCode?format=json&lang=en&db=BS01&code=MABJMTA",
+   "tier": 1,
+   "track": "U2",
+   "units": "100 million yen",
+   "variable": "CB_TOTAL_ASSETS",
+   "why_this_route": "BoJ の一次配信。getMetadata の名称『Bank of Japan Accounts/Assets/Total』で確認"
+  },
+  "U2/USD": {
+   "content_hash": "3e03c114105a28de1ccce7fc445732c5b95afc3825459ab1ed26210e7adc455b",
+   "coverage_first": "2002-12-18",
+   "coverage_last": "2025-12-24",
+   "currency": "USD",
+   "file": "balance_sheet_usd",
+   "frequency": "WEEKLY（Wednesday level）",
+   "metadata_url": "https://www.federalreserve.gov/datadownload/Output.aspx?rel=H41&filetype=zip",
+   "official_title": "Assets: Total Assets: Total assets: Wednesday level",
+   "outcome": "OK",
+   "provider": "Board of Governors of the Federal Reserve System (H.4.1)",
+   "publication_lag": "{'kind': 'business_days', 'n': 2}",
+   "request_windows": "FULL_SERIES_REQUESTED_TRUNCATED_BEFORE_SAVE",
+   "retrieval_timestamp_utc": "2026-09-23T15:01:47.434400+00:00",
+   "revision_behavior": "BALANCE_SHEET_STOCK_REVISIONS_RARE_CURRENT_VINTAGE",
+   "rows_long_span": 703,
+   "rows_recent_span": 244,
+   "rows_saved": 947,
+   "seasonal_adjustment": "Not Seasonally Adjusted（残高）",
+   "semantic_check": {
+    "evidence": "Assets: Total Assets: Total assets: Wednesday level Assets: Total Assets: Total assets: Wednesday level",
+    "matched": [
+     [
+      "total",
+      "asset"
+     ]
+    ],
+    "variable": "CB_TOTAL_ASSETS"
+   },
+   "series_id": "RESPPA_N.WW",
+   "source_url": "https://www.federalreserve.gov/datadownload/Output.aspx?rel=H41&filetype=zip",
+   "tier": 1,
+   "track": "U2",
+   "units": "Currency x1000000 USD",
+   "variable": "CB_TOTAL_ASSETS",
+   "why_this_route": "Fed の一次配信。H.4.1 の annotation『Assets: Total Assets: Total assets: Wednesday level』で確認。District 別の RESPPA_Fxx は意味検証の禁止語（district）で除外される"
+  },
+  "U4/AUD": {
+   "content_hash": "160882b689aaa19cee09504c9382ecf83b2c793713597ca8dabbd29a3e5578d3",
+   "coverage_first": "1990-01-01",
+   "coverage_last": "2025-12-01",
+   "currency": "AUD",
+   "file": "reserves_aud",
+   "frequency": "Monthly（観測間隔から導出）",
+   "metadata_url": "https://alfred.stlouisfed.org/series?seid=TRESEGAUM052N",
+   "official_title": "Reserves Excluding Gold for Australia",
+   "outcome": "OK",
+   "provider": "Federal Reserve Bank of St. Louis (ALFRED) / IMF",
+   "publication_lag": "{'kind': 'month_end_offset', 'months': 1}",
+   "request_windows": [
+    [
+     "1990-01-01",
+     "2016-06-01"
+    ],
+    [
+     "2021-04-27",
+     "2025-12-26"
+    ]
+   ],
+   "retrieval_timestamp_utc": "2026-09-23T15:01:57.483717+00:00",
+   "revision_behavior": "CURRENT_VINTAGE_ONLY_REVISION_CAVEAT",
+   "rows_long_span": 318,
+   "rows_recent_span": 56,
+   "rows_saved": 374,
+   "seasonal_adjustment": "Not Seasonally Adjusted",
+   "semantic_check": {
+    "evidence": "Reserves Excluding Gold for Australia ",
+    "matched": [
+     [
+      "reserves",
+      "excluding gold"
+     ]
+    ],
+    "variable": "FX_RESERVES"
+   },
+   "series_id": "TRESEGAUM052N",
+   "source_url": "https://alfred.stlouisfed.org/graph/alfredgraph.csv?id=TRESEGAUM052N&cosd=1990-01-01&coed=2016-06-01 | https://alfred.stlouisfed.org/graph/alfredgraph.csv?id=TRESEGAUM052N&cosd=2021-04-27&coed=2025-12-26",
+   "tier": 2,
+   "track": "U4",
+   "units": "Millions of Dollars , Not Seasonally Adjusted",
+   "variable": "FX_RESERVES",
+   "why_this_route": "IMF 由来の『Reserves Excluding Gold』を ALFRED から取る。**全通貨を同じ定義で揃えられる**。銀行の準備預金（reserve balances）とは別物であることを意味検証で確かめてある"
+  },
+  "U4/CAD": {
+   "content_hash": "6441eb1e164df059286328c1abfeacd6adb41969a152d1117c08d4ddbf6b5708",
+   "coverage_first": "1990-01-01",
+   "coverage_last": "2025-12-01",
+   "currency": "CAD",
+   "file": "reserves_cad",
+   "frequency": "Monthly（観測間隔から導出）",
+   "metadata_url": "https://alfred.stlouisfed.org/series?seid=TRESEGCAM052N",
+   "official_title": "Reserves Excluding Gold for Canada",
+   "outcome": "OK",
+   "provider": "Federal Reserve Bank of St. Louis (ALFRED) / IMF",
+   "publication_lag": "{'kind': 'month_end_offset', 'months': 1}",
+   "request_windows": [
+    [
+     "1990-01-01",
+     "2016-06-01"
+    ],
+    [
+     "2021-04-27",
+     "2025-12-26"
+    ]
+   ],
+   "retrieval_timestamp_utc": "2026-09-23T15:01:57.083077+00:00",
+   "revision_behavior": "CURRENT_VINTAGE_ONLY_REVISION_CAVEAT",
+   "rows_long_span": 318,
+   "rows_recent_span": 56,
+   "rows_saved": 374,
+   "seasonal_adjustment": "Not Seasonally Adjusted",
+   "semantic_check": {
+    "evidence": "Reserves Excluding Gold for Canada ",
+    "matched": [
+     [
+      "reserves",
+      "excluding gold"
+     ]
+    ],
+    "variable": "FX_RESERVES"
+   },
+   "series_id": "TRESEGCAM052N",
+   "source_url": "https://alfred.stlouisfed.org/graph/alfredgraph.csv?id=TRESEGCAM052N&cosd=1990-01-01&coed=2016-06-01 | https://alfred.stlouisfed.org/graph/alfredgraph.csv?id=TRESEGCAM052N&cosd=2021-04-27&coed=2025-12-26",
+   "tier": 2,
+   "track": "U4",
+   "units": "Millions of Dollars , Not Seasonally Adjusted",
+   "variable": "FX_RESERVES",
+   "why_this_route": "IMF 由来の『Reserves Excluding Gold』を ALFRED から取る。**全通貨を同じ定義で揃えられる**。銀行の準備預金（reserve balances）とは別物であることを意味検証で確かめてある"
+  },
+  "U4/EUR": {
+   "content_hash": "e508e60e3600953d0db39763f64fd33512d686e4034d428c5ed63714b61126ec",
+   "coverage_first": "1999-01-01",
+   "coverage_last": "2016-06-01",
+   "currency": "EUR",
+   "file": "reserves_eur",
+   "frequency": "Monthly（観測間隔から導出）",
+   "metadata_url": "https://alfred.stlouisfed.org/series?seid=TRESEGEZM052N",
+   "official_title": "Total Reserves excluding Gold for Euro Area",
+   "outcome": "OK",
+   "provider": "Federal Reserve Bank of St. Louis (ALFRED) / IMF",
+   "publication_lag": "{'kind': 'month_end_offset', 'months': 1}",
+   "request_windows": [
+    [
+     "1990-01-01",
+     "2016-06-01"
+    ],
+    [
+     "2021-04-27",
+     "2025-12-26"
+    ]
+   ],
+   "retrieval_timestamp_utc": "2026-09-23T15:01:57.825090+00:00",
+   "revision_behavior": "CURRENT_VINTAGE_ONLY_REVISION_CAVEAT",
+   "rows_long_span": 210,
+   "rows_recent_span": 0,
+   "rows_saved": 210,
+   "seasonal_adjustment": "Not Seasonally Adjusted",
+   "semantic_check": {
+    "evidence": "Total Reserves excluding Gold for Euro Area ",
+    "matched": [
+     [
+      "reserves",
+      "excluding gold"
+     ]
+    ],
+    "variable": "FX_RESERVES"
+   },
+   "series_id": "TRESEGEZM052N",
+   "source_url": "https://alfred.stlouisfed.org/graph/alfredgraph.csv?id=TRESEGEZM052N&cosd=1990-01-01&coed=2016-06-01 | https://alfred.stlouisfed.org/graph/alfredgraph.csv?id=TRESEGEZM052N&cosd=2021-04-27&coed=2025-12-26",
+   "tier": 2,
+   "track": "U4",
+   "units": "Dollars , Not Seasonally Adjusted",
+   "variable": "FX_RESERVES",
+   "why_this_route": "IMF 由来の『Reserves Excluding Gold』を ALFRED から取る。**全通貨を同じ定義で揃えられる**。銀行の準備預金（reserve balances）とは別物であることを意味検証で確かめてある"
+  },
+  "U4/GBP": {
+   "content_hash": "0bb85fa1ddfdb5579e5bea3e357bd8b113055a7666d80b7721f87700df01c568",
+   "coverage_first": "1990-01-01",
+   "coverage_last": "2025-12-01",
+   "currency": "GBP",
+   "file": "reserves_gbp",
+   "frequency": "Monthly（観測間隔から導出）",
+   "metadata_url": "https://alfred.stlouisfed.org/series?seid=TRESEGGBM052N",
+   "official_title": "Reserves Excluding Gold for United Kingdom",
+   "outcome": "OK",
+   "provider": "Federal Reserve Bank of St. Louis (ALFRED) / IMF",
+   "publication_lag": "{'kind': 'month_end_offset', 'months': 1}",
+   "request_windows": [
+    [
+     "1990-01-01",
+     "2016-06-01"
+    ],
+    [
+     "2021-04-27",
+     "2025-12-26"
+    ]
+   ],
+   "retrieval_timestamp_utc": "2026-09-23T15:01:56.692734+00:00",
+   "revision_behavior": "CURRENT_VINTAGE_ONLY_REVISION_CAVEAT",
+   "rows_long_span": 318,
+   "rows_recent_span": 56,
+   "rows_saved": 374,
+   "seasonal_adjustment": "Not Seasonally Adjusted",
+   "semantic_check": {
+    "evidence": "Reserves Excluding Gold for United Kingdom ",
+    "matched": [
+     [
+      "reserves",
+      "excluding gold"
+     ]
+    ],
+    "variable": "FX_RESERVES"
+   },
+   "series_id": "TRESEGGBM052N",
+   "source_url": "https://alfred.stlouisfed.org/graph/alfredgraph.csv?id=TRESEGGBM052N&cosd=1990-01-01&coed=2016-06-01 | https://alfred.stlouisfed.org/graph/alfredgraph.csv?id=TRESEGGBM052N&cosd=2021-04-27&coed=2025-12-26",
+   "tier": 2,
+   "track": "U4",
+   "units": "Millions of Dollars , Not Seasonally Adjusted",
+   "variable": "FX_RESERVES",
+   "why_this_route": "IMF 由来の『Reserves Excluding Gold』を ALFRED から取る。**全通貨を同じ定義で揃えられる**。銀行の準備預金（reserve balances）とは別物であることを意味検証で確かめてある"
+  },
+  "U4/JPY": {
+   "content_hash": "9c93ffd810cb6beead0b5bbeb13a29f5efd0833aa8179791f66516b6911ccb31",
+   "coverage_first": "1990-01-01",
+   "coverage_last": "2025-12-01",
+   "currency": "JPY",
+   "file": "reserves_jpy",
+   "frequency": "Monthly（観測間隔から導出）",
+   "metadata_url": "https://alfred.stlouisfed.org/series?seid=TRESEGJPM052N",
+   "official_title": "Reserves Excluding Gold for Japan",
+   "outcome": "OK",
+   "provider": "Federal Reserve Bank of St. Louis (ALFRED) / IMF",
+   "publication_lag": "{'kind': 'month_end_offset', 'months': 1}",
+   "request_windows": [
+    [
+     "1990-01-01",
+     "2016-06-01"
+    ],
+    [
+     "2021-04-27",
+     "2025-12-26"
+    ]
+   ],
+   "retrieval_timestamp_utc": "2026-09-23T15:01:56.303059+00:00",
+   "revision_behavior": "CURRENT_VINTAGE_ONLY_REVISION_CAVEAT",
+   "rows_long_span": 318,
+   "rows_recent_span": 56,
+   "rows_saved": 374,
+   "seasonal_adjustment": "Not Seasonally Adjusted",
+   "semantic_check": {
+    "evidence": "Reserves Excluding Gold for Japan ",
+    "matched": [
+     [
+      "reserves",
+      "excluding gold"
+     ]
+    ],
+    "variable": "FX_RESERVES"
+   },
+   "series_id": "TRESEGJPM052N",
+   "source_url": "https://alfred.stlouisfed.org/graph/alfredgraph.csv?id=TRESEGJPM052N&cosd=1990-01-01&coed=2016-06-01 | https://alfred.stlouisfed.org/graph/alfredgraph.csv?id=TRESEGJPM052N&cosd=2021-04-27&coed=2025-12-26",
+   "tier": 2,
+   "track": "U4",
+   "units": "Millions of Dollars , Not Seasonally Adjusted",
+   "variable": "FX_RESERVES",
+   "why_this_route": "IMF 由来の『Reserves Excluding Gold』を ALFRED から取る。**全通貨を同じ定義で揃えられる**。銀行の準備預金（reserve balances）とは別物であることを意味検証で確かめてある"
+  },
+  "U4/USD": {
+   "content_hash": "c6ea52934b93053056da9d7e28444d78245d53a2a82ea3526445d5ffc551b92f",
+   "coverage_first": "1990-01-01",
+   "coverage_last": "2025-12-01",
+   "currency": "USD",
+   "file": "reserves_usd",
+   "frequency": "Monthly（観測間隔から導出）",
+   "metadata_url": "https://alfred.stlouisfed.org/series?seid=TRESEGUSM052N",
+   "official_title": "Reserves Excluding Gold for United States",
+   "outcome": "OK",
+   "provider": "Federal Reserve Bank of St. Louis (ALFRED) / IMF",
+   "publication_lag": "{'kind': 'month_end_offset', 'months': 1}",
+   "request_windows": [
+    [
+     "1990-01-01",
+     "2016-06-01"
+    ],
+    [
+     "2021-04-27",
+     "2025-12-26"
+    ]
+   ],
+   "retrieval_timestamp_utc": "2026-09-23T15:01:55.911856+00:00",
+   "revision_behavior": "CURRENT_VINTAGE_ONLY_REVISION_CAVEAT",
+   "rows_long_span": 318,
+   "rows_recent_span": 56,
+   "rows_saved": 374,
+   "seasonal_adjustment": "Not Seasonally Adjusted",
+   "semantic_check": {
+    "evidence": "Reserves Excluding Gold for United States ",
+    "matched": [
+     [
+      "reserves",
+      "excluding gold"
+     ]
+    ],
+    "variable": "FX_RESERVES"
+   },
+   "series_id": "TRESEGUSM052N",
+   "source_url": "https://alfred.stlouisfed.org/graph/alfredgraph.csv?id=TRESEGUSM052N&cosd=1990-01-01&coed=2016-06-01 | https://alfred.stlouisfed.org/graph/alfredgraph.csv?id=TRESEGUSM052N&cosd=2021-04-27&coed=2025-12-26",
+   "tier": 2,
+   "track": "U4",
+   "units": "Millions of Dollars , Not Seasonally Adjusted",
+   "variable": "FX_RESERVES",
+   "why_this_route": "IMF 由来の『Reserves Excluding Gold』を ALFRED から取る。**全通貨を同じ定義で揃えられる**。銀行の準備預金（reserve balances）とは別物であることを意味検証で確かめてある"
+  },
+  "U5/SPREAD": {
+   "content_hash": "61983ed2ef405f7d655651719bb02350adb69324a4f677ee416d30619a888437",
+   "coverage_first": "2023-09-25",
+   "coverage_last": "2025-12-26",
+   "currency": "SPREAD",
+   "file": "credit_hy_oas",
+   "frequency": "Daily（観測間隔から導出）",
+   "metadata_url": "https://alfred.stlouisfed.org/series?seid=BAMLH0A0HYM2",
+   "official_title": "ICE BofA US High Yield Index Option-Adjusted Spread",
+   "outcome": "OK",
+   "provider": "Federal Reserve Bank of St. Louis (ALFRED) / ICE Data Indices",
+   "publication_lag": "{'kind': 'business_days', 'n': 2}",
+   "request_windows": [
+    [
+     "1990-01-01",
+     "2016-06-01"
+    ],
+    [
+     "2021-04-27",
+     "2025-12-26"
+    ]
+   ],
+   "retrieval_timestamp_utc": "2026-09-23T15:01:58.267423+00:00",
+   "revision_behavior": "MARKET_DATA_NOT_REVISED",
+   "rows_long_span": 0,
+   "rows_recent_span": 592,
+   "rows_saved": 592,
+   "seasonal_adjustment": "Not Seasonally Adjusted",
+   "semantic_check": {
+    "evidence": "ICE BofA US High Yield Index Option-Adjusted Spread ",
+    "matched": [
+     [
+      "high yield",
+      "spread"
+     ]
+    ],
+    "variable": "HY_CREDIT_SPREAD"
+   },
+   "series_id": "BAMLH0A0HYM2",
+   "source_url": "https://alfred.stlouisfed.org/graph/alfredgraph.csv?id=BAMLH0A0HYM2&cosd=1990-01-01&coed=2016-06-01 | https://alfred.stlouisfed.org/graph/alfredgraph.csv?id=BAMLH0A0HYM2&cosd=2021-04-27&coed=2025-12-26",
+   "tier": 2,
+   "track": "U5",
+   "units": "Percent , Not Seasonally Adjusted",
+   "variable": "HY_CREDIT_SPREAD",
+   "why_this_route": "ICE BofA の OAS は無料の一次配信が無く、FRED / ALFRED が公式の無料配信である。**ICE の license により配信は 2023-09-25 以降に限られる**（長 span は存在しない）。IG spread や Baa-Treasury spread は別の risk なので代替しない（第 2 裁定 §22）"
+  }
+ },
+ "statements": {
+  "EUR": {
+   "content_hash": "f0930673b465e214470e9d1eb71490ee54bdb17ab6311a585342e72824f866d7",
+   "coverage_first": "2021-06-10",
+   "coverage_last": "2025-12-18",
+   "documents": 37,
+   "documents_detail": [
+    {
+     "date": "2021-06-10",
+     "dovish": 3.0,
+     "hawkish": 1.0,
+     "url": "https://www.ecb.europa.eu/press/pr/date/2021/html/ecb.mp210610~b4d5381df0.en.html",
+     "words": 627.0
+    },
+    {
+     "date": "2021-07-22",
+     "dovish": 3.0,
+     "hawkish": 1.0,
+     "url": "https://www.ecb.europa.eu/press/pr/date/2021/html/ecb.mp210722~48dc3b436b.en.html",
+     "words": 951.0
+    },
+    {
+     "date": "2021-09-09",
+     "dovish": 2.0,
+     "hawkish": 1.0,
+     "url": "https://www.ecb.europa.eu/press/pr/date/2021/html/ecb.mp210909~2c94b35639.en.html",
+     "words": 753.0
+    },
+    {
+     "date": "2021-10-28",
+     "dovish": 2.0,
+     "hawkish": 1.0,
+     "url": "https://www.ecb.europa.eu/press/pr/date/2021/html/ecb.mp211028~85474438a4.en.html",
+     "words": 741.0
+    },
+    {
+     "date": "2021-12-16",
+     "dovish": 3.0,
+     "hawkish": 0.0,
+     "url": "https://www.ecb.europa.eu/press/pr/date/2021/html/ecb.mp211216~1b6d3a1fd8.en.html",
+     "words": 875.0
+    },
+    {
+     "date": "2022-02-03",
+     "dovish": 2.0,
+     "hawkish": 0.0,
+     "url": "https://www.ecb.europa.eu/press/pr/date/2022/html/ecb.mp220203~90fbe94662.en.html",
+     "words": 796.0
+    },
+    {
+     "date": "2022-03-10",
+     "dovish": 1.0,
+     "hawkish": 0.0,
+     "url": "https://www.ecb.europa.eu/press/pr/date/2022/html/ecb.mp220310~2d19f8ba60.en.html",
+     "words": 1052.0
+    },
+    {
+     "date": "2022-04-14",
+     "dovish": 1.0,
+     "hawkish": 0.0,
+     "url": "https://www.ecb.europa.eu/press/pr/date/2022/html/ecb.mp220414~d1b76520c6.en.html",
+     "words": 988.0
+    },
+    {
+     "date": "2022-06-09",
+     "dovish": 1.0,
+     "hawkish": 1.0,
+     "url": "https://www.ecb.europa.eu/press/pr/date/2022/html/ecb.mp220609~122666c272.en.html",
+     "words": 1090.0
+    },
+    {
+     "date": "2022-07-21",
+     "dovish": 0.0,
+     "hawkish": 0.0,
+     "url": "https://www.ecb.europa.eu/press/pr/date/2022/html/ecb.mp220721~53e5bdd317.en.html",
+     "words": 904.0
+    },
+    {
+     "date": "2022-09-08",
+     "dovish": 2.0,
+     "hawkish": 1.0,
+     "url": "https://www.ecb.europa.eu/press/pr/date/2022/html/ecb.mp220908~c1b6839378.en.html",
+     "words": 897.0
+    },
+    {
+     "date": "2022-10-27",
+     "dovish": 2.0,
+     "hawkish": 1.0,
+     "url": "https://www.ecb.europa.eu/press/pr/date/2022/html/ecb.mp221027~df1d778b84.en.html",
+     "words": 813.0
+    },
+    {
+     "date": "2022-12-15",
+     "dovish": 2.0,
+     "hawkish": 4.0,
+     "url": "https://www.ecb.europa.eu/press/pr/date/2022/html/ecb.mp221215~f3461d7b6e.en.html",
+     "words": 953.0
+    },
+    {
+     "date": "2023-02-02",
+     "dovish": 0.0,
+     "hawkish": 3.0,
+     "url": "https://www.ecb.europa.eu/press/pr/date/2023/html/ecb.mp230202~08a972ac76.en.html",
+     "words": 747.0
+    },
+    {
+     "date": "2023-03-16",
+     "dovish": 1.0,
+     "hawkish": 3.0,
+     "url": "https://www.ecb.europa.eu/press/pr/date/2023/html/ecb.mp230316~aad5249f30.en.html",
+     "words": 808.0
+    },
+    {
+     "date": "2023-05-04",
+     "dovish": 0.0,
+     "hawkish": 1.0,
+     "url": "https://www.ecb.europa.eu/press/pr/date/2023/html/ecb.mp230504~cdfd11a697.en.html",
+     "words": 682.0
+    },
+    {
+     "date": "2023-06-15",
+     "dovish": 0.0,
+     "hawkish": 2.0,
+     "url": "https://www.ecb.europa.eu/press/pr/date/2023/html/ecb.mp230615~d34cddb4c6.en.html",
+     "words": 767.0
+    },
+    {
+     "date": "2023-07-27",
+     "dovish": 1.0,
+     "hawkish": 2.0,
+     "url": "https://www.ecb.europa.eu/press/pr/date/2023/html/ecb.mp230727~da80cfcf24.en.html",
+     "words": 713.0
+    },
+    {
+     "date": "2023-09-14",
+     "dovish": 2.0,
+     "hawkish": 3.0,
+     "url": "https://www.ecb.europa.eu/press/pr/date/2023/html/ecb.mp230914~aab39f8c21.en.html",
+     "words": 738.0
+    },
+    {
+     "date": "2023-10-26",
+     "dovish": 1.0,
+     "hawkish": 1.0,
+     "url": "https://www.ecb.europa.eu/press/pr/date/2023/html/ecb.mp231026~6028cea576.en.html",
+     "words": 582.0
+    },
+    {
+     "date": "2023-12-14",
+     "dovish": 2.0,
+     "hawkish": 3.0,
+     "url": "https://www.ecb.europa.eu/press/pr/date/2023/html/ecb.mp231214~9846e62f62.en.html",
+     "words": 796.0
+    },
+    {
+     "date": "2024-01-25",
+     "dovish": 0.0,
+     "hawkish": 1.0,
+     "url": "https://www.ecb.europa.eu/press/pr/date/2024/html/ecb.mp240125~f738889bde.en.html",
+     "words": 571.0
+    },
+    {
+     "date": "2024-03-07",
+     "dovish": 2.0,
+     "hawkish": 2.0,
+     "url": "https://www.ecb.europa.eu/press/pr/date/2024/html/ecb.mp240307~a5fa52b82b.en.html",
+     "words": 658.0
+    },
+    {
+     "date": "2024-04-11",
+     "dovish": 1.0,
+     "hawkish": 2.0,
+     "url": "https://www.ecb.europa.eu/press/pr/date/2024/html/ecb.mp240411~1345644915.en.html",
+     "words": 619.0
+    },
+    {
+     "date": "2024-06-06",
+     "dovish": 1.0,
+     "hawkish": 3.0,
+     "url": "https://www.ecb.europa.eu/press/pr/date/2024/html/ecb.mp240606~2148ecdb3c.en.html",
+     "words": 760.0
+    },
+    {
+     "date": "2024-07-18",
+     "dovish": 0.0,
+     "hawkish": 4.0,
+     "url": "https://www.ecb.europa.eu/press/pr/date/2024/html/ecb.mp240718~b9e0ddd9d5.en.html",
+     "words": 557.0
+    },
+    {
+     "date": "2024-09-12",
+     "dovish": 3.0,
+     "hawkish": 3.0,
+     "url": "https://www.ecb.europa.eu/press/pr/date/2024/html/ecb.mp240912~67cb23badb.en.html",
+     "words": 879.0
+    },
+    {
+     "date": "2024-10-17",
+     "dovish": 2.0,
+     "hawkish": 3.0,
+     "url": "https://www.ecb.europa.eu/press/pr/date/2024/html/ecb.mp241017~aa366eaf20.en.html",
+     "words": 613.0
+    },
+    {
+     "date": "2024-12-12",
+     "dovish": 2.0,
+     "hawkish": 3.0,
+     "url": "https://www.ecb.europa.eu/press/pr/date/2024/html/ecb.mp241212~2acab6e51e.en.html",
+     "words": 687.0
+    },
+    {
+     "date": "2025-01-30",
+     "dovish": 1.0,
+     "hawkish": 3.0,
+     "url": "https://www.ecb.europa.eu/press/pr/date/2025/html/ecb.mp250130~530b29e622.en.html",
+     "words": 606.0
+    },
+    {
+     "date": "2025-03-06",
+     "dovish": 4.0,
+     "hawkish": 3.0,
+     "url": "https://www.ecb.europa.eu/press/pr/date/2025/html/ecb.mp250306~d4340800b3.en.html",
+     "words": 660.0
+    },
+    {
+     "date": "2025-04-17",
+     "dovish": 1.0,
+     "hawkish": 2.0,
+     "url": "https://www.ecb.europa.eu/press/pr/date/2025/html/ecb.mp250417~42727d0735.en.html",
+     "words": 548.0
+    },
+    {
+     "date": "2025-06-05",
+     "dovish": 2.0,
+     "hawkish": 2.0,
+     "url": "https://www.ecb.europa.eu/press/pr/date/2025/html/ecb.mp250605~3b5f67d007.en.html",
+     "words": 733.0
+    },
+    {
+     "date": "2025-07-24",
+     "dovish": 2.0,
+     "hawkish": 0.0,
+     "url": "https://www.ecb.europa.eu/press/pr/date/2025/html/ecb.mp250724~50bc70e13f.en.html",
+     "words": 413.0
+    },
+    {
+     "date": "2025-09-11",
+     "dovish": 0.0,
+     "hawkish": 0.0,
+     "url": "https://www.ecb.europa.eu/press/pr/date/2025/html/ecb.mp250911~6afb7a9490.en.html",
+     "words": 431.0
+    },
+    {
+     "date": "2025-10-30",
+     "dovish": 1.0,
+     "hawkish": 0.0,
+     "url": "https://www.ecb.europa.eu/press/pr/date/2025/html/ecb.mp251030~cf0540b5c0.en.html",
+     "words": 409.0
+    },
+    {
+     "date": "2025-12-18",
+     "dovish": 0.0,
+     "hawkish": 0.0,
+     "url": "https://www.ecb.europa.eu/press/pr/date/2025/html/ecb.mp251218~58b0e415a6.en.html",
+     "words": 434.0
+    }
+   ],
+   "file": "tone_eur",
+   "outcome": "OK",
+   "regions": [
+    "MAIN_REGION"
+   ],
+   "retrieval_timestamp_utc": "2026-09-23T15:02:09.884412+00:00"
+  },
+  "JPY": {
+   "content_hash": "ca12877fa028dfc18f598e18aecfac22306ead3f747f83c3d54111c20ec40713",
+   "coverage_first": "2021-04-27",
+   "coverage_last": "2025-12-19",
+   "documents": 38,
+   "documents_detail": [
+    {
+     "date": "2021-04-27",
+     "dovish": 3.0,
+     "hawkish": 0.0,
+     "url": "https://www.boj.or.jp/en/mopo/mpmdeci/state_2021/k210427a.htm",
+     "words": 718.0
+    },
+    {
+     "date": "2021-06-18",
+     "dovish": 8.0,
+     "hawkish": 0.0,
+     "url": "https://www.boj.or.jp/en/mopo/mpmdeci/state_2021/k210618a.htm",
+     "words": 1421.0
+    },
+    {
+     "date": "2021-07-16",
+     "dovish": 3.0,
+     "hawkish": 0.0,
+     "url": "https://www.boj.or.jp/en/mopo/mpmdeci/state_2021/k210716a.htm",
+     "words": 1037.0
+    },
+    {
+     "date": "2021-09-22",
+     "dovish": 8.0,
+     "hawkish": 0.0,
+     "url": "https://www.boj.or.jp/en/mopo/mpmdeci/state_2021/k210922a.htm",
+     "words": 1146.0
+    },
+    {
+     "date": "2021-10-28",
+     "dovish": 3.0,
+     "hawkish": 0.0,
+     "url": "https://www.boj.or.jp/en/mopo/mpmdeci/state_2021/k211028a.htm",
+     "words": 698.0
+    },
+    {
+     "date": "2021-12-17",
+     "dovish": 11.0,
+     "hawkish": 0.0,
+     "url": "https://www.boj.or.jp/en/mopo/mpmdeci/state_2021/k211217a.htm",
+     "words": 1517.0
+    },
+    {
+     "date": "2022-01-18",
+     "dovish": 3.0,
+     "hawkish": 0.0,
+     "url": "https://www.boj.or.jp/en/mopo/mpmdeci/state_2022/k220118a.htm",
+     "words": 724.0
+    },
+    {
+     "date": "2022-03-18",
+     "dovish": 10.0,
+     "hawkish": 1.0,
+     "url": "https://www.boj.or.jp/en/mopo/mpmdeci/state_2022/k220318a.htm",
+     "words": 1169.0
+    },
+    {
+     "date": "2022-04-28",
+     "dovish": 3.0,
+     "hawkish": 0.0,
+     "url": "https://www.boj.or.jp/en/mopo/mpmdeci/state_2022/k220428a.htm",
+     "words": 693.0
+    },
+    {
+     "date": "2022-06-17",
+     "dovish": 11.0,
+     "hawkish": 0.0,
+     "url": "https://www.boj.or.jp/en/mopo/mpmdeci/state_2022/k220617a.htm",
+     "words": 1190.0
+    },
+    {
+     "date": "2022-07-21",
+     "dovish": 3.0,
+     "hawkish": 0.0,
+     "url": "https://www.boj.or.jp/en/mopo/mpmdeci/state_2022/k220721a.htm",
+     "words": 696.0
+    },
+    {
+     "date": "2022-09-22",
+     "dovish": 8.0,
+     "hawkish": 1.0,
+     "url": "https://www.boj.or.jp/en/mopo/mpmdeci/state_2022/k220922a.htm",
+     "words": 1309.0
+    },
+    {
+     "date": "2022-10-28",
+     "dovish": 2.0,
+     "hawkish": 0.0,
+     "url": "https://www.boj.or.jp/en/mopo/mpmdeci/state_2022/k221028a.htm",
+     "words": 571.0
+    },
+    {
+     "date": "2022-12-20",
+     "dovish": 8.0,
+     "hawkish": 0.0,
+     "url": "https://www.boj.or.jp/en/mopo/mpmdeci/state_2022/k221220a.htm",
+     "words": 1276.0
+    },
+    {
+     "date": "2023-01-18",
+     "dovish": 2.0,
+     "hawkish": 0.0,
+     "url": "https://www.boj.or.jp/en/mopo/mpmdeci/state_2023/k230118a.htm",
+     "words": 707.0
+    },
+    {
+     "date": "2023-03-10",
+     "dovish": 5.0,
+     "hawkish": 0.0,
+     "url": "https://www.boj.or.jp/en/mopo/mpmdeci/state_2023/k230310a.htm",
+     "words": 1072.0
+    },
+    {
+     "date": "2023-04-28",
+     "dovish": 4.0,
+     "hawkish": 0.0,
+     "url": "https://www.boj.or.jp/en/mopo/mpmdeci/state_2023/k230428a.htm",
+     "words": 758.0
+    },
+    {
+     "date": "2023-06-16",
+     "dovish": 6.0,
+     "hawkish": 0.0,
+     "url": "https://www.boj.or.jp/en/mopo/mpmdeci/state_2023/k230616a.htm",
+     "words": 1093.0
+    },
+    {
+     "date": "2023-07-28",
+     "dovish": 10.0,
+     "hawkish": 2.0,
+     "url": "https://www.boj.or.jp/en/mopo/mpmdeci/state_2023/k230728a.htm",
+     "words": 1180.0
+    },
+    {
+     "date": "2023-09-22",
+     "dovish": 5.0,
+     "hawkish": 0.0,
+     "url": "https://www.boj.or.jp/en/mopo/mpmdeci/state_2023/k230922a.htm",
+     "words": 1120.0
+    },
+    {
+     "date": "2023-10-31",
+     "dovish": 5.0,
+     "hawkish": 0.0,
+     "url": "https://www.boj.or.jp/en/mopo/mpmdeci/state_2023/k231031a.htm",
+     "words": 1120.0
+    },
+    {
+     "date": "2023-12-19",
+     "dovish": 5.0,
+     "hawkish": 0.0,
+     "url": "https://www.boj.or.jp/en/mopo/mpmdeci/state_2023/k231219a.htm",
+     "words": 1082.0
+    },
+    {
+     "date": "2024-01-23",
+     "dovish": 3.0,
+     "hawkish": 0.0,
+     "url": "https://www.boj.or.jp/en/mopo/mpmdeci/state_2024/k240123a.htm",
+     "words": 694.0
+    },
+    {
+     "date": "2024-03-19",
+     "dovish": 6.0,
+     "hawkish": 0.0,
+     "url": "https://www.boj.or.jp/en/mopo/mpmdeci/state_2024/k240319a.htm",
+     "words": 1638.0
+    },
+    {
+     "date": "2024-04-26",
+     "dovish": 0.0,
+     "hawkish": 0.0,
+     "url": "https://www.boj.or.jp/en/mopo/mpmdeci/state_2024/k240426a.htm",
+     "words": 252.0
+    },
+    {
+     "date": "2024-06-14",
+     "dovish": 4.0,
+     "hawkish": 0.0,
+     "url": "https://www.boj.or.jp/en/mopo/mpmdeci/state_2024/k240614a.htm",
+     "words": 824.0
+    },
+    {
+     "date": "2024-07-31",
+     "dovish": 5.0,
+     "hawkish": 2.0,
+     "url": "https://www.boj.or.jp/en/mopo/mpmdeci/state_2024/k240731a.htm",
+     "words": 1504.0
+    },
+    {
+     "date": "2024-09-20",
+     "dovish": 4.0,
+     "hawkish": 0.0,
+     "url": "https://www.boj.or.jp/en/mopo/mpmdeci/state_2024/k240920a.htm",
+     "words": 632.0
+    },
+    {
+     "date": "2024-10-31",
+     "dovish": 0.0,
+     "hawkish": 0.0,
+     "url": "https://www.boj.or.jp/en/mopo/mpmdeci/state_2024/k241031a.htm",
+     "words": 208.0
+    },
+    {
+     "date": "2024-12-19",
+     "dovish": 4.0,
+     "hawkish": 1.0,
+     "url": "https://www.boj.or.jp/en/mopo/mpmdeci/state_2024/k241219a.htm",
+     "words": 883.0
+    },
+    {
+     "date": "2025-01-24",
+     "dovish": 4.0,
+     "hawkish": 0.0,
+     "url": "https://www.boj.or.jp/en/mopo/mpmdeci/state_2025/k250124a.htm",
+     "words": 993.0
+    },
+    {
+     "date": "2025-03-19",
+     "dovish": 4.0,
+     "hawkish": 0.0,
+     "url": "https://www.boj.or.jp/en/mopo/mpmdeci/state_2025/k250319a.htm",
+     "words": 685.0
+    },
+    {
+     "date": "2025-05-01",
+     "dovish": 0.0,
+     "hawkish": 0.0,
+     "url": "https://www.boj.or.jp/en/mopo/mpmdeci/state_2025/k250501a.htm",
+     "words": 205.0
+    },
+    {
+     "date": "2025-06-17",
+     "dovish": 8.0,
+     "hawkish": 0.0,
+     "url": "https://www.boj.or.jp/en/mopo/mpmdeci/state_2025/k250617a.htm",
+     "words": 1269.0
+    },
+    {
+     "date": "2025-07-31",
+     "dovish": 0.0,
+     "hawkish": 0.0,
+     "url": "https://www.boj.or.jp/en/mopo/mpmdeci/state_2025/k250731a.htm",
+     "words": 205.0
+    },
+    {
+     "date": "2025-09-19",
+     "dovish": 6.0,
+     "hawkish": 1.0,
+     "url": "https://www.boj.or.jp/en/mopo/mpmdeci/state_2025/k250919a.htm",
+     "words": 1714.0
+    },
+    {
+     "date": "2025-10-30",
+     "dovish": 0.0,
+     "hawkish": 1.0,
+     "url": "https://www.boj.or.jp/en/mopo/mpmdeci/state_2025/k251030a.htm",
+     "words": 330.0
+    },
+    {
+     "date": "2025-12-19",
+     "dovish": 8.0,
+     "hawkish": 0.0,
+     "url": "https://www.boj.or.jp/en/mopo/mpmdeci/state_2025/k251219a.htm",
+     "words": 1418.0
+    }
+   ],
+   "file": "tone_jpy",
+   "outcome": "OK",
+   "regions": [
+    "WHOLE_PAGE"
+   ],
+   "retrieval_timestamp_utc": "2026-09-23T15:06:21.892094+00:00"
+  },
+  "USD": {
+   "content_hash": "5c104a8bc67123572af5cd878b82ac50ce9f656a08ac84436c904460ded203f5",
+   "coverage_first": "2021-04-28",
+   "coverage_last": "2025-12-10",
+   "documents": 38,
+   "documents_detail": [
+    {
+     "date": "2021-04-28",
+     "dovish": 4.0,
+     "hawkish": 0.0,
+     "url": "https://www.federalreserve.gov/newsevents/pressreleases/monetary20210428a.htm",
+     "words": 492.0
+    },
+    {
+     "date": "2021-06-16",
+     "dovish": 4.0,
+     "hawkish": 0.0,
+     "url": "https://www.federalreserve.gov/newsevents/pressreleases/monetary20210616a.htm",
+     "words": 490.0
+    },
+    {
+     "date": "2021-07-28",
+     "dovish": 3.0,
+     "hawkish": 0.0,
+     "url": "https://www.federalreserve.gov/newsevents/pressreleases/monetary20210728a.htm",
+     "words": 503.0
+    },
+    {
+     "date": "2021-09-22",
+     "dovish": 3.0,
+     "hawkish": 1.0,
+     "url": "https://www.federalreserve.gov/newsevents/pressreleases/monetary20210922a.htm",
+     "words": 521.0
+    },
+    {
+     "date": "2021-11-03",
+     "dovish": 4.0,
+     "hawkish": 1.0,
+     "url": "https://www.federalreserve.gov/newsevents/pressreleases/monetary20211103a.htm",
+     "words": 630.0
+    },
+    {
+     "date": "2021-12-15",
+     "dovish": 3.0,
+     "hawkish": 1.0,
+     "url": "https://www.federalreserve.gov/newsevents/pressreleases/monetary20211215a.htm",
+     "words": 538.0
+    },
+    {
+     "date": "2022-01-26",
+     "dovish": 3.0,
+     "hawkish": 1.0,
+     "url": "https://www.federalreserve.gov/newsevents/pressreleases/monetary20220126a.htm",
+     "words": 446.0
+    },
+    {
+     "date": "2022-03-16",
+     "dovish": 0.0,
+     "hawkish": 2.0,
+     "url": "https://www.federalreserve.gov/newsevents/pressreleases/monetary20220316a.htm",
+     "words": 362.0
+    },
+    {
+     "date": "2022-05-04",
+     "dovish": 0.0,
+     "hawkish": 2.0,
+     "url": "https://www.federalreserve.gov/newsevents/pressreleases/monetary20220504a.htm",
+     "words": 398.0
+    },
+    {
+     "date": "2022-06-15",
+     "dovish": 0.0,
+     "hawkish": 1.0,
+     "url": "https://www.federalreserve.gov/newsevents/pressreleases/monetary20220615a.htm",
+     "words": 383.0
+    },
+    {
+     "date": "2022-07-27",
+     "dovish": 0.0,
+     "hawkish": 1.0,
+     "url": "https://www.federalreserve.gov/newsevents/pressreleases/monetary20220727a.htm",
+     "words": 331.0
+    },
+    {
+     "date": "2022-09-21",
+     "dovish": 0.0,
+     "hawkish": 1.0,
+     "url": "https://www.federalreserve.gov/newsevents/pressreleases/monetary20220921a.htm",
+     "words": 332.0
+    },
+    {
+     "date": "2022-11-02",
+     "dovish": 0.0,
+     "hawkish": 3.0,
+     "url": "https://www.federalreserve.gov/newsevents/pressreleases/monetary20221102a.htm",
+     "words": 401.0
+    },
+    {
+     "date": "2022-12-14",
+     "dovish": 0.0,
+     "hawkish": 3.0,
+     "url": "https://www.federalreserve.gov/newsevents/pressreleases/monetary20221214a.htm",
+     "words": 401.0
+    },
+    {
+     "date": "2023-02-01",
+     "dovish": 1.0,
+     "hawkish": 4.0,
+     "url": "https://www.federalreserve.gov/newsevents/pressreleases/monetary20230201a.htm",
+     "words": 358.0
+    },
+    {
+     "date": "2023-03-22",
+     "dovish": 0.0,
+     "hawkish": 5.0,
+     "url": "https://www.federalreserve.gov/newsevents/pressreleases/monetary20230322a.htm",
+     "words": 390.0
+    },
+    {
+     "date": "2023-05-03",
+     "dovish": 0.0,
+     "hawkish": 4.0,
+     "url": "https://www.federalreserve.gov/newsevents/pressreleases/monetary20230503a.htm",
+     "words": 356.0
+    },
+    {
+     "date": "2023-06-14",
+     "dovish": 0.0,
+     "hawkish": 4.0,
+     "url": "https://www.federalreserve.gov/newsevents/pressreleases/monetary20230614a.htm",
+     "words": 366.0
+    },
+    {
+     "date": "2023-07-26",
+     "dovish": 0.0,
+     "hawkish": 4.0,
+     "url": "https://www.federalreserve.gov/newsevents/pressreleases/monetary20230726a.htm",
+     "words": 358.0
+    },
+    {
+     "date": "2023-09-20",
+     "dovish": 0.0,
+     "hawkish": 4.0,
+     "url": "https://www.federalreserve.gov/newsevents/pressreleases/monetary20230920a.htm",
+     "words": 363.0
+    },
+    {
+     "date": "2023-11-01",
+     "dovish": 0.0,
+     "hawkish": 4.0,
+     "url": "https://www.federalreserve.gov/newsevents/pressreleases/monetary20231101a.htm",
+     "words": 369.0
+    },
+    {
+     "date": "2023-12-13",
+     "dovish": 1.0,
+     "hawkish": 4.0,
+     "url": "https://www.federalreserve.gov/newsevents/pressreleases/monetary20231213a.htm",
+     "words": 380.0
+    },
+    {
+     "date": "2024-01-31",
+     "dovish": 1.0,
+     "hawkish": 1.0,
+     "url": "https://www.federalreserve.gov/newsevents/pressreleases/monetary20240131a.htm",
+     "words": 358.0
+    },
+    {
+     "date": "2024-03-20",
+     "dovish": 1.0,
+     "hawkish": 1.0,
+     "url": "https://www.federalreserve.gov/newsevents/pressreleases/monetary20240320a.htm",
+     "words": 352.0
+    },
+    {
+     "date": "2024-05-01",
+     "dovish": 1.0,
+     "hawkish": 1.0,
+     "url": "https://www.federalreserve.gov/newsevents/pressreleases/monetary20240501a.htm",
+     "words": 428.0
+    },
+    {
+     "date": "2024-06-12",
+     "dovish": 1.0,
+     "hawkish": 1.0,
+     "url": "https://www.federalreserve.gov/newsevents/pressreleases/monetary20240612a.htm",
+     "words": 366.0
+    },
+    {
+     "date": "2024-07-31",
+     "dovish": 1.0,
+     "hawkish": 1.0,
+     "url": "https://www.federalreserve.gov/newsevents/pressreleases/monetary20240731a.htm",
+     "words": 383.0
+    },
+    {
+     "date": "2024-09-18",
+     "dovish": 0.0,
+     "hawkish": 1.0,
+     "url": "https://www.federalreserve.gov/newsevents/pressreleases/monetary20240918a.htm",
+     "words": 378.0
+    },
+    {
+     "date": "2024-11-07",
+     "dovish": 1.0,
+     "hawkish": 1.0,
+     "url": "https://www.federalreserve.gov/newsevents/pressreleases/monetary20241107a.htm",
+     "words": 342.0
+    },
+    {
+     "date": "2024-12-18",
+     "dovish": 1.0,
+     "hawkish": 1.0,
+     "url": "https://www.federalreserve.gov/newsevents/pressreleases/monetary20241218a.htm",
+     "words": 367.0
+    },
+    {
+     "date": "2025-01-29",
+     "dovish": 0.0,
+     "hawkish": 1.0,
+     "url": "https://www.federalreserve.gov/newsevents/pressreleases/monetary20250129a.htm",
+     "words": 331.0
+    },
+    {
+     "date": "2025-03-19",
+     "dovish": 0.0,
+     "hawkish": 1.0,
+     "url": "https://www.federalreserve.gov/newsevents/pressreleases/monetary20250319a.htm",
+     "words": 388.0
+    },
+    {
+     "date": "2025-05-07",
+     "dovish": 0.0,
+     "hawkish": 1.0,
+     "url": "https://www.federalreserve.gov/newsevents/pressreleases/monetary20250507a.htm",
+     "words": 347.0
+    },
+    {
+     "date": "2025-06-18",
+     "dovish": 0.0,
+     "hawkish": 2.0,
+     "url": "https://www.federalreserve.gov/newsevents/pressreleases/monetary20250618a.htm",
+     "words": 320.0
+    },
+    {
+     "date": "2025-07-30",
+     "dovish": 0.0,
+     "hawkish": 2.0,
+     "url": "https://www.federalreserve.gov/newsevents/pressreleases/monetary20250730a.htm",
+     "words": 349.0
+    },
+    {
+     "date": "2025-09-17",
+     "dovish": 1.0,
+     "hawkish": 2.0,
+     "url": "https://www.federalreserve.gov/newsevents/pressreleases/monetary20250917a.htm",
+     "words": 358.0
+    },
+    {
+     "date": "2025-10-29",
+     "dovish": 1.0,
+     "hawkish": 2.0,
+     "url": "https://www.federalreserve.gov/newsevents/pressreleases/monetary20251029a.htm",
+     "words": 387.0
+    },
+    {
+     "date": "2025-12-10",
+     "dovish": 1.0,
+     "hawkish": 2.0,
+     "url": "https://www.federalreserve.gov/newsevents/pressreleases/monetary20251210a.htm",
+     "words": 409.0
+    }
+   ],
+   "file": "tone_usd",
+   "outcome": "OK",
+   "regions": [
+    "MAIN_REGION"
+   ],
+   "retrieval_timestamp_utc": "2026-09-23T15:01:58.713625+00:00"
+  }
+ }
+}

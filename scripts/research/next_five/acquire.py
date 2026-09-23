@@ -3,61 +3,48 @@
 
 `NON_DECISION_BEARING_EXPLORATORY_ONLY` · `RESEARCH_SCRATCH_NON_AUTHORITATIVE`.
 
-Authority: 2026-09-22 Human + ChatGPT 裁定 §K（Stage 0 / 取得）。
+Authority: 2026-09-22 第 2 裁定 §2–§4（取得・mapping・Stage 0 再実行の承認）。
 
 **network に出る条件は 2 つ揃ったときだけ。**
 
-1. `NEXT_FIVE_ACQUIRE_APPROVED=1`（`require_opt_in` が fetch のたびに確認）
+1. `NEXT_FIVE_ACQUIRE_APPROVED=1`（`data_access.fetch` が試行のたびに確認）
 2. この module を **script として実行**していること
 
-`import` では何も起きない。curl 等へ落ちる経路は持たない。
+**保護期間は request から外す。** 期間 parameter を受け付ける endpoint（ALFRED / BoC /
+BoJ）には seen window の 2 区間だけを request する。受け付けない endpoint（Fed H.4.1 の
+一括 zip / SNB の cube）は、parse 直後・保存前に `_truncate` で落とし、保護期間の行が
+残っていたら **例外で止まる**。切り落とす前の series は外へ返らない。
 
-**保存するのは切り落とし済みの frame だけ。** 切り落とし前の frame は `_truncate` の
-内側にしか存在せず、外へ返らない。呼び出し側が protected 領域を見る経路が無い。
-
-**source は 2 系統ある。** FRED 経由と、各国公式サイト直の経路である。
-前 cycle で FRED だけが到達せず、公式サイト直は 8 本すべて HTTP 200 で取れた。
-`--route` でどちらを使うかを選ぶ — **どちらを使ったかは provenance に残る。**
+mapping は `series_map.SERIES_MAP` に凍結してあり、取得のたびに provider の metadata で
+**意味を検証し直す**（`data_access.mapping.check_semantics`）。合わなければ保存しない。
 """
 
 from __future__ import annotations
 
 import argparse
 import datetime as dt
-import io
 import os
-import ssl
 import sys
-import time
-import urllib.error
-import urllib.request
 from pathlib import Path
 from typing import Any, Final
 
 import pandas as pd
 
-from scripts.research.acquisition_safety import (
-    NETWORK_FAILURES,
-    OK,
-    classify_failure,
-    digest,
-    require_opt_in,
-    write_provenance,
-)
-from scripts.research.next_five import prereg
+from scripts.research.acquisition_safety import digest, write_provenance
+from scripts.research.data_access import mapping, providers
+from scripts.research.data_access.fetch import FetchError
+from scripts.research.next_five import prereg, series_map, statements
 
 OPT_IN_ENV: Final[str] = "NEXT_FIVE_ACQUIRE_APPROVED"
 OVERWRITE_ENV: Final[str] = "NEXT_FIVE_PROVENANCE_OVERWRITE_APPROVED"
-USER_AGENT: Final[str] = "Mozilla/5.0 fx-ai-trading research acquisition"
-TIMEOUT_SECONDS: Final[int] = 90
-ATTEMPTS: Final[int] = 2
-RETRY_SECONDS: Final[float] = 2.0
 
 REPO_ROOT: Final[Path] = Path(__file__).resolve().parents[3]
 DATA_DIR: Final[Path] = REPO_ROOT / "artifacts/track_a_scratch/next_five"
 RECORD: Final[Path] = REPO_ROOT / "artifacts/research/next_five/acquisition.json"
 
-#: seen span の外側は **保存しない**。境界は parsed date で判定する。
+#: seen span の境界。**parsed typed date で判定する。文字列の辞書順比較はしない。**
+LONG_LAST: Final[dt.date] = dt.date.fromisoformat(prereg.SPANS["long"]["last"])
+RECENT_FIRST: Final[dt.date] = dt.date.fromisoformat(prereg.SPANS["recent"]["first"])
 SEEN_LAST: Final[dt.date] = dt.date.fromisoformat(prereg.SPANS["recent"]["last"])
 PROTECTED_FIRST: Final[dt.date] = dt.date.fromisoformat(
     prereg.PROTECTED_BOUNDS["fresh_pool"]["first"]
@@ -65,225 +52,234 @@ PROTECTED_FIRST: Final[dt.date] = dt.date.fromisoformat(
 PROTECTED_LAST: Final[dt.date] = dt.date.fromisoformat(
     prereg.PROTECTED_BOUNDS["fresh_pool"]["last"]
 )
-LONG_LAST: Final[dt.date] = dt.date.fromisoformat(prereg.SPANS["long"]["last"])
+
+#: request に入れる 2 区間（前半の始点は signal の warm-up のために十分前）
+WINDOWS: Final[tuple[tuple[str, str], ...]] = (
+    ("1990-01-01", LONG_LAST.isoformat()),
+    (RECENT_FIRST.isoformat(), SEEN_LAST.isoformat()),
+)
+
+#: series ごとの経済変数（mapping の意味検証に使う）
+VARIABLE_OF: Final[dict[str, str]] = {
+    "U1": "GOODS_TRADE_BALANCE",
+    "U2": "CB_TOTAL_ASSETS",
+    "U4": "FX_RESERVES",
+    "U5": "HY_CREDIT_SPREAD",
+}
+FILE_PREFIX: Final[dict[str, str]] = {"U1": "trade", "U2": "balance_sheet", "U4": "reserves"}
 
 
 def is_seen(day: dt.date) -> bool:
-    """**parsed typed date で判定する。文字列の辞書順比較はしない。**"""
+    """**parsed typed date で判定する。** 文字列比較・部分文字列比較はしない。"""
     if not isinstance(day, dt.date) or isinstance(day, dt.datetime):
         day = dt.date(day.year, day.month, day.day)
     if day <= LONG_LAST:
         return True
-    if PROTECTED_FIRST <= day <= PROTECTED_LAST:
+    if day < RECENT_FIRST:
+        #: 保護 pool と、その前後の span 外の日（2016-06-02 … 2021-04-26）
         return False
     return day <= SEEN_LAST
 
 
-#: FRED 経由の series id。
-FRED: Final[dict[str, str]] = {
-    "trade_usd": "BOPGSTB",
-    "trade_jpy": "XTNTVA01JPM664S",
-    "trade_gbp": "XTNTVA01GBM664S",
-    "trade_cad": "XTNTVA01CAM664S",
-    "trade_aud": "XTNTVA01AUM664S",
-    "trade_nzd": "XTNTVA01NZM664S",
-    "trade_chf": "XTNTVA01CHM664S",
-    "trade_eur": "XTNTVA01EZM664S",
-    "balance_sheet_usd": "WALCL",
-    "balance_sheet_eur": "ECBASSETSW",
-    "balance_sheet_jpy": "JPNASSETS",
-    "reserves_jpy": "TRESEGJPM052N",
-    "reserves_chf": "TRESEGCHM052N",
-    "reserves_gbp": "TRESEGGBM052N",
-    "reserves_cad": "TRESEGCAM052N",
-    "reserves_aud": "TRESEGAUM052N",
-    "credit_hy_oas": "BAMLH0A0HYM2",
-}
-
-#: 各国公式サイト直の経路（FRED が到達しないときの代替）。
-#: **前 cycle で HTTP 200 が確認できた host を優先している。**
-DIRECT: Final[dict[str, dict[str, str]]] = {
-    "balance_sheet_chf": {
-        "provider": "Swiss National Bank",
-        "url": "https://data.snb.ch/api/cube/snbbipo/data/csv/en",
-        "kind": "snb_csv",
-    },
-    "reserves_chf": {
-        "provider": "Swiss National Bank",
-        "url": "https://data.snb.ch/api/cube/snbdevbil/data/csv/en",
-        "kind": "snb_csv",
-    },
-}
-
-
-def _fetch(url: str) -> bytes:
-    """network へ出る唯一の場所。**fetch のたびに許可を確認する。** fallback は無い。"""
-    last: BaseException | None = None
-    for _ in range(ATTEMPTS):
-        require_opt_in(OPT_IN_ENV, what="acquire next-five public data")
-        request = urllib.request.Request(url, headers={"User-Agent": USER_AGENT})
-        try:
-            with urllib.request.urlopen(
-                request, timeout=TIMEOUT_SECONDS, context=ssl.create_default_context()
-            ) as response:
-                return response.read()
-        except urllib.error.HTTPError:
-            raise
-        except NETWORK_FAILURES as error:
-            last = error
-            time.sleep(RETRY_SECONDS)
-    raise last if last is not None else RuntimeError(f"{url}: 取得できなかった")
-
-
-def _truncate(frame: pd.DataFrame, *, label: str) -> pd.DataFrame:
-    """**seen window の外を落とす唯一の場所。** 切り落とし前の frame は外へ返らない。"""
-    if not isinstance(frame.index, pd.DatetimeIndex):
-        raise TypeError(f"{label}: DatetimeIndex でない frame は切り落とせない")
-    keep = [is_seen(stamp.date()) for stamp in frame.index]
-    kept = frame[keep]
-    leaked = [str(s.date()) for s, k in zip(frame.index, keep, strict=True) if not k][:3]
-    if kept.empty:
-        raise ValueError(f"{label}: seen window に 1 行も残らなかった（外側の例: {leaked}）")
+def _truncate(series: pd.Series, *, label: str) -> pd.Series:
+    """seen window の外を落とす唯一の場所。**保護 pool の行が残れば例外で止める。**"""
+    if not isinstance(series.index, pd.DatetimeIndex):
+        raise TypeError(f"{label}: DatetimeIndex でない series は切り落とせない")
+    kept = series[[is_seen(stamp.date()) for stamp in series.index]]
     for stamp in kept.index:
         if PROTECTED_FIRST <= stamp.date() <= PROTECTED_LAST:
             raise AssertionError(f"{label}: 保護 pool の行が残った（{stamp.date()}）")
+        if stamp.date() > SEEN_LAST:
+            raise AssertionError(f"{label}: forward epoch 側の行が残った（{stamp.date()}）")
+    if kept.empty:
+        raise FetchError("SERIES_NOT_FOUND", f"{label}: seen window に観測が 1 つも無い")
     return kept
 
 
-def _parse_fred(payload: bytes, name: str) -> pd.DataFrame:
-    frame = pd.read_csv(io.StringIO(payload.decode("utf-8", errors="replace")))
-    if frame.shape[1] < 2:
-        raise ValueError(f"{name}: 列が足りない")
-    stamps = pd.to_datetime(frame.iloc[:, 0], errors="coerce")
-    values = pd.to_numeric(
-        frame.iloc[:, 1].astype(str).str.replace(",", "", regex=False), errors="coerce"
-    )
-    out = pd.DataFrame({name: values.to_numpy()}, index=pd.DatetimeIndex(stamps))
-    out = out[out.index.notna()].dropna()
-    if out.empty or float(out[name].std()) == 0.0:
-        #: 前 cycle の TIC は全 0.0 で通りかけた。**分散ゼロは parse 失敗として扱う。**
-        raise ValueError(f"{name}: 値が空か定数である（parse を疑う）")
-    return out.sort_index()
-
-
-def _parse_snb(payload: bytes, name: str) -> pd.DataFrame:
-    text = payload.decode("utf-8", errors="replace")
-    lines = text.splitlines()
-    start = next((i for i, line in enumerate(lines) if line.startswith("Date")), 0)
-    frame = pd.read_csv(io.StringIO("\n".join(lines[start:])), sep=";")
-    stamps = pd.to_datetime(frame.iloc[:, 0], errors="coerce")
-    values = pd.to_numeric(frame.iloc[:, -1], errors="coerce")
-    out = pd.DataFrame({name: values.to_numpy()}, index=pd.DatetimeIndex(stamps))
-    out = out[out.index.notna()].dropna()
-    if out.empty or float(out[name].std()) == 0.0:
-        raise ValueError(f"{name}: 値が空か定数である（parse を疑う）")
-    return out.sort_index()
-
-
-PARSERS: Final[dict[str, Any]] = {"fred": _parse_fred, "snb_csv": _parse_snb}
-
-
-def _acquire_one(name: str, url: str, kind: str, provider: str) -> dict[str, Any]:
-    started = pd.Timestamp.utcnow().isoformat()
-    try:
-        payload = _fetch(url)
-    except Exception as error:  # noqa: BLE001 - 分類して記録するのが仕事である
-        return {
-            "name": name,
-            "provider": provider,
-            "url": url,
-            "retrieval_timestamp_utc": started,
-            "http_status": getattr(error, "code", None),
-            "outcome": classify_failure(error),
-            "error": f"{type(error).__name__}: {error}"[:200],
-            "reading": "**『provider にデータが無い』ではない。** 到達の話である",
+def _fetch_windowed(fetcher: str, args: dict[str, Any]) -> tuple[pd.Series, dict[str, Any]]:
+    """期間 parameter を受け付ける provider には **2 区間だけ** を request する。"""
+    if fetcher in {"alfred", "boc_valet"}:
+        parts: list[pd.Series] = []
+        meta: dict[str, Any] = {}
+        urls: list[str] = []
+        for first, last in WINDOWS:
+            try:
+                piece, meta = getattr(providers, fetcher)(
+                    opt_in_env=OPT_IN_ENV, first=first, last=last, **args
+                )
+            except FetchError as error:
+                if error.outcome == "PARSER_FAILURE" and "1 つも無い" in str(error):
+                    continue  # その区間に観測が無い（例: HY OAS の長 span）
+                raise
+            parts.append(piece)
+            urls.append(meta["source_url"])
+        if not parts:
+            raise FetchError("SERIES_NOT_FOUND", f"{args}: どちらの区間にも観測が無い")
+        series = pd.concat(parts).sort_index()
+        series = series[~series.index.duplicated(keep="last")]
+        meta = {
+            **meta,
+            "source_url": " | ".join(urls),
+            "request_windows": [list(w) for w in WINDOWS],
         }
-    try:
-        frame = PARSERS[kind](payload, name)
-        kept = _truncate(frame, label=name)
-    except Exception as error:  # noqa: BLE001
-        return {
-            "name": name,
-            "provider": provider,
-            "url": url,
-            "retrieval_timestamp_utc": started,
-            "http_status": 200,
-            "outcome": f"PARSE_OR_TRUNCATION_FAILED: {type(error).__name__}",
-            "error": str(error)[:200],
-        }
+        return series, meta
+    series, meta = getattr(providers, fetcher)(opt_in_env=OPT_IN_ENV, **args)
+    meta = {**meta, "request_windows": "FULL_SERIES_REQUESTED_TRUNCATED_BEFORE_SAVE"}
+    return series, meta
 
+
+def _save(name: str, series: pd.Series) -> str:
     DATA_DIR.mkdir(parents=True, exist_ok=True)
-    kept.to_parquet(DATA_DIR / f"{name}.parquet")
-    spacing = pd.Series(kept.index).diff().dt.days.median()
+    frame = series.to_frame(name=name)
+    frame.index.name = "date"
+    path = DATA_DIR / f"{name}.parquet"
+    frame.to_parquet(path)
+    return digest(frame.to_csv())
+
+
+def acquire_series(track: str, currency: str, spec: dict[str, Any]) -> dict[str, Any]:
+    name = "credit_hy_oas" if track == "U5" else f"{FILE_PREFIX[track]}_{currency.lower()}"
+    started = pd.Timestamp.now(tz="UTC").isoformat()
+    try:
+        raw, meta = _fetch_windowed(spec["fetcher"], spec["args"])
+        semantic = mapping.check_semantics(
+            VARIABLE_OF[track], f"{meta['title']} {meta.get('notes', '')}"
+        )
+        kept = _truncate(raw, label=name)
+        saved_hash = _save(name, kept)
+    except FetchError as error:
+        return {
+            "track": track,
+            "currency": currency,
+            "file": name,
+            "outcome": error.outcome,
+            "http_status": error.http_status,
+            "error": str(error)[:300],
+            "retrieval_timestamp_utc": started,
+            "reading": (
+                "**環境側の失敗であり、データが存在しないことを意味しない**"
+                if error.outcome in {"TIMEOUT", "DNS", "TLS", "ENVIRONMENT_RETRIEVAL_FAILURE"}
+                else "provider の応答 / 中身 / 意味の不一致による失敗"
+            ),
+        }
+    record = mapping.SeriesMapping(
+        track=track,
+        currency=currency,
+        variable=VARIABLE_OF[track],
+        provider=spec["provider"],
+        tier=int(spec["tier"]),
+        series_id=meta["series_id"],
+        official_title=meta["title"],
+        units=meta["units"],
+        frequency=meta["frequency"],
+        seasonal_adjustment=meta["seasonal_adjustment"],
+        coverage_first=str(kept.index.min().date()),
+        coverage_last=str(kept.index.max().date()),
+        publication_lag=str(spec["lag"]),
+        revision_behavior=spec["revision"],
+        source_url=meta["source_url"],
+        metadata_url=meta["metadata_url"],
+        retrieval_timestamp_utc=started,
+        content_hash=saved_hash,
+        semantic_check=semantic,
+    ).as_record()
     return {
-        "name": name,
-        "provider": provider,
-        "url": url,
-        "request_parameters": url.split("?", 1)[1] if "?" in url else "",
-        "retrieval_timestamp_utc": started,
-        "http_status": 200,
-        "outcome": OK,
-        "content_hash": digest(payload.decode("utf-8", errors="replace")),
-        "coverage": {
-            "first": str(kept.index.min().date()),
-            "last": str(kept.index.max().date()),
-            "rows": int(len(kept)),
-        },
-        "frequency": (
-            "daily"
-            if spacing and spacing <= 5
-            else "weekly"
-            if spacing and spacing <= 10
-            else "monthly"
-        ),
-        "publication_timing": "prereg.TRACKS の publication_lag に従って適用される",
-        "truncated_to_seen_window": True,
+        **record,
+        "file": name,
+        "outcome": "OK",
+        "rows_saved": int(len(kept)),
+        "rows_long_span": int((kept.index.date <= LONG_LAST).sum()),
+        "rows_recent_span": int((kept.index.date >= RECENT_FIRST).sum()),
+        "request_windows": meta.get("request_windows"),
+        "why_this_route": spec["why_this_route"],
     }
 
 
-def run(route: str) -> dict[str, Any]:
-    rows: list[dict[str, Any]] = []
-    if route in {"fred", "both"}:
-        for name, series_id in FRED.items():
-            rows.append(
-                _acquire_one(
-                    name,
-                    f"https://fred.stlouisfed.org/graph/fredgraph.csv?id={series_id}",
-                    "fred",
-                    "Federal Reserve Bank of St. Louis (FRED)",
-                )
+def acquire_statements() -> dict[str, Any]:
+    """U3 の声明。**保護期間の日付の声明は request しない。**"""
+    out: dict[str, Any] = {}
+    years = range(2021, SEEN_LAST.year + 1)
+    for currency in statements.LISTERS:
+        name = f"tone_{currency.lower()}"
+        started = pd.Timestamp.now(tz="UTC").isoformat()
+        try:
+            series, records = statements.tone_series(
+                currency, years, opt_in_env=OPT_IN_ENV, is_seen=is_seen
             )
-    if route in {"direct", "both"}:
-        for name, spec in DIRECT.items():
-            if route == "both" and any(r["name"] == name and r["outcome"] == OK for r in rows):
-                continue
-            rows.append(_acquire_one(name, spec["url"], spec["kind"], spec["provider"]))
+            kept = _truncate(series, label=name)
+            saved_hash = _save(name, kept)
+        except FetchError as error:
+            out[currency] = {
+                "file": name,
+                "outcome": error.outcome,
+                "error": str(error)[:300],
+                "retrieval_timestamp_utc": started,
+            }
+            continue
+        except (ValueError, KeyError, TypeError) as error:
+            #: 一覧や本文の形が想定と違った — provider の不在ではなく parser の問題
+            out[currency] = {
+                "file": name,
+                "outcome": "PARSER_FAILURE",
+                "error": f"{type(error).__name__}: {error}"[:300],
+                "retrieval_timestamp_utc": started,
+            }
+            continue
+        out[currency] = {
+            "file": name,
+            "outcome": "OK",
+            "documents": len(records),
+            "coverage_first": str(kept.index.min().date()),
+            "coverage_last": str(kept.index.max().date()),
+            "regions": sorted({r["region"] for r in records}),
+            "content_hash": saved_hash,
+            "retrieval_timestamp_utc": started,
+            "documents_detail": [
+                {k: r[k] for k in ("date", "url", "words", "hawkish", "dovish")} for r in records
+            ],
+        }
+    return out
 
-    ok = [row["name"] for row in rows if row["outcome"] == OK]
+
+def run() -> dict[str, Any]:
+    rows: dict[str, Any] = {}
+    for track, currencies in series_map.SERIES_MAP.items():
+        for currency, spec in currencies.items():
+            rows[f"{track}/{currency}"] = acquire_series(track, currency, spec)
+            print(
+                f"{track}/{currency:6} {rows[f'{track}/{currency}']['outcome']}",
+                file=sys.stderr,
+                flush=True,
+            )
+    tone = acquire_statements()
+    for currency, row in tone.items():
+        print(
+            f"U3/{currency:6} {row['outcome']} docs={row.get('documents')}",
+            file=sys.stderr,
+            flush=True,
+        )
     return {
         "cycle": prereg.CYCLE,
         "freeze_digest": prereg.freeze_digest(),
-        "authority": "2026-09-22 Human + ChatGPT 裁定 §K",
-        "route": route,
-        "finished_utc": pd.Timestamp.utcnow().isoformat(),
+        "authority": "2026-09-22 第 2 裁定 §2–§4",
+        "finished_utc": pd.Timestamp.now(tz="UTC").isoformat(),
         "scope": "public / free source のみ。paid / authenticated には触れていない",
-        "sources": {row["name"]: row for row in rows},
-        "acquired": sorted(ok),
-        "failed": sorted(row["name"] for row in rows if row["outcome"] != OK),
+        "series": rows,
+        "statements": tone,
+        "not_mapped": series_map.NOT_MAPPED,
         "protected_span_handling": (
-            "seen window の外は **保存前に落とす**。境界は parsed typed date で判定し、"
-            "保護 pool の行が残っていたら AssertionError で落ちる"
+            "期間 parameter を受け付ける endpoint には seen window の 2 区間だけを request した。"
+            "受け付けない endpoint は parse 直後・保存前に切り落とし、保護 pool / forward 側の行が"
+            "残れば例外で止まる"
         ),
     }
 
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="次の 5 本の public data を取得する")
-    parser.add_argument("--route", choices=("fred", "direct", "both"), default="both")
     parser.add_argument("--overwrite", action="store_true")
     args = parser.parse_args()
-
-    payload = run(args.route)
+    payload = run()
     RECORD.parent.mkdir(parents=True, exist_ok=True)
     written = write_provenance(
         RECORD,
@@ -291,9 +287,6 @@ def main() -> int:
         overwrite=args.overwrite,
         env_name=OVERWRITE_ENV if args.overwrite else None,
     )
-    print(f"取得成功 {len(payload['acquired'])} / 失敗 {len(payload['failed'])}", file=sys.stderr)
-    for name in payload["failed"]:
-        print(f"  失敗: {name} -> {payload['sources'][name]['outcome']}", file=sys.stderr)
     print(f"written: {RECORD} sha256={written}", file=sys.stderr)
     return 0
 
