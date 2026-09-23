@@ -1,0 +1,218 @@
+{
+ "cycle": "MECHANISM_REDESIGN_2026_09",
+ "deleted_files": [
+  "epu_usd.parquet",
+  "epu_eur.parquet"
+ ],
+ "finished_utc": "2026-09-23T20:50:37.273923+00:00",
+ "incidents": {
+  "D-M1_METADATA_PAGE": "providers.alfred は window ごとに metadata page（alfred.stlouisfed.org/series?seid=…）を取得した。1 series あたり 2 回、実行 3 回で合計約 200 ページ。page 全体を decode して regex で走査しており、見出しの最新観測値（2026 年 = forward epoch の値）が**メモリ上で parse された**。抽出・保存はしていない。『観測値は読まない』という初版の記述は不正確で、正しくは『抽出・保存しない』",
+  "D-M2_PROVIDER_IGNORED_BOUND": "1 回目の実行で JPNEPUINDXM の recent request に対し ALFRED が 1988-06 以降の全系列を返した。providers._series が応答全体を parse して標準偏差まで計算した後に assert_response_within が拒否した（『計算なし』は厳密には誤り。保存は無し）。以後 EPU family には request していない",
+  "D-M2b_EPU_USD_EUR_SAVED_IN_RUN_1": "同じ 1 回目の実行で、EPU の USD / EUR は bound どおりに返り、epu_usd.parquet / epu_eur.parquet として保存された（保護 stamp は 0 件）。acquisition.json はこの 2 本を ROUTE_NOT_REQUEST_BOUNDED と記録しており、保存の事実が抜けていた。2 本は signal に使われておらず、この amendment で削除した",
+  "D-M3_BIS_ATTRIBUTE_TEXT": "BIS WS_CBPOL の probe 1 回（JP、recent 区間、属性付き）で、属性列 COMPILATION に 2026 年の政策決定の記述（forward epoch の内容）が含まれていた。**lead session がこれを表示して読んだ。** 保存も計算もしていない。本取得は detail=dataonly（観測値の列だけ）で行い、属性列は応答に入っていない",
+  "RUNS_1_AND_2": "1 回目（D-M2 で停止、record 無し）と 2 回目（EPU を止めた後、record は同一 session で置き換えた）は、CANDIDATES の全 series を同じ bound で request した。parquet は 3 回目が上書きした（未 commit の段階）。request の一覧は CANDIDATES と同じで、別の記録は残っていない"
+ },
+ "rows": [
+  {
+   "content_hash": "7154c331fbb1664a44c42718f5424f3ffe7b0649bde7d4d14cad07ec40ce8f61",
+   "coverage_first": "1990-01-01",
+   "coverage_last": "2025-11-01",
+   "currency": "USD",
+   "metadata_url": "https://stats.bis.org/api/v2/structure/dataflow/BIS/WS_CBPOL/1.0",
+   "official_title": "Central bank policy rates - US - Monthly - End of period（dataflow 構造定義と、事前の 1 回の probe の TITLE で確認）",
+   "outcome": "OK",
+   "reference_period": "MONTH",
+   "revision": "政策金利の決定値。改訂無し",
+   "rows_long_span": 317,
+   "rows_recent_span": 55,
+   "semantic_check": {
+    "evidence": "Central bank policy rates The interest rate which best captures the monetary authorities' policy intentions.",
+    "matched": [
+     [
+      "central bank policy rates"
+     ]
+    ],
+    "variable": "POLICY_RATE"
+   },
+   "series_key": "WS_CBPOL/M.US",
+   "slot": "policy_rate_bis",
+   "source_url": "https://stats.bis.org/api/v2/data/dataflow/BIS/WS_CBPOL/1.0/M.US?format=csv&startPeriod=1990-01&endPeriod=2016-05&detail=dataonly | https://stats.bis.org/api/v2/data/dataflow/BIS/WS_CBPOL/1.0/M.US?format=csv&startPeriod=2021-05&endPeriod=2025-11&detail=dataonly"
+  },
+  {
+   "content_hash": "417403438d645c304416c5a7b3009c7af3c4017ada3bce83b396b0ba02decbf5",
+   "coverage_first": "1990-01-01",
+   "coverage_last": "2025-11-01",
+   "currency": "JPY",
+   "metadata_url": "https://stats.bis.org/api/v2/structure/dataflow/BIS/WS_CBPOL/1.0",
+   "official_title": "Central bank policy rates - JP - Monthly - End of period（dataflow 構造定義と、事前の 1 回の probe の TITLE で確認）",
+   "outcome": "OK",
+   "reference_period": "MONTH",
+   "revision": "政策金利の決定値。改訂無し",
+   "rows_long_span": 204,
+   "rows_recent_span": 55,
+   "semantic_check": {
+    "evidence": "Central bank policy rates The interest rate which best captures the monetary authorities' policy intentions.",
+    "matched": [
+     [
+      "central bank policy rates"
+     ]
+    ],
+    "variable": "POLICY_RATE"
+   },
+   "series_key": "WS_CBPOL/M.JP",
+   "slot": "policy_rate_bis",
+   "source_url": "https://stats.bis.org/api/v2/data/dataflow/BIS/WS_CBPOL/1.0/M.JP?format=csv&startPeriod=1990-01&endPeriod=2016-05&detail=dataonly | https://stats.bis.org/api/v2/data/dataflow/BIS/WS_CBPOL/1.0/M.JP?format=csv&startPeriod=2021-05&endPeriod=2025-11&detail=dataonly"
+  },
+  {
+   "content_hash": "66848d1c0bbc6fa93aeddaf468534bc884d2e24b58579e72866e012860e30c3a",
+   "coverage_first": "1990-01-01",
+   "coverage_last": "2025-11-01",
+   "currency": "GBP",
+   "metadata_url": "https://stats.bis.org/api/v2/structure/dataflow/BIS/WS_CBPOL/1.0",
+   "official_title": "Central bank policy rates - GB - Monthly - End of period（dataflow 構造定義と、事前の 1 回の probe の TITLE で確認）",
+   "outcome": "OK",
+   "reference_period": "MONTH",
+   "revision": "政策金利の決定値。改訂無し",
+   "rows_long_span": 317,
+   "rows_recent_span": 55,
+   "semantic_check": {
+    "evidence": "Central bank policy rates The interest rate which best captures the monetary authorities' policy intentions.",
+    "matched": [
+     [
+      "central bank policy rates"
+     ]
+    ],
+    "variable": "POLICY_RATE"
+   },
+   "series_key": "WS_CBPOL/M.GB",
+   "slot": "policy_rate_bis",
+   "source_url": "https://stats.bis.org/api/v2/data/dataflow/BIS/WS_CBPOL/1.0/M.GB?format=csv&startPeriod=1990-01&endPeriod=2016-05&detail=dataonly | https://stats.bis.org/api/v2/data/dataflow/BIS/WS_CBPOL/1.0/M.GB?format=csv&startPeriod=2021-05&endPeriod=2025-11&detail=dataonly"
+  },
+  {
+   "content_hash": "381a79530eb073a9b18d1d7812a987e4972b54f9af440be7af8ca021f784e908",
+   "coverage_first": "1990-01-01",
+   "coverage_last": "2025-11-01",
+   "currency": "CAD",
+   "metadata_url": "https://stats.bis.org/api/v2/structure/dataflow/BIS/WS_CBPOL/1.0",
+   "official_title": "Central bank policy rates - CA - Monthly - End of period（dataflow 構造定義と、事前の 1 回の probe の TITLE で確認）",
+   "outcome": "OK",
+   "reference_period": "MONTH",
+   "revision": "政策金利の決定値。改訂無し",
+   "rows_long_span": 317,
+   "rows_recent_span": 55,
+   "semantic_check": {
+    "evidence": "Central bank policy rates The interest rate which best captures the monetary authorities' policy intentions.",
+    "matched": [
+     [
+      "central bank policy rates"
+     ]
+    ],
+    "variable": "POLICY_RATE"
+   },
+   "series_key": "WS_CBPOL/M.CA",
+   "slot": "policy_rate_bis",
+   "source_url": "https://stats.bis.org/api/v2/data/dataflow/BIS/WS_CBPOL/1.0/M.CA?format=csv&startPeriod=1990-01&endPeriod=2016-05&detail=dataonly | https://stats.bis.org/api/v2/data/dataflow/BIS/WS_CBPOL/1.0/M.CA?format=csv&startPeriod=2021-05&endPeriod=2025-11&detail=dataonly"
+  },
+  {
+   "content_hash": "191e7b25498c782607fda62bfaf5307b3b1b303a740a7276ad6f7f62e353835f",
+   "coverage_first": "1990-01-01",
+   "coverage_last": "2025-11-01",
+   "currency": "AUD",
+   "metadata_url": "https://stats.bis.org/api/v2/structure/dataflow/BIS/WS_CBPOL/1.0",
+   "official_title": "Central bank policy rates - AU - Monthly - End of period（dataflow 構造定義と、事前の 1 回の probe の TITLE で確認）",
+   "outcome": "OK",
+   "reference_period": "MONTH",
+   "revision": "政策金利の決定値。改訂無し",
+   "rows_long_span": 317,
+   "rows_recent_span": 55,
+   "semantic_check": {
+    "evidence": "Central bank policy rates The interest rate which best captures the monetary authorities' policy intentions.",
+    "matched": [
+     [
+      "central bank policy rates"
+     ]
+    ],
+    "variable": "POLICY_RATE"
+   },
+   "series_key": "WS_CBPOL/M.AU",
+   "slot": "policy_rate_bis",
+   "source_url": "https://stats.bis.org/api/v2/data/dataflow/BIS/WS_CBPOL/1.0/M.AU?format=csv&startPeriod=1990-01&endPeriod=2016-05&detail=dataonly | https://stats.bis.org/api/v2/data/dataflow/BIS/WS_CBPOL/1.0/M.AU?format=csv&startPeriod=2021-05&endPeriod=2025-11&detail=dataonly"
+  },
+  {
+   "content_hash": "8754097314562df8cc72dc27dcfa10b209a592f6db5117b8f58c974b8ba2c191",
+   "coverage_first": "1990-01-01",
+   "coverage_last": "2025-11-01",
+   "currency": "NZD",
+   "metadata_url": "https://stats.bis.org/api/v2/structure/dataflow/BIS/WS_CBPOL/1.0",
+   "official_title": "Central bank policy rates - NZ - Monthly - End of period（dataflow 構造定義と、事前の 1 回の probe の TITLE で確認）",
+   "outcome": "OK",
+   "reference_period": "MONTH",
+   "revision": "政策金利の決定値。改訂無し",
+   "rows_long_span": 317,
+   "rows_recent_span": 55,
+   "semantic_check": {
+    "evidence": "Central bank policy rates The interest rate which best captures the monetary authorities' policy intentions.",
+    "matched": [
+     [
+      "central bank policy rates"
+     ]
+    ],
+    "variable": "POLICY_RATE"
+   },
+   "series_key": "WS_CBPOL/M.NZ",
+   "slot": "policy_rate_bis",
+   "source_url": "https://stats.bis.org/api/v2/data/dataflow/BIS/WS_CBPOL/1.0/M.NZ?format=csv&startPeriod=1990-01&endPeriod=2016-05&detail=dataonly | https://stats.bis.org/api/v2/data/dataflow/BIS/WS_CBPOL/1.0/M.NZ?format=csv&startPeriod=2021-05&endPeriod=2025-11&detail=dataonly"
+  },
+  {
+   "content_hash": "b3f4e1b1c3cdeeae5819e603e4f633428a1ce69e74627efbafe61221cb940260",
+   "coverage_first": "1990-01-01",
+   "coverage_last": "2025-11-01",
+   "currency": "CHF",
+   "metadata_url": "https://stats.bis.org/api/v2/structure/dataflow/BIS/WS_CBPOL/1.0",
+   "official_title": "Central bank policy rates - CH - Monthly - End of period（dataflow 構造定義と、事前の 1 回の probe の TITLE で確認）",
+   "outcome": "OK",
+   "reference_period": "MONTH",
+   "revision": "政策金利の決定値。改訂無し",
+   "rows_long_span": 317,
+   "rows_recent_span": 55,
+   "semantic_check": {
+    "evidence": "Central bank policy rates The interest rate which best captures the monetary authorities' policy intentions.",
+    "matched": [
+     [
+      "central bank policy rates"
+     ]
+    ],
+    "variable": "POLICY_RATE"
+   },
+   "series_key": "WS_CBPOL/M.CH",
+   "slot": "policy_rate_bis",
+   "source_url": "https://stats.bis.org/api/v2/data/dataflow/BIS/WS_CBPOL/1.0/M.CH?format=csv&startPeriod=1990-01&endPeriod=2016-05&detail=dataonly | https://stats.bis.org/api/v2/data/dataflow/BIS/WS_CBPOL/1.0/M.CH?format=csv&startPeriod=2021-05&endPeriod=2025-11&detail=dataonly"
+  },
+  {
+   "content_hash": "351cce56341ce4022bb2f24a8595c31066c7b108eada8d3e5ac24f818c0ddd3d",
+   "coverage_first": "1999-01-01",
+   "coverage_last": "2025-11-01",
+   "currency": "EUR",
+   "metadata_url": "https://stats.bis.org/api/v2/structure/dataflow/BIS/WS_CBPOL/1.0",
+   "official_title": "Central bank policy rates - XM - Monthly - End of period（dataflow 構造定義と、事前の 1 回の probe の TITLE で確認）",
+   "outcome": "OK",
+   "reference_period": "MONTH",
+   "revision": "政策金利の決定値。改訂無し",
+   "rows_long_span": 209,
+   "rows_recent_span": 55,
+   "semantic_check": {
+    "evidence": "Central bank policy rates The interest rate which best captures the monetary authorities' policy intentions.",
+    "matched": [
+     [
+      "central bank policy rates"
+     ]
+    ],
+    "variable": "POLICY_RATE"
+   },
+   "series_key": "WS_CBPOL/M.XM",
+   "slot": "policy_rate_bis",
+   "source_url": "https://stats.bis.org/api/v2/data/dataflow/BIS/WS_CBPOL/1.0/M.XM?format=csv&startPeriod=1990-01&endPeriod=2016-05&detail=dataonly | https://stats.bis.org/api/v2/data/dataflow/BIS/WS_CBPOL/1.0/M.XM?format=csv&startPeriod=2021-05&endPeriod=2025-11&detail=dataonly"
+  }
+ ],
+ "slot": "policy_rate_bis"
+}

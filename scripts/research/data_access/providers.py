@@ -73,7 +73,16 @@ def alfred(
 
     `fred.stlouisfed.org` は本環境から timeout するが、同じ St. Louis Fed の ALFRED は届く。
     **現行 vintage であって real-time vintage ではない** — 改訂留保は呼び出し側が付ける。
+
+    **期間を必ず request に入れる**（2026-09-24 裁定の D-5 policy）。first / last の無い呼び出しは
+    全期間を返させるので拒否する。
     """
+    if not first or not last:
+        from scripts.research.data_access.request_policy import ProtectedRequestError
+
+        raise ProtectedRequestError(
+            f"{series_id}: 期間の無い ALFRED request は保護暦日を含みうるので拒否する"
+        )
     params = f"id={series_id}"
     if first:
         params += f"&cosd={first}"

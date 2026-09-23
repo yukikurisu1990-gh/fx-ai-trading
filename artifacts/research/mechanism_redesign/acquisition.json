@@ -1,0 +1,1250 @@
+{
+ "bulk_only_used": [],
+ "cycle": "MECHANISM_REDESIGN_2026_09",
+ "finished_utc": "2026-09-23T20:29:00.913132+00:00",
+ "incidents": {
+  "D-M1_METADATA_PAGE": "ALFRED の series ページ（metadata）は見出しに最新の観測値を表示することがある。title / units / frequency / notes の label だけを読み、観測値は読まない",
+  "D-M2_PROVIDER_IGNORED_BOUND": "1 回目の取得で、JPNEPUINDXM の recent 区間（cosd=2021-05-01, coed=2025-11-01）の request に対し ALFRED が 1988-06 以降の全系列を返した。応答は保護暦日と forward の行を含み、CSV として parse された 後に assert_response_within が拒否した（保存なし、計算なし）。その実行は例外で止まり、record は 書かれていない。EPU family はそれ以後 request していない",
+  "RERUN": "この record は 3 回目の実行（EPU を止め、cpi_index を足した後）。1 回目は D-M2 で停止、2 回目の record は同一 session で置き換えた（未 commit）"
+ },
+ "policy": "REQUEST_LEVEL_EXCLUSION_ONLY（data_access.request_policy）",
+ "route_not_request_bounded": {
+  "epu": "ALFRED が JPNEPUINDXM の cosd / coed を無視した（D-M2）。EPU family は request-level exclusion を保証できない"
+ },
+ "series": [
+  {
+   "content_hash": "f2c3ed4f15f2eb08f34a23038221c4c3f90c592859ad7dda0976420c8d3435ab",
+   "coverage_first": "1990-01-01",
+   "coverage_last": "2025-04-01",
+   "currency": "USD",
+   "frequency": "Monthly（観測間隔から導出）",
+   "metadata_url": "https://alfred.stlouisfed.org/series?seid=CPALTT01USM659N",
+   "official_title": "Consumer Price Indices (CPIs, HICPs), COICOP 1999: Consumer Price Index: Total for United States",
+   "outcome": "OK",
+   "reference_period": "MONTH",
+   "rejected_candidates": [],
+   "request_windows": [
+    [
+     "1990-01-01",
+     "2016-05-01"
+    ],
+    [
+     "2021-05-01",
+     "2025-11-01"
+    ]
+   ],
+   "retrieval_timestamp_utc": "2026-09-23T20:28:46.974591+00:00",
+   "revision": "CURRENT_VINTAGE_ONLY_REVISION_CAVEAT",
+   "rows_long_span": 317,
+   "rows_recent_span": 48,
+   "seasonal_adjustment": "Not Seasonally Adjusted",
+   "semantic_check": {
+    "evidence": "Consumer Price Indices (CPIs, HICPs), COICOP 1999: Consumer Price Index: Total for United States Growth rate same period previous year , Not Seasonally Adjusted",
+    "matched": [
+     [
+      "consumer price",
+      "same period previous year"
+     ]
+    ],
+    "variable": "CPI_INFLATION_YOY"
+   },
+   "series_id": "CPALTT01USM659N",
+   "slot": "cpi_yoy",
+   "source_url": "https://alfred.stlouisfed.org/graph/alfredgraph.csv?id=CPALTT01USM659N&cosd=1990-01-01&coed=2016-05-01 | https://alfred.stlouisfed.org/graph/alfredgraph.csv?id=CPALTT01USM659N&cosd=2021-05-01&coed=2025-11-01",
+   "units": "Growth rate same period previous year , Not Seasonally Adjusted"
+  },
+  {
+   "content_hash": "51e1b2c2b79019c2a142e90fbdfa5ec0251132793def9e1cac5871a2f8ef70c2",
+   "coverage_first": "1990-01-01",
+   "coverage_last": "2021-06-01",
+   "currency": "JPY",
+   "frequency": "Monthly（観測間隔から導出）",
+   "metadata_url": "https://alfred.stlouisfed.org/series?seid=CPALTT01JPM659N",
+   "official_title": "Consumer Price Indices (CPIs, HICPs), COICOP 1999: Consumer Price Index: Total for Japan",
+   "outcome": "OK",
+   "reference_period": "MONTH",
+   "rejected_candidates": [],
+   "request_windows": [
+    [
+     "1990-01-01",
+     "2016-05-01"
+    ],
+    [
+     "2021-05-01",
+     "2025-11-01"
+    ]
+   ],
+   "retrieval_timestamp_utc": "2026-09-23T20:28:47.583176+00:00",
+   "revision": "CURRENT_VINTAGE_ONLY_REVISION_CAVEAT",
+   "rows_long_span": 317,
+   "rows_recent_span": 2,
+   "seasonal_adjustment": "Not Seasonally Adjusted",
+   "semantic_check": {
+    "evidence": "Consumer Price Indices (CPIs, HICPs), COICOP 1999: Consumer Price Index: Total for Japan Growth rate same period previous year , Not Seasonally Adjusted",
+    "matched": [
+     [
+      "consumer price",
+      "same period previous year"
+     ]
+    ],
+    "variable": "CPI_INFLATION_YOY"
+   },
+   "series_id": "CPALTT01JPM659N",
+   "slot": "cpi_yoy",
+   "source_url": "https://alfred.stlouisfed.org/graph/alfredgraph.csv?id=CPALTT01JPM659N&cosd=1990-01-01&coed=2016-05-01 | https://alfred.stlouisfed.org/graph/alfredgraph.csv?id=CPALTT01JPM659N&cosd=2021-05-01&coed=2025-11-01",
+   "units": "Growth rate same period previous year , Not Seasonally Adjusted"
+  },
+  {
+   "content_hash": "cd3a2dcc1a6f9db9354460198f32a3c000939d1ff7b5374282f3c00aaf7555ce",
+   "coverage_first": "1990-01-01",
+   "coverage_last": "2025-03-01",
+   "currency": "GBP",
+   "frequency": "Monthly（観測間隔から導出）",
+   "metadata_url": "https://alfred.stlouisfed.org/series?seid=CPALTT01GBM659N",
+   "official_title": "Consumer Price Indices (CPIs, HICPs), COICOP 1999: Consumer Price Index: Total for United Kingdom",
+   "outcome": "OK",
+   "reference_period": "MONTH",
+   "rejected_candidates": [],
+   "request_windows": [
+    [
+     "1990-01-01",
+     "2016-05-01"
+    ],
+    [
+     "2021-05-01",
+     "2025-11-01"
+    ]
+   ],
+   "retrieval_timestamp_utc": "2026-09-23T20:28:47.948321+00:00",
+   "revision": "CURRENT_VINTAGE_ONLY_REVISION_CAVEAT",
+   "rows_long_span": 317,
+   "rows_recent_span": 47,
+   "seasonal_adjustment": "Not Seasonally Adjusted",
+   "semantic_check": {
+    "evidence": "Consumer Price Indices (CPIs, HICPs), COICOP 1999: Consumer Price Index: Total for United Kingdom Growth rate same period previous year , Not Seasonally Adjusted",
+    "matched": [
+     [
+      "consumer price",
+      "same period previous year"
+     ]
+    ],
+    "variable": "CPI_INFLATION_YOY"
+   },
+   "series_id": "CPALTT01GBM659N",
+   "slot": "cpi_yoy",
+   "source_url": "https://alfred.stlouisfed.org/graph/alfredgraph.csv?id=CPALTT01GBM659N&cosd=1990-01-01&coed=2016-05-01 | https://alfred.stlouisfed.org/graph/alfredgraph.csv?id=CPALTT01GBM659N&cosd=2021-05-01&coed=2025-11-01",
+   "units": "Growth rate same period previous year , Not Seasonally Adjusted"
+  },
+  {
+   "content_hash": "1d8f2d22e9a56fdf273def8937df72bcd818f6ce311c11b07fb39071adcff4ee",
+   "coverage_first": "1990-01-01",
+   "coverage_last": "2025-03-01",
+   "currency": "CAD",
+   "frequency": "Monthly（観測間隔から導出）",
+   "metadata_url": "https://alfred.stlouisfed.org/series?seid=CPALTT01CAM659N",
+   "official_title": "Consumer Price Indices (CPIs, HICPs), COICOP 1999: Consumer Price Index: Total for Canada",
+   "outcome": "OK",
+   "reference_period": "MONTH",
+   "rejected_candidates": [],
+   "request_windows": [
+    [
+     "1990-01-01",
+     "2016-05-01"
+    ],
+    [
+     "2021-05-01",
+     "2025-11-01"
+    ]
+   ],
+   "retrieval_timestamp_utc": "2026-09-23T20:28:48.336620+00:00",
+   "revision": "CURRENT_VINTAGE_ONLY_REVISION_CAVEAT",
+   "rows_long_span": 317,
+   "rows_recent_span": 47,
+   "seasonal_adjustment": "Not Seasonally Adjusted",
+   "semantic_check": {
+    "evidence": "Consumer Price Indices (CPIs, HICPs), COICOP 1999: Consumer Price Index: Total for Canada Growth rate same period previous year , Not Seasonally Adjusted",
+    "matched": [
+     [
+      "consumer price",
+      "same period previous year"
+     ]
+    ],
+    "variable": "CPI_INFLATION_YOY"
+   },
+   "series_id": "CPALTT01CAM659N",
+   "slot": "cpi_yoy",
+   "source_url": "https://alfred.stlouisfed.org/graph/alfredgraph.csv?id=CPALTT01CAM659N&cosd=1990-01-01&coed=2016-05-01 | https://alfred.stlouisfed.org/graph/alfredgraph.csv?id=CPALTT01CAM659N&cosd=2021-05-01&coed=2025-11-01",
+   "units": "Growth rate same period previous year , Not Seasonally Adjusted"
+  },
+  {
+   "content_hash": "92b6ea984f5c41ea8795af025edc2f35094ac3ae2ef54adf7738dcf899dd5d96",
+   "coverage_first": "1990-01-01",
+   "coverage_last": "2025-04-01",
+   "currency": "CHF",
+   "frequency": "Monthly（観測間隔から導出）",
+   "metadata_url": "https://alfred.stlouisfed.org/series?seid=CPALTT01CHM659N",
+   "official_title": "Consumer Price Indices (CPIs, HICPs), COICOP 1999: Consumer Price Index: Total for Switzerland",
+   "outcome": "OK",
+   "reference_period": "MONTH",
+   "rejected_candidates": [],
+   "request_windows": [
+    [
+     "1990-01-01",
+     "2016-05-01"
+    ],
+    [
+     "2021-05-01",
+     "2025-11-01"
+    ]
+   ],
+   "retrieval_timestamp_utc": "2026-09-23T20:28:49.687851+00:00",
+   "revision": "CURRENT_VINTAGE_ONLY_REVISION_CAVEAT",
+   "rows_long_span": 317,
+   "rows_recent_span": 48,
+   "seasonal_adjustment": "Not Seasonally Adjusted",
+   "semantic_check": {
+    "evidence": "Consumer Price Indices (CPIs, HICPs), COICOP 1999: Consumer Price Index: Total for Switzerland Growth rate same period previous year , Not Seasonally Adjusted",
+    "matched": [
+     [
+      "consumer price",
+      "same period previous year"
+     ]
+    ],
+    "variable": "CPI_INFLATION_YOY"
+   },
+   "series_id": "CPALTT01CHM659N",
+   "slot": "cpi_yoy",
+   "source_url": "https://alfred.stlouisfed.org/graph/alfredgraph.csv?id=CPALTT01CHM659N&cosd=1990-01-01&coed=2016-05-01 | https://alfred.stlouisfed.org/graph/alfredgraph.csv?id=CPALTT01CHM659N&cosd=2021-05-01&coed=2025-11-01",
+   "units": "Growth rate same period previous year , Not Seasonally Adjusted"
+  },
+  {
+   "attempts": [
+    {
+     "at": "2026-09-23T20:28:50.070802+00:00",
+     "error": "HTTPError: HTTP Error 404: Not Found",
+     "outcome": "SERIES_NOT_FOUND",
+     "series_id": "CPALTT01EZM659N"
+    }
+   ],
+   "currency": "EUR",
+   "outcome": "NOT_MAPPED",
+   "slot": "cpi_yoy"
+  },
+  {
+   "content_hash": "8d5dcf5ad0f02ef30ab41ea99c79812f3218926beaeecb8ae711d2b0f08e1f2b",
+   "coverage_first": "1990-01-01",
+   "coverage_last": "2025-01-01",
+   "currency": "AUD",
+   "frequency": "Quarterly（観測間隔から導出）",
+   "metadata_url": "https://alfred.stlouisfed.org/series?seid=CPALTT01AUQ659N",
+   "official_title": "Consumer Price Indices (CPIs, HICPs), COICOP 1999: Consumer Price Index: Total for Australia",
+   "outcome": "OK",
+   "reference_period": "QUARTER",
+   "rejected_candidates": [],
+   "request_windows": [
+    [
+     "1990-01-01",
+     "2016-01-01"
+    ],
+    [
+     "2021-07-01",
+     "2025-07-01"
+    ]
+   ],
+   "retrieval_timestamp_utc": "2026-09-23T20:28:50.515919+00:00",
+   "revision": "CURRENT_VINTAGE_ONLY_REVISION_CAVEAT",
+   "rows_long_span": 105,
+   "rows_recent_span": 15,
+   "seasonal_adjustment": "Not Seasonally Adjusted",
+   "semantic_check": {
+    "evidence": "Consumer Price Indices (CPIs, HICPs), COICOP 1999: Consumer Price Index: Total for Australia Growth rate same period previous year , Not Seasonally Adjusted",
+    "matched": [
+     [
+      "consumer price",
+      "same period previous year"
+     ]
+    ],
+    "variable": "CPI_INFLATION_YOY"
+   },
+   "series_id": "CPALTT01AUQ659N",
+   "slot": "cpi_yoy",
+   "source_url": "https://alfred.stlouisfed.org/graph/alfredgraph.csv?id=CPALTT01AUQ659N&cosd=1990-01-01&coed=2016-01-01 | https://alfred.stlouisfed.org/graph/alfredgraph.csv?id=CPALTT01AUQ659N&cosd=2021-07-01&coed=2025-07-01",
+   "units": "Growth rate same period previous year , Not Seasonally Adjusted"
+  },
+  {
+   "content_hash": "1c949201a18742d3bd79fc75d37e2c841674ececcff8947280a3542813a93f5b",
+   "coverage_first": "1990-01-01",
+   "coverage_last": "2023-07-01",
+   "currency": "NZD",
+   "frequency": "Quarterly（観測間隔から導出）",
+   "metadata_url": "https://alfred.stlouisfed.org/series?seid=CPALTT01NZQ659N",
+   "official_title": "Consumer Price Indices (CPIs, HICPs), COICOP 1999: Consumer Price Index: Total for New Zealand",
+   "outcome": "OK",
+   "reference_period": "QUARTER",
+   "rejected_candidates": [],
+   "request_windows": [
+    [
+     "1990-01-01",
+     "2016-01-01"
+    ],
+    [
+     "2021-07-01",
+     "2025-07-01"
+    ]
+   ],
+   "retrieval_timestamp_utc": "2026-09-23T20:28:50.866594+00:00",
+   "revision": "CURRENT_VINTAGE_ONLY_REVISION_CAVEAT",
+   "rows_long_span": 105,
+   "rows_recent_span": 9,
+   "seasonal_adjustment": "Not Seasonally Adjusted",
+   "semantic_check": {
+    "evidence": "Consumer Price Indices (CPIs, HICPs), COICOP 1999: Consumer Price Index: Total for New Zealand Growth rate same period previous year , Not Seasonally Adjusted",
+    "matched": [
+     [
+      "consumer price",
+      "same period previous year"
+     ]
+    ],
+    "variable": "CPI_INFLATION_YOY"
+   },
+   "series_id": "CPALTT01NZQ659N",
+   "slot": "cpi_yoy",
+   "source_url": "https://alfred.stlouisfed.org/graph/alfredgraph.csv?id=CPALTT01NZQ659N&cosd=1990-01-01&coed=2016-01-01 | https://alfred.stlouisfed.org/graph/alfredgraph.csv?id=CPALTT01NZQ659N&cosd=2021-07-01&coed=2025-07-01",
+   "units": "Growth rate same period previous year , Not Seasonally Adjusted"
+  },
+  {
+   "content_hash": "15d8232388dea6da9deaec2197a65c40fc99a7b7cc35f67d98cbef739dd9abb4",
+   "coverage_first": "1996-12-01",
+   "coverage_last": "2025-11-01",
+   "currency": "EUR",
+   "frequency": "Monthly（観測間隔から導出）",
+   "metadata_url": "https://alfred.stlouisfed.org/series?seid=CP0000EZ19M086NEST",
+   "official_title": "Harmonized Index of Consumer Prices: Total for Euro Area (19 Countries)",
+   "outcome": "OK",
+   "reference_period": "MONTH",
+   "rejected_candidates": [],
+   "request_windows": [
+    [
+     "1990-01-01",
+     "2016-05-01"
+    ],
+    [
+     "2021-05-01",
+     "2025-11-01"
+    ]
+   ],
+   "retrieval_timestamp_utc": "2026-09-23T20:28:51.240782+00:00",
+   "revision": "CURRENT_VINTAGE_ONLY_REVISION_CAVEAT",
+   "rows_long_span": 234,
+   "rows_recent_span": 55,
+   "seasonal_adjustment": "Not Seasonally Adjusted",
+   "semantic_check": {
+    "evidence": "Harmonized Index of Consumer Prices: Total for Euro Area (19 Countries) Index 2025=100 , Not Seasonally Adjusted",
+    "matched": [
+     [
+      "harmonized index of consumer prices",
+      "total"
+     ]
+    ],
+    "variable": "CPI_INDEX"
+   },
+   "series_id": "CP0000EZ19M086NEST",
+   "slot": "cpi_index",
+   "source_url": "https://alfred.stlouisfed.org/graph/alfredgraph.csv?id=CP0000EZ19M086NEST&cosd=1990-01-01&coed=2016-05-01 | https://alfred.stlouisfed.org/graph/alfredgraph.csv?id=CP0000EZ19M086NEST&cosd=2021-05-01&coed=2025-11-01",
+   "units": "Index 2025=100 , Not Seasonally Adjusted"
+  },
+  {
+   "content_hash": "9b3fbb38f93d153a4580b4bcb74929dee294d1b51ef2c560df1796a47ca0e065",
+   "coverage_first": "1990-01-01",
+   "coverage_last": "2021-06-01",
+   "currency": "JPY",
+   "frequency": "Monthly（観測間隔から導出）",
+   "metadata_url": "https://alfred.stlouisfed.org/series?seid=JPNCPIALLMINMEI",
+   "official_title": "Consumer Price Indices (CPIs, HICPs), COICOP 1999: Consumer Price Index: Total for Japan",
+   "outcome": "OK",
+   "reference_period": "MONTH",
+   "rejected_candidates": [],
+   "request_windows": [
+    [
+     "1990-01-01",
+     "2016-05-01"
+    ],
+    [
+     "2021-05-01",
+     "2025-11-01"
+    ]
+   ],
+   "retrieval_timestamp_utc": "2026-09-23T20:28:51.606743+00:00",
+   "revision": "CURRENT_VINTAGE_ONLY_REVISION_CAVEAT",
+   "rows_long_span": 317,
+   "rows_recent_span": 2,
+   "seasonal_adjustment": "Not Seasonally Adjusted",
+   "semantic_check": {
+    "evidence": "Consumer Price Indices (CPIs, HICPs), COICOP 1999: Consumer Price Index: Total for Japan Index 2015=100 , Not Seasonally Adjusted",
+    "matched": [
+     [
+      "consumer price index",
+      "total",
+      "index 20"
+     ]
+    ],
+    "variable": "CPI_INDEX"
+   },
+   "series_id": "JPNCPIALLMINMEI",
+   "slot": "cpi_index",
+   "source_url": "https://alfred.stlouisfed.org/graph/alfredgraph.csv?id=JPNCPIALLMINMEI&cosd=1990-01-01&coed=2016-05-01 | https://alfred.stlouisfed.org/graph/alfredgraph.csv?id=JPNCPIALLMINMEI&cosd=2021-05-01&coed=2025-11-01",
+   "units": "Index 2015=100 , Not Seasonally Adjusted"
+  },
+  {
+   "content_hash": "48f0335deb3fe053c65df398846f89420347c7529b833a4ace8c5c5c22428a47",
+   "coverage_first": "1990-01-01",
+   "coverage_last": "2025-09-01",
+   "currency": "USD",
+   "frequency": "Monthly（観測間隔から導出）",
+   "metadata_url": "https://alfred.stlouisfed.org/series?seid=LRHUTTTTUSM156S",
+   "official_title": "Infra-Annual Labor Statistics: Monthly Unemployment Rate Total: 15 Years or over for United States",
+   "outcome": "OK",
+   "reference_period": "MONTH",
+   "rejected_candidates": [],
+   "request_windows": [
+    [
+     "1990-01-01",
+     "2016-05-01"
+    ],
+    [
+     "2021-05-01",
+     "2025-11-01"
+    ]
+   ],
+   "retrieval_timestamp_utc": "2026-09-23T20:28:51.987543+00:00",
+   "revision": "CURRENT_VINTAGE_ONLY_REVISION_CAVEAT",
+   "rows_long_span": 317,
+   "rows_recent_span": 53,
+   "seasonal_adjustment": "Seasonally Adjusted",
+   "semantic_check": {
+    "evidence": "Infra-Annual Labor Statistics: Monthly Unemployment Rate Total: 15 Years or over for United States Percent , Seasonally Adjusted",
+    "matched": [
+     [
+      "unemployment rate"
+     ],
+     [
+      "unemployment",
+      "rate"
+     ]
+    ],
+    "variable": "UNEMPLOYMENT_RATE"
+   },
+   "series_id": "LRHUTTTTUSM156S",
+   "slot": "unemployment",
+   "source_url": "https://alfred.stlouisfed.org/graph/alfredgraph.csv?id=LRHUTTTTUSM156S&cosd=1990-01-01&coed=2016-05-01 | https://alfred.stlouisfed.org/graph/alfredgraph.csv?id=LRHUTTTTUSM156S&cosd=2021-05-01&coed=2025-11-01",
+   "units": "Percent , Seasonally Adjusted"
+  },
+  {
+   "content_hash": "8952de935f4327e81e402b5daff978ae1b53672740aa40a06f59701a9b57883f",
+   "coverage_first": "1990-01-01",
+   "coverage_last": "2025-11-01",
+   "currency": "JPY",
+   "frequency": "Monthly（観測間隔から導出）",
+   "metadata_url": "https://alfred.stlouisfed.org/series?seid=LRHUTTTTJPM156S",
+   "official_title": "Infra-Annual Labor Statistics: Monthly Unemployment Rate Total: 15 Years or over for Japan",
+   "outcome": "OK",
+   "reference_period": "MONTH",
+   "rejected_candidates": [],
+   "request_windows": [
+    [
+     "1990-01-01",
+     "2016-05-01"
+    ],
+    [
+     "2021-05-01",
+     "2025-11-01"
+    ]
+   ],
+   "retrieval_timestamp_utc": "2026-09-23T20:28:52.408192+00:00",
+   "revision": "CURRENT_VINTAGE_ONLY_REVISION_CAVEAT",
+   "rows_long_span": 317,
+   "rows_recent_span": 55,
+   "seasonal_adjustment": "Seasonally Adjusted",
+   "semantic_check": {
+    "evidence": "Infra-Annual Labor Statistics: Monthly Unemployment Rate Total: 15 Years or over for Japan Percent , Seasonally Adjusted",
+    "matched": [
+     [
+      "unemployment rate"
+     ],
+     [
+      "unemployment",
+      "rate"
+     ]
+    ],
+    "variable": "UNEMPLOYMENT_RATE"
+   },
+   "series_id": "LRHUTTTTJPM156S",
+   "slot": "unemployment",
+   "source_url": "https://alfred.stlouisfed.org/graph/alfredgraph.csv?id=LRHUTTTTJPM156S&cosd=1990-01-01&coed=2016-05-01 | https://alfred.stlouisfed.org/graph/alfredgraph.csv?id=LRHUTTTTJPM156S&cosd=2021-05-01&coed=2025-11-01",
+   "units": "Percent , Seasonally Adjusted"
+  },
+  {
+   "content_hash": "59b930ea4480bed9f9320a8a6e9298a8afb7c89c534dc8f3fb44e2d8eeaa7978",
+   "coverage_first": "1990-01-01",
+   "coverage_last": "2025-11-01",
+   "currency": "GBP",
+   "frequency": "Monthly（観測間隔から導出）",
+   "metadata_url": "https://alfred.stlouisfed.org/series?seid=LRHUTTTTGBM156S",
+   "official_title": "Infra-Annual Labor Statistics: Monthly Unemployment Rate Total: 15 Years or over for United Kingdom",
+   "outcome": "OK",
+   "reference_period": "MONTH",
+   "rejected_candidates": [],
+   "request_windows": [
+    [
+     "1990-01-01",
+     "2016-05-01"
+    ],
+    [
+     "2021-05-01",
+     "2025-11-01"
+    ]
+   ],
+   "retrieval_timestamp_utc": "2026-09-23T20:28:52.768378+00:00",
+   "revision": "CURRENT_VINTAGE_ONLY_REVISION_CAVEAT",
+   "rows_long_span": 317,
+   "rows_recent_span": 55,
+   "seasonal_adjustment": "Seasonally Adjusted",
+   "semantic_check": {
+    "evidence": "Infra-Annual Labor Statistics: Monthly Unemployment Rate Total: 15 Years or over for United Kingdom Percent , Seasonally Adjusted",
+    "matched": [
+     [
+      "unemployment rate"
+     ],
+     [
+      "unemployment",
+      "rate"
+     ]
+    ],
+    "variable": "UNEMPLOYMENT_RATE"
+   },
+   "series_id": "LRHUTTTTGBM156S",
+   "slot": "unemployment",
+   "source_url": "https://alfred.stlouisfed.org/graph/alfredgraph.csv?id=LRHUTTTTGBM156S&cosd=1990-01-01&coed=2016-05-01 | https://alfred.stlouisfed.org/graph/alfredgraph.csv?id=LRHUTTTTGBM156S&cosd=2021-05-01&coed=2025-11-01",
+   "units": "Percent , Seasonally Adjusted"
+  },
+  {
+   "content_hash": "5c57bd779e24b83971978d2e89519693ddc35b1f6d035dfd7522ad89c58688ac",
+   "coverage_first": "1990-01-01",
+   "coverage_last": "2025-11-01",
+   "currency": "CAD",
+   "frequency": "Monthly（観測間隔から導出）",
+   "metadata_url": "https://alfred.stlouisfed.org/series?seid=LRHUTTTTCAM156S",
+   "official_title": "Infra-Annual Labor Statistics: Monthly Unemployment Rate Total: 15 Years or over for Canada",
+   "outcome": "OK",
+   "reference_period": "MONTH",
+   "rejected_candidates": [],
+   "request_windows": [
+    [
+     "1990-01-01",
+     "2016-05-01"
+    ],
+    [
+     "2021-05-01",
+     "2025-11-01"
+    ]
+   ],
+   "retrieval_timestamp_utc": "2026-09-23T20:28:53.148337+00:00",
+   "revision": "CURRENT_VINTAGE_ONLY_REVISION_CAVEAT",
+   "rows_long_span": 317,
+   "rows_recent_span": 55,
+   "seasonal_adjustment": "Seasonally Adjusted",
+   "semantic_check": {
+    "evidence": "Infra-Annual Labor Statistics: Monthly Unemployment Rate Total: 15 Years or over for Canada Percent , Seasonally Adjusted",
+    "matched": [
+     [
+      "unemployment rate"
+     ],
+     [
+      "unemployment",
+      "rate"
+     ]
+    ],
+    "variable": "UNEMPLOYMENT_RATE"
+   },
+   "series_id": "LRHUTTTTCAM156S",
+   "slot": "unemployment",
+   "source_url": "https://alfred.stlouisfed.org/graph/alfredgraph.csv?id=LRHUTTTTCAM156S&cosd=1990-01-01&coed=2016-05-01 | https://alfred.stlouisfed.org/graph/alfredgraph.csv?id=LRHUTTTTCAM156S&cosd=2021-05-01&coed=2025-11-01",
+   "units": "Percent , Seasonally Adjusted"
+  },
+  {
+   "content_hash": "e311d13bfa31f3060401d73def1a1a3aef4b62aaa5b7c27fb677318503a34ceb",
+   "coverage_first": "1990-01-01",
+   "coverage_last": "2025-11-01",
+   "currency": "AUD",
+   "frequency": "Monthly（観測間隔から導出）",
+   "metadata_url": "https://alfred.stlouisfed.org/series?seid=LRHUTTTTAUM156S",
+   "official_title": "Infra-Annual Labor Statistics: Monthly Unemployment Rate Total: 15 Years or over for Australia",
+   "outcome": "OK",
+   "reference_period": "MONTH",
+   "rejected_candidates": [],
+   "request_windows": [
+    [
+     "1990-01-01",
+     "2016-05-01"
+    ],
+    [
+     "2021-05-01",
+     "2025-11-01"
+    ]
+   ],
+   "retrieval_timestamp_utc": "2026-09-23T20:28:53.526991+00:00",
+   "revision": "CURRENT_VINTAGE_ONLY_REVISION_CAVEAT",
+   "rows_long_span": 317,
+   "rows_recent_span": 55,
+   "seasonal_adjustment": "Seasonally Adjusted",
+   "semantic_check": {
+    "evidence": "Infra-Annual Labor Statistics: Monthly Unemployment Rate Total: 15 Years or over for Australia Percent , Seasonally Adjusted",
+    "matched": [
+     [
+      "unemployment rate"
+     ],
+     [
+      "unemployment",
+      "rate"
+     ]
+    ],
+    "variable": "UNEMPLOYMENT_RATE"
+   },
+   "series_id": "LRHUTTTTAUM156S",
+   "slot": "unemployment",
+   "source_url": "https://alfred.stlouisfed.org/graph/alfredgraph.csv?id=LRHUTTTTAUM156S&cosd=1990-01-01&coed=2016-05-01 | https://alfred.stlouisfed.org/graph/alfredgraph.csv?id=LRHUTTTTAUM156S&cosd=2021-05-01&coed=2025-11-01",
+   "units": "Percent , Seasonally Adjusted"
+  },
+  {
+   "content_hash": "f7ac3178aacefc1f275448bdcc92d60b2efa46b25cbc44b631b60f7412edfa2d",
+   "coverage_first": "1990-07-01",
+   "coverage_last": "2023-01-01",
+   "currency": "EUR",
+   "frequency": "Monthly（観測間隔から導出）",
+   "metadata_url": "https://alfred.stlouisfed.org/series?seid=LRHUTTTTEZM156S",
+   "official_title": "Harmonised Unemployment - Monthly Rates: Total: All Persons for the Euro Area (19 Countries)",
+   "outcome": "OK",
+   "reference_period": "MONTH",
+   "rejected_candidates": [],
+   "request_windows": [
+    [
+     "1990-01-01",
+     "2016-05-01"
+    ],
+    [
+     "2021-05-01",
+     "2025-11-01"
+    ]
+   ],
+   "retrieval_timestamp_utc": "2026-09-23T20:28:53.881176+00:00",
+   "revision": "CURRENT_VINTAGE_ONLY_REVISION_CAVEAT",
+   "rows_long_span": 311,
+   "rows_recent_span": 21,
+   "seasonal_adjustment": "Seasonally Adjusted",
+   "semantic_check": {
+    "evidence": "Harmonised Unemployment - Monthly Rates: Total: All Persons for the Euro Area (19 Countries) Percent , Seasonally Adjusted",
+    "matched": [
+     [
+      "unemployment",
+      "rate"
+     ]
+    ],
+    "variable": "UNEMPLOYMENT_RATE"
+   },
+   "series_id": "LRHUTTTTEZM156S",
+   "slot": "unemployment",
+   "source_url": "https://alfred.stlouisfed.org/graph/alfredgraph.csv?id=LRHUTTTTEZM156S&cosd=1990-01-01&coed=2016-05-01 | https://alfred.stlouisfed.org/graph/alfredgraph.csv?id=LRHUTTTTEZM156S&cosd=2021-05-01&coed=2025-11-01",
+   "units": "Percent , Seasonally Adjusted"
+  },
+  {
+   "content_hash": "50c0891f102a04db23e00ea4bbe3a604eeb7a3521ce0fc66a722184f65dce84c",
+   "coverage_first": "1999-04-01",
+   "coverage_last": "2025-07-01",
+   "currency": "CHF",
+   "frequency": "Quarterly（観測間隔から導出）",
+   "metadata_url": "https://alfred.stlouisfed.org/series?seid=LRHUTTTTCHQ156S",
+   "official_title": "Infra-Annual Labor Statistics: Monthly Unemployment Rate Total: 15 Years or over for Switzerland",
+   "outcome": "OK",
+   "reference_period": "QUARTER",
+   "rejected_candidates": [],
+   "request_windows": [
+    [
+     "1990-01-01",
+     "2016-01-01"
+    ],
+    [
+     "2021-07-01",
+     "2025-07-01"
+    ]
+   ],
+   "retrieval_timestamp_utc": "2026-09-23T20:28:54.229084+00:00",
+   "revision": "CURRENT_VINTAGE_ONLY_REVISION_CAVEAT",
+   "rows_long_span": 36,
+   "rows_recent_span": 17,
+   "seasonal_adjustment": "Seasonally Adjusted",
+   "semantic_check": {
+    "evidence": "Infra-Annual Labor Statistics: Monthly Unemployment Rate Total: 15 Years or over for Switzerland Percent , Seasonally Adjusted",
+    "matched": [
+     [
+      "unemployment rate"
+     ],
+     [
+      "unemployment",
+      "rate"
+     ]
+    ],
+    "variable": "UNEMPLOYMENT_RATE"
+   },
+   "series_id": "LRHUTTTTCHQ156S",
+   "slot": "unemployment",
+   "source_url": "https://alfred.stlouisfed.org/graph/alfredgraph.csv?id=LRHUTTTTCHQ156S&cosd=1990-01-01&coed=2016-01-01 | https://alfred.stlouisfed.org/graph/alfredgraph.csv?id=LRHUTTTTCHQ156S&cosd=2021-07-01&coed=2025-07-01",
+   "units": "Percent , Seasonally Adjusted"
+  },
+  {
+   "content_hash": "33c5e028251b27a32332decc5b2b10ebb5806db4f732418b6a58a54a04150599",
+   "coverage_first": "1990-01-01",
+   "coverage_last": "2025-07-01",
+   "currency": "NZD",
+   "frequency": "Quarterly（観測間隔から導出）",
+   "metadata_url": "https://alfred.stlouisfed.org/series?seid=LRHUTTTTNZQ156S",
+   "official_title": "Infra-Annual Labor Statistics: Monthly Unemployment Rate Total: 15 Years or over for New Zealand",
+   "outcome": "OK",
+   "reference_period": "QUARTER",
+   "rejected_candidates": [],
+   "request_windows": [
+    [
+     "1990-01-01",
+     "2016-01-01"
+    ],
+    [
+     "2021-07-01",
+     "2025-07-01"
+    ]
+   ],
+   "retrieval_timestamp_utc": "2026-09-23T20:28:54.618913+00:00",
+   "revision": "CURRENT_VINTAGE_ONLY_REVISION_CAVEAT",
+   "rows_long_span": 105,
+   "rows_recent_span": 17,
+   "seasonal_adjustment": "Seasonally Adjusted",
+   "semantic_check": {
+    "evidence": "Infra-Annual Labor Statistics: Monthly Unemployment Rate Total: 15 Years or over for New Zealand Percent , Seasonally Adjusted",
+    "matched": [
+     [
+      "unemployment rate"
+     ],
+     [
+      "unemployment",
+      "rate"
+     ]
+    ],
+    "variable": "UNEMPLOYMENT_RATE"
+   },
+   "series_id": "LRHUTTTTNZQ156S",
+   "slot": "unemployment",
+   "source_url": "https://alfred.stlouisfed.org/graph/alfredgraph.csv?id=LRHUTTTTNZQ156S&cosd=1990-01-01&coed=2016-01-01 | https://alfred.stlouisfed.org/graph/alfredgraph.csv?id=LRHUTTTTNZQ156S&cosd=2021-07-01&coed=2025-07-01",
+   "units": "Percent , Seasonally Adjusted"
+  },
+  {
+   "content_hash": "f5106bacbb0d54e1c0edcf45efc8f45c2f1b1f7239855275c6147dfc6d73745b",
+   "coverage_first": "1990-01-01",
+   "coverage_last": "2025-11-01",
+   "currency": "USD",
+   "frequency": "Monthly（観測間隔から導出）",
+   "metadata_url": "https://alfred.stlouisfed.org/series?seid=FEDFUNDS",
+   "official_title": "Federal Funds Effective Rate",
+   "outcome": "OK",
+   "reference_period": "MONTH",
+   "rejected_candidates": [],
+   "request_windows": [
+    [
+     "1990-01-01",
+     "2016-05-01"
+    ],
+    [
+     "2021-05-01",
+     "2025-11-01"
+    ]
+   ],
+   "retrieval_timestamp_utc": "2026-09-23T20:28:54.965257+00:00",
+   "revision": "CURRENT_VINTAGE_ONLY_REVISION_CAVEAT",
+   "rows_long_span": 317,
+   "rows_recent_span": 55,
+   "seasonal_adjustment": "Not Seasonally Adjusted",
+   "semantic_check": {
+    "evidence": "Federal Funds Effective Rate Percent , Not Seasonally Adjusted",
+    "matched": [
+     [
+      "federal funds",
+      "effective"
+     ]
+    ],
+    "variable": "POLICY_RATE"
+   },
+   "series_id": "FEDFUNDS",
+   "slot": "policy_rate",
+   "source_url": "https://alfred.stlouisfed.org/graph/alfredgraph.csv?id=FEDFUNDS&cosd=1990-01-01&coed=2016-05-01 | https://alfred.stlouisfed.org/graph/alfredgraph.csv?id=FEDFUNDS&cosd=2021-05-01&coed=2025-11-01",
+   "units": "Percent , Not Seasonally Adjusted"
+  },
+  {
+   "attempts": [
+    {
+     "at": "2026-09-23T20:28:55.313142+00:00",
+     "error": "POLICY_RATE: metadata が定義と一致しない（必要語の一致=[]、禁止語=[]） —  Percent , Not Seasonally Adjusted",
+     "outcome": "SEMANTIC_MISMATCH",
+     "series_id": "IRSTCB01JPM156N"
+    }
+   ],
+   "currency": "JPY",
+   "outcome": "NOT_MAPPED",
+   "slot": "policy_rate"
+  },
+  {
+   "attempts": [
+    {
+     "at": "2026-09-23T20:28:55.576665+00:00",
+     "error": "HTTPError: HTTP Error 404: Not Found",
+     "outcome": "SERIES_NOT_FOUND",
+     "series_id": "IRSTCB01GBM156N"
+    }
+   ],
+   "currency": "GBP",
+   "outcome": "NOT_MAPPED",
+   "slot": "policy_rate"
+  },
+  {
+   "attempts": [
+    {
+     "at": "2026-09-23T20:28:56.046487+00:00",
+     "error": "POLICY_RATE: metadata が定義と一致しない（必要語の一致=[]、禁止語=[]） —  Percent , Not Seasonally Adjusted",
+     "outcome": "SEMANTIC_MISMATCH",
+     "series_id": "IRSTCB01CAM156N"
+    }
+   ],
+   "currency": "CAD",
+   "outcome": "NOT_MAPPED",
+   "slot": "policy_rate"
+  },
+  {
+   "attempts": [
+    {
+     "at": "2026-09-23T20:28:56.417736+00:00",
+     "error": "HTTPError: HTTP Error 404: Not Found",
+     "outcome": "SERIES_NOT_FOUND",
+     "series_id": "IRSTCB01AUM156N"
+    }
+   ],
+   "currency": "AUD",
+   "outcome": "NOT_MAPPED",
+   "slot": "policy_rate"
+  },
+  {
+   "attempts": [
+    {
+     "at": "2026-09-23T20:28:56.691187+00:00",
+     "error": "HTTPError: HTTP Error 404: Not Found",
+     "outcome": "SERIES_NOT_FOUND",
+     "series_id": "IRSTCB01NZM156N"
+    }
+   ],
+   "currency": "NZD",
+   "outcome": "NOT_MAPPED",
+   "slot": "policy_rate"
+  },
+  {
+   "attempts": [
+    {
+     "at": "2026-09-23T20:28:57.098166+00:00",
+     "error": "HTTPError: HTTP Error 404: Not Found",
+     "outcome": "SERIES_NOT_FOUND",
+     "series_id": "IRSTCB01CHM156N"
+    }
+   ],
+   "currency": "CHF",
+   "outcome": "NOT_MAPPED",
+   "slot": "policy_rate"
+  },
+  {
+   "attempts": [
+    {
+     "at": "2026-09-23T20:28:57.384912+00:00",
+     "error": "HTTPError: HTTP Error 404: Not Found",
+     "outcome": "SERIES_NOT_FOUND",
+     "series_id": "IRSTCB01EZM156N"
+    }
+   ],
+   "currency": "EUR",
+   "outcome": "NOT_MAPPED",
+   "slot": "policy_rate"
+  },
+  {
+   "content_hash": "1d029fae945270010f92ffecb7025e604b0b8d3f88007b06dc182bada1dc2ca3",
+   "coverage_first": "1990-01-01",
+   "coverage_last": "2025-11-01",
+   "currency": "USD",
+   "frequency": "Monthly（観測間隔から導出）",
+   "metadata_url": "https://alfred.stlouisfed.org/series?seid=IR3TIB01USM156N",
+   "official_title": "Interest Rates: 3-Month or 90-Day Rates and Yields: Interbank Rates: Total for United States",
+   "outcome": "OK",
+   "reference_period": "MONTH",
+   "rejected_candidates": [],
+   "request_windows": [
+    [
+     "1990-01-01",
+     "2016-05-01"
+    ],
+    [
+     "2021-05-01",
+     "2025-11-01"
+    ]
+   ],
+   "retrieval_timestamp_utc": "2026-09-23T20:28:58.019377+00:00",
+   "revision": "CURRENT_VINTAGE_ONLY_REVISION_CAVEAT",
+   "rows_long_span": 317,
+   "rows_recent_span": 55,
+   "seasonal_adjustment": "Not Seasonally Adjusted",
+   "semantic_check": {
+    "evidence": "Interest Rates: 3-Month or 90-Day Rates and Yields: Interbank Rates: Total for United States Percent , Not Seasonally Adjusted",
+    "matched": [
+     [
+      "3-month",
+      "interbank"
+     ]
+    ],
+    "variable": "SHORT_RATE_3M"
+   },
+   "series_id": "IR3TIB01USM156N",
+   "slot": "short_rate_3m",
+   "source_url": "https://alfred.stlouisfed.org/graph/alfredgraph.csv?id=IR3TIB01USM156N&cosd=1990-01-01&coed=2016-05-01 | https://alfred.stlouisfed.org/graph/alfredgraph.csv?id=IR3TIB01USM156N&cosd=2021-05-01&coed=2025-11-01",
+   "units": "Percent , Not Seasonally Adjusted"
+  },
+  {
+   "content_hash": "61c0c2cfcb41139bd0075435176669b0f4efc905c64edcc0087e391355edaef1",
+   "coverage_first": "2002-04-01",
+   "coverage_last": "2025-11-01",
+   "currency": "JPY",
+   "frequency": "Monthly（観測間隔から導出）",
+   "metadata_url": "https://alfred.stlouisfed.org/series?seid=IR3TIB01JPM156N",
+   "official_title": "Interest Rates: 3-Month or 90-Day Rates and Yields: Interbank Rates: Total for Japan",
+   "outcome": "OK",
+   "reference_period": "MONTH",
+   "rejected_candidates": [],
+   "request_windows": [
+    [
+     "1990-01-01",
+     "2016-05-01"
+    ],
+    [
+     "2021-05-01",
+     "2025-11-01"
+    ]
+   ],
+   "retrieval_timestamp_utc": "2026-09-23T20:28:58.396697+00:00",
+   "revision": "CURRENT_VINTAGE_ONLY_REVISION_CAVEAT",
+   "rows_long_span": 170,
+   "rows_recent_span": 55,
+   "seasonal_adjustment": "Not Seasonally Adjusted",
+   "semantic_check": {
+    "evidence": "Interest Rates: 3-Month or 90-Day Rates and Yields: Interbank Rates: Total for Japan Percent , Not Seasonally Adjusted",
+    "matched": [
+     [
+      "3-month",
+      "interbank"
+     ]
+    ],
+    "variable": "SHORT_RATE_3M"
+   },
+   "series_id": "IR3TIB01JPM156N",
+   "slot": "short_rate_3m",
+   "source_url": "https://alfred.stlouisfed.org/graph/alfredgraph.csv?id=IR3TIB01JPM156N&cosd=1990-01-01&coed=2016-05-01 | https://alfred.stlouisfed.org/graph/alfredgraph.csv?id=IR3TIB01JPM156N&cosd=2021-05-01&coed=2025-11-01",
+   "units": "Percent , Not Seasonally Adjusted"
+  },
+  {
+   "content_hash": "e157f53fdb8e29eb41158513784490a01fc262ac87cc83d97e4845be5fe3131d",
+   "coverage_first": "1990-01-01",
+   "coverage_last": "2025-11-01",
+   "currency": "GBP",
+   "frequency": "Monthly（観測間隔から導出）",
+   "metadata_url": "https://alfred.stlouisfed.org/series?seid=IR3TIB01GBM156N",
+   "official_title": "Interest Rates: 3-Month or 90-Day Rates and Yields: Interbank Rates: Total for United Kingdom",
+   "outcome": "OK",
+   "reference_period": "MONTH",
+   "rejected_candidates": [],
+   "request_windows": [
+    [
+     "1990-01-01",
+     "2016-05-01"
+    ],
+    [
+     "2021-05-01",
+     "2025-11-01"
+    ]
+   ],
+   "retrieval_timestamp_utc": "2026-09-23T20:28:58.762613+00:00",
+   "revision": "CURRENT_VINTAGE_ONLY_REVISION_CAVEAT",
+   "rows_long_span": 317,
+   "rows_recent_span": 55,
+   "seasonal_adjustment": "Not Seasonally Adjusted",
+   "semantic_check": {
+    "evidence": "Interest Rates: 3-Month or 90-Day Rates and Yields: Interbank Rates: Total for United Kingdom Percent , Not Seasonally Adjusted",
+    "matched": [
+     [
+      "3-month",
+      "interbank"
+     ]
+    ],
+    "variable": "SHORT_RATE_3M"
+   },
+   "series_id": "IR3TIB01GBM156N",
+   "slot": "short_rate_3m",
+   "source_url": "https://alfred.stlouisfed.org/graph/alfredgraph.csv?id=IR3TIB01GBM156N&cosd=1990-01-01&coed=2016-05-01 | https://alfred.stlouisfed.org/graph/alfredgraph.csv?id=IR3TIB01GBM156N&cosd=2021-05-01&coed=2025-11-01",
+   "units": "Percent , Not Seasonally Adjusted"
+  },
+  {
+   "content_hash": "a7d5b60748d69c4291c53d83499c9d6a2b32588901b30de5de7da49faf37de65",
+   "coverage_first": "1990-01-01",
+   "coverage_last": "2025-11-01",
+   "currency": "CAD",
+   "frequency": "Monthly（観測間隔から導出）",
+   "metadata_url": "https://alfred.stlouisfed.org/series?seid=IR3TIB01CAM156N",
+   "official_title": "Interest Rates: 3-Month or 90-Day Rates and Yields: Interbank Rates: Total for Canada",
+   "outcome": "OK",
+   "reference_period": "MONTH",
+   "rejected_candidates": [],
+   "request_windows": [
+    [
+     "1990-01-01",
+     "2016-05-01"
+    ],
+    [
+     "2021-05-01",
+     "2025-11-01"
+    ]
+   ],
+   "retrieval_timestamp_utc": "2026-09-23T20:28:59.168657+00:00",
+   "revision": "CURRENT_VINTAGE_ONLY_REVISION_CAVEAT",
+   "rows_long_span": 317,
+   "rows_recent_span": 55,
+   "seasonal_adjustment": "Not Seasonally Adjusted",
+   "semantic_check": {
+    "evidence": "Interest Rates: 3-Month or 90-Day Rates and Yields: Interbank Rates: Total for Canada Percent , Not Seasonally Adjusted",
+    "matched": [
+     [
+      "3-month",
+      "interbank"
+     ]
+    ],
+    "variable": "SHORT_RATE_3M"
+   },
+   "series_id": "IR3TIB01CAM156N",
+   "slot": "short_rate_3m",
+   "source_url": "https://alfred.stlouisfed.org/graph/alfredgraph.csv?id=IR3TIB01CAM156N&cosd=1990-01-01&coed=2016-05-01 | https://alfred.stlouisfed.org/graph/alfredgraph.csv?id=IR3TIB01CAM156N&cosd=2021-05-01&coed=2025-11-01",
+   "units": "Percent , Not Seasonally Adjusted"
+  },
+  {
+   "content_hash": "dddb7013beb26cb90669ad7d41b1e38089a2a328e31b51bf454769c1a529bd2d",
+   "coverage_first": "1990-01-01",
+   "coverage_last": "2025-11-01",
+   "currency": "AUD",
+   "frequency": "Monthly（観測間隔から導出）",
+   "metadata_url": "https://alfred.stlouisfed.org/series?seid=IR3TIB01AUM156N",
+   "official_title": "Interest Rates: 3-Month or 90-Day Rates and Yields: Interbank Rates: Total for Australia",
+   "outcome": "OK",
+   "reference_period": "MONTH",
+   "rejected_candidates": [],
+   "request_windows": [
+    [
+     "1990-01-01",
+     "2016-05-01"
+    ],
+    [
+     "2021-05-01",
+     "2025-11-01"
+    ]
+   ],
+   "retrieval_timestamp_utc": "2026-09-23T20:28:59.510721+00:00",
+   "revision": "CURRENT_VINTAGE_ONLY_REVISION_CAVEAT",
+   "rows_long_span": 317,
+   "rows_recent_span": 55,
+   "seasonal_adjustment": "Not Seasonally Adjusted",
+   "semantic_check": {
+    "evidence": "Interest Rates: 3-Month or 90-Day Rates and Yields: Interbank Rates: Total for Australia Percent , Not Seasonally Adjusted",
+    "matched": [
+     [
+      "3-month",
+      "interbank"
+     ]
+    ],
+    "variable": "SHORT_RATE_3M"
+   },
+   "series_id": "IR3TIB01AUM156N",
+   "slot": "short_rate_3m",
+   "source_url": "https://alfred.stlouisfed.org/graph/alfredgraph.csv?id=IR3TIB01AUM156N&cosd=1990-01-01&coed=2016-05-01 | https://alfred.stlouisfed.org/graph/alfredgraph.csv?id=IR3TIB01AUM156N&cosd=2021-05-01&coed=2025-11-01",
+   "units": "Percent , Not Seasonally Adjusted"
+  },
+  {
+   "content_hash": "ddee0dcd664f21b31e5fda615356520f325631b4f613132bfc62941532fc97da",
+   "coverage_first": "1990-01-01",
+   "coverage_last": "2025-11-01",
+   "currency": "NZD",
+   "frequency": "Monthly（観測間隔から導出）",
+   "metadata_url": "https://alfred.stlouisfed.org/series?seid=IR3TIB01NZM156N",
+   "official_title": "Interest Rates: 3-Month or 90-Day Rates and Yields: Interbank Rates: Total for New Zealand",
+   "outcome": "OK",
+   "reference_period": "MONTH",
+   "rejected_candidates": [],
+   "request_windows": [
+    [
+     "1990-01-01",
+     "2016-05-01"
+    ],
+    [
+     "2021-05-01",
+     "2025-11-01"
+    ]
+   ],
+   "retrieval_timestamp_utc": "2026-09-23T20:28:59.873670+00:00",
+   "revision": "CURRENT_VINTAGE_ONLY_REVISION_CAVEAT",
+   "rows_long_span": 317,
+   "rows_recent_span": 55,
+   "seasonal_adjustment": "Not Seasonally Adjusted",
+   "semantic_check": {
+    "evidence": "Interest Rates: 3-Month or 90-Day Rates and Yields: Interbank Rates: Total for New Zealand Percent , Not Seasonally Adjusted",
+    "matched": [
+     [
+      "3-month",
+      "interbank"
+     ]
+    ],
+    "variable": "SHORT_RATE_3M"
+   },
+   "series_id": "IR3TIB01NZM156N",
+   "slot": "short_rate_3m",
+   "source_url": "https://alfred.stlouisfed.org/graph/alfredgraph.csv?id=IR3TIB01NZM156N&cosd=1990-01-01&coed=2016-05-01 | https://alfred.stlouisfed.org/graph/alfredgraph.csv?id=IR3TIB01NZM156N&cosd=2021-05-01&coed=2025-11-01",
+   "units": "Percent , Not Seasonally Adjusted"
+  },
+  {
+   "content_hash": "f5b12a8290ad0a8ea045abf5b99489358c70c8482bf8ba67fc69ca4613f37040",
+   "coverage_first": "1999-07-01",
+   "coverage_last": "2025-11-01",
+   "currency": "CHF",
+   "frequency": "Monthly（観測間隔から導出）",
+   "metadata_url": "https://alfred.stlouisfed.org/series?seid=IR3TIB01CHM156N",
+   "official_title": "Interest Rates: 3-Month or 90-Day Rates and Yields: Interbank Rates: Total for Switzerland",
+   "outcome": "OK",
+   "reference_period": "MONTH",
+   "rejected_candidates": [],
+   "request_windows": [
+    [
+     "1990-01-01",
+     "2016-05-01"
+    ],
+    [
+     "2021-05-01",
+     "2025-11-01"
+    ]
+   ],
+   "retrieval_timestamp_utc": "2026-09-23T20:29:00.203577+00:00",
+   "revision": "CURRENT_VINTAGE_ONLY_REVISION_CAVEAT",
+   "rows_long_span": 203,
+   "rows_recent_span": 55,
+   "seasonal_adjustment": "Not Seasonally Adjusted",
+   "semantic_check": {
+    "evidence": "Interest Rates: 3-Month or 90-Day Rates and Yields: Interbank Rates: Total for Switzerland Percent , Not Seasonally Adjusted",
+    "matched": [
+     [
+      "3-month",
+      "interbank"
+     ]
+    ],
+    "variable": "SHORT_RATE_3M"
+   },
+   "series_id": "IR3TIB01CHM156N",
+   "slot": "short_rate_3m",
+   "source_url": "https://alfred.stlouisfed.org/graph/alfredgraph.csv?id=IR3TIB01CHM156N&cosd=1990-01-01&coed=2016-05-01 | https://alfred.stlouisfed.org/graph/alfredgraph.csv?id=IR3TIB01CHM156N&cosd=2021-05-01&coed=2025-11-01",
+   "units": "Percent , Not Seasonally Adjusted"
+  },
+  {
+   "content_hash": "8099d8ed8356f2ea9b6edbf6ef6c39d4d7182c8943c3500d304eca301a061b36",
+   "coverage_first": "1994-01-01",
+   "coverage_last": "2025-11-01",
+   "currency": "EUR",
+   "frequency": "Monthly（観測間隔から導出）",
+   "metadata_url": "https://alfred.stlouisfed.org/series?seid=IR3TIB01EZM156N",
+   "official_title": "Interest Rates: 3-Month or 90-Day Rates and Yields: Interbank Rates: Total for Euro Area (19 Countries)",
+   "outcome": "OK",
+   "reference_period": "MONTH",
+   "rejected_candidates": [],
+   "request_windows": [
+    [
+     "1990-01-01",
+     "2016-05-01"
+    ],
+    [
+     "2021-05-01",
+     "2025-11-01"
+    ]
+   ],
+   "retrieval_timestamp_utc": "2026-09-23T20:29:00.536737+00:00",
+   "revision": "CURRENT_VINTAGE_ONLY_REVISION_CAVEAT",
+   "rows_long_span": 269,
+   "rows_recent_span": 55,
+   "seasonal_adjustment": "Not Seasonally Adjusted",
+   "semantic_check": {
+    "evidence": "Interest Rates: 3-Month or 90-Day Rates and Yields: Interbank Rates: Total for Euro Area (19 Countries) Percent , Not Seasonally Adjusted",
+    "matched": [
+     [
+      "3-month",
+      "interbank"
+     ]
+    ],
+    "variable": "SHORT_RATE_3M"
+   },
+   "series_id": "IR3TIB01EZM156N",
+   "slot": "short_rate_3m",
+   "source_url": "https://alfred.stlouisfed.org/graph/alfredgraph.csv?id=IR3TIB01EZM156N&cosd=1990-01-01&coed=2016-05-01 | https://alfred.stlouisfed.org/graph/alfredgraph.csv?id=IR3TIB01EZM156N&cosd=2021-05-01&coed=2025-11-01",
+   "units": "Percent , Not Seasonally Adjusted"
+  },
+  {
+   "currency": "USD",
+   "outcome": "ROUTE_NOT_REQUEST_BOUNDED",
+   "slot": "epu",
+   "why": "ALFRED が JPNEPUINDXM の cosd / coed を無視した（D-M2）。EPU family は request-level exclusion を保証できない"
+  },
+  {
+   "currency": "EUR",
+   "outcome": "ROUTE_NOT_REQUEST_BOUNDED",
+   "slot": "epu",
+   "why": "ALFRED が JPNEPUINDXM の cosd / coed を無視した（D-M2）。EPU family は request-level exclusion を保証できない"
+  },
+  {
+   "currency": "JPY",
+   "outcome": "ROUTE_NOT_REQUEST_BOUNDED",
+   "slot": "epu",
+   "why": "ALFRED が JPNEPUINDXM の cosd / coed を無視した（D-M2）。EPU family は request-level exclusion を保証できない"
+  },
+  {
+   "currency": "GBP",
+   "outcome": "ROUTE_NOT_REQUEST_BOUNDED",
+   "slot": "epu",
+   "why": "ALFRED が JPNEPUINDXM の cosd / coed を無視した（D-M2）。EPU family は request-level exclusion を保証できない"
+  },
+  {
+   "currency": "CAD",
+   "outcome": "ROUTE_NOT_REQUEST_BOUNDED",
+   "slot": "epu",
+   "why": "ALFRED が JPNEPUINDXM の cosd / coed を無視した（D-M2）。EPU family は request-level exclusion を保証できない"
+  },
+  {
+   "currency": "AUD",
+   "outcome": "ROUTE_NOT_REQUEST_BOUNDED",
+   "slot": "epu",
+   "why": "ALFRED が JPNEPUINDXM の cosd / coed を無視した（D-M2）。EPU family は request-level exclusion を保証できない"
+  },
+  {
+   "currency": "CHF",
+   "outcome": "ROUTE_NOT_REQUEST_BOUNDED",
+   "slot": "epu",
+   "why": "ALFRED が JPNEPUINDXM の cosd / coed を無視した（D-M2）。EPU family は request-level exclusion を保証できない"
+  }
+ ]
+}
