@@ -4,13 +4,23 @@
 `NON_DECISION_BEARING_EXPLORATORY_ONLY` · `RESEARCH_SCRATCH_NON_AUTHORITATIVE`.
 
 **統計は next-five と同じ関数を import して使う**（指標・development economics・Stage 2 適格・
-capacity・降格 gate）。book の設定（ドル track の deviation）と track の名前だけがこの cycle のもの。
+capacity・降格 gate）。この cycle で違うのは 3 つ（すべて alpha 前に凍結）:
+
+1. **判定する P&L に carry と financing を入れる**（pre-alpha review Role 1 B-1）。
+   spot だけの P&L は dollar carry が名乗る premium を測らない。全 track を
+   `spot + carry accrual − spread cost − 仮定 financing markup` で判定し、
+   spot だけの値は前 cycle との比較のための診断として並べる。
+2. **検出力の上限**: primary の有効標本数（AR(1) 近似）が 10 未満の track は、
+   正の結果でも POSITIVE_EXPLORATORY を超えない。負の結果はその formulation と span に限った
+   ものとして記録し、family を閉じない（Role 1 R-4）。
+3. **rename gate が評価できないとき**は RENAME にも DISTINCT にもせず NOT_EVALUABLE と記録する。
+   verdict は RENAME のときだけ変わる（Role 1 R-2）。
 """
 
 from __future__ import annotations
 
 import dataclasses
-from typing import Any
+from typing import Any, Final
 
 import numpy as np
 import pandas as pd
@@ -30,6 +40,8 @@ _sharpe = _nf._sharpe
 _circular_shift = _nf._circular_shift
 _lag_one_autocorrelation = _nf._lag_one_autocorrelation
 
+CURRENCIES: Final[tuple[str, ...]] = signals.CURRENCIES
+
 
 def _config(
     track: str, cost_multiple: float = 1.0, band: float | None = None
@@ -42,8 +54,57 @@ def _config(
     return construction.BookConfig(name=track, cost_multiple=cost_multiple, **frozen)
 
 
-def _draw_chunk(job: tuple[str, pd.DataFrame, pd.DataFrame, list[int], float]) -> list[float]:
-    track, scores, excess, shifts, persistence = job
+def book(
+    config: construction.BookConfig,
+    scores: pd.DataFrame,
+    excess: pd.DataFrame,
+    rates: pd.DataFrame,
+) -> pd.DataFrame:
+    """run_book の日次に carry と financing を足す。**判定はこの net で行う。**
+
+    carry: 決定日の保有 exposure × その日に使える 3 か月金利（%、年率）× 暦日 / 365。
+    exposure は和が 0 なので、これは book の金利差の受け払いである。金利の無い通貨は 0。
+    financing: |exposure| の和 × 年率の仮定 markup × 暦日 / 365 × cost_multiple。
+    """
+    daily = construction.run_book(config, scores, excess, TRADING_DAYS)["daily"].copy()
+    decision = pd.DatetimeIndex(daily["decision_day"])
+    days = np.asarray((daily.index - decision).days, dtype=float)[:, None]
+    rate = rates.reindex(decision)[list(CURRENCIES)].fillna(0.0).to_numpy() / 100.0
+    exposure = daily[[f"x_{c}" for c in CURRENCIES]].to_numpy()
+    carry = exposure * rate * days / 365.0
+    financing = (
+        np.abs(exposure)
+        * prereg.FINANCING["markup_annual_per_unit_currency_gross"]
+        * config.cost_multiple
+        * days
+        / 365.0
+    )
+    for i, currency in enumerate(CURRENCIES):
+        daily[f"pnl_{currency}"] = daily[f"pnl_{currency}"] + carry[:, i] - financing[:, i]
+    daily["spot_gross"] = daily["gross"]
+    daily["spread_cost"] = daily["cost"]
+    daily["carry"] = carry.sum(axis=1)
+    daily["financing"] = financing.sum(axis=1)
+    daily["gross"] = daily["spot_gross"] + daily["carry"]
+    daily["cost"] = daily["spread_cost"] + daily["financing"]
+    daily["net"] = daily["gross"] - daily["cost"]
+    return daily
+
+
+def effective_observations(scores: pd.DataFrame) -> float:
+    values = scores.to_numpy()
+    if len(values) < 3:
+        return float("nan")
+    rho = float(np.corrcoef(values[:-1].ravel(), values[1:].ravel())[0, 1])
+    if not np.isfinite(rho) or rho >= 1:
+        return 1.0
+    return float(len(values) * (1 - rho) / (1 + rho))
+
+
+def _draw_chunk(
+    job: tuple[str, pd.DataFrame, pd.DataFrame, pd.DataFrame, list[int], float],
+) -> list[float]:
+    track, scores, excess, rates, shifts, persistence = job
     config = _config(track)
     out: list[float] = []
     for shift in shifts:
@@ -51,9 +112,7 @@ def _draw_chunk(job: tuple[str, pd.DataFrame, pd.DataFrame, list[int], float]) -
         drawn = _lag_one_autocorrelation(shifted)
         if np.isfinite(persistence) and abs(drawn - persistence) >= 0.05:
             raise AssertionError("帰無が signal の自己相関を壊した")
-        out.append(
-            _sharpe(construction.run_book(config, shifted, excess, TRADING_DAYS)["daily"]["net"])
-        )
+        out.append(_sharpe(book(config, shifted, excess, rates)["net"]))
     return out
 
 
@@ -61,26 +120,27 @@ def null_diagnostic(
     track: str,
     scores: pd.DataFrame,
     excess: pd.DataFrame,
+    rates: pd.DataFrame,
     *,
-    draws: int | None = None,
     workers: int = 1,
 ) -> dict[str, Any]:
+    """**draw 数は凍結値だけ**（実行時に変えられない。Role 1 R-3 / Role 2 RF-6）。"""
     spec = prereg.NULL_DIAGNOSTIC["permutation"]
-    count = draws if draws is not None else int(spec["draws"])
+    count = int(spec["draws"])
     rng = np.random.default_rng(int(spec["seed"]))
-    observed = construction.run_book(_config(track), scores, excess, TRADING_DAYS)["daily"]
+    observed = book(_config(track), scores, excess, rates)
     observed_sharpe = _sharpe(observed["net"])
     observed_annual = float(observed["net"].sum() / (len(observed["net"]) / TRADING_DAYS))
     persistence = _lag_one_autocorrelation(scores)
     shifts = [int(rng.integers(1, max(len(scores), 2))) for _ in range(count)]
     if workers <= 1:
-        drawn = _draw_chunk((track, scores, excess, shifts, persistence))
+        drawn = _draw_chunk((track, scores, excess, rates, shifts, persistence))
     else:
         from concurrent.futures import ProcessPoolExecutor
 
         size = max(1, -(-len(shifts) // workers))
         jobs = [
-            (track, scores, excess, shifts[i : i + size], persistence)
+            (track, scores, excess, rates, shifts[i : i + size], persistence)
             for i in range(0, len(shifts), size)
         ]
         with ProcessPoolExecutor(max_workers=workers) as pool:
@@ -94,6 +154,7 @@ def null_diagnostic(
         "is_the_only_gate": False,
         "draws": count,
         "seed": int(spec["seed"]),
+        "judged_pnl": prereg.FINANCING["judged_pnl"],
         "observed_net_sharpe": round(observed_sharpe, 4),
         "observed_net_annual_return": round(observed_annual, 5),
         "p_value": round(p_value, 4),
@@ -121,17 +182,32 @@ def development_economics(
     return _nf.development_economics(metrics, stressed)
 
 
+POSITIVE_SUFFIXES: Final[frozenset[str]] = frozenset(
+    {"STRONG_DEVELOPMENT_CANDIDATE", "MARGINAL_DEVELOPMENT_CANDIDATE"}
+)
+
+
 def verdict(
-    track: str, primary: dict[str, Any], other: dict[str, Any] | None, renamed: bool
+    track: str,
+    primary: dict[str, Any],
+    other: dict[str, Any] | None,
+    rename_gates: dict[str, Any],
 ) -> dict[str, Any]:
-    """凍結した VERDICT_LOGIC を上から当てる（next-five と同じ規則）。"""
+    """凍結した VERDICT_LOGIC を上から当て、その後に検出力の上限を当てる。"""
     metrics = primary["metrics"]
     economics = primary["development_economics"]
     null = primary["null_diagnostic"]
     gross, net = float(metrics["gross_sharpe"]), float(metrics["net_sharpe"])
+    n_eff = float(metrics["effective_independent_observations"])
     other_sign = None
     if other and "metrics" in other:
         other_sign = "positive" if float(other["metrics"]["gross_sharpe"]) > 0 else "non_positive"
+    renamed = any(g.get("verdict") == "RENAME" for g in rename_gates.values())
+    not_evaluable = sorted(
+        k
+        for k, g in rename_gates.items()
+        if g.get("verdict") != "RENAME" and g.get("verdict") != "DISTINCT"
+    )
     failure = None
     if renamed:
         suffix = "RENAME_OF_A_CLOSED_TRACK"
@@ -150,17 +226,28 @@ def verdict(
         checks = economics["checks"]
         if not (checks["E5_breadth"] and checks["E6_concentration"]):
             failure = "CONCENTRATION_FAILURE"
+    uncapped = suffix
+    underpowered = bool(
+        np.isfinite(n_eff) and n_eff < prereg.POWER_RULE["min_effective_observations"]
+    )
+    if underpowered and suffix in POSITIVE_SUFFIXES:
+        suffix = "POSITIVE_EXPLORATORY_SIGNAL_NOT_DECISION_GRADE"
     return {
         "status": prereg.track_status(track, suffix),
+        "status_before_power_cap": prereg.track_status(track, uncapped),
         "failure_class": failure,
         "null_label": null["label"],
         "economics_label": economics["label"],
         "other_span_gross_sign": other_sign,
+        "effective_independent_observations": round(n_eff, 1),
+        "underpowered": underpowered,
+        "closure_scope": prereg.POWER_RULE["closure_scope"],
+        "rename_gates_not_evaluable": not_evaluable,
     }
 
 
 def _nuisance_sensitivity(
-    track: str, span: str, built: dict[str, Any], name: str
+    track: str, span: str, built: dict[str, Any], name: str, rates: pd.DataFrame
 ) -> dict[str, Any]:
     spec = signals.NUISANCE[name]
     excess = built[span]["currency_excess_return"]
@@ -181,9 +268,7 @@ def _nuisance_sensitivity(
         if scores.empty:
             grid[str(value)] = {"status": "NO_USABLE_DAYS"}
             continue
-        daily = construction.run_book(_config(track, band=band), scores, excess, TRADING_DAYS)[
-            "daily"
-        ]
+        daily = book(_config(track, band=band), scores, excess, rates)
         grid[str(value)] = {
             "days": int(len(scores)),
             "net_sharpe": round(_sharpe(daily["net"]), 4),
@@ -199,26 +284,32 @@ def _nuisance_sensitivity(
     }
 
 
+def _decomposition(daily: pd.DataFrame) -> dict[str, Any]:
+    """判定 P&L の 4 行と、spot だけの値（前 cycle との比較用）。"""
+    years = len(daily) / TRADING_DAYS
+    return {
+        "annual_spot_gross": round(float(daily["spot_gross"].sum() / years), 5),
+        "annual_carry": round(float(daily["carry"].sum() / years), 5),
+        "annual_spread_cost": round(float(daily["spread_cost"].sum() / years), 5),
+        "annual_financing": round(float(daily["financing"].sum() / years), 5),
+        "spot_only_gross_sharpe": round(_sharpe(daily["spot_gross"]), 4),
+        "spot_only_net_sharpe": round(_sharpe(daily["spot_gross"] - daily["spread_cost"]), 4),
+        "carry_sharpe_alone": round(_sharpe(daily["carry"]), 4),
+    }
+
+
 def run_track(
     track: str,
     span: str,
     built: dict[str, Any],
     *,
-    permutation_draws: int | None = None,
     workers: int = 1,
 ) -> dict[str, Any]:
     spec = prereg.TRACKS[track]
     excess = built[span]["currency_excess_return"]
     try:
         scores = signals.scores_for(track, built, span)
-    except signals.NonContiguousScoresError as error:
-        return {
-            "track": track,
-            "span": span,
-            "verdict": prereg.track_status(track, "DATA_NOT_DECISION_GRADE"),
-            "why": str(error)[:300],
-        }
-    except signals.SignalUnavailableError as error:
+    except (signals.NonContiguousScoresError, signals.SignalUnavailableError) as error:
         return {
             "track": track,
             "span": span,
@@ -233,20 +324,22 @@ def run_track(
             "why": f"3 通貨以上の score がある decision day が {len(scores)} 日",
         }
 
+    rates = signals.carry_rate_panel(excess.index)
     config = _config(track)
-    daily = construction.run_book(config, scores, excess, TRADING_DAYS)["daily"]
+    daily = book(config, scores, excess, rates)
     metrics = _metrics(daily, scores, excess)
     control = _benchmarks(excess)["fx_own_momentum_20d"].reindex(scores.index)
     metrics["incremental_ic"] = _incremental_ic(scores, control, excess)
     metrics["signal_persistence_lag1"] = round(_lag_one_autocorrelation(scores), 4)
     metrics["detection_floor_mde95"] = round(float(1.96 / np.sqrt(len(scores) / TRADING_DAYS)), 4)
+    metrics["effective_independent_observations"] = round(effective_observations(scores), 2)
 
     benches = {}
     for name, frame in _benchmarks(excess).items():
         usable = frame.reindex(scores.index).dropna(how="any")
         if usable.empty:
             continue
-        bench_daily = construction.run_book(config, usable, excess, TRADING_DAYS)["daily"]
+        bench_daily = book(config, usable, excess, rates)
         benches[name] = {
             "net_sharpe": _sharpe(bench_daily["net"]),
             "gross_sharpe": _sharpe(bench_daily["gross"]),
@@ -255,9 +348,9 @@ def run_track(
 
     stressed = {}
     for multiple in prereg.COST["stress_multiples"][1:]:
-        stress = construction.run_book(
-            dataclasses.replace(config, cost_multiple=multiple), scores, excess, TRADING_DAYS
-        )["daily"]["net"]
+        stress = book(dataclasses.replace(config, cost_multiple=multiple), scores, excess, rates)[
+            "net"
+        ]
         stressed[f"cost_x{multiple}"] = {
             "net_annual_return": float(stress.sum() / (len(stress) / TRADING_DAYS)),
             "net_sharpe": round(_sharpe(stress), 4),
@@ -270,6 +363,7 @@ def run_track(
         "is_primary_span": is_primary,
         "book": "DOLLAR" if track in signals.DOLLAR_TRACKS else "XS",
         "metrics": metrics,
+        "pnl_decomposition": _decomposition(daily),
         "benchmarks": benches,
         "cost_stress": stressed,
         "diagnostic_gate": _nf._diagnostic_triple(metrics),
@@ -280,9 +374,7 @@ def run_track(
     if not is_primary and span == "long":
         out["cost_caveat"] = prereg.PRIMARY_SPAN_RULE["cost_caveat"]
     if is_primary:
-        out["null_diagnostic"] = null_diagnostic(
-            track, scores, excess, draws=permutation_draws, workers=workers
-        )
+        out["null_diagnostic"] = null_diagnostic(track, scores, excess, rates, workers=workers)
         out["development_economics"] = development_economics(track, metrics, stressed)
         eligible = _nf.stage2_eligible(out["development_economics"], out["null_diagnostic"])
         out["stage_2"] = (
@@ -291,10 +383,17 @@ def run_track(
             else {"eligible": False, "reason": prereg.STAGE_2_ELIGIBILITY["if_not_eligible"]}
         )
         out["nuisance_sensitivity"] = {
-            name: _nuisance_sensitivity(track, span, built, name)
+            name: _nuisance_sensitivity(track, span, built, name, rates)
             for name in prereg.NUISANCE_APPLIES[track]
         }
     return out
 
 
-__all__ = ["development_economics", "null_diagnostic", "run_track", "verdict"]
+__all__ = [
+    "book",
+    "development_economics",
+    "effective_observations",
+    "null_diagnostic",
+    "run_track",
+    "verdict",
+]

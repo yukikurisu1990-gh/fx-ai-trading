@@ -85,7 +85,11 @@ OVERLAP_AUDIT: Final[dict[str, dict[str, str]]] = {
         "closest": "tic_flow_formulation",
         "why": "データは独立だが breadth 1。最低 3 通貨の規則を満たさない",
     },
-    "M10": {"verdict": "ELIGIBLE", "closest": "（無し）", "why": "取引費用の状態は未使用の観測量"},
+    "M10": {
+        "verdict": "ELIGIBLE",
+        "closest": "T1 / Track 1 の vol 状態（currency_realised_vol_20d_z）・multi-day reversal",
+        "why": "取引費用の状態は未使用の観測量だが、20 日 / 250 日比は通貨別の vol shock に近い。vol ratio との rename gate を置く（pre-alpha review R-5）",
+    },
     "M11": {
         "verdict": "ELIGIBLE_WITH_RENAME_GATE",
         "closest": "next_five_u1_u5（U1）",
@@ -98,14 +102,14 @@ OVERLAP_AUDIT: Final[dict[str, dict[str, str]]] = {
         "why": "vol timing と risk beta は閉じた 2 つの交差",
     },
     "M14": {
-        "verdict": "EXCLUDED_NEAR_RENAME",
+        "verdict": "ELIGIBLE_NOT_SELECTED_MAX_FIVE",
         "closest": "next_five_u1_u5（U5）",
-        "why": "funding stress 軸は U5 と同じ",
+        "why": "U5 は第 1 主成分を中立化した book で測ったので、ドル factor の funding stress は未測定。初版の『U5 の rename』は過剰一般化だった（R-7）。最大 5 本の枠を prior score の順で埋めると 6 番目",
     },
     "M15": {
         "verdict": "ELIGIBLE",
-        "closest": "cross-sectional carry（#471）",
-        "why": "target がドル factor。相対 book はこれを捨てていた（ドル軸を測った T5 は TIC flow で、金利の情報ではない）",
+        "closest": "cross-sectional carry / pair-level carry C-A（#471）",
+        "why": "target がドル factor。#471 の pair-level carry は recent だけで long は触れていない。相対 book はこれを捨てていた（ドル軸を測った T5 は TIC flow で、金利の情報ではない）",
     },
     "M16": {
         "verdict": "ELIGIBLE_WITH_RENAME_GATE",

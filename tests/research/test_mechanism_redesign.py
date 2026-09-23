@@ -6,8 +6,10 @@ import numpy as np
 import pandas as pd
 import pytest
 
+from scripts.research.data_access import providers, request_policy
 from scripts.research.mechanism_redesign import (
     driver,
+    execute,
     prereg,
     prior_cycle,
     ranking,
@@ -75,6 +77,7 @@ def test_dollar_carry_sells_usd_when_foreign_rates_are_higher(tmp_path, monkeypa
             tmp_path / f"short_rate_3m_{currency.lower()}.parquet"
         )
     monkeypatch.setattr(signals, "DATA_DIR", tmp_path)
+    monkeypatch.setattr(signals, "VERIFY_INPUT_HASHES", False)
     mu = signals.dollar_carry(pd.bdate_range("2003-01-01", "2006-06-30"))
     assert (mu["USD"].dropna() == -1.0).all()
 
@@ -91,6 +94,7 @@ def test_monthly_value_is_not_used_before_its_publication_lag(tmp_path, monkeypa
             tmp_path / f"short_rate_3m_{currency.lower()}.parquet"
         )
     monkeypatch.setattr(signals, "DATA_DIR", tmp_path)
+    monkeypatch.setattr(signals, "VERIFY_INPUT_HASHES", False)
     mu = signals.dollar_carry(pd.bdate_range("2005-01-01", "2005-06-30"))
     #: 2005-03 分は m+1 月末（2005-04-29 以降の営業日）まで使えない
     assert (mu.loc[:"2005-04-28", "USD"] == -1.0).all()
@@ -101,6 +105,7 @@ def test_load_refuses_a_protected_reference_period(tmp_path, monkeypatch) -> Non
     stamps = pd.to_datetime(["2016-04-01", "2016-05-01", "2016-06-01"])
     pd.DataFrame({"v": [1.0, 2.0, 3.0]}, index=stamps).to_parquet(tmp_path / "x.parquet")
     monkeypatch.setattr(signals, "DATA_DIR", tmp_path)
+    monkeypatch.setattr(signals, "VERIFY_INPUT_HASHES", False)
     with pytest.raises(AssertionError):
         signals._load("x")
 
@@ -113,3 +118,116 @@ def test_m10_has_no_long_span() -> None:
     }
     with pytest.raises(signals.SignalUnavailableError):
         signals.scores_for("M10", built, "long")
+
+
+# ----------------------------------------------------------------------
+# pre-alpha amendment
+# ----------------------------------------------------------------------
+def test_execution_set_has_five_tracks_including_m01() -> None:
+    assert prereg.EXECUTION_ORDER == ("M15", "M11", "M16", "M01", "M10")
+    assert prereg.FREEZE_AMENDMENT_PRE_ALPHA["digest_before"].startswith("2815e1dd")
+
+
+def test_freeze_covers_the_code_closure_and_inputs() -> None:
+    payload = prereg._payload()
+    assert set(payload["code_closure_sha256"]) == set(prereg.CODE_CLOSURE)
+    assert len(payload["input_manifest_sha256"]) == 64
+
+
+def test_book_adds_carry_and_financing(monkeypatch) -> None:
+    days = pd.bdate_range("2020-01-06", periods=3)
+    frame = pd.DataFrame(
+        {
+            "decision_day": days[:-1],
+            "gross": [0.001, 0.001],
+            "cost": [0.0001, 0.0],
+            **{f"x_{c}": [0.0, 0.0] for c in signals.CURRENCIES},
+            **{f"pnl_{c}": [0.0, 0.0] for c in signals.CURRENCIES},
+        },
+        index=days[1:],
+    )
+    frame["x_USD"] = [-1.0, -1.0]
+    frame["x_JPY"] = [1.0, 1.0]
+    monkeypatch.setattr(execute.construction, "run_book", lambda *a, **k: {"daily": frame.copy()})
+    rates = pd.DataFrame(0.0, index=days, columns=list(signals.CURRENCIES))
+    rates["USD"] = 5.0
+    daily = execute.book(execute._config("M15"), None, None, rates)
+    #: USD を 1 単位売って JPY を 1 単位買う → 5% の金利差を払う（1 暦日）
+    assert daily["carry"].iloc[0] == pytest.approx(-0.05 / 365)
+    assert daily["financing"].iloc[0] == pytest.approx(2 * 0.0025 / 365)
+    assert daily["net"].iloc[0] == pytest.approx(0.001 - 0.05 / 365 - 0.0001 - 2 * 0.0025 / 365)
+    assert daily["spot_gross"].iloc[0] == pytest.approx(0.001)
+
+
+def _fake_primary(net: float, n_eff: float) -> dict:
+    return {
+        "metrics": {
+            "gross_sharpe": net + 0.1,
+            "net_sharpe": net,
+            "effective_independent_observations": n_eff,
+        },
+        "development_economics": {
+            "label": "DEVELOPMENT_ECONOMICS_SUPPORTED",
+            "core_satisfied": True,
+            "checks": {"E5_breadth": True, "E6_concentration": True},
+        },
+        "null_diagnostic": {"label": "NULL_REJECTION_SUPPORTED", "observed_percentile": 0.99},
+    }
+
+
+def test_power_cap_limits_positive_verdicts() -> None:
+    capped = execute.verdict("M15", _fake_primary(0.5, 5.0), None, {})
+    assert capped["status"].endswith("POSITIVE_EXPLORATORY_SIGNAL_NOT_DECISION_GRADE")
+    assert capped["status_before_power_cap"].endswith("STRONG_DEVELOPMENT_CANDIDATE")
+    free = execute.verdict("M16", _fake_primary(0.5, 27.0), None, {})
+    assert free["status"].endswith("STRONG_DEVELOPMENT_CANDIDATE")
+
+
+def test_not_evaluable_rename_gate_does_not_change_the_verdict() -> None:
+    gates = {"M16_WITHIN_CYCLE": {"verdict": "NOT_EVALUABLE"}}
+    out = execute.verdict("M15", _fake_primary(-0.1, 5.0), None, gates)
+    assert out["status"].endswith("NOT_SUPPORTED_IN_SEEN_DEVELOPMENT")
+    assert out["rename_gates_not_evaluable"] == ["M16_WITHIN_CYCLE"]
+    renamed = execute.verdict("M15", _fake_primary(0.5, 5.0), None, {"x": {"verdict": "RENAME"}})
+    assert renamed["status"].endswith("RENAME_OF_A_CLOSED_TRACK")
+
+
+def test_yoy_whose_base_month_is_protected_is_dropped() -> None:
+    clean = signals._yoy_base_is_clean
+    assert not clean(pd.Timestamp("2022-04-01"), request_policy.MONTH)
+    assert clean(pd.Timestamp("2022-05-01"), request_policy.MONTH)
+    assert clean(pd.Timestamp("2016-05-01"), request_policy.MONTH)
+    assert not clean(pd.Timestamp("2022-04-01"), request_policy.QUARTER)
+    assert clean(pd.Timestamp("2022-07-01"), request_policy.QUARTER)
+
+
+def test_gbp_unemployment_uses_a_longer_lag() -> None:
+    assert signals.LAG_OVERRIDES[("unemployment", "GBP")] == signals.LAG_MONTHS["unemployment"] + 1
+
+
+def test_load_refuses_a_parquet_whose_hash_is_not_recorded(tmp_path, monkeypatch) -> None:
+    stamps = pd.to_datetime(["2016-04-01", "2016-05-01"])
+    pd.DataFrame({"v": [1.0, 2.0]}, index=stamps).to_parquet(tmp_path / "x.parquet")
+    monkeypatch.setattr(signals, "DATA_DIR", tmp_path)
+    with pytest.raises(AssertionError):
+        signals._load("x")
+
+
+def test_alfred_refuses_an_unbounded_request() -> None:
+    with pytest.raises(request_policy.ProtectedRequestError):
+        providers.alfred("X", opt_in_env="NOPE")
+
+
+def test_driver_refuses_when_the_record_exists(tmp_path, monkeypatch) -> None:
+    record = tmp_path / "development.json"
+    record.write_text("{}", encoding="utf-8")
+    monkeypatch.setattr(driver, "RECORD", record)
+    with pytest.raises(SystemExit):
+        driver.preflight()
+
+
+def test_draw_count_cannot_be_overridden() -> None:
+    import inspect
+
+    assert "draws" not in inspect.signature(execute.null_diagnostic).parameters
+    assert "permutation_draws" not in inspect.signature(execute.run_track).parameters

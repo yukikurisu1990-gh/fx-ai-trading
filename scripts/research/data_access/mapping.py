@@ -127,6 +127,7 @@ VARIABLES: Final[dict[str, Variable]] = {
         description="中央銀行の政策金利（または政策の運営目標となる翌日物金利）",
         required_any=(
             ("central bank rates",),
+            ("central bank policy rates",),
             ("federal funds", "effective"),
             ("main refinancing",),
             ("deposit facility",),

@@ -1,5 +1,5 @@
 # ruff: noqa: E501 -- signal prose
-"""凍結する 4 本の signal（mechanism redesign cycle）。
+"""凍結する 5 本の signal（mechanism redesign cycle）。
 
 `NON_DECISION_BEARING_EXPLORATORY_ONLY` · `RESEARCH_SCRATCH_NON_AUTHORITATIVE`.
 
@@ -15,10 +15,19 @@ next-five の共通基盤修正（C-1〜C-6）を引き継ぐ:
 
 2 種類の book がある:
 
-- **XS**（M11 / M10）: 既存の相対価値 book。第 1 主成分を中立化する。
+- **XS**（M11 / M01 / M10）: 既存の相対価値 book。第 1 主成分を中立化する。
 - **DOLLAR**（M15 / M16）: ドル対 7 通貨 basket。**第 1 主成分を中立化しない**（それがドル factor
-  そのものなので）。mu は USD に −s、他 7 通貨に +s/7。book は `linear` mapping で等ウェイト basket に
-  なり、capped_weights が各側を 0.5 に揃えるので、**実際に効くのは s の符号だけ**（大きさは効かない）。
+  そのものなので）。mu は USD に +sign（ドル買いなら +1）、他 7 通貨に −sign/7。book は `linear`
+  mapping で等ウェイト basket になり、capped_weights が各側を 0.5 に揃えるので、
+  **実際に効くのは符号だけ**（大きさは効かない）。
+
+pre-alpha amendment（独立 review 2 役の指摘による。alpha はまだ測っていない）:
+
+- **前年比の参照期間**: CPI 前年比の値は 12 か月前の物価水準を分母に持つ。
+  分母の月が保護暦日に掛かる stamp（recent の 2021-05 … 2022-04）は読まない。
+- **GBP の失業率**は LFS の 3 か月平均なので、公表 lag を 1 か月長く取る（m+3 月末）。
+- **入力の hash を照合する**: `_load` は取得記録の content_hash と一致しない parquet を読まない。
+- **M01（Taylor gap）**を追加（BIS の政策金利を date-bounded な SDMX で取得できたため）。
 """
 
 from __future__ import annotations
@@ -29,6 +38,7 @@ from typing import Any, Final
 import numpy as np
 import pandas as pd
 
+from scripts.research.acquisition_safety import digest
 from scripts.research.data_access import request_policy
 from scripts.research.next_five.signals import (
     NonContiguousScoresError,
@@ -40,6 +50,10 @@ from scripts.research.top_five import UNIVERSE, sources
 
 REPO_ROOT: Final[Path] = Path(__file__).resolve().parents[3]
 DATA_DIR: Final[Path] = REPO_ROOT / "artifacts/track_a_scratch/mechanism_redesign"
+ACQUISITION_RECORDS: Final[tuple[Path, ...]] = (
+    REPO_ROOT / "artifacts/research/mechanism_redesign/acquisition.json",
+    REPO_ROOT / "artifacts/research/mechanism_redesign/acquisition_amendment.json",
+)
 M15_CACHES: Final[tuple[str, ...]] = (
     "momentum_replication_b",
     "supplemental_replication",
@@ -68,6 +82,17 @@ LAG_MONTHS: Final[dict[str, int]] = {
     "short_rate_3m": 1,  # 市場金利の月平均。翌月初に確定、翌月末から使う
     "cpi": 2,  # 翌月中旬公表 → m+2 月末
     "unemployment": 2,
+    "policy_rate_bis": 1,  # 月末時点の政策金利。決定は即日公表だが、他と揃えて翌月末から
+}
+#: 通貨ごとの lag の上書き。**GBP の失業率は LFS の 3 か月平均**で、中心月に stamp されると
+#: 入手は参照期間の最後の月から約 75 日後になる。保守側に 1 か月長く取る。
+LAG_OVERRIDES: Final[dict[tuple[str, str], int]] = {("unemployment", "GBP"): 3}
+#: lag の根拠。**provider の metadata ではなく各統計局の公表慣行**である（review で指摘された限界）。
+LAG_JUSTIFICATION: Final[dict[str, str]] = {
+    "cpi": "米・加・英・スイス・日本・euro area は翌月 2〜4 週で公表、豪・NZ の四半期は四半期末から 3〜4 週",
+    "unemployment": "米・加は翌月初、豪は翌月中旬、日本は翌月末、euro area は約 1 か月後、スイス・NZ の四半期は 5〜8 週後、英国は 3 か月平均（m+3）",
+    "short_rate_3m": "市場金利の月平均。OECD の収録は翌月",
+    "policy_rate_bis": "政策決定は即日公表。月末値は月末に確定",
 }
 #: 四半期の stamp は四半期の初月。参照期間の最後の月は stamp + 2 か月。
 QUARTER_EXTRA_MONTHS: Final[int] = 2
@@ -85,12 +110,37 @@ def _nuisance(name: str, overrides: dict[str, Any] | None) -> Any:
     return value
 
 
+def _recorded_hashes() -> dict[str, str]:
+    """取得記録（commit 済み）にある content_hash。**記録に無い parquet は読まない。**"""
+    import json
+
+    hashes: dict[str, str] = {}
+    for record in ACQUISITION_RECORDS:
+        if not record.exists():
+            continue
+        payload = json.loads(record.read_text(encoding="utf-8"))
+        for row in payload.get("series", []) + payload.get("rows", []):
+            if row.get("outcome") == "OK":
+                hashes[f"{row['slot']}_{row['currency'].lower()}"] = row["content_hash"]
+    return hashes
+
+
+#: 取得記録との照合を行うか。**テストで合成 parquet を使うときだけ False にする。**
+VERIFY_INPUT_HASHES: bool = True
+
+
 def _load(name: str) -> tuple[pd.Series, str]:
     """外部 series を読む唯一の経路。戻り値は (series, 参照期間の種類)。"""
     path = DATA_DIR / f"{name}.parquet"
     if not path.exists():
         raise SignalUnavailableError(f"{name} が取得されていない")
     frame = pd.read_parquet(path)
+    if VERIFY_INPUT_HASHES:
+        expected = _recorded_hashes().get(name)
+        if expected is None or digest(frame.to_csv()) != expected:
+            raise AssertionError(
+                f"{name}: parquet が取得記録の content_hash と一致しない（または記録に無い）"
+            )
     series = frame.iloc[:, -1].astype(float).sort_index().dropna()
     if series.empty:
         raise SignalUnavailableError(f"{name} は空")
@@ -110,31 +160,42 @@ def _monthly_panel(
     columns: dict[str, pd.Series] = {}
     for currency in CURRENCIES:
         try:
-            series, kind = _load_slot(slot, currency)
+            series, kind = _load_slot(slot, currency, staleness=staleness)
         except SignalUnavailableError:
             continue
         quarterly = kind == request_policy.QUARTER
         stale = QUARTERLY_STALENESS_DAYS if quarterly else staleness
         if change_months is not None:
             series = _change(series, change_months, staleness_days=stale)
-        offset = LAG_MONTHS[slot] + (QUARTER_EXTRA_MONTHS if quarterly else 0)
+        offset = LAG_OVERRIDES.get((slot, currency), LAG_MONTHS[slot]) + (
+            QUARTER_EXTRA_MONTHS if quarterly else 0
+        )
         columns[currency] = _align(
             series, index, vintage_offset_months=offset, staleness_days=stale
         )
     return pd.DataFrame(columns, index=index).reindex(columns=list(CURRENCIES))
 
 
-def _load_slot(slot: str, currency: str) -> tuple[pd.Series, str]:
+def _yoy_base_is_clean(stamp: pd.Timestamp, kind: str) -> bool:
+    """前年比の値の参照期間は「12 か月前の期の初日 … 当期の末日」。そこが保護暦日に掛からないか。"""
+    base = (stamp - pd.DateOffset(months=12)).date()
+    base_start = request_policy.reference_period(base, kind)[0]
+    end = request_policy.reference_period(stamp.date(), kind)[1]
+    return not request_policy.touches_protected(base_start, end)
+
+
+def _load_slot(slot: str, currency: str, *, staleness: int = 75) -> tuple[pd.Series, str]:
     """CPI は前年比（%）で揃える。前年比 series が無い通貨だけ、指数水準から前年比を作る。"""
     if slot == "cpi":
         try:
-            return _load(f"cpi_yoy_{currency.lower()}")
+            series, kind = _load(f"cpi_yoy_{currency.lower()}")
         except SignalUnavailableError:
             index_series, kind = _load(f"cpi_index_{currency.lower()}")
-            log_change = _change(
-                index_series, 12, log=True, staleness_days=QUARTERLY_STALENESS_DAYS
-            )
+            stale = QUARTERLY_STALENESS_DAYS if kind == request_policy.QUARTER else staleness
+            log_change = _change(index_series, 12, log=True, staleness_days=stale)
             return (np.exp(log_change) - 1.0) * 100.0, kind
+        keep = np.array([_yoy_base_is_clean(stamp, kind) for stamp in series.index], dtype=bool)
+        return series[keep], kind
     return _load(f"{slot}_{currency.lower()}")
 
 
@@ -190,6 +251,61 @@ def us_macro_momentum(
     score = macro_momentum(index, overrides)
     usd = score["USD"].where(score.notna().sum(axis=1) >= MIN_CURRENCIES + 1)
     return _dollar_mu(np.sign(usd), index)
+
+
+# ----------------------------------------------------------------------
+# M01 — Taylor 則の政策圧力 gap（XS）
+# ----------------------------------------------------------------------
+#: Taylor（1993）の係数と Okun 係数 2。**推定しない。** 国ごとに共通の r*・インフレ目標は
+#: cross-section で相殺されるので置かない（国ごとに違う r* を置くと自由度になる）。
+TAYLOR_INFLATION_COEF: Final[float] = 1.5
+TAYLOR_UNEMPLOYMENT_GAP_COEF: Final[float] = 1.0
+UNEMPLOYMENT_TREND_WINDOW: Final[str] = "1827D"
+UNEMPLOYMENT_TREND_MIN_OBS: Final[dict[str, int]] = {
+    request_policy.MONTH: 24,
+    request_policy.QUARTER: 8,
+}
+
+
+def _unemployment_gap(currency: str, staleness: int) -> tuple[pd.Series, str]:
+    """失業率 − 直近 60 か月（暦日）の平均。**保護 pool の空白を跨ぐ窓は観測数が足りず欠損になる。**"""
+    series, kind = _load_slot("unemployment", currency, staleness=staleness)
+    trend = series.rolling(
+        UNEMPLOYMENT_TREND_WINDOW, min_periods=UNEMPLOYMENT_TREND_MIN_OBS[kind]
+    ).mean()
+    return (series - trend).dropna(), kind
+
+
+def taylor_gap(index: pd.DatetimeIndex, overrides: dict[str, Any] | None = None) -> pd.DataFrame:
+    """gap_c = 1.5·インフレ − 1.0·失業率 gap − 政策金利。xs_z した値が高い通貨を買う。"""
+    staleness = _nuisance("max_staleness_days_monthly", overrides)
+    inflation = _monthly_panel("cpi", index, change_months=None, staleness=staleness)
+    policy = _monthly_panel("policy_rate_bis", index, change_months=None, staleness=staleness)
+    gaps: dict[str, pd.Series] = {}
+    for currency in CURRENCIES:
+        try:
+            gap, kind = _unemployment_gap(currency, staleness)
+        except SignalUnavailableError:
+            continue
+        quarterly = kind == request_policy.QUARTER
+        stale = QUARTERLY_STALENESS_DAYS if quarterly else staleness
+        offset = LAG_OVERRIDES.get(("unemployment", currency), LAG_MONTHS["unemployment"]) + (
+            QUARTER_EXTRA_MONTHS if quarterly else 0
+        )
+        gaps[currency] = _align(gap, index, vintage_offset_months=offset, staleness_days=stale)
+    u_gap = pd.DataFrame(gaps, index=index).reindex(columns=list(CURRENCIES))
+    gap = TAYLOR_INFLATION_COEF * inflation - TAYLOR_UNEMPLOYMENT_GAP_COEF * u_gap - policy
+    return _xs_z(gap)
+
+
+def carry_rate_panel(index: pd.DatetimeIndex) -> pd.DataFrame:
+    """carry accrual に使う 3 か月金利（%、年率）。signal と同じ lag・staleness（primary）で揃える。"""
+    return _monthly_panel(
+        "short_rate_3m",
+        index,
+        change_months=None,
+        staleness=NUISANCE["max_staleness_days_monthly"]["primary"],
+    )
 
 
 # ----------------------------------------------------------------------
@@ -265,6 +381,7 @@ SCORERS: Final[dict[str, Any]] = {
     "M15": dollar_carry,
     "M11": macro_momentum,
     "M16": us_macro_momentum,
+    "M01": taylor_gap,
     "M10": liquidity,
 }
 DOLLAR_TRACKS: Final[frozenset[str]] = frozenset({"M15", "M16"})

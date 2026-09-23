@@ -102,11 +102,13 @@ def run() -> dict[str, Any]:
 
 def main() -> int:
     payload = run()
-    RECORD.parent.mkdir(parents=True, exist_ok=True)
-    written = write_provenance(RECORD, payload)
+    #: pre-alpha amendment の後は別の record に書く（最初の record は上書きしない）
+    record = RECORD.with_name("feasibility_amendment.json") if "--amend" in sys.argv else RECORD
+    record.parent.mkdir(parents=True, exist_ok=True)
+    written = write_provenance(record, payload)
     for row in payload["rows"]:
         print(row, file=sys.stderr)
-    print(f"written {RECORD} {written}", file=sys.stderr)
+    print(f"written {record} {written}", file=sys.stderr)
     return 0
 
 

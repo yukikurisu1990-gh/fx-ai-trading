@@ -27,7 +27,28 @@ AUTHORITY: Final[dict[str, str]] = {
     "ruling": "2026-09-24 Human + ChatGPT 裁定（U1..U5 最終統合報告のレビュー後）",
     "scope": "mechanism 再設計 → signal-blind ranking → 最大 5 本の凍結 → minimal development",
 }
-WORKFLOW_STATUS: Final[str] = "FOUR_TRACKS_FROZEN_AWAITING_ALPHA_EXECUTION"
+WORKFLOW_STATUS: Final[str] = "FIVE_TRACKS_FROZEN_AWAITING_ALPHA_EXECUTION"
+
+#: **pre-alpha amendment**（独立 review 2 役: Role 1 経済 BLOCKER 1 / REQUIRED 8、Role 2 timing REQUIRED 8）。
+#: 最初の凍結 digest から変えたのは下の項目で、どれも alpha を 1 本も見る前である。
+FREEZE_AMENDMENT_PRE_ALPHA: Final[dict[str, Any]] = {
+    "digest_before": "2815e1ddf76a189145e52d7cf5251500351f7a359cbe6aa16bd27c27c177263c",
+    "status": "AMENDED_PRE_ALPHA_NO_RETURN_HAD_BEEN_MEASURED",
+    "changes": (
+        "判定 P&L に carry accrual と仮定 financing markup を入れた（B-1）",
+        "digest に依存コードの source と入力 data の hash を入れた（R-1 / RF-5）",
+        "rename gate が評価できない場合を NOT_EVALUABLE として凍結した（R-2）",
+        "permutation の draw 数を実行時に変えられなくした、記録があれば走らない、dirty tree で走らない（R-3 / RF-6）",
+        "有効標本数 10 未満の track に検出力の上限と非 closure 規則を置いた（R-4）",
+        "M10 の最近接 family に vol 状態・reversal を書き、vol ratio との rename gate を置いた（R-5）",
+        "M01 を BIS の date-bounded SDMX で取得でき、5 本目として加えた（R-6）",
+        "M14 の除外理由を直した（R-7）、M15 と #471 pair-level carry の区別を書いた（R-8）",
+        "CPI 前年比の分母の月が保護暦日に掛かる stamp を読まない（RF-3）",
+        "GBP 失業率の公表 lag を m+3 にした（RF-4）",
+        "M15 の改訂留保を CURRENT_VINTAGE_ONLY に直した（RF-7）",
+        "取得の事故と露出を acquisition_amendment.json に記録した（RF-1 / RF-2 / RF-8、D-M3）",
+    ),
+}
 
 FORBIDDEN: Final[tuple[str, ...]] = (
     "fresh pool / historical OOS / dead window / forward epoch の読み取り",
@@ -37,7 +58,7 @@ FORBIDDEN: Final[tuple[str, ...]] = (
     "unrestricted nonlinear ML",
     "post-hoc multi-source optimization",
     "U1..U5 の horizon / sign / subset rescue",
-    "6 本目以降の alpha 実行（今回は 4 本）",
+    "6 本目以降の alpha 実行（今回は 5 本）",
     "結果を見た後の horizon / sign / universe / benchmark / feature / threshold の変更（track 間も含む）",
 )
 
@@ -74,7 +95,7 @@ NULL_DIAGNOSTIC: Final[dict[str, Any]] = {
     **_nf.NULL_DIAGNOSTIC,
     "permutation": {**_nf.NULL_DIAGNOSTIC["permutation"], "seed": 20260924},
     "multiplicity": (
-        "4 本を同じ null に当てるので、**いずれか 1 本が 5% を切る確率は帰無でも約 19%**（1 − 0.95⁴）。"
+        "5 本を同じ null に当てるので、**いずれか 1 本が 5% を切る確率は帰無でも約 23%**（1 − 0.95⁵）。"
         "**1 本通ったことを『edge が見つかった』とは書かない**"
     ),
     "null_pass_probability_by_construction": 0.05,
@@ -91,10 +112,41 @@ DOLLAR_TRACK_BREADTH_RULE: Final[str] = (
     "E5 は USD 以外の 7 通貨の leave-one-currency-out の最悪値 > 0"
 )
 
+#: **判定する P&L**（B-1）。spot だけでは dollar carry が名乗る premium を測らない。
+FINANCING: Final[dict[str, Any]] = {
+    "judged_pnl": "spot + carry accrual − spread cost − 仮定 financing markup",
+    "carry_accrual": "決定日の exposure × 3 か月銀行間金利（signal と同じ lag・staleness）× 暦日 / 365。金利の無い通貨は 0",
+    "markup_annual_per_unit_currency_gross": 0.0025,
+    "markup_is_assumed_not_measured": (
+        "retail の swap に含まれる markup の公開記録は無い（economic_edge/carry.py）。"
+        "年 0.25%（通貨 gross 1 単位あたり、pair で見ると約 0.5%）を仮定し、cost stress の倍率を spread cost と同じく掛ける"
+    ),
+    "spot_only_is_reported": "前 cycle との比較のため、spot だけの gross / net Sharpe を pnl_decomposition に並べる（判定には使わない）",
+    "applies_to": "全 5 track（M15 だけに入れると track 間で P&L の定義が変わるため）",
+}
+
+#: **検出力の上限と、負の結果の範囲**（R-4）。
+POWER_RULE: Final[dict[str, Any]] = {
+    "min_effective_observations": 10,
+    "effective_observations": "primary span の score の AR(1) 近似 N·(1−ρ)/(1+ρ)（return を使わない量）",
+    "cap": "有効標本数が 10 未満なら、STRONG / MARGINAL は POSITIVE_EXPLORATORY_SIGNAL_NOT_DECISION_GRADE に下げる",
+    "closure_scope": (
+        "NOT_SUPPORTED は凍結した formulation と span についての記録であり、mechanism family を閉じない。"
+        "有効標本数 10 未満の負の結果は検出力の無い null であって refutation ではない"
+    ),
+}
+
+#: rename gate が評価できないとき（比較対象が定数・短すぎる・取れない）の扱い（R-2）。
+RENAME_NOT_EVALUABLE_RULE: Final[str] = (
+    "NOT_EVALUABLE として記録し、verdict は変えない（RENAME にも DISTINCT にも数えない）。"
+    "verdict に rename_gates_not_evaluable として並べる"
+)
+
 NUISANCE_APPLIES: Final[dict[str, tuple[str, ...]]] = {
     "M15": ("max_staleness_days_monthly", "implementation_tolerance_band"),
     "M11": ("max_staleness_days_monthly", "change_window_months", "implementation_tolerance_band"),
     "M16": ("max_staleness_days_monthly", "change_window_months", "implementation_tolerance_band"),
+    "M01": ("max_staleness_days_monthly", "implementation_tolerance_band"),
     "M10": ("liquidity_short_window", "liquidity_long_window", "implementation_tolerance_band"),
 }
 NUISANCE_RULE: Final[str] = (
@@ -117,12 +169,18 @@ TRACKS: Final[dict[str, dict[str, Any]]] = {
         "universe": "USD 対 7 通貨の等ウェイト basket",
         "portfolio_mapping": "DOLLAR（BOOK_CONFIG_DEVIATIONS）。**効くのは d の符号だけ**",
         "primary_span": "long",
-        "revision": "市場金利、改訂無し",
+        "revision": "CURRENT_VINTAGE_ONLY_REVISION_CAVEAT（OECD MEI の現行 vintage。LIBOR 廃止後の USD / GBP は同じ series の中で定義が変わっている可能性がある）",
         "declared_weakness_before_alpha": (
             "**long span で符号の regime が 6 個しかない**（反転 5 回 / 17.7 年）。結果は少数の regime の当たり外れで"
             "決まり、E6（集中）が偽になりやすい。**recent span は全期間ドル買い**（米金利が常に高い）ので、"
-            "recent の M15 は benchmark の constant_long_usd と同じ book になり、情報を持たない"
+            "recent の M15 は benchmark の constant_long_usd と同じ book になり、情報を持たない。"
+            "**有効標本数は long 5.0 / recent 1.0**（POWER_RULE の上限に掛かる）。"
+            "符号の regime は公知のドル循環（2002–04 のドル安、2008 年後半、2014–15 のドル高）と重なるので、"
+            "signal-blind は形式上にとどまる — 結果はある程度事前に推測できる。"
+            "1999–2002 は JPY / CHF の金利が欠け 5〜6 通貨の平均、2008-12 の 1 か月の反転は US 3 か月銀行間金利の"
+            "funding stress から来ている"
         ),
+        "distinct_from_471": "#471 の pair-level carry（C-A）は USD pair で全差が同符号なら同じ book になりうるが、#471 は recent だけで、primary の long は触れていない",
         "rename_gates": ("T5_TIC_FLOW", "M16_WITHIN_CYCLE"),
     },
     "M11": {
@@ -142,7 +200,8 @@ TRACKS: Final[dict[str, dict[str, Any]]] = {
         "revision": "CURRENT_VINTAGE_ONLY_REVISION_CAVEAT（失業率の季節調整改訂）",
         "declared_weakness_before_alpha": (
             "**U1（貿易収支）は Dahlquist–Hasseltoft の構成要素で、NOT_SUPPORTED だった。** 貿易収支は入れない。"
-            "recent span は 3.2 年・5 通貨で、ほぼ情報を持たない"
+            "recent span は短く（CPI 前年比の分母規則でさらに短くなる）、ほぼ情報を持たない。"
+            "long の有効標本数 13.2。3 か月金利の 12 か月変化との cross-section 相関 0.318（#471 の carry change と一部重なる）"
         ),
         "rename_gates": ("U1_TRADE_BALANCE",),
     },
@@ -161,7 +220,11 @@ TRACKS: Final[dict[str, dict[str, Any]]] = {
         "portfolio_mapping": "DOLLAR（BOOK_CONFIG_DEVIATIONS）。効くのは符号だけ",
         "primary_span": "long",
         "revision": "CURRENT_VINTAGE_ONLY_REVISION_CAVEAT",
-        "declared_weakness_before_alpha": "M11 と情報集合が同じ。M11 が捨てた成分を測るので、2 本で 1 つの情報を分解している",
+        "declared_weakness_before_alpha": (
+            "M11 と情報集合が同じ。M11 が捨てた成分を測るので、2 本で 1 つの情報を分解している。"
+            "long の有効標本数 23.1（GBP の lag を m+3 にした後）。反転のうち数回は通貨数の変化と同じ日（構成が起こした反転）。"
+            "ドル track の E5（USD を除く LOO）は構造上ゆるく、book の半分を占める USD 脚の集中は検定されない"
+        ),
         "rename_gates": ("T5_TIC_FLOW", "M15_WITHIN_CYCLE"),
     },
     "M10": {
@@ -180,19 +243,63 @@ TRACKS: Final[dict[str, dict[str, Any]]] = {
         "primary_span": "recent（long に quote は無い）",
         "revision": "改訂無し",
         "declared_weakness_before_alpha": (
-            "recent span 3.8 年だけ（MDE 1.00）。retail の quote が interbank の流動性を表すかは不確か。"
-            "**符号の理論が 2 つある**（悪化時に売られて後で戻る premium か、流動性の悪い通貨がさらに売られるか）。"
-            "前者を凍結した"
+            "recent span 3.8 年だけ（MDE 1.00、有効標本数 0.5 — AR(1) 近似は rolling 窓の signal では過小に出る）。"
+            "retail の quote が interbank の流動性を表すかは不確か。通貨別 spread は pair の平均で、"
+            "pair 固有の shock を通貨ごとに識別していない。**20 日 / 250 日の比は実質的に通貨別の vol shock に近く、"
+            "凍結した『悪化の後に戻る』は流動性 premium というより forced selling 後の reversal である**。"
+            "最も近い family は T1 / Track 1 の vol 状態と multi-day reversal"
         ),
-        "rename_gates": (),
+        "rename_gates": ("VOL_RATIO_STATE",),
     },
 }
+TRACKS["M01"] = {
+    "candidate": "M01",
+    "name": "Taylor 則の政策圧力 gap",
+    "mechanism": "fundamentals が要求する政策金利と実際の政策金利の差が大きい国は、中銀が追いつくために引き締めを続け、通貨需要が生まれる",
+    "why_fx_should_lag": "市場は観測できる金利差と forward guidance に錨を下ろし、fundamentals が示す将来の政策経路は中銀が動くまで部分的にしか織り込まれない",
+    "data": "CPI 前年比（M11 と同じ）・失業率（M11 と同じ）・BIS 政策金利（WS_CBPOL、月末値、SDMX で date-bounded、detail=dataonly）",
+    "exact_series": "M11 の CPI / 失業率 + BIS WS_CBPOL M.{US,JP,GB,CA,AU,NZ,CH,XM}",
+    "availability_lag": "CPI・失業率は M11 と同じ、政策金利は m+1 月末",
+    "signal": "gap_c = 1.5·インフレ_c − 1.0·(失業率_c − 直近 60 か月平均) − 政策金利_c。cross-section で z 化",
+    "sign": "gap が高い（政策が fundamentals より緩い）通貨を買う",
+    "horizon": "1〜3 か月",
+    "universe": "3 入力が揃う通貨（JPY は 2013-04 … 2016-09 に政策金利が無い）",
+    "portfolio_mapping": "XS",
+    "primary_span": "long",
+    "revision": "CURRENT_VINTAGE_ONLY_REVISION_CAVEAT（失業率）。政策金利は改訂無し",
+    "declared_weakness_before_alpha": (
+        "Taylor 係数（1.5 / 1.0）と Okun 係数 2 は文献の固定値で推定していない。r* とインフレ目標を国ごとに同じと置いている。"
+        "**gap は −政策金利を含むので、インフレと失業率が同じなら低金利通貨を買う anti-carry になる** — "
+        "閉じた carry の符号反転にならないよう、3 か月金利の cross-section z との rename gate を置く。M11 と入力を共有する。"
+        "**long の有効標本数 6.2**（POWER_RULE の上限に掛かる）、recent は 2.3 年・中央値 5 通貨"
+    ),
+    "rename_gates": ("CARRY_LEVEL_XS", "M11_WITHIN_CYCLE"),
+}
+
 for _track, _row in TRACKS.items():
     _row["primary_span"] = "recent" if _track == "M10" else "long"
 
-EXECUTION_ORDER: Final[tuple[str, ...]] = ("M15", "M11", "M16", "M10")
+EXECUTION_ORDER: Final[tuple[str, ...]] = ("M15", "M11", "M16", "M01", "M10")
 
 RENAME_GATES: Final[dict[str, dict[str, Any]]] = {
+    "CARRY_LEVEL_XS": {
+        "comparator": "3 か月銀行間金利の cross-section z（閉じた carry の signal）",
+        "statistic": "日次 score の cross-section 相関の平均の絶対値",
+        "threshold": 0.8,
+        "if_exceeded": "RENAME_OF_A_PRIOR_TRACK（carry、符号によらない）",
+    },
+    "M11_WITHIN_CYCLE": {
+        "comparator": "M11 の score",
+        "statistic": "日次 score の cross-section 相関の平均の絶対値",
+        "threshold": 0.8,
+        "if_exceeded": "RENAME_WITHIN_THIS_CYCLE",
+    },
+    "VOL_RATIO_STATE": {
+        "comparator": "通貨別 realised vol の 20 日 / 250 日比（log）の cross-section 偏差（currency excess return から作る）",
+        "statistic": "日次 score の cross-section 相関の平均の絶対値",
+        "threshold": 0.8,
+        "if_exceeded": "RENAME_OF_A_PRIOR_TRACK（vol 状態）",
+    },
     "T5_TIC_FLOW": {
         "comparator": "Top-Five T5（TIC flow）の score の USD 列",
         "statistic": "重なる日の USD 列の相関の絶対値",
@@ -228,22 +335,29 @@ STAGE_0_OUTCOME: Final[dict[str, Any]] = {
         "M11": {"status": "PASSED", "years_long": 17.69, "years_recent": 3.21},
         "M16": {"status": "PASSED", "sign_regimes_long": 28, "sign_regimes_recent": 5},
         "M10": {"status": "PASSED_RECENT_ONLY", "years_recent": 3.82},
+        "M01": {"status": "PASSED", "route": "BIS SDMX（acquisition_amendment.json）"},
     },
+    "amendment_record": "artifacts/research/mechanism_redesign/acquisition_amendment.json",
     "not_selected": {
-        "M01": "DATA_MAPPING_BLOCKED — 政策金利が USD 以外取れない（IRSTCB01 は 404 / title 不一致）。3 か月金利での代用は変数が違うので行わない",
         "M17": "ROUTE_NOT_REQUEST_BOUNDED — ALFRED が JPNEPUINDXM の期間指定を無視した（D-M2）。EPU family は request-level exclusion を保証できない",
         "M18": "DATA_NOT_FEASIBLE_AT_THIS_SCOPE — CLI は現行 vintage が look-ahead を含み、point-in-time の再構成に数百回の vintage request が要る",
-        "M02": "DATA_LIMITED — 政策金利が取れず、日次 2 年金利も無料で 3 通貨",
+        "M02": "DATA_LIMITED — 日次 2 年金利が無料で 3 通貨",
         "M09": "BREADTH_ONE — 最低 3 通貨の規則を満たさない",
+        "M14": (
+            "ELIGIBLE_NOT_SELECTED_MAX_FIVE — U5 は第 1 主成分を中立化した book で測ったので、ドル factor の funding stress は"
+            "未測定（初版の『U5 の rename』は過剰一般化だった）。ただし最大 5 本の枠を prior score の順で埋め、M14（0.648）は 6 番目。"
+            "Stage 0 は行っていない"
+        ),
     },
     "selection_rule": (
-        "overlap audit を通り、Stage 0 で primary span が取れた候補を全部選ぶ（4 本）。"
-        "**5 本目を無理に足さない**（裁定 §21）。prior score は選抜に使っていない"
+        "overlap audit を通り、Stage 0 で primary span が取れた候補を選ぶ。5 本を超えるときは prior score の順。"
+        "初版は M01 を『政策金利が無い』として落としたが、それは ALFRED 経路の制約で、BIS の SDMX で取れた（R-6）。"
+        "M01 を足して 5 本。M14 は 6 番目で選ばない"
     ),
 }
 
 METRICS: Final[tuple[str, ...]] = _nf.METRICS
-EXPLORATION_DISCLOSURE: Final[str] = "FOUR_WAY_EXPLORATORY_DEVELOPMENT_SEARCH_NO_CONFIRMATION_CLAIM"
+EXPLORATION_DISCLOSURE: Final[str] = "FIVE_WAY_EXPLORATORY_DEVELOPMENT_SEARCH_NO_CONFIRMATION_CLAIM"
 SHARED_BLOCKERS: Final[tuple[str, ...]] = _nf.SHARED_BLOCKERS
 INTERPRETATION: Final[str] = (
     "development の結果は sign・大きさ・net economics・incremental information・null percentile・"
@@ -252,6 +366,33 @@ INTERPRETATION: Final[str] = (
 )
 
 _SIGNALS_SOURCE: Final[Path] = Path(__file__).with_name("signals.py")
+_REPO: Final[Path] = Path(__file__).resolve().parents[3]
+
+#: **結果を変えうるコード**の閉包（R-1 / RF-5）。source の sha256 を payload に入れる。
+#: driver.py は凍結値そのものを持つので、`FROZEN_DIGEST` の行を除いて hash する。
+CODE_CLOSURE: Final[tuple[str, ...]] = (
+    "scripts/research/mechanism_redesign/signals.py",
+    "scripts/research/mechanism_redesign/execute.py",
+    "scripts/research/mechanism_redesign/driver.py",
+    "scripts/research/mechanism_redesign/inputs.py",
+    "scripts/research/next_five/signals.py",
+    "scripts/research/next_five/execute.py",
+    "scripts/research/top_five/execute.py",
+    "scripts/research/top_five/stage2.py",
+    "scripts/research/top_five/panel.py",
+    "scripts/research/top_five/sources.py",
+    "scripts/research/continuous_portfolio/construction.py",
+    "scripts/research/data_access/request_policy.py",
+    "scripts/research/acquisition_safety.py",
+)
+INPUT_MANIFEST: Final[str] = "artifacts/research/mechanism_redesign/inputs_manifest.json"
+
+
+def _source_sha(relative: str) -> str:
+    raw = (_REPO / relative).read_bytes().replace(b"\r\n", b"\n")
+    if relative.endswith("mechanism_redesign/driver.py"):
+        raw = b"\n".join(line for line in raw.split(b"\n") if not line.startswith(b"FROZEN_DIGEST"))
+    return hashlib.sha256(raw).hexdigest()
 
 
 def track_status(track: str, suffix: str) -> str:
@@ -315,6 +456,22 @@ def _payload() -> dict[str, Any]:
         "shared_blockers": list(SHARED_BLOCKERS),
         "interpretation": INTERPRETATION,
         "signals_source_sha256": signals_source_digest(),
+        "freeze_amendment_pre_alpha": FREEZE_AMENDMENT_PRE_ALPHA,
+        "financing": FINANCING,
+        "power_rule": POWER_RULE,
+        "rename_not_evaluable_rule": RENAME_NOT_EVALUABLE_RULE,
+        "lag_overrides": {f"{a}/{b}": v for (a, b), v in signals.LAG_OVERRIDES.items()},
+        "lag_justification": signals.LAG_JUSTIFICATION,
+        "taylor": {
+            "inflation_coef": signals.TAYLOR_INFLATION_COEF,
+            "unemployment_gap_coef": signals.TAYLOR_UNEMPLOYMENT_GAP_COEF,
+            "trend_window": signals.UNEMPLOYMENT_TREND_WINDOW,
+            "trend_min_obs": signals.UNEMPLOYMENT_TREND_MIN_OBS,
+        },
+        "code_closure_sha256": {path: _source_sha(path) for path in CODE_CLOSURE},
+        "input_manifest_sha256": hashlib.sha256(
+            (_REPO / INPUT_MANIFEST).read_bytes().replace(b"\r\n", b"\n")
+        ).hexdigest(),
     }
 
 

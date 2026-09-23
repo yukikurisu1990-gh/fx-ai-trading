@@ -101,7 +101,7 @@ MECHANISMS: Final[tuple[dict[str, Any], ...]] = (
         natural_signal_persistence="高い（月次入力、gap は数四半期続く）",
         expected_turnover="低い（4〜8 RT/年/単位 gross）",
         breadth="G10 の 8 通貨（CHF・NZD の失業率は四半期で粗い）",
-        public_free_data="ALFRED（OECD MEI）。request は期間指定できる",
+        public_free_data="ALFRED（OECD MEI）と BIS（政策金利、SDMX）。どちらも request を期間指定できる。ALFRED の政策金利は USD 以外取れず、BIS で取れた",
         timing_revision_quality="CPI はほぼ改訂無し。失業率は季節調整の改訂あり → REVISION_CAVEAT",
         overlap_with_prior_failures=(
             "S23（実質金利水準）は閉鎖、carry（#471）は NOT_SUPPORTED、S01（2 年金利 repricing）は閉鎖。"
@@ -641,7 +641,7 @@ MECHANISMS: Final[tuple[dict[str, Any], ...]] = (
             "遅れではなく**リスク premium**である。ドル factor は世界景気のリスクを負うので、"
             "金利差が開いている間はその補償が続く。高い persistence は機構そのものから来る"
         ),
-        information_source="G10 の 3 か月金利（OECD MEI 月次）と米 3 か月 T-bill",
+        information_source="G10 の 3 か月銀行間金利（OECD MEI 月次、米国も銀行間金利）",
         expected_return_source="ドル factor の carry premium",
         target_variable="**ドル対 7 通貨 basket の return（ドル factor）**",
         horizon="1〜3 か月",

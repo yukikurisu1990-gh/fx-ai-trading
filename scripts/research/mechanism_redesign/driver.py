@@ -23,7 +23,7 @@ import numpy as np
 import pandas as pd
 
 from scripts.research.acquisition_safety import write_provenance
-from scripts.research.mechanism_redesign import execute, prereg, signals
+from scripts.research.mechanism_redesign import execute, inputs, prereg, signals
 from scripts.research.top_five import panel
 
 REPO_ROOT: Final[Path] = Path(__file__).resolve().parents[3]
@@ -31,7 +31,7 @@ RECORD: Final[Path] = REPO_ROOT / "artifacts/research/mechanism_redesign/develop
 SPANS: Final[tuple[str, ...]] = ("long", "recent")
 
 #: **alpha の前に commit した凍結値。** これと一致しない凍結では走らせない。
-FROZEN_DIGEST: Final[str] = "2815e1ddf76a189145e52d7cf5251500351f7a359cbe6aa16bd27c27c177263c"
+FROZEN_DIGEST: Final[str] = "e13998514cbf2c49189ac15d4d7397bb6288c90b22c750e5610e84e9fc029132"
 
 
 def _usd_corr(left: pd.DataFrame, right: pd.DataFrame) -> tuple[float, int]:
@@ -76,19 +76,32 @@ def _rename_gates(
                 measured, overlap = _usd_corr(scores, signals.scores_for("M16", built, span))
             elif gate == "M15_WITHIN_CYCLE":
                 measured, overlap = _usd_corr(scores, signals.scores_for("M15", built, span))
+            elif gate == "M11_WITHIN_CYCLE":
+                measured, overlap = _xs_corr(scores, signals.scores_for("M11", built, span))
+            elif gate == "CARRY_LEVEL_XS":
+                rates = signals.carry_rate_panel(scores.index)
+                measured, overlap = _xs_corr(scores, signals._xs_z(rates))
+            elif gate == "VOL_RATIO_STATE":
+                excess = built[span]["currency_excess_return"]
+                ratio = np.log(
+                    excess.rolling(20, min_periods=20).std()
+                    / excess.rolling(250, min_periods=250).std()
+                )
+                measured, overlap = _xs_corr(scores, ratio.sub(ratio.mean(axis=1), axis=0))
             else:
-                continue
+                raise KeyError(f"凍結されていない rename gate: {gate}")
         except Exception as error:  # noqa: BLE001 - 比較できないことも記録する
             out[gate] = {
                 **spec,
-                "verdict": "COMPARATOR_UNAVAILABLE",
+                "verdict": "NOT_EVALUABLE",
                 "why": f"{type(error).__name__}: {error}"[:150],
             }
             continue
         if not np.isfinite(measured):
             out[gate] = {
                 **spec,
-                "verdict": "COMPARATOR_UNAVAILABLE_OR_CONSTANT",
+                "verdict": "NOT_EVALUABLE",
+                "why": "比較対象が定数か、重なりが 60 日未満",
                 "overlap_days": overlap,
             }
             continue
@@ -115,13 +128,26 @@ def _code_identity() -> dict[str, Any]:
     }
 
 
-def run(*, permutation_draws: int | None = None, workers: int = 1) -> dict[str, Any]:
+def preflight() -> tuple[str, dict[str, Any]]:
+    """**何も計算しないうちに**止めるべき条件を全部確かめる（Role 2 RF-5 / RF-6）。"""
+    if RECORD.exists():
+        raise SystemExit(
+            f"{RECORD} は既にある。再実行は記録されない alpha を見ることになるので走らせない"
+        )
     digest = prereg.freeze_digest()
     if digest != FROZEN_DIGEST:
         raise SystemExit(
             f"凍結 digest が commit 済みの値と違う（{digest} != {FROZEN_DIGEST}）。走らせない"
         )
     identity = _code_identity()
+    if identity["dirty_paths"]:
+        raise SystemExit(f"dirty tree では走らせない: {identity['dirty_paths'][:5]}")
+    inputs.verify()
+    return digest, identity
+
+
+def run(*, workers: int = 1) -> dict[str, Any]:
+    digest, identity = preflight()
     built = panel.build()
     results: dict[str, Any] = {}
     pnl: dict[str, pd.Series] = {}
@@ -131,9 +157,7 @@ def run(*, permutation_draws: int | None = None, workers: int = 1) -> dict[str, 
             started = time.monotonic()
             print(f"[{time.strftime('%H:%M:%S')}] {key} 開始", file=sys.stderr, flush=True)
             try:
-                out = execute.run_track(
-                    track, span, built, permutation_draws=permutation_draws, workers=workers
-                )
+                out = execute.run_track(track, span, built, workers=workers)
             except Exception as error:  # noqa: BLE001 - 失敗も記録する
                 results[key] = {
                     "track": track,
@@ -168,10 +192,9 @@ def run(*, permutation_draws: int | None = None, workers: int = 1) -> dict[str, 
         primary = results.get(f"{track}_{primary_span}", {})
         other = results.get(f"{track}_{other_span}")
         if "null_diagnostic" in primary:
-            renamed = any(
-                g.get("verdict") == "RENAME" for g in primary.get("rename_gates", {}).values()
+            verdicts[track] = execute.verdict(
+                track, primary, other, primary.get("rename_gates", {})
             )
-            verdicts[track] = execute.verdict(track, primary, other, renamed)
         else:
             verdicts[track] = {
                 "status": primary.get("verdict", "NOT_RUN"),
@@ -203,10 +226,9 @@ def run(*, permutation_draws: int | None = None, workers: int = 1) -> dict[str, 
 def main() -> int:
     warnings.filterwarnings("ignore")
     parser = argparse.ArgumentParser()
-    parser.add_argument("--draws", type=int, default=None)
     parser.add_argument("--workers", type=int, default=1)
     args = parser.parse_args()
-    payload = run(permutation_draws=args.draws, workers=args.workers)
+    payload = run(workers=args.workers)
     RECORD.parent.mkdir(parents=True, exist_ok=True)
     written = write_provenance(RECORD, payload)
     print(
