@@ -1,0 +1,117 @@
+{
+ "returns_used": "SYNTHETIC_ONLY（seed 7）。実際の FX return は使っていない",
+ "rows": {
+  "M15_long_factor_rebalance": {
+   "currencies_always_zero": [],
+   "currencies_ever_zero_after_first_trade": [],
+   "days": 4457,
+   "foreign_legs_equal": true,
+   "sum_zero_max_abs": 6.661338147750939e-16,
+   "usd_share_of_gross_mean": 0.5,
+   "usd_sign_matches_signal": true
+  },
+  "M15_long_old_band_rebalance": {
+   "currencies_always_zero": [
+    "EUR",
+    "GBP",
+    "JPY",
+    "NZD"
+   ],
+   "currencies_ever_zero_after_first_trade": [
+    "EUR",
+    "GBP",
+    "JPY",
+    "NZD"
+   ],
+   "days": 4457,
+   "foreign_legs_equal": false,
+   "sum_zero_max_abs": 8.881784197001252e-16,
+   "usd_share_of_gross_mean": 0.5,
+   "usd_sign_matches_signal": true
+  },
+  "M15_recent_factor_rebalance": {
+   "currencies_always_zero": [],
+   "currencies_ever_zero_after_first_trade": [],
+   "days": 1166,
+   "foreign_legs_equal": true,
+   "sum_zero_max_abs": 4.440892098500626e-16,
+   "usd_share_of_gross_mean": 0.5,
+   "usd_sign_matches_signal": true
+  },
+  "M15_recent_old_band_rebalance": {
+   "currencies_always_zero": [
+    "EUR",
+    "GBP",
+    "JPY",
+    "NZD"
+   ],
+   "currencies_ever_zero_after_first_trade": [
+    "EUR",
+    "GBP",
+    "JPY",
+    "NZD"
+   ],
+   "days": 1166,
+   "foreign_legs_equal": false,
+   "sum_zero_max_abs": 4.440892098500626e-16,
+   "usd_share_of_gross_mean": 0.5,
+   "usd_sign_matches_signal": true
+  },
+  "M16_long_factor_rebalance": {
+   "currencies_always_zero": [],
+   "currencies_ever_zero_after_first_trade": [],
+   "days": 4457,
+   "foreign_legs_equal": true,
+   "sum_zero_max_abs": 6.661338147750939e-16,
+   "usd_share_of_gross_mean": 0.5,
+   "usd_sign_matches_signal": true
+  },
+  "M16_long_old_band_rebalance": {
+   "currencies_always_zero": [
+    "EUR",
+    "GBP",
+    "JPY",
+    "NZD"
+   ],
+   "currencies_ever_zero_after_first_trade": [
+    "EUR",
+    "GBP",
+    "JPY",
+    "NZD"
+   ],
+   "days": 4457,
+   "foreign_legs_equal": false,
+   "sum_zero_max_abs": 8.881784197001252e-16,
+   "usd_share_of_gross_mean": 0.5,
+   "usd_sign_matches_signal": true
+  },
+  "M16_recent_factor_rebalance": {
+   "currencies_always_zero": [],
+   "currencies_ever_zero_after_first_trade": [],
+   "days": 530,
+   "foreign_legs_equal": true,
+   "sum_zero_max_abs": 2.220446049250313e-16,
+   "usd_share_of_gross_mean": 0.5,
+   "usd_sign_matches_signal": true
+  },
+  "M16_recent_old_band_rebalance": {
+   "currencies_always_zero": [
+    "EUR",
+    "GBP",
+    "JPY",
+    "NZD"
+   ],
+   "currencies_ever_zero_after_first_trade": [
+    "EUR",
+    "GBP",
+    "JPY",
+    "NZD"
+   ],
+   "days": 530,
+   "foreign_legs_equal": false,
+   "sum_zero_max_abs": 4.440892098500626e-16,
+   "usd_share_of_gross_mean": 0.5,
+   "usd_sign_matches_signal": true
+  }
+ }
+}
