@@ -1,0 +1,2953 @@
+{
+ "aggregation_scenarios": {
+  "caveats": [
+   "s は**真の**効果。観測された小さな Sharpe は selection と雑音を含むので s には使えない。",
+   "ρ が低いのは『独立な情報』の証拠ではない — 情報を持たない signal 同士も低相関。",
+   "cost は Sharpe の単位で 1 本ごとに引く: S_p,net = (s_gross − c) × √(N/(1+(N−1)ρ))。倍率は gross と同じだが、cost 後の s が 0 の source は何本足しても 0 のまま（逆向きの position が相殺されれば cost はそれより少し減る）。",
+   "N を増やすには N 本の独立で真の source が要る。これまでの programme では null を超えた source は 0 本。"
+  ],
+  "ceiling_as_n_grows": {
+   "s=0.10|rho=0.1": 0.316,
+   "s=0.10|rho=0.3": 0.183,
+   "s=0.10|rho=0.5": 0.141,
+   "s=0.20|rho=0.1": 0.632,
+   "s=0.20|rho=0.3": 0.365,
+   "s=0.20|rho=0.5": 0.283,
+   "s=0.30|rho=0.1": 0.949,
+   "s=0.30|rho=0.3": 0.548,
+   "s=0.30|rho=0.5": 0.424
+  },
+  "formula": "S_p = s × √(N / (1 + (N − 1) ρ))（等リスク・事前固定）。s は cost 後の真の Sharpe",
+  "grid": {
+   "s=0.05|rho=0.0": {
+    "1": 0.05,
+    "10": 0.158,
+    "20": 0.224,
+    "3": 0.087,
+    "5": 0.112
+   },
+   "s=0.05|rho=0.1": {
+    "1": 0.05,
+    "10": 0.115,
+    "20": 0.131,
+    "3": 0.079,
+    "5": 0.094
+   },
+   "s=0.05|rho=0.3": {
+    "1": 0.05,
+    "10": 0.082,
+    "20": 0.086,
+    "3": 0.068,
+    "5": 0.075
+   },
+   "s=0.05|rho=0.5": {
+    "1": 0.05,
+    "10": 0.067,
+    "20": 0.069,
+    "3": 0.061,
+    "5": 0.065
+   },
+   "s=0.10|rho=0.0": {
+    "1": 0.1,
+    "10": 0.316,
+    "20": 0.447,
+    "3": 0.173,
+    "5": 0.224
+   },
+   "s=0.10|rho=0.1": {
+    "1": 0.1,
+    "10": 0.229,
+    "20": 0.263,
+    "3": 0.158,
+    "5": 0.189
+   },
+   "s=0.10|rho=0.3": {
+    "1": 0.1,
+    "10": 0.164,
+    "20": 0.173,
+    "3": 0.137,
+    "5": 0.151
+   },
+   "s=0.10|rho=0.5": {
+    "1": 0.1,
+    "10": 0.135,
+    "20": 0.138,
+    "3": 0.122,
+    "5": 0.129
+   },
+   "s=0.20|rho=0.0": {
+    "1": 0.2,
+    "10": 0.632,
+    "20": 0.894,
+    "3": 0.346,
+    "5": 0.447
+   },
+   "s=0.20|rho=0.1": {
+    "1": 0.2,
+    "10": 0.459,
+    "20": 0.525,
+    "3": 0.316,
+    "5": 0.378
+   },
+   "s=0.20|rho=0.3": {
+    "1": 0.2,
+    "10": 0.329,
+    "20": 0.346,
+    "3": 0.274,
+    "5": 0.302
+   },
+   "s=0.20|rho=0.5": {
+    "1": 0.2,
+    "10": 0.27,
+    "20": 0.276,
+    "3": 0.245,
+    "5": 0.258
+   },
+   "s=0.30|rho=0.0": {
+    "1": 0.3,
+    "10": 0.949,
+    "20": 1.342,
+    "3": 0.52,
+    "5": 0.671
+   },
+   "s=0.30|rho=0.1": {
+    "1": 0.3,
+    "10": 0.688,
+    "20": 0.788,
+    "3": 0.474,
+    "5": 0.567
+   },
+   "s=0.30|rho=0.3": {
+    "1": 0.3,
+    "10": 0.493,
+    "20": 0.518,
+    "3": 0.411,
+    "5": 0.452
+   },
+   "s=0.30|rho=0.5": {
+    "1": 0.3,
+    "10": 0.405,
+    "20": 0.414,
+    "3": 0.367,
+    "5": 0.387
+   }
+  },
+  "min_n_to_reach_target": {
+   "target=0.5|s=0.1|rho=0.0": 25,
+   "target=0.5|s=0.1|rho=0.1": null,
+   "target=0.5|s=0.1|rho=0.3": null,
+   "target=0.5|s=0.2|rho=0.0": 7,
+   "target=0.5|s=0.2|rho=0.1": 15,
+   "target=0.5|s=0.2|rho=0.3": null,
+   "target=0.5|s=0.3|rho=0.0": 3,
+   "target=0.5|s=0.3|rho=0.1": 4,
+   "target=0.5|s=0.3|rho=0.3": 12,
+   "target=0.6|s=0.1|rho=0.0": 36,
+   "target=0.6|s=0.1|rho=0.1": null,
+   "target=0.6|s=0.1|rho=0.3": null,
+   "target=0.6|s=0.2|rho=0.0": 9,
+   "target=0.6|s=0.2|rho=0.1": 81,
+   "target=0.6|s=0.2|rho=0.3": null,
+   "target=0.6|s=0.3|rho=0.0": 4,
+   "target=0.6|s=0.3|rho=0.1": 6,
+   "target=0.6|s=0.3|rho=0.3": null,
+   "target=0.75|s=0.1|rho=0.0": 57,
+   "target=0.75|s=0.1|rho=0.1": null,
+   "target=0.75|s=0.1|rho=0.3": null,
+   "target=0.75|s=0.2|rho=0.0": 15,
+   "target=0.75|s=0.2|rho=0.1": null,
+   "target=0.75|s=0.2|rho=0.3": null,
+   "target=0.75|s=0.3|rho=0.0": 7,
+   "target=0.75|s=0.3|rho=0.1": 15,
+   "target=0.75|s=0.3|rho=0.3": null
+  }
+ },
+ "broker_auth_trigger": {
+  "M15": {
+   "checks": {
+    "B1_ex_financing_edge_beats_null": false,
+    "B2_financing_material": true,
+    "B3_effective_n": false,
+    "B4_decision_changes": false,
+    "B5_no_larger_uncertainty_dominates": false
+   },
+   "limitation": "carry を収穫する book（M15 のように spot ≈ 0 で edge が financing そのもの）では B1 が原理的に成り立たない。その場合 broker financing の価値は『edge があるか』ではなく『carry が retail の markup を上回るか』で、B1 の代わりに『政策金利差の carry が null を超える』を置くべきだが、M15 の carry 込み total も percentile 0.60 で超えていない",
+   "met": false,
+   "track_id": "USDF_M15_long_exfin"
+  },
+  "M16": {
+   "checks": {
+    "B1_ex_financing_edge_beats_null": false,
+    "B2_financing_material": false,
+    "B3_effective_n": true,
+    "B4_decision_changes": false,
+    "B5_no_larger_uncertainty_dominates": false
+   },
+   "limitation": "carry を収穫する book（M15 のように spot ≈ 0 で edge が financing そのもの）では B1 が原理的に成り立たない。その場合 broker financing の価値は『edge があるか』ではなく『carry が retail の markup を上回るか』で、B1 の代わりに『政策金利差の carry が null を超える』を置くべきだが、M15 の carry 込み total も percentile 0.60 で超えていない",
+   "met": false,
+   "track_id": "USDF_M16_long_exfin"
+  },
+  "financing_cells": {
+   "M15": {
+    "cells": {
+     "policy_contemporaneous|0.0000": 0.1649,
+     "policy_contemporaneous|0.0050": 0.0965,
+     "policy_contemporaneous|0.0100": 0.028,
+     "policy_contemporaneous|0.0200": -0.1088,
+     "three_month_lagged|0.0000": 0.1613,
+     "three_month_lagged|0.0050": 0.0929,
+     "three_month_lagged|0.0100": 0.0245,
+     "three_month_lagged|0.0200": -0.1123
+    },
+    "sign_changes_across_cells": true
+   },
+   "M16": {
+    "cells": {
+     "policy_contemporaneous|0.0000": 0.344,
+     "policy_contemporaneous|0.0050": 0.2755,
+     "policy_contemporaneous|0.0100": 0.2071,
+     "policy_contemporaneous|0.0200": 0.0702,
+     "three_month_lagged|0.0000": 0.3363,
+     "three_month_lagged|0.0050": 0.2679,
+     "three_month_lagged|0.0100": 0.1994,
+     "three_month_lagged|0.0200": 0.0625
+    },
+    "sign_changes_across_cells": false
+   }
+  }
+ },
+ "drag_inputs": {
+  "financing": {
+   "central_markup_0_5pct": 0.068,
+   "conservative_markup_2pct": 0.274,
+   "markup_1pct": 0.137,
+   "optimistic_markup_0": 0.0
+  },
+  "financing_source": "artifacts/research/usd_factor_financing/development.json results.M16_long.pnl_decomposition.total_economic（policy_contemporaneous の markup 0 からの Sharpe の低下）。USD-factor book の参照値",
+  "transaction_cost": {
+   "cells": {
+    "median": 0.403,
+    "p25": 0.061,
+    "p75": 0.85,
+    "slowest_recorded": 0.013
+   },
+   "reading": "遅い月次 book（M01・M11・T-V）は 0.01〜0.04、日次・週次の book は 0.4〜2.5",
+   "rows": 22
+  }
+ },
+ "forward_eligibility_all_primary_ABC": {
+  "eligible_to_raise": [],
+  "most_checks_passed": [
+   {
+    "checks": {
+     "F1_tier_A": true,
+     "F2_beats_null_on_every_deciding_span": true,
+     "F3_positive_after_conservative_financing": null,
+     "F4_effective_n": null,
+     "F5_robustness": null,
+     "F6_not_contaminated": true
+    },
+    "eligible_to_raise_to_human": false,
+    "failed": [],
+    "note": "None は記録が無いことで、合格ではない。F7・F8 は行の値では判定できない。F1–F6 を全て満たしても forward は別の Red gate",
+    "passed": [
+     "F1_tier_A",
+     "F2_beats_null_on_every_deciding_span",
+     "F6_not_contaminated"
+    ],
+    "track_id": "ROUNDBP_B1_variance_ratio",
+    "unknown_not_recorded": [
+     "F3_positive_after_conservative_financing",
+     "F4_effective_n",
+     "F5_robustness"
+    ]
+   },
+   {
+    "checks": {
+     "F1_tier_A": false,
+     "F2_beats_null_on_every_deciding_span": false,
+     "F3_positive_after_conservative_financing": true,
+     "F4_effective_n": null,
+     "F5_robustness": true,
+     "F6_not_contaminated": true
+    },
+    "eligible_to_raise_to_human": false,
+    "failed": [
+     "F1_tier_A",
+     "F2_beats_null_on_every_deciding_span"
+    ],
+    "note": "None は記録が無いことで、合格ではない。F7・F8 は行の値では判定できない。F1–F6 を全て満たしても forward は別の Red gate",
+    "passed": [
+     "F3_positive_after_conservative_financing",
+     "F5_robustness",
+     "F6_not_contaminated"
+    ],
+    "track_id": "TOP5_T5_recent",
+    "unknown_not_recorded": [
+     "F4_effective_n"
+    ]
+   },
+   {
+    "checks": {
+     "F1_tier_A": false,
+     "F2_beats_null_on_every_deciding_span": false,
+     "F3_positive_after_conservative_financing": true,
+     "F4_effective_n": true,
+     "F5_robustness": true,
+     "F6_not_contaminated": false
+    },
+    "eligible_to_raise_to_human": false,
+    "failed": [
+     "F1_tier_A",
+     "F2_beats_null_on_every_deciding_span",
+     "F6_not_contaminated"
+    ],
+    "note": "None は記録が無いことで、合格ではない。F7・F8 は行の値では判定できない。F1–F6 を全て満たしても forward は別の Red gate",
+    "passed": [
+     "F3_positive_after_conservative_financing",
+     "F4_effective_n",
+     "F5_robustness"
+    ],
+    "track_id": "USDF_M16_long_total",
+    "unknown_not_recorded": []
+   },
+   {
+    "checks": {
+     "F1_tier_A": true,
+     "F2_beats_null_on_every_deciding_span": false,
+     "F3_positive_after_conservative_financing": null,
+     "F4_effective_n": null,
+     "F5_robustness": null,
+     "F6_not_contaminated": true
+    },
+    "eligible_to_raise_to_human": false,
+    "failed": [
+     "F2_beats_null_on_every_deciding_span"
+    ],
+    "note": "None は記録が無いことで、合格ではない。F7・F8 は行の値では判定できない。F1–F6 を全て満たしても forward は別の Red gate",
+    "passed": [
+     "F1_tier_A",
+     "F6_not_contaminated"
+    ],
+    "track_id": "EB_pooled_1h_p2123",
+    "unknown_not_recorded": [
+     "F3_positive_after_conservative_financing",
+     "F4_effective_n",
+     "F5_robustness"
+    ]
+   },
+   {
+    "checks": {
+     "F1_tier_A": true,
+     "F2_beats_null_on_every_deciding_span": false,
+     "F3_positive_after_conservative_financing": null,
+     "F4_effective_n": null,
+     "F5_robustness": null,
+     "F6_not_contaminated": true
+    },
+    "eligible_to_raise_to_human": false,
+    "failed": [
+     "F2_beats_null_on_every_deciding_span"
+    ],
+    "note": "None は記録が無いことで、合格ではない。F7・F8 は行の値では判定できない。F1–F6 を全て満たしても forward は別の Red gate",
+    "passed": [
+     "F1_tier_A",
+     "F6_not_contaminated"
+    ],
+    "track_id": "EB_pooled_1h_p2325",
+    "unknown_not_recorded": [
+     "F3_positive_after_conservative_financing",
+     "F4_effective_n",
+     "F5_robustness"
+    ]
+   },
+   {
+    "checks": {
+     "F1_tier_A": true,
+     "F2_beats_null_on_every_deciding_span": false,
+     "F3_positive_after_conservative_financing": null,
+     "F4_effective_n": null,
+     "F5_robustness": null,
+     "F6_not_contaminated": true
+    },
+    "eligible_to_raise_to_human": false,
+    "failed": [
+     "F2_beats_null_on_every_deciding_span"
+    ],
+    "note": "None は記録が無いことで、合格ではない。F7・F8 は行の値では判定できない。F1–F6 を全て満たしても forward は別の Red gate",
+    "passed": [
+     "F1_tier_A",
+     "F6_not_contaminated"
+    ],
+    "track_id": "EX_MACRO_cpi_1h_p2123",
+    "unknown_not_recorded": [
+     "F3_positive_after_conservative_financing",
+     "F4_effective_n",
+     "F5_robustness"
+    ]
+   },
+   {
+    "checks": {
+     "F1_tier_A": true,
+     "F2_beats_null_on_every_deciding_span": false,
+     "F3_positive_after_conservative_financing": null,
+     "F4_effective_n": null,
+     "F5_robustness": null,
+     "F6_not_contaminated": true
+    },
+    "eligible_to_raise_to_human": false,
+    "failed": [
+     "F2_beats_null_on_every_deciding_span"
+    ],
+    "note": "None は記録が無いことで、合格ではない。F7・F8 は行の値では判定できない。F1–F6 を全て満たしても forward は別の Red gate",
+    "passed": [
+     "F1_tier_A",
+     "F6_not_contaminated"
+    ],
+    "track_id": "EX_MACRO_cpi_1h_p2325",
+    "unknown_not_recorded": [
+     "F3_positive_after_conservative_financing",
+     "F4_effective_n",
+     "F5_robustness"
+    ]
+   },
+   {
+    "checks": {
+     "F1_tier_A": true,
+     "F2_beats_null_on_every_deciding_span": null,
+     "F3_positive_after_conservative_financing": null,
+     "F4_effective_n": null,
+     "F5_robustness": null,
+     "F6_not_contaminated": true
+    },
+    "eligible_to_raise_to_human": false,
+    "failed": [],
+    "note": "None は記録が無いことで、合格ではない。F7・F8 は行の値では判定できない。F1–F6 を全て満たしても forward は別の Red gate",
+    "passed": [
+     "F1_tier_A",
+     "F6_not_contaminated"
+    ],
+    "track_id": "MONETIZ_B3_selector",
+    "unknown_not_recorded": [
+     "F2_beats_null_on_every_deciding_span",
+     "F3_positive_after_conservative_financing",
+     "F4_effective_n",
+     "F5_robustness"
+    ]
+   }
+  ],
+  "rows_checked": 102
+ },
+ "forward_information": {
+  "generic_prior_N(0.1,0.15)": {
+   "prior_mean": 0.1,
+   "prior_sd": 0.15,
+   "rows": {
+    "12m": {
+     "posterior_sd": 0.148,
+     "posterior_sd_reduction_vs_prior": 0.011,
+     "prob_forward_alone_z_above_1_96_one_sided_2_5pct": 0.033,
+     "se_of_sharpe": 1.0
+    },
+    "24m": {
+     "posterior_sd": 0.147,
+     "posterior_sd_reduction_vs_prior": 0.022,
+     "prob_forward_alone_z_above_1_96_one_sided_2_5pct": 0.038,
+     "se_of_sharpe": 0.707
+    },
+    "36m": {
+     "posterior_sd": 0.145,
+     "posterior_sd_reduction_vs_prior": 0.032,
+     "prob_forward_alone_z_above_1_96_one_sided_2_5pct": 0.042,
+     "se_of_sharpe": 0.577
+    },
+    "6m": {
+     "posterior_sd": 0.149,
+     "posterior_sd_reduction_vs_prior": 0.006,
+     "prob_forward_alone_z_above_1_96_one_sided_2_5pct": 0.03,
+     "se_of_sharpe": 1.414
+    }
+   }
+  },
+  "tier_A_new_candidate_prior": {
+   "prior_mean": 0.07,
+   "prior_sd": 0.565,
+   "rows": {
+    "12m": {
+     "posterior_sd": 0.492,
+     "posterior_sd_reduction_vs_prior": 0.129,
+     "prob_forward_alone_z_above_1_96_one_sided_2_5pct": 0.05,
+     "se_of_sharpe": 1.0
+    },
+    "24m": {
+     "posterior_sd": 0.441,
+     "posterior_sd_reduction_vs_prior": 0.219,
+     "prob_forward_alone_z_above_1_96_one_sided_2_5pct": 0.073,
+     "se_of_sharpe": 0.707
+    },
+    "36m": {
+     "posterior_sd": 0.404,
+     "posterior_sd_reduction_vs_prior": 0.285,
+     "prob_forward_alone_z_above_1_96_one_sided_2_5pct": 0.094,
+     "se_of_sharpe": 0.577
+    },
+    "6m": {
+     "posterior_sd": 0.525,
+     "posterior_sd_reduction_vs_prior": 0.071,
+     "prob_forward_alone_z_above_1_96_one_sided_2_5pct": 0.038,
+     "se_of_sharpe": 1.414
+    }
+   }
+  }
+ },
+ "historical_positive_audit": [
+  {
+   "calendar_years": 2.2,
+   "concentration_top10": 0.798405,
+   "effective_n": 24,
+   "effective_n_kind": "DISTINCT_SIGNAL_STATES_NOT_EFFECTIVE_N",
+   "evidence_tier": "C",
+   "forward_eligibility": {
+    "checks": {
+     "F1_tier_A": false,
+     "F2_beats_null_on_every_deciding_span": false,
+     "F3_positive_after_conservative_financing": true,
+     "F4_effective_n": null,
+     "F5_robustness": true,
+     "F6_not_contaminated": true
+    },
+    "eligible_to_raise_to_human": false,
+    "failed": [
+     "F1_tier_A",
+     "F2_beats_null_on_every_deciding_span"
+    ],
+    "note": "None は記録が無いことで、合格ではない。F7・F8 は行の値では判定できない。F1–F6 を全て満たしても forward は別の Red gate",
+    "passed": [
+     "F3_positive_after_conservative_financing",
+     "F5_robustness",
+     "F6_not_contaminated"
+    ],
+    "track_id": "TOP5_T5_recent",
+    "unknown_not_recorded": [
+     "F4_effective_n"
+    ]
+   },
+   "full_retail_net": "FULL_RETAIL_NET_UNKNOWN",
+   "gross_sharpe": 0.891026,
+   "judged_net_sharpe_incl_approx_financing": null,
+   "loo_worst": 0.058917,
+   "max_dd": -0.098016,
+   "mde_sharpe_at_span": 1.889,
+   "null_percentile": null,
+   "null_stats_basis": "AS_RECORDED_FOR_THE_ROW",
+   "p_value": 0.314,
+   "post_result_correction": true,
+   "result_status": "T5_S26_POSITIVE_EXPLORATORY_SIGNAL_NOT_DECISION_GRADE",
+   "sharpe_ex_financing": 0.837666,
+   "span": "recent",
+   "track_id": "TOP5_T5_recent"
+  },
+  {
+   "calendar_years": 3.01,
+   "concentration_top10": 1.491062,
+   "effective_n": null,
+   "effective_n_kind": null,
+   "evidence_tier": "C",
+   "forward_eligibility": {
+    "checks": {
+     "F1_tier_A": false,
+     "F2_beats_null_on_every_deciding_span": false,
+     "F3_positive_after_conservative_financing": true,
+     "F4_effective_n": null,
+     "F5_robustness": false,
+     "F6_not_contaminated": true
+    },
+    "eligible_to_raise_to_human": false,
+    "failed": [
+     "F1_tier_A",
+     "F2_beats_null_on_every_deciding_span",
+     "F5_robustness"
+    ],
+    "note": "None は記録が無いことで、合格ではない。F7・F8 は行の値では判定できない。F1–F6 を全て満たしても forward は別の Red gate",
+    "passed": [
+     "F3_positive_after_conservative_financing",
+     "F6_not_contaminated"
+    ],
+    "track_id": "NF_U2_recent",
+    "unknown_not_recorded": [
+     "F4_effective_n"
+    ]
+   },
+   "full_retail_net": "FULL_RETAIL_NET_UNKNOWN",
+   "gross_sharpe": 0.475531,
+   "judged_net_sharpe_incl_approx_financing": null,
+   "loo_worst": 0.079376,
+   "max_dd": -0.143917,
+   "mde_sharpe_at_span": 1.615,
+   "null_percentile": null,
+   "null_stats_basis": "AS_RECORDED_FOR_THE_ROW",
+   "p_value": null,
+   "post_result_correction": true,
+   "result_status": "U2_S25_NOT_SUPPORTED_IN_SEEN_DEVELOPMENT",
+   "sharpe_ex_financing": 0.416696,
+   "span": "recent",
+   "track_id": "NF_U2_recent"
+  },
+  {
+   "calendar_years": 3.87,
+   "concentration_top10": 51.760567,
+   "effective_n": null,
+   "effective_n_kind": null,
+   "evidence_tier": "C",
+   "forward_eligibility": {
+    "checks": {
+     "F1_tier_A": false,
+     "F2_beats_null_on_every_deciding_span": false,
+     "F3_positive_after_conservative_financing": false,
+     "F4_effective_n": null,
+     "F5_robustness": false,
+     "F6_not_contaminated": true
+    },
+    "eligible_to_raise_to_human": false,
+    "failed": [
+     "F1_tier_A",
+     "F2_beats_null_on_every_deciding_span",
+     "F3_positive_after_conservative_financing",
+     "F5_robustness"
+    ],
+    "note": "None は記録が無いことで、合格ではない。F7・F8 は行の値では判定できない。F1–F6 を全て満たしても forward は別の Red gate",
+    "passed": [
+     "F6_not_contaminated"
+    ],
+    "track_id": "NF_U4_recent",
+    "unknown_not_recorded": [
+     "F4_effective_n"
+    ]
+   },
+   "full_retail_net": "FULL_RETAIL_NET_UNKNOWN",
+   "gross_sharpe": 0.090252,
+   "judged_net_sharpe_incl_approx_financing": null,
+   "loo_worst": -0.239219,
+   "max_dd": -0.22719,
+   "mde_sharpe_at_span": 1.424,
+   "null_percentile": null,
+   "null_stats_basis": "AS_RECORDED_FOR_THE_ROW",
+   "p_value": null,
+   "post_result_correction": true,
+   "result_status": "U4_S31_NOT_SUPPORTED_IN_SEEN_DEVELOPMENT",
+   "sharpe_ex_financing": 0.010854,
+   "span": "recent",
+   "track_id": "NF_U4_recent"
+  },
+  {
+   "calendar_years": 4.813,
+   "concentration_top10": 8.4639,
+   "effective_n": null,
+   "effective_n_kind": null,
+   "evidence_tier": "B",
+   "forward_eligibility": {
+    "checks": {
+     "F1_tier_A": false,
+     "F2_beats_null_on_every_deciding_span": null,
+     "F3_positive_after_conservative_financing": false,
+     "F4_effective_n": null,
+     "F5_robustness": false,
+     "F6_not_contaminated": false
+    },
+    "eligible_to_raise_to_human": false,
+    "failed": [
+     "F1_tier_A",
+     "F3_positive_after_conservative_financing",
+     "F5_robustness",
+     "F6_not_contaminated"
+    ],
+    "note": "None は記録が無いことで、合格ではない。F7・F8 は行の値では判定できない。F1–F6 を全て満たしても forward は別の Red gate",
+    "passed": [],
+    "track_id": "TR2_D",
+    "unknown_not_recorded": [
+     "F2_beats_null_on_every_deciding_span",
+     "F4_effective_n"
+    ]
+   },
+   "full_retail_net": "FULL_RETAIL_NET_UNKNOWN",
+   "gross_sharpe": 0.8335,
+   "judged_net_sharpe_incl_approx_financing": null,
+   "loo_worst": -1.0336,
+   "max_dd": -0.36886,
+   "mde_sharpe_at_span": 1.277,
+   "null_percentile": null,
+   "null_stats_basis": "AS_RECORDED_FOR_THE_ROW",
+   "p_value": null,
+   "post_result_correction": false,
+   "result_status": "MARKET_YIELD_SLOW_REPRICING_NOT_SUPPORTED_IN_SEEN_DEVELOPMENT",
+   "sharpe_ex_financing": 0.0511,
+   "span": "seen development (5-currency universe CAD/EUR/GBP/JPY/USD)",
+   "track_id": "TR2_D"
+  },
+  {
+   "calendar_years": 12.62,
+   "concentration_top10": 2.0729,
+   "effective_n": null,
+   "effective_n_kind": null,
+   "evidence_tier": "A",
+   "forward_eligibility": {
+    "checks": {
+     "F1_tier_A": true,
+     "F2_beats_null_on_every_deciding_span": null,
+     "F3_positive_after_conservative_financing": false,
+     "F4_effective_n": null,
+     "F5_robustness": false,
+     "F6_not_contaminated": true
+    },
+    "eligible_to_raise_to_human": false,
+    "failed": [
+     "F3_positive_after_conservative_financing",
+     "F5_robustness"
+    ],
+    "note": "None は記録が無いことで、合格ではない。F7・F8 は行の値では判定できない。F1–F6 を全て満たしても forward は別の Red gate",
+    "passed": [
+     "F1_tier_A",
+     "F6_not_contaminated"
+    ],
+    "track_id": "TV_C",
+    "unknown_not_recorded": [
+     "F2_beats_null_on_every_deciding_span",
+     "F4_effective_n"
+    ]
+   },
+   "full_retail_net": "FULL_RETAIL_NET_UNKNOWN",
+   "gross_sharpe": 0.1399,
+   "judged_net_sharpe_incl_approx_financing": null,
+   "loo_worst": -0.272,
+   "max_dd": -0.39394,
+   "mde_sharpe_at_span": 0.789,
+   "null_percentile": null,
+   "null_stats_basis": "AS_RECORDED_FOR_THE_ROW",
+   "p_value": null,
+   "post_result_correction": false,
+   "result_status": "REAL_EXCHANGE_RATE_VALUATION_NOT_SUPPORTED_IN_DEVELOPMENT",
+   "sharpe_ex_financing": 0.1268,
+   "span": "public pre-2016 history (ECB reference rates), positions from 2003-12-31",
+   "track_id": "TV_C"
+  },
+  {
+   "calendar_years": 17.69,
+   "concentration_top10": 0.854331,
+   "effective_n": 13.19,
+   "effective_n_kind": "EFFECTIVE_INDEPENDENT_OBSERVATIONS",
+   "evidence_tier": "A",
+   "forward_eligibility": {
+    "checks": {
+     "F1_tier_A": true,
+     "F2_beats_null_on_every_deciding_span": false,
+     "F3_positive_after_conservative_financing": false,
+     "F4_effective_n": true,
+     "F5_robustness": false,
+     "F6_not_contaminated": false
+    },
+    "eligible_to_raise_to_human": false,
+    "failed": [
+     "F2_beats_null_on_every_deciding_span",
+     "F3_positive_after_conservative_financing",
+     "F5_robustness",
+     "F6_not_contaminated"
+    ],
+    "note": "None は記録が無いことで、合格ではない。F7・F8 は行の値では判定できない。F1–F6 を全て満たしても forward は別の Red gate",
+    "passed": [
+     "F1_tier_A",
+     "F4_effective_n"
+    ],
+    "track_id": "MR_M11_long",
+    "unknown_not_recorded": []
+   },
+   "full_retail_net": "FULL_RETAIL_NET_UNKNOWN",
+   "gross_sharpe": 0.2245,
+   "judged_net_sharpe_incl_approx_financing": 0.1593297934788434,
+   "loo_worst": -0.039742,
+   "max_dd": -0.288447,
+   "mde_sharpe_at_span": 0.666,
+   "null_percentile": 0.781,
+   "null_stats_basis": "JUDGED_PNL_SPOT_PLUS_CARRY_MINUS_SPREAD_MINUS_ASSUMED_MARKUP",
+   "p_value": 0.2198,
+   "post_result_correction": false,
+   "result_status": "POSITIVE_EXPLORATORY_NOT_DECISION_GRADE",
+   "sharpe_ex_financing": 0.1862,
+   "span": "long",
+   "track_id": "MR_M11_long"
+  },
+  {
+   "calendar_years": 17.69,
+   "concentration_top10": 1.728894,
+   "effective_n": 6.22,
+   "effective_n_kind": "EFFECTIVE_INDEPENDENT_OBSERVATIONS",
+   "evidence_tier": "A",
+   "forward_eligibility": {
+    "checks": {
+     "F1_tier_A": true,
+     "F2_beats_null_on_every_deciding_span": false,
+     "F3_positive_after_conservative_financing": true,
+     "F4_effective_n": false,
+     "F5_robustness": false,
+     "F6_not_contaminated": false
+    },
+    "eligible_to_raise_to_human": false,
+    "failed": [
+     "F2_beats_null_on_every_deciding_span",
+     "F4_effective_n",
+     "F5_robustness",
+     "F6_not_contaminated"
+    ],
+    "note": "None は記録が無いことで、合格ではない。F7・F8 は行の値では判定できない。F1–F6 を全て満たしても forward は別の Red gate",
+    "passed": [
+     "F1_tier_A",
+     "F3_positive_after_conservative_financing"
+    ],
+    "track_id": "MR_M01_long",
+    "unknown_not_recorded": []
+   },
+   "full_retail_net": "FULL_RETAIL_NET_UNKNOWN",
+   "gross_sharpe": 0.3218,
+   "judged_net_sharpe_incl_approx_financing": 0.08042160384631192,
+   "loo_worst": -0.148726,
+   "max_dd": -0.492944,
+   "mde_sharpe_at_span": 0.666,
+   "null_percentile": 0.803,
+   "null_stats_basis": "JUDGED_PNL_SPOT_PLUS_CARRY_MINUS_SPREAD_MINUS_ASSUMED_MARKUP",
+   "p_value": 0.1978,
+   "post_result_correction": false,
+   "result_status": "POSITIVE_EXPLORATORY_NOT_DECISION_GRADE",
+   "sharpe_ex_financing": 0.2961,
+   "span": "long",
+   "track_id": "MR_M01_long"
+  },
+  {
+   "calendar_years": 17.69,
+   "concentration_top10": 0.536056,
+   "effective_n": 23.12,
+   "effective_n_kind": "EFFECTIVE_INDEPENDENT_OBSERVATIONS",
+   "evidence_tier": "C",
+   "forward_eligibility": {
+    "checks": {
+     "F1_tier_A": false,
+     "F2_beats_null_on_every_deciding_span": false,
+     "F3_positive_after_conservative_financing": true,
+     "F4_effective_n": true,
+     "F5_robustness": true,
+     "F6_not_contaminated": false
+    },
+    "eligible_to_raise_to_human": false,
+    "failed": [
+     "F1_tier_A",
+     "F2_beats_null_on_every_deciding_span",
+     "F6_not_contaminated"
+    ],
+    "note": "None は記録が無いことで、合格ではない。F7・F8 は行の値では判定できない。F1–F6 を全て満たしても forward は別の Red gate",
+    "passed": [
+     "F3_positive_after_conservative_financing",
+     "F4_effective_n",
+     "F5_robustness"
+    ],
+    "track_id": "USDF_M16_long_total",
+    "unknown_not_recorded": []
+   },
+   "full_retail_net": "FULL_RETAIL_NET_UNKNOWN",
+   "gross_sharpe": 0.361137,
+   "judged_net_sharpe_incl_approx_financing": 0.275544,
+   "loo_worst": 0.217646,
+   "max_dd": -0.402615,
+   "mde_sharpe_at_span": 0.666,
+   "null_percentile": 0.809,
+   "null_stats_basis": "TOTAL_WITH_APPROXIMATE_RESEARCH_FINANCING_CENTRAL_CELL",
+   "p_value": 0.1918,
+   "post_result_correction": true,
+   "result_status": "M16_CORRECTED_POSITIVE_EXPLORATORY_NOT_DECISION_GRADE",
+   "sharpe_ex_financing": 0.348135,
+   "span": "long",
+   "track_id": "USDF_M16_long_total"
+  }
+ ],
+ "hypothesis_counts": {
+  "by_tier": {
+   "A": 19,
+   "B": 42,
+   "C": 63,
+   "D": 119,
+   "E": 35
+  },
+  "caveat": "数え方で 32〜212 の幅がある。span・panel・近い mechanism を共有するので、独立な検定の数はこれより少ない",
+  "post_r1": {
+   "by_variant_type": {
+    "BENCHMARK": 31,
+    "DISTINCT_MECHANISM": 47,
+    "HORIZON_VARIANT": 31,
+    "MODEL_VARIANT": 17,
+    "REPLICATION": 3,
+    "SECONDARY_SPAN": 41,
+    "SENSITIVITY": 33,
+    "SIGN_VARIANT": 4,
+    "UNIVERSE_VARIANT": 5
+   },
+   "distinct_mechanisms": 32,
+   "invalid_rows": 19,
+   "measured_rows_including_sensitivity_secondary_benchmark": 212,
+   "not_preregistered_primary_cells": 3,
+   "post_result_corrected_rows": 63,
+   "preregistered_primary_cells": 105,
+   "primary_cells_including_horizon_model_sign_universe_variants": 108
+  },
+  "pre_r1_legacy_rows": 47,
+  "rows_total": 278
+ },
+ "no_alpha_computed": true,
+ "null_comparison": {
+  "all_tests": {
+   "A": {
+    "gross_sign_by_mechanism": {
+     "negative": 2,
+     "positive": 4,
+     "prob_at_least_positive_if_null_half": 0.344
+    },
+    "independence_caveat": "tail 確率は検定が独立だと仮定している。同じ panel・同じ span・近い mechanism の検定は相関するので、実際の有効な検定数はこれより少なく、tail 確率は目安にとどまる。p の定義も cycle ごとに違う",
+    "max_percentile": 0.803,
+    "mean_percentile": 0.59,
+    "mean_percentile_z_vs_uniform": 0.54,
+    "net_ex_financing_sign_by_mechanism": {
+     "negative": 3,
+     "positive": 3
+    },
+    "p_le_005": {
+     "actual": 2,
+     "expected_false_positives_under_null": 0.45,
+     "min_p": 0.005,
+     "prob_at_least_actual_under_independent_null": 0.071
+    },
+    "percentile_counts": {
+     ">=0.8": {
+      "actual": 1,
+      "expected_under_null": 0.6,
+      "prob_at_least_actual_under_independent_null": 0.488
+     },
+     ">=0.9": {
+      "actual": 0,
+      "expected_under_null": 0.3,
+      "prob_at_least_actual_under_independent_null": 1.0
+     },
+     ">=0.95": {
+      "actual": 0,
+      "expected_under_null": 0.15,
+      "prob_at_least_actual_under_independent_null": 1.0
+     }
+    },
+    "rows": 19,
+    "rows_with_null_percentile": 3,
+    "rows_with_p": 9,
+    "tiers": [
+     "A"
+    ]
+   },
+   "A+B": {
+    "gross_sign_by_mechanism": {
+     "negative": 2,
+     "positive": 4,
+     "prob_at_least_positive_if_null_half": 0.344
+    },
+    "independence_caveat": "tail 確率は検定が独立だと仮定している。同じ panel・同じ span・近い mechanism の検定は相関するので、実際の有効な検定数はこれより少なく、tail 確率は目安にとどまる。p の定義も cycle ごとに違う",
+    "max_percentile": 0.803,
+    "mean_percentile": 0.59,
+    "mean_percentile_z_vs_uniform": 0.54,
+    "net_ex_financing_sign_by_mechanism": {
+     "negative": 3,
+     "positive": 3
+    },
+    "p_le_005": {
+     "actual": 3,
+     "expected_false_positives_under_null": 0.75,
+     "min_p": 0.005,
+     "prob_at_least_actual_under_independent_null": 0.036
+    },
+    "percentile_counts": {
+     ">=0.8": {
+      "actual": 1,
+      "expected_under_null": 0.6,
+      "prob_at_least_actual_under_independent_null": 0.488
+     },
+     ">=0.9": {
+      "actual": 0,
+      "expected_under_null": 0.3,
+      "prob_at_least_actual_under_independent_null": 1.0
+     },
+     ">=0.95": {
+      "actual": 0,
+      "expected_under_null": 0.15,
+      "prob_at_least_actual_under_independent_null": 1.0
+     }
+    },
+    "rows": 61,
+    "rows_with_null_percentile": 3,
+    "rows_with_p": 15,
+    "tiers": [
+     "A",
+     "B"
+    ]
+   },
+   "A+B+C": {
+    "gross_sign_by_mechanism": {
+     "negative": 8,
+     "positive": 8,
+     "prob_at_least_positive_if_null_half": 0.598
+    },
+    "independence_caveat": "tail 確率は検定が独立だと仮定している。同じ panel・同じ span・近い mechanism の検定は相関するので、実際の有効な検定数はこれより少なく、tail 確率は目安にとどまる。p の定義も cycle ごとに違う",
+    "max_percentile": 0.839,
+    "mean_percentile": 0.515,
+    "mean_percentile_z_vs_uniform": 0.18,
+    "net_ex_financing_sign_by_mechanism": {
+     "negative": 12,
+     "positive": 6
+    },
+    "p_le_005": {
+     "actual": 3,
+     "expected_false_positives_under_null": 2.75,
+     "min_p": 0.005,
+     "prob_at_least_actual_under_independent_null": 0.523
+    },
+    "percentile_counts": {
+     ">=0.8": {
+      "actual": 3,
+      "expected_under_null": 2.4,
+      "prob_at_least_actual_under_independent_null": 0.442
+     },
+     ">=0.9": {
+      "actual": 0,
+      "expected_under_null": 1.2,
+      "prob_at_least_actual_under_independent_null": 1.0
+     },
+     ">=0.95": {
+      "actual": 0,
+      "expected_under_null": 0.6,
+      "prob_at_least_actual_under_independent_null": 1.0
+     }
+    },
+    "rows": 124,
+    "rows_with_null_percentile": 12,
+    "rows_with_p": 55,
+    "tiers": [
+     "A",
+     "B",
+     "C"
+    ]
+   },
+   "C": {
+    "gross_sign_by_mechanism": {
+     "negative": 6,
+     "positive": 4,
+     "prob_at_least_positive_if_null_half": 0.828
+    },
+    "independence_caveat": "tail 確率は検定が独立だと仮定している。同じ panel・同じ span・近い mechanism の検定は相関するので、実際の有効な検定数はこれより少なく、tail 確率は目安にとどまる。p の定義も cycle ごとに違う",
+    "max_percentile": 0.839,
+    "mean_percentile": 0.49,
+    "mean_percentile_z_vs_uniform": -0.11,
+    "net_ex_financing_sign_by_mechanism": {
+     "negative": 9,
+     "positive": 3
+    },
+    "p_le_005": {
+     "actual": 0,
+     "expected_false_positives_under_null": 2.0,
+     "min_p": 0.1618,
+     "prob_at_least_actual_under_independent_null": 1.0
+    },
+    "percentile_counts": {
+     ">=0.8": {
+      "actual": 2,
+      "expected_under_null": 1.8,
+      "prob_at_least_actual_under_independent_null": 0.564
+     },
+     ">=0.9": {
+      "actual": 0,
+      "expected_under_null": 0.9,
+      "prob_at_least_actual_under_independent_null": 1.0
+     },
+     ">=0.95": {
+      "actual": 0,
+      "expected_under_null": 0.45,
+      "prob_at_least_actual_under_independent_null": 1.0
+     }
+    },
+    "rows": 63,
+    "rows_with_null_percentile": 9,
+    "rows_with_p": 40,
+    "tiers": [
+     "C"
+    ]
+   },
+   "D": {
+    "independence_caveat": "tail 確率は検定が独立だと仮定している。同じ panel・同じ span・近い mechanism の検定は相関するので、実際の有効な検定数はこれより少なく、tail 確率は目安にとどまる。p の定義も cycle ごとに違う",
+    "p_le_005": {
+     "actual": 1,
+     "expected_false_positives_under_null": 0.8,
+     "min_p": 0.025,
+     "prob_at_least_actual_under_independent_null": 0.56
+    },
+    "rows": 119,
+    "rows_with_null_percentile": 0,
+    "rows_with_p": 16,
+    "tiers": [
+     "D"
+    ]
+   }
+  },
+  "economic_tests_only": {
+   "A": {
+    "gross_sign_by_mechanism": {
+     "negative": 2,
+     "positive": 4,
+     "prob_at_least_positive_if_null_half": 0.344
+    },
+    "independence_caveat": "tail 確率は検定が独立だと仮定している。同じ panel・同じ span・近い mechanism の検定は相関するので、実際の有効な検定数はこれより少なく、tail 確率は目安にとどまる。p の定義も cycle ごとに違う",
+    "max_percentile": 0.803,
+    "mean_percentile": 0.59,
+    "mean_percentile_z_vs_uniform": 0.54,
+    "net_ex_financing_sign_by_mechanism": {
+     "negative": 3,
+     "positive": 3
+    },
+    "p_le_005": {
+     "actual": 1,
+     "expected_false_positives_under_null": 0.4,
+     "min_p": 0.0498,
+     "prob_at_least_actual_under_independent_null": 0.337
+    },
+    "percentile_counts": {
+     ">=0.8": {
+      "actual": 1,
+      "expected_under_null": 0.6,
+      "prob_at_least_actual_under_independent_null": 0.488
+     },
+     ">=0.9": {
+      "actual": 0,
+      "expected_under_null": 0.3,
+      "prob_at_least_actual_under_independent_null": 1.0
+     },
+     ">=0.95": {
+      "actual": 0,
+      "expected_under_null": 0.15,
+      "prob_at_least_actual_under_independent_null": 1.0
+     }
+    },
+    "rows": 18,
+    "rows_with_null_percentile": 3,
+    "rows_with_p": 8,
+    "tiers": [
+     "A"
+    ]
+   },
+   "A+B": {
+    "gross_sign_by_mechanism": {
+     "negative": 2,
+     "positive": 4,
+     "prob_at_least_positive_if_null_half": 0.344
+    },
+    "independence_caveat": "tail 確率は検定が独立だと仮定している。同じ panel・同じ span・近い mechanism の検定は相関するので、実際の有効な検定数はこれより少なく、tail 確率は目安にとどまる。p の定義も cycle ごとに違う",
+    "max_percentile": 0.803,
+    "mean_percentile": 0.59,
+    "mean_percentile_z_vs_uniform": 0.54,
+    "net_ex_financing_sign_by_mechanism": {
+     "negative": 3,
+     "positive": 3
+    },
+    "p_le_005": {
+     "actual": 2,
+     "expected_false_positives_under_null": 0.7,
+     "min_p": 0.0249,
+     "prob_at_least_actual_under_independent_null": 0.153
+    },
+    "percentile_counts": {
+     ">=0.8": {
+      "actual": 1,
+      "expected_under_null": 0.6,
+      "prob_at_least_actual_under_independent_null": 0.488
+     },
+     ">=0.9": {
+      "actual": 0,
+      "expected_under_null": 0.3,
+      "prob_at_least_actual_under_independent_null": 1.0
+     },
+     ">=0.95": {
+      "actual": 0,
+      "expected_under_null": 0.15,
+      "prob_at_least_actual_under_independent_null": 1.0
+     }
+    },
+    "rows": 60,
+    "rows_with_null_percentile": 3,
+    "rows_with_p": 14,
+    "tiers": [
+     "A",
+     "B"
+    ]
+   },
+   "A+B+C": {
+    "gross_sign_by_mechanism": {
+     "negative": 8,
+     "positive": 8,
+     "prob_at_least_positive_if_null_half": 0.598
+    },
+    "independence_caveat": "tail 確率は検定が独立だと仮定している。同じ panel・同じ span・近い mechanism の検定は相関するので、実際の有効な検定数はこれより少なく、tail 確率は目安にとどまる。p の定義も cycle ごとに違う",
+    "max_percentile": 0.839,
+    "mean_percentile": 0.515,
+    "mean_percentile_z_vs_uniform": 0.18,
+    "net_ex_financing_sign_by_mechanism": {
+     "negative": 12,
+     "positive": 6
+    },
+    "p_le_005": {
+     "actual": 2,
+     "expected_false_positives_under_null": 2.7,
+     "min_p": 0.0249,
+     "prob_at_least_actual_under_independent_null": 0.759
+    },
+    "percentile_counts": {
+     ">=0.8": {
+      "actual": 3,
+      "expected_under_null": 2.4,
+      "prob_at_least_actual_under_independent_null": 0.442
+     },
+     ">=0.9": {
+      "actual": 0,
+      "expected_under_null": 1.2,
+      "prob_at_least_actual_under_independent_null": 1.0
+     },
+     ">=0.95": {
+      "actual": 0,
+      "expected_under_null": 0.6,
+      "prob_at_least_actual_under_independent_null": 1.0
+     }
+    },
+    "rows": 123,
+    "rows_with_null_percentile": 12,
+    "rows_with_p": 54,
+    "tiers": [
+     "A",
+     "B",
+     "C"
+    ]
+   },
+   "C": {
+    "gross_sign_by_mechanism": {
+     "negative": 6,
+     "positive": 4,
+     "prob_at_least_positive_if_null_half": 0.828
+    },
+    "independence_caveat": "tail 確率は検定が独立だと仮定している。同じ panel・同じ span・近い mechanism の検定は相関するので、実際の有効な検定数はこれより少なく、tail 確率は目安にとどまる。p の定義も cycle ごとに違う",
+    "max_percentile": 0.839,
+    "mean_percentile": 0.49,
+    "mean_percentile_z_vs_uniform": -0.11,
+    "net_ex_financing_sign_by_mechanism": {
+     "negative": 9,
+     "positive": 3
+    },
+    "p_le_005": {
+     "actual": 0,
+     "expected_false_positives_under_null": 2.0,
+     "min_p": 0.1618,
+     "prob_at_least_actual_under_independent_null": 1.0
+    },
+    "percentile_counts": {
+     ">=0.8": {
+      "actual": 2,
+      "expected_under_null": 1.8,
+      "prob_at_least_actual_under_independent_null": 0.564
+     },
+     ">=0.9": {
+      "actual": 0,
+      "expected_under_null": 0.9,
+      "prob_at_least_actual_under_independent_null": 1.0
+     },
+     ">=0.95": {
+      "actual": 0,
+      "expected_under_null": 0.45,
+      "prob_at_least_actual_under_independent_null": 1.0
+     }
+    },
+    "rows": 63,
+    "rows_with_null_percentile": 9,
+    "rows_with_p": 40,
+    "tiers": [
+     "C"
+    ]
+   },
+   "D": {
+    "independence_caveat": "tail 確率は検定が独立だと仮定している。同じ panel・同じ span・近い mechanism の検定は相関するので、実際の有効な検定数はこれより少なく、tail 確率は目安にとどまる。p の定義も cycle ごとに違う",
+    "p_le_005": {
+     "actual": 1,
+     "expected_false_positives_under_null": 0.8,
+     "min_p": 0.025,
+     "prob_at_least_actual_under_independent_null": 0.56
+    },
+    "rows": 119,
+    "rows_with_null_percentile": 0,
+    "rows_with_p": 16,
+    "tiers": [
+     "D"
+    ]
+   }
+  },
+  "non_economic_excluded": [
+   "ROUNDBP_B1_variance_ratio"
+  ],
+  "p_value_caveat": "p は cycle ごとに定義が違う（片側の permutation / circular shift、両側の bootstrap、family-max）。数えるのは目安"
+ },
+ "objective_table": {
+  "dd_caveat": "DD は加算 equity。margin の強制決済・流動性の蒸発は入れていない。iid 正規の値が最も楽観的",
+  "drag_units": "Sharpe の単位（年率 drag ÷ book の vol）。notional が vol に比例するので vol を変えても変わらない",
+  "financing_drag_sharpe": {
+   "central": 0.068,
+   "conservative": 0.274,
+   "optimistic": 0.0
+  },
+  "label": "APPROXIMATE_RESEARCH_FINANCING_RANGE · FULL_RETAIL_NET_UNKNOWN · 実際の broker financing ではない",
+  "rows": {
+   "10%@vol10%": {
+    "drawdown": {
+     "gap": {
+      "median_max_dd": -0.185,
+      "p10_max_dd": -0.279,
+      "prob_dd_worse_than_20pct": 0.403,
+      "prob_dd_worse_than_30pct": 0.067,
+      "prob_negative_after_years": 0.002
+     },
+     "iid_gaussian_true_sharpe_equals_requirement": {
+      "median_max_dd": -0.169,
+      "p10_max_dd": -0.254,
+      "prob_dd_worse_than_20pct": 0.284,
+      "prob_dd_worse_than_30pct": 0.036,
+      "prob_negative_after_years": 0.0
+     },
+     "programme_prior": {
+      "median_max_dd": -0.361,
+      "p10_max_dd": -0.945,
+      "prob_dd_worse_than_20pct": 0.831,
+      "prob_dd_worse_than_30pct": 0.599,
+      "prob_negative_after_years": 0.497
+     },
+     "requirement_with_sharpe_uncertainty": {
+      "median_max_dd": -0.17,
+      "p10_max_dd": -0.32,
+      "prob_dd_worse_than_20pct": 0.349,
+      "prob_dd_worse_than_30pct": 0.118,
+      "prob_negative_after_years": 0.06
+     },
+     "stochastic_vol": {
+      "median_max_dd": -0.186,
+      "p10_max_dd": -0.369,
+      "prob_dd_worse_than_20pct": 0.435,
+      "prob_dd_worse_than_30pct": 0.181,
+      "prob_negative_after_years": 0.004
+     }
+    },
+    "gross_required_at_central_financing": {
+     "median": 1.471,
+     "p25": 1.129,
+     "p75": 1.918,
+     "slowest_recorded": 1.081
+    },
+    "net_all_in": 1.0,
+    "stress_only": false,
+    "tc_net_ex_financing_required": {
+     "central": 1.068,
+     "conservative": 1.274,
+     "optimistic": 1.0
+    }
+   },
+   "10%@vol12%": {
+    "drawdown": {
+     "gap": {
+      "median_max_dd": -0.244,
+      "p10_max_dd": -0.377,
+      "prob_dd_worse_than_20pct": 0.743,
+      "prob_dd_worse_than_30pct": 0.268,
+      "prob_negative_after_years": 0.012
+     },
+     "iid_gaussian_true_sharpe_equals_requirement": {
+      "median_max_dd": -0.222,
+      "p10_max_dd": -0.339,
+      "prob_dd_worse_than_20pct": 0.632,
+      "prob_dd_worse_than_30pct": 0.173,
+      "prob_negative_after_years": 0.003
+     },
+     "programme_prior": {
+      "median_max_dd": -0.433,
+      "p10_max_dd": -1.134,
+      "prob_dd_worse_than_20pct": 0.907,
+      "prob_dd_worse_than_30pct": 0.709,
+      "prob_negative_after_years": 0.497
+     },
+     "requirement_with_sharpe_uncertainty": {
+      "median_max_dd": -0.222,
+      "p10_max_dd": -0.456,
+      "prob_dd_worse_than_20pct": 0.601,
+      "prob_dd_worse_than_30pct": 0.266,
+      "prob_negative_after_years": 0.1
+     },
+     "stochastic_vol": {
+      "median_max_dd": -0.236,
+      "p10_max_dd": -0.464,
+      "prob_dd_worse_than_20pct": 0.629,
+      "prob_dd_worse_than_30pct": 0.314,
+      "prob_negative_after_years": 0.009
+     }
+    },
+    "gross_required_at_central_financing": {
+     "median": 1.304,
+     "p25": 0.962,
+     "p75": 1.751,
+     "slowest_recorded": 0.914
+    },
+    "net_all_in": 0.833,
+    "stress_only": false,
+    "tc_net_ex_financing_required": {
+     "central": 0.901,
+     "conservative": 1.107,
+     "optimistic": 0.833
+    }
+   },
+   "10%@vol15%": {
+    "drawdown": {
+     "gap": {
+      "median_max_dd": -0.338,
+      "p10_max_dd": -0.539,
+      "prob_dd_worse_than_20pct": 0.96,
+      "prob_dd_worse_than_30pct": 0.647,
+      "prob_negative_after_years": 0.045
+     },
+     "iid_gaussian_true_sharpe_equals_requirement": {
+      "median_max_dd": -0.305,
+      "p10_max_dd": -0.477,
+      "prob_dd_worse_than_20pct": 0.922,
+      "prob_dd_worse_than_30pct": 0.525,
+      "prob_negative_after_years": 0.017
+     },
+     "programme_prior": {
+      "median_max_dd": -0.541,
+      "p10_max_dd": -1.417,
+      "prob_dd_worse_than_20pct": 0.973,
+      "prob_dd_worse_than_30pct": 0.831,
+      "prob_negative_after_years": 0.497
+     },
+     "requirement_with_sharpe_uncertainty": {
+      "median_max_dd": -0.307,
+      "p10_max_dd": -0.677,
+      "prob_dd_worse_than_20pct": 0.85,
+      "prob_dd_worse_than_30pct": 0.521,
+      "prob_negative_after_years": 0.154
+     },
+     "stochastic_vol": {
+      "median_max_dd": -0.313,
+      "p10_max_dd": -0.617,
+      "prob_dd_worse_than_20pct": 0.831,
+      "prob_dd_worse_than_30pct": 0.537,
+      "prob_negative_after_years": 0.02
+     }
+    },
+    "gross_required_at_central_financing": {
+     "median": 1.138,
+     "p25": 0.796,
+     "p75": 1.585,
+     "slowest_recorded": 0.748
+    },
+    "net_all_in": 0.667,
+    "stress_only": false,
+    "tc_net_ex_financing_required": {
+     "central": 0.735,
+     "conservative": 0.941,
+     "optimistic": 0.667
+    }
+   },
+   "10%@vol20%": {
+    "drawdown": {
+     "gap": {
+      "median_max_dd": -0.508,
+      "p10_max_dd": -0.829,
+      "prob_dd_worse_than_20pct": 1.0,
+      "prob_dd_worse_than_30pct": 0.947,
+      "prob_negative_after_years": 0.114
+     },
+     "iid_gaussian_true_sharpe_equals_requirement": {
+      "median_max_dd": -0.457,
+      "p10_max_dd": -0.729,
+      "prob_dd_worse_than_20pct": 1.0,
+      "prob_dd_worse_than_30pct": 0.903,
+      "prob_negative_after_years": 0.062
+     },
+     "programme_prior": {
+      "median_max_dd": -0.721,
+      "p10_max_dd": -1.89,
+      "prob_dd_worse_than_20pct": 0.996,
+      "prob_dd_worse_than_30pct": 0.943,
+      "prob_negative_after_years": 0.497
+     },
+     "requirement_with_sharpe_uncertainty": {
+      "median_max_dd": -0.459,
+      "p10_max_dd": -1.1,
+      "prob_dd_worse_than_20pct": 0.986,
+      "prob_dd_worse_than_30pct": 0.824,
+      "prob_negative_after_years": 0.22
+     },
+     "stochastic_vol": {
+      "median_max_dd": -0.45,
+      "p10_max_dd": -0.886,
+      "prob_dd_worse_than_20pct": 0.967,
+      "prob_dd_worse_than_30pct": 0.807,
+      "prob_negative_after_years": 0.058
+     }
+    },
+    "gross_required_at_central_financing": {
+     "median": 0.971,
+     "p25": 0.629,
+     "p75": 1.418,
+     "slowest_recorded": 0.581
+    },
+    "net_all_in": 0.5,
+    "stress_only": true,
+    "tc_net_ex_financing_required": {
+     "central": 0.568,
+     "conservative": 0.774,
+     "optimistic": 0.5
+    }
+   },
+   "10%@vol8%": {
+    "drawdown": {
+     "gap": {
+      "median_max_dd": -0.131,
+      "p10_max_dd": -0.195,
+      "prob_dd_worse_than_20pct": 0.086,
+      "prob_dd_worse_than_30pct": 0.005,
+      "prob_negative_after_years": 0.0
+     },
+     "iid_gaussian_true_sharpe_equals_requirement": {
+      "median_max_dd": -0.12,
+      "p10_max_dd": -0.175,
+      "prob_dd_worse_than_20pct": 0.046,
+      "prob_dd_worse_than_30pct": 0.002,
+      "prob_negative_after_years": 0.0
+     },
+     "programme_prior": {
+      "median_max_dd": -0.289,
+      "p10_max_dd": -0.756,
+      "prob_dd_worse_than_20pct": 0.709,
+      "prob_dd_worse_than_30pct": 0.482,
+      "prob_negative_after_years": 0.497
+     },
+     "requirement_with_sharpe_uncertainty": {
+      "median_max_dd": -0.121,
+      "p10_max_dd": -0.21,
+      "prob_dd_worse_than_20pct": 0.115,
+      "prob_dd_worse_than_30pct": 0.029,
+      "prob_negative_after_years": 0.025
+     },
+     "stochastic_vol": {
+      "median_max_dd": -0.138,
+      "p10_max_dd": -0.28,
+      "prob_dd_worse_than_20pct": 0.238,
+      "prob_dd_worse_than_30pct": 0.08,
+      "prob_negative_after_years": 0.0
+     }
+    },
+    "gross_required_at_central_financing": {
+     "median": 1.721,
+     "p25": 1.379,
+     "p75": 2.168,
+     "slowest_recorded": 1.331
+    },
+    "net_all_in": 1.25,
+    "stress_only": false,
+    "tc_net_ex_financing_required": {
+     "central": 1.318,
+     "conservative": 1.524,
+     "optimistic": 1.25
+    }
+   },
+   "5%@vol10%": {
+    "drawdown": {
+     "gap": {
+      "median_max_dd": -0.254,
+      "p10_max_dd": -0.414,
+      "prob_dd_worse_than_20pct": 0.761,
+      "prob_dd_worse_than_30pct": 0.331,
+      "prob_negative_after_years": 0.114
+     },
+     "iid_gaussian_true_sharpe_equals_requirement": {
+      "median_max_dd": -0.229,
+      "p10_max_dd": -0.364,
+      "prob_dd_worse_than_20pct": 0.655,
+      "prob_dd_worse_than_30pct": 0.227,
+      "prob_negative_after_years": 0.062
+     },
+     "programme_prior": {
+      "median_max_dd": -0.361,
+      "p10_max_dd": -0.945,
+      "prob_dd_worse_than_20pct": 0.831,
+      "prob_dd_worse_than_30pct": 0.599,
+      "prob_negative_after_years": 0.497
+     },
+     "requirement_with_sharpe_uncertainty": {
+      "median_max_dd": -0.23,
+      "p10_max_dd": -0.55,
+      "prob_dd_worse_than_20pct": 0.609,
+      "prob_dd_worse_than_30pct": 0.315,
+      "prob_negative_after_years": 0.22
+     },
+     "stochastic_vol": {
+      "median_max_dd": -0.225,
+      "p10_max_dd": -0.443,
+      "prob_dd_worse_than_20pct": 0.598,
+      "prob_dd_worse_than_30pct": 0.289,
+      "prob_negative_after_years": 0.058
+     }
+    },
+    "gross_required_at_central_financing": {
+     "median": 0.971,
+     "p25": 0.629,
+     "p75": 1.418,
+     "slowest_recorded": 0.581
+    },
+    "net_all_in": 0.5,
+    "stress_only": false,
+    "tc_net_ex_financing_required": {
+     "central": 0.568,
+     "conservative": 0.774,
+     "optimistic": 0.5
+    }
+   },
+   "5%@vol12%": {
+    "drawdown": {
+     "gap": {
+      "median_max_dd": -0.328,
+      "p10_max_dd": -0.542,
+      "prob_dd_worse_than_20pct": 0.927,
+      "prob_dd_worse_than_30pct": 0.589,
+      "prob_negative_after_years": 0.172
+     },
+     "iid_gaussian_true_sharpe_equals_requirement": {
+      "median_max_dd": -0.292,
+      "p10_max_dd": -0.475,
+      "prob_dd_worse_than_20pct": 0.871,
+      "prob_dd_worse_than_30pct": 0.467,
+      "prob_negative_after_years": 0.098
+     },
+     "programme_prior": {
+      "median_max_dd": -0.433,
+      "p10_max_dd": -1.134,
+      "prob_dd_worse_than_20pct": 0.907,
+      "prob_dd_worse_than_30pct": 0.709,
+      "prob_negative_after_years": 0.497
+     },
+     "requirement_with_sharpe_uncertainty": {
+      "median_max_dd": -0.292,
+      "p10_max_dd": -0.73,
+      "prob_dd_worse_than_20pct": 0.783,
+      "prob_dd_worse_than_30pct": 0.482,
+      "prob_negative_after_years": 0.26
+     },
+     "stochastic_vol": {
+      "median_max_dd": -0.282,
+      "p10_max_dd": -0.555,
+      "prob_dd_worse_than_20pct": 0.769,
+      "prob_dd_worse_than_30pct": 0.45,
+      "prob_negative_after_years": 0.093
+     }
+    },
+    "gross_required_at_central_financing": {
+     "median": 0.888,
+     "p25": 0.546,
+     "p75": 1.335,
+     "slowest_recorded": 0.498
+    },
+    "net_all_in": 0.417,
+    "stress_only": false,
+    "tc_net_ex_financing_required": {
+     "central": 0.485,
+     "conservative": 0.691,
+     "optimistic": 0.417
+    }
+   },
+   "5%@vol15%": {
+    "drawdown": {
+     "gap": {
+      "median_max_dd": -0.441,
+      "p10_max_dd": -0.74,
+      "prob_dd_worse_than_20pct": 0.992,
+      "prob_dd_worse_than_30pct": 0.852,
+      "prob_negative_after_years": 0.237
+     },
+     "iid_gaussian_true_sharpe_equals_requirement": {
+      "median_max_dd": -0.392,
+      "p10_max_dd": -0.644,
+      "prob_dd_worse_than_20pct": 0.981,
+      "prob_dd_worse_than_30pct": 0.768,
+      "prob_negative_after_years": 0.149
+     },
+     "programme_prior": {
+      "median_max_dd": -0.541,
+      "p10_max_dd": -1.417,
+      "prob_dd_worse_than_20pct": 0.973,
+      "prob_dd_worse_than_30pct": 0.831,
+      "prob_negative_after_years": 0.497
+     },
+     "requirement_with_sharpe_uncertainty": {
+      "median_max_dd": -0.393,
+      "p10_max_dd": -1.002,
+      "prob_dd_worse_than_20pct": 0.929,
+      "prob_dd_worse_than_30pct": 0.69,
+      "prob_negative_after_years": 0.304
+     },
+     "stochastic_vol": {
+      "median_max_dd": -0.372,
+      "p10_max_dd": -0.729,
+      "prob_dd_worse_than_20pct": 0.914,
+      "prob_dd_worse_than_30pct": 0.668,
+      "prob_negative_after_years": 0.14
+     }
+    },
+    "gross_required_at_central_financing": {
+     "median": 0.804,
+     "p25": 0.462,
+     "p75": 1.251,
+     "slowest_recorded": 0.414
+    },
+    "net_all_in": 0.333,
+    "stress_only": false,
+    "tc_net_ex_financing_required": {
+     "central": 0.401,
+     "conservative": 0.607,
+     "optimistic": 0.333
+    }
+   },
+   "5%@vol20%": {
+    "drawdown": {
+     "gap": {
+      "median_max_dd": -0.634,
+      "p10_max_dd": -1.08,
+      "prob_dd_worse_than_20pct": 1.0,
+      "prob_dd_worse_than_30pct": 0.983,
+      "prob_negative_after_years": 0.322
+     },
+     "iid_gaussian_true_sharpe_equals_requirement": {
+      "median_max_dd": -0.559,
+      "p10_max_dd": -0.938,
+      "prob_dd_worse_than_20pct": 1.0,
+      "prob_dd_worse_than_30pct": 0.967,
+      "prob_negative_after_years": 0.216
+     },
+     "programme_prior": {
+      "median_max_dd": -0.721,
+      "p10_max_dd": -1.89,
+      "prob_dd_worse_than_20pct": 0.996,
+      "prob_dd_worse_than_30pct": 0.943,
+      "prob_negative_after_years": 0.497
+     },
+     "requirement_with_sharpe_uncertainty": {
+      "median_max_dd": -0.563,
+      "p10_max_dd": -1.466,
+      "prob_dd_worse_than_20pct": 0.994,
+      "prob_dd_worse_than_30pct": 0.893,
+      "prob_negative_after_years": 0.347
+     },
+     "stochastic_vol": {
+      "median_max_dd": -0.525,
+      "p10_max_dd": -1.027,
+      "prob_dd_worse_than_20pct": 0.986,
+      "prob_dd_worse_than_30pct": 0.89,
+      "prob_negative_after_years": 0.203
+     }
+    },
+    "gross_required_at_central_financing": {
+     "median": 0.721,
+     "p25": 0.379,
+     "p75": 1.168,
+     "slowest_recorded": 0.331
+    },
+    "net_all_in": 0.25,
+    "stress_only": true,
+    "tc_net_ex_financing_required": {
+     "central": 0.318,
+     "conservative": 0.524,
+     "optimistic": 0.25
+    }
+   },
+   "5%@vol8%": {
+    "drawdown": {
+     "gap": {
+      "median_max_dd": -0.185,
+      "p10_max_dd": -0.298,
+      "prob_dd_worse_than_20pct": 0.416,
+      "prob_dd_worse_than_30pct": 0.097,
+      "prob_negative_after_years": 0.06
+     },
+     "iid_gaussian_true_sharpe_equals_requirement": {
+      "median_max_dd": -0.167,
+      "p10_max_dd": -0.264,
+      "prob_dd_worse_than_20pct": 0.301,
+      "prob_dd_worse_than_30pct": 0.05,
+      "prob_negative_after_years": 0.026
+     },
+     "programme_prior": {
+      "median_max_dd": -0.289,
+      "p10_max_dd": -0.756,
+      "prob_dd_worse_than_20pct": 0.709,
+      "prob_dd_worse_than_30pct": 0.482,
+      "prob_negative_after_years": 0.497
+     },
+     "requirement_with_sharpe_uncertainty": {
+      "median_max_dd": -0.168,
+      "p10_max_dd": -0.379,
+      "prob_dd_worse_than_20pct": 0.368,
+      "prob_dd_worse_than_30pct": 0.165,
+      "prob_negative_after_years": 0.168
+     },
+     "stochastic_vol": {
+      "median_max_dd": -0.17,
+      "p10_max_dd": -0.335,
+      "prob_dd_worse_than_20pct": 0.378,
+      "prob_dd_worse_than_30pct": 0.141,
+      "prob_negative_after_years": 0.025
+     }
+    },
+    "gross_required_at_central_financing": {
+     "median": 1.096,
+     "p25": 0.754,
+     "p75": 1.543,
+     "slowest_recorded": 0.706
+    },
+    "net_all_in": 0.625,
+    "stress_only": false,
+    "tc_net_ex_financing_required": {
+     "central": 0.693,
+     "conservative": 0.899,
+     "optimistic": 0.625
+    }
+   }
+  },
+  "tc_drag_sharpe": {
+   "median": 0.403,
+   "p25": 0.061,
+   "p75": 0.85,
+   "slowest_recorded": 0.013
+  }
+ },
+ "paid_data_trigger_evaluation": "ledger の行には当てていない（有料 data の候補仮説が 1 つも書かれていないので、P1 の時点で満たさない）",
+ "power_landscape": {
+  "archetypes": {
+   "combined_seen_all": {
+    "mde_sharpe_80pct_power": 0.592,
+    "note": "long + recent を合わせた seen の全長（#489 の pooled 22.5 年）",
+    "power_if_true_sharpe": {
+     "0.2": 0.155,
+     "0.3": 0.295,
+     "0.5": 0.658
+    },
+    "years": 22.4
+   },
+   "cross_sectional_factor_long": {
+    "mde_sharpe_80pct_power": 0.666,
+    "note": "8 通貨の相対 book",
+    "power_if_true_sharpe": {
+     "0.2": 0.132,
+     "0.3": 0.243,
+     "0.5": 0.557
+    },
+    "years": 17.7
+   },
+   "daily_continuous_long": {
+    "mde_sharpe_80pct_power": 0.666,
+    "note": "long span（ECB 参照レート）の日次 book",
+    "power_if_true_sharpe": {
+     "0.2": 0.132,
+     "0.3": 0.243,
+     "0.5": 0.557
+    },
+    "years": 17.7
+   },
+   "daily_continuous_recent": {
+    "mde_sharpe_80pct_power": 1.292,
+    "note": "recent span の日次 book（例: U5・M10・Top-Five の recent）",
+    "power_if_true_sharpe": {
+     "0.2": 0.063,
+     "0.3": 0.095,
+     "0.5": 0.191
+    },
+    "years": 4.7
+   },
+   "event_driven": {
+    "mde_sharpe_80pct_power": null,
+    "note": "event 数が律速（例: 中銀会合 8 回/年 × 4 中銀 × 20 年 ≈ 640 件）。日次換算の年数では測れない",
+    "power_if_true_sharpe": null,
+    "years": null
+   },
+   "fresh_pool_if_released": {
+    "mde_sharpe_80pct_power": 1.266,
+    "note": "保護中の fresh pool 2016-06-02 … 2021-04-25 の**長さだけ**（中身は読まない）。単独で使ったときの検出力",
+    "power_if_true_sharpe": {
+     "0.2": 0.065,
+     "0.3": 0.098,
+     "0.5": 0.197
+    },
+    "years": 4.9
+   },
+   "monthly_macro_long": {
+    "mde_sharpe_80pct_power": 0.666,
+    "note": "月次 macro signal。return は日次でも、signal の独立な状態は有効標本数（5〜25）しか無い。下の検出力は上限",
+    "power_if_true_sharpe": {
+     "0.2": 0.132,
+     "0.3": 0.243,
+     "0.5": 0.557
+    },
+    "years": 17.7
+   },
+   "usd_factor_long": {
+    "mde_sharpe_80pct_power": 0.666,
+    "note": "1 factor（breadth 1）。符号 regime が少ない（M15 は 6、M16 は 28）。下の検出力は上限",
+    "power_if_true_sharpe": {
+     "0.2": 0.132,
+     "0.3": 0.243,
+     "0.5": 0.557
+    },
+    "years": 17.7
+   }
+  },
+  "family_vs_track": "family 内の K 本を事前固定の等ウェイトで 1 つの統計量にすると、真の効果が family 共通なら Sharpe は √(K/(1+(K−1)ρ)) 倍になり、必要年数は (1+(K−1)ρ)/K 倍に縮む。**効果が family 共通でなければ、平均は薄まる**",
+  "slow_signal_caveat": "日次 return がほぼ独立なら Sharpe の SE は √(1/T) で決まるが、signal の状態がほとんど変わらない（有効標本 5〜25）なら、その推定は少数の regime の当たり外れに支配され、SE √(1/T) は過小評価になる",
+  "years_needed_80pct_power_two_sided_5pct": {
+   "0.1": 784.9,
+   "0.2": 196.2,
+   "0.3": 87.2,
+   "0.5": 31.4,
+   "0.7": 16.0,
+   "1.0": 7.8
+  }
+ },
+ "rules": {
+  "broker_auth_trigger": [
+   "B1 financing を除いた edge が正で、null と区別できる（percentile ≥ 0.95）",
+   "B2 financing の不確実性が結論を左右する（financing の cell の間で符号か判定が変わる）",
+   "B3 有効標本数が足りる（≥ 10）",
+   "B4 実際の financing が分かると意思決定が変わる",
+   "B5 それより大きな不確実性（検出力・汚染・data の質）が結論を支配していない"
+  ],
+  "closed": [
+   {
+    "scope": "両方向とも 3 span（0.7 + 2 + 2 年）で null と区別できない。family を active 探索から外した",
+    "span_and_mde": "各 span 約 2 年、MDE ≈ 2.0（pips 単位の検定で、Sharpe の MDE は目安）",
+    "what": "M15 の multi-day reversal / momentum（lb480_h480、PAIRS_20、M15 derived）"
+   },
+   {
+    "scope": "development 2025 の上で cost 後すべて負。walk-forward でも選べない",
+    "span_and_mde": "0.7 年、MDE ≈ 3.4。**cost が gross を大きく上回った**ことが結論で、検出力の話ではない",
+    "what": "M15 textbook rules・15 本の戦略 family・reversal の parameter sweep"
+   },
+   {
+    "scope": "構造は null を超えて実在（p 0.005）するが、線形 selector 8 特徴・7 母集団で round trip cost の 6–16%",
+    "span_and_mde": "3 panel。cost に対する比で閉じた（検出力ではない）",
+    "what": "M15 の price-path structure（VR < 1）の収益化"
+   },
+   {
+    "scope": "事前登録の判定は 2 つの決定 panel の両方を要求し、どれも NOT_SUPPORTED。ただし CPI 4h は 2023–25 panel で family-max p 0.040（family-wise で通過）、2021–23 panel では family-max p 0.99、development 2025 では 0.75。CPI 1h は family-max p 0.124 / 0.906",
+    "span_and_mde": "各 panel 2 年、event 単位の MDE（例: CPI 4h で 19.1 pips/pair-event、観測 net 15.3）。**検出力不足に近い**",
+    "what": "US CPI surprise・COT positioning・survey consensus"
+   },
+   {
+    "scope": "walk-forward で事前登録の pass rule を満たさない（Track 1 net −0.84）",
+    "span_and_mde": "out-of-fold 2.9 年、MDE ≈ 1.6",
+    "what": "continuous currency portfolio（Track 1）・model learning M01/M03/M13"
+   },
+   {
+    "scope": "5 日は cost で負（turnover 82〜98）。valuation は名目平均回帰より有意に悪い（増分 IC の NW t −3.34）",
+    "span_and_mde": "4.8 年（MDE 1.28）/ 12.6 年（MDE 0.79）。valuation は有意な**負**の増分で閉じた",
+    "what": "市場利回り repricing（5 日）・実質為替 valuation"
+   },
+   {
+    "scope": "NOT_SUPPORTED_IN_SEEN_DEVELOPMENT（T3・U3・U5・M10 の long は DATA_NOT_DECISION_GRADE）。T4 と T1・T2 は cost で負",
+    "span_and_mde": "long 17 年（MDE 0.67）と recent 2〜4.8 年（MDE 1.3〜2.0）",
+    "what": "Top-Five T1–T4、next-five U1・U3・U4・U5、mechanism redesign M10"
+   },
+   {
+    "scope": "M15_CORRECTED_FINANCING_NOT_DECISION_GRADE。spot ≈ 0、economics は financing の仮定次第",
+    "span_and_mde": "17.7 年、MDE 0.67、有効標本 5",
+    "what": "M15 USD factor（carry + macro）"
+   }
+  ],
+  "closure_principle": "閉じるのは『この情報集合 × この定式化 × この seen の文脈』だけ。『FX に edge は無い』とは言わない。言えるのは、試した形では seen data の上で null と区別できる経済的な効果が出なかったこと。span が短い検定は『閉じた』のではなく『検出力不足で決まらなかった』に近い — 各項目に MDE を付ける",
+  "continue": [
+   "C1 事前に書いた family 単位の設計（1 つの統計量、best-of-N なし）で、検出力 ≥ 0.5 を持てる対象がある",
+   "C2 未検定の情報源に、経済的な理由と point-in-time の入手経路がある",
+   "C3 研究の目的を『年 5% の戦略』から『情報の測定』へ明示的に変え、そのための予算を Human + ChatGPT が認める"
+  ],
+  "d_m3": "JPY_RATE_RELATED_FORWARD_CONFIRMATION_CONTAMINATED_BY_EXTERNAL_INFORMATION_EXPOSURE",
+  "forward_eligibility_conditions": [
+   "F1 evidence tier A（事前登録・1 回・1 つの仮説の primary・事後修正なし・無効でない・多数の cell からの選択でない）",
+   "F2 development で null を超える: null percentile ≥ 0.95（または p ≤ 0.05）。family-max の p が記録されていればそれを使い、**同じ mechanism の全ての決定 span で**成り立つこと",
+   "F3 financing 抜きの TC-net が、conservative の financing drag（markup 2%/pair notional、参照 0.274 Sharpe）を引いても正",
+   "F4 有効標本数 ≥ 10（distinct signal states は有効標本数ではないので不明扱い）",
+   "F5 LOO・concentration が破綻していない（最悪 LOO が正、top-10 日の寄与 < 1）",
+   "F6 汚染されていない（JPY_RATE_RELATED_FORWARD_CONFIRMATION_CONTAMINATED_BY_EXTERNAL_INFORMATION_EXPOSURE の対象 = signal か judged P&L が金利を使う track。対象なら金利を使わない形で凍結し直す必要がある）",
+   "F7 forward の長さで意思決定が変わる（§27 の情報量）",
+   "F8 凍結 digest・入力 manifest・1 回限りの実行が forward 前に commit されている"
+  ],
+  "open": {
+   "CONFIRMATION_BLOCKED": [
+    "forward epoch は採用待ち（FORWARD_EPOCH_ADOPTION_BLOCKED_INSUFFICIENT_SAMPLE_ADOPTION_WAITS）",
+    "fresh pool は未読で保護中（使う判断は Human + ChatGPT）"
+   ],
+   "CONTAMINATED": [
+    "JPY 金利に関係する forward 確認（JPY_RATE_RELATED_FORWARD_CONFIRMATION_CONTAMINATED_BY_EXTERNAL_INFORMATION_EXPOSURE）"
+   ],
+   "DATA_BLOCKED": [
+    "T3・U3・U5・M10 の long span（data が decision grade でない）",
+    "非 USD surprise（vintage archive が無い）"
+   ],
+   "FINANCING_UNKNOWN": [
+    "全行の FULL_RETAIL_NET（broker financing 履歴は認証が必要で、今回取得禁止）",
+    "financing を除いた positive（U2 / U4 recent・T-R2・T-V・M11・M01・M16）は上方に偏っている。M01 は judged（carry + markup 込み）で 0.30 → 0.08"
+   ],
+   "NEGATIVE_BUT_NOT_REFUTED": [
+    "multi-day reversal / momentum（区間が 0 を跨ぐ負の点推定）",
+    "next-five U2（long −0.07）"
+   ],
+   "PAID_ONLY": [
+    "consensus の有料 vintage、options、tick / order book の長い履歴"
+   ],
+   "UNDERPOWERED": [
+    "政策金利 carry（pair / 断面 k2・k3 / 変化）: 2 panel × 2 年、MDE ≈ 2.0。文献でよく引かれる carry の Sharpe はこれより遥かに小さい — **閉じたのではなく決まらなかった**",
+    "US CPI surprise・COT・survey consensus（上記、event 単位の MDE が観測値を上回る）",
+    "Sharpe 0.3 前後の効果全般（seen の最長 22 年で検出力 0.3 前後）",
+    "月次 macro の遅い signal（有効標本 5–25）: M11・M01・M16 はここ",
+    "USD factor（breadth 1、符号 regime 6–28）",
+    "20 日の市場利回り repricing（T-R2）: gross 0.83 だが cost 8.2%/年で net 0.05"
+   ],
+   "UNTESTED": [
+    "**公開の長い span（1999–2016）での古典的 premia**: 断面 carry（G10、k 本の long-short）と 1〜12 か月の通貨 momentum。long span で検定したのは USD factor の carry（M15）と 4〜6 日の momentum 類似・valuation だけ",
+    "options / risk-reversal・implied vol の情報（有料）",
+    "order flow・positioning の高頻度 data（有料）",
+    "cross-asset（金利先物・株・商品）を使う定式化の大半",
+    "family 単位で事前固定した合成（1 つの統計量）"
+   ]
+  },
+  "paid_data_trigger": [
+   "P1 無料 data では検定できない、事前に書いた具体的な仮説がある（data を買ってから仮説を探さない）",
+   "P2 その data の期間と頻度で、想定する効果に検出力がある（§13 の年数の制約を data が破れる — 例: event 数・breadth で有効標本を増やせる）",
+   "P3 vintage / point-in-time が保証され、保護期間を request で除外できる",
+   "P4 費用が、得られる情報量（forward 何年分に相当するか）に見合う",
+   "P5 Human + ChatGPT の承認（有料 data は Amber 以上）"
+  ],
+  "path_comparison": {
+   "A_serial_single_signal": {
+    "broker_paid_need": "retail の判断には financing が要る（研究段階は近似で可）",
+    "data_need": "中（無料 data は大半を使った）",
+    "engineering_cost": "中",
+    "five_pct_relevance": "低（単体で TC-net 0.5–0.77 が要る）",
+    "forward_consumption": "候補ごとに消費",
+    "info_gain": "低（1 本あたり seen の検出力 0.1–0.3）",
+    "label": "A. 単一 signal の逐次探索（今までの方法）",
+    "overfit_risk": "高（試行の数が増えるほど偽陽性が増え、seen span も減る）",
+    "power": "低",
+    "route_to_decision_bearing_result": "decision-bearing な結論には forward での Formal Confirmation が要る。36 か月でも SE 0.58 なので、どの path も forward の段階で D と同じ時間と検出力の制約を受ける（B・C は forward の前の選別であって代わりではない）",
+    "time": "選別に 1 本 1 cycle、確認に forward 3 年以上"
+   },
+   "B_family_level_prereg": {
+    "broker_paid_need": "retail の判断には financing が要る（研究段階は近似で可）",
+    "data_need": "新しい source か保護 data（seen の再利用は結果を知った後なので D tier まで）",
+    "engineering_cost": "中",
+    "five_pct_relevance": "中〜低（family 共通の効果が真にあり、それが TC-net 0.5 超のときだけ）",
+    "forward_consumption": "family で 1 回",
+    "info_gain": "中（family 共通の効果があるかを 1 回で答える）",
+    "label": "B. family 単位の事前登録（1 family = 1 統計量）",
+    "overfit_risk": "低（best-of-N を禁じる）",
+    "power": "中（family 共通の効果があるときだけ。K 本の平均で必要年数が (1+(K−1)ρ)/K 倍）",
+    "route_to_decision_bearing_result": "decision-bearing な結論には forward での Formal Confirmation が要る。36 か月でも SE 0.58 なので、どの path も forward の段階で D と同じ時間と検出力の制約を受ける（B・C は forward の前の選別であって代わりではない）",
+    "time": "選別に 1–2 cycle、確認に forward 3 年以上"
+   },
+   "C_fixed_multi_source_composite": {
+    "broker_paid_need": "retail の判断には financing が要る（研究段階は近似で可）",
+    "data_need": "既存 source で組めるが、seen で結果を知っている source の合成は tier D",
+    "engineering_cost": "中",
+    "five_pct_relevance": "低（cost 後の真の s = 0.2 の独立な source が ρ = 0.1 で 15 本、s = 0.1 なら ρ = 0.1 では上限 0.32 で届かない。programme の推定 s は約 0.07）",
+    "forward_consumption": "1 回",
+    "info_gain": "中（弱い source の和に意味があるかを 1 回で）",
+    "label": "C. 事前固定の多 source 合成（等ウェイト・等リスク）",
+    "overfit_risk": "中（どの source を入れるかが結果を見た後だと selection になる）",
+    "power": "中（真の source が N 本あれば √N。cost 後の s が 0 の source は足しても 0）",
+    "route_to_decision_bearing_result": "decision-bearing な結論には forward での Formal Confirmation が要る。36 か月でも SE 0.58 なので、どの path も forward の段階で D と同じ時間と検出力の制約を受ける（B・C は forward の前の選別であって代わりではない）",
+    "time": "選別に 1 cycle、確認に forward 3 年以上"
+   },
+   "D_wait_for_forward": {
+    "broker_paid_need": "retail の判断には financing が要る",
+    "data_need": "なし",
+    "engineering_cost": "低",
+    "five_pct_relevance": "低（確かめる候補が無い）",
+    "forward_consumption": "消費する",
+    "info_gain": "低（36 か月でも Sharpe の SE 0.58）",
+    "label": "D. forward を待つ",
+    "overfit_risk": "なし",
+    "power": "非常に低",
+    "route_to_decision_bearing_result": "forward そのもの。ただし確かめる候補が今は無い",
+    "time": "3 年以上"
+   },
+   "E_hold_or_end": {
+    "broker_paid_need": "不要",
+    "data_need": "なし",
+    "engineering_cost": "なし",
+    "five_pct_relevance": "なし",
+    "forward_consumption": "保存",
+    "info_gain": "なし",
+    "label": "E. 保留・終了",
+    "overfit_risk": "なし",
+    "power": "—",
+    "route_to_decision_bearing_result": "なし（保護 data は保存される）",
+    "time": "—"
+   }
+  },
+  "pause_policy": "FX_RESEARCH_PAUSED は自動では立てない。STOP 条件の評価は Human + ChatGPT に上げる",
+  "protected_information_ledger": [
+   {
+    "item": "FX fresh pool 2016-06-02 … 2021-04-25",
+    "scope": "全 FX track の将来の確認用",
+    "state": "UNREAD（M15 archive・公開 FX とも request で除外）"
+   },
+   {
+    "item": "historical EXPLORATORY_OOS_SLICE",
+    "scope": "formal evidence には使えない。Formal Confirmation は将来の未接触 epoch を使う",
+    "state": "HISTORICAL_EXPLORATORY_OOS_PRISTINE_CLAIM_WITHDRAWN（R1 が 1 pair 1 行、計 20 行を decode。値は出力に届いていない）"
+   },
+   {
+    "item": "dead window",
+    "scope": "—",
+    "state": "UNREAD"
+   },
+   {
+    "item": "forward Formal Confirmation epoch（FX 価格）",
+    "scope": "—",
+    "state": "UNREAD。FORWARD_EPOCH_ADOPTION_BLOCKED_INSUFFICIENT_SAMPLE_ADOPTION_WAITS"
+   },
+   {
+    "item": "D-M3: lead session が forward epoch の BoJ 政策決定（2026 年）を読んだ",
+    "scope": "**JPY 金利に関係する forward 確認だけ**（JPY の政策金利・carry を signal または会計に使う track）。FX 価格の forward epoch 全体を汚染したとは扱わない",
+    "state": "JPY_RATE_RELATED_FORWARD_CONFIRMATION_CONTAMINATED_BY_EXTERNAL_INFORMATION_EXPOSURE"
+   },
+   {
+    "item": "D-M1: ALFRED の metadata page を 2026 年の最新観測付きで parse",
+    "scope": "その series の forward 確認で開示が要る",
+    "state": "EXTERNAL_INFORMATION_EXPOSURE（値は使っていない）"
+   },
+   {
+    "item": "D-M2: EPU の response を parse して拒否",
+    "scope": "EPU を使う track",
+    "state": "EXTERNAL_INFORMATION_EXPOSURE"
+   },
+   {
+    "item": "D-5: next-five の bulk response（H.4.1 zip・SNB cube・BoJ・Fed JSON）が保護期間の行を含んだまま memory 上で parse され、保存前に切られた",
+    "scope": "U1–U5 の source の forward 確認で開示が要る",
+    "state": "EXTERNAL_INFORMATION_EXPOSURE（C-4 の月次 stamp 2016-06-01 / 2025-12-01 は保存された。run4 で読む側から落とした）"
+   },
+   {
+    "item": "C-1: Top-Five の signals._two_year が保護期間・forward epoch の parquet 行を読んでいた（recent の T3 score 3 件）",
+    "scope": "Top-Five",
+    "state": "報告値の前に閉じた。cycle は CORRECTED_AFTER_RESULTS_WERE_SEEN"
+   },
+   {
+    "item": "CPI 前年比の分母・HICP 2025=100・現行 vintage の SA 係数",
+    "scope": "M01 / M11 / M16 の macro 入力",
+    "state": "保護期間の水準が逆算可能な形で保存された（逆算はしていない）"
+   },
+   {
+    "item": "ML Step 4 365d_BA holdout（2026-03-01 … 2026-04-24）",
+    "scope": "M1 lineage（終了）",
+    "state": "CONSUMED"
+   },
+   {
+    "item": "seen として消費済みの span",
+    "scope": "いずれも holdout・confirmation に使えない",
+    "state": "EXPLORATORY_SEEN_DATA: M15 archive の 3 window（2021-04-26 … 2025-12-28）、公開 pre-2016 FX と macro（1999 … 2016-06-01）"
+   }
+  ],
+  "stop": [
+   "S1 新しい候補が、検出力のある設計でも null と区別できない状態が続き、残りの未検定領域が有料 data か forward しかない",
+   "S2 事業目標（年 5%）に要る TC-net Sharpe（vol 10% で financing 込み 0.5–0.77）が、programme の縮小推定の上位でも届かない範囲にあると確かめられた",
+   "S3 保護 data を使う以外に情報を増やす手段が無く、その使用が承認されない",
+   "S4 financing を含めた retail の net が、どの現実的な仮定でも負"
+  ]
+ },
+ "shrinkage": {
+  "fits": {
+   "A+B+C|gross_sharpe": {
+    "grid_boundary_hit": false,
+    "max_observed": 0.772,
+    "max_posterior_mean": 0.035,
+    "mechanisms": [
+     {
+      "mechanism_id": "MR_M01",
+      "members": [
+       "MR_M01_long"
+      ],
+      "posterior_mean": 0.035,
+      "sharpe": 0.322,
+      "years": 17.69
+     },
+     {
+      "mechanism_id": "MR_M10",
+      "members": [
+       "MR_M10_recent"
+      ],
+      "posterior_mean": 0.035,
+      "sharpe": -0.234,
+      "years": 3.82
+     },
+     {
+      "mechanism_id": "MR_M11",
+      "members": [
+       "MR_M11_long"
+      ],
+      "posterior_mean": 0.035,
+      "sharpe": 0.225,
+      "years": 17.69
+     },
+     {
+      "mechanism_id": "NF_U1",
+      "members": [
+       "NF_U1_long"
+      ],
+      "posterior_mean": 0.035,
+      "sharpe": -0.122,
+      "years": 17.19
+     },
+     {
+      "mechanism_id": "NF_U2",
+      "members": [
+       "NF_U2_long"
+      ],
+      "posterior_mean": 0.035,
+      "sharpe": 0.03,
+      "years": 16.69
+     },
+     {
+      "mechanism_id": "NF_U3",
+      "members": [
+       "NF_U3_recent"
+      ],
+      "posterior_mean": 0.035,
+      "sharpe": -0.105,
+      "years": 4.06
+     },
+     {
+      "mechanism_id": "NF_U4",
+      "members": [
+       "NF_U4_long"
+      ],
+      "posterior_mean": 0.035,
+      "sharpe": -0.315,
+      "years": 17.19
+     },
+     {
+      "mechanism_id": "NF_U5",
+      "members": [
+       "NF_U5_recent"
+      ],
+      "posterior_mean": 0.035,
+      "sharpe": -0.28,
+      "years": 1.8
+     },
+     {
+      "mechanism_id": "T1_primary",
+      "members": [
+       "T1_primary"
+      ],
+      "posterior_mean": 0.035,
+      "sharpe": -0.469,
+      "years": 2.94
+     },
+     {
+      "mechanism_id": "TOP5_T1",
+      "members": [
+       "TOP5_T1_long",
+       "TOP5_T1_recent"
+      ],
+      "posterior_mean": 0.035,
+      "sharpe": 0.182,
+      "years": 21.96
+     },
+     {
+      "mechanism_id": "TOP5_T2",
+      "members": [
+       "TOP5_T2_long",
+       "TOP5_T2_recent"
+      ],
+      "posterior_mean": 0.035,
+      "sharpe": -0.161,
+      "years": 21.58
+     },
+     {
+      "mechanism_id": "TOP5_T3_H1",
+      "members": [
+       "TOP5_T3_H1_recent"
+      ],
+      "posterior_mean": 0.035,
+      "sharpe": -0.749,
+      "years": 4.72
+     },
+     {
+      "mechanism_id": "TOP5_T4",
+      "members": [
+       "TOP5_T4_long",
+       "TOP5_T4_recent"
+      ],
+      "posterior_mean": 0.035,
+      "sharpe": 0.144,
+      "years": 19.54
+     },
+     {
+      "mechanism_id": "TOP5_T5",
+      "members": [
+       "TOP5_T5_long",
+       "TOP5_T5_recent"
+      ],
+      "posterior_mean": 0.035,
+      "sharpe": 0.134,
+      "years": 19.39
+     },
+     {
+      "mechanism_id": "TR_C",
+      "members": [
+       "TR_C"
+      ],
+      "posterior_mean": 0.035,
+      "sharpe": 0.772,
+      "years": 4.81
+     },
+     {
+      "mechanism_id": "TV_C",
+      "members": [
+       "TV_C"
+      ],
+      "posterior_mean": 0.035,
+      "sharpe": 0.14,
+      "years": 12.62
+     }
+    ],
+    "mu_hat": 0.035,
+    "mu_se_lower_bound": 0.07,
+    "naive_mean_observed": -0.03,
+    "new_candidate_prior": {
+     "mean": 0.035,
+     "sd": 0.255
+    },
+    "reading": "τ̂ が 0 に近いなら、観測のばらつきは標本誤差でほぼ説明でき、mechanism 間で真の効果が違う証拠は弱い。μ̂ は試した mechanism の平均的な真の TC-net（financing 抜き）Sharpe の推定。Sharpe の SE を √(1/年数) と置くので、遅い signal（有効標本 5〜25）では不確実性を過小評価する",
+    "share_true_above_predictive": {
+     "0.0": {
+      "at_tau_hat": 0.691,
+      "at_tau_upper_95": 0.555
+     },
+     "0.3": {
+      "at_tau_hat": 0.0,
+      "at_tau_upper_95": 0.149
+     },
+     "0.5": {
+      "at_tau_hat": 0.0,
+      "at_tau_upper_95": 0.034
+     }
+    },
+    "sharpe_measure": "gross_sharpe",
+    "tau_hat": 0.0,
+    "tau_upper_95_profile": 0.245,
+    "tiers": [
+     "A",
+     "B",
+     "C"
+    ],
+    "usable_mechanisms": 16
+   },
+   "A+B+C|sharpe_ex_financing": {
+    "grid_boundary_hit": false,
+    "max_observed": 0.348,
+    "max_posterior_mean": 0.22,
+    "mechanisms": [
+     {
+      "mechanism_id": "MR_M01",
+      "members": [
+       "MR_M01_long"
+      ],
+      "posterior_mean": 0.178,
+      "sharpe": 0.296,
+      "years": 17.69
+     },
+     {
+      "mechanism_id": "MR_M10",
+      "members": [
+       "MR_M10_recent"
+      ],
+      "posterior_mean": -0.316,
+      "sharpe": -0.306,
+      "years": 3.82
+     },
+     {
+      "mechanism_id": "MR_M11",
+      "members": [
+       "MR_M11_long"
+      ],
+      "posterior_mean": 0.089,
+      "sharpe": 0.186,
+      "years": 17.69
+     },
+     {
+      "mechanism_id": "MR_M15",
+      "members": [
+       "USDF_M15_long_total"
+      ],
+      "posterior_mean": -0.056,
+      "sharpe": 0.007,
+      "years": 17.69
+     },
+     {
+      "mechanism_id": "MR_M16",
+      "members": [
+       "USDF_M16_long_total"
+      ],
+      "posterior_mean": 0.22,
+      "sharpe": 0.348,
+      "years": 17.69
+     },
+     {
+      "mechanism_id": "NF_U1",
+      "members": [
+       "NF_U1_long"
+      ],
+      "posterior_mean": -0.226,
+      "sharpe": -0.202,
+      "years": 17.19
+     },
+     {
+      "mechanism_id": "NF_U2",
+      "members": [
+       "NF_U2_long"
+      ],
+      "posterior_mean": -0.118,
+      "sharpe": -0.066,
+      "years": 16.69
+     },
+     {
+      "mechanism_id": "NF_U3",
+      "members": [
+       "NF_U3_recent"
+      ],
+      "posterior_mean": -0.278,
+      "sharpe": -0.23,
+      "years": 4.06
+     },
+     {
+      "mechanism_id": "NF_U4",
+      "members": [
+       "NF_U4_long"
+      ],
+      "posterior_mean": -0.368,
+      "sharpe": -0.378,
+      "years": 17.19
+     },
+     {
+      "mechanism_id": "NF_U5",
+      "members": [
+       "NF_U5_recent"
+      ],
+      "posterior_mean": -0.502,
+      "sharpe": -0.91,
+      "years": 1.8
+     },
+     {
+      "mechanism_id": "T1_primary",
+      "members": [
+       "T1_primary"
+      ],
+      "posterior_mean": -0.539,
+      "sharpe": -0.842,
+      "years": 2.94
+     },
+     {
+      "mechanism_id": "TOP5_T1",
+      "members": [
+       "TOP5_T1_long",
+       "TOP5_T1_recent"
+      ],
+      "posterior_mean": -0.429,
+      "sharpe": -0.449,
+      "years": 21.96
+     },
+     {
+      "mechanism_id": "TOP5_T2",
+      "members": [
+       "TOP5_T2_long",
+       "TOP5_T2_recent"
+      ],
+      "posterior_mean": -0.612,
+      "sharpe": -0.668,
+      "years": 21.58
+     },
+     {
+      "mechanism_id": "TOP5_T3_H1",
+      "members": [
+       "TOP5_T3_H1_recent"
+      ],
+      "posterior_mean": -1.022,
+      "sharpe": -1.638,
+      "years": 4.72
+     },
+     {
+      "mechanism_id": "TOP5_T4",
+      "members": [
+       "TOP5_T4_long",
+       "TOP5_T4_recent"
+      ],
+      "posterior_mean": -1.445,
+      "sharpe": -1.683,
+      "years": 19.54
+     },
+     {
+      "mechanism_id": "TOP5_T5",
+      "members": [
+       "TOP5_T5_long",
+       "TOP5_T5_recent"
+      ],
+      "posterior_mean": 0.008,
+      "sharpe": 0.08,
+      "years": 19.39
+     },
+     {
+      "mechanism_id": "TR_C",
+      "members": [
+       "TR_C"
+      ],
+      "posterior_mean": -0.425,
+      "sharpe": -0.512,
+      "years": 4.81
+     },
+     {
+      "mechanism_id": "TV_C",
+      "members": [
+       "TV_C"
+      ],
+      "posterior_mean": 0.015,
+      "sharpe": 0.127,
+      "years": 12.62
+     }
+    ],
+    "mu_hat": -0.325,
+    "mu_se_lower_bound": 0.139,
+    "naive_mean_observed": -0.38,
+    "new_candidate_prior": {
+     "mean": -0.325,
+     "sd": 0.787
+    },
+    "reading": "τ̂ が 0 に近いなら、観測のばらつきは標本誤差でほぼ説明でき、mechanism 間で真の効果が違う証拠は弱い。μ̂ は試した mechanism の平均的な真の TC-net（financing 抜き）Sharpe の推定。Sharpe の SE を √(1/年数) と置くので、遅い signal（有効標本 5〜25）では不確実性を過小評価する",
+    "share_true_above_predictive": {
+     "0.0": {
+      "at_tau_hat": 0.262,
+      "at_tau_upper_95": 0.34
+     },
+     "0.3": {
+      "at_tau_hat": 0.11,
+      "at_tau_upper_95": 0.214
+     },
+     "0.5": {
+      "at_tau_hat": 0.053,
+      "at_tau_upper_95": 0.147
+     }
+    },
+    "sharpe_measure": "sharpe_ex_financing",
+    "tau_hat": 0.49,
+    "tau_upper_95_profile": 0.775,
+    "tiers": [
+     "A",
+     "B",
+     "C"
+    ],
+    "usable_mechanisms": 18
+   },
+   "A+B|gross_sharpe": {
+    "grid_boundary_hit": false,
+    "max_observed": 0.772,
+    "max_posterior_mean": 0.215,
+    "mechanisms": [
+     {
+      "mechanism_id": "MR_M01",
+      "members": [
+       "MR_M01_long"
+      ],
+      "posterior_mean": 0.215,
+      "sharpe": 0.322,
+      "years": 17.69
+     },
+     {
+      "mechanism_id": "MR_M10",
+      "members": [
+       "MR_M10_recent"
+      ],
+      "posterior_mean": 0.215,
+      "sharpe": -0.234,
+      "years": 3.82
+     },
+     {
+      "mechanism_id": "MR_M11",
+      "members": [
+       "MR_M11_long"
+      ],
+      "posterior_mean": 0.215,
+      "sharpe": 0.225,
+      "years": 17.69
+     },
+     {
+      "mechanism_id": "T1_primary",
+      "members": [
+       "T1_primary"
+      ],
+      "posterior_mean": 0.215,
+      "sharpe": -0.469,
+      "years": 2.94
+     },
+     {
+      "mechanism_id": "TR_C",
+      "members": [
+       "TR_C"
+      ],
+      "posterior_mean": 0.215,
+      "sharpe": 0.772,
+      "years": 4.81
+     },
+     {
+      "mechanism_id": "TV_C",
+      "members": [
+       "TV_C"
+      ],
+      "posterior_mean": 0.215,
+      "sharpe": 0.14,
+      "years": 12.62
+     }
+    ],
+    "mu_hat": 0.215,
+    "mu_se_lower_bound": 0.13,
+    "naive_mean_observed": 0.126,
+    "new_candidate_prior": {
+     "mean": 0.215,
+     "sd": 0.435
+    },
+    "reading": "τ̂ が 0 に近いなら、観測のばらつきは標本誤差でほぼ説明でき、mechanism 間で真の効果が違う証拠は弱い。μ̂ は試した mechanism の平均的な真の TC-net（financing 抜き）Sharpe の推定。Sharpe の SE を √(1/年数) と置くので、遅い signal（有効標本 5〜25）では不確実性を過小評価する",
+    "share_true_above_predictive": {
+     "0.0": {
+      "at_tau_hat": 0.951,
+      "at_tau_upper_95": 0.69
+     },
+     "0.3": {
+      "at_tau_hat": 0.256,
+      "at_tau_upper_95": 0.422
+     },
+     "0.5": {
+      "at_tau_hat": 0.014,
+      "at_tau_upper_95": 0.256
+     }
+    },
+    "sharpe_measure": "gross_sharpe",
+    "tau_hat": 0.0,
+    "tau_upper_95_profile": 0.415,
+    "tiers": [
+     "A",
+     "B"
+    ],
+    "usable_mechanisms": 6
+   },
+   "A+B|sharpe_ex_financing": {
+    "grid_boundary_hit": false,
+    "max_observed": 0.296,
+    "max_posterior_mean": 0.07,
+    "mechanisms": [
+     {
+      "mechanism_id": "MR_M01",
+      "members": [
+       "MR_M01_long"
+      ],
+      "posterior_mean": 0.07,
+      "sharpe": 0.296,
+      "years": 17.69
+     },
+     {
+      "mechanism_id": "MR_M10",
+      "members": [
+       "MR_M10_recent"
+      ],
+      "posterior_mean": 0.07,
+      "sharpe": -0.306,
+      "years": 3.82
+     },
+     {
+      "mechanism_id": "MR_M11",
+      "members": [
+       "MR_M11_long"
+      ],
+      "posterior_mean": 0.07,
+      "sharpe": 0.186,
+      "years": 17.69
+     },
+     {
+      "mechanism_id": "T1_primary",
+      "members": [
+       "T1_primary"
+      ],
+      "posterior_mean": 0.07,
+      "sharpe": -0.842,
+      "years": 2.94
+     },
+     {
+      "mechanism_id": "TR_C",
+      "members": [
+       "TR_C"
+      ],
+      "posterior_mean": 0.07,
+      "sharpe": -0.512,
+      "years": 4.81
+     },
+     {
+      "mechanism_id": "TV_C",
+      "members": [
+       "TV_C"
+      ],
+      "posterior_mean": 0.07,
+      "sharpe": 0.127,
+      "years": 12.62
+     }
+    ],
+    "mu_hat": 0.07,
+    "mu_se_lower_bound": 0.13,
+    "naive_mean_observed": -0.175,
+    "new_candidate_prior": {
+     "mean": 0.07,
+     "sd": 0.565
+    },
+    "reading": "τ̂ が 0 に近いなら、観測のばらつきは標本誤差でほぼ説明でき、mechanism 間で真の効果が違う証拠は弱い。μ̂ は試した mechanism の平均的な真の TC-net（financing 抜き）Sharpe の推定。Sharpe の SE を √(1/年数) と置くので、遅い signal（有効標本 5〜25）では不確実性を過小評価する",
+    "share_true_above_predictive": {
+     "0.0": {
+      "at_tau_hat": 0.705,
+      "at_tau_upper_95": 0.549
+     },
+     "0.3": {
+      "at_tau_hat": 0.038,
+      "at_tau_upper_95": 0.342
+     },
+     "0.5": {
+      "at_tau_hat": 0.0,
+      "at_tau_upper_95": 0.223
+     }
+    },
+    "sharpe_measure": "sharpe_ex_financing",
+    "tau_hat": 0.0,
+    "tau_upper_95_profile": 0.55,
+    "tiers": [
+     "A",
+     "B"
+    ],
+    "usable_mechanisms": 6
+   },
+   "A|gross_sharpe": {
+    "grid_boundary_hit": false,
+    "max_observed": 0.772,
+    "max_posterior_mean": 0.215,
+    "mechanisms": [
+     {
+      "mechanism_id": "MR_M01",
+      "members": [
+       "MR_M01_long"
+      ],
+      "posterior_mean": 0.215,
+      "sharpe": 0.322,
+      "years": 17.69
+     },
+     {
+      "mechanism_id": "MR_M10",
+      "members": [
+       "MR_M10_recent"
+      ],
+      "posterior_mean": 0.215,
+      "sharpe": -0.234,
+      "years": 3.82
+     },
+     {
+      "mechanism_id": "MR_M11",
+      "members": [
+       "MR_M11_long"
+      ],
+      "posterior_mean": 0.215,
+      "sharpe": 0.225,
+      "years": 17.69
+     },
+     {
+      "mechanism_id": "T1_primary",
+      "members": [
+       "T1_primary"
+      ],
+      "posterior_mean": 0.215,
+      "sharpe": -0.469,
+      "years": 2.94
+     },
+     {
+      "mechanism_id": "TR_C",
+      "members": [
+       "TR_C"
+      ],
+      "posterior_mean": 0.215,
+      "sharpe": 0.772,
+      "years": 4.81
+     },
+     {
+      "mechanism_id": "TV_C",
+      "members": [
+       "TV_C"
+      ],
+      "posterior_mean": 0.215,
+      "sharpe": 0.14,
+      "years": 12.62
+     }
+    ],
+    "mu_hat": 0.215,
+    "mu_se_lower_bound": 0.13,
+    "naive_mean_observed": 0.126,
+    "new_candidate_prior": {
+     "mean": 0.215,
+     "sd": 0.435
+    },
+    "reading": "τ̂ が 0 に近いなら、観測のばらつきは標本誤差でほぼ説明でき、mechanism 間で真の効果が違う証拠は弱い。μ̂ は試した mechanism の平均的な真の TC-net（financing 抜き）Sharpe の推定。Sharpe の SE を √(1/年数) と置くので、遅い signal（有効標本 5〜25）では不確実性を過小評価する",
+    "share_true_above_predictive": {
+     "0.0": {
+      "at_tau_hat": 0.951,
+      "at_tau_upper_95": 0.69
+     },
+     "0.3": {
+      "at_tau_hat": 0.256,
+      "at_tau_upper_95": 0.422
+     },
+     "0.5": {
+      "at_tau_hat": 0.014,
+      "at_tau_upper_95": 0.256
+     }
+    },
+    "sharpe_measure": "gross_sharpe",
+    "tau_hat": 0.0,
+    "tau_upper_95_profile": 0.415,
+    "tiers": [
+     "A"
+    ],
+    "usable_mechanisms": 6
+   },
+   "A|sharpe_ex_financing": {
+    "grid_boundary_hit": false,
+    "max_observed": 0.296,
+    "max_posterior_mean": 0.07,
+    "mechanisms": [
+     {
+      "mechanism_id": "MR_M01",
+      "members": [
+       "MR_M01_long"
+      ],
+      "posterior_mean": 0.07,
+      "sharpe": 0.296,
+      "years": 17.69
+     },
+     {
+      "mechanism_id": "MR_M10",
+      "members": [
+       "MR_M10_recent"
+      ],
+      "posterior_mean": 0.07,
+      "sharpe": -0.306,
+      "years": 3.82
+     },
+     {
+      "mechanism_id": "MR_M11",
+      "members": [
+       "MR_M11_long"
+      ],
+      "posterior_mean": 0.07,
+      "sharpe": 0.186,
+      "years": 17.69
+     },
+     {
+      "mechanism_id": "T1_primary",
+      "members": [
+       "T1_primary"
+      ],
+      "posterior_mean": 0.07,
+      "sharpe": -0.842,
+      "years": 2.94
+     },
+     {
+      "mechanism_id": "TR_C",
+      "members": [
+       "TR_C"
+      ],
+      "posterior_mean": 0.07,
+      "sharpe": -0.512,
+      "years": 4.81
+     },
+     {
+      "mechanism_id": "TV_C",
+      "members": [
+       "TV_C"
+      ],
+      "posterior_mean": 0.07,
+      "sharpe": 0.127,
+      "years": 12.62
+     }
+    ],
+    "mu_hat": 0.07,
+    "mu_se_lower_bound": 0.13,
+    "naive_mean_observed": -0.175,
+    "new_candidate_prior": {
+     "mean": 0.07,
+     "sd": 0.565
+    },
+    "reading": "τ̂ が 0 に近いなら、観測のばらつきは標本誤差でほぼ説明でき、mechanism 間で真の効果が違う証拠は弱い。μ̂ は試した mechanism の平均的な真の TC-net（financing 抜き）Sharpe の推定。Sharpe の SE を √(1/年数) と置くので、遅い signal（有効標本 5〜25）では不確実性を過小評価する",
+    "share_true_above_predictive": {
+     "0.0": {
+      "at_tau_hat": 0.705,
+      "at_tau_upper_95": 0.549
+     },
+     "0.3": {
+      "at_tau_hat": 0.038,
+      "at_tau_upper_95": 0.342
+     },
+     "0.5": {
+      "at_tau_hat": 0.0,
+      "at_tau_upper_95": 0.223
+     }
+    },
+    "sharpe_measure": "sharpe_ex_financing",
+    "tau_hat": 0.0,
+    "tau_upper_95_profile": 0.55,
+    "tiers": [
+     "A"
+    ],
+    "usable_mechanisms": 6
+   }
+  },
+  "note": "Sharpe は全て sharpe_ex_financing（TC-net、financing 抜き）。C を含む推定の τ̂ は主に cost の違い（TOP5_T4・T3 の −1.6 前後）で生じ、signal の質のばらつきではない。gross の推定では τ̂ = 0",
+  "primary": [
+   "A"
+  ],
+  "same_as_A_not_an_independent_check": [
+   "A+B"
+  ],
+  "sensitivity_only": [
+   "A+B+C"
+  ]
+ },
+ "status": "NON_DECISION_BEARING_EXPLORATORY_ONLY",
+ "tiers": {
+  "A": "clean preregistered development evidence（凍結後に 1 回、1 つの仮説の primary、事後修正なし、多数の cell からの選択でない）",
+  "B": "結果の前に凍結された grid の cell、多数から選ばれた cell、または事前登録の無い探索",
+  "C": "post-result の実装修正を経た exploratory（POST_EXECUTION_SHARED_DEFECT_CORRECTED / POST_RESULT_IMPLEMENTATION_CORRECTED）",
+  "D": "診断・secondary span・感度・benchmark・事後の分析、pre-R1 era 全体",
+  "E": "無効・置き換え済み"
+ }
+}
