@@ -1,0 +1,411 @@
+{
+ "approximation": {
+  "asymmetry": "long / short の非対称は markup を |exposure| に対称に掛けることで近似する（実際の bid / offer の非対称は再現していない）",
+  "central_markup": 0.0025,
+  "interest_differential": "pair ごとの 3 か月銀行間金利の差（base − quote）に spot と同じ pair book 演算子を掛け、決定日の exposure と内積を取り、暦日 / 365 で accrual（週末は暦日で入る — triple-day の総量と同じ）。金利が無い日は BIS 政策金利、BoJ のゼロ金利・量的緩和期は 0%（mechanism redesign と同じ規則）",
+  "markup_band_annual_per_unit_currency_gross": [
+   0.0,
+   0.0025,
+   0.005,
+   0.01
+  ],
+  "name": "APPROXIMATE_RESEARCH_FINANCING",
+  "rule": "**primary の経済判定を、都合のよい 1 点の近似だけで決めない**。markup band の中で総合 P&L の符号が変わるなら FINANCING_NOT_DECISION_GRADE",
+  "zero_financing_row": "spot − spread（NET_EX_TRANSACTION_COSTS_EXCLUDING_FINANCING）も必ず並べる"
+ },
+ "financing_source_audit": {
+  "evidence": "#472 Stage D（exogenous/financing.py）の anonymous probe 6 件: OANDA の financing-rates ページ（US / 非 US）は 404、historical rates ページは 404、v20 developer 文書は 200 だが実現 financing を持つ account endpoint は token 必須、CME settlements は 403、BIS の bulk に swap point は無い。**公開の過去 financing の記録は見つかっていない**",
+  "evidence_strength": "PUBLIC_FINANCING_HISTORY_NOT_FOUND_IN_LIMITED_ANONYMOUS_PROBE。404 は推測した URL が外れただけで、公開の過去履歴が存在しないことの証明ではない（review R-3）。現在値の公開ページは存在する（今回は読まない）",
+  "human_return_item": "実際の financing 履歴には認証付きの broker access（自分の口座の取引履歴）が要る。**接続していない**",
+  "items": {
+   "account / server / instrument dependency": "account の区分・法人（OANDA Japan / 他地域）で異なりうる",
+   "conversion method": "account 通貨への換算は account の設定に依存",
+   "date": "—",
+   "holidays": "同上",
+   "long_financing / short_financing": "公開の履歴無し（現在値のみ公開、今回は読まない）",
+   "markup": "benchmark 金利に broker の markup を上乗せ・差し引き。markup の値は公開の履歴が無い",
+   "pair": "公開の履歴無し",
+   "rate / points / percentage definition": "OANDA の v20 は per-instrument の financing rate（年率、long / short 別）を account 文脈で返す。公開の過去値は無い",
+   "triple-day rule": "OANDA は保有時間に比例して日次で課金（週末分を含む暦日の accrual）とされる。公式の過去の運用を公開情報で検証できていない"
+  },
+  "not_probed_again_this_cycle": "OANDA Japan / OANDA の現在のスワップポイント・financing rate の公開ページは**今回取得していない**。表示されるのは 2026 年（forward epoch）の値で、第 3 裁定 §24 の保護情報（observation values）に当たる。また現在の値から過去を逆算することは §10 で禁じられている",
+  "status": "PUBLIC_FINANCING_HISTORY_NOT_AVAILABLE_WITHOUT_AUTHENTICATED_BROKER_ACCESS"
+ },
+ "impact_audit": {
+  "flagged": [
+   "Top-Five T3_recent_T3-H2（net -0.0152、carry 典型 0.0245）",
+   "Top-Five T5_long（net -0.0018、carry 典型 0.0184）",
+   "next-five U1_long（net -0.0216、carry 典型 0.0264）",
+   "next-five U2_long（net -0.0072、carry 典型 0.0237）",
+   "next-five U2_recent（net +0.0457、carry 典型 0.0250）",
+   "next-five U4_recent（net +0.0012、carry 典型 0.0222）",
+   "T-R2 B（net +0.0044、carry 典型 0.0204）",
+   "T-V A（net +0.0148、carry 典型 0.0244）",
+   "mechanism redesign M11_long（net は spot − spread）（net +0.0207、carry 典型 0.0232）",
+   "mechanism redesign M01_long（net は spot − spread）（net +0.0321、carry 典型 0.0232）"
+  ],
+  "method": "signal-blind: 記録済みの年率 net（financing 抜き）と平均通貨 gross だけを使う。position の向きは記録に無いので、carry は『向きが金利と無関係なときの典型値 0.38 × gross × 金利の cross-section sd』、markup は 0.25〜1%/年 × gross。|net| がその和より小さければ符号が変わりうる。Track 1 は測った carry accrual を使う。**再実行はしない**",
+  "rows": [
+   {
+    "financing_could_plausibly_change_economic_sign": false,
+    "markup_cost_band": [
+     0.00882,
+     0.03529
+    ],
+    "mean_currency_gross": 3.529,
+    "measured_carry": null,
+    "net_annual_ex_financing": -0.04943,
+    "span": "long",
+    "track": "Top-Five T1_long",
+    "typical_carry_scale": 0.02347
+   },
+   {
+    "financing_could_plausibly_change_economic_sign": false,
+    "markup_cost_band": [
+     0.01355,
+     0.05419
+    ],
+    "mean_currency_gross": 5.419,
+    "measured_carry": null,
+    "net_annual_ex_financing": -0.05787,
+    "span": "recent",
+    "track": "Top-Five T1_recent",
+    "typical_carry_scale": 0.02838
+   },
+   {
+    "financing_could_plausibly_change_economic_sign": false,
+    "markup_cost_band": [
+     0.00804,
+     0.03217
+    ],
+    "mean_currency_gross": 3.217,
+    "measured_carry": null,
+    "net_annual_ex_financing": -0.08421,
+    "span": "long",
+    "track": "Top-Five T2_long",
+    "typical_carry_scale": 0.02139
+   },
+   {
+    "financing_could_plausibly_change_economic_sign": false,
+    "markup_cost_band": [
+     0.01228,
+     0.04913
+    ],
+    "mean_currency_gross": 4.913,
+    "measured_carry": null,
+    "net_annual_ex_financing": -0.02759,
+    "span": "recent",
+    "track": "Top-Five T2_recent",
+    "typical_carry_scale": 0.02572
+   },
+   {
+    "financing_could_plausibly_change_economic_sign": false,
+    "markup_cost_band": [
+     0.01169,
+     0.04677
+    ],
+    "mean_currency_gross": 4.677,
+    "measured_carry": null,
+    "net_annual_ex_financing": -0.16929,
+    "span": "recent",
+    "track": "Top-Five T3_recent_T3-H1",
+    "typical_carry_scale": 0.02449
+   },
+   {
+    "financing_could_plausibly_change_economic_sign": true,
+    "markup_cost_band": [
+     0.01169,
+     0.04677
+    ],
+    "mean_currency_gross": 4.677,
+    "measured_carry": null,
+    "net_annual_ex_financing": -0.01521,
+    "span": "recent",
+    "track": "Top-Five T3_recent_T3-H2",
+    "typical_carry_scale": 0.02449
+   },
+   {
+    "financing_could_plausibly_change_economic_sign": false,
+    "markup_cost_band": [
+     0.00877,
+     0.03506
+    ],
+    "mean_currency_gross": 3.506,
+    "measured_carry": null,
+    "net_annual_ex_financing": -0.15524,
+    "span": "long",
+    "track": "Top-Five T4_long",
+    "typical_carry_scale": 0.02332
+   },
+   {
+    "financing_could_plausibly_change_economic_sign": false,
+    "markup_cost_band": [
+     0.01238,
+     0.04951
+    ],
+    "mean_currency_gross": 4.951,
+    "measured_carry": null,
+    "net_annual_ex_financing": -0.30141,
+    "span": "recent",
+    "track": "Top-Five T4_recent",
+    "typical_carry_scale": 0.02593
+   },
+   {
+    "financing_could_plausibly_change_economic_sign": true,
+    "markup_cost_band": [
+     0.00693,
+     0.02771
+    ],
+    "mean_currency_gross": 2.771,
+    "measured_carry": null,
+    "net_annual_ex_financing": -0.00182,
+    "span": "long",
+    "track": "Top-Five T5_long",
+    "typical_carry_scale": 0.01843
+   },
+   {
+    "financing_could_plausibly_change_economic_sign": false,
+    "markup_cost_band": [
+     0.00627,
+     0.02506
+    ],
+    "mean_currency_gross": 2.506,
+    "measured_carry": null,
+    "net_annual_ex_financing": 0.08571,
+    "span": "recent",
+    "track": "Top-Five T5_recent",
+    "typical_carry_scale": 0.01312
+   },
+   {
+    "financing_could_plausibly_change_economic_sign": true,
+    "markup_cost_band": [
+     0.00993,
+     0.0397
+    ],
+    "mean_currency_gross": 3.97,
+    "measured_carry": null,
+    "net_annual_ex_financing": -0.02164,
+    "span": "long",
+    "track": "next-five U1_long",
+    "typical_carry_scale": 0.0264
+   },
+   {
+    "financing_could_plausibly_change_economic_sign": false,
+    "markup_cost_band": [
+     0.01283,
+     0.05132
+    ],
+    "mean_currency_gross": 5.132,
+    "measured_carry": null,
+    "net_annual_ex_financing": -0.02835,
+    "span": "recent",
+    "track": "next-five U1_recent",
+    "typical_carry_scale": 0.02687
+   },
+   {
+    "financing_could_plausibly_change_economic_sign": true,
+    "markup_cost_band": [
+     0.00889,
+     0.03557
+    ],
+    "mean_currency_gross": 3.557,
+    "measured_carry": null,
+    "net_annual_ex_financing": -0.00724,
+    "span": "long",
+    "track": "next-five U2_long",
+    "typical_carry_scale": 0.02366
+   },
+   {
+    "financing_could_plausibly_change_economic_sign": true,
+    "markup_cost_band": [
+     0.01196,
+     0.04785
+    ],
+    "mean_currency_gross": 4.785,
+    "measured_carry": null,
+    "net_annual_ex_financing": 0.04566,
+    "span": "recent",
+    "track": "next-five U2_recent",
+    "typical_carry_scale": 0.02505
+   },
+   {
+    "financing_could_plausibly_change_economic_sign": false,
+    "markup_cost_band": [
+     0.00823,
+     0.03293
+    ],
+    "mean_currency_gross": 3.293,
+    "measured_carry": null,
+    "net_annual_ex_financing": -0.02441,
+    "span": "recent",
+    "track": "next-five U3_recent",
+    "typical_carry_scale": 0.01724
+   },
+   {
+    "financing_could_plausibly_change_economic_sign": false,
+    "markup_cost_band": [
+     0.0093,
+     0.03721
+    ],
+    "mean_currency_gross": 3.721,
+    "measured_carry": null,
+    "net_annual_ex_financing": -0.04143,
+    "span": "long",
+    "track": "next-five U4_long",
+    "typical_carry_scale": 0.02474
+   },
+   {
+    "financing_could_plausibly_change_economic_sign": true,
+    "markup_cost_band": [
+     0.01061,
+     0.04243
+    ],
+    "mean_currency_gross": 4.243,
+    "measured_carry": null,
+    "net_annual_ex_financing": 0.00116,
+    "span": "recent",
+    "track": "next-five U4_recent",
+    "typical_carry_scale": 0.02222
+   },
+   {
+    "financing_could_plausibly_change_economic_sign": false,
+    "markup_cost_band": [
+     0.01194,
+     0.04775
+    ],
+    "mean_currency_gross": 4.775,
+    "measured_carry": null,
+    "net_annual_ex_financing": -0.10384,
+    "span": "recent",
+    "track": "next-five U5_recent",
+    "typical_carry_scale": 0.025
+   },
+   {
+    "financing_could_plausibly_change_economic_sign": false,
+    "markup_cost_band": [
+     0.01028,
+     0.04111
+    ],
+    "mean_currency_gross": 4.111,
+    "measured_carry": null,
+    "net_annual_ex_financing": -0.09982,
+    "span": "recent",
+    "track": "T-R A",
+    "typical_carry_scale": 0.02153
+   },
+   {
+    "financing_could_plausibly_change_economic_sign": true,
+    "markup_cost_band": [
+     0.00976,
+     0.03902
+    ],
+    "mean_currency_gross": 3.902,
+    "measured_carry": null,
+    "net_annual_ex_financing": 0.00443,
+    "span": "recent",
+    "track": "T-R2 B",
+    "typical_carry_scale": 0.02043
+   },
+   {
+    "financing_could_plausibly_change_economic_sign": true,
+    "markup_cost_band": [
+     0.00915,
+     0.03662
+    ],
+    "mean_currency_gross": 3.662,
+    "measured_carry": null,
+    "net_annual_ex_financing": 0.01476,
+    "span": "long",
+    "track": "T-V A",
+    "typical_carry_scale": 0.02435
+   },
+   {
+    "financing_could_plausibly_change_economic_sign": true,
+    "markup_cost_band": [
+     0.0087,
+     0.03481
+    ],
+    "mean_currency_gross": 3.481,
+    "measured_carry": 0.00559,
+    "net_annual_ex_financing": 0.02067,
+    "span": "long",
+    "track": "mechanism redesign M11_long（net は spot − spread）",
+    "typical_carry_scale": 0.02315
+   },
+   {
+    "financing_could_plausibly_change_economic_sign": true,
+    "markup_cost_band": [
+     0.00872,
+     0.03489
+    ],
+    "mean_currency_gross": 3.489,
+    "measured_carry": -0.01482,
+    "net_annual_ex_financing": 0.03215,
+    "span": "long",
+    "track": "mechanism redesign M01_long（net は spot − spread）",
+    "typical_carry_scale": 0.0232
+   },
+   {
+    "financing_could_plausibly_change_economic_sign": false,
+    "markup_cost_band": [
+     0.01073,
+     0.04292
+    ],
+    "mean_currency_gross": 4.292,
+    "measured_carry": 0.000849,
+    "net_annual_ex_financing": -0.0842,
+    "span": "recent",
+    "track": "Track 1 primary",
+    "typical_carry_scale": 0.02247
+   }
+  ]
+ },
+ "net_definitions": {
+  "#471 economic edge（carry）": {
+   "net": "SPOT_PLUS_RESEARCH_CARRY_POLICY_RATES_MINUS_COST",
+   "note": "spot・carry・cost を分けて計上。carry は政策金利の research carry で broker financing ではない"
+  },
+  "T-R 市場利回り repricing（PR #485 / r2）": {
+   "net": "NET_EX_TRANSACTION_COSTS_EXCLUDING_FINANCING",
+   "note": "—"
+  },
+  "T-V 実質為替 valuation（PR #486–#488）": {
+   "net": "NET_EX_TRANSACTION_COSTS_EXCLUDING_FINANCING",
+   "note": "carry_exposure を診断として測った（除外した carry の向き）"
+  },
+  "Top-Five T1〜T5（PR #490）": {
+   "net": "NET_EX_TRANSACTION_COSTS_EXCLUDING_FINANCING",
+   "note": "panel は spot only（carry_leg_absent_on_both_spans）"
+  },
+  "Track 1 continuous currency portfolio（PR #481/#482）": {
+   "net": "NET_EX_TRANSACTION_COSTS_EXCLUDING_FINANCING",
+   "note": "financing は P&L から除外、政策金利の carry accrual を診断として報告（年 0.085%）"
+  },
+  "carry の基準は cycle ごとに違う（review O-8）": {
+   "net": "—",
+   "note": "Track 1 は当日の政策金利 × x·r（診断のみ）、#471 は政策金利の research carry、mechanism redesign は lag 付き 3 か月金利 × pair operator、今回の修正版は当時の政策金利（primary）と lag 付き 3 か月金利（感度）"
+  },
+  "exploratory_m15 Round 1 / Round 2 / 補足再現 / momentum": {
+   "net": "NET_EX_TRANSACTION_COSTS_EXCLUDING_FINANCING",
+   "note": "bar の bid / ask spread。保有は M15〜数日で financing の影響は小さいが 0 ではない"
+  },
+  "mechanism redesign M11 / M01 / M10（PR #494）": {
+   "net": "NET_INCLUDING_APPROXIMATE_INTEREST_DIFFERENTIAL_AND_ASSUMED_MARKUP",
+   "note": "3 か月銀行間金利差の carry 近似 − 仮定 markup 0.25%/年。実際の OANDA financing ではない"
+  },
+  "next-five U1〜U5（PR #493）": {
+   "net": "NET_EX_TRANSACTION_COSTS_EXCLUDING_FINANCING",
+   "note": "Top-Five と同じ panel"
+  }
+ },
+ "transaction_cost_convention": {
+  "commission": "無し（OANDA の retail は spread 課金。commission 口座は想定していない）",
+  "financing_swap_interest_adjustment": "**無し**（mechanism redesign cycle だけが近似を入れた）",
+  "long_short_asymmetry": "無し",
+  "pair_specific_financing": "無し",
+  "rollover": "無し。exploratory_m15 系は rollover の bar で新規に建てないだけで、rollover の費用は計上していない",
+  "slippage": "spread の実測（all-bars の約定）に含まれる。別の項は無い",
+  "spread": "charged_cost = Σ|Δexposure| × 1.703 bp（片道）。Track 3 で実測した market order の round trip 2.69 / 2.47 bp の中点 2.58 bp を基にした保守的な換算",
+  "triple_day": "無し（financing を入れていないので該当しない）"
+ }
+}

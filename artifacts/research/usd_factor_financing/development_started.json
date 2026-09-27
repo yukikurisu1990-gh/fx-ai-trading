@@ -1,0 +1,14 @@
+{
+ "code_identity": {
+  "argv": [
+   "C:\\Users\\yukik\\fx-ai-trading\\scripts\\research\\usd_factor_financing\\driver.py",
+   "--workers",
+   "14"
+  ],
+  "dirty_paths": [],
+  "head": "69a18a0cfeb71eff792271825d6d3bcccb1da2dc",
+  "started_utc": "2026-09-23T23:33:42Z"
+ },
+ "freeze_digest": "d3dcfbba075e56934cbf0ec7f7c0a5d37101f54f1904aca7cb21352dbc60b4d3",
+ "status": "STARTED"
+}
