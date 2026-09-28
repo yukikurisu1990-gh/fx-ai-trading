@@ -37,7 +37,7 @@ TARGETS: Final[Path] = OUT_DIR / "execution_monthly_targets.parquet"
 #: compute の最初に書く印。計算の途中で落ちても「試みた」ことが残り、黙った再実行を止める（re-audit NEW-4）
 ATTEMPT: Final[Path] = OUT_DIR / "execution_attempt.json"
 
-FROZEN_DIGEST: Final[str] = "UNFROZEN"
+FROZEN_DIGEST: Final[str] = "401b2b5c31f30444e7edac881a1a1391b323e8026e2ddc588b9805e06fb39f69"
 
 
 def _rel(path: Path) -> str:
