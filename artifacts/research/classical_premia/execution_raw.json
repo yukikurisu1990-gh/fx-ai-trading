@@ -1,0 +1,445 @@
+{
+ "compute_started_utc": "2026-09-28T22:20:26Z",
+ "cycle": "FINAL_CLASSICAL_PREMIA_LONG_SPAN_CYCLE",
+ "environment": {
+  "numpy": "2.4.4",
+  "pandas": "3.0.2",
+  "python": "3.12.10"
+ },
+ "execution_head": "f9356c3b8c86b3e1858c35cb8f7d009b636ccde0",
+ "freeze_digest": "401b2b5c31f30444e7edac881a1a1391b323e8026e2ddc588b9805e06fb39f69",
+ "panel": {
+  "decision_days": 196,
+  "first_decision_day": "2000-02-01",
+  "last_decision_day": "2016-05-02",
+  "last_pnl_day": "2016-06-01",
+  "no_new_acquisition": true,
+  "no_protected_day": true,
+  "panel_first_day": "1999-01-05",
+  "panel_last_day": "2016-06-01",
+  "source": "ECB euro reference rates（T-V で取得済み、artifacts/track_a_scratch/valuation/fx_*.parquet）",
+  "span_days": 4178
+ },
+ "raw": {
+  "cost_stress": {
+   "cost_x1.5": {
+    "judged_adverse_by_basis_sharpe": {
+     "policy_contemporaneous": -0.2043,
+     "three_month_lagged": -0.2004
+    },
+    "judged_central_annual": 0.02963,
+    "judged_central_sharpe": 0.2758,
+    "tc_net_annual": 0.01247,
+    "tc_net_sharpe": 0.1161
+   },
+   "cost_x2.0": {
+    "judged_adverse_by_basis_sharpe": {
+     "policy_contemporaneous": -0.4284,
+     "three_month_lagged": -0.4245
+    },
+    "judged_central_annual": 0.02277,
+    "judged_central_sharpe": 0.212,
+    "tc_net_annual": 0.01134,
+    "tc_net_sharpe": 0.1056
+   }
+  },
+  "diagnostic_single_family": {
+   "carry": {
+    "annual_carry_policy": 0.04187,
+    "annual_transaction_cost": 0.00033,
+    "diagnostic_only": true,
+    "gross_spot_sharpe": -0.0084,
+    "judged_central": {
+     "annual": 0.03055,
+     "sharpe": 0.2869
+    },
+    "max_drawdown_judged": -0.40501,
+    "monthly_weight_persistence": 0.9941,
+    "tc_net": {
+     "annual": -0.00123,
+     "sharpe": -0.0115
+    }
+   },
+   "momentum": {
+    "annual_carry_policy": 0.00963,
+    "annual_transaction_cost": 0.00269,
+    "diagnostic_only": true,
+    "gross_spot_sharpe": 0.1521,
+    "judged_central": {
+     "annual": 0.01209,
+     "sharpe": 0.1105
+    },
+    "max_drawdown_judged": -0.35308,
+    "monthly_weight_persistence": 0.8343,
+    "tc_net": {
+     "annual": 0.01396,
+     "sharpe": 0.1276
+    }
+   }
+  },
+  "effective_n": {
+   "effective_n": 11.64,
+   "lag1_rho": 0.8879,
+   "months": 196
+  },
+  "effective_n_per_family": {
+   "carry": {
+    "effective_n": 0.58,
+    "lag1_rho": 0.9941,
+    "months": 196
+   },
+   "momentum": {
+    "effective_n": 17.7,
+    "lag1_rho": 0.8343,
+    "months": 196
+   }
+  },
+  "family_contribution": {
+   "attribution": "spot と carry は線形に厳密、transaction cost は |Δx_f|、markup は外国脚の |x_f| の比で按分",
+   "carry": {
+    "calendar_year_judged": {
+     "2000": -0.00372,
+     "2001": 0.02706,
+     "2002": 0.07125,
+     "2003": 0.12859,
+     "2004": 0.0481,
+     "2005": 0.11138,
+     "2006": 0.12602,
+     "2007": 0.03282,
+     "2008": -0.34668,
+     "2009": 0.32615,
+     "2010": 0.00965,
+     "2011": -0.0021,
+     "2012": 0.08206,
+     "2013": 0.0179,
+     "2014": 0.0477,
+     "2015": -0.07026,
+     "2016": -0.00737
+    },
+    "carry_annual": 0.0359,
+    "judged_central_annual": 0.0361,
+    "mean_foreign_held_share": 0.4655,
+    "mean_traded_share": 0.2406,
+    "share_of_composite_judged": 0.9894,
+    "spot_annual": 0.00606,
+    "tc_net_annual": 0.00554
+   },
+   "daily_correlation_carry_vs_momentum_judged": -0.7885,
+   "momentum": {
+    "calendar_year_judged": {
+     "2000": 0.00417,
+     "2001": 0.04535,
+     "2002": 0.11392,
+     "2003": 0.04833,
+     "2004": -0.03359,
+     "2005": -0.00836,
+     "2006": -0.06588,
+     "2007": 0.02251,
+     "2008": 0.27548,
+     "2009": -0.2959,
+     "2010": 0.02573,
+     "2011": -0.05175,
+     "2012": -0.06299,
+     "2013": 0.04318,
+     "2014": -0.00623,
+     "2015": 0.00663,
+     "2016": -0.05413
+    },
+    "carry_annual": -0.00155,
+    "judged_central_annual": 0.00039,
+    "mean_foreign_held_share": 0.5345,
+    "mean_traded_share": 0.7594,
+    "share_of_composite_judged": 0.0107,
+    "spot_annual": 0.00981,
+    "tc_net_annual": 0.00807
+   }
+  },
+  "leave_one_out": {
+   "AUD": {
+    "judged_central_annual": 0.04046,
+    "judged_central_sharpe": 0.3803,
+    "tc_net_annual": 0.01873,
+    "tc_net_sharpe": 0.1762
+   },
+   "CAD": {
+    "judged_central_annual": 0.04446,
+    "judged_central_sharpe": 0.4087,
+    "tc_net_annual": 0.02076,
+    "tc_net_sharpe": 0.1909
+   },
+   "CHF": {
+    "judged_central_annual": 0.04253,
+    "judged_central_sharpe": 0.3901,
+    "tc_net_annual": 0.02004,
+    "tc_net_sharpe": 0.1839
+   },
+   "EUR": {
+    "judged_central_annual": 0.0297,
+    "judged_central_sharpe": 0.2742,
+    "tc_net_annual": 0.00614,
+    "tc_net_sharpe": 0.0568
+   },
+   "GBP": {
+    "judged_central_annual": 0.03013,
+    "judged_central_sharpe": 0.2822,
+    "tc_net_annual": 0.00751,
+    "tc_net_sharpe": 0.0704
+   },
+   "JPY": {
+    "judged_central_annual": 0.01579,
+    "judged_central_sharpe": 0.1466,
+    "tc_net_annual": -0.00106,
+    "tc_net_sharpe": -0.0099
+   },
+   "NZD": {
+    "judged_central_annual": 0.03715,
+    "judged_central_sharpe": 0.3434,
+    "tc_net_annual": 0.01538,
+    "tc_net_sharpe": 0.1422
+   },
+   "USD": {
+    "judged_central_annual": 0.02597,
+    "judged_central_sharpe": 0.2425,
+    "tc_net_annual": 0.00492,
+    "tc_net_sharpe": 0.0459
+   }
+  },
+  "metrics": {
+   "annual_carry": {
+    "policy_contemporaneous": 0.03435,
+    "three_month_lagged": 0.03476
+   },
+   "annual_markup_central": 0.01146,
+   "annual_pair_notional_years": 2.2918,
+   "annual_transaction_cost": 0.00226,
+   "currencies_positive_judged_central": 5,
+   "currency_contribution_judged_central_annual": {
+    "AUD": 0.00298,
+    "CAD": -0.00337,
+    "CHF": -0.00443,
+    "EUR": -0.00156,
+    "GBP": 0.00308,
+    "JPY": 0.03042,
+    "NZD": 0.00221,
+    "USD": 0.00717
+   },
+   "days": 4178,
+   "full_retail_net": "FULL_RETAIL_NET_UNKNOWN",
+   "gross_economic_spot_plus_carry": {
+    "annual": 0.05021,
+    "sharpe": 0.4672
+   },
+   "gross_spot": {
+    "annual": 0.01587,
+    "sharpe": 0.1477
+   },
+   "judged_net_cells": {
+    "policy_contemporaneous|0.0000": {
+     "annual": 0.04795,
+     "sharpe": 0.4462
+    },
+    "policy_contemporaneous|0.0050": {
+     "annual": 0.03649,
+     "sharpe": 0.3396
+    },
+    "policy_contemporaneous|0.0100": {
+     "annual": 0.02503,
+     "sharpe": 0.233
+    },
+    "policy_contemporaneous|0.0200": {
+     "annual": 0.00212,
+     "sharpe": 0.0197
+    },
+    "three_month_lagged|0.0000": {
+     "annual": 0.04837,
+     "sharpe": 0.45
+    },
+    "three_month_lagged|0.0050": {
+     "annual": 0.03691,
+     "sharpe": 0.3435
+    },
+    "three_month_lagged|0.0100": {
+     "annual": 0.02545,
+     "sharpe": 0.2369
+    },
+    "three_month_lagged|0.0200": {
+     "annual": 0.00253,
+     "sharpe": 0.0236
+    }
+   },
+   "judged_net_central": {
+    "annual_return": 0.03649,
+    "calendar_year_returns": {
+     "2000": 0.00045,
+     "2001": 0.07241,
+     "2002": 0.18517,
+     "2003": 0.17692,
+     "2004": 0.01451,
+     "2005": 0.10302,
+     "2006": 0.06015,
+     "2007": 0.05533,
+     "2008": -0.0712,
+     "2009": 0.03025,
+     "2010": 0.03537,
+     "2011": -0.05385,
+     "2012": 0.01907,
+     "2013": 0.06109,
+     "2014": 0.04147,
+     "2015": -0.06363,
+     "2016": -0.0615
+    },
+    "cell": "policy_contemporaneous | 0.005",
+    "max_drawdown": -0.2858,
+    "positive_calendar_year_share": 0.7647,
+    "positive_calendar_years": "13/17",
+    "realized_vol": 0.10745,
+    "sharpe": 0.3396,
+    "top_10_day_contribution": 0.4542,
+    "top_1_day_contribution": 0.0568,
+    "top_5_day_contribution": 0.2531
+   },
+   "judged_sign_consistent_across_cells": true,
+   "mean_currency_gross": 2.704,
+   "months_at_gross_cap": 0,
+   "tc_net": {
+    "annual_return": 0.0136,
+    "calendar_year_returns": {
+     "2000": -0.02281,
+     "2001": 0.04363,
+     "2002": 0.15697,
+     "2003": 0.1378,
+     "2004": -0.0292,
+     "2005": 0.05166,
+     "2006": 0.0123,
+     "2007": 0.01077,
+     "2008": -0.08577,
+     "2009": 0.02789,
+     "2010": 0.02066,
+     "2011": -0.07226,
+     "2012": 0.00822,
+     "2013": 0.05441,
+     "2014": 0.03528,
+     "2015": -0.06323,
+     "2016": -0.06077
+    },
+    "max_drawdown": -0.31577,
+    "name": "NET_EX_TRANSACTION_COSTS_EXCLUDING_FINANCING",
+    "positive_calendar_year_share": 0.6471,
+    "positive_calendar_years": "11/17",
+    "realized_vol": 0.1074,
+    "sharpe": 0.1267,
+    "top_10_day_contribution": 1.2136,
+    "top_1_day_contribution": 0.1506,
+    "top_5_day_contribution": 0.6761
+   },
+   "turnover_per_unit_gross": 2.456,
+   "turnover_round_trips_per_year": 6.64,
+   "years": 16.579
+  },
+  "null": {
+   "distinct_permutations": 1960,
+   "draws": 2000,
+   "finite_draws": 2000,
+   "judged_net_central": {
+    "null_mean": -0.1857,
+    "null_p05": -0.5633,
+    "null_p50": -0.1991,
+    "null_p95": 0.2422,
+    "null_positive_share": 0.217,
+    "observed_percentile": 0.9775,
+    "observed_sharpe": 0.3396,
+    "p_value": 0.023
+   },
+   "kind": "currency_label_permutation",
+   "primary": "judged_net_central",
+   "role": "PRIMARY",
+   "seed": 20260929,
+   "tc_net": {
+    "null_mean": -0.0384,
+    "null_p05": -0.3431,
+    "null_p50": -0.0434,
+    "null_p95": 0.2761,
+    "null_positive_share": 0.4085,
+    "observed_percentile": 0.8065,
+    "observed_sharpe": 0.1267,
+    "p_value": 0.1939
+   }
+  },
+  "null_all": {
+   "currency_label_permutation": {
+    "distinct_permutations": 1960,
+    "draws": 2000,
+    "finite_draws": 2000,
+    "judged_net_central": {
+     "null_mean": -0.1857,
+     "null_p05": -0.5633,
+     "null_p50": -0.1991,
+     "null_p95": 0.2422,
+     "null_positive_share": 0.217,
+     "observed_percentile": 0.9775,
+     "observed_sharpe": 0.3396,
+     "p_value": 0.023
+    },
+    "kind": "currency_label_permutation",
+    "primary": "judged_net_central",
+    "role": "PRIMARY",
+    "seed": 20260929,
+    "tc_net": {
+     "null_mean": -0.0384,
+     "null_p05": -0.3431,
+     "null_p50": -0.0434,
+     "null_p95": 0.2761,
+     "null_positive_share": 0.4085,
+     "observed_percentile": 0.8065,
+     "observed_sharpe": 0.1267,
+     "p_value": 0.1939
+    }
+   },
+   "joint_circular_shift": {
+    "distinct_shifts": 1542,
+    "draws": 2000,
+    "finite_draws": 2000,
+    "judged_net_central": {
+     "null_mean": 0.0552,
+     "null_p05": -0.2216,
+     "null_p50": 0.0467,
+     "null_p95": 0.3281,
+     "null_positive_share": 0.636,
+     "observed_percentile": 0.9545,
+     "observed_sharpe": 0.3396,
+     "p_value": 0.046
+    },
+    "kind": "joint_circular_shift",
+    "primary": "judged_net_central",
+    "role": "SECONDARY_REPORTED_ONLY",
+    "seed": 20260930,
+    "shift_range": [
+     252,
+     3926
+    ],
+    "tc_net": {
+     "null_mean": -0.0552,
+     "null_p05": -0.3459,
+     "null_p50": -0.0604,
+     "null_p95": 0.2318,
+     "null_positive_share": 0.3425,
+     "observed_percentile": 0.855,
+     "observed_sharpe": 0.1267,
+     "p_value": 0.1454
+    }
+   }
+  },
+  "signal_persistence_monthly": {
+   "carry": 0.9941,
+   "momentum": 0.8343
+  }
+ },
+ "series_sha256": {
+  "artifacts/research/classical_premia/execution_daily.parquet": "a37f0104b7ecd9dbe55da1606d5856d77576c24470dca74c7688258cf1ec74ba",
+  "artifacts/research/classical_premia/execution_monthly_targets.parquet": "d4a6b864286596cfaf958a56a732c55e115a8946f727a9627d707c5d26628a56"
+ },
+ "started_entry_sha256": "8fe76990bf6818a17dd5227a4102a6e3f936970e84783bf4cc285229791209d2",
+ "started_utc": "2026-09-28T22:20:11Z",
+ "warnings": {},
+ "workers": 6
+}

@@ -9,3 +9,6 @@ artifacts/track_a_scratch/ledger/** -text
 # a fresh clone and the only record of how an irreversible run was driven cannot
 # be checked. A review role measured exactly that.
 docs/governance/evidence/** -text
+
+# FINAL_CLASSICAL_PREMIA の実行記録・ledger は sha256 で照合する。CRLF に書き換えさせない。
+artifacts/research/classical_premia/** -text
