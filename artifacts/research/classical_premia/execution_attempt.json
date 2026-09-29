@@ -1,0 +1,14 @@
+{
+ "compute_started_utc": "2026-09-28T22:20:26Z",
+ "cycle": "FINAL_CLASSICAL_PREMIA_LONG_SPAN_CYCLE",
+ "environment": {
+  "numpy": "2.4.4",
+  "pandas": "3.0.2",
+  "python": "3.12.10"
+ },
+ "execution_head": "f9356c3b8c86b3e1858c35cb8f7d009b636ccde0",
+ "freeze_digest": "401b2b5c31f30444e7edac881a1a1391b323e8026e2ddc588b9805e06fb39f69",
+ "started_entry_sha256": "8fe76990bf6818a17dd5227a4102a6e3f936970e84783bf4cc285229791209d2",
+ "started_utc": "2026-09-28T22:20:11Z",
+ "workers": 6
+}
