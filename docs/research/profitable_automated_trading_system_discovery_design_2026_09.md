@@ -30,7 +30,7 @@ Human + ChatGPT の依頼（2026-09-29、programme の研究思想の再設計�
 **旧 programme の結論は変えない。** `EXPECTED_RETURN_SOURCE_DISCOVERY` は `LONG_TERM_HOLD` / `NO_FURTHER_SEEN_DATA_ALPHA_SEARCH` のまま保持する。
 
 - `FX_HAS_NO_EDGE` という意味ではない。
-- 根拠の 1 つである #497（carry + momentum の合成）は、PR が open で、merge は未承認である。
+- 根拠の 1 つである #497（carry + momentum の合成）は、2026-09-29 に merge された（merge commit `d38fa2c`）。
 
 ---
 
