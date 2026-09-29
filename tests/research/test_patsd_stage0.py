@@ -175,3 +175,53 @@ def test_closure_and_digest():
     for name in ("run", "data", "cost", "null_pipeline", "ledgers", "prereg"):
         assert f"scripts/research/patsd_stage0/{name}.py" in closure
     assert len(prereg.freeze_digest()) == 64
+
+
+def test_real_returns_are_used_only_through_the_sign_randomiser_and_std():
+    """実 return は符号ランダム化と vol（std）以外で使わない。"""
+    import ast
+    import inspect
+
+    source = inspect.getsource(null_pipeline)
+    tree = ast.parse(source)
+    allowed = {
+        "synthetic_cumret",
+        "build_panel",
+        "make_trades",
+        "run_replication",
+        "daily",
+        "trade_pnl",
+    }
+    for node in ast.walk(tree):
+        if isinstance(node, ast.FunctionDef):
+            uses = [
+                n for n in ast.walk(node) if isinstance(n, ast.Attribute) and n.attr == "returns"
+            ]
+            if uses:
+                assert node.name in allowed, node.name
+                if node.name not in {"synthetic_cumret", "build_panel"}:
+                    body = ast.unparse(node)
+                    assert "returns.shape" in body and body.count(".returns") == body.count(
+                        ".returns.shape"
+                    ), node.name
+
+
+def test_pre_r1_overlap_never_reads_price_files_via_pathlib(monkeypatch):
+    from pathlib import Path
+
+    real = Path.read_text
+
+    def guarded(self, *args, **kwargs):
+        if self.suffix == ".jsonl":
+            raise AssertionError("price file read")
+        return real(self, *args, **kwargs)
+
+    monkeypatch.setattr(Path, "read_text", guarded)
+    monkeypatch.setattr(
+        Path,
+        "read_bytes",
+        lambda self: (
+            (_ for _ in ()).throw(AssertionError("read_bytes")) if self.suffix == ".jsonl" else b""
+        ),
+    )
+    assert "overlap" in ledgers.pre_r1_overlap()
