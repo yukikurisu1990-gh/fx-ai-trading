@@ -1,0 +1,4 @@
+"""PATSD Stage 0（S0-G）— signal を使わない feasibility の測定。R-A の範囲だけ。
+
+`NON_DECISION_BEARING_EXPLORATORY_ONLY` · `RESEARCH_SCRATCH_NON_AUTHORITATIVE`.
+"""
