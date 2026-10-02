@@ -1,0 +1,47 @@
+{
+ "cycle": "PATSD_STAGE_0_FEASIBILITY",
+ "kind": "POST_RUN_REVIEW_ADDENDUM",
+ "record": "artifacts/research/patsd_stage0/stage0.json",
+ "record_sha256": "0003e23c93ccd5755946c369778922eeaadcb999fe0f7e787e72f55eb4d11aae",
+ "note": "実行記録は再生成していない。以下は独立 review 2 役の後の訂正と開示で、どの分類（GREEN / AMBER / RED）も変えない",
+ "route_code_not_in_freeze_closure": {
+  "finding": "Role 2 RF-1: data.load_pair は route を importlib で読むので、freeze digest の閉包に momentum.py / supplemental.py / round2.py が入っていない",
+  "evidence_unchanged_at_run": {
+   "scripts/research/exploratory_m15/momentum.py": {"last_commit": "a1828d0", "sha256_lf_at_ea5da89": "3f0a0dc8dc8054a9a099d0ab2ac8a4bacb2506172934e596c6ad63ad3db3609b"},
+   "scripts/research/exploratory_m15/supplemental.py": {"last_commit": "a1828d0", "sha256_lf_at_ea5da89": "209e3105206bd850a3bceae9ba3519a0c2f56a131e0bf31d3bc4162c095040f1"},
+   "scripts/research/exploratory_m15/round2.py": {"last_commit": "eab8f25", "sha256_lf_at_ea5da89": "505eb82d5797869561e5999c0c897da4c9ee0982e6cd26fa8bdda1eb52f53bd3"},
+   "scripts/research/exploratory_m15/bars.py": {"last_commit": "a1828d0", "sha256_lf_at_ea5da89": "5b3f5c30a6b541d9472e577268d60d96a6483d9d27493f2dfabd9dad09694e15"}
+  },
+  "consequence": "どの route も Stage 0 の code commit（ea5da89）より前から変わっていない。Role 2 は digest efbc86ee… を現在の tree で再計算して一致を確認した"
+ },
+ "record_line_endings": "Role 2 RF-2: .gitattributes に artifacts/research/patsd_stage0/** -text を足し、記録の blob を LF のまま保存した（sha256 0003e23c… は clone 後も一致する）",
+ "s0_5_correction": {
+  "finding": "Role 2 RF-3: F3（clock / flow）には既に scripts/research/clock_flow/（WMR 16:00 fix・Tokyo fix・月末）と、その feasibility frontier（commit 8bf5f61、clock window の break-even gross IR 4.1〜58.7）がある。ledger の『repo に同型の検定は無い』は誤り",
+  "corrected_genuine": "F3 を PARTIAL に訂正。genuine YES は 2（F4・F5）、PARTIAL は 2（F1・F3）",
+  "classification": "AMBER（変わらない。凍結した境界 green_min 4 / amber_min 2）"
+ },
+ "s0_4_correction": {
+  "finding": "Role 2 RF-4: Gate P1 PR-B は 3650d の archive（fresh を含む）の全行を parse して、file の sha256・行数・非有限値・単調性・gap を記録した（artifacts/gate_p1_pr_b/firstrun_3650d_ba/raw_inventory_3650d_BA.json）。Foundation T2 も round trip した。#444 の裁定では hash も byte の読み取りである",
+  "added_exposure": {"id": "X-BYTE-LEVEL-INTEGRITY", "kind": "BYTE_LEVEL_INTEGRITY_READ", "scope": "fresh を含む archive の全 file。行数・hash・整合性の統計だけで、価格の値の統計・方向・損益は計算していない", "price_value_information": "NO"},
+  "overlap_argument": "pre-R1 の 1825d の取得は scripts/fetch_oanda_candles.py の end_time = now、start = end − days（:207–208）で、最も早い file の mtime 2026-05-02 21:18 UTC から最初の candle は 2021-05-03。学習 log の最初の日付 2021-05-03 と一致し、fresh の終わり 2021-04-25 から 8 日の余裕がある。clean clone では log と mtime が無いので、この判定は AMBER になりうる",
+  "classification": "GREEN（価格の値の情報の読み取りは無い。byte の読み取りを開示）"
+ },
+ "s0_1_disclosure": {
+  "finding": "Role 2 RF-5: D bar は UTC 日で、日曜の短い bar（約 240 日）を営業日に数えた。trading_days_per_year = 312.2（平日だけなら 260.9）",
+  "effect": "turnover T が約 20% 大きく、drag は保守側に大きい（EUR_USD: 記録 0.1115、平日基準 0.0933）。H4 の hold_bars は 25.8（5 営業日なら 30）",
+  "classification": "GREEN（変わらない）"
+ },
+ "s0_2_s0_3_interpretation": {
+  "RF-1_calibration_not_engaged": "帰無の誤合格率は階段の全ての段（0.10 … 0.001）で 0/200（95% 上限 約 1.5%）。calibrated_p = 0.10 は階段の緩い端であって、10% への較正ではない。階段の外（合成 panel、Role 1）では p* ≈ 0.8 で FWER 7.5%、そのとき S=1.5 の G4 通過 0.39",
+  "RF-2_sr0_cost_dispersion": "SR0 = 断面の daily SR の SD × E[max z(N_eff)] は、config ごとに違う決まった cost drag を含み、合成で約 34% 大きい（1.46 → 1.96）。保守側の偏り",
+  "RF-3_g4_readings": {
+   "design_deflate_then_shrink": "P(obs ≥ 1.8845 + 0.551 × 2.91 = 3.49 | S=1.5) ≈ 0.00015（S=2.0 で 0.0035）→ RED",
+   "frozen_ladder_gate": "0.025（記録）→ RED",
+   "gate_with_truly_calibrated_p": "合成で約 0.39（階段の外、結果の後の分析）→ 採るなら Human の判断",
+   "g4_point_deflated_label": "記録の g4_point_deflated は、点推定の deflation と DSR の gate の二重の deflation である（設計の版ではない）"
+  },
+  "NB-1": "DSR 以外の hard filter は、帰無でほぼ誤合格を防がない（合成で DSR なしの any-pass は 65〜77%）。family-wise の保証は DSR だけが担っている",
+  "NB-2": "N_eff ≈ 314 は置き換え candidate の相関の低さによる。実際の規則の格子なら低く、E[max z] は 2.91 → 2.53（N=100）。偏りは保守側で、凍結した階段の下では label を変えない"
+ },
+ "labels_unchanged": {"S0-1": "GREEN", "S0-2": "GREEN（ただし較正は効いていない）", "S0-3": "RED", "S0-4": "GREEN（byte の読み取りを開示）", "S0-5": "AMBER", "overall": "STAGE0_RED_RETURN_TO_HUMAN"}
+}
