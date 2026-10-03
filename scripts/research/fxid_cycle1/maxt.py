@@ -8,7 +8,8 @@
 - **合成 data（感度）**: 正規分布の return。pair × NY 時刻の vol と、pair 間の相関だけを seen から取る（実際の経路は使わない）。
 - **候補は signal を持たない置き換えだけ**: ランダムな時刻（NY 03:00〜12:45 の M15 の終値）・ランダムな side・
   事前固定の保有（2 / 4 / 6 / 8 時間）・当日決済。S1 / S2 は実装しない。
-- 統計量 = 候補の年率 Sharpe（日次の net）。各 replication の候補の最大値を記録し、
+- 統計量 = 候補の**gross**（cost 前）の年率 Sharpe（日次）。帰無は「情報が無い」なので、選択の誤りの制御は gross の上で行い、
+  net の経済性は別に判定する（run 1 は net を使い、候補の cost で帰無の中心が −2.5 前後にずれて、等価試行数と検出力が意味を失った）。各 replication の候補の最大値を記録し、
   閾値 = 帰無の最大値の 90 percentile（較正）、別の replication で family-wise 誤合格率を検証する。
 """
 
@@ -151,7 +152,7 @@ def run_null(
             if kind == "sign"
             else synthetic_gaussian(grid, rng, chol, hour_scale)
         )
-        values = candidate_sharpes(grid, synthetic, candidates)
+        values = candidate_sharpes(grid, synthetic, candidates, cost_multiple=0.0)
         maxima[r] = values.max()
         first[r] = values[0]
     return maxima, first
@@ -175,18 +176,14 @@ def selection_power(
     hits = 0
     for _ in range(reps):
         synthetic = synthetic_sign(grid, rng)
-        values = candidate_sharpes(grid, synthetic, candidates)
+        values = candidate_sharpes(grid, synthetic, candidates, cost_multiple=0.0)
         cum = np.vstack([np.zeros((1, synthetic.shape[1])), np.cumsum(synthetic, axis=0)])
         move = cum[c0.t1 + 1, c0.pair] - cum[c0.t0 + 1, c0.pair]
-        base = (
-            c0.side * move / grid.sigma_bar[c0.pair] - grid.cost[c0.pair] / grid.sigma_bar[c0.pair]
-        )
+        base = c0.side * move / grid.sigma_bar[c0.pair]
         daily = np.bincount(c0.day, weights=base, minlength=grid.n_days)
         target_mean = true_sharpe * daily.std(ddof=1) / math.sqrt(days_per_year)
-        #: 帰無の**期待値**（gross 0、cost の分だけ負）からずらす。実現値に合わせると雑音が消えてしまう
-        expected_null_mean = (
-            -float((grid.cost[c0.pair] / grid.sigma_bar[c0.pair]).sum()) / grid.n_days
-        )
+        #: 帰無の**期待値**（gross は 0）からずらす。実現値に合わせると雑音が消えてしまう
+        expected_null_mean = 0.0
         drift = (target_mean - expected_null_mean) * grid.n_days / n_trades
         boosted = np.bincount(c0.day, weights=base + drift, minlength=grid.n_days)
         values[0] = boosted.mean() / boosted.std(ddof=1) * math.sqrt(days_per_year)

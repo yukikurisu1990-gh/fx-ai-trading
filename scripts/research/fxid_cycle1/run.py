@@ -27,7 +27,8 @@ from scripts.research.fxid_cycle1 import clock, maxt, stats
 from scripts.research.patsd_stage0 import data as guarded
 
 REPO: Final[Path] = Path(__file__).resolve().parents[3]
-RECORD: Final[Path] = REPO / "artifacts/research/fxid_cycle1/cycle1.json"
+#: run 1（cycle1.json）は max-T の統計量に net を使った欠陥がある。run 2 は gross で、別の file に書く
+RECORD: Final[Path] = REPO / "artifacts/research/fxid_cycle1/cycle1_run2.json"
 ROUTE_FILES: Final[tuple[str, ...]] = (
     "scripts/research/exploratory_m15/momentum.py",
     "scripts/research/exploratory_m15/supplemental.py",
