@@ -163,17 +163,53 @@ def test_real_returns_in_maxt_only_feed_synthetic_generators():
     for node in ast.walk(tree):
         if isinstance(node, ast.FunctionDef):
             body = ast.unparse(node)
+            if "grid.returns" in body and node.name == "candidate_sharpes":
+                # 実 return を拒否する検査の 2 箇所だけ
+                guard = [ast.unparse(n.test) for n in ast.walk(node) if isinstance(n, ast.If)]
+                assert body.count("grid.returns") == 2, body
+                assert any(g.count("grid.returns") == 2 for g in guard), guard
+                continue
             if "grid.returns" in body:
                 assert node.name in allowed, node.name
                 if node.name not in {"build_grid", "synthetic_sign"}:
                     assert body.count("grid.returns") == body.count("grid.returns.shape"), node.name
 
 
+def test_candidate_sharpes_refuses_real_returns():
+    grid = _grid(days=60)
+    cands = maxt.make_candidates(grid, 2, seed=0)
+    for real in (grid.returns, grid.returns.copy(), grid.returns[:]):
+        with pytest.raises(ValueError):
+            maxt.candidate_sharpes(grid, real, cands)
+    maxt.candidate_sharpes(grid, maxt.synthetic_sign(grid, np.random.default_rng(0)), cands)
+
+
+def test_candidate_sharpes_is_called_only_inside_the_null_and_power_functions():
+    """package の全 module で、候補の Sharpe を出す関数の呼び出し元を限定する。"""
+    import pathlib
+
+    import scripts.research.fxid_cycle1 as pkg
+
+    root = pathlib.Path(pkg.__file__).parent
+    callers = set()
+    for path in root.glob("*.py"):
+        tree = ast.parse(path.read_text(encoding="utf-8"))
+        for fn in ast.walk(tree):
+            if isinstance(fn, ast.FunctionDef):
+                for node in ast.walk(fn):
+                    if isinstance(node, ast.Call) and "candidate_sharpes" in ast.unparse(node.func):
+                        callers.add((path.name, fn.name))
+        # 関数の外（module の top level）からの呼び出しも無いこと
+        for node in tree.body:
+            if not isinstance(node, ast.FunctionDef | ast.ClassDef):
+                assert "candidate_sharpes(" not in ast.unparse(node), path.name
+    assert callers == {("maxt.py", "run_null"), ("maxt.py", "selection_power")}
+
+
 # ----------------------------------------------------------------------
 # pre-2016 取得の guard（取得はしない。合成の入力だけ）
 # ----------------------------------------------------------------------
 def test_acquisition_guard_accepts_only_exact_bounds_inside_the_window():
-    import datetime as dt
 
     from scripts.research.fxid_cycle1 import acquisition_guard as g
 
@@ -198,9 +234,53 @@ def test_acquisition_guard_accepts_only_exact_bounds_inside_the_window():
 
     with pytest.raises(g.AcquisitionBoundaryError):
         g.check_request("2006-01-02T00:00:00Z", Sneaky("2017-01-01T00:00:00Z"))
+
+
+def test_distribution_unit_uses_vendor_timezone_and_exact_types():
+    import datetime as dt
+
+    from scripts.research.fxid_cycle1 import acquisition_guard as g
+
+    est = dt.timezone(dt.timedelta(hours=-5))
+    # HistData の EST 固定の月の file: 2016-05 は 2016-06-01 05:00Z まで被覆するので拒否
     with pytest.raises(g.AcquisitionBoundaryError):
-        g.check_distribution_unit(dt.date(2016, 1, 1), dt.date(2016, 12, 31))
-    g.check_distribution_unit(dt.date(2016, 5, 1), dt.date(2016, 5, 31))
+        g.check_distribution_unit(
+            dt.datetime(2016, 5, 1, tzinfo=est), dt.datetime(2016, 6, 1, tzinfo=est)
+        )
+    g.check_distribution_unit(
+        dt.datetime(2016, 4, 1, tzinfo=est), dt.datetime(2016, 5, 1, tzinfo=est)
+    )
+    # 年の file
+    with pytest.raises(g.AcquisitionBoundaryError):
+        g.check_distribution_unit(
+            dt.datetime(2016, 1, 1, tzinfo=dt.UTC), dt.datetime(2017, 1, 1, tzinfo=dt.UTC)
+        )
+    # 逆順・下限より前・date・naive
+    for a, b in (
+        (dt.datetime(2010, 2, 1, tzinfo=dt.UTC), dt.datetime(2010, 1, 1, tzinfo=dt.UTC)),
+        (dt.datetime(2005, 12, 1, tzinfo=dt.UTC), dt.datetime(2006, 1, 1, tzinfo=dt.UTC)),
+        (dt.date(2010, 1, 1), dt.date(2010, 2, 1)),
+        (dt.datetime(2010, 1, 1), dt.datetime(2010, 2, 1)),
+    ):
+        with pytest.raises(g.AcquisitionBoundaryError):
+            g.check_distribution_unit(a, b)
+
+    class Sneaky(dt.datetime):
+        def __gt__(self, other):
+            return False
+
+        def __ge__(self, other):
+            return False
+
+        def __lt__(self, other):
+            return False
+
+    with pytest.raises(g.AcquisitionBoundaryError):
+        g.check_distribution_unit(
+            dt.datetime(2016, 1, 1, tzinfo=dt.UTC), Sneaky(2016, 12, 31, tzinfo=dt.UTC)
+        )
+    with pytest.raises(g.AcquisitionBoundaryError):
+        g.check_response([Sneaky(2020, 1, 1, tzinfo=dt.UTC)])
 
 
 def test_acquisition_guard_rejects_whole_response_with_any_protected_row():
@@ -214,3 +294,47 @@ def test_acquisition_guard_rejects_whole_response_with_any_protected_row():
         g.check_response(good + [dt.datetime(2016, 5, 31, 21, 0, tzinfo=dt.UTC)])
     with pytest.raises(g.AcquisitionBoundaryError):
         g.check_response([dt.datetime(2016, 5, 31, 20, 45)])
+    with pytest.raises(g.AcquisitionBoundaryError):
+        g.check_response([])
+    # tz 付きの UTC 以外: 2016-05-31 17:00 EDT = 21:00Z は拒否、16:45 EDT は受理
+    edt = dt.timezone(dt.timedelta(hours=-4))
+    g.check_response([dt.datetime(2016, 5, 31, 16, 45, tzinfo=edt)])
+    with pytest.raises(g.AcquisitionBoundaryError):
+        g.check_response([dt.datetime(2016, 5, 31, 17, 0, tzinfo=edt)])
+    import pandas as pd
+
+    with pytest.raises(g.AcquisitionBoundaryError):
+        g.check_response([pd.Timestamp("2010-01-01T00:00:00Z")])
+
+
+def test_null_and_power_use_the_gross_statistic():
+    """run 1 の欠陥（帰無を net で作った）への回帰の guard。"""
+    src = inspect.getsource(maxt.run_null) + inspect.getsource(maxt.selection_power)
+    calls = [
+        n
+        for n in ast.walk(ast.parse(src))
+        if isinstance(n, ast.Call) and "candidate_sharpes" in ast.unparse(n.func)
+    ]
+    assert len(calls) == 2
+    for call in calls:
+        kw = {k.arg: ast.unparse(k.value) for k in call.keywords}
+        assert kw.get("cost_multiple") == "0.0", ast.unparse(call)
+
+
+def test_design_supplement_reproduces_run2_arithmetic_at_mu_007():
+    import json
+    import pathlib
+
+    from scripts.research.fxid_cycle1 import design_supplement as ds
+
+    run2 = json.loads(
+        pathlib.Path(ds.REPO / "artifacts/research/fxid_cycle1/cycle1_run2.json").read_text(
+            encoding="utf-8"
+        )
+    )["design_arithmetic"]
+    sup = ds.compute()
+    prefix = {"3_block": "1_", "pre2016_split_select": "2_", "pre2016_split_6y_4y": "4_"}
+    names = {k: next(v for p, v in prefix.items() if k.startswith(p)) + k for k in run2}
+    for old, new in names.items():
+        for key, row in run2[old].items():
+            assert sup[new][f"mu=0.07|{key}"] == row, (old, key)

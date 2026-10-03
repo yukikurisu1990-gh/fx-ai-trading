@@ -8,8 +8,9 @@
 - **合成 data（感度）**: 正規分布の return。pair × NY 時刻の vol と、pair 間の相関だけを seen から取る（実際の経路は使わない）。
 - **候補は signal を持たない置き換えだけ**: ランダムな時刻（NY 03:00〜12:45 の M15 の終値）・ランダムな side・
   事前固定の保有（2 / 4 / 6 / 8 時間）・当日決済。S1 / S2 は実装しない。
-- 統計量 = 候補の**gross**（cost 前）の年率 Sharpe（日次）。帰無は「情報が無い」なので、選択の誤りの制御は gross の上で行い、
-  net の経済性は別に判定する（run 1 は net を使い、候補の cost で帰無の中心が −2.5 前後にずれて、等価試行数と検出力が意味を失った）。各 replication の候補の最大値を記録し、
+- 帰無の分布 = 候補の**gross**（cost 前）の年率 Sharpe（日次）の最大値。帰無は「情報が無い」なので、閾値は gross の帰無から作る。
+  **Cycle 2 での使い方の提案**（凍結しない）: 各候補の **net** の Sharpe をこの閾値と比べる（net の平均 ≤ 0 の最も不利な点での検定）。
+  gross で選んでから net を見ると、cost に弱い候補を選ぶ bias が残る（報告 §9）。（run 1 は net を使い、候補の cost で帰無の中心が −2.5 前後にずれて、等価試行数と検出力が意味を失った）。各 replication の候補の最大値を記録し、
   閾値 = 帰無の最大値の 90 percentile（較正）、別の replication で family-wise 誤合格率を検証する。
 """
 
@@ -117,6 +118,9 @@ def synthetic_gaussian(
 def candidate_sharpes(
     grid: Grid, returns: np.ndarray, candidates: list[Candidate], *, cost_multiple: float = 1.0
 ) -> np.ndarray:
+    # 実価格の return（無作為化していないもの）に候補の向きを掛けることを拒否する（R-A2 / 裁定 §23）。
+    if np.shares_memory(returns, grid.returns) or np.array_equal(returns, grid.returns):
+        raise ValueError("candidate_sharpes は合成の return だけを受ける（実 return は拒否）")
     cum = np.vstack([np.zeros((1, returns.shape[1])), np.cumsum(returns, axis=0)])
     out = np.empty(len(candidates))
     days_per_year = grid.n_days / grid.years

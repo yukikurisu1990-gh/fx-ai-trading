@@ -8,8 +8,8 @@
 - 上限: `UPPER_EXCLUSIVE_UTC = 2016-05-31T21:00:00Z`（NY 17:00 = 2016-05-31 の取引日の終わり、夏時間）。
   これより後の bar は 2016-06-01 の取引日（NY 17:00 区切り）に属するので、全て除く。
 - 下限: `LOWER_INCLUSIVE_UTC = 2006-01-01T00:00:00Z`。
-- 境界は**型と書式を厳密に**検査する（文字列の比較・`str` の subclass・緩い書式は拒否）。repo で 3 回抜かれた bypass と同じ形を防ぐ。
-- 配布の単位: 単位の被覆の終わりが上限を越える file（年や月の file で 2016 年 6 月を含むもの）は、**request を出さない**。
+- 境界は**型と書式を厳密に**検査し、比較は field から作り直した UTC の datetime どうしで行う（文字列の比較・`str` の subclass・緩い書式は拒否）。repo で 3 回抜かれた bypass と同じ形を防ぐ。
+- 配布の単位: vendor の時刻帯で見た単位の被覆の終わりを UTC に直し、上限を越える file は **request を出さない**（日付の粒度で比べない）。
 - 応答の検査: 応答の中に上限以上の timestamp が 1 行でもあれば、**応答全体を捨てて何も書かない**（部分的な保存もしない）。
 """
 
@@ -57,21 +57,55 @@ def check_request(start: object, end_exclusive: object) -> tuple[dt.datetime, dt
     return lo, hi
 
 
-def check_distribution_unit(unit_start: dt.date, unit_end_inclusive: dt.date) -> None:
-    """年や月などの配布の単位: その単位の被覆が上限の日（2016-05-31）を越えるなら request しない。"""
-    if unit_end_inclusive > UPPER_EXCLUSIVE_UTC.date():
-        raise AcquisitionBoundaryError(
-            f"配布の単位（{unit_start} … {unit_end_inclusive}）が保護期間を含む"
-        )
+def _exact_utc(value: object, what: str) -> dt.datetime:
+    """`datetime` そのもの（subclass は拒否）で tz 付きのものだけを受け、field から UTC を作り直す。
+
+    呼び出し側の object の比較演算子は使わない（`__ge__` などを上書きした subclass の bypass を防ぐ）。
+    `pandas.Timestamp` は subclass なので拒否する（呼び出し側で `to_pydatetime()` に直す）。
+    """
+    if type(value) is not dt.datetime:  # noqa: E721 - subclass を意図的に拒否する
+        raise AcquisitionBoundaryError(f"{what} は datetime そのものだけ: {type(value).__name__}")
+    offset = value.utcoffset()
+    if type(offset) is not dt.timedelta:  # noqa: E721
+        raise AcquisitionBoundaryError(f"{what} に timezone が無い")
+    naive = dt.datetime(
+        value.year,
+        value.month,
+        value.day,
+        value.hour,
+        value.minute,
+        value.second,
+        value.microsecond,
+    )
+    return (naive - offset).replace(tzinfo=dt.UTC)
 
 
-def check_response(timestamps: list[dt.datetime]) -> None:
-    """応答の全行を検査する。1 行でも範囲外なら応答全体を拒否する（呼び出し側は何も書かない）。"""
+def check_distribution_unit(coverage_start: object, coverage_end_exclusive: object) -> None:
+    """年や月などの配布の単位: **vendor の時刻帯で見た被覆の終わり**を UTC に直し、上限を越えるなら request しない。
+
+    例: HistData の 2016-05 の file は EST 固定なので、被覆の終わりは 2016-06-01T00:00 EST = 05:00Z で上限を越える。
+    """
+    lo = _exact_utc(coverage_start, "単位の開始")
+    hi = _exact_utc(coverage_end_exclusive, "単位の終わり")
+    if not lo < hi:
+        raise AcquisitionBoundaryError("単位の開始 < 終わり でない")
+    if lo < LOWER_INCLUSIVE_UTC:
+        raise AcquisitionBoundaryError(f"単位が下限より前: {lo}")
+    if hi > UPPER_EXCLUSIVE_UTC:
+        raise AcquisitionBoundaryError(f"配布の単位（{lo} … {hi}）が保護期間を含む")
+
+
+def check_response(timestamps: list[object]) -> None:
+    """応答の全行を検査する。1 行でも範囲外なら応答全体を拒否する（呼び出し側は何も書かない）。
+
+    空の応答も拒否する（被覆の確認で「無い」と「取れなかった」を区別するため）。
+    """
+    if len(timestamps) == 0:
+        raise AcquisitionBoundaryError("空の応答")
     for ts in timestamps:
-        if ts.tzinfo is None or ts.utcoffset() is None:
-            raise AcquisitionBoundaryError("timezone の無い timestamp")
-        if ts >= UPPER_EXCLUSIVE_UTC or ts < LOWER_INCLUSIVE_UTC:
-            raise AcquisitionBoundaryError(f"範囲外の行: {ts}")
+        utc = _exact_utc(ts, "応答の行")
+        if utc >= UPPER_EXCLUSIVE_UTC or utc < LOWER_INCLUSIVE_UTC:
+            raise AcquisitionBoundaryError(f"範囲外の行: {utc}")
 
 
 __all__ = [
