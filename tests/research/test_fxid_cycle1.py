@@ -296,6 +296,15 @@ def test_acquisition_guard_rejects_whole_response_with_any_protected_row():
         g.check_response([dt.datetime(2016, 5, 31, 20, 45)])
     with pytest.raises(g.AcquisitionBoundaryError):
         g.check_response([])
+
+    class Hollow(list):
+        def __iter__(self):
+            return iter([])
+
+    with pytest.raises(g.AcquisitionBoundaryError):
+        g.check_response(Hollow([dt.datetime(2020, 1, 1, tzinfo=dt.UTC)]))
+    with pytest.raises(g.AcquisitionBoundaryError):
+        g.check_response((dt.datetime(2010, 1, 1, tzinfo=dt.UTC),))
     # tz 付きの UTC 以外: 2016-05-31 17:00 EDT = 21:00Z は拒否、16:45 EDT は受理
     edt = dt.timezone(dt.timedelta(hours=-4))
     g.check_response([dt.datetime(2016, 5, 31, 16, 45, tzinfo=edt)])

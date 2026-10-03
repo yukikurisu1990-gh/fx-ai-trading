@@ -95,11 +95,13 @@ def check_distribution_unit(coverage_start: object, coverage_end_exclusive: obje
         raise AcquisitionBoundaryError(f"配布の単位（{lo} … {hi}）が保護期間を含む")
 
 
-def check_response(timestamps: list[object]) -> None:
+def check_response(timestamps: object) -> None:
     """応答の全行を検査する。1 行でも範囲外なら応答全体を拒否する（呼び出し側は何も書かない）。
 
     空の応答も拒否する（被覆の確認で「無い」と「取れなかった」を区別するため）。
     """
+    if type(timestamps) is not list:  # noqa: E721 - subclass（反復を上書きしたもの）を拒否する
+        raise AcquisitionBoundaryError(f"応答は list そのものだけ: {type(timestamps).__name__}")
     if len(timestamps) == 0:
         raise AcquisitionBoundaryError("空の応答")
     for ts in timestamps:

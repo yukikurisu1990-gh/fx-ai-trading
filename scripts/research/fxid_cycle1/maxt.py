@@ -118,7 +118,8 @@ def synthetic_gaussian(
 def candidate_sharpes(
     grid: Grid, returns: np.ndarray, candidates: list[Candidate], *, cost_multiple: float = 1.0
 ) -> np.ndarray:
-    # 実価格の return（無作為化していないもの）に候補の向きを掛けることを拒否する（R-A2 / 裁定 §23）。
+    # 多層の防御の一つ: 実価格の return をそのまま（同じ memory・同じ値で）渡す事故を拒否する。
+    # ε を足した値などは抜けられるので境界ではない。境界は呼び出し元を run_null / selection_power に限る test。
     if np.shares_memory(returns, grid.returns) or np.array_equal(returns, grid.returns):
         raise ValueError("candidate_sharpes は合成の return だけを受ける（実 return は拒否）")
     cum = np.vstack([np.zeros((1, returns.shape[1])), np.cumsum(returns, axis=0)])
