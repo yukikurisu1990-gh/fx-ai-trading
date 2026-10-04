@@ -79,7 +79,7 @@ FX の日中には、文献で実証された、時刻に錨を下ろした仕�
 - **clock flow（#474）**: London fix・東京の仲値・NY 10:00 の option cut・London の開場・rollover の**前後 1 時間**を、**ランダムな方向で**検出力と cost だけ測った。方向の仮説は一度も検定していない。
   - 毎日の窓: 損益分岐の gross IR は 4.1〜58.7 で不可能。
   - 月末: London fix の前の窓は経済性が最良（IR 0.59 / 0.82）だが、どちらの panel でも検出力が無い。
-- **#475**: `LONDON_FIX_NOT_DECISION_GRADE_AT_CURRENT_EXECUTION_FRONTIER`。月末の London fix の前の窓の実測の cost は、中央値 2.925 / 2.886 bp（slippage を除く）。
+- **#475**: `LONDON_FIX_NOT_DECISION_GRADE_AT_CURRENT_EXECUTION_FRONTIER`。月末の London fix の前の窓の実測の cost `C` は、中央値 2.925 / 2.886 bp（片脚の half spread + 0.25 pip の pad を含む往復。#475 §3）。
 - **#478**: C04（fix flow）・C05（月末）は「検出力の不足で、反証ではない」。RED で、**両方とも判断により停止・提案不可**。C03（session の引き継ぎ）は `NO_DECISION_GRADE_PASS_REGION`。
 - **#489**: 22.5 年で C05 に `PASS_REGION_EXISTS`（拘束条件は event_floor）と記録。
 - **CPI・指標**:
@@ -319,15 +319,16 @@ FX の日中には、文献で実証された、時刻に錨を下ろした仕�
 
 - 20 pair の中央値の実測: 11 時台の spread 1.64、16 時台 2.54。往復 2.6 bp。σ（11:00〜16:45 の 23 本）≈ 22 bp。
 - 必要 = 0.12 + 0.063 ≈ 0.18。
-- 原典の gross / σ は、EUR で 2.9 / 22 ≈ 0.13、basket で 1.9 / 22 ≈ 0.09。basket の σ は単一の pair より小さいので、basket の比は過小評価だが、basket は単一の因子（k ≈ 1）である。
-- CME では、EUR の後の区間は Sharpe 0.08、GBP は −0.99。**不足**。
+- 原典の gross / σ は、basket（London fix → 17:00）で 1.9 / 22 ≈ 0.09。basket の σ は単一の pair より小さいので、basket の比は過小評価だが、basket は単一の因子（k ≈ 1）である。
+- EUR の Table 8 の値は **ECB の fix の後の区間（08:15 → 17:00）**: 6.68% / 252 ≈ 2.65 bp / 日。EUR_USD の実測で、σ（08:00〜16:45）≈ 36.9 bp、往復 (1.50 + 1.66) / 2 + 0.5 = 2.08 bp。必要 = 0.056 + 0.063 = 0.119 > gross / σ 0.072。
+- GBP の London fix の後は、CME で Sharpe −0.99、EUR の ECB の後は 0.08。**不足**。
 
 **(d) 月末の株式ヘッジ（L3）**:
 
 - R² = 0.03 から、予測の相関は約 0.17。符号だけで取引する場合の trade あたりの gross / σ は約 0.14【算術。予測と return が同時正規の場合】。|signal| > 1 SD だけで取引すると約 0.26（取引の数は減る）。
 - R² は横断面の平均を引いた相対の return についての値なので、単一の pair の σ に対しては更に小さくなる（結論を強める向き）。
-- cost: #475 の実測（月末の London fix の前の窓、slippage を除く中央値 2.925 / 2.886 bp）+ 0.5 bp。σ は #474 の月末の分散 12.6〜17.4 bp。cost / σ は約 0.20〜0.27。
-- 横断面の long-short（k ≤ 9、n = 12）で 1/√108 = 0.096。**必要 0.30〜0.37 > 0.14〜0.26**。`ECONOMICALLY_UNATTRACTIVE`。
+- cost: #475 の実測の `C`（月末の London fix の前の窓、中央値 2.925 / 2.886 bp）。`C` は既に slippage（片脚 0.25 pip）を含むので、足さない。σ は #474 の月末の分散 17.40 / 12.59 bp を panel ごとに組み合わせ、cost / σ は約 0.17〜0.23。
+- 横断面の long-short（k ≤ 9、n = 12）で 1/√108 = 0.096。**必要 0.26〜0.32 > 符号の規則の 0.14**。閾値の規則（約 0.26）は取引する月が減り、その分だけ 1/√(k · n) が大きくなるので、やはり届かない。`ECONOMICALLY_UNATTRACTIVE`（条件 7 でも独立に不合格）。
 
 **(e) 月末の fix の後の反転（L2・L5）・仲値の spike（L4）**: 効果は窓の終わりの 1〜15 分の中にあり、M15 の entry では大部分を逃す。`NOT_IMPLEMENTABLE_WITH_AVAILABLE_INFORMATION`（解像度）。
 
@@ -351,9 +352,9 @@ FX の日中には、文献で実証された、時刻に錨を下ろした仕�
 
 | 仕組み | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 区分 |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| **EUR の欧州の朝の short**（L1・L6） | ○ | ○（1997–2018、CME 2009–18 を含む） | ○ | ○ | ○ | △（net は正の可能性。必要 gross / σ に届かない、§13a） | ○ | **×**（下記） | `ECONOMICALLY_UNATTRACTIVE`（programme の要求に対して） |
-| **JPY の仲値の後**（L1） | ○ | ○（ただし 2013 年以降は横ばい） | ○ | ○ | ○ | △（平均では正、最近は約 0、§13b） | ○ | **×** | `ECONOMICALLY_UNATTRACTIVE` |
-| London fix の後の dollar 安（L1） | ○ | ○ | ○ | ○ | ○ | **×**（§13c、CME で EUR 0.08・GBP −0.99） | ○ | × | `ECONOMICALLY_UNATTRACTIVE` |
+| **EUR の欧州の朝の short**（L1・L6） | ○ | ○（1997–2018、CME 2009–18 を含む） | ○ | ○ | ○ | **×**（programme の要求に対して。net は 0 より上の可能性があるが、必要 gross / σ に届かない、§13a） | ○ | △（下記） | `ECONOMICALLY_UNATTRACTIVE`（programme の要求に対して） |
+| **JPY の仲値の後**（L1） | ○ | ○（ただし 2013 年以降は横ばい） | ○ | ○ | ○ | **×**（programme の要求に対して。平均では正、最近は約 0、§13b） | ○ | △ | `ECONOMICALLY_UNATTRACTIVE` |
+| fix の後の dollar 安（L1。London の basket・EUR の ECB の後） | ○ | ○ | ○ | ○ | ○ | **×**（§13c、CME で EUR の ECB の後 0.08・GBP の London の後 −0.99） | ○ | × | `ECONOMICALLY_UNATTRACTIVE` |
 | 月末の株式ヘッジ（L3） | ○ | ○（2012 年まで） | ○ | ○ | ○ | **×**（§13d） | **×**（C05・S21 は停止中） | **×**（年 12 回、検出力の不足が拘束条件） | `DUPLICATE_OF_PREVIOUS_RESEARCH` / `ECONOMICALLY_UNATTRACTIVE` |
 | 月末の fix の後の反転（L2・L5） | ○ | △（改革の後は約 16 回） | ○ | **×** | ○ | — | △ | × | `NOT_IMPLEMENTABLE_WITH_AVAILABLE_INFORMATION` |
 | 東京の仲値の spike・gotobi の長い drift（L4・L15） | ○ | ○ / △（長い drift は査読なし） | ○ | **×** / △ | ○ | — | △ | — | `NOT_IMPLEMENTABLE_WITH_AVAILABLE_INFORMATION` / `INSUFFICIENT_EVIDENCE` |
@@ -361,10 +362,12 @@ FX の日中には、文献で実証された、時刻に錨を下ろした仕�
 | 指標の発表の drift（L12） | △ | **×**（drift の実証なし） | ○ | × | ○ | — | **×**（#473 の帰無、S2 保留） | — | `INSUFFICIENT_EVIDENCE` / `DUPLICATE_OF_PREVIOUS_RESEARCH` |
 | 日中の momentum（L13・L14） | △ | **×**（G10 OTC で未確認） | ○ | ○ | ○ | — | **×**（S1・VR < 1） | — | `INSUFFICIENT_EVIDENCE` / `DUPLICATE_OF_PREVIOUS_RESEARCH` |
 
-**条件 8 が「×」の理由**（EUR の朝・JPY の仲値の後）:
+**条件 6 の適用**: 「現実的な cost を超える可能性」は、損益分岐（net > 0）ではなく、この programme の既存の要求（必要 gross / σ = cost / σ + 1/√(k · n)、すなわち G4 の Sharpe 1.0 に相当）に対して判定した。要求は変えていない。
+
+**決定的な除外の理由は (iii)・(iv)（G4 に届かない）で、(i)・(ii) は補助**。条件 8 は「△」とする（EUR の朝・JPY の仲値の後）:
 
 - (i) 追加で取得できる pre-2016 の履歴（OANDA 2006–2016）は、文献がこの効果を見つけて報告した期間（L6 1997–2007、L1 1999–2018）の中にあり、効果の存在の独立な検定にならない。確かめられるのは「その期間の OANDA の cost でも正か」だけ。
-- (ii) 公表の後の期間（2019 年〜）は、fresh（2016-06〜2021-04、保護）・seen（2021–2025、使用済み）・保護期間に当たる。
+- (ii) 公表の後の期間（2019 年〜）は、fresh（2016-06〜2021-04）・seen（2021–2025、使用済み）・保護期間に当たる。fresh は分割の方針の最終確認の予算で、選択と推定の block には使えない（2019〜2021 の部分は KMW の sample の後なので、最終確認としては独立になりうる）。
 - (iii) 検出力: net の Sharpe を 0.5 とすると、10 年の data での片側 5% の検出力は約 0.47、0.3 なら約 0.24【算術】。
 - (iv) 真の Sharpe が 0.2〜0.75 なら、どれだけ data があっても G4（縮小後 1.0）は満たせない。
 
@@ -474,7 +477,7 @@ FX の日中には、文献で実証された、時刻に錨を下ろした仕�
 | # | 指摘 | 対応 |
 | --- | --- | --- |
 | 1 | §13 の値（11 時台 1.64・16 時台 2.54・11〜15 時台の vol）の出典が報告ではなく、commit 済みの記録 | `cycle1_run2.json` の key と集計の方法（pair の中央値、spread の平均）を明記した |
-| 2 | 月末の cost の拡大を「含まない」としていたが、#475 に実測がある（2.925 / 2.886 bp） | その値を使った |
+| 2 | 月末の cost の拡大を「含まない」としていたが、#475 に実測がある（2.925 / 2.886 bp） | その値を使った（再監査で slippage の二重計上を指摘され、直した） |
 | 3 | 月末の fix の後・東京の仲値の月末の cell の既存の測定（#474）が §11 に無い | 足した |
 | 4 | 自国時間の行に、H-002（CLOSED）と C03（`NO_DECISION_GRADE_PASS_REGION`）が無い | 足し、方向の仮説としては未検定であることを論じた |
 | 5 | 「最良の場合 Sharpe 0.6」は支えられていない（Role 1 の B1 と同じ） | 同上 |
@@ -488,7 +491,26 @@ FX の日中には、文献で実証された、時刻に錨を下ろした仕�
 - URL を補完した
 - B&R の net と EBS の spread の仮定に表の番号と【推論】を付けた
 
-**修正の後の再監査**: 新しい context で確認した（結果は PR の本文に記録する）。
+**修正の後の再監査**（新しい context、`79dbfd2`）: PASS、BLOCKER なし。
+
+確認された点:
+
+- Table 8 の 36 マス、引用（逐語）、東京の仲値の換算、§13a / §13b の算術（σ 28.58・cost 1.944・必要 0.131、JPY の σ 25.6 / 29.0・必要 0.126）、検出力（0.47 / 0.24）、6,872 日、§19(a) 0.098。
+- 一貫性（NY の cost を他の時間帯に転用していない、21 節、G4 / prior は不変）。
+
+**REQUIRED FIX 2 件（修正済み、結論は不変）**:
+
+| # | 指摘 | 対応 |
+| --- | --- | --- |
+| 1 | §13c の「EUR 2.9 bp」と「CME の EUR 0.08」は、London fix の後ではなく ECB の fix の後（08:15 → 17:00）の区間 | EUR_USD の実測で評価し直した（gross / σ 0.072 < 必要 0.119） |
+| 2 | #475 の `C` は slippage を含むのに 0.5 bp を足していた（二重計上） | 足さないように直した（cost / σ 0.17〜0.23、必要 0.26〜0.32） |
+
+**NON-BLOCKING**:
+
+- 条件 8 の判定は、決定的な理由が G4 に届かないこと（(iii)・(iv)）なので、△ とし、主と補助を明記した。条件 6 を programme の要求に対して判定したことも明記した。
+- JPY の σ を端ごとに合わせた範囲の注記。
+
+**再監査の判断**: EUR の欧州の朝の区間を除外することは正当。理由は、既存の G4 に照らすと最初から失敗が決まった cycle になること。
 
 ## 21. Human + ChatGPT への判断依頼
 
