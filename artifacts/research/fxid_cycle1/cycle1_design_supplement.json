@@ -1,0 +1,327 @@
+{
+ "assumptions": "run 2 の `design_arithmetic` は prior の平均を μ = 0.07 に固定していた。懐疑的な prior（μ = 0）の行をここで足す。\n- 分割ごとの選択の検出力（max-T、試行 20、Šidák）を、最後まで通る確率と並べて出す。\n- 仮定: 真の Sharpe は期間をまたいで一定、候補は独立（実測の等価試行数は 16.8 なので保守側）、「最大でもある」条件は無視。\n- prior・G4・閾値は**凍結しない**（裁定）。",
+ "1_3_block_pre2016_select_10y__seen_estimate_4.68y__fresh": {
+  "selection_power_n20": {
+   "0.8": 0.4885,
+   "1.0": 0.727,
+   "1.5": 0.9855
+  },
+  "confirm_power": {
+   "0.8": 0.5497,
+   "1.0": 0.7148,
+   "1.5": 0.9529
+  },
+  "mu=0.0|tau=0.4|G4-A_1.0": {
+   "overall": {
+    "0.8": 0.0001,
+    "1.0": 0.001,
+    "1.5": 0.0332
+   },
+   "observed_needed_in_estimate_block": 2.335
+  },
+  "mu=0.0|tau=0.4|G4-B_0.8": {
+   "overall": {
+    "0.8": 0.0028,
+    "1.0": 0.0157,
+    "1.5": 0.1998
+   },
+   "observed_needed_in_estimate_block": 1.868
+  },
+  "mu=0.0|tau=0.565|G4-A_1.0": {
+   "overall": {
+    "0.8": 0.0081,
+    "1.0": 0.0384,
+    "1.5": 0.3353
+   },
+   "observed_needed_in_estimate_block": 1.669
+  },
+  "mu=0.0|tau=0.565|G4-B_0.8": {
+   "overall": {
+    "0.8": 0.0331,
+    "1.0": 0.1216,
+    "1.5": 0.6001
+   },
+   "observed_needed_in_estimate_block": 1.335
+  },
+  "mu=0.0|tau=0.8|G4-A_1.0": {
+   "overall": {
+    "0.8": 0.0333,
+    "1.0": 0.1221,
+    "1.5": 0.6014
+   },
+   "observed_needed_in_estimate_block": 1.334
+  },
+  "mu=0.0|tau=0.8|G4-B_0.8": {
+   "overall": {
+    "0.8": 0.0756,
+    "1.0": 0.2298,
+    "1.5": 0.7753
+   },
+   "observed_needed_in_estimate_block": 1.067
+  },
+  "mu=0.07|tau=0.4|G4-A_1.0": {
+   "overall": {
+    "0.8": 0.0002,
+    "1.0": 0.0019,
+    "1.5": 0.0509
+   },
+   "observed_needed_in_estimate_block": 2.242
+  },
+  "mu=0.07|tau=0.4|G4-B_0.8": {
+   "overall": {
+    "0.8": 0.0047,
+    "1.0": 0.0243,
+    "1.5": 0.2592
+   },
+   "observed_needed_in_estimate_block": 1.775
+  },
+  "mu=0.07|tau=0.565|G4-A_1.0": {
+   "overall": {
+    "0.8": 0.0101,
+    "1.0": 0.0463,
+    "1.5": 0.3714
+   },
+   "observed_needed_in_estimate_block": 1.623
+  },
+  "mu=0.07|tau=0.565|G4-B_0.8": {
+   "overall": {
+    "0.8": 0.039,
+    "1.0": 0.1383,
+    "1.5": 0.6351
+   },
+   "observed_needed_in_estimate_block": 1.289
+  },
+  "mu=0.07|tau=0.8|G4-A_1.0": {
+   "overall": {
+    "0.8": 0.0362,
+    "1.0": 0.1304,
+    "1.5": 0.619
+   },
+   "observed_needed_in_estimate_block": 1.31
+  },
+  "mu=0.07|tau=0.8|G4-B_0.8": {
+   "overall": {
+    "0.8": 0.0803,
+    "1.0": 0.2402,
+    "1.5": 0.7872
+   },
+   "observed_needed_in_estimate_block": 1.044
+  }
+ },
+ "2_pre2016_split_select_6y__pre2016_estimate_4y__fresh": {
+  "selection_power_n20": {
+   "0.8": 0.2746,
+   "1.0": 0.4565,
+   "1.5": 0.8677
+  },
+  "confirm_power": {
+   "0.8": 0.5497,
+   "1.0": 0.7148,
+   "1.5": 0.9529
+  },
+  "mu=0.0|tau=0.4|G4-A_1.0": {
+   "overall": {
+    "0.8": 0.0,
+    "1.0": 0.0003,
+    "1.5": 0.0139
+   },
+   "observed_needed_in_estimate_block": 2.562
+  },
+  "mu=0.0|tau=0.4|G4-B_0.8": {
+   "overall": {
+    "0.8": 0.0009,
+    "1.0": 0.0058,
+    "1.5": 0.1122
+   },
+   "observed_needed_in_estimate_block": 2.05
+  },
+  "mu=0.0|tau=0.565|G4-A_1.0": {
+   "overall": {
+    "0.8": 0.0037,
+    "1.0": 0.0191,
+    "1.5": 0.2361
+   },
+   "observed_needed_in_estimate_block": 1.783
+  },
+  "mu=0.0|tau=0.565|G4-B_0.8": {
+   "overall": {
+    "0.8": 0.0159,
+    "1.0": 0.0642,
+    "1.5": 0.4617
+   },
+   "observed_needed_in_estimate_block": 1.427
+  },
+  "mu=0.0|tau=0.8|G4-A_1.0": {
+   "overall": {
+    "0.8": 0.0179,
+    "1.0": 0.0709,
+    "1.5": 0.485
+   },
+   "observed_needed_in_estimate_block": 1.391
+  },
+  "mu=0.0|tau=0.8|G4-B_0.8": {
+   "overall": {
+    "0.8": 0.0401,
+    "1.0": 0.1341,
+    "1.5": 0.6456
+   },
+   "observed_needed_in_estimate_block": 1.112
+  },
+  "mu=0.07|tau=0.4|G4-A_1.0": {
+   "overall": {
+    "0.8": 0.0001,
+    "1.0": 0.0006,
+    "1.5": 0.0234
+   },
+   "observed_needed_in_estimate_block": 2.453
+  },
+  "mu=0.07|tau=0.4|G4-B_0.8": {
+   "overall": {
+    "0.8": 0.0017,
+    "1.0": 0.0098,
+    "1.5": 0.1563
+   },
+   "observed_needed_in_estimate_block": 1.941
+  },
+  "mu=0.07|tau=0.565|G4-A_1.0": {
+   "overall": {
+    "0.8": 0.0048,
+    "1.0": 0.0237,
+    "1.5": 0.2679
+   },
+   "observed_needed_in_estimate_block": 1.728
+  },
+  "mu=0.07|tau=0.565|G4-B_0.8": {
+   "overall": {
+    "0.8": 0.0191,
+    "1.0": 0.0746,
+    "1.5": 0.4971
+   },
+   "observed_needed_in_estimate_block": 1.372
+  },
+  "mu=0.07|tau=0.8|G4-A_1.0": {
+   "overall": {
+    "0.8": 0.0196,
+    "1.0": 0.0763,
+    "1.5": 0.5025
+   },
+   "observed_needed_in_estimate_block": 1.363
+  },
+  "mu=0.07|tau=0.8|G4-B_0.8": {
+   "overall": {
+    "0.8": 0.0429,
+    "1.0": 0.1411,
+    "1.5": 0.6587
+   },
+   "observed_needed_in_estimate_block": 1.085
+  }
+ },
+ "4_pre2016_split_6y_4y__fresh_kept__forward_3y_confirm": {
+  "selection_power_n20": {
+   "0.8": 0.2746,
+   "1.0": 0.4565,
+   "1.5": 0.8677
+  },
+  "confirm_power": {
+   "0.8": 0.3977,
+   "1.0": 0.5347,
+   "1.5": 0.8297
+  },
+  "mu=0.0|tau=0.4|G4-A_1.0": {
+   "overall": {
+    "0.8": 0.0,
+    "1.0": 0.0002,
+    "1.5": 0.0121
+   },
+   "observed_needed_in_estimate_block": 2.562
+  },
+  "mu=0.0|tau=0.4|G4-B_0.8": {
+   "overall": {
+    "0.8": 0.0007,
+    "1.0": 0.0044,
+    "1.5": 0.0977
+   },
+   "observed_needed_in_estimate_block": 2.05
+  },
+  "mu=0.0|tau=0.565|G4-A_1.0": {
+   "overall": {
+    "0.8": 0.0027,
+    "1.0": 0.0143,
+    "1.5": 0.2056
+   },
+   "observed_needed_in_estimate_block": 1.783
+  },
+  "mu=0.0|tau=0.565|G4-B_0.8": {
+   "overall": {
+    "0.8": 0.0115,
+    "1.0": 0.048,
+    "1.5": 0.402
+   },
+   "observed_needed_in_estimate_block": 1.427
+  },
+  "mu=0.0|tau=0.8|G4-A_1.0": {
+   "overall": {
+    "0.8": 0.013,
+    "1.0": 0.0531,
+    "1.5": 0.4223
+   },
+   "observed_needed_in_estimate_block": 1.391
+  },
+  "mu=0.0|tau=0.8|G4-B_0.8": {
+   "overall": {
+    "0.8": 0.029,
+    "1.0": 0.1003,
+    "1.5": 0.5622
+   },
+   "observed_needed_in_estimate_block": 1.112
+  },
+  "mu=0.07|tau=0.4|G4-A_1.0": {
+   "overall": {
+    "0.8": 0.0001,
+    "1.0": 0.0004,
+    "1.5": 0.0204
+   },
+   "observed_needed_in_estimate_block": 2.453
+  },
+  "mu=0.07|tau=0.4|G4-B_0.8": {
+   "overall": {
+    "0.8": 0.0012,
+    "1.0": 0.0073,
+    "1.5": 0.1361
+   },
+   "observed_needed_in_estimate_block": 1.941
+  },
+  "mu=0.07|tau=0.565|G4-A_1.0": {
+   "overall": {
+    "0.8": 0.0035,
+    "1.0": 0.0177,
+    "1.5": 0.2332
+   },
+   "observed_needed_in_estimate_block": 1.728
+  },
+  "mu=0.07|tau=0.565|G4-B_0.8": {
+   "overall": {
+    "0.8": 0.0138,
+    "1.0": 0.0558,
+    "1.5": 0.4329
+   },
+   "observed_needed_in_estimate_block": 1.372
+  },
+  "mu=0.07|tau=0.8|G4-A_1.0": {
+   "overall": {
+    "0.8": 0.0142,
+    "1.0": 0.0571,
+    "1.5": 0.4375
+   },
+   "observed_needed_in_estimate_block": 1.363
+  },
+  "mu=0.07|tau=0.8|G4-B_0.8": {
+   "overall": {
+    "0.8": 0.031,
+    "1.0": 0.1055,
+    "1.5": 0.5735
+   },
+   "observed_needed_in_estimate_block": 1.085
+  }
+ }
+}

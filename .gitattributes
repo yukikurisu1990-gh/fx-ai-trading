@@ -15,3 +15,6 @@ artifacts/research/classical_premia/** -text
 
 # PATSD Stage 0 の実行記録は sha256 で照合する。CRLF に書き換えさせない。
 artifacts/research/patsd_stage0/** -text
+
+# FXID Cycle 1 の記録は sha256 で照合する。
+artifacts/research/fxid_cycle1/** -text
