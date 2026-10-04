@@ -158,17 +158,40 @@ def test_no_aggregate_of_price_changes_other_than_std():
     """log mid（とその差）に平均・和を取る式が無い（別名も、log_mid を含む代入で追う）。"""
     tree = ast.parse(inspect.getsource(eco))
     tainted = {"log_mid", "moves", "_moves"}
-    for node in ast.walk(tree):
-        if isinstance(node, ast.Assign) and any(t in ast.unparse(node.value) for t in tainted):
-            for target in node.targets:
-                tainted.add(ast.unparse(target))
+    for _ in range(3):  # 代入の連鎖を数回たどる
+        for node in ast.walk(tree):
+            if (
+                isinstance(node, ast.Assign | ast.AugAssign | ast.AnnAssign)
+                and node.value is not None
+                and any(t in ast.unparse(node.value) for t in tainted)
+            ):
+                targets = node.targets if isinstance(node, ast.Assign) else [node.target]
+                for target in targets:
+                    for name in ast.walk(target):
+                        if isinstance(name, ast.Name):
+                            tainted.add(name.id)
+                    tainted.add(ast.unparse(target))
     for node in ast.walk(tree):
         if not isinstance(node, ast.Call):
             continue
         func = ast.unparse(node.func)
         args = " ".join(ast.unparse(a) for a in node.args)
         receiver = ast.unparse(node.func.value) if isinstance(node.func, ast.Attribute) else ""
-        aggregate = func.split(".")[-1] in {"mean", "sum", "cumsum", "average", "nanmean", "nansum"}
+        aggregate = func.split(".")[-1] in {
+            "mean",
+            "sum",
+            "cumsum",
+            "average",
+            "nanmean",
+            "nansum",
+            "median",
+            "dot",
+            "matmul",
+            "reduce",
+            "fmean",
+            "prod",
+            "nanmedian",
+        }
         if aggregate:
             assert not any(t in args or t in receiver for t in tainted), ast.unparse(node)
 
@@ -189,15 +212,32 @@ def test_recorded_artifact_has_no_direction_or_pnl_keys():
                 walk(v)
 
     walk(json.loads(path.read_text(encoding="utf-8")))
-    banned = (
+    import re
+
+    banned = {
         "pnl",
         "sharpe",
-        "win_rate",
+        "win",
         "winrate",
         "side",
         "direction",
         "signal",
-        "mean_return",
         "profit",
-    )
-    assert not [k for k in keys if any(b in k.lower() for b in banned)]
+        "sign",
+        "long",
+        "short",
+        "return",
+        "ret",
+        "hit",
+        "gain",
+        "edge",
+        "expect",
+        "expected",
+        "ic",
+        "drift",
+    }
+    tokens = {k: set(re.split(r"[^a-z0-9]+", k.lower())) for k in keys}
+    assert not [k for k, tok in tokens.items() if tok & banned]
+    text = path.read_text(encoding="utf-8").lower()
+    for word in ("pnl", "sharpe", "win_rate", "long", "short"):
+        assert f'"{word}' not in text, word
