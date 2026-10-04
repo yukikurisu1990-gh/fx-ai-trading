@@ -152,3 +152,52 @@ def test_driver_reads_only_through_the_guarded_route():
     calls = {ast.unparse(n.func) for n in ast.walk(tree) if isinstance(n, ast.Call)}
     assert "guarded.load_pair" in calls
     assert not any("read_parquet" in c or "read_csv" in c for c in calls)
+
+
+def test_no_aggregate_of_price_changes_other_than_std():
+    """log mid（とその差）に平均・和を取る式が無い（別名も、log_mid を含む代入で追う）。"""
+    tree = ast.parse(inspect.getsource(eco))
+    tainted = {"log_mid", "moves", "_moves"}
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Assign) and any(t in ast.unparse(node.value) for t in tainted):
+            for target in node.targets:
+                tainted.add(ast.unparse(target))
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.Call):
+            continue
+        func = ast.unparse(node.func)
+        args = " ".join(ast.unparse(a) for a in node.args)
+        receiver = ast.unparse(node.func.value) if isinstance(node.func, ast.Attribute) else ""
+        aggregate = func.split(".")[-1] in {"mean", "sum", "cumsum", "average", "nanmean", "nansum"}
+        if aggregate:
+            assert not any(t in args or t in receiver for t in tainted), ast.unparse(node)
+
+
+def test_recorded_artifact_has_no_direction_or_pnl_keys():
+    import json
+
+    path = REPO / "artifacts/research/fxid_ny_followup/r_a2b.json"
+    keys: set[str] = set()
+
+    def walk(value):
+        if isinstance(value, dict):
+            for k, v in value.items():
+                keys.add(k)
+                walk(v)
+        elif isinstance(value, list):
+            for v in value:
+                walk(v)
+
+    walk(json.loads(path.read_text(encoding="utf-8")))
+    banned = (
+        "pnl",
+        "sharpe",
+        "win_rate",
+        "winrate",
+        "side",
+        "direction",
+        "signal",
+        "mean_return",
+        "profit",
+    )
+    assert not [k for k in keys if any(b in k.lower() for b in banned)]
