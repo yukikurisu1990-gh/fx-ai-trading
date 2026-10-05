@@ -50,6 +50,26 @@ def test_overstated_conclusions_are_not_written():
     ):
         assert phrase not in text, phrase
     assert "`NO_EDGE` とは記録しない" in _text()
+    assert _text().count("`NO_EDGE`") == 1
+
+
+def test_section_4_denials_are_pinned():
+    section = _text().split("## 4. What it does NOT mean", 1)[1].split("## 5.", 1)[0]
+    assert section.count("という判定ではない") >= 4
+    for line in (
+        "- FX の日中に edge が存在しない、という判定ではない",
+        "- FX のデイトレードで利益を上げることが原理的にできない、という判定ではない。",
+        "- あらゆる戦略を検証した、という判定ではない。",
+        "- M15 の解像度では利益が出せない、という判定ではない。",
+    ):
+        assert line in section, line
+
+
+def test_economic_magnitude_layer_numbers():
+    text = _text()
+    assert "| EUR の欧州の朝の short | 0.131 | 0.078〜0.115 |" in text
+    assert "| JPY の東京の仲値の後 | 0.126 | 0.115〜0.119 |" in text
+    assert "2013 年以降" in text
 
 
 def test_near_misses_are_kept():
@@ -67,6 +87,8 @@ def test_preserved_settings():
     assert "**未凍結**" in text
     assert "**限定的な候補**" in text
     assert "2021–2025 の seen data を、新しい独立な data に戻してはならない" in text
+    assert "**個々の strategy に必ず Sharpe 1.0 を要求するという意味にはしない**" in text
+    assert "`μ = 0, τ = 0.4`" in text
 
 
 def test_cost_trigger_is_all_in_and_not_automatic():
@@ -77,6 +99,13 @@ def test_cost_trigger_is_all_in_and_not_automatic():
     assert "**研究を自動で再開してはならない。**" in text
     assert "**1 bp 以下になったら自動的に alpha 研究を始める、という意味ではない。**" in text
     assert "`FXID_REOPEN_REVIEW_PROPOSAL`" in text
+    assert "**再開の trigger が観測された場合でも、agent はこれらを自動で行わない。**" in text
+    for non_trigger in (
+        "「AI の model が進化した」",
+        "「新しい indicator を思いついた」",
+        "LightGBM",
+    ):
+        assert non_trigger in text, non_trigger
 
 
 def test_previous_rulings_are_unchanged():
@@ -94,4 +123,6 @@ def test_previous_rulings_are_unchanged():
 def test_pr503_provenance():
     text = _text()
     assert "**`332719e`**" in text
+    for sha in ("`957fa3d`", "`1b05255`", "`03ce274`"):
+        assert sha in text, sha
     assert "`58967b7`" in text

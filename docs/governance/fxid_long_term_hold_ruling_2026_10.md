@@ -84,7 +84,7 @@ FXID の active alpha discovery を停止し、長期保留へ移行する。
 **EUR の欧州の朝の short（概ね 02:00 ET → 08:15 ET）**:
 
 - 関連する効果が Breedon & Ranaldo（JMCB 2013）と Krohn・Mueller・Whelan（J. Finance 2024）の双方で確認されている。
-- firm な気配・全 spread を使った期間でも、正の Sharpe が報告された（B&R の EBS 1997–2007 で 1.3、KMW の CME 2009–2018 で 0.99）。
+- firm な気配の cost を払った期間でも、正の Sharpe が報告された（B&R: EBS の firm な bid / ask を払った後、1997–2007 で 1.3。KMW: CME の firm な気配・全 spread、2009–2018 で 0.99）。
 - 現在想定する retail の執行に置き換えた机上の推定では、net の Sharpe は概ね **0.2〜0.75** の可能性がある。
 - ただし programme の要求 `G4 = shrunk Sharpe ≥ 1.0` には届かないので、alpha cycle を正当化しない。
 
