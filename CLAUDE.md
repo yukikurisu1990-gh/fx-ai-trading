@@ -24,6 +24,13 @@ Before any M15 / ML Step 4 / post-M1 research work, read:
 For ordinary Green engineering (lint, CI, docs, tests, refactors) the
 autonomous development policy alone is enough.
 
+**FXID (FX intraday system discovery) is on long-term hold** —
+`FXID_LONG_TERM_HOLD_NO_JUSTIFIED_ALPHA_CYCLE`. The authoritative record,
+including restart triggers and what the hold does *not* mean, is
+`docs/governance/fxid_long_term_hold_ruling_2026_10.md`. Do not devise,
+implement or test FXID alpha hypotheses; reopening requires an
+`FXID_REOPEN_REVIEW_PROPOSAL` and explicit Human + ChatGPT approval.
+
 ## The Two-Track model — read this before any M15 research task
 
 M15 Family A research is split. Which track a task belongs to changes what is
