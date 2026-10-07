@@ -4,7 +4,7 @@
 
 **authoritative な state は変わらない: `FXID_LONG_TERM_HOLD_NO_JUSTIFIED_ALPHA_CYCLE`**（`docs/governance/fxid_long_term_hold_ruling_2026_10.md`、PR #504 で merge 済み: head `afef899` → merge `bd69dd1`。この branch の起点）。この文書は HOLD を解除せず、`FXID_REOPEN_REVIEW_PROPOSAL` でもない。
 
-**承認**: Human + ChatGPT の指示 `ARCHITECTURE_NEUTRAL_FX_SYSTEM_REDESIGN`（2026-10-07）。以下で「指示 §n」はこの指示の節を指す（HOLD の裁定の節は「裁定 §n」と書く）。指示 §36 は、既存の文書と集計の記録の確認、taxonomy、数学・統計の設計、**synthetic / analytic calculation**、独立レビュー、報告の作成を許可し、新しい価格 data の読み取りと取得、backtest、ML、fresh の読み取り、HOLD の解除を禁止している。
+**承認**: Human + ChatGPT の指示 `ARCHITECTURE_NEUTRAL_FX_SYSTEM_REDESIGN`（2026-10-07）。以下で「指示 §n」はこの指示の節を指す（HOLD の裁定の節は「裁定 §n」と書く）。指示 §36 は、既存の文書と集計の記録の確認、taxonomy、数学・統計の設計、**synthetic / analytic calculation**、独立レビュー、報告の作成を許可し、新しい価格 data の読み取りと取得、backtest、ML、fresh の読み取り、HOLD の解除を禁止している。裁定 §10 は HOLD の間の「signal-free の統計や max-T などの simulation の追加」を禁じているが、**この文書の合成の算術（§22 の帰無の選択の simulation を含む）は、それより後の Human + ChatGPT の明示の指示 §36 による、この設計研究に限った許可**の下で行った。FXID の alpha の仮説の検証ではない。
 
 **記号**:
 
@@ -35,10 +35,14 @@
    | 組み合わせ | 合成の上限（真の Sharpe） |
    | --- | --- |
    | EUR の朝（retail の net 0.2〜0.75）＋ JPY の仲値の後（最近の retail の net ≈ 0） | 0.75（相関 0）〜0.87（相関 0.5 の hedge の効果） |
-   | 同上、JPY を 1999–2018 の長期・half spread の 0.85 に置いた場合（古い sample の上端） | 1.13 |
+   | 同上、JPY を 1999–2018 の長期の retail の net の推定 0.85（#503 §13b の 0.82〜0.89 の中間。原典の half spread の Sharpe は 0.77）に置いた場合（古い sample の上端） | 1.13 |
 
-   - この 2 区間は、同じ機構（dealer が fix での dollar の需要を在庫で受ける W 字）の、**時間が重ならず、USD の符号が逆**の 2 つの窓である（EUR の short は USD の long、JPY の long は USD の short）。同じ family の中の上限であり、独立な 2 つの component ではない。
-   - これは真の Sharpe の上限で、G4（縮小後の事後 Sharpe 1.0）に要る観測（G4-A、τ 0.8〜0.4 で 1.31〜2.56、τ 0.4 では 2.24〜2.56【記録 Cycle 1 §16 と `cycle1_design_supplement.json`】）とは比べる量が違う。どちらで見ても届かない。
+   - この 2 区間は、同じ機構（dealer が fix での dollar の需要を在庫で受ける W 字）の、**時間が重ならず、USD の符号が逆**の 2 つの窓である（EUR の short は USD の long、JPY の long は USD の short）。同じ family の中の値であり、独立な 2 つの component ではない。
+   - **表の値は相関 ρ ≥ 0 の場合の値**。USD の符号が逆なので、負の ρ もありうる。負の ρ は合成の値を上げる（JPY 0.85・ρ −0.2 で 1.27、JPY ≈ 0・ρ −0.2 で 0.77【算術】）。ρ は推定していない。
+   - **JPY を長期の 0.85 に置いた行（1.13、ρ が負ならそれ以上）は、真の Sharpe として 1.0 を超える**。「届かない」は §1 の表だけからは言えず、次の 3 つに拠る:
+     - (a) 最近の期間の JPY ≈ 0（2013 年以降と CME 2009–2018【記録 #503 §13b】）
+     - (b) 文献の効果量への公表の後の減衰の haircut（30〜60%。1.13 は 0.45〜0.79 になる）
+     - (c) G4 は縮小後の事後の Sharpe 1.0 で、要る観測は G4-A で 1.31〜2.56（τ 0.8〜0.4。推定の block が 4.68 年の 3 ブロック案と、4 年の分割 ② を合わせた範囲。τ 0.4 では 2.24〜2.56）【記録 Cycle 1 §16 と `cycle1_design_supplement.json`】。真の Sharpe 1.13 でも、この観測に届く確率は低い
    - #496 の算術【記録】では、s ≈ 0.07 の source を無限に足しても上限は s/√ρ = 0.22（ρ = 0.1）。
 2. **最大の危険は、architecture の名前で偽発見を増やすこと**【合成】。真の Sharpe が全て 0 の候補 100 本から、in-sample の上位 5 本を等 risk で組むと:
    - in-sample の portfolio の Sharpe は平均 **2.03**（帰無の 90 percentile は 2.36）
@@ -438,7 +442,7 @@ risk は μ に掛ける scalar ではなく、**最適化の目的と制約**�
 **管理の設計【設計】**:
 
 1. **探索の台帳**: cycle の前に全ての自由度を列挙し、候補の総数を事前登録する。
-2. **予算**: 選択の block の長さで決める。閾値は max-T の z_{α/M} で上がる（10 年で、試行 10 → 20 で z は 2.81 → 3.02、Sharpe の閾値は約 0.07 上がる）。
+2. **予算**: 選択の block の長さで決める。閾値は max-T の z_{α/M} で上がる（片側 FWER 10%、独立の近似で、試行 10 → 20 で z は 2.33 → 2.58。10 年なら Sharpe の閾値は約 0.08 上がる。Cycle 1 の選択の検出力 0.73（10 年・試行 20）は z = 2.58 で再現する）。
 3. 保有期間・exit・cost・risk の規則・執行は、事前に固定する。
 4. ML の暗黙の試行は、交差検証の実効の自由度で数えるか、使わない。
 5. 「試したのは 20 本だけ」は安全の根拠にならない。
@@ -457,9 +461,9 @@ risk は μ に掛ける scalar ではなく、**最適化の目的と制約**�
 | 真の system の Sharpe | 0.5 | 0.7 | 1.0 | 1.3 | 1.5 |
 | --- | --- | --- | --- | --- | --- |
 | 検出力（SE = 1/√T） | 0.30 | 0.46 | 0.72 | 0.89 | 0.95 |
-| 検出力（Lo 2002 の SE） | 0.27 | 0.40 | 0.56 | 0.68 | 0.74 |
+| 検出力（保守的な変種: 4.9 年を年次の 4.9 個の観測として Lo の iid の補正を当てたもの） | 0.27 | 0.40 | 0.56 | 0.68 | 0.74 |
 
-**真の system の Sharpe 1.0 でも、検出力は 0.72 以下**（fat tail と自己相関があれば更に下がる）。fresh は programme の名前に依らず全体で 1 回しか使えない（裁定 §7）。
+**真の system の Sharpe 1.0 でも、検出力は 0.72 以下**。日次の標本では Lo の iid の補正は無視でき、SE はほぼ 1/√T。保守的な変種の行は上限を下げる感度として示す。fat tail と系列相関があれば、検出力は更に下がる（系列相関は model していない）。fresh は programme の名前に依らず全体で 1 回しか使えない（裁定 §7）。
 
 ## 25. Candidate system architectures
 
@@ -540,7 +544,7 @@ H = 良い、M = 中、L = 悪い（overfit・多重性・sample の必要量・
 
 ## 28. Proposed research programme
 
-**前提**: 次の全ては、**裁定 §9 の trigger が成立し、`FXID_REOPEN_REVIEW_PROPOSAL` が Human + ChatGPT に承認された後にだけ**行う。HOLD のままでは行わない。
+**前提**: P0（この文書。指示 §36 により HOLD の中で許可された設計の作業）を除き、P1 以降の全ては、**裁定 §9 の trigger が成立し、`FXID_REOPEN_REVIEW_PROPOSAL` が Human + ChatGPT に承認された後にだけ**行う。HOLD のままでは行わない。
 
 | Phase | 中身 | 実 data | gate |
 | --- | --- | --- | --- |
@@ -574,7 +578,9 @@ H = 良い、M = 中、L = 悪い（overfit・多重性・sample の必要量・
   | family | 既存の判定【記録】 |
   | --- | --- |
   | dollar の日中の W 字（EUR の朝・JPY の仲値の後を 1 family） | `ECONOMICALLY_UNATTRACTIVE`（#503） |
-  | 自国時間の顧客の flow | W 字と重なる |
+  | 自国時間の顧客の flow | W 字と重なる。C03 `NO_DECISION_GRADE_PASS_REGION`、H-002 CLOSED（gate として）、#503 §13 で programme の要求に不足 |
+| 機関の注文 flow | `NOT_IMPLEMENTABLE_WITH_AVAILABLE_INFORMATION`（#503） |
+| 日中の momentum | `INSUFFICIENT_EVIDENCE` / `DUPLICATE_OF_PREVIOUS_RESEARCH`（#503、S1 除外） |
   | 月末の株式ヘッジ | `DUPLICATE_OF_PREVIOUS_RESEARCH`（C05 / S21 停止） |
   | 指標の発表の後の drift | 査読の drift の実証なし、#473 の帰無、S2 保留 |
   | NY 10:00 の option cut・session の引き継ぎ | C03 `NO_DECISION_GRADE_PASS_REGION` |
@@ -583,7 +589,7 @@ H = 良い、M = 中、L = 悪い（overfit・多重性・sample の必要量・
 
 - **過去に RED / HOLD / 停止の判定を受けた mechanism は、その mechanism 自身の REOPEN なしに component として戻れない**（裁定 §12、緩い component gate による復活の禁止）。
 - 各 family の文献の効果量（retail の net の推定）に、**公表の後の減衰の haircut**（30〜60%。McLean & Pontiff 2016、J. Finance【文献・この文書では原典を未照合】）を掛け、§21 の重なりで構造化した相関を置き、system の真の Sharpe の上限を解析的に計算する。
-- **予想される結論**: 残る family は全て USD を中心にしたもの（S8）で、上限は 1.0 に届かない（§1）。**P1 で STOP になる見込みが高い**。
+- **予想される結論**: 残る family は全て USD を中心にしたもの（S8）。最近の期間の JPY ≈ 0 と公表の後の haircut を入れると、上限は 1.0 に届かない（§1 の (a)・(b)）。**P1 で STOP になる見込みが高い**。
 
 **P2（pipeline の帰無の検証）**: P1 が上限 ≥ 1.0 を示した場合だけ行う。H と G を合成 data の上で走らせ、選択を含めた portfolio 単位の FWER と検出力を確かめる。G が H を検出力で上回らなければ H を採る。
 
@@ -600,7 +606,7 @@ architecture の研究そのものの終了条件【設計】。
 | S3 | cost で全て消える | 全ての component が、all-in の現実の cost（時刻と event 別）の後に prior の net ≤ 0 |
 | S4 | 交互作用が必要な標本を満たさない | §10 の式で、必要な標本が選択の block を超える（現実の効果量では常に当たる） |
 | S5 | 実効の探索の複雑さが予算を超える | 等価試行数が、選択の block で真の Sharpe 1.0 の検出力 0.5 を保てる数を超える |
-| S6 | 独立な確認ができない | fresh の検出力（Lo の SE）< 0.5 になる真の system の Sharpe しか見込めない |
+| S6 | 独立な確認ができない | fresh の検出力（SE = 1/√T、系列相関の補正を加える）< 0.5 になる真の system の Sharpe しか見込めない |
 | S7 | 必要な標本が非現実的 | 独立な選択と推定の block に、合わせて 15 年を超える data が要る |
 | S8 | 実効の breadth が小さすぎる | 全ての component が USD の因子だけに載る、または pair の空間の participation ratio < 3 |
 
@@ -627,7 +633,28 @@ component gate を緩めて何でも通すことはしない。弱い component 
 
 **合成の記録の再生成**: 独立レビューの指摘で `synthetic.py` を直し（β12 の要件、疎な view、Lo の SE、PAIRS の hardcode、未使用の IC の表の削除）、merge の前の `synthetic.json` を作り直した（記録の上書きの禁止は、merge 済みの記録に適用する）。
 
-**修正の後の再監査**: 新しい context で確認した（結果は PR の本文に記録する）。
+**修正の後の再監査**（新しい context、`c04c40c`）: BLOCKER 0。
+
+確認された点:
+
+- 全ての前の指摘の修正
+- 合成の記録の一致
+- §10・§13・§20・§22・§24 の数値、§19 の spread、統治（HOLD・REOPEN の後だけ・判断依頼）
+
+**REQUIRED FIX 3 件（修正済み）**:
+
+| # | 指摘 | 対応 |
+| --- | --- | --- |
+| RF-1 | §1 の 1.13 の行は 1.0 を超え、「届かない」は haircut と最近の JPY に拠る。負の ρ は値を上げる | 依拠を (a)〜(c) に明記し、ρ ≥ 0 の値と書いた |
+| RF-2 | 「Lo の SE」の行は、年次の 4.9 個の観測として扱った保守的な変種 | 名前を直し、S6 は SE = 1/√T に拠らせた |
+| RF-3 | §23 の z は FWER 10% では 2.33 → 2.58 | 直した |
+
+**NON-BLOCKING 4 件（反映）**:
+
+- 1.31〜2.56 の block の長さの混在
+- JPY 0.85 の出典
+- §29 の表に機関の flow・日中の momentum・自国時間の判定を追加
+- 裁定 §10 と指示 §36 の関係、P0 の扱い
 
 ## 32. Human + ChatGPT decision requests
 

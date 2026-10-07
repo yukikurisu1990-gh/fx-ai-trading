@@ -11,7 +11,7 @@
 2. 弱い component の portfolio の偽発見（帰無の N 本から in-sample の上位 k 本を選んだ portfolio の Sharpe）
 3. 交互作用の項 β12 の検定に要る標本（効果は 2×2 の 1 cell だけ、多重性 M）
 4. 2 component の合成の Sharpe の上限（相関 ρ）
-5. system 単位の fresh の確認の検出力（SE = 1/√T と、Lo (2002) の SE）
+5. system 単位の fresh の確認の検出力（SE = 1/√T と、年次の 4.9 個の観測として Lo の iid の補正を当てた保守的な変種。日次の標本では補正は無視でき、系列相関の補正は model していない）
 """
 
 from __future__ import annotations
@@ -175,7 +175,7 @@ def fresh_power() -> list[dict[str, Any]]:
                 "true_sharpe": s,
                 "fresh_years": FRESH_YEARS,
                 "power_se_1_over_sqrt_t": round(float(simple), 3),
-                "power_lo_2002_se": round(float(lo), 3),
+                "power_annual_sampling_conservative": round(float(lo), 3),
             }
         )
     return out
