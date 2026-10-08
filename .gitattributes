@@ -19,3 +19,4 @@ artifacts/research/patsd_stage0/** -text
 # FXID Cycle 1 の記録は sha256 で照合する。
 artifacts/research/fxid_cycle1/** -text
 artifacts/research/fxid_ny_followup/** -text
+artifacts/research/architecture_redesign/** -text
