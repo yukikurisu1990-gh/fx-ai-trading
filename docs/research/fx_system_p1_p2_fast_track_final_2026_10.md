@@ -9,7 +9,7 @@
 | 記号 | 意味 |
 | --- | --- |
 | 【記録】 | repo に commit 済みの報告・記録 |
-| 【P1】 | `artifacts/research/fx_system_reopen_feasibility/p1_result.json`（sha256 `8986337a…`） |
+| 【P1】 | `artifacts/research/fx_system_reopen_feasibility/p1_result.json`（sha256 `8986337aa447c8dae7f0e1b022ac83bad699309607ac952479a4825849ce3005`） |
 | 【算術】 | この文書の計算 |
 
 ---
@@ -22,18 +22,19 @@ P1 は STOP（`PORTFOLIO_ARCHITECTURE_FEASIBLE_BUT_COMPONENT_SUPPLY_INSUFFICIENT
 
 - **component の供給**:
   - 棚卸しした 15 の mechanism family のうち、過去の判定（RED・CLOSED・HOLD・DUPLICATE・NOT_IMPLEMENTABLE・ECONOMICALLY_UNATTRACTIVE など）を受けていないものは無い。
-  - 上限の計算に入れられるのは、HOLD の裁定 §6 が near-miss として保存した **dollar の日中の W 字の family（F1）の 1 つだけ**。
+  - 上限の計算に入れられるのは、**dollar の日中の W 字の family（F1）の 1 つだけ**。HOLD の裁定 §6 が near-miss として保存したのは、そのうち EUR の欧州の朝と JPY の仲値の後の 2 つの窓で、EUR の ECB の後の窓は部分的な復活（§9）。
   - **distinct な family が 1 つしかないので、P1 の PASS 条件 (3)「2 つ以上の family」は、family の分類の段階で（上限を計算する前に）満たせないことが決まっていた**（独立レビュー Statistics の指摘。§13）。
+  - さらに、Optimistic の窓は全て「古い」と事前に印を付けたので、`p1.py` の読み方では AMBER にも到達できなかった。**どの数値の結果でも STOP 以外は出なかった**。判定は、事前登録の分類と、事前登録の後・実行の前に書いた code の読み方で決まっており、上限の計算は判定に影響しない記述的な数値である（§14）。
 - **system の上限**【P1】（long only、年率の retail の net の真の Sharpe）:
 
   | scenario | 上限 | 備考 |
   | --- | --- | --- |
   | **Base** | **0.28** | 正の窓は EUR の欧州の朝だけ |
-  | Optimistic | 1.15 | 3 つの窓が全て古い推定で、それを除くと 0。窓の間の相関が 0 の時だけ 1.0 を超える（0.3 で 0.99） |
+  | Optimistic | 1.15 | 3 つの窓が全て古い推定で、それを除くと 0。窓の間の相関が約 0.27 以下の時だけ 1.0 を超える（0.3 で 0.99） |
   | Stress | 0 | cost 1.5 倍で全ての窓が負 |
 
-  Base の上限は、どの合理的な代替の仮定（haircut なし 0.40、CME の上端 0.52、閉じた family を戻しても 0.41）でも 1.0 から遠い【独立レビュー】。
-- **結論**: Architecture H の合成の構造は使えるが、統合する正の component が足りない。ARCH-C の判定（主な制約は `COMPONENT_SUPPLY + COST + INDEPENDENT_DATA`）を、P1 が具体的な数で裏付けた。
+  Base の上限は、検討した代替の仮定（haircut なし 0.40、CME の上端 0.52、閉じた family を戻しても 0.41）でも 1.0 から遠い【独立レビュー】。比べているのは真の Sharpe の上限で、G4（縮小後の事後の Sharpe）にとっては必要条件にすぎない。届かないことの結論は、より強くなる向きである。
+- **結論**: 統合する正の component が足りない。ARCH-C の判定（主な制約は `COMPONENT_SUPPLY + COST + INDEPENDENT_DATA`）を、P1 が具体的な数で裏付けた。STOP の token の「ARCHITECTURE_FEASIBLE」は事前登録の token で、H の合成の構造が P2 で検証されたことを意味しない（P2 は未実行）。
 
 ## 2. PR #505 merge record
 
@@ -68,7 +69,8 @@ P1 は STOP（`PORTFOLIO_ARCHITECTURE_FEASIBLE_BUT_COMPONENT_SUPPLY_INSUFFICIENT
 
 G は既定にしない。P2 で、同じ selection-error の予算の下で、事前登録の基準で H を上回る場合だけ候補にする（同 §5）。
 
-- その基準は `gates.choose_architecture` に実装した。基準の要素: FWER の CI の上端 ≤ 10%、H より FWER が悪くない、現実の対立仮説の半数以上で検出力が 0.10 以上向上、増えた自由度あたりの向上。
+- その基準の形は `gates.choose_architecture` に実装した。基準の要素（独立レビューの指摘で強化）: 同じ対立仮説の集合、G の FWER の CI の上端 ≤ 10% かつ H の CI の上端以下、どの対立仮説でも 0.10 以上の検出力を失わない、半数以上で 0.10 以上向上、増えた自由度あたりの中央値の向上。
+- **`GCriterion` の閾値の値は placeholder で、P2 を行う場合は、その事前登録で出力の前に改めて固定する**（事前登録された基準ではない）。
 - **今回は P2 を実行していないので、G は評価されていない**。
 
 ## 6. One-time P1/P2 HOLD exception
@@ -102,8 +104,8 @@ G は既定にしない。P2 で、同じ selection-error の予算の下で、�
 
 | family | P1 での扱い |
 | --- | --- |
-| F1 dollar の日中の W 字 / fixing の在庫 | ELIGIBLE（保存された near-miss） |
-| F2 自国時間 / 顧客の flow | F1 に統合（同じ pair・窓・符号で、損益の系列が同じ） |
+| F1 dollar の日中の W 字 / fixing の在庫 | ELIGIBLE（§6 が保存した 2 つの窓。ECB の後の窓は部分的な復活、§9） |
+| F2 自国時間 / 顧客の flow | F1 に統合（EUR の窓では同じ pair・窓・符号で、損益の系列が同じ。JPY では B&R の自国時間の効果は東京の時間の JPY の short で F1 の窓と違うが、F2 は LOCKED で影響なし） |
 | F3 機関の注文 flow | LOCKED |
 | F4 月末の株式ヘッジ | LOCKED |
 | F5 fix の後の反転 | LOCKED |
@@ -135,7 +137,7 @@ G は既定にしない。P2 で、同じ selection-error の予算の下で、�
 | family | 過去の判定【記録】 |
 | --- | --- |
 | F1 | `ECONOMICALLY_UNATTRACTIVE`（#503 §15）、HOLD の裁定 §6 の near-miss。**fix の flow の以前の記録**（独立レビュー FX の指摘で追加）: C04 benchmark fix flow は RED（停止、#478 inventory）、#474 の fix の前後 1 時間の cell は方向が未検定 |
-| F2 | C03 `NO_DECISION_GRADE_PASS_REGION`、H-002 CLOSED（gate として）、#503 で programme の要求に不足 |
+| F2 | C03 `NO_DECISION_GRADE_PASS_REGION`（#484）・RED（#478 inventory）、H-002 CLOSED（gate として）、#503 で programme の要求に不足 |
 | F3 | `NOT_IMPLEMENTABLE_WITH_AVAILABLE_INFORMATION`（#503） |
 | F4 | `DUPLICATE_OF_PREVIOUS_RESEARCH`（C05 / S21 停止）・`ECONOMICALLY_UNATTRACTIVE`（#503 §13d） |
 | F5 | `NOT_IMPLEMENTABLE`（分単位） |
@@ -156,6 +158,7 @@ ML・tabular の系譜（Phase 9・27〜29・ML Step 4、C-8）・Round A（#468
 
 - HOLD の裁定 §6 が near-miss として保存したのは、**EUR の欧州の朝と JPY の仲値の後の 2 つの窓だけ**で、**EUR の ECB の後の窓は保存されていない**（#503 §13c / §15 で `ECONOMICALLY_UNATTRACTIVE`、CME 0.08）。
 - それを F1 の窓として Optimistic に 0.25 で入れたのは、**部分的な復活**に当たる。
+- **事前登録の不整合**として記録する（事前登録 §2 の「過去の判定を受けたものは寄与 0」の規則に反する）。計算の前に登録したので結果に依存した拡大ではなく、Optimistic を上げる向き（STOP に不利な向き）だけに効く。
 - 影響は無い: ECB の後を除いても、Optimistic は 1.127（1 つを除いた上限）で、判定は同じ。Base と Stress では、この窓は 0 か負。
 
 ## 10. Effect scenarios
@@ -191,10 +194,19 @@ ML・tabular の系譜（Phase 9・27〜29・ML Step 4、C-8）・Round A（#468
 | 記録の field | 注記 |
 | --- | --- |
 | `unconstrained_any_sign` | **無効**（`INVALID_SIGN_FLIP_IGNORES_COST`）。cost の後の Sharpe が負や 0 の窓を「売る」ことで上限を上げているが、取引を逆にしても cost は再び払う（売りの Sharpe は −gross − cost で、+\|net\| ではない）。Stress の 0.58、Stress の相関 −0.2 の 1.05、Base の 0.30 はこの理由で実現できない。**1.0 への経路として引用しない** |
-| `currency_exposure_constrained` | 窓は時間が重ならない（終わりと始まりが接するだけ）ので同時の複数通貨の exposure は無い。しかし**3 つの窓は全て USD の因子の bet**（dollar の W 字）で、USD の risk の比率の上限は満たせない（family の集中と同じく、制約は binding）。値の複写は「同時の exposure」の意味でだけ正しい |
+| `currency_exposure_constrained` | **上限の値としては無効**。窓は時間が重ならない（終わりと始まりが接するだけ）ので同時の複数通貨の exposure は無いが、**3 つの窓は全て USD の pair の bet**（USD の符号は、EUR の朝で long、JPY の仲値の後と ECB の後で short と交互）で、USD の risk の比率の上限は満たせない（制約は binding）。記録の値は long only の値の複写 |
 | `same_day_constrained` | overnight の family は全て LOCKED なので、判定に影響しない |
 | `distinct_families...`・`family_concentration...` | F1 だけが eligible なので、計算ではなく分類の結果として記録した値 |
 | `TRADES_PER_YEAR` | 250（原典の値の一部は √252 で作られている。差は判定に影響しない） |
+
+**cost の現実性の注記**（独立レビュー FX）: Base は、CME の firm な気配を OANDA の 2021–2025 の時刻の平均の M15 の spread + 0.5 bp に置き換えたもので、次を model していない。Base の EUR の朝は cost の倍率約 1.26 で 0 になるので、どれも STOP を強める向き。
+
+- OANDA の market maker の気配（last look・requote）と firm な気配の違い
+- 02:00・08:15 の境の時刻の spread
+- ECB の会合の日の 08:15（年約 8 回）
+- ECB の後の窓の中の US 08:30・10:00 の発表・option cut・11:00 の London fix・FOMC
+
+**証拠の新しさ**: P1 の入力は、どれも 2018 年より新しくない。Base の入力（CME 2009–18）も、KMW 自身の 1999–2018 の sample の中にある。
 
 ## 12. P1 results
 
@@ -206,7 +218,7 @@ ML・tabular の系譜（Phase 9・27〜29・ML Step 4、C-8）・Round A（#468
 | P1-O | 0.74 / 0.85 / 0.25 | **1.154** | 0.886 / 0.781（JPY を除く）/ 1.127 | **0**（全て古い） | 1.432 |
 | P1-S | −0.47 / −0.50 / −0.44 | **0** | 0 | 0 | 0 |
 
-- **Optimistic の相関の感度**【算術】: 0.3 で 0.99、0.5 で 0.93。**1.0 を超えるのは相関 ≤ 0（窓の間の W 字の強さが独立か逆）の時だけ**。
+- **Optimistic の相関の感度**【算術】: 0.25 で 1.010、0.275 で 1.000、0.3 で 0.99、0.5 で 0.93。**1.0 を超えるのは相関が約 0.27 以下の時だけ**。
 - **Base の cost の損益分岐**: EUR の朝の 0.28 は、cost の倍率約 1.26 で 0 になる【算術、独立レビュー Quant】。
 - **状態を解いた参考の行**（判定に使わない）: Base 0.28 に、閉じた #497 の 0.127 と M16 の 0.276 を相関 0 で足しても 0.41。当日決済に反し、観測の Sharpe と真の上限の混在でもある。
 
@@ -243,7 +255,8 @@ ML・tabular の系譜（Phase 9・27〜29・ML Step 4、C-8）・Round A（#468
   - JPY の 0.85 は最近の証拠（CME 2009–18 で −0.2〜0.07、2013 年以降は横ばい）と矛盾する。
   - 1.0 を超えるのは窓の間の相関 ≤ 0 の時だけ。
 - 第 2 の節「1 つの古い推定だけに依存」の字義では、1.0 には**2 つ**の古い推定（EUR の朝と JPY）が要る（1 つを除くと 0.886 と 0.781）。code の「古い窓を除いた上限 < 1.0」は、事前登録の文言より厳しい読み方である。
-- **どちらの読み方でも結果は同じ**: AMBER も STOP も P2 に進まず（指示 §13）、HOLD は継続し、最終の分類は FAST-A（P1 で止まる）。
+- **どちらの読み方でも結果は同じ**: AMBER も STOP も P2 に進まず（指示 §13）、HOLD は継続する。指示 §32 は FAST-A を「P1 で STOP」と定義しているので、**AMBER を FAST-A に対応させるのは解釈**である（P2 が無いことは同じ）。
+- **上限の計算は判定に影響しなかった**: PASS は分類の段階で不可能（条件 (3)）で、Optimistic の窓は全て事前に「古い」と印を付けたので、code の読み方では AMBER にも到達できなかった。
 
 ## 15. P2 preregistration if applicable
 
@@ -275,15 +288,39 @@ ML・tabular の系譜（Phase 9・27〜29・ML Step 4、C-8）・Round A（#468
 
 ## 22. System-prior calibration
 
-P2 は未実行だが、**system の prior の契約は code と test で固定した**（`system_prior.py`）:
+P2 は未実行だが、**system の prior の契約は code と test で固定した**（`system_prior.py`）。
 
-- component ごとに独立な N(0, τ_c²) の prior を置き、符号と重みを最適に選んで合成すると、system の達成しうる Sharpe の尺度は τ_c √k_eff（k_eff = k / (1 + (k − 1) ρ)）。
-- τ_c に system の τ をそのまま使うと、τ = 0.4・k = 10 で尺度は 1.26 に緩む。`assert_not_loosened` はこれを拒否する。
-- `calibrated_component_tau` は τ_c = τ_sys / √k_eff を返し、含意する system の尺度は G4 の τ と一致する（test で k = 1・5・10、ρ = 0・0.3 を確認。正規の乱数でも尺度を確認）。
+**最初の版の欠陥と修正**（独立レビュー Statistics・Quant の指摘）:
+
+- 最初の版（`96796d5`）は、実効の数に k / (1 + (k − 1) ρ) を使っていた。これは等しい重み・同じ符号の合成の量である。
+- 符号と重みを最適に選ぶ合成（S = √(sᵀ R⁻¹ s)）では、component の prior N(0, τ_c² I) の下で **E[S²] = τ_c² · tr(R⁻¹)** で、等相関では tr(R⁻¹) = 1 / (1 + (k − 1) ρ) + (k − 1) / (1 − ρ) ≥ k になる（正の相関は、hedge で達成しうる Sharpe を上げる）。
+- 最初の版の「較正した」τ_c は、k = 10・ρ = 0.3 で system の RMS を 0.88 にし（G4 の 0.4 ではなく）、P(S > 1) は 23% だった。**抜け穴を閉じていなかった**。
+- 最初の版の test は、ρ = 0 の simulation と、自分自身との循環の比較だけで、この欠陥を見逃していた。
+
+**修正の後の契約**:
+
+| 項目 | 内容 |
+| --- | --- |
+| 2 次の moment | τ_c = τ_sys / √tr(R⁻¹) で、含意する system の RMS を G4 の τ に一致させる |
+| tail | 含意する P(S > 1) が、G4 の prior の P(system の Sharpe > 1) = 1 − Φ(1/τ_sys)（τ 0.4 で 0.0062）以下であることを、Monte Carlo（決定的）で確かめる。2 次の moment を合わせても、S は χ 型なので tail は別に検査する |
+| test | ρ = 0・0.3 の simulation、tr(R⁻¹) の式、tail、k = 1 で符号を data で選ぶと tail が 2 倍になり拒否されること |
+
+**計算の例**【算術】: τ_sys = 0.4、k = 10。
+
+| ρ | 2 次の moment で較正した τ_c | tail で較正した τ_c | 拘束する条件 |
+| --- | --- | --- | --- |
+| 0 | 0.127 | 0.202 | 2 次の moment |
+| 0.3 | 0.110 | 0.174 | 2 次の moment |
+
+**P1 の記録への影響**: `system_prior.py` と `gates.py`（`choose_architecture` の強化）は P1 の実行の後に変えたので、記録の `code_sha256` のこの 2 file の値は現在の file と一致しない。
+
+- `p1.py` は `system_prior` を import していない。
+- `gates` からは `p2_allowed` と `final_classification` だけを使い、この 2 つは変えていない。
+- したがって、P1 の計算と判定は影響を受けない。
 
 ## 23. H vs G decision
 
-P2 を実行していないので、G は評価されていない。**既定の H のまま**（裁定 §5）。G を採る基準は `gates.choose_architecture` に実装し、test で固定した。
+P2 を実行していないので、G は評価されていない。**既定の H のまま**（裁定 §5）。G を採る基準の形は `gates.choose_architecture` に実装し、test で形を固定したが、**閾値の値は placeholder で、将来の P2 の事前登録で改めて固定する**。
 
 ## 24. Final verdict
 
@@ -309,7 +346,18 @@ P2 を実行していないので、G は評価されていない。**既定の 
 
 ## 27. Independent reviews
 
-（下に記録する。）
+**P1 の独立レビュー**（3 役）は §13。
+
+**最終の成果物の独立レビュー**（4 役、指示 §30）: 別の context で並行して走らせ、互いの結論は渡していない。**4 役とも BLOCKER なし、FAST-A と P2 の未実行を支持**。
+
+| 役 | 主な指摘 | 対応 |
+| --- | --- | --- |
+| **Quant Portfolio** | REQUIRED: (1) **system の prior の契約の実効の数が ρ > 0 で誤り**（tr(R⁻¹) が正しい。k = 10・ρ = 0.3 で尺度は 3.63 τ_c、code は 1.64 τ_c）、(2) Optimistic が 1.0 を超える相関は 0 ではなく約 0.275。NON-BLOCKING: `currency_exposure_constrained` は上限の値として無効、`choose_architecture` の甘さ（点と CI の比較、key の集合、損失の上限）、「H の構造は使える」は未検証 | §22 の契約を書き直し test を追加、§1・§12 の相関、§11、§5 の基準の強化 |
+| **Statistician** | REQUIRED: (1) 同じ契約の欠陥（ρ = 0.3 で RMS 0.88、P(S > 1) 23%）、(2) simulation の test が ρ = 0 だけで、2 次の moment だけ、(3) **どの数値でも STOP 以外は出なかった**ことを §1・§14 に明記、(4) `GCriterion` は placeholder、(5) 「どの合理的な代替でも」は過大。NON-BLOCKING: AMBER → FAST-A は解釈、真の Sharpe の上限は G4 の必要条件 | §22・test・§1・§14・§5・§23 |
+| **FX Economist** | REQUIRED: (1) governance の文書の §1 の参照が §5（正しくは §6）、(2) ECB の後の窓を「保存された near-miss」と書いた箇所（§1・§8）。NON-BLOCKING: F2 の統合は EUR の窓だけで成り立つ、C03 の RED の併記、時刻の確認、cost の現実性（market maker・境の時刻・ECB の会合の日・窓の中の event）、2018 年より新しい入力は無い | governance の §1、§1・§8・§9・§11 |
+| **Adversarial Governance** | BLOCKER・REQUIRED なし（PR の作成だけが残る）。範囲・隠れた data の読み取り・事前登録の順序・例外の範囲・G4 の抜け穴・§29 を確認。NON-BLOCKING: ECB の後の窓は事前登録の不整合、AMBER は事前登録の定数の下で到達不能、test 11 は記録の削除で抜けられる、test 4〜6 の禁止の呼び出しが部分一致だけ、出力の sha の全桁の記録 | §9、§14、test 11 を記録の存在の必須と scenario の値の固定に、test 4〜6 に `open`・`np.load`・`fromfile`・`importlib`・`pickle` と、file の読み取り・subprocess を helper の中に限る検査を追加、全桁の sha |
+
+**修正の後の再監査**: 新しい context で確認した（結果は PR の本文に記録する）。
 
 ## 28. Governance compliance
 

@@ -66,8 +66,29 @@ def test_package_imports_no_data_broker_or_protected_reader(path):
     imported |= {a.name for n in ast.walk(tree) if isinstance(n, ast.Import) for a in n.names}
     assert imported <= ALLOWED_IMPORTS, imported - ALLOWED_IMPORTS
     calls = {ast.unparse(n.func) for n in ast.walk(tree) if isinstance(n, ast.Call)}
-    for forbidden in ("read_parquet", "read_csv", "load_pair", "requests", "urlopen", "oanda"):
+    forbidden_calls = (
+        "read_parquet",
+        "read_csv",
+        "load_pair",
+        "requests",
+        "urlopen",
+        "oanda",
+        "np.load",
+        "fromfile",
+        "__import__",
+        "importlib",
+        "pickle",
+    )
+    for forbidden in forbidden_calls:
         assert not any(forbidden in c for c in calls), (path.name, forbidden)
+    assert "open" not in calls, path.name
+    for fn in (n for n in ast.walk(tree) if isinstance(n, ast.FunctionDef)):
+        body = ast.unparse(fn)
+        if "read_bytes" in body or "read_text" in body:
+            assert fn.name == "_sha", (path.name, fn.name)
+        if "subprocess.run" in body:
+            assert fn.name == "_git", (path.name, fn.name)
+            assert "['git', *args]" in body, (path.name, fn.name)
 
 
 # 7. G4 は system 単位の 1.0
@@ -76,24 +97,48 @@ def test_g4_is_system_level_one():
     assert pr.TARGET == 1.0
 
 
-# 8. component の prior で system の prior を緩められない
+# 8. component の prior で system の prior を緩められない（2 次の moment と tail、ρ > 0 を含む）
 def test_component_priors_cannot_loosen_system_prior():
     tau = 0.4
-    with pytest.raises(ValueError):
-        system_prior.assert_not_loosened(tau, tau, k=10)
-    assert math.isclose(system_prior.implied_system_prior_scale(tau, 10), tau * math.sqrt(10))
-    for k, rho in ((1, 0.0), (5, 0.0), (10, 0.0), (10, 0.3)):
+    for k, rho in ((10, 0.0), (10, 0.3), (5, 0.0)):
+        with pytest.raises(ValueError):
+            system_prior.assert_not_loosened(tau, tau, k=k, rho=rho)
         tc = system_prior.calibrated_component_tau(tau, k, rho)
         assert math.isclose(system_prior.implied_system_prior_scale(tc, k, rho), tau)
         system_prior.assert_not_loosened(tc, tau, k, rho)
 
 
-def test_implied_scale_matches_simulation():
-    rng = np.random.default_rng(0)
+def test_second_moment_uses_trace_of_inverse_correlation():
+    k, rho = 10, 0.3
+    trace = 1 / (1 + (k - 1) * rho) + (k - 1) / (1 - rho)
+    r = np.full((k, k), rho)
+    np.fill_diagonal(r, 1.0)
+    assert math.isclose(system_prior.second_moment_factor(r), trace, rel_tol=1e-9)
+    assert trace > k
+
+
+@pytest.mark.parametrize("rho", [0.0, 0.3])
+def test_implied_scale_matches_simulation_including_correlated_case(rho):
+    rng = np.random.default_rng(1)
     tau, k = 0.4, 10
-    draws = rng.normal(0, tau, size=(20000, k))
-    scale = math.sqrt(float(np.mean((draws**2).sum(axis=1))))
-    assert abs(scale - system_prior.implied_system_prior_scale(tau, k)) < 0.02
+    r = np.full((k, k), rho)
+    np.fill_diagonal(r, 1.0)
+    s = rng.normal(0, tau, size=(40000, k))
+    q = np.einsum("ij,ij->i", s, np.linalg.solve(r, s.T).T)
+    rms = math.sqrt(float(q.mean()))
+    assert abs(rms - system_prior.implied_system_prior_scale(tau, k, rho)) / rms < 0.02
+
+
+def test_tail_of_calibrated_prior_does_not_exceed_g4_tail():
+    for k, rho in ((10, 0.0), (10, 0.3)):
+        tc = system_prior.calibrated_component_tau(0.4, k, rho)
+        assert system_prior.implied_tail(tc, k, rho) <= system_prior.g4_tail(0.4)
+
+
+def test_single_component_sign_choice_doubles_the_tail():
+    # k = 1 でも、符号を data で選ぶと tail は G4 の 2 倍になり、拒否される
+    with pytest.raises(ValueError):
+        system_prior.assert_not_loosened(0.4, 0.4, k=1)
 
 
 # 9. P2 は P1 が PASS の場合だけ
@@ -116,6 +161,10 @@ def test_g_only_when_it_beats_h_on_preregistered_criterion():
     assert gates.choose_architecture(h, _res(0.09, 0.10, {"a": 0.5, "b": 0.3}, 12), c) == "G"
     assert gates.choose_architecture(h, _res(0.09, 0.10, {"a": 0.35, "b": 0.35}, 12), c) == "H"
     assert gates.choose_architecture(h, _res(0.09, 0.10, {"a": 0.5, "b": 0.5}, 100), c) == "H"
+    assert gates.choose_architecture(h, _res(0.09, 0.10, {"a": 0.5, "c": 0.9}, 12), c) == "H"
+    assert gates.choose_architecture(h, _res(0.09, 0.10, {"a": 0.9, "b": 0.1}, 12), c) == "H"
+    h2 = _res(0.05, 0.07, {"a": 0.3, "b": 0.3}, 10)
+    assert gates.choose_architecture(h2, _res(0.08, 0.095, {"a": 0.6, "b": 0.6}, 12), c) == "H"
 
 
 # 11. 結果に依存した候補の拡大の禁止（universe の固定と、事前登録の hash の一致）
@@ -124,11 +173,20 @@ def test_candidate_universe_is_fixed_and_preregistered():
     eligible = [k for k, v in pr.FAMILIES.items() if v[2].startswith("ELIGIBLE")]
     assert eligible == ["F1_dollar_intraday_W_fixing_inventory"]
     assert pr.WINDOWS == ("EUR_morning_0200_0815", "JPY_post_tokyo_fix", "EUR_post_ECB_0815_1700")
-    if RESULT.exists():
-        rec = json.loads(RESULT.read_text(encoding="utf-8"))
-        for path, sha in rec["preregistration_sha256"].items():
-            raw = (REPO / path).read_bytes().replace(b"\r\n", b"\n")
-            assert hashlib.sha256(raw).hexdigest() == sha, path
+    assert RESULT.exists()
+    rec = json.loads(RESULT.read_text(encoding="utf-8"))
+    for path, sha in rec["preregistration_sha256"].items():
+        raw = (REPO / path).read_bytes().replace(b"\r\n", b"\n")
+        assert hashlib.sha256(raw).hexdigest() == sha, path
+    eur, jpy, ecb = pr.WINDOWS[0], pr.WINDOWS[1], pr.WINDOWS[2]
+    expected = {
+        "P1-O": {eur: 0.74, jpy: 0.85, ecb: 0.25},
+        "P1-B": {eur: 0.28, jpy: 0.0, ecb: 0.0},
+        "P1-S": {eur: 0.064, jpy: 0.0, ecb: 0.0},
+    }
+    assert {k: v["sharpe"] for k, v in pr.SCENARIOS.items()} == expected
+    assert rec["verdict"]["p1_verdict"] == "STOP"
+    assert rec["p2_executed"] is False
 
 
 # 12. REOPEN の提案は実行の許可ではない

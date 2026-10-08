@@ -20,7 +20,7 @@
 | component ごとの縮小の和 | **G4 の迂回に使うことを禁止** |
 | fresh | 最終的に凍結した system 全体に 1 回だけ |
 | FXID の state | **`FXID_LONG_TERM_HOLD_NO_JUSTIFIED_ALPHA_CYCLE` は解除しない** |
-| 一度限りの例外 | **P1 と、条件付きの P2 だけ**を、HOLD の中で実行することを許可（§5） |
+| 一度限りの例外 | **P1 と、条件付きの P2 だけ**を、HOLD の中で実行することを許可（§6） |
 
 ## 2. ARCH-C の意味
 
@@ -64,6 +64,7 @@
 
 - H に、mechanism の中の条件付きの μ の推定・状態変数・family の縮小などの自由度を加えたもの。**既定にしない**。
 - P2 で、**同じ selection-error の予算の下で、H より実質的に高い検出力**を、事前登録した基準で示した場合だけ候補にする。それ以外は H。
+- 基準の形は `scripts/research/fx_system_reopen_feasibility/gates.py` の `choose_architecture` に置いたが、**閾値の値（`GCriterion`）は placeholder で、P2 を行う場合は、その事前登録で出力の前に改めて固定する**。
 - **ML / GBDT で G を救済してはならない**。
 
 **system の prior**:
@@ -71,6 +72,9 @@
 - G4 の prior は、**最終の system の net Sharpe に直接**課す。
 - component ごとに独立な prior を置いて足し、system の prior が `τ√k` に膨らむことを禁止する。
 - component の prior を使う場合は、**含意する system の prior が G4 の prior と一致するよう scale する**。
+  - 符号と重みを最適に選ぶ合成では、system の達成しうる Sharpe の 2 次の moment は τ_c² · tr(R⁻¹)（R は component の相関）。正の相関では tr(R⁻¹) > k で、hedge が達成しうる Sharpe を上げる。
+  - 2 次の moment に加えて、tail（P(system の Sharpe > 1)）も G4 の prior の値以下にする。
+  - 契約は `scripts/research/fx_system_reopen_feasibility/system_prior.py` と test に置いた。
 
 ## 6. 一度限りの例外: P1 と条件付きの P2
 

@@ -45,24 +45,28 @@ class GCriterion:
 
 
 def choose_architecture(h: PipelineResult, g: PipelineResult, c: GCriterion) -> str:
-    """事前の基準を全て満たす時だけ G。それ以外は H（既定）。"""
-    # FWER の上限（MC の CI の上端）を超える、または H より FWER が悪い（MC の CI の幅を超えて）なら H
-    if g.fwer_ci_upper > c.fwer_cap:
+    """事前の基準を全て満たす時だけ G。それ以外は H（既定）。
+
+    **基準の値（GCriterion）は placeholder で、将来の P2 の事前登録で、出力の前に改めて固定する**。
+    """
+    # 同じ対立仮説の集合で比べる
+    if set(g.power_by_alternative) != set(h.power_by_alternative) or not g.power_by_alternative:
         return "H"
-    if g.fwer > h.fwer_ci_upper:
+    # FWER: G の CI の上端が上限を超える、または H の CI の上端より悪いなら H
+    if g.fwer_ci_upper > c.fwer_cap or g.fwer_ci_upper > h.fwer_ci_upper:
         return "H"
     gains = {
-        k: g.power_by_alternative[k] - h.power_by_alternative.get(k, 0.0)
-        for k in g.power_by_alternative
+        k: g.power_by_alternative[k] - h.power_by_alternative[k] for k in g.power_by_alternative
     }
-    if not gains:
+    # どこかの対立仮説で大きく検出力を失うなら H
+    if min(gains.values()) <= -c.min_power_gain:
         return "H"
     improved = [k for k, v in gains.items() if v >= c.min_power_gain]
     if len(improved) / len(gains) < c.min_share_of_alternatives_improved:
         return "H"
     extra_dof = g.search_dof - h.search_dof
-    mean_gain = sum(gains.values()) / len(gains)
-    if extra_dof > 0 and mean_gain / extra_dof < c.min_power_gain_per_extra_dof:
+    median_gain = float(sorted(gains.values())[len(gains) // 2])
+    if extra_dof > 0 and median_gain / extra_dof < c.min_power_gain_per_extra_dof:
         return "H"
     return "G"
 
