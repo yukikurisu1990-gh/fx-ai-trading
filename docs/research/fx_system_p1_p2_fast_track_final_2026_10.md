@@ -253,7 +253,7 @@ ML・tabular の系譜（Phase 9・27〜29・ML Step 4、C-8）・Round A（#468
 - STOP は、規則の STOP の第 1 の節「Base と Optimistic のどちらにも credible な 1.0 の経路が無い」による:
   - Optimistic の 3 つの窓は全て、最近の証拠より古い sample の推定で、古い窓を除くと上限は 0。
   - JPY の 0.85 は最近の証拠（CME 2009–18 で −0.2〜0.07、2013 年以降は横ばい）と矛盾する。
-  - 1.0 を超えるのは窓の間の相関 ≤ 0 の時だけ。
+  - 1.0 を超えるのは窓の間の相関が約 0.27 以下の時だけ（§12）。
 - 第 2 の節「1 つの古い推定だけに依存」の字義では、1.0 には**2 つ**の古い推定（EUR の朝と JPY）が要る（1 つを除くと 0.886 と 0.781）。code の「古い窓を除いた上限 < 1.0」は、事前登録の文言より厳しい読み方である。
 - **どちらの読み方でも結果は同じ**: AMBER も STOP も P2 に進まず（指示 §13）、HOLD は継続する。指示 §32 は FAST-A を「P1 で STOP」と定義しているので、**AMBER を FAST-A に対応させるのは解釈**である（P2 が無いことは同じ）。
 - **上限の計算は判定に影響しなかった**: PASS は分類の段階で不可能（条件 (3)）で、Optimistic の窓は全て事前に「古い」と印を付けたので、code の読み方では AMBER にも到達できなかった。
@@ -352,12 +352,12 @@ P2 を実行していないので、G は評価されていない。**既定の 
 
 | 役 | 主な指摘 | 対応 |
 | --- | --- | --- |
-| **Quant Portfolio** | REQUIRED: (1) **system の prior の契約の実効の数が ρ > 0 で誤り**（tr(R⁻¹) が正しい。k = 10・ρ = 0.3 で尺度は 3.63 τ_c、code は 1.64 τ_c）、(2) Optimistic が 1.0 を超える相関は 0 ではなく約 0.275。NON-BLOCKING: `currency_exposure_constrained` は上限の値として無効、`choose_architecture` の甘さ（点と CI の比較、key の集合、損失の上限）、「H の構造は使える」は未検証 | §22 の契約を書き直し test を追加、§1・§12 の相関、§11、§5 の基準の強化 |
+| **Quant Portfolio** | REQUIRED: (1) **system の prior の契約の実効の数が ρ > 0 で誤り**（tr(R⁻¹) が正しい。k = 10・ρ = 0.3 で尺度は 3.62 τ_c、code は 1.64 τ_c）、(2) Optimistic が 1.0 を超える相関は 0 ではなく約 0.275。NON-BLOCKING: `currency_exposure_constrained` は上限の値として無効、`choose_architecture` の甘さ（点と CI の比較、key の集合、損失の上限）、「H の構造は使える」は未検証 | §22 の契約を書き直し test を追加、§1・§12 の相関、§11、§5 の基準の強化 |
 | **Statistician** | REQUIRED: (1) 同じ契約の欠陥（ρ = 0.3 で RMS 0.88、P(S > 1) 23%）、(2) simulation の test が ρ = 0 だけで、2 次の moment だけ、(3) **どの数値でも STOP 以外は出なかった**ことを §1・§14 に明記、(4) `GCriterion` は placeholder、(5) 「どの合理的な代替でも」は過大。NON-BLOCKING: AMBER → FAST-A は解釈、真の Sharpe の上限は G4 の必要条件 | §22・test・§1・§14・§5・§23 |
 | **FX Economist** | REQUIRED: (1) governance の文書の §1 の参照が §5（正しくは §6）、(2) ECB の後の窓を「保存された near-miss」と書いた箇所（§1・§8）。NON-BLOCKING: F2 の統合は EUR の窓だけで成り立つ、C03 の RED の併記、時刻の確認、cost の現実性（market maker・境の時刻・ECB の会合の日・窓の中の event）、2018 年より新しい入力は無い | governance の §1、§1・§8・§9・§11 |
 | **Adversarial Governance** | BLOCKER・REQUIRED なし（PR の作成だけが残る）。範囲・隠れた data の読み取り・事前登録の順序・例外の範囲・G4 の抜け穴・§29 を確認。NON-BLOCKING: ECB の後の窓は事前登録の不整合、AMBER は事前登録の定数の下で到達不能、test 11 は記録の削除で抜けられる、test 4〜6 の禁止の呼び出しが部分一致だけ、出力の sha の全桁の記録 | §9、§14、test 11 を記録の存在の必須と scenario の値の固定に、test 4〜6 に `open`・`np.load`・`fromfile`・`importlib`・`pickle` と、file の読み取り・subprocess を helper の中に限る検査を追加、全桁の sha |
 
-**修正の後の再監査**: 新しい context で確認した（結果は PR の本文に記録する）。
+**修正の後の再監査**（新しい context、`d127e27`）: BLOCKER 0。(a) 契約（tr(R⁻¹) 13.127、較正の値、拒否と受理、旧版の失敗 RMS 0.88・P(S > 1) 0.234 の再現）、(c)・(e)・(f)・(g)・(h)・(i)（P1 の結果に影響なし）を確認。**REQUIRED FIX 2 件**: `choose_architecture` が上側の中央値を使っていた（2 つの対立仮説では最大の利得になる）→ `statistics.median` に直し test を追加、§14 に「相関 ≤ 0」が残っていた → 直した。NON-BLOCKING: NaN の guard を追加、test の件数・3.62 の表記を直した。§13 の Quant の行の「相関 0 の時だけ」はそのレビューの記録として残す（正しい値は §12）。
 
 ## 28. Governance compliance
 
@@ -374,7 +374,7 @@ P2 を実行していないので、G は評価されていない。**既定の 
 | component の prior の和による抜け穴 | 契約と test で禁止 |
 | 結果に依存した候補の拡大 | 無し（15 family の universe を事前登録で固定、test で確認）。ECB の後の窓の部分的な復活は §9 で開示（影響なし） |
 | 新しい文献の探索 | 無し |
-| 指示 §29 の 12 項目の test | `tests/research/test_fx_system_reopen_feasibility.py`（16 件） |
+| 指示 §29 の 12 項目の test | `tests/research/test_fx_system_reopen_feasibility.py`（parametrize を展開して 20 件以上） |
 
 ## 29. Human + ChatGPT decision requests
 

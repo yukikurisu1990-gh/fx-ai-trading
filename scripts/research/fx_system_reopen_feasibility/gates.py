@@ -3,6 +3,8 @@
 
 from __future__ import annotations
 
+import math
+import statistics
 from dataclasses import dataclass
 from typing import Final
 
@@ -52,6 +54,9 @@ def choose_architecture(h: PipelineResult, g: PipelineResult, c: GCriterion) -> 
     # 同じ対立仮説の集合で比べる
     if set(g.power_by_alternative) != set(h.power_by_alternative) or not g.power_by_alternative:
         return "H"
+    # 数値でない値（NaN・inf）は H
+    if not all(math.isfinite(x) for x in (g.fwer, g.fwer_ci_upper, h.fwer, h.fwer_ci_upper)):
+        return "H"
     # FWER: G の CI の上端が上限を超える、または H の CI の上端より悪いなら H
     if g.fwer_ci_upper > c.fwer_cap or g.fwer_ci_upper > h.fwer_ci_upper:
         return "H"
@@ -65,7 +70,7 @@ def choose_architecture(h: PipelineResult, g: PipelineResult, c: GCriterion) -> 
     if len(improved) / len(gains) < c.min_share_of_alternatives_improved:
         return "H"
     extra_dof = g.search_dof - h.search_dof
-    median_gain = float(sorted(gains.values())[len(gains) // 2])
+    median_gain = float(statistics.median(gains.values()))
     if extra_dof > 0 and median_gain / extra_dof < c.min_power_gain_per_extra_dof:
         return "H"
     return "G"

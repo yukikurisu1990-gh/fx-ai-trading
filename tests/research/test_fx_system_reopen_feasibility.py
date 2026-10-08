@@ -49,6 +49,7 @@ ALLOWED_IMPORTS = {
     "itertools",
     "json",
     "math",
+    "statistics",
     "subprocess",
     "sys",
     "time",
@@ -163,6 +164,12 @@ def test_g_only_when_it_beats_h_on_preregistered_criterion():
     assert gates.choose_architecture(h, _res(0.09, 0.10, {"a": 0.5, "b": 0.5}, 100), c) == "H"
     assert gates.choose_architecture(h, _res(0.09, 0.10, {"a": 0.5, "c": 0.9}, 12), c) == "H"
     assert gates.choose_architecture(h, _res(0.09, 0.10, {"a": 0.9, "b": 0.1}, 12), c) == "H"
+    # 中央値（上側の中央値ではない）: 利得 0 と 0.5 の中央値 0.25 を、増えた自由度 10 で割ると 0.025
+    assert gates.choose_architecture(h, _res(0.09, 0.10, {"a": 0.3, "b": 0.8}, 20), c) == "G"
+    assert gates.choose_architecture(h, _res(0.09, 0.10, {"a": 0.3, "b": 0.8}, 40), c) == "H"
+    assert (
+        gates.choose_architecture(h, _res(0.09, float("nan"), {"a": 0.5, "b": 0.5}, 12), c) == "H"
+    )
     h2 = _res(0.05, 0.07, {"a": 0.3, "b": 0.3}, 10)
     assert gates.choose_architecture(h2, _res(0.08, 0.095, {"a": 0.6, "b": 0.6}, 12), c) == "H"
 
