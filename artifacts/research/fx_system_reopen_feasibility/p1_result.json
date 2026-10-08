@@ -1,0 +1,234 @@
+{
+ "authorization": "Human + ChatGPT 2026-10-08 の P1 / 条件付き P2 に限った一度限りの HOLD の例外",
+ "code_sha256": {
+  "scripts/research/fx_system_reopen_feasibility/__init__.py": "63bbba7b75c181dcb604fd8ca51ccacfcd74c0703c41b8adcc320dcd9bc99447",
+  "scripts/research/fx_system_reopen_feasibility/gates.py": "d253321412ab6715533ef7fef570113e3d543525a4d89c009c5767de33055b59",
+  "scripts/research/fx_system_reopen_feasibility/p1.py": "9ab9a2a4291f26e50a20088eb0cc4be665ff1ebfac6a784c480b5e41c599bea0",
+  "scripts/research/fx_system_reopen_feasibility/prereg.py": "86a6f2e1c24300793e456410782b9ca69b0b67f14364faf8b9a7ee521f69eb00",
+  "scripts/research/fx_system_reopen_feasibility/system_prior.py": "e36ce28d3133bf8788c124b776a25340b45d2e47044b93bad30497549ec1c01d"
+ },
+ "dirty_path_count": 0,
+ "families": {
+  "F10_session_transition": {
+   "p1_treatment": "LOCKED",
+   "previous_status": "C03 NO_DECISION_GRADE_PASS_REGION",
+   "reason": "経済性の机上の判定で不合格"
+  },
+  "F11_option_cut": {
+   "p1_treatment": "LOCKED",
+   "previous_status": "#474 の cell（方向は未検定、毎日は損益分岐 IR 4〜59）",
+   "reason": "経済的に不可能に近い"
+  },
+  "F12_carry": {
+   "p1_treatment": "LOCKED",
+   "previous_status": "CARRY_EDGE_NOT_SUPPORTED（#471）／#497 で LONG_TERM_HOLD",
+   "reason": "carry は rollover をまたいで初めて生じ、当日決済では 0"
+  },
+  "F13_cross_sectional_or_ts_momentum": {
+   "p1_treatment": "LOCKED",
+   "previous_status": "#497 で hedge の役だけ、B′-4 の月次 TSMOM は負",
+   "reason": "日次以上の horizon で当日決済の範囲外"
+  },
+  "F14_classical_premia_composite": {
+   "p1_treatment": "LOCKED",
+   "previous_status": "#497 LONG_TERM_HOLD（TC-net 0.127、carry 99%）",
+   "reason": "F12 と F13 の合成"
+  },
+  "F15_other_researched_daily": {
+   "p1_treatment": "LOCKED",
+   "previous_status": "T-R / T-R2 / T-V / Top-Five / next-five は NOT_SUPPORTED、M16 は POSITIVE_EXPLORATORY だが #495 で「閉じる」",
+   "reason": "日次の horizon で当日決済の範囲外"
+  },
+  "F1_dollar_intraday_W_fixing_inventory": {
+   "p1_treatment": "ELIGIBLE_AS_PRESERVED_NEAR_MISS",
+   "previous_status": "ECONOMICALLY_UNATTRACTIVE（#503）／ HOLD の裁定 §6 の near-miss",
+   "reason": "EUR の欧州の朝・JPY の仲値の後・EUR の ECB の後を、同じ W 字の別の窓として 1 family にする"
+  },
+  "F2_local_currency_trading_hours_customer_flow": {
+   "p1_treatment": "MERGED_INTO_F1",
+   "previous_status": "C03 NO_DECISION_GRADE_PASS_REGION／H-002 CLOSED（gate として）／#503 で programme の要求に不足",
+   "reason": "EUR の朝の窓は F1 と同じ時間・同じ符号で、economic source が重なる（B&R の顧客の flow と KMW の dealer の在庫は同じ現象の 2 つの説明）"
+  },
+  "F3_institutional_order_flow": {
+   "p1_treatment": "LOCKED",
+   "previous_status": "NOT_IMPLEMENTABLE_WITH_AVAILABLE_INFORMATION（#503）",
+   "reason": "非公開の flow"
+  },
+  "F4_month_end_equity_hedging": {
+   "p1_treatment": "LOCKED",
+   "previous_status": "DUPLICATE_OF_PREVIOUS_RESEARCH（C05 / S21 停止）・ECONOMICALLY_UNATTRACTIVE（#503 §13d）",
+   "reason": "年 12 回、cost に負ける"
+  },
+  "F5_post_fix_reversal": {
+   "p1_treatment": "LOCKED",
+   "previous_status": "NOT_IMPLEMENTABLE_WITH_AVAILABLE_INFORMATION（#503）",
+   "reason": "効果は 1〜15 分の中"
+  },
+  "F6_tokyo_fixing_spike_gotobi": {
+   "p1_treatment": "LOCKED",
+   "previous_status": "NOT_IMPLEMENTABLE / INSUFFICIENT_EVIDENCE（#503）",
+   "reason": "秒単位の spike、長い drift は査読なし。数時間の窓は F1 に含む"
+  },
+  "F7_macro_announcement_repricing": {
+   "p1_treatment": "LOCKED",
+   "previous_status": "INSUFFICIENT_EVIDENCE / DUPLICATE（#473 の検出力のある帰無、S2 保留）",
+   "reason": "調整は数分"
+  },
+  "F8_intraday_momentum": {
+   "p1_treatment": "LOCKED",
+   "previous_status": "INSUFFICIENT_EVIDENCE / DUPLICATE（S1 除外、VR < 1）",
+   "reason": "測られた反転と逆"
+  },
+  "F9_short_horizon_mean_reversion": {
+   "p1_treatment": "LOCKED",
+   "previous_status": "Round 1 で net 負、B′ の構造は損益分岐の 6〜16%（#469 / #470）、multi-day の反転は dropped（#465〜#467）",
+   "reason": "cost で回収できない"
+  }
+ },
+ "head": "96796d5001181720ab7094c248b822198ba613ca",
+ "p2_executed": false,
+ "preregistration_sha256": {
+  "docs/research/fx_system_p1_prereg_2026_10.md": "a944af8f665e024a76f6a2a4aa184c292f0bde6bfa996d09c812cbefc8aa27cf",
+  "scripts/research/fx_system_reopen_feasibility/prereg.py": "86a6f2e1c24300793e456410782b9ca69b0b67f14364faf8b9a7ee521f69eb00"
+ },
+ "scenarios": {
+  "P1-B": {
+   "bound_without_stale_components": 0.28,
+   "currency_exposure_constrained": 0.28,
+   "distinct_families_with_positive_contribution": 1,
+   "family_concentration_constrained_feasible": false,
+   "label": "Base: 最近の証拠を優先し、公表の後の減衰と市場の変化を考えた、最も防御できる中心の推定",
+   "leave_one_out_long_only": {
+    "EUR_morning_0200_0815": 0.0,
+    "EUR_post_ECB_0815_1700": 0.28,
+    "JPY_post_tokyo_fix": 0.28
+   },
+   "long_only": 0.28,
+   "long_only_support": [
+    "EUR_morning_0200_0815"
+   ],
+   "positive_windows": [
+    "EUR_morning_0200_0815"
+   ],
+   "rho_within_family": 0.3,
+   "same_day_constrained": 0.28,
+   "sensitivity_not_for_verdict": {
+    "rho=-0.2": {
+     "long_only": 0.2951,
+     "unconstrained": 0.2951
+    }
+   },
+   "unconstrained_any_sign": 0.3017,
+   "window_sharpe_after_cost_stress": {
+    "EUR_morning_0200_0815": 0.28,
+    "EUR_post_ECB_0815_1700": 0.0,
+    "JPY_post_tokyo_fix": 0.0
+   }
+  },
+  "P1-O": {
+   "bound_without_stale_components": 0.0,
+   "currency_exposure_constrained": 1.1544,
+   "distinct_families_with_positive_contribution": 1,
+   "family_concentration_constrained_feasible": false,
+   "label": "Optimistic: 原典で確認された、実装の可能性のある最も強い post-cost の効果",
+   "leave_one_out_long_only": {
+    "EUR_morning_0200_0815": 0.886,
+    "EUR_post_ECB_0815_1700": 1.127,
+    "JPY_post_tokyo_fix": 0.7811
+   },
+   "long_only": 1.1544,
+   "long_only_support": [
+    "EUR_morning_0200_0815",
+    "JPY_post_tokyo_fix",
+    "EUR_post_ECB_0815_1700"
+   ],
+   "positive_windows": [
+    "EUR_morning_0200_0815",
+    "JPY_post_tokyo_fix",
+    "EUR_post_ECB_0815_1700"
+   ],
+   "rho_within_family": 0.0,
+   "same_day_constrained": 1.1544,
+   "sensitivity_not_for_verdict": {
+    "rho=-0.2": {
+     "long_only": 1.4321,
+     "unconstrained": 1.4321
+    }
+   },
+   "unconstrained_any_sign": 1.1544,
+   "window_sharpe_after_cost_stress": {
+    "EUR_morning_0200_0815": 0.74,
+    "EUR_post_ECB_0815_1700": 0.25,
+    "JPY_post_tokyo_fix": 0.85
+   }
+  },
+  "P1-S": {
+   "bound_without_stale_components": 0.0,
+   "currency_exposure_constrained": 0.0,
+   "distinct_families_with_positive_contribution": 0,
+   "family_concentration_constrained_feasible": false,
+   "label": "Stress: より高い cost・より弱い効果・正の相関・集中",
+   "leave_one_out_long_only": {
+    "EUR_morning_0200_0815": 0.0,
+    "EUR_post_ECB_0815_1700": 0.0,
+    "JPY_post_tokyo_fix": 0.0
+   },
+   "long_only": 0.0,
+   "long_only_support": [],
+   "positive_windows": [],
+   "rho_within_family": 0.5,
+   "same_day_constrained": 0.0,
+   "sensitivity_not_for_verdict": {
+    "rho=-0.2": {
+     "long_only": 0.0,
+     "unconstrained": 1.0548
+    }
+   },
+   "unconstrained_any_sign": 0.5801,
+   "window_sharpe_after_cost_stress": {
+    "EUR_morning_0200_0815": -0.4736,
+    "EUR_post_ECB_0815_1700": -0.4427,
+    "JPY_post_tokyo_fix": -0.4981
+   }
+  }
+ },
+ "started_utc": "2026-10-08T12:17:40Z",
+ "status_unlocked_reference_not_for_verdict": {
+  "base_plus_unlocked_rho0": 0.4132,
+  "components": {
+   "F14_classical_premia_composite_TC_net": 0.127,
+   "F15_M16_central": 0.276
+  },
+  "note": "当日決済に反し、閉じた family を含む。判定に使わない"
+ },
+ "verdict": {
+  "base_long_only_after_cost_x1_5": 0.0,
+  "conditions": {
+   "1_base_bound_ge_1": false,
+   "2_not_single_stale_or_extreme": false,
+   "3_two_distinct_families": false,
+   "4_room_after_cost_stress": false
+  },
+  "final_classification": "FAST-A NO_REOPEN_JUSTIFICATION_COMPONENT_SUPPLY_INSUFFICIENT",
+  "optimistic_leave_one_out_min": 0.7811,
+  "optimistic_long_only": 1.1544,
+  "optimistic_without_stale": 0.0,
+  "p1_verdict": "STOP",
+  "p2_allowed": false,
+  "stop_state": "PORTFOLIO_ARCHITECTURE_FEASIBLE_BUT_COMPONENT_SUPPLY_INSUFFICIENT"
+ },
+ "window_times_et": {
+  "EUR_morning_0200_0815": [
+   "02:00",
+   "08:15"
+  ],
+  "EUR_post_ECB_0815_1700": [
+   "08:15",
+   "16:45"
+  ],
+  "JPY_post_tokyo_fix": [
+   "19:55/20:55",
+   "02:00(+1 暦日、同じ取引日)"
+  ]
+ }
+}
