@@ -262,15 +262,15 @@ V は `VERIFIED_FROM_TEXT`、NV は `NOT_VERIFIED`。
 
 - Optimistic は 2013 年に終わる sample の、全体の return（carry を含む）の値。
 - BoJ の値は cost の報告が無い gross。
-- Lucca & Moench は pre-FOMC の部分を主要通貨で否定する。
+- Lucca & Moench は、pre-FOMC の部分を主要通貨で確認しない（検出力の低い帰無。§11）。記録（`d2_desk.json`）の `replication` の欄の「否定」の文言は、凍結した記録の文で、この訂正の前のもの。
 
-Base（104 年）は、どの解釈でも K8 に当たる。
+Base（104 年）は、下の逸脱を 1 つずつ採っても K8 に当たる。複数を同時に採ると（文献の期間を含める読み方 約 27 年と、全体の return・減衰 30% の 21 年）K8 を通りうるが、文献の期間は独立な検証にならない（K5）ので、その組み合わせは採らない。
 
 **D2 の事後の選択と感度**（独立レビューの指摘で開示。どれも Base の kill を変えない）:
 
 | 項目 | 内容 | 判定への影響 |
 | --- | --- | --- |
-| Optimistic の定義の逸脱 | D0 §6 の「原典の最も強い post-cost の効果」は Table X の S2（net 19.15 bp、Sharpe 0.783）で、記録は dol（10.77）を使った。S2 を使うと FOMC の Optimistic は約 0.69、family は約 1.04（約 5.7 年）で、**Optimistic は K8 に当たらない**（BoJ の σ を直すと約 0.80・約 9.6 年で当たる）。S2 は、発表で引き締めかどうか（発表の時点で決まる）で符号を反転し、金利差が正の通貨だけを使うので、事前の実装には難がある | なし（kill は Base。S2 の Base でも family は 38 年以上） |
+| Optimistic の定義の逸脱 | D0 §6 の「原典の最も強い post-cost の効果」は Table X の S2（net 19.15 bp、Sharpe 0.783）で、記録は dol（10.77）を使った。S2 を使うと FOMC の Optimistic は約 0.67、family は約 1.03（約 5.8 年）で、**Optimistic は K8 に当たらない**（BoJ の σ を直すと約 0.79・約 9.9 年で当たる）。S2 は、発表で引き締めかどうか（発表の時点で決まる）で符号を反転し、金利差が正の通貨だけを使うので、事前の実装には難がある | なし（kill は Base。S2 の Base でも family は 38 年以上） |
 | Base で差（発表の日 − 他の日）を使った | D0 §6 は「原典の効果」とだけ書く。差を使うのは事後の選択で、kill の向きに偏る。根拠は、当日決済の窓は rollover をまたがず carry を得ないこと（MTV の return は金利差を含む超過 return） | なし（全体の return の Base でも family 0.32・約 60 年。公表の後の replication を認めて減衰 30% にしても 0.54・約 21 年） |
 | 使える年数 7.1 | D0 の「使える非 fresh の期間」を「文献の sample の外の非 fresh の期間」と読んだ（K5 と重なる読み方）。2014-01 … 2016-05 の 2.4 年は OANDA の archive に無く、取得（D4 の 1 package）が要る。文献の期間（1994〜2013）を含めて読めば Optimistic は K8 を通るが、Base は通らない | なし |
 | 窓の移し | retail の窓は前日の 16:00〜18:00 を落とすが、これは MTV の pre-window の中にある。均等に生じるなら約 0.7 bp の損失（未検定） | なし |
@@ -362,7 +362,11 @@ PR #506 の契約（`τ² · tr(R⁻¹)` と tail の制約）を維持した。
 | **FX Economics** | (1) 方向は金利差の条件付き（2017–19・2022–25 は体制が合わない）、(2) Lucca & Moench は % の単位で、反証ではなく「確認しない」、(3) 探索の空間の項目ごとの対応 | §10・§11・§7、D1 の記録の §3。NON-BLOCKING（他の中央銀行に効果なし、月末の債券は PARTIAL_OVERLAP、M-OV1 の gate 4 は × と K3、入りの cost） |
 | **Adversarial Governance** | (1) §27 が空、(2) 記録の provenance の不足、(3) D1 の時刻を証明できない | §27 を記入、§15・§28 に開示、D1 の記録（作業用の file の mtime は全て D0 の commit の後）を commit。HOLD の裁定を sha256 で固定する test を追加 |
 
-**修正の後の再監査**: 新しい context で確認した（結果は PR の本文に記録する）。
+**修正の後の再監査**（新しい context、`77fefef`）: BLOCKER なし。
+
+- 16 項目を、原典の text・code・git から再計算した。BoJ の σ 97.1 / 99.1 bp、全体の return の Base 0.320・60.3 年、HOLD の裁定の hash、D1 の記録の 20 file の hash と mtime などを確認した。
+- REQUIRED FIX 1 件（§12 に Lucca & Moench の「否定」が残っていた）を修正した。
+- NON-BLOCKING（S2 の値の精密化 0.67 / 1.03 / 5.8 年・0.79 / 9.9 年、逸脱の組み合わせの注記）も反映した。
 
 ## 28. Governance compliance
 
