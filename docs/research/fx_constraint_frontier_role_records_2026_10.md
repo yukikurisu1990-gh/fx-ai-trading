@@ -1,6 +1,6 @@
 # FX Feasibility Constraint Frontier — 役割の記録（2026-10-11）
 
-事前登録（`docs/research/fx_constraint_frontier_prereg_2026_10.md`、`732fa49`、2026-10-11T14:29:28Z）の commit の後に、別の context の agent に渡した指示の文面（逐語）と、出力の要点。出力の全文は agent の会話の記録にあり、repo には要点だけを残す。
+事前登録（`docs/research/fx_constraint_frontier_prereg_2026_10.md`、`732fa49`、2026-10-11T14:29:28Z）の commit の後に、別の context の agent に渡した指示の文面（逐語）と、出力の要点（§0 の候補の抽出だけは事前登録の commit の前）。出力の全文は agent の会話の記録にあり、repo には要点だけを残す。
 
 - 3 つの調査は、事前登録の commit の後に並行して起動した。どの agent も価格の data を読んでいない。account の作成・login・取引・demo・data の取得・購入をしていない。
 - 数値は、agent が頁の本文から引用したもの（`[V]`）と、検索の要約からのもの（`[S]`、未検証）を区別した。
