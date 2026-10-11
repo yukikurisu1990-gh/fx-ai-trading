@@ -98,3 +98,23 @@ def test_retained_fast_path_matches_contract():
         a = fr.retained(name, d, 4.67, 6.4)
         b = c.run_contract(name, d, 4.67, 6.4, 0.0)["retained"]
         assert (a == b).all()
+
+
+def test_no_module_in_the_package_reads_price_data():
+    import importlib
+
+    for name in ("frontier", "supplement", "run_synthetic", "run_frontier", "run_supplement"):
+        mod = importlib.import_module(f"scripts.research.fx_constraint_frontier.{name}")
+        src = inspect.getsource(mod)
+        for forbidden in ("read_parquet", "read_csv", "load_pair", "guarded", "data/"):
+            assert forbidden not in src, (name, forbidden)
+
+
+def test_supplement_variants_change_only_the_named_inputs():
+    from scripts.research.fx_constraint_frontier import supplement as sp
+
+    base = sp.candidates_with()
+    both = sp.candidates_with(k1_g=3.3, k3_boj_sigma=51.0)
+    assert base[0].windows[0].g == 2.8 and both[0].windows[0].g == 3.3
+    assert base[2].windows[1].sigma == 98.0 and both[2].windows[1].sigma == 51.0
+    assert base[1] == both[1] and base[3] == both[3]
