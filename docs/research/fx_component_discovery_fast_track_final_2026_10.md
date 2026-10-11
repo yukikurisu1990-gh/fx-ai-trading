@@ -19,8 +19,8 @@
 
 | 段階 | 結果 |
 | --- | --- |
-| D1 | 3 つの独立な探索で、約 29 の mechanism を、原典の本文と照合しながら調べた。**D1 の gate を通ったのは 1 つの family だけ**: 中央銀行の発表の日の不確実性の premium（Mueller・Tahbaz-Salehi・Vedolin、J. Finance 2017）。2 つの探索が独立に同じ family に行き着いた |
-| D2 | その family（FOMC と BoJ の 2 つの窓）は、**全ての scenario で kill の規則 K8 に当たった**（下表）。Stress では K1（cost ≥ gross）にも当たった |
+| D1 | 3 つの独立な探索で、31 の mechanism を、原典の本文と照合しながら調べた。**D1 の gate を通ったのは 1 つの family だけ**: 中央銀行の発表の日の不確実性の premium（Mueller・Tahbaz-Salehi・Vedolin、J. Finance 2017）。2 つの探索が独立に同じ family に行き着いた |
+| D2 | その family（FOMC と BoJ の 2 つの窓）は、**事前登録の kill の規則 K8（Base で判定）に当たった**: Base の検出に 104 年、使える期間 7.1 年。Optimistic と Stress は参考（下表） |
 
 **D2 の結果**【D2】（年率の retail の net Sharpe、当日決済の窓 18:00 → 16:45 ET）:
 
@@ -31,6 +31,11 @@
 | Stress | −0.04 | −0.05 | 0 | — | 7.1 |
 
 - **2 つ以上の distinct な family という要件は、D1 の段階で既に満たせなかった**（D1 を通ったのは 1 family）。D2 は、その 1 family も机上で消えることを示した。
+- **独立レビューで見つかった D2 の誤りと逸脱**（§11・§12）は、どれも Base の kill を変えない:
+  - BoJ の σ の過小評価（直すと kill は強まる）
+  - Optimistic の定義の逸脱（S2 を使うと Optimistic は K8 に当たらないが、kill は Base で判定する）
+  - Base で差を使ったこと（事後の選択）
+  - 使える年数の読み方
 - **D3（候補の freeze）以降は実行していない**。data の取得（D4）も、実証（D5）も、P2 も行っていない。
 - **FX のデイトレードが不可能という意味ではない**。限定の予算の中で、retail の cost の後に検証できる新しい mechanism の供給が見つからなかった、という意味である。
 
@@ -101,8 +106,8 @@ V は `VERIFIED_FROM_TEXT`、NV は `NOT_VERIFIED`。
 
 | 探索 | MECHANISM_ID | 原典（確認） | 結論 |
 | --- | --- | --- | --- |
-| (1)(3) | **CB_ANNOUNCEMENT_DAY_UNCERTAINTY_PREMIUM**（FOMC・BoJ） | Mueller, Tahbaz-Salehi, Vedolin, JF 72(3) 2017（V）。反対の証拠: Lucca & Moench, JF 2015 Table 9（V） | **D1 通過 → D2 で K8 kill** |
-| (2) | M-OV1 FX の option の取引量 → 翌日の USD | Czech, Della Corte, Huang, Wang, BoE SWP 964（2022）・CDI WP 26-01（2026）（V） | D1 で不合格（gate 5: 日次で当日決済の証拠なし、gate 7: gross ≈ retail の cost） |
+| (1)(3) | **CB_ANNOUNCEMENT_DAY_UNCERTAINTY_PREMIUM**（FOMC・BoJ） | Mueller, Tahbaz-Salehi, Vedolin, JF 72(3) 2017（V）。確認しない証拠: Lucca & Moench, JF 2015 Table 9（V） | **D1 通過 → D2 で K8 kill** |
+| (2) | M-OV1 FX の option の取引量 → 翌日の USD | Czech, Della Corte, Huang, Wang, BoE SWP 964（2022）・CDI WP 26-01（2026）（V） | D1 で不合格（gate 4: 主の data は EMIR / DTCC の非公開の規制 data で K3、gate 5: 日次で当日決済の証拠なし、gate 7: gross ≈ retail の cost） |
 | (2) | M-PIN option の strike への pinning | FX の原典なし（NV） | 不合格（gate 2・3） |
 | (2) | M-GAMMA dealer の gamma | Anderegg, Ulmann, Sornette, JIMF 2022（abstract） | 不合格（vol の効果で方向なし、data が非公開） |
 | (2) | M-RETAIL retail の positioning の逆張り | Kaourma et al., JIFMIM 2025（abstract）、Nolte & Nolte（V、逆の符号） | 不合格（非公開、方向が争われている、分単位） |
@@ -112,7 +117,7 @@ V は `VERIFIED_FROM_TEXT`、NV は `NOT_VERIFIED`。
 | (1) | 四半期末の dealer の balance sheet / dollar funding | Kloks, Mattille, Ranaldo（2024）、Correa, Du, Liao | 不合格（swap / CIP の効果で spot の方向なし） |
 | (1) | FX の spot と swap の流動性の波及 | Krohn & Sushko, BIS WP 836 | 不合格（cost の側だけ） |
 | (1) | hedging の経路 | Liao & Zhang, IFDP 1283 | 不合格（日中・暦ではない） |
-| (1) | 月末の債券の index の hedge | 原典なし | `IMPLEMENTATION_ONLY_DIFFERENCE`（F4） |
+| (1) | 月末の債券の index の hedge | 原典なし | `PARTIAL_OVERLAP`（F4・F1。駆動の要因は株価ではなく index の rebalance）。原典が無いので gate 2 で不合格 |
 | (1) | 日本の年度末の資金の還流 | 原典なし | 不合格（年 1 回） |
 | (1) | 投信など日本の投資家の flow | 月次の論文のみ | 不合格 |
 | (1) | Norges Bank の事前公表の買い | 学術の証拠なし | 不合格 |
@@ -153,6 +158,8 @@ V は `VERIFIED_FROM_TEXT`、NV は `NOT_VERIFIED`。
 | M-OV1 | ○ | ○ | ○ | △ | **×** | ○ | **×** | ○ | △ | 不合格 |
 | 他の全て | — | — | — | — | — | — | — | — | — | 不合格（§7） |
 
+**D0 からの逸脱**（独立レビュー Statistics の指摘）: D0 §4 は 9 項目の**全て**を満たすことを求めるが、この候補は gate 5・7・9 が △ のまま通した。候補を進める向きに寛大な逸脱で、結果は kill なので判定に影響しない。
+
 **ranking**: D1 を通ったのは 1 つなので、上位 5 の選択は要らない。参考の rubric の点数は 70 / 110 と 72 / 110（2 つの探索が独立に採点。M-OV1 は 60）。
 
 ## 10. Selected families
@@ -167,6 +174,17 @@ V は `VERIFIED_FROM_TEXT`、NV は `NOT_VERIFIED`。
 | 結果 | 発表の前に外貨が安く値付けされ、発表の日を通じて期待として上がる |
 | いつ | 制度の calendar（FOMC 年 8 回、BoJ） |
 | 方向 | dollar（BoJ では円）を売る。高金利の通貨ほど大きい |
+| **条件**（独立レビュー FX の指摘） | 下の表を参照 |
+| 他の中央銀行 | MTV は、BoJ 以外の中央銀行（ECB・BoE など）に効果を見つけていない。それで FOMC と BoJ だけを対象にした |
+
+**方向の条件**（独立レビュー FX の指摘）:
+
+| 項目 | 中身 |
+| --- | --- |
+| model の条件 | 金融仲介者が dollar を売るのは、**外国の金利が米国の金利より高い場合**（MTV の本文の十分条件）。premium は金利差に比例する（命題 2） |
+| 最近の体制 | 2017〜2019 年と 2022〜2025 年は、USD の金利が主要通貨の大半より高い。dol の代理では、model は符号を予測しない |
+| 検証の期間への影響 | **seen の 4.7 年の大半はこの体制で、独立な検証の期間が model の前提と合わない**（K8 を強める） |
+| 低金利の portfolio（pf1） | 原典でも cost の後に有意でない（net 2.13 bp、t 0.44） |
 
 ## 11. Desk economics
 
@@ -181,11 +199,15 @@ V は `VERIFIED_FROM_TEXT`、NV は `NOT_VERIFIED`。
 | dol の発表の日 | 10.77 bp（t 2.27）、他の日 0.47 bp、差 10.30 bp |
 | 年率の Sharpe | 0.51（年 8 回で年率化） |
 | interbank の bid / ask の後（Table X） | 8.02 bp・Sharpe 0.377 |
-| pre-window（4pm → 2:15pm） | 7.89 bp |
-| post-window（2:15pm → 4pm） | 2.39 bp |
-| BoJ（1998–2013、232 回、円の対価で再計算） | pf3 は発表の日 17.59 bp 対 他の日 2.82 bp（差 14.77、t 2.27）、Sharpe 1.07〜1.32（**gross、cost の報告なし**） |
+| pre-window（4pm → 2:15pm） | 発表の日 − 他の日の差 7.89 bp |
+| post-window（2:15pm → 4pm） | 同 2.39 bp |
+| BoJ（1998–2013、232 回、円の対価で再計算） | pf3 は発表の日 17.59 bp 対 他の日 2.82 bp（差 14.77、t 2.27）。発表の日の年率の Sharpe は pf1 1.07・pf3 1.32（年 15 回で年率化、**gross、cost の報告なし**） |
 
-**反対の独立な証拠**【原典】: Lucca & Moench（JF 2015）Table 9、1994-09 … 2011-03、132 回: pre-FOMC の 2pm → 2pm の窓で USD-EUR −0.064、USD-JPY 0.083（どちらも有意でない）。
+**確認しない独立な証拠**【原典】: Lucca & Moench（JF 2015）Table 9、1994-09 … 2011-03、132 回。
+
+- pre-FOMC の 2pm → 2pm の窓で、USD-EUR −0.064%（−6.4 bp）、USD-JPY 0.083%（+8.3 bp）。どちらも標準誤差 約 5〜6 bp で有意でない。
+- MTV の pre-window の 7.89 bp と同程度の大きさで、**2 通貨の検出力の低い帰無**であり、反証ではない（独立レビュー Quant・FX の指摘で「否定」から訂正）。
+- 符号の向きの規約は、読んだ範囲では確認できていない。
 
 **scenario**（D0 §6）:
 
@@ -201,7 +223,13 @@ V は `VERIFIED_FROM_TEXT`、NV は `NOT_VERIFIED`。
 - 往復 = (18 時台の spread + 16 時台の spread) / 2 + 0.5 bp。
 - FOMC は USD の 7 major の平均 **2.66 bp**、BoJ は AUD_JPY・NZD_JPY・GBP_JPY の平均 **3.54 bp**。
 
-**1 回の event の σ**【算術】: gross の効果 ÷（年率の Sharpe ÷ √年の回数）。FOMC 60 bp、BoJ 51 bp。
+**1 回の event の σ**【算術】: gross の効果 ÷（年率の Sharpe ÷ √年の回数）。FOMC 60 bp（原典の t 2.27 を再現する: 10.77 ÷ (60 / √160) = 2.27）、BoJ 51 bp。
+
+**BoJ の σ の過小評価**（独立レビュー Quant の指摘）:
+
+- BoJ の Sharpe 1.32 は、原典自身の t 値と整合しない。平均の t 2.76（n = 232）からは σ ≈ 97 bp、差の t 2.27 からは σ ≈ 99 bp で、記録の 51 bp の約 1.9 倍。pf3 の全期間の日次の σ も約 82 bp。
+- σ ≈ 97 bp では、BoJ の Optimistic の net Sharpe は約 0.41（記録 0.78）、family の合成の Optimistic は約 0.56（約 20 年）になる。**直すと kill は強まる**。
+- 記録（`d2_desk.json`）は作り直さず、この開示で扱う。
 
 **現在の年の回数**: FOMC 8 回、BoJ 8 回（2016 年以降の決定会合）。
 
@@ -218,17 +246,37 @@ V は `VERIFIED_FROM_TEXT`、NV は `NOT_VERIFIED`。
 | BoJ | B | 7.39 | 3.54 | 2.09 | 3.85 | 0.21 | 135 | 不 | **該当** |
 | BoJ | S | 4.43 | 5.31 | 0.83 | −0.88 | −0.05 | — | **該当** | **該当** |
 
-**family の合成**（FOMC と BoJ が独立と仮定した上限）: Optimistic 0.87（8.1 年）、Base 0.24（104 年）、Stress 0。
+**事前登録の判定**（K1・K8 は Base で判定、D0 §7）:
+
+- Base の family の合成 0.24 → **検出に 104 年 > 使える 7.1 年 → K8 で kill**。
+- K1 は Base では不該当。
+
+**参考**（判定に使わない）:
+
+- Optimistic 0.87（8.1 年）、Stress 0（Stress では cost ≥ gross）。
+- 合成は FOMC と BoJ が独立で、最適な重みの場合の上限で、候補に有利な向きの仮定である。
 
 **使える非 fresh の独立な期間**: 7.1 年（文献の sample の外。2014-01 … 2016-05 の 2.4 年と、seen の 2021-04 … 2025-12 の 4.7 年）。Optimistic の family の合成でも 8.1 年 > 7.1 年。
 
-**K8 の判定は Optimistic では境界に近い**（8.1 対 7.1）。しかし次のどれもが、Optimistic をそのまま使えない理由になる:
+**Optimistic を参考に留める理由**（kill は Base で判定するが、境界に近いので開示する。8.1 対 7.1）:
 
 - Optimistic は 2013 年に終わる sample の、全体の return（carry を含む）の値。
 - BoJ の値は cost の報告が無い gross。
 - Lucca & Moench は pre-FOMC の部分を主要通貨で否定する。
 
 Base（104 年）は、どの解釈でも K8 に当たる。
+
+**D2 の事後の選択と感度**（独立レビューの指摘で開示。どれも Base の kill を変えない）:
+
+| 項目 | 内容 | 判定への影響 |
+| --- | --- | --- |
+| Optimistic の定義の逸脱 | D0 §6 の「原典の最も強い post-cost の効果」は Table X の S2（net 19.15 bp、Sharpe 0.783）で、記録は dol（10.77）を使った。S2 を使うと FOMC の Optimistic は約 0.69、family は約 1.04（約 5.7 年）で、**Optimistic は K8 に当たらない**（BoJ の σ を直すと約 0.80・約 9.6 年で当たる）。S2 は、発表で引き締めかどうか（発表の時点で決まる）で符号を反転し、金利差が正の通貨だけを使うので、事前の実装には難がある | なし（kill は Base。S2 の Base でも family は 38 年以上） |
+| Base で差（発表の日 − 他の日）を使った | D0 §6 は「原典の効果」とだけ書く。差を使うのは事後の選択で、kill の向きに偏る。根拠は、当日決済の窓は rollover をまたがず carry を得ないこと（MTV の return は金利差を含む超過 return） | なし（全体の return の Base でも family 0.32・約 60 年。公表の後の replication を認めて減衰 30% にしても 0.54・約 21 年） |
+| 使える年数 7.1 | D0 の「使える非 fresh の期間」を「文献の sample の外の非 fresh の期間」と読んだ（K5 と重なる読み方）。2014-01 … 2016-05 の 2.4 年は OANDA の archive に無く、取得（D4 の 1 package）が要る。文献の期間（1994〜2013）を含めて読めば Optimistic は K8 を通るが、Base は通らない | なし |
+| 窓の移し | retail の窓は前日の 16:00〜18:00 を落とすが、これは MTV の pre-window の中にある。均等に生じるなら約 0.7 bp の損失（未検定） | なし |
+| dol の代理 | PAIRS_20 に NOK・SEK が無く、USD の 7 major で代理した（原典の Table I の超過 return で約 11.2 bp と同程度）。通貨が少ないので σ はやや大きいはず | なし |
+| cost | 入りの 18 時台は時刻の平均で、rollover の直後の広い spread を含まず、18:00 ちょうどの約定は記録より高い可能性がある。出の 16:45 に event の日の spread の拡大を掛けていない | なし（cost を下げても Base は数十年） |
+| Stress | D0 §6 の「F1 との相関 0.5」を入れていない | なし（family が 1 つ） |
 
 ## 13. Candidate freeze
 
@@ -245,8 +293,16 @@ Base（104 年）は、どの解釈でも K8 に当たる。
 | 種類 | 記録 |
 | --- | --- |
 | cost | `artifacts/research/fxid_cycle1/cycle1_run2.json`（集計の記録。sha256 は【D2】の `cost_record_sha256` に保存） |
-| 算術 | `scripts/research/fx_component_discovery/d2_desk.py`（commit `8349958`。記録の作成の前） |
-| 記録 | `e30779a` |
+| 算術 | `scripts/research/fx_component_discovery/d2_desk.py`（commit `8349958`、13:41:56 JST） |
+| 実行 | head `8349958`（commit の直後で dirty 0）、command `python -X utf8 -m scripts.research.fx_component_discovery.d2_desk`、13:41:56〜13:41:58 JST の間 |
+| 記録 | `e30779a`（13:41:58 JST）、sha256 `98d2fa07…` |
+| D1 の記録 | `docs/research/fx_component_discovery_d1_record_2026_10.md`（時刻の順序・原典の抽出の hash・探索の空間の対応） |
+
+**provenance の不足の開示**（独立レビュー Adversarial Governance の指摘）:
+
+- `d2_desk.json` 自体には、cost の記録の sha256 しか入っていない。head・dirty・timestamp・command は、上の表と git にある。
+- code と記録の commit は 2 秒差で、「記録の前に code」は名目である。ただし test が記録を再計算して完全一致を要求する。
+- D1 の探索の開始が D0 の後であることは、git では証明できない。証拠は、作業用の file の mtime（全て D0 の commit の後）と session の記録である。
 
 ## 16. Component tests
 
@@ -254,7 +310,7 @@ Base（104 年）は、どの解釈でも K8 に当たる。
 
 ## 17. Multiplicity
 
-D1 で、約 29 の mechanism を、事前登録の gate と kill の規則で選別した。
+D1 で、31 の mechanism を、事前登録の gate と kill の規則で選別した。
 
 - 実証の検定は行っていないので、検定の多重性の補正は発生していない。
 - 探索の数そのものは、将来この family を再検討する場合の試行の数として記録する。
@@ -297,7 +353,16 @@ PR #506 の契約（`τ² · tr(R⁻¹)` と tail の制約）を維持した。
 
 ## 27. Independent reviews
 
-（下に記録する。）
+4 つの独立な役（指示 §34）を、別の context で並行して走らせた。互いの結論は渡していない。**4 役とも BLOCKER なし、DISCOVERY-A / STOP B を支持**（kill は Base の 104 年 対 7.1 年で、どの合理的な変種でも変わらない）。
+
+| 役 | REQUIRED FIX | 対応 |
+| --- | --- | --- |
+| **Quant** | (1) BoJ の σ の過小評価（原典の t 値から約 97 bp）、(2) K8・K1 は Base で判定（「全ての scenario」は事前登録の外）、(3) Optimistic の定義の逸脱（S2 なら Optimistic は K8 に当たらない） | §11・§12・§1 に開示（kill は不変か強まる）。記録は作り直さない |
+| **Statistics** | K8 の判定の枠組み（Base を先に書く） | §12・§1。NON-BLOCKING（Base の差は事後の選択、7.1 年の読み方、D1 の gate の寛大な逸脱、探索の数の不整合 29 → 31）も反映 |
+| **FX Economics** | (1) 方向は金利差の条件付き（2017–19・2022–25 は体制が合わない）、(2) Lucca & Moench は % の単位で、反証ではなく「確認しない」、(3) 探索の空間の項目ごとの対応 | §10・§11・§7、D1 の記録の §3。NON-BLOCKING（他の中央銀行に効果なし、月末の債券は PARTIAL_OVERLAP、M-OV1 の gate 4 は × と K3、入りの cost） |
+| **Adversarial Governance** | (1) §27 が空、(2) 記録の provenance の不足、(3) D1 の時刻を証明できない | §27 を記入、§15・§28 に開示、D1 の記録（作業用の file の mtime は全て D0 の commit の後）を commit。HOLD の裁定を sha256 で固定する test を追加 |
+
+**修正の後の再監査**: 新しい context で確認した（結果は PR の本文に記録する）。
 
 ## 28. Governance compliance
 
@@ -310,8 +375,9 @@ PR #506 の契約（`τ² · tr(R⁻¹)` と tail の制約）を維持した。
 | 取引・account の変更 | 無し |
 | ML による alpha・交互作用の探索 | 無し |
 | 予算の延長 | 無し（STOP の後に候補を足していない） |
-| 事前登録 | D0（`2aea25d`）は文献の探索の前、D2 の code（`8349958`）は記録の前 |
-| provenance | 記録の sha256・cost の記録の sha256・code の commit |
+| 事前登録 | D0（`2aea25d`）は、commit の順序で文献の探索の結果より前（探索の開始の時刻は git では証明できない。§15） |
+| provenance | 記録の sha256・cost の記録の sha256・code の commit・実行の head と command（§15）。記録の file 自体の項目は不足（§15 で開示） |
+| HOLD の裁定の不変 | test で sha256 を origin/master の値に固定 |
 | FX のみ | はい |
 
 ## 29. Final verdict

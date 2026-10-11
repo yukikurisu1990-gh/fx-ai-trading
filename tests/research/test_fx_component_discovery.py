@@ -26,6 +26,15 @@ def test_hold_ruling_untouched_and_reopen_is_limited():
     assert "**fresh `2016-06-02 … 2021-04-25`** | **読まない**" in gov
 
 
+def test_hold_ruling_bytes_are_pinned():
+    import hashlib
+
+    raw = HOLD.read_bytes().replace(b"\r\n", b"\n")
+    assert hashlib.sha256(raw).hexdigest() == (
+        "e7abc2f56c559d0965c551485dbc9d4e883af8acd66ebfb2e393954d9718e221"
+    )
+
+
 def test_desk_module_reads_only_the_committed_cost_record():
     tree = ast.parse(inspect.getsource(d2_desk))
     imported = {n.module for n in ast.walk(tree) if isinstance(n, ast.ImportFrom) and n.module}
