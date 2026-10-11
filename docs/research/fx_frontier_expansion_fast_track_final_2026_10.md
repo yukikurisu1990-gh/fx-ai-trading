@@ -19,7 +19,7 @@
 
 | track | 結果 |
 | --- | --- |
-| **Track A（original な mechanism）** | 価格の data を見ない Role H が、市場の配管の地図から 7 つの original な mechanism を作った。data を見る前の power-first の gate（F0 §5、最低限の有用な component の net Sharpe 0.58）を、**どれも通らなかった**。Base の予測は −2.48 〜 +0.07。data の取得・target の return の読み取り・実証は行っていない |
+| **Track A（original な mechanism）** | 価格の data を見ない Role H が、市場の配管の地図から 7 つの original な mechanism を作った。data を見る前の power-first の gate（F0 §5、最低限の有用な component の net Sharpe 0.58）を、**事前登録の h = 0.5 の下で、どれも通らなかった**。Base の予測は −2.48 〜 +0.07。data の取得・target の return の読み取り・実証は行っていない |
 | **Track B（execution の cost の frontier）** | seen の 2021-04 … 2025-12 の M15 bid / ask の spread を測った。最も低いのは USD_JPY の London fix の時刻の中央値 1.13 bp で、all-in の往復は約 1.63 bp（slippage 0.5 bp の推定を含む）。**all-in ≤ 1.0 bp は、20 pair × 11 の時間帯の 220 の cell のうち 212 で一度も無く、8 で一瞬（bar の 0.05% 以下）だけ**。HOLD の再開の trigger A（all-in ≤ 1.0 bp の継続）も、**この OANDA の pricing の tier では**観測されない（他の業者・口座は測っていない） |
 
 **所見**（Role H が見つけ、review で範囲を絞った。【A】§7）:
@@ -165,7 +165,7 @@ F0 §4 の 12 の基準（最大 156）: H-02 112、H-07 92、H-05 85、H-03 83�
 | PARTIAL / CONTINUOUS | 0 |
 | 最大の割合 | 0.05%（GBP_AUD の NY 10 時台） |
 
-**cost の floor**: EUR_USD・USD_JPY・GBP_USD・USD_CAD・EUR_JPY で all-in の往復 約 1.6〜1.9 bp、AUD_USD で約 2.4 bp。cost は、gross − 現実の all-in の cost で評価した（1.0 bp を絶対の条件にしない）。
+**cost の floor**: EUR_USD・USD_JPY・GBP_USD・USD_CAD・EUR_JPY で all-in の往復 約 1.6〜1.9 bp、USD_CHF で約 2.15 bp、AUD_USD で約 2.4 bp（他の pair はさらに高い）。cost は、gross − 現実の all-in の cost で評価した（1.0 bp を絶対の条件にしない）。
 
 **限界**:
 
@@ -246,6 +246,7 @@ F0 §4 の 12 の基準（最大 156）: H-02 112、H-07 92、H-05 85、H-03 83�
 
 - 再監査は、全ての s_B・h = 1 の値・Optimistic・検出力・PF2 の erratum・Track B の 30 の cell・class の数・記録の sha256・code の sha256・期間の guard・HOLD の裁定の hash・commit の順序を、独立に再現・確認した。
 - 判定 FRONTIER-A（事前登録の h = 0.5 の下で）は変わらない。
+- 修正（`c241054`）は、別の新しい context でさらに確認した: BLOCKER 0・REQUIRED 0。NON-BLOCKING（V = 1 の限定、USD_CHF の floor、h = 0.5 の明記）を反映した。
 
 ## 28. Governance compliance
 
