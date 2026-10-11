@@ -56,3 +56,45 @@ def test_null_scenario_fwer_is_controlled_for_s0():
 def test_family_corr_is_portfolio_correlation():
     r = c.family_corr(0.7, 0.3)
     assert abs(r[0, 1] - 0.3 / ((1 + 3 * 0.7) / 4)) < 1e-12
+
+
+def test_window_sharpe_formula_and_horizon_rules():
+    from scripts.research.fx_constraint_frontier import frontier as fr
+
+    w = fr.Window(250, 1, 4.0, 20.0, "x")
+    base = fr.window_sharpe(w, 1.0, 0.5, None, 6.0, "flat", 0.2, True)
+    assert abs(base - (250**0.5) * (2.0 - 1.0) / 20.0) < 1e-12
+    h1 = fr.window_sharpe(w, 1.0, 0.5, 24.0, 6.0, "flat", 0.2, True)
+    assert abs(h1 - (200**0.5) * (2.0 - 1.2) / 40.0) < 1e-12
+    per = fr.window_sharpe(w, 1.0, 0.5, 24.0, 6.0, "persist", 0.2, True)
+    assert abs(per - (200**0.5) * (4.0 - 1.2) / 40.0) < 1e-12
+
+
+def test_deviation_excludes_sensitivity_points():
+    from scripts.research.fx_constraint_frontier import frontier as fr
+
+    assert fr.deviation(fr.Point("E3", "H0", "flat", "median", "current")) is None
+    assert fr.deviation(fr.Point("E0", "H0", "flat", "p90", "current")) is None
+    assert fr.deviation(fr.Point("E1", "H1", "flat", "median", "paid")) == 5
+
+
+def test_g4_years_and_inputs_rules():
+    from scripts.research.fx_constraint_frontier import frontier as fr
+
+    assert fr.g4_required_years(1.0) == float("inf")
+    assert abs(fr.g4_required_years(2.0) - 1 / (0.58 * 0.16)) < 1e-12
+    inp = fr.load_inputs()
+    # 原則固定の時間帯の外の候補は E0（事前登録 §3）
+    for k in ("K3_FOMC", "K3_BOJ", "K4"):
+        assert inp["cost"]["E1"][k] == inp["cost"]["E0"][k] == inp["cost"]["E2"][k]
+    assert inp["d"]["pub"]["beta"] == [1.2, 2.2]
+
+
+def test_retained_fast_path_matches_contract():
+    from scripts.research.fx_constraint_frontier import frontier as fr
+
+    for name in ("S0", "S3", "S4"):
+        d = c.draw(c.SCENARIOS[4], 4.67, 6.4, 1500, np.random.default_rng(3))
+        a = fr.retained(name, d, 4.67, 6.4)
+        b = c.run_contract(name, d, 4.67, 6.4, 0.0)["retained"]
+        assert (a == b).all()

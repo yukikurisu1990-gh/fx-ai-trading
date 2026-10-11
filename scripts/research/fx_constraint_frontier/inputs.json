@@ -1,0 +1,23 @@
+{
+ "_note": "公開の調査（Role C1 / C4 / C5、2026-10-11）から lead が事前登録 §3・§6・§7・§8.4 の規則で転記した値。出典は最終報告 §6・§7・§15・§17。",
+ "cost": {
+  "E0": {"K1": 1.94, "K2": 1.72, "K3_FOMC": 2.66, "K3_BOJ": 3.54, "K4": 2.7},
+  "E1": {"K1": 0.76, "K2": 0.66, "K3_FOMC": 2.66, "K3_BOJ": 3.54, "K4": 2.7},
+  "E2": {"K1": 0.53, "K2": 0.33, "K3_FOMC": 2.66, "K3_BOJ": 3.54, "K4": 2.7}
+ },
+ "_cost_rule": "E1 = 自動売買が可能な口座の公表の通常時の spread（手数料込み）の中央値 + 0.35 bp、E2 = 最小 + 0.2 bp（ADVERTISED、MEASURED ではない）。K3（18:00 / 16:45 ET）と K4（日曜の再開）は、全ての口座の原則固定の時間帯の外なので E0（§3 の規則）。",
+ "financing_bp_per_night": 0.2,
+ "_financing_rule": "swap の bid / ask の非対称は公開の頁から抽出できなかった（C1）。§4 の範囲 0.2〜1.0 の下端（feasibility に最も有利）を既定にし、1.0 を sensitivity にする。",
+ "d": {
+  "pub": {"beta": [1.2, 2.2]},
+  "desk": {"beta": [1.2, 2.2]}
+ },
+ "_d_rule": "d_pub ~ Beta(1.2, 2.2)（C5、平均 0.353、中央値 0.322）。d_desk に直接の値は無く、文献は d_desk ≤ d_pub（確率的に）の上限だけを与える。§7 に従い d_pub の分布を上限として使う（K4 に有利な側）。",
+ "years": {
+  "K1": {"current": 4.67, "free_permitted": 4.67, "free_unknown_terms": 4.67, "paid": 15.67},
+  "K2": {"current": 4.67, "free_permitted": 4.67, "free_unknown_terms": 4.67, "paid": 17.67},
+  "K3": {"current": 7.1, "free_permitted": 7.1, "free_unknown_terms": 7.1, "paid": 7.1},
+  "K4": {"current": 4.67, "free_permitted": 4.67, "free_unknown_terms": 20.67, "paid": 35.07}
+ },
+ "_years_rule": "seen 4.67 年 + 文献の sample と重ならない pre-2016 の bid / ask の intraday。K1: 文献 1997–2018 → 有料（Olsen 1986〜）の 1986-01…1996-12 の 11.0 年。K2: 文献 1999–2018 → 1986-01…1998-12 の 13.0 年。K3: 定時の発表は 1994 年以降で、文献 1994–2013 → 追加なし（7.1 は事前登録 §8.4 の値）。K4: 文献なし → 無料・規約不明の HistData の tick bid / ask 2000-05…2016-05 の 16.0 年、有料の Olsen 1986-01…2016-05 の 30.4 年。TrueFX（2009-05〜）は派生物の禁止の範囲が不明なので規約不明に数える。日曜の再開の被覆はどの源も文書で確認できない。"
+}
