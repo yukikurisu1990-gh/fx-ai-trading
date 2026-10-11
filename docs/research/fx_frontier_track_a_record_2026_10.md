@@ -5,7 +5,8 @@
 - 別の context の agent で行った。
 - **価格・return の data を読んでいない**: repo の既存の報告と、3 回の web 検索だけ。
 - 使った cost と σ は、repo が既に報告した集計（Cycle 1 §11–§12、R-A2b §7–§11）だけ。
-- 時刻: F0 の事前登録の commit（`53d5d9f`、2026-10-11 20:24 JST）の後に起動した。
+- 時刻: F0 の事前登録の commit（`53d5d9f`、2026-10-11T20:24:03+09:00）の後、2026-10-11T11:24:40Z（20:24:40 JST）に起動した。
+- 指示の文面は §6 に逐語で残す。§1〜§5 は Role H の出力のまま。lead の訂正と開示は §7 にまとめる（本文は書き換えない）。
 
 ## 1. 市場の配管の地図（ET、夏時間 / 冬時間）
 
@@ -39,7 +40,7 @@
 | n | 年の機会 |
 | k | 実効の breadth |
 | g | haircut の前の gross（bp） |
-| h | 直接の証拠が無いための haircut。Base 0.5、Optimistic 1 |
+| h | 直接の証拠が無いための haircut。Base 0.5、Optimistic 1（Optimistic は g も上の prior に変えている。§7 の 1） |
 | c | retail の all-in の往復 |
 | σ | 保有の窓の σ |
 
@@ -93,3 +94,69 @@
 **結論**: 直接の証拠が無い効果への 50% の haircut と retail の cost が重なると、本当に original な intraday の mechanism は、構造的に gate を通れない。通りうるのは直接の post-cost の証拠がある効果だけで、それらは既に inventory にある（主に F1）。
 
 **Role H の推奨**: どの family も事前登録しない。
+
+## 6. Role H への指示の文面（逐語）
+
+lead が 2026-10-11T11:24:40Z に、別の context の agent（description「Role H: hypothesis architect (no data)」）に渡した。
+
+```text
+You are Role H — Hypothesis Architect — in a pre-registered FX research programme (repo C:\Users\yukik\fx-ai-trading, branch research/fxid-frontier-expansion). STRICT FIREWALL: you must NOT read, load, or compute anything from FX price/return data (no data/*.jsonl, no parquet, no caches, no running research scripts, no artifacts containing return statistics beyond what prior reports already state in prose). You MAY read repo docs (docs/**) and the web (literature, central-bank/institutional docs) for institutional detail, sign/timing priors and external effect-size priors. Do not modify repo files. Return your full output as your final message.
+
+Read first:
+- docs/research/fx_frontier_f0_prereg_2026_10.md (roles, period architecture, duplicate classes, 12-criterion ranking rubric with weights 12..1, power-first gate PF1–PF4 with m=0.58, component gate)
+- docs/governance/fxid_frontier_expansion_reopen_2026_10.md
+- Inventory to dedup against: scripts/research/fx_system_reopen_feasibility/prereg.py (FAMILIES F1–F15), docs/research/fx_component_discovery_fast_track_final_2026_10.md §7 (31 mechanisms examined, incl. CB announcement-day premium, option volume, quarter-end funding, etc.), docs/research/fxid_final_mechanism_feasibility_review_2026_10.md §6–§16 (KMW fixing W, Breedon-Ranaldo, Melvin-Prins month-end, Ito-Yamada, etc.), docs/research/m15_next_edge_source_reframing.md and m15_candidate_rerank_2026_09.md (S01..S23, C01..C13, H-001..), Round 1/A/B′ results (docs/research/m15_track_a_exploratory_round_1.md, m15_round_a_results.md, m15_round_b_prime_results.md: VR<1 at all horizons, IC negative).
+- Retail cost context (aggregate, already reported): docs/research/fxid_cycle1_data_feasibility_final_report_2026_10.md §11–§12 and docs/research/fxid_ny_intraday_economics_followup_2026_10.md §7–§11 (round-trip ~1.7–2.6 bp majors depending on hour; rollover hour ~9 bp; 08:30 window ×1.44).
+
+Tasks:
+1. MARKET PLUMBING MAP (instruction §10): for the FX day (in ET), map whose balance sheet moves when and why: Tokyo open/Tokyo fixing (9:55 JST), Asia close, London open, European data, ECB reference (14:15 CET), London 4pm WMR fix, US data (08:30/10:00 ET), NY open, NY 10:00 option cut, FOMC/CB events, CLS settlement windows, 17:00 ET rollover/value-date roll, corporate payment cycles (gotobi, month-end, quarter-end), benchmark execution, dealer inventory management, liquidity-provider risk limits, futures/spot information transfer (CME, IMM dates), rates/FX transfer, options hedging (delta/gamma around expiries), international asset hedging. Keep it compact (table).
+2. ORIGINAL CANDIDATES: generate 5–10 original mechanism hypotheses derived from the map (not indicator ideas; no RSI/EMA/etc.; no data mining). For each: MECHANISM_ID; Who; Why (necessity); When (exact ET timing); Information set observable ex-ante by a retail trader (public, available at decision time — specify source & latency); Direction (or relative value) and why; Decay (when the edge ends); Counterparty (who pays the premium); Cost (why it can exceed retail all-in round trip; pair & time of execution); duplicate classification vs inventory (NEW_MECHANISM / NEW_INFORMATION_FOR_EXISTING_MECHANISM / DUPLICATE / PREVIOUSLY_REJECTED / EXECUTION_VARIANT / HORIZON_VARIANT) with reasoning; opportunity frequency per year and cross-sectional breadth; needed data and whether available free (for S = 2021-04-26..2025-12-28 and E = 2010-01-01..2016-05-31).
+3. BASE PREDICTED EFFECT s_B (annual retail net Sharpe) per candidate, derived WITHOUT looking at FX data: state assumptions explicitly (flow size, price-impact elasticity from literature, fraction captured, horizon σ, retail cost, 50% haircut for lack of direct evidence). Be honest and conservative; if you cannot justify ≥0.58, say so. Also give Optimistic and a range.
+4. Apply the F0 ranking rubric (12 criteria, 0/1/2, weights 12..1) and the power-first gate PF1–PF4 (T_S=4.67y; T_E≈6.4y; V = total registered variants you'd propose, ≤6; z = Φ⁻¹(1−0.10/V)) to each candidate. Show the arithmetic.
+5. Recommend ≤3 families for preregistration (each: 1 primary hypothesis fully specified — exact direction, timing, information set, target currencies, pair expression, horizon, entry, exit, primary statistic, null, minimum effect; optional ≤1 secondary variant). If none pass PF1–PF4, say so plainly — that is an acceptable outcome; do NOT inflate s_B to pass.
+
+Output under 3500 words, structured with tables.
+```
+
+- Role H が行った 3 回の web 検索の **検索語は記録していない**（agent の出力に残っていない）。外部の prior（Evans–Lyons 2002、KMW など）は、§2 と §5 に出典の名前だけが残る。
+- 指示の文面は z = Φ⁻¹(1 − 0.10 / V) を明示している（F0 §5 の本文と同じ。例の値とは合わない。§4）。
+
+## 7. lead の訂正と開示（独立の review の後）
+
+### 7.1 Optimistic の列の定義
+
+§2 の Optimistic は **h = 1 だけではない**。Role H は Optimistic で g も上の prior に変えている（例: H-02 は g = 6、H-07 は g = 9、H-05 は g = 10 と c = 2.5）。H-02 = (6 − 2.2) / 16 × √24 = 1.16、H-07 = (9 − 2.7) / 26 × √37.5 = 1.48 で再現する。倍率は候補ごとに違い、根拠の記録は無い。
+
+**h = 1 だけを変えた場合**【算術、§2 の n・k・g・c・σ のまま】:
+
+| ID | s_B（h = 0.5） | h = 1 だけ |
+| --- | --- | --- |
+| H-01 | −2.48 | −2.31 |
+| H-02 | −0.21 | +0.25 |
+| H-03 | −0.02 | +0.19 |
+| H-04 | −1.79 | −1.58 |
+| H-05 | +0.03 | +0.25 |
+| H-06 | −1.25 | −1.00 |
+| H-07 | +0.07 | **+0.78** |
+
+- **判定は、事前登録した 50% の haircut に依存する**。h = 1 なら H-07 は 0.78 > 0.58 で PF1 を通る。
+- H-07 は `HORIZON_VARIANT`（F9）と分類され、F0 §3 で実証に進めない。ただし FX の microstructure の review は、週末の再開の流動性の供給は F9 と別の mechanism と読めると指摘した。その場合も Base（h = 0.5）は +0.07 で PF1 を通らない。
+- h = 1 でも、PF2（V = 1 でも 0.76 以上）を通る候補は無い。
+
+### 7.2 cost の入力
+
+- Role H の c は、Cycle 1 §11–§12 と R-A2b §7–§11 の既報の集計である。**F0 §5 は Track B の値を使うと定めており、これは事前登録からの逸脱**（Track B は Role H と並行して走り、Role H の起動の時点で無かった）。
+- Track B の値で置き換えても判定は変わらない: H-02 は c = 1.72 で −0.07、H-07 は c = 2.2 で約 +0.19、H-05 は c を 1.28 下げても約 +0.14。**どれも 0.58 に届かない**。
+- H-07 の c = 2.7 は測定に裏付けられていない。Track B は日曜の再開の bar を測っていない（§7.4）。
+
+### 7.3 「構造的」の所見の範囲
+
+- §5 の結論は、**事前登録した 50% の haircut と、Role H の g の prior の下で**の所見である。市場の構造についての事実ではない。
+- §5 の g/σ ≥ 0.24（年率 約 3.8）は、PF2 の厳しい読み方の 0.76 と k = 1 を使っている。breadth と保有を変えると、必要な gross の年率 Sharpe（pair あたり）は約 2.2〜3.7（k = 5 で 2.89、k = 20 で 2.55、cost の floor の約 2.2）。**haircut が無ければ約 1.9** で、KMW の 1.24〜1.82 に近い。
+- Role H は gate を知った上で予測した。予測が保守的に偏る（偽陰性の）risk がある。rubric の基準 11（検証の実現性）は gate そのものを採点に入れており、循環している。
+- **FRONTIER-A は「desk の段で、実証していない」判定である**。どの候補も data で反証されていない。
+
+### 7.4 F0 §5 の gate の性質
+
+- m = 0.58 の真の効果でも、片側 5% の単一の検定の検出力は S で約 0.35、E で約 0.43。V = 6 の多重性の下では約 0.13〜0.19。**PF2・PF3 を m ちょうどの効果で満たすことは、S = 4.67 年・E = 6.4 年では不可能**で、この読み方では、FRONTIER-A は設計でほぼ決まっていた。
+- 一方で m = 1/√3 は緩い。system の posterior（#506 の prior の縮小）で G4 の 1.0 に届くには、component の真の Sharpe は約 1.1 が要る。

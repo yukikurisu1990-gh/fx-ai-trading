@@ -22,13 +22,14 @@
 | **Track A（original な mechanism）** | 価格の data を見ない Role H が、市場の配管の地図から 7 つの original な mechanism を作った。data を見る前の power-first の gate（F0 §5、最低限の有用な component の net Sharpe 0.58）を、**どれも通らなかった**。Base の予測は −2.48 〜 +0.07。data の取得・target の return の読み取り・実証は行っていない |
 | **Track B（execution の cost の frontier）** | seen の 2021-04 … 2025-12 の M15 bid / ask の spread を測った。最も低いのは USD_JPY の London fix の時刻の中央値 1.13 bp で、all-in の往復は約 1.63 bp（slippage 0.5 bp の推定を含む）。**all-in ≤ 1.0 bp は、20 pair × 11 の時間帯の 220 の cell のうち 212 で一度も無く、8 で一瞬（bar の 0.05% 以下）だけ**。HOLD の再開の trigger A（all-in ≤ 1.0 bp の継続）も観測されない |
 
-**構造的な所見**（Role H が見つけ、lead が確認した）:
+**所見**（Role H が見つけ、review で範囲を絞った。【A】§7）:
 
-- 日次の intraday の取引では cost / σ ≈ 0.06〜0.08 で、component の Sharpe 0.76 に届くには、cost の無い gross で pair あたり年率 Sharpe 約 3.8 が要る。
-- これは、公表された最も強い intraday の FX の効果（KMW の fix の W 字、cost なし 1.24〜1.82）の 2 倍以上である。
-- **直接の証拠が無い original な仮説は、50% の haircut と retail の cost の下で、data を見る前に構造的に gate を通れない**。
+- **事前登録した 50% の haircut と、Role H の g の prior の下で**、日次の intraday の候補が gate に届くには、cost の無い gross で pair あたり年率 Sharpe 約 2.2〜3.7 が要る（breadth と保有による）。haircut が無ければ約 1.9。
+- 公表された最も強い intraday の FX の効果（KMW の fix の W 字）は、cost なしで 1.24〜1.82。
+- **判定は haircut に依存する**。h = 1 なら H-07 は 0.78 で PF1 を通る（ただし H-07 は F9 の horizon variant として実証に進めない）。
+- **FRONTIER-A は desk の段の判定で、どの候補も data で反証されていない**。
 
-**意味**: FX のデイトレードが不可能という判定ではない。retail の cost の下では、事前に検出できる大きさの original な mechanism を、根拠を持って予測できなかった。
+**意味**: FX のデイトレードが不可能という判定ではない。この OANDA の pricing の cost と事前登録の haircut の下では、事前に検出できる大きさの original な mechanism を、根拠を持って予測できなかった。
 
 ## 2. #507 merge record
 
@@ -104,7 +105,19 @@ F0 §4 の 12 の基準（最大 156）: H-02 112、H-07 92、H-05 85、H-03 83�
 **Track B の実測の cost で置き換えた場合**【算術】:
 
 - H-02 の cost を Track B の USD_JPY の東京の時間帯の中央値 1.22 + 0.5 = 1.72 bp にしても、s_B = (1.5 − 1.72) / 16 × √24 ≈ −0.07 で、不合格のまま。
-- 他の候補も、cost の差（0.2〜0.8 bp）では符号が変わらない。
+- H-07 は c = 2.2 で約 +0.19、H-05 は c を 1.28 下げても約 +0.14。**どの候補も 0.58 に届かない**。
+- **逸脱の開示**: Role H の c は Cycle 1 / R-A2b の既報の集計で、F0 §5 が定める Track B の値ではない（Track B は並行して走った）。上の置き換えで判定は変わらない。
+
+**Optimistic の列と haircut**【A】§7.1:
+
+- 【A】§2 の Optimistic は h = 1 に加えて g も上の prior に変えている（H-02 g = 6 など）。h = 1 だけでは H-01 −2.31、H-02 +0.25、H-03 +0.19、H-04 −1.58、H-05 +0.25、H-06 −1.00、**H-07 +0.78**。
+- **判定は事前登録の 50% の haircut に依存する**。
+
+**gate の性質**【A】§7.4:
+
+- m ちょうどの効果では、PF2・PF3 は S = 4.67 年・E = 6.4 年で満たせない（V = 6 の検出力は約 0.13〜0.19）。この読み方では FRONTIER-A は設計でほぼ決まっていた。
+- m = 1/√3 は緩い。#506 の prior の縮小の後で G4 に届くには、真の Sharpe 約 1.1 が要る。
+- Role H は gate を知った上で予測した（偽陰性の risk）。rubric の基準 11 は gate を採点に入れており循環している。
 
 **参考**: m = 0.58 の真の効果があっても、S（4.67 年）での検出力は約 0.35、E（6.4 年）では約 0.43。
 
@@ -159,6 +172,14 @@ F0 §4 の 12 の基準（最大 156）: H-02 112、H-07 92、H-05 85、H-03 83�
 - M15 の終値の snapshot だけで、bar の中の spread の最小は捕まえていない。
 - 実約定・slippage・拒否の data は無く、slippage 0.5 bp は推定。
 - order の種類（指値など）の効果は測っていない（#475 では passive の執行は cost を上げた【記録】）。
+- **この OANDA の pricing の tier だけ**の測定である。日本の国内の retail の業者の原則固定の spread（USD/JPY 0.2 銭 ≈ 0.14 bp）や、手数料型の口座は測っていない。そこでの実約定の質（slippage・拒否・API の可否）も不明。
+- **曜日の filter が日曜の夕方の bar を落としている**（`weekday < 5`）。週末の再開（H-07 の窓）は測っていない。
+- `london_fix_1045_1115` は ET で固定している。US と UK の夏時間がずれる週（年に約 3 週）は、WMR の fix が 12:00 ET、ECB の参照 rate が 09:15 ET になり、この bucket から外れる。
+- MOMENTARY の 8 cell（GBP_AUD、0.5 bp 未満の spread）は、quote の artefact の可能性が高い。
+- `spread_open_bp` は計算したが、記録の統計には使っていない。
+- Tokyo の bucket（19:00〜02:00 ET）は、仲値の slot（19:55 / 20:55 ET）の近似でしかない。
+
+**F0 §8 からの erratum**: 実装した bucket は F0 §8 と違う。pre_london（02:00〜03:00）を足し、NY 10 時台を 10:00〜10:45、London fix を 10:45〜11:15、NY の午後を 11:15〜16:00 にした（F0 は「11:00 前後」「12:00〜16:00」）。境界は bar の終わりの時刻。測定の前に code を commit した（`5fc223f`）が、F0 の文面は変えていない。
 
 ## 12. Data acquisition
 
@@ -171,7 +192,10 @@ F0 §4 の 12 の基準（最大 156）: H-02 112、H-07 92、H-05 85、H-03 83�
 | F0 | `53d5d9f`（2026-10-11 20:24 JST）。仮説の生成と cost の測定の前 |
 | Track B の code | commit の後に実行（head `5fc223f`、dirty 0、command `python -X utf8 -m scripts.research.fx_frontier.track_b_cost`、2026-10-11T11:25:41Z）。記録に入力の content hash（20 pair）・code の sha256・slippage の仮定を保存 |
 | Track B の記録 | `66064b4`、sha256 `7491242f…` |
-| Track A | Role H の出力を【A】として commit。Role H は別の context で、価格の data を読んでいない（指示の文面と出力は【A】） |
+| Track A | Role H の出力を【A】として commit。Role H は別の context で、価格の data を読んでいない。起動は 2026-10-11T11:24:40Z（F0 の commit の 37 秒後）。指示の文面は【A】§6 に逐語。**web 検索の検索語は記録していない** |
+| 順序 | master の CI（#507 の merge）は 11:23:36Z 頃に完了し、F0 の commit は 11:24:03Z。F0 `53d5d9f` は Track B の code の commit `5fc223f` の祖先 |
+| seed | 該当なし（Track B は決定的、乱数を使わない） |
+| 環境 | repo の `.venv`（Python 3.12.10、pandas 3.0.2、numpy 2.4.4。この報告の作成時に確認、Track B の記録自体には保存していない）。Windows 11 |
 
 ## 14〜23. Empirical component results 〜 H vs G
 
@@ -194,7 +218,17 @@ F0 §4 の 12 の基準（最大 156）: H-02 112、H-07 92、H-05 85、H-03 83�
 
 ## 27. Independent reviews
 
-（下に記録する。）
+4 つの役割を、別の context の agent で、互いの結論を渡さずに行った（対象 `b5bf0ff`）。**BLOCKER は全ての役割で 0**。
+
+| 役割 | 主な所見 | 対応 |
+| --- | --- | --- |
+| Quant | 全ての s_B と §10 の −0.07 を再現。系統的に悲観に寄せた形跡は無い。Optimistic の列が定義（h = 1）と合わない | 【A】§7.1 で入力を開示し、h = 1 だけの値を追加 |
+| Statistician | m ちょうどの効果では PF2・PF3 は満たせない（設計でほぼ決まる）。m = 1/√3 は posterior の縮小の下では緩い。判定は haircut に依存。rubric の基準 11 が循環。「0.2〜0.8 bp」の記述が不正確 | §10・【A】§7.3〜§7.4 に開示。記述を訂正 |
+| FX microstructure | 配管の地図の時刻は正しい（夏時間のずれの週は除く）。H-01〜H-07 の棄却は公平。「構造的」は haircut の効果。cost の結論は OANDA の tier に限る。Track B は日曜を測らず、London fix の bucket は夏時間のずれの週に外れ、GBP_AUD の MOMENTARY は artefact の可能性 | §1・§11・§29 の範囲を絞り、限界を追加 |
+| Adversarial governance | fresh・OOS・取引・HOLD の裁定は守られている。Role H の指示の文面が【A】に無いのに §13 が「ある」と書いていた。cost の入力が F0 §5（Track B）からの逸脱。Track B の bucket が F0 §8 と違う。web 検索の記録が無い | 指示の文面を【A】§6 に逐語で追加し、§13 を訂正。逸脱と erratum を §10・§11 に開示 |
+
+- 全ての修正は記録と開示で、記録の JSON（上書きを拒否する）と F0 は変えていない。判定は変わらない。
+- 修正の後の再監査は、別の新しい context で行う（下の 27a）。
 
 ## 28. Governance compliance
 
@@ -212,15 +246,15 @@ F0 §4 の 12 の基準（最大 156）: H-02 112、H-07 92、H-05 85、H-03 83�
 
 ## 29. Final verdict
 
-**FRONTIER-A — `NO_ORIGINAL_MECHANISM_SURVIVES`**（desk power infeasible / candidate 0 で STOP）。
+**FRONTIER-A — `NO_ORIGINAL_MECHANISM_SURVIVES`**（desk power infeasible / candidate 0 で STOP。**desk の段の判定で、実証していない**）。
 
 - state は **`FXID_LONG_TERM_HOLD_NO_JUSTIFIED_ALPHA_CYCLE` に戻る**。
 - STOP の後に、予算を足して候補を増やすことはしない。
 
 **Human の目的に対する示唆**（判定ではなく、次の判断の材料）:
 
-1. **原因は data の長さではなく、効果の大きさと cost の比である**。cost / σ が 0.06〜0.08 の intraday では、事前に予測できる original な効果は、その数倍の大きさが要る。
-2. **cost の側の改善**（all-in の往復が 1 bp 以下になる執行）は、Track B の実測では、現在の OANDA の retail では観測されない。
+1. **原因は data の長さだけではなく、事前登録の haircut の下での効果の大きさと cost の比である**。cost / σ が 0.06〜0.08 の intraday では、事前に予測できる original な効果は、その数倍の大きさが要る。判定は desk の段のもので、候補は data で反証されていない。
+2. **cost の側の改善**（all-in の往復が 1 bp 以下になる執行）は、Track B の実測では、**この OANDA の pricing の tier では**観測されない。他の業者・口座の種類は測っていない。
 3. したがって、FX の intraday で G4 に届く system を作るには、次のどれかが要る。
    - (a) cost の構造の大きな変化（HOLD の trigger A・D）
    - (b) 公開の情報で事前に観測できる、新しい flow の情報源（trigger C）
