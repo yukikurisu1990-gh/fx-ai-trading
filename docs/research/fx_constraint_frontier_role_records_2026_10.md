@@ -4,7 +4,37 @@
 
 - 3 つの調査は、事前登録の commit の後に並行して起動した。どの agent も価格の data を読んでいない。account の作成・login・取引・demo・data の取得・購入をしていない。
 - 数値は、agent が頁の本文から引用したもの（`[V]`）と、検索の要約からのもの（`[S]`、未検証）を区別した。
-- 候補の母集団の抽出（§8 の表の元）は、事前登録の commit の前に別の agent が repo の文書だけから行った。
+- 候補の母集団の抽出（§8 の表の元）は、事前登録の commit の前に別の agent が repo の文書だけから行った（§0）。
+- **起動の時刻**（session の記録の tool の呼び出しの timestamp。repo の commit ではないので、lead の session の記録による）: 抽出 2026-10-11T14:24:53Z、C1 14:30:17Z、C4 14:30:22Z、C5 14:30:29Z。事前登録の commit は 14:29:28Z。
+
+## 0. 候補の母集団の抽出（事前登録の前）
+
+### 0.1 指示（逐語）
+
+```text
+Read-only documentation extraction in repo C:\Users\yukik\fx-ai-trading (branch research/fx-feasibility-constraint-frontier, = master d71ed65). Do NOT read any FX price data (no data/*, parquet, caches, jsonl price files; do not run research scripts). You may read docs/** and committed JSON artifacts under artifacts/research/** that contain only already-reported summary statistics. Do not modify files.
+
+Goal: compile the FROZEN CANDIDATE UNIVERSE of near-miss FX components already recorded in authoritative repo docs, with the numbers those docs already report, for a constraint-frontier (cost/horizon/statistical-contract/data-length) desk analysis. Do not invent candidates; do not rescue anything marked REJECT/INVALID/leakage/duplicate (list those separately as excluded with reason).
+
+Required candidates (find them):
+1. F1 / EUR European morning (see docs/research/fxid_final_mechanism_feasibility_review_2026_10.md, fx_system_p1_p2_fast_track_final_2026_10.md, fx_system_p1_prereg_2026_10.md, fxid_cycle1_data_feasibility_final_report_2026_10.md)
+2. JPY post-Tokyo-fix (fxid_ny_intraday_economics_followup_2026_10.md, fxid_final_mechanism_feasibility_review_2026_10.md, fxid_cycle1...)
+3. CB announcement-day premium (fx_component_discovery_fast_track_final_2026_10.md, fx_component_discovery_d1_record_2026_10.md)
+4. H-07 weekend-reopen liquidity reversal (fx_frontier_track_a_record_2026_10.md: n=15/yr, k=2.5, g=6bp, c=2.7, sigma=26bp, h=0.5)
+5. #497 classical premia components (m15_final_classical_premia_final_report_2026_09_29.md: carry + 12-1 momentum)
+6. M16 POSITIVE_EXPLORATORY (m15_usd_factor_financing_final_report_2026_09_24.md)
+7. Any other near-miss explicitly preserved in these authoritative docs (e.g. NY 09:00/09:30 entry from R-A2b; T5 from top-five cycle docs/research/*top_five*; KMW fix W-shape; Breedon-Ranaldo; gotobi) — include only if the doc records numbers and a non-REJECT status, otherwise list as excluded.
+
+For EACH candidate give a table row with: id/name; current status token & reason (quote, with file:line); mechanism (one line); horizon/holding; opportunities per year n and breadth k; gross edge per trade (bp) and its source (in-sample measured / literature / prior); cost assumed (bp round trip) and which pair/time; per-trade sigma (bp) or annualised gross/net Sharpe as reported; evidence age (sample years); validation problem; the exact report numbers needed to compute s = sqrt(n*k)*(g-c)/sigma or annualised Sharpe. Quote numbers exactly with file:line. Where a number is not recorded say NOT_RECORDED — never estimate.
+
+Also extract: the #506 system prior contract (tau_c, tr(R^-1), tail constraint) and G4 definition with file:line (docs/governance/fx_system_architecture_ruling_2026_10.md, fx_system_architecture_redesign_2026_10.md); the HOLD ruling restart triggers (docs/governance/fxid_long_term_hold_ruling_2026_10.md §9); the Cycle 1 / R-A2b cost and sigma by hour aggregates; and the data-availability findings already recorded (pre-2016 OANDA intraday availability, E period 2010–2016, any source/price info for historical bid/ask).
+
+Output: structured markdown, under 3000 words, numbers with file:line citations.
+```
+
+### 0.2 出力の要点
+
+事前登録 §8 の表（K1〜K4、R1〜R3、除外の一覧、独立に使える年数）の元。値は記録の値だけで、`NOT_RECORDED` の値を推定していない。
 
 ## 1. Role C1 — execution / broker の frontier
 
@@ -86,3 +116,4 @@ Deliver: (1) a table of studies with the decay/retention estimate, sample, marke
 - **d_pub の prior: Beta(1.2, 2.2)**、平均 0.353、中央値 0.322、10%点 0.072、90%点 0.686。FX の証拠に重みを置いた。
 - **d_desk の直接の値は無い**。文献は d_desk ≤ d_pub（確率的に）の上限だけを与える。
 - **固定の 50% は d_pub の 73 パーセント点**で、証拠に比べて楽観的。
+- **開示**: C5 の指示は、FX の fix の文献（KMW の後続・2015 年の WMR の改革）を調べる対象に挙げており、K1 / K2 の mechanism の文献に寄っている。指示は候補の結果を見ることを禁じたが、「候補と独立」は厳密には言い過ぎである。
