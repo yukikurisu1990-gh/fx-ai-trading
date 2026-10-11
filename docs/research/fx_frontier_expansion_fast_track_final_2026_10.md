@@ -20,13 +20,13 @@
 | track | 結果 |
 | --- | --- |
 | **Track A（original な mechanism）** | 価格の data を見ない Role H が、市場の配管の地図から 7 つの original な mechanism を作った。data を見る前の power-first の gate（F0 §5、最低限の有用な component の net Sharpe 0.58）を、**どれも通らなかった**。Base の予測は −2.48 〜 +0.07。data の取得・target の return の読み取り・実証は行っていない |
-| **Track B（execution の cost の frontier）** | seen の 2021-04 … 2025-12 の M15 bid / ask の spread を測った。最も低いのは USD_JPY の London fix の時刻の中央値 1.13 bp で、all-in の往復は約 1.63 bp（slippage 0.5 bp の推定を含む）。**all-in ≤ 1.0 bp は、20 pair × 11 の時間帯の 220 の cell のうち 212 で一度も無く、8 で一瞬（bar の 0.05% 以下）だけ**。HOLD の再開の trigger A（all-in ≤ 1.0 bp の継続）も観測されない |
+| **Track B（execution の cost の frontier）** | seen の 2021-04 … 2025-12 の M15 bid / ask の spread を測った。最も低いのは USD_JPY の London fix の時刻の中央値 1.13 bp で、all-in の往復は約 1.63 bp（slippage 0.5 bp の推定を含む）。**all-in ≤ 1.0 bp は、20 pair × 11 の時間帯の 220 の cell のうち 212 で一度も無く、8 で一瞬（bar の 0.05% 以下）だけ**。HOLD の再開の trigger A（all-in ≤ 1.0 bp の継続）も、**この OANDA の pricing の tier では**観測されない（他の業者・口座は測っていない） |
 
 **所見**（Role H が見つけ、review で範囲を絞った。【A】§7）:
 
 - **事前登録した 50% の haircut と、Role H の g の prior の下で**、日次の intraday の候補が gate に届くには、cost の無い gross で pair あたり年率 Sharpe 約 2.2〜3.7 が要る（breadth と保有による）。haircut が無ければ約 1.9。
 - 公表された最も強い intraday の FX の効果（KMW の fix の W 字）は、cost なしで 1.24〜1.82。
-- **判定は haircut に依存する**。h = 1 なら H-07 は 0.78 で PF1 を通る（ただし H-07 は F9 の horizon variant として実証に進めない）。
+- **判定は haircut に依存する**。h = 1・V = 1 なら H-07 は 0.78 で **PF1〜PF4 を全て通る**。H-07 を除外しているのは、h = 0.5 と、F9 の horizon variant という分類（FX microstructure の review は別の mechanism と読めると指摘）だけである。
 - **FRONTIER-A は desk の段の判定で、どの候補も data で反証されていない**。
 
 **意味**: FX のデイトレードが不可能という判定ではない。この OANDA の pricing の cost と事前登録の haircut の下では、事前に検出できる大きさの original な mechanism を、根拠を持って予測できなかった。
@@ -105,17 +105,17 @@ F0 §4 の 12 の基準（最大 156）: H-02 112、H-07 92、H-05 85、H-03 83�
 **Track B の実測の cost で置き換えた場合**【算術】:
 
 - H-02 の cost を Track B の USD_JPY の東京の時間帯の中央値 1.22 + 0.5 = 1.72 bp にしても、s_B = (1.5 − 1.72) / 16 × √24 ≈ −0.07 で、不合格のまま。
-- H-07 は c = 2.2 で約 +0.19、H-05 は c を 1.28 下げても約 +0.14。**どの候補も 0.58 に届かない**。
+- H-07 は c = 2.2 で約 +0.19、H-05 は c を 1.28 下げて 1.72 にしても約 +0.11（c = 1.28 にしても約 +0.14）。**どの候補も 0.58 に届かない**。
 - **逸脱の開示**: Role H の c は Cycle 1 / R-A2b の既報の集計で、F0 §5 が定める Track B の値ではない（Track B は並行して走った）。上の置き換えで判定は変わらない。
 
 **Optimistic の列と haircut**【A】§7.1:
 
 - 【A】§2 の Optimistic は h = 1 に加えて g も上の prior に変えている（H-02 g = 6 など）。h = 1 だけでは H-01 −2.31、H-02 +0.25、H-03 +0.19、H-04 −1.58、H-05 +0.25、H-06 −1.00、**H-07 +0.78**。
-- **判定は事前登録の 50% の haircut に依存する**。
+- **判定は事前登録の 50% の haircut に依存する**。h = 1・V = 1 なら H-07 は PF1〜PF4 を全て通る（0.777 ≥ 0.761、PF3 は 1.97 ≥ 1.645、PF4 は n = 15 > 12 で該当しない）。他の 6 候補は h = 1 でも PF1 を通らない。
 
 **gate の性質**【A】§7.4:
 
-- m ちょうどの効果では、PF2・PF3 は S = 4.67 年・E = 6.4 年で満たせない（V = 6 の検出力は約 0.13〜0.19）。この読み方では FRONTIER-A は設計でほぼ決まっていた。
+- m ちょうどの効果では、PF2・PF3 は S = 4.67 年・E = 6.4 年で満たせない（V = 6 の検出力は S で約 0.13〜0.19、E で約 0.18〜0.25）。この読み方では FRONTIER-A は設計でほぼ決まっていた。
 - m = 1/√3 は緩い。#506 の prior の縮小の後で G4 に届くには、真の Sharpe 約 1.1 が要る。
 - Role H は gate を知った上で予測した（偽陰性の risk）。rubric の基準 11 は gate を採点に入れており循環している。
 
@@ -165,7 +165,7 @@ F0 §4 の 12 の基準（最大 156）: H-02 112、H-07 92、H-05 85、H-03 83�
 | PARTIAL / CONTINUOUS | 0 |
 | 最大の割合 | 0.05%（GBP_AUD の NY 10 時台） |
 
-**cost の floor**: 主要な pair で all-in の往復 約 1.6〜1.9 bp。cost は、gross − 現実の all-in の cost で評価した（1.0 bp を絶対の条件にしない）。
+**cost の floor**: EUR_USD・USD_JPY・GBP_USD・USD_CAD・EUR_JPY で all-in の往復 約 1.6〜1.9 bp、AUD_USD で約 2.4 bp。cost は、gross − 現実の all-in の cost で評価した（1.0 bp を絶対の条件にしない）。
 
 **限界**:
 
@@ -228,7 +228,24 @@ F0 §4 の 12 の基準（最大 156）: H-02 112、H-07 92、H-05 85、H-03 83�
 | Adversarial governance | fresh・OOS・取引・HOLD の裁定は守られている。Role H の指示の文面が【A】に無いのに §13 が「ある」と書いていた。cost の入力が F0 §5（Track B）からの逸脱。Track B の bucket が F0 §8 と違う。web 検索の記録が無い | 指示の文面を【A】§6 に逐語で追加し、§13 を訂正。逸脱と erratum を §10・§11 に開示 |
 
 - 全ての修正は記録と開示で、記録の JSON（上書きを拒否する）と F0 は変えていない。判定は変わらない。
-- 修正の後の再監査は、別の新しい context で行う（下の 27a）。
+- 修正の後の再監査は、別の新しい context で行った（下の 27a）。
+
+### 27a. 修正の後の再監査
+
+対象 `a43cd94`。別の新しい context で、source と数値を再計算した。**BLOCKER 0、REQUIRED FIX 2、NON-BLOCKING 5**。
+
+| 区分 | 所見 | 対応 |
+| --- | --- | --- |
+| REQUIRED | 【A】§7.1 の「h = 1 でも PF2 を通る候補は無い」は誤り。H-07 は h = 1・V = 1 で PF1〜PF4 を全て通る | 【A】§7.1・§7.3、本報告 §1・§10 を訂正 |
+| REQUIRED | H-05 の「c を 1.28 下げても約 +0.14」は誤り（1.72 にすると +0.11。+0.14 は c = 1.28） | 訂正 |
+| NON-BLOCKING | 27a の参照先が無い | この節 |
+| NON-BLOCKING | V = 6 の検出力 0.13〜0.19 は S だけ（E は 0.18〜0.25） | 両方を記載 |
+| NON-BLOCKING | §1 の trigger A の記述が OANDA の tier に限定されていない | 限定した |
+| NON-BLOCKING | cost の floor 1.6〜1.9 bp に AUD_USD（約 2.4）が入らない | pair を明記 |
+| NON-BLOCKING | 【A】§5 の「構造的」は Role H の原文のまま | §7.3 に h = 1 での H-07 の通過を追記 |
+
+- 再監査は、全ての s_B・h = 1 の値・Optimistic・検出力・PF2 の erratum・Track B の 30 の cell・class の数・記録の sha256・code の sha256・期間の guard・HOLD の裁定の hash・commit の順序を、独立に再現・確認した。
+- 判定 FRONTIER-A（事前登録の h = 0.5 の下で）は変わらない。
 
 ## 28. Governance compliance
 
