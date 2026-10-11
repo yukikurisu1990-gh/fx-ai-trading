@@ -1,0 +1,125 @@
+{
+ "FOMC": {
+  "pairs": [
+   "EUR_USD",
+   "GBP_USD",
+   "AUD_USD",
+   "NZD_USD",
+   "USD_CAD",
+   "USD_CHF",
+   "USD_JPY"
+  ],
+  "retail_round_trip_bp_by_pair": {
+   "EUR_USD": 2.109,
+   "GBP_USD": 2.457,
+   "AUD_USD": 2.975,
+   "NZD_USD": 3.838,
+   "USD_CAD": 2.26,
+   "USD_CHF": 2.934,
+   "USD_JPY": 2.033
+  },
+  "retail_round_trip_bp_mean": 2.658,
+  "sigma_per_event_bp": 60.0,
+  "sample": "1994-01 … 2013-12、160 回",
+  "replication": "未確認（Lin, Taylor, Wang, Xu 2025 は abstract のみ）。Lucca & Moench（2015）は主要通貨の pre-FOMC の異常な return を否定（Table 9、本文で確認）",
+  "scenarios": {
+   "Optimistic": {
+    "gross_event_bp": 10.77,
+    "retail_cost_bp": 2.658,
+    "gross_over_cost": 4.05,
+    "net_event_bp": 8.112,
+    "annual_net_sharpe": 0.383,
+    "years_to_detect_80pct": 42.2,
+    "K1_cost_ge_gross": false,
+    "K8_years_exceed_available": true
+   },
+   "Base": {
+    "gross_event_bp": 5.15,
+    "retail_cost_bp": 2.658,
+    "gross_over_cost": 1.94,
+    "net_event_bp": 2.492,
+    "annual_net_sharpe": 0.118,
+    "years_to_detect_80pct": 447.5,
+    "K1_cost_ge_gross": false,
+    "K8_years_exceed_available": true
+   },
+   "Stress": {
+    "gross_event_bp": 3.09,
+    "retail_cost_bp": 3.987,
+    "gross_over_cost": 0.78,
+    "net_event_bp": -0.897,
+    "annual_net_sharpe": -0.042,
+    "years_to_detect_80pct": null,
+    "K1_cost_ge_gross": true,
+    "K8_years_exceed_available": true
+   }
+  }
+ },
+ "BoJ": {
+  "pairs": [
+   "AUD_JPY",
+   "NZD_JPY",
+   "GBP_JPY"
+  ],
+  "retail_round_trip_bp_by_pair": {
+   "AUD_JPY": 3.293,
+   "NZD_JPY": 4.41,
+   "GBP_JPY": 2.916
+  },
+  "retail_round_trip_bp_mean": 3.54,
+  "sigma_per_event_bp": 50.7,
+  "sample": "1998 … 2013、232 回",
+  "replication": "未確認",
+  "scenarios": {
+   "Optimistic": {
+    "gross_event_bp": 17.59,
+    "retail_cost_bp": 3.54,
+    "gross_over_cost": 4.97,
+    "net_event_bp": 14.05,
+    "annual_net_sharpe": 0.783,
+    "years_to_detect_80pct": 10.1,
+    "K1_cost_ge_gross": false,
+    "K8_years_exceed_available": true
+   },
+   "Base": {
+    "gross_event_bp": 7.385,
+    "retail_cost_bp": 3.54,
+    "gross_over_cost": 2.09,
+    "net_event_bp": 3.845,
+    "annual_net_sharpe": 0.214,
+    "years_to_detect_80pct": 134.6,
+    "K1_cost_ge_gross": false,
+    "K8_years_exceed_available": true
+   },
+   "Stress": {
+    "gross_event_bp": 4.431,
+    "retail_cost_bp": 5.309,
+    "gross_over_cost": 0.83,
+    "net_event_bp": -0.878,
+    "annual_net_sharpe": -0.049,
+    "years_to_detect_80pct": null,
+    "K1_cost_ge_gross": true,
+    "K8_years_exceed_available": true
+   }
+  }
+ },
+ "family_CB_ANNOUNCEMENT_DAY_UNCERTAINTY_PREMIUM": {
+  "Optimistic": {
+   "annual_net_sharpe_combined_independent": 0.872,
+   "years_to_detect_80pct": 8.1,
+   "K8": true
+  },
+  "Base": {
+   "annual_net_sharpe_combined_independent": 0.244,
+   "years_to_detect_80pct": 103.5,
+   "K8": true
+  },
+  "Stress": {
+   "annual_net_sharpe_combined_independent": 0.0,
+   "years_to_detect_80pct": null,
+   "K8": true
+  }
+ },
+ "available_validation_years": 7.1,
+ "cost_record_sha256": "aa15efa252d606556a4758ce55cef7fd52b937712653b8fe501d67de50472780"
+}
