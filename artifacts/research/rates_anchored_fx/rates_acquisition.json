@@ -1,0 +1,38 @@
+{
+ "head": "7ea5d1c8cb257e67fdf59dd9707b30364dcbf410",
+ "started_utc": "2026-10-12T16:30:22+00:00",
+ "endpoint": "v20 InstrumentsCandles（historical / read-only）",
+ "environment": "practice",
+ "granularity": "M15",
+ "price": "BA",
+ "request_lower_utc": "2021-04-26T00:00:00+00:00",
+ "request_upper_utc_exclusive": "2025-12-29T00:00:00+00:00",
+ "instruments": {
+  "USD": {
+   "instrument": "USB10Y_USD",
+   "rows": 107440,
+   "first_ts": "2021-04-26T00:00:00+00:00",
+   "last_ts": "2025-12-28T23:30:00+00:00",
+   "sha256": "525790a5101d6d5d678a13214b13fd484e52ac47bbff4c6acc00908d650a2fa9",
+   "file": "data/rates_anchored_fx/USB10Y_USD_M15_BA.jsonl"
+  },
+  "EUR": {
+   "instrument": "DE10YB_EUR",
+   "rows": 94788,
+   "first_ts": "2021-04-26T00:15:00+00:00",
+   "last_ts": "2025-12-23T20:45:00+00:00",
+   "sha256": "ffcf990e4df88f7092995de41f924ab4d1e7be0956689bace7828a6f2577686b",
+   "file": "data/rates_anchored_fx/DE10YB_EUR_M15_BA.jsonl"
+  },
+  "GBP": {
+   "instrument": "UK10YB_GBP",
+   "rows": 46966,
+   "first_ts": "2021-04-26T07:00:00+00:00",
+   "last_ts": "2025-12-24T12:00:00+00:00",
+   "sha256": "aced2ae422392ffc65eafd790f6e58f6620a6c0dd7381986f7ea6dcc94b2f426",
+   "file": "data/rates_anchored_fx/UK10YB_GBP_M15_BA.jsonl"
+  }
+ },
+ "code_sha256": "ed79f59860c0ee44c0ddb367783f70782e4d814c8d135f37b19b78957cdfde74",
+ "completed_utc": "2026-10-12T16:33:08+00:00"
+}
