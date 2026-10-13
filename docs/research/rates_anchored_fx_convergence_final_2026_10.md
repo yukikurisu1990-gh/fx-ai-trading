@@ -12,7 +12,7 @@
 | --- | --- |
 | **Q1** 金利の差は 30 分の FX の return を説明するか | **EUR は部分的に yes**（β > 0 が全ての日、平均 0.44、R² 0.12）。**GBP は弱い**（β 0.13、R² 0.02）。符号は経済的に正しい（外国の金利の上昇 → 外貨高） |
 | **Q2** 残差は平均回帰するか | **ほとんどしない**。120 分後の残差の中央値の比は 0.92〜1.06（|Z| の bin によらず 1 に近い）。30 分の残差の lag-1 の自己相関は −0.03 / −0.02 |
-| **Q3** overshoot と underreaction のどちらが強いか | overshoot（A）の trade は 1,730 件で gross +0.19 bp / trade。underreaction（B）は規則の下で **1 件しか起きなかった**（−27.7 bp）。どちらも cost に遠く及ばない |
+| **Q3** overshoot と underreaction のどちらが強いか | overshoot（A）の trade は 1,730 件で gross +0.19 bp / trade、cost に遠く及ばない。**underreaction（B）は凍結した閾値の下で実質的に検定されていない**（4.5 年で 1 件）: `NOT_EFFECTIVELY_TESTED_UNDER_FROZEN_THRESHOLD`。閾値は下げない |
 | **Q4** cost gate の後も正の期待値が残るか | **いいえ**。portfolio の net −1.79 bp / trade（gross +0.18、cost 1.97）、net Sharpe −1.93、bootstrap の P(平均 ≤ 0) = 1.00 |
 | **Q5** 2 pair の portfolio に意味のある Sharpe があるか | **いいえ**。両方の pair・全ての年・development と holdout・全ての sensitivity で net < 0 |
 | 金利の情報は価格だけの平均回帰より良いか | **いいえ**。price-only・time-shift・符号の乱数化の control は、主の strategy より**わずかに良い**（net −1.47〜−1.64 bp 対 −1.79） |
@@ -34,7 +34,7 @@
 
 - 取得: v20 の candle の endpoint（historical / read-only）、M15 bid / ask、request の境界を 2021-04-26T00:00Z / 2025-12-29T00:00Z（排他）に固定し、返った全ての candle の時刻を parse して確かめた（【R】、code の sha256 を記録）。
 - 優先の OIS（SOFR / €STR / SONIA / TONA）・STIR futures・2 年債の intraday は、無料の retail の経路が無い。**短期金利ではなく 10 年**で、期間 premium を含む。これは仮説の検定としての限界である（§25）。
-- feasibility の段で、各 instrument の 2021-04-26 12:00 の 1 本の candle の存在を確かめた（価格は表示していない）。
+- **feasibility の段の price の endpoint の読み取り**（事前登録の commit の前、記録の code は無く、lead の session の inline の Python で実行）: v20 の InstrumentsCandles に `granularity = M15`、`price = BA`、`from = 2021-04-26T12:00:00Z`、`count = 1` を、`USB02Y_USD`・`USB10Y_USD`・`DE10YB_EUR`・`UK10YB_GBP`・`USB05Y_USD`・`USB30Y_USD` に送り、返った candle の時刻だけを表示した（価格は表示していない。時刻は全て 2021-04-26T12:00Z、seen の範囲の中）。`JP10YB_JPY`・`JGB10Y_JPY`・`DE02YB_EUR`・`DE05YB_EUR`・`UK02YB_GBP` は「Invalid value specified for 'instrument'」。この読み取りの request は repo の記録に残っておらず、ここに文面で記録する。その前に `feasibility.py` で account の instrument の metadata（68 件、全て CURRENCY）を読んだ。
 
 ## 4. FX data
 
@@ -88,7 +88,8 @@ entry は判定の bar の終値の気配（買いは ask、売りは bid）。e
 ## 12. Underreaction results（B）
 
 - 規則の下で **1 件**（−27.7 bp）。|FAIR| ≥ 2.5σ（金利の 30 分の動きが FX の残差の σ の 2.5 倍以上）の観測が少なく、その中で |ACTUAL| ≤ 0.5·|FAIR| と cost gate を同時に満たすものはほぼ無い。
-- 診断（§17）では、EUR の |FAIR| / σ が 2.0〜3.0 の観測（n = 55）で 120 分後の追随が +4.6〜+8.3 bp だった。**標本が小さく、規則の外の観測であり、閾値を下げて trade を増やすことはしない**（指示 §40、§47）。
+- 診断（§18）では、EUR の |FAIR| / σ が 2.0〜3.0 の観測（n = 55）で 120 分後の追随が +4.6〜+8.3 bp だった。**標本が小さく、規則の外の観測であり、閾値を下げて trade を増やすことはしない**（指示 §40、§47）。
+- **B は `NOT_EFFECTIVELY_TESTED_UNDER_FROZEN_THRESHOLD`**: MIN_FAIR_MOVE = 2.5σ は指示が値を定めなかったため lead が凍結した値で、10 年の proxy の R² 0.02〜0.12 の下では、B の脚をほぼ止める閾値だった。**この報告の「mechanism の終了」は、A（overshoot）と、凍結した仕様の全体について言うもので、underreaction の仮説が data で反証されたという意味ではない**。
 
 ## 13. Pair-level results
 
@@ -161,7 +162,7 @@ event の時間帯で特に良いわけではない（金利の再評価が最�
 | 2.5–3.0 | +2.14（591） | −2.34（430） |
 | 3.0+ | −0.06（816） | +1.09（551） |
 
-- 2 pair の加重の平均で、2.5 以上の bin（+0.34 bp）は 2.5 未満（+0.24 bp）より大きく、事前登録の「単調性」は形式上成り立つ。**しかし大きさは cost（約 2 bp）の 1/6 で、pair の間で符号が揃わない**（EUR の 2.5–3.0 は +2.1、GBP は −2.3）。経済的な単調性の証拠ではない。
+- **pair をまたいで pool した**加重の平均で、2.5 以上の bin（+0.34 bp）は 2.5 未満（+0.24 bp）より大きく、事前登録の「単調性」は形式上成り立つ。pair ごとに見ると、EUR の 3.0+（−0.06）と GBP の 2.5–3.0（−2.34）が低い bin を下回り、成り立たない。**しかし大きさは cost（約 2 bp）の 1/6 で、pair の間で符号が揃わない**（EUR の 2.5–3.0 は +2.1、GBP は −2.3）。経済的な単調性の証拠ではない。
 - underreaction（|FAIR| / σ の bin、sign(FAIR)·ΔFX の 120 分）: EUR は +0.62（600）、+1.93（153）、+4.59（33）、+8.30（22）、+1.20（23）。GBP は標本が 2〜38 で符号が不安定。
 
 ## 19. Price-only control
@@ -207,13 +208,23 @@ event の時間帯で特に良いわけではない（金利の再評価が最�
 | capture 0.4 / 0.8 | 1,196 / 1,784 | +0.20 / +0.17 | −1.81 / −1.81 | −1.43 / −2.00 |
 | slippage 0.25 / 1.0 | 1,782 / 1,482 | +0.18 / +0.13 | −1.55 / −2.36 | −1.72 / −2.18 |
 | σ = 標準偏差 | 883 | +0.99 | −1.01 | −0.66 |
+
+- **capture と cost の倍数は同じ 1 つの parameter**: gate は D ≥ (倍数 / capture)·C なので、capture 0.8 は cost の倍数 3 と同じ run（1,784 件、同じ結果）、capture 0.4 は cost の stress C2 と trade の集合が同じ。C1（×1.25）は cost の倍数 5 と同じ trade の集合。独立の sensitivity ではない。
 | secondary（leave-one-out の USD の共通の factor） | 1,692 | +0.15 | −1.83 | −1.94 |
 
 **全ての sensitivity で net < 0**。最も良い σ = 標準偏差でも net −1.01 bp。
 
 ## 23. Independent reviews
 
-（下に記録する。）
+3 つの役割を別の context の agent で、互いの結論を渡さずに行った（対象 `4bbb37f`）。**BLOCKER は 0**。全員が RAC-F を支持した。指示 §51 に従い、BLOCKER 以外は延々と直さず、報告の文面の必須の修正だけを 1 回反映した。
+
+| 役割 | 主な所見 | 対応 |
+| --- | --- | --- |
+| Quant | lookahead なし（β・σ・cost・ATR・exit の as-of を合成で確認）。符号・P&L・position の衝突の規則は正しい。1,731 件の trade から portfolio・pair・年・exit の理由・MaxDD を再計算し全て一致。non-blocking: 単調性は pair をまたいで pool、price-only の σ の尺度、cost の stress は gate にも掛かる、同じ bar の終値での約定、exposure の単位、stale な Gilt | §18・§25 に注記 |
+| Rates / FX microstructure | 符号・時刻の整合は正しい（FX も金利も bar の終わり）。β 0.44 と R² 0.12 は妥当。**必須（文面）**: B は実質的に未検定、「FX は効率的」は言い過ぎ。non-blocking: 10 年の先物の duration の不一致、roll の跳び、Gilt の時間帯 | §1・§12・§25 を訂正 |
+| Adversarial | 事前登録 → 取得 → engine → backtest の順序と、全ての code / prereg の hash の一致を確認。data の境界（parse した datetime・str の subclass の拒否・guard 付きの FX の route）は正しい。lead の追加の値（MIN_FAIR 2.5σ など）は全て取得の前に凍結済み。**必須（文面）**: B を `NOT_EFFECTIVELY_TESTED_UNDER_FROZEN_THRESHOLD` と書く、feasibility の candle の読み取りの request を記録する。non-blocking: capture と cost の倍数は同じ parameter、cost の stress で trade の集合が変わる | §1・§3・§12・§22 を訂正 |
+
+（修正の後の再監査は 23a。）
 
 ## 24. Final classification
 
@@ -227,7 +238,11 @@ event の時間帯で特に良いわけではない（金利の再評価が最�
 - **この mechanism は終了する**（指示 §56）。indicator・ML・閾値・保有・cost の倍数の変更で救済しない。
 - **限界**（この結論の範囲）:
   - 金利の proxy は 10 年の国債の CFD で、短期金利（OIS / STIR）ではない。仮説の中心の「短期金利の再評価」を直接は検定していない。OIS / STIR の intraday の data は有料で、買っていない。
+  - **duration の不一致**: 事前登録 §4 は「同じ 10 年なので duration は共通の定数」としたが、CFD が追う先物の最割安銘柄の修正 duration は、米 10 年 note の先物が約 6、Bund・Long Gilt が約 8〜9 で違う。ΔRD は US の脚を約 25% 軽く重み付けしており、fit（R²）を弱める。残差の平均回帰の有無そのものは変えない（price-only の control と方向が 99.8% 一致）。
+  - CFD の価格の四半期の先物の roll の跳び（年 4 回 × 3 instrument）は確かめていない。Huber の推定で吸収される程度の件数。
+  - Gilt の気配が無い NY の午後は、GBP の exit の監視で直前の Gilt の値を使う（as-of の規則どおり。entry は t の金利の bar を要求する）。
+  - entry は signal を計算した bar の終値の気配で、遅延が無い。平均回帰の signal には楽観的で、真の gross はさらに低い可能性がある。
   - GBP の金利の proxy（Gilt の CFD）は London の日中だけで、NY の時間帯の GBP の判定は金利の data の欠落で除外された。
   - FX は M15 で、30 分の窓は 2 本の bar。M5 は guard 付きの route が無く使っていない。
   - cost は OANDA の実測の気配。PR #509 の公表の最良の cost（0.5〜0.8 bp）でも、gross +0.18 bp では net は負のまま。
-- 有料の OIS / STIR の data で短期金利の版を検定するかは、Human の判断（購入の承認が要る）。この報告はそれを推奨しない: 30 分の残差がほぼ収束しない（§17）という結果は、proxy の tenor よりも、30 分の FX の価格が金利に対して効率的であることを示唆する。
+- 有料の OIS / STIR の data で短期金利の版を検定するかは、Human の判断（購入の承認が要る）。判断の材料: 30 分の残差がほぼ収束しない（§17）のは、FAIR が残差の σ に比べて小さいので、**実質的には 30 分の FX の価格が平均回帰しないこと**についての結果である。短期金利の proxy で FAIR が大きくなっても A の結論が変わるとは考えにくいが、**underreaction（B）は FAIR の大きさに依存し、この programme では検定されていない**。
