@@ -34,11 +34,11 @@
 
 - 取得: v20 の candle の endpoint（historical / read-only）、M15 bid / ask、request の境界を 2021-04-26T00:00Z / 2025-12-29T00:00Z（排他）に固定し、返った全ての candle の時刻を parse して確かめた（【R】、code の sha256 を記録）。
 - 優先の OIS（SOFR / €STR / SONIA / TONA）・STIR futures・2 年債の intraday は、無料の retail の経路が無い。**短期金利ではなく 10 年**で、期間 premium を含む。これは仮説の検定としての限界である（§25）。
-- **feasibility の段の price の endpoint の読み取り**（事前登録の commit の前、記録の code は無く、lead の session の inline の Python で実行）: v20 の InstrumentsCandles に `granularity = M15`、`price = BA`、`from = 2021-04-26T12:00:00Z`、`count = 1` を、`USB02Y_USD`・`USB10Y_USD`・`DE10YB_EUR`・`UK10YB_GBP`・`USB05Y_USD`・`USB30Y_USD` に送り、返った candle の時刻だけを表示した（価格は表示していない。時刻は全て 2021-04-26T12:00Z、seen の範囲の中）。`JP10YB_JPY`・`JGB10Y_JPY`・`DE02YB_EUR`・`DE05YB_EUR`・`UK02YB_GBP` は「Invalid value specified for 'instrument'」。この読み取りの request は repo の記録に残っておらず、ここに文面で記録する。その前に `feasibility.py` で account の instrument の metadata（68 件、全て CURRENCY）を読んだ。
+- **feasibility の段の price の endpoint の読み取り**（governance の記録 `df52939` の commit の後・事前登録の commit `10a33f0` の前、記録の code は無く、lead の session の inline の Python で実行）: v20 の InstrumentsCandles に `granularity = M15`、`price = BA`、`from = 2021-04-26T12:00:00Z`、`count = 1` を、`USB02Y_USD`・`USB10Y_USD`・`DE10YB_EUR`・`UK10YB_GBP`・`USB05Y_USD`・`USB30Y_USD` に送り、返った candle の時刻だけを表示した（価格は表示していない。時刻は全て 2021-04-26T12:00Z、seen の範囲の中）。`JP10YB_JPY`・`JGB10Y_JPY`・`DE02YB_EUR`・`DE05YB_EUR`・`UK02YB_GBP` は「Invalid value specified for 'instrument'」。この読み取りの request は repo の記録に残っておらず、ここに文面で記録する。その前に `feasibility.py` で account の instrument の metadata（68 件、全て CURRENCY）を読んだ。
 
 ## 4. FX data
 
-承認済みの seen の route（`patsd_stage0.data.load_pair`）の **M15** bid / ask。EUR_USD・GBP_USD（USD の共通の factor の secondary に AUD_USD・NZD_USD・USD_CAD・USD_CHF・USD_JPY）。**M5 は使わなかった**: archive の M5 の file は保護期間の行を含み、seen だけを読む guard 付きの route が無い（事前登録 §3）。
+承認済みの seen の route（`patsd_stage0.data.load_pair`）の **M15** bid / ask。EUR_USD・GBP_USD（USD の共通の factor の secondary に AUD_USD・NZD_USD・USD_CAD・USD_CHF・USD_JPY）。**governance の記録（§2）の pair の一覧の外の読み取りの開示**: secondary の USD の共通の factor のために、AUD_USD・NZD_USD・USD_CAD・USD_CHF（と USD_JPY）の seen の M15 も、同じ guard 付きの route で読んだ。事前登録 §12 には書いたが、governance の記録の pair の一覧には無かった。保護期間は読んでいない。**M5 は使わなかった**: archive の M5 の file は保護期間の行を含み、seen だけを読む guard 付きの route が無い（事前登録 §3）。
 
 ## 5. Timestamp alignment
 
@@ -208,9 +208,9 @@ event の時間帯で特に良いわけではない（金利の再評価が最�
 | capture 0.4 / 0.8 | 1,196 / 1,784 | +0.20 / +0.17 | −1.81 / −1.81 | −1.43 / −2.00 |
 | slippage 0.25 / 1.0 | 1,782 / 1,482 | +0.18 / +0.13 | −1.55 / −2.36 | −1.72 / −2.18 |
 | σ = 標準偏差 | 883 | +0.99 | −1.01 | −0.66 |
+| secondary（leave-one-out の USD の共通の factor） | 1,692 | +0.15 | −1.83 | −1.94 |
 
 - **capture と cost の倍数は同じ 1 つの parameter**: gate は D ≥ (倍数 / capture)·C なので、capture 0.8 は cost の倍数 3 と同じ run（1,784 件、同じ結果）、capture 0.4 は cost の stress C2 と trade の集合が同じ。C1（×1.25）は cost の倍数 5 と同じ trade の集合。独立の sensitivity ではない。
-| secondary（leave-one-out の USD の共通の factor） | 1,692 | +0.15 | −1.83 | −1.94 |
 
 **全ての sensitivity で net < 0**。最も良い σ = 標準偏差でも net −1.01 bp。
 
@@ -224,7 +224,9 @@ event の時間帯で特に良いわけではない（金利の再評価が最�
 | Rates / FX microstructure | 符号・時刻の整合は正しい（FX も金利も bar の終わり）。β 0.44 と R² 0.12 は妥当。**必須（文面）**: B は実質的に未検定、「FX は効率的」は言い過ぎ。non-blocking: 10 年の先物の duration の不一致、roll の跳び、Gilt の時間帯 | §1・§12・§25 を訂正 |
 | Adversarial | 事前登録 → 取得 → engine → backtest の順序と、全ての code / prereg の hash の一致を確認。data の境界（parse した datetime・str の subclass の拒否・guard 付きの FX の route）は正しい。lead の追加の値（MIN_FAIR 2.5σ など）は全て取得の前に凍結済み。**必須（文面）**: B を `NOT_EFFECTIVELY_TESTED_UNDER_FROZEN_THRESHOLD` と書く、feasibility の candle の読み取りの request を記録する。non-blocking: capture と cost の倍数は同じ parameter、cost の stress で trade の集合が変わる | §1・§3・§12・§22 を訂正 |
 
-（修正の後の再監査は 23a。）
+### 23a. 修正の後の再監査
+
+別の新しい context で、修正の commit（`4bbb37f..9bbef4c`）と PR の全体を再監査した。**BLOCKER 0**。capture と cost の倍数の同値（1,784 / 1,196 / 1,503 件）、pair ごとの単調性、B の 1 件、feasibility の記述と commit の順序、RAC-F の規則、backtest の後に code が変わっていないこと（全ての sha256 が一致）、data の読み取りの経路を確かめた。non-blocking の 3 点（§22 の表の崩れ、feasibility の読み取りが governance の commit の後であること、governance の pair の一覧の外の 4 pair の読み取りの開示）を反映した。指示 §51 に従い、ここで review を終える。
 
 ## 24. Final classification
 
